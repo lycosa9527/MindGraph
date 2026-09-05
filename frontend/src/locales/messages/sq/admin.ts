@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': 'Kanale shkollore, tema dhe mesazhe direkte.',
   'admin.feature.mindmateCollab': 'Bashkëpunim MindMate',
   'admin.feature.mindmateCollabHint': 'Dhomë bisede AI MindMate e përbashkët (shfletim org + kod ftese). Kërkon nivel online_collab.',
+  'admin.feature.training': 'Org training follow',
+  'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.featureLoadFailed': 'Flamujt e funksioneve nuk u ngarkuan',
   'admin.featureSaveFailed': 'Cilësimet nuk u ruajtën',
   'admin.featuresIntro': 'Aktivizoni ose çaktivizoni modulet. Vlerat shkruhen në .env dhe ringarkohen në të gjithë workerët API që UI dhe kontrollet API të përditësohen pa rinisje. Hapësira e Njohurive mund të kërkojë ende Qdrant/Celery të nisur me procesin.',

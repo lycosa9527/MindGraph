@@ -6,5 +6,7 @@ declare module 'vue-router' {
     titleKey?: string
     /** Auth layout: hide brand + language toggle; use browser-detected locale on the page. */
     authLayoutMinimal?: boolean
+    /** Visiting instructor console (`/training`). */
+    requiresTrainingLead?: boolean
   }
 }

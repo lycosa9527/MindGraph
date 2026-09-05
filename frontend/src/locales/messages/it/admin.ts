@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': 'Canaux di l\'istituto, sujets e messaggios directs.',
   'admin.feature.mindmateCollab': 'Collab. MindMate',
   'admin.feature.mindmateCollabHint': 'Salle di chat IA MindMate condivisa (percorso org. + code d’invito). Richiede l’offerta online_collab.',
+  'admin.feature.training': 'Org training follow',
+  'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.featureLoadFailed': 'Impossibile caricare i indicatori di funzionalità',
   'admin.featureSaveFailed': 'Impossibile salvare i parametri',
   'admin.featuresIntro': 'Attiva o disattiva i moduli. I valori sono scritti in .env e ricaricati sul server in corso di esecuzione, che aggiorna l\'UI e la maggior parte dei controlli API subito. Se un modulo n\'a mai été caricato all\'avvio del processo, un riavvio completo può essere necessario per registrare il sue route.',

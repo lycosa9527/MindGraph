@@ -100,6 +100,7 @@ export default {
   'meta.pageTitle.askOnce': 'AskOnce',
   'meta.pageTitle.auth': 'Kirish',
   'meta.pageTitle.canvas': 'Kanvas',
+  'meta.pageTitle.training': 'Training',
   'meta.pageTitle.chunkTest': 'Chunk testi',
   'meta.pageTitle.chunkTestResults': 'Chunk test neticeleri',
   'meta.pageTitle.community': 'Jamiyat',

@@ -7,10 +7,11 @@
  *
  * Exposes ``openCollab(mode)`` so CanvasPage can proxy ZoomControls events.
  */
-import { type ComputedRef, computed, ref } from 'vue'
+import { type ComputedRef, computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { OnlineCollabModal } from '@/components/workshop'
 import { useLanguage } from '@/composables'
+import { registerTrainingModalOpener } from '@/composables/training/trainingUiBridge'
 import type { ConnectionStatus, ParticipantInfo } from '@/composables/workshop/useWorkshop'
 
 import CollabUserRail from './CollabUserRail.vue'
@@ -168,6 +169,22 @@ function openCollab(mode: 'organization' | 'network') {
     collabModalRef.value?.startNow()
   }
 }
+
+let unregisterTrainingModal: (() => void) | null = null
+
+onMounted(() => {
+  unregisterTrainingModal = registerTrainingModalOpener('online-collab', {
+    open: () => openCollab('organization'),
+    close: () => {
+      showCollabModal.value = false
+    },
+  })
+})
+
+onUnmounted(() => {
+  unregisterTrainingModal?.()
+  unregisterTrainingModal = null
+})
 
 /** Stop the active session immediately — no confirmation modal. */
 async function stopNow() {

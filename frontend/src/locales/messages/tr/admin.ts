@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': 'Okul kanalları, konular ve doğrudan mesajlar.',
   'admin.feature.mindmateCollab': 'MindMate ortak çalışması',
   'admin.feature.mindmateCollabHint': 'Paylaşılan MindMate yapay zeka sohbet odası (kuruluş taraması + davet kodu). ONLINE_COLLAB seviye gerektirir.',
+  'admin.feature.training': 'Org training follow',
+  'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.featureLoadFailed': 'Özellik bayrakları yüklenemedi',
   'admin.featureSaveFailed': 'Ayarlar kaydedilemedi',
   'admin.featuresIntro': 'Modül bayraklarını değiştirin. Değerler .env\'ye yazılır ve tüm API çalışanlarına yeniden yüklenir, böylece UI ve API yeniden başlatılmadan güncellemeyi kontrol eder. Knowledge Space, süreçle başlayan Qdrant/Celery\'ye hala ihtiyaç duyabilir.',

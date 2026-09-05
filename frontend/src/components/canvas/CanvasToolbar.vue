@@ -20,7 +20,8 @@ import {
 } from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
-import { useDiagramStore, useUIStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { useUIStore } from '@/stores'
 import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
 
 import CanvasMathInsertDialog from './CanvasMathInsertDialog.vue'
@@ -48,7 +49,7 @@ const { t } = useLanguage()
 const notify = useNotifications()
 const { triggerConceptMapImportInPlace } = useDiagramImport()
 
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const uiStore = useUIStore()
 
 const { handleAddNode, handleDeleteNode, handleAddCause, handleAddEffect } = useNodeActions({

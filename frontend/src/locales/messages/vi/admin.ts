@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': 'Các kênh, chủ đề và tin nhắn trực tiếp của trường học.',
   'admin.feature.mindmateCollab': 'MindMate cộng tác',
   'admin.feature.mindmateCollabHint': 'Phòng trò chuyện AI MindMate được chia sẻ (duyệt tổ chức + mã mời). Yêu cầu cấp độ online_collab.',
+  'admin.feature.training': 'Org training follow',
+  'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.featureLoadFailed': 'Không thể tải cờ tính năng',
   'admin.featureSaveFailed': 'Không thể lưu cài đặt',
   'admin.featuresIntro': 'Chuyển đổi cờ mô-đun. Các giá trị được ghi vào .env và được tải lại trên tất cả các nhân viên API để UI và API kiểm tra cập nhật mà không cần khởi động lại. Không gian Tri thức có thể vẫn cần Qdrant/Celery đã được bắt đầu trong quá trình này.',

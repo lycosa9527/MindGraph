@@ -230,7 +230,14 @@ run_backend() {
     tests/test_log_user_context.py \
     tests/test_document_filenames.py \
     tests/test_doc_summary_ingest.py \
-    tests/test_knowledge_packages_api.py
+    tests/test_knowledge_packages_api.py \
+    tests/test_training_permissions.py \
+    tests/test_training_session_store.py \
+    tests/test_training_activity_sse.py \
+    tests/test_training_routes.py \
+    tests/test_training_storage_keys.py \
+    tests/test_training_course_routes.py \
+    tests/test_training_play_advance.py
 }
 
 run_frontend() {
@@ -276,7 +283,12 @@ run_frontend() {
     tests/formatSidebarDailyTokens.spec.ts \
     tests/voiceNotesMarkdown.spec.ts tests/voiceNotesTranscript.spec.ts \
     tests/voiceNotesSaveStatus.spec.ts tests/mobileVoiceNotesFinish.spec.ts \
-    tests/hasPersistedAuthUser.spec.ts
+    tests/hasPersistedAuthUser.spec.ts \
+    tests/applyTrainingSnapshot.spec.ts tests/trainingStore.spec.ts \
+    tests/trainingClient.spec.ts tests/useTrainingFollow.spec.ts \
+    tests/trainingCourses.spec.ts tests/trainingOverlayDrag.spec.ts \
+    tests/presentationSpotlight.spec.ts tests/applyTrainingUiTarget.spec.ts \
+    tests/trainingStageThumb.spec.ts
 }
 
 run_chrome_extension() {

@@ -100,6 +100,7 @@ export default {
   'meta.pageTitle.askOnce': 'AskOnce',
   'meta.pageTitle.auth': 'Mag-sign in',
   'meta.pageTitle.canvas': 'Canvas',
+  'meta.pageTitle.training': 'Training',
   'meta.pageTitle.chunkTest': 'Pagsusuri ng chunk',
   'meta.pageTitle.chunkTestResults': 'Mga resulta ng chunk test',
   'meta.pageTitle.community': 'Komunidad',

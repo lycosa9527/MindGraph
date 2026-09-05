@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': 'स्कूल चैनल, विषय और सीधे संदेश।',
   'admin.feature.mindmateCollab': 'MindMate collab',
   'admin.feature.mindmateCollabHint': 'साझा MindMate AI chatroom (org browse + invite code)। online_collab tier चाहिए।',
+  'admin.feature.training': 'Org training follow',
+  'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.featureLoadFailed': 'नहीं हो सका: load feature flags',
   'admin.featureSaveFailed': 'नहीं हो सका: save settings',
   'admin.featuresIntro': 'मॉड्यूल फ़्लैग टॉगल। .env में लिखकर सभी API workers पर reload — UI/API बिना restart अपडेट। Knowledge Space को Qdrant/Celery चाहिए हो सकता है।',

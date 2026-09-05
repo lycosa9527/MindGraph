@@ -32,7 +32,7 @@ from dotenv import load_dotenv
 from config.base_config import BaseConfig
 from config.dashscope_endpoint_config import DashScopeEndpointConfigMixin
 from config.features_config import FeaturesConfigMixin
-from config.knowledge_config import KnowledgeConfigMixin
+from config.knowledge_config import KnowledgeConfigMixin, TrainingCosConfigMixin
 from config.llm_config import LLMConfigMixin
 from config.mind_classroom_config import MindClassroomConfigMixin
 from config.t2i_config import T2IConfigMixin
@@ -54,6 +54,7 @@ class Config(
     MindClassroomConfigMixin,
     RateLimitingConfigMixin,
     KnowledgeConfigMixin,
+    TrainingCosConfigMixin,
     FeaturesConfigMixin,
 ):
     """

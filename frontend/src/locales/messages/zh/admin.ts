@@ -91,6 +91,8 @@ export default {
   'admin.feature.workshopChatHint': '校级频道、话题与私信。',
   'admin.feature.mindmateCollab': 'MindMate 在线协同',
   'admin.feature.mindmateCollabHint': '共享 MindMate AI 聊天室（校内浏览 + 邀请码）。需 online_collab 套餐。',
+  'admin.feature.training': '校本培训跟随',
+  'admin.feature.trainingHint': '到校讲师可将该校教师拉到同一图示页。',
   'admin.featureLoadFailed': '无法加载功能开关',
   'admin.featureSaveFailed': '无法保存设置',
   'admin.featuresIntro':

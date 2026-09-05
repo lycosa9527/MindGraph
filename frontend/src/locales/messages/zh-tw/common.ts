@@ -100,6 +100,7 @@ export default {
   'meta.pageTitle.askOnce': '多應',
   'meta.pageTitle.auth': '登錄',
   'meta.pageTitle.canvas': '畫布',
+  'meta.pageTitle.training': '校本培訓',
   'meta.pageTitle.chunkTest': '分塊測試',
   'meta.pageTitle.chunkTestResults': '分塊測試結果',
   'meta.pageTitle.community': '社區',

@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': 'පාසල් නාලිකා, මාතෘකා සහ සෘජු පණිවිඩ.',
   'admin.feature.mindmateCollab': 'MindMate සහයෝගීතාව',
   'admin.feature.mindmateCollabHint': 'බෙදාගත් MindMate AI කතා කාමරය (org බ්‍රවුස් + ආරාධනා කේතය). online_collab ස්ථරයක් අවශ්‍ය වේ.',
+  'admin.feature.training': 'Org training follow',
+  'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.featureLoadFailed': 'විශේෂාංග කොඩි පූරණය කළ නොහැකි විය',
   'admin.featureSaveFailed': 'සැකසීම් සුරැකීමට නොහැකි විය',
   'admin.featuresIntro': 'මොඩියුල කොඩි ටොගල් කරන්න. අගයන් .env වෙත ලියා සියලුම API සේවකයන් මත නැවත පූරණය කර ඇති නිසා UI සහ API චෙක්පත් නැවත ආරම්භ කිරීමකින් තොරව යාවත්කාලීන වේ. දැනුම අවකාශයට තවමත් ක්‍රියාවලිය සමඟ ආරම්භ කරන ලද Qdrant/Celery අවශ්‍ය විය හැක.',

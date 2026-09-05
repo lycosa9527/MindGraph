@@ -18,6 +18,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useKittyDesktopActionPoll } from '@/composables/kitty/useKittyDesktopActionPoll'
+import { useTrainingFollow } from '@/composables/training/useTrainingFollow'
 import { privacyPageUiCode } from '@/composables/usePrivacyPageLocale'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { loadElementPlusLocale } from '@/i18n/elementPlusLocale'
@@ -39,6 +40,7 @@ import { shouldShowTestServerBannerOnVisit } from '@/utils/testServerBanner'
 const notify = useNotifications()
 
 useKittyDesktopActionPoll()
+useTrainingFollow()
 
 const LoginModal = defineAsyncComponent(() => import('@/components/auth/LoginModal.vue'))
 const CanvasLiveSubtitleOverlay = defineAsyncComponent(
@@ -49,6 +51,24 @@ const VoiceNotesFab = defineAsyncComponent(
 )
 const VoiceNotesModal = defineAsyncComponent(
   () => import('@/components/voiceNotes/VoiceNotesModal.vue')
+)
+const TrainingBanner = defineAsyncComponent(
+  () => import('@/components/training/TrainingBanner.vue')
+)
+const TrainingFriendsRail = defineAsyncComponent(
+  () => import('@/components/training/TrainingFriendsRail.vue')
+)
+const TrainingLessonOverlay = defineAsyncComponent(
+  () => import('@/components/training/TrainingLessonOverlay.vue')
+)
+const TrainingFocusRing = defineAsyncComponent(
+  () => import('@/components/training/TrainingFocusRing.vue')
+)
+const TrainingNotesBar = defineAsyncComponent(
+  () => import('@/components/training/TrainingNotesBar.vue')
+)
+const TrainingInstructorPad = defineAsyncComponent(
+  () => import('@/components/training/TrainingInstructorPad.vue')
 )
 const ChatMessageToast = defineAsyncComponent(
   () => import('@/components/common/ChatMessageToast.vue')
@@ -388,6 +408,12 @@ onUnmounted(() => {
 
     <VoiceNotesFab />
     <VoiceNotesModal />
+    <TrainingBanner />
+    <TrainingFriendsRail />
+    <TrainingLessonOverlay />
+    <TrainingNotesBar />
+    <TrainingInstructorPad />
+    <TrainingFocusRing />
   </ElConfigProvider>
 </template>
 

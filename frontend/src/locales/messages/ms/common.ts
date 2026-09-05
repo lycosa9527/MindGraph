@@ -100,6 +100,7 @@ export default {
   'meta.pageTitle.askOnce': 'AskOnce',
   'meta.pageTitle.auth': 'Log masuk',
   'meta.pageTitle.canvas': 'Kanvas',
+  'meta.pageTitle.training': 'Training',
   'meta.pageTitle.chunkTest': 'Ujian potongan',
   'meta.pageTitle.chunkTestResults': 'Keputusan ujian potongan',
   'meta.pageTitle.community': 'Komuniti',

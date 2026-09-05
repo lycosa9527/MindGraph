@@ -60,6 +60,7 @@ import { useMobileCanvasInlineRecBar } from '@/composables/mobile/useMobileCanva
 import { useMobileCanvasRouteLoader } from '@/composables/mobile/useMobileCanvasRouteLoader'
 import { useMobileCanvasToolbar } from '@/composables/mobile/useMobileCanvasToolbar'
 import { DiagramSessionKey } from '@/composables/diagram/useDiagramSession'
+import { useTrainingCanvasGenerate } from '@/composables/training/useTrainingCanvasGenerate'
 import {
   type DiagramSession,
   useAuthStore,
@@ -106,6 +107,7 @@ const { startSession: startNodePaletteSession } = getNodePalette({
 })
 
 const { handleAIGenerate, handleConceptGeneration, isAIGenerating } = useCanvasToolbarApps()
+useTrainingCanvasGenerate(handleAIGenerate)
 const diagramAutoSave = useDiagramAutoSave()
 const previewStore = useMindMapSubgraphPreviewStore()
 const inlineRecCoordinator = useInlineRecommendationsCoordinator()

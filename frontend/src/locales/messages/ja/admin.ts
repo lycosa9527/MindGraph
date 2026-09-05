@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': '学校 channels, topics, and direct messages.',
   'admin.feature.mindmateCollab': 'MindMate オンラインコラボ',
   'admin.feature.mindmateCollabHint': '共有 MindMate AI チャットルーム（校内閲覧＋招待コード）。online_collab プランが必要です。',
+  'admin.feature.training': 'Org training follow',
+  'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.featureLoadFailed': '読み込めません機能スイッチ',
   'admin.featureSaveFailed': '保存できません設定',
   'admin.featuresIntro': '各モジュールをここで切り替えます。値は .env に書き込まれ、すべての API ワーカーにホットリロードされ、UI と API チェックは再起動なしで更新されます。ナレッジスペースは起動時に初期化した Qdrant/Celery が必要な場合、完全再起動が必要なことがあります。',

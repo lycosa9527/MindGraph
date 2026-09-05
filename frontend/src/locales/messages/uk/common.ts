@@ -100,6 +100,7 @@ export default {
   'meta.pageTitle.askOnce': 'AskOnce',
   'meta.pageTitle.auth': 'Увійти',
   'meta.pageTitle.canvas': 'Полотно',
+  'meta.pageTitle.training': 'Training',
   'meta.pageTitle.chunkTest': 'Тест фрагментів',
   'meta.pageTitle.chunkTestResults': 'Результати тесту фрагментів',
   'meta.pageTitle.community': 'Спільнота',

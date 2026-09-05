@@ -1,0 +1,112 @@
+import type { Router } from 'vue-router'
+
+import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
+import { trainingPagePath } from '@/config/trainingPages'
+import type { DiagramType } from '@/types'
+import type { TrainingSnapshot, TrainingTopicOption } from '@/types/training'
+import { canvasEditorPathForRoute } from '@/utils/canvasBackNavigation'
+
+export function canSeeTrainingSpeakerNotes(
+  snapshot: TrainingSnapshot,
+  userId: number | null | undefined
+): boolean {
+  if (snapshot.state !== 'live' && snapshot.state !== 'paused') return false
+  if (userId == null || snapshot.instructor_id == null) return false
+  return Number(snapshot.instructor_id) === Number(userId)
+}
+
+export function isMediaTrainingStep(snapshot: TrainingSnapshot): boolean {
+  const stepType = snapshot.step?.type
+  return stepType === 'slide' || stepType === 'video'
+}
+
+export function stepPullsUsers(snapshot: TrainingSnapshot): boolean {
+  if (snapshot.pull_users === false) return false
+  const step = snapshot.step
+  if (!step) {
+    return Boolean(snapshot.diagram_type)
+  }
+  if (typeof step.pull_users === 'boolean') {
+    return step.pull_users
+  }
+  return step.type === 'canvas'
+}
+
+export function shouldForceNavigate(snapshot: TrainingSnapshot, lastAppliedSeq: number): boolean {
+  if (snapshot.state !== 'live' || snapshot.seq <= lastAppliedSeq) {
+    return false
+  }
+  if (!stepPullsUsers(snapshot)) {
+    return false
+  }
+  if (snapshot.step?.page_key) {
+    return true
+  }
+  return Boolean(snapshot.diagram_type)
+}
+
+export function trainingCanvasLocation(
+  routePath: string,
+  diagramType: string
+): { path: '/canvas' | '/m/canvas'; query: { type: string } } | null {
+  const typeKey = diagramType === 'mind_map' ? 'mindmap' : diagramType
+  if (!VALID_DIAGRAM_TYPES.includes(typeKey as DiagramType)) {
+    return null
+  }
+  return {
+    path: canvasEditorPathForRoute(routePath),
+    query: { type: typeKey },
+  }
+}
+
+export function trainingStepLocation(
+  routePath: string,
+  snapshot: TrainingSnapshot
+): { path: string; query?: Record<string, string> } | null {
+  const pageKey = snapshot.step?.page_key
+  const diagramType = snapshot.diagram_type || snapshot.step?.diagram_type || ''
+  if (pageKey === 'canvas' || (!pageKey && diagramType)) {
+    return trainingCanvasLocation(routePath, diagramType)
+  }
+  const path = trainingPagePath(routePath, pageKey)
+  if (!path) return null
+  if (pageKey === 'auth') {
+    return { path, query: { training: '1' } }
+  }
+  return { path }
+}
+
+function sameTrainingQuery(
+  currentQuery: Record<string, unknown>,
+  targetQuery?: Record<string, string>
+): boolean {
+  if (!targetQuery) return true
+  return Object.entries(targetQuery).every(
+    ([key, value]) => String(currentQuery[key] || '') === value
+  )
+}
+
+export async function applyTrainingNavigate(
+  router: Router,
+  routePath: string,
+  snapshot: TrainingSnapshot
+): Promise<boolean> {
+  const target = trainingStepLocation(routePath, snapshot)
+  if (!target) return false
+  const current = router.currentRoute.value
+  const samePath = current.path === target.path
+  if (samePath && sameTrainingQuery(current.query, target.query)) {
+    return true
+  }
+  await router.push(target)
+  return true
+}
+
+export function chipTopicOverride(option: TrainingTopicOption): string {
+  const left = (option.item_a || '').trim()
+  const right = (option.item_b || '').trim()
+  if (left && right) {
+    return `${left} vs ${right}`
+  }
+  return (option.prompt || option.label || '').trim()
+}

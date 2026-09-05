@@ -55,6 +55,7 @@ FEATURE_KEY_TO_CONFIG_ATTR = {
     "feature_mindbot": "FEATURE_MINDBOT",
     "feature_mindmate_export": "FEATURE_MINDMATE_EXPORT",
     "feature_kitty_agent": "FEATURE_KITTY_AGENT",
+    "feature_training": "FEATURE_TRAINING",
 }
 
 # Keys whose Permissions UI is enforced by ``user_has_feature_access`` on the API.

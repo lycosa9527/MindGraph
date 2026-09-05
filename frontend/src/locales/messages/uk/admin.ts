@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': 'Шкільні канали, теми та особисті повідомлення.',
   'admin.feature.mindmateCollab': 'Співпраця MindMate',
   'admin.feature.mindmateCollabHint': 'Спільна ШІ-кімната MindMate (перегляд організації + код запрошення). Потрібен рівень online_collab.',
+  'admin.feature.training': 'Org training follow',
+  'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.featureLoadFailed': 'Не вдалося завантажити прапорці функцій',
   'admin.featureSaveFailed': 'Не вдалося зберегти налаштування',
   'admin.featuresIntro': 'Увімкніть або вимкніть модулі. Значення записуються в .env і перезавантажуються на всіх API-воркерах, тож інтерфейс і перевірки API оновлюються без перезапуску. Простір знань може все одно потребувати Qdrant/Celery, запущених разом із процесом.',

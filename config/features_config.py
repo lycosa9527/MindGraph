@@ -233,6 +233,14 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_MINDMATE_COLLAB", "False").lower() == "true"
 
     @property
+    def FEATURE_TRAINING(self):
+        """Enable org training follow (instructor pull).
+
+        Disabled by default. Set FEATURE_TRAINING=True in .env to enable.
+        """
+        return self._get_cached_value("FEATURE_TRAINING", "False").lower() == "true"
+
+    @property
     def WORKSHOP_CHAT_PREVIEW_ORG_IDS(self) -> frozenset[int]:
         """Organization IDs that may use Workshop Chat without admin/manager role.
 

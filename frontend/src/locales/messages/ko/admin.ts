@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': '학교 채널, 주제, 쪽지.',
   'admin.feature.mindmateCollab': 'MindMate 협업',
   'admin.feature.mindmateCollabHint': '공유 MindMate AI 채팅방(조직 탐색 + 초대 코드). online_collab 등급 필요.',
+  'admin.feature.training': 'Org training follow',
+  'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.featureLoadFailed': '기능 플래그를 불러오지 못했습니다',
   'admin.featureSaveFailed': '설정을 저장하지 못했습니다',
   'admin.featuresIntro': '모듈 플래그를 전환합니다. 값은 .env에 기록되고 모든 API 워커에 다시 로드되어 UI와 API 검사가 재시작 없이 갱신됩니다. 지식 공간은 프로세스와 함께 시작된 Qdrant/Celery가 여전히 필요할 수 있습니다.',

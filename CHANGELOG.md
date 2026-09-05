@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.40] - 2026-09-05
+
+> **Org training follow and Course Builder ship behind `FEATURE_TRAINING` (default off): visiting instructors pull a school’s teachers to the same page, author lessons, and drive them with a live play pad.**
+
+### Added
+
+- **Org training follow** — Redis session + SSE `{seq}` whisper; clients `GET /api/training/command` for the snapshot. Visiting staff (superadmin, platform BD, invited expert) host; school teachers are pulled. Notes stay instructor-only.
+- **Course Builder** (`/training/builder`) — Postgres courses/steps/assets, COS folder per course, seeded 双气泡图教程 (system, read-only). Slides target a closed page/modal/button catalog; canvas is an isolated live editor; filmstrip thumbs hibernate finished slides.
+- **主题备选** — Drag topic chips onto the stage as a single `topics` overlay. Clicking an option fills the canvas topic node(s) (`left-topic` / `right-topic` on 双气泡图).
+- **Instructor play pad** — Global bottom-right 上一页 / 下一页 / 停止 / 自由 in live training (`App.vue`, hidden on the builder). Prev/next walk mark clicks then slides. 自由 keeps the session live with `pull_users: false` so teachers may work; next or 自由 again pulls them back. Builder preview uses the same pad locally.
+- **`FEATURE_TRAINING`** — Defaults off. Admin → Features. Routes 404 when the flag is off. Documented in `docs/architecture/training_follow.md`.
+
+### Changed
+
+- System seed courses reject PUT as well as DELETE (`System courses cannot be edited`).
+- Training asset reads: authors always; teachers only during a live or paused session bound to that course.
+
+### Tests
+
+- `tests/test_training_*.py` — permissions, session store, SSE, routes, storage keys, course CRUD, play advance, system-course write guard, asset AuthZ
+- `frontend/tests/applyTrainingSnapshot.spec.ts`, `trainingStore.spec.ts`, `trainingClient.spec.ts`, `useTrainingFollow.spec.ts`, `trainingCourses.spec.ts`, `trainingOverlayDrag.spec.ts`, `applyTrainingUiTarget.spec.ts`, `trainingStageThumb.spec.ts`
+- `frontend/tests/presentationSpotlight.spec.ts` — landing spotlight ring
+
 ## [5.180.39] - 2026-09-05
 
 > **Document Summary paste no longer fails ingest when `Pasted note.md` already exists in the knowledge space.**

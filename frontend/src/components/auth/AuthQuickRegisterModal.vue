@@ -10,6 +10,7 @@ import { Close } from '@element-plus/icons-vue'
 import { ArrowLeft, Loader2 } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { isTrainingInlineHost } from '@/composables/training/trainingInlineHost'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
 
@@ -46,6 +47,7 @@ function handleBackdropClick() {
 
 /** `/auth`: footer legal link sits below the modal — overlay must not swallow clicks. */
 const passThroughFooterClicks = computed(() => Boolean(props.lightBackdrop && props.persistent))
+const inlineHost = isTrainingInlineHost()
 
 onMounted(async () => {
   if (!props.quickRegToken) {
@@ -130,12 +132,15 @@ async function submitQuickRegister() {
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport
+    to="body"
+    :disabled="inlineHost"
+  >
     <Transition name="modal">
       <div
         v-if="quickRegToken"
-        class="login-modal-overlay fixed inset-0 z-1000 overflow-y-auto overscroll-y-contain"
-        :class="{ 'pointer-events-none': passThroughFooterClicks }"
+        class="login-modal-overlay inset-0 z-1000 overflow-y-auto overscroll-y-contain"
+        :class="[inlineHost ? 'absolute' : 'fixed', { 'pointer-events-none': passThroughFooterClicks }]"
       >
         <div
           v-if="!lightBackdrop"

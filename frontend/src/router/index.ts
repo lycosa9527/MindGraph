@@ -122,6 +122,39 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, layout: 'canvas', ...pageTitle('canvas') },
   },
   {
+    path: '/training',
+    name: 'Training',
+    component: () => import('@/pages/TrainingPage.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresTrainingLead: true,
+      layout: 'main',
+      ...pageTitle('training'),
+    },
+  },
+  {
+    path: '/training/builder',
+    name: 'TrainingBuilder',
+    component: () => import('@/pages/TrainingBuilderPage.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresTrainingLead: true,
+      layout: 'main',
+      ...pageTitle('training'),
+    },
+  },
+  {
+    path: '/training/builder/:courseId',
+    name: 'TrainingBuilderEditor',
+    component: () => import('@/pages/TrainingBuilderEditorPage.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresTrainingLead: true,
+      layout: 'main',
+      ...pageTitle('training'),
+    },
+  },
+  {
     path: '/admin/mindbot',
     redirect: (to) => ({
       path: '/admin',
@@ -467,6 +500,13 @@ router.beforeEach(async (to, from) => {
     return { name: 'MindMate' }
   }
 
+  if (to.meta.requiresTrainingLead) {
+    await featureFlagsStore.fetchFlags()
+    if (!featureFlagsStore.getFeatureTraining() || !authStore.isPlatformLevel) {
+      return { name: 'MindMate' }
+    }
+  }
+
   // Check admin access (admin-only, not managers)
   if (to.meta.requiresAdmin && !authStore.isAdmin) {
     return { name: 'MindMate' }
@@ -567,10 +607,13 @@ router.beforeEach(async (to, from) => {
   if (to.meta.guestOnly) {
     const isAuthenticated = await authStore.checkAuth()
     if (isAuthenticated) {
-      if (isMobile.value) {
-        return { path: '/m' }
+      const trainingAuth = to.name === 'Auth' && String(to.query.training || '') === '1'
+      if (!trainingAuth) {
+        if (isMobile.value) {
+          return { path: '/m' }
+        }
+        return { name: 'MindMate' }
       }
-      return { name: 'MindMate' }
     }
     if (to.name === 'Auth') {
       useUIStore().syncGuestLocaleFromBrowser()

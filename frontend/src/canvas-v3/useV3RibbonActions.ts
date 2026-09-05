@@ -12,7 +12,8 @@ import { useNotifications } from '@/composables/core/useNotifications'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
 import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { CANVAS_MINDMAP_EXPORT_MENU_ITEMS } from '@/config/canvasExportMenu'
-import { useCanvasExportStore, useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { useCanvasExportStore } from '@/stores'
 
 import { useV3ChromeActions } from './useV3ChromeActions'
 
@@ -20,7 +21,7 @@ export function useV3RibbonActions() {
   const chrome = useV3ChromeActions()
   const { t } = useLanguage()
   const notify = useNotifications()
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
   const { resetToDefaultTemplate } = useCanvasReset()
   const { handleAddChild, handleAddSibling, handleAddBranch, handleDeleteNode } = useNodeActions({
     registerEventBusListeners: false,

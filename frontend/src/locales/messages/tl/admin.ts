@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': 'Mga channel ng paaralan, paksa, at direktang mensahe.',
   'admin.feature.mindmateCollab': 'Kolaborasyon sa MindMate',
   'admin.feature.mindmateCollabHint': 'Ibinahagi ang MindMate AI chatroom (org browse + invite code). Nangangailangan ng online_collab tier.',
+  'admin.feature.training': 'Org training follow',
+  'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.featureLoadFailed': 'Hindi ma-load ang mga feature na flag',
   'admin.featureSaveFailed': 'Hindi ma-save ang mga setting',
   'admin.featuresIntro': 'I-toggle ang mga flag ng module. Ang mga value ay isinusulat sa .env at nire-reload sa lahat ng API na manggagawa kaya ang UI at API ay nagsusuri ng update nang hindi nagre-restart. Maaaring kailanganin pa rin ng Knowledge Space ang Qdrant/Celery na sinimulan sa proseso.',

@@ -6,13 +6,13 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
-import { useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { DiagramNode, NodeStyle } from '@/types'
 
 import './v3Chrome.css'
 
 const { t } = useLanguage()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 
 const open = ref(true)
 

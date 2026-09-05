@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': 'کانال‌های مدرسه، موضوعات و پیام‌های مستقیم.',
   'admin.feature.mindmateCollab': 'همکاری MindMate',
   'admin.feature.mindmateCollabHint': 'چت روم MindMate AI مشترک (مرور سازمانی + کد دعوت). به سطح همکاری آنلاین نیاز دارد.',
+  'admin.feature.training': 'Org training follow',
+  'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.featureLoadFailed': 'نتوانستم پرچم‌های ویژگی را بارگیری کنم',
   'admin.featureSaveFailed': 'نتوانست تنظیمات را ذخیره کند.',
   'admin.featuresIntro': 'فعال/غیرفعال کردن پرچم‌های ماژول. مقادیر در .env نوشته شده و در تمام API workerها بارگذاری مجدد می‌شوند، بنابراین بررسی‌های رابط کاربری و API بدون راه‌اندازی مجدد به‌روزرسانی می‌شوند. ممکن است فضای دانش هنوز به Qdrant/Celery که با فرآیند آغاز شده‌اند، نیاز داشته باشد.',

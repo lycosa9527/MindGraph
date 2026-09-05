@@ -15,6 +15,7 @@ import sidebar from './sidebar.ts'
 import { thinkingCoinsMessages as thinkingCoins } from './thinkingCoins.ts'
 import maite from './maite.ts'
 import workshop from './workshop.ts'
+import training from '../en/training.ts'
 
 export default {
   ...common,
@@ -22,6 +23,7 @@ export default {
   ...canvas,
   ...maite,
   ...workshop,
+  ...training,
   ...admin,
   ...knowledge,
   ...community,

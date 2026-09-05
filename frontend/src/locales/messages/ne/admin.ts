@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': 'School channels, topics, and direct messages.',
   'admin.feature.mindmateCollab': 'MindMate collab',
   'admin.feature.mindmateCollabHint': 'Shared MindMate AI chatroom (org browse + invite code). Requires online_collab tier.',
+  'admin.feature.training': 'Org training follow',
+  'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.featureLoadFailed': 'Could not load feature flags',
   'admin.featureSaveFailed': 'Could not save settings',
   'admin.featuresIntro': 'Toggle module flags. Values are written to .env and reloaded on all API workers so the UI and API checks update without a restart. Knowledge Space may still need Qdrant/Celery that were started with the process.',

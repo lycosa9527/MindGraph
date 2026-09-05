@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': 'Məktəb kanalları, mövzular və DM.',
   'admin.feature.mindmateCollab': 'MindMate əməkdaşlığı',
   'admin.feature.mindmateCollabHint': 'Paylaşılan MindMate AI söhbət otağı (təşkilat baxışı + dəvət kodu). online_collab səviyyəsi tələb olunur.',
+  'admin.feature.training': 'Org training follow',
+  'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.featureLoadFailed': 'Funksiya bayraqları yüklənmədi',
   'admin.featureSaveFailed': 'Parametrlər saxlanılmadı',
   'admin.featuresIntro': 'Modul bayraqlarını dəyişin. Dəyərlər .env-ə yazılır və işlək prosesə yenidən yüklənir; UI və çox API dərhal yenilənir. Proses başlananda yüklənməyən modul üçün tam restart lazım ola bilər.',

@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': 'Schoolkanalen, onderwerpen en directe berichten.',
   'admin.feature.mindmateCollab': 'MindMate samenwerking',
   'admin.feature.mindmateCollabHint': 'Gedeelde MindMate AI chatroom (org browsen + uitnodigingscode). Vereist online_collab-laag.',
+  'admin.feature.training': 'Org training follow',
+  'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.featureLoadFailed': 'Kan functievlaggen niet laden',
   'admin.featureSaveFailed': 'Kan instellingen niet opslaan',
   'admin.featuresIntro': 'Schakel modulevlaggen in en uit. Waarden worden naar .env geschreven en opnieuw geladen op alle API-werkrollen, zodat de gebruikersinterface en API-controles worden bijgewerkt zonder opnieuw op te starten. Knowledge Space heeft mogelijk nog steeds Qdrant/Celery nodig die tijdens het proces zijn gestart.',

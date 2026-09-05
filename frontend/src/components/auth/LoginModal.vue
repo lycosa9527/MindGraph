@@ -22,6 +22,7 @@ import LoginAuthAltLinks from '@/components/auth/LoginAuthAltLinks.vue'
 import OAuthQrLoginModal from '@/components/auth/OAuthQrLoginModal.vue'
 import { useLoginModal } from '@/composables/auth/useLoginModal'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
+import { isTrainingInlineHost } from '@/composables/training/trainingInlineHost'
 import { invitationCodeFromSearch } from '@/utils/invitationCode'
 import { initCatWalk } from '@/utils/mascot/catWalk'
 import { resolveOAuthInviteCode, shouldShowWechatLoginLink } from '@/utils/oauthLoginUi'
@@ -172,19 +173,26 @@ onBeforeUnmount(() => {
 
 /** `/auth`: footer legal link sits below the modal — overlay must not swallow clicks. */
 const passThroughFooterClicks = computed(() => Boolean(props.lightBackdrop && props.persistent))
+const inlineHost = isTrainingInlineHost()
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport
+    to="body"
+    :disabled="inlineHost"
+  >
     <Transition name="modal">
       <div
         v-if="isVisible"
         ref="loginModalOverlayRef"
-        class="login-modal-overlay fixed inset-0 z-1000 overflow-y-auto overscroll-y-contain"
-        :class="{
-          'pointer-events-auto': authStore.showSessionExpiredModal,
-          'pointer-events-none': passThroughFooterClicks,
-        }"
+        class="login-modal-overlay inset-0 z-1000 overflow-y-auto overscroll-y-contain"
+        :class="[
+          inlineHost ? 'absolute' : 'fixed',
+          {
+            'pointer-events-auto': authStore.showSessionExpiredModal,
+            'pointer-events-none': passThroughFooterClicks,
+          },
+        ]"
       >
         <!-- Full-screen scrim (skipped on /auth so the route background shows through) -->
         <div
@@ -249,6 +257,7 @@ const passThroughFooterClicks = computed(() => Boolean(props.lightBackdrop && pr
                   role="tab"
                   :aria-selected="activeTab === 'login'"
                   class="auth-tab-switch__btn"
+                  data-training-target="auth-login"
                   :class="{ 'auth-tab-switch__btn--active': activeTab === 'login' }"
                   @click="switchLoginRegisterTab('login')"
                 >
@@ -259,6 +268,7 @@ const passThroughFooterClicks = computed(() => Boolean(props.lightBackdrop && pr
                   role="tab"
                   :aria-selected="activeTab === 'register'"
                   class="auth-tab-switch__btn"
+                  data-training-target="auth-register"
                   :class="{ 'auth-tab-switch__btn--active': activeTab === 'register' }"
                   @click="switchLoginRegisterTab('register')"
                 >

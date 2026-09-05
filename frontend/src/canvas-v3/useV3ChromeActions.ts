@@ -15,7 +15,8 @@ import { useNotifications } from '@/composables/core/useNotifications'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
-import { useDiagramStore, useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
 import { navigateBackFromCanvas } from '@/utils/canvasBackNavigation'
 
 const V3_LLM_MODELS = [
@@ -29,7 +30,7 @@ export function useV3ChromeActions() {
   const route = useRoute()
   const { t } = useLanguage()
   const notify = useNotifications()
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
   const uiStore = useUIStore()
   const panelsStore = usePanelsStore()
   const llmResultsStore = useLLMResultsStore()
@@ -53,6 +54,7 @@ export function useV3ChromeActions() {
   const isNodePaletteOpen = computed(() => panelsStore.nodePalettePanel.isOpen)
 
   function goBack(): void {
+    if (route.path.startsWith('/training')) return
     navigateBackFromCanvas(router, route.path)
   }
 

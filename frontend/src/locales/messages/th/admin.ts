@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': 'ช่องทางโรงเรียน หัวข้อ และข้อความส่วนตัว',
   'admin.feature.mindmateCollab': 'MindMate collab',
   'admin.feature.mindmateCollabHint': 'ห้องแชท AI MindMate แบบแชร์ (เรียกดูองค์กร + รหัสเชิญ) ต้องใช้ระดับ online_collab',
+  'admin.feature.training': 'Org training follow',
+  'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.featureLoadFailed': 'ไม่สามารถโหลดแฟล็กฟีเจอร์',
   'admin.featureSaveFailed': 'ไม่สามารถบันทึกการตั้งค่า',
   'admin.featuresIntro': 'สลับแฟล็กโมดูล ค่าจะถูกเขียนใน .env และโหลดซ้ำในเซิร์ฟเวอร์ที่ทำงานอยู่ ดังนั้น UI และการตรวจสอบ API ส่วนใหญ่จะอัปเดตทันที หากโมดูลไม่เคยถูกโหลดตอนเริ่มต้น คุณอาจยังต้องรีสตาร์ทเต็มรูปแบบ',

@@ -3,7 +3,7 @@ Tencent Cloud Object Storage (COS) client helpers.
 
 Auth: reuses TENCENT_SMS_SECRET_ID / TENCENT_SMS_SECRET_KEY (same CAM key as SMS/SES).
 Bucket/region: COS_BUCKET / COS_REGION. Feature prefixes: COS_KEY_PREFIX, COS_DOCUMENTS_*,
-COS_SHOWCASE_*.
+COS_SHOWCASE_*, COS_ZHIHUI_*, COS_TRAINING_*.
 
 Used by backup scheduler, document summary, Showcase media, and COS mirror sync.
 

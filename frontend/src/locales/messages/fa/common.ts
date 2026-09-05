@@ -100,6 +100,7 @@ export default {
   'meta.pageTitle.askOnce': 'AskOnce',
   'meta.pageTitle.auth': 'ورود',
   'meta.pageTitle.canvas': 'بوم',
+  'meta.pageTitle.training': 'Training',
   'meta.pageTitle.chunkTest': 'آزمون تکه‌ای',
   'meta.pageTitle.chunkTestResults': 'نتایج آزمون چانک',
   'meta.pageTitle.community': 'انجمن',

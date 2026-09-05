@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': 'Skoolkanale, onderwerpe en direkte boodskappe.',
   'admin.feature.mindmateCollab': 'MindMate-samewerking',
   'admin.feature.mindmateCollabHint': 'Gedeelde MindMate-KI-kletskamer (org-blaai + uitnodigingskode). Vereis online_collab-vlak.',
+  'admin.feature.training': 'Org training follow',
+  'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.featureLoadFailed': 'Kon nie kenmerkvlagte laai nie',
   'admin.featureSaveFailed': 'Kon nie instellings stoor nie',
   'admin.featuresIntro': 'Skakel module-vlagte oor. Waardes word na .env geskryf en in die opererende bediener herlaai sodat die gebruikerskoppelvlak en meeste API-toetse onmiddellik opdateer. Indien \'n module nooit tydens prosesbegin gelaai is nie, kan jy dalk steeds \'n volledige herstart nodig hê om sy roetes te registreer.',

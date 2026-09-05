@@ -279,7 +279,9 @@ onUnmounted(() => {
 
 // ── Card click ──
 
-function handleCardClick(item: { type: DiagramType }) {
+function handleCardClick(item: { type: DiagramType }, event?: MouseEvent) {
+  const raw = event?.target
+  if (raw instanceof Element && raw.closest('.builder-stage')) return
   const zhName = TYPE_TO_ZH_NAME[item.type]
   if (zhName) uiStore.setSelectedChartType(zhName)
   router.push({ path: '/canvas', query: { type: item.type } })
@@ -493,7 +495,8 @@ onMounted(() => {
             v-for="item in eightThinkingMapCards"
             :key="item.type"
             class="intl-card"
-            @click="handleCardClick(item)"
+            :data-training-target="`diagram-${item.type}`"
+            @click="handleCardClick(item, $event)"
           >
             <div class="intl-card-preview">
               <DiagramPreviewSvg :type="item.type" />
@@ -510,7 +513,8 @@ onMounted(() => {
             v-for="item in advancedDiagramCards"
             :key="item.type"
             class="intl-card"
-            @click="handleCardClick(item)"
+            :data-training-target="`diagram-${item.type}`"
+            @click="handleCardClick(item, $event)"
           >
             <div class="intl-card-preview">
               <DiagramPreviewSvg :type="item.type" />

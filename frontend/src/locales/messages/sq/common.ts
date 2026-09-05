@@ -100,6 +100,7 @@ export default {
   'meta.pageTitle.askOnce': 'AskOnce',
   'meta.pageTitle.auth': 'Hyr',
   'meta.pageTitle.canvas': 'Kanavacë',
+  'meta.pageTitle.training': 'Training',
   'meta.pageTitle.chunkTest': 'Test fragmentesh',
   'meta.pageTitle.chunkTestResults': 'Rezultatet e testit të fragmenteve',
   'meta.pageTitle.community': 'Komuniteti',

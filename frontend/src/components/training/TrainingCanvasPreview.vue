@@ -1,0 +1,166 @@
+<script setup lang="ts">
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+
+import V3PropertyPanel from '@/canvas-v3/V3PropertyPanel.vue'
+import V3StatusBar from '@/canvas-v3/V3StatusBar.vue'
+import V3TopToolbar from '@/canvas-v3/V3TopToolbar.vue'
+import { CanvasChrome, CanvasTopBar, ZoomControls } from '@/components/canvas'
+import { OnlineCollabModal } from '@/components/workshop'
+import {
+  applyTrainingTopicToDiagram,
+  registerTrainingTopicApplier,
+} from '@/composables/training/trainingTopicApply'
+import { registerTrainingModalOpener } from '@/composables/training/trainingUiBridge'
+import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
+import DiagramSessionProvider from '@/components/diagram/DiagramSessionProvider.vue'
+import { normalizeDiagramTypeKey } from '@/composables/canvasPage/newCanvasBootstrap'
+import type { LocaleCode } from '@/i18n/locales'
+import type { DiagramSession } from '@/stores/diagram'
+import { getDefaultTemplate } from '@/stores/specLoader/defaultTemplates'
+import { useUIStore } from '@/stores/ui'
+import type { MindMapCanvasMode } from '@/stores/ui'
+import type { DiagramType } from '@/types'
+import {
+  readEffectiveMindMapCanvasMode,
+  resolveSessionMindMapCanvasMode,
+} from '@/utils/mindMapCanvasMode'
+
+const props = defineProps<{
+  diagramType?: string | null
+  canvasMode?: MindMapCanvasMode | null
+  interactive?: boolean
+}>()
+
+const uiStore = useUIStore()
+
+const normalizedType = computed(() => {
+  const key = normalizeDiagramTypeKey(props.diagramType) || 'mindmap'
+  return key as DiagramType
+})
+
+const spec = computed(() =>
+  getDefaultTemplate(normalizedType.value, uiStore.language as LocaleCode)
+)
+
+const sessionMode = computed<MindMapCanvasMode>(() =>
+  resolveSessionMindMapCanvasMode(props.canvasMode || readEffectiveMindMapCanvasMode())
+)
+const useV3Chrome = computed(() => sessionMode.value === 'v3')
+
+const sessionKey = computed(
+  () =>
+    `${normalizedType.value}:${sessionMode.value}:${props.interactive ? 'edit' : 'ro'}:${spec.value ? 'ok' : 'empty'}`
+)
+
+const collabOpen = ref(false)
+const providerRef = ref<{ session: DiagramSession } | null>(null)
+let unregisterCollab: (() => void) | null = null
+let unregisterTopic: (() => void) | null = null
+
+watch(
+  providerRef,
+  (host) => {
+    unregisterTopic?.()
+    unregisterTopic = null
+    const session = host?.session
+    if (!session) return
+    unregisterTopic = registerTrainingTopicApplier((option) => {
+      applyTrainingTopicToDiagram(session, option)
+    })
+  },
+  { immediate: true }
+)
+
+onMounted(() => {
+  unregisterCollab = registerTrainingModalOpener('online-collab', {
+    open: () => {
+      collabOpen.value = true
+    },
+    close: () => {
+      collabOpen.value = false
+    },
+  })
+})
+
+onUnmounted(() => {
+  unregisterCollab?.()
+  unregisterCollab = null
+  unregisterTopic?.()
+  unregisterTopic = null
+})
+</script>
+
+<template>
+  <div class="canvas-preview">
+    <DiagramSessionProvider
+      v-if="spec"
+      ref="providerRef"
+      :key="sessionKey"
+      :mode="interactive ? 'edit' : 'readonly'"
+      :mind-map-canvas-mode="sessionMode"
+      :spec="spec"
+      :diagram-type="normalizedType"
+    >
+      <CanvasChrome :class="{ 'shadow-none': useV3Chrome }">
+        <V3TopToolbar
+          v-if="useV3Chrome"
+          :is-viewer="!interactive"
+        />
+        <CanvasTopBar
+          v-else
+          preview-lock
+        />
+      </CanvasChrome>
+      <div class="canvas-preview__body">
+        <DiagramCanvasHost
+          class="canvas-preview__host"
+          :show-minimap="false"
+          :fit-view-on-init="true"
+          :hand-tool-active="!interactive"
+          :presentation-hand-pan-mode="!interactive"
+        />
+        <V3PropertyPanel v-if="useV3Chrome && interactive" />
+        <ZoomControls
+          v-if="!useV3Chrome"
+          class="canvas-preview__zoom"
+        />
+      </div>
+      <V3StatusBar v-if="useV3Chrome" />
+      <OnlineCollabModal
+        :visible="collabOpen"
+        :diagram-id="null"
+        mode="organization"
+        @update:visible="collabOpen = $event"
+      />
+    </DiagramSessionProvider>
+  </div>
+</template>
+
+<style scoped>
+.canvas-preview {
+  display: flex;
+  height: 100%;
+  min-height: 8rem;
+  flex-direction: column;
+  background: #f8fafc;
+}
+.canvas-preview__body {
+  position: relative;
+  min-height: 0;
+  flex: 1;
+}
+.canvas-preview__host {
+  height: 100%;
+  min-height: 8rem;
+}
+.canvas-preview :deep(.diagram-canvas) {
+  height: 100%;
+  min-height: 8rem;
+}
+.canvas-preview__zoom {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 4;
+}
+</style>

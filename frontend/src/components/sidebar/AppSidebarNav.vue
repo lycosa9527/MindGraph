@@ -284,6 +284,57 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           </div>
         </transition>
 
+        <el-tooltip
+          v-if="s.showTrainingNav"
+          :content="s.t('sidebar.training')"
+          placement="right"
+          :disabled="!s.isCollapsed"
+        >
+          <div
+            class="nav-item"
+            :class="s.navItemClass('training')"
+            @click="s.setMode('training')"
+          >
+            <GraduationCap
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label admin-menu-title"
+            >
+              {{ s.t('sidebar.training') }}
+              <ChevronDown
+                class="admin-expand-chevron"
+                :class="{ 'admin-expand-chevron--open': s.trainingExpanded }"
+              />
+            </span>
+          </div>
+        </el-tooltip>
+        <transition name="admin-slide">
+          <div
+            v-if="s.trainingExpanded && !s.isCollapsed && s.showTrainingNav"
+            class="admin-subnav"
+          >
+            <button
+              type="button"
+              class="nav-subitem"
+              :class="s.trainingSubItemClass('courses')"
+              @click="s.navigateTrainingSub('courses')"
+            >
+              {{ s.t('sidebar.trainingCourses') }}
+            </button>
+            <button
+              type="button"
+              class="nav-subitem"
+              :class="s.trainingSubItemClass('builder')"
+              @click="s.navigateTrainingSub('builder')"
+            >
+              {{ s.t('sidebar.trainingBuilder') }}
+            </button>
+          </div>
+        </transition>
+
         <!-- Debateverse -->
         <el-tooltip
           v-if="s.featureDebateverse"

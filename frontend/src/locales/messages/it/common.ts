@@ -100,6 +100,7 @@ export default {
   'meta.pageTitle.askOnce': 'AskOnce',
   'meta.pageTitle.auth': 'Accedi',
   'meta.pageTitle.canvas': 'Canvas',
+  'meta.pageTitle.training': 'Training',
   'meta.pageTitle.chunkTest': 'Test chunk',
   'meta.pageTitle.chunkTestResults': 'Risultati test chunk',
   'meta.pageTitle.community': 'Community',

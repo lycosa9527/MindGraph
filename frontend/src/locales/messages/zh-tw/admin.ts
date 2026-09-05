@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': '校級頻道、話題與私信。',
   'admin.feature.mindmateCollab': 'MindMate 在線協同',
   'admin.feature.mindmateCollabHint': '共享 MindMate AI 聊天室（校內瀏覽 + 邀請碼）。需 online_collab 套餐。',
+  'admin.feature.training': '校本培訓跟隨',
+  'admin.feature.trainingHint': '到校講師可將該校教師拉到同一圖示頁。',
   'admin.featureLoadFailed': '無法加載功能開關',
   'admin.featureSaveFailed': '無法保存設置',
   'admin.featuresIntro': '在此开关各模块。会写入 .env 并热加载到所有 API 进程，界面与接口无需重启即可生效。知识空间若依赖启动时初始化的 Qdrant/Celery，仍可能需要完整重启。',

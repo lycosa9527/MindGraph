@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': 'Canais escolares, tópicos e mensagens diretas.',
   'admin.feature.mindmateCollab': 'MindMate collab',
   'admin.feature.mindmateCollabHint': 'Sala de chat MindMate AI compartilhada (navegação organizacional + código de convite). Requer a modalidade online_collab.',
+  'admin.feature.training': 'Org training follow',
+  'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.featureLoadFailed': 'Não foi possível carregar os sinalizadores de recursos',
   'admin.featureSaveFailed': 'Não foi possível gravar a configuração.',
   'admin.featuresIntro': 'Alternar sinalizadores do módulo. Os valores são gravados em .env e recarregados em todos os trabalhadores da API para que a interface do usuário e a API verifiquem a atualização sem reiniciar. O Espaço do Conhecimento ainda pode precisar de Qdrant/Aipo que foram iniciados com o processo.',

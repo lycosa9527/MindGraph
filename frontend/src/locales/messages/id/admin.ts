@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': 'Saluran sekolah, topik, dan pesan langsung.',
   'admin.feature.mindmateCollab': 'MindMate kolaborasi',
   'admin.feature.mindmateCollabHint': 'Ruang obrolan AI MindMate bersama (jelajahan organisasi + kode undangan). Membutuhkan tingkat online_collab.',
+  'admin.feature.training': 'Org training follow',
+  'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.featureLoadFailed': 'Tidak dapat memuat tanda fitur',
   'admin.featureSaveFailed': 'Tidak dapat menyimpan setelan',
   'admin.featuresIntro': 'Alihkan tanda modul. Nilai ditulis ke .env dan dimuat ulang di semua pekerja API sehingga UI dan API memeriksa pembaruan tanpa memulai ulang. Ruang Pengetahuan mungkin masih memerlukan Qdrant/Celery yang dimulai dengan proses.',

@@ -100,6 +100,7 @@ export default {
   'meta.pageTitle.askOnce': 'AskOnce',
   'meta.pageTitle.auth': 'เข้าสู่ระบบ',
   'meta.pageTitle.canvas': 'แคนวาส',
+  'meta.pageTitle.training': 'Training',
   'meta.pageTitle.chunkTest': 'ทดสอบชิ้นส่วน',
   'meta.pageTitle.chunkTestResults': 'ผลทดสอบชิ้นส่วน',
   'meta.pageTitle.community': 'ชุมชน',

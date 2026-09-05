@@ -15,6 +15,8 @@ import ThinkingCoinsModal from '@/components/auth/ThinkingCoinsModal.vue'
 import LanguageSettingsModal from '@/components/settings/LanguageSettingsModal.vue'
 import { useThinkingCoinInsufficientListener } from '@/composables/auth/useThinkingCoinInsufficientListener'
 import { appSidebarInjectionKey, useAppSidebar } from '@/composables/sidebar/useAppSidebar'
+import { registerTrainingUiHost } from '@/composables/training/trainingUiBridge'
+import type { TrainingModalKey } from '@/config/trainingUiTargets'
 
 import AppSidebarAccountFooter from './AppSidebarAccountFooter.vue'
 import AppSidebarNav from './AppSidebarNav.vue'
@@ -39,6 +41,39 @@ const {
   orgEditionLabel,
   orgEditionTooltip,
 } = sidebar
+
+function openTrainingModal(key: TrainingModalKey): void {
+  if (key === 'language-settings') {
+    sidebar.openLanguageSettingsModal()
+    return
+  }
+  if (key === 'account') {
+    sidebar.openAccountModal()
+    return
+  }
+  if (key === 'thinking-coins') {
+    sidebar.openThinkingCoinsModal()
+    return
+  }
+  if (key === 'login') {
+    sidebar.openLoginModal()
+    return
+  }
+  if (key === 'update-log') {
+    sidebar.openUpdateLogModal()
+  }
+}
+
+const unregisterTrainingUiHost = registerTrainingUiHost({
+  openModal: openTrainingModal,
+  closeModals: () => {
+    showLanguageSettingsModal.value = false
+    showAccountModal.value = false
+    showThinkingCoinsModal.value = false
+    showUpdateLogModal.value = false
+    showLoginModal.value = false
+  },
+})
 
 const showLogoQrScan = ref(false)
 const prefersHover = ref(false)
@@ -118,6 +153,7 @@ watch(isCollapsed, (collapsed) => {
 onBeforeUnmount(() => {
   clearHoverOpenTimer()
   clearHoverCloseTimer()
+  unregisterTrainingUiHost()
 })
 </script>
 

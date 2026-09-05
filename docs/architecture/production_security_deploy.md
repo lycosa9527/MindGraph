@@ -91,7 +91,7 @@ location /api {
 
 **Nginx Proxy Manager:** Proxy Host → **Edit** → **Advanced** → Custom Nginx Configuration, add the same `proxy_read_timeout` / `proxy_send_timeout` lines inside the generated `location /` block (or a dedicated `/api` custom location if you split routes).
 
-The backend also emits SSE comment keepalives every 25s during Dify silence ([`sse_streaming.py`](../../routers/api/sse_streaming.py)); raising the proxy timeout to 300s is still required for very long single gaps and aligns with Dify client `sock_read`.
+The backend also emits SSE comment keepalives every 25s during Dify silence ([`sse_streaming.py`](../../routers/api/sse_streaming.py)); raising the proxy timeout to 300s is still required for very long single gaps and aligns with Dify client `sock_read`. Org training follow (`GET /api/training/events`) uses the same `X-Accel-Buffering: no` plus ~20s comment keepalives; see [training_follow.md](training_follow.md).
 
 5. **Extension mind-map PNG** — `POST /api/web_content_mindmap_png` can take up to **180s** (extension client abort). Use the same `proxy_read_timeout` / `proxy_send_timeout` **≥ 180s** on `/api` (300s is fine and matches MindMate above). Playwright render + LLM run server-side; cert testers need a current backend build on `mg.mindspringedu.com` / `test.mindspringedu.com`.
 

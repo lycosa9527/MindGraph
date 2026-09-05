@@ -44,6 +44,7 @@ export function useFeatureFlags() {
   const featureTeacherUsage = computed(() => data.value?.feature_teacher_usage ?? false)
   const featureWorkshopChat = computed(() => data.value?.feature_workshop_chat ?? false)
   const featureMindmateCollab = computed(() => data.value?.feature_mindmate_collab ?? false)
+  const featureTraining = computed(() => data.value?.feature_training ?? false)
   const featureMarkets = computed(() => data.value?.feature_markets ?? false)
   const featureMindbot = computed(() => data.value?.feature_mindbot ?? false)
   const featureWechatLogin = computed(() => data.value?.feature_wechat_login ?? false)
@@ -77,6 +78,7 @@ export function useFeatureFlags() {
     featureTeacherUsage,
     featureWorkshopChat,
     featureMindmateCollab,
+    featureTraining,
     featureMarkets,
     featureMindbot,
     featureWechatLogin,

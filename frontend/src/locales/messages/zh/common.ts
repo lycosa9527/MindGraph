@@ -100,6 +100,7 @@ export default {
   'meta.pageTitle.askOnce': '多应',
   'meta.pageTitle.auth': '登录',
   'meta.pageTitle.canvas': '画布',
+  'meta.pageTitle.training': '校本培训',
   'meta.pageTitle.chunkTest': '分块测试',
   'meta.pageTitle.chunkTestResults': '分块测试结果',
   'meta.pageTitle.community': '社区',

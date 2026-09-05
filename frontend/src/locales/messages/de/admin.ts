@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': 'Schulkanäle, Themen und Direktnachrichten.',
   'admin.feature.mindmateCollab': 'MindMate-Kollaboration',
   'admin.feature.mindmateCollabHint': 'Gemeinsamer MindMate-KI-Chatraum (Org-Browse + Einladungscode). Erfordert online_collab-Stufe.',
+  'admin.feature.training': 'Org training follow',
+  'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.featureLoadFailed': 'Feature-Flags konnten nicht geladen werden',
   'admin.featureSaveFailed': 'Einstellungen konnten nicht gespeichert werden',
   'admin.featuresIntro': 'Module ein- oder ausschalten. Werte werden in .env geschrieben und auf allen API-Workern neu geladen, sodass UI und API-Prüfungen ohne Neustart aktualisiert werden. Wissensraum benötigt ggf. weiterhin Qdrant/Celery, die mit dem Prozess gestartet wurden.',

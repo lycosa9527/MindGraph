@@ -85,6 +85,7 @@ export function useAppSidebar() {
     featureMindmateExport,
     featureWorkshopChat,
     featureMindmateCollab,
+    featureTraining,
     featureMindbot,
     workshopChatPreviewOrgIds,
     featureOrgAccess,
@@ -125,6 +126,7 @@ export function useAppSidebar() {
       return 'admin'
     }
     if (path.startsWith('/workshop-chat')) return 'workshop-chat'
+    if (path.startsWith('/training')) return 'training'
     if (path.startsWith('/thinking-coins')) return 'thinking-coins'
     return ''
   })
@@ -347,6 +349,7 @@ export function useAppSidebar() {
     library: '/library',
     admin: '/admin',
     'workshop-chat': '/workshop-chat',
+    training: '/training',
   }
 
   const settingsNav = useAdminSettingsNav({
@@ -578,6 +581,22 @@ export function useAppSidebar() {
   }
 
   const workshopExpanded = computed(() => expandedPanel.value === 'workshop-chat')
+  const trainingExpanded = computed(() => expandedPanel.value === 'training')
+
+  function trainingSubItemClass(name: 'courses' | 'builder') {
+    const path = router.currentRoute.value.path
+    const active =
+      name === 'builder' ? path.startsWith('/training/builder') : path === '/training'
+    return { 'is-active': active }
+  }
+
+  function navigateTrainingSub(name: 'courses' | 'builder') {
+    expandedPanel.value = 'training'
+    const target = name === 'builder' ? '/training/builder' : '/training'
+    if (router.currentRoute.value.path !== target) {
+      void router.push(target)
+    }
+  }
 
   function navItemClass(mode: string) {
     return {
@@ -635,6 +654,11 @@ export function useAppSidebar() {
           expandedPanel.value = 'admin'
         }
       } else if (expandedPanel.value === 'admin') {
+        expandedPanel.value = null
+      }
+      if (path.startsWith('/training')) {
+        expandedPanel.value = 'training'
+      } else if (expandedPanel.value === 'training') {
         expandedPanel.value = null
       }
     },
@@ -722,6 +746,9 @@ export function useAppSidebar() {
   const showMindmateCollabSessions = computed(
     () => featureMindmateCollab.value && canUseOnlineCollab.value,
   )
+  const showTrainingNav = computed(
+    () => featureTraining.value && authStore.isPlatformLevel && isAuthenticated.value
+  )
 
   return {
     t,
@@ -747,6 +774,8 @@ export function useAppSidebar() {
     featureWorkshopChat,
     featureMindmateCollab,
     showMindmateCollabSessions,
+    featureTraining,
+    showTrainingNav,
     featureMindbot,
     isCollapsed,
     currentMode,
@@ -822,6 +851,9 @@ export function useAppSidebar() {
     handleDiagramSelect,
     expandedPanel,
     workshopExpanded,
+    trainingExpanded,
+    trainingSubItemClass,
+    navigateTrainingSub,
     navItemClass,
     showPanel,
   }

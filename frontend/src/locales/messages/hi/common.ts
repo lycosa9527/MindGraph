@@ -100,6 +100,7 @@ export default {
   'meta.pageTitle.askOnce': 'AskOnce',
   'meta.pageTitle.auth': 'साइन इन',
   'meta.pageTitle.canvas': 'कैनवास',
+  'meta.pageTitle.training': 'Training',
   'meta.pageTitle.chunkTest': 'चंक परीक्षण',
   'meta.pageTitle.chunkTestResults': 'चंक परीक्षण परिणाम',
   'meta.pageTitle.community': 'समुदाय',

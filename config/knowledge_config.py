@@ -10,6 +10,8 @@ Proprietary License
 import logging
 from typing import TYPE_CHECKING, Any, Optional
 
+from config.cos_env_prefix import cos_feature_prefix
+
 logger = logging.getLogger(__name__)
 
 
@@ -296,3 +298,41 @@ class KnowledgeConfigMixin:
     def FILE_CENTER_WIKI_COMPILE(self) -> bool:
         """Compile a per-package wiki (markdown on disk) after chunk indexing (v2a)."""
         return self._get_cached_value("FILE_CENTER_WIKI_COMPILE", "true").lower() == "true"
+
+
+class TrainingCosConfigMixin:
+    """COS knobs for 校本培训 course folders."""
+
+    if TYPE_CHECKING:
+
+        def _get_cached_value(self, _key: str, _default: Any = None) -> Any:
+            """Type stub: method provided by BaseConfig."""
+            raise NotImplementedError
+
+    @property
+    def COS_TRAINING_ENABLED(self) -> bool:
+        """Private-bucket training course media. Default on; local if COS auth missing."""
+        return self._get_cached_value("COS_TRAINING_ENABLED", "true").lower() == "true"
+
+    @property
+    def COS_TRAINING_PREFIX(self) -> str:
+        """COS key prefix for training course folders (private bucket objects).
+
+        Defaults from ENVIRONMENT so local / test / production do not share
+        one prefix: ``training/mindgraph-Dev``, ``training/mindgraph-Test``,
+        ``training/mindgraph``. Set COS_TRAINING_PREFIX to override.
+        """
+        return cos_feature_prefix(
+            "training",
+            self._get_cached_value("COS_TRAINING_PREFIX", ""),
+        )
+
+    @property
+    def COS_TRAINING_PRESIGN_PUT_TTL(self) -> int:
+        """Seconds for browser→COS presigned PUT URLs (short-lived)."""
+        return int(self._get_cached_value("COS_TRAINING_PRESIGN_PUT_TTL", "900"))
+
+    @property
+    def COS_TRAINING_PRESIGN_GET_TTL(self) -> int:
+        """Seconds for COS→browser presigned GET URLs (short-lived)."""
+        return int(self._get_cached_value("COS_TRAINING_PRESIGN_GET_TTL", "300"))

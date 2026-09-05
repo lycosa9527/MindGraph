@@ -90,6 +90,8 @@ export default {
   'admin.feature.workshopChatHint': 'Canales escolares, temas y mensajes directos.',
   'admin.feature.mindmateCollab': 'Colaboración MindMate',
   'admin.feature.mindmateCollabHint': 'Sala de chat IA MindMate compartida (exploración org. + código de invitación). Requiere nivel online_collab.',
+  'admin.feature.training': 'Org training follow',
+  'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.featureLoadFailed': 'No se pudieron cargar los indicadores de funciones',
   'admin.featureSaveFailed': 'No se pudo guardar la configuración',
   'admin.featuresIntro': 'Active o desactive módulos. Los valores se escriben en .env y se recargan en todos los workers API para que la interfaz y las comprobaciones API se actualicen sin reiniciar. Knowledge Space puede seguir necesitando Qdrant/Celery iniciados con el proceso.',
