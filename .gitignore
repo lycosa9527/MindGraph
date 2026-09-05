@@ -223,7 +223,8 @@ static/
 
 # Runtime object/file storage (library pages, knowledge docs, tiktoken, leftover local qdrant)
 # Not part of the codebase — Knowledge Space still creates knowledge_documents/ at runtime
-storage/
+# Leading slash: repo-root only. Nested packages (services/*/storage/) must stay tracked.
+/storage/
 
 # Documentation — ship operator/setup guides; ignore local drafts and bulky assets
 docs/*

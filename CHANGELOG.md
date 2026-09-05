@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.42] - 2026-09-05
+
+> **Production would not start: `.gitignore` treated `services/features/training/storage/` as runtime data, so the COS package never reached the server.**
+
+### Fixed
+
+- **Training COS package** — Track `services/features/training/storage/` (`backend`, `keys`, `grants`). Scope `.gitignore` to repo-root `/storage/` so nested Python storage packages are not dropped on deploy.
+
 ## [5.180.41] - 2026-09-05
 
 > **Training follow and Course Builder are Pinia + event-bus driven. System seed courses stay read-only in the editor, and COS I/O no longer blocks the API event loop.**
