@@ -10,7 +10,7 @@ import {
 } from '@/composables/training/trainingBuilderHibernate'
 import {
   captureTrainingStage,
-  trainingStepPageKey,
+  trainingStepThumbKey,
 } from '@/composables/training/trainingStageThumb'
 import { useTrainingBuilderStore } from '@/stores/trainingBuilder'
 
@@ -51,12 +51,12 @@ export function useTrainingBuilderThumbs(): {
   async function rememberCurrentThumb(): Promise<void> {
     window.clearTimeout(timer)
     const index = builder.selected
-    const pageKey = trainingStepPageKey(builder.current)
+    const captureKey = trainingStepThumbKey(builder.current)
     const token = (generation += 1)
     const url = await captureTrainingStage()
     if (token !== generation || !url) return
-    builder.writeThumb(index, url, pageKey)
-    await persistThumbAt(index, url, pageKey)
+    builder.writeThumb(index, url, captureKey)
+    await persistThumbAt(index, url, captureKey)
   }
 
   async function rememberIfNeeded(): Promise<void> {
@@ -73,7 +73,11 @@ export function useTrainingBuilderThumbs(): {
     }
     const url = builder.thumbs[builder.selected]
     if (url) {
-      await persistThumbAt(builder.selected, url, builder.thumbKeys[builder.selected] || '')
+      await persistThumbAt(
+        builder.selected,
+        url,
+        builder.thumbKeys[builder.selected] || trainingStepThumbKey(builder.current)
+      )
     }
   }
 
@@ -84,7 +88,7 @@ export function useTrainingBuilderThumbs(): {
       await persistThumbAt(
         index,
         url,
-        builder.thumbKeys[index] || trainingStepPageKey(builder.steps[index]),
+        builder.thumbKeys[index] || trainingStepThumbKey(builder.steps[index]),
         false
       )
     }
@@ -94,18 +98,18 @@ export function useTrainingBuilderThumbs(): {
     if (!builder.awake) return
     window.clearTimeout(timer)
     const index = builder.selected
-    const pageKey = trainingStepPageKey(builder.current)
+    const captureKey = trainingStepThumbKey(builder.current)
     const token = (generation += 1)
     timer = window.setTimeout(() => {
       void captureTrainingStage().then((url) => {
         if (token !== generation || !url) return
-        builder.writeThumb(index, url, pageKey)
-        void persistThumbAt(index, url, pageKey)
+        builder.writeThumb(index, url, captureKey)
+        void persistThumbAt(index, url, captureKey)
       })
     }, CAPTURE_DELAY_MS)
   }
 
-  watch(() => trainingStepPageKey(builder.current), scheduleThumb)
+  watch(() => trainingStepThumbKey(builder.current), scheduleThumb)
 
   onUnmounted(() => {
     window.clearTimeout(timer)

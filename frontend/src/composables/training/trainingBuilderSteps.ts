@@ -246,3 +246,37 @@ export function trainingCourseWriteBody(
     }),
   }
 }
+
+export function trainingCourseFingerprint(
+  title: string,
+  description: string,
+  steps: TrainingCourseStep[]
+): string {
+  const body = trainingCourseWriteBody(title, description, steps)
+  return JSON.stringify({
+    title: body.title,
+    description: body.description,
+    status: body.status,
+    steps: body.steps.map((step) => ({
+      ...step,
+      id: undefined,
+    })),
+  })
+}
+
+export function mergeSavedStepMeta(
+  local: TrainingCourseStep[],
+  saved: TrainingCourseStep[] | undefined
+): void {
+  if (!saved?.length) return
+  const count = Math.min(local.length, saved.length)
+  for (let index = 0; index < count; index += 1) {
+    const from = saved[index]
+    const to = local[index]
+    if (from.id) to.id = from.id
+    if (from.thumb_id) to.thumb_id = from.thumb_id
+    if (from.thumb_url && !to.thumb_url) to.thumb_url = from.thumb_url
+    if (from.asset_id) to.asset_id = from.asset_id
+    if (from.asset_url && !to.asset_url) to.asset_url = from.asset_url
+  }
+}

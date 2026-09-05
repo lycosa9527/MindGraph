@@ -12,6 +12,7 @@ import {
 } from '@/composables/training/persistTrainingThumb'
 import {
   captureTrainingStage,
+  raceCapture,
   trainingStepPageKey,
   trainingStepThumbKey,
 } from '@/composables/training/trainingStageThumb'
@@ -39,24 +40,32 @@ describe('trainingStageThumb', () => {
     document.body.innerHTML = ''
     await expect(captureTrainingStage()).resolves.toBeNull()
   })
+
+  it('gives up when a stage snapshot never resolves', async () => {
+    vi.useFakeTimers()
+    const pending = raceCapture(new Promise<string>(() => undefined), 1200)
+    await vi.advanceTimersByTimeAsync(1200)
+    await expect(pending).resolves.toBeNull()
+    vi.useRealTimers()
+  })
 })
 
 describe('training builder hibernate', () => {
-  it('stays asleep on a slide that already has a snapshot', () => {
+  it('wakes page slides so the filmstrip stays tied to the live stage', () => {
     const step = blankPageStep(0)
-    expect(shouldAwakeOnSelect('data:image/png;base64,xx', step)).toBe(false)
-    expect(shouldAwakeOnSelect(null, step)).toBe(true)
+    expect(shouldAwakeOnSelect(step)).toBe(true)
+    expect(shouldAwakeOnSelect(null)).toBe(true)
   })
 
   it('never wakes a media slide and skips recapture while asleep', () => {
     const image = blankSlideStep(0)
     image.asset_url = '/api/training/assets/courses/x/slides/a.png'
     expect(isTrainingMediaStep(image)).toBe(true)
-    expect(shouldAwakeOnSelect(null, image)).toBe(false)
+    expect(shouldAwakeOnSelect(image)).toBe(false)
     expect(shouldRecaptureThumb(null, '', image, true)).toBe(false)
-    expect(shouldRecaptureThumb('data:image/png;base64,xx', 'page|mindgraph', blankPageStep(0), false)).toBe(
-      false
-    )
+    expect(
+      shouldRecaptureThumb('data:image/png;base64,xx', 'page|mindgraph', blankPageStep(0), false)
+    ).toBe(false)
   })
 
   it('treats COS asset URLs as persisted previews', () => {
@@ -80,11 +89,15 @@ describe('training builder hibernate', () => {
     expect(() => dataUrlToPngFile('not-a-data-url', 'slide-1.png')).toThrow('invalid data url')
   })
 
-  it('recaptures only when the live page itself changed', () => {
+  it('recaptures when the live page or its marks change', () => {
     const step = blankPageStep(0)
-    const key = trainingStepPageKey(step)
+    const key = trainingStepThumbKey(step)
     expect(shouldRecaptureThumb('data:image/png;base64,xx', key, step, true)).toBe(false)
     step.focus_key = 'auth-register'
+    expect(shouldRecaptureThumb('data:image/png;base64,xx', key, step, true)).toBe(true)
+    step.focus_key = null
+    expect(shouldRecaptureThumb('data:image/png;base64,xx', key, step, true)).toBe(false)
+    step.overlays = [{ kind: 'text', x: 20, y: 18, text: '注册' }]
     expect(shouldRecaptureThumb('data:image/png;base64,xx', key, step, true)).toBe(true)
   })
 })

@@ -16,6 +16,8 @@ import {
   insertStepsAt,
   selectedIndexAfterRemove,
   stepSpotlight,
+  mergeSavedStepMeta,
+  trainingCourseFingerprint,
   trainingCourseWriteBody,
   uploadedSlideSteps,
 } from '@/composables/training/trainingBuilderSteps'
@@ -279,6 +281,32 @@ describe('training course playback', () => {
     expect(body.steps[0]?.focus_key).toBe('auth-register')
     expect(body.steps[0]?.thumb_id).toBe('thumb-1')
     expect(body.steps[0]?.thumb_url).toBeUndefined()
+  })
+
+  it('fingerprints the course without volatile step ids', () => {
+    const step = blankPageStep(0)
+    step.overlays = [{ kind: 'text', x: 20, y: 18, text: '注册' }]
+    const before = trainingCourseFingerprint('登录课', '', [step])
+    step.id = 'server-1'
+    expect(trainingCourseFingerprint('登录课', '', [step])).toBe(before)
+    step.overlays[0].text = '邀请码'
+    expect(trainingCourseFingerprint('登录课', '', [step])).not.toBe(before)
+  })
+
+  it('merges saved step ids onto the live draft', () => {
+    const local = [blankPageStep(0)]
+    local[0].notes = '讲稿'
+    mergeSavedStepMeta(local, [
+      {
+        ...blankPageStep(0),
+        id: 'step-1',
+        thumb_id: 'thumb-1',
+        thumb_url: '/api/training/assets/thumbs/a.png',
+      },
+    ])
+    expect(local[0].id).toBe('step-1')
+    expect(local[0].thumb_id).toBe('thumb-1')
+    expect(local[0].notes).toBe('讲稿')
   })
 
   it('only offers account and language-settings on the landing page', () => {

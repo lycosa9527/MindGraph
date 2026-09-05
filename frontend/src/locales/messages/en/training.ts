@@ -15,6 +15,8 @@ export default {
   'training.builder.new': 'New course',
   'training.builder.save': 'Save',
   'training.builder.saved': 'Saved',
+  'training.builder.autosaving': 'Saving…',
+  'training.builder.autosaved': 'Saved automatically',
   'training.builder.saveFailed': 'Could not save the course',
   'training.builder.systemBadge': 'System',
   'training.builder.preview': 'Preview',

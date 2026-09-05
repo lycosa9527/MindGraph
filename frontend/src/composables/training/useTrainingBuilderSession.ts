@@ -3,16 +3,15 @@ import { useRoute } from 'vue-router'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { applyTrainingUiTarget } from '@/composables/training/applyTrainingUiTarget'
-import {
-  trainingCourseWriteBody,
-  uploadedSlideSteps,
-} from '@/composables/training/trainingBuilderSteps'
+import { uploadedSlideSteps } from '@/composables/training/trainingBuilderSteps'
+import { requestTrainingModalsClose } from '@/composables/training/trainingCommands'
 import { currentMarkStep } from '@/composables/training/trainingMarkSteps'
 import { uploadTrainingFile } from '@/composables/training/uploadTrainingFile'
 import { useTrainingAuthoringBind } from '@/composables/training/useTrainingAuthoringBind'
+import { useTrainingBuilderAutosave } from '@/composables/training/useTrainingBuilderAutosave'
 import { useTrainingBuilderThumbs } from '@/composables/training/useTrainingBuilderThumbs'
 import { useTrainingBuilderStore } from '@/stores/trainingBuilder'
-import { fetchTrainingCourse, saveTrainingCourse } from '@/utils/trainingApi'
+import { fetchTrainingCourse } from '@/utils/trainingApi'
 
 export type TrainingBuilderSessionApi = {
   selectStep: (index: number) => Promise<void>
@@ -24,6 +23,7 @@ export type TrainingBuilderSessionApi = {
   onAddText: () => void
   previewMove: (delta: number) => Promise<void>
   onTopicsDrop: (pos: { x: number; y: number }) => void
+  syncState: ReturnType<typeof useTrainingBuilderAutosave>['syncState']
 }
 
 export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
@@ -32,8 +32,10 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
   const route = useRoute()
   const builder = useTrainingBuilderStore()
   const { rememberIfNeeded, persistAllPending } = useTrainingBuilderThumbs()
+  const { flush, markClean, syncState } = useTrainingBuilderAutosave({ persistAllPending })
 
   useTrainingAuthoringBind()
+  requestTrainingModalsClose()
 
   watch(
     () => ({
@@ -48,6 +50,7 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
         applyTrainingUiTarget({
           modalKey: next.modal,
           focusKey: next.focus,
+          hostModals: false,
         })
       )
     }
@@ -122,12 +125,7 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
     builder.setBusy(true)
     try {
       await rememberIfNeeded()
-      await persistAllPending()
-      const saved = await saveTrainingCourse(
-        builder.courseId,
-        trainingCourseWriteBody(builder.title, builder.description, builder.steps)
-      )
-      builder.applyCourse(saved, true)
+      await flush()
       builder.setInfoOpen(false)
       notify.success(t('training.builder.saved'))
     } catch (error) {
@@ -172,12 +170,14 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
       const course = await fetchTrainingCourse(id)
       if (token !== loadGeneration) return
       builder.applyCourse(course)
+      markClean()
     },
     { immediate: true }
   )
 
   onUnmounted(() => {
     loadGeneration += 1
+    requestTrainingModalsClose()
     builder.reset()
   })
 
@@ -191,5 +191,6 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
     onAddText,
     previewMove,
     onTopicsDrop,
+    syncState,
   }
 }

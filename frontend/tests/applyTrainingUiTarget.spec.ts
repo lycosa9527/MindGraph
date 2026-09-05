@@ -73,4 +73,39 @@ describe('applyTrainingUiTarget', () => {
     expect(closed).toEqual(['all'])
     expect(useTrainingStore().uiFocusKey).toBeNull()
   })
+
+  it('does not open host modals while authoring or previewing', async () => {
+    const tab = document.createElement('button')
+    tab.setAttribute('data-training-target', 'auth-register')
+    const clicked = vi.fn()
+    tab.addEventListener('click', clicked)
+    document.body.appendChild(tab)
+    await applyTrainingUiTarget({
+      modalKey: 'login',
+      focusKey: 'auth-register',
+      hostModals: false,
+    })
+    expect(opened).toEqual([])
+    expect(closed).toEqual([])
+    expect(clicked).not.toHaveBeenCalled()
+    expect(useTrainingStore().uiFocusKey).toBe('auth-register')
+  })
+
+  it('clicks the in-stage register tab without opening the host modal', async () => {
+    const stage = document.createElement('div')
+    stage.className = 'builder-stage'
+    const tab = document.createElement('button')
+    tab.setAttribute('data-training-target', 'auth-register')
+    const clicked = vi.fn()
+    tab.addEventListener('click', clicked)
+    stage.appendChild(tab)
+    document.body.appendChild(stage)
+    await applyTrainingUiTarget({
+      modalKey: 'login',
+      focusKey: 'auth-register',
+      hostModals: false,
+    })
+    expect(opened).toEqual([])
+    expect(clicked).toHaveBeenCalled()
+  })
 })

@@ -13,6 +13,7 @@ defineProps<{
   busy?: boolean
   previewing?: boolean
   readonly?: boolean
+  syncLabel?: string
 }>()
 
 const emit = defineEmits<{
@@ -51,6 +52,10 @@ const emit = defineEmits<{
         {{ t('training.builder.new') }}
       </ElButton>
       <template v-if="showSave">
+        <span
+          v-if="syncLabel"
+          class="training-header__sync"
+        >{{ syncLabel }}</span>
         <ElButton
           size="small"
           class="admin-swiss-btn"
@@ -117,6 +122,11 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+.training-header__sync {
+  color: #78716c;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 .training-header__icon {
   margin-right: 0.25rem;

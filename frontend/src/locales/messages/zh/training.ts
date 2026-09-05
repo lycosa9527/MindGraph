@@ -18,6 +18,8 @@ export default {
   'training.builder.new': '新建课程',
   'training.builder.save': '保存',
   'training.builder.saved': '已保存',
+  'training.builder.autosaving': '正在保存…',
+  'training.builder.autosaved': '已自动保存',
   'training.builder.saveFailed': '课程保存失败',
   'training.builder.systemBadge': '系统',
   'training.builder.preview': '预览',

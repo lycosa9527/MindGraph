@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import TrainingPageLiveFrame from '@/components/training/TrainingPageLiveFrame.vue'
 import TrainingStepMarks from '@/components/training/TrainingStepMarks.vue'
 import { useLanguage } from '@/composables'
-import { markStepCount, visibleMarkOverlays } from '@/composables/training/trainingMarkSteps'
+import { visibleMarkOverlays } from '@/composables/training/trainingMarkSteps'
 import { hasTrainingLivePreview } from '@/config/trainingPageLive'
 import { trainingPageDef } from '@/config/trainingPages'
 import type { TrainingCourseStep } from '@/types/training'
@@ -36,7 +36,7 @@ const showLive = computed(() => {
   return hasTrainingLivePreview(props.step.page_key)
 })
 const showMarks = computed(() => props.compact)
-const marks = computed(() => visibleMarkOverlays(props.step, markStepCount(props.step)))
+const marks = computed(() => visibleMarkOverlays(props.step))
 </script>
 
 <template>

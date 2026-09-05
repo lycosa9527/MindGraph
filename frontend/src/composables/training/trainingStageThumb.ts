@@ -4,6 +4,23 @@ import type { TrainingCourseStep } from '@/types/training'
 
 const STAGE_SELECTOR = '.builder-stage'
 const PIXEL_RATIO = 0.55
+export const CAPTURE_TIMEOUT_MS = 1200
+
+export function raceCapture<T>(work: Promise<T>, ms: number): Promise<T | null> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(null), ms)
+    work.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      () => {
+        clearTimeout(timer)
+        resolve(null)
+      }
+    )
+  })
+}
 
 export function trainingStepPageKey(step: TrainingCourseStep | null | undefined): string {
   if (!step) return ''
@@ -34,16 +51,17 @@ export async function captureTrainingStage(): Promise<string | null> {
   if (!(host instanceof HTMLElement) || host.clientWidth < 8 || host.clientHeight < 8) {
     return null
   }
-  await nextTick()
-  const { toPng } = await import('html-to-image')
-  try {
-    return await toPng(host, {
-      backgroundColor: '#ffffff',
-      pixelRatio: PIXEL_RATIO,
-      cacheBust: true,
-      filter: keepCaptureNode,
-    })
-  } catch {
-    return null
-  }
+  return raceCapture(
+    (async () => {
+      await nextTick()
+      const { toPng } = await import('html-to-image')
+      return toPng(host, {
+        backgroundColor: '#ffffff',
+        pixelRatio: PIXEL_RATIO,
+        cacheBust: true,
+        filter: keepCaptureNode,
+      })
+    })(),
+    CAPTURE_TIMEOUT_MS
+  )
 }

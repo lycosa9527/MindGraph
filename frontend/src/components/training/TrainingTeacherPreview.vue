@@ -41,7 +41,9 @@ watch(
   () => [props.step.modal_key, props.step.focus_key, showLive.value] as const,
   ([modalKey, focusKey, live]) => {
     if (!live) return
-    void nextTick().then(() => applyTrainingUiTarget({ modalKey, focusKey }))
+    void nextTick().then(() =>
+      applyTrainingUiTarget({ modalKey, focusKey, hostModals: false })
+    )
   },
   { immediate: true }
 )

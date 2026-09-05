@@ -18,7 +18,7 @@ import {
   advancePlayCursor,
   canAdvancePlayCursor,
 } from '@/composables/training/trainingMarkSteps'
-import { trainingStepPageKey } from '@/composables/training/trainingStageThumb'
+import { trainingStepThumbKey } from '@/composables/training/trainingStageThumb'
 import type {
   TrainingCourse,
   TrainingCourseStep,
@@ -102,7 +102,7 @@ export const useTrainingBuilderStore = defineStore('trainingBuilder', () => {
   }
 
   function applySelectAwake(index: number, step: TrainingCourseStep | null | undefined): void {
-    awake.value = shouldAwakeOnSelect(thumbs.value[index], step)
+    awake.value = shouldAwakeOnSelect(step)
   }
 
   function writeThumb(index: number, url: string | null, pageKey: string): void {
@@ -123,9 +123,9 @@ export const useTrainingBuilderStore = defineStore('trainingBuilder', () => {
       return isTrainingMediaStep(step) ? step.asset_url || null : null
     })
     thumbKeys.value = rows.map((step, index) =>
-      thumbs.value[index] ? trainingStepPageKey(step) : ''
+      thumbs.value[index] ? trainingStepThumbKey(step) : ''
     )
-    awake.value = shouldAwakeOnSelect(thumbs.value[selected.value], rows[selected.value] || null)
+    awake.value = shouldAwakeOnSelect(rows[selected.value] || null)
   }
 
   function removeThumb(index: number): void {

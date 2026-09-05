@@ -50,7 +50,14 @@ const {
   onAddText,
   previewMove,
   onTopicsDrop,
+  syncState,
 } = useTrainingBuilderSession()
+
+const syncLabel = computed(() => {
+  if (syncState.value === 'saving') return t('training.builder.autosaving')
+  if (syncState.value === 'saved') return t('training.builder.autosaved')
+  return ''
+})
 </script>
 
 <template>
@@ -60,6 +67,7 @@ const {
       show-save
       :busy="busy"
       :previewing="previewing"
+      :sync-label="syncLabel"
       @save="save"
       @info="builder.setInfoOpen(true)"
       @preview="builder.togglePreview()"
