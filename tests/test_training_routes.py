@@ -148,7 +148,7 @@ async def test_late_join_command_matches_snapshot() -> None:
             current_user=teacher,
             if_none_match=None,
         )
-    assert response.headers["ETag"] == '"4"'
+    assert response.headers["ETag"] == '"sess-1:4"'
     payload = bytes(response.body).decode("utf-8")
     assert "double_bubble_map" in payload
     assert '"seq":4' in payload
@@ -173,9 +173,35 @@ async def test_command_etag_304() -> None:
         response = await get_command(
             org_id=None,
             current_user=teacher,
-            if_none_match='"4"',
+            if_none_match='"sess-1:4"',
         )
     assert response.status_code == 304
+
+
+@pytest.mark.asyncio
+async def test_command_etag_is_per_session() -> None:
+    """A new session at the same seq is not a 304 against the old ETag."""
+    session = _live_session()
+    session["session_id"] = "sess-2"
+    session["seq"] = 4
+    teacher = _user("teacher", org_id=10)
+    with (
+        patch(
+            "routers.api.training_routes.get_session",
+            new=AsyncMock(return_value=dict(session)),
+        ),
+        patch(
+            "routers.api.training_routes.maybe_auto_pause",
+            new=AsyncMock(side_effect=lambda item: item),
+        ),
+    ):
+        response = await get_command(
+            org_id=None,
+            current_user=teacher,
+            if_none_match='"sess-1:4"',
+        )
+    assert response.status_code == 200
+    assert response.headers["ETag"] == '"sess-2:4"'
 
 
 @pytest.mark.asyncio

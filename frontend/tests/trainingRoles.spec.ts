@@ -6,6 +6,7 @@ import {
   isTrainingRoleId,
   resizeRoleWidth,
   roleWidth,
+  trainingRoleMarkSrc,
   trainingRolePlaybackSrc,
   trainingRoleSrc,
   trainingRoleThumb,
@@ -26,6 +27,15 @@ describe('trainingRoles', () => {
     )
     expect(trainingRolePlaybackSrc('ghost')).toBe(
       '/api/training/assets/roles/01-look-here.webp'
+    )
+    expect(trainingRoleMarkSrc('11-clap', { still: true })).toBe(
+      '/api/training/assets/roles/11-clap-thumb.webp'
+    )
+    expect(trainingRoleMarkSrc('11-clap', { remote: true })).toBe(
+      '/api/training/assets/roles/11-clap.webp'
+    )
+    expect(trainingRoleMarkSrc('11-clap', { still: true, remote: true })).toBe(
+      '/api/training/assets/roles/11-clap-thumb.webp'
     )
   })
 

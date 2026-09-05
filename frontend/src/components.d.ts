@@ -429,6 +429,7 @@ declare module 'vue' {
     TrainingFriendsRail: typeof import('./components/training/TrainingFriendsRail.vue')['default']
     TrainingInstructorPad: typeof import('./components/training/TrainingInstructorPad.vue')['default']
     TrainingLandingHeader: typeof import('./components/training/TrainingLandingHeader.vue')['default']
+    TrainingLandingPreview: typeof import('./components/training/TrainingLandingPreview.vue')['default']
     TrainingLessonOverlay: typeof import('./components/training/TrainingLessonOverlay.vue')['default']
     TrainingMarkStepsBar: typeof import('./components/training/TrainingMarkStepsBar.vue')['default']
     TrainingNotesBar: typeof import('./components/training/TrainingNotesBar.vue')['default']

@@ -61,6 +61,6 @@ const canNext = computed(() => {
   position: fixed;
   right: 1rem;
   bottom: 1rem;
-  z-index: 38;
+  z-index: 4300;
 }
 </style>

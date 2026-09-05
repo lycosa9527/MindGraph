@@ -14,7 +14,7 @@ const training = useTrainingStore()
 const liveStep = computed(() =>
   liveLessonStep(training.snapshot, {
     skip: shouldSkipTrainingFollow(),
-    trainingRoute: route.path.startsWith('/training'),
+    trainingRoute: route.path.startsWith('/training/builder'),
   })
 )
 const coverMedia = computed(() => liveLessonCoversMedia(liveStep.value))

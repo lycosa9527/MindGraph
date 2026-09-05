@@ -328,14 +328,14 @@ describe('training course playback', () => {
     expect(step.modal_key).toBeNull()
   })
 
-  it('does not pull when the instructor leaves the box unchecked', () => {
+  it('does not pull when the instructor released the room', () => {
     const stay = snapshot({
+      pull_users: false,
       diagram_type: null,
       step: {
         position: 0,
         type: 'page',
         page_key: 'mindgraph',
-        pull_users: false,
       },
     })
     expect(shouldForceNavigate(stay, 4)).toBe(false)

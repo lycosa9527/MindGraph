@@ -32,7 +32,7 @@ export function useTrainingFollow(): void {
   let pollTimer: ReturnType<typeof setInterval> | null = null
   let activityTimer: ReturnType<typeof setInterval> | null = null
   let pollFallback = false
-  let pullInFlight: Promise<void> | null = null
+  let pullChain: Promise<void> = Promise.resolve()
   let pullQueued = false
   let activityInFlight = false
 
@@ -52,21 +52,20 @@ export function useTrainingFollow(): void {
     return Number.isNaN(parsed) ? null : parsed
   }
 
-  async function pullCommand(): Promise<void> {
-    if (pullInFlight) {
-      pullQueued = true
-      await pullInFlight
-      return
-    }
-    do {
-      pullQueued = false
-      pullInFlight = runPullCommand()
-      try {
-        await pullInFlight
-      } finally {
-        pullInFlight = null
-      }
-    } while (pullQueued)
+  function pullCommand(): Promise<void> {
+    pullQueued = true
+    const scheduled = pullChain.then(async () => {
+      if (!pullQueued) return
+      do {
+        pullQueued = false
+        await runPullCommand()
+      } while (pullQueued)
+    })
+    pullChain = scheduled.then(
+      () => undefined,
+      () => undefined
+    )
+    return scheduled
   }
 
   async function runPullCommand(): Promise<void> {
@@ -75,20 +74,35 @@ export function useTrainingFollow(): void {
     const result = await fetchTrainingCommand(orgId, training.commandEtag)
     if (result.etag) training.setCommandEtag(result.etag)
     if (result.notModified || result.snapshot == null) return
-    const previousSeq = training.lastAppliedSeq
     training.applySnapshot(result.snapshot)
-    if (shouldForceNavigate(result.snapshot, previousSeq)) {
-      const ok = await applyTrainingNavigate(router, route.path, result.snapshot)
-      const step = result.snapshot.step
+    const applied = training.snapshot
+    if (
+      applied.session_id !== result.snapshot.session_id ||
+      applied.seq !== result.snapshot.seq
+    ) {
+      return
+    }
+    if (shouldForceNavigate(applied, training.lastAppliedSeq)) {
+      const ok = await applyTrainingNavigate(router, route.path, applied)
+      const step = applied.step
       if (ok || step?.modal_key || step?.focus_key) {
         await applyTrainingUiTarget({
           modalKey: step?.modal_key,
           focusKey: step?.focus_key,
         })
-        training.markApplied(result.snapshot.seq)
+        training.markApplied(applied.seq)
       }
-    } else if (result.snapshot.state !== 'live' || isMediaTrainingStep(result.snapshot)) {
-      training.markApplied(result.snapshot.seq)
+    } else {
+      if (applied.pull_users === false) {
+        await applyTrainingUiTarget({ modalKey: null, focusKey: null })
+      }
+      if (
+        applied.state !== 'live' ||
+        isMediaTrainingStep(applied) ||
+        applied.pull_users === false
+      ) {
+        training.markApplied(applied.seq)
+      }
     }
   }
 

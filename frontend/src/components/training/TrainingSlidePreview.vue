@@ -84,6 +84,7 @@ const marks = computed(() => visibleMarkOverlays(props.step))
       v-if="showMarks"
       :overlays="marks"
       :step="step"
+      still-roles
     />
     <span class="slide-preview__index">{{ index + 1 }}</span>
   </div>

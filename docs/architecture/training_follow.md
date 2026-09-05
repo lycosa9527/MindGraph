@@ -8,12 +8,14 @@ Visiting instructors (superadmin, `platform_bd`, expert with invited orgs) steer
 
 ## Session
 
-One live-or-paused session per org and at most one hosted session per instructor. States: `live`, `paused`, `ended`. Hard TTL 4 hours. Instructor heartbeat every 15s; 3 minutes silent → lazy auto-pause on `GET /command`.
+Many schools may train at once: Redis keys and SSE channels are per `org_id`. One live-or-paused session per org and at most one hosted session per instructor. A new session always starts at `seq` 1; clients key follow state by `session_id`, not a process-wide seq. States: `live`, `paused`, `ended`. Hard TTL 4 hours. Instructor heartbeat every 15s; 3 minutes silent → lazy auto-pause on `GET /command`.
+
+**Start then play.** Selecting a school and clicking Start arms the room: refresh teacher / online counts, drop stale follow ETags, and open a live Redis session with `pull_users: false` (no force-nav, no teacher banner). A toast says the module is ready. Clicking a course is what pulls every online teacher and starts the slideshow (`pull_users: true`). Start alone stays on the catalog.
 
 ## Transport
 
 - `GET /api/training/events` — SSE (`X-Accel-Buffering: no`, comment keepalive ~20s). Cookie auth, same-origin EventSource.
-- `GET /api/training/command` — snapshot + ETag.
+- `GET /api/training/command` — snapshot + ETag (`"{session_id}:{seq}"` so a new session at seq 1 is not a 304).
 - Poll fallback (2s) if EventSource fails.
 
 Do not put tokens on the SSE query string. Recreate EventSource after access-token refresh.
@@ -32,7 +34,7 @@ Course Builder is `/training/builder`. Each slide picks a teacher-facing app pag
 
 ## Live instructor pad
 
-`TrainingInstructorPad` mounts in `App.vue` (hidden on `/training/builder`). When the signed-in user is the session instructor and a course is playing, a bottom-right pad shows 上一页 / 下一页 / 停止 / 自由.
+`TrainingInstructorPad` mounts in `App.vue` (hidden on `/training/builder`). After Start+play, the instructor is routed to the same page teachers see. When they host and a course is playing, a bottom-right pad (above the lesson overlay) shows 上一页 / 下一页 / 停止 / 自由.
 
 - Prev/next walk remaining mark clicks on the current slide, then change slides. The next slide starts at mark 1; the previous slide ends at its last mark (`services/features/training/play_advance.py`).
 - 停止 ends the Redis session.

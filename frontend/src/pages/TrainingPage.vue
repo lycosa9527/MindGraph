@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import TrainingCourseGrid from '@/components/training/TrainingCourseGrid.vue'
 import TrainingLandingHeader from '@/components/training/TrainingLandingHeader.vue'
-import { useLanguage } from '@/composables'
+import TrainingLandingPreview from '@/components/training/TrainingLandingPreview.vue'
+import { useLanguage, useNotifications } from '@/composables'
+import { isTrainingRoomArmed } from '@/composables/training/applyTrainingSnapshot'
 import {
   requestTrainingEnd,
   requestTrainingPause,
@@ -19,10 +21,14 @@ import { useTrainingHeartbeat } from '@/composables/training/useTrainingHeartbea
 import { useAuthStore } from '@/stores/auth'
 import { useTrainingStore } from '@/stores/training'
 import type { TrainingCourse } from '@/types/training'
+import { fetchTrainingCourse } from '@/utils/trainingApi'
 
 const { t } = useLanguage()
+const notify = useNotifications()
 const authStore = useAuthStore()
 const training = useTrainingStore()
+const preview = ref<TrainingCourse | null>(null)
+const previewIndex = ref(0)
 
 const myUserId = computed(() => Number(authStore.user?.id))
 const isForeignSession = computed(
@@ -35,11 +41,31 @@ const canControl = computed(() => training.isActive && !isForeignSession.value)
 const canStart = computed(() =>
   Boolean(training.ready && training.selectedOrgId != null && !training.isActive)
 )
+const roomArmed = computed(() => canControl.value && isTrainingRoomArmed(training.snapshot))
 
 useTrainingHeartbeat(() => Boolean(canControl.value && authStore.isPlatformLevel))
 
-function applyCourse(course: TrainingCourse): void {
+async function applyCourse(course: TrainingCourse): Promise<void> {
+  if (training.selectedOrgId == null) {
+    try {
+      const full = await fetchTrainingCourse(course.id)
+      if (!full.steps?.length) {
+        notify.warning(t('training.builder.previewEmpty'))
+        return
+      }
+      preview.value = full
+      previewIndex.value = 0
+    } catch {
+      notify.error(t('training.builder.previewEmpty'))
+    }
+    return
+  }
   requestTrainingPlay(course.id)
+}
+
+function onSelectOrg(orgId: number | null): void {
+  preview.value = null
+  requestTrainingSelectOrg(orgId)
 }
 
 onMounted(() => {
@@ -61,7 +87,7 @@ onMounted(() => {
       :is-foreign="isForeignSession"
       :has-course="Boolean(training.snapshot.course_id)"
       @search="requestTrainingSearchOrgs"
-      @select-org="requestTrainingSelectOrg"
+      @select-org="onSelectOrg"
       @start="requestTrainingStart"
       @pause="requestTrainingPause"
       @resume="requestTrainingResume"
@@ -77,12 +103,31 @@ onMounted(() => {
       >
         {{ t('training.confirmStart') }}
       </p>
+      <p
+        v-else-if="roomArmed"
+        class="training-page__hint"
+      >
+        {{ t('training.moduleReady') }}
+      </p>
+      <p
+        v-else-if="training.selectedOrgId == null"
+        class="training-page__hint"
+      >
+        {{ t('training.builder.previewHint') }}
+      </p>
       <TrainingCourseGrid
         :courses="training.courses"
         :active-course-id="training.snapshot.course_id ?? null"
         @select="applyCourse"
       />
     </div>
+    <TrainingLandingPreview
+      v-if="preview"
+      :course="preview"
+      :index="previewIndex"
+      @close="preview = null"
+      @index="previewIndex = $event"
+    />
   </div>
 </template>
 

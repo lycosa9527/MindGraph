@@ -4,7 +4,6 @@ import { computed, ref } from 'vue'
 import { useLanguage } from '@/composables'
 import {
   TRAINING_ROLES,
-  trainingRoleSrc,
   trainingRoleThumb,
   type TrainingRoleDef,
 } from '@/config/trainingRoles'
@@ -65,7 +64,7 @@ function hidePreview(): void {
       <div class="role-picker__card">
         <img
           class="role-picker__anim"
-          :src="trainingRoleSrc(preview.id)"
+          :src="trainingRoleThumb(preview.id)"
           :alt="t(preview.labelKey)"
         >
         <p class="role-picker__caption">{{ t(preview.labelKey) }}</p>

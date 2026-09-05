@@ -35,6 +35,35 @@ describe('training store', () => {
     expect(store.snapshot.diagram_type).toBe('tree_map')
   })
 
+  it('applies a restarted session so teachers can be pulled again', () => {
+    const store = useTrainingStore()
+    store.applySnapshot(snapshot({ seq: 12 }))
+    store.markApplied(12)
+    store.setCommandEtag('"sess-1:12"')
+    store.applySnapshot(snapshot({ state: 'ended', seq: 13 }))
+    store.applySnapshot(
+      snapshot({
+        session_id: 'sess-2',
+        seq: 1,
+        diagram_type: 'circle_map',
+      })
+    )
+    expect(store.snapshot.session_id).toBe('sess-2')
+    expect(store.snapshot.seq).toBe(1)
+    expect(store.lastAppliedSeq).toBe(0)
+    expect(store.commandEtag).toBeNull()
+  })
+
+  it('keeps the hosted school when the picker changes', async () => {
+    const store = useTrainingStore()
+    store.applySnapshot(snapshot({ org_id: 10, instructor_id: 1 }))
+    store.selectedOrgId = 10
+    expect(await store.selectOrg(99)).toBe('locked')
+    expect(store.selectedOrgId).toBe(10)
+    expect(store.leadingOrgId).toBe(10)
+    expect(store.snapshot.org_id).toBe(10)
+  })
+
   it('tracks last applied seq monotonically', () => {
     const store = useTrainingStore()
     store.markApplied(3)

@@ -23,6 +23,16 @@ export function isTrainingRailVisible(isPlatformLevel: boolean, isActive: boolea
   return isPlatformLevel && isActive
 }
 
+export function isTrainingOwnerHeartbeat(
+  isPlatformLevel: boolean,
+  isActive: boolean,
+  userId: number,
+  instructorId: number | null
+): boolean {
+  if (!isPlatformLevel || !isActive || instructorId == null) return false
+  return userId > 0 && userId === Number(instructorId)
+}
+
 export function windowedRosterRows<T>(rows: T[], windowSize = TRAINING_RAIL_WINDOW): T[] {
   return rows.length > windowSize ? rows.slice(0, windowSize) : rows
 }

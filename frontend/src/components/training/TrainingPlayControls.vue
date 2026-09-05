@@ -6,6 +6,7 @@ defineProps<{
   canNext?: boolean
   free?: boolean
   busy?: boolean
+  showFree?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -49,6 +50,7 @@ const { t } = useLanguage()
       {{ t('training.stop') }}
     </button>
     <button
+      v-if="showFree !== false"
       type="button"
       class="play-pad__btn play-pad__btn--free"
       :class="{ 'is-on': free }"

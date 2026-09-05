@@ -175,6 +175,7 @@ async def start_session(
         "confirm_teacher_count": int(confirm_teacher_total),
         "last_steer_at": 0.0,
         "taken_over_from": None,
+        "pull_users": False,
     }
     await _write_session(session, SESSION_HARD_TTL_SECONDS)
     return session

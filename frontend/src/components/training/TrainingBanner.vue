@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 
 import { useLanguage } from '@/composables'
+import { teachersSeeTrainingBanner } from '@/composables/training/applyTrainingSnapshot'
 import { requestTrainingChipSelected } from '@/composables/training/trainingCommands'
 import { useAuthStore } from '@/stores/auth'
 import { useTrainingStore } from '@/stores/training'
@@ -11,7 +12,9 @@ const { t } = useLanguage()
 const training = useTrainingStore()
 const authStore = useAuthStore()
 
-const visible = computed(() => training.isActive && !authStore.isPlatformLevel)
+const visible = computed(
+  () => teachersSeeTrainingBanner(training.snapshot) && !authStore.isPlatformLevel
+)
 const typeLabel = computed(() => training.snapshot.diagram_type || '')
 const title = computed(() => {
   if (training.isPaused) return t('training.bannerPaused')

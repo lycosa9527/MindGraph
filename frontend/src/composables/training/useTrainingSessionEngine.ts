@@ -2,9 +2,12 @@
  * Binds training:* bus commands to the Pinia session store.
  */
 import { onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage, useNotifications } from '@/composables'
+import { applyTrainingNavigate } from '@/composables/training/applyTrainingSnapshot'
+import { applyTrainingUiTarget } from '@/composables/training/applyTrainingUiTarget'
 import { useAuthStore } from '@/stores/auth'
 import { useTrainingStore } from '@/stores/training'
 
@@ -15,6 +18,8 @@ export function useTrainingSessionEngine(): void {
   const notify = useNotifications()
   const authStore = useAuthStore()
   const training = useTrainingStore()
+  const router = useRouter()
+  const route = useRoute()
 
   function myUserId(): number {
     return Number(authStore.user?.id)
@@ -28,6 +33,24 @@ export function useTrainingSessionEngine(): void {
     )
   }
 
+  function hostName(): string {
+    return (training.snapshot.instructor_name || '').trim() || '—'
+  }
+
+  async function followStage(): Promise<void> {
+    const snap = training.snapshot
+    if (!snap.course_id || (!snap.step && !snap.diagram_type)) return
+    const moved = await applyTrainingNavigate(router, route.path, snap)
+    const step = snap.step
+    if (moved || step?.modal_key || step?.focus_key) {
+      await applyTrainingUiTarget({
+        modalKey: step?.modal_key,
+        focusKey: step?.focus_key,
+      })
+    }
+    training.markApplied(snap.seq)
+  }
+
   async function steer(work: () => Promise<void>): Promise<void> {
     try {
       await work()
@@ -36,9 +59,28 @@ export function useTrainingSessionEngine(): void {
     }
   }
 
+  async function steerThenFollow(work: () => Promise<void>): Promise<void> {
+    await steer(async () => {
+      await work()
+      await followStage()
+    })
+  }
+
+  async function announceRoomReady(): Promise<void> {
+    await training.refreshReady()
+    notify.success(t('training.moduleReady'))
+  }
+
   async function onStart(): Promise<void> {
+    if (training.isActive && !isForeignSession()) {
+      await announceRoomReady()
+      return
+    }
     const code = await training.startSession()
-    if (code === 'ok') return
+    if (code === 'ok') {
+      await announceRoomReady()
+      return
+    }
     if (code === 'pick_org') {
       notify.warning(t('training.pickOrgFirst'))
       return
@@ -52,7 +94,11 @@ export function useTrainingSessionEngine(): void {
       return
     }
     if (code === 'org_busy') {
-      notify.warning(t('training.takeoverHint'))
+      if (training.isActive && !isForeignSession()) {
+        await announceRoomReady()
+        return
+      }
+      notify.warning(t('training.takeoverHint', { name: hostName() }))
       return
     }
     notify.error(t('training.startFailed'))
@@ -64,14 +110,14 @@ export function useTrainingSessionEngine(): void {
       return
     }
     if (isForeignSession()) {
-      notify.warning(t('training.takeoverHint'))
+      notify.warning(t('training.takeoverHint', { name: hostName() }))
       return
     }
     if (!training.isActive) {
-      await onStart()
-      if (!training.isActive) return
+      notify.warning(t('training.startFirst'))
+      return
     }
-    await steer(() => training.playCourse(courseId))
+    await steerThenFollow(() => training.playCourse(courseId))
   }
 
   eventBus.onWithOwner('training:start_requested', () => {
@@ -84,23 +130,25 @@ export function useTrainingSessionEngine(): void {
     void steer(() => training.pauseSession())
   }, OWNER)
   eventBus.onWithOwner('training:resume_requested', () => {
-    void steer(() => training.resumeSession())
+    void steerThenFollow(() => training.resumeSession())
   }, OWNER)
   eventBus.onWithOwner('training:end_requested', () => {
     void steer(() => training.endSession())
   }, OWNER)
   eventBus.onWithOwner('training:takeover_requested', () => {
-    void steer(() => training.takeoverSession())
+    void steerThenFollow(() => training.takeoverSession())
   }, OWNER)
   eventBus.onWithOwner('training:step_requested', (payload) => {
-    void steer(() => training.stepSession(payload.delta))
+    void steerThenFollow(() => training.stepSession(payload.delta))
   }, OWNER)
   eventBus.onWithOwner('training:free_requested', (payload) => {
     const next = payload.free ?? !training.isFree
     void steer(() => training.freeSession(next))
   }, OWNER)
   eventBus.onWithOwner('training:select_org_requested', (payload) => {
-    void training.selectOrg(payload.orgId)
+    void training.selectOrg(payload.orgId).then((code) => {
+      if (code === 'locked') notify.warning(t('training.hostedElsewhere'))
+    })
   }, OWNER)
   eventBus.onWithOwner('training:search_orgs_requested', (payload) => {
     void training.loadOrgs(payload.query)
@@ -109,6 +157,7 @@ export function useTrainingSessionEngine(): void {
     training.setPendingChip(payload.option)
   }, OWNER)
   eventBus.onWithOwner('training:roster_invalidate', () => {
+    if (!authStore.isPlatformLevel || !training.isActive) return
     void training.fetchRoster()
   }, OWNER)
 

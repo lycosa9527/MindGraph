@@ -39,6 +39,7 @@ from services.features.training.payloads import (
     NavigateBody,
     OptionsBody,
     StartSessionBody,
+    command_etag,
     snapshot_from_session,
 )
 from services.features.training.permissions import (
@@ -352,7 +353,7 @@ async def get_command(
     target = _resolve_command_org(current_user, org_id)
     if target is None:
         body = snapshot_from_session(None)
-        return JSONResponse(body, headers={"ETag": '"0"'})
+        return JSONResponse(body, headers={"ETag": command_etag(None, 0)})
     if not is_org_teacher_target(current_user, target):
         if not await can_lead_training(current_user, target):
             raise HTTPException(status_code=403, detail="Training access required")
@@ -363,7 +364,7 @@ async def get_command(
         if int(session.get("seq") or 0) != before:
             await _publish_seq(target, session)
     body = _snapshot(session, current_user)
-    etag = f'"{body["seq"]}"'
+    etag = command_etag(body.get("session_id"), body.get("seq"))
     if if_none_match and if_none_match.strip() == etag:
         return Response(status_code=304, headers={"ETag": etag})
     return JSONResponse(body, headers={"ETag": etag})

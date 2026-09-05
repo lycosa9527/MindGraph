@@ -5,7 +5,10 @@ export default {
   'training.searchOrg': '搜索学校',
   'training.teacherTotal': '{n} 名教师',
   'training.onlineNow': '当前在线 {n}',
-  'training.confirmStart': '将引导该校全部教师（含稍后打开应用或新加入的教师），直到你暂停或结束。',
+  'training.confirmStart':
+    '开始会清场并核对在线教师人数。教室就绪后再点课程，才会把全部在线教师拉进这一课。一所学校同时只能有一场培训。',
+  'training.moduleReady': '教室已就绪，请点击课程开始授课。',
+  'training.startFirst': '请先点击「开始」，教室就绪后再选课程。',
   'training.start': '开始',
   'training.stop': '停止',
   'training.free': '自由',
@@ -116,7 +119,8 @@ export default {
   'training.resume': '继续',
   'training.end': '结束',
   'training.takeover': '接管',
-  'training.takeoverHint': '另一位讲师正在带领该校。',
+  'training.takeoverHint':
+    '该校已有进行中的培训（主持人：{name}）。一所学校同时只能开一场，因为会拉取全部在线教师。可点「接管」，或等这场结束后再开始。',
   'training.hostedElsewhere': '你已在另一所学校主持场次，请先结束。',
   'training.diagramTypes': '图示类型',
   'training.topicOptions': '题目选项',

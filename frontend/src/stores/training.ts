@@ -2,6 +2,10 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
+import {
+  shouldAcceptTrainingSnapshot,
+  trainingFollowCursorResets,
+} from '@/composables/training/applyTrainingSnapshot'
 import type {
   TrainingCourse,
   TrainingOrgRow,
@@ -95,9 +99,19 @@ export const useTrainingStore = defineStore('training', () => {
   const isActive = computed(() => isLive.value || isPaused.value)
   const isFree = computed(() => isLive.value && snapshot.value.pull_users === false)
 
+  function clearRoster(): void {
+    rosterRows.value = []
+    rosterTotal.value = 0
+    rosterSummary.value = emptyRosterSummary()
+  }
+
   function applySnapshot(next: TrainingSnapshot): void {
-    if (next.seq < snapshot.value.seq && next.state !== 'none') {
-      return
+    const current = snapshot.value
+    if (!shouldAcceptTrainingSnapshot(current, next)) return
+    if (trainingFollowCursorResets(current, next)) {
+      lastAppliedSeq.value = 0
+      commandEtag.value = null
+      clearRoster()
     }
     snapshot.value = next
   }
@@ -137,6 +151,7 @@ export const useTrainingStore = defineStore('training', () => {
   }
 
   function sessionIds(): { sessionId: string; orgId: number } | null {
+    if (!isActive.value) return null
     const sessionId = snapshot.value.session_id
     const orgId = snapshot.value.org_id
     if (!sessionId || orgId == null) return null
@@ -152,22 +167,42 @@ export const useTrainingStore = defineStore('training', () => {
     courses.value = await fetchTrainingCourses()
   }
 
-  async function selectOrg(orgId: number | null): Promise<void> {
+  async function selectOrg(orgId: number | null): Promise<'ok' | 'locked'> {
+    if (isActive.value && snapshot.value.org_id != null && orgId !== snapshot.value.org_id) {
+      selectedOrgId.value = snapshot.value.org_id
+      setLeadingOrgId(snapshot.value.org_id)
+      return 'locked'
+    }
     selectedOrgId.value = orgId
     setLeadingOrgId(orgId)
     if (orgId == null) {
       ready.value = null
-      return
+      return 'ok'
     }
     ready.value = await fetchTrainingReady(orgId)
     applySnapshot(await fetchActiveTraining(orgId))
+    return 'ok'
+  }
+
+  async function refreshReady(): Promise<void> {
+    if (selectedOrgId.value == null) return
+    ready.value = await fetchTrainingReady(selectedOrgId.value)
+  }
+
+  function clearFollowCursor(): void {
+    lastAppliedSeq.value = 0
+    commandEtag.value = null
   }
 
   async function startSession(): Promise<TrainingStartCode> {
-    if (selectedOrgId.value == null || ready.value == null) return 'pick_org'
+    if (selectedOrgId.value == null) return 'pick_org'
     busy.value = true
     try {
+      await refreshReady()
+      if (ready.value == null) return 'failed'
+      clearFollowCursor()
       applySnapshot(await startTrainingSession(selectedOrgId.value, ready.value.teacher_total))
+      await refreshReady()
       return 'ok'
     } catch (error) {
       if (error instanceof TrainingApiError && error.code === 'instructor_busy') {
@@ -253,6 +288,11 @@ export const useTrainingStore = defineStore('training', () => {
       rosterRows.value = list.items
       rosterTotal.value = list.total
       rosterSummary.value = counts
+    } catch {
+      const live = sessionIds()
+      if (!live || live.sessionId !== ids.sessionId) {
+        clearRoster()
+      }
     } finally {
       rosterLoading.value = false
     }
@@ -268,9 +308,7 @@ export const useTrainingStore = defineStore('training', () => {
     activityTick.value = 0
     uiFocusKey.value = null
     topicsDragLive.value = false
-    rosterRows.value = []
-    rosterTotal.value = 0
-    rosterSummary.value = emptyRosterSummary()
+    clearRoster()
     rosterLoading.value = false
   }
 
@@ -309,6 +347,7 @@ export const useTrainingStore = defineStore('training', () => {
     loadOrgs,
     loadCourses,
     selectOrg,
+    refreshReady,
     startSession,
     playCourse,
     pauseSession,

@@ -6,7 +6,9 @@ export default {
   'training.teacherTotal': '{n} teachers',
   'training.onlineNow': '{n} online now',
   'training.confirmStart':
-    'This will steer all teachers in this school, including anyone who opens the app later, until you pause or end.',
+    'Start clears the room and checks who is online. Teachers are pulled only when you click a course. Only one live session per school.',
+  'training.moduleReady': 'Room is ready. Click a course to start.',
+  'training.startFirst': 'Click Start first. When the room is ready, pick a course.',
   'training.start': 'Start',
   'training.stop': 'Stop',
   'training.pickOrgFirst': 'Choose a school first.',
@@ -119,7 +121,8 @@ export default {
   'training.playPad': 'Lesson controls',
   'training.bannerFree': 'Free practice — work as you like',
   'training.takeover': 'Take over',
-  'training.takeoverHint': 'Another instructor is leading this school.',
+  'training.takeoverHint':
+    'This school already has a live session (host: {name}). Only one session at a time per school, because it pulls every online teacher. Take over, or wait until it ends.',
   'training.hostedElsewhere': 'You already host a session at another school. End it first.',
   'training.diagramTypes': 'Diagram type',
   'training.topicOptions': 'Topic choices',

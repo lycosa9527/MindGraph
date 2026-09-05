@@ -99,6 +99,12 @@ function snapshot(overrides: Partial<TrainingSnapshot> = {}): TrainingSnapshot {
   }
 }
 
+async function flushTurns(times = 8): Promise<void> {
+  for (let index = 0; index < times; index += 1) {
+    await Promise.resolve()
+  }
+}
+
 function mountFollow() {
   const pinia = createPinia()
   setActivePinia(pinia)
@@ -140,8 +146,7 @@ describe('useTrainingFollow', () => {
 
   it('applies a live seq and ignores a later stale snapshot', async () => {
     const { app, host, store } = mountFollow()
-    await Promise.resolve()
-    await Promise.resolve()
+    await flushTurns()
     expect(navigateMock).toHaveBeenCalled()
     expect(applyUiMock).toHaveBeenCalled()
     store.markApplied(5)
@@ -152,9 +157,32 @@ describe('useTrainingFollow', () => {
       notModified: false,
     })
     FakeEventSource.latest?.emit('seq')
-    await Promise.resolve()
+    await flushTurns()
     expect(store.snapshot.seq).toBe(5)
     expect(navigateMock).not.toHaveBeenCalled()
+    app.unmount()
+    host.remove()
+  })
+
+  it('pulls teachers into a restarted session at seq 1', async () => {
+    const { app, host, store } = mountFollow()
+    await flushTurns()
+    store.applySnapshot(snapshot({ state: 'ended', seq: 13 }))
+    navigateMock.mockClear()
+    fetchCommand.mockResolvedValueOnce({
+      snapshot: snapshot({
+        session_id: 'sess-2',
+        seq: 1,
+        diagram_type: 'circle_map',
+      }),
+      etag: '"sess-2:1"',
+      notModified: false,
+    })
+    FakeEventSource.latest?.emit('seq')
+    await flushTurns()
+    expect(store.snapshot.session_id).toBe('sess-2')
+    expect(store.snapshot.seq).toBe(1)
+    expect(navigateMock).toHaveBeenCalled()
     app.unmount()
     host.remove()
   })
@@ -162,7 +190,7 @@ describe('useTrainingFollow', () => {
   it('falls back to polling after EventSource error', async () => {
     vi.useFakeTimers()
     const { app, host } = mountFollow()
-    await Promise.resolve()
+    await flushTurns()
     fetchCommand.mockClear()
     FakeEventSource.latest?.onerror?.()
     await vi.advanceTimersByTimeAsync(2000)
@@ -173,17 +201,14 @@ describe('useTrainingFollow', () => {
 
   it('refetches when the tab becomes visible', async () => {
     const { app, host } = mountFollow()
-    await Promise.resolve()
-    await Promise.resolve()
-    await Promise.resolve()
+    await flushTurns()
     fetchCommand.mockClear()
     Object.defineProperty(document, 'visibilityState', {
       configurable: true,
       value: 'visible',
     })
     document.dispatchEvent(new Event('visibilitychange'))
-    await Promise.resolve()
-    await Promise.resolve()
+    await flushTurns()
     expect(fetchCommand).toHaveBeenCalled()
     app.unmount()
     host.remove()

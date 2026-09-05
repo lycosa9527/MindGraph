@@ -20,8 +20,7 @@ import {
 import {
   resizeRoleWidth,
   roleWidth,
-  trainingRolePlaybackSrc,
-  trainingRoleSrc,
+  trainingRoleMarkSrc,
 } from '@/config/trainingRoles'
 import {
   bumpTextBubbleFont,
@@ -44,6 +43,7 @@ const props = defineProps<{
   editable?: boolean
   selectable?: boolean
   remoteRoles?: boolean
+  stillRoles?: boolean
   step?: TrainingCourseStep
 }>()
 
@@ -129,8 +129,10 @@ function endDrag(): void {
 
 function roleSrc(overlay: TrainingStepOverlay): string {
   const id = overlay.role || overlay.glyph || ''
-  if (props.remoteRoles) return trainingRolePlaybackSrc(id)
-  return trainingRoleSrc(id)
+  return trainingRoleMarkSrc(id, {
+    still: props.stillRoles,
+    remote: props.remoteRoles,
+  })
 }
 
 function roleBox(overlay: TrainingStepOverlay): Record<string, string> {

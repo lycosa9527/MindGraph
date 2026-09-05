@@ -1,6 +1,7 @@
 """Prev/next walks mark clicks, then course slides."""
 
-from services.features.training.payloads import snapshot_from_session
+from routers.api.training_play_routes import _step_extras
+from services.features.training.payloads import command_etag, snapshot_from_session
 from services.features.training.play_advance import mark_span, resolve_play_cursor
 
 
@@ -28,6 +29,23 @@ def test_resolve_play_cursor_stays_on_slide_until_marks_done() -> None:
     live["mark_step"] = 3
     assert resolve_play_cursor(steps, 0, live, 1) == (1, 1)
     assert resolve_play_cursor(steps, 1, steps[1], -1) == (0, 3)
+
+
+def test_command_etag_is_per_session() -> None:
+    """Restarts at seq 1 must not share the previous session ETag."""
+    assert command_etag("sess-1", 4) == '"sess-1:4"'
+    assert command_etag(None, 0) == '"none:0"'
+
+
+def test_step_extras_reenable_pull_after_free() -> None:
+    """Next / play always pull teachers back, even if the slide was authored free."""
+    extras = _step_extras(
+        "course-1",
+        0,
+        {"type": "page", "page_key": "auth", "pull_users": False},
+    )
+    assert extras["pull_users"] is True
+    assert extras["diagram_type"] is None
 
 
 def test_snapshot_exposes_free_release() -> None:

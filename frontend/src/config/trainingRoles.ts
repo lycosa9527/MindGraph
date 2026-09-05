@@ -50,6 +50,15 @@ export function trainingRolePlaybackSrc(id: string): string {
   return trainingRoleSrc(id)
 }
 
+export function trainingRoleMarkSrc(
+  id: string,
+  options: { still?: boolean; remote?: boolean } = {}
+): string {
+  if (options.still) return trainingRoleThumb(id)
+  if (options.remote) return trainingRolePlaybackSrc(id)
+  return trainingRoleSrc(id)
+}
+
 function safeRoleId(id: string): string {
   return isTrainingRoleId(id) ? id : '01-look-here'
 }

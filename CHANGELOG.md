@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.45] - 2026-09-05
+
+> **校本培训: Start arms the room; clicking a course pulls teachers and opens the same live page for the instructor. Restart, Free, and Next keep working.**
+
+### Fixed
+
+- **Restart pull-in** — A new session always starts at `seq` 1. Clients now key follow state by `session_id`, so ending a run and starting again no longer drops the live snapshot. Command ETag is `"{session_id}:{seq}"` so a restart is not a false 304.
+- **Roster noise** — Only the hosting platform lead fetches roster. Ended or unknown session IDs no longer throw unhandled `roster` / `summary` errors (the 404/403 storm after Stop).
+- **Filmstrip mascots** — Compact previews and the role picker use still `-thumb.webp` clips, not the animated WebPs.
+
+### Changed
+
+- **One room per school** — Already enforced as `409 org_busy`. The toast now names the host and explains that only one live session can pull all online teachers. Start copy says the same.
+- **Landing without a school** — Course cards open a local filmstrip preview. They do not `POST /sessions`.
+- **Start then play** — Start arms the room (refresh counts, drop stale follow state, `pull_users: false`) and toasts “教室已就绪，请点击课程开始授课.” Teachers are pulled only when a course is clicked.
+- **Instructor stage** — After a course plays, the instructor is routed to the same page teachers see. The four-button pad (上一页 / 下一页 / 停止 / 自由) sits above the lesson overlay.
+- **Free / Next** — Free hides the lesson overlay, closes training modals, and stops force-nav so teachers can work. Next (and play) always set `pull_users: true` and pull them back.
+
+### Tests
+
+- `frontend/tests/applyTrainingSnapshot.spec.ts`, `trainingStore.spec.ts`, `useTrainingFollow.spec.ts`, `trainingClient.spec.ts`, `trainingCourses.spec.ts`, `trainingRoles.spec.ts`
+- `tests/test_training_routes.py`, `test_training_session_store.py`, `test_training_play_advance.py`
+
 ## [5.180.44] - 2026-09-05
 
 > **Course Builder can take exported PPT slide images as real lesson slides — upload inserts at the current filmstrip position.**

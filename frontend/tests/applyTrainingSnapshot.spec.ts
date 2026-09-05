@@ -4,10 +4,14 @@ import {
   applyTrainingNavigate,
   canSeeTrainingSpeakerNotes,
   chipTopicOverride,
+  isTrainingRoomArmed,
   liveLessonCoversMedia,
   liveLessonStep,
+  shouldAcceptTrainingSnapshot,
   shouldForceNavigate,
+  teachersSeeTrainingBanner,
   trainingCanvasLocation,
+  trainingFollowCursorResets,
 } from '@/composables/training/applyTrainingSnapshot'
 import type { TrainingSnapshot } from '@/types/training'
 
@@ -25,6 +29,17 @@ function snapshot(overrides: Partial<TrainingSnapshot> = {}): TrainingSnapshot {
   }
 }
 
+describe('armed room', () => {
+  it('is ready after Start and hides the teacher banner until a course plays', () => {
+    const armed = snapshot({ course_id: null, diagram_type: null, pull_users: false })
+    expect(isTrainingRoomArmed(armed)).toBe(true)
+    expect(teachersSeeTrainingBanner(armed)).toBe(false)
+    expect(isTrainingRoomArmed(snapshot({ course_id: 'c1' }))).toBe(false)
+    expect(teachersSeeTrainingBanner(snapshot({ course_id: 'c1' }))).toBe(true)
+    expect(shouldForceNavigate(armed, 0)).toBe(false)
+  })
+})
+
 describe('liveLessonStep', () => {
   it('paints page marks for teachers during live and paused play', () => {
     const page = snapshot({
@@ -41,6 +56,7 @@ describe('liveLessonStep', () => {
     expect(liveLessonStep(page, { skip: true })).toBeNull()
     expect(liveLessonStep(page, { trainingRoute: true })).toBeNull()
     expect(liveLessonStep(snapshot({ state: 'ended', step: page.step }), {})).toBeNull()
+    expect(liveLessonStep(snapshot({ pull_users: false, step: page.step }), {})).toBeNull()
   })
 
   it('covers the viewport only when a slide or video has a file', () => {
@@ -64,6 +80,39 @@ describe('canSeeTrainingSpeakerNotes', () => {
   })
 })
 
+describe('shouldAcceptTrainingSnapshot', () => {
+  it('accepts a new live session even when the previous seq was higher', () => {
+    const ended = snapshot({
+      state: 'ended',
+      session_id: 'sess-old',
+      seq: 21,
+    })
+    const next = snapshot({
+      state: 'live',
+      session_id: 'sess-new',
+      seq: 1,
+      diagram_type: 'double_bubble_map',
+    })
+    expect(shouldAcceptTrainingSnapshot(ended, next)).toBe(true)
+    expect(trainingFollowCursorResets(ended, next)).toBe(true)
+  })
+
+  it('still drops an older seq on the same session', () => {
+    expect(shouldAcceptTrainingSnapshot(snapshot({ seq: 6 }), snapshot({ seq: 5 }))).toBe(
+      false
+    )
+  })
+
+  it('does not replace a live session with a different ended tombstone', () => {
+    expect(
+      shouldAcceptTrainingSnapshot(
+        snapshot({ session_id: 'sess-live', seq: 2 }),
+        snapshot({ state: 'ended', session_id: 'sess-old', seq: 21 })
+      )
+    ).toBe(false)
+  })
+})
+
 describe('shouldForceNavigate', () => {
   it('applies a higher live seq with a diagram type', () => {
     expect(shouldForceNavigate(snapshot({ seq: 5 }), 4)).toBe(true)
@@ -80,6 +129,19 @@ describe('shouldForceNavigate', () => {
 
   it('does not force-nav while the instructor released the room', () => {
     expect(shouldForceNavigate(snapshot({ seq: 9, pull_users: false }), 4)).toBe(false)
+  })
+
+  it('pulls again after free when the session flag is back on', () => {
+    expect(
+      shouldForceNavigate(
+        snapshot({
+          seq: 10,
+          pull_users: true,
+          step: { position: 0, type: 'page', page_key: 'canvas', pull_users: false },
+        }),
+        9
+      )
+    ).toBe(true)
   })
 
   it('does not force-nav without a diagram type', () => {

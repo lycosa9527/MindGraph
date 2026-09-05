@@ -47,7 +47,7 @@ const visible = computed(() => {
   right: 1rem;
   bottom: 1rem;
   left: 1rem;
-  z-index: 36;
+  z-index: 4250;
   max-width: 42rem;
   margin: 0 auto;
   border: 1px solid #e7e5e4;

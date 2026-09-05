@@ -6,6 +6,34 @@ import type { DiagramType } from '@/types'
 import type { TrainingCourseStep, TrainingSnapshot, TrainingTopicOption } from '@/types/training'
 import { canvasEditorPathForRoute } from '@/utils/canvasBackNavigation'
 
+export function shouldAcceptTrainingSnapshot(
+  current: TrainingSnapshot,
+  next: TrainingSnapshot
+): boolean {
+  if (next.state === 'none') return true
+  if (next.session_id && next.session_id === current.session_id) {
+    return next.seq >= current.seq
+  }
+  if (
+    (current.state === 'live' || current.state === 'paused') &&
+    next.state === 'ended' &&
+    Boolean(next.session_id) &&
+    next.session_id !== current.session_id
+  ) {
+    return false
+  }
+  return true
+}
+
+export function trainingFollowCursorResets(
+  current: TrainingSnapshot,
+  next: TrainingSnapshot
+): boolean {
+  return (
+    next.session_id !== current.session_id || next.state === 'none' || next.state === 'ended'
+  )
+}
+
 export function canSeeTrainingSpeakerNotes(
   snapshot: TrainingSnapshot,
   userId: number | null | undefined
@@ -20,12 +48,23 @@ export function isMediaTrainingStep(snapshot: TrainingSnapshot): boolean {
   return stepType === 'slide' || stepType === 'video'
 }
 
+export function isTrainingRoomArmed(snapshot: TrainingSnapshot): boolean {
+  if (snapshot.state !== 'live' && snapshot.state !== 'paused') return false
+  return !snapshot.course_id
+}
+
+export function teachersSeeTrainingBanner(snapshot: TrainingSnapshot): boolean {
+  if (snapshot.state !== 'live' && snapshot.state !== 'paused') return false
+  return Boolean(snapshot.course_id)
+}
+
 export function liveLessonStep(
   snapshot: TrainingSnapshot,
   opts: { skip?: boolean; trainingRoute?: boolean }
 ): TrainingCourseStep | null {
   if (opts.skip || opts.trainingRoute) return null
   if (snapshot.state !== 'live' && snapshot.state !== 'paused') return null
+  if (snapshot.pull_users === false) return null
   return snapshot.step ?? null
 }
 
@@ -37,13 +76,9 @@ export function liveLessonCoversMedia(step: TrainingCourseStep | null | undefine
 export function stepPullsUsers(snapshot: TrainingSnapshot): boolean {
   if (snapshot.pull_users === false) return false
   const step = snapshot.step
-  if (!step) {
-    return Boolean(snapshot.diagram_type)
-  }
-  if (typeof step.pull_users === 'boolean') {
-    return step.pull_users
-  }
-  return step.type === 'canvas'
+  if (step?.type === 'slide' || step?.type === 'video') return false
+  if (step?.page_key) return true
+  return Boolean(snapshot.diagram_type || step?.diagram_type)
 }
 
 export function shouldForceNavigate(snapshot: TrainingSnapshot, lastAppliedSeq: number): boolean {

@@ -8,7 +8,11 @@ import { useTrainingHeartbeat } from '@/composables/training/useTrainingHeartbea
 import { useAuthStore } from '@/stores/auth'
 import { useTrainingStore } from '@/stores/training'
 import type { TrainingRosterRow } from '@/types/training'
-import { isTrainingRailVisible, windowedRosterRows } from '@/utils/trainingClient'
+import {
+  isTrainingOwnerHeartbeat,
+  isTrainingRailVisible,
+  windowedRosterRows,
+} from '@/utils/trainingClient'
 
 const { t } = useLanguage()
 const training = useTrainingStore()
@@ -25,7 +29,14 @@ const windowed = computed(() => windowedRosterRows(training.rosterRows))
 const overflowCount = computed(() => Math.max(training.rosterTotal - windowed.value.length, 0))
 const canLoadMore = computed(() => training.rosterRows.length < training.rosterTotal)
 
-useTrainingHeartbeat(() => visible.value)
+useTrainingHeartbeat(() =>
+  isTrainingOwnerHeartbeat(
+    authStore.isPlatformLevel,
+    training.isActive,
+    Number(authStore.user?.id),
+    training.snapshot.instructor_id
+  )
+)
 
 watch(
   () => [training.snapshot.session_id, visible.value],

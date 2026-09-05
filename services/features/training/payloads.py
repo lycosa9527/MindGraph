@@ -81,6 +81,12 @@ def _step_for_viewer(step: Any, *, include_notes: bool) -> Any:
     return redacted
 
 
+def command_etag(session_id: Any, seq: Any) -> str:
+    """ETag is per session so a restart at seq 1 is not a 304."""
+    token = str(session_id or "none")
+    return f'"{token}:{int(seq or 0)}"'
+
+
 def snapshot_from_session(
     session: Optional[dict[str, Any]],
     *,

@@ -147,6 +147,34 @@ async def test_start_rejects_second_session_for_org() -> None:
         assert exc.value.code == "org_busy"
         assert exc.value.extras.get("instructor_name") == "Ada"
         assert first["state"] == "live"
+        assert first["pull_users"] is False
+        assert first.get("course_id") is None
+
+
+@pytest.mark.asyncio
+async def test_two_orgs_can_train_at_once() -> None:
+    """Different schools keep independent live sessions."""
+    redis = FakeRedis()
+    with _patch_redis(redis):
+        first = await start_session(
+            org_id=1,
+            instructor_id=1,
+            instructor_name="Ada",
+            confirm_teacher_total=3,
+        )
+        second = await start_session(
+            org_id=2,
+            instructor_id=2,
+            instructor_name="Bea",
+            confirm_teacher_total=4,
+        )
+        assert first["session_id"] != second["session_id"]
+        left = await get_session(1)
+        right = await get_session(2)
+        assert left is not None
+        assert right is not None
+        assert left["instructor_id"] == 1
+        assert right["instructor_id"] == 2
 
 
 @pytest.mark.asyncio

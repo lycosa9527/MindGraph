@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MINDGRAPH_HEADLESS_EXPORT_KEY } from '@/utils/headlessExportSession'
 import { resetOfficeEmbedForTests } from '@/utils/officeEmbed'
 import {
+  isTrainingOwnerHeartbeat,
   isTrainingRailVisible,
   shouldSkipTrainingFollow,
   trainingEventsUrl,
@@ -36,6 +37,13 @@ describe('trainingClient', () => {
     expect(isTrainingRailVisible(false, true)).toBe(false)
     expect(isTrainingRailVisible(true, true)).toBe(true)
     expect(isTrainingRailVisible(true, false)).toBe(false)
+  })
+
+  it('heartbeats only the hosting instructor', () => {
+    expect(isTrainingOwnerHeartbeat(true, true, 3, 3)).toBe(true)
+    expect(isTrainingOwnerHeartbeat(true, true, 3, 9)).toBe(false)
+    expect(isTrainingOwnerHeartbeat(false, true, 3, 3)).toBe(false)
+    expect(isTrainingOwnerHeartbeat(true, false, 3, 3)).toBe(false)
   })
 
   it('windows long roster lists', () => {

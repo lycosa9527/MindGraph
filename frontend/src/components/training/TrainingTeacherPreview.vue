@@ -16,6 +16,7 @@ const props = defineProps<{
   canPrev?: boolean
   canNext?: boolean
   free?: boolean
+  showFree?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -107,6 +108,7 @@ onUnmounted(() => {
         :can-prev="canPrev"
         :can-next="canNext"
         :free="free"
+        :show-free="showFree"
         @prev="emit('prev')"
         @next="emit('next')"
         @stop="emit('close')"
