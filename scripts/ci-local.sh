@@ -288,7 +288,7 @@ run_frontend() {
     tests/trainingClient.spec.ts tests/useTrainingFollow.spec.ts \
     tests/trainingCourses.spec.ts tests/trainingOverlayDrag.spec.ts \
     tests/presentationSpotlight.spec.ts tests/applyTrainingUiTarget.spec.ts \
-    tests/trainingStageThumb.spec.ts
+    tests/trainingStageThumb.spec.ts tests/trainingBuilderStore.spec.ts
 }
 
 run_chrome_extension() {

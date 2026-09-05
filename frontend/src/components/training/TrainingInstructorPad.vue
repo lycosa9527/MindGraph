@@ -3,14 +3,15 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import TrainingPlayControls from '@/components/training/TrainingPlayControls.vue'
-import { useLanguage, useNotifications } from '@/composables'
+import {
+  requestTrainingEnd,
+  requestTrainingFree,
+  requestTrainingStep,
+} from '@/composables/training/trainingCommands'
 import { currentMarkStep, markStepCount } from '@/composables/training/trainingMarkSteps'
 import { useAuthStore } from '@/stores/auth'
 import { useTrainingStore } from '@/stores/training'
-import { endTraining, freeTraining, stepTrainingCourse } from '@/utils/trainingApi'
 
-const { t } = useLanguage()
-const notify = useNotifications()
 const route = useRoute()
 const authStore = useAuthStore()
 const training = useTrainingStore()
@@ -36,41 +37,6 @@ const canNext = computed(() => {
   if (count && index < count - 1) return true
   return Boolean(step && currentMarkStep(step) < markStepCount(step))
 })
-
-async function steer(work: () => Promise<void>): Promise<void> {
-  try {
-    await work()
-  } catch {
-    notify.error(t('training.steerFailed'))
-  }
-}
-
-async function move(delta: number): Promise<void> {
-  const sessionId = training.snapshot.session_id
-  const orgId = training.snapshot.org_id
-  if (!sessionId || orgId == null) return
-  await steer(async () => {
-    training.applySnapshot(await stepTrainingCourse(sessionId, orgId, { delta }))
-  })
-}
-
-async function stop(): Promise<void> {
-  const sessionId = training.snapshot.session_id
-  const orgId = training.snapshot.org_id
-  if (!sessionId || orgId == null) return
-  await steer(async () => {
-    training.applySnapshot(await endTraining(sessionId, orgId))
-  })
-}
-
-async function toggleFree(): Promise<void> {
-  const sessionId = training.snapshot.session_id
-  const orgId = training.snapshot.org_id
-  if (!sessionId || orgId == null) return
-  await steer(async () => {
-    training.applySnapshot(await freeTraining(sessionId, orgId, !training.isFree))
-  })
-}
 </script>
 
 <template>
@@ -82,10 +48,10 @@ async function toggleFree(): Promise<void> {
       :can-prev="canPrev"
       :can-next="canNext"
       :free="training.isFree"
-      @prev="move(-1)"
-      @next="move(1)"
-      @stop="stop"
-      @free="toggleFree"
+      @prev="requestTrainingStep(-1)"
+      @next="requestTrainingStep(1)"
+      @stop="requestTrainingEnd"
+      @free="requestTrainingFree()"
     />
   </div>
 </template>

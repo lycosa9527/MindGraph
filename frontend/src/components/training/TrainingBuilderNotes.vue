@@ -6,13 +6,14 @@ const NOTES_MAX = 4000
 
 const props = defineProps<{
   step: TrainingCourseStep
+  readonly?: boolean
 }>()
 
 const { t } = useLanguage()
 
 function onInput(event: Event): void {
   const field = event.target
-  if (!(field instanceof HTMLTextAreaElement)) return
+  if (!(field instanceof HTMLTextAreaElement) || props.readonly) return
   props.step.notes = field.value
 }
 </script>
@@ -25,6 +26,7 @@ function onInput(event: Event): void {
       :value="step.notes || ''"
       :maxlength="NOTES_MAX"
       :placeholder="t('training.builder.notesHint')"
+      :readonly="readonly"
       rows="4"
       @input="onInput"
     />

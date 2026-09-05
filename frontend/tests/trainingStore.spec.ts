@@ -50,4 +50,18 @@ describe('training store', () => {
     store.reset()
     expect(store.uiFocusKey).toBeNull()
   })
+
+  it('owns etag, org, and topics-drag through setters', () => {
+    const store = useTrainingStore()
+    store.setCommandEtag('"n-3"')
+    store.setLeadingOrgId(10)
+    store.setTopicsDragLive(true)
+    expect(store.commandEtag).toBe('"n-3"')
+    expect(store.leadingOrgId).toBe(10)
+    expect(store.topicsDragLive).toBe(true)
+    store.reset()
+    expect(store.commandEtag).toBeNull()
+    expect(store.leadingOrgId).toBeNull()
+    expect(store.topicsDragLive).toBe(false)
+  })
 })

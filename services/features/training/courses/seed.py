@@ -18,7 +18,7 @@ from services.features.training.courses.constants import (
     DOUBLE_BUBBLE_TITLE,
 )
 from services.features.training.courses.cover_png import build_double_bubble_cover_png
-from services.features.training.storage.backend import put_bytes_sync
+from services.features.training.storage.backend import put_bytes
 from services.features.training.storage.keys import build_object_key
 
 
@@ -69,7 +69,7 @@ async def ensure_double_bubble_seed(db: AsyncSession) -> TrainingCourse:
 
     logical_key = build_object_key(course.id, "cover", DOUBLE_BUBBLE_COVER_ID, ".png")
     png = build_double_bubble_cover_png()
-    put_bytes_sync(logical_key, png, content_type="image/png")
+    await put_bytes(logical_key, png, content_type="image/png")
     cover = next((row for row in course.assets if row.id == DOUBLE_BUBBLE_COVER_ID), None)
     if cover is None:
         cover = TrainingCourseAsset(

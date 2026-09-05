@@ -20,7 +20,7 @@ from services.features.training.courses.constants import (
     optional_notes,
     optional_step_key,
 )
-from services.features.training.storage.backend import delete_course_prefix
+from services.features.training.storage.backend import delete_course_folder
 
 
 async def list_courses(db: AsyncSession) -> list[TrainingCourse]:
@@ -181,4 +181,4 @@ async def delete_course(db: AsyncSession, course: TrainingCourse) -> None:
     course_id = course.id
     await db.delete(course)
     await db.flush()
-    delete_course_prefix(course_id)
+    await delete_course_folder(course_id)

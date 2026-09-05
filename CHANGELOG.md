@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.41] - 2026-09-05
+
+> **Training follow and Course Builder are Pinia + event-bus driven. System seed courses stay read-only in the editor, and COS I/O no longer blocks the API event loop.**
+
+### Changed
+
+- **Live session engine** — UI emits `training:*` events; `useTrainingSessionEngine` owns start/play/step/free. Catalog, roster, and snapshot live on `useTrainingStore`.
+- **Course Builder draft** — Title, steps, selection, thumbs, and preview chrome live on `useTrainingBuilderStore`. Seeded system courses open read-only (no save/upload/edit).
+- **Training COS** — Asset write/read/head/delete run through `asyncio.to_thread` so FastAPI handlers stay async.
+
+### Tests
+
+- `frontend/tests/trainingBuilderStore.spec.ts` — load, remove, insert, reset, system read-only
+- `frontend/tests/trainingStore.spec.ts` — etag/org/topics-drag setters
+- `frontend/tests/applyTrainingUiTarget.spec.ts` — modal open/close via the event bus
+
 ## [5.180.40] - 2026-09-05
 
 > **Org training follow and Course Builder ship behind `FEATURE_TRAINING` (default off): visiting instructors pull a school’s teachers to the same page, author lessons, and drive them with a live play pad.**

@@ -71,7 +71,13 @@ onMounted(() => {
             v-else
             class="builder-card__cover builder-card__cover--empty"
           />
-          <h3>{{ course.title }}</h3>
+          <h3>
+            {{ course.title }}
+            <span
+              v-if="course.is_system"
+              class="builder-card__badge"
+            >{{ t('training.builder.systemBadge') }}</span>
+          </h3>
           <p>{{ course.description }}</p>
         </button>
       </div>
@@ -126,9 +132,20 @@ onMounted(() => {
   background: linear-gradient(135deg, #0d9488, #0f766e);
 }
 .builder-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   margin: 0.75rem 0 0.25rem;
   font-size: 0.95rem;
   color: #1c1917;
+}
+.builder-card__badge {
+  border: 1px solid #d6d3d1;
+  border-radius: 999px;
+  padding: 0.05rem 0.4rem;
+  color: #78716c;
+  font-size: 0.68rem;
+  font-weight: 600;
 }
 .builder-card p {
   margin: 0;

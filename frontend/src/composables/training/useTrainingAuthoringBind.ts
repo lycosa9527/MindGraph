@@ -1,13 +1,15 @@
-import { onMounted, onUnmounted, type Ref } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 
 import { applyDiagramCardStep } from '@/composables/training/trainingBuilderSteps'
 import { isTrainingFocusKey, shouldBlockTrainingAuthoringClick } from '@/config/trainingUiTargets'
-import type { TrainingCourseStep } from '@/types/training'
+import { useTrainingBuilderStore } from '@/stores/trainingBuilder'
 
-export function useTrainingAuthoringBind(current: Ref<TrainingCourseStep | null>): void {
+export function useTrainingAuthoringBind(): void {
+  const builder = useTrainingBuilderStore()
+
   function onClick(event: MouseEvent): void {
-    const step = current.value
-    if (!step) return
+    const step = builder.current
+    if (!step || builder.isSystem) return
     const raw = event.target
     if (!(raw instanceof Element)) return
     const el = raw.closest('[data-training-target]')

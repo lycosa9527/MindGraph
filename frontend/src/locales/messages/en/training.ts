@@ -16,6 +16,8 @@ export default {
   'training.builder.save': 'Save',
   'training.builder.saved': 'Saved',
   'training.builder.saveFailed': 'Could not save the course',
+  'training.builder.systemReadOnly': 'System courses are read-only and cannot be saved.',
+  'training.builder.systemBadge': 'System',
   'training.builder.preview': 'Preview',
   'training.builder.previewExit': 'Exit preview',
   'training.builder.previewHint': 'Teacher view',

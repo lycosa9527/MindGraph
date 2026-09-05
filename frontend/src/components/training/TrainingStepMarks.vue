@@ -14,7 +14,7 @@ import {
   translateOverlay,
   type ArrowHandle,
 } from '@/composables/training/trainingOverlayDrag'
-import { applyRegisteredTrainingTopic } from '@/composables/training/trainingTopicApply'
+import { requestTrainingTopicApply } from '@/composables/training/trainingCommands'
 import { stepUsesDualTopics } from '@/composables/training/trainingTopicOptions'
 import type { TrainingCourseStep, TrainingStepOverlay, TrainingTopicOption } from '@/types/training'
 
@@ -86,7 +86,7 @@ async function pickTopic(overlay: TrainingStepOverlay, option: TrainingTopicOpti
   overlay.text = option.id
   emit('awake')
   await nextTick()
-  applyRegisteredTrainingTopic(option)
+  requestTrainingTopicApply(option)
 }
 
 function markerId(overlay: TrainingStepOverlay): string {

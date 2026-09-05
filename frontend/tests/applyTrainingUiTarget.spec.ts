@@ -1,31 +1,39 @@
 import { createPinia, setActivePinia } from 'pinia'
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { eventBus } from '@/composables/core/useEventBus'
 import { applyTrainingUiTarget, queryTrainingFocus } from '@/composables/training/applyTrainingUiTarget'
-import { registerTrainingUiHost } from '@/composables/training/trainingUiBridge'
 import { useTrainingStore } from '@/stores/training'
 
 describe('applyTrainingUiTarget', () => {
+  const opened: string[] = []
+  const closed: string[] = []
+
   beforeEach(() => {
     setActivePinia(createPinia())
     document.body.innerHTML = ''
-  })
-
-  it('opens the catalogued modal then rings the button', async () => {
-    const opened: string[] = []
-    const closed: string[] = []
-    registerTrainingUiHost({
-      openModal: (key) => {
-        opened.push(key)
+    opened.length = 0
+    closed.length = 0
+    eventBus.on('training:modal_open_requested', ({ key }) => {
+      opened.push(key)
+      if (key === 'language-settings') {
         const button = document.createElement('button')
         button.setAttribute('data-training-target', 'mindmap-v2')
         document.body.appendChild(button)
-      },
-      closeModals: () => {
-        closed.push('all')
-      },
+      }
     })
+    eventBus.on('training:modal_close_requested', () => {
+      closed.push('all')
+    })
+  })
+
+  afterEach(() => {
+    eventBus.off('training:modal_open_requested')
+    eventBus.off('training:modal_close_requested')
+  })
+
+  it('opens the catalogued modal then rings the button', async () => {
     await applyTrainingUiTarget({
       modalKey: 'language-settings',
       focusKey: 'mindmap-v2',
@@ -44,10 +52,6 @@ describe('applyTrainingUiTarget', () => {
     const clicked = vi.fn()
     tab.addEventListener('click', clicked)
     document.body.appendChild(tab)
-    registerTrainingUiHost({
-      openModal: vi.fn(),
-      closeModals: vi.fn(),
-    })
     await applyTrainingUiTarget({ modalKey: null, focusKey: 'auth-register' })
     expect(clicked).toHaveBeenCalled()
     expect(useTrainingStore().uiFocusKey).toBe('auth-register')
@@ -59,23 +63,14 @@ describe('applyTrainingUiTarget', () => {
     const clicked = vi.fn()
     card.addEventListener('click', clicked)
     document.body.appendChild(card)
-    registerTrainingUiHost({
-      openModal: vi.fn(),
-      closeModals: vi.fn(),
-    })
     await applyTrainingUiTarget({ modalKey: null, focusKey: 'diagram-double_bubble_map' })
     expect(clicked).not.toHaveBeenCalled()
     expect(useTrainingStore().uiFocusKey).toBe('diagram-double_bubble_map')
   })
 
   it('closes app modals when the slide has no modal', async () => {
-    const closeModals = vi.fn()
-    registerTrainingUiHost({
-      openModal: vi.fn(),
-      closeModals,
-    })
     await applyTrainingUiTarget({ modalKey: null, focusKey: null })
-    expect(closeModals).toHaveBeenCalled()
+    expect(closed).toEqual(['all'])
     expect(useTrainingStore().uiFocusKey).toBeNull()
   })
 })

@@ -5,23 +5,6 @@ export type TrainingTopicDiagramTarget = {
   updateNode: (nodeId: string, updates: { text: string }) => boolean
 }
 
-type TopicApplier = (option: TrainingTopicOption) => void
-
-const appliers: TopicApplier[] = []
-
-export function registerTrainingTopicApplier(apply: TopicApplier): () => void {
-  appliers.push(apply)
-  return () => {
-    const index = appliers.lastIndexOf(apply)
-    if (index >= 0) appliers.splice(index, 1)
-  }
-}
-
-export function applyRegisteredTrainingTopic(option: TrainingTopicOption): void {
-  const apply = appliers[appliers.length - 1]
-  apply?.(option)
-}
-
 export function applyTrainingTopicToDiagram(
   session: TrainingTopicDiagramTarget,
   option: TrainingTopicOption

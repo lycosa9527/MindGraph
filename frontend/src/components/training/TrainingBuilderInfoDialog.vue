@@ -9,6 +9,7 @@ const open = defineModel<boolean>('open', { default: false })
 
 defineProps<{
   busy?: boolean
+  readonly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -39,6 +40,7 @@ function onCover(event: Event): void {
         <ElInput
           v-model="title"
           size="small"
+          :disabled="readonly"
         />
       </label>
       <label>
@@ -48,9 +50,13 @@ function onCover(event: Event): void {
           type="textarea"
           :rows="3"
           size="small"
+          :disabled="readonly"
         />
       </label>
-      <label class="builder-info__cover">
+      <label
+        v-if="!readonly"
+        class="builder-info__cover"
+      >
         {{ t('training.builder.cover') }}
         <input
           type="file"
@@ -59,7 +65,10 @@ function onCover(event: Event): void {
         >
       </label>
     </div>
-    <template #footer>
+    <template
+      v-if="!readonly"
+      #footer
+    >
       <ElButton
         size="small"
         class="admin-swiss-btn admin-swiss-btn--primary"

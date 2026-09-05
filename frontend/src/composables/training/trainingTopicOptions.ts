@@ -1,18 +1,18 @@
-import { shallowRef, type ShallowRef } from 'vue'
+import { computed, type ComputedRef } from 'vue'
 
+import { useTrainingStore } from '@/stores/training'
 import type { TrainingCourseStep, TrainingTopicOption } from '@/types/training'
 
 export const TRAINING_TOPIC_OPTION_MAX = 20
 export const TRAINING_TOPICS_DRAG = 'application/x-mg-training-topics'
 
-const topicsDragLive = shallowRef(false)
-
 export function setTrainingTopicsDragLive(next: boolean): void {
-  topicsDragLive.value = next
+  useTrainingStore().setTopicsDragLive(next)
 }
 
-export function useTrainingTopicsDragLive(): ShallowRef<boolean> {
-  return topicsDragLive
+export function useTrainingTopicsDragLive(): ComputedRef<boolean> {
+  const training = useTrainingStore()
+  return computed(() => training.topicsDragLive)
 }
 
 export function isTrainingTopicsDrag(transfer: DataTransfer | null): boolean {

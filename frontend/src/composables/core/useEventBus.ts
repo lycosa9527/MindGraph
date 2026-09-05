@@ -14,6 +14,7 @@ import { onUnmounted } from 'vue'
 import mitt, { type Emitter, type Handler } from 'mitt'
 
 import type { CanvasExportOptions } from '@/config/canvasExportOptions'
+import type { TrainingTopicOption } from '@/types/training'
 
 // ============================================================================
 // Event Type Definitions
@@ -371,6 +372,21 @@ export type EventTypes = {
     reason?: 'empty' | 'no_diagram' | 'cancelled' | 'failed' | 'unauthenticated'
     action: 'start' | 'restart'
   }
+  'training:start_requested': Record<string, never>
+  'training:play_requested': { courseId: string }
+  'training:pause_requested': Record<string, never>
+  'training:resume_requested': Record<string, never>
+  'training:end_requested': Record<string, never>
+  'training:takeover_requested': Record<string, never>
+  'training:step_requested': { delta: number }
+  'training:free_requested': { free?: boolean }
+  'training:select_org_requested': { orgId: number | null }
+  'training:search_orgs_requested': { query: string }
+  'training:chip_selected': { option: TrainingTopicOption }
+  'training:topic_apply_requested': { option: TrainingTopicOption }
+  'training:modal_open_requested': { key: string }
+  'training:modal_close_requested': Record<string, never>
+  'training:roster_invalidate': Record<string, never>
 
   // One-sentence mini-chat (Pinia SoT + cooperators)
   'oneSentence:request_queued': {

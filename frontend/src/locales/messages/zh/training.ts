@@ -19,6 +19,8 @@ export default {
   'training.builder.save': '保存',
   'training.builder.saved': '已保存',
   'training.builder.saveFailed': '课程保存失败',
+  'training.builder.systemReadOnly': '系统课程只读，不能保存修改。',
+  'training.builder.systemBadge': '系统',
   'training.builder.preview': '预览',
   'training.builder.previewExit': '退出预览',
   'training.builder.previewHint': '教师视角',

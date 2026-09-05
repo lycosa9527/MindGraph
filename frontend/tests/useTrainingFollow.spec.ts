@@ -174,12 +174,15 @@ describe('useTrainingFollow', () => {
   it('refetches when the tab becomes visible', async () => {
     const { app, host } = mountFollow()
     await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
     fetchCommand.mockClear()
     Object.defineProperty(document, 'visibilityState', {
       configurable: true,
       value: 'visible',
     })
     document.dispatchEvent(new Event('visibilitychange'))
+    await Promise.resolve()
     await Promise.resolve()
     expect(fetchCommand).toHaveBeenCalled()
     app.unmount()

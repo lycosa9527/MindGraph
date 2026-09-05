@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 
 import { useLanguage } from '@/composables'
+import { requestTrainingChipSelected } from '@/composables/training/trainingCommands'
 import { useAuthStore } from '@/stores/auth'
 import { useTrainingStore } from '@/stores/training'
 import type { TrainingTopicOption } from '@/types/training'
@@ -20,7 +21,7 @@ const title = computed(() => {
 
 function pick(option: TrainingTopicOption): void {
   if (!training.isLive) return
-  training.setPendingChip(option)
+  requestTrainingChipSelected(option)
 }
 </script>
 

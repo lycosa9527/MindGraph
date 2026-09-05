@@ -12,6 +12,7 @@ defineProps<{
   selected: number
   thumbs?: (string | null)[]
   busy?: boolean
+  readonly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -39,7 +40,10 @@ function onImages(event: Event): void {
 
 <template>
   <aside class="filmstrip">
-    <div class="filmstrip__actions">
+    <div
+      v-if="!readonly"
+      class="filmstrip__actions"
+    >
       <ElButton
         size="small"
         class="admin-swiss-btn filmstrip__add"
@@ -84,6 +88,7 @@ function onImages(event: Event): void {
         />
       </button>
       <button
+        v-if="!readonly"
         type="button"
         class="filmstrip__delete"
         :aria-label="t('training.builder.deleteSlide')"

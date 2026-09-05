@@ -11,7 +11,7 @@ import { type ComputedRef, computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { OnlineCollabModal } from '@/components/workshop'
 import { useLanguage } from '@/composables'
-import { registerTrainingModalOpener } from '@/composables/training/trainingUiBridge'
+import { eventBus } from '@/composables/core/useEventBus'
 import type { ConnectionStatus, ParticipantInfo } from '@/composables/workshop/useWorkshop'
 
 import CollabUserRail from './CollabUserRail.vue'
@@ -170,20 +170,27 @@ function openCollab(mode: 'organization' | 'network') {
   }
 }
 
-let unregisterTrainingModal: (() => void) | null = null
+const TRAINING_COLLAB_OWNER = 'CanvasCollabTrainingModal'
 
 onMounted(() => {
-  unregisterTrainingModal = registerTrainingModalOpener('online-collab', {
-    open: () => openCollab('organization'),
-    close: () => {
+  eventBus.onWithOwner(
+    'training:modal_open_requested',
+    ({ key }) => {
+      if (key === 'online-collab') openCollab('organization')
+    },
+    TRAINING_COLLAB_OWNER
+  )
+  eventBus.onWithOwner(
+    'training:modal_close_requested',
+    () => {
       showCollabModal.value = false
     },
-  })
+    TRAINING_COLLAB_OWNER
+  )
 })
 
 onUnmounted(() => {
-  unregisterTrainingModal?.()
-  unregisterTrainingModal = null
+  eventBus.removeAllListenersForOwner(TRAINING_COLLAB_OWNER)
 })
 
 /** Stop the active session immediately — no confirmation modal. */

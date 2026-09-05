@@ -6,7 +6,6 @@ import type {
   TrainingRosterRow,
   TrainingRosterSummary,
   TrainingSnapshot,
-  TrainingTopicOption,
 } from '@/types/training'
 import { apiRequest, parseApiErrorDetail } from '@/utils/apiClient'
 import { TRAINING_RAIL_PAGE_SIZE } from '@/utils/trainingClient'
@@ -104,40 +103,6 @@ export async function postTrainingHeartbeat(sessionId: string, orgId: number): P
     { method: 'POST' }
   )
   if (!res.ok) throw new Error('heartbeat')
-}
-
-export async function navigateTraining(
-  sessionId: string,
-  orgId: number,
-  diagramType: string
-): Promise<TrainingSnapshot> {
-  const res = await apiRequest(
-    `${API}/sessions/${encodeURIComponent(sessionId)}/navigate?org_id=${orgId}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ diagram_type: diagramType }),
-    }
-  )
-  if (!res.ok) throw new Error('navigate')
-  return readJson(res)
-}
-
-export async function setTrainingOptions(
-  sessionId: string,
-  orgId: number,
-  options: TrainingTopicOption[]
-): Promise<TrainingSnapshot> {
-  const res = await apiRequest(
-    `${API}/sessions/${encodeURIComponent(sessionId)}/options?org_id=${orgId}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ options }),
-    }
-  )
-  if (!res.ok) throw new Error('options')
-  return readJson(res)
 }
 
 export async function pauseTraining(sessionId: string, orgId: number): Promise<TrainingSnapshot> {

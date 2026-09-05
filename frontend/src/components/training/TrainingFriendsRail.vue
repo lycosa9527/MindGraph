@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useLanguage } from '@/composables'
@@ -7,13 +7,8 @@ import { applyTrainingNavigate } from '@/composables/training/applyTrainingSnaps
 import { useTrainingHeartbeat } from '@/composables/training/useTrainingHeartbeat'
 import { useAuthStore } from '@/stores/auth'
 import { useTrainingStore } from '@/stores/training'
-import type { TrainingRosterRow, TrainingRosterSummary } from '@/types/training'
-import { fetchTrainingRoster, fetchTrainingRosterSummary } from '@/utils/trainingApi'
-import {
-  TRAINING_RAIL_PAGE_SIZE,
-  isTrainingRailVisible,
-  windowedRosterRows,
-} from '@/utils/trainingClient'
+import type { TrainingRosterRow } from '@/types/training'
+import { isTrainingRailVisible, windowedRosterRows } from '@/utils/trainingClient'
 
 const { t } = useLanguage()
 const training = useTrainingStore()
@@ -21,61 +16,21 @@ const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 
-const rows = ref<TrainingRosterRow[]>([])
-const total = ref(0)
-const summary = ref<TrainingRosterSummary>({ online: 0, generating: 0, done: 0 })
-const loading = ref(false)
-
 const visible = computed(
   () =>
     isTrainingRailVisible(authStore.isPlatformLevel, training.isActive) &&
     Boolean(training.snapshot.session_id && training.snapshot.org_id)
 )
-const windowed = computed(() => windowedRosterRows(rows.value))
-const overflowCount = computed(() => Math.max(total.value - windowed.value.length, 0))
-const canLoadMore = computed(() => rows.value.length < total.value)
+const windowed = computed(() => windowedRosterRows(training.rosterRows))
+const overflowCount = computed(() => Math.max(training.rosterTotal - windowed.value.length, 0))
+const canLoadMore = computed(() => training.rosterRows.length < training.rosterTotal)
 
 useTrainingHeartbeat(() => visible.value)
 
-async function reload(): Promise<void> {
-  const snap = training.snapshot
-  if (!visible.value || !snap.session_id || snap.org_id == null) return
-  loading.value = true
-  try {
-    const [list, counts] = await Promise.all([
-      fetchTrainingRoster(snap.session_id, snap.org_id, 0),
-      fetchTrainingRosterSummary(snap.session_id, snap.org_id),
-    ])
-    rows.value = list.items
-    total.value = list.total
-    summary.value = counts
-  } finally {
-    loading.value = false
-  }
-}
-
-async function loadMore(): Promise<void> {
-  const snap = training.snapshot
-  if (!visible.value || !snap.session_id || snap.org_id == null || loading.value) return
-  loading.value = true
-  try {
-    const list = await fetchTrainingRoster(
-      snap.session_id,
-      snap.org_id,
-      rows.value.length,
-      TRAINING_RAIL_PAGE_SIZE
-    )
-    rows.value = [...rows.value, ...list.items]
-    total.value = list.total
-  } finally {
-    loading.value = false
-  }
-}
-
 watch(
-  () => [training.snapshot.session_id, training.snapshot.seq, training.activityTick, visible.value],
+  () => [training.snapshot.session_id, visible.value],
   () => {
-    void reload()
+    if (visible.value) void training.fetchRoster()
   },
   { immediate: true }
 )
@@ -112,7 +67,7 @@ async function jump(row: TrainingRosterRow): Promise<void> {
   >
     <header class="training-rail__head">
       <h2>{{ t('training.friends') }}</h2>
-      <p>{{ summary.online }} · {{ summary.generating }} / {{ summary.done }}</p>
+      <p>{{ training.rosterSummary.online }} · {{ training.rosterSummary.generating }} / {{ training.rosterSummary.done }}</p>
     </header>
     <ul class="training-rail__list">
       <li
@@ -142,12 +97,12 @@ async function jump(row: TrainingRosterRow): Promise<void> {
       v-if="canLoadMore"
       type="button"
       class="training-rail__more"
-      @click="loadMore"
+      @click="training.fetchRoster(true)"
     >
       {{ t('training.loadMore') }}
     </button>
     <p
-      v-if="!loading && !rows.length"
+      v-if="!training.rosterLoading && !training.rosterRows.length"
       class="training-rail__empty"
     >
       {{ t('training.noTeachersOnline') }}

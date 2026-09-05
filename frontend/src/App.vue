@@ -19,6 +19,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useKittyDesktopActionPoll } from '@/composables/kitty/useKittyDesktopActionPoll'
 import { useTrainingFollow } from '@/composables/training/useTrainingFollow'
+import { useTrainingSessionEngine } from '@/composables/training/useTrainingSessionEngine'
 import { privacyPageUiCode } from '@/composables/usePrivacyPageLocale'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { loadElementPlusLocale } from '@/i18n/elementPlusLocale'
@@ -41,6 +42,7 @@ const notify = useNotifications()
 
 useKittyDesktopActionPoll()
 useTrainingFollow()
+useTrainingSessionEngine()
 
 const LoginModal = defineAsyncComponent(() => import('@/components/auth/LoginModal.vue'))
 const CanvasLiveSubtitleOverlay = defineAsyncComponent(

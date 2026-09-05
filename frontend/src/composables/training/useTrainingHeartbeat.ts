@@ -8,12 +8,19 @@ const HEARTBEAT_MS = 15000
 export function useTrainingHeartbeat(enabled: () => boolean): void {
   const training = useTrainingStore()
   let timer: ReturnType<typeof setInterval> | null = null
+  let inFlight = false
 
   async function tick(): Promise<void> {
+    if (inFlight) return
     const snap = training.snapshot
     if (!enabled() || !snap.session_id || snap.org_id == null) return
     if (snap.state !== 'live' && snap.state !== 'paused') return
-    await postTrainingHeartbeat(snap.session_id, snap.org_id)
+    inFlight = true
+    try {
+      await postTrainingHeartbeat(snap.session_id, snap.org_id)
+    } finally {
+      inFlight = false
+    }
   }
 
   function start(): void {

@@ -1,9 +1,9 @@
 import { nextTick } from 'vue'
 
 import {
-  closeTrainingModals,
-  openTrainingModal,
-} from '@/composables/training/trainingUiBridge'
+  requestTrainingModalOpen,
+  requestTrainingModalsClose,
+} from '@/composables/training/trainingCommands'
 import { trainingFocusDef, trainingFocusSelector } from '@/config/trainingUiTargets'
 import { useTrainingStore } from '@/stores/training'
 
@@ -41,9 +41,9 @@ export async function applyTrainingUiTarget(options: {
   const training = useTrainingStore()
   training.setUiFocus(null)
   if (options.modalKey) {
-    openTrainingModal(options.modalKey)
+    requestTrainingModalOpen(options.modalKey)
   } else {
-    closeTrainingModals()
+    requestTrainingModalsClose()
   }
   if (!options.focusKey) return
   await nextTick()

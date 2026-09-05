@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import V3PropertyPanel from '@/canvas-v3/V3PropertyPanel.vue'
 import V3StatusBar from '@/canvas-v3/V3StatusBar.vue'
 import V3TopToolbar from '@/canvas-v3/V3TopToolbar.vue'
 import { CanvasChrome, CanvasTopBar, ZoomControls } from '@/components/canvas'
 import { OnlineCollabModal } from '@/components/workshop'
-import {
-  applyTrainingTopicToDiagram,
-  registerTrainingTopicApplier,
-} from '@/composables/training/trainingTopicApply'
-import { registerTrainingModalOpener } from '@/composables/training/trainingUiBridge'
+import { eventBus } from '@/composables/core/useEventBus'
+import { applyTrainingTopicToDiagram } from '@/composables/training/trainingTopicApply'
 import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
 import DiagramSessionProvider from '@/components/diagram/DiagramSessionProvider.vue'
 import { normalizeDiagramTypeKey } from '@/composables/canvasPage/newCanvasBootstrap'
@@ -54,39 +51,35 @@ const sessionKey = computed(
 
 const collabOpen = ref(false)
 const providerRef = ref<{ session: DiagramSession } | null>(null)
-let unregisterCollab: (() => void) | null = null
-let unregisterTopic: (() => void) | null = null
-
-watch(
-  providerRef,
-  (host) => {
-    unregisterTopic?.()
-    unregisterTopic = null
-    const session = host?.session
-    if (!session) return
-    unregisterTopic = registerTrainingTopicApplier((option) => {
-      applyTrainingTopicToDiagram(session, option)
-    })
-  },
-  { immediate: true }
-)
+const owner = `TrainingCanvasPreview:${Math.random().toString(36).slice(2, 8)}`
 
 onMounted(() => {
-  unregisterCollab = registerTrainingModalOpener('online-collab', {
-    open: () => {
-      collabOpen.value = true
+  eventBus.onWithOwner(
+    'training:topic_apply_requested',
+    ({ option }) => {
+      const session = providerRef.value?.session
+      if (session) applyTrainingTopicToDiagram(session, option)
     },
-    close: () => {
+    owner
+  )
+  eventBus.onWithOwner(
+    'training:modal_open_requested',
+    ({ key }) => {
+      if (key === 'online-collab') collabOpen.value = true
+    },
+    owner
+  )
+  eventBus.onWithOwner(
+    'training:modal_close_requested',
+    () => {
       collabOpen.value = false
     },
-  })
+    owner
+  )
 })
 
 onUnmounted(() => {
-  unregisterCollab?.()
-  unregisterCollab = null
-  unregisterTopic?.()
-  unregisterTopic = null
+  eventBus.removeAllListenersForOwner(owner)
 })
 </script>
 

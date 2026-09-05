@@ -19,9 +19,9 @@ from services.features.training.storage.backend import (
     cos_training_enabled,
     create_presigned_get,
     create_presigned_put,
-    get_bytes_sync,
-    head_object_sync,
-    put_bytes_sync,
+    get_bytes,
+    head_object_async,
+    put_bytes,
     storage_backend,
 )
 from services.features.training.storage.grants import pop_upload_grant, save_upload_grant
@@ -131,12 +131,16 @@ async def complete_training_asset(
         data = await file.read()
         if len(data) > int(grant.get("max_bytes") or 0):
             raise HTTPException(status_code=400, detail="File is too large")
-        put_bytes_sync(key, data, content_type=str(grant.get("content_type") or "application/octet-stream"))
+        await put_bytes(
+            key,
+            data,
+            content_type=str(grant.get("content_type") or "application/octet-stream"),
+        )
         size = len(data)
     else:
         if not cos_training_enabled():
             raise HTTPException(status_code=400, detail="File body required when COS is off")
-        meta = head_object_sync(key)
+        meta = await head_object_async(key)
         if meta is None:
             raise HTTPException(status_code=400, detail="Object not found in course folder")
         size = int(meta.get("ContentLength") or 0)
@@ -203,7 +207,7 @@ async def download_training_asset(
             raise HTTPException(status_code=404, detail="Not found") from exc
         if path.is_file():
             return FileResponse(path)
-        data = get_bytes_sync(normalized)
+        data = await get_bytes(normalized)
         if data is None:
             raise HTTPException(status_code=404, detail="Not found")
         return Response(content=data, media_type="application/octet-stream")

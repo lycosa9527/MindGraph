@@ -2,6 +2,7 @@ import { watch } from 'vue'
 
 import { useDiagramStore } from '@/stores/diagram'
 import { useTrainingStore } from '@/stores/training'
+import type { TrainingTopicOption } from '@/types/training'
 import { postTrainingActivity } from '@/utils/trainingApi'
 
 import { chipTopicOverride } from './applyTrainingSnapshot'
@@ -12,6 +13,7 @@ export function useTrainingCanvasGenerate(
 ): void {
   const training = useTrainingStore()
   const diagramStore = useDiagramStore()
+  let chipInFlight = false
 
   watch(
     () => training.pendingJump,
@@ -25,24 +27,27 @@ export function useTrainingCanvasGenerate(
   watch(
     () => training.pendingChip,
     (option) => {
-      if (!option) return
-      applyTrainingTopicToDiagram(diagramStore, option)
-      const topic = chipTopicOverride(option)
-      training.setPendingChip(null)
-      void postTrainingActivity({
-        diagram_type: training.snapshot.diagram_type,
-        option_id: option.id,
-        option_label: option.label,
-        generate_state: 'generating',
-      })
-      void Promise.resolve(handleAIGenerate({ topicOverride: topic || undefined })).finally(() => {
-        void postTrainingActivity({
-          diagram_type: training.snapshot.diagram_type,
-          option_id: option.id,
-          option_label: option.label,
-          generate_state: 'done',
-        })
-      })
+      if (!option || chipInFlight) return
+      void runChipGenerate(option)
     }
   )
+
+  async function runChipGenerate(option: TrainingTopicOption): Promise<void> {
+    chipInFlight = true
+    applyTrainingTopicToDiagram(diagramStore, option)
+    const topic = chipTopicOverride(option)
+    training.setPendingChip(null)
+    const activity = {
+      diagram_type: training.snapshot.diagram_type,
+      option_id: option.id,
+      option_label: option.label,
+    }
+    try {
+      await postTrainingActivity({ ...activity, generate_state: 'generating' })
+      await Promise.resolve(handleAIGenerate({ topicOverride: topic || undefined }))
+    } finally {
+      await postTrainingActivity({ ...activity, generate_state: 'done' })
+      chipInFlight = false
+    }
+  }
 }

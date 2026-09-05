@@ -12,6 +12,7 @@ defineProps<{
   showNew?: boolean
   busy?: boolean
   previewing?: boolean
+  readonly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -58,6 +59,7 @@ const emit = defineEmits<{
           {{ t('training.builder.info') }}
         </ElButton>
         <ElButton
+          v-if="!readonly"
           size="small"
           class="admin-swiss-btn admin-swiss-btn--primary"
           :loading="busy"

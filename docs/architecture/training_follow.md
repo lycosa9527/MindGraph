@@ -18,6 +18,10 @@ One live-or-paused session per org and at most one hosted session per instructor
 
 Do not put tokens on the SSE query string. Recreate EventSource after access-token refresh.
 
+## Frontend engine
+
+The live console is Pinia + event bus, same shape as 思维讲堂. UI emits `training:*_requested` (`frontend/src/composables/training/trainingCommands.ts`). `useTrainingSessionEngine` in `App.vue` maps those to `useTrainingStore` actions (start/play/step/free, catalog, roster). Follow stays SSE + ETag GET (`useTrainingFollow`). Topic apply and catalog modals are bus events (`training:topic_apply_requested`, `training:modal_open_requested`), not module-level registries. Course Builder drafts live in `useTrainingBuilderStore`; system seed courses are read-only. COS I/O on the API is `asyncio.to_thread`.
+
 ## Courses and COS
 
 Authored lessons live in Postgres (`training_courses`, `training_course_steps`, `training_course_assets`). Each course owns a COS folder `{COS_TRAINING_PREFIX}/courses/{course_id}/` (cover, slides, videos, media). The prefix defaults from `ENVIRONMENT` (`training/mindgraph`, `training/mindgraph-Test`, `training/mindgraph-Dev`) so local / test / production do not collide in one bucket. JSON never stores durable COS hosts — only `/api/training/assets/...`. Each step may set `page_key` (MindGraph landing, canvas, MindMate, …) and `pull_users`. The seeded 双气泡图教程 is the first system course.

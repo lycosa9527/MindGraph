@@ -4,6 +4,7 @@
 import { onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { requestTrainingRosterInvalidate } from '@/composables/training/trainingCommands'
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useTrainingStore } from '@/stores/training'
@@ -31,6 +32,9 @@ export function useTrainingFollow(): void {
   let pollTimer: ReturnType<typeof setInterval> | null = null
   let activityTimer: ReturnType<typeof setInterval> | null = null
   let pollFallback = false
+  let pullInFlight: Promise<void> | null = null
+  let pullQueued = false
+  let activityInFlight = false
 
   function canRun(): boolean {
     if (shouldSkipTrainingFollow()) return false
@@ -49,10 +53,27 @@ export function useTrainingFollow(): void {
   }
 
   async function pullCommand(): Promise<void> {
+    if (pullInFlight) {
+      pullQueued = true
+      await pullInFlight
+      return
+    }
+    do {
+      pullQueued = false
+      pullInFlight = runPullCommand()
+      try {
+        await pullInFlight
+      } finally {
+        pullInFlight = null
+      }
+    } while (pullQueued)
+  }
+
+  async function runPullCommand(): Promise<void> {
     if (!canRun()) return
     const orgId = resolveOrgId()
     const result = await fetchTrainingCommand(orgId, training.commandEtag)
-    if (result.etag) training.commandEtag = result.etag
+    if (result.etag) training.setCommandEtag(result.etag)
     if (result.notModified || result.snapshot == null) return
     const previousSeq = training.lastAppliedSeq
     training.applySnapshot(result.snapshot)
@@ -94,6 +115,7 @@ export function useTrainingFollow(): void {
     })
     next.addEventListener('activity', () => {
       training.bumpActivity()
+      requestTrainingRosterInvalidate()
     })
     next.onerror = () => {
       pollFallback = true
@@ -122,9 +144,13 @@ export function useTrainingFollow(): void {
   function startActivity(): void {
     if (activityTimer != null || !authStore.isTeacher) return
     const send = (): void => {
+      if (activityInFlight) return
+      activityInFlight = true
       void postTrainingActivity({
         diagram_type: training.snapshot.diagram_type,
         generate_state: 'idle',
+      }).finally(() => {
+        activityInFlight = false
       })
     }
     send()

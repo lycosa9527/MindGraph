@@ -18,6 +18,7 @@ const props = defineProps<{
   index: number
   thumb?: string | null
   hibernated?: boolean
+  readonly?: boolean
 }>()
 
 const stageRef = ref<HTMLElement | null>(null)
@@ -68,12 +69,12 @@ function onDrop(event: DragEvent): void {
     <TrainingStepMarks
       :overlays="marks"
       :step="step"
-      editable
-      selectable
+      :editable="!readonly"
+      :selectable="!readonly"
       @awake="emit('wake')"
     />
     <div
-      v-if="topicsDragLive"
+      v-if="topicsDragLive && !readonly"
       class="builder-stage__catch"
       @dragover="onDragOver"
       @drop="onDrop"
