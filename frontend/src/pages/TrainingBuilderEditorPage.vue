@@ -29,7 +29,6 @@ const {
   hibernated,
   previewCanPrev,
   previewCanNext,
-  isSystem,
 } = storeToRefs(builder)
 
 const title = computed({
@@ -61,7 +60,6 @@ const {
       show-save
       :busy="busy"
       :previewing="previewing"
-      :readonly="isSystem"
       @save="save"
       @info="builder.setInfoOpen(true)"
       @preview="builder.togglePreview()"
@@ -71,26 +69,15 @@ const {
       v-model:title="title"
       v-model:description="description"
       :busy="busy"
-      :readonly="isSystem"
       @cover="onUpload('cover', $event)"
       @save="save"
     />
-    <p
-      v-if="isSystem"
-      class="editor__hint"
-    >
-      {{ t('training.builder.systemReadOnly') }}
-    </p>
-    <div
-      class="editor"
-      :class="{ 'editor--readonly': isSystem }"
-    >
+    <div class="editor">
       <TrainingBuilderFilmstrip
         :steps="steps"
         :selected="selected"
         :thumbs="thumbs"
         :busy="busy"
-        :readonly="isSystem"
         @select="selectStep"
         @add="addSlide"
         @images="addImageSlides"
@@ -108,6 +95,7 @@ const {
           @emoji="builder.addCurrentOverlay('emoji', { glyph: $event })"
           @arrow="builder.addCurrentOverlay('arrow', $event)"
           @spotlight="builder.addCurrentOverlay('spotlight')"
+          @role="builder.addCurrentOverlay('role', { role: $event })"
           @image="onUpload('slide', $event)"
         />
         <TrainingBuilderStage
@@ -115,14 +103,10 @@ const {
           :index="selected"
           :thumb="stageThumb"
           :hibernated="hibernated"
-          :readonly="isSystem"
           @wake="builder.wake()"
           @topics="onTopicsDrop"
         />
-        <TrainingBuilderNotes
-          :step="current"
-          :readonly="isSystem"
-        />
+        <TrainingBuilderNotes :step="current" />
       </section>
       <TrainingTeacherPreview
         v-if="previewing && current"
@@ -148,21 +132,11 @@ const {
   overflow: hidden;
   background: #fafaf9;
 }
-.editor__hint {
-  margin: 0;
-  padding: 0.55rem 1rem 0;
-  color: #78716c;
-  font-size: 0.8rem;
-}
 .editor {
   position: relative;
   display: flex;
   flex: 1;
   min-height: 0;
-}
-.editor--readonly :deep(.builder-toolbar) {
-  pointer-events: none;
-  opacity: 0.72;
 }
 .editor__main {
   display: flex;

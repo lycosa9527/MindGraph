@@ -25,6 +25,13 @@ from services.features.training.storage.backend import (
     storage_backend,
 )
 from services.features.training.storage.grants import pop_upload_grant, save_upload_grant
+from services.features.training.roles.catalog import (
+    ROLE_CONTENT_TYPE,
+    is_packed_role_key,
+    packed_role_file,
+    parse_packed_role_key,
+)
+from services.features.training.roles.publish import ensure_packed_roles_on_cos
 from services.features.training.storage.keys import (
     ASSET_ROLES,
     build_object_key,
@@ -180,6 +187,33 @@ async def can_read_training_asset(user: User, course_id: str) -> bool:
     return str(session.get("course_id") or "") == course_id
 
 
+async def can_read_packed_role(user: User) -> bool:
+    """Authors always; teachers during any live or paused session."""
+    if can_lead_any_training(user):
+        return True
+    org_id = getattr(user, "organization_id", None)
+    if org_id is None or not is_org_teacher_target(user, int(org_id)):
+        return False
+    session = await get_session(int(org_id))
+    return session is not None and session.get("state") in {"live", "paused"}
+
+
+async def _serve_packed_role(normalized: str, proxy: bool) -> Response:
+    parsed = parse_packed_role_key(normalized)
+    if parsed is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    await ensure_packed_roles_on_cos()
+    if not proxy and cos_training_enabled():
+        url = create_presigned_get(normalized)
+        if url:
+            return RedirectResponse(url, status_code=302)
+    role_id, thumb = parsed
+    path = packed_role_file(role_id, thumb=thumb)
+    if path is not None:
+        return FileResponse(path, media_type=ROLE_CONTENT_TYPE)
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+
 @router.get("/assets/{asset_path:path}")
 async def download_training_asset(
     asset_path: str,
@@ -188,6 +222,13 @@ async def download_training_asset(
 ):
     """AuthZ then 302 presigned GET, or local/proxy bytes."""
     normalized = asset_path.lstrip("/").replace("\\", "/")
+    if is_packed_role_key(normalized):
+        if not await can_read_packed_role(current_user):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Training access required",
+            )
+        return await _serve_packed_role(normalized, proxy)
     if not is_scoped_course_object_key(normalized):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     course_id = course_id_from_key(normalized)

@@ -9,6 +9,7 @@ import { useLanguage } from '@/composables'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import TrainingArrowPicker from '@/components/training/TrainingArrowPicker.vue'
 import TrainingEmojiPicker from '@/components/training/TrainingEmojiPicker.vue'
+import TrainingRolePicker from '@/components/training/TrainingRolePicker.vue'
 import TrainingMarkStepsBar from '@/components/training/TrainingMarkStepsBar.vue'
 import TrainingTopicOptionsPanel from '@/components/training/TrainingTopicOptionsPanel.vue'
 import { TRAINING_PAGES, type TrainingPageKey } from '@/config/trainingPages'
@@ -46,6 +47,7 @@ const emit = defineEmits<{
   emoji: [glyph: string]
   arrow: [opts: { color: TrainingArrowColor; line: TrainingArrowLine }]
   spotlight: []
+  role: [role: string]
   image: [file: File]
   awake: []
 }>()
@@ -54,6 +56,7 @@ const { t } = useLanguage()
 const emojiOpen = ref(false)
 const arrowOpen = ref(false)
 const spotOpen = ref(false)
+const roleOpen = ref(false)
 const spotlight = computed(() => stepSpotlight(props.step))
 const spotShape = computed({
   get: (): TrainingSpotlightShape => spotlightShape(spotlight.value),
@@ -84,6 +87,11 @@ const canvasModeOptions = computed(() => {
   }
   return options
 })
+
+function addTextBubble(): void {
+  emit('awake')
+  emit('text')
+}
 
 function onPage(value: string): void {
   emit('awake')
@@ -119,29 +127,49 @@ function pickArrow(opts: { color: TrainingArrowColor; line: TrainingArrowLine })
   arrowOpen.value = false
 }
 
-function toggleEmoji(): void {
+function closeMenus(): void {
+  emojiOpen.value = false
   arrowOpen.value = false
   spotOpen.value = false
-  emojiOpen.value = !emojiOpen.value
+  roleOpen.value = false
+}
+
+function toggleEmoji(): void {
+  const next = !emojiOpen.value
+  closeMenus()
+  emojiOpen.value = next
 }
 
 function toggleArrow(): void {
   emit('awake')
-  emojiOpen.value = false
-  spotOpen.value = false
-  arrowOpen.value = !arrowOpen.value
+  const next = !arrowOpen.value
+  closeMenus()
+  arrowOpen.value = next
 }
 
 function toggleSpotlight(): void {
   emit('awake')
-  emojiOpen.value = false
-  arrowOpen.value = false
+  const next = !spotOpen.value
+  closeMenus()
   if (!spotlight.value) {
     emit('spotlight')
     spotOpen.value = true
     return
   }
-  spotOpen.value = !spotOpen.value
+  spotOpen.value = next
+}
+
+function toggleRoles(): void {
+  emit('awake')
+  const next = !roleOpen.value
+  closeMenus()
+  roleOpen.value = next
+}
+
+function pickRole(role: string): void {
+  emit('awake')
+  emit('role', role)
+  roleOpen.value = false
 }
 
 function onSpotRadius(event: Event): void {
@@ -216,7 +244,7 @@ function clearSpotlight(): void {
       <ElButton
         size="small"
         class="admin-swiss-btn"
-        @click="emit('text')"
+        @click="addTextBubble"
       >
         {{ t('training.builder.toolText') }}
       </ElButton>
@@ -298,6 +326,25 @@ function clearSpotlight(): void {
           </button>
         </div>
       </div>
+      <div
+        class="builder-toolbar__menu"
+        @click.stop
+      >
+        <ElButton
+          size="small"
+          class="admin-swiss-btn"
+          :class="{ 'is-on': roleOpen }"
+          @click="toggleRoles"
+        >
+          {{ t('training.builder.toolRoles') }}
+        </ElButton>
+        <div
+          v-if="roleOpen"
+          class="builder-toolbar__sheet builder-toolbar__sheet--roles"
+        >
+          <TrainingRolePicker @pick="pickRole" />
+        </div>
+      </div>
       <label class="builder-toolbar__upload">
         {{ t('training.builder.toolImage') }}
         <input
@@ -363,6 +410,9 @@ function clearSpotlight(): void {
   width: 12.5rem;
   flex-direction: column;
   gap: 0.45rem;
+}
+.builder-toolbar__sheet--roles {
+  overflow: visible;
 }
 .builder-toolbar__menu :deep(.is-on.el-button) {
   border-color: #ca8a04;

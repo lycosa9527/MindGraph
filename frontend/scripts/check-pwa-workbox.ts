@@ -28,6 +28,10 @@ if (!viteConfig.includes("'**/sidebar-quotes-*'")) {
   throw new Error('vite PWA workbox must globIgnore sidebar-quotes assets')
 }
 
+if (!viteConfig.includes("'**/training/roles/**'")) {
+  throw new Error('vite PWA workbox must globIgnore Course Builder role WebPs')
+}
+
 if (!viteConfig.includes("urlPattern: /^\\/assets\\//")) {
   throw new Error('vite PWA runtimeCaching must include /assets/ CacheFirst rule')
 }

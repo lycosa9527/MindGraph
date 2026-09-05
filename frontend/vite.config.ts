@@ -303,7 +303,7 @@ export default defineConfig({
       workbox: {
         globPatterns: isPwaDev ? [] : PWA_PRECACHE_GLOB_PATTERNS,
         // Sidebar quote pools are fetched on demand after login (locale-specific).
-        globIgnores: ['**/sidebar-quotes-*', '**/stats.html'],
+        globIgnores: ['**/sidebar-quotes-*', '**/training/roles/**', '**/stats.html'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [
           /^\/api/,

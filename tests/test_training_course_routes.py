@@ -33,6 +33,7 @@ from services.features.training.courses.constants import (
     optional_step_key,
 )
 from services.features.training.courses.cover_png import build_double_bubble_cover_png
+from services.features.training.courses.seed import ensure_double_bubble_seed
 from services.features.training.courses.serialize import (
     localized_text,
     snapshot_step_payload,
@@ -288,9 +289,19 @@ def test_grant_cannot_target_another_folder() -> None:
 
 
 @pytest.mark.asyncio
-async def test_system_course_cannot_be_updated() -> None:
-    """Seeded courses stay read-only on PUT."""
-    course = SimpleNamespace(id=DOUBLE_BUBBLE_COURSE_ID, is_system=True)
+async def test_system_course_can_be_updated() -> None:
+    """Seeded 双气泡图教程 is editable by visiting staff."""
+    course = SimpleNamespace(
+        id=DOUBLE_BUBBLE_COURSE_ID,
+        title={"zh": "双气泡图教程", "en": "Double Bubble Map tutorial"},
+        description={"zh": "对比辨析两个对象。", "en": "Compare and contrast two topics."},
+        status="ready",
+        is_system=True,
+        cover_asset_id=None,
+        assets=[],
+        steps=[],
+        updated_at=None,
+    )
     db = AsyncMock()
     with (
         patch("routers.api.training_course_routes.can_lead_any_training", return_value=True),
@@ -299,17 +310,16 @@ async def test_system_course_cannot_be_updated() -> None:
             "routers.api.training_course_routes.get_course",
             new=AsyncMock(return_value=course),
         ),
-        patch("routers.api.training_course_routes.save_course", new=AsyncMock()) as save,
+        patch("routers.api.training_course_routes.save_course", new=AsyncMock(return_value=course)) as save,
     ):
-        with pytest.raises(HTTPException) as exc:
-            await update_training_course(
-                DOUBLE_BUBBLE_COURSE_ID,
-                CourseWriteBody(title={"zh": "改种子课", "en": "Rewrite seed"}),
-                current_user=_user("superadmin", user_id=1),
-            )
-    assert exc.value.status_code == 403
-    assert "edited" in str(exc.value.detail)
-    save.assert_not_awaited()
+        body = await update_training_course(
+            DOUBLE_BUBBLE_COURSE_ID,
+            CourseWriteBody(title={"zh": "改种子课", "en": "Rewrite seed"}),
+            current_user=_user("superadmin", user_id=1),
+        )
+    save.assert_awaited()
+    assert body["id"] == DOUBLE_BUBBLE_COURSE_ID
+    assert body["is_system"] is True
 
 
 @pytest.mark.asyncio
@@ -334,6 +344,31 @@ async def test_system_course_cannot_be_deleted() -> None:
     assert exc.value.status_code == 403
     assert "deleted" in str(exc.value.detail)
     delete.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_seed_keeps_existing_author_edits() -> None:
+    """Re-running the seed must not reset title, steps, or cover."""
+    existing = SimpleNamespace(
+        id=DOUBLE_BUBBLE_COURSE_ID,
+        title={"zh": "已改标题", "en": "Edited title"},
+        description={"zh": "已改说明", "en": "Edited desc"},
+        status="ready",
+        is_system=False,
+        steps=[SimpleNamespace(id="edited-step")],
+        assets=[SimpleNamespace(id="edited-cover", role="cover")],
+        cover_asset_id="edited-cover",
+    )
+    result = SimpleNamespace(scalar_one_or_none=lambda: existing)
+    db = AsyncMock()
+    db.execute = AsyncMock(return_value=result)
+    with patch("services.features.training.courses.seed.put_bytes", new=AsyncMock()) as put:
+        course = await ensure_double_bubble_seed(db)
+    assert course.title == {"zh": "已改标题", "en": "Edited title"}
+    assert course.description == {"zh": "已改说明", "en": "Edited desc"}
+    assert course.is_system is True
+    assert course.steps == existing.steps
+    put.assert_not_awaited()
 
 
 @pytest.mark.asyncio

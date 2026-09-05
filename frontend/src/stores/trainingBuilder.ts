@@ -57,12 +57,10 @@ export const useTrainingBuilderStore = defineStore('trainingBuilder', () => {
   }
 
   function setTitle(value: string): void {
-    if (isSystem.value) return
     title.value = value
   }
 
   function setDescription(value: string): void {
-    if (isSystem.value) return
     description.value = value
   }
 
@@ -158,7 +156,7 @@ export const useTrainingBuilderStore = defineStore('trainingBuilder', () => {
     description.value = course.description
     steps.value = (course.steps || []).map((step) => ({ ...step }))
     if (!keepThumbs) hydrateFromSteps(steps.value)
-    if (!steps.value.length && !isSystem.value) {
+    if (!steps.value.length) {
       steps.value.push(blankPageStep(0))
       applySelectAwake(0, steps.value[0])
       selected.value = 0
@@ -167,13 +165,11 @@ export const useTrainingBuilderStore = defineStore('trainingBuilder', () => {
 
   function pushBlankPage(): TrainingCourseStep {
     const step = blankPageStep(steps.value.length)
-    if (isSystem.value) return step
     steps.value.push(step)
     return step
   }
 
   function removeStepAt(index: number): number {
-    if (isSystem.value) return selected.value
     steps.value.splice(index, 1)
     removeThumb(index)
     if (!steps.value.length) {
@@ -189,7 +185,6 @@ export const useTrainingBuilderStore = defineStore('trainingBuilder', () => {
   }
 
   function insertCreatedSteps(at: number, created: TrainingCourseStep[]): number {
-    if (isSystem.value) return selected.value
     const inserted = insertStepsAt(steps.value, at, created)
     insertThumbs(
       inserted,
@@ -202,14 +197,14 @@ export const useTrainingBuilderStore = defineStore('trainingBuilder', () => {
 
   function setCurrentAsset(assetId: string, assetUrl: string): void {
     const step = current.value
-    if (!step || isSystem.value) return
+    if (!step) return
     wake()
     step.asset_id = assetId
     step.asset_url = assetUrl
   }
 
   function applyCurrentPage(key: TrainingPageKey): void {
-    if (!current.value || isSystem.value) return
+    if (!current.value) return
     applyPageKey(current.value, key)
   }
 
@@ -217,7 +212,7 @@ export const useTrainingBuilderStore = defineStore('trainingBuilder', () => {
     kind: TrainingStepOverlay['kind'],
     extra: Partial<TrainingStepOverlay> = {}
   ): void {
-    if (!current.value || isSystem.value) return
+    if (!current.value) return
     addOverlay(current.value, kind, extra)
   }
 

@@ -3,7 +3,7 @@ import type { Router } from 'vue-router'
 import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
 import { trainingPagePath } from '@/config/trainingPages'
 import type { DiagramType } from '@/types'
-import type { TrainingSnapshot, TrainingTopicOption } from '@/types/training'
+import type { TrainingCourseStep, TrainingSnapshot, TrainingTopicOption } from '@/types/training'
 import { canvasEditorPathForRoute } from '@/utils/canvasBackNavigation'
 
 export function canSeeTrainingSpeakerNotes(
@@ -18,6 +18,20 @@ export function canSeeTrainingSpeakerNotes(
 export function isMediaTrainingStep(snapshot: TrainingSnapshot): boolean {
   const stepType = snapshot.step?.type
   return stepType === 'slide' || stepType === 'video'
+}
+
+export function liveLessonStep(
+  snapshot: TrainingSnapshot,
+  opts: { skip?: boolean; trainingRoute?: boolean }
+): TrainingCourseStep | null {
+  if (opts.skip || opts.trainingRoute) return null
+  if (snapshot.state !== 'live' && snapshot.state !== 'paused') return null
+  return snapshot.step ?? null
+}
+
+export function liveLessonCoversMedia(step: TrainingCourseStep | null | undefined): boolean {
+  if (!step?.asset_url) return false
+  return step.type === 'slide' || step.type === 'video'
 }
 
 export function stepPullsUsers(snapshot: TrainingSnapshot): boolean {

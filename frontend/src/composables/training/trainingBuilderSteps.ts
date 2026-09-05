@@ -1,10 +1,16 @@
-import type { TrainingPageKey } from '@/config/trainingPages'
-import { isTrainingModalForPage, trainingFocusOptions } from '@/config/trainingUiTargets'
 import {
   allocateOverlayStep,
   overlayMarkStep,
   visibleMarkOverlays,
 } from '@/composables/training/trainingMarkSteps'
+import type { TrainingPageKey } from '@/config/trainingPages'
+import { TRAINING_ROLE_WIDTH_DEFAULT, isTrainingRoleId } from '@/config/trainingRoles'
+import {
+  TRAINING_TEXT_HEIGHT_DEFAULT,
+  TRAINING_TEXT_SIZE_DEFAULT,
+  TRAINING_TEXT_WIDTH_DEFAULT,
+} from '@/config/trainingTextBubbles'
+import { isTrainingModalForPage, trainingFocusOptions } from '@/config/trainingUiTargets'
 import type { TrainingCourseStep, TrainingStepOverlay } from '@/types/training'
 
 export function blankPageStep(position: number): TrainingCourseStep {
@@ -138,16 +144,34 @@ export function addOverlay(
       shape: extra.shape ?? 'circle',
       step: at,
     })
+  } else if (kind === 'role') {
+    const roleId = extra.role || extra.glyph || ''
+    overlays.push({
+      ...extra,
+      kind: 'role',
+      x: extra.x ?? 82,
+      y: extra.y ?? 74,
+      w: extra.w ?? TRAINING_ROLE_WIDTH_DEFAULT,
+      role: isTrainingRoleId(roleId) ? roleId : '01-look-here',
+      step: at,
+    })
   } else {
-    overlays.push({ kind: 'text', x: 18, y: 18, text: extra.text || '', ...extra, step: at })
+    overlays.push({
+      ...extra,
+      kind: 'text',
+      x: extra.x ?? 50,
+      y: extra.y ?? 42,
+      w: extra.w ?? TRAINING_TEXT_WIDTH_DEFAULT,
+      h: extra.h ?? TRAINING_TEXT_HEIGHT_DEFAULT,
+      size: extra.size ?? TRAINING_TEXT_SIZE_DEFAULT,
+      text: extra.text || '',
+      step: at,
+    })
   }
   step.overlays = overlays
 }
 
-function placeTopicsOverlay(
-  step: TrainingCourseStep,
-  extra: Partial<TrainingStepOverlay>
-): void {
+function placeTopicsOverlay(step: TrainingCourseStep, extra: Partial<TrainingStepOverlay>): void {
   const overlays = step.overlays || []
   const keep = overlays.find((row) => row.kind === 'topics')
   const at = extra.step ?? (keep ? overlayMarkStep(keep) : allocateOverlayStep(step))
@@ -200,7 +224,9 @@ export function trainingCourseWriteBody(
         if (overlays[i].kind === 'topics') lastTopics = i
       }
       if (lastTopics >= 0) {
-        next.overlays = overlays.filter((row, rowIndex) => row.kind !== 'topics' || rowIndex === lastTopics)
+        next.overlays = overlays.filter(
+          (row, rowIndex) => row.kind !== 'topics' || rowIndex === lastTopics
+        )
       }
       delete next.asset_url
       delete next.thumb_url

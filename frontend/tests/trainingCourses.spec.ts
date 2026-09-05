@@ -309,6 +309,17 @@ describe('training course playback', () => {
     expect(shouldForceNavigate(stay, 4)).toBe(false)
   })
 
+  it('places a role overlay that can sit on the page', () => {
+    const step = blankPageStep(0)
+    addOverlay(step, 'role', { role: '11-clap' })
+    expect(step.mark_step).toBe(2)
+    expect(visibleMarkOverlays(step)).toMatchObject([
+      { kind: 'role', role: '11-clap', x: 82, y: 74, w: 18, step: 2 },
+    ])
+    addOverlay(step, 'role', { role: 'not-a-role' })
+    expect(visibleMarkOverlays(step)[1]).toMatchObject({ kind: 'role', role: '01-look-here' })
+  })
+
   it('places a spotlight overlay and keeps selection after deleting a slide', () => {
     const step = blankPageStep(0)
     addOverlay(step, 'spotlight')

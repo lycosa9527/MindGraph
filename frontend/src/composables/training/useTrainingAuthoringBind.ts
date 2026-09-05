@@ -9,7 +9,7 @@ export function useTrainingAuthoringBind(): void {
 
   function onClick(event: MouseEvent): void {
     const step = builder.current
-    if (!step || builder.isSystem) return
+    if (!step) return
     const raw = event.target
     if (!(raw instanceof Element)) return
     const el = raw.closest('[data-training-target]')

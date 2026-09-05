@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   isTrainingMediaStep,
@@ -6,7 +6,10 @@ import {
   shouldRecaptureThumb,
 } from '@/composables/training/trainingBuilderHibernate'
 import { blankPageStep, blankSlideStep } from '@/composables/training/trainingBuilderSteps'
-import { isPersistedTrainingThumb } from '@/composables/training/persistTrainingThumb'
+import {
+  dataUrlToPngFile,
+  isPersistedTrainingThumb,
+} from '@/composables/training/persistTrainingThumb'
 import {
   captureTrainingStage,
   trainingStepPageKey,
@@ -59,6 +62,22 @@ describe('training builder hibernate', () => {
   it('treats COS asset URLs as persisted previews', () => {
     expect(isPersistedTrainingThumb('data:image/png;base64,xx')).toBe(false)
     expect(isPersistedTrainingThumb('/api/training/assets/courses/x/thumbs/a.png')).toBe(true)
+  })
+
+  it('decodes a PNG data URL without fetch (CSP connect-src blocks data:)', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const pixel =
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+    const file = dataUrlToPngFile(pixel, 'slide-1.png')
+    expect(file.name).toBe('slide-1.png')
+    expect(file.type).toBe('image/png')
+    expect(file.size).toBeGreaterThan(0)
+    expect(fetchSpy).not.toHaveBeenCalled()
+    fetchSpy.mockRestore()
+  })
+
+  it('rejects a data URL with no payload', () => {
+    expect(() => dataUrlToPngFile('not-a-data-url', 'slide-1.png')).toThrow('invalid data url')
   })
 
   it('recaptures only when the live page itself changed', () => {

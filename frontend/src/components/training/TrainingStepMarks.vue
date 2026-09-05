@@ -1,27 +1,49 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import TrainingSpotlightLayer from '@/components/training/TrainingSpotlightLayer.vue'
+import TrainingTextBubble from '@/components/training/TrainingTextBubble.vue'
 import TrainingTopicsMark from '@/components/training/TrainingTopicsMark.vue'
+import { requestTrainingTopicApply } from '@/composables/training/trainingCommands'
+import {
+  type ArrowHandle,
+  moveArrowHandle,
+  overlayClientPercent,
+  translateOverlay,
+} from '@/composables/training/trainingOverlayDrag'
+import { stepUsesDualTopics } from '@/composables/training/trainingTopicOptions'
 import {
   TRAINING_ARROW_COLORS,
   trainingArrowHex,
   trainingArrowLine,
 } from '@/config/trainingMarkPalettes'
 import {
-  moveArrowHandle,
-  overlayClientPercent,
-  translateOverlay,
-  type ArrowHandle,
-} from '@/composables/training/trainingOverlayDrag'
-import { requestTrainingTopicApply } from '@/composables/training/trainingCommands'
-import { stepUsesDualTopics } from '@/composables/training/trainingTopicOptions'
-import type { TrainingCourseStep, TrainingStepOverlay, TrainingTopicOption } from '@/types/training'
+  resizeRoleWidth,
+  roleWidth,
+  trainingRolePlaybackSrc,
+  trainingRoleSrc,
+} from '@/config/trainingRoles'
+import {
+  bumpTextBubbleFont,
+  resizeTextBubble,
+  setTextBubbleAlign,
+  setTextBubbleInk,
+  setTextBubbleStroke,
+  toggleTextBubbleBold,
+  toggleTextBubbleItalic,
+} from '@/config/trainingTextBubbles'
+import type {
+  TrainingCourseStep,
+  TrainingStepOverlay,
+  TrainingTextAlign,
+  TrainingTopicOption,
+} from '@/types/training'
 
 const props = defineProps<{
   overlays: TrainingStepOverlay[]
   editable?: boolean
   selectable?: boolean
+  remoteRoles?: boolean
   step?: TrainingCourseStep
 }>()
 
@@ -33,24 +55,48 @@ const topicOptions = computed(() => props.step?.topic_options || [])
 const dualTopics = computed(() => stepUsesDualTopics(props.step))
 
 const rootRef = ref<HTMLElement | null>(null)
+const selectedTextIndex = ref<number | null>(null)
 const markScope = `ar-${Math.random().toString(36).slice(2, 10)}`
+type MarkHandle = ArrowHandle | 'body' | 'role-size' | 'text-size'
 let dragIndex = -1
-let arrowHandle: ArrowHandle | 'body' = 'body'
+let arrowHandle: MarkHandle = 'body'
 let lastX = 0
 let lastY = 0
 
-function startDrag(index: number, event: PointerEvent, handle: ArrowHandle | 'body' = 'body'): void {
+watch(
+  () => props.overlays.length,
+  (length, previous) => {
+    if (!props.editable || length <= (previous ?? 0)) return
+    const last = length - 1
+    if (props.overlays[last]?.kind === 'text') selectedTextIndex.value = last
+  }
+)
+
+function onDocPointer(event: PointerEvent): void {
+  const target = event.target
+  if (!(target instanceof Element) || target.closest('.text-bubble')) return
+  selectedTextIndex.value = null
+}
+
+onMounted(() => {
+  document.addEventListener('pointerdown', onDocPointer)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('pointerdown', onDocPointer)
+})
+
+function startDrag(index: number, event: PointerEvent, handle: MarkHandle = 'body'): void {
   if (!props.editable) return
   event.preventDefault()
   event.stopPropagation()
+  selectedTextIndex.value = props.overlays[index]?.kind === 'text' ? index : null
   dragIndex = index
   arrowHandle = handle
   lastX = event.clientX
   lastY = event.clientY
-  const target = event.currentTarget
-  if (target instanceof Element) {
-    target.setPointerCapture(event.pointerId)
-  }
+  const capture = rootRef.value
+  if (capture) capture.setPointerCapture(event.pointerId)
 }
 
 function moveDrag(event: PointerEvent): void {
@@ -58,8 +104,16 @@ function moveDrag(event: PointerEvent): void {
   const overlay = props.overlays[dragIndex]
   if (!overlay) return
   const next = overlayClientPercent(rootRef.value, event.clientX, event.clientY)
-  if (overlay.kind === 'arrow' && arrowHandle !== 'body') {
+  if (overlay.kind === 'arrow' && (arrowHandle === 'start' || arrowHandle === 'end')) {
     moveArrowHandle(overlay, arrowHandle, next.x, next.y)
+    return
+  }
+  if (overlay.kind === 'role' && arrowHandle === 'role-size') {
+    resizeRoleWidth(overlay, next.x)
+    return
+  }
+  if (overlay.kind === 'text' && arrowHandle === 'text-size') {
+    resizeTextBubble(overlay, next.x, next.y)
     return
   }
   const prev = overlayClientPercent(rootRef.value, lastX, lastY)
@@ -73,12 +127,61 @@ function endDrag(): void {
   arrowHandle = 'body'
 }
 
+function roleSrc(overlay: TrainingStepOverlay): string {
+  const id = overlay.role || overlay.glyph || ''
+  if (props.remoteRoles) return trainingRolePlaybackSrc(id)
+  return trainingRoleSrc(id)
+}
+
+function roleBox(overlay: TrainingStepOverlay): Record<string, string> {
+  return {
+    left: left(overlay),
+    top: top(overlay),
+    width: `${roleWidth(overlay)}%`,
+  }
+}
+
 function left(overlay: TrainingStepOverlay): string {
   return `${overlay.x ?? 0}%`
 }
 
 function top(overlay: TrainingStepOverlay): string {
   return `${overlay.y ?? 0}%`
+}
+
+function editText(overlay: TrainingStepOverlay, text: string): void {
+  overlay.text = text
+  emit('awake')
+}
+
+function bumpText(overlay: TrainingStepOverlay, delta: number): void {
+  bumpTextBubbleFont(overlay, delta)
+  emit('awake')
+}
+
+function toggleBold(overlay: TrainingStepOverlay): void {
+  toggleTextBubbleBold(overlay)
+  emit('awake')
+}
+
+function toggleItalic(overlay: TrainingStepOverlay): void {
+  toggleTextBubbleItalic(overlay)
+  emit('awake')
+}
+
+function alignText(overlay: TrainingStepOverlay, align: TrainingTextAlign): void {
+  setTextBubbleAlign(overlay, align)
+  emit('awake')
+}
+
+function setInk(overlay: TrainingStepOverlay, color: string): void {
+  setTextBubbleInk(overlay, color)
+  emit('awake')
+}
+
+function setStroke(overlay: TrainingStepOverlay, color: string): void {
+  setTextBubbleStroke(overlay, color)
+  emit('awake')
 }
 
 async function pickTopic(overlay: TrainingStepOverlay, option: TrainingTopicOption): Promise<void> {
@@ -161,18 +264,46 @@ function dashArray(overlay: TrainingStepOverlay): string | undefined {
       v-for="(overlay, index) in overlays"
       :key="`label-${index}`"
     >
-      <span
+      <TrainingTextBubble
         v-if="overlay.kind === 'text'"
-        class="step-marks__label step-marks__text"
-        :style="{ left: left(overlay), top: top(overlay) }"
-        @pointerdown="startDrag(index, $event)"
-      >{{ overlay.text }}</span>
+        :overlay="overlay"
+        :editable="editable"
+        :selected="Boolean(editable && selectedTextIndex === index)"
+        @select="selectedTextIndex = index"
+        @edit="editText(overlay, $event)"
+        @bump-font="bumpText(overlay, $event)"
+        @toggle-bold="toggleBold(overlay)"
+        @toggle-italic="toggleItalic(overlay)"
+        @align="alignText(overlay, $event)"
+        @ink="setInk(overlay, $event)"
+        @stroke="setStroke(overlay, $event)"
+        @drag="startDrag(index, $event)"
+        @resize="startDrag(index, $event, 'text-size')"
+      />
       <span
         v-else-if="overlay.kind === 'emoji'"
         class="step-marks__label step-marks__emoji"
         :style="{ left: left(overlay), top: top(overlay) }"
         @pointerdown="startDrag(index, $event)"
-      >{{ overlay.glyph }}</span>
+        >{{ overlay.glyph }}</span
+      >
+      <div
+        v-else-if="overlay.kind === 'role'"
+        class="step-marks__label step-marks__role"
+        :style="roleBox(overlay)"
+        @pointerdown="startDrag(index, $event)"
+      >
+        <img
+          class="step-marks__role-img"
+          :src="roleSrc(overlay)"
+          alt=""
+        />
+        <span
+          v-if="editable"
+          class="step-marks__role-handle"
+          @pointerdown="startDrag(index, $event, 'role-size')"
+        />
+      </div>
       <div
         v-else-if="overlay.kind === 'topics'"
         class="step-marks__label step-marks__topics"
@@ -228,14 +359,32 @@ function dashArray(overlay: TrainingStepOverlay): string | undefined {
   line-height: 1.25;
   white-space: pre-wrap;
 }
-.step-marks__text {
-  color: #1c1917;
-  font-size: clamp(0.95rem, 3.4cqh, 1.35rem);
-  font-weight: 600;
-}
 .step-marks__emoji {
   font-size: clamp(1.25rem, 7cqh, 2.1rem);
   line-height: 1;
+}
+.step-marks__role {
+  max-width: none;
+  line-height: 0;
+}
+.step-marks__role-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+}
+.step-marks__role-handle {
+  position: absolute;
+  right: 0.05rem;
+  bottom: 0.05rem;
+  z-index: 3;
+  width: 0.7rem;
+  height: 0.7rem;
+  border: 1px solid #1c1917;
+  border-radius: 2px;
+  background: #fafaf9;
+  cursor: nwse-resize;
 }
 .step-marks__knob {
   position: absolute;
@@ -257,9 +406,19 @@ function dashArray(overlay: TrainingStepOverlay): string | undefined {
 }
 .step-marks--editable .step-marks__hit,
 .step-marks--editable .step-marks__label,
-.step-marks--editable .step-marks__knob {
+.step-marks--editable .step-marks__knob,
+.step-marks--editable .step-marks__role-handle,
+.step-marks--editable :deep(.text-bubble),
+.step-marks--editable :deep(.text-bubble__handle) {
   pointer-events: auto;
   cursor: grab;
+}
+.step-marks--editable .step-marks__role-handle,
+.step-marks--editable :deep(.text-bubble__handle) {
+  cursor: nwse-resize;
+}
+.step-marks--editable :deep(.text-bubble__edit) {
+  cursor: text;
 }
 .step-marks--editable .step-marks__topics {
   cursor: grab;

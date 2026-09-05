@@ -109,8 +109,6 @@ async def update_training_course(
         course = await get_course(db, course_id)
         if course is None:
             raise HTTPException(status_code=404, detail="Course not found")
-        if course.is_system:
-            raise HTTPException(status_code=403, detail="System courses cannot be edited")
         try:
             await save_course(
                 db,

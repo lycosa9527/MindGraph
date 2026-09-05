@@ -11,9 +11,10 @@ export interface TrainingTopicOption {
 export type TrainingSpotlightShape = 'circle' | 'rect'
 export type TrainingArrowColor = 'red' | 'amber' | 'green' | 'blue' | 'violet' | 'stone'
 export type TrainingArrowLine = 'solid' | 'dashed' | 'thick'
+export type TrainingTextAlign = 'left' | 'center' | 'right'
 
 export interface TrainingStepOverlay {
-  kind: 'arrow' | 'emoji' | 'text' | 'spotlight' | 'topics'
+  kind: 'arrow' | 'emoji' | 'text' | 'spotlight' | 'topics' | 'role'
   x?: number
   y?: number
   x2?: number
@@ -21,11 +22,18 @@ export interface TrainingStepOverlay {
   w?: number
   h?: number
   r?: number
+  size?: number
   shape?: TrainingSpotlightShape
   color?: TrainingArrowColor
   line?: TrainingArrowLine
+  align?: TrainingTextAlign
+  bold?: boolean
+  italic?: boolean
+  ink?: string
+  stroke?: string
   step?: number
   glyph?: string
+  role?: string
   text?: string
 }
 

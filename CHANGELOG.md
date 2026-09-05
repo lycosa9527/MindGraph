@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.43] - 2026-09-05
+
+> **Course Builder marks now reach teachers: speech-bubble text, classroom cat roles on COS, and the same overlays on live pages — not only PPT slides.**
+
+### Added
+
+- **文本泡泡** — Course Builder **文本** is now an on-slide speech bubble. No prompt modal: click to drop, type in place, drag, resize. A floating bar sets size, bold, italic, align, text color, and border color.
+- **角色** — Twenty packed black-cat classroom clips on the stage (drag / resize). Authoring loads repo WebPs; live play publishes them to `{COS_TRAINING_PREFIX}/roles/` and serves `GET /api/training/assets/roles/{id}.webp` (302 to COS). PWA workbox skips the catalog so the app shell stays small.
+- **Wan role toolkit** — Green-screen stills and `python -m scripts.training_roles.generate` stay in `scripts/training_roles/` so more clips can be generated later (scratch MP4s stay in `.work/`).
+
+### Changed
+
+- **Live teacher view** — Page and canvas steps keep teachers on the real app page and paint the author’s marks (bubbles, roles, arrows, emoji, spotlight, topics) as a transparent overlay. Slide/video steps still cover the viewport. Topic chips stay tappable. Marks remain visible while the session is paused.
+- **Seeded tutorial** — The 双气泡图 course can be edited and saved. Startup seed no longer overwrites an already-authored title, steps, or cover.
+- **Bubble drag** — A wider frame is a grab handle; an 8px move on the text also starts a drag so the caret click still works.
+
+### Tests
+
+- `frontend/tests/trainingTextBubbles.spec.ts`, `trainingRoles.spec.ts`, `applyTrainingSnapshot.spec.ts` (live lesson step)
+- `tests/test_training_role_assets.py`, `tests/scripts/test_training_roles_kit.py`
+- GitHub CI / `scripts/ci-local.sh` now run those files
+
 ## [5.180.42] - 2026-09-05
 
 > **Production would not start: `.gitignore` treated `services/features/training/storage/` as runtime data, so the COS package never reached the server.**

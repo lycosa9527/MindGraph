@@ -237,7 +237,9 @@ run_backend() {
     tests/test_training_routes.py \
     tests/test_training_storage_keys.py \
     tests/test_training_course_routes.py \
-    tests/test_training_play_advance.py
+    tests/test_training_play_advance.py \
+    tests/test_training_role_assets.py \
+    tests/scripts/test_training_roles_kit.py
 }
 
 run_frontend() {
@@ -288,7 +290,8 @@ run_frontend() {
     tests/trainingClient.spec.ts tests/useTrainingFollow.spec.ts \
     tests/trainingCourses.spec.ts tests/trainingOverlayDrag.spec.ts \
     tests/presentationSpotlight.spec.ts tests/applyTrainingUiTarget.spec.ts \
-    tests/trainingStageThumb.spec.ts tests/trainingBuilderStore.spec.ts
+    tests/trainingStageThumb.spec.ts tests/trainingBuilderStore.spec.ts \
+    tests/trainingRoles.spec.ts tests/trainingTextBubbles.spec.ts
 }
 
 run_chrome_extension() {

@@ -61,14 +61,15 @@ describe('trainingBuilder store', () => {
     expect(store.thumbs[0]).toBe('/api/training/assets/a.png')
   })
 
-  it('keeps system courses read-only', () => {
+  it('lets authors edit the seeded system course', () => {
     const store = useTrainingBuilderStore()
     store.applyCourse(course({ is_system: true, title: '种子' }))
     expect(store.isSystem).toBe(true)
     store.setTitle('改掉')
     store.pushBlankPage()
-    store.removeStepAt(0)
-    expect(store.title).toBe('种子')
+    expect(store.title).toBe('改掉')
+    expect(store.steps).toHaveLength(3)
+    store.removeStepAt(2)
     expect(store.steps).toHaveLength(2)
   })
 

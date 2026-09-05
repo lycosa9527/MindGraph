@@ -1,15 +1,16 @@
 import { nextTick, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { ElMessageBox } from 'element-plus'
-
 import { useLanguage, useNotifications } from '@/composables'
 import { applyTrainingUiTarget } from '@/composables/training/applyTrainingUiTarget'
-import { blankSlideStep, trainingCourseWriteBody } from '@/composables/training/trainingBuilderSteps'
+import {
+  blankSlideStep,
+  trainingCourseWriteBody,
+} from '@/composables/training/trainingBuilderSteps'
 import { currentMarkStep } from '@/composables/training/trainingMarkSteps'
+import { uploadTrainingFile } from '@/composables/training/uploadTrainingFile'
 import { useTrainingAuthoringBind } from '@/composables/training/useTrainingAuthoringBind'
 import { useTrainingBuilderThumbs } from '@/composables/training/useTrainingBuilderThumbs'
-import { uploadTrainingFile } from '@/composables/training/uploadTrainingFile'
 import { useTrainingBuilderStore } from '@/stores/trainingBuilder'
 import type { TrainingCourseStep } from '@/types/training'
 import { fetchTrainingCourse, saveTrainingCourse } from '@/utils/trainingApi'
@@ -21,7 +22,7 @@ export type TrainingBuilderSessionApi = {
   onUpload: (role: 'cover' | 'slide', file: File | undefined) => Promise<void>
   addImageSlides: (files: File[]) => Promise<void>
   save: () => Promise<void>
-  onAddText: () => Promise<void>
+  onAddText: () => void
   previewMove: (delta: number) => Promise<void>
   onTopicsDrop: (pos: { x: number; y: number }) => void
 }
@@ -61,7 +62,6 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
   }
 
   async function addSlide(): Promise<void> {
-    if (builder.isSystem) return
     await rememberIfNeeded()
     const step = builder.pushBlankPage()
     const index = builder.steps.length - 1
@@ -70,7 +70,6 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
   }
 
   async function removeStep(index: number): Promise<void> {
-    if (builder.isSystem) return
     if (builder.steps.length <= 1) {
       await rememberIfNeeded()
     }
@@ -78,7 +77,7 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
   }
 
   async function onUpload(role: 'cover' | 'slide', file: File | undefined): Promise<void> {
-    if (!file || builder.isSystem) return
+    if (!file) return
     const uploaded = await uploadTrainingFile(builder.courseId, role, file)
     if (role === 'cover') {
       notify.success(t('training.builder.saved'))
@@ -88,7 +87,7 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
   }
 
   async function addImageSlides(files: File[]): Promise<void> {
-    if (!files.length || builder.isSystem) return
+    if (!files.length) return
     builder.setBusy(true)
     try {
       await rememberIfNeeded()
@@ -110,10 +109,6 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
   }
 
   async function save(): Promise<void> {
-    if (builder.isSystem) {
-      notify.warning(t('training.builder.systemReadOnly'))
-      return
-    }
     builder.setBusy(true)
     try {
       await rememberIfNeeded()
@@ -133,19 +128,10 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
     }
   }
 
-  async function onAddText(): Promise<void> {
-    if (!builder.current || builder.isSystem) return
-    try {
-      const result = await ElMessageBox.prompt(
-        t('training.builder.toolTextHint'),
-        t('training.builder.toolText'),
-        { confirmButtonText: t('training.builder.save'), cancelButtonText: t('common.cancel') }
-      )
-      const text = String(result.value || '').trim()
-      if (text) builder.addCurrentOverlay('text', { text })
-    } catch {
-      return
-    }
+  function onAddText(): void {
+    if (!builder.current) return
+    builder.wake()
+    builder.addCurrentOverlay('text', { text: '' })
   }
 
   async function previewMove(delta: number): Promise<void> {
@@ -154,7 +140,7 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
   }
 
   function onTopicsDrop(pos: { x: number; y: number }): void {
-    if (!builder.current || builder.isSystem) return
+    if (!builder.current) return
     builder.wake()
     const at = currentMarkStep(builder.current)
     builder.addCurrentOverlay('topics', {

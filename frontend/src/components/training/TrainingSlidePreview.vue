@@ -4,9 +4,9 @@ import { computed } from 'vue'
 import TrainingPageLiveFrame from '@/components/training/TrainingPageLiveFrame.vue'
 import TrainingStepMarks from '@/components/training/TrainingStepMarks.vue'
 import { useLanguage } from '@/composables'
+import { markStepCount, visibleMarkOverlays } from '@/composables/training/trainingMarkSteps'
 import { hasTrainingLivePreview } from '@/config/trainingPageLive'
 import { trainingPageDef } from '@/config/trainingPages'
-import { markStepCount, visibleMarkOverlays } from '@/composables/training/trainingMarkSteps'
 import type { TrainingCourseStep } from '@/types/training'
 
 const props = defineProps<{
@@ -20,7 +20,9 @@ const props = defineProps<{
 const { t } = useLanguage()
 
 const page = computed(() => trainingPageDef(props.step.page_key))
-const pageLabel = computed(() => (page.value ? t(page.value.labelKey) : t('training.builder.upload')))
+const pageLabel = computed(() =>
+  page.value ? t(page.value.labelKey) : t('training.builder.upload')
+)
 const diagramLabel = computed(() => {
   const type = props.step.diagram_type
   if (!type || props.step.page_key !== 'canvas') return ''
@@ -47,13 +49,13 @@ const marks = computed(() => visibleMarkOverlays(props.step, markStepCount(props
       class="slide-preview__thumb"
       :src="thumb || ''"
       alt=""
-    >
+    />
     <img
       v-else-if="hasMedia && !isVideo"
       class="slide-preview__media"
       :src="step.asset_url || ''"
       alt=""
-    >
+    />
     <video
       v-else-if="hasMedia && isVideo && !compact"
       class="slide-preview__media"
@@ -112,11 +114,23 @@ const marks = computed(() => visibleMarkOverlays(props.step, markStepCount(props
 .slide-preview--compact :deep(.step-marks) {
   z-index: 1;
 }
-.slide-preview--compact :deep(.step-marks__text) {
+.slide-preview--compact :deep(.text-bubble) {
+  border-radius: 0.4rem;
+  box-shadow: none;
+}
+.slide-preview--compact :deep(.text-bubble__face) {
+  padding: 0.08rem 0.12rem;
   font-size: 0.48rem;
+}
+.slide-preview--compact :deep(.text-bubble__bar),
+.slide-preview--compact :deep(.text-bubble__handle) {
+  display: none;
 }
 .slide-preview--compact :deep(.step-marks__emoji) {
   font-size: 0.7rem;
+}
+.slide-preview--compact :deep(.step-marks__role-handle) {
+  display: none;
 }
 .slide-preview--compact :deep(.topics-mark) {
   min-width: 3.6rem;

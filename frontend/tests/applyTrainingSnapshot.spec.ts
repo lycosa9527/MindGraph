@@ -4,6 +4,8 @@ import {
   applyTrainingNavigate,
   canSeeTrainingSpeakerNotes,
   chipTopicOverride,
+  liveLessonCoversMedia,
+  liveLessonStep,
   shouldForceNavigate,
   trainingCanvasLocation,
 } from '@/composables/training/applyTrainingSnapshot'
@@ -22,6 +24,37 @@ function snapshot(overrides: Partial<TrainingSnapshot> = {}): TrainingSnapshot {
     ...overrides,
   }
 }
+
+describe('liveLessonStep', () => {
+  it('paints page marks for teachers during live and paused play', () => {
+    const page = snapshot({
+      step: {
+        position: 0,
+        type: 'page',
+        page_key: 'canvas',
+        overlays: [{ kind: 'text', text: '看这里', x: 50, y: 40 }],
+      },
+    })
+    expect(liveLessonStep(page, {})?.overlays?.[0]?.kind).toBe('text')
+    expect(liveLessonCoversMedia(page.step)).toBe(false)
+    expect(liveLessonStep(snapshot({ state: 'paused', step: page.step }), {})).not.toBeNull()
+    expect(liveLessonStep(page, { skip: true })).toBeNull()
+    expect(liveLessonStep(page, { trainingRoute: true })).toBeNull()
+    expect(liveLessonStep(snapshot({ state: 'ended', step: page.step }), {})).toBeNull()
+  })
+
+  it('covers the viewport only when a slide or video has a file', () => {
+    expect(
+      liveLessonCoversMedia({
+        position: 0,
+        type: 'slide',
+        asset_url: '/api/training/assets/x',
+      })
+    ).toBe(true)
+    expect(liveLessonCoversMedia({ position: 0, type: 'slide' })).toBe(false)
+    expect(liveLessonCoversMedia({ position: 0, type: 'page', page_key: 'mindgraph' })).toBe(false)
+  })
+})
 
 describe('canSeeTrainingSpeakerNotes', () => {
   it('shows notes only to the session instructor', () => {
