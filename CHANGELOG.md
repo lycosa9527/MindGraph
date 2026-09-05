@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.39] - 2026-09-05
+
+> **Document Summary paste no longer fails ingest when `Pasted note.md` already exists in the knowledge space.**
+
+### Fixed
+
+- **文档总结 paste ingest** — Sources share one knowledge space, so `uq_space_filename` rejected a second `Pasted note.md` with HTTP 500. Ingest now suffixes a free name (`Pasted note_1.md`) and retries on a raced unique violation. Untitled Document Summary pastes use the package/diagram title instead of always `Pasted note`.
+
+### Tests
+
+- `tests/test_document_filenames.py` — unique suffix, VARCHAR clip, IntegrityError retry
+- `tests/test_doc_summary_ingest.py` — persist_extracted uses the unique name
+- `tests/test_knowledge_packages_api.py` — untitled doc_summary paste title
+
 ## [5.180.38] - 2026-09-04
 
 > **Workshop canvas collab keeps sibling order and two-peer adds in sync. MindMate seminar chat renders markdown and aligns your own bubbles by user id.**

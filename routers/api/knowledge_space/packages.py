@@ -388,7 +388,7 @@ async def ingest_text(
     if not package:
         raise HTTPException(status_code=404, detail="Package not found")
     try:
-        title = request.title or "Pasted note"
+        title = request.title or (package.name if package.source == "doc_summary" else None) or "Pasted note"
         if package.source == "doc_summary":
             ingest = DocSummaryIngestService(db, current_user.id)
             document = await ingest.ingest_text(

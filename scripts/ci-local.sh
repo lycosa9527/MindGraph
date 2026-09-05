@@ -227,7 +227,10 @@ run_backend() {
     tests/test_tencent_asr_v2.py \
     tests/test_tencent_asr_v2_errors.py \
     tests/test_token_refresh_rate_limit.py \
-    tests/test_log_user_context.py
+    tests/test_log_user_context.py \
+    tests/test_document_filenames.py \
+    tests/test_doc_summary_ingest.py \
+    tests/test_knowledge_packages_api.py
 }
 
 run_frontend() {
