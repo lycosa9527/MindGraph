@@ -39,15 +39,15 @@ export function isTrainingRoleId(value: string | undefined): boolean {
 }
 
 export function trainingRoleSrc(id: string): string {
-  return `/training/roles/${safeRoleId(id)}.webp`
+  return `/api/training/assets/roles/${safeRoleId(id)}.webp`
 }
 
 export function trainingRoleThumb(id: string): string {
-  return `/training/roles/${safeRoleId(id)}-thumb.webp`
+  return `/api/training/assets/roles/${safeRoleId(id)}-thumb.webp`
 }
 
 export function trainingRolePlaybackSrc(id: string): string {
-  return `/api/training/assets/roles/${safeRoleId(id)}.webp`
+  return trainingRoleSrc(id)
 }
 
 function safeRoleId(id: string): string {

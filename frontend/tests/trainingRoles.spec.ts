@@ -13,12 +13,14 @@ import {
 import type { TrainingStepOverlay } from '@/types/training'
 
 describe('trainingRoles', () => {
-  it('ships twenty role clips with public WebP urls', () => {
+  it('ships twenty role clips with COS playback urls', () => {
     expect(TRAINING_ROLES).toHaveLength(20)
     expect(isTrainingRoleId('11-clap')).toBe(true)
     expect(isTrainingRoleId('ghost')).toBe(false)
-    expect(trainingRoleSrc('11-clap')).toBe('/training/roles/11-clap.webp')
-    expect(trainingRoleThumb('11-clap')).toBe('/training/roles/11-clap-thumb.webp')
+    expect(trainingRoleSrc('11-clap')).toBe('/api/training/assets/roles/11-clap.webp')
+    expect(trainingRoleThumb('11-clap')).toBe(
+      '/api/training/assets/roles/11-clap-thumb.webp'
+    )
     expect(trainingRolePlaybackSrc('11-clap')).toBe(
       '/api/training/assets/roles/11-clap.webp'
     )
