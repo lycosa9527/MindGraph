@@ -129,8 +129,9 @@ async def test_production_csp_uses_nonce_when_request_state_has_nonce() -> None:
         with patch.object(middleware_module, "config") as mock_config:
             mock_config.debug = False
             with patch.object(middleware_module, "cos_showcase_enabled", return_value=False):
-                with patch("services.auth.tsec.csp.tsec_csp_enabled", return_value=False):
-                    result = await middleware_module.add_security_headers(request, _call_next)
+                with patch.object(middleware_module, "cos_training_enabled", return_value=False):
+                    with patch("services.auth.tsec.csp.tsec_csp_enabled", return_value=False):
+                        result = await middleware_module.add_security_headers(request, _call_next)
 
     csp = result.headers["Content-Security-Policy"]
     assert "script-src 'self' 'nonce-testnonce123'" in csp
@@ -398,6 +399,49 @@ def test_doc_summary_upload_body_size_limit_paths() -> None:
     assert resolver("/api/knowledge-space/packages/12/documents/upload") == limit
     assert limit > middleware_module.MAX_REQUEST_BODY_SIZE
     assert resolver("/api/doc-summary/packages/12/documents/ingest-text") == (middleware_module.MAX_REQUEST_BODY_SIZE)
+
+
+@pytest.mark.asyncio
+async def test_production_csp_allows_exact_cos_hosts_when_training_cos_on() -> None:
+    """Course Builder COS browser PUT requires the same bucket hosts as Showcase."""
+    request = MagicMock()
+    request.url.scheme = "https"
+    request.state = SimpleNamespace(csp_nonce="testnonce123")
+    response = MagicMock()
+    response.headers = {}
+    cos_hosts = (
+        "https://mindgraph-1356113246.cos.ap-beijing.myqcloud.com "
+        "https://mindgraph-1356113246.cos.ap-beijing.tencentcos.cn"
+    )
+
+    async def _call_next(_req):
+        return response
+
+    with patch.object(middleware_module, "is_https", return_value=False):
+        with patch.object(middleware_module, "config") as mock_config:
+            mock_config.debug = False
+            with patch.object(middleware_module, "cos_showcase_enabled", return_value=False):
+                with patch.object(middleware_module, "cos_training_enabled", return_value=True):
+                    with patch.object(
+                        middleware_module,
+                        "cos_browser_csp_sources",
+                        return_value=cos_hosts,
+                    ):
+                        with patch("services.auth.tsec.csp.tsec_csp_enabled", return_value=False):
+                            result = await middleware_module.add_security_headers(request, _call_next)
+
+    csp = result.headers["Content-Security-Policy"]
+    assert f"connect-src 'self' ws: wss: blob: {cos_hosts} " in csp
+    assert f"media-src 'self' blob: {cos_hosts};" in csp
+
+
+def test_training_asset_complete_body_size_limit_path() -> None:
+    """Course Builder complete uploads may exceed the default 5MB API body cap."""
+    resolver = middleware_module.max_request_body_size_for_path
+    limit = middleware_module.TRAINING_ASSET_MAX_BODY_SIZE
+    assert resolver("/api/training/assets/complete") == limit
+    assert limit > middleware_module.MAX_REQUEST_BODY_SIZE
+    assert resolver("/api/training/assets/init") == middleware_module.MAX_REQUEST_BODY_SIZE
 
 
 @pytest.mark.asyncio

@@ -43,11 +43,21 @@ describe('trainingBuilder store', () => {
     expect(store.selected).toBe(0)
   })
 
+  it('turns the current page into a slide when an image is attached', () => {
+    const store = useTrainingBuilderStore()
+    store.applyCourse(course())
+    store.setCurrentAsset('slide-1', '/api/training/assets/slide.png')
+    expect(store.current?.type).toBe('slide')
+    expect(store.current?.page_key).toBeNull()
+    expect(store.current?.asset_id).toBe('slide-1')
+    expect(store.thumbs[0]).toBe('/api/training/assets/slide.png')
+  })
+
   it('inserts image slides at the current index', () => {
     const store = useTrainingBuilderStore()
     store.applyCourse(course())
-    store.setSelected(0)
-    store.insertCreatedSteps(0, [
+    store.setSelected(1)
+    store.insertCreatedSteps(1, [
       {
         ...blankPageStep(0),
         type: 'slide',
@@ -56,9 +66,11 @@ describe('trainingBuilder store', () => {
       },
     ])
     expect(store.steps).toHaveLength(3)
-    expect(store.selected).toBe(0)
-    expect(store.steps[0].asset_id).toBe('a1')
-    expect(store.thumbs[0]).toBe('/api/training/assets/a.png')
+    expect(store.selected).toBe(1)
+    expect(store.steps[1].asset_id).toBe('a1')
+    expect(store.steps[1].type).toBe('slide')
+    expect(store.steps[2].type).toBe('page')
+    expect(store.thumbs[1]).toBe('/api/training/assets/a.png')
   })
 
   it('lets authors edit the seeded system course', () => {

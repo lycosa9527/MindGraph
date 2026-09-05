@@ -43,6 +43,18 @@ export function blankSlideStep(position: number): TrainingCourseStep {
   }
 }
 
+export function uploadedSlideSteps(
+  at: number,
+  uploaded: ReadonlyArray<{ id: string; url: string }>
+): TrainingCourseStep[] {
+  return uploaded.map((item, index) => {
+    const step = blankSlideStep(at + index)
+    step.asset_id = item.id
+    step.asset_url = item.url
+    return step
+  })
+}
+
 export function insertStepsAt(
   steps: TrainingCourseStep[],
   index: number,

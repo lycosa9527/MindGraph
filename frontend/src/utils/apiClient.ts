@@ -123,15 +123,19 @@ function handleUnauthorizedAfterFailedRefresh(): void {
  * @param options - Fetch options
  * @returns Promise<Response>
  */
+function requestHeaders(options: RequestInit): Record<string, string> {
+  const isForm = options.body instanceof FormData
+  const headers = mergeApiHeaders(isForm ? {} : { 'Content-Type': 'application/json' }, options)
+  if (isForm) {
+    delete headers['Content-Type']
+  }
+  return headers
+}
+
 export async function apiRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
   const url = endpoint.startsWith('/') ? endpoint : `${API_BASE}/${endpoint}`
 
-  const headers = mergeApiHeaders(
-    {
-      'Content-Type': 'application/json',
-    },
-    options
-  )
+  const headers = requestHeaders(options)
 
   const epochAtStart = getSessionRefreshEpoch()
   // Make the initial request
@@ -158,15 +162,9 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
     const refreshed = await ensureFreshSessionAfterAuthFailure(epochAtStart)
 
     if (refreshed) {
-      const retryHeaders = mergeApiHeaders(
-        {
-          'Content-Type': 'application/json',
-        },
-        options
-      )
       response = await fetch(url, {
         ...options,
-        headers: retryHeaders,
+        headers: requestHeaders(options),
         credentials: 'same-origin',
       })
     } else {

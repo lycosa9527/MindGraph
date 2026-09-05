@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.44] - 2026-09-05
+
+> **Course Builder can take exported PPT slide images as real lesson slides — upload inserts at the current filmstrip position.**
+
+### Fixed
+
+- **Slide image upload** — Completing an upload now posts the file as multipart (`apiUpload`). The previous JSON `Content-Type` dropped the bytes, so PPT screenshots never landed. Failures show a toast. Names without an extension still get a suffix from the MIME type.
+
+### Changed
+
+- **Insert at current slide** — Filmstrip **添加图片** and toolbar **图片** both insert a new `slide` step at the selected index and shift the rest down. They no longer overwrite the canvas or page under the cursor.
+- **PPT framing** — The builder stage letterboxes uploaded slide images (`object-fit: contain`), matching the live teacher overlay so intro slides are not cropped.
+
+### Tests
+
+- `frontend/tests/uploadTrainingFile.spec.ts`, `trainingBuilderStore.spec.ts`, `trainingCourses.spec.ts`
+- `tests/test_training_course_routes.py` (init without suffix, complete writes bytes)
+- `tests/test_training_storage_keys.py` (MIME suffix fallback)
+
 ## [5.180.43] - 2026-09-05
 
 > **Course Builder marks now reach teachers: speech-bubble text, classroom cat roles on COS, and the same overlays on live pages — not only PPT slides.**

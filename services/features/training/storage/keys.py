@@ -30,12 +30,35 @@ _COURSE_OBJECT_RE = re.compile(
 )
 
 
+MIME_SUFFIX = {
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/webp": ".webp",
+    "application/pdf": ".pdf",
+    "video/mp4": ".mp4",
+    "video/webm": ".webm",
+    "video/quicktime": ".mov",
+}
+
+
 def normalize_ext(suffix: str) -> str:
     """Return a dotted lowercase suffix or raise."""
     ext = suffix if suffix.startswith(".") else f".{suffix}"
     if not _EXT_SAFE.match(ext):
         raise ValueError(f"Invalid file suffix: {suffix}")
     return ext.lower()
+
+
+def suffix_for_upload(filename: str, content_type: str) -> str:
+    """Prefer the filename suffix; fall back to the declared MIME type."""
+    suffix = Path(filename).suffix
+    if suffix:
+        return normalize_ext(suffix)
+    mime = content_type.split(";")[0].strip().lower()
+    mapped = MIME_SUFFIX.get(mime)
+    if mapped is None:
+        raise ValueError(f"Invalid file suffix: {filename or content_type}")
+    return mapped
 
 
 def require_course_id(course_id: str) -> str:

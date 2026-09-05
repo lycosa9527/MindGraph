@@ -199,8 +199,11 @@ export const useTrainingBuilderStore = defineStore('trainingBuilder', () => {
     const step = current.value
     if (!step) return
     wake()
+    step.type = 'slide'
+    step.page_key = null
     step.asset_id = assetId
     step.asset_url = assetUrl
+    writeThumb(selected.value, assetUrl, '')
   }
 
   function applyCurrentPage(key: TrainingPageKey): void {

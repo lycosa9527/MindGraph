@@ -17,8 +17,10 @@ import {
   selectedIndexAfterRemove,
   stepSpotlight,
   trainingCourseWriteBody,
+  uploadedSlideSteps,
 } from '@/composables/training/trainingBuilderSteps'
 import {
+  addMarkStep,
   advancePlayCursor,
   canAdvancePlayCursor,
   currentMarkStep,
@@ -250,12 +252,14 @@ describe('training course playback', () => {
   it('inserts image slides at the current index and shifts the rest down', () => {
     const steps = [blankPageStep(0), blankPageStep(1), blankPageStep(2)]
     steps[2].focus_key = 'old-three'
-    const image = blankSlideStep(0)
-    image.asset_url = '/api/training/assets/courses/x/slides/a.png'
-    const at = insertStepsAt(steps, 2, [image])
+    const created = uploadedSlideSteps(2, [
+      { id: 'a1', url: '/api/training/assets/courses/x/slides/a.png' },
+    ])
+    const at = insertStepsAt(steps, 2, created)
     expect(at).toBe(2)
     expect(steps.map((step) => step.type)).toEqual(['page', 'page', 'slide', 'page'])
     expect(steps.map((step) => step.position)).toEqual([0, 1, 2, 3])
+    expect(steps[2]?.asset_id).toBe('a1')
     expect(steps[2]?.asset_url).toContain('slides/a.png')
     expect(steps[3]?.focus_key).toBe('old-three')
   })
@@ -312,9 +316,9 @@ describe('training course playback', () => {
   it('places a role overlay that can sit on the page', () => {
     const step = blankPageStep(0)
     addOverlay(step, 'role', { role: '11-clap' })
-    expect(step.mark_step).toBe(2)
+    expect(step.mark_step).toBe(1)
     expect(visibleMarkOverlays(step)).toMatchObject([
-      { kind: 'role', role: '11-clap', x: 82, y: 74, w: 18, step: 2 },
+      { kind: 'role', role: '11-clap', x: 82, y: 74, w: 18, step: 1 },
     ])
     addOverlay(step, 'role', { role: 'not-a-role' })
     expect(visibleMarkOverlays(step)[1]).toMatchObject({ kind: 'role', role: '01-look-here' })
@@ -323,44 +327,60 @@ describe('training course playback', () => {
   it('places a spotlight overlay and keeps selection after deleting a slide', () => {
     const step = blankPageStep(0)
     addOverlay(step, 'spotlight')
-    expect(step.mark_step).toBe(2)
+    expect(step.mark_step).toBe(1)
     expect(stepSpotlight(step)).toMatchObject({
       kind: 'spotlight',
       x: 50,
       y: 50,
       r: 1,
       shape: 'circle',
-      step: 2,
+      step: 1,
     })
     expect(selectedIndexAfterRemove(2, 0, 3)).toBe(1)
     expect(selectedIndexAfterRemove(0, 0, 2)).toBe(0)
     expect(selectedIndexAfterRemove(1, 1, 1)).toBe(0)
   })
 
-  it('builds marks like PowerPoint clicks: first stage empty, then each mark appears', () => {
+  it('keeps spotlight role and text on the current step until a step is added by hand', () => {
     const step = blankPageStep(0)
     expect(visibleMarkOverlays(step)).toEqual([])
     addOverlay(step, 'spotlight')
+    addOverlay(step, 'role', { role: '11-clap' })
     addOverlay(step, 'text', { text: 'hint' })
-    addOverlay(step, 'arrow')
-    expect(currentMarkStep(step)).toBe(4)
-    expect(visibleMarkOverlays({ ...step, mark_step: 1 })).toEqual([])
-    expect(visibleMarkOverlays({ ...step, mark_step: 2 }).map((row) => row.kind)).toEqual([
+    expect(currentMarkStep(step)).toBe(1)
+    expect(step.mark_steps).toBe(1)
+    expect(visibleMarkOverlays(step).map((row) => row.kind)).toEqual([
       'spotlight',
-    ])
-    expect(visibleMarkOverlays({ ...step, mark_step: 3 }).map((row) => row.kind)).toEqual([
-      'spotlight',
+      'role',
       'text',
     ])
-    expect(visibleMarkOverlays(step).map((row) => row.kind)).toEqual(['spotlight', 'text', 'arrow'])
+    addMarkStep(step)
+    addOverlay(step, 'arrow')
+    expect(currentMarkStep(step)).toBe(2)
+    expect(visibleMarkOverlays({ ...step, mark_step: 1 }).map((row) => row.kind)).toEqual([
+      'spotlight',
+      'role',
+      'text',
+    ])
+    expect(visibleMarkOverlays(step).map((row) => row.kind)).toEqual([
+      'spotlight',
+      'role',
+      'text',
+      'arrow',
+    ])
     removeMarkStep(step)
-    expect(step.mark_step).toBe(3)
-    expect(visibleMarkOverlays(step).map((row) => row.kind)).toEqual(['spotlight', 'text'])
+    expect(step.mark_step).toBe(1)
+    expect(visibleMarkOverlays(step).map((row) => row.kind)).toEqual([
+      'spotlight',
+      'role',
+      'text',
+    ])
   })
 
   it('advances preview like a deck: mark clicks first, then the next slide', () => {
     const first = blankPageStep(0)
     addOverlay(first, 'text', { text: 'a' })
+    addMarkStep(first)
     addOverlay(first, 'text', { text: 'b' })
     first.mark_step = 1
     const second = blankPageStep(1)
@@ -368,11 +388,9 @@ describe('training course playback', () => {
     expect(canAdvancePlayCursor(deck, 0, 1)).toBe(true)
     expect(advancePlayCursor(deck, 0, 1)).toBe(0)
     expect(currentMarkStep(first)).toBe(2)
-    expect(advancePlayCursor(deck, 0, 1)).toBe(0)
-    expect(currentMarkStep(first)).toBe(3)
     expect(advancePlayCursor(deck, 0, 1)).toBe(1)
     expect(currentMarkStep(second)).toBe(1)
     expect(advancePlayCursor(deck, 1, -1)).toBe(0)
-    expect(currentMarkStep(first)).toBe(3)
+    expect(currentMarkStep(first)).toBe(2)
   })
 })

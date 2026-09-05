@@ -2,18 +2,21 @@
 
 from __future__ import annotations
 
+from io import BytesIO
 from types import SimpleNamespace
 from typing import cast
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
+from starlette.datastructures import Headers
 
 from models.domain.auth import User
 from models.domain.training import TrainingCourseAsset
 from routers.api.training_asset_routes import (
     AssetInitBody,
     can_read_training_asset,
+    complete_training_asset,
     init_training_asset,
 )
 from routers.api.training_course_routes import (
@@ -63,6 +66,82 @@ async def test_teacher_cannot_list_courses() -> None:
     with pytest.raises(HTTPException) as exc:
         await list_training_courses(locale="zh", current_user=_user("teacher"))
     assert exc.value.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_init_upload_accepts_filename_without_suffix() -> None:
+    """Browser camera/blob files often have no extension."""
+    course = SimpleNamespace(id=DOUBLE_BUBBLE_COURSE_ID)
+    db = AsyncMock()
+    with (
+        patch("routers.api.training_asset_routes.can_lead_any_training", return_value=True),
+        patch("routers.api.training_asset_routes.system_rls_session", return_value=_rls(db)),
+        patch(
+            "routers.api.training_asset_routes.get_course",
+            new=AsyncMock(return_value=course),
+        ),
+        patch("routers.api.training_asset_routes.save_upload_grant", new=AsyncMock()),
+        patch("routers.api.training_asset_routes.create_presigned_put", return_value=None),
+    ):
+        body = await init_training_asset(
+            AssetInitBody(
+                course_id=DOUBLE_BUBBLE_COURSE_ID,
+                role="slide",
+                filename="blob",
+                content_type="image/png",
+                size_bytes=12,
+            ),
+            current_user=_user("superadmin", user_id=1),
+        )
+    assert body["key"].endswith(".png")
+    assert "/slides/" in body["key"]
+
+
+@pytest.mark.asyncio
+async def test_complete_upload_stores_bytes_and_returns_url() -> None:
+    """Complete writes the file through the API and binds it to the course."""
+    logical_key = f"courses/{DOUBLE_BUBBLE_COURSE_ID}/slides/aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee.png"
+    upload = UploadFile(
+        filename="slide.png",
+        file=BytesIO(b"\x89PNG\r\n\x1a\n"),
+        headers=Headers({"content-type": "image/png"}),
+    )
+    asset = SimpleNamespace(id="asset-1", role="slide", logical_key=logical_key)
+    course = SimpleNamespace(id=DOUBLE_BUBBLE_COURSE_ID)
+    db = AsyncMock()
+    with (
+        patch("routers.api.training_asset_routes.can_lead_any_training", return_value=True),
+        patch(
+            "routers.api.training_asset_routes.pop_upload_grant",
+            new=AsyncMock(
+                return_value={
+                    "key": logical_key,
+                    "course_id": DOUBLE_BUBBLE_COURSE_ID,
+                    "content_type": "image/png",
+                    "max_bytes": 20 * 1024 * 1024,
+                    "role": "slide",
+                }
+            ),
+        ),
+        patch("routers.api.training_asset_routes.put_bytes", new=AsyncMock()) as put,
+        patch("routers.api.training_asset_routes.system_rls_session", return_value=_rls(db)),
+        patch(
+            "routers.api.training_asset_routes.get_course",
+            new=AsyncMock(return_value=course),
+        ),
+        patch("routers.api.training_asset_routes.add_asset", new=AsyncMock(return_value=asset)),
+    ):
+        body = await complete_training_asset(
+            course_id=DOUBLE_BUBBLE_COURSE_ID,
+            role="slide",
+            key=logical_key,
+            asset_id="asset-1",
+            file=upload,
+            current_user=_user("superadmin", user_id=1),
+        )
+    put.assert_awaited()
+    assert body["id"] == "asset-1"
+    assert body["url"] == f"/api/training/assets/{logical_key}"
 
 
 @pytest.mark.asyncio

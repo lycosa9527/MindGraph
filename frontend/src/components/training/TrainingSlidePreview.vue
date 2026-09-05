@@ -109,7 +109,8 @@ const marks = computed(() => visibleMarkOverlays(props.step, markStepCount(props
 .slide-preview__media {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  background: #111827;
 }
 .slide-preview--compact :deep(.step-marks) {
   z-index: 1;

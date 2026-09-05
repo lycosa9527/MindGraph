@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import uuid
-from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
@@ -37,8 +36,8 @@ from services.features.training.storage.keys import (
     build_object_key,
     course_id_from_key,
     is_scoped_course_object_key,
-    normalize_ext,
     resolve_local_safe,
+    suffix_for_upload,
     training_public_asset_url,
 )
 from utils.auth import get_current_user
@@ -55,11 +54,6 @@ class AssetInitBody(BaseModel):
     filename: str = Field(min_length=1, max_length=255)
     content_type: str = Field(min_length=1, max_length=128)
     size_bytes: int = Field(ge=1)
-
-
-def _suffix_from_filename(filename: str) -> str:
-    suffix = Path(filename).suffix
-    return normalize_ext(suffix)
 
 
 def _require_author(user: User) -> None:
@@ -82,7 +76,7 @@ async def init_training_asset(
     if body.size_bytes > ROLE_MAX_BYTES[body.role]:
         raise HTTPException(status_code=400, detail="File is too large")
     try:
-        suffix = _suffix_from_filename(body.filename)
+        suffix = suffix_for_upload(body.filename, body.content_type)
         asset_id = str(uuid.uuid4())
         logical_key = build_object_key(body.course_id, body.role, asset_id, suffix)
     except ValueError as exc:

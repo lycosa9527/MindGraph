@@ -5,8 +5,8 @@ export const TRAINING_MARK_STEPS_MAX = 8
 
 export function overlayMarkStep(overlay: TrainingStepOverlay): number {
   const raw = overlay.step
-  if (typeof raw !== 'number' || !Number.isFinite(raw)) return 2
-  return Math.min(TRAINING_MARK_STEPS_MAX, Math.max(2, Math.round(raw)))
+  if (typeof raw !== 'number' || !Number.isFinite(raw)) return TRAINING_MARK_STEPS_MIN
+  return Math.min(TRAINING_MARK_STEPS_MAX, Math.max(TRAINING_MARK_STEPS_MIN, Math.round(raw)))
 }
 
 export function markStepCount(step: TrainingCourseStep): number {
@@ -57,18 +57,7 @@ export function removeMarkStep(step: TrainingCourseStep): void {
 }
 
 export function allocateOverlayStep(step: TrainingCourseStep): number {
-  const current = currentMarkStep(step)
-  const count = markStepCount(step)
-  if (current <= 1) {
-    addMarkStep(step)
-    return currentMarkStep(step)
-  }
-  const occupied = (step.overlays || []).some((overlay) => overlayMarkStep(overlay) === current)
-  if (occupied && current === count && count < TRAINING_MARK_STEPS_MAX) {
-    addMarkStep(step)
-    return currentMarkStep(step)
-  }
-  return current
+  return currentMarkStep(step)
 }
 
 export function visibleMarkOverlays(
@@ -76,7 +65,6 @@ export function visibleMarkOverlays(
   at?: number
 ): TrainingStepOverlay[] {
   const current = at ?? currentMarkStep(step)
-  if (current <= 1) return []
   const due = (step.overlays || []).filter((overlay) => overlayMarkStep(overlay) <= current)
   let latestSpot: TrainingStepOverlay | undefined
   for (const overlay of due) {

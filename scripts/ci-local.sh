@@ -291,7 +291,8 @@ run_frontend() {
     tests/trainingCourses.spec.ts tests/trainingOverlayDrag.spec.ts \
     tests/presentationSpotlight.spec.ts tests/applyTrainingUiTarget.spec.ts \
     tests/trainingStageThumb.spec.ts tests/trainingBuilderStore.spec.ts \
-    tests/trainingRoles.spec.ts tests/trainingTextBubbles.spec.ts
+    tests/trainingRoles.spec.ts tests/trainingTextBubbles.spec.ts \
+    tests/uploadTrainingFile.spec.ts
 }
 
 run_chrome_extension() {

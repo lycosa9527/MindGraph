@@ -7,7 +7,7 @@ import type {
   TrainingRosterSummary,
   TrainingSnapshot,
 } from '@/types/training'
-import { apiRequest, parseApiErrorDetail } from '@/utils/apiClient'
+import { apiRequest, apiUpload, parseApiErrorDetail } from '@/utils/apiClient'
 import { TRAINING_RAIL_PAGE_SIZE } from '@/utils/trainingClient'
 
 const API = '/api/training'
@@ -306,7 +306,10 @@ export async function initTrainingAsset(body: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  if (!res.ok) throw new Error('init')
+  if (!res.ok) {
+    const payload: unknown = await res.json().catch(() => null)
+    throw new Error(parseApiErrorDetail(payload, 'init'))
+  }
   return readJson(res)
 }
 
@@ -325,7 +328,10 @@ export async function completeTrainingAsset(body: {
   form.append('asset_id', body.asset_id)
   if (body.filename) form.append('filename', body.filename)
   if (body.file) form.append('file', body.file)
-  const res = await apiRequest(`${API}/assets/complete`, { method: 'POST', body: form })
-  if (!res.ok) throw new Error('complete')
+  const res = await apiUpload(`${API}/assets/complete`, form)
+  if (!res.ok) {
+    const payload: unknown = await res.json().catch(() => null)
+    throw new Error(parseApiErrorDetail(payload, 'complete'))
+  }
   return readJson(res)
 }

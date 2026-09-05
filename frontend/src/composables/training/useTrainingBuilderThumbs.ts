@@ -24,7 +24,12 @@ export function useTrainingBuilderThumbs(): {
   let timer = 0
   let generation = 0
 
-  async function persistThumbAt(index: number, url: string, pageKey: string): Promise<void> {
+  async function persistThumbAt(
+    index: number,
+    url: string,
+    pageKey: string,
+    ignoreError = true
+  ): Promise<void> {
     const step = builder.steps[index]
     if (!builder.courseId || !step || isTrainingMediaStep(step)) return
     if (isPersistedTrainingThumb(url)) {
@@ -37,8 +42,9 @@ export function useTrainingBuilderThumbs(): {
       step.thumb_id = uploaded.id
       step.thumb_url = uploaded.url
       builder.writeThumb(index, uploaded.url, pageKey)
-    } catch {
-      return
+    } catch (error) {
+      if (ignoreError) return
+      throw error
     }
   }
 
@@ -78,7 +84,8 @@ export function useTrainingBuilderThumbs(): {
       await persistThumbAt(
         index,
         url,
-        builder.thumbKeys[index] || trainingStepPageKey(builder.steps[index])
+        builder.thumbKeys[index] || trainingStepPageKey(builder.steps[index]),
+        false
       )
     }
   }

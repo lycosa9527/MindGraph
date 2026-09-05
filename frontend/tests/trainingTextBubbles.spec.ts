@@ -39,7 +39,7 @@ describe('trainingTextBubbles', () => {
       h: TRAINING_TEXT_HEIGHT_DEFAULT,
       size: TRAINING_TEXT_SIZE_DEFAULT,
       text: '',
-      step: 2,
+      step: 1,
     })
   })
 

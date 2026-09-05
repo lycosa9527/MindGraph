@@ -46,6 +46,7 @@ from services.infrastructure.http.security_csp import (
     production_content_security_policy,
     word_addin_content_security_policy,
 )
+from services.features.training.storage.backend import cos_training_enabled
 from services.showcase.storage import cos_showcase_enabled
 from services.utils.tencent_cos_client import cos_browser_csp_sources
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR, resolve_authenticated_user_optional
@@ -71,6 +72,8 @@ SHOWCASE_MAX_BODY_SIZE = 105 * 1024 * 1024  # 100MB + multipart overhead
 WORKSHEET_DOCX_MAX_BODY_SIZE = 22 * 1024 * 1024
 # Document Summary / Knowledge Space file upload: 20MB file + multipart overhead
 DOC_SUMMARY_UPLOAD_MAX_BODY_SIZE = 22 * 1024 * 1024
+# Course Builder assets: video/media 100MB + multipart overhead (bytes go API → COS)
+TRAINING_ASSET_MAX_BODY_SIZE = 105 * 1024 * 1024
 
 
 def _is_document_upload_path(path: str) -> bool:
@@ -80,10 +83,17 @@ def _is_document_upload_path(path: str) -> bool:
     return path.startswith("/api/doc-summary/packages/") or path.startswith("/api/knowledge-space/packages/")
 
 
+def _browser_cos_connect_enabled() -> bool:
+    """True when the browser may PUT/GET private COS (Showcase or training)."""
+    return cos_showcase_enabled() or cos_training_enabled()
+
+
 def max_request_body_size_for_path(path: str) -> int:
     """Per-route body limit; shrink Showcase when COS mode (no large multipart)."""
     if path == "/api/export_worksheet_docx":
         return WORKSHEET_DOCX_MAX_BODY_SIZE
+    if path == "/api/training/assets/complete":
+        return TRAINING_ASSET_MAX_BODY_SIZE
     if _is_document_upload_path(path):
         return DOC_SUMMARY_UPLOAD_MAX_BODY_SIZE
     showcase_paths = (
@@ -307,8 +317,8 @@ async def add_security_headers(request: Request, call_next):
       /public worker and does not need blob:).
     - ws:/wss:: Required for Kitty Agent WebSocket connections
     - data: URIs: Required for canvas-to-image conversions
-    - connect-src / media-src: when Showcase COS is on, allow the configured
-      bucket virtual-host endpoints for browser→COS presigned PUT / media
+    - connect-src / media-src: when Showcase or training COS is on, allow the
+      configured bucket virtual-host endpoints for browser→COS presigned PUT / media
     - DEBUG mode: Allows Swagger UI CDN (cdn.jsdelivr.net) for /docs endpoint
 
     Reviewed: 2025-10-26 - All directives verified against actual codebase
@@ -337,10 +347,10 @@ async def add_security_headers(request: Request, call_next):
     # Tailored specifically for MindGraph's architecture
     # In DEBUG mode, allow Swagger UI CDN for /docs and /redoc endpoints
     frame_ancestors = "'self'" if same_origin_frame else "'none'"
-    # Direct browser PUT to private COS (Showcase). Omit when COS is off so
-    # connect-src stays least-privilege. SPA serve strips Vite CSP <meta> so
-    # this header is the sole document policy.
-    cos_connect = cos_browser_csp_sources() if cos_showcase_enabled() else ""
+    # Direct browser PUT to private COS (Showcase / Course Builder). Omit when
+    # COS is off so connect-src stays least-privilege. SPA serve strips Vite
+    # CSP <meta> so this header is the sole document policy.
+    cos_connect = cos_browser_csp_sources() if _browser_cos_connect_enabled() else ""
     cos_connect_clause = f" {cos_connect}" if cos_connect else ""
     media_src = f"media-src 'self' blob:{cos_connect_clause}; " if cos_connect else "media-src 'self' blob:; "
     if is_word_addin:

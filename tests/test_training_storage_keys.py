@@ -16,8 +16,17 @@ from services.features.training.storage.keys import (
     course_folder,
     course_id_from_key,
     is_scoped_course_object_key,
+    suffix_for_upload,
     training_public_asset_url,
 )
+
+
+def test_suffix_for_upload_falls_back_to_content_type() -> None:
+    """Camera/blob files often have no extension; MIME still yields a key suffix."""
+    assert suffix_for_upload("slide.PNG", "image/jpeg") == ".png"
+    assert suffix_for_upload("blob", "image/png") == ".png"
+    with pytest.raises(ValueError, match="suffix"):
+        suffix_for_upload("blob", "application/octet-stream")
 
 
 def test_course_folder_and_cover_key() -> None:

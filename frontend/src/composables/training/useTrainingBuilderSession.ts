@@ -4,15 +4,14 @@ import { useRoute } from 'vue-router'
 import { useLanguage, useNotifications } from '@/composables'
 import { applyTrainingUiTarget } from '@/composables/training/applyTrainingUiTarget'
 import {
-  blankSlideStep,
   trainingCourseWriteBody,
+  uploadedSlideSteps,
 } from '@/composables/training/trainingBuilderSteps'
 import { currentMarkStep } from '@/composables/training/trainingMarkSteps'
 import { uploadTrainingFile } from '@/composables/training/uploadTrainingFile'
 import { useTrainingAuthoringBind } from '@/composables/training/useTrainingAuthoringBind'
 import { useTrainingBuilderThumbs } from '@/composables/training/useTrainingBuilderThumbs'
 import { useTrainingBuilderStore } from '@/stores/trainingBuilder'
-import type { TrainingCourseStep } from '@/types/training'
 import { fetchTrainingCourse, saveTrainingCourse } from '@/utils/trainingApi'
 
 export type TrainingBuilderSessionApi = {
@@ -76,14 +75,29 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
     builder.removeStepAt(index)
   }
 
+  function uploadFailedMessage(error: unknown): string {
+    const detail = error instanceof Error ? error.message : ''
+    if (!detail || detail === 'init' || detail === 'complete' || detail === 'empty') {
+      return t('training.builder.uploadFailed')
+    }
+    return detail
+  }
+
   async function onUpload(role: 'cover' | 'slide', file: File | undefined): Promise<void> {
     if (!file) return
-    const uploaded = await uploadTrainingFile(builder.courseId, role, file)
-    if (role === 'cover') {
-      notify.success(t('training.builder.saved'))
+    if (role === 'slide') {
+      await addImageSlides([file])
       return
     }
-    builder.setCurrentAsset(uploaded.id, uploaded.url)
+    builder.setBusy(true)
+    try {
+      await uploadTrainingFile(builder.courseId, role, file)
+      notify.success(t('training.builder.saved'))
+    } catch (error) {
+      notify.error(uploadFailedMessage(error))
+    } finally {
+      builder.setBusy(false)
+    }
   }
 
   async function addImageSlides(files: File[]): Promise<void> {
@@ -92,17 +106,13 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
     try {
       await rememberIfNeeded()
       const at = builder.selected
-      const created: TrainingCourseStep[] = []
+      const uploaded: Array<{ id: string; url: string }> = []
       for (const file of files) {
-        const uploaded = await uploadTrainingFile(builder.courseId, 'slide', file)
-        const step = blankSlideStep(at + created.length)
-        step.asset_id = uploaded.id
-        step.asset_url = uploaded.url
-        created.push(step)
+        uploaded.push(await uploadTrainingFile(builder.courseId, 'slide', file))
       }
-      builder.insertCreatedSteps(at, created)
-    } catch {
-      notify.error(t('training.builder.uploadFailed'))
+      builder.insertCreatedSteps(at, uploadedSlideSteps(at, uploaded))
+    } catch (error) {
+      notify.error(uploadFailedMessage(error))
     } finally {
       builder.setBusy(false)
     }
