@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MINDGRAPH_HEADLESS_EXPORT_KEY } from '@/utils/headlessExportSession'
 import { resetOfficeEmbedForTests } from '@/utils/officeEmbed'
 import {
+  emptyTrainingSnapshot,
   isTrainingOwnerHeartbeat,
   isTrainingRailVisible,
   shouldSkipTrainingFollow,
@@ -37,6 +38,15 @@ describe('trainingClient', () => {
     expect(isTrainingRailVisible(false, true)).toBe(false)
     expect(isTrainingRailVisible(true, true)).toBe(true)
     expect(isTrainingRailVisible(true, false)).toBe(false)
+  })
+
+  it('builds an empty command snapshot', () => {
+    expect(emptyTrainingSnapshot()).toMatchObject({
+      state: 'none',
+      session_id: null,
+      org_id: null,
+      seq: 0,
+    })
   })
 
   it('heartbeats only the hosting instructor', () => {

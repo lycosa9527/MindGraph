@@ -201,14 +201,16 @@ async def session_heartbeat(
     org_id: int = Query(...),
     current_user: User = Depends(get_current_user),
 ):
-    """Keep the instructor lock alive."""
+    """Keep the instructor lock alive, or return the current org snapshot."""
     await _require_leader(current_user, org_id)
     session = await get_session(org_id)
     if session is None or str(session.get("session_id")) != session_id:
-        raise HTTPException(status_code=404, detail="Session not found")
+        return _snapshot(session, current_user)
     try:
         updated = await heartbeat(org_id, int(current_user.id))
     except TrainingSessionError as exc:
+        if exc.code == "not_owner":
+            return _snapshot(session, current_user)
         raise _http_for_session_error(exc) from exc
     return _snapshot(updated, current_user)
 

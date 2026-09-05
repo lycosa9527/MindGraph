@@ -1,8 +1,27 @@
+import type { TrainingSnapshot } from '@/types/training'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import { isOfficeEmbedDesktop } from '@/utils/officeEmbed'
 
 export const TRAINING_RAIL_PAGE_SIZE = 50
 export const TRAINING_RAIL_WINDOW = 50
+
+export function emptyTrainingSnapshot(): TrainingSnapshot {
+  return {
+    state: 'none',
+    session_id: null,
+    org_id: null,
+    seq: 0,
+    diagram_type: null,
+    topic_options: [],
+    instructor_id: null,
+    instructor_name: null,
+    course_id: null,
+    step_index: 0,
+    step_count: 0,
+    step: null,
+    pull_users: true,
+  }
+}
 
 export function shouldSkipTrainingFollow(
   pathname = typeof window === 'undefined' ? '' : window.location.pathname

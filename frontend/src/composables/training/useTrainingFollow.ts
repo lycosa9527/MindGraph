@@ -82,6 +82,10 @@ export function useTrainingFollow(): void {
     ) {
       return
     }
+    if (applied.state !== 'live') {
+      training.markApplied(applied.seq)
+      return
+    }
     if (shouldForceNavigate(applied, training.lastAppliedSeq)) {
       const ok = await applyTrainingNavigate(router, route.path, applied)
       const step = applied.step

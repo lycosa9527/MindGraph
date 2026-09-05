@@ -8,10 +8,12 @@ import {
   liveLessonCoversMedia,
   liveLessonStep,
   shouldAcceptTrainingSnapshot,
+  shouldBypassTrainingLeaveConfirm,
   shouldForceNavigate,
   teachersSeeTrainingBanner,
   trainingCanvasLocation,
   trainingFollowCursorResets,
+  trainingSteerMode,
 } from '@/composables/training/applyTrainingSnapshot'
 import type { TrainingSnapshot } from '@/types/training'
 
@@ -37,6 +39,8 @@ describe('armed room', () => {
     expect(isTrainingRoomArmed(snapshot({ course_id: 'c1' }))).toBe(false)
     expect(teachersSeeTrainingBanner(snapshot({ course_id: 'c1' }))).toBe(true)
     expect(shouldForceNavigate(armed, 0)).toBe(false)
+    expect(trainingSteerMode(armed)).toBe('free')
+    expect(trainingSteerMode(snapshot({ course_id: 'c1', pull_users: true }))).toBe('pull')
   })
 })
 
@@ -125,6 +129,12 @@ describe('shouldForceNavigate', () => {
 
   it('does not force-nav while paused', () => {
     expect(shouldForceNavigate(snapshot({ state: 'paused', seq: 9 }), 4)).toBe(false)
+  })
+
+  it('does not force-nav after the session ends', () => {
+    expect(shouldForceNavigate(snapshot({ state: 'ended', seq: 9 }), 4)).toBe(false)
+    expect(shouldBypassTrainingLeaveConfirm('ended')).toBe(true)
+    expect(shouldBypassTrainingLeaveConfirm('none')).toBe(false)
   })
 
   it('does not force-nav while the instructor released the room', () => {

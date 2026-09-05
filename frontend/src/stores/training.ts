@@ -32,25 +32,9 @@ import {
   stepTrainingCourse,
   takeoverTraining,
 } from '@/utils/trainingApi'
-import { TRAINING_RAIL_PAGE_SIZE } from '@/utils/trainingClient'
+import { emptyTrainingSnapshot, TRAINING_RAIL_PAGE_SIZE } from '@/utils/trainingClient'
 
 const STEER_GAP_MS = 550
-
-const emptySnapshot = (): TrainingSnapshot => ({
-  state: 'none',
-  session_id: null,
-  org_id: null,
-  seq: 0,
-  diagram_type: null,
-  topic_options: [],
-  instructor_id: null,
-  instructor_name: null,
-  course_id: null,
-  step_index: 0,
-  step_count: 0,
-  step: null,
-  pull_users: true,
-})
 
 const emptyRosterSummary = (): TrainingRosterSummary => ({
   online: 0,
@@ -73,7 +57,7 @@ export type TrainingStartCode =
   | 'failed'
 
 export const useTrainingStore = defineStore('training', () => {
-  const snapshot = ref<TrainingSnapshot>(emptySnapshot())
+  const snapshot = ref<TrainingSnapshot>(emptyTrainingSnapshot())
   const lastAppliedSeq = ref(0)
   const commandEtag = ref<string | null>(null)
   const pendingChip = ref<TrainingTopicOption | null>(null)
@@ -299,7 +283,7 @@ export const useTrainingStore = defineStore('training', () => {
   }
 
   function reset(): void {
-    snapshot.value = emptySnapshot()
+    snapshot.value = emptyTrainingSnapshot()
     lastAppliedSeq.value = 0
     commandEtag.value = null
     pendingChip.value = null

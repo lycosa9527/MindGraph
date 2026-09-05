@@ -1,3 +1,5 @@
+import { isMobileRoutePath } from '@/utils/mobileRouteRedirect'
+
 export type TrainingPageKey =
   | 'auth'
   | 'mindgraph'
@@ -152,5 +154,5 @@ export function trainingPagePath(
 ): string | null {
   const page = trainingPageDef(key)
   if (!page) return null
-  return routePath.startsWith('/m') ? page.mobilePath : page.path
+  return isMobileRoutePath(routePath) ? page.mobilePath : page.path
 }

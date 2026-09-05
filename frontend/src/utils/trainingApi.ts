@@ -8,7 +8,7 @@ import type {
   TrainingSnapshot,
 } from '@/types/training'
 import { apiRequest, apiUpload, parseApiErrorDetail } from '@/utils/apiClient'
-import { TRAINING_RAIL_PAGE_SIZE } from '@/utils/trainingClient'
+import { emptyTrainingSnapshot, TRAINING_RAIL_PAGE_SIZE } from '@/utils/trainingClient'
 
 const API = '/api/training'
 
@@ -97,12 +97,22 @@ export async function fetchTrainingCommand(
   return { snapshot: await readJson<TrainingSnapshot>(res), etag: nextTag, notModified: false }
 }
 
-export async function postTrainingHeartbeat(sessionId: string, orgId: number): Promise<void> {
+export async function postTrainingHeartbeat(
+  sessionId: string,
+  orgId: number
+): Promise<TrainingSnapshot> {
   const res = await apiRequest(
     `${API}/sessions/${encodeURIComponent(sessionId)}/heartbeat?org_id=${orgId}`,
     { method: 'POST' }
   )
-  if (!res.ok) throw new Error('heartbeat')
+  if (res.status === 404 || res.status === 403) {
+    return emptyTrainingSnapshot()
+  }
+  if (!res.ok) {
+    const body: unknown = await res.json().catch(() => null)
+    throw new TrainingApiError(res.status, detailCode(body), 'heartbeat')
+  }
+  return readJson(res)
 }
 
 export async function pauseTraining(sessionId: string, orgId: number): Promise<TrainingSnapshot> {

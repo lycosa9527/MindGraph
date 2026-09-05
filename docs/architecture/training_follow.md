@@ -34,11 +34,11 @@ Course Builder is `/training/builder`. Each slide picks a teacher-facing app pag
 
 ## Live instructor pad
 
-`TrainingInstructorPad` mounts in `App.vue` (hidden on `/training/builder`). After Start+play, the instructor is routed to the same page teachers see. When they host and a course is playing, a bottom-right pad (above the lesson overlay) shows 上一页 / 下一页 / 停止 / 自由.
+`TrainingInstructorPad` mounts in `App.vue` (hidden on `/training/builder`). After Start+play, the instructor is routed to the same page teachers see. When they host and a course is playing, a bottom-right pad (above the lesson overlay) shows 上一页 / 下一页 / 停止 and a **自由 / 拉取** segmented control. The pad tracks the visual viewport (and shifts left of the friends rail) so all four controls stay on screen; short windows switch to a two-row layout.
 
 - Prev/next walk remaining mark clicks on the current slide, then change slides. The next slide starts at mark 1; the previous slide ends at its last mark (`services/features/training/play_advance.py`).
-- 停止 ends the Redis session.
-- 自由 keeps the session **live** but sets snapshot `pull_users: false` so teachers stay on the page they are on and may work. Next, or 自由 again, pulls them back (`pull_users: true`).
+- 停止 ends the Redis session. Clients stay on the current page; follow does not navigate or open/close modals, and the canvas unsaved-leave prompt is skipped.
+- **自由** keeps the session live with `pull_users: false` so teachers stay put and may work. **拉取** sets `pull_users: true` and force-navs everyone to the current slide (also used by Next / play). Re-tapping 拉取 pulls again.
 - Builder preview uses the same pad locally (`advancePlayCursor`) without hitting Redis. The notes bar shifts left (`training-notes--pad`) so it does not sit under the pad.
 
 ## Proxy

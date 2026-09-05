@@ -99,7 +99,16 @@ describe('training course playback', () => {
     })
     expect(shouldForceNavigate(landing, 4)).toBe(true)
     expect(trainingStepLocation('/library', landing)).toEqual({ path: '/mindgraph' })
+    expect(trainingStepLocation('/mindgraph', landing)).toEqual({ path: '/mindgraph' })
+    expect(trainingStepLocation('/mindmate', landing)).toEqual({ path: '/mindgraph' })
     expect(trainingPagePath('/m/home', 'mindgraph')).toBe('/m/mindgraph')
+    expect(trainingPagePath('/mindgraph', 'mindgraph')).toBe('/mindgraph')
+    expect(trainingPagePath('/mindmate', 'mindgraph')).toBe('/mindgraph')
+    expect(trainingPagePath('/maite', 'maite')).toBe('/maite')
+    expect(trainingCanvasLocation('/mindgraph', 'double_bubble_map')).toEqual({
+      path: '/canvas',
+      query: { type: 'double_bubble_map' },
+    })
     expect(hasTrainingLivePreview('mindgraph')).toBe(true)
     expect(hasTrainingLivePreview('canvas')).toBe(true)
     expect(hasTrainingLivePreview('auth')).toBe(true)

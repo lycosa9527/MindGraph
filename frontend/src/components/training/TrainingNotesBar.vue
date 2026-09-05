@@ -56,7 +56,13 @@ const visible = computed(() => {
   box-shadow: 0 8px 24px rgb(28 25 23 / 0.08);
 }
 .training-notes--pad {
-  right: 9.5rem;
+  right: 11.5rem;
+}
+@media (max-height: 780px) {
+  .training-notes--pad {
+    right: 1rem;
+    bottom: 7.25rem;
+  }
 }
 .training-notes__kicker {
   margin: 0 0 0.25rem;

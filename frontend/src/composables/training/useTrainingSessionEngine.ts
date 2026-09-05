@@ -143,7 +143,11 @@ export function useTrainingSessionEngine(): void {
   }, OWNER)
   eventBus.onWithOwner('training:free_requested', (payload) => {
     const next = payload.free ?? !training.isFree
-    void steer(() => training.freeSession(next))
+    if (next) {
+      void steer(() => training.freeSession(true))
+      return
+    }
+    void steerThenFollow(() => training.freeSession(false))
   }, OWNER)
   eventBus.onWithOwner('training:select_org_requested', (payload) => {
     void training.selectOrg(payload.orgId).then((code) => {

@@ -5,10 +5,11 @@ import TrainingPageLiveFrame from '@/components/training/TrainingPageLiveFrame.v
 import TrainingPlayControls from '@/components/training/TrainingPlayControls.vue'
 import TrainingStepMarks from '@/components/training/TrainingStepMarks.vue'
 import { useLanguage } from '@/composables'
+import type { TrainingSteerMode } from '@/composables/training/applyTrainingSnapshot'
 import { applyTrainingUiTarget } from '@/composables/training/applyTrainingUiTarget'
 import { isTrainingMediaStep } from '@/composables/training/trainingBuilderHibernate'
-import { hasTrainingLivePreview } from '@/config/trainingPageLive'
 import { visibleMarkOverlays } from '@/composables/training/trainingMarkSteps'
+import { hasTrainingLivePreview } from '@/config/trainingPageLive'
 import type { TrainingCourseStep } from '@/types/training'
 
 const props = defineProps<{
@@ -16,14 +17,14 @@ const props = defineProps<{
   canPrev?: boolean
   canNext?: boolean
   free?: boolean
-  showFree?: boolean
+  showMode?: boolean
 }>()
 
 const emit = defineEmits<{
   close: []
   prev: []
   next: []
-  free: []
+  mode: [value: TrainingSteerMode]
 }>()
 
 const { t } = useLanguage()
@@ -107,12 +108,12 @@ onUnmounted(() => {
         class="teacher-preview__pad"
         :can-prev="canPrev"
         :can-next="canNext"
-        :free="free"
-        :show-free="showFree"
+        :mode="free ? 'free' : 'pull'"
+        :show-mode="showMode"
         @prev="emit('prev')"
         @next="emit('next')"
         @stop="emit('close')"
-        @free="emit('free')"
+        @mode="emit('mode', $event)"
       />
     </div>
   </div>
@@ -173,8 +174,10 @@ onUnmounted(() => {
 }
 .teacher-preview__pad {
   position: absolute;
-  right: 1rem;
-  bottom: 1rem;
+  right: max(1rem, env(safe-area-inset-right, 0px));
+  bottom: max(1rem, env(safe-area-inset-bottom, 0px));
   z-index: 40;
+  max-height: calc(100% - 2rem);
+  overflow: auto;
 }
 </style>

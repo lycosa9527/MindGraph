@@ -17,7 +17,10 @@ export function useTrainingHeartbeat(enabled: () => boolean): void {
     if (snap.state !== 'live' && snap.state !== 'paused') return
     inFlight = true
     try {
-      await postTrainingHeartbeat(snap.session_id, snap.org_id)
+      const next = await postTrainingHeartbeat(snap.session_id, snap.org_id)
+      training.applySnapshot(next)
+    } catch {
+      // Transient network errors retry on the next interval.
     } finally {
       inFlight = false
     }

@@ -288,6 +288,7 @@ run_frontend() {
     tests/hasPersistedAuthUser.spec.ts \
     tests/applyTrainingSnapshot.spec.ts tests/trainingStore.spec.ts \
     tests/trainingClient.spec.ts tests/useTrainingFollow.spec.ts \
+    tests/useTrainingHeartbeat.spec.ts tests/trainingPadAnchor.spec.ts \
     tests/trainingCourses.spec.ts tests/trainingOverlayDrag.spec.ts \
     tests/presentationSpotlight.spec.ts tests/applyTrainingUiTarget.spec.ts \
     tests/trainingStageThumb.spec.ts tests/trainingBuilderStore.spec.ts \

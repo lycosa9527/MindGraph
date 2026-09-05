@@ -125,7 +125,7 @@ const syncLabel = computed(() => {
         @close="builder.setPreviewing(false)"
         @prev="previewMove(-1)"
         @next="previewMove(1)"
-        @free="builder.togglePreviewFree()"
+        @mode="builder.setPreviewFree($event === 'free')"
       />
     </div>
   </div>

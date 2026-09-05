@@ -16,9 +16,11 @@ from routers.api.training_routes import (
     create_session,
     get_command,
     navigate_session,
+    session_heartbeat,
     session_roster,
 )
 from services.features.training.payloads import NavigateBody, StartSessionBody
+from services.features.training.session_store import TrainingSessionError
 from services.infrastructure.http.feature_gate import feature_flag_gate
 
 
@@ -277,3 +279,76 @@ async def test_roster_paginates_over_200() -> None:
     assert len(first["items"]) == 50
     assert later["items"][0]["user_id"] == 200
     assert len(later["items"]) == 10
+
+
+@pytest.mark.asyncio
+async def test_stale_heartbeat_returns_none_snapshot() -> None:
+    """A vanished session is current truth, not a 404."""
+    with (
+        patch(
+            "routers.api.training_routes.can_lead_training",
+            new=AsyncMock(return_value=True),
+        ),
+        patch(
+            "routers.api.training_routes.get_session",
+            new=AsyncMock(return_value=None),
+        ),
+    ):
+        body = await session_heartbeat(
+            "c54f550e-3fb6-465c-ae88-568e25deff1f",
+            org_id=10,
+            current_user=_user("superadmin", org_id=None),
+        )
+    assert body["state"] == "none"
+    assert body["session_id"] is None
+
+
+@pytest.mark.asyncio
+async def test_stale_heartbeat_returns_replacement_session() -> None:
+    """Heartbeating an old id returns the live replacement snapshot."""
+    with (
+        patch(
+            "routers.api.training_routes.can_lead_training",
+            new=AsyncMock(return_value=True),
+        ),
+        patch(
+            "routers.api.training_routes.get_session",
+            new=AsyncMock(return_value=_live_session()),
+        ),
+    ):
+        body = await session_heartbeat(
+            "old-session",
+            org_id=10,
+            current_user=_user("superadmin", org_id=None),
+        )
+    assert body["session_id"] == "sess-1"
+    assert body["state"] == "live"
+
+
+@pytest.mark.asyncio
+async def test_heartbeat_not_owner_returns_current_snapshot() -> None:
+    """Takeover does not 403 the previous host's leftover timer."""
+    session = _live_session()
+    session["instructor_id"] = 9
+    session["instructor_name"] = "Bea"
+    with (
+        patch(
+            "routers.api.training_routes.can_lead_training",
+            new=AsyncMock(return_value=True),
+        ),
+        patch(
+            "routers.api.training_routes.get_session",
+            new=AsyncMock(return_value=session),
+        ),
+        patch(
+            "routers.api.training_routes.heartbeat",
+            new=AsyncMock(side_effect=TrainingSessionError("not_owner", "Only the owner")),
+        ),
+    ):
+        body = await session_heartbeat(
+            "sess-1",
+            org_id=10,
+            current_user=_user("superadmin", org_id=None),
+        )
+    assert body["instructor_id"] == 9
+    assert body["session_id"] == "sess-1"

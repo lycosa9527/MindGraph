@@ -60,6 +60,7 @@ import { useMobileCanvasInlineRecBar } from '@/composables/mobile/useMobileCanva
 import { useMobileCanvasRouteLoader } from '@/composables/mobile/useMobileCanvasRouteLoader'
 import { useMobileCanvasToolbar } from '@/composables/mobile/useMobileCanvasToolbar'
 import { DiagramSessionKey } from '@/composables/diagram/useDiagramSession'
+import { shouldBypassTrainingLeaveConfirm } from '@/composables/training/applyTrainingSnapshot'
 import { useTrainingCanvasGenerate } from '@/composables/training/useTrainingCanvasGenerate'
 import {
   type DiagramSession,
@@ -76,6 +77,7 @@ import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { useTrainingStore } from '@/stores/training'
 import type { DiagramType } from '@/types'
 import {
   DEFAULT_CHART_TYPE_KEY,
@@ -88,6 +90,7 @@ const route = useRoute()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
 const savedDiagramsStore = useSavedDiagramsStore()
+const training = useTrainingStore()
 const llmResultsStore = useLLMResultsStore()
 const panelsStore = usePanelsStore()
 getDiagramOperations()
@@ -251,6 +254,8 @@ onBeforeRouteLeave((to) => {
 
 useCanvasUnsavedLeaveGuard({
   isDirty: diagramAutoSave.isDirty,
+  shouldBypassLeaveConfirm: () =>
+    shouldBypassTrainingLeaveConfirm(training.snapshot.state),
 })
 
 watch(

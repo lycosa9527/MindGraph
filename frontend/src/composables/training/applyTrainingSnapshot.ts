@@ -58,6 +58,12 @@ export function teachersSeeTrainingBanner(snapshot: TrainingSnapshot): boolean {
   return Boolean(snapshot.course_id)
 }
 
+export type TrainingSteerMode = 'free' | 'pull'
+
+export function trainingSteerMode(snapshot: TrainingSnapshot): TrainingSteerMode {
+  return snapshot.pull_users === false ? 'free' : 'pull'
+}
+
 export function liveLessonStep(
   snapshot: TrainingSnapshot,
   opts: { skip?: boolean; trainingRoute?: boolean }
@@ -79,6 +85,10 @@ export function stepPullsUsers(snapshot: TrainingSnapshot): boolean {
   if (step?.type === 'slide' || step?.type === 'video') return false
   if (step?.page_key) return true
   return Boolean(snapshot.diagram_type || step?.diagram_type)
+}
+
+export function shouldBypassTrainingLeaveConfirm(state: TrainingSnapshot['state']): boolean {
+  return state === 'live' || state === 'paused' || state === 'ended'
 }
 
 export function shouldForceNavigate(snapshot: TrainingSnapshot, lastAppliedSeq: number): boolean {
@@ -140,6 +150,7 @@ export async function applyTrainingNavigate(
   routePath: string,
   snapshot: TrainingSnapshot
 ): Promise<boolean> {
+  if (snapshot.state !== 'live') return false
   const target = trainingStepLocation(routePath, snapshot)
   if (!target) return false
   const current = router.currentRoute.value

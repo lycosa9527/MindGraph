@@ -50,7 +50,7 @@ function move(delta: number): void {
         :step="current"
         :can-prev="canPrev"
         :can-next="canNext"
-        :show-free="false"
+        :show-mode="false"
         @close="emit('close')"
         @prev="move(-1)"
         @next="move(1)"

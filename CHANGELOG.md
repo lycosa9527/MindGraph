@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.46] - 2026-09-05
+
+> **校本培训: Free/Pull is a segmented control that stays on screen; follow no longer dumps desktop pages onto `/m/*`; Stop leaves everyone where they are.**
+
+### Fixed
+
+- **Desktop mistaken for mobile** — Follow used `path.startsWith('/m')`, so `/mindgraph` and `/mindmate` were treated as mobile routes. The next mark (often a spotlight) sent instructor and teachers to `/m/*`.
+- **Stop leave prompt** — Ending a session no longer steers or tears down the current page. The canvas unsaved-leave / “save content” dialog is skipped for live, paused, and ended rooms.
+- **Stale instructor heartbeat** — A vanished or replaced session id is current truth (200 snapshot), not `404 Session not found`. The client applies that snapshot and stops the timer.
+- **Pad clipped** — The fourth control sat below the fold. The pad now tracks the visual viewport, clears the friends rail, and switches to a two-row layout on short windows.
+
+### Changed
+
+- **自由 / 拉取** — A segmented control replaces the Free toggle. Free releases teachers; Pull always force-navs them to the current slide.
+
+### Tests
+
+- `frontend/tests/applyTrainingSnapshot.spec.ts`, `trainingCourses.spec.ts`, `trainingPadAnchor.spec.ts`, `useTrainingHeartbeat.spec.ts`, `trainingClient.spec.ts`
+- `tests/test_training_routes.py`
+
 ## [5.180.45] - 2026-09-05
 
 > **校本培训: Start arms the room; clicking a course pulls teachers and opens the same live page for the instructor. Restart, Free, and Next keep working.**
