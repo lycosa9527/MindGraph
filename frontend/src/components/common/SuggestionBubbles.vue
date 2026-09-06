@@ -141,7 +141,7 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
   gap: 10px;
   justify-content: center;
   align-content: flex-start;
-  max-height: 140px;
+  max-height: var(--mm-suggest-max-h, 140px);
   overflow-x: auto;
   overflow-y: hidden;
   padding: 8px 4px;

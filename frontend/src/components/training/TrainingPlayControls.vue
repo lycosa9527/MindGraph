@@ -4,13 +4,24 @@ import { computed } from 'vue'
 import { useLanguage } from '@/composables'
 import type { TrainingSteerMode } from '@/composables/training/applyTrainingSnapshot'
 
-const props = defineProps<{
-  canPrev?: boolean
-  canNext?: boolean
-  mode?: TrainingSteerMode
-  busy?: boolean
-  showMode?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    canPrev?: boolean
+    canNext?: boolean
+    mode?: TrainingSteerMode
+    busy?: boolean
+    showMode?: boolean
+    layout?: 'pad' | 'stack'
+  }>(),
+  {
+    canPrev: false,
+    canNext: false,
+    mode: 'pull',
+    busy: false,
+    showMode: true,
+    layout: 'pad',
+  }
+)
 
 const emit = defineEmits<{
   prev: []
@@ -20,10 +31,11 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
-const currentMode = computed<TrainingSteerMode>(() => props.mode ?? 'pull')
-const showSteer = computed(() => props.showMode !== false)
+const currentMode = computed<TrainingSteerMode>(() => props.mode)
+const showSteer = computed(() => props.showMode)
 
 function pickMode(next: TrainingSteerMode): void {
+  if (next === currentMode.value) return
   emit('mode', next)
 }
 </script>
@@ -31,6 +43,7 @@ function pickMode(next: TrainingSteerMode): void {
 <template>
   <div
     class="play-pad"
+    :class="{ 'play-pad--stack': layout === 'stack' }"
     role="group"
     :aria-label="t('training.playPad')"
   >
@@ -95,34 +108,33 @@ function pickMode(next: TrainingSteerMode): void {
 <style scoped>
 .play-pad {
   display: grid;
-  width: 9.5rem;
-  gap: 0.45rem;
-}
-@media (max-height: 780px) {
-  .play-pad {
-    width: min(16.5rem, calc(100vw - 2rem));
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-  .play-pad__mode {
-    grid-column: 1 / -1;
-  }
+  width: min(16.75rem, calc(100vw - 2rem));
+  grid-template-columns: 1fr 1fr 1fr;
+  overflow: hidden;
+  border: 1px solid #a8a29e;
+  background: #1c1917;
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.4);
 }
 .play-pad__btn {
-  min-height: 2.8rem;
+  min-height: 2.6rem;
   border: 0;
+  border-right: 1px solid #57534e;
   background: #1c1917;
   color: #fafaf9;
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 750;
   letter-spacing: 0.04em;
   cursor: pointer;
+}
+.play-pad__btn:last-of-type {
+  border-right: 0;
 }
 .play-pad__btn:hover:not(:disabled) {
   background: #44403c;
 }
 .play-pad__btn:disabled {
   background: #d6d3d1;
-  color: #a8a29e;
+  color: #78716c;
   cursor: default;
 }
 .play-pad__btn--stop {
@@ -133,19 +145,24 @@ function pickMode(next: TrainingSteerMode): void {
 }
 .play-pad__mode {
   display: grid;
+  grid-column: 1 / -1;
   grid-template-columns: 1fr 1fr;
-  min-height: 2.6rem;
-  overflow: hidden;
+  min-height: 2.4rem;
+  border-top: 1px solid #78716c;
   background: #292524;
 }
 .play-pad__seg {
   border: 0;
+  border-right: 1px solid #57534e;
   background: transparent;
   color: #a8a29e;
   font-size: 0.92rem;
   font-weight: 750;
   letter-spacing: 0.03em;
   cursor: pointer;
+}
+.play-pad__seg:last-child {
+  border-right: 0;
 }
 .play-pad__seg:hover:not(:disabled):not(.is-on) {
   color: #fafaf9;
@@ -160,5 +177,19 @@ function pickMode(next: TrainingSteerMode): void {
 .play-pad__seg:disabled {
   color: #78716c;
   cursor: default;
+}
+.play-pad--stack {
+  width: 100%;
+  min-height: 0;
+  grid-template-columns: 1fr;
+}
+.play-pad--stack .play-pad__btn {
+  min-height: 44px;
+  border-right: 0;
+  border-bottom: 1px solid #57534e;
+}
+.play-pad--stack .play-pad__mode {
+  grid-column: auto;
+  min-height: 44px;
 }
 </style>

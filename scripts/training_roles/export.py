@@ -108,11 +108,14 @@ def save_webp(frames: list[Image.Image], dest: Path, *, lossless: bool) -> None:
     print(f"webp {dest.name} {dest.stat().st_size} {frames[0].size}", flush=True)
 
 
-def extract_keyed_frames(mp4: Path) -> list[Image.Image]:
+def extract_keyed_frames(
+    mp4: Path,
+    frames_dir: Path | None = None,
+) -> list[Image.Image]:
     """Decode 12 fps PNG frames and key the green screen."""
-    frames_dir = WORK_DIR / "frames" / mp4.stem
-    frames_dir.mkdir(parents=True, exist_ok=True)
-    for old in frames_dir.glob("*.png"):
+    target = frames_dir or (WORK_DIR / "frames" / mp4.stem)
+    target.mkdir(parents=True, exist_ok=True)
+    for old in target.glob("*.png"):
         old.unlink()
     cmd = [
         ffmpeg_bin(),
@@ -124,12 +127,12 @@ def extract_keyed_frames(mp4: Path) -> list[Image.Image]:
         str(mp4),
         "-vf",
         "fps=12",
-        str(frames_dir / "frame-%03d.png"),
+        str(target / "frame-%03d.png"),
     ]
     code = os.spawnvp(os.P_WAIT, cmd[0], cmd)
     if code != 0:
         raise RuntimeError(f"ffmpeg extract failed {mp4.name}")
-    keyed = [key_green(Image.open(path)) for path in sorted(frames_dir.glob("frame-*.png"))]
+    keyed = [key_green(Image.open(path)) for path in sorted(target.glob("frame-*.png"))]
     return crop_union(keyed, pad=48)
 
 
@@ -172,9 +175,13 @@ def _pick_frames(frames: list[Image.Image], count: int) -> list[Image.Image]:
     return [frames[index] for index in indexes]
 
 
-def export_wechat_gif(mp4: Path, dest: Path) -> None:
+def export_wechat_gif(
+    mp4: Path,
+    dest: Path,
+    frames_dir: Path | None = None,
+) -> None:
     """240x240 GIF under 500KB for WeChat custom emoji."""
-    keyed = crop_union(extract_keyed_frames(mp4), pad=24)
+    keyed = crop_union(extract_keyed_frames(mp4, frames_dir), pad=24)
     squared = [_fit_square(frame) for frame in keyed]
     last_size = 0
     for count, colors in ((24, 128), (20, 96), (16, 96), (12, 64), (8, 48)):

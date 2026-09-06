@@ -182,6 +182,7 @@ vi.mock('pinia', async () => {
 })
 
 import { useMobileKittyPairing } from '@/composables/kitty/useMobileKittyPairing'
+import { useOneSentenceStore } from '@/stores/oneSentence'
 
 describe('useMobileKittyPairing one-sentence context', () => {
   let scope: EffectScope
@@ -247,10 +248,14 @@ describe('useMobileKittyPairing one-sentence context', () => {
     // Thin mobile: never push full Pinia nodes[] — server prefers live_spec.
     expect(ctx.diagram_data).not.toHaveProperty('nodes')
     expect(ctx.diagram_data).not.toHaveProperty('connections')
+    const oneSentence = useOneSentenceStore()
+    expect(oneSentence.phase).toBe('edit')
+    expect(oneSentence.libraryScope).toBe('lib-diagram-1')
   })
 
-  it('uses create phase when edit flow is not ready', () => {
+  it('uses create phase when no library is bound and edit flow is not ready', () => {
     shouldUseEditFlowMock.mockReturnValue(false)
+    activeState.id = null
     const kitty = {
       isConnected: ref(true),
       updateContext: vi.fn(),
@@ -266,6 +271,30 @@ describe('useMobileKittyPairing one-sentence context', () => {
     const ctx = buildMobileKittyContext()
     expect(ctx.active_panel).toBe('one_sentence')
     expect(ctx.one_sentence_phase).toBe('create')
+    const oneSentence = useOneSentenceStore()
+    expect(oneSentence.phase).toBe('create')
+    expect(oneSentence.libraryScope).toBeNull()
+  })
+
+  it('uses edit phase when a library diagram is bound even if canvas heuristic is create', () => {
+    shouldUseEditFlowMock.mockReturnValue(false)
+    activeState.id = 'lib-diagram-1'
+    const kitty = {
+      isConnected: ref(true),
+      updateContext: vi.fn(),
+    } as unknown as Parameters<typeof useMobileKittyPairing>[0]
+
+    const { buildMobileKittyContext, resolveMobileOneSentencePhase } = scope.run(() =>
+      useMobileKittyPairing(kitty, {
+        kittyServerEnabled: computed(() => true),
+      })
+    )!
+
+    expect(resolveMobileOneSentencePhase()).toBe('edit')
+    const ctx = buildMobileKittyContext()
+    expect(ctx.active_panel).toBe('one_sentence')
+    expect(ctx.one_sentence_phase).toBe('edit')
+    expect(ctx.diagram_library_id).toBe('lib-diagram-1')
   })
 
   it('follows desktop_focus while connected: setActiveDiagram + hydrate', async () => {

@@ -130,7 +130,6 @@ def snapshot_step_payload(step_body: dict[str, Any]) -> dict[str, Any]:
         "mindmap_canvas_mode": step_body.get("mindmap_canvas_mode"),
         "modal_key": step_body.get("modal_key"),
         "focus_key": step_body.get("focus_key"),
-        "notes": str(step_body.get("notes") or ""),
         "mark_step": step_body.get("mark_step") or 1,
         "mark_steps": step_body.get("mark_steps") or 1,
     }

@@ -284,3 +284,5 @@ frontend/public/fonts/*
 
 # Wan I2V scratch (mp4s, frames, task ids) for Course Builder roles
 scripts/training_roles/.work/
+scripts/white_cat_emoji/.work/
+scripts/cat_office_battles/.work/

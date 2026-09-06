@@ -1,6 +1,7 @@
 /**
  * Edit pipeline worker — S06 history → (desktop S07 hub sync) → S08 text send.
- * Mobile lane skips S07: phone is mic+chat; Redis live_spec comes from desktop/server.
+ * Mobile lane skips S07 persist: phone is mic+chat; Redis live_spec comes from
+ * desktop/server. Mobile still fire-and-forgets thin context_update (phase / library).
  */
 import { eventBus } from '@/composables/core/useEventBus'
 import type {
@@ -130,7 +131,16 @@ export async function runKittyEditTurn(
     }
   }
 
-  // Mobile is mic+chat only — server prefers live_spec/library; no phone pre-edit push.
+  function pushThinMobileSessionContext(): void {
+    if (deps.lane !== 'mobile') {
+      return
+    }
+    // Fire-and-forget: WS is ordered, so one_sentence_phase / library id land
+    // before text. Do not wait for hub persist (phone must not overwrite live_spec).
+    deps.updateContext(deps.buildContext())
+  }
+
+  // Mobile is mic+chat only — server prefers live_spec/library; no phone persist.
   if (deps.lane !== 'mobile') {
     let hub = await runKittyHubSync({
       deps: {
@@ -189,9 +199,11 @@ export async function runKittyEditTurn(
       module: 'hub_sync',
       step: 'S07_hub_sync',
       status: 'skip',
-      detail: 'mobile thin ingress — server live_spec',
+      detail: 'mobile thin ingress — session context then live_spec',
     })
   }
+
+  pushThinMobileSessionContext()
 
   pipeline.setPhase('sending')
   recordPipelineEvent({
@@ -221,6 +233,7 @@ export async function runKittyEditTurn(
           })
         ).ok
     if (reconnected) {
+      pushThinMobileSessionContext()
       sent = deps.kitty.sendTextMessage(text, ingress)
     }
   }

@@ -239,7 +239,12 @@ run_backend() {
     tests/test_training_course_routes.py \
     tests/test_training_play_advance.py \
     tests/test_training_role_assets.py \
-    tests/scripts/test_training_roles_kit.py
+    tests/test_training_audit_log.py \
+    tests/test_kitty_mobile_active.py \
+    tests/scripts/test_training_roles_kit.py \
+    tests/scripts/test_white_cat_emoji.py \
+    tests/scripts/test_cat_office_battles.py \
+    tests/scripts/test_cat_emoji_stills.py
 }
 
 run_frontend() {
@@ -293,6 +298,12 @@ run_frontend() {
     tests/presentationSpotlight.spec.ts tests/applyTrainingUiTarget.spec.ts \
     tests/trainingStageThumb.spec.ts tests/trainingBuilderStore.spec.ts \
     tests/trainingRoles.spec.ts tests/trainingTextBubbles.spec.ts \
+    tests/trainingPlayControls.spec.ts tests/trainingFriendLine.spec.ts \
+    tests/trainingRemoteView.spec.ts tests/mobileRouterRedirects.spec.ts \
+    tests/mindmateWelcomeLayout.spec.ts \
+    tests/enqueueKittyDesktopExplainNode.spec.ts \
+    tests/kittyDesktopExplainNodeAction.spec.ts \
+    tests/kittyPendingCanvasAction.spec.ts \
     tests/uploadTrainingFile.spec.ts
 }
 

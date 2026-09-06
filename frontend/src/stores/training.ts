@@ -34,7 +34,7 @@ import {
 } from '@/utils/trainingApi'
 import { emptyTrainingSnapshot, TRAINING_RAIL_PAGE_SIZE } from '@/utils/trainingClient'
 
-const STEER_GAP_MS = 550
+const STEER_GAP_MS = 120
 
 const emptyRosterSummary = (): TrainingRosterSummary => ({
   online: 0,
@@ -173,9 +173,28 @@ export const useTrainingStore = defineStore('training', () => {
     ready.value = await fetchTrainingReady(selectedOrgId.value)
   }
 
+  async function hydrateHostedSession(): Promise<void> {
+    const next = await fetchActiveTraining()
+    applySnapshot(next)
+    if (next.org_id != null) {
+      setLeadingOrgId(next.org_id)
+      selectedOrgId.value = next.org_id
+    }
+  }
+
   function clearFollowCursor(): void {
     lastAppliedSeq.value = 0
     commandEtag.value = null
+  }
+
+  async function runBusy(work: () => Promise<void>): Promise<void> {
+    if (busy.value) return
+    busy.value = true
+    try {
+      await work()
+    } finally {
+      busy.value = false
+    }
   }
 
   async function startSession(): Promise<TrainingStartCode> {
@@ -209,44 +228,72 @@ export const useTrainingStore = defineStore('training', () => {
   async function playCourse(courseId: string): Promise<void> {
     const ids = sessionIds()
     if (!ids) return
-    applySnapshot(await playTrainingCourse(ids.sessionId, ids.orgId, courseId))
-    await sleep(STEER_GAP_MS)
+    await runBusy(async () => {
+      applySnapshot(await playTrainingCourse(ids.sessionId, ids.orgId, courseId))
+      await sleep(STEER_GAP_MS)
+    })
   }
 
   async function pauseSession(): Promise<void> {
     const ids = sessionIds()
     if (!ids) return
-    applySnapshot(await pauseTraining(ids.sessionId, ids.orgId))
+    await runBusy(async () => {
+      applySnapshot(await pauseTraining(ids.sessionId, ids.orgId))
+    })
   }
 
   async function resumeSession(): Promise<void> {
     const ids = sessionIds()
     if (!ids) return
-    applySnapshot(await resumeTraining(ids.sessionId, ids.orgId))
+    await runBusy(async () => {
+      applySnapshot(await resumeTraining(ids.sessionId, ids.orgId))
+    })
   }
 
   async function endSession(): Promise<void> {
     const ids = sessionIds()
     if (!ids) return
-    applySnapshot(await endTraining(ids.sessionId, ids.orgId))
+    await runBusy(async () => {
+      applySnapshot(await endTraining(ids.sessionId, ids.orgId))
+    })
   }
 
   async function takeoverSession(): Promise<void> {
     const ids = sessionIds()
     if (!ids) return
-    applySnapshot(await takeoverTraining(ids.sessionId, ids.orgId))
+    await runBusy(async () => {
+      applySnapshot(await takeoverTraining(ids.sessionId, ids.orgId))
+    })
   }
 
   async function stepSession(delta: number): Promise<void> {
     const ids = sessionIds()
     if (!ids) return
-    applySnapshot(await stepTrainingCourse(ids.sessionId, ids.orgId, { delta }))
+    const previous = snapshot.value
+    await runBusy(async () => {
+      applySnapshot({ ...previous, pull_users: true })
+      try {
+        applySnapshot(await stepTrainingCourse(ids.sessionId, ids.orgId, { delta }))
+      } catch (error) {
+        applySnapshot(previous)
+        throw error
+      }
+    })
   }
 
   async function freeSession(free = true): Promise<void> {
     const ids = sessionIds()
     if (!ids) return
-    applySnapshot(await freeTraining(ids.sessionId, ids.orgId, free))
+    const previous = snapshot.value
+    await runBusy(async () => {
+      applySnapshot({ ...previous, pull_users: !free })
+      try {
+        applySnapshot(await freeTraining(ids.sessionId, ids.orgId, free))
+      } catch (error) {
+        applySnapshot(previous)
+        throw error
+      }
+    })
   }
 
   async function fetchRoster(append = false): Promise<void> {
@@ -332,6 +379,7 @@ export const useTrainingStore = defineStore('training', () => {
     loadCourses,
     selectOrg,
     refreshReady,
+    hydrateHostedSession,
     startSession,
     playCourse,
     pauseSession,

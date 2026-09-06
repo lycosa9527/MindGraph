@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { queryTrainingFocus } from '@/composables/training/applyTrainingUiTarget'
 import { useTrainingStore } from '@/stores/training'
+import { shouldHideTrainingDesktopChrome } from '@/utils/trainingClient'
 
+const route = useRoute()
 const training = useTrainingStore()
+const hidden = computed(() => shouldHideTrainingDesktopChrome(route.path))
 const box = ref<{ top: number; left: number; width: number; height: number } | null>(null)
 let frame = 0
 
@@ -31,10 +35,10 @@ function tick(): void {
 }
 
 watch(
-  () => training.uiFocusKey,
-  (key) => {
+  () => [training.uiFocusKey, hidden.value] as const,
+  ([key, hide]) => {
     window.cancelAnimationFrame(frame)
-    if (!key) {
+    if (hide || !key) {
       box.value = null
       return
     }

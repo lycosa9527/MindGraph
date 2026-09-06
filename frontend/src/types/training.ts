@@ -105,6 +105,7 @@ export interface TrainingReady {
 export interface TrainingRosterRow {
   user_id: number
   name?: string
+  page_key?: string | null
   diagram_type?: string | null
   option_id?: string | null
   option_label?: string | null

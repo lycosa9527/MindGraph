@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from datetime import UTC, datetime
 from typing import Any, Optional
 
@@ -9,7 +10,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from models.domain.training import TrainingCourse, TrainingCourseAsset, TrainingCourseStep
+from models.domain.training import (
+    TrainingCourse,
+    TrainingCourseAsset,
+    TrainingCourseStep,
+    generate_training_uuid,
+)
 from services.features.training.courses.constants import (
     COURSE_STATUSES,
     FOCUS_KEYS,
@@ -94,50 +100,90 @@ async def save_course(
             raise ValueError("Invalid course status")
         course.status = status
     if steps is not None:
-        course.steps.clear()
-        await db.flush()
-        for index, raw in enumerate(steps):
-            step_type = str(raw.get("type") or raw.get("step_type") or "")
-            if step_type not in STEP_TYPES:
-                raise ValueError(f"Invalid step type: {step_type}")
-            page_key = raw.get("page_key")
-            if isinstance(page_key, str):
-                page_key = page_key.strip() or None
-            if page_key is not None and str(page_key) not in PAGE_KEYS:
-                raise ValueError(f"Invalid page_key: {page_key}")
-            canvas_mode = raw.get("mindmap_canvas_mode")
-            if isinstance(canvas_mode, str):
-                canvas_mode = canvas_mode.strip() or None
-            if canvas_mode is not None and canvas_mode not in {"legacy", "v2", "v3"}:
-                raise ValueError(f"Invalid mindmap_canvas_mode: {canvas_mode}")
-            modal_key = optional_step_key(raw.get("modal_key"), MODAL_KEYS, "modal_key")
-            focus_key = optional_step_key(raw.get("focus_key"), FOCUS_KEYS, "focus_key")
-            notes = optional_notes(raw.get("notes"))
-            payload = {
-                "diagram_type": raw.get("diagram_type"),
-                "topic_options": raw.get("topic_options") or [],
-                "asset_id": raw.get("asset_id"),
-                "thumb_id": raw.get("thumb_id"),
-                "overlays": raw.get("overlays") or [],
-                "page_key": page_key,
-                "pull_users": bool(raw.get("pull_users")),
-                "mindmap_canvas_mode": canvas_mode,
-                "modal_key": modal_key,
-                "focus_key": focus_key,
-                "notes": notes,
-                "mark_step": clamped_mark_step(raw.get("mark_step"), 1),
-                "mark_steps": clamped_mark_step(raw.get("mark_steps"), 1),
-            }
-            course.steps.append(
-                TrainingCourseStep(
-                    position=index,
-                    step_type=step_type,
-                    payload=payload,
-                )
-            )
+        await _replace_steps(db, course, steps)
     course.updated_at = datetime.now(UTC)
     await db.flush()
     return course
+
+
+def _stable_step_id(raw: dict[str, Any], taken: set[str]) -> str:
+    candidate = str(raw.get("id") or "").strip()
+    try:
+        parsed = str(uuid.UUID(candidate))
+    except ValueError:
+        parsed = generate_training_uuid()
+    if parsed in taken:
+        return generate_training_uuid()
+    return parsed
+
+
+def _step_payload(raw: dict[str, Any]) -> dict[str, Any]:
+    page_key = raw.get("page_key")
+    if isinstance(page_key, str):
+        page_key = page_key.strip() or None
+    if page_key is not None and str(page_key) not in PAGE_KEYS:
+        raise ValueError(f"Invalid page_key: {page_key}")
+    canvas_mode = raw.get("mindmap_canvas_mode")
+    if isinstance(canvas_mode, str):
+        canvas_mode = canvas_mode.strip() or None
+    if canvas_mode is not None and canvas_mode not in {"legacy", "v2", "v3"}:
+        raise ValueError(f"Invalid mindmap_canvas_mode: {canvas_mode}")
+    return {
+        "diagram_type": raw.get("diagram_type"),
+        "topic_options": raw.get("topic_options") or [],
+        "asset_id": raw.get("asset_id"),
+        "thumb_id": raw.get("thumb_id"),
+        "overlays": raw.get("overlays") or [],
+        "page_key": page_key,
+        "pull_users": bool(raw.get("pull_users")),
+        "mindmap_canvas_mode": canvas_mode,
+        "modal_key": optional_step_key(raw.get("modal_key"), MODAL_KEYS, "modal_key"),
+        "focus_key": optional_step_key(raw.get("focus_key"), FOCUS_KEYS, "focus_key"),
+        "notes": optional_notes(raw.get("notes")),
+        "mark_step": clamped_mark_step(raw.get("mark_step"), 1),
+        "mark_steps": clamped_mark_step(raw.get("mark_steps"), 1),
+    }
+
+
+async def _replace_steps(
+    db: AsyncSession,
+    course: TrainingCourse,
+    steps: list[dict[str, Any]],
+) -> None:
+    existing = {row.id: row for row in list(course.steps)}
+    kept: list[TrainingCourseStep] = []
+    taken: set[str] = set()
+    for index, raw in enumerate(steps):
+        step_type = str(raw.get("type") or raw.get("step_type") or "")
+        if step_type not in STEP_TYPES:
+            raise ValueError(f"Invalid step type: {step_type}")
+        step_id = _stable_step_id(raw, taken)
+        taken.add(step_id)
+        payload = _step_payload(raw)
+        row = existing.get(step_id)
+        if row is None:
+            row = TrainingCourseStep(
+                id=step_id,
+                course_id=course.id,
+                position=index,
+                step_type=step_type,
+                payload=payload,
+            )
+        else:
+            row.position = index
+            row.step_type = step_type
+            row.payload = payload
+        kept.append(row)
+    keep_ids = {row.id for row in kept}
+    for row in list(course.steps):
+        if row.id not in keep_ids:
+            course.steps.remove(row)
+    await db.flush()
+    by_id = {row.id: row for row in course.steps}
+    for row in kept:
+        if row.id not in by_id:
+            course.steps.append(row)
+    await db.flush()
 
 
 async def add_asset(

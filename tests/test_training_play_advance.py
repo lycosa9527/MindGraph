@@ -33,8 +33,8 @@ def test_resolve_play_cursor_stays_on_slide_until_marks_done() -> None:
 
 def test_command_etag_is_per_session() -> None:
     """Restarts at seq 1 must not share the previous session ETag."""
-    assert command_etag("sess-1", 4) == '"sess-1:4"'
-    assert command_etag(None, 0) == '"none:0"'
+    assert command_etag("sess-1", 4, "live") == '"sess-1:4:live"'
+    assert command_etag(None, 0) == '"none:0:none"'
 
 
 def test_step_extras_reenable_pull_after_free() -> None:

@@ -39,6 +39,7 @@ export function useTrainingCanvasGenerate(
     training.setPendingChip(null)
     const activity = {
       diagram_type: training.snapshot.diagram_type,
+      page_key: 'canvas',
       option_id: option.id,
       option_label: option.label,
     }

@@ -25,6 +25,7 @@ import {
   addMarkStep,
   advancePlayCursor,
   canAdvancePlayCursor,
+  canSteerLiveSnapshot,
   currentMarkStep,
   removeMarkStep,
   visibleMarkOverlays,
@@ -429,5 +430,30 @@ describe('training course playback', () => {
     expect(currentMarkStep(second)).toBe(1)
     expect(advancePlayCursor(deck, 1, -1)).toBe(0)
     expect(currentMarkStep(first)).toBe(2)
+  })
+
+  it('enables live pad prev/next from snapshot cursor, not the full deck', () => {
+    const first = blankPageStep(0)
+    addMarkStep(first)
+    first.mark_step = 1
+    const live = {
+      state: 'live' as const,
+      session_id: 's',
+      org_id: 1,
+      seq: 2,
+      diagram_type: null,
+      topic_options: [],
+      instructor_id: 1,
+      instructor_name: 'Ada',
+      step: first,
+      step_index: 0,
+      step_count: 2,
+    }
+    expect(canSteerLiveSnapshot(live, -1)).toBe(false)
+    expect(canSteerLiveSnapshot(live, 1)).toBe(true)
+    first.mark_step = 2
+    live.step_index = 1
+    expect(canSteerLiveSnapshot(live, -1)).toBe(true)
+    expect(canSteerLiveSnapshot(live, 1)).toBe(false)
   })
 })

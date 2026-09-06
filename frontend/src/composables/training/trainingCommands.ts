@@ -20,8 +20,8 @@ export function requestTrainingResume(): void {
   eventBus.emit('training:resume_requested', {})
 }
 
-export function requestTrainingEnd(): void {
-  eventBus.emit('training:end_requested', {})
+export function requestTrainingEnd(confirmed = false): void {
+  eventBus.emit('training:end_requested', { confirmed })
 }
 
 export function requestTrainingTakeover(): void {

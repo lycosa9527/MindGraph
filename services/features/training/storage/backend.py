@@ -13,6 +13,7 @@ from services.features.training.storage.keys import (
     full_cos_key,
     resolve_local_safe,
 )
+from services.features.training.training_logger import log_training
 from services.utils.tencent_cos_client import (
     cos_credentials_configured,
     delete_object,
@@ -52,13 +53,28 @@ def put_bytes_sync(
     path = resolve_local_safe(logical_key)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(data)
-    if cos_training_enabled():
-        upload_bytes(
+    backend = storage_backend()
+    uploaded = True
+    cos_key = ""
+    if backend == STORAGE_COS:
+        cos_key = full_cos_key(logical_key)
+        uploaded = upload_bytes(
             data,
-            full_cos_key(logical_key),
+            cos_key,
             content_type=content_type,
             log_prefix="[Training/COS]",
         )
+    log_training(
+        logger,
+        "put_bytes",
+        level=logging.INFO if uploaded else logging.ERROR,
+        prefix="[Training/COS]",
+        backend=backend,
+        key=logical_key,
+        cos_key=cos_key,
+        bytes=len(data),
+        uploaded=uploaded,
+    )
     return logical_key
 
 
@@ -137,15 +153,36 @@ async def delete_course_folder(course_id: str) -> None:
 def delete_course_prefix(course_id: str) -> None:
     """Delete every object under the course folder (COS + local)."""
     folder = course_folder(course_id)
-    if cos_training_enabled():
-        prefix = full_cos_key(folder)
-        for obj in list_prefix(prefix):
+    backend = storage_backend()
+    cos_deleted = 0
+    cos_failed = 0
+    cos_prefix = ""
+    if backend == STORAGE_COS:
+        cos_prefix = full_cos_key(folder)
+        for obj in list_prefix(cos_prefix):
             key = str(obj.get("key") or "")
-            if key:
-                delete_object(key)
+            if not key:
+                continue
+            if delete_object(key):
+                cos_deleted += 1
+            else:
+                cos_failed += 1
+    local_removed = False
     try:
         local_root = resolve_local_safe(f"{folder}/.keep").parent
     except ValueError:
-        return
-    if local_root.is_dir():
+        local_root = None
+    if local_root is not None and local_root.is_dir():
         shutil.rmtree(local_root, ignore_errors=True)
+        local_removed = True
+    log_training(
+        logger,
+        "delete_course_folder",
+        prefix="[Training/COS]",
+        course_id=course_id,
+        backend=backend,
+        cos_prefix=cos_prefix,
+        cos_deleted=cos_deleted,
+        cos_failed=cos_failed,
+        local_removed=local_removed,
+    )

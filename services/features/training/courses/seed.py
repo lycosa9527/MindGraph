@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import logging
 from datetime import UTC, datetime
 
 from sqlalchemy import select
@@ -20,6 +22,20 @@ from services.features.training.courses.constants import (
 from services.features.training.courses.cover_png import build_double_bubble_cover_png
 from services.features.training.storage.backend import put_bytes
 from services.features.training.storage.keys import build_object_key
+from services.features.training.training_logger import bilingual_label, log_training
+
+logger = logging.getLogger(__name__)
+
+
+class _SeedOnceHolder:
+    """Remember a successful seed without a global statement."""
+
+    def __init__(self) -> None:
+        self.done = False
+        self.lock = asyncio.Lock()
+
+
+_SEED_ONCE = _SeedOnceHolder()
 
 
 def _append_seed_step(course: TrainingCourse) -> None:
@@ -63,6 +79,14 @@ async def _ensure_seed_cover(db: AsyncSession, course: TrainingCourse) -> None:
         cover.mime = "image/png"
         cover.bytes_size = len(png)
     course.cover_asset_id = cover.id
+    log_training(
+        logger,
+        "seed_cover_written",
+        prefix="[Training/COS]",
+        course_id=course.id,
+        key=logical_key,
+        bytes=len(png),
+    )
 
 
 async def ensure_double_bubble_seed(db: AsyncSession) -> TrainingCourse:
@@ -90,12 +114,41 @@ async def ensure_double_bubble_seed(db: AsyncSession) -> TrainingCourse:
         _append_seed_step(course)
         await _ensure_seed_cover(db, course)
         await db.flush()
+        log_training(
+            logger,
+            "seed_course_created",
+            course_id=course.id,
+            title=bilingual_label(course.title),
+            steps=len(course.steps),
+        )
         return course
 
     course.is_system = True
+    appended_step = False
     if not course.steps:
         _append_seed_step(course)
-    if course.cover_asset_id is None and not any(row.role == "cover" for row in course.assets):
+        appended_step = True
+    wrote_cover = course.cover_asset_id is None and not any(row.role == "cover" for row in course.assets)
+    if wrote_cover:
         await _ensure_seed_cover(db, course)
     await db.flush()
+    if appended_step or wrote_cover:
+        log_training(
+            logger,
+            "seed_course_repaired",
+            course_id=course.id,
+            appended_step=appended_step,
+            wrote_cover=wrote_cover,
+        )
     return course
+
+
+async def ensure_double_bubble_seed_once(db: AsyncSession) -> None:
+    """Seed at most once per process; catalog list is the only caller."""
+    if _SEED_ONCE.done:
+        return
+    async with _SEED_ONCE.lock:
+        if _SEED_ONCE.done:
+            return
+        await ensure_double_bubble_seed(db)
+        _SEED_ONCE.done = True

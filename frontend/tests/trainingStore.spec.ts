@@ -1,9 +1,21 @@
 import { createPinia, setActivePinia } from 'pinia'
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTrainingStore } from '@/stores/training'
 import type { TrainingSnapshot } from '@/types/training'
+
+const pauseTraining = vi.hoisted(() => vi.fn())
+const fetchActiveTraining = vi.hoisted(() => vi.fn())
+
+vi.mock('@/utils/trainingApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/trainingApi')>()
+  return {
+    ...actual,
+    pauseTraining: (...args: unknown[]) => pauseTraining(...args),
+    fetchActiveTraining: (...args: unknown[]) => fetchActiveTraining(...args),
+  }
+})
 
 function snapshot(overrides: Partial<TrainingSnapshot> = {}): TrainingSnapshot {
   return {
@@ -22,6 +34,8 @@ function snapshot(overrides: Partial<TrainingSnapshot> = {}): TrainingSnapshot {
 describe('training store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    pauseTraining.mockReset()
+    fetchActiveTraining.mockReset()
   })
 
   it('applies a newer snapshot and ignores a stale seq', () => {
@@ -92,5 +106,37 @@ describe('training store', () => {
     expect(store.commandEtag).toBeNull()
     expect(store.leadingOrgId).toBeNull()
     expect(store.topicsDragLive).toBe(false)
+  })
+
+  it('keeps one in-flight steer so pause cannot double-fire', async () => {
+    let release: ((value: TrainingSnapshot) => void) | undefined
+    pauseTraining.mockReturnValue(
+      new Promise<TrainingSnapshot>((resolve) => {
+        release = resolve
+      })
+    )
+    const store = useTrainingStore()
+    store.applySnapshot(snapshot())
+    const first = store.pauseSession()
+    const second = store.pauseSession()
+    expect(store.busy).toBe(true)
+    expect(pauseTraining).toHaveBeenCalledTimes(1)
+    release?.(snapshot({ state: 'paused', seq: 5 }))
+    await first
+    await second
+    expect(store.busy).toBe(false)
+    expect(store.snapshot.state).toBe('paused')
+  })
+
+  it('hydrates the hosted session so the phone remote has org_id', async () => {
+    fetchActiveTraining.mockResolvedValue(
+      snapshot({ org_id: 44, course_id: 'c1', seq: 2 })
+    )
+    const store = useTrainingStore()
+    await store.hydrateHostedSession()
+    expect(store.snapshot.org_id).toBe(44)
+    expect(store.leadingOrgId).toBe(44)
+    expect(store.selectedOrgId).toBe(44)
+    expect(store.snapshot.course_id).toBe('c1')
   })
 })

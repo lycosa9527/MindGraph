@@ -20,7 +20,7 @@ export type TrainingPadViewport = {
 }
 
 const DEFAULT_GAP = 16
-const DEFAULT_RAIL_WIDTH = 16 * 16 + 12
+const DEFAULT_RAIL_WIDTH = 18 * 16 + 12
 
 export function trainingPadBox(input: TrainingPadViewport): TrainingPadBox {
   const gap = input.gap ?? DEFAULT_GAP

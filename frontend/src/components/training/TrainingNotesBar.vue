@@ -6,6 +6,7 @@ import { useLanguage } from '@/composables'
 import { canSeeTrainingSpeakerNotes } from '@/composables/training/applyTrainingSnapshot'
 import { useAuthStore } from '@/stores/auth'
 import { useTrainingStore } from '@/stores/training'
+import { shouldHideTrainingDesktopChrome } from '@/utils/trainingClient'
 
 const { t } = useLanguage()
 const authStore = useAuthStore()
@@ -23,7 +24,7 @@ const padClear = computed(() => {
   )
 })
 const visible = computed(() => {
-  if (route.path.startsWith('/training/builder')) return false
+  if (shouldHideTrainingDesktopChrome(route.path)) return false
   if (!text.value) return false
   return canSeeTrainingSpeakerNotes(training.snapshot, Number(authStore.user?.id) || null)
 })
@@ -56,13 +57,7 @@ const visible = computed(() => {
   box-shadow: 0 8px 24px rgb(28 25 23 / 0.08);
 }
 .training-notes--pad {
-  right: 11.5rem;
-}
-@media (max-height: 780px) {
-  .training-notes--pad {
-    right: 1rem;
-    bottom: 7.25rem;
-  }
+  right: 18.5rem;
 }
 .training-notes__kicker {
   margin: 0 0 0.25rem;

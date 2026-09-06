@@ -82,6 +82,17 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/mobile/MobileVoiceNotesPage.vue'),
     meta: { requiresAuth: true, layout: 'mobile', ...pageTitle('voiceNotes') },
   },
+  {
+    path: '/m/training',
+    name: 'MobileTraining',
+    component: () => import('@/pages/mobile/MobileTrainingRemotePage.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresTrainingLead: true,
+      layout: 'mobile',
+      ...pageTitle('training'),
+    },
+  },
 
   // ── Desktop routes ────────────────────────────────────────────────
   {
@@ -436,6 +447,18 @@ router.beforeEach(async (to, from) => {
   const skipMobileRedirect = shouldSkipMobileRouteRedirect(to.path)
 
   if (isMobile.value && !skipMobileRedirect) {
+    if (to.path === '/training') {
+      await featureFlagsStore.fetchFlags()
+      if (!authStore.user) {
+        await authStore.checkAuth()
+      }
+      const isTrainingLead =
+        featureFlagsStore.getFeatureTraining() && authStore.isPlatformLevel
+      return {
+        path: resolveMobileRouteRedirect(to.path, { isTrainingLead }),
+        query: to.query as Record<string, string>,
+      }
+    }
     const mobilePath = resolveMobileRouteRedirect(to.path)
     return { path: mobilePath, query: to.query as Record<string, string> }
   }
@@ -503,6 +526,9 @@ router.beforeEach(async (to, from) => {
   if (to.meta.requiresTrainingLead) {
     await featureFlagsStore.fetchFlags()
     if (!featureFlagsStore.getFeatureTraining() || !authStore.isPlatformLevel) {
+      if (to.path.startsWith('/m/')) {
+        return { path: '/m' }
+      }
       return { name: 'MindMate' }
     }
   }

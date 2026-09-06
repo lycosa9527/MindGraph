@@ -8,7 +8,8 @@ Proprietary License
 
 from __future__ import annotations
 
-from typing import Optional
+import logging
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
@@ -23,6 +24,7 @@ from services.features.training.activity_store import (
     activity_summary,
     clear_activity,
     list_activity,
+    should_publish_activity,
     touch_activity,
 )
 from services.features.training.constants import (
@@ -40,6 +42,7 @@ from services.features.training.payloads import (
     OptionsBody,
     StartSessionBody,
     command_etag,
+    sanitize_activity_page_key,
     snapshot_from_session,
 )
 from services.features.training.permissions import (
@@ -54,18 +57,20 @@ from services.features.training.session_store import (
     get_instructor_pointer,
     get_session,
     heartbeat,
-    maybe_auto_pause,
     pause_session,
+    present_session,
     require_owner_active,
     resume_session,
     start_session,
     takeover_session,
 )
 from services.features.training.sse import iter_org_events, publish_event
+from services.features.training.training_logger import log_training
 from utils.auth import get_current_user
 from utils.auth.roles import is_superadmin
 from utils.db.session_open import system_rls_session
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/training", tags=["training"])
 router.include_router(training_course_router)
 router.include_router(training_asset_router)
@@ -79,7 +84,7 @@ def _snapshot(session, user: User):
 
 def _http_for_session_error(exc: TrainingSessionError) -> HTTPException:
     detail = {"code": exc.code, "message": exc.message, **exc.extras}
-    if exc.code in {"org_busy", "instructor_busy"}:
+    if exc.code in {"org_busy", "instructor_busy", "seq_conflict"}:
         return HTTPException(status_code=409, detail=detail)
     if exc.code == "rate_limited":
         return HTTPException(status_code=429, detail=detail)
@@ -100,8 +105,38 @@ async def _publish_seq(org_id: int, session: dict) -> None:
     await publish_event(org_id, event, {"seq": int(session.get("seq") or 0)})
 
 
+async def _present_org_session(org_id: int, session: Optional[dict]) -> Optional[dict]:
+    """Overlay stale state and persist pause/end once, then doorbell if Redis changed."""
+    if session is None:
+        return None
+    presented, wrote = await present_session(session)
+    if wrote:
+        await _publish_seq(org_id, presented)
+    return presented
+
+
 def _display_name(user: User) -> str:
     return str(getattr(user, "name", None) or f"User {user.id}")
+
+
+async def _log_session_event(event: str, session: dict, user: User, **fields: Any) -> None:
+    org_id = int(session.get("org_id") or 0)
+    summary = await activity_summary(org_id) if org_id else {"online": 0, "generating": 0}
+    log_training(
+        logger,
+        event,
+        actor_id=int(user.id),
+        org_id=org_id,
+        session_id=str(session.get("session_id") or ""),
+        course_id=str(session.get("course_id") or ""),
+        teachers=int(session.get("confirm_teacher_count") or 0),
+        online=int(summary.get("online") or 0),
+        generating=int(summary.get("generating") or 0),
+        pull_users=bool(session.get("pull_users")),
+        state=str(session.get("state") or ""),
+        seq=int(session.get("seq") or 0),
+        **fields,
+    )
 
 
 @router.get("/orgs")
@@ -134,6 +169,15 @@ async def org_ready(
     async with system_rls_session() as db:
         teacher_total = await count_org_teachers(db, org_id)
     summary = await activity_summary(org_id)
+    log_training(
+        logger,
+        "org_ready",
+        actor_id=int(current_user.id),
+        org_id=org_id,
+        teachers=teacher_total,
+        online=int(summary["online"]),
+        generating=int(summary["generating"]),
+    )
     return {
         "org_id": org_id,
         "teacher_total": teacher_total,
@@ -151,6 +195,15 @@ async def create_session(
     async with system_rls_session() as db:
         teacher_total = await count_org_teachers(db, body.org_id)
     if int(body.confirm_teacher_total) != int(teacher_total):
+        log_training(
+            logger,
+            "session_confirm_mismatch",
+            level=logging.WARNING,
+            actor_id=int(current_user.id),
+            org_id=body.org_id,
+            teachers=teacher_total,
+            confirm=int(body.confirm_teacher_total),
+        )
         raise HTTPException(
             status_code=409,
             detail={
@@ -169,6 +222,7 @@ async def create_session(
     except TrainingSessionError as exc:
         raise _http_for_session_error(exc) from exc
     await _publish_seq(body.org_id, session)
+    await _log_session_event("session_started", session, current_user)
     return _snapshot(session, current_user)
 
 
@@ -189,9 +243,7 @@ async def active_session(
     if not await can_lead_training(current_user, target):
         if not is_org_teacher_target(current_user, target):
             raise HTTPException(status_code=403, detail="Training access required")
-    session = await get_session(target)
-    if session is not None:
-        session = await maybe_auto_pause(session)
+    session = await _present_org_session(target, await get_session(target))
     return _snapshot(session, current_user)
 
 
@@ -205,13 +257,15 @@ async def session_heartbeat(
     await _require_leader(current_user, org_id)
     session = await get_session(org_id)
     if session is None or str(session.get("session_id")) != session_id:
-        return _snapshot(session, current_user)
+        return _snapshot(await _present_org_session(org_id, session), current_user)
     try:
         updated = await heartbeat(org_id, int(current_user.id))
     except TrainingSessionError as exc:
         if exc.code == "not_owner":
-            return _snapshot(session, current_user)
+            return _snapshot(await _present_org_session(org_id, session), current_user)
         raise _http_for_session_error(exc) from exc
+    if updated is None:
+        return _snapshot(await _present_org_session(org_id, session), current_user)
     return _snapshot(updated, current_user)
 
 
@@ -282,6 +336,7 @@ async def pause(
     except TrainingSessionError as exc:
         raise _http_for_session_error(exc) from exc
     await _publish_seq(org_id, updated)
+    await _log_session_event("session_paused", updated, current_user)
     return _snapshot(updated, current_user)
 
 
@@ -298,6 +353,7 @@ async def resume(
     except TrainingSessionError as exc:
         raise _http_for_session_error(exc) from exc
     await _publish_seq(org_id, updated)
+    await _log_session_event("session_resumed", updated, current_user)
     return _snapshot(updated, current_user)
 
 
@@ -319,6 +375,7 @@ async def end(
     await clear_activity(org_id)
     if ended is not None:
         await _publish_seq(org_id, ended)
+        await _log_session_event("session_ended", ended, current_user)
     return _snapshot(ended, current_user)
 
 
@@ -342,6 +399,13 @@ async def takeover(
     except TrainingSessionError as exc:
         raise _http_for_session_error(exc) from exc
     await _publish_seq(org_id, updated)
+    previous = session.get("instructor_id")
+    await _log_session_event(
+        "session_takeover",
+        updated,
+        current_user,
+        previous_instructor_id=previous,
+    )
     return _snapshot(updated, current_user)
 
 
@@ -359,14 +423,9 @@ async def get_command(
     if not is_org_teacher_target(current_user, target):
         if not await can_lead_training(current_user, target):
             raise HTTPException(status_code=403, detail="Training access required")
-    session = await get_session(target)
-    if session is not None:
-        before = int(session.get("seq") or 0)
-        session = await maybe_auto_pause(session)
-        if int(session.get("seq") or 0) != before:
-            await _publish_seq(target, session)
+    session = await _present_org_session(target, await get_session(target))
     body = _snapshot(session, current_user)
-    etag = command_etag(body.get("session_id"), body.get("seq"))
+    etag = command_etag(body.get("session_id"), body.get("seq"), body.get("state"))
     if if_none_match and if_none_match.strip() == etag:
         return Response(status_code=304, headers={"ETag": etag})
     return JSONResponse(body, headers={"ETag": etag})
@@ -418,6 +477,7 @@ async def post_activity(
         int(current_user.id),
         {
             "diagram_type": body.diagram_type,
+            "page_key": sanitize_activity_page_key(body.page_key),
             "option_id": body.option_id,
             "option_label": body.option_label,
             "generate_state": generate_state,
@@ -425,7 +485,7 @@ async def post_activity(
         },
     )
     session = await get_session(int(org_id))
-    if session is not None and session.get("state") == STATE_LIVE:
+    if session is not None and session.get("state") == STATE_LIVE and await should_publish_activity(int(org_id)):
         await publish_event(int(org_id), "activity", {"seq": int(session.get("seq") or 0)})
     return {"ok": True}
 

@@ -1,4 +1,4 @@
-import type { TrainingCourseStep, TrainingStepOverlay } from '@/types/training'
+import type { TrainingCourseStep, TrainingSnapshot, TrainingStepOverlay } from '@/types/training'
 
 export const TRAINING_MARK_STEPS_MIN = 1
 export const TRAINING_MARK_STEPS_MAX = 8
@@ -126,4 +126,15 @@ export function canAdvancePlayCursor(
     return currentMarkStep(step) < markStepCount(step) || selected < steps.length - 1
   }
   return currentMarkStep(step) > 1 || selected > 0
+}
+
+export function canSteerLiveSnapshot(snapshot: TrainingSnapshot, delta: number): boolean {
+  const step = snapshot.step
+  if (!step || !delta) return false
+  const index = snapshot.step_index || 0
+  const count = snapshot.step_count || 0
+  if (delta > 0) {
+    return currentMarkStep(step) < markStepCount(step) || (count > 0 && index < count - 1)
+  }
+  return currentMarkStep(step) > 1 || index > 0
 }

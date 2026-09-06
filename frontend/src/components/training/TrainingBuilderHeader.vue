@@ -14,6 +14,7 @@ defineProps<{
   previewing?: boolean
   readonly?: boolean
   syncLabel?: string
+  syncError?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -55,6 +56,7 @@ const emit = defineEmits<{
         <span
           v-if="syncLabel"
           class="training-header__sync"
+          :class="{ 'is-error': syncError }"
         >{{ syncLabel }}</span>
         <ElButton
           size="small"
@@ -127,6 +129,9 @@ const emit = defineEmits<{
   color: #78716c;
   font-size: 0.75rem;
   font-weight: 600;
+}
+.training-header__sync.is-error {
+  color: #b91c1c;
 }
 .training-header__icon {
   margin-right: 0.25rem;

@@ -26,7 +26,7 @@ describe('trainingPadBox', () => {
       viewHeight: 700,
       railOpen: true,
     })
-    expect(chrome.right).toBe(16 + 16 * 16 + 12)
+    expect(chrome.right).toBe(16 + 18 * 16 + 12)
     expect(chrome.bottom).toBe(16 + 200)
     expect(chrome.maxHeight).toBe(668)
   })

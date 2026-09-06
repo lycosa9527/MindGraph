@@ -156,6 +156,7 @@ export async function takeoverTraining(
 
 export async function postTrainingActivity(body: {
   diagram_type?: string | null
+  page_key?: string | null
   option_id?: string | null
   option_label?: string | null
   generate_state?: string

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -15,11 +16,21 @@ from services.features.training.courses.repository import (
     list_courses,
     save_course,
 )
-from services.features.training.courses.seed import ensure_double_bubble_seed
+from services.features.training.courses.seed import ensure_double_bubble_seed_once
 from services.features.training.courses.serialize import serialize_course
-from services.features.training.permissions import can_lead_any_training
+from services.features.training.permissions import (
+    can_delete_training_course,
+    can_lead_any_training,
+)
+from services.features.training.training_logger import (
+    bilingual_label,
+    log_training,
+    step_type_summary,
+)
 from utils.auth import get_current_user
 from utils.db.session_open import system_rls_session
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -52,7 +63,7 @@ async def list_training_courses(
     _require_author(current_user)
     lang = locale or _locale_from_user(current_user)
     async with system_rls_session() as db:
-        await ensure_double_bubble_seed(db)
+        await ensure_double_bubble_seed_once(db)
         await db.commit()
         rows = await list_courses(db)
         return {"items": [serialize_course(row, locale=lang, include_steps=False) for row in rows]}
@@ -78,7 +89,17 @@ async def create_training_course(
         await db.commit()
         await db.refresh(course)
         loaded = await get_course(db, course.id)
-    return serialize_course(loaded or course, locale=_locale_from_user(current_user))
+    saved = loaded or course
+    log_training(
+        logger,
+        "course_created",
+        actor_id=int(current_user.id),
+        course_id=saved.id,
+        owner_id=int(current_user.id),
+        title=bilingual_label(saved.title),
+        status=saved.status,
+    )
+    return serialize_course(saved, locale=_locale_from_user(current_user))
 
 
 @router.get("/courses/{course_id}")
@@ -89,8 +110,6 @@ async def get_training_course(
     """Builder editor payload."""
     _require_author(current_user)
     async with system_rls_session() as db:
-        await ensure_double_bubble_seed(db)
-        await db.commit()
         course = await get_course(db, course_id)
     if course is None:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -122,7 +141,18 @@ async def update_training_course(
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         await db.commit()
         loaded = await get_course(db, course_id)
-    return serialize_course(loaded or course, locale=_locale_from_user(current_user))
+    saved = loaded or course
+    log_training(
+        logger,
+        "course_saved",
+        actor_id=int(current_user.id),
+        course_id=saved.id,
+        title=bilingual_label(saved.title),
+        status=saved.status,
+        steps=step_type_summary(body.steps),
+        system=bool(saved.is_system),
+    )
+    return serialize_course(saved, locale=_locale_from_user(current_user))
 
 
 @router.delete("/courses/{course_id}")
@@ -136,8 +166,17 @@ async def remove_training_course(
         course = await get_course(db, course_id)
         if course is None:
             raise HTTPException(status_code=404, detail="Course not found")
-        if course.is_system:
-            raise HTTPException(status_code=403, detail="System courses cannot be deleted")
+        if not can_delete_training_course(current_user, course):
+            detail = "System courses cannot be deleted" if course.is_system else "Only the owner may delete this course"
+            raise HTTPException(status_code=403, detail=detail)
+        title = bilingual_label(course.title)
         await delete_course(db, course)
         await db.commit()
+    log_training(
+        logger,
+        "course_deleted",
+        actor_id=int(current_user.id),
+        course_id=course_id,
+        title=title,
+    )
     return {"ok": True}

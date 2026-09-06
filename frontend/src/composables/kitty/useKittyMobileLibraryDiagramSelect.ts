@@ -6,6 +6,7 @@ import { ref } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { loadBlankCanvasForType } from '@/composables/canvasPage/newCanvasBootstrap'
+import { enqueueKittyDesktopAction } from '@/composables/kitty/enqueueKittyDesktopExplainNode'
 import { reportKittySessionIngress } from '@/composables/kitty/useKittySessionManager'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { useDiagramStore } from '@/stores/diagram'
@@ -45,21 +46,11 @@ export function useKittyMobileLibraryDiagramSelect(options: {
     diagramId: string,
     title: string
   ): Promise<boolean> {
-    const res = await fetch('/api/kitty/desktop_action/enqueue', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        kind: 'open_library_diagram',
-        diagram_library_id: diagramId,
-        title,
-      }),
+    return enqueueKittyDesktopAction({
+      kind: 'open_library_diagram',
+      diagram_library_id: diagramId,
+      title,
     })
-    if (!res.ok) {
-      return false
-    }
-    const data = (await res.json()) as { ok?: boolean }
-    return data.ok === true
   }
 
   async function selectDiagram(diagram: SavedDiagram): Promise<void> {

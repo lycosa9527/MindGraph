@@ -641,6 +641,42 @@ async def test_pop_discards_stale_actions(monkeypatch: pytest.MonkeyPatch) -> No
 
 
 @pytest.mark.asyncio
+async def test_enqueue_explain_node_accepts_valid_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Mobile chip tap may enqueue desktop 节点解释."""
+    pushed: list[dict] = []
+
+    async def _fake_push(user_id: int, payload: dict) -> bool:
+        pushed.append({"user_id": user_id, "payload": payload})
+        return True
+
+    monkeypatch.setattr(queue, "_push_desktop_action", _fake_push)
+    ok = await queue.enqueue_kitty_desktop_action(
+        9,
+        {
+            "kind": "explain_node",
+            "node_id": "branch-r-1-0",
+            "node_label": "广东",
+            "diagram_library_id": "abc-def-123",
+        },
+    )
+    assert ok is True
+    assert pushed[0]["payload"]["kind"] == "explain_node"
+    assert pushed[0]["payload"]["node_id"] == "branch-r-1-0"
+    assert pushed[0]["payload"]["node_label"] == "广东"
+    assert pushed[0]["payload"]["diagram_library_id"] == "abc-def-123"
+
+
+@pytest.mark.asyncio
+async def test_enqueue_explain_node_rejects_invalid_id() -> None:
+    """Reject unsafe node ids on explain_node enqueue."""
+    ok = await queue.enqueue_kitty_desktop_action(
+        9,
+        {"kind": "explain_node", "node_id": "bad id!"},
+    )
+    assert ok is False
+
+
+@pytest.mark.asyncio
 async def test_enqueue_open_library_diagram_rejects_invalid_id() -> None:
     """Test enqueue open library diagram rejects invalid id."""
     ok = await queue.enqueue_kitty_desktop_action(

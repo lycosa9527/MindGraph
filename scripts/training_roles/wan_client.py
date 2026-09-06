@@ -30,18 +30,27 @@ def _headers(api_key: str) -> dict[str, str]:
     }
 
 
-def post_i2v(api_key: str, frame_url: str, action: RoleAction) -> str:
-    """Submit one 5s 720P clip. Returns task id."""
+def submit_i2v(
+    api_key: str,
+    frame_url: str,
+    prompt: str,
+    negative: str,
+    label: str,
+    *,
+    resolution: str = "720P",
+    duration: int = 5,
+) -> str:
+    """Submit one I2V clip. Defaults stay 5s 720P for Course Builder roles."""
     body: dict[str, Any] = {
         "model": MODEL,
         "input": {
-            "prompt": SHELL + action["prompt"],
-            "negative_prompt": NEGATIVE,
+            "prompt": prompt,
+            "negative_prompt": negative,
             "media": [{"type": "first_frame", "url": frame_url}],
         },
         "parameters": {
-            "resolution": "720P",
-            "duration": 5,
+            "resolution": resolution,
+            "duration": duration,
             "prompt_extend": False,
             "watermark": False,
         },
@@ -59,15 +68,26 @@ def post_i2v(api_key: str, frame_url: str, action: RoleAction) -> str:
                 data = response.json()
                 task_id = (data.get("output") or {}).get("task_id")
                 if isinstance(task_id, str) and task_id:
-                    print(f"{action['id']} submitted {task_id}", flush=True)
+                    print(f"{label} submitted {task_id}", flush=True)
                     return task_id
                 last_error = RuntimeError(str(data.get("message") or "submit failed"))
-                print(f"{action['id']} submit {data.get('code')} {data.get('message')}", flush=True)
+                print(f"{label} submit {data.get('code')} {data.get('message')}", flush=True)
             except requests.RequestException as exc:
                 last_error = exc
-                print(f"{action['id']} transport {type(exc).__name__}", flush=True)
+                print(f"{label} transport {type(exc).__name__}", flush=True)
                 time.sleep(2 * attempt)
-    raise RuntimeError(f"{action['id']} submit failed: {last_error}")
+    raise RuntimeError(f"{label} submit failed: {last_error}")
+
+
+def post_i2v(api_key: str, frame_url: str, action: RoleAction) -> str:
+    """Submit one Course Builder role clip. Returns task id."""
+    return submit_i2v(
+        api_key,
+        frame_url,
+        SHELL + action["prompt"],
+        NEGATIVE,
+        action["id"],
+    )
 
 
 def poll_video_url(api_key: str, task_id: str, label: str) -> str:

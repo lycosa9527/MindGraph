@@ -56,6 +56,7 @@ const {
 const syncLabel = computed(() => {
   if (syncState.value === 'saving') return t('training.builder.autosaving')
   if (syncState.value === 'saved') return t('training.builder.autosaved')
+  if (syncState.value === 'error') return t('training.builder.autosaveError')
   return ''
 })
 </script>
@@ -68,6 +69,7 @@ const syncLabel = computed(() => {
       :busy="busy"
       :previewing="previewing"
       :sync-label="syncLabel"
+      :sync-error="syncState === 'error'"
       @save="save"
       @info="builder.setInfoOpen(true)"
       @preview="builder.togglePreview()"
@@ -153,5 +155,10 @@ const syncLabel = computed(() => {
   flex-direction: column;
   gap: 0.75rem;
   padding: 0.85rem 1rem 1rem;
+}
+@media (max-width: 768px) {
+  .editor {
+    flex-direction: column;
+  }
 }
 </style>

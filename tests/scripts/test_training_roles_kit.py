@@ -22,6 +22,7 @@ def test_original_stills_are_in_the_repo() -> None:
     assert STILL_THREE_QUARTER.is_file()
     assert STILL_FRONT.stat().st_size > 100_000
     assert STILL_THREE_QUARTER.stat().st_size > 100_000
+    assert "scripts/cat_emoji/stills/black" in STILL_FRONT.as_posix()
 
 
 def test_wan_catalog_matches_shipped_role_ids() -> None:

@@ -6,14 +6,14 @@ import TrainingStepMarks from '@/components/training/TrainingStepMarks.vue'
 import { liveLessonCoversMedia, liveLessonStep } from '@/composables/training/applyTrainingSnapshot'
 import { visibleMarkOverlays } from '@/composables/training/trainingMarkSteps'
 import { useTrainingStore } from '@/stores/training'
-import { shouldSkipTrainingFollow } from '@/utils/trainingClient'
+import { shouldHideTrainingDesktopChrome, shouldSkipTrainingFollow } from '@/utils/trainingClient'
 
 const route = useRoute()
 const training = useTrainingStore()
 
 const liveStep = computed(() =>
   liveLessonStep(training.snapshot, {
-    skip: shouldSkipTrainingFollow(),
+    skip: shouldSkipTrainingFollow() || shouldHideTrainingDesktopChrome(route.path),
     trainingRoute: route.path.startsWith('/training/builder'),
   })
 )

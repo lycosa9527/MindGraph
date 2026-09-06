@@ -4,9 +4,14 @@ import { MINDGRAPH_HEADLESS_EXPORT_KEY } from '@/utils/headlessExportSession'
 import { resetOfficeEmbedForTests } from '@/utils/officeEmbed'
 import {
   emptyTrainingSnapshot,
+  canOpenTrainingEvents,
   isTrainingOwnerHeartbeat,
   isTrainingRailVisible,
+  isTrainingRemotePath,
+  shouldHideTrainingDesktopChrome,
+  shouldHoldTrainingHostOnMobile,
   shouldSkipTrainingFollow,
+  TRAINING_RAIL_VISIBLE_ROWS,
   trainingEventsUrl,
   windowedRosterRows,
 } from '@/utils/trainingClient'
@@ -32,6 +37,12 @@ describe('trainingClient', () => {
     expect(trainingEventsUrl(12, true)).toBe('/api/training/events?org_id=12')
     expect(trainingEventsUrl(12, false)).toBe('/api/training/events')
     expect(trainingEventsUrl(null, true)).toBe('/api/training/events')
+  })
+
+  it('does not open SSE for a platform lead until an org is known', () => {
+    expect(canOpenTrainingEvents(true, null)).toBe(false)
+    expect(canOpenTrainingEvents(true, 12)).toBe(true)
+    expect(canOpenTrainingEvents(false, null)).toBe(true)
   })
 
   it('hides the friends rail from teachers', () => {
@@ -60,5 +71,26 @@ describe('trainingClient', () => {
     const rows = Array.from({ length: 80 }, (_, index) => index)
     expect(windowedRosterRows(rows, 50)).toHaveLength(50)
     expect(windowedRosterRows(rows.slice(0, 10), 50)).toHaveLength(10)
+  })
+
+  it('keeps fifteen friends visible before the rail scrolls', () => {
+    expect(TRAINING_RAIL_VISIBLE_ROWS).toBe(15)
+  })
+
+  it('hides desktop training chrome on every phone route', () => {
+    expect(isTrainingRemotePath('/m/training')).toBe(true)
+    expect(isTrainingRemotePath('/m/mindgraph')).toBe(false)
+    expect(shouldHideTrainingDesktopChrome('/m/training')).toBe(true)
+    expect(shouldHideTrainingDesktopChrome('/m')).toBe(true)
+    expect(shouldHideTrainingDesktopChrome('/m/mindmate')).toBe(true)
+    expect(shouldHideTrainingDesktopChrome('/training/builder/c1')).toBe(true)
+    expect(shouldHideTrainingDesktopChrome('/canvas')).toBe(false)
+  })
+
+  it('keeps the host on phone pages and anyone on the remote', () => {
+    expect(shouldHoldTrainingHostOnMobile('/m/training', 1, 9)).toBe(true)
+    expect(shouldHoldTrainingHostOnMobile('/m', 3, 3)).toBe(true)
+    expect(shouldHoldTrainingHostOnMobile('/m', 3, 9)).toBe(false)
+    expect(shouldHoldTrainingHostOnMobile('/canvas', 3, 3)).toBe(false)
   })
 })

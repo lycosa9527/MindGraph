@@ -53,6 +53,7 @@ const pageTitle = computed(() => {
     MobileKitty: 'Kitty',
     MobileOrgs: t('mobile.orgsTitle'),
     MobileVoiceNotes: t('auth.voiceNotes.modalTitle'),
+    MobileTraining: t('training.title'),
     MobileCanvas: 'MindGraph',
     MobileAccount: t('sidebar.account', 'Account'),
   }

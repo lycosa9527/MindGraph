@@ -7,7 +7,7 @@ Examples (from repo root, conda env python313):
   python -m scripts.training_roles.generate --ids 05,07 --still 1
   python -m scripts.training_roles.generate --ship-only --ids 11
 
-Stills live in scripts/training_roles/stills/.
+Green-screen stills live in scripts/cat_emoji/stills/black/.
 Shipped WebPs land in frontend/public/training/roles/.
 Scratch MP4s stay in scripts/training_roles/.work/ (gitignored).
 """

@@ -100,4 +100,20 @@ describe('useTrainingHeartbeat', () => {
     app.unmount()
     host.remove()
   })
+
+  it('ticks again when the tab becomes visible', async () => {
+    const { app, host, store } = mountHeartbeat()
+    store.applySnapshot(snapshot())
+    await flushTurns()
+    postHeartbeat.mockClear()
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+    await flushTurns()
+    expect(postHeartbeat).toHaveBeenCalled()
+    app.unmount()
+    host.remove()
+  })
 })

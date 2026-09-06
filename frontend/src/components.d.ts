@@ -435,6 +435,8 @@ declare module 'vue' {
     TrainingNotesBar: typeof import('./components/training/TrainingNotesBar.vue')['default']
     TrainingPageLiveFrame: typeof import('./components/training/TrainingPageLiveFrame.vue')['default']
     TrainingPlayControls: typeof import('./components/training/TrainingPlayControls.vue')['default']
+    TrainingRemotePrompter: typeof import('./components/training/TrainingRemotePrompter.vue')['default']
+    TrainingRemoteRoster: typeof import('./components/training/TrainingRemoteRoster.vue')['default']
     TrainingRolePicker: typeof import('./components/training/TrainingRolePicker.vue')['default']
     TrainingSlidePreview: typeof import('./components/training/TrainingSlidePreview.vue')['default']
     TrainingSpotlightLayer: typeof import('./components/training/TrainingSpotlightLayer.vue')['default']

@@ -376,7 +376,7 @@ export type EventTypes = {
   'training:play_requested': { courseId: string }
   'training:pause_requested': Record<string, never>
   'training:resume_requested': Record<string, never>
-  'training:end_requested': Record<string, never>
+  'training:end_requested': { confirmed?: boolean }
   'training:takeover_requested': Record<string, never>
   'training:step_requested': { delta: number }
   'training:free_requested': { free?: boolean }

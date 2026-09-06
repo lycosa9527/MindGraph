@@ -57,6 +57,11 @@ import {
   useConceptMapRelationship,
 } from '@/composables/editor/useConceptMapRelationship'
 import { eventBus } from '@/composables/core/useEventBus'
+import {
+  consumeKittyPendingDesktopExplain,
+  peekKittyPendingDesktopExplain,
+  shouldFlushKittyPendingDesktopExplain,
+} from '@/composables/kitty/kittyPendingCanvasAction'
 import { useMindMapSubgraphSuggest } from '@/composables/editor/useMindMapSubgraphSuggest'
 import { MIND_MAP_CANVAS_VARIANT_KEY } from '@/composables/mindMap/mindMapCanvasVariantKey'
 import {
@@ -73,6 +78,7 @@ import {
 import { LEARNING_SHEET_HAMMER_CURSOR } from '@/config/learningSheetCursor'
 import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR } from '@/config/presentationHighlighter'
 import { usePanelsStore, usePresentationPointerStore, useUIStore } from '@/stores'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { diagramSessionRef, useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { MindMapCanvasMode } from '@/stores/ui'
@@ -168,6 +174,7 @@ const emit = defineEmits<{
 
 const diagramStore = useDiagramSession()
 const mindMapBulkLoading = diagramSessionRef(diagramStore, 'mindMapBulkLoading')
+const savedDiagramsStore = useSavedDiagramsStore()
 const panelsStore = usePanelsStore()
 const uiStore = useUIStore()
 
@@ -604,6 +611,19 @@ useDiagramCanvasVueFlowHandlers({
 let unsubscribeEventBus: (() => void) | null = null
 let unregisterLayoutRecalcSession: (() => void) | null = null
 
+function flushPendingDesktopExplain(activeLibraryId?: string | null): void {
+  const nodeId = shouldFlushKittyPendingDesktopExplain(
+    peekKittyPendingDesktopExplain(),
+    activeLibraryId ?? savedDiagramsStore.activeDiagramId,
+    diagramStore.data?.nodes ?? []
+  )
+  if (!nodeId) {
+    return
+  }
+  consumeKittyPendingDesktopExplain()
+  openNodeExplain(nodeId)
+}
+
 onMounted(() => {
   unregisterLayoutRecalcSession = registerDiagramLayoutRecalcSession(diagramStore)
   void ensureMarkdownRenderer()
@@ -622,6 +642,14 @@ onMounted(() => {
     },
     'DiagramCanvas'
   )
+  eventBus.onWithOwner(
+    'diagram:loaded_from_library',
+    ({ diagramId }) => {
+      flushPendingDesktopExplain(diagramId)
+    },
+    'DiagramCanvas'
+  )
+  flushPendingDesktopExplain()
   unsubscribeEventBus = mountSubscriptions({
     diagramStore,
     getNodes: () => unref(getVueFlowNodes) as unknown as MindGraphNode[],

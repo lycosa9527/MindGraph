@@ -91,6 +91,43 @@ export function shouldBypassTrainingLeaveConfirm(state: TrainingSnapshot['state'
   return state === 'live' || state === 'paused' || state === 'ended'
 }
 
+export function shouldEnforceTrainingPageLock(
+  snapshot: TrainingSnapshot,
+  userId: number | null | undefined
+): boolean {
+  if (snapshot.state !== 'live') return false
+  if (!snapshot.course_id) return false
+  if (snapshot.pull_users !== false) return false
+  const mine = Number(userId)
+  const host = Number(snapshot.instructor_id)
+  if (!mine || !host) return false
+  return mine !== host
+}
+
+export function trainingFreeLockLocation(
+  routePath: string,
+  snapshot: TrainingSnapshot
+): { path: string; query?: Record<string, string> } | null {
+  const step = snapshot.step
+  if (step?.type === 'slide' || step?.type === 'video') return null
+  return trainingStepLocation(routePath, snapshot)
+}
+
+export function trainingFreeLockDecision(
+  snapshot: TrainingSnapshot,
+  userId: number | null | undefined,
+  currentPath: string,
+  toPath: string
+): { path: string; query?: Record<string, string> } | boolean {
+  if (!shouldEnforceTrainingPageLock(snapshot, userId)) return true
+  const target = trainingFreeLockLocation(currentPath, snapshot)
+  if (target) {
+    if (toPath === target.path) return true
+    return target
+  }
+  return toPath === currentPath
+}
+
 export function shouldForceNavigate(snapshot: TrainingSnapshot, lastAppliedSeq: number): boolean {
   if (snapshot.state !== 'live' || snapshot.seq <= lastAppliedSeq) {
     return false
@@ -150,7 +187,7 @@ export async function applyTrainingNavigate(
   routePath: string,
   snapshot: TrainingSnapshot
 ): Promise<boolean> {
-  if (snapshot.state !== 'live') return false
+  if (snapshot.state !== 'live' && snapshot.state !== 'paused') return false
   const target = trainingStepLocation(routePath, snapshot)
   if (!target) return false
   const current = router.currentRoute.value

@@ -36,6 +36,7 @@ from services.features.training.courses.constants import (
     optional_step_key,
 )
 from services.features.training.courses.cover_png import build_double_bubble_cover_png
+from services.features.training.courses.repository import _stable_step_id
 from services.features.training.courses.seed import ensure_double_bubble_seed
 from services.features.training.courses.serialize import (
     localized_text,
@@ -187,7 +188,7 @@ async def test_leader_lists_seeded_double_bubble() -> None:
         patch("routers.api.training_course_routes.can_lead_any_training", return_value=True),
         patch("routers.api.training_course_routes.system_rls_session", return_value=_rls(db)),
         patch(
-            "routers.api.training_course_routes.ensure_double_bubble_seed",
+            "routers.api.training_course_routes.ensure_double_bubble_seed_once",
             new=AsyncMock(),
         ),
         patch("routers.api.training_course_routes.list_courses", new=AsyncMock(return_value=[course])),
@@ -276,6 +277,33 @@ def test_snapshot_hides_notes_from_teachers() -> None:
     assert instructor["step"]["notes"] == "先点注册"
 
 
+def test_snapshot_uses_instructor_notes_field() -> None:
+    """Redis keeps notes off the step blob; instructors still see them."""
+    session = {
+        "state": "live",
+        "session_id": "s",
+        "org_id": 1,
+        "seq": 2,
+        "instructor_id": 9,
+        "course_id": DOUBLE_BUBBLE_COURSE_ID,
+        "step_index": 0,
+        "step": {"type": "page"},
+        "instructor_notes": "讲义",
+    }
+    teacher = snapshot_from_session(session, viewer_user_id=3)
+    instructor = snapshot_from_session(session, viewer_user_id=9)
+    assert "notes" not in teacher["step"]
+    assert instructor["step"]["notes"] == "讲义"
+
+
+def test_stable_step_id_reuses_client_uuid() -> None:
+    """Autosave keeps the author's step id when it is a UUID."""
+    kept = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+    assert _stable_step_id({"id": kept}, set()) == kept
+    assert _stable_step_id({"id": kept}, {kept}) != kept
+    assert snapshot_step_payload({"type": "page", "notes": "secret"}).get("notes") is None
+
+
 def test_localized_text_and_cover_png() -> None:
     """Bilingual fields and the seed cover PNG are well-formed."""
     assert localized_text({"zh": "甲", "en": "A"}, "zh") == "甲"
@@ -299,7 +327,7 @@ def test_localized_text_and_cover_png() -> None:
     assert step["pull_users"] is True
     assert step["modal_key"] == "language-settings"
     assert step["focus_key"] == "mindmap-v2"
-    assert step["notes"] == "点击思维导图"
+    assert "notes" not in step
     assert step["mark_step"] == 1
     assert step["mark_steps"] == 1
     assert clamped_mark_step(3) == 3

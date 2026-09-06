@@ -15,14 +15,16 @@ import KittyIpodClickWheel from '@/components/kitty/KittyIpodClickWheel.vue'
 import KittyMobileChatTranscript from '@/components/kitty/KittyMobileChatTranscript.vue'
 import KittyMobileDiagramPickerDropdown from '@/components/kitty/KittyMobileDiagramPickerDropdown.vue'
 import KittyMobileLlmModelRow from '@/components/kitty/KittyMobileLlmModelRow.vue'
-import MindMapNodeExplainBubble from '@/components/canvas/MindMapNodeExplainBubble.vue'
-import type { ExplainBubblePosition } from '@/composables/canvasToolbar'
 import {
   useKittyAgent,
   useLanguage,
   useNotifications,
 } from '@/composables'
 import { applyKittyRemoteLlmModel } from '@/composables/kitty/applyKittyRemoteLlmModel'
+import {
+  enqueueKittyDesktopAction,
+  enqueueKittyDesktopExplainNode,
+} from '@/composables/kitty/enqueueKittyDesktopExplainNode'
 import { hydrateMobileKittyFromLibrary } from '@/composables/kitty/hydrateMobileKittyFromLibrary'
 import { hydrateMobileKittyStoreFromBootstrap } from '@/composables/kitty/hydrateMobileKittyStoreFromBootstrap'
 import {
@@ -39,7 +41,6 @@ import { useKittyMobileLibraryDiagramSelect } from '@/composables/kitty/useKitty
 import { useKittySessionManager } from '@/composables/kitty/useKittySessionManager'
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
 import { useMobileKittyPairing } from '@/composables/kitty/useMobileKittyPairing'
-import { useMindMapNodeExplain } from '@/composables/mindMap/useMindMapNodeExplain'
 import { prepareMobileKittyPhotoCapture } from '@/composables/mobile/prepareMobileKittyPhotoCapture'
 import { useMobileKittyChat } from '@/composables/mobile/useMobileKittyChat'
 import { useMobileKittyMicPtt } from '@/composables/mobile/useMobileKittyMicPtt'
@@ -260,26 +261,14 @@ async function handleScopeSyncChoice(
     }
     if (choice === 'open_on_desktop') {
       markUserDiagramOverride()
-      const res = await fetch('/api/kitty/desktop_action/enqueue', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          kind: 'open_library_diagram',
-          diagram_library_id: div.mobileScope,
-        }),
+      const ok = await enqueueKittyDesktopAction({
+        kind: 'open_library_diagram',
+        diagram_library_id: div.mobileScope,
       })
-      if (!res.ok) {
-        notify.warning(t('mobile.kittyDesktopJumpFailed', '已切换导图，但无法通知电脑端'))
+      if (ok) {
+        notify.success(t('mobile.kittyDiagramSelected', '已选择导图，电脑端将同步打开'))
       } else {
-        const data = (await res.json()) as { ok?: boolean }
-        if (data.ok) {
-          notify.success(
-            t('mobile.kittyDiagramSelected', '已选择导图，电脑端将同步打开')
-          )
-        } else {
-          notify.warning(t('mobile.kittyDesktopJumpFailed', '已切换导图，但无法通知电脑端'))
-        }
+        notify.warning(t('mobile.kittyDesktopJumpFailed', '已切换导图，但无法通知电脑端'))
       }
       showScopeDivergenceBanner.value = false
       divergenceDismissedKey.value = key
@@ -765,25 +754,23 @@ function handleClarifyChoice(choice: OneSentenceClarifyChoice): void {
   void selectClarifyChoice(choice)
 }
 
-const {
-  visible: nodeExplainVisible,
-  target: nodeExplainTarget,
-  text: nodeExplainText,
-  error: nodeExplainError,
-  loading: nodeExplainLoading,
-  openExplain: openNodeExplain,
-  close: closeNodeExplain,
-} = useMindMapNodeExplain()
-
-const mobileExplainPosition: ExplainBubblePosition = {
-  left: 0,
-  top: 0,
-  visible: false,
-  placement: 'below',
-}
-
-function handleChipActiveRetap(node: { id: string; text: string }): void {
-  openNodeExplain(node.id, node.text)
+function handleChipNodeTap(node: { id: string; text: string }): void {
+  const nodeId = node.id.trim()
+  if (!nodeId) {
+    return
+  }
+  pushKittyDebugLine('#explain', nodeId.slice(0, 12))
+  void enqueueKittyDesktopExplainNode({
+    nodeId,
+    nodeLabel: node.text,
+    diagramLibraryId: mobileKittyContextPreview.value.diagramLibraryId ?? undefined,
+  }).then((ok) => {
+    if (!ok) {
+      notify.warning(
+        t('mobile.kittyDesktopExplainFailed', '无法在电脑端打开节点解释，请确认桌面已打开该导图')
+      )
+    }
+  })
 }
 </script>
 
@@ -980,7 +967,7 @@ function handleChipActiveRetap(node: { id: string; text: string }): void {
           <KittyIpodClickWheel
             class="kitty-stage__wheel w-full"
             :on-selection-change="syncMobileKittyContextNow"
-            :on-active-retap="handleChipActiveRetap"
+            :on-node-tap="handleChipNodeTap"
           />
           <KittyMobileLlmModelRow
             v-if="authStore.isAuthenticated && kittyServerEnabled"
@@ -1122,6 +1109,7 @@ function handleChipActiveRetap(node: { id: string; text: string }): void {
       </div>
 
       <p
+        v-if="isDevBuild"
         class="text-center text-[10px] text-slate-400 pb-1 px-3 font-mono leading-tight break-all"
         aria-live="polite"
       >
@@ -1137,15 +1125,6 @@ function handleChipActiveRetap(node: { id: string; text: string }): void {
       </p>
     </div>
 
-    <MindMapNodeExplainBubble
-      v-model:visible="nodeExplainVisible"
-      :target="nodeExplainTarget"
-      :text="nodeExplainText"
-      :error="nodeExplainError"
-      :loading="nodeExplainLoading"
-      :position="mobileExplainPosition"
-      @close="closeNodeExplain"
-    />
   </div>
 </template>
 

@@ -95,7 +95,7 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
     builder.setBusy(true)
     try {
       await uploadTrainingFile(builder.courseId, role, file)
-      notify.success(t('training.builder.saved'))
+      notify.success(t('training.builder.coverUploaded'))
     } catch (error) {
       notify.error(uploadFailedMessage(error))
     } finally {
@@ -109,10 +109,9 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
     try {
       await rememberIfNeeded()
       const at = builder.selected
-      const uploaded: Array<{ id: string; url: string }> = []
-      for (const file of files) {
-        uploaded.push(await uploadTrainingFile(builder.courseId, 'slide', file))
-      }
+      const uploaded = await Promise.all(
+        files.map((file) => uploadTrainingFile(builder.courseId, 'slide', file))
+      )
       builder.insertCreatedSteps(at, uploadedSlideSteps(at, uploaded))
     } catch (error) {
       notify.error(uploadFailedMessage(error))

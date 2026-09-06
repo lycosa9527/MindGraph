@@ -38,9 +38,9 @@ const welcomeMessage = computed(() =>
       :branding-size="welcomeBrandingSize"
       avatar-class="mindmate-avatar-welcome"
     />
-    <div class="text-center mt-6">
-      <div class="text-2xl font-medium text-gray-800 mb-2">{{ displayName }}</div>
-      <div class="text-lg text-gray-600">
+    <div class="welcome-copy text-center">
+      <div class="welcome-title font-medium text-gray-800 mb-2">{{ displayName }}</div>
+      <div class="welcome-subtitle text-gray-600">
         {{ welcomeMessage }}
       </div>
     </div>
@@ -70,4 +70,12 @@ const welcomeMessage = computed(() =>
 
 <style scoped>
 @import './mindmate.css';
+
+.welcome-title {
+  font-size: 1.5rem;
+}
+
+.welcome-subtitle {
+  font-size: 1.125rem;
+}
 </style>

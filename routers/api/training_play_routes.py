@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import logging
+import time
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from models.domain.auth import User
-from services.features.training.courses.repository import get_course
-from services.features.training.courses.seed import ensure_double_bubble_seed
-from services.features.training.courses.serialize import serialize_course, snapshot_step_payload
+from services.features.training.activity_store import activity_summary
+from services.features.training.courses.play_cache import load_serialized_steps
+from services.features.training.courses.serialize import snapshot_step_payload
 from services.features.training.payloads import FreeBody, PlayBody, StepBody, snapshot_from_session
 from services.features.training.play_advance import resolve_play_cursor
 from services.features.training.permissions import can_lead_training
@@ -17,9 +21,10 @@ from services.features.training.session_store import (
     require_owner_active,
 )
 from services.features.training.sse import publish_event
+from services.features.training.training_logger import log_training
 from utils.auth import get_current_user
-from utils.db.session_open import system_rls_session
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -31,6 +36,8 @@ def _http_for_session_error(exc: TrainingSessionError) -> HTTPException:
         return HTTPException(status_code=403, detail=detail)
     if exc.code == "not_found":
         return HTTPException(status_code=404, detail=detail)
+    if exc.code == "seq_conflict":
+        return HTTPException(status_code=409, detail=detail)
     return HTTPException(status_code=503, detail=detail)
 
 
@@ -54,6 +61,7 @@ def _step_extras(course_id: str, index: int, step_body: dict) -> dict:
         "course_id": course_id,
         "step_index": index,
         "step": snapshot_step_payload(step_body),
+        "instructor_notes": str(step_body.get("notes") or ""),
         "diagram_type": diagram,
         "topic_options": options,
         "pull_users": True,
@@ -61,13 +69,26 @@ def _step_extras(course_id: str, index: int, step_body: dict) -> dict:
 
 
 async def _load_serialized_steps(course_id: str) -> list[dict]:
-    async with system_rls_session() as db:
-        await ensure_double_bubble_seed(db)
-        await db.commit()
-        course = await get_course(db, course_id)
-        if course is None:
-            return []
-        return serialize_course(course, include_steps=True).get("steps") or []
+    return await load_serialized_steps(course_id)
+
+
+async def _log_teacher_pull(event: str, session: dict, user: User, **fields: Any) -> None:
+    org_id = int(session.get("org_id") or 0)
+    summary = await activity_summary(org_id) if org_id else {"online": 0, "generating": 0}
+    log_training(
+        logger,
+        event,
+        actor_id=int(user.id),
+        org_id=org_id,
+        session_id=str(session.get("session_id") or ""),
+        course_id=str(session.get("course_id") or ""),
+        teachers=int(session.get("confirm_teacher_count") or 0),
+        online=int(summary.get("online") or 0),
+        generating=int(summary.get("generating") or 0),
+        pull_users=bool(session.get("pull_users")),
+        seq=int(session.get("seq") or 0),
+        **fields,
+    )
 
 
 @router.post("/sessions/{session_id}/play")
@@ -85,11 +106,23 @@ async def play_course(
     extras = _step_extras(body.course_id, 0, steps[0])
     extras["step"]["mark_step"] = 1
     extras["step_count"] = len(steps)
+    started = time.monotonic()
     try:
         updated = await bump_and_save(session, extra=extras, rate_limit_steer=True)
     except TrainingSessionError as exc:
         raise _http_for_session_error(exc) from exc
     await publish_event(org_id, "seq", {"seq": int(updated.get("seq") or 0)})
+    step = steps[0]
+    await _log_teacher_pull(
+        "course_play",
+        updated,
+        current_user,
+        step_index=0,
+        steps=len(steps),
+        step_type=str(step.get("type") or ""),
+        page_key=str(step.get("page_key") or ""),
+        elapsed_ms=int((time.monotonic() - started) * 1000),
+    )
     return snapshot_from_session(updated, viewer_user_id=int(current_user.id))
 
 
@@ -120,11 +153,25 @@ async def step_course(
     extras = _step_extras(course_id, target, steps[target])
     extras["step"]["mark_step"] = mark_at
     extras["step_count"] = len(steps)
+    started = time.monotonic()
     try:
         updated = await bump_and_save(session, extra=extras, rate_limit_steer=True)
     except TrainingSessionError as exc:
         raise _http_for_session_error(exc) from exc
     await publish_event(org_id, "seq", {"seq": int(updated.get("seq") or 0)})
+    step = steps[target]
+    await _log_teacher_pull(
+        "course_step",
+        updated,
+        current_user,
+        from_index=current,
+        step_index=target,
+        mark_step=mark_at,
+        steps=len(steps),
+        step_type=str(step.get("type") or ""),
+        page_key=str(step.get("page_key") or ""),
+        elapsed_ms=int((time.monotonic() - started) * 1000),
+    )
     return snapshot_from_session(updated, viewer_user_id=int(current_user.id))
 
 
@@ -137,6 +184,7 @@ async def free_teachers(
 ):
     """Keep teachers on this page and let them work, or pull them back."""
     session = await _owner_session(org_id, session_id, current_user)
+    started = time.monotonic()
     try:
         updated = await bump_and_save(
             session,
@@ -146,4 +194,12 @@ async def free_teachers(
     except TrainingSessionError as exc:
         raise _http_for_session_error(exc) from exc
     await publish_event(org_id, "seq", {"seq": int(updated.get("seq") or 0)})
+    event = "teachers_free" if body.free else "teachers_pull"
+    await _log_teacher_pull(
+        event,
+        updated,
+        current_user,
+        step_index=updated.get("step_index"),
+        elapsed_ms=int((time.monotonic() - started) * 1000),
+    )
     return snapshot_from_session(updated, viewer_user_id=int(current_user.id))

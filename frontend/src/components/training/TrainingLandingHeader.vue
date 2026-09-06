@@ -19,7 +19,6 @@ const props = defineProps<{
   isLive: boolean
   isPaused: boolean
   isForeign: boolean
-  hasCourse?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -30,8 +29,6 @@ const emit = defineEmits<{
   resume: []
   end: []
   takeover: []
-  prevStep: []
-  nextStep: []
 }>()
 
 const startMode = computed(() => {
@@ -39,6 +36,7 @@ const startMode = computed(() => {
   if (props.selectedOrgId != null && !props.isForeign) return 'ready'
   return 'idle'
 })
+const orgLocked = computed(() => props.canControl || props.isForeign)
 
 function onOrgChange(value: number | string | null): void {
   if (value == null || value === '') {
@@ -89,6 +87,7 @@ function onStartStop(): void {
         remote
         clearable
         size="small"
+        :disabled="busy || orgLocked"
         :placeholder="t('training.searchOrg')"
         :popper-class="SCHOOL_SELECT_POPPER_CLASS"
         :remote-method="(query: string) => emit('search', query)"
@@ -117,6 +116,8 @@ function onStartStop(): void {
         v-if="isForeign"
         size="small"
         class="admin-swiss-btn"
+        :loading="busy"
+        :disabled="busy"
         @click="emit('takeover')"
       >
         {{ t('training.takeover') }}
@@ -125,6 +126,8 @@ function onStartStop(): void {
         v-if="canControl && isLive"
         size="small"
         class="admin-swiss-btn"
+        :loading="busy"
+        :disabled="busy"
         @click="emit('pause')"
       >
         {{ t('training.pause') }}
@@ -133,25 +136,11 @@ function onStartStop(): void {
         v-if="canControl && isPaused"
         size="small"
         class="admin-swiss-btn"
+        :loading="busy"
+        :disabled="busy"
         @click="emit('resume')"
       >
         {{ t('training.resume') }}
-      </ElButton>
-      <ElButton
-        v-if="canControl && hasCourse"
-        size="small"
-        class="admin-swiss-btn"
-        @click="emit('prevStep')"
-      >
-        {{ t('training.prevStep') }}
-      </ElButton>
-      <ElButton
-        v-if="canControl && hasCourse"
-        size="small"
-        class="admin-swiss-btn"
-        @click="emit('nextStep')"
-      >
-        {{ t('training.nextStep') }}
       </ElButton>
     </div>
   </header>

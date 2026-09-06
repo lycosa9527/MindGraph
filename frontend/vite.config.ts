@@ -236,6 +236,12 @@ export default defineConfig({
       '@vueuse/core',
       'vue-demi',
       'pdfjs-dist',
+      // Vue Flow is only imported from lazy canvas routes. Without include,
+      // Vite rediscovers it on first /training or /canvas load and 504s
+      // "Outdated Optimize Dep", which then fails the route dynamic import.
+      '@vue-flow/core',
+      '@vue-flow/background',
+      '@vue-flow/minimap',
     ],
     rolldownOptions: {
       plugins: [pdfjsViteIgnoreDynamicImportPlugin()],

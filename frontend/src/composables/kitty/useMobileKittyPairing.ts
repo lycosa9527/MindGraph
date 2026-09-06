@@ -18,6 +18,7 @@ import { useMobileKittyLiveContextPoll } from '@/composables/kitty/useMobileKitt
 import { runKittyHubSync } from '@/composables/kitty/pipeline/hubSyncWorker'
 import { useAuthStore, useDiagramStore } from '@/stores'
 import { useLLMResultsStore } from '@/stores/llmResults'
+import { useOneSentenceStore } from '@/stores/oneSentence'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
@@ -94,13 +95,26 @@ export function useMobileKittyPairing(
     selectedNodes: selectedNodesRef,
   } = storeToRefs(diagramStore)
   const { activeDiagramId } = storeToRefs(savedDiagramsStore)
+  const oneSentenceStore = useOneSentenceStore()
 
-  /** Mobile Kitty uses the one-sentence edit pipeline for verified diagram mutations. */
+  /**
+   * Same gate as 对话式修改: a bound library diagram is always edit.
+   * Canvas heuristics cover ephemeral sessions that already have a real map.
+   */
   function resolveMobileOneSentencePhase(): 'create' | 'edit' {
+    if (resolveMobileLibraryDiagramId()) {
+      return 'edit'
+    }
     if (shouldUseOneSentenceEditFlow(diagramStore, savedDiagramsStore, llmResultsStore, 'create')) {
       return 'edit'
     }
     return 'create'
+  }
+
+  function applyOneSentenceStoreFromPairing(): void {
+    const lib = resolveMobileLibraryDiagramId()
+    oneSentenceStore.setLibraryScope(lib)
+    oneSentenceStore.setPhase(resolveMobileOneSentencePhase())
   }
 
   function withOneSentencePanel(ctx: KittyAgentContext): KittyAgentContext {
@@ -497,6 +511,7 @@ export function useMobileKittyPairing(
   }
 
   function buildMobileKittyContext(): KittyAgentContext {
+    applyOneSentenceStoreFromPairing()
     const libId = resolveMobileLibraryDiagramId()
     if (libId) {
       const libCtx = buildMinimalLibraryKittyContext(libId)
@@ -641,6 +656,21 @@ export function useMobileKittyPairing(
       scheduleMobileKittyContextSync()
     },
     { deep: true }
+  )
+
+  // Picking / following a library diagram is the same as opening 对话式修改 on that map.
+  // Context sync is owned by the debounced store watch — do not fire a second immediate push.
+  watch(
+    activeDiagramId,
+    (id, prev) => {
+      const lib = id?.trim() ?? ''
+      const previous = prev?.trim() ?? ''
+      if (previous !== '' && lib === previous) {
+        return
+      }
+      applyOneSentenceStoreFromPairing()
+    },
+    { immediate: true }
   )
 
   watch(

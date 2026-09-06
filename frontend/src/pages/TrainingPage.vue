@@ -14,7 +14,6 @@ import {
   requestTrainingSearchOrgs,
   requestTrainingSelectOrg,
   requestTrainingStart,
-  requestTrainingStep,
   requestTrainingTakeover,
 } from '@/composables/training/trainingCommands'
 import { useTrainingHeartbeat } from '@/composables/training/useTrainingHeartbeat'
@@ -29,6 +28,7 @@ const authStore = useAuthStore()
 const training = useTrainingStore()
 const preview = ref<TrainingCourse | null>(null)
 const previewIndex = ref(0)
+const catalogLoading = ref(true)
 
 const myUserId = computed(() => Number(authStore.user?.id))
 const isForeignSession = computed(
@@ -56,7 +56,7 @@ async function applyCourse(course: TrainingCourse): Promise<void> {
       preview.value = full
       previewIndex.value = 0
     } catch {
-      notify.error(t('training.builder.previewEmpty'))
+      notify.error(t('training.builder.previewLoadFailed'))
     }
     return
   }
@@ -69,8 +69,9 @@ function onSelectOrg(orgId: number | null): void {
 }
 
 onMounted(() => {
-  void training.loadOrgs()
-  void training.loadCourses()
+  void Promise.all([training.loadOrgs(), training.loadCourses()]).finally(() => {
+    catalogLoading.value = false
+  })
 })
 </script>
 
@@ -85,7 +86,6 @@ onMounted(() => {
       :is-live="training.isLive"
       :is-paused="training.isPaused"
       :is-foreign="isForeignSession"
-      :has-course="Boolean(training.snapshot.course_id)"
       @search="requestTrainingSearchOrgs"
       @select-org="onSelectOrg"
       @start="requestTrainingStart"
@@ -93,8 +93,6 @@ onMounted(() => {
       @resume="requestTrainingResume"
       @end="requestTrainingEnd"
       @takeover="requestTrainingTakeover"
-      @prev-step="requestTrainingStep(-1)"
-      @next-step="requestTrainingStep(1)"
     />
     <div class="training-page__body">
       <p
@@ -114,6 +112,12 @@ onMounted(() => {
         class="training-page__hint"
       >
         {{ t('training.builder.previewHint') }}
+      </p>
+      <p
+        v-if="catalogLoading"
+        class="training-page__hint"
+      >
+        {{ t('training.catalogLoading') }}
       </p>
       <TrainingCourseGrid
         :courses="training.courses"

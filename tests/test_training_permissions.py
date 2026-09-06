@@ -8,6 +8,8 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from services.features.training.permissions import (
+    can_delete_training_course,
+    can_edit_training_course,
     can_lead_any_training,
     can_lead_training,
     is_org_teacher_target,
@@ -75,3 +77,17 @@ async def test_teacher_cannot_lead_own_org() -> None:
     """Teachers cannot start or steer."""
     teacher = _user("teacher", org_id=10)
     assert await can_lead_training(teacher, 10) is False
+
+
+def test_shared_catalog_edit_and_owned_delete() -> None:
+    """Visiting staff share edits; experts delete only their own drafts."""
+    draft = SimpleNamespace(is_system=False, owner_id=9)
+    seed = SimpleNamespace(is_system=True, owner_id=None)
+    expert = _user("expert", user_id=9)
+    other = _user("expert", user_id=8)
+    admin = _user("superadmin", user_id=1)
+    assert can_edit_training_course(expert) is True
+    assert can_delete_training_course(expert, draft) is True
+    assert can_delete_training_course(other, draft) is False
+    assert can_delete_training_course(admin, draft) is True
+    assert can_delete_training_course(admin, seed) is False

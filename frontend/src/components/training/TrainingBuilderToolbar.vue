@@ -372,6 +372,12 @@ function clearSpotlight(): void {
   align-items: center;
   gap: 0.5rem;
 }
+@media (max-width: 768px) {
+  .builder-toolbar__row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
 .builder-toolbar__label {
   min-width: 2.5rem;
   color: #78716c;

@@ -12,9 +12,14 @@ const notify = useNotifications()
 const router = useRouter()
 const courses = ref<TrainingCourse[]>([])
 const busy = ref(false)
+const loading = ref(true)
 
 async function load(): Promise<void> {
-  courses.value = await fetchTrainingCourses()
+  try {
+    courses.value = await fetchTrainingCourses()
+  } finally {
+    loading.value = false
+  }
 }
 
 async function createCourse(): Promise<void> {
@@ -23,7 +28,7 @@ async function createCourse(): Promise<void> {
     const created = await createTrainingCourse()
     await router.push({ name: 'TrainingBuilderEditor', params: { courseId: created.id } })
   } catch {
-    notify.error(t('training.startFailed'))
+    notify.error(t('training.builder.createFailed'))
   } finally {
     busy.value = false
   }
@@ -48,7 +53,13 @@ onMounted(() => {
     />
     <div class="training-page__body">
       <p
-        v-if="!courses.length"
+        v-if="loading"
+        class="training-page__hint"
+      >
+        {{ t('training.catalogLoading') }}
+      </p>
+      <p
+        v-else-if="!courses.length"
         class="training-page__hint"
       >
         {{ t('training.builder.empty') }}

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from typing import Optional
 
@@ -14,6 +15,7 @@ from services.features.training.courses.constants import ROLE_MAX_BYTES, ROLE_MI
 from services.features.training.courses.repository import add_asset, get_course
 from services.features.training.permissions import can_lead_any_training, is_org_teacher_target
 from services.features.training.session_store import get_session
+from services.features.training.session_view import is_active_session
 from services.features.training.storage.backend import (
     cos_training_enabled,
     create_presigned_get,
@@ -40,10 +42,13 @@ from services.features.training.storage.keys import (
     suffix_for_upload,
     training_public_asset_url,
 )
+from services.features.training.training_logger import log_training
 from utils.auth import get_current_user
 from utils.db.session_open import system_rls_session
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
+_ASSET_CACHE = {"Cache-Control": "private, max-age=120"}
 
 
 class AssetInitBody(BaseModel):
@@ -94,11 +99,25 @@ async def init_training_asset(
         max_bytes=ROLE_MAX_BYTES[body.role],
     )
     put_url = create_presigned_put(logical_key, body.content_type)
+    backend = storage_backend()
+    log_training(
+        logger,
+        "asset_init",
+        prefix="[Training/COS]",
+        actor_id=int(current_user.id),
+        course_id=body.course_id,
+        role=body.role,
+        asset_id=asset_id,
+        key=logical_key,
+        bytes=body.size_bytes,
+        backend=backend,
+        presign=bool(put_url),
+    )
     return {
         "key": logical_key,
         "asset_id": asset_id,
         "put_url": put_url,
-        "backend": storage_backend(),
+        "backend": backend,
         "headers": {"Content-Type": body.content_type} if put_url else {},
     }
 
@@ -120,6 +139,16 @@ async def complete_training_asset(
         role=role,
     )
     if grant is None:
+        log_training(
+            logger,
+            "asset_grant_missing",
+            level=logging.WARNING,
+            prefix="[Training/COS]",
+            actor_id=int(current_user.id),
+            course_id=course_id,
+            role=role,
+            key=key,
+        )
         raise HTTPException(status_code=400, detail="Upload grant missing or expired")
     if grant.get("key") != key or grant.get("course_id") != course_id:
         raise HTTPException(status_code=400, detail="Upload grant does not match this course")
@@ -160,6 +189,19 @@ async def complete_training_asset(
             bytes_size=size,
         )
         await db.commit()
+    log_training(
+        logger,
+        "asset_complete",
+        prefix="[Training/COS]",
+        actor_id=int(current_user.id),
+        course_id=course_id,
+        role=role,
+        asset_id=asset.id,
+        key=key,
+        bytes=size,
+        source="multipart" if file is not None else "cos_head",
+        backend=storage_backend(),
+    )
     return {
         "id": asset.id,
         "role": asset.role,
@@ -176,7 +218,7 @@ async def can_read_training_asset(user: User, course_id: str) -> bool:
     if org_id is None or not is_org_teacher_target(user, int(org_id)):
         return False
     session = await get_session(int(org_id))
-    if session is None or session.get("state") not in {"live", "paused"}:
+    if session is None or not is_active_session(session):
         return False
     return str(session.get("course_id") or "") == course_id
 
@@ -189,7 +231,7 @@ async def can_read_packed_role(user: User) -> bool:
     if org_id is None or not is_org_teacher_target(user, int(org_id)):
         return False
     session = await get_session(int(org_id))
-    return session is not None and session.get("state") in {"live", "paused"}
+    return is_active_session(session)
 
 
 async def _serve_packed_role(normalized: str, proxy: bool) -> Response:
@@ -200,11 +242,11 @@ async def _serve_packed_role(normalized: str, proxy: bool) -> Response:
     if not proxy and cos_training_enabled():
         url = create_presigned_get(normalized)
         if url:
-            return RedirectResponse(url, status_code=302)
+            return RedirectResponse(url, status_code=302, headers=_ASSET_CACHE)
     role_id, thumb = parsed
     path = packed_role_file(role_id, thumb=thumb)
     if path is not None:
-        return FileResponse(path, media_type=ROLE_CONTENT_TYPE)
+        return FileResponse(path, media_type=ROLE_CONTENT_TYPE, headers=_ASSET_CACHE)
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 
 
@@ -234,16 +276,20 @@ async def download_training_asset(
     if not proxy and cos_training_enabled():
         url = create_presigned_get(normalized)
         if url:
-            return RedirectResponse(url, status_code=302)
+            return RedirectResponse(url, status_code=302, headers=_ASSET_CACHE)
     if proxy or not cos_training_enabled():
         try:
             path = resolve_local_safe(normalized)
         except ValueError as exc:
             raise HTTPException(status_code=404, detail="Not found") from exc
         if path.is_file():
-            return FileResponse(path)
+            return FileResponse(path, headers=_ASSET_CACHE)
         data = await get_bytes(normalized)
         if data is None:
             raise HTTPException(status_code=404, detail="Not found")
-        return Response(content=data, media_type="application/octet-stream")
+        return Response(
+            content=data,
+            media_type="application/octet-stream",
+            headers=_ASSET_CACHE,
+        )
     raise HTTPException(status_code=404, detail="Not found")

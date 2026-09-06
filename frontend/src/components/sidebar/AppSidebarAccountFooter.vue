@@ -66,7 +66,7 @@ function handleVoiceNotes(): void {
 </script>
 
 <template>
-  <div class="border-t border-stone-200 relative">
+  <div class="sidebar-account-footer border-t border-stone-200 relative shrink-0">
     <!-- Not authenticated: Show login button -->
     <template v-if="!s.isAuthenticated">
       <div :class="s.isCollapsed ? 'p-2 flex flex-col gap-2' : 'p-4 flex flex-col gap-2'">
@@ -388,6 +388,33 @@ function handleVoiceNotes(): void {
 </template>
 
 <style scoped>
+.sidebar-account-footer {
+  flex-shrink: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (max-height: 800px) {
+  .tc-sidebar-promo {
+    display: none;
+  }
+
+  .user-dropdown-trigger {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+}
+
+@media (max-height: 640px) {
+  .tc-sidebar-widget {
+    padding: 0.375rem 0.5rem;
+  }
+
+  :deep(.el-avatar) {
+    width: 32px !important;
+    height: 32px !important;
+  }
+}
+
 /* Login button - Swiss Design style */
 .login-btn {
   --el-button-bg-color: #1c1917;

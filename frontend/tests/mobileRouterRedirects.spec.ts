@@ -18,6 +18,15 @@ describe('mobileRouteRedirect', () => {
   it('falls back to mobile hub for unmapped desktop paths', () => {
     expect(resolveMobileRouteRedirect('/library')).toBe('/m')
     expect(resolveMobileRouteRedirect('/showcase')).toBe('/m')
+    expect(resolveMobileRouteRedirect('/training/builder')).toBe('/m')
+  })
+
+  it('sends training leads to the phone remote and teachers to the hub', () => {
+    expect(resolveMobileRouteRedirect('/training', { isTrainingLead: true })).toBe(
+      '/m/training'
+    )
+    expect(resolveMobileRouteRedirect('/training', { isTrainingLead: false })).toBe('/m')
+    expect(resolveMobileRouteRedirect('/training')).toBe('/m')
   })
 
   it('recognizes mobile route paths', () => {

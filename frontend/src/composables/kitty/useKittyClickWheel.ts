@@ -18,8 +18,6 @@ export interface KittyClickWheelChild {
 export interface UseKittyClickWheelOptions {
   onSelectionChange?: () => void
   canvasHighlight?: boolean
-  /** Fired when the already-active chip is tapped again (e.g. open 节点解释). */
-  onActiveRetap?: (node: KittyClickWheelChild) => void
 }
 
 export function useKittyClickWheel(options: UseKittyClickWheelOptions = {}) {
@@ -93,18 +91,10 @@ export function useKittyClickWheel(options: UseKittyClickWheelOptions = {}) {
     if (found === activeIndex.value) {
       applyKittySelectionTarget({ nodeId }, { canvasHighlight })
       pulseDeviceEngage()
-      const child = children.value[found]
-      if (child) {
-        options.onActiveRetap?.(child)
-      }
       options.onSelectionChange?.()
       return
     }
     selectIndex(found)
-  }
-
-  function stepBy(delta: number): void {
-    selectIndex(activeIndex.value + delta)
   }
 
   watch(
@@ -120,10 +110,6 @@ export function useKittyClickWheel(options: UseKittyClickWheelOptions = {}) {
     hasNodes,
     activeIndex,
     activeChild,
-    selectIndex,
     selectById,
-    stepBy,
   }
 }
-
-export type KittyClickWheelApi = ReturnType<typeof useKittyClickWheel>

@@ -13,7 +13,14 @@ import logging
 import time
 from typing import Any
 
-from services.features.training.constants import ACTIVITY_KEY, ACTIVITY_TTL_SECONDS
+from services.features.training.constants import (
+    ACTIVITY_KEY,
+    ACTIVITY_SSE_KEY,
+    ACTIVITY_SSE_MIN_SECONDS,
+    ACTIVITY_SUMMARY_KEY,
+    ACTIVITY_SUMMARY_TTL_SECONDS,
+    ACTIVITY_TTL_SECONDS,
+)
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import REDIS_ERRORS
 
@@ -22,6 +29,14 @@ logger = logging.getLogger(__name__)
 
 def _key(org_id: int) -> str:
     return ACTIVITY_KEY.format(org_id=int(org_id))
+
+
+def _summary_key(org_id: int) -> str:
+    return ACTIVITY_SUMMARY_KEY.format(org_id=int(org_id))
+
+
+def _sse_gate_key(org_id: int) -> str:
+    return ACTIVITY_SSE_KEY.format(org_id=int(org_id))
 
 
 def _decode_field(raw: Any) -> dict[str, Any] | None:
@@ -50,13 +65,18 @@ async def touch_activity(
         redis = get_async_redis()
         if redis is None:
             return
-        body = dict(payload)
+        previous = _decode_field(await redis.hget(_key(org_id), str(int(user_id))))
+        body = dict(previous or {})
+        for key, value in payload.items():
+            if value is not None:
+                body[key] = value
         body["user_id"] = int(user_id)
         body["updated_at"] = time.time()
         encoded = json.dumps(body, separators=(",", ":"))
         async with redis.pipeline(transaction=False) as pipe:
             pipe.hset(_key(org_id), str(int(user_id)), encoded)
             pipe.expire(_key(org_id), ACTIVITY_TTL_SECONDS * 3)
+            pipe.delete(_summary_key(org_id))
             await pipe.execute()
     except REDIS_ERRORS as exc:
         logger.debug("[Training] touch_activity failed: %s", exc)
@@ -98,7 +118,25 @@ async def list_activity(org_id: int) -> list[dict[str, Any]]:
 
 
 async def activity_summary(org_id: int) -> dict[str, int]:
-    """Counts for the instructor header."""
+    """Counts for the instructor header, cached a few seconds."""
+    try:
+        redis = get_async_redis()
+        if redis is not None:
+            raw = await redis.get(_summary_key(org_id))
+            if raw:
+                if isinstance(raw, bytes):
+                    raw = raw.decode("utf-8")
+                parsed = json.loads(raw)
+                if isinstance(parsed, dict):
+                    return {
+                        "online": int(parsed.get("online") or 0),
+                        "generating": int(parsed.get("generating") or 0),
+                        "done": int(parsed.get("done") or 0),
+                    }
+    except REDIS_ERRORS as exc:
+        logger.debug("[Training] activity_summary cache missed: %s", exc)
+    except (json.JSONDecodeError, TypeError, ValueError) as exc:
+        logger.debug("[Training] activity_summary cache missed: %s", exc)
     rows = await list_activity(org_id)
     generating = 0
     done = 0
@@ -108,11 +146,40 @@ async def activity_summary(org_id: int) -> dict[str, int]:
             generating += 1
         elif state == "done":
             done += 1
-    return {
+    counts = {
         "online": len(rows),
         "generating": generating,
         "done": done,
     }
+    try:
+        redis = get_async_redis()
+        if redis is not None:
+            await redis.set(
+                _summary_key(org_id),
+                json.dumps(counts, separators=(",", ":")),
+                ex=ACTIVITY_SUMMARY_TTL_SECONDS,
+            )
+    except REDIS_ERRORS as exc:
+        logger.debug("[Training] activity_summary cache write failed: %s", exc)
+    return counts
+
+
+async def should_publish_activity(org_id: int) -> bool:
+    """Allow at most one activity SSE doorbell per second per org."""
+    try:
+        redis = get_async_redis()
+        if redis is None:
+            return True
+        won = await redis.set(
+            _sse_gate_key(org_id),
+            "1",
+            nx=True,
+            ex=ACTIVITY_SSE_MIN_SECONDS,
+        )
+        return bool(won)
+    except REDIS_ERRORS as exc:
+        logger.debug("[Training] activity SSE gate failed: %s", exc)
+        return True
 
 
 async def clear_activity(org_id: int) -> None:
@@ -121,6 +188,6 @@ async def clear_activity(org_id: int) -> None:
         redis = get_async_redis()
         if redis is None:
             return
-        await redis.delete(_key(org_id))
+        await redis.delete(_key(org_id), _summary_key(org_id), _sse_gate_key(org_id))
     except REDIS_ERRORS as exc:
         logger.debug("[Training] clear_activity failed: %s", exc)

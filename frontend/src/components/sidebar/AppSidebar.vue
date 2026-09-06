@@ -182,7 +182,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div
-    class="app-sidebar bg-stone-50 flex flex-col h-full shrink-0 overflow-hidden"
+    class="app-sidebar bg-stone-50 flex flex-col h-full min-h-0 shrink-0 overflow-hidden"
     :class="
       isCollapsed
         ? 'w-0 min-w-0 max-w-0 border-transparent pointer-events-none'
@@ -303,4 +303,5 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 </style>

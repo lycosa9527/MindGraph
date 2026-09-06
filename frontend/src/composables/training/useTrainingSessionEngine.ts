@@ -4,12 +4,18 @@
 import { onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { loadElMessageBox } from '@/composables/core/notifications'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage, useNotifications } from '@/composables'
-import { applyTrainingNavigate } from '@/composables/training/applyTrainingSnapshot'
+import {
+  applyTrainingNavigate,
+  trainingSteerMode,
+} from '@/composables/training/applyTrainingSnapshot'
 import { applyTrainingUiTarget } from '@/composables/training/applyTrainingUiTarget'
 import { useAuthStore } from '@/stores/auth'
 import { useTrainingStore } from '@/stores/training'
+import { shouldHoldTrainingHostOnMobile } from '@/utils/trainingClient'
+import '@/styles/training-stop-confirm.css'
 
 const OWNER = 'TrainingSessionEngine'
 
@@ -20,6 +26,7 @@ export function useTrainingSessionEngine(): void {
   const training = useTrainingStore()
   const router = useRouter()
   const route = useRoute()
+  let stopConfirmOpen = false
 
   function myUserId(): number {
     return Number(authStore.user?.id)
@@ -40,6 +47,16 @@ export function useTrainingSessionEngine(): void {
   async function followStage(): Promise<void> {
     const snap = training.snapshot
     if (!snap.course_id || (!snap.step && !snap.diagram_type)) return
+    if (
+      shouldHoldTrainingHostOnMobile(
+        route.path,
+        snap.instructor_id,
+        Number(authStore.user?.id) || null
+      )
+    ) {
+      training.markApplied(snap.seq)
+      return
+    }
     const moved = await applyTrainingNavigate(router, route.path, snap)
     const step = snap.step
     if (moved || step?.modal_key || step?.focus_key) {
@@ -127,22 +144,44 @@ export function useTrainingSessionEngine(): void {
     void onPlay(payload.courseId)
   }, OWNER)
   eventBus.onWithOwner('training:pause_requested', () => {
+    if (training.busy) return
     void steer(() => training.pauseSession())
   }, OWNER)
   eventBus.onWithOwner('training:resume_requested', () => {
+    if (training.busy) return
     void steerThenFollow(() => training.resumeSession())
   }, OWNER)
-  eventBus.onWithOwner('training:end_requested', () => {
-    void steer(() => training.endSession())
+  eventBus.onWithOwner('training:end_requested', (payload) => {
+    if (stopConfirmOpen || training.busy) return
+    if (payload?.confirmed) {
+      void steer(() => training.endSession())
+      return
+    }
+    stopConfirmOpen = true
+    void loadElMessageBox()
+      .then((ElMessageBox) =>
+        ElMessageBox.confirm(t('training.confirmStop'), t('training.stop'), {
+          type: 'warning',
+          customClass: 'training-stop-confirm',
+        })
+      )
+      .then(() => steer(() => training.endSession()))
+      .catch(() => undefined)
+      .finally(() => {
+        stopConfirmOpen = false
+      })
   }, OWNER)
   eventBus.onWithOwner('training:takeover_requested', () => {
+    if (training.busy) return
     void steerThenFollow(() => training.takeoverSession())
   }, OWNER)
   eventBus.onWithOwner('training:step_requested', (payload) => {
     void steerThenFollow(() => training.stepSession(payload.delta))
   }, OWNER)
   eventBus.onWithOwner('training:free_requested', (payload) => {
-    const next = payload.free ?? !training.isFree
+    const currentlyFree = trainingSteerMode(training.snapshot) === 'free'
+    const next = payload.free ?? !currentlyFree
+    if (next === currentlyFree) return
     if (next) {
       void steer(() => training.freeSession(true))
       return

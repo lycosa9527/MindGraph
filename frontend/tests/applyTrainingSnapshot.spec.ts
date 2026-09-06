@@ -9,8 +9,10 @@ import {
   liveLessonStep,
   shouldAcceptTrainingSnapshot,
   shouldBypassTrainingLeaveConfirm,
+  shouldEnforceTrainingPageLock,
   shouldForceNavigate,
   teachersSeeTrainingBanner,
+  trainingFreeLockDecision,
   trainingCanvasLocation,
   trainingFollowCursorResets,
   trainingSteerMode,
@@ -141,6 +143,29 @@ describe('shouldForceNavigate', () => {
     expect(shouldForceNavigate(snapshot({ seq: 9, pull_users: false }), 4)).toBe(false)
   })
 
+  it('locks teachers to the current page in free mode', () => {
+    const freeCanvas = snapshot({
+      course_id: 'c1',
+      pull_users: false,
+      step: { position: 0, type: 'page', page_key: 'canvas' },
+    })
+    expect(shouldEnforceTrainingPageLock(freeCanvas, 3)).toBe(true)
+    expect(shouldEnforceTrainingPageLock(freeCanvas, 1)).toBe(false)
+    expect(trainingFreeLockDecision(freeCanvas, 3, '/canvas', '/canvas')).toBe(true)
+    expect(trainingFreeLockDecision(freeCanvas, 3, '/canvas', '/mindmate')).toEqual({
+      path: '/canvas',
+      query: { type: 'double_bubble_map' },
+    })
+    expect(trainingFreeLockDecision(freeCanvas, 1, '/canvas', '/mindmate')).toBe(true)
+    const freeSlide = snapshot({
+      course_id: 'c1',
+      pull_users: false,
+      step: { position: 1, type: 'slide', asset_url: '/s.png' },
+    })
+    expect(trainingFreeLockDecision(freeSlide, 3, '/mindgraph', '/mindgraph')).toBe(true)
+    expect(trainingFreeLockDecision(freeSlide, 3, '/mindgraph', '/library')).toBe(false)
+  })
+
   it('pulls again after free when the session flag is back on', () => {
     expect(
       shouldForceNavigate(
@@ -218,6 +243,21 @@ describe('applyTrainingNavigate', () => {
     )
     expect(ok).toBe(true)
     expect(push).not.toHaveBeenCalled()
+  })
+
+  it('still routes the instructor while the room is paused', async () => {
+    const push = vi.fn().mockResolvedValue(undefined)
+    const router = {
+      push,
+      currentRoute: { value: { path: '/mindmate', query: {} } },
+    }
+    const ok = await applyTrainingNavigate(
+      router as never,
+      '/mindmate',
+      snapshot({ state: 'paused', diagram_type: 'tree_map' })
+    )
+    expect(ok).toBe(true)
+    expect(push).toHaveBeenCalledWith({ path: '/canvas', query: { type: 'tree_map' } })
   })
 })
 

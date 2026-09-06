@@ -13,6 +13,7 @@ from services.features.training.roles.catalog import (
 )
 from services.features.training.storage.backend import cos_training_enabled
 from services.features.training.storage.keys import full_cos_key
+from services.features.training.training_logger import log_training
 from services.utils.tencent_cos_client import head_object, upload_bytes
 
 logger = logging.getLogger(__name__)
@@ -41,20 +42,26 @@ def publish_packed_roles_sync() -> bool:
     if not cos_training_enabled():
         return True
     ok = True
+    uploaded_count = 0
+    skipped = 0
+    failed = 0
     for filename in packed_role_filenames():
         parsed = parse_packed_role_key(f"roles/{filename}")
         if parsed is None:
             ok = False
+            failed += 1
             continue
         role_id, thumb = parsed
         local = packed_role_file(role_id, thumb=thumb)
         if local is None:
             logger.warning("[Training/COS] packed role missing on disk: %s", filename)
             ok = False
+            failed += 1
             continue
         logical_key = f"roles/{filename}"
         size = local.stat().st_size
         if _object_matches(logical_key, size):
+            skipped += 1
             continue
         uploaded = upload_bytes(
             local.read_bytes(),
@@ -65,6 +72,17 @@ def publish_packed_roles_sync() -> bool:
         if not uploaded:
             logger.error("[Training/COS] packed role upload failed: %s", filename)
             ok = False
+            failed += 1
+            continue
+        uploaded_count += 1
+    log_training(
+        logger,
+        "packed_roles_publish",
+        prefix="[Training/COS]",
+        uploaded=uploaded_count,
+        skipped=skipped,
+        failed=failed,
+    )
     return ok
 
 

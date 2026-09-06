@@ -771,8 +771,7 @@
 
 .input-area-fullpage {
   flex-shrink: 0;
-  padding: 20px;
-  padding-bottom: 64px;
+  padding: clamp(12px, 2vh, 20px) 20px clamp(10px, 2.4vh, 24px);
   max-width: 680px;
   margin: 0 auto;
   width: 100%;
@@ -1002,17 +1001,18 @@
   padding-bottom: 20px;
 }
 
-/* Welcome Screen - Fullpage Mode (Centered Vertically) */
+/* Welcome Screen - Fullpage Mode */
 .welcome-fullpage {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1;
-  min-height: 50vh;
+  flex: 0 0 auto;
+  min-height: 0;
+  gap: 1.5rem;
 }
 
-/* Welcome Screen - Panel Mode (Centered Vertically) */
+/* Welcome Screen - Panel Mode */
 .welcome-panel {
   display: flex;
   flex-direction: column;
@@ -1022,17 +1022,10 @@
   min-height: 200px;
 }
 
-/* Welcome Mode - Panel doesn't expand */
 .mindmate-panel.welcome-mode .welcome-panel {
   flex: 0 0 auto;
   min-height: auto;
-  padding: 120px 0 0;
-}
-
-.mindmate-panel.welcome-mode .welcome-fullpage {
-  flex: 0 0 auto;
-  min-height: auto;
-  padding: 140px 0 0;
+  padding: clamp(24px, 8vh, 80px) 0 0;
 }
 
 /* Suggestion Bubbles - Above Input (Fullpage) */
@@ -1055,14 +1048,9 @@
   border-top-color: #374151;
 }
 
-/* Welcome Mode - Suggestions and Input positioned right below welcome message */
 .mindmate-panel.welcome-mode .suggestions-above-input-panel {
-  margin-top: 50px;
+  margin-top: clamp(8px, 2.5vh, 24px);
   border-top: none;
-}
-
-.mindmate-panel.welcome-mode .suggestions-above-input {
-  margin-top: 50px;
 }
 
 .mindmate-panel.welcome-mode .input-area-swiss {

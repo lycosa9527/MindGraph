@@ -25,8 +25,15 @@ MAX_OPTION_LABEL_LEN: Final[int] = 80
 ROSTER_PAGE_MAX: Final[int] = 50
 
 ORG_SESSION_KEY: Final[str] = "training:org:{org_id}"
-INSTRUCTOR_KEY: Final[str] = "training:instructor:{user_id}"
+INSTRUCTOR_KEY_PREFIX: Final[str] = "training:instructor:"
+INSTRUCTOR_KEY: Final[str] = INSTRUCTOR_KEY_PREFIX + "{user_id}"
+RECONCILE_KEY: Final[str] = "training:org:{org_id}:reconcile:{session_id}"
+RECONCILE_GATE_SECONDS: Final[int] = 30
 ACTIVITY_KEY: Final[str] = "training:org:{org_id}:activity"
+ACTIVITY_SSE_KEY: Final[str] = "training:org:{org_id}:activity_sse"
+ACTIVITY_SUMMARY_KEY: Final[str] = "training:org:{org_id}:activity_summary"
+ACTIVITY_SSE_MIN_SECONDS: Final[int] = 1
+ACTIVITY_SUMMARY_TTL_SECONDS: Final[int] = 3
 EVENTS_CHANNEL: Final[str] = "training:org:{org_id}:events"
 
 VALID_DIAGRAM_TYPES: frozenset[str] = frozenset(

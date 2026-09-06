@@ -142,10 +142,22 @@ export const TRAINING_PAGES: TrainingPageDef[] = [
 ]
 
 const PAGE_BY_KEY = new Map(TRAINING_PAGES.map((page) => [page.key, page]))
+const PAGES_BY_PATH_LEN = [...TRAINING_PAGES].sort((left, right) => right.path.length - left.path.length)
 
 export function trainingPageDef(key: string | null | undefined): TrainingPageDef | null {
   if (!key) return null
   return PAGE_BY_KEY.get(key as TrainingPageKey) ?? null
+}
+
+export function trainingPageKeyFromPath(path: string): TrainingPageKey | null {
+  const raw = path.split('?')[0] || ''
+  const desktop = isMobileRoutePath(raw) ? raw.slice(2) || '/' : raw
+  for (const page of PAGES_BY_PATH_LEN) {
+    if (desktop === page.path || desktop.startsWith(`${page.path}/`)) {
+      return page.key
+    }
+  }
+  return null
 }
 
 export function trainingPagePath(

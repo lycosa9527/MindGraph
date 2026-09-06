@@ -8,6 +8,7 @@ Accepted payload kinds:
   (e.g. mobile vision mind-map rebuild wrote a new library snapshot).
 - ``open_canvas`` — residual blank-canvas open (diagram slug + optional topic / session_scope).
   Not used for durable create-new.
+- ``explain_node`` — open desktop 节点解释 for ``node_id`` (optional label / library id).
 
 This queue must **not** carry full diagram specs or hub patches — avoid duplicating diagram
 mutation alongside ``apply_diagram_spec_mutation`` / ``live_spec``; use hub + Redis live spec
@@ -119,6 +120,29 @@ def _normalize_open_library_payload(payload: Dict[str, Any]) -> Optional[Dict[st
     return payload
 
 
+def _normalize_explain_node_payload(payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Normalize mobile → desktop 节点解释 (node id + optional label / library)."""
+    raw_id = payload.get("node_id")
+    if not isinstance(raw_id, str):
+        return None
+    node_id = normalize_kitty_diagram_session_id(raw_id)
+    if node_id is None:
+        return None
+    payload["kind"] = "explain_node"
+    payload["node_id"] = node_id
+    _take_optional_str(payload, "node_label", 256)
+    raw_lib = payload.get("diagram_library_id")
+    if isinstance(raw_lib, str):
+        lib_id = normalize_kitty_diagram_session_id(raw_lib)
+        if lib_id is None:
+            payload.pop("diagram_library_id", None)
+        else:
+            payload["diagram_library_id"] = lib_id
+    else:
+        payload.pop("diagram_library_id", None)
+    return payload
+
+
 def _action_is_fresh(payload: Dict[str, Any], *, max_age_sec: int) -> bool:
     """Reject stale queue items so opening Kitty does not replay old navigation."""
     raw_ts = payload.get("enqueued_at")
@@ -226,6 +250,17 @@ async def enqueue_kitty_desktop_action(user_id: int, payload: Dict[str, Any]) ->
             )
             return False
         normalized["kind"] = "reload_library_diagram"
+        return await _push_desktop_action(user_id, normalized)
+
+    if kind == "explain_node":
+        normalized = _normalize_explain_node_payload(dict(payload))
+        if normalized is None:
+            logger.warning(
+                "[KittyDesktopActions] invalid explain_node user=%s payload=%s",
+                user_id,
+                payload,
+            )
+            return False
         return await _push_desktop_action(user_id, normalized)
 
     logger.warning("[KittyDesktopActions] unsupported kind=%s user=%s", kind, user_id)

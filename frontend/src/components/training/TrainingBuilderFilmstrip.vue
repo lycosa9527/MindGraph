@@ -113,6 +113,20 @@ function onImages(event: Event): void {
   background: #fff;
   padding: 0.75rem;
 }
+@media (max-width: 768px) {
+  .filmstrip {
+    width: 100%;
+    max-height: 8.5rem;
+    flex-direction: row;
+    overflow: auto;
+    border-right: 0;
+    border-bottom: 1px solid #e7e5e4;
+  }
+  .filmstrip__actions {
+    flex-direction: row;
+    align-items: center;
+  }
+}
 .filmstrip__actions {
   display: flex;
   flex-direction: column;

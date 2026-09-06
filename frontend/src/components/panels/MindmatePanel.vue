@@ -656,59 +656,65 @@ function isLastAssistantMessage(messageId: string): boolean {
     />
 
     <template v-else>
-      <!-- Messages -->
-      <MindmateMessages
-      :mode="mode"
-      :messages="mindMate.messages.value"
-      :user-avatar="userAvatar"
-      :show-welcome="showWelcome"
-      :is-loading="mindMate.isLoading.value"
-      :is-streaming="mindMate.isStreaming.value"
-      :load-phase="mindMateLoadPhase"
-      :is-loading-history="mindMate.isLoadingHistory.value"
-      :editing-message-id="editingMessageId"
-      :editing-content="editingContent"
-      :hovered-message-id="hoveredMessageId"
-      :is-last-assistant-message="isLastAssistantMessage"
-      :has-previous-user-message="hasPreviousUserMessage"
-      @edit="startEdit"
-      @cancel-edit="cancelEdit"
-      @save-edit="saveEdit"
-      @copy="copyMessage"
-      @regenerate="regenerateMessage"
-      @feedback="handleFeedback"
-      @share="openShareModal"
-      @message-hover="hoveredMessageId = $event"
-    />
+      <div
+        class="mindmate-stage"
+        :class="{ 'mindmate-stage--welcome': showWelcome && isFullpageMode }"
+      >
+        <MindmateMessages
+          :mode="mode"
+          :messages="mindMate.messages.value"
+          :user-avatar="userAvatar"
+          :show-welcome="showWelcome"
+          :is-loading="mindMate.isLoading.value"
+          :is-streaming="mindMate.isStreaming.value"
+          :load-phase="mindMateLoadPhase"
+          :is-loading-history="mindMate.isLoadingHistory.value"
+          :editing-message-id="editingMessageId"
+          :editing-content="editingContent"
+          :hovered-message-id="hoveredMessageId"
+          :is-last-assistant-message="isLastAssistantMessage"
+          :has-previous-user-message="hasPreviousUserMessage"
+          @edit="startEdit"
+          @cancel-edit="cancelEdit"
+          @save-edit="saveEdit"
+          @copy="copyMessage"
+          @regenerate="regenerateMessage"
+          @feedback="handleFeedback"
+          @share="openShareModal"
+          @message-hover="hoveredMessageId = $event"
+        />
 
-    <!-- Input Area - wrapper pins to bottom in panel mode -->
-    <div class="mindmate-input-section">
-      <MindmateInput
-        v-model:input-text="inputText"
-        :mode="mode"
-        :is-loading="isLoading"
-        :is-streaming="mindMate.isStreaming.value"
-        :is-uploading="mindMate.isUploading.value"
-        :pending-files="mindMate.pendingFiles.value"
-        :show-suggestions="showWelcome"
-        :show-file-upload="isFullpageMode"
-        @send="sendMessage"
-        @stop="stopGeneration"
-        @upload="handleFileSelect"
-        @remove-file="mindMate.removeFile"
-        @suggestion-select="handleSuggestionSelect"
+        <div class="mindmate-input-section">
+          <MindmateInput
+            v-model:input-text="inputText"
+            :mode="mode"
+            :is-loading="isLoading"
+            :is-streaming="mindMate.isStreaming.value"
+            :is-uploading="mindMate.isUploading.value"
+            :pending-files="mindMate.pendingFiles.value"
+            :show-suggestions="showWelcome"
+            :show-file-upload="isFullpageMode"
+            @send="sendMessage"
+            @stop="stopGeneration"
+            @upload="handleFileSelect"
+            @remove-file="mindMate.removeFile"
+            @suggestion-select="handleSuggestionSelect"
+          />
+        </div>
+      </div>
+
+      <ShareExportModal
+        v-model:visible="showShareModal"
+        :messages="mindMate.messages.value"
+        :conversation-title="mindMate.conversationTitle.value"
       />
-    </div>
-
-    <!-- Share Export Modal -->
-    <ShareExportModal
-      v-model:visible="showShareModal"
-      :messages="mindMate.messages.value"
-      :conversation-title="mindMate.conversationTitle.value"
-    />
     </template>
   </div>
 </template>
+
+<style>
+@import './mindmate/mindmate-welcome-layout.css';
+</style>
 
 <style scoped>
 @import './mindmate/mindmate.css';

@@ -5,6 +5,80 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.50] - 2026-09-06
+
+> **MindMate welcome: avatar, suggestions, and composer stay one cluster on common displays; the sidebar account row shrinks on short windows.**
+
+### Changed
+
+- **Welcome cluster** — Full-page welcome keeps avatar, copy, suggestions, and the composer together (`dvh` / `cqi` tokens, no size containment). The input sits in the same stage instead of pinning away from the greeting.
+- **Sidebar account** — The thinking-coin promo hides below 800px height; avatar and padding tighten below 640px so the account row does not overflow.
+
+### Tests
+
+- `frontend/tests/mindmateWelcomeLayout.spec.ts`
+
+## [5.180.49] - 2026-09-06
+
+> **Kitty: tapping a node chip on the phone opens 节点解释 on the desktop canvas (same event as the floating toolbar).**
+
+### Changed
+
+- **Phone chip tap** — Click-wheel chips enqueue `explain_node` to the desktop action queue. The phone no longer opens a local explain bubble.
+- **Desktop open** — If the phone sends a library id, desktop opens that diagram first, then explains the node once it is on the canvas.
+
+### Tests
+
+- `frontend/tests/enqueueKittyDesktopExplainNode.spec.ts`, `kittyDesktopExplainNodeAction.spec.ts`, `kittyPendingCanvasAction.spec.ts`
+- `tests/test_kitty_mobile_active.py`
+
+## [5.180.48] - 2026-09-06
+
+> **校本培训: a landscape phone remote (controls | online teachers | teleprompter) for the instructor after desktop Start + Play.**
+
+### Added
+
+- **Mobile instructor remote** — Platform leads get a 校本培训 card on `/m`. `/m/training` is a landscape clicker: stacked 上一步 / 下一步 / 停止 / 自由·拉取, a scrollable online list, and speaker notes as a teleprompter. The phone hydrates the hosted session (`GET /sessions/active`), keeps the 15s heartbeat, and stays on the remote while teachers follow slides. Desktop overlays stay hidden on this route.
+- **Cat mascot kits** — Shared green-screen stills live in `scripts/cat_emoji/stills/` (`black/`, `white/`). White-cat emoji and office-battle generators sit beside Course Builder roles.
+
+### Fixed
+
+- **Remote waiting forever** — Opening `/m/training` before desktop Play was a one-shot hydrate. The phone now hydrates on show / `pageshow` and polls the hosted pointer until the room is live, then SSE takes over. Platform leads no longer open EventSource or command GET without an org (those were 400s). The remote does not post a teacher activity ping, and wake lock / owner heartbeat fire again when the tab is visible.
+- **Remote chrome leaks** — Desktop pad / rail / notes / spotlight no longer paint on `/m` or other phone pages. Follow does not yank the host off `/m`, and Stop on the remote uses an in-page confirm (desktop Stop sits above the spotlight). Wake Lock re-requests after the browser releases it.
+- **Vue Flow on first training load** — `@vue-flow/core` is in Vite `optimizeDeps` so opening `/training` or `/canvas` no longer 504s "Outdated Optimize Dep".
+
+### Changed
+
+- **Start/steer races** — Redis Lua claim + compare-and-swap so two leads cannot double-book a school, and a stale seq no longer overwrites the room. Play caches serialized steps by course id + `updated_at`.
+- **Training audit log** — Greppable `[Training]` lines for course create/save and live start/play/steer.
+
+### Tests
+
+- `frontend/tests/trainingRemoteView.spec.ts`, `trainingStore.spec.ts`, `trainingClient.spec.ts`, `mobileRouterRedirects.spec.ts`, `useTrainingFollow.spec.ts`
+- `tests/test_training_session_store.py`, `test_training_audit_log.py`
+- `tests/scripts/test_cat_emoji_stills.py`, `test_white_cat_emoji.py`, `test_cat_office_battles.py`
+
+## [5.180.47] - 2026-09-06
+
+> **校本培训: the instructor pad always shows Free/Pull; the online rail is a friends list (name / page / topic), fifteen visible, the rest scroll.**
+
+### Fixed
+
+- **自由 / 拉取 hidden** — `showMode` is a boolean prop. Omitting it made Vue treat it as `false`, so the live pad only showed 上一步 / 下一步 / 停止. The default is now `true`.
+- **Free/Pull lock** — Free now actually keeps teachers on the current page (the lock helper was never registered on the router). Pull bumps seq and force-navs them back to the live step; repeating the same mode no longer 429s the steer.
+- **Paused Pull / Next** — Steer mode is `pull_users`, not “live and free”. Pause no longer makes 拉取 a no-op, and the instructor can still follow the cursor while paused. Friend-list jump uses the teacher’s page, not only a diagram type.
+- **Control in-flight state** — Pause, resume, stop, and takeover now share the same `busy` lock as Next/Free, so a second click does not fire. The header disables those buttons and the school picker while a steer is running or the room is already live.
+
+### Changed
+
+- **授课控制** — Playback lives only on the pad (上一步 · 下一步 · 停止, then 自由 · 拉取). The landing header keeps Start/Stop, pause/resume, takeover, and school. The pad stays bottom-right as a compact two-row card with a grey outer border so it does not clip under the slide letterbox or blend into the dark bar.
+- **在线名单** — The instructor rail is the classic friends list, online only, no search and no teacher roster chrome. Each row is `name / page / topic`. Heartbeats now send the page; idle ticks no longer wipe the last topic chip. The first fifteen stay in view; the rest scroll in place.
+
+### Tests
+
+- `frontend/tests/trainingPlayControls.spec.ts`, `trainingFriendLine.spec.ts`, `trainingPadAnchor.spec.ts`, `trainingClient.spec.ts`, `useTrainingFollow.spec.ts`, `applyTrainingSnapshot.spec.ts`, `trainingStore.spec.ts`
+- `tests/test_training_activity_sse.py`, `test_training_session_store.py`
+
 ## [5.180.46] - 2026-09-05
 
 > **校本培训: Free/Pull is a segmented control that stays on screen; follow no longer dumps desktop pages onto `/m/*`; Stop leaves everyone where they are.**

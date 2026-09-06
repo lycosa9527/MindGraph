@@ -41,6 +41,12 @@ export function useTrainingHeartbeat(enabled: () => boolean): void {
     }
   }
 
+  function onShown(): void {
+    if (document.visibilityState === 'visible' && enabled() && training.isActive) {
+      void tick()
+    }
+  }
+
   watch(
     () => [enabled(), training.snapshot.session_id, training.snapshot.state],
     () => {
@@ -50,5 +56,9 @@ export function useTrainingHeartbeat(enabled: () => boolean): void {
     { immediate: true }
   )
 
-  onUnmounted(stop)
+  document.addEventListener('visibilitychange', onShown)
+  onUnmounted(() => {
+    document.removeEventListener('visibilitychange', onShown)
+    stop()
+  })
 }

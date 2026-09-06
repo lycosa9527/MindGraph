@@ -41,3 +41,23 @@ async def can_lead_training(user: object, org_id: int) -> bool:
         return False
     invited = await load_expert_invited_org_ids(int(getattr(user, "id")))
     return int(org_id) in invited
+
+
+def can_edit_training_course(user: object) -> bool:
+    """Shared catalog: any visiting lead may author."""
+    return can_lead_any_training(user)
+
+
+def can_delete_training_course(user: object, course: object) -> bool:
+    """System courses stay; experts delete only their own drafts."""
+    if getattr(course, "is_system", False):
+        return False
+    if not can_lead_any_training(user):
+        return False
+    if is_superadmin(user) or is_platform_bd(user):
+        return True
+    owner_id = getattr(course, "owner_id", None)
+    user_id = getattr(user, "id", None)
+    if owner_id is None or user_id is None:
+        return False
+    return int(owner_id) == int(user_id)

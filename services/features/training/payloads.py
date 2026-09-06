@@ -12,6 +12,20 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
+from services.features.training.courses.constants import PAGE_KEYS
+
+ACTIVITY_PAGE_KEYS = PAGE_KEYS | frozenset({"slide", "video"})
+
+
+def sanitize_activity_page_key(raw: Optional[str]) -> Optional[str]:
+    """Keep known app pages plus live slide/video overlays."""
+    if raw is None:
+        return None
+    text = str(raw).strip()
+    if text in ACTIVITY_PAGE_KEYS:
+        return text
+    return None
+
 
 class TopicOption(BaseModel):
     """Instructor-authored topic chip."""
@@ -46,6 +60,7 @@ class ActivityBody(BaseModel):
     """Teacher activity heartbeat."""
 
     diagram_type: Optional[str] = Field(default=None, max_length=40)
+    page_key: Optional[str] = Field(default=None, max_length=40)
     option_id: Optional[str] = Field(default=None, max_length=64)
     option_label: Optional[str] = Field(default=None, max_length=80)
     generate_state: str = Field(default="idle", max_length=20)
@@ -81,10 +96,11 @@ def _step_for_viewer(step: Any, *, include_notes: bool) -> Any:
     return redacted
 
 
-def command_etag(session_id: Any, seq: Any) -> str:
-    """ETag is per session so a restart at seq 1 is not a 304."""
+def command_etag(session_id: Any, seq: Any, state: Any = None) -> str:
+    """ETag is per session and viewed state so a virtual pause is not a 304."""
     token = str(session_id or "none")
-    return f'"{token}:{int(seq or 0)}"'
+    status = str(state or "none")
+    return f'"{token}:{int(seq or 0)}:{status}"'
 
 
 def snapshot_from_session(
@@ -113,6 +129,10 @@ def snapshot_from_session(
     include_notes = (
         viewer_user_id is not None and instructor_id is not None and int(instructor_id) == int(viewer_user_id)
     )
+    step = _step_for_viewer(session.get("step"), include_notes=include_notes)
+    if include_notes and isinstance(step, dict) and session.get("instructor_notes"):
+        step = dict(step)
+        step["notes"] = str(session.get("instructor_notes") or "")
     return {
         "state": session.get("state"),
         "session_id": session.get("session_id"),
@@ -127,6 +147,6 @@ def snapshot_from_session(
         "course_id": session.get("course_id"),
         "step_index": int(session.get("step_index") or 0),
         "step_count": int(session.get("step_count") or 0),
-        "step": _step_for_viewer(session.get("step"), include_notes=include_notes),
+        "step": step,
         "pull_users": session.get("pull_users") is not False,
     }

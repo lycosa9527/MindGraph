@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from types import SimpleNamespace
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -63,8 +64,8 @@ def _live_session() -> dict:
         "diagram_type": "double_bubble_map",
         "topic_options": [{"id": "opt-1", "label": "ice vs water"}],
         "started_at": 1.0,
-        "expires_at": 9999.0,
-        "instructor_seen_at": 9999.0,
+        "expires_at": time.time() + 3600,
+        "instructor_seen_at": time.time(),
     }
 
 
@@ -135,22 +136,16 @@ async def test_late_join_command_matches_snapshot() -> None:
     """A teacher who opens the app later GETs the current snapshot."""
     session = _live_session()
     teacher = _user("teacher", org_id=10)
-    with (
-        patch(
-            "routers.api.training_routes.get_session",
-            new=AsyncMock(return_value=dict(session)),
-        ),
-        patch(
-            "routers.api.training_routes.maybe_auto_pause",
-            new=AsyncMock(side_effect=lambda item: item),
-        ),
+    with patch(
+        "routers.api.training_routes.get_session",
+        new=AsyncMock(return_value=dict(session)),
     ):
         response = await get_command(
             org_id=None,
             current_user=teacher,
             if_none_match=None,
         )
-    assert response.headers["ETag"] == '"sess-1:4"'
+    assert response.headers["ETag"] == '"sess-1:4:live"'
     payload = bytes(response.body).decode("utf-8")
     assert "double_bubble_map" in payload
     assert '"seq":4' in payload
@@ -162,20 +157,14 @@ async def test_command_etag_304() -> None:
     """Unchanged snapshots return 304."""
     session = _live_session()
     teacher = _user("teacher", org_id=10)
-    with (
-        patch(
-            "routers.api.training_routes.get_session",
-            new=AsyncMock(return_value=dict(session)),
-        ),
-        patch(
-            "routers.api.training_routes.maybe_auto_pause",
-            new=AsyncMock(side_effect=lambda item: item),
-        ),
+    with patch(
+        "routers.api.training_routes.get_session",
+        new=AsyncMock(return_value=dict(session)),
     ):
         response = await get_command(
             org_id=None,
             current_user=teacher,
-            if_none_match='"sess-1:4"',
+            if_none_match='"sess-1:4:live"',
         )
     assert response.status_code == 304
 
@@ -187,23 +176,17 @@ async def test_command_etag_is_per_session() -> None:
     session["session_id"] = "sess-2"
     session["seq"] = 4
     teacher = _user("teacher", org_id=10)
-    with (
-        patch(
-            "routers.api.training_routes.get_session",
-            new=AsyncMock(return_value=dict(session)),
-        ),
-        patch(
-            "routers.api.training_routes.maybe_auto_pause",
-            new=AsyncMock(side_effect=lambda item: item),
-        ),
+    with patch(
+        "routers.api.training_routes.get_session",
+        new=AsyncMock(return_value=dict(session)),
     ):
         response = await get_command(
             org_id=None,
             current_user=teacher,
-            if_none_match='"sess-1:4"',
+            if_none_match='"sess-1:4:live"',
         )
     assert response.status_code == 200
-    assert response.headers["ETag"] == '"sess-2:4"'
+    assert response.headers["ETag"] == '"sess-2:4:live"'
 
 
 @pytest.mark.asyncio
@@ -213,15 +196,9 @@ async def test_paused_command_keeps_state() -> None:
     session["state"] = "paused"
     session["seq"] = 6
     teacher = _user("teacher", org_id=10)
-    with (
-        patch(
-            "routers.api.training_routes.get_session",
-            new=AsyncMock(return_value=dict(session)),
-        ),
-        patch(
-            "routers.api.training_routes.maybe_auto_pause",
-            new=AsyncMock(side_effect=lambda item: item),
-        ),
+    with patch(
+        "routers.api.training_routes.get_session",
+        new=AsyncMock(return_value=dict(session)),
     ):
         response = await get_command(
             org_id=None,
@@ -231,6 +208,34 @@ async def test_paused_command_keeps_state() -> None:
     payload = bytes(response.body).decode("utf-8")
     assert '"state":"paused"' in payload
     assert '"seq":6' in payload
+
+
+@pytest.mark.asyncio
+async def test_stale_command_uses_paused_etag() -> None:
+    """Vanished instructor: teachers see paused and a new ETag without a Redis write."""
+    session = _live_session()
+    session["instructor_seen_at"] = time.time() - 200
+    teacher = _user("teacher", org_id=10)
+    with (
+        patch(
+            "routers.api.training_routes.get_session",
+            new=AsyncMock(return_value=dict(session)),
+        ),
+        patch(
+            "services.features.training.session_store.get_async_redis",
+            return_value=None,
+        ),
+    ):
+        response = await get_command(
+            org_id=None,
+            current_user=teacher,
+            if_none_match='"sess-1:4:live"',
+        )
+    assert response.status_code == 200
+    assert response.headers["ETag"] == '"sess-1:4:paused"'
+    payload = bytes(response.body).decode("utf-8")
+    assert '"state":"paused"' in payload
+    assert '"seq":4' in payload
 
 
 @pytest.mark.asyncio

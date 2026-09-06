@@ -8,24 +8,49 @@
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { Building2, ChevronRight, MessageSquare, Mic, UserCog, Workflow } from '@lucide/vue'
+import {
+  Building2,
+  ChevronRight,
+  GraduationCap,
+  MessageSquare,
+  Mic,
+  UserCog,
+  Workflow,
+} from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
+import { useTrainingRemoteSync } from '@/composables/training/useTrainingRemoteSync'
 import { useAuthStore, useFeatureFlagsStore } from '@/stores'
+import { useTrainingStore } from '@/stores/training'
 import { canSeeMobileOrgManagement } from '@/utils/adminCapabilities'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const featureFlagsStore = useFeatureFlagsStore()
+const training = useTrainingStore()
 const { t } = useLanguage()
 
 const displayName = computed(() => authStore.user?.username || '')
 
 const showKittyHubCard = computed(() => featureFlagsStore.flags?.feature_kitty_agent ?? false)
+const showTrainingCard = computed(
+  () => Boolean(featureFlagsStore.flags?.feature_training) && authStore.isPlatformLevel
+)
+const trainingLive = computed(() => {
+  const mine = Number(authStore.user?.id)
+  return (
+    showTrainingCard.value &&
+    training.isActive &&
+    mine > 0 &&
+    Number(training.snapshot.instructor_id) === mine
+  )
+})
 
 const showOrgsCard = computed(() =>
   canSeeMobileOrgManagement(authStore.adminCapabilitiesPayload, authStore.adminCapabilitiesLoaded)
 )
+
+useTrainingRemoteSync({ pollWhileWaiting: false })
 
 onMounted(() => {
   void featureFlagsStore.fetchFlags()
@@ -54,6 +79,10 @@ function goToOrgs() {
 
 function goToVoiceNotes() {
   router.push('/m/voice-notes')
+}
+
+function goToTraining() {
+  router.push('/m/training')
 }
 </script>
 
@@ -137,6 +166,34 @@ function goToVoiceNotes() {
           </div>
           <div class="text-sm text-gray-500 mt-0.5">
             {{ t('mobile.kittyCardDesc', '思维教学语音智能体') }}
+          </div>
+        </div>
+        <ChevronRight
+          :size="20"
+          class="text-gray-400 shrink-0"
+        />
+      </button>
+
+      <button
+        v-if="showTrainingCard"
+        class="feature-card w-full flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-200 active:bg-gray-50 transition-colors text-left"
+        @click="goToTraining"
+      >
+        <div
+          class="flex items-center justify-center w-12 h-12 rounded-xl bg-teal-50 text-teal-700 shrink-0"
+        >
+          <GraduationCap :size="24" />
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-base font-semibold text-gray-900">
+            {{ t('training.title') }}
+            <span
+              v-if="trainingLive"
+              class="training-live"
+            >{{ t('training.remoteLive') }}</span>
+          </div>
+          <div class="text-sm text-gray-500 mt-0.5">
+            {{ t('training.remoteCardHint') }}
           </div>
         </div>
         <ChevronRight
@@ -236,5 +293,13 @@ function goToVoiceNotes() {
 
 .mobile-home {
   padding-bottom: env(safe-area-inset-bottom);
+}
+.training-live {
+  margin-left: 0.4rem;
+  color: #0f766e;
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
 }
 </style>

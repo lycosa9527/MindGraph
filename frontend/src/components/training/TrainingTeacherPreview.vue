@@ -12,13 +12,21 @@ import { visibleMarkOverlays } from '@/composables/training/trainingMarkSteps'
 import { hasTrainingLivePreview } from '@/config/trainingPageLive'
 import type { TrainingCourseStep } from '@/types/training'
 
-const props = defineProps<{
-  step: TrainingCourseStep
-  canPrev?: boolean
-  canNext?: boolean
-  free?: boolean
-  showMode?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    step: TrainingCourseStep
+    canPrev?: boolean
+    canNext?: boolean
+    free?: boolean
+    showMode?: boolean
+  }>(),
+  {
+    canPrev: false,
+    canNext: false,
+    free: false,
+    showMode: true,
+  }
+)
 
 const emit = defineEmits<{
   close: []
@@ -177,7 +185,6 @@ onUnmounted(() => {
   right: max(1rem, env(safe-area-inset-right, 0px));
   bottom: max(1rem, env(safe-area-inset-bottom, 0px));
   z-index: 40;
-  max-height: calc(100% - 2rem);
-  overflow: auto;
+  overflow: visible;
 }
 </style>

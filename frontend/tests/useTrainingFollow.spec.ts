@@ -10,7 +10,9 @@ import type { TrainingSnapshot } from '@/types/training'
 import { MINDGRAPH_HEADLESS_EXPORT_KEY } from '@/utils/headlessExportSession'
 
 const fetchCommand = vi.hoisted(() => vi.fn())
+const postActivity = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const navigateMock = vi.hoisted(() => vi.fn().mockResolvedValue(true))
+const routePath = vi.hoisted(() => ({ value: '/mindmate' }))
 const applyUiMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const authState = vi.hoisted(() => ({
   isAuthenticated: true,
@@ -34,7 +36,7 @@ vi.mock('@/stores/featureFlags', () => ({
 
 vi.mock('@/utils/trainingApi', () => ({
   fetchTrainingCommand: (...args: unknown[]) => fetchCommand(...args),
-  postTrainingActivity: vi.fn().mockResolvedValue(undefined),
+  postTrainingActivity: (...args: unknown[]) => postActivity(...args),
 }))
 
 vi.mock('@/composables/training/applyTrainingUiTarget', () => ({
@@ -54,9 +56,10 @@ vi.mock('@/composables/training/applyTrainingSnapshot', async () => {
 vi.mock('vue-router', () => ({
   useRouter: () => ({
     push: vi.fn(),
+    beforeEach: () => () => undefined,
     currentRoute: { value: { path: '/mindmate', query: {} } },
   }),
-  useRoute: () => ({ path: '/mindmate' }),
+  useRoute: () => ({ path: routePath.value }),
 }))
 
 class FakeEventSource {
@@ -126,10 +129,15 @@ function mountFollow() {
 describe('useTrainingFollow', () => {
   beforeEach(() => {
     fetchCommand.mockReset()
+    postActivity.mockClear()
     navigateMock.mockClear()
+    routePath.value = '/mindmate'
     applyUiMock.mockClear()
     FakeEventSource.latest = null
     sessionStorage.clear()
+    authState.isPlatformLevel = false
+    authState.isTeacher = true
+    authState.user = { id: '3', schoolId: '12' }
     vi.stubGlobal('EventSource', FakeEventSource)
     fetchCommand.mockResolvedValue({
       snapshot: snapshot(),
@@ -142,6 +150,8 @@ describe('useTrainingFollow', () => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
     sessionStorage.clear()
+    authState.isPlatformLevel = false
+    authState.user = { id: '3', schoolId: '12' }
   })
 
   it('applies a live seq and ignores a later stale snapshot', async () => {
@@ -214,12 +224,119 @@ describe('useTrainingFollow', () => {
     host.remove()
   })
 
+  it('force-navs teachers when the instructor switches from free to pull', async () => {
+    const { app, host, store } = mountFollow()
+    await flushTurns()
+    navigateMock.mockClear()
+    store.markApplied(5)
+    fetchCommand.mockResolvedValueOnce({
+      snapshot: snapshot({
+        seq: 6,
+        pull_users: false,
+        course_id: 'c1',
+        step: { position: 0, type: 'page', page_key: 'canvas' },
+      }),
+      etag: '"6"',
+      notModified: false,
+    })
+    FakeEventSource.latest?.emit('seq')
+    await flushTurns()
+    expect(navigateMock).not.toHaveBeenCalled()
+    expect(store.lastAppliedSeq).toBe(6)
+    fetchCommand.mockResolvedValueOnce({
+      snapshot: snapshot({
+        seq: 7,
+        pull_users: true,
+        course_id: 'c1',
+        step: { position: 0, type: 'page', page_key: 'canvas' },
+      }),
+      etag: '"7"',
+      notModified: false,
+    })
+    FakeEventSource.latest?.emit('seq')
+    await flushTurns()
+    expect(navigateMock).toHaveBeenCalled()
+    expect(store.lastAppliedSeq).toBe(7)
+    app.unmount()
+    host.remove()
+  })
+
+  it('does not force-nav anyone off the phone remote', async () => {
+    routePath.value = '/m/training'
+    const { app, host, store } = mountFollow()
+    await flushTurns()
+    navigateMock.mockClear()
+    store.markApplied(5)
+    fetchCommand.mockResolvedValueOnce({
+      snapshot: snapshot({
+        seq: 8,
+        pull_users: true,
+        course_id: 'c1',
+        step: { position: 0, type: 'page', page_key: 'canvas' },
+      }),
+      etag: '"8"',
+      notModified: false,
+    })
+    FakeEventSource.latest?.emit('seq')
+    await flushTurns()
+    expect(navigateMock).not.toHaveBeenCalled()
+    expect(store.lastAppliedSeq).toBe(8)
+    app.unmount()
+    host.remove()
+  })
+
+  it('does not force-nav the hosting instructor off mobile home', async () => {
+    routePath.value = '/m'
+    authState.user = { id: '1', schoolId: '12' }
+    const { app, host, store } = mountFollow()
+    await flushTurns()
+    navigateMock.mockClear()
+    store.markApplied(5)
+    fetchCommand.mockResolvedValueOnce({
+      snapshot: snapshot({
+        seq: 9,
+        pull_users: true,
+        course_id: 'c1',
+        instructor_id: 1,
+        step: { position: 0, type: 'page', page_key: 'canvas' },
+      }),
+      etag: '"9"',
+      notModified: false,
+    })
+    FakeEventSource.latest?.emit('seq')
+    await flushTurns()
+    expect(navigateMock).not.toHaveBeenCalled()
+    expect(store.lastAppliedSeq).toBe(9)
+    app.unmount()
+    host.remove()
+  })
+
   it('does not open EventSource during headless export', async () => {
     sessionStorage.setItem(MINDGRAPH_HEADLESS_EXPORT_KEY, '1')
     const { app, host } = mountFollow()
     await Promise.resolve()
     expect(FakeEventSource.latest).toBeNull()
     expect(fetchCommand).not.toHaveBeenCalled()
+    app.unmount()
+    host.remove()
+  })
+
+  it('does not open EventSource for a platform lead until the school is known', async () => {
+    authState.isPlatformLevel = true
+    authState.user = { id: '3', schoolId: '' }
+    const { app, host } = mountFollow()
+    await flushTurns()
+    expect(FakeEventSource.latest).toBeNull()
+    expect(fetchCommand).not.toHaveBeenCalled()
+    app.unmount()
+    host.remove()
+  })
+
+  it('does not post teacher activity from the phone remote', async () => {
+    routePath.value = '/m/training'
+    const { app, host } = mountFollow()
+    await flushTurns()
+    expect(postActivity).not.toHaveBeenCalled()
     app.unmount()
     host.remove()
   })
