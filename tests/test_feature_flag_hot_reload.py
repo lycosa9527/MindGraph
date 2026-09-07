@@ -81,6 +81,39 @@ async def test_feature_flag_gate_blocks_workshop_ws_prefix():
 
 
 @pytest.mark.asyncio
+async def test_feature_flag_gate_allows_packed_roles_when_workshop_on():
+    """研习社 can load Course Builder mascots when FEATURE_TRAINING is off."""
+    downstream = MagicMock(status_code=200)
+    call_next = AsyncMock(return_value=downstream)
+    with patch(
+        "services.infrastructure.http.feature_gate.config",
+        SimpleNamespace(FEATURE_TRAINING=False, FEATURE_WORKSHOP_CHAT=True),
+    ):
+        response = await feature_flag_gate(
+            _request("/api/training/assets/roles/11-clap.webp"),
+            call_next,
+        )
+    assert response is downstream
+    call_next.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_feature_flag_gate_blocks_packed_roles_when_both_off():
+    """Packed mascots stay hidden when training and 研习社 are both off."""
+    call_next = AsyncMock(return_value=MagicMock(status_code=200))
+    with patch(
+        "services.infrastructure.http.feature_gate.config",
+        SimpleNamespace(FEATURE_TRAINING=False, FEATURE_WORKSHOP_CHAT=False),
+    ):
+        response = await feature_flag_gate(
+            _request("/api/training/assets/roles/11-clap.webp"),
+            call_next,
+        )
+    assert response.status_code == 404
+    call_next.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_feature_flag_gate_blocks_kitty_prefix():
     """Kitty REST is gated when FEATURE_KITTY_AGENT is off."""
     call_next = AsyncMock(return_value=MagicMock(status_code=200))

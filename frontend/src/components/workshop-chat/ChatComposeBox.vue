@@ -3,6 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 
 import { ChevronRight, X } from '@lucide/vue'
 
+import { TRAINING_ROLES } from '@/config/trainingRoles'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useRenderedMarkdown } from '@/composables/core/useRenderedMarkdown'
 import { type OrgMember, useWorkshopChatStore } from '@/stores/workshopChat'
@@ -13,6 +14,7 @@ import {
   applyComposeFormat,
   insertTextAtCursor,
 } from '@/utils/workshopComposeFormat'
+import { buildWorkshopRoleMarkdown, inlineWorkshopRoleMarkdown } from '@/utils/workshopRoleEmbed'
 
 import './ChatComposeBox.css'
 import WorkshopComposeToolbar from './WorkshopComposeToolbar.vue'
@@ -48,6 +50,7 @@ const isExpanded = ref(false)
 const isPreview = ref(false)
 const textareaRef = ref<HTMLTextAreaElement>()
 const showEmojiPicker = ref(false)
+const showRolePicker = ref(false)
 const showDiagramPicker = ref(false)
 const uploading = ref(false)
 const fileInputRef = ref<HTMLInputElement>()
@@ -55,7 +58,7 @@ const showMentionPicker = ref(false)
 const mentionQuery = ref('')
 
 const { html: previewHtml } = useRenderedMarkdown(() =>
-  stripMindmateDiagramIdComments(content.value)
+  inlineWorkshopRoleMarkdown(stripMindmateDiagramIdComments(content.value))
 )
 
 let draftSaveTimer: ReturnType<typeof setTimeout> | null = null
@@ -171,6 +174,7 @@ function collapse(): void {
   isPreview.value = false
   showMentionPicker.value = false
   showEmojiPicker.value = false
+  showRolePicker.value = false
 }
 
 function handleSend(): void {
@@ -298,6 +302,37 @@ function handleDiagramInsert(markdown: string): void {
   const end = el?.selectionEnd ?? start
   const prefix = start > 0 && content.value.charAt(start - 1) !== '\n' ? '\n' : ''
   applyToTextarea(insertTextAtCursor(content.value, start, end, `${prefix}${markdown}\n`))
+}
+
+function handleRolePick(roleId: string): void {
+  showRolePicker.value = false
+  const role = TRAINING_ROLES.find((row) => row.id === roleId)
+  const alt = role ? t(role.labelKey) : roleId
+  const markdown = buildWorkshopRoleMarkdown(roleId, alt)
+  const el = textareaRef.value
+  const start = el?.selectionStart ?? content.value.length
+  const end = el?.selectionEnd ?? start
+  applyToTextarea(insertTextAtCursor(content.value, start, end, markdown))
+}
+
+function onEmojiPickerVisible(open: boolean): void {
+  showEmojiPicker.value = open
+  if (open) {
+    showRolePicker.value = false
+  }
+}
+
+function onRolePickerVisible(open: boolean): void {
+  showRolePicker.value = open
+  if (open) {
+    showEmojiPicker.value = false
+  }
+}
+
+function openDiagramPicker(): void {
+  showEmojiPicker.value = false
+  showRolePicker.value = false
+  showDiagramPicker.value = true
 }
 
 function triggerFileUpload(): void {
@@ -473,12 +508,15 @@ async function handleFileChange(event: Event): Promise<void> {
           :format-disabled="isPreview"
           :uploading="uploading"
           :show-emoji-picker="showEmojiPicker"
+          :show-role-picker="showRolePicker"
           @format="handleFormat"
           @toggle-preview="isPreview = !isPreview"
           @upload="triggerFileUpload"
-          @update:show-emoji-picker="showEmojiPicker = $event"
+          @update:show-emoji-picker="onEmojiPickerVisible"
+          @update:show-role-picker="onRolePickerVisible"
           @emoji="handleEmojiSelect"
-          @open-diagram="showDiagramPicker = true"
+          @pick-role="handleRolePick"
+          @open-diagram="openDiagramPicker"
           @send="handleSend"
         />
       </div>

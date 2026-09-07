@@ -20,6 +20,8 @@ const { t } = useLanguage()
 
 const channel = computed(() => store.findChannelById(props.channelId))
 
+const isAnnounce = computed(() => channel.value?.channel_type === 'announce')
+
 const isManagerOrAdmin = computed(() => authStore.isAdmin || authStore.isManager)
 
 const localColor = ref('#c2c2c2')
@@ -55,7 +57,6 @@ watch(
 )
 
 const channelTypeOptions = [
-  { value: 'announce', label: 'workshop.channelTypeAnnounce' },
   { value: 'public', label: 'workshop.channelTypePublic' },
   { value: 'private', label: 'workshop.channelTypePrivate' },
 ]
@@ -78,11 +79,16 @@ async function savePrefs(): Promise<void> {
 
 async function savePermissions(): Promise<void> {
   saving.value = true
-  await store.updateChannelPermissions(props.channelId, {
-    channel_type: localChannelType.value,
-    posting_policy: localPostingPolicy.value,
-    is_default: localIsDefault.value,
-  })
+  const perms: { channel_type?: 'public' | 'private'; posting_policy: string; is_default: boolean } =
+    {
+      posting_policy: localPostingPolicy.value,
+      is_default: localIsDefault.value,
+    }
+  const nextType = localChannelType.value
+  if (!isAnnounce.value && (nextType === 'public' || nextType === 'private')) {
+    perms.channel_type = nextType
+  }
+  await store.updateChannelPermissions(props.channelId, perms)
   saving.value = false
   emit('update:visible', false)
 }
@@ -160,7 +166,10 @@ async function savePermissions(): Promise<void> {
           {{ t('workshop.permissions') }}
         </h4>
 
-        <div class="mb-3">
+        <div
+          v-if="!isAnnounce"
+          class="mb-3"
+        >
           <label class="text-xs text-stone-600 mb-1 block">{{ t('workshop.channelType') }}</label>
           <el-select
             v-model="localChannelType"

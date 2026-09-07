@@ -157,6 +157,7 @@ export default {
   'workshop.italic': '기울임',
   'workshop.join': '참여',
   'workshop.keyboardShortcutsTitle': '키보드 단축키',
+  'workshop.kitty': 'Kitty',
   'workshop.leave': '나가기',
   'workshop.lessonDueAll': '전체',
   'workshop.lessonDueFilter': '수업 마감',

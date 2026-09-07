@@ -25,6 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.workshop_chat import (
     ChannelMember,
+    ChatChannel,
     ChatMessage,
     DirectMessage,
     FileAttachment,
@@ -150,6 +151,21 @@ async def _user_is_channel_member(
     return row.scalar_one_or_none() is not None
 
 
+async def _user_may_use_channel_files(
+    db: AsyncSession,
+    channel_id: int,
+    user_id: int,
+) -> bool:
+    """True for announce (platform-wide) or a member of an org channel."""
+    channel_row = await db.execute(select(ChatChannel).where(ChatChannel.id == channel_id))
+    channel = channel_row.scalar_one_or_none()
+    if channel is None:
+        return False
+    if channel.channel_type == "announce":
+        return True
+    return await _user_is_channel_member(db, channel_id, user_id)
+
+
 async def _verify_attachment_link(
     db: AsyncSession,
     user_id: int,
@@ -164,7 +180,7 @@ async def _verify_attachment_link(
         msg = row.scalar_one_or_none()
         if msg is None:
             raise ValueError("Message not found")
-        if not await _user_is_channel_member(db, msg.channel_id, user_id):
+        if not await _user_may_use_channel_files(db, msg.channel_id, user_id):
             raise ValueError("Not a member of this channel")
         return
     if dm_id is not None:
@@ -187,7 +203,7 @@ async def user_can_access_attachment(
         msg = row.scalar_one_or_none()
         if msg is None:
             return att.uploader_id == user_id
-        return await _user_is_channel_member(db, msg.channel_id, user_id)
+        return await _user_may_use_channel_files(db, msg.channel_id, user_id)
     if att.dm_id is not None:
         row = await db.execute(select(DirectMessage).where(DirectMessage.id == att.dm_id))
         dm = row.scalar_one_or_none()

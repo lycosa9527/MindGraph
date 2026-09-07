@@ -328,6 +328,7 @@ async def leave_channel(
     current_user: User = Depends(get_current_user),
 ):
     """Leave a channel."""
+    await access_channel(db, channel_id, current_user)
     await channel_service.leave_channel(db, channel_id, current_user.id)
     return {"ok": True}
 
@@ -515,6 +516,11 @@ async def update_permissions(
     """
     channel = await access_channel(db, channel_id, current_user)
     require_channel_manager(current_user, channel)
+    if body.channel_type is not None and channel.channel_type == "announce":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Announcement channels cannot change type",
+        )
     result = await channel_service.update_channel_permissions(
         db,
         channel_id,

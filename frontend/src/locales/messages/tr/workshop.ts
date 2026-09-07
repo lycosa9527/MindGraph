@@ -157,6 +157,7 @@ export default {
   'workshop.italic': 'İtalik',
   'workshop.join': 'Katıl',
   'workshop.keyboardShortcutsTitle': 'Klavye kısayolları',
+  'workshop.kitty': 'Kitty',
   'workshop.leave': 'Ayrıl',
   'workshop.lessonDueAll': 'Tümü',
   'workshop.lessonDueFilter': 'Ders son tarihleri',

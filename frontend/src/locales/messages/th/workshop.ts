@@ -157,6 +157,7 @@ export default {
   'workshop.italic': 'ตัวเอียง',
   'workshop.join': 'เข้าร่ว…',
   'workshop.keyboardShortcutsTitle': 'แป้นพิมพ์ลัด',
+  'workshop.kitty': 'Kitty',
   'workshop.leave': 'ออ…',
   'workshop.lessonDueAll': 'ทั้งหม…',
   'workshop.lessonDueFilter': 'กำหนดส่งบทเรียน',

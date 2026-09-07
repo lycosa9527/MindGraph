@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.54] - 2026-09-07
+
+> **研习社 stays school-scoped except 系统公告; compose can insert Kitty mascots.**
+
+### Added
+
+- **研习社 Kitty insert** — Compose toolbar can insert a Course Builder black-cat mascot inline (same `/api/training/assets/roles/` URLs as the builder). Preview and message bubbles size those clips at 140px.
+
+### Changed
+
+- **研习社 tenancy** — Each school sees only its own 教研组, 课例, conversations, and DMs. **系统公告** stays platform-wide (`organization_id` NULL). School admins cannot browse another school. Star, react, edit, leave, and WebSocket post go through `access_channel`. Packed mascot bytes load when `FEATURE_WORKSHOP_CHAT` is on even if Course Builder is off.
+- **系统公告 type** — Announce is seed-only. The permissions API accepts `public` / `private` only. Channel settings no longer offer a convert-to-announce control.
+
+### Fixed
+
+- **研习社 star / mute RLS** — Migration `0116` requires a visible message or topic. A guessed foreign `message_id` can no longer create a star or topic-pref row.
+- **研习社 系统公告 files** — Anyone who can read the announce stream can download its attachments (membership is not required).
+
+### Tests
+
+- [`tests/test_workshop_tenant_isolation.py`](tests/test_workshop_tenant_isolation.py), [`tests/db/test_rls_workshop_chat.py`](tests/db/test_rls_workshop_chat.py)
+- [`tests/test_feature_flag_hot_reload.py`](tests/test_feature_flag_hot_reload.py)
+- [`frontend/tests/workshopComposeFormat.spec.ts`](frontend/tests/workshopComposeFormat.spec.ts)
+
 ## [5.180.53] - 2026-09-07
 
 > **Cloud VOD for school admins; 研习社 compose toolbar, diagram insert, and COS uploads; shared COS env prefixes on dev/test.**

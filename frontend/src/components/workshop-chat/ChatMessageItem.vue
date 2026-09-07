@@ -11,6 +11,7 @@ import {
 } from '@/stores/workshopChat'
 import { stripMindmateDiagramIdComments } from '@/utils/mindmateDiagramMeta'
 import { workshopChatHrefFromState } from '@/utils/workshopChatRoute'
+import { inlineWorkshopRoleMarkdown } from '@/utils/workshopRoleEmbed'
 
 import FilePreview from './FilePreview.vue'
 import MessageActionBar from './MessageActionBar.vue'
@@ -20,7 +21,9 @@ const { t } = useLanguage()
 const workshopStore = useWorkshopChatStore()
 
 const { html: renderedContent } = useRenderedMarkdown(() =>
-  props.message.is_deleted ? '' : stripMindmateDiagramIdComments(props.message.content)
+  props.message.is_deleted
+    ? ''
+    : inlineWorkshopRoleMarkdown(stripMindmateDiagramIdComments(props.message.content))
 )
 
 const previewAttachments = computed(() => {
@@ -492,6 +495,19 @@ function handleAddReaction(emojiName: string, emojiCode: string): void {
   border-radius: 6px;
   margin: 6px 0;
   border: 1px solid hsl(0deg 0% 0% / 8%);
+}
+
+.msg-content :deep(img[src*='/api/training/assets/roles/']) {
+  display: inline-block;
+  width: 140px;
+  height: 140px;
+  max-width: 140px;
+  max-height: 140px;
+  margin: 0 0.2em;
+  vertical-align: bottom;
+  object-fit: contain;
+  border: none;
+  background: transparent;
 }
 
 .msg-content :deep(table) {

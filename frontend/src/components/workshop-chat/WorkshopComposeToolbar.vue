@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useTemplateRef } from 'vue'
+
+import { onClickOutside } from '@vueuse/core'
+
 import {
   Bold,
   Code,
@@ -19,6 +23,8 @@ import {
   Table,
 } from '@lucide/vue'
 
+import OneSentenceKittyAvatar from '@/components/canvas/OneSentenceKittyAvatar.vue'
+import TrainingRolePicker from '@/components/training/TrainingRolePicker.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { ComposeFormatType } from '@/utils/workshopComposeFormat'
 
@@ -31,6 +37,7 @@ const props = defineProps<{
   formatDisabled: boolean
   uploading: boolean
   showEmojiPicker: boolean
+  showRolePicker: boolean
 }>()
 
 const emit = defineEmits<{
@@ -38,12 +45,21 @@ const emit = defineEmits<{
   togglePreview: []
   upload: []
   'update:showEmojiPicker': [value: boolean]
+  'update:showRolePicker': [value: boolean]
   emoji: [name: string, code: string]
+  pickRole: [roleId: string]
   openDiagram: []
   send: []
 }>()
 
 const { t } = useLanguage()
+const roleMenuRef = useTemplateRef<HTMLElement>('roleMenuRef')
+
+onClickOutside(roleMenuRef, () => {
+  if (props.showRolePicker) {
+    emit('update:showRolePicker', false)
+  }
+})
 
 const formatButtons: { key: ComposeFormatType; icon: typeof Bold; titleKey: string }[] = [
   { key: 'bold', icon: Bold, titleKey: 'workshop.bold' },
@@ -132,6 +148,32 @@ const formatButtons: { key: ComposeFormatType; icon: typeof Bold; titleKey: stri
         <EmojiPicker @select="(name, code) => emit('emoji', name, code)" />
       </el-popover>
 
+      <div
+        ref="roleMenuRef"
+        class="compose-toolbar__menu"
+        @click.stop
+      >
+        <button
+          type="button"
+          class="compose-toolbar__btn compose-toolbar__btn--kitty"
+          :class="{ 'compose-toolbar__btn--on': showRolePicker }"
+          :title="t('workshop.kitty')"
+          :disabled="formatDisabled || uploading"
+          @click="emit('update:showRolePicker', !props.showRolePicker)"
+        >
+          <OneSentenceKittyAvatar :size="20" />
+        </button>
+        <div
+          v-if="showRolePicker"
+          class="compose-toolbar__sheet"
+        >
+          <TrainingRolePicker
+            preview-side="left"
+            @pick="(roleId) => emit('pickRole', roleId)"
+          />
+        </div>
+      </div>
+
       <button
         type="button"
         class="compose-toolbar__btn compose-toolbar__btn--mark"
@@ -162,6 +204,7 @@ const formatButtons: { key: ComposeFormatType; icon: typeof Bold; titleKey: stri
   gap: 8px;
   padding: 4px 6px 5px;
   border-top: 1px solid hsl(0deg 0% 0% / 6%);
+  overflow: visible;
 }
 
 .compose-toolbar__fmt {
@@ -202,6 +245,34 @@ const formatButtons: { key: ComposeFormatType; icon: typeof Bold; titleKey: stri
 
 .compose-toolbar__btn--mark {
   padding: 0;
+}
+
+.compose-toolbar__btn--kitty {
+  padding: 0;
+}
+
+.compose-toolbar__btn--kitty :deep(.one-sentence-kitty-avatar) {
+  box-shadow: none;
+}
+
+.compose-toolbar__btn--on {
+  background: hsl(0deg 0% 0% / 6%);
+}
+
+.compose-toolbar__menu {
+  position: relative;
+}
+
+.compose-toolbar__sheet {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.35rem);
+  z-index: 40;
+  overflow: visible;
+  border: 1px solid hsl(0deg 0% 0% / 10%);
+  background: hsl(0deg 0% 100%);
+  padding: 0.55rem;
+  box-shadow: 0 10px 28px rgb(28 25 23 / 0.12);
 }
 
 @keyframes compose-toolbar-pulse {

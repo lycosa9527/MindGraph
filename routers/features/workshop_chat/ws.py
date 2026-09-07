@@ -22,8 +22,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.settings import config
 from models.domain.auth import User as UserModel
-from models.domain.workshop_chat import ChannelMember, ChatChannel
+from models.domain.workshop_chat import ChatChannel
 from routers.features.workshop_chat.dependencies import (
+    access_channel,
     get_effective_org_id,
     require_post_permission,
 )
@@ -65,6 +66,15 @@ router = APIRouter()
 MAX_CHANNEL_IDS_SUBSCRIBE = 512
 
 
+def _ws_access_error_message(exc: HTTPException) -> str:
+    """Map REST access errors to a socket payload without leaking other schools."""
+    if exc.status_code == 404 or exc.detail == "Not your organization":
+        return "Channel not found"
+    if isinstance(exc.detail, str):
+        return exc.detail
+    return "Forbidden"
+
+
 async def _ws_channel_post_gate(
     websocket: WebSocket,
     db: AsyncSession,
@@ -72,31 +82,13 @@ async def _ws_channel_post_gate(
     user,
 ) -> ChatChannel | None:
     """Load channel, enforce membership (except announce), posting policy; else error."""
-    result = await db.execute(
-        select(ChatChannel).where(
-            ChatChannel.id == channel_id,
-            ChatChannel.is_archived.is_(False),
-        )
-    )
-    channel = result.scalar_one_or_none()
-    if not channel:
-        await websocket.send_text(
-            json.dumps(
-                {
-                    "type": "error",
-                    "message": "Channel not found",
-                }
-            )
-        )
+    try:
+        channel = await access_channel(db, channel_id, user)
+    except HTTPException as exc:
+        await websocket.send_text(json.dumps({"type": "error", "message": _ws_access_error_message(exc)}))
         return None
     if channel.channel_type != "announce":
-        member_result = await db.execute(
-            select(ChannelMember).where(
-                ChannelMember.channel_id == channel_id,
-                ChannelMember.user_id == user.id,
-            )
-        )
-        if not member_result.scalar_one_or_none():
+        if not await channel_service.is_channel_member(db, channel_id, user.id):
             await websocket.send_text(
                 json.dumps(
                     {
@@ -109,16 +101,7 @@ async def _ws_channel_post_gate(
     try:
         require_post_permission(channel, user)
     except HTTPException as exc:
-        detail = exc.detail
-        msg = detail if isinstance(detail, str) else "Forbidden"
-        await websocket.send_text(
-            json.dumps(
-                {
-                    "type": "error",
-                    "message": msg,
-                }
-            )
-        )
+        await websocket.send_text(json.dumps({"type": "error", "message": _ws_access_error_message(exc)}))
         return None
     return channel
 
@@ -257,9 +240,19 @@ async def _handle_subscribe_channels(
     if not channel_ids:
         return
     async with actor_rls_session(user, allow_global_channels=True) as db:
-        # Batch membership check: single SELECT instead of one per channel.
+        # Membership is org-scoped under RLS. Announce is platform-wide
+        # (no ChannelMember required), so include those ids from the request.
         member_ids = await channel_service.get_user_member_channel_ids(db, user.id, channel_ids)
-    valid_ids = [cid for cid in channel_ids if cid in member_ids]
+        announce_result = await db.execute(
+            select(ChatChannel.id).where(
+                ChatChannel.id.in_(channel_ids),
+                ChatChannel.is_archived.is_(False),
+                ChatChannel.channel_type == "announce",
+            )
+        )
+        announce_ids = {row[0] for row in announce_result.all()}
+    allowed = member_ids | announce_ids
+    valid_ids = [cid for cid in channel_ids if cid in allowed]
     chat_ws_manager.subscribe_channels(user.id, valid_ids)
 
 

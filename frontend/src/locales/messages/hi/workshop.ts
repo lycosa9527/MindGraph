@@ -157,6 +157,7 @@ export default {
   'workshop.italic': 'तिरछा',
   'workshop.join': 'शामिल',
   'workshop.keyboardShortcutsTitle': 'कीबोर्ड शॉर्टकट',
+  'workshop.kitty': 'Kitty',
   'workshop.leave': 'छोड़ें',
   'workshop.lessonDueAll': 'सभी',
   'workshop.lessonDueFilter': 'पाठ समय सीमा',

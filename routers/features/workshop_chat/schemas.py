@@ -11,7 +11,7 @@ Proprietary License
 """
 
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -107,9 +107,13 @@ class UpdateMemberPrefsRequest(BaseModel):
 
 
 class UpdateChannelPermissionsRequest(BaseModel):
-    """Request body for updating channel-level settings."""
+    """Request body for updating org-channel settings.
 
-    channel_type: Optional[str] = Field(None, max_length=20)
+    ``announce`` is seed-only (系统公告). Managers may switch a 教研组
+    between public and private.
+    """
+
+    channel_type: Optional[Literal["public", "private"]] = None
     posting_policy: Optional[str] = Field(None, max_length=20)
     is_default: Optional[bool] = None
 

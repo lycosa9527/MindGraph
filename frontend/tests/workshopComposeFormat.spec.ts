@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { applyComposeFormat, insertTextAtCursor } from '@/utils/workshopComposeFormat'
 import { buildWorkshopDiagramMarkdown } from '@/utils/workshopDiagramEmbed'
+import { buildWorkshopRoleMarkdown, inlineWorkshopRoleMarkdown } from '@/utils/workshopRoleEmbed'
 
 describe('applyComposeFormat', () => {
   it('wraps a selection in bold', () => {
@@ -66,5 +67,31 @@ describe('buildWorkshopDiagramMarkdown', () => {
   it('falls back to the title when the id is not a uuid', () => {
     const md = buildWorkshopDiagramMarkdown('local', 'My map', '/api/chat/attachments/1/download')
     expect(md).toBe('![My map](/api/chat/attachments/1/download)')
+  })
+})
+
+describe('buildWorkshopRoleMarkdown', () => {
+  it('embeds the Course Builder role asset url', () => {
+    const md = buildWorkshopRoleMarkdown('11-clap', 'Clap')
+    expect(md).toBe('![Clap](/api/training/assets/roles/11-clap.webp)')
+  })
+
+  it('falls back to look-here for an unknown role id', () => {
+    const md = buildWorkshopRoleMarkdown('ghost', 'Ghost')
+    expect(md).toBe('![Ghost](/api/training/assets/roles/01-look-here.webp)')
+  })
+})
+
+describe('inlineWorkshopRoleMarkdown', () => {
+  it('joins a role clip to neighboring words on one line', () => {
+    const src = '123\n![Clap](/api/training/assets/roles/11-clap.webp)\n测试23'
+    expect(inlineWorkshopRoleMarkdown(src)).toBe(
+      '123 ![Clap](/api/training/assets/roles/11-clap.webp) 测试23'
+    )
+  })
+
+  it('leaves a lone role clip unchanged', () => {
+    const src = '![Clap](/api/training/assets/roles/11-clap.webp)'
+    expect(inlineWorkshopRoleMarkdown(src)).toBe(src)
   })
 })

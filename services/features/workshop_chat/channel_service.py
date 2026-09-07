@@ -728,12 +728,10 @@ class ChannelService:
         if not channel:
             return None
 
-        valid_types = {"announce", "public", "private"}
+        org_types = {"public", "private"}
         valid_policies = {"everyone", "managers", "members_only"}
 
-        if channel_type is not None and channel_type in valid_types:
-            if channel_type == "announce":
-                channel.organization_id = None
+        if channel_type is not None and channel.channel_type in org_types and channel_type in org_types:
             channel.channel_type = channel_type
         if posting_policy is not None and posting_policy in valid_policies:
             channel.posting_policy = posting_policy

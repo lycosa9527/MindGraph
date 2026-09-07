@@ -155,6 +155,7 @@ export default {
   "workshop.italic": "Italic",
   "workshop.join": "Join",
   "workshop.keyboardShortcutsTitle": "Keyboard shortcuts",
+  "workshop.kitty": "Kitty",
   "workshop.leave": "Leave",
   "workshop.lessonDueAll": "All",
   "workshop.lessonDueFilter": "Lesson deadlines",

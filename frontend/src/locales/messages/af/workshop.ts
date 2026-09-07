@@ -157,6 +157,7 @@ export default {
   'workshop.italic': 'Skuinsgedruk',
   'workshop.join': 'Sluit aan',
   'workshop.keyboardShortcutsTitle': 'Sleutelbordkortpaaie',
+  'workshop.kitty': 'Kitty',
   'workshop.leave': 'Verlaat',
   'workshop.lessonDueAll': 'Almal',
   'workshop.lessonDueFilter': 'Lesfinaaldata',

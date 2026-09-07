@@ -157,6 +157,7 @@ export default {
   'workshop.italic': 'Kursiv',
   'workshop.join': 'Ulanish',
   'workshop.keyboardShortcutsTitle': 'Klaviatura qisayollari',
+  'workshop.kitty': 'Kitty',
   'workshop.leave': 'Ayril',
   'workshop.lessonDueAll': 'Hammasi',
   'workshop.lessonDueFilter': 'Dars son tarixleri',

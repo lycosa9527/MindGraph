@@ -166,6 +166,7 @@ export default {
   'workshop.italic': '斜体',
   'workshop.join': '加入',
   'workshop.keyboardShortcutsTitle': '键盘快捷键',
+  'workshop.kitty': '小猫',
   'workshop.leave': '离开',
   'workshop.lessonDueAll': '全部',
   'workshop.lessonDueFilter': '备课截止日期',

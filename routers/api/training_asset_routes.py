@@ -229,15 +229,9 @@ async def can_read_training_asset(user: User, course_id: str) -> bool:
     return str(session.get("course_id") or "") == course_id
 
 
-async def can_read_packed_role(user: User) -> bool:
-    """Authors always; teachers during any live or paused session."""
-    if can_lead_any_training(user):
-        return True
-    org_id = getattr(user, "organization_id", None)
-    if org_id is None or not is_org_teacher_target(user, int(org_id)):
-        return False
-    session = await get_session(int(org_id))
-    return is_active_session(session)
+async def can_read_packed_role(_user: User) -> bool:
+    """Packed brand mascots: any signed-in user (Course Builder + 研习社)."""
+    return True
 
 
 def _repo_packed_role_response(parsed: tuple[str, bool]) -> Response:

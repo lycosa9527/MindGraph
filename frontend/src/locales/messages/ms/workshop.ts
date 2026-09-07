@@ -157,6 +157,7 @@ export default {
   'workshop.italic': 'miring',
   'workshop.join': 'Bergabung',
   'workshop.keyboardShortcutsTitle': 'Pintasan keyboard',
+  'workshop.kitty': 'Kitty',
   'workshop.leave': 'Meninggalkan',
   'workshop.lessonDueAll': 'Semua',
   'workshop.lessonDueFilter': 'Batas waktu pelajaran',

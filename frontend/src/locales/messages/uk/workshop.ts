@@ -157,6 +157,7 @@ export default {
   'workshop.italic': 'Курсив',
   'workshop.join': 'Приєднатися',
   'workshop.keyboardShortcutsTitle': 'Гарячі клавіші',
+  'workshop.kitty': 'Kitty',
   'workshop.leave': 'Вийти',
   'workshop.lessonDueAll': 'Усі',
   'workshop.lessonDueFilter': 'Дедлайни уроків',

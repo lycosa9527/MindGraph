@@ -157,6 +157,7 @@ export default {
   'workshop.italic': 'Cursief',
   'workshop.join': 'Meedoen',
   'workshop.keyboardShortcutsTitle': 'Sneltoetsen',
+  'workshop.kitty': 'Kitty',
   'workshop.leave': 'Vertrekken',
   'workshop.lessonDueAll': 'Alle',
   'workshop.lessonDueFilter': 'Lesdeadlines',

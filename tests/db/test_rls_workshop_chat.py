@@ -1,7 +1,12 @@
 """Workshop chat RLS: session GUC plus policy SQL for topic-less rows and DMs."""
 
 from utils.db.rls_context import RlsContext
-from utils.db_rls.policy_builder import WORKSHOP_CHILD, WORKSHOP_MESSAGE_EXPR
+from utils.db_rls.policy_builder import (
+    WORKSHOP_CHILD,
+    WORKSHOP_MESSAGE_EXPR,
+    WORKSHOP_STAR_EXPR,
+    WORKSHOP_TOPIC_PREF_EXPR,
+)
 
 
 class _User:
@@ -44,3 +49,21 @@ def test_workshop_attachment_rls_covers_dm_and_channel() -> None:
     assert "rls_user_visible(d.sender_id)" in expr
     assert "uploader_id = rls_current_user_id()" in expr
     assert "message_id IS NULL AND dm_id IS NULL" in expr
+
+
+def test_workshop_star_rls_requires_visible_message() -> None:
+    """Stars cannot point at another school's message_id."""
+    expr = dict(WORKSHOP_CHILD)["starred_messages"]
+    assert expr == WORKSHOP_STAR_EXPR
+    assert "rls_user_visible(user_id)" in expr
+    assert "m.channel_id" in expr
+    assert "rls_chat_channel_visible" in expr
+
+
+def test_workshop_topic_pref_rls_requires_visible_topic() -> None:
+    """Mute/pin prefs cannot target another school's topic_id."""
+    expr = dict(WORKSHOP_CHILD)["user_topic_preferences"]
+    assert expr == WORKSHOP_TOPIC_PREF_EXPR
+    assert "rls_user_visible(user_id)" in expr
+    assert "chat_topics" in expr
+    assert "rls_chat_channel_visible" in expr

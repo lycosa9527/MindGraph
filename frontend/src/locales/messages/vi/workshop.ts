@@ -157,6 +157,7 @@ export default {
   'workshop.italic': 'Nghiêng',
   'workshop.join': 'Tham gia',
   'workshop.keyboardShortcutsTitle': 'Phím tắt',
+  'workshop.kitty': 'Kitty',
   'workshop.leave': 'Rời khỏi',
   'workshop.lessonDueAll': 'Tất cả',
   'workshop.lessonDueFilter': 'Thời hạn bài học',

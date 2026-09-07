@@ -157,6 +157,7 @@ export default {
   'workshop.italic': 'ඇල අකුරු',
   'workshop.join': 'එක්වන්න',
   'workshop.keyboardShortcutsTitle': 'යතුරුපුවරු කෙටිමං',
+  'workshop.kitty': 'Kitty',
   'workshop.leave': 'යන්න',
   'workshop.lessonDueAll': 'සියල්ල',
   'workshop.lessonDueFilter': 'පාඩම් කාලසීමාවන්',

@@ -54,18 +54,10 @@ def test_packed_role_keys_match_shipped_webps() -> None:
 
 
 @pytest.mark.asyncio
-async def test_teacher_needs_a_live_session_for_packed_roles() -> None:
-    """Teachers cannot pull role clips unless a session is live or paused."""
-    with patch(
-        "routers.api.training_asset_routes.get_session",
-        new=AsyncMock(return_value=None),
-    ):
-        assert await can_read_packed_role(_user("teacher")) is False
-    with patch(
-        "routers.api.training_asset_routes.get_session",
-        new=AsyncMock(return_value={"state": "live", "course_id": "abc"}),
-    ):
-        assert await can_read_packed_role(_user("teacher")) is True
+async def test_signed_in_users_can_read_packed_roles() -> None:
+    """Packed mascots are brand assets for Course Builder and 研习社."""
+    assert await can_read_packed_role(_user("teacher")) is True
+    assert await can_read_packed_role(_user("student")) is True
     assert await can_read_packed_role(_user("superadmin")) is True
 
 

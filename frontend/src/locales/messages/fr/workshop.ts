@@ -157,6 +157,7 @@ export default {
   'workshop.italic': 'Italique',
   'workshop.join': 'Rejoindre',
   'workshop.keyboardShortcutsTitle': 'Raccourcis clavier',
+  'workshop.kitty': 'Kitty',
   'workshop.leave': 'Quitter',
   'workshop.lessonDueAll': 'Tous',
   'workshop.lessonDueFilter': 'Échéances des leçons',

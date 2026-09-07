@@ -18,7 +18,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
-from models.domain.workshop_chat import ChatMessage, MessageReaction
+from models.domain.workshop_chat import MessageReaction
+from routers.features.workshop_chat.dependencies import access_channel_message
 from services.features.workshop_chat import reaction_service
 from services.features.workshop_chat_ws_manager import chat_ws_manager
 from utils.auth import get_current_user
@@ -43,10 +44,7 @@ async def toggle_reaction(
     current_user: User = Depends(get_current_user),
 ):
     """Toggle an emoji reaction on a message (add or remove)."""
-    msg_result = await db.execute(select(ChatMessage).where(ChatMessage.id == message_id))
-    msg = msg_result.scalar_one_or_none()
-    if not msg:
-        raise HTTPException(status_code=404, detail="Message not found")
+    msg, _channel = await access_channel_message(db, message_id, current_user)
 
     result = await reaction_service.toggle_reaction(
         db,
@@ -82,10 +80,7 @@ async def remove_reaction(
     current_user: User = Depends(get_current_user),
 ):
     """Explicitly remove a specific emoji reaction."""
-    msg_result = await db.execute(select(ChatMessage).where(ChatMessage.id == message_id))
-    msg = msg_result.scalar_one_or_none()
-    if not msg:
-        raise HTTPException(status_code=404, detail="Message not found")
+    msg, _channel = await access_channel_message(db, message_id, current_user)
 
     existing_result = await db.execute(
         select(MessageReaction).where(
@@ -122,7 +117,8 @@ async def remove_reaction(
 async def get_reactions(
     message_id: int,
     db: AsyncSession = Depends(get_async_db),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Get grouped reactions for a message."""
+    await access_channel_message(db, message_id, current_user)
     return await reaction_service.get_message_reactions(db, message_id)

@@ -978,7 +978,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
 
   async function updateChannelPermissions(
     channelId: number,
-    perms: { channel_type?: string; posting_policy?: string; is_default?: boolean }
+    perms: { channel_type?: 'public' | 'private'; posting_policy?: string; is_default?: boolean }
   ): Promise<boolean> {
     try {
       const res = await apiRequest(`/api/chat/channels/${channelId}/permissions`, {

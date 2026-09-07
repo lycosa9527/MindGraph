@@ -157,6 +157,7 @@ export default {
   'workshop.italic': 'Kursiv',
   'workshop.join': 'Bashkohu',
   'workshop.keyboardShortcutsTitle': 'Shkurtoret e tastierës',
+  'workshop.kitty': 'Kitty',
   'workshop.leave': 'Dil',
   'workshop.lessonDueAll': 'Të gjitha',
   'workshop.lessonDueFilter': 'Afatet e mësimeve',

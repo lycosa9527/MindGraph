@@ -204,6 +204,14 @@ WORKSHOP_REACTION_EXPR = (
     "JOIN chat_channels c ON c.id = m.channel_id "
     "WHERE m.id = message_id AND rls_chat_channel_visible(c.organization_id))"
 )
+WORKSHOP_STAR_EXPR = f"rls_user_visible(user_id) AND {WORKSHOP_REACTION_EXPR}"
+WORKSHOP_TOPIC_PREF_EXPR = (
+    "rls_user_visible(user_id) AND EXISTS ("
+    "SELECT 1 FROM chat_topics t "
+    "JOIN chat_channels c ON c.id = t.channel_id "
+    "WHERE t.id = topic_id AND rls_chat_channel_visible(c.organization_id)"
+    ")"
+)
 WORKSHOP_ATTACHMENT_EXPR = (
     "("
     "message_id IS NOT NULL AND EXISTS ("
@@ -230,9 +238,9 @@ WORKSHOP_CHILD = [
     ("chat_messages", WORKSHOP_MESSAGE_EXPR),
     ("direct_messages", DIRECT_MESSAGE_EXPR),
     ("message_reactions", WORKSHOP_REACTION_EXPR),
-    ("starred_messages", "rls_user_visible(user_id)"),
+    ("starred_messages", WORKSHOP_STAR_EXPR),
     ("file_attachments", WORKSHOP_ATTACHMENT_EXPR),
-    ("user_topic_preferences", "rls_user_visible(user_id)"),
+    ("user_topic_preferences", WORKSHOP_TOPIC_PREF_EXPR),
 ]
 
 MINDMATE_COLLAB_SESSION_EXPR = (

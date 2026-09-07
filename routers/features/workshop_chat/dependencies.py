@@ -27,7 +27,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
-from models.domain.workshop_chat import ChatChannel
+from models.domain.workshop_chat import ChatChannel, ChatMessage
 from services.features.workshop_chat.channel_service import channel_service
 from utils.auth import (
     can_moderate_workshop_channel,
@@ -101,6 +101,27 @@ async def access_channel(
             )
 
     return channel
+
+
+async def access_channel_message(
+    db: AsyncSession,
+    message_id: int,
+    current_user: User,
+) -> tuple[ChatMessage, ChatChannel]:
+    """Load a channel message and apply the same org rules as ``access_channel``.
+
+    Foreign-school rows are 403 (or 404 when RLS hides them). Announce
+    messages stay readable for every workshop user.
+    """
+    result = await db.execute(select(ChatMessage).where(ChatMessage.id == message_id))
+    message = result.scalar_one_or_none()
+    if not message:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Message not found",
+        )
+    channel = await access_channel(db, message.channel_id, current_user)
+    return message, channel
 
 
 def require_post_permission(

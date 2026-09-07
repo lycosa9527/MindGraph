@@ -157,6 +157,7 @@ export default {
   'workshop.italic': 'Kursywa',
   'workshop.join': 'Dołącz',
   'workshop.keyboardShortcutsTitle': 'Skróty klawiaturowe',
+  'workshop.kitty': 'Kitty',
   'workshop.leave': 'Opuść',
   'workshop.lessonDueAll': 'Wszystkie',
   'workshop.lessonDueFilter': 'Terminy lekcji',

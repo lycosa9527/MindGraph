@@ -301,6 +301,19 @@
   border-radius: 6px;
 }
 
+.compose__preview img[src*='/api/training/assets/roles/'] {
+  display: inline-block;
+  width: 140px;
+  height: 140px;
+  max-width: 140px;
+  max-height: 140px;
+  margin: 0 0.2em;
+  vertical-align: bottom;
+  object-fit: contain;
+  border: none;
+  background: transparent;
+}
+
 .compose__preview table {
   border-collapse: collapse;
   font-size: 13px;

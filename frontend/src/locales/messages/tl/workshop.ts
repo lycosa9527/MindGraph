@@ -157,6 +157,7 @@ export default {
   'workshop.italic': 'Italic',
   'workshop.join': 'Sumali',
   'workshop.keyboardShortcutsTitle': 'Mga keyboard shortcut',
+  'workshop.kitty': 'Kitty',
   'workshop.leave': 'umalis',
   'workshop.lessonDueAll': 'Lahat',
   'workshop.lessonDueFilter': 'Mga deadline ng aralin',

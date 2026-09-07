@@ -183,6 +183,8 @@ run_backend() {
     tests/test_workshop_chat_file_service.py \
     tests/test_workshop_announce_seed.py \
     tests/test_workshop_archive_channel_children.py \
+    tests/test_workshop_tenant_isolation.py \
+    tests/db/test_rls_workshop_chat.py \
     tests/test_dingtalk_bind_service.py \
     tests/test_showcase_helpers.py \
     tests/test_celery_manager_stale.py \

@@ -8,6 +8,13 @@ import {
   type TrainingRoleDef,
 } from '@/config/trainingRoles'
 
+const props = withDefaults(
+  defineProps<{
+    previewSide?: 'left' | 'right'
+  }>(),
+  { previewSide: 'right' }
+)
+
 const emit = defineEmits<{
   pick: [role: string]
 }>()
@@ -30,6 +37,7 @@ function hidePreview(): void {
 <template>
   <div
     class="role-picker"
+    :class="{ 'role-picker--preview-left': props.previewSide === 'left' }"
     @mouseleave="hidePreview"
   >
     <div
@@ -122,6 +130,12 @@ function hidePreview(): void {
   left: 100%;
   z-index: 2;
   padding-left: 0.45rem;
+}
+.role-picker--preview-left .role-picker__preview {
+  left: auto;
+  right: 100%;
+  padding-left: 0;
+  padding-right: 0.45rem;
 }
 .role-picker__card {
   display: flex;

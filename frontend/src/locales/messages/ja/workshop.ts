@@ -157,6 +157,7 @@ export default {
   'workshop.italic': '斜体',
   'workshop.join': '加入',
   'workshop.keyboardShortcutsTitle': 'キーボードショートカット',
+  'workshop.kitty': 'Kitty',
   'workshop.leave': 'Leave',
   'workshop.lessonDueAll': 'すべて',
   'workshop.lessonDueFilter': '授業準備の期限',
