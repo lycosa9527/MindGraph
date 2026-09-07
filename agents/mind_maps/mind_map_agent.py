@@ -19,6 +19,10 @@ from agents.core.agent_utils import extract_json_from_response
 from agents.core.llm_spec_stream import dispatch_llm_chat
 from config.settings import Config
 from prompts import get_prompt
+from prompts.ai_content_level import (
+    append_audience_instructions,
+    extract_appended_generation_instructions,
+)
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.prompt_locale import is_chinese_prompt_shell_language
 
@@ -34,6 +38,7 @@ def build_mind_map_branch_expand_user_message(
     existing_branch_children: List[str],
     parent_branch: str,
     language: str,
+    generation_instructions: str | None = None,
 ) -> str:
     """Build the LLM user message for mind map branch sub-graph expansion."""
     is_main_branch = not (parent_branch or "").strip()
@@ -52,7 +57,7 @@ def build_mind_map_branch_expand_user_message(
             lines.append("请为该主分支生成 4–6 个直接子节点（仅一层，不要嵌套更深层级）。")
         else:
             lines.append("请为该子节点生成 4–6 个直接下级节点（仅一层，不要嵌套更深层级）。")
-        return "\n".join(lines)
+        return append_audience_instructions("\n".join(lines), generation_instructions)
 
     lines = [
         f"Central topic: {mind_map_topic or '(not set)'}",
@@ -69,7 +74,7 @@ def build_mind_map_branch_expand_user_message(
         lines.append("Generate 4–6 direct child nodes for this main branch only (one level; no deeper nesting).")
     else:
         lines.append("Generate 4–6 direct child nodes for this sub-node only (one level; no deeper nesting).")
-    return "\n".join(lines)
+    return append_audience_instructions("\n".join(lines), generation_instructions)
 
 
 class MindMapAgent(BaseAgent):
@@ -124,6 +129,7 @@ class MindMapAgent(BaseAgent):
                     reference_branches=kwargs.get("reference_branches"),
                     existing_branch_children=kwargs.get("existing_branch_children"),
                     parent_branch=str(kwargs.get("parent_branch") or "").strip(),
+                    generation_instructions=extract_appended_generation_instructions(user_prompt, language),
                     user_id=user_id,
                     organization_id=organization_id,
                     request_type=request_type,
@@ -251,6 +257,7 @@ class MindMapAgent(BaseAgent):
         existing_branch_children: List[str],
         parent_branch: str,
         language: str,
+        generation_instructions: str | None = None,
     ) -> str:
         return build_mind_map_branch_expand_user_message(
             expand_branch=expand_branch,
@@ -259,6 +266,7 @@ class MindMapAgent(BaseAgent):
             existing_branch_children=existing_branch_children,
             parent_branch=parent_branch,
             language=language,
+            generation_instructions=generation_instructions,
         )
 
     async def _generate_branch_expand(
@@ -270,6 +278,7 @@ class MindMapAgent(BaseAgent):
         reference_branches: Any,
         existing_branch_children: Any,
         parent_branch: str,
+        generation_instructions: str | None,
         user_id: Optional[int],
         organization_id: Optional[int],
         request_type: str,
@@ -293,6 +302,7 @@ class MindMapAgent(BaseAgent):
                 existing_branch_children=existing,
                 parent_branch=parent_branch,
                 language=language,
+                generation_instructions=generation_instructions,
             )
 
             logger.info(

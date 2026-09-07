@@ -16,7 +16,11 @@ from starlette.requests import Request
 
 from services.infrastructure.http.feature_gate import feature_flag_gate
 from services.infrastructure.sync.env_reload_fanout import handle_env_reload_message
-from utils.auth.roles import FEATURE_KEY_TO_CONFIG_ATTR, FEATURE_KEYS_WITH_ORG_ACCESS
+from utils.auth.roles import (
+    FEATURE_KEY_TO_CONFIG_ATTR,
+    FEATURE_KEYS_SCHOOL_ADMIN_GRANT_GATED,
+    FEATURE_KEYS_WITH_ORG_ACCESS,
+)
 
 
 def _request(path: str, method: str = "GET") -> Request:
@@ -202,6 +206,13 @@ def test_mindmate_collab_feature_key_mapped_and_permissions_supported():
     """Permissions for MindMate collab must resolve FEATURE_MINDMATE_COLLAB."""
     assert FEATURE_KEY_TO_CONFIG_ATTR["feature_mindmate_collab"] == "FEATURE_MINDMATE_COLLAB"
     assert "feature_mindmate_collab" in FEATURE_KEYS_WITH_ORG_ACCESS
+
+
+def test_workshop_chat_is_grant_gated_to_preview_orgs():
+    """School admins do not auto-pass Workshop Chat; preview orgs gate the module."""
+    assert FEATURE_KEY_TO_CONFIG_ATTR["feature_workshop_chat"] == "FEATURE_WORKSHOP_CHAT"
+    assert "feature_workshop_chat" in FEATURE_KEYS_WITH_ORG_ACCESS
+    assert "feature_workshop_chat" in FEATURE_KEYS_SCHOOL_ADMIN_GRANT_GATED
 
 
 def test_workshop_ws_awaits_can_access_workshop_chat():

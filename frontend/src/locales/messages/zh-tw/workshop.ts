@@ -261,7 +261,7 @@ export default {
   'workshop.teachingGroupNoLessons': '該教研組下還沒有課例。',
   'workshop.thisChannel': '此頻道',
   'workshop.thisConversation': '此對話',
-  'workshop.title': '工作坊',
+  'workshop.title': '研習社',
   'workshop.toggleContacts': '通訊錄開關',
   'workshop.topicCount': '個話題',
   'workshop.topicDescription': '描述',

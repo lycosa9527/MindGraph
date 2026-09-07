@@ -357,7 +357,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/WorkshopChatPage.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdminOrManager: true,
+      requiresWorkshopChatAccess: true,
       layout: 'main',
       ...pageTitle('workshopChat'),
     },
@@ -565,7 +565,7 @@ router.beforeEach(async (to, from) => {
     const workshopEntry = accessMap.feature_workshop_chat
     if (
       !userCanAccessWorkshopChat(
-        authStore.isAdminOrManager,
+        authStore.isAdmin,
         authStore.user?.schoolId,
         authStore.user?.id,
         previewIds,

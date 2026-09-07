@@ -47,14 +47,14 @@ export function mindmateStageSize(
 export function welcomeClusterHeight(viewportHeight: number, stageHeight: number): number {
   const avatar = viewportHeight <= 700 ? 64 : clamp(64, stageHeight * 0.14, 128)
   const titleBlock = 72
-  const suggest = viewportHeight <= 700 ? 72 : clamp(64, stageHeight * 0.18, 140)
+  const suggest = viewportHeight <= 700 ? 108 : clamp(108, stageHeight * 0.18, 140)
   const input = 88
   const gaps = clamp(20, viewportHeight * 0.05, 64)
   return avatar + titleBlock + suggest + input + gaps
 }
 
 export function welcomeComposerWidth(stageWidth: number): number {
-  return clamp(COMPOSER_MIN, stageWidth * 0.4, COMPOSER_MAX)
+  return clamp(COMPOSER_MIN, stageWidth - CLUSTER_GUTTER * 2, COMPOSER_MAX)
 }
 
 export function sidebarAccountFits(viewportHeight: number): boolean {

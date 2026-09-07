@@ -210,7 +210,7 @@ export function useAppSidebar() {
     }
     const entry = featureOrgAccess.value.feature_workshop_chat
     return userCanAccessWorkshopChat(
-      authStore.isAdminOrManager,
+      authStore.isAdmin,
       authStore.user?.schoolId,
       authStore.user?.id,
       workshopChatPreviewOrgIds.value,

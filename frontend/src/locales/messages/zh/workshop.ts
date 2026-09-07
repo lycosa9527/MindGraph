@@ -268,7 +268,7 @@ export default {
   'workshop.teachingGroupNoLessons': '该教研组下还没有课例。',
   'workshop.thisChannel': '此频道',
   'workshop.thisConversation': '此对话',
-  'workshop.title': '工作坊',
+  'workshop.title': '研习社',
   'workshop.toggleContacts': '通讯录开关',
   'workshop.topicCount': '个话题',
   'workshop.topicDescription': '描述',

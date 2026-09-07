@@ -1,6 +1,6 @@
 /* Fullpage welcome: avatar + suggestions + input stay one cluster.
    Vertical tokens use dvh (stage is shorter than the viewport).
-   Width tokens use cqi against the stage — no size containment. */
+   Composer width fills the stage (capped at 48rem). */
 
 .mindmate-stage {
   flex: 1 1 0;
@@ -17,8 +17,9 @@
   --mm-gap-suggest: clamp(6px, 1.8vh, 20px);
   --mm-title: clamp(1.125rem, 2.4vh, 1.5rem);
   --mm-subtitle: clamp(0.875rem, 2vh, 1.125rem);
-  --mm-suggest-max-h: clamp(72px, 16vh, 140px);
-  --mm-composer-max: clamp(20rem, 56vw, 48rem);
+  --mm-suggest-max-h: clamp(108px, 16vh, 140px);
+  /* Fill the stage up to 48rem. A 40% container token was too narrow on tablets. */
+  --mm-composer-max: min(48rem, 100%);
   --mm-gutter: clamp(12px, 3vw, 24px);
   container-type: inline-size;
   container-name: mindmate-welcome;
@@ -33,13 +34,12 @@
     --mm-gap-suggest: clamp(6px, 1.8dvh, 20px);
     --mm-title: clamp(1.125rem, 2.4dvh, 1.5rem);
     --mm-subtitle: clamp(0.875rem, 2dvh, 1.125rem);
-    --mm-suggest-max-h: clamp(72px, 16dvh, 140px);
+    --mm-suggest-max-h: clamp(108px, 16dvh, 140px);
   }
 }
 
 @supports (width: 1cqi) {
   .mindmate-stage--welcome {
-    --mm-composer-max: clamp(20rem, 40cqi, 48rem);
     --mm-gutter: clamp(12px, 3cqi, 24px);
   }
 }
@@ -56,6 +56,8 @@
   flex: 0 0 auto;
   height: auto;
   min-height: 0;
+  min-width: 0;
+  width: 100%;
 }
 
 .mindmate-stage--welcome .messages-wrapper,
@@ -95,13 +97,19 @@
 }
 
 .mindmate-stage--welcome .suggestions-above-input {
+  box-sizing: border-box;
   margin-top: var(--mm-gap-suggest);
   max-width: var(--mm-composer-max);
+  min-width: 0;
+  width: 100%;
   padding: 0 var(--mm-gutter) var(--mm-gap-suggest);
 }
 
 .mindmate-stage--welcome .input-area-fullpage {
+  box-sizing: border-box;
   max-width: var(--mm-composer-max);
+  min-width: 0;
+  width: 100%;
   padding: 0 var(--mm-gutter) clamp(8px, 2vh, 20px);
 }
 
@@ -112,6 +120,6 @@
 @media (max-height: 700px) {
   .mindmate-stage--welcome {
     --mm-avatar: 64px;
-    --mm-suggest-max-h: 72px;
+    --mm-suggest-max-h: 108px;
   }
 }

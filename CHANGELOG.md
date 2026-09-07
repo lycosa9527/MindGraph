@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.51] - 2026-09-07
+
+> **研习社 is back for org 5; MindMate tablet chips stay readable; mind-map branch expand keeps 专业程度.**
+
+### Added
+
+- **研习社 (Workshop Chat)** — Turn the Zulip-style school chat back on behind `FEATURE_WORKSHOP_CHAT`. Only members of `WORKSHOP_CHAT_PREVIEW_ORG_IDS` (org 5) plus superadmins can see it. School admins at other orgs no longer get a free pass. Chinese sidebar and page title is **研习社**.
+
+### Changed
+
+- **Workshop access** — `/workshop-chat` uses `requiresWorkshopChatAccess` instead of admin/manager. The public feature flag is per-user (off for guests and other orgs). The preview-org list stays a hard filter even if Permissions is unrestricted.
+- **Mind-map branch expand** — Canvas 专业程度 / `generation_instructions` stay on the LLM user prompt when expanding a branch ([`merge_generation_instructions`](prompts/ai_content_level.py)).
+
+### Fixed
+
+- **Welcome chips** — The composer now fills the stage (capped at 48rem). The old `40cqi` token collapsed to 320px on iPad, and nowrap chips centered in that box so prompts were cut off on the left and right. Chips wrap inside the composer (`safe center`) so long prompts stay visible. The chip strip also keeps enough height for two rows on short tablet windows.
+
+### Tests
+
+- [`frontend/tests/workshopAccess.spec.ts`](frontend/tests/workshopAccess.spec.ts)
+- [`tests/auth/test_workshop_chat_access.py`](tests/auth/test_workshop_chat_access.py)
+- [`frontend/tests/mindmateWelcomeLayout.spec.ts`](frontend/tests/mindmateWelcomeLayout.spec.ts)
+- [`tests/test_mind_map_branch_expand.py`](tests/test_mind_map_branch_expand.py)
+- [`tests/test_ai_content_level.py`](tests/test_ai_content_level.py)
+
 ## [5.180.50] - 2026-09-06
 
 > **MindMate welcome: avatar, suggestions, and composer stay one cluster on common displays; the sidebar account row shrinks on short windows.**

@@ -242,13 +242,13 @@ class FeaturesConfigMixin:
 
     @property
     def WORKSHOP_CHAT_PREVIEW_ORG_IDS(self) -> frozenset[int]:
-        """Organization IDs that may use Workshop Chat without admin/manager role.
+        """Organization IDs allowed to use Workshop Chat (教研坊).
 
-        Comma-separated integers (e.g. ``5`` or ``5,12``). Used while the feature
-        is under development so a specific school can test; admins and managers
-        always have access when FEATURE_WORKSHOP_CHAT is enabled.
+        Comma-separated integers (e.g. ``5`` or ``5,12``). When
+        ``FEATURE_WORKSHOP_CHAT`` is on and no DB grant row exists, only
+        members of these orgs (plus superadmins) can see the module.
 
-        Empty by default (only elevated roles).
+        Empty by default (superadmins only).
         """
         raw = str(self._get_cached_value("WORKSHOP_CHAT_PREVIEW_ORG_IDS", "") or "")
         result: list[int] = []

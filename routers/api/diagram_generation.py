@@ -26,6 +26,7 @@ from agents.core.workflow import agent_graph_workflow_with_styles
 from models import GenerateRequest, GenerateResponse, Messages, get_request_language
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
+from prompts.ai_content_level import merge_generation_instructions
 from services.admin.user_usage_activity import schedule_user_usage_activity
 from services.auth.thinking_coin.event_hub import mutation_to_footer
 from services.auth.thinking_coin.usage_wire import thinking_coin_post_diagram_generation_mutation
@@ -126,17 +127,11 @@ async def _prepare_generate_graph(
     lang = get_request_language(x_language, accept_language)
     language = req.language
 
-    prompt = (req.prompt or "").strip()
-    generation_instructions = (req.generation_instructions or "").strip()
-    if generation_instructions:
-        if req.language.startswith("zh"):
-            marker = "【用户要求】"
-        else:
-            marker = "User requirements:"
-        if prompt:
-            prompt = f"{prompt}\n\n{marker}\n{generation_instructions}"
-        else:
-            prompt = generation_instructions
+    prompt = merge_generation_instructions(
+        (req.prompt or "").strip(),
+        (req.generation_instructions or "").strip(),
+        req.language,
+    )
     request_id = f"gen_{int(time.time() * 1000)}"
     llm_model = req.llm.value if hasattr(req.llm, "value") else str(req.llm)
 
