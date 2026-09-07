@@ -1,7 +1,7 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.180.52",
+  "version": "5.180.53",
   "type": "module",
   "engines": {
     "node": ">=26.0.0"
@@ -99,6 +99,8 @@
     "simple-keyboard": "^3.8.175",
     "simple-keyboard-layouts": "^3.4.249",
     "svg2pdf.js": "^2.7.0",
+    "tcplayer.js": "^5.3.4",
+    "vod-js-sdk-v6": "^1.8.0",
     "vue": "^3.5.41",
     "vue-demi": "^0.14.10",
     "vue-i18n": "^11.4.8",
@@ -137,6 +139,7 @@
     "vue-tsc": "^3.3.9"
   },
   "overrides": {
+    "axios": "1.20.0",
     "browserslist": "^4.28.7",
     "fast-uri": "^3.1.7",
     "glob": "^13.0.6",

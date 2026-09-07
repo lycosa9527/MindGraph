@@ -38,6 +38,7 @@ export function isTrainingRoleId(value: string | undefined): boolean {
   return Boolean(value && ROLE_IDS.has(value))
 }
 
+/** App-relative URL. API 302s to COS when COURSE_BUILDER_LOAD_FROM_COS is true. */
 export function trainingRoleSrc(id: string): string {
   return `/api/training/assets/roles/${safeRoleId(id)}.webp`
 }

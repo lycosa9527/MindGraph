@@ -34,6 +34,8 @@ from utils.auth.admin_panel_permissions import (
     CAP_TAB_SETTINGS_EDIT,
     CAP_TAB_SETTINGS_VIEW,
     CAP_TAB_SHOWCASE_VIEW,
+    CAP_TAB_VOD_EDIT,
+    CAP_TAB_VOD_VIEW,
     CAP_TAB_USERS_EDIT,
     CAP_TAB_USERS_VIEW,
     ROLE_PANEL_CAPABILITIES,
@@ -69,6 +71,8 @@ def test_school_admin_has_school_member_caps_without_global_scope():
     assert CAP_PANEL_ACCESS in caps
     assert CAP_TAB_USERS_VIEW in caps
     assert CAP_TAB_USERS_EDIT in caps
+    assert CAP_TAB_VOD_VIEW in caps
+    assert CAP_TAB_VOD_EDIT in caps
     assert CAP_TAB_SCHOOL_DASHBOARD_VIEW in caps
     assert CAP_TAB_SCHOOL_DASHBOARD_ACTIVITY_VIEW not in caps
     assert CAP_TAB_SCHOOL_DASHBOARD_FEATURE_USAGE_VIEW not in caps

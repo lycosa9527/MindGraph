@@ -21,6 +21,28 @@ Use this when rolling hardened MindGraph to **mg.mindspringedu.com** (or any TLS
 
 Generate strong random passkeys; do **not** copy `CHANGE-ME-before-production` from `env.example`.
 
+## Pre-deploy: COS prefixes (do not migrate yet)
+
+The shared `{env}/{module}` tree is **dev/** and **test/** only. Production still uses the live keys. **Do not** set `COS_ENV_PREFIX=production` and **do not** strip `COS_*_PREFIX` from the production `.env` until the bucket is copied.
+
+| Variable | Keep on mg.mindspringedu.com |
+|----------|------------------------------|
+| `COS_KEY_PREFIX` | `backups/mg.mindspringedu.com` (host dumps) |
+| `COS_SYNC_KEY_PREFIX` | `backups/mindgraph-shared` |
+| `COS_DOCUMENTS_PREFIX` | `documents/mindgraph` |
+| `COS_TEMP_IMAGES_PREFIX` | `temp_images/mindgraph` |
+| `COS_ZHIHUI_PREFIX` | `zhihui/mindgraph` |
+| `COS_SHOWCASE_PREFIX` | current live prefix (`showcase/mindgraph-mg` if that is what the host already uses) |
+| `COS_TRAINING_PREFIX` / `COS_WORKSHOP_PREFIX` | leave unset or keep live values; do not invent `production/…` |
+| `COURSE_BUILDER_LOAD_FROM_COS` | `true` (or omit) |
+| `FEATURE_TRAINING` | `False` until Course Builder is ready on prod |
+
+On boot the main worker logs `[COS] layout=…`. Confirm `layout=live-production` and that every prefix matches the table. `layout=production-tree` means the host will write empty `production/` folders — revert `COS_ENV_PREFIX` before serving traffic.
+
+Packed role WebPs are never published from a production process (no write to `dev/training`, `test/training`, or `production/training`).
+
+
+
 ## Pre-deploy: reverse proxy (openresty / nginx)
 
 TLS usually terminates at the edge. The Python app must see HTTPS semantics for **Secure cookies**, **HSTS**, and **CSRF** consistency.

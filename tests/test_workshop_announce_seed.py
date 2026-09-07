@@ -22,7 +22,12 @@ from services.features.workshop_chat.seed_channel_data import (
 )
 
 
-def _channel(channel_id: int, *, archived: bool = False) -> ChatChannel:
+def _channel(
+    channel_id: int,
+    *,
+    archived: bool = False,
+    organization_id: int | None = None,
+) -> ChatChannel:
     """Build an in-memory announce channel for picker tests."""
     return ChatChannel(
         id=channel_id,
@@ -30,6 +35,7 @@ def _channel(channel_id: int, *, archived: bool = False) -> ChatChannel:
         created_by=1,
         channel_type="announce",
         is_archived=archived,
+        organization_id=organization_id,
     )
 
 
@@ -86,6 +92,37 @@ async def test_seed_announce_does_not_crash_on_duplicate_rows(
     assert result == {"id": 11, "name": "系统公告", "channel_type": "announce"}
     assert extra.is_archived is True
     assert keeper.is_archived is False
+    db.commit.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_seed_announce_detaches_org_scoped_row(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A leftover org id would hide 系统公告 from other schools under RLS."""
+    keeper = _channel(11, organization_id=5)
+
+    async def fake_list(_db: object) -> list[ChatChannel]:
+        return [keeper]
+
+    monkeypatch.setattr(
+        "services.features.workshop_chat.default_channels._list_announce_channels",
+        fake_list,
+    )
+    monkeypatch.setattr(
+        "services.features.workshop_chat.default_channels._top_up_existing_announce",
+        AsyncMock(),
+    )
+
+    db = AsyncMock()
+    db.commit = AsyncMock()
+    db.flush = AsyncMock()
+
+    result = await seed_announce_channel(db, created_by=3)
+
+    assert result == {"id": 11, "name": "系统公告", "channel_type": "announce"}
+    assert keeper.organization_id is None
+    db.flush.assert_awaited()
     db.commit.assert_awaited()
 
 
@@ -164,6 +201,7 @@ def _org_channel(
     name: str,
     *,
     parent_id: int | None = None,
+    channel_type: str = "public",
 ) -> SimpleNamespace:
     """Minimal channel row for retired-seed archive tests."""
     return SimpleNamespace(
@@ -171,6 +209,7 @@ def _org_channel(
         name=name,
         parent_id=parent_id,
         is_archived=False,
+        channel_type=channel_type,
     )
 
 
@@ -288,6 +327,27 @@ async def test_ensure_default_streams_joins_keeper_group_and_lesson() -> None:
     db.add = MagicMock()
 
     added = await ensure_default_stream_memberships(db, organization_id=5, user_id=42)
+
+    assert added == 2
+    assert db.add.call_count == 2
+    db.commit.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_ensure_default_streams_joins_global_announce() -> None:
+    """Every org member is subscribed to the global 系统公告 channel."""
+    announce = _org_channel(1, "系统公告", channel_type="announce")
+    yuwen = _org_channel(3, KEEPER_GROUP_NAME)
+    listed = MagicMock()
+    listed.scalars.return_value.all.return_value = [announce, yuwen]
+    missing = MagicMock()
+    missing.scalar_one_or_none.return_value = None
+    db = AsyncMock()
+    db.execute = AsyncMock(side_effect=[listed, missing, missing])
+    db.commit = AsyncMock()
+    db.add = MagicMock()
+
+    added = await ensure_default_stream_memberships(db, organization_id=9, user_id=42)
 
     assert added == 2
     assert db.add.call_count == 2

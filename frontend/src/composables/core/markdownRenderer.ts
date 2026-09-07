@@ -8,11 +8,15 @@ import katex from 'katex'
 import 'katex/contrib/mhchem'
 import MarkdownIt from 'markdown-it'
 
+import { markdownItWorkshopFences } from '@/composables/core/markdownItWorkshopFences'
 import {
   normalizeKatexDelimitersForMarkdownIt,
   replaceMathLivePlaceholdersForKatex,
 } from '@/composables/core/markdownKatexDelimiter'
-import { markdownKatexDomPurifyConfig, installMarkdownLinkSanitizeHook } from '@/composables/core/markdownKatexSanitize'
+import {
+  installMarkdownLinkSanitizeHook,
+  markdownKatexDomPurifyConfig,
+} from '@/composables/core/markdownKatexSanitize'
 
 type MarkdownItInstance = InstanceType<typeof MarkdownIt>
 
@@ -61,7 +65,9 @@ const md = new MarkdownIt({
 // markdown-it v15 / linkify-it: fuzzy links (example.com) are off by default.
 md.linkify.set({ fuzzyLink: true })
 
+md.enable(['table', 'strikethrough'])
 md.use(resolveMarkdownItKatexPlugin(), { throwOnError: false, katex })
+md.use(markdownItWorkshopFences)
 
 export function renderRichMarkdownHtmlImpl(content: string): string {
   const prepared = normalizeKatexDelimitersForMarkdownIt(

@@ -20,7 +20,7 @@ import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import count as sql_count
@@ -277,6 +277,13 @@ async def _dedupe_announce_channels(
         changed = True
         logger.info(
             "[WorkshopChat] Restored archived announce channel id=%s as canonical",
+            keeper.id,
+        )
+    if keeper.organization_id is not None:
+        keeper.organization_id = None
+        changed = True
+        logger.info(
+            "[WorkshopChat] Detached announce channel id=%s so 系统公告 is global",
             keeper.id,
         )
     if changed:
@@ -680,26 +687,34 @@ async def ensure_default_stream_memberships(
     organization_id: int,
     user_id: int,
 ) -> int:
-    """Subscribe the user to keeper 教研组 + 课例 (Zulip default streams)."""
+    """Subscribe the user to 系统公告 plus keeper 教研组 / 课例."""
     result = await db.execute(
         select(ChatChannel).where(
-            ChatChannel.organization_id == organization_id,
             ChatChannel.is_archived.is_(False),
+            or_(
+                ChatChannel.organization_id == organization_id,
+                ChatChannel.channel_type == "announce",
+            ),
         )
     )
     channels = list(result.scalars().all())
     keeper_group_id: Optional[int] = None
+    announce_id: Optional[int] = None
     for channel in channels:
-        if channel.parent_id is None and channel.name == KEEPER_GROUP_NAME:
+        if channel.channel_type == "announce" and announce_id is None:
+            announce_id = channel.id
+        if keeper_group_id is None and channel.parent_id is None and channel.name == KEEPER_GROUP_NAME:
             keeper_group_id = channel.id
-            break
-    if keeper_group_id is None:
+    target_ids: List[int] = []
+    if announce_id is not None:
+        target_ids.append(announce_id)
+    if keeper_group_id is not None:
+        target_ids.append(keeper_group_id)
+        for channel in channels:
+            if channel.parent_id == keeper_group_id and channel.name == KEEPER_LESSON_NAME:
+                target_ids.append(channel.id)
+    if not target_ids:
         return 0
-
-    target_ids = [keeper_group_id]
-    for channel in channels:
-        if channel.parent_id == keeper_group_id and channel.name == KEEPER_LESSON_NAME:
-            target_ids.append(channel.id)
 
     added = 0
     for channel_id in target_ids:

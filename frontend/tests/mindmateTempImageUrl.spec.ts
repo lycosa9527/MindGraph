@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   rewriteMindmateTempImageUrls,
+  sameOriginTempImageFetchUrl,
   shouldProxyMindmateTempImageUrl,
   shouldRewriteMindmateTempImageUrl,
 } from '@/utils/mindmateTempImageUrl'
@@ -32,6 +33,22 @@ describe('shouldProxyMindmateTempImageUrl', () => {
   it('proxies known MindGraph deployment hosts', () => {
     const url = new URL('https://mg.mindspringedu.com/api/temp_images/a.png?sig=x')
     expect(shouldProxyMindmateTempImageUrl(url, 'localhost:41732')).toBe(true)
+  })
+})
+
+describe('sameOriginTempImageFetchUrl', () => {
+  it('rewrites a test-server temp url to the local api path', () => {
+    const remote =
+      'https://test.mindspringedu.com/api/temp_images/diagram_abc.png?sig=x&exp=1'
+    expect(sameOriginTempImageFetchUrl(remote)).toBe(
+      '/api/temp_images/diagram_abc.png?sig=x&exp=1'
+    )
+  })
+
+  it('keeps an already-relative temp path', () => {
+    expect(sameOriginTempImageFetchUrl('/api/temp_images/diagram_abc.png?sig=x')).toBe(
+      '/api/temp_images/diagram_abc.png?sig=x'
+    )
   })
 })
 

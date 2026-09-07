@@ -29,7 +29,7 @@ if (!viteConfig.includes("'**/sidebar-quotes-*'")) {
 }
 
 if (!viteConfig.includes("'**/training/roles/**'")) {
-  throw new Error('vite PWA workbox must globIgnore Course Builder role WebPs')
+  throw new Error('vite PWA workbox must globIgnore packed role WebPs (COS catalog)')
 }
 
 if (!viteConfig.includes("urlPattern: /^\\/assets\\//")) {

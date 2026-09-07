@@ -42,3 +42,5 @@ def test_workshop_attachment_rls_covers_dm_and_channel() -> None:
     assert "message_id" in expr
     assert "chat_topics" not in expr
     assert "rls_user_visible(d.sender_id)" in expr
+    assert "uploader_id = rls_current_user_id()" in expr
+    assert "message_id IS NULL AND dm_id IS NULL" in expr

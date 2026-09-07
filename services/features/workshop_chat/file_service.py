@@ -4,9 +4,10 @@ File Service
 
 File upload and attachment operations for workshop chat.
 
-Files are stored under ``static/chat/<year>/<month>/`` with a UUID prefix.
-Clients fetch bytes via authenticated ``/api/chat/attachments/{id}/download``;
-direct ``/static/chat/`` URLs are blocked by middleware.
+Bytes live on Tencent COS when configured (logical key in ``file_path``).
+Local ``static/chat/`` is the fallback for CI/dev and pre-COS rows.
+Clients fetch via authenticated ``/api/chat/attachments/{id}/download``.
+Message text stays in Postgres.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -14,10 +15,9 @@ Proprietary License
 """
 
 import logging
-import uuid
-from datetime import UTC, datetime
+import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from fastapi import UploadFile
 from sqlalchemy import select
@@ -28,6 +28,13 @@ from models.domain.workshop_chat import (
     ChatMessage,
     DirectMessage,
     FileAttachment,
+)
+from services.features.workshop_chat.attachment_storage import (
+    AttachmentDownload,
+    build_logical_key,
+    local_path_for_key,
+    put_attachment_bytes,
+    resolve_stored_payload,
 )
 from services.utils.error_types import DATABASE_ERRORS
 
@@ -54,6 +61,51 @@ def attachment_download_url(attachment_id: int) -> str:
     return f"/api/chat/attachments/{attachment_id}/download"
 
 
+_ATTACHMENT_MARKDOWN_ID_RE = re.compile(r"/api/chat/attachments/(\d+)/download")
+
+
+def attachment_ids_in_content(content: str) -> List[int]:
+    """Unique attachment ids referenced by compose markdown image/file links."""
+    found: List[int] = []
+    seen: set[int] = set()
+    for match in _ATTACHMENT_MARKDOWN_ID_RE.finditer(content):
+        att_id = int(match.group(1))
+        if att_id in seen:
+            continue
+        seen.add(att_id)
+        found.append(att_id)
+    return found
+
+
+async def link_content_attachments(
+    db: AsyncSession,
+    *,
+    uploader_id: int,
+    content: str,
+    message_id: Optional[int] = None,
+    dm_id: Optional[int] = None,
+) -> None:
+    """Bind compose-uploaded files to the message so channel/DM peers can download."""
+    if message_id is None and dm_id is None:
+        return
+    ids = attachment_ids_in_content(content)
+    if not ids:
+        return
+    result = await db.execute(
+        select(FileAttachment).where(
+            FileAttachment.id.in_(ids),
+            FileAttachment.uploader_id == uploader_id,
+            FileAttachment.message_id.is_(None),
+            FileAttachment.dm_id.is_(None),
+        )
+    )
+    for attachment in result.scalars().all():
+        if message_id is not None:
+            attachment.message_id = message_id
+        if dm_id is not None:
+            attachment.dm_id = dm_id
+
+
 def _safe_upload_basename(filename: str) -> str:
     base = Path(filename).name.strip()
     if not base or base in (".", ".."):
@@ -62,16 +114,11 @@ def _safe_upload_basename(filename: str) -> str:
 
 
 def _disk_path_for_stored_url(stored_path: str) -> Path:
-    """Map DB ``/static/chat/...`` path to absolute file on disk."""
+    """Map a legacy ``/static/chat/...`` DB path to an absolute file."""
     prefix = "/static/chat/"
     if not stored_path.startswith(prefix):
         raise ValueError("Invalid attachment path")
-    relative = stored_path[len(prefix) :]
-    candidate = (STATIC_ROOT / relative).resolve()
-    root_resolved = STATIC_ROOT.resolve()
-    if not candidate.is_relative_to(root_resolved):
-        raise ValueError("Invalid attachment path")
-    return candidate
+    return local_path_for_key(stored_path[len(prefix) :], STATIC_ROOT)
 
 
 def _format_attachment(att: FileAttachment) -> Dict[str, Any]:
@@ -161,9 +208,9 @@ class FileService:
         message_id: Optional[int] = None,
         dm_id: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """Validate, persist to disk, and create a DB record.
+        """Validate, store bytes on COS (or local fallback), and create a DB row.
 
-        Raises ``ValueError`` on validation failure.
+        Raises ``ValueError`` on validation or storage failure.
         """
         if not file.filename:
             raise ValueError("Filename is required")
@@ -181,21 +228,13 @@ class FileService:
             raise ValueError(f"File too large ({len(data)} bytes). Max {MAX_FILE_SIZE} bytes.")
 
         basename = _safe_upload_basename(file.filename)
-
-        now = datetime.now(UTC)
-        sub_dir = STATIC_ROOT / str(now.year) / f"{now.month:02d}"
-        sub_dir.mkdir(parents=True, exist_ok=True)
-
-        safe_name = f"{uuid.uuid4().hex[:12]}_{basename}"
-        disk_path = sub_dir / safe_name
-        root_resolved = STATIC_ROOT.resolve()
-        resolved = disk_path.resolve()
-        if not resolved.is_relative_to(root_resolved):
-            raise ValueError("Invalid filename")
-
-        resolved.write_bytes(data)
-
-        relative_path = f"/static/chat/{now.year}/{now.month:02d}/{safe_name}"
+        logical_key = build_logical_key(basename)
+        stored_path = await put_attachment_bytes(
+            logical_key,
+            data,
+            content_type,
+            STATIC_ROOT,
+        )
 
         attachment = FileAttachment(
             message_id=message_id,
@@ -204,7 +243,7 @@ class FileService:
             filename=basename,
             content_type=content_type,
             file_size=len(data),
-            file_path=relative_path,
+            file_path=stored_path,
         )
         db.add(attachment)
         try:
@@ -287,22 +326,19 @@ class FileService:
         db: AsyncSession,
         attachment_id: int,
         user_id: int,
-    ) -> Optional[Tuple[Path, str, str]]:
-        """Return (disk_path, content_type, download_filename) when access is allowed."""
+    ) -> Optional[AttachmentDownload]:
+        """Return disk or COS redirect payload when access is allowed."""
         att = await FileService.get_attachment_row(db, attachment_id)
         if att is None:
             return None
         if not await user_can_access_attachment(db, user_id, att):
             return None
-        try:
-            disk_path = _disk_path_for_stored_url(att.file_path)
-        except ValueError:
-            logger.warning("Attachment %s has invalid stored path: %s", att.id, att.file_path)
-            return None
-        if not disk_path.is_file():
-            logger.warning("Attachment %s file missing on disk: %s", att.id, disk_path)
-            return None
-        return disk_path, att.content_type, att.filename
+        return await resolve_stored_payload(
+            att.file_path,
+            att.content_type,
+            att.filename,
+            STATIC_ROOT,
+        )
 
 
 file_service = FileService()

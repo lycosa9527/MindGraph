@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Upload
 from fastapi.responses import FileResponse, RedirectResponse, Response
 from pydantic import BaseModel, Field
 
+from config.settings import config
 from models.domain.auth import User
 from services.features.training.courses.constants import ROLE_MAX_BYTES, ROLE_MIME
 from services.features.training.courses.repository import add_asset, get_course
@@ -32,7 +33,10 @@ from services.features.training.roles.catalog import (
     packed_role_file,
     parse_packed_role_key,
 )
-from services.features.training.roles.publish import ensure_packed_roles_on_cos
+from services.features.training.roles.publish import (
+    ensure_packed_roles_on_cos,
+    packed_role_cos_prefixes,
+)
 from services.features.training.storage.keys import (
     ASSET_ROLES,
     build_object_key,
@@ -98,7 +102,9 @@ async def init_training_asset(
         content_type=body.content_type,
         max_bytes=ROLE_MAX_BYTES[body.role],
     )
-    put_url = create_presigned_put(logical_key, body.content_type)
+    put_url = None
+    if config.COURSE_BUILDER_LOAD_FROM_COS:
+        put_url = create_presigned_put(logical_key, body.content_type)
     backend = storage_backend()
     log_training(
         logger,
@@ -234,20 +240,37 @@ async def can_read_packed_role(user: User) -> bool:
     return is_active_session(session)
 
 
-async def _serve_packed_role(normalized: str, proxy: bool) -> Response:
-    parsed = parse_packed_role_key(normalized)
-    if parsed is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-    await ensure_packed_roles_on_cos()
-    if not proxy and cos_training_enabled():
-        url = create_presigned_get(normalized)
-        if url:
-            return RedirectResponse(url, status_code=302, headers=_ASSET_CACHE)
+def _repo_packed_role_response(parsed: tuple[str, bool]) -> Response:
+    """Git-packed WebP when COURSE_BUILDER_LOAD_FROM_COS is off or COS misses."""
     role_id, thumb = parsed
     path = packed_role_file(role_id, thumb=thumb)
     if path is not None:
         return FileResponse(path, media_type=ROLE_CONTENT_TYPE, headers=_ASSET_CACHE)
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+
+async def _serve_packed_role(normalized: str, proxy: bool) -> Response:
+    parsed = parse_packed_role_key(normalized)
+    if parsed is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    if not config.COURSE_BUILDER_LOAD_FROM_COS:
+        return _repo_packed_role_response(parsed)
+    prefixes = packed_role_cos_prefixes()
+    if prefixes:
+        await ensure_packed_roles_on_cos()
+    if prefixes and cos_training_enabled() and not proxy:
+        url = create_presigned_get(normalized)
+        if url:
+            return RedirectResponse(url, status_code=302, headers=_ASSET_CACHE)
+    if prefixes and cos_training_enabled() and proxy:
+        data = await get_bytes(normalized)
+        if data is not None:
+            return Response(
+                content=data,
+                media_type=ROLE_CONTENT_TYPE,
+                headers=_ASSET_CACHE,
+            )
+    return _repo_packed_role_response(parsed)
 
 
 @router.get("/assets/{asset_path:path}")
@@ -273,23 +296,23 @@ async def download_training_asset(
     if not await can_read_training_asset(current_user, course_id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Training access required")
 
-    if not proxy and cos_training_enabled():
+    serve_from_server = proxy or not cos_training_enabled() or not config.COURSE_BUILDER_LOAD_FROM_COS
+    if not serve_from_server:
         url = create_presigned_get(normalized)
         if url:
             return RedirectResponse(url, status_code=302, headers=_ASSET_CACHE)
-    if proxy or not cos_training_enabled():
-        try:
-            path = resolve_local_safe(normalized)
-        except ValueError as exc:
-            raise HTTPException(status_code=404, detail="Not found") from exc
-        if path.is_file():
-            return FileResponse(path, headers=_ASSET_CACHE)
-        data = await get_bytes(normalized)
-        if data is None:
-            raise HTTPException(status_code=404, detail="Not found")
-        return Response(
-            content=data,
-            media_type="application/octet-stream",
-            headers=_ASSET_CACHE,
-        )
-    raise HTTPException(status_code=404, detail="Not found")
+        raise HTTPException(status_code=404, detail="Not found")
+    try:
+        path = resolve_local_safe(normalized)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Not found") from exc
+    if path.is_file():
+        return FileResponse(path, headers=_ASSET_CACHE)
+    data = await get_bytes(normalized)
+    if data is None:
+        raise HTTPException(status_code=404, detail="Not found")
+    return Response(
+        content=data,
+        media_type="application/octet-stream",
+        headers=_ASSET_CACHE,
+    )

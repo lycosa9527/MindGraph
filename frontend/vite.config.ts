@@ -199,6 +199,26 @@ function pdfjsViteIgnoreDynamicImportPlugin(): Plugin {
   }
 }
 
+/** Packed mascots live on COS. Do not serve git WebPs from /training/roles/. */
+function denyStaticTrainingRolesPlugin(): Plugin {
+  return {
+    name: 'mindgraph-deny-static-training-roles',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const path = (req.url || '').split('?')[0]
+        if (!path.startsWith('/training/roles/')) {
+          next()
+          return
+        }
+        res.statusCode = 404
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+        res.end('Training roles load from /api/training/assets/roles/')
+      })
+    },
+  }
+}
+
 /** Dev-only: inject WSL/custom API origin into CSP when VITE_BACKEND_HOST is not localhost:9527. */
 function devCspConnectSrcPlugin(apiOrigin: string): Plugin {
   return {
@@ -249,6 +269,7 @@ export default defineConfig({
   },
   plugins: [
     wslSafeEmptyOutDirPlugin(__dirname, buildOutDir),
+    denyStaticTrainingRolesPlugin(),
     devCspConnectSrcPlugin(backendOrigin),
     vue({
       template: {

@@ -91,9 +91,10 @@ def test_cos_app_identity_uses_environment_suffix() -> None:
 def test_cos_feature_prefix_follows_environment(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Feature prefix is training/{identity} unless an override is set."""
+    """Feature prefix is {env}/training unless an override is set."""
+    monkeypatch.delenv("COS_ENV_PREFIX", raising=False)
     monkeypatch.setenv("ENVIRONMENT", "test")
-    assert cos_feature_prefix("training") == "training/mindgraph-Test"
+    assert cos_feature_prefix("training") == "test/training"
     assert cos_feature_prefix("training", "training/mindgraph-e2e-smoke") == ("training/mindgraph-e2e-smoke")
     with pytest.raises(ValueError):
         cos_feature_prefix("  ")
@@ -104,13 +105,14 @@ def test_training_prefix_follows_environment(
 ) -> None:
     """COS_TRAINING_PREFIX defaults from ENVIRONMENT; override still wins."""
     monkeypatch.delenv("COS_TRAINING_PREFIX", raising=False)
+    monkeypatch.delenv("COS_ENV_PREFIX", raising=False)
     monkeypatch.setenv("ENVIRONMENT", "test")
     config.refresh_env_cache()
     try:
-        assert config.COS_TRAINING_PREFIX == "training/mindgraph-Test"
+        assert config.COS_TRAINING_PREFIX == "test/training"
         monkeypatch.setenv("ENVIRONMENT", "development")
         config.refresh_env_cache()
-        assert config.COS_TRAINING_PREFIX == "training/mindgraph-Dev"
+        assert config.COS_TRAINING_PREFIX == "dev/training"
         monkeypatch.setenv("COS_TRAINING_PREFIX", "training/mindgraph-e2e-smoke")
         config.refresh_env_cache()
         assert config.COS_TRAINING_PREFIX == "training/mindgraph-e2e-smoke"

@@ -64,6 +64,7 @@ interface FeatureFlagsResponse {
   feature_workshop_chat: boolean
   feature_mindmate_collab: boolean
   feature_training?: boolean
+  feature_vod?: boolean
   feature_markets: boolean
   feature_mindbot: boolean
   feature_mindmate_export: boolean
@@ -113,6 +114,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
       feature_workshop_chat: false,
       feature_mindmate_collab: false,
       feature_training: false,
+      feature_vod: false,
       feature_markets: false,
       feature_mindbot: false,
       feature_mindmate_export: false,
@@ -180,6 +182,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_org_access: raw.feature_org_access ?? {},
           feature_mindmate_collab: raw.feature_mindmate_collab ?? false,
           feature_training: raw.feature_training ?? false,
+          feature_vod: raw.feature_vod ?? false,
           feature_markets: raw.feature_markets ?? false,
           feature_mindbot: raw.feature_mindbot ?? false,
           feature_mindmate_export: raw.feature_mindmate_export ?? false,
@@ -312,6 +315,10 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     return flags.value?.feature_training ?? false
   }
 
+  function getFeatureVod(): boolean {
+    return flags.value?.feature_vod ?? false
+  }
+
   function getFeatureMarkets(): boolean {
     return flags.value?.feature_markets ?? false
   }
@@ -374,6 +381,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     getFeatureWorkshopChat,
     getFeatureMindmateCollab,
     getFeatureTraining,
+    getFeatureVod,
     getFeatureMarkets,
     getFeatureMindbot,
     getFeatureKittyAgent,

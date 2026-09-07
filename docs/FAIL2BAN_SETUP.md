@@ -117,7 +117,7 @@ Optional metadata: `abuseipdb:blacklist:meta` (AbuseIPDB sync), `crowdsec:blockl
 Use a shared sync prefix so every env reads the same objects (PG dumps can stay per-env):
 
 ```bash
-COS_KEY_PREFIX=backups/mindgraph-CHANGE          # optional per-env dumps
+COS_KEY_PREFIX=backups/mindgraph-CHANGE          # optional; default is {env}/backups
 COS_SYNC_KEY_PREFIX=backups/mindgraph-shared     # shared blocklists / Qdrant / Celery / Playwright / GeoLite
 ```
 

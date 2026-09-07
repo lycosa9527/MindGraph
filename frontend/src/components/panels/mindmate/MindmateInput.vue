@@ -10,6 +10,10 @@ import { Paperclip, Send } from '@lucide/vue'
 import { useLanguage } from '@/composables'
 import type { MindMateFile } from '@/composables/mindmate/useMindMate'
 import { useAuthStore } from '@/stores/auth'
+import {
+  MINDMATE_COMPOSER_FILE_ACCEPT,
+  isMindmateComposerUploadableFile,
+} from '@/utils/mindmateComposerUpload'
 
 import SuggestionBubbles from '../../common/SuggestionBubbles.vue'
 
@@ -95,7 +99,7 @@ function triggerFileUpload() {
   fileInputRef.value?.click()
 }
 
-// Handle file selection - only images allowed
+// Handle file selection — images and Word .doc / .docx
 function handleFileSelect(event: Event) {
   // Check authentication before allowing file upload
   if (!authStore.isAuthenticated) {
@@ -109,22 +113,18 @@ function handleFileSelect(event: Event) {
   const files = input.files
   if (!files || files.length === 0) return
 
-  // Filter to only image files
-  const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'))
+  const allowedFiles = Array.from(files).filter((file) => isMindmateComposerUploadableFile(file))
 
-  if (imageFiles.length === 0) {
-    // No valid images selected
-    console.warn('Only image files are allowed')
+  if (allowedFiles.length === 0) {
+    console.warn('Only images and Word documents (.doc, .docx) are allowed')
     input.value = ''
     return
   }
 
-  // Create a new FileList-like object with only images
   const dataTransfer = new DataTransfer()
-  imageFiles.forEach((file) => dataTransfer.items.add(file))
+  allowedFiles.forEach((file) => dataTransfer.items.add(file))
 
   emit('upload', dataTransfer.files)
-  // Reset input
   input.value = ''
 }
 
@@ -196,7 +196,7 @@ function handleSuggestionSelect(suggestion: string) {
         type="file"
         class="hidden"
         name="mindmate-file-input"
-        accept="image/*"
+        :accept="MINDMATE_COMPOSER_FILE_ACCEPT"
         multiple
         :aria-label="t('mindmate.input.attachFile')"
         @change="handleFileSelect"

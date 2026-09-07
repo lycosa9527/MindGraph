@@ -99,6 +99,37 @@ async def test_init_upload_accepts_filename_without_suffix() -> None:
 
 
 @pytest.mark.asyncio
+async def test_init_upload_omits_presign_when_builder_gate_off() -> None:
+    """COURSE_BUILDER_LOAD_FROM_COS=false forces multipart through the API."""
+    course = SimpleNamespace(id=DOUBLE_BUBBLE_COURSE_ID)
+    db = AsyncMock()
+    with (
+        patch("routers.api.training_asset_routes.can_lead_any_training", return_value=True),
+        patch("routers.api.training_asset_routes.system_rls_session", return_value=_rls(db)),
+        patch(
+            "routers.api.training_asset_routes.get_course",
+            new=AsyncMock(return_value=course),
+        ),
+        patch("routers.api.training_asset_routes.save_upload_grant", new=AsyncMock()),
+        patch("routers.api.training_asset_routes.config") as mock_config,
+        patch("routers.api.training_asset_routes.create_presigned_put") as presign,
+    ):
+        mock_config.COURSE_BUILDER_LOAD_FROM_COS = False
+        body = await init_training_asset(
+            AssetInitBody(
+                course_id=DOUBLE_BUBBLE_COURSE_ID,
+                role="slide",
+                filename="slide.png",
+                content_type="image/png",
+                size_bytes=12,
+            ),
+            current_user=_user("superadmin", user_id=1),
+        )
+    presign.assert_not_called()
+    assert body["put_url"] is None
+
+
+@pytest.mark.asyncio
 async def test_complete_upload_stores_bytes_and_returns_url() -> None:
     """Complete writes the file through the API and binds it to the course."""
     logical_key = f"courses/{DOUBLE_BUBBLE_COURSE_ID}/slides/aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee.png"

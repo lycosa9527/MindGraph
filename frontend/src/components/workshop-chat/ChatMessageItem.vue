@@ -9,6 +9,7 @@ import {
   type ReactionGroup,
   useWorkshopChatStore,
 } from '@/stores/workshopChat'
+import { stripMindmateDiagramIdComments } from '@/utils/mindmateDiagramMeta'
 import { workshopChatHrefFromState } from '@/utils/workshopChatRoute'
 
 import FilePreview from './FilePreview.vue'
@@ -19,8 +20,18 @@ const { t } = useLanguage()
 const workshopStore = useWorkshopChatStore()
 
 const { html: renderedContent } = useRenderedMarkdown(() =>
-  props.message.is_deleted ? '' : props.message.content
+  props.message.is_deleted ? '' : stripMindmateDiagramIdComments(props.message.content)
 )
+
+const previewAttachments = computed(() => {
+  const body = props.message.content || ''
+  return props.attachments.filter((item) => {
+    if (!item.content_type.startsWith('image/')) {
+      return true
+    }
+    return !body.includes(item.file_path)
+  })
+})
 
 const CONDENSE_THRESHOLD = 300
 
@@ -209,8 +220,8 @@ function handleAddReaction(emojiName: string, emojiCode: string): void {
 
         <!-- Attachments -->
         <FilePreview
-          v-if="attachments.length > 0"
-          :attachments="attachments"
+          v-if="previewAttachments.length > 0"
+          :attachments="previewAttachments"
         />
 
         <!-- Reactions -->
@@ -504,6 +515,25 @@ function handleAddReaction(emojiName: string, emojiCode: string): void {
   border: none;
   border-top: 1px solid hsl(0deg 0% 0% / 10%);
   margin: 8px 0;
+}
+
+.msg-content :deep(details.workshop-spoiler) {
+  margin: 6px 0;
+  padding: 4px 10px;
+  border: 1px solid hsl(0deg 0% 0% / 10%);
+  border-radius: 6px;
+  background: hsl(0deg 0% 98%);
+}
+
+.msg-content :deep(details.workshop-spoiler summary) {
+  cursor: pointer;
+  font-weight: 600;
+  color: hsl(0deg 0% 32%);
+}
+
+.msg-content :deep(del) {
+  text-decoration: line-through;
+  color: hsl(0deg 0% 36%);
 }
 
 /* Condense toggle */

@@ -64,7 +64,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "prefixes",
         nargs="+",
-        help="COS prefixes such as training/mindgraph-Dev training/mindgraph-Test",
+        help="COS prefixes such as dev/training test/training",
     )
     args = parser.parse_args(argv)
     if not cos_training_enabled():

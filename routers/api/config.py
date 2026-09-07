@@ -105,6 +105,7 @@ class FeatureFlagsResponse(BaseModel):
     feature_workshop_chat: bool
     feature_mindmate_collab: bool
     feature_training: bool = False
+    feature_vod: bool = False
     feature_markets: bool
     feature_mindbot: bool
     feature_wechat_login: bool = False
@@ -173,6 +174,7 @@ async def get_feature_flags(
         feature_workshop_chat=workshop_chat_flag,
         feature_mindmate_collab=mindmate_collab_flag,
         feature_training=config.FEATURE_TRAINING,
+        feature_vod=config.FEATURE_VOD,
         feature_markets=config.FEATURE_MARKETS,
         feature_mindbot=config.FEATURE_MINDBOT,
         feature_wechat_login=config.FEATURE_WECHAT_LOGIN,

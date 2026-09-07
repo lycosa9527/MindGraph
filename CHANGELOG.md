@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.53] - 2026-09-07
+
+> **Cloud VOD for school admins; 研习社 compose toolbar, diagram insert, and COS uploads; shared COS env prefixes on dev/test.**
+
+### Added
+
+- **云点播** — Management-panel tab **云点播** behind `FEATURE_VOD` (default off). School and platform admins upload to Tencent VOD (`vod-js-sdk-v6`), browse the org catalog, preview with TCPlayer, and refresh or delete FileIds. Play uses a short-lived `psign`; PlayKey and CAM secrets stay on the server. Migration `0113` adds `vod_media`.
+- **研习社 compose toolbar** — Zulip-style markdown: bold, italic, strike, link, lists, quote, spoiler, code, LaTeX, table, preview, emoji, paperclip, and insert a personal-library diagram as a durable chat image.
+- **研习社 COS attachments** — Message text stays in Postgres; file bytes go to `workshop/` COS when configured (local disk fallback). Clients still fetch via `/api/chat/attachments/{id}/download`. Sending a message binds draft uploads so channel and DM peers can download.
+
+### Changed
+
+- **COS env prefix** — Dev and test share one bucket root (`dev/{module}/`, `test/{module}/`). Production keeps live `COS_*_PREFIX` values until operators set `COS_ENV_PREFIX=production` after a copy. Boot logs `[COS] layout=…`.
+- **Course Builder roles** — Packed WebPs load from COS when `COURSE_BUILDER_LOAD_FROM_COS` is on; Vite no longer serves `/training/roles/` from git. Production processes do not publish packed roles into the env tree.
+- **MindMate paperclip** — Composer accepts images plus Word `.doc` / `.docx`.
+
+### Fixed
+
+- **研习社 系统公告** — Seed and migration `0114` clear `organization_id` on the announce channel. RLS treats a leftover school id as org-private, so other schools never saw 系统公告. Initialize also subscribes each visitor to that global channel.
+- **研习社 insert diagram** — Local Vite insert no longer fetches `EXTERNAL_BASE_URL` (test/prod) for a PNG that was just written on localhost. Loopback PNG URLs stay on the request host; the follow-up load uses `/api/temp_images/...` on the page origin.
+- **研习社 chat upload** — Compose uploads (no `message_id` / `dm_id` yet) were blocked by `file_attachments` RLS and returned 500. Migration `0115` lets the uploader keep those draft rows.
+
+### Tests
+
+- [`tests/test_vod_catalog_routes.py`](tests/test_vod_catalog_routes.py), [`tests/test_vod_permissions.py`](tests/test_vod_permissions.py), [`tests/test_tencent_vod_play_sign.py`](tests/test_tencent_vod_play_sign.py), [`tests/test_tencent_vod_upload_sign.py`](tests/test_tencent_vod_upload_sign.py)
+- [`tests/test_cos_env_prefix.py`](tests/test_cos_env_prefix.py), [`tests/test_workshop_attachment_storage.py`](tests/test_workshop_attachment_storage.py), [`tests/test_public_temp_image_url.py`](tests/test_public_temp_image_url.py)
+- [`frontend/tests/adminVodTab.spec.ts`](frontend/tests/adminVodTab.spec.ts), [`frontend/tests/workshopComposeFormat.spec.ts`](frontend/tests/workshopComposeFormat.spec.ts), [`frontend/tests/workshopMarkdownFences.spec.ts`](frontend/tests/workshopMarkdownFences.spec.ts), [`frontend/tests/mindmateComposerUpload.spec.ts`](frontend/tests/mindmateComposerUpload.spec.ts)
+
 ## [5.180.52] - 2026-09-07
 
 > **研习社: slimmer seed, add/archive/delete for 教研组 and 系统公告, and a 课例 shows only its own conversations.**

@@ -36,6 +36,7 @@ _PATH_FLAG_ATTRS: tuple[tuple[str, str], ...] = (
     ("/api/ws/mindmate-notify", "FEATURE_MINDMATE_COLLAB"),
     ("/api/mindbot", "FEATURE_MINDBOT"),
     ("/api/training", "FEATURE_TRAINING"),
+    ("/api/vod", "FEATURE_VOD"),
     ("/api/kitty", "FEATURE_KITTY_AGENT"),
     ("/ws/kitty", "FEATURE_KITTY_AGENT"),
     ("/api/auth/oauth/wechat", "FEATURE_WECHAT_LOGIN"),

@@ -9,18 +9,14 @@ All Rights Reserved
 Proprietary License
 """
 
-import logging
-
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
 from services.features.workshop_chat import file_service
 from utils.auth import get_current_user
-
-logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -74,13 +70,16 @@ async def download_attachment(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Stream attachment bytes after access check."""
+    """Stream a local file or 302 to a short-lived COS URL after access check."""
     resolved = await file_service.resolve_download(db, attachment_id, current_user.id)
     if resolved is None:
         raise HTTPException(status_code=404, detail="Attachment not found")
-    disk_path, content_type, filename = resolved
+    if resolved.redirect_url:
+        return RedirectResponse(url=resolved.redirect_url, status_code=302)
+    if resolved.disk_path is None:
+        raise HTTPException(status_code=404, detail="Attachment not found")
     return FileResponse(
-        path=str(disk_path),
-        media_type=content_type,
-        filename=filename,
+        path=str(resolved.disk_path),
+        media_type=resolved.content_type,
+        filename=resolved.filename,
     )

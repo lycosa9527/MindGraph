@@ -218,6 +218,10 @@ WORKSHOP_ATTACHMENT_EXPR = (
     "rls_user_visible(d.sender_id) OR rls_user_visible(d.recipient_id)"
     ")"
     ")"
+    ") OR ("
+    "message_id IS NULL AND dm_id IS NULL AND ("
+    "uploader_id = rls_current_user_id() OR rls_is_system_mode()"
+    ")"
     ")"
 )
 WORKSHOP_CHILD = [

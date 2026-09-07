@@ -530,7 +530,8 @@ class FileAttachment(Base):
     File attached to a channel message or direct message.
 
     Exactly one of ``message_id`` or ``dm_id`` should be set.
-    Files are stored on disk under ``static/chat/``.
+    ``file_path`` is a logical COS key (or a legacy ``/static/chat/`` path).
+    Message text stays in Postgres; file bytes live on COS when configured.
     """
 
     __tablename__ = "file_attachments"

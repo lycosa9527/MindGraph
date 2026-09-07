@@ -12,6 +12,7 @@ import {
   Setting,
   ShoppingCart,
   User,
+  VideoCamera,
 } from '@element-plus/icons-vue'
 
 export interface AdminPanelTabConfig {
@@ -27,6 +28,7 @@ export const ADMIN_PANEL_TAB_CONFIG: readonly AdminPanelTabConfig[] = [
   { name: 'invites', labelKey: 'admin.inviteUsers', icon: Promotion },
   { name: 'billing', labelKey: 'admin.billing', icon: ShoppingCart },
   { name: 'showcase', labelKey: 'admin.showcase.title', icon: Document },
+  { name: 'vod', labelKey: 'admin.vod.title', icon: VideoCamera },
   { name: 'settings', labelKey: 'admin.systemSettings', icon: Setting },
   { name: 'feature_dev', labelKey: 'admin.featureDevTab', icon: MagicStick },
 ]

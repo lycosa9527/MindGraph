@@ -35,6 +35,7 @@ from services.auth.sms_service import SMS_NOTIFICATION_RATE_LIMIT_MESSAGE
 from services.dify.dify_health_poller import start_dify_health_poller
 from services.dify.dify_server_schema import clear_dify_server_schema_cache
 from services.infrastructure.lifecycle.app_runtime import set_app_start_time
+from services.infrastructure.lifecycle.cos_prefix_posture import log_cos_prefix_posture
 from services.infrastructure.lifecycle.lifespan_collab_integration import (
     start_online_collab_subsystem_async,
 )
@@ -118,6 +119,7 @@ def _log_security_startup_posture() -> None:
         openapi_schema,
     )
     logger.info("[SECURITY] AUTH_MODE=%s", AUTH_MODE)
+    log_cos_prefix_posture()
     proxy_summary = describe_trusted_proxy_config()
     if not config.debug and not any(ip.strip() for ip in TRUSTED_PROXY_IPS):
         logger.warning("[SECURITY] %s", proxy_summary)

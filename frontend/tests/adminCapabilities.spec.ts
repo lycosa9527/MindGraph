@@ -90,6 +90,16 @@ describe('adminCapabilities', () => {
   it('tabEditCapability maps admin tabs', () => {
     expect(tabEditCapability('invites')).toBe('tab.invites.edit')
     expect(tabEditCapability('users')).toBe('tab.users.edit')
+    expect(tabEditCapability('vod')).toBe('tab.vod.edit')
+  })
+
+  it('school_admin and superadmin can view the 云点播 tab', () => {
+    const school = fallbackCapabilitiesForRole('school_admin')
+    const superadmin = fallbackCapabilitiesForRole('superadmin')
+    expect(school).toContain('tab.vod.view')
+    expect(school).toContain('tab.vod.edit')
+    expect(superadmin).toContain('tab.vod.view')
+    expect(tabRequiresCapabilities('vod')).toEqual(['tab.vod.view'])
   })
 
   it('data_center tab requires no fixed caps (checked via canViewDataCenterTab)', () => {

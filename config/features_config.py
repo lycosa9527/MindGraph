@@ -241,6 +241,14 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_TRAINING", "False").lower() == "true"
 
     @property
+    def FEATURE_VOD(self):
+        """Enable Tencent Cloud VOD (云点播) admin library.
+
+        Disabled by default. Set FEATURE_VOD=True in .env to enable.
+        """
+        return self._get_cached_value("FEATURE_VOD", "False").lower() == "true"
+
+    @property
     def WORKSHOP_CHAT_PREVIEW_ORG_IDS(self) -> frozenset[int]:
         """Organization IDs allowed to use Workshop Chat (研习社).
 
