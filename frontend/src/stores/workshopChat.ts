@@ -42,6 +42,7 @@ import {
   markWorkshopInitializedThisSession,
 } from '@/utils/workshopInitializeOnce'
 import { applyDeletedChatMessage, applyEditedChatMessage } from '@/utils/workshopMessageLocalPatch'
+import { inferFoundOldest } from '@/utils/workshopMessagePage'
 
 export interface ChatChannel {
   id: number
@@ -213,6 +214,10 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
   const topicMessages = ref<ChatMessage[]>([])
   const dmConversations = ref<DMConversation[]>([])
   const dmMessages = ref<DirectMessageItem[]>([])
+  /** Zulip `found_oldest`: no older messages remain for the current list. */
+  const channelFoundOldest = ref(true)
+  const topicFoundOldest = ref(true)
+  const dmFoundOldest = ref(true)
   const channelMembers = ref<ChannelMember[]>([])
 
   const activeTab = ref<'channels' | 'dms'>('channels')
@@ -502,8 +507,11 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
       if (res.ok) {
         const msgs: ChatMessage[] = await res.json()
         const prependOlder = anchor > 0 && numAfter === 0
+        channelFoundOldest.value = inferFoundOldest(msgs.length, numBefore, numAfter)
         if (prependOlder) {
-          channelMessages.value = [...msgs, ...channelMessages.value]
+          if (msgs.length > 0) {
+            channelMessages.value = [...msgs, ...channelMessages.value]
+          }
         } else {
           channelMessages.value = msgs
         }
@@ -530,8 +538,11 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
       if (res.ok) {
         const msgs: ChatMessage[] = await res.json()
         const prependOlder = anchor > 0 && numAfter === 0
+        topicFoundOldest.value = inferFoundOldest(msgs.length, numBefore, numAfter)
         if (prependOlder) {
-          topicMessages.value = [...msgs, ...topicMessages.value]
+          if (msgs.length > 0) {
+            topicMessages.value = [...msgs, ...topicMessages.value]
+          }
         } else {
           topicMessages.value = msgs
         }
@@ -568,8 +579,11 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
       if (res.ok) {
         const msgs: DirectMessageItem[] = await res.json()
         const prependOlder = anchor > 0 && numAfter === 0
+        dmFoundOldest.value = inferFoundOldest(msgs.length, numBefore, numAfter)
         if (prependOlder) {
-          dmMessages.value = [...msgs, ...dmMessages.value]
+          if (msgs.length > 0) {
+            dmMessages.value = [...msgs, ...dmMessages.value]
+          }
         } else {
           dmMessages.value = msgs
         }
@@ -1576,6 +1590,9 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     channelMessages.value = []
     topicMessages.value = []
     dmMessages.value = []
+    channelFoundOldest.value = true
+    topicFoundOldest.value = true
+    dmFoundOldest.value = true
   }
 
   async function openTeachingGroupLanding(groupId: number): Promise<void> {
@@ -1587,6 +1604,8 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     currentTopicId.value = null
     channelMessages.value = []
     topicMessages.value = []
+    channelFoundOldest.value = true
+    topicFoundOldest.value = true
     teachingGroupLandingId.value = groupId
   }
 
@@ -1597,6 +1616,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     mainChannelFeedActive.value = true
     currentTopicId.value = null
     topicMessages.value = []
+    topicFoundOldest.value = true
   }
 
   function leaveMainChannelFeed(): void {
@@ -1613,6 +1633,8 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     currentTopicId.value = null
     channelMessages.value = []
     topicMessages.value = []
+    channelFoundOldest.value = true
+    topicFoundOldest.value = true
   }
 
   function selectTopic(topicId: number | null): void {
@@ -1622,6 +1644,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     mainChannelFeedActive.value = false
     currentTopicId.value = topicId
     topicMessages.value = []
+    topicFoundOldest.value = true
   }
 
   function selectDMPartner(partnerId: number | null): void {
@@ -1631,6 +1654,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     teachingGroupLandingId.value = null
     currentDMPartnerId.value = partnerId
     dmMessages.value = []
+    dmFoundOldest.value = true
   }
 
   function openCreateChannel(opts?: { parentId: number | null }): void {
@@ -1665,6 +1689,9 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     topics.value = []
     channelMessages.value = []
     topicMessages.value = []
+    channelFoundOldest.value = true
+    topicFoundOldest.value = true
+    dmFoundOldest.value = true
     dmConversations.value = []
     dmMessages.value = []
     channelMembers.value = []
@@ -1704,6 +1731,9 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     currentChannelTopics,
     channelMessages,
     topicMessages,
+    channelFoundOldest,
+    topicFoundOldest,
+    dmFoundOldest,
     dmConversations,
     dmMessages,
     channelMembers,

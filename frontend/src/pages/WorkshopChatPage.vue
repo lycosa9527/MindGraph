@@ -75,6 +75,7 @@ const applyingWorkshopRoute = ref(false)
 
 const messageListRef = ref<InstanceType<typeof ChatMessageList>>()
 const loadingMessages = ref(false)
+const loadingOlderMessages = ref(false)
 
 const showNewTopicDialog = ref(false)
 const newTopicTitle = ref('')
@@ -1033,23 +1034,31 @@ function handleTypingDM(): void {
 }
 
 async function handleLoadMoreChannelMessages(): Promise<void> {
+  if (store.channelFoundOldest || loadingOlderMessages.value) return
   if (!store.currentChannelId || store.channelMessages.length === 0) return
   const oldestId = store.channelMessages[0]?.id
   if (oldestId) {
-    loadingMessages.value = true
-    await store.fetchChannelMessages(store.currentChannelId, oldestId)
-    loadingMessages.value = false
+    loadingOlderMessages.value = true
+    try {
+      await store.fetchChannelMessages(store.currentChannelId, oldestId)
+    } finally {
+      loadingOlderMessages.value = false
+    }
   }
 }
 
 async function handleLoadMoreTopicMessages(): Promise<void> {
+  if (store.topicFoundOldest || loadingOlderMessages.value) return
   if (topicSearchServerResults.value !== null) return
   if (!store.currentChannelId || !store.currentTopicId || store.topicMessages.length === 0) return
   const oldestId = store.topicMessages[0]?.id
   if (oldestId) {
-    loadingMessages.value = true
-    await store.fetchTopicMessages(store.currentChannelId, store.currentTopicId, oldestId)
-    loadingMessages.value = false
+    loadingOlderMessages.value = true
+    try {
+      await store.fetchTopicMessages(store.currentChannelId, store.currentTopicId, oldestId)
+    } finally {
+      loadingOlderMessages.value = false
+    }
   }
 }
 
@@ -1300,6 +1309,8 @@ function handleTopicMove(topicId: number): void {
               ref="messageListRef"
               :messages="displayChannelStreamMessages"
               :loading="loadingMessages"
+              :loading-more="loadingOlderMessages"
+              :has-more="!store.channelFoundOldest"
               :channel-name="store.currentChannel.name"
               :channel-type="store.currentChannel.channel_type"
               :channel-color="store.currentChannel.color"
@@ -1523,6 +1534,8 @@ function handleTopicMove(topicId: number): void {
               ref="messageListRef"
               :messages="displayTopicMessages"
               :loading="messageListLoading"
+              :loading-more="loadingOlderMessages"
+              :has-more="!store.topicFoundOldest"
               :channel-name="store.currentChannel?.name"
               :channel-type="store.currentChannel?.channel_type"
               :channel-color="store.currentChannel?.color"
