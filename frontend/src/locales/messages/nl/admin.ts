@@ -86,7 +86,7 @@ export default {
     'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Sjabloonbronnen',
   'admin.feature.templateHint': 'Sjabloongalerij en gerelateerde API\'s.',
-  'admin.feature.workshopChat': 'Workshop (教研坊)',
+  'admin.feature.workshopChat': 'Workshop (研习社)',
   'admin.feature.workshopChatHint': 'Schoolkanalen, onderwerpen en directe berichten.',
   'admin.feature.mindmateCollab': 'MindMate samenwerking',
   'admin.feature.mindmateCollabHint': 'Gedeelde MindMate AI chatroom (org browsen + uitnodigingscode). Vereist online_collab-laag.',

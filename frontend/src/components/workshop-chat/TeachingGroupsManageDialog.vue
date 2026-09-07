@@ -1,14 +1,14 @@
 <script setup lang="ts">
 /**
- * 教研组 management: compact list + per-row Edit (advanced channel settings
- * live inside the expanded panel); reorder/duplicate/archive on the row.
+ * 教研组 management: add/delete in this modal, compact list + per-row Edit
+ * (advanced channel settings live inside the expanded panel).
  */
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { ElMessage, ElMessageBox } from 'element-plus'
 
-import { ArrowDown, ArrowUp, Copy, LayoutList, Plus, Settings, Trash2 } from '@lucide/vue'
+import { Archive, ArrowDown, ArrowUp, Copy, LayoutList, Plus, Settings, Trash2 } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
@@ -35,6 +35,18 @@ const store = useWorkshopChatStore()
 const authStore = useAuthStore()
 
 const canManage = computed(() => authStore.isAdminOrManager)
+const addingGroup = ref(false)
+const newGroupName = ref('')
+const newGroupDescription = ref('')
+const savingNewGroup = ref(false)
+
+function canDeleteGroup(group: ChatChannel): boolean {
+  if (canManage.value) {
+    return true
+  }
+  const uid = Number(authStore.user?.id)
+  return Number.isFinite(uid) && uid > 0 && uid === group.created_by
+}
 
 const teachingGroups = computed(() => {
   const list = store.channels.filter(
@@ -72,6 +84,10 @@ watch(
     if (open) {
       syncDrafts()
       editingGroupId.value = null
+      addingGroup.value = false
+      newGroupName.value = ''
+      newGroupDescription.value = ''
+      void store.fetchChannels({ force: true })
       void store.fetchOrgMembers({ limit: 200, offset: 0 })
     }
   }
@@ -113,12 +129,64 @@ async function confirmArchive(group: ChatChannel): Promise<void> {
   }
 }
 
+async function confirmDelete(group: ChatChannel): Promise<void> {
+  try {
+    await ElMessageBox.confirm(
+      t('workshop.deleteTeachingGroupConfirm'),
+      t('workshop.deleteTeachingGroup'),
+      {
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
+        type: 'warning',
+      }
+    )
+  } catch {
+    return
+  }
+  const ok = await store.deleteChannel(group.id)
+  if (ok) {
+    ElMessage.success(t('workshop.channelDeleted'))
+  } else {
+    ElMessage.error(t('workshop.channelDeleteFailed'))
+  }
+}
+
 function close(): void {
   emit('update:visible', false)
 }
 
 function addGroup(): void {
-  store.openCreateChannel()
+  addingGroup.value = true
+}
+
+function cancelAddGroup(): void {
+  addingGroup.value = false
+  newGroupName.value = ''
+  newGroupDescription.value = ''
+}
+
+async function submitNewGroup(): Promise<void> {
+  const name = newGroupName.value.trim()
+  if (!name) {
+    ElMessage.warning(t('workshop.teachingGroupNameRequired'))
+    return
+  }
+  savingNewGroup.value = true
+  try {
+    const result = await store.createChannel({
+      name,
+      description: newGroupDescription.value.trim() || null,
+      parent_id: null,
+    })
+    if (result.ok) {
+      ElMessage.success(t('workshop.createChannelSuccess'))
+      cancelAddGroup()
+      return
+    }
+    ElMessage.error(result.error || t('workshop.createChannelFailed'))
+  } finally {
+    savingNewGroup.value = false
+  }
 }
 
 function browseTeachingGroups(): void {
@@ -268,14 +336,13 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
       {{ t('workshop.manageTeachingGroupsBlurb') }}
     </p>
 
-    <div
-      v-if="canManage"
-      class="tg-manage-dialog__actions"
-    >
+    <div class="tg-manage-dialog__actions">
       <el-button
+        v-if="canManage"
         type="primary"
         size="small"
         class="tg-manage-dialog__btn-primary"
+        :disabled="addingGroup"
         @click="addGroup"
       >
         <span class="tg-manage-dialog__btn-inner">
@@ -299,6 +366,60 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
           {{ t('workshop.browseChannels') }}
         </span>
       </el-button>
+    </div>
+    <p
+      v-if="!canManage"
+      class="tg-manage-dialog__need-admin"
+    >
+      {{ t('workshop.manageNeedAdmin') }}
+    </p>
+    <div
+      v-if="addingGroup"
+      class="tg-manage-dialog__add-form"
+    >
+      <div class="tg-manage-dialog__field">
+        <span class="tg-manage-dialog__field-label">{{ t('workshop.channelNameLabel') }}</span>
+        <el-input
+          v-model="newGroupName"
+          size="small"
+          maxlength="100"
+          show-word-limit
+          class="tg-manage-dialog__name-input"
+          :placeholder="t('workshop.channelNamePlaceholder')"
+          :disabled="savingNewGroup"
+          @keyup.enter="submitNewGroup"
+        />
+      </div>
+      <div class="tg-manage-dialog__field">
+        <span class="tg-manage-dialog__field-label">{{ t('workshop.topicDescription') }}</span>
+        <el-input
+          v-model="newGroupDescription"
+          type="textarea"
+          :rows="2"
+          maxlength="500"
+          show-word-limit
+          size="small"
+          :placeholder="t('workshop.topicDescriptionPlaceholder')"
+          :disabled="savingNewGroup"
+        />
+      </div>
+      <div class="tg-manage-dialog__add-actions">
+        <el-button
+          size="small"
+          :disabled="savingNewGroup"
+          @click="cancelAddGroup"
+        >
+          {{ t('common.cancel') }}
+        </el-button>
+        <el-button
+          type="primary"
+          size="small"
+          :loading="savingNewGroup"
+          @click="submitNewGroup"
+        >
+          {{ t('workshop.addChannel') }}
+        </el-button>
+      </div>
     </div>
 
     <div
@@ -339,54 +460,75 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
             </p>
           </div>
           <div
-            v-if="canManage"
+            v-if="canManage || canDeleteGroup(g)"
             class="tg-manage-dialog__row-tools"
           >
+            <template v-if="canManage">
+              <el-button
+                text
+                size="small"
+                class="tg-manage-dialog__icon-btn"
+                :title="t('workshop.moveUp')"
+                :disabled="teachingGroups[0]?.id === g.id"
+                @click="moveGroup(g.id, -1)"
+              >
+                <ArrowUp :size="16" />
+              </el-button>
+              <el-button
+                text
+                size="small"
+                class="tg-manage-dialog__icon-btn"
+                :title="t('workshop.moveDown')"
+                :disabled="teachingGroups[teachingGroups.length - 1]?.id === g.id"
+                @click="moveGroup(g.id, 1)"
+              >
+                <ArrowDown :size="16" />
+              </el-button>
+              <el-button
+                text
+                size="small"
+                class="tg-manage-dialog__icon-btn"
+                :title="t('workshop.duplicateTeachingGroup')"
+                @click="duplicateGroup(g)"
+              >
+                <Copy :size="16" />
+              </el-button>
+              <el-button
+                size="small"
+                class="tg-manage-dialog__edit-btn"
+                @click="toggleEdit(g.id)"
+              >
+                {{ editingGroupId === g.id ? t('common.cancel') : t('common.edit') }}
+              </el-button>
+            </template>
             <el-button
-              text
+              v-if="canDeleteGroup(g)"
               size="small"
-              class="tg-manage-dialog__icon-btn"
-              :title="t('workshop.moveUp')"
-              :disabled="teachingGroups[0]?.id === g.id"
-              @click="moveGroup(g.id, -1)"
-            >
-              <ArrowUp :size="16" />
-            </el-button>
-            <el-button
-              text
-              size="small"
-              class="tg-manage-dialog__icon-btn"
-              :title="t('workshop.moveDown')"
-              :disabled="teachingGroups[teachingGroups.length - 1]?.id === g.id"
-              @click="moveGroup(g.id, 1)"
-            >
-              <ArrowDown :size="16" />
-            </el-button>
-            <el-button
-              text
-              size="small"
-              class="tg-manage-dialog__icon-btn"
-              :title="t('workshop.duplicateTeachingGroup')"
-              @click="duplicateGroup(g)"
-            >
-              <Copy :size="16" />
-            </el-button>
-            <el-button
-              size="small"
-              class="tg-manage-dialog__edit-btn"
-              @click="toggleEdit(g.id)"
-            >
-              {{ editingGroupId === g.id ? t('common.cancel') : t('common.edit') }}
-            </el-button>
-            <el-button
-              text
-              size="small"
-              type="danger"
-              class="tg-manage-dialog__icon-btn"
-              :title="t('workshop.archiveTeachingGroup')"
+              class="tg-manage-dialog__archive-btn"
               @click="confirmArchive(g)"
             >
-              <Trash2 :size="16" />
+              <span class="tg-manage-dialog__btn-inner">
+                <Archive
+                  class="tg-manage-dialog__btn-icon"
+                  :size="14"
+                />
+                {{ t('workshop.archiveTeachingGroup') }}
+              </span>
+            </el-button>
+            <el-button
+              v-if="canDeleteGroup(g)"
+              size="small"
+              type="danger"
+              class="tg-manage-dialog__delete-btn"
+              @click="confirmDelete(g)"
+            >
+              <span class="tg-manage-dialog__btn-inner">
+                <Trash2
+                  class="tg-manage-dialog__btn-icon"
+                  :size="14"
+                />
+                {{ t('workshop.deleteTeachingGroup') }}
+              </span>
             </el-button>
           </div>
         </div>
@@ -543,257 +685,4 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
   </el-dialog>
 </template>
 
-<style scoped>
-.tg-manage-dialog__blurb {
-  margin: 0 0 14px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: hsl(0deg 0% 38%);
-}
-
-.tg-manage-dialog__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-
-.tg-manage-dialog__btn-inner {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.tg-manage-dialog__btn-icon {
-  flex-shrink: 0;
-}
-
-.tg-manage-dialog__btn-primary {
-  border-radius: 9999px;
-  font-weight: 500;
-}
-
-.tg-manage-dialog__btn-secondary {
-  border-radius: 9999px;
-  font-weight: 500;
-  --el-button-bg-color: #e7e5e4;
-  --el-button-border-color: #d6d3d1;
-  --el-button-hover-bg-color: #d6d3d1;
-  --el-button-hover-border-color: #a8a29e;
-  --el-button-text-color: #1c1917;
-}
-
-.tg-manage-dialog__list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: min(52vh, 420px);
-  overflow-y: auto;
-  padding-right: 2px;
-}
-
-.tg-manage-dialog__row {
-  border: 1px solid hsl(0deg 0% 90%);
-  border-radius: 8px;
-  background: hsl(0deg 0% 99%);
-  overflow: hidden;
-}
-
-.tg-manage-dialog__row--editing {
-  border-color: hsl(210deg 30% 78%);
-  box-shadow: 0 0 0 1px hsl(210deg 35% 88%);
-}
-
-.tg-manage-dialog__row-summary {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 10px 10px 10px 12px;
-}
-
-.tg-manage-dialog__avatar {
-  flex-shrink: 0;
-  font-size: 1.15rem;
-  line-height: 1.2;
-}
-
-.tg-manage-dialog__row-summary-main {
-  flex: 1;
-  min-width: 0;
-}
-
-.tg-manage-dialog__row-title-line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 10px;
-}
-
-.tg-manage-dialog__row-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: hsl(210deg 28% 22%);
-  word-break: break-word;
-}
-
-.tg-manage-dialog__row-meta {
-  font-size: 11px;
-  color: hsl(0deg 0% 48%);
-}
-
-.tg-manage-dialog__row-desc-preview {
-  margin: 4px 0 0;
-  font-size: 12px;
-  line-height: 1.4;
-  color: hsl(0deg 0% 42%);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.tg-manage-dialog__row-tools {
-  display: flex;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 2px;
-  max-width: 100%;
-}
-
-.tg-manage-dialog__edit-btn {
-  border-radius: 6px;
-  font-weight: 500;
-  margin: 0 2px;
-}
-
-.tg-manage-dialog__field-label {
-  display: block;
-  margin-bottom: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: hsl(0deg 0% 45%);
-}
-
-.tg-manage-dialog__field {
-  margin-bottom: 12px;
-}
-
-.tg-manage-dialog__field--inline {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-
-.tg-manage-dialog__field--inline .tg-manage-dialog__field-label {
-  margin-bottom: 0;
-}
-
-.tg-manage-dialog__name-input {
-  width: 100%;
-}
-
-.tg-manage-dialog__visibility-select {
-  width: 140px;
-}
-
-.tg-manage-dialog__badge {
-  font-size: 11px;
-  padding: 2px 7px;
-  border-radius: 6px;
-  background: hsl(0deg 0% 0% / 6%);
-  color: hsl(0deg 0% 35%);
-}
-
-.tg-manage-dialog__icon-btn {
-  padding: 4px;
-  min-height: 0;
-}
-
-.tg-manage-dialog__row-panel {
-  padding: 12px 12px 12px;
-  border-top: 1px solid hsl(0deg 0% 92%);
-  background: hsl(0deg 0% 100%);
-}
-
-.tg-manage-dialog__panel-advanced {
-  margin-bottom: 10px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid hsl(0deg 0% 93%);
-}
-
-.tg-manage-dialog__advanced-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 6px;
-  font-weight: 500;
-  color: hsl(210deg 35% 38%);
-}
-
-.tg-manage-dialog__advanced-icon {
-  flex-shrink: 0;
-}
-
-.tg-manage-dialog__panel-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.tg-manage-dialog__members-block {
-  margin-bottom: 12px;
-  padding-top: 4px;
-}
-
-.tg-manage-dialog__members-heading {
-  margin-bottom: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: hsl(210deg 25% 32%);
-}
-
-.tg-manage-dialog__members-list {
-  margin: 0 0 10px;
-  padding-left: 18px;
-  font-size: 12px;
-  line-height: 1.5;
-  color: hsl(0deg 0% 32%);
-}
-
-.tg-manage-dialog__members-li {
-  margin-bottom: 2px;
-}
-
-.tg-manage-dialog__members-hint {
-  margin: 0 0 8px;
-  font-size: 12px;
-  color: hsl(0deg 0% 55%);
-}
-
-.tg-manage-dialog__invite-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.tg-manage-dialog__invite-select {
-  flex: 1;
-  min-width: 160px;
-}
-
-.tg-manage-dialog__empty {
-  margin: 0;
-  padding: 20px;
-  font-size: 13px;
-  text-align: center;
-  color: hsl(0deg 0% 45%);
-}
-</style>
+<style scoped src="./TeachingGroupsManageDialog.css"></style>

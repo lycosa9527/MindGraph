@@ -216,7 +216,7 @@ class FeaturesConfigMixin:
 
     @property
     def FEATURE_WORKSHOP_CHAT(self):
-        """Enable Workshop Chat (教研坊) school-scoped communication system.
+        """Enable Workshop Chat (研习社) school-scoped communication system.
 
         Disabled by default. Set FEATURE_WORKSHOP_CHAT=True in .env to enable.
         Provides channels, topics, and DMs for teacher collaboration.
@@ -242,7 +242,7 @@ class FeaturesConfigMixin:
 
     @property
     def WORKSHOP_CHAT_PREVIEW_ORG_IDS(self) -> frozenset[int]:
-        """Organization IDs allowed to use Workshop Chat (教研坊).
+        """Organization IDs allowed to use Workshop Chat (研习社).
 
         Comma-separated integers (e.g. ``5`` or ``5,12``). When
         ``FEATURE_WORKSHOP_CHAT`` is on and no DB grant row exists, only

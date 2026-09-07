@@ -132,7 +132,7 @@ export function useChatNotifications() {
   function notifyChannelMessage(msg: ChatMessage): void {
     if (String(msg.sender_id) === myId()) return
 
-    const channel = store.channels.find((c) => c.id === msg.channel_id)
+    const channel = store.findChannelById(msg.channel_id)
     if (channel?.is_muted) return
 
     const isViewing =
@@ -174,7 +174,7 @@ export function useChatNotifications() {
   function notifyTopicMessage(msg: ChatMessage): void {
     if (String(msg.sender_id) === myId()) return
 
-    const channel = store.channels.find((c) => c.id === msg.channel_id)
+    const channel = store.findChannelById(msg.channel_id)
     if (channel?.is_muted) return
 
     const isViewing =

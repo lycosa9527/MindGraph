@@ -256,7 +256,7 @@ export default {
   'meta.pageTitle.template': '模板',
   'meta.pageTitle.thinkingCoinsUpgrade': '升级会员',
   'meta.pageTitle.teacherUsage': '教师使用度',
-  'meta.pageTitle.workshopChat': '工作坊聊天',
+  'meta.pageTitle.workshopChat': '研习社',
   'publicDashboard.networkError': '网络错误，加载仪表盘失败',
   'publicDashboard.title': 'MG全国数据中心',
   'publicDashboard.subtitle': '全国用户实时分布',

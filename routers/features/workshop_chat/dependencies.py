@@ -29,7 +29,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.domain.auth import User
 from models.domain.workshop_chat import ChatChannel
 from services.features.workshop_chat.channel_service import channel_service
-from utils.auth import can_moderate_workshop_channel, is_admin, is_manager
+from utils.auth import (
+    can_moderate_workshop_channel,
+    is_admin,
+    is_admin_or_manager,
+    is_manager,
+)
 
 
 def get_effective_org_id(
@@ -187,6 +192,26 @@ def require_channel_manager(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="Permission denied",
     )
+
+
+def require_channel_remove(
+    current_user: User,
+    channel: ChatChannel,
+) -> None:
+    """Raise 403 unless the user may archive or permanently delete this channel.
+
+    School admins and superadmins may remove global announce channels so
+    duplicate 系统公告 rows can be cleaned up. Other channels use
+    ``require_channel_manager``.
+    """
+    if channel.channel_type == "announce":
+        if not is_admin_or_manager(current_user):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only admins can archive or delete announcement channels",
+            )
+        return
+    require_channel_manager(current_user, channel)
 
 
 async def access_dm_partner(

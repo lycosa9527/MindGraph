@@ -27,6 +27,7 @@ from routers.features.workshop_chat.dependencies import (
     access_channel,
     get_effective_org_id,
     require_channel_manager,
+    require_channel_remove,
 )
 from routers.features.workshop_chat.schemas import (
     CreateChannelRequest,
@@ -280,13 +281,28 @@ async def archive_channel(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Archive a channel (same rules as channel settings: org managers or admins).
-
-    Global announce channels require a full admin (see ``require_channel_manager``).
-    """
+    """Soft-archive a channel (hidden from lists; messages stay stored)."""
     channel = await access_channel(db, channel_id, current_user)
-    require_channel_manager(current_user, channel)
+    require_channel_remove(current_user, channel)
     await channel_service.archive_channel(db, channel_id)
+    return {"ok": True}
+
+
+@router.delete("/channels/{channel_id}/permanent")
+async def delete_channel(
+    channel_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Permanently delete a channel and, for a teaching group, its lesson studies."""
+    channel = await access_channel(db, channel_id, current_user)
+    require_channel_remove(current_user, channel)
+    deleted = await channel_service.delete_channel(db, channel_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Channel not found",
+        )
     return {"ok": True}
 
 

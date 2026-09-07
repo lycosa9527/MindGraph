@@ -38,10 +38,11 @@ import type { SavedDiagram } from '@/stores/savedDiagrams'
 import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
 import { getShowcasePendingCount } from '@/utils/apiClient'
 import { userCanAccessMindbotAdmin } from '@/utils/mindbotAccess'
+import { shouldExpandWorkshopOnNavClick } from '@/utils/sidebarWorkshopPanel'
 import { getRolePillStyle } from '@/utils/userRoleDisplay'
+import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
 import { isPaidSchoolTier } from '@/constants/schoolTier'
-import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 /** Hide ZhiHui sidebar entry until the studio is ready to ship. `/zhihui` stays reachable. */
 const HIDE_ZHIHUI_NAV = true
@@ -472,9 +473,26 @@ export function useAppSidebar() {
     return path === routePath || path.startsWith(`${routePath}/`)
   }
 
+  function toggleWorkshopChatPanel(): void {
+    const alreadyOn = currentMode.value === 'workshop-chat' && isOnRouteForMode('workshop-chat')
+    if (shouldExpandWorkshopOnNavClick(alreadyOn, isCollapsed.value)) {
+      expandedPanel.value = expandedPanel.value === 'workshop-chat' ? null : 'workshop-chat'
+      return
+    }
+    expandedPanel.value = null
+    const target = routeMap['workshop-chat']
+    if (target && !isOnRouteForMode('workshop-chat')) {
+      void router.push(target)
+    }
+  }
+
   function setMode(index: string) {
     if (index === 'admin') {
       toggleManagementPanel()
+      return
+    }
+    if (index === 'workshop-chat') {
+      toggleWorkshopChatPanel()
       return
     }
     // 智绘: always open landing (conversation only via history select), like MindMate new chat.
@@ -610,9 +628,10 @@ export function useAppSidebar() {
   }
 
   /**
-   * Keep MindMate / MindGraph / Mate Learning / ZhiHui history accordions in sync
-   * with the route: only one open. Signed-in MindMate / MindGraph do not auto-open;
-   * click the nav item to expand. Login closes a leftover guest panel.
+   * Keep MindMate / MindGraph / Mate Learning / ZhiHui / 研习社 history
+   * accordions in sync with the route: only one open. Signed-in MindMate /
+   * MindGraph / 研习社 do not auto-open; click the nav item to expand.
+   * Login closes a leftover guest panel.
    */
   watch(
     [currentMode, isAuthenticated],
@@ -628,7 +647,7 @@ export function useAppSidebar() {
         expandedPanel.value = mode
         return
       }
-      if (mode === 'mindmate' || mode === 'mindgraph') {
+      if (mode === 'mindmate' || mode === 'mindgraph' || mode === 'workshop-chat') {
         if (justLoggedIn) {
           expandedPanel.value = null
         }
@@ -638,7 +657,8 @@ export function useAppSidebar() {
         expandedPanel.value === 'mindmate' ||
         expandedPanel.value === 'mindgraph' ||
         expandedPanel.value === 'maite' ||
-        expandedPanel.value === 'zhihui'
+        expandedPanel.value === 'zhihui' ||
+        expandedPanel.value === 'workshop-chat'
       ) {
         expandedPanel.value = null
       }
@@ -659,6 +679,9 @@ export function useAppSidebar() {
       if (path.startsWith('/training')) {
         expandedPanel.value = 'training'
       } else if (expandedPanel.value === 'training') {
+        expandedPanel.value = null
+      }
+      if (!path.startsWith('/workshop-chat') && expandedPanel.value === 'workshop-chat') {
         expandedPanel.value = null
       }
     },

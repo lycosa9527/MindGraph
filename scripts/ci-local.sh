@@ -181,6 +181,8 @@ run_backend() {
     tests/test_privacy_policy_static.py \
     tests/test_privacy_policy_http.py \
     tests/test_workshop_chat_file_service.py \
+    tests/test_workshop_announce_seed.py \
+    tests/test_workshop_archive_channel_children.py \
     tests/test_dingtalk_bind_service.py \
     tests/test_showcase_helpers.py \
     tests/test_celery_manager_stale.py \
@@ -301,6 +303,10 @@ run_frontend() {
     tests/trainingPlayControls.spec.ts tests/trainingFriendLine.spec.ts \
     tests/trainingRemoteView.spec.ts tests/mobileRouterRedirects.spec.ts \
     tests/mindmateWelcomeLayout.spec.ts \
+    tests/workshopTopicChevron.spec.ts \
+    tests/workshopChannelTree.spec.ts \
+    tests/workshopInitializeOnce.spec.ts \
+    tests/workshopMessageLocalPatch.spec.ts \
     tests/enqueueKittyDesktopExplainNode.spec.ts \
     tests/kittyDesktopExplainNodeAction.spec.ts \
     tests/kittyPendingCanvasAction.spec.ts \

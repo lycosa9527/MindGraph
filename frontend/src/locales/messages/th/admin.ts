@@ -86,7 +86,7 @@ export default {
     'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'ทรัพยากรเทมเพลต',
   'admin.feature.templateHint': 'แกลเลอรีเทมเพลตและ API ที่เกี่ยวข้อง',
-  'admin.feature.workshopChat': 'เวิร์กช็อป (教研坊)',
+  'admin.feature.workshopChat': 'เวิร์กช็อป (研习社)',
   'admin.feature.workshopChatHint': 'ช่องทางโรงเรียน หัวข้อ และข้อความส่วนตัว',
   'admin.feature.mindmateCollab': 'MindMate collab',
   'admin.feature.mindmateCollabHint': 'ห้องแชท AI MindMate แบบแชร์ (เรียกดูองค์กร + รหัสเชิญ) ต้องใช้ระดับ online_collab',

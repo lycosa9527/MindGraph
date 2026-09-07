@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.52] - 2026-09-07
+
+> **研习社: slimmer seed, add/archive/delete for 教研组 and 系统公告, and a 课例 shows only its own conversations.**
+
+### Changed
+
+- **研习社 seed strip** — Initialize keeps `系统公告` plus `语文教研组` / `《背影》（朱自清）`. Extra canned 教研组 / 课例 names are archived. The STEM/数理化 seed module is gone.
+- **研习社 topic fetch** — Sidebar mount loads channels + DMs only. Topics load when you expand or open a lesson.
+- **研习社 nested lookup** — Joined, unread, mute/pin, prefs, and WS `subscribe_channels` walk lesson children. Incoming `topic_moved`, `topic_deleted`, and `reaction_update` update the store.
+- **研习社 load leftovers** — Initialize runs once per tab session. Teaching-group landing uses `topic_count` / `unread_count`. Send appends the POST body; mark-read zeros local unread without forcing `GET /channels`.
+- **研习社 leftovers** — Channel/topic messages can be edited or deleted. Starred and Mentions sidebar stubs stay hidden until those views exist.
+- **研习社 管理教研组** — Add a group in the modal (name + description). Admins or the creator can **归档** (hide, keep messages) or **删除** (permanent, including child 课例).
+- **研习社 系统公告菜单** — The sidebar ⋯ menu has the same **归档** and **删除** pair. School admins and superadmins can remove duplicate announce rows.
+- **研习社 copy** — Admin, README, and env help say 研习社 instead of 教研坊 / 工作坊聊天. Landing grid uses 桥形图 / 树形图.
+
+### Fixed
+
+- **研习社 initialize 500** — Two workers could each insert a global announce channel. Seed keeps the oldest live announce row, archives extras, and `0110` blocks a second live announce channel.
+- **研习社 DM unread** — Opening a DM marks it read and zeros the sidebar badge.
+- **研习社 topic lists** — Switching streams no longer wipes topics for other expanded lessons. The center 课例 grid lists only that lesson’s conversations.
+- **研习社 default streams** — Initialize subscribes later org members to `语文教研组` / `《背影》（朱自清）`.
+- **研习社 RLS** — Message / reaction / attachment policies follow `chat_channels` and `file_attachments.dm_id`. Migration `0111` re-enables FORCE RLS on the workshop tables.
+- **研习社 duplicate 教研组** — Initialize archives same-name copies (keep oldest). `0112` adds a unique live `(org, parent, name)` index.
+
+### Tests
+
+- [`tests/test_workshop_announce_seed.py`](tests/test_workshop_announce_seed.py)
+- [`tests/test_workshop_archive_channel_children.py`](tests/test_workshop_archive_channel_children.py)
+- [`tests/db/test_rls_workshop_chat.py`](tests/db/test_rls_workshop_chat.py)
+- [`frontend/tests/workshopTopicChevron.spec.ts`](frontend/tests/workshopTopicChevron.spec.ts)
+- [`frontend/tests/workshopChannelTree.spec.ts`](frontend/tests/workshopChannelTree.spec.ts)
+- [`frontend/tests/workshopInitializeOnce.spec.ts`](frontend/tests/workshopInitializeOnce.spec.ts)
+- [`frontend/tests/workshopMessageLocalPatch.spec.ts`](frontend/tests/workshopMessageLocalPatch.spec.ts)
+
 ## [5.180.51] - 2026-09-07
 
 > **研习社 is back for org 5; MindMate tablet chips stay readable; mind-map branch expand keeps 专业程度.**

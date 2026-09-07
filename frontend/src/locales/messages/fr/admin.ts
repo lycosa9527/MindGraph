@@ -86,7 +86,7 @@ export default {
     'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Ressources modèles',
   'admin.feature.templateHint': 'Galerie de modèles et API associées.',
-  'admin.feature.workshopChat': 'Atelier (教研坊)',
+  'admin.feature.workshopChat': 'Atelier (研习社)',
   'admin.feature.workshopChatHint': 'Canaux de l\'établissement, sujets et messages directs.',
   'admin.feature.mindmateCollab': 'Collab. MindMate',
   'admin.feature.mindmateCollabHint': 'Salle de chat IA MindMate partagée (parcours org. + code d’invitation). Nécessite l’offre online_collab.',

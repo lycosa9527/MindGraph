@@ -86,7 +86,7 @@ export default {
     'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'منابع الگو',
   'admin.feature.templateHint': 'گالری قالب و API های مرتبط.',
-  'admin.feature.workshopChat': 'کارگاه (教研坊)',
+  'admin.feature.workshopChat': 'کارگاه (研习社)',
   'admin.feature.workshopChatHint': 'کانال‌های مدرسه، موضوعات و پیام‌های مستقیم.',
   'admin.feature.mindmateCollab': 'همکاری MindMate',
   'admin.feature.mindmateCollabHint': 'چت روم MindMate AI مشترک (مرور سازمانی + کد دعوت). به سطح همکاری آنلاین نیاز دارد.',

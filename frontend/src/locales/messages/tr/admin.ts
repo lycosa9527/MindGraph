@@ -86,7 +86,7 @@ export default {
     'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Şablon kaynakları',
   'admin.feature.templateHint': 'Şablon galerisi ve ilgili API\'ler.',
-  'admin.feature.workshopChat': 'Çalıştay (教研坊)',
+  'admin.feature.workshopChat': 'Çalıştay (研习社)',
   'admin.feature.workshopChatHint': 'Okul kanalları, konular ve doğrudan mesajlar.',
   'admin.feature.mindmateCollab': 'MindMate ortak çalışması',
   'admin.feature.mindmateCollabHint': 'Paylaşılan MindMate yapay zeka sohbet odası (kuruluş taraması + davet kodu). ONLINE_COLLAB seviye gerektirir.',

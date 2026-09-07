@@ -11,6 +11,13 @@ import { defineStore } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
 import { apiRequest } from '@/utils/apiClient'
 import {
+  findChannelInTree,
+  flattenChannels,
+  joinedUnreadTotal,
+  mergeTopicsByChannel,
+  topicsForChannel,
+} from '@/utils/workshopChannelTree'
+import {
   CHANNELS_TTL_MS,
   TOPICS_TTL_MS,
   type WorkshopCacheScope,
@@ -30,6 +37,11 @@ import {
   loadLastSeenOnlineFromStorage,
   saveLastSeenOnlineToStorage,
 } from '@/utils/workshopContactLastSeenStorage'
+import {
+  hasWorkshopInitializedThisSession,
+  markWorkshopInitializedThisSession,
+} from '@/utils/workshopInitializeOnce'
+import { applyDeletedChatMessage, applyEditedChatMessage } from '@/utils/workshopMessageLocalPatch'
 
 export interface ChatChannel {
   id: number
@@ -254,6 +266,10 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     return findChannelById(currentChannelId.value)
   })
 
+  const currentChannelTopics = computed(() =>
+    topicsForChannel(topics.value, currentChannelId.value)
+  )
+
   const topicParticipantIds = computed<Set<number>>(() => {
     const ids = new Set<number>()
     const msgs = currentTopicId.value ? topicMessages.value : channelMessages.value
@@ -263,25 +279,29 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     return ids
   })
 
-  const joinedChannels = computed(() => channels.value.filter((c) => c.is_joined))
+  const joinedChannels = computed(() => flattenChannels(channels.value).filter((c) => c.is_joined))
 
-  const totalUnreadChannels = computed(() =>
-    channels.value.reduce((sum, c) => sum + (c.is_joined ? c.unread_count : 0), 0)
-  )
+  const totalUnreadChannels = computed(() => joinedUnreadTotal(channels.value))
 
   const totalUnreadDMs = computed(() =>
     dmConversations.value.reduce((sum, c) => sum + c.unread_count, 0)
   )
 
   const announceChannels = computed(() =>
-    channels.value.filter((c) => c.channel_type === 'announce')
+    flattenChannels(channels.value).filter((c) => c.channel_type === 'announce')
   )
 
-  const publicChannels = computed(() => channels.value.filter((c) => c.channel_type === 'public'))
+  const publicChannels = computed(() =>
+    flattenChannels(channels.value).filter((c) => c.channel_type === 'public')
+  )
 
-  const privateChannels = computed(() => channels.value.filter((c) => c.channel_type === 'private'))
+  const privateChannels = computed(() =>
+    flattenChannels(channels.value).filter((c) => c.channel_type === 'private')
+  )
 
-  const pinnedChannels = computed(() => channels.value.filter((c) => c.pin_to_top && c.is_joined))
+  const pinnedChannels = computed(() =>
+    flattenChannels(channels.value).filter((c) => c.pin_to_top && c.is_joined)
+  )
 
   const channelGroups = computed(() =>
     channels.value.filter((c) => c.parent_id === null || c.parent_id === undefined)
@@ -290,13 +310,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
   const allLessonStudies = computed(() => channels.value.flatMap((g) => g.children ?? []))
 
   function findChannelById(channelId: number): ChatChannel | null {
-    for (const group of channels.value) {
-      if (group.id === channelId) return group
-      for (const child of group.children ?? []) {
-        if (child.id === channelId) return child
-      }
-    }
-    return null
+    return findChannelInTree(channels.value, channelId)
   }
 
   function findParentGroup(channelId: number): ChatChannel | null {
@@ -313,24 +327,28 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     return buildWorkshopCacheScope(auth.user?.id, adminOrgId.value, auth.user?.schoolId)
   }
 
-  function applyTopicsPayload(channelId: number, raw: ChatTopic[], merge: boolean): void {
+  function applyTopicsPayload(channelId: number, raw: ChatTopic[]): void {
     const mapped = raw.map((t) => ({
       ...t,
       unread_count: t.unread_count ?? 0,
     }))
-    if (merge) {
-      const rest = topics.value.filter((t) => t.channel_id !== channelId)
-      topics.value = [...rest, ...mapped]
-    } else {
-      topics.value = mapped
-    }
+    topics.value = mergeTopicsByChannel(topics.value, channelId, mapped)
   }
 
   async function initializeDefaults(): Promise<void> {
+    const auth = useAuthStore()
+    const uid = auth.user?.id
+    if (hasWorkshopInitializedThisSession(sessionStorage, uid)) {
+      return
+    }
     try {
       const res = await apiRequest('/api/chat/channels/initialize', { method: 'POST' })
       if (!res.ok) {
         console.warn('[WorkshopChat] initializeDefaults response:', res.status)
+        return
+      }
+      if (uid != null) {
+        markWorkshopInitializedThisSession(sessionStorage, uid)
       }
     } catch (err) {
       console.warn('[WorkshopChat] initializeDefaults error:', err)
@@ -400,13 +418,12 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     options?: { force?: boolean; merge?: boolean }
   ): Promise<void> {
     const scope = getCacheScope()
-    const merge = options?.merge ?? false
     const skey = `${workshopScopeKey(scope)}:${channelId}`
 
     if (!options?.force && scope) {
       const row = readCachedTopicsRow(scope, channelId)
       if (row && cacheIsFresh(row.savedAt, TOPICS_TTL_MS)) {
-        applyTopicsPayload(channelId, row.data, merge)
+        applyTopicsPayload(channelId, row.data)
         return
       }
     }
@@ -461,13 +478,13 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
         touchCachedTopics(scope, channelId)
         const row = readCachedTopicsRow(scope, channelId)
         if (row) {
-          applyTopicsPayload(channelId, row.data, merge)
+          applyTopicsPayload(channelId, row.data)
         }
       }
       return
     }
     if (outcome.kind === 'http200') {
-      applyTopicsPayload(channelId, outcome.raw, merge)
+      applyTopicsPayload(channelId, outcome.raw)
     }
   }
 
@@ -555,6 +572,10 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
           dmMessages.value = [...msgs, ...dmMessages.value]
         } else {
           dmMessages.value = msgs
+        }
+        const conv = dmConversations.value.find((row) => row.partner_id === partnerId)
+        if (conv) {
+          conv.unread_count = 0
         }
         return msgs
       }
@@ -784,17 +805,46 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
         method: 'DELETE',
       })
       if (res.ok) {
+        const selected = currentChannelId.value
+        const selectedCh = selected != null ? findChannelById(selected) : null
+        const leaveSelected = selected === channelId || selectedCh?.parent_id === channelId
+        const leaveLanding = teachingGroupLandingId.value === channelId
         await fetchChannels({ force: true })
-        if (currentChannelId.value === channelId) {
+        if (leaveSelected) {
           selectChannel(null)
         }
-        if (teachingGroupLandingId.value === channelId) {
+        if (leaveLanding) {
           openWorkshopInboxHome()
         }
         return true
       }
     } catch (err) {
       console.error('[WorkshopChat] archiveChannel error:', err)
+    }
+    return false
+  }
+
+  async function deleteChannel(channelId: number): Promise<boolean> {
+    try {
+      const res = await apiRequest(`/api/chat/channels/${channelId}/permanent`, {
+        method: 'DELETE',
+      })
+      if (res.ok) {
+        const selected = currentChannelId.value
+        const selectedCh = selected != null ? findChannelById(selected) : null
+        const leaveSelected = selected === channelId || selectedCh?.parent_id === channelId
+        const leaveLanding = teachingGroupLandingId.value === channelId
+        await fetchChannels({ force: true })
+        if (leaveSelected) {
+          selectChannel(null)
+        }
+        if (leaveLanding) {
+          openWorkshopInboxHome()
+        }
+        return true
+      }
+    } catch (err) {
+      console.error('[WorkshopChat] deleteChannel error:', err)
     }
     return false
   }
@@ -806,7 +856,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
       const res = await apiRequest(`/api/chat/channels/${channelId}/mute`, { method: 'POST' })
       if (res.ok) {
         const data = await res.json()
-        const ch = channels.value.find((c) => c.id === channelId)
+        const ch = findChannelById(channelId)
         if (ch) ch.is_muted = data.is_muted
         return true
       }
@@ -821,7 +871,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
       const res = await apiRequest(`/api/chat/channels/${channelId}/pin`, { method: 'POST' })
       if (res.ok) {
         const data = await res.json()
-        const ch = channels.value.find((c) => c.id === channelId)
+        const ch = findChannelById(channelId)
         if (ch) ch.pin_to_top = data.pin_to_top
         return true
       }
@@ -837,8 +887,13 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
         method: 'POST',
       })
       if (res.ok) {
-        const ch = channels.value.find((c) => c.id === channelId)
+        const ch = findChannelById(channelId)
         if (ch) ch.unread_count = 0
+        for (const topic of topics.value) {
+          if (topic.channel_id === channelId) {
+            topic.unread_count = 0
+          }
+        }
         return true
       }
     } catch (err) {
@@ -903,7 +958,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
           desktop_notifications?: boolean
           email_notifications?: boolean
         }
-        const ch = channels.value.find((c) => c.id === channelId)
+        const ch = findChannelById(channelId)
         if (ch) {
           if (data.color != null) ch.color = data.color
           if (data.desktop_notifications != null) {
@@ -1119,6 +1174,43 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     return false
   }
 
+  async function editMessage(messageId: number, content: string): Promise<boolean> {
+    try {
+      const res = await apiRequest(`/api/chat/messages/${messageId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      })
+      if (!res.ok) {
+        return false
+      }
+      const updated = (await res.json()) as ChatMessage
+      applyEditedChatMessage(channelMessages.value, updated)
+      applyEditedChatMessage(topicMessages.value, updated)
+      return true
+    } catch (err) {
+      console.error('[WorkshopChat] editMessage error:', err)
+    }
+    return false
+  }
+
+  async function deleteMessage(messageId: number): Promise<boolean> {
+    try {
+      const res = await apiRequest(`/api/chat/messages/${messageId}`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) {
+        return false
+      }
+      applyDeletedChatMessage(channelMessages.value, messageId)
+      applyDeletedChatMessage(topicMessages.value, messageId)
+      return true
+    } catch (err) {
+      console.error('[WorkshopChat] deleteMessage error:', err)
+    }
+    return false
+  }
+
   async function markTopicRead(channelId: number, topicId: number): Promise<boolean> {
     try {
       const res = await apiRequest(`/api/chat/channels/${channelId}/topics/${topicId}/read`, {
@@ -1126,14 +1218,18 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
       })
       if (res.ok) {
         const t = topics.value.find((x) => x.id === topicId)
+        const prevUnread = t?.unread_count ?? 0
         if (t) {
           t.unread_count = 0
+        }
+        const ch = findChannelById(channelId)
+        if (ch) {
+          ch.unread_count = Math.max(0, (ch.unread_count || 0) - prevUnread)
         }
         const scope = getCacheScope()
         if (scope) {
           clearCachedTopics(scope, channelId)
         }
-        await fetchChannels({ force: true })
       }
       return res.ok
     } catch (err) {
@@ -1166,10 +1262,13 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
   }
 
   function addIncomingChannelMessage(msg: ChatMessage): void {
+    if (channelMessages.value.some((m) => m.id === msg.id)) {
+      return
+    }
     if (msg.channel_id === currentChannelId.value && !msg.topic_id) {
       channelMessages.value.push(msg)
     }
-    const ch = channels.value.find((c) => c.id === msg.channel_id)
+    const ch = findChannelById(msg.channel_id)
     if (ch && msg.channel_id !== currentChannelId.value) {
       ch.unread_count += 1
     }
@@ -1179,11 +1278,14 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     if (!msg.topic_id) {
       return
     }
+    if (topicMessages.value.some((m) => m.id === msg.id)) {
+      return
+    }
     if (msg.topic_id === currentTopicId.value && msg.channel_id === currentChannelId.value) {
       topicMessages.value.push(msg)
       return
     }
-    const ch = channels.value.find((c) => c.id === msg.channel_id)
+    const ch = findChannelById(msg.channel_id)
     if (ch) {
       ch.unread_count += 1
     }
@@ -1195,6 +1297,9 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
   }
 
   function addIncomingDM(msg: DirectMessageItem): void {
+    if (dmMessages.value.some((m) => m.id === msg.id)) {
+      return
+    }
     if (
       msg.sender_id === currentDMPartnerId.value ||
       msg.recipient_id === currentDMPartnerId.value
@@ -1205,12 +1310,14 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
       (c) => c.partner_id === msg.sender_id || c.partner_id === msg.recipient_id
     )
     if (conv) {
+      const myId = Number(useAuthStore().user?.id)
+      const isMine = Number.isFinite(myId) && msg.sender_id === myId
       conv.last_message = {
         content: msg.content.slice(0, 100),
         created_at: msg.created_at,
-        is_mine: false,
+        is_mine: isMine,
       }
-      if (msg.sender_id !== currentDMPartnerId.value) {
+      if (!isMine && msg.sender_id !== currentDMPartnerId.value) {
         conv.unread_count += 1
       }
     }
@@ -1244,6 +1351,27 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
       }
     }
     onlineUserIds.value = online
+  }
+
+  function removeTopic(topicId: number): void {
+    topics.value = topics.value.filter((t) => t.id !== topicId)
+    if (currentTopicId.value === topicId) {
+      currentTopicId.value = null
+      topicMessages.value = []
+    }
+  }
+
+  function applyTopicMoved(topicId: number, fromChannelId: number, targetChannelId: number): void {
+    const topic = topics.value.find((t) => t.id === topicId)
+    if (topic) {
+      topic.channel_id = targetChannelId
+    }
+    if (currentTopicId.value === topicId && currentChannelId.value === fromChannelId) {
+      currentChannelId.value = targetChannelId
+    }
+    if (currentChannelId.value === fromChannelId) {
+      topics.value = topics.value.filter((t) => t.id !== topicId)
+    }
   }
 
   function updateTopic(topicData: ChatTopic): void {
@@ -1447,7 +1575,6 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     currentDMPartnerId.value = null
     channelMessages.value = []
     topicMessages.value = []
-    topics.value = []
     dmMessages.value = []
   }
 
@@ -1460,11 +1587,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     currentTopicId.value = null
     channelMessages.value = []
     topicMessages.value = []
-    topics.value = []
     teachingGroupLandingId.value = groupId
-    const group = findChannelById(groupId)
-    const children = group?.children ?? []
-    await Promise.all(children.map((c) => fetchTopics(c.id, { merge: true })))
   }
 
   function openMainChannelFeed(): void {
@@ -1490,7 +1613,6 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     currentTopicId.value = null
     channelMessages.value = []
     topicMessages.value = []
-    topics.value = []
   }
 
   function selectTopic(topicId: number | null): void {
@@ -1579,6 +1701,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     currentTopicId,
     currentDMPartnerId,
     topics,
+    currentChannelTopics,
     channelMessages,
     topicMessages,
     dmConversations,
@@ -1619,12 +1742,15 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     joinChannel,
     leaveChannel,
     archiveChannel,
+    deleteChannel,
     addIncomingChannelMessage,
     addIncomingTopicMessage,
     addIncomingDM,
     setTyping,
     updatePresence,
     updateTopic,
+    removeTopic,
+    applyTopicMoved,
     selectChannel,
     selectTopic,
     selectDMPartner,
@@ -1664,6 +1790,8 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     moveTopic,
     renameTopic,
     deleteTopic,
+    editMessage,
+    deleteMessage,
     markTopicRead,
     setTopicVisibility,
     showChannelBrowser,

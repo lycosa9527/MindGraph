@@ -527,6 +527,43 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           </div>
         </transition>
 
+        <!-- Workshop Chat (研习社) — above 管理面板 -->
+        <el-tooltip
+          v-if="s.canAccessWorkshopChat"
+          :content="s.t('workshop.title')"
+          placement="right"
+          :disabled="!s.isCollapsed"
+        >
+          <div
+            class="nav-item"
+            :class="s.navItemClass('workshop-chat')"
+            @click="s.setMode('workshop-chat')"
+          >
+            <MessagesSquare
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label ws-menu-title"
+            >
+              {{ s.t('workshop.title') }}
+              <ChevronDown
+                class="ws-expand-chevron"
+                :class="{ 'ws-expand-chevron--open': s.workshopExpanded }"
+              />
+            </span>
+          </div>
+        </el-tooltip>
+        <transition name="ws-slide">
+          <div
+            v-if="s.workshopExpanded && !s.isCollapsed && s.canAccessWorkshopChat"
+            class="workshop-panel-host"
+          >
+            <WorkshopChatHistory />
+          </div>
+        </transition>
+
         <!-- Single management tab (e.g. school_admin users-only) -->
         <el-tooltip
           v-if="s.isManagementPanelUser && s.singleAdminNavTab"
@@ -704,43 +741,6 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
                 </span>
               </button>
             </template>
-          </div>
-        </transition>
-
-        <!-- Workshop Chat (admin & school managers) -->
-        <el-tooltip
-          v-if="s.canAccessWorkshopChat"
-          :content="s.t('workshop.title')"
-          placement="right"
-          :disabled="!s.isCollapsed"
-        >
-          <div
-            class="nav-item"
-            :class="s.navItemClass('workshop-chat')"
-            @click="s.setMode('workshop-chat')"
-          >
-            <MessagesSquare
-              class="nav-icon"
-              :size="NAV_ICON_SIZE"
-            />
-            <span
-              v-if="!s.isCollapsed"
-              class="nav-label ws-menu-title"
-            >
-              {{ s.t('workshop.title') }}
-              <ChevronDown
-                class="ws-expand-chevron"
-                :class="{ 'ws-expand-chevron--open': s.workshopExpanded }"
-              />
-            </span>
-          </div>
-        </el-tooltip>
-        <transition name="ws-slide">
-          <div
-            v-if="s.workshopExpanded && !s.isCollapsed && s.canAccessWorkshopChat"
-            class="workshop-panel-host"
-          >
-            <WorkshopChatHistory />
           </div>
         </transition>
       </div>

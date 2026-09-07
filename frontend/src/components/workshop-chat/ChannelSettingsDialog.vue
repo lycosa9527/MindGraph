@@ -18,7 +18,7 @@ const store = useWorkshopChatStore()
 const authStore = useAuthStore()
 const { t } = useLanguage()
 
-const channel = computed(() => store.channels.find((c) => c.id === props.channelId))
+const channel = computed(() => store.findChannelById(props.channelId))
 
 const isManagerOrAdmin = computed(() => authStore.isAdmin || authStore.isManager)
 

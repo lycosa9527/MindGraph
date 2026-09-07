@@ -86,7 +86,7 @@ export default {
     'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Tài nguyên mẫu',
   'admin.feature.templateHint': 'Thư viện mẫu và các API liên quan.',
-  'admin.feature.workshopChat': 'Workshop (教研坊)',
+  'admin.feature.workshopChat': 'Workshop (研习社)',
   'admin.feature.workshopChatHint': 'Các kênh, chủ đề và tin nhắn trực tiếp của trường học.',
   'admin.feature.mindmateCollab': 'MindMate cộng tác',
   'admin.feature.mindmateCollabHint': 'Phòng trò chuyện AI MindMate được chia sẻ (duyệt tổ chức + mã mời). Yêu cầu cấp độ online_collab.',

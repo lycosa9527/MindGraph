@@ -86,7 +86,7 @@ export default {
     'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'टेम्पलेट संसाधन',
   'admin.feature.templateHint': 'टेम्पलेट गैलरी और संबंधित API।',
-  'admin.feature.workshopChat': 'Workshop (教研坊)',
+  'admin.feature.workshopChat': 'Workshop (研习社)',
   'admin.feature.workshopChatHint': 'स्कूल चैनल, विषय और सीधे संदेश।',
   'admin.feature.mindmateCollab': 'MindMate collab',
   'admin.feature.mindmateCollabHint': 'साझा MindMate AI chatroom (org browse + invite code)। online_collab tier चाहिए।',

@@ -34,6 +34,7 @@ from sqlalchemy import (
     Index,
     CheckConstraint,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -182,6 +183,12 @@ class ChatChannel(Base):
         Index("ix_chat_channels_org_archived", "organization_id", "is_archived"),
         Index("ix_chat_channels_type", "channel_type"),
         Index("ix_chat_channels_parent", "parent_id"),
+        Index(
+            "uq_chat_channels_single_announce",
+            "channel_type",
+            unique=True,
+            postgresql_where=text("channel_type = 'announce' AND NOT is_archived"),
+        ),
     )
 
     @property

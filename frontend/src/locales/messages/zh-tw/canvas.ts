@@ -1222,7 +1222,7 @@ export default {
   'landing.diagramGrid.brace_map.desc': '拆分',
   'landing.diagramGrid.brace_map.title': '括號圖',
   'landing.diagramGrid.bridge_map.desc': '類比',
-  'landing.diagramGrid.bridge_map.title': '橋型圖',
+  'landing.diagramGrid.bridge_map.title': '橋形圖',
   'landing.diagramGrid.bubble_map.desc': '描述',
   'landing.diagramGrid.bubble_map.title': '氣泡圖',
   'landing.diagramGrid.circle_map.desc': '聯想',
@@ -1239,7 +1239,7 @@ export default {
   'landing.diagramGrid.multi_flow_map.title': '複流程圖',
   'landing.diagramGrid.sectionTitle': '在畫布中創建',
   'landing.diagramGrid.tree_map.desc': '分類',
-  'landing.diagramGrid.tree_map.title': '樹狀圖',
+  'landing.diagramGrid.tree_map.title': '樹形圖',
   'landing.diagramGrid.voice_notes.desc': '錄音生成導圖',
   'landing.diagramGrid.voice_notes.title': '語音筆記',
   'landing.template.freePlaceholder':

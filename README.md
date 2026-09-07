@@ -81,7 +81,7 @@ Built for teachers, learners, and anyone who thinks better with pictures (especi
 **Collaboration & Platform**
 
 - Online canvas collaboration (WebSocket, Redis live-spec merge)
-- Workshop Chat (教研坊): school-scoped real-time channels, topics, DMs, reactions, and file attachments
+- Workshop Chat (研习社): school-scoped real-time channels, topics, DMs, reactions, and file attachments
 - **Showcase** (案例广场): community case gallery with teaching-design / diagram publish, AI copy, Office→PDF preview, cover job manifesto, and admin moderation — see [services/showcase/README.md](services/showcase/README.md)
 - **迈特学习法 (Maite Learning)**: native async learning module (PG + RLS, Redis, event-bus UI) — see [services/maite/README.md](services/maite/README.md)
 - International landing page with Chinese / International UI version toggle

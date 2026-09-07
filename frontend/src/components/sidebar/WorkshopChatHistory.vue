@@ -12,21 +12,13 @@ import { useRouter } from 'vue-router'
 
 import { ElMessage } from 'element-plus'
 
-import {
-  AtSign,
-  ChevronDown,
-  ChevronRight,
-  Inbox,
-  MoreVertical,
-  Plus,
-  Search,
-  Star,
-} from '@lucide/vue'
+import { ChevronDown, ChevronRight, Inbox, MoreVertical, Plus, Search } from '@lucide/vue'
 
 import ChannelSidebarItem from '@/components/sidebar/ChannelSidebarItem.vue'
 import ChannelActionsPopover from '@/components/workshop-chat/ChannelActionsPopover.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { type ChatChannel, type ChatTopic, useWorkshopChatStore } from '@/stores/workshopChat'
+import { topicsForChannel } from '@/utils/workshopChannelTree'
 import { workshopChatHrefFromState } from '@/utils/workshopChatRoute'
 
 defineProps<{
@@ -75,8 +67,8 @@ const filteredDMs = computed(() => {
   return store.dmConversations.filter((c) => c.partner_name.toLowerCase().includes(q))
 })
 
-function topicsForChannel(channelId: number): ChatTopic[] {
-  return store.topics.filter((tp) => tp.channel_id === channelId)
+function topicsForChannelId(channelId: number): ChatTopic[] {
+  return topicsForChannel(store.topics, channelId)
 }
 
 function isGroupCollapsed(groupId: number): boolean {
@@ -250,17 +242,10 @@ function childChannels(group: ChatChannel): ChatChannel[] {
 }
 
 onMounted(async () => {
+  // Zulip-style: one stream list + DMs. Topics load on expand / narrow, not
+  // one GET /topics per channel on sidebar mount.
   await store.fetchChannels()
   await store.fetchDMConversations()
-
-  const allChildren = store.channels.flatMap((g) => g.children ?? [])
-  const announceList = store.channels.filter((c) => c.channel_type === 'announce')
-
-  for (const ch of [...announceList, ...allChildren]) {
-    if (ch.is_joined) {
-      await store.fetchTopics(ch.id, { merge: true })
-    }
-  }
 })
 </script>
 
@@ -301,7 +286,7 @@ onMounted(async () => {
     </div>
 
     <div class="sidebar-scroll-area">
-      <!-- Views section (inbox, starred, mentions) -->
+      <!-- Views section (inbox; starred / mentions hidden until those views exist) -->
       <div class="sidebar-section">
         <button
           class="section-header"
@@ -331,20 +316,6 @@ onMounted(async () => {
               />
               <span class="view-label">{{ t('workshop.inbox') }}</span>
             </button>
-          </li>
-          <li class="view-row view-row--muted">
-            <Star
-              :size="16"
-              class="view-icon"
-            />
-            <span class="view-label">{{ t('workshop.starred') }}</span>
-          </li>
-          <li class="view-row view-row--muted">
-            <AtSign
-              :size="16"
-              class="view-icon"
-            />
-            <span class="view-label">{{ t('workshop.mentions') }}</span>
           </li>
         </ul>
       </div>
@@ -381,7 +352,7 @@ onMounted(async () => {
             v-for="ch in announceChannels"
             :key="ch.id"
             :channel="ch"
-            :topics="topicsForChannel(ch.id)"
+            :topics="topicsForChannelId(ch.id)"
             :is-expanded="isChannelExpanded(ch.id)"
             :is-active-channel="ch.id === store.currentChannelId"
             :active-topic-id="store.currentTopicId"
@@ -466,7 +437,7 @@ onMounted(async () => {
                 v-for="child in childChannels(group)"
                 :key="child.id"
                 :channel="child"
-                :topics="topicsForChannel(child.id)"
+                :topics="topicsForChannelId(child.id)"
                 :is-expanded="isChannelExpanded(child.id)"
                 :is-active-channel="child.id === store.currentChannelId"
                 :active-topic-id="store.currentTopicId"

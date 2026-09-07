@@ -86,7 +86,7 @@ export default {
     'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Mga mapagkukunan ng template',
   'admin.feature.templateHint': 'Gallery ng template at mga nauugnay na API.',
-  'admin.feature.workshopChat': 'Workshop (教研坊)',
+  'admin.feature.workshopChat': 'Workshop (研习社)',
   'admin.feature.workshopChatHint': 'Mga channel ng paaralan, paksa, at direktang mensahe.',
   'admin.feature.mindmateCollab': 'Kolaborasyon sa MindMate',
   'admin.feature.mindmateCollabHint': 'Ibinahagi ang MindMate AI chatroom (org browse + invite code). Nangangailangan ng online_collab tier.',

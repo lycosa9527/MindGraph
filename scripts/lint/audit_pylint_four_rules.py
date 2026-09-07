@@ -161,7 +161,7 @@ def main() -> int:
     by_dir: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
 
     for py_path in _tracked_python_files(root):
-        if _should_skip(py_path, root):
+        if _should_skip(py_path, root) or not py_path.is_file():
             continue
         counts = audit_file(py_path)
         if not counts:

@@ -182,6 +182,33 @@ export function useWorkshopChatComposable() {
       case 'topic_updated':
         store.updateTopic(data.topic as never)
         break
+      case 'topic_moved': {
+        const topicId = Number(data.topic_id)
+        const fromId = Number(data.channel_id)
+        const targetId = Number(data.target_channel_id)
+        if (Number.isFinite(topicId) && Number.isFinite(fromId) && Number.isFinite(targetId)) {
+          store.applyTopicMoved(topicId, fromId, targetId)
+        }
+        break
+      }
+      case 'topic_deleted': {
+        const deletedId = Number(data.topic_id)
+        if (Number.isFinite(deletedId)) {
+          store.removeTopic(deletedId)
+        }
+        break
+      }
+      case 'reaction_update': {
+        const messageId = Number(data.message_id)
+        const userId = Number(data.user_id)
+        const emojiName = typeof data.emoji_name === 'string' ? data.emoji_name : ''
+        const emojiCode = typeof data.emoji_code === 'string' ? data.emoji_code : ''
+        const action = typeof data.action === 'string' ? data.action : ''
+        if (Number.isFinite(messageId) && Number.isFinite(userId) && emojiName) {
+          store.handleReactionUpdate(messageId, emojiName, emojiCode, userId, action)
+        }
+        break
+      }
       case 'error': {
         const code = data.code as string | undefined
         if (code === 'invalid_mentions') {

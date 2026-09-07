@@ -86,7 +86,7 @@ export default {
     'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'සැකිලි සම්පත්',
   'admin.feature.templateHint': 'සැකිලි ගැලරිය සහ අදාළ API.',
-  'admin.feature.workshopChat': 'වැඩමුළු (教研坊)',
+  'admin.feature.workshopChat': 'වැඩමුළු (研习社)',
   'admin.feature.workshopChatHint': 'පාසල් නාලිකා, මාතෘකා සහ සෘජු පණිවිඩ.',
   'admin.feature.mindmateCollab': 'MindMate සහයෝගීතාව',
   'admin.feature.mindmateCollabHint': 'බෙදාගත් MindMate AI කතා කාමරය (org බ්‍රවුස් + ආරාධනා කේතය). online_collab ස්ථරයක් අවශ්‍ය වේ.',

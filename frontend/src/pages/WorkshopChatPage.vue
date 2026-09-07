@@ -2,7 +2,7 @@
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 import { CirclePlus } from '@element-plus/icons-vue'
 
@@ -743,6 +743,7 @@ watch(
   () => [store.mainChannelFeedActive, store.currentChannelId] as const,
   async ([feed, ch]) => {
     if (!feed || !ch) return
+    void store.markChannelReadAll(ch)
     const focusId = pendingMainChannelFocusMessageId.value
     if (focusId == null) return
     pendingMainChannelFocusMessageId.value = null
@@ -794,7 +795,8 @@ async function handleSendChannelMessage(content: string): Promise<void> {
     }
     return
   }
-  await store.fetchChannelMessages(store.currentChannelId)
+  const sent = (await res.json()) as ChatMessage
+  store.addIncomingChannelMessage(sent)
   messageListRef.value?.scrollToBottom()
 }
 
@@ -815,7 +817,8 @@ async function handleSendTopicMessage(content: string): Promise<void> {
     }
     return
   }
-  await store.fetchTopicMessages(store.currentChannelId, store.currentTopicId)
+  const sent = (await res.json()) as ChatMessage
+  store.addIncomingTopicMessage(sent)
   messageListRef.value?.scrollToBottom()
 }
 
@@ -832,8 +835,56 @@ async function handleSendDM(content: string): Promise<void> {
     }
     return
   }
-  await store.fetchDMMessages(store.currentDMPartnerId)
+  const sent = (await res.json()) as DirectMessageItem
+  store.addIncomingDM(sent)
   messageListRef.value?.scrollToBottom()
+}
+
+async function handleEditMessage(message: ChatMessage): Promise<void> {
+  if (message.channel_id == null) {
+    return
+  }
+  try {
+    const { value } = await ElMessageBox.prompt(
+      t('workshop.editMessagePrompt'),
+      t('workshop.editMessagePrompt'),
+      {
+        inputValue: message.content,
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
+        inputType: 'textarea',
+      }
+    )
+    const ok = await store.editMessage(message.id, value)
+    if (!ok) {
+      ElMessage.error(t('workshop.messageSendFailed'))
+    }
+  } catch {
+    /* cancelled */
+  }
+}
+
+async function handleDeleteMessage(messageId: number): Promise<void> {
+  if (store.currentDMPartnerId != null && store.currentChannelId == null) {
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      t('workshop.deleteMessageConfirm'),
+      t('workshop.deleteMessageConfirm'),
+      {
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
+        type: 'warning',
+      }
+    )
+    const ok = await store.deleteMessage(messageId)
+    if (!ok) {
+      ElMessage.error(t('workshop.messageSendFailed'))
+    }
+  } catch {
+    /* cancelled */
+  }
 }
 
 function handleSelectChannel(channelId: number): void {
@@ -1279,6 +1330,8 @@ function handleTopicMove(topicId: number): void {
               :topic-name="t('workshop.mainChannelStream')"
               @load-more="handleLoadMoreChannelMessages"
               @back-to-topic-list="store.leaveMainChannelFeed()"
+              @edit-message="handleEditMessage"
+              @delete-message="handleDeleteMessage"
             >
               <template #recipientActions>
                 <el-dropdown
@@ -1366,7 +1419,7 @@ function handleTopicMove(topicId: number): void {
                 </span>
                 <span class="ws-center-header__meta">
                   {{ store.channelMembers.length }} {{ t('workshop.members') }} ·
-                  {{ store.topics.length }} {{ t('workshop.conversations') }}
+                  {{ store.currentChannelTopics.length }} {{ t('workshop.conversations') }}
                 </span>
                 <ChannelActionsPopover
                   v-if="store.currentChannelId"
@@ -1461,11 +1514,11 @@ function handleTopicMove(topicId: number): void {
                 </el-button>
               </div>
               <div
-                v-if="store.topics.length > 0"
+                v-if="store.currentChannelTopics.length > 0"
                 class="ws-topic-grid__list"
               >
                 <TopicCard
-                  v-for="topic in store.topics"
+                  v-for="topic in store.currentChannelTopics"
                   :key="topic.id"
                   :topic="topic"
                   @click="(topicId: number) => handleSelectTopic(store.currentChannelId!, topicId)"
@@ -1501,6 +1554,8 @@ function handleTopicMove(topicId: number): void {
               :topic-name="currentTopicDetail.title"
               @load-more="handleLoadMoreTopicMessages"
               @back-to-topic-list="store.selectTopic(null)"
+              @edit-message="handleEditMessage"
+              @delete-message="handleDeleteMessage"
             >
               <template #recipientActions>
                 <el-dropdown
@@ -1571,6 +1626,8 @@ function handleTopicMove(topicId: number): void {
               :messages="displayDmMessages as any"
               :loading="messageListLoading"
               :dm-partner-name="currentDMPartner.partner_name"
+              @edit-message="handleEditMessage"
+              @delete-message="handleDeleteMessage"
             >
               <template #recipientActions>
                 <el-dropdown

@@ -86,7 +86,7 @@ export default {
     'When off, 幻灯片讲解 stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Template resources',
   'admin.feature.templateHint': 'Template gallery and related APIs.',
-  'admin.feature.workshopChat': 'Workshop (教研坊)',
+  'admin.feature.workshopChat': 'Workshop (研习社)',
   'admin.feature.workshopChatHint': 'School channels, topics, and direct messages.',
   'admin.feature.mindmateCollab': 'MindMate collab',
   'admin.feature.mindmateCollabHint': 'Shared MindMate AI chatroom (org browse + invite code). Requires online_collab tier.',

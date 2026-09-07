@@ -86,7 +86,7 @@ export default {
     'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Sumber daya templat',
   'admin.feature.templateHint': 'Galeri template dan API terkait.',
-  'admin.feature.workshopChat': 'Lokakarya (教研坊)',
+  'admin.feature.workshopChat': 'Lokakarya (研习社)',
   'admin.feature.workshopChatHint': 'Saluran sekolah, topik, dan pesan langsung.',
   'admin.feature.mindmateCollab': 'MindMate kolaborasi',
   'admin.feature.mindmateCollabHint': 'Ruang obrolan AI MindMate bersama (jelajahan organisasi + kode undangan). Membutuhkan tingkat online_collab.',

@@ -171,7 +171,7 @@ export const DIAGRAM_TYPE_OPTIONS = [
   { value: 'tree_map', label: '树形图' },
   { value: 'flow_map', label: '流程图' },
   { value: 'multi_flow_map', label: '复流程图' },
-  { value: 'bridge_map', label: '桥型图' },
+  { value: 'bridge_map', label: '桥形图' },
   { value: 'mind_map', label: '思维导图' },
   { value: 'concept_map', label: '概念图' },
   { value: 'combined', label: '组合应用' },

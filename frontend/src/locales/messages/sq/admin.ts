@@ -86,7 +86,7 @@ export default {
     'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Burime shabllonesh',
   'admin.feature.templateHint': 'Galeri shabllonesh dhe API të lidhura.',
-  'admin.feature.workshopChat': 'Workshop (教研坊)',
+  'admin.feature.workshopChat': 'Workshop (研习社)',
   'admin.feature.workshopChatHint': 'Kanale shkollore, tema dhe mesazhe direkte.',
   'admin.feature.mindmateCollab': 'Bashkëpunim MindMate',
   'admin.feature.mindmateCollabHint': 'Dhomë bisede AI MindMate e përbashkët (shfletim org + kod ftese). Kërkon nivel online_collab.',

@@ -68,7 +68,7 @@ const ACTION_VERBS_ZH: Record<string, string> = {
   knowledge_ingest: '知识入库',
   doc_summary_session: '文档摘要',
   workshop_collab: '协作画布',
-  workshop_chat: '工作坊聊天',
+  workshop_chat: '研习社聊天',
   askonce_turn: 'AskOnce',
   debate_turn: '辩论',
   market_order: '市场订单',
