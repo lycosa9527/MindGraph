@@ -135,6 +135,8 @@ export default {
   'workshop.duplicateSuccess': '교수 그룹이 복제되었습니다.',
   'workshop.duplicateTeachingGroup': '복제',
   'workshop.edited': '(편집됨)',
+  'workshop.editMessage': 'Edit',
+  'workshop.editMessageFailed': 'Could not save the edited message',
   'workshop.editMessagePrompt': 'Edit message',
   'workshop.emailNotifications': '이메일 알림',
   'workshop.emoji': '이모지',

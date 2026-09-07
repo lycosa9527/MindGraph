@@ -135,6 +135,8 @@ export default {
   'workshop.duplicateSuccess': 'शिक्षण समूह डुप्लिकेट।',
   'workshop.duplicateTeachingGroup': 'डुप्लिकेट',
   'workshop.edited': '(संपादित)',
+  'workshop.editMessage': 'Edit',
+  'workshop.editMessageFailed': 'Could not save the edited message',
   'workshop.editMessagePrompt': 'Edit message',
   'workshop.emailNotifications': 'ईमेल सूचनाएँ',
   'workshop.emoji': 'इमोजी',

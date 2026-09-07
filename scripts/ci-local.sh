@@ -181,6 +181,8 @@ run_backend() {
     tests/test_privacy_policy_static.py \
     tests/test_privacy_policy_http.py \
     tests/test_workshop_chat_file_service.py \
+    tests/test_workshop_diagram_embed.py \
+    tests/test_chromium_version.py \
     tests/test_workshop_announce_seed.py \
     tests/test_workshop_archive_channel_children.py \
     tests/test_workshop_tenant_isolation.py \
@@ -309,6 +311,9 @@ run_frontend() {
     tests/workshopChannelTree.spec.ts \
     tests/workshopInitializeOnce.spec.ts \
     tests/workshopMessageLocalPatch.spec.ts \
+    tests/workshopComposeFormat.spec.ts \
+    tests/workshopDiagramEmbed.spec.ts \
+    tests/workshopMessageEditKeys.spec.ts \
     tests/enqueueKittyDesktopExplainNode.spec.ts \
     tests/kittyDesktopExplainNodeAction.spec.ts \
     tests/kittyPendingCanvasAction.spec.ts \

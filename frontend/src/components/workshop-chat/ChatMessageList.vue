@@ -22,7 +22,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   loadMore: []
   backToTopicList: []
-  editMessage: [message: ChatMessage]
   deleteMessage: [messageId: number]
   quote: [message: ChatMessage]
 }>()
@@ -221,7 +220,6 @@ defineExpose({ scrollToBottom, scrollToMessageId })
             :is-starred="store.isMessageStarred(msg.id)"
             :attachments="store.getAttachmentsForMessage(msg.id)"
             :can-moderate="canModerateMessages"
-            @edit="emit('editMessage', $event)"
             @delete="emit('deleteMessage', $event)"
             @toggle-reaction="(msgId, name, code) => store.toggleReaction(msgId, name, code)"
             @toggle-star="(msgId) => store.toggleStar(msgId)"

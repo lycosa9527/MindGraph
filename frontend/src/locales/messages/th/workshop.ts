@@ -135,6 +135,8 @@ export default {
   'workshop.duplicateSuccess': 'ทำสำเนากลุ่มการสอนแล้…',
   'workshop.duplicateTeachingGroup': 'ทำสำเนา',
   'workshop.edited': '(แก้ไขแล้',
+  'workshop.editMessage': 'Edit',
+  'workshop.editMessageFailed': 'Could not save the edited message',
   'workshop.editMessagePrompt': 'Edit message',
   'workshop.emailNotifications': 'การแจ้งเตือนอีเมล',
   'workshop.emoji': 'อีโมจิ',

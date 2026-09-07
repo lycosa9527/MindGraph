@@ -135,6 +135,8 @@ export default {
   'workshop.duplicateSuccess': 'Tədris qrupu çoxaldı.',
   'workshop.duplicateTeachingGroup': 'Çoxalt',
   'workshop.edited': '(redaktə)',
+  'workshop.editMessage': 'Edit',
+  'workshop.editMessageFailed': 'Could not save the edited message',
   'workshop.editMessagePrompt': 'Edit message',
   'workshop.emailNotifications': 'E-poçt bildirişləri',
   'workshop.emoji': 'Emoji simvolu',

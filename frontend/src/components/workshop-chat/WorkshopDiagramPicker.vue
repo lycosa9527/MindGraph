@@ -49,7 +49,6 @@ async function pick(diagram: SavedDiagram): Promise<void> {
     const markdown = await embedWorkshopLibraryDiagram({
       id: String(diagram.id),
       title: diagram.title || t('workshop.diagram'),
-      thumbnail: diagram.thumbnail,
     })
     if (!markdown) {
       ElMessage.error(t('workshop.diagramInsertFailed'))

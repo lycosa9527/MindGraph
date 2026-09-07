@@ -135,6 +135,8 @@ export default {
   'workshop.duplicateSuccess': 'Kelompok pengajar diduplikasi.',
   'workshop.duplicateTeachingGroup': 'Duplikat',
   'workshop.edited': '(diedit)',
+  'workshop.editMessage': 'Edit',
+  'workshop.editMessageFailed': 'Could not save the edited message',
   'workshop.editMessagePrompt': 'Edit message',
   'workshop.emailNotifications': 'Pemberitahuan email',
   'workshop.emoji': 'emoji',

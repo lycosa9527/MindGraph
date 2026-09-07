@@ -213,6 +213,48 @@ async def user_can_access_attachment(
     return att.uploader_id == user_id
 
 
+async def persist_attachment_bytes(
+    db: AsyncSession,
+    *,
+    data: bytes,
+    content_type: str,
+    basename: str,
+    uploader_id: int,
+    message_id: Optional[int] = None,
+    dm_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Write bytes to COS/disk and insert a ``file_attachments`` row."""
+    if content_type not in ALLOWED_CONTENT_TYPES:
+        raise ValueError(f"Unsupported file type: {content_type}. Allowed: {', '.join(sorted(ALLOWED_CONTENT_TYPES))}")
+    if len(data) > MAX_FILE_SIZE:
+        raise ValueError(f"File too large ({len(data)} bytes). Max {MAX_FILE_SIZE} bytes.")
+
+    logical_key = build_logical_key(basename)
+    stored_path = await put_attachment_bytes(
+        logical_key,
+        data,
+        content_type,
+        STATIC_ROOT,
+    )
+    attachment = FileAttachment(
+        message_id=message_id,
+        dm_id=dm_id,
+        uploader_id=uploader_id,
+        filename=basename,
+        content_type=content_type,
+        file_size=len(data),
+        file_path=stored_path,
+    )
+    db.add(attachment)
+    try:
+        await db.commit()
+        await db.refresh(attachment)
+    except DATABASE_ERRORS:
+        await db.rollback()
+        raise
+    return _format_attachment(attachment)
+
+
 class FileService:
     """File upload and attachment operations."""
 
@@ -232,44 +274,34 @@ class FileService:
             raise ValueError("Filename is required")
 
         await _verify_attachment_link(db, uploader_id, message_id, dm_id)
-
         content_type = file.content_type or "application/octet-stream"
-        if content_type not in ALLOWED_CONTENT_TYPES:
-            raise ValueError(
-                f"Unsupported file type: {content_type}. Allowed: {', '.join(sorted(ALLOWED_CONTENT_TYPES))}"
-            )
-
         data = await file.read()
-        if len(data) > MAX_FILE_SIZE:
-            raise ValueError(f"File too large ({len(data)} bytes). Max {MAX_FILE_SIZE} bytes.")
-
-        basename = _safe_upload_basename(file.filename)
-        logical_key = build_logical_key(basename)
-        stored_path = await put_attachment_bytes(
-            logical_key,
-            data,
-            content_type,
-            STATIC_ROOT,
-        )
-
-        attachment = FileAttachment(
+        return await persist_attachment_bytes(
+            db,
+            data=data,
+            content_type=content_type,
+            basename=_safe_upload_basename(file.filename),
+            uploader_id=uploader_id,
             message_id=message_id,
             dm_id=dm_id,
-            uploader_id=uploader_id,
-            filename=basename,
-            content_type=content_type,
-            file_size=len(data),
-            file_path=stored_path,
         )
-        db.add(attachment)
-        try:
-            await db.commit()
-            await db.refresh(attachment)
-        except DATABASE_ERRORS:
-            await db.rollback()
-            raise
 
-        return _format_attachment(attachment)
+    @staticmethod
+    async def save_png_bytes(
+        db: AsyncSession,
+        *,
+        uploader_id: int,
+        data: bytes,
+        filename: str,
+    ) -> Dict[str, Any]:
+        """Store a rendered PNG on COS (or local fallback) as a draft attachment."""
+        return await persist_attachment_bytes(
+            db,
+            data=data,
+            content_type="image/png",
+            basename=_safe_upload_basename(filename),
+            uploader_id=uploader_id,
+        )
 
     @staticmethod
     async def get_message_attachments(

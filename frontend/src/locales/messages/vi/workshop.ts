@@ -135,6 +135,8 @@ export default {
   'workshop.duplicateSuccess': 'Nhóm giảng dạy trùng lặp.',
   'workshop.duplicateTeachingGroup': 'Nhân bản',
   'workshop.edited': '(đã chỉnh sửa)',
+  'workshop.editMessage': 'Edit',
+  'workshop.editMessageFailed': 'Could not save the edited message',
   'workshop.editMessagePrompt': 'Edit message',
   'workshop.emailNotifications': 'Thông báo qua email',
   'workshop.emoji': 'Biểu tượng cảm xúc',

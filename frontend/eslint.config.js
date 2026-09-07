@@ -111,6 +111,7 @@ export default tseslint.config(
       'src/components/debateverse/DebateMessage.vue',
       'src/components/workshop-chat/ChatMessageItem.vue',
       'src/components/workshop-chat/ChatComposeBox.vue',
+      'src/components/workshop-chat/MessageEditForm.vue',
       'src/components/askonce/AskOncePanel.vue',
       'src/components/panels/ShareExportModal.vue',
       'src/components/auth/UpdateLogModal.vue',

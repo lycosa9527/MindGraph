@@ -135,6 +135,8 @@ export default {
   'workshop.duplicateSuccess': 'Grupi mësimdhënës u duplikua.',
   'workshop.duplicateTeachingGroup': 'Dupliko',
   'workshop.edited': '(redaktuar)',
+  'workshop.editMessage': 'Edit',
+  'workshop.editMessageFailed': 'Could not save the edited message',
   'workshop.editMessagePrompt': 'Edit message',
   'workshop.emailNotifications': 'Njoftimet me email',
   'workshop.emoji': 'Emoji',

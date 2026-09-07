@@ -31,14 +31,18 @@ import type { ComposeFormatType } from '@/utils/workshopComposeFormat'
 import EmojiPicker from './EmojiPicker.vue'
 import MindGraphMarkIcon from './MindGraphMarkIcon.vue'
 
-const props = defineProps<{
-  canSend: boolean
-  previewOn: boolean
-  formatDisabled: boolean
-  uploading: boolean
-  showEmojiPicker: boolean
-  showRolePicker: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    canSend: boolean
+    previewOn: boolean
+    formatDisabled: boolean
+    uploading: boolean
+    showEmojiPicker: boolean
+    showRolePicker: boolean
+    showSend?: boolean
+  }>(),
+  { showSend: true }
+)
 
 const emit = defineEmits<{
   format: [type: ComposeFormatType]
@@ -186,6 +190,7 @@ const formatButtons: { key: ComposeFormatType; icon: typeof Bold; titleKey: stri
     </div>
 
     <button
+      v-if="showSend"
       type="button"
       class="compose-toolbar__send"
       :disabled="!canSend"

@@ -141,6 +141,8 @@ export default {
   'workshop.duplicateSuccess': '已複製教研組。',
   'workshop.duplicateTeachingGroup': '複製',
   'workshop.edited': '（已編輯）',
+  'workshop.editMessage': '編輯',
+  'workshop.editMessageFailed': '無法儲存編輯後的訊息',
   'workshop.editMessagePrompt': '編輯訊息',
   'workshop.emailNotifications': '郵件通知',
   'workshop.emoji': '表情',

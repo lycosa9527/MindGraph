@@ -135,6 +135,8 @@ export default {
   'workshop.duplicateSuccess': 'Методичну групу продубльовано.',
   'workshop.duplicateTeachingGroup': 'Дублювати',
   'workshop.edited': '(редаговано)',
+  'workshop.editMessage': 'Edit',
+  'workshop.editMessageFailed': 'Could not save the edited message',
   'workshop.editMessagePrompt': 'Edit message',
   'workshop.emailNotifications': 'Email-сповіщення',
   'workshop.emoji': 'Емодзі',

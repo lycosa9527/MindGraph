@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.55] - 2026-09-07
+
+> **研习社 library diagrams render to COS; compose stays markdown; in-row message edit.**
+
+### Changed
+
+- **研习社 insert diagram** — `POST /api/chat/library-diagrams/{id}` renders the library spec with Playwright, stores the PNG on COS (local disk only when COS is off), and returns `/api/chat/attachments/{id}/download`. Compose inserts markdown only. Viewers follow that URL to a short-lived COS redirect. Library rows do not store thumbnails.
+- **研习社 edit** — Own channel messages edit in-row with the compose toolbar (Zulip-style), not a prompt dialog. Direct messages stay without an edit control.
+
+### Fixed
+
+- **PNG Chromium pick** — First capture no longer launches two extra Chromiums just to compare local vs Playwright versions. The already-started Playwright binary is used; `browsers/chromium/` is only a fallback.
+
+### Tests
+
+- [`tests/test_workshop_diagram_embed.py`](tests/test_workshop_diagram_embed.py), [`tests/test_chromium_version.py`](tests/test_chromium_version.py)
+- [`frontend/tests/workshopDiagramEmbed.spec.ts`](frontend/tests/workshopDiagramEmbed.spec.ts), [`frontend/tests/workshopMessageEditKeys.spec.ts`](frontend/tests/workshopMessageEditKeys.spec.ts)
+
 ## [5.180.54] - 2026-09-07
 
 > **研习社 stays school-scoped except 系统公告; compose can insert Kitty mascots.**

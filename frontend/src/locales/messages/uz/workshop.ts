@@ -135,6 +135,8 @@ export default {
   'workshop.duplicateSuccess': 'O’qitish qrupu choxaldi.',
   'workshop.duplicateTeachingGroup': 'Choxalt',
   'workshop.edited': '(tahrir)',
+  'workshop.editMessage': 'Edit',
+  'workshop.editMessageFailed': 'Could not save the edited message',
   'workshop.editMessagePrompt': 'Edit message',
   'workshop.emailNotifications': 'E-pocht bildirishleri',
   'workshop.emoji': 'Emoji belgiu',

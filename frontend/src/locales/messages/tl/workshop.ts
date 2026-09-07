@@ -135,6 +135,8 @@ export default {
   'workshop.duplicateSuccess': 'Nadoble ang pangkat ng pagtuturo.',
   'workshop.duplicateTeachingGroup': 'Duplicate',
   'workshop.edited': '(na-edit)',
+  'workshop.editMessage': 'Edit',
+  'workshop.editMessageFailed': 'Could not save the edited message',
   'workshop.editMessagePrompt': 'Edit message',
   'workshop.emailNotifications': 'Mga abiso sa email',
   'workshop.emoji': 'Emoji',

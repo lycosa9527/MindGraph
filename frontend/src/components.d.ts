@@ -295,6 +295,7 @@ declare module 'vue' {
     ManualEvaluationModal: typeof import('./components/knowledge-space/ManualEvaluationModal.vue')['default']
     MessageActionBar: typeof import('./components/workshop-chat/MessageActionBar.vue')['default']
     MessageBubble: typeof import('./components/panels/mindmate/MessageBubble.vue')['default']
+    MessageEditForm: typeof import('./components/workshop-chat/MessageEditForm.vue')['default']
     MessageReactions: typeof import('./components/workshop-chat/MessageReactions.vue')['default']
     MindbotUsageEventDetailDialog: typeof import('./components/admin/MindbotUsageEventDetailDialog.vue')['default']
     MindClassroomLaunchContent: typeof import('./components/canvas/MindClassroomLaunchContent.vue')['default']

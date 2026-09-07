@@ -840,30 +840,6 @@ async function handleSendDM(content: string): Promise<void> {
   messageListRef.value?.scrollToBottom()
 }
 
-async function handleEditMessage(message: ChatMessage): Promise<void> {
-  if (message.channel_id == null) {
-    return
-  }
-  try {
-    const { value } = await ElMessageBox.prompt(
-      t('workshop.editMessagePrompt'),
-      t('workshop.editMessagePrompt'),
-      {
-        inputValue: message.content,
-        confirmButtonText: t('common.confirm'),
-        cancelButtonText: t('common.cancel'),
-        inputType: 'textarea',
-      }
-    )
-    const ok = await store.editMessage(message.id, value)
-    if (!ok) {
-      ElMessage.error(t('workshop.messageSendFailed'))
-    }
-  } catch {
-    /* cancelled */
-  }
-}
-
 async function handleDeleteMessage(messageId: number): Promise<void> {
   if (store.currentDMPartnerId != null && store.currentChannelId == null) {
     return
@@ -1330,7 +1306,6 @@ function handleTopicMove(topicId: number): void {
               :topic-name="t('workshop.mainChannelStream')"
               @load-more="handleLoadMoreChannelMessages"
               @back-to-topic-list="store.leaveMainChannelFeed()"
-              @edit-message="handleEditMessage"
               @delete-message="handleDeleteMessage"
             >
               <template #recipientActions>
@@ -1554,7 +1529,6 @@ function handleTopicMove(topicId: number): void {
               :topic-name="currentTopicDetail.title"
               @load-more="handleLoadMoreTopicMessages"
               @back-to-topic-list="store.selectTopic(null)"
-              @edit-message="handleEditMessage"
               @delete-message="handleDeleteMessage"
             >
               <template #recipientActions>
@@ -1626,7 +1600,6 @@ function handleTopicMove(topicId: number): void {
               :messages="displayDmMessages as any"
               :loading="messageListLoading"
               :dm-partner-name="currentDMPartner.partner_name"
-              @edit-message="handleEditMessage"
               @delete-message="handleDeleteMessage"
             >
               <template #recipientActions>

@@ -135,6 +135,8 @@ export default {
   'workshop.duplicateSuccess': 'Öğretim grubu kopyalandı.',
   'workshop.duplicateTeachingGroup': 'Kopyala',
   'workshop.edited': '(düzenlendi)',
+  'workshop.editMessage': 'Edit',
+  'workshop.editMessageFailed': 'Could not save the edited message',
   'workshop.editMessagePrompt': 'Edit message',
   'workshop.emailNotifications': 'E-posta bildirimleri',
   'workshop.emoji': 'Emoji',

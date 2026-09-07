@@ -21,6 +21,8 @@ defineProps<{
   isOwn: boolean
   isStarred: boolean
   isCondensed: boolean
+  /** Own channel messages (not DMs): show the in-row edit control. */
+  canEdit?: boolean
   /** Admin / school manager: delete others' messages (server enforces). */
   canModerate?: boolean
 }>()
@@ -117,11 +119,11 @@ function handleCopyLink(): void {
       />
     </button>
 
-    <!-- Edit (own messages) -->
+    <!-- Edit (own channel messages) -->
     <button
-      v-if="isOwn"
+      v-if="canEdit"
       class="action-btn"
-      title="Edit"
+      :title="t('workshop.editMessage')"
       @click="emit('edit')"
     >
       <el-icon :size="14"><Edit /></el-icon>

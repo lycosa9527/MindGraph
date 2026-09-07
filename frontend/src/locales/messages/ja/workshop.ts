@@ -135,6 +135,8 @@ export default {
   'workshop.duplicateSuccess': 'コピーしました教研グループ。',
   'workshop.duplicateTeachingGroup': 'コピー',
   'workshop.edited': '(edited)',
+  'workshop.editMessage': 'Edit',
+  'workshop.editMessageFailed': 'Could not save the edited message',
   'workshop.editMessagePrompt': 'Edit message',
   'workshop.emailNotifications': 'メール通知',
   'workshop.emoji': '表情',

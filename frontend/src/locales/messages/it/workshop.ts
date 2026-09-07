@@ -135,6 +135,8 @@ export default {
   'workshop.duplicateSuccess': 'Gruppo didattico duplicato.',
   'workshop.duplicateTeachingGroup': 'Duplica',
   'workshop.edited': '(modificato)',
+  'workshop.editMessage': 'Edit',
+  'workshop.editMessageFailed': 'Could not save the edited message',
   'workshop.editMessagePrompt': 'Edit message',
   'workshop.emailNotifications': 'Notifiche email',
   'workshop.emoji': 'Emoji',

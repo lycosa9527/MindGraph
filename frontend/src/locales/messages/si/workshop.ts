@@ -135,6 +135,8 @@ export default {
   'workshop.duplicateSuccess': 'ඉගැන්වීමේ කණ්ඩායම අනුපිටපත් කර ඇත.',
   'workshop.duplicateTeachingGroup': 'අනුපිටපත් කරන්න',
   'workshop.edited': '(සංස්කරණය)',
+  'workshop.editMessage': 'Edit',
+  'workshop.editMessageFailed': 'Could not save the edited message',
   'workshop.editMessagePrompt': 'Edit message',
   'workshop.emailNotifications': 'ඊමේල් දැනුම්දීම්',
   'workshop.emoji': 'ඉමොජි',

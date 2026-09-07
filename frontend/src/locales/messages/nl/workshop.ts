@@ -135,6 +135,8 @@ export default {
   'workshop.duplicateSuccess': 'Lesgroep gedupliceerd.',
   'workshop.duplicateTeachingGroup': 'Duplicaat',
   'workshop.edited': '(bewerkt)',
+  'workshop.editMessage': 'Edit',
+  'workshop.editMessageFailed': 'Could not save the edited message',
   'workshop.editMessagePrompt': 'Edit message',
   'workshop.emailNotifications': 'E-mailmeldingen',
   'workshop.emoji': 'Emoji',
