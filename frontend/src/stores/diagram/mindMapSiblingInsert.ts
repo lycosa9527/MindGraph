@@ -11,12 +11,14 @@ import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import type { Connection, DiagramNode, NodeStyle } from '@/types'
 import {
+  isMindMapAssociationConnection,
   type MindMapSideChar,
   mindMapBranchDataFields,
   mindMapNodeDepth,
   mindMapNodeSide,
   mindMapSideFromChar,
   mindMapSideToChar,
+  mindMapTreeParentId,
   parsePositionalMindMapBranchId,
 } from '@/utils/mindMapLocation'
 import { MINDMAP_NODE_UID_DATA_KEY, readMindMapNodeUid } from '@/utils/mindMapNodeUid'
@@ -163,7 +165,9 @@ function siblingIdsForInsert(
   side: MindMapSideChar | null,
   nodes: DiagramNode[]
 ): string[] {
-  const targets = connections.filter((c) => c.source === parentId).map((c) => c.target)
+  const targets = connections
+    .filter((c) => c.source === parentId && !isMindMapAssociationConnection(c))
+    .map((c) => c.target)
   if (parentId !== 'topic' || side == null) return targets
   const wanted = mindMapSideFromChar(side)
   return targets.filter((id) => mindMapNodeSide(id, { nodes, connections }) === wanted)
@@ -206,10 +210,10 @@ function resolveInsertContext(
     const parentId =
       options.parentId ??
       (options.anchorNodeId
-        ? connections.find((c) => c.target === options.anchorNodeId)?.source
+        ? mindMapTreeParentId(connections, options.anchorNodeId)
         : undefined) ??
       (options.afterNodeId
-        ? connections.find((c) => c.target === options.afterNodeId)?.source
+        ? mindMapTreeParentId(connections, options.afterNodeId)
         : undefined)
     if (!parentId) {
       recordMindMapSiblingInsertFailure('insert_index_missing_parent', {
@@ -232,7 +236,7 @@ function resolveInsertContext(
   }
 
   if (options.afterNodeId) {
-    const parentId = connections.find((c) => c.target === options.afterNodeId)?.source
+    const parentId = mindMapTreeParentId(connections, options.afterNodeId)
     if (!parentId) {
       recordMindMapSiblingInsertFailure('after_node_missing_parent', {
         afterNodeId: options.afterNodeId,
@@ -266,7 +270,7 @@ function resolveInsertContext(
     })
     return null
   }
-  const parentId = connections.find((c) => c.target === anchorNodeId)?.source
+  const parentId = mindMapTreeParentId(connections, anchorNodeId)
   if (!parentId) {
     recordMindMapSiblingInsertFailure('anchor_missing_parent_edge', {
       anchorNodeId,

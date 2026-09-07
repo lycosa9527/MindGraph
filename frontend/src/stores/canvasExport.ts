@@ -1,5 +1,5 @@
 /**
- * Canvas export preferences + worksheet (导出为DOCX/PDF) modal lifecycle.
+ * Canvas export preferences + worksheet (导出为DOC/PDF) modal lifecycle.
  * Persisted in sessionStorage; toolbar open/export stay event-bus driven.
  */
 import { computed, ref, watch } from 'vue'
@@ -29,6 +29,7 @@ export const useCanvasExportStore = defineStore('canvasExport', () => {
     loadCanvasWorksheetTextOptions()
   )
   const worksheetTextModalOpen = ref(false)
+  const worksheetModalPreferLearningSheet = ref(false)
   const exportSessionActive = ref(false)
   /** Serializes preview capture + PDF export so viewport fit/restore cannot race. */
   let exportSessionChain: Promise<unknown> = Promise.resolve()
@@ -79,16 +80,21 @@ export const useCanvasExportStore = defineStore('canvasExport', () => {
     worksheetTextOptions.value = { ...DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS }
   }
 
-  function openWorksheetTextModal(): void {
+  function openWorksheetTextModal(preferLearningSheet = false): void {
+    worksheetModalPreferLearningSheet.value = preferLearningSheet
     worksheetTextModalOpen.value = true
   }
 
   function closeWorksheetTextModal(): void {
     worksheetTextModalOpen.value = false
+    worksheetModalPreferLearningSheet.value = false
   }
 
   function setWorksheetTextModalOpen(open: boolean): void {
     worksheetTextModalOpen.value = open
+    if (!open) {
+      worksheetModalPreferLearningSheet.value = false
+    }
   }
 
   function runExportSession<T>(fn: () => Promise<T>): Promise<T> {
@@ -135,6 +141,7 @@ export const useCanvasExportStore = defineStore('canvasExport', () => {
     exportOptions,
     worksheetTextOptions,
     worksheetTextModalOpen,
+    worksheetModalPreferLearningSheet,
     exportSessionActive,
     mergedExportOptions,
     worksheetExportOptions,

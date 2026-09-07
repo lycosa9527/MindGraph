@@ -133,7 +133,7 @@ function pickStyle(id: MindMapDiagramStyleId): void {
     :label="t('canvas.v3.ribbon.groupNumbering')"
     :classic="classic"
   >
-    <MindMapNumberingControls />
+    <MindMapNumberingControls variant="button" />
   </V3RibbonGroup>
   <V3RibbonGroup
     group="sketch"

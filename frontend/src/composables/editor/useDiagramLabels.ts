@@ -209,7 +209,7 @@ export function getDiagramTypeDisplayName(typeOrName: string, locale: LocaleCode
 
 /**
  * Generate default diagram name for new diagrams
- * Format: "新圆圈图" / "New Circle Map" / "Yeni Dairə xəritəsi"
+ * Format: "新圆圈图" / "New Circle Map"; mind maps use 未命名 / Untitled.
  */
 export function getDefaultDiagramName(
   diagramType: DiagramType | string | null,
@@ -219,8 +219,9 @@ export function getDefaultDiagramName(
   if (!displayName) {
     return NEW_DIAGRAM_FALLBACK[locale] ?? NEW_DIAGRAM_FALLBACK.en
   }
+  const isMindMap = diagramType === 'mindmap' || diagramType === 'mind_map'
   if (locale === 'zh' || locale === 'zh-tw') {
-    return `新${displayName}`
+    return isMindMap ? `未命名${displayName}` : `新${displayName}`
   }
   if (locale === 'az') {
     return `Yeni ${displayName}`
@@ -234,5 +235,5 @@ export function getDefaultDiagramName(
   if (locale === 'si') {
     return `නව ${displayName}`
   }
-  return `New ${displayName}`
+  return isMindMap ? `Untitled ${displayName}` : `New ${displayName}`
 }

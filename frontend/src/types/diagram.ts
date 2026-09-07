@@ -48,6 +48,9 @@ export interface NodeStyle {
   borderRadius?: number
   /** Mind-map node silhouette: rounded | rectangle | oval | underline */
   nodeShape?: 'rounded' | 'rectangle' | 'oval' | 'underline'
+  /** Rainbow L2+ left identity bar (px). 0 clears a previous bar. */
+  accentBarWidth?: number
+  accentBarColor?: string
   width?: number
   height?: number
   size?: number // Uniform size for perfect circles (diameter)
@@ -149,7 +152,7 @@ export interface DiagramData {
   }
   /** Per-node custom style overrides (persisted across sessions) */
   _node_styles?: Record<string, NodeStyle>
-  /** Active mind-map color theme (new nodes inherit this instead of default vibrantBlue) */
+  /** Active mind-map color theme (new nodes inherit this instead of default rainbow) */
   _mindmap_theme?: string
   /** Mind map node shape combo preset (topic + branch depth shapes) */
   _mindmap_diagram_style?: string

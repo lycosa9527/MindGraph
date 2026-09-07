@@ -1,16 +1,18 @@
 <script setup lang="ts">
 /**
- * Coach mark below Export when a learning sheet has blanked nodes.
- * Mounted from CanvasPage (not inside the toolbar) so overflow cannot hide it.
+ * Coach mark under 制作学习单 after blanking nodes.
+ * Teleported to body so the ribbon cannot clip it.
  */
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 
 import { X } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
+import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useDiagramStore } from '@/stores'
 
-const EXPORT_BUTTON_SELECTORS = [
+const ANCHOR_SELECTORS = [
+  '[data-learning-sheet-nudge-anchor]',
   '[data-learning-sheet-export-anchor]',
   '.mm-btn--export',
   '[data-canvas-export-anchor]',
@@ -20,6 +22,7 @@ const STORAGE_KEY = 'mindgraph.learningSheet.exportNudge.neverRemind'
 
 const { t } = useLanguage()
 const diagramStore = useDiagramStore()
+const { isFloatBarOpen } = useLearningSheetCustomMode()
 
 const neverRemind = ref(readNeverRemind())
 const sessionDismissed = ref(false)
@@ -41,22 +44,29 @@ const blankCount = computed(() => {
 })
 
 const visible = computed(
-  () => blankCount.value > 0 && !neverRemind.value && !sessionDismissed.value
+  () =>
+    blankCount.value > 0 &&
+    !neverRemind.value &&
+    !sessionDismissed.value &&
+    !isFloatBarOpen.value
 )
 
 const nudgeStyle = computed(() => {
   const rect = anchorRect.value
-  if (!rect) {
+  if (rect && rect.width > 0 && rect.height > 0) {
+    const centerX = rect.left + rect.width / 2
     return {
-      top: '64px',
-      left: '50%',
+      top: `${rect.bottom + 8}px`,
+      left: `${centerX}px`,
       transform: 'translateX(-50%)',
     }
   }
-  const centerX = rect.left + rect.width / 2
+  const chrome =
+    document.querySelector('.canvas-top-bar--mindmap') ?? document.querySelector('.canvas-top-bar')
+  const bottom = chrome instanceof HTMLElement ? chrome.getBoundingClientRect().bottom : 96
   return {
-    top: `${rect.bottom + 6}px`,
-    left: `${centerX}px`,
+    top: `${bottom + 8}px`,
+    left: '50%',
     transform: 'translateX(-50%)',
   }
 })
@@ -64,16 +74,19 @@ const nudgeStyle = computed(() => {
 let rafId = 0
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
-function findExportButton(): HTMLElement | null {
-  for (const selector of EXPORT_BUTTON_SELECTORS) {
+function findAnchorButton(): HTMLElement | null {
+  for (const selector of ANCHOR_SELECTORS) {
     const el = document.querySelector(selector)
-    if (el instanceof HTMLElement) return el
+    if (!(el instanceof HTMLElement)) continue
+    const rect = el.getBoundingClientRect()
+    if (rect.width < 1 || rect.height < 1) continue
+    return el
   }
   return null
 }
 
 function updateAnchorRect(): void {
-  anchorRect.value = findExportButton()?.getBoundingClientRect() ?? null
+  anchorRect.value = findAnchorButton()?.getBoundingClientRect() ?? null
 }
 
 function scheduleAnchorUpdate(): void {
@@ -101,14 +114,9 @@ function stopAnchorPoll(): void {
 
 function startAnchorPoll(): void {
   stopAnchorPoll()
-  let attempts = 0
   pollTimer = setInterval(() => {
     scheduleAnchorUpdate()
-    attempts += 1
-    if (anchorRect.value || attempts >= 30) {
-      stopAnchorPoll()
-    }
-  }, 100)
+  }, 250)
 }
 
 async function bindAnchorWhenVisible(): Promise<void> {
@@ -207,9 +215,6 @@ function onNeverRemindChange(event: Event): void {
           <p class="ls-export-nudge__title">
             {{ t('canvas.toolbar.learningSheetExportNudgeTitle') }}
           </p>
-          <p class="ls-export-nudge__desc">
-            {{ t('canvas.toolbar.learningSheetExportNudgeDesc') }}
-          </p>
           <div class="ls-export-nudge__footer">
             <label class="ls-export-nudge__never">
               <input
@@ -291,13 +296,6 @@ function onNeverRemindChange(event: Event): void {
   color: #92400e;
   font-size: 11px;
   font-weight: 600;
-  line-height: 1.35;
-}
-
-.ls-export-nudge__desc {
-  margin: 2px 0 0;
-  color: #a8a29e;
-  font-size: 10px;
   line-height: 1.35;
 }
 

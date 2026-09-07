@@ -114,7 +114,7 @@ function onSnapshotClick(event: MouseEvent, versionNumber: number): void {
     />
     <V3RibbonCommand
       v-if="classic"
-      :label="t('canvas.topBar.addWorksheetText')"
+      :label="t('canvas.worksheetText.modalTitle')"
       :icon="FileText"
       variant="stacked"
       :disabled="disabled"

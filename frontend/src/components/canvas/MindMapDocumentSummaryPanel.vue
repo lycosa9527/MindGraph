@@ -23,8 +23,11 @@ import {
   X,
 } from '@lucide/vue'
 
+import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.vue'
+import '@/components/canvas/aiGenerateGlass.css'
 import { useLanguage, useNotifications } from '@/composables'
+import { eventBus } from '@/composables/core/useEventBus'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useFileCenterMutations, usePackageDetail } from '@/composables/fileCenter/useFileCenter'
@@ -33,6 +36,7 @@ import { useChatHandoff } from '@/composables/mindMap/useChatHandoff'
 import {
   resolveLiteDraftKind,
   waitForDocSummarySourceReady,
+  docSummaryLiteIntent,
 } from '@/composables/mindMap/useDocSummaryLiteSaveAndGenerate'
 import { useMindMapDocumentSummary } from '@/composables/mindMap/useMindMapDocumentSummary'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
@@ -41,7 +45,7 @@ import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import { useDiagramStore } from '@/stores'
 import { docSummarySourceLabel, toDocSummaryMarkdownName } from '@/utils/docSummaryMarkdownName'
 
-type SummaryTab = 'file' | 'chat' | 'document' | 'image' | 'web'
+type SummaryTab = 'file' | 'paste' | 'chat' | 'document' | 'image' | 'web'
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -93,7 +97,13 @@ const {
 const { pairingCode, handoffStatus, expiresInSeconds, isMinting, mintError, mintPairingCode } =
   useChatHandoff(activePackageId)
 
-const activeTab = ref<SummaryTab>(DOC_SUMMARY_LITE_UI ? 'file' : 'document')
+const activeTab = ref<SummaryTab>(
+  DOC_SUMMARY_LITE_UI
+    ? docSummaryLiteIntent.value === 'web'
+      ? 'web'
+      : 'file'
+    : 'document'
+)
 const corpusExpanded = ref(true)
 const pastedText = ref('')
 const uploadedFileName = ref('')
@@ -105,18 +115,23 @@ const nameDraft = ref('')
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
-const tabs: Array<{ id: SummaryTab; labelKey: string }> = DOC_SUMMARY_LITE_UI
-  ? [
-      { id: 'file', labelKey: 'canvas.mindMapDocumentSummary.tabFileUpload' },
-      { id: 'web', labelKey: 'canvas.mindMapDocumentSummary.tabWeb' },
-      { id: 'chat', labelKey: 'canvas.mindMapDocumentSummary.tabChatHistory' },
-    ]
-  : [
+const liteEntry = ref<'doc' | 'web'>(docSummaryLiteIntent.value)
+
+const tabs = computed<Array<{ id: SummaryTab; labelKey: string }>>(() => {
+  if (!DOC_SUMMARY_LITE_UI) {
+    return [
       { id: 'document', labelKey: 'canvas.mindMapDocumentSummary.tabDocument' },
       { id: 'image', labelKey: 'canvas.mindMapDocumentSummary.tabImage' },
       { id: 'web', labelKey: 'canvas.mindMapDocumentSummary.tabWeb' },
       { id: 'chat', labelKey: 'canvas.mindMapDocumentSummary.tabChat' },
     ]
+  }
+  if (liteEntry.value === 'web') return []
+  return [
+    { id: 'file', labelKey: 'canvas.mindMapDocumentSummary.tabFileUpload' },
+    { id: 'paste', labelKey: 'canvas.mindMapDocumentSummary.tabPaste' },
+  ]
+})
 
 const docSummaryLiteUi = DOC_SUMMARY_LITE_UI
 
@@ -277,6 +292,22 @@ onMounted(() => {
   if (featureEnabled.value) {
     void bootstrapSession()
   }
+  const stopTab = eventBus.on('mindmap:doc_summary_tab', ({ tab }) => {
+    if (DOC_SUMMARY_LITE_UI && tab === 'web') {
+      liteEntry.value = 'web'
+      activeTab.value = 'web'
+      return
+    }
+    if (DOC_SUMMARY_LITE_UI && (tab === 'file' || tab === 'document')) {
+      liteEntry.value = 'doc'
+      activeTab.value = 'file'
+      return
+    }
+    if (tabs.value.some((item) => item.id === tab)) {
+      activeTab.value = tab
+    }
+  })
+  onUnmounted(stopTab)
 })
 
 watch(featureEnabled, (enabled) => {
@@ -641,23 +672,36 @@ const liteSourceBound = computed(
   () =>
     docSummaryLiteUi &&
     hasActiveSource.value &&
-    (activeTab.value === 'file' || activeTab.value === 'web')
+    (activeTab.value === 'file' || activeTab.value === 'paste' || activeTab.value === 'web')
 )
+
+const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
+  if (activeTab.value === 'web') return 'web'
+  if (activeTab.value === 'chat') return 'chat'
+  return 'doc'
+})
 </script>
 
 <template>
   <aside
     class="mind-map-side-rail-panel mind-map-document-summary-panel pointer-events-auto w-80"
+    :class="docSummaryLiteUi ? `ai-gen-shell ai-gen-shell--${glassHeroVariant}` : undefined"
     :aria-label="t('canvas.mindMapSideToolbar.documentSummary')"
   >
+    <AiGenerateGlassHero
+      v-if="docSummaryLiteUi"
+      :variant="glassHeroVariant"
+      @close="handleClose"
+    />
     <MindMapSidePanelHeader
+      v-else
       :title="t('canvas.mindMapSideToolbar.documentSummary')"
       :intro="featureEnabled ? t('canvas.mindMapDocumentSummary.intro') : undefined"
       @close="handleClose"
     />
 
     <div
-      v-if="featureEnabled"
+      v-if="featureEnabled && !docSummaryLiteUi"
       class="shrink-0 border-b border-slate-100 px-3 py-2"
     />
 
@@ -867,7 +911,10 @@ const liteSourceBound = computed(
         />
       </div>
 
-      <div class="doc-summary-tab-strip mx-3 mt-3 shrink-0">
+      <div
+        v-if="tabs.length"
+        class="doc-summary-tab-strip mx-3 mt-3 shrink-0"
+      >
         <button
           v-for="tab in tabs"
           :key="tab.id"
@@ -880,11 +927,11 @@ const liteSourceBound = computed(
         </button>
       </div>
 
-      <div class="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-3">
+      <div class="flex min-h-0 flex-1 flex-col overflow-hidden px-3 py-3">
         <!-- Lite: upload zone only when no source yet -->
         <div
           v-if="docSummaryLiteUi && activeTab === 'file' && !hasActiveSource"
-          class="flex flex-col gap-3"
+          class="doc-summary-fill-stage"
         >
           <div
             v-if="hasPendingUpload"
@@ -942,7 +989,7 @@ const liteSourceBound = computed(
           <template v-else>
             <button
               type="button"
-              class="doc-summary-upload-box"
+              class="doc-summary-upload-box doc-summary-upload-box--fill"
               @click="openFilePicker"
             >
               <Upload
@@ -956,12 +1003,6 @@ const liteSourceBound = computed(
                 {{ t('canvas.mindMapDocumentSummary.uploadFileSubhint') }}
               </span>
             </button>
-            <textarea
-              v-model="pastedText"
-              class="doc-summary-textarea w-full resize-none rounded-xl border border-(--swiss-border,#e7e5e4) bg-white px-3 py-2.5 text-sm leading-relaxed text-(--swiss-ink,#1c1917) placeholder:text-(--swiss-subtle,#a8a29e) focus:border-(--swiss-border-strong,#d6d3d1) focus:outline-none focus:ring-2 focus:ring-(--swiss-geek-cyan-soft,#ecfeff)"
-              :placeholder="t('canvas.mindMapDocumentSummary.pastePlaceholder')"
-              rows="4"
-            />
           </template>
           <input
             ref="fileInputRef"
@@ -969,6 +1010,17 @@ const liteSourceBound = computed(
             class="hidden"
             :accept="DOC_SUMMARY_UPLOAD_ACCEPT"
             @change="handleFileChange"
+          />
+        </div>
+
+        <div
+          v-else-if="docSummaryLiteUi && activeTab === 'paste' && !hasActiveSource"
+          class="doc-summary-fill-stage"
+        >
+          <textarea
+            v-model="pastedText"
+            class="doc-summary-textarea doc-summary-textarea--fill w-full resize-none rounded-xl border border-(--swiss-border,#e7e5e4) bg-white px-3 py-2.5 text-sm leading-relaxed text-(--swiss-ink,#1c1917) placeholder:text-(--swiss-subtle,#a8a29e) focus:border-(--swiss-border-strong,#d6d3d1) focus:outline-none focus:ring-2 focus:ring-(--swiss-geek-cyan-soft,#ecfeff)"
+            :placeholder="t('canvas.mindMapDocumentSummary.pastePlaceholder')"
           />
         </div>
 
@@ -988,7 +1040,7 @@ const liteSourceBound = computed(
         <!-- Document (legacy) -->
         <div
           v-else-if="activeTab === 'document'"
-          class="flex flex-col gap-3"
+          class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"
         >
           <button
             type="button"
@@ -1027,7 +1079,7 @@ const liteSourceBound = computed(
         <!-- Image (legacy) -->
         <div
           v-else-if="activeTab === 'image'"
-          class="flex flex-col gap-3"
+          class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"
         >
           <button
             v-if="!filePreviewUrl"
@@ -1075,7 +1127,7 @@ const liteSourceBound = computed(
         <!-- Web link — paste URL, server crawls page text → markdown -->
         <div
           v-else-if="activeTab === 'web'"
-          class="flex flex-col gap-3"
+          class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"
         >
           <div class="relative">
             <Link2
@@ -1120,7 +1172,7 @@ const liteSourceBound = computed(
         <!-- Chat -->
         <div
           v-else-if="activeTab === 'chat'"
-          class="flex flex-col gap-3"
+          class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"
         >
           <p class="text-[11px] leading-relaxed text-slate-500">
             {{
@@ -1415,6 +1467,21 @@ const liteSourceBound = computed(
   box-shadow: 0 1px 2px rgb(28 25 23 / 0.06);
 }
 
+.doc-summary-fill-stage {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  flex-direction: column;
+}
+
+.doc-summary-upload-box--fill,
+.doc-summary-textarea--fill {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
 .doc-summary-upload-box {
   display: flex;
   flex-direction: column;
@@ -1494,5 +1561,16 @@ const liteSourceBound = computed(
 .doc-summary-generate-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.ai-gen-shell .doc-summary-generate-btn {
+  background: var(--ai-ribbon-fill);
+  border-color: transparent;
+}
+
+.ai-gen-shell .doc-summary-generate-btn:hover:not(:disabled) {
+  background: var(--ai-ribbon-fill);
+  border-color: transparent;
+  filter: brightness(1.06);
 }
 </style>

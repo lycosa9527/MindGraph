@@ -6,7 +6,7 @@ import { computed, ref } from 'vue'
 
 import { ElButton, ElTooltip } from 'element-plus'
 
-import { ArrowDownUp, Brush, Upload } from '@lucide/vue'
+import type { V3RibbonTabId } from '@/canvas-v3/v3RibbonTypes'
 
 import { useCanvasToolbarApps, useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
@@ -39,10 +39,18 @@ import CanvasVirtualKeyboardPanel from './CanvasVirtualKeyboardPanel.vue'
  * When true, flatter styles for use inside CanvasTopBar (single merged chrome row).
  * When embedded, `compactToolbar` is driven by CanvasTopBar (two-tier bar width breakpoints).
  */
-const props = withDefaults(defineProps<{ embedded?: boolean; compactToolbar?: boolean }>(), {
-  embedded: false,
-  compactToolbar: false,
-})
+const props = withDefaults(
+  defineProps<{
+    embedded?: boolean
+    compactToolbar?: boolean
+    ribbonTab?: V3RibbonTabId
+  }>(),
+  {
+    embedded: false,
+    compactToolbar: false,
+    ribbonTab: 'edit',
+  }
+)
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -167,6 +175,7 @@ function handleToggleOrientation() {
       <CanvasToolbarMindMap
         v-if="useMindMapV2"
         :compact="compactToolbar"
+        :ribbon-tab="ribbonTab"
       />
       <div
         v-else
@@ -212,6 +221,7 @@ function handleToggleOrientation() {
             size="small"
             :class="formatBrushActive ? 'bg-purple-100 ring-1 ring-purple-400 rounded' : ''"
             @click="handleFormatBrush"
+            @dblclick.prevent="handleFormatBrush({ lock: true })"
           >
             <Brush
               class="w-4 h-4"

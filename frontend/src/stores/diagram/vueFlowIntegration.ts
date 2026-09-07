@@ -14,7 +14,7 @@ import {
 import { withClassicMindMapTopicSourceHandle } from '@/utils/classicMindMapTopicHandles'
 import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
-import { mindMapNodeSide } from '@/utils/mindMapLocation'
+import { isMindMapAssociationConnection, mindMapNodeSide } from '@/utils/mindMapLocation'
 import { buildMindMapOrthogonalSiblingMap } from '@/utils/mindMapOrthogonalSiblings'
 
 import {
@@ -378,16 +378,19 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
         }
       }
 
-      const edgeType = isLegacyMindMap
+      const isAssoc = isMindMapAssociationConnection(conn)
+      const edgeType = isAssoc
         ? 'curved'
-        : isV2MindMap
-          ? 'mindmapOrthogonal'
-          : (effectiveConn.edgeType as MindGraphEdgeType) || defaultEdgeType
+        : isLegacyMindMap
+          ? 'curved'
+          : isV2MindMap
+            ? 'mindmapOrthogonal'
+            : (effectiveConn.edgeType as MindGraphEdgeType) || defaultEdgeType
       const edge = connectionToVueFlowEdge(effectiveConn, edgeType)
       if (diagramType && edge.data) {
-        edge.data = { ...edge.data, diagramType }
+        edge.data = { ...edge.data, diagramType, isAssociation: isAssoc }
       }
-      if (diagramType === 'concept_map') {
+      if (diagramType === 'concept_map' || isAssoc) {
         edge.selectable = true
         edge.selected = ctx.selectedConnectionId.value === conn.id
       } else if (isLegacyMindMap || isV2MindMap) {
@@ -528,6 +531,9 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
           const d = edge.data?.arrowheadDirection ?? existing?.arrowheadDirection
           return d === 'source' || d === 'target' || d === 'both' ? d : undefined
         })(),
+        edgeType: edge.data?.isAssociation
+          ? 'association'
+          : existing?.edgeType,
       }
       return conn
     })

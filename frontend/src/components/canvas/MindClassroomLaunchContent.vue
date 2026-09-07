@@ -244,13 +244,6 @@ function handleRestart(): void {
     :class="`mc-launch--${props.variant}`"
   >
     <div class="mc-launch__body">
-      <p
-        v-if="props.variant === 'modal'"
-        class="mc-launch__lead"
-      >
-        {{ t('canvas.mindClassroom.lead') }}
-      </p>
-
       <!-- 1. Mastery -->
       <section class="mc-block">
         <header class="mc-block__head">
@@ -466,7 +459,6 @@ function handleRestart(): void {
     </div>
 
     <footer class="mc-launch__footer">
-      <ProfessionalContentAudienceBanner />
       <p
         v-if="!authStore.isAuthenticated"
         class="mc-launch__hint"
@@ -515,6 +507,7 @@ function handleRestart(): void {
           {{ t('canvas.mindClassroom.queue.restart') }}
         </button>
       </div>
+      <ProfessionalContentAudienceBanner />
     </footer>
   </div>
 </template>

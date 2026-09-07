@@ -71,7 +71,15 @@ describe('normalizeAuthUser', () => {
       v3_ribbon_tab: 'Review',
     })
     expect(user.v3RibbonClassic).toBe(true)
-    expect(user.v3RibbonTab).toBe('review')
+    expect(user.v3RibbonTab).toBe('teaching')
+  })
+
+  it('maps retired draw and learn ribbon tabs onto edit and teaching', () => {
+    expect(normalizeAuthUser({ ...loginPayload, v3_ribbon_tab: 'draw' }).v3RibbonTab).toBe('edit')
+    expect(normalizeAuthUser({ ...loginPayload, v3_ribbon_tab: 'learn' }).v3RibbonTab).toBe(
+      'teaching'
+    )
+    expect(normalizeAuthUser({ ...loginPayload, v3_ribbon_tab: 'ai' }).v3RibbonTab).toBe('ai')
   })
 
   it('drops unknown V3 ribbon tabs', () => {

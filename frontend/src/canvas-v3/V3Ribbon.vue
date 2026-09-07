@@ -4,6 +4,7 @@ import { ref } from 'vue'
 import { ChevronUp } from '@lucide/vue'
 
 import CanvasMindMapShortcutGuide from '@/components/canvas/CanvasMindMapShortcutGuide.vue'
+import CanvasToolbarMindMapInsert from '@/components/canvas/CanvasToolbarMindMapInsert.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { SnapshotMetadata } from '@/composables/editor/useSnapshotHistory'
 
@@ -11,9 +12,11 @@ import V3RibbonAi from './V3RibbonAi.vue'
 import V3RibbonDesign from './V3RibbonDesign.vue'
 import V3RibbonFile from './V3RibbonFile.vue'
 import V3RibbonHome from './V3RibbonHome.vue'
+import V3RibbonLearn from './V3RibbonLearn.vue'
+import V3RibbonResearch from './V3RibbonResearch.vue'
 import V3RibbonReview from './V3RibbonReview.vue'
 import './v3Ribbon.css'
-import { type V3RibbonTabId, V3_RIBBON_TABS, V3_RIBBON_TAB_LABEL_KEYS } from './v3RibbonTypes'
+import { type V3RibbonTabId } from './v3RibbonTypes'
 
 withDefaults(
   defineProps<{
@@ -36,7 +39,6 @@ withDefaults(
 )
 
 const emit = defineEmits<{
-  'update:activeTab': [tab: V3RibbonTabId]
   toggleClassic: []
 }>()
 
@@ -46,10 +48,6 @@ const shortcutGuideOpen = ref(false)
 function toggleShortcutGuide(): void {
   shortcutGuideOpen.value = !shortcutGuideOpen.value
 }
-
-function tabLabel(tab: V3RibbonTabId): string {
-  return t(V3_RIBBON_TAB_LABEL_KEYS[tab])
-}
 </script>
 
 <template>
@@ -58,24 +56,6 @@ function tabLabel(tab: V3RibbonTabId): string {
     :data-tab="activeTab"
     data-testid="mindmap-v3-ribbon"
   >
-    <div
-      class="v3-ribbon__tabs"
-      role="tablist"
-    >
-      <button
-        v-for="tab in V3_RIBBON_TABS"
-        :key="tab"
-        type="button"
-        class="v3-ribbon__tab"
-        role="tab"
-        :class="{ 'is-active': activeTab === tab }"
-        :aria-selected="activeTab === tab"
-        :data-testid="`mindmap-v3-ribbon-tab-${tab}`"
-        @click="emit('update:activeTab', tab)"
-      >
-        {{ tabLabel(tab) }}
-      </button>
-    </div>
     <div class="v3-ribbon__body">
       <div
         class="v3-ribbon__scroll is-classic"
@@ -90,25 +70,38 @@ function tabLabel(tab: V3RibbonTabId): string {
           :recalling-snapshot-version="recallingSnapshotVersion"
           :is-collab-guest="isCollabGuest"
         />
-        <V3RibbonHome
-          v-else-if="activeTab === 'home'"
-          classic
-          :disabled="disabled"
-        />
-        <V3RibbonDesign
-          v-else-if="activeTab === 'design'"
-          classic
-          :disabled="disabled"
-        />
-        <V3RibbonReview
-          v-else-if="activeTab === 'review'"
-          classic
-          :disabled="disabled"
-          :workshop-code="workshopCode"
-          :shortcut-guide-open="shortcutGuideOpen"
-          @toggle-shortcut-guide="toggleShortcutGuide"
-        />
+        <template v-else-if="activeTab === 'edit'">
+          <V3RibbonHome
+            classic
+            :disabled="disabled"
+          />
+          <V3RibbonDesign
+            classic
+            :disabled="disabled"
+          />
+          <div class="v3-ribbon-insert-host">
+            <CanvasToolbarMindMapInsert />
+          </div>
+        </template>
         <V3RibbonAi
+          v-else-if="activeTab === 'ai'"
+          classic
+          :disabled="disabled"
+        />
+        <template v-else-if="activeTab === 'teaching'">
+          <V3RibbonLearn
+            classic
+            :disabled="disabled"
+          />
+          <V3RibbonReview
+            classic
+            :disabled="disabled"
+            :workshop-code="workshopCode"
+            :shortcut-guide-open="shortcutGuideOpen"
+            @toggle-shortcut-guide="toggleShortcutGuide"
+          />
+        </template>
+        <V3RibbonResearch
           v-else
           classic
           :disabled="disabled"

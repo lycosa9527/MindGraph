@@ -1,5 +1,6 @@
 import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
 import { syncMindMapConnectionStrokeColorsForCanvasMode } from '@/config/mindMapGeometry'
+import { isRainbowMindMapTheme, syncRainbowMindMapConnectionColors } from '@/config/mindMapVibrantThemes'
 import type { MindMapCanvasMode } from '@/stores/ui'
 import type {
   DiagramData,
@@ -211,7 +212,14 @@ export function hydrateMindMapCanvasStylesOnLoad(data: DiagramData, mode: MindMa
   }
 
   if (connections.length > 0) {
-    syncMindMapConnectionStrokeColorsForCanvasMode(connections, data.nodes, mode)
+    if (
+      isMindMapV2FamilyMode(mode) &&
+      isRainbowMindMapTheme(data._mindmap_theme ?? data._mindmap_canvas?.v2?.theme)
+    ) {
+      syncRainbowMindMapConnectionColors(connections, data.nodes)
+    } else {
+      syncMindMapConnectionStrokeColorsForCanvasMode(connections, data.nodes, mode)
+    }
   }
 }
 

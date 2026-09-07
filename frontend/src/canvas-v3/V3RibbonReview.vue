@@ -1,16 +1,13 @@
 <script setup lang="ts">
 import {
   BookOpen,
-  CircleOff,
   GraduationCap,
   Keyboard,
   Languages,
   List,
   MonitorPlay,
   MousePointerClick,
-  Network,
   Shuffle,
-  Users,
 } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -108,36 +105,6 @@ const actions = useV3RibbonActions()
       variant="stacked"
       :disabled="disabled"
       @click="actions.runTranslate"
-    />
-  </V3RibbonGroup>
-  <V3RibbonGroup
-    v-if="classic || workshopCode"
-    group="collaborate"
-    :label="t('canvas.v3.ribbon.groupCollaborate')"
-    :classic="classic"
-  >
-    <V3RibbonCommand
-      v-if="classic"
-      :label="t('canvas.zoomControls.collabWithinOrg')"
-      :icon="Users"
-      variant="stacked"
-      :disabled="disabled"
-      @click="actions.openCollab('organization')"
-    />
-    <V3RibbonCommand
-      v-if="classic"
-      :label="t('canvas.zoomControls.collabCrossOrg')"
-      :icon="Network"
-      variant="stacked"
-      :disabled="disabled"
-      @click="actions.openCollab('network')"
-    />
-    <V3RibbonCommand
-      v-if="workshopCode"
-      :label="t('canvas.zoomControls.collabTurnOff')"
-      :icon="CircleOff"
-      variant="stacked"
-      @click="actions.openCollab('stop')"
     />
   </V3RibbonGroup>
   <V3RibbonGroup

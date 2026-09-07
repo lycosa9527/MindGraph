@@ -15,6 +15,7 @@ import { useNotifications } from '@/composables/core/useNotifications'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
+import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useDiagramStore, useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
 import { navigateBackFromCanvas } from '@/utils/canvasBackNavigation'
 
@@ -39,6 +40,7 @@ export function useV3ChromeActions() {
   const { handleAIGenerate } = useCanvasToolbarApps()
   const { triggerImportInPlace } = useDiagramImport()
   const { switchToModel } = useAutoComplete()
+  const learningSheet = useLearningSheetCustomMode()
 
   const nodeCount = computed(() => diagramStore.data?.nodes?.length ?? 0)
   const canUndo = computed(() => diagramStore.canUndo)
@@ -75,7 +77,7 @@ export function useV3ChromeActions() {
       return
     }
     if (diagramStore.isLearningSheet) {
-      diagramStore.restoreFromLearningSheetMode()
+      learningSheet.exitLearningSheet()
       return
     }
     if (diagramStore.hasPreservedLearningSheet()) {

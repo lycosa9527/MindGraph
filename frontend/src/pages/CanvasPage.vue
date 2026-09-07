@@ -49,7 +49,6 @@ import {
   MindClassroomSlidePane,
   MindMapPresentationSideToolbar,
   MindMapSidePanel,
-  MindMapSideToolbar,
   MindMapSlideOverlay,
   PresentationTimerHud,
   PresentationTimerOverlay,
@@ -58,6 +57,7 @@ import {
 import CanvasCollabOverlay from '@/components/canvas/CanvasCollabOverlay.vue'
 import CanvasTranslateProgressBanner from '@/components/canvas/CanvasTranslateProgressBanner.vue'
 import LearningSheetExportNudge from '@/components/canvas/LearningSheetExportNudge.vue'
+import LearningSheetFloatBar from '@/components/canvas/LearningSheetFloatBar.vue'
 import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
 import KittyCanvasAnchor from '@/components/kitty/KittyCanvasAnchor.vue'
 import { MindmatePanel, NodePalettePanel, RootConceptModal } from '@/components/panels'
@@ -609,7 +609,7 @@ const showMindMapShortcutGuide = computed(
     Boolean(diagramStore.data)
 )
 
-const showMindMapSideToolbar = computed(
+const showMindMapSidePanel = computed(
   () =>
     isMindMapRibbonFamily.value &&
     !presentationRailOpen.value &&
@@ -630,7 +630,7 @@ const showCanvasChrome = computed(
   () => !isMindMapPresentationMode.value && !mindClassroomSlideDeck.value
 )
 
-const { activeTool, sidebarVisible, closeActiveTool } = useMindMapSideToolbarState()
+const { activeTool, closeActiveTool } = useMindMapSideToolbarState()
 
 watch(
   () => useMindMapV2.value && panelsStore.aiBrainstormPanel.isOpen,
@@ -1440,6 +1440,7 @@ onUnmounted(() => {
     ref="canvasPageRef"
     class="canvas-page flex flex-col h-screen bg-gray-50 relative"
     :class="{
+      'canvas-page--mm-ribbon': isMindMapRibbonFamily,
       'presentation-active': canUsePresentationTools && presentationRailOpen,
       'mind-map-presentation-active': isMindMapPresentationMode,
       'presentation-pointer-mode':
@@ -1607,6 +1608,7 @@ onUnmounted(() => {
     </CanvasChrome>
 
     <LearningSheetExportNudge v-if="showLearningSheetExportNudge" />
+    <LearningSheetFloatBar v-if="showLearningSheetExportNudge" />
 
     <!-- Collab UI: participant rail, session modal, active-session banner -->
     <CanvasCollabOverlay
@@ -1703,13 +1705,12 @@ onUnmounted(() => {
             @node-double-click="handleNodeDoubleClick"
           />
 
-          <MindMapSideToolbar v-if="showMindMapSideToolbar && sidebarVisible" />
           <MindMapSidePanel
-            v-if="showMindMapSideToolbar && activeTool"
+            v-if="showMindMapSidePanel && activeTool"
             :tool="activeTool"
             @close="closeActiveTool"
           />
-          <MindClassroomMascot v-if="showMindMapSideToolbar && !mindClassroomLecturing" />
+          <MindClassroomMascot v-if="showMindMapSidePanel && !mindClassroomLecturing" />
           <MindClassroomLectureOverlay v-if="mindClassroomCanvasTour" />
         </div>
         <MindClassroomSlidePane v-if="mindClassroomSlideDeck" />
@@ -1740,14 +1741,14 @@ onUnmounted(() => {
     </div>
 
     <V3StatusBar
-      v-if="useMindMapV3 && showBottomBar"
+      v-if="isMindMapRibbonFamily && showBottomBar"
       :zoom="canvasZoom"
       :hand-tool-active="handToolActive"
     />
 
     <!-- Bottom controls: shortcut guide (mind map) + floating glass toolbar card -->
     <div
-      v-if="showBottomBar && !useMindMapV3"
+      v-if="showBottomBar && !isMindMapRibbonFamily"
       class="canvas-bottom-controls absolute bottom-3 left-0 right-0 z-20 flex justify-center px-2 sm:px-4 pointer-events-none"
     >
       <div

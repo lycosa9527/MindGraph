@@ -2,12 +2,11 @@
 /**
  * Mind-map side tool panels — outline delegates to SidebarOutline; other tools inline.
  */
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
-import { Hammer, RotateCcw, Shuffle } from '@lucide/vue'
+import { Hammer, Shuffle } from '@lucide/vue'
 
-import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
-import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.vue'
+import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 
 import { useLanguage } from '@/composables'
 import { type MindMapSideToolId } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
@@ -32,25 +31,9 @@ const diagramStore = useDiagramStore()
 
 const {
   isPickActive,
-  isLearningSheetActive,
   activatePick,
   startRandomLearningSheet,
-  exitLearningSheet,
 } = useLearningSheetCustomMode()
-
-type AnswerVisibility = 'show' | 'hide'
-
-const answerVisibility = computed<AnswerVisibility>({
-  get: () => (diagramStore.learningSheetShowAnswers ? 'show' : 'hide'),
-  set: (value) => {
-    diagramStore.setLearningSheetShowAnswers(value === 'show')
-  },
-})
-
-const answerVisibilityOptions = computed(() => [
-  { label: t('canvas.mindMapSideToolbar.learningSheetAnswersShow'), value: 'show' as const },
-  { label: t('canvas.mindMapSideToolbar.learningSheetAnswersHide'), value: 'hide' as const },
-])
 
 const panelTitle = computed(() => {
   switch (props.tool) {
@@ -71,16 +54,35 @@ function handleClose(): void {
   emit('close')
 }
 
+watch(
+  () => props.tool,
+  (tool, _previous, onCleanup) => {
+    if (tool !== 'document_summary' && tool !== 'learning_sheet') return
+    const onKeydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') handleClose()
+    }
+    window.addEventListener('keydown', onKeydown)
+    onCleanup(() => window.removeEventListener('keydown', onKeydown))
+  },
+  { immediate: true }
+)
+
 function handleRandomLearningSheet(): void {
+  const keepAnswers = diagramStore.learningSheetShowAnswers
   startRandomLearningSheet()
+  diagramStore.setLearningSheetShowAnswers(keepAnswers)
+  handleClose()
 }
 
 function handleCustomPick(): void {
+  const keepAnswers = diagramStore.learningSheetShowAnswers
   activatePick()
+  diagramStore.setLearningSheetShowAnswers(keepAnswers)
+  handleClose()
 }
 
-function handleExitLearningSheet(): void {
-  exitLearningSheet()
+function onKeepAnswersChange(value: string | number | boolean): void {
+  diagramStore.setLearningSheetShowAnswers(Boolean(value))
 }
 </script>
 
@@ -100,105 +102,101 @@ function handleExitLearningSheet(): void {
     @close="handleClose"
   />
 
-  <MindMapDocumentSummaryPanel
+  <Teleport
     v-else-if="tool === 'document_summary'"
-    @close="handleClose"
-  />
-
-  <aside
-    v-else
-    class="mind-map-side-rail-panel mind-map-side-panel pointer-events-auto w-80"
-    :aria-label="panelTitle"
+    to="body"
   >
-    <MindMapSidePanelHeader
-      :title="panelTitle"
-      :intro="t('canvas.mindMapSideToolbar.learningSheetIntro')"
-      @close="handleClose"
-    />
-
-    <!-- Learning sheet -->
     <div
-      v-if="tool === 'learning_sheet'"
-      class="flex min-h-0 flex-1 flex-col overflow-y-auto"
+      class="mm-canvas-center-modal"
+      role="presentation"
+      @click.self="handleClose"
     >
-      <div class="flex flex-col gap-3 px-4 py-5">
-        <button
-          type="button"
-          class="learning-sheet-mode-card group"
-          @click="handleRandomLearningSheet"
-        >
-          <span class="learning-sheet-mode-card__icon learning-sheet-mode-card__icon--amber">
-            <Shuffle
-              class="h-4 w-4"
-              :stroke-width="2"
-            />
-          </span>
-          <span class="min-w-0 flex-1 text-left">
-            <span class="block text-sm font-semibold text-slate-800">
-              {{ t('canvas.mindMapSideToolbar.learningSheetRandomTitle') }}
-            </span>
-            <span class="mt-0.5 block text-[11px] leading-snug text-slate-500">
-              {{ t('canvas.mindMapSideToolbar.learningSheetRandomDesc') }}
-            </span>
-          </span>
-        </button>
-
-        <button
-          type="button"
-          class="learning-sheet-mode-card group"
-          :class="{ 'learning-sheet-mode-card--active': isPickActive }"
-          @click="handleCustomPick"
-        >
-          <span class="learning-sheet-mode-card__icon learning-sheet-mode-card__icon--blue">
-            <Hammer
-              class="h-4 w-4 rotate-[-38deg]"
-              :stroke-width="2"
-            />
-          </span>
-          <span class="min-w-0 flex-1 text-left">
-            <span class="block text-sm font-semibold text-slate-800">
-              {{ t('canvas.mindMapSideToolbar.learningSheetCustomTitle') }}
-            </span>
-            <span class="mt-0.5 block text-[11px] leading-snug text-slate-500">
-              {{ t('canvas.mindMapSideToolbar.learningSheetCustomDesc') }}
-            </span>
-          </span>
-        </button>
-
-        <div
-          v-if="isLearningSheetActive"
-          class="learning-sheet-session-controls mt-1 flex flex-col gap-2"
-        >
-          <div class="learning-sheet-answers-control">
-            <span class="learning-sheet-answers-control__label">
-              {{ t('canvas.mindMapSideToolbar.learningSheetAnswersLabel') }}
-            </span>
-            <AdminSwissSegmented
-              v-model="answerVisibility"
-              block
-              :options="answerVisibilityOptions"
-              :ariaLabel="t('canvas.mindMapSideToolbar.learningSheetAnswersLabel')"
-            />
-            <p class="learning-sheet-answers-control__shortcut">
-              {{ t('canvas.mindMapSideToolbar.learningSheetAnswersShortcut') }}
-            </p>
-          </div>
-
-          <button
-            type="button"
-            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary w-full"
-            @click="handleExitLearningSheet"
-          >
-            <RotateCcw
-              class="h-4 w-4"
-              :stroke-width="2.25"
-            />
-            {{ t('canvas.mindMapSideToolbar.restoreFullDiagram') }}
-          </button>
-        </div>
-      </div>
+      <MindMapDocumentSummaryPanel @close="handleClose" />
     </div>
-  </aside>
+  </Teleport>
+
+  <Teleport
+    v-else-if="tool === 'learning_sheet'"
+    to="body"
+  >
+    <div
+      class="mm-canvas-center-modal"
+      role="presentation"
+      @click.self="handleClose"
+    >
+      <aside
+        class="mind-map-side-rail-panel mind-map-side-panel learning-sheet-glass-panel pointer-events-auto ai-gen-shell ai-gen-shell--learningSheet"
+        :aria-label="panelTitle"
+      >
+        <AiGenerateGlassHero
+          variant="learningSheet"
+          @close="handleClose"
+        />
+
+        <div class="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          <div class="flex flex-col gap-3 px-4 py-5">
+            <button
+              type="button"
+              class="learning-sheet-mode-card group"
+              @click="handleRandomLearningSheet"
+            >
+              <span class="learning-sheet-mode-card__icon learning-sheet-mode-card__icon--amber">
+                <Shuffle
+                  class="h-4 w-4"
+                  :stroke-width="2"
+                />
+              </span>
+              <span class="min-w-0 flex-1 text-left">
+                <span class="block text-sm font-semibold text-slate-800">
+                  {{ t('canvas.mindMapSideToolbar.learningSheetRandomTitle') }}
+                </span>
+                <span class="mt-0.5 block text-[11px] leading-snug text-slate-500">
+                  {{ t('canvas.mindMapSideToolbar.learningSheetRandomDesc') }}
+                </span>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              class="learning-sheet-mode-card group"
+              :class="{ 'learning-sheet-mode-card--active': isPickActive }"
+              @click="handleCustomPick"
+            >
+              <span class="learning-sheet-mode-card__icon learning-sheet-mode-card__icon--blue">
+                <Hammer
+                  class="h-4 w-4 rotate-[-38deg]"
+                  :stroke-width="2"
+                />
+              </span>
+              <span class="min-w-0 flex-1 text-left">
+                <span class="block text-sm font-semibold text-slate-800">
+                  {{ t('canvas.mindMapSideToolbar.learningSheetCustomTitle') }}
+                </span>
+                <span class="mt-0.5 block text-[11px] leading-snug text-slate-500">
+                  {{ t('canvas.mindMapSideToolbar.learningSheetCustomDesc') }}
+                </span>
+              </span>
+            </button>
+
+            <label class="learning-sheet-keep-answers">
+              <span class="learning-sheet-keep-answers__copy">
+                <span class="learning-sheet-keep-answers__label">
+                  {{ t('canvas.mindMapSideToolbar.learningSheetKeepAnswers') }}
+                </span>
+                <span class="learning-sheet-keep-answers__hint">
+                  {{ t('canvas.mindMapSideToolbar.learningSheetKeepAnswersHint') }}
+                </span>
+              </span>
+              <el-switch
+                :model-value="diagramStore.learningSheetShowAnswers"
+                @change="onKeepAnswersChange"
+              />
+            </label>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -247,29 +245,41 @@ function handleExitLearningSheet(): void {
   border-color: color-mix(in srgb, var(--swiss-geek-cyan-ui, #0e7490) 22%, var(--swiss-border, #e7e5e4));
 }
 
+.learning-sheet-keep-answers {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--swiss-border, #e7e5e4);
+  border-radius: 12px;
+  background: var(--swiss-inset, #fafaf9);
+  cursor: pointer;
+}
+
+.learning-sheet-keep-answers__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.learning-sheet-keep-answers__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--swiss-ink, #1c1917);
+}
+
+.learning-sheet-keep-answers__hint {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--swiss-muted, #78716c);
+}
+
 .learning-sheet-mode-card--active {
   border-color: var(--swiss-ink, #1c1917);
   background: var(--swiss-hover, #f5f5f4);
   box-shadow: 0 0 0 1px var(--swiss-ink, #1c1917);
-}
-
-.learning-sheet-answers-control {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.learning-sheet-answers-control__label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--swiss-muted, #78716c);
-}
-
-.learning-sheet-answers-control__shortcut {
-  margin: 0;
-  font-size: 10px;
-  line-height: 1.35;
-  color: var(--swiss-subtle, #a8a29e);
 }
 </style>

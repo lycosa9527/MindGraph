@@ -17,18 +17,25 @@ import { mergeCanvasExportOptions } from '@/utils/mergeCanvasExportOptions'
 
 describe('canvasWorksheetText', () => {
   it('defines worksheet text menu metadata', () => {
-    expect(CANVAS_WORKSHEET_TEXT_MENU_ITEM.labelKey).toBe('canvas.topBar.addWorksheetText')
+    expect(CANVAS_WORKSHEET_TEXT_MENU_ITEM.labelKey).toBe('canvas.worksheetText.modalTitle')
     expect('divided' in CANVAS_WORKSHEET_TEXT_MENU_ITEM).toBe(false)
   })
 
-  it('defaults classroom fields to shown', () => {
+  it('defaults classroom fields ready, with learning-sheet mode off', () => {
+    expect(DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS.learningSheetMode).toBe(false)
     expect(DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS.showTopic).toBe(true)
     expect(DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS.showName).toBe(true)
     expect(DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS.showClass).toBe(true)
     expect(DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS.showDate).toBe(true)
     expect(DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS.showInstruction).toBe(true)
     expect(DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS.topicText).toBe('')
-    expect(hasActiveWorksheetHeader(DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS)).toBe(true)
+    expect(hasActiveWorksheetHeader(DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS)).toBe(false)
+    expect(
+      hasActiveWorksheetHeader({
+        ...DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS,
+        learningSheetMode: true,
+      })
+    ).toBe(true)
   })
 
   it('detects inactive header when every field is hidden', () => {

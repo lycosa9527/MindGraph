@@ -1,7 +1,7 @@
 import type { Ref } from 'vue'
 
 import type { MindMapCanvasMode } from '@/stores/ui'
-import type { DiagramData, DiagramNode, DiagramType, HistoryEntry } from '@/types'
+import type { Connection, DiagramData, DiagramNode, DiagramType, HistoryEntry } from '@/types'
 
 import type { DiagramViewBus } from './diagramViewBus'
 
@@ -130,7 +130,12 @@ export interface DiagramContext {
   // Cross-cutting functions (filled during two-phase init)
   pushHistory: (action: string) => void
   addNode: (node: DiagramNode) => void
-  addConnection: (sourceId: string, targetId: string, label?: string) => string | null
+  addConnection: (
+    sourceId: string,
+    targetId: string,
+    label?: string,
+    extra?: Partial<Pick<Connection, 'edgeType' | 'style' | 'linkedFromConnectionId'>>
+  ) => string | null
   clearCustomPosition: (nodeId: string) => void
   clearNodeStyle: (nodeId: string) => void
   removeFromSelection: (nodeId: string) => void

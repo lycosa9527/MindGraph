@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { h, ref } from 'vue'
 
 import {
   AlignCenter,
@@ -8,13 +8,12 @@ import {
   Bold,
   ClipboardPaste,
   Copy,
-  CornerDownRight,
   Eraser,
   FunctionSquare,
   Italic,
   Keyboard,
   Paintbrush,
-  Plus,
+  Palette,
   RotateCcw,
   Scissors,
   Settings2,
@@ -24,6 +23,7 @@ import {
 } from '@lucide/vue'
 
 import CanvasMathInsertDialog from '@/components/canvas/CanvasMathInsertDialog.vue'
+import MindMapInsertNodeIcon from '@/components/canvas/MindMapInsertNodeIcon.vue'
 import { useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
 import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimiter'
 import { eventBus } from '@/composables/core/useEventBus'
@@ -49,6 +49,8 @@ withDefaults(
 const { t } = useLanguage()
 const notify = useNotifications()
 const diagramStore = useDiagramStore()
+const AddChildNodeIcon = () => h(MindMapInsertNodeIcon, { kind: 'child' })
+const AddSiblingNodeIcon = () => h(MindMapInsertNodeIcon, { kind: 'sibling' })
 const actions = useV3RibbonActions()
 const {
   formatBrushActive,
@@ -142,14 +144,14 @@ function focusProperty(): void {
         :label="t('diagram.contextMenu.cut')"
         :icon="Scissors"
         variant="icon"
-        :disabled="disabled || !actions.hasSelection"
+        :disabled="disabled"
         @click="actions.cutSelected"
       />
       <V3RibbonCommand
         :label="t('diagram.contextMenu.copy')"
         :icon="Copy"
         variant="icon"
-        :disabled="disabled || !actions.hasSelection"
+        :disabled="disabled"
         @click="actions.copySelected"
       />
       <V3RibbonCommand
@@ -160,6 +162,7 @@ function focusProperty(): void {
         :active="formatBrushActive"
         :disabled="disabled"
         @click="handleFormatBrush"
+        @dblclick="handleFormatBrush({ lock: true })"
       />
     </div>
   </V3RibbonGroup>
@@ -324,14 +327,14 @@ function focusProperty(): void {
   >
     <V3RibbonCommand
       :label="t('canvas.toolbar.addChildNode')"
-      :icon="Plus"
+      :icon="AddChildNodeIcon"
       variant="stacked"
       :disabled="disabled"
       @click="actions.handleAddChildClick"
     />
     <V3RibbonCommand
       :label="t('canvas.toolbar.addSiblingNode')"
-      :icon="CornerDownRight"
+      :icon="AddSiblingNodeIcon"
       variant="stacked"
       :disabled="disabled"
       @click="actions.handleAddSibling"
@@ -340,7 +343,7 @@ function focusProperty(): void {
       :label="t('canvas.toolbar.deleteShort')"
       :icon="Trash2"
       variant="stacked"
-      :disabled="disabled || !actions.hasSelection"
+      :disabled="disabled"
       @click="actions.handleDeleteNode"
     />
     <V3RibbonCommand
@@ -348,8 +351,16 @@ function focusProperty(): void {
       :label="t('canvas.v3.empty')"
       :icon="Eraser"
       variant="stacked"
-      :disabled="disabled || !actions.hasSelection"
+      :disabled="disabled"
       @click="actions.emptySelected"
+    />
+    <V3RibbonCommand
+      :label="t('canvas.v3.palette')"
+      :icon="Palette"
+      variant="stacked"
+      :active="actions.isNodePaletteOpen"
+      :disabled="disabled"
+      @click="actions.openNodePalette"
     />
   </V3RibbonGroup>
   <V3RibbonGroup
@@ -383,7 +394,7 @@ function focusProperty(): void {
       :label="t('canvas.v3.resetStyles')"
       :icon="RotateCcw"
       variant="stacked"
-      :disabled="disabled || !actions.hasSelection"
+      :disabled="disabled"
       @click="actions.resetNodeStyles"
     />
   </V3RibbonGroup>

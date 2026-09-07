@@ -61,7 +61,7 @@ const actions = useV3RibbonActions()
       <button
         type="button"
         class="v3-tool-btn"
-        :disabled="disabled || !actions.hasSelection"
+        :disabled="disabled"
         @click="actions.handleDeleteNode"
       >
         {{ t('canvas.toolbar.deleteShort') }}
@@ -107,7 +107,7 @@ const actions = useV3RibbonActions()
       <button
         type="button"
         class="v3-tool-btn"
-        :disabled="disabled || !actions.hasSelection"
+        :disabled="disabled"
         @click="actions.emptySelected"
       >
         {{ t('canvas.v3.empty') }}

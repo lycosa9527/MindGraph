@@ -81,8 +81,14 @@ export function useV3RibbonActions() {
     })
   }
 
-  function requestWorksheetText(): void {
-    eventBus.emit('toolbar:worksheet_text_requested', {})
+  function requestWorksheetText(preferLearningSheet = false): void {
+    if (!diagramStore.data?.nodes?.length) {
+      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      return
+    }
+    eventBus.emit('toolbar:worksheet_text_requested', {
+      preferLearningSheet: preferLearningSheet === true,
+    })
   }
 
   function requestSnapshot(): void {

@@ -52,12 +52,22 @@ describe('resolveLiteDraftKind', () => {
     expect(
       resolveLiteDraftKind({
         hasActiveSource: false,
-        activeTab: 'file',
+        activeTab: 'paste',
         uploadedFile: null,
         pastedText: '  hello  ',
         webUrl: '',
       })
     ).toBe('paste')
+
+    expect(
+      resolveLiteDraftKind({
+        hasActiveSource: false,
+        activeTab: 'file',
+        uploadedFile: null,
+        pastedText: '  hello  ',
+        webUrl: '',
+      })
+    ).toBe('none')
 
     expect(
       resolveLiteDraftKind({

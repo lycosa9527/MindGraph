@@ -19,7 +19,6 @@ describe('mind map V3 chrome (pills collapsed, Word ribbon expanded)', () => {
     expect(top).toContain('v-if="!classic"')
     expect(top).toContain('class="v3-toolbar"')
     expect(top).toContain('<V3CollapsedPills')
-    expect(top).toContain('v3-mindmate-btn')
     expect(top).toContain('data-testid="mindmap-v3-ribbon-chevron"')
     expect(pills).toContain('v3-toolbar__row')
     expect(pills).toContain('v3-toolbar__group')
@@ -37,17 +36,21 @@ describe('mind map V3 chrome (pills collapsed, Word ribbon expanded)', () => {
     expect(pills.indexOf('canvas.v3.tools')).toBeLessThan(pills.indexOf('v3-mindmate-btn'))
   })
 
-  it('shows the five-tab Word ribbon only when expanded', () => {
+  it('shows File/Edit/AI/Teaching/Research ribbon tabs on the title row when expanded', () => {
     const top = readSrc('src/canvas-v3/V3TopToolbar.vue')
     const ribbon = readSrc('src/canvas-v3/V3Ribbon.vue')
+    expect(top).toContain('<V3RibbonTabs')
     expect(top).toContain('<V3Ribbon')
+    const tabs = readSrc('src/canvas-v3/V3RibbonTabs.vue')
     expect(ribbon).toContain('data-testid="mindmap-v3-ribbon"')
-    expect(ribbon).toContain('role="tablist"')
-    expect(ribbon).toContain('mindmap-v3-ribbon-tab-')
+    expect(tabs).toContain('role="tablist"')
+    expect(tabs).toContain('mindmap-v3-ribbon-tab-')
     expect(ribbon).toContain('class="v3-ribbon__scroll is-classic"')
-    expect([...V3_RIBBON_TABS]).toEqual(['file', 'home', 'design', 'review', 'ai'])
-    expect(DEFAULT_V3_RIBBON_TAB).toBe('home')
-    expect(isV3RibbonTabId('home')).toBe(true)
+    expect([...V3_RIBBON_TABS]).toEqual(['file', 'edit', 'ai', 'teaching', 'research'])
+    expect(DEFAULT_V3_RIBBON_TAB).toBe('edit')
+    expect(isV3RibbonTabId('ai')).toBe(true)
+    expect(isV3RibbonTabId('draw')).toBe(false)
+    expect(isV3RibbonTabId('learn')).toBe(false)
     expect(isV3RibbonTabId('palette')).toBe(false)
   })
 
@@ -76,6 +79,12 @@ describe('mind map V3 chrome (pills collapsed, Word ribbon expanded)', () => {
     expect(status).toContain('data-testid="mindmap-v3-zoom-percent"')
     expect(status).toContain('data-testid="mindmap-v3-fit-view"')
     expect(status).toContain('data-testid="mindmap-v3-hand-tool"')
+    const chrome = readSrc('src/canvas-v3/v3Chrome.css')
+    expect(chrome).toMatch(/\.v3-status\s*\{[\s\S]*?display:\s*flex/)
+    expect(chrome).toContain('flex-wrap: nowrap')
+    expect(chrome).toContain('max-height: 40px')
+    expect(css).toContain('.v3-status__zoom-btn')
+    expect(css).toMatch(/\.v3-status__zoom-btn\s*\{[\s\S]*?height:\s*28px/)
   })
 
   it('does not persist ribbon height or tab in browser storage', () => {
@@ -87,6 +96,19 @@ describe('mind map V3 chrome (pills collapsed, Word ribbon expanded)', () => {
     expect(state).not.toContain('sessionStorage')
   })
 
+  it('puts collaborative drawing on the title row as a global control', () => {
+    const topBar = readSrc('src/components/canvas/CanvasTopBar.vue')
+    const v3 = readSrc('src/canvas-v3/V3TopToolbar.vue')
+    const research = readSrc('src/canvas-v3/V3RibbonResearch.vue')
+    const mmToolbar = readSrc('src/components/canvas/CanvasToolbarMindMap.vue')
+    expect(topBar).toContain('canvas-top-bar__global')
+    expect(topBar).toContain('<CanvasOnlineCollabMenu')
+    expect(v3).toContain('v3-qat__end')
+    expect(v3).toContain('<CanvasOnlineCollabMenu')
+    expect(research).not.toContain('openCollab')
+    expect(mmToolbar).not.toContain("openCollab('organization')")
+  })
+
   it('wires V3 chrome on CanvasPage and keeps the V2 diagram shell', () => {
     const page = readSrc('src/pages/CanvasPage.vue')
     const router = readSrc('src/components/diagram/MindMapCanvasRouter.vue')
@@ -94,7 +116,7 @@ describe('mind map V3 chrome (pills collapsed, Word ribbon expanded)', () => {
     expect(page).toContain('<V3TopToolbar')
     expect(page).toContain('v-if="useMindMapV3"')
     expect(page).toContain('<V3StatusBar')
-    expect(page).toContain('v-if="useMindMapV3 && showBottomBar"')
+    expect(page).toContain('v-if="isMindMapRibbonFamily && showBottomBar"')
     expect(page).toContain('<V3PropertyPanel v-if="useMindMapV3 && !mindClassroomSlideDeck"')
     expect(property).toContain('data-testid="mindmap-v3-property-panel"')
     expect(page).toContain('isMindMapRibbonFamily')

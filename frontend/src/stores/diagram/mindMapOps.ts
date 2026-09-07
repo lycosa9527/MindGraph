@@ -12,10 +12,12 @@ import {
 } from '@/utils/mindMapCanvasMode'
 import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import {
+  isMindMapAssociationConnection,
   isMindMapBranchId,
   isMindMapBranchNode,
   mindMapNodeDepth,
   mindMapNodeSide,
+  mindMapTreeParentId,
 } from '@/utils/mindMapLocation'
 import {
   MINDMAP_NODE_UID_DATA_KEY,
@@ -168,8 +170,47 @@ function retainMeasuredDimensions(
   }
 }
 
+function preserveMindMapAssociationConnections(
+  oldNodes: DiagramNode[],
+  oldConnections: Connection[],
+  newNodes: DiagramNode[],
+  newConnections: Connection[]
+): Connection[] {
+  const next = [...newConnections]
+  const seen = new Set(next.map((c) => `${c.source}\0${c.target}`))
+  for (const conn of oldConnections) {
+    if (!isMindMapAssociationConnection(conn)) continue
+    const source = remapMindMapNodeIdAfterReload(
+      conn.source,
+      oldNodes,
+      oldConnections,
+      newNodes,
+      newConnections
+    )
+    const target = remapMindMapNodeIdAfterReload(
+      conn.target,
+      oldNodes,
+      oldConnections,
+      newNodes,
+      newConnections
+    )
+    if (!source || !target || source === target) continue
+    const key = `${source}\0${target}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    const idTaken = next.some((c) => c.id === conn.id)
+    next.push({
+      ...conn,
+      source,
+      target,
+      id: idTaken ? `assoc-${safeRandomUUID()}` : conn.id,
+    })
+  }
+  return next
+}
+
 function getMindMapParentId(connections: Connection[], nodeId: string): string | null {
-  return connections.find((c) => c.target === nodeId)?.source ?? null
+  return mindMapTreeParentId(connections, nodeId)
 }
 
 function computeSiblingPathKey(
@@ -631,7 +672,12 @@ function commitMindMapReload(
   const previewStore = useMindMapSubgraphPreviewStore()
 
   ctx.data.value.nodes = result.nodes
-  ctx.data.value.connections = result.connections
+  ctx.data.value.connections = preserveMindMapAssociationConnections(
+    oldNodes,
+    oldConnections,
+    result.nodes,
+    result.connections
+  )
   ctx.data.value._node_styles = mergedNodeStyles
 
   if (syncV2 && (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map')) {
@@ -1540,7 +1586,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     const idsToExpand = new Set<string>([nodeId])
     let current: string | undefined = nodeId
     while (current && current !== 'topic') {
-      const parent = connections.find((c) => c.target === current)?.source
+      const parent = mindMapTreeParentId(connections, current)
       if (parent && mindMapNodeHasChildren(parent, connections)) {
         idsToExpand.add(parent)
       }

@@ -32,6 +32,7 @@ const props = withDefaults(
     colorMode?: CanvasExportColorMode
     layout?: CanvasExportLayout
     defaultTopic?: string
+    preferLearningSheet?: boolean
     captureDiagramPreview?: (preview?: {
       colorMode?: CanvasExportColorMode
     }) => Promise<string | null>
@@ -40,6 +41,7 @@ const props = withDefaults(
     colorMode: 'color',
     layout: 'landscape',
     defaultTopic: '',
+    preferLearningSheet: false,
     captureDiagramPreview: undefined,
   }
 )
@@ -69,6 +71,18 @@ const previewTopic = computed(() =>
 
 const previewHasHeader = computed(() => hasActiveWorksheetHeader(draft.value))
 
+const dedicatedLearningSheet = computed(() => props.preferLearningSheet)
+
+const modalTitle = computed(() =>
+  dedicatedLearningSheet.value
+    ? t('canvas.v3.ribbon.makeLearningSheet')
+    : t('canvas.worksheetText.modalTitle')
+)
+
+const showSheetFields = computed(
+  () => dedicatedLearningSheet.value || draft.value.learningSheetMode
+)
+
 const previewInstruction = computed(() => {
   const custom = draft.value.instructionText.trim()
   return custom || t('canvas.worksheetText.defaultInstruction')
@@ -78,6 +92,18 @@ const showHideOptions = computed(() => [
   { label: t('canvas.worksheetText.show'), value: 'show' as const },
   { label: t('canvas.worksheetText.hide'), value: 'hide' as const },
 ])
+
+const learningSheetModeOptions = computed(() => [
+  { label: t('canvas.worksheetText.learningSheetModeOff'), value: 'off' as const },
+  { label: t('canvas.worksheetText.learningSheetModeOn'), value: 'on' as const },
+])
+
+const learningSheetModeVisibility = computed({
+  get: (): 'on' | 'off' => (draft.value.learningSheetMode ? 'on' : 'off'),
+  set: (value: 'on' | 'off') => {
+    draft.value.learningSheetMode = value === 'on'
+  },
+})
 
 const colorOptions = computed(() => [
   { label: t('canvas.exportOptions.colorWireframe'), value: 'wireframe' as const },
@@ -154,10 +180,20 @@ const {
 
 function seedDraftFromProps() {
   // Keep empty topicText so export falls back to the live diagram title.
-  draft.value = {
+  const next: CanvasWorksheetTextOptions = {
     ...DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS,
     ...props.options,
+    learningSheetMode: props.preferLearningSheet,
   }
+  if (props.preferLearningSheet) {
+    next.learningSheetMode = true
+    next.showTopic = true
+    next.showName = true
+    next.showClass = true
+    next.showDate = true
+    next.showInstruction = true
+  }
+  draft.value = next
   draftColorMode.value = props.colorMode
   draftLayout.value = props.layout
 }
@@ -269,8 +305,11 @@ function handleExportDocx() {
 }
 
 async function handleReset() {
-  // Full factory defaults: fields, placement, scale, color mode, and paper orientation.
-  draft.value = { ...CLASSROOM_WORKSHEET_TEXT_PRESET }
+  const keepLearningSheet = draft.value.learningSheetMode
+  draft.value = {
+    ...CLASSROOM_WORKSHEET_TEXT_PRESET,
+    learningSheetMode: keepLearningSheet,
+  }
   draftColorMode.value = 'color'
   draftLayout.value = 'landscape'
   await nextTick()
@@ -296,7 +335,7 @@ async function handleReset() {
           aria-hidden="true"
         >◇</span>
         <h2 class="worksheet-text-modal__title">
-          {{ t('canvas.worksheetText.modalTitle') }}
+          {{ modalTitle }}
         </h2>
         <span
           class="worksheet-text-modal__header-rule"
@@ -381,12 +420,6 @@ async function handleReset() {
                 {{ t('canvas.worksheetText.instructionPrefix') }}{{ previewInstruction }}
               </p>
             </div>
-            <div
-              v-else
-              class="worksheet-text-modal__paper-empty"
-            >
-              {{ t('canvas.worksheetText.previewEmpty') }}
-            </div>
             <div class="worksheet-text-modal__paper-diagram">
               <div
                 ref="diagramBodyRef"
@@ -452,132 +485,170 @@ async function handleReset() {
                   {{ t('canvas.worksheetText.previewFailed') }}
                 </p>
               </div>
-              <p
-                v-if="diagramPreviewUrl"
-                class="worksheet-text-modal__paper-diagram-hint"
-              >
-                {{ t('canvas.worksheetText.dragDiagramHint') }}
-              </p>
             </div>
           </div>
         </div>
+        <p
+          v-if="diagramPreviewUrl"
+          class="worksheet-text-modal__preview-hint"
+        >
+          {{ t('canvas.worksheetText.dragDiagramHint') }}
+        </p>
       </aside>
 
       <div class="worksheet-text-modal__controls">
-        <div class="worksheet-text-modal__fields">
-          <div class="worksheet-text-modal__row">
-            <span class="worksheet-text-modal__label">{{
-              t('canvas.worksheetText.showTopic')
-            }}</span>
-            <AdminSwissSegmented
-              v-model="showTopicVisibility"
-              fit
-              :options="showHideOptions"
-              :aria-label="t('canvas.worksheetText.showTopic')"
-            />
-          </div>
-
-          <div class="worksheet-text-modal__field-input">
-            <span class="worksheet-text-modal__kicker">{{
-              t('canvas.worksheetText.topicPreviewLabel')
-            }}</span>
-            <ElInput
-              v-model="draft.topicText"
-              :placeholder="defaultTopic || t('canvas.worksheetText.topicPreviewLabel')"
-              class="worksheet-text-modal__input"
-            />
-          </div>
-
-          <div class="worksheet-text-modal__row">
-            <span class="worksheet-text-modal__label">{{
-              t('canvas.worksheetText.showName')
-            }}</span>
-            <AdminSwissSegmented
-              v-model="showNameVisibility"
-              fit
-              :options="showHideOptions"
-              :aria-label="t('canvas.worksheetText.showName')"
-            />
-          </div>
-
-          <div class="worksheet-text-modal__row">
-            <span class="worksheet-text-modal__label">{{
-              t('canvas.worksheetText.showClass')
-            }}</span>
-            <AdminSwissSegmented
-              v-model="showClassVisibility"
-              fit
-              :options="showHideOptions"
-              :aria-label="t('canvas.worksheetText.showClass')"
-            />
-          </div>
-
-          <div class="worksheet-text-modal__row">
-            <span class="worksheet-text-modal__label">{{
-              t('canvas.worksheetText.showDate')
-            }}</span>
-            <AdminSwissSegmented
-              v-model="showDateVisibility"
-              fit
-              :options="showHideOptions"
-              :aria-label="t('canvas.worksheetText.showDate')"
-            />
-          </div>
-
-          <div class="worksheet-text-modal__row">
-            <span class="worksheet-text-modal__label">{{
-              t('canvas.worksheetText.showInstruction')
-            }}</span>
-            <AdminSwissSegmented
-              v-model="showInstructionVisibility"
-              fit
-              :options="showHideOptions"
-              :aria-label="t('canvas.worksheetText.showInstruction')"
-            />
-          </div>
-        </div>
-
         <div
-          v-if="draft.showInstruction"
-          class="worksheet-text-modal__instruction"
+          class="worksheet-text-modal__mode-bar"
+          :class="{
+            'is-on': showSheetFields,
+            'is-dedicated': dedicatedLearningSheet,
+          }"
         >
-          <span class="worksheet-text-modal__kicker">{{
-            t('canvas.worksheetText.instructionLabel')
-          }}</span>
-          <ElInput
-            v-model="draft.instructionText"
-            type="textarea"
-            :rows="3"
-            :placeholder="t('canvas.worksheetText.defaultInstruction')"
-            class="worksheet-text-modal__textarea"
-          />
+          <div
+            v-if="!dedicatedLearningSheet"
+            class="worksheet-text-modal__mode-bar-header"
+          >
+            <span class="worksheet-text-modal__mode-bar-title">{{
+              t('canvas.worksheetText.learningSheetMode')
+            }}</span>
+            <AdminSwissSegmented
+              v-model="learningSheetModeVisibility"
+              fit
+              :options="learningSheetModeOptions"
+              :aria-label="t('canvas.worksheetText.learningSheetMode')"
+            />
+          </div>
+          <div
+            v-if="showSheetFields"
+            class="worksheet-text-modal__fields"
+          >
+            <p
+              v-if="!dedicatedLearningSheet"
+              class="worksheet-text-modal__sheet-panel-hint"
+            >
+              {{ t('canvas.worksheetText.learningSheetPanelHint') }}
+            </p>
+            <div class="worksheet-text-modal__row">
+              <span class="worksheet-text-modal__label">{{
+                t('canvas.worksheetText.showTopic')
+              }}</span>
+              <AdminSwissSegmented
+                v-model="showTopicVisibility"
+                fit
+                :options="showHideOptions"
+                :aria-label="t('canvas.worksheetText.showTopic')"
+              />
+            </div>
+
+            <div class="worksheet-text-modal__field-input">
+              <span class="worksheet-text-modal__kicker">{{
+                t('canvas.worksheetText.topicPreviewLabel')
+              }}</span>
+              <ElInput
+                v-model="draft.topicText"
+                :placeholder="defaultTopic || t('canvas.worksheetText.topicPreviewLabel')"
+                class="worksheet-text-modal__input"
+              />
+            </div>
+
+            <div class="worksheet-text-modal__row">
+              <span class="worksheet-text-modal__label">{{
+                t('canvas.worksheetText.showName')
+              }}</span>
+              <AdminSwissSegmented
+                v-model="showNameVisibility"
+                fit
+                :options="showHideOptions"
+                :aria-label="t('canvas.worksheetText.showName')"
+              />
+            </div>
+
+            <div class="worksheet-text-modal__row">
+              <span class="worksheet-text-modal__label">{{
+                t('canvas.worksheetText.showClass')
+              }}</span>
+              <AdminSwissSegmented
+                v-model="showClassVisibility"
+                fit
+                :options="showHideOptions"
+                :aria-label="t('canvas.worksheetText.showClass')"
+              />
+            </div>
+
+            <div class="worksheet-text-modal__row">
+              <span class="worksheet-text-modal__label">{{
+                t('canvas.worksheetText.showDate')
+              }}</span>
+              <AdminSwissSegmented
+                v-model="showDateVisibility"
+                fit
+                :options="showHideOptions"
+                :aria-label="t('canvas.worksheetText.showDate')"
+              />
+            </div>
+
+            <div class="worksheet-text-modal__row">
+              <span class="worksheet-text-modal__label">{{
+                t('canvas.worksheetText.showInstruction')
+              }}</span>
+              <AdminSwissSegmented
+                v-model="showInstructionVisibility"
+                fit
+                :options="showHideOptions"
+                :aria-label="t('canvas.worksheetText.showInstruction')"
+              />
+            </div>
+            <div
+              v-if="draft.showInstruction"
+              class="worksheet-text-modal__instruction"
+            >
+              <span class="worksheet-text-modal__kicker">{{
+                t('canvas.worksheetText.instructionLabel')
+              }}</span>
+              <ElInput
+                v-model="draft.instructionText"
+                type="textarea"
+                :rows="3"
+                :placeholder="t('canvas.worksheetText.defaultInstruction')"
+                class="worksheet-text-modal__textarea"
+              />
+            </div>
+          </div>
         </div>
 
-        <div class="worksheet-text-modal__row">
-          <span class="worksheet-text-modal__label">{{
-            t('canvas.exportOptions.colorLabel')
-          }}</span>
-          <AdminSwissSegmented
-            v-model="draftColorMode"
-            fit
-            :options="colorOptions"
-            :aria-label="t('canvas.exportOptions.colorLabel')"
-          />
-        </div>
+        <section
+          class="worksheet-text-modal__export-panel"
+          :aria-label="t('canvas.worksheetText.exportSettings')"
+        >
+          <h3 class="worksheet-text-modal__export-panel-title">
+            {{ t('canvas.worksheetText.exportSettings') }}
+          </h3>
+          <div class="worksheet-text-modal__row">
+            <span class="worksheet-text-modal__label">{{
+              t('canvas.exportOptions.colorLabel')
+            }}</span>
+            <AdminSwissSegmented
+              v-model="draftColorMode"
+              fit
+              :options="colorOptions"
+              :aria-label="t('canvas.exportOptions.colorLabel')"
+            />
+          </div>
 
-        <div class="worksheet-text-modal__row">
-          <span class="worksheet-text-modal__label">{{
-            t('canvas.exportOptions.layoutLabel')
-          }}</span>
-          <AdminSwissSegmented
-            v-model="draftLayout"
-            fit
-            :options="layoutOptions"
-            :aria-label="t('canvas.exportOptions.layoutLabel')"
-          />
-        </div>
+          <div class="worksheet-text-modal__row">
+            <span class="worksheet-text-modal__label">{{
+              t('canvas.exportOptions.layoutLabel')
+            }}</span>
+            <AdminSwissSegmented
+              v-model="draftLayout"
+              fit
+              :options="layoutOptions"
+              :aria-label="t('canvas.exportOptions.layoutLabel')"
+            />
+          </div>
 
-        <p class="worksheet-text-modal__hint">{{ t('canvas.worksheetText.modalHint') }}</p>
+          <p class="worksheet-text-modal__hint">{{ t('canvas.worksheetText.modalHint') }}</p>
+        </section>
       </div>
     </div>
 

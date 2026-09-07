@@ -5,7 +5,7 @@
  */
 import { ElTooltip } from 'element-plus'
 
-import { Wand2 } from '@lucide/vue'
+import { Sparkles } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useMindMapAudienceGenerate } from '@/composables/mindMap/audience/useMindMapAudienceGenerate'
@@ -56,7 +56,7 @@ const generatingLabel = t('canvas.toolbar.aiGenerating')
       :aria-label="isAIGenerating ? generatingLabel : generateLabel"
       @click="onGenerateClick"
     >
-      <Wand2
+      <Sparkles
         class="mm-ai-generate__icon h-4 w-4 shrink-0"
         aria-hidden="true"
       />

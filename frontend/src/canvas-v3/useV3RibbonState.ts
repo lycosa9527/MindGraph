@@ -6,7 +6,11 @@ import { onUnmounted, ref, watch } from 'vue'
 import { useAuthStore } from '@/stores'
 import { authFetch } from '@/utils/api'
 
-import { DEFAULT_V3_RIBBON_TAB, type V3RibbonTabId, isV3RibbonTabId } from './v3RibbonTypes'
+import {
+  DEFAULT_V3_RIBBON_TAB,
+  type V3RibbonTabId,
+  normalizeV3RibbonTabId,
+} from './v3RibbonTypes'
 
 const API_PATH = '/api/auth/diagram-preferences'
 const PERSIST_DEBOUNCE_MS = 400
@@ -26,7 +30,7 @@ export function useV3RibbonState() {
       return
     }
     classic.value = user.v3RibbonClassic === true
-    activeTab.value = isV3RibbonTabId(user.v3RibbonTab) ? user.v3RibbonTab : DEFAULT_V3_RIBBON_TAB
+    activeTab.value = normalizeV3RibbonTabId(user.v3RibbonTab) ?? DEFAULT_V3_RIBBON_TAB
   }
 
   hydrateFromUser()
@@ -65,7 +69,7 @@ export function useV3RibbonState() {
         v3_ribbon_tab?: string | null
       }
       const savedClassic = data.v3_ribbon_classic === true
-      const savedTab = isV3RibbonTabId(data.v3_ribbon_tab) ? data.v3_ribbon_tab : activeTab.value
+      const savedTab = normalizeV3RibbonTabId(data.v3_ribbon_tab) ?? activeTab.value
       classic.value = savedClassic
       activeTab.value = savedTab
       patchAuthUser(savedClassic, savedTab)

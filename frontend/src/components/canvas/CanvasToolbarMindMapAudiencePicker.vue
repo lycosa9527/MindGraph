@@ -46,8 +46,10 @@ const props = withDefaults(
     compact?: boolean
     /** top = toolbar below the control; bottom = control sits on the canvas bottom bar */
     anchor?: 'top' | 'bottom'
+    /** Status-bar clone: skip the first-run callout (toolbar instance owns it). */
+    hideGuide?: boolean
   }>(),
-  { compact: false, anchor: 'top' }
+  { compact: false, anchor: 'top', hideGuide: false }
 )
 
 const popoverPlacement = computed(() => (props.anchor === 'bottom' ? 'top-start' : 'bottom-start'))
@@ -92,6 +94,7 @@ const proContentButtonTitle = computed(
 
 const showProContentGuide = computed(
   () =>
+    !props.hideGuide &&
     showFirstRunGuide.value &&
     proContentGuideReady.value &&
     !diagramStore.collabSessionActive &&
@@ -115,7 +118,7 @@ const proContentGuideStyle = computed(() => {
     }
   }
   const viewportWidth = typeof window === 'undefined' ? 304 : window.innerWidth
-  const guideWidth = Math.min(280, viewportWidth - 24)
+  const guideWidth = Math.min(220, viewportWidth - 24)
   const halfWidth = guideWidth / 2
   const anchorCenter = rect.left + rect.width / 2
   const clampedCenter = Math.max(
@@ -188,7 +191,7 @@ watch(proContentPanelOpen, (open) => {
 })
 
 onMounted(() => {
-  if (!showFirstRunGuide.value || diagramStore.collabSessionActive) return
+  if (props.hideGuide || !showFirstRunGuide.value || diagramStore.collabSessionActive) return
   proContentGuideTimer = window.setTimeout(() => {
     updateProContentAnchorRect()
     if (proContentAnchor.value) {
@@ -276,7 +279,7 @@ function handleProContentKeydown(event: KeyboardEvent, id: AiContentLevelId): vo
     v-if="!diagramStore.collabSessionActive"
     v-model:visible="proContentPanelOpen"
     :placement="popoverPlacement"
-    :width="280"
+    :width="220"
     trigger="click"
     popper-class="mm-toolbar-popper mm-toolbar-popper--pro-content"
   >
@@ -320,6 +323,7 @@ function handleProContentKeydown(event: KeyboardEvent, id: AiContentLevelId): vo
           >{{ proContentActiveOption.title }}</span
         >
         <ChevronDown
+          :size="12"
           class="mm-btn__chevron"
           :class="{ 'mm-btn__chevron--open': proContentPanelOpen }"
         />

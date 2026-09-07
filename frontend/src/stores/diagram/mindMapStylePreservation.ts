@@ -25,7 +25,11 @@ import {
 import type { MindMapCanvasMode } from '@/stores/ui'
 import type { Connection, DiagramNode, DiagramType, NodeStyle } from '@/types'
 import { readEffectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
-import { isMindMapBranchNode, mindMapLocationPathKey } from '@/utils/mindMapLocation'
+import {
+  isMindMapAssociationConnection,
+  isMindMapBranchNode,
+  mindMapLocationPathKey,
+} from '@/utils/mindMapLocation'
 
 /** Injected to avoid a circular import with mindMapCollapse remap helpers. */
 export type MindMapNodeIdRemapper = (
@@ -42,6 +46,7 @@ export function buildMindMapChildrenMapByConnectionOrder(
 ): Map<string, string[]> {
   const map = new Map<string, string[]>()
   for (const c of connections) {
+    if (isMindMapAssociationConnection(c)) continue
     const kids = map.get(c.source)
     if (kids) kids.push(c.target)
     else map.set(c.source, [c.target])
@@ -373,6 +378,9 @@ export function buildMindMapStyleForNewBranchNode(
       backgroundColor: branchColors.backgroundColor,
       textColor: branchColors.textColor,
       borderColor: branchColors.borderColor,
+      borderWidth: branchColors.borderWidth,
+      accentBarColor: branchColors.accentBarColor,
+      accentBarWidth: branchColors.accentBarWidth ?? 0,
     }
   }
 

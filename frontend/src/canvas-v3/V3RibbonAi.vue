@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Bot, FileSearch, GitBranch, Layers, MessageCircle, Palette, Sparkles } from '@lucide/vue'
+import { FileSearch, GitBranch, Layers, MessageCircle, Sparkles } from '@lucide/vue'
 
 import CanvasToolbarMindMapAudiencePicker from '@/components/canvas/CanvasToolbarMindMapAudiencePicker.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -63,22 +63,6 @@ const actions = useV3RibbonActions()
     :classic="classic"
   >
     <V3RibbonCommand
-      :label="t('canvas.v3.mindMate')"
-      :icon="Bot"
-      variant="stacked"
-      :active="actions.isMindmateOpen"
-      :disabled="disabled"
-      @click="actions.toggleMindmate"
-    />
-    <V3RibbonCommand
-      :label="t('canvas.v3.palette')"
-      :icon="Palette"
-      variant="stacked"
-      :active="actions.isNodePaletteOpen"
-      :disabled="disabled"
-      @click="actions.openNodePalette"
-    />
-    <V3RibbonCommand
       v-if="classic"
       :label="t('canvas.mindMapSideToolbar.waterfall')"
       :icon="Layers"
@@ -115,13 +99,6 @@ const actions = useV3RibbonActions()
       variant="stacked"
       :disabled="disabled || !actions.hasSelection"
       @click="actions.requestAiSubgraph"
-    />
-    <V3RibbonCommand
-      :label="t('canvas.floatingToolbar.explainNode')"
-      :icon="MessageCircle"
-      variant="stacked"
-      :disabled="disabled || !actions.hasSelection"
-      @click="actions.requestExplainNode"
     />
   </V3RibbonGroup>
 </template>

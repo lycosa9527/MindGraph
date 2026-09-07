@@ -11,9 +11,16 @@ import {
   mindMapStyleFromTheme,
   nodeHasMindMapThemeColors,
 } from '@/config/mindMapThemes'
+import {
+  applyRainbowMindMapColors,
+  isRainbowMindMapTheme,
+} from '@/config/mindMapVibrantThemes'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
-import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
+import {
+  isMindMapV2FamilyMode,
+  resolveSessionMindMapCanvasMode,
+} from '@/utils/mindMapCanvasMode'
 import {
   remapCollabConnectionEndpoints,
   spliceCollabConnection,
@@ -162,31 +169,35 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       ctx.mindMapPreserveIncomingY.value = false
       ctx.mindMapPreserveIncomingYNodeId.value = null
 
-      // V2 only: classic hydrate restores Material palette / LEGACY_MINDMAP_THEME defaults.
-      if (sessionCanvasMode === 'v2') {
+      // V2/V3: fill missing node colors from the diagram theme (rainbow is per-L1).
+      if (isMindMapV2FamilyMode(sessionCanvasMode)) {
         const themeFromSpec = getMindMapThemeForDiagram(spec as { _mindmap_theme?: string | null })
         const diagramStyleId = (spec as { _mindmap_diagram_style?: string | null })
           ._mindmap_diagram_style
-        nodesToStore = nodesToStore.map((node) => {
-          if (node.type === 'boundary' || nodeHasMindMapThemeColors(node.style)) return node
-          return {
-            ...node,
-            style: {
-              ...mindMapStyleFromTheme(
-                node,
-                themeFromSpec,
-                diagramStyleId,
-                result.connections
-              ),
-              ...(node.style || {}),
-            },
-          }
-        })
-        const layered = mindMapDiagramStyleUsesLayeredBranchColors(diagramStyleId)
-        syncMindMapConnectionStrokeColors(
-          result.connections,
-          layered ? themeFromSpec.borderColor : themeFromSpec.topicBorderColor
-        )
+        if (isRainbowMindMapTheme(themeFromSpec.id)) {
+          applyRainbowMindMapColors(nodesToStore, result.connections)
+        } else {
+          nodesToStore = nodesToStore.map((node) => {
+            if (node.type === 'boundary' || nodeHasMindMapThemeColors(node.style)) return node
+            return {
+              ...node,
+              style: {
+                ...mindMapStyleFromTheme(
+                  node,
+                  themeFromSpec,
+                  diagramStyleId,
+                  result.connections
+                ),
+                ...(node.style || {}),
+              },
+            }
+          })
+          const layered = mindMapDiagramStyleUsesLayeredBranchColors(diagramStyleId)
+          syncMindMapConnectionStrokeColors(
+            result.connections,
+            layered ? themeFromSpec.borderColor : themeFromSpec.topicBorderColor
+          )
+        }
       }
 
       if (nodesToStore.length > 0) {

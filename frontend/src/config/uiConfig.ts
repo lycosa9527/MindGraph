@@ -139,10 +139,12 @@ export const FIT_PADDING = {
     BUFFER_PX: 20,
   },
   /**
-   * Top padding in pixels — clears merged canvas chrome only (CanvasTopBar `min-h-12` = 48px).
-   * Previously 64px when header and editing toolbar were separate rows; reclaimed for fit/zoom area.
+   * Top padding in pixels — clears merged canvas chrome (CanvasTopBar `min-h-12` = 48px).
+   * Mind-map V2 two-row chrome (title + ribbon tools) uses MIND_MAP_TWO_ROW_CHROME_PX.
    */
   TOP_UI_HEIGHT_PX: 48,
+  /** Title row (~44px) + tool row (~44px) for mind-map V2 ribbon chrome. */
+  MIND_MAP_TWO_ROW_CHROME_PX: 88,
   /** Extra top padding for concept map - leaves space for menu icon above main topic node (icon ~20px + margin) */
   MAIN_TOPIC_MENU_ICON_PX: 35,
   /** Bottom padding in pixels - ZoomControls + AIModelSelector (bottom-4 + compact bar ~48px + margin) */
@@ -191,8 +193,11 @@ export const CANVAS_TOP_BAR = {
   AUTOSAVE_STATUS_MAX_WIDTH: 'min(11rem, 42vw)',
   /** Workshop participant name in header chip */
   PARTICIPANT_NAME_MAX_WIDTH_PX: 140,
-  /** Filename display (non-edit); `ch` = width of "0" in font */
-  FILENAME_DISPLAY_MAX_WIDTH: '12ch',
+  /**
+   * Filename display (non-edit). `ch` is the width of "0"; CJK glyphs are ~2ch,
+   * so 24ch fits the default untitled mind-map name (未命名思维导图) without clipping.
+   */
+  FILENAME_DISPLAY_MAX_WIDTH: '24ch',
   /** Filename edit input cap inside left column */
   FILE_NAME_INPUT_MAX_WIDTH: 'min(12rem, 100%)',
 } as const

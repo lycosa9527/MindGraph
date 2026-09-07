@@ -137,6 +137,9 @@ export type EventTypes = {
   'diagram:workshop_snapshot_applied': Record<string, never>
   'mindmap:ai_subgraph_requested': { nodeId?: string }
   'mindmap:explain_node_requested': { nodeId?: string }
+  'mindmap:doc_summary_tab': {
+    tab: 'file' | 'web' | 'document' | 'image' | 'chat'
+  }
   'concept_map:link_drop': { sourceId: string; targetId: string; linkedFromConnectionId?: string }
   /**
    * Link handle (node menu or relationship menu): start drawing a link. Uses Pointer events so
@@ -710,7 +713,7 @@ export type EventTypes = {
 
   // Toolbar Events
   'toolbar:export_requested': { format: string; options?: CanvasExportOptions }
-  'toolbar:worksheet_text_requested': Record<string, never>
+  'toolbar:worksheet_text_requested': { preferLearningSheet?: boolean }
   'toolbar:zhihui_diagram_requested': Record<string, never>
   'presentation:start_requested': Record<string, never>
   'collab:open_requested': { mode: 'organization' | 'network' | 'stop' }

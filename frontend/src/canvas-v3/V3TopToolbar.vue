@@ -6,6 +6,7 @@ import { computed, nextTick, ref } from 'vue'
 
 import { ChevronDown } from '@lucide/vue'
 
+import CanvasOnlineCollabMenu from '@/components/canvas/CanvasOnlineCollabMenu.vue'
 import CanvasVirtualKeyboardPanel from '@/components/canvas/CanvasVirtualKeyboardPanel.vue'
 import { getDefaultDiagramName } from '@/composables'
 import { canvasVirtualKeyboardOpen } from '@/composables/canvasToolbar/useCanvasVirtualKeyboardOpen'
@@ -15,6 +16,7 @@ import { useDiagramStore } from '@/stores'
 
 import V3CollapsedPills from './V3CollapsedPills.vue'
 import V3Ribbon from './V3Ribbon.vue'
+import V3RibbonTabs from './V3RibbonTabs.vue'
 import { useV3RibbonActions } from './useV3RibbonActions'
 import { useV3RibbonState } from './useV3RibbonState'
 import './v3Chrome.css'
@@ -96,6 +98,7 @@ function finishRename(): void {
     <div
       v-else
       class="v3-chrome"
+      :data-tab="activeTab"
     >
       <div class="v3-qat">
         <button
@@ -124,49 +127,23 @@ function finishRename(): void {
             {{ fileName }}
           </button>
         </div>
-        <button
-          type="button"
-          class="v3-ribbon-cmd"
-          :disabled="isViewer"
-          :title="`${t('common.save')} (${t('canvas.toolbar.saveShortcut')})`"
-          @click="actions.requestSave"
-        >
-          {{ t('common.save') }}
-        </button>
-        <button
-          type="button"
-          class="v3-ribbon-cmd"
-          :disabled="!actions.canUndo || isViewer"
-          :title="`${t('canvas.toolbar.undo')} (${t('canvas.toolbar.undoShortcut')})`"
-          @click="actions.undo"
-        >
-          {{ t('canvas.toolbar.undo') }}
-        </button>
-        <button
-          type="button"
-          class="v3-ribbon-cmd"
-          :disabled="!actions.canRedo || isViewer"
-          :title="`${t('canvas.toolbar.redo')} (${t('canvas.toolbar.redoShortcut')})`"
-          @click="actions.redo"
-        >
-          {{ t('canvas.toolbar.redo') }}
-        </button>
         <span
           v-if="autoSavedStatus && !isViewer"
           class="v3-qat__autosave"
           :title="autoSavedStatus"
           >{{ autoSavedStatus }}</span
         >
+        <V3RibbonTabs
+          :active-tab="activeTab"
+          variant="v3"
+          @update:active-tab="setActiveTab"
+        />
         <div class="v3-qat__end">
-          <button
-            type="button"
-            class="v3-mindmate-btn"
-            :class="{ 'is-active': actions.isMindmateOpen }"
-            :disabled="isViewer"
-            @click="actions.toggleMindmate"
-          >
-            {{ t('canvas.v3.mindMate') }}
-          </button>
+          <CanvasOnlineCollabMenu
+            :workshop-code="workshopCode"
+            :is-collab-guest="isCollabGuest"
+            :is-viewer="isViewer"
+          />
         </div>
       </div>
       <V3Ribbon
@@ -177,7 +154,6 @@ function finishRename(): void {
         :recalling-snapshot-version="recallingSnapshotVersion"
         :is-collab-guest="isCollabGuest"
         :workshop-code="workshopCode"
-        @update:active-tab="setActiveTab"
         @toggle-classic="toggleClassic"
       />
     </div>

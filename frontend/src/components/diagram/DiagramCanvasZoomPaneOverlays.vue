@@ -26,6 +26,7 @@ const props = defineProps<{
   linkDragTargetNodeId: string | null
   showConceptLinkPreview: boolean
   linkPreviewShowArrow: boolean
+  showLinkPreviewPill?: boolean
 }>()
 
 const dragState = computed(() => toValue(props.branchMove.state))
@@ -178,7 +179,7 @@ const dropTargetShapeClass = computed((): string => {
       :marker-end="linkPreviewShowArrow ? 'url(#concept-map-link-preview-arrow)' : undefined"
     />
     <rect
-      v-if="!linkDragTargetNodeId"
+      v-if="showLinkPreviewPill !== false && !linkDragTargetNodeId"
       :x="linkDragCursor.x - 40"
       :y="linkDragCursor.y - 18"
       width="80"

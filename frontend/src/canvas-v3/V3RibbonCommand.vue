@@ -25,6 +25,7 @@ withDefaults(
 
 const emit = defineEmits<{
   click: []
+  dblclick: []
 }>()
 </script>
 
@@ -42,6 +43,7 @@ const emit = defineEmits<{
     :disabled="disabled"
     :title="shortcut ? `${label} (${shortcut})` : label"
     @click="emit('click')"
+    @dblclick.prevent="emit('dblclick')"
   >
     <component
       :is="icon"

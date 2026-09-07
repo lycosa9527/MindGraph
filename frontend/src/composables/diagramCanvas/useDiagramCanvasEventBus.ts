@@ -272,8 +272,8 @@ export function useDiagramCanvasEventBus(): {
     )
 
     unsubscribers.push(
-      eventBus.on('toolbar:worksheet_text_requested', () => {
-        canvasExportStore.openWorksheetTextModal()
+      eventBus.on('toolbar:worksheet_text_requested', (payload) => {
+        canvasExportStore.openWorksheetTextModal(Boolean(payload.preferLearningSheet))
       })
     )
 

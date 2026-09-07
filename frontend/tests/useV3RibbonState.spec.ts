@@ -44,8 +44,8 @@ describe('useV3RibbonState', () => {
       throw new Error('expected ribbon state')
     }
     expect(state.classic.value).toBe(false)
-    expect(state.activeTab.value).toBe('home')
-    state.setActiveTab('design')
+    expect(state.activeTab.value).toBe('edit')
+    state.setActiveTab('teaching')
     state.setClassic(true)
     vi.runAllTimers()
     expect(authFetch).not.toHaveBeenCalled()
@@ -70,13 +70,14 @@ describe('useV3RibbonState', () => {
       username: 'teacher',
       role: 'teacher',
       v3RibbonClassic: false,
-      v3RibbonTab: 'home',
+      v3RibbonTab: 'draw',
     }
     const scope = effectScope()
     const state = scope.run(() => useV3RibbonState())
     if (!state) {
       throw new Error('expected ribbon state')
     }
+    expect(state.activeTab.value).toBe('edit')
     state.setClassic(true)
     state.setActiveTab('file')
     await vi.runAllTimersAsync()

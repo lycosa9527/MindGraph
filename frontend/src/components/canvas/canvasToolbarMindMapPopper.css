@@ -158,6 +158,10 @@
   width: 100%;
 }
 
+.mm-panel--insert {
+  min-width: 168px;
+}
+
 .mm-panel--export {
   width: max-content;
   min-width: min(100%, 168px);
@@ -230,6 +234,10 @@
 
 .mm-list-item:hover {
   background: #f3f4f6;
+}
+
+.mm-list-item.is-dimmed {
+  opacity: 0.45;
 }
 
 .mm-list-item.is-active {
@@ -389,4 +397,50 @@
   font-size: 12px;
   font-weight: 500;
   line-height: 1.4;
+}
+
+.node-floating-toolbar-popper.el-popper {
+  z-index: 5100 !important;
+  padding: 8px !important;
+  border-radius: 10px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12) !important;
+}
+
+.node-floating-toolbar-popper .nft-dropdown-menu {
+  padding: 0 !important;
+  min-width: 0 !important;
+  list-style: none !important;
+}
+
+.node-floating-toolbar-popper .el-dropdown-menu {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.node-floating-toolbar-popper .el-dropdown-menu__item.nft-dropdown-item {
+  padding: 6px 12px !important;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #334155;
+  justify-content: flex-start !important;
+  list-style: none !important;
+}
+
+.node-floating-toolbar-popper .el-dropdown-menu__item.nft-dropdown-item::before,
+.node-floating-toolbar-popper .el-dropdown-menu__item.nft-dropdown-item::marker {
+  content: none !important;
+  display: none !important;
+}
+
+.node-floating-toolbar-popper .el-dropdown-menu__item.nft-dropdown-item:hover {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+}
+
+.node-floating-toolbar-popper .el-dropdown-menu__item.nft-dropdown-item--active {
+  color: #2563eb !important;
+  font-weight: 600;
+  background: transparent !important;
 }
