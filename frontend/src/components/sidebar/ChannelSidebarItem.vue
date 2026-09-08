@@ -12,6 +12,7 @@ import TopicActionsPopover from '@/components/workshop-chat/TopicActionsPopover.
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { ChatChannel, ChatTopic } from '@/stores/workshopChat'
 import { lessonStudyDeadlineBadge } from '@/utils/lessonStudyDeadline'
+import { channelTopicChevronVisible } from '@/utils/workshopTopicChevron'
 
 const MAX_VISIBLE_TOPICS = 5
 
@@ -57,6 +58,10 @@ const remainingCount = computed(() => Math.max(0, props.topics.length - MAX_VISI
 
 const hasTopics = computed(() => props.topics.length > 0)
 
+const showTopicChevron = computed(() =>
+  channelTopicChevronVisible(props.channel.topic_count ?? 0, props.topics.length)
+)
+
 const lessonDeadlineKind = computed(() => lessonStudyDeadlineBadge(props.channel).kind)
 
 const lessonDeadlineBadgeClass = computed(() => {
@@ -100,7 +105,7 @@ const lessonDeadlineShortLabel = computed(() => {
     >
       <button
         class="channel-expand-btn"
-        :class="{ 'channel-expand-btn--visible': hasTopics }"
+        :class="{ 'channel-expand-btn--visible': showTopicChevron }"
         @click.stop="emit('toggleExpand', channel.id)"
       >
         <component

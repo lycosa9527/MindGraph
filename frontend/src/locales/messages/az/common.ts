@@ -100,6 +100,7 @@ export default {
   'meta.pageTitle.askOnce': 'AskOnce',
   'meta.pageTitle.auth': 'Daxil ol',
   'meta.pageTitle.canvas': 'Kətan',
+  'meta.pageTitle.training': 'Training',
   'meta.pageTitle.chunkTest': 'Chunk testi',
   'meta.pageTitle.chunkTestResults': 'Chunk test nəticələri',
   'meta.pageTitle.community': 'İcma',

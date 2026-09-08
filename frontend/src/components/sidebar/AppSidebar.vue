@@ -15,6 +15,8 @@ import ThinkingCoinsModal from '@/components/auth/ThinkingCoinsModal.vue'
 import LanguageSettingsModal from '@/components/settings/LanguageSettingsModal.vue'
 import { useThinkingCoinInsufficientListener } from '@/composables/auth/useThinkingCoinInsufficientListener'
 import { appSidebarInjectionKey, useAppSidebar } from '@/composables/sidebar/useAppSidebar'
+import { eventBus } from '@/composables/core/useEventBus'
+import type { TrainingModalKey } from '@/config/trainingUiTargets'
 
 import AppSidebarAccountFooter from './AppSidebarAccountFooter.vue'
 import AppSidebarNav from './AppSidebarNav.vue'
@@ -39,6 +41,62 @@ const {
   orgEditionLabel,
   orgEditionTooltip,
 } = sidebar
+
+function openTrainingModal(key: TrainingModalKey): void {
+  if (key === 'language-settings') {
+    sidebar.openLanguageSettingsModal()
+    return
+  }
+  if (key === 'account') {
+    sidebar.openAccountModal()
+    return
+  }
+  if (key === 'thinking-coins') {
+    sidebar.openThinkingCoinsModal()
+    return
+  }
+  if (key === 'login') {
+    sidebar.openLoginModal()
+    return
+  }
+  if (key === 'update-log') {
+    sidebar.openUpdateLogModal()
+  }
+}
+
+const TRAINING_HOST_MODALS = new Set<TrainingModalKey>([
+  'language-settings',
+  'account',
+  'thinking-coins',
+  'update-log',
+  'login',
+])
+const TRAINING_MODAL_OWNER = 'AppSidebarTrainingModals'
+
+function closeTrainingHostModals(): void {
+  showLanguageSettingsModal.value = false
+  showAccountModal.value = false
+  showThinkingCoinsModal.value = false
+  showUpdateLogModal.value = false
+  showLoginModal.value = false
+}
+
+eventBus.onWithOwner(
+  'training:modal_open_requested',
+  ({ key }) => {
+    if (TRAINING_HOST_MODALS.has(key as TrainingModalKey)) {
+      openTrainingModal(key as TrainingModalKey)
+    }
+  },
+  TRAINING_MODAL_OWNER
+)
+eventBus.onWithOwner(
+  'training:modal_close_requested',
+  () => {
+    closeTrainingHostModals()
+  },
+  TRAINING_MODAL_OWNER
+)
 
 const showLogoQrScan = ref(false)
 const prefersHover = ref(false)
@@ -118,12 +176,13 @@ watch(isCollapsed, (collapsed) => {
 onBeforeUnmount(() => {
   clearHoverOpenTimer()
   clearHoverCloseTimer()
+  eventBus.removeAllListenersForOwner(TRAINING_MODAL_OWNER)
 })
 </script>
 
 <template>
   <div
-    class="app-sidebar bg-stone-50 flex flex-col h-full shrink-0 overflow-hidden"
+    class="app-sidebar bg-stone-50 flex flex-col h-full min-h-0 shrink-0 overflow-hidden"
     :class="
       isCollapsed
         ? 'w-0 min-w-0 max-w-0 border-transparent pointer-events-none'
@@ -244,4 +303,5 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 </style>

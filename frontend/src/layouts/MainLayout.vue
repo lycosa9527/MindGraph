@@ -60,7 +60,7 @@ const overlayIcpOnLanding = computed(() => route.path.startsWith('/mindgraph'))
 </script>
 
 <template>
-  <div class="main-layout h-screen w-screen flex overflow-hidden">
+  <div class="main-layout">
     <AppSidebar v-if="!hideAppSidebar" />
 
     <!-- Main content (blurred for guests; sidebar stays clear) -->
@@ -119,7 +119,26 @@ const overlayIcpOnLanding = computed(() => route.path.startsWith('/mindgraph'))
   </div>
 </template>
 
+<style>
+html:has(.main-layout),
+html:has(.main-layout) body,
+html:has(.main-layout) #app {
+  height: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+</style>
+
 <style scoped>
+.main-layout {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
 .main-slot {
   flex: 1 1 0;
 }
@@ -136,11 +155,19 @@ const overlayIcpOnLanding = computed(() => route.path.startsWith('/mindgraph'))
 .icp-footer {
   flex-shrink: 0;
   padding: 12px 8px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
   text-align: center;
   font-size: 12px;
   color: #999;
   user-select: none;
   pointer-events: none;
+}
+
+@media (max-height: 700px) {
+  .icp-footer {
+    padding-top: 6px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
+  }
 }
 
 /* Landing: sit on the sheen (positioned against `main`, which is relative) */

@@ -19,8 +19,16 @@ const MOBILE_REDIRECT_SKIP_PREFIXES = [
   '/admin',
 ] as const
 
-/** Destination under `/m/*`, or hub `/m` for unmapped desktop paths. */
-export function resolveMobileRouteRedirect(desktopPath: string): string {
+export function resolveMobileRouteRedirect(
+  desktopPath: string,
+  opts?: { isTrainingLead?: boolean }
+): string {
+  if (desktopPath === '/training') {
+    return opts?.isTrainingLead ? '/m/training' : '/m'
+  }
+  if (desktopPath.startsWith('/training/')) {
+    return '/m'
+  }
   return MOBILE_ROUTE_MAP[desktopPath] ?? '/m'
 }
 

@@ -82,6 +82,17 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/mobile/MobileVoiceNotesPage.vue'),
     meta: { requiresAuth: true, layout: 'mobile', ...pageTitle('voiceNotes') },
   },
+  {
+    path: '/m/training',
+    name: 'MobileTraining',
+    component: () => import('@/pages/mobile/MobileTrainingRemotePage.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresTrainingLead: true,
+      layout: 'mobile',
+      ...pageTitle('training'),
+    },
+  },
 
   // ── Desktop routes ────────────────────────────────────────────────
   {
@@ -120,6 +131,39 @@ const routes: RouteRecordRaw[] = [
     name: 'Canvas',
     component: () => import('@/pages/CanvasPage.vue'),
     meta: { requiresAuth: true, layout: 'canvas', ...pageTitle('canvas') },
+  },
+  {
+    path: '/training',
+    name: 'Training',
+    component: () => import('@/pages/TrainingPage.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresTrainingLead: true,
+      layout: 'main',
+      ...pageTitle('training'),
+    },
+  },
+  {
+    path: '/training/builder',
+    name: 'TrainingBuilder',
+    component: () => import('@/pages/TrainingBuilderPage.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresTrainingLead: true,
+      layout: 'main',
+      ...pageTitle('training'),
+    },
+  },
+  {
+    path: '/training/builder/:courseId',
+    name: 'TrainingBuilderEditor',
+    component: () => import('@/pages/TrainingBuilderEditorPage.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresTrainingLead: true,
+      layout: 'main',
+      ...pageTitle('training'),
+    },
   },
   {
     path: '/admin/mindbot',
@@ -313,7 +357,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/WorkshopChatPage.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdminOrManager: true,
+      requiresWorkshopChatAccess: true,
       layout: 'main',
       ...pageTitle('workshopChat'),
     },
@@ -403,6 +447,18 @@ router.beforeEach(async (to, from) => {
   const skipMobileRedirect = shouldSkipMobileRouteRedirect(to.path)
 
   if (isMobile.value && !skipMobileRedirect) {
+    if (to.path === '/training') {
+      await featureFlagsStore.fetchFlags()
+      if (!authStore.user) {
+        await authStore.checkAuth()
+      }
+      const isTrainingLead =
+        featureFlagsStore.getFeatureTraining() && authStore.isPlatformLevel
+      return {
+        path: resolveMobileRouteRedirect(to.path, { isTrainingLead }),
+        query: to.query as Record<string, string>,
+      }
+    }
     const mobilePath = resolveMobileRouteRedirect(to.path)
     return { path: mobilePath, query: to.query as Record<string, string> }
   }
@@ -467,6 +523,16 @@ router.beforeEach(async (to, from) => {
     return { name: 'MindMate' }
   }
 
+  if (to.meta.requiresTrainingLead) {
+    await featureFlagsStore.fetchFlags()
+    if (!featureFlagsStore.getFeatureTraining() || !authStore.isPlatformLevel) {
+      if (to.path.startsWith('/m/')) {
+        return { path: '/m' }
+      }
+      return { name: 'MindMate' }
+    }
+  }
+
   // Check admin access (admin-only, not managers)
   if (to.meta.requiresAdmin && !authStore.isAdmin) {
     return { name: 'MindMate' }
@@ -499,7 +565,7 @@ router.beforeEach(async (to, from) => {
     const workshopEntry = accessMap.feature_workshop_chat
     if (
       !userCanAccessWorkshopChat(
-        authStore.isAdminOrManager,
+        authStore.isAdmin,
         authStore.user?.schoolId,
         authStore.user?.id,
         previewIds,
@@ -567,10 +633,13 @@ router.beforeEach(async (to, from) => {
   if (to.meta.guestOnly) {
     const isAuthenticated = await authStore.checkAuth()
     if (isAuthenticated) {
-      if (isMobile.value) {
-        return { path: '/m' }
+      const trainingAuth = to.name === 'Auth' && String(to.query.training || '') === '1'
+      if (!trainingAuth) {
+        if (isMobile.value) {
+          return { path: '/m' }
+        }
+        return { name: 'MindMate' }
       }
-      return { name: 'MindMate' }
     }
     if (to.name === 'Auth') {
       useUIStore().syncGuestLocaleFromBrowser()

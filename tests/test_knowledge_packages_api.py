@@ -119,6 +119,45 @@ def test_ingest_text_does_not_start_processing(client: TestClient) -> None:
     task.delay.assert_not_called()
 
 
+def test_doc_summary_ingest_text_defaults_title_to_package_name(client: TestClient) -> None:
+    """Untitled Document Summary pastes use the package/diagram title."""
+    app.dependency_overrides[get_current_user] = _override_current_user
+    document = SimpleNamespace(
+        id=8,
+        file_name="国王节演讲金句.md",
+        file_type="text/markdown",
+        file_size=12,
+        status="completed",
+        chunk_count=0,
+        error_message=None,
+        processing_progress="completed",
+        processing_progress_percent=100,
+        doc_metadata={},
+        created_at=SimpleNamespace(isoformat=lambda: "2026-01-01T00:00:00"),
+        updated_at=SimpleNamespace(isoformat=lambda: "2026-01-01T00:00:00"),
+    )
+    with (
+        patch("routers.api.knowledge_space.packages.KnowledgePackageService") as service_cls,
+        patch("routers.api.knowledge_space.packages.DocSummaryIngestService") as ingest_cls,
+        patch("routers.api.knowledge_space.packages.schedule_module_activity"),
+    ):
+        service = service_cls.return_value
+        service.get_package = AsyncMock(
+            return_value=SimpleNamespace(id=47, source="doc_summary", name="国王节演讲金句")
+        )
+        ingest = ingest_cls.return_value
+        ingest.ingest_text = AsyncMock(return_value=document)
+        response = client.post(
+            "/api/knowledge-space/packages/47/documents/ingest-text",
+            json={"content": "hello world"},
+        )
+    assert response.status_code == 200
+    ingest.ingest_text.assert_awaited_once()
+    called = ingest.ingest_text.await_args
+    assert called is not None
+    assert called.kwargs["title"] == "国王节演讲金句"
+
+
 def test_start_package_processing_enqueues_pending_sources(client: TestClient) -> None:
     """Start-processing indexes pending package sources on demand."""
     app.dependency_overrides[get_current_user] = _override_current_user

@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from models.domain.knowledge_space import KnowledgeDocument
 from services.knowledge.doc_summary_ingest import DocSummaryIngestService, _run_file_extract_job
 
 
@@ -59,17 +61,20 @@ async def test_ingest_file_schedules_background_job(tmp_path: Path) -> None:
         side_effect=[
             MagicMock(scalars=MagicMock(return_value=MagicMock(first=MagicMock(return_value=pkg)))),
             MagicMock(scalars=MagicMock(return_value=MagicMock(all=MagicMock(return_value=[])))),
+            MagicMock(scalars=MagicMock(return_value=MagicMock(all=MagicMock(return_value=[])))),
             MagicMock(scalars=MagicMock(return_value=MagicMock(first=MagicMock(return_value=space)))),
         ]
     )
 
-    created: dict[str, object] = {}
-
-    def _capture_add(obj: object) -> None:
-        created["doc"] = obj
-        setattr(obj, "id", 77)
-
-    db.add = MagicMock(side_effect=_capture_add)
+    async def _insert_row(
+        _db: object,
+        _space_id: int,
+        desired_name: str,
+        build: Callable[[str], KnowledgeDocument],
+    ) -> KnowledgeDocument:
+        document = build(desired_name)
+        document.id = 77
+        return document
 
     service = DocSummaryIngestService(db, user_id=1)
     job_dir = tmp_path / "job"
@@ -93,6 +98,11 @@ async def test_ingest_file_schedules_background_job(tmp_path: Path) -> None:
         ) as create_task,
         patch("services.knowledge.doc_summary_ingest.clear_package_redis", new_callable=AsyncMock),
         patch("services.knowledge.doc_summary_ingest.delete_extracted_content", new_callable=AsyncMock),
+        patch(
+            "services.knowledge.doc_summary_ingest.insert_unique_named_row",
+            new_callable=AsyncMock,
+            side_effect=_insert_row,
+        ),
     ):
         result = await service.ingest_file(9, str(upload), "x.pdf", "application/pdf", 9)
 
@@ -216,3 +226,64 @@ async def test_run_file_extract_job_cleans_temp_on_failure(tmp_path: Path) -> No
 
     assert document.status == "failed"
     remove_job.assert_called_once_with(str(job_dir))
+
+
+@pytest.mark.asyncio
+async def test_persist_extracted_uses_unique_space_filename() -> None:
+    """A second paste in the same knowledge space must not reuse file_name."""
+    db = AsyncMock()
+    db.commit = AsyncMock()
+    db.refresh = AsyncMock()
+
+    async def _insert_row(
+        _db: object,
+        _space_id: int,
+        _desired: str,
+        build: Callable[[str], KnowledgeDocument],
+    ) -> KnowledgeDocument:
+        document = build("Pasted note_1.md")
+        document.id = 88
+        return document
+
+    service = DocSummaryIngestService(db, user_id=5)
+    space = SimpleNamespace(id=19)
+
+    with (
+        patch.object(service, "_ensure_space", new_callable=AsyncMock, return_value=space),
+        patch(
+            "services.knowledge.doc_summary_ingest.insert_unique_named_row",
+            new_callable=AsyncMock,
+            side_effect=_insert_row,
+        ) as insert_row,
+        patch(
+            "services.knowledge.doc_summary_ingest.store_extracted_markdown",
+            new_callable=AsyncMock,
+            return_value={"storage": "local", "object_id": "obj1"},
+        ),
+        patch(
+            "services.knowledge.doc_summary_ingest.build_storage_metadata",
+            return_value={"extract_char_count": 5, "storage": "local"},
+        ) as build_meta,
+        patch("services.knowledge.doc_summary_ingest.cache_extracted_text", new_callable=AsyncMock),
+        patch(
+            "services.knowledge.doc_summary_ingest.set_package_extract_progress",
+            new_callable=AsyncMock,
+        ),
+        patch("services.knowledge.doc_summary_ingest.new_object_id", return_value="obj1"),
+    ):
+        result = await service.persist_extracted(
+            package_id=47,
+            markdown="hello",
+            source_filename="Pasted note.md",
+            source_mime="text/markdown",
+            file_size=5,
+            ingest_source="paste",
+            skip_replace=True,
+        )
+
+    insert_row.assert_awaited_once()
+    called = insert_row.await_args
+    assert called is not None
+    assert called.args[1:3] == (19, "Pasted note.md")
+    assert result.file_name == "Pasted note_1.md"
+    assert build_meta.call_args.kwargs["source_filename"] == "Pasted note_1.md"

@@ -9,7 +9,13 @@ import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
 import { isCanvasPristineForTypeSwitch } from '@/composables/canvasPage/isCanvasPristineForTypeSwitch'
 import { switchCanvasDiagramType } from '@/composables/canvasPage/switchCanvasDiagramType'
 import { loadElMessageBox } from '@/composables/core/notifications'
+import { eventBus } from '@/composables/core/useEventBus'
 import { adoptOpenCanvasSessionScope } from '@/composables/kitty/adoptOpenCanvasSessionScope'
+import { applyKittySelectionTarget } from '@/composables/kitty/kittySelectionApply'
+import {
+  consumeKittyPendingDesktopExplain,
+  stashKittyPendingDesktopExplain,
+} from '@/composables/kitty/kittyPendingCanvasAction'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
@@ -42,6 +48,13 @@ interface ReloadLibraryDiagramQueued {
   kind?: unknown
   diagram_library_id?: unknown
   title?: unknown
+}
+
+interface ExplainNodeQueued {
+  kind?: unknown
+  node_id?: unknown
+  node_label?: unknown
+  diagram_library_id?: unknown
 }
 
 function isDiagramType(slug: unknown): slug is DiagramType {
@@ -130,9 +143,20 @@ export async function handleKittyReloadLibraryDiagramAction(
   }
 }
 
-export async function handleKittyOpenLibraryDiagramAction(
+function isDesktopCanvasPath(routePath: string): boolean {
+  return routePath === '/canvas' || routePath.startsWith('/canvas/')
+}
+
+function emitDesktopNodeExplain(nodeId: string): void {
+  applyKittySelectionTarget({ nodeId }, { canvasHighlight: true })
+  eventBus.emit('mindmap:explain_node_requested', { nodeId })
+  traceKittyWorkflow('desktop', 'desktop_nav', `explain_node ${nodeId.slice(0, 12)}`)
+}
+
+/** Mobile node-chip tap → desktop 节点解释 (same event as the canvas floating toolbar). */
+export async function handleKittyExplainNodeAction(
   action: unknown,
-  options: {
+  options?: {
     routePath: string
     savedDiagramsStore: SavedDiagramsStore
     router: Router
@@ -142,13 +166,58 @@ export async function handleKittyOpenLibraryDiagramAction(
   if (action == null || typeof action !== 'object') {
     return
   }
+  const act = action as ExplainNodeQueued
+  if (act.kind !== 'explain_node') {
+    return
+  }
+  const nodeId = typeof act.node_id === 'string' ? act.node_id.trim() : ''
+  if (!nodeId) {
+    return
+  }
+  const libId =
+    typeof act.diagram_library_id === 'string' ? act.diagram_library_id.trim() : ''
+  const onCanvas = options != null && isDesktopCanvasPath(options.routePath)
+  const currentLib = options?.savedDiagramsStore.activeDiagramId?.trim() ?? ''
+  const sameDiagram = !libId || !currentLib || currentLib === libId
+  if (options == null || (onCanvas && sameDiagram)) {
+    emitDesktopNodeExplain(nodeId)
+    return
+  }
+  stashKittyPendingDesktopExplain(nodeId, libId || undefined)
+  if (libId) {
+    const opened = await handleKittyOpenLibraryDiagramAction(
+      { kind: 'open_library_diagram', diagram_library_id: libId },
+      options
+    )
+    if (!opened) {
+      consumeKittyPendingDesktopExplain()
+    }
+    return
+  }
+  if (!onCanvas) {
+    await options.router.push({ path: '/canvas' }).catch(() => undefined)
+  }
+}
+
+export async function handleKittyOpenLibraryDiagramAction(
+  action: unknown,
+  options: {
+    routePath: string
+    savedDiagramsStore: SavedDiagramsStore
+    router: Router
+    t: (key: string, fallback?: string) => string
+  }
+): Promise<boolean> {
+  if (action == null || typeof action !== 'object') {
+    return false
+  }
   const act = action as OpenLibraryDiagramQueued
   if (act.kind !== 'open_library_diagram') {
-    return
+    return false
   }
   const targetId = typeof act.diagram_library_id === 'string' ? act.diagram_library_id.trim() : ''
   if (targetId.length === 0) {
-    return
+    return false
   }
   const targetTitle =
     typeof act.title === 'string' && act.title.trim().length > 0 ? act.title.trim() : targetId
@@ -156,7 +225,7 @@ export async function handleKittyOpenLibraryDiagramAction(
   const currentId = options.savedDiagramsStore.activeDiagramId?.trim() ?? ''
   const decision = decideCanvasLibraryDiagramOpen(options.routePath, currentId, targetId)
   if (decision === 'noop') {
-    return
+    return true
   }
 
   if (decision === 'confirm') {
@@ -172,7 +241,7 @@ export async function handleKittyOpenLibraryDiagramAction(
       cancelButtonText: options.t('common.cancel', '取消'),
     })
     if (!accepted) {
-      return
+      return false
     }
   }
 
@@ -182,6 +251,7 @@ export async function handleKittyOpenLibraryDiagramAction(
   traceKittyWorkflow('desktop', 'desktop_nav', `open_library ${targetId.slice(0, 12)}`, {
     scope: targetId,
   })
+  return true
 }
 
 export async function handleKittyOpenCanvasAction(
@@ -313,5 +383,9 @@ export async function handleKittyDesktopQueuedAction(
   }
   if (kind === 'reload_library_diagram') {
     await handleKittyReloadLibraryDiagramAction(action, options)
+    return
+  }
+  if (kind === 'explain_node') {
+    await handleKittyExplainNodeAction(action, options)
   }
 }

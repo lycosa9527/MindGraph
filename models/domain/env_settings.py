@@ -250,6 +250,14 @@ class FeatureFlagSettings(BaseModel):
         default=False,
         description="Enable 思维讲堂 slide-lecture (幻灯片讲解) presentation mode",
     )
+    FEATURE_TRAINING: bool = Field(
+        default=False,
+        description="Enable org training follow (instructor pull of school teachers)",
+    )
+    FEATURE_VOD: bool = Field(
+        default=False,
+        description="Enable Tencent Cloud VOD (云点播) admin media library",
+    )
 
 
 class DifySettings(BaseModel):

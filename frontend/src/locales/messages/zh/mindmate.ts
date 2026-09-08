@@ -85,7 +85,7 @@ export default {
   'mindmate.defaultSuggestion9': '英语听力教学的有效策略有哪些？',
   'mindmate.historyTitle': '历史会话',
   'mindmate.imagePreview': '图片预览',
-  'mindmate.input.attachFile': '上传文件',
+  'mindmate.input.attachFile': '上传图片或 Word 文档',
   'mindmate.input.placeholder': '请输入你的问题',
   'mindmate.newChat': '新建对话',
   'mindmate.otherModules': '其他功能模块',

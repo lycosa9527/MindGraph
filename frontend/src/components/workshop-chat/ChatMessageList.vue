@@ -9,20 +9,33 @@ import type { ChatMessage } from '@/stores/workshopChat'
 import ChatMessageItem from './ChatMessageItem.vue'
 import RecipientBar from './RecipientBar.vue'
 
-const props = defineProps<{
-  messages: ChatMessage[]
-  loading?: boolean
-  channelName?: string
-  channelType?: 'announce' | 'public' | 'private'
-  channelColor?: string
-  topicName?: string
-  dmPartnerName?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    messages: ChatMessage[]
+    loading?: boolean
+    loadingMore?: boolean
+    hasMore?: boolean
+    channelName?: string
+    channelType?: 'announce' | 'public' | 'private'
+    channelColor?: string
+    topicName?: string
+    dmPartnerName?: string
+  }>(),
+  {
+    loading: false,
+    loadingMore: false,
+    hasMore: true,
+    channelName: undefined,
+    channelType: undefined,
+    channelColor: undefined,
+    topicName: undefined,
+    dmPartnerName: undefined,
+  }
+)
 
 const emit = defineEmits<{
   loadMore: []
   backToTopicList: []
-  editMessage: [message: ChatMessage]
   deleteMessage: [messageId: number]
   quote: [message: ChatMessage]
 }>()
@@ -34,6 +47,7 @@ const store = useWorkshopChatStore()
 const canModerateMessages = computed(() => authStore.isAdminOrManager)
 const containerRef = ref<HTMLDivElement>()
 const isAtBottom = ref(true)
+const messageIdsKey = computed(() => props.messages.map((m) => m.id).join(','))
 
 interface MessageGroup {
   type: 'date-divider' | 'recipient-group'
@@ -119,9 +133,10 @@ function handleScroll(): void {
   if (!containerRef.value) return
   const el = containerRef.value
   isAtBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight < 50
-  if (el.scrollTop < 100 && !props.loading) {
-    emit('loadMore')
-  }
+  if (!props.hasMore || props.loading || props.loadingMore) return
+  if (el.scrollHeight <= el.clientHeight + 8) return
+  if (el.scrollTop >= 100 || props.messages.length === 0) return
+  emit('loadMore')
 }
 
 watch(
@@ -132,14 +147,13 @@ watch(
 )
 
 watch(
-  () => props.messages,
-  (msgs) => {
-    if (msgs.length > 0) {
-      const ids = msgs.map((m) => m.id)
-      store.fetchReactionsBatch(ids)
-      store.fetchStarredBatch(ids)
-      store.fetchAttachmentsBatch(ids)
-    }
+  messageIdsKey,
+  (key) => {
+    if (!key) return
+    const ids = props.messages.map((m) => m.id)
+    store.fetchReactionsBatch(ids)
+    store.fetchStarredBatch(ids)
+    store.fetchAttachmentsBatch(ids)
   },
   { immediate: true }
 )
@@ -221,7 +235,6 @@ defineExpose({ scrollToBottom, scrollToMessageId })
             :is-starred="store.isMessageStarred(msg.id)"
             :attachments="store.getAttachmentsForMessage(msg.id)"
             :can-moderate="canModerateMessages"
-            @edit="emit('editMessage', $event)"
             @delete="emit('deleteMessage', $event)"
             @toggle-reaction="(msgId, name, code) => store.toggleReaction(msgId, name, code)"
             @toggle-star="(msgId) => store.toggleStar(msgId)"

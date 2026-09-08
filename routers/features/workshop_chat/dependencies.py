@@ -27,9 +27,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
-from models.domain.workshop_chat import ChatChannel
+from models.domain.workshop_chat import ChatChannel, ChatMessage
 from services.features.workshop_chat.channel_service import channel_service
-from utils.auth import can_moderate_workshop_channel, is_admin, is_manager
+from utils.auth import (
+    can_moderate_workshop_channel,
+    is_admin,
+    is_admin_or_manager,
+    is_manager,
+)
 
 
 def get_effective_org_id(
@@ -96,6 +101,27 @@ async def access_channel(
             )
 
     return channel
+
+
+async def access_channel_message(
+    db: AsyncSession,
+    message_id: int,
+    current_user: User,
+) -> tuple[ChatMessage, ChatChannel]:
+    """Load a channel message and apply the same org rules as ``access_channel``.
+
+    Foreign-school rows are 403 (or 404 when RLS hides them). Announce
+    messages stay readable for every workshop user.
+    """
+    result = await db.execute(select(ChatMessage).where(ChatMessage.id == message_id))
+    message = result.scalar_one_or_none()
+    if not message:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Message not found",
+        )
+    channel = await access_channel(db, message.channel_id, current_user)
+    return message, channel
 
 
 def require_post_permission(
@@ -187,6 +213,26 @@ def require_channel_manager(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="Permission denied",
     )
+
+
+def require_channel_remove(
+    current_user: User,
+    channel: ChatChannel,
+) -> None:
+    """Raise 403 unless the user may archive or permanently delete this channel.
+
+    School admins and superadmins may remove global announce channels so
+    duplicate 系统公告 rows can be cleaned up. Other channels use
+    ``require_channel_manager``.
+    """
+    if channel.channel_type == "announce":
+        if not is_admin_or_manager(current_user):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only admins can archive or delete announcement channels",
+            )
+        return
+    require_channel_manager(current_user, channel)
 
 
 async def access_dm_partner(

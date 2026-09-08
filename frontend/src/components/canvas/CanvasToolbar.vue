@@ -7,20 +7,20 @@ import { computed, ref } from 'vue'
 import { ElButton, ElTooltip } from 'element-plus'
 
 import type { V3RibbonTabId } from '@/canvas-v3/v3RibbonTypes'
-
-import { useCanvasToolbarApps, useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
-import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
-import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimiter'
-import { eventBus } from '@/composables/core/useEventBus'
-import { useLanguage } from '@/composables/core/useLanguage'
-import { useNotifications } from '@/composables/core/useNotifications'
 import {
   tryCollabGuardedRedo,
   tryCollabGuardedUndo,
 } from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
-import { useNodeActions } from '@/composables/editor/useNodeActions'
+import { useCanvasToolbarApps, useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
+import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimiter'
+import { eventBus } from '@/composables/core/useEventBus'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
-import { useDiagramStore, useUIStore } from '@/stores'
+import { useNodeActions } from '@/composables/editor/useNodeActions'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import { useUIStore } from '@/stores'
 import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
 
 import CanvasMathInsertDialog from './CanvasMathInsertDialog.vue'
@@ -56,7 +56,7 @@ const { t } = useLanguage()
 const notify = useNotifications()
 const { triggerConceptMapImportInPlace } = useDiagramImport()
 
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const uiStore = useUIStore()
 
 const { handleAddNode, handleDeleteNode, handleAddCause, handleAddEffect } = useNodeActions({
@@ -220,7 +220,7 @@ function handleToggleOrientation() {
             text
             size="small"
             :class="formatBrushActive ? 'bg-purple-100 ring-1 ring-purple-400 rounded' : ''"
-            @click="handleFormatBrush"
+            @click="() => handleFormatBrush()"
             @dblclick.prevent="handleFormatBrush({ lock: true })"
           >
             <Brush

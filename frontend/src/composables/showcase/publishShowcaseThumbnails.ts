@@ -11,9 +11,8 @@ import {
   isDiagramImageFile,
 } from '@/components/showcase/showcaseShared'
 import { useSavedDiagramsStore, type SavedDiagram } from '@/stores/savedDiagrams'
-import {
-  fetchDiagramSpecPngBlob,
-} from '@/utils/showcaseDiagramThumbnail'
+import { sameOriginTempImageFetchUrl } from '@/utils/mindmateTempImageUrl'
+import { fetchDiagramSpecPngBlob } from '@/utils/showcaseDiagramThumbnail'
 
 import type { GalleryImageDraft } from './usePublishShowcaseGalleryDrafts'
 
@@ -59,7 +58,10 @@ export async function resolveHistoryDiagramThumbnail(
     if (res.ok) {
       const data = (await res.json()) as { url?: string }
       if (data.url) {
-        const imgRes = await fetch(data.url, { credentials: 'include', cache: 'no-store' })
+        const imgRes = await fetch(sameOriginTempImageFetchUrl(data.url), {
+          credentials: 'include',
+          cache: 'no-store',
+        })
         if (imgRes.ok) {
           const prepared = await acceptThumbnailBlob(await imgRes.blob())
           if (prepared) return prepared

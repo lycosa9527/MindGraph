@@ -90,29 +90,31 @@ describe('runKittyEditTurn', () => {
     expect(onFailMessage).toHaveBeenCalled()
   })
 
-  it('mobile skips hub sync and sends text', async () => {
+  it('mobile skips hub persist, pushes thin session context, then sends text', async () => {
     syncKittyHubContextMock.mockResolvedValue({ ok: false, error: 'hub_persist_timeout' })
     const sendTextMessage = vi.fn(() => true)
+    const updateContext = vi.fn()
     const kitty = {
       sendTextMessage,
-      updateContext: vi.fn(),
+      updateContext,
       isConnected: ref(true),
       isLiveForScope: () => true,
       reconcileLiveState: vi.fn(),
       startConversation: vi.fn(),
     }
+    const context = {
+      diagram_type: 'mindmap',
+      active_panel: 'one_sentence',
+      selected_nodes: [],
+      diagram_data: {},
+      one_sentence_phase: 'edit',
+    }
 
     const result = await runKittyEditTurn(
       {
         kitty: kitty as never,
-        buildContext: () =>
-          ({
-            diagram_type: 'mindmap',
-            active_panel: 'none',
-            selected_nodes: [],
-            diagram_data: {},
-          }) as never,
-        updateContext: kitty.updateContext,
+        buildContext: () => context as never,
+        updateContext,
         getScope: () => 'scope-1',
         lane: 'mobile',
         ensureConnected: async () => true,
@@ -126,6 +128,7 @@ describe('runKittyEditTurn', () => {
     expect(result.ok).toBe(true)
     expect(result.sent).toBe(true)
     expect(syncKittyHubContextMock).not.toHaveBeenCalled()
+    expect(updateContext).toHaveBeenCalledWith(context)
     expect(sendTextMessage).toHaveBeenCalledWith('添加广东分支', {
       requestId: 'req-mobile-skip',
       ingressSource: 'text',

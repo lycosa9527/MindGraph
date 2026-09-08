@@ -195,50 +195,52 @@ MINDBOT_USAGE_EXPR = "rls_org_visible(organization_id)"
 
 WORKSHOP_ROOT = "chat_channels"
 WORKSHOP_CHANNEL_EXPR = "rls_chat_channel_visible(organization_id)"
+WORKSHOP_VIA_CHANNEL = (
+    "EXISTS (SELECT 1 FROM chat_channels c WHERE c.id = channel_id AND rls_chat_channel_visible(c.organization_id))"
+)
+WORKSHOP_MESSAGE_EXPR = WORKSHOP_VIA_CHANNEL
+WORKSHOP_REACTION_EXPR = (
+    "EXISTS (SELECT 1 FROM chat_messages m "
+    "JOIN chat_channels c ON c.id = m.channel_id "
+    "WHERE m.id = message_id AND rls_chat_channel_visible(c.organization_id))"
+)
+WORKSHOP_STAR_EXPR = f"rls_user_visible(user_id) AND {WORKSHOP_REACTION_EXPR}"
+WORKSHOP_TOPIC_PREF_EXPR = (
+    "rls_user_visible(user_id) AND EXISTS ("
+    "SELECT 1 FROM chat_topics t "
+    "JOIN chat_channels c ON c.id = t.channel_id "
+    "WHERE t.id = topic_id AND rls_chat_channel_visible(c.organization_id)"
+    ")"
+)
+WORKSHOP_ATTACHMENT_EXPR = (
+    "("
+    "message_id IS NOT NULL AND EXISTS ("
+    "SELECT 1 FROM chat_messages m "
+    "JOIN chat_channels c ON c.id = m.channel_id "
+    "WHERE m.id = message_id AND rls_chat_channel_visible(c.organization_id)"
+    ")"
+    ") OR ("
+    "dm_id IS NOT NULL AND EXISTS ("
+    "SELECT 1 FROM direct_messages d "
+    "WHERE d.id = dm_id AND ("
+    "rls_user_visible(d.sender_id) OR rls_user_visible(d.recipient_id)"
+    ")"
+    ")"
+    ") OR ("
+    "message_id IS NULL AND dm_id IS NULL AND ("
+    "uploader_id = rls_current_user_id() OR rls_is_system_mode()"
+    ")"
+    ")"
+)
 WORKSHOP_CHILD = [
-    (
-        "channel_members",
-        (
-            "EXISTS (SELECT 1 FROM chat_channels c "
-            "WHERE c.id = channel_id AND rls_chat_channel_visible(c.organization_id))"
-        ),
-    ),
-    (
-        "chat_topics",
-        (
-            "EXISTS (SELECT 1 FROM chat_channels c "
-            "WHERE c.id = channel_id AND rls_chat_channel_visible(c.organization_id))"
-        ),
-    ),
-    (
-        "chat_messages",
-        (
-            "EXISTS (SELECT 1 FROM chat_topics t "
-            "JOIN chat_channels c ON c.id = t.channel_id "
-            "WHERE t.id = topic_id AND rls_chat_channel_visible(c.organization_id))"
-        ),
-    ),
+    ("channel_members", WORKSHOP_VIA_CHANNEL),
+    ("chat_topics", WORKSHOP_VIA_CHANNEL),
+    ("chat_messages", WORKSHOP_MESSAGE_EXPR),
     ("direct_messages", DIRECT_MESSAGE_EXPR),
-    (
-        "message_reactions",
-        (
-            "EXISTS (SELECT 1 FROM chat_messages m "
-            "JOIN chat_topics t ON t.id = m.topic_id "
-            "JOIN chat_channels c ON c.id = t.channel_id "
-            "WHERE m.id = message_id AND rls_chat_channel_visible(c.organization_id))"
-        ),
-    ),
-    ("starred_messages", "rls_user_visible(user_id)"),
-    (
-        "file_attachments",
-        (
-            "EXISTS (SELECT 1 FROM chat_messages m "
-            "JOIN chat_topics t ON t.id = m.topic_id "
-            "JOIN chat_channels c ON c.id = t.channel_id "
-            "WHERE m.id = message_id AND rls_chat_channel_visible(c.organization_id))"
-        ),
-    ),
-    ("user_topic_preferences", "rls_user_visible(user_id)"),
+    ("message_reactions", WORKSHOP_REACTION_EXPR),
+    ("starred_messages", WORKSHOP_STAR_EXPR),
+    ("file_attachments", WORKSHOP_ATTACHMENT_EXPR),
+    ("user_topic_preferences", WORKSHOP_TOPIC_PREF_EXPR),
 ]
 
 MINDMATE_COLLAB_SESSION_EXPR = (

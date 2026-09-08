@@ -30,7 +30,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional, Tuple
 
-from sqlalchemy import and_, case, func, or_, select
+from sqlalchemy import and_, case, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.functions import count as sql_count
@@ -441,19 +441,56 @@ class ChannelService:
         db: AsyncSession,
         channel_id: int,
     ) -> bool:
-        """Soft-archive a channel."""
+        """Soft-archive a channel and live children of a top-level group."""
         result = await db.execute(select(ChatChannel).where(ChatChannel.id == channel_id))
         channel = result.scalar_one_or_none()
         if not channel:
             return False
+        now = datetime.now(UTC)
         channel.is_archived = True
-        channel.updated_at = datetime.now(UTC)
+        channel.updated_at = now
+        if channel.parent_id is None:
+            children = await db.execute(
+                select(ChatChannel).where(
+                    ChatChannel.parent_id == channel_id,
+                    ChatChannel.is_archived.is_(False),
+                )
+            )
+            for child in children.scalars().all():
+                child.is_archived = True
+                child.updated_at = now
         try:
             await db.commit()
         except DATABASE_ERRORS:
             await db.rollback()
             raise
         logger.info("[WorkshopChat] Channel %d archived", channel_id)
+        return True
+
+    @staticmethod
+    async def delete_channel(
+        db: AsyncSession,
+        channel_id: int,
+    ) -> bool:
+        """Permanently delete a channel and children of a top-level group."""
+        result = await db.execute(select(ChatChannel).where(ChatChannel.id == channel_id))
+        channel = result.scalar_one_or_none()
+        if not channel:
+            return False
+        to_delete: List[ChatChannel] = [channel]
+        if channel.parent_id is None:
+            children = await db.execute(select(ChatChannel).where(ChatChannel.parent_id == channel_id))
+            to_delete = list(children.scalars().all()) + [channel]
+        channel_ids = [row.id for row in to_delete]
+        try:
+            await db.execute(update(ChatMessage).where(ChatMessage.channel_id.in_(channel_ids)).values(parent_id=None))
+            for row in to_delete:
+                await db.delete(row)
+            await db.commit()
+        except DATABASE_ERRORS:
+            await db.rollback()
+            raise
+        logger.info("[WorkshopChat] Channel %d permanently deleted", channel_id)
         return True
 
     @staticmethod
@@ -691,12 +728,10 @@ class ChannelService:
         if not channel:
             return None
 
-        valid_types = {"announce", "public", "private"}
+        org_types = {"public", "private"}
         valid_policies = {"everyone", "managers", "members_only"}
 
-        if channel_type is not None and channel_type in valid_types:
-            if channel_type == "announce":
-                channel.organization_id = None
+        if channel_type is not None and channel.channel_type in org_types and channel_type in org_types:
             channel.channel_type = channel_type
         if posting_policy is not None and posting_policy in valid_policies:
             channel.posting_policy = posting_policy

@@ -100,6 +100,7 @@ export default {
   'meta.pageTitle.askOnce': 'AskOnce',
   'meta.pageTitle.auth': '로그인',
   'meta.pageTitle.canvas': '캔버스',
+  'meta.pageTitle.training': 'Training',
   'meta.pageTitle.chunkTest': '청크 테스트',
   'meta.pageTitle.chunkTestResults': '청크 테스트 결과',
   'meta.pageTitle.community': '커뮤니티',

@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.domain.diagrams import Diagram
 from models.domain.knowledge_space import DocumentBatch, KnowledgeDocument
 from services.knowledge import package_wiki_store
+from services.knowledge.document_filenames import insert_unique_named_row
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 from services.knowledge.package_rag_scope import PackageRagScope, resolve_diagram_rag_scope
 from services.utils.safe_upload import ensure_within_directory
@@ -467,27 +468,33 @@ class KnowledgePackageService:
         await self._enforce_quota()
         space = await self.ks.create_knowledge_space()
 
-        file_name = await self._unique_file_name(space.id, title, source_kind)
         encoded = text.encode("utf-8")
+        desired_name = f"{_slugify_title(title, fallback=source_kind or 'source')}.md"
+        metadata = self._build_text_metadata(source_kind, title, page_url, extra_metadata)
 
-        document = KnowledgeDocument(
-            space_id=space.id,
-            file_name=file_name,
-            file_path="",
-            file_type=TEXT_SOURCE_FILE_TYPE,
-            file_size=len(encoded),
-            status="pending",
-            batch_id=package_id,
-            language=language,
-            doc_metadata=self._build_text_metadata(source_kind, title, page_url, extra_metadata),
+        def _build_text_document(file_name: str) -> KnowledgeDocument:
+            return KnowledgeDocument(
+                space_id=space.id,
+                file_name=file_name,
+                file_path="",
+                file_type=TEXT_SOURCE_FILE_TYPE,
+                file_size=len(encoded),
+                status="pending",
+                batch_id=package_id,
+                language=language,
+                doc_metadata=metadata,
+            )
+
+        document = await insert_unique_named_row(
+            self.db,
+            space.id,
+            desired_name,
+            _build_text_document,
         )
-        self.db.add(document)
-        await self.db.commit()
-        await self.db.refresh(document)
 
         user_dir = self.ks.storage_dir / str(self.user_id)
         user_dir.mkdir(parents=True, exist_ok=True)
-        final_path = ensure_within_directory(user_dir / f"{document.id}_{file_name}", user_dir)
+        final_path = ensure_within_directory(user_dir / f"{document.id}_{document.file_name}", user_dir)
         final_path.write_bytes(encoded)
         document.file_path = str(final_path)
         await self.db.commit()
@@ -533,26 +540,6 @@ class KnowledgePackageService:
         count = result.scalar_one()
         if count >= self.ks.max_documents:
             raise ValueError(f"Maximum {self.ks.max_documents} documents allowed. Please delete a source first.")
-
-    async def _unique_file_name(self, space_id: int, title: str, source_kind: str) -> str:
-        base = _slugify_title(title, fallback=source_kind or "source")
-        candidate = f"{base}.md"
-        suffix = 1
-        while await self._file_name_exists(space_id, candidate):
-            candidate = f"{base}_{suffix}.md"
-            suffix += 1
-        return candidate
-
-    async def _file_name_exists(self, space_id: int, file_name: str) -> bool:
-        result = await self.db.execute(
-            select(KnowledgeDocument.id).where(
-                and_(
-                    KnowledgeDocument.space_id == space_id,
-                    KnowledgeDocument.file_name == file_name,
-                )
-            )
-        )
-        return result.scalars().first() is not None
 
     @staticmethod
     def _build_text_metadata(

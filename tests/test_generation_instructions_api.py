@@ -6,6 +6,7 @@ import pytest
 
 from models import GenerateRequest
 from models.common import LLMModel
+from prompts.ai_content_level import merge_generation_instructions
 
 
 def test_generate_request_accepts_generation_instructions() -> None:
@@ -30,9 +31,8 @@ def test_generate_request_accepts_generation_instructions() -> None:
 )
 def test_generation_instructions_merge_marker(language: str, marker: str) -> None:
     """Merged prompt uses locale-appropriate requirement marker."""
-    _ = language
     prompt = "Main topic"
     instructions = "Four branches: A, B, C, D"
-    merged = f"{prompt}\n\n{marker}\n{instructions.strip()}"
+    merged = merge_generation_instructions(prompt, instructions, language)
     assert marker in merged
     assert instructions in merged

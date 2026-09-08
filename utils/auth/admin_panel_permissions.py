@@ -66,6 +66,8 @@ CAP_TAB_SHOWCASE_RECOMMEND: Final[str] = "tab.showcase.recommend"
 CAP_TAB_SHOWCASE_FIELDS: Final[str] = "tab.showcase.fields"
 CAP_TAB_SHOWCASE_PERMISSIONS: Final[str] = "tab.showcase.permissions"
 CAP_TAB_SHOWCASE_DASHBOARD: Final[str] = "tab.showcase.dashboard"
+CAP_TAB_VOD_VIEW: Final[str] = "tab.vod.view"
+CAP_TAB_VOD_EDIT: Final[str] = "tab.vod.edit"
 
 CAP_SETTINGS_FEATURES: Final[str] = "tab.settings.features"
 CAP_SETTINGS_ROLES: Final[str] = "tab.settings.roles"
@@ -136,6 +138,8 @@ _SUPERADMIN_CAPS: frozenset[str] = (
             CAP_TAB_SHOWCASE_FIELDS,
             CAP_TAB_SHOWCASE_PERMISSIONS,
             CAP_TAB_SHOWCASE_DASHBOARD,
+            CAP_TAB_VOD_VIEW,
+            CAP_TAB_VOD_EDIT,
             CAP_SCOPE_GLOBAL,
         }
     )
@@ -181,6 +185,8 @@ _SCHOOL_ADMIN_CAPS: frozenset[str] = frozenset(
         CAP_TAB_SCHOOL_DASHBOARD_VIEW,
         CAP_TAB_USERS_VIEW,
         CAP_TAB_USERS_EDIT,
+        CAP_TAB_VOD_VIEW,
+        CAP_TAB_VOD_EDIT,
         CAP_SCOPE_ORG,
     }
 )

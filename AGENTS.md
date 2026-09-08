@@ -13,6 +13,7 @@ Repository: https://github.com/lycosa9527/MindGraph
 | WSL, conda, paths, no `npm run build` | [`.cursor/rules/wsl-conda-dev.mdc`](.cursor/rules/wsl-conda-dev.mdc) |
 | CI before commit/push | [`.cursor/rules/ci-before-commit-push.mdc`](.cursor/rules/ci-before-commit-push.mdc) → [`scripts/ci-local.sh`](scripts/ci-local.sh) |
 | File-reader Windows exe rebuild | [`.cursor/rules/file-reader-rebuild.mdc`](.cursor/rules/file-reader-rebuild.mdc) (glob: `clients/file-reader/**`) |
+| 研习社 / Zulip reference | [`.cursor/rules/workshop-zulip-reference.mdc`](.cursor/rules/workshop-zulip-reference.mdc) (workshop chat only; not canvas `workshop_ws`) |
 
 **DingTalk bind:** MindBot pair-code ingress (`services/mindbot/tools/`); bind/unbind via rotating codes — see [`docs/architecture/dingtalk_account_binding.md`](docs/architecture/dingtalk_account_binding.md) and [`docs/architecture/mindbot_tool_ingress.md`](docs/architecture/mindbot_tool_ingress.md).
 
@@ -21,6 +22,8 @@ Repository: https://github.com/lycosa9527/MindGraph
 **`.mg` diagram files:** native interchange (AES-GCM obfuscation of JSON spec). Format + decode recipe: [`docs/MG_FILE_FORMAT.md`](docs/MG_FILE_FORMAT.md); codec: [`frontend/src/utils/mgInterchange.ts`](frontend/src/utils/mgInterchange.ts); CLI: `python scripts/decode_mg_file.py path.mg`.
 
 **Word add-in:** Office.js host in [`word-addin/`](word-addin/) (`X-MG-Client: word-addin`); login-free embed via [`docs/architecture/word_addin_embed_auth.md`](docs/architecture/word_addin_embed_auth.md). Account download and the deploy zip are gated by **`FEATURE_WORD_ADDIN`** (default off).
+
+**Cat mascot kits:** green-screen stills in [`scripts/cat_emoji/stills/`](scripts/cat_emoji/stills/) (`black/`, `white/`). Generate via [`scripts/training_roles/`](scripts/training_roles/) (black Course Builder), [`scripts/white_cat_emoji/`](scripts/white_cat_emoji/) (white emoji, keyed), [`scripts/cat_office_battles/`](scripts/cat_office_battles/) (office scenes, no key).
 
 ## Quality gates
 

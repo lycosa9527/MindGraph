@@ -9,18 +9,21 @@ All Rights Reserved
 Proprietary License
 """
 
-import logging
-
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
+from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
+from routers.api.vueflow_screenshot import capture_diagram_screenshot
 from services.features.workshop_chat import file_service
+from services.features.workshop_chat.diagram_embed import (
+    load_library_diagram_spec,
+    store_library_diagram_png,
+)
+from services.infrastructure.utils.browser import BrowserUnavailableError
 from utils.auth import get_current_user
-
-logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -55,6 +58,54 @@ async def upload_file(
     return result
 
 
+@router.post("/library-diagrams/{diagram_id}", status_code=status.HTTP_201_CREATED)
+async def embed_library_diagram_png(
+    diagram_id: str,
+    request: Request,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Render a library diagram to PNG, store it on COS, return a download URL.
+
+    Compose inserts markdown only. Message viewers load
+    ``/api/chat/attachments/{id}/download``, which 302s to COS.
+    """
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "workshop_diagram_embed",
+        identifier,
+        max_requests=20,
+        window_seconds=60,
+    )
+    try:
+        spec, diagram_type, title = await load_library_diagram_spec(
+            current_user.id,
+            diagram_id,
+        )
+        png_bytes = await capture_diagram_screenshot(spec, diagram_type)
+        return await store_library_diagram_png(
+            db,
+            current_user.id,
+            title,
+            png_bytes,
+            diagram_id,
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except BrowserUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Diagram renderer is unavailable",
+        ) from exc
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to render diagram PNG",
+        ) from exc
+
+
 @router.get("/attachments/{attachment_id}")
 async def get_attachment(
     attachment_id: int,
@@ -74,13 +125,16 @@ async def download_attachment(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Stream attachment bytes after access check."""
+    """Stream a local file or 302 to a short-lived COS URL after access check."""
     resolved = await file_service.resolve_download(db, attachment_id, current_user.id)
     if resolved is None:
         raise HTTPException(status_code=404, detail="Attachment not found")
-    disk_path, content_type, filename = resolved
+    if resolved.redirect_url:
+        return RedirectResponse(url=resolved.redirect_url, status_code=302)
+    if resolved.disk_path is None:
+        raise HTTPException(status_code=404, detail="Attachment not found")
     return FileResponse(
-        path=str(disk_path),
-        media_type=content_type,
-        filename=filename,
+        path=str(resolved.disk_path),
+        media_type=resolved.content_type,
+        filename=resolved.filename,
     )

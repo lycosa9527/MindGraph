@@ -80,7 +80,7 @@ export default {
   'mindmate.defaultSuggestion9': '英語聽力教學的有效策略有哪些？',
   'mindmate.historyTitle': '歷史會話',
   'mindmate.imagePreview': '圖片預覽',
-  'mindmate.input.attachFile': '上傳文件',
+  'mindmate.input.attachFile': '上傳圖片或 Word 文件',
   'mindmate.input.placeholder': '請輸入你的問題',
   'mindmate.newChat': '新建對話',
   'mindmate.otherModules': '其他功能模塊',

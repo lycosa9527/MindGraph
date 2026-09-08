@@ -100,6 +100,7 @@ export default {
   'meta.pageTitle.askOnce': 'AskOnce',
   'meta.pageTitle.auth': 'පිවිසෙන්න',
   'meta.pageTitle.canvas': 'කැන්වස්',
+  'meta.pageTitle.training': 'Training',
   'meta.pageTitle.chunkTest': 'කොටස් පරීක්ෂාව',
   'meta.pageTitle.chunkTestResults': 'කොටස් පරීක්ෂා ප්‍රතිඵල',
   'meta.pageTitle.community': 'ප්‍රජාව',

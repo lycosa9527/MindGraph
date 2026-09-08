@@ -10,6 +10,8 @@ Proprietary License
 import logging
 from typing import TYPE_CHECKING, Any, Optional
 
+from config.cos_env_prefix import cos_feature_prefix
+
 logger = logging.getLogger(__name__)
 
 
@@ -234,11 +236,13 @@ class KnowledgeConfigMixin:
     def COS_DOCUMENTS_PREFIX(self) -> str:
         """COS key prefix for Document Summary extracted markdown.
 
-        Objects are UUID-keyed (not MG user id), e.g.
-        ``documents/mindgraph/{uuid}.md``, so test/prod can share one bucket.
-        Access is always via ownership-checked APIs — never a public COS URL.
+        Defaults to ``{env}/documents`` (see ``cos_feature_prefix``). Objects are
+        UUID-keyed. Access is always via ownership-checked APIs.
         """
-        return self._get_cached_value("COS_DOCUMENTS_PREFIX", "documents/mindgraph").strip().rstrip("/")
+        return cos_feature_prefix(
+            "documents",
+            self._get_cached_value("COS_DOCUMENTS_PREFIX", ""),
+        )
 
     @property
     def COS_SHOWCASE_ENABLED(self) -> bool:
@@ -247,8 +251,11 @@ class KnowledgeConfigMixin:
 
     @property
     def COS_SHOWCASE_PREFIX(self) -> str:
-        """COS key prefix for Showcase posts (private bucket objects)."""
-        return self._get_cached_value("COS_SHOWCASE_PREFIX", "showcase/mindgraph").strip().rstrip("/")
+        """COS key prefix for Showcase posts. Default ``{env}/showcase``."""
+        return cos_feature_prefix(
+            "showcase",
+            self._get_cached_value("COS_SHOWCASE_PREFIX", ""),
+        )
 
     @property
     def COS_SHOWCASE_PRESIGN_PUT_TTL(self) -> int:
@@ -267,8 +274,11 @@ class KnowledgeConfigMixin:
 
     @property
     def COS_ZHIHUI_PREFIX(self) -> str:
-        """COS key prefix for ZhiHui generations (private bucket objects)."""
-        return self._get_cached_value("COS_ZHIHUI_PREFIX", "zhihui/mindgraph").strip().rstrip("/")
+        """COS key prefix for ZhiHui generations. Default ``{env}/zhihui``."""
+        return cos_feature_prefix(
+            "zhihui",
+            self._get_cached_value("COS_ZHIHUI_PREFIX", ""),
+        )
 
     @property
     def COS_ZHIHUI_PRESIGN_GET_TTL(self) -> int:
@@ -278,13 +288,9 @@ class KnowledgeConfigMixin:
     @property
     def COS_TEMP_IMAGES_PREFIX(self) -> str:
         """COS key prefix for generate_dingtalk / MindMate preview PNGs."""
-        return (
-            self._get_cached_value(
-                "COS_TEMP_IMAGES_PREFIX",
-                "temp_images/mindgraph",
-            )
-            .strip()
-            .rstrip("/")
+        return cos_feature_prefix(
+            "temp_images",
+            self._get_cached_value("COS_TEMP_IMAGES_PREFIX", ""),
         )
 
     @property
@@ -296,3 +302,69 @@ class KnowledgeConfigMixin:
     def FILE_CENTER_WIKI_COMPILE(self) -> bool:
         """Compile a per-package wiki (markdown on disk) after chunk indexing (v2a)."""
         return self._get_cached_value("FILE_CENTER_WIKI_COMPILE", "true").lower() == "true"
+
+
+class TrainingCosConfigMixin:
+    """COS knobs for 校本培训 course folders."""
+
+    if TYPE_CHECKING:
+
+        def _get_cached_value(self, _key: str, _default: Any = None) -> Any:
+            """Type stub: method provided by BaseConfig."""
+            raise NotImplementedError
+
+    @property
+    def COS_TRAINING_ENABLED(self) -> bool:
+        """Private-bucket training course media. Default on; local if COS auth missing."""
+        return self._get_cached_value("COS_TRAINING_ENABLED", "true").lower() == "true"
+
+    @property
+    def COS_TRAINING_PREFIX(self) -> str:
+        """COS key prefix for training course folders. Default ``{env}/training``."""
+        return cos_feature_prefix(
+            "training",
+            self._get_cached_value("COS_TRAINING_PREFIX", ""),
+        )
+
+    @property
+    def COS_TRAINING_PRESIGN_PUT_TTL(self) -> int:
+        """Seconds for browser→COS presigned PUT URLs (short-lived)."""
+        return int(self._get_cached_value("COS_TRAINING_PRESIGN_PUT_TTL", "900"))
+
+    @property
+    def COS_TRAINING_PRESIGN_GET_TTL(self) -> int:
+        """Seconds for COS→browser presigned GET URLs (short-lived)."""
+        return int(self._get_cached_value("COS_TRAINING_PRESIGN_GET_TTL", "300"))
+
+    @property
+    def COURSE_BUILDER_LOAD_FROM_COS(self) -> bool:
+        """True: browser talks to COS (GET 302, PUT presign). False: API serves and accepts bytes."""
+        return self._get_cached_value("COURSE_BUILDER_LOAD_FROM_COS", "true").lower() == "true"
+
+
+class WorkshopCosConfigMixin:
+    """COS knobs for 研习社 chat attachments (bytes only; message text stays in PG)."""
+
+    if TYPE_CHECKING:
+
+        def _get_cached_value(self, _key: str, _default: Any = None) -> Any:
+            """Type stub: method provided by BaseConfig."""
+            raise NotImplementedError
+
+    @property
+    def COS_WORKSHOP_ENABLED(self) -> bool:
+        """Private-bucket workshop attachments. Default on; local if COS auth missing."""
+        return self._get_cached_value("COS_WORKSHOP_ENABLED", "true").lower() == "true"
+
+    @property
+    def COS_WORKSHOP_PREFIX(self) -> str:
+        """COS key prefix for 研习社 files. Default ``{env}/workshop``."""
+        return cos_feature_prefix(
+            "workshop",
+            self._get_cached_value("COS_WORKSHOP_PREFIX", ""),
+        )
+
+    @property
+    def COS_WORKSHOP_PRESIGN_GET_TTL(self) -> int:
+        """Seconds for COS→browser presigned GET URLs (short-lived)."""
+        return int(self._get_cached_value("COS_WORKSHOP_PRESIGN_GET_TTL", "300"))

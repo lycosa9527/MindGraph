@@ -17,7 +17,7 @@ import {
   resolveMindMapThemeId,
 } from '@/config/mindMapThemes'
 import { MIND_MAP_RAINBOW_THEME_ID } from '@/config/mindMapVibrantThemes'
-import { useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 
 import V3RibbonCommand from './V3RibbonCommand.vue'
 import V3RibbonGroup from './V3RibbonGroup.vue'
@@ -33,7 +33,7 @@ const props = withDefaults(
 
 const { t } = useLanguage()
 const notify = useNotifications()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const actions = useV3RibbonActions()
 const themes = getMindMapCommonThemes()
 

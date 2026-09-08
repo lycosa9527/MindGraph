@@ -6,7 +6,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { Hash, MessageSquare, MoreVertical } from '@lucide/vue'
+import { Hash, MoreVertical } from '@lucide/vue'
 
 import ChannelActionsPopover from '@/components/workshop-chat/ChannelActionsPopover.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -35,18 +35,8 @@ const group = computed((): ChatChannel | null => {
 
 const lessonStudies = computed(() => group.value?.children ?? [])
 
-function topicsForLesson(channelId: number) {
-  return store.topics.filter((tp) => tp.channel_id === channelId)
-}
-
 function openLesson(channelId: number): void {
   store.selectChannel(channelId)
-  void router.push('/workshop-chat')
-}
-
-function openTopic(channelId: number, topicId: number): void {
-  store.selectChannel(channelId)
-  store.selectTopic(topicId)
   void router.push('/workshop-chat')
 }
 
@@ -184,38 +174,8 @@ function lessonDeadlineLine(ch: ChatChannel): string | null {
         {{ lessonDeadlineLine(lesson) }}
       </p>
 
-      <ul
-        v-if="topicsForLesson(lesson.id).length > 0"
-        class="tg-landing__topics"
-      >
-        <li
-          v-for="topic in topicsForLesson(lesson.id)"
-          :key="topic.id"
-          class="tg-landing__topic"
-        >
-          <button
-            type="button"
-            class="tg-landing__topic-btn"
-            @click="openTopic(lesson.id, topic.id)"
-          >
-            <MessageSquare
-              :size="14"
-              class="tg-landing__topic-icon"
-            />
-            <span class="tg-landing__topic-title">{{ topic.title }}</span>
-            <span
-              v-if="(topic.unread_count ?? 0) > 0"
-              class="tg-landing__topic-unread"
-              >{{ topic.unread_count }}</span
-            >
-          </button>
-        </li>
-      </ul>
-      <p
-        v-else
-        class="tg-landing__no-topics"
-      >
-        {{ t('workshop.noTopicsYet') }}
+      <p class="tg-landing__no-topics">
+        {{ lesson.topic_count }} {{ t('workshop.conversations') }}
       </p>
     </section>
   </div>

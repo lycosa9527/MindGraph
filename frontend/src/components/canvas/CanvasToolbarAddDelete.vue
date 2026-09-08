@@ -38,6 +38,7 @@ const emit = defineEmits<{
       <ElButton
         text
         size="small"
+        data-training-target="canvas-add"
         @click="emit('addCause')"
       >
         <Plus class="w-4 h-4" />
@@ -52,6 +53,7 @@ const emit = defineEmits<{
       <ElButton
         text
         size="small"
+        data-training-target="canvas-add"
         @click="emit('addEffect')"
       >
         <Plus class="w-4 h-4" />
@@ -69,6 +71,7 @@ const emit = defineEmits<{
       <ElButton
         text
         size="small"
+        data-training-target="canvas-add"
         @click="emit('addNode')"
       >
         <Plus class="w-4 h-4" />
@@ -86,6 +89,7 @@ const emit = defineEmits<{
     <ElButton
       text
       size="small"
+      data-training-target="canvas-add"
       @click="emit('addNode')"
     >
       <Plus class="w-4 h-4" />
@@ -100,6 +104,7 @@ const emit = defineEmits<{
     <ElButton
       text
       size="small"
+      data-training-target="canvas-delete"
       @click="emit('deleteNode')"
     >
       <Trash2 class="w-4 h-4" />

@@ -12,7 +12,7 @@ import { getDefaultDiagramName } from '@/composables'
 import { canvasVirtualKeyboardOpen } from '@/composables/canvasToolbar/useCanvasVirtualKeyboardOpen'
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { SnapshotMetadata } from '@/composables/editor/useSnapshotHistory'
-import { useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 
 import V3CollapsedPills from './V3CollapsedPills.vue'
 import V3Ribbon from './V3Ribbon.vue'
@@ -48,7 +48,7 @@ const props = withDefaults(
 )
 
 const { t, currentLanguage } = useLanguage()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const actions = useV3RibbonActions()
 const { classic, activeTab, setActiveTab, toggleClassic } = useV3RibbonState()
 const editingTitle = ref(false)

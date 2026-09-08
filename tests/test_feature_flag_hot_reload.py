@@ -16,7 +16,11 @@ from starlette.requests import Request
 
 from services.infrastructure.http.feature_gate import feature_flag_gate
 from services.infrastructure.sync.env_reload_fanout import handle_env_reload_message
-from utils.auth.roles import FEATURE_KEY_TO_CONFIG_ATTR, FEATURE_KEYS_WITH_ORG_ACCESS
+from utils.auth.roles import (
+    FEATURE_KEY_TO_CONFIG_ATTR,
+    FEATURE_KEYS_SCHOOL_ADMIN_GRANT_GATED,
+    FEATURE_KEYS_WITH_ORG_ACCESS,
+)
 
 
 def _request(path: str, method: str = "GET") -> Request:
@@ -74,6 +78,39 @@ async def test_feature_flag_gate_blocks_workshop_ws_prefix():
     ):
         response = await feature_flag_gate(_request("/api/ws/chat"), call_next)
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_feature_flag_gate_allows_packed_roles_when_workshop_on():
+    """研习社 can load Course Builder mascots when FEATURE_TRAINING is off."""
+    downstream = MagicMock(status_code=200)
+    call_next = AsyncMock(return_value=downstream)
+    with patch(
+        "services.infrastructure.http.feature_gate.config",
+        SimpleNamespace(FEATURE_TRAINING=False, FEATURE_WORKSHOP_CHAT=True),
+    ):
+        response = await feature_flag_gate(
+            _request("/api/training/assets/roles/11-clap.webp"),
+            call_next,
+        )
+    assert response is downstream
+    call_next.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_feature_flag_gate_blocks_packed_roles_when_both_off():
+    """Packed mascots stay hidden when training and 研习社 are both off."""
+    call_next = AsyncMock(return_value=MagicMock(status_code=200))
+    with patch(
+        "services.infrastructure.http.feature_gate.config",
+        SimpleNamespace(FEATURE_TRAINING=False, FEATURE_WORKSHOP_CHAT=False),
+    ):
+        response = await feature_flag_gate(
+            _request("/api/training/assets/roles/11-clap.webp"),
+            call_next,
+        )
+    assert response.status_code == 404
+    call_next.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -202,6 +239,13 @@ def test_mindmate_collab_feature_key_mapped_and_permissions_supported():
     """Permissions for MindMate collab must resolve FEATURE_MINDMATE_COLLAB."""
     assert FEATURE_KEY_TO_CONFIG_ATTR["feature_mindmate_collab"] == "FEATURE_MINDMATE_COLLAB"
     assert "feature_mindmate_collab" in FEATURE_KEYS_WITH_ORG_ACCESS
+
+
+def test_workshop_chat_is_grant_gated_to_preview_orgs():
+    """School admins do not auto-pass Workshop Chat; preview orgs gate the module."""
+    assert FEATURE_KEY_TO_CONFIG_ATTR["feature_workshop_chat"] == "FEATURE_WORKSHOP_CHAT"
+    assert "feature_workshop_chat" in FEATURE_KEYS_WITH_ORG_ACCESS
+    assert "feature_workshop_chat" in FEATURE_KEYS_SCHOOL_ADMIN_GRANT_GATED
 
 
 def test_workshop_ws_awaits_can_access_workshop_chat():

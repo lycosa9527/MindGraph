@@ -160,73 +160,72 @@ watch(
     :element-loading-background="loadingBackground"
     class="messages-container"
   >
-    <!-- Messages with Element Plus Scrollbar -->
-    <ElScrollbar
-      ref="scrollbarRef"
-      class="messages-scrollbar"
+    <div
+      v-if="showWelcome"
+      class="messages-wrapper messages-wrapper--welcome"
     >
-      <div
-        ref="messagesWrapperRef"
-        class="messages-wrapper p-4 space-y-6"
+      <MindmateWelcome :mode="mode" />
+    </div>
+
+    <template v-else>
+      <ElScrollbar
+        ref="scrollbarRef"
+        class="messages-scrollbar"
       >
-        <!-- Welcome Message -->
-        <MindmateWelcome
-          v-if="showWelcome"
-          :mode="mode"
-        />
-
-        <!-- Messages -->
-        <MessageBubble
-          v-for="message in messages"
-          :key="message.id"
-          :message="message"
-          :user-avatar="userAvatar"
-          :agent-load-phase="message.isStreaming ? (loadPhase ?? 'idle') : 'idle'"
-          :is-editing="editingMessageId === message.id"
-          :editing-content="editingContent"
-          :is-hovered="hoveredMessageId === message.id"
-          :is-last-assistant="isLastAssistantMessage?.(message.id) ?? false"
-          :has-previous-user-message="hasPreviousUserMessage?.(message.id) ?? false"
-          :is-loading="isLoading"
-          @edit="emit('edit', $event)"
-          @cancel-edit="emit('cancelEdit')"
-          @save-edit="emit('saveEdit', $event)"
-          @copy="emit('copy', $event)"
-          @regenerate="emit('regenerate', $event)"
-          @feedback="
-            (messageId: string, rating: 'like' | 'dislike' | null) =>
-              emit('feedback', messageId, rating)
-          "
-          @share="emit('share')"
-          @mouseenter="emit('messageHover', message.id)"
-          @mouseleave="emit('messageHover', null)"
-        />
-
-        <!-- Sending indicator (HTTP in flight, before SSE placeholder) -->
         <div
-          v-if="loadPhase === 'sending'"
-          class="message flex gap-3"
+          ref="messagesWrapperRef"
+          class="messages-wrapper p-4 space-y-6"
         >
-          <MindmateAgentAvatar
-            :size="40"
-            avatar-class="mindmate-avatar flex-shrink-0"
-            phase="sending"
+          <MessageBubble
+            v-for="message in messages"
+            :key="message.id"
+            :message="message"
+            :user-avatar="userAvatar"
+            :agent-load-phase="message.isStreaming ? (loadPhase ?? 'idle') : 'idle'"
+            :is-editing="editingMessageId === message.id"
+            :editing-content="editingContent"
+            :is-hovered="hoveredMessageId === message.id"
+            :is-last-assistant="isLastAssistantMessage?.(message.id) ?? false"
+            :has-previous-user-message="hasPreviousUserMessage?.(message.id) ?? false"
+            :is-loading="isLoading"
+            @edit="emit('edit', $event)"
+            @cancel-edit="emit('cancelEdit')"
+            @save-edit="emit('saveEdit', $event)"
+            @copy="emit('copy', $event)"
+            @regenerate="emit('regenerate', $event)"
+            @feedback="
+              (messageId: string, rating: 'like' | 'dislike' | null) =>
+                emit('feedback', messageId, rating)
+            "
+            @share="emit('share')"
+            @mouseenter="emit('messageHover', message.id)"
+            @mouseleave="emit('messageHover', null)"
           />
-        </div>
-      </div>
-    </ElScrollbar>
 
-    <!-- Scroll to Bottom Button -->
-    <transition name="fade">
-      <ElButton
-        v-if="showScrollButton"
-        class="scroll-to-bottom-btn"
-        circle
-        @click="forceScrollToBottom"
-      >
-        <ElIcon><Bottom /></ElIcon>
-      </ElButton>
-    </transition>
+          <div
+            v-if="loadPhase === 'sending'"
+            class="message flex gap-3"
+          >
+            <MindmateAgentAvatar
+              :size="40"
+              avatar-class="mindmate-avatar flex-shrink-0"
+              phase="sending"
+            />
+          </div>
+        </div>
+      </ElScrollbar>
+
+      <transition name="fade">
+        <ElButton
+          v-if="showScrollButton"
+          class="scroll-to-bottom-btn"
+          circle
+          @click="forceScrollToBottom"
+        >
+          <ElIcon><Bottom /></ElIcon>
+        </ElButton>
+      </transition>
+    </template>
   </div>
 </template>
 

@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
 import { useMobileKittyChat } from '@/composables/mobile/useMobileKittyChat'
+import { useOneSentenceStore } from '@/stores/oneSentence'
 
 const {
   appendOneSentenceTurnMock,
@@ -200,6 +201,19 @@ describe('useMobileKittyChat', () => {
         (m) => m.role === 'kitty' && m.text.toLowerCase().includes('diagram')
       )
     ).toBe(true)
+  })
+
+  it('edit send binds one-sentence store like 对话式修改', async () => {
+    const store = useOneSentenceStore()
+    expect(store.phase).toBe('create')
+    const { chat } = mountChat('edit')
+    await nextTick()
+    await Promise.resolve()
+
+    const ok = await chat.sendUserText('改成春天')
+    expect(ok).toBe(true)
+    expect(store.phase).toBe('edit')
+    expect(store.libraryScope).toBe('scope-abc')
   })
 
   it('edit turn failure blocks send', async () => {

@@ -41,6 +41,7 @@ from services.knowledge.doc_summary_storage import (
     store_extracted_markdown,
 )
 from services.knowledge.doc_summary_temp import remove_job_dir, write_upload_temp
+from services.knowledge.document_filenames import insert_unique_named_row
 from services.knowledge.document_processor import DocumentProcessor
 from services.knowledge.legacy_office_convert import convert_legacy_office, is_legacy_office_mime
 from services.redis.redis_distributed_lock import DistributedLock
@@ -173,25 +174,26 @@ class DocSummaryIngestService:
         try:
             await self._replace_existing_sources(package_id)
             space = await self._ensure_space()
-            document = KnowledgeDocument(
-                space_id=space.id,
-                file_name=safe_name,
-                file_path="",
-                file_type=file_type,
-                file_size=file_size,
-                status="processing",
-                processing_progress="starting",
-                processing_progress_percent=_STAGE_PERCENT["starting"],
-                batch_id=package_id,
-                doc_metadata={
-                    "ingest_source": "upload",
-                    "temp_job_dir": str(job_dir),
-                    "temp_source_path": str(job_file),
-                },
-            )
-            self.db.add(document)
-            await self.db.commit()
-            await self.db.refresh(document)
+
+            def _build_processing(name: str) -> KnowledgeDocument:
+                return KnowledgeDocument(
+                    space_id=space.id,
+                    file_name=name,
+                    file_path="",
+                    file_type=file_type,
+                    file_size=file_size,
+                    status="processing",
+                    processing_progress="starting",
+                    processing_progress_percent=_STAGE_PERCENT["starting"],
+                    batch_id=package_id,
+                    doc_metadata={
+                        "ingest_source": "upload",
+                        "temp_job_dir": str(job_dir),
+                        "temp_source_path": str(job_file),
+                    },
+                )
+
+            document = await insert_unique_named_row(self.db, space.id, safe_name, _build_processing)
         finally:
             await lock.release()
 
@@ -206,7 +208,7 @@ class DocSummaryIngestService:
                 source_path=str(job_file),
                 job_dir=str(job_dir),
                 file_type=file_type,
-                source_filename=safe_name,
+                source_filename=document.file_name,
                 file_size=file_size,
             ),
             name=f"doc_summary_extract:{package_id}:{document.id}",
@@ -402,24 +404,30 @@ class DocSummaryIngestService:
         if not skip_replace:
             await self._replace_existing_sources(package_id)
         space = await self._ensure_space()
-
         if existing_document is None:
-            document = KnowledgeDocument(
-                space_id=space.id,
-                file_name=source_filename,
-                file_path="",
-                file_type=source_mime,
-                file_size=file_size,
-                status="processing",
-                batch_id=package_id,
-                language=language,
-                doc_metadata={"ingest_source": ingest_source},
+
+            def _build_extract(name: str) -> KnowledgeDocument:
+                return KnowledgeDocument(
+                    space_id=space.id,
+                    file_name=name,
+                    file_path="",
+                    file_type=source_mime,
+                    file_size=file_size,
+                    status="processing",
+                    batch_id=package_id,
+                    language=language,
+                    doc_metadata={"ingest_source": ingest_source},
+                )
+
+            document = await insert_unique_named_row(
+                self.db,
+                space.id,
+                source_filename,
+                _build_extract,
             )
-            self.db.add(document)
-            await self.db.commit()
-            await self.db.refresh(document)
         else:
             document = existing_document
+        unique_name = document.file_name or source_filename
 
         object_id = new_object_id()
         storage_info = await store_extracted_markdown(text, object_id=object_id)
@@ -427,7 +435,7 @@ class DocSummaryIngestService:
             metadata = build_storage_metadata(
                 object_id=object_id,
                 markdown=text,
-                source_filename=source_filename,
+                source_filename=unique_name,
                 source_mime=source_mime,
                 ingest_source=ingest_source,
                 page_url=page_url,

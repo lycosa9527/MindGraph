@@ -5,16 +5,19 @@ import { onUnmounted } from 'vue'
 import type { Router } from 'vue-router'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { enqueueKittyDesktopExplainNode } from '@/composables/kitty/enqueueKittyDesktopExplainNode'
 import {
   consumeKittyPendingCanvasAction,
   stashKittyPendingCanvasAction,
 } from '@/composables/kitty/kittyPendingCanvasAction'
 import { useDiagramStore } from '@/stores/diagram'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 const OWNER = 'KittyMobileHubActionBridge'
 
 export function useKittyMobileHubActionBridge(router: Router): void {
   const diagramStore = useDiagramStore()
+  const savedDiagramsStore = useSavedDiagramsStore()
 
   function hasDiagramContext(): boolean {
     return (diagramStore.data?.nodes?.length ?? 0) > 0
@@ -46,6 +49,22 @@ export function useKittyMobileHubActionBridge(router: Router): void {
       goCanvasForAction({
         kind: 'add_node_with_recommendations',
         text: data.text,
+      })
+    },
+    OWNER
+  )
+
+  // Voice explain_node on /m/kitty has no canvas listener — forward to desktop 节点解释.
+  eventBus.onWithOwner(
+    'mindmap:explain_node_requested',
+    (data) => {
+      const nodeId = data.nodeId?.trim() ?? ''
+      if (!nodeId) {
+        return
+      }
+      void enqueueKittyDesktopExplainNode({
+        nodeId,
+        diagramLibraryId: savedDiagramsStore.activeDiagramId ?? undefined,
       })
     },
     OWNER

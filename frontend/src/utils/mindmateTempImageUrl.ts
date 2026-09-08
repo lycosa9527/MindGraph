@@ -65,6 +65,32 @@ export function shouldProxyMindmateTempImageUrl(url: URL, pageHost?: string): bo
 }
 
 /**
+ * Follow-up fetch for a PNG we just rendered on this API.
+ *
+ * ``GET /api/diagrams/{id}/png`` may still return ``EXTERNAL_BASE_URL``
+ * (test/prod). That host is the wrong disk in local Vite, and CSP blocks it.
+ * Always load ``/api/temp_images/...`` on the page origin (Vite → :9527).
+ */
+export function sameOriginTempImageFetchUrl(rawUrl: string): string {
+  const trimmed = (rawUrl || '').trim()
+  if (!trimmed) {
+    return trimmed
+  }
+  try {
+    const parsed = new URL(trimmed, 'http://localhost')
+    const marker = '/temp_images/'
+    const idx = parsed.pathname.indexOf(marker)
+    if (idx === -1) {
+      return trimmed
+    }
+    const rest = parsed.pathname.slice(idx + marker.length)
+    return `/api/temp_images/${rest}${parsed.search}`
+  } catch {
+    return trimmed
+  }
+}
+
+/**
  * Rewrite temp-image markdown URLs for MindMate display.
  *
  * - Loopback / same-page host → `/api/temp_images/...` (Vite → local :9527 in dev)

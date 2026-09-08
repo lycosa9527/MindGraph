@@ -72,6 +72,15 @@ async def _effective_feature_mindmate_collab(current_user: Optional[User]) -> bo
     return await user_has_feature_access(current_user, "feature_mindmate_collab")
 
 
+async def _effective_feature_workshop_chat(current_user: Optional[User]) -> bool:
+    """Match ``FEATURE_WORKSHOP_CHAT`` plus preview-org / grant rules when signed in."""
+    if not config.FEATURE_WORKSHOP_CHAT:
+        return False
+    if current_user is None:
+        return False
+    return await user_has_feature_access(current_user, "feature_workshop_chat")
+
+
 class FeatureFlagsResponse(BaseModel):
     """Feature flags response model."""
 
@@ -95,6 +104,8 @@ class FeatureFlagsResponse(BaseModel):
     feature_teacher_usage: bool
     feature_workshop_chat: bool
     feature_mindmate_collab: bool
+    feature_training: bool = False
+    feature_vod: bool = False
     feature_markets: bool
     feature_mindbot: bool
     feature_wechat_login: bool = False
@@ -136,6 +147,11 @@ async def get_feature_flags(
         if current_user is not None and is_admin(current_user)
         else await _effective_feature_mindmate_collab(current_user)
     )
+    workshop_chat_flag = (
+        config.FEATURE_WORKSHOP_CHAT
+        if current_user is not None and is_admin(current_user)
+        else await _effective_feature_workshop_chat(current_user)
+    )
     return FeatureFlagsResponse(
         external_base_url=external_base,
         feature_rag_chunk_test=config.FEATURE_RAG_CHUNK_TEST,
@@ -155,8 +171,10 @@ async def get_feature_flags(
         feature_gewe=config.FEATURE_GEWE,
         feature_smart_response=config.FEATURE_SMART_RESPONSE,
         feature_teacher_usage=config.FEATURE_TEACHER_USAGE,
-        feature_workshop_chat=config.FEATURE_WORKSHOP_CHAT,
+        feature_workshop_chat=workshop_chat_flag,
         feature_mindmate_collab=mindmate_collab_flag,
+        feature_training=config.FEATURE_TRAINING,
+        feature_vod=config.FEATURE_VOD,
         feature_markets=config.FEATURE_MARKETS,
         feature_mindbot=config.FEATURE_MINDBOT,
         feature_wechat_login=config.FEATURE_WECHAT_LOGIN,

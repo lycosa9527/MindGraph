@@ -53,6 +53,7 @@ async def test_require_workshop_chat_access_keeps_authenticated_for_teacher(
 
     assert result is user
     assert request.state.rls_context.mode == MODE_AUTHENTICATED
+    assert request.state.rls_context.allow_global_channels is True
 
 
 @pytest.mark.asyncio

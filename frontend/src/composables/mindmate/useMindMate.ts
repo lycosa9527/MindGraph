@@ -32,6 +32,10 @@ import {
 import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
 import { consumeSseDataLines } from '@/utils/mindMateSseStream'
 import {
+  isMindmateComposerUploadableFile,
+  mindMateFileTypeFromMimeAndName,
+} from '@/utils/mindmateComposerUpload'
+import {
   queueMindmateDiagramPreviewPersist,
   queueMindmateDiagramPreviewsForMessages,
 } from '@/utils/mindmateDiagramPreviewPersist'
@@ -355,22 +359,6 @@ export function useMindMate(options: MindMateOptions = {}) {
   // File Upload
   // =========================================================================
 
-  function getFileType(mimeType: string): MindMateFile['type'] {
-    if (mimeType.startsWith('image/')) return 'image'
-    if (mimeType.startsWith('audio/')) return 'audio'
-    if (mimeType.startsWith('video/')) return 'video'
-    if (
-      mimeType.includes('pdf') ||
-      mimeType.includes('document') ||
-      mimeType.includes('text') ||
-      mimeType.includes('spreadsheet') ||
-      mimeType.includes('presentation')
-    ) {
-      return 'document'
-    }
-    return 'custom'
-  }
-
   /** Extensions accepted by ``/api/dify/files/upload`` (documents + images). */
   const DIFY_UPLOAD_EXTENSIONS = new Set([
     'jpg',
@@ -406,13 +394,15 @@ export function useMindMate(options: MindMateOptions = {}) {
     file: File,
     options: { allowDocuments?: boolean } = {}
   ): Promise<MindMateFile | null> {
-    // Composer paperclip stays image-only; programmatic handoffs (Showcase) may
-    // attach teaching docs that the Dify upload API already accepts.
+    // Composer paperclip: images + Word. Showcase handoffs may send other Dify docs.
     const allowDocuments = options.allowDocuments === true
-    if (!file.type.startsWith('image/') && !(allowDocuments && isDifyUploadableFile(file))) {
+    const allowed = allowDocuments
+      ? isDifyUploadableFile(file)
+      : isMindmateComposerUploadableFile(file)
+    if (!allowed) {
       const errorMsg = allowDocuments
         ? 'Unsupported file type for MindMate'
-        : 'Only image files are allowed'
+        : 'Only images and Word documents (.doc, .docx) are allowed'
       eventBus.emit('mindmate:error', { error: errorMsg })
       onError?.(errorMsg)
       return null
@@ -453,7 +443,7 @@ export function useMindMate(options: MindMateOptions = {}) {
       const uploadedFile: MindMateFile = {
         id: data.id,
         name: data.name || file.name,
-        type: getFileType(data.mime_type || file.type),
+        type: mindMateFileTypeFromMimeAndName(data.mime_type || file.type, data.name || file.name),
         size: data.size || file.size,
         extension: data.extension || file.name.split('.').pop() || '',
         mime_type: data.mime_type || file.type,

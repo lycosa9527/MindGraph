@@ -1,0 +1,394 @@
+import { computed, ref } from 'vue'
+
+import { defineStore } from 'pinia'
+
+import {
+  shouldAcceptTrainingSnapshot,
+  trainingFollowCursorResets,
+} from '@/composables/training/applyTrainingSnapshot'
+import type {
+  TrainingCourse,
+  TrainingOrgRow,
+  TrainingReady,
+  TrainingRosterRow,
+  TrainingRosterSummary,
+  TrainingSnapshot,
+  TrainingTopicOption,
+} from '@/types/training'
+import {
+  TrainingApiError,
+  endTraining,
+  fetchActiveTraining,
+  fetchTrainingCourses,
+  fetchTrainingOrgs,
+  fetchTrainingReady,
+  fetchTrainingRoster,
+  fetchTrainingRosterSummary,
+  freeTraining,
+  pauseTraining,
+  playTrainingCourse,
+  resumeTraining,
+  startTrainingSession,
+  stepTrainingCourse,
+  takeoverTraining,
+} from '@/utils/trainingApi'
+import { emptyTrainingSnapshot, TRAINING_RAIL_PAGE_SIZE } from '@/utils/trainingClient'
+
+const STEER_GAP_MS = 120
+
+const emptyRosterSummary = (): TrainingRosterSummary => ({
+  online: 0,
+  generating: 0,
+  done: 0,
+})
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms)
+  })
+}
+
+export type TrainingStartCode =
+  | 'ok'
+  | 'pick_org'
+  | 'instructor_busy'
+  | 'confirm_mismatch'
+  | 'org_busy'
+  | 'failed'
+
+export const useTrainingStore = defineStore('training', () => {
+  const snapshot = ref<TrainingSnapshot>(emptyTrainingSnapshot())
+  const lastAppliedSeq = ref(0)
+  const commandEtag = ref<string | null>(null)
+  const pendingChip = ref<TrainingTopicOption | null>(null)
+  const pendingJump = ref<TrainingTopicOption | null>(null)
+  const leadingOrgId = ref<number | null>(null)
+  const activityTick = ref(0)
+  const uiFocusKey = ref<string | null>(null)
+  const topicsDragLive = ref(false)
+
+  const orgs = ref<TrainingOrgRow[]>([])
+  const courses = ref<TrainingCourse[]>([])
+  const selectedOrgId = ref<number | null>(null)
+  const ready = ref<TrainingReady | null>(null)
+  const busy = ref(false)
+
+  const rosterRows = ref<TrainingRosterRow[]>([])
+  const rosterTotal = ref(0)
+  const rosterSummary = ref<TrainingRosterSummary>(emptyRosterSummary())
+  const rosterLoading = ref(false)
+
+  const isLive = computed(() => snapshot.value.state === 'live')
+  const isPaused = computed(() => snapshot.value.state === 'paused')
+  const isActive = computed(() => isLive.value || isPaused.value)
+  const isFree = computed(() => isLive.value && snapshot.value.pull_users === false)
+
+  function clearRoster(): void {
+    rosterRows.value = []
+    rosterTotal.value = 0
+    rosterSummary.value = emptyRosterSummary()
+  }
+
+  function applySnapshot(next: TrainingSnapshot): void {
+    const current = snapshot.value
+    if (!shouldAcceptTrainingSnapshot(current, next)) return
+    if (trainingFollowCursorResets(current, next)) {
+      lastAppliedSeq.value = 0
+      commandEtag.value = null
+      clearRoster()
+    }
+    snapshot.value = next
+  }
+
+  function markApplied(seq: number): void {
+    if (seq > lastAppliedSeq.value) {
+      lastAppliedSeq.value = seq
+    }
+  }
+
+  function setCommandEtag(etag: string | null): void {
+    commandEtag.value = etag
+  }
+
+  function setLeadingOrgId(orgId: number | null): void {
+    leadingOrgId.value = orgId
+  }
+
+  function setPendingChip(option: TrainingTopicOption | null): void {
+    pendingChip.value = option
+  }
+
+  function setPendingJump(option: TrainingTopicOption | null): void {
+    pendingJump.value = option
+  }
+
+  function setTopicsDragLive(next: boolean): void {
+    topicsDragLive.value = next
+  }
+
+  function bumpActivity(): void {
+    activityTick.value += 1
+  }
+
+  function setUiFocus(key: string | null): void {
+    uiFocusKey.value = key
+  }
+
+  function sessionIds(): { sessionId: string; orgId: number } | null {
+    if (!isActive.value) return null
+    const sessionId = snapshot.value.session_id
+    const orgId = snapshot.value.org_id
+    if (!sessionId || orgId == null) return null
+    return { sessionId, orgId }
+  }
+
+  async function loadOrgs(query = ''): Promise<void> {
+    const result = await fetchTrainingOrgs(query)
+    orgs.value = result.items
+  }
+
+  async function loadCourses(): Promise<void> {
+    courses.value = await fetchTrainingCourses()
+  }
+
+  async function selectOrg(orgId: number | null): Promise<'ok' | 'locked'> {
+    if (isActive.value && snapshot.value.org_id != null && orgId !== snapshot.value.org_id) {
+      selectedOrgId.value = snapshot.value.org_id
+      setLeadingOrgId(snapshot.value.org_id)
+      return 'locked'
+    }
+    selectedOrgId.value = orgId
+    setLeadingOrgId(orgId)
+    if (orgId == null) {
+      ready.value = null
+      return 'ok'
+    }
+    ready.value = await fetchTrainingReady(orgId)
+    applySnapshot(await fetchActiveTraining(orgId))
+    return 'ok'
+  }
+
+  async function refreshReady(): Promise<void> {
+    if (selectedOrgId.value == null) return
+    ready.value = await fetchTrainingReady(selectedOrgId.value)
+  }
+
+  async function hydrateHostedSession(): Promise<void> {
+    const next = await fetchActiveTraining()
+    applySnapshot(next)
+    if (next.org_id != null) {
+      setLeadingOrgId(next.org_id)
+      selectedOrgId.value = next.org_id
+    }
+  }
+
+  function clearFollowCursor(): void {
+    lastAppliedSeq.value = 0
+    commandEtag.value = null
+  }
+
+  async function runBusy(work: () => Promise<void>): Promise<void> {
+    if (busy.value) return
+    busy.value = true
+    try {
+      await work()
+    } finally {
+      busy.value = false
+    }
+  }
+
+  async function startSession(): Promise<TrainingStartCode> {
+    if (selectedOrgId.value == null) return 'pick_org'
+    busy.value = true
+    try {
+      await refreshReady()
+      if (ready.value == null) return 'failed'
+      clearFollowCursor()
+      applySnapshot(await startTrainingSession(selectedOrgId.value, ready.value.teacher_total))
+      await refreshReady()
+      return 'ok'
+    } catch (error) {
+      if (error instanceof TrainingApiError && error.code === 'instructor_busy') {
+        return 'instructor_busy'
+      }
+      if (error instanceof TrainingApiError && error.code === 'confirm_mismatch') {
+        ready.value = await fetchTrainingReady(selectedOrgId.value)
+        return 'confirm_mismatch'
+      }
+      if (error instanceof TrainingApiError && error.code === 'org_busy') {
+        applySnapshot(await fetchActiveTraining(selectedOrgId.value))
+        return 'org_busy'
+      }
+      return 'failed'
+    } finally {
+      busy.value = false
+    }
+  }
+
+  async function playCourse(courseId: string): Promise<void> {
+    const ids = sessionIds()
+    if (!ids) return
+    await runBusy(async () => {
+      applySnapshot(await playTrainingCourse(ids.sessionId, ids.orgId, courseId))
+      await sleep(STEER_GAP_MS)
+    })
+  }
+
+  async function pauseSession(): Promise<void> {
+    const ids = sessionIds()
+    if (!ids) return
+    await runBusy(async () => {
+      applySnapshot(await pauseTraining(ids.sessionId, ids.orgId))
+    })
+  }
+
+  async function resumeSession(): Promise<void> {
+    const ids = sessionIds()
+    if (!ids) return
+    await runBusy(async () => {
+      applySnapshot(await resumeTraining(ids.sessionId, ids.orgId))
+    })
+  }
+
+  async function endSession(): Promise<void> {
+    const ids = sessionIds()
+    if (!ids) return
+    await runBusy(async () => {
+      applySnapshot(await endTraining(ids.sessionId, ids.orgId))
+    })
+  }
+
+  async function takeoverSession(): Promise<void> {
+    const ids = sessionIds()
+    if (!ids) return
+    await runBusy(async () => {
+      applySnapshot(await takeoverTraining(ids.sessionId, ids.orgId))
+    })
+  }
+
+  async function stepSession(delta: number): Promise<void> {
+    const ids = sessionIds()
+    if (!ids) return
+    const previous = snapshot.value
+    await runBusy(async () => {
+      applySnapshot({ ...previous, pull_users: true })
+      try {
+        applySnapshot(await stepTrainingCourse(ids.sessionId, ids.orgId, { delta }))
+      } catch (error) {
+        applySnapshot(previous)
+        throw error
+      }
+    })
+  }
+
+  async function freeSession(free = true): Promise<void> {
+    const ids = sessionIds()
+    if (!ids) return
+    const previous = snapshot.value
+    await runBusy(async () => {
+      applySnapshot({ ...previous, pull_users: !free })
+      try {
+        applySnapshot(await freeTraining(ids.sessionId, ids.orgId, free))
+      } catch (error) {
+        applySnapshot(previous)
+        throw error
+      }
+    })
+  }
+
+  async function fetchRoster(append = false): Promise<void> {
+    const ids = sessionIds()
+    if (!ids || rosterLoading.value) return
+    rosterLoading.value = true
+    try {
+      if (append) {
+        const list = await fetchTrainingRoster(
+          ids.sessionId,
+          ids.orgId,
+          rosterRows.value.length,
+          TRAINING_RAIL_PAGE_SIZE
+        )
+        rosterRows.value = [...rosterRows.value, ...list.items]
+        rosterTotal.value = list.total
+        return
+      }
+      const [list, counts] = await Promise.all([
+        fetchTrainingRoster(ids.sessionId, ids.orgId, 0),
+        fetchTrainingRosterSummary(ids.sessionId, ids.orgId),
+      ])
+      rosterRows.value = list.items
+      rosterTotal.value = list.total
+      rosterSummary.value = counts
+    } catch {
+      const live = sessionIds()
+      if (!live || live.sessionId !== ids.sessionId) {
+        clearRoster()
+      }
+    } finally {
+      rosterLoading.value = false
+    }
+  }
+
+  function reset(): void {
+    snapshot.value = emptyTrainingSnapshot()
+    lastAppliedSeq.value = 0
+    commandEtag.value = null
+    pendingChip.value = null
+    pendingJump.value = null
+    leadingOrgId.value = null
+    activityTick.value = 0
+    uiFocusKey.value = null
+    topicsDragLive.value = false
+    clearRoster()
+    rosterLoading.value = false
+  }
+
+  return {
+    snapshot,
+    lastAppliedSeq,
+    commandEtag,
+    pendingChip,
+    pendingJump,
+    leadingOrgId,
+    activityTick,
+    uiFocusKey,
+    topicsDragLive,
+    orgs,
+    courses,
+    selectedOrgId,
+    ready,
+    busy,
+    rosterRows,
+    rosterTotal,
+    rosterSummary,
+    rosterLoading,
+    isLive,
+    isPaused,
+    isActive,
+    isFree,
+    applySnapshot,
+    markApplied,
+    setCommandEtag,
+    setLeadingOrgId,
+    setPendingChip,
+    setPendingJump,
+    setTopicsDragLive,
+    bumpActivity,
+    setUiFocus,
+    loadOrgs,
+    loadCourses,
+    selectOrg,
+    refreshReady,
+    hydrateHostedSession,
+    startSession,
+    playCourse,
+    pauseSession,
+    resumeSession,
+    endSession,
+    takeoverSession,
+    stepSession,
+    freeSession,
+    fetchRoster,
+    reset,
+  }
+})

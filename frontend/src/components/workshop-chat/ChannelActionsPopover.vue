@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 import {
+  Archive,
   Bell,
   BellOff,
   CalendarClock,
@@ -52,6 +53,50 @@ const isTeachingGroup = computed(() => {
   return Boolean(ch && !ch.parent_id && ch.channel_type !== 'announce')
 })
 
+const isAnnounce = computed(() => channel.value?.channel_type === 'announce')
+
+const canArchiveChannel = computed(
+  () => isManager.value && (isLessonStudy.value || isTeachingGroup.value || isAnnounce.value)
+)
+
+function archiveDialogCopy(): { title: string; message: string } {
+  if (isAnnounce.value) {
+    return {
+      title: t('workshop.archiveAnnounceChannel'),
+      message: t('workshop.archiveAnnounceChannelConfirm'),
+    }
+  }
+  if (isTeachingGroup.value) {
+    return {
+      title: t('workshop.archiveTeachingGroup'),
+      message: t('workshop.archiveTeachingGroupConfirm'),
+    }
+  }
+  return {
+    title: t('workshop.archiveLessonStudy'),
+    message: t('workshop.archiveLessonStudyConfirm'),
+  }
+}
+
+function deleteDialogCopy(): { title: string; message: string } {
+  if (isAnnounce.value) {
+    return {
+      title: t('workshop.deleteAnnounceChannel'),
+      message: t('workshop.deleteAnnounceChannelConfirm'),
+    }
+  }
+  if (isTeachingGroup.value) {
+    return {
+      title: t('workshop.deleteTeachingGroup'),
+      message: t('workshop.deleteTeachingGroupConfirm'),
+    }
+  }
+  return {
+    title: t('workshop.deleteLessonStudy'),
+    message: t('workshop.deleteLessonStudyConfirm'),
+  }
+}
+
 const deadlineDialogVisible = ref(false)
 const deadlineDraft = ref<Date | null>(null)
 
@@ -88,20 +133,16 @@ function handleCopyChannelLink(): void {
 
 async function handleArchiveChannel(): Promise<void> {
   const ch = channel.value
-  if (!ch || !isManager.value) {
+  if (!ch || !canArchiveChannel.value) {
     return
   }
-  const isGroup = isTeachingGroup.value
+  const copy = archiveDialogCopy()
   try {
-    await ElMessageBox.confirm(
-      isGroup ? t('workshop.archiveTeachingGroupConfirm') : t('workshop.archiveLessonStudyConfirm'),
-      isGroup ? t('workshop.archiveTeachingGroup') : t('workshop.archiveLessonStudy'),
-      {
-        confirmButtonText: t('common.confirm'),
-        cancelButtonText: t('common.cancel'),
-        type: 'warning',
-      }
-    )
+    await ElMessageBox.confirm(copy.message, copy.title, {
+      confirmButtonText: t('common.confirm'),
+      cancelButtonText: t('common.cancel'),
+      type: 'warning',
+    })
   } catch {
     return
   }
@@ -110,6 +151,30 @@ async function handleArchiveChannel(): Promise<void> {
     ElMessage.success(t('workshop.channelArchived'))
   } else {
     ElMessage.error(t('workshop.channelArchiveFailed'))
+  }
+  emit('update:visible', false)
+}
+
+async function handleDeleteChannel(): Promise<void> {
+  const ch = channel.value
+  if (!ch || !canArchiveChannel.value) {
+    return
+  }
+  const copy = deleteDialogCopy()
+  try {
+    await ElMessageBox.confirm(copy.message, copy.title, {
+      confirmButtonText: t('common.confirm'),
+      cancelButtonText: t('common.cancel'),
+      type: 'warning',
+    })
+  } catch {
+    return
+  }
+  const ok = await store.deleteChannel(props.channelId)
+  if (ok) {
+    ElMessage.success(t('workshop.channelDeleted'))
+  } else {
+    ElMessage.error(t('workshop.channelDeleteFailed'))
   }
   emit('update:visible', false)
 }
@@ -326,14 +391,34 @@ export default { name: 'ChannelActionsPopover' }
       </button>
 
       <button
-        v-if="isManager && (isLessonStudy || isTeachingGroup)"
+        v-if="canArchiveChannel"
+        type="button"
+        class="ws-popover-item"
+        @click="handleArchiveChannel"
+      >
+        <Archive class="ws-popover-icon" />
+        {{
+          isAnnounce
+            ? t('workshop.archiveAnnounceChannel')
+            : isTeachingGroup
+              ? t('workshop.archiveTeachingGroup')
+              : t('workshop.archiveLessonStudy')
+        }}
+      </button>
+
+      <button
+        v-if="canArchiveChannel"
         type="button"
         class="ws-popover-item ws-popover-item--danger"
-        @click="handleArchiveChannel"
+        @click="handleDeleteChannel"
       >
         <Trash2 class="ws-popover-icon" />
         {{
-          isTeachingGroup ? t('workshop.archiveTeachingGroup') : t('workshop.archiveLessonStudy')
+          isAnnounce
+            ? t('workshop.deleteAnnounceChannel')
+            : isTeachingGroup
+              ? t('workshop.deleteTeachingGroup')
+              : t('workshop.deleteLessonStudy')
         }}
       </button>
 

@@ -2,8 +2,9 @@
 Tencent Cloud Object Storage (COS) client helpers.
 
 Auth: reuses TENCENT_SMS_SECRET_ID / TENCENT_SMS_SECRET_KEY (same CAM key as SMS/SES).
-Bucket/region: COS_BUCKET / COS_REGION. Feature prefixes: COS_KEY_PREFIX, COS_DOCUMENTS_*,
-COS_SHOWCASE_*.
+Bucket/region: COS_BUCKET / COS_REGION. App objects use ``{env}/{module}/...``
+(see ``config.cos_env_prefix``). Optional per-module ``COS_*_PREFIX`` overrides
+and ``COS_SYNC_KEY_PREFIX`` (shared sync) stay outside that tree.
 
 Used by backup scheduler, document summary, Showcase media, and COS mirror sync.
 
@@ -24,6 +25,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+from config.cos_env_prefix import cos_feature_prefix
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 try:
@@ -41,7 +43,7 @@ COS_SECRET_ID = os.getenv("TENCENT_SMS_SECRET_ID", "").strip()
 COS_SECRET_KEY = os.getenv("TENCENT_SMS_SECRET_KEY", "").strip()
 COS_BUCKET = os.getenv("COS_BUCKET", "").strip()
 COS_REGION = os.getenv("COS_REGION", "ap-beijing").strip()
-COS_KEY_PREFIX = os.getenv("COS_KEY_PREFIX", "backups/mindgraph").strip()
+COS_KEY_PREFIX = cos_feature_prefix("backups", os.getenv("COS_KEY_PREFIX", ""))
 
 
 def cos_exc_call(exc: Exception, method: str, default: str) -> str:

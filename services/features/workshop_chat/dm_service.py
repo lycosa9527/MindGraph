@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
 from models.domain.workshop_chat import DirectMessage
+from services.features.workshop_chat.file_service import link_content_attachments
 from services.features.workshop_chat.mention_resolution import (
     resolve_mentioned_user_ids,
 )
@@ -257,6 +258,13 @@ class DirectMessageService:
             mentioned_user_ids=mention_ids or None,
         )
         db.add(msg)
+        await db.flush()
+        await link_content_attachments(
+            db,
+            uploader_id=sender_id,
+            content=msg.content,
+            dm_id=msg.id,
+        )
         await db.commit()
         await db.refresh(msg)
 

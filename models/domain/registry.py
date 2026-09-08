@@ -67,6 +67,8 @@ from models.domain.showcase import (
     ShowcasePostLike,
 )
 from models.domain.zhihui import ZhihuiConversation, ZhihuiGeneration
+from models.domain.training import TrainingCourse, TrainingCourseAsset, TrainingCourseStep
+from models.domain.vod import VodMedia
 from models.domain.mind_classroom import MindClassroomJob, MindClassroomSlide
 from models.domain.showcase_admin import (
     ShowcaseAuditLog,
@@ -256,4 +258,8 @@ __all__ = [
     "MaiteTaskReference",
     "ErrorEvent",
     "ErrorGroup",
+    "TrainingCourse",
+    "TrainingCourseStep",
+    "TrainingCourseAsset",
+    "VodMedia",
 ]

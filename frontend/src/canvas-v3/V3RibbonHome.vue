@@ -29,7 +29,7 @@ import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimit
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
-import { useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { NODE_SHAPE_OPTIONS } from '@/utils/nodeShapeStyle'
@@ -48,7 +48,7 @@ withDefaults(
 
 const { t } = useLanguage()
 const notify = useNotifications()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const AddChildNodeIcon = () => h(MindMapInsertNodeIcon, { kind: 'child' })
 const AddSiblingNodeIcon = () => h(MindMapInsertNodeIcon, { kind: 'sibling' })
 const actions = useV3RibbonActions()
@@ -161,7 +161,7 @@ function focusProperty(): void {
         variant="icon"
         :active="formatBrushActive"
         :disabled="disabled"
-        @click="handleFormatBrush"
+        @click="() => handleFormatBrush()"
         @dblclick="handleFormatBrush({ lock: true })"
       />
     </div>

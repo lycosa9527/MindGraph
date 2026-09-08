@@ -9,8 +9,8 @@ import { useKittyClickWheel } from '@/composables/kitty/useKittyClickWheel'
 
 const props = defineProps<{
   onSelectionChange?: () => void
-  /** Re-tap active chip (e.g. open 节点解释). */
-  onActiveRetap?: (node: { id: string; text: string }) => void
+  /** Explicit chip tap — enqueue desktop 节点解释. Not fired on swipe-select. */
+  onNodeTap?: (node: { id: string; text: string }) => void
 }>()
 
 const { t } = useLanguage()
@@ -18,7 +18,6 @@ const scrollerRef = useTemplateRef<HTMLDivElement>('scrollerRef')
 
 const { children, hasNodes, activeIndex, activeChild, selectById } = useKittyClickWheel({
   onSelectionChange: () => props.onSelectionChange?.(),
-  onActiveRetap: (node) => props.onActiveRetap?.({ id: node.id, text: node.text }),
   // Mobile has no Vue Flow; canvasHighlight would loop through voice selection bus.
   canvasHighlight: false,
 })
@@ -79,7 +78,11 @@ function scrollActiveIntoView(smooth: boolean): void {
 }
 
 function onChipClick(nodeId: string): void {
+  const tapped = children.value.find((row) => row.id === nodeId)
   selectById(nodeId)
+  if (tapped) {
+    props.onNodeTap?.({ id: tapped.id, text: tapped.text })
+  }
   void nextTick(() => scrollActiveIntoView(true))
 }
 

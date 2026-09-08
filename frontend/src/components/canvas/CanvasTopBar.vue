@@ -45,7 +45,8 @@ import { useLanguage } from '@/composables'
 import { CANVAS_TOP_BAR } from '@/config/uiConfig'
 import { CANVAS_STANDARD_EXPORT_MENU_ITEMS, CANVAS_COMMUNITY_EXPORT_MENU_ITEM } from '@/config/canvasExportMenu'
 import { isPdfExportCommand } from '@/utils/diagramPdfExport'
-import { useAuthStore, useCanvasExportStore, useDiagramStore, usePanelsStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { useAuthStore, useCanvasExportStore, usePanelsStore } from '@/stores'
 import { navigateBackFromCanvas } from '@/utils/canvasBackNavigation'
 
 const { resetToDefaultTemplate } = useCanvasReset()
@@ -71,6 +72,7 @@ const props = defineProps<{
   slotFullAndNewDiagram?: boolean
   isDirty?: boolean
   isSaving?: boolean
+  previewLock?: boolean
   /** Snapshot badges to display next to the filename */
   snapshots?: SnapshotMetadata[]
   /** Currently active (recalled) snapshot version */
@@ -108,7 +110,7 @@ function onSnapshotBadgeClick(event: MouseEvent, versionNumber: number): void {
 const route = useRoute()
 const router = useRouter()
 const { promptLanguage, t, currentLanguage } = useLanguage()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 
 const authStore = useAuthStore()
 const panelsStore = usePanelsStore()
@@ -206,6 +208,7 @@ watch(
 )
 
 function handleBack() {
+  if (props.previewLock) return
   navigateBackFromCanvas(router, route.path)
 }
 
@@ -282,6 +285,7 @@ function handleOpenMindmate() {
  * Nothing is persisted. Shows confirmation modal first.
  */
 async function handleReset() {
+  if (props.previewLock) return
   await resetToDefaultTemplate()
   showSlotFullModal.value = false
 }

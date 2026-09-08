@@ -35,6 +35,8 @@ _PATH_FLAG_ATTRS: tuple[tuple[str, str], ...] = (
     ("/api/ws/mindmate-collab", "FEATURE_MINDMATE_COLLAB"),
     ("/api/ws/mindmate-notify", "FEATURE_MINDMATE_COLLAB"),
     ("/api/mindbot", "FEATURE_MINDBOT"),
+    ("/api/training", "FEATURE_TRAINING"),
+    ("/api/vod", "FEATURE_VOD"),
     ("/api/kitty", "FEATURE_KITTY_AGENT"),
     ("/ws/kitty", "FEATURE_KITTY_AGENT"),
     ("/api/auth/oauth/wechat", "FEATURE_WECHAT_LOGIN"),
@@ -44,6 +46,7 @@ _PATH_FLAG_ATTRS: tuple[tuple[str, str], ...] = (
 )
 
 _OAUTH_SHARED_PREFIX = "/api/auth/oauth"
+_PACKED_ROLE_ASSET_PREFIX = "/api/training/assets/roles/"
 
 
 def _feature_enabled(attr_name: str) -> bool:
@@ -62,6 +65,13 @@ async def feature_flag_gate(request: Request, call_next):
         return await call_next(request)
 
     path = request.url.path
+    if path.startswith(_PACKED_ROLE_ASSET_PREFIX):
+        if _feature_enabled("FEATURE_TRAINING") or _feature_enabled("FEATURE_WORKSHOP_CHAT"):
+            return await call_next(request)
+        return JSONResponse(
+            status_code=404,
+            content={"detail": "Feature is disabled"},
+        )
     for prefix, attr in _PATH_FLAG_ATTRS:
         if path.startswith(prefix) and not _feature_enabled(attr):
             return JSONResponse(

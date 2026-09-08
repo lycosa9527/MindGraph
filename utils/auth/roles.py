@@ -55,6 +55,8 @@ FEATURE_KEY_TO_CONFIG_ATTR = {
     "feature_mindbot": "FEATURE_MINDBOT",
     "feature_mindmate_export": "FEATURE_MINDMATE_EXPORT",
     "feature_kitty_agent": "FEATURE_KITTY_AGENT",
+    "feature_training": "FEATURE_TRAINING",
+    "feature_vod": "FEATURE_VOD",
 }
 
 # Keys whose Permissions UI is enforced by ``user_has_feature_access`` on the API.
@@ -65,6 +67,15 @@ FEATURE_KEYS_WITH_ORG_ACCESS = frozenset(
         "feature_mindbot",
         "feature_mindmate_export",
         "feature_kitty_agent",
+    }
+)
+
+# School admins do not auto-pass these (same grant path as teachers).
+FEATURE_KEYS_SCHOOL_ADMIN_GRANT_GATED = frozenset(
+    {
+        "feature_mindbot",
+        "feature_mindmate_export",
+        "feature_workshop_chat",
     }
 )
 
@@ -176,10 +187,25 @@ def _legacy_workshop_preview_or_open(feature_key: str, current_user) -> bool:
     """Legacy workshop preview or open."""
     if feature_key != "feature_workshop_chat":
         return True
-    org_id = getattr(current_user, "organization_id", None)
-    if org_id is None:
+    return _workshop_preview_org_allows(current_user)
+
+
+def _workshop_preview_org_allows(current_user) -> bool:
+    """True when the user's organization is in WORKSHOP_CHAT_PREVIEW_ORG_IDS."""
+    preview = config.WORKSHOP_CHAT_PREVIEW_ORG_IDS
+    if not preview:
         return False
-    return org_id in config.WORKSHOP_CHAT_PREVIEW_ORG_IDS
+    org_id = getattr(current_user, "organization_id", None)
+    return org_id is not None and org_id in preview
+
+
+def _apply_workshop_preview_filter(feature_key: str, current_user, granted: bool) -> bool:
+    """When preview orgs are set, Workshop Chat stays limited to those schools."""
+    if feature_key != "feature_workshop_chat":
+        return granted
+    if not config.WORKSHOP_CHAT_PREVIEW_ORG_IDS:
+        return granted
+    return granted and _workshop_preview_org_allows(current_user)
 
 
 async def user_has_feature_access(current_user, feature_key: str) -> bool:
@@ -187,28 +213,29 @@ async def user_has_feature_access(current_user, feature_key: str) -> bool:
     Whether the user may use this feature (global FEATURE_* + DB rules).
 
     Superadmins always pass when the global flag is on. School admins pass for
-    every feature except ``feature_mindbot`` and ``feature_mindmate_export``:
-    for those (both expose per-org conversation data), school admins are subject
-    to ``feature_access_*`` grants (same as regular users).
+    every feature except ``FEATURE_KEYS_SCHOOL_ADMIN_GRANT_GATED`` (MindBot,
+    MindMate export, Workshop Chat): those use ``feature_access_*`` grants or
+    the Workshop Chat preview-org list, same as regular users.
     """
     if not _global_feature_flag_enabled(feature_key):
         return False
     if is_superadmin(current_user):
         return True
-    _grant_gated_features = {"feature_mindbot", "feature_mindmate_export"}
-    if is_school_admin(current_user) and feature_key not in _grant_gated_features:
+    if is_school_admin(current_user) and feature_key not in FEATURE_KEYS_SCHOOL_ADMIN_GRANT_GATED:
         return True
     doc = await _get_feature_access_map_cached() or {}
     entry = doc.get(feature_key)
     if entry is None:
-        return _legacy_workshop_preview_or_open(feature_key, current_user)
-    if not entry.restrict:
-        return True
-    uid = getattr(current_user, "id", None)
-    org_id = getattr(current_user, "organization_id", None)
-    ok_user = uid is not None and uid in entry.user_ids
-    ok_org = org_id is not None and org_id in entry.organization_ids
-    return ok_user or ok_org
+        granted = _legacy_workshop_preview_or_open(feature_key, current_user)
+    elif not entry.restrict:
+        granted = True
+    else:
+        uid = getattr(current_user, "id", None)
+        org_id = getattr(current_user, "organization_id", None)
+        ok_user = uid is not None and uid in entry.user_ids
+        ok_org = org_id is not None and org_id in entry.organization_ids
+        granted = ok_user or ok_org
+    return _apply_workshop_preview_filter(feature_key, current_user, granted)
 
 
 async def can_access_workshop_chat(current_user) -> bool:

@@ -258,6 +258,8 @@ export interface AdminFeatureFlagsPayload {
   feature_teacher_usage?: boolean
   feature_workshop_chat?: boolean
   feature_mindmate_collab?: boolean
+  feature_training?: boolean
+  feature_vod?: boolean
   feature_markets?: boolean
   feature_mindbot?: boolean
   feature_kitty_agent?: boolean

@@ -82,7 +82,7 @@ DIAGRAM_TYPE_DISPLAY = {
     "tree_map": "树形图",
     "flow_map": "流程图",
     "multi_flow_map": "复流程图",
-    "bridge_map": "桥型图",
+    "bridge_map": "桥形图",
     "mind_map": "思维导图",
     "mindmap": "思维导图",
     "concept_map": "概念图",

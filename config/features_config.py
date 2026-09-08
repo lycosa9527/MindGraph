@@ -216,7 +216,7 @@ class FeaturesConfigMixin:
 
     @property
     def FEATURE_WORKSHOP_CHAT(self):
-        """Enable Workshop Chat (教研坊) school-scoped communication system.
+        """Enable Workshop Chat (研习社) school-scoped communication system.
 
         Disabled by default. Set FEATURE_WORKSHOP_CHAT=True in .env to enable.
         Provides channels, topics, and DMs for teacher collaboration.
@@ -233,14 +233,30 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_MINDMATE_COLLAB", "False").lower() == "true"
 
     @property
+    def FEATURE_TRAINING(self):
+        """Enable org training follow (instructor pull).
+
+        Disabled by default. Set FEATURE_TRAINING=True in .env to enable.
+        """
+        return self._get_cached_value("FEATURE_TRAINING", "False").lower() == "true"
+
+    @property
+    def FEATURE_VOD(self):
+        """Enable Tencent Cloud VOD (云点播) admin library.
+
+        Disabled by default. Set FEATURE_VOD=True in .env to enable.
+        """
+        return self._get_cached_value("FEATURE_VOD", "False").lower() == "true"
+
+    @property
     def WORKSHOP_CHAT_PREVIEW_ORG_IDS(self) -> frozenset[int]:
-        """Organization IDs that may use Workshop Chat without admin/manager role.
+        """Organization IDs allowed to use Workshop Chat (研习社).
 
-        Comma-separated integers (e.g. ``5`` or ``5,12``). Used while the feature
-        is under development so a specific school can test; admins and managers
-        always have access when FEATURE_WORKSHOP_CHAT is enabled.
+        Comma-separated integers (e.g. ``5`` or ``5,12``). When
+        ``FEATURE_WORKSHOP_CHAT`` is on and no DB grant row exists, only
+        members of these orgs (plus superadmins) can see the module.
 
-        Empty by default (only elevated roles).
+        Empty by default (superadmins only).
         """
         raw = str(self._get_cached_value("WORKSHOP_CHAT_PREVIEW_ORG_IDS", "") or "")
         result: list[int] = []

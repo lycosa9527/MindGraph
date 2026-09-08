@@ -1,25 +1,24 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 
-import {
-  Bold,
-  ChevronRight,
-  Code,
-  CodeSquare,
-  Italic,
-  Link2,
-  Paperclip,
-  SendHorizonal,
-  Smile,
-  Strikethrough,
-  X,
-} from '@lucide/vue'
+import { ChevronRight, X } from '@lucide/vue'
 
+import { TRAINING_ROLES } from '@/config/trainingRoles'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useRenderedMarkdown } from '@/composables/core/useRenderedMarkdown'
 import { type OrgMember, useWorkshopChatStore } from '@/stores/workshopChat'
 import { apiUpload } from '@/utils/apiClient'
+import { stripMindmateDiagramIdComments } from '@/utils/mindmateDiagramMeta'
+import {
+  type ComposeFormatType,
+  applyComposeFormat,
+  insertTextAtCursor,
+} from '@/utils/workshopComposeFormat'
+import { buildWorkshopRoleMarkdown, inlineWorkshopRoleMarkdown } from '@/utils/workshopRoleEmbed'
 
-import EmojiPicker from './EmojiPicker.vue'
+import './ChatComposeBox.css'
+import WorkshopComposeToolbar from './WorkshopComposeToolbar.vue'
+import WorkshopDiagramPicker from './WorkshopDiagramPicker.vue'
 
 const { t } = useLanguage()
 const store = useWorkshopChatStore()
@@ -33,9 +32,7 @@ const props = withDefaults(
     topicName?: string
     dmPartnerName?: string
     mode?: 'channel' | 'topic' | 'dm'
-    /** When false, show read-only hint (e.g. global announce topics for non-admins). */
     allowSend?: boolean
-    /** localStorage key segment for autosave (narrow-scoped). */
     draftKey?: string
   }>(),
   { mode: 'channel', allowSend: true }
@@ -50,12 +47,19 @@ const emit = defineEmits<{
 
 const content = ref('')
 const isExpanded = ref(false)
+const isPreview = ref(false)
 const textareaRef = ref<HTMLTextAreaElement>()
 const showEmojiPicker = ref(false)
+const showRolePicker = ref(false)
+const showDiagramPicker = ref(false)
 const uploading = ref(false)
 const fileInputRef = ref<HTMLInputElement>()
 const showMentionPicker = ref(false)
 const mentionQuery = ref('')
+
+const { html: previewHtml } = useRenderedMarkdown(() =>
+  inlineWorkshopRoleMarkdown(stripMindmateDiagramIdComments(content.value))
+)
 
 let draftSaveTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -167,7 +171,10 @@ function expand(): void {
 
 function collapse(): void {
   isExpanded.value = false
+  isPreview.value = false
   showMentionPicker.value = false
+  showEmojiPicker.value = false
+  showRolePicker.value = false
 }
 
 function handleSend(): void {
@@ -175,6 +182,7 @@ function handleSend(): void {
   if (!trimmed) return
   emit('send', trimmed)
   content.value = ''
+  isPreview.value = false
   if (props.draftKey) {
     localStorage.removeItem(DRAFT_PREFIX + props.draftKey)
   }
@@ -262,64 +270,69 @@ function handleInput(): void {
   typingTimeout = setTimeout(() => emit('typing'), 500)
 }
 
-function wrapSelection(before: string, after: string): void {
-  const el = textareaRef.value
-  if (!el) return
-  const start = el.selectionStart
-  const end = el.selectionEnd
-  const text = content.value
-  const selected = text.slice(start, end)
-  const replacement = `${before}${selected || 'text'}${after}`
-  content.value = text.slice(0, start) + replacement + text.slice(end)
-  setTimeout(() => {
+function applyToTextarea(result: { text: string; start: number; end: number }): void {
+  content.value = result.text
+  nextTick(() => {
+    const el = textareaRef.value
+    if (!el) return
     el.focus()
-    const newStart = start + before.length
-    const newEnd = newStart + (selected ? selected.length : 4)
-    el.setSelectionRange(newStart, newEnd)
-  }, 10)
+    el.setSelectionRange(result.start, result.end)
+  })
 }
 
-function insertBold(): void {
-  wrapSelection('**', '**')
-}
-function insertItalic(): void {
-  wrapSelection('*', '*')
-}
-function insertStrikethrough(): void {
-  wrapSelection('~~', '~~')
-}
-function insertInlineCode(): void {
-  wrapSelection('`', '`')
-}
-
-function insertCodeBlock(): void {
+function handleFormat(type: ComposeFormatType): void {
+  if (isPreview.value) return
   const el = textareaRef.value
-  if (!el) return
-  const start = el.selectionStart
-  const text = content.value
-  const block = '\n```\n\n```\n'
-  content.value = text.slice(0, start) + block + text.slice(start)
-  setTimeout(() => {
-    el.focus()
-    el.setSelectionRange(start + 5, start + 5)
-  }, 10)
-}
-
-function insertLink(): void {
-  wrapSelection('[', '](url)')
+  const start = el?.selectionStart ?? content.value.length
+  const end = el?.selectionEnd ?? start
+  applyToTextarea(applyComposeFormat(content.value, start, end, type))
 }
 
 function handleEmojiSelect(_name: string, code: string): void {
   showEmojiPicker.value = false
   const el = textareaRef.value
-  if (!el) return
-  const start = el.selectionStart
-  const text = content.value
-  content.value = text.slice(0, start) + code + text.slice(start)
-  setTimeout(() => {
-    el.focus()
-    el.setSelectionRange(start + code.length, start + code.length)
-  }, 10)
+  const start = el?.selectionStart ?? content.value.length
+  const end = el?.selectionEnd ?? start
+  applyToTextarea(insertTextAtCursor(content.value, start, end, code))
+}
+
+function handleDiagramInsert(markdown: string): void {
+  const el = textareaRef.value
+  const start = el?.selectionStart ?? content.value.length
+  const end = el?.selectionEnd ?? start
+  const prefix = start > 0 && content.value.charAt(start - 1) !== '\n' ? '\n' : ''
+  applyToTextarea(insertTextAtCursor(content.value, start, end, `${prefix}${markdown}\n`))
+}
+
+function handleRolePick(roleId: string): void {
+  showRolePicker.value = false
+  const role = TRAINING_ROLES.find((row) => row.id === roleId)
+  const alt = role ? t(role.labelKey) : roleId
+  const markdown = buildWorkshopRoleMarkdown(roleId, alt)
+  const el = textareaRef.value
+  const start = el?.selectionStart ?? content.value.length
+  const end = el?.selectionEnd ?? start
+  applyToTextarea(insertTextAtCursor(content.value, start, end, markdown))
+}
+
+function onEmojiPickerVisible(open: boolean): void {
+  showEmojiPicker.value = open
+  if (open) {
+    showRolePicker.value = false
+  }
+}
+
+function onRolePickerVisible(open: boolean): void {
+  showRolePicker.value = open
+  if (open) {
+    showEmojiPicker.value = false
+  }
+}
+
+function openDiagramPicker(): void {
+  showEmojiPicker.value = false
+  showRolePicker.value = false
+  showDiagramPicker.value = true
 }
 
 function triggerFileUpload(): void {
@@ -338,16 +351,16 @@ async function handleFileChange(event: Event): Promise<void> {
     formData.append('file', file)
     const res = await apiUpload('/api/chat/upload', formData)
     if (res.ok) {
-      const data = await res.json()
+      const data = (await res.json()) as { filename?: string; file_path?: string }
+      if (!data.file_path) return
       const isImage = file.type.startsWith('image/')
       const mdLink = isImage
-        ? `![${data.filename}](${data.file_path})`
-        : `[${data.filename}](${data.file_path})`
-
+        ? `![${data.filename || file.name}](${data.file_path})`
+        : `[${data.filename || file.name}](${data.file_path})`
       const el = textareaRef.value
       const start = el?.selectionStart ?? content.value.length
-      const text = content.value
-      content.value = text.slice(0, start) + mdLink + text.slice(start)
+      const end = el?.selectionEnd ?? start
+      applyToTextarea(insertTextAtCursor(content.value, start, end, mdLink))
     }
   } catch (err) {
     console.error('[ChatComposeBox] upload failed:', err)
@@ -355,20 +368,6 @@ async function handleFileChange(event: Event): Promise<void> {
     uploading.value = false
   }
 }
-
-const toolbarButtons = [
-  { key: 'bold', icon: Bold, action: insertBold, titleKey: 'workshop.bold' },
-  { key: 'italic', icon: Italic, action: insertItalic, titleKey: 'workshop.italic' },
-  {
-    key: 'strike',
-    icon: Strikethrough,
-    action: insertStrikethrough,
-    titleKey: 'workshop.strikethrough',
-  },
-  { key: 'code', icon: Code, action: insertInlineCode, titleKey: 'workshop.code' },
-  { key: 'codeBlock', icon: CodeSquare, action: insertCodeBlock, titleKey: 'workshop.codeBlock' },
-  { key: 'link', icon: Link2, action: insertLink, titleKey: 'workshop.insertLink' },
-]
 </script>
 
 <template>
@@ -388,7 +387,6 @@ const toolbarButtons = [
       class="compose__box"
       :class="{ 'compose__box--open': isExpanded }"
     >
-      <!-- Collapsed state — Zulip-style three-part bar -->
       <div
         v-if="!isExpanded"
         class="compose__collapsed"
@@ -416,12 +414,10 @@ const toolbarButtons = [
         </button>
       </div>
 
-      <!-- Expanded state -->
       <div
         v-else
         class="compose__expanded"
       >
-        <!-- Recipient header row -->
         <div class="compose__recipient">
           <div class="compose__recipient-info">
             <template v-if="mode === 'dm'">
@@ -470,7 +466,23 @@ const toolbarButtons = [
           </button>
         </div>
 
+        <div
+          v-if="isPreview"
+          class="compose__preview"
+        >
+          <p
+            v-if="!content.trim()"
+            class="compose__preview-empty"
+          >
+            {{ t('workshop.previewEmpty') }}
+          </p>
+          <div
+            v-else
+            v-html="previewHtml"
+          />
+        </div>
         <textarea
+          v-else
           ref="textareaRef"
           v-model="content"
           class="compose__textarea"
@@ -482,452 +494,37 @@ const toolbarButtons = [
           @click="syncMentionPicker"
         />
 
-        <!-- Toolbar + send -->
-        <div class="compose__toolbar">
-          <div class="compose__fmt-group">
-            <button
-              v-for="btn in toolbarButtons"
-              :key="btn.key"
-              class="compose__tool-btn"
-              :title="t(btn.titleKey)"
-              @click="btn.action"
-            >
-              <component
-                :is="btn.icon"
-                :size="15"
-              />
-            </button>
+        <input
+          ref="fileInputRef"
+          type="file"
+          class="compose__file-input"
+          accept="image/*,.pdf,.doc,.docx,.txt"
+          @change="handleFileChange"
+        />
 
-            <span class="compose__divider" />
-
-            <!-- File upload -->
-            <button
-              class="compose__tool-btn"
-              :class="{ 'compose__tool-btn--uploading': uploading }"
-              :title="t('workshop.uploadFile')"
-              :disabled="uploading"
-              @click="triggerFileUpload"
-            >
-              <Paperclip :size="15" />
-            </button>
-            <input
-              ref="fileInputRef"
-              type="file"
-              class="compose__file-input"
-              accept="image/*,.pdf,.doc,.docx,.txt"
-              @change="handleFileChange"
-            />
-
-            <!-- Emoji -->
-            <el-popover
-              :visible="showEmojiPicker"
-              placement="top-end"
-              :width="260"
-              trigger="click"
-              :show-arrow="false"
-              @update:visible="showEmojiPicker = $event"
-            >
-              <template #reference>
-                <button
-                  class="compose__tool-btn"
-                  :title="t('workshop.emoji')"
-                  @click="showEmojiPicker = !showEmojiPicker"
-                >
-                  <Smile :size="15" />
-                </button>
-              </template>
-              <EmojiPicker @select="handleEmojiSelect" />
-            </el-popover>
-          </div>
-
-          <button
-            class="compose__send-btn"
-            :disabled="!content.trim()"
-            @click="handleSend"
-          >
-            <SendHorizonal :size="16" />
-          </button>
-        </div>
+        <WorkshopComposeToolbar
+          :can-send="Boolean(content.trim())"
+          :preview-on="isPreview"
+          :format-disabled="isPreview"
+          :uploading="uploading"
+          :show-emoji-picker="showEmojiPicker"
+          :show-role-picker="showRolePicker"
+          @format="handleFormat"
+          @toggle-preview="isPreview = !isPreview"
+          @upload="triggerFileUpload"
+          @update:show-emoji-picker="onEmojiPickerVisible"
+          @update:show-role-picker="onRolePickerVisible"
+          @emoji="handleEmojiSelect"
+          @pick-role="handleRolePick"
+          @open-diagram="openDiagramPicker"
+          @send="handleSend"
+        />
       </div>
     </div>
+    <WorkshopDiagramPicker
+      :visible="showDiagramPicker"
+      @update:visible="showDiagramPicker = $event"
+      @insert="handleDiagramInsert"
+    />
   </div>
 </template>
-
-<style scoped>
-.compose {
-  flex-shrink: 0;
-  padding: 0 0 8px;
-}
-
-.compose--readonly {
-  padding: 0 14px 10px;
-}
-
-.compose__read-only {
-  font-size: 13px;
-  line-height: 1.45;
-  color: hsl(0deg 0% 45%);
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: hsl(0deg 0% 0% / 4%);
-  border: 1px solid hsl(0deg 0% 0% / 8%);
-}
-
-.compose__box {
-  margin: 0 14px;
-  border: 1px solid hsl(0deg 0% 0% / 12%);
-  border-radius: 6px;
-  background: hsl(0deg 0% 100%);
-  transition:
-    border-color 150ms ease,
-    box-shadow 150ms ease;
-}
-
-.compose__box--open:focus-within {
-  border-color: hsl(228deg 40% 68%);
-  box-shadow: 0 0 0 2px hsl(228deg 56% 58% / 8%);
-}
-
-/* ── Collapsed ── */
-.compose__collapsed {
-  display: flex;
-  align-items: stretch;
-  gap: 4px;
-  padding: 4px;
-}
-
-.compose__reply-container {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  border-radius: 4px;
-  background: hsl(228deg 24% 96%);
-  border: 1px solid hsl(228deg 18% 88%);
-  transition:
-    background 120ms ease,
-    border-color 120ms ease;
-}
-
-.compose__reply-container:hover {
-  background: hsl(228deg 20% 93%);
-  border-color: hsl(228deg 18% 82%);
-}
-
-.compose__reply-btn {
-  flex: 1;
-  min-width: 0;
-  padding: 5px 10px;
-  font-size: 13px;
-  font-family: inherit;
-  font-weight: 500;
-  text-align: left;
-  color: hsl(0deg 0% 28%);
-  border: none;
-  background: none;
-  border-radius: 3px;
-  cursor: pointer;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  line-height: 20px;
-}
-
-.compose__new-conv-btn {
-  flex-shrink: 0;
-  padding: 0 10px;
-  margin: 1px;
-  font-size: 13px;
-  font-family: inherit;
-  font-weight: 500;
-  color: hsl(0deg 0% 42%);
-  border: none;
-  background: none;
-  border-radius: 3px;
-  cursor: pointer;
-  white-space: nowrap;
-  line-height: 20px;
-  transition:
-    background 100ms ease,
-    color 100ms ease;
-}
-
-.compose__new-conv-btn:hover {
-  background: hsl(0deg 0% 0% / 6%);
-  color: hsl(0deg 0% 15%);
-}
-
-.compose__new-dm-btn {
-  flex-shrink: 0;
-  padding: 5px 10px;
-  font-size: 13px;
-  font-family: inherit;
-  font-weight: 500;
-  color: hsl(0deg 0% 28%);
-  background: hsl(0deg 0% 96%);
-  border: 1px solid hsl(0deg 0% 0% / 10%);
-  border-radius: 4px;
-  cursor: pointer;
-  white-space: nowrap;
-  line-height: 20px;
-  transition:
-    background 100ms ease,
-    border-color 100ms ease;
-}
-
-.compose__new-dm-btn:hover {
-  background: hsl(0deg 0% 93%);
-  border-color: hsl(0deg 0% 0% / 16%);
-}
-
-/* ── Expanded ── */
-.compose__expanded {
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-.mention-picker {
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  bottom: 100%;
-  margin-bottom: 4px;
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 20;
-  border-radius: 8px;
-  border: 1px solid hsl(0deg 0% 0% / 12%);
-  background: hsl(0deg 0% 100%);
-  box-shadow: 0 4px 18px hsl(0deg 0% 0% / 12%);
-  padding: 4px;
-}
-
-.mention-picker__item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 6px 8px;
-  border: none;
-  border-radius: 6px;
-  background: none;
-  cursor: pointer;
-  font-size: 13px;
-  text-align: left;
-  color: hsl(0deg 0% 20%);
-}
-
-.mention-picker__item:hover {
-  background: hsl(228deg 40% 96%);
-}
-
-.mention-picker__avatar {
-  flex-shrink: 0;
-  font-size: 16px;
-  line-height: 1;
-}
-
-.mention-picker__name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Recipient header row */
-.compose__recipient {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 5px 8px 4px 10px;
-  border-bottom: 1px solid hsl(0deg 0% 0% / 6%);
-  background: hsl(0deg 0% 98.5%);
-  border-radius: 6px 6px 0 0;
-}
-
-.compose__recipient-info {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  min-width: 0;
-  font-size: 13px;
-  line-height: 20px;
-  overflow: hidden;
-}
-
-.compose__recipient-channel {
-  font-weight: 700;
-  font-size: 14px;
-  flex-shrink: 0;
-}
-
-.compose__recipient-channel-name {
-  font-weight: 600;
-  color: hsl(0deg 0% 22%);
-  flex-shrink: 0;
-}
-
-.compose__recipient-sep {
-  color: hsl(0deg 0% 55%);
-  flex-shrink: 0;
-  margin: 0 1px;
-}
-
-.compose__recipient-topic {
-  color: hsl(0deg 0% 38%);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.compose__recipient-dm-label {
-  font-weight: 600;
-  color: hsl(0deg 0% 38%);
-  flex-shrink: 0;
-}
-
-.compose__recipient-dm-name {
-  font-weight: 600;
-  color: hsl(0deg 0% 22%);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.compose__close-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border: none;
-  background: none;
-  border-radius: 3px;
-  cursor: pointer;
-  color: hsl(0deg 0% 48%);
-  flex-shrink: 0;
-  transition:
-    background 100ms ease,
-    color 100ms ease;
-}
-
-.compose__close-btn:hover {
-  background: hsl(0deg 0% 0% / 8%);
-  color: hsl(0deg 0% 15%);
-}
-
-.compose__textarea {
-  display: block;
-  width: 100%;
-  min-height: 54px;
-  max-height: 320px;
-  padding: 10px 12px 6px;
-  font-size: 14px;
-  line-height: 1.55;
-  color: hsl(0deg 0% 12%);
-  border: none;
-  outline: none;
-  resize: vertical;
-  background: transparent;
-  font-family: inherit;
-}
-
-.compose__textarea::placeholder {
-  color: hsl(0deg 0% 52%);
-}
-
-/* Toolbar */
-.compose__toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 6px 5px;
-  border-top: 1px solid hsl(0deg 0% 0% / 6%);
-}
-
-.compose__fmt-group {
-  display: flex;
-  align-items: center;
-  gap: 1px;
-}
-
-.compose__tool-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: none;
-  border-radius: 4px;
-  cursor: pointer;
-  color: hsl(0deg 0% 42%);
-  transition: all 100ms ease;
-}
-
-.compose__tool-btn:hover {
-  background: hsl(0deg 0% 0% / 6%);
-  color: hsl(0deg 0% 15%);
-}
-
-.compose__tool-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.compose__tool-btn--uploading {
-  animation: compose-pulse 1.5s infinite;
-}
-
-@keyframes compose-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
-}
-
-.compose__divider {
-  width: 1px;
-  height: 16px;
-  background: hsl(0deg 0% 0% / 10%);
-  margin: 0 5px;
-}
-
-.compose__file-input {
-  display: none;
-}
-
-/* Send button */
-.compose__send-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 30px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  background: hsl(228deg 56% 58%);
-  color: hsl(0deg 0% 100%);
-  transition: all 120ms ease;
-  box-shadow: 0 1px 2px hsl(228deg 56% 58% / 25%);
-}
-
-.compose__send-btn:hover:not(:disabled) {
-  background: hsl(228deg 48% 48%);
-  box-shadow: 0 2px 4px hsl(228deg 56% 58% / 30%);
-}
-
-.compose__send-btn:active:not(:disabled) {
-  transform: scale(0.96);
-}
-
-.compose__send-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
-  box-shadow: none;
-}
-</style>

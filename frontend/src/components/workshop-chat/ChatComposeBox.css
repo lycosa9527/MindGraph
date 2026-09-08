@@ -1,0 +1,349 @@
+.compose {
+  flex-shrink: 0;
+  padding: 0 0 8px;
+}
+
+.compose--readonly {
+  padding: 0 14px 10px;
+}
+
+.compose__read-only {
+  font-size: 13px;
+  line-height: 1.45;
+  color: hsl(0deg 0% 45%);
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: hsl(0deg 0% 0% / 4%);
+  border: 1px solid hsl(0deg 0% 0% / 8%);
+}
+
+.compose__box {
+  margin: 0 14px;
+  border: 1px solid hsl(0deg 0% 0% / 12%);
+  border-radius: 6px;
+  background: hsl(0deg 0% 100%);
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.compose__box--open:focus-within {
+  border-color: hsl(228deg 40% 68%);
+  box-shadow: 0 0 0 2px hsl(228deg 56% 58% / 8%);
+}
+
+.compose__collapsed {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  padding: 4px;
+}
+
+.compose__reply-container {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  border-radius: 4px;
+  background: hsl(228deg 24% 96%);
+  border: 1px solid hsl(228deg 18% 88%);
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+.compose__reply-container:hover {
+  background: hsl(228deg 20% 93%);
+  border-color: hsl(228deg 18% 82%);
+}
+
+.compose__reply-btn {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  text-align: left;
+  color: hsl(0deg 0% 28%);
+  border: none;
+  background: none;
+  border-radius: 3px;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 20px;
+}
+
+.compose__new-conv-btn {
+  flex-shrink: 0;
+  padding: 0 10px;
+  margin: 1px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  color: hsl(0deg 0% 42%);
+  border: none;
+  background: none;
+  border-radius: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 20px;
+  transition:
+    background 100ms ease,
+    color 100ms ease;
+}
+
+.compose__new-conv-btn:hover {
+  background: hsl(0deg 0% 0% / 6%);
+  color: hsl(0deg 0% 15%);
+}
+
+.compose__new-dm-btn {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  color: hsl(0deg 0% 28%);
+  background: hsl(0deg 0% 96%);
+  border: 1px solid hsl(0deg 0% 0% / 10%);
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 20px;
+  transition:
+    background 100ms ease,
+    border-color 100ms ease;
+}
+
+.compose__new-dm-btn:hover {
+  background: hsl(0deg 0% 93%);
+  border-color: hsl(0deg 0% 0% / 16%);
+}
+
+.compose__expanded {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.mention-picker {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 100%;
+  margin-bottom: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 20;
+  border-radius: 8px;
+  border: 1px solid hsl(0deg 0% 0% / 12%);
+  background: hsl(0deg 0% 100%);
+  box-shadow: 0 4px 18px hsl(0deg 0% 0% / 12%);
+  padding: 4px;
+}
+
+.mention-picker__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+  color: hsl(0deg 0% 20%);
+}
+
+.mention-picker__item:hover {
+  background: hsl(228deg 40% 96%);
+}
+
+.mention-picker__avatar {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.mention-picker__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compose__recipient {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 5px 8px 4px 10px;
+  border-bottom: 1px solid hsl(0deg 0% 0% / 6%);
+  background: hsl(0deg 0% 98.5%);
+  border-radius: 6px 6px 0 0;
+}
+
+.compose__recipient-info {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 20px;
+  overflow: hidden;
+}
+
+.compose__recipient-channel {
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.compose__recipient-channel-name {
+  font-weight: 600;
+  color: hsl(0deg 0% 22%);
+  flex-shrink: 0;
+}
+
+.compose__recipient-sep {
+  color: hsl(0deg 0% 55%);
+  flex-shrink: 0;
+  margin: 0 1px;
+}
+
+.compose__recipient-topic {
+  color: hsl(0deg 0% 38%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compose__recipient-dm-label {
+  font-weight: 600;
+  color: hsl(0deg 0% 38%);
+  flex-shrink: 0;
+}
+
+.compose__recipient-dm-name {
+  font-weight: 600;
+  color: hsl(0deg 0% 22%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compose__close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: none;
+  border-radius: 3px;
+  cursor: pointer;
+  color: hsl(0deg 0% 48%);
+  flex-shrink: 0;
+  transition:
+    background 100ms ease,
+    color 100ms ease;
+}
+
+.compose__close-btn:hover {
+  background: hsl(0deg 0% 0% / 8%);
+  color: hsl(0deg 0% 15%);
+}
+
+.compose__textarea,
+.compose__preview {
+  display: block;
+  width: 100%;
+  min-height: 54px;
+  max-height: 320px;
+  padding: 10px 12px 6px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: hsl(0deg 0% 12%);
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+}
+
+.compose__textarea {
+  resize: vertical;
+}
+
+.compose__preview {
+  overflow-y: auto;
+}
+
+.compose__textarea::placeholder {
+  color: hsl(0deg 0% 52%);
+}
+
+.compose__preview p {
+  margin: 0 0 6px;
+}
+
+.compose__preview ul,
+.compose__preview ol {
+  margin: 4px 0;
+  padding-left: 22px;
+}
+
+.compose__preview img {
+  max-width: 100%;
+  max-height: 240px;
+  border-radius: 6px;
+}
+
+.compose__preview img[src*='/api/training/assets/roles/'] {
+  display: inline-block;
+  width: 140px;
+  height: 140px;
+  max-width: 140px;
+  max-height: 140px;
+  margin: 0 0.2em;
+  vertical-align: bottom;
+  object-fit: contain;
+  border: none;
+  background: transparent;
+}
+
+.compose__preview table {
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.compose__preview th,
+.compose__preview td {
+  border: 1px solid hsl(0deg 0% 0% / 12%);
+  padding: 4px 8px;
+}
+
+.compose__preview blockquote {
+  margin: 6px 0;
+  padding: 6px 12px;
+  border-left: 3px solid hsl(228deg 40% 76%);
+  background: hsl(228deg 20% 97%);
+}
+
+.compose__preview details.workshop-spoiler {
+  margin: 6px 0;
+  padding: 4px 10px;
+  border: 1px solid hsl(0deg 0% 0% / 10%);
+  border-radius: 6px;
+}
+
+.compose__preview-empty {
+  color: hsl(0deg 0% 52%);
+  margin: 0;
+}
+
+.compose__file-input {
+  display: none;
+}

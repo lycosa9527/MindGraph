@@ -28,6 +28,7 @@ from models.domain.workshop_chat import (
     ChatMessage,
     ChatTopic,
 )
+from services.features.workshop_chat.file_service import link_content_attachments
 from services.features.workshop_chat import message_fts
 from services.features.workshop_chat.mention_resolution import (
     resolve_mentioned_user_ids,
@@ -224,6 +225,12 @@ class MessageService:
         )
         db.add(msg)
         await db.flush()
+        await link_content_attachments(
+            db,
+            uploader_id=sender_id,
+            content=msg.content,
+            message_id=msg.id,
+        )
 
         if topic_id:
             t_row = await db.execute(select(ChatTopic).where(ChatTopic.id == topic_id))
@@ -283,6 +290,12 @@ class MessageService:
         msg.content = new_content[:MAX_CONTENT_LENGTH]
         msg.mentioned_user_ids = mention_ids or None
         msg.edited_at = datetime.now(UTC)
+        await link_content_attachments(
+            db,
+            uploader_id=sender_id,
+            content=msg.content,
+            message_id=msg.id,
+        )
         await db.commit()
         refreshed = await db.execute(
             select(ChatMessage).options(joinedload(ChatMessage.sender)).where(ChatMessage.id == message_id)

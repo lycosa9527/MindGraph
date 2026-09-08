@@ -181,6 +181,12 @@ run_backend() {
     tests/test_privacy_policy_static.py \
     tests/test_privacy_policy_http.py \
     tests/test_workshop_chat_file_service.py \
+    tests/test_workshop_diagram_embed.py \
+    tests/test_chromium_version.py \
+    tests/test_workshop_announce_seed.py \
+    tests/test_workshop_archive_channel_children.py \
+    tests/test_workshop_tenant_isolation.py \
+    tests/db/test_rls_workshop_chat.py \
     tests/test_dingtalk_bind_service.py \
     tests/test_showcase_helpers.py \
     tests/test_celery_manager_stale.py \
@@ -227,7 +233,24 @@ run_backend() {
     tests/test_tencent_asr_v2.py \
     tests/test_tencent_asr_v2_errors.py \
     tests/test_token_refresh_rate_limit.py \
-    tests/test_log_user_context.py
+    tests/test_log_user_context.py \
+    tests/test_document_filenames.py \
+    tests/test_doc_summary_ingest.py \
+    tests/test_knowledge_packages_api.py \
+    tests/test_training_permissions.py \
+    tests/test_training_session_store.py \
+    tests/test_training_activity_sse.py \
+    tests/test_training_routes.py \
+    tests/test_training_storage_keys.py \
+    tests/test_training_course_routes.py \
+    tests/test_training_play_advance.py \
+    tests/test_training_role_assets.py \
+    tests/test_training_audit_log.py \
+    tests/test_kitty_mobile_active.py \
+    tests/scripts/test_training_roles_kit.py \
+    tests/scripts/test_white_cat_emoji.py \
+    tests/scripts/test_cat_office_battles.py \
+    tests/scripts/test_cat_emoji_stills.py
 }
 
 run_frontend() {
@@ -273,7 +296,28 @@ run_frontend() {
     tests/formatSidebarDailyTokens.spec.ts \
     tests/voiceNotesMarkdown.spec.ts tests/voiceNotesTranscript.spec.ts \
     tests/voiceNotesSaveStatus.spec.ts tests/mobileVoiceNotesFinish.spec.ts \
-    tests/hasPersistedAuthUser.spec.ts
+    tests/hasPersistedAuthUser.spec.ts \
+    tests/applyTrainingSnapshot.spec.ts tests/trainingStore.spec.ts \
+    tests/trainingClient.spec.ts tests/useTrainingFollow.spec.ts \
+    tests/useTrainingHeartbeat.spec.ts tests/trainingPadAnchor.spec.ts \
+    tests/trainingCourses.spec.ts tests/trainingOverlayDrag.spec.ts \
+    tests/presentationSpotlight.spec.ts tests/applyTrainingUiTarget.spec.ts \
+    tests/trainingStageThumb.spec.ts tests/trainingBuilderStore.spec.ts \
+    tests/trainingRoles.spec.ts tests/trainingTextBubbles.spec.ts \
+    tests/trainingPlayControls.spec.ts tests/trainingFriendLine.spec.ts \
+    tests/trainingRemoteView.spec.ts tests/mobileRouterRedirects.spec.ts \
+    tests/mindmateWelcomeLayout.spec.ts \
+    tests/workshopTopicChevron.spec.ts \
+    tests/workshopChannelTree.spec.ts \
+    tests/workshopInitializeOnce.spec.ts \
+    tests/workshopMessageLocalPatch.spec.ts \
+    tests/workshopComposeFormat.spec.ts \
+    tests/workshopDiagramEmbed.spec.ts \
+    tests/workshopMessageEditKeys.spec.ts \
+    tests/enqueueKittyDesktopExplainNode.spec.ts \
+    tests/kittyDesktopExplainNodeAction.spec.ts \
+    tests/kittyPendingCanvasAction.spec.ts \
+    tests/uploadTrainingFile.spec.ts
 }
 
 run_chrome_extension() {

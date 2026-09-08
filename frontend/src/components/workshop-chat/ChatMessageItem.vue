@@ -9,18 +9,33 @@ import {
   type ReactionGroup,
   useWorkshopChatStore,
 } from '@/stores/workshopChat'
+import { stripMindmateDiagramIdComments } from '@/utils/mindmateDiagramMeta'
 import { workshopChatHrefFromState } from '@/utils/workshopChatRoute'
+import { inlineWorkshopRoleMarkdown } from '@/utils/workshopRoleEmbed'
 
 import FilePreview from './FilePreview.vue'
 import MessageActionBar from './MessageActionBar.vue'
+import MessageEditForm from './MessageEditForm.vue'
 import MessageReactions from './MessageReactions.vue'
 
 const { t } = useLanguage()
 const workshopStore = useWorkshopChatStore()
 
 const { html: renderedContent } = useRenderedMarkdown(() =>
-  props.message.is_deleted ? '' : props.message.content
+  props.message.is_deleted
+    ? ''
+    : inlineWorkshopRoleMarkdown(stripMindmateDiagramIdComments(props.message.content))
 )
+
+const previewAttachments = computed(() => {
+  const body = props.message.content || ''
+  return props.attachments.filter((item) => {
+    if (!item.content_type.startsWith('image/')) {
+      return true
+    }
+    return !body.includes(item.file_path)
+  })
+})
 
 const CONDENSE_THRESHOLD = 300
 
@@ -36,12 +51,18 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  edit: [message: ChatMessage]
   delete: [messageId: number]
   toggleReaction: [messageId: number, emojiName: string, emojiCode: string]
   toggleStar: [messageId: number]
   quote: [message: ChatMessage]
 }>()
+
+const isEditing = ref(false)
+const savingEdit = ref(false)
+const editFormRef = ref<{ markSaveFailed: () => void }>()
+const canEdit = computed(
+  () => props.isOwn && props.message.channel_id != null && !props.message.is_deleted
+)
 
 const contentRef = ref<HTMLDivElement>()
 const isCondensed = ref(false)
@@ -100,6 +121,31 @@ function handleCopyLink(): void {
 function handleAddReaction(emojiName: string, emojiCode: string): void {
   emit('toggleReaction', props.message.id, emojiName, emojiCode)
 }
+
+function startInlineEdit(): void {
+  if (!canEdit.value) return
+  isEditing.value = true
+}
+
+function cancelInlineEdit(): void {
+  if (savingEdit.value) return
+  isEditing.value = false
+}
+
+async function saveInlineEdit(content: string): Promise<void> {
+  if (content === props.message.content) {
+    isEditing.value = false
+    return
+  }
+  savingEdit.value = true
+  const ok = await workshopStore.editMessage(props.message.id, content)
+  savingEdit.value = false
+  if (!ok) {
+    editFormRef.value?.markSaveFailed()
+    return
+  }
+  isEditing.value = false
+}
 </script>
 
 <template>
@@ -109,6 +155,7 @@ function handleAddReaction(emojiName: string, emojiCode: string): void {
     :class="{
       'msg-row--with-sender': !hideHeader,
       'msg-row--continuation': hideHeader,
+      'msg-row--editing': isEditing,
     }"
   >
     <!-- Unread marker (Zulip-style 2px left bar) -->
@@ -119,19 +166,20 @@ function handleAddReaction(emojiName: string, emojiCode: string): void {
 
     <!-- Hover action bar -->
     <div
-      v-if="!message.is_deleted"
+      v-if="!message.is_deleted && !isEditing"
       class="msg-row__actions"
     >
       <MessageActionBar
         :is-own="isOwn"
         :is-starred="isStarred"
         :is-condensed="isCondensed"
+        :can-edit="canEdit"
         :can-moderate="props.canModerate"
         @add-reaction="handleAddReaction"
         @toggle-star="emit('toggleStar', message.id)"
         @quote="emit('quote', message)"
         @copy-link="handleCopyLink"
-        @edit="emit('edit', message)"
+        @edit="startInlineEdit"
         @delete="emit('delete', message.id)"
         @toggle-condense="handleToggleCondense"
       />
@@ -185,7 +233,15 @@ function handleAddReaction(emojiName: string, emojiCode: string): void {
         :class="{ 'msg-box__content--no-header': hideHeader }"
       >
         <!-- Body -->
-        <div v-if="!message.is_deleted">
+        <MessageEditForm
+          v-if="isEditing"
+          ref="editFormRef"
+          :initial-content="message.content"
+          :saving="savingEdit"
+          @save="saveInlineEdit"
+          @cancel="cancelInlineEdit"
+        />
+        <div v-else-if="!message.is_deleted">
           <div
             ref="contentRef"
             class="msg-content"
@@ -209,8 +265,8 @@ function handleAddReaction(emojiName: string, emojiCode: string): void {
 
         <!-- Attachments -->
         <FilePreview
-          v-if="attachments.length > 0"
-          :attachments="attachments"
+          v-if="!isEditing && previewAttachments.length > 0"
+          :attachments="previewAttachments"
         />
 
         <!-- Reactions -->
@@ -243,6 +299,10 @@ function handleAddReaction(emojiName: string, emojiCode: string): void {
 
 .msg-row--continuation {
   margin-top: 0;
+}
+
+.msg-row--editing {
+  background: hsl(210deg 20% 97%);
 }
 
 /* ---------- Unread marker ---------- */
@@ -483,6 +543,19 @@ function handleAddReaction(emojiName: string, emojiCode: string): void {
   border: 1px solid hsl(0deg 0% 0% / 8%);
 }
 
+.msg-content :deep(img[src*='/api/training/assets/roles/']) {
+  display: inline-block;
+  width: 140px;
+  height: 140px;
+  max-width: 140px;
+  max-height: 140px;
+  margin: 0 0.2em;
+  vertical-align: bottom;
+  object-fit: contain;
+  border: none;
+  background: transparent;
+}
+
 .msg-content :deep(table) {
   border-collapse: collapse;
   margin: 6px 0;
@@ -504,6 +577,25 @@ function handleAddReaction(emojiName: string, emojiCode: string): void {
   border: none;
   border-top: 1px solid hsl(0deg 0% 0% / 10%);
   margin: 8px 0;
+}
+
+.msg-content :deep(details.workshop-spoiler) {
+  margin: 6px 0;
+  padding: 4px 10px;
+  border: 1px solid hsl(0deg 0% 0% / 10%);
+  border-radius: 6px;
+  background: hsl(0deg 0% 98%);
+}
+
+.msg-content :deep(details.workshop-spoiler summary) {
+  cursor: pointer;
+  font-weight: 600;
+  color: hsl(0deg 0% 32%);
+}
+
+.msg-content :deep(del) {
+  text-decoration: line-through;
+  color: hsl(0deg 0% 36%);
 }
 
 /* Condense toggle */

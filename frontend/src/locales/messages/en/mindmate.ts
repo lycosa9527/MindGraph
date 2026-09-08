@@ -80,7 +80,7 @@ export default {
   'mindmate.defaultSuggestion9': 'What are effective strategies for listening instruction?',
   'mindmate.historyTitle': 'Conversation History',
   'mindmate.imagePreview': 'Image Preview',
-  'mindmate.input.attachFile': 'Attach file',
+  'mindmate.input.attachFile': 'Attach image or Word document',
   'mindmate.input.placeholder': 'Type your question...',
   'mindmate.newChat': 'New Chat',
   'mindmate.otherModules': 'Other modules',

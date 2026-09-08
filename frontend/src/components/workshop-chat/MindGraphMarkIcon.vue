@@ -1,0 +1,30 @@
+<script setup lang="ts">
+withDefaults(
+  defineProps<{
+    size?: number
+  }>(),
+  { size: 15 }
+)
+</script>
+
+<template>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    :width="size"
+    :height="size"
+    viewBox="0 0 32 32"
+    aria-hidden="true"
+  >
+    <rect
+      width="32"
+      height="32"
+      rx="6"
+      ry="6"
+      fill="#1c1917"
+    />
+    <path
+      fill="#fff"
+      d="M23.189 23H20.386V15.459Q20.386 14.237 20.491 12.761H20.421Q20.201 13.921 20.025 14.431L17.072 23H14.752L11.746 14.519Q11.623 14.176 11.351 12.761H11.271Q11.386 14.624 11.386 16.03V23H8.828V10.396H12.985L15.561 17.867Q15.868 18.764 16.009 19.669H16.062Q16.299 18.623 16.562 17.85L19.138 10.396H23.189Z"
+    />
+  </svg>
+</template>

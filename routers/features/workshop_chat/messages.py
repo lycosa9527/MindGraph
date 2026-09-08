@@ -22,9 +22,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
-from models.domain.workshop_chat import ChatMessage, ChatTopic
+from models.domain.workshop_chat import ChatTopic
 from routers.features.workshop_chat.dependencies import (
     access_channel,
+    access_channel_message,
     require_membership_unless_announce,
     require_post_permission,
 )
@@ -255,6 +256,7 @@ async def edit_message(
     current_user: User = Depends(get_current_user),
 ):
     """Edit a message (sender only)."""
+    await access_channel_message(db, message_id, current_user)
     try:
         result = await message_service.edit_message(
             db,
@@ -283,11 +285,7 @@ async def delete_message(
     current_user: User = Depends(get_current_user),
 ):
     """Soft-delete a message (sender or org/realm moderator)."""
-    stub_result = await db.execute(select(ChatMessage).where(ChatMessage.id == message_id))
-    stub = stub_result.scalar_one_or_none()
-    if not stub:
-        raise HTTPException(status_code=404, detail="Message not found")
-    await access_channel(db, stub.channel_id, current_user)
+    await access_channel_message(db, message_id, current_user)
     success = await message_service.delete_message(db, message_id, current_user)
     if not success:
         raise HTTPException(
@@ -307,6 +305,7 @@ async def toggle_star(
     current_user: User = Depends(get_current_user),
 ):
     """Star or unstar a message."""
+    await access_channel_message(db, message_id, current_user)
     return await star_service.toggle_star(db, message_id, current_user.id)
 
 

@@ -124,6 +124,13 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
       return false
     }
 
+    oneSentence.setPhase('edit')
+    const boundScope = diagramScope.value.trim()
+    const ephemeral = ephemeralSessionId.value?.trim() ?? ''
+    if (boundScope && boundScope !== ephemeral) {
+      oneSentence.setLibraryScope(boundScope)
+    }
+
     const result = await runKittyEditTurn(
       {
         kitty,

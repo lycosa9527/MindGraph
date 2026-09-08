@@ -100,6 +100,7 @@ export default {
   'meta.pageTitle.askOnce': 'AskOnce',
   'meta.pageTitle.auth': 'Giriş',
   'meta.pageTitle.canvas': 'Tuval',
+  'meta.pageTitle.training': 'Training',
   'meta.pageTitle.chunkTest': 'Parça testi',
   'meta.pageTitle.chunkTestResults': 'Parça testi sonuçları',
   'meta.pageTitle.community': 'Topluluk',

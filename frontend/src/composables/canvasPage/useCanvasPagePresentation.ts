@@ -9,6 +9,7 @@ import { storeToRefs } from 'pinia'
 import { eventBus } from '@/composables/core/useEventBus'
 import { ANIMATION } from '@/config'
 import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR } from '@/config/presentationHighlighter'
+import { presentationSpotlightBackground } from '@/config/presentationSpotlight'
 import { PRESENTATION_Z } from '@/config/uiConfig'
 import {
   PRESENTATION_POINTER_SCALE_STEP,
@@ -26,8 +27,6 @@ const PRESENTATION_RAIL_TOOL_SHORTCUT_ORDER: readonly PresentationToolId[] = [
 ]
 
 const TIMER_DEFAULT_SECONDS = 300
-const SPOTLIGHT_INNER_RADIUS_PX = 150
-const SPOTLIGHT_OUTER_RADIUS_PX = 195
 const LASER_CURSOR_BASE_PX = 12
 
 export function useCanvasPagePresentation() {
@@ -154,15 +153,10 @@ export function useCanvasPagePresentation() {
     pointerOverPresentationRail.value = false
   }
 
-  const spotlightStyle = computed(() => {
-    const s = spotlightScale.value
-    const inner = SPOTLIGHT_INNER_RADIUS_PX * s
-    const outer = SPOTLIGHT_OUTER_RADIUS_PX * s
-    return {
-      zIndex: PRESENTATION_Z.SPOTLIGHT,
-      background: `radial-gradient(circle at ${laserX.value}px ${laserY.value}px, transparent 0%, transparent ${inner}px, rgba(0,0,0,0.62) ${outer}px)`,
-    }
-  })
+  const spotlightStyle = computed(() => ({
+    zIndex: PRESENTATION_Z.SPOTLIGHT,
+    background: presentationSpotlightBackground(laserX.value, laserY.value, spotlightScale.value),
+  }))
 
   const laserCursorStyle = computed(() => {
     const s = laserScale.value

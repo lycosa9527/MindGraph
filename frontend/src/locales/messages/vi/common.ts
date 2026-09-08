@@ -100,6 +100,7 @@ export default {
   'meta.pageTitle.askOnce': 'AskOnce',
   'meta.pageTitle.auth': 'Đăng nhập',
   'meta.pageTitle.canvas': 'Canvas',
+  'meta.pageTitle.training': 'Training',
   'meta.pageTitle.chunkTest': 'Kiểm thử chunk',
   'meta.pageTitle.chunkTestResults': 'Kết quả kiểm thử chunk',
   'meta.pageTitle.community': 'Cộng đồng',

@@ -49,6 +49,8 @@ interface FeatureFlagsPayload extends AdminFeatureFlagsPayload {
   feature_teacher_usage: boolean
   feature_workshop_chat: boolean
   feature_mindmate_collab: boolean
+  feature_training: boolean
+  feature_vod: boolean
   feature_markets: boolean
   feature_mindbot: boolean
   feature_mindmate_export: boolean
@@ -87,6 +89,18 @@ const ROWS: RowDef[] = [
     envKey: 'FEATURE_MINDMATE_COLLAB',
     labelKey: 'admin.feature.mindmateCollab',
     hintKey: 'admin.feature.mindmateCollabHint',
+  },
+  {
+    apiKey: 'feature_training',
+    envKey: 'FEATURE_TRAINING',
+    labelKey: 'admin.feature.training',
+    hintKey: 'admin.feature.trainingHint',
+  },
+  {
+    apiKey: 'feature_vod',
+    envKey: 'FEATURE_VOD',
+    labelKey: 'admin.feature.vod',
+    hintKey: 'admin.feature.vodHint',
   },
   {
     apiKey: 'feature_library',

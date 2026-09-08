@@ -54,6 +54,8 @@ export type AdminCapability =
   | 'tab.showcase.fields'
   | 'tab.showcase.permissions'
   | 'tab.showcase.dashboard'
+  | 'tab.vod.view'
+  | 'tab.vod.edit'
   | 'scope.global'
   | 'scope.org'
   | 'scope.invited_orgs'
@@ -108,6 +110,8 @@ const SUPERADMIN_CAPS: AdminCapability[] = [
   'tab.showcase.fields',
   'tab.showcase.permissions',
   'tab.showcase.dashboard',
+  'tab.vod.view',
+  'tab.vod.edit',
   'scope.global',
 ]
 
@@ -145,6 +149,8 @@ const SCHOOL_ADMIN_CAPS: AdminCapability[] = [
   'tab.school_dashboard.view',
   'tab.users.view',
   'tab.users.edit',
+  'tab.vod.view',
+  'tab.vod.edit',
   'scope.org',
 ]
 
@@ -207,6 +213,7 @@ const TAB_EDIT_CAPABILITY: Record<string, AdminCapability> = {
   feature_dev: 'tab.settings.edit',
   settings: 'tab.settings.edit',
   showcase: 'tab.showcase.edit',
+  vod: 'tab.vod.edit',
 }
 
 export function tabEditCapability(tabKey: string): AdminCapability | null {
@@ -222,6 +229,7 @@ export function tabRequiresCapabilities(tabKey: string): AdminCapability[] {
     billing: ['tab.billing.view'],
     settings: ['tab.settings.view'],
     showcase: ['tab.showcase.view'],
+    vod: ['tab.vod.view'],
   }
   return map[tabKey] ?? ['panel.access']
 }

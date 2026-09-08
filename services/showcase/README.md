@@ -184,9 +184,8 @@ COS_SHOWCASE_SMOKE=1 python -m pytest tests/test_showcase_e2e_smoke.py \
 
 Smoke / matrix use isolated prefixes (`showcase/mindgraph-e2e-smoke`,
 `showcase/mindgraph-e2e-matrix`) and a phone-keyed teacher (`19900000661`) so
-live objects stay out of shared prod/test prefixes. Prefer distinct
-`COS_SHOWCASE_PREFIX` per environment (`showcase/mindgraph` vs
-`showcase/mindgraph-Test`).
+live objects stay out of shared env folders. The default prefix is
+`{env}/showcase` (`dev/showcase`, `test/showcase`, `production/showcase`).
 
 ## Test ↔ prod MG id mismatch
 

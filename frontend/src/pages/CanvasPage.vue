@@ -153,6 +153,7 @@ import {
   setPresentationDiagramEditLocked,
   setPresentationFullscreenRoot,
 } from '@/composables/presentation/presentationDiagramEdit'
+import { useTrainingCanvasGenerate } from '@/composables/training/useTrainingCanvasGenerate'
 import { IMPORT_SPEC_KEY, SAVE } from '@/config'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import { PRESENTATION_HIGHLIGHTER_PALETTE_TOOLBAR } from '@/config/presentationHighlighter'
@@ -215,6 +216,7 @@ const notify = useNotifications()
 const { canUseOnlineCollab, canUsePresentationTools } = useSchoolTierFeatures()
 const featureFlagsStore = useFeatureFlagsStore()
 const { handleAIGenerate, handleConceptGeneration, isAIGenerating } = useCanvasToolbarApps()
+useTrainingCanvasGenerate(handleAIGenerate)
 
 const snapshotHistory = useSnapshotHistory()
 const recallingSnapshotVersion = snapshotHistory.recallingVersion

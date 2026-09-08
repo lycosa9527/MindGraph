@@ -66,6 +66,9 @@ COMMUNITY_MODULE = getattr(_community_mod, "router", None) if _community_mod els
 _showcase_mod = _try_import_module("routers.features.showcase", "showcase")
 SHOWCASE_MODULE = getattr(_showcase_mod, "router", None) if _showcase_mod else None
 
+_vod_mod = _try_import_module("routers.features.vod", "vod")
+VOD_MODULE = getattr(_vod_mod, "router", None) if _vod_mod else None
+
 _zhihui_mod = _try_import_module("routers.features.zhihui", "zhihui")
 ZHIHUI_MODULE = getattr(_zhihui_mod, "router", None) if _zhihui_mod else None
 
@@ -151,6 +154,7 @@ def register_routers(app: FastAPI) -> None:
 
     _mount_feature(app, COMMUNITY_MODULE, "/api/community", registered_feature_paths)
     _mount_feature(app, SHOWCASE_MODULE, "/api/showcase", registered_feature_paths)
+    _mount_feature(app, VOD_MODULE, "/api/vod", registered_feature_paths)
     _mount_feature(app, ZHIHUI_MODULE, "/api/zhihui", registered_feature_paths)
     _mount_feature(app, MIND_CLASSROOM_MODULE, "/api/mind-classroom", registered_feature_paths)
 

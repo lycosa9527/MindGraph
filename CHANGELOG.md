@@ -5,6 +5,377 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.56] - 2026-09-08
+
+> **Mind-map ribbon: live tabs, format painter, title-row collab, and a single-line status bar.**
+
+### Added
+
+- **Ribbon tabs** — File, Edit, Draw, Teaching, and Research filter the mind-map toolbar. Last tab persists on the account (`v3_ribbon_tab`); legacy tab ids alias to the new set.
+- **Format painter** — Click copies node style and applies once; double-click locks until Esc or a canvas click.
+- **Association line** — Dashed relationship edges between nodes; they stay out of the tree parent layout.
+
+### Changed
+
+- **Title-row chrome** — Filename, autosave, ribbon tabs, and Collaborative drawing sit on one row. Collab left the Review/Research ribbon.
+- **Status bar** — Outline, audience, LLM, zoom, and presentation share one 40px row on V2 and V3 chrome.
+- **Default theme** — New mind maps use the rainbow theme.
+- **Side toolbar** — Left-rail mind-map icons move into the ribbon tabs; the learning-sheet float bar stays.
+
+### Tests
+
+- [`frontend/tests/formatBrushStyle.spec.ts`](frontend/tests/formatBrushStyle.spec.ts), [`frontend/tests/formatBrushWiring.spec.ts`](frontend/tests/formatBrushWiring.spec.ts), [`frontend/tests/useCanvasToolbarFormatBrush.spec.ts`](frontend/tests/useCanvasToolbarFormatBrush.spec.ts)
+- [`frontend/tests/mindMapAssociationLine.spec.ts`](frontend/tests/mindMapAssociationLine.spec.ts), [`frontend/tests/mindMapRainbowTokens.spec.ts`](frontend/tests/mindMapRainbowTokens.spec.ts), [`frontend/tests/useFollowNodeStyleToolbar.spec.ts`](frontend/tests/useFollowNodeStyleToolbar.spec.ts)
+- [`frontend/tests/mindMapV3Chrome.spec.ts`](frontend/tests/mindMapV3Chrome.spec.ts), [`tests/auth/test_user_session_prefs.py`](tests/auth/test_user_session_prefs.py)
+
+## [5.180.55] - 2026-09-07
+
+> **研习社 library diagrams render to COS; compose stays markdown; in-row message edit.**
+
+### Changed
+
+- **研习社 insert diagram** — `POST /api/chat/library-diagrams/{id}` renders the library spec with Playwright, stores the PNG on COS (local disk only when COS is off), and returns `/api/chat/attachments/{id}/download`. Compose inserts markdown only. Viewers follow that URL to a short-lived COS redirect. Library rows do not store thumbnails.
+- **研习社 edit** — Own channel messages edit in-row with the compose toolbar (Zulip-style), not a prompt dialog. Direct messages stay without an edit control.
+
+### Fixed
+
+- **PNG Chromium pick** — First capture no longer launches two extra Chromiums just to compare local vs Playwright versions. The already-started Playwright binary is used; `browsers/chromium/` is only a fallback.
+
+### Tests
+
+- [`tests/test_workshop_diagram_embed.py`](tests/test_workshop_diagram_embed.py), [`tests/test_chromium_version.py`](tests/test_chromium_version.py)
+- [`frontend/tests/workshopDiagramEmbed.spec.ts`](frontend/tests/workshopDiagramEmbed.spec.ts), [`frontend/tests/workshopMessageEditKeys.spec.ts`](frontend/tests/workshopMessageEditKeys.spec.ts)
+
+## [5.180.54] - 2026-09-07
+
+> **研习社 stays school-scoped except 系统公告; compose can insert Kitty mascots.**
+
+### Added
+
+- **研习社 Kitty insert** — Compose toolbar can insert a Course Builder black-cat mascot inline (same `/api/training/assets/roles/` URLs as the builder). Preview and message bubbles size those clips at 140px.
+
+### Changed
+
+- **研习社 tenancy** — Each school sees only its own 教研组, 课例, conversations, and DMs. **系统公告** stays platform-wide (`organization_id` NULL). School admins cannot browse another school. Star, react, edit, leave, and WebSocket post go through `access_channel`. Packed mascot bytes load when `FEATURE_WORKSHOP_CHAT` is on even if Course Builder is off.
+- **系统公告 type** — Announce is seed-only. The permissions API accepts `public` / `private` only. Channel settings no longer offer a convert-to-announce control.
+
+### Fixed
+
+- **研习社 star / mute RLS** — Migration `0116` requires a visible message or topic. A guessed foreign `message_id` can no longer create a star or topic-pref row.
+- **研习社 系统公告 files** — Anyone who can read the announce stream can download its attachments (membership is not required).
+
+### Tests
+
+- [`tests/test_workshop_tenant_isolation.py`](tests/test_workshop_tenant_isolation.py), [`tests/db/test_rls_workshop_chat.py`](tests/db/test_rls_workshop_chat.py)
+- [`tests/test_feature_flag_hot_reload.py`](tests/test_feature_flag_hot_reload.py)
+- [`frontend/tests/workshopComposeFormat.spec.ts`](frontend/tests/workshopComposeFormat.spec.ts)
+
+## [5.180.53] - 2026-09-07
+
+> **Cloud VOD for school admins; 研习社 compose toolbar, diagram insert, and COS uploads; shared COS env prefixes on dev/test.**
+
+### Added
+
+- **云点播** — Management-panel tab **云点播** behind `FEATURE_VOD` (default off). School and platform admins upload to Tencent VOD (`vod-js-sdk-v6`), browse the org catalog, preview with TCPlayer, and refresh or delete FileIds. Play uses a short-lived `psign`; PlayKey and CAM secrets stay on the server. Migration `0113` adds `vod_media`.
+- **研习社 compose toolbar** — Zulip-style markdown: bold, italic, strike, link, lists, quote, spoiler, code, LaTeX, table, preview, emoji, paperclip, and insert a personal-library diagram as a durable chat image.
+- **研习社 COS attachments** — Message text stays in Postgres; file bytes go to `workshop/` COS when configured (local disk fallback). Clients still fetch via `/api/chat/attachments/{id}/download`. Sending a message binds draft uploads so channel and DM peers can download.
+
+### Changed
+
+- **COS env prefix** — Dev and test share one bucket root (`dev/{module}/`, `test/{module}/`). Production keeps live `COS_*_PREFIX` values until operators set `COS_ENV_PREFIX=production` after a copy. Boot logs `[COS] layout=…`.
+- **Course Builder roles** — Packed WebPs load from COS when `COURSE_BUILDER_LOAD_FROM_COS` is on; Vite no longer serves `/training/roles/` from git. Production processes do not publish packed roles into the env tree.
+- **MindMate paperclip** — Composer accepts images plus Word `.doc` / `.docx`.
+
+### Fixed
+
+- **研习社 系统公告** — Seed and migration `0114` clear `organization_id` on the announce channel. RLS treats a leftover school id as org-private, so other schools never saw 系统公告. Initialize also subscribes each visitor to that global channel.
+- **研习社 insert diagram** — Local Vite insert no longer fetches `EXTERNAL_BASE_URL` (test/prod) for a PNG that was just written on localhost. Loopback PNG URLs stay on the request host; the follow-up load uses `/api/temp_images/...` on the page origin.
+- **研习社 chat upload** — Compose uploads (no `message_id` / `dm_id` yet) were blocked by `file_attachments` RLS and returned 500. Migration `0115` lets the uploader keep those draft rows.
+
+### Tests
+
+- [`tests/test_vod_catalog_routes.py`](tests/test_vod_catalog_routes.py), [`tests/test_vod_permissions.py`](tests/test_vod_permissions.py), [`tests/test_tencent_vod_play_sign.py`](tests/test_tencent_vod_play_sign.py), [`tests/test_tencent_vod_upload_sign.py`](tests/test_tencent_vod_upload_sign.py)
+- [`tests/test_cos_env_prefix.py`](tests/test_cos_env_prefix.py), [`tests/test_workshop_attachment_storage.py`](tests/test_workshop_attachment_storage.py), [`tests/test_public_temp_image_url.py`](tests/test_public_temp_image_url.py)
+- [`frontend/tests/adminVodTab.spec.ts`](frontend/tests/adminVodTab.spec.ts), [`frontend/tests/workshopComposeFormat.spec.ts`](frontend/tests/workshopComposeFormat.spec.ts), [`frontend/tests/workshopMarkdownFences.spec.ts`](frontend/tests/workshopMarkdownFences.spec.ts), [`frontend/tests/mindmateComposerUpload.spec.ts`](frontend/tests/mindmateComposerUpload.spec.ts)
+
+## [5.180.52] - 2026-09-07
+
+> **研习社: slimmer seed, add/archive/delete for 教研组 and 系统公告, and a 课例 shows only its own conversations.**
+
+### Changed
+
+- **研习社 seed strip** — Initialize keeps `系统公告` plus `语文教研组` / `《背影》（朱自清）`. Extra canned 教研组 / 课例 names are archived. The STEM/数理化 seed module is gone.
+- **研习社 topic fetch** — Sidebar mount loads channels + DMs only. Topics load when you expand or open a lesson.
+- **研习社 nested lookup** — Joined, unread, mute/pin, prefs, and WS `subscribe_channels` walk lesson children. Incoming `topic_moved`, `topic_deleted`, and `reaction_update` update the store.
+- **研习社 load leftovers** — Initialize runs once per tab session. Teaching-group landing uses `topic_count` / `unread_count`. Send appends the POST body; mark-read zeros local unread without forcing `GET /channels`.
+- **研习社 leftovers** — Channel/topic messages can be edited or deleted. Starred and Mentions sidebar stubs stay hidden until those views exist.
+- **研习社 管理教研组** — Add a group in the modal (name + description). Admins or the creator can **归档** (hide, keep messages) or **删除** (permanent, including child 课例).
+- **研习社 系统公告菜单** — The sidebar ⋯ menu has the same **归档** and **删除** pair. School admins and superadmins can remove duplicate announce rows.
+- **研习社 copy** — Admin, README, and env help say 研习社 instead of 教研坊 / 工作坊聊天. Landing grid uses 桥形图 / 树形图.
+
+### Fixed
+
+- **研习社 initialize 500** — Two workers could each insert a global announce channel. Seed keeps the oldest live announce row, archives extras, and `0110` blocks a second live announce channel.
+- **研习社 DM unread** — Opening a DM marks it read and zeros the sidebar badge.
+- **研习社 topic lists** — Switching streams no longer wipes topics for other expanded lessons. The center 课例 grid lists only that lesson’s conversations.
+- **研习社 default streams** — Initialize subscribes later org members to `语文教研组` / `《背影》（朱自清）`.
+- **研习社 RLS** — Message / reaction / attachment policies follow `chat_channels` and `file_attachments.dm_id`. Migration `0111` re-enables FORCE RLS on the workshop tables.
+- **研习社 duplicate 教研组** — Initialize archives same-name copies (keep oldest). `0112` adds a unique live `(org, parent, name)` index.
+
+### Tests
+
+- [`tests/test_workshop_announce_seed.py`](tests/test_workshop_announce_seed.py)
+- [`tests/test_workshop_archive_channel_children.py`](tests/test_workshop_archive_channel_children.py)
+- [`tests/db/test_rls_workshop_chat.py`](tests/db/test_rls_workshop_chat.py)
+- [`frontend/tests/workshopTopicChevron.spec.ts`](frontend/tests/workshopTopicChevron.spec.ts)
+- [`frontend/tests/workshopChannelTree.spec.ts`](frontend/tests/workshopChannelTree.spec.ts)
+- [`frontend/tests/workshopInitializeOnce.spec.ts`](frontend/tests/workshopInitializeOnce.spec.ts)
+- [`frontend/tests/workshopMessageLocalPatch.spec.ts`](frontend/tests/workshopMessageLocalPatch.spec.ts)
+
+## [5.180.51] - 2026-09-07
+
+> **研习社 is back for org 5; MindMate tablet chips stay readable; mind-map branch expand keeps 专业程度.**
+
+### Added
+
+- **研习社 (Workshop Chat)** — Turn the Zulip-style school chat back on behind `FEATURE_WORKSHOP_CHAT`. Only members of `WORKSHOP_CHAT_PREVIEW_ORG_IDS` (org 5) plus superadmins can see it. School admins at other orgs no longer get a free pass. Chinese sidebar and page title is **研习社**.
+
+### Changed
+
+- **Workshop access** — `/workshop-chat` uses `requiresWorkshopChatAccess` instead of admin/manager. The public feature flag is per-user (off for guests and other orgs). The preview-org list stays a hard filter even if Permissions is unrestricted.
+- **Mind-map branch expand** — Canvas 专业程度 / `generation_instructions` stay on the LLM user prompt when expanding a branch ([`merge_generation_instructions`](prompts/ai_content_level.py)).
+
+### Fixed
+
+- **Welcome chips** — The composer now fills the stage (capped at 48rem). The old `40cqi` token collapsed to 320px on iPad, and nowrap chips centered in that box so prompts were cut off on the left and right. Chips wrap inside the composer (`safe center`) so long prompts stay visible. The chip strip also keeps enough height for two rows on short tablet windows.
+
+### Tests
+
+- [`frontend/tests/workshopAccess.spec.ts`](frontend/tests/workshopAccess.spec.ts)
+- [`tests/auth/test_workshop_chat_access.py`](tests/auth/test_workshop_chat_access.py)
+- [`frontend/tests/mindmateWelcomeLayout.spec.ts`](frontend/tests/mindmateWelcomeLayout.spec.ts)
+- [`tests/test_mind_map_branch_expand.py`](tests/test_mind_map_branch_expand.py)
+- [`tests/test_ai_content_level.py`](tests/test_ai_content_level.py)
+
+## [5.180.50] - 2026-09-06
+
+> **MindMate welcome: avatar, suggestions, and composer stay one cluster on common displays; the sidebar account row shrinks on short windows.**
+
+### Changed
+
+- **Welcome cluster** — Full-page welcome keeps avatar, copy, suggestions, and the composer together (`dvh` / `cqi` tokens, no size containment). The input sits in the same stage instead of pinning away from the greeting.
+- **Sidebar account** — The thinking-coin promo hides below 800px height; avatar and padding tighten below 640px so the account row does not overflow.
+
+### Tests
+
+- `frontend/tests/mindmateWelcomeLayout.spec.ts`
+
+## [5.180.49] - 2026-09-06
+
+> **Kitty: tapping a node chip on the phone opens 节点解释 on the desktop canvas (same event as the floating toolbar).**
+
+### Changed
+
+- **Phone chip tap** — Click-wheel chips enqueue `explain_node` to the desktop action queue. The phone no longer opens a local explain bubble.
+- **Desktop open** — If the phone sends a library id, desktop opens that diagram first, then explains the node once it is on the canvas.
+
+### Tests
+
+- `frontend/tests/enqueueKittyDesktopExplainNode.spec.ts`, `kittyDesktopExplainNodeAction.spec.ts`, `kittyPendingCanvasAction.spec.ts`
+- `tests/test_kitty_mobile_active.py`
+
+## [5.180.48] - 2026-09-06
+
+> **校本培训: a landscape phone remote (controls | online teachers | teleprompter) for the instructor after desktop Start + Play.**
+
+### Added
+
+- **Mobile instructor remote** — Platform leads get a 校本培训 card on `/m`. `/m/training` is a landscape clicker: stacked 上一步 / 下一步 / 停止 / 自由·拉取, a scrollable online list, and speaker notes as a teleprompter. The phone hydrates the hosted session (`GET /sessions/active`), keeps the 15s heartbeat, and stays on the remote while teachers follow slides. Desktop overlays stay hidden on this route.
+- **Cat mascot kits** — Shared green-screen stills live in `scripts/cat_emoji/stills/` (`black/`, `white/`). White-cat emoji and office-battle generators sit beside Course Builder roles.
+
+### Fixed
+
+- **Remote waiting forever** — Opening `/m/training` before desktop Play was a one-shot hydrate. The phone now hydrates on show / `pageshow` and polls the hosted pointer until the room is live, then SSE takes over. Platform leads no longer open EventSource or command GET without an org (those were 400s). The remote does not post a teacher activity ping, and wake lock / owner heartbeat fire again when the tab is visible.
+- **Remote chrome leaks** — Desktop pad / rail / notes / spotlight no longer paint on `/m` or other phone pages. Follow does not yank the host off `/m`, and Stop on the remote uses an in-page confirm (desktop Stop sits above the spotlight). Wake Lock re-requests after the browser releases it.
+- **Vue Flow on first training load** — `@vue-flow/core` is in Vite `optimizeDeps` so opening `/training` or `/canvas` no longer 504s "Outdated Optimize Dep".
+
+### Changed
+
+- **Start/steer races** — Redis Lua claim + compare-and-swap so two leads cannot double-book a school, and a stale seq no longer overwrites the room. Play caches serialized steps by course id + `updated_at`.
+- **Training audit log** — Greppable `[Training]` lines for course create/save and live start/play/steer.
+
+### Tests
+
+- `frontend/tests/trainingRemoteView.spec.ts`, `trainingStore.spec.ts`, `trainingClient.spec.ts`, `mobileRouterRedirects.spec.ts`, `useTrainingFollow.spec.ts`
+- `tests/test_training_session_store.py`, `test_training_audit_log.py`
+- `tests/scripts/test_cat_emoji_stills.py`, `test_white_cat_emoji.py`, `test_cat_office_battles.py`
+
+## [5.180.47] - 2026-09-06
+
+> **校本培训: the instructor pad always shows Free/Pull; the online rail is a friends list (name / page / topic), fifteen visible, the rest scroll.**
+
+### Fixed
+
+- **自由 / 拉取 hidden** — `showMode` is a boolean prop. Omitting it made Vue treat it as `false`, so the live pad only showed 上一步 / 下一步 / 停止. The default is now `true`.
+- **Free/Pull lock** — Free now actually keeps teachers on the current page (the lock helper was never registered on the router). Pull bumps seq and force-navs them back to the live step; repeating the same mode no longer 429s the steer.
+- **Paused Pull / Next** — Steer mode is `pull_users`, not “live and free”. Pause no longer makes 拉取 a no-op, and the instructor can still follow the cursor while paused. Friend-list jump uses the teacher’s page, not only a diagram type.
+- **Control in-flight state** — Pause, resume, stop, and takeover now share the same `busy` lock as Next/Free, so a second click does not fire. The header disables those buttons and the school picker while a steer is running or the room is already live.
+
+### Changed
+
+- **授课控制** — Playback lives only on the pad (上一步 · 下一步 · 停止, then 自由 · 拉取). The landing header keeps Start/Stop, pause/resume, takeover, and school. The pad stays bottom-right as a compact two-row card with a grey outer border so it does not clip under the slide letterbox or blend into the dark bar.
+- **在线名单** — The instructor rail is the classic friends list, online only, no search and no teacher roster chrome. Each row is `name / page / topic`. Heartbeats now send the page; idle ticks no longer wipe the last topic chip. The first fifteen stay in view; the rest scroll in place.
+
+### Tests
+
+- `frontend/tests/trainingPlayControls.spec.ts`, `trainingFriendLine.spec.ts`, `trainingPadAnchor.spec.ts`, `trainingClient.spec.ts`, `useTrainingFollow.spec.ts`, `applyTrainingSnapshot.spec.ts`, `trainingStore.spec.ts`
+- `tests/test_training_activity_sse.py`, `test_training_session_store.py`
+
+## [5.180.46] - 2026-09-05
+
+> **校本培训: Free/Pull is a segmented control that stays on screen; follow no longer dumps desktop pages onto `/m/*`; Stop leaves everyone where they are.**
+
+### Fixed
+
+- **Desktop mistaken for mobile** — Follow used `path.startsWith('/m')`, so `/mindgraph` and `/mindmate` were treated as mobile routes. The next mark (often a spotlight) sent instructor and teachers to `/m/*`.
+- **Stop leave prompt** — Ending a session no longer steers or tears down the current page. The canvas unsaved-leave / “save content” dialog is skipped for live, paused, and ended rooms.
+- **Stale instructor heartbeat** — A vanished or replaced session id is current truth (200 snapshot), not `404 Session not found`. The client applies that snapshot and stops the timer.
+- **Pad clipped** — The fourth control sat below the fold. The pad now tracks the visual viewport, clears the friends rail, and switches to a two-row layout on short windows.
+
+### Changed
+
+- **自由 / 拉取** — A segmented control replaces the Free toggle. Free releases teachers; Pull always force-navs them to the current slide.
+
+### Tests
+
+- `frontend/tests/applyTrainingSnapshot.spec.ts`, `trainingCourses.spec.ts`, `trainingPadAnchor.spec.ts`, `useTrainingHeartbeat.spec.ts`, `trainingClient.spec.ts`
+- `tests/test_training_routes.py`
+
+## [5.180.45] - 2026-09-05
+
+> **校本培训: Start arms the room; clicking a course pulls teachers and opens the same live page for the instructor. Restart, Free, and Next keep working.**
+
+### Fixed
+
+- **Restart pull-in** — A new session always starts at `seq` 1. Clients now key follow state by `session_id`, so ending a run and starting again no longer drops the live snapshot. Command ETag is `"{session_id}:{seq}"` so a restart is not a false 304.
+- **Roster noise** — Only the hosting platform lead fetches roster. Ended or unknown session IDs no longer throw unhandled `roster` / `summary` errors (the 404/403 storm after Stop).
+- **Filmstrip mascots** — Compact previews and the role picker use still `-thumb.webp` clips, not the animated WebPs.
+
+### Changed
+
+- **One room per school** — Already enforced as `409 org_busy`. The toast now names the host and explains that only one live session can pull all online teachers. Start copy says the same.
+- **Landing without a school** — Course cards open a local filmstrip preview. They do not `POST /sessions`.
+- **Start then play** — Start arms the room (refresh counts, drop stale follow state, `pull_users: false`) and toasts “教室已就绪，请点击课程开始授课.” Teachers are pulled only when a course is clicked.
+- **Instructor stage** — After a course plays, the instructor is routed to the same page teachers see. The four-button pad (上一页 / 下一页 / 停止 / 自由) sits above the lesson overlay.
+- **Free / Next** — Free hides the lesson overlay, closes training modals, and stops force-nav so teachers can work. Next (and play) always set `pull_users: true` and pull them back.
+
+### Tests
+
+- `frontend/tests/applyTrainingSnapshot.spec.ts`, `trainingStore.spec.ts`, `useTrainingFollow.spec.ts`, `trainingClient.spec.ts`, `trainingCourses.spec.ts`, `trainingRoles.spec.ts`
+- `tests/test_training_routes.py`, `test_training_session_store.py`, `test_training_play_advance.py`
+
+## [5.180.44] - 2026-09-05
+
+> **Course Builder can take exported PPT slide images as real lesson slides — upload inserts at the current filmstrip position.**
+
+### Fixed
+
+- **Slide image upload** — Completing an upload now posts the file as multipart (`apiUpload`). The previous JSON `Content-Type` dropped the bytes, so PPT screenshots never landed. Failures show a toast. Names without an extension still get a suffix from the MIME type.
+
+### Changed
+
+- **Insert at current slide** — Filmstrip **添加图片** and toolbar **图片** both insert a new `slide` step at the selected index and shift the rest down. They no longer overwrite the canvas or page under the cursor.
+- **PPT framing** — The builder stage letterboxes uploaded slide images (`object-fit: contain`), matching the live teacher overlay so intro slides are not cropped.
+
+### Tests
+
+- `frontend/tests/uploadTrainingFile.spec.ts`, `trainingBuilderStore.spec.ts`, `trainingCourses.spec.ts`
+- `tests/test_training_course_routes.py` (init without suffix, complete writes bytes)
+- `tests/test_training_storage_keys.py` (MIME suffix fallback)
+
+## [5.180.43] - 2026-09-05
+
+> **Course Builder marks now reach teachers: speech-bubble text, classroom cat roles on COS, and the same overlays on live pages — not only PPT slides.**
+
+### Added
+
+- **文本泡泡** — Course Builder **文本** is now an on-slide speech bubble. No prompt modal: click to drop, type in place, drag, resize. A floating bar sets size, bold, italic, align, text color, and border color.
+- **角色** — Twenty packed black-cat classroom clips on the stage (drag / resize). Authoring loads repo WebPs; live play publishes them to `{COS_TRAINING_PREFIX}/roles/` and serves `GET /api/training/assets/roles/{id}.webp` (302 to COS). PWA workbox skips the catalog so the app shell stays small.
+- **Wan role toolkit** — Green-screen stills and `python -m scripts.training_roles.generate` stay in `scripts/training_roles/` so more clips can be generated later (scratch MP4s stay in `.work/`).
+
+### Changed
+
+- **Live teacher view** — Page and canvas steps keep teachers on the real app page and paint the author’s marks (bubbles, roles, arrows, emoji, spotlight, topics) as a transparent overlay. Slide/video steps still cover the viewport. Topic chips stay tappable. Marks remain visible while the session is paused.
+- **Seeded tutorial** — The 双气泡图 course can be edited and saved. Startup seed no longer overwrites an already-authored title, steps, or cover.
+- **Bubble drag** — A wider frame is a grab handle; an 8px move on the text also starts a drag so the caret click still works.
+
+### Tests
+
+- `frontend/tests/trainingTextBubbles.spec.ts`, `trainingRoles.spec.ts`, `applyTrainingSnapshot.spec.ts` (live lesson step)
+- `tests/test_training_role_assets.py`, `tests/scripts/test_training_roles_kit.py`
+- GitHub CI / `scripts/ci-local.sh` now run those files
+
+## [5.180.42] - 2026-09-05
+
+> **Production would not start: `.gitignore` treated `services/features/training/storage/` as runtime data, so the COS package never reached the server.**
+
+### Fixed
+
+- **Training COS package** — Track `services/features/training/storage/` (`backend`, `keys`, `grants`). Scope `.gitignore` to repo-root `/storage/` so nested Python storage packages are not dropped on deploy.
+
+## [5.180.41] - 2026-09-05
+
+> **Training follow and Course Builder are Pinia + event-bus driven. System seed courses stay read-only in the editor, and COS I/O no longer blocks the API event loop.**
+
+### Changed
+
+- **Live session engine** — UI emits `training:*` events; `useTrainingSessionEngine` owns start/play/step/free. Catalog, roster, and snapshot live on `useTrainingStore`.
+- **Course Builder draft** — Title, steps, selection, thumbs, and preview chrome live on `useTrainingBuilderStore`. Seeded system courses open read-only (no save/upload/edit).
+- **Training COS** — Asset write/read/head/delete run through `asyncio.to_thread` so FastAPI handlers stay async.
+
+### Tests
+
+- `frontend/tests/trainingBuilderStore.spec.ts` — load, remove, insert, reset, system read-only
+- `frontend/tests/trainingStore.spec.ts` — etag/org/topics-drag setters
+- `frontend/tests/applyTrainingUiTarget.spec.ts` — modal open/close via the event bus
+
+## [5.180.40] - 2026-09-05
+
+> **Org training follow and Course Builder ship behind `FEATURE_TRAINING` (default off): visiting instructors pull a school’s teachers to the same page, author lessons, and drive them with a live play pad.**
+
+### Added
+
+- **Org training follow** — Redis session + SSE `{seq}` whisper; clients `GET /api/training/command` for the snapshot. Visiting staff (superadmin, platform BD, invited expert) host; school teachers are pulled. Notes stay instructor-only.
+- **Course Builder** (`/training/builder`) — Postgres courses/steps/assets, COS folder per course, seeded 双气泡图教程 (system, read-only). Slides target a closed page/modal/button catalog; canvas is an isolated live editor; filmstrip thumbs hibernate finished slides.
+- **主题备选** — Drag topic chips onto the stage as a single `topics` overlay. Clicking an option fills the canvas topic node(s) (`left-topic` / `right-topic` on 双气泡图).
+- **Instructor play pad** — Global bottom-right 上一页 / 下一页 / 停止 / 自由 in live training (`App.vue`, hidden on the builder). Prev/next walk mark clicks then slides. 自由 keeps the session live with `pull_users: false` so teachers may work; next or 自由 again pulls them back. Builder preview uses the same pad locally.
+- **`FEATURE_TRAINING`** — Defaults off. Admin → Features. Routes 404 when the flag is off. Documented in `docs/architecture/training_follow.md`.
+
+### Changed
+
+- System seed courses reject PUT as well as DELETE (`System courses cannot be edited`).
+- Training asset reads: authors always; teachers only during a live or paused session bound to that course.
+
+### Tests
+
+- `tests/test_training_*.py` — permissions, session store, SSE, routes, storage keys, course CRUD, play advance, system-course write guard, asset AuthZ
+- `frontend/tests/applyTrainingSnapshot.spec.ts`, `trainingStore.spec.ts`, `trainingClient.spec.ts`, `useTrainingFollow.spec.ts`, `trainingCourses.spec.ts`, `trainingOverlayDrag.spec.ts`, `applyTrainingUiTarget.spec.ts`, `trainingStageThumb.spec.ts`
+- `frontend/tests/presentationSpotlight.spec.ts` — landing spotlight ring
+
+## [5.180.39] - 2026-09-05
+
+> **Document Summary paste no longer fails ingest when `Pasted note.md` already exists in the knowledge space.**
+
+### Fixed
+
+- **文档总结 paste ingest** — Sources share one knowledge space, so `uq_space_filename` rejected a second `Pasted note.md` with HTTP 500. Ingest now suffixes a free name (`Pasted note_1.md`) and retries on a raced unique violation. Untitled Document Summary pastes use the package/diagram title instead of always `Pasted note`.
+
+### Tests
+
+- `tests/test_document_filenames.py` — unique suffix, VARCHAR clip, IntegrityError retry
+- `tests/test_doc_summary_ingest.py` — persist_extracted uses the unique name
+- `tests/test_knowledge_packages_api.py` — untitled doc_summary paste title
+
 ## [5.180.38] - 2026-09-04
 
 > **Workshop canvas collab keeps sibling order and two-peer adds in sync. MindMate seminar chat renders markdown and aligns your own bubbles by user id.**

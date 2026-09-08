@@ -1590,7 +1590,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       if (parent && mindMapNodeHasChildren(parent, connections)) {
         idsToExpand.add(parent)
       }
-      current = parent
+      current = parent ?? undefined
     }
 
     for (const id of idsToExpand) {

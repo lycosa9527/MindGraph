@@ -124,7 +124,8 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
 <style scoped>
 .suggestion-bubbles {
   width: 100%;
-  max-width: 800px;
+  max-width: 100%;
+  min-width: 0;
   margin: 0 auto;
 }
 
@@ -140,8 +141,10 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
   flex-wrap: wrap;
   gap: 10px;
   justify-content: center;
+  justify-content: safe center;
   align-content: flex-start;
-  max-height: 140px;
+  max-height: var(--mm-suggest-max-h, 140px);
+  min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
   padding: 8px 4px;
@@ -161,13 +164,17 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
 }
 
 .suggestion-bubble {
+  box-sizing: border-box;
   background: #f3f4f6;
   border: 1px solid #e5e7eb;
   border-radius: 20px;
   padding: 8px 16px;
   font-size: 13px;
   color: #374151;
-  white-space: nowrap;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: break-word;
+  text-align: left;
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;

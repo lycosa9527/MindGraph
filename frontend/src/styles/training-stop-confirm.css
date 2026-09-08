@@ -1,0 +1,4 @@
+/* Above lesson marks (4200) and the instructor pad (4300). See TRAINING_DIALOG_Z. */
+.el-overlay.is-message-box:has(.training-stop-confirm) {
+  z-index: 4500;
+}

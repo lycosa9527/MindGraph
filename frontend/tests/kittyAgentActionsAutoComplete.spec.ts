@@ -13,6 +13,10 @@ vi.mock('@/composables/kitty/kittyWorkflowTrace', () => ({
   traceKittyWorkflow: vi.fn(),
 }))
 
+vi.mock('@/composables/kitty/kittySelectionApply', () => ({
+  applyKittySelectionTarget: vi.fn(),
+}))
+
 describe('executeKittyAgentAction auto_complete topic', () => {
   beforeEach(() => {
     emitMock.mockClear()
@@ -38,5 +42,12 @@ describe('executeKittyAgentAction auto_complete topic', () => {
       source: 'kitty_agent',
       topic: undefined,
     })
+  })
+
+  it('opens 节点解释 instead of MindMate', async () => {
+    const { executeKittyAgentAction } = await import('@/composables/kitty/kittyAgentActions')
+    executeKittyAgentAction('explain_node', { node_id: 'n1', node_label: '广东' })
+    expect(emitMock).toHaveBeenCalledWith('mindmap:explain_node_requested', { nodeId: 'n1' })
+    expect(emitMock).not.toHaveBeenCalledWith('mindmate:send_message', expect.anything())
   })
 })

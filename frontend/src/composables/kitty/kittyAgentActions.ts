@@ -1,4 +1,5 @@
 import { eventBus } from '@/composables/core/useEventBus'
+import { applyKittySelectionTarget } from '@/composables/kitty/kittySelectionApply'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 
 export function executeKittyAgentAction(action: string, params: Record<string, unknown>): void {
@@ -79,18 +80,15 @@ export function executeKittyAgentAction(action: string, params: Record<string, u
       }
       break
 
-    case 'explain_node':
-      if (params.node_id && params.node_label) {
-        eventBus.emit('panel:open_requested', { panel: 'mindmate' })
-        eventBus.emit('selection:highlight_requested', { nodeId: params.node_id as string })
-        setTimeout(() => {
-          const prompt =
-            (params.prompt as string) ||
-            `Explain the concept of "${params.node_label}" in simple terms.`
-          eventBus.emit('mindmate:send_message', { message: prompt })
-        }, 500)
+    case 'explain_node': {
+      const nodeId = typeof params.node_id === 'string' ? params.node_id.trim() : ''
+      if (!nodeId) {
+        break
       }
+      applyKittySelectionTarget({ nodeId }, { canvasHighlight: true })
+      eventBus.emit('mindmap:explain_node_requested', { nodeId })
       break
+    }
 
     case 'ask_mindmate':
     case 'ask_thinkguide': {

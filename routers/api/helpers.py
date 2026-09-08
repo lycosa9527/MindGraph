@@ -143,14 +143,41 @@ def _authority_for_public_temp_url(authority: str) -> str:
     return auth
 
 
+def _request_is_loopback(request: Request) -> bool:
+    """True when the caller reached this process via localhost / 127.0.0.1."""
+    forwarded = strip_leading_http_schemes((request.headers.get("X-Forwarded-Host") or "").split(",")[0])
+    candidates = (
+        request.url.hostname or "",
+        (request.headers.get("Host") or "").split(":")[0],
+        forwarded.split(":")[0],
+    )
+    return any(_is_local_loopback_host(part) for part in candidates)
+
+
+def _loopback_media_url(request: Request, prefix: str, path_seg: str) -> str:
+    """Build a temp-image URL on the host that just wrote the file."""
+    host = (request.headers.get("Host") or request.url.netloc or "").strip()
+    if not host:
+        host = f"localhost:{os.getenv('PORT', '9527')}"
+    protocol = (request.headers.get("X-Forwarded-Proto") or request.url.scheme or "http").split(",")[
+        0
+    ].strip() or "http"
+    return f"{protocol}://{host}/{prefix}/{path_seg}"
+
+
 def _build_public_api_media_url(request: Request, api_prefix: str, signed_path: str) -> str:
     """
     Public absolute URL for signed media under an /api/... prefix.
 
-    Order: EXTERNAL_BASE_URL, then X-Forwarded-Proto/Host, then EXTERNAL_HOST.
+    Loopback callers keep the request host so local Vite/API do not emit
+    EXTERNAL_BASE_URL (often the test server). Remote callers still use
+    EXTERNAL_BASE_URL, then X-Forwarded-Proto/Host, then EXTERNAL_HOST.
     """
     path_seg = _signed_path_for_public_url(signed_path)
     prefix = api_prefix.strip("/")
+
+    if _request_is_loopback(request):
+        return _loopback_media_url(request, prefix, path_seg)
 
     external_base = normalize_external_base_url(os.getenv("EXTERNAL_BASE_URL", ""))
     if external_base:
@@ -175,8 +202,8 @@ def build_public_temp_image_url(request: Request, signed_path: str) -> str:
     """
     Public URL for /api/temp_images (signed path).
 
-    Order: EXTERNAL_BASE_URL, then X-Forwarded-Proto/Host, then EXTERNAL_HOST (see
-    _authority_for_public_temp_url: public hostnames omit bind PORT unless EXTERNAL_PUBLIC_PORT).
+    Loopback requests stay on the request host. Otherwise: EXTERNAL_BASE_URL,
+    then X-Forwarded-Proto/Host, then EXTERNAL_HOST.
     """
     return _build_public_api_media_url(request, "api/temp_images", signed_path)
 

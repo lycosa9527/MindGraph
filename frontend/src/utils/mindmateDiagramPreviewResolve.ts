@@ -1,6 +1,7 @@
 /** Resolve MindMate generate_dingtalk preview PNGs (IndexedDB → temp URL → library re-render). */
 
 import { authFetch } from '@/utils/api'
+import { sameOriginTempImageFetchUrl } from '@/utils/mindmateTempImageUrl'
 import {
   extractFirstMarkdownImageUrl,
   parseMindmateDiagramLibraryId,
@@ -65,7 +66,7 @@ async function fetchLibraryDiagramPreviewBlob(libraryDiagramId: string): Promise
     if (!pngUrl) {
       return null
     }
-    return fetchPreviewBlob(pngUrl)
+    return fetchPreviewBlob(sameOriginTempImageFetchUrl(pngUrl))
   } catch {
     return null
   }

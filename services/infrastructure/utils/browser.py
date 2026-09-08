@@ -28,7 +28,7 @@ from typing import Optional, Tuple
 
 import playwright
 from playwright.async_api import Error as PlaywrightError
-from playwright.async_api import async_playwright
+from playwright.async_api import Playwright, async_playwright
 from playwright.sync_api import sync_playwright
 
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
@@ -66,50 +66,12 @@ def wrap_browser_launch_error(exc: BaseException) -> BaseException:
 
 def _get_chromium_version(executable_path: str) -> Optional[str]:
     """
-    Get Chromium version from executable.
-    Uses multiple methods to handle different platforms and Chromium behaviors.
+    Get Chromium version from executable without launching a browser when possible.
 
-    Args:
-        executable_path: Path to Chromium executable
-
-    Returns:
-        Version string (e.g., "141.0.7390.37") or None if failed
+    ``--version`` and the Playwright cache path are milliseconds. Launching Chromium
+    via Playwright just to read ``browser.version`` costs tens of seconds per binary
+    and was the first-PNG stall (and TargetClosedError teardown noise).
     """
-    # Method 1: Try using Playwright to launch browser and get version (works for any Chromium)
-    try:
-        with sync_playwright() as p:
-            # Try to launch browser and get version
-            browser = p.chromium.launch(
-                executable_path=executable_path,
-                headless=True,
-                args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
-            )
-            try:
-                # Get version from browser object
-                version = browser.version
-                if version:
-                    version_str = str(version).strip()
-                    # browser.version returns version directly (e.g., "141.0.7390.37")
-                    # or sometimes "Chromium 141.0.7390.37"
-                    version_match = re.search(r"(\d+\.\d+\.\d+\.\d+)", version_str)
-                    if version_match:
-                        browser.close()
-                        return version_match.group(1)
-                    # If it's already a version-like string, return it
-                    if re.match(r"^\d+\.\d+\.\d+\.\d+$", version_str):
-                        browser.close()
-                        return version_str
-                browser.close()
-            except BACKGROUND_INFRA_ERRORS as exc:
-                logger.debug("Chromium CDP version detection failed: %s", exc)
-                try:
-                    browser.close()
-                except BACKGROUND_INFRA_ERRORS as exc_close:
-                    logger.debug("Chromium browser close after error failed: %s", exc_close)
-    except BACKGROUND_INFRA_ERRORS as exc:
-        logger.debug("Chromium CDP connection failed: %s", exc)
-
-    # Method 2: Try --version flag with timeout (fallback)
     try:
         result = subprocess.run(
             [executable_path, "--version"],
@@ -120,25 +82,44 @@ def _get_chromium_version(executable_path: str) -> Optional[str]:
             check=False,
         )
         if result.returncode == 0 and result.stdout:
-            # Parse version from output like "Chromium 141.0.7390.37" or "Google Chrome 141.0.7390.37"
             version_match = re.search(r"(\d+\.\d+\.\d+\.\d+)", result.stdout)
             if version_match:
                 return version_match.group(1)
     except subprocess.TimeoutExpired:
         pass
     except BACKGROUND_INFRA_ERRORS as exc:
-        logger.debug("Chromium --version fallback failed: %s", exc)
+        logger.debug("Chromium --version failed: %s", exc)
 
-    # Method 3: Extract revision from path (fallback for Playwright browsers)
-    # Only use this if we couldn't get actual version
     if "chromium-" in executable_path and "ms-playwright" in executable_path:
-        try:
-            revision_match = re.search(r"chromium-(\d+)", executable_path)
-            if revision_match:
-                # Return revision as fallback (will be compared as revision number)
-                return revision_match.group(1)
-        except BACKGROUND_INFRA_ERRORS as exc:
-            logger.debug("Chromium revision extraction from path failed: %s", exc)
+        revision_match = re.search(r"chromium-(\d+)", executable_path)
+        if revision_match:
+            return revision_match.group(1)
+
+    try:
+        with sync_playwright() as playwright_api:
+            browser = playwright_api.chromium.launch(
+                executable_path=executable_path,
+                headless=True,
+                args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
+            )
+            try:
+                version = browser.version
+                if version:
+                    version_str = str(version).strip()
+                    version_match = re.search(r"(\d+\.\d+\.\d+\.\d+)", version_str)
+                    if version_match:
+                        return version_match.group(1)
+                    if re.match(r"^\d+\.\d+\.\d+\.\d+$", version_str):
+                        return version_str
+            except BACKGROUND_INFRA_ERRORS as exc:
+                logger.debug("Chromium CDP version detection failed: %s", exc)
+            finally:
+                try:
+                    browser.close()
+                except BACKGROUND_INFRA_ERRORS as exc_close:
+                    logger.debug("Chromium browser close after version probe failed: %s", exc_close)
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.debug("Chromium CDP connection failed: %s", exc)
 
     return None
 
@@ -243,6 +224,22 @@ def _get_local_chromium_executable():
         if path.exists():
             return str(path)
     return None
+
+
+def _chromium_executable_for_launch(playwright_instance: Playwright) -> Optional[str]:
+    """Pick a Chromium path without launching browsers to compare versions.
+
+    Use the already-started Playwright instance's bundled binary. Fall back to
+    ``browsers/chromium/`` only when that path is missing (offline install).
+    """
+    try:
+        playwright_path = playwright_instance.chromium.executable_path
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.debug("Playwright Chromium path unavailable: %s", exc)
+        playwright_path = None
+    if playwright_path and os.path.exists(playwright_path):
+        return playwright_path
+    return _get_local_chromium_executable()
 
 
 def _select_best_chromium_executable(
@@ -367,9 +364,9 @@ _CHROMIUM_EXECUTABLE_HOLDER = _ChromiumExecutableHolder()
 async def _get_best_chromium_executable_async() -> Optional[str]:
     """Async: resolve the best Chromium path off the event loop, cached per process.
 
-    ``_select_best_chromium_executable`` may launch Chromium through the sync Playwright
-    API to compare versions, which raises when run inside the asyncio loop, so the whole
-    resolution runs in a worker thread.
+    ``_select_best_chromium_executable`` may call the sync Playwright API for the
+    managed browser path (and only launches Chromium if ``--version`` fails), so the
+    whole resolution runs in a worker thread.
     """
     holder = _CHROMIUM_EXECUTABLE_HOLDER
     if holder.resolved:
@@ -506,8 +503,9 @@ class BrowserContextManager:
             logger.error("[Browser] Error starting Playwright: %s", e, exc_info=True)
             raise
 
-        # Get best available Chromium (compares versions, prefers newer)
-        chromium_executable = await _get_best_chromium_executable_async()
+        if self.playwright is None:
+            raise RuntimeError("Playwright failed to start")
+        chromium_executable = _chromium_executable_for_launch(self.playwright)
         launch_options = {
             "headless": True,
             "args": [

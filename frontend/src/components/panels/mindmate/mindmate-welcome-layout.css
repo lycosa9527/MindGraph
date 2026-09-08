@@ -1,0 +1,125 @@
+/* Fullpage welcome: avatar + suggestions + input stay one cluster.
+   Vertical tokens use dvh (stage is shorter than the viewport).
+   Composer width fills the stage (capped at 48rem). */
+
+.mindmate-stage {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mindmate-stage--welcome {
+  --mm-avatar: clamp(64px, 12vh, 128px);
+  --mm-gap-welcome: clamp(8px, 2.2vh, 24px);
+  --mm-gap-suggest: clamp(6px, 1.8vh, 20px);
+  --mm-title: clamp(1.125rem, 2.4vh, 1.5rem);
+  --mm-subtitle: clamp(0.875rem, 2vh, 1.125rem);
+  --mm-suggest-max-h: clamp(108px, 16vh, 140px);
+  /* Fill the stage up to 48rem. A 40% container token was too narrow on tablets. */
+  --mm-composer-max: min(48rem, 100%);
+  --mm-gutter: clamp(12px, 3vw, 24px);
+  container-type: inline-size;
+  container-name: mindmate-welcome;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+@supports (height: 1dvh) {
+  .mindmate-stage--welcome {
+    --mm-avatar: clamp(64px, 12dvh, 128px);
+    --mm-gap-welcome: clamp(8px, 2.2dvh, 24px);
+    --mm-gap-suggest: clamp(6px, 1.8dvh, 20px);
+    --mm-title: clamp(1.125rem, 2.4dvh, 1.5rem);
+    --mm-subtitle: clamp(0.875rem, 2dvh, 1.125rem);
+    --mm-suggest-max-h: clamp(108px, 16dvh, 140px);
+  }
+}
+
+@supports (width: 1cqi) {
+  .mindmate-stage--welcome {
+    --mm-gutter: clamp(12px, 3cqi, 24px);
+  }
+}
+
+.mindmate-stage--welcome::before,
+.mindmate-stage--welcome::after {
+  content: '';
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.mindmate-stage--welcome .messages-container,
+.mindmate-stage--welcome .mindmate-input-section {
+  flex: 0 0 auto;
+  height: auto;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.mindmate-stage--welcome .messages-wrapper,
+.mindmate-stage--welcome .messages-wrapper--welcome {
+  padding: 0 var(--mm-gutter);
+}
+
+.mindmate-stage--welcome .welcome-fullpage {
+  flex: 0 0 auto;
+  min-height: 0;
+  padding: 0;
+  gap: var(--mm-gap-welcome);
+}
+
+.mindmate-stage--welcome .welcome-fullpage .welcome-copy {
+  margin-top: 0;
+}
+
+.mindmate-stage--welcome .welcome-fullpage .welcome-title {
+  font-size: var(--mm-title);
+  line-height: 1.3;
+}
+
+.mindmate-stage--welcome .welcome-fullpage .welcome-subtitle {
+  font-size: var(--mm-subtitle);
+  line-height: 1.45;
+}
+
+.mindmate-stage--welcome .mindmate-agent-avatar-ring {
+  width: var(--mm-avatar);
+  height: var(--mm-avatar);
+}
+
+.mindmate-stage--welcome .mindmate-avatar-welcome {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.mindmate-stage--welcome .suggestions-above-input {
+  box-sizing: border-box;
+  margin-top: var(--mm-gap-suggest);
+  max-width: var(--mm-composer-max);
+  min-width: 0;
+  width: 100%;
+  padding: 0 var(--mm-gutter) var(--mm-gap-suggest);
+}
+
+.mindmate-stage--welcome .input-area-fullpage {
+  box-sizing: border-box;
+  max-width: var(--mm-composer-max);
+  min-width: 0;
+  width: 100%;
+  padding: 0 var(--mm-gutter) clamp(8px, 2vh, 20px);
+}
+
+.mindmate-stage--welcome .suggestion-container {
+  max-height: var(--mm-suggest-max-h);
+}
+
+@media (max-height: 700px) {
+  .mindmate-stage--welcome {
+    --mm-avatar: 64px;
+    --mm-suggest-max-h: 108px;
+  }
+}

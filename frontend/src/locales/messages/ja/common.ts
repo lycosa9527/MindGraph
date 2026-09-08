@@ -100,6 +100,7 @@ export default {
   'meta.pageTitle.askOnce': 'AskOnce',
   'meta.pageTitle.auth': 'サインイン',
   'meta.pageTitle.canvas': 'キャンバス',
+  'meta.pageTitle.training': 'Training',
   'meta.pageTitle.chunkTest': 'チャンクテスト',
   'meta.pageTitle.chunkTestResults': 'チャンクテスト結果',
   'meta.pageTitle.community': 'コミュニティ',

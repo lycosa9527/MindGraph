@@ -58,14 +58,12 @@ interface ModuleItem {
 }
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
-const isAdmin = computed(() => authStore.isAdmin)
-const isAdminOrManager = computed(() => authStore.isAdminOrManager)
 
 const canWorkshop = computed(() => {
   if (!featureWorkshopChat.value) return false
   const entry = (featureOrgAccess.value as Record<string, unknown>).feature_workshop_chat
   return userCanAccessWorkshopChat(
-    isAdminOrManager.value,
+    authStore.isAdmin,
     authStore.user?.schoolId,
     authStore.user?.id,
     workshopChatPreviewOrgIds.value,

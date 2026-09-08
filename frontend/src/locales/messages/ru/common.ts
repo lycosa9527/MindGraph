@@ -100,6 +100,7 @@ export default {
   'meta.pageTitle.askOnce': 'T0',
   'meta.pageTitle.auth': 'Зарегистрироваться',
   'meta.pageTitle.canvas': 'Холст',
+  'meta.pageTitle.training': 'Training',
   'meta.pageTitle.chunkTest': 'Испытание на кусок',
   'meta.pageTitle.chunkTestResults': 'Результаты теста фрагмента',
   'meta.pageTitle.community': 'Сообщество',
