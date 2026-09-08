@@ -75,7 +75,7 @@ const dedicatedLearningSheet = computed(() => props.preferLearningSheet)
 
 const modalTitle = computed(() =>
   dedicatedLearningSheet.value
-    ? t('canvas.v3.ribbon.makeLearningSheet')
+    ? t('canvas.ribbon.makeLearningSheet')
     : t('canvas.worksheetText.modalTitle')
 )
 

@@ -51,9 +51,9 @@ export function syncMindMapStoreLayoutPositions(ctx: DiagramContext): void {
   const connections = ctx.data.value.connections ?? []
   const canvasMode = resolveSessionMindMapCanvasMode(ctx.mindMapCanvasMode.value)
 
-  const v2Family = canvasMode === 'v2' || canvasMode === 'v3'
+  const v2Family = canvasMode === 'v2'
 
-  // v2/v3: sole layout owner is mindMapV2LayoutResult — write-back only (no second compute).
+  // v2: sole layout owner is mindMapV2LayoutResult — write-back only (no second compute).
   if (v2Family && ctx.writeBackMindMapV2LayoutFromComputed) {
     ctx.writeBackMindMapV2LayoutFromComputed()
     return

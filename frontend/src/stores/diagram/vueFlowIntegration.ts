@@ -101,7 +101,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     const diagramType = ctx.type.value
     if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return null
     if (!ctx.data.value?.nodes) return null
-    if (effectiveMindMapMode.value !== 'v2' && effectiveMindMapMode.value !== 'v3') {
+    if (effectiveMindMapMode.value !== 'v2') {
       return null
     }
 
@@ -230,7 +230,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     }
 
     if (diagramType === 'mindmap' || diagramType === 'mind_map') {
-      const useV2Layout = effectiveMindMapMode.value === 'v2' || effectiveMindMapMode.value === 'v3'
+      const useV2Layout = effectiveMindMapMode.value === 'v2'
       const connections = ctx.data.value.connections ?? []
       const firstLevelBranchCount = connections.filter((c) => c.source === 'topic').length
 

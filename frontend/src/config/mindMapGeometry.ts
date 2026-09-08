@@ -276,7 +276,7 @@ export function syncMindMapConnectionStrokeColorsForCanvasMode(
   nodes: DiagramNode[],
   mode: MindMapCanvasMode
 ): void {
-  if (mode === 'v2' || mode === 'v3') {
+  if (mode === 'v2') {
     const topic = nodes.find((node) => node.id === 'topic')
     syncMindMapConnectionStrokeColors(connections, resolveMindMapTopicBorderColor(topic))
     return

@@ -23,6 +23,7 @@ from services.features.training.courses.constants import (
     PAGE_KEYS,
     STEP_TYPES,
     clamped_mark_step,
+    normalize_mindmap_canvas_mode,
     optional_notes,
     optional_step_key,
 )
@@ -123,11 +124,7 @@ def _step_payload(raw: dict[str, Any]) -> dict[str, Any]:
         page_key = page_key.strip() or None
     if page_key is not None and str(page_key) not in PAGE_KEYS:
         raise ValueError(f"Invalid page_key: {page_key}")
-    canvas_mode = raw.get("mindmap_canvas_mode")
-    if isinstance(canvas_mode, str):
-        canvas_mode = canvas_mode.strip() or None
-    if canvas_mode is not None and canvas_mode not in {"legacy", "v2", "v3"}:
-        raise ValueError(f"Invalid mindmap_canvas_mode: {canvas_mode}")
+    canvas_mode = normalize_mindmap_canvas_mode(raw.get("mindmap_canvas_mode"))
     return {
         "diagram_type": raw.get("diagram_type"),
         "topic_options": raw.get("topic_options") or [],

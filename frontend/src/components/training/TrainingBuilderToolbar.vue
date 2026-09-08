@@ -6,7 +6,6 @@ import { ElButton, ElCheckbox, ElOption, ElSelect } from 'element-plus'
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
 import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
 import { useLanguage } from '@/composables'
-import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import TrainingArrowPicker from '@/components/training/TrainingArrowPicker.vue'
 import TrainingEmojiPicker from '@/components/training/TrainingEmojiPicker.vue'
 import TrainingRolePicker from '@/components/training/TrainingRolePicker.vue'
@@ -33,11 +32,9 @@ const props = defineProps<{
   step: TrainingCourseStep
 }>()
 
-const { featureMindmapV3Canvas } = useFeatureFlags()
-
 function mindmapMode(step: TrainingCourseStep): MindMapCanvasMode {
   return resolveSessionMindMapCanvasMode(
-    step.mindmap_canvas_mode || readEffectiveMindMapCanvasMode()
+    step.mindmap_canvas_mode ?? readEffectiveMindMapCanvasMode()
   )
 }
 
@@ -77,16 +74,10 @@ const canvasMode = computed({
   get: () => mindmapMode(props.step),
   set: (mode: MindMapCanvasMode) => onCanvasMode(mode),
 })
-const canvasModeOptions = computed(() => {
-  const options: Array<{ label: string; value: MindMapCanvasMode }> = [
-    { value: 'legacy', label: t('settings.language.mindMapCanvasV1') },
-    { value: 'v2', label: t('settings.language.mindMapCanvasV2') },
-  ]
-  if (featureMindmapV3Canvas.value) {
-    options.push({ value: 'v3', label: t('settings.language.mindMapCanvasV3') })
-  }
-  return options
-})
+const canvasModeOptions = computed(() => [
+  { value: 'legacy' as const, label: t('settings.language.mindMapCanvasV1') },
+  { value: 'v2' as const, label: t('settings.language.mindMapCanvasV2') },
+])
 
 function addTextBubble(): void {
   emit('awake')

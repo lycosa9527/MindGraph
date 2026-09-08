@@ -57,11 +57,6 @@ export const TRAINING_MODALS: TrainingModalDef[] = [
         labelKey: 'settings.language.mindMapCanvasV2',
         selector: '[data-training-target="mindmap-v2"]',
       },
-      {
-        key: 'mindmap-v3',
-        labelKey: 'settings.language.mindMapCanvasV3',
-        selector: '[data-training-target="mindmap-v3"]',
-      },
     ],
   },
   {

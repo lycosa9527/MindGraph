@@ -276,7 +276,6 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'クラシックキャンバス',
   'settings.language.mindMapCanvasV2': 'V2',
   'settings.language.mindMapCanvasV1': 'V1',
-  'settings.language.mindMapCanvasV3': 'V3',
   'settings.language.mindMapCanvasRefreshHint': '切り替え後、キャンバスページを更新すると完全に反映されます',
   'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
   'settings.language.eBlackboardOff': 'Off',

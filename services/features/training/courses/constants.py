@@ -59,6 +59,21 @@ FOCUS_KEYS = frozenset(
         "canvas-delete",
     }
 )
+MINDMAP_CANVAS_MODES = frozenset({"legacy", "v2"})
+
+
+def normalize_mindmap_canvas_mode(value: object) -> str | None:
+    """Accept leftover stored ``v3`` as New canvas; reject unknown ids."""
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    if text == "v3":
+        return "v2"
+    if text not in MINDMAP_CANVAS_MODES:
+        raise ValueError(f"Invalid mindmap_canvas_mode: {text}")
+    return text
 
 
 def optional_step_key(value: object, allowed: frozenset[str], label: str) -> str | None:

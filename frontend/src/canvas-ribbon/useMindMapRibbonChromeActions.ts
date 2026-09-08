@@ -1,5 +1,5 @@
 /**
- * Actions for V3 bubble-style chrome (old JS bars). Does not change the V2 diagram.
+ * Shared actions for New-canvas ribbon and status bar. Does not change the V2 diagram.
  */
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -20,13 +20,13 @@ import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningShe
 import { useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
 import { navigateBackFromCanvas } from '@/utils/canvasBackNavigation'
 
-const V3_LLM_MODELS = [
+const RIBBON_LLM_MODELS = [
   { id: 'qwen', label: 'Qwen' },
   { id: 'deepseek', label: 'DeepSeek' },
   { id: 'doubao', label: 'Doubao' },
 ] as const
 
-export function useV3ChromeActions() {
+export function useMindMapRibbonChromeActions() {
   const router = useRouter()
   const route = useRoute()
   const { t } = useLanguage()
@@ -90,7 +90,7 @@ export function useV3ChromeActions() {
   }
 
   function openNodePalette(): void {
-    eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'v3-toolbar' })
+    eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'mind-map-ribbon' })
   }
 
   function toggleMindmate(): void {
@@ -111,7 +111,7 @@ export function useV3ChromeActions() {
   }
 
   return {
-    llmModels: V3_LLM_MODELS,
+    llmModels: RIBBON_LLM_MODELS,
     nodeCount,
     canUndo,
     canRedo,

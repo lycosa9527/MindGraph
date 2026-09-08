@@ -75,7 +75,7 @@ Built for teachers, learners, and anyone who thinks better with pictures (especi
 - Diagram snapshots: up to 10 point-in-time versions per diagram with click-to-recall
 - Canvas history baseline: first edit is undoable; session reset clears ephemeral state
 - Text alignment and rich text-style toolbar
-- Mind map v2 canvas (default when `FEATURE_MINDMAP_V2_CANVAS=True`): side-toolbar chrome, orthogonal edges, adaptive branch gaps, e-blackboard chrome, Document Summary panel; classic still selectable in Language settings
+- Mind map v2 canvas (default when `FEATURE_MINDMAP_V2_CANVAS=True`): ribbon + status-bar chrome, orthogonal edges, adaptive branch gaps, e-blackboard chrome, Document Summary panel; classic still selectable in Language settings
 - Mobile web shell (`/m/*`) with touch pinch-zoom and pane pan
 
 **Collaboration & Platform**
@@ -214,8 +214,7 @@ Notable feature flags (see `env.example` for full list):
 | `FEATURE_DINGTALK_LOGIN` | `False` | DingTalk QR login (per school AppKey/Secret; enable on production) |
 | `FEATURE_WORD_ADDIN` | `False` | Account Word add-in download + deploy zip (hosted `/word-addin/` shell stays on) |
 | `FEATURE_THINKING_COINS` | `False` | Trial-tier org thinking coin wallet |
-| `FEATURE_MINDMAP_V2_CANVAS` | `True` | Mind map v2 side-toolbar canvas (default layout; classic still available) |
-| `FEATURE_MINDMAP_V3_CANVAS` | `True` | Mind map V3 D3 canvas in Language settings (requires v2 flag; off clamps to v2) |
+| `FEATURE_MINDMAP_V2_CANVAS` | `True` | Mind map v2 ribbon canvas (default layout; classic still available) |
 | `FEATURE_MIND_CLASSROOM_SLIDE_DECK` | `False` | 思维讲堂「幻灯片讲解」(greyed + coming-soon until enabled) |
 
 Production hardening: set `COLLAB_FANOUT_ORIGIN_SECRET` (shared across workers), `ALLOWED_HOSTS`, and see [docs/architecture/production_security_deploy.md](docs/architecture/production_security_deploy.md).

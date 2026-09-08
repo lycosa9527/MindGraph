@@ -4,7 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useV3RibbonState } from '@/canvas-v3/useV3RibbonState'
+import { useMindMapRibbonState } from '@/canvas-ribbon/useMindMapRibbonState'
 import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
 
@@ -12,7 +12,7 @@ vi.mock('@/utils/api', () => ({
   authFetch: vi.fn(),
 }))
 
-describe('useV3RibbonState', () => {
+describe('useMindMapRibbonState', () => {
   beforeEach(() => {
     localStorage.clear()
     sessionStorage.clear()
@@ -39,7 +39,7 @@ describe('useV3RibbonState', () => {
 
   it('keeps guest height and tab in memory only', () => {
     const scope = effectScope()
-    const state = scope.run(() => useV3RibbonState())
+    const state = scope.run(() => useMindMapRibbonState())
     if (!state) {
       throw new Error('expected ribbon state')
     }
@@ -73,7 +73,7 @@ describe('useV3RibbonState', () => {
       v3RibbonTab: 'draw',
     }
     const scope = effectScope()
-    const state = scope.run(() => useV3RibbonState())
+    const state = scope.run(() => useMindMapRibbonState())
     if (!state) {
       throw new Error('expected ribbon state')
     }

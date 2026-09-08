@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { useId } from 'vue'
 
-const gradId = `v3-ai-mark-${useId()}`
+const gradId = `mm-ai-mark-${useId()}`
 </script>
 
 <template>
   <svg
-    class="v3-ribbon-ai-mark"
+    class="mm-ribbon-ai-mark"
     viewBox="0 0 34 22"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
@@ -59,7 +59,7 @@ const gradId = `v3-ai-mark-${useId()}`
 </template>
 
 <style scoped>
-.v3-ribbon-ai-mark {
+.mm-ribbon-ai-mark {
   display: block;
   width: 22px;
   height: 15px;

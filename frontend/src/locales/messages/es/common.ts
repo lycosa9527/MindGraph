@@ -276,7 +276,6 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'Lienzo clásico',
   'settings.language.mindMapCanvasV2': 'V2',
   'settings.language.mindMapCanvasV1': 'V1',
-  'settings.language.mindMapCanvasV3': 'V3',
   'settings.language.mindMapCanvasRefreshHint': 'Actualice la página del lienzo después de cambiar para el efecto completo',
   'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
   'settings.language.eBlackboardOff': 'Off',

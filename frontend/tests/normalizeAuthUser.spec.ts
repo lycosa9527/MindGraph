@@ -64,7 +64,7 @@ describe('normalizeAuthUser', () => {
     expect(user.thinkingCoins).toBeUndefined()
   })
 
-  it('hydrates V3 ribbon height and last tab from /me', () => {
+  it('hydrates ribbon height and last tab from /me', () => {
     const user = normalizeAuthUser({
       ...loginPayload,
       v3_ribbon_classic: true,
@@ -82,7 +82,7 @@ describe('normalizeAuthUser', () => {
     expect(normalizeAuthUser({ ...loginPayload, v3_ribbon_tab: 'ai' }).v3RibbonTab).toBe('ai')
   })
 
-  it('drops unknown V3 ribbon tabs', () => {
+  it('drops unknown ribbon tabs', () => {
     const user = normalizeAuthUser({
       ...loginPayload,
       v3RibbonClassic: false,

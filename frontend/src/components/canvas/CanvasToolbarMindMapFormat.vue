@@ -78,12 +78,12 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
     <span
       v-if="hidePainter && !compact"
       class="mm-style-kicker"
-      >{{ t('canvas.v3.textStyle') }}</span
+      >{{ t('canvas.ribbon.textStyle') }}</span
     >
     <select
       class="mm-select"
       :value="fontFamily"
-      :aria-label="t('canvas.v3.fontFamily')"
+      :aria-label="t('canvas.ribbon.fontFamily')"
       @change="handleFontFamilyChange"
     >
       <option :value="DIAGRAM_NODE_FONT_STACK">
@@ -100,7 +100,7 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
       min="8"
       max="72"
       :value="fontSize"
-      :aria-label="t('canvas.v3.fontSize')"
+      :aria-label="t('canvas.ribbon.fontSize')"
       @change="handleFontSizeInput"
     />
     <span class="mm-sep" />
@@ -135,7 +135,7 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
       </ElTooltip>
       <label
         class="mm-color"
-        :title="t('canvas.v3.colorText')"
+        :title="t('canvas.ribbon.colorText')"
       >
         <span class="mm-color__glyph">A</span>
         <input
@@ -152,7 +152,7 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
         type="button"
         class="mm-btn mm-btn--icon"
         :class="{ 'is-active': textAlign === 'left' }"
-        :aria-label="t('canvas.v3.ribbon.alignLeft')"
+        :aria-label="t('canvas.ribbon.alignLeft')"
         @click="handleTextAlign('left')"
       >
         <AlignLeft class="w-4 h-4" />
@@ -161,7 +161,7 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
         type="button"
         class="mm-btn mm-btn--icon"
         :class="{ 'is-active': textAlign === 'center' }"
-        :aria-label="t('canvas.v3.ribbon.alignCenter')"
+        :aria-label="t('canvas.ribbon.alignCenter')"
         @click="handleTextAlign('center')"
       >
         <AlignCenter class="w-4 h-4" />
@@ -170,7 +170,7 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
         type="button"
         class="mm-btn mm-btn--icon"
         :class="{ 'is-active': textAlign === 'right' }"
-        :aria-label="t('canvas.v3.ribbon.alignRight')"
+        :aria-label="t('canvas.ribbon.alignRight')"
         @click="handleTextAlign('right')"
       >
         <AlignRight class="w-4 h-4" />

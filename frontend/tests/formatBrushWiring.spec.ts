@@ -19,16 +19,11 @@ describe('format painter wiring', () => {
     expect(toolbar).toContain("'is-locked': formatBrushLocked")
   })
 
-  it('double-click locks on the format strip, classic toolbar, and V3 home ribbon', () => {
+  it('double-click locks on the format strip and classic toolbar', () => {
     const format = readSrc('src/components/canvas/CanvasToolbarMindMapFormat.vue')
     const classic = readSrc('src/components/canvas/CanvasToolbar.vue')
-    const home = readSrc('src/canvas-v3/V3RibbonHome.vue')
-    const command = readSrc('src/canvas-v3/V3RibbonCommand.vue')
     expect(format).toContain("@dblclick.prevent=\"handleFormatBrush({ lock: true })\"")
     expect(classic).toContain("@dblclick.prevent=\"handleFormatBrush({ lock: true })\"")
-    expect(home).toContain("@dblclick=\"handleFormatBrush({ lock: true })\"")
-    expect(command).toContain("dblclick: []")
-    expect(command).toContain("@dblclick.prevent=\"emit('dblclick')\"")
   })
 
   it('cancels on canvas pane click and shows a copy cursor while active', () => {

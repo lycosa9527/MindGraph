@@ -122,7 +122,7 @@ function handlePickRainbow(): void {
           <span
             v-if="!props.compact"
             class="mm-btn__label"
-            >{{ t('canvas.v3.ribbon.themeStyle') }}</span
+            >{{ t('canvas.ribbon.themeStyle') }}</span
           >
           <ChevronDown
             :size="12"

@@ -67,15 +67,15 @@ import {
   useVoiceNotesStore,
 } from '@/stores'
 
-import { useV3RibbonActions } from '@/canvas-v3/useV3RibbonActions'
-import type { V3RibbonTabId } from '@/canvas-v3/v3RibbonTypes'
+import { useMindMapRibbonActions } from '@/canvas-ribbon/useMindMapRibbonActions'
+import type { MindMapRibbonTabId } from '@/canvas-ribbon/mindMapRibbonTypes'
 import { useCanvasToolbarFormatting, useFollowNodeStyleToolbar } from '@/composables/canvasToolbar'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 
 import MindMapStructureIcon from './MindMapStructureIcon.vue'
 
 const props = withDefaults(
-  defineProps<{ compact?: boolean; ribbonTab?: V3RibbonTabId }>(),
+  defineProps<{ compact?: boolean; ribbonTab?: MindMapRibbonTabId }>(),
   { compact: false, ribbonTab: 'edit' }
 )
 
@@ -86,7 +86,7 @@ const authStore = useAuthStore()
 const { featureCommunity } = useFeatureFlags()
 const { triggerImportInPlace } = useDiagramImport()
 const { resetToDefaultTemplate } = useCanvasReset()
-const ribbon = useV3RibbonActions()
+const ribbon = useMindMapRibbonActions()
 const classroomStore = useMindClassroomStore()
 const voiceNotesStore = useVoiceNotesStore()
 const route = useRoute()
@@ -718,14 +718,14 @@ watch(
               </button>
             </ElTooltip>
           <ElTooltip
-            :content="t('canvas.v3.ribbon.makeLearningSheet')"
+            :content="t('canvas.ribbon.makeLearningSheet')"
             placement="bottom"
           >
             <button
               type="button"
               class="mm-btn"
               :class="{ 'mm-btn--icon': props.compact }"
-              :aria-label="t('canvas.v3.ribbon.makeLearningSheet')"
+              :aria-label="t('canvas.ribbon.makeLearningSheet')"
               data-learning-sheet-nudge-anchor
               @click="() => ribbon.requestWorksheetText(true)"
             >
@@ -733,7 +733,7 @@ watch(
               <span
                 v-if="!props.compact"
                 class="mm-btn__label"
-                >{{ t('canvas.v3.ribbon.makeLearningSheet') }}</span
+                >{{ t('canvas.ribbon.makeLearningSheet') }}</span
               >
             </button>
           </ElTooltip>
@@ -798,26 +798,26 @@ watch(
       <template v-if="ribbonTab === 'ai'">
         <div class="mm-btn-group">
           <ElTooltip
-            :content="t('canvas.v3.ribbon.topicGenerate')"
+            :content="t('canvas.ribbon.topicGenerate')"
             placement="bottom"
           >
             <button
               type="button"
               class="mm-btn"
               :class="{ 'mm-btn--icon': props.compact }"
-              :aria-label="t('canvas.v3.ribbon.topicGenerate')"
+              :aria-label="t('canvas.ribbon.topicGenerate')"
               @click="ribbon.handleAIGenerate()"
             >
               <Sparkles class="w-4 h-4" />
               <span
                 v-if="!props.compact"
                 class="mm-btn__label"
-                >{{ t('canvas.v3.ribbon.topicGenerate') }}</span
+                >{{ t('canvas.ribbon.topicGenerate') }}</span
               >
             </button>
           </ElTooltip>
           <ElTooltip
-            :content="t('canvas.v3.ribbon.docGenerate')"
+            :content="t('canvas.ribbon.docGenerate')"
             placement="bottom"
           >
             <button
@@ -827,52 +827,52 @@ watch(
                 'mm-btn--icon': props.compact,
                 'is-active': activeTool === 'document_summary',
               }"
-              :aria-label="t('canvas.v3.ribbon.docGenerate')"
+              :aria-label="t('canvas.ribbon.docGenerate')"
               @click="openDocGenerate('file')"
             >
               <FileText class="w-4 h-4" />
               <span
                 v-if="!props.compact"
                 class="mm-btn__label"
-                >{{ t('canvas.v3.ribbon.docGenerate') }}</span
+                >{{ t('canvas.ribbon.docGenerate') }}</span
               >
             </button>
           </ElTooltip>
           <ElTooltip
-            :content="t('canvas.v3.ribbon.webGenerate')"
+            :content="t('canvas.ribbon.webGenerate')"
             placement="bottom"
           >
             <button
               type="button"
               class="mm-btn"
               :class="{ 'mm-btn--icon': props.compact }"
-              :aria-label="t('canvas.v3.ribbon.webGenerate')"
+              :aria-label="t('canvas.ribbon.webGenerate')"
               @click="openDocGenerate('web')"
             >
               <Link2 class="w-4 h-4" />
               <span
                 v-if="!props.compact"
                 class="mm-btn__label"
-                >{{ t('canvas.v3.ribbon.webGenerate') }}</span
+                >{{ t('canvas.ribbon.webGenerate') }}</span
               >
             </button>
           </ElTooltip>
           <ElTooltip
-            :content="t('canvas.v3.ribbon.voiceSummary')"
+            :content="t('canvas.ribbon.voiceSummary')"
             placement="bottom"
           >
             <button
               type="button"
               class="mm-btn"
               :class="{ 'mm-btn--icon': props.compact }"
-              :aria-label="t('canvas.v3.ribbon.voiceSummary')"
+              :aria-label="t('canvas.ribbon.voiceSummary')"
               @click="openVoiceSummary"
             >
               <Mic class="w-4 h-4" />
               <span
                 v-if="!props.compact"
                 class="mm-btn__label"
-                >{{ t('canvas.v3.ribbon.voiceSummary') }}</span
+                >{{ t('canvas.ribbon.voiceSummary') }}</span
               >
             </button>
           </ElTooltip>
@@ -943,7 +943,7 @@ watch(
       <template v-if="ribbonTab === 'research'">
         <div class="mm-btn-group">
           <ElTooltip
-            :content="t('canvas.v3.mindMate')"
+            :content="t('canvas.ribbon.mindMate')"
             placement="bottom"
           >
             <button
@@ -953,14 +953,14 @@ watch(
                 'mm-btn--icon': props.compact,
                 'is-active': ribbon.isMindmateOpen,
               }"
-              :aria-label="t('canvas.v3.mindMate')"
+              :aria-label="t('canvas.ribbon.mindMate')"
               @click="ribbon.toggleMindmate"
             >
               <Bot class="w-4 h-4" />
               <span
                 v-if="!props.compact"
                 class="mm-btn__label"
-                >{{ t('canvas.v3.mindMate') }}</span
+                >{{ t('canvas.ribbon.mindMate') }}</span
               >
             </button>
           </ElTooltip>

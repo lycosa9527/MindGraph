@@ -44,7 +44,7 @@ function closeMenu(): void {
 
 function comingSoon(): void {
   closeMenu()
-  notify.info(t('canvas.v3.ribbon.insertComingSoon'))
+  notify.info(t('canvas.ribbon.insertComingSoon'))
 }
 
 function requireNodeCount(min: number, action: () => void): void {
@@ -61,13 +61,13 @@ function insertAssociation(): void {
   closeMenu()
   const ids = diagramStore.selectedNodes.filter((id, index, list) => list.indexOf(id) === index)
   if (ids.length < 2) {
-    notify.warning(t('canvas.v3.ribbon.selectTwoNodes'))
+    notify.warning(t('canvas.ribbon.selectTwoNodes'))
     return
   }
-  diagramStore.pushHistory(t('canvas.v3.ribbon.assocLine'))
+  diagramStore.pushHistory(t('canvas.ribbon.assocLine'))
   const created = diagramStore.addConnection(ids[0], ids[1])
   if (!created) {
-    notify.warning(t('canvas.v3.ribbon.selectTwoNodes'))
+    notify.warning(t('canvas.ribbon.selectTwoNodes'))
   }
 }
 
@@ -108,7 +108,7 @@ function onMathConfirm(latex: string): void {
 
 <template>
   <ElTooltip
-    :content="t('canvas.v3.ribbon.tabInsert')"
+    :content="t('canvas.ribbon.tabInsert')"
     placement="bottom"
     :disabled="!props.compact"
   >
@@ -122,13 +122,13 @@ function onMathConfirm(latex: string): void {
         <button
           type="button"
           class="mm-btn"
-          :aria-label="t('canvas.v3.ribbon.tabInsert')"
+          :aria-label="t('canvas.ribbon.tabInsert')"
         >
           <Plus class="w-4 h-4" />
           <span
             v-if="!props.compact"
             class="mm-btn__label"
-            >{{ t('canvas.v3.ribbon.tabInsert') }}</span
+            >{{ t('canvas.ribbon.tabInsert') }}</span
           >
           <ChevronDown
             :size="12"
@@ -145,7 +145,7 @@ function onMathConfirm(latex: string): void {
               @click="requireNodeCount(2, insertAssociation)"
             >
               <Spline class="w-4 h-4 shrink-0" />
-              <span>{{ t('canvas.v3.ribbon.assocLine') }}</span>
+              <span>{{ t('canvas.ribbon.assocLine') }}</span>
             </button>
             <button
               type="button"
@@ -155,7 +155,7 @@ function onMathConfirm(latex: string): void {
               @click="requireNodeCount(1, comingSoon)"
             >
               <Braces class="w-4 h-4 shrink-0" />
-              <span>{{ t('canvas.v3.ribbon.summary') }}</span>
+              <span>{{ t('canvas.ribbon.summary') }}</span>
             </button>
             <button
               type="button"
@@ -165,7 +165,7 @@ function onMathConfirm(latex: string): void {
               @click="requireNodeCount(1, comingSoon)"
             >
               <Image class="w-4 h-4 shrink-0" />
-              <span>{{ t('canvas.v3.ribbon.insertImage') }}</span>
+              <span>{{ t('canvas.ribbon.insertImage') }}</span>
             </button>
             <button
               type="button"
@@ -175,7 +175,7 @@ function onMathConfirm(latex: string): void {
               @click="requireNodeCount(1, comingSoon)"
             >
               <Smile class="w-4 h-4 shrink-0" />
-              <span>{{ t('canvas.v3.ribbon.insertIcon') }}</span>
+              <span>{{ t('canvas.ribbon.insertIcon') }}</span>
             </button>
             <button
               type="button"
@@ -185,7 +185,7 @@ function onMathConfirm(latex: string): void {
               @click="requireNodeCount(1, comingSoon)"
             >
               <Link2 class="w-4 h-4 shrink-0" />
-              <span>{{ t('canvas.v3.ribbon.insertLink') }}</span>
+              <span>{{ t('canvas.ribbon.insertLink') }}</span>
             </button>
             <button
               type="button"

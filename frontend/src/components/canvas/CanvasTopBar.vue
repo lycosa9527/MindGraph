@@ -26,8 +26,8 @@ import { ChatDotRound, Download } from '@element-plus/icons-vue'
 
 import { ArrowLeft, FileImage, FileJson, FileText, ImageDown, RotateCcw, Share2 } from '@lucide/vue'
 
-import V3RibbonTabs from '@/canvas-v3/V3RibbonTabs.vue'
-import { useV3RibbonState } from '@/canvas-v3/useV3RibbonState'
+import MindMapRibbonTabs from '@/canvas-ribbon/MindMapRibbonTabs.vue'
+import { useMindMapRibbonState } from '@/canvas-ribbon/useMindMapRibbonState'
 import CanvasOnlineCollabMenu from '@/components/canvas/CanvasOnlineCollabMenu.vue'
 import CanvasToolbar from '@/components/canvas/CanvasToolbar.vue'
 import DiagramSlotFullModal from '@/components/canvas/DiagramSlotFullModal.vue'
@@ -133,7 +133,7 @@ const diagramTypeForName = computed(
 )
 
 const isMindMapEditor = useMindMapV2Chrome()
-const { activeTab, setActiveTab } = useV3RibbonState()
+const { activeTab, setActiveTab } = useMindMapRibbonState()
 
 /**
  * Generate default diagram name (simple, no timestamp)
@@ -384,9 +384,8 @@ async function handleReset() {
         v-if="isMindMapEditor"
         class="canvas-top-bar__tabs"
       >
-        <V3RibbonTabs
+        <MindMapRibbonTabs
           :active-tab="activeTab"
-          variant="topbar"
           @update:active-tab="setActiveTab"
         />
       </div>

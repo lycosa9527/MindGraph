@@ -556,7 +556,7 @@ export function loadMindMapSpec(
   hydrateMindMapBranchTree(leftBranches)
   const canvasMode: MindMapCanvasMode =
     options?.canvasMode ?? (readMindMapV2VisualDesignActive() ? 'v2' : 'legacy')
-  const v2Visuals = canvasMode === 'v2' || canvasMode === 'v3'
+  const v2Visuals = canvasMode === 'v2'
   const diagramStyleId =
     (spec._mindmap_diagram_style as string | undefined) ??
     (spec.mindmap_diagram_style as string | undefined)

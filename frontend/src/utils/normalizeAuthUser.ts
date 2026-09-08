@@ -2,7 +2,7 @@
  * Map login /me payloads (snake_case) or an already-normalized User to User.
  * Idempotent so login → setUser does not drop camelCase preference fields.
  */
-import { normalizeV3RibbonTabId } from '@/canvas-v3/v3RibbonTypes'
+import { normalizeMindMapRibbonTabId } from '@/canvas-ribbon/mindMapRibbonTypes'
 import { isAiContentLevelId } from '@/config/aiContentLevels'
 import { isEducationStage } from '@/constants/educationStage'
 import { mergeSchoolTierFeatures, normalizeSchoolTier } from '@/constants/schoolTier'
@@ -141,7 +141,7 @@ export function normalizeAuthUser(source: BackendUser | User): User {
   const aiLevelRaw = raw.ai_content_level ?? raw.aiContentLevel ?? null
   const ribbonClassicRaw = raw.v3_ribbon_classic ?? raw.v3RibbonClassic
   const ribbonTabRaw = raw.v3_ribbon_tab ?? raw.v3RibbonTab
-  const ribbonTab = normalizeV3RibbonTabId(
+  const ribbonTab = normalizeMindMapRibbonTabId(
     typeof ribbonTabRaw === 'string' ? ribbonTabRaw : null
   )
 

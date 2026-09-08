@@ -26,7 +26,20 @@ export type PromptLanguage = PromptOutputLanguageCode
 
 export type AppMode = 'mindmate' | 'mindgraph' | 'template' | 'course' | 'community'
 export type UiVersion = 'chinese' | 'international'
-export type MindMapCanvasMode = 'legacy' | 'v2' | 'v3'
+export type MindMapCanvasMode = 'legacy' | 'v2'
+
+/** Accept leftover stored `v3` (removed chrome mode) as New canvas. */
+export function parseMindMapCanvasMode(
+  value: string | null | undefined
+): MindMapCanvasMode | null {
+  if (value === 'legacy' || value === 'v2') {
+    return value
+  }
+  if (value === 'v3') {
+    return 'v2'
+  }
+  return null
+}
 
 const THEME_KEY = 'mindgraph_theme'
 const LANGUAGE_KEY = 'language'
@@ -46,11 +59,6 @@ export const MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY =
 export const E_BLACKBOARD_OPTIMIZE_KEY = 'mindgraph_e_blackboard_optimize'
 export const SIDEBAR_POEM_ENABLED_KEY = 'mindgraph_sidebar_poem_enabled'
 
-const VALID_MINDMAP_CANVAS_MODES: ReadonlySet<string> = new Set(['legacy', 'v2', 'v3'])
-
-function isValidMindMapCanvasMode(value: string | null): value is MindMapCanvasMode {
-  return value !== null && VALID_MINDMAP_CANVAS_MODES.has(value)
-}
 
 type CanvasModeStorage = Pick<Storage, 'getItem' | 'setItem'>
 
@@ -276,8 +284,12 @@ export const useUIStore = defineStore('ui', () => {
     const storedMindMapCanvasMode = localStorage.getItem(MINDMAP_CANVAS_MODE_KEY)
     // Restore post-migration choice; otherwise default to new (v2) layout.
     // Flag sync may force Classic in-memory only when FEATURE_MINDMAP_V2_CANVAS is off.
-    if (isValidMindMapCanvasMode(storedMindMapCanvasMode)) {
-      mindMapCanvasMode.value = storedMindMapCanvasMode
+    const parsedMindMapCanvasMode = parseMindMapCanvasMode(storedMindMapCanvasMode)
+    if (parsedMindMapCanvasMode) {
+      mindMapCanvasMode.value = parsedMindMapCanvasMode
+      if (storedMindMapCanvasMode === 'v3') {
+        localStorage.setItem(MINDMAP_CANVAS_MODE_KEY, parsedMindMapCanvasMode)
+      }
     } else {
       mindMapCanvasMode.value = 'v2'
     }
@@ -438,19 +450,20 @@ export const useUIStore = defineStore('ui', () => {
     options: { persist?: boolean } = {}
   ): void {
     const persist = options.persist !== false
+    const nextMode = parseMindMapCanvasMode(mode) ?? 'v2'
     const previousMode = mindMapCanvasMode.value
-    if (previousMode === mode) {
+    if (previousMode === nextMode) {
       // Runtime-only Classic can leave storage on v2; still persist an explicit opt-in.
-      if (persist && localStorage.getItem(MINDMAP_CANVAS_MODE_KEY) !== mode) {
-        localStorage.setItem(MINDMAP_CANVAS_MODE_KEY, mode)
+      if (persist && localStorage.getItem(MINDMAP_CANVAS_MODE_KEY) !== nextMode) {
+        localStorage.setItem(MINDMAP_CANVAS_MODE_KEY, nextMode)
       }
       return
     }
-    mindMapCanvasMode.value = mode
+    mindMapCanvasMode.value = nextMode
     if (persist) {
-      localStorage.setItem(MINDMAP_CANVAS_MODE_KEY, mode)
+      localStorage.setItem(MINDMAP_CANVAS_MODE_KEY, nextMode)
     }
-    eventBus.emit('mindmap:canvas_mode_changed', { previousMode, newMode: mode })
+    eventBus.emit('mindmap:canvas_mode_changed', { previousMode, newMode: nextMode })
   }
 
   function setEBlackboardOptimize(value: boolean): void {

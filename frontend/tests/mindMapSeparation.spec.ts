@@ -22,7 +22,7 @@ import { useMindMapOpsSlice } from '@/stores/diagram/mindMapOps'
 import type { DiagramContext } from '@/stores/diagram/types'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { loadMindMapSpec, nodesAndConnectionsToMindMapSpec } from '@/stores/specLoader'
-import { useUIStore } from '@/stores/ui'
+import { parseMindMapCanvasMode, useUIStore } from '@/stores/ui'
 import type { Connection, DiagramData, DiagramNode } from '@/types'
 import {
   buildClassicMindMapTopicHandlePositions,
@@ -369,7 +369,7 @@ describe('mind map classic vs v2 separation', () => {
     expect(data._mindmap_diagram_style).toBeUndefined()
   })
 
-  it('reconcileMindMapCanvasModeSwitch is a no-op for v2 to v3', () => {
+  it('reconcileMindMapCanvasModeSwitch is a no-op for leftover v3 remapped to v2', () => {
     enableMindMapV2CanvasFlag()
     const loaded = loadMindMapSpec(
       {
@@ -399,7 +399,12 @@ describe('mind map classic vs v2 separation', () => {
     }
     const ctx = makeMindMapCtx(data)
     const nodesBefore = data.nodes
-    const changed = reconcileMindMapCanvasModeSwitch(ctx, 'v2', 'v3')
+    expect(parseMindMapCanvasMode('v3')).toBe('v2')
+    const changed = reconcileMindMapCanvasModeSwitch(
+      ctx,
+      'v2',
+      parseMindMapCanvasMode('v3') ?? 'v2'
+    )
     expect(changed).toBe(false)
     expect(data.nodes).toBe(nodesBefore)
     expect(data._mindmap_theme).toBe('ocean')

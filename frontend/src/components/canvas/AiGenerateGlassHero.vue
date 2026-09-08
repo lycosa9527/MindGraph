@@ -41,10 +41,10 @@ const emit = defineEmits<{ close: [] }>()
 const { t } = useLanguage()
 
 const copy = computed(() => ({
-  ribbon: t(`canvas.v3.aiHero.${props.variant}.ribbon`),
-  title: t(`canvas.v3.aiHero.${props.variant}.title`),
-  line1: t(`canvas.v3.aiHero.${props.variant}.line1`),
-  line2: t(`canvas.v3.aiHero.${props.variant}.line2`),
+  ribbon: t(`canvas.ribbon.aiHero.${props.variant}.ribbon`),
+  title: t(`canvas.ribbon.aiHero.${props.variant}.title`),
+  line1: t(`canvas.ribbon.aiHero.${props.variant}.line1`),
+  line2: t(`canvas.ribbon.aiHero.${props.variant}.line2`),
 }))
 </script>
 

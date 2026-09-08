@@ -645,12 +645,8 @@ function commitMindMapReload(
     result.nodes,
     result.connections,
     ctx.data.value._node_styles,
-    reloadCanvasMode === 'v2' || reloadCanvasMode === 'v3'
-      ? resolveActiveMindMapThemeId(ctx.data.value)
-      : null,
-    reloadCanvasMode === 'v2' || reloadCanvasMode === 'v3'
-      ? ctx.data.value._mindmap_diagram_style
-      : undefined,
+    reloadCanvasMode === 'v2' ? resolveActiveMindMapThemeId(ctx.data.value) : null,
+    reloadCanvasMode === 'v2' ? ctx.data.value._mindmap_diagram_style : undefined,
     remapMindMapNodeIdAfterReload,
     reloadCanvasMode
   )

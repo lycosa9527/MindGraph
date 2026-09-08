@@ -276,7 +276,6 @@ export default {
   'settings.language.mindMapCanvasLegacy': '經典畫布',
   'settings.language.mindMapCanvasV2': 'V2',
   'settings.language.mindMapCanvasV1': 'V1',
-  'settings.language.mindMapCanvasV3': 'V3',
   'settings.language.mindMapCanvasRefreshHint': '切換後刷新畫布頁面可看到完整效果',
   'settings.language.eBlackboardOptimize': '電子白板優化',
   'settings.language.eBlackboardOff': '關閉',

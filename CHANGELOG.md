@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.57] - 2026-09-08
+
+> **Mind-map canvas is Classic or New only; V3 chrome mode and leftover V3 names are gone.**
+
+### Removed
+
+- **V3 chrome mode** — Bubble toolbar, Word-style V3 ribbons, right property dock, Language-settings V3 segment, and `FEATURE_MINDMAP_V3_CANVAS`. Live modes are Classic (`legacy`) and New (`v2`) only. Leftover stored `v3` remaps to `v2` at ingest.
+
+### Changed
+
+- **Ribbon sources** — Moved from `canvas-v3/` to `canvas-ribbon/` (`MindMapRibbonTabs`, `MindMapStatusBar`). i18n keys are `canvas.ribbon.*`. Account prefs still use `v3_ribbon_tab` / `v3_ribbon_classic`.
+- **Status bar** — Outline, audience, LLM, zoom, and presentation share one 40px row on New-canvas chrome.
+
+### Tests
+
+- [`frontend/tests/mindMapRibbonChrome.spec.ts`](frontend/tests/mindMapRibbonChrome.spec.ts), [`frontend/tests/mindMapCanvasModeParse.spec.ts`](frontend/tests/mindMapCanvasModeParse.spec.ts), [`frontend/tests/useMindMapRibbonState.spec.ts`](frontend/tests/useMindMapRibbonState.spec.ts)
+- [`frontend/tests/trainingCourses.spec.ts`](frontend/tests/trainingCourses.spec.ts), [`tests/test_training_course_routes.py`](tests/test_training_course_routes.py)
+
 ## [5.180.56] - 2026-09-08
 
 > **Mind-map ribbon: live tabs, format painter, title-row collab, and a single-line status bar.**
@@ -410,7 +428,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Mind map V3 chrome** — Isolated under `frontend/src/canvas-v3/`. File / Home / Design / Review / AI ribbon (expanded or collapsed pills), top toolbar, bottom status bar, and right property dock. The diagram stays on V2 (`MindMapV2Canvas`); V2 ↔ V3 does not remount Vue Flow.
+- **Mind map V3 chrome** — Isolated under `frontend/src/canvas-ribbon/`. File / Home / Design / Review / AI ribbon (expanded or collapsed pills), top toolbar, bottom status bar, and right property dock. The diagram stays on V2 (`MindMapV2Canvas`); V2 ↔ V3 does not remount Vue Flow.
 - **Language settings V1 / V2 / V3** — Segmented control when `FEATURE_MINDMAP_V3_CANVAS` is on (default). Flag off hides the V3 segment and clamps `v3` → `v2` in memory (does not persist). Showcase and export-render stay on v2.
 - **Account ribbon prefs** — `users.v3_ribbon_classic` and `users.v3_ribbon_tab` (Alembic 0108). Classic height and last tab persist on the account via `PATCH /api/auth/diagram-preferences`, not browser storage.
 - **`FEATURE_MINDMAP_V3_CANVAS`** — Defaults True. Requires `FEATURE_MINDMAP_V2_CANVAS`. Documented in README and env.example.
@@ -422,9 +440,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- `frontend/tests/mindMapV3Chrome.spec.ts` — V3 chrome gate vs V2
-- `frontend/tests/useV3RibbonState.spec.ts` — hydrate and persist classic height + last tab
-- `frontend/tests/mindMapCanvasModeV3.spec.ts` — flag clamp `v3` → `v2`
+- `frontend/tests/mindMapRibbonChrome.spec.ts` — V3 chrome gate vs V2
+- `frontend/tests/useMindMapRibbonState.spec.ts` — hydrate and persist classic height + last tab
+- `frontend/tests/mindMapCanvasModeParse.spec.ts` — flag clamp `v3` → `v2`
 - `frontend/tests/languageSettingsCanvasV3.spec.ts` — V3 segment visibility
 - `frontend/tests/mindMapSeparation.spec.ts` — V2/V3 family
 - `frontend/tests/normalizeAuthUser.spec.ts` — ribbon fields on `/me`

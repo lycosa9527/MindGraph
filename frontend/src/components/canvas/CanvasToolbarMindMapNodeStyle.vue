@@ -72,7 +72,7 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
     <span
       v-if="!compact"
       class="mm-style-kicker"
-      >{{ t('canvas.v3.ribbon.nodeStyle') }}</span
+      >{{ t('canvas.ribbon.nodeStyle') }}</span
     >
     <ElDropdown
       trigger="click"

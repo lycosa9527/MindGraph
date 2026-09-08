@@ -276,7 +276,6 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'Klasyczne płótno',
   'settings.language.mindMapCanvasV2': 'V2',
   'settings.language.mindMapCanvasV1': 'V1',
-  'settings.language.mindMapCanvasV3': 'V3',
   'settings.language.mindMapCanvasRefreshHint': 'Po przełączeniu odśwież stronę płótna, aby uzyskać pełny efekt',
   'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
   'settings.language.eBlackboardOff': 'Off',

@@ -50,7 +50,7 @@ export interface TrainingCourseStep {
   overlays?: TrainingStepOverlay[]
   page_key?: string | null
   pull_users?: boolean
-  mindmap_canvas_mode?: 'legacy' | 'v2' | 'v3' | null
+  mindmap_canvas_mode?: 'legacy' | 'v2' | null
   modal_key?: string | null
   focus_key?: string | null
   notes?: string | null

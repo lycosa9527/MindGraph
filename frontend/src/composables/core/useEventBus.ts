@@ -129,8 +129,8 @@ export type EventTypes = {
   'diagram:layout_recalc_bump': Record<string, never>
   'diagram:branch_moved': Record<string, never>
   'mindmap:canvas_mode_changed': {
-    previousMode: 'legacy' | 'v2' | 'v3'
-    newMode: 'legacy' | 'v2' | 'v3'
+    previousMode: 'legacy' | 'v2'
+    newMode: 'legacy' | 'v2'
   }
   'snapshot:requested': Record<string, never>
   'snapshot:recall_requested': { versionNumber: number }

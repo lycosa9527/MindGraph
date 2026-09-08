@@ -6,7 +6,7 @@ import { computed, ref } from 'vue'
 
 import { ElButton, ElTooltip } from 'element-plus'
 
-import type { V3RibbonTabId } from '@/canvas-v3/v3RibbonTypes'
+import type { MindMapRibbonTabId } from '@/canvas-ribbon/mindMapRibbonTypes'
 import {
   tryCollabGuardedRedo,
   tryCollabGuardedUndo,
@@ -43,7 +43,7 @@ const props = withDefaults(
   defineProps<{
     embedded?: boolean
     compactToolbar?: boolean
-    ribbonTab?: V3RibbonTabId
+    ribbonTab?: MindMapRibbonTabId
   }>(),
   {
     embedded: false,

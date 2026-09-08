@@ -32,6 +32,7 @@ from services.features.training.courses.constants import (
     MODAL_KEYS,
     STEP_TYPES,
     clamped_mark_step,
+    normalize_mindmap_canvas_mode,
     optional_notes,
     optional_step_key,
 )
@@ -384,6 +385,11 @@ def test_optional_step_key_allowlist() -> None:
     assert optional_notes("  讲到这里  ") == "讲到这里"
     with pytest.raises(ValueError, match="notes"):
         optional_notes("x" * 4001)
+    assert normalize_mindmap_canvas_mode(None) is None
+    assert normalize_mindmap_canvas_mode("v3") == "v2"
+    assert normalize_mindmap_canvas_mode("legacy") == "legacy"
+    with pytest.raises(ValueError, match="mindmap_canvas_mode"):
+        normalize_mindmap_canvas_mode("v4")
 
 
 def test_slide_preview_falls_back_to_the_uploaded_file() -> None:

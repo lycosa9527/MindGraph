@@ -57,7 +57,7 @@ function toggleExpanded(): void {
     <button
       v-if="isStatus"
       type="button"
-      class="v3-status__zoom-btn"
+      class="mm-status__zoom-btn"
       :class="{ 'is-active': expanded }"
       :aria-expanded="expanded"
       :aria-label="t('canvas.shortcutGuide.title')"

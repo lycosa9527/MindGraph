@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * V3 status bar — node count, LLM pills, Word-style zoom cluster.
+ * Status bar — node count, LLM pills, zoom cluster.
  */
 import { computed } from 'vue'
 
@@ -12,9 +12,9 @@ import CanvasToolbarMindMapAudiencePicker from '@/components/canvas/CanvasToolba
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useLanguage } from '@/composables/core/useLanguage'
 
-import { useV3RibbonActions } from './useV3RibbonActions'
-import './v3Chrome.css'
-import './v3Ribbon.css'
+import { useMindMapRibbonActions } from './useMindMapRibbonActions'
+import './mindMapStatusBar.css'
+import './mindMapRibbon.css'
 
 const props = withDefaults(
   defineProps<{
@@ -28,7 +28,7 @@ const props = withDefaults(
 )
 
 const { t } = useLanguage()
-const actions = useV3RibbonActions()
+const actions = useMindMapRibbonActions()
 const { activeTool, handleToolSelect } = useMindMapSideToolbarState()
 
 const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom * 100) : 100))
@@ -36,13 +36,13 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
 
 <template>
   <div
-    class="v3-status"
-    data-testid="mindmap-v3-status-bar"
+    class="mm-status"
+    data-testid="mindmap-ribbon-status-bar"
   >
-    <div class="v3-status__left">
+    <div class="mm-status__left">
       <button
         type="button"
-        class="v3-status__zoom-btn"
+        class="mm-status__zoom-btn"
         :class="{ 'is-active': activeTool === 'outline' }"
         :title="t('canvas.mindMapSideToolbar.outline')"
         @click="handleToolSelect('outline')"
@@ -53,23 +53,23 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
         />
         {{ t('canvas.mindMapSideToolbar.outline') }}
       </button>
-      <span class="v3-status__sep" />
-      <span>{{ t('canvas.v3.nodeCount', { count: actions.nodeCount }) }}</span>
-      <span class="v3-status__sep" />
+      <span class="mm-status__sep" />
+      <span>{{ t('canvas.ribbon.nodeCount', { count: actions.nodeCount }) }}</span>
+      <span class="mm-status__sep" />
       <CanvasMindMapShortcutGuide variant="status" />
     </div>
-    <div class="v3-status__center">
+    <div class="mm-status__center">
       <CanvasToolbarMindMapAudiencePicker
         anchor="bottom"
         hide-guide
       />
-      <span class="v3-status__label">{{ t('canvas.v3.aiModel') }}</span>
-      <div class="v3-llm-selector">
+      <span class="mm-status__label">{{ t('canvas.ribbon.aiModel') }}</span>
+      <div class="mm-llm-selector">
         <button
           v-for="model in actions.llmModels"
           :key="model.id"
           type="button"
-          class="v3-llm-btn"
+          class="mm-llm-btn"
           :data-llm="model.id"
           :class="{ 'is-active': actions.selectedLlm === model.id }"
           @click="actions.selectLlm(model.id)"
@@ -79,10 +79,10 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
       </div>
       <CanvasToolbarMindMapAiGenerate tooltip-placement="top" />
     </div>
-    <div class="v3-status__right v3-status__zoom">
+    <div class="mm-status__right mm-status__zoom">
       <button
         type="button"
-        class="v3-status__zoom-btn"
+        class="mm-status__zoom-btn"
         :title="t('canvas.toolbar.moreAppTranslateLabelDesc')"
         :aria-label="t('canvas.toolbar.moreAppTranslateLabel')"
         @click="actions.runTranslate"
@@ -95,10 +95,10 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
       </button>
       <button
         type="button"
-        class="v3-status__zoom-btn"
+        class="mm-status__zoom-btn"
         :class="{ 'is-active': handToolActive }"
         :title="t('canvas.zoomControls.hand')"
-        data-testid="mindmap-v3-hand-tool"
+        data-testid="mindmap-ribbon-hand-tool"
         :aria-label="t('canvas.zoomControls.hand')"
         @click="actions.toggleHand(!handToolActive)"
       >
@@ -107,17 +107,17 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
           :stroke-width="2"
         />
       </button>
-      <span class="v3-status__sep" />
+      <span class="mm-status__sep" />
       <button
         type="button"
-        class="v3-status__zoom-btn"
-        data-testid="mindmap-v3-zoom-out"
+        class="mm-status__zoom-btn"
+        data-testid="mindmap-ribbon-zoom-out"
         @click="actions.zoomOut"
       >
         −
       </button>
       <input
-        class="v3-status__zoom-slider"
+        class="mm-status__zoom-slider"
         type="range"
         min="25"
         max="200"
@@ -131,19 +131,19 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
       />
       <button
         type="button"
-        class="v3-status__zoom-btn"
-        data-testid="mindmap-v3-zoom-in"
+        class="mm-status__zoom-btn"
+        data-testid="mindmap-ribbon-zoom-in"
         @click="actions.zoomIn"
       >
         +
       </button>
-      <span data-testid="mindmap-v3-zoom-percent">{{ zoomPercent }}%</span>
+      <span data-testid="mindmap-ribbon-zoom-percent">{{ zoomPercent }}%</span>
       <button
         type="button"
-        class="v3-status__zoom-btn"
-        :title="t('canvas.v3.resetView')"
-        :aria-label="t('canvas.v3.resetView')"
-        data-testid="mindmap-v3-fit-view"
+        class="mm-status__zoom-btn"
+        :title="t('canvas.ribbon.resetView')"
+        :aria-label="t('canvas.ribbon.resetView')"
+        data-testid="mindmap-ribbon-fit-view"
         @click="actions.fitToScreen"
       >
         <Maximize2
@@ -153,10 +153,10 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
       </button>
       <button
         type="button"
-        class="v3-status__zoom-btn"
+        class="mm-status__zoom-btn"
         :title="t('canvas.zoomControls.presentationMode')"
         :aria-label="t('canvas.zoomControls.presentationMode')"
-        data-testid="mindmap-v3-presentation"
+        data-testid="mindmap-ribbon-presentation"
         @click="actions.startPresentation"
       >
         <MonitorPlay

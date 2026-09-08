@@ -291,7 +291,7 @@ run_frontend() {
     tests/tsecCaptcha.spec.ts \
     tests/markdownKatexSanitize.spec.ts tests/mindmateDiagramPreviewCache.spec.ts \
     tests/loginRestoresUiLanguage.spec.ts tests/normalizeAuthUser.spec.ts \
-    tests/mindMapV3Chrome.spec.ts tests/useV3RibbonState.spec.ts \
+    tests/mindMapRibbonChrome.spec.ts tests/useMindMapRibbonState.spec.ts \
     tests/authBootstrapDedupe.spec.ts tests/formatGalleryLanguageMenuLabel.spec.ts \
     tests/formatSidebarDailyTokens.spec.ts \
     tests/voiceNotesMarkdown.spec.ts tests/voiceNotesTranscript.spec.ts \

@@ -6,7 +6,7 @@ import { computed } from 'vue'
 
 import { ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
 
-import { useV3RibbonActions } from '@/canvas-v3/useV3RibbonActions'
+import { useMindMapRibbonActions } from '@/canvas-ribbon/useMindMapRibbonActions'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramStore } from '@/stores'
@@ -29,7 +29,7 @@ const props = withDefaults(
 const { t } = useLanguage()
 const { canUseOnlineCollab } = useSchoolTierFeatures()
 const diagramStore = useDiagramStore()
-const actions = useV3RibbonActions()
+const actions = useMindMapRibbonActions()
 
 const sessionLive = computed(
   () => Boolean(props.workshopCode) || diagramStore.collabSessionActive

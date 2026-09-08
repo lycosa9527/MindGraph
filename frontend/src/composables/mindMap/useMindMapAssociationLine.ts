@@ -85,7 +85,7 @@ export function useMindMapAssociationLine(options?: {
       deactivate()
       return true
     }
-    diagramStore.pushHistory(t('canvas.v3.ribbon.assocLine'))
+    diagramStore.pushHistory(t('canvas.ribbon.assocLine'))
     const extra = {
       edgeType: MIND_MAP_ASSOCIATION_EDGE_TYPE,
       style: { strokeColor: '#64748b', strokeWidth: 2, strokeDasharray: '6 4' },
@@ -94,7 +94,7 @@ export function useMindMapAssociationLine(options?: {
       diagramStore.addConnection(sourceId, targetId, '', extra) ||
       diagramStore.addConnection(targetId, sourceId, '', extra)
     if (!created) {
-      notify.warning(t('canvas.v3.ribbon.selectTwoNodes'))
+      notify.warning(t('canvas.ribbon.selectTwoNodes'))
       return false
     }
     associationLinePendingEditId.value = created
@@ -119,7 +119,7 @@ export function useMindMapAssociationLine(options?: {
     if (typeof document !== 'undefined') {
       document.documentElement.classList.add('mg-association-line-active')
     }
-    notify.success(t('canvas.v3.ribbon.assocLineHint'))
+    notify.success(t('canvas.ribbon.assocLineHint'))
   }
 
   if (!associationLineWatchBound) {

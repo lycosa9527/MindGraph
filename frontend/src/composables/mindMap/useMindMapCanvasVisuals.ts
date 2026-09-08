@@ -16,7 +16,7 @@ export function useMindMapCanvasVisuals() {
 
   return computed(() => {
     const locked = injectedVariant?.value
-    if (locked === 'v2' || locked === 'v3') {
+    if (locked === 'v2') {
       return diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map'
     }
     if (locked === 'legacy') {

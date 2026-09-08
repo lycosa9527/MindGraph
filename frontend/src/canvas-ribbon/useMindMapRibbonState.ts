@@ -1,5 +1,5 @@
 /**
- * V3 ribbon height + last tab. Account default in Postgres; no browser storage.
+ * Ribbon height + last tab. Account default in Postgres; no browser storage.
  */
 import { onUnmounted, ref, watch } from 'vue'
 
@@ -7,18 +7,18 @@ import { useAuthStore } from '@/stores'
 import { authFetch } from '@/utils/api'
 
 import {
-  DEFAULT_V3_RIBBON_TAB,
-  type V3RibbonTabId,
-  normalizeV3RibbonTabId,
-} from './v3RibbonTypes'
+  DEFAULT_MIND_MAP_RIBBON_TAB,
+  type MindMapRibbonTabId,
+  normalizeMindMapRibbonTabId,
+} from './mindMapRibbonTypes'
 
 const API_PATH = '/api/auth/diagram-preferences'
 const PERSIST_DEBOUNCE_MS = 400
 
-export function useV3RibbonState() {
+export function useMindMapRibbonState() {
   const authStore = useAuthStore()
   const classic = ref(false)
-  const activeTab = ref<V3RibbonTabId>(DEFAULT_V3_RIBBON_TAB)
+  const activeTab = ref<MindMapRibbonTabId>(DEFAULT_MIND_MAP_RIBBON_TAB)
   let persistTimer = 0
   let persistInFlight = false
 
@@ -26,11 +26,11 @@ export function useV3RibbonState() {
     const user = authStore.user
     if (!user) {
       classic.value = false
-      activeTab.value = DEFAULT_V3_RIBBON_TAB
+      activeTab.value = DEFAULT_MIND_MAP_RIBBON_TAB
       return
     }
     classic.value = user.v3RibbonClassic === true
-    activeTab.value = normalizeV3RibbonTabId(user.v3RibbonTab) ?? DEFAULT_V3_RIBBON_TAB
+    activeTab.value = normalizeMindMapRibbonTabId(user.v3RibbonTab) ?? DEFAULT_MIND_MAP_RIBBON_TAB
   }
 
   hydrateFromUser()
@@ -43,7 +43,7 @@ export function useV3RibbonState() {
     }
   )
 
-  function patchAuthUser(nextClassic: boolean, nextTab: V3RibbonTabId): void {
+  function patchAuthUser(nextClassic: boolean, nextTab: MindMapRibbonTabId): void {
     if (!authStore.user) return
     authStore.patchPersistedUser({
       v3RibbonClassic: nextClassic,
@@ -69,7 +69,7 @@ export function useV3RibbonState() {
         v3_ribbon_tab?: string | null
       }
       const savedClassic = data.v3_ribbon_classic === true
-      const savedTab = normalizeV3RibbonTabId(data.v3_ribbon_tab) ?? activeTab.value
+      const savedTab = normalizeMindMapRibbonTabId(data.v3_ribbon_tab) ?? activeTab.value
       classic.value = savedClassic
       activeTab.value = savedTab
       patchAuthUser(savedClassic, savedTab)
@@ -100,7 +100,7 @@ export function useV3RibbonState() {
     setClassic(!classic.value)
   }
 
-  function setActiveTab(tab: V3RibbonTabId): void {
+  function setActiveTab(tab: MindMapRibbonTabId): void {
     if (activeTab.value === tab) return
     activeTab.value = tab
     patchAuthUser(classic.value, tab)
