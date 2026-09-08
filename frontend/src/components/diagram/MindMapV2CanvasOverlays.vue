@@ -1,12 +1,11 @@
 <script setup lang="ts">
 /**
  * V2 mind map canvas overlays — lazy chunk paired with MindMapV2Canvas.vue.
- * Floating toolbar (incl. node explain), learning-sheet bar, directional add, collapse toggles.
+ * Floating toolbar (incl. node explain), directional add, collapse toggles.
  */
 import { type Ref, computed, inject, unref } from 'vue'
 
 import { CanvasNodeFloatingToolbar } from '@/components/canvas'
-import LearningSheetFloatBar from '@/components/canvas/LearningSheetFloatBar.vue'
 import type {
   FloatingToolbarPosition,
   FloatingToolbarSize,
@@ -42,10 +41,6 @@ const resolvedContainer = computed((): HTMLElement | null => unref(props.canvasC
 </script>
 
 <template>
-  <LearningSheetFloatBar
-    v-if="!headlessExport && !presentationDiagramEditLocked && !uiStore.exportWireframeOutline"
-  />
-
   <!-- Hide toolbar / add handles so they do not cover the explain bubble. -->
   <CanvasNodeFloatingToolbar
     v-if="!headlessExport && !presentationDiagramEditLocked && !nodeExplainOpen"

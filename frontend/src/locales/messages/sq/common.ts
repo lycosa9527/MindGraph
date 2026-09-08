@@ -276,7 +276,6 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'Kanavacë klasike',
   'settings.language.mindMapCanvasV2': 'V2',
   'settings.language.mindMapCanvasV1': 'V1',
-  'settings.language.mindMapCanvasV3': 'V3',
   'settings.language.mindMapCanvasRefreshHint': 'Rifreskoni faqen e kanavacës pas ndryshimit për efekt të plotë',
   'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
   'settings.language.eBlackboardOff': 'Off',

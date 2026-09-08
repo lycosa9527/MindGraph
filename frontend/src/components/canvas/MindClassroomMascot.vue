@@ -10,6 +10,8 @@ import { ElDialog } from 'element-plus'
 
 import { ChevronDown } from '@lucide/vue'
 
+import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
+import '@/components/canvas/aiGenerateGlass.css'
 import MindClassroomLaunchContent from '@/components/canvas/MindClassroomLaunchContent.vue'
 import { useEventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -553,52 +555,22 @@ eventBus.on('classroom:queue_result', (result) => {
 
   <ElDialog
     v-model="modalOpen"
-    :title="t('canvas.mindClassroom.title')"
-    width="600px"
-    align-center
+    width="min(600px, 92vw)"
+    top="12vh"
     append-to-body
     destroy-on-close
-    class="mc-classroom-dialog"
+    :show-close="false"
+    class="mc-classroom-dialog mm-canvas-upper-dialog ai-gen-shell ai-gen-shell--classroom"
     @close="handleModalClose"
   >
+    <template #header>
+      <AiGenerateGlassHero
+        variant="classroom"
+        @close="handleModalClose"
+      />
+    </template>
     <MindClassroomLaunchContent variant="modal" />
   </ElDialog>
 </template>
 
 <style scoped src="./mindClassroomMascot.css"></style>
-
-<style>
-.mc-classroom-dialog.el-dialog {
-  border-radius: 18px;
-  overflow: hidden;
-}
-
-.mc-classroom-dialog .el-dialog__header {
-  padding: 18px 22px 8px;
-  margin: 0;
-}
-
-.mc-classroom-dialog .el-dialog__title {
-  font-size: 18px;
-  font-weight: 800;
-  color: #0f172a;
-  letter-spacing: 0.01em;
-}
-
-.mc-classroom-dialog .el-dialog__headerbtn {
-  top: 16px;
-  right: 16px;
-  width: 32px;
-  height: 32px;
-}
-
-.mc-classroom-dialog .el-dialog__body {
-  padding: 4px 22px 20px;
-}
-
-@media (max-width: 640px) {
-  .mc-classroom-dialog.el-dialog {
-    width: calc(100vw - 24px) !important;
-  }
-}
-</style>

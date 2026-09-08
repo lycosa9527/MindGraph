@@ -1,10 +1,13 @@
 import type { StylePresetColors } from '@/config/colorPalette'
 import { mindMapDiagramStyleUsesLayeredBranchColors } from '@/config/mindMapDiagramStyles'
-import { mindMapLayeredBranchColorsForNode, mindMapLayeredCenterTopicColors } from '@/config/mindMapVibrantThemes'
 import {
   MIND_MAP_RAINBOW_THEME_ID,
   MIND_MAP_RAINBOW_TOPIC_COLORS,
+  isRainbowMindMapTheme,
   mindMapColorsFromVibrantAccent,
+  mindMapLayeredBranchColorsForNode,
+  mindMapLayeredCenterTopicColors,
+  mindMapRainbowColorsForNode,
 } from '@/config/mindMapVibrantThemes'
 import { MIND_MAP_GEOMETRY, mindMapBranchFontSize } from '@/config/mindMapGeometry'
 import {
@@ -113,7 +116,7 @@ const VIBRANT_ROSE: MindMapThemePreset = {
 const RAINBOW_THEME: MindMapThemePreset = {
   id: MIND_MAP_RAINBOW_THEME_ID,
   nameKey: 'canvas.toolbar.mindMapThemeRainbow',
-  previewClass: 'bg-gradient-to-r from-[#FA8055] via-[#B5C62A] to-[#FF7DC1]',
+  previewClass: 'bg-gradient-to-r from-[#2E90FA] via-[#F79009] to-[#7A5AF8]',
   sourceNote: `${VIBRANT_THEME_SOURCE}; per-L1 rainbow branch accents`,
   backgroundColor: mindMapColorsFromVibrantAccent('#4A72D4').backgroundColor,
   textColor: mindMapColorsFromVibrantAccent('#4A72D4').textColor,
@@ -359,7 +362,7 @@ export const MIND_MAP_THEMES: MindMapThemePreset[] = [
   ),
 ]
 
-export const DEFAULT_MIND_MAP_THEME_ID: MindMapThemeId = 'vibrantBlue'
+export const DEFAULT_MIND_MAP_THEME_ID: MindMapThemeId = MIND_MAP_RAINBOW_THEME_ID
 
 /** Curated palettes in the appearance picker (vibrant classroom choices). */
 export const MIND_MAP_COMMON_THEME_IDS: MindMapThemeId[] = [
@@ -465,6 +468,21 @@ export function mindMapStyleFromTheme(
       backgroundColor: theme.topicBackgroundColor,
       textColor: theme.topicTextColor,
       borderColor: theme.topicBorderColor,
+    }
+  }
+
+  if (isRainbowMindMapTheme(theme.id) && connections?.length) {
+    const rainbow = mindMapRainbowColorsForNode(node.id, connections)
+    if (rainbow) {
+      return {
+        ...geometry,
+        backgroundColor: rainbow.backgroundColor,
+        textColor: rainbow.textColor,
+        borderColor: rainbow.borderColor,
+        borderWidth: rainbow.borderWidth ?? geometry.borderWidth,
+        accentBarColor: rainbow.accentBarColor,
+        accentBarWidth: rainbow.accentBarWidth ?? 0,
+      }
     }
   }
 

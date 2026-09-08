@@ -30,7 +30,17 @@ type NodeLike = {
   data?: NodeDataLike
 }
 
-type ConnectionLike = Pick<Connection, 'source' | 'target' | 'sourceHandle'>
+type ConnectionLike = Pick<Connection, 'source' | 'target' | 'sourceHandle'> & {
+  edgeType?: string
+}
+
+export const MIND_MAP_ASSOCIATION_EDGE_TYPE = 'association'
+
+export function isMindMapAssociationConnection(
+  connection: { edgeType?: string } | null | undefined
+): boolean {
+  return connection?.edgeType === MIND_MAP_ASSOCIATION_EDGE_TYPE
+}
 
 export function isPositionalMindMapBranchId(nodeId: string): boolean {
   return POSITIONAL_MINDMAP_BRANCH_ID_RE.test(nodeId)
@@ -117,9 +127,17 @@ export function mindMapSideFromHandle(handle: string | undefined): MindMapSide |
 function parentOfMap(connections: readonly ConnectionLike[]): Map<string, string> {
   const parentOf = new Map<string, string>()
   for (const connection of connections) {
+    if (isMindMapAssociationConnection(connection)) continue
     parentOf.set(connection.target, connection.source)
   }
   return parentOf
+}
+
+export function mindMapTreeParentId(
+  connections: readonly ConnectionLike[],
+  nodeId: string
+): string | null {
+  return parentOfMap(connections).get(nodeId) ?? null
 }
 
 function l1AncestorId(nodeId: string, parentOf: Map<string, string>): string | null {
@@ -179,7 +197,10 @@ export function mindMapNodeSide(
       const l1Stamped = readMindMapSide(l1Node?.data)
       if (l1Stamped) return l1Stamped
       const topicEdge = connections.find(
-        (item) => item.source === MINDMAP_TOPIC_ID && item.target === l1Id
+        (item) =>
+          item.source === MINDMAP_TOPIC_ID &&
+          item.target === l1Id &&
+          !isMindMapAssociationConnection(item)
       )
       const fromHandle = mindMapSideFromHandle(topicEdge?.sourceHandle)
       if (fromHandle) return fromHandle
@@ -248,6 +269,7 @@ export function mindMapLocationPathKey(
   const parentOf = parentOfMap(connections)
   const childMap = new Map<string, string[]>()
   for (const connection of connections) {
+    if (isMindMapAssociationConnection(connection)) continue
     const kids = childMap.get(connection.source)
     if (kids) kids.push(connection.target)
     else childMap.set(connection.source, [connection.target])

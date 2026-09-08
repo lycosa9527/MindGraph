@@ -64,17 +64,25 @@ describe('normalizeAuthUser', () => {
     expect(user.thinkingCoins).toBeUndefined()
   })
 
-  it('hydrates V3 ribbon height and last tab from /me', () => {
+  it('hydrates ribbon height and last tab from /me', () => {
     const user = normalizeAuthUser({
       ...loginPayload,
       v3_ribbon_classic: true,
       v3_ribbon_tab: 'Review',
     })
     expect(user.v3RibbonClassic).toBe(true)
-    expect(user.v3RibbonTab).toBe('review')
+    expect(user.v3RibbonTab).toBe('teaching')
   })
 
-  it('drops unknown V3 ribbon tabs', () => {
+  it('maps retired draw and learn ribbon tabs onto edit and teaching', () => {
+    expect(normalizeAuthUser({ ...loginPayload, v3_ribbon_tab: 'draw' }).v3RibbonTab).toBe('edit')
+    expect(normalizeAuthUser({ ...loginPayload, v3_ribbon_tab: 'learn' }).v3RibbonTab).toBe(
+      'teaching'
+    )
+    expect(normalizeAuthUser({ ...loginPayload, v3_ribbon_tab: 'ai' }).v3RibbonTab).toBe('ai')
+  })
+
+  it('drops unknown ribbon tabs', () => {
     const user = normalizeAuthUser({
       ...loginPayload,
       v3RibbonClassic: false,

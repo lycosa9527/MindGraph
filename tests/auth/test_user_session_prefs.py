@@ -70,8 +70,14 @@ def test_diagram_preferences_accepts_v3_ribbon_fields() -> None:
     """V3 ribbon height and last tab can PATCH without 学段."""
     body = DiagramPreferencesUpdate.model_validate({"v3_ribbon_classic": True, "v3_ribbon_tab": "Design"})
     assert body.v3_ribbon_classic is True
-    assert body.v3_ribbon_tab == "design"
+    assert body.v3_ribbon_tab == "edit"
     assert "education_stage" not in body.model_fields_set
+    draw = DiagramPreferencesUpdate.model_validate({"v3_ribbon_tab": "draw"})
+    assert draw.v3_ribbon_tab == "edit"
+    learn = DiagramPreferencesUpdate.model_validate({"v3_ribbon_tab": "learn"})
+    assert learn.v3_ribbon_tab == "teaching"
+    ai = DiagramPreferencesUpdate.model_validate({"v3_ribbon_tab": "ai"})
+    assert ai.v3_ribbon_tab == "ai"
 
 
 def test_diagram_preferences_rejects_unknown_v3_ribbon_tab() -> None:

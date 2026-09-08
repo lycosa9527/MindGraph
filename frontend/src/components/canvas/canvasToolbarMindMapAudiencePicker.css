@@ -11,17 +11,15 @@
 }
 
 .mm-btn--pro-content {
-  border-color: #3b82f6;
+  border: none;
 }
 
 .mm-btn--pro-content:hover:not(:disabled) {
-  border-color: #2563eb;
-  background: #eff6ff;
+  background: #e5e7eb;
 }
 
 .mm-btn--pro-content.is-open {
-  border-color: #2563eb;
-  background: #eff6ff;
+  background: #e5e7eb;
 }
 
 :global(.dark) .mm-btn--pro-content {
@@ -66,7 +64,7 @@
 .mm-pro-guide {
   position: fixed;
   z-index: 4100;
-  width: min(280px, calc(100vw - 24px));
+  width: min(220px, calc(100vw - 24px));
   pointer-events: auto;
 }
 

@@ -276,7 +276,6 @@ export default {
   'settings.language.mindMapCanvasLegacy': '클래식 캔버스',
   'settings.language.mindMapCanvasV2': 'V2',
   'settings.language.mindMapCanvasV1': 'V1',
-  'settings.language.mindMapCanvasV3': 'V3',
   'settings.language.mindMapCanvasRefreshHint': '전환 후 캔버스 페이지를 새로고침하면 효과가 완전히 적용됩니다',
   'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
   'settings.language.eBlackboardOff': 'Off',

@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import V3PropertyPanel from '@/canvas-v3/V3PropertyPanel.vue'
-import V3StatusBar from '@/canvas-v3/V3StatusBar.vue'
-import V3TopToolbar from '@/canvas-v3/V3TopToolbar.vue'
 import { CanvasChrome, CanvasTopBar, ZoomControls } from '@/components/canvas'
 import { OnlineCollabModal } from '@/components/workshop'
 import { eventBus } from '@/composables/core/useEventBus'
@@ -42,8 +39,6 @@ const spec = computed(() =>
 const sessionMode = computed<MindMapCanvasMode>(() =>
   resolveSessionMindMapCanvasMode(props.canvasMode || readEffectiveMindMapCanvasMode())
 )
-const useV3Chrome = computed(() => sessionMode.value === 'v3')
-
 const sessionKey = computed(
   () =>
     `${normalizedType.value}:${sessionMode.value}:${props.interactive ? 'edit' : 'ro'}:${spec.value ? 'ok' : 'empty'}`
@@ -94,15 +89,8 @@ onUnmounted(() => {
       :spec="spec"
       :diagram-type="normalizedType"
     >
-      <CanvasChrome :class="{ 'shadow-none': useV3Chrome }">
-        <V3TopToolbar
-          v-if="useV3Chrome"
-          :is-viewer="!interactive"
-        />
-        <CanvasTopBar
-          v-else
-          preview-lock
-        />
+      <CanvasChrome>
+        <CanvasTopBar preview-lock />
       </CanvasChrome>
       <div class="canvas-preview__body">
         <DiagramCanvasHost
@@ -112,13 +100,8 @@ onUnmounted(() => {
           :hand-tool-active="!interactive"
           :presentation-hand-pan-mode="!interactive"
         />
-        <V3PropertyPanel v-if="useV3Chrome && interactive" />
-        <ZoomControls
-          v-if="!useV3Chrome"
-          class="canvas-preview__zoom"
-        />
+        <ZoomControls class="canvas-preview__zoom" />
       </div>
-      <V3StatusBar v-if="useV3Chrome" />
       <OnlineCollabModal
         :visible="collabOpen"
         :diagram-id="null"

@@ -3,21 +3,22 @@
 New (v2) mind map canvas is the **default** (`mindMapCanvasMode: v2`) when
 `FEATURE_MINDMAP_V2_CANVAS=True` (on by default). A one-time browser migration
 (`mindgraph_mindmap_canvas_v2_default_migrated`) moves sticky Classic preferences
-onto New; Classic remains opt-in via Language settings. V2 chrome includes side
-toolbar, **Document Summary** (文档总结), orthogonal edges, and subtree layout.
+onto New; Classic remains opt-in via Language settings. V2 chrome includes the
+ribbon + status bar, **Document Summary** (文档总结), orthogonal edges, and
+subtree layout.
 Set `FEATURE_MINDMAP_V2_CANVAS=False` to force classic-only at runtime (does not
 overwrite the saved New-canvas preference).
 
 ## Canvas component split (lazy-loaded shells)
 
 Mind maps mount through **`DiagramCanvasHost`** → **`MindMapCanvasRouter`**, which
-loads exactly one diagram shell. V2 and V3 share `MindMapV2Canvas` (same `:key`)
-so switching chrome does not remount Vue Flow.
+loads exactly one diagram shell. Leftover stored `v3` uses `MindMapV2Canvas`
+(same `:key` as New canvas).
 
 | Shell | Chunk | Edge registry | Overlays |
 |-------|-------|---------------|----------|
 | `MindMapLegacyCanvas` | classic (V1) | `diagramCanvasEdgeTypesLegacy` (curved only) | none |
-| `MindMapV2Canvas` | v2 / v3 | `diagramCanvasEdgeTypesMindMapV2` (+ orthogonal) | `MindMapV2CanvasOverlays` |
+| `MindMapV2Canvas` | v2 (leftover `v3` clamps here) | `diagramCanvasEdgeTypesMindMapV2` (+ orthogonal) | `MindMapV2CanvasOverlays` |
 
 Each shell passes `mindMapVariant` into `DiagramCanvas` and **`provide`s
 `MIND_MAP_CANVAS_VARIANT_KEY`** so `TopicNode` / `BranchNode` use
@@ -25,7 +26,7 @@ Each shell passes `mindMapVariant` into `DiagramCanvas` and **`provide`s
 
 Non–mind-map types still mount `DiagramCanvas` directly (showcase, export-render, etc.).
 
-Classic ↔ V2/V3 remounts the shell (`:key` on router). V2 ↔ V3 does not.
+Classic ↔ New remounts the shell (`:key` on router). Leftover `v3` does not remount.
 
 ### Node component split (lazy-loaded)
 
@@ -41,10 +42,9 @@ Variant files hardcode styling (no runtime legacy/v2 branches). `useMindMapCanva
 
 ## Central gate
 
-- `useMindMapV2Chrome()` — V2 UI chrome only
-- `useMindMapV3Chrome()` — V3 UI chrome only (old JS bars)
-- `readMindMapV2VisualDesignActive()` — layout, geometry, themes, stroke sync in stores/spec loader (V2 and V3)
-- `effectiveMindMapCanvasMode(mode, flag)` — runtime mode with flag forcing legacy when off
+- `useMindMapV2Chrome()` — New-canvas UI chrome (ribbon + status bar)
+- `readMindMapV2VisualDesignActive()` — layout, geometry, themes, stroke sync in stores/spec loader
+- `effectiveMindMapCanvasMode(mode, flag)` — leftover stored `v3` becomes `v2`; flag off forces classic
 
 ## Layout split (baseline c2611060e for classic)
 
@@ -84,7 +84,7 @@ Other diagram types (tree map, flow map, bubble, double-bubble, …) use the sam
 ## V2-only surfaces
 
 - **Visual design**: unified connection stroke, `mindMapThemes`, node shapes, `MIND_MAP_GEOMETRY`
-- Components: `MindMapSideToolbar`, `MindMapDocumentSummaryPanel` (Document Summary portal; replaces unmounted `FileCenterPanel`), `MindMapDirectionalAddOverlay`, subgraph/collapse overlays
+- Components: `MindMapDocumentSummaryPanel` (Document Summary portal; replaces unmounted `FileCenterPanel`), `MindMapDirectionalAddOverlay`, subgraph/collapse overlays. Left-rail icons live in the ribbon tabs (`useMindMapSideToolbarState`).
 - Store ops (gated): `toggleMindMapCollapse`, `performMindMapDirectionalAdd`, subgraph preview restore/apply
 
 ## Shared paths (both modes)
@@ -129,28 +129,21 @@ rg "readMindMapV2VisualDesignActive|useMindMapV2Chrome|MIND_MAP_GEOMETRY|getMind
 
 Classic paths in those files should gate v2 imports/calls. Tests: `frontend/tests/mindMapSeparation.spec.ts`, `mindMapColorPalettes.spec.ts`.
 
-## V3 canvas (bubble-style chrome only)
+## Shared ribbon
 
-V3 is **mind-map only**. Current V3 chrome is the **bubble style** (purple grouped
-toolbar, navy status bar, right property dock from the pre-Vue editor). The
-diagram is the same V2 Vue Flow map (layout, theme,
-orthogonal edges, overlays, `_mindmap_canvas.v2` style bucket). Switching V2 ↔ V3
-does not remount the diagram (`MindMapCanvasRouter` keeps `:key="'mindmap-v2'"`)
-and `reconcileMindMapCanvasModeSwitch` is a no-op.
+The obsolete V3 chrome **mode** is gone (no Language-settings V3 segment, no
+`FEATURE_MINDMAP_V3_CANVAS`, no bubble toolbar / Word V3 ribbons / property dock).
+Leftover stored `v3` clamps to New canvas (`v2`) and still uses `MindMapV2Canvas`.
 
-V3 only replaces page chrome extracted from the pre-Vue editor (`f87d276d7`):
-
-| Chrome | Component |
-|--------|-----------|
-| Top toolbar | [`V3TopToolbar.vue`](../../frontend/src/canvas-v3/V3TopToolbar.vue) |
-| Bottom status bar | [`V3StatusBar.vue`](../../frontend/src/canvas-v3/V3StatusBar.vue) |
-| Right property dock | [`V3PropertyPanel.vue`](../../frontend/src/canvas-v3/V3PropertyPanel.vue) |
+The New-canvas ribbon and status bar still live under
+[`frontend/src/canvas-ribbon/`](../../frontend/src/canvas-ribbon/) (`MindMapRibbonTabs`,
+`MindMapStatusBar`, ribbon state/actions). Title-row collab is on `CanvasTopBar`.
 
 | Concern | Owner |
 |---------|--------|
-| Isolated chrome | [`frontend/src/canvas-v3/`](../../frontend/src/canvas-v3/) |
+| Ribbon tabs + status | [`frontend/src/canvas-ribbon/`](../../frontend/src/canvas-ribbon/) |
 | Diagram | `MindMapV2Canvas` via `MindMapCanvasRouter` |
-| Settings | Language settings **V1 / V2 / V3** (`FEATURE_MINDMAP_V3_CANVAS`, default on) |
-| Flag off | Hide the V3 segment; clamp `v3` → `v2` in memory (do not persist) |
+| Settings | Language settings **Classic / New** (`FEATURE_MINDMAP_V2_CANVAS`) |
+| Leftover `v3` | `parseMindMapCanvasMode` / training `normalize_mindmap_canvas_mode` → `v2` |
 | Showcase / export-render | Stay on **v2** |
-| Chrome gates | `useMindMapV2Chrome()` is V2 only; `useMindMapV3Chrome()` is V3 only; layout/theme use `isSessionMindMapV2VisualDesignActive` |
+| Chrome gate | `useMindMapV2Chrome()`; layout/theme use `isSessionMindMapV2VisualDesignActive` |

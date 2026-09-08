@@ -8,7 +8,16 @@ export {
   ensureCanvasVirtualKeyboardUiVersionSync,
   toggleCanvasVirtualKeyboard,
 } from './useCanvasVirtualKeyboardOpen'
-export { useCanvasToolbarFormatting } from './useCanvasToolbarFormatting'
+export {
+  formatBrushActive,
+  formatBrushLocked,
+  resetFormatBrushState,
+  useCanvasToolbarFormatting,
+} from './useCanvasToolbarFormatting'
+export {
+  useFollowNodeStyleToolbar,
+  setFollowNodeStyleToolbar,
+} from './useFollowNodeStyleToolbar'
 export {
   useMindMapSideToolbarState,
   bindMindMapExternalPanelClose,

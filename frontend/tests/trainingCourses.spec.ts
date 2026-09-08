@@ -146,7 +146,6 @@ describe('training course playback', () => {
     expect(trainingFocusOptions('mindgraph', 'language-settings').map((item) => item.key)).toEqual([
       'mindmap-v1',
       'mindmap-v2',
-      'mindmap-v3',
     ])
     expect(trainingFocusOptions('auth', null).map((item) => item.key)).toEqual([
       'auth-login',

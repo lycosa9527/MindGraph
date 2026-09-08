@@ -1,5 +1,6 @@
 import type { Connection, DiagramData, DiagramNode } from '@/types'
 import {
+  isMindMapAssociationConnection,
   isMindMapBranchNode,
   isPositionalMindMapBranchId,
   mindMapNodeSide,
@@ -16,7 +17,10 @@ function getMindMapTextSegments(
 ): string[] | null {
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
   const parentOf = new Map<string, string>()
-  connections.forEach((c) => parentOf.set(c.target, c.source))
+  connections.forEach((c) => {
+    if (isMindMapAssociationConnection(c)) return
+    parentOf.set(c.target, c.source)
+  })
 
   const segments: string[] = []
   let current: string | undefined = nodeId
@@ -38,7 +42,9 @@ function findNodeIdByTextSegments(
   if (segments.length === 0) return null
 
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
-  const childIds = connections.filter((c) => c.source === parentId).map((c) => c.target)
+  const childIds = connections
+    .filter((c) => c.source === parentId && !isMindMapAssociationConnection(c))
+    .map((c) => c.target)
 
   for (const childId of childIds) {
     if ((nodeMap.get(childId)?.text ?? '') !== segments[0]) continue
@@ -343,7 +349,7 @@ export function getMindMapVisibleCollapsedNodeIds(
 }
 
 export function mindMapNodeHasChildren(nodeId: string, connections: Connection[]): boolean {
-  return connections.some((c) => c.source === nodeId)
+  return connections.some((c) => c.source === nodeId && !isMindMapAssociationConnection(c))
 }
 
 export function mindMapDescendantCount(

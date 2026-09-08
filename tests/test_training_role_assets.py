@@ -130,6 +130,10 @@ async def test_packed_role_download_redirects_to_cos() -> None:
         patch("routers.api.training_asset_routes.can_read_packed_role", new=AsyncMock(return_value=True)),
         patch("routers.api.training_asset_routes.cos_training_enabled", return_value=True),
         patch("routers.api.training_asset_routes.config") as mock_config,
+        patch(
+            "routers.api.training_asset_routes.packed_role_cos_prefixes",
+            return_value=("dev/training",),
+        ),
         patch("routers.api.training_asset_routes.ensure_packed_roles_on_cos", new=AsyncMock()),
         patch(
             "routers.api.training_asset_routes.create_presigned_get",

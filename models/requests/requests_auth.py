@@ -901,7 +901,16 @@ class LanguagePreferencesUpdate(BaseModel):
         return stripped
 
 
-_V3_RIBBON_TABS = frozenset(("file", "home", "design", "review", "ai"))
+_V3_RIBBON_TABS = frozenset(("file", "edit", "ai", "teaching", "research"))
+_V3_RIBBON_TAB_ALIASES = {
+    "home": "edit",
+    "draw": "edit",
+    "style": "edit",
+    "insert": "edit",
+    "design": "edit",
+    "learn": "teaching",
+    "review": "teaching",
+}
 
 
 class DiagramPreferencesUpdate(BaseModel):
@@ -928,7 +937,7 @@ class DiagramPreferencesUpdate(BaseModel):
     v3_ribbon_tab: Optional[str] = Field(
         None,
         max_length=16,
-        description="Last V3 ribbon tab (file|home|design|review|ai)",
+        description="Last V3 ribbon tab (file|edit|ai|teaching|research)",
     )
 
     @field_validator("education_stage")
@@ -960,6 +969,7 @@ class DiagramPreferencesUpdate(BaseModel):
         if value is None:
             return None
         stripped = value.strip().lower()
+        stripped = _V3_RIBBON_TAB_ALIASES.get(stripped, stripped)
         if stripped not in _V3_RIBBON_TABS:
-            raise ValueError("v3_ribbon_tab must be file, home, design, review, or ai")
+            raise ValueError("v3_ribbon_tab must be file, edit, ai, teaching, or research")
         return stripped

@@ -6,10 +6,9 @@ import { computed, ref, watch } from 'vue'
 
 import { ElDropdown, ElTooltip } from 'element-plus'
 
-import { Check, Palette } from '@lucide/vue'
+import { Check, ChevronDown, Palette } from '@lucide/vue'
 
 import MindMapDiagramStylePreview from '@/components/canvas/MindMapDiagramStylePreview.vue'
-import MindMapNumberingControls from '@/components/canvas/MindMapNumberingControls.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import {
@@ -25,19 +24,15 @@ import {
 import { MIND_MAP_RAINBOW_THEME_ID } from '@/config/mindMapVibrantThemes'
 import { useDiagramStore } from '@/stores'
 
-withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
+const props = withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
 
 const { t } = useLanguage()
 const notify = useNotifications()
 const diagramStore = useDiagramStore()
 
 const dropdownOpen = ref(false)
-const numberingOverlayLock = ref(false)
 
 function handleAppearanceVisible(visible: boolean): void {
-  if (!visible && numberingOverlayLock.value) {
-    return
-  }
   dropdownOpen.value = visible
 }
 
@@ -117,12 +112,21 @@ function handlePickRainbow(): void {
           class="mm-btn mm-btn--appearance"
           :aria-label="t('canvas.toolbar.mindMapAppearanceLabel')"
         >
-          <Palette class="w-4 h-4 text-gray-500 shrink-0" />
+          <Palette class="w-4 h-4 shrink-0" />
           <span
             class="mm-btn__color-dot"
             :class="{ 'mm-btn__color-dot--rainbow': isRainbowActive }"
             :style="isRainbowActive ? undefined : { backgroundColor: activeTheme.topicBorderColor }"
             aria-hidden="true"
+          />
+          <span
+            v-if="!props.compact"
+            class="mm-btn__label"
+            >{{ t('canvas.ribbon.themeStyle') }}</span
+          >
+          <ChevronDown
+            :size="12"
+            class="mm-btn__chevron"
           />
         </button>
         <template #dropdown>
@@ -141,6 +145,22 @@ function handlePickRainbow(): void {
                 :aria-label="t('canvas.toolbar.mindMapAppearanceThemeColor')"
               >
                 <button
+                  type="button"
+                  class="mm-appearance-color-dot mm-appearance-color-dot--rainbow"
+                  :class="{ 'is-active': isRainbowActive }"
+                  :title="t('canvas.toolbar.mindMapThemeRainbow')"
+                  :aria-label="t('canvas.toolbar.mindMapThemeRainbow')"
+                  :aria-selected="isRainbowActive"
+                  role="option"
+                  @click="handlePickRainbow()"
+                >
+                  <Check
+                    v-if="isRainbowActive"
+                    class="mm-appearance-color-dot__check"
+                    :stroke-width="3"
+                  />
+                </button>
+                <button
                   v-for="theme in commonThemes"
                   :key="theme.id"
                   type="button"
@@ -155,22 +175,6 @@ function handlePickRainbow(): void {
                 >
                   <Check
                     v-if="theme.id === activeThemeId"
-                    class="mm-appearance-color-dot__check"
-                    :stroke-width="3"
-                  />
-                </button>
-                <button
-                  type="button"
-                  class="mm-appearance-color-dot mm-appearance-color-dot--rainbow"
-                  :class="{ 'is-active': isRainbowActive }"
-                  :title="t('canvas.toolbar.mindMapThemeRainbow')"
-                  :aria-label="t('canvas.toolbar.mindMapThemeRainbow')"
-                  :aria-selected="isRainbowActive"
-                  role="option"
-                  @click="handlePickRainbow()"
-                >
-                  <Check
-                    v-if="isRainbowActive"
                     class="mm-appearance-color-dot__check"
                     :stroke-width="3"
                   />
@@ -206,8 +210,6 @@ function handlePickRainbow(): void {
                 </button>
               </div>
             </div>
-
-            <MindMapNumberingControls @overlay-lock="numberingOverlayLock = $event" />
           </div>
         </template>
       </ElDropdown>
@@ -221,21 +223,29 @@ function handlePickRainbow(): void {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  height: 32px;
-  padding: 0 10px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #fff;
-  color: #374151;
+  height: 28px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #4b5563;
   font-size: 12px;
   line-height: 1;
   white-space: nowrap;
   flex-shrink: 0;
   cursor: pointer;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+  transition: background 0.12s ease;
+  box-shadow: none;
+}
+
+.mm-btn:hover {
+  background: #e5e7eb;
+}
+
+.mm-btn__chevron {
+  width: 12px;
+  height: 12px;
+  color: #9ca3af;
 }
 
 .mm-btn--appearance {

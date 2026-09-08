@@ -15,6 +15,7 @@ import { Menu } from '@element-plus/icons-vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useTheme } from '@/composables/core/useTheme'
+import { associationLinePendingEditId } from '@/composables/mindMap/useMindMapAssociationLine'
 import { getPositionsFromAngle } from '@/composables/diagramCanvas/conceptMapLinkPreviewGeometry'
 import { CONCEPT_MAP_GENERATING_KEY } from '@/composables/editor/useConceptMapRelationship'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
@@ -68,6 +69,8 @@ const isEdgeSelected = computed(() => diagramStore.selectedConnectionId === prop
 const relationshipPlaceholder = computed(() => t('diagram.relationshipPlaceholder', '输入关系...'))
 
 const isConceptMap = computed(() => (props.data?.diagramType as DiagramType) === 'concept_map')
+const isAssociation = computed(() => props.data?.isAssociation === true)
+const isRelationshipLabel = computed(() => isConceptMap.value || isAssociation.value)
 
 /** Topic → default root concept (“根概念”): label is fixed; no inline edit */
 const isTopicRootLabelLocked = computed(() => {
@@ -99,11 +102,21 @@ watch(
   { immediate: true }
 )
 
+watch(
+  associationLinePendingEditId,
+  (id) => {
+    if (id !== props.id) return
+    associationLinePendingEditId.value = null
+    startEditing()
+  },
+  { immediate: true }
+)
+
 function startEditing() {
-  if (!isConceptMap.value || isTopicRootLabelLocked.value) return
+  if (!isRelationshipLabel.value || isTopicRootLabelLocked.value) return
   isEditing.value = true
   editText.value = props.data?.label || ''
-  useConceptMapRelationshipStore().clearAll()
+  if (isConceptMap.value) useConceptMapRelationshipStore().clearAll()
   nextTick(() => {
     if (isEditing.value) {
       focusHtmlControl(inputRef.value)
@@ -112,13 +125,13 @@ function startEditing() {
 }
 
 function saveLabel() {
-  if (!isConceptMap.value || isTopicRootLabelLocked.value) return
+  if (!isRelationshipLabel.value || isTopicRootLabelLocked.value) return
   isEditing.value = false
   const trimmed = editText.value.trim()
   if (trimmed !== (props.data?.label || '')) {
     diagramStore.updateConnectionLabel(props.id, trimmed)
     diagramStore.pushHistory('Update relationship')
-    if (trimmed === '') {
+    if (trimmed === '' && isConceptMap.value) {
       eventBus.emit('concept_map:label_cleared', {
         connectionId: props.id,
         sourceId: props.source,
@@ -139,7 +152,7 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 function handleLabelClick(e: MouseEvent) {
-  if (!isConceptMap.value) return
+  if (!isRelationshipLabel.value) return
   if (isEditing.value) return
   if (e.ctrlKey || e.metaKey) {
     e.preventDefault()
@@ -148,6 +161,7 @@ function handleLabelClick(e: MouseEvent) {
     return
   }
   diagramStore.selectConnection(props.id)
+  if (isAssociation.value) startEditing()
 }
 
 function onConceptMapCurveHitClick(e: MouseEvent) {
@@ -564,24 +578,24 @@ const targetMarkerEnd = computed(() =>
       <div
         class="edge-label"
         :class="{
-          'edge-label-concept-map': isConceptMap,
-          'edge-label-box': !isConceptMap,
-          'edge-label-selected': isConceptMap && isEdgeSelected,
-          'pointer-events-none': !isConceptMap,
-          nopan: isConceptMap,
-          'cursor-text': isConceptMap && !isEditing && !isTopicRootLabelLocked,
+          'edge-label-concept-map': isRelationshipLabel,
+          'edge-label-box': !isRelationshipLabel,
+          'edge-label-selected': isRelationshipLabel && isEdgeSelected,
+          'pointer-events-none': !isRelationshipLabel,
+          nopan: isRelationshipLabel,
+          'cursor-text': isRelationshipLabel && !isEditing && !isTopicRootLabelLocked,
           'cursor-default': isConceptMap && isTopicRootLabelLocked,
         }"
         :style="{
           color: isConceptMap ? relationshipColor : undefined,
-          pointerEvents: isConceptMap ? 'auto' : undefined,
+          pointerEvents: isRelationshipLabel ? 'auto' : undefined,
         }"
         @click.stop="handleLabelClick"
         @dblclick.stop="startEditing()"
       >
         <span>
           <input
-            v-if="isConceptMap && isEditing"
+            v-if="isRelationshipLabel && isEditing"
             ref="inputRef"
             v-model="editText"
             type="text"
@@ -593,7 +607,8 @@ const targetMarkerEnd = computed(() =>
           <span
             v-else
             :class="{
-              'edge-label-placeholder': isConceptMap && !data?.label?.trim() && !isGenerating,
+              'edge-label-placeholder':
+                isRelationshipLabel && !data?.label?.trim() && !isGenerating,
             }"
           >
             {{
@@ -601,7 +616,7 @@ const targetMarkerEnd = computed(() =>
                 ? data.label
                 : isGenerating
                   ? (t('diagram.aiGenerating', 'AI...') as string)
-                  : isConceptMap
+                  : isRelationshipLabel
                     ? relationshipPlaceholder
                     : ''
             }}

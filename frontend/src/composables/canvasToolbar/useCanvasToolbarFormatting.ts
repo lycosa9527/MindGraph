@@ -1,13 +1,68 @@
-import { ref, watch, type Ref } from 'vue'
+import { ref, shallowRef, watch, type Ref } from 'vue'
 
+import {
+  collectFormatBrushStyle,
+  FORMAT_BRUSH_DOUBLE_CLICK_MS,
+  formatBrushTargetsFromSelection,
+  resolveFormatPainterClick,
+} from '@/composables/canvasToolbar/formatBrushStyle'
+import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
-import { STYLE_PRESET_PALETTES, type StylePresetColors } from '@/config/colorPalette'
-import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { STYLE_PRESET_PALETTES, type StylePresetColors } from '@/config/colorPalette'
+import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
+import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
+import { getMindMapThemeForDiagram, mindMapStyleFromTheme } from '@/config/mindMapThemes'
+import type { NodeStyle } from '@/types'
 import { type BorderStyleType, getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { colorToHex, hexToRgba, parseAlphaFromColor } from '@/utils/colorFormat'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
+
+export const formatBrushActive = ref(false)
+export const formatBrushLocked = ref(false)
+const formatBrushStyle = ref<NodeStyle | null>(null)
+const formatBrushSourceIds = ref<string[]>([])
+let lastFormatBrushClickAt = 0
+let formatBrushActivateToastTimer: ReturnType<typeof setTimeout> | null = null
+
+let formatBrushSelectionWatchBound = false
+let formatBrushEscapeBound = false
+let formatBrushPaneBound = false
+let applyFormatBrushToIds: ((ids: string[]) => void) | null = null
+let cancelFormatBrush: ((options?: { silent?: boolean }) => void) | null = null
+let formatBrushDiagramStore = shallowRef<ReturnType<typeof useDiagramSession> | null>(null)
+
+export function resetFormatBrushState(): void {
+  formatBrushActive.value = false
+  formatBrushLocked.value = false
+  formatBrushStyle.value = null
+  formatBrushSourceIds.value = []
+  lastFormatBrushClickAt = 0
+  if (formatBrushActivateToastTimer !== null) {
+    clearTimeout(formatBrushActivateToastTimer)
+    formatBrushActivateToastTimer = null
+  }
+  if (typeof document !== 'undefined') {
+    document.documentElement.classList.remove('mg-format-brush-active')
+  }
+}
+
+function syncFormatBrushCursor(active: boolean): void {
+  if (typeof document === 'undefined') return
+  document.documentElement.classList.toggle('mg-format-brush-active', active)
+}
+
+function onFormatBrushEscape(event: KeyboardEvent): void {
+  if (event.key !== 'Escape' || !formatBrushActive.value) return
+  cancelFormatBrush?.({ silent: false })
+}
+
+function onFormatBrushPaneClick(): void {
+  if (!formatBrushActive.value) return
+  cancelFormatBrush?.({ silent: false })
+  if (formatBrushActive.value) resetFormatBrushState()
+}
 
 export function useCanvasToolbarFormatting(options?: {
   silentUpdates?: boolean
@@ -26,9 +81,6 @@ export function useCanvasToolbarFormatting(options?: {
     const pinned = pinnedNodeId?.value
     return pinned ? [pinned] : []
   }
-
-  const formatBrushActive = ref(false)
-  const formatBrushStyle = ref<import('@/types').NodeStyle | null>(null)
 
   const fontFamily = ref('Inter')
   const fontSize = ref(14)
@@ -345,8 +397,9 @@ export function useCanvasToolbarFormatting(options?: {
     },
     (node) => {
       if (node) {
-        const s = node.style
-        if (s) {
+        const persisted = diagramStore.getNodeStyle(node.id)
+        const s = { ...(persisted || {}), ...(node.style || {}) }
+        if (Object.keys(s).length > 0) {
           if (s.fontFamily) fontFamily.value = s.fontFamily
           if (s.fontSize) fontSize.value = s.fontSize
           if (s.textColor) textColor.value = s.textColor
@@ -368,70 +421,159 @@ export function useCanvasToolbarFormatting(options?: {
     { deep: true }
   )
 
-  function handleFormatBrush() {
-    const styleKeys: (keyof import('@/types').NodeStyle)[] = [
-      'backgroundColor',
-      'borderColor',
-      'textColor',
-      'fontSize',
-      'fontFamily',
-      'fontWeight',
-      'fontStyle',
-      'textDecoration',
-      'textAlign',
-      'borderWidth',
-      'borderStyle',
-      'borderRadius',
-      'nodeShape',
-    ]
-
-    if (!formatBrushActive.value) {
-      const sourceId = diagramStore.selectedNodes[0]
-      if (!sourceId) {
-        notify.warning(t('canvas.toolbar.formatBrushSelectSource'))
-        return
-      }
-      const sourceNode = diagramStore.data?.nodes?.find((n) => n.id === sourceId)
-      if (!sourceNode) return
-
-      const copiedStyle: import('@/types').NodeStyle = {}
-      for (const key of styleKeys) {
-        if (sourceNode.style?.[key] !== undefined) {
-          ;(copiedStyle as Record<string, unknown>)[key] = sourceNode.style[key]
-        }
-      }
-      formatBrushStyle.value = copiedStyle
-      formatBrushActive.value = true
-      notify.success(t('canvas.toolbar.formatBrushActivated'))
-      return
+  function snapshotFormatBrushStyle(nodeId: string): NodeStyle | null {
+    const sourceNode = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
+    if (!sourceNode) return null
+    const persisted = diagramStore.getNodeStyle(nodeId)
+    const isMindMap = diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map'
+    const themeFallback = isMindMap
+      ? mindMapStyleFromTheme(
+          sourceNode,
+          getMindMapThemeForDiagram(diagramStore.data),
+          diagramStore.data?._mindmap_diagram_style,
+          diagramStore.data?.connections
+        )
+      : undefined
+    const copied = collectFormatBrushStyle(sourceNode.style, persisted, themeFallback)
+    if (!copied.nodeShape && isMindMap) {
+      copied.nodeShape = resolveMindMapNodeShape(
+        {
+          id: sourceNode.id,
+          type: sourceNode.type,
+          style: { ...themeFallback, ...persisted, ...sourceNode.style },
+        },
+        diagramStore.data?._mindmap_diagram_style
+      )
     }
+    return copied
+  }
 
-    const targetIds = diagramStore.selectedNodes
-    if (!targetIds.length) {
-      formatBrushActive.value = false
-      formatBrushStyle.value = null
-      notify.info(t('canvas.toolbar.formatBrushCancelled'))
-      return
-    }
-
+  function applyCopiedFormatBrush(ids: string[]): void {
     const style = formatBrushStyle.value
-    if (!style) return
-
+    if (!style || ids.length === 0) return
     diagramStore.pushHistory(t('canvas.toolbar.formatPainter'))
-    targetIds.forEach((nodeId) => {
+    ids.forEach((nodeId) => {
       const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
       if (node) {
         diagramStore.updateNode(nodeId, { style: { ...(node.style || {}), ...style } })
       }
     })
+    const keepActive = formatBrushLocked.value
+    const count = ids.length
+    if (keepActive) {
+      formatBrushSourceIds.value = [...formatBrushSourceIds.value, ...ids]
+      return
+    }
+    resetFormatBrushState()
+    if (notifyOnApply) notify.success(t('canvas.toolbar.formatBrushApplied', { count }))
+  }
 
-    formatBrushActive.value = false
-    formatBrushStyle.value = null
-    notify.success(t('canvas.toolbar.formatBrushApplied', { count: targetIds.length }))
+  function cancelCopiedFormatBrush(options?: { silent?: boolean }): void {
+    if (!formatBrushActive.value) return
+    resetFormatBrushState()
+    if (!options?.silent) notify.info(t('canvas.toolbar.formatBrushCancelled'))
+  }
+
+  applyFormatBrushToIds = applyCopiedFormatBrush
+  cancelFormatBrush = cancelCopiedFormatBrush
+  formatBrushDiagramStore.value = diagramStore
+
+  if (!formatBrushSelectionWatchBound) {
+    formatBrushSelectionWatchBound = true
+    watch(
+      () => formatBrushDiagramStore.value?.selectedNodes.join('\0') ?? '',
+      (joined) => {
+        if (!formatBrushActive.value || !formatBrushStyle.value) return
+        const ids = joined ? joined.split('\0') : []
+        const targets = formatBrushTargetsFromSelection(ids, formatBrushSourceIds.value)
+        if (!targets.length) return
+        applyFormatBrushToIds?.(targets)
+      }
+    )
+  }
+
+  if (!formatBrushEscapeBound && typeof document !== 'undefined') {
+    formatBrushEscapeBound = true
+    document.addEventListener('keydown', onFormatBrushEscape)
+  }
+
+  if (!formatBrushPaneBound) {
+    formatBrushPaneBound = true
+    eventBus.on('canvas:pane_clicked', onFormatBrushPaneClick)
+  }
+
+  watch(formatBrushActive, (active) => {
+    syncFormatBrushCursor(active)
+  })
+
+  function pickupFormatBrush(lock: boolean): boolean {
+    const sourceIds = diagramStore.selectedNodes
+    const sourceId = sourceIds[0]
+    if (!sourceId) {
+      notify.warning(t('canvas.toolbar.formatBrushSelectSource'))
+      return false
+    }
+    const copiedStyle = snapshotFormatBrushStyle(sourceId)
+    if (!copiedStyle || Object.keys(copiedStyle).length === 0) return false
+    formatBrushStyle.value = copiedStyle
+    formatBrushSourceIds.value = [...sourceIds]
+    formatBrushActive.value = true
+    formatBrushLocked.value = lock
+    syncFormatBrushCursor(true)
+    return true
+  }
+
+  function announceFormatBrushMode(lock: boolean): void {
+    if (!notifyOnApply) return
+    if (formatBrushActivateToastTimer !== null) {
+      clearTimeout(formatBrushActivateToastTimer)
+      formatBrushActivateToastTimer = null
+    }
+    if (lock) {
+      notify.success(t('canvas.toolbar.formatBrushActivated'))
+      return
+    }
+    formatBrushActivateToastTimer = setTimeout(() => {
+      formatBrushActivateToastTimer = null
+      if (formatBrushActive.value && !formatBrushLocked.value) {
+        notify.success(t('canvas.toolbar.formatBrushActivated'))
+      }
+    }, FORMAT_BRUSH_DOUBLE_CLICK_MS)
+  }
+
+  function handleFormatBrush(options?: { lock?: boolean }): void {
+    const now = Date.now()
+    const action = resolveFormatPainterClick({
+      active: formatBrushActive.value,
+      locked: formatBrushLocked.value,
+      lockRequested: Boolean(options?.lock),
+      elapsedMs: now - lastFormatBrushClickAt,
+    })
+    lastFormatBrushClickAt = now
+
+    if (action === 'noop') return
+    if (action === 'cancel') {
+      cancelCopiedFormatBrush()
+      return
+    }
+
+    if (action === 'activate') {
+      if (!pickupFormatBrush(false)) return
+      announceFormatBrushMode(false)
+      return
+    }
+
+    if (!formatBrushActive.value) {
+      if (!pickupFormatBrush(true)) return
+    } else {
+      formatBrushLocked.value = true
+    }
+    announceFormatBrushMode(true)
   }
 
   return {
     formatBrushActive,
+    formatBrushLocked,
     stylePresets,
     fontFamily,
     fontSize,

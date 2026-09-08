@@ -29,7 +29,7 @@ const uiStore = useUIStore()
 const authStore = useAuthStore()
 const { t } = useLanguage()
 const notify = useNotifications()
-const { featureMindmapV2Canvas, featureMindmapV3Canvas } = useFeatureFlags()
+const { featureMindmapV2Canvas } = useFeatureFlags()
 
 const draftUi = ref<Language>(uiStore.language)
 const draftPrompt = ref<PromptLanguage>(uiStore.promptLanguage)
@@ -301,7 +301,7 @@ function onClose(): void {
           <span>{{ t('settings.language.mindMapCanvas') }}</span>
         </div>
         <!--
-          Swiss equal-split segmented control (V1 / V2 / V3).
+          Swiss equal-split segmented control (Classic / New).
           Use plain <button role="radio"> — NOT ElRadioGroup/ElRadioButton (shows circles).
           Styles: settings-language-swiss.css → .language-settings-canvas-segmented / -segment
           Active segment: .is-active on the selected button; v-model via click + :class binding.
@@ -332,20 +332,6 @@ function onClose(): void {
             @click="draftMindMapCanvasMode = 'v2'"
           >
             {{ t('settings.language.mindMapCanvasV2') }}
-          </button>
-          <!-- V3 = bubble-style chrome (old JS bars); the diagram stays V2. -->
-          <button
-            v-if="featureMindmapV3Canvas"
-            type="button"
-            role="radio"
-            class="language-settings-canvas-segment"
-            data-testid="mindmap-canvas-v3-segment"
-            data-training-target="mindmap-v3"
-            :class="{ 'is-active': draftMindMapCanvasMode === 'v3' }"
-            :aria-checked="draftMindMapCanvasMode === 'v3'"
-            @click="draftMindMapCanvasMode = 'v3'"
-          >
-            {{ t('settings.language.mindMapCanvasV3') }}
           </button>
         </div>
         <p class="language-settings-swiss__hint">

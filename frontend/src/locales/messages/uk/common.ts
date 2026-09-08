@@ -276,7 +276,6 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'Класичне полотно',
   'settings.language.mindMapCanvasV2': 'V2',
   'settings.language.mindMapCanvasV1': 'V1',
-  'settings.language.mindMapCanvasV3': 'V3',
   'settings.language.mindMapCanvasRefreshHint': 'Оновіть сторінку полотна після перемикання для повного ефекту',
   'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
   'settings.language.eBlackboardOff': 'Off',

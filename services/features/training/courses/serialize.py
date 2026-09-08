@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from models.domain.training import TrainingCourse, TrainingCourseAsset, TrainingCourseStep
+from services.features.training.courses.constants import normalize_mindmap_canvas_mode
 from services.features.training.storage.keys import training_public_asset_url
 
 
@@ -78,7 +79,7 @@ def serialize_step(
         "overlays": payload.get("overlays") or [],
         "page_key": page_key,
         "pull_users": bool(pull_users),
-        "mindmap_canvas_mode": payload.get("mindmap_canvas_mode"),
+        "mindmap_canvas_mode": normalize_mindmap_canvas_mode(payload.get("mindmap_canvas_mode")),
         "modal_key": payload.get("modal_key"),
         "focus_key": payload.get("focus_key"),
         "notes": str(payload.get("notes") or ""),
@@ -127,7 +128,7 @@ def snapshot_step_payload(step_body: dict[str, Any]) -> dict[str, Any]:
         "overlays": step_body.get("overlays") or [],
         "page_key": step_body.get("page_key"),
         "pull_users": bool(step_body.get("pull_users")),
-        "mindmap_canvas_mode": step_body.get("mindmap_canvas_mode"),
+        "mindmap_canvas_mode": normalize_mindmap_canvas_mode(step_body.get("mindmap_canvas_mode")),
         "modal_key": step_body.get("modal_key"),
         "focus_key": step_body.get("focus_key"),
         "mark_step": step_body.get("mark_step") or 1,

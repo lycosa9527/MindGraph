@@ -8,7 +8,7 @@ import { ElAvatar } from 'element-plus'
 
 import { Camera, Mic, Send } from '@lucide/vue'
 
-import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.vue'
+import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import OneSentenceKittyAvatar from '@/components/canvas/OneSentenceKittyAvatar.vue'
 import OneSentenceNodeActionGuide from '@/components/canvas/OneSentenceNodeActionGuide.vue'
 import KittyBlackCatMascot from '@/components/kitty/KittyBlackCatMascot.vue'
@@ -170,16 +170,13 @@ onUnmounted(() => {
 
 <template>
   <aside
-    class="mind-map-side-rail-panel mind-map-one-sentence-panel pointer-events-auto w-88"
+    class="mind-map-side-rail-panel mind-map-one-sentence-panel pointer-events-auto w-88 ai-gen-shell ai-gen-shell--oneSentence"
     :aria-label="t('canvas.mindMapSideToolbar.oneSentence')"
   >
-    <MindMapSidePanelHeader
-      :title="t('canvas.mindMapSideToolbar.oneSentence')"
-      :intro="t('canvas.mindMapSideToolbar.oneSentenceIntro')"
+    <AiGenerateGlassHero
+      variant="oneSentence"
       @close="handleClose"
     />
-
-    <div class="shrink-0 border-b border-slate-100 px-3 py-2" />
 
     <div
       :ref="setChatScrollEl"
@@ -257,7 +254,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <footer class="one-sentence-footer shrink-0 bg-white px-3 pb-3 pt-2">
+    <footer class="one-sentence-footer shrink-0 px-3 pb-3 pt-2">
       <p
         v-if="kittySessionDivergence"
         class="one-sentence-scope-divergence mb-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-[11px] leading-snug text-sky-950"

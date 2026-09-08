@@ -4,6 +4,8 @@
  */
 
 export interface CanvasWorksheetTextOptions {
+  /** When false, export is a plain DOC/PDF with no classroom header. */
+  learningSheetMode: boolean
   showTopic: boolean
   showName: boolean
   showClass: boolean
@@ -24,6 +26,7 @@ export interface CanvasWorksheetTextOptions {
 }
 
 export const DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS: CanvasWorksheetTextOptions = {
+  learningSheetMode: false,
   showTopic: true,
   showName: true,
   showClass: true,
@@ -39,6 +42,7 @@ export const DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS: CanvasWorksheetTextOptions =
 /** Classroom-friendly preset applied from the modal reset action. */
 export const CLASSROOM_WORKSHEET_TEXT_PRESET: CanvasWorksheetTextOptions = {
   ...DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS,
+  learningSheetMode: true,
 }
 
 /** v2 — defaults flipped to show-all; ignore stale v1 all-hidden session values. */
@@ -59,7 +63,7 @@ function readScale(value: unknown, fallback: number): number {
 }
 
 export function hasActiveWorksheetHeader(options: CanvasWorksheetTextOptions | undefined): boolean {
-  if (!options) return false
+  if (!options?.learningSheetMode) return false
   return (
     options.showTopic ||
     options.showName ||
@@ -86,6 +90,7 @@ export function loadCanvasWorksheetTextOptions(): CanvasWorksheetTextOptions {
     const parsed = JSON.parse(raw) as Partial<CanvasWorksheetTextOptions>
     const defaults = DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS
     return {
+      learningSheetMode: readBoolean(parsed.learningSheetMode, defaults.learningSheetMode),
       showTopic: readBoolean(parsed.showTopic, defaults.showTopic),
       showName: readBoolean(parsed.showName, defaults.showName),
       showClass: readBoolean(parsed.showClass, defaults.showClass),

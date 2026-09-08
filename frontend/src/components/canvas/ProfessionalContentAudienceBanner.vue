@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Shows current AI audience level from the top-bar「专业内容」preference.
+ * Shows current AI audience level from the status-bar「专业内容」preference.
  */
 import { computed } from 'vue'
 

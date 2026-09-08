@@ -10,6 +10,8 @@ import { storeToRefs } from 'pinia'
 
 import { ArrowUpRight, Copy, Mic, Pause, Square } from '@lucide/vue'
 
+import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
+import '@/components/canvas/aiGenerateGlass.css'
 import VoiceNotesSpeakerEditor from '@/components/voiceNotes/VoiceNotesSpeakerEditor.vue'
 import VoiceNotesTranscriptPane from '@/components/voiceNotes/VoiceNotesTranscriptPane.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -73,38 +75,31 @@ async function onCopy(): Promise<void> {
 <template>
   <el-dialog
     :model-value="modalOpen && !isMobileShell"
-    width="min(520px, 92vw)"
+    width="min(560px, 92vw)"
+    top="12vh"
     append-to-body
     destroy-on-close
-    align-center
-    class="voice-notes-swiss"
+    class="voice-notes-swiss mm-canvas-upper-dialog ai-gen-shell ai-gen-shell--voice"
+    :show-close="false"
     @close="onClose"
   >
     <template #header>
-      <div class="vn-swiss__header">
+      <AiGenerateGlassHero
+        variant="voice"
+        @close="onClose"
+      />
+      <div class="vn-swiss__note vn-swiss__note--glass">
         <span
-          class="vn-swiss__glyph"
-          aria-hidden="true"
-          >◇</span
+          class="vn-swiss__status"
+          :class="{
+            'vn-swiss__status--dirty': saveKind === 'unsaved',
+            'vn-swiss__status--saving': saveKind === 'saving',
+            'vn-swiss__status--click': statusClickable,
+          }"
+          @click="onStatusClick"
+          >{{ statusLabel }}</span
         >
-        <span class="vn-swiss__title">{{ t('auth.voiceNotes.modalTitle') }}</span>
-        <span
-          class="vn-swiss__divider"
-          aria-hidden="true"
-        />
-        <span class="vn-swiss__note">
-          <span
-            class="vn-swiss__status"
-            :class="{
-              'vn-swiss__status--dirty': saveKind === 'unsaved',
-              'vn-swiss__status--saving': saveKind === 'saving',
-              'vn-swiss__status--click': statusClickable,
-            }"
-            @click="onStatusClick"
-            >{{ statusLabel }}</span
-          >
-          <span class="vn-swiss__elapsed">{{ elapsedLabel }}</span>
-        </span>
+        <span class="vn-swiss__elapsed">{{ elapsedLabel }}</span>
       </div>
     </template>
 
@@ -222,7 +217,8 @@ async function onCopy(): Promise<void> {
   --vn-hover: #f5f5f4;
   --vn-danger: #b91c1c;
 
-  border-radius: 10px;
+  --el-dialog-padding-primary: 0px;
+  border-radius: 22px;
   overflow: hidden;
   border: 1px solid var(--vn-border);
   box-shadow:
@@ -232,7 +228,7 @@ async function onCopy(): Promise<void> {
 
 .voice-notes-swiss .el-dialog__header {
   margin: 0;
-  padding: 1rem 1.25rem 0.75rem;
+  padding: 0;
 }
 
 .voice-notes-swiss .el-dialog__headerbtn {
@@ -288,13 +284,12 @@ async function onCopy(): Promise<void> {
   min-width: 0.75rem;
 }
 
-.vn-swiss__note {
-  display: inline-flex;
+.vn-swiss__note--glass {
+  display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 0.55rem;
-  min-width: 0;
-  flex: 1 1 auto;
+  padding: 0 18px 10px;
   font-size: 0.75rem;
   color: var(--vn-muted, #78716c);
 }

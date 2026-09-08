@@ -27,10 +27,10 @@
 }
 
 .mc-launch--modal .mc-launch__body {
-  gap: 22px;
+  gap: 18px;
   max-height: min(62vh, 560px);
   overflow-y: auto;
-  padding-right: 2px;
+  padding: 2px 0 0;
   scrollbar-gutter: stable;
 }
 
@@ -449,7 +449,10 @@
 }
 
 .mc-launch--modal .mc-launch__footer {
-  margin-top: 14px;
+  margin-top: 16px;
+  padding: 14px 0 16px;
+  background: transparent;
+  border-top-color: rgb(226 232 240 / 0.7);
 }
 
 .mc-launch__hint {

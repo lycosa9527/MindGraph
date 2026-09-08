@@ -1,0 +1,302 @@
+/**
+ * Shared glass-card chrome for document / web / voice AI generate dialogs.
+ * Unified left-blue → right-purple wash (same family as mind-map chrome).
+ */
+
+.ai-gen-shell {
+  --ai-ink: #1f2937;
+  --ai-muted: #6b7280;
+  --ai-ribbon: #5b6fd6;
+  --ai-accent: #6366f1;
+  --ai-wash:
+    linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.18) 0%,
+      rgb(255 255 255 / 0.72) 22%,
+      rgb(255 255 255 / 0.96) 40%,
+      #ffffff 100%
+    ),
+    linear-gradient(
+      90deg,
+      rgb(226 236 248) 0%,
+      rgb(234 232 246) 48%,
+      rgb(242 236 248) 100%
+    );
+  --ai-ribbon-fill: linear-gradient(90deg, #3b82f6 0%, #7c5cbf 100%);
+  --el-dialog-padding-primary: 0px;
+  overflow: hidden;
+  border-radius: 22px !important;
+  border: 1px solid rgb(255 255 255 / 0.72) !important;
+  background: var(--ai-wash) !important;
+  box-shadow: 0 18px 40px rgb(15 23 42 / 0.16) !important;
+  backdrop-filter: blur(18px);
+}
+
+.ai-gen-shell--doc,
+.ai-gen-shell--web,
+.ai-gen-shell--voice,
+.ai-gen-shell--chat,
+.ai-gen-shell--classroom,
+.ai-gen-shell--learningSheet,
+.ai-gen-shell--brainstorm,
+.ai-gen-shell--oneSentence {
+  background: var(--ai-wash) !important;
+}
+
+.mm-canvas-center-modal {
+  background: rgb(15 23 42 / 0.32);
+  backdrop-filter: blur(8px);
+}
+
+.mm-canvas-center-modal .mind-map-document-summary-panel.ai-gen-shell,
+.mm-canvas-center-modal .learning-sheet-glass-panel.ai-gen-shell {
+  width: min(560px, 92vw) !important;
+  max-height: min(78vh, 740px);
+}
+
+.ai-glass-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 4px 16px 0;
+}
+
+.ai-glass-hero {
+  position: relative;
+  width: 100%;
+  min-height: 118px;
+  padding: 22px 10.5rem 18px 88px;
+}
+
+.ai-brainstorm-panel.ai-gen-shell .ai-glass-hero,
+.mind-map-one-sentence-panel.ai-gen-shell .ai-glass-hero {
+  min-height: 100px;
+  padding: 18px 6.75rem 14px 80px;
+}
+
+.ai-brainstorm-panel.ai-gen-shell .ai-glass-hero__icon,
+.mind-map-one-sentence-panel.ai-gen-shell .ai-glass-hero__icon {
+  top: 14px;
+  left: 12px;
+  transform: scale(0.92);
+  transform-origin: top left;
+}
+
+.ai-brainstorm-panel.ai-gen-shell .ai-glass-hero__title,
+.mind-map-one-sentence-panel.ai-gen-shell .ai-glass-hero__title {
+  font-size: 18px;
+}
+
+.ai-glass-hero--learningSheet .ai-glass-hero__lines {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-glass-hero--classroom {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  column-gap: 16px;
+  row-gap: 6px;
+  align-items: center;
+  min-height: 0;
+  padding: 24px 7.25rem 20px 22px;
+}
+
+.ai-glass-hero--classroom .ai-glass-hero__icon {
+  position: relative;
+  top: auto;
+  left: auto;
+  grid-row: 1 / span 2;
+}
+
+.ai-glass-hero--classroom .ai-glass-hero__title {
+  grid-column: 2;
+}
+
+.ai-glass-hero--classroom .ai-glass-hero__lines {
+  grid-column: 2;
+  margin: 0;
+}
+
+.mc-classroom-dialog.ai-gen-shell .el-dialog__body {
+  padding: 4px 22px 0 !important;
+}
+
+.ai-glass-hero__icon {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 64px;
+  height: 64px;
+  z-index: 1;
+}
+
+.ai-glass-icon__plate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.78), rgb(255 255 255 / 0.28));
+  border: 1px solid rgb(255 255 255 / 0.85);
+  box-shadow:
+    0 12px 22px rgb(91 111 214 / 0.22),
+    inset 0 1px 0 rgb(255 255 255 / 0.95);
+  color: var(--ai-ribbon);
+}
+
+.ai-glass-icon__glyph {
+  width: 50px;
+  height: 50px;
+  opacity: 0.95;
+}
+
+.ai-glass-icon__badge {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 4px 10px rgb(15 23 42 / 0.16);
+  color: var(--ai-accent);
+}
+
+.ai-glass-hero__corner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  inset-inline-end: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 32px;
+  padding: 4px 4px 5px 14px;
+  /* Outer corners stay square so overflow:hidden on .ai-gen-shell clips them
+     to the dialog radius. A matching 22px radius here sits on the *inner*
+     curve and leaves a visible gap. */
+  border-radius: 0 0 0 16px;
+  background: var(--ai-ribbon-fill);
+  color: #fff;
+}
+
+.ai-glass-hero__ribbon {
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  padding-right: 4px;
+}
+
+.ai-glass-hero__corner .mind-map-side-panel-close {
+  --el-button-text-color: rgb(255 255 255 / 0.92);
+  --el-button-hover-text-color: #fff;
+  --el-button-hover-bg-color: rgb(255 255 255 / 0.18);
+}
+
+.ai-glass-hero__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+  color: var(--ai-ink);
+}
+
+.ai-glass-hero__lines {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.55;
+  color: var(--ai-muted);
+}
+
+.ai-gen-shell .doc-summary-tab-strip {
+  margin-left: 16px;
+  margin-right: 16px;
+  background: rgb(255 255 255 / 0.55);
+  border-color: rgb(255 255 255 / 0.8);
+}
+
+.ai-gen-shell .doc-summary-generate-btn {
+  background: var(--ai-ribbon-fill);
+  border-color: transparent;
+  color: #fff;
+}
+
+.ai-gen-shell .doc-summary-generate-btn:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.ai-gen-shell .mind-map-side-rail-btn--primary {
+  background: var(--ai-ribbon-fill);
+  border-color: transparent;
+  color: #fff;
+}
+
+.ai-gen-shell.el-dialog {
+  padding: 0 !important;
+}
+
+.ai-gen-shell.el-dialog .el-dialog__header {
+  display: block;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.ai-gen-shell.el-dialog .ai-glass-hero {
+  margin: 0;
+}
+
+.voice-notes-swiss.ai-gen-shell .el-dialog__body {
+  padding: 0 18px 12px;
+}
+
+.voice-notes-swiss.ai-gen-shell .el-dialog__footer {
+  padding: 10px 18px 16px;
+  border-top: 1px solid rgb(255 255 255 / 0.6);
+  background: rgb(255 255 255 / 0.35);
+}
+
+.dark .ai-gen-shell--doc,
+.dark .ai-gen-shell--web,
+.dark .ai-gen-shell--voice,
+.dark .ai-gen-shell--chat,
+.dark .ai-gen-shell--classroom,
+.dark .ai-gen-shell--learningSheet,
+.dark .ai-gen-shell--brainstorm,
+.dark .ai-gen-shell--oneSentence,
+.dark .ai-gen-shell {
+  --ai-wash:
+    linear-gradient(
+      180deg,
+      rgb(31 41 55 / 0.2) 0%,
+      rgb(31 41 55 / 0.72) 24%,
+      #1f2937 44%,
+      #1f2937 100%
+    ),
+    linear-gradient(90deg, rgb(42 58 82 / 0.7) 0%, rgb(52 48 78 / 0.72) 100%);
+  background: var(--ai-wash) !important;
+  border-color: rgb(255 255 255 / 0.12) !important;
+}
+
+.dark .ai-glass-hero__title {
+  color: #f8fafc;
+}
+
+.dark .ai-glass-hero__lines {
+  color: #94a3b8;
+}
+
+.dark .ai-glass-icon__plate {
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.14), rgb(255 255 255 / 0.05));
+  border-color: rgb(255 255 255 / 0.18);
+}

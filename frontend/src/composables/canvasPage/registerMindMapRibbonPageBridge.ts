@@ -1,11 +1,11 @@
 /**
- * CanvasPage listeners for V3 ribbon commands that the page already owns.
+ * CanvasPage listeners for ribbon commands that the page already owns.
  */
 import { type Ref } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 
-export function registerV3RibbonPageBridge(options: {
+export function registerMindMapRibbonPageBridge(options: {
   handleSaveKey: () => void | Promise<void>
   handleSnapshotRecall: (version: number) => void
   handleSnapshotDelete: (version: number) => void

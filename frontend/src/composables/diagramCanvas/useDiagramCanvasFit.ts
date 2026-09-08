@@ -5,6 +5,7 @@ import { useVueFlow } from '@vue-flow/core'
 
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { ANIMATION, CANVAS, FIT_PADDING, PANEL, ZOOM } from '@/config/uiConfig'
 import type { usePanelsStore } from '@/stores/panels'
 import { useUIStore } from '@/stores/ui'
@@ -87,7 +88,8 @@ export function useDiagramCanvasFit(options: {
   const useMindMapV2 = computed(() =>
     isSessionMindMapV2VisualDesignActive(diagramStore.mindMapCanvasMode)
   )
-  const { sidebarExpanded, sidebarVisible } = useMindMapSideToolbarState()
+  const { sidebarExpanded } = useMindMapSideToolbarState()
+  const mindMapV2Chrome = useMindMapV2Chrome()
   const isFittedForPanel = ref(false)
   const hasInitialFitDoneForDiagram = ref(false)
   let fitFromNodesChangeTimeoutId: ReturnType<typeof setTimeout> | null = null
@@ -193,9 +195,12 @@ export function useDiagramCanvasFit(options: {
   }
 
   function getFitViewTopPx(): number {
-    return diagramStore.type === 'concept_map'
-      ? FIT_PADDING.TOP_UI_HEIGHT_PX + FIT_PADDING.MAIN_TOPIC_MENU_ICON_PX
+    const chromeTop = mindMapV2Chrome.value
+      ? FIT_PADDING.MIND_MAP_TWO_ROW_CHROME_PX
       : FIT_PADDING.TOP_UI_HEIGHT_PX
+    return diagramStore.type === 'concept_map'
+      ? chromeTop + FIT_PADDING.MAIN_TOPIC_MENU_ICON_PX
+      : chromeTop
   }
 
   function getFitViewBottomPx(): number {
@@ -217,7 +222,7 @@ export function useDiagramCanvasFit(options: {
       isMindMapDiagramType(diagramStore.type) &&
       useMindMapV2.value &&
       !presentationRailOpen.value &&
-      sidebarVisible.value
+      sidebarExpanded.value
     )
   }
 

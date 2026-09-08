@@ -1,12 +1,14 @@
 /**
  * Mind-map side-rail panel shell + Swiss stone buttons.
- * Bottom inset matches FIT_PADDING.BOTTOM_UI_HEIGHT_PX (88) so panels clear the bottom toolbox.
+ * Bottom inset defaults to FIT_PADDING.BOTTOM_UI_HEIGHT_PX (88) so panels clear
+ * the floating bottom toolbox. Ribbon chrome puts the status bar in layout
+ * (not over the canvas), so --mm-side-rail-bottom is tightened on that page.
  */
 
 .mind-map-side-rail-panel {
   position: absolute;
   top: 0.75rem;
-  bottom: 88px;
+  bottom: var(--mm-side-rail-bottom, 88px);
   left: 0.75rem;
   z-index: 40;
   display: flex;
@@ -16,6 +18,41 @@
   border: 1px solid var(--swiss-border, #e7e5e4);
   background: var(--swiss-surface, #ffffff);
   box-shadow: 0 1px 2px rgb(28 25 23 / 0.06);
+}
+
+.canvas-page--mm-ribbon {
+  --mm-side-rail-bottom: 0.5rem;
+}
+
+.canvas-page--mm-ribbon .canvas-chrome {
+  box-shadow: none;
+}
+
+/* Document / web generate + voice notes: upper-center overlay. */
+.mm-canvas-upper-dialog.el-dialog {
+  margin-top: 12vh !important;
+}
+
+.mm-canvas-center-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12vh 16px 24px;
+  background: rgb(0 0 0 / 0.45);
+}
+
+.mm-canvas-center-modal .mind-map-side-rail-panel {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  z-index: 1;
+  width: min(520px, 92vw) !important;
+  max-height: min(72vh, 680px);
 }
 
 .mind-map-side-rail-btn {

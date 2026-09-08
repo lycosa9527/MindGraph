@@ -276,7 +276,6 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'සම්ප්‍රදායික කැන්වස්',
   'settings.language.mindMapCanvasV2': 'V2',
   'settings.language.mindMapCanvasV1': 'V1',
-  'settings.language.mindMapCanvasV3': 'V3',
   'settings.language.mindMapCanvasRefreshHint': 'Switch පසු full effect සඳහා canvas page refresh',
   'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
   'settings.language.eBlackboardOff': 'Off',

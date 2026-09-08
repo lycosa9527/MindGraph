@@ -26,6 +26,9 @@ import { ChatDotRound, Download } from '@element-plus/icons-vue'
 
 import { ArrowLeft, FileImage, FileJson, FileText, ImageDown, RotateCcw, Share2 } from '@lucide/vue'
 
+import MindMapRibbonTabs from '@/canvas-ribbon/MindMapRibbonTabs.vue'
+import { useMindMapRibbonState } from '@/canvas-ribbon/useMindMapRibbonState'
+import CanvasOnlineCollabMenu from '@/components/canvas/CanvasOnlineCollabMenu.vue'
 import CanvasToolbar from '@/components/canvas/CanvasToolbar.vue'
 import DiagramSlotFullModal from '@/components/canvas/DiagramSlotFullModal.vue'
 import { useFeatureFlags } from '@/composables'
@@ -130,6 +133,7 @@ const diagramTypeForName = computed(
 )
 
 const isMindMapEditor = useMindMapV2Chrome()
+const { activeTab, setActiveTab } = useMindMapRibbonState()
 
 /**
  * Generate default diagram name (simple, no timestamp)
@@ -290,12 +294,21 @@ async function handleReset() {
 <template>
   <div
     ref="topBarRootRef"
-    class="canvas-top-bar relative w-full min-h-12 px-2 sm:px-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1 sm:gap-x-2 shrink-0 border-b border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md"
+    class="canvas-top-bar relative w-full min-h-12 shrink-0"
+    :class="
+      isMindMapEditor
+        ? 'canvas-top-bar--mindmap'
+        : 'px-2 sm:px-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1 sm:gap-x-2 border-b border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md'
+    "
   >
-    <!-- Col 1: back + title + auto-save -->
+    <div
+      class="canvas-top-bar__title-row"
+      :class="{ 'canvas-top-bar__title-row--mindmap': isMindMapEditor }"
+    >
     <div
       class="flex items-center gap-1 min-w-0 z-10"
-      :style="{ maxWidth: CANVAS_TOP_BAR.LEFT_CLUSTER_MAX_WIDTH }"
+      :class="{ 'canvas-top-bar__doc': isMindMapEditor }"
+      :style="isMindMapEditor ? undefined : { maxWidth: CANVAS_TOP_BAR.LEFT_CLUSTER_MAX_WIDTH }"
     >
       <ElTooltip
         :content="t('canvas.topBar.back')"
@@ -330,7 +343,12 @@ async function handleReset() {
           placement="bottom"
         >
           <span
-            class="file-name-label text-xs font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-1.5 sm:px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 truncate"
+            class="file-name-label text-xs font-medium cursor-pointer transition-colors px-1.5 sm:px-2 py-1 rounded truncate"
+            :class="
+              isMindMapEditor
+                ? 'text-gray-800 hover:text-blue-600 hover:bg-white/70'
+                : 'text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            "
             :style="{ maxWidth: CANVAS_TOP_BAR.FILENAME_DISPLAY_MAX_WIDTH }"
             @click="handleFileNameClick"
           >
@@ -345,10 +363,16 @@ async function handleReset() {
           :title="autoSaveHoverTitle"
           :class="[
             props.isSaving
-              ? 'text-blue-500 dark:text-blue-400'
+              ? isMindMapEditor
+                ? 'text-blue-500'
+                : 'text-blue-500 dark:text-blue-400'
               : props.isDirty
-                ? 'text-amber-500 dark:text-amber-400'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
+                ? isMindMapEditor
+                  ? 'text-amber-500'
+                  : 'text-amber-500 dark:text-amber-400'
+                : isMindMapEditor
+                  ? 'text-gray-500 hover:text-gray-700'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
           ]"
           @click="handleAutoSaveStatusClick"
         >
@@ -356,10 +380,31 @@ async function handleReset() {
         </span>
       </div>
     </div>
+      <div
+        v-if="isMindMapEditor"
+        class="canvas-top-bar__tabs"
+      >
+        <MindMapRibbonTabs
+          :active-tab="activeTab"
+          @update:active-tab="setActiveTab"
+        />
+      </div>
+      <div
+        v-if="isMindMapEditor"
+        class="canvas-top-bar__global"
+      >
+        <CanvasOnlineCollabMenu
+          :workshop-code="workshopCode"
+          :is-collab-guest="isCollabGuest"
+          :is-viewer="isViewer"
+        />
+      </div>
+    </div>
 
     <!-- Col 2: editing toolbar (hidden for viewers) -->
     <div
       class="min-w-0 flex justify-center items-center self-center overflow-x-auto px-0.5 z-5"
+      :class="{ 'canvas-top-bar__tools-row': isMindMapEditor }"
     >
       <span
         v-if="props.isViewer"
@@ -371,11 +416,13 @@ async function handleReset() {
         v-else
         embedded
         :compact-toolbar="compactCanvasToolbar"
+        :ribbon-tab="isMindMapEditor ? activeTab : undefined"
       />
     </div>
 
     <!-- Col 3: snapshots + workshop participants + actions -->
     <div
+      v-if="!isMindMapEditor"
       class="flex w-full min-w-0 items-center justify-end gap-1.5 sm:gap-2 md:gap-3 z-10 flex-wrap sm:flex-nowrap"
     >
       <div
@@ -559,6 +606,170 @@ async function handleReset() {
 <style scoped>
 .canvas-top-bar {
   z-index: 100;
+}
+
+.canvas-top-bar__title-row {
+  display: contents;
+}
+
+.canvas-top-bar__title-row--mindmap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: flex-end;
+  gap: 8px;
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0 12px 0 8px;
+  overflow: visible;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.canvas-top-bar--mindmap {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0 0 10px;
+  border-bottom: none;
+  background-color: transparent;
+  background-image: linear-gradient(
+    90deg,
+    rgb(214 232 252 / 0.8) 0%,
+    rgb(226 224 248 / 0.72) 48%,
+    rgb(236 222 250 / 0.84) 100%
+  );
+  backdrop-filter: blur(18px) saturate(1.12);
+  -webkit-backdrop-filter: blur(18px) saturate(1.12);
+  box-shadow: 0 8px 22px rgb(168 176 228 / 0.14);
+}
+
+.canvas-top-bar__doc {
+  justify-self: start;
+  align-self: end;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 36px;
+  max-width: min(46vw, 22rem);
+}
+
+.canvas-top-bar__tabs {
+  grid-column: 2;
+  justify-self: center;
+  display: flex;
+  justify-content: center;
+}
+
+.canvas-top-bar__global {
+  grid-column: 3;
+  justify-self: end;
+  align-self: end;
+  display: flex;
+  align-items: center;
+  height: 36px;
+}
+
+.canvas-top-bar__doc :deep(.el-button) {
+  color: #4b5563;
+}
+
+.canvas-top-bar__doc :deep(.el-button:hover) {
+  background: rgb(255 255 255 / 0.72);
+  color: #1f2937;
+}
+
+.canvas-top-bar__doc .file-name-label {
+  color: #1f2937;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.canvas-top-bar__doc .file-name-label:hover {
+  color: #2563eb;
+  background: rgb(255 255 255 / 0.72);
+}
+
+.canvas-top-bar__doc .auto-saved-status {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.canvas-top-bar__doc .border-r {
+  border-color: #d1d5db;
+}
+
+.canvas-top-bar__tools-row {
+  box-sizing: border-box;
+  width: calc(100% - 24px);
+  max-width: calc(100% - 24px);
+  height: 50px;
+  min-height: 50px;
+  max-height: 50px;
+  flex-shrink: 0;
+  align-self: center;
+  justify-content: center;
+  margin: 0 auto;
+  padding: 5px 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: none;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 10px 18px -8px rgb(15 23 42 / 0.12);
+}
+
+.canvas-top-bar__tools-row :deep(.canvas-toolbar),
+.canvas-top-bar__tools-row :deep(.mm-toolbar) {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+}
+
+.canvas-top-bar__tools-row :deep(.canvas-toolbar > div) {
+  width: 100%;
+  max-width: 100%;
+}
+
+:global(.dark) .canvas-top-bar__tools-row {
+  background: #1f2937;
+  box-shadow: 0 10px 18px -8px rgb(0 0 0 / 0.35);
+}
+
+:global(.dark) .canvas-top-bar--mindmap {
+  background-color: transparent;
+  background-image: linear-gradient(
+    90deg,
+    rgb(36 62 102 / 0.78) 0%,
+    rgb(52 48 92 / 0.72) 48%,
+    rgb(72 44 102 / 0.82) 100%
+  );
+  box-shadow: 0 8px 22px rgb(0 0 0 / 0.18);
+}
+
+:global(.dark) .canvas-top-bar__doc :deep(.el-button) {
+  color: #d1d5db;
+}
+
+:global(.dark) .canvas-top-bar__doc .file-name-label {
+  color: #e5e7eb;
+}
+
+:global(.dark) .canvas-top-bar__doc .file-name-label:hover {
+  color: #93c5fd;
+}
+
+:global(.dark) .canvas-top-bar__doc .auto-saved-status {
+  color: #9ca3af;
+}
+
+:global(.dark) .canvas-top-bar__doc .border-r {
+  border-color: #4b5563;
 }
 
 .participant-emoji {

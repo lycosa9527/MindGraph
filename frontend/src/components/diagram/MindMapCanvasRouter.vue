@@ -1,7 +1,6 @@
 <script setup lang="ts">
 /**
  * Routes mind maps to classic (V1) or V2 Vue Flow.
- * V3 bubble-style chrome is swapped on CanvasPage; this router still mounts V2.
  */
 import { computed, defineAsyncComponent } from 'vue'
 

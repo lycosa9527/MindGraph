@@ -159,6 +159,8 @@ const nodeStyle = computed((): CSSProperties => {
   const result: CSSProperties = { ...applyNodeShapeToStyle(base, shape, borderColor, true) }
 
   const padX = mindMapHorizontalPadding(shape)
+  const accentBarWidth = style.accentBarWidth ?? 0
+  const accentBarColor = style.accentBarColor
   const isBlankedForSheet =
     diagramStore.isLearningSheet && diagramStore.isNodeBlankedForLearningSheet(props.id)
   const layoutWidth = props.data?.estimatedWidth as number | undefined
@@ -174,6 +176,11 @@ const nodeStyle = computed((): CSSProperties => {
     result.padding = `${MIND_MAP_GEOMETRY.paddingY}px ${padX}px`
     result.minWidth = `${MIND_MAP_GEOMETRY.minWidth}px`
     result.minHeight = `${MIND_MAP_GEOMETRY.minHeight}px`
+  }
+
+  if (!isUnderlineShape.value && accentBarWidth > 0 && accentBarColor) {
+    result.boxShadow = `inset ${accentBarWidth}px 0 0 0 ${accentBarColor}, 0 1px 3px rgba(15, 23, 42, 0.06)`
+    result.paddingLeft = `${padX + accentBarWidth + 4}px`
   }
 
   if (isBlankedForSheet && layoutWidth && layoutWidth > 0) {

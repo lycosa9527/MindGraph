@@ -7,7 +7,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { Check, Loader2, RefreshCw } from '@lucide/vue'
 
-import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.vue'
+import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { getAiBrainstorm } from '@/composables/aiBrainstorm/useAiBrainstorm'
 import { PALETTE_MINDMAP_DRAG_MIME } from '@/composables/nodePalette/constants'
@@ -169,82 +169,79 @@ onUnmounted(() => {
 
 <template>
   <aside
-    class="mind-map-side-rail-panel ai-brainstorm-panel pointer-events-auto w-104 max-w-[calc(100%-1.5rem)]"
+    class="mind-map-side-rail-panel ai-brainstorm-panel pointer-events-auto w-104 max-w-[calc(100%-1.5rem)] ai-gen-shell ai-gen-shell--brainstorm"
     :aria-label="t('canvas.mindMapSideToolbar.waterfall')"
   >
-    <MindMapSidePanelHeader
-      :title="t('canvas.mindMapSideToolbar.waterfall')"
-      :intro="t('canvas.mindMapWaterfall.panelHint')"
+    <AiGenerateGlassHero
+      variant="brainstorm"
       @close="handleClose"
-    >
-      <template #actions>
-        <span
-          v-if="selectedIds.length > 0"
-          class="mr-1 text-xs text-slate-500"
-        >
-          {{ selectedIds.length }} {{ t('nodePalette.selected') }}
-        </span>
-        <button
-          type="button"
-          class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 transition-all hover:bg-slate-100 hover:text-gray-600 disabled:opacity-40"
-          :disabled="isLoading"
-          :aria-label="t('nodePalette.refresh')"
-          @click="handleRefresh"
-        >
-          <RefreshCw
-            class="h-4 w-4"
-            :class="{ 'animate-spin': isLoading }"
-            :stroke-width="2"
-          />
-        </button>
-      </template>
+    />
 
-      <template
-        v-if="showTabs"
-        #below
+    <div class="ai-glass-toolbar">
+      <span
+        v-if="selectedIds.length > 0"
+        class="mr-1 text-xs text-slate-500"
       >
-        <div
-          class="flex gap-1 overflow-x-auto rounded-lg bg-slate-100 p-0.5"
-          :class="paletteTabStripGlowClass"
-        >
-          <template v-if="showStage2Tabs">
-            <button
-              v-for="parent in stage2Parents"
-              :key="parent.id"
-              type="button"
-              class="shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
-              :class="
-                activeTabId === parent.name || activeTabId === parent.id
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-slate-600 hover:text-gray-900'
-              "
-              :title="parent.name"
-              @click="handleStageTab(parent.id, parent.name)"
-            >
-              {{ parent.name.length > 8 ? parent.name.slice(0, 7) + '…' : parent.name }}
-            </button>
-          </template>
-          <template v-else>
-            <button
-              v-for="tab in sourceTabs"
-              :key="tab.id"
-              type="button"
-              class="shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
-              :class="
-                activeTabId === tab.id
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-slate-600 hover:text-gray-900'
-              "
-              @click="switchTab(tab.id)"
-            >
-              {{ tab.name }}
-            </button>
-          </template>
-        </div>
-      </template>
-    </MindMapSidePanelHeader>
+        {{ selectedIds.length }} {{ t('nodePalette.selected') }}
+      </span>
+      <button
+        type="button"
+        class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 transition-all hover:bg-slate-100 hover:text-gray-600 disabled:opacity-40"
+        :disabled="isLoading"
+        :aria-label="t('nodePalette.refresh')"
+        @click="handleRefresh"
+      >
+        <RefreshCw
+          class="h-4 w-4"
+          :class="{ 'animate-spin': isLoading }"
+          :stroke-width="2"
+        />
+      </button>
+    </div>
 
-    <div class="shrink-0 border-b border-slate-100 px-3 py-2" />
+    <div
+      v-if="showTabs"
+      class="px-4 pt-2"
+    >
+      <div
+        class="flex gap-1 overflow-x-auto rounded-lg bg-slate-100 p-0.5"
+        :class="paletteTabStripGlowClass"
+      >
+        <template v-if="showStage2Tabs">
+          <button
+            v-for="parent in stage2Parents"
+            :key="parent.id"
+            type="button"
+            class="shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
+            :class="
+              activeTabId === parent.name || activeTabId === parent.id
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-slate-600 hover:text-gray-900'
+            "
+            :title="parent.name"
+            @click="handleStageTab(parent.id, parent.name)"
+          >
+            {{ parent.name.length > 8 ? parent.name.slice(0, 7) + '…' : parent.name }}
+          </button>
+        </template>
+        <template v-else>
+          <button
+            v-for="tab in sourceTabs"
+            :key="tab.id"
+            type="button"
+            class="shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
+            :class="
+              activeTabId === tab.id
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-slate-600 hover:text-gray-900'
+            "
+            @click="switchTab(tab.id)"
+          >
+            {{ tab.name }}
+          </button>
+        </template>
+      </div>
+    </div>
 
     <div class="min-h-0 flex-1 overflow-y-auto px-3 py-3">
       <div

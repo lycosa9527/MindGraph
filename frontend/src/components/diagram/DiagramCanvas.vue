@@ -30,7 +30,9 @@ import type { CanvasExportColorMode, CanvasExportLayout } from '@/config/canvasE
 import type { CanvasWorksheetTextOptions } from '@/config/canvasWorksheetText'
 import { useCanvasExportStore } from '@/stores/canvasExport'
 import {
+  useFollowNodeStyleToolbar,
   useNodeFloatingToolbarPosition,
+  formatBrushActive,
   type FloatingToolbarSize,
 } from '@/composables/canvasToolbar'
 import { registerDiagramLayoutRecalcSession } from '@/composables/core/diagramLayoutRecalcBootstrap'
@@ -356,12 +358,16 @@ watch(
   { immediate: true }
 )
 
+const { followEnabled: followNodeStyleToolbar } = useFollowNodeStyleToolbar()
+
 const floatingToolbarNodeIds = computed(() => {
   if (!useMindMapV2.value) return []
   return diagramStore.selectedNodes.slice()
 })
 
-const floatingToolbarEnabled = computed(() => floatingToolbarNodeIds.value.length > 0)
+const floatingToolbarEnabled = computed(
+  () => followNodeStyleToolbar.value && floatingToolbarNodeIds.value.length > 0
+)
 
 const floatingToolbarAnchorId = computed(() => floatingToolbarNodeIds.value[0] ?? null)
 
@@ -474,6 +480,7 @@ const {
   exportOptions,
   worksheetTextOptions,
   worksheetTextModalOpen,
+  worksheetModalPreferLearningSheet,
 } = storeToRefs(canvasExportStore)
 
 function handleWorksheetTextSave(payload: {
@@ -717,6 +724,7 @@ defineExpose({
       'canvas-touch': canvasTouchGesturesActive,
       'diagram-canvas--hand-tool': useHandToolPanClass,
       'diagram-canvas--learning-sheet-pick': isLearningSheetPickActive,
+      'diagram-canvas--format-brush': formatBrushActive,
       'diagram-canvas--bulk-load': mindMapBulkLoading,
     }"
     @contextmenu.capture="handleContextMenuEvent"
@@ -860,6 +868,7 @@ defineExpose({
       :options="worksheetTextOptions"
       :layout="exportOptions.layout"
       :default-topic="worksheetDefaultTopic"
+      :prefer-learning-sheet="worksheetModalPreferLearningSheet"
       :capture-diagram-preview="captureWorksheetPreview"
       @save="handleWorksheetTextSave"
     />
@@ -881,6 +890,17 @@ defineExpose({
 .diagram-canvas--learning-sheet-pick :deep(.cursor-grab) {
   cursor: v-bind('hammerPickCursor') !important;
 }
+
+.diagram-canvas--format-brush,
+.diagram-canvas--format-brush :deep(.vue-flow__pane),
+.diagram-canvas--format-brush :deep(.vue-flow__node),
+.diagram-canvas--format-brush :deep(.branch-node),
+.diagram-canvas--format-brush :deep(.topic-node),
+.diagram-canvas--format-brush :deep(.mind-map-node),
+.diagram-canvas--format-brush :deep(.mind-map-legacy-node),
+.diagram-canvas--format-brush :deep(.mind-map-topic-node) {
+  cursor: copy !important;
+}
 </style>
 
 <style>
@@ -896,5 +916,11 @@ html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick .inline-editabl
 html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick .inline-edit-display,
 html.mg-learning-sheet-pick .diagram-canvas--learning-sheet-pick .cursor-grab {
   cursor: var(--mg-hammer-cursor) !important;
+}
+
+html.mg-format-brush-active .diagram-canvas,
+html.mg-format-brush-active .diagram-canvas .vue-flow__pane,
+html.mg-format-brush-active .diagram-canvas .vue-flow__node {
+  cursor: copy !important;
 }
 </style>

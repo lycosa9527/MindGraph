@@ -84,6 +84,8 @@ export interface MindGraphEdgeData {
    * CurvedEdge uses this to route the bezier path from the parent label position.
    */
   linkedFromConnectionId?: string
+  /** Mind-map relationship overlay (not a tree parent link). */
+  isAssociation?: boolean
   // Allow additional custom properties
   [key: string]: unknown
 }
@@ -227,6 +229,7 @@ export function connectionToVueFlowEdge(
       style: connection.style,
       arrowheadDirection: connection.arrowheadDirection,
       linkedFromConnectionId: connection.linkedFromConnectionId,
+      isAssociation: connection.edgeType === 'association',
     },
   }
 }

@@ -1,7 +1,7 @@
 /**
  * Document Summary lite: save pending draft (file / paste / URL) then generate.
  */
-import { type Ref } from 'vue'
+import { ref, type Ref } from 'vue'
 
 import type { usePackageDetail } from '@/composables/fileCenter/useFileCenter'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
@@ -14,6 +14,9 @@ const WAIT_READY_MS = 120_000
 export const DOC_SUMMARY_WEB_URL_MAX_CHARS = 2000
 
 export type LiteDraftKind = 'none' | 'file' | 'paste' | 'web'
+
+/** Last requested lite dialog: document upload vs web-link. Read on panel setup. */
+export const docSummaryLiteIntent = ref<'doc' | 'web'>('doc')
 
 export function isValidDocSummaryWebUrl(url: string): boolean {
   const trimmed = url.trim()
@@ -36,9 +39,9 @@ export function resolveLiteDraftKind(options: {
   if (options.hasActiveSource) return 'none'
   if (options.activeTab === 'file') {
     if (options.uploadedFile) return 'file'
-    if (options.pastedText.trim()) return 'paste'
     return 'none'
   }
+  if (options.activeTab === 'paste' && options.pastedText.trim()) return 'paste'
   if (options.activeTab === 'web' && isValidDocSummaryWebUrl(options.webUrl)) return 'web'
   return 'none'
 }

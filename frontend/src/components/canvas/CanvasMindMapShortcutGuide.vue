@@ -12,10 +12,19 @@ import { useDiagramStore } from '@/stores'
 
 const STORAGE_KEY = 'mindgraph.mindmap.shortcutGuide.expanded'
 
+const props = withDefaults(
+  defineProps<{
+    /** floating = old bottom-bar cluster; status = icon in the status bar, card pops up */
+    variant?: 'floating' | 'status'
+  }>(),
+  { variant: 'floating' }
+)
+
 const { t } = useLanguage()
 const diagramStore = useDiagramStore()
 
-const expanded = ref(true)
+const expanded = ref(props.variant !== 'status')
+const isStatus = computed(() => props.variant === 'status')
 
 const rows = computed(() => resolveMindMapShortcutGuideRows(diagramStore.isLearningSheet))
 
@@ -41,10 +50,29 @@ function toggleExpanded(): void {
 </script>
 
 <template>
-  <div class="select-none shrink-0">
+  <div
+    class="select-none shrink-0"
+    :class="{ 'shortcut-guide--status': isStatus }"
+  >
+    <button
+      v-if="isStatus"
+      type="button"
+      class="mm-status__zoom-btn"
+      :class="{ 'is-active': expanded }"
+      :aria-expanded="expanded"
+      :aria-label="t('canvas.shortcutGuide.title')"
+      :title="t('canvas.shortcutGuide.title')"
+      @click="toggleExpanded"
+    >
+      {{ t('canvas.shortcutGuide.shortLabel') }}
+      <Keyboard
+        class="h-3.5 w-3.5"
+        :stroke-width="2"
+      />
+    </button>
     <!-- Collapsed pill -->
     <button
-      v-if="!expanded"
+      v-else-if="!expanded"
       type="button"
       class="inline-flex items-center gap-2 rounded-xl border border-gray-200/80 bg-white/90 dark:border-gray-600/80 dark:bg-gray-800/90 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-lg backdrop-blur-md transition-all hover:border-slate-300 hover:bg-white dark:hover:bg-gray-800"
       :aria-expanded="false"
@@ -69,6 +97,7 @@ function toggleExpanded(): void {
       <div
         v-if="expanded"
         class="shortcut-guide-card w-60 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-600 dark:bg-gray-900"
+        :class="{ 'shortcut-guide-card--popover': isStatus }"
       >
         <div
           class="flex items-center justify-between gap-2 border-b border-slate-100 px-3 pb-1 pt-2 dark:border-slate-700"
@@ -169,6 +198,17 @@ function toggleExpanded(): void {
 </template>
 
 <style scoped>
+.shortcut-guide--status {
+  position: relative;
+}
+
+.shortcut-guide-card--popover {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 60;
+}
+
 .shortcut-kbd {
   display: inline-flex;
   align-items: center;
@@ -205,6 +245,11 @@ function toggleExpanded(): void {
     opacity 0.2s ease,
     transform 0.22s ease;
   transform-origin: bottom left;
+}
+
+.shortcut-guide-card--popover.shortcut-guide-card-enter-active,
+.shortcut-guide-card--popover.shortcut-guide-card-leave-active {
+  transform-origin: bottom right;
 }
 
 .shortcut-guide-card-enter-from,

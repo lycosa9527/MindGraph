@@ -12,7 +12,7 @@ import {
 } from '@/utils/mindMapCanvasMode'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
-import type { MindMapCanvasMode } from '../ui'
+import { parseMindMapCanvasMode, type MindMapCanvasMode } from '../ui'
 import { useBraceMapOpsSlice } from './braceMapOps'
 import { useBubbleMapOpsSlice } from './bubbleMapOps'
 import { useConnectionManagementSlice } from './connectionManagement'
@@ -78,7 +78,7 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     options.viewBus ??
     (mode === 'edit' ? adaptGlobalEventBusAsViewBus(eventBus) : createDiagramViewBus())
   const mindMapCanvasMode = ref<MindMapCanvasMode>(
-    options.mindMapCanvasMode ?? readEffectiveMindMapCanvasMode()
+    parseMindMapCanvasMode(options.mindMapCanvasMode) ?? readEffectiveMindMapCanvasMode()
   )
 
   // Core state refs

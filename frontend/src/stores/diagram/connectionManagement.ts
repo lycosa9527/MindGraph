@@ -5,6 +5,7 @@ import {
 import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import type { Connection } from '@/types'
 import { normalizeTopicRootLabelIfNeeded } from '@/utils/conceptMapTopicRootEdge'
+import { isMindMapAssociationConnection } from '@/utils/mindMapLocation'
 
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
@@ -15,7 +16,10 @@ import type { DiagramContext } from './types'
  * Handles adding, labelling, and arrowhead toggling on connections.
  */
 type AddConnectionExtra = Partial<
-  Pick<Connection, 'linkedFromConnectionId' | 'arrowheadDirection' | 'arrowheadLocked'>
+  Pick<
+    Connection,
+    'linkedFromConnectionId' | 'arrowheadDirection' | 'arrowheadLocked' | 'edgeType' | 'style'
+  >
 >
 
 export function useConnectionManagementSlice(ctx: DiagramContext) {
@@ -36,12 +40,12 @@ export function useConnectionManagementSlice(ctx: DiagramContext) {
     )
     if (duplicate) return null
 
-    const connId = `conn-${Date.now()}`
+    const connId = extra?.edgeType === 'association' ? `assoc-${Date.now()}` : `conn-${Date.now()}`
     const conn: Connection = {
       id: connId,
       source: sourceId,
       target: targetId,
-      label: label || '',
+      label: label ?? '',
       ...extra,
     }
     if (ctx.type.value === 'concept_map' && !conn.arrowheadLocked) {
@@ -91,15 +95,18 @@ export function useConnectionManagementSlice(ctx: DiagramContext) {
 
   function removeConnection(connectionId: string): boolean {
     if (isDiagramPresentationReadOnly(ctx)) return false
-    if (!ctx.data.value?.connections || ctx.type.value !== 'concept_map') {
-      return false
-    }
+    if (!ctx.data.value?.connections) return false
 
     const conns = ctx.data.value.connections
-    const exists = conns.some((c) => c.id === connectionId)
-    if (!exists) {
-      return false
-    }
+    const target = conns.find((c) => c.id === connectionId)
+    if (!target) return false
+
+    const isMindMap =
+      ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map'
+    const canRemove =
+      ctx.type.value === 'concept_map' ||
+      (isMindMap && isMindMapAssociationConnection(target))
+    if (!canRemove) return false
 
     const toRemove = new Set<string>([connectionId])
     let growing = true

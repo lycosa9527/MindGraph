@@ -10,12 +10,12 @@ import {
   readShowcaseMindMapCanvasMode,
 } from '@/utils/mindMapCanvasMode'
 
-describe('mind map canvas V3 mode helpers', () => {
+describe('mind map leftover V3 mode helpers', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })
 
-  it('treats v2 and v3 as the same layout family', () => {
+  it('treats leftover v3 as the same layout family as v2', () => {
     expect(isMindMapV2FamilyMode('v2')).toBe(true)
     expect(isMindMapV2FamilyMode('v3')).toBe(true)
     expect(isMindMapV2FamilyMode('legacy')).toBe(false)
@@ -23,15 +23,15 @@ describe('mind map canvas V3 mode helpers', () => {
     expect(layoutMindMapCanvasMode('legacy')).toBe('legacy')
   })
 
-  it('clamps v3 to v2 when the V3 flag is off (does not persist here)', () => {
-    expect(effectiveMindMapCanvasMode('v3', true, false)).toBe('v2')
-    expect(effectiveMindMapCanvasMode('v2', true, false)).toBe('v2')
-    expect(effectiveMindMapCanvasMode('legacy', true, false)).toBe('legacy')
+  it('clamps leftover v3 to v2 when the V2 flag is on', () => {
+    expect(effectiveMindMapCanvasMode('v3', true)).toBe('v2')
+    expect(effectiveMindMapCanvasMode('v2', true)).toBe('v2')
+    expect(effectiveMindMapCanvasMode('legacy', true)).toBe('legacy')
   })
 
-  it('clamps v3 and v2 to classic when the V2 flag is off', () => {
-    expect(effectiveMindMapCanvasMode('v3', false, true)).toBe('legacy')
-    expect(effectiveMindMapCanvasMode('v2', false, true)).toBe('legacy')
+  it('clamps leftover v3 and v2 to classic when the V2 flag is off', () => {
+    expect(effectiveMindMapCanvasMode('v3', false)).toBe('legacy')
+    expect(effectiveMindMapCanvasMode('v2', false)).toBe('legacy')
   })
 
   it('keeps showcase on v2 when the v2 flag is on', () => {
@@ -49,7 +49,6 @@ describe('mind map canvas V3 mode helpers', () => {
       feature_debateverse: false,
       feature_knowledge_space: false,
       feature_mindmap_v2_canvas: true,
-      feature_mindmap_v3_canvas: true,
       feature_library: false,
       feature_gewe: false,
       feature_smart_response: false,

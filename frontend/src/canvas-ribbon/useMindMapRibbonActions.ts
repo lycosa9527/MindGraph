@@ -1,5 +1,5 @@
 /**
- * V3 ribbon commands — reuses existing stores, node actions, and event-bus paths.
+ * Ribbon commands — reuses existing stores, node actions, and event-bus paths.
  */
 import { computed, reactive } from 'vue'
 
@@ -15,10 +15,10 @@ import { CANVAS_MINDMAP_EXPORT_MENU_ITEMS } from '@/config/canvasExportMenu'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useCanvasExportStore } from '@/stores'
 
-import { useV3ChromeActions } from './useV3ChromeActions'
+import { useMindMapRibbonChromeActions } from './useMindMapRibbonChromeActions'
 
-export function useV3RibbonActions() {
-  const chrome = useV3ChromeActions()
+export function useMindMapRibbonActions() {
+  const chrome = useMindMapRibbonChromeActions()
   const { t } = useLanguage()
   const notify = useNotifications()
   const diagramStore = useDiagramSession()
@@ -82,8 +82,14 @@ export function useV3RibbonActions() {
     })
   }
 
-  function requestWorksheetText(): void {
-    eventBus.emit('toolbar:worksheet_text_requested', {})
+  function requestWorksheetText(preferLearningSheet = false): void {
+    if (!diagramStore.data?.nodes?.length) {
+      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      return
+    }
+    eventBus.emit('toolbar:worksheet_text_requested', {
+      preferLearningSheet: preferLearningSheet === true,
+    })
   }
 
   function requestSnapshot(): void {

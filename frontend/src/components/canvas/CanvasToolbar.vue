@@ -6,21 +6,20 @@ import { computed, ref } from 'vue'
 
 import { ElButton, ElTooltip } from 'element-plus'
 
-import { ArrowDownUp, Brush, Upload } from '@lucide/vue'
-
-import { useCanvasToolbarApps, useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
-import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
-import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimiter'
-import { eventBus } from '@/composables/core/useEventBus'
-import { useLanguage } from '@/composables/core/useLanguage'
-import { useNotifications } from '@/composables/core/useNotifications'
+import type { MindMapRibbonTabId } from '@/canvas-ribbon/mindMapRibbonTypes'
 import {
   tryCollabGuardedRedo,
   tryCollabGuardedUndo,
 } from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
-import { useNodeActions } from '@/composables/editor/useNodeActions'
-import { useDiagramImport } from '@/composables/editor/useDiagramImport'
+import { useCanvasToolbarApps, useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
+import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimiter'
+import { eventBus } from '@/composables/core/useEventBus'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { useDiagramImport } from '@/composables/editor/useDiagramImport'
+import { useNodeActions } from '@/composables/editor/useNodeActions'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { useUIStore } from '@/stores'
 import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
 
@@ -40,10 +39,18 @@ import CanvasVirtualKeyboardPanel from './CanvasVirtualKeyboardPanel.vue'
  * When true, flatter styles for use inside CanvasTopBar (single merged chrome row).
  * When embedded, `compactToolbar` is driven by CanvasTopBar (two-tier bar width breakpoints).
  */
-const props = withDefaults(defineProps<{ embedded?: boolean; compactToolbar?: boolean }>(), {
-  embedded: false,
-  compactToolbar: false,
-})
+const props = withDefaults(
+  defineProps<{
+    embedded?: boolean
+    compactToolbar?: boolean
+    ribbonTab?: MindMapRibbonTabId
+  }>(),
+  {
+    embedded: false,
+    compactToolbar: false,
+    ribbonTab: 'edit',
+  }
+)
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -168,6 +175,7 @@ function handleToggleOrientation() {
       <CanvasToolbarMindMap
         v-if="useMindMapV2"
         :compact="compactToolbar"
+        :ribbon-tab="ribbonTab"
       />
       <div
         v-else
@@ -212,7 +220,8 @@ function handleToggleOrientation() {
             text
             size="small"
             :class="formatBrushActive ? 'bg-purple-100 ring-1 ring-purple-400 rounded' : ''"
-            @click="handleFormatBrush"
+            @click="() => handleFormatBrush()"
+            @dblclick.prevent="handleFormatBrush({ lock: true })"
           >
             <Brush
               class="w-4 h-4"

@@ -21,18 +21,7 @@ export function useMindMapV2Chrome() {
   )
 }
 
-/** True when the mind map uses V3 bubble-style chrome (old JS top/bottom/property bars). */
-export function useMindMapV3Chrome() {
-  const diagramStore = useDiagramSession()
-
-  return computed(
-    () =>
-      isMindMapType(diagramStore.type) &&
-      resolveSessionMindMapCanvasMode(diagramStore.mindMapCanvasMode) === 'v3'
-  )
-}
-
-/** True when the mind map uses V2 layout/theme (V2 or V3 chrome). */
+/** True when the mind map uses V2 layout/theme. */
 export function useMindMapV2FamilyVisual() {
   const diagramStore = useDiagramSession()
 

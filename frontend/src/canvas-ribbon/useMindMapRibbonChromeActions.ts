@@ -1,5 +1,5 @@
 /**
- * Actions for V3 bubble-style chrome (old JS bars). Does not change the V2 diagram.
+ * Shared actions for New-canvas ribbon and status bar. Does not change the V2 diagram.
  */
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -12,20 +12,21 @@ import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolb
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
 import { navigateBackFromCanvas } from '@/utils/canvasBackNavigation'
 
-const V3_LLM_MODELS = [
+const RIBBON_LLM_MODELS = [
   { id: 'qwen', label: 'Qwen' },
   { id: 'deepseek', label: 'DeepSeek' },
   { id: 'doubao', label: 'Doubao' },
 ] as const
 
-export function useV3ChromeActions() {
+export function useMindMapRibbonChromeActions() {
   const router = useRouter()
   const route = useRoute()
   const { t } = useLanguage()
@@ -40,6 +41,7 @@ export function useV3ChromeActions() {
   const { handleAIGenerate } = useCanvasToolbarApps()
   const { triggerImportInPlace } = useDiagramImport()
   const { switchToModel } = useAutoComplete()
+  const learningSheet = useLearningSheetCustomMode()
 
   const nodeCount = computed(() => diagramStore.data?.nodes?.length ?? 0)
   const canUndo = computed(() => diagramStore.canUndo)
@@ -77,7 +79,7 @@ export function useV3ChromeActions() {
       return
     }
     if (diagramStore.isLearningSheet) {
-      diagramStore.restoreFromLearningSheetMode()
+      learningSheet.exitLearningSheet()
       return
     }
     if (diagramStore.hasPreservedLearningSheet()) {
@@ -88,7 +90,7 @@ export function useV3ChromeActions() {
   }
 
   function openNodePalette(): void {
-    eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'v3-toolbar' })
+    eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'mind-map-ribbon' })
   }
 
   function toggleMindmate(): void {
@@ -109,7 +111,7 @@ export function useV3ChromeActions() {
   }
 
   return {
-    llmModels: V3_LLM_MODELS,
+    llmModels: RIBBON_LLM_MODELS,
     nodeCount,
     canUndo,
     canRedo,

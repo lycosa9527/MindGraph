@@ -19,6 +19,10 @@ describe('useCanvasExportStore', () => {
     expect(store.worksheetTextModalOpen).toBe(false)
     store.openWorksheetTextModal()
     expect(store.worksheetTextModalOpen).toBe(true)
+    expect(store.worksheetModalPreferLearningSheet).toBe(false)
+    store.closeWorksheetTextModal()
+    store.openWorksheetTextModal(true)
+    expect(store.worksheetModalPreferLearningSheet).toBe(true)
   })
 
   it('keeps plain merged export options header-free', () => {

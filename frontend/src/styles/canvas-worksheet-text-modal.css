@@ -338,12 +338,16 @@
   text-align: center;
 }
 
-.worksheet-text-modal__paper-diagram-hint {
-  margin: 0.35rem 0 0;
-  font-size: 1.111cqw;
-  line-height: 1.35;
-  color: #a8a29e;
+.worksheet-text-modal__preview-hint {
+  margin: 0;
+  flex-shrink: 0;
+  padding: 0.4rem 0.35rem 0.1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #57534e;
   text-align: center;
+  letter-spacing: 0.01em;
 }
 
 .dark .worksheet-text-modal__diagram-frame {
@@ -358,8 +362,72 @@
 .worksheet-text-modal__controls {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: 0.85rem;
   min-width: 0;
+  max-height: min(62vh, 560px);
+  overflow-y: auto;
+  padding-inline-end: 0.15rem;
+}
+
+.worksheet-text-modal__mode-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #e7e5e4;
+  border-radius: 8px;
+  background: #fafaf9;
+}
+
+.worksheet-text-modal__mode-bar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.worksheet-text-modal__mode-bar-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1c1917;
+}
+
+.worksheet-text-modal__mode-bar.is-on .worksheet-text-modal__fields {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e7e5e4;
+}
+
+.worksheet-text-modal__mode-bar.is-dedicated .worksheet-text-modal__fields {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.worksheet-text-modal__sheet-panel-hint {
+  margin: 0;
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  color: #78716c;
+}
+
+.worksheet-text-modal__export-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.85rem;
+  border: 1px solid #e7e5e4;
+  border-radius: 8px;
+  background: #fafaf9;
+}
+
+.worksheet-text-modal__export-panel-title {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #78716c;
 }
 
 .worksheet-text-modal__fields {
@@ -375,7 +443,7 @@
   padding: 0.65rem 0.75rem;
   border: 1px solid #e7e5e4;
   border-radius: 6px;
-  background: #fafaf9;
+  background: #ffffff;
 }
 
 .worksheet-text-modal__row {
@@ -560,6 +628,36 @@
 .dark .worksheet-text-modal__preview-pane {
   border-color: #374151;
   background: #111827;
+}
+
+.dark .worksheet-text-modal__preview-hint {
+  color: #d6d3d1;
+}
+
+.dark .worksheet-text-modal__mode-bar {
+  border-color: #374151;
+  background: #111827;
+}
+
+.dark .worksheet-text-modal__mode-bar-title {
+  color: #fafaf9;
+}
+
+.dark .worksheet-text-modal__mode-bar.is-on .worksheet-text-modal__fields {
+  border-color: #374151;
+}
+
+.dark .worksheet-text-modal__sheet-panel-hint {
+  color: #a8a29e;
+}
+
+.dark .worksheet-text-modal__export-panel {
+  border-color: #374151;
+  background: #111827;
+}
+
+.dark .worksheet-text-modal__export-panel-title {
+  color: #a8a29e;
 }
 
 .dark .worksheet-text-modal__paper,

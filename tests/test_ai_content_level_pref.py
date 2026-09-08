@@ -53,7 +53,7 @@ def test_diagram_preferences_accepts_v3_ribbon_fields() -> None:
     """V3 ribbon height and last tab can PATCH without 学段."""
     body = DiagramPreferencesUpdate.model_validate({"v3_ribbon_classic": True, "v3_ribbon_tab": "Design"})
     assert body.v3_ribbon_classic is True
-    assert body.v3_ribbon_tab == "design"
+    assert body.v3_ribbon_tab == "edit"
     assert "education_stage" not in body.model_fields_set
 
 

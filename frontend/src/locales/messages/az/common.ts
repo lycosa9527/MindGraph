@@ -276,7 +276,6 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'Klassik kətan',
   'settings.language.mindMapCanvasV2': 'V2',
   'settings.language.mindMapCanvasV1': 'V1',
-  'settings.language.mindMapCanvasV3': 'V3',
   'settings.language.mindMapCanvasRefreshHint': 'Tam effekt üçün dəyişdikdən sonra kətan səhifəsini yeniləyin',
   'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
   'settings.language.eBlackboardOff': 'Off',

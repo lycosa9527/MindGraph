@@ -1,10 +1,12 @@
 <script setup lang="ts">
 /**
- * 编号 启用/隐藏 + Swiss el-selects (same chrome as language settings).
+ * 编号 启用/隐藏 + sample chips (no nested select inside the flyout).
  */
-import { computed, onUnmounted } from 'vue'
+import { computed, ref } from 'vue'
 
-import { ElOption, ElSelect } from 'element-plus'
+import { ElDropdown, ElTooltip } from 'element-plus'
+
+import { ChevronDown, ListOrdered } from '@lucide/vue'
 
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -24,21 +26,24 @@ const emit = defineEmits<{
   overlayLock: [locked: boolean]
 }>()
 
+const props = withDefaults(
+  defineProps<{
+    /** toolbar = one ribbon button that opens this panel */
+    variant?: 'embedded' | 'button'
+    compact?: boolean
+  }>(),
+  { variant: 'embedded', compact: false }
+)
+
 const { t } = useLanguage()
 const notify = useNotifications()
 const diagramStore = useDiagramStore()
 
 type NumberingVisibility = 'enable' | 'hide'
 
-const SWISS_SELECT_POPPER = 'mm-numbering-swiss-select-popper'
-
-let unlockTimer = 0
-
-onUnmounted(() => {
-  if (unlockTimer !== 0) {
-    window.clearTimeout(unlockTimer)
-  }
-})
+const numberingLabel = computed(() => t('canvas.toolbar.mindMapAppearanceNumbering'))
+const isButton = computed(() => props.variant === 'button')
+const dropdownOpen = ref(false)
 
 function ensureDiagram(): boolean {
   if (!diagramStore.data?.nodes?.length) {
@@ -55,6 +60,8 @@ const numberingVisibility = computed<NumberingVisibility>({
     diagramStore.setMindMapBranchNumbering(value === 'enable')
   },
 })
+
+const numberingEnabled = computed(() => numberingVisibility.value === 'enable')
 
 const numberingVisibilityOptions = computed(() => [
   { label: t('canvas.toolbar.mindMapAppearanceNumberingEnable'), value: 'enable' as const },
@@ -79,23 +86,115 @@ const nestedStyle = computed<MindMapNumberingNestedStyle>({
   },
 })
 
-function handleSelectVisible(open: boolean): void {
-  emit('overlayLock', true)
-  if (unlockTimer !== 0) {
-    window.clearTimeout(unlockTimer)
-    unlockTimer = 0
-  }
-  if (!open) {
-    unlockTimer = window.setTimeout(() => {
-      unlockTimer = 0
-      emit('overlayLock', false)
-    }, 0)
-  }
+function handleDropdownVisible(visible: boolean): void {
+  dropdownOpen.value = visible
+  emit('overlayLock', visible)
 }
 </script>
 
 <template>
-  <div class="mm-numbering">
+  <ElTooltip
+    v-if="isButton"
+    :content="numberingLabel"
+    placement="bottom"
+  >
+    <span class="inline-flex shrink-0">
+      <ElDropdown
+        :visible="dropdownOpen"
+        :hide-on-click="false"
+        trigger="click"
+        placement="bottom"
+        popper-class="mm-toolbar-popper mm-toolbar-popper--numbering"
+        @update:visible="handleDropdownVisible"
+      >
+        <button
+          type="button"
+          class="mm-btn"
+          :aria-label="numberingLabel"
+        >
+          <ListOrdered class="w-4 h-4 shrink-0" />
+          <span
+            v-if="!compact"
+            class="mm-btn__label"
+            >{{ numberingLabel }}</span
+          >
+          <ChevronDown
+            :size="12"
+            class="mm-btn__chevron"
+          />
+        </button>
+        <template #dropdown>
+          <div class="mm-numbering mm-numbering--flyout">
+            <AdminSwissSegmented
+              v-model="numberingVisibility"
+              equal
+              :options="numberingVisibilityOptions"
+              :aria-label="numberingLabel"
+            />
+
+            <div
+              class="mm-numbering__styles"
+              :class="{ 'is-disabled': !numberingEnabled }"
+            >
+              <section class="mm-numbering-field">
+                <div class="mm-numbering-kicker">
+                  {{ t('canvas.toolbar.mindMapAppearanceNumberingPrefix') }}
+                </div>
+                <div
+                  class="mm-numbering-chips"
+                  role="listbox"
+                  :aria-label="t('canvas.toolbar.mindMapAppearanceNumberingPrefix')"
+                >
+                  <button
+                    v-for="preset in MIND_MAP_NUMBERING_GLYPH_PRESETS"
+                    :key="preset.id"
+                    type="button"
+                    class="mm-numbering-chip"
+                    role="option"
+                    :aria-selected="prefixStyle === preset.id"
+                    :class="{ 'is-active': prefixStyle === preset.id }"
+                    :disabled="!numberingEnabled"
+                    @click="prefixStyle = preset.id"
+                  >
+                    {{ preset.samples }}
+                  </button>
+                </div>
+              </section>
+
+              <section class="mm-numbering-field">
+                <div class="mm-numbering-kicker">
+                  {{ t('canvas.toolbar.mindMapAppearanceNumberingNested') }}
+                </div>
+                <div
+                  class="mm-numbering-chips"
+                  role="listbox"
+                  :aria-label="t('canvas.toolbar.mindMapAppearanceNumberingNested')"
+                >
+                  <button
+                    v-for="preset in MIND_MAP_NUMBERING_NESTED_PRESETS"
+                    :key="preset.id"
+                    type="button"
+                    class="mm-numbering-chip"
+                    role="option"
+                    :aria-selected="nestedStyle === preset.id"
+                    :class="{ 'is-active': nestedStyle === preset.id }"
+                    :disabled="!numberingEnabled"
+                    @click="nestedStyle = preset.id"
+                  >
+                    {{ preset.samples }}
+                  </button>
+                </div>
+              </section>
+            </div>
+          </div>
+        </template>
+      </ElDropdown>
+    </span>
+  </ElTooltip>
+  <div
+    v-else
+    class="mm-numbering"
+  >
     <div class="mm-appearance-row mm-numbering__toggle">
       <span class="mm-appearance-row__label">
         {{ t('canvas.toolbar.mindMapAppearanceNumbering') }}
@@ -108,49 +207,46 @@ function handleSelectVisible(open: boolean): void {
       />
     </div>
 
-    <div class="mm-numbering__styles">
+    <div
+      class="mm-numbering__styles"
+      :class="{ 'is-disabled': !numberingEnabled }"
+    >
       <section class="mm-numbering-field">
         <div class="mm-numbering-kicker">
           {{ t('canvas.toolbar.mindMapAppearanceNumberingPrefix') }}
         </div>
-        <ElSelect
-          v-model="prefixStyle"
-          class="mm-numbering-swiss-select"
-          :fit-input-width="true"
-          :popper-class="SWISS_SELECT_POPPER"
-          :aria-label="t('canvas.toolbar.mindMapAppearanceNumberingPrefix')"
-          @visible-change="handleSelectVisible"
-        >
-          <ElOption
+        <div class="mm-numbering-chips">
+          <button
             v-for="preset in MIND_MAP_NUMBERING_GLYPH_PRESETS"
             :key="preset.id"
-            :label="preset.samples"
-            :value="preset.id"
+            type="button"
+            class="mm-numbering-chip"
+            :class="{ 'is-active': prefixStyle === preset.id }"
+            :disabled="!numberingEnabled"
             @click="prefixStyle = preset.id"
-          />
-        </ElSelect>
+          >
+            {{ preset.samples }}
+          </button>
+        </div>
       </section>
 
       <section class="mm-numbering-field">
         <div class="mm-numbering-kicker">
           {{ t('canvas.toolbar.mindMapAppearanceNumberingNested') }}
         </div>
-        <ElSelect
-          v-model="nestedStyle"
-          class="mm-numbering-swiss-select"
-          :fit-input-width="true"
-          :popper-class="SWISS_SELECT_POPPER"
-          :aria-label="t('canvas.toolbar.mindMapAppearanceNumberingNested')"
-          @visible-change="handleSelectVisible"
-        >
-          <ElOption
+        <div class="mm-numbering-chips">
+          <button
             v-for="preset in MIND_MAP_NUMBERING_NESTED_PRESETS"
             :key="preset.id"
-            :label="preset.samples"
-            :value="preset.id"
+            type="button"
+            class="mm-numbering-chip"
+            :class="{ 'is-active': nestedStyle === preset.id }"
+            :disabled="!numberingEnabled"
             @click="nestedStyle = preset.id"
-          />
-        </ElSelect>
+          >
+            {{ preset.samples }}
+          </button>
+        </div>
       </section>
     </div>
   </div>
@@ -160,27 +256,41 @@ function handleSelectVisible(open: boolean): void {
 .mm-numbering {
   --mm-numbering-ink: #1c1917;
   --mm-numbering-muted: #78716c;
-  --mm-numbering-subtle: #a8a29e;
   --mm-numbering-border: #e7e5e4;
   --mm-numbering-border-strong: #d6d3d1;
   --mm-numbering-surface: #ffffff;
   --mm-numbering-hover: #f5f5f4;
+  --mm-numbering-active: #eff6ff;
+  --mm-numbering-active-ink: #1d4ed8;
+  --mm-numbering-active-border: #93c5fd;
 
   margin-top: 12px;
   padding-top: 10px;
   border-top: 1px solid var(--mm-numbering-border);
 }
 
+.mm-numbering--flyout {
+  margin-top: 0;
+  padding: 12px;
+  border-top: none;
+}
+
 .dark .mm-numbering {
   --mm-numbering-ink: #f9fafb;
   --mm-numbering-muted: #a8a29e;
-  --mm-numbering-subtle: #78716c;
   --mm-numbering-border: #374151;
   --mm-numbering-border-strong: #4b5563;
   --mm-numbering-surface: #1f2937;
   --mm-numbering-hover: #374151;
+  --mm-numbering-active: rgb(37 99 235 / 0.22);
+  --mm-numbering-active-ink: #93c5fd;
+  --mm-numbering-active-border: #3b82f6;
 
   border-top-color: var(--mm-numbering-border);
+}
+
+.mm-numbering--flyout :deep(.admin-swiss-segmented) {
+  width: 100%;
 }
 
 .mm-numbering__toggle {
@@ -191,181 +301,76 @@ function handleSelectVisible(open: boolean): void {
   width: 60px;
 }
 
-.mm-numbering :deep(.admin-swiss-segmented) {
-  flex: 0 0 auto;
-}
-
-.mm-numbering :deep(.admin-swiss-segment) {
-  min-width: 0;
-  min-height: 28px;
-  padding: 0 8px;
-  font-size: 12px;
-}
-
 .mm-numbering__styles {
-  margin-top: 10px;
+  margin-top: 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+}
+
+.mm-numbering__styles.is-disabled {
+  opacity: 0.45;
 }
 
 .mm-numbering-kicker {
-  display: flex;
-  align-items: baseline;
-  margin-bottom: 6px;
-  font-size: 0.6875rem;
+  margin-bottom: 8px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
   color: var(--mm-numbering-muted);
-  line-height: 1.35;
+  line-height: 1.2;
 }
 
-.mm-numbering-kicker::before {
-  content: '';
-  display: inline-block;
-  width: 0.35rem;
-  height: 0.35rem;
-  margin-inline-end: 0.35rem;
-  background: var(--mm-numbering-subtle);
-  border-radius: 1px;
-  transform: translateY(-0.05rem);
+.mm-numbering-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-.mm-numbering-swiss-select {
-  width: 12rem;
+.mm-numbering-chip {
+  display: inline-flex;
+  align-items: center;
   max-width: 100%;
-}
-
-.mm-numbering-swiss-select :deep(.el-select__wrapper) {
-  min-height: 2.25rem;
-  border-radius: 6px;
+  min-height: 28px;
+  padding: 4px 8px;
   border: 1px solid var(--mm-numbering-border-strong);
-  background: var(--mm-numbering-surface);
-  box-shadow: none;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--mm-numbering-ink);
-  transition:
-    border-color 0.12s ease,
-    background-color 0.12s ease;
-}
-
-.mm-numbering-swiss-select :deep(.el-select__wrapper:hover) {
-  border-color: var(--mm-numbering-subtle);
-}
-
-.mm-numbering-swiss-select :deep(.el-select__wrapper.is-focused) {
-  border-color: var(--mm-numbering-muted);
-  box-shadow: 0 0 0 1px var(--mm-numbering-border-strong);
-}
-
-.mm-numbering-swiss-select :deep(.el-select__caret) {
-  color: var(--mm-numbering-muted);
-}
-
-.mm-numbering-swiss-select :deep(.el-select__placeholder),
-.mm-numbering-swiss-select :deep(.el-select__selected-item) {
-  color: var(--mm-numbering-ink);
-}
-
-.mm-numbering-swiss-select :deep(.el-select__placeholder) {
-  color: var(--mm-numbering-muted);
-}
-</style>
-
-<!-- Dropdown is teleported; target via popper-class (same Swiss panel as language). -->
-<style>
-.el-select__popper.mm-numbering-swiss-select-popper.el-popper {
-  box-sizing: border-box !important;
-  min-width: 0 !important;
-  width: 12rem !important;
-  max-width: min(12rem, calc(100vw - 32px)) !important;
-  padding: 4px !important;
-  border: 1px solid #e7e5e4 !important;
-  border-radius: 10px !important;
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.07),
-    0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
-  background: #ffffff !important;
-  overflow: hidden !important;
-}
-
-.dark .el-select__popper.mm-numbering-swiss-select-popper.el-popper {
-  border-color: #374151 !important;
-  background: #1f2937 !important;
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.25),
-    0 2px 4px -2px rgba(0, 0, 0, 0.18) !important;
-}
-
-.el-select-dropdown.mm-numbering-swiss-select-popper {
-  min-width: 0 !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  border: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  background: transparent !important;
-}
-
-.mm-numbering-swiss-select-popper .el-select-dropdown__list {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-.mm-numbering-swiss-select-popper .el-select-dropdown__item {
-  height: auto !important;
-  min-height: 2rem;
-  line-height: 1.25;
-  padding: 0.3rem 8px !important;
   border-radius: 6px;
-  font-size: 0.8125rem;
+  background: var(--mm-numbering-surface);
+  color: var(--mm-numbering-ink);
+  cursor: pointer;
+  font-size: 12px;
   font-weight: 500;
-  color: #44403c;
-  letter-spacing: 0.01em;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.25;
   white-space: nowrap;
   transition:
-    background 0.12s ease,
+    border-color 0.12s ease,
+    background-color 0.12s ease,
     color 0.12s ease;
 }
 
-.dark .mm-numbering-swiss-select-popper .el-select-dropdown__item {
-  color: #d6d3d1;
+.mm-numbering-chip:hover:not(:disabled) {
+  background: var(--mm-numbering-hover);
 }
 
-.mm-numbering-swiss-select-popper .el-select-dropdown__item.is-hovering,
-.mm-numbering-swiss-select-popper .el-select-dropdown__item:hover {
-  background: #f5f5f4 !important;
-  color: #1c1917 !important;
+.mm-numbering-chip.is-active {
+  border-color: var(--mm-numbering-active-border);
+  background: var(--mm-numbering-active);
+  color: var(--mm-numbering-active-ink);
+  font-weight: 600;
 }
 
-.dark .mm-numbering-swiss-select-popper .el-select-dropdown__item.is-hovering,
-.dark .mm-numbering-swiss-select-popper .el-select-dropdown__item:hover {
-  background: #374151 !important;
-  color: #f9fafb !important;
+.mm-numbering-chip:disabled {
+  cursor: not-allowed;
+}
+</style>
+
+<style>
+.mm-toolbar-popper--numbering.el-popper {
+  width: min(340px, calc(100vw - 24px)) !important;
 }
 
-.mm-numbering-swiss-select-popper .el-select-dropdown__item:active {
-  background: #e7e5e4 !important;
-}
-
-.dark .mm-numbering-swiss-select-popper .el-select-dropdown__item:active {
-  background: #4b5563 !important;
-}
-
-.mm-numbering-swiss-select-popper .el-select-dropdown__item.is-selected {
-  font-weight: 600 !important;
-  color: #1c1917 !important;
-  background: #f5f5f4 !important;
-}
-
-.dark .mm-numbering-swiss-select-popper .el-select-dropdown__item.is-selected {
-  color: #f9fafb !important;
-  background: #374151 !important;
+.mm-toolbar-popper--numbering .mm-numbering--flyout {
+  margin-top: 0;
+  padding: 12px;
+  border-top: none;
 }
 </style>

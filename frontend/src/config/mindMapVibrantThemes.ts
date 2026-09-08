@@ -16,16 +16,18 @@ export const MIND_MAP_THEME_ACCENTS = [
   '#7574BC', // rgb(117, 116, 188)
 ] as const
 
-/** Rainbow branch cycle — coral → orange → lime → cyan → blue → purple → pink. */
-export const MIND_MAP_RAINBOW_ACCENTS = [
-  '#FA8055',
-  '#FFAD36',
-  '#B5C62A',
-  '#0098B9',
-  MIND_MAP_VIBRANT_BLUE,
-  '#7574BC',
-  '#FF7DC1', // rgb(255, 125, 193)
+/** Rainbow branch families — line / text / fill (WCAG AA tokens). */
+export const MIND_MAP_RAINBOW_FAMILIES = [
+  { line: '#2E90FA', text: '#175CD3', fill: '#EBF3FE' },
+  { line: '#12B76A', text: '#077D55', fill: '#E9F9F1' },
+  { line: '#F79009', text: '#B54708', fill: '#FEF3E2' },
+  { line: '#F04438', text: '#B42318', fill: '#FEECEB' },
+  { line: '#7A5AF8', text: '#5925DC', fill: '#F0EBFE' },
+  { line: '#0BA5EC', text: '#026AA2', fill: '#E7F6FD' },
 ] as const
+
+/** Rainbow branch cycle — line token of each family. */
+export const MIND_MAP_RAINBOW_ACCENTS = MIND_MAP_RAINBOW_FAMILIES.map((family) => family.line)
 
 /** @deprecated Use MIND_MAP_THEME_ACCENTS or MIND_MAP_RAINBOW_ACCENTS. */
 export const MIND_MAP_VIBRANT_ACCENTS = MIND_MAP_RAINBOW_ACCENTS
@@ -36,15 +38,25 @@ export const MIND_MAP_RAINBOW_TOPIC_COLORS: Pick<
   StylePresetColors,
   'topicBackgroundColor' | 'topicTextColor' | 'topicBorderColor'
 > = {
-  topicBackgroundColor: '#3d4a6e',
+  topicBackgroundColor: '#3B5BDB',
   topicTextColor: '#ffffff',
-  topicBorderColor: '#2c3654',
+  topicBorderColor: '#3B5BDB',
 }
 
 export interface RainbowBranchNodeColors {
   backgroundColor: string
   textColor: string
   borderColor: string
+  borderWidth?: number
+  accentBarColor?: string
+  accentBarWidth?: number
+}
+
+const RAINBOW_L2_LEFT_BAR_PX = 3
+
+function rainbowFamilyForLine(line: string): (typeof MIND_MAP_RAINBOW_FAMILIES)[number] | null {
+  const key = line.trim().toLowerCase()
+  return MIND_MAP_RAINBOW_FAMILIES.find((family) => family.line.toLowerCase() === key) ?? null
 }
 
 function parseHex(hex: string): [number, number, number] {
@@ -95,13 +107,41 @@ export function mindMapColorsFromVibrantAccent(accent: string): StylePresetColor
 }
 
 /**
- * Rainbow branch node colors by depth (reference: L1 solid fill + white text,
- * L2/L3+ progressively lighter tints with accent-hued text).
+ * Rainbow branch node colors by depth.
+ * L1: fill / text / line tokens. L2+: white fill + 3px left bar (line token).
  */
 export function mindMapRainbowNodeColors(
   accent: string,
   depth: number
 ): RainbowBranchNodeColors {
+  const family = rainbowFamilyForLine(accent)
+  if (family) {
+    if (depth <= 1) {
+      return {
+        backgroundColor: family.fill,
+        textColor: family.text,
+        borderColor: family.line,
+        borderWidth: 1.5,
+        accentBarWidth: 0,
+      }
+    }
+    return {
+      backgroundColor: '#FFFFFF',
+      textColor: family.text,
+      borderColor: family.line,
+      borderWidth: 0,
+      accentBarColor: family.line,
+      accentBarWidth: RAINBOW_L2_LEFT_BAR_PX,
+    }
+  }
+  return layeredBranchFillFromAccent(accent, depth)
+}
+
+/**
+ * Solid-theme depth fills (not the rainbow token table).
+ * L1 solid accent; L2/L3+ lighter tints.
+ */
+function layeredBranchFillFromAccent(accent: string, depth: number): RainbowBranchNodeColors {
   if (depth <= 1) {
     return {
       backgroundColor: accent,
@@ -180,7 +220,7 @@ export function mindMapLayeredBranchColorsFromAccent(
   accent: string,
   depth: number
 ): RainbowBranchNodeColors {
-  return mindMapRainbowNodeColors(accent, depth)
+  return layeredBranchFillFromAccent(accent, depth)
 }
 
 /** Center topic for layered diagram styles — darker than L1 accent fill. */
@@ -264,6 +304,9 @@ export function applyRainbowMindMapColors(
       backgroundColor: colors.backgroundColor,
       textColor: colors.textColor,
       borderColor: colors.borderColor,
+      borderWidth: colors.borderWidth,
+      accentBarColor: colors.accentBarColor,
+      accentBarWidth: colors.accentBarWidth ?? 0,
     }
   })
 
