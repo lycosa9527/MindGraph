@@ -318,7 +318,7 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
       if (pipelineStore.editPipelineActive) {
         return
       }
-      void history.bootstrapHistory()
+      void history.refreshHistory()
     }, PEER_HISTORY_POLL_MS)
   }
   function stopPeerHistoryPoll(): void {

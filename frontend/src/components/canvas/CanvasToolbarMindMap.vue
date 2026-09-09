@@ -232,7 +232,7 @@ function openDocGenerate(kind: 'file' | 'web'): void {
 }
 
 function openVoiceSummary(): void {
-  voiceNotesStore.openModal()
+  void voiceNotesStore.enableAndShowModal()
 }
 
 function openClassroom(): void {

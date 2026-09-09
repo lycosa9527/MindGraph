@@ -12,8 +12,8 @@ Round bring-up uses one **circular safe area** on the 1.85″ 360×360 panel (We
 - Content band: about `x 62–298`, `y 64–280` (inscribed; corners stay dead)
 - Bottom chin: gesture hint lifted (`24 dp`)
 - Apps (Settings / Files / App Store): headers sit **below** the capsule; pages use the same inset
-- Launcher: 2×2 watch tiles (`56` icon + `18` label) so app names stay inside the disc
-- Keyboard: Chinese 九宫格 (T9 pinyin + candidates) and English 九宫格 multi-tap
+- Launcher: Super C++ hardcodes 112×18 phone tiles; the 360 overlay forces 80×10 / 2 columns so labels stay above the chin
+- Keyboard: ITU 3×4 九宫格 (`1`–`9`, last row 中/EN · `0` · ⌫). Composer + OK above the pad; candidates between them. Tap = letter / pinyin; long-press = digit. Passwords open on 123.
 
 Overlay: [`../../firmware/1.85c/round_ui`](../../firmware/1.85c/round_ui). Shell language defaults to `zh_CN` (NotoSans SC). The 九宫格 IME lives in firmware `main/modules/round_shell.cpp`.
 

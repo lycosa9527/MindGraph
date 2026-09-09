@@ -5,13 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.64] - 2026-09-09
+
+> **Voice notes bind to the open canvas; 概要 braces wrap whole subtrees; Kitty clarify chips survive hydrate.**
+
+### Added
+
+- **Voice notes on the current diagram** — Canvas recorder binds to the open mind map (saves an unsaved spec first). Ingest is tagged `voice_notes` so it does not wipe other Document Summary sources. Transcript live-saves every 30s while recording. Hiding the modal mid-record asks first; capture keeps running.
+- **Generate mindmap** — Desktop FAB/modal share the mobile stop → ingest → document-summary → persist path (replaces Jump).
+- **Clarify chips** — Numbered Kitty options parse from reply text or `clarify_options`. Chips stay on the message after history hydrate and peer refresh.
+
+### Changed
+
+- **概要 brace** — Range chrome uses sibling height and the outward edge of covered subtrees so the brace sits past child topics.
+- **1.85C 九宫格** — ITU 3×4 pad in the inscribed circle (composer + OK above, candidates between). Visible key borders; long-press digits; passwords open on 123. Launcher overlay forces 80×10 / 2-column tiles.
+- **Kitty history refresh** — Peer poll no longer wipes a live thread when Redis/PG briefly returns empty.
+- **Mobile Kitty PTT** — Mic control ignores iOS callout, select, and drag.
+
+### Tests
+
+- [`frontend/tests/voiceNotesBind.spec.ts`](frontend/tests/voiceNotesBind.spec.ts), [`frontend/tests/oneSentenceClarifyChoices.spec.ts`](frontend/tests/oneSentenceClarifyChoices.spec.ts), [`frontend/tests/useKittyConversationHistory.spec.ts`](frontend/tests/useKittyConversationHistory.spec.ts), [`frontend/tests/mindMapSummary.spec.ts`](frontend/tests/mindMapSummary.spec.ts), [`tests/test_doc_summary_ingest.py`](tests/test_doc_summary_ingest.py)
+
 ## [5.180.63] - 2026-09-09
 
 > **1.85C round shell: zh_CN, circular launcher, 九宫格 IME. Placeholder watch app removed.**
 
 ### Added
 
-- **九宫格 keyboard** — System keyboard is a 3×4 phone pad. Chinese mode is T9 pinyin with a candidate bar; EN mode is multi-tap ABC. Firmware: [`esp32/firmware/1.85c/main/modules/round_shell.cpp`](esp32/firmware/1.85c/main/modules/round_shell.cpp).
+- **九宫格 keyboard** — 4-row phone pad in the inscribed circle. Chinese T9 pinyin; EN multi-tap ABC. Visible key borders (JSON styles were ignored by Brookesia). Firmware: [`esp32/firmware/1.85c/main/modules/round_shell.cpp`](esp32/firmware/1.85c/main/modules/round_shell.cpp).
 - **zh_CN shell** — Super boots in Chinese and uses NotoSans SC.
 
 ### Changed

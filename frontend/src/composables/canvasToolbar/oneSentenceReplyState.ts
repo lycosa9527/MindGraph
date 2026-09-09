@@ -4,6 +4,7 @@
  */
 import type { Ref } from 'vue'
 
+import { resolveClarifyChoices } from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
 import type {
   OneSentenceChatMessage,
   OneSentenceClarifyChoice,
@@ -24,7 +25,7 @@ export function createOneSentenceReplyState(options: {
   pushKittyMessage: (
     text: string,
     streaming?: boolean,
-    extras?: { choices?: OneSentenceClarifyChoice[] }
+    extras?: { choices?: OneSentenceClarifyChoice[]; requestId?: string }
   ) => string
   replaceKittyMessage: (messageId: string, text: string, streaming?: boolean) => void
   scrollChatToBottom: () => void
@@ -62,23 +63,42 @@ export function createOneSentenceReplyState(options: {
     progressMessageId = null
   }
 
-  function showFinalReply(text: string, choices?: OneSentenceClarifyChoice[]): void {
+  function showFinalReply(
+    text: string,
+    choices?: OneSentenceClarifyChoice[],
+    requestId?: string
+  ): void {
     const trimmed = text.trim()
     if (trimmed === '') {
       return
     }
     finalizeConversationalStream()
     clearProgressMessage()
-    consumeOpenChoices()
-    if (trimmed === lastFinalReplyText && !choices?.length) {
-      return
-    }
+    const resolved = resolveClarifyChoices(choices, trimmed)
+    const rid = requestId?.trim() || undefined
     const last = options.messages.value[options.messages.value.length - 1]
-    if (last?.role === 'kitty' && last.text === trimmed && !choices?.length) {
+    if (last?.role === 'kitty' && last.text === trimmed) {
       lastFinalReplyText = trimmed
+      if ((resolved?.length && !last.choices?.length) || (rid && !last.requestId)) {
+        const idx = options.messages.value.length - 1
+        const next = [...options.messages.value]
+        next[idx] = {
+          ...last,
+          ...(resolved?.length && !last.choices?.length ? { choices: resolved } : {}),
+          ...(rid && !last.requestId ? { requestId: rid } : {}),
+        }
+        options.messages.value = next
+      }
       return
     }
-    options.pushKittyMessage(trimmed, false, choices?.length ? { choices } : undefined)
+    if (trimmed === lastFinalReplyText && !resolved?.length) {
+      return
+    }
+    consumeOpenChoices()
+    options.pushKittyMessage(trimmed, false, {
+      ...(resolved?.length ? { choices: resolved } : {}),
+      ...(rid ? { requestId: rid } : {}),
+    })
     lastFinalReplyText = trimmed
   }
 
@@ -134,7 +154,7 @@ export function createOneSentenceReplyState(options: {
       appendConversationalStream(trimmed)
       return
     }
-    showFinalReply(trimmed, payload.choices)
+    showFinalReply(trimmed, payload.choices, payload.requestId)
   }
 
   function resetForNewTurn(): void {

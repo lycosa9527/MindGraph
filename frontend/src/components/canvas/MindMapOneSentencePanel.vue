@@ -13,12 +13,14 @@ import OneSentenceKittyAvatar from '@/components/canvas/OneSentenceKittyAvatar.v
 import OneSentenceNodeActionGuide from '@/components/canvas/OneSentenceNodeActionGuide.vue'
 import KittyBlackCatMascot from '@/components/kitty/KittyBlackCatMascot.vue'
 import { useLanguage } from '@/composables'
+import { resolveMessageClarifyChoices } from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
 import { useMindMapOneSentenceChat } from '@/composables/canvasToolbar/useMindMapOneSentenceChat'
 import {
   ONE_SENTENCE_NODE_ACTION_SUGGESTION_KEYS,
   ONE_SENTENCE_SUGGESTION_ROTATE_MS,
 } from '@/config/oneSentenceNodeActionSuggestions'
 import { useAuthStore } from '@/stores'
+import type { OneSentenceChatMessage, OneSentenceClarifyChoice } from '@/stores/oneSentence'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 const emit = defineEmits<{
@@ -46,6 +48,10 @@ const {
 const userAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
 const photoInputRef = ref<HTMLInputElement | null>(null)
 const photoUploading = ref(false)
+
+function messageChoices(msg: OneSentenceChatMessage): OneSentenceClarifyChoice[] {
+  return resolveMessageClarifyChoices(messages.value, msg)
+}
 
 const inputDisabled = computed(() => isInputBlocked.value)
 
@@ -231,13 +237,13 @@ onUnmounted(() => {
               {{ t('canvas.mindMapOneSentence.requestFailed') }}
             </p>
             <div
-              v-if="msg.choices?.length && !msg.choicesConsumed"
+              v-if="messageChoices(msg).length"
               class="one-sentence-choices"
               role="group"
               :aria-label="t('canvas.mindMapOneSentence.clarifyChoices')"
             >
               <button
-                v-for="choice in msg.choices"
+                v-for="choice in messageChoices(msg)"
                 :key="`${msg.id}-${choice.index}`"
                 type="button"
                 class="one-sentence-choice"

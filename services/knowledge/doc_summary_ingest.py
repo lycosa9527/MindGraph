@@ -34,6 +34,7 @@ from services.knowledge.doc_summary_storage import (
     cache_extracted_text,
     clear_package_redis,
     delete_extracted_content,
+    fetch_extracted_markdown,
     fetch_extracted_markdown_cached,
     new_object_id,
     set_package_extract_progress,
@@ -240,6 +241,9 @@ class DocSummaryIngestService:
         lock = await self._begin_exclusive_ingest(package_id)
         try:
             await set_package_status(package_id, "processing")
+            skip_replace = source_kind == "voice_notes"
+            if skip_replace:
+                await self._replace_sources_by_kind(package_id, "voice_notes")
             return await self.persist_extracted(
                 package_id=package_id,
                 markdown=text,
@@ -250,6 +254,7 @@ class DocSummaryIngestService:
                 page_url=page_url,
                 language=language,
                 extra_metadata=extra_metadata,
+                skip_replace=skip_replace,
             )
         except _DOC_SUMMARY_INGEST_ERRORS:
             await set_package_status(package_id, "failed")
@@ -257,7 +262,11 @@ class DocSummaryIngestService:
         finally:
             await lock.release()
 
-    async def list_completed_extract_candidates(self, package_id: int) -> list[dict[str, Any]]:
+    async def list_completed_extract_candidates(
+        self,
+        package_id: int,
+        ingest_source: Optional[str] = None,
+    ) -> list[dict[str, Any]]:
         """DB-only: validate package and return completed extract metadata rows.
 
         Each item is ``{"document_id": int, "meta": dict}``. Callers should exit
@@ -275,6 +284,8 @@ class DocSummaryIngestService:
             if document.status != "completed":
                 continue
             meta = document.doc_metadata or {}
+            if ingest_source and meta.get("ingest_source") != ingest_source:
+                continue
             candidates.append({"document_id": int(document.id), "meta": dict(meta)})
         return candidates
 
@@ -331,6 +342,33 @@ class DocSummaryIngestService:
                 raise
             await self.reconcile_conflict_document(package_id, exc.document_id)
             raise
+
+    async def fetch_source_markdown(
+        self,
+        package_id: int,
+        ingest_source: str,
+    ) -> Optional[str]:
+        """Return COS/local markdown for one ingest source, skipping package cache."""
+        candidates = await self.list_completed_extract_candidates(
+            package_id,
+            ingest_source=ingest_source,
+        )
+        await release_open_transaction(self.db)
+        for entry in candidates:
+            raw_meta = entry.get("meta")
+            meta: dict[str, Any] = raw_meta if isinstance(raw_meta, dict) else {}
+            text = await fetch_extracted_markdown(meta)
+            if text and text.strip():
+                return text.strip()
+            if self._metadata_claims_extract_blob(meta):
+                doc_id_raw = entry.get("document_id")
+                document_id = int(doc_id_raw) if doc_id_raw is not None else None
+                raise DocSummaryStorageConflictError(
+                    package_id=package_id,
+                    object_id=str(meta.get("object_id") or "") or None,
+                    document_id=document_id,
+                )
+        return None
 
     @staticmethod
     def _metadata_claims_extract_blob(meta: dict) -> bool:
@@ -489,6 +527,20 @@ class DocSummaryIngestService:
         if existing:
             await self.db.commit()
         await clear_package_redis(package_id)
+
+    async def _replace_sources_by_kind(self, package_id: int, ingest_source: str) -> None:
+        existing = await self._package_documents(package_id)
+        removed = False
+        for document in existing:
+            meta = document.doc_metadata or {}
+            if meta.get("ingest_source") != ingest_source:
+                continue
+            remove_job_dir(meta.get("temp_job_dir"))
+            await delete_extracted_content(document.doc_metadata)
+            await self.db.delete(document)
+            removed = True
+        if removed:
+            await self.db.commit()
 
     async def list_package_documents(self, package_id: int) -> list[KnowledgeDocument]:
         """List sources in a package (newest first)."""

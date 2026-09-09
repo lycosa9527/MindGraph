@@ -8,6 +8,9 @@ import json
 import shutil
 from pathlib import Path
 
+from patch_super_keyboard import apply_keyboard_patches
+from patch_super_launcher import patch_launcher_cpp
+
 ROUND_WHEN = "${expr(${env.widthDp} == 360dp && ${env.heightDp} == 360dp)}"
 THEME_ASSETS = ["font/360.json", "size/360.json"]
 SHELL_ASSETS = ["constants/360.json"]
@@ -99,6 +102,22 @@ def patch_round_status_bar(super_root: Path) -> None:
     status_bar = styles.setdefault("styles", {}).setdefault("shell.statusBar", {})
     status_bar["radius"] = "16dp"
     status_bar["opacity"] = 230
+    save_json(style_path, styles)
+
+
+def patch_keyboard_composer(super_root: Path) -> None:
+    """Make the typed field a visible box sitting on the 九宫格."""
+    style_path = super_root / "shell" / "styles" / "shell.json"
+    if not style_path.is_file():
+        return
+    styles = load_json(style_path)
+    bucket = styles.setdefault("styles", {})
+    keyboard_input = bucket.setdefault("shell.keyboardInput", {})
+    keyboard_input["borderWidth"] = "2dp"
+    keyboard_input["radius"] = "12dp"
+    keyboard_field = bucket.setdefault("shell.keyboardInputField", {})
+    keyboard_field["borderWidth"] = "2dp"
+    keyboard_field["radius"] = "10dp"
     save_json(style_path, styles)
 
 
@@ -292,6 +311,7 @@ def apply(littlefs: Path, overlay: Path) -> None:
     if (overlay / "settings").exists() and settings_res.exists():
         copy_tree(overlay / "settings", settings_res)
     patch_round_status_bar(super_root)
+    patch_keyboard_composer(super_root)
     patch_launcher_frame(super_root)
     patch_launcher_labels(super_root)
     patch_message_dialog_actions(super_root)
@@ -322,6 +342,13 @@ def apply(littlefs: Path, overlay: Path) -> None:
     if store_res.is_dir():
         changed = apply_app_overlay(store_res, overlay / "app_store", APP_STORE_ASSETS) or changed
         patch_app_store_padding(store_res)
+
+    launcher_cpp = littlefs.parent / "managed_components" / "espressif__brookesia_system_super" / "src" / "shell_app_launcher.cpp"
+    if launcher_cpp.is_file():
+        launcher_changed = patch_launcher_cpp(launcher_cpp)
+        print(f"round_ui: launcher grid ({launcher_changed})")
+    motion_changed, password_changed = apply_keyboard_patches()
+    print(f"round_ui: keyboard motion={motion_changed} password={password_changed}")
 
     print(f"round_ui: applied to {littlefs} (variants_changed={changed})")
 

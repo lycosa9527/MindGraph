@@ -56,6 +56,13 @@ export default {
   'auth.voiceNotes.savedMinutesAgo': '轉錄已於{n}分鐘前儲存',
   'auth.voiceNotes.savedAt': '轉錄已儲存於 {time}',
   'auth.voiceNotes.unsavedChanges': '轉錄未儲存',
+  'auth.voiceNotes.closeWhileRecordingTitle': '正在錄音',
+  'auth.voiceNotes.closeWhileRecordingBody':
+    '關閉視窗不會停止錄音。轉錄每 30 秒自動儲存到目前導圖。確定要隱藏視窗嗎？',
+  'auth.voiceNotes.closeWhileRecordingConfirm': '隱藏視窗',
+  'auth.voiceNotes.recordingContinues': '錄音仍在繼續，可隨時重新開啟錄音總結。',
+  'auth.voiceNotes.noCurrentDiagram': '請先儲存目前思維導圖，再使用錄音總結。',
+  'auth.voiceNotes.restoreFailed': '無法載入已儲存的錄音轉錄。',
   'auth.voiceNotes.retryGenerate': '生成思維導圖',
   'auth.voiceNotes.historyTitle': '歷史語音筆記',
   'auth.voiceNotes.historyEmpty': '還沒有語音筆記',

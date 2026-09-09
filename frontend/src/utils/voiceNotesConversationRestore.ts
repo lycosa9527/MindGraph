@@ -1,6 +1,7 @@
 /**
  * Load a previous Voice Notes diagram back into the transcript UI.
  */
+import { voiceNotesMarkdownUrl } from '@/composables/voiceNotes/voiceNotesBind'
 import { DOC_SUMMARY_API_BASE } from '@/config/docSummaryApi'
 import { apiGet, apiRequestJson } from '@/utils/apiClient'
 import { parseVoiceNotesMarkdown } from '@/utils/voiceNotesMarkdown'
@@ -30,7 +31,8 @@ export type RestoredVoiceNotesConversation = {
 export async function loadVoiceNotesConversation(
   diagramId: string,
   title: string,
-  defaultLabelTemplate: string
+  defaultLabelTemplate: string,
+  ingestSource?: string
 ): Promise<RestoredVoiceNotesConversation> {
   const pkg = await apiRequestJson<DocSummaryPackage>(`${DOC_SUMMARY_API_BASE}/session/start`, {
     method: 'POST',
@@ -40,7 +42,7 @@ export async function loadVoiceNotesConversation(
       create_if_missing: true,
     }),
   })
-  const response = await apiGet(`${DOC_SUMMARY_API_BASE}/${pkg.id}/md`)
+  const response = await apiGet(voiceNotesMarkdownUrl(pkg.id, ingestSource))
   let markdown = ''
   if (response.ok) {
     const payload = (await response.json()) as ExtractedMarkdown

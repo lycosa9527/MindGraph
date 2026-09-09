@@ -162,4 +162,60 @@ describe('oneSentenceReplyState', () => {
     replyState.resetForNewTurn()
     expect(messages.value[0]?.choicesConsumed).toBe(true)
   })
+
+  it('parses numbered options from reply text and keeps them on a duplicate ack', () => {
+    const messages = ref<
+      Array<{
+        id: string
+        role: 'kitty' | 'user'
+        text: string
+        streaming?: boolean
+        choices?: Array<{ index: number; label: string }>
+        choicesConsumed?: boolean
+      }>
+    >([])
+    const ids: string[] = []
+
+    const replyState = createOneSentenceReplyState({
+      messages,
+      pushKittyMessage: (text, streaming = false, extras) => {
+        const id = `msg-${ids.length + 1}`
+        ids.push(id)
+        messages.value = [
+          ...messages.value,
+          {
+            id,
+            role: 'kitty',
+            text,
+            streaming,
+            choices: extras?.choices,
+          },
+        ]
+        return id
+      },
+      replaceKittyMessage: (messageId, text, streaming = false) => {
+        messages.value = messages.value.map((row) =>
+          row.id === messageId ? { ...row, text, streaming } : row
+        )
+      },
+      scrollChatToBottom: () => undefined,
+    })
+
+    replyState.handleReplyPayload({
+      text: '想怎么改这张图？\n1) 改主题\n2) 添加分支\n3) 自动补全这张图',
+      kind: 'final',
+    })
+
+    expect(messages.value[0]?.choices).toEqual([
+      { index: 1, label: '改主题' },
+      { index: 2, label: '添加分支' },
+      { index: 3, label: '自动补全这张图' },
+    ])
+    expect(messages.value[0]?.choicesConsumed).toBeUndefined()
+
+    replyState.showFinalReply('想怎么改这张图？\n1) 改主题\n2) 添加分支\n3) 自动补全这张图')
+    expect(messages.value).toHaveLength(1)
+    expect(messages.value[0]?.choicesConsumed).toBeUndefined()
+    expect(messages.value[0]?.choices).toHaveLength(3)
+  })
 })

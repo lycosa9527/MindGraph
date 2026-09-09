@@ -3,6 +3,7 @@
  */
 import { type Ref, ref } from 'vue'
 
+import { applyClarifyChoicesOnHydrate } from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
 import {
   pickOneSentenceGenerateDone,
   pickOneSentenceWelcome,
@@ -35,6 +36,7 @@ export function useKittyConversationHistory(options: {
   sessionHydrated: Ref<boolean>
   chatScrollEl: Ref<HTMLElement | null>
   bootstrapHistory: () => Promise<void>
+  refreshHistory: () => Promise<void>
   appendUserTurn: (
     text: string,
     requestId: string,
@@ -81,7 +83,7 @@ export function useKittyConversationHistory(options: {
   function pushKittyMessage(
     text: string,
     streaming = false,
-    extras?: { choices?: OneSentenceChatMessage['choices'] }
+    extras?: { choices?: OneSentenceChatMessage['choices']; requestId?: string }
   ): string {
     const id = nextMessageId()
     const row: OneSentenceChatMessage = {
@@ -92,6 +94,9 @@ export function useKittyConversationHistory(options: {
     }
     if (extras?.choices?.length) {
       row.choices = extras.choices
+    }
+    if (extras?.requestId?.trim()) {
+      row.requestId = extras.requestId.trim()
     }
     messages.value = [...messages.value, row]
     scrollChatToBottom()
@@ -197,17 +202,24 @@ export function useKittyConversationHistory(options: {
         status,
       })
     }
-    messages.value = rows
+    messages.value = applyClarifyChoicesOnHydrate(rows, messages.value)
     scrollChatToBottom()
   }
 
-  async function bootstrapHistory(): Promise<void> {
+  async function loadHistory(opts: {
+    replaceOnEmpty: boolean
+    markUnhydrated: boolean
+  }): Promise<void> {
     const gen = ++bootstrapGeneration
     const scope = options.diagramScope.value
-    sessionHydrated.value = false
+    if (opts.markUnhydrated) {
+      sessionHydrated.value = false
+    }
     if (!scope) {
-      messages.value = []
-      seedOpeningLine()
+      if (opts.replaceOnEmpty) {
+        messages.value = []
+        seedOpeningLine()
+      }
       sessionHydrated.value = true
       return
     }
@@ -217,11 +229,20 @@ export function useKittyConversationHistory(options: {
     }
     if (restored.length > 0) {
       hydrateFromTurns(restored)
-    } else {
+    } else if (opts.replaceOnEmpty) {
       messages.value = []
       seedOpeningLine()
     }
     sessionHydrated.value = true
+  }
+
+  async function bootstrapHistory(): Promise<void> {
+    await loadHistory({ replaceOnEmpty: true, markUnhydrated: true })
+  }
+
+  /** Peer poll — never wipe a live thread if Redis/PG briefly returns empty. */
+  async function refreshHistory(): Promise<void> {
+    await loadHistory({ replaceOnEmpty: false, markUnhydrated: false })
   }
 
   async function appendUserTurn(
@@ -346,6 +367,7 @@ export function useKittyConversationHistory(options: {
     sessionHydrated,
     chatScrollEl,
     bootstrapHistory,
+    refreshHistory,
     appendUserTurn,
     appendKittyTurn,
     migrateScope,

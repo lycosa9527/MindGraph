@@ -23,9 +23,7 @@ onMounted(() => {
   if (!authStore.isAuthenticated) {
     return
   }
-  void voiceNotes.enableAndOpen().then(() => {
-    voiceNotes.openModal()
-  })
+  void voiceNotes.enableAndShowModal()
 })
 </script>
 

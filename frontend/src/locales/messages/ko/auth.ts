@@ -307,6 +307,13 @@ export default {
   'auth.voiceNotes.savedMinutesAgo': '전사가 {n}분 전에 저장되었습니다',
   'auth.voiceNotes.savedAt': '전사가 {time}에 저장되었습니다',
   'auth.voiceNotes.unsavedChanges': '저장되지 않은 전사',
+  'auth.voiceNotes.closeWhileRecordingTitle': 'Recording in progress',
+  'auth.voiceNotes.closeWhileRecordingBody':
+    'Closing hides this window but does not stop recording. The transcript auto-saves to this mindmap every 30 seconds. Hide the window anyway?',
+  'auth.voiceNotes.closeWhileRecordingConfirm': 'Hide window',
+  'auth.voiceNotes.recordingContinues': 'Recording continues. Reopen Recording summary anytime.',
+  'auth.voiceNotes.noCurrentDiagram': 'Save this mindmap first, then use Recording summary.',
+  'auth.voiceNotes.restoreFailed': 'Could not load the saved recording transcript.',
   'auth.voiceNotes.retryGenerate': '마인드맵 생성',
   'auth.voiceNotes.historyTitle': '이전 음성 메모',
   'auth.voiceNotes.historyEmpty': '음성 메모가 없습니다',

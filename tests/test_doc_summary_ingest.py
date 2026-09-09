@@ -47,6 +47,31 @@ async def test_ingest_text_persists_completed_document() -> None:
 
 
 @pytest.mark.asyncio
+async def test_ingest_text_voice_notes_replaces_only_matching_source() -> None:
+    """Voice-note ingest keeps other Document Summary sources on the package."""
+    db = AsyncMock()
+    service = DocSummaryIngestService(db, user_id=1)
+    with (
+        patch.object(service, "get_package", new_callable=AsyncMock, return_value=_package()),
+        patch.object(service, "_begin_exclusive_ingest", new_callable=AsyncMock) as begin_lock,
+        patch.object(service, "_replace_sources_by_kind", new_callable=AsyncMock) as replace_kind,
+        patch.object(service, "persist_extracted", new_callable=AsyncMock) as persist,
+        patch("services.knowledge.doc_summary_ingest.set_package_status", new_callable=AsyncMock),
+    ):
+        lock = AsyncMock()
+        begin_lock.return_value = lock
+        persist.return_value = SimpleNamespace(id=55, status="completed")
+        await service.ingest_text(9, "hello from a meeting", title="Note", source_kind="voice_notes")
+
+    replace_kind.assert_awaited_once_with(9, "voice_notes")
+    persist.assert_awaited_once()
+    assert persist.await_args is not None
+    assert persist.await_args.kwargs["skip_replace"] is True
+    assert persist.await_args.kwargs["ingest_source"] == "voice_notes"
+    lock.release.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 async def test_ingest_file_schedules_background_job(tmp_path: Path) -> None:
     """File ingest copies into doc_summary_tmp and schedules async extract."""
     upload = tmp_path / "router-temp.bin"

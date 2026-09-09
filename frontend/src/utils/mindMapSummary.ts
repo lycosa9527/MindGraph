@@ -251,6 +251,14 @@ export function sameMindMapSummaryPaths(
   return left.every((path, index) => path === right[index])
 }
 
+/** True when `path` is a covered sibling or a descendant of one. */
+export function isMindMapSummaryExtentPath(
+  path: string,
+  coveredPaths: readonly string[]
+): boolean {
+  return coveredPaths.some((covered) => path === covered || path.startsWith(`${covered}/`))
+}
+
 /** Every tree path that shares the parent of the current 概要 range. */
 export function siblingPathsSharingParent(
   coveredPaths: readonly string[],

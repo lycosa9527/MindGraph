@@ -57,6 +57,13 @@ export default {
   'auth.voiceNotes.savedMinutesAgo': '转录已于{n}分钟前保存',
   'auth.voiceNotes.savedAt': '转录已保存于 {time}',
   'auth.voiceNotes.unsavedChanges': '转录未保存',
+  'auth.voiceNotes.closeWhileRecordingTitle': '正在录音',
+  'auth.voiceNotes.closeWhileRecordingBody':
+    '关闭窗口不会停止录音。转录每 30 秒自动保存到当前导图。确定要隐藏窗口吗？',
+  'auth.voiceNotes.closeWhileRecordingConfirm': '隐藏窗口',
+  'auth.voiceNotes.recordingContinues': '录音仍在继续，可随时重新打开录音总结。',
+  'auth.voiceNotes.noCurrentDiagram': '请先保存当前思维导图，再使用录音总结。',
+  'auth.voiceNotes.restoreFailed': '无法加载已保存的录音转录。',
   'auth.voiceNotes.retryGenerate': '生成思维导图',
   'auth.voiceNotes.historyTitle': '历史语音笔记',
   'auth.voiceNotes.historyEmpty': '还没有语音笔记',

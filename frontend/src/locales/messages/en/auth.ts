@@ -60,6 +60,13 @@ export default {
   'auth.voiceNotes.savedMinutesAgo': 'Transcript saved {n}min ago',
   'auth.voiceNotes.savedAt': 'Transcript saved at {time}',
   'auth.voiceNotes.unsavedChanges': 'Unsaved transcript',
+  'auth.voiceNotes.closeWhileRecordingTitle': 'Recording in progress',
+  'auth.voiceNotes.closeWhileRecordingBody':
+    'Closing hides this window but does not stop recording. The transcript auto-saves to this mindmap every 30 seconds. Hide the window anyway?',
+  'auth.voiceNotes.closeWhileRecordingConfirm': 'Hide window',
+  'auth.voiceNotes.recordingContinues': 'Recording continues. Reopen Recording summary anytime.',
+  'auth.voiceNotes.noCurrentDiagram': 'Save this mindmap first, then use Recording summary.',
+  'auth.voiceNotes.restoreFailed': 'Could not load the saved recording transcript.',
   'auth.voiceNotes.retryGenerate': 'Generate mindmap',
   'auth.voiceNotes.historyTitle': 'Previous voice notes',
   'auth.voiceNotes.historyEmpty': 'No voice notes yet',

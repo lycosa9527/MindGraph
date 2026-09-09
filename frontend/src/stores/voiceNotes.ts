@@ -11,10 +11,19 @@ import { defineStore } from 'pinia'
 
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { getDefaultDiagramName } from '@/composables/editor/useDiagramLabels'
 import {
+  VOICE_NOTES_INGEST_SOURCE,
+  VOICE_NOTES_LIVE_SAVE_MS,
+  isCanvasVoiceNotesPath,
   resolveVoiceNotesCanvasPath,
   shouldWarnEmptyVoiceTranscript,
 } from '@/composables/voiceNotes/mobileVoiceNotesFinish'
+import {
+  resolveCanvasDiagramId,
+  shouldBlockDiagramRebind,
+  shouldReuseBoundVoiceNotes,
+} from '@/composables/voiceNotes/voiceNotesBind'
 import {
   DOC_SUMMARY_API_BASE,
   DOC_SUMMARY_MAX_INPUT_CHARS,
@@ -24,6 +33,7 @@ import { SAVE } from '@/config/saveConfig'
 import { i18n } from '@/i18n'
 import {
   useAuthStore,
+  useDiagramStore,
   useKittySessionStore,
   useLiveSubtitlesStore,
   useSavedDiagramsStore,
@@ -141,6 +151,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
   const lastSavedAt = ref<number | null>(null)
   const sessionTitle = ref('')
   let transcriptSaveTimer: number | null = null
+  let recordingIngestTimer: number | null = null
 
   let currentSessionStamp = 0
   let removeVisibilityListener: (() => void) | null = null
@@ -236,6 +247,10 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
       window.clearTimeout(startedTimeoutTimer)
       startedTimeoutTimer = null
     }
+    if (recordingIngestTimer !== null) {
+      window.clearInterval(recordingIngestTimer)
+      recordingIngestTimer = null
+    }
   }
 
   function startSessionWatchers(): void {
@@ -264,6 +279,12 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
         void stopRecording('silence')
       }
     }, SILENCE_CHECK_MS)
+
+    recordingIngestTimer = window.setInterval(() => {
+      if ((!recording.value && !paused.value) || ingesting.value || stopping.value) return
+      if (!transcriptText.value.trim()) return
+      void ingestTranscript()
+    }, VOICE_NOTES_LIVE_SAVE_MS)
   }
 
   function clearStartedTimeout(): void {
@@ -283,6 +304,90 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     }, STARTED_TIMEOUT_MS)
   }
 
+  function routeDiagramId(): string | null {
+    const raw = router.currentRoute.value.query.diagramId
+    return typeof raw === 'string' && raw.trim() ? raw.trim() : null
+  }
+
+  function titleForDiagram(id: string): string {
+    const row = savedDiagramsStore.diagrams.find((item) => item.id === id)
+    if (row?.title.trim()) return row.title.trim()
+    const cached = savedDiagramsStore.getCachedDiagram(id)
+    if (cached?.title.trim()) return cached.title.trim()
+    return sessionTitle.value.trim() || formatVoiceNoteTitle()
+  }
+
+  function applyRestoredConversation(
+    restored: Awaited<ReturnType<typeof loadVoiceNotesConversation>>,
+    title: string
+  ): void {
+    diagramId.value = restored.diagramId
+    packageId.value = restored.packageId
+    sessionTitle.value = title
+    captureTurnOffset = restored.turns.length
+    transcriptDirty.value = false
+    lastSavedAt.value = restored.savedAt ?? (restored.hasTranscript ? Date.now() : null)
+    elapsedMs.value = restored.elapsedMs
+    error.value = null
+    if (hasActiveCapture.value) return
+    turns.value = restored.turns
+    speakerNames.value = restored.speakerNames
+    speakerIds.value = mergeSpeakerSlots([], restored.speakerIds)
+    speakerRemaps.value = restored.speakerRemaps
+    speakerContextId = restored.speakerContextId
+  }
+
+  async function persistUnsavedCanvasDiagram(): Promise<string | null> {
+    const diagramStore = useDiagramStore()
+    const spec = diagramStore.getSpecForSave()
+    if (!spec) return null
+    const lang = String(uiStore.promptLanguage || uiStore.language || 'zh').split('-')[0] || 'zh'
+    const diagramType = diagramStore.type || 'mindmap'
+    const title = getDefaultDiagramName(diagramType, uiStore.language)
+    const saved = await savedDiagramsStore.saveDiagram(title, diagramType, spec, lang)
+    if (!saved?.id) return null
+    savedDiagramsStore.setActiveDiagram(saved.id)
+    return saved.id
+  }
+
+  async function bindToDiagram(targetId: string, title: string): Promise<boolean> {
+    if (
+      shouldReuseBoundVoiceNotes({
+        boundDiagramId: diagramId.value,
+        targetDiagramId: targetId,
+        hasActiveCapture: hasActiveCapture.value,
+        hasLocalTurns: turns.value.length > 0,
+      }) &&
+      packageId.value
+    ) {
+      return true
+    }
+    if (
+      shouldBlockDiagramRebind({
+        boundDiagramId: diagramId.value,
+        targetDiagramId: targetId,
+        hasActiveCapture: hasActiveCapture.value,
+      })
+    ) {
+      notify.warning(t('auth.voiceNotes.sessionBusy'))
+      return false
+    }
+    try {
+      const restored = await loadVoiceNotesConversation(
+        targetId,
+        title,
+        speakerLabelTemplate(),
+        VOICE_NOTES_INGEST_SOURCE
+      )
+      applyRestoredConversation(restored, title)
+      return true
+    } catch (exc) {
+      const msg = exc instanceof Error ? exc.message : t('auth.voiceNotes.restoreFailed')
+      notify.warning(msg)
+      return false
+    }
+  }
+
   async function ensureMindmapSession(): Promise<boolean> {
     if (diagramId.value && packageId.value) return true
     if (bootstrapPromise) return bootstrapPromise
@@ -291,6 +396,13 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
       bootstrapping.value = true
       error.value = null
       try {
+        const preferred = resolveCanvasDiagramId({
+          routeDiagramId: routeDiagramId(),
+          activeDiagramId: savedDiagramsStore.activeDiagramId,
+        })
+        if (preferred) {
+          return bindToDiagram(preferred, titleForDiagram(preferred))
+        }
         const lang =
           String(uiStore.promptLanguage || uiStore.language || 'zh').split('-')[0] || 'zh'
         const template = getDefaultTemplate('mindmap', uiStore.language)
@@ -351,7 +463,8 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
       const restored = await loadVoiceNotesConversation(
         savedId,
         title,
-        String(i18n.global.t('auth.voiceNotes.speakerLabel'))
+        String(i18n.global.t('auth.voiceNotes.speakerLabel')),
+        VOICE_NOTES_INGEST_SOURCE
       )
       diagramId.value = restored.diagramId
       packageId.value = restored.packageId
@@ -674,6 +787,28 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     registerPageHideListener()
   }
 
+  /** Enable the recorder session and show the transcript modal (canvas / page). */
+  async function enableAndShowModal(): Promise<void> {
+    await enableAndOpen()
+    if (!enabled.value) return
+    if (isCanvasVoiceNotesPath(router.currentRoute.value.path)) {
+      let targetId = resolveCanvasDiagramId({
+        routeDiagramId: routeDiagramId(),
+        activeDiagramId: savedDiagramsStore.activeDiagramId,
+      })
+      if (!targetId) {
+        targetId = await persistUnsavedCanvasDiagram()
+      }
+      if (!targetId) {
+        notify.warning(t('auth.voiceNotes.noCurrentDiagram'))
+        return
+      }
+      const bound = await bindToDiagram(targetId, titleForDiagram(targetId))
+      if (!bound) return
+    }
+    modalOpen.value = true
+  }
+
   async function abortSession(reason: VoiceNotesStopReason): Promise<void> {
     clearStartedTimeout()
     clearWatchTimers()
@@ -841,6 +976,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
           content,
           title: sessionTitle.value.trim() || formatVoiceNoteTitle(),
           language: lang,
+          source_kind: VOICE_NOTES_INGEST_SOURCE,
         }),
       })
       transcriptDirty.value = false
@@ -1047,6 +1183,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     mergeSpeakers,
     resetSpeaker,
     enableAndOpen,
+    enableAndShowModal,
     openModal,
     closeModal,
     jumpToMindmap,

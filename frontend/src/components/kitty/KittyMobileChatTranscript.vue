@@ -7,6 +7,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { ElAvatar } from 'element-plus'
 
 import OneSentenceKittyAvatar from '@/components/canvas/OneSentenceKittyAvatar.vue'
+import { resolveMessageClarifyChoices } from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
 import { useLanguage } from '@/composables'
 import { useAuthStore } from '@/stores'
 import type {
@@ -30,10 +31,22 @@ const scrollEl = ref<HTMLElement | null>(null)
 
 const userAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
 
+const choicesByMessageId = computed(() => {
+  const map = new Map<string, OneSentenceClarifyChoice[]>()
+  for (const msg of props.messages) {
+    map.set(msg.id, resolveMessageClarifyChoices(props.messages, msg))
+  }
+  return map
+})
+
 function setScrollEl(el: unknown): void {
   const node = el instanceof HTMLElement ? el : null
   scrollEl.value = node
   emit('bind-scroll', node)
+}
+
+function messageChoices(msg: OneSentenceChatMessage): OneSentenceClarifyChoice[] {
+  return choicesByMessageId.value.get(msg.id) ?? []
 }
 
 function scrollToBottom(): void {
@@ -46,7 +59,10 @@ function scrollToBottom(): void {
 }
 
 watch(
-  () => props.messages.map((m) => `${m.id}:${m.text.length}:${m.streaming ? 1 : 0}`).join('|'),
+  () =>
+    props.messages
+      .map((m) => `${m.id}:${m.text.length}:${m.streaming ? 1 : 0}:${m.choices?.length ?? 0}`)
+      .join('|'),
   () => {
     scrollToBottom()
   }
@@ -116,16 +132,16 @@ onMounted(() => {
             </p>
           </div>
           <div
-            v-if="msg.choices?.length && !msg.choicesConsumed"
+            v-if="messageChoices(msg).length"
             class="flex flex-wrap gap-1.5"
             role="group"
             :aria-label="t('canvas.mindMapOneSentence.clarifyChoices')"
           >
             <button
-              v-for="choice in msg.choices"
+              v-for="choice in messageChoices(msg)"
               :key="`${msg.id}-${choice.index}`"
               type="button"
-              class="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-800 active:bg-violet-100"
+              class="kitty-mobile-chat__choice min-h-9 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-800 active:bg-violet-100"
               @click="emit('select-choice', choice)"
             >
               <span class="opacity-60 mr-1">{{ choice.index }}.</span>
@@ -143,5 +159,12 @@ onMounted(() => {
   --el-avatar-bg-color: #fafafa;
   border: 2px solid #303133;
   font-size: 14px;
+}
+
+.kitty-mobile-chat__choice {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 </style>

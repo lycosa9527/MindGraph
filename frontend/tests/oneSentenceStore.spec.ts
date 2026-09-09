@@ -74,6 +74,30 @@ describe('useOneSentenceStore', () => {
     )
   })
 
+  it('attaches numbered clarify chips when hydrating the latest kitty turn', () => {
+    const store = useOneSentenceStore()
+    store.hydrateFromTurns([
+      {
+        turn_id: 'u1',
+        role: 'user',
+        content: '帮我改图',
+        request_id: 'req-1',
+      },
+      {
+        turn_id: 'k1',
+        role: 'kitty',
+        content: '想怎么改这张图？\n1) 改主题\n2) 添加分支',
+        request_id: 'req-1',
+        outcome: 'success',
+      },
+    ])
+
+    expect(store.messages.at(-1)?.choices).toEqual([
+      { index: 1, label: '改主题' },
+      { index: 2, label: '添加分支' },
+    ])
+  })
+
   it('rotates ephemeral scope on canvas reset', () => {
     const store = useOneSentenceStore()
     const before = store.ephemeralScope

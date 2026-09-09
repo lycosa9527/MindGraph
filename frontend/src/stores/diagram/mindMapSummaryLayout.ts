@@ -13,13 +13,18 @@ import type {
 import { mindMapLocationPathKey } from '@/utils/mindMapLocation'
 import {
   filterTreeMindMapNodes,
+  isMindMapSummaryExtentPath,
   isMindMapSummaryNode,
   mindMapSummaryChildNodeId,
   mindMapSummaryRootNodeId,
   readMindMapSummaries,
   siblingPathsSharingParent,
 } from '@/utils/mindMapSummary'
-import { MINDMAP_SUMMARY_TIP_NODE_GAP, mindMapSummaryBracePath } from '@/utils/mindMapSummaryBrace'
+import {
+  MINDMAP_SUMMARY_RANGE_PAD,
+  MINDMAP_SUMMARY_TIP_NODE_GAP,
+  mindMapSummaryBracePath,
+} from '@/utils/mindMapSummaryBrace'
 
 export const MINDMAP_SUMMARY_BRACE_GAP = 16
 export const MINDMAP_SUMMARY_CHILD_GAP_X = 36
@@ -90,6 +95,57 @@ function makeSummaryNode(
 function coveredSide(coveredPaths: readonly string[]): 'left' | 'right' {
   const first = coveredPaths[0] ?? 'r/0'
   return first.startsWith('l/') ? 'left' : 'right'
+}
+
+function collectBoxesForPaths(
+  treeNodes: readonly DiagramNode[],
+  connections: readonly Connection[],
+  match: (path: string) => boolean,
+  widths: Record<string, number>,
+  heights: Record<string, number>
+): SizedBox[] {
+  const boxes: SizedBox[] = []
+  for (const node of treeNodes) {
+    if (isMindMapSummaryNode(node)) continue
+    const path = mindMapLocationPathKey(node.id, connections)
+    if (!path || !match(path)) continue
+    const box = nodeBox(node, widths, heights)
+    if (box) boxes.push(box)
+  }
+  return boxes
+}
+
+/**
+ * Range chrome: sibling height, outward edge past the covered subtrees.
+ * Keeps vertical drag on sibling centers while the brace sits past children.
+ */
+export function mindMapSummaryOutwardRangeRect(
+  siblingBoxes: readonly SizedBox[],
+  extentBoxes: readonly SizedBox[],
+  side: 'left' | 'right'
+): SizedBox | null {
+  const siblings = unionBoxes([...siblingBoxes])
+  if (!siblings) return null
+  const extent = unionBoxes([...extentBoxes])
+  const pad = MINDMAP_SUMMARY_RANGE_PAD
+  let x = siblings.x - pad
+  let width = siblings.width + pad * 2
+  if (extent) {
+    if (side === 'right') {
+      const right = Math.max(siblings.x + siblings.width, extent.x + extent.width) + pad
+      width = right - x
+    } else {
+      const left = Math.min(siblings.x, extent.x) - pad
+      width = x + width - left
+      x = left
+    }
+  }
+  return {
+    x,
+    y: siblings.y - pad,
+    width,
+    height: siblings.height + pad * 2,
+  }
 }
 
 function placeChildColumn(
@@ -167,14 +223,15 @@ export function placeMindMapSummaryNodes(
   }
 
   for (const summary of summaries) {
-    const boxes: SizedBox[] = []
-    for (const path of summary.coveredPaths) {
-      const node = byPath.get(path)
-      if (!node) continue
+    const siblingBoxes: SizedBox[] = []
+    const extentBoxes: SizedBox[] = []
+    for (const [path, node] of byPath) {
       const box = nodeBox(node, widths, heights)
-      if (box) boxes.push(box)
+      if (!box) continue
+      if (summary.coveredPaths.includes(path)) siblingBoxes.push(box)
+      if (isMindMapSummaryExtentPath(path, summary.coveredPaths)) extentBoxes.push(box)
     }
-    const union = unionBoxes(boxes)
+    const union = unionBoxes(siblingBoxes)
     if (!union) continue
 
     const side = coveredSide(summary.coveredPaths)
@@ -182,7 +239,11 @@ export function placeMindMapSummaryNodes(
     const rootId = mindMapSummaryRootNodeId(summary.id)
     const rootW = widths[rootId] ?? MIND_MAP_GEOMETRY.minWidth
     const rootH = heights[rootId] ?? MIND_MAP_GEOMETRY.minHeight
-    const brace = mindMapSummaryBracePath(boxes, side, { kind: summary.kind ?? 'brace' })
+    const rangeRect = mindMapSummaryOutwardRangeRect(siblingBoxes, extentBoxes, side)
+    const brace = mindMapSummaryBracePath(siblingBoxes, side, {
+      kind: summary.kind ?? 'brace',
+      rangeRect: rangeRect ?? undefined,
+    })
     const tipX =
       brace?.tipX ??
       (side === 'right'
@@ -271,14 +332,30 @@ export function coveredBoxesForSummary(
   widths: Record<string, number>,
   heights: Record<string, number>
 ): SizedBox[] {
-  const boxes: SizedBox[] = []
-  for (const path of summary.coveredPaths) {
-    const node = treeNodes.find((item) => mindMapLocationPathKey(item.id, connections) === path)
-    if (!node) continue
-    const box = nodeBox(node, widths, heights)
-    if (box) boxes.push(box)
-  }
-  return boxes
+  return collectBoxesForPaths(
+    treeNodes,
+    connections,
+    (path) => summary.coveredPaths.includes(path),
+    widths,
+    heights
+  )
+}
+
+/** Covered siblings plus every descendant — used to push the brace past child topics. */
+export function extentBoxesForCoveredPaths(
+  treeNodes: readonly DiagramNode[],
+  connections: readonly Connection[],
+  coveredPaths: readonly string[],
+  widths: Record<string, number>,
+  heights: Record<string, number>
+): SizedBox[] {
+  return collectBoxesForPaths(
+    treeNodes,
+    connections,
+    (path) => isMindMapSummaryExtentPath(path, coveredPaths),
+    widths,
+    heights
+  )
 }
 
 export type SummarySiblingBox = SizedBox & { path: string }

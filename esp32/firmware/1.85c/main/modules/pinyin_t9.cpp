@@ -471,6 +471,39 @@ char t9_multitap_letter(char digit, unsigned taps, bool uppercase)
     return letter;
 }
 
+char t9_multitap_cycle(char digit, unsigned taps)
+{
+    if (taps == 0) {
+        return '\0';
+    }
+    if (digit == '1') {
+        static const char punct[] = ".,?!";
+        return punct[(taps - 1U) % 4U];
+    }
+    const char *letters = t9_letters_for_digit(digit);
+    const size_t count = std::strlen(letters);
+    if (count == 0) {
+        return digit;
+    }
+    const size_t period = count * 2U + 1U;
+    const size_t index = (taps - 1U) % period;
+    if (index < count) {
+        return letters[index];
+    }
+    if (index < count * 2U) {
+        return static_cast<char>(letters[index - count] - 'a' + 'A');
+    }
+    return digit;
+}
+
+char t9_digit_from_key_label(const char *label)
+{
+    if (label == nullptr || label[0] < '0' || label[0] > '9') {
+        return '\0';
+    }
+    return label[0];
+}
+
 bool t9_pinyin_matches(const char *pinyin, const char *digits)
 {
     if (pinyin == nullptr || digits == nullptr || digits[0] == '\0') {

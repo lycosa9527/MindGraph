@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
+import { applyClarifyChoicesOnHydrate } from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
 import { eventBus } from '@/composables/core/useEventBus'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
@@ -389,7 +390,7 @@ export const useOneSentenceStore = defineStore('oneSentence', () => {
       }
     }
 
-    messages.value = rows
+    messages.value = applyClarifyChoicesOnHydrate(rows, messages.value)
     requests.value = nextRequests
     busyQueue.value = []
     activeRequestId.value = null

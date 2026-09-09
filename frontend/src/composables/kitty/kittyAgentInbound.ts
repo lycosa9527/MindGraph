@@ -1,5 +1,9 @@
 import type { Ref, ShallowRef } from 'vue'
 
+import {
+  choicesFromClarifyOptions,
+  parseNumberedClarifyChoices,
+} from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
 import { type EventTypes, eventBus } from '@/composables/core/useEventBus'
 import { applyKittyRemoteLlmModel } from '@/composables/kitty/applyKittyRemoteLlmModel'
 import { executeKittyAgentAction } from '@/composables/kitty/kittyAgentActions'
@@ -181,23 +185,10 @@ export function handleKittyServerMessage(
               ? 'final'
               : 'conversational'
         const actionRaw = data.action
-        const clarifyQuestion =
-          typeof data.clarify_question === 'string' ? data.clarify_question.trim() : ''
-        const clarifyRaw = data.clarify_options
-        const choices: Array<{ index: number; label: string }> = []
-        if (Array.isArray(clarifyRaw)) {
-          for (const item of clarifyRaw) {
-            if (typeof item !== 'string' || !item.trim()) {
-              continue
-            }
-            choices.push({ index: choices.length + 1, label: item.trim() })
-            if (choices.length >= 3) {
-              break
-            }
-          }
-        }
+        const fromOptions = choicesFromClarifyOptions(data.clarify_options)
+        const choices = fromOptions.length >= 2 ? fromOptions : parseNumberedClarifyChoices(text)
         eventBus.emit('kitty:one_sentence_reply', {
-          text: clarifyQuestion || text,
+          text,
           kind,
           action: typeof actionRaw === 'string' ? actionRaw : undefined,
           choices: choices.length >= 2 ? choices : undefined,

@@ -11,7 +11,7 @@ Proprietary License
 import logging
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -253,10 +253,40 @@ async def authorize_extracted_access(
 )
 async def get_extracted_markdown(
     package_id: int,
+    ingest_source: Optional[str] = Query(default=None, max_length=32),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Return extracted markdown only after ownership checks out (server-side COS fetch)."""
+    if ingest_source == "voice_notes":
+        try:
+            ingest = DocSummaryIngestService(db, current_user.id)
+            markdown = await ingest.fetch_source_markdown(package_id, "voice_notes")
+        except DocSummaryStorageConflictError as exc:
+            raise HTTPException(
+                status_code=409,
+                detail=storage_conflict_detail(
+                    package_id=exc.package_id,
+                    object_id=exc.object_id,
+                ),
+            ) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except DATABASE_ERRORS as exc:
+            logger.error(
+                "[DocSummary] extracted get failed user=%s package=%s: %s",
+                current_user.id,
+                package_id,
+                exc,
+            )
+            raise HTTPException(status_code=500, detail="Fetch failed") from exc
+        if not markdown:
+            raise HTTPException(status_code=404, detail="No extracted content in package yet")
+        return DocSummaryExtractedContentResponse(
+            package_id=package_id,
+            markdown=markdown,
+        )
+
     try:
         resolved = await resolve_owned_extracted(
             db=db,

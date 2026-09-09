@@ -1,14 +1,14 @@
 <script setup lang="ts">
 /**
  * Voice notes transcript modal — Swiss stone shell, pill actions.
- * Closing does not stop an active recording.
+ * Closing mid-record asks first; capture keeps running after hide.
  */
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
 
-import { ArrowUpRight, Copy, Mic, Pause, Square } from '@lucide/vue'
+import { Copy, Mic, Pause, Square } from '@lucide/vue'
 
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import '@/components/canvas/aiGenerateGlass.css'
@@ -16,7 +16,9 @@ import VoiceNotesSpeakerEditor from '@/components/voiceNotes/VoiceNotesSpeakerEd
 import VoiceNotesTranscriptPane from '@/components/voiceNotes/VoiceNotesTranscriptPane.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { confirmHideVoiceNotesWhileRecording } from '@/composables/voiceNotes/confirmVoiceNotesModalClose'
 import { isMobileAppPath } from '@/composables/voiceNotes/mobileVoiceNotesFinish'
+import { useVoiceNotesGenerate } from '@/composables/voiceNotes/useVoiceNotesGenerate'
 import { useVoiceNotesSessionChrome } from '@/composables/voiceNotes/useVoiceNotesSessionChrome'
 import { useVoiceNotesStore } from '@/stores/voiceNotes'
 
@@ -24,10 +26,14 @@ const { t } = useLanguage()
 const route = useRoute()
 const notify = useNotifications()
 const voiceNotes = useVoiceNotesStore()
+const session = useVoiceNotesGenerate()
 const isMobileShell = computed(() => route.meta.layout === 'mobile' || isMobileAppPath(route.path))
 const { modalOpen, elapsedMs } = storeToRefs(voiceNotes)
 const { statusLabel, saveKind, statusClickable, onStatusClick, actions } =
-  useVoiceNotesSessionChrome()
+  useVoiceNotesSessionChrome({
+    generating: session.generating,
+    persisting: session.persisting,
+  })
 
 const elapsedLabel = computed(() => {
   const totalSec = Math.floor(elapsedMs.value / 1000)
@@ -36,8 +42,23 @@ const elapsedLabel = computed(() => {
   return `${mm}:${ss}`
 })
 
-function onClose(): void {
+async function requestClose(): Promise<boolean> {
+  if (!voiceNotes.modalOpen) return true
+  if (!voiceNotes.hasActiveCapture) {
+    voiceNotes.closeModal()
+    return true
+  }
+  const confirmed = await confirmHideVoiceNotesWhileRecording((key) => t(key))
+  if (!confirmed) return false
   voiceNotes.closeModal()
+  notify.info(t('auth.voiceNotes.recordingContinues'))
+  return true
+}
+
+function onBeforeClose(done: (cancel?: boolean) => void): void {
+  void requestClose().then((ok) => {
+    if (ok) done()
+  })
 }
 
 function onStart(): void {
@@ -53,11 +74,11 @@ function onResume(): void {
 }
 
 function onStop(): void {
-  void voiceNotes.stopRecording()
+  void session.stopRecordingOnly()
 }
 
-function onJump(): void {
-  void voiceNotes.jumpToMindmap()
+function onGenerate(): void {
+  void session.generateMindmap()
 }
 
 async function onCopy(): Promise<void> {
@@ -81,12 +102,12 @@ async function onCopy(): Promise<void> {
     destroy-on-close
     class="voice-notes-swiss mm-canvas-upper-dialog ai-gen-shell ai-gen-shell--voice"
     :show-close="false"
-    @close="onClose"
+    :before-close="onBeforeClose"
   >
     <template #header>
       <AiGenerateGlassHero
         variant="voice"
-        @close="onClose"
+        @close="void requestClose()"
       />
       <div class="vn-swiss__note vn-swiss__note--glass">
         <span
@@ -132,16 +153,11 @@ async function onCopy(): Promise<void> {
           </button>
           <button
             type="button"
-            class="vn-pill vn-pill--ghost"
-            :disabled="!actions.canJump"
-            @click="onJump"
+            class="vn-pill vn-pill--solid"
+            :disabled="!actions.canGenerate"
+            @click="onGenerate"
           >
-            <span>{{ t('auth.voiceNotes.jumpToMindmap') }}</span>
-            <ArrowUpRight
-              class="vn-pill__icon"
-              :size="14"
-              :stroke-width="2"
-            />
+            {{ t('auth.voiceNotes.retryGenerate') }}
           </button>
         </div>
 

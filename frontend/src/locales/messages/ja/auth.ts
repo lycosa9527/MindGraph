@@ -307,6 +307,13 @@ export default {
   'auth.voiceNotes.savedMinutesAgo': '{n}分前に文字起こしを保存しました',
   'auth.voiceNotes.savedAt': '{time} に文字起こしを保存しました',
   'auth.voiceNotes.unsavedChanges': '未保存の文字起こし',
+  'auth.voiceNotes.closeWhileRecordingTitle': 'Recording in progress',
+  'auth.voiceNotes.closeWhileRecordingBody':
+    'Closing hides this window but does not stop recording. The transcript auto-saves to this mindmap every 30 seconds. Hide the window anyway?',
+  'auth.voiceNotes.closeWhileRecordingConfirm': 'Hide window',
+  'auth.voiceNotes.recordingContinues': 'Recording continues. Reopen Recording summary anytime.',
+  'auth.voiceNotes.noCurrentDiagram': 'Save this mindmap first, then use Recording summary.',
+  'auth.voiceNotes.restoreFailed': 'Could not load the saved recording transcript.',
   'auth.voiceNotes.retryGenerate': 'マインドマップを生成',
   'auth.voiceNotes.historyTitle': '過去のボイスノート',
   'auth.voiceNotes.historyEmpty': 'ボイスノートはまだありません',

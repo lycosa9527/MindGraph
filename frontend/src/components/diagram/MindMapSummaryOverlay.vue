@@ -15,6 +15,8 @@ import {
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
 import {
   coveredBoxesForSummary,
+  extentBoxesForCoveredPaths,
+  mindMapSummaryOutwardRangeRect,
   siblingBoxesForSummary,
 } from '@/stores/diagram/mindMapSummaryLayout'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
@@ -26,11 +28,7 @@ import {
   resolveMindMapSummaryLineStyle,
   resolveMindMapSummaryStrokeWidth,
 } from '@/utils/mindMapSummary'
-import {
-  mindMapSummaryBracePath,
-  mindMapSummaryConnectorPath,
-  mindMapSummaryPaddedRangeRect,
-} from '@/utils/mindMapSummaryBrace'
+import { mindMapSummaryBracePath, mindMapSummaryConnectorPath } from '@/utils/mindMapSummaryBrace'
 
 import MindMapSummaryFloatingToolbar from './MindMapSummaryFloatingToolbar.vue'
 
@@ -101,7 +99,7 @@ const elements = computed<BraceElement[]>(() => {
     const side = summary.coveredPaths[0]?.startsWith('l/') ? 'left' : 'right'
     const kind = resolveMindMapSummaryKind(summary)
     let layoutBoxes = boxes
-    let rangeOverride: { x: number; y: number; width: number; height: number } | undefined
+    let layoutPaths = summary.coveredPaths
     if (drag && drag.summaryId === summary.id) {
       const slots = siblingBoxesForSummary(data.nodes, connections, summary, widths, heights)
       const previewBoxes = slots
@@ -112,11 +110,22 @@ const elements = computed<BraceElement[]>(() => {
           width: slot.width,
           height: slot.height,
         }))
-      if (previewBoxes.length > 0) layoutBoxes = previewBoxes
-      const padded = mindMapSummaryPaddedRangeRect(layoutBoxes)
-      if (padded) {
-        rangeOverride = { ...padded, y: drag.previewY, height: drag.previewH }
+      if (previewBoxes.length > 0) {
+        layoutBoxes = previewBoxes
+        layoutPaths = drag.previewPaths
       }
+    }
+    const extentBoxes = extentBoxesForCoveredPaths(
+      data.nodes,
+      connections,
+      layoutPaths,
+      widths,
+      heights
+    )
+    const outwardRange = mindMapSummaryOutwardRangeRect(layoutBoxes, extentBoxes, side)
+    let rangeOverride = outwardRange ?? undefined
+    if (rangeOverride && drag && drag.summaryId === summary.id) {
+      rangeOverride = { ...rangeOverride, y: drag.previewY, height: drag.previewH }
     }
     const brace = mindMapSummaryBracePath(layoutBoxes, side, { kind, rangeRect: rangeOverride })
     if (!brace) continue

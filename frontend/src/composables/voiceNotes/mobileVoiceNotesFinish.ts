@@ -39,8 +39,15 @@ export function resolveVoiceNotesCanvasPath(currentPath: string): string {
   return isMobileAppPath(currentPath) ? '/m/canvas' : '/canvas'
 }
 
+export function isCanvasVoiceNotesPath(currentPath: string): boolean {
+  return currentPath === '/canvas' || currentPath === '/m/canvas'
+}
+
 export const VOICE_NOTE_TITLE_PREFIX = 'voice recording_'
 export const VOICE_NOTES_SOURCE_CHANNEL = 'voice_notes'
+export const VOICE_NOTES_INGEST_SOURCE = 'voice_notes'
+/** Live COS markdown snapshot while the mic is open. */
+export const VOICE_NOTES_LIVE_SAVE_MS = 30_000
 
 export const VOICE_NOTES_STATUS_LINES = [
   'waiting',
@@ -106,20 +113,23 @@ export function resolveVoiceNotesActions(input: {
   bootstrapping: boolean
   generating?: boolean
   persisting?: boolean
+  enabled?: boolean
   hasTranscript: boolean
   hasActiveCapture: boolean
 }): VoiceNotesActionFlags {
+  const sessionOn = input.enabled !== false
   const pipelineBusy =
     input.stopping || input.ingesting || Boolean(input.generating) || Boolean(input.persisting)
   const handshake = input.connecting || (input.recording && !input.sessionReady && !input.paused)
   return {
-    canStart: !input.recording && !input.paused && !handshake && !pipelineBusy,
+    canStart: sessionOn && !input.recording && !input.paused && !handshake && !pipelineBusy,
     canPause: input.recording && input.sessionReady && !input.paused && !pipelineBusy,
     canResume: input.recording && input.paused && !pipelineBusy,
     canStop: (input.recording || input.paused) && !input.stopping && !input.ingesting,
     canCopy: input.hasTranscript,
     canJump: !input.bootstrapping && !pipelineBusy,
-    canGenerate: !pipelineBusy && !handshake && (input.hasActiveCapture || input.hasTranscript),
+    canGenerate:
+      sessionOn && !pipelineBusy && !handshake && (input.hasActiveCapture || input.hasTranscript),
   }
 }
 

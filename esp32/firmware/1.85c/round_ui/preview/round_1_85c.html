@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>1.85C round simulations</title>
+  <style>
+    :root {
+      --bezel: #1a1a1a;
+      --face: #111318;
+      --text: #f2f2f2;
+      --muted: #9aa0a8;
+      --tile: #2a2f38;
+      --key: #3a404c;
+      --line: #d8d8d8;
+      --accent: #5ad0c8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans CJK SC", "Noto Sans SC", "PingFang SC", sans-serif;
+      background: #0b0c10;
+      color: var(--text);
+      padding: 24px;
+    }
+    h1 { font-size: 20px; font-weight: 600; margin: 0 0 8px; }
+    p { color: var(--muted); margin: 0 0 20px; max-width: 720px; line-height: 1.45; }
+    .row { display: flex; flex-wrap: wrap; gap: 32px; }
+    figure { margin: 0; text-align: center; }
+    figcaption { margin-top: 10px; font-size: 13px; color: var(--muted); }
+    .watch {
+      width: 360px;
+      height: 360px;
+      border-radius: 50%;
+      background: var(--face);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 0 10px var(--bezel), 0 18px 40px rgba(0, 0, 0, 0.45);
+    }
+    .status {
+      position: absolute;
+      left: 100px;
+      top: 34px;
+      width: 160px;
+      height: 24px;
+      border-radius: 16px;
+      background: rgba(40, 44, 54, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 12px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #7d8; }
+    .content {
+      position: absolute;
+      left: 62px;
+      top: 64px;
+      width: 236px;
+      height: 216px;
+      overflow: hidden;
+    }
+    .tile {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+    .icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: var(--tile);
+    }
+    .label {
+      width: 100%;
+      height: 16px;
+      font-size: 12px;
+      line-height: 16px;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .now .tile { width: 92px; height: 86px; }
+    .now .t0 { left: 0; top: 6px; }
+    .now .t1 { left: 130px; top: 6px; }
+    .now .t2 { left: 0; top: 136px; }
+    .now .t3 { left: 130px; top: 136px; }
+    .fix .tile { width: 80px; height: 80px; }
+    .fix .t0 { left: 33px; top: 12px; }
+    .fix .t1 { left: 123px; top: 12px; }
+    .fix .t2 { left: 33px; top: 102px; }
+    .fix .t3 { left: 123px; top: 102px; }
+    .composer {
+      position: absolute;
+      left: 62px;
+      top: 74px;
+      width: 236px;
+      height: 36px;
+      border: 2px solid var(--line);
+      border-radius: 10px;
+      background: #1c2028;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      font-size: 16px;
+      letter-spacing: 0.12em;
+    }
+    .keys {
+      position: absolute;
+      left: 62px;
+      top: 134px;
+      width: 236px;
+      height: 152px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      gap: 4px;
+      padding: 4px;
+    }
+    .key {
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: var(--key);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      line-height: 1.15;
+      text-align: center;
+    }
+    .key small { color: #c8c8c8; font-size: 9px; }
+    .safe {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 1px rgba(90, 208, 200, 0.25);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Waveshare 1.85C · 360×360 circular cutoff</h1>
+  <p>
+    Same circle the ST77916 actually draws. The chin clips anything below about y=280.
+    Super still parks the second row on a 112×18 phone grid, so 文件 / 应用商店 labels
+    sit in that chin. The fix uses 80×10 tiles and two columns inside the inscribed band.
+  </p>
+  <div class="row">
+    <figure>
+      <div class="watch now">
+        <div class="status"><span class="dot"></span>19:05</div>
+        <div class="content">
+          <div class="tile t0"><div class="icon"></div><div class="label">设置</div></div>
+          <div class="tile t1"><div class="icon"></div><div class="label">文件</div></div>
+          <div class="tile t2"><div class="icon"></div><div class="label">应用商店</div></div>
+          <div class="tile t3"><div class="icon"></div><div class="label">智回</div></div>
+        </div>
+        <div class="safe"></div>
+      </div>
+      <figcaption>Now on device — bottom names cut in half</figcaption>
+    </figure>
+    <figure>
+      <div class="watch fix">
+        <div class="status"><span class="dot"></span>19:05</div>
+        <div class="content">
+          <div class="tile t0"><div class="icon"></div><div class="label">设置</div></div>
+          <div class="tile t1"><div class="icon"></div><div class="label">文件</div></div>
+          <div class="tile t2"><div class="icon"></div><div class="label">应用商店</div></div>
+          <div class="tile t3"><div class="icon"></div><div class="label">智回</div></div>
+        </div>
+        <div class="safe"></div>
+      </div>
+      <figcaption>After flash — labels stay inside the disc</figcaption>
+    </figure>
+    <figure>
+      <div class="watch">
+        <div class="status"><span class="dot"></span>19:05</div>
+        <div class="composer">••••<span style="margin-left:auto;font-size:12px;letter-spacing:0">OK</span></div>
+        <div class="keys">
+          <div class="key">1</div>
+          <div class="key">2<br><small>ABC</small></div>
+          <div class="key">3<br><small>DEF</small></div>
+          <div class="key">4<br><small>GHI</small></div>
+          <div class="key">5<br><small>JKL</small></div>
+          <div class="key">6<br><small>MNO</small></div>
+          <div class="key">7<br><small>PQRS</small></div>
+          <div class="key">8<br><small>TUV</small></div>
+          <div class="key">9<br><small>WXYZ</small></div>
+          <div class="key">EN</div>
+          <div class="key">0</div>
+          <div class="key">⌫</div>
+        </div>
+        <div class="safe"></div>
+      </div>
+      <figcaption>ITU 3×4 九宫格 — tap letter, long-press digit, OK on the box</figcaption>
+    </figure>
+  </div>
+</body>
+</html>

@@ -1085,6 +1085,8 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
           @pointercancel="onKittyMicPointerUp"
           @touchend="onKittyMicTouchEnd"
           @contextmenu.prevent
+          @selectstart.prevent
+          @dragstart.prevent
         >
           <Loader2
             v-if="connecting"
@@ -1211,6 +1213,9 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  -webkit-tap-highlight-color: transparent;
   transition: transform 0.15s ease;
 }
 
@@ -1248,9 +1253,17 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
   -webkit-touch-callout: none;
 }
 
+.kitty-side-control--mic-ptt > * {
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
 .kitty-side-control__icon--mic-ptt {
   width: clamp(1.125rem, 5vw, 1.375rem);
   height: clamp(1.125rem, 5vw, 1.375rem);
+  pointer-events: none;
 }
 
 .kitty-mic-ptt-label {
@@ -1259,7 +1272,11 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
   letter-spacing: 0.01em;
   white-space: nowrap;
   line-height: 1.1;
+  pointer-events: none;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
 }
 
 .kitty-side-control--mic:active:not(:disabled),

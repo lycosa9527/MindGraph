@@ -18,6 +18,20 @@ endif()
 
 set(ROUND_UI_OVERLAY "${CMAKE_CURRENT_LIST_DIR}/../round_ui")
 set(LITTLEFS_ROOT "${CMAKE_CURRENT_LIST_DIR}/../littlefs")
+execute_process(
+    COMMAND python3 "${ROUND_UI_OVERLAY}/patch_super_launcher.py"
+    RESULT_VARIABLE ROUND_LAUNCHER_PATCH
+)
+if(NOT ROUND_LAUNCHER_PATCH EQUAL 0)
+    message(FATAL_ERROR "round launcher C++ patch failed")
+endif()
+execute_process(
+    COMMAND python3 "${ROUND_UI_OVERLAY}/patch_super_keyboard.py"
+    RESULT_VARIABLE ROUND_KEYBOARD_PATCH
+)
+if(NOT ROUND_KEYBOARD_PATCH EQUAL 0)
+    message(FATAL_ERROR "round keyboard C++ patch failed")
+endif()
 add_custom_target(
     mindgraph_round_ui
     COMMAND python3 "${ROUND_UI_OVERLAY}/apply_round_ui.py"

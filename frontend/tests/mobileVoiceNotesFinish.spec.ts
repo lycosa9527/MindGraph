@@ -140,6 +140,20 @@ describe('resolveVoiceNotesActions', () => {
     expect(saving.canJump).toBe(false)
     expect(saving.canGenerate).toBe(false)
   })
+
+  it('keeps start and generate off until the recorder session is enabled', () => {
+    const disabled = resolveVoiceNotesActions({
+      ...idle,
+      enabled: false,
+      hasTranscript: true,
+    })
+    expect(disabled.canStart).toBe(false)
+    expect(disabled.canGenerate).toBe(false)
+
+    const enabledIdle = resolveVoiceNotesActions({ ...idle, enabled: true })
+    expect(enabledIdle.canStart).toBe(true)
+    expect(enabledIdle.canGenerate).toBe(false)
+  })
 })
 
 describe('voiceNotesHistoryListUrl', () => {

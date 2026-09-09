@@ -395,7 +395,7 @@ async def ingest_text(
                 package_id,
                 content=request.content,
                 title=title,
-                source_kind="paste",
+                source_kind=request.source_kind or "paste",
                 language=request.language,
             )
         else:

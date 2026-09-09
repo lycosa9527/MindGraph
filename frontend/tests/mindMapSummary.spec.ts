@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
+import {
+  mindMapSummaryOutwardRangeRect,
+  placeMindMapSummaryNodes,
+} from '@/stores/diagram/mindMapSummaryLayout'
 import type { Connection, DiagramNode } from '@/types'
 import {
   areConsecutiveSiblingPaths,
   coveredPathsFromVerticalRange,
+  isMindMapSummaryExtentPath,
   mindMapSummaryChildNodeId,
   mindMapSummaryRootNodeId,
   parseMindMapSummaries,
@@ -60,6 +65,14 @@ describe('mind map summary range', () => {
     )
     expect(areConsecutiveSiblingPaths(remapped)).toBe(true)
     expect(remapped).toEqual(['r/0', 'r/1'])
+  })
+
+  it('treats descendant paths as part of the covered extent', () => {
+    expect(isMindMapSummaryExtentPath('r/0', ['r/0'])).toBe(true)
+    expect(isMindMapSummaryExtentPath('r/0/1', ['r/0'])).toBe(true)
+    expect(isMindMapSummaryExtentPath('r/0/1/2', ['r/0'])).toBe(true)
+    expect(isMindMapSummaryExtentPath('r/1', ['r/0'])).toBe(false)
+    expect(isMindMapSummaryExtentPath('r/00', ['r/0'])).toBe(false)
   })
 
   it('lists every sibling that shares the covered parent', () => {
@@ -171,5 +184,93 @@ describe('mind map summary brace', () => {
     )
     expect(line.includes('130')).toBe(false)
     expect(line.startsWith('M 100 40')).toBe(true)
+  })
+})
+
+describe('mind map summary placement', () => {
+  it('extends the range past descendant topics without changing sibling height', () => {
+    const siblings = [{ x: 100, y: 40, width: 80, height: 30 }]
+    const extent = [
+      { x: 100, y: 40, width: 80, height: 30 },
+      { x: 250, y: 10, width: 80, height: 30 },
+    ]
+    const range = mindMapSummaryOutwardRangeRect(siblings, extent, 'right')
+    expect(range).not.toBeNull()
+    expect(range?.y).toBe(34)
+    expect(range?.height).toBe(42)
+    expect(range && range.x + range.width).toBeGreaterThan(330)
+  })
+
+  it('places the 概要 node to the right of covered children', () => {
+    const tree: DiagramNode[] = [
+      { id: 'topic', text: 'T', type: 'topic', position: { x: 0, y: 100 } },
+      {
+        id: 'a',
+        text: 'A',
+        type: 'branch',
+        position: { x: 100, y: 80 },
+        data: { mindMapSide: 'right', mindMapDepth: 1 },
+      },
+      {
+        id: 'a1',
+        text: 'A1',
+        type: 'branch',
+        position: { x: 250, y: 80 },
+        data: { mindMapSide: 'right', mindMapDepth: 2 },
+      },
+    ]
+    const links: Connection[] = [
+      { id: 'e1', source: 'topic', target: 'a', sourceHandle: 'mindmap-right' },
+      { id: 'e2', source: 'a', target: 'a1', sourceHandle: 'mindmap-right' },
+    ]
+    const widths = { a: 80, a1: 80, [mindMapSummaryRootNodeId('s1')]: 90 }
+    const heights = { a: 30, a1: 30, [mindMapSummaryRootNodeId('s1')]: 34 }
+    const placed = placeMindMapSummaryNodes(
+      tree,
+      links,
+      [{ id: 's1', text: '概要', coveredPaths: ['r/0'] }],
+      null,
+      widths,
+      heights
+    )
+    const root = placed.find((node) => node.id === mindMapSummaryRootNodeId('s1'))
+    expect(root?.position?.x).toBeGreaterThan(330)
+  })
+
+  it('places a left-side 概要 node past the leftmost descendant', () => {
+    const tree: DiagramNode[] = [
+      { id: 'topic', text: 'T', type: 'topic', position: { x: 400, y: 100 } },
+      {
+        id: 'a',
+        text: 'A',
+        type: 'branch',
+        position: { x: 280, y: 80 },
+        data: { mindMapSide: 'left', mindMapDepth: 1 },
+      },
+      {
+        id: 'a1',
+        text: 'A1',
+        type: 'branch',
+        position: { x: 120, y: 80 },
+        data: { mindMapSide: 'left', mindMapDepth: 2 },
+      },
+    ]
+    const links: Connection[] = [
+      { id: 'e1', source: 'topic', target: 'a', sourceHandle: 'mindmap-left' },
+      { id: 'e2', source: 'a', target: 'a1', sourceHandle: 'mindmap-left' },
+    ]
+    const rootId = mindMapSummaryRootNodeId('s1')
+    const widths = { a: 80, a1: 80, [rootId]: 90 }
+    const heights = { a: 30, a1: 30, [rootId]: 34 }
+    const placed = placeMindMapSummaryNodes(
+      tree,
+      links,
+      [{ id: 's1', text: '概要', coveredPaths: ['l/0'] }],
+      null,
+      widths,
+      heights
+    )
+    const root = placed.find((node) => node.id === rootId)
+    expect(root?.position?.x).toBeLessThan(120)
   })
 })

@@ -2,7 +2,7 @@
 /**
  * Floating voice-notes recorder FAB — Kitty-style, draggable.
  * Left-click cycles idle → recording → pause → recording…
- * Right-click: Start / Pause / Stop / View transcript / Jump / Exit.
+ * Right-click: Start / Pause / Stop / View transcript / Generate / Exit.
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -15,6 +15,7 @@ import { Mic } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { isMobileAppPath } from '@/composables/voiceNotes/mobileVoiceNotesFinish'
+import { useVoiceNotesGenerate } from '@/composables/voiceNotes/useVoiceNotesGenerate'
 import { useVoiceNotesSessionChrome } from '@/composables/voiceNotes/useVoiceNotesSessionChrome'
 import { useVoiceNotesStore } from '@/stores/voiceNotes'
 
@@ -24,9 +25,13 @@ const FAB_PAD = 16
 const { t } = useLanguage()
 const route = useRoute()
 const voiceNotes = useVoiceNotesStore()
+const session = useVoiceNotesGenerate()
 const { enabled, recording, paused, connecting, bootstrapping, inputLevel } =
   storeToRefs(voiceNotes)
-const { actions } = useVoiceNotesSessionChrome()
+const { actions } = useVoiceNotesSessionChrome({
+  generating: session.generating,
+  persisting: session.persisting,
+})
 const isMobileShell = computed(() => route.meta.layout === 'mobile' || isMobileAppPath(route.path))
 
 const fabRef = ref<HTMLElement | null>(null)
@@ -213,17 +218,17 @@ function onResume(): void {
 }
 
 function onStop(): void {
-  void voiceNotes.stopRecording()
+  void session.stopRecordingOnly()
+  closeMenu()
+}
+
+function onGenerate(): void {
+  void session.generateMindmap()
   closeMenu()
 }
 
 function onViewTranscript(): void {
   voiceNotes.openModal()
-  closeMenu()
-}
-
-function onJump(): void {
-  void voiceNotes.jumpToMindmap()
   closeMenu()
 }
 
@@ -337,10 +342,10 @@ onUnmounted(() => {
         type="button"
         class="voice-notes-ctx__item"
         role="menuitem"
-        :disabled="!actions.canJump"
-        @click="onJump"
+        :disabled="!actions.canGenerate"
+        @click="onGenerate"
       >
-        {{ t('auth.voiceNotes.jumpToMindmap') }}
+        {{ t('auth.voiceNotes.retryGenerate') }}
       </button>
       <button
         type="button"

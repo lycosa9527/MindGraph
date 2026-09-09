@@ -73,6 +73,11 @@ class PackageIngestTextRequest(BaseModel):
     content: str = Field(..., min_length=1, max_length=900_000)
     title: Optional[str] = Field(default=None, max_length=200)
     language: Optional[str] = Field(default=None, max_length=10)
+    source_kind: Optional[str] = Field(
+        default=None,
+        max_length=32,
+        pattern="^(paste|voice_notes)$",
+    )
 
 
 class PackageIngestWebRequest(BaseModel):

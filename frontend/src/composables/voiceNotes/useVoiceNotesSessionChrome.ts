@@ -90,6 +90,7 @@ export function useVoiceNotesSessionChrome(extra?: {
       bootstrapping: voiceNotes.bootstrapping,
       generating: extra?.generating?.value,
       persisting: extra?.persisting?.value,
+      enabled: voiceNotes.enabled,
       hasTranscript: voiceNotes.transcriptText.trim().length > 0,
       hasActiveCapture: voiceNotes.hasActiveCapture,
     })
