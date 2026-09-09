@@ -17,6 +17,6 @@ idf.py build
 
 Do not flash from WSL. After `idf.py merge-bin`, copy the image to the Windows Desktop and flash with Waveshare `flash_download_tool` at offset `0x00`.
 
-Round overlay ([`round_ui/`](round_ui)) is applied when the littlefs image is built: circular safe area, zh_CN, 智回, and the 九宫格 IME.
+Round overlay ([`round_ui/`](round_ui)) is applied when the littlefs image is built: circular safe area, zh_CN, and the 九宫格 IME.
 
 `managed_components/` is gitignored; the first configure downloads Brookesia from the [component registry](https://components.espressif.com/).

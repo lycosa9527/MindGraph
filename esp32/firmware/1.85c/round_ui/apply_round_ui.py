@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import json
 import shutil
-import zipfile
 from pathlib import Path
 
 ROUND_WHEN = "${expr(${env.widthDp} == 360dp && ${env.heightDp} == 360dp)}"
@@ -270,20 +269,6 @@ def patch_wifi_connect_actions(settings_res: Path) -> None:
     save_json(path, document)
 
 
-def stage_hello(littlefs: Path, overlay: Path) -> None:
-    """Extract the staged 智回 .bpk into littlefs apps."""
-    hello_bpk = overlay / "com.mindgraph.hello.bpk"
-    hello_dest = littlefs / "apps" / "com.mindgraph.hello"
-    if not hello_bpk.is_file():
-        return
-    if hello_dest.exists():
-        shutil.rmtree(hello_dest)
-    hello_dest.mkdir(parents=True)
-    with zipfile.ZipFile(hello_bpk) as package:
-        package.extractall(hello_dest)
-    print(f"round_ui: staged 智回 from {hello_bpk.name}")
-
-
 def apply_app_overlay(res_dir: Path, overlay_dir: Path, assets: list[str]) -> bool:
     """Copy an app overlay and register its 360 variant. True when root.json changed."""
     if overlay_dir.exists() and res_dir.exists():
@@ -306,7 +291,6 @@ def apply(littlefs: Path, overlay: Path) -> None:
     copy_tree(overlay / "super", super_root)
     if (overlay / "settings").exists() and settings_res.exists():
         copy_tree(overlay / "settings", settings_res)
-    stage_hello(littlefs, overlay)
     patch_round_status_bar(super_root)
     patch_launcher_frame(super_root)
     patch_launcher_labels(super_root)

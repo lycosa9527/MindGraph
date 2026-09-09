@@ -16,7 +16,7 @@ RULES = (
     "broad-except",
 )
 
-_SKIP_DIRS = {"__pycache__", ".venv", "venv", "node_modules", "frontend", "typings"}
+_SKIP_DIRS = {"__pycache__", ".venv", "venv", "node_modules", "frontend", "typings", "esp32"}
 _SKIP_PARTS = {"alembic/versions"}
 _SKIP_FILES = {
     "services/infrastructure/process/fatal_process_exit.py",

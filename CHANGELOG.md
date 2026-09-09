@@ -7,16 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [5.180.63] - 2026-09-09
 
-> **智回 is back on the 1.85C: circular launcher labels, zh_CN, and a 九宫格 IME.**
+> **1.85C round shell: zh_CN, circular launcher, 九宫格 IME. Placeholder watch app removed.**
 
 ### Added
 
-- **智回** — The 1.85C remote app is named 智回 / ZhiHui. Super boots in `zh_CN` so Settings / 智回 use NotoSans SC.
 - **九宫格 keyboard** — System keyboard is a 3×4 phone pad. Chinese mode is T9 pinyin with a candidate bar; EN mode is multi-tap ABC. Firmware: [`esp32/firmware/1.85c/main/modules/round_shell.cpp`](esp32/firmware/1.85c/main/modules/round_shell.cpp).
+- **zh_CN shell** — Super boots in Chinese and uses NotoSans SC.
 
 ### Changed
 
-- **Round launcher** — 2×2 tiles shrink so 设置 and 智回 sit inside the disc (icon 56 + label 18). The active screen is clipped to a circle so the square framebuffer does not look cut off.
+- **Round launcher** — 2×2 tiles shrink so app names sit inside the disc (icon 56 + label 18). The active screen is clipped to a circle so the square framebuffer does not look cut off.
+
+### Removed
+
+- **Hello / 智回 `.bpk`** — Placeholder Brookesia remote app and littlefs staging. Firmware + round overlay stay.
 
 ## [5.180.62] - 2026-09-09
 
