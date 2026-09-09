@@ -16,6 +16,7 @@ import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { mindMapConnectionAnchorY } from '@/config/mindMapGeometry'
 import type { Connection, DiagramNode } from '@/types'
 import {
+  buildMindMapTreeChildrenMap,
   isMindMapBranchNode,
   isMindMapL1,
   mindMapNodeDepth,
@@ -413,13 +414,7 @@ function centerOneParentChildrenGroup(
 }
 
 function buildChildrenMap(connections: Connection[]): Map<string, string[]> {
-  const map = new Map<string, string[]>()
-  for (const connection of connections) {
-    const kids = map.get(connection.source)
-    if (kids) kids.push(connection.target)
-    else map.set(connection.source, [connection.target])
-  }
-  return map
+  return buildMindMapTreeChildrenMap(connections)
 }
 
 function collectDescendantIds(rootId: string, childrenMap: Map<string, string[]>): string[] {

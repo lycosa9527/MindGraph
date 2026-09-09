@@ -14,7 +14,7 @@ from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
 )
 from services.kitty.session.runtime_state import voice_sessions
 
-_VALID_PHASES = frozenset({"listening", "speaking", "active"})
+_VALID_PHASES = frozenset({"listening", "speaking", "active", "thinking"})
 _SESSION_PHASE_KEY = "_desktop_voice_phase"
 
 

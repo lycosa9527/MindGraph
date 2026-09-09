@@ -98,8 +98,8 @@ NODE_ACTION_ROWS: List[NodeActionRow] = [
         "tool_name": "node_action.clarify_options",
         "description_zh": "向用户确认意图（2–3个短选项）",
         "description_en": "Ask the user to pick among 2–3 short options",
-        "when_to_use_zh": "在添加新分支 vs 补全已有分支等意图之间不确定时",
-        "when_to_use_en": "Ambiguous between add-new vs fill-existing or similar",
+        "when_to_use_zh": "问候、闲聊，或「改一下/这个」等意图不清时；添加 vs 补全也不确定时",
+        "when_to_use_en": "Greetings, chitchat, vague edits, or add-new vs fill-existing",
         "examples_zh": ["中国 → 添加分支还是补全已有？"],
         "examples_en": ["China → add new branch or fill existing?"],
     },
@@ -132,7 +132,11 @@ def build_node_action_tools() -> List[Dict[str, Any]]:
     ui_and_meta = [
         _fn(
             "node_action.auto_complete_branch",
-            "Fill AI-generated children under an EXISTING branch on the canvas.",
+            (
+                "Fill AI-generated children under an EXISTING branch. "
+                "Use when the user asks to 补全/填充/expand a named branch that already exists. "
+                "Require node_id from Current diagram JSON."
+            ),
             {
                 "node_id": {
                     "type": "string",
@@ -147,13 +151,17 @@ def build_node_action_tools() -> List[Dict[str, Any]]:
         ),
         _fn(
             "node_action.auto_complete",
-            "Run whole-diagram AI auto-complete (no specific branch).",
+            (
+                "Fill the whole diagram when the user asks to auto-complete the map "
+                "and does not name a branch. Do not call this in the same turn as new-branch add_node."
+            ),
             {},
             [],
         ),
         _fn(
             "node_action.clarify_options",
-            "Ask the user to pick one of 2–3 short options when intent is ambiguous.",
+            "Ask the user to pick one of 2–3 short next actions. Use for greetings (你好), "
+            "chitchat, or vague edits (改一下 / this). Question is one line; labels stay short.",
             {
                 "question": {
                     "type": "string",
@@ -174,6 +182,7 @@ def build_node_action_tools() -> List[Dict[str, Any]]:
                                     "delete_node",
                                     "auto_complete_branch",
                                     "auto_complete",
+                                    "ask_followup",
                                 ],
                             },
                             "target": {"type": "string"},
@@ -191,6 +200,15 @@ def build_node_action_tools() -> List[Dict[str, Any]]:
                                 "type": "string",
                                 "enum": ["left", "right"],
                                 "description": "Mind map side for a new top-level branch",
+                            },
+                            "followup": {
+                                "type": "string",
+                                "description": "Next question when action is ask_followup",
+                            },
+                            "slot_action": {
+                                "type": "string",
+                                "enum": ["update_center", "add_node", "update_node"],
+                                "description": "Edit to apply after the user answers ask_followup",
                             },
                         },
                         "required": ["label", "action"],
@@ -211,10 +229,10 @@ def node_action_tool_names() -> set[str]:
 
 
 def render_library_prompt(lang: Lang = "zh") -> str:
-    """Compact library text for the node-action agent system prompt."""
+    """Short leftover catalog for the one-shot node-action parser (not the typed loop)."""
     use_zh = lang != "en"
     lines: List[str] = [
-        "Node action library (call one or more tools by tool name, in execution order):",
+        "Node action tools:",
     ]
     for row in NODE_ACTION_ROWS:
         if row["name"] == "none":
@@ -222,42 +240,11 @@ def render_library_prompt(lang: Lang = "zh") -> str:
         tool = row["tool_name"]
         desc = row["description_zh"] if use_zh else row["description_en"]
         when = row["when_to_use_zh"] if use_zh else row["when_to_use_en"]
-        examples = row["examples_zh"] if use_zh else row["examples_en"]
-        ex_text = "; ".join(examples[:2]) if examples else ""
-        lines.append(f"- {tool}: {desc}. When: {when}. Examples: {ex_text}")
+        lines.append(f"- {tool}: {desc}. {when}.")
     lines.extend(
         [
-            "Rules:",
-            "- Prefer auto_complete_branch when user asks to 补全/填充/expand an EXISTING branch label.",
-            "- Prefer add_node only when adding a NEW branch/child (exact new labels).",
-            "- When the user changes the topic/center AND asks for whole-map auto-complete "
-            "(补全/补完整图) with NO new-branch adds, call diagram.update_center then "
-            "node_action.auto_complete (two tool calls).",
-            "- When the user adds ONE NEW branch (even if they also say 补全/fill it), "
-            "prefer diagram.add_node only — the canvas fills that new branch after apply. "
-            "Do not invent node_id for the new branch.",
-            "- When the user adds MULTIPLE new branches in one request (optionally after "
-            "changing the topic), emit only structural tools: diagram.update_center if "
-            "needed, then one diagram.add_node per branch label in order. Do NOT emit "
-            "auto_complete_branch or whole-map auto_complete for those new labels — the "
-            "server fills them after all structural edits finish. Never interleave "
-            "auto_complete_branch between add_node calls.",
-            "- Never call whole-map auto_complete in the same turn as new-branch add_node "
-            "calls you expect the canvas to fill (whole-map fill would wipe those children).",
-            "- Execution order (always): update_center → delete_node → update_node → "
-            "add_node → auto_complete_branch → auto_complete. Never put auto-complete "
-            "before structural edits.",
-            "- Match branch labels and node ids against the Current diagram JSON; do not invent labels.",
-            "- Always pass node_id from the diagram JSON when targeting an existing node "
-            "(stable if text changes). Never invent node_id for a node that does not exist yet.",
-            "- add_node creates a NEW node: pass target/text (+ parent_ref/side); do not invent "
-            "node_id. The canvas assigns the real id after apply.",
-            "- auto_complete_branch / delete_node / update_node: require node_id "
-            "from Current diagram JSON whenever the node already exists.",
-            "- If ambiguous, call node_action.clarify_options with 2–3 short options.",
-            "- clarify_options: every option_command must include the fields needed to execute "
-            "(add_node: target + parent_ref/side; delete_node/auto_complete_branch: node_id + "
-            "target; update_node: node_id/node_identifier + target/new_text).",
+            "Prefer node_id from Current diagram JSON. Never invent node_id for a new node.",
+            "If ambiguous, call node_action.clarify_options.",
         ]
     )
     return "\n".join(lines)
@@ -266,7 +253,16 @@ def render_library_prompt(lang: Lang = "zh") -> str:
 def _option_to_command(option: Dict[str, Any]) -> Dict[str, Any]:
     action = str(option.get("action") or "").strip()
     cmd: Dict[str, Any] = {"action": action, "confidence": 0.9}
-    for key in ("target", "node_identifier", "new_text", "parent_ref", "side", "node_id"):
+    for key in (
+        "target",
+        "node_identifier",
+        "new_text",
+        "parent_ref",
+        "side",
+        "node_id",
+        "followup",
+        "slot_action",
+    ):
         val = option.get(key)
         if isinstance(val, str) and val.strip():
             cmd[key] = val.strip()

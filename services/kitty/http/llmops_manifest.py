@@ -112,13 +112,13 @@ def build_kitty_llmops_manifest() -> Dict[str, Any]:
                 "hub_calls": [],
             },
             {
-                "id": "omni_realtime",
-                "title": "Qwen Omni (retired for Kitty)",
+                "id": "typed_agent_loop",
+                "title": "Typed Kitty agent loop",
                 "paths": [
-                    "clients/omni_client.py",
-                    "services/kitty/omni/event_loop.py",
+                    "services/kitty/agent_loop/loop.py",
+                    "services/kitty/agent_loop/tools.py",
                 ],
-                "role": "Quarantined; Kitty sessions no longer start Omni duplex.",
+                "role": "Keyboard and Fun-ASR text → OpenAI-compatible tool loop (no Qwen-Omni duplex).",
                 "hub_calls": [],
             },
             {

@@ -26,7 +26,7 @@ import type { MindMapCanvasMode } from '@/stores/ui'
 import type { Connection, DiagramNode, DiagramType, NodeStyle } from '@/types'
 import { readEffectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 import {
-  isMindMapAssociationConnection,
+  buildMindMapTreeChildrenMap,
   isMindMapBranchNode,
   mindMapLocationPathKey,
 } from '@/utils/mindMapLocation'
@@ -44,14 +44,7 @@ export type MindMapNodeIdRemapper = (
 export function buildMindMapChildrenMapByConnectionOrder(
   connections: Connection[]
 ): Map<string, string[]> {
-  const map = new Map<string, string[]>()
-  for (const c of connections) {
-    if (isMindMapAssociationConnection(c)) continue
-    const kids = map.get(c.source)
-    if (kids) kids.push(c.target)
-    else map.set(c.source, [c.target])
-  }
-  return map
+  return buildMindMapTreeChildrenMap(connections)
 }
 
 function buildChildrenMap(connections: Connection[]): Map<string, string[]> {

@@ -284,6 +284,11 @@ export type EventTypes = {
     scope?: string
     phase?: string
   }
+  'kitty:auto_complete_observe': {
+    status: 'finished' | 'failed'
+    nodeId?: string
+    action?: string
+  }
   /** Mobile Kitty WS: desktop library focus changed (cross-worker Redis relay). */
   'kitty:desktop_focus_update': {
     diagram_library_id: string | null

@@ -115,7 +115,7 @@ async def reply_text_only_conversational(
             if lang_code == "en"
             else "我暂时无法回复。你可以直接说“添加一个历史分支”来修改导图。"
         )
-        await emit_user_ack(websocket, voice_session_id, fallback, also_omni=False)
+        await emit_user_ack(websocket, voice_session_id, fallback)
         await safe_websocket_send(websocket, {"type": "response_text_done", "text": fallback})
         await safe_websocket_send(websocket, {"type": "response_done"})
         await fanout_voice_phase_from_outbound_type(voice_session_id, "response_done")
@@ -129,7 +129,7 @@ async def reply_text_only_conversational(
             else "告诉我你想怎么改导图，例如添加或重命名分支。"
         )
 
-    await emit_user_ack(websocket, voice_session_id, reply, also_omni=False)
+    await emit_user_ack(websocket, voice_session_id, reply)
     memory.append_assistant_chunk(reply)
     memory.flush_assistant_turn()
     await safe_websocket_send(websocket, {"type": "response_text_done", "text": reply})

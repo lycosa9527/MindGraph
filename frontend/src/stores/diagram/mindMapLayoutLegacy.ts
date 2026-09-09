@@ -7,7 +7,11 @@ import {
   MINDMAP_SIBLING_GAP,
 } from '@/composables/diagrams/layoutConfig'
 import type { Connection, DiagramNode } from '@/types'
-import { mindMapNodeDepth, mindMapNodeSide } from '@/utils/mindMapLocation'
+import {
+  buildMindMapTreeChildrenMap,
+  mindMapNodeDepth,
+  mindMapNodeSide,
+} from '@/utils/mindMapLocation'
 import { resolveNodeShape } from '@/utils/nodeShapeStyle'
 
 // ---------------------------------------------------------------------------
@@ -178,15 +182,7 @@ function correctYPositions(
   const nodeMap = new Map<string, DiagramNode>()
   for (const n of nodes) nodeMap.set(n.id, n)
 
-  const childrenMap = new Map<string, string[]>()
-  for (const c of connections) {
-    const kids = childrenMap.get(c.source)
-    if (kids) {
-      kids.push(c.target)
-    } else {
-      childrenMap.set(c.source, [c.target])
-    }
-  }
+  const childrenMap = buildMindMapTreeChildrenMap(connections)
 
   const topicChildren = childrenMap.get('topic') ?? []
   if (topicChildren.length === 0) return nodes

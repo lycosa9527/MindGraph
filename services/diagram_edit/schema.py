@@ -38,7 +38,7 @@ def get_diagram_edit_tools() -> list[dict[str, Any]]:
     return [
         _fn(
             "diagram.update_center",
-            "Update the mind map center topic text.",
+            "Change the mind map center/topic/title text.",
             {
                 "new_text": {"type": "string", "description": "New center/topic text"},
             },
@@ -46,7 +46,10 @@ def get_diagram_edit_tools() -> list[dict[str, Any]]:
         ),
         _fn(
             "diagram.add_node",
-            "Add a branch or child node on a mind map.",
+            (
+                "Add a NEW branch or child that does not exist yet. "
+                "Do not invent node_id; the canvas assigns it after apply."
+            ),
             {
                 "text": {"type": "string", "description": "Node label text"},
                 "parent_ref": {
@@ -82,7 +85,7 @@ def get_diagram_edit_tools() -> list[dict[str, Any]]:
         ),
         _fn(
             "diagram.update_node",
-            "Update an existing mind map node label.",
+            "Rename an existing node. Prefer node_id from Current diagram JSON.",
             {
                 "node_identifier": {
                     "type": "string",
@@ -94,7 +97,7 @@ def get_diagram_edit_tools() -> list[dict[str, Any]]:
         ),
         _fn(
             "diagram.delete_node",
-            "Delete a mind map node by text or index.",
+            "Delete an existing node. Prefer node_id from Current diagram JSON.",
             {
                 "node_identifier": {
                     "type": "string",

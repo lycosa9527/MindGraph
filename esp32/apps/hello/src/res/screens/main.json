@@ -1,0 +1,38 @@
+{
+  "type": "viewScreen",
+  "id": "main",
+  "style": {
+    "padding": "64dp"
+  },
+  "layout": {
+    "type": "flex",
+    "flexFlow": "column",
+    "mainAlign": "center",
+    "crossAlign": "center",
+    "gap": "8dp"
+  },
+  "children": [
+    {
+      "type": "label",
+      "id": "title",
+      "labelProps": {
+        "text": "智回"
+      },
+      "style": {
+        "fontSize": "28sp",
+        "textAlign": "center"
+      }
+    },
+    {
+      "type": "label",
+      "id": "subtitle",
+      "labelProps": {
+        "text": "Smart Response"
+      },
+      "style": {
+        "fontSize": "13sp",
+        "textAlign": "center"
+      }
+    }
+  ]
+}

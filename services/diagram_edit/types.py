@@ -26,6 +26,7 @@ ErrorCode = Literal[
     "collab_active",
     "busy_llm_generating",
     "hub_persist_failed",
+    "ungrounded_target",
 ]
 
 

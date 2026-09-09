@@ -48,6 +48,7 @@ import {
 import { applyNodeShapeToStyle, mindMapUnderlineHandleStyle } from '@/utils/nodeShapeStyle'
 
 import InlineEditableText from '../InlineEditableText.vue'
+import MindMapNodeAdornments from './MindMapNodeAdornments.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 
@@ -437,6 +438,61 @@ function handleBranchNodeClick(event: MouseEvent): void {
           class="mind-map-underline-text"
           :style="underlineTextStyle"
         >
+          <MindMapNodeAdornments
+            :node-id="id"
+            part="image"
+          />
+          <div class="mm-branch-inline">
+            <MindMapNodeAdornments
+              :node-id="id"
+              part="inline"
+            />
+            <div
+              class="mm-branch-text-row"
+              :style="numberPrefixGapStyle"
+            >
+              <span
+                v-if="showNumberPrefix"
+                class="mm-branch-number"
+                aria-hidden="true"
+                >{{ numberPrefix }}</span
+              >
+              <InlineEditableText
+                :text="data.label || ''"
+                :node-id="id"
+                :is-editing="isEditing"
+                :readonly="isTextReadonly"
+                :max-width="textMaxWidth"
+                :text-align="resolvedStyle.textAlign || 'center'"
+                :text-decoration="resolvedStyle.textDecoration || 'none'"
+                auto-wrap
+                render-markdown
+                @save="handleTextSave"
+                @cancel="handleEditCancel"
+                @close="handleEditCancel"
+                @edit-start="isEditing = true"
+              />
+            </div>
+          </div>
+        </div>
+        <div
+          class="mind-map-underline-line"
+          :style="underlineLineStyle"
+        />
+      </template>
+      <div
+        v-else
+        class="mm-branch-body"
+      >
+        <MindMapNodeAdornments
+          :node-id="id"
+          part="image"
+        />
+        <div class="mm-branch-inline">
+          <MindMapNodeAdornments
+            :node-id="id"
+            part="inline"
+          />
           <div
             class="mm-branch-text-row"
             :style="numberPrefixGapStyle"
@@ -464,37 +520,6 @@ function handleBranchNodeClick(event: MouseEvent): void {
             />
           </div>
         </div>
-        <div
-          class="mind-map-underline-line"
-          :style="underlineLineStyle"
-        />
-      </template>
-      <div
-        v-else
-        class="mm-branch-text-row"
-        :style="numberPrefixGapStyle"
-      >
-        <span
-          v-if="showNumberPrefix"
-          class="mm-branch-number"
-          aria-hidden="true"
-          >{{ numberPrefix }}</span
-        >
-        <InlineEditableText
-          :text="data.label || ''"
-          :node-id="id"
-          :is-editing="isEditing"
-          :readonly="isTextReadonly"
-          :max-width="textMaxWidth"
-          :text-align="resolvedStyle.textAlign || 'center'"
-          :text-decoration="resolvedStyle.textDecoration || 'none'"
-          auto-wrap
-          render-markdown
-          @save="handleTextSave"
-          @cancel="handleEditCancel"
-          @close="handleEditCancel"
-          @edit-start="isEditing = true"
-        />
       </div>
 
       <Handle
@@ -564,6 +589,22 @@ function handleBranchNodeClick(event: MouseEvent): void {
 
 .branch-node.mind-map-underline-node:hover {
   box-shadow: none !important;
+}
+
+.mm-branch-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.mm-branch-inline {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .branch-node.mind-map-node {

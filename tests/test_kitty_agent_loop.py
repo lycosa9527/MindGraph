@@ -10,10 +10,11 @@ import pytest
 
 from services.agent_hub.diagram_spine.types import DiagramCommandResult
 from services.diagram_edit.types import ErrorCode, ToolResult
-from services.infrastructure.http.error_handler import ThinkingCoinInsufficientError
+from services.infrastructure.http.error_handler import LLMTimeoutError, ThinkingCoinInsufficientError
 from services.kitty.agent_loop.loop import MAX_TOOL_ROUNDS, run_typed_agent_loop
-from services.kitty.agent_loop.tools import leftover_live_key
-from services.kitty.routing.command_router import RouteOutcome, route_omni_function_call
+from services.kitty.agent_loop.messages import build_system_prompt
+from services.kitty.agent_loop.tools import leftover_live_key, loop_tool_schemas
+from services.kitty.routing.command_router import RouteOutcome
 from services.kitty.routing.one_sentence_edit_helpers import should_use_verified_diagram_edit
 from services.kitty.session.ops import create_voice_session
 from services.kitty.session.runtime_state import voice_sessions
@@ -127,6 +128,10 @@ async def _run_loop(
                 "services.kitty.agent_loop.loop.live_spec_newer_than_library",
                 new=AsyncMock(return_value=True),
             ),
+            patch(
+                "services.kitty.agent_loop.loop.fanout_voice_phase_from_session",
+                new=AsyncMock(),
+            ),
         ):
             result = await run_typed_agent_loop(ws, vid, text, dict(context))
         finished = True
@@ -202,7 +207,7 @@ async def test_multi_step_includes_first_tool_result_and_revision() -> None:
     """改主题再加分支: second LLM call sees first apply + new revision."""
     context = _mindmap_context()
     result, vid, chat_mock, bus_mock = await _run_loop(
-        "改主题再加分支",
+        "主题改成运动，再添加一个跑步的分支",
         context=context,
         chat_side_effect=[
             _tool_reply("diagram.update_center", '{"new_text":"运动"}', "call_center"),
@@ -340,12 +345,12 @@ async def test_auto_complete_branch_stops_without_done_text() -> None:
     """Explicit branch complete waits for canvas generate; loop must not say done yet."""
     context = _mindmap_context()
     result, vid, chat_mock, bus_mock = await _run_loop(
-        "补完品牌分支",
+        "补全历史这个分支",
         context=context,
         chat_side_effect=[
             _tool_reply(
                 "node_action.auto_complete_branch",
-                json.dumps({"node_id": "uid-hist", "target": "品牌"}, ensure_ascii=False),
+                json.dumps({"node_id": "uid-hist", "target": "历史"}, ensure_ascii=False),
                 "call_ac",
             ),
             _text_reply("这个分支补全好了"),
@@ -392,7 +397,7 @@ async def test_leftover_branch_id_allowed_only_as_alias() -> None:
     context = _mindmap_context(leftover_alias=True)
     assert leftover_live_key({"action": "update_node", "node_id": "branch-r-1-0"}, context) is None
     result, vid, _chat_mock, bus_mock = await _run_loop(
-        "把那个分支改成史记",
+        "把历史改成史记",
         context=context,
         chat_side_effect=[
             _tool_reply("diagram.update_node", '{"node_identifier":"branch-r-1-0","new_text":"史记"}'),
@@ -417,7 +422,7 @@ async def test_step_cap_stops_after_five_rounds() -> None:
     ]
     applies = [_applied(revision=index + 2, op="update_center") for index in range(MAX_TOOL_ROUNDS)]
     result, vid, chat_mock, bus_mock = await _run_loop(
-        "改主题",
+        "主题改成运动",
         context=context,
         chat_side_effect=replies,
         bus_side_effect=applies,
@@ -450,46 +455,68 @@ async def test_general_typed_text_without_tools_is_chat() -> None:
         voice_sessions.pop(vid, None)
 
 
-@pytest.mark.asyncio
-async def test_route_omni_function_call_stays_one_shot() -> None:
-    """Retired Omni path does not enter the typed agent loop."""
-    ws = MagicMock()
-    vid = create_voice_session(user_id="1", diagram_session_id="scope-omni", diagram_type="circle_map")
-    context = {"diagram_data": {"children": [], "center": {"text": ""}}}
-    voice_sessions[vid]["context"] = context
-    try:
-        with (
-            patch("services.kitty.agent_loop.loop.run_typed_agent_loop", new=AsyncMock()) as loop_mock,
-            patch(
-                "services.kitty.routing.command_router.safe_websocket_send",
-                new=AsyncMock(return_value=True),
-            ),
-            patch(
-                "services.kitty.routing.command_router.redis_user_cache.get_by_id",
-                new=AsyncMock(return_value=None),
-            ),
-        ):
-            result = await route_omni_function_call(
-                ws,
-                vid,
-                "open_panel",
-                '{"panel_name": "mindmate"}',
-                context,
-            )
-        loop_mock.assert_not_awaited()
-        assert result.outcome == RouteOutcome.EXECUTED
-    finally:
-        voice_sessions.pop(vid, None)
+def _tool_schema_name(item: Dict[str, Any]) -> str:
+    fn = item.get("function")
+    if not isinstance(fn, dict):
+        return ""
+    name = fn.get("name")
+    return name.strip() if isinstance(name, str) else ""
+
+
+def test_edit_schemas_exclude_ui_tools() -> None:
+    """Edit mode keeps read/structural/clarify/fill; general adds UI tools."""
+    edit_names = {_tool_schema_name(item) for item in loop_tool_schemas("edit")}
+    general_names = {_tool_schema_name(item) for item in loop_tool_schemas("general")}
+    assert "diagram.add_node" in edit_names
+    assert "node_action.clarify_options" in edit_names
+    assert "node_action.auto_complete" in edit_names
+    assert "open_panel" not in edit_names
+    assert "open_desktop_canvas" not in edit_names
+    assert "open_panel" in general_names
+    assert "open_desktop_canvas" in general_names
+
+
+def test_system_prompt_is_short_identity() -> None:
+    """Loop prompt is identity only — no leftover library dump."""
+    prompt = build_system_prompt("edit", lang="zh")
+    assert "Execution order" not in prompt
+    assert "Node action tools:" not in prompt
+    assert "clarify_options" in prompt
 
 
 @pytest.mark.asyncio
 async def test_heuristics_are_last_resort_after_empty_tools() -> None:
-    """Edit-mode heuristics run only after the LLM returns no tools."""
+    """Edit-mode empty tools offer a short clarify menu instead of regex-guessing."""
     context = _mindmap_context()
     result, vid, chat_mock, bus_mock = await _run_loop(
         "添加一个饮品分析的分支",
         context=context,
         chat_side_effect=[_text_reply("")],
+        bus_side_effect=[_applied(revision=2, node_id="uid-drink", op="add_node")],
+    )
+    try:
+        assert chat_mock.await_count == 1
+        bus_mock.assert_not_awaited()
+        assert result.reason == "intent_clarify"
+        assert result.action == "clarify_options"
+        assert result.outcome == RouteOutcome.EXECUTED
+        pending = voice_sessions[vid].get("pending_clarify_options")
+        assert isinstance(pending, dict)
+        labels = pending.get("options")
+        assert isinstance(labels, list)
+        assert any("添加" in str(item) or "主题" in str(item) for item in labels)
+    finally:
+        voice_sessions.pop(vid, None)
+
+
+@pytest.mark.asyncio
+async def test_heuristics_run_on_llm_timeout() -> None:
+    """Timeout still uses the obvious add-branch phrase as last resort."""
+    context = _mindmap_context()
+    result, vid, chat_mock, bus_mock = await _run_loop(
+        "添加一个饮品分析的分支",
+        context=context,
+        chat_side_effect=LLMTimeoutError("timed out"),
         bus_side_effect=[_applied(revision=2, node_id="uid-drink", op="add_node")],
     )
     try:

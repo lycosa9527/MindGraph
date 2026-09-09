@@ -292,6 +292,24 @@ async def dispatch_kitty_ws_inbound_message(
             )
         return "continue"
 
+    if msg_type == "auto_complete_done":
+        status_raw = message.get("status")
+        status = status_raw.strip() if isinstance(status_raw, str) and status_raw.strip() else "finished"
+        node_raw = message.get("node_id")
+        node_id = node_raw.strip() if isinstance(node_raw, str) else None
+        done_payload: dict[str, Any] = {"status": status}
+        if node_id:
+            done_payload["node_id"] = node_id
+        bus = get_session_event_bus(voice_session_id)
+        await bus.emit(
+            KittyEvent(
+                kind="auto_complete_done",
+                voice_session_id=voice_session_id,
+                payload=done_payload,
+            )
+        )
+        return "continue"
+
     if msg_type == "get_desktop_session_snapshot":
         lane = voice_sessions[voice_session_id].get("_kitty_client_lane")
         snapshot_payload = await build_desktop_pairing_snapshot(

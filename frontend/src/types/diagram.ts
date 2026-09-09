@@ -32,6 +32,7 @@ export type NodeType =
   | 'flowSubstep' // Flow map substep node
   | 'brace' // Brace map part node
   | 'label' // Classification dimension label
+  | 'summary' // Mind-map v2 sibling-range summary topic
 
 export interface NodeStyle {
   backgroundColor?: string
@@ -112,6 +113,11 @@ export interface Connection {
    * path visually from the parent label position instead of the anchor node handle.
    */
   linkedFromConnectionId?: string
+  /**
+   * Mind-map association: apex offset from the endpoint midpoint (flow coords).
+   * The curve passes through midpoint + offset.
+   */
+  curveOffset?: { x: number; y: number }
 }
 
 /** Styles keyed by stable mind-map path (`topic`, `r/0`, `l/1/2`, …). */
@@ -137,6 +143,46 @@ export interface MindMapCanvasStyleBuckets {
   legacy?: MindMapCanvasLegacyBucket
   v2?: MindMapCanvasV2Bucket
 }
+
+/** Nested topics attached to a mind-map summary (not part of the main tree). */
+export interface MindMapSummaryChildSpec {
+  text: string
+  children?: MindMapSummaryChildSpec[]
+}
+
+/** Brace chrome drawn around the covered sibling range. */
+export type MindMapSummaryKind = 'brace' | 'bracket' | 'paren'
+
+/** Stroke pattern for the summary brace, range box, and connector. */
+export type MindMapSummaryLineStyle = 'solid' | 'dashed' | 'dotted'
+
+/** XMind-style 概要: brace over consecutive siblings plus a summary topic. */
+export interface MindMapSummarySpec {
+  id: string
+  text: string
+  coveredPaths: string[]
+  children?: MindMapSummaryChildSpec[]
+  kind?: MindMapSummaryKind
+  lineStyle?: MindMapSummaryLineStyle
+  strokeColor?: string
+  strokeWidth?: number
+}
+
+export type MindMapSummaryChromePatch = {
+  kind?: MindMapSummaryKind
+  lineStyle?: MindMapSummaryLineStyle
+  strokeColor?: string
+  strokeWidth?: number
+}
+
+/** Path-keyed icon / link / image that survives topic+children rebuilds. */
+export interface MindMapNodeAdornment {
+  icon?: string
+  href?: string
+  imageUrl?: string
+}
+
+export type MindMapAdornmentsByPath = Record<string, MindMapNodeAdornment>
 
 export interface DiagramData {
   type: DiagramType
@@ -166,6 +212,10 @@ export interface DiagramData {
   _collapsed_paths?: string[]
   /** Mind map: per-canvas-mode style snapshots (classic vs new canvas) */
   _mindmap_canvas?: MindMapCanvasStyleBuckets
+  /** Mind map v2: XMind-style summary braces (sibling ranges) */
+  _mindmap_summaries?: MindMapSummarySpec[]
+  /** Mind map v2: icon / link / image keyed by stable path */
+  _mindmap_adornments?: MindMapAdornmentsByPath
   /** Custom positions set by user dragging (distinct from auto-layout) */
   _customPositions?: Record<string, Position>
   /** Index signature for dynamic property access (e.g., 'attributes', 'steps', etc.) */
@@ -197,14 +247,7 @@ export type PresentationToolId = 'laser' | 'spotlight' | 'highlighter' | 'pen' |
 
 /** Mind map presentation rail tools */
 export type MindMapPresentationToolId =
-  | 'pointer'
-  | 'hand'
-  | 'laser'
-  | 'highlighter'
-  | 'pen'
-  | 'spotlight'
-  | 'timer'
-  | 'slides'
+  'pointer' | 'hand' | 'laser' | 'highlighter' | 'pen' | 'spotlight' | 'timer' | 'slides'
 
 /** Tools with an inline parameter panel; clicking again returns to pointer. */
 export const MIND_MAP_PRESENTATION_EXPANDABLE_TOOLS = [

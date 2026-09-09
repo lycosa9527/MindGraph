@@ -28,11 +28,11 @@ One backend package. There is no separate `kitty_voice` module.
 ## Acknowledgment templates (`services/kitty/ack/`)
 
 Diagram edits, UI actions, low-confidence clarifications, and **unsupported diagram types**
-(e.g. fishbone / 鱼骨图) use a **hybrid** model: templated acks for structured outcomes, Omni LLM for open conversation.
+(e.g. fishbone / 鱼骨图) use a **hybrid** model: templated acks for structured outcomes, CosyVoice for spoken replies.
 
 - **`ack_library.py`** — zh/en template keys (`diagram.update_node.success`, `diagram.low_confidence`, `ui.*`, …) and `render_ack()`.
 - **`ack_slots.py`** — slot extraction from router commands and diagram_update payloads (implicit confirmation: old/new text, targets).
-- **`ack_emit.py`** — `emit_user_ack()` sends `text_chunk` for text clients (一句话 panel) and optional short Omni `create_response` on voice.
+- **`ack_emit.py`** — `emit_user_ack()` sends `text_chunk` for text clients (一句话 panel) and speaks via CosyVoice when voice is on.
 
 The command router calls `emit_user_ack` after successful `execute_diagram_update`; `send_kitty_diagram_update` adds the same text as `user_summary` on the WebSocket payload so canvas and chat stay aligned.
 

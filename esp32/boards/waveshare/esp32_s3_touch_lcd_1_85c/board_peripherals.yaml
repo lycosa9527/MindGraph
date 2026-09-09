@@ -1,0 +1,44 @@
+# V1 factory demo pins (ESP32-S3-Touch-LCD-1.85C-Test).
+# GPIO10/11 are onboard I2C (touch, TCA9554, RTC). The V1-vs-V2 "NC" row is
+# audio/header remapping, not the touch bus.
+peripherals:
+  - name: i2c_master
+    type: i2c
+    role: master
+    config:
+      port: 0
+      pins:
+        sda: 11
+        scl: 10
+
+  - name: spi_display
+    type: spi
+    role: master
+    config:
+      spi_bus_config:
+        spi_port: SPI2_HOST
+        sclk_io_num: 40
+        mosi_io_num: 46
+        miso_io_num: 45
+        quadwp_io_num: 42
+        quadhd_io_num: 41
+        max_transfer_sz: 7200
+
+  # Any GPIO peripheral is enough for board-manager to emit periph_gpio_* types.
+  # Do not name this gpio_backlight_control: the HAL then expects a handle.
+  - name: gpio_type_stub
+    type: gpio
+    role: io
+    config:
+      pin: 18
+      mode: GPIO_MODE_INPUT
+      default_level: 0
+
+  - name: ledc_backlight
+    type: ledc
+    role: none
+    config:
+      gpio_num: 5
+      freq_hz: 5000
+      duty: 4000
+      duty_resolution: LEDC_TIMER_13_BIT

@@ -21,6 +21,7 @@ def test_classify_clarify_option_pick() -> None:
     assert classify_clarify_option_pick("第二个", 2) == 2
     assert classify_clarify_option_pick("好的第一个", 2) == 1
     assert classify_clarify_option_pick("随便聊聊", 2) is None
+    assert classify_clarify_option_pick("补全「中国」", 2, ["补全「中国」", "新增「中国」"]) == 1
 
 
 @pytest.mark.asyncio

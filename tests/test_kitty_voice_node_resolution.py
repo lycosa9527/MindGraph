@@ -151,16 +151,17 @@ def test_resolve_voice_index_rejects_leftover_child_id() -> None:
 
 
 def test_resolve_voice_node_by_text_match() -> None:
-    """Test resolve voice node by text match."""
+    """Label resolve is exact; a prefix is not a target."""
     ctx = {
         "diagram_data": {
             "children": [{"id": "context-0", "text": "Wheels"}],
         },
     }
-    out = resolve_voice_node_reference(cast(dict[str, object], ctx), "circle_map", node_identifier="Wheel")
+    out = resolve_voice_node_reference(cast(dict[str, object], ctx), "circle_map", node_identifier="Wheels")
     assert out is not None
     assert out["node_id"] == "context-0"
     assert out["node_index"] == 0
+    assert resolve_voice_node_reference(cast(dict[str, object], ctx), "circle_map", node_identifier="Wheel") is None
 
 
 def test_resolve_voice_node_falls_back_to_selected() -> None:
@@ -216,7 +217,6 @@ async def test_route_omni_add_node_with_recommendations() -> None:
     voice_sessions[vid]["context"] = {"diagram_data": {"children": []}}
 
     send_mock = AsyncMock(return_value=True)
-    omni_mock = AsyncMock()
 
     try:
         with (
@@ -229,12 +229,16 @@ async def test_route_omni_add_node_with_recommendations() -> None:
                 new=AsyncMock(return_value=None),
             ),
             patch(
-                "services.kitty.routing.command_router.safe_websocket_send",
+                "services.kitty.routing.command_router.send_kitty_ws_action",
                 send_mock,
             ),
             patch(
-                "services.kitty.routing.command_router.get_session_omni_client",
-                return_value=omni_mock,
+                "services.kitty.routing.command_router.emit_user_ack",
+                new=AsyncMock(return_value=True),
+            ),
+            patch(
+                "services.kitty.routing.command_router.fanout_voice_command_from_session",
+                new=AsyncMock(),
             ),
             patch(
                 "services.kitty.routing.command_router.redis_user_cache.get_by_id",
@@ -249,9 +253,8 @@ async def test_route_omni_add_node_with_recommendations() -> None:
                 dict(voice_sessions[vid]["context"]),
             )
         assert result.outcome == RouteOutcome.EXECUTED
-        payload = mock_await_args(send_mock)[1]
+        payload = mock_await_args(send_mock)[2]
         assert payload["action"] == "add_node_with_recommendations"
-        omni_mock.create_response.assert_awaited()
     finally:
         voice_sessions.pop(vid, None)
 

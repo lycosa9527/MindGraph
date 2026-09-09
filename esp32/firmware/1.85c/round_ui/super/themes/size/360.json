@@ -1,0 +1,12 @@
+{
+    "type": "constant",
+    "data": {
+        "radius": {
+            "card": "16dp",
+            "listItem": "12dp",
+            "chip": "14dp",
+            "button": "10dp",
+            "input": "16dp"
+        }
+    }
+}

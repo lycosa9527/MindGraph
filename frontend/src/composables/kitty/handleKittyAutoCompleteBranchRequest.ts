@@ -2,6 +2,7 @@
  * Handle Kitty ``auto_complete_branch`` → mind-map subgraph expand (branch glow)
  * via the verified local commit path (paste → verify → Hub persist).
  */
+import { eventBus } from '@/composables/core/useEventBus'
 import {
   generateMindMapSubgraphForNode,
   type MindMapSubgraphPersistOptions,
@@ -72,6 +73,10 @@ export async function handleKittyAutoCompleteBranchRequest(
 
   if (!isMindMapDiagramType(diagramStore.type)) {
     notify.warning(t('canvas.mindMapOneSentence.kittyEditBranchCompleteFailed'))
+    eventBus.emit('kitty:auto_complete_observe', {
+      status: 'failed',
+      action: 'auto_complete_branch',
+    })
     return false
   }
 
@@ -81,6 +86,10 @@ export async function handleKittyAutoCompleteBranchRequest(
   const nodeId = await resolveAutoCompleteBranchNodeIdReady(payload)
   if (!nodeId) {
     endQuietBranchComplete(false)
+    eventBus.emit('kitty:auto_complete_observe', {
+      status: 'failed',
+      action: 'auto_complete_branch',
+    })
     return false
   }
 
@@ -89,6 +98,11 @@ export async function handleKittyAutoCompleteBranchRequest(
     const connected = await persistHooks.ensureConnected()
     if (!connected) {
       endQuietBranchComplete(false)
+      eventBus.emit('kitty:auto_complete_observe', {
+        status: 'failed',
+        nodeId,
+        action: 'auto_complete_branch',
+      })
       return false
     }
     persist = {
@@ -97,11 +111,17 @@ export async function handleKittyAutoCompleteBranchRequest(
     }
   }
 
-  return generateMindMapSubgraphForNode(nodeId, {
+  const ok = await generateMindMapSubgraphForNode(nodeId, {
     persist,
     anchorLabel: payload.nodeLabel,
     // Kitty already acked the turn; canvas glow is enough while fills run.
     // Final chat line is coalesced by kittyQuietBranchCompleteBatch.
     quietSuccess: true,
   })
+  eventBus.emit('kitty:auto_complete_observe', {
+    status: ok ? 'finished' : 'failed',
+    nodeId,
+    action: 'auto_complete_branch',
+  })
+  return ok
 }

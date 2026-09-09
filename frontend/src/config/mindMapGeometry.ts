@@ -171,6 +171,22 @@ export function mindMapConnectionAnchorY(
   return nodeTopY + nodeHeight / 2
 }
 
+/**
+ * Vertical center of the label text. Underline nodes keep the bar + gap below
+ * the text, so this sits above {@link mindMapConnectionAnchorY}.
+ */
+export function mindMapTextCenterAnchorY(
+  nodeTopY: number,
+  nodeHeight: number,
+  shape: 'rounded' | 'rectangle' | 'oval' | 'underline'
+): number {
+  if (shape !== 'underline') {
+    return nodeTopY + nodeHeight / 2
+  }
+  const { top, textGap } = mindMapUnderlineContentPadding()
+  return nodeTopY + (nodeHeight + top - textGap - MINDMAP_UNDERLINE_STROKE_WIDTH) / 2
+}
+
 /** Inverse of mindMapConnectionAnchorY: top-left Y so the connection anchor sits at anchorY. */
 export function mindMapNodeTopYForAnchorY(
   anchorY: number,

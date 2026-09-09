@@ -1,0 +1,31 @@
+## Registry components — do not vendor espressif/esp-brookesia.
+dependencies:
+  espressif/brookesia_hal_adaptor: "0.8.*"
+  espressif/brookesia_hal_boards: "0.8.*"
+  espressif/brookesia_service_audio: "0.8.*"
+  espressif/brookesia_service_device: "0.8.*"
+  espressif/brookesia_service_storage: "0.8.*"
+  espressif/brookesia_service_sntp: "0.8.*"
+  espressif/brookesia_service_http: "0.8.*"
+  espressif/brookesia_service_wifi: "0.8.*"
+  espressif/brookesia_service_display: "0.8.*"
+  espressif/brookesia_service_video: "0.8.*"
+  espressif/brookesia_emulation_nes: "0.8.*"
+  espressif/brookesia_agent_coze: "0.8.*"
+  espressif/brookesia_agent_xiaozhi: "0.8.*"
+  espressif/brookesia_gui_lvgl: "0.8.*"
+  espressif/brookesia_runtime_js:
+    version: "0.8.*"
+    require: public
+  espressif/brookesia_system_super:
+    version: "0.8.*"
+    require: public
+  espressif/brookesia_app_settings:
+    version: "0.8.*"
+    require: public
+  espressif/brookesia_app_store:
+    version: "0.8.*"
+    require: public
+  espressif/brookesia_app_files:
+    version: "0.8.*"
+    require: public

@@ -14,9 +14,10 @@ from fastapi import WebSocket
 
 from services.diagram_edit.transport.kitty_ws import MULTI_STEP_SUPPRESS_DIAGRAM_CHAT_KEY
 from services.kitty.ack.ack_failure import render_failure_ack_for_command
-from services.kitty.ack.ack_library import render_ack
+from services.kitty.ack.ack_library import render_ack, render_not_understood_ack
 from services.kitty.ack.ack_slots import enrich_ack_session_context
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
+from services.kitty.routing.command_grounding import UNGROUNDED_ERROR
 from services.kitty.routing.one_sentence_edit_helpers import CLIENT_REPORTED_FAILURE_CODES
 from services.kitty.routing.node_action_order import order_node_action_commands
 from services.kitty.routing.pending_branch_autocomplete import (
@@ -611,10 +612,27 @@ async def _run_verified_structural_chain_body(
             diagram_type=str(diagram_type),
             user_id=user_id,
             verify_required=verify_required,
+            user_text=command_text,
         )
         tool_result = bus_result.tool_result
         if tool_result.status != "applied":
             err_code = tool_result.error_code or "verify_failed"
+            if err_code == UNGROUNDED_ERROR:
+                fail_text = render_not_understood_ack(lang=lang)
+                await router.send_diagram_failure_ack(
+                    websocket,
+                    voice_session_id,
+                    fail_text,
+                    one_sentence_action=step_action or None,
+                    one_sentence_outcome="failed",
+                    one_sentence_user_text=command_text,
+                )
+                return router.finish_route(
+                    voice_session_id,
+                    router.RouteOutcome.FAILED,
+                    reason=UNGROUNDED_ERROR,
+                    action=step_action or None,
+                )
             if err_code not in CLIENT_REPORTED_FAILURE_CODES:
                 fail_text = render_failure_ack_for_command(
                     step_action,

@@ -21,6 +21,7 @@ function mapAgentToMascot(state: KittyAgentState): KittyState {
       return 'listening'
     case 'speaking':
       return 'speaking'
+    case 'thinking':
     case 'connecting':
       return 'thinking'
     case 'error':

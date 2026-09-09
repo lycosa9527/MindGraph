@@ -679,8 +679,30 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     } catch {
       return false
     }
-    state.value = textOnly ? 'active' : 'speaking'
+    state.value = 'thinking'
     return true
+  }
+
+  function sendAutoCompleteDone(payload: {
+    status: 'finished' | 'failed'
+    nodeId?: string
+  }): boolean {
+    if (!ws.value || ws.value.readyState !== WebSocket.OPEN) {
+      return false
+    }
+    const body: Record<string, string> = {
+      type: 'auto_complete_done',
+      status: payload.status,
+    }
+    if (payload.nodeId) {
+      body.node_id = payload.nodeId
+    }
+    try {
+      ws.value.send(JSON.stringify(body))
+      return true
+    } catch {
+      return false
+    }
   }
 
   function setTtsEnabled(enabled: boolean): void {
@@ -810,6 +832,17 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
   eventBus.onWithOwner('voice:stop_requested', () => void stopConversation(), ownerId)
 
   eventBus.onWithOwner(
+    'kitty:auto_complete_observe',
+    (payload) => {
+      sendAutoCompleteDone({
+        status: payload.status,
+        nodeId: payload.nodeId,
+      })
+    },
+    ownerId
+  )
+
+  eventBus.onWithOwner(
     'lifecycle:session_ending',
     (data) => {
       cleanup()
@@ -853,6 +886,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     sendNarrate,
     sendPrefetch,
     sendTextMessage,
+    sendAutoCompleteDone,
     setTtsEnabled,
     stopAudioPlayback,
     updateContext,

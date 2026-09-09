@@ -46,6 +46,7 @@ import {
 } from './mindMapCanvasModeSwitch'
 import { cancelMindMapPendingInlineEdit, clearMindMapEditingNodeId } from './mindMapOps'
 import { resyncMindMapConnectionStrokeColorsForActiveMode } from './mindMapStylePreservation'
+import { rematerializeMindMapSummaryNodes } from './mindMapSummaryLayout'
 import type { DiagramContext, LoadFromSpecOptions } from './types'
 
 function seedMindMapMeasuresFromEstimates(
@@ -284,6 +285,11 @@ export function useSpecIOSlice(ctx: DiagramContext) {
           ctx.data.value.connections,
           sessionCanvasMode
         )
+        rematerializeMindMapSummaryNodes(
+          ctx.data.value,
+          ctx.mindMapNodeWidths.value,
+          ctx.mindMapNodeHeights.value
+        )
       }
     }
 
@@ -519,6 +525,14 @@ export function useSpecIOSlice(ctx: DiagramContext) {
         spec._mindmap_branch_numbering = true
         spec._mindmap_branch_numbering_prefix = ctx.data.value._mindmap_branch_numbering_prefix
         spec._mindmap_branch_numbering_nested = ctx.data.value._mindmap_branch_numbering_nested
+      }
+      const summaries = dataRecord._mindmap_summaries
+      if (Array.isArray(summaries) && summaries.length > 0) {
+        spec._mindmap_summaries = summaries
+      }
+      const adornments = dataRecord._mindmap_adornments
+      if (adornments && typeof adornments === 'object') {
+        spec._mindmap_adornments = adornments
       }
     }
     return spec

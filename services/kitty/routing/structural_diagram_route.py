@@ -21,10 +21,13 @@ from services.kitty.ack.ack_library import (
     render_ack,
     render_ack_for_command,
     render_low_confidence_ack,
+    render_not_understood_ack,
 )
 from services.kitty.ack.ack_slots import enrich_ack_session_context
 from services.kitty.context.messaging import resolve_voice_interaction_language
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
+from services.kitty.routing.command_grounding import UNGROUNDED_ERROR, apply_command_grounding
+from services.kitty.routing.diagram_agent_context import enrich_node_action_command
 from services.kitty.routing.one_sentence_edit_helpers import (
     CLIENT_REPORTED_FAILURE_CODES,
     normalize_follow_up_actions,
@@ -61,6 +64,14 @@ async def execute_follow_up_actions(
     for follow in follow_ups:
         action = str(follow.get("action") or "").strip()
         if action == "auto_complete":
+            mapped = {"action": "auto_complete", "confidence": 0.9}
+            if not apply_command_grounding(
+                mapped,
+                user_text=command_text,
+                session_context=session_context,
+            ).allowed:
+                logger.warning("follow-up auto_complete rejected: ungrounded_target")
+                continue
             logger.info("Triggering follow-up AI auto-complete from text/voice command")
             params: Dict[str, Any] = {}
             if topic_text:
@@ -94,6 +105,14 @@ async def execute_follow_up_actions(
             node_id = str(node_id_raw).strip() if isinstance(node_id_raw, str) else ""
             if not target and not node_id:
                 logger.warning("follow-up auto_complete_branch missing target/node_id")
+                continue
+            branch_cmd = enrich_node_action_command(dict(follow), session_context)
+            if not apply_command_grounding(
+                branch_cmd,
+                user_text=command_text,
+                session_context=session_context,
+            ).allowed:
+                logger.warning("follow-up auto_complete_branch rejected: ungrounded_target")
                 continue
             await router.emit_auto_complete_branch(
                 websocket,
@@ -165,6 +184,7 @@ async def route_structural_diagram_command(
             action=str(action) if action else None,
         )
 
+    command = enrich_node_action_command(command, session_context)
     live_voice = voice_sessions.get(voice_session_id)
     if isinstance(live_voice, dict):
         live_voice["last_diagram_command"] = copy.deepcopy(command)
@@ -274,6 +294,7 @@ async def route_structural_diagram_command(
             diagram_type=str(diagram_type),
             user_id=user_id,
             verify_required=True,
+            user_text=command_text,
         )
         tool_result = bus_result.tool_result
         if tool_result.status == "applied":
@@ -325,6 +346,22 @@ async def route_structural_diagram_command(
                 action=str(action) if action else None,
             )
         err_code = tool_result.error_code or "verify_failed"
+        if err_code == UNGROUNDED_ERROR:
+            fail_text = render_not_understood_ack(lang=lang)
+            await router.send_diagram_failure_ack(
+                websocket,
+                voice_session_id,
+                fail_text,
+                one_sentence_action=str(action) if action else None,
+                one_sentence_outcome="failed",
+                one_sentence_user_text=command_text,
+            )
+            return router.finish_route(
+                voice_session_id,
+                router.RouteOutcome.FAILED,
+                reason=UNGROUNDED_ERROR,
+                action=str(action) if action else None,
+            )
         if err_code not in CLIENT_REPORTED_FAILURE_CODES:
             fail_text = render_failure_ack_for_command(
                 str(action),
@@ -360,6 +397,7 @@ async def route_structural_diagram_command(
         raw_scope = live_voice.get("diagram_session_id")
         legacy_scope = str(raw_scope).strip() if isinstance(raw_scope, str) else ""
 
+    bus_error = ""
     if legacy_scope:
         if parallel_auto_complete:
             await execute_follow_up_actions(
@@ -380,9 +418,31 @@ async def route_structural_diagram_command(
             diagram_type=str(diagram_type),
             user_id=user_id,
             verify_required=False,
+            user_text=command_text,
         )
         executed = bus_result.tool_result.status == "applied"
         applied_ops = bus_result.tool_result.applied_ops
+        bus_error = str(bus_result.tool_result.error_code or "")
+    elif not apply_command_grounding(
+        command,
+        user_text=command_text,
+        session_context=session_context,
+    ).allowed:
+        fail_text = render_not_understood_ack(lang=lang)
+        await router.send_diagram_failure_ack(
+            websocket,
+            voice_session_id,
+            fail_text,
+            one_sentence_action=str(action) if action else None,
+            one_sentence_outcome="failed",
+            one_sentence_user_text=command_text,
+        )
+        return router.finish_route(
+            voice_session_id,
+            router.RouteOutcome.FAILED,
+            reason=UNGROUNDED_ERROR,
+            action=str(action) if action else None,
+        )
     else:
         executed = await router.execute_diagram_update(
             websocket,
@@ -441,12 +501,17 @@ async def route_structural_diagram_command(
             router.RouteOutcome.EXECUTED,
             action=str(action) if action else None,
         )
-    fail_text = render_failure_ack_for_command(
-        str(action),
-        command,
-        enrich_ack_session_context(session_context, live_session),
-        error_code="diagram_execute_failed",
-        lang=lang,
+    fail_reason = UNGROUNDED_ERROR if bus_error == UNGROUNDED_ERROR else "diagram_execute_failed"
+    fail_text = (
+        render_not_understood_ack(lang=lang)
+        if fail_reason == UNGROUNDED_ERROR
+        else render_failure_ack_for_command(
+            str(action),
+            command,
+            enrich_ack_session_context(session_context, live_session),
+            error_code="diagram_execute_failed",
+            lang=lang,
+        )
     )
     await router.send_diagram_failure_ack(
         websocket,
@@ -459,6 +524,6 @@ async def route_structural_diagram_command(
     return router.finish_route(
         voice_session_id,
         router.RouteOutcome.FAILED,
-        reason="diagram_execute_failed",
+        reason=fail_reason,
         action=str(action) if action else None,
     )

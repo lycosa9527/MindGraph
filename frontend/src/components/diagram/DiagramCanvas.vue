@@ -87,12 +87,14 @@ import type { MindMapCanvasMode } from '@/stores/ui'
 import type { MindGraphNode, PresentationHighlightStroke, PresentationToolId } from '@/types'
 import { isMindMapConnectorDebugEnabled } from '@/utils/mindMapConnectorDebugLevel'
 import { isMindMapSubgraphExpandable } from '@/utils/mindMapSubgraphContext'
+import { isMindMapSummaryNodeId } from '@/utils/mindMapSummary'
 
 import BraceOverlay from './BraceOverlay.vue'
 import BridgeOverlay from './BridgeOverlay.vue'
 import ContextMenu from './ContextMenu.vue'
 import DiagramCanvasZoomPaneOverlays from './DiagramCanvasZoomPaneOverlays.vue'
 import LearningSheetOverlay from './LearningSheetOverlay.vue'
+import MindMapSummaryOverlay from './MindMapSummaryOverlay.vue'
 import PresentationHighlightOverlay from './PresentationHighlightOverlay.vue'
 import TreeMapOverlay from './TreeMapOverlay.vue'
 import './diagramCanvas.css'
@@ -362,7 +364,7 @@ const { followEnabled: followNodeStyleToolbar } = useFollowNodeStyleToolbar()
 
 const floatingToolbarNodeIds = computed(() => {
   if (!useMindMapV2.value) return []
-  return diagramStore.selectedNodes.slice()
+  return diagramStore.selectedNodes.filter((id) => !isMindMapSummaryNodeId(id))
 })
 
 const floatingToolbarEnabled = computed(
@@ -783,6 +785,7 @@ defineExpose({
         />
 
         <BraceOverlay />
+        <MindMapSummaryOverlay />
         <BridgeOverlay />
         <TreeMapOverlay />
         <LearningSheetOverlay />

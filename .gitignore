@@ -260,8 +260,17 @@ services/knowledge/rag_chunk_test/rag-test/
 # Local PG mind-map export fixtures (may contain user diagram data)
 frontend/tests/fixtures/pg_mindmaps/
 
-# ESP32 (ignored for now - will revisit in a few months)
-esp32/
+# ESP32 / Brookesia — track source under esp32/; ignore toolchain output
+esp32/**/dist/
+esp32/**/build/
+esp32/**/managed_components/
+esp32/**/.cache/
+esp32/**/.brookesia/
+esp32/**/sdkconfig
+esp32/**/sdkconfig.old
+esp32/**/dependencies.lock
+esp32/**/sign/
+esp32/**/node_modules/
 
 # Archive (most features complete)
 archive/

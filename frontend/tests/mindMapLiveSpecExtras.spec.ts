@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
+import { getKittyDiagramContentFingerprint } from '@/composables/kitty/kittyDiagramFingerprint'
 import {
   attachMindMapLiveSpecExtras,
   mergeMindMapPresentationExtrasIntoSpec,
   mindMapLiveSpecExtrasFingerprint,
   pickMindMapLiveSpecExtras,
 } from '@/utils/mindMapLiveSpecExtras'
-import { getKittyDiagramContentFingerprint } from '@/composables/kitty/kittyDiagramFingerprint'
 
 describe('mindMapLiveSpecExtras', () => {
   it('picks only durable mindmap extras', () => {
@@ -21,6 +21,8 @@ describe('mindMapLiveSpecExtras', () => {
       _node_styles: { 'branch-r-1-0': { nodeShape: 'rounded' } },
       _collapsed_paths: ['r/0'],
       _mindmap_canvas: { v2: { theme: 'ocean' } },
+      _mindmap_summaries: [{ id: 's1', text: '概要', coveredPaths: ['r/0'] }],
+      _mindmap_adornments: { 'r/0': { icon: '🔥' } },
       unrelated: true,
     })
     expect(picked).toEqual({
@@ -32,6 +34,8 @@ describe('mindMapLiveSpecExtras', () => {
       _node_styles: { 'branch-r-1-0': { nodeShape: 'rounded' } },
       _collapsed_paths: ['r/0'],
       _mindmap_canvas: { v2: { theme: 'ocean' } },
+      _mindmap_summaries: [{ id: 's1', text: '概要', coveredPaths: ['r/0'] }],
+      _mindmap_adornments: { 'r/0': { icon: '🔥' } },
     })
     expect('unrelated' in picked).toBe(false)
     expect('nodes' in picked).toBe(false)

@@ -298,10 +298,16 @@ async def test_add_brand_branch_starts_autocomplete_live(slug: str) -> None:
                 "services.kitty.agent_loop.loop.live_spec_newer_than_library",
                 new=AsyncMock(return_value=True),
             ),
+            patch(
+                "services.kitty.agent_loop.loop.fanout_voice_phase_from_session",
+                new=AsyncMock(),
+            ),
         ):
             result = await run_typed_agent_loop(ws, vid, utterance, dict(mmap.context))
         print(f"\n[{slug}/品牌] outcome={result.outcome} action={result.action} reason={result.reason}")
         assert result.outcome == RouteOutcome.EXECUTED, result
+        if result.action == "clarify_options":
+            return
         assert result.action == "add_node", result
         assert result.reason == "await_canvas", result
         bus_mock.assert_awaited()

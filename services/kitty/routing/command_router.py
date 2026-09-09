@@ -79,6 +79,7 @@ from services.kitty.routing.pending_branch_autocomplete import (
     maybe_start_background_branch_autocomplete,
     try_consume_pending_branch_autocomplete,
 )
+from services.kitty.routing.command_grounding import UNGROUNDED_ERROR, apply_command_grounding
 from services.kitty.routing.pending_clarify_options import (
     arm_pending_clarify_options,
     try_consume_pending_clarify_options,
@@ -154,7 +155,7 @@ async def _send_diagram_failure_ack(
     one_sentence_outcome: str | None = None,
     one_sentence_user_text: str | None = None,
 ) -> None:
-    """Send diagram failure or clarify ack via text_chunk and optional Omni."""
+    """Send diagram failure or clarify ack via text_chunk."""
     await emit_user_ack(
         websocket,
         voice_session_id,
@@ -176,7 +177,7 @@ async def _emit_unsupported_diagram_route(
     *,
     desktop_open: bool = False,
 ) -> RouteResult:
-    """Emit in-development ack and stop routing (no Omni conversational handoff)."""
+    """Emit in-development ack and stop routing."""
     lang = resolve_voice_interaction_language(session_context)
     ack_text = render_unsupported_diagram_ack(match, lang=lang, desktop_open=desktop_open)
     await emit_user_ack(websocket, voice_session_id, ack_text)
@@ -267,7 +268,7 @@ def _resolve_command_node(
     command: Dict[str, Any],
     session_context: Dict[str, Any],
     *,
-    prefer_selected: bool = True,
+    prefer_selected: bool = False,
 ) -> Optional[Dict[str, Any]]:
     """Resolve command node."""
     diagram_type = _diagram_type_for_session(voice_session_id, session_context)
@@ -688,6 +689,26 @@ async def route_voice_command(
 
         # Interaction control
         if action == "auto_complete":
+            if not apply_command_grounding(
+                {"action": "auto_complete", "confidence": 0.9},
+                user_text=command_text,
+                session_context=session_context,
+            ).allowed:
+                lang = resolve_voice_interaction_language(session_context)
+                await emit_user_ack(
+                    websocket,
+                    voice_session_id,
+                    render_not_understood_ack(lang=lang),
+                    one_sentence_action="auto_complete",
+                    one_sentence_outcome="failed",
+                    one_sentence_user_text=command_text,
+                )
+                return _finish_route(
+                    voice_session_id,
+                    RouteOutcome.FAILED,
+                    reason=UNGROUNDED_ERROR,
+                    action="auto_complete",
+                )
             logger.info("Triggering AI auto-complete from text/voice command")
             sent = await send_kitty_ws_action(
                 websocket,
@@ -721,6 +742,25 @@ async def route_voice_command(
             target = str(target_raw).strip() if isinstance(target_raw, str) else ""
             node_id_raw = command.get("node_id")
             node_id = str(node_id_raw).strip() if isinstance(node_id_raw, str) else ""
+            if not apply_command_grounding(
+                command,
+                user_text=command_text,
+                session_context=session_context,
+            ).allowed:
+                await emit_user_ack(
+                    websocket,
+                    voice_session_id,
+                    render_not_understood_ack(lang=lang),
+                    one_sentence_action="auto_complete_branch",
+                    one_sentence_outcome="failed",
+                    one_sentence_user_text=command_text,
+                )
+                return _finish_route(
+                    voice_session_id,
+                    RouteOutcome.FAILED,
+                    reason=UNGROUNDED_ERROR,
+                    action="auto_complete_branch",
+                )
             if not target and not node_id:
                 await emit_user_ack(
                     websocket,
@@ -1063,14 +1103,14 @@ async def route_voice_command(
                     session_context,
                     unsupported,
                 )
-            logger.debug("No command detected - should send to Omni for conversational response")
+            logger.debug("No command detected — conversational fallback")
             return _finish_route(
                 voice_session_id,
                 RouteOutcome.CONVERSATIONAL_FALLBACK,
                 action=str(action) if action else None,
             )
 
-        # Unknown action — clarify supported node edits for text; voice may fall back to Omni
+        # Unknown action — clarify supported node edits for text.
         lang = resolve_voice_interaction_language(session_context)
         unsupported = resolve_unsupported_diagram_type(
             text=command_text,
@@ -1118,7 +1158,7 @@ async def route_omni_function_call(
     arguments_json: str,
     session_context: Dict[str, Any],
 ) -> RouteResult:
-    """Execute a diagram/UI command from an Omni native tool call."""
+    """Map a leftover UI tool name to the same command router as typed tools."""
     command = omni_function_call_to_command(function_name, arguments_json)
     return await route_voice_command(
         websocket,

@@ -5,6 +5,97 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.63] - 2026-09-09
+
+> **智回 is back on the 1.85C: circular launcher labels, zh_CN, and a 九宫格 IME.**
+
+### Added
+
+- **智回** — The 1.85C remote app is named 智回 / ZhiHui. Super boots in `zh_CN` so Settings / 智回 use NotoSans SC.
+- **九宫格 keyboard** — System keyboard is a 3×4 phone pad. Chinese mode is T9 pinyin with a candidate bar; EN mode is multi-tap ABC. Firmware: [`esp32/firmware/1.85c/main/modules/round_shell.cpp`](esp32/firmware/1.85c/main/modules/round_shell.cpp).
+
+### Changed
+
+- **Round launcher** — 2×2 tiles shrink so 设置 and 智回 sit inside the disc (icon 56 + label 18). The active screen is clipped to a circle so the square framebuffer does not look cut off.
+
+## [5.180.62] - 2026-09-09
+
+> **ESP32 1.85C source is in the repo; canvas icon picker leads with office/education glyphs.**
+
+### Added
+
+- **ESP32 1.85C** — Waveshare ESP32-S3-Touch-LCD-1.85C V1 (360×360) lives under [`esp32/`](esp32/): Brookesia Super firmware, Hello remote `.bpk` app, and a circular safe-area shell (status capsule, launcher, Settings/Files/App Store, watch keyboard). Toolchain output stays gitignored. Brookesia `0.8.*` comes from the ESP Component Registry — do not clone the GitHub tree into MindGraph. Build with IDF 6.1 in WSL; flash the merged bin from Windows.
+
+### Changed
+
+- **Insert icon picker** — Canvas insert hides search and opens on the objects tab (books, school, office). The icon sits to the left of the topic text.
+- **概要 brace** — Shorter middle stem; air between the brace tip and the 概要 node.
+- **Association chrome** — A selected relationship line opens style, curve, and start/end arrow controls. Connect stays same-side; the toolbar can delete the line.
+
+### Tests
+
+- [`frontend/tests/emojiPickerCategories.spec.ts`](frontend/tests/emojiPickerCategories.spec.ts)
+
+## [5.180.61] - 2026-09-09
+
+> **New-canvas Edit Insert: 概要 braces, association lines, and node icon/link/image.**
+
+### Added
+
+- **概要** — Select one node or consecutive siblings, then Insert → 概要. Draws an XMind-style range box with grips, a curly brace, a connector, and a summary topic. Extra topics hang off the summary (`+` / directional add), not the main tree. Mixed parents or gaps toast and do nothing. Saved as `_mindmap_summaries` (live-spec extra; Classic canvas unchanged).
+- **Brace chrome** — The three-dot handle is a click target. It selects the brace (not the 概要 node) and opens type (`{` / `[` / `(`), line (solid / dashed / dotted), color, and 1–8px thickness. Esc or a canvas click closes it; the node style toolbar stays closed. Double-click the handle deletes the summary and leaves the covered topics. Chrome fields persist on the summary (`kind`, `lineStyle`, `strokeColor`, `strokeWidth`).
+- **Insert adornments** — Icon (emoji picker), link, and image on New-canvas topics, keyed by stable path as `_mindmap_adornments`. Links accept http(s) only. Images accept a URL or a size-capped data URL (no new asset API).
+- **Association line** — Insert starts the existing relationship-line flow (`edgeType: 'association'`). Equation insert is unchanged.
+
+### Changed
+
+- **Tree reload** — 概要 `coveredPaths` remap when topics are rebuilt so braces stay on the same siblings.
+
+### Tests
+
+- [`frontend/tests/mindMapSummary.spec.ts`](frontend/tests/mindMapSummary.spec.ts), [`frontend/tests/mindMapAdornments.spec.ts`](frontend/tests/mindMapAdornments.spec.ts)
+
+## [5.180.60] - 2026-09-09
+
+> **Kitty grounding is mention-only at the adapter door.**
+
+### Changed
+
+- **Tighter referent check** — Node/center/add tools require the named text in the user turn. Saying 主题 no longer authorizes an invented title. Collective word lists are gone; “delete all” already fails because the target label is absent.
+- **One structural door** — `apply_kitty_legacy_diagram_command` enriches and grounds before the bus. Leftover router/chain checks were duplicates.
+
+## [5.180.59] - 2026-09-09
+
+> **Kitty mutates only objects the user pointed at.**
+
+### Changed
+
+- **Referent grounding** — `delete_node` / `update_node` / `add_node` / center / fill run only when the utterance names that object, an armed clarify pick named it, or a deictic (`这个`) plus the current selection does. Snapshot `node_id`s are not authorization. Collective “delete all” without a named node is refused and clarified.
+- **Exact targets** — Label resolve no longer substring-matches or silently inherits selection.
+
+### Tests
+
+- [`tests/test_kitty_command_grounding.py`](tests/test_kitty_command_grounding.py)
+
+## [5.180.58] - 2026-09-09
+
+> **Kitty typed loop is the only edit brain; Omni realtime is gone.**
+
+### Removed
+
+- **Qwen-Omni Kitty duplex** — Sessions never started an Omni client. Deleted `services/kitty/omni/event_loop.py`, `context_refresh.py`, and `omni_client_access.py`. Voice stays Fun-ASR + CosyVoice.
+
+### Changed
+
+- **Tighter agent loop** — Edit mode offers read / structural / clarify / fill tools only. System prompt is short identity; memory injects last observation plus the previous user line. Regex heuristics run only on LLM timeout.
+- **Unclear intent** — Greetings and vague edits (`你好`, `把这个改一下`) ask a short clarify question with 2–3 suggestions instead of “I didn’t understand.”
+- **Honest auto-complete** — Fill tools report `started`, then a second observation when the canvas finishes (`auto_complete_done`).
+- **Thinking FAB** — Kitty shows a thinking phase while the loop runs so a multi-step edit does not look frozen.
+
+### Tests
+
+- [`tests/test_kitty_agent_loop.py`](tests/test_kitty_agent_loop.py), [`tests/test_kitty_agent_loop_messages.py`](tests/test_kitty_agent_loop_messages.py), [`tests/test_kitty_session_event_bus.py`](tests/test_kitty_session_event_bus.py)
+
 ## [5.180.57] - 2026-09-08
 
 > **Mind-map canvas is Classic or New only; V3 chrome mode and leftover V3 names are gone.**

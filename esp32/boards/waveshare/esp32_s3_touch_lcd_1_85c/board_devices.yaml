@@ -1,0 +1,72 @@
+# Display + touch only. V1 audio is PCM5101 (not ES8311); skip for first image.
+devices:
+  - name: gpio_expander
+    chip: tca9554
+    type: gpio_expander
+    version: default
+    dependencies:
+      espressif/esp_io_expander_tca9554: "^2"
+    config:
+      max_pins: 8
+      output_io_mask: [0, 1]
+      output_io_level_mask: [1, 1]
+    peripherals:
+      - name: i2c_master
+        i2c_addr: [0x40]
+
+  - name: display_lcd
+    chip: st77916
+    type: display_lcd
+    sub_type: spi
+    version: default
+    depends_on: [gpio_expander]
+    dependencies:
+      espressif/esp_lcd_st77916: "^1"
+    config:
+      x_max: 360
+      y_max: 360
+      need_reset: false
+      io_spi_config:
+        cs_gpio_num: 21
+        spi_mode: 0
+        pclk_hz: 80000000
+        lcd_cmd_bits: 32
+        flags:
+          quad_mode: true
+      lcd_panel_config:
+        reset_gpio_num: -1
+        bits_per_pixel: 16
+        vendor_config: NULL
+    peripherals:
+      - name: spi_display
+
+  - name: lcd_touch
+    chip: cst816s
+    type: lcd_touch
+    sub_type: i2c
+    version: default
+    depends_on: [gpio_expander]
+    dependencies:
+      espressif/esp_lcd_touch_cst816s: "^1"
+    config:
+      io_i2c_config:
+        lcd_cmd_bits: 8
+        scl_speed_hz: 400000
+      touch_config:
+        x_max: 360
+        y_max: 360
+        rst_gpio_num: -1
+        int_gpio_num: 4
+        flags:
+          swap_xy: false
+          mirror_x: false
+          mirror_y: false
+    peripherals:
+      - name: i2c_master
+        i2c_addr: [0x2A]
+
+  - name: lcd_brightness
+    type: ledc_ctrl
+    version: default
+    peripherals:
+      - name: ledc_backlight

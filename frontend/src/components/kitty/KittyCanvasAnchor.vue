@@ -41,6 +41,8 @@ const statusDotClass = computed(() => {
       return 'kitty-voice-status--listening'
     case 'speaking':
       return 'kitty-voice-status--speaking'
+    case 'thinking':
+      return 'kitty-voice-status--thinking'
     case 'active':
       return 'kitty-voice-status--active'
     default:
@@ -55,6 +57,8 @@ const statusSubtitle = computed(() => {
         return t('canvas.kittyMobileIndicatorListening', '手机正在聆听')
       case 'speaking':
         return t('canvas.kittyMobileIndicatorSpeaking', '手机正在回复')
+      case 'thinking':
+        return t('canvas.kittyMobileIndicatorThinking', '手机正在思考')
       default:
         return t('canvas.kittyMobileIndicatorHint')
     }
@@ -68,6 +72,8 @@ const statusSubtitle = computed(() => {
       return '正在聆听'
     case 'speaking':
       return '正在回复'
+    case 'thinking':
+      return '正在思考'
     case 'active':
       return '已连接 · 点击使用'
     default:
@@ -82,6 +88,8 @@ const ariaLabel = computed(() => {
         return t('canvas.kittyMobileIndicatorListeningAria', 'Kitty 手机端正在聆听')
       case 'speaking':
         return t('canvas.kittyMobileIndicatorSpeakingAria', 'Kitty 手机端正在回复')
+      case 'thinking':
+        return t('canvas.kittyMobileIndicatorThinkingAria', 'Kitty 手机端正在思考')
       default:
         return t('canvas.kittyMobileIndicatorAria')
     }
@@ -95,6 +103,8 @@ const ariaLabel = computed(() => {
       return 'Kitty 智能体，正在聆听，点击打开'
     case 'speaking':
       return 'Kitty 智能体，正在回复，点击打开'
+    case 'thinking':
+      return 'Kitty 智能体，正在思考，点击打开'
     case 'active':
       return 'Kitty 智能体，已连接，点击打开'
     default:
@@ -113,8 +123,15 @@ const fabPhaseClass = computed(() => {
   if (props.state === 'speaking') {
     return 'kitty-anchor--phase-speaking'
   }
+  if (props.state === 'thinking') {
+    return 'kitty-anchor--phase-thinking'
+  }
   return ''
 })
+
+const phasePulse = computed(
+  () => props.state === 'listening' || props.state === 'speaking' || props.state === 'thinking'
+)
 
 const fabShellClass = computed(() => {
   const base =
@@ -158,7 +175,7 @@ const inlineShellClass = computed(() => {
       <span
         class="relative z-[1]"
         :class="{
-          'kitty-anchor__emoji--pulse': state === 'listening' || state === 'speaking',
+          'kitty-anchor__emoji--pulse': phasePulse,
         }"
         >🐈‍⬛</span
       >
@@ -184,7 +201,7 @@ const inlineShellClass = computed(() => {
       <span
         class="relative z-[1]"
         :class="{
-          'kitty-anchor__emoji--pulse': state === 'listening' || state === 'speaking',
+          'kitty-anchor__emoji--pulse': phasePulse,
         }"
         >🐈‍⬛</span
       >
@@ -211,7 +228,7 @@ const inlineShellClass = computed(() => {
       <span
         class="text-xl leading-none shrink-0"
         :class="{
-          'kitty-anchor__emoji--pulse': state === 'listening' || state === 'speaking',
+          'kitty-anchor__emoji--pulse': phasePulse,
         }"
         >🐈‍⬛</span
       >
@@ -246,7 +263,7 @@ const inlineShellClass = computed(() => {
       <span
         class="text-xl leading-none shrink-0"
         :class="{
-          'kitty-anchor__emoji--pulse': state === 'listening' || state === 'speaking',
+          'kitty-anchor__emoji--pulse': phasePulse,
         }"
         >🐈‍⬛</span
       >
@@ -360,6 +377,11 @@ const inlineShellClass = computed(() => {
   animation: kitty-dot-pulse 0.75s ease-in-out infinite;
 }
 
+.kitty-voice-status--thinking {
+  background-color: rgb(139 92 246);
+  animation: kitty-dot-pulse 0.9s ease-in-out infinite;
+}
+
 .kitty-voice-status--error {
   background-color: rgb(239 68 68);
 }
@@ -371,14 +393,16 @@ const inlineShellClass = computed(() => {
 }
 
 .kitty-anchor--phase-listening,
-.kitty-anchor--phase-speaking {
+.kitty-anchor--phase-speaking,
+.kitty-anchor--phase-thinking {
   /* Keep Tailwind `fixed` — do not set position:relative (breaks viewport FAB). */
   padding: 2px;
   border-color: transparent !important;
 }
 
 .kitty-anchor--phase-listening::before,
-.kitty-anchor--phase-speaking::before {
+.kitty-anchor--phase-speaking::before,
+.kitty-anchor--phase-thinking::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -424,6 +448,19 @@ const inlineShellClass = computed(() => {
   );
 }
 
+.kitty-anchor--phase-thinking::before {
+  background: conic-gradient(
+    from var(--kitty-fab-ring-angle) at 50% 50%,
+    rgba(139, 92, 246, 0.12) 0deg,
+    rgba(139, 92, 246, 0.08) 50deg,
+    #c4b5fd 130deg,
+    #8b5cf6 180deg,
+    #a78bfa 230deg,
+    rgba(139, 92, 246, 0.08) 310deg,
+    rgba(139, 92, 246, 0.12) 360deg
+  );
+}
+
 .dark .kitty-anchor--phase-listening::before {
   background: conic-gradient(
     from var(--kitty-fab-ring-angle) at 50% 50%,
@@ -447,6 +484,19 @@ const inlineShellClass = computed(() => {
     #4ade80 230deg,
     rgba(52, 211, 153, 0.08) 310deg,
     rgba(52, 211, 153, 0.12) 360deg
+  );
+}
+
+.dark .kitty-anchor--phase-thinking::before {
+  background: conic-gradient(
+    from var(--kitty-fab-ring-angle) at 50% 50%,
+    rgba(167, 139, 250, 0.12) 0deg,
+    rgba(167, 139, 250, 0.08) 50deg,
+    #c4b5fd 130deg,
+    #a78bfa 180deg,
+    #8b5cf6 230deg,
+    rgba(167, 139, 250, 0.08) 310deg,
+    rgba(167, 139, 250, 0.12) 360deg
   );
 }
 

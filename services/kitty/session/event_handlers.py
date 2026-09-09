@@ -1,4 +1,4 @@
-"""Kitty session event consumer wiring (command router + memory + omni refresh).
+"""Kitty session event consumer wiring (typed loop + memory).
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -15,12 +15,12 @@ from typing import Any, Dict
 from fastapi import WebSocket
 
 from services.kitty.ack.ack_emit import emit_user_ack
-from services.kitty.context.library_refresh import bump_voice_mutation_freshness
-from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
-from services.kitty.omni.context_refresh import schedule_omni_context_refresh
 from services.kitty.agent_loop.loop import run_typed_agent_loop
+from services.kitty.agent_loop.results import finish_pending_autocomplete, summarize_payload_for_memory
+from services.kitty.context.library_refresh import bump_voice_mutation_freshness
 from services.kitty.diagram.diagram_utils import is_paragraph_text
-from services.kitty.routing.command_router import RouteOutcome, route_omni_function_call, route_voice_command
+from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
+from services.kitty.routing.command_router import RouteOutcome, route_voice_command
 from services.kitty.session.events import (
     KittyEvent,
     SessionEventBus,
@@ -60,26 +60,42 @@ async def setup_session_event_handlers(runtime: KittySessionRuntime) -> SessionE
                 mem.append_assistant_chunk(chunk)
         elif event.kind == "assistant_done":
             get_session_memory(runtime.voice_session_id).flush_assistant_turn()
-        elif event.kind == "function_call":
-            await _handle_function_call(runtime, event.payload)
         elif event.kind == "diagram_mutated":
             bump_voice_mutation_freshness(runtime.voice_session_id)
-            delta = event.payload.get("delta")
-            await schedule_omni_context_refresh(
-                runtime.voice_session_id,
-                reason="diagram_mutation",
-                delta=str(delta) if delta else None,
-            )
         elif event.kind == "context_update":
             sess = voice_sessions.get(runtime.voice_session_id)
             if sess is not None:
                 sess["_last_context_update_mono"] = time.monotonic()
-            reason = str(event.payload.get("reason") or "context_update")
-            await schedule_omni_context_refresh(runtime.voice_session_id, reason=reason)
+        elif event.kind == "auto_complete_done":
+            _record_auto_complete_done(runtime.voice_session_id, event.payload)
 
     bus.add_handler(_on_event)
     await bus.start()
     return bus
+
+
+def _record_auto_complete_done(voice_session_id: str, payload: Dict[str, Any]) -> None:
+    """Second generate observation when the canvas reports fill finished or failed."""
+    session = voice_sessions.get(voice_session_id)
+    status_raw = payload.get("status")
+    status = status_raw.strip() if isinstance(status_raw, str) else "finished"
+    node_raw = payload.get("node_id")
+    node_id = node_raw.strip() if isinstance(node_raw, str) else None
+    message_raw = payload.get("message")
+    message = message_raw.strip() if isinstance(message_raw, str) else None
+    observation = finish_pending_autocomplete(
+        session if isinstance(session, dict) else None,
+        status=status,
+        node_id=node_id,
+        message=message,
+    )
+    if observation is None:
+        return
+    action = str(observation.get("action") or "auto_complete")
+    get_session_memory(voice_session_id).append_observation(
+        summarize_payload_for_memory(observation, action=action),
+        action=action,
+    )
 
 
 async def _handle_transcription(runtime: KittySessionRuntime, payload: Dict[str, Any]) -> None:
@@ -105,7 +121,7 @@ async def _handle_transcription(runtime: KittySessionRuntime, payload: Dict[str,
 
 
 async def _handle_text_inbound(runtime: KittySessionRuntime, payload: Dict[str, Any]) -> None:
-    """Handle text inbound."""
+    """Handle keyboard or Fun-ASR committed text via the typed agent loop."""
     text = str(payload.get("text") or "").strip()
     if not text:
         return
@@ -171,7 +187,6 @@ async def _handle_text_inbound(runtime: KittySessionRuntime, payload: Dict[str, 
     ):
         return
 
-    # Omni duplex retired — conversational fallback without Omni uses text reply only.
     logger.info(
         "[OneSentence] clarify fallback voice=%s request_id=%s",
         runtime.voice_session_id[:12],
@@ -181,31 +196,7 @@ async def _handle_text_inbound(runtime: KittySessionRuntime, payload: Dict[str, 
         runtime.websocket,
         runtime.voice_session_id,
         "我暂时只能帮你改图或回答和这张图相关的问题，请再说具体一点。",
-        also_omni=False,
         reply_kind="final",
         one_sentence_outcome="clarify",
         request_id=request_id,
-    )
-
-
-async def _handle_function_call(runtime: KittySessionRuntime, payload: Dict[str, Any]) -> None:
-    """Handle function call."""
-    name = payload.get("name")
-    args = payload.get("arguments") or "{}"
-    if not isinstance(name, str):
-        return
-    kitty_wf_log(
-        "omni_tool",
-        str(args)[:160],
-        voice_session_id=runtime.voice_session_id,
-        action=name,
-    )
-    session = voice_sessions.get(runtime.voice_session_id) or {}
-    session_context = dict(session.get("context") or {})
-    await route_omni_function_call(
-        runtime.websocket,
-        runtime.voice_session_id,
-        name,
-        str(args),
-        session_context,
     )

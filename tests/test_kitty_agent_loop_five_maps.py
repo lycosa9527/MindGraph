@@ -92,6 +92,10 @@ async def test_five_maps_all_node_actions(slug: str, action: str) -> None:
                 "services.kitty.agent_loop.loop.live_spec_newer_than_library",
                 new=AsyncMock(return_value=True),
             ),
+            patch(
+                "services.kitty.agent_loop.loop.fanout_voice_phase_from_session",
+                new=AsyncMock(),
+            ),
         ):
             result = await run_typed_agent_loop(ws, vid, utterance, dict(mmap.context))
 

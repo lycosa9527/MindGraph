@@ -348,8 +348,8 @@ def resolve_diagram_node_ref(
     """
     Resolve a canvas node to stable ``node_id`` + current label.
 
-    Matches exact id, ``mindMapUid`` / leftover positional alias, exact label,
-    then substring label (same as voice resolver).
+    Matches exact id, ``mindMapUid`` / leftover positional alias, or exact label.
+    Substring labels are not targets.
     """
     data = diagram_data if isinstance(diagram_data, dict) else {}
     nodes_raw = data.get("nodes")
@@ -375,9 +375,6 @@ def resolve_diagram_node_ref(
     wanted_label = label.strip()
     for nid, lbl in pairs:
         if lbl == wanted_label:
-            return {"node_id": nid, "node_label": lbl}
-    for nid, lbl in pairs:
-        if lbl and (wanted_label in lbl or lbl in wanted_label):
             return {"node_id": nid, "node_label": lbl}
     return None
 
@@ -467,17 +464,6 @@ def enrich_node_action_command(
     ident_raw = out.get("node_identifier") or out.get("target") or out.get("node_label")
     ident = ident_raw.strip() if isinstance(ident_raw, str) else ""
     if not ident:
-        selected = session_context.get("selected_nodes")
-        if not isinstance(selected, list):
-            selected = diagram_data.get("selected_nodes")
-        if isinstance(selected, list) and selected:
-            first = selected[0]
-            if isinstance(first, str) and first.strip():
-                resolved = resolve_diagram_node_ref(diagram_data, node_id=first.strip())
-                if resolved:
-                    out["node_id"] = resolved["node_id"]
-                    if resolved.get("node_label"):
-                        out.setdefault("target", resolved["node_label"])
         return out
 
     resolved = resolve_diagram_node_ref(diagram_data, label=ident)

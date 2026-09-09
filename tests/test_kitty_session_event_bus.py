@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from services.kitty.agent_loop.results import PENDING_AUTOCOMPLETE_KEY, arm_pending_autocomplete
 from services.kitty.routing.command_router import RouteOutcome
 from services.kitty.session.event_handlers import (
     KittySessionRuntime,
@@ -21,7 +22,7 @@ from services.kitty.session.memory import get_session_memory
 from services.kitty.session.ops import create_voice_session
 from services.kitty.session.runtime_state import voice_sessions
 from services.kitty.session.session_teardown import teardown_session_event_handlers
-from tests.typing_helpers import mock_await_args, mock_await_kwargs
+from tests.typing_helpers import mock_await_args
 
 
 async def _drain_bus() -> None:
@@ -53,26 +54,25 @@ async def _cleanup_event_runtime(voice_session_id: str) -> None:
 
 
 @pytest.mark.asyncio
-async def test_function_call_event_routes_omni_call() -> None:
-    """Test function call event routes omni call."""
+async def test_auto_complete_done_records_observation() -> None:
+    """Canvas generate-done is a second tool observation, not an Omni call."""
     _, voice_session_id = await _make_event_runtime()
     try:
+        session = voice_sessions[voice_session_id]
+        arm_pending_autocomplete(session, action="auto_complete_branch", node_id="n1")
         bus = get_session_event_bus(voice_session_id)
-        with patch(
-            "services.kitty.session.event_handlers.route_omni_function_call",
-            new=AsyncMock(),
-        ) as route_mock:
-            await bus.emit(
-                KittyEvent(
-                    kind="function_call",
-                    voice_session_id=voice_session_id,
-                    payload={"name": "add_node", "arguments": '{"text": "apple"}'},
-                )
+        await bus.emit(
+            KittyEvent(
+                kind="auto_complete_done",
+                voice_session_id=voice_session_id,
+                payload={"status": "finished", "node_id": "n1"},
             )
-            await _drain_bus()
+        )
+        await _drain_bus()
 
-        route_mock.assert_awaited_once()
-        assert mock_await_args(route_mock)[2] == "add_node"
+        mem = get_session_memory(voice_session_id)
+        assert any(turn.source == "tool" and "finished" in turn.content for turn in mem.turns)
+        assert PENDING_AUTOCOMPLETE_KEY not in session
     finally:
         await _cleanup_event_runtime(voice_session_id)
 
@@ -83,16 +83,10 @@ async def test_transcription_event_memory_only_no_router() -> None:
     _, voice_session_id = await _make_event_runtime()
     try:
         bus = get_session_event_bus(voice_session_id)
-        with (
-            patch(
-                "services.kitty.session.event_handlers.route_voice_command",
-                new=AsyncMock(),
-            ) as route_mock,
-            patch(
-                "services.kitty.session.event_handlers.route_omni_function_call",
-                new=AsyncMock(),
-            ) as fn_mock,
-        ):
+        with patch(
+            "services.kitty.session.event_handlers.route_voice_command",
+            new=AsyncMock(),
+        ) as route_mock:
             await bus.emit(
                 KittyEvent(
                     kind="transcription",
@@ -103,7 +97,6 @@ async def test_transcription_event_memory_only_no_router() -> None:
             await _drain_bus()
 
         route_mock.assert_not_awaited()
-        fn_mock.assert_not_awaited()
         mem = get_session_memory(voice_session_id)
         assert any(t.content == "add node apple" and t.source == "transcription" for t in mem.turns)
         history = voice_sessions[voice_session_id].get("conversation_history")
@@ -209,54 +202,44 @@ async def test_text_inbound_conversational_fallback_uses_text_reply() -> None:
 
 
 @pytest.mark.asyncio
-async def test_diagram_mutated_schedules_single_debounced_refresh() -> None:
-    """Test diagram mutated schedules single debounced refresh."""
+async def test_diagram_mutated_bumps_freshness() -> None:
+    """Diagram mutations refresh voice freshness, not an Omni session."""
     _, voice_session_id = await _make_event_runtime()
     try:
         with patch(
-            "services.kitty.session.event_handlers.schedule_omni_context_refresh",
-            new=AsyncMock(),
-        ) as schedule_mock:
+            "services.kitty.session.event_handlers.bump_voice_mutation_freshness",
+        ) as bump_mock:
             await emit_diagram_mutated(voice_session_id, action="add_node", delta="add_node applied")
             await _drain_bus()
 
-        schedule_mock.assert_awaited_once()
-        schedule_kwargs = mock_await_kwargs(schedule_mock)
-        assert schedule_kwargs["reason"] == "diagram_mutation"
-        assert schedule_kwargs["delta"] == "add_node applied"
+        bump_mock.assert_called_once_with(voice_session_id)
     finally:
         await _cleanup_event_runtime(voice_session_id)
 
 
 @pytest.mark.asyncio
-async def test_context_update_schedules_refresh_once() -> None:
-    """Test context update schedules refresh once."""
+async def test_context_update_records_timestamp() -> None:
+    """Context updates stamp the session clock for later loop snapshots."""
     _, voice_session_id = await _make_event_runtime()
     try:
         bus = get_session_event_bus(voice_session_id)
-        with patch(
-            "services.kitty.session.event_handlers.schedule_omni_context_refresh",
-            new=AsyncMock(),
-        ) as schedule_mock:
-            await bus.emit(
-                KittyEvent(
-                    kind="context_update",
-                    voice_session_id=voice_session_id,
-                    payload={"reason": "context_update", "diagram_type": "circle_map"},
-                )
+        await bus.emit(
+            KittyEvent(
+                kind="context_update",
+                voice_session_id=voice_session_id,
+                payload={"reason": "context_update", "diagram_type": "circle_map"},
             )
-            await _drain_bus()
+        )
+        await _drain_bus()
 
-        schedule_mock.assert_awaited_once()
-        assert mock_await_kwargs(schedule_mock)["reason"] == "context_update"
         assert voice_sessions[voice_session_id].get("_last_context_update_mono") is not None
     finally:
         await _cleanup_event_runtime(voice_session_id)
 
 
 @pytest.mark.asyncio
-async def test_teardown_clears_bus_memory_and_pending_refresh() -> None:
-    """Test teardown clears bus memory and pending refresh."""
+async def test_teardown_clears_bus_and_memory() -> None:
+    """Teardown drops the session bus and memory."""
     _runtime, voice_session_id = await _make_event_runtime()
     get_session_memory(voice_session_id).append_user_turn("hello", source="text")
 
@@ -267,13 +250,9 @@ async def test_teardown_clears_bus_memory_and_pending_refresh() -> None:
         patch(
             "services.kitty.session.session_teardown.remove_session_memory",
         ) as remove_mem_mock,
-        patch(
-            "services.kitty.session.session_teardown.cancel_pending_omni_refresh",
-        ) as cancel_mock,
     ):
         await teardown_session_event_handlers(voice_session_id)
 
     remove_bus_mock.assert_called_once_with(voice_session_id)
     remove_mem_mock.assert_called_once_with(voice_session_id)
-    cancel_mock.assert_called_once_with(voice_session_id)
     voice_sessions.pop(voice_session_id, None)

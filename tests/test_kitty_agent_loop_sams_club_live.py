@@ -112,6 +112,12 @@ async def test_live_sams_club_agent_loop(
         with (
             patch("services.kitty.agent_loop.loop.llm_service.chat_raw", new=_chat),
             patch("services.kitty.agent_loop.tools.apply_kitty_legacy_diagram_command", bus_mock),
+            patch("services.kitty.agent_loop.tools.emit_auto_complete_branch", new=AsyncMock(return_value=True)),
+            patch(
+                "services.kitty.agent_loop.tools.maybe_start_background_branch_autocomplete",
+                new=AsyncMock(return_value=True),
+            ),
+            patch("services.kitty.agent_loop.tools.send_kitty_ws_action", new=AsyncMock(return_value=True)),
             patch("services.kitty.agent_loop.loop.emit_user_ack", new=AsyncMock(return_value=True)),
             patch("services.kitty.agent_loop.tools.emit_user_ack", new=AsyncMock(return_value=True)),
             patch("services.kitty.agent_loop.loop.load_kitty_live_context", new=AsyncMock(return_value=None)),
@@ -122,6 +128,10 @@ async def test_live_sams_club_agent_loop(
             patch(
                 "services.kitty.agent_loop.loop.live_spec_newer_than_library",
                 new=AsyncMock(return_value=True),
+            ),
+            patch(
+                "services.kitty.agent_loop.loop.fanout_voice_phase_from_session",
+                new=AsyncMock(),
             ),
         ):
             result = await run_typed_agent_loop(ws, vid, utterance, dict(context))

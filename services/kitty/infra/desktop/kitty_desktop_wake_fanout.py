@@ -288,7 +288,7 @@ async def publish_kitty_llm_model_update(
     )
 
 
-_VALID_KITTY_VOICE_PHASES = frozenset({"listening", "speaking", "active"})
+_VALID_KITTY_VOICE_PHASES = frozenset({"listening", "speaking", "active", "thinking"})
 
 
 async def publish_kitty_voice_phase_update(

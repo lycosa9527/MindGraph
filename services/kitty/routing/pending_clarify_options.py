@@ -195,8 +195,16 @@ def arm_pending_clarify_options(
     return True
 
 
-def classify_clarify_option_pick(text: str, option_count: int) -> Optional[int]:
-    """Return 1-based option index when user picks, else None."""
+def _normalize_pick_label(text: str) -> str:
+    return " ".join(text.strip().lower().split())
+
+
+def classify_clarify_option_pick(
+    text: str,
+    option_count: int,
+    labels: Optional[List[str]] = None,
+) -> Optional[int]:
+    """Return 1-based option index when user picks a number or option label."""
     cleaned = " ".join(str(text or "").strip().split())
     if not cleaned or option_count < 2:
         return None
@@ -215,6 +223,22 @@ def classify_clarify_option_pick(text: str, option_count: int) -> Optional[int]:
         idx = int(cleaned)
         if 1 <= idx <= option_count:
             return idx
+    if labels:
+        wanted = _normalize_pick_label(cleaned)
+        exact: List[int] = []
+        partial: List[int] = []
+        for idx, raw in enumerate(labels[:option_count], start=1):
+            if not isinstance(raw, str) or not raw.strip():
+                continue
+            label = _normalize_pick_label(raw)
+            if label == wanted:
+                exact.append(idx)
+            elif wanted and (wanted in label or label in wanted):
+                partial.append(idx)
+        if len(exact) == 1:
+            return exact[0]
+        if len(partial) == 1:
+            return partial[0]
     return None
 
 
@@ -251,7 +275,9 @@ async def try_consume_pending_clarify_options(
         )
         return None
 
-    pick = classify_clarify_option_pick(command_text, len(commands))
+    labels_raw = pending.get("options")
+    labels = [item for item in labels_raw if isinstance(item, str)] if isinstance(labels_raw, list) else None
+    pick = classify_clarify_option_pick(command_text, len(commands), labels)
     if pick is None:
         log_node_action(
             "clarify_unrecognized_reply",

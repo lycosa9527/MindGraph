@@ -12,6 +12,7 @@ import {
 } from '@/utils/mindMapCanvasMode'
 import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import {
+  buildMindMapTreeChildrenMap,
   isMindMapAssociationConnection,
   isMindMapBranchId,
   isMindMapBranchNode,
@@ -47,6 +48,7 @@ import {
   type MindMapBranchSpec,
   mergeGeneratedBranchesIntoSpec,
 } from '@/utils/mindMapSubgraphMerge'
+import { isMindMapSummaryNodeId } from '@/utils/mindMapSummary'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 import { useInlineRecommendationsStore } from '../inlineRecommendations'
@@ -62,6 +64,7 @@ import {
 import type { SpecLoaderResult } from '../specLoader/types'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { emitCtxEvent, getMindMapCurveExtents } from './events'
+import { remapAdornmentsAfterTreeReload } from './mindMapAdornmentOps'
 import {
   getMindMapCollapsedNodeIds,
   getMindMapCollapsedPaths,
@@ -81,6 +84,11 @@ import {
   mergeMindMapReloadStyles,
   mindMapNodePathKey,
 } from './mindMapStylePreservation'
+import {
+  addMindMapSummaryChild,
+  deleteMindMapSummariesByNodeIds,
+  remapAndRematerializeMindMapSummaries,
+} from './mindMapSummaryOps'
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
 
@@ -723,6 +731,23 @@ function commitMindMapReload(
     setMindMapCollapsedPaths(ctx.data.value as Record<string, unknown>, pruned)
   }
 
+  remapAndRematerializeMindMapSummaries(
+    ctx.data.value,
+    oldNodes,
+    oldConnections,
+    ctx.data.value.nodes,
+    ctx.data.value.connections ?? [],
+    ctx.mindMapNodeWidths.value,
+    ctx.mindMapNodeHeights.value
+  )
+  remapAdornmentsAfterTreeReload(
+    ctx,
+    oldNodes,
+    oldConnections,
+    ctx.data.value.nodes,
+    ctx.data.value.connections ?? []
+  )
+
   ctx.selectedNodes.value = remapMindMapNodeIdsAfterReload(
     previousSelected,
     oldNodes,
@@ -872,6 +897,11 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     const beforeNodes = data.value.nodes
     const beforeConnections = connections
     const topicY = beforeNodes.find((node) => node.id === 'topic')?.position?.y
+    const summaryDeleted = deleteMindMapSummariesByNodeIds(
+      ctx,
+      nodeIds.filter((id) => isMindMapSummaryNodeId(id)),
+      { skipHistory: true }
+    )
     const spec = nodesAndConnectionsToMindMapSpec(beforeNodes, connections)
     const hadBothSidesBefore = spec.leftBranches.length > 0 && spec.rightBranches.length > 0
     const idsToRemove = new Set(nodeIds.filter((id) => isMindMapBranchId(id, beforeNodes)))
@@ -916,7 +946,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     })
 
     const deletedCount = toRemoveWithParent.length
-    if (deletedCount === 0) return 0
+    if (deletedCount === 0) return summaryDeleted
 
     const deletedNodeIds = toRemoveWithParent.map((item) => item.nodeId)
     const deletedL1 = toRemoveWithParent.some(
@@ -986,12 +1016,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
   function getMindMapDescendantIds(rootNodeId: string): Set<string> {
     const connections = data.value?.connections ?? []
-    const childrenMap = new Map<string, string[]>()
-    connections.forEach((c) => {
-      if (!childrenMap.has(c.source)) childrenMap.set(c.source, [])
-      const srcList = childrenMap.get(c.source)
-      if (srcList) srcList.push(c.target)
-    })
+    const childrenMap = buildMindMapTreeChildrenMap(connections)
     const result = new Set<string>([rootNodeId])
     function collect(id: string): void {
       for (const childId of childrenMap.get(id) ?? []) {
@@ -1547,6 +1572,18 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     if (isDiagramPresentationReadOnly(ctx)) return false
     if (!ctxV2Visuals(ctx)) return false
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
+
+    if (isMindMapSummaryNodeId(nodeId)) {
+      if (direction === 'top') return addMindMapSummaryChild(ctx, nodeId, 'above')
+      if (direction === 'bottom') return addMindMapSummaryChild(ctx, nodeId, 'below')
+      const side = mindMapNodeSide(nodeId, {
+        nodes: data.value?.nodes,
+        connections: data.value?.connections,
+      })
+      const outward: 'left' | 'right' = side === 'left' ? 'left' : 'right'
+      if (direction === outward) return addMindMapSummaryChild(ctx, nodeId, 'child')
+      return false
+    }
 
     if (nodeId === 'topic') {
       if (direction === 'left') return addMindMapBranchOnSide('left')

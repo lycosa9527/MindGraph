@@ -384,7 +384,7 @@ export function nodesAndConnectionsToMindMapSpec(
 
   function buildBranch(nodeId: string): MindMapBranch | null {
     const node = nodeMap.get(nodeId)
-    if (!node || nodeId === 'topic') return null
+    if (!node || nodeId === 'topic' || node.type === 'summary') return null
     const childIds = childrenMap.get(nodeId) ?? []
     const children = childIds
       .map((id) => buildBranch(id))

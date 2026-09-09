@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import Deque, Dict, List, Literal, Optional
 
 TurnRole = Literal["user", "assistant", "system"]
-TurnSource = Literal["transcription", "text", "omni_tts", "action", "tool"]
+TurnSource = Literal["transcription", "text", "assistant", "action", "tool"]
 
 
 @dataclass(slots=True)
@@ -54,7 +54,7 @@ class KittySessionMemory:
         content = "".join(self._assistant_buffer).strip()
         self._assistant_buffer.clear()
         if content:
-            self.turns.append(KittyTurn(role="assistant", content=content, source="omni_tts"))
+            self.turns.append(KittyTurn(role="assistant", content=content, source="assistant"))
 
     def append_action_turn(self, summary: str, *, action: str) -> None:
         """Append action turn."""
@@ -111,6 +111,33 @@ class KittySessionMemory:
             if turn.action_taken:
                 prefix = f"{prefix}/{turn.action_taken}"
             lines.append(f"{prefix}: {turn.content}")
+        return "\n".join(lines)
+
+    def compact_for_loop(self, *, current_user_text: str, lang: str) -> str:
+        """Last tool observation + previous user line (not a raw chat dump)."""
+        goal = current_user_text.strip()
+        last_obs: Optional[KittyTurn] = None
+        prev_user: Optional[KittyTurn] = None
+        for turn in reversed(self.turns):
+            if last_obs is None and turn.source == "tool":
+                last_obs = turn
+            if prev_user is None and turn.role == "user" and turn.content.strip() != goal:
+                prev_user = turn
+            if last_obs is not None and prev_user is not None:
+                break
+        if lang == "en":
+            obs_label = "Last observation"
+            prev_label = "Previous user"
+            none = "(none)"
+        else:
+            obs_label = "上次工具结果"
+            prev_label = "上一轮用户"
+            none = "（无）"
+        lines = [
+            f"{obs_label}: {last_obs.content if last_obs else none}",
+        ]
+        if prev_user is not None:
+            lines.append(f"{prev_label}: {prev_user.content}")
         return "\n".join(lines)
 
 

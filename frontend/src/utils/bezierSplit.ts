@@ -73,3 +73,16 @@ export function splitBezierPathAtMidpoint(path: string): {
 
   return { segment1, segment2 }
 }
+
+/** Point on a cubic bezier path at parameter t (0–1). */
+export function pointOnCubicBezierPath(path: string, t: number): Point | null {
+  const points = parseCubicBezierPath(path)
+  if (!points) return null
+  const [p0, p1, p2, p3] = points
+  const p11 = lerp(p0, p1, t)
+  const p21 = lerp(p1, p2, t)
+  const p31 = lerp(p2, p3, t)
+  const p12 = lerp(p11, p21, t)
+  const p22 = lerp(p21, p31, t)
+  return lerp(p12, p22, t)
+}

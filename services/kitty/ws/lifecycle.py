@@ -292,7 +292,6 @@ class KittySessionStartResult:
 
     voice_session_id: str
     agent_session_id: str
-    omni_generator: Any | None
     start_client_lane: str | None
     inbound_ctx: KittyWsInboundContext
 
@@ -303,7 +302,7 @@ async def start_kitty_session(
     auth: KittyWsAuthResult,
     start_msg: dict[str, Any],
 ) -> Optional[KittySessionStartResult]:
-    """Create voice session, agent mirror, Omni generator, and hub registration."""
+    """Create voice session, agent mirror, and hub registration."""
     user_id = str(auth.current_user.id)
     diagram_session_id = auth.diagram_session_id
     hub = auth.hub
@@ -388,11 +387,7 @@ async def start_kitty_session(
     if start_ts is not None:
         session["_kitty_redis_seen_ts"] = start_ts
 
-    logger.debug(
-        "Text-first Kitty session %s — skipping Omni realtime",
-        voice_session_id,
-    )
-    omni_generator = None
+    logger.debug("Text-first Kitty session %s (Fun-ASR / CosyVoice)", voice_session_id)
 
     refcount_ok = await hub.register_kitty_connection(diagram_session_id, int(auth.current_user.id))
     if not getattr(config, "DEBUG", True) and not refcount_ok:
@@ -445,7 +440,6 @@ async def start_kitty_session(
     return KittySessionStartResult(
         voice_session_id=voice_session_id,
         agent_session_id=agent_session_id,
-        omni_generator=omni_generator,
         start_client_lane=start_client_lane,
         inbound_ctx=inbound_ctx,
     )

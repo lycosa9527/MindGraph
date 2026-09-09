@@ -1,0 +1,12 @@
+{
+  "name": "com.mindgraph.hello",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "doctor": "brookesia doctor",
+    "build": "brookesia build",
+    "release": "brookesia release",
+    "verify": "brookesia verify",
+    "simulate": "brookesia simulate"
+  }
+}

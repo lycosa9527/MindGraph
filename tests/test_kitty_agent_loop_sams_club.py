@@ -123,6 +123,10 @@ async def _run_loop(
                 "services.kitty.agent_loop.loop.live_spec_newer_than_library",
                 new=AsyncMock(return_value=True),
             ),
+            patch(
+                "services.kitty.agent_loop.loop.fanout_voice_phase_from_session",
+                new=AsyncMock(),
+            ),
         ):
             result = await run_typed_agent_loop(ws, vid, text, dict(context))
         finished = True

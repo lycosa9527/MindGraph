@@ -44,7 +44,6 @@ async def emit_user_ack(
     voice_session_id: str,
     text: str,
     *,
-    also_omni: bool = False,
     one_sentence_action: str | None = None,
     one_sentence_outcome: str | None = None,
     one_sentence_user_text: str | None = None,
@@ -57,7 +56,6 @@ async def emit_user_ack(
     """
     Send a user-facing ack on text_chunk and persist the one-sentence turn.
 
-    Omni duplex is retired; ``also_omni`` is ignored (kept for call-site compat).
     Speaks via CosyVoice in parallel with the chat text (progress + final).
     ``reply_kind`` is ``progress`` for in-flight async canvas work; defaults to
     ``final`` so one-sentence chat dedupes against diagram ``user_summary``.
@@ -65,7 +63,6 @@ async def emit_user_ack(
     ``clarify_options`` drive one-sentence choice buttons.
     ``command_detail`` stores node-action / Bus proof for diagram activity tracking.
     """
-    del also_omni
     message = str(text or "").strip()
     if not message:
         return False

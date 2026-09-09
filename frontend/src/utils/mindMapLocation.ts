@@ -42,6 +42,29 @@ export function isMindMapAssociationConnection(
   return connection?.edgeType === MIND_MAP_ASSOCIATION_EDGE_TYPE
 }
 
+function isSummaryScopedConnection(connection: ConnectionLike): boolean {
+  return connection.source.startsWith('smry:') || connection.target.startsWith('smry:')
+}
+
+/** Tree parent→child only. Association overlays and 概要 links are not ranks. */
+export function isMindMapTreeConnection(connection: ConnectionLike): boolean {
+  return !isMindMapAssociationConnection(connection) && !isSummaryScopedConnection(connection)
+}
+
+/** Children grouped by parent in connection-list order (tree edges only). */
+export function buildMindMapTreeChildrenMap(
+  connections: readonly ConnectionLike[]
+): Map<string, string[]> {
+  const map = new Map<string, string[]>()
+  for (const connection of connections) {
+    if (!isMindMapTreeConnection(connection)) continue
+    const kids = map.get(connection.source)
+    if (kids) kids.push(connection.target)
+    else map.set(connection.source, [connection.target])
+  }
+  return map
+}
+
 export function isPositionalMindMapBranchId(nodeId: string): boolean {
   return POSITIONAL_MINDMAP_BRANCH_ID_RE.test(nodeId)
 }
@@ -127,7 +150,7 @@ export function mindMapSideFromHandle(handle: string | undefined): MindMapSide |
 function parentOfMap(connections: readonly ConnectionLike[]): Map<string, string> {
   const parentOf = new Map<string, string>()
   for (const connection of connections) {
-    if (isMindMapAssociationConnection(connection)) continue
+    if (!isMindMapTreeConnection(connection)) continue
     parentOf.set(connection.target, connection.source)
   }
   return parentOf
@@ -267,13 +290,7 @@ export function mindMapLocationPathKey(
   if (!side) return null
 
   const parentOf = parentOfMap(connections)
-  const childMap = new Map<string, string[]>()
-  for (const connection of connections) {
-    if (isMindMapAssociationConnection(connection)) continue
-    const kids = childMap.get(connection.source)
-    if (kids) kids.push(connection.target)
-    else childMap.set(connection.source, [connection.target])
-  }
+  const childMap = buildMindMapTreeChildrenMap(connections)
 
   const indices: number[] = []
   let current: string | undefined = nodeId

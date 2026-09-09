@@ -6,6 +6,7 @@ from services.diagram_edit.types import ToolResult, VerificationReport
 from services.kitty.agent_loop.messages import (
     append_assistant_tool_calls,
     append_tool_message,
+    build_user_turn,
     extract_tool_calls,
 )
 from services.kitty.agent_loop.results import (
@@ -124,3 +125,25 @@ def test_memory_append_observation_stores_compact_summary() -> None:
     assert turn.diagram_revision == 5
     assert "applied" in turn.content
     assert "uid-created" in turn.content
+
+
+def test_compact_for_loop_uses_last_observation_not_raw_dump() -> None:
+    """Next loop turn sees last tool obs + previous user line, not five chat lines."""
+    memory = KittySessionMemory()
+    memory.append_user_turn("先改主题", source="text")
+    memory.append_user_turn("再补历史", source="text")
+    memory.append_observation("applied add_node uid-hist", action="add_node", revision=4)
+    memory.append_user_turn("把历史改成史记", source="text")
+    compact = memory.compact_for_loop(current_user_text="把历史改成史记", lang="zh")
+    assert "上次工具结果" in compact
+    assert "applied add_node uid-hist" in compact
+    assert "再补历史" in compact
+    assert compact.count("先改主题") == 0
+    turn = build_user_turn(
+        "把历史改成史记",
+        snapshot="Current diagram: {}",
+        recent=compact,
+        lang="zh",
+    )
+    assert "上下文" in turn
+    assert "Recent turns" not in turn

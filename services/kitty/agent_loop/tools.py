@@ -23,13 +23,27 @@ from services.kitty.ack.ack_emit import emit_user_ack
 from services.kitty.ack.ack_library import render_ack, render_ack_for_command, render_clarify_options_ack
 from services.kitty.ack.ack_slots import enrich_ack_session_context
 from services.kitty.adapters.diagram_command import apply_kitty_legacy_diagram_command
-from services.kitty.agent_loop.messages import read_diagram_tool_schema
-from services.kitty.agent_loop.results import tool_result_content, ui_result_content
+from services.kitty.agent_loop.messages import LoopMode, read_diagram_tool_schema
+from services.kitty.agent_loop.intent_clarify import (
+    arm_pending_intent_slot,
+    ask_followup_text,
+)
+from services.kitty.agent_loop.results import (
+    arm_pending_autocomplete,
+    autocomplete_started_content,
+    tool_result_content,
+    ui_result_content,
+)
 from services.kitty.context.messaging import resolve_voice_interaction_language, send_kitty_ws_action
 from services.kitty.diagram.hub_bridge import try_sync_voice_diagram_to_hub
 from services.kitty.infra.desktop.kitty_desktop_wake_fanout import publish_kitty_selection_update
 from services.kitty.infra.desktop.kitty_voice_command_fanout import fanout_voice_command_from_session
 from services.kitty.omni.tools import build_omni_diagram_tools, omni_function_call_to_command
+from services.kitty.routing.command_grounding import (
+    GROUNDED_ACTIONS,
+    UNGROUNDED_ERROR,
+    apply_command_grounding,
+)
 from services.kitty.routing.diagram_agent_context import enrich_node_action_command
 from services.kitty.routing.node_action_library import (
     build_node_action_tools,
@@ -77,6 +91,19 @@ _OMNI_UI_NAMES = frozenset(
         "open_desktop_canvas",
     }
 )
+# Whole-map auto_complete stays in edit for “改主题再补完整图” / five-maps coverage.
+EDIT_LOOP_TOOL_NAMES = frozenset(
+    {
+        "read_diagram",
+        "diagram.update_center",
+        "diagram.add_node",
+        "diagram.update_node",
+        "diagram.delete_node",
+        "node_action.clarify_options",
+        "node_action.auto_complete_branch",
+        "node_action.auto_complete",
+    }
+)
 
 
 @dataclass(slots=True)
@@ -91,15 +118,22 @@ class ToolDispatchResult:
     mutated: bool = False
 
 
-def loop_tool_schemas() -> List[Dict[str, Any]]:
-    """Node-action library + read_diagram + Omni UI-only tools."""
+def _schema_name(item: Dict[str, Any]) -> str:
+    fn = item.get("function")
+    if not isinstance(fn, dict):
+        return ""
+    name = fn.get("name")
+    return name.strip() if isinstance(name, str) else ""
+
+
+def loop_tool_schemas(mode: LoopMode = "general") -> List[Dict[str, Any]]:
+    """Edit: read + structural + clarify + fill. General also offers canvas UI tools."""
     schemas = list(build_node_action_tools())
     schemas.append(read_diagram_tool_schema())
+    if mode == "edit":
+        return [item for item in schemas if _schema_name(item) in EDIT_LOOP_TOOL_NAMES]
     for item in build_omni_diagram_tools():
-        fn = item.get("function")
-        if not isinstance(fn, dict):
-            continue
-        name = fn.get("name")
+        name = _schema_name(item)
         if name in _OMNI_UI_NAMES:
             schemas.append(item)
     return schemas
@@ -212,6 +246,7 @@ async def dispatch_loop_tool(
     diagram_type: str,
     command_text: str,
     verify_required: bool,
+    grounding_source: str = "",
 ) -> ToolDispatchResult:
     """Resolve identity, then Bus / UI / clarify. Never fake structural applied."""
     command = map_tool_call_to_command(name, arguments_json)
@@ -223,6 +258,7 @@ async def dispatch_loop_tool(
         diagram_type=diagram_type,
         command_text=command_text,
         verify_required=verify_required,
+        grounding_source=grounding_source,
     )
 
 
@@ -235,6 +271,7 @@ async def dispatch_prepared_command(
     diagram_type: str,
     command_text: str,
     verify_required: bool,
+    grounding_source: str = "",
 ) -> ToolDispatchResult:
     """Dispatch an already-mapped legacy command (identity resolve first)."""
     ensure_live_mindmap_identity(session_context)
@@ -266,6 +303,28 @@ async def dispatch_prepared_command(
             action=rejected,
         )
 
+    if action == "ask_followup":
+        live = voice_sessions.get(voice_session_id)
+        armed = arm_pending_intent_slot(live if isinstance(live, dict) else None, command)
+        prompt = ask_followup_text(command, lang=lang)
+        await emit_user_ack(
+            websocket,
+            voice_session_id,
+            prompt,
+            one_sentence_action="ask_followup",
+            one_sentence_outcome="executed",
+            one_sentence_user_text=command_text,
+        )
+        return ToolDispatchResult(
+            payload=ui_result_content(
+                status="ok",
+                action="ask_followup",
+                extra={"armed": armed},
+            ),
+            action="ask_followup",
+            stop_clarify=True,
+        )
+
     if action == "clarify_options":
         live = voice_sessions.get(voice_session_id)
         armed = arm_pending_clarify_options(live if isinstance(live, dict) else None, command)
@@ -290,6 +349,23 @@ async def dispatch_prepared_command(
             stop_clarify=True,
         )
 
+    if action in GROUNDED_ACTIONS:
+        decision = apply_command_grounding(
+            command,
+            user_text=command_text,
+            session_context=session_context,
+            source=grounding_source,
+        )
+        if not decision.allowed:
+            return ToolDispatchResult(
+                payload=ui_result_content(
+                    status="rejected",
+                    action=action,
+                    extra={"error_code": UNGROUNDED_ERROR, "reason": decision.reason},
+                ),
+                action=action,
+            )
+
     if action in STRUCTURAL_ACTIONS:
         return await _dispatch_structural(
             websocket,
@@ -300,6 +376,7 @@ async def dispatch_prepared_command(
             verify_required=verify_required,
             lang=lang,
             command_text=command_text,
+            grounding_source=grounding_source,
         )
 
     return await _dispatch_ui(
@@ -322,6 +399,7 @@ async def _dispatch_structural(
     verify_required: bool,
     lang: str,
     command_text: str,
+    grounding_source: str = "",
 ) -> ToolDispatchResult:
     """Apply one structural command through the DiagramCommandBus."""
     action = str(command.get("action") or "")
@@ -344,6 +422,8 @@ async def _dispatch_structural(
         diagram_type=diagram_type,
         user_id=_session_user_id(voice_session_id),
         verify_required=use_verify,
+        user_text=command_text,
+        grounding_source=grounding_source,
     )
     tool_result: ToolResult = bus_result.tool_result
     payload = tool_result_content(tool_result)
@@ -405,15 +485,23 @@ async def _dispatch_ui(
             {"type": "action", "action": "auto_complete", "params": {}},
         )
         await fanout_voice_command_from_session(voice_session_id, "auto_complete")
-        status = "ok" if sent else "failed"
         if sent:
             await emit_user_ack(websocket, voice_session_id, render_ack("ui.auto_complete", lang=lang))
-        else:
-            await emit_user_ack(websocket, voice_session_id, render_ack("ui.auto_complete.failed", lang=lang))
+            live = voice_sessions.get(voice_session_id)
+            arm_pending_autocomplete(
+                live if isinstance(live, dict) else None,
+                action=action,
+            )
+            return ToolDispatchResult(
+                payload=autocomplete_started_content(action=action),
+                action=action,
+                stop_after=True,
+            )
+        await emit_user_ack(websocket, voice_session_id, render_ack("ui.auto_complete.failed", lang=lang))
         return ToolDispatchResult(
-            payload=ui_result_content(status=status, action=action),
+            payload=ui_result_content(status="failed", action=action),
             action=action,
-            stop_nonretryable=not sent,
+            stop_nonretryable=True,
         )
 
     if action == "auto_complete_branch":
@@ -429,15 +517,31 @@ async def _dispatch_ui(
             lang=lang,
             node_id=node_id or None,
         )
+        if sent:
+            live = voice_sessions.get(voice_session_id)
+            arm_pending_autocomplete(
+                live if isinstance(live, dict) else None,
+                action=action,
+                node_id=node_id or None,
+                target=target or None,
+            )
+            return ToolDispatchResult(
+                payload=autocomplete_started_content(
+                    action=action,
+                    node_id=node_id or None,
+                    target=target or None,
+                ),
+                action=action,
+                stop_after=True,
+            )
         return ToolDispatchResult(
             payload=ui_result_content(
-                status="ok" if sent else "failed",
+                status="failed",
                 action=action,
                 extra={"node_id": node_id or None, "target": target},
             ),
             action=action,
-            stop_after=sent,
-            stop_nonretryable=not sent,
+            stop_nonretryable=True,
         )
 
     if action == "open_desktop_canvas":

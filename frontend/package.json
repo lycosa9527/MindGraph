@@ -1,7 +1,7 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.180.57",
+  "version": "5.180.62",
   "type": "module",
   "engines": {
     "node": ">=26.0.0"
@@ -125,7 +125,7 @@
     "patch-package": "^8.0.1",
     "prettier": "^3.9.6",
     "rollup-plugin-visualizer": "^7.0.1",
-    "sharp": "^0.35.3",
+    "sharp": "^0.35.4",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.66.0",

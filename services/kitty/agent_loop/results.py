@@ -12,6 +12,8 @@ from typing import Any, Dict, List, Optional
 
 from services.diagram_edit.types import ToolResult
 
+PENDING_AUTOCOMPLETE_KEY = "_pending_autocomplete_observe"
+
 NONRETRYABLE_ERROR_CODES = frozenset(
     {
         "access_denied",
@@ -35,6 +37,83 @@ RETRYABLE_ERROR_CODES = frozenset(
 def tool_result_content(result: ToolResult) -> Dict[str, Any]:
     """JSON object stored in a ``role: tool`` message for a structural apply."""
     return result.to_dict()
+
+
+def autocomplete_started_content(
+    *,
+    action: str,
+    node_id: Optional[str] = None,
+    target: Optional[str] = None,
+    job_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Honest generate-start observation — never ``applied``."""
+    extra: Dict[str, Any] = {"started": True}
+    if node_id:
+        extra["node_id"] = node_id
+    if target:
+        extra["target"] = target
+    if job_id:
+        extra["job_id"] = job_id
+    return ui_result_content(status="started", action=action, extra=extra)
+
+
+def arm_pending_autocomplete(
+    session: Optional[Dict[str, Any]],
+    *,
+    action: str,
+    node_id: Optional[str] = None,
+    target: Optional[str] = None,
+) -> None:
+    """Remember an in-flight canvas generate so a later finish can be observed."""
+    if not isinstance(session, dict):
+        return
+    pending: Dict[str, Any] = {"action": action, "started": True}
+    if node_id:
+        pending["node_id"] = node_id
+    if target:
+        pending["target"] = target
+    session[PENDING_AUTOCOMPLETE_KEY] = pending
+
+
+def finish_pending_autocomplete(
+    session: Optional[Dict[str, Any]],
+    *,
+    status: str = "finished",
+    node_id: Optional[str] = None,
+    message: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    """Consume the pending generate and return a finish/fail observation."""
+    if not isinstance(session, dict):
+        return None
+    raw = session.pop(PENDING_AUTOCOMPLETE_KEY, None)
+    if not isinstance(raw, dict):
+        return None
+    action = str(raw.get("action") or "auto_complete")
+    extra: Dict[str, Any] = {}
+    resolved_id = node_id or raw.get("node_id")
+    if isinstance(resolved_id, str) and resolved_id.strip():
+        extra["node_id"] = resolved_id.strip()
+    target = raw.get("target")
+    if isinstance(target, str) and target.strip():
+        extra["target"] = target.strip()
+    normalized = status.strip().lower() if status.strip() else "finished"
+    if normalized not in {"finished", "failed"}:
+        normalized = "finished"
+    return ui_result_content(
+        status=normalized,
+        action=action,
+        message=message,
+        extra=extra or None,
+    )
+
+
+def should_keep_pending_autocomplete(session_context: Dict[str, Any]) -> bool:
+    """True while the canvas still holds the LLM generate lock."""
+    lock = session_context.get("diagram_write_lock")
+    if not isinstance(lock, dict):
+        return False
+    holder = lock.get("holder")
+    return holder == "llm"
 
 
 def ui_result_content(

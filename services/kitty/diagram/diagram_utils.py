@@ -183,7 +183,7 @@ def resolve_voice_node_reference(
     node_id: str | None = None,
     node_index: int | None = None,
     node_identifier: str | None = None,
-    prefer_selected: bool = True,
+    prefer_selected: bool = False,
 ) -> dict[str, object] | None:
     """
     Resolve ``node_id``, ``node_index``, and ``node_label`` for node-targeting voice commands.
@@ -253,7 +253,7 @@ def resolve_voice_node_reference(
     if ident:
         for idx, node in enumerate(children):
             text = _voice_node_text(node)
-            if text and (ident in text or text in ident):
+            if text and ident == text:
                 resolved_id = child_node_live_id(node, idx, diagram_type)
                 if not resolved_id:
                     resolved_id = typed_node_id_by_unique_label(node, typed_nodes)

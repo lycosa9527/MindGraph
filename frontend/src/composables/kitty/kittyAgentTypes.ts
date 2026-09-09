@@ -43,7 +43,14 @@ export interface KittyContextUpdateOptions {
   expectedRevision?: number | null
 }
 
-export type KittyAgentState = 'idle' | 'connecting' | 'active' | 'listening' | 'speaking' | 'error'
+export type KittyAgentState =
+  | 'idle'
+  | 'connecting'
+  | 'active'
+  | 'listening'
+  | 'speaking'
+  | 'thinking'
+  | 'error'
 
 export interface KittyAudioChunk {
   buffer: AudioBuffer

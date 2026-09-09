@@ -12,18 +12,25 @@ import { ElIcon } from 'element-plus'
 
 import { Menu } from '@element-plus/icons-vue'
 
+import MindMapAssociationEdgeChrome from '@/components/diagram/edges/MindMapAssociationEdgeChrome.vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useTheme } from '@/composables/core/useTheme'
-import { associationLinePendingEditId } from '@/composables/mindMap/useMindMapAssociationLine'
 import { getPositionsFromAngle } from '@/composables/diagramCanvas/conceptMapLinkPreviewGeometry'
 import { CONCEPT_MAP_GENERATING_KEY } from '@/composables/editor/useConceptMapRelationship'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import {
+  associationCurveOffsetForEdge,
+  associationLineHoverId,
+  associationLinePendingEditId,
+  setAssociationLineHover,
+} from '@/composables/mindMap/useMindMapAssociationLine'
 import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import type { DiagramType, MindGraphEdgeData } from '@/types'
 import { splitBezierPathAtMidpoint } from '@/utils/bezierSplit'
 import { isTopicToRootConceptConnection } from '@/utils/conceptMapTopicRootEdge'
 import { focusHtmlControl } from '@/utils/focusHtmlControl'
+import { mindMapAssociationCurveFromEnds } from '@/utils/mindMapAssociationLine'
 import { isMindMapBranchId, mindMapNodeSide } from '@/utils/mindMapLocation'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
@@ -35,7 +42,7 @@ const generatingConnectionIds = inject<{ value: Set<string> }>(
 
 const diagramStore = useDiagramSession()
 const { t } = useLanguage()
-const { edges: vueFlowEdges } = useVueFlow(diagramStore.vueFlowId)
+const { edges: vueFlowEdges, nodes: vueFlowNodes } = useVueFlow(diagramStore.vueFlowId)
 
 const isMindMap = computed(() => {
   const dt = props.data?.diagramType as DiagramType | undefined
@@ -56,12 +63,17 @@ const topicSideSiblingEdges = computed(() => {
   if (!mySide) return []
   return vueFlowEdges.value.filter((edge) => {
     if (edge.source !== 'topic') return false
+    if (edge.data?.isAssociation) return false
     return mindMapBranchSide(edge.target) === mySide
   })
 })
 
 const useStraightTopicSideLine = computed(
-  () => isMindMap.value && props.source === 'topic' && topicSideSiblingEdges.value.length === 1
+  () =>
+    isMindMap.value &&
+    !props.data?.isAssociation &&
+    props.source === 'topic' &&
+    topicSideSiblingEdges.value.length === 1
 )
 
 const isEdgeSelected = computed(() => diagramStore.selectedConnectionId === props.id)
@@ -93,6 +105,14 @@ const relationshipColor = computed(() => {
 const isEditing = ref(false)
 const editText = ref('')
 const inputRef = ref<HTMLInputElement | null>(null)
+const hasAssociationLabelText = computed(() => Boolean(props.data?.label?.trim()))
+const showAssociationLabel = computed(
+  () =>
+    !isAssociation.value ||
+    hasAssociationLabelText.value ||
+    isEditing.value ||
+    associationLineHoverId.value === props.id
+)
 
 watch(
   () => props.data?.label,
@@ -202,6 +222,7 @@ function onRelLinkHandlePointerDown(e: PointerEvent) {
 
 // Curvature per diagram type: mindmap uses tighter curves (like double bubble map differences)
 const curvature = computed(() => {
+  if (isAssociation.value) return 0.45
   const dt = props.data?.diagramType as DiagramType | undefined
   if (dt === 'mindmap' || dt === 'mind_map') return 0.12
   return 0.25
@@ -243,6 +264,35 @@ const path = computed(() => {
       labelX: (props.sourceX + props.targetX) / 2,
       labelY: props.sourceY,
     }
+  }
+
+  if (isAssociation.value) {
+    const side =
+      mindMapBranchSide(props.source) ??
+      mindMapBranchSide(props.target) ??
+      (props.sourcePosition === 'right' && props.targetPosition === 'right' ? 'right' : 'left')
+    const nodes = diagramStore.data?.nodes ?? []
+    const heights = diagramStore.mindMapNodeHeights as Record<string, number>
+    const dims = diagramStore.nodeDimensions as Record<string, { height?: number }>
+    const flowHeight = (nodeId: string): number | undefined =>
+      vueFlowNodes.value.find((node) => node.id === nodeId)?.dimensions?.height
+    const stored = diagramStore.data?.connections?.find((item) => item.id === props.id)
+    return mindMapAssociationCurveFromEnds(
+      { x: props.sourceX, y: props.sourceY },
+      { x: props.targetX, y: props.targetY },
+      side,
+      nodes.find((node) => node.id === props.source),
+      nodes.find((node) => node.id === props.target),
+      {
+        sourceHeight: heights[props.source] ?? dims[props.source]?.height ?? flowHeight(props.source),
+        targetHeight: heights[props.target] ?? dims[props.target]?.height ?? flowHeight(props.target),
+        diagramStyleId: diagramStore.data?._mindmap_diagram_style,
+        curveOffset: associationCurveOffsetForEdge(
+          props.id,
+          stored?.curveOffset ?? props.data?.curveOffset
+        ),
+      }
+    )
   }
 
   const linked = linkedSourcePos.value
@@ -534,6 +584,8 @@ const targetMarkerEnd = computed(() =>
     :d="path.edgePath"
     :style="edgeStyle"
     :marker-end="markerEnd"
+    @pointerenter="isAssociation && setAssociationLineHover(id)"
+    @pointerleave="isAssociation && setAssociationLineHover(null)"
   />
 
   <!--
@@ -552,9 +604,24 @@ const targetMarkerEnd = computed(() =>
     pointer-events="none"
   />
 
+  <MindMapAssociationEdgeChrome
+    v-if="isAssociation"
+    :connection-id="id"
+    :edge-path="path.edgePath"
+    :label-x="path.labelX"
+    :label-y="path.labelY"
+    :stroke="String(edgeStyle.stroke)"
+    :stroke-width="Number(edgeStyle.strokeWidth)"
+    :stroke-dasharray="String(edgeStyle.strokeDasharray)"
+    :selected="isEdgeSelected"
+    :arrowhead-direction="arrowheadDirection"
+  />
+
   <!-- Edge label: concept map = editable, others = static box.
        Edges linked from a relationship label carry no label of their own. -->
-  <EdgeLabelRenderer v-if="data?.label !== undefined && !isLinkedFromRelationship">
+  <EdgeLabelRenderer
+    v-if="data?.label !== undefined && !isLinkedFromRelationship && showAssociationLabel"
+  >
     <div
       class="edge-label-wrapper absolute"
       :style="{
@@ -590,6 +657,8 @@ const targetMarkerEnd = computed(() =>
           color: isConceptMap ? relationshipColor : undefined,
           pointerEvents: isRelationshipLabel ? 'auto' : undefined,
         }"
+        @pointerenter="isAssociation && setAssociationLineHover(id)"
+        @pointerleave="isAssociation && setAssociationLineHover(null)"
         @click.stop="handleLabelClick"
         @dblclick.stop="startEditing()"
       >

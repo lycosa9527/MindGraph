@@ -102,6 +102,13 @@ Other diagram types (tree map, flow map, bubble, double-bubble, …) use the sam
 | `legacy` | `node_styles_by_path` only (sanitized) |
 | `v2` | `node_styles_by_path`, `theme`, `diagram_style`, `collapsed_paths` |
 
+Live-spec extras (both travel with save / collab, v2 chrome only):
+
+| Extra | Contents |
+|-------|----------|
+| `_mindmap_summaries` | XMind-style 概要: `id`, `text`, `coveredPaths`, optional `children`, chrome (`kind`, `lineStyle`, `strokeColor`, `strokeWidth`) |
+| `_mindmap_adornments` | Path-keyed `{ icon?, href?, imageUrl? }` |
+
 Legacy sanitize strips `nodeShape`, `backgroundColor`, `borderColor`, `fontFamily`, and `borderWidth` (classic render uses Material palette + `LEGACY_MINDMAP_THEME`). Keeps user text formatting (`textColor`, font size/weight/style).
 On legacy load/switch, live `_mindmap_theme` and `_mindmap_diagram_style` are cleared; returning to v2 restores them from the v2 bucket. Classic apply never calls `buildMindMapStyleForNewBranchNode`.
 

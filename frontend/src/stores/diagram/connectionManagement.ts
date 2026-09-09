@@ -5,6 +5,10 @@ import {
 import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import type { Connection } from '@/types'
 import { normalizeTopicRootLabelIfNeeded } from '@/utils/conceptMapTopicRootEdge'
+import {
+  applyAssociationChromePatch,
+  type AssociationChromePatch,
+} from '@/utils/mindMapAssociationLine'
 import { isMindMapAssociationConnection } from '@/utils/mindMapLocation'
 
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
@@ -18,7 +22,15 @@ import type { DiagramContext } from './types'
 type AddConnectionExtra = Partial<
   Pick<
     Connection,
-    'linkedFromConnectionId' | 'arrowheadDirection' | 'arrowheadLocked' | 'edgeType' | 'style'
+    | 'linkedFromConnectionId'
+    | 'arrowheadDirection'
+    | 'arrowheadLocked'
+    | 'edgeType'
+    | 'style'
+    | 'sourceHandle'
+    | 'targetHandle'
+    | 'sourcePosition'
+    | 'targetPosition'
   >
 >
 
@@ -181,11 +193,25 @@ export function useConnectionManagementSlice(ctx: DiagramContext) {
     return true
   }
 
+  function updateConnectionChrome(
+    connectionId: string,
+    patch: AssociationChromePatch
+  ): boolean {
+    if (isDiagramPresentationReadOnly(ctx)) return false
+    if (!ctx.data.value?.connections) return false
+    const conn = ctx.data.value.connections.find((item) => item.id === connectionId)
+    if (!conn || !isMindMapAssociationConnection(conn)) return false
+    applyAssociationChromePatch(conn, patch)
+    ctx.pushHistory('Update association line')
+    return true
+  }
+
   return {
     addConnection,
     updateConnectionLabel,
     removeConnection,
     updateConnectionArrowheadsForNode,
     toggleConnectionArrowhead,
+    updateConnectionChrome,
   }
 }

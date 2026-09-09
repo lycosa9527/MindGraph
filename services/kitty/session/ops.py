@@ -1,15 +1,14 @@
-"""Voice session lifecycle and Omni client accessors.
+"""Voice session lifecycle accessors.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """
 
-import asyncio
 import copy
 import uuid
 from datetime import datetime
-from typing import Any, Awaitable, Callable, Dict, Optional, cast
+from typing import Any, Dict, Optional
 
 from services.agent_hub.scope_lifecycle import (
     configure_kitty_control_state,
@@ -19,7 +18,6 @@ from services.kitty.infra.redis.kitty_session_redis import configure_voice_sessi
 from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.session.canvas_owner import agent_session_id_for_scope
 from services.kitty.session.manager import get_kitty_session_manager
-from services.kitty.session.omni_client_access import get_session_omni_client as _get_session_omni_client_impl
 from services.kitty.session.one_sentence_session_pg import soft_close_one_sentence_session
 from services.kitty.session.runtime_state import active_websockets, logger, voice_sessions
 from services.kitty.session.session_teardown import teardown_session_event_handlers
@@ -107,11 +105,10 @@ def create_voice_session(
         "created_at": datetime.now(),
         "last_activity": datetime.now(),
         "conversation_history": [],
-        "omni_client": None,
     }
 
     logger.debug(
-        "Session created: %s (linked to diagram=%s, text-first, no Omni)",
+        "Session created: %s (linked to diagram=%s, text-first)",
         session_id,
         diagram_session_id,
     )
@@ -132,12 +129,6 @@ def persist_voice_session_context(voice_session_id: str, session_context: Dict[s
     session["context"] = copy.deepcopy(session_context)
 
 
-def get_session_omni_client(voice_session_id: str):
-    """Return the OmniClient for a voice session (delegates to leaf accessor)."""
-    ensure_kitty_hub_wired()
-    return _get_session_omni_client_impl(voice_session_id)
-
-
 def update_panel_context(session_id: str, active_panel: Optional[str]) -> None:
     """Update active panel context; ``None`` leaves the stored panel unchanged."""
     if session_id not in voice_sessions:
@@ -149,45 +140,10 @@ def update_panel_context(session_id: str, active_panel: Optional[str]) -> None:
     logger.debug("Panel context updated: %s (%s -> %s)", session_id, old_panel, active_panel)
 
 
-async def _close_omni_client_for_session(omni_client: Any, session_id: str) -> None:
-    """Await async Omni close; offload sync close to a thread if needed."""
-    try:
-        close_result = omni_client.close()
-        if asyncio.iscoroutine(close_result):
-            await close_result
-        elif callable(close_result):
-            await asyncio.to_thread(close_result)
-    except (RuntimeError, AttributeError, asyncio.CancelledError) as exc:
-        logger.debug(
-            "VOIC | Error closing Omni client for session %s (may already be closed): %s",
-            session_id,
-            exc,
-        )
-
-
-async def _close_omni_generator_for_session(session: Dict[str, Any], session_id: str) -> None:
-    """Close the Omni async generator stored on the voice session, if any."""
-    generator = session.get("omni_generator")
-    if generator is None:
-        return
-    aclose = getattr(generator, "aclose", None)
-    if not callable(aclose):
-        return
-    try:
-        await cast(Callable[[], Awaitable[Any]], aclose)()
-    except (RuntimeError, AttributeError, GeneratorExit, StopAsyncIteration) as exc:
-        logger.debug(
-            "VOIC | Omni generator close skipped for session %s: %s",
-            session_id,
-            exc,
-        )
-
-
 async def end_voice_session_async(session_id: str, reason: str = "completed") -> None:
     """
-    End and cleanup session including persistent agent and OmniClient (asyncio-native).
+    End and cleanup session including persistent agent.
 
-    Always ``await`` Omni ``close()`` from async contexts — never ``asyncio.run``.
     Idempotent and safe under concurrent cleanup (e.g. WebSocket teardown vs HTTP).
     """
     await teardown_session_event_handlers(session_id)
@@ -220,13 +176,7 @@ async def end_voice_session_async(session_id: str, reason: str = "completed") ->
         if uid > 0 and scope:
             await soft_close_one_sentence_session(user_id=uid, diagram_scope=scope)
 
-    await _close_omni_generator_for_session(session, session_id)
     diagram_session_id = session.get("diagram_session_id")
-    omni_client = session.get("omni_client")
-
-    if omni_client:
-        await _close_omni_client_for_session(omni_client, session_id)
-        logger.debug("VOIC | Closed Omni client for session %s", session_id)
 
     if diagram_session_id:
         lane = session.get("_kitty_client_lane")

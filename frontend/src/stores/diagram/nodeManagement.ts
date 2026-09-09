@@ -22,6 +22,7 @@ import { applyTreeMapTopicLayoutToNodes } from '../specLoader/treeMapTopicLayout
 import { isLearningSheetBlankDisplayText } from '../specLoader/utils'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { emitCtxEvent } from './events'
+import { syncMindMapSummaryNodeText } from './mindMapSummaryOps'
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
 
@@ -108,6 +109,14 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
     // Keep data.label in sync with text so vue-flow nodes render the latest label.
     if ('text' in updates && typeof merged.text === 'string' && merged.data != null) {
       ;(merged.data as Record<string, unknown>).label = merged.text
+    }
+
+    if (
+      (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') &&
+      'text' in updates &&
+      typeof merged.text === 'string'
+    ) {
+      syncMindMapSummaryNodeText(ctx.data.value, nodeId, merged.text)
     }
 
     const treeTopicLayoutBump =

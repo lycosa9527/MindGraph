@@ -1,5 +1,9 @@
 import type { Connection, DiagramNode } from '@/types'
-import { mindMapNodeSide, mindMapSideToChar } from '@/utils/mindMapLocation'
+import {
+  isMindMapAssociationConnection,
+  mindMapNodeSide,
+  mindMapSideToChar,
+} from '@/utils/mindMapLocation'
 
 export function parseMindMapSideHandleIndex(sourceHandle: string | undefined): number {
   if (!sourceHandle) return 0
@@ -19,7 +23,9 @@ export function classicMindMapTopicSideConnections(
   return connections
     .filter(
       (c) =>
-        c.source === 'topic' && mindMapNodeSide(c.target, { nodes, connections }) === wanted
+        c.source === 'topic' &&
+        !isMindMapAssociationConnection(c) &&
+        mindMapNodeSide(c.target, { nodes, connections }) === wanted
     )
     .slice()
     .sort((a, b) => {
@@ -92,7 +98,7 @@ export function withClassicMindMapTopicSourceHandle(
   connections: Connection[],
   nodes: DiagramNode[] = []
 ): Connection {
-  if (conn.source !== 'topic') return conn
+  if (conn.source !== 'topic' || isMindMapAssociationConnection(conn)) return conn
 
   const resolved = mindMapNodeSide(conn.target, { nodes, connections })
   const side = resolved ? mindMapSideToChar(resolved) : null

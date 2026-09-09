@@ -23,7 +23,11 @@ import {
   markMindMapLoadStage,
   scheduleMindMapLoadSettle,
 } from '@/utils/mindMapLoadDebug'
-import { mindMapNodeSide, mindMapSideToChar } from '@/utils/mindMapLocation'
+import {
+  buildMindMapTreeChildrenMap,
+  mindMapNodeSide,
+  mindMapSideToChar,
+} from '@/utils/mindMapLocation'
 import {
   applyMindMapL1HeightDeltaShift,
   centerMindMapSidePacksOnTopic,
@@ -446,15 +450,7 @@ export function recalculateMindMapV2ColumnPositions(
   const topicRightEdge = centerX + effectiveTopicWidth / 2
   const topicLeftEdge = centerX - effectiveTopicWidth / 2
 
-  const childrenMap = new Map<string, string[]>()
-  for (const c of connections) {
-    const kids = childrenMap.get(c.source)
-    if (kids) {
-      kids.push(c.target)
-    } else {
-      childrenMap.set(c.source, [c.target])
-    }
-  }
+  const childrenMap = buildMindMapTreeChildrenMap(connections)
 
   const nodeMap = new Map<string, DiagramNode>()
   for (const n of nodes) nodeMap.set(n.id, n)
@@ -582,15 +578,7 @@ function correctYPositions(
   const nodeMap = new Map<string, DiagramNode>()
   for (const n of nodes) nodeMap.set(n.id, n)
 
-  const childrenMap = new Map<string, string[]>()
-  for (const c of connections) {
-    const kids = childrenMap.get(c.source)
-    if (kids) {
-      kids.push(c.target)
-    } else {
-      childrenMap.set(c.source, [c.target])
-    }
-  }
+  const childrenMap = buildMindMapTreeChildrenMap(connections)
   const topicChildren = childrenMap.get('topic') ?? []
   if (topicChildren.length === 0) return nodes
 

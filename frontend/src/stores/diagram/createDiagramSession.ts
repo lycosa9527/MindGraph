@@ -5,7 +5,13 @@
 import { computed, reactive, ref, type UnwrapNestedRefs } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import type { DiagramData, DiagramNode, DiagramType, HistoryEntry } from '@/types'
+import type {
+  DiagramData,
+  DiagramNode,
+  DiagramType,
+  HistoryEntry,
+  MindMapSummaryChromePatch,
+} from '@/types'
 import {
   readEffectiveMindMapCanvasMode,
   resolveSessionMindMapCanvasMode,
@@ -30,6 +36,7 @@ import { useFlowMapOpsSlice } from './flowMapOps'
 import { useHistorySlice } from './history'
 import { reconcileAfterHistoryRestore as reconcileDiagramAfterHistoryRestore } from './historyRestore'
 import { useLearningSheetSlice } from './learningSheet'
+import { setMindMapNodeHref, setMindMapNodeIcon, setMindMapNodeImage } from './mindMapAdornmentOps'
 import { reconcileMindMapCanvasModeSwitch } from './mindMapCanvasModeSwitch'
 import { syncMindMapStoreLayoutPositions } from './mindMapDisplayLayout'
 import { useMindMapLayoutSlice } from './mindMapLayout'
@@ -41,6 +48,12 @@ import {
 } from './mindMapOps'
 import { createMindMapRecalcScheduler } from './mindMapRecalcScheduler'
 import { resyncMindMapConnectionStrokeColorsForActiveMode } from './mindMapStylePreservation'
+import {
+  addMindMapSummaryChild,
+  insertMindMapSummaryFromSelection,
+  updateMindMapSummaryChrome,
+  updateMindMapSummaryCoveredPaths,
+} from './mindMapSummaryOps'
 import { useMultiFlowLayoutSlice } from './multiFlowLayout'
 import { useNodeDimensionSlice } from './nodeDimensionSlice'
 import { useNodeManagementSlice } from './nodeManagement'
@@ -357,6 +370,7 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     removeConnection: removeConceptMapConnection,
     updateConnectionArrowheadsForNode,
     toggleConnectionArrowhead,
+    updateConnectionChrome,
   } = connectionSlice
   ctx.addConnection = addConnection
 
@@ -571,6 +585,7 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     addNode,
     addConnection,
     updateConnectionLabel,
+    updateConnectionChrome,
     removeConceptMapConnection,
     toggleConnectionArrowhead,
     updateConnectionArrowheadsForNode,
@@ -580,6 +595,18 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     removeBraceMapNodes,
     addMindMapBranch,
     addMindMapChild,
+    insertMindMapSummary: (defaultText: string) =>
+      insertMindMapSummaryFromSelection(ctx, defaultText),
+    addMindMapSummaryChild: (nodeId: string, placement?: 'child' | 'above' | 'below') =>
+      addMindMapSummaryChild(ctx, nodeId, placement),
+    updateMindMapSummaryChrome: (summaryId: string, patch: MindMapSummaryChromePatch) =>
+      updateMindMapSummaryChrome(ctx, summaryId, patch),
+    updateMindMapSummaryCoveredPaths: (summaryId: string, coveredPaths: readonly string[]) =>
+      updateMindMapSummaryCoveredPaths(ctx, summaryId, coveredPaths),
+    setMindMapNodeIcon: (nodeId: string, icon: string) => setMindMapNodeIcon(ctx, nodeId, icon),
+    setMindMapNodeHref: (nodeId: string, href: string) => setMindMapNodeHref(ctx, nodeId, href),
+    setMindMapNodeImage: (nodeId: string, imageUrl: string) =>
+      setMindMapNodeImage(ctx, nodeId, imageUrl),
     removeMindMapNodes,
     moveMindMapBranch,
     addMindMapSibling,

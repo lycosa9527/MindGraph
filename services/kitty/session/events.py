@@ -24,7 +24,7 @@ KittyEventKind = Literal[
     "assistant_text",
     "assistant_done",
     "context_update",
-    "function_call",
+    "auto_complete_done",
     "stop",
 ]
 
@@ -160,7 +160,7 @@ async def emit_diagram_mutated(
     action: str,
     delta: Optional[str] = None,
 ) -> None:
-    """Notify the session bus that diagram state changed (handler schedules Omni refresh)."""
+    """Notify the session bus that diagram state changed."""
     await emit_kitty_session_event(
         voice_session_id,
         "diagram_mutated",

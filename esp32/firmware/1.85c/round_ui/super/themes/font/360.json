@@ -1,0 +1,17 @@
+{
+    "type": "constant",
+    "data": {
+        "font": {
+            "body": "16sp",
+            "pageTitle": "22sp",
+            "pageSubtitle": "16sp",
+            "cardTitle": "18sp",
+            "cardSubtitle": "15sp",
+            "listItemTitle": "16sp",
+            "listItemValue": "14sp",
+            "caption": "13sp",
+            "chip": "14sp",
+            "button": "15sp"
+        }
+    }
+}

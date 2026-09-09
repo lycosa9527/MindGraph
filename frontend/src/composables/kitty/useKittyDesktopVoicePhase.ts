@@ -6,7 +6,7 @@ import { type ComputedRef, type Ref, onUnmounted, ref, watch } from 'vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import type { KittyAgentState } from '@/composables/kitty/kittyAgentTypes'
 
-const VALID_PHASES = new Set<KittyAgentState>(['listening', 'speaking', 'active'])
+const VALID_PHASES = new Set<KittyAgentState>(['listening', 'speaking', 'active', 'thinking'])
 
 function normalizePhase(raw: unknown): KittyAgentState | null {
   if (typeof raw !== 'string') {

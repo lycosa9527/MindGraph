@@ -1,0 +1,18 @@
+{
+  "package": {
+    "id": "com.mindgraph.hello",
+    "name": {
+      "en": "ZhiHui",
+      "zh_CN": "智回"
+    },
+    "version": "0.1.0",
+    "visible": true,
+    "systems": ["super"]
+  },
+  "runtime": {
+    "type": "JavaScript",
+    "entry": "app/main.js",
+    "resource_dir": "res",
+    "arguments": []
+  }
+}

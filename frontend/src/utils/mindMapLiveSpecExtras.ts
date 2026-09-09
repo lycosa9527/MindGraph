@@ -13,6 +13,8 @@ const MINDMAP_LIVE_SPEC_EXTRA_KEYS = [
   '_mindmap_branch_numbering_nested',
   '_mindmap_canvas',
   '_collapsed_paths',
+  '_mindmap_summaries',
+  '_mindmap_adornments',
 ] as const
 
 export type MindMapLiveSpecExtraKey = (typeof MINDMAP_LIVE_SPEC_EXTRA_KEYS)[number]

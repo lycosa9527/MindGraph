@@ -12,10 +12,12 @@ import {
   vueFlowNodeToDiagramNode,
 } from '@/types/vueflow'
 import { withClassicMindMapTopicSourceHandle } from '@/utils/classicMindMapTopicHandles'
+import { withMindMapAssociationHandles } from '@/utils/mindMapAssociationLine'
 import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import { isMindMapAssociationConnection, mindMapNodeSide } from '@/utils/mindMapLocation'
 import { buildMindMapOrthogonalSiblingMap } from '@/utils/mindMapOrthogonalSiblings'
+import { filterTreeMindMapNodes } from '@/utils/mindMapSummary'
 
 import {
   recalculateBraceMapLayout,
@@ -33,6 +35,7 @@ import {
   computeMindMapDisplayLayout,
   mergeMindMapLayoutPositions,
 } from './mindMapDisplayLayout'
+import { mergeLaidOutTreeWithSummaries } from './mindMapSummaryLayout'
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
 
@@ -120,16 +123,17 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     void ctx.data.value._mindmap_branch_numbering_prefix
     void ctx.data.value._mindmap_branch_numbering_nested
     const connections = ctx.data.value.connections ?? []
+    const treeNodes = filterTreeMindMapNodes(ctx.data.value.nodes)
     const collapsedPaths = getMindMapCollapsedPaths(ctx.data.value)
     const collapsedNodeIds = getMindMapCollapsedNodeIds(
-      ctx.data.value.nodes,
+      treeNodes,
       connections,
       collapsedPaths
     )
     const preserveIncomingY = ctx.mindMapPreserveIncomingY.value
-    return computeMindMapDisplayLayout(
+    const laidOut = computeMindMapDisplayLayout(
       'v2',
-      ctx.data.value.nodes,
+      treeNodes,
       connections,
       ctx.mindMapTopicActualWidth.value,
       ctx.mindMapNodeWidths.value,
@@ -138,6 +142,17 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       ctx.data.value._mindmap_diagram_style as string | undefined,
       preserveIncomingY ? { preserveIncomingY: true } : undefined
     )
+    return {
+      nodes: mergeLaidOutTreeWithSummaries(
+        laidOut.nodes,
+        ctx.data.value.nodes,
+        connections,
+        ctx.data.value,
+        ctx.mindMapNodeWidths.value,
+        ctx.mindMapNodeHeights.value
+      ),
+      gaps: laidOut.gaps,
+    }
   })
 
   const mindMapV2LayoutNodes = computed(() => mindMapV2LayoutResult.value?.nodes ?? [])
@@ -360,10 +375,13 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       effectiveMindMapMode.value === 'v2'
 
     const edges = connections.map((conn) => {
+      const isAssoc = isMindMapAssociationConnection(conn)
       let effectiveConn =
         diagramType === 'concept_map' ? augmentConnectionWithOptimalHandles(conn, nodes) : conn
 
-      if (isLegacyMindMap) {
+      if (isAssoc) {
+        effectiveConn = withMindMapAssociationHandles(conn, nodes, connections)
+      } else if (isLegacyMindMap) {
         effectiveConn = withClassicMindMapTopicSourceHandle(effectiveConn, connections, nodes)
         effectiveConn = {
           ...effectiveConn,
@@ -378,7 +396,6 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
         }
       }
 
-      const isAssoc = isMindMapAssociationConnection(conn)
       const edgeType = isAssoc
         ? 'curved'
         : isLegacyMindMap
@@ -389,6 +406,9 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       const edge = connectionToVueFlowEdge(effectiveConn, edgeType)
       if (diagramType && edge.data) {
         edge.data = { ...edge.data, diagramType, isAssociation: isAssoc }
+      }
+      if (isAssoc) {
+        edge.zIndex = 8
       }
       if (diagramType === 'concept_map' || isAssoc) {
         edge.selectable = true

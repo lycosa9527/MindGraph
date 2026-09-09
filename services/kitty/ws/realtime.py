@@ -1,4 +1,4 @@
-"""Kitty Agent WebSocket realtime session (Omni + inbound dispatch).
+"""Kitty Agent WebSocket realtime session (Fun-ASR / CosyVoice + inbound dispatch).
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -14,12 +14,10 @@ from fastapi import WebSocket, WebSocketDisconnect
 
 from services.infrastructure.monitoring.ws_metrics import redis_increment_active_total
 from services.kitty.context.messaging import safe_websocket_send
-from services.kitty.omni.event_loop import run_kitty_omni_event_loop
 from services.kitty.session.event_handlers import (
     KittySessionRuntime,
     setup_session_event_handlers,
 )
-from services.kitty.session.events import get_session_event_bus
 from services.kitty.session.runtime_state import logger
 from services.kitty.session.session_teardown import teardown_session_event_handlers
 from services.kitty.ws.lifecycle import (
@@ -132,7 +130,6 @@ async def kitty_realtime_websocket(websocket: WebSocket, diagram_session_id: str
             voice_session_id=voice_session_id,
         )
         await setup_session_event_handlers(session_runtime)
-        event_bus = get_session_event_bus(voice_session_id)
 
         client_task = asyncio.create_task(
             run_kitty_client_message_loop(
@@ -143,25 +140,12 @@ async def kitty_realtime_websocket(websocket: WebSocket, diagram_session_id: str
                 last_client_inbound=last_client_inbound,
             )
         )
-        omni_task: asyncio.Task[None] | None = None
-        if start_result.omni_generator is not None:
-            omni_task = asyncio.create_task(
-                run_kitty_omni_event_loop(
-                    websocket,
-                    voice_session_id,
-                    start_result.omni_generator,
-                    event_bus,
-                )
-            )
 
         idle_timeout_sec = kitty_ws_idle_timeout_seconds()
 
         try:
             if idle_timeout_sec is None:
-                if omni_task is not None:
-                    await asyncio.gather(client_task, omni_task)
-                else:
-                    await client_task
+                await client_task
             else:
                 idle_task = asyncio.create_task(
                     run_kitty_idle_watchdog(
@@ -173,24 +157,16 @@ async def kitty_realtime_websocket(websocket: WebSocket, diagram_session_id: str
                         last_client_inbound=last_client_inbound,
                     )
                 )
-                wait_set: set[asyncio.Task[None]] = {client_task, idle_task}
-                if omni_task is not None:
-                    wait_set.add(omni_task)
                 _done, _pending = await asyncio.wait(
-                    wait_set,
+                    {client_task, idle_task},
                     return_when=asyncio.FIRST_COMPLETED,
                 )
                 if idle_task in _done:
                     if not client_task.done():
                         client_task.cancel()
-                    if omni_task is not None and not omni_task.done():
-                        omni_task.cancel()
                 else:
                     idle_task.cancel()
-                gather_targets: list[asyncio.Task[None]] = [client_task, idle_task]
-                if omni_task is not None:
-                    gather_targets.append(omni_task)
-                await asyncio.gather(*gather_targets, return_exceptions=True)
+                await asyncio.gather(client_task, idle_task, return_exceptions=True)
         finally:
             if voice_session_id:
                 await teardown_session_event_handlers(voice_session_id)

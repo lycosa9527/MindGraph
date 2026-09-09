@@ -10,52 +10,50 @@ from __future__ import annotations
 from typing import Any, Dict, List, Literal
 
 from services.kitty.agent_loop.results import encode_tool_content
-from services.kitty.routing.node_action_library import render_library_prompt
 
 LoopMode = Literal["edit", "general"]
 
 
 def build_system_prompt(mode: LoopMode, *, lang: str) -> str:
-    """Mode-specific system prompt plus the node-action library."""
-    library = render_library_prompt("en" if lang == "en" else "zh")
+    """Short identity only — tool schemas carry when-to-use."""
     if lang == "en":
         if mode == "edit":
-            head = (
+            return (
                 "You are Kitty's mind-map edit agent. "
                 "Call tools to change the canvas. "
                 "Prefer node_id from the Current diagram JSON for existing nodes. "
                 "Never invent node_id for a new node; use created ids from tool results. "
                 "Do not use path or leftover branch-* ids as keys. "
-                "If intent is ambiguous, call node_action.clarify_options. "
+                "Greetings and vague asks (hi, change this) must call "
+                "node_action.clarify_options with 2-3 short suggestions. "
+                "Never reply with only text when the intent is unclear. "
                 "When the goal is done, reply with a short confirmation and no tools. "
                 "If you cannot apply a change, say so briefly without pretending it applied."
             )
-        else:
-            head = (
-                "You are Kitty. Call tools for canvas or UI actions. "
-                "Prefer node_id from the Current diagram JSON. "
-                "Never invent node_id for a new node. "
-                "If the user is only chatting, reply with text and no tools."
-            )
-    elif mode == "edit":
-        head = (
+        return (
+            "You are Kitty. Call tools for canvas or UI actions. "
+            "Prefer node_id from the Current diagram JSON. "
+            "Never invent node_id for a new node. "
+            "If the user is only chatting, reply with text and no tools."
+        )
+    if mode == "edit":
+        return (
             "你是 Kitty 的思维导图编辑代理。"
             "用工具修改画布。"
             "已有节点优先使用 Current diagram JSON 中的 node_id。"
             "不要为新节点编造 node_id，使用工具结果里的 created id。"
             "不要把 path 或遗留的 branch-* 当作主键。"
-            "意图不清时调用 node_action.clarify_options。"
+            "问候或「改一下/这个」等意图不清时，必须调用 node_action.clarify_options，"
+            "给出 2–3 个短建议，不要只用纯文本回复。"
             "完成后用一句短确认结束，不要再调用工具。"
             "无法修改时如实说明，不要假装已应用。"
         )
-    else:
-        head = (
-            "你是 Kitty。画布或界面操作请调用工具。"
-            "已有节点优先使用 Current diagram JSON 中的 node_id。"
-            "不要为新节点编造 node_id。"
-            "若用户只是闲聊，用纯文本回复且不要调用工具。"
-        )
-    return f"{head}\n\n{library}"
+    return (
+        "你是 Kitty。画布或界面操作请调用工具。"
+        "已有节点优先使用 Current diagram JSON 中的 node_id。"
+        "不要为新节点编造 node_id。"
+        "若用户只是闲聊，用纯文本回复且不要调用工具。"
+    )
 
 
 def build_user_turn(
@@ -66,19 +64,21 @@ def build_user_turn(
     lang: str,
     pending_clarify_note: str = "",
 ) -> str:
-    """First user message: snapshot + recent turns + utterance."""
+    """First user message: snapshot + compact memory + utterance."""
     if lang == "en":
-        recent_label = "Recent turns"
         pending_label = "Unanswered clarify"
+        compact_label = "Context"
         user_label = "User"
+        empty = "(none)"
     else:
-        recent_label = "最近对话"
         pending_label = "未回答的确认"
+        compact_label = "上下文"
         user_label = "用户"
+        empty = "（无）"
     parts = [snapshot]
     if pending_clarify_note.strip():
         parts.append(f"{pending_label}:\n{pending_clarify_note.strip()}")
-    parts.append(f"{recent_label}:\n{recent or ('(none)' if lang == 'en' else '（无）')}")
+    parts.append(f"{compact_label}:\n{recent.strip() or empty}")
     parts.append(f"{user_label}: {user_text.strip()}")
     return "\n".join(parts)
 
@@ -189,7 +189,10 @@ def read_diagram_tool_schema() -> Dict[str, Any]:
         "type": "function",
         "function": {
             "name": "read_diagram",
-            "description": "Re-read the current diagram snapshot (id, text, type, path).",
+            "description": (
+                "Re-read the current diagram snapshot (id, text, type, path) "
+                "when the last tool result is stale or a node id is missing."
+            ),
             "parameters": {"type": "object", "properties": {}, "required": []},
         },
     }

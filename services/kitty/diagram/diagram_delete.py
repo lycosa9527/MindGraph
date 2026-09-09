@@ -234,7 +234,7 @@ async def voice_apply_delete_node_action(
         diagram_type = str(voice_sessions[voice_session_id].get("diagram_type") or "circle_map")
         for idx, node in enumerate(nodes):
             node_text = node.get("text") if isinstance(node, dict) else str(node)
-            if node_text and target and (target in node_text or node_text in target):
+            if node_text and target and node_text == target:
                 resolved_node_id = child_node_live_id(node, idx, diagram_type)
                 if not resolved_node_id:
                     continue

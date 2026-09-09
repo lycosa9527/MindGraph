@@ -9,7 +9,7 @@ exclude = [
     "**/build",
     "**/*.toml",
     "pyproject.toml",
-    # Local ESP-IDF / vendor trees (gitignored); keep CI/local analysis aligned.
+    # ESP32 / Brookesia tree (IDF + toolkit; not linted).
     "esp32",
     "esp32/**",
     "archive",
@@ -80,7 +80,7 @@ ignore-paths = [
     "prompts",
     # @generated bundled API strings; wrapping would churn large dict literals on regen.
     "models/domain/message_catalog/bundled_messages.py",
-    # Local ESP-IDF / vendor trees (gitignored).
+    # ESP32 / Brookesia tree (IDF + toolkit; not linted).
     "esp32",
     "archive",
 ]

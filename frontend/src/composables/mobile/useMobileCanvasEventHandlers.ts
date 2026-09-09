@@ -135,7 +135,12 @@ export function useMobileCanvasEventHandlers(
       }
       const topicOverride =
         typeof data?.topic === 'string' && data.topic.trim() !== '' ? data.topic.trim() : undefined
-      void handleAIGenerate({ topicOverride })
+      void Promise.resolve(handleAIGenerate({ topicOverride })).then(() => {
+        eventBus.emit('kitty:auto_complete_observe', {
+          status: 'finished',
+          action: 'auto_complete',
+        })
+      })
     },
     OWNER
   )

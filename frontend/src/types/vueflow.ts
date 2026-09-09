@@ -21,6 +21,7 @@ export type MindGraphNodeType =
   | 'circle' // Circle map context node
   | 'boundary' // Circle map outer boundary ring (non-interactive)
   | 'label' // Classification dimension label
+  | 'summary' // Mind-map v2 summary topic
 
 // Custom edge types
 export type MindGraphEdgeType =
@@ -128,6 +129,7 @@ export function diagramNodeToVueFlowNode(
     flowSubstep: 'flowSubstep', // Substep nodes for flow maps
     brace: 'brace',
     label: 'label', // Classification dimension label for tree_map and brace_map
+    summary: 'summary',
   }
 
   const mappedType = nodeTypeMap[node.type] || 'branch'
@@ -230,6 +232,7 @@ export function connectionToVueFlowEdge(
       arrowheadDirection: connection.arrowheadDirection,
       linkedFromConnectionId: connection.linkedFromConnectionId,
       isAssociation: connection.edgeType === 'association',
+      curveOffset: connection.curveOffset,
     },
   }
 }
@@ -249,6 +252,7 @@ export function vueFlowNodeToDiagramNode(node: MindGraphNode): DiagramNode {
     tree: 'branch',
     circle: 'bubble',
     label: 'label',
+    summary: 'summary',
   }
 
   const data = node.data

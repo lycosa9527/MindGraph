@@ -5,8 +5,8 @@ import { markRaw } from 'vue'
 
 import BraceEdge from './edges/BraceEdge.vue'
 import CurvedEdge from './edges/CurvedEdge.vue'
-import MindMapOrthogonalEdge from './edges/MindMapOrthogonalEdge.vue'
 import HorizontalStepEdge from './edges/HorizontalStepEdge.vue'
+import MindMapOrthogonalEdge from './edges/MindMapOrthogonalEdge.vue'
 import RadialEdge from './edges/RadialEdge.vue'
 import StepEdge from './edges/StepEdge.vue'
 import StraightEdge from './edges/StraightEdge.vue'
@@ -31,6 +31,7 @@ export const diagramCanvasNodeTypes = {
   brace: markRaw(BraceNode),
   boundary: markRaw(BoundaryNode),
   label: markRaw(LabelNode),
+  summary: markRaw(BranchNode),
   circle: markRaw(CircleNode),
   concept: markRaw(ConceptNode),
   tree: markRaw(BranchNode),

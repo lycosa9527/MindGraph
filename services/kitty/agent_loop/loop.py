@@ -19,6 +19,12 @@ from services.infrastructure.http.error_handler import (
 )
 from services.kitty.ack.ack_emit import emit_user_ack
 from services.kitty.ack.ack_library import render_not_understood_ack
+from services.kitty.agent_loop.intent_clarify import (
+    PENDING_INTENT_SLOT_KEY,
+    consume_pending_intent_slot,
+    default_intent_clarify_command,
+    is_intent_slot_cancel,
+)
 from services.kitty.agent_loop.messages import (
     LoopMode,
     append_assistant_tool_calls,
@@ -30,6 +36,8 @@ from services.kitty.agent_loop.messages import (
 from services.kitty.agent_loop.results import (
     created_node_ids_from_payload,
     error_code_from_payload,
+    finish_pending_autocomplete,
+    should_keep_pending_autocomplete,
     summarize_payload_for_memory,
 )
 from services.kitty.agent_loop.tools import (
@@ -44,6 +52,7 @@ from services.kitty.context.library_refresh import (
     throttled_refresh_voice_context_from_library,
 )
 from services.kitty.context.messaging import resolve_voice_interaction_language
+from services.kitty.infra.desktop.kitty_voice_phase_fanout import fanout_voice_phase_from_session
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.kitty.infra.redis.kitty_session_redis import (
     apply_redis_live_to_voice_session,
@@ -56,6 +65,7 @@ from services.kitty.routing.one_sentence_edit_helpers import (
     is_mindmap_diagram_type,
     is_one_sentence_edit_mode,
 )
+from services.kitty.routing.command_grounding import UNGROUNDED_ERROR
 from services.kitty.routing.pending_branch_autocomplete import try_consume_pending_branch_autocomplete
 from services.kitty.routing.pending_clarify_options import (
     classify_clarify_option_pick,
@@ -63,7 +73,7 @@ from services.kitty.routing.pending_clarify_options import (
     get_pending_clarify_options,
     try_consume_pending_clarify_options,
 )
-from services.kitty.session.memory import get_session_memory
+from services.kitty.session.memory import KittySessionMemory, get_session_memory
 from services.kitty.session.ops import get_voice_session
 from services.kitty.session.runtime_state import voice_sessions
 from services.llm import llm_service
@@ -204,6 +214,49 @@ def _apply_evidence_to_context(session_context: Dict[str, Any], payload: Dict[st
             nodes.append(node_row)
 
 
+def _record_pending_autocomplete_if_ready(
+    voice_session_id: str,
+    session_context: Dict[str, Any],
+    memory: KittySessionMemory,
+) -> None:
+    """Second observation after canvas generate finishes (or lock is gone)."""
+    live = voice_sessions.get(voice_session_id)
+    if not isinstance(live, dict) or should_keep_pending_autocomplete(session_context):
+        return
+    payload = finish_pending_autocomplete(live)
+    if payload is None:
+        return
+    action = str(payload.get("action") or "auto_complete")
+    memory.append_observation(summarize_payload_for_memory(payload, action=action), action=action)
+
+
+async def _offer_intent_clarify(
+    websocket: WebSocket,
+    voice_session_id: str,
+    text: str,
+    session_context: Dict[str, Any],
+    diagram_type: str,
+    verify_required: bool,
+    lang: str,
+) -> RouteResult:
+    command = default_intent_clarify_command(lang=lang, session_context=session_context)
+    dispatched = await dispatch_prepared_command(
+        websocket,
+        voice_session_id,
+        command=command,
+        session_context=session_context,
+        diagram_type=diagram_type,
+        command_text=text,
+        verify_required=verify_required,
+    )
+    return _finish(
+        voice_session_id,
+        RouteOutcome.EXECUTED,
+        action=dispatched.action or "clarify_options",
+        reason="intent_clarify",
+    )
+
+
 async def _last_resort_heuristic(
     websocket: WebSocket,
     voice_session_id: str,
@@ -255,6 +308,17 @@ async def run_typed_agent_loop(
         text,
         session_context,
     )
+    grounding_source = "clarify_pick" if picked is not None else ""
+    live_for_slot = voice_sessions.get(voice_session_id)
+    slot_cancelled = False
+    if picked is None and isinstance(live_for_slot, dict):
+        had_slot = isinstance(live_for_slot.get(PENDING_INTENT_SLOT_KEY), dict)
+        slot_cmd = consume_pending_intent_slot(live_for_slot, text)
+        if slot_cmd is not None:
+            picked = slot_cmd
+            grounding_source = "ask_followup"
+        elif had_slot and is_intent_slot_cancel(text):
+            slot_cancelled = True
     live = voice_sessions.get(voice_session_id)
     live_dict = live if isinstance(live, dict) else None
     pending_note = ""
@@ -263,12 +327,27 @@ async def run_typed_agent_loop(
         if pending is not None:
             option_commands = pending.get("option_commands")
             count = len(option_commands) if isinstance(option_commands, list) else 0
-            if classify_clarify_option_pick(text, count) is None:
+            labels_raw = pending.get("options")
+            labels = [item for item in labels_raw if isinstance(item, str)] if isinstance(labels_raw, list) else None
+            if classify_clarify_option_pick(text, count, labels) is None:
                 pending_note = _pending_clarify_note(live_dict)
                 clear_pending_clarify_options(live_dict)
 
     context = await _refresh_live_context(voice_session_id, session_context)
     ensure_live_mindmap_identity(context)
+    if slot_cancelled:
+        diagram_type = _diagram_type(voice_session_id, context)
+        verify_required = is_mindmap_diagram_type(diagram_type)
+        lang = resolve_voice_interaction_language(context)
+        return await _offer_intent_clarify(
+            websocket,
+            voice_session_id,
+            text,
+            context,
+            diagram_type,
+            verify_required,
+            lang,
+        )
     if picked is not None:
         context = dict(live_dict.get("context") or context) if live_dict else context
         diagram_type = _diagram_type(voice_session_id, context)
@@ -281,11 +360,13 @@ async def run_typed_agent_loop(
             diagram_type=diagram_type,
             command_text=text,
             verify_required=verify_required,
+            grounding_source=grounding_source,
         )
         outcome = RouteOutcome.EXECUTED if dispatched.mutated or dispatched.action else RouteOutcome.FAILED
         if dispatched.payload.get("status") in {"failed", "rejected"}:
             outcome = RouteOutcome.FAILED
-        return _finish(voice_session_id, outcome, action=dispatched.action, reason="clarify_pick")
+        pick_reason = "ask_followup" if dispatched.action == "ask_followup" else "clarify_pick"
+        return _finish(voice_session_id, outcome, action=dispatched.action, reason=pick_reason)
 
     mode = _resolve_mode(context, live_dict)
     diagram_type = _diagram_type(voice_session_id, context)
@@ -297,15 +378,52 @@ async def run_typed_agent_loop(
         lang="en" if lang == "en" else "zh",
     )
     memory = get_session_memory(voice_session_id)
+    _record_pending_autocomplete_if_ready(voice_session_id, context, memory)
     messages = build_initial_messages(
         mode=mode,
         user_text=text,
         snapshot=snapshot,
-        recent=memory.summarize_for_parser(5),
+        recent=memory.compact_for_loop(current_user_text=text, lang=lang),
         lang=lang,
         pending_clarify_note=pending_note,
     )
     user_id, organization_id = _session_user_ids(voice_session_id)
+    await fanout_voice_phase_from_session(voice_session_id, "thinking")
+    try:
+        return await _run_loop_rounds(
+            websocket,
+            voice_session_id,
+            text=text,
+            context=context,
+            messages=messages,
+            memory=memory,
+            mode=mode,
+            diagram_type=diagram_type,
+            verify_required=verify_required,
+            lang=lang,
+            user_id=user_id,
+            organization_id=organization_id,
+        )
+    finally:
+        await fanout_voice_phase_from_session(voice_session_id, "active")
+
+
+async def _run_loop_rounds(
+    websocket: WebSocket,
+    voice_session_id: str,
+    *,
+    text: str,
+    context: Dict[str, Any],
+    messages: List[Dict[str, Any]],
+    memory: KittySessionMemory,
+    mode: LoopMode,
+    diagram_type: str,
+    verify_required: bool,
+    lang: str,
+    user_id: Optional[int],
+    organization_id: Optional[int],
+) -> RouteResult:
+    """LLM tool rounds after snapshot/memory are built."""
     acted = False
     last_action = ""
 
@@ -317,7 +435,7 @@ async def run_typed_agent_loop(
                 temperature=0.0,
                 max_tokens=600,
                 timeout=20.0,
-                tools=loop_tool_schemas(),
+                tools=loop_tool_schemas(mode),
                 tool_choice="auto",
                 user_id=user_id,
                 organization_id=organization_id,
@@ -350,45 +468,30 @@ async def run_typed_agent_loop(
                 )
                 if heuristic is not None:
                     return heuristic
-                ack = render_not_understood_ack(lang=lang)
-                await emit_user_ack(
+                return await _offer_intent_clarify(
                     websocket,
                     voice_session_id,
-                    ack,
-                    one_sentence_action="none",
-                    one_sentence_outcome="failed",
-                    one_sentence_user_text=text,
+                    text,
+                    context,
+                    diagram_type,
+                    verify_required,
+                    lang,
                 )
-                return _finish(voice_session_id, RouteOutcome.FAILED, reason="llm_failed")
             return _finish(voice_session_id, RouteOutcome.CONVERSATIONAL_FALLBACK, reason="llm_failed")
 
         tool_calls = extract_tool_calls(result)
         if not tool_calls:
             reply = extract_assistant_text(result)
             if mode == "edit" and not acted:
-                if pending_note:
-                    ack = render_not_understood_ack(lang=lang)
-                else:
-                    heuristic = await _last_resort_heuristic(
-                        websocket,
-                        voice_session_id,
-                        text,
-                        context,
-                        diagram_type,
-                        verify_required,
-                    )
-                    if heuristic is not None:
-                        return heuristic
-                    ack = render_not_understood_ack(lang=lang)
-                await emit_user_ack(
+                return await _offer_intent_clarify(
                     websocket,
                     voice_session_id,
-                    ack,
-                    one_sentence_action="none",
-                    one_sentence_outcome="failed",
-                    one_sentence_user_text=text,
+                    text,
+                    context,
+                    diagram_type,
+                    verify_required,
+                    lang,
                 )
-                return _finish(voice_session_id, RouteOutcome.FAILED, reason="edit_not_parsed")
             if acted:
                 return _finish(voice_session_id, RouteOutcome.EXECUTED, action=last_action, reason="text_stop")
             if reply:
@@ -414,9 +517,42 @@ async def run_typed_agent_loop(
                 command_text=text,
                 verify_required=verify_required,
             )
+            if error_code_from_payload(dispatched.payload) == UNGROUNDED_ERROR:
+                if acted:
+                    return _finish(
+                        voice_session_id,
+                        RouteOutcome.EXECUTED,
+                        action=last_action,
+                        reason="text_stop",
+                    )
+                if mode == "edit":
+                    return await _offer_intent_clarify(
+                        websocket,
+                        voice_session_id,
+                        text,
+                        context,
+                        diagram_type,
+                        verify_required,
+                        lang,
+                    )
+                ack = render_not_understood_ack(lang=lang)
+                await emit_user_ack(
+                    websocket,
+                    voice_session_id,
+                    ack,
+                    one_sentence_action=last_action or None,
+                    one_sentence_outcome="failed",
+                    one_sentence_user_text=text,
+                )
+                return _finish(
+                    voice_session_id,
+                    RouteOutcome.FAILED,
+                    reason=UNGROUNDED_ERROR,
+                    action=dispatched.action,
+                )
             last_action = dispatched.action
             status = str(dispatched.payload.get("status") or "")
-            if status in {"ok", "applied"}:
+            if status in {"ok", "applied", "started"}:
                 acted = True
             if dispatched.mutated:
                 _apply_evidence_to_context(context, dispatched.payload)
@@ -432,7 +568,11 @@ async def run_typed_agent_loop(
             )
             append_tool_message(messages, tool_call_id=str(call["id"]), payload=dispatched.payload)
             if dispatched.stop_clarify:
-                return _finish(voice_session_id, RouteOutcome.EXECUTED, action="clarify_options")
+                return _finish(
+                    voice_session_id,
+                    RouteOutcome.EXECUTED,
+                    action=dispatched.action or "clarify_options",
+                )
             if dispatched.stop_after:
                 return _finish(
                     voice_session_id,
@@ -447,24 +587,13 @@ async def run_typed_agent_loop(
     if acted:
         return _finish(voice_session_id, RouteOutcome.EXECUTED, action=last_action, reason="step_cap")
     if mode == "edit":
-        heuristic = await _last_resort_heuristic(
+        return await _offer_intent_clarify(
             websocket,
             voice_session_id,
             text,
             context,
             diagram_type,
             verify_required,
+            lang,
         )
-        if heuristic is not None:
-            return heuristic
-        ack = render_not_understood_ack(lang=lang)
-        await emit_user_ack(
-            websocket,
-            voice_session_id,
-            ack,
-            one_sentence_action="none",
-            one_sentence_outcome="failed",
-            one_sentence_user_text=text,
-        )
-        return _finish(voice_session_id, RouteOutcome.FAILED, reason="step_cap")
     return _finish(voice_session_id, RouteOutcome.FAILED, reason="step_cap")

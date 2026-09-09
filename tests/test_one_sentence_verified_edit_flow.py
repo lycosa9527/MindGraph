@@ -152,7 +152,16 @@ async def test_one_sentence_update_node_routes_through_verified_bus() -> None:
     """Edit-phase update_node uses verified Bus path."""
     ws = MagicMock()
     vid = create_voice_session(user_id="2", diagram_session_id="scope-os-upd", diagram_type="mindmap")
-    voice_sessions[vid]["context"] = _mindmap_edit_context()
+    context = _mindmap_edit_context()
+    context["diagram_data"] = {
+        "center": {"text": "Cars"},
+        "children": [{"id": "uid-b1", "text": "分支1"}],
+        "nodes": [
+            {"id": "topic", "text": "Cars", "type": "topic"},
+            {"id": "uid-b1", "text": "分支1", "type": "branch"},
+        ],
+    }
+    voice_sessions[vid]["context"] = context
     bus_mock = AsyncMock(return_value=_applied_bus_result(3))
 
     try:
@@ -312,7 +321,16 @@ async def test_one_sentence_delete_node_routes_through_verified_bus() -> None:
     """Edit-phase delete_node uses verified Bus path."""
     ws = MagicMock()
     vid = create_voice_session(user_id="3", diagram_session_id="scope-os-del", diagram_type="mind_map")
-    voice_sessions[vid]["context"] = _mindmap_edit_context()
+    context = _mindmap_edit_context()
+    context["diagram_data"] = {
+        "center": {"text": "Cars"},
+        "children": [{"id": "uid-diy", "text": "DIY"}],
+        "nodes": [
+            {"id": "topic", "text": "Cars", "type": "topic"},
+            {"id": "uid-diy", "text": "DIY", "type": "branch"},
+        ],
+    }
+    voice_sessions[vid]["context"] = context
     bus_mock = AsyncMock(return_value=_applied_bus_result())
 
     try:

@@ -45,6 +45,7 @@ import {
 } from '@/utils/nodeShapeStyle'
 
 import InlineEditableText from '../InlineEditableText.vue'
+import MindMapNodeAdornments from './MindMapNodeAdornments.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 
@@ -270,6 +271,50 @@ function handleTopicNodeClick(event: MouseEvent): void {
           class="mind-map-underline-text"
           :style="underlineTextStyle"
         >
+          <MindMapNodeAdornments
+            :node-id="id"
+            part="image"
+          />
+          <div class="mm-topic-inline">
+            <MindMapNodeAdornments
+              :node-id="id"
+              part="inline"
+            />
+            <InlineEditableText
+              :text="data.label || ''"
+              :node-id="id"
+              :is-editing="isEditing"
+              :readonly="isTextReadonly"
+              :max-width="topicMaxWidth"
+              :text-align="resolvedStyle.textAlign || 'center'"
+              :text-decoration="resolvedStyle.textDecoration || 'none'"
+              auto-wrap
+              render-markdown
+              @save="handleTextSave"
+              @cancel="handleEditCancel"
+              @close="handleEditCancel"
+              @edit-start="isEditing = true"
+            />
+          </div>
+        </div>
+        <div
+          class="mind-map-underline-line"
+          :style="underlineLineStyle"
+        />
+      </template>
+      <div
+        v-else
+        class="mm-topic-body"
+      >
+        <MindMapNodeAdornments
+          :node-id="id"
+          part="image"
+        />
+        <div class="mm-topic-inline">
+          <MindMapNodeAdornments
+            :node-id="id"
+            part="inline"
+          />
           <InlineEditableText
             :text="data.label || ''"
             :node-id="id"
@@ -286,27 +331,7 @@ function handleTopicNodeClick(event: MouseEvent): void {
             @edit-start="isEditing = true"
           />
         </div>
-        <div
-          class="mind-map-underline-line"
-          :style="underlineLineStyle"
-        />
-      </template>
-      <InlineEditableText
-        v-else
-        :text="data.label || ''"
-        :node-id="id"
-        :is-editing="isEditing"
-        :readonly="isTextReadonly"
-        :max-width="topicMaxWidth"
-        :text-align="resolvedStyle.textAlign || 'center'"
-        :text-decoration="resolvedStyle.textDecoration || 'none'"
-        auto-wrap
-        render-markdown
-        @save="handleTextSave"
-        @cancel="handleEditCancel"
-        @close="handleEditCancel"
-        @edit-start="isEditing = true"
-      />
+      </div>
 
       <Handle
         v-for="handle in mindMapHandlePositions.right"
@@ -368,6 +393,22 @@ function handleTopicNodeClick(event: MouseEvent): void {
 
 .topic-node.mind-map-underline-node:hover {
   box-shadow: none !important;
+}
+
+.mm-topic-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.mm-topic-inline {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .topic-node.mind-map-topic-node {
