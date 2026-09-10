@@ -6,17 +6,14 @@ import { computed, onMounted, ref } from 'vue'
 
 import { ElTable } from 'element-plus'
 
+import { Settings2 } from '@lucide/vue'
+
 import AdminMindBotConfigDialog from '@/components/admin/AdminMindBotConfigDialog.vue'
-import type {
-  MindbotConfigRow,
-  OrgOption,
-} from '@/components/admin/mindbotConfigTypes'
-import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
-import {
-  MINDBOT_BOT_CAP,
-  useAdminMindBotConfig,
-} from '@/composables/admin/useAdminMindBotConfig'
+import type { MindbotConfigRow, OrgOption } from '@/components/admin/mindbotConfigTypes'
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
+import { MINDBOT_BOT_CAP, useAdminMindBotConfig } from '@/composables/admin/useAdminMindBotConfig'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useAdminOrganizations, useMoveAdminMindbotConfig } from '@/composables/queries'
 import { useAuthStore } from '@/stores/auth'
@@ -36,7 +33,6 @@ const {
   configs,
   dialogMode,
   formOrgId,
-  editingConfigId,
   dingtalkSecretReplaceMode,
   difyApiKeyReplaceMode,
   form,
@@ -366,8 +362,8 @@ defineExpose({
                       size="small"
                       plain
                       class="mindbot-pill mindbot-pill--table-move"
-                  :disabled="!canMoveBot(row as MindbotConfigRow)"
-                  @click="openMoveDialog(row as MindbotConfigRow)"
+                      :disabled="!canMoveBot(row as MindbotConfigRow)"
+                      @click="openMoveDialog(row as MindbotConfigRow)"
                     >
                       {{ t('admin.mindbot.move') }}
                     </el-button>
@@ -487,29 +483,17 @@ defineExpose({
       </el-card>
     </template>
 
-    <el-dialog
+    <SwissGlassDialog
       v-model="moveDialogVisible"
-      class="mindbot-settings-dialog mindbot-swiss-dialog mindbot-move-dialog"
+      :ribbon="t('swissGlass.hero.adminInline.ribbon')"
+      :title="t('swissGlass.hero.adminInline.title')"
+      :line1="t('swissGlass.hero.adminInline.line1')"
+      :line2="t('admin.mindbot.moveTitle')"
+      :icon="Settings2"
       width="min(480px, 94vw)"
-      destroy-on-close
-      append-to-body
-      align-center
-      modal-class="mindbot-swiss-backdrop"
-      :show-close="true"
-      @closed="onMoveDialogClosed"
+      dialog-class="mindbot-move-dialog"
+      @close="onMoveDialogClosed"
     >
-      <template #header>
-        <div class="mindbot-swiss-header mindbot-config-header">
-          <span class="mindbot-swiss-header__glyph">◇</span>
-          <span class="mindbot-swiss-header__title">{{ t('admin.mindbot.move') }}</span>
-          <span
-            class="mindbot-swiss-header__divider"
-            aria-hidden="true"
-            >·</span
-          >
-          <span class="mindbot-swiss-header__note">{{ t('admin.mindbot.moveTitle') }}</span>
-        </div>
-      </template>
       <div class="mindbot-config-body">
         <div
           class="mindbot-config-scanlines"
@@ -541,25 +525,25 @@ defineExpose({
         </div>
       </div>
       <template #footer>
-        <div class="mindbot-dialog-footer flex w-full justify-end gap-2">
-          <el-button
-            class="mindbot-pill mindbot-pill--footer-cancel"
+        <div class="swiss-glass-footer">
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
             @click="moveDialogVisible = false"
           >
             {{ t('common.cancel') }}
-          </el-button>
-          <el-button
-            type="primary"
-            class="mindbot-pill mindbot-pill--footer-save"
-            :loading="moveSubmitting"
-            :disabled="moveTargetOrgId == null || moveTargetOptions.length === 0"
+          </button>
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+            :disabled="moveSubmitting || moveTargetOrgId == null || moveTargetOptions.length === 0"
             @click="confirmMoveBot"
           >
             {{ t('admin.mindbot.move') }}
-          </el-button>
+          </button>
         </div>
       </template>
-    </el-dialog>
+    </SwissGlassDialog>
 
     <AdminMindBotConfigDialog
       v-if="isAdmin"

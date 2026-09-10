@@ -27,6 +27,7 @@ import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { conceptMapNodeIsAmbiguousForRec } from '@/utils/conceptMapInlineRec'
+import { getDiagramPersistBaseSpec } from '@/utils/diagramPersistBaseSpec'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 
 export function useCanvasPageMountedHandlers(options: {
@@ -55,7 +56,7 @@ export function useCanvasPageMountedHandlers(options: {
         if (diagramStore.collabSessionActive && isDiagramOwner?.value === false) return
         const diagramId = savedDiagramsStore.activeDiagramId
         if (!diagramId) return
-        const spec = diagramStore.getSpecForSave()
+        const spec = getDiagramPersistBaseSpec()
         if (!spec) return
         const result = await snapshotHistory.takeSnapshot(diagramId, spec)
         if (!result) return

@@ -5,6 +5,8 @@
  */
 import type { Router } from 'vue-router'
 
+import { discardCanvasTranslatePreview } from '@/composables/canvasPage/discardCanvasTranslatePreview'
+
 export const CANVAS_ENTRY_PATH_KEY = 'mindgraph_canvas_entry'
 
 export const CANVAS_EDITOR_PATH_DESKTOP = '/canvas'
@@ -52,6 +54,7 @@ export function defaultMindGraphLandingPath(routePath: string): '/mindgraph' | '
  * require multiple back clicks.
  */
 export function navigateBackFromCanvas(router: Router, currentRoutePath: string): void {
+  discardCanvasTranslatePreview()
   const entry = sessionStorage.getItem(CANVAS_ENTRY_PATH_KEY)
   if (entry && isCanvasBackTargetPath(entry)) {
     void router.replace({ path: entry })

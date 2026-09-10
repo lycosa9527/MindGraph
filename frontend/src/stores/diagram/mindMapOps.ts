@@ -63,7 +63,11 @@ import {
   rebalanceMindMapBranchesAfterL1Delete,
 } from '../specLoader'
 import type { SpecLoaderResult } from '../specLoader/types'
-import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
+import {
+  collabForeignLockBlocksAnyId,
+  emitCollabDeleteBlocked,
+  emitCollabLockBlocked,
+} from './collabHelpers'
 import { emitCtxEvent, getMindMapCurveExtents } from './events'
 import { remapAdornmentsAfterTreeReload } from './mindMapAdornmentOps'
 import {
@@ -850,6 +854,10 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     if (isDiagramPresentationReadOnly(ctx)) return false
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
+    if (collabForeignLockBlocksAnyId(ctx, [parentNodeId])) {
+      emitCollabLockBlocked()
+      return false
+    }
 
     const connections = data.value.connections
     const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, connections)
@@ -1283,6 +1291,11 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     }
     if (nodeId === 'topic' && at?.parentId == null && at?.insertIndex == null) {
       recordMindMapSiblingInsertFailure('topic_without_insert_at', { nodeId, at })
+      return false
+    }
+    if (collabForeignLockBlocksAnyId(ctx, [nodeId])) {
+      emitCollabLockBlocked()
+      recordMindMapSiblingInsertFailure('collab_locked', { nodeId })
       return false
     }
 

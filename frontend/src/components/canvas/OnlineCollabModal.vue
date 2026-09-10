@@ -5,15 +5,12 @@
  */
 import { computed, onUnmounted, ref, watch } from 'vue'
 
-import { ElButton, ElDialog, ElPopover, ElRadioButton, ElRadioGroup, ElTag } from 'element-plus'
+import { ElPopover, ElRadioButton, ElRadioGroup, ElTag } from 'element-plus'
 
-import { Copy, Settings, Users } from '@lucide/vue'
+import { Copy, Loader2, Settings, Users } from '@lucide/vue'
 
-import {
-  useDiagramSpecForPersist,
-  useLanguage,
-  useNotifications,
-} from '@/composables'
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
+import { useDiagramSpecForPersist, useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
@@ -358,7 +355,7 @@ async function handleGenerateCode() {
 /**
  * Start the collab session immediately without showing the dialog.
  * Called programmatically by CanvasCollabOverlay when the user picks a mode
- * from the zoom-controls dropdown while no session is active.
+ * from the ribbon or classic ZoomControls menu while no session is active.
  */
 async function startNow() {
   await handleGenerateCode()
@@ -407,7 +404,9 @@ async function endCollaboration() {
     const response = await authFetch(`/api/diagrams/${diagramId}/workshop/stop`, {
       method: 'POST',
     })
-    if (response.ok) {
+    if (response.ok || response.status === 404) {
+      // 404: session already gone (ended, partial stop, or DB clear lagged).
+      // Clear local state so the host is not left on a socket that keeps 4011.
       workshopCode.value = null
       sessionVisibility.value = null
       isActive.value = false
@@ -417,19 +416,8 @@ async function endCollaboration() {
       notify.success(t('collab.ended'))
     } else {
       const error = await response.json().catch(() => ({}))
-      if (response.status === 404) {
-        // Server says the session does not exist (already ended, partial stop,
-        // or the closing flag was set but the DB clear failed). Treat this as
-        // "session is gone" and force a local disconnect so the host is not
-        // left with an open WS that keeps being rejected with "shutting down".
-        workshopCode.value = null
-        sessionVisibility.value = null
-        isActive.value = false
-        participantCount.value = 0
-        emitClearCollabSession()
-        showDialog.value = false
-      }
-      notify.error(error.detail || t('collab.endFailed'))
+      const detail = typeof error.detail === 'string' ? error.detail : ''
+      notify.error(detail || t('collab.endFailed'))
     }
   } catch (error) {
     console.error('Stop collaboration failed:', error)
@@ -441,10 +429,13 @@ async function endCollaboration() {
 </script>
 
 <template>
-  <ElDialog
+  <SwissGlassDialog
     v-model="showDialog"
-    :title="t('collab.title')"
-    width="500px"
+    :ribbon="t('canvas.hero.collab.ribbon')"
+    :title="t('canvas.hero.collab.title')"
+    :line1="t('canvas.hero.collab.line1')"
+    :icon="Users"
+    width="min(500px, 92vw)"
     :close-on-click-modal="false"
   >
     <div class="online-collab-modal">
@@ -491,25 +482,23 @@ async function endCollaboration() {
                 >
                   {{ workshopCode }}
                 </ElTag>
-                <ElButton
-                  text
-                  size="small"
-                  class="copy-button"
+                <button
+                  type="button"
+                  class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost"
                   @click="copyCode"
                 >
                   <Copy class="w-4 h-4" />
                   {{ t('collab.copy') }}
-                </ElButton>
+                </button>
               </div>
               <p class="code-hint text-xs break-all px-2">{{ joinLinkDisplay }}</p>
-              <ElButton
-                text
-                size="small"
-                class="mt-1"
+              <button
+                type="button"
+                class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost mt-1"
                 @click="copyJoinLink"
               >
                 {{ t('collab.copyLink') }}
-              </ElButton>
+              </button>
             </div>
           </div>
           <div
@@ -522,14 +511,18 @@ async function endCollaboration() {
             </span>
           </div>
           <div class="mt-4 flex justify-end">
-            <ElButton
-              type="danger"
-              plain
-              :loading="isLoading"
+            <button
+              type="button"
+              class="mind-map-side-rail-btn mind-map-side-rail-btn--danger"
+              :disabled="isLoading"
               @click="endCollaboration"
             >
+              <Loader2
+                v-if="isLoading"
+                class="w-4 h-4 animate-spin"
+              />
               {{ t('collab.end') }}
-            </ElButton>
+            </button>
           </div>
         </div>
 
@@ -544,14 +537,18 @@ async function endCollaboration() {
             </span>
           </div>
           <div class="mt-4 flex justify-end">
-            <ElButton
-              type="danger"
-              plain
-              :loading="isLoading"
+            <button
+              type="button"
+              class="mind-map-side-rail-btn mind-map-side-rail-btn--danger"
+              :disabled="isLoading"
               @click="endCollaboration"
             >
+              <Loader2
+                v-if="isLoading"
+                class="w-4 h-4 animate-spin"
+              />
               {{ t('collab.end') }}
-            </ElButton>
+            </button>
           </div>
         </div>
 
@@ -567,14 +564,13 @@ async function endCollaboration() {
               trigger="click"
             >
               <template #reference>
-                <ElButton
-                  text
-                  circle
-                  size="small"
+                <button
+                  type="button"
+                  class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost"
                   :aria-label="t('collab.durationAria')"
                 >
                   <Settings class="w-4 h-4" />
-                </ElButton>
+                </button>
               </template>
               <div class="p-2">
                 <ElRadioGroup
@@ -596,41 +592,27 @@ async function endCollaboration() {
           <p class="description">
             {{ isNetworkMode ? t('collab.hintNetworkInactive') : t('collab.hintSchoolInactive') }}
           </p>
-          <ElButton
-            type="primary"
-            :loading="isLoading"
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary"
+            :disabled="isLoading"
             @click="handleGenerateCode"
           >
+            <Loader2
+              v-if="isLoading"
+              class="w-4 h-4 animate-spin"
+            />
             {{ t('collab.start') }}
-          </ElButton>
+          </button>
         </div>
       </div>
     </div>
-  </ElDialog>
+  </SwissGlassDialog>
 </template>
 
 <style scoped>
 .online-collab-modal {
   padding: 4px 0;
-}
-
-:deep(.el-dialog) {
-  border-radius: 12px;
-}
-
-:deep(.el-dialog__header) {
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-:deep(.el-dialog__body) {
-  padding: 24px;
-}
-
-:deep(.el-dialog__title) {
-  font-weight: 600;
-  font-size: 18px;
-  letter-spacing: -0.3px;
 }
 
 .collab-section {
@@ -730,10 +712,6 @@ async function endCollaboration() {
   background: #f0f9ff;
   border-color: #93c5fd;
   color: #1e40af;
-}
-
-.copy-button {
-  color: var(--el-text-color-regular);
 }
 
 .code-hint {

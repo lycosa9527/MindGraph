@@ -5,10 +5,9 @@ import { computed, ref, watch } from 'vue'
 
 import { useDebounceFn } from '@vueuse/core'
 
-import { ElMessageBox } from 'element-plus'
-
 import { useLanguage, useNotifications } from '@/composables'
 import type { RoleControlTab } from '@/composables/admin/adminRoleControlNav'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import {
   useAddAdminOrganizationManager,
   useAdminAdmins,
@@ -66,9 +65,7 @@ export interface PlatformRoleMember {
 }
 
 export type RoleMemberRow =
-  | (AdminUser & { source: 'database' | 'env' })
-  | PlatformRoleMember
-  | ManagerUser
+  (AdminUser & { source: 'database' | 'env' }) | PlatformRoleMember | ManagerUser
 
 export function useAdminRoleControl() {
   const { t } = useLanguage()
@@ -299,7 +296,8 @@ export function useAdminRoleControl() {
       notify.success(t('admin.roleAssignSuccess'))
       return true
     } catch (err) {
-      const message = err instanceof Error ? err.message : t('admin.trendChartErrors.setManagerFailed')
+      const message =
+        err instanceof Error ? err.message : t('admin.trendChartErrors.setManagerFailed')
       notify.error(message)
       return false
     }
@@ -354,7 +352,7 @@ export function useAdminRoleControl() {
     const displayName = row.name || row.phone
     const roleName = roleLabel(activeTab.value)
     try {
-      await ElMessageBox.confirm(
+      await swissGlassConfirm(
         `${t('admin.revokeRoleConfirm')} ${displayName} (${roleName})?`,
         t('admin.revokeRole'),
         {

@@ -8,6 +8,7 @@ import {
   tryCollabGuardedRedo,
   tryCollabGuardedUndo,
 } from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
+import { useCanvasDiagramTranslate } from '@/composables/canvasToolbar/useCanvasDiagramTranslate'
 import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -39,6 +40,7 @@ export function useMindMapRibbonChromeActions() {
     registerEventBusListeners: false,
   })
   const { handleAIGenerate } = useCanvasToolbarApps()
+  const { leaveTranslatePreview } = useCanvasDiagramTranslate()
   const { triggerImportInPlace } = useDiagramImport()
   const { switchToModel } = useAutoComplete()
   const learningSheet = useLearningSheetCustomMode()
@@ -107,7 +109,9 @@ export function useMindMapRibbonChromeActions() {
 
   function selectLlm(model: string): void {
     llmResultsStore.setSelectedModel(model)
-    switchToModel(model)
+    void leaveTranslatePreview().then(() => {
+      switchToModel(model)
+    })
   }
 
   return {

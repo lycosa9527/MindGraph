@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { ElMessageBox } from 'element-plus'
-
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { useTriggerAdminCosCrowdsecSync } from '@/composables/queries'
 
 const props = defineProps<{
@@ -21,7 +20,7 @@ const localMeta = computed(() => (props.data?.local_meta as Record<string, unkno
 const cosMeta = computed(() => (props.data?.cos_meta as Record<string, unknown>) ?? null)
 
 async function onSync() {
-  await ElMessageBox.confirm(t('admin.cos.confirmCrowdsecSync'), t('admin.cos.syncNow'), {
+  await swissGlassConfirm(t('admin.cos.confirmCrowdsecSync'), t('admin.cos.syncNow'), {
     type: 'warning',
   })
   try {
@@ -35,7 +34,10 @@ async function onSync() {
 </script>
 
 <template>
-  <div v-loading="loading" class="admin-cos-crowdsec">
+  <div
+    v-loading="loading"
+    class="admin-cos-crowdsec"
+  >
     <el-alert
       :title="t('admin.cos.roleHint', { role: syncRole ?? 'off' })"
       type="info"
@@ -56,7 +58,10 @@ async function onSync() {
         :value="String(cosMeta?.count ?? '—')"
       />
     </div>
-    <el-descriptions :column="1" border>
+    <el-descriptions
+      :column="1"
+      border
+    >
       <el-descriptions-item :label="t('admin.cos.localLastMerge')">
         {{ localMeta?.last_merge_unix ?? '—' }}
       </el-descriptions-item>
@@ -65,7 +70,11 @@ async function onSync() {
       </el-descriptions-item>
     </el-descriptions>
     <div class="admin-cos-actions">
-      <el-button type="primary" :loading="triggerSync.isPending.value" @click="onSync">
+      <el-button
+        type="primary"
+        :loading="triggerSync.isPending.value"
+        @click="onSync"
+      >
         {{ t('admin.cos.syncNow') }}
       </el-button>
     </div>

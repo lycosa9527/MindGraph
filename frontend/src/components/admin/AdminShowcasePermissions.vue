@@ -2,20 +2,24 @@
 import { computed, onMounted, ref, watch } from 'vue'
 
 import { useDebounceFn } from '@vueuse/core'
+
 import { ElTable } from 'element-plus'
 
+import { Settings2 } from '@lucide/vue'
+
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
+import { useLanguage, useNotifications } from '@/composables'
 import {
   SHOWCASE_STAFF_PERMISSIONS,
-  showcaseStaffPermissionLabelKey,
   type ShowcaseStaffPermission,
+  showcaseStaffPermissionLabelKey,
 } from '@/composables/admin/adminShowcaseNav'
-import { useLanguage, useNotifications } from '@/composables'
 import { useAdminUsers } from '@/composables/queries'
 import {
+  type ShowcaseStaffGrantRow,
   deleteAdminShowcaseStaffGrant,
   getAdminShowcaseStaffGrants,
   saveAdminShowcaseStaffGrant,
-  type ShowcaseStaffGrantRow,
 } from '@/utils/apiClient'
 
 interface SearchUserRow {
@@ -310,14 +314,24 @@ onMounted(() => {
       {{ t('admin.showcase.permissions.empty') }}
     </div>
 
-    <el-dialog
+    <SwissGlassDialog
       v-model="dialogVisible"
-      :title="editingGrant ? t('admin.showcase.permissions.editTitle') : t('admin.showcase.permissions.addTitle')"
+      :ribbon="t('swissGlass.hero.adminInline.ribbon')"
+      :title="t('swissGlass.hero.adminInline.title')"
+      :line1="t('swissGlass.hero.adminInline.line1')"
+      :line2="
+        editingGrant
+          ? t('admin.showcase.permissions.editTitle')
+          : t('admin.showcase.permissions.addTitle')
+      "
+      :icon="Settings2"
       width="520px"
     >
       <div class="space-y-4">
         <div v-if="!editingGrant">
-          <label class="mb-1 block text-sm text-gray-700">{{ t('admin.showcase.permissions.searchUser') }}</label>
+          <label class="mb-1 block text-sm text-gray-700">{{
+            t('admin.showcase.permissions.searchUser')
+          }}</label>
           <input
             v-model="searchQuery"
             type="search"
@@ -325,7 +339,11 @@ onMounted(() => {
             class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-400"
           />
           <p
-            v-if="searchQuery.trim().length >= 2 && searchResults.length === 0 && !userSearchQuery.isFetching.value"
+            v-if="
+              searchQuery.trim().length >= 2 &&
+              searchResults.length === 0 &&
+              !userSearchQuery.isFetching.value
+            "
             class="mt-2 text-xs text-gray-400"
           >
             {{ t('admin.showcase.permissions.noSearchResults') }}
@@ -354,7 +372,9 @@ onMounted(() => {
         </div>
 
         <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700">{{ t('admin.showcase.permissions.selectPerms') }}</label>
+          <label class="mb-2 block text-sm font-medium text-gray-700">{{
+            t('admin.showcase.permissions.selectPerms')
+          }}</label>
           <div class="space-y-2">
             <label
               v-for="opt in permissionOptions"
@@ -372,7 +392,9 @@ onMounted(() => {
         </div>
 
         <div>
-          <label class="mb-1 block text-sm text-gray-700">{{ t('admin.showcase.permissions.note') }}</label>
+          <label class="mb-1 block text-sm text-gray-700">{{
+            t('admin.showcase.permissions.note')
+          }}</label>
           <textarea
             v-model="grantNote"
             rows="2"
@@ -383,22 +405,24 @@ onMounted(() => {
       </div>
 
       <template #footer>
-        <button
-          type="button"
-          class="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-          @click="dialogVisible = false"
-        >
-          {{ t('admin.cancel') }}
-        </button>
-        <button
-          type="button"
-          class="ml-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
-          :disabled="isSaving"
-          @click="saveGrant"
-        >
-          {{ t('admin.save') }}
-        </button>
+        <div class="swiss-glass-footer">
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+            @click="dialogVisible = false"
+          >
+            {{ t('admin.cancel') }}
+          </button>
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+            :disabled="isSaving"
+            @click="saveGrant"
+          >
+            {{ t('admin.save') }}
+          </button>
+        </div>
       </template>
-    </el-dialog>
+    </SwissGlassDialog>
   </div>
 </template>

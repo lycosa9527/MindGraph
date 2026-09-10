@@ -10,6 +10,8 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
+CANVAS_TRANSLATE_MODEL = "qwen3.8-flash"
+
 CANVAS_TRANSLATE_TARGET_CODES = frozenset(
     {
         "en",
@@ -73,6 +75,7 @@ class TranslateNodeLabelRequest(BaseModel):
     @field_validator("target_language")
     @classmethod
     def validate_target_language(cls, value: str) -> str:
+        """Reject target codes that the canvas translate API does not support."""
         normalized = (value or "").strip().lower()
         if normalized not in CANVAS_TRANSLATE_TARGET_CODES:
             raise ValueError("Unsupported target_language code")
@@ -81,6 +84,7 @@ class TranslateNodeLabelRequest(BaseModel):
     @field_validator("diagram_type")
     @classmethod
     def normalize_diagram_type(cls, value: Optional[str]) -> Optional[str]:
+        """Strip empty diagram_type values to None."""
         if value is None:
             return None
         stripped = value.strip()
@@ -132,6 +136,7 @@ class TranslateDiagramLabelsRequest(BaseModel):
     @field_validator("target_language")
     @classmethod
     def validate_batch_target_language(cls, value: str) -> str:
+        """Reject target codes that the canvas translate API does not support."""
         normalized = (value or "").strip().lower()
         if normalized not in CANVAS_TRANSLATE_TARGET_CODES:
             raise ValueError("Unsupported target_language code")
@@ -140,6 +145,7 @@ class TranslateDiagramLabelsRequest(BaseModel):
     @field_validator("diagram_type")
     @classmethod
     def normalize_batch_diagram_type(cls, value: Optional[str]) -> Optional[str]:
+        """Strip empty diagram_type values to None."""
         if value is None:
             return None
         stripped = value.strip()
@@ -148,6 +154,7 @@ class TranslateDiagramLabelsRequest(BaseModel):
     @field_validator("ui_locale")
     @classmethod
     def normalize_ui_locale(cls, value: Optional[str]) -> Optional[str]:
+        """Lowercase ui_locale and treat blank strings as omitted."""
         if value is None:
             return None
         stripped = value.strip()

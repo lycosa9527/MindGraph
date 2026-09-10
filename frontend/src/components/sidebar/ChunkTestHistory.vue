@@ -12,7 +12,6 @@ import {
   ElDropdownItem,
   ElDropdownMenu,
   ElIcon,
-  ElMessageBox,
   ElScrollbar,
   ElTag,
 } from 'element-plus'
@@ -22,6 +21,7 @@ import { Loading } from '@element-plus/icons-vue'
 import { Lock, MoreHorizontal, TestTube, Trash2 } from '@lucide/vue'
 
 import { notify, useLanguage } from '@/composables'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import {
   type ChunkTestHistoryItem,
   useChunkTestHistory,
@@ -137,7 +137,7 @@ function handleTestClick(testId: number): void {
 // Handle delete test
 async function handleDeleteTest(testId: number): Promise<void> {
   try {
-    await ElMessageBox.confirm(
+    await swissGlassConfirm(
       t('chunkTest.history.confirmDeleteBody'),
       t('chunkTest.history.confirmDeleteTitle'),
       {

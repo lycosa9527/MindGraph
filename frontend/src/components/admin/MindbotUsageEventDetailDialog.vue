@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { FileSearch } from '@lucide/vue'
 
 import type { MindbotUsageEventRow } from '@/components/admin/mindbotUsageTypes'
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables'
 
 const visible = defineModel<boolean>({ required: true })
@@ -11,8 +12,6 @@ defineProps<{
 }>()
 
 const { t } = useLanguage()
-
-const title = computed(() => t('admin.mindbot.usageEventDetailTitle'))
 
 function formatTime(iso: string): string {
   try {
@@ -44,14 +43,14 @@ function formatTokens(row: MindbotUsageEventRow): string {
 </script>
 
 <template>
-  <el-dialog
+  <SwissGlassDialog
     v-model="visible"
-    :title="title"
+    :ribbon="t('swissGlass.hero.adminEvent.ribbon')"
+    :title="t('swissGlass.hero.adminEvent.title')"
+    :line1="t('swissGlass.hero.adminEvent.line1')"
+    :icon="FileSearch"
     width="min(560px, 92vw)"
-    class="mindbot-usage-detail-dialog"
-    append-to-body
-    align-center
-    destroy-on-close
+    dialog-class="mindbot-usage-detail-dialog"
   >
     <template v-if="event">
       <div
@@ -131,7 +130,7 @@ function formatTokens(row: MindbotUsageEventRow): string {
         </el-descriptions>
       </div>
     </template>
-  </el-dialog>
+  </SwissGlassDialog>
 </template>
 
 <style scoped>

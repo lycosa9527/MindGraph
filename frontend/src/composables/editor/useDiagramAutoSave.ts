@@ -25,6 +25,7 @@ import { eventBus } from '@/composables'
 import { SAVE } from '@/config'
 import { useAuthStore } from '@/stores/auth'
 import { useDiagramStore } from '@/stores/diagram'
+import { useDiagramTranslateUiStore } from '@/stores/diagramTranslateUi'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -211,6 +212,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
   const { promptLanguage, currentLanguage } = useLanguage()
   const diagramStore = useDiagramStore()
   const savedDiagramsStore = useSavedDiagramsStore()
+  const translateUi = useDiagramTranslateUiStore()
   const llmResultsStore = useLLMResultsStore()
   const authStore = useAuthStore()
   const previewStore = useMindMapSubgraphPreviewStore()
@@ -275,6 +277,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
   function startInterval(): void {
     if (intervalTimer) return
     intervalTimer = setInterval(() => {
+      if (translateUi.viewingTranslated) return
       if (!canSave.value || !isDirty.value) return
       const currentFull = getFullFingerprint(diagramStore.data as DiagramDataLike)
       if (currentFull === lastSavedFullFingerprint) {
@@ -447,7 +450,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
   )
 
   function markDirtyIfAheadOfLastSave(): void {
-    if (disposed || !diagramStore.data) return
+    if (disposed || !diagramStore.data || translateUi.viewingTranslated) return
     const currentFull = getFullFingerprint(diagramStore.data as DiagramDataLike)
     if (!currentFull || currentFull === lastSavedFullFingerprint) return
     trigger()
@@ -455,6 +458,10 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
 
   const stopContentWatch = watch(contentFingerprint, (newFP, oldFP) => {
     if (!newFP || oldFP === undefined || newFP === oldFP) return
+    if (translateUi.viewingTranslated) {
+      cancelDebounce()
+      return
+    }
     if (llmResultsStore.contentChangeIsFromModelSwitch) {
       llmResultsStore.contentChangeIsFromModelSwitch = false
       cancelDebounce()

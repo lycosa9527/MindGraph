@@ -5,7 +5,7 @@
  *   2. OnlineCollabModal (host start/stop sessions)
  *   3. Session-active banner (network: shows share code; org: label only)
  *
- * Exposes ``openCollab(mode)`` so CanvasPage can proxy ZoomControls events.
+ * Exposes ``openCollab(mode)`` so CanvasPage can proxy ribbon / ZoomControls events.
  */
 import { type ComputedRef, computed, onMounted, onUnmounted, ref } from 'vue'
 
@@ -37,8 +37,6 @@ const props = defineProps<{
   roomIdleRemainingSeconds?: number | ComputedRef<number | null | undefined> | null
   /** From useWorkshop: connection state for reconnecting/failed banner. */
   connectionStatus?: ConnectionStatus
-  /** True when the current user is a guest (not the diagram owner). */
-  isCollabGuest?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -66,8 +64,8 @@ const collabMode = computed<'organization' | 'network'>(() => {
   return userSelectedMode.value ?? 'organization'
 })
 
-/** Banner: omit meeting code for 校内 (`organization`). */
-const showShareCodeRow = computed(() => props.workshopVisibility !== 'organization')
+/** Banner: show the invite code only after the server confirms network visibility. */
+const showShareCodeRow = computed(() => props.workshopVisibility === 'network')
 
 const isReconnecting = computed(() => props.connectionStatus === 'reconnecting')
 const isConnectionFailed = computed(() => props.connectionStatus === 'failed')
@@ -220,6 +218,7 @@ defineExpose({ openCollab, stopNow })
   <!-- Session banner: 校内 omit meeting code -->
   <div
     v-if="props.workshopCode"
+    data-collab-session-banner
     class="w-full shrink-0 flex flex-col border-b border-slate-600/60 pointer-events-none select-none"
     role="status"
   >
@@ -268,6 +267,14 @@ defineExpose({ openCollab, stopNow })
           >
             · {{ statusChip.countdown }}s
           </span>
+          <button
+            v-if="statusChip.tone === 'err'"
+            type="button"
+            class="pointer-events-auto underline ml-1"
+            @click="emit('retryConnection')"
+          >
+            {{ t('canvasPage.collabRetryConnection') }}
+          </button>
         </span>
       </template>
     </div>
@@ -279,16 +286,16 @@ defineExpose({ openCollab, stopNow })
     </div>
   </div>
 
-  <!-- Connection status banners -->
+  <!-- Standalone strips only when the session banner is not mounted -->
   <div
-    v-if="isReconnecting"
+    v-if="!props.workshopCode && isReconnecting"
     class="w-full shrink-0 flex items-center justify-center gap-2 px-3 py-1 text-xs text-amber-100 bg-amber-800/90 pointer-events-none"
     role="status"
   >
     <span>{{ t('canvasPage.collabReconnecting') }}</span>
   </div>
   <div
-    v-else-if="isConnectionFailed"
+    v-else-if="!props.workshopCode && isConnectionFailed"
     class="w-full shrink-0 flex items-center justify-center gap-2 px-3 py-1 text-xs text-red-100 bg-red-900/90"
     role="alert"
   >

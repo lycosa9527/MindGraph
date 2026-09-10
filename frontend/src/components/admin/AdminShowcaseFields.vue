@@ -3,15 +3,18 @@ import { computed, onMounted, ref } from 'vue'
 
 import { ElTable } from 'element-plus'
 
-import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
-import { useLanguage, useNotifications } from '@/composables'
+import { Settings2 } from '@lucide/vue'
 import { useQueryClient } from '@tanstack/vue-query'
+
+import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
+import { useLanguage, useNotifications } from '@/composables'
 import {
+  type ShowcaseFieldOptionRow,
   createAdminShowcaseFieldOption,
   deleteAdminShowcaseFieldOption,
   getAdminShowcaseFieldOptions,
   patchAdminShowcaseFieldOption,
-  type ShowcaseFieldOptionRow,
 } from '@/utils/apiClient'
 
 const FIELD_CATEGORIES = ['subject', 'grade', 'recommended_tag'] as const
@@ -173,7 +176,9 @@ onMounted(() => {
       </h3>
       <div class="flex flex-wrap items-end gap-3">
         <div class="min-w-35 flex-1">
-          <label class="mb-1 block text-xs text-gray-500">{{ t('admin.showcase.fields.value') }}</label>
+          <label class="mb-1 block text-xs text-gray-500">{{
+            t('admin.showcase.fields.value')
+          }}</label>
           <input
             v-model="newValue"
             type="text"
@@ -182,7 +187,9 @@ onMounted(() => {
           />
         </div>
         <div class="min-w-35 flex-1">
-          <label class="mb-1 block text-xs text-gray-500">{{ t('admin.showcase.fields.label') }}</label>
+          <label class="mb-1 block text-xs text-gray-500">{{
+            t('admin.showcase.fields.label')
+          }}</label>
           <input
             v-model="newLabel"
             type="text"
@@ -260,7 +267,11 @@ onMounted(() => {
             class="mr-3 text-sm text-gray-700 hover:text-gray-900"
             @click="toggleActive(row as ShowcaseFieldOptionRow)"
           >
-            {{ row.is_active ? t('admin.showcase.fields.deactivate') : t('admin.showcase.fields.activate') }}
+            {{
+              row.is_active
+                ? t('admin.showcase.fields.deactivate')
+                : t('admin.showcase.fields.activate')
+            }}
           </button>
           <button
             type="button"
@@ -280,9 +291,13 @@ onMounted(() => {
       {{ t('admin.showcase.fields.empty') }}
     </div>
 
-    <el-dialog
+    <SwissGlassDialog
       v-model="editVisible"
-      :title="t('admin.showcase.fields.editTitle')"
+      :ribbon="t('swissGlass.hero.adminInline.ribbon')"
+      :title="t('swissGlass.hero.adminInline.title')"
+      :line1="t('swissGlass.hero.adminInline.line1')"
+      :line2="t('admin.showcase.fields.editTitle')"
+      :icon="Settings2"
       width="420px"
     >
       <div
@@ -290,7 +305,9 @@ onMounted(() => {
         class="space-y-4"
       >
         <div>
-          <label class="mb-1 block text-xs text-gray-500">{{ t('admin.showcase.fields.value') }}</label>
+          <label class="mb-1 block text-xs text-gray-500">{{
+            t('admin.showcase.fields.value')
+          }}</label>
           <input
             :value="editingRow.value"
             type="text"
@@ -299,7 +316,9 @@ onMounted(() => {
           />
         </div>
         <div>
-          <label class="mb-1 block text-xs text-gray-500">{{ t('admin.showcase.fields.label') }}</label>
+          <label class="mb-1 block text-xs text-gray-500">{{
+            t('admin.showcase.fields.label')
+          }}</label>
           <input
             v-model="editLabel"
             type="text"
@@ -308,7 +327,9 @@ onMounted(() => {
           />
         </div>
         <div>
-          <label class="mb-1 block text-xs text-gray-500">{{ t('admin.showcase.fields.sortOrder') }}</label>
+          <label class="mb-1 block text-xs text-gray-500">{{
+            t('admin.showcase.fields.sortOrder')
+          }}</label>
           <input
             v-model.number="editSortOrder"
             type="number"
@@ -325,22 +346,24 @@ onMounted(() => {
         </label>
       </div>
       <template #footer>
-        <button
-          type="button"
-          class="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-          @click="editVisible = false"
-        >
-          {{ t('admin.cancel') }}
-        </button>
-        <button
-          type="button"
-          class="ml-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
-          :disabled="isSaving"
-          @click="saveEdit"
-        >
-          {{ t('admin.save') }}
-        </button>
+        <div class="swiss-glass-footer">
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+            @click="editVisible = false"
+          >
+            {{ t('admin.cancel') }}
+          </button>
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+            :disabled="isSaving"
+            @click="saveEdit"
+          >
+            {{ t('admin.save') }}
+          </button>
+        </div>
       </template>
-    </el-dialog>
+    </SwissGlassDialog>
   </div>
 </template>

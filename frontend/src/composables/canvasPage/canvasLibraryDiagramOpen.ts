@@ -2,7 +2,7 @@
  * Shared decision + confirm for opening a library diagram on the canvas
  * (MindMate «Edit in canvas», Kitty open_library_diagram).
  */
-import { loadElMessageBox } from '@/composables/core/notifications'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 
 export type CanvasLibraryOpenDecision = 'noop' | 'confirm' | 'navigate'
 
@@ -47,8 +47,7 @@ export async function confirmCanvasLibraryDiagramOpen(options: {
   cancelButtonText: string
 }): Promise<boolean> {
   try {
-    const ElMessageBox = await loadElMessageBox()
-    await ElMessageBox.confirm(options.message, options.title, {
+    await swissGlassConfirm(options.message, options.title, {
       confirmButtonText: options.confirmButtonText,
       cancelButtonText: options.cancelButtonText,
       type: 'warning',

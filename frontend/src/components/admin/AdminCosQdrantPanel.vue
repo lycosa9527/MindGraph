@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { ElMessageBox } from 'element-plus'
-
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { useInstallAdminCosQdrant, usePublishAdminCosQdrant } from '@/composables/queries'
 
 const props = defineProps<{
@@ -23,7 +22,7 @@ const isPublisher = computed(() => props.syncRole === 'publisher')
 const isConsumer = computed(() => props.syncRole === 'consumer')
 
 async function onPublish() {
-  await ElMessageBox.confirm(t('admin.cos.confirmQdrantPublish'), t('admin.cos.publishQdrant'), {
+  await swissGlassConfirm(t('admin.cos.confirmQdrantPublish'), t('admin.cos.publishQdrant'), {
     type: 'warning',
   })
   try {
@@ -36,7 +35,7 @@ async function onPublish() {
 }
 
 async function onInstall() {
-  await ElMessageBox.confirm(t('admin.cos.confirmQdrantInstall'), t('admin.cos.installQdrant'), {
+  await swissGlassConfirm(t('admin.cos.confirmQdrantInstall'), t('admin.cos.installQdrant'), {
     type: 'warning',
   })
   try {
@@ -54,7 +53,10 @@ async function onInstall() {
 </script>
 
 <template>
-  <div v-loading="loading" class="admin-cos-qdrant">
+  <div
+    v-loading="loading"
+    class="admin-cos-qdrant"
+  >
     <div class="admin-cos-kpi-row">
       <AdminSwissKpiCard
         :title="t('admin.cos.targetVersion')"

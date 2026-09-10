@@ -10,6 +10,7 @@ import {
   useDiagramSpecForSave,
 } from '@/composables/editor/useDiagramSpecForSave'
 import { useDiagramStore } from '@/stores/diagram'
+import { useDiagramTranslateUiStore } from '@/stores/diagramTranslateUi'
 import { useLLMResultsStore } from '@/stores/llmResults'
 
 function memoryStorage(): Storage {
@@ -77,5 +78,40 @@ describe('diagram spec for save vs persist', () => {
     const getDiagramSpecForPersist = useDiagramSpecForPersist()
     getDiagramSpecForPersist()
     expect(llmResultsStore.results.deepseek?.timestamp).toBeGreaterThan(1000)
+  })
+
+  it('persists the original snapshot while the canvas shows a translate preview', () => {
+    const diagramStore = useDiagramStore()
+    const translateUi = useDiagramTranslateUiStore()
+    const llmResultsStore = useLLMResultsStore()
+
+    const original = {
+      topic: '光合作用',
+      children: [{ id: 'a', text: '叶绿体' }],
+    }
+    diagramStore.loadFromSpec(
+      { topic: 'Photosynthesis', children: [{ id: 'a', text: 'Chloroplast' }] },
+      'mindmap'
+    )
+    translateUi.armPending('en', original)
+    translateUi.setViewingTranslated(true)
+
+    llmResultsStore.expectedDiagramType = 'mindmap'
+    llmResultsStore.selectedModel = 'qwen'
+    llmResultsStore.results = {
+      qwen: {
+        success: true,
+        spec: { topic: 'qwen-should-not-be-stamped' },
+        diagramType: 'mindmap',
+        elapsed: 1,
+        timestamp: 1000,
+      },
+    }
+
+    const getDiagramSpecForPersist = useDiagramSpecForPersist()
+    const persisted = getDiagramSpecForPersist()
+    expect(persisted?.topic).toBe('光合作用')
+    expect(llmResultsStore.results.qwen?.timestamp).toBe(1000)
+    expect(llmResultsStore.results.qwen?.spec).toEqual({ topic: 'qwen-should-not-be-stamped' })
   })
 })

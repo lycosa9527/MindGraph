@@ -2,26 +2,35 @@
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 
 import { CirclePlus } from '@element-plus/icons-vue'
 
-import { MoreVertical, School, Users } from '@lucide/vue'
+import {
+  BookOpen,
+  Keyboard,
+  MessageSquarePlus,
+  MoreVertical,
+  School,
+  User,
+  Users,
+} from '@lucide/vue'
 
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
+import OrgContactsPanel from '@/components/social/OrgContactsPanel.vue'
 import {
   ChannelBrowser,
   ChannelMemberList,
   ChatComposeBox,
   ChatMessageList,
   TopicCard,
-  UserCardPopover,
 } from '@/components/workshop-chat'
 import ChannelActionsPopover from '@/components/workshop-chat/ChannelActionsPopover.vue'
 import TeachingGroupLanding from '@/components/workshop-chat/TeachingGroupLanding.vue'
 import WorkshopGearMenu from '@/components/workshop-chat/WorkshopGearMenu.vue'
 import WorkshopInboxWelcome from '@/components/workshop-chat/WorkshopInboxWelcome.vue'
 import WorkshopPersonalMenu from '@/components/workshop-chat/WorkshopPersonalMenu.vue'
-import OrgContactsPanel from '@/components/social/OrgContactsPanel.vue'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
 import { useWorkshopChatComposable } from '@/composables/workshop/useWorkshopChat'
@@ -136,16 +145,6 @@ const composeDraftKey = computed(() => {
   return undefined
 })
 
-const settingsPanelTitle = computed(() => {
-  if (workshopSettingsPanel.value === 'notifications') {
-    return t('workshop.notifications')
-  }
-  if (workshopSettingsPanel.value === 'preferences') {
-    return t('workshop.preferences')
-  }
-  return ''
-})
-
 const workshopSettingsDialogVisible = computed({
   get: () => workshopSettingsPanel.value !== null,
   set: (v: boolean) => {
@@ -252,14 +251,7 @@ function onGlobalKeydown(ev: KeyboardEvent): void {
 }
 
 type CenterView =
-  | 'empty'
-  | 'inbox'
-  | 'teaching-group'
-  | 'channel'
-  | 'channel-stream'
-  | 'topic'
-  | 'dm'
-  | 'browse'
+  'empty' | 'inbox' | 'teaching-group' | 'channel' | 'channel-stream' | 'topic' | 'dm' | 'browse'
 
 const centerView = computed<CenterView>(() => {
   if (store.workshopHomeViewActive) return 'inbox'
@@ -846,7 +838,7 @@ async function handleDeleteMessage(messageId: number): Promise<void> {
     return
   }
   try {
-    await ElMessageBox.confirm(
+    await swissGlassConfirm(
       t('workshop.deleteMessageConfirm'),
       t('workshop.deleteMessageConfirm'),
       {
@@ -1681,10 +1673,13 @@ function handleTopicMove(topicId: number): void {
     </div>
 
     <!-- New Conversation Dialog -->
-    <el-dialog
+    <SwissGlassDialog
       v-model="showNewTopicDialog"
-      :title="t('workshop.newConversation')"
-      width="480px"
+      :ribbon="t('swissGlass.hero.newTopic.ribbon')"
+      :title="t('swissGlass.hero.newTopic.title')"
+      :line1="t('swissGlass.hero.newTopic.line1')"
+      :icon="MessageSquarePlus"
+      width="min(480px, 92vw)"
       :close-on-click-modal="false"
     >
       <el-form
@@ -1709,17 +1704,25 @@ function handleTopicMove(topicId: number): void {
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showNewTopicDialog = false">{{ t('common.cancel') }}</el-button>
-        <el-button
-          type="primary"
-          :loading="creatingTopic"
-          :disabled="!newTopicTitle.trim()"
-          @click="handleCreateTopic"
-        >
-          {{ t('workshop.create') }}
-        </el-button>
+        <div class="swiss-glass-footer">
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+            @click="showNewTopicDialog = false"
+          >
+            {{ t('common.cancel') }}
+          </button>
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+            :disabled="creatingTopic || !newTopicTitle.trim()"
+            @click="handleCreateTopic"
+          >
+            {{ t('workshop.create') }}
+          </button>
+        </div>
       </template>
-    </el-dialog>
+    </SwissGlassDialog>
 
     <!-- Channel Settings Dialog -->
     <ChannelSettingsDialog
@@ -1755,11 +1758,13 @@ function handleTopicMove(topicId: number): void {
       @update:visible="showTopicEdit = $event"
     />
 
-    <el-dialog
+    <SwissGlassDialog
       v-model="workshopSettingsDialogVisible"
-      :title="settingsPanelTitle"
-      width="420px"
-      append-to-body
+      :ribbon="t('swissGlass.hero.workshopSettings.ribbon')"
+      :title="t('swissGlass.hero.workshopSettings.title')"
+      :line1="t('swissGlass.hero.workshopSettings.line1')"
+      :icon="BookOpen"
+      width="min(420px, 92vw)"
     >
       <p
         v-if="workshopSettingsPanel === 'notifications'"
@@ -1773,13 +1778,15 @@ function handleTopicMove(topicId: number): void {
       >
         {{ t('workshop.preferencesSettingsBlurb') }}
       </p>
-    </el-dialog>
+    </SwissGlassDialog>
 
-    <el-dialog
+    <SwissGlassDialog
       v-model="showShortcutsHelp"
-      :title="t('workshop.keyboardShortcutsTitle')"
-      width="400px"
-      append-to-body
+      :ribbon="t('swissGlass.hero.shortcuts.ribbon')"
+      :title="t('swissGlass.hero.shortcuts.title')"
+      :line1="t('swissGlass.hero.shortcuts.line1')"
+      :icon="Keyboard"
+      width="min(400px, 92vw)"
     >
       <ul class="text-sm text-stone-600 space-y-2 list-disc pl-4">
         <li>{{ t('workshop.shortcutHelp') }}</li>
@@ -1787,13 +1794,15 @@ function handleTopicMove(topicId: number): void {
         <li>{{ t('workshop.phase2RoadmapGroupsAlerts') }}</li>
         <li>{{ t('workshop.phase2RoadmapPlatform') }}</li>
       </ul>
-    </el-dialog>
+    </SwissGlassDialog>
 
-    <el-dialog
+    <SwissGlassDialog
       v-model="contactProfileDialogVisible"
-      :title="contactProfileMember?.name || ''"
-      width="360px"
-      append-to-body
+      :ribbon="t('swissGlass.hero.contactProfile.ribbon')"
+      :title="t('swissGlass.hero.contactProfile.title')"
+      :line1="t('swissGlass.hero.contactProfile.line1')"
+      :icon="User"
+      width="min(360px, 92vw)"
     >
       <div
         v-if="contactProfileMember"
@@ -1807,7 +1816,7 @@ function handleTopicMove(topicId: number): void {
           {{ t('workshop.readOnlyProfileBlurb') }}
         </p>
       </div>
-    </el-dialog>
+    </SwissGlassDialog>
 
     <AccountInfoModal
       v-if="showAccountModal"

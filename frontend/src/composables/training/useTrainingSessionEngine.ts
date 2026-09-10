@@ -4,9 +4,9 @@
 import { onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { loadElMessageBox } from '@/composables/core/notifications'
-import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage, useNotifications } from '@/composables'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
+import { eventBus } from '@/composables/core/useEventBus'
 import {
   applyTrainingNavigate,
   trainingSteerMode,
@@ -14,8 +14,8 @@ import {
 import { applyTrainingUiTarget } from '@/composables/training/applyTrainingUiTarget'
 import { useAuthStore } from '@/stores/auth'
 import { useTrainingStore } from '@/stores/training'
-import { shouldHoldTrainingHostOnMobile } from '@/utils/trainingClient'
 import '@/styles/training-stop-confirm.css'
+import { shouldHoldTrainingHostOnMobile } from '@/utils/trainingClient'
 
 const OWNER = 'TrainingSessionEngine'
 
@@ -137,72 +137,116 @@ export function useTrainingSessionEngine(): void {
     await steerThenFollow(() => training.playCourse(courseId))
   }
 
-  eventBus.onWithOwner('training:start_requested', () => {
-    void onStart()
-  }, OWNER)
-  eventBus.onWithOwner('training:play_requested', (payload) => {
-    void onPlay(payload.courseId)
-  }, OWNER)
-  eventBus.onWithOwner('training:pause_requested', () => {
-    if (training.busy) return
-    void steer(() => training.pauseSession())
-  }, OWNER)
-  eventBus.onWithOwner('training:resume_requested', () => {
-    if (training.busy) return
-    void steerThenFollow(() => training.resumeSession())
-  }, OWNER)
-  eventBus.onWithOwner('training:end_requested', (payload) => {
-    if (stopConfirmOpen || training.busy) return
-    if (payload?.confirmed) {
-      void steer(() => training.endSession())
-      return
-    }
-    stopConfirmOpen = true
-    void loadElMessageBox()
-      .then((ElMessageBox) =>
-        ElMessageBox.confirm(t('training.confirmStop'), t('training.stop'), {
-          type: 'warning',
-          customClass: 'training-stop-confirm',
-        })
-      )
-      .then(() => steer(() => training.endSession()))
-      .catch(() => undefined)
-      .finally(() => {
-        stopConfirmOpen = false
+  eventBus.onWithOwner(
+    'training:start_requested',
+    () => {
+      void onStart()
+    },
+    OWNER
+  )
+  eventBus.onWithOwner(
+    'training:play_requested',
+    (payload) => {
+      void onPlay(payload.courseId)
+    },
+    OWNER
+  )
+  eventBus.onWithOwner(
+    'training:pause_requested',
+    () => {
+      if (training.busy) return
+      void steer(() => training.pauseSession())
+    },
+    OWNER
+  )
+  eventBus.onWithOwner(
+    'training:resume_requested',
+    () => {
+      if (training.busy) return
+      void steerThenFollow(() => training.resumeSession())
+    },
+    OWNER
+  )
+  eventBus.onWithOwner(
+    'training:end_requested',
+    (payload) => {
+      if (stopConfirmOpen || training.busy) return
+      if (payload?.confirmed) {
+        void steer(() => training.endSession())
+        return
+      }
+      stopConfirmOpen = true
+      void swissGlassConfirm(t('training.confirmStop'), t('training.stop'), {
+        type: 'warning',
       })
-  }, OWNER)
-  eventBus.onWithOwner('training:takeover_requested', () => {
-    if (training.busy) return
-    void steerThenFollow(() => training.takeoverSession())
-  }, OWNER)
-  eventBus.onWithOwner('training:step_requested', (payload) => {
-    void steerThenFollow(() => training.stepSession(payload.delta))
-  }, OWNER)
-  eventBus.onWithOwner('training:free_requested', (payload) => {
-    const currentlyFree = trainingSteerMode(training.snapshot) === 'free'
-    const next = payload.free ?? !currentlyFree
-    if (next === currentlyFree) return
-    if (next) {
-      void steer(() => training.freeSession(true))
-      return
-    }
-    void steerThenFollow(() => training.freeSession(false))
-  }, OWNER)
-  eventBus.onWithOwner('training:select_org_requested', (payload) => {
-    void training.selectOrg(payload.orgId).then((code) => {
-      if (code === 'locked') notify.warning(t('training.hostedElsewhere'))
-    })
-  }, OWNER)
-  eventBus.onWithOwner('training:search_orgs_requested', (payload) => {
-    void training.loadOrgs(payload.query)
-  }, OWNER)
-  eventBus.onWithOwner('training:chip_selected', (payload) => {
-    training.setPendingChip(payload.option)
-  }, OWNER)
-  eventBus.onWithOwner('training:roster_invalidate', () => {
-    if (!authStore.isPlatformLevel || !training.isActive) return
-    void training.fetchRoster()
-  }, OWNER)
+        .then(() => steer(() => training.endSession()))
+        .catch(() => undefined)
+        .finally(() => {
+          stopConfirmOpen = false
+        })
+    },
+    OWNER
+  )
+  eventBus.onWithOwner(
+    'training:takeover_requested',
+    () => {
+      if (training.busy) return
+      void steerThenFollow(() => training.takeoverSession())
+    },
+    OWNER
+  )
+  eventBus.onWithOwner(
+    'training:step_requested',
+    (payload) => {
+      void steerThenFollow(() => training.stepSession(payload.delta))
+    },
+    OWNER
+  )
+  eventBus.onWithOwner(
+    'training:free_requested',
+    (payload) => {
+      const currentlyFree = trainingSteerMode(training.snapshot) === 'free'
+      const next = payload.free ?? !currentlyFree
+      if (next === currentlyFree) return
+      if (next) {
+        void steer(() => training.freeSession(true))
+        return
+      }
+      void steerThenFollow(() => training.freeSession(false))
+    },
+    OWNER
+  )
+  eventBus.onWithOwner(
+    'training:select_org_requested',
+    (payload) => {
+      void training.selectOrg(payload.orgId).then((code) => {
+        if (code === 'locked') notify.warning(t('training.hostedElsewhere'))
+      })
+    },
+    OWNER
+  )
+  eventBus.onWithOwner(
+    'training:search_orgs_requested',
+    (payload) => {
+      void training.loadOrgs(payload.query)
+    },
+    OWNER
+  )
+  eventBus.onWithOwner(
+    'training:chip_selected',
+    (payload) => {
+      training.setPendingChip(payload.option)
+    },
+    OWNER
+  )
+  eventBus.onWithOwner(
+    'training:roster_invalidate',
+    () => {
+      if (!authStore.isPlatformLevel || !training.isActive) return
+      void training.fetchRoster()
+    },
+    OWNER
+  )
 
   onUnmounted(() => {
     eventBus.removeAllListenersForOwner(OWNER)

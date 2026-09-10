@@ -4,11 +4,11 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { ElTable } from 'element-plus'
 
 import { Award, RefreshCw, Search, Trash2 } from '@lucide/vue'
-import { ElMessageBox } from 'element-plus'
 
 import ShowcaseDetailModal from '@/components/showcase/ShowcaseDetailModal.vue'
 import ShowcaseFilterDropdown from '@/components/showcase/ShowcaseFilterDropdown.vue'
 import { type ShowcaseCaseType } from '@/components/showcase/showcaseShared'
+import { useLanguage, useNotifications } from '@/composables'
 import {
   resolveShowcaseMediaStatus,
   showcaseCanRefreshCover,
@@ -18,9 +18,9 @@ import {
   showcaseMediaStatusLabelKey,
 } from '@/composables/admin/showcaseMediaStatus'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
-import { useLanguage, useNotifications } from '@/composables'
-import { useShowcaseMeta } from '@/composables/showcase/useShowcaseMeta'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useShowcaseMeta } from '@/composables/showcase/useShowcaseMeta'
 import {
   type ShowcasePost,
   deleteAdminShowcasePost,
@@ -235,14 +235,13 @@ function onDetailDeleted(): void {
 async function confirmDeletePost(post: ShowcasePost): Promise<void> {
   if (!canDeletePost(post)) return
   try {
-    await ElMessageBox.confirm(
+    await swissGlassConfirm(
       String(t('admin.showcase.published.deleteConfirm', { title: post.title })),
       String(t('admin.showcase.published.deleteTitle')),
       {
         confirmButtonText: String(t('admin.delete')),
         cancelButtonText: String(t('admin.cancel')),
         type: 'warning',
-        confirmButtonClass: 'el-button--danger',
       }
     )
   } catch {
@@ -331,7 +330,9 @@ onMounted(() => {
         {{ t('showcase.expertRecommend') }}
       </button>
       <div class="relative min-w-55 flex-1 sm:max-w-xs">
-        <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <Search
+          class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+        />
         <input
           v-model="searchQuery"
           type="search"
@@ -373,7 +374,9 @@ onMounted(() => {
         />
       </div>
       <div>
-        <label class="mb-1 block text-xs text-gray-500">{{ t('admin.showcase.colPublishSource') }}</label>
+        <label class="mb-1 block text-xs text-gray-500">{{
+          t('admin.showcase.colPublishSource')
+        }}</label>
         <ShowcaseFilterDropdown
           v-model="filterPublishSource"
           block
@@ -556,7 +559,10 @@ onMounted(() => {
               ]"
               @click.stop="toggleRecommend(row as ShowcasePost)"
             >
-              <Award class="h-4 w-4" :class="row.is_expert_recommended ? 'fill-current' : ''" />
+              <Award
+                class="h-4 w-4"
+                :class="row.is_expert_recommended ? 'fill-current' : ''"
+              />
             </button>
             <button
               v-if="canDeletePost(row as ShowcasePost)"

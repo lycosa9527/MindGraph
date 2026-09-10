@@ -20,13 +20,13 @@ import {
   Sparkles,
   Star,
   Users,
-  X,
 } from '@lucide/vue'
 
+import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage } from '@/composables'
 import { SHOW_PERSONAL_SUBSCRIPTION_TAB } from '@/composables/auth/thinkingCoinsUpgradeUi'
-import { formatThinkingCoinBalance, useThinkingCoins } from '@/composables/auth/useThinkingCoins'
 import { patchEarnTasksFromMutation } from '@/composables/auth/useThinkingCoinSync'
+import { formatThinkingCoinBalance, useThinkingCoins } from '@/composables/auth/useThinkingCoins'
 import { eventBus } from '@/composables/core/useEventBus'
 import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
 
@@ -138,9 +138,7 @@ const isVisible = computed({
   set: (value) => emit('update:visible', value),
 })
 
-const balanceText = computed(() =>
-  formatThinkingCoinBalance(wallet.value?.balance ?? 0)
-)
+const balanceText = computed(() => formatThinkingCoinBalance(wallet.value?.balance ?? 0))
 
 const dailyBalance = computed(() => wallet.value?.daily_balance ?? 0)
 
@@ -271,307 +269,249 @@ function onUpgradeClick() {
 </script>
 
 <template>
-  <Teleport to="body">
+  <SwissGlassCard
+    v-model="isVisible"
+    :ribbon="t('swissGlass.hero.coins.ribbon')"
+    :title="t('swissGlass.hero.coins.title')"
+    :line1="t('swissGlass.hero.coins.line1')"
+    :icon="Coins"
+    card-class="swiss-glass-card--wide"
+    @close="closeModal"
+  >
     <div
-      v-if="isVisible"
-      class="fixed inset-0 z-2000 flex items-center justify-center p-4"
+      v-if="loading && !wallet"
+      class="p-10 text-center text-sm text-stone-500"
     >
-      <div
-        class="absolute inset-0 bg-stone-900/45 backdrop-blur-[2px]"
-        @click="closeModal"
-      />
+      …
+    </div>
 
-      <div
-        class="tc-modal relative z-10 flex w-full max-w-2xl max-h-[90vh] flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-2xl"
-        role="dialog"
-        aria-modal="true"
-        :aria-label="t('thinkingCoins.title')"
-      >
-        <div class="tc-modal-stripe shrink-0" aria-hidden="true" />
-
-        <div class="tc-modal-header shrink-0 flex items-center justify-between border-b border-stone-100 px-6 py-4">
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="tc-modal-icon-wrap shrink-0">
-              <Coins class="h-5 w-5 text-amber-700" />
+    <template v-else-if="wallet?.eligible">
+      <section class="border-b border-stone-100 px-6 py-5">
+        <div class="tc-balance-hero rounded-xl border border-stone-200 bg-stone-50 p-5">
+          <div class="flex items-end justify-between gap-4">
+            <div class="min-w-0">
+              <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
+                {{ t('thinkingCoins.balanceUnit') }}
+              </p>
+              <p class="mt-1 text-4xl font-bold tabular-nums tracking-tight text-stone-900">
+                {{ balanceText }}
+              </p>
+              <p class="mt-2 text-xs text-stone-500">
+                {{ t('thinkingCoins.dailyExpiresHint') }}
+              </p>
+              <p
+                v-if="dailyBalance > 0"
+                class="mt-1 text-xs tabular-nums text-amber-700"
+              >
+                {{ t('thinkingCoins.dailyBalanceRemaining', { n: dailyBalance }) }}
+              </p>
             </div>
-            <h2 class="text-base font-semibold tracking-tight text-stone-900 truncate">
-              {{ t('thinkingCoins.title') }}
-            </h2>
+            <button
+              type="button"
+              class="tc-upgrade-btn shrink-0"
+              @click="onUpgradeClick"
+            >
+              <Star class="h-3.5 w-3.5 fill-current" />
+              {{ t('thinkingCoins.upgrade') }}
+            </button>
           </div>
+        </div>
+
+        <h3 class="mt-5 mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
+          {{ t('thinkingCoins.earnMore') }}
+        </h3>
+
+        <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           <button
+            v-for="(task, index) in earnTasks"
+            :key="task.id"
             type="button"
-            class="rounded-lg p-1.5 text-stone-400 transition hover:bg-stone-100 hover:text-stone-700"
-            :aria-label="t('common.close')"
-            @click="closeModal"
+            class="tc-task-card flex items-center gap-3 rounded-xl border p-3 text-left transition"
+            :class="[
+              taskTheme(index).card,
+              taskIsActionable(task)
+                ? 'hover:-translate-y-px hover:shadow-md cursor-pointer'
+                : 'opacity-90 cursor-default',
+            ]"
+            :disabled="!taskIsActionable(task)"
+            @click="taskIsActionable(task) && handleTaskClick(task)"
           >
-            <X class="h-5 w-5" />
+            <div
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+              :class="taskTheme(index).iconWrap"
+            >
+              <component
+                :is="taskIcon(task.slug)"
+                class="h-5 w-5"
+                :class="taskTheme(index).icon"
+              />
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="truncate text-sm font-semibold text-stone-800">
+                {{ taskTitle(task) }}
+              </div>
+              <div class="truncate text-xs text-stone-500">
+                {{ taskSubtitle(task) }}
+              </div>
+              <div
+                v-if="taskStatusHint(task)"
+                class="mt-0.5 text-xs text-stone-400"
+              >
+                {{ taskStatusHint(task) }}
+              </div>
+            </div>
+            <div class="flex shrink-0 items-center gap-1">
+              <Check
+                v-if="task.completed_today"
+                class="h-4 w-4 text-emerald-600"
+              />
+              <span
+                class="text-sm font-bold tabular-nums"
+                :class="taskTheme(index).reward"
+              >
+                +{{ task.reward_amount }}
+              </span>
+            </div>
           </button>
         </div>
 
-        <div class="min-h-0 flex-1 overflow-y-auto">
+        <button
+          type="button"
+          class="mt-4 flex w-full items-center gap-2 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 transition hover:border-stone-300 hover:bg-stone-50 hover:text-stone-800"
+          @click="ledgerOpen = !ledgerOpen"
+        >
+          <component
+            :is="ledgerOpen ? ChevronDown : ChevronRight"
+            class="h-4 w-4 shrink-0 text-stone-400"
+          />
+          <span>{{ t('thinkingCoins.ledgerTitle') }}</span>
+        </button>
+
+        <div
+          v-if="ledgerOpen"
+          class="mt-2 overflow-hidden rounded-xl border border-stone-200 bg-white"
+        >
           <div
-            v-if="loading && !wallet"
-            class="p-10 text-center text-sm text-stone-500"
+            v-if="!ledger?.items.length"
+            class="py-8 text-center text-sm text-stone-400"
           >
-            …
+            {{ t('thinkingCoins.ledgerEmpty') }}
           </div>
+          <ul
+            v-else
+            class="divide-y divide-stone-100"
+          >
+            <li
+              v-for="item in ledger.items"
+              :key="item.id"
+              class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm"
+            >
+              <span class="truncate text-stone-600">{{ ledgerItemLabel(item) }}</span>
+              <span
+                class="shrink-0 font-semibold tabular-nums"
+                :class="item.delta >= 0 ? 'text-emerald-600' : 'text-stone-800'"
+              >
+                {{ item.delta >= 0 ? '+' : '' }}{{ item.delta }}
+              </span>
+            </li>
+          </ul>
+          <button
+            v-if="ledgerHasMore"
+            type="button"
+            class="w-full border-t border-stone-100 py-2.5 text-xs font-medium text-stone-600 transition hover:bg-stone-50 disabled:opacity-50"
+            :disabled="ledgerLoading"
+            @click="loadMoreLedger"
+          >
+            {{
+              ledgerLoading ? t('thinkingCoins.ledgerLoading') : t('thinkingCoins.ledgerLoadMore')
+            }}
+          </button>
+        </div>
+      </section>
 
-          <template v-else-if="wallet?.eligible">
-            <section class="border-b border-stone-100 px-6 py-5">
-              <div class="tc-balance-hero rounded-xl border border-stone-200 bg-stone-50 p-5">
-                <div class="flex items-end justify-between gap-4">
-                  <div class="min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
-                      {{ t('thinkingCoins.balanceUnit') }}
-                    </p>
-                    <p class="mt-1 text-4xl font-bold tabular-nums tracking-tight text-stone-900">
-                      {{ balanceText }}
-                    </p>
-                    <p class="mt-2 text-xs text-stone-500">
-                      {{ t('thinkingCoins.dailyExpiresHint') }}
-                    </p>
-                    <p
-                      v-if="dailyBalance > 0"
-                      class="mt-1 text-xs tabular-nums text-amber-700"
-                    >
-                      {{ t('thinkingCoins.dailyBalanceRemaining', { n: dailyBalance }) }}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    class="tc-upgrade-btn shrink-0"
-                    @click="onUpgradeClick"
-                  >
-                    <Star class="h-3.5 w-3.5 fill-current" />
-                    {{ t('thinkingCoins.upgrade') }}
-                  </button>
-                </div>
+      <section
+        ref="subscriptionSectionRef"
+        class="px-6 py-5"
+      >
+        <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
+          {{ t('thinkingCoins.subscriptionRef') }}
+        </h3>
+
+        <div
+          v-if="SHOW_PERSONAL_SUBSCRIPTION_TAB"
+          class="mb-4 inline-flex rounded-full border border-stone-200 bg-stone-50 p-0.5"
+        >
+          <button
+            type="button"
+            class="rounded-full px-4 py-1.5 text-sm font-medium transition"
+            :class="
+              !subscriptionTab
+                ? 'bg-stone-900 text-white shadow-sm'
+                : 'text-stone-600 hover:text-stone-900'
+            "
+            @click="subscriptionTab = false"
+          >
+            {{ t('thinkingCoins.personalTab') }}
+          </button>
+          <button
+            type="button"
+            class="rounded-full px-4 py-1.5 text-sm font-medium transition"
+            :class="
+              subscriptionTab
+                ? 'bg-stone-900 text-white shadow-sm'
+                : 'text-stone-600 hover:text-stone-900'
+            "
+            @click="subscriptionTab = true"
+          >
+            {{ t('thinkingCoins.schoolTab') }}
+          </button>
+        </div>
+
+        <div
+          v-if="SHOW_PERSONAL_SUBSCRIPTION_TAB && !subscriptionTab"
+          class="grid grid-cols-1 gap-3 sm:grid-cols-2"
+        >
+          <div
+            v-for="tier in PERSONAL_TIERS"
+            :key="tier"
+            class="tc-tier-card overflow-hidden rounded-xl border bg-white"
+            :class="tierTheme(tier).ring"
+          >
+            <div
+              class="tc-tier-stripe h-1.5"
+              :class="tierTheme(tier).stripe"
+            />
+            <div class="p-4">
+              <div class="mb-2 text-sm font-semibold text-stone-800">
+                {{ tierLabel(tier) }}
               </div>
-
-              <h3 class="mt-5 mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
-                {{ t('thinkingCoins.earnMore') }}
-              </h3>
-
-              <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                <button
-                  v-for="(task, index) in earnTasks"
-                  :key="task.id"
-                  type="button"
-                  class="tc-task-card flex items-center gap-3 rounded-xl border p-3 text-left transition"
-                  :class="[
-                    taskTheme(index).card,
-                    taskIsActionable(task)
-                      ? 'hover:-translate-y-px hover:shadow-md cursor-pointer'
-                      : 'opacity-90 cursor-default',
-                  ]"
-                  :disabled="!taskIsActionable(task)"
-                  @click="taskIsActionable(task) && handleTaskClick(task)"
-                >
-                  <div
-                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
-                    :class="taskTheme(index).iconWrap"
-                  >
-                    <component
-                      :is="taskIcon(task.slug)"
-                      class="h-5 w-5"
-                      :class="taskTheme(index).icon"
-                    />
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <div class="truncate text-sm font-semibold text-stone-800">
-                      {{ taskTitle(task) }}
-                    </div>
-                    <div class="truncate text-xs text-stone-500">
-                      {{ taskSubtitle(task) }}
-                    </div>
-                    <div
-                      v-if="taskStatusHint(task)"
-                      class="mt-0.5 text-xs text-stone-400"
-                    >
-                      {{ taskStatusHint(task) }}
-                    </div>
-                  </div>
-                  <div class="flex shrink-0 items-center gap-1">
-                    <Check
-                      v-if="task.completed_today"
-                      class="h-4 w-4 text-emerald-600"
-                    />
-                    <span
-                      class="text-sm font-bold tabular-nums"
-                      :class="taskTheme(index).reward"
-                    >
-                      +{{ task.reward_amount }}
-                    </span>
-                  </div>
-                </button>
+              <div class="mb-2 text-xl font-bold text-stone-400 blur-[6px] select-none">¥ ··</div>
+              <div class="mb-3 text-xs text-stone-500">
+                {{ t('thinkingCoins.pricePending') }}
               </div>
-
               <button
                 type="button"
-                class="mt-4 flex w-full items-center gap-2 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 transition hover:border-stone-300 hover:bg-stone-50 hover:text-stone-800"
-                @click="ledgerOpen = !ledgerOpen"
+                disabled
+                class="w-full cursor-not-allowed rounded-lg border border-stone-200 py-2 text-xs font-medium text-stone-400"
               >
-                <component
-                  :is="ledgerOpen ? ChevronDown : ChevronRight"
-                  class="h-4 w-4 shrink-0 text-stone-400"
-                />
-                <span>{{ t('thinkingCoins.ledgerTitle') }}</span>
+                {{ t('thinkingCoins.comingSoon') }}
               </button>
-
-              <div
-                v-if="ledgerOpen"
-                class="mt-2 overflow-hidden rounded-xl border border-stone-200 bg-white"
-              >
-                <div
-                  v-if="!ledger?.items.length"
-                  class="py-8 text-center text-sm text-stone-400"
-                >
-                  {{ t('thinkingCoins.ledgerEmpty') }}
-                </div>
-                <ul
-                  v-else
-                  class="divide-y divide-stone-100"
-                >
-                  <li
-                    v-for="item in ledger.items"
-                    :key="item.id"
-                    class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm"
-                  >
-                    <span class="truncate text-stone-600">{{ ledgerItemLabel(item) }}</span>
-                    <span
-                      class="shrink-0 font-semibold tabular-nums"
-                      :class="item.delta >= 0 ? 'text-emerald-600' : 'text-stone-800'"
-                    >
-                      {{ item.delta >= 0 ? '+' : '' }}{{ item.delta }}
-                    </span>
-                  </li>
-                </ul>
-                <button
-                  v-if="ledgerHasMore"
-                  type="button"
-                  class="w-full border-t border-stone-100 py-2.5 text-xs font-medium text-stone-600 transition hover:bg-stone-50 disabled:opacity-50"
-                  :disabled="ledgerLoading"
-                  @click="loadMoreLedger"
-                >
-                  {{ ledgerLoading ? t('thinkingCoins.ledgerLoading') : t('thinkingCoins.ledgerLoadMore') }}
-                </button>
-              </div>
-            </section>
-
-            <section
-              ref="subscriptionSectionRef"
-              class="px-6 py-5"
-            >
-              <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
-                {{ t('thinkingCoins.subscriptionRef') }}
-              </h3>
-
-              <div
-                v-if="SHOW_PERSONAL_SUBSCRIPTION_TAB"
-                class="mb-4 inline-flex rounded-full border border-stone-200 bg-stone-50 p-0.5"
-              >
-                <button
-                  type="button"
-                  class="rounded-full px-4 py-1.5 text-sm font-medium transition"
-                  :class="
-                    !subscriptionTab
-                      ? 'bg-stone-900 text-white shadow-sm'
-                      : 'text-stone-600 hover:text-stone-900'
-                  "
-                  @click="subscriptionTab = false"
-                >
-                  {{ t('thinkingCoins.personalTab') }}
-                </button>
-                <button
-                  type="button"
-                  class="rounded-full px-4 py-1.5 text-sm font-medium transition"
-                  :class="
-                    subscriptionTab
-                      ? 'bg-stone-900 text-white shadow-sm'
-                      : 'text-stone-600 hover:text-stone-900'
-                  "
-                  @click="subscriptionTab = true"
-                >
-                  {{ t('thinkingCoins.schoolTab') }}
-                </button>
-              </div>
-
-              <div
-                v-if="SHOW_PERSONAL_SUBSCRIPTION_TAB && !subscriptionTab"
-                class="grid grid-cols-1 gap-3 sm:grid-cols-2"
-              >
-                <div
-                  v-for="tier in PERSONAL_TIERS"
-                  :key="tier"
-                  class="tc-tier-card overflow-hidden rounded-xl border bg-white"
-                  :class="tierTheme(tier).ring"
-                >
-                  <div
-                    class="tc-tier-stripe h-1.5"
-                    :class="tierTheme(tier).stripe"
-                  />
-                  <div class="p-4">
-                    <div class="mb-2 text-sm font-semibold text-stone-800">
-                      {{ tierLabel(tier) }}
-                    </div>
-                    <div class="mb-2 text-xl font-bold text-stone-400 blur-[6px] select-none">
-                      ¥ ··
-                    </div>
-                    <div class="mb-3 text-xs text-stone-500">
-                      {{ t('thinkingCoins.pricePending') }}
-                    </div>
-                    <button
-                      type="button"
-                      disabled
-                      class="w-full cursor-not-allowed rounded-lg border border-stone-200 py-2 text-xs font-medium text-stone-400"
-                    >
-                      {{ t('thinkingCoins.comingSoon') }}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                v-else
-                class="rounded-xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm leading-relaxed text-sky-900"
-              >
-                {{ t('thinkingCoins.schoolInfo') }}
-              </div>
-            </section>
-          </template>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  </Teleport>
+
+        <div
+          v-else
+          class="rounded-xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm leading-relaxed text-sky-900"
+        >
+          {{ t('thinkingCoins.schoolInfo') }}
+        </div>
+      </section>
+    </template>
+  </SwissGlassCard>
 </template>
 
 <style scoped>
-.tc-modal-stripe {
-  height: 4px;
-  background: linear-gradient(
-    90deg,
-    #ef4444 0%,
-    #ef4444 25%,
-    #f59e0b 25%,
-    #f59e0b 50%,
-    #3b82f6 50%,
-    #3b82f6 75%,
-    #1c1917 75%,
-    #1c1917 100%
-  );
-}
-
-.tc-modal-icon-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 0.625rem;
-  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-  border: 1px solid #fde68a;
-}
-
 .tc-upgrade-btn {
   display: inline-flex;
   align-items: center;

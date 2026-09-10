@@ -20,6 +20,7 @@ import { Loading } from '@element-plus/icons-vue'
 import { Edit3, Lock, MessageCircle, MoreHorizontal, Pin, Trash2 } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import {
   useConversations,
   useDeleteConversation,
@@ -213,7 +214,7 @@ async function handleRenameConversation(convId: string): Promise<void> {
 // Handle delete conversation
 async function handleDeleteConversation(convId: string): Promise<void> {
   try {
-    await ElMessageBox.confirm(
+    await swissGlassConfirm(
       t('sidebar.chatHistory.deleteConfirm'),
       t('sidebar.chatHistory.deleteTitle'),
       {

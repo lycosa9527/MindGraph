@@ -12,6 +12,7 @@ import { useAuthStore, useDiagramStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
+import { getDiagramPersistBaseSpec } from '@/utils/diagramPersistBaseSpec'
 
 import { useCanvasPageCollabBus } from './useCanvasPageCollabBus'
 import { useCanvasPageCollabDiff } from './useCanvasPageCollabDiff'
@@ -99,7 +100,7 @@ export function useCanvasPageWorkshopCollab() {
       // so the owner's in-memory diagram is authoritative — push it to the server
       // instead of overwriting local state with the potentially stale seed.
       if (_workshopCtx.isDiagramOwner?.value && version === 1) {
-        const currentSpec = diagramStore.getSpecForSave()
+        const currentSpec = getDiagramPersistBaseSpec()
         if (currentSpec) {
           _workshopCtx.sendUpdate?.(currentSpec as Record<string, unknown>)
         }
@@ -129,7 +130,7 @@ export function useCanvasPageWorkshopCollab() {
     getDiagramData: () => diagramStore.data,
     // Full Pinia save spec (includes mindmap extras) when granular exceeds caps
     // or mindmap style/collapse metadata changes without a topology-only patch.
-    getSpecForWorkshopUpdate: () => diagramStore.getSpecForSave(),
+    getSpecForWorkshopUpdate: () => getDiagramPersistBaseSpec(),
     mergeGranularUpdate: (...args) => diagramStore.mergeGranularUpdate(...args),
     clearRedoStack: () => diagramStore.clearRedoStack(),
     updateNode: (id, patch) => diagramStore.updateNode(id, patch),
@@ -215,8 +216,8 @@ export function useCanvasPageWorkshopCollab() {
 
   /**
    * After loading a diagram, silently check if an active workshop session exists
-   * for it and auto-reconnect the host's WebSocket without requiring them to click
-   * the buddy icon again.  Guests joining via URL are handled by applyJoinWorkshopFromQuery.
+   * for it and auto-reconnect the host's WebSocket. Guests joining via URL are
+   * handled by applyJoinWorkshopFromQuery.
    */
   async function checkAndReconnectWorkshop(diagramId: string): Promise<void> {
     if (workshopCode.value) return // already connected
@@ -246,7 +247,7 @@ export function useCanvasPageWorkshopCollab() {
       workshopVisibility.value = vis
       eventBus.emit('workshop:code-changed', { code: data.code, visibility: vis })
     } catch {
-      // Non-fatal: host can still reconnect manually via buddy icon
+      // Non-fatal: host can still reopen the session from the title-row menu
     }
   }
 

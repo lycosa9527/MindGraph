@@ -5,13 +5,17 @@
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { ElAlert, ElButton, ElInput, ElTooltip } from 'element-plus'
+import { ElAlert, ElInput, ElTooltip } from 'element-plus'
 
-import { Check, CircleSlash, Equal, Loader2, Minus } from '@lucide/vue'
+import { Check, CircleHelp, CircleSlash, Equal, Loader2, Minus } from '@lucide/vue'
 
+import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
+import '@/components/canvas/aiGenerateGlass.css'
 import { useLanguage, useNotifications } from '@/composables'
 import { getLLMColor } from '@/config/llmModelColors'
 import { useUIStore } from '@/stores/ui'
+import '@/styles/mind-map-side-rail-panel.css'
+import '@/styles/swissGlassControls.css'
 import { authFetch } from '@/utils/api'
 
 const FOCUS_MODELS = ['qwen', 'deepseek', 'doubao'] as const
@@ -504,15 +508,20 @@ function confirm() {
 
 <template>
   <div
-    class="focus-modal rounded-2xl shadow-2xl border border-gray-200/90 dark:border-gray-600 bg-white dark:bg-gray-900 max-w-2xl w-full p-6 max-h-[min(90vh,720px)] overflow-y-auto"
+    class="focus-modal ai-gen-shell swiss-glass-card swiss-glass-card--wide max-w-2xl w-full max-h-[min(90vh,720px)] overflow-y-auto"
     role="dialog"
     aria-modal="true"
     :aria-label="labels.title"
   >
-    <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2 leading-snug">
-      {{ labels.title }}
-    </h2>
-    <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-4">
+    <AiGenerateGlassHero
+      compact
+      :ribbon="t('swissGlass.hero.focusQuestion.ribbon')"
+      :title="t('swissGlass.hero.focusQuestion.title')"
+      :line1="t('swissGlass.hero.focusQuestion.line1')"
+      :icon="CircleHelp"
+      :show-close="false"
+    />
+    <p class="px-[18px] text-xs text-[var(--swiss-muted,#78716c)] leading-relaxed mb-4">
       {{ labels.help }}
     </p>
 
@@ -521,7 +530,7 @@ function confirm() {
       type="textarea"
       :rows="4"
       :placeholder="t('focusQuestion.placeholder')"
-      class="mb-3"
+      class="mb-3 mx-[18px] w-auto"
       @update:model-value="onDraftInput"
     />
 
@@ -536,38 +545,39 @@ function confirm() {
     </ElAlert>
 
     <!-- One row: AI检验 left, 跳过 centered, 确认 right (skip uses overlay so it stays true center) -->
-    <div class="relative flex w-full items-center gap-2 mb-2 min-h-10">
+    <div class="relative flex w-full items-center gap-2 mb-2 min-h-10 px-[18px]">
       <div class="flex min-w-0 flex-1 items-center justify-start">
-        <ElButton
+        <button
           v-if="isAuthenticated"
-          type="primary"
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
           :disabled="!canTryValidate"
           @click="runValidation"
         >
           {{ labels.validate }}
-        </ElButton>
+        </button>
       </div>
       <div class="flex min-w-0 flex-1 items-center justify-end">
-        <ElButton
-          type="success"
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
           :disabled="!canConfirm"
           @click="confirm"
         >
           {{ labels.confirm }}
-        </ElButton>
+        </button>
       </div>
       <div
         v-if="isAuthenticated && !skipAi"
         class="pointer-events-none absolute inset-0 flex items-center justify-center"
       >
-        <ElButton
-          class="pointer-events-auto"
-          text
-          type="info"
+        <button
+          type="button"
+          class="pointer-events-auto mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="doSkipAi"
         >
           {{ labels.skip }}
-        </ElButton>
+        </button>
       </div>
     </div>
 

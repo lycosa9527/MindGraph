@@ -7,6 +7,9 @@ import { computed, ref, watch } from 'vue'
 
 import { ElCheckbox } from 'element-plus'
 
+import { Settings } from '@lucide/vue'
+
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -197,29 +200,16 @@ function onClose(): void {
 </script>
 
 <template>
-  <el-dialog
+  <SwissGlassDialog
     v-model="visible"
-    class="language-settings-dialog language-settings-swiss"
+    :ribbon="t('swissGlass.hero.settings.ribbon')"
+    :title="t('swissGlass.hero.settings.title')"
+    :line1="t('swissGlass.hero.settings.line1')"
+    :icon="Settings"
     width="min(480px, 92vw)"
-    destroy-on-close
+    dialog-class="language-settings-dialog language-settings-swiss"
     @close="onClose"
   >
-    <template #header>
-      <div class="language-settings-swiss__header">
-        <span
-          class="language-settings-swiss__glyph"
-          aria-hidden="true"
-          >◇</span
-        >
-        <span class="language-settings-swiss__title">{{ t('settings.language.title') }}</span>
-        <span
-          class="language-settings-swiss__divider"
-          aria-hidden="true"
-        />
-        <span class="language-settings-swiss__note">{{ t('settings.language.headerNote') }}</span>
-      </div>
-    </template>
-
     <div class="language-settings-swiss__stack">
       <ElCheckbox v-model="matchPromptToInterface">
         {{ t('settings.language.matchPrompt') }}
@@ -409,23 +399,24 @@ function onClose(): void {
     </div>
 
     <template #footer>
-      <div class="language-settings-swiss__footer">
-        <el-button
-          class="lang-settings-swiss-btn"
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="onClose"
         >
           {{ t('common.cancel') }}
-        </el-button>
-        <el-button
-          type="primary"
-          class="lang-settings-swiss-btn"
+        </button>
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
           @click="save"
         >
           {{ t('common.save') }}
-        </el-button>
+        </button>
       </div>
     </template>
-  </el-dialog>
+  </SwissGlassDialog>
 </template>
 
 <style scoped>

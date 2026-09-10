@@ -4,7 +4,7 @@
  */
 import { onBeforeUnmount, onMounted } from 'vue'
 
-import { loadElMessageBox } from '@/composables/core/notifications'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 
 type TranslateFn = (key: string, fallback?: string) => string
 
@@ -34,8 +34,7 @@ export function useQuickRegisterDialogClose(options: {
 
   async function requestClose(commit: () => void): Promise<void> {
     try {
-      const ElMessageBox = await loadElMessageBox()
-      await ElMessageBox.confirm(
+      await swissGlassConfirm(
         t(
           'auth.quickRegCloseConfirm',
           'Closing this window stops new students from joining with the current QR and room code.'
@@ -45,7 +44,6 @@ export function useQuickRegisterDialogClose(options: {
           confirmButtonText: t('common.close'),
           cancelButtonText: t('common.cancel'),
           distinguishCancelAndClose: true,
-          autofocus: false,
         }
       )
     } catch {

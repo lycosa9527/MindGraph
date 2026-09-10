@@ -7,6 +7,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Hammer, Shuffle, X } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
+import { measureCanvasChromeBottomPx } from '@/composables/canvas/useCanvasChromeBottomOffset'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
 
@@ -28,10 +29,7 @@ const showReferenceAnswers = computed(() => diagramStore.learningSheetShowAnswer
 const barTop = ref('96px')
 
 function updateBarTop(): void {
-  const chrome =
-    document.querySelector('.canvas-top-bar--mindmap') ?? document.querySelector('.canvas-top-bar')
-  const bottom = chrome instanceof HTMLElement ? chrome.getBoundingClientRect().bottom : 96
-  barTop.value = `${bottom + 12}px`
+  barTop.value = `${measureCanvasChromeBottomPx() + 12}px`
 }
 
 function onHideAnswersChange(event: Event): void {

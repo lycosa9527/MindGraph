@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ElMessageBox, ElTable, ElTableColumn } from 'element-plus'
+import { ElTable, ElTableColumn } from 'element-plus'
 
 import { useLanguage } from '@/composables'
 import { formatVodDuration } from '@/composables/admin/vodMediaFormat'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import type { VodMediaItem } from '@/utils/vodApi'
 
 defineProps<{
@@ -36,13 +37,9 @@ function isVodMediaItem(row: unknown): row is VodMediaItem {
 
 async function confirmDelete(item: VodMediaItem): Promise<void> {
   try {
-    await ElMessageBox.confirm(
-      String(t('admin.vod.deleteConfirm')),
-      String(t('admin.vod.delete')),
-      {
-        type: 'warning',
-      }
-    )
+    await swissGlassConfirm(String(t('admin.vod.deleteConfirm')), String(t('admin.vod.delete')), {
+      type: 'warning',
+    })
     emit('delete', item)
   } catch {
     return

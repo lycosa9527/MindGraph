@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
+import { Pencil } from '@lucide/vue'
+
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
 
@@ -14,6 +17,11 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:visible', val: boolean): void
 }>()
+
+const open = computed({
+  get: () => props.visible,
+  set: (value: boolean) => emit('update:visible', value),
+})
 
 const store = useWorkshopChatStore()
 const { t } = useLanguage()
@@ -51,11 +59,13 @@ async function handleSave(): Promise<void> {
 </script>
 
 <template>
-  <el-dialog
-    :model-value="visible"
-    :title="mode === 'rename' ? t('workshop.renameTopic') : t('workshop.moveTopic')"
-    width="380px"
-    @update:model-value="emit('update:visible', $event)"
+  <SwissGlassDialog
+    v-model="open"
+    :ribbon="t('swissGlass.hero.topicEdit.ribbon')"
+    :title="t('swissGlass.hero.topicEdit.title')"
+    :line1="t('swissGlass.hero.topicEdit.line1')"
+    :icon="Pencil"
+    width="min(380px, 92vw)"
   >
     <div class="flex flex-col gap-3">
       <template v-if="mode === 'rename'">
@@ -87,17 +97,23 @@ async function handleSave(): Promise<void> {
     </div>
 
     <template #footer>
-      <el-button @click="emit('update:visible', false)">
-        {{ t('workshop.dismiss') }}
-      </el-button>
-      <el-button
-        type="primary"
-        :loading="saving"
-        :disabled="mode === 'rename' ? !newTitle.trim() : !targetChannelId"
-        @click="handleSave"
-      >
-        {{ t('workshop.create') }}
-      </el-button>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          @click="open = false"
+        >
+          {{ t('workshop.dismiss') }}
+        </button>
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          :disabled="saving || (mode === 'rename' ? !newTitle.trim() : !targetChannelId)"
+          @click="handleSave"
+        >
+          {{ t('workshop.create') }}
+        </button>
+      </div>
     </template>
-  </el-dialog>
+  </SwissGlassDialog>
 </template>

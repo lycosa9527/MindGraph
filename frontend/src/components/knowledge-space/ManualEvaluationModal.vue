@@ -5,21 +5,13 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import {
-  ElButton,
-  ElCard,
-  ElDialog,
-  ElDivider,
-  ElIcon,
-  ElInput,
-  ElOption,
-  ElSelect,
-} from 'element-plus'
+import { ElCard, ElDivider, ElIcon, ElInput, ElOption, ElSelect } from 'element-plus'
 
 import { Loading } from '@element-plus/icons-vue'
 
-import { Sparkles } from '@lucide/vue'
+import { ClipboardCheck, Loader2, Sparkles } from '@lucide/vue'
 
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { notify } from '@/composables/core/notifications'
 import { useLanguage } from '@/composables/core/useLanguage'
 import {
@@ -154,15 +146,21 @@ watch(
 </script>
 
 <template>
-  <ElDialog
+  <SwissGlassDialog
     v-model="dialogVisible"
-    :title="t('knowledge.manualEval.dialogTitle', { method: methodLabels[method] || method })"
-    width="900px"
+    :ribbon="t('swissGlass.hero.manualEval.ribbon')"
+    :title="t('swissGlass.hero.manualEval.title')"
+    :line1="t('swissGlass.hero.manualEval.line1')"
+    :icon="ClipboardCheck"
+    width="min(900px, 92vw)"
     :close-on-click-modal="false"
-    class="manual-evaluation-modal"
+    dialog-class="manual-evaluation-modal"
     @close="handleClose"
   >
     <div class="evaluation-container">
+      <p class="text-sm font-medium text-stone-700 mb-3">
+        {{ t('knowledge.manualEval.dialogTitle', { method: methodLabels[method] || method }) }}
+      </p>
       <!-- Form Section -->
       <div class="form-section mb-6">
         <div class="mb-4">
@@ -213,9 +211,9 @@ watch(
             <label class="block text-sm font-medium text-stone-700">
               {{ t('knowledge.manualEval.selectChunksHeading') }}
             </label>
-            <ElButton
-              size="small"
-              text
+            <button
+              type="button"
+              class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost"
               @click="selectAllChunks"
             >
               {{
@@ -223,7 +221,7 @@ watch(
                   ? t('knowledge.manualEval.deselectAll')
                   : t('knowledge.manualEval.selectAll')
               }}
-            </ElButton>
+            </button>
           </div>
           <div
             v-if="isLoadingChunks"
@@ -274,16 +272,22 @@ watch(
           </div>
         </div>
 
-        <ElButton
-          type="primary"
-          class="w-full"
-          :loading="isEvaluating"
-          :disabled="!query.trim()"
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary w-full"
+          :disabled="isEvaluating || !query.trim()"
           @click="handleEvaluate"
         >
-          <ElIcon class="mr-1"><Sparkles /></ElIcon>
+          <Loader2
+            v-if="isEvaluating"
+            class="w-4 h-4 animate-spin"
+          />
+          <Sparkles
+            v-else
+            class="w-4 h-4"
+          />
           {{ t('knowledge.manualEval.startEvaluation') }}
-        </ElButton>
+        </button>
       </div>
 
       <!-- Results Section -->
@@ -402,14 +406,10 @@ watch(
         </div>
       </div>
     </div>
-  </ElDialog>
+  </SwissGlassDialog>
 </template>
 
 <style scoped>
-.manual-evaluation-modal :deep(.el-dialog__body) {
-  padding: 24px;
-}
-
 .chunks-selection {
   max-height: 200px;
 }

@@ -3,11 +3,12 @@
  */
 import { computed, watch } from 'vue'
 
-import { ElMessageBox } from 'element-plus'
-import { useQueryClient } from '@tanstack/vue-query'
 import { storeToRefs } from 'pinia'
 
+import { useQueryClient } from '@tanstack/vue-query'
+
 import { notify, useLanguage } from '@/composables'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import {
   fileCenterKeys,
   useFileCenterMutations,
@@ -84,7 +85,7 @@ export function useKnowledgeSpacePackagePage() {
     const packageId = activePackageId.value
     if (packageId === null) return
     try {
-      await ElMessageBox.confirm(
+      await swissGlassConfirm(
         t('knowledgeSpace.confirmDeleteBody'),
         t('knowledgeSpace.confirmDeleteTitle'),
         {

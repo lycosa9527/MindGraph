@@ -9,19 +9,13 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { ElMessageBox } from 'element-plus'
-
 import { FileText, Globe, Link2, Loader2, Plus, Trash2, Upload, X } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
-import {
-  useFileCenterMutations,
-  usePackageDetail,
-} from '@/composables/fileCenter/useFileCenter'
-import {
-  useFileCenterActivePackage,
-} from '@/composables/fileCenter/useFileCenterActivePackage'
+import { useFileCenterMutations, usePackageDetail } from '@/composables/fileCenter/useFileCenter'
+import { useFileCenterActivePackage } from '@/composables/fileCenter/useFileCenterActivePackage'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { useDiagramStore } from '@/stores'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
@@ -70,12 +64,8 @@ const documents = computed(() => detailQuery.data.value?.documents ?? [])
 const completedCount = computed(
   () => documents.value.filter((doc) => doc.status === 'completed').length
 )
-const isIndexing = computed(() =>
-  documents.value.some((doc) => doc.status === 'processing')
-)
-const ragActive = computed(
-  () => activeDiagramId.value !== null && completedCount.value > 0
-)
+const isIndexing = computed(() => documents.value.some((doc) => doc.status === 'processing'))
+const ragActive = computed(() => activeDiagramId.value !== null && completedCount.value > 0)
 const diagramSaved = computed(() => activeDiagramId.value !== null)
 
 function defaultPackageName(): string {
@@ -170,15 +160,11 @@ async function handleDeletePackage(): Promise<void> {
   const id = activePackageId.value
   if (id === null) return
   try {
-    await ElMessageBox.confirm(
-      t('fileCenter.confirmDeletePackage'),
-      t('fileCenter.deletePackage'),
-      {
-        confirmButtonText: t('common.delete'),
-        cancelButtonText: t('common.cancel'),
-        type: 'warning',
-      }
-    )
+    await swissGlassConfirm(t('fileCenter.confirmDeletePackage'), t('fileCenter.deletePackage'), {
+      confirmButtonText: t('common.delete'),
+      cancelButtonText: t('common.cancel'),
+      type: 'warning',
+    })
   } catch {
     return
   }

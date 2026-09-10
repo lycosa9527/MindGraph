@@ -5,7 +5,8 @@
  */
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
-import { loadElMessageBox, notify } from '@/composables/core/notifications'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
+import { notify } from '@/composables/core/notifications'
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
 import { apiRequest, apiUpload } from '@/utils/apiClient'
@@ -259,8 +260,7 @@ export function useDeleteDocumentWithConfirmation() {
 
   const deleteWithConfirmation = async (documentId: number) => {
     try {
-      const ElMessageBox = await loadElMessageBox()
-      await ElMessageBox.confirm(
+      await swissGlassConfirm(
         t('knowledgeSpace.confirmDeleteBody'),
         t('knowledgeSpace.confirmDeleteTitle'),
         {

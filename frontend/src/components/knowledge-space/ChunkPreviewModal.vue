@@ -5,10 +5,13 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { ElDialog, ElEmpty, ElIcon, ElPagination, ElTag } from 'element-plus'
+import { ElEmpty, ElIcon, ElPagination, ElTag } from 'element-plus'
 
 import { Document, Loading } from '@element-plus/icons-vue'
 
+import { FileSearch } from '@lucide/vue'
+
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { apiRequest } from '@/utils/apiClient'
 
@@ -103,13 +106,19 @@ watch(
 </script>
 
 <template>
-  <ElDialog
+  <SwissGlassDialog
     v-model="dialogVisible"
-    :title="t('knowledge.chunkPreview.title', { fileName: props.fileName })"
-    width="800px"
+    :ribbon="t('swissGlass.hero.chunkPreview.ribbon')"
+    :title="t('swissGlass.hero.chunkPreview.title')"
+    :line1="t('swissGlass.hero.chunkPreview.line1')"
+    :icon="FileSearch"
+    width="min(800px, 92vw)"
     :close-on-click-modal="false"
-    class="chunk-preview-modal"
+    dialog-class="chunk-preview-modal"
   >
+    <p class="text-sm font-medium text-stone-700 mb-3">
+      {{ t('knowledge.chunkPreview.title', { fileName: props.fileName }) }}
+    </p>
     <div
       v-if="loading"
       class="flex items-center justify-center py-12"
@@ -183,14 +192,10 @@ watch(
         />
       </div>
     </div>
-  </ElDialog>
+  </SwissGlassDialog>
 </template>
 
 <style scoped>
-.chunk-preview-modal :deep(.el-dialog__body) {
-  padding: 20px 24px;
-}
-
 .chunk-item {
   transition: box-shadow 0.2s;
 }

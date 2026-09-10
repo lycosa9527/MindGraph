@@ -19,11 +19,12 @@ import {
   Trash2,
 } from '@lucide/vue'
 
-import { useDiagramArchiveHistory } from '@/composables/sidebar/useDiagramArchiveHistory'
 import { useLanguage, useNotifications } from '@/composables'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
+import { useDiagramArchiveHistory } from '@/composables/sidebar/useDiagramArchiveHistory'
 import { useAuthStore } from '@/stores'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
-import { formatDiagramCountLabel, hasDiagramSaveLimit } from '@/utils/diagramLimit'
+import { formatDiagramCountLabel } from '@/utils/diagramLimit'
 
 import DiagramHistoryRow from './DiagramHistoryRow.vue'
 
@@ -156,7 +157,7 @@ async function handleRenameFolder(folderId: string, currentName: string): Promis
 
 async function handleDeleteFolder(folderId: string): Promise<void> {
   try {
-    await ElMessageBox.confirm(
+    await swissGlassConfirm(
       t('sidebar.diagramHistory.folderDeleteConfirm'),
       t('sidebar.diagramHistory.folderDeleteTitle'),
       {
@@ -317,8 +318,8 @@ async function handleCreateFolderFromRow(): Promise<string | null> {
                   :folders="folders"
                   :is-active="currentDiagramId === diagram.id"
                   show-pinned-icon
-                  @select="handleDiagramClick"
                   :create-folder="handleCreateFolderFromRow"
+                  @select="handleDiagramClick"
                 />
                 <p
                   v-if="diagramsForFolder(folder.id).length === 0"
@@ -350,8 +351,8 @@ async function handleCreateFolderFromRow(): Promise<string | null> {
                 :folders="folders"
                 :is-active="currentDiagramId === diagram.id"
                 show-pinned-icon
-                @select="handleDiagramClick"
                 :create-folder="handleCreateFolderFromRow"
+                @select="handleDiagramClick"
               />
             </div>
 
@@ -366,8 +367,8 @@ async function handleCreateFolderFromRow(): Promise<string | null> {
                 :diagram="diagram"
                 :folders="folders"
                 :is-active="currentDiagramId === diagram.id"
-                @select="handleDiagramClick"
                 :create-folder="handleCreateFolderFromRow"
+                @select="handleDiagramClick"
               />
             </div>
 
@@ -382,8 +383,8 @@ async function handleCreateFolderFromRow(): Promise<string | null> {
                 :diagram="diagram"
                 :folders="folders"
                 :is-active="currentDiagramId === diagram.id"
-                @select="handleDiagramClick"
                 :create-folder="handleCreateFolderFromRow"
+                @select="handleDiagramClick"
               />
             </div>
 
@@ -398,8 +399,8 @@ async function handleCreateFolderFromRow(): Promise<string | null> {
                 :diagram="diagram"
                 :folders="folders"
                 :is-active="currentDiagramId === diagram.id"
-                @select="handleDiagramClick"
                 :create-folder="handleCreateFolderFromRow"
+                @select="handleDiagramClick"
               />
             </div>
 
@@ -414,8 +415,8 @@ async function handleCreateFolderFromRow(): Promise<string | null> {
                 :diagram="diagram"
                 :folders="folders"
                 :is-active="currentDiagramId === diagram.id"
-                @select="handleDiagramClick"
                 :create-folder="handleCreateFolderFromRow"
+                @select="handleDiagramClick"
               />
             </div>
 

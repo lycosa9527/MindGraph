@@ -1,0 +1,81 @@
+/* Teleported gallery language menu — width lives on the popper, not a scoped subtree. */
+.mindgraph-lang-switcher-popper.el-popper {
+  /* bilingual native + Chinese labels need a bit more than the caption menu */
+  width: min(240px, calc(100vw - 24px)) !important;
+  max-width: min(240px, calc(100vw - 24px)) !important;
+  box-sizing: border-box !important;
+  padding: 4px !important;
+  border: 1px solid #e7e5e4 !important;
+  border-radius: 10px !important;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.07),
+    0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
+  overflow: hidden !important;
+}
+
+.mindgraph-lang-switcher-popper .el-dropdown-menu {
+  /* fill the popper exactly; no independent fixed px width */
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  overflow-x: hidden !important;
+  /* pre-allocate scrollbar gutter so vertical bar never shifts content */
+  scrollbar-gutter: stable;
+}
+
+.mindgraph-lang-switcher-popper .el-dropdown-menu__item {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0 !important;
+  border-radius: 6px;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.mindgraph-lang-switcher-popper .el-dropdown-menu__item:hover,
+.mindgraph-lang-switcher-popper .el-dropdown-menu__item:focus {
+  background: #f5f5f4 !important;
+  color: #1c1917;
+}
+
+.mindgraph-lang-switcher-popper .el-dropdown-menu__item:active {
+  background: #e7e5e4 !important;
+}
+
+/* Inner row: centred label + gutter checkmark */
+.mindgraph-lang-switcher-popper .mindgraph-lang-switcher__row {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 7px 24px 7px 10px;
+  min-height: 1.35em;
+  font-size: 13px;
+  font-weight: 500;
+  color: #44403c;
+  letter-spacing: 0.01em;
+  overflow: hidden;
+}
+
+.mindgraph-lang-switcher-popper .mindgraph-lang-switcher__label {
+  display: block;
+  width: 100%;
+  text-align: center;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.mindgraph-lang-switcher-popper .mindgraph-lang-switcher__check {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+}
+
+.mindgraph-lang-switcher-popper .el-dropdown-menu__item:hover .mindgraph-lang-switcher__row,
+.mindgraph-lang-switcher-popper .el-dropdown-menu__item:focus .mindgraph-lang-switcher__row {
+  color: #1c1917;
+}

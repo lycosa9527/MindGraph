@@ -6,10 +6,23 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 
-import { Archive, ArrowDown, ArrowUp, Copy, LayoutList, Plus, Settings, Trash2 } from '@lucide/vue'
+import {
+  Archive,
+  ArrowDown,
+  ArrowUp,
+  Copy,
+  FolderKanban,
+  LayoutList,
+  Loader2,
+  Plus,
+  Settings,
+  Trash2,
+} from '@lucide/vue'
 
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
 import {
@@ -28,6 +41,11 @@ const emit = defineEmits<{
   (e: 'update:visible', val: boolean): void
   (e: 'openChannelSettings', channelId: number): void
 }>()
+
+const open = computed({
+  get: () => props.visible,
+  set: (value: boolean) => emit('update:visible', value),
+})
 
 const { t } = useLanguage()
 const router = useRouter()
@@ -109,7 +127,7 @@ function visibilityValue(g: ChatChannel): 'public' | 'private' {
 
 async function confirmArchive(group: ChatChannel): Promise<void> {
   try {
-    await ElMessageBox.confirm(
+    await swissGlassConfirm(
       t('workshop.archiveTeachingGroupConfirm'),
       t('workshop.archiveTeachingGroup'),
       {
@@ -131,7 +149,7 @@ async function confirmArchive(group: ChatChannel): Promise<void> {
 
 async function confirmDelete(group: ChatChannel): Promise<void> {
   try {
-    await ElMessageBox.confirm(
+    await swissGlassConfirm(
       t('workshop.deleteTeachingGroupConfirm'),
       t('workshop.deleteTeachingGroup'),
       {
@@ -323,25 +341,25 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
 </script>
 
 <template>
-  <el-dialog
-    :model-value="visible"
-    :title="t('workshop.manageTeachingGroups')"
-    width="560px"
-    append-to-body
+  <SwissGlassDialog
+    v-model="open"
+    :ribbon="t('swissGlass.hero.teachingGroups.ribbon')"
+    :title="t('swissGlass.hero.teachingGroups.title')"
+    :line1="t('swissGlass.hero.teachingGroups.line1')"
+    :icon="FolderKanban"
+    width="min(560px, 92vw)"
     :close-on-click-modal="false"
-    class="tg-manage-dialog"
-    @update:model-value="emit('update:visible', $event)"
+    dialog-class="tg-manage-dialog"
   >
     <p class="tg-manage-dialog__blurb">
       {{ t('workshop.manageTeachingGroupsBlurb') }}
     </p>
 
     <div class="tg-manage-dialog__actions">
-      <el-button
+      <button
         v-if="canManage"
-        type="primary"
-        size="small"
-        class="tg-manage-dialog__btn-primary"
+        type="button"
+        class="mind-map-side-rail-btn mind-map-side-rail-btn--primary"
         :disabled="addingGroup"
         @click="addGroup"
       >
@@ -352,10 +370,10 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
           />
           {{ t('workshop.addChannel') }}
         </span>
-      </el-button>
-      <el-button
-        size="small"
-        class="tg-manage-dialog__btn-secondary"
+      </button>
+      <button
+        type="button"
+        class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
         @click="browseTeachingGroups"
       >
         <span class="tg-manage-dialog__btn-inner">
@@ -365,7 +383,7 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
           />
           {{ t('workshop.browseChannels') }}
         </span>
-      </el-button>
+      </button>
     </div>
     <p
       v-if="!canManage"
@@ -404,21 +422,26 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
         />
       </div>
       <div class="tg-manage-dialog__add-actions">
-        <el-button
-          size="small"
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
           :disabled="savingNewGroup"
           @click="cancelAddGroup"
         >
           {{ t('common.cancel') }}
-        </el-button>
-        <el-button
-          type="primary"
-          size="small"
-          :loading="savingNewGroup"
+        </button>
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary"
+          :disabled="savingNewGroup"
           @click="submitNewGroup"
         >
+          <Loader2
+            v-if="savingNewGroup"
+            class="w-3.5 h-3.5 animate-spin"
+          />
           {{ t('workshop.addChannel') }}
-        </el-button>
+        </button>
       </div>
     </div>
 
@@ -464,47 +487,44 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
             class="tg-manage-dialog__row-tools"
           >
             <template v-if="canManage">
-              <el-button
-                text
-                size="small"
-                class="tg-manage-dialog__icon-btn"
+              <button
+                type="button"
+                class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost"
                 :title="t('workshop.moveUp')"
                 :disabled="teachingGroups[0]?.id === g.id"
                 @click="moveGroup(g.id, -1)"
               >
                 <ArrowUp :size="16" />
-              </el-button>
-              <el-button
-                text
-                size="small"
-                class="tg-manage-dialog__icon-btn"
+              </button>
+              <button
+                type="button"
+                class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost"
                 :title="t('workshop.moveDown')"
                 :disabled="teachingGroups[teachingGroups.length - 1]?.id === g.id"
                 @click="moveGroup(g.id, 1)"
               >
                 <ArrowDown :size="16" />
-              </el-button>
-              <el-button
-                text
-                size="small"
-                class="tg-manage-dialog__icon-btn"
+              </button>
+              <button
+                type="button"
+                class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost"
                 :title="t('workshop.duplicateTeachingGroup')"
                 @click="duplicateGroup(g)"
               >
                 <Copy :size="16" />
-              </el-button>
-              <el-button
-                size="small"
-                class="tg-manage-dialog__edit-btn"
+              </button>
+              <button
+                type="button"
+                class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
                 @click="toggleEdit(g.id)"
               >
                 {{ editingGroupId === g.id ? t('common.cancel') : t('common.edit') }}
-              </el-button>
+              </button>
             </template>
-            <el-button
+            <button
               v-if="canDeleteGroup(g)"
-              size="small"
-              class="tg-manage-dialog__archive-btn"
+              type="button"
+              class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
               @click="confirmArchive(g)"
             >
               <span class="tg-manage-dialog__btn-inner">
@@ -514,12 +534,11 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
                 />
                 {{ t('workshop.archiveTeachingGroup') }}
               </span>
-            </el-button>
-            <el-button
+            </button>
+            <button
               v-if="canDeleteGroup(g)"
-              size="small"
-              type="danger"
-              class="tg-manage-dialog__delete-btn"
+              type="button"
+              class="mind-map-side-rail-btn mind-map-side-rail-btn--danger"
               @click="confirmDelete(g)"
             >
               <span class="tg-manage-dialog__btn-inner">
@@ -529,7 +548,7 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
                 />
                 {{ t('workshop.deleteTeachingGroup') }}
               </span>
-            </el-button>
+            </button>
           </div>
         </div>
 
@@ -624,21 +643,20 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
                   :value="u.id"
                 />
               </el-select>
-              <el-button
-                size="small"
-                type="primary"
+              <button
+                type="button"
+                class="mind-map-side-rail-btn mind-map-side-rail-btn--primary"
                 @click="submitInvite(g.id)"
               >
                 {{ t('workshop.inviteMember') }}
-              </el-button>
+              </button>
             </div>
           </div>
 
           <div class="tg-manage-dialog__panel-advanced">
-            <el-button
-              text
-              size="small"
-              class="tg-manage-dialog__advanced-btn"
+            <button
+              type="button"
+              class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost"
               @click="openGroupSettings(g.id)"
             >
               <Settings
@@ -646,23 +664,24 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
                 :size="16"
               />
               {{ t('workshop.channelSettings') }}
-            </el-button>
+            </button>
           </div>
 
           <div class="tg-manage-dialog__panel-actions">
-            <el-button
-              size="small"
+            <button
+              type="button"
+              class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
               @click="cancelEditPanel"
             >
               {{ t('common.cancel') }}
-            </el-button>
-            <el-button
-              type="primary"
-              size="small"
+            </button>
+            <button
+              type="button"
+              class="mind-map-side-rail-btn mind-map-side-rail-btn--primary"
               @click="saveNameAndDescription(g.id)"
             >
               {{ t('common.save') }}
-            </el-button>
+            </button>
           </div>
         </div>
       </div>
@@ -675,14 +694,17 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
     </p>
 
     <template #footer>
-      <el-button
-        size="small"
-        @click="close"
-      >
-        {{ t('common.close') }}
-      </el-button>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          @click="close"
+        >
+          {{ t('common.close') }}
+        </button>
+      </div>
     </template>
-  </el-dialog>
+  </SwissGlassDialog>
 </template>
 
 <style scoped src="./TeachingGroupsManageDialog.css"></style>

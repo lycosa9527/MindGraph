@@ -5,10 +5,9 @@
  */
 import { computed } from 'vue'
 
-import { ElButton } from 'element-plus'
+import { QrCode } from '@lucide/vue'
 
-import { X } from '@lucide/vue'
-
+import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage } from '@/composables'
 import { usePublicSiteUrl } from '@/composables/core/usePublicSiteUrl'
 import { APP_REFINED_SANS_STACK } from '@/utils/diagramNodeFontStack'
@@ -29,105 +28,68 @@ const qrSrc = computed(() => {
   return `/api/qrcode?data=${encodeURIComponent(url)}&size=260`
 })
 
+const isVisible = computed({
+  get: () => props.visible,
+  set: (value: boolean) => {
+    if (!value) {
+      emit('close')
+    }
+  },
+})
+
 function closeModal(): void {
   emit('close')
-}
-
-function handleBackdropClick(event: MouseEvent): void {
-  if (event.target === event.currentTarget) {
-    closeModal()
-  }
 }
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="logo-site-qr">
-      <div
-        v-if="visible"
-        class="logo-site-qr-overlay fixed inset-0 z-[1100] flex items-center justify-center p-4"
-        @click="handleBackdropClick"
-        @pointerenter="emit('hoverEnter')"
-        @pointerleave="emit('hoverLeave')"
+  <SwissGlassCard
+    v-model="isVisible"
+    :ribbon="t('swissGlass.hero.logoQr.ribbon')"
+    :title="t('swissGlass.hero.logoQr.title')"
+    :line1="t('swissGlass.hero.logoQr.line1')"
+    :icon="QrCode"
+    @close="closeModal"
+    @pointerenter="emit('hoverEnter')"
+    @pointerleave="emit('hoverLeave')"
+  >
+    <div class="logo-site-qr-body logo-site-qr-typography">
+      <p
+        class="w-full max-w-sm px-1 text-center text-sm font-medium leading-snug tracking-tight text-slate-600"
       >
-        <div
-          class="absolute inset-0 bg-stone-900/45 backdrop-blur-md"
-          aria-hidden="true"
-        />
+        {{ t('sidebar.logoSiteQrHint') }}
+      </p>
 
-        <div
-          class="logo-site-qr-card relative w-full max-w-[480px] overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-2xl"
-          role="dialog"
-          aria-modal="true"
-          :aria-label="t('sidebar.logoSiteQrTitle')"
-          @click.stop
-        >
-          <div class="flex items-center justify-between gap-3 border-b border-stone-100 px-5 py-4">
-            <div class="logo-site-qr-typography flex min-w-0 flex-1 items-center gap-2.5">
-              <div
-                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-stone-900 text-sm font-semibold leading-none text-white shadow-sm"
-                aria-hidden="true"
-              >
-                M
-              </div>
-              <span
-                class="truncate text-base font-semibold leading-snug tracking-tight text-stone-900 sm:text-[1.0625rem]"
-              >
-                {{ t('sidebar.brandTitle') }}
-              </span>
-            </div>
-            <ElButton
-              class="logo-site-qr-close -mr-1 shrink-0"
-              text
-              circle
-              :aria-label="t('common.close')"
-              @click="closeModal"
-            >
-              <X
-                class="h-5 w-5"
-                aria-hidden="true"
+      <div class="logo-site-qr-stage">
+        <div class="qr-ga-stack">
+          <div
+            class="qr-ga-wrap logo-site-qr-aura"
+            role="img"
+            :aria-label="t('sidebar.logoSiteQrTitle')"
+          >
+            <div class="logo-site-qr-inner">
+              <img
+                v-if="qrSrc && visible"
+                :src="qrSrc"
+                alt=""
+                width="260"
+                height="260"
+                class="logo-site-qr-img"
+                decoding="async"
               />
-            </ElButton>
-          </div>
-
-          <div class="logo-site-qr-body logo-site-qr-typography px-5 pb-6 pt-5">
-            <p class="w-full max-w-sm px-1 text-center text-sm font-medium leading-snug tracking-tight text-slate-600">
-              {{ t('sidebar.logoSiteQrHint') }}
-            </p>
-
-            <div class="logo-site-qr-stage">
-              <div class="qr-ga-stack">
-                <div
-                  class="qr-ga-wrap logo-site-qr-aura"
-                  role="img"
-                  :aria-label="t('sidebar.logoSiteQrTitle')"
-                >
-                  <div class="logo-site-qr-inner">
-                    <img
-                      v-if="qrSrc && visible"
-                      :src="qrSrc"
-                      alt=""
-                      width="260"
-                      height="260"
-                      class="logo-site-qr-img"
-                      decoding="async"
-                    />
-                  </div>
-                </div>
-              </div>
             </div>
-
-            <p
-              v-if="publicSiteUrl"
-              class="w-full max-w-sm truncate px-1 text-center text-xs font-medium text-slate-400"
-            >
-              {{ publicSiteUrl }}
-            </p>
           </div>
         </div>
       </div>
-    </Transition>
-  </Teleport>
+
+      <p
+        v-if="publicSiteUrl"
+        class="w-full max-w-sm truncate px-1 text-center text-xs font-medium text-slate-400"
+      >
+        {{ publicSiteUrl }}
+      </p>
+    </div>
+  </SwissGlassCard>
 </template>
 
 <style scoped>
@@ -145,18 +107,6 @@ function handleBackdropClick(event: MouseEvent): void {
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-.logo-site-qr-close {
-  color: rgb(148 163 184);
-  transition:
-    color 0.15s ease,
-    background 0.15s ease;
-}
-
-.logo-site-qr-close:hover {
-  color: rgb(15 23 42);
-  background: rgb(241 245 249) !important;
 }
 
 .logo-site-qr-body {
@@ -268,28 +218,5 @@ function handleBackdropClick(event: MouseEvent): void {
   max-height: min(260px, 68vw);
   object-fit: contain;
   border-radius: 6px;
-}
-
-.logo-site-qr-enter-active,
-.logo-site-qr-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.logo-site-qr-enter-active .logo-site-qr-card,
-.logo-site-qr-leave-active .logo-site-qr-card {
-  transition:
-    transform 0.22s ease,
-    opacity 0.22s ease;
-}
-
-.logo-site-qr-enter-from,
-.logo-site-qr-leave-to {
-  opacity: 0;
-}
-
-.logo-site-qr-enter-from .logo-site-qr-card,
-.logo-site-qr-leave-to .logo-site-qr-card {
-  opacity: 0;
-  transform: scale(0.96) translateY(6px);
 }
 </style>

@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { ElButton, ElDialog, ElInput } from 'element-plus'
+import { ElInput } from 'element-plus'
 
+import { GraduationCap } from '@lucide/vue'
+
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables'
 
 const title = defineModel<string>('title', { default: '' })
@@ -28,11 +31,14 @@ function onCover(event: Event): void {
 </script>
 
 <template>
-  <ElDialog
+  <SwissGlassDialog
     v-model="open"
-    class="builder-info-dialog"
-    :title="t('training.builder.info')"
-    width="28rem"
+    :ribbon="t('swissGlass.hero.trainingInfo.ribbon')"
+    :title="t('swissGlass.hero.trainingInfo.title')"
+    :line1="t('swissGlass.hero.trainingInfo.line1')"
+    :icon="GraduationCap"
+    width="min(28rem, 92vw)"
+    dialog-class="builder-info-dialog"
   >
     <div class="builder-info">
       <label>
@@ -62,26 +68,27 @@ function onCover(event: Event): void {
           type="file"
           accept="image/png,image/jpeg,image/webp"
           @change="onCover"
-        >
+        />
       </label>
     </div>
     <template
       v-if="!readonly"
       #footer
     >
-      <ElButton
-        size="small"
-        class="admin-swiss-btn admin-swiss-btn--primary"
-        :loading="busy"
-        @click="emit('save')"
-      >
-        {{ t('training.builder.save') }}
-      </ElButton>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          :disabled="busy"
+          @click="emit('save')"
+        >
+          {{ t('training.builder.save') }}
+        </button>
+      </div>
     </template>
-  </ElDialog>
+  </SwissGlassDialog>
 </template>
 
-<style scoped src="@/styles/admin-swiss-controls.css"></style>
 <style scoped>
 .builder-info {
   display: flex;

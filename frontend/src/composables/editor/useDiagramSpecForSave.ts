@@ -13,6 +13,10 @@ import { SAVE } from '@/config'
 import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { attachLlmResultsWithinSizeLimit } from '@/stores/llmResultsPersist'
+import {
+  getDiagramPersistBaseSpec,
+  shouldStampLiveCanvasOntoLlmResult,
+} from '@/utils/diagramPersistBaseSpec'
 
 function attachLlmResultsIfFit(
   base: Record<string, unknown>,
@@ -42,15 +46,17 @@ export function useDiagramSpecForSave(): () => Record<string, unknown> | null {
 
 /**
  * Persist-path spec: stamp live canvas into the selected model slot, then build.
+ * While a translate preview is on the canvas, persist the original snapshot.
  */
 export function useDiagramSpecForPersist(): () => Record<string, unknown> | null {
-  const diagramStore = useDiagramStore()
   const llmResultsStore = useLLMResultsStore()
 
   return function getDiagramSpecForPersist(): Record<string, unknown> | null {
-    const base = diagramStore.getSpecForSave()
+    const base = getDiagramPersistBaseSpec()
     if (!base) return null
-    llmResultsStore.updateCurrentModelSpec(base)
+    if (shouldStampLiveCanvasOntoLlmResult()) {
+      llmResultsStore.updateCurrentModelSpec(base)
+    }
     return attachLlmResultsIfFit(base, llmResultsStore)
   }
 }

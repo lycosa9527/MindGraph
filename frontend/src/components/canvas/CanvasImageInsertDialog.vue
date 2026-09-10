@@ -1,22 +1,23 @@
 <script setup lang="ts">
 /**
- * Dialog to attach an image URL or compressed file to the selected node.
+ * Swiss glass dialog to attach an image URL or compressed file to the selected node.
  */
 import { ref, watch } from 'vue'
 
-import { ElButton, ElDialog, ElInput } from 'element-plus'
+import { Image } from '@lucide/vue'
 
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { sanitizeMindMapImageUrl } from '@/utils/mindMapAdornments'
 import { mindMapNodeImageFileToDataUrl } from '@/utils/mindMapNodeImageDataUrl'
 
+const open = defineModel<boolean>({ required: true })
+
 const props = defineProps<{
-  modelValue: boolean
   initialUrl?: string
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
   confirm: [imageUrl: string]
 }>()
 
@@ -26,19 +27,16 @@ const error = ref('')
 const busy = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 
-watch(
-  () => props.modelValue,
-  (open) => {
-    if (open) {
-      url.value = props.initialUrl ?? ''
-      error.value = ''
-      busy.value = false
-    }
+watch(open, (isOpen) => {
+  if (isOpen) {
+    url.value = props.initialUrl ?? ''
+    error.value = ''
+    busy.value = false
   }
-)
+})
 
 function close(): void {
-  emit('update:modelValue', false)
+  open.value = false
 }
 
 function confirmUrl(): void {
@@ -70,63 +68,75 @@ async function onFile(event: Event): Promise<void> {
 </script>
 
 <template>
-  <ElDialog
-    :model-value="props.modelValue"
-    :title="t('canvas.ribbon.insertImage')"
-    width="420px"
-    append-to-body
-    @update:model-value="emit('update:modelValue', $event)"
+  <SwissGlassDialog
+    v-model="open"
+    :ribbon="t('canvas.hero.image.ribbon')"
+    :title="t('canvas.hero.image.title')"
+    :line1="t('canvas.hero.image.line1')"
+    :icon="Image"
+    width="min(420px, 92vw)"
   >
-    <ElInput
-      v-model="url"
-      :placeholder="t('canvas.ribbon.imageUrl')"
-      :disabled="busy"
-      @keydown.enter.prevent="confirmUrl"
-    />
-    <div class="mm-image-file-row">
-      <input
-        ref="fileInput"
-        type="file"
-        accept="image/png,image/jpeg,image/webp,image/gif"
-        class="hidden"
-        @change="onFile"
-      />
-      <ElButton
-        :disabled="busy"
-        @click="fileInput?.click()"
-        >{{ t('canvas.ribbon.imagePick') }}</ElButton
+    <div class="swiss-glass-stack">
+      <label class="swiss-glass-field">
+        <span class="swiss-glass-field__kicker">{{ t('canvas.ribbon.imageUrl') }}</span>
+        <input
+          v-model="url"
+          type="url"
+          class="swiss-glass-field__input"
+          :placeholder="t('canvas.ribbon.imageUrl')"
+          :disabled="busy"
+          autocomplete="off"
+          @keydown.enter.prevent="confirmUrl"
+        />
+      </label>
+      <div>
+        <input
+          ref="fileInput"
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          class="hidden"
+          @change="onFile"
+        />
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
+          :disabled="busy"
+          @click="fileInput?.click()"
+        >
+          {{ t('canvas.ribbon.imagePick') }}
+        </button>
+      </div>
+      <p
+        v-if="error"
+        class="swiss-glass-error"
       >
+        {{ error }}
+      </p>
     </div>
-    <p
-      v-if="error"
-      class="mm-insert-error"
-    >
-      {{ error }}
-    </p>
     <template #footer>
-      <ElButton @click="close">{{ t('common.cancel') }}</ElButton>
-      <ElButton
-        type="primary"
-        :disabled="busy"
-        @click="confirmUrl"
-        >{{ t('canvas.ribbon.imageConfirm') }}</ElButton
-      >
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          @click="close"
+        >
+          {{ t('common.cancel') }}
+        </button>
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          :disabled="busy"
+          @click="confirmUrl"
+        >
+          {{ t('canvas.ribbon.imageConfirm') }}
+        </button>
+      </div>
     </template>
-  </ElDialog>
+  </SwissGlassDialog>
 </template>
 
 <style scoped>
-.mm-image-file-row {
-  margin-top: 12px;
-}
-
 .hidden {
   display: none;
-}
-
-.mm-insert-error {
-  margin: 8px 0 0;
-  color: var(--el-color-danger);
-  font-size: 12px;
 }
 </style>

@@ -6,34 +6,32 @@
  */
 import { computed, ref, watch } from 'vue'
 
+import { Loader2, UserRound } from '@lucide/vue'
 import { useQueryClient } from '@tanstack/vue-query'
 
-import { ElButton } from 'element-plus'
-
-import { Close } from '@element-plus/icons-vue'
-
+import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import { difyKeys } from '@/composables/queries/difyKeys'
-import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
-import { logPairAudit } from '@/utils/dingtalkPairAuditLog'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
+import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
+import { difyKeys } from '@/composables/queries/difyKeys'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
-import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
+import { logPairAudit } from '@/utils/dingtalkPairAuditLog'
 import {
   canStartWechatBind,
   shouldShowAccountBindingsSection,
   shouldShowWechatBindRow,
 } from '@/utils/oauthLoginUi'
+import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 import AccountApiTokenField from './AccountApiTokenField.vue'
 import ApiTokenModal from './ApiTokenModal.vue'
 import AvatarSelectModal from './AvatarSelectModal.vue'
 import BindDingTalkAccountModal from './BindDingTalkAccountModal.vue'
-import DingTalkPairModal from './DingTalkPairModal.vue'
-import OAuthQrLoginModal from './OAuthQrLoginModal.vue'
 import ChangePasswordModal from './ChangePasswordModal.vue'
 import ChangePhoneModal from './ChangePhoneModal.vue'
+import DingTalkPairModal from './DingTalkPairModal.vue'
+import OAuthQrLoginModal from './OAuthQrLoginModal.vue'
 import SetPasswordWithSmsModal from './SetPasswordWithSmsModal.vue'
 
 const { t } = useLanguage()
@@ -112,9 +110,7 @@ const userPhone = computed(() => {
 })
 const userOrg = computed(() => authStore.user?.schoolName || '')
 
-const showMindbotBindRow = computed(
-  () => featureMindbot.value && !!authStore.user?.schoolId
-)
+const showMindbotBindRow = computed(() => featureMindbot.value && !!authStore.user?.schoolId)
 
 const showAccountBindingsSection = computed(() =>
   shouldShowAccountBindingsSection({
@@ -150,21 +146,14 @@ const showDingtalkOAuthRow = computed(
 const wechatOAuthLinked = computed(() => oauthLinks.value?.wechat != null)
 const dingtalkOAuthLinked = computed(() => oauthLinks.value?.dingtalk != null)
 
-const canMintDingtalkBind = computed(
-  () => dingtalkBindStatus.value?.mindbot_available === true
-)
+const canMintDingtalkBind = computed(() => dingtalkBindStatus.value?.mindbot_available === true)
 
 const dingtalkLinked = computed(() => dingtalkBindStatus.value?.linked === true)
 
-const dingtalkStaffMasked = computed(
-  () => dingtalkBindStatus.value?.dingtalk_staff_id || ''
-)
+const dingtalkStaffMasked = computed(() => dingtalkBindStatus.value?.dingtalk_staff_id || '')
 
 async function fetchOauthLinks() {
-  if (
-    !authStore.user?.schoolId ||
-    (!featureDingtalkLogin.value && !featureWechatLogin.value)
-  ) {
+  if (!authStore.user?.schoolId || (!featureDingtalkLogin.value && !featureWechatLogin.value)) {
     oauthLinks.value = null
     return
   }
@@ -380,429 +369,388 @@ watch(
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="modal">
-      <div
-        v-if="isVisible"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        @click.self="closeModal"
-      >
-        <!-- Backdrop -->
-        <div class="absolute inset-0 bg-stone-900/60 backdrop-blur-[2px]" />
+  <SwissGlassCard
+    v-model="isVisible"
+    :ribbon="t('swissGlass.hero.account.ribbon')"
+    :title="t('swissGlass.hero.account.title')"
+    :line1="t('swissGlass.hero.account.line1')"
+    :icon="UserRound"
+    @close="closeModal"
+  >
+    <div class="space-y-6">
+      <!-- Avatar Section -->
+      <div>
+        <label class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-4">
+          头像
+        </label>
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="text-5xl shrink-0 mg-user-avatar-emoji">{{ currentAvatar }}</div>
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost shrink-0"
+            @click="openAvatarModal"
+          >
+            编辑
+          </button>
+        </div>
+      </div>
 
-        <!-- Modal -->
-        <div class="relative w-full max-w-md">
-          <!-- Card -->
-          <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
-            <!-- Header -->
-            <div class="px-8 pt-8 pb-4 text-center border-b border-stone-100 relative">
-              <el-button
-                :icon="Close"
-                circle
-                text
-                class="close-btn"
-                @click="closeModal"
+      <!-- User Information (Read-only fields) -->
+      <div class="space-y-4">
+        <div>
+          <label
+            class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2"
+            for="account-info-name"
+          >
+            {{ t('auth.accountDisplayName') }}
+          </label>
+          <div class="flex flex-wrap items-center gap-2">
+            <input
+              id="account-info-name"
+              v-model="nameEdit"
+              type="text"
+              name="account-info-name"
+              :placeholder="t('auth.accountNamePlaceholder')"
+              class="min-w-0 flex-1 px-4 py-3 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 text-sm"
+            />
+            <button
+              type="button"
+              class="mind-map-side-rail-btn mind-map-side-rail-btn--primary shrink-0"
+              :disabled="nameSaving"
+              @click="saveDisplayName"
+            >
+              <Loader2
+                v-if="nameSaving"
+                class="w-3.5 h-3.5 animate-spin"
               />
-              <h2 class="text-lg font-semibold text-stone-900 tracking-tight">
-                {{ t('auth.accountInfo') }}
-              </h2>
-            </div>
+              {{ t('auth.accountNameSave') }}
+            </button>
+          </div>
+        </div>
 
-            <!-- Content -->
-            <div class="p-8 space-y-6">
-              <!-- Avatar Section -->
-              <div>
-                <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-4"
-                >
-                  头像
-                </label>
-                <div class="flex flex-wrap items-center gap-4">
-                  <div class="text-5xl shrink-0 mg-user-avatar-emoji">{{ currentAvatar }}</div>
-                  <el-button
-                    round
-                    size="small"
-                    class="edit-avatar-btn shrink-0"
-                    @click="openAvatarModal"
-                  >
-                    编辑
-                  </el-button>
-                </div>
-              </div>
-
-              <!-- User Information (Read-only fields) -->
-              <div class="space-y-4">
-                <div>
-                  <label
-                    class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2"
-                    for="account-info-name"
-                  >
-                    {{ t('auth.accountDisplayName') }}
-                  </label>
-                  <div class="flex flex-wrap items-center gap-2">
-                    <input
-                      id="account-info-name"
-                      v-model="nameEdit"
-                      type="text"
-                      name="account-info-name"
-                      :placeholder="t('auth.accountNamePlaceholder')"
-                      class="min-w-0 flex-1 px-4 py-3 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 text-sm"
-                    />
-                    <el-button
-                      round
-                      size="small"
-                      class="account-action-btn shrink-0"
-                      :loading="nameSaving"
-                      @click="saveDisplayName"
-                    >
-                      {{ t('auth.accountNameSave') }}
-                    </el-button>
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2"
-                    for="account-info-phone"
-                  >
-                    手机号
-                  </label>
-                  <div class="flex flex-wrap items-center gap-2">
-                    <input
-                      id="account-info-phone"
-                      :value="userPhone || '未设置'"
-                      type="text"
-                      name="account-info-phone"
-                      disabled
-                      class="min-w-0 flex-1 px-4 py-3 bg-stone-100 border-0 rounded-lg text-stone-500 cursor-not-allowed"
-                    />
-                    <div class="flex shrink-0 items-center gap-2">
-                      <el-button
-                        round
-                        size="small"
-                        class="account-action-btn"
-                        @click="openChangePhoneModal"
-                      >
-                        {{ t('auth.changePhoneButton') }}
-                      </el-button>
-                      <el-button
-                        v-if="needsSetLoginPassword && authStore.user?.phone"
-                        round
-                        size="small"
-                        class="account-action-btn"
-                        @click="openSetPasswordSmsModal"
-                      >
-                        {{ t('auth.setPasswordWithSms') }}
-                      </el-button>
-                      <el-button
-                        v-else-if="!needsSetLoginPassword"
-                        round
-                        size="small"
-                        class="account-action-btn"
-                        @click="openChangePasswordModal"
-                      >
-                        {{ t('auth.changePassword') }}
-                      </el-button>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2"
-                    for="account-info-org"
-                  >
-                    组织
-                  </label>
-                  <input
-                    id="account-info-org"
-                    :value="userOrg || '未设置组织'"
-                    type="text"
-                    name="account-info-org"
-                    disabled
-                    class="w-full px-4 py-3 bg-stone-100 border-0 rounded-lg text-stone-500 cursor-not-allowed"
-                  />
-                </div>
-
-                <div v-if="showAccountBindingsSection">
-                  <label class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2">
-                    {{ t('auth.accountBindingsSection') }}
-                  </label>
-                  <p class="text-xs text-stone-500 mb-3 m-0">
-                    {{ t('auth.accountBindingsHint') }}
-                  </p>
-                  <div class="flex flex-col gap-3">
-                    <div
-                      v-if="showMindbotBindRow"
-                      class="flex flex-col gap-1"
-                    >
-                      <div class="flex flex-wrap items-center gap-2">
-                        <el-button
-                          v-if="dingtalkLinked"
-                          round
-                          size="small"
-                          class="account-action-btn account-action-btn--unbind shrink-0"
-                          :loading="dingtalkBindLoading"
-                          @click="unbindDingtalk"
-                        >
-                          {{ t('auth.unbindMindbot') }}
-                        </el-button>
-                        <el-button
-                          v-else
-                          round
-                          size="small"
-                          class="account-action-btn shrink-0"
-                          :loading="dingtalkBindLoading"
-                          :disabled="!canMintDingtalkBind"
-                          @click="openBindDingTalkModal"
-                        >
-                          {{ t('auth.bindMindbot') }}
-                        </el-button>
-                      </div>
-                      <p
-                        v-if="dingtalkLinked && dingtalkStaffMasked"
-                        class="text-xs text-stone-500 m-0"
-                      >
-                        {{ t('auth.dingtalkBindLinkedLabel', { staff: dingtalkStaffMasked }) }}
-                      </p>
-                      <p
-                        v-else-if="!dingtalkBindLoading && !canMintDingtalkBind && !dingtalkLinked"
-                        class="text-xs text-stone-500 m-0"
-                      >
-                        {{ t('auth.dingtalkBindNoMindbot') }}
-                      </p>
-                    </div>
-
-                    <div
-                      v-if="showWechatOAuthRow"
-                      class="flex flex-col gap-1"
-                    >
-                      <div class="flex flex-wrap items-center gap-2">
-                        <el-button
-                          v-if="wechatOAuthLinked"
-                          round
-                          size="small"
-                          class="account-action-btn account-action-btn--unbind shrink-0"
-                          :loading="oauthLinksLoading"
-                          @click="unbindOAuthProvider('wechat')"
-                        >
-                          {{ t('auth.unbindWechat') }}
-                        </el-button>
-                        <el-button
-                          v-else-if="canBindWechat"
-                          round
-                          size="small"
-                          class="account-action-btn shrink-0"
-                          :loading="oauthLinksLoading"
-                          @click="openOAuthBindModal('wechat')"
-                        >
-                          {{ t('auth.bindWechat') }}
-                        </el-button>
-                      </div>
-                      <p
-                        v-if="wechatOAuthLinked"
-                        class="text-xs text-stone-500 m-0"
-                      >
-                        {{
-                          oauthLinks?.wechat?.nickname ||
-                          oauthLinks?.wechat?.external_id_masked ||
-                          t('auth.oauthLinkedFallback')
-                        }}
-                      </p>
-                    </div>
-
-                    <div
-                      v-if="showDingtalkOAuthRow"
-                      class="flex flex-col gap-1"
-                    >
-                      <div class="flex flex-wrap items-center gap-2">
-                        <el-button
-                          v-if="dingtalkOAuthLinked"
-                          round
-                          size="small"
-                          class="account-action-btn account-action-btn--unbind shrink-0"
-                          :loading="oauthLinksLoading"
-                          @click="unbindOAuthProvider('dingtalk')"
-                        >
-                          {{ t('auth.unbindDingtalkOAuth') }}
-                        </el-button>
-                        <el-button
-                          v-else
-                          round
-                          size="small"
-                          class="account-action-btn shrink-0"
-                          :loading="oauthLinksLoading"
-                          @click="openOAuthBindModal('dingtalk')"
-                        >
-                          {{ t('auth.bindDingtalkOAuth') }}
-                        </el-button>
-                      </div>
-                      <p
-                        v-if="dingtalkOAuthLinked"
-                        class="text-xs text-stone-500 m-0"
-                      >
-                        {{
-                          oauthLinks?.dingtalk?.nickname ||
-                          oauthLinks?.dingtalk?.external_id_masked ||
-                          t('auth.oauthLinkedFallback')
-                        }}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div v-if="showAccountPlugins">
-                  <label
-                    class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2"
-                  >
-                    {{ t('auth.accountPlugin') }}
-                  </label>
-                  <div class="flex flex-wrap items-center gap-2">
-                    <a
-                      v-if="canUseApiToken"
-                      class="account-plugin-pill account-plugin-pill--openclaw"
-                      :href="openclawSkillZipUrl"
-                      :title="t('auth.downloadOpenclawSkillHint')"
-                      download
-                      @click="scheduleTokenRefreshAfterDownload"
-                    >
-                      {{ t('auth.downloadOpenclawSkill') }}
-                    </a>
-                    <a
-                      v-if="canUseChromeExtension"
-                      class="account-plugin-pill account-plugin-pill--chrome"
-                      :href="chromeExtensionZipUrl"
-                      download
-                    >
-                      {{ t('auth.downloadChromeExtension') }}
-                    </a>
-                    <a
-                      v-if="featureWordAddin && canUseChromeExtension"
-                      class="account-plugin-pill account-plugin-pill--word"
-                      :href="wordAddinZipUrl"
-                      download
-                    >
-                      {{ t('auth.downloadWordAddin') }}
-                    </a>
-                    <button
-                      v-if="canUseApiToken"
-                      type="button"
-                      class="account-plugin-pill account-plugin-pill--token"
-                      @click="showApiTokenModal = true"
-                    >
-                      {{ t('auth.apiTokenButton') }}
-                    </button>
-                  </div>
-                  <AccountApiTokenField
-                    v-if="canUseApiToken"
-                    class="mt-3"
-                    :active="isVisible"
-                    :refresh-tick="apiTokenRefreshTick"
-                  />
-                  <p
-                    v-if="canUseApiToken"
-                    class="mt-2 text-xs text-stone-400 leading-relaxed"
-                  >
-                    {{ t('auth.downloadOpenclawSkillHint') }}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="px-8 pb-8 flex justify-end">
+        <div>
+          <label
+            class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2"
+            for="account-info-phone"
+          >
+            手机号
+          </label>
+          <div class="flex flex-wrap items-center gap-2">
+            <input
+              id="account-info-phone"
+              :value="userPhone || '未设置'"
+              type="text"
+              name="account-info-phone"
+              disabled
+              class="min-w-0 flex-1 px-4 py-3 bg-stone-100 border-0 rounded-lg text-stone-500 cursor-not-allowed"
+            />
+            <div class="flex shrink-0 items-center gap-2">
               <button
-                class="py-2 px-6 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all"
-                @click="closeModal"
+                type="button"
+                class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
+                @click="openChangePhoneModal"
               >
-                关闭
+                {{ t('auth.changePhoneButton') }}
+              </button>
+              <button
+                v-if="needsSetLoginPassword && authStore.user?.phone"
+                type="button"
+                class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
+                @click="openSetPasswordSmsModal"
+              >
+                {{ t('auth.setPasswordWithSms') }}
+              </button>
+              <button
+                v-else-if="!needsSetLoginPassword"
+                type="button"
+                class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
+                @click="openChangePasswordModal"
+              >
+                {{ t('auth.changePassword') }}
               </button>
             </div>
           </div>
         </div>
+
+        <div>
+          <label
+            class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2"
+            for="account-info-org"
+          >
+            组织
+          </label>
+          <input
+            id="account-info-org"
+            :value="userOrg || '未设置组织'"
+            type="text"
+            name="account-info-org"
+            disabled
+            class="w-full px-4 py-3 bg-stone-100 border-0 rounded-lg text-stone-500 cursor-not-allowed"
+          />
+        </div>
+
+        <div v-if="showAccountBindingsSection">
+          <label class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2">
+            {{ t('auth.accountBindingsSection') }}
+          </label>
+          <p class="text-xs text-stone-500 mb-3 m-0">
+            {{ t('auth.accountBindingsHint') }}
+          </p>
+          <div class="flex flex-col gap-3">
+            <div
+              v-if="showMindbotBindRow"
+              class="flex flex-col gap-1"
+            >
+              <div class="flex flex-wrap items-center gap-2">
+                <button
+                  v-if="dingtalkLinked"
+                  type="button"
+                  class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary shrink-0"
+                  :disabled="dingtalkBindLoading"
+                  @click="unbindDingtalk"
+                >
+                  <Loader2
+                    v-if="dingtalkBindLoading"
+                    class="w-3.5 h-3.5 animate-spin"
+                  />
+                  {{ t('auth.unbindMindbot') }}
+                </button>
+                <button
+                  v-else
+                  type="button"
+                  class="mind-map-side-rail-btn mind-map-side-rail-btn--primary shrink-0"
+                  :disabled="dingtalkBindLoading || !canMintDingtalkBind"
+                  @click="openBindDingTalkModal"
+                >
+                  <Loader2
+                    v-if="dingtalkBindLoading"
+                    class="w-3.5 h-3.5 animate-spin"
+                  />
+                  {{ t('auth.bindMindbot') }}
+                </button>
+              </div>
+              <p
+                v-if="dingtalkLinked && dingtalkStaffMasked"
+                class="text-xs text-stone-500 m-0"
+              >
+                {{ t('auth.dingtalkBindLinkedLabel', { staff: dingtalkStaffMasked }) }}
+              </p>
+              <p
+                v-else-if="!dingtalkBindLoading && !canMintDingtalkBind && !dingtalkLinked"
+                class="text-xs text-stone-500 m-0"
+              >
+                {{ t('auth.dingtalkBindNoMindbot') }}
+              </p>
+            </div>
+
+            <div
+              v-if="showWechatOAuthRow"
+              class="flex flex-col gap-1"
+            >
+              <div class="flex flex-wrap items-center gap-2">
+                <button
+                  v-if="wechatOAuthLinked"
+                  type="button"
+                  class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary shrink-0"
+                  :disabled="oauthLinksLoading"
+                  @click="unbindOAuthProvider('wechat')"
+                >
+                  <Loader2
+                    v-if="oauthLinksLoading"
+                    class="w-3.5 h-3.5 animate-spin"
+                  />
+                  {{ t('auth.unbindWechat') }}
+                </button>
+                <button
+                  v-else-if="canBindWechat"
+                  type="button"
+                  class="mind-map-side-rail-btn mind-map-side-rail-btn--primary shrink-0"
+                  :disabled="oauthLinksLoading"
+                  @click="openOAuthBindModal('wechat')"
+                >
+                  <Loader2
+                    v-if="oauthLinksLoading"
+                    class="w-3.5 h-3.5 animate-spin"
+                  />
+                  {{ t('auth.bindWechat') }}
+                </button>
+              </div>
+              <p
+                v-if="wechatOAuthLinked"
+                class="text-xs text-stone-500 m-0"
+              >
+                {{
+                  oauthLinks?.wechat?.nickname ||
+                  oauthLinks?.wechat?.external_id_masked ||
+                  t('auth.oauthLinkedFallback')
+                }}
+              </p>
+            </div>
+
+            <div
+              v-if="showDingtalkOAuthRow"
+              class="flex flex-col gap-1"
+            >
+              <div class="flex flex-wrap items-center gap-2">
+                <button
+                  v-if="dingtalkOAuthLinked"
+                  type="button"
+                  class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary shrink-0"
+                  :disabled="oauthLinksLoading"
+                  @click="unbindOAuthProvider('dingtalk')"
+                >
+                  <Loader2
+                    v-if="oauthLinksLoading"
+                    class="w-3.5 h-3.5 animate-spin"
+                  />
+                  {{ t('auth.unbindDingtalkOAuth') }}
+                </button>
+                <button
+                  v-else
+                  type="button"
+                  class="mind-map-side-rail-btn mind-map-side-rail-btn--primary shrink-0"
+                  :disabled="oauthLinksLoading"
+                  @click="openOAuthBindModal('dingtalk')"
+                >
+                  <Loader2
+                    v-if="oauthLinksLoading"
+                    class="w-3.5 h-3.5 animate-spin"
+                  />
+                  {{ t('auth.bindDingtalkOAuth') }}
+                </button>
+              </div>
+              <p
+                v-if="dingtalkOAuthLinked"
+                class="text-xs text-stone-500 m-0"
+              >
+                {{
+                  oauthLinks?.dingtalk?.nickname ||
+                  oauthLinks?.dingtalk?.external_id_masked ||
+                  t('auth.oauthLinkedFallback')
+                }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="showAccountPlugins">
+          <label class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2">
+            {{ t('auth.accountPlugin') }}
+          </label>
+          <div class="flex flex-wrap items-center gap-2">
+            <a
+              v-if="canUseApiToken"
+              class="account-plugin-pill account-plugin-pill--openclaw"
+              :href="openclawSkillZipUrl"
+              :title="t('auth.downloadOpenclawSkillHint')"
+              download
+              @click="scheduleTokenRefreshAfterDownload"
+            >
+              {{ t('auth.downloadOpenclawSkill') }}
+            </a>
+            <a
+              v-if="canUseChromeExtension"
+              class="account-plugin-pill account-plugin-pill--chrome"
+              :href="chromeExtensionZipUrl"
+              download
+            >
+              {{ t('auth.downloadChromeExtension') }}
+            </a>
+            <a
+              v-if="featureWordAddin && canUseChromeExtension"
+              class="account-plugin-pill account-plugin-pill--word"
+              :href="wordAddinZipUrl"
+              download
+            >
+              {{ t('auth.downloadWordAddin') }}
+            </a>
+            <button
+              v-if="canUseApiToken"
+              type="button"
+              class="account-plugin-pill account-plugin-pill--token"
+              @click="showApiTokenModal = true"
+            >
+              {{ t('auth.apiTokenButton') }}
+            </button>
+          </div>
+          <AccountApiTokenField
+            v-if="canUseApiToken"
+            class="mt-3"
+            :active="isVisible"
+            :refresh-tick="apiTokenRefreshTick"
+          />
+          <p
+            v-if="canUseApiToken"
+            class="mt-2 text-xs text-stone-400 leading-relaxed"
+          >
+            {{ t('auth.downloadOpenclawSkillHint') }}
+          </p>
+        </div>
       </div>
-    </Transition>
+    </div>
 
-    <!-- Avatar Select Modal -->
-    <AvatarSelectModal
-      v-model:visible="showAvatarModal"
-      @success="handleAvatarSuccess"
-    />
+    <template #footer>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          @click="closeModal"
+        >
+          {{ t('common.close') }}
+        </button>
+      </div>
+    </template>
+  </SwissGlassCard>
 
-    <!-- Change Phone Modal -->
-    <ChangePhoneModal
-      v-model:visible="showChangePhoneModal"
-      @success="handlePhoneChangeSuccess"
-    />
+  <!-- Avatar Select Modal -->
+  <AvatarSelectModal
+    v-model:visible="showAvatarModal"
+    @success="handleAvatarSuccess"
+  />
 
-    <ChangePasswordModal v-model:visible="showChangePasswordModal" />
+  <!-- Change Phone Modal -->
+  <ChangePhoneModal
+    v-model:visible="showChangePhoneModal"
+    @success="handlePhoneChangeSuccess"
+  />
 
-    <SetPasswordWithSmsModal
-      v-model:visible="showSetPasswordSmsModal"
-      @success="emit('success')"
-    />
+  <ChangePasswordModal v-model:visible="showChangePasswordModal" />
 
-    <ApiTokenModal
-      v-if="canUseApiToken"
-      v-model:visible="showApiTokenModal"
-      @changed="bumpApiTokenRefresh"
-    />
+  <SetPasswordWithSmsModal
+    v-model:visible="showSetPasswordSmsModal"
+    @success="emit('success')"
+  />
 
-    <BindDingTalkAccountModal
-      v-model="showBindDingTalkModal"
-      :linked-staff-id="dingtalkStaffMasked"
-      @linked="handleDingtalkBindLinked"
-    />
+  <ApiTokenModal
+    v-if="canUseApiToken"
+    v-model:visible="showApiTokenModal"
+    @changed="bumpApiTokenRefresh"
+  />
 
-    <DingTalkPairModal
-      v-model="showUnbindPairModal"
-      mode="unbind"
-      :linked-staff-id="dingtalkStaffMasked"
-      @completed="handleDingtalkUnbindCompleted"
-    />
+  <BindDingTalkAccountModal
+    v-model="showBindDingTalkModal"
+    :linked-staff-id="dingtalkStaffMasked"
+    @linked="handleDingtalkBindLinked"
+  />
 
-    <OAuthQrLoginModal
-      v-model:visible="showOAuthBindModal"
-      invite-code=""
-      mode="bind"
-      :initial-provider="oauthBindProvider"
-      lock-provider
-      @success="handleOAuthBindSuccess"
-    />
-  </Teleport>
+  <DingTalkPairModal
+    v-model="showUnbindPairModal"
+    mode="unbind"
+    :linked-staff-id="dingtalkStaffMasked"
+    @completed="handleDingtalkUnbindCompleted"
+  />
+
+  <OAuthQrLoginModal
+    v-model:visible="showOAuthBindModal"
+    invite-code=""
+    mode="bind"
+    :initial-provider="oauthBindProvider"
+    lock-provider
+    @success="handleOAuthBindSuccess"
+  />
 </template>
 
 <style scoped>
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.modal-enter-active > div:last-child,
-.modal-leave-active > div:last-child {
-  transition: transform 0.2s ease;
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-from > div:last-child,
-.modal-leave-to > div:last-child {
-  transform: scale(0.95);
-}
-
-/* Close button positioning and styling */
-.close-btn {
-  position: absolute;
-  top: 16px;
-  inset-inline-end: 16px;
-  --el-button-text-color: #a8a29e;
-  --el-button-hover-text-color: #57534e;
-  --el-button-hover-bg-color: #f5f5f4;
-}
-
 /*
  * Plugin row — light Swiss tones: cool mist, soft blue-gray, warm sand.
  * Dark text on pale fills; subtle border; hover deepens slightly.
@@ -872,42 +820,5 @@ watch(
   background: #e8e0d8;
   border-color: #ccc0b8;
   color: #1c1917;
-}
-
-/* Phone / password actions - Swiss Design with dark grey/black theme */
-.account-action-btn {
-  --el-button-bg-color: #44403c;
-  --el-button-text-color: #ffffff;
-  --el-button-border-color: #44403c;
-  --el-button-hover-bg-color: #292524;
-  --el-button-hover-text-color: #ffffff;
-  --el-button-hover-border-color: #292524;
-  --el-button-active-bg-color: #1c1917;
-  --el-button-active-border-color: #1c1917;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-}
-
-.account-action-btn--linked {
-  --el-button-bg-color: #e7e5e4;
-  --el-button-text-color: #78716c;
-  --el-button-border-color: #d6d3d1;
-  --el-button-hover-bg-color: #e7e5e4;
-  --el-button-hover-text-color: #78716c;
-  --el-button-hover-border-color: #d6d3d1;
-  --el-button-active-bg-color: #e7e5e4;
-  --el-button-active-border-color: #d6d3d1;
-  cursor: not-allowed;
-}
-
-.account-action-btn--unbind {
-  --el-button-bg-color: #ffffff;
-  --el-button-text-color: #44403c;
-  --el-button-border-color: #d6d3d1;
-  --el-button-hover-bg-color: #fafaf9;
-  --el-button-hover-text-color: #292524;
-  --el-button-hover-border-color: #a8a29e;
-  --el-button-active-bg-color: #f5f5f4;
-  --el-button-active-border-color: #78716c;
 }
 </style>

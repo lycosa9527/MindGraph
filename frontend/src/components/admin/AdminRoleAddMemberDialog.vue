@@ -4,8 +4,11 @@
  */
 import { computed, nextTick, ref, watch } from 'vue'
 
-import { Close, Loading, Search, UserFilled } from '@element-plus/icons-vue'
+import { Loading, Search, UserFilled } from '@element-plus/icons-vue'
 
+import { UserPlus } from '@lucide/vue'
+
+import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage } from '@/composables'
 import type { CandidateUser } from '@/composables/admin/useAdminRoleControl'
 
@@ -31,19 +34,13 @@ const { t } = useLanguage()
 
 const searchInputRef = ref<HTMLInputElement | null>(null)
 
-const modalTitle = computed(() =>
-  t('admin.addRoleMemberModalTitle', { role: props.roleTabLabel })
-)
+const modalTitle = computed(() => t('admin.addRoleMemberModalTitle', { role: props.roleTabLabel }))
 
 const showEmptyState = computed(
   () =>
     searchQuery.value.trim().length >= 2 &&
     (props.loading || (props.hasRun && props.results.length === 0))
 )
-
-function closeModal(): void {
-  visible.value = false
-}
 
 function onGrant(user: CandidateUser): void {
   emit('grant', user)
@@ -62,160 +59,101 @@ watch(visible, async (open) => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="admin-role-add-modal">
-      <div
-        v-if="visible"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+  <SwissGlassCard
+    v-model="visible"
+    :ribbon="t('swissGlass.hero.adminRoleMember.ribbon')"
+    :title="t('swissGlass.hero.adminRoleMember.title')"
+    :line1="t('swissGlass.hero.adminRoleMember.line1')"
+    :line2="modalTitle"
+    :icon="UserPlus"
+    card-class="swiss-glass-card--wide"
+  >
+    <div class="space-y-4">
+      <label
+        class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+        for="role-add-member-search"
       >
-        <div
-          class="absolute inset-0 bg-stone-900/60 backdrop-blur-[2px]"
-          aria-hidden="true"
-          @click="closeModal"
+        {{ t('admin.searchUserByNameOrPhone') }}
+      </label>
+      <div class="admin-role-add-modal__search">
+        <el-icon class="admin-role-add-modal__search-icon">
+          <Search />
+        </el-icon>
+        <input
+          id="role-add-member-search"
+          ref="searchInputRef"
+          v-model="searchQuery"
+          type="search"
+          autocomplete="off"
+          :placeholder="t('admin.searchUserByNameOrPhone')"
+          class="admin-role-add-modal__input"
+          @keyup.enter="emit('search')"
         />
-
-        <div
-          class="relative w-full max-w-lg max-h-[90vh] flex flex-col"
-          role="dialog"
-          aria-modal="true"
-          :aria-label="modalTitle"
-          @click.stop
-          @keydown.esc="closeModal"
-        >
-          <div class="bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div class="px-8 pt-8 pb-4 text-center border-b border-stone-100 relative shrink-0">
-              <el-button
-                :icon="Close"
-                circle
-                text
-                class="admin-role-add-modal__close"
-                :aria-label="t('common.cancel')"
-                @click="closeModal"
-              />
-              <h2 class="text-lg font-semibold text-stone-900 tracking-tight px-6">
-                {{ modalTitle }}
-              </h2>
-            </div>
-
-            <div class="p-8 space-y-4 overflow-y-auto">
-              <label
-                class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                for="role-add-member-search"
-              >
-                {{ t('admin.searchUserByNameOrPhone') }}
-              </label>
-              <div class="admin-role-add-modal__search">
-                <el-icon class="admin-role-add-modal__search-icon">
-                  <Search />
-                </el-icon>
-                <input
-                  id="role-add-member-search"
-                  ref="searchInputRef"
-                  v-model="searchQuery"
-                  type="search"
-                  autocomplete="off"
-                  :placeholder="t('admin.searchUserByNameOrPhone')"
-                  class="admin-role-add-modal__input"
-                  @keyup.enter="emit('search')"
-                />
-              </div>
-
-              <div
-                v-if="showEmptyState"
-                class="admin-role-add-modal__empty"
-              >
-                <template v-if="loading">
-                  <el-icon class="is-loading"><Loading /></el-icon>
-                  <p>{{ t('admin.loading') }}</p>
-                </template>
-                <template v-else>
-                  <el-icon :size="32"><UserFilled /></el-icon>
-                  <p>{{ t('admin.roleAddMemberNoSearchResults') }}</p>
-                </template>
-              </div>
-
-              <ul
-                v-else-if="results.length > 0"
-                class="admin-role-add-modal__list"
-              >
-                <li
-                  v-for="user in results"
-                  :key="user.id"
-                  class="admin-role-add-modal__row"
-                >
-                  <div class="min-w-0">
-                    <p class="admin-role-add-modal__name">
-                      {{ user.name || user.phone }}
-                    </p>
-                    <p class="admin-role-add-modal__meta">
-                      {{ user.phone }} · {{ t('admin.currentRole') }}:
-                      {{ roleLabelFor(user.role) }}
-                      <template v-if="showSchoolInResults && schoolLabel(user)">
-                        · {{ t('admin.schoolName') }}: {{ schoolLabel(user) }}
-                      </template>
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    class="admin-role-add-modal__grant"
-                    :disabled="grantingId === user.id"
-                    @click="onGrant(user)"
-                  >
-                    <el-icon
-                      v-if="grantingId === user.id"
-                      class="is-loading"
-                    >
-                      <Loading />
-                    </el-icon>
-                    {{ t('admin.grantRole') }}
-                  </button>
-                </li>
-              </ul>
-
-              <p
-                v-else
-                class="admin-role-add-modal__hint"
-              >
-                {{ t('admin.roleAddMemberSearchHint') }}
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
-    </Transition>
-  </Teleport>
+
+      <div
+        v-if="showEmptyState"
+        class="admin-role-add-modal__empty"
+      >
+        <template v-if="loading">
+          <el-icon class="is-loading"><Loading /></el-icon>
+          <p>{{ t('admin.loading') }}</p>
+        </template>
+        <template v-else>
+          <el-icon :size="32"><UserFilled /></el-icon>
+          <p>{{ t('admin.roleAddMemberNoSearchResults') }}</p>
+        </template>
+      </div>
+
+      <ul
+        v-else-if="results.length > 0"
+        class="admin-role-add-modal__list"
+      >
+        <li
+          v-for="user in results"
+          :key="user.id"
+          class="admin-role-add-modal__row"
+        >
+          <div class="min-w-0">
+            <p class="admin-role-add-modal__name">
+              {{ user.name || user.phone }}
+            </p>
+            <p class="admin-role-add-modal__meta">
+              {{ user.phone }} · {{ t('admin.currentRole') }}:
+              {{ roleLabelFor(user.role) }}
+              <template v-if="showSchoolInResults && schoolLabel(user)">
+                · {{ t('admin.schoolName') }}: {{ schoolLabel(user) }}
+              </template>
+            </p>
+          </div>
+          <button
+            type="button"
+            class="admin-role-add-modal__grant"
+            :disabled="grantingId === user.id"
+            @click="onGrant(user)"
+          >
+            <el-icon
+              v-if="grantingId === user.id"
+              class="is-loading"
+            >
+              <Loading />
+            </el-icon>
+            {{ t('admin.grantRole') }}
+          </button>
+        </li>
+      </ul>
+
+      <p
+        v-else
+        class="admin-role-add-modal__hint"
+      >
+        {{ t('admin.roleAddMemberSearchHint') }}
+      </p>
+    </div>
+  </SwissGlassCard>
 </template>
 
 <style scoped>
-.admin-role-add-modal-enter-active,
-.admin-role-add-modal-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.admin-role-add-modal-enter-active .relative,
-.admin-role-add-modal-leave-active .relative {
-  transition: transform 0.2s ease;
-}
-
-.admin-role-add-modal-enter-from,
-.admin-role-add-modal-leave-to {
-  opacity: 0;
-}
-
-.admin-role-add-modal-enter-from .relative,
-.admin-role-add-modal-leave-to .relative {
-  transform: scale(0.97);
-}
-
-.admin-role-add-modal__close {
-  position: absolute;
-  top: 16px;
-  inset-inline-end: 16px;
-  --el-button-text-color: #a8a29e;
-  --el-button-hover-text-color: #57534e;
-  --el-button-hover-bg-color: #f5f5f4;
-}
-
 .admin-role-add-modal__search {
   position: relative;
 }

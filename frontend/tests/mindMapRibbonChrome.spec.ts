@@ -3,7 +3,11 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-import { DEFAULT_MIND_MAP_RIBBON_TAB, MIND_MAP_RIBBON_TABS, isMindMapRibbonTabId } from '@/canvas-ribbon/mindMapRibbonTypes'
+import {
+  DEFAULT_MIND_MAP_RIBBON_TAB,
+  MIND_MAP_RIBBON_TABS,
+  isMindMapRibbonTabId,
+} from '@/canvas-ribbon/mindMapRibbonTypes'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -25,6 +29,28 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     expect(isMindMapRibbonTabId('draw')).toBe(false)
     expect(isMindMapRibbonTabId('learn')).toBe(false)
     expect(isMindMapRibbonTabId('palette')).toBe(false)
+  })
+
+  it('reuses the status-bar translate button for language pick and LLM loading', () => {
+    const status = readSrc('src/canvas-ribbon/MindMapStatusBar.vue')
+    const picker = readSrc('src/canvas-ribbon/CanvasDiagramTranslateLangPicker.vue')
+    const chrome = readSrc('src/canvas-ribbon/mindMapStatusBar.css')
+    expect(status).toContain('<CanvasDiagramTranslateLangPicker')
+    expect(status).not.toContain('mindmap-ribbon-translate-confirm')
+    expect(status).not.toContain('mm-llm-translate-btn')
+    expect(picker).toContain('<LlmPhaseRing')
+    expect(picker).toContain('is-translating')
+    expect(picker).toContain('mindgraph-lang-switcher-popper')
+    expect(picker).toContain('getGalleryLanguageMenuRows')
+    expect(picker).toContain('armAndStartTranslate')
+    expect(picker).toContain('aiBlockedByCollab')
+    const chromeActions = readSrc('src/canvas-ribbon/useMindMapRibbonChromeActions.ts')
+    expect(chromeActions).toContain('leaveTranslatePreview')
+    expect(chromeActions).toContain('switchToModel(model)')
+    expect(chrome).toContain('.mm-status__translate-btn.is-translating')
+    const toolbarApps = readSrc('src/composables/canvasToolbar/useCanvasToolbarApps.ts')
+    expect(toolbarApps).toContain('useMindMapV2.value')
+    expect(toolbarApps).toContain("appKey !== 'translate_diagram'")
   })
 
   it('puts zoom on the status bar', () => {
@@ -58,6 +84,26 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     expect(topBar).toContain('canvas-top-bar__global')
     expect(topBar).toContain('<CanvasOnlineCollabMenu')
     expect(mmToolbar).not.toContain("openCollab('organization')")
+  })
+
+  it('sits the live collab session bar flush against the mind-map toolbar', () => {
+    const topBar = readSrc('src/components/canvas/CanvasTopBar.vue')
+    expect(topBar).toContain('canvas-top-bar--collab-flush')
+    expect(topBar).toContain('Boolean(workshopCode)')
+    expect(topBar).toMatch(
+      /\.canvas-top-bar--mindmap\.canvas-top-bar--collab-flush\s*\{[\s\S]*?padding-bottom:\s*0/
+    )
+  })
+
+  it('keeps the session banner school-safe and does not duplicate reconnect chrome', () => {
+    const overlay = readSrc('src/components/canvas/CanvasCollabOverlay.vue')
+    const rail = readSrc('src/components/canvas/CollabUserRail.vue')
+    expect(overlay).toContain("workshopVisibility === 'network'")
+    expect(overlay).toContain('data-collab-session-banner')
+    expect(overlay).toContain('!props.workshopCode && isReconnecting')
+    expect(overlay).not.toContain('isCollabGuest')
+    expect(rail).toContain('useCanvasChromeBottomOffset')
+    expect(rail).not.toContain('top: 56px')
   })
 
   it('uses V2 chrome on CanvasPage and keeps the V2 diagram shell', () => {

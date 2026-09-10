@@ -461,6 +461,7 @@ class TestMessageHandlerRegistry:
             "node_editing",
             "node_editing_batch",
             "node_selected",
+            "claim_node_edit",
             "update",
         }
         assert expected.issubset(MSG_HANDLERS.keys())

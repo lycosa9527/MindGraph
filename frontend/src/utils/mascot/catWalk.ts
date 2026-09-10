@@ -13,6 +13,11 @@ export interface CatWalkOptions {
   typingInputs: readonly HTMLInputElement[]
   form: HTMLFormElement
   mountParent?: HTMLElement
+  /**
+   * Patrol the top edge of the track (stand on the modal roof).
+   * Default path sits 18px above the box and overshoots the sides.
+   */
+  roofWalk?: boolean
 }
 
 interface CatWalkState {
@@ -26,19 +31,29 @@ interface CatWalkState {
   rafId: number | null
 }
 
+const CAT_BOX_WIDTH = 110
+const CAT_BOX_HEIGHT = 78
+/** SVG feet sit near y=128 in a 200×140 viewBox (~71px in the 78px box). */
+const CAT_FEET_FROM_TOP = 71
+const ROOF_PLANT_PX = 6
+/** Above `.swiss-glass-card-overlay` (4000) so the walk is not trapped under the glass card. */
+const CAT_LAYER_Z = '4010'
+
 function createCatElement(): HTMLDivElement {
   const cat = document.createElement('div')
   cat.id = 'mg-cat'
   cat.setAttribute('aria-hidden', 'true')
-  cat.style.position = 'fixed'
-  cat.style.left = '0'
-  cat.style.top = '0'
-  cat.style.width = '110px'
-  cat.style.height = '78px'
-  cat.style.zIndex = '10005'
+  cat.style.position = 'absolute'
+  cat.style.left = '-9999px'
+  cat.style.top = '-9999px'
+  cat.style.width = `${CAT_BOX_WIDTH}px`
+  cat.style.height = `${CAT_BOX_HEIGHT}px`
+  cat.style.zIndex = CAT_LAYER_Z
   cat.style.pointerEvents = 'none'
-  cat.style.filter = 'drop-shadow(0 6px 6px rgba(0,0,0,0.25))'
-  cat.style.transform = 'translate(-9999px, -9999px)'
+  cat.style.isolation = 'isolate'
+  cat.style.filter = 'drop-shadow(0 6px 6px rgba(0, 0, 0, 0.25))'
+  cat.style.transformOrigin = '50% 80%'
+  cat.style.transform = 'translateZ(1px) scaleX(-1)'
 
   cat.innerHTML =
     '<svg viewBox="0 0 200 140" width="100%" height="100%" overflow="visible" preserveAspectRatio="xMidYMid meet">' +
@@ -78,6 +93,20 @@ function createCatElement(): HTMLDivElement {
   return cat
 }
 
+function elementRect(el: HTMLElement, parent: HTMLElement, viewportFixed: boolean): DOMRect {
+  const child = el.getBoundingClientRect()
+  if (viewportFixed) {
+    return child
+  }
+  const frame = parent.getBoundingClientRect()
+  return new DOMRect(
+    child.left - frame.left + parent.scrollLeft,
+    child.top - frame.top + parent.scrollTop,
+    child.width,
+    child.height
+  )
+}
+
 function placeCat(
   cat: HTMLDivElement,
   state: CatWalkState,
@@ -88,7 +117,9 @@ function placeCat(
   state.posX = x
   state.posY = y
   if (typeof facing === 'number') state.facing = facing
-  cat.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px) scaleX(${-state.facing})`
+  cat.style.left = `${Math.round(x)}px`
+  cat.style.top = `${Math.round(y)}px`
+  cat.style.transform = `translateZ(1px) scaleX(${-state.facing})`
 }
 
 function animateBlink(cat: HTMLDivElement, state: CatWalkState, blinkTimers: number[]): void {
@@ -224,7 +255,10 @@ function startTrackPatrol(
   cat: HTMLDivElement,
   state: CatWalkState,
   trackRoot: HTMLElement,
-  submitButton: HTMLElement
+  submitButton: HTMLElement,
+  coordParent: HTMLElement,
+  roofWalk: boolean,
+  viewportFixed: boolean
 ): void {
   if (state.orbiting) return
   state.orbiting = true
@@ -234,24 +268,19 @@ function startTrackPatrol(
   let dir = 1
   let turnUntil = 0
   const speed = 140
-  const centerOffsetX = 50
-  const centerOffsetY = 36
-  const marginPx = 18
+  const centerOffsetX = CAT_BOX_WIDTH / 2
+  const sideInsetPx = roofWalk ? 32 : -18
+  const topLiftPx = roofWalk ? 0 : 18
+  const centerOffsetY = roofWalk ? CAT_FEET_FROM_TOP - ROOF_PLANT_PX : 36
 
   function resolveTrackRect(): { left: number; top: number; width: number } {
-    if (document.body.contains(trackRoot)) {
-      const r = trackRoot.getBoundingClientRect()
-      return {
-        left: r.left - marginPx,
-        top: r.top - marginPx,
-        width: r.width + 2 * marginPx,
-      }
-    }
-    const rFallback = submitButton.getBoundingClientRect()
+    const source = document.body.contains(trackRoot) ? trackRoot : submitButton
+    const r = elementRect(source, coordParent, viewportFixed)
+    const width = Math.max(r.width - 2 * sideInsetPx, 160)
     return {
-      left: rFallback.left - marginPx,
-      top: rFallback.top - marginPx,
-      width: Math.max(rFallback.width + 2 * marginPx, 260),
+      left: r.left + sideInsetPx,
+      top: r.top - topLiftPx,
+      width,
     }
   }
 
@@ -280,18 +309,14 @@ function startTrackPatrol(
 
     if (now < turnUntil) {
       state.facing = dir
-      const xPause = rect.left + nextProgress
-      const yPause = rect.top
-      placeCat(cat, state, xPause - centerOffsetX, yPause - centerOffsetY)
+      placeCat(cat, state, rect.left + nextProgress - centerOffsetX, rect.top - centerOffsetY, dir)
       requestAnimationFrame(patrolLoop)
       return
     }
 
     progress = nextProgress
-    const x = rect.left + progress
-    const y = rect.top
     state.facing = dir
-    placeCat(cat, state, x - centerOffsetX, y - centerOffsetY)
+    placeCat(cat, state, rect.left + progress - centerOffsetX, rect.top - centerOffsetY, dir)
     requestAnimationFrame(patrolLoop)
   }
 
@@ -301,6 +326,9 @@ function startTrackPatrol(
 export function initCatWalk(options: CatWalkOptions): CatWalkDispose {
   const { trackRoot, submitButton, typingInputs, form } = options
   const mountParent = options.mountParent ?? document.body
+  const roofWalk = options.roofWalk === true
+  const coordParent = mountParent
+  const viewportFixed = mountParent === document.body || mountParent === document.documentElement
 
   if (window.matchMedia('(hover: none), (pointer: coarse)').matches) {
     return (): void => {}
@@ -327,6 +355,9 @@ export function initCatWalk(options: CatWalkOptions): CatWalkDispose {
   }
 
   const cat = createCatElement()
+  if (mountParent === document.body || mountParent === document.documentElement) {
+    cat.style.position = 'fixed'
+  }
   mountParent.appendChild(cat)
 
   placeCat(cat, state, -9999, -9999, 1)
@@ -340,13 +371,19 @@ export function initCatWalk(options: CatWalkOptions): CatWalkDispose {
   startGaitLoop(cat, state)
 
   function getButtonSpawnPoint(): { x: number; y: number } {
-    const r = submitButton.getBoundingClientRect()
-    return { x: r.left + r.width * 0.5, y: r.top + r.height * 0.5 }
+    const r = elementRect(submitButton, coordParent, viewportFixed)
+    return {
+      x: r.left + r.width * 0.5 - CAT_BOX_WIDTH / 2,
+      y: r.top + r.height * 0.5 - CAT_BOX_HEIGHT / 2,
+    }
   }
 
   function getApproachPoint(): { x: number; y: number } {
-    const r = submitButton.getBoundingClientRect()
-    return { x: r.left + r.width * 0.15, y: r.top + r.height + 8 }
+    const r = elementRect(submitButton, coordParent, viewportFixed)
+    return {
+      x: r.left + r.width * 0.15 - CAT_BOX_WIDTH / 2,
+      y: r.top + r.height + 8 - CAT_BOX_HEIGHT / 2,
+    }
   }
 
   let emerged = false
@@ -357,7 +394,7 @@ export function initCatWalk(options: CatWalkOptions): CatWalkDispose {
     emerged = true
     state.emerged = true
     const spawn = getButtonSpawnPoint()
-    placeCat(cat, state, spawn.x - 50, spawn.y - 20, 1)
+    placeCat(cat, state, spawn.x, spawn.y, 1)
     await moveCatTo(cat, state, getApproachPoint(), 500)
     tryStartOrbit()
   }
@@ -370,7 +407,7 @@ export function initCatWalk(options: CatWalkOptions): CatWalkDispose {
     if (orbitStarted || !state.emerged || state.exited) return
     if (hasTypedCredential()) {
       orbitStarted = true
-      startTrackPatrol(cat, state, trackRoot, submitButton)
+      startTrackPatrol(cat, state, trackRoot, submitButton, coordParent, roofWalk, viewportFixed)
     }
   }
 
@@ -388,18 +425,12 @@ export function initCatWalk(options: CatWalkOptions): CatWalkDispose {
     state.orbiting = false
     tailAnimations.forEach((a) => a.cancel())
     const spawn = getButtonSpawnPoint()
-    void moveCatTo(cat, state, { x: spawn.x - 50, y: spawn.y - 20 }, 450).then(() => {
+    void moveCatTo(cat, state, spawn, 450).then(() => {
       if (!cat.parentNode) return
       cat.animate(
         [
-          {
-            opacity: 1,
-            transform: `translate(${state.posX}px, ${state.posY}px) scaleX(${-state.facing}) scale(1)`,
-          },
-          {
-            opacity: 0,
-            transform: `translate(${state.posX}px, ${state.posY}px) scaleX(${-state.facing}) scale(0.6)`,
-          },
+          { opacity: 1, transform: `translateZ(1px) scaleX(${-state.facing}) scale(1)` },
+          { opacity: 0, transform: `translateZ(1px) scaleX(${-state.facing}) scale(0.6)` },
         ],
         { duration: 220, fill: 'forwards', easing: 'ease-in' }
       )

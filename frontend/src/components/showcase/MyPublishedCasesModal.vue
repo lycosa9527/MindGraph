@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
-import { ElMessageBox } from 'element-plus'
+import { Eye, FileText, Heart, PenLine, Trash2, Undo2 } from '@lucide/vue'
 
-import { Eye, FileText, Heart, PenLine, Trash2, Undo2, X } from '@lucide/vue'
-
+import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import {
+  type ShowcaseCaseType,
   caseTypeShortLabel,
   getCoverColor,
-  type ShowcaseCaseType,
 } from '@/components/showcase/showcaseShared'
 import { useLanguage, useNotifications } from '@/composables'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import {
   postCanDelist,
   postCanResubmit,
@@ -37,6 +37,11 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const notify = useNotifications()
+
+const open = computed({
+  get: () => props.visible,
+  set: (value: boolean) => emit('update:visible', value),
+})
 
 const posts = ref<ShowcasePost[]>([])
 const isLoading = ref(false)
@@ -104,16 +109,11 @@ async function confirmAction(
   title: string
 ): Promise<boolean> {
   try {
-    await ElMessageBox.confirm(
-      String(t(messageKey, { title })),
-      String(t(titleKey)),
-      {
-        confirmButtonText: String(t('showcase.detail.confirm')),
-        cancelButtonText: String(t('showcase.detail.cancel')),
-        type: 'warning',
-        confirmButtonClass: 'el-button--danger',
-      }
-    )
+    await swissGlassConfirm(String(t(messageKey, { title })), String(t(titleKey)), {
+      confirmButtonText: String(t('showcase.detail.confirm')),
+      cancelButtonText: String(t('showcase.detail.cancel')),
+      type: 'warning',
+    })
     return true
   } catch {
     return false
@@ -122,7 +122,13 @@ async function confirmAction(
 
 async function withdrawPost(post: ShowcasePost) {
   if (!postCanWithdraw(post)) return
-  if (!(await confirmAction('showcase.detail.withdrawTitle', 'showcase.detail.withdrawConfirm', post.title))) {
+  if (
+    !(await confirmAction(
+      'showcase.detail.withdrawTitle',
+      'showcase.detail.withdrawConfirm',
+      post.title
+    ))
+  ) {
     return
   }
   actingPostId.value = post.id
@@ -140,7 +146,13 @@ async function withdrawPost(post: ShowcasePost) {
 
 async function delistPost(post: ShowcasePost) {
   if (!postCanDelist(post)) return
-  if (!(await confirmAction('showcase.detail.delistTitle', 'showcase.detail.delistConfirm', post.title))) {
+  if (
+    !(await confirmAction(
+      'showcase.detail.delistTitle',
+      'showcase.detail.delistConfirm',
+      post.title
+    ))
+  ) {
     return
   }
   actingPostId.value = post.id
@@ -165,152 +177,129 @@ function resubmitPost(post: ShowcasePost) {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="visible"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      @click.self="close"
-    >
-      <div class="mx-6 w-full max-w-3xl rounded-2xl bg-white shadow-2xl">
-        <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-          <div>
-            <h2 class="text-lg font-bold text-gray-900">{{ t('showcase.myCasesModalTitle') }}</h2>
-            <p class="mt-0.5 text-xs text-gray-400">{{ t('showcase.myCasesManageHint') }}</p>
-          </div>
+  <SwissGlassCard
+    v-model="open"
+    :ribbon="t('swissGlass.hero.myPublished.ribbon')"
+    :title="t('swissGlass.hero.myPublished.title')"
+    :line1="t('swissGlass.hero.myPublished.line1')"
+    :icon="FileText"
+    card-class="swiss-glass-card--xl"
+    @close="close"
+  >
+    <div class="max-h-[70vh] overflow-y-auto">
+      <div
+        v-if="isLoading"
+        class="py-12 text-center text-sm text-gray-400"
+      >
+        …
+      </div>
+      <div
+        v-else-if="posts.length === 0"
+        class="py-12 text-center"
+      >
+        <FileText class="mx-auto mb-3 h-12 w-12 text-gray-300" />
+        <p class="text-sm text-gray-400">{{ t('showcase.myCasesEmpty') }}</p>
+        <p class="mt-1 text-xs text-gray-300">{{ t('showcase.myCasesEmptyHint') }}</p>
+      </div>
+      <div
+        v-else
+        class="divide-y divide-gray-100"
+      >
+        <div
+          v-for="post in posts"
+          :key="post.id"
+          class="flex items-center gap-3 rounded-xl px-1 py-1 transition-colors hover:bg-gray-50"
+        >
           <button
             type="button"
-            class="my-cases-modal-close"
-            @click="close"
+            class="my-cases-row-btn"
+            @click="openPost(post)"
           >
-            <X class="h-5 w-5" />
-          </button>
-        </div>
-
-        <div class="max-h-[70vh] overflow-y-auto px-6 py-4">
-          <div v-if="isLoading" class="py-12 text-center text-sm text-gray-400">…</div>
-          <div v-else-if="posts.length === 0" class="py-12 text-center">
-            <FileText class="mx-auto mb-3 h-12 w-12 text-gray-300" />
-            <p class="text-sm text-gray-400">{{ t('showcase.myCasesEmpty') }}</p>
-            <p class="mt-1 text-xs text-gray-300">{{ t('showcase.myCasesEmptyHint') }}</p>
-          </div>
-          <div v-else class="divide-y divide-gray-100">
             <div
-              v-for="post in posts"
-              :key="post.id"
-              class="flex items-center gap-3 rounded-xl px-1 py-1 transition-colors hover:bg-gray-50"
+              :class="[
+                'flex h-12 w-12 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white',
+                `bg-gradient-to-br ${getCoverColor(post.id)}`,
+              ]"
             >
-              <button
-                type="button"
-                class="my-cases-row-btn"
-                @click="openPost(post)"
-              >
-                <div
-                  :class="[
-                    'flex h-12 w-12 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white',
-                    `bg-gradient-to-br ${getCoverColor(post.id)}`,
-                  ]"
-                >
-                  {{ caseTypeShortLabel(post.case_type) }}
-                </div>
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-2">
-                    <span class="truncate text-sm font-medium text-gray-900">{{ post.title }}</span>
-                    <span
-                      class="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium"
-                      :class="statusClass(post.status)"
-                    >
-                      {{ statusText(post.status) }}
-                    </span>
-                  </div>
-                  <div class="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-gray-400">
-                    <span>{{ caseTypeText(post.case_type) }}</span>
-                    <span v-if="post.subject">{{ post.subject }}</span>
-                    <span>{{ formatDate(post.created_at) }}</span>
-                    <span class="inline-flex items-center gap-1">
-                      <Eye class="h-3 w-3" />
-                      {{ post.views_count }}
-                    </span>
-                    <span
-                      v-if="post.status === 'approved'"
-                      class="inline-flex items-center gap-1"
-                    >
-                      <Heart class="h-3 w-3" />
-                      {{ post.likes_count }}
-                    </span>
-                  </div>
-                  <p v-if="post.status === 'rejected' && post.rejection_reason" class="mt-1 text-xs text-red-500">
-                    {{ post.rejection_reason }}
-                  </p>
-                </div>
-              </button>
-
-              <div
-                class="flex shrink-0 flex-wrap items-center justify-end gap-1.5"
-                @click.stop
-              >
-                <button
-                  v-if="postCanResubmit(post)"
-                  type="button"
-                  class="my-cases-action-btn my-cases-action-btn--primary"
-                  :disabled="actingPostId === post.id"
-                  @click="resubmitPost(post)"
-                >
-                  <PenLine class="h-3.5 w-3.5" />
-                  {{ t('showcase.myCasesAction.edit') }}
-                </button>
-                <button
-                  v-if="postCanWithdraw(post)"
-                  type="button"
-                  class="my-cases-action-btn my-cases-action-btn--withdraw"
-                  :disabled="actingPostId === post.id"
-                  @click="withdrawPost(post)"
-                >
-                  <Undo2 class="h-3.5 w-3.5" />
-                  {{ t('showcase.detail.withdraw') }}
-                </button>
-                <button
-                  v-if="postCanDelist(post)"
-                  type="button"
-                  class="my-cases-action-btn my-cases-action-btn--delist"
-                  :disabled="actingPostId === post.id"
-                  @click="delistPost(post)"
-                >
-                  <Trash2 class="h-3.5 w-3.5" />
-                  {{ t('showcase.detail.delist') }}
-                </button>
-              </div>
+              {{ caseTypeShortLabel(post.case_type) }}
             </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2">
+                <span class="truncate text-sm font-medium text-gray-900">{{ post.title }}</span>
+                <span
+                  class="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium"
+                  :class="statusClass(post.status)"
+                >
+                  {{ statusText(post.status) }}
+                </span>
+              </div>
+              <div class="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-gray-400">
+                <span>{{ caseTypeText(post.case_type) }}</span>
+                <span v-if="post.subject">{{ post.subject }}</span>
+                <span>{{ formatDate(post.created_at) }}</span>
+                <span class="inline-flex items-center gap-1">
+                  <Eye class="h-3 w-3" />
+                  {{ post.views_count }}
+                </span>
+                <span
+                  v-if="post.status === 'approved'"
+                  class="inline-flex items-center gap-1"
+                >
+                  <Heart class="h-3 w-3" />
+                  {{ post.likes_count }}
+                </span>
+              </div>
+              <p
+                v-if="post.status === 'rejected' && post.rejection_reason"
+                class="mt-1 text-xs text-red-500"
+              >
+                {{ post.rejection_reason }}
+              </p>
+            </div>
+          </button>
+
+          <div
+            class="flex shrink-0 flex-wrap items-center justify-end gap-1.5"
+            @click.stop
+          >
+            <button
+              v-if="postCanResubmit(post)"
+              type="button"
+              class="my-cases-action-btn my-cases-action-btn--primary"
+              :disabled="actingPostId === post.id"
+              @click="resubmitPost(post)"
+            >
+              <PenLine class="h-3.5 w-3.5" />
+              {{ t('showcase.myCasesAction.edit') }}
+            </button>
+            <button
+              v-if="postCanWithdraw(post)"
+              type="button"
+              class="my-cases-action-btn my-cases-action-btn--withdraw"
+              :disabled="actingPostId === post.id"
+              @click="withdrawPost(post)"
+            >
+              <Undo2 class="h-3.5 w-3.5" />
+              {{ t('showcase.detail.withdraw') }}
+            </button>
+            <button
+              v-if="postCanDelist(post)"
+              type="button"
+              class="my-cases-action-btn my-cases-action-btn--delist"
+              :disabled="actingPostId === post.id"
+              @click="delistPost(post)"
+            >
+              <Trash2 class="h-3.5 w-3.5" />
+              {{ t('showcase.detail.delist') }}
+            </button>
           </div>
         </div>
       </div>
     </div>
-  </Teleport>
+  </SwissGlassCard>
 </template>
 
 <style scoped>
-.my-cases-modal-close {
-  border: none;
-  outline: none;
-  border-radius: 0.5rem;
-  padding: 0.25rem;
-  color: #9ca3af;
-  background: transparent;
-  appearance: none;
-  -webkit-appearance: none;
-  cursor: pointer;
-}
-
-.my-cases-modal-close:hover {
-  background: #f3f4f6;
-  color: #4b5563;
-}
-
-.my-cases-modal-close:focus,
-.my-cases-modal-close:focus-visible {
-  outline: none;
-  box-shadow: none;
-}
-
 .my-cases-row-btn {
   display: flex;
   min-width: 0;

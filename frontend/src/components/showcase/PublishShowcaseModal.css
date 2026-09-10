@@ -1,3 +1,10 @@
+.publish-wizard {
+  display: flex;
+  height: min(72vh, 760px);
+  min-height: 0;
+  overflow: hidden;
+}
+
 .publish-step-dot {
   display: flex;
   height: 1.75rem;
@@ -47,7 +54,10 @@
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .publish-ai-badge:hover:not(:disabled) {
@@ -127,7 +137,9 @@
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .publish-tag-suggest:hover {

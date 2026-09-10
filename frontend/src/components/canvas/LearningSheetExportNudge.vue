@@ -8,6 +8,7 @@ import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { X } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
+import { measureCanvasChromeBottomPx } from '@/composables/canvas/useCanvasChromeBottomOffset'
 import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useDiagramStore } from '@/stores'
 
@@ -61,11 +62,8 @@ const nudgeStyle = computed(() => {
       transform: 'translateX(-50%)',
     }
   }
-  const chrome =
-    document.querySelector('.canvas-top-bar--mindmap') ?? document.querySelector('.canvas-top-bar')
-  const bottom = chrome instanceof HTMLElement ? chrome.getBoundingClientRect().bottom : 96
   return {
-    top: `${bottom + 8}px`,
+    top: `${measureCanvasChromeBottomPx() + 8}px`,
     left: '50%',
     transform: 'translateX(-50%)',
   }

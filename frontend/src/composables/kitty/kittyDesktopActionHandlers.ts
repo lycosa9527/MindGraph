@@ -8,14 +8,14 @@ import {
 import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
 import { isCanvasPristineForTypeSwitch } from '@/composables/canvasPage/isCanvasPristineForTypeSwitch'
 import { switchCanvasDiagramType } from '@/composables/canvasPage/switchCanvasDiagramType'
-import { loadElMessageBox } from '@/composables/core/notifications'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { eventBus } from '@/composables/core/useEventBus'
 import { adoptOpenCanvasSessionScope } from '@/composables/kitty/adoptOpenCanvasSessionScope'
-import { applyKittySelectionTarget } from '@/composables/kitty/kittySelectionApply'
 import {
   consumeKittyPendingDesktopExplain,
   stashKittyPendingDesktopExplain,
 } from '@/composables/kitty/kittyPendingCanvasAction'
+import { applyKittySelectionTarget } from '@/composables/kitty/kittySelectionApply'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
@@ -97,8 +97,7 @@ export async function handleKittyReloadLibraryDiagramAction(
     return
   }
 
-  const onCanvas =
-    options.routePath === '/canvas' || options.routePath.startsWith('/canvas/')
+  const onCanvas = options.routePath === '/canvas' || options.routePath.startsWith('/canvas/')
   if (!onCanvas) {
     await options.router
       .push({ path: '/canvas', query: { diagramId: targetId } })
@@ -174,8 +173,7 @@ export async function handleKittyExplainNodeAction(
   if (!nodeId) {
     return
   }
-  const libId =
-    typeof act.diagram_library_id === 'string' ? act.diagram_library_id.trim() : ''
+  const libId = typeof act.diagram_library_id === 'string' ? act.diagram_library_id.trim() : ''
   const onCanvas = options != null && isDesktopCanvasPath(options.routePath)
   const currentLib = options?.savedDiagramsStore.activeDiagramId?.trim() ?? ''
   const sameDiagram = !libId || !currentLib || currentLib === libId
@@ -296,8 +294,7 @@ export async function handleKittyOpenCanvasAction(
     const t = options?.t
     if (t != null) {
       try {
-        const ElMessageBox = await loadElMessageBox()
-        await ElMessageBox.confirm(
+        await swissGlassConfirm(
           t(
             'kitty.desktopJumpConfirmBody',
             '手机 Kitty 请求打开新画布。当前画布有未保存内容，是否切换？'

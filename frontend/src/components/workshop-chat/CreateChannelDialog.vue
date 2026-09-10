@@ -7,6 +7,9 @@ import { computed, ref, watch } from 'vue'
 
 import { ElMessage } from 'element-plus'
 
+import { MessagesSquare } from '@lucide/vue'
+
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
 
@@ -17,6 +20,11 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:visible', val: boolean): void
 }>()
+
+const open = computed({
+  get: () => props.visible,
+  set: (value: boolean) => emit('update:visible', value),
+})
 
 const { t } = useLanguage()
 const store = useWorkshopChatStore()
@@ -86,13 +94,14 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <el-dialog
-    :model-value="visible"
-    :title="t('workshop.addChannelTitle')"
-    width="440px"
+  <SwissGlassDialog
+    v-model="open"
+    :ribbon="t('swissGlass.hero.createChannel.ribbon')"
+    :title="t('swissGlass.hero.createChannel.title')"
+    :line1="t('swissGlass.hero.createChannel.line1')"
+    :icon="MessagesSquare"
+    width="min(440px, 92vw)"
     :close-on-click-modal="false"
-    append-to-body
-    @update:model-value="emit('update:visible', $event)"
   >
     <div class="flex flex-col gap-3 text-sm">
       <el-radio-group
@@ -167,17 +176,23 @@ async function submit(): Promise<void> {
     </div>
 
     <template #footer>
-      <el-button @click="emit('update:visible', false)">
-        {{ t('common.cancel') }}
-      </el-button>
-      <el-button
-        type="primary"
-        :loading="saving"
-        :disabled="!name.trim() || (kind === 'lesson' && parentOptions.length === 0)"
-        @click="submit"
-      >
-        {{ t('workshop.create') }}
-      </el-button>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          @click="open = false"
+        >
+          {{ t('common.cancel') }}
+        </button>
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          :disabled="saving || !name.trim() || (kind === 'lesson' && parentOptions.length === 0)"
+          @click="submit"
+        >
+          {{ t('workshop.create') }}
+        </button>
+      </div>
     </template>
-  </el-dialog>
+  </SwissGlassDialog>
 </template>

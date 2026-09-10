@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
-import { ElDialog, ElProgress } from 'element-plus'
+import { ElProgress } from 'element-plus'
 
+import { Video } from '@lucide/vue'
+
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { uploadVodFile } from '@/composables/admin/uploadVodFile'
 
@@ -18,6 +21,11 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const notify = useNotifications()
+
+const open = computed({
+  get: () => props.modelValue,
+  set: (value: boolean) => emit('update:modelValue', value),
+})
 
 const title = ref('')
 const file = ref<File | null>(null)
@@ -82,11 +90,14 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <ElDialog
-    :model-value="modelValue"
-    :title="t('admin.vod.uploadTitle')"
+  <SwissGlassDialog
+    v-model="open"
+    :ribbon="t('swissGlass.hero.adminVod.ribbon')"
+    :title="t('swissGlass.hero.adminVod.title')"
+    :line1="t('swissGlass.hero.adminVod.line1')"
+    :icon="Video"
     width="28rem"
-    @update:model-value="emit('update:modelValue', $event)"
+    :close-on-click-modal="!uploading"
     @close="close"
   >
     <label class="vod-field">
@@ -113,24 +124,26 @@ async function submit(): Promise<void> {
       class="mt-3"
     />
     <template #footer>
-      <button
-        type="button"
-        class="vod-btn vod-btn--ghost"
-        :disabled="uploading"
-        @click="close"
-      >
-        {{ t('common.cancel') }}
-      </button>
-      <button
-        type="button"
-        class="vod-btn"
-        :disabled="uploading"
-        @click="submit"
-      >
-        {{ t('admin.vod.upload') }}
-      </button>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          :disabled="uploading"
+          @click="close"
+        >
+          {{ t('common.cancel') }}
+        </button>
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          :disabled="uploading"
+          @click="submit"
+        >
+          {{ t('admin.vod.upload') }}
+        </button>
+      </div>
     </template>
-  </ElDialog>
+  </SwissGlassDialog>
 </template>
 
 <style scoped>
@@ -145,16 +158,5 @@ async function submit(): Promise<void> {
   border: 1px solid #d6d3d1;
   border-radius: 0.375rem;
   padding: 0.4rem 0.6rem;
-}
-.vod-btn {
-  border-radius: 0.375rem;
-  background: #1c1917;
-  color: #fff;
-  padding: 0.4rem 0.85rem;
-}
-.vod-btn--ghost {
-  background: #f5f5f4;
-  color: #44403c;
-  margin-right: 0.5rem;
 }
 </style>

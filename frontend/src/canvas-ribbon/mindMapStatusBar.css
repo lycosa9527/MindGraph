@@ -75,7 +75,8 @@
 
 .mm-status .el-tooltip__trigger,
 .mm-status .el-only-child__content,
-.mm-status .shortcut-guide--status {
+.mm-status .shortcut-guide--status,
+.mm-status .el-dropdown {
   display: inline-flex;
   align-items: center;
   height: 28px;
@@ -124,6 +125,11 @@
   padding: 2px;
   border-radius: 6px;
   background: #e5e7eb;
+}
+
+.mm-llm-selector .llm-phase-ring {
+  height: 24px;
+  align-items: center;
 }
 
 .mm-llm-btn {
@@ -175,4 +181,38 @@
   background: rgb(233 30 99 / 0.8);
   color: #fff;
   font-weight: 600;
+}
+
+.mm-status__right .llm-phase-ring {
+  height: 28px;
+  max-height: 28px;
+  align-items: center;
+}
+
+.mm-status__translate-btn.is-translating {
+  background: rgb(13 94 88 / 0.94);
+  color: #ecfdf5;
+  font-weight: 600;
+}
+
+.mm-status__translate-btn.is-translating:hover {
+  background: rgb(15 118 110 / 1);
+}
+
+.dark .mm-status__translate-btn.is-translating {
+  background: rgb(15 76 72 / 0.96);
+  color: #ccfbf1;
+}
+
+.dark .mm-status__translate-btn.is-translating:hover {
+  background: rgb(17 94 89 / 1);
+}
+
+.mm-status__translate-code {
+  max-width: 52px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }

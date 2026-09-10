@@ -6,16 +6,29 @@
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
-import { ElMessageBox } from 'element-plus'
+import { Delete } from '@element-plus/icons-vue'
 
-import { Delete, Loading } from '@element-plus/icons-vue'
-
+import { TrendingUp } from '@lucide/vue'
 import type { Chart as ChartInstance } from 'chart.js'
 
-import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
-import { queryErrorMessage } from '@/composables/admin/useQueryErrorNotification'
-import { useScopedAbort } from '@/composables/core/useScopedAbort'
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
+import { useAdminAccess } from '@/composables/admin/useAdminAccess'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
+import {
+  clearAdminMindBotOrgSession,
+  getAdminMindBotOrgSession,
+} from '@/composables/admin/useAdminMindBotConfig'
+import {
+  ADMIN_TREND_CHART_MOUNT_DELAY_MS,
+  ADMIN_TREND_DAYS_MAP,
+  formatAdminTrendNumber,
+  renderAdminTrendLineChart,
+} from '@/composables/admin/useAdminTrendChart'
+import { queryErrorMessage } from '@/composables/admin/useQueryErrorNotification'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
+import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
+import { useScopedAbort } from '@/composables/core/useScopedAbort'
 import {
   fetchAdminOrganizationManagers,
   fetchAdminOrganizationUsers,
@@ -28,34 +41,22 @@ import {
   useUpdateAdminOrganization,
 } from '@/composables/queries'
 import {
+  SCHOOL_TIER_LIMITS,
+  type SchoolTier,
   effectiveMemberLimit,
   isUnlimitedMemberLimit,
-  SCHOOL_TIER_LIMITS,
   normalizeSchoolTier,
-  type SchoolTier,
 } from '@/constants/schoolTier'
-import { useAdminAccess } from '@/composables/admin/useAdminAccess'
-import {
-  ADMIN_TREND_CHART_MOUNT_DELAY_MS,
-  ADMIN_TREND_DAYS_MAP,
-  formatAdminTrendNumber,
-  renderAdminTrendLineChart,
-} from '@/composables/admin/useAdminTrendChart'
-import {
-  clearAdminMindBotOrgSession,
-  getAdminMindBotOrgSession,
-} from '@/composables/admin/useAdminMindBotConfig'
-import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { intlLocaleForUiCode } from '@/i18n/locales'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
 
+import AdminOrgActivityTab from './AdminOrgActivityTab.vue'
 import AdminSchoolDifySettings from './AdminSchoolDifySettings.vue'
 import AdminSchoolMindBotTab from './AdminSchoolMindBotTab.vue'
 import AdminSchoolOrgGeneralTab from './AdminSchoolOrgGeneralTab.vue'
 import AdminSchoolTeachersTab from './AdminSchoolTeachersTab.vue'
 import AdminSchoolTokenUsageTab from './AdminSchoolTokenUsageTab.vue'
-import AdminOrgActivityTab from './AdminOrgActivityTab.vue'
 import AdminUserActivityTab from './AdminUserActivityTab.vue'
 import AdminUserTokenUsageTab from './AdminUserTokenUsageTab.vue'
 
@@ -166,9 +167,7 @@ function isMindbotSchoolTab(tab: SchoolDialogTab): boolean {
   return MIND_BOT_SCHOOL_TABS.has(tab)
 }
 
-function mindbotEmbeddedPane(
-  tab: SchoolDialogTab
-): 'dingtalk' | 'log' | 'monitor' | null {
+function mindbotEmbeddedPane(tab: SchoolDialogTab): 'dingtalk' | 'log' | 'monitor' | null {
   if (tab === 'mindbot_dingtalk') {
     return 'dingtalk'
   }
@@ -313,8 +312,7 @@ const tierDowngradeBlocked = computed(() => {
   const memberCount = props.orgUserCount ?? 0
   const managerCount = managers.value.length
   const memberCap = effectiveMemberLimitValue.value
-  const memberOverLimit =
-    !isUnlimitedMemberLimit(memberCap) && memberCount > memberCap
+  const memberOverLimit = !isUnlimitedMemberLimit(memberCap) && memberCount > memberCap
   return memberOverLimit || managerCount > limits.managerLimit
 })
 
@@ -413,7 +411,9 @@ async function loadUserTokenCards(signal: AbortSignal) {
     today: formatAdminTrendNumber(sum(1) || 0),
     week: formatAdminTrendNumber(sum(7) || 0),
     month: formatAdminTrendNumber(sum(30) || 0),
-    total: formatAdminTrendNumber(arr.reduce((a: number, b: { value?: number }) => a + (b.value ?? 0), 0)),
+    total: formatAdminTrendNumber(
+      arr.reduce((a: number, b: { value?: number }) => a + (b.value ?? 0), 0)
+    ),
   }
 }
 
@@ -572,13 +572,10 @@ async function saveGeneralSettings() {
     notify.warning(
       t('admin.schoolTierDowngradeBlocked', {
         members: props.orgUserCount ?? 0,
-        memberLimit: isUnlimitedMemberLimit(memberCap)
-          ? t('admin.unlimited')
-          : memberCap,
+        memberLimit: isUnlimitedMemberLimit(memberCap) ? t('admin.unlimited') : memberCap,
         managers: managers.value.length,
-        managerLimit: limits.managerLimit <= 0
-          ? t('admin.noSchoolManagersShort')
-          : limits.managerLimit,
+        managerLimit:
+          limits.managerLimit <= 0 ? t('admin.noSchoolManagersShort') : limits.managerLimit,
       })
     )
     return
@@ -593,8 +590,7 @@ async function saveGeneralSettings() {
         display_name: displayNameEdit.value.trim() || null,
         expires_at: expiresAtPayload,
         school_tier: schoolTierEdit.value,
-        extra_member_seats:
-          schoolTierEdit.value === 'trial' ? 0 : extraMemberSeatsEdit.value,
+        extra_member_seats: schoolTierEdit.value === 'trial' ? 0 : extraMemberSeatsEdit.value,
       },
     })
     const savedTier = updated.school_tier
@@ -661,11 +657,10 @@ async function deleteOrganization() {
           .replace('{count}', String(userCount))
       : t('admin.deleteOrgConfirm').replace('{name}', name)
   try {
-    await ElMessageBox.confirm(confirmMsg, t('admin.deleteOrganization'), {
+    await swissGlassConfirm(confirmMsg, t('admin.deleteOrganization'), {
       type: 'warning',
       confirmButtonText: t('common.delete'),
       cancelButtonText: t('common.cancel'),
-      confirmButtonClass: 'el-button--danger',
     })
   } catch {
     return
@@ -800,31 +795,19 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <el-dialog
+  <SwissGlassDialog
     v-if="type === 'org'"
     :model-value="visible"
-    class="school-settings-dialog mindbot-settings-dialog mindbot-swiss-dialog"
+    :ribbon="t('swissGlass.hero.adminTrend.ribbon')"
+    :title="schoolModalHeaderTitle"
+    :line1="t('swissGlass.hero.adminTrend.line1')"
+    :line2="schoolHeaderNote"
+    :icon="TrendingUp"
     width="min(760px, 94vw)"
-    destroy-on-close
-    append-to-body
-    align-center
-    modal-class="mindbot-swiss-backdrop"
-    :show-close="true"
+    dialog-class="school-settings-dialog"
     @update:model-value="onSchoolModalVisibleChange"
     @close="handleClose"
   >
-    <template #header>
-      <div class="mindbot-swiss-header mindbot-config-header">
-        <span class="mindbot-swiss-header__glyph">◇</span>
-        <span class="mindbot-swiss-header__title">{{ schoolModalHeaderTitle }}</span>
-        <span
-          class="mindbot-swiss-header__divider"
-          aria-hidden="true"
-          >·</span
-        >
-        <span class="mindbot-swiss-header__note">{{ schoolHeaderNote }}</span>
-      </div>
-    </template>
     <div class="mindbot-config-body">
       <div
         class="mindbot-config-scanlines"
@@ -971,16 +954,17 @@ onBeforeUnmount(() => {
         v-if="isInsightsMode"
         class="flex justify-end"
       >
-        <el-button
-          class="mindbot-pill mindbot-pill--footer-cancel"
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="close"
         >
           {{ t('common.close') }}
-        </el-button>
+        </button>
       </div>
       <div
         v-else
-        class="mindbot-dialog-footer flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+        class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
       >
         <div
           v-if="showMindbotFooterEnable && !panelReadOnly"
@@ -996,92 +980,74 @@ onBeforeUnmount(() => {
           v-if="!panelReadOnly || (schoolDialogTab === 'general' && canEditOrgGeneral)"
           class="flex shrink-0 flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:flex-wrap sm:ml-auto"
         >
-        <el-button
-          v-if="schoolDialogTab === 'general' && orgId && canEditOrgGeneral"
-          type="primary"
-          class="mindbot-pill mindbot-pill--footer-save w-full sm:w-auto"
-          :loading="generalTabSaving"
-          :disabled="tierDowngradeBlocked"
-          @click="saveGeneralSettings"
-        >
-          {{ t('admin.save') }}
-        </el-button>
-        <el-tooltip
-          v-else-if="schoolDialogTab === 'dify' && orgId"
-          :disabled="Boolean(mindmateDifyRef?.canSave)"
-          :content="t('admin.schoolDifyAuthRequiredBeforeSave')"
-          placement="top"
-        >
-          <el-button
-            type="primary"
-            class="mindbot-pill mindbot-pill--footer-save w-full sm:w-auto"
-            :loading="mindmateDifyRef?.saving"
-            :disabled="!mindmateDifyRef?.canSave"
-            @click="mindmateDifyRef?.saveSettings()"
+          <button
+            v-if="schoolDialogTab === 'general' && orgId && canEditOrgGeneral"
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+            :disabled="generalTabSaving || tierDowngradeBlocked"
+            @click="saveGeneralSettings"
           >
             {{ t('admin.save') }}
-          </el-button>
-        </el-tooltip>
-        <el-button
-          v-else-if="isMindbotSchoolTab(schoolDialogTab) && orgId && mindbotSaveEnabled"
-          type="primary"
-          class="mindbot-pill mindbot-pill--footer-save w-full sm:w-auto"
-          :loading="mindbotSaving"
-          @click="saveMindbotSettings()"
-        >
-          {{ t('admin.mindbot.save') }}
-        </el-button>
-        <el-button
-          class="mindbot-pill mindbot-pill--footer-cancel w-full sm:w-auto"
-          @click="close"
-        >
-          {{ t('common.close') }}
-        </el-button>
-        <el-button
-          v-if="orgId"
-          type="danger"
-          plain
-          class="mindbot-pill mindbot-pill--footer-danger w-full sm:w-auto"
-          :loading="deleteLoading"
-          @click="deleteOrganization"
-        >
-          <el-icon class="mr-1"><Delete /></el-icon>
-          {{ t('admin.deleteOrganization') }}
-        </el-button>
+          </button>
+          <el-tooltip
+            v-else-if="schoolDialogTab === 'dify' && orgId"
+            :disabled="Boolean(mindmateDifyRef?.canSave)"
+            :content="t('admin.schoolDifyAuthRequiredBeforeSave')"
+            placement="top"
+          >
+            <button
+              type="button"
+              class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+              :disabled="Boolean(mindmateDifyRef?.saving) || !mindmateDifyRef?.canSave"
+              @click="mindmateDifyRef?.saveSettings()"
+            >
+              {{ t('admin.save') }}
+            </button>
+          </el-tooltip>
+          <button
+            v-else-if="isMindbotSchoolTab(schoolDialogTab) && orgId && mindbotSaveEnabled"
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+            :disabled="mindbotSaving"
+            @click="saveMindbotSettings()"
+          >
+            {{ t('admin.mindbot.save') }}
+          </button>
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+            @click="close"
+          >
+            {{ t('common.close') }}
+          </button>
+          <button
+            v-if="orgId"
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--danger min-w-22"
+            :disabled="deleteLoading"
+            @click="deleteOrganization"
+          >
+            <el-icon class="mr-1"><Delete /></el-icon>
+            {{ t('admin.deleteOrganization') }}
+          </button>
         </div>
       </div>
     </template>
-  </el-dialog>
+  </SwissGlassDialog>
 
-  <el-dialog
+  <SwissGlassDialog
     v-else
     :model-value="visible"
-    class="admin-user-trend-swiss admin-org-dialog school-settings-dialog"
+    :ribbon="t('swissGlass.hero.adminTrend.ribbon')"
+    :title="t('swissGlass.hero.adminTrend.title')"
+    :line1="t('swissGlass.hero.adminTrend.line1')"
+    :line2="userName"
+    :icon="TrendingUp"
     width="min(760px, 94vw)"
-    destroy-on-close
-    append-to-body
-    align-center
+    dialog-class="admin-user-trend-swiss school-settings-dialog"
     @update:model-value="(v: boolean) => emit('update:visible', v)"
     @close="handleClose"
   >
-    <template #header>
-      <div class="admin-user-trend-swiss__header">
-        <span
-          class="admin-user-trend-swiss__glyph"
-          aria-hidden="true"
-        >◇</span>
-        <span class="admin-user-trend-swiss__title">{{ t('admin.trendUserTokens') }}</span>
-        <span
-          v-if="userName"
-          class="admin-user-trend-swiss__divider"
-          aria-hidden="true"
-        />
-        <span
-          v-if="userName"
-          class="admin-user-trend-swiss__name"
-        >{{ userName }}</span>
-      </div>
-    </template>
     <div class="admin-user-trend-swiss__stack">
       <div
         class="admin-swiss-segmented admin-swiss-segmented--block"
@@ -1119,16 +1085,17 @@ onBeforeUnmount(() => {
       />
     </div>
     <template #footer>
-      <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:flex-wrap">
-        <el-button
-          class="admin-swiss-btn w-full sm:w-auto"
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="close"
         >
           {{ t('common.close') }}
-        </el-button>
+        </button>
       </div>
     </template>
-  </el-dialog>
+  </SwissGlassDialog>
 </template>
 
 <style>
@@ -1138,11 +1105,9 @@ onBeforeUnmount(() => {
 </style>
 
 <style scoped>
-.school-settings-dialog.mindbot-swiss-dialog {
+.school-settings-dialog {
   width: min(92vw, 800px) !important;
   max-width: 100%;
-  border-radius: 2px;
-  overflow: hidden;
 }
 
 .school-dialog-tabs :deep(.el-tabs__content) {

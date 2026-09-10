@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 
 import {
   Archive,
@@ -21,6 +21,8 @@ import {
   Trash2,
 } from '@lucide/vue'
 
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
@@ -138,7 +140,7 @@ async function handleArchiveChannel(): Promise<void> {
   }
   const copy = archiveDialogCopy()
   try {
-    await ElMessageBox.confirm(copy.message, copy.title, {
+    await swissGlassConfirm(copy.message, copy.title, {
       confirmButtonText: t('common.confirm'),
       cancelButtonText: t('common.cancel'),
       type: 'warning',
@@ -162,7 +164,7 @@ async function handleDeleteChannel(): Promise<void> {
   }
   const copy = deleteDialogCopy()
   try {
-    await ElMessageBox.confirm(copy.message, copy.title, {
+    await swissGlassConfirm(copy.message, copy.title, {
       confirmButtonText: t('common.confirm'),
       cancelButtonText: t('common.cancel'),
       type: 'warning',
@@ -435,12 +437,13 @@ export default { name: 'ChannelActionsPopover' }
     </div>
   </el-popover>
 
-  <el-dialog
+  <SwissGlassDialog
     v-model="deadlineDialogVisible"
-    :title="t('workshop.deadlineDialogTitle')"
-    width="400px"
-    destroy-on-close
-    append-to-body
+    :ribbon="t('swissGlass.hero.deadline.ribbon')"
+    :title="t('swissGlass.hero.deadline.title')"
+    :line1="t('swissGlass.hero.deadline.line1')"
+    :icon="CalendarClock"
+    width="min(400px, 92vw)"
   >
     <el-date-picker
       v-model="deadlineDraft"
@@ -449,18 +452,25 @@ export default { name: 'ChannelActionsPopover' }
       :teleported="true"
     />
     <template #footer>
-      <el-button @click="deadlineDialogVisible = false">
-        {{ t('common.cancel') }}
-      </el-button>
-      <el-button
-        type="primary"
-        :disabled="!deadlineDraft"
-        @click="handleSaveDeadline"
-      >
-        {{ t('common.save') }}
-      </el-button>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          @click="deadlineDialogVisible = false"
+        >
+          {{ t('common.cancel') }}
+        </button>
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          :disabled="!deadlineDraft"
+          @click="handleSaveDeadline"
+        >
+          {{ t('common.save') }}
+        </button>
+      </div>
     </template>
-  </el-dialog>
+  </SwissGlassDialog>
 </template>
 
 <style scoped>

@@ -1,15 +1,14 @@
 /**
  * Shared MindBot admin config state: load, create, update, rotate callback.
  */
-import { computed, ref, type Ref } from 'vue'
-
-import { ElMessageBox } from 'element-plus'
+import { type Ref, computed, ref } from 'vue'
 
 import type {
   MindbotConfigFormState,
   MindbotConfigRow,
 } from '@/components/admin/mindbotConfigTypes'
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import {
   fetchAllAdminMindbotConfigs,
   useCreateAdminMindbotConfig,
@@ -199,7 +198,10 @@ export function useAdminMindBotConfig(options?: {
     await loadConfigsPromise
   }
 
-  async function loadConfigsForOrg(orgId: number, preferredConfigId?: number | null): Promise<void> {
+  async function loadConfigsForOrg(
+    orgId: number,
+    preferredConfigId?: number | null
+  ): Promise<void> {
     await loadConfigs()
     if (featureDisabled.value) {
       return
@@ -339,15 +341,11 @@ export function useAdminMindBotConfig(options?: {
       return
     }
     try {
-      await ElMessageBox.confirm(
+      await swissGlassConfirm(
         t('admin.mindbot.rotateConfirm'),
         t('admin.mindbot.rotateConfirmTitle'),
         {
           type: 'warning',
-          customClass: 'mindbot-swiss-message-box mindbot-swiss-msg--rotate',
-          modalClass: 'mindbot-swiss-backdrop',
-          cancelButtonClass: 'mindbot-pill mindbot-pill--footer-cancel',
-          showClose: true,
         }
       )
     } catch {
@@ -371,15 +369,11 @@ export function useAdminMindBotConfig(options?: {
 
   async function deleteConfig(row: MindbotConfigRow): Promise<boolean> {
     try {
-      await ElMessageBox.confirm(
+      await swissGlassConfirm(
         t('admin.mindbot.deleteConfirm'),
         t('admin.mindbot.deleteConfirmTitle'),
         {
           type: 'warning',
-          customClass: 'mindbot-swiss-message-box mindbot-swiss-msg--delete',
-          modalClass: 'mindbot-swiss-backdrop',
-          cancelButtonClass: 'mindbot-pill mindbot-pill--footer-cancel',
-          showClose: true,
         }
       )
     } catch {

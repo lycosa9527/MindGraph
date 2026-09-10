@@ -65,6 +65,7 @@ describe('applyCanvasSessionReset', () => {
     const translateStore = useDiagramTranslateUiStore()
     translateStore.openBanner()
     translateStore.beginStream()
+    translateStore.armPending('ja', { type: 'mindmap', nodes: [{ id: 'n1', text: '光' }] })
 
     const kittySession = useKittySessionStore()
     kittySession.setWriteLockHolder('llm')
@@ -102,6 +103,8 @@ describe('applyCanvasSessionReset', () => {
     expect(useConceptMapFocusReviewStore().streamPhase).toBe('idle')
     expect(Object.keys(relationshipStore.allLabels)).toHaveLength(0)
     expect(translateStore.bannerVisible).toBe(false)
+    expect(translateStore.hasPendingTranslate).toBe(false)
+    expect(translateStore.pendingSourceSpec).toBeNull()
     expect(kittySession.writeLockHolder).toBeNull()
     expect(kittySession.hubScopeRevision).toBeNull()
     expect(kittySession.asrListening).toBe(false)

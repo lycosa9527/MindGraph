@@ -4,20 +4,22 @@
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
+import { Settings2 } from '@lucide/vue'
 import { useQueryClient } from '@tanstack/vue-query'
 
-import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import {
+  type AdminFeatureFlagsPayload,
   useAdminConfigFeatures,
   useAdminOrganizations,
   useReloadAdminEnvRuntime,
   useUpdateAdminEnvSettings,
   useUpdateAdminFeatureOrgAccess,
-  type AdminFeatureFlagsPayload,
 } from '@/composables/queries'
-import type { FeatureOrgAccessEntry } from '@/stores/featureFlags'
 import { useAdminPanelStore } from '@/stores'
+import type { FeatureOrgAccessEntry } from '@/stores/featureFlags'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 
 const { t } = useLanguage()
@@ -529,12 +531,15 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <el-dialog
+    <SwissGlassDialog
       v-model="dialogVisible"
-      :title="dialogTitleKey ? t(dialogTitleKey) : ''"
+      :ribbon="t('swissGlass.hero.adminInline.ribbon')"
+      :title="t('swissGlass.hero.adminInline.title')"
+      :line1="t('swissGlass.hero.adminInline.line1')"
+      :line2="dialogTitleKey ? t(dialogTitleKey) : ''"
+      :icon="Settings2"
       width="min(520px, 92vw)"
-      destroy-on-close
-      @closed="onPermissionDialogClosed"
+      @close="onPermissionDialogClosed"
     >
       <div
         v-if="permissionDialogKey"
@@ -589,19 +594,25 @@ onUnmounted(() => {
         </div>
       </div>
       <template #footer>
-        <el-button @click="closePermissionDialog">
-          {{ t('admin.cancel') }}
-        </el-button>
-        <el-button
-          type="primary"
-          :loading="savingPermissions"
-          :disabled="!permissionDialogKey"
-          @click="applyPermissionDialog"
-        >
-          {{ t('admin.featurePermissionsApply') }}
-        </el-button>
+        <div class="swiss-glass-footer">
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+            @click="closePermissionDialog"
+          >
+            {{ t('admin.cancel') }}
+          </button>
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+            :disabled="savingPermissions || !permissionDialogKey"
+            @click="applyPermissionDialog"
+          >
+            {{ t('admin.featurePermissionsApply') }}
+          </button>
+        </div>
       </template>
-    </el-dialog>
+    </SwissGlassDialog>
   </div>
 </template>
 

@@ -7,21 +7,13 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import {
-  ElButton,
-  ElCard,
-  ElIcon,
-  ElMessageBox,
-  ElProgress,
-  ElTable,
-  ElTableColumn,
-  ElTag,
-} from 'element-plus'
+import { ElButton, ElCard, ElIcon, ElProgress, ElTable, ElTableColumn, ElTag } from 'element-plus'
 
 import { Check, CircleClose, Loading, View } from '@element-plus/icons-vue'
 
 import { Sparkles } from '@lucide/vue'
 
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { notify } from '@/composables/core/notifications'
 import { useLanguage } from '@/composables/core/useLanguage'
 import {
@@ -79,16 +71,14 @@ const completedMethods = computed(
 
 const allMethods = ['spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk']
 
-const stageLabels = computed(
-  (): Record<string, string> => ({
-    pending: t('chunkTest.stage.pending'),
-    chunking: t('chunkTest.stage.chunking'),
-    retrieval: t('chunkTest.stage.retrieval'),
-    evaluation: t('chunkTest.stage.evaluation'),
-    completed: t('chunkTest.stage.completed'),
-    failed: t('chunkTest.stage.failed'),
-  })
-)
+const stageLabels = computed((): Record<string, string> => ({
+  pending: t('chunkTest.stage.pending'),
+  chunking: t('chunkTest.stage.chunking'),
+  retrieval: t('chunkTest.stage.retrieval'),
+  evaluation: t('chunkTest.stage.evaluation'),
+  completed: t('chunkTest.stage.completed'),
+  failed: t('chunkTest.stage.failed'),
+}))
 
 const methodLabels: Record<string, string> = {
   spacy: 'spaCy',
@@ -193,7 +183,7 @@ const handleCloseChunks = () => {
 
 const handleCancelTest = async () => {
   try {
-    await ElMessageBox.confirm(
+    await swissGlassConfirm(
       t('chunkTestResults.cancelConfirmBody'),
       t('chunkTestResults.cancelTest'),
       {

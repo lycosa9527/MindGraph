@@ -2,10 +2,9 @@
 /**
  * CoinTossModal - Modal explaining the coin toss stage
  */
-import { ElButton, ElDialog } from 'element-plus'
-
 import { Coins } from '@lucide/vue'
 
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 
 defineProps<{
@@ -26,42 +25,29 @@ function handleClose() {
 </script>
 
 <template>
-  <ElDialog
+  <SwissGlassDialog
     :model-value="visible"
-    :title="t('debateverse.coinTossStageTitle')"
-    width="500px"
+    :ribbon="t('swissGlass.hero.coinToss.ribbon')"
+    :title="t('swissGlass.hero.coinToss.title')"
+    :line1="t('swissGlass.hero.coinToss.line1')"
+    :icon="Coins"
+    width="min(500px, 92vw)"
     :close-on-click-modal="false"
-    :close-on-press-escape="false"
-    @update:model-value="handleClose"
+    @close="handleClose"
   >
-    <div class="coin-toss-modal-content">
-      <div class="flex items-center justify-center mb-4">
-        <div class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
-          <Coins
-            :size="32"
-            class="text-blue-600"
-          />
-        </div>
-      </div>
-
-      <p class="text-center text-gray-700 mb-6">
-        {{ t('debateverse.coinTossModalBody') }}
-      </p>
-
-      <div class="flex justify-center">
-        <ElButton
-          type="primary"
+    <p class="text-center text-[var(--swiss-body,#44403c)] mb-2">
+      {{ t('debateverse.coinTossModalBody') }}
+    </p>
+    <template #footer>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
           @click="handleClose"
         >
           {{ t('debateverse.coinTossGotIt') }}
-        </ElButton>
+        </button>
       </div>
-    </div>
-  </ElDialog>
+    </template>
+  </SwissGlassDialog>
 </template>
-
-<style scoped>
-.coin-toss-modal-content {
-  padding: 20px 0;
-}
-</style>

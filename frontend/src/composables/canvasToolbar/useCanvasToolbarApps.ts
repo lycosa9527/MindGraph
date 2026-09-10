@@ -1,4 +1,4 @@
-import { type ComputedRef, computed, inject, ref } from 'vue'
+import { type ComputedRef, computed, inject } from 'vue'
 
 import {
   Camera,
@@ -10,10 +10,7 @@ import {
   Package,
 } from '@lucide/vue'
 
-import {
-  applyThinkingCoinMutation,
-  extractThinkingCoinsFooter,
-} from '@/composables/auth/useThinkingCoinSync'
+import { useCanvasDiagramTranslate } from '@/composables/canvasToolbar/useCanvasDiagramTranslate'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -25,16 +22,11 @@ import {
   isEducationStage,
   mergeGenerationInstructions,
 } from '@/constants/educationStage'
-import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useDiagramStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
-import { useDiagramTranslateUiStore } from '@/stores/diagramTranslateUi'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { useUIStore } from '@/stores/ui'
-import { authFetch } from '@/utils/api'
 import { claimThinkingCoinEvent } from '@/utils/claimThinkingCoinEvent'
-import { consumeDiagramTranslateNdjsonStream } from '@/utils/diagramTranslateStream'
-import { canvasTranslateTargetForUiLocale } from '@/utils/translateLanguages'
 
 import {
   canvasVirtualKeyboardOpen,
@@ -58,8 +50,8 @@ export type MoreAppItem = {
 export function useCanvasToolbarApps() {
   ensureCanvasVirtualKeyboardUiVersionSync()
   const diagramStore = useDiagramStore()
-  const diagramTranslateUi = useDiagramTranslateUiStore()
   const savedDiagramsStore = useSavedDiagramsStore()
+  const { runFromCurrentDiagram } = useCanvasDiagramTranslate()
   const uiStore = useUIStore()
   const authStore = useAuthStore()
   const { t } = useLanguage()
@@ -83,8 +75,6 @@ export function useCanvasToolbarApps() {
     }
     return !own.value
   })
-
-  const diagramTranslateInFlight = ref(false)
 
   const isConceptMap = computed(() => diagramStore.type === 'concept_map')
   const useMindMapV2 = useMindMapV2Chrome()
@@ -152,12 +142,15 @@ export function useCanvasToolbarApps() {
       list = withoutWaterfall
     }
     if (aiBlockedByCollab.value) {
-      return list.filter(
+      list = list.filter(
         (a) =>
           a.appKey !== 'learning_sheet' &&
           a.appKey !== 'snapshot' &&
           a.appKey !== 'translate_diagram'
       )
+    }
+    if (useMindMapV2.value) {
+      return list.filter((a) => a.appKey !== 'translate_diagram')
     }
     return list
   })
@@ -232,134 +225,6 @@ export function useCanvasToolbarApps() {
     void handleMoreApp(app)
   }
 
-  function collectDiagramTranslateItems(): Array<{
-    itemId: string
-    text: string
-    kind: 'node' | 'connection'
-  }> {
-    const out: Array<{ itemId: string; text: string; kind: 'node' | 'connection' }> = []
-    for (const node of diagramStore.data?.nodes ?? []) {
-      const text = String(
-        node?.text ?? (node?.data as { label?: string } | undefined)?.label ?? ''
-      ).trim()
-      if (text) {
-        out.push({ itemId: node.id, text, kind: 'node' })
-      }
-    }
-    for (const conn of diagramStore.data?.connections ?? []) {
-      const text = String(conn.label ?? '').trim()
-      if (text) {
-        out.push({ itemId: conn.id, text, kind: 'connection' })
-      }
-    }
-    return out
-  }
-
-  async function runToolbarDiagramTranslate(
-    items: Array<{ itemId: string; text: string; kind: 'node' | 'connection' }>
-  ): Promise<void> {
-    if (diagramTranslateInFlight.value) {
-      return
-    }
-    const uiCode = uiStore.language
-    const targetLanguage = canvasTranslateTargetForUiLocale(uiCode)
-    if (targetLanguage === 'en' && uiCode !== 'en') {
-      notify.info(t('canvas.toolbar.translateLabelFallbackEnInfo'))
-    }
-    diagramTranslateInFlight.value = true
-    diagramTranslateUi.openBanner()
-    const signal = diagramTranslateUi.beginStream()
-    let streamFinishedOk = false
-    try {
-      const body: Record<string, unknown> = {
-        items: items.map((item) => ({
-          item_id: item.itemId,
-          text: item.text.trim(),
-          item_kind: item.kind,
-        })),
-        target_language: targetLanguage,
-        diagram_type: diagramStore.type ?? undefined,
-        ui_locale: uiCode,
-      }
-      const activeId = savedDiagramsStore.activeDiagramId
-      if (activeId) {
-        body.diagram_id = activeId
-      }
-      const response = await authFetch('/api/canvas/translate_diagram_labels_stream', {
-        method: 'POST',
-        signal,
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/x-ndjson',
-        },
-        body: JSON.stringify(body),
-      })
-      if (!response.ok) {
-        if (signal.aborted) {
-          return
-        }
-        const errorPayload = (await response.json().catch(() => null)) as {
-          detail?: unknown
-        } | null
-        let detail: string | null = null
-        const detailRaw = errorPayload?.detail
-        if (typeof detailRaw === 'string') {
-          detail = detailRaw
-        } else if (Array.isArray(detailRaw) && detailRaw.length > 0) {
-          const first = detailRaw[0] as { msg?: string }
-          if (typeof first.msg === 'string') {
-            detail = first.msg
-          }
-        }
-        notify.warning(detail || t('canvas.toolbar.translateLabelFailed'))
-        return
-      }
-      await consumeDiagramTranslateNdjsonStream(response, {
-        onStart(totalItems: number) {
-          if (signal.aborted) {
-            return
-          }
-          diagramTranslateUi.setTotal(totalItems)
-        },
-        onItem(row) {
-          if (signal.aborted) {
-            return
-          }
-          const text = row.translated_text.trim()
-          if (!text) {
-            return
-          }
-          if (row.item_kind === 'connection') {
-            diagramStore.updateConnectionLabel(row.item_id, text)
-          } else {
-            eventBus.emit('node:text_updated', { nodeId: row.item_id, text })
-          }
-          diagramTranslateUi.bumpApplied()
-        },
-        onDone(donePayload) {
-          streamFinishedOk = true
-          applyThinkingCoinMutation(extractThinkingCoinsFooter(donePayload))
-        },
-        onError(message) {
-          notify.warning(message || t('canvas.toolbar.translateLabelFailed'))
-        },
-      })
-      if (streamFinishedOk) {
-        await ensureFontsForLanguageCode(targetLanguage)
-        notify.success(t('canvas.toolbar.translateLabelDone'))
-      }
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        return
-      }
-      console.error('Translate diagram failed:', error)
-      notify.warning(t('canvas.toolbar.translateLabelFailed'))
-    } finally {
-      diagramTranslateUi.closeBanner()
-      diagramTranslateInFlight.value = false
-    }
-  }
-
   async function handleMoreApp(app: MoreAppItem) {
     if (
       aiBlockedByCollab.value &&
@@ -428,16 +293,7 @@ export function useCanvasToolbarApps() {
       return
     }
     if (app.appKey === 'translate_diagram') {
-      if (!diagramStore.data?.nodes?.length) {
-        notify.warning(t('canvas.toolbar.createDiagramFirst'))
-        return
-      }
-      const items = collectDiagramTranslateItems()
-      if (items.length === 0) {
-        notify.warning(t('canvas.toolbar.translateLabelDiagramEmpty'))
-        return
-      }
-      void runToolbarDiagramTranslate(items)
+      runFromCurrentDiagram()
       return
     }
     notify.info(t('canvas.toolbar.featureInDevelopment', { name: app.name }))

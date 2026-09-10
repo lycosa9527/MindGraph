@@ -4,10 +4,9 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { ElButton } from 'element-plus'
+import { KeyRound, Loader2 } from '@lucide/vue'
 
-import { Loader2 } from '@lucide/vue'
-
+import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useTsecCaptcha } from '@/composables/auth/useTsecCaptcha'
 import { useAuthStore, useFeatureFlagsStore } from '@/stores'
@@ -197,153 +196,146 @@ watch(
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="modal">
-      <div
-        v-if="isVisible"
-        class="fixed inset-0 z-[60] overflow-y-auto overscroll-y-contain auth-modal-overlay flex items-start sm:items-center justify-center p-4"
-        @click.self="close"
-      >
-        <div class="absolute inset-0 bg-stone-900/60 backdrop-blur-[2px]" />
-        <div class="relative w-full max-w-md bg-white rounded-xl shadow-2xl p-6">
-          <h2 class="text-lg font-semibold text-stone-900 mb-1">
-            {{ t('auth.setPasswordWithSmsTitle') }}
-          </h2>
-          <p class="text-sm text-stone-500 mb-4">
-            {{ t('auth.setPasswordWithSmsHint') }}
-          </p>
-          <p
-            v-if="boundPhone"
-            class="text-sm text-stone-600 mb-4"
+  <SwissGlassCard
+    v-model="isVisible"
+    :ribbon="t('swissGlass.hero.setPassword.ribbon')"
+    :title="t('swissGlass.hero.setPassword.title')"
+    :line1="t('swissGlass.hero.setPassword.line1')"
+    :icon="KeyRound"
+    @close="close"
+  >
+    <p
+      v-if="boundPhone"
+      class="text-sm text-stone-600 mb-4"
+    >
+      {{ t('auth.phone') }}: {{ boundPhone }}
+    </p>
+    <div class="space-y-3">
+      <div v-if="showLegacyCaptcha">
+        <label
+          class="block text-xs text-stone-500 mb-1"
+          for="sp-captcha"
+        >
+          {{ t('auth.captcha') }}
+        </label>
+        <div class="captcha-row">
+          <input
+            id="sp-captcha"
+            v-model="captcha"
+            type="text"
+            maxlength="4"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            class="captcha-row__input px-3 py-2 border border-stone-200 rounded-lg"
+          />
+          <img
+            v-if="captchaImage"
+            :src="captchaImage"
+            class="captcha-image"
+            :alt="t('auth.captcha')"
+            :title="t('auth.clickToRefresh')"
+            @click="loadCaptcha"
+          />
+          <div
+            v-else
+            class="captcha-placeholder"
+            @click="loadCaptcha"
           >
-            {{ t('auth.phone') }}: {{ boundPhone }}
-          </p>
-          <div class="space-y-3">
-            <div v-if="showLegacyCaptcha">
-              <label
-                class="block text-xs text-stone-500 mb-1"
-                for="sp-captcha"
-              >
-                {{ t('auth.captcha') }}
-              </label>
-              <div class="captcha-row">
-                <input
-                  id="sp-captcha"
-                  v-model="captcha"
-                  type="text"
-                  maxlength="4"
-                  autocomplete="off"
-                  autocapitalize="off"
-                  spellcheck="false"
-                  class="captcha-row__input px-3 py-2 border border-stone-200 rounded-lg"
-                />
-                <img
-                  v-if="captchaImage"
-                  :src="captchaImage"
-                  class="captcha-image"
-                  :alt="t('auth.captcha')"
-                  :title="t('auth.clickToRefresh')"
-                  @click="loadCaptcha"
-                />
-                <div
-                  v-else
-                  class="captcha-placeholder"
-                  @click="loadCaptcha"
-                >
-                  <Loader2
-                    v-if="captchaLoading"
-                    class="w-5 h-5 text-stone-400 animate-spin"
-                  />
-                </div>
-              </div>
-            </div>
-            <ElButton
-              type="primary"
-              :loading="smsSending"
-              :disabled="smsCountdown > 0"
-              @click="sendResetSms"
-            >
-              {{
-                smsCountdown > 0
-                  ? t('auth.modal.resendIn', { seconds: smsCountdown })
-                  : t('auth.modal.sendSmsCode')
-              }}
-            </ElButton>
-            <div>
-              <label
-                class="block text-xs text-stone-500 mb-1"
-                for="sp-sms"
-              >
-                {{ t('auth.modal.smsCodeLabel') }}
-              </label>
-              <input
-                id="sp-sms"
-                v-model="smsCode"
-                type="text"
-                maxlength="6"
-                class="w-full px-3 py-2 border border-stone-200 rounded-lg"
-              />
-            </div>
-            <div>
-              <label
-                class="block text-xs text-stone-500 mb-1"
-                for="sp-np"
-              >
-                {{ t('auth.modal.newPassword') }}
-              </label>
-              <input
-                id="sp-np"
-                v-model="newPassword"
-                type="password"
-                autocomplete="new-password"
-                class="w-full px-3 py-2 border border-stone-200 rounded-lg"
-              />
-            </div>
-            <div>
-              <label
-                class="block text-xs text-stone-500 mb-1"
-                for="sp-cp"
-              >
-                {{ t('auth.modal.confirmPassword') }}
-              </label>
-              <input
-                id="sp-cp"
-                v-model="confirmPassword"
-                type="password"
-                autocomplete="new-password"
-                class="w-full px-3 py-2 border border-stone-200 rounded-lg"
-              />
-            </div>
-            <div class="flex justify-end gap-2 pt-2">
-              <ElButton @click="close">
-                {{ t('common.cancel') }}
-              </ElButton>
-              <ElButton
-                type="primary"
-                :loading="submitting"
-                @click="submit"
-              >
-                {{
-                  submitting
-                    ? t('auth.setPasswordWithSmsSubmitting')
-                    : t('auth.setPasswordWithSmsSubmit')
-                }}
-              </ElButton>
-            </div>
+            <Loader2
+              v-if="captchaLoading"
+              class="w-5 h-5 text-stone-400 animate-spin"
+            />
           </div>
         </div>
       </div>
-    </Transition>
-  </Teleport>
-</template>
+      <button
+        type="button"
+        class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
+        :disabled="smsSending || smsCountdown > 0"
+        @click="sendResetSms"
+      >
+        <Loader2
+          v-if="smsSending"
+          class="w-4 h-4 animate-spin"
+        />
+        {{
+          smsCountdown > 0
+            ? t('auth.modal.resendIn', { seconds: smsCountdown })
+            : t('auth.modal.sendSmsCode')
+        }}
+      </button>
+      <div>
+        <label
+          class="block text-xs text-stone-500 mb-1"
+          for="sp-sms"
+        >
+          {{ t('auth.modal.smsCodeLabel') }}
+        </label>
+        <input
+          id="sp-sms"
+          v-model="smsCode"
+          type="text"
+          maxlength="6"
+          class="w-full px-3 py-2 border border-stone-200 rounded-lg"
+        />
+      </div>
+      <div>
+        <label
+          class="block text-xs text-stone-500 mb-1"
+          for="sp-np"
+        >
+          {{ t('auth.modal.newPassword') }}
+        </label>
+        <input
+          id="sp-np"
+          v-model="newPassword"
+          type="password"
+          autocomplete="new-password"
+          class="w-full px-3 py-2 border border-stone-200 rounded-lg"
+        />
+      </div>
+      <div>
+        <label
+          class="block text-xs text-stone-500 mb-1"
+          for="sp-cp"
+        >
+          {{ t('auth.modal.confirmPassword') }}
+        </label>
+        <input
+          id="sp-cp"
+          v-model="confirmPassword"
+          type="password"
+          autocomplete="new-password"
+          class="w-full px-3 py-2 border border-stone-200 rounded-lg"
+        />
+      </div>
+    </div>
 
-<style scoped>
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.2s ease;
-}
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-</style>
+    <template #footer>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          @click="close"
+        >
+          {{ t('common.cancel') }}
+        </button>
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          :disabled="submitting"
+          @click="submit"
+        >
+          <Loader2
+            v-if="submitting"
+            class="w-4 h-4 animate-spin"
+          />
+          {{
+            submitting ? t('auth.setPasswordWithSmsSubmitting') : t('auth.setPasswordWithSmsSubmit')
+          }}
+        </button>
+      </div>
+    </template>
+  </SwissGlassCard>
+</template>

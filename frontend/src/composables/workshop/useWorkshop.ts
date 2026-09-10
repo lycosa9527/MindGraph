@@ -1,6 +1,6 @@
 /**
- * useWorkshop - Composable for presentation-mode WebSocket collaboration
- * Handles real-time diagram updates via WebSocket
+ * useWorkshop — canvas online-collab WebSocket (not 研习社 chat).
+ * Handles real-time diagram updates via ``/api/ws/canvas-collab``.
  */
 import { type Ref, computed, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'

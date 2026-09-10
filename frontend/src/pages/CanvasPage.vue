@@ -29,8 +29,6 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
 
-import { ElMessageBox } from 'element-plus'
-
 import MindMapStatusBar from '@/canvas-ribbon/MindMapStatusBar.vue'
 import {
   CanvasBottomAiCluster,
@@ -96,6 +94,7 @@ import {
 } from '@/composables/canvasPage/newCanvasBootstrap'
 import { registerCanvasPageDiagramEventBus } from '@/composables/canvasPage/registerCanvasPageDiagramEventBus'
 import { registerCanvasPageResetHandler } from '@/composables/canvasPage/registerCanvasPageResetHandler'
+import { registerMindMapRibbonPageBridge } from '@/composables/canvasPage/registerMindMapRibbonPageBridge'
 import { shouldSkipLibraryReloadForActiveDiagram } from '@/composables/canvasPage/skipLibraryReloadDuringGeneration'
 import { useCanvasPageEditorShortcuts } from '@/composables/canvasPage/useCanvasPageEditorShortcuts'
 import { useCanvasPageLibrarySnapshots } from '@/composables/canvasPage/useCanvasPageLibrarySnapshots'
@@ -114,6 +113,7 @@ import {
   bindMindMapExternalPanelClose,
   useMindMapSideToolbarState,
 } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import {
   diagramSpecLikelyNeedsMarkdownPipeline,
   loadDiagramMarkdownPipeline,
@@ -146,7 +146,6 @@ import {
 import { useMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
 import { useMindMapSlidePresentation } from '@/composables/mindMap/useMindMapSlidePresentation'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
-import { registerMindMapRibbonPageBridge } from '@/composables/canvasPage/registerMindMapRibbonPageBridge'
 import {
   setPresentationDiagramEditLocked,
   setPresentationFullscreenRoot,
@@ -310,7 +309,7 @@ async function handleStartPresentationWithTier(): Promise<void> {
   const opening = !presentationRailOpen.value
   if (opening && learningSheetNeedsPresentationConfirm()) {
     try {
-      await ElMessageBox.confirm(
+      await swissGlassConfirm(
         t('canvas.presentation.learningSheetConfirmBody'),
         t('canvas.presentation.learningSheetConfirmTitle'),
         {
@@ -507,8 +506,7 @@ const ragBranchExpandEnabled = computed(() => fileCenterEnabled.value && !DOC_SU
 useMindMapRagBranchExpand(ragBranchExpandEnabled)
 
 const isMindMapPresentationMode = computed(
-  () =>
-    isMindMapRibbonFamily.value && presentationRailOpen.value && canUsePresentationTools.value
+  () => isMindMapRibbonFamily.value && presentationRailOpen.value && canUsePresentationTools.value
 )
 
 /** All diagram types use the simplified 4-tool presentation rail when open. */
@@ -1610,7 +1608,6 @@ onUnmounted(() => {
       :owner-username="ownerUsername"
       :room-idle-remaining-seconds="roomIdleSecondsRemaining"
       :connection-status="connectionStatus"
-      :is-collab-guest="isCollabGuest"
       @collabSession="handleCollabSession"
       @retryConnection="reconnect"
     />

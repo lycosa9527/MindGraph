@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 
-import { ElMessageBox, ElTable } from 'element-plus'
+import { ElTable } from 'element-plus'
 
 import { FolderOpened, Loading } from '@element-plus/icons-vue'
 
+import { Settings2 } from '@lucide/vue'
+
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
-import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import {
   useDeleteAdminLibraryDocument,
   useGenerateAdminLibraryDocumentCover,
@@ -232,10 +236,9 @@ async function deleteBook(book: BookEntry, deleteFiles: boolean) {
     ? t('admin.library.deleteBookTitle')
     : t('admin.library.deleteConfirmTitle')
   try {
-    await ElMessageBox.confirm(confirmMsg, confirmTitle, {
+    await swissGlassConfirm(confirmMsg, confirmTitle, {
       type: 'warning',
       confirmButtonText: deleteFiles ? t('admin.library.deleteBookConfirm') : undefined,
-      confirmButtonClass: 'el-button--danger',
     })
   } catch {
     return
@@ -384,9 +387,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
       class="flex items-center gap-1.5 mb-4 px-3 py-2 rounded-lg bg-stone-50 border border-stone-100"
     >
       <el-icon class="text-stone-400 shrink-0"><FolderOpened /></el-icon>
-      <span class="text-[11px] text-stone-400 shrink-0"
-        >{{ t('admin.library.storageDir') }}:</span
-      >
+      <span class="text-[11px] text-stone-400 shrink-0">{{ t('admin.library.storageDir') }}:</span>
       <span
         v-if="scanData"
         class="font-mono text-[11px] text-stone-600 truncate"
@@ -643,11 +644,14 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
     </ElTable>
 
     <!-- Rename Pages Dialog -->
-    <el-dialog
+    <SwissGlassDialog
       v-model="renameDialog.visible"
-      :title="t('admin.library.renameDialogTitle')"
+      :ribbon="t('swissGlass.hero.adminInline.ribbon')"
+      :title="t('swissGlass.hero.adminInline.title')"
+      :line1="t('swissGlass.hero.adminInline.line1')"
+      :line2="t('admin.library.renameDialogTitle')"
+      :icon="Settings2"
       width="560px"
-      destroy-on-close
     >
       <div class="py-1">
         <!-- Book name prefix -->
@@ -729,17 +733,26 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
       </div>
 
       <template #footer>
-        <el-button @click="renameDialog.visible = false">{{ t('common.cancel') }}</el-button>
-        <el-button
-          v-if="renameDialog.result && renameDialog.result.rename_count > 0"
-          type="primary"
-          :loading="renameDialog.isApplying"
-          @click="applyRename"
-        >
-          {{ t('admin.library.renameApply') }}
-        </el-button>
+        <div class="swiss-glass-footer">
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+            @click="renameDialog.visible = false"
+          >
+            {{ t('common.cancel') }}
+          </button>
+          <button
+            v-if="renameDialog.result && renameDialog.result.rename_count > 0"
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+            :disabled="renameDialog.isApplying"
+            @click="applyRename"
+          >
+            {{ t('admin.library.renameApply') }}
+          </button>
+        </div>
       </template>
-    </el-dialog>
+    </SwissGlassDialog>
   </div>
 </template>
 

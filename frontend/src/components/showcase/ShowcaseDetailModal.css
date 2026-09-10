@@ -1,0 +1,57 @@
+.showcase-detail-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: min(68vh, 640px);
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.detail-like-btn {
+  border: none;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.detail-like-btn:focus,
+.detail-like-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(239 68 68 / 0.35);
+}
+
+.detail-mindmate-btn,
+.detail-delete-btn,
+.detail-tab {
+  border: none;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.detail-delete-btn {
+  border: 1px solid #fecaca;
+  background: #fff;
+}
+
+.detail-delete-btn:focus,
+.detail-delete-btn:focus-visible,
+.detail-mindmate-btn:focus,
+.detail-mindmate-btn:focus-visible {
+  outline: none;
+}
+
+.detail-tab--active {
+  border-bottom: 2px solid #111827;
+  color: #111827;
+}
+
+.detail-tab--idle {
+  border-bottom: 2px solid transparent;
+  color: #9ca3af;
+}
+
+.detail-tab--idle:hover {
+  color: #4b5563;
+}

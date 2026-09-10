@@ -1,5 +1,5 @@
 """
-Canvas node label translation API (DashScope Qwen classification / flash).
+Canvas node label translation API (DashScope ``qwen3.8-flash``).
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -19,6 +19,7 @@ from fastapi.responses import StreamingResponse
 from models.domain.auth import User
 from models.requests.requests_canvas_translate import (
     CANVAS_TRANSLATE_LANGUAGE_NAMES_EN,
+    CANVAS_TRANSLATE_MODEL,
     TranslateDiagramLabelResult,
     TranslateDiagramLabelsRequest,
     TranslateNodeLabelRequest,
@@ -34,7 +35,11 @@ from services.auth.thinking_coin.usage_wire import (
     assert_llm_usage_budget,
     thinking_coin_post_llm_success_mutation,
 )
-from services.infrastructure.http.error_handler import LLMServiceError, ThinkingCoinInsufficientError
+from services.infrastructure.http.error_handler import (
+    LLMServiceError,
+    ThinkingCoinInsufficientError,
+    UserDailyTokenCapExceededError,
+)
 from services.llm import llm_service
 from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, JSON_PARSE_ERRORS
@@ -150,7 +155,7 @@ async def _translate_unique_texts_chunk(
     raw = await llm_service.chat(
         prompt=user_message,
         system_message=system_message,
-        model="qwen-turbo",
+        model=CANVAS_TRANSLATE_MODEL,
         temperature=0.2,
         max_tokens=max_tokens,
         use_knowledge_base=False,
@@ -212,7 +217,7 @@ async def _settle_batch_translate_coins(
         "request_type": _CANVAS_TRANSLATE_REQUEST_TYPE,
         "endpoint_path": endpoint_path,
     }
-    snapshot = build_token_usage_snapshot({}, metadata, "qwen-turbo", duration)
+    snapshot = build_token_usage_snapshot({}, metadata, CANVAS_TRANSLATE_MODEL, duration)
     mutation = await thinking_coin_post_llm_success_mutation(
         user_id,
         organization_id,
@@ -244,8 +249,6 @@ async def _translate_diagram_labels_ndjson(
     translation_for_text: dict[str, str] = {}
     batch_started = time.time()
     try:
-        if user_id is not None:
-            await assert_llm_usage_budget(user_id, organization_id, _CANVAS_TRANSLATE_REQUEST_TYPE)
         for start in range(0, len(ordered_texts), _STREAM_CHUNK_SIZE):
             chunk = ordered_texts[start : start + _STREAM_CHUNK_SIZE]
             translated_part = await _translate_unique_texts_chunk(
@@ -289,8 +292,10 @@ async def _translate_diagram_labels_ndjson(
         if coins_footer:
             done_payload["thinking_coins"] = coins_footer
         yield _ndjson_line(done_payload)
-    except ThinkingCoinInsufficientError:
-        raise
+    except ThinkingCoinInsufficientError as coin_exc:
+        yield _ndjson_line({"event": "error", "detail": coin_exc.user_message})
+    except UserDailyTokenCapExceededError as cap_exc:
+        yield _ndjson_line({"event": "error", "detail": cap_exc.user_message})
     except LLMServiceError as exc:
         logger.warning("canvas_translate stream LLM error: %s", exc)
         yield _ndjson_line({"event": "error", "detail": "Translation service temporarily unavailable"})
@@ -324,7 +329,7 @@ async def translate_node_label(
     current_user: Optional[User] = Depends(get_current_user_or_api_key),
 ):
     """
-    Translate a single diagram node label using Qwen classification (qwen3.6-flash via env).
+    Translate a single diagram node label using DashScope ``qwen3.8-flash``.
     """
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
@@ -375,7 +380,7 @@ async def translate_node_label(
         raw = await llm_service.chat(
             prompt=user_message,
             system_message=system_message,
-            model="qwen-turbo",
+            model=CANVAS_TRANSLATE_MODEL,
             temperature=0.2,
             max_tokens=512,
             use_knowledge_base=False,
@@ -387,6 +392,8 @@ async def translate_node_label(
             endpoint_path="/api/canvas/translate_node_label",
         )
     except LLMServiceError as exc:
+        if isinstance(exc, (ThinkingCoinInsufficientError, UserDailyTokenCapExceededError)):
+            raise
         logger.warning("canvas_translate LLM error: %s", exc)
         raise HTTPException(status_code=503, detail="Translation service temporarily unavailable") from exc
     except BACKGROUND_INFRA_ERRORS as exc:
@@ -470,6 +477,8 @@ async def translate_diagram_labels(
             for original, translated in zip(chunk, translated_part, strict=True):
                 translation_for_text[original] = translated
     except LLMServiceError as exc:
+        if isinstance(exc, (ThinkingCoinInsufficientError, UserDailyTokenCapExceededError)):
+            raise
         logger.warning("canvas_translate batch LLM error: %s", exc)
         raise HTTPException(
             status_code=503,
@@ -541,6 +550,8 @@ async def translate_diagram_labels_stream(
     organization_id = (
         getattr(current_user, "organization_id", None) if current_user and hasattr(current_user, "id") else None
     )
+    if user_id is not None:
+        await assert_llm_usage_budget(user_id, organization_id, _CANVAS_TRANSLATE_REQUEST_TYPE)
 
     if current_user and hasattr(current_user, "id"):
         schedule_module_activity(

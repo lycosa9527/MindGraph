@@ -4,11 +4,12 @@
  * Shows a stacked list of avatar circles (first char of username) for every
  * participant. Visible only when a workshop session is active.
  */
-import { computed } from 'vue'
+import { computed, nextTick, watch } from 'vue'
 
 import { ElTooltip } from 'element-plus'
 
 import { useLanguage } from '@/composables'
+import { useCanvasChromeBottomOffset } from '@/composables/canvas/useCanvasChromeBottomOffset'
 import type { ParticipantInfo } from '@/composables/workshop/useWorkshop'
 import { colorForUser } from '@/shared/collabPalette'
 
@@ -63,6 +64,24 @@ const overflowTooltip = computed(() => {
 })
 
 const visible = computed(() => !!props.workshopCode && (props.participants?.length ?? 0) > 0)
+const { offsetPx, update, bindObserver } = useCanvasChromeBottomOffset(8)
+
+watch(visible, async (isVisible) => {
+  if (!isVisible) {
+    return
+  }
+  await nextTick()
+  bindObserver()
+  update()
+})
+
+const railStyle = computed(() => {
+  const top = offsetPx.value
+  return {
+    top: `${top}px`,
+    maxHeight: `calc(100vh - ${top + 16}px)`,
+  }
+})
 </script>
 
 <template>
@@ -70,6 +89,7 @@ const visible = computed(() => !!props.workshopCode && (props.participants?.leng
     <div
       v-if="visible"
       class="collab-user-rail"
+      :style="railStyle"
       role="list"
       :aria-label="t('canvasPage.collabParticipantsAria')"
     >
@@ -115,7 +135,6 @@ const visible = computed(() => !!props.workshopCode && (props.participants?.leng
 .collab-user-rail {
   position: fixed;
   left: 0;
-  top: 56px; /* below topbar (~48px) + small gap */
   z-index: 30;
   display: flex;
   flex-direction: column;
@@ -127,7 +146,6 @@ const visible = computed(() => !!props.workshopCode && (props.participants?.leng
   border-right: 1px solid rgba(0, 0, 0, 0.07);
   border-radius: 0 10px 10px 0;
   box-shadow: 2px 0 12px rgba(0, 0, 0, 0.06);
-  max-height: calc(100vh - 72px);
   overflow-y: auto;
   scrollbar-width: none;
   pointer-events: auto;

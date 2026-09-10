@@ -5,19 +5,14 @@
  */
 import { computed, onUnmounted, ref, watch } from 'vue'
 
-import {
-  ElDialog,
-  ElDropdown,
-  ElDropdownItem,
-  ElDropdownMenu,
-  ElMessageBox,
-  ElScrollbar,
-} from 'element-plus'
+import { ElDropdown, ElDropdownItem, ElDropdownMenu, ElScrollbar } from 'element-plus'
 
-import { Download, Heart, MoreVertical, Trash2, X } from '@lucide/vue'
+import { Download, Heart, MessageCircle, MoreVertical, Trash2, X } from '@lucide/vue'
 
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
 import { useLanguage, useNotifications } from '@/composables'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import type { LocaleCode } from '@/i18n/locales'
 import { intlLocaleForUiCode } from '@/i18n/locales'
 import { useAuthStore } from '@/stores'
@@ -48,6 +43,11 @@ const authStore = useAuthStore()
 const savedDiagramsStore = useSavedDiagramsStore()
 const { t, currentLanguage } = useLanguage()
 const notify = useNotifications()
+
+const open = computed({
+  get: () => props.visible,
+  set: (value: boolean) => emit('update:visible', value),
+})
 
 const post = ref<CommunityPost | null>(null)
 const comments = ref<CommunityPostComment[]>([])
@@ -229,14 +229,13 @@ const deletingCommentId = ref<number | null>(null)
 async function deleteComment(comment: CommunityPostComment) {
   if (!props.postId || !comment.can_delete) return
   try {
-    await ElMessageBox.confirm(
-      t('community.post.deleteCommentConfirm'),
-      t('community.post.deleteCommentTitle'),
+    await swissGlassConfirm(
+      String(t('community.post.deleteCommentConfirm')),
+      String(t('community.post.deleteCommentTitle')),
       {
+        confirmButtonText: String(t('common.delete')),
+        cancelButtonText: String(t('common.cancel')),
         type: 'warning',
-        confirmButtonText: t('common.delete'),
-        cancelButtonText: t('common.cancel'),
-        confirmButtonClass: 'el-button--danger',
       }
     )
   } catch {
@@ -273,15 +272,15 @@ function formatDate(iso: string): string {
 </script>
 
 <template>
-  <el-dialog
-    :model-value="visible"
-    :title="undefined"
+  <SwissGlassDialog
+    v-model="open"
+    :ribbon="t('swissGlass.hero.communityPost.ribbon')"
+    :title="t('swissGlass.hero.communityPost.title')"
+    :line1="t('swissGlass.hero.communityPost.line1')"
+    :icon="MessageCircle"
     width="min(900px, 95vw)"
-    class="community-post-detail-modal"
-    :show-close="true"
-    destroy-on-close
+    dialog-class="community-post-detail-modal"
     @close="close"
-    @update:model-value="emit('update:visible', $event)"
   >
     <div
       v-if="isLoading"
@@ -517,38 +516,13 @@ function formatDate(iso: string): string {
         </div>
       </div>
     </div>
-  </el-dialog>
+  </SwissGlassDialog>
 </template>
 
 <style scoped>
-.community-post-detail-modal :deep(.el-dialog) {
-  border-radius: 16px;
-  overflow: hidden;
-}
-
-.community-post-detail-modal :deep(.el-dialog__header) {
-  padding: 0;
-  margin: 0;
-  min-height: 0;
-}
-
-.community-post-detail-modal :deep(.el-dialog__header) .el-dialog__title {
-  display: none;
-}
-
 .community-post-detail-modal :deep(.el-dialog__body) {
   padding: 0;
   max-height: 85vh;
-}
-
-.community-post-detail-modal :deep(.el-dialog__headerbtn) {
-  top: 12px;
-  inset-inline-end: 12px;
-  z-index: 10;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
 }
 
 .detail-content {

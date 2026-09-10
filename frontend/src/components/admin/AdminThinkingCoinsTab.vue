@@ -4,25 +4,32 @@
  */
 import { computed, onMounted, ref } from 'vue'
 
-import { ElMessageBox } from 'element-plus'
-import { Plus, Trash2 } from '@lucide/vue'
+import { Plus, Settings2, Trash2 } from '@lucide/vue'
 
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import {
+  type CreateAdminThinkingCoinTaskBody,
   createAdminThinkingCoinTask,
   deleteAdminThinkingCoinTask,
   fetchAdminThinkingCoinSettings,
   fetchAdminThinkingCoinTasks,
   updateAdminThinkingCoinSettings,
   updateAdminThinkingCoinTask,
-  type CreateAdminThinkingCoinTaskBody,
 } from '@/composables/auth/useThinkingCoins'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import type { AdminThinkingCoinTask, ThinkingCoinSettings } from '@/types/thinkingCoins'
 
 type AdminPanel = 'tasks' | 'settings' | 'preview'
 
-const PHASE1_HANDLERS = ['auto_login', 'usage_daily', 'client_event', 'navigate', 'custom_cta'] as const
+const PHASE1_HANDLERS = [
+  'auto_login',
+  'usage_daily',
+  'client_event',
+  'navigate',
+  'custom_cta',
+] as const
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -125,7 +132,7 @@ async function confirmDeleteTask(task: AdminThinkingCoinTask): Promise<void> {
     return
   }
   try {
-    await ElMessageBox.confirm(t('thinkingCoins.admin.deleteConfirm'), {
+    await swissGlassConfirm(t('thinkingCoins.admin.deleteConfirm'), {
       type: 'warning',
       confirmButtonText: t('thinkingCoins.admin.deleteTask'),
     })
@@ -253,7 +260,7 @@ onMounted(() => {
                     v-model="task.title"
                     type="text"
                     class="w-full min-w-[8rem] rounded border border-stone-200 px-2 py-1 text-sm"
-                  >
+                  />
                 </td>
                 <td class="px-3 py-2">
                   <input
@@ -261,7 +268,7 @@ onMounted(() => {
                     type="number"
                     min="0"
                     class="w-20 rounded border border-stone-200 px-2 py-1"
-                  >
+                  />
                 </td>
                 <td class="px-3 py-2">
                   <input
@@ -270,7 +277,7 @@ onMounted(() => {
                     min="0"
                     placeholder="—"
                     class="w-20 rounded border border-stone-200 px-2 py-1"
-                  >
+                  />
                 </td>
                 <td class="px-3 py-2 text-xs text-stone-500 whitespace-nowrap">
                   {{ handlerLabel(task.handler_key) }}
@@ -280,14 +287,14 @@ onMounted(() => {
                     v-model.number="task.sort_order"
                     type="number"
                     class="w-16 rounded border border-stone-200 px-2 py-1"
-                  >
+                  />
                 </td>
                 <td class="px-3 py-2 text-center">
                   <input
                     v-model="task.is_active"
                     type="checkbox"
                     :disabled="task.slug === 'referral_register'"
-                  >
+                  />
                 </td>
                 <td class="px-3 py-2 whitespace-nowrap">
                   <button
@@ -319,7 +326,9 @@ onMounted(() => {
         <h3 class="swiss-stat-card-group__title mb-3">
           {{ t('thinkingCoins.admin.settingsTitle') }}
         </h3>
-        <div class="rounded-xl border border-stone-200 bg-white p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+        <div
+          class="rounded-xl border border-stone-200 bg-white p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl"
+        >
           <label class="text-sm text-stone-700">
             {{ t('thinkingCoins.admin.signupGrant') }}
             <input
@@ -327,7 +336,7 @@ onMounted(() => {
               type="number"
               min="0"
               class="mt-1 block w-full rounded-lg border border-stone-200 px-3 py-2"
-            >
+            />
           </label>
           <label class="text-sm text-stone-700">
             {{ t('thinkingCoins.admin.dailyEarnCap') }}
@@ -336,7 +345,7 @@ onMounted(() => {
               type="number"
               min="0"
               class="mt-1 block w-full rounded-lg border border-stone-200 px-3 py-2"
-            >
+            />
             <span class="mt-1 block text-xs text-stone-500">
               {{ t('thinkingCoins.admin.dailyEarnCapHint') }}
             </span>
@@ -348,7 +357,7 @@ onMounted(() => {
               type="number"
               min="0"
               class="mt-1 block w-full rounded-lg border border-stone-200 px-3 py-2"
-            >
+            />
           </label>
           <label class="text-sm text-stone-700">
             {{ t('thinkingCoins.admin.costDiagram') }}
@@ -357,7 +366,7 @@ onMounted(() => {
               type="number"
               min="0"
               class="mt-1 block w-full rounded-lg border border-stone-200 px-3 py-2"
-            >
+            />
           </label>
           <label class="text-sm text-stone-700">
             {{ t('thinkingCoins.admin.costCanvas') }}
@@ -366,7 +375,7 @@ onMounted(() => {
               type="number"
               min="0"
               class="mt-1 block w-full rounded-lg border border-stone-200 px-3 py-2"
-            >
+            />
           </label>
         </div>
         <button
@@ -398,12 +407,15 @@ onMounted(() => {
       </section>
     </template>
 
-    <el-dialog
+    <SwissGlassDialog
       v-model="showCreateDialog"
-      :title="t('thinkingCoins.admin.createTaskTitle')"
+      :ribbon="t('swissGlass.hero.adminInline.ribbon')"
+      :title="t('swissGlass.hero.adminInline.title')"
+      :line1="t('swissGlass.hero.adminInline.line1')"
+      :line2="t('thinkingCoins.admin.createTaskTitle')"
+      :icon="Settings2"
       width="480px"
-      destroy-on-close
-      @closed="resetCreateForm"
+      @close="resetCreateForm"
     >
       <div class="space-y-3 text-sm">
         <label class="block">
@@ -413,7 +425,7 @@ onMounted(() => {
             type="text"
             class="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 font-mono text-sm"
             placeholder="my_custom_task"
-          >
+          />
         </label>
         <label class="block">
           {{ t('thinkingCoins.admin.tasksTitle') }}
@@ -421,7 +433,7 @@ onMounted(() => {
             v-model="createForm.title"
             type="text"
             class="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2"
-          >
+          />
         </label>
         <label class="block">
           {{ t('thinkingCoins.admin.reward') }}
@@ -430,7 +442,7 @@ onMounted(() => {
             type="number"
             min="0"
             class="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2"
-          >
+          />
         </label>
         <label class="block">
           {{ t('thinkingCoins.admin.handler') }}
@@ -456,8 +468,10 @@ onMounted(() => {
             :value="String(createForm.action_config?.request_type ?? 'mindmate')"
             type="text"
             class="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 font-mono text-sm"
-            @input="createForm.action_config = { request_type: ($event.target as HTMLInputElement).value }"
-          >
+            @input="
+              createForm.action_config = { request_type: ($event.target as HTMLInputElement).value }
+            "
+          />
         </label>
         <label
           v-if="createForm.handler_key === 'client_event'"
@@ -468,8 +482,10 @@ onMounted(() => {
             :value="String(createForm.action_config?.event_key ?? '')"
             type="text"
             class="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 font-mono text-sm"
-            @input="createForm.action_config = { event_key: ($event.target as HTMLInputElement).value }"
-          >
+            @input="
+              createForm.action_config = { event_key: ($event.target as HTMLInputElement).value }
+            "
+          />
         </label>
         <label
           v-if="createForm.handler_key === 'navigate'"
@@ -481,7 +497,7 @@ onMounted(() => {
             type="text"
             class="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 font-mono text-sm"
             @input="createForm.action_config = { route: ($event.target as HTMLInputElement).value }"
-          >
+          />
         </label>
         <label class="block">
           {{ t('thinkingCoins.admin.sortOrder') }}
@@ -489,25 +505,27 @@ onMounted(() => {
             v-model.number="createForm.sort_order"
             type="number"
             class="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2"
-          >
+          />
         </label>
       </div>
       <template #footer>
-        <button
-          type="button"
-          class="rounded-lg border border-stone-200 px-4 py-2 text-sm text-stone-600 hover:bg-stone-50"
-          @click="showCreateDialog = false"
-        >
-          {{ t('common.cancel') }}
-        </button>
-        <button
-          type="button"
-          class="ml-2 rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800"
-          @click="submitCreateTask"
-        >
-          {{ t('thinkingCoins.admin.save') }}
-        </button>
+        <div class="swiss-glass-footer">
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+            @click="showCreateDialog = false"
+          >
+            {{ t('common.cancel') }}
+          </button>
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+            @click="submitCreateTask"
+          >
+            {{ t('thinkingCoins.admin.save') }}
+          </button>
+        </div>
       </template>
-    </el-dialog>
+    </SwissGlassDialog>
   </div>
 </template>

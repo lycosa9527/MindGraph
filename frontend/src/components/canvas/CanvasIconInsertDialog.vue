@@ -1,18 +1,16 @@
 <script setup lang="ts">
 /**
- * Emoji picker dialog for a mind-map node icon adornment.
+ * Swiss glass emoji picker for a mind-map node icon adornment.
  */
-import { ElButton, ElDialog } from 'element-plus'
+import { Smile } from '@lucide/vue'
 
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import EmojiPicker from '@/components/workshop-chat/EmojiPicker.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 
-const props = defineProps<{
-  modelValue: boolean
-}>()
+const open = defineModel<boolean>({ required: true })
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
   confirm: [icon: string]
   clear: []
 }>()
@@ -20,7 +18,7 @@ const emit = defineEmits<{
 const { t } = useLanguage()
 
 function close(): void {
-  emit('update:modelValue', false)
+  open.value = false
 }
 
 function onSelect(_name: string, code: string): void {
@@ -35,12 +33,13 @@ function clearAndClose(): void {
 </script>
 
 <template>
-  <ElDialog
-    :model-value="props.modelValue"
-    :title="t('canvas.ribbon.insertIcon')"
-    width="380px"
-    append-to-body
-    @update:model-value="emit('update:modelValue', $event)"
+  <SwissGlassDialog
+    v-model="open"
+    :ribbon="t('canvas.hero.icon.ribbon')"
+    :title="t('canvas.hero.icon.title')"
+    :line1="t('canvas.hero.icon.line1')"
+    :icon="Smile"
+    width="min(380px, 92vw)"
   >
     <EmojiPicker
       hide-search
@@ -48,8 +47,22 @@ function clearAndClose(): void {
       @select="onSelect"
     />
     <template #footer>
-      <ElButton @click="clearAndClose">{{ t('canvas.ribbon.clearIcon') }}</ElButton>
-      <ElButton @click="close">{{ t('common.cancel') }}</ElButton>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost min-w-22"
+          @click="clearAndClose"
+        >
+          {{ t('canvas.ribbon.clearIcon') }}
+        </button>
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          @click="close"
+        >
+          {{ t('common.cancel') }}
+        </button>
+      </div>
     </template>
-  </ElDialog>
+  </SwissGlassDialog>
 </template>

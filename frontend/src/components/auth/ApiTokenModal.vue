@@ -4,10 +4,12 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { ElButton, ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus'
 
-import { Close } from '@element-plus/icons-vue'
+import { Key, Loader2 } from '@lucide/vue'
 
+import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
+import { useLanguage } from '@/composables'
 import { apiDelete, apiGet, apiPost } from '@/utils/apiClient'
 
 const props = defineProps<{
@@ -18,6 +20,8 @@ const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void
   (e: 'changed'): void
 }>()
+
+const { t } = useLanguage()
 
 const isVisible = computed({
   get: () => props.visible,
@@ -130,199 +134,160 @@ function doneTokenView() {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="modal">
+  <SwissGlassCard
+    v-model="isVisible"
+    :ribbon="t('swissGlass.hero.apiToken.ribbon')"
+    :title="t('swissGlass.hero.apiToken.title')"
+    :line1="t('swissGlass.hero.apiToken.line1')"
+    :icon="Key"
+    @close="closeModal"
+  >
+    <div class="space-y-4">
       <div
-        v-if="isVisible"
-        class="fixed inset-0 z-60 flex items-center justify-center p-4"
-        @click.self="closeModal"
+        v-if="loading && !status"
+        class="text-center text-stone-500 text-sm"
       >
-        <div class="absolute inset-0 bg-stone-900/60 backdrop-blur-[2px]" />
-        <div class="relative w-full max-w-md">
-          <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
-            <div class="px-8 pt-8 pb-4 text-center border-b border-stone-100 relative">
-              <el-button
-                :icon="Close"
-                circle
-                text
-                class="close-btn"
-                @click="closeModal"
-              />
-              <h2 class="text-lg font-semibold text-stone-900 tracking-tight">API Token</h2>
-              <p class="text-xs text-stone-500 mt-1">用于 WorkBuddy 技能包、Chrome 扩展等外部工具，有效期 90 天。令牌会显示在账户信息中。重新生成会使旧技能包与扩展失效。</p>
-            </div>
+        加载中…
+      </div>
 
-            <div class="p-8 space-y-4">
-              <div
-                v-if="loading && !status"
-                class="text-center text-stone-500 text-sm"
-              >
-                加载中…
-              </div>
-
-              <template v-else-if="view === 'status'">
-                <div
-                  v-if="status?.exists"
-                  class="rounded-lg border border-stone-200 bg-stone-50 p-4 text-sm text-stone-600 space-y-2"
-                >
-                  <div>状态：有效</div>
-                  <div v-if="status.expires_at">到期：{{ status.expires_at }}</div>
-                  <div v-if="status.last_used_at">上次使用：{{ status.last_used_at }}</div>
-                  <div
-                    v-if="status.token"
-                    class="flex gap-2"
-                  >
-                    <input
-                      :value="status.token"
-                      type="text"
-                      readonly
-                      class="flex-1 min-w-0 px-3 py-2 rounded-lg border border-stone-200 bg-white font-mono text-xs"
-                    />
-                    <el-button
-                      round
-                      size="small"
-                      @click="copyToken"
-                      >复制</el-button
-                    >
-                  </div>
-                  <div
-                    v-else
-                    class="text-xs text-stone-500"
-                  >
-                    当前令牌无法回显，请重新生成。
-                  </div>
-                </div>
-                <div
-                  v-else
-                  class="text-sm text-stone-500"
-                >
-                  尚未生成 Token
-                </div>
-
-                <div class="flex flex-wrap gap-2 justify-end pt-2">
-                  <el-button
-                    v-if="status?.exists"
-                    round
-                    size="small"
-                    class="account-action-btn"
-                    :loading="loading"
-                    @click="generateToken"
-                  >
-                    重新生成
-                  </el-button>
-                  <el-button
-                    v-else
-                    round
-                    size="small"
-                    type="primary"
-                    :loading="loading"
-                    @click="generateToken"
-                  >
-                    生成 Token
-                  </el-button>
-                  <el-button
-                    v-if="status?.exists"
-                    round
-                    size="small"
-                    :loading="loading"
-                    @click="revokeToken"
-                  >
-                    吊销
-                  </el-button>
-                </div>
-              </template>
-
-              <template v-else>
-                <div
-                  class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"
-                >
-                  令牌已保存在账户信息中，可随时再次查看。
-                </div>
-                <div
-                  v-if="accountHint"
-                  class="text-xs text-stone-500"
-                >
-                  账号：{{ accountHint }}
-                </div>
-                <div
-                  v-if="tokenExpiresAt"
-                  class="text-xs text-stone-500"
-                >
-                  有效期至：{{ tokenExpiresAt }}
-                </div>
-                <div class="flex gap-2">
-                  <input
-                    :value="rawToken"
-                    type="text"
-                    readonly
-                    class="flex-1 min-w-0 px-3 py-2 rounded-lg border border-stone-200 bg-stone-50 font-mono text-xs"
-                  />
-                  <el-button
-                    round
-                    size="small"
-                    @click="copyToken"
-                    >复制</el-button
-                  >
-                </div>
-                <div class="flex justify-end pt-2">
-                  <el-button
-                    round
-                    size="small"
-                    type="primary"
-                    @click="doneTokenView"
-                    >完成</el-button
-                  >
-                </div>
-              </template>
-            </div>
-
-            <div class="px-8 pb-8 flex justify-end">
-              <button
-                class="py-2 px-6 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 transition-all"
-                @click="closeModal"
-              >
-                关闭
-              </button>
-            </div>
+      <template v-else-if="view === 'status'">
+        <div
+          v-if="status?.exists"
+          class="rounded-lg border border-stone-200 bg-stone-50 p-4 text-sm text-stone-600 space-y-2"
+        >
+          <div>状态：有效</div>
+          <div v-if="status.expires_at">到期：{{ status.expires_at }}</div>
+          <div v-if="status.last_used_at">上次使用：{{ status.last_used_at }}</div>
+          <div
+            v-if="status.token"
+            class="flex gap-2"
+          >
+            <input
+              :value="status.token"
+              type="text"
+              readonly
+              class="flex-1 min-w-0 px-3 py-2 rounded-lg border border-stone-200 bg-white font-mono text-xs"
+            />
+            <button
+              type="button"
+              class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost"
+              @click="copyToken"
+            >
+              复制
+            </button>
+          </div>
+          <div
+            v-else
+            class="text-xs text-stone-500"
+          >
+            当前令牌无法回显，请重新生成。
           </div>
         </div>
-      </div>
-    </Transition>
-  </Teleport>
-</template>
+        <div
+          v-else
+          class="text-sm text-stone-500"
+        >
+          尚未生成 Token
+        </div>
 
-<style scoped>
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.2s ease;
-}
-.modal-enter-active > div:last-child,
-.modal-leave-active > div:last-child {
-  transition: transform 0.2s ease;
-}
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-.modal-enter-from > div:last-child,
-.modal-leave-to > div:last-child {
-  transform: scale(0.95);
-}
-.close-btn {
-  position: absolute;
-  top: 16px;
-  inset-inline-end: 16px;
-  --el-button-text-color: #a8a29e;
-  --el-button-hover-text-color: #57534e;
-  --el-button-hover-bg-color: #f5f5f4;
-}
-.account-action-btn {
-  --el-button-bg-color: #44403c;
-  --el-button-text-color: #ffffff;
-  --el-button-border-color: #44403c;
-  --el-button-hover-bg-color: #292524;
-  --el-button-hover-text-color: #ffffff;
-  --el-button-hover-border-color: #292524;
-  font-weight: 500;
-}
-</style>
+        <div class="flex flex-wrap gap-2 justify-end pt-2">
+          <button
+            v-if="status?.exists"
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
+            :disabled="loading"
+            @click="generateToken"
+          >
+            <Loader2
+              v-if="loading"
+              class="w-3.5 h-3.5 animate-spin"
+            />
+            重新生成
+          </button>
+          <button
+            v-else
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary"
+            :disabled="loading"
+            @click="generateToken"
+          >
+            <Loader2
+              v-if="loading"
+              class="w-3.5 h-3.5 animate-spin"
+            />
+            生成 Token
+          </button>
+          <button
+            v-if="status?.exists"
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--danger"
+            :disabled="loading"
+            @click="revokeToken"
+          >
+            <Loader2
+              v-if="loading"
+              class="w-3.5 h-3.5 animate-spin"
+            />
+            吊销
+          </button>
+        </div>
+      </template>
+
+      <template v-else>
+        <div
+          class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"
+        >
+          令牌已保存在账户信息中，可随时再次查看。
+        </div>
+        <div
+          v-if="accountHint"
+          class="text-xs text-stone-500"
+        >
+          账号：{{ accountHint }}
+        </div>
+        <div
+          v-if="tokenExpiresAt"
+          class="text-xs text-stone-500"
+        >
+          有效期至：{{ tokenExpiresAt }}
+        </div>
+        <div class="flex gap-2">
+          <input
+            :value="rawToken"
+            type="text"
+            readonly
+            class="flex-1 min-w-0 px-3 py-2 rounded-lg border border-stone-200 bg-stone-50 font-mono text-xs"
+          />
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost"
+            @click="copyToken"
+          >
+            复制
+          </button>
+        </div>
+        <div class="flex justify-end pt-2">
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary"
+            @click="doneTokenView"
+          >
+            完成
+          </button>
+        </div>
+      </template>
+    </div>
+
+    <template #footer>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          @click="closeModal"
+        >
+          {{ t('common.close') }}
+        </button>
+      </div>
+    </template>
+  </SwissGlassCard>
+</template>

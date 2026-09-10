@@ -1,6 +1,7 @@
 import { type Ref, nextTick, watch } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { useDiagramTranslateUiStore } from '@/stores/diagramTranslateUi'
 import type { DiagramNode } from '@/types/diagram'
 import { mindMapLiveSpecExtrasFingerprint } from '@/utils/mindMapLiveSpecExtras'
 
@@ -298,6 +299,9 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
   watch(
     () => options.getDiagramData(),
     (newData) => {
+      if (useDiagramTranslateUiStore().viewingTranslated) {
+        return
+      }
       if (!newData?.nodes) return
 
       if (!options.workshopCode.value) {

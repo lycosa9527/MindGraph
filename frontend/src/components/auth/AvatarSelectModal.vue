@@ -7,15 +7,15 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { ElButton } from 'element-plus'
+import { Smile } from '@lucide/vue'
 
-import { Close } from '@element-plus/icons-vue'
-
-import { useNotifications } from '@/composables'
+import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
+import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'
 import { DEFAULT_USER_AVATAR_EMOJI, resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 const notify = useNotifications()
+const { t } = useLanguage()
 
 const props = defineProps<{
   visible: boolean
@@ -694,158 +694,79 @@ async function saveAvatar() {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="modal">
-      <div
-        v-if="isVisible"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        @click.self="closeModal"
-      >
-        <!-- Backdrop -->
-        <div class="absolute inset-0 bg-stone-900/60 backdrop-blur-[2px]" />
+  <SwissGlassCard
+    v-model="isVisible"
+    :ribbon="t('swissGlass.hero.avatar.ribbon')"
+    :title="t('swissGlass.hero.avatar.title')"
+    :line1="t('swissGlass.hero.avatar.line1')"
+    :icon="Smile"
+    @close="closeModal"
+  >
+    <el-scrollbar
+      ref="scrollbarRef"
+      height="400px"
+      class="flex-1"
+      @scroll="handleScroll"
+    >
+      <div class="p-8">
+        <!-- Avatar grid (5 columns) -->
+        <div class="grid grid-cols-5 gap-4">
+          <button
+            v-for="emoji in displayedAvatars"
+            :key="emoji"
+            class="w-full aspect-square rounded-lg border-2 transition-all duration-200 flex items-center justify-center text-4xl hover:scale-105 mg-user-avatar-emoji"
+            :class="
+              selectedEmoji === emoji
+                ? 'border-stone-900 bg-stone-50 ring-2 ring-stone-900 ring-offset-2'
+                : 'border-stone-200 hover:border-stone-400 bg-white'
+            "
+            @click="selectAvatar(emoji)"
+          >
+            <span class="block mg-user-avatar-emoji">{{ emoji }}</span>
+          </button>
+        </div>
 
-        <!-- Modal -->
-        <div class="relative w-full max-w-md">
-          <!-- Card -->
-          <div class="bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
-            <!-- Header -->
-            <div
-              class="px-8 pt-8 pb-4 text-center border-b border-stone-100 flex-shrink-0 relative"
-            >
-              <el-button
-                :icon="Close"
-                circle
-                text
-                class="close-btn"
-                @click="closeModal"
-              />
-              <h2 class="text-lg font-semibold text-stone-900 tracking-tight">选择头像</h2>
-            </div>
+        <!-- Loading indicator for scrolling -->
+        <div
+          v-if="isLoadingMore"
+          class="flex justify-center items-center py-4"
+        >
+          <div class="text-sm text-stone-500">加载中...</div>
+        </div>
 
-            <!-- Content with scrollbar -->
-            <el-scrollbar
-              ref="scrollbarRef"
-              height="400px"
-              class="flex-1"
-              @scroll="handleScroll"
-            >
-              <div class="p-8">
-                <!-- Avatar grid (5 columns) -->
-                <div class="grid grid-cols-5 gap-4">
-                  <button
-                    v-for="emoji in displayedAvatars"
-                    :key="emoji"
-                    class="w-full aspect-square rounded-lg border-2 transition-all duration-200 flex items-center justify-center text-4xl hover:scale-105 mg-user-avatar-emoji"
-                    :class="
-                      selectedEmoji === emoji
-                        ? 'border-stone-900 bg-stone-50 ring-2 ring-stone-900 ring-offset-2'
-                        : 'border-stone-200 hover:border-stone-400 bg-white'
-                    "
-                    @click="selectAvatar(emoji)"
-                  >
-                    <span class="block mg-user-avatar-emoji">{{ emoji }}</span>
-                  </button>
-                </div>
-
-                <!-- Loading indicator for scrolling -->
-                <div
-                  v-if="isLoadingMore"
-                  class="flex justify-center items-center py-4"
-                >
-                  <div class="text-sm text-stone-500">加载中...</div>
-                </div>
-
-                <!-- No more indicator -->
-                <div
-                  v-if="!hasMore && displayedAvatars.length > 0"
-                  class="flex justify-center items-center py-4"
-                >
-                  <div class="text-xs text-stone-400">
-                    已显示全部 {{ allAvatars.length }} 个头像
-                  </div>
-                </div>
-              </div>
-            </el-scrollbar>
-
-            <!-- Footer -->
-            <div
-              class="px-8 pb-8 flex items-center justify-end gap-3 flex-shrink-0 border-t border-stone-100 pt-6"
-            >
-              <el-button @click="closeModal"> 取消 </el-button>
-              <el-button
-                type="primary"
-                :loading="isSaving"
-                class="save-btn"
-                @click="saveAvatar"
-              >
-                保存
-              </el-button>
-            </div>
-          </div>
+        <!-- No more indicator -->
+        <div
+          v-if="!hasMore && displayedAvatars.length > 0"
+          class="flex justify-center items-center py-4"
+        >
+          <div class="text-xs text-stone-400">已显示全部 {{ allAvatars.length }} 个头像</div>
         </div>
       </div>
-    </Transition>
-  </Teleport>
+    </el-scrollbar>
+
+    <template #footer>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          @click="closeModal"
+        >
+          {{ t('common.cancel') }}
+        </button>
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          :disabled="isSaving"
+          @click="saveAvatar"
+        >
+          {{ t('common.save') }}
+        </button>
+      </div>
+    </template>
+  </SwissGlassCard>
 </template>
 
 <style scoped>
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.modal-enter-active > div:last-child,
-.modal-leave-active > div:last-child {
-  transition: transform 0.2s ease;
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-from > div:last-child,
-.modal-leave-to > div:last-child {
-  transform: scale(0.95);
-}
-
-/* Close button positioning and styling */
-.close-btn {
-  position: absolute;
-  top: 16px;
-  inset-inline-end: 16px;
-  --el-button-text-color: #a8a29e;
-  --el-button-hover-text-color: #57534e;
-  --el-button-hover-bg-color: #f5f5f4;
-}
-
-/* Footer buttons - Swiss Design style */
-:deep(.el-button) {
-  font-weight: 500;
-}
-
-:deep(.el-button--default) {
-  --el-button-text-color: #57534e;
-  --el-button-hover-text-color: #1c1917;
-  --el-button-hover-bg-color: #f5f5f4;
-  --el-button-border-color: #d6d3d1;
-  --el-button-hover-border-color: #a8a29e;
-}
-
-:deep(.el-button--primary) {
-  --el-button-bg-color: #1c1917;
-  --el-button-border-color: #1c1917;
-  --el-button-hover-bg-color: #292524;
-  --el-button-hover-border-color: #292524;
-  --el-button-active-bg-color: #0c0a09;
-  --el-button-active-border-color: #0c0a09;
-}
-
-/* Save button - wider */
-.save-btn {
-  min-width: 100px;
-}
-
 /* Scrollbar - Element Plus style with Swiss Design */
 :deep(.el-scrollbar__bar) {
   right: 2px;

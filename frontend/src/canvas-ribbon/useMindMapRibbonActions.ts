@@ -9,10 +9,10 @@ import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindM
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
 import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { CANVAS_MINDMAP_EXPORT_MENU_ITEMS } from '@/config/canvasExportMenu'
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useCanvasExportStore } from '@/stores'
 
 import { useMindMapRibbonChromeActions } from './useMindMapRibbonChromeActions'
@@ -165,13 +165,6 @@ export function useMindMapRibbonActions() {
     eventBus.emit('mindmap:explain_node_requested', { nodeId })
   }
 
-  function runTranslate(): void {
-    const app = moreApps.value.find((item) => item.appKey === 'translate_diagram')
-    if (app) {
-      handleMoreAppItem(app)
-    }
-  }
-
   function toggleVirtualKeyboard(): void {
     const app = moreApps.value.find((item) => item.appKey === 'virtual_keyboard')
     if (app) {
@@ -218,7 +211,6 @@ export function useMindMapRibbonActions() {
     openSideTool,
     requestAiSubgraph,
     requestExplainNode,
-    runTranslate,
     toggleVirtualKeyboard,
     resetNodeStyles,
     learningSheet,

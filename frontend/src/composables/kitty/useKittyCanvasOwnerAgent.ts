@@ -26,6 +26,7 @@ import { useKittyAgent } from '@/composables/kitty/useKittyAgent'
 import { lectureSpeakGeneration } from '@/composables/mindMap/useMindClassroomLecture'
 import { useAuthStore } from '@/stores/auth'
 import { useDiagramStore } from '@/stores/diagram'
+import { useDiagramTranslateUiStore } from '@/stores/diagramTranslateUi'
 import { useOneSentenceStore } from '@/stores/oneSentence'
 import { useKittySessionStore } from '@/stores/kittySession'
 
@@ -43,6 +44,7 @@ export function useKittyCanvasOwnerAgent(options: {
 } {
   const authStore = useAuthStore()
   const diagramStore = useDiagramStore()
+  const translateUi = useDiagramTranslateUiStore()
   const oneSentence = useOneSentenceStore()
   const kittySession = useKittySessionStore()
   const authGate = createKittyWsAuthReconnectGate()
@@ -198,6 +200,9 @@ export function useKittyCanvasOwnerAgent(options: {
   }
 
   function scheduleBackgroundHubSync(): void {
+    if (translateUi.viewingTranslated) {
+      return
+    }
     if (!options.enabled.value || !kittySession.ownsKittySession || !kitty.isConnected.value) {
       return
     }

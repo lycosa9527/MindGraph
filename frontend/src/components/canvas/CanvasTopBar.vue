@@ -297,7 +297,10 @@ async function handleReset() {
     class="canvas-top-bar relative w-full min-h-12 shrink-0"
     :class="
       isMindMapEditor
-        ? 'canvas-top-bar--mindmap'
+        ? {
+            'canvas-top-bar--mindmap': true,
+            'canvas-top-bar--collab-flush': Boolean(workshopCode),
+          }
         : 'px-2 sm:px-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1 sm:gap-x-2 border-b border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md'
     "
   >
@@ -645,6 +648,12 @@ async function handleReset() {
   box-shadow: 0 8px 22px rgb(168 176 228 / 0.14);
 }
 
+/* Live session banner sits in the next flex row — drop the card-shadow inset. */
+.canvas-top-bar--mindmap.canvas-top-bar--collab-flush {
+  padding-bottom: 0;
+  box-shadow: none;
+}
+
 .canvas-top-bar__doc {
   justify-self: start;
   align-self: end;
@@ -750,6 +759,10 @@ async function handleReset() {
     rgb(72 44 102 / 0.82) 100%
   );
   box-shadow: 0 8px 22px rgb(0 0 0 / 0.18);
+}
+
+:global(.dark) .canvas-top-bar--mindmap.canvas-top-bar--collab-flush {
+  box-shadow: none;
 }
 
 :global(.dark) .canvas-top-bar__doc :deep(.el-button) {

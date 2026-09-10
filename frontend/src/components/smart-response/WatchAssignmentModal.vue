@@ -1,8 +1,11 @@
 <template>
-  <el-dialog
+  <SwissGlassDialog
     v-model="visible"
-    title="Assign Watch to Student"
-    width="500px"
+    :ribbon="t('swissGlass.hero.watchAssign.ribbon')"
+    :title="t('swissGlass.hero.watchAssign.title')"
+    :line1="t('swissGlass.hero.watchAssign.line1')"
+    :icon="Eye"
+    width="min(500px, 92vw)"
     @close="handleClose"
   >
     <el-form
@@ -33,21 +36,34 @@
     </el-form>
 
     <template #footer>
-      <el-button @click="handleClose">Cancel</el-button>
-      <el-button
-        type="primary"
-        :loading="loading"
-        @click="handleAssign"
-      >
-        Assign
-      </el-button>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          @click="handleClose"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          :disabled="loading"
+          @click="handleAssign"
+        >
+          Assign
+        </button>
+      </div>
     </template>
-  </el-dialog>
+  </SwissGlassDialog>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
+import { Eye } from '@lucide/vue'
+
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
+import { useLanguage } from '@/composables/core/useLanguage'
 import type { Watch } from '@/stores/smartResponse'
 
 interface Props {
@@ -63,17 +79,15 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const visible = ref(false)
+const { t } = useLanguage()
+
+const visible = computed({
+  get: () => props.modelValue,
+  set: (value: boolean) => emit('update:modelValue', value),
+})
 const loading = ref(false)
 const form = ref({ student_id: null as number | null })
 const students = ref<Array<{ id: number; name: string; class: string }>>([])
-
-watch(
-  () => props.modelValue,
-  (val) => {
-    visible.value = val
-  }
-)
 
 watch(
   () => props.watchItem,
@@ -89,7 +103,6 @@ onMounted(async () => {
 
 function handleClose() {
   visible.value = false
-  emit('update:modelValue', false)
 }
 
 async function handleAssign() {

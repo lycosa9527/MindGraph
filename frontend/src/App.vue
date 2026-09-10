@@ -9,8 +9,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 
 import { ElConfigProvider } from 'element-plus/es/components/config-provider/index.mjs'
-import type { Language } from 'element-plus/es/locale'
 import 'element-plus/es/components/config-provider/style/css'
+import type { Language } from 'element-plus/es/locale'
 
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useOAuthRouteFeedback } from '@/composables/auth/useOAuthRouteFeedback'
@@ -28,12 +28,9 @@ import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useLiveTranslationStore } from '@/stores/liveTranslation'
 import { useUIStore } from '@/stores/ui'
-import { isGuestAuthPath, getSafePostAuthPath } from '@/utils/authRedirect'
+import { getSafePostAuthPath, isGuestAuthPath } from '@/utils/authRedirect'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
-import {
-  privacyPageDocumentTitle,
-  privacyPageHtmlLang,
-} from '@/utils/privacyPageLocale'
+import { privacyPageDocumentTitle, privacyPageHtmlLang } from '@/utils/privacyPageLocale'
 import { isAdminPublicDashboardRoute } from '@/utils/publicDashboardRoute'
 import type { SchoolExpiredInfo } from '@/utils/schoolExpiredLockout'
 import { shouldShowTestServerBannerOnVisit } from '@/utils/testServerBanner'
@@ -86,6 +83,9 @@ const BrowserLocaleHintDialog = defineAsyncComponent(
 )
 const SwissWarningModal = defineAsyncComponent(
   () => import('@/components/common/SwissWarningModal.vue')
+)
+const SwissGlassConfirmHost = defineAsyncComponent(
+  () => import('@/components/common/SwissGlassConfirmHost.vue')
 )
 const TestServerWatermark = defineAsyncComponent(
   () => import('@/components/common/TestServerWatermark.vue')
@@ -310,10 +310,7 @@ onMounted(async () => {
     await featureFlagsStore.fetchFlags()
     if (featureFlagsStore.getFeatureTestServerBanner()) {
       showTestServerWatermark.value = true
-      if (
-        pendingLoginBanner.value ||
-        shouldShowTestServerBannerOnVisit(route.path)
-      ) {
+      if (pendingLoginBanner.value || shouldShowTestServerBannerOnVisit(route.path)) {
         openSwissWarningModal()
       }
     }
@@ -394,7 +391,9 @@ onUnmounted(() => {
       :title="t('app.schoolExpired.title')"
       :body="t('app.schoolExpired.body')"
       :host="schoolExpiredHost"
-      :confirm-label="authStore.user ? t('app.schoolExpired.signOut') : t('app.schoolExpired.acknowledge')"
+      :confirm-label="
+        authStore.user ? t('app.schoolExpired.signOut') : t('app.schoolExpired.acknowledge')
+      "
       :show-jump="false"
       :count-test-server-day="false"
       @confirm="onSchoolExpiredConfirm"
@@ -410,6 +409,7 @@ onUnmounted(() => {
 
     <VoiceNotesFab />
     <VoiceNotesModal />
+    <SwissGlassConfirmHost />
     <TrainingBanner />
     <TrainingFriendsRail />
     <TrainingLessonOverlay />

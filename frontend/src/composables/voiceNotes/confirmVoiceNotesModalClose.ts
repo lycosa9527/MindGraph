@@ -1,14 +1,13 @@
 /**
  * Confirm hiding the Voice Notes modal while capture is still live.
  */
-import { loadElMessageBox } from '@/composables/core/notifications'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 
 export async function confirmHideVoiceNotesWhileRecording(
   translate: (key: string) => string
 ): Promise<boolean> {
   try {
-    const ElMessageBox = await loadElMessageBox()
-    await ElMessageBox.confirm(
+    await swissGlassConfirm(
       translate('auth.voiceNotes.closeWhileRecordingBody'),
       translate('auth.voiceNotes.closeWhileRecordingTitle'),
       {

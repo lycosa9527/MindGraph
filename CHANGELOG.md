@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.66] - 2026-09-10
+
+> **Swiss glass dialogs across the app; status-bar diagram translate keeps the original until you leave.**
+
+### Added
+
+- **Swiss glass chrome** — Shared dialog, card, and confirm host replace Element Plus boxes across auth, admin, showcase, workshop, canvas, and settings. Localized hero copy lives under `swissGlass.hero.*`.
+- **Diagram translate preview** — Status-bar language picker streams every label with DashScope `qwen3.8-flash`. The original spec stays on the canvas; gallery/back discards the temp translation so it cannot auto-save.
+- **Collab edit lock** — Inbound presence and `claim_node_edit` no longer let a structural flash or another user's release wipe an exclusive text-edit claim.
+
+### Changed
+
+- **Canvas translate API** — Pinned to `qwen3.8-flash` (client, balancer, token buffer). Stream yields coin and daily-cap errors instead of dropping the connection; the budget check runs before the stream starts.
+- **Canvas overlays** — Collab rail and learning-sheet bars measure chrome bottom (title row, ribbon, live banner) so they sit below.
+- **Login cat** — Roof walk on Swiss glass cards; the cat sits above the overlay instead of under it.
+- **Training stop** — Host/student leave uses the Swiss glass confirm.
+
+### Tests
+
+- [`frontend/tests/applyCollabEditorPresence.spec.ts`](frontend/tests/applyCollabEditorPresence.spec.ts), [`frontend/tests/applyDiagramTranslationsToSpec.spec.ts`](frontend/tests/applyDiagramTranslationsToSpec.spec.ts), [`frontend/tests/cloneDiagramSpecJson.spec.ts`](frontend/tests/cloneDiagramSpecJson.spec.ts), [`frontend/tests/collectDiagramTranslateItems.spec.ts`](frontend/tests/collectDiagramTranslateItems.spec.ts), [`frontend/tests/diagramTranslateStream.spec.ts`](frontend/tests/diagramTranslateStream.spec.ts), [`frontend/tests/diagramTranslateUi.spec.ts`](frontend/tests/diagramTranslateUi.spec.ts), [`frontend/tests/discardCanvasTranslatePreview.spec.ts`](frontend/tests/discardCanvasTranslatePreview.spec.ts), [`frontend/tests/galleryLanguageMenuRows.spec.ts`](frontend/tests/galleryLanguageMenuRows.spec.ts), [`frontend/tests/useCanvasChromeBottomOffset.spec.ts`](frontend/tests/useCanvasChromeBottomOffset.spec.ts), [`frontend/tests/mindMapRibbonChrome.spec.ts`](frontend/tests/mindMapRibbonChrome.spec.ts), [`frontend/tests/diagramSpecForSaveStamp.spec.ts`](frontend/tests/diagramSpecForSaveStamp.spec.ts), [`tests/test_thinking_coin_canvas_translate.py`](tests/test_thinking_coin_canvas_translate.py)
+
 ## [5.180.65] - 2026-09-10
 
 > **Kitty follow-ups survive reconnect; insert-link gets Name+URL; 1.85C Wi-Fi and subset CJK font.**

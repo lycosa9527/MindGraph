@@ -7,6 +7,11 @@ import { computed, ref, watch } from 'vue'
 
 import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 
+import { Image } from '@lucide/vue'
+
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
+import { useLanguage } from '@/composables/core/useLanguage'
+
 const props = defineProps<{
   visible: boolean
   title: string
@@ -21,6 +26,13 @@ const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void
   (e: 'close'): void
 }>()
+
+const { t } = useLanguage()
+
+const open = computed({
+  get: () => props.visible,
+  set: (value: boolean) => emit('update:visible', value),
+})
 
 const currentIndex = ref(0)
 
@@ -74,15 +86,23 @@ function goNext() {
 </script>
 
 <template>
-  <el-dialog
-    :model-value="visible"
-    :title="currentImage.title"
-    :show-close="true"
-    :close-on-click-modal="true"
+  <SwissGlassDialog
+    v-model="open"
+    :ribbon="t('swissGlass.hero.imagePreview.ribbon')"
+    :title="t('swissGlass.hero.imagePreview.title')"
+    :line1="t('swissGlass.hero.imagePreview.line1')"
+    :icon="Image"
     width="80%"
     :before-close="handleClose"
-    class="image-preview-modal"
+    dialog-class="image-preview-modal"
+    @close="emit('close')"
   >
+    <p
+      v-if="currentImage.title"
+      class="text-sm font-medium text-stone-700 mb-2 px-4"
+    >
+      {{ currentImage.title }}
+    </p>
     <div class="relative flex items-center">
       <!-- Prev button -->
       <button
@@ -138,14 +158,10 @@ function goNext() {
     >
       {{ currentIndex + 1 }} / {{ props.images.length }}
     </div>
-  </el-dialog>
+  </SwissGlassDialog>
 </template>
 
 <style scoped>
-.image-preview-modal :deep(.el-dialog__body) {
-  padding: 0;
-}
-
 .nav-btn {
   flex-shrink: 0;
   width: 48px;

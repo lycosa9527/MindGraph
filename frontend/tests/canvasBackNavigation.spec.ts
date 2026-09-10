@@ -1,3 +1,7 @@
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -53,6 +57,14 @@ describe('canvasBackNavigation', () => {
     navigateBackFromCanvas({ replace } as never, '/canvas')
     expect(replace).toHaveBeenCalledWith({ path: '/mindmate' })
     sessionStorage.removeItem(CANVAS_ENTRY_PATH_KEY)
+  })
+
+  it('drops the translate preview before replacing to the gallery', () => {
+    const src = readFileSync(
+      resolve(dirname(fileURLToPath(import.meta.url)), '../src/utils/canvasBackNavigation.ts'),
+      'utf8'
+    )
+    expect(src).toContain('discardCanvasTranslatePreview')
   })
 
   it('navigateBackFromCanvas falls back to landing when entry is missing', () => {

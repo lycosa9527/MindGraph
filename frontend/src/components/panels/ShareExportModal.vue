@@ -5,10 +5,13 @@
  */
 import { computed, nextTick, ref, watch } from 'vue'
 
-import { ElButton, ElCheckbox, ElDialog, ElIcon, ElScrollbar } from 'element-plus'
+import { ElCheckbox, ElIcon, ElScrollbar } from 'element-plus'
 
-import { Close, Download, Select } from '@element-plus/icons-vue'
+import { Close, Select } from '@element-plus/icons-vue'
 
+import { Download } from '@lucide/vue'
+
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import {
   ensureMarkdownRenderer,
@@ -48,6 +51,11 @@ const { displayName: mindMateLabel, avatarUrl: mindMateAvatarUrl } = useMindMate
 const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void
 }>()
+
+const open = computed({
+  get: () => props.visible,
+  set: (value: boolean) => emit('update:visible', value),
+})
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -300,14 +308,15 @@ async function exportAsPng() {
 </script>
 
 <template>
-  <el-dialog
-    :model-value="visible"
-    :title="t('panels.share.title')"
-    width="640px"
+  <SwissGlassDialog
+    v-model="open"
+    :ribbon="t('swissGlass.hero.shareExport.ribbon')"
+    :title="t('swissGlass.hero.shareExport.title')"
+    :line1="t('swissGlass.hero.shareExport.line1')"
+    :icon="Download"
+    width="min(640px, 92vw)"
     :close-on-click-modal="false"
-    :append-to-body="true"
-    class="share-export-modal"
-    @update:model-value="emit('update:visible', $event)"
+    dialog-class="share-export-modal"
   >
     <div class="modal-content">
       <!-- Header with selection info -->
@@ -324,20 +333,22 @@ async function exportAsPng() {
           </div>
         </div>
         <div class="header-actions">
-          <el-button
-            size="small"
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost"
             @click="selectAll"
           >
             <el-icon><Select /></el-icon>
             {{ t('common.all') }}
-          </el-button>
-          <el-button
-            size="small"
+          </button>
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost"
             @click="deselectAll"
           >
             <el-icon><Close /></el-icon>
             {{ t('common.clear') }}
-          </el-button>
+          </button>
         </div>
       </div>
 
@@ -466,22 +477,25 @@ async function exportAsPng() {
     </div>
 
     <template #footer>
-      <div class="dialog-footer">
-        <el-button @click="closeDialog">
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          @click="closeDialog"
+        >
           {{ t('common.cancel') }}
-        </el-button>
-        <el-button
-          type="primary"
-          :loading="isExporting"
-          :disabled="selectedMessages.length === 0"
+        </button>
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          :disabled="isExporting || selectedMessages.length === 0"
           @click="exportAsPng"
         >
-          <el-icon><Download /></el-icon>
           {{ t('panels.share.exportPng') }}
-        </el-button>
+        </button>
       </div>
     </template>
-  </el-dialog>
+  </SwissGlassDialog>
 </template>
 
 <style scoped>
@@ -923,56 +937,5 @@ async function exportAsPng() {
   max-width: 100%;
   border-radius: 8px;
   margin: 8px 0;
-}
-
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding-top: 8px;
-}
-
-/* Dialog customization */
-:deep(.el-dialog) {
-  border-radius: 16px;
-  overflow: hidden;
-}
-
-:deep(.el-dialog__header) {
-  padding: 16px 20px;
-  margin: 0;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-}
-
-:deep(.el-dialog__title) {
-  color: white;
-  font-weight: 600;
-  font-size: 16px;
-}
-
-:deep(.el-dialog__headerbtn) {
-  top: 16px;
-  inset-inline-end: 16px;
-}
-
-:deep(.el-dialog__headerbtn .el-dialog__close) {
-  color: white;
-}
-
-:deep(.el-dialog__headerbtn:hover .el-dialog__close) {
-  color: #e0e7ff;
-}
-
-:deep(.el-dialog__body) {
-  padding: 20px;
-}
-
-:deep(.el-dialog__footer) {
-  padding: 12px 20px 20px;
-  border-top: 1px solid #e2e8f0;
-}
-
-.dark :deep(.el-dialog__footer) {
-  border-top-color: #475569;
 }
 </style>

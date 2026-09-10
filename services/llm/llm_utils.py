@@ -59,6 +59,7 @@ class LLMUtils:
             "qwen-plus": 120.0,
             "qwen3.6-flash": 120.0,
             "qwen3.7-flash": 120.0,
+            "qwen3.8-flash": 120.0,
             "qwen3.7-plus": 120.0,
             "deepseek": 70.0,
             "ark-deepseek": 70.0,  # Volcengine DeepSeek (Route B)

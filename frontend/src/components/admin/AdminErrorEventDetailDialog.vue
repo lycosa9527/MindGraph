@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { FileSearch } from '@lucide/vue'
 
-import type { AdminErrorEventItem } from '@/composables/queries/adminApi'
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables'
+import type { AdminErrorEventItem } from '@/composables/queries/adminApi'
 
 const visible = defineModel<boolean>({ required: true })
 
@@ -11,8 +12,6 @@ const props = defineProps<{
 }>()
 
 const { t } = useLanguage()
-
-const title = computed(() => t('admin.errors.detailTitle'))
 
 function formatTime(iso: string): string {
   try {
@@ -35,14 +34,14 @@ function formatTags(tags: Record<string, unknown> | null | undefined): string {
 </script>
 
 <template>
-  <el-dialog
+  <SwissGlassDialog
     v-model="visible"
-    :title="title"
+    :ribbon="t('swissGlass.hero.adminEvent.ribbon')"
+    :title="t('swissGlass.hero.adminEvent.title')"
+    :line1="t('swissGlass.hero.adminEvent.line1')"
+    :icon="FileSearch"
     width="min(620px, 92vw)"
-    class="admin-error-detail-dialog"
-    append-to-body
-    align-center
-    destroy-on-close
+    dialog-class="admin-error-detail-dialog"
   >
     <template v-if="props.event">
       <div
@@ -122,7 +121,7 @@ function formatTags(tags: Record<string, unknown> | null | undefined): string {
         </el-descriptions>
       </div>
     </template>
-  </el-dialog>
+  </SwissGlassDialog>
 </template>
 
 <style scoped>

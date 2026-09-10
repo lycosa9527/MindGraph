@@ -109,6 +109,9 @@ export async function consumeDiagramTranslateNdjsonStream(
       handlers.onError('Translation stream ended unexpectedly')
     }
   } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      return
+    }
     console.error('Diagram translate stream read error:', error)
     handlers.onError('Translation failed')
   }

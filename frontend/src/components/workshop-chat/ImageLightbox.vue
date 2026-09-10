@@ -1,16 +1,16 @@
 <script setup lang="ts">
 /**
- * ImageLightbox - Full-screen image viewer overlay.
+ * ImageLightbox - Swiss glass full-bleed image viewer.
  *
- * Shows the image at full resolution with Close, Download, and
- * Open-in-new-tab actions. Esc or clicking the backdrop closes it.
+ * Photo fills the card body. Esc or backdrop/close dismisses it.
  */
-import { onBeforeUnmount, onMounted } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { Close, Download } from '@element-plus/icons-vue'
+import { Download } from '@element-plus/icons-vue'
 
-import { Link } from '@lucide/vue'
+import { Image, Link } from '@lucide/vue'
 
+import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 
 const { t } = useLanguage()
@@ -24,9 +24,15 @@ const emit = defineEmits<{
   close: []
 }>()
 
+const open = ref(true)
+
 function handleKeydown(event: KeyboardEvent): void {
   if (event.key === 'Escape') emit('close')
 }
+
+watch(open, (isOpen) => {
+  if (!isOpen) emit('close')
+})
 
 onMounted(() => {
   document.addEventListener('keydown', handleKeydown)
@@ -40,18 +46,23 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
-      @click.self="emit('close')"
-    >
-      <!-- Action bar -->
-      <div class="absolute top-4 right-4 flex items-center gap-2 z-10">
+  <SwissGlassCard
+    v-model="open"
+    :ribbon="t('swissGlass.hero.lightbox.ribbon')"
+    :title="t('swissGlass.hero.lightbox.title')"
+    :line1="t('swissGlass.hero.lightbox.line1')"
+    :icon="Image"
+    card-class="swiss-glass-card--xl"
+    overlay-class="image-lightbox-overlay"
+    @close="emit('close')"
+  >
+    <div class="lightbox-bleed">
+      <div class="lightbox-bleed__actions">
         <a
           :href="props.src"
           target="_blank"
           rel="noopener noreferrer"
-          class="w-9 h-9 flex items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
+          class="lightbox-bleed__action"
           title="Open in new tab"
         >
           <Link :size="16" />
@@ -59,32 +70,75 @@ onBeforeUnmount(() => {
         <a
           :href="props.src"
           :download="props.filename"
-          class="w-9 h-9 flex items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
+          class="lightbox-bleed__action"
           :title="t('workshop.download')"
         >
           <el-icon :size="16"><Download /></el-icon>
         </a>
-        <button
-          class="w-9 h-9 flex items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
-          @click="emit('close')"
-        >
-          <el-icon :size="16"><Close /></el-icon>
-        </button>
       </div>
-
-      <!-- Image -->
       <img
         :src="props.src"
         :alt="props.filename"
-        class="max-w-[90vw] max-h-[90vh] object-contain rounded shadow-2xl"
+        class="lightbox-bleed__photo"
       />
-
-      <!-- Filename label -->
-      <div
-        class="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/70 text-sm truncate max-w-md"
-      >
-        {{ props.filename }}
-      </div>
+      <p class="lightbox-bleed__name">{{ props.filename }}</p>
     </div>
-  </Teleport>
+  </SwissGlassCard>
 </template>
+
+<style scoped>
+.image-lightbox-overlay {
+  z-index: 9999;
+}
+
+.lightbox-bleed {
+  position: relative;
+  margin: 0 -18px -12px;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+.lightbox-bleed__actions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lightbox-bleed__action {
+  display: flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.2);
+  color: #fff;
+  transition: background-color 0.15s ease;
+}
+
+.lightbox-bleed__action:hover {
+  background: rgb(255 255 255 / 0.3);
+}
+
+.lightbox-bleed__photo {
+  display: block;
+  width: 100%;
+  max-height: min(72vh, 760px);
+  object-fit: contain;
+}
+
+.lightbox-bleed__name {
+  margin: 0;
+  padding: 8px 16px 12px;
+  color: rgb(255 255 255 / 0.7);
+  font-size: 0.875rem;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+</style>

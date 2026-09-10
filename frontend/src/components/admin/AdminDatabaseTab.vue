@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
-import { ElMessageBox } from 'element-plus'
-
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import {
   useAdminDatabaseOrphans,
   useAdminDatabaseStats,
@@ -185,7 +184,7 @@ async function exportDump() {
 
 async function importDump(filename: string) {
   try {
-    await ElMessageBox.confirm(
+    await swissGlassConfirm(
       t('admin.database.importConfirmMsg'),
       t('admin.database.importConfirmTitle'),
       { confirmButtonText: t('admin.confirm'), cancelButtonText: t('admin.cancel'), type: 'error' }
@@ -219,7 +218,9 @@ async function analyzeDump(filename: string) {
   pgDumpAnalysis.value = null
   pgDumpMergeResult.value = null
   try {
-    pgDumpAnalysis.value = (await analyzeDatabaseDump.mutateAsync({ filename })) as unknown as PgDumpAnalysis
+    pgDumpAnalysis.value = (await analyzeDatabaseDump.mutateAsync({
+      filename,
+    })) as unknown as PgDumpAnalysis
   } catch (err: unknown) {
     console.error('[AdminDB] PG dump analyze error:', err)
     const message = err instanceof Error ? err.message : ''
@@ -234,7 +235,7 @@ async function executePgMerge() {
   const filename = selectedDump.value
 
   try {
-    await ElMessageBox.confirm(
+    await swissGlassConfirm(
       t('admin.database.pgMergeConfirmMsg'),
       t('admin.database.pgMergeConfirmTitle'),
       {
@@ -251,7 +252,9 @@ async function executePgMerge() {
 
   isMergingDump.value = true
   try {
-    pgDumpMergeResult.value = (await mergeDatabaseDump.mutateAsync({ filename })) as unknown as PgDumpMergeResult
+    pgDumpMergeResult.value = (await mergeDatabaseDump.mutateAsync({
+      filename,
+    })) as unknown as PgDumpMergeResult
     notify.success(t('admin.database.pgMergeSuccess'))
     loadStats()
   } catch (err: unknown) {
@@ -277,7 +280,7 @@ async function detectOrphans() {
 
 async function cleanOrphans() {
   try {
-    await ElMessageBox.confirm(
+    await swissGlassConfirm(
       t('admin.database.orphanCleanConfirmMsg'),
       t('admin.database.orphanCleanConfirmTitle'),
       {

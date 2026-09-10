@@ -4,20 +4,14 @@
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
+import { Loader2, Smartphone } from '@lucide/vue'
 import { useQueryClient } from '@tanstack/vue-query'
 
-import { ElButton, ElDialog } from 'element-plus'
-
-import { Loader2 } from '@lucide/vue'
-
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { difyKeys } from '@/composables/queries/difyKeys'
 import { authFetch } from '@/utils/api'
-import {
-  logPairAudit,
-  pairTokenTail,
-  type DingTalkPairPurpose,
-} from '@/utils/dingtalkPairAuditLog'
+import { type DingTalkPairPurpose, logPairAudit, pairTokenTail } from '@/utils/dingtalkPairAuditLog'
 
 const BIND_TTL_SECONDS = 600
 const POLL_MS = 2500
@@ -137,10 +131,14 @@ async function cancelPendingToken() {
       generation: sessionGeneration.value,
     })
   } catch {
-    logPairAudit('session_cancel_failed', {
-      purpose: pairPurpose.value,
-      generation: sessionGeneration.value,
-    }, { reportToServer: false })
+    logPairAudit(
+      'session_cancel_failed',
+      {
+        purpose: pairPurpose.value,
+        generation: sessionGeneration.value,
+      },
+      { reportToServer: false }
+    )
   }
 }
 
@@ -163,10 +161,14 @@ async function fetchRoomCode(generation: number) {
       return
     }
     if (res.status === 429) {
-      logPairAudit('room_code_rate_limited', {
-        purpose: pairPurpose.value,
-        generation,
-      }, { reportToServer: false })
+      logPairAudit(
+        'room_code_rate_limited',
+        {
+          purpose: pairPurpose.value,
+          generation,
+        },
+        { reportToServer: false }
+      )
       return
     }
     if (!res.ok) {
@@ -206,18 +208,26 @@ async function fetchRoomCode(generation: number) {
       validUntilUnix.value = data.valid_until_unix
     }
     if (pairCodeDisplay.value && pairCodeDisplay.value !== previousCode) {
-      logPairAudit('room_code_updated', {
-        purpose: pairPurpose.value,
-        generation,
-        code_display: pairCodeDisplay.value,
-        token: pairTokenTail(token.value),
-      }, { reportToServer: false })
+      logPairAudit(
+        'room_code_updated',
+        {
+          purpose: pairPurpose.value,
+          generation,
+          code_display: pairCodeDisplay.value,
+          token: pairTokenTail(token.value),
+        },
+        { reportToServer: false }
+      )
     }
   } catch {
-    logPairAudit('room_code_fetch_error', {
-      purpose: pairPurpose.value,
-      generation,
-    }, { reportToServer: false })
+    logPairAudit(
+      'room_code_fetch_error',
+      {
+        purpose: pairPurpose.value,
+        generation,
+      },
+      { reportToServer: false }
+    )
   }
 }
 
@@ -243,10 +253,14 @@ async function pollStatus() {
       return
     }
     if (data.rate_limited === true) {
-      logPairAudit('status_rate_limited', {
-        purpose: pairPurpose.value,
-        generation: sessionGeneration.value,
-      }, { reportToServer: false })
+      logPairAudit(
+        'status_rate_limited',
+        {
+          purpose: pairPurpose.value,
+          generation: sessionGeneration.value,
+        },
+        { reportToServer: false }
+      )
       return
     }
     const linked = data.linked === true
@@ -271,11 +285,15 @@ async function pollStatus() {
 
 function startPolling(generation: number) {
   stopTimers()
-  logPairAudit('polling_started', {
-    purpose: pairPurpose.value,
-    generation,
-    token: pairTokenTail(token.value),
-  }, { reportToServer: false })
+  logPairAudit(
+    'polling_started',
+    {
+      purpose: pairPurpose.value,
+      generation,
+      token: pairTokenTail(token.value),
+    },
+    { reportToServer: false }
+  )
   void pollStatus()
   pollTimer = setInterval(() => {
     void pollStatus()
@@ -295,10 +313,14 @@ async function mintSession() {
   pairCodeDisplay.value = ''
   validUntilUnix.value = 0
   stopTimers()
-  logPairAudit('mint_started', {
-    purpose: pairPurpose.value,
-    generation,
-  }, { reportToServer: false })
+  logPairAudit(
+    'mint_started',
+    {
+      purpose: pairPurpose.value,
+      generation,
+    },
+    { reportToServer: false }
+  )
   try {
     const res = await authFetch(startEndpoint.value, { method: 'POST' })
     const data = (await res.json().catch(() => ({}))) as {
@@ -415,15 +437,17 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <ElDialog
+  <SwissGlassDialog
     v-model="visible"
-    :title="t(titleKey)"
-    width="420px"
-    align-center
-    destroy-on-close
+    :ribbon="t('swissGlass.hero.dingtalk.ribbon')"
+    :title="t('swissGlass.hero.dingtalk.title')"
+    :line1="t('swissGlass.hero.dingtalk.line1')"
+    :icon="Smartphone"
+    width="min(420px, 92vw)"
     @close="close"
   >
     <div class="space-y-4 text-sm text-stone-700">
+      <p class="font-medium text-stone-800">{{ t(titleKey) }}</p>
       <p>{{ t(instructionsKey) }}</p>
       <p
         v-if="isUnbind && props.linkedStaffId"
@@ -489,18 +513,26 @@ onBeforeUnmount(() => {
           {{ t('auth.dingtalkBindCountdown', { s: secondsLeft }) }}
         </p>
       </div>
-
-      <div class="flex justify-end gap-2 pt-2">
-        <ElButton @click="close">{{ t('common.close') }}</ElButton>
-        <ElButton
+    </div>
+    <template #footer>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          @click="close"
+        >
+          {{ t('common.close') }}
+        </button>
+        <button
           v-if="expired && !completed"
-          type="primary"
-          :loading="tokenLoading"
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          :disabled="tokenLoading"
           @click="mintSession"
         >
           {{ t(regenerateKey) }}
-        </ElButton>
+        </button>
       </div>
-    </div>
-  </ElDialog>
+    </template>
+  </SwissGlassDialog>
 </template>

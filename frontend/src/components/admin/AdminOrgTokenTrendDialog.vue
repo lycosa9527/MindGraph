@@ -2,15 +2,18 @@
 /**
  * Org-scoped token trend dialog — chart + synced period summary cards.
  */
-import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
 import { Loading } from '@element-plus/icons-vue'
 
+import { TrendingUp } from '@lucide/vue'
+
+import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
+import { useLanguage } from '@/composables'
 import {
-  useOrgTokenTrendModal,
   type TokenTrendPeriod,
   type TokenTrendService,
+  useOrgTokenTrendModal,
 } from '@/composables/admin/useOrgTokenTrendModal'
-import { useLanguage } from '@/composables'
 
 const { t } = useLanguage()
 
@@ -52,11 +55,14 @@ defineExpose({
 </script>
 
 <template>
-  <el-dialog
+  <SwissGlassDialog
     :model-value="trendModalVisible"
-    :title="trendChartTitle"
+    :ribbon="t('swissGlass.hero.adminOrgTrend.ribbon')"
+    :title="t('swissGlass.hero.adminOrgTrend.title')"
+    :line1="t('swissGlass.hero.adminOrgTrend.line1')"
+    :line2="trendChartTitle"
+    :icon="TrendingUp"
     width="640px"
-    destroy-on-close
     @update:model-value="onDialogVisibleChange"
     @close="closeTrendModal"
   >
@@ -121,7 +127,15 @@ defineExpose({
       </div>
     </template>
     <template #footer>
-      <el-button @click="closeTrendModal">{{ t('common.close') }}</el-button>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          @click="closeTrendModal"
+        >
+          {{ t('common.close') }}
+        </button>
+      </div>
     </template>
-  </el-dialog>
+  </SwissGlassDialog>
 </template>

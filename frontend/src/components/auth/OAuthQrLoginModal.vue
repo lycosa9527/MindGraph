@@ -4,12 +4,13 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { Close } from '@element-plus/icons-vue'
+import { QrCode } from '@lucide/vue'
 
-import OAuthQrLoginPanel from './OAuthQrLoginPanel.vue'
+import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage } from '@/composables'
 import type { OAuthProvider, OAuthQrMode } from '@/composables/auth/useOAuthQrLogin'
-import { wechatQrModalMaxWidthPx } from '@/utils/oauthLoginUi'
+
+import OAuthQrLoginPanel from './OAuthQrLoginPanel.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -28,11 +29,6 @@ const { t } = useLanguage()
 
 const activeProvider = ref<OAuthProvider>('wechat')
 const mode = computed(() => props.mode ?? 'login')
-const wechatCardStyle = computed(() =>
-  activeProvider.value === 'wechat'
-    ? { maxWidth: `${wechatQrModalMaxWidthPx()}px` }
-    : undefined
-)
 
 const isVisible = computed({
   get: () => props.visible,
@@ -59,83 +55,49 @@ watch(
 </script>
 
 <template>
-  <Teleport to="body">
+  <SwissGlassCard
+    v-model="isVisible"
+    :ribbon="t('swissGlass.hero.oauthQr.ribbon')"
+    :title="t('swissGlass.hero.oauthQr.title')"
+    :line1="t('swissGlass.hero.oauthQr.line1')"
+    :icon="QrCode"
+    @close="close"
+  >
     <div
-      v-if="isVisible"
-      class="oauth-qr-modal-overlay fixed inset-0 z-[1100] flex items-center justify-center bg-stone-900/70 p-4"
-      @click.self="close"
+      v-if="!lockProvider"
+      class="flex gap-2 mb-3"
     >
-      <div
-        class="oauth-qr-modal-card bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden"
-        :style="wechatCardStyle"
-        role="dialog"
-        aria-modal="true"
-        :aria-label="t('auth.qrLoginTitle')"
+      <button
+        type="button"
+        class="flex-1 py-2 text-sm rounded-lg border transition-colors"
+        :class="
+          activeProvider === 'wechat'
+            ? 'border-stone-900 bg-stone-900 text-white'
+            : 'border-stone-200 text-stone-600 hover:bg-stone-50'
+        "
+        @click="activeProvider = 'wechat'"
       >
-        <div class="flex items-center justify-between px-5 py-4 border-b border-stone-100">
-          <h2 class="text-base font-semibold text-stone-900">
-            {{
-              mode === 'bind'
-                ? t('auth.oauthBindTitle')
-                : lockProvider
-                  ? t('auth.wechatLogin')
-                  : t('auth.qrLoginTitle')
-            }}
-          </h2>
-          <button
-            type="button"
-            class="p-1 rounded hover:bg-stone-100 text-stone-500"
-            :aria-label="t('common.close')"
-            @click="close"
-          >
-            <Close class="w-5 h-5" />
-          </button>
-        </div>
-
-        <div
-          v-if="!lockProvider"
-          class="px-5 pt-3"
-        >
-          <div class="flex gap-2 mb-3">
-            <button
-              type="button"
-              class="flex-1 py-2 text-sm rounded-lg border transition-colors"
-              :class="
-                activeProvider === 'wechat'
-                  ? 'border-stone-900 bg-stone-900 text-white'
-                  : 'border-stone-200 text-stone-600 hover:bg-stone-50'
-              "
-              @click="activeProvider = 'wechat'"
-            >
-              {{ t('auth.qrLoginWechatTab') }}
-            </button>
-            <button
-              type="button"
-              class="flex-1 py-2 text-sm rounded-lg border transition-colors"
-              :class="
-                activeProvider === 'dingtalk'
-                  ? 'border-stone-900 bg-stone-900 text-white'
-                  : 'border-stone-200 text-stone-600 hover:bg-stone-50'
-              "
-              @click="activeProvider = 'dingtalk'"
-            >
-              {{ t('auth.qrLoginDingtalkTab') }}
-            </button>
-          </div>
-        </div>
-
-        <div
-          class="px-5 pb-5"
-          :class="lockProvider ? 'pt-5' : ''"
-        >
-          <OAuthQrLoginPanel
-            :invite-code="inviteCode"
-            :mode="mode"
-            :provider="activeProvider"
-            @success="onQrSuccess"
-          />
-        </div>
-      </div>
+        {{ t('auth.qrLoginWechatTab') }}
+      </button>
+      <button
+        type="button"
+        class="flex-1 py-2 text-sm rounded-lg border transition-colors"
+        :class="
+          activeProvider === 'dingtalk'
+            ? 'border-stone-900 bg-stone-900 text-white'
+            : 'border-stone-200 text-stone-600 hover:bg-stone-50'
+        "
+        @click="activeProvider = 'dingtalk'"
+      >
+        {{ t('auth.qrLoginDingtalkTab') }}
+      </button>
     </div>
-  </Teleport>
+
+    <OAuthQrLoginPanel
+      :invite-code="inviteCode"
+      :mode="mode"
+      :provider="activeProvider"
+      @success="onQrSuccess"
+    />
+  </SwissGlassCard>
 </template>

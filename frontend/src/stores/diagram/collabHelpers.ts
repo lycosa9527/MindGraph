@@ -9,6 +9,10 @@ export function emitCollabDeleteBlocked(): void {
   eventBus.emit('diagram:collab_delete_blocked', {})
 }
 
+export function emitCollabLockBlocked(): void {
+  eventBus.emit('diagram:collab_lock_blocked', {})
+}
+
 export function collabForeignLockBlocksAnyId(
   ctx: DiagramContext,
   nodeIds: Iterable<string>

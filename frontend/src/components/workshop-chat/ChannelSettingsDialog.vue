@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
+import { Hash, Loader2 } from '@lucide/vue'
+
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
@@ -13,6 +16,11 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:visible', val: boolean): void
 }>()
+
+const open = computed({
+  get: () => props.visible,
+  set: (value: boolean) => emit('update:visible', value),
+})
 
 const store = useWorkshopChatStore()
 const authStore = useAuthStore()
@@ -79,11 +87,14 @@ async function savePrefs(): Promise<void> {
 
 async function savePermissions(): Promise<void> {
   saving.value = true
-  const perms: { channel_type?: 'public' | 'private'; posting_policy: string; is_default: boolean } =
-    {
-      posting_policy: localPostingPolicy.value,
-      is_default: localIsDefault.value,
-    }
+  const perms: {
+    channel_type?: 'public' | 'private'
+    posting_policy: string
+    is_default: boolean
+  } = {
+    posting_policy: localPostingPolicy.value,
+    is_default: localIsDefault.value,
+  }
   const nextType = localChannelType.value
   if (!isAnnounce.value && (nextType === 'public' || nextType === 'private')) {
     perms.channel_type = nextType
@@ -95,11 +106,13 @@ async function savePermissions(): Promise<void> {
 </script>
 
 <template>
-  <el-dialog
-    :model-value="visible"
-    :title="t('workshop.channelSettings')"
-    width="420px"
-    @update:model-value="emit('update:visible', $event)"
+  <SwissGlassDialog
+    v-model="open"
+    :ribbon="t('swissGlass.hero.channelSettings.ribbon')"
+    :title="t('swissGlass.hero.channelSettings.title')"
+    :line1="t('swissGlass.hero.channelSettings.line1')"
+    :icon="Hash"
+    width="min(420px, 92vw)"
   >
     <div class="flex flex-col gap-4">
       <div
@@ -209,16 +222,19 @@ async function savePermissions(): Promise<void> {
           />
         </div>
 
-        <el-button
-          type="primary"
-          size="small"
-          :loading="saving"
-          class="w-full"
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary w-full"
+          :disabled="saving"
           @click="savePermissions"
         >
+          <Loader2
+            v-if="saving"
+            class="w-3.5 h-3.5 animate-spin"
+          />
           {{ t('workshop.create') }}
-        </el-button>
+        </button>
       </div>
     </div>
-  </el-dialog>
+  </SwissGlassDialog>
 </template>

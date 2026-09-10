@@ -3,6 +3,7 @@ export {
   type MoreAppHandlerKey,
   type MoreAppItem,
 } from './useCanvasToolbarApps'
+export { useCanvasDiagramTranslate } from './useCanvasDiagramTranslate'
 export {
   canvasVirtualKeyboardOpen,
   ensureCanvasVirtualKeyboardUiVersionSync,
@@ -14,10 +15,7 @@ export {
   resetFormatBrushState,
   useCanvasToolbarFormatting,
 } from './useCanvasToolbarFormatting'
-export {
-  useFollowNodeStyleToolbar,
-  setFollowNodeStyleToolbar,
-} from './useFollowNodeStyleToolbar'
+export { useFollowNodeStyleToolbar, setFollowNodeStyleToolbar } from './useFollowNodeStyleToolbar'
 export {
   useMindMapSideToolbarState,
   bindMindMapExternalPanelClose,

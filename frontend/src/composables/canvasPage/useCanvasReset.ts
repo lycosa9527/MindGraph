@@ -1,9 +1,9 @@
-import { loadElMessageBox } from '@/composables/core/notifications'
 import { useRouter } from 'vue-router'
 
+import { eventBus, getDefaultDiagramName, useLanguage, useNotifications } from '@/composables'
 import { applyCanvasSessionReset } from '@/composables/canvasPage/applyCanvasSessionReset'
 import { loadBlankCanvasForType } from '@/composables/canvasPage/newCanvasBootstrap'
-import { eventBus, getDefaultDiagramName, useLanguage, useNotifications } from '@/composables'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { useDiagramStore, useSavedDiagramsStore, useUIStore } from '@/stores'
 import type { DiagramType } from '@/types'
 
@@ -27,8 +27,7 @@ export function useCanvasReset() {
     }
 
     try {
-      const ElMessageBox = await loadElMessageBox()
-      await ElMessageBox.confirm(t('canvas.reset.confirmBody'), t('canvas.reset.confirmTitle'), {
+      await swissGlassConfirm(t('canvas.reset.confirmBody'), t('canvas.reset.confirmTitle'), {
         confirmButtonText: t('canvas.reset.confirmButton'),
         cancelButtonText: t('common.cancel'),
         type: 'warning',

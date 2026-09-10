@@ -26,6 +26,11 @@ import { authFetch } from '@/utils/api'
 import { hasDiagramSaveLimit } from '@/utils/diagramLimit'
 
 import { syncFolderDiagramCounts } from '@/composables/sidebar/useDiagramArchiveHistory'
+import {
+  getDiagramPersistBaseSpec,
+  shouldStampLiveCanvasOntoLlmResult,
+} from '@/utils/diagramPersistBaseSpec'
+
 import { useAuthStore } from './auth'
 import { useDiagramStore } from './diagram'
 import { useLLMResultsStore } from './llmResults'
@@ -1071,12 +1076,14 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     const llmResultsStore = useLLMResultsStore()
     if (!authStore.isAuthenticated || !diagramStore.type || !diagramStore.data) return
 
-    let spec = diagramStore.getSpecForSave()
-    if (!spec) return
+    const persistBase = getDiagramPersistBaseSpec()
+    if (!persistBase) return
 
-    llmResultsStore.updateCurrentModelSpec(spec)
-    spec = attachLlmResultsWithinSizeLimit(
-      spec,
+    if (shouldStampLiveCanvasOntoLlmResult()) {
+      llmResultsStore.updateCurrentModelSpec(persistBase)
+    }
+    const spec = attachLlmResultsWithinSizeLimit(
+      persistBase,
       llmResultsStore.getResultsForPersistence(),
       SAVE.MAX_SPEC_SIZE_KB
     )

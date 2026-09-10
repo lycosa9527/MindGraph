@@ -7,12 +7,15 @@ import { computed, ref, watch } from 'vue'
 
 import { DocumentCopy, MagicStick, Refresh } from '@element-plus/icons-vue'
 
+import { Bot } from '@lucide/vue'
+
 import AdminMindBotUsagePanel from '@/components/admin/AdminMindBotUsagePanel.vue'
 import type {
   MindbotConfigFormState,
   MindbotConfigRow,
   OrgOption,
 } from '@/components/admin/mindbotConfigTypes'
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminMindbotStreamingStatus } from '@/composables/queries'
 
@@ -208,35 +211,20 @@ function onDialogClosed(): void {
 </script>
 
 <template>
-  <el-dialog
+  <SwissGlassDialog
     v-model="visible"
-    class="mindbot-settings-dialog mindbot-swiss-dialog"
+    :ribbon="t('swissGlass.hero.adminMindbot.ribbon')"
+    :title="t('swissGlass.hero.adminMindbot.title')"
+    :line1="t('swissGlass.hero.adminMindbot.line1')"
+    :line2="
+      t('admin.mindbot.dialogHeaderNote', {
+        name: (schoolDisplayName || '').trim() || '—',
+      })
+    "
+    :icon="Bot"
     width="min(720px, 94vw)"
-    destroy-on-close
-    append-to-body
-    align-center
-    modal-class="mindbot-swiss-backdrop"
-    :show-close="true"
-    @closed="onDialogClosed"
+    @close="onDialogClosed"
   >
-    <template #header>
-      <div class="mindbot-swiss-header mindbot-config-header">
-        <span class="mindbot-swiss-header__glyph">◇</span>
-        <span class="mindbot-swiss-header__title">{{
-          mode === 'create' ? t('admin.mindbot.create') : t('admin.mindbot.edit')
-        }}</span>
-        <span
-          class="mindbot-swiss-header__divider"
-          aria-hidden="true"
-          >·</span
-        >
-        <span class="mindbot-swiss-header__note">{{
-          t('admin.mindbot.dialogHeaderNote', {
-            name: (schoolDisplayName || '').trim() || '—',
-          })
-        }}</span>
-      </div>
-    </template>
     <div class="mindbot-config-body">
       <div
         class="mindbot-config-scanlines"
@@ -577,17 +565,17 @@ function onDialogClosed(): void {
                     controls-position="right"
                   />
                 </el-form-item>
-                  <el-form-item
-                    :label="t('admin.mindbot.difyShowChainOfThought')"
-                    class="mindbot-cot-form-item"
-                  >
-                    <div class="mindbot-cot-field">
-                      <el-switch
-                        v-model="form.show_chain_of_thought"
-                        class="mindbot-cot-switch mindbot-footer-enabled-switch"
-                      />
-                    </div>
-                  </el-form-item>
+                <el-form-item
+                  :label="t('admin.mindbot.difyShowChainOfThought')"
+                  class="mindbot-cot-form-item"
+                >
+                  <div class="mindbot-cot-field">
+                    <el-switch
+                      v-model="form.show_chain_of_thought"
+                      class="mindbot-cot-switch mindbot-footer-enabled-switch"
+                    />
+                  </div>
+                </el-form-item>
               </div>
             </el-tab-pane>
 
@@ -632,32 +620,31 @@ function onDialogClosed(): void {
         <div
           class="flex shrink-0 flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-2"
         >
-          <el-button
-            class="mindbot-pill mindbot-pill--footer-cancel"
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
             @click="onClose"
           >
             {{ t('admin.cancel') }}
-          </el-button>
-          <el-button
-            type="primary"
-            class="mindbot-pill mindbot-pill--footer-save"
-            :loading="saving"
+          </button>
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+            :disabled="saving"
             @click="emit('save')"
           >
             {{ t('admin.mindbot.save') }}
-          </el-button>
+          </button>
         </div>
       </div>
     </template>
-  </el-dialog>
+  </SwissGlassDialog>
 </template>
 
 <style scoped>
-.mindbot-settings-dialog.mindbot-swiss-dialog {
+.mindbot-settings-dialog {
   width: min(92vw, 720px) !important;
   max-width: 100%;
-  border-radius: 2px;
-  overflow: hidden;
 }
 
 .mindbot-config-banner {

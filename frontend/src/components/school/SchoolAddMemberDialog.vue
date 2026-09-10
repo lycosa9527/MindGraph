@@ -4,19 +4,18 @@
  */
 import { computed, nextTick, ref, watch } from 'vue'
 
-import { Close, DocumentCopy } from '@element-plus/icons-vue'
-import { Loader2 } from '@lucide/vue'
+import { DocumentCopy } from '@element-plus/icons-vue'
 
+import { Loader2, UserPlus } from '@lucide/vue'
+
+import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import {
-  useCreateAdminSchoolUser,
-  useCreateAdminSchoolUsersBatch,
-} from '@/composables/queries'
 import { useAdminOrgScope } from '@/composables/admin/useAdminOrgScope'
+import { useCreateAdminSchoolUser, useCreateAdminSchoolUsersBatch } from '@/composables/queries'
 import { useAuthStore } from '@/stores'
 import type { SchoolMemberBatchFailureItem } from '@/types/api'
-import { httpErrorDetail } from '@/utils/httpErrorDetail'
 import {
+  type ParsedMemberInvalidRow,
   dedupeMemberRows,
   formatMemberContact,
   isValidMemberContact,
@@ -26,7 +25,6 @@ import {
   normalizeMemberEmail,
   normalizeMemberPhone,
   parseExcelMemberPaste,
-  type ParsedMemberInvalidRow,
 } from '@/utils/parseBatchMemberPaste'
 
 const visible = defineModel<boolean>('visible', { required: true })
@@ -211,10 +209,6 @@ function closeModal(): void {
   visible.value = false
 }
 
-function orgQueryString(): string {
-  return new URLSearchParams({ organization_id: String(props.orgId) }).toString()
-}
-
 async function openBatchPaste(): Promise<void> {
   batchExpanded.value = true
   await nextTick()
@@ -322,8 +316,9 @@ async function handleSubmit(): Promise<void> {
   submitting.value = true
   try {
     if (batchExpanded.value && batchPreviewCount.value > 0) {
-      if (batchInvalidRows.value.length > 0) {
-        notifyInvalidRow(batchInvalidRows.value[0]!)
+      const firstInvalid = batchInvalidRows.value[0]
+      if (firstInvalid) {
+        notifyInvalidRow(firstInvalid)
       }
       const { outcome, createdCount } = await submitBatch()
       if (outcome === 'success') {
@@ -377,339 +372,279 @@ watch(visible, (open) => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="admin-school-modal">
-      <div
-        v-if="visible"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+  <SwissGlassCard
+    v-model="visible"
+    :ribbon="t('swissGlass.hero.schoolMember.ribbon')"
+    :title="t('swissGlass.hero.schoolMember.title')"
+    :line1="t('swissGlass.hero.schoolMember.line1')"
+    :line2="modalTitle"
+    :icon="UserPlus"
+    card-class="swiss-glass-card--wide"
+  >
+    <form
+      v-if="!showingBatchResult"
+      class="space-y-5"
+      @submit.prevent="handleSubmit"
+    >
+      <template v-if="!batchExpanded">
+        <div>
+          <label
+            class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+            for="add-member-name"
+          >
+            {{ t('admin.schoolAddMemberName') }}
+            <span class="text-stone-400">*</span>
+          </label>
+          <input
+            id="add-member-name"
+            v-model="nameEdit"
+            type="text"
+            autocomplete="name"
+            :placeholder="t('admin.schoolAddMemberNamePlaceholder')"
+            class="school-add-member-input"
+          />
+        </div>
+
+        <div>
+          <label
+            class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+            for="add-member-contact"
+          >
+            {{ t('admin.schoolAddMemberContact') }}
+            <span class="text-stone-400">*</span>
+          </label>
+          <input
+            id="add-member-contact"
+            v-model="contactEdit"
+            type="text"
+            inputmode="email"
+            autocomplete="username"
+            :placeholder="t('admin.schoolAddMemberContactPlaceholder')"
+            class="school-add-member-input"
+          />
+        </div>
+      </template>
+
+      <button
+        type="button"
+        class="school-add-member-batch-trigger"
+        :class="{ 'school-add-member-batch-trigger--open': batchExpanded }"
+        @click="batchExpanded ? (batchExpanded = false) : void openBatchPaste()"
       >
-        <div
-          class="absolute inset-0 bg-stone-900/60 backdrop-blur-[2px]"
-          aria-hidden="true"
-          @click="closeModal"
+        <span class="school-add-member-batch-trigger__icon">
+          <el-icon><DocumentCopy /></el-icon>
+        </span>
+        <span class="min-w-0 text-left">
+          <span class="block text-sm font-medium text-stone-800">
+            {{ t('admin.schoolAddMemberBatchTitle') }}
+          </span>
+          <span class="block text-xs text-stone-500 leading-relaxed mt-1">
+            {{ t('admin.schoolAddMemberBatchHint') }}
+          </span>
+        </span>
+      </button>
+
+      <div
+        v-show="batchExpanded"
+        class="school-add-member-paste-panel"
+        :class="{ 'school-add-member-paste-panel--focused': batchPasteFocused }"
+        @click="focusPasteArea"
+        @paste="onPasteFromClipboard"
+      >
+        <textarea
+          ref="pasteTextareaRef"
+          v-model="batchPasteText"
+          class="school-add-member-paste-input"
+          rows="6"
+          :placeholder="t('admin.schoolAddMemberBatchPastePlaceholder')"
+          @focus="batchPasteFocused = true"
+          @blur="batchPasteFocused = false"
+          @click.stop
+          @paste="onPasteFromClipboard"
         />
 
-        <div
-          class="relative w-full max-w-lg max-h-[90vh] flex flex-col"
-          role="dialog"
-          aria-modal="true"
-          :aria-label="modalTitle"
-          @click.stop
+        <p
+          v-if="batchParseErrorKey"
+          class="school-add-member-meta school-add-member-meta--error"
         >
-          <div class="bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div class="px-8 pt-8 pb-4 text-center border-b border-stone-100 relative shrink-0">
-              <el-button
-                :icon="Close"
-                circle
-                text
-                class="admin-school-modal__close"
-                :aria-label="t('common.cancel')"
-                @click="closeModal"
-              />
-              <h2 class="text-lg font-semibold text-stone-900 tracking-tight px-6">
-                {{ modalTitle }}
-              </h2>
-            </div>
+          {{ t(batchParseErrorKey, batchParseResult.errorParams ?? {}) }}
+        </p>
+        <p
+          v-else-if="batchPreviewCount > 0"
+          class="school-add-member-meta"
+        >
+          {{ t('admin.schoolAddMemberBatchPreview', { count: batchPreviewCount }) }}
+          <template v-if="batchDuplicateCount > 0">
+            {{ ' ' }}
+            {{ t('admin.schoolAddMemberBatchDuplicatesRemoved', { count: batchDuplicateCount }) }}
+          </template>
+          <template v-if="batchSkippedInvalidCount > 0">
+            {{ ' ' }}
+            {{ t('admin.schoolAddMemberBatchSkippedRows', { count: batchSkippedInvalidCount }) }}
+          </template>
+        </p>
+        <p
+          v-else
+          class="school-add-member-meta school-add-member-meta--hint"
+        >
+          {{ t('admin.schoolAddMemberBatchPasteHint') }}
+        </p>
 
-            <form
-              v-if="!showingBatchResult"
-              class="p-8 space-y-5 overflow-y-auto"
-              @submit.prevent="handleSubmit"
-            >
-              <template v-if="!batchExpanded">
-                <div>
-                  <label
-                    class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                    for="add-member-name"
-                  >
-                    {{ t('admin.schoolAddMemberName') }}
-                    <span class="text-stone-400">*</span>
-                  </label>
-                  <input
-                    id="add-member-name"
-                    v-model="nameEdit"
-                    type="text"
-                    autocomplete="name"
-                    :placeholder="t('admin.schoolAddMemberNamePlaceholder')"
-                    class="school-add-member-input"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                    for="add-member-contact"
-                  >
-                    {{ t('admin.schoolAddMemberContact') }}
-                    <span class="text-stone-400">*</span>
-                  </label>
-                  <input
-                    id="add-member-contact"
-                    v-model="contactEdit"
-                    type="text"
-                    inputmode="email"
-                    autocomplete="username"
-                    :placeholder="t('admin.schoolAddMemberContactPlaceholder')"
-                    class="school-add-member-input"
-                  />
-                </div>
-              </template>
-
-              <button
-                type="button"
-                class="school-add-member-batch-trigger"
-                :class="{ 'school-add-member-batch-trigger--open': batchExpanded }"
-                @click="batchExpanded ? (batchExpanded = false) : void openBatchPaste()"
-              >
-                <span class="school-add-member-batch-trigger__icon">
-                  <el-icon><DocumentCopy /></el-icon>
-                </span>
-                <span class="min-w-0 text-left">
-                  <span class="block text-sm font-medium text-stone-800">
-                    {{ t('admin.schoolAddMemberBatchTitle') }}
-                  </span>
-                  <span class="block text-xs text-stone-500 leading-relaxed mt-1">
-                    {{ t('admin.schoolAddMemberBatchHint') }}
-                  </span>
-                </span>
-              </button>
-
-              <div
-                v-show="batchExpanded"
-                class="school-add-member-paste-panel"
-                :class="{ 'school-add-member-paste-panel--focused': batchPasteFocused }"
-                @click="focusPasteArea"
-                @paste="onPasteFromClipboard"
-              >
-                <textarea
-                  ref="pasteTextareaRef"
-                  v-model="batchPasteText"
-                  class="school-add-member-paste-input"
-                  rows="6"
-                  :placeholder="t('admin.schoolAddMemberBatchPastePlaceholder')"
-                  @focus="batchPasteFocused = true"
-                  @blur="batchPasteFocused = false"
-                  @click.stop
-                  @paste="onPasteFromClipboard"
-                />
-
-                <p
-                  v-if="batchParseErrorKey"
-                  class="school-add-member-meta school-add-member-meta--error"
-                >
-                  {{ t(batchParseErrorKey, batchParseResult.errorParams ?? {}) }}
-                </p>
-          <p
-            v-else-if="batchPreviewCount > 0"
-            class="school-add-member-meta"
+        <div
+          v-if="batchPreviewCount > 0"
+          class="school-add-member-preview"
+        >
+          <div class="school-add-member-preview__head">
+            <span>{{ t('admin.schoolAddMemberContact') }}</span>
+            <span>{{ t('admin.schoolAddMemberName') }}</span>
+          </div>
+          <div
+            v-for="row in batchPreviewRows"
+            :key="`${row.line}-${formatMemberContact(row)}`"
+            class="school-add-member-preview__row"
           >
-            {{ t('admin.schoolAddMemberBatchPreview', { count: batchPreviewCount }) }}
-            <template v-if="batchDuplicateCount > 0">
-              {{ ' ' }}
-              {{ t('admin.schoolAddMemberBatchDuplicatesRemoved', { count: batchDuplicateCount }) }}
-            </template>
-            <template v-if="batchSkippedInvalidCount > 0">
-              {{ ' ' }}
-              {{ t('admin.schoolAddMemberBatchSkippedRows', { count: batchSkippedInvalidCount }) }}
-            </template>
+            <span>{{ formatMemberContact(row) }}</span>
+            <span>{{ row.name }}</span>
+          </div>
+          <p
+            v-if="batchPreviewCount > batchPreviewRows.length"
+            class="school-add-member-preview__more"
+          >
+            {{
+              t('admin.schoolAddMemberBatchPreviewMore', {
+                count: batchPreviewCount - batchPreviewRows.length,
+              })
+            }}
           </p>
-                <p
-                  v-else
-                  class="school-add-member-meta school-add-member-meta--hint"
-                >
-                  {{ t('admin.schoolAddMemberBatchPasteHint') }}
-                </p>
+        </div>
 
-                <div
-                  v-if="batchPreviewCount > 0"
-                  class="school-add-member-preview"
-                >
-                  <div class="school-add-member-preview__head">
-                    <span>{{ t('admin.schoolAddMemberContact') }}</span>
-                    <span>{{ t('admin.schoolAddMemberName') }}</span>
-                  </div>
-                  <div
-                    v-for="row in batchPreviewRows"
-                    :key="`${row.line}-${formatMemberContact(row)}`"
-                    class="school-add-member-preview__row"
-                  >
-                    <span>{{ formatMemberContact(row) }}</span>
-                    <span>{{ row.name }}</span>
-                  </div>
-                  <p
-                    v-if="batchPreviewCount > batchPreviewRows.length"
-                    class="school-add-member-preview__more"
-                  >
-                    {{
-                      t('admin.schoolAddMemberBatchPreviewMore', {
-                        count: batchPreviewCount - batchPreviewRows.length,
-                      })
-                    }}
-                  </p>
-                </div>
-
-                <div
-                  v-if="batchInvalidRows.length > 0"
-                  class="school-add-member-invalid-panel"
-                >
-                  <p class="school-add-member-invalid-panel__title">
-                    {{
-                      t('admin.schoolAddMemberBatchInvalidRowsTitle', {
-                        count: batchInvalidRows.length,
-                      })
-                    }}
-                  </p>
-                  <div class="school-add-member-preview school-add-member-preview--invalid">
-                    <div
-                      class="school-add-member-preview__head school-add-member-preview__head--invalid"
-                    >
-                      <span>{{ t('admin.schoolAddMemberContact') }}</span>
-                      <span>{{ t('admin.schoolAddMemberName') }}</span>
-                      <span>{{ t('admin.schoolAddMemberBatchFailedReason') }}</span>
-                    </div>
-                    <div class="school-add-member-invalid-panel__list">
-                      <div
-                        v-for="row in batchInvalidPreviewRows"
-                        :key="`invalid-${row.line}-${row.contactRaw}`"
-                        class="school-add-member-preview__row school-add-member-preview__row--invalid"
-                      >
-                        <span>{{ row.contactRaw || '—' }}</span>
-                        <span>{{ row.name || '—' }}</span>
-                        <span class="school-add-member-preview__reason">
-                          {{ t(row.errorKey, row.errorParams ?? {}) }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <p
-                    v-if="batchInvalidRows.length > batchInvalidPreviewRows.length"
-                    class="school-add-member-preview__more"
-                  >
-                    {{
-                      t('admin.schoolAddMemberBatchPreviewMore', {
-                        count: batchInvalidRows.length - batchInvalidPreviewRows.length,
-                      })
-                    }}
-                  </p>
-                </div>
-              </div>
-
-              <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end pt-1">
-                <button
-                  type="button"
-                  class="school-add-member-btn school-add-member-btn--ghost"
-                  @click="closeModal"
-                >
-                  {{ t('common.cancel') }}
-                </button>
-                <button
-                  type="submit"
-                  :disabled="submitting || !canSubmit"
-                  class="school-add-member-btn school-add-member-btn--primary"
-                >
-                  <Loader2
-                    v-if="submitting"
-                    class="w-4 h-4 animate-spin"
-                  />
-                  {{ submitLabel }}
-                </button>
-              </div>
-            </form>
-
-            <div
-              v-else-if="batchImportResult"
-              class="p-8 space-y-5 overflow-y-auto"
-            >
-              <p
-                class="school-add-member-result-summary"
-                :class="`school-add-member-result-summary--${batchResultSummaryTone}`"
-              >
-                {{
-                  t(batchResultSummaryKey ?? 'admin.schoolAddMemberBatchResultSuccess', {
-                    created: batchImportResult.createdCount,
-                    failed: batchImportResult.failedCount,
-                  })
-                }}
-              </p>
-
+        <div
+          v-if="batchInvalidRows.length > 0"
+          class="school-add-member-invalid-panel"
+        >
+          <p class="school-add-member-invalid-panel__title">
+            {{
+              t('admin.schoolAddMemberBatchInvalidRowsTitle', {
+                count: batchInvalidRows.length,
+              })
+            }}
+          </p>
+          <div class="school-add-member-preview school-add-member-preview--invalid">
+            <div class="school-add-member-preview__head school-add-member-preview__head--invalid">
+              <span>{{ t('admin.schoolAddMemberContact') }}</span>
+              <span>{{ t('admin.schoolAddMemberName') }}</span>
+              <span>{{ t('admin.schoolAddMemberBatchFailedReason') }}</span>
+            </div>
+            <div class="school-add-member-invalid-panel__list">
               <div
-                v-if="batchImportResult.failedCount > 0"
-                class="school-add-member-failed-panel"
+                v-for="row in batchInvalidPreviewRows"
+                :key="`invalid-${row.line}-${row.contactRaw}`"
+                class="school-add-member-preview__row school-add-member-preview__row--invalid"
               >
-                <p class="school-add-member-failed-panel__title">
-                  {{
-                    t('admin.schoolAddMemberBatchFailedListTitle', {
-                      count: batchImportResult.failedCount,
-                    })
-                  }}
-                </p>
-                <div class="school-add-member-preview school-add-member-preview--failed">
-                  <div class="school-add-member-preview__head school-add-member-preview__head--failed">
-                    <span>{{ t('admin.schoolAddMemberContact') }}</span>
-                    <span>{{ t('admin.schoolAddMemberName') }}</span>
-                    <span>{{ t('admin.schoolAddMemberBatchFailedReason') }}</span>
-                  </div>
-                  <div class="school-add-member-failed-panel__list">
-                    <div
-                      v-for="item in batchImportResult.failedItems"
-                      :key="`${item.index}-${formatFailureContact(item)}`"
-                      class="school-add-member-preview__row school-add-member-preview__row--failed"
-                    >
-                      <span>{{ formatFailureContact(item) }}</span>
-                      <span>{{ item.name }}</span>
-                      <span class="school-add-member-preview__reason">{{ item.detail }}</span>
-                    </div>
-                  </div>
-                </div>
+                <span>{{ row.contactRaw || '—' }}</span>
+                <span>{{ row.name || '—' }}</span>
+                <span class="school-add-member-preview__reason">
+                  {{ t(row.errorKey, row.errorParams ?? {}) }}
+                </span>
               </div>
+            </div>
+          </div>
+          <p
+            v-if="batchInvalidRows.length > batchInvalidPreviewRows.length"
+            class="school-add-member-preview__more"
+          >
+            {{
+              t('admin.schoolAddMemberBatchPreviewMore', {
+                count: batchInvalidRows.length - batchInvalidPreviewRows.length,
+              })
+            }}
+          </p>
+        </div>
+      </div>
 
-              <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end pt-1">
-                <button
-                  type="button"
-                  class="school-add-member-btn school-add-member-btn--primary"
-                  @click="closeBatchResult"
-                >
-                  {{ t('admin.schoolAddMemberBatchResultDone') }}
-                </button>
-              </div>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          @click="closeModal"
+        >
+          {{ t('common.cancel') }}
+        </button>
+        <button
+          type="submit"
+          :disabled="submitting || !canSubmit"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+        >
+          <Loader2
+            v-if="submitting"
+            class="w-4 h-4 animate-spin"
+          />
+          {{ submitLabel }}
+        </button>
+      </div>
+    </form>
+
+    <div
+      v-else-if="batchImportResult"
+      class="space-y-5"
+    >
+      <p
+        class="school-add-member-result-summary"
+        :class="`school-add-member-result-summary--${batchResultSummaryTone}`"
+      >
+        {{
+          t(batchResultSummaryKey ?? 'admin.schoolAddMemberBatchResultSuccess', {
+            created: batchImportResult.createdCount,
+            failed: batchImportResult.failedCount,
+          })
+        }}
+      </p>
+
+      <div
+        v-if="batchImportResult.failedCount > 0"
+        class="school-add-member-failed-panel"
+      >
+        <p class="school-add-member-failed-panel__title">
+          {{
+            t('admin.schoolAddMemberBatchFailedListTitle', {
+              count: batchImportResult.failedCount,
+            })
+          }}
+        </p>
+        <div class="school-add-member-preview school-add-member-preview--failed">
+          <div class="school-add-member-preview__head school-add-member-preview__head--failed">
+            <span>{{ t('admin.schoolAddMemberContact') }}</span>
+            <span>{{ t('admin.schoolAddMemberName') }}</span>
+            <span>{{ t('admin.schoolAddMemberBatchFailedReason') }}</span>
+          </div>
+          <div class="school-add-member-failed-panel__list">
+            <div
+              v-for="item in batchImportResult.failedItems"
+              :key="`${item.index}-${formatFailureContact(item)}`"
+              class="school-add-member-preview__row school-add-member-preview__row--failed"
+            >
+              <span>{{ formatFailureContact(item) }}</span>
+              <span>{{ item.name }}</span>
+              <span class="school-add-member-preview__reason">{{ item.detail }}</span>
             </div>
           </div>
         </div>
       </div>
-    </Transition>
-  </Teleport>
+
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          @click="closeBatchResult"
+        >
+          {{ t('admin.schoolAddMemberBatchResultDone') }}
+        </button>
+      </div>
+    </div>
+  </SwissGlassCard>
 </template>
 
 <style scoped>
-.admin-school-modal-enter-active,
-.admin-school-modal-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.admin-school-modal-enter-active .relative,
-.admin-school-modal-leave-active .relative {
-  transition: transform 0.2s ease;
-}
-
-.admin-school-modal-enter-from,
-.admin-school-modal-leave-to {
-  opacity: 0;
-}
-
-.admin-school-modal-enter-from .relative,
-.admin-school-modal-leave-to .relative {
-  transform: scale(0.97);
-}
-
-.admin-school-modal__close {
-  position: absolute;
-  top: 16px;
-  inset-inline-end: 16px;
-  --el-button-text-color: #a8a29e;
-  --el-button-hover-text-color: #57534e;
-  --el-button-hover-bg-color: #f5f5f4;
-}
-
 .school-add-member-input {
   width: 100%;
   padding: 0.75rem 1rem;

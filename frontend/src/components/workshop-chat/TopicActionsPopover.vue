@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { ElMessageBox } from 'element-plus'
-
 import { ArrowRightLeft, Bell, BellOff, BookCheck, Eye, Pencil, Trash2 } from '@lucide/vue'
 
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
 import type { ChatTopic } from '@/stores/workshopChat'
@@ -62,7 +61,7 @@ function handleMove(): void {
 
 async function handleDelete(): Promise<void> {
   try {
-    await ElMessageBox.confirm(t('workshop.deleteTopicConfirm'), t('workshop.deleteTopic'), {
+    await swissGlassConfirm(t('workshop.deleteTopicConfirm'), t('workshop.deleteTopic'), {
       confirmButtonText: t('workshop.deleteTopic'),
       type: 'warning',
     })

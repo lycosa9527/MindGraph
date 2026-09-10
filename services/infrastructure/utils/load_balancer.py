@@ -67,6 +67,7 @@ class LLMLoadBalancer:
         "qwen-plus-latest": "qwen-plus",
         "qwen3.6-flash": "qwen3.6-flash",
         "qwen3.7-flash": "qwen3.7-flash",
+        "qwen3.8-flash": "qwen3.8-flash",
         "qwen3.7-plus": "qwen3.7-plus",
         # Unaffected
         "hunyuan": "hunyuan",  # → Tencent hunyuan

@@ -5,11 +5,12 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { ElMessageBox, ElScrollbar } from 'element-plus'
+import { ElScrollbar } from 'element-plus'
 
 import { Folder, Trash2 } from '@lucide/vue'
 
 import { notify, useLanguage } from '@/composables'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import {
   type KnowledgePackage,
   useFileCenterMutations,
@@ -46,15 +47,11 @@ function handleSelect(pkg: KnowledgePackage): void {
 
 async function handleDelete(packageId: number): Promise<void> {
   try {
-    await ElMessageBox.confirm(
-      t('fileCenter.confirmDeletePackage'),
-      t('fileCenter.deletePackage'),
-      {
-        confirmButtonText: t('common.delete'),
-        cancelButtonText: t('common.cancel'),
-        type: 'warning',
-      }
-    )
+    await swissGlassConfirm(t('fileCenter.confirmDeletePackage'), t('fileCenter.deletePackage'), {
+      confirmButtonText: t('common.delete'),
+      cancelButtonText: t('common.cancel'),
+      type: 'warning',
+    })
     await deletePackage.mutateAsync(packageId)
     if (store.activePackageId === packageId) {
       store.selectPackage(null)

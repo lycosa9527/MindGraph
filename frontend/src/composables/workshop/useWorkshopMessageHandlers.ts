@@ -14,6 +14,10 @@ import type {
   WorkshopUpdate,
 } from '@/composables/workshop/useWorkshopTypes'
 
+import {
+  applyActiveEditorPresence,
+  purgeActiveEditorsForUser,
+} from './applyCollabEditorPresence'
 import type { CollabSyncVersion } from './useCollabSyncVersion'
 
 // applySnapshotFrame / evaluateLiveSpecGap are now used inside useCollabSyncVersion;
@@ -132,6 +136,25 @@ function workshopGuestEligibleForForcedExit(deps: WorkshopMessageDispatchDeps): 
     return false
   }
   return deps.auth.getCurrentUserIdString() !== String(oid)
+}
+
+function applyEditingPresence(
+  deps: WorkshopMessageDispatchDeps,
+  nodeId: string,
+  editing: boolean,
+  userId?: number,
+  username?: string,
+  color?: string,
+  emoji?: string
+): void {
+  const result = applyActiveEditorPresence(
+    deps.activeEditors.value,
+    { nodeId, editing, userId, username, color, emoji },
+    (uid, name) => resolveWorkshopEditorDisplayName(deps, uid, name)
+  )
+  if (result.changed && deps.onNodeEditing) {
+    deps.onNodeEditing(nodeId, result.editor)
+  }
 }
 
 function normalizeBatchEditingEvent(raw: unknown): NodeEditingEvent | null {
@@ -334,25 +357,15 @@ export function dispatchWorkshopMessage(
 
     case 'node_editing':
       if (message.node_id) {
-        if (message.editing && message.user_id && message.color && message.emoji) {
-          const editor: ActiveEditor = {
-            user_id: message.user_id,
-            username: resolveWorkshopEditorDisplayName(deps, message.user_id, message.username),
-            color: message.color,
-            emoji: message.emoji,
-          }
-          deps.activeEditors.value.set(message.node_id, editor)
-
-          if (deps.onNodeEditing) {
-            deps.onNodeEditing(message.node_id, editor)
-          }
-        } else {
-          deps.activeEditors.value.delete(message.node_id)
-
-          if (deps.onNodeEditing) {
-            deps.onNodeEditing(message.node_id, null)
-          }
-        }
+        applyEditingPresence(
+          deps,
+          message.node_id,
+          message.editing === true,
+          message.user_id,
+          message.username,
+          message.color,
+          message.emoji
+        )
       }
       break
 
@@ -403,6 +416,12 @@ export function dispatchWorkshopMessage(
       }
       deps.remoteSelectionsByUser.value.delete(leftId)
       deps.remoteSelectionsByUser.value = new Map(deps.remoteSelectionsByUser.value)
+      const releasedNodes = purgeActiveEditorsForUser(deps.activeEditors.value, leftId)
+      for (const nodeId of releasedNodes) {
+        if (deps.onNodeEditing) {
+          deps.onNodeEditing(nodeId, null)
+        }
+      }
       deps.schedulePresenceNotification('left', leftId, leftDisplayName)
       break
     }
@@ -451,28 +470,17 @@ export function dispatchWorkshopMessage(
 
     case 'node_editing_batch': {
       const nodeIds = Array.isArray(message.node_ids) ? message.node_ids : []
-      if (message.editing && message.user_id && message.color && message.emoji) {
-        const editor: ActiveEditor = {
-          user_id: message.user_id,
-          username: resolveWorkshopEditorDisplayName(deps, message.user_id, message.username),
-          color: message.color,
-          emoji: message.emoji,
-        }
-        for (const nid of nodeIds) {
-          if (!nid) continue
-          deps.activeEditors.value.set(nid, editor)
-          if (deps.onNodeEditing) {
-            deps.onNodeEditing(nid, editor)
-          }
-        }
-      } else {
-        for (const nid of nodeIds) {
-          if (!nid) continue
-          deps.activeEditors.value.delete(nid)
-          if (deps.onNodeEditing) {
-            deps.onNodeEditing(nid, null)
-          }
-        }
+      for (const nid of nodeIds) {
+        if (!nid) continue
+        applyEditingPresence(
+          deps,
+          nid,
+          message.editing === true,
+          message.user_id,
+          message.username,
+          message.color,
+          message.emoji
+        )
       }
       break
     }
@@ -484,23 +492,15 @@ export function dispatchWorkshopMessage(
         if (!evt || !evt.node_id) {
           continue
         }
-        if (evt.editing && evt.user_id && evt.color && evt.emoji) {
-          const editor: ActiveEditor = {
-            user_id: evt.user_id,
-            username: resolveWorkshopEditorDisplayName(deps, evt.user_id, evt.username),
-            color: evt.color,
-            emoji: evt.emoji,
-          }
-          deps.activeEditors.value.set(evt.node_id, editor)
-          if (deps.onNodeEditing) {
-            deps.onNodeEditing(evt.node_id, editor)
-          }
-        } else {
-          deps.activeEditors.value.delete(evt.node_id)
-          if (deps.onNodeEditing) {
-            deps.onNodeEditing(evt.node_id, null)
-          }
-        }
+        applyEditingPresence(
+          deps,
+          evt.node_id,
+          evt.editing === true,
+          evt.user_id,
+          evt.username,
+          evt.color,
+          evt.emoji
+        )
       }
       break
     }
@@ -514,9 +514,7 @@ export function dispatchWorkshopMessage(
       break
 
     case 'owner_disconnected':
-      if (message.workshop_continues) {
-        deps.notify.info(deps.t('workshopCanvas.connectionClosed'))
-      }
+      // Room stays open for remaining peers; a "connection closed" toast is wrong.
       break
 
     case 'kicked':

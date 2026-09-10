@@ -4,10 +4,9 @@
  */
 import { computed } from 'vue'
 
-import { Close } from '@element-plus/icons-vue'
+import { Copy, Share2 } from '@lucide/vue'
 
-import { Copy } from '@lucide/vue'
-
+import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 
 const props = defineProps<{
@@ -73,104 +72,45 @@ async function copyShortInvite() {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="admin-school-modal">
-      <div
-        v-if="isVisible"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
-      >
-        <div
-          class="absolute inset-0 bg-stone-900/60 backdrop-blur-[2px]"
-          aria-hidden="true"
+  <SwissGlassCard
+    v-model="isVisible"
+    :ribbon="t('swissGlass.hero.adminSchoolShare.ribbon')"
+    :title="t('swissGlass.hero.adminSchoolShare.title')"
+    :line1="t('swissGlass.hero.adminSchoolShare.line1')"
+    :icon="Share2"
+    card-class="swiss-glass-card--wide"
+  >
+    <p
+      class="whitespace-pre-wrap rounded-lg bg-stone-50 p-4 text-sm text-stone-700 leading-relaxed max-h-[min(50vh,320px)] overflow-y-auto"
+    >
+      {{ shareMessageText }}
+    </p>
+    <template #footer>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="closeModal"
-        />
-
-        <div
-          class="relative w-full max-w-lg"
-          @click.stop
         >
-          <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
-            <div class="px-8 pt-8 pb-4 text-center border-b border-stone-100 relative">
-              <el-button
-                :icon="Close"
-                circle
-                text
-                class="admin-school-modal__close"
-                :aria-label="t('common.close')"
-                @click="closeModal"
-              />
-              <h2 class="text-lg font-semibold text-stone-900 tracking-tight">
-                {{ t('admin.shareInviteTitle') }}
-              </h2>
-            </div>
-
-            <div class="p-8 space-y-5">
-              <p
-                class="whitespace-pre-wrap rounded-lg bg-stone-50 p-4 text-sm text-stone-700 leading-relaxed max-h-[min(50vh,320px)] overflow-y-auto"
-              >
-                {{ shareMessageText }}
-              </p>
-
-              <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  class="w-full sm:w-auto px-5 py-2.5 rounded-lg text-sm font-medium text-stone-600 bg-stone-100 hover:bg-stone-200 transition-colors"
-                  @click="closeModal"
-                >
-                  {{ t('common.close') }}
-                </button>
-                <button
-                  type="button"
-                  class="w-full sm:w-auto px-5 py-2.5 rounded-lg text-sm font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 flex items-center justify-center gap-2 transition-colors"
-                  @click="copyShortInvite"
-                >
-                  <Copy class="w-4 h-4" />
-                  {{ t('admin.copyShortInvite') }}
-                </button>
-                <button
-                  type="button"
-                  class="w-full sm:w-auto px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 flex items-center justify-center gap-2 transition-colors"
-                  @click="copyShareMessage"
-                >
-                  <Copy class="w-4 h-4" />
-                  {{ t('admin.copyShareMessage') }}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+          {{ t('common.close') }}
+        </button>
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          @click="copyShortInvite"
+        >
+          <Copy class="w-4 h-4" />
+          {{ t('admin.copyShortInvite') }}
+        </button>
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          @click="copyShareMessage"
+        >
+          <Copy class="w-4 h-4" />
+          {{ t('admin.copyShareMessage') }}
+        </button>
       </div>
-    </Transition>
-  </Teleport>
+    </template>
+  </SwissGlassCard>
 </template>
-
-<style scoped>
-.admin-school-modal-enter-active,
-.admin-school-modal-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.admin-school-modal-enter-active .relative,
-.admin-school-modal-leave-active .relative {
-  transition: transform 0.2s ease;
-}
-
-.admin-school-modal-enter-from,
-.admin-school-modal-leave-to {
-  opacity: 0;
-}
-
-.admin-school-modal-enter-from .relative,
-.admin-school-modal-leave-to .relative {
-  transform: scale(0.97);
-}
-
-.admin-school-modal__close {
-  position: absolute;
-  top: 16px;
-  inset-inline-end: 16px;
-  --el-button-text-color: #a8a29e;
-  --el-button-hover-text-color: #57534e;
-  --el-button-hover-bg-color: #f5f5f4;
-}
-</style>

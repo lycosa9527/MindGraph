@@ -1,0 +1,178 @@
+/**
+ * Shared Swiss glass field / footer / overlay chrome for dialogs and cards.
+ */
+
+.swiss-glass-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.swiss-glass-field__kicker {
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ai-muted, #6b7280);
+}
+
+.swiss-glass-field__input,
+.swiss-glass-field textarea.swiss-glass-field__input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgb(231 229 228);
+  background: rgb(255 255 255 / 0.78);
+  padding: 0.65rem 0.8rem;
+  font-size: 0.875rem;
+  color: var(--ai-ink, #1f2937);
+  outline: none;
+}
+
+.swiss-glass-field__input::placeholder {
+  color: #a8a29e;
+}
+
+.swiss-glass-field__input:focus {
+  border-color: #c7d2fe;
+  box-shadow: 0 0 0 3px rgb(99 102 241 / 0.12);
+}
+
+.swiss-glass-error {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 12px;
+}
+
+.swiss-glass-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.swiss-glass-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.swiss-glass-card-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12vh 16px 24px;
+  background: rgb(15 23 42 / 0.32);
+  backdrop-filter: blur(8px);
+}
+
+/*
+ * /auth and other login hosts: center the card, keep roof-cat clearance,
+ * and scroll on short viewports instead of a hard 12vh offset.
+ */
+.swiss-glass-card-overlay--auth {
+  isolation: isolate;
+  align-items: center;
+  overflow: visible;
+  padding: max(4.75rem, calc(env(safe-area-inset-top, 0px) + 3.25rem))
+    max(1rem, env(safe-area-inset-right, 0px)) max(1.5rem, env(safe-area-inset-bottom, 0px))
+    max(1rem, env(safe-area-inset-left, 0px));
+}
+
+.swiss-glass-card-overlay--auth.swiss-glass-card-overlay--auth-pad {
+  padding-bottom: max(6.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.swiss-glass-card--auth {
+  z-index: 1;
+  width: min(480px, calc(100vw - 2rem));
+  max-height: min(740px, calc(100dvh - 6.5rem));
+  flex-shrink: 0;
+}
+
+.swiss-glass-card-overlay--auth.swiss-glass-card-overlay--auth-pad .swiss-glass-card--auth {
+  max-height: min(740px, calc(100dvh - 11.25rem));
+}
+
+@media (max-height: 700px) {
+  .swiss-glass-card-overlay--auth {
+    align-items: flex-start;
+  }
+
+  .swiss-glass-card--auth {
+    max-height: min(740px, calc(100dvh - 5.5rem));
+  }
+
+  .swiss-glass-card-overlay--auth.swiss-glass-card-overlay--auth-pad .swiss-glass-card--auth {
+    max-height: min(740px, calc(100dvh - 10.25rem));
+  }
+}
+
+@media (max-height: 520px) {
+  .swiss-glass-card-overlay--auth {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+}
+
+.swiss-glass-card {
+  position: relative;
+  width: min(480px, 92vw);
+  max-height: min(78vh, 740px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.swiss-glass-card--wide {
+  width: min(720px, 94vw);
+}
+
+.swiss-glass-card--xl {
+  width: min(960px, 96vw);
+  max-height: min(88vh, 900px);
+}
+
+.swiss-glass-card__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 18px 12px;
+}
+
+.swiss-glass-card__footer {
+  flex-shrink: 0;
+  padding: 10px 18px 16px;
+  border-top: 1px solid rgb(255 255 255 / 0.6);
+  background: rgb(255 255 255 / 0.35);
+}
+
+.dark .swiss-glass-field__kicker {
+  color: #94a3b8;
+}
+
+.dark .swiss-glass-field__input,
+.dark .swiss-glass-field textarea.swiss-glass-field__input {
+  border-color: rgb(255 255 255 / 0.16);
+  background: rgb(15 23 42 / 0.45);
+  color: #f8fafc;
+}
+
+.dark .swiss-glass-card__footer {
+  border-top-color: rgb(255 255 255 / 0.12);
+  background: rgb(15 23 42 / 0.28);
+}
+
+.mind-map-side-rail-btn--danger {
+  border: 1px solid #b91c1c;
+  background: #b91c1c;
+  color: #fafaf9;
+}
+
+.mind-map-side-rail-btn--danger:hover:not(:disabled) {
+  background: #991b1b;
+  border-color: #991b1b;
+}

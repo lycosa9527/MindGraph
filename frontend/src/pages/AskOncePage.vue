@@ -8,14 +8,15 @@
  */
 import { computed, onUnmounted, ref } from 'vue'
 
-import { ElButton, ElDialog, ElIcon, ElInput, ElOption, ElSelect } from 'element-plus'
+import { ElButton, ElIcon, ElInput, ElOption, ElSelect } from 'element-plus'
 
 import { Plus } from '@element-plus/icons-vue'
 
-import { Send, Settings } from '@lucide/vue'
+import { Send, Settings, Sparkles } from '@lucide/vue'
 
 import { AskOncePanel } from '@/components/askonce'
 import { LoginModal } from '@/components/auth'
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { ASKONCE_PROMPT_TEMPLATES, type PromptTemplate } from '@/config/askOncePrompts'
 import { type ModelId, useAskOnceStore } from '@/stores/askonce'
@@ -406,10 +407,13 @@ onUnmounted(() => {
     </main>
 
     <!-- Prompt Template Modal -->
-    <ElDialog
+    <SwissGlassDialog
       v-model="showSystemModal"
-      :title="t('askOnce.promptTemplatesTitle')"
-      width="600px"
+      :ribbon="t('swissGlass.hero.askOnce.ribbon')"
+      :title="t('swissGlass.hero.askOnce.title')"
+      :line1="t('swissGlass.hero.askOnce.line1')"
+      :icon="Sparkles"
+      width="min(600px, 92vw)"
     >
       <div class="mb-4">
         <label
@@ -451,19 +455,24 @@ onUnmounted(() => {
         />
       </div>
       <template #footer>
-        <div class="flex justify-end gap-2">
-          <ElButton @click="clearPromptDraft">
+        <div class="swiss-glass-footer">
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+            @click="clearPromptDraft"
+          >
             {{ t('askOnce.clearDraft') }}
-          </ElButton>
-          <ElButton
-            type="primary"
+          </button>
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
             @click="saveSystemPrompt"
           >
             {{ t('askOnce.apply') }}
-          </ElButton>
+          </button>
         </div>
       </template>
-    </ElDialog>
+    </SwissGlassDialog>
 
     <!-- Login Modal -->
     <LoginModal

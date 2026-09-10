@@ -7,8 +7,11 @@
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { ElButton, ElDialog, ElForm, ElFormItem, ElInput, ElOption, ElSelect } from 'element-plus'
+import { ElForm, ElFormItem, ElInput, ElOption, ElSelect } from 'element-plus'
 
+import { Share2 } from '@lucide/vue'
+
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { type CommunityPost, createCommunityPost, updateCommunityPost } from '@/utils/apiClient'
 import { captureDiagramPngBlob } from '@/utils/diagramExportRasterCapture'
@@ -63,8 +66,13 @@ const isSubmitting = ref(false)
 
 const isEdit = computed(() => props.mode === 'edit')
 const modalTitle = computed(() =>
-  isEdit.value ? t('community.shareModal.titleEdit') : t('community.shareModal.titleCreate')
+  isEdit.value ? t('canvas.hero.communityExport.editTitle') : t('canvas.hero.communityExport.title')
 )
+
+const open = computed({
+  get: () => props.visible,
+  set: (value: boolean) => emit('update:visible', value),
+})
 const submitLabel = computed(() =>
   isEdit.value ? t('community.shareModal.save') : t('community.shareModal.publish')
 )
@@ -135,8 +143,7 @@ async function submit() {
   if (props.mode === 'edit' && props.initialPost) {
     spec =
       ((props.initialPost as CommunityPost & { spec?: unknown }).spec as
-        | Record<string, unknown>
-        | undefined) ?? null
+        Record<string, unknown> | undefined) ?? null
   } else {
     spec = props.getDiagramSpec()
   }
@@ -188,13 +195,14 @@ async function submit() {
 </script>
 
 <template>
-  <el-dialog
-    :model-value="visible"
+  <SwissGlassDialog
+    v-model="open"
+    :ribbon="t('canvas.hero.communityExport.ribbon')"
     :title="modalTitle"
-    width="480px"
+    :line1="t('canvas.hero.communityExport.line1')"
+    :icon="Share2"
+    width="min(480px, 92vw)"
     :close-on-click-modal="false"
-    class="export-to-community-modal"
-    @update:model-value="emit('update:visible', $event)"
   >
     <el-form
       label-position="top"
@@ -239,34 +247,33 @@ async function submit() {
     </el-form>
 
     <template #footer>
-      <div class="dialog-footer">
-        <el-button @click="close">
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          @click="close"
+        >
           {{ t('community.shareModal.cancel') }}
-        </el-button>
-        <el-button
-          type="primary"
-          :loading="isSubmitting"
+        </button>
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          :disabled="isSubmitting"
           @click="submit"
         >
           {{ submitLabel }}
-        </el-button>
+        </button>
       </div>
     </template>
-  </el-dialog>
+  </SwissGlassDialog>
 </template>
 
 <style scoped>
 .community-form {
-  padding: 8px 0;
+  padding: 0;
 }
 
 .w-full {
   width: 100%;
-}
-
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
 }
 </style>

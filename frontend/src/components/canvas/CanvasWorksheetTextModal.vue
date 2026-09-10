@@ -5,23 +5,22 @@
  */
 import { computed, nextTick, ref, watch } from 'vue'
 
-import { ElButton, ElDialog, ElInput } from 'element-plus'
+import { ElInput } from 'element-plus'
+
+import { FileText } from '@lucide/vue'
 
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useWorksheetDiagramPreviewDrag } from '@/composables/canvas/useWorksheetDiagramPreviewDrag'
 import { useLanguage } from '@/composables/core/useLanguage'
-import type {
-  CanvasExportColorMode,
-  CanvasExportLayout,
-} from '@/config/canvasExportOptions'
+import type { CanvasExportColorMode, CanvasExportLayout } from '@/config/canvasExportOptions'
 import {
   CLASSROOM_WORKSHEET_TEXT_PRESET,
+  type CanvasWorksheetTextOptions,
   DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS,
   hasActiveWorksheetHeader,
   resolveWorksheetTopicText,
-  type CanvasWorksheetTextOptions,
 } from '@/config/canvasWorksheetText'
-
 import '@/styles/canvas-worksheet-text-modal.css'
 
 const visible = defineModel<boolean>('visible', { required: true })
@@ -47,12 +46,14 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  save: [payload: {
-    worksheetText: CanvasWorksheetTextOptions
-    colorMode: CanvasExportColorMode
-    layout: CanvasExportLayout
-    format: 'pdf' | 'worksheet_docx'
-  }]
+  save: [
+    payload: {
+      worksheetText: CanvasWorksheetTextOptions
+      colorMode: CanvasExportColorMode
+      layout: CanvasExportLayout
+      format: 'pdf' | 'worksheet_docx'
+    },
+  ]
 }>()
 
 const { t } = useLanguage()
@@ -65,9 +66,7 @@ const previewLoading = ref(false)
 const previewFailed = ref(false)
 let previewRequestId = 0
 
-const previewTopic = computed(() =>
-  resolveWorksheetTopicText(draft.value, props.defaultTopic)
-)
+const previewTopic = computed(() => resolveWorksheetTopicText(draft.value, props.defaultTopic))
 
 const previewHasHeader = computed(() => hasActiveWorksheetHeader(draft.value))
 
@@ -117,10 +116,12 @@ const layoutOptions = computed(() => [
 
 type WorksheetVisibility = 'show' | 'hide'
 
-function worksheetVisibility(field: keyof Pick<
-  CanvasWorksheetTextOptions,
-  'showTopic' | 'showName' | 'showClass' | 'showDate' | 'showInstruction'
->) {
+function worksheetVisibility(
+  field: keyof Pick<
+    CanvasWorksheetTextOptions,
+    'showTopic' | 'showName' | 'showClass' | 'showDate' | 'showInstruction'
+  >
+) {
   return computed({
     get: (): WorksheetVisibility => (draft.value[field] ? 'show' : 'hide'),
     set: (value: WorksheetVisibility) => {
@@ -318,35 +319,16 @@ async function handleReset() {
 </script>
 
 <template>
-  <ElDialog
+  <SwissGlassDialog
     v-model="visible"
-    width="920px"
-    append-to-body
-    destroy-on-close
-    align-center
-    class="worksheet-text-modal"
-    :show-close="true"
+    :ribbon="t('canvas.hero.worksheet.ribbon')"
+    :title="modalTitle"
+    :line1="t('canvas.hero.worksheet.line1')"
+    :icon="FileText"
+    width="min(920px, 96vw)"
+    dialog-class="worksheet-text-modal"
     @close="close"
   >
-    <template #header>
-      <div class="worksheet-text-modal__header">
-        <span
-          class="worksheet-text-modal__glyph"
-          aria-hidden="true"
-        >◇</span>
-        <h2 class="worksheet-text-modal__title">
-          {{ modalTitle }}
-        </h2>
-        <span
-          class="worksheet-text-modal__header-rule"
-          aria-hidden="true"
-        />
-        <span class="worksheet-text-modal__header-note">
-          {{ t('canvas.worksheetText.previewLabel') }}
-        </span>
-      </div>
-    </template>
-
     <div class="worksheet-text-modal__layout">
       <aside
         class="worksheet-text-modal__preview-pane"
@@ -454,7 +436,7 @@ async function handleReset() {
                     alt=""
                     draggable="false"
                     @load="onDiagramImageLoad"
-                  >
+                  />
                   <span
                     class="worksheet-text-modal__diagram-handle worksheet-text-modal__diagram-handle--nw"
                     data-handle="nw"
@@ -653,35 +635,38 @@ async function handleReset() {
     </div>
 
     <template #footer>
-      <div class="worksheet-text-modal__footer">
-        <ElButton
-          class="worksheet-text-modal__btn"
+      <div class="swiss-glass-footer worksheet-text-modal__footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost"
           @click="handleReset"
         >
           {{ t('canvas.worksheetText.reset') }}
-        </ElButton>
+        </button>
         <div class="worksheet-text-modal__footer-actions">
-          <ElButton
-            class="worksheet-text-modal__btn"
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
             @click="close"
           >
             {{ t('canvas.worksheetText.cancel') }}
-          </ElButton>
-          <ElButton
-            class="worksheet-text-modal__btn"
+          </button>
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
             @click="handleExportDocx"
           >
             {{ t('canvas.worksheetText.exportDocx') }}
-          </ElButton>
-          <ElButton
-            type="primary"
-            class="worksheet-text-modal__btn worksheet-text-modal__btn--primary"
+          </button>
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
             @click="handleExportPdf"
           >
             {{ t('canvas.worksheetText.exportPdf') }}
-          </ElButton>
+          </button>
         </div>
       </div>
     </template>
-  </ElDialog>
+  </SwissGlassDialog>
 </template>

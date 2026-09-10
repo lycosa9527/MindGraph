@@ -12,15 +12,17 @@
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import { ElButton, ElInput } from 'element-plus'
+import { ElInput } from 'element-plus'
 
-import { Close } from '@element-plus/icons-vue'
+import { Smartphone } from '@lucide/vue'
 
-import { useNotifications } from '@/composables'
+import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
+import { useLanguage, useNotifications } from '@/composables'
 import { useTsecCaptcha } from '@/composables/auth/useTsecCaptcha'
 import { useAuthStore, useFeatureFlagsStore } from '@/stores'
 
 const notify = useNotifications()
+const { t } = useLanguage()
 
 const props = defineProps<{
   visible: boolean
@@ -286,189 +288,131 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="modal">
-      <div
-        v-if="isVisible"
-        class="fixed inset-0 z-50 overflow-y-auto overscroll-y-contain auth-modal-overlay flex items-start sm:items-center justify-center p-4"
-        @click.self="closeModal"
-      >
-        <!-- Backdrop -->
-        <div class="absolute inset-0 bg-stone-900/60 backdrop-blur-[2px]" />
-
-        <!-- Modal -->
-        <div class="relative w-full max-w-md">
-          <!-- Card -->
-          <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
-            <!-- Header -->
-            <div class="px-8 pt-8 pb-4 text-center border-b border-stone-100 relative">
-              <el-button
-                :icon="Close"
-                circle
-                text
-                class="close-btn"
-                @click="closeModal"
-              />
-              <h2 class="text-lg font-semibold text-stone-900 tracking-tight">更换手机号</h2>
-              <p class="text-sm text-stone-500 mt-1">验证新手机号后完成更换</p>
-            </div>
-
-            <!-- Content -->
-            <div class="p-8 space-y-5">
-              <!-- New Phone Input -->
-              <div>
-                <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
-                >
-                  新手机号
-                </label>
-                <el-input
-                  v-model="newPhone"
-                  placeholder="请输入新的11位手机号"
-                  maxlength="11"
-                  :disabled="smsSent"
-                  class="phone-input"
-                  @input="phoneError = ''"
-                />
-                <p
-                  v-if="phoneError"
-                  class="text-xs text-red-500 mt-1"
-                >
-                  {{ phoneError }}
-                </p>
-              </div>
-
-              <!-- Captcha Row (only show before SMS sent) -->
-              <div v-if="!smsSent && showLegacyCaptcha">
-                <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
-                >
-                  图形验证码
-                </label>
-                <div class="captcha-row">
-                  <el-input
-                    v-model="captchaCode"
-                    placeholder="请输入验证码"
-                    maxlength="4"
-                    class="captcha-row__input captcha-input"
-                    @input="captchaError = ''"
-                    @keyup.enter="sendSmsCode"
-                  />
-                  <img
-                    v-if="captchaImage"
-                    :src="captchaImage"
-                    alt="验证码"
-                    class="captcha-image border border-stone-200 hover:border-stone-400 transition-colors"
-                    :class="{ 'opacity-50': captchaLoading }"
-                    @click="fetchCaptcha"
-                  />
-                </div>
-                <p
-                  v-if="captchaError"
-                  class="text-xs text-red-500 mt-1"
-                >
-                  {{ captchaError }}
-                </p>
-              </div>
-
-              <!-- SMS Code Input (after SMS sent) -->
-              <div v-if="smsSent">
-                <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
-                >
-                  短信验证码
-                </label>
-                <div class="flex gap-3">
-                  <el-input
-                    v-model="smsCode"
-                    placeholder="请输入6位验证码"
-                    maxlength="6"
-                    class="flex-1 sms-input"
-                    @input="smsError = ''"
-                    @keyup.enter="handleSubmit"
-                  />
-                  <button
-                    class="px-4 py-2 bg-stone-200 text-stone-700 font-medium rounded-lg hover:bg-stone-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                    :disabled="countdown > 0 || smsLoading"
-                    @click="sendSmsCode"
-                  >
-                    {{ countdown > 0 ? `${countdown}s` : '重新发送' }}
-                  </button>
-                </div>
-                <p
-                  v-if="smsError"
-                  class="text-xs text-red-500 mt-1"
-                >
-                  {{ smsError }}
-                </p>
-              </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="px-8 pb-8 flex gap-3">
-              <button
-                class="flex-1 py-3 bg-stone-100 text-stone-700 font-medium rounded-lg hover:bg-stone-200 active:bg-stone-300 transition-all"
-                @click="closeModal"
-              >
-                取消
-              </button>
-              <!-- Send SMS Button (before SMS sent) -->
-              <button
-                v-if="!smsSent"
-                class="flex-1 py-3 bg-stone-800 text-white font-medium rounded-lg hover:bg-stone-700 active:bg-stone-900 focus:ring-2 focus:ring-stone-800 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                :disabled="smsLoading"
-                @click="sendSmsCode"
-              >
-                {{ smsLoading ? '发送中...' : '发送验证码' }}
-              </button>
-              <!-- Confirm Button (after SMS sent) -->
-              <button
-                v-if="smsSent"
-                class="flex-1 py-3 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                :disabled="submitting"
-                @click="handleSubmit"
-              >
-                {{ submitting ? '提交中...' : '确认更换' }}
-              </button>
-            </div>
-          </div>
-        </div>
+  <SwissGlassCard
+    v-model="isVisible"
+    :ribbon="t('swissGlass.hero.phone.ribbon')"
+    :title="t('swissGlass.hero.phone.title')"
+    :line1="t('swissGlass.hero.phone.line1')"
+    :icon="Smartphone"
+    @close="closeModal"
+  >
+    <div class="space-y-5">
+      <!-- New Phone Input -->
+      <div>
+        <label class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">
+          新手机号
+        </label>
+        <el-input
+          v-model="newPhone"
+          placeholder="请输入新的11位手机号"
+          maxlength="11"
+          :disabled="smsSent"
+          class="phone-input"
+          @input="phoneError = ''"
+        />
+        <p
+          v-if="phoneError"
+          class="text-xs text-red-500 mt-1"
+        >
+          {{ phoneError }}
+        </p>
       </div>
-    </Transition>
-  </Teleport>
+
+      <!-- Captcha Row (only show before SMS sent) -->
+      <div v-if="!smsSent && showLegacyCaptcha">
+        <label class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">
+          图形验证码
+        </label>
+        <div class="captcha-row">
+          <el-input
+            v-model="captchaCode"
+            placeholder="请输入验证码"
+            maxlength="4"
+            class="captcha-row__input captcha-input"
+            @input="captchaError = ''"
+            @keyup.enter="sendSmsCode"
+          />
+          <img
+            v-if="captchaImage"
+            :src="captchaImage"
+            alt="验证码"
+            class="captcha-image border border-stone-200 hover:border-stone-400 transition-colors"
+            :class="{ 'opacity-50': captchaLoading }"
+            @click="fetchCaptcha"
+          />
+        </div>
+        <p
+          v-if="captchaError"
+          class="text-xs text-red-500 mt-1"
+        >
+          {{ captchaError }}
+        </p>
+      </div>
+
+      <!-- SMS Code Input (after SMS sent) -->
+      <div v-if="smsSent">
+        <label class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">
+          短信验证码
+        </label>
+        <div class="flex gap-3">
+          <el-input
+            v-model="smsCode"
+            placeholder="请输入6位验证码"
+            maxlength="6"
+            class="flex-1 sms-input"
+            @input="smsError = ''"
+            @keyup.enter="handleSubmit"
+          />
+          <button
+            class="px-4 py-2 bg-stone-200 text-stone-700 font-medium rounded-lg hover:bg-stone-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            :disabled="countdown > 0 || smsLoading"
+            @click="sendSmsCode"
+          >
+            {{ countdown > 0 ? `${countdown}s` : '重新发送' }}
+          </button>
+        </div>
+        <p
+          v-if="smsError"
+          class="text-xs text-red-500 mt-1"
+        >
+          {{ smsError }}
+        </p>
+      </div>
+    </div>
+
+    <template #footer>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          @click="closeModal"
+        >
+          {{ t('common.cancel') }}
+        </button>
+        <button
+          v-if="!smsSent"
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          :disabled="smsLoading"
+          @click="sendSmsCode"
+        >
+          {{ smsLoading ? '发送中...' : '发送验证码' }}
+        </button>
+        <button
+          v-if="smsSent"
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          :disabled="submitting"
+          @click="handleSubmit"
+        >
+          {{ submitting ? '提交中...' : '确认更换' }}
+        </button>
+      </div>
+    </template>
+  </SwissGlassCard>
 </template>
 
 <style scoped>
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.modal-enter-active > div:last-child,
-.modal-leave-active > div:last-child {
-  transition: transform 0.2s ease;
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-from > div:last-child,
-.modal-leave-to > div:last-child {
-  transform: scale(0.95);
-}
-
-/* Close button positioning and styling */
-.close-btn {
-  position: absolute;
-  top: 16px;
-  inset-inline-end: 16px;
-  --el-button-text-color: #a8a29e;
-  --el-button-hover-text-color: #57534e;
-  --el-button-hover-bg-color: #f5f5f4;
-}
-
 /* Input styling - Swiss design with dark grey theme */
 .phone-input :deep(.el-input__wrapper),
 .captcha-input :deep(.el-input__wrapper),

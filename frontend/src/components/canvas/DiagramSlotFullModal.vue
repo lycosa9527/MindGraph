@@ -7,10 +7,11 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { ElButton, ElRadio, ElRadioGroup } from 'element-plus'
+import { ElRadio, ElRadioGroup } from 'element-plus'
 
-import { AlertTriangle, Loader2, Trash2 } from '@lucide/vue'
+import { FolderOpen, Loader2, Trash2 } from '@lucide/vue'
 
+import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useNotifications } from '@/composables'
 import { useLanguage } from '@/composables'
 import { getDiagramTypeDisplayName } from '@/composables/editor/useDiagramLabels'
@@ -139,168 +140,98 @@ async function handleDeleteAndSave(): Promise<void> {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="modal-fade">
-      <div
-        v-if="isVisible"
-        class="modal-overlay"
-        @click.self="closeModal"
+  <SwissGlassCard
+    v-model="isVisible"
+    :ribbon="t('canvas.hero.slotFull.ribbon')"
+    :title="t('canvas.hero.slotFull.title')"
+    :line1="t('library.slotFull.body', { max: maxDiagrams })"
+    :icon="FolderOpen"
+    card-class="swiss-glass-card--wide"
+    @close="closeModal"
+  >
+    <div class="diagram-list">
+      <ElRadioGroup
+        v-model="selectedDiagramId"
+        class="w-full"
       >
-        <div class="modal-container">
-          <!-- Header -->
-          <div class="modal-header">
-            <div class="header-icon">
-              <AlertTriangle class="w-6 h-6 text-amber-500" />
-            </div>
-            <h2 class="modal-title">
-              {{ t('library.slotFull.title') }}
-            </h2>
-            <p class="modal-subtitle">
-              {{ t('library.slotFull.body', { max: maxDiagrams }) }}
-            </p>
-          </div>
-
-          <!-- Diagram list -->
-          <div class="diagram-list">
-            <ElRadioGroup
-              v-model="selectedDiagramId"
-              class="w-full"
-            >
-              <div
-                v-for="diagram in diagrams"
-                :key="diagram.id"
-                class="diagram-item"
-                :class="{ 'is-selected': selectedDiagramId === diagram.id }"
-                @click="selectedDiagramId = diagram.id"
-              >
-                <ElRadio
-                  :value="diagram.id"
-                  class="diagram-radio"
+        <div
+          v-for="diagram in diagrams"
+          :key="diagram.id"
+          class="diagram-item"
+          :class="{ 'is-selected': selectedDiagramId === diagram.id }"
+          @click="selectedDiagramId = diagram.id"
+        >
+          <ElRadio
+            :value="diagram.id"
+            class="diagram-radio"
+          >
+            <div class="diagram-content">
+              <!-- Thumbnail -->
+              <div class="diagram-thumbnail">
+                <img
+                  v-if="diagram.thumbnail"
+                  :src="diagram.thumbnail"
+                  :alt="diagram.title"
+                  class="thumbnail-image"
+                />
+                <div
+                  v-else
+                  class="thumbnail-placeholder"
                 >
-                  <div class="diagram-content">
-                    <!-- Thumbnail -->
-                    <div class="diagram-thumbnail">
-                      <img
-                        v-if="diagram.thumbnail"
-                        :src="diagram.thumbnail"
-                        :alt="diagram.title"
-                        class="thumbnail-image"
-                      />
-                      <div
-                        v-else
-                        class="thumbnail-placeholder"
-                      >
-                        <span class="text-stone-400 text-xs">
-                          {{ getDiagramTypeName(diagram.diagram_type).charAt(0) }}
-                        </span>
-                      </div>
-                    </div>
-
-                    <!-- Info -->
-                    <div class="diagram-info">
-                      <div class="diagram-title">{{ diagram.title }}</div>
-                      <div class="diagram-meta">
-                        <span class="diagram-type">{{
-                          getDiagramTypeName(diagram.diagram_type)
-                        }}</span>
-                        <span class="meta-dot" />
-                        <span class="diagram-date">{{ formatDate(diagram.updated_at) }}</span>
-                      </div>
-                    </div>
-                  </div>
-                </ElRadio>
+                  <span class="text-stone-400 text-xs">
+                    {{ getDiagramTypeName(diagram.diagram_type).charAt(0) }}
+                  </span>
+                </div>
               </div>
-            </ElRadioGroup>
-          </div>
 
-          <!-- Footer -->
-          <div class="modal-footer">
-            <ElButton
-              class="cancel-btn"
-              @click="closeModal"
-            >
-              {{ t('library.slotFull.cancel') }}
-            </ElButton>
-            <ElButton
-              type="danger"
-              class="delete-btn"
-              :disabled="!selectedDiagramId || isDeleting"
-              @click="handleDeleteAndSave"
-            >
-              <Loader2
-                v-if="isDeleting"
-                class="w-4 h-4 mr-2 animate-spin"
-              />
-              <Trash2
-                v-else
-                class="w-4 h-4 mr-2"
-              />
-              {{ t('library.slotFull.deleteAndSave') }}
-            </ElButton>
-          </div>
+              <!-- Info -->
+              <div class="diagram-info">
+                <div class="diagram-title">{{ diagram.title }}</div>
+                <div class="diagram-meta">
+                  <span class="diagram-type">{{ getDiagramTypeName(diagram.diagram_type) }}</span>
+                  <span class="meta-dot" />
+                  <span class="diagram-date">{{ formatDate(diagram.updated_at) }}</span>
+                </div>
+              </div>
+            </div>
+          </ElRadio>
         </div>
+      </ElRadioGroup>
+    </div>
+
+    <template #footer>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          @click="closeModal"
+        >
+          {{ t('library.slotFull.cancel') }}
+        </button>
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--danger min-w-22"
+          :disabled="!selectedDiagramId || isDeleting"
+          @click="handleDeleteAndSave"
+        >
+          <Loader2
+            v-if="isDeleting"
+            class="w-4 h-4 animate-spin"
+          />
+          <Trash2
+            v-else
+            class="w-4 h-4"
+          />
+          {{ t('library.slotFull.deleteAndSave') }}
+        </button>
       </div>
-    </Transition>
-  </Teleport>
+    </template>
+  </SwissGlassCard>
 </template>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  backdrop-filter: blur(4px);
-}
-
-.modal-container {
-  background: white;
-  border-radius: 16px;
-  width: 100%;
-  max-width: 480px;
-  max-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-}
-
-.modal-header {
-  padding: 24px 24px 16px;
-  text-align: center;
-  border-bottom: 1px solid #e7e5e4;
-}
-
-.header-icon {
-  width: 48px;
-  height: 48px;
-  margin: 0 auto 12px;
-  background: #fef3c7;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1c1917;
-  margin: 0 0 8px;
-}
-
-.modal-subtitle {
-  font-size: 14px;
-  color: #78716c;
-  margin: 0;
-}
-
 .diagram-list {
-  flex: 1;
   overflow-y: auto;
-  padding: 16px;
   max-height: 400px;
 }
 
@@ -403,51 +334,5 @@ async function handleDeleteAndSave(): Promise<void> {
 
 .diagram-date {
   color: #a8a29e;
-}
-
-.modal-footer {
-  padding: 16px 24px 24px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  border-top: 1px solid #e7e5e4;
-}
-
-.cancel-btn {
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 500;
-}
-
-.delete-btn {
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-}
-
-/* Transition animations */
-.modal-fade-enter-active,
-.modal-fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.modal-fade-enter-active .modal-container,
-.modal-fade-leave-active .modal-container {
-  transition:
-    transform 0.2s ease,
-    opacity 0.2s ease;
-}
-
-.modal-fade-enter-from,
-.modal-fade-leave-to {
-  opacity: 0;
-}
-
-.modal-fade-enter-from .modal-container,
-.modal-fade-leave-to .modal-container {
-  transform: scale(0.95);
-  opacity: 0;
 }
 </style>

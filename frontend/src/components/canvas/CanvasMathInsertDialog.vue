@@ -5,8 +5,10 @@
  */
 import { nextTick, onUnmounted, ref, watch } from 'vue'
 
-import { ElButton, ElDialog } from 'element-plus'
+import { Sigma } from '@lucide/vue'
 
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
+import { loadMathLive } from '@/composables/canvas/loadMathLive'
 import {
   MATHLIVE_BASE_LAYOUTS_BEFORE_CUSTOM,
   buildChemistryVirtualKeyboardLayout,
@@ -18,7 +20,6 @@ import {
   buildK12ChemFormulasKeyLabels,
   buildK12EquationsKeyLabels,
 } from '@/composables/canvas/mathLiveKeyboardI18n'
-import { loadMathLive } from '@/composables/canvas/loadMathLive'
 import { mapUiLocaleToMathLiveLocale } from '@/composables/canvas/mathLiveLocale'
 import { useLanguage } from '@/composables/core/useLanguage'
 
@@ -170,8 +171,7 @@ onUnmounted(() => {
 
 function handleConfirm(): void {
   const el = mathFieldEl.value as unknown as
-    | { value?: string; getValue?: (format: string) => string }
-    | undefined
+    { value?: string; getValue?: (format: string) => string } | undefined
   if (!el) {
     emit('update:modelValue', false)
     return
@@ -194,17 +194,18 @@ function handleCancel(): void {
 </script>
 
 <template>
-  <ElDialog
+  <SwissGlassDialog
     :model-value="modelValue"
-    :title="t('canvas.toolbar.insertEquationDialogTitle')"
+    :ribbon="t('canvas.hero.math.ribbon')"
+    :title="t('canvas.hero.math.title')"
+    :line1="t('canvas.hero.math.line1')"
+    :icon="Sigma"
     width="min(520px, 92vw)"
-    append-to-body
-    destroy-on-close
     @update:model-value="emit('update:modelValue', $event)"
   >
     <div
       v-if="mathLoadError"
-      class="text-red-600 text-sm"
+      class="swiss-glass-error"
     >
       {{ mathLoadError }}
     </div>
@@ -212,27 +213,35 @@ function handleCancel(): void {
       <math-field
         ref="mathFieldEl"
         math-virtual-keyboard-policy="manual"
-        class="math-insert-field w-full min-h-12 min-w-0 rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900"
+        class="math-insert-field swiss-glass-field__input w-full min-h-12 min-w-0"
       />
     </template>
     <div
       v-else
-      class="text-sm text-gray-500 dark:text-gray-400 py-4"
+      class="text-sm py-4"
+      style="color: var(--ai-muted, #6b7280)"
     >
       {{ t('canvas.toolbar.insertEquationLoading') }}
     </div>
     <template #footer>
-      <ElButton @click="handleCancel">
-        {{ t('canvas.toolbar.insertEquationCancel') }}
-      </ElButton>
-      <ElButton
-        type="primary"
-        @click="handleConfirm"
-      >
-        {{ t('canvas.toolbar.insertEquationConfirm') }}
-      </ElButton>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          @click="handleCancel"
+        >
+          {{ t('canvas.toolbar.insertEquationCancel') }}
+        </button>
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          @click="handleConfirm"
+        >
+          {{ t('canvas.toolbar.insertEquationConfirm') }}
+        </button>
+      </div>
     </template>
-  </ElDialog>
+  </SwissGlassDialog>
 </template>
 
 <style scoped>

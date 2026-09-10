@@ -82,6 +82,7 @@ export type EventTypes = {
   }
   'diagram:delete_selected_requested': Record<string, never>
   'diagram:collab_delete_blocked': Record<string, never>
+  'diagram:collab_lock_blocked': Record<string, never>
   'diagram:add_node_requested': Record<string, never>
   'diagram:add_branch_requested': Record<string, never>
   'diagram:add_child_requested': Record<string, never>

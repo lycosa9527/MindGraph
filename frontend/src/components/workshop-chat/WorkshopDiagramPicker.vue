@@ -3,6 +3,9 @@ import { computed, ref, watch } from 'vue'
 
 import { ElMessage } from 'element-plus'
 
+import { LayoutGrid } from '@lucide/vue'
+
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { embedWorkshopLibraryDiagram } from '@/utils/workshopDiagramEmbed'
@@ -15,6 +18,11 @@ const emit = defineEmits<{
   'update:visible': [value: boolean]
   insert: [markdown: string]
 }>()
+
+const open = computed({
+  get: () => props.visible,
+  set: (value: boolean) => emit('update:visible', value),
+})
 
 const { t } = useLanguage()
 const savedStore = useSavedDiagramsStore()
@@ -65,13 +73,14 @@ async function pick(diagram: SavedDiagram): Promise<void> {
 </script>
 
 <template>
-  <el-dialog
-    :model-value="visible"
-    :title="t('workshop.diagramPickerTitle')"
-    width="560px"
-    append-to-body
-    class="ws-diagram-picker"
-    @update:model-value="emit('update:visible', $event)"
+  <SwissGlassDialog
+    v-model="open"
+    :ribbon="t('swissGlass.hero.diagramPicker.ribbon')"
+    :title="t('swissGlass.hero.diagramPicker.title')"
+    :line1="t('swissGlass.hero.diagramPicker.line1')"
+    :icon="LayoutGrid"
+    width="min(560px, 92vw)"
+    dialog-class="ws-diagram-picker"
   >
     <p
       v-if="isLoading"
@@ -100,8 +109,12 @@ async function pick(diagram: SavedDiagram): Promise<void> {
           @click="pick(diagram)"
         >
           <span class="ws-diagram-picker__meta">
-            <span class="ws-diagram-picker__title">{{ diagram.title || t('workshop.diagram') }}</span>
-            <span class="ws-diagram-picker__type">{{ diagramTypeLabel(diagram.diagram_type) }}</span>
+            <span class="ws-diagram-picker__title">{{
+              diagram.title || t('workshop.diagram')
+            }}</span>
+            <span class="ws-diagram-picker__type">{{
+              diagramTypeLabel(diagram.diagram_type)
+            }}</span>
           </span>
           <span
             v-if="insertingId === String(diagram.id)"
@@ -112,7 +125,7 @@ async function pick(diagram: SavedDiagram): Promise<void> {
         </button>
       </li>
     </ul>
-  </el-dialog>
+  </SwissGlassDialog>
 </template>
 
 <style scoped>

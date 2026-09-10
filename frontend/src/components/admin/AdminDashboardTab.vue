@@ -5,17 +5,20 @@
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
+import { Connection, Document, Loading, TrendCharts, User } from '@element-plus/icons-vue'
+
+import { Settings2 } from '@lucide/vue'
+import type { Chart as ChartInstance } from 'chart.js'
+
+import AdminTokenOverviewRow from '@/components/admin/AdminTokenOverviewRow.vue'
+import AdminTokenUsageByServicePanel from '@/components/admin/AdminTokenUsageByServicePanel.vue'
+import AdminTrendChartModal from '@/components/admin/AdminTrendChartModal.vue'
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
 import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
 import AdminSwissServiceCard from '@/components/admin/swiss/AdminSwissServiceCard.vue'
-import AdminTokenOverviewRow from '@/components/admin/AdminTokenOverviewRow.vue'
-import AdminTokenUsageByServicePanel from '@/components/admin/AdminTokenUsageByServicePanel.vue'
-import AdminTrendChartModal from '@/components/admin/AdminTrendChartModal.vue'
-import { Connection, Document, Loading, TrendCharts, User } from '@element-plus/icons-vue'
-
-import type { Chart as ChartInstance } from 'chart.js'
-
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
+import { useLanguage, useNotifications } from '@/composables'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import {
@@ -23,15 +26,14 @@ import {
   useQueryErrorNotification,
 } from '@/composables/admin/useQueryErrorNotification'
 import { useScopedAbort } from '@/composables/core/useScopedAbort'
-import { useLanguage, useNotifications } from '@/composables'
-import { intlLocaleForUiCode } from '@/i18n/locales'
-import { useUIStore } from '@/stores/ui'
 import {
   fetchAdminStatsTrends,
   fetchAdminTokenStats,
   useAdminStats,
   useAdminTokenStats,
 } from '@/composables/queries'
+import { intlLocaleForUiCode } from '@/i18n/locales'
+import { useUIStore } from '@/stores/ui'
 import { type ChartConfiguration, type TooltipItem, loadChartJs } from '@/utils/lazyChartJs'
 
 const props = withDefaults(
@@ -41,9 +43,7 @@ const props = withDefaults(
   { section: 'all' }
 )
 
-const showOperations = computed(
-  () => props.section === 'all' || props.section === 'operations'
-)
+const showOperations = computed(() => props.section === 'all' || props.section === 'operations')
 const showUsageByService = computed(() => props.section === 'usage')
 const showTokenRankings = computed(() => showOperations.value || showUsageByService.value)
 
@@ -184,9 +184,7 @@ const topOrgsByMindmate = computed(() =>
   topOrgsFromStats(rankingsByPeriod.value[schoolRankingPeriod.value].byOrgMindmate)
 )
 
-const topUsersByTokens = computed(
-  () => rankingsByPeriod.value[userRankingPeriod.value].topUsers
-)
+const topUsersByTokens = computed(() => rankingsByPeriod.value[userRankingPeriod.value].topUsers)
 
 const trendModalVisible = ref(false)
 const trendChartTitle = ref('')
@@ -300,8 +298,7 @@ function applyStatsPayload(data: Record<string, unknown>): void {
     totalUsers: (data.total_users as number | undefined) ?? 0,
     totalOrganizations: (data.total_organizations as number | undefined) ?? 0,
     recentRegistrations: (data.recent_registrations as number | undefined) ?? 0,
-    totalTokens:
-      ((data.token_stats as { total_tokens?: number } | undefined)?.total_tokens) ?? 0,
+    totalTokens: (data.token_stats as { total_tokens?: number } | undefined)?.total_tokens ?? 0,
   }
   applyRankingsPayload(data)
 }
@@ -391,7 +388,12 @@ async function showTrendChart(
     trendChartLoading.value = false
     await nextTick()
     await new Promise((r) => setTimeout(r, 50))
-    await renderTrendChart(chartData as { data: Array<{ date: string; value: number; input?: number; output?: number }> }, metric)
+    await renderTrendChart(
+      chartData as {
+        data: Array<{ date: string; value: number; input?: number; output?: number }>
+      },
+      metric
+    )
     if (metric === 'tokens') {
       const tokenData = cardsData as unknown as PlatformTokenStats
       const fmt = (p: { input_tokens?: number; output_tokens?: number }) => {
@@ -444,8 +446,7 @@ function showOrganizationTrendChart(
   if (!trimmedName) {
     return
   }
-  orgTrendOrgId.value =
-    orgId != null && Number.isFinite(orgId) && orgId > 0 ? orgId : undefined
+  orgTrendOrgId.value = orgId != null && Number.isFinite(orgId) && orgId > 0 ? orgId : undefined
   orgTrendOrgName.value = trimmedName
   orgTrendInitialPeriod.value = period
   orgTrendService.value = service
@@ -495,7 +496,10 @@ async function showServiceTokenTrendChart(
     trendChartLoading.value = false
     await nextTick()
     await new Promise((r) => setTimeout(r, 50))
-    await renderTrendChart(data as { data: Array<{ date: string; value: number; input?: number; output?: number }> }, 'tokens')
+    await renderTrendChart(
+      data as { data: Array<{ date: string; value: number; input?: number; output?: number }> },
+      'tokens'
+    )
 
     const fmt = (p: { input_tokens?: number; output_tokens?: number }) =>
       `${formatNumber(p?.input_tokens ?? 0)}+${formatNumber(p?.output_tokens ?? 0)}`
@@ -1040,11 +1044,14 @@ onBeforeUnmount(() => {
       </div>
     </template>
 
-    <el-dialog
+    <SwissGlassDialog
       v-model="trendModalVisible"
-      :title="trendChartTitle"
+      :ribbon="t('swissGlass.hero.adminInline.ribbon')"
+      :title="t('swissGlass.hero.adminInline.title')"
+      :line1="t('swissGlass.hero.adminInline.line1')"
+      :line2="trendChartTitle"
+      :icon="Settings2"
       width="640px"
-      destroy-on-close
       @close="closeTrendModal"
     >
       <div
@@ -1108,9 +1115,17 @@ onBeforeUnmount(() => {
         </div>
       </template>
       <template #footer>
-        <el-button @click="closeTrendModal">{{ t('common.close') }}</el-button>
+        <div class="swiss-glass-footer">
+          <button
+            type="button"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+            @click="closeTrendModal"
+          >
+            {{ t('common.close') }}
+          </button>
+        </div>
       </template>
-    </el-dialog>
+    </SwissGlassDialog>
 
     <AdminTrendChartModal
       v-if="orgTrendOrgName"
@@ -1134,4 +1149,3 @@ onBeforeUnmount(() => {
     />
   </div>
 </template>
-

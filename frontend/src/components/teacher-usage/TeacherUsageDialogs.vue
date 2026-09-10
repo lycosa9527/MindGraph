@@ -2,10 +2,13 @@
 /**
  * Teacher usage: classification config + teacher list modal and user detail modal.
  */
-import { inject } from 'vue'
+import { inject, watch } from 'vue'
 
 import { Loading } from '@element-plus/icons-vue'
 
+import { BarChart3, Loader2 } from '@lucide/vue'
+
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import type { Teacher } from '@/composables/teacherUsage/teacherUsageTypes'
 import { teacherUsageInjectionKey } from '@/composables/teacherUsage/useTeacherUsagePage'
 
@@ -35,16 +38,30 @@ const {
   onUserChartModalOpened,
   userChartRef,
 } = injected
+
+watch(showUserChartModal, (isOpen) => {
+  if (isOpen) {
+    onUserChartModalOpened()
+  }
+})
 </script>
 
 <template>
   <!-- Teachers list modal -->
-  <el-dialog
+  <SwissGlassDialog
     v-model="showTeachersModal"
-    :title="modalTitle"
-    width="700px"
-    destroy-on-close
+    :ribbon="t('swissGlass.hero.teacherUsage.ribbon')"
+    :title="t('swissGlass.hero.teacherUsage.title')"
+    :line1="t('swissGlass.hero.teacherUsage.line1')"
+    :icon="BarChart3"
+    width="min(700px, 92vw)"
   >
+    <p
+      v-if="modalTitle"
+      class="text-sm font-medium text-stone-700 mb-3"
+    >
+      {{ modalTitle }}
+    </p>
     <!-- Classification rules (for non-total): show only rules for the selected category -->
     <div
       v-if="modalStatCardType && modalStatCardType !== 'total'"
@@ -199,20 +216,30 @@ const {
         v-if="modalStatCardType !== 'unused'"
         class="flex gap-2 mt-2"
       >
-        <el-button
-          size="small"
-          :loading="isSavingConfig"
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
+          :disabled="isSavingConfig"
           @click="saveConfig"
         >
+          <Loader2
+            v-if="isSavingConfig"
+            class="w-3.5 h-3.5 animate-spin"
+          />
           {{ t('teacher.analytics.saveOnly') }}
-        </el-button>
-        <el-button
-          size="small"
-          :loading="isRecomputing"
+        </button>
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary"
+          :disabled="isRecomputing"
           @click="recomputeClassifications"
         >
+          <Loader2
+            v-if="isRecomputing"
+            class="w-3.5 h-3.5 animate-spin"
+          />
           {{ t('teacher.analytics.saveRecompute') }}
-        </el-button>
+        </button>
       </div>
     </div>
     <el-table
@@ -258,25 +285,34 @@ const {
       />
     </el-table>
     <template #footer>
-      <el-button
-        type="primary"
-        @click="showTeachersModal = false"
-      >
-        {{ t('common.close') }}
-      </el-button>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          @click="showTeachersModal = false"
+        >
+          {{ t('common.close') }}
+        </button>
+      </div>
     </template>
-  </el-dialog>
+  </SwissGlassDialog>
 
   <!-- User detail modal: chart (3 numbers) + token tracking cards -->
-  <el-dialog
+  <SwissGlassDialog
     v-model="showUserChartModal"
-    :title="selectedUser ? selectedUser.username : ''"
-    width="640px"
-    append-to-body
-    destroy-on-close
+    :ribbon="t('swissGlass.hero.teacherUsage.ribbon')"
+    :title="t('swissGlass.hero.teacherUsage.title')"
+    :line1="t('swissGlass.hero.teacherUsage.line1')"
+    :icon="BarChart3"
+    width="min(640px, 92vw)"
     @close="closeUserChartModal"
-    @opened="onUserChartModalOpened"
   >
+    <p
+      v-if="selectedUser"
+      class="text-sm font-medium text-stone-700 mb-3"
+    >
+      {{ selectedUser.username }}
+    </p>
     <div
       v-if="userChartLoading"
       class="flex items-center justify-center py-12"
@@ -343,14 +379,17 @@ const {
       </div>
     </template>
     <template #footer>
-      <el-button
-        type="primary"
-        @click="closeUserChartModal"
-      >
-        {{ t('common.close') }}
-      </el-button>
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
+          @click="closeUserChartModal"
+        >
+          {{ t('common.close') }}
+        </button>
+      </div>
     </template>
-  </el-dialog>
+  </SwissGlassDialog>
 </template>
 
 <style scoped>

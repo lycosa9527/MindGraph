@@ -71,13 +71,15 @@
 }
 
 .ai-brainstorm-panel.ai-gen-shell .ai-glass-hero,
-.mind-map-one-sentence-panel.ai-gen-shell .ai-glass-hero {
+.mind-map-one-sentence-panel.ai-gen-shell .ai-glass-hero,
+.ai-glass-hero--compact {
   min-height: 100px;
   padding: 18px 6.75rem 14px 80px;
 }
 
 .ai-brainstorm-panel.ai-gen-shell .ai-glass-hero__icon,
-.mind-map-one-sentence-panel.ai-gen-shell .ai-glass-hero__icon {
+.mind-map-one-sentence-panel.ai-gen-shell .ai-glass-hero__icon,
+.ai-glass-hero--compact .ai-glass-hero__icon {
   top: 14px;
   left: 12px;
   transform: scale(0.92);
@@ -85,7 +87,8 @@
 }
 
 .ai-brainstorm-panel.ai-gen-shell .ai-glass-hero__title,
-.mind-map-one-sentence-panel.ai-gen-shell .ai-glass-hero__title {
+.mind-map-one-sentence-panel.ai-gen-shell .ai-glass-hero__title,
+.ai-glass-hero--compact .ai-glass-hero__title {
   font-size: 18px;
 }
 
@@ -258,12 +261,14 @@
 }
 
 .voice-notes-swiss.ai-gen-shell .el-dialog__body,
-.mm-link-insert.ai-gen-shell .el-dialog__body {
+.mm-link-insert.ai-gen-shell .el-dialog__body,
+.swiss-glass-dialog.ai-gen-shell .el-dialog__body {
   padding: 0 18px 12px;
 }
 
 .voice-notes-swiss.ai-gen-shell .el-dialog__footer,
-.mm-link-insert.ai-gen-shell .el-dialog__footer {
+.mm-link-insert.ai-gen-shell .el-dialog__footer,
+.swiss-glass-dialog.ai-gen-shell .el-dialog__footer {
   padding: 10px 18px 16px;
   border-top: 1px solid rgb(255 255 255 / 0.6);
   background: rgb(255 255 255 / 0.35);

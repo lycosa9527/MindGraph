@@ -4,10 +4,11 @@
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
-import { ElButton, ElDialog, ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
+import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
 
-import { ChevronDown, Loader2, X } from '@lucide/vue'
+import { ChevronDown, Loader2, Share2 } from '@lucide/vue'
 
+import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useQuickRegisterDialogClose } from '@/composables/auth/useQuickRegisterDialogClose'
 import { usePublicSiteUrl } from '@/composables/core/usePublicSiteUrl'
@@ -67,9 +68,25 @@ const qrSrc = computed(() => {
   return `/api/qrcode?data=${encodeURIComponent(u)}&size=260`
 })
 
+const { dialogDismissLocked, requestClose } = useQuickRegisterDialogClose({
+  t,
+  token,
+  revokeKeepAlive: () => {
+    void revokeToken(true)
+  },
+})
+
 const visible = computed({
   get: () => props.modelValue,
-  set: (v: boolean) => emit('update:modelValue', v),
+  set: (v: boolean) => {
+    if (v) {
+      emit('update:modelValue', true)
+      return
+    }
+    void requestClose(() => {
+      emit('update:modelValue', false)
+    })
+  },
 })
 
 const roomRingProgress = computed(() => {
@@ -98,20 +115,6 @@ const selectedOrgLabel = computed(() => {
   const org = adminOrgs.value.find((o) => o.id === selectedOrgId.value)
   return org ? String(org.display_name || org.name) : t('auth.quickRegSelectOrg')
 })
-
-const { dialogDismissLocked, requestClose } = useQuickRegisterDialogClose({
-  t,
-  token,
-  revokeKeepAlive: () => {
-    void revokeToken(true)
-  },
-})
-
-function close() {
-  void requestClose(() => {
-    visible.value = false
-  })
-}
 
 function stopRoomCodeUi() {
   if (roomCodePoll) {
@@ -353,45 +356,14 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <ElDialog
+  <SwissGlassCard
     v-model="visible"
-    :show-close="false"
-    :close-on-click-modal="!dialogDismissLocked"
-    :close-on-press-escape="!dialogDismissLocked"
-    width="480px"
-    class="intl-share-site-dialog"
-    align-center
-    append-to-body
+    :ribbon="t('swissGlass.hero.shareSite.ribbon')"
+    :title="t('swissGlass.hero.shareSite.title')"
+    :line1="t('swissGlass.hero.shareSite.line1')"
+    :icon="Share2"
+    :persistent="dialogDismissLocked"
   >
-    <template #header>
-      <div class="flex w-full min-w-0 items-center justify-between gap-3 pr-0.5">
-        <div class="quick-reg-numeric-typography flex min-w-0 flex-1 items-center gap-2.5">
-          <div
-            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-stone-900 text-sm font-semibold leading-none text-white shadow-sm"
-            aria-hidden="true"
-          >
-            M
-          </div>
-          <span
-            class="truncate text-base font-semibold leading-snug tracking-tight text-stone-900 sm:text-[1.0625rem]"
-            >{{ t('sidebar.brandTitle') }}</span
-          >
-        </div>
-        <ElButton
-          class="intl-share-site-close -mr-1 shrink-0"
-          text
-          circle
-          :aria-label="t('common.close')"
-          @click="close"
-        >
-          <X
-            class="h-5 w-5"
-            aria-hidden="true"
-          />
-        </ElButton>
-      </div>
-    </template>
-
     <div class="intl-share-site-body">
       <div class="quick-reg-toolbar quick-reg-numeric-typography w-full">
         <div class="flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-2.5">
@@ -561,7 +533,7 @@ onBeforeUnmount(() => {
         {{ t('auth.quickRegSessionSignups', { n: signupsCount }) }}
       </p>
     </div>
-  </ElDialog>
+  </SwissGlassCard>
 </template>
 
 <style scoped>
@@ -570,18 +542,6 @@ onBeforeUnmount(() => {
   syntax: '<angle>';
   inherits: false;
   initial-value: 0deg;
-}
-
-.intl-share-site-close {
-  color: rgb(148 163 184);
-  transition:
-    color 0.15s ease,
-    background 0.15s ease;
-}
-
-.intl-share-site-close:hover {
-  color: rgb(15 23 42);
-  background: rgb(241 245 249) !important;
 }
 
 /* Inter + Noto (see eagerFonts) — matches app body, cleaner than generic system UI */
@@ -819,35 +779,7 @@ onBeforeUnmount(() => {
 </style>
 
 <style>
-.intl-share-site-dialog.el-dialog {
-  overflow: hidden;
-  border-radius: 16px;
-  border: 1px solid rgb(226 232 240);
-  background: rgb(255 255 255);
-  box-shadow:
-    0 25px 50px -12px rgb(15 23 42 / 0.2),
-    0 0 0 1px rgb(15 23 42 / 0.04),
-    inset 0 1px 0 rgb(255 255 255 / 0.9);
-}
-
-.intl-share-site-dialog .el-dialog__header {
-  padding: 1.125rem 1.375rem 1rem;
-  margin: 0;
-  background: linear-gradient(180deg, rgb(252 252 254) 0%, rgb(255 255 255) 55%);
-  border-bottom: none;
-}
-
-.intl-share-site-dialog .el-dialog__body {
-  padding: 1.25rem 1.375rem 1.5rem;
-  background: linear-gradient(
-    180deg,
-    rgb(255 255 255) 0%,
-    rgb(248 250 252) 55%,
-    rgb(252 252 254) 100%
-  );
-}
-
-/* Org list is teleported to body — keep long lists scrollable (dialog uses overflow:hidden). */
+/* Org list is teleported to body — keep long lists scrollable. */
 .quick-reg-org-dropdown-popper .el-dropdown-menu {
   max-height: min(50vh, 280px);
   overflow-x: hidden;

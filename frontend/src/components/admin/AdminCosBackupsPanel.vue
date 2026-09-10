@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { ElMessageBox } from 'element-plus'
-
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { useTriggerAdminCosBackup } from '@/composables/queries'
 
 const props = defineProps<{
@@ -22,7 +21,7 @@ const localBackups = computed(() => (local.value.backups as Array<Record<string,
 const cosBackups = computed(() => (cos.value.backups as Array<Record<string, unknown>>) ?? [])
 
 async function onTriggerBackup() {
-  await ElMessageBox.confirm(t('admin.cos.confirmBackup'), t('admin.cos.runBackup'), {
+  await swissGlassConfirm(t('admin.cos.confirmBackup'), t('admin.cos.runBackup'), {
     type: 'warning',
   })
   try {
@@ -36,7 +35,10 @@ async function onTriggerBackup() {
 </script>
 
 <template>
-  <div v-loading="loading" class="admin-cos-backups">
+  <div
+    v-loading="loading"
+    class="admin-cos-backups"
+  >
     <div class="admin-cos-kpi-row">
       <AdminSwissKpiCard
         :title="t('admin.cos.localBackupCount')"
@@ -48,26 +50,62 @@ async function onTriggerBackup() {
       />
     </div>
     <div class="admin-cos-actions">
-      <el-button type="primary" :loading="triggerBackup.isPending.value" @click="onTriggerBackup">
+      <el-button
+        type="primary"
+        :loading="triggerBackup.isPending.value"
+        @click="onTriggerBackup"
+      >
         {{ t('admin.cos.runBackup') }}
       </el-button>
     </div>
     <h4>{{ t('admin.cos.cosObjects') }}</h4>
-    <el-table :data="cosBackups" size="small" stripe>
-      <el-table-column prop="filename" :label="t('admin.cos.fileName')" />
-      <el-table-column prop="size_mb" :label="t('admin.cos.sizeMb')" width="100" />
-      <el-table-column prop="last_modified" :label="t('admin.cos.lastModified')" />
-      <el-table-column prop="has_manifest" :label="t('admin.cos.manifest')" width="90">
+    <el-table
+      :data="cosBackups"
+      size="small"
+      stripe
+    >
+      <el-table-column
+        prop="filename"
+        :label="t('admin.cos.fileName')"
+      />
+      <el-table-column
+        prop="size_mb"
+        :label="t('admin.cos.sizeMb')"
+        width="100"
+      />
+      <el-table-column
+        prop="last_modified"
+        :label="t('admin.cos.lastModified')"
+      />
+      <el-table-column
+        prop="has_manifest"
+        :label="t('admin.cos.manifest')"
+        width="90"
+      >
         <template #default="{ row }">
           {{ row.has_manifest ? t('admin.cos.yes') : t('admin.cos.no') }}
         </template>
       </el-table-column>
     </el-table>
     <h4 class="mt-4">{{ t('admin.cos.localObjects') }}</h4>
-    <el-table :data="localBackups" size="small" stripe>
-      <el-table-column prop="filename" :label="t('admin.cos.fileName')" />
-      <el-table-column prop="size_mb" :label="t('admin.cos.sizeMb')" width="100" />
-      <el-table-column prop="created" :label="t('admin.cos.lastModified')" />
+    <el-table
+      :data="localBackups"
+      size="small"
+      stripe
+    >
+      <el-table-column
+        prop="filename"
+        :label="t('admin.cos.fileName')"
+      />
+      <el-table-column
+        prop="size_mb"
+        :label="t('admin.cos.sizeMb')"
+        width="100"
+      />
+      <el-table-column
+        prop="created"
+        :label="t('admin.cos.lastModified')"
+      />
     </el-table>
   </div>
 </template>

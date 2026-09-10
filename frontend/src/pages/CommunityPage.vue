@@ -7,13 +7,14 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import { useInfiniteScroll } from '@vueuse/core'
 
-import { ElButton, ElEmpty, ElMessageBox, ElSkeleton } from 'element-plus'
+import { ElButton, ElEmpty, ElSkeleton } from 'element-plus'
 
 import { Heart, MessageCircle, Pencil, Search, Trash2 } from '@lucide/vue'
 
 import { ExportToCommunityModal } from '@/components/canvas'
 import { CommunityPostDetailModal } from '@/components/community'
 import { useLanguage, useNotifications } from '@/composables'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { useAuthStore } from '@/stores'
 import {
   type CommunityPost,
@@ -259,15 +260,11 @@ async function handleEditSuccess(updated: CommunityPost) {
 
 async function confirmDelete(post: CommunityPost) {
   try {
-    await ElMessageBox.confirm(
-      t('community.deleteConfirmBody'),
-      t('community.deleteConfirmTitle'),
-      {
-        confirmButtonText: t('common.delete'),
-        cancelButtonText: t('common.cancel'),
-        type: 'warning',
-      }
-    )
+    await swissGlassConfirm(t('community.deleteConfirmBody'), t('community.deleteConfirmTitle'), {
+      confirmButtonText: t('common.delete'),
+      cancelButtonText: t('common.cancel'),
+      type: 'warning',
+    })
   } catch {
     return
   }

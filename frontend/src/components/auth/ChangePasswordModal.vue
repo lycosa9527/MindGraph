@@ -6,10 +6,9 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { Close } from '@element-plus/icons-vue'
+import { Eye, EyeOff, KeyRound, Loader2, RefreshCw } from '@lucide/vue'
 
-import { Eye, EyeOff, Loader2, RefreshCw } from '@lucide/vue'
-
+import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useTsecCaptcha } from '@/composables/auth/useTsecCaptcha'
 import { useAuthStore, useFeatureFlagsStore } from '@/stores'
@@ -169,258 +168,197 @@ async function handleSubmit() {
     isLoading.value = false
   }
 }
-
-function handleBackdropClick(event: MouseEvent) {
-  if (event.target === event.currentTarget) {
-    closeModal()
-  }
-}
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="modal">
-      <div
-        v-if="isVisible"
-        class="fixed inset-0 z-50 overflow-y-auto overscroll-y-contain auth-modal-overlay flex items-start sm:items-center justify-center p-4"
-        @click="handleBackdropClick"
-      >
-        <!-- Backdrop -->
-        <div class="absolute inset-0 bg-stone-900/60 backdrop-blur-[2px]" />
+  <SwissGlassCard
+    v-model="isVisible"
+    :ribbon="t('swissGlass.hero.password.ribbon')"
+    :title="t('swissGlass.hero.password.title')"
+    :line1="t('swissGlass.hero.password.line1')"
+    :icon="KeyRound"
+    @close="closeModal"
+  >
+    <form
+      class="space-y-5"
+      @submit.prevent="handleSubmit"
+    >
+      <!-- Hidden username field for accessibility and password managers -->
+      <input
+        id="change-password-username"
+        type="text"
+        name="username"
+        :value="authStore.user?.phone || authStore.user?.username || ''"
+        autocomplete="username"
+        class="sr-only"
+        tabindex="-1"
+        aria-hidden="true"
+        readonly
+      />
 
-        <!-- Modal -->
-        <div class="relative w-full max-w-sm">
-          <!-- Card -->
-          <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
-            <!-- Header -->
-            <div class="px-8 pt-8 pb-4 text-center border-b border-stone-100 relative">
-              <el-button
-                :icon="Close"
-                circle
-                text
-                class="close-btn"
-                @click="closeModal"
-              />
-              <h2 class="text-lg font-semibold text-stone-900 tracking-tight">修改密码</h2>
-            </div>
+      <!-- Current password -->
+      <div>
+        <label
+          class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+          for="change-password-current"
+        >
+          当前密码
+        </label>
+        <div class="relative">
+          <input
+            id="change-password-current"
+            v-model="formData.currentPassword"
+            :type="showCurrentPassword ? 'text' : 'password'"
+            name="change-password-current"
+            placeholder="请输入当前密码"
+            autocomplete="current-password"
+            class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+          />
+          <button
+            type="button"
+            class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
+            @click="showCurrentPassword = !showCurrentPassword"
+          >
+            <Eye
+              v-if="showCurrentPassword"
+              class="w-4 h-4"
+            />
+            <EyeOff
+              v-else
+              class="w-4 h-4"
+            />
+          </button>
+        </div>
+      </div>
 
-            <!-- Form -->
-            <form
-              class="p-8 space-y-5"
-              @submit.prevent="handleSubmit"
-            >
-              <!-- Hidden username field for accessibility and password managers -->
-              <input
-                id="change-password-username"
-                type="text"
-                name="username"
-                :value="authStore.user?.phone || authStore.user?.username || ''"
-                autocomplete="username"
-                class="sr-only"
-                tabindex="-1"
-                aria-hidden="true"
-                readonly
-              />
+      <!-- New password -->
+      <div>
+        <label
+          class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+          for="change-password-new"
+        >
+          新密码
+        </label>
+        <div class="relative">
+          <input
+            id="change-password-new"
+            v-model="formData.newPassword"
+            :type="showNewPassword ? 'text' : 'password'"
+            name="change-password-new"
+            placeholder="至少8位字符"
+            autocomplete="new-password"
+            class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+          />
+          <button
+            type="button"
+            class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
+            @click="showNewPassword = !showNewPassword"
+          >
+            <Eye
+              v-if="showNewPassword"
+              class="w-4 h-4"
+            />
+            <EyeOff
+              v-else
+              class="w-4 h-4"
+            />
+          </button>
+        </div>
+      </div>
 
-              <!-- Current password -->
-              <div>
-                <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
-                  for="change-password-current"
-                >
-                  当前密码
-                </label>
-                <div class="relative">
-                  <input
-                    id="change-password-current"
-                    v-model="formData.currentPassword"
-                    :type="showCurrentPassword ? 'text' : 'password'"
-                    name="change-password-current"
-                    placeholder="请输入当前密码"
-                    autocomplete="current-password"
-                    class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-                  />
-                  <button
-                    type="button"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
-                    @click="showCurrentPassword = !showCurrentPassword"
-                  >
-                    <Eye
-                      v-if="showCurrentPassword"
-                      class="w-4 h-4"
-                    />
-                    <EyeOff
-                      v-else
-                      class="w-4 h-4"
-                    />
-                  </button>
-                </div>
-              </div>
+      <!-- Confirm password -->
+      <div>
+        <label
+          class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+          for="change-password-confirm"
+        >
+          确认新密码
+        </label>
+        <div class="relative">
+          <input
+            id="change-password-confirm"
+            v-model="formData.confirmPassword"
+            :type="showConfirmPassword ? 'text' : 'password'"
+            name="change-password-confirm"
+            placeholder="再次输入新密码"
+            autocomplete="new-password"
+            class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+          />
+          <button
+            type="button"
+            class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
+            @click="showConfirmPassword = !showConfirmPassword"
+          >
+            <Eye
+              v-if="showConfirmPassword"
+              class="w-4 h-4"
+            />
+            <EyeOff
+              v-else
+              class="w-4 h-4"
+            />
+          </button>
+        </div>
+      </div>
 
-              <!-- New password -->
-              <div>
-                <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
-                  for="change-password-new"
-                >
-                  新密码
-                </label>
-                <div class="relative">
-                  <input
-                    id="change-password-new"
-                    v-model="formData.newPassword"
-                    :type="showNewPassword ? 'text' : 'password'"
-                    name="change-password-new"
-                    placeholder="至少8位字符"
-                    autocomplete="new-password"
-                    class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-                  />
-                  <button
-                    type="button"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
-                    @click="showNewPassword = !showNewPassword"
-                  >
-                    <Eye
-                      v-if="showNewPassword"
-                      class="w-4 h-4"
-                    />
-                    <EyeOff
-                      v-else
-                      class="w-4 h-4"
-                    />
-                  </button>
-                </div>
-              </div>
-
-              <!-- Confirm password -->
-              <div>
-                <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
-                  for="change-password-confirm"
-                >
-                  确认新密码
-                </label>
-                <div class="relative">
-                  <input
-                    id="change-password-confirm"
-                    v-model="formData.confirmPassword"
-                    :type="showConfirmPassword ? 'text' : 'password'"
-                    name="change-password-confirm"
-                    placeholder="再次输入新密码"
-                    autocomplete="new-password"
-                    class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-                  />
-                  <button
-                    type="button"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
-                    @click="showConfirmPassword = !showConfirmPassword"
-                  >
-                    <Eye
-                      v-if="showConfirmPassword"
-                      class="w-4 h-4"
-                    />
-                    <EyeOff
-                      v-else
-                      class="w-4 h-4"
-                    />
-                  </button>
-                </div>
-              </div>
-
-              <!-- Captcha -->
-              <div v-if="showLegacyCaptcha">
-                <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
-                  for="change-password-captcha"
-                >
-                  {{ t('auth.captcha') }}
-                </label>
-                <div class="captcha-row">
-                  <input
-                    id="change-password-captcha"
-                    v-model="formData.captcha"
-                    type="text"
-                    name="change-password-captcha"
-                    :placeholder="t('auth.modal.captchaPlaceholderShort')"
-                    maxlength="4"
-                    autocomplete="off"
-                    autocapitalize="off"
-                    spellcheck="false"
-                    class="captcha-row__input px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-                  />
-                  <img
-                    v-if="captchaImage && !captchaLoading"
-                    :src="captchaImage"
-                    :alt="t('auth.captcha')"
-                    class="captcha-image"
-                    :title="t('auth.clickToRefresh')"
-                    @click="refreshCaptcha"
-                  />
-                  <div
-                    v-else
-                    class="captcha-placeholder"
-                    @click="refreshCaptcha"
-                  >
-                    <Loader2
-                      v-if="captchaLoading"
-                      class="w-5 h-5 text-stone-400 animate-spin"
-                    />
-                    <RefreshCw
-                      v-else
-                      class="w-5 h-5 text-stone-400"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Submit button -->
-              <button
-                type="submit"
-                :disabled="isLoading || captchaLoading"
-                class="w-full py-3 px-4 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <Loader2
-                  v-if="isLoading"
-                  class="w-4 h-4 animate-spin"
-                />
-                {{ isLoading ? '修改中...' : '确认修改' }}
-              </button>
-            </form>
+      <!-- Captcha -->
+      <div v-if="showLegacyCaptcha">
+        <label
+          class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+          for="change-password-captcha"
+        >
+          {{ t('auth.captcha') }}
+        </label>
+        <div class="captcha-row">
+          <input
+            id="change-password-captcha"
+            v-model="formData.captcha"
+            type="text"
+            name="change-password-captcha"
+            :placeholder="t('auth.modal.captchaPlaceholderShort')"
+            maxlength="4"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            class="captcha-row__input px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+          />
+          <img
+            v-if="captchaImage && !captchaLoading"
+            :src="captchaImage"
+            :alt="t('auth.captcha')"
+            class="captcha-image"
+            :title="t('auth.clickToRefresh')"
+            @click="refreshCaptcha"
+          />
+          <div
+            v-else
+            class="captcha-placeholder"
+            @click="refreshCaptcha"
+          >
+            <Loader2
+              v-if="captchaLoading"
+              class="w-5 h-5 text-stone-400 animate-spin"
+            />
+            <RefreshCw
+              v-else
+              class="w-5 h-5 text-stone-400"
+            />
           </div>
         </div>
       </div>
-    </Transition>
-  </Teleport>
+
+      <!-- Submit button -->
+      <button
+        type="submit"
+        :disabled="isLoading || captchaLoading"
+        class="mind-map-side-rail-btn mind-map-side-rail-btn--primary w-full"
+      >
+        <Loader2
+          v-if="isLoading"
+          class="w-4 h-4 animate-spin"
+        />
+        {{ isLoading ? '修改中...' : '确认修改' }}
+      </button>
+    </form>
+  </SwissGlassCard>
 </template>
-
-<style scoped>
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.modal-enter-active > div:last-child,
-.modal-leave-active > div:last-child {
-  transition: transform 0.2s ease;
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-from > div:last-child,
-.modal-leave-to > div:last-child {
-  transform: scale(0.95);
-}
-
-/* Close button positioning and styling */
-.close-btn {
-  position: absolute;
-  top: 16px;
-  inset-inline-end: 16px;
-  --el-button-text-color: #a8a29e;
-  --el-button-hover-text-color: #57534e;
-  --el-button-hover-bg-color: #f5f5f4;
-}
-</style>

@@ -4,6 +4,9 @@
  */
 import { computed, ref, watch } from 'vue'
 
+import { Languages } from '@lucide/vue'
+
+import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { SUPPORTED_UI_LOCALES, matchedPromptLanguageForUiLocale } from '@/i18n/locales'
 import type { Language } from '@/stores/ui'
@@ -63,30 +66,41 @@ function handleDontAsk(): void {
 </script>
 
 <template>
-  <el-dialog
+  <SwissGlassDialog
     v-model="visible"
-    :title="t('app.browserLocale.title')"
+    :ribbon="t('swissGlass.hero.localeHint.ribbon')"
+    :title="t('swissGlass.hero.localeHint.title')"
+    :line1="t('swissGlass.hero.localeHint.line1')"
+    :icon="Languages"
     width="min(400px, 92vw)"
-    destroy-on-close
   >
     <p class="text-stone-700 dark:text-stone-300 text-sm leading-relaxed">
       {{ t('app.browserLocale.body', { name: targetDisplayName }) }}
     </p>
     <template #footer>
-      <div class="flex flex-wrap gap-2 justify-end">
-        <el-button @click="handleDontAsk">
+      <div class="swiss-glass-footer">
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          @click="handleDontAsk"
+        >
           {{ t('app.browserLocale.dontAsk') }}
-        </el-button>
-        <el-button @click="handleKeepChinese">
+        </button>
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          @click="handleKeepChinese"
+        >
           {{ t('app.browserLocale.keepChinese') }}
-        </el-button>
-        <el-button
-          type="primary"
+        </button>
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
           @click="handleSwitch"
         >
           {{ t('app.browserLocale.switch') }}
-        </el-button>
+        </button>
       </div>
     </template>
-  </el-dialog>
+  </SwissGlassDialog>
 </template>

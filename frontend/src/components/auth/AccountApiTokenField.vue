@@ -4,7 +4,7 @@
  */
 import { ref, watch } from 'vue'
 
-import { ElButton, ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus'
 
 import { useLanguage } from '@/composables'
 import { apiGet } from '@/utils/apiClient'
@@ -82,13 +82,13 @@ async function copyToken() {
           readonly
           class="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg border border-stone-200 bg-stone-50 font-mono text-xs text-stone-700"
         />
-        <el-button
-          round
-          size="small"
+        <button
+          type="button"
+          class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost"
           @click="copyToken"
         >
           {{ t('auth.apiTokenCopy') }}
-        </el-button>
+        </button>
       </div>
       <p
         v-if="payload.expires_at"

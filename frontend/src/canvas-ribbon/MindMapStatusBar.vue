@@ -4,17 +4,20 @@
  */
 import { computed } from 'vue'
 
-import { Hand, Languages, ListTree, Maximize2, MonitorPlay } from '@lucide/vue'
+import { Hand, ListTree, Maximize2, MonitorPlay } from '@lucide/vue'
 
 import CanvasMindMapShortcutGuide from '@/components/canvas/CanvasMindMapShortcutGuide.vue'
 import CanvasToolbarMindMapAiGenerate from '@/components/canvas/CanvasToolbarMindMapAiGenerate.vue'
 import CanvasToolbarMindMapAudiencePicker from '@/components/canvas/CanvasToolbarMindMapAudiencePicker.vue'
+import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useLLMResultsStore } from '@/stores/llmResults'
 
-import { useMindMapRibbonActions } from './useMindMapRibbonActions'
-import './mindMapStatusBar.css'
+import CanvasDiagramTranslateLangPicker from './CanvasDiagramTranslateLangPicker.vue'
 import './mindMapRibbon.css'
+import './mindMapStatusBar.css'
+import { useMindMapRibbonActions } from './useMindMapRibbonActions'
 
 const props = withDefaults(
   defineProps<{
@@ -30,6 +33,7 @@ const props = withDefaults(
 const { t } = useLanguage()
 const actions = useMindMapRibbonActions()
 const { activeTool, handleToolSelect } = useMindMapSideToolbarState()
+const llmResultsStore = useLLMResultsStore()
 
 const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom * 100) : 100))
 </script>
@@ -65,34 +69,28 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
       />
       <span class="mm-status__label">{{ t('canvas.ribbon.aiModel') }}</span>
       <div class="mm-llm-selector">
-        <button
+        <LlmPhaseRing
           v-for="model in actions.llmModels"
           :key="model.id"
-          type="button"
-          class="mm-llm-btn"
-          :data-llm="model.id"
-          :class="{ 'is-active': actions.selectedLlm === model.id }"
-          @click="actions.selectLlm(model.id)"
+          :phase="llmResultsStore.modelPhases[model.id]"
+          :streaming-variant="model.id"
+          border-radius="6px"
         >
-          {{ model.label }}
-        </button>
+          <button
+            type="button"
+            class="mm-llm-btn"
+            :data-llm="model.id"
+            :class="{ 'is-active': actions.selectedLlm === model.id }"
+            @click="actions.selectLlm(model.id)"
+          >
+            {{ model.label }}
+          </button>
+        </LlmPhaseRing>
       </div>
       <CanvasToolbarMindMapAiGenerate tooltip-placement="top" />
     </div>
     <div class="mm-status__right mm-status__zoom">
-      <button
-        type="button"
-        class="mm-status__zoom-btn"
-        :title="t('canvas.toolbar.moreAppTranslateLabelDesc')"
-        :aria-label="t('canvas.toolbar.moreAppTranslateLabel')"
-        @click="actions.runTranslate"
-      >
-        {{ t('canvas.toolbar.moreAppTranslateLabel') }}
-        <Languages
-          class="h-3.5 w-3.5"
-          :stroke-width="2"
-        />
-      </button>
+      <CanvasDiagramTranslateLangPicker />
       <button
         type="button"
         class="mm-status__zoom-btn"
