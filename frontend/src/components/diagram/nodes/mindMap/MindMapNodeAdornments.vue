@@ -79,7 +79,7 @@ function openLink(event: MouseEvent): void {
         v-if="href"
         type="button"
         class="mm-adornments__link"
-        :title="t('canvas.ribbon.openLink')"
+        :title="href || t('canvas.ribbon.openLink')"
         @click="openLink"
         @mousedown.stop
       >

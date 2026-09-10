@@ -82,11 +82,17 @@ async def emit_user_ack(
         payload["request_id"] = resolved_request_id
 
     option_labels = _normalize_clarify_options(clarify_options)
+    question = clarify_question.strip() if isinstance(clarify_question, str) and clarify_question.strip() else ""
     if option_labels:
         payload["clarify_options"] = option_labels
-        question = clarify_question.strip() if isinstance(clarify_question, str) and clarify_question.strip() else ""
         if question:
             payload["clarify_question"] = question
+        persist_detail = dict(detail) if detail else {}
+        persist_detail.setdefault("action", "clarify_options")
+        persist_detail["clarify_options"] = option_labels
+        if question:
+            persist_detail["clarify_question"] = question[:200]
+        detail = normalize_command_detail(persist_detail)
 
     sent = await safe_websocket_send(websocket, payload)
     if sent:

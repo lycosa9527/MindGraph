@@ -3,7 +3,10 @@
  */
 import { type Ref, ref } from 'vue'
 
-import { applyClarifyChoicesOnHydrate } from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
+import {
+  applyClarifyChoicesOnHydrate,
+  choicesFromCommandDetail,
+} from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
 import {
   pickOneSentenceGenerateDone,
   pickOneSentenceWelcome,
@@ -171,6 +174,7 @@ export function useKittyConversationHistory(options: {
       content: string
       request_id?: string
       outcome?: string
+      command_detail?: Record<string, unknown>
     }>
   ): void {
     const rows: OneSentenceChatMessage[] = []
@@ -194,12 +198,15 @@ export function useKittyConversationHistory(options: {
           status = 'done'
         }
       }
+      const detailChoices =
+        turn.role === 'kitty' ? choicesFromCommandDetail(turn.command_detail) : []
       rows.push({
         id: turn.turn_id || nextMessageId(),
         role: turn.role,
         text: content,
         requestId,
         status,
+        ...(detailChoices.length >= 2 ? { choices: detailChoices } : {}),
       })
     }
     messages.value = applyClarifyChoicesOnHydrate(rows, messages.value)

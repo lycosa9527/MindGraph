@@ -125,6 +125,58 @@ export function sanitizeMindMapHref(raw: string): string | null {
   return null
 }
 
+/** Short host (or mailto address) so the node can hide the full URL. */
+export function hostnameFromMindMapHref(href: string): string {
+  const trimmed = href.trim()
+  if (!trimmed) return ''
+  if (/^mailto:/i.test(trimmed)) {
+    return trimmed.slice('mailto:'.length).split('?')[0] ?? ''
+  }
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) return trimmed
+  try {
+    const normalized = trimmed.startsWith('//') ? `https:${trimmed}` : trimmed
+    const url = new URL(normalized)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return ''
+    return url.hostname.replace(/^www\./i, '')
+  } catch {
+    return ''
+  }
+}
+
+/** Prefill the insert-link dialog: URL-like node text goes into href, not Name. */
+export function seedMindMapLinkDialog(
+  currentText: string,
+  existingHref: string
+): { name: string; href: string } {
+  const text = currentText.trim()
+  const stored = existingHref.trim()
+  const textAsHref = text ? sanitizeMindMapHref(text) : null
+  if (stored) {
+    const storedSanitized = sanitizeMindMapHref(stored)
+    const name = textAsHref && storedSanitized && textAsHref === storedSanitized ? '' : text
+    return { href: stored, name }
+  }
+  if (textAsHref) return { href: textAsHref, name: '' }
+  return { href: '', name: text }
+}
+
+/**
+ * Name wins; if omitted and the node already shows a URL, fall back to the host
+ * so the full link does not stay as the node label.
+ */
+export function resolveMindMapLinkDisplayName(
+  rawName: string,
+  href: string,
+  currentText: string
+): string {
+  const name = rawName.trim()
+  if (name) return name
+  const current = currentText.trim()
+  const currentAsHref = current ? sanitizeMindMapHref(current) : null
+  if (!current || currentAsHref) return hostnameFromMindMapHref(href) || current
+  return current
+}
+
 const DATA_URL_IMAGE_RE = /^data:image\/(png|jpe?g|gif|webp);base64,/i
 const HTTP_IMAGE_RE = /^https?:\/\/\S+/i
 

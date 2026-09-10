@@ -44,6 +44,21 @@ def test_heuristic_one_sentence_edit_phrases(text: str, action: str, target: str
     assert cmd["target"] == target
 
 
+def test_heuristic_unnamed_add_is_not_a_label() -> None:
+    """「自定义/custom」 is a request to name the branch, not the branch name."""
+    for text in (
+        "添加一个自定义的分支",
+        "添加一个分支",
+        "加个分支",
+        "add a custom branch",
+        "add a branch",
+    ):
+        cmd = heuristic_one_sentence_edit_command(text)
+        assert cmd is not None, text
+        assert cmd["action"] == "add_node"
+        assert not (isinstance(cmd.get("target"), str) and cmd["target"].strip()), text
+
+
 def test_heuristic_whole_auto_complete() -> None:
     """Bare auto-complete maps to whole-diagram action."""
     cmd = heuristic_one_sentence_edit_command("自动补全")

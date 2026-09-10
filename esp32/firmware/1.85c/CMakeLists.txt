@@ -10,6 +10,15 @@ cmake_minimum_required(VERSION 3.16)
 
 option(CCACHE_ENABLE "Use ccache to accelerate repeat ESP-IDF builds" ON)
 
+set(_mg_sdkconfig_defaults
+    "${CMAKE_CURRENT_LIST_DIR}/sdkconfig.defaults"
+    "${CMAKE_CURRENT_LIST_DIR}/sdkconfig.defaults.esp32s3"
+)
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/sdkconfig.defaults.local")
+    list(APPEND _mg_sdkconfig_defaults "${CMAKE_CURRENT_LIST_DIR}/sdkconfig.defaults.local")
+endif()
+set(SDKCONFIG_DEFAULTS "${_mg_sdkconfig_defaults}")
+
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
 # Work around esp-idf-configdep mapping CONFIG_ESP_LVGL_ADAPTER_PARTIAL_AUX_IMG_CACHE

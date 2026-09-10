@@ -5,7 +5,10 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
-import { applyClarifyChoicesOnHydrate } from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
+import {
+  applyClarifyChoicesOnHydrate,
+  choicesFromCommandDetail,
+} from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
 import { eventBus } from '@/composables/core/useEventBus'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
@@ -47,6 +50,7 @@ export type OneSentenceTurnHydrateRow = {
   phase?: OneSentencePhase
   request_id?: string
   outcome?: string
+  command_detail?: Record<string, unknown>
 }
 
 let messageSeq = 0
@@ -360,12 +364,15 @@ export const useOneSentenceStore = defineStore('oneSentence', () => {
           createdAt: Date.now(),
         }
       }
+      const detailChoices =
+        turn.role === 'kitty' ? choicesFromCommandDetail(turn.command_detail) : []
       rows.push({
         id: turn.turn_id || nextMessageId(),
         role: turn.role,
         text: turn.content,
         requestId,
         status: turn.role === 'user' ? status : undefined,
+        ...(detailChoices.length >= 2 ? { choices: detailChoices } : {}),
       })
     }
 

@@ -1,0 +1,225 @@
+{
+  "topic": "劳动合同要点",
+  "nodes": [
+    {
+      "id": "topic",
+      "type": "topic",
+      "text": "劳动合同要点",
+      "position": {
+        "x": 400.0,
+        "y": 300.0
+      }
+    },
+    {
+      "id": "97548026-bcf4-591c-8ff7-635ccfe764e1",
+      "type": "branch",
+      "text": "合同介绍",
+      "position": {
+        "x": 620.0,
+        "y": 220.0
+      },
+      "data": {
+        "mindMapUid": "97548026-bcf4-591c-8ff7-635ccfe764e1",
+        "mindMapSide": "right",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "ca07a933-56fb-58b8-8473-df72305c4cbf",
+      "type": "branch",
+      "text": "主体",
+      "position": {
+        "x": 840.0,
+        "y": 220.0
+      },
+      "data": {
+        "mindMapUid": "ca07a933-56fb-58b8-8473-df72305c4cbf",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "9e1e0172-efe8-56a5-becb-6da1462f8ff9",
+      "type": "branch",
+      "text": "期限",
+      "position": {
+        "x": 840.0,
+        "y": 270.0
+      },
+      "data": {
+        "mindMapUid": "9e1e0172-efe8-56a5-becb-6da1462f8ff9",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "644ebeb8-f65c-5bee-a3a9-bb261230ce63",
+      "type": "branch",
+      "text": "权利义务",
+      "position": {
+        "x": 620.0,
+        "y": 310.0
+      },
+      "data": {
+        "mindMapUid": "644ebeb8-f65c-5bee-a3a9-bb261230ce63",
+        "mindMapSide": "right",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "207515be-a969-5d74-b679-4f066393b3fa",
+      "type": "branch",
+      "text": "甲方义务",
+      "position": {
+        "x": 840.0,
+        "y": 310.0
+      },
+      "data": {
+        "mindMapUid": "207515be-a969-5d74-b679-4f066393b3fa",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "95b4e9ad-03cc-553c-82c8-25c724454212",
+      "type": "branch",
+      "text": "乙方义务",
+      "position": {
+        "x": 840.0,
+        "y": 360.0
+      },
+      "data": {
+        "mindMapUid": "95b4e9ad-03cc-553c-82c8-25c724454212",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "a9cdc78e-8164-5252-aa00-9e262c00aa14",
+      "type": "branch",
+      "text": "薪酬福利",
+      "position": {
+        "x": 620.0,
+        "y": 400.0
+      },
+      "data": {
+        "mindMapUid": "a9cdc78e-8164-5252-aa00-9e262c00aa14",
+        "mindMapSide": "left",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "baf31bdf-da24-5e34-a833-f495e9710faa",
+      "type": "branch",
+      "text": "工资",
+      "position": {
+        "x": 840.0,
+        "y": 400.0
+      },
+      "data": {
+        "mindMapUid": "baf31bdf-da24-5e34-a833-f495e9710faa",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "d45ae5af-8190-5c00-bc20-b01ec36a34f0",
+      "type": "branch",
+      "text": "社保",
+      "position": {
+        "x": 840.0,
+        "y": 450.0
+      },
+      "data": {
+        "mindMapUid": "d45ae5af-8190-5c00-bc20-b01ec36a34f0",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "80e6a5d5-ea02-5583-9a96-cd489b5590e2",
+      "type": "branch",
+      "text": "解除终止",
+      "position": {
+        "x": 620.0,
+        "y": 490.0
+      },
+      "data": {
+        "mindMapUid": "80e6a5d5-ea02-5583-9a96-cd489b5590e2",
+        "mindMapSide": "left",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "39bbea94-ec7d-5012-9e46-d99271c22115",
+      "type": "branch",
+      "text": "协商解除",
+      "position": {
+        "x": 840.0,
+        "y": 490.0
+      },
+      "data": {
+        "mindMapUid": "39bbea94-ec7d-5012-9e46-d99271c22115",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "e-topic-97548026-bcf4-591c-8ff7-635ccfe764e1",
+      "source": "topic",
+      "target": "97548026-bcf4-591c-8ff7-635ccfe764e1"
+    },
+    {
+      "id": "e-97548026-bcf4-591c-8ff7-635ccfe764e1-ca07a933-56fb-58b8-8473-df72305c4cbf",
+      "source": "97548026-bcf4-591c-8ff7-635ccfe764e1",
+      "target": "ca07a933-56fb-58b8-8473-df72305c4cbf"
+    },
+    {
+      "id": "e-97548026-bcf4-591c-8ff7-635ccfe764e1-9e1e0172-efe8-56a5-becb-6da1462f8ff9",
+      "source": "97548026-bcf4-591c-8ff7-635ccfe764e1",
+      "target": "9e1e0172-efe8-56a5-becb-6da1462f8ff9"
+    },
+    {
+      "id": "e-topic-644ebeb8-f65c-5bee-a3a9-bb261230ce63",
+      "source": "topic",
+      "target": "644ebeb8-f65c-5bee-a3a9-bb261230ce63"
+    },
+    {
+      "id": "e-644ebeb8-f65c-5bee-a3a9-bb261230ce63-207515be-a969-5d74-b679-4f066393b3fa",
+      "source": "644ebeb8-f65c-5bee-a3a9-bb261230ce63",
+      "target": "207515be-a969-5d74-b679-4f066393b3fa"
+    },
+    {
+      "id": "e-644ebeb8-f65c-5bee-a3a9-bb261230ce63-95b4e9ad-03cc-553c-82c8-25c724454212",
+      "source": "644ebeb8-f65c-5bee-a3a9-bb261230ce63",
+      "target": "95b4e9ad-03cc-553c-82c8-25c724454212"
+    },
+    {
+      "id": "e-topic-a9cdc78e-8164-5252-aa00-9e262c00aa14",
+      "source": "topic",
+      "target": "a9cdc78e-8164-5252-aa00-9e262c00aa14"
+    },
+    {
+      "id": "e-a9cdc78e-8164-5252-aa00-9e262c00aa14-baf31bdf-da24-5e34-a833-f495e9710faa",
+      "source": "a9cdc78e-8164-5252-aa00-9e262c00aa14",
+      "target": "baf31bdf-da24-5e34-a833-f495e9710faa"
+    },
+    {
+      "id": "e-a9cdc78e-8164-5252-aa00-9e262c00aa14-d45ae5af-8190-5c00-bc20-b01ec36a34f0",
+      "source": "a9cdc78e-8164-5252-aa00-9e262c00aa14",
+      "target": "d45ae5af-8190-5c00-bc20-b01ec36a34f0"
+    },
+    {
+      "id": "e-topic-80e6a5d5-ea02-5583-9a96-cd489b5590e2",
+      "source": "topic",
+      "target": "80e6a5d5-ea02-5583-9a96-cd489b5590e2"
+    },
+    {
+      "id": "e-80e6a5d5-ea02-5583-9a96-cd489b5590e2-39bbea94-ec7d-5012-9e46-d99271c22115",
+      "source": "80e6a5d5-ea02-5583-9a96-cd489b5590e2",
+      "target": "39bbea94-ec7d-5012-9e46-d99271c22115"
+    }
+  ]
+}

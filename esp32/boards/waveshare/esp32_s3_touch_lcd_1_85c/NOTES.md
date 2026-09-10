@@ -15,7 +15,7 @@ Round bring-up uses one **circular safe area** on the 1.85″ 360×360 panel (We
 - Launcher: Super C++ hardcodes 112×18 phone tiles; the 360 overlay forces 80×10 / 2 columns so labels stay above the chin
 - Keyboard: ITU 3×4 九宫格 (`1`–`9`, last row 中/EN · `0` · ⌫). Composer + OK above the pad; candidates between them. Tap = letter / pinyin; long-press = digit. Passwords open on 123.
 
-Overlay: [`../../firmware/1.85c/round_ui`](../../firmware/1.85c/round_ui). Shell language defaults to `zh_CN` (NotoSans SC). The 九宫格 IME lives in firmware `main/modules/round_shell.cpp`.
+Overlay: [`../../firmware/1.85c/round_ui`](../../firmware/1.85c/round_ui). Shell language defaults to `zh_CN` (NotoSans SC via MEMFS FreeType). The board has **16MB flash** and **8MB PSRAM**; after instruction XIP the **heap is ~2.5MB**. File-backed FreeType reads LittleFS from a PSRAM task and reboots (`esp_task_stack_is_sane_cache_disabled`). MEMFS copies the TTF into RAM, so the watch font in `round_ui/fonts/` must stay small. Without FreeType, Super falls back to Montserrat (tofu). The 九宫格 IME lives in firmware `main/modules/round_shell.cpp`.
 
 ## V1 vs V2
 

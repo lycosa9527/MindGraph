@@ -38,18 +38,66 @@
     }
     .status {
       position: absolute;
-      left: 100px;
-      top: 34px;
-      width: 160px;
-      height: 24px;
-      border-radius: 16px;
+      left: 114px;
+      top: 30px;
+      width: 132px;
+      height: 28px;
+      border-radius: 14px;
       background: rgba(40, 44, 54, 0.9);
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      font-size: 12px;
+      gap: 8px;
+      font-size: 13px;
     }
+    .page {
+      position: absolute;
+      left: 50px;
+      top: 104px;
+      width: 260px;
+      height: 176px;
+      overflow: hidden;
+    }
+    .header {
+      position: absolute;
+      left: 50px;
+      top: 64px;
+      width: 260px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .card {
+      background: #1c212b;
+      border-radius: 16px;
+      padding: 8px;
+    }
+    .row-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 44px;
+      font-size: 14px;
+    }
+    .row-item .name { flex: 0 0 auto; }
+    .row-item .ssid {
+      flex: 1 1 auto;
+      min-width: 0;
+      text-align: right;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .wifi-ssid {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 14px;
+    }
+    .wifi-detail { font-size: 11px; color: var(--muted); }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: #7d8; }
     .content {
       position: absolute;
@@ -198,6 +246,40 @@
         <div class="safe"></div>
       </div>
       <figcaption>ITU 3×4 九宫格 — tap letter, long-press digit, OK on the box</figcaption>
+    </figure>
+    <figure>
+      <div class="watch">
+        <div class="status"><span class="dot"></span>19:05</div>
+        <div class="header">设置</div>
+        <div class="page">
+          <div class="card">
+            <div class="row-item"><span class="name">Wi-Fi</span><span class="ssid">ChinaNet-Office-5G-Guest</span></div>
+            <div class="row-item"><span class="name">声音</span><span class="ssid">72%</span></div>
+            <div class="row-item"><span class="name">显示</span><span class="ssid">深色</span></div>
+          </div>
+        </div>
+        <div class="safe"></div>
+      </div>
+      <figcaption>Settings — SSID ellipsizes, capsule in the 12 o’clock pocket</figcaption>
+    </figure>
+    <figure>
+      <div class="watch">
+        <div class="status"><span class="dot"></span>19:05</div>
+        <div class="header">Wi-Fi</div>
+        <div class="page">
+          <div class="card" style="margin-bottom:8px">
+            <div class="row-item" style="justify-content:space-between"><span>Wi-Fi</span><span style="opacity:.7">●</span></div>
+          </div>
+          <div class="card">
+            <div class="wifi-ssid">ChinaNet-Office-5G-Guest</div>
+            <div class="wifi-detail">已保存</div>
+            <div class="wifi-ssid" style="margin-top:8px">TP-LINK_5G_A8F2_HomeLab</div>
+            <div class="wifi-detail">加密 · 强</div>
+          </div>
+        </div>
+        <div class="safe"></div>
+      </div>
+      <figcaption>Wi-Fi list — long names clip with …, not the bezel</figcaption>
     </figure>
   </div>
 </body>

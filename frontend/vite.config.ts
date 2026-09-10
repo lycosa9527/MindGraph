@@ -251,7 +251,6 @@ export default defineConfig({
       'katex/contrib/mhchem',
       'dompurify',
       '@lucide/vue',
-      'mathlive',
       '@tanstack/vue-query',
       '@vueuse/core',
       'vue-demi',
@@ -263,6 +262,9 @@ export default defineConfig({
       '@vue-flow/background',
       '@vue-flow/minimap',
     ],
+    // 插入公式: do not prebundle mathlive into .vite/deps/mathlive.js — that
+    // URL 404s/504s when the dep cache is stale (WSL /mnt vs ~/src).
+    exclude: ['mathlive'],
     rolldownOptions: {
       plugins: [pdfjsViteIgnoreDynamicImportPlugin()],
     },
@@ -370,10 +372,15 @@ export default defineConfig({
     tsconfigPaths: true,
     // One KaTeX instance so `katex/contrib/mhchem` registers `\ce` on the same copy used by @vscode/markdown-it-katex.
     dedupe: ['katex', 'vue', 'vue-demi'],
-    alias: {
-      '@': resolve(__dirname, 'src'),
-      '@data': resolve(__dirname, '../data'),
-    },
+    alias: [
+      // Exact bare specifier only — `mathlive/fonts.css` must keep working.
+      {
+        find: /^mathlive$/,
+        replacement: resolve(__dirname, 'node_modules/mathlive/mathlive.min.mjs'),
+      },
+      { find: '@', replacement: resolve(__dirname, 'src') },
+      { find: '@data', replacement: resolve(__dirname, '../data') },
+    ],
   },
   server: {
     // Use 41732+ to avoid ip_unprivileged_port_start (often 32768 on WSL); override with PORT=3000 npm run dev

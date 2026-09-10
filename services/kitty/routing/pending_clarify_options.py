@@ -17,11 +17,17 @@ from services.kitty.ack.ack_library import render_ack
 from services.kitty.context.messaging import (
     resolve_voice_interaction_language,
 )
+from services.kitty.agent_loop.intent_clarify import rewrite_valueless_edit_to_followup
 from services.kitty.routing.node_action_debug import (
     clip_node_action_text,
     log_node_action,
     log_node_action_debug,
     summarize_legacy_command,
+)
+from services.kitty.routing.pending_clarify_store import (
+    delete_pending_clarify_payload,
+    load_pending_clarify_payload,
+    persist_pending_clarify_payload,
 )
 from services.kitty.session.memory import get_session_memory
 from services.kitty.session.runtime_state import voice_sessions
@@ -80,9 +86,44 @@ def get_pending_clarify_options(session: Optional[Dict[str, Any]]) -> Optional[D
 
 
 def clear_pending_clarify_options(session: Optional[Dict[str, Any]]) -> None:
-    """Drop pending clarify-options state."""
+    """Drop pending clarify-options state from the live session."""
     if isinstance(session, dict):
         session.pop(PENDING_CLARIFY_OPTIONS_KEY, None)
+
+
+def clarify_option_labels(command: Dict[str, Any]) -> List[str]:
+    """Up to three non-empty option labels for chips and numbered acks."""
+    labels: List[str] = []
+    raw = command.get("options")
+    if isinstance(raw, list):
+        for item in raw:
+            if isinstance(item, str) and item.strip():
+                labels.append(item.strip())
+            if len(labels) >= 3:
+                break
+    return labels
+
+
+async def persist_armed_pending_clarify(session: Optional[Dict[str, Any]]) -> None:
+    """Mirror armed options to Redis so a reconnect can still consume a tap."""
+    await persist_pending_clarify_payload(session, get_pending_clarify_options(session))
+
+
+async def restore_armed_pending_clarify(session: Optional[Dict[str, Any]]) -> bool:
+    """Re-arm options from Redis when the in-memory session is new."""
+    if get_pending_clarify_options(session) is not None:
+        return True
+    payload = await load_pending_clarify_payload(session)
+    if payload is None or not isinstance(session, dict):
+        return False
+    session[PENDING_CLARIFY_OPTIONS_KEY] = payload
+    return True
+
+
+async def clear_pending_clarify_options_async(session: Optional[Dict[str, Any]]) -> None:
+    """Drop live + Redis pending so a later reconnect cannot replay a stale pick."""
+    clear_pending_clarify_options(session)
+    await delete_pending_clarify_payload(session)
 
 
 def _first_book_quote(text: str) -> str:
@@ -178,7 +219,12 @@ def arm_pending_clarify_options(
             "option_commands": raw_cmds,
         }
     )
-    filled_cmds = _backfill_option_command_targets(raw_cmds, seed_target)
+    ctx = session.get("context")
+    lang = resolve_voice_interaction_language(ctx if isinstance(ctx, dict) else {})
+    filled_cmds = [
+        rewrite_valueless_edit_to_followup(cmd, lang=lang)
+        for cmd in _backfill_option_command_targets(raw_cmds, seed_target)
+    ]
     pending: Dict[str, Any] = {
         "question": command.get("question"),
         "options": label_list,
@@ -254,7 +300,10 @@ async def try_consume_pending_clarify_options(
     Returns the chosen legacy command dict when consumed, otherwise ``None``.
     """
     live = voice_sessions.get(voice_session_id)
-    pending = get_pending_clarify_options(live if isinstance(live, dict) else None)
+    live_dict = live if isinstance(live, dict) else None
+    if get_pending_clarify_options(live_dict) is None:
+        await restore_armed_pending_clarify(live_dict)
+    pending = get_pending_clarify_options(live_dict)
     if pending is None:
         return None
 
@@ -267,7 +316,7 @@ async def try_consume_pending_clarify_options(
 
     commands = pending.get("option_commands")
     if not isinstance(commands, list):
-        clear_pending_clarify_options(live if isinstance(live, dict) else None)
+        await clear_pending_clarify_options_async(live_dict)
         log_node_action_debug(
             "clarify_cleared",
             voice_session_id=voice_session_id,
@@ -289,7 +338,7 @@ async def try_consume_pending_clarify_options(
 
     chosen = commands[pick - 1]
     if not isinstance(chosen, dict):
-        clear_pending_clarify_options(live if isinstance(live, dict) else None)
+        await clear_pending_clarify_options_async(live_dict)
         log_node_action_debug(
             "clarify_cleared",
             voice_session_id=voice_session_id,
@@ -297,7 +346,7 @@ async def try_consume_pending_clarify_options(
         )
         return None
 
-    clear_pending_clarify_options(live if isinstance(live, dict) else None)
+    await clear_pending_clarify_options_async(live_dict)
     log_node_action(
         "clarify_picked",
         voice_session_id=voice_session_id,

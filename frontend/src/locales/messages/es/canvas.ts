@@ -1611,5 +1611,9 @@ export default {
   'canvas.floatingToolbar.assocArrow': 'Arrow',
   'canvas.ribbon.assocLineSameSide': 'Relationship lines stay on the same side',
   'canvas.ribbon.assocLineDelete': 'Delete relationship line',
-
+  'canvas.ribbon.linkName': 'Name',
+  'canvas.ribbon.aiHero.link.ribbon': 'Insert',
+  'canvas.ribbon.aiHero.link.title': 'Add a link',
+  'canvas.ribbon.aiHero.link.line1': 'The node shows the name. The full URL stays on the icon.',
+  'canvas.ribbon.aiHero.link.line2': '',
 } as const

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   applyClarifyChoicesOnHydrate,
   choicesFromClarifyOptions,
+  choicesFromCommandDetail,
   parseNumberedClarifyChoices,
   resolveMessageClarifyChoices,
 } from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
@@ -42,6 +43,23 @@ describe('parseNumberedClarifyChoices', () => {
   it('ignores a single numbered line', () => {
     expect(parseNumberedClarifyChoices('已添加 1) 品牌 分支')).toEqual([])
   })
+
+  it('strips the reply-with-number footer from the last option', () => {
+    expect(
+      parseNumberedClarifyChoices(
+        '想怎么改这张图？\n1) 改主题\n2) 添加分支\n请回复序号或选项内容。'
+      )
+    ).toEqual([
+      { index: 1, label: '改主题' },
+      { index: 2, label: '添加分支' },
+    ])
+    expect(
+      parseNumberedClarifyChoices('1) 改主题 2) 添加分支 Reply with the number or option text.')
+    ).toEqual([
+      { index: 1, label: '改主题' },
+      { index: 2, label: '添加分支' },
+    ])
+  })
 })
 
 describe('choicesFromClarifyOptions', () => {
@@ -54,6 +72,20 @@ describe('choicesFromClarifyOptions', () => {
 
   it('drops a single label', () => {
     expect(choicesFromClarifyOptions(['only one'])).toEqual([])
+  })
+})
+
+describe('choicesFromCommandDetail', () => {
+  it('reads persisted clarify_options on a kitty turn', () => {
+    expect(
+      choicesFromCommandDetail({
+        action: 'clarify_options',
+        clarify_options: ['改主题', '添加分支'],
+      })
+    ).toEqual([
+      { index: 1, label: '改主题' },
+      { index: 2, label: '添加分支' },
+    ])
   })
 })
 

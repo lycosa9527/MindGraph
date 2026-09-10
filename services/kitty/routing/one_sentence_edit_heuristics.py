@@ -258,6 +258,31 @@ _DELETE_NODE_EN = re.compile(
 )
 
 _STRIP_TRAILING_PUNCT = re.compile(r"[。.!！？?\s]+$")
+_PLACEHOLDER_LABELS = frozenset({"自定义", "新", "新的", "个", "custom", "new"})
+_UNNAMED_ADD_ZH = re.compile(
+    r"^(?:请)?(?:帮我)?(?:再)?"
+    r"(?:添加|增加|加|新建|加入)"
+    r"(?:一个|一条|一个新的|一条新的|个)?"
+    r"(?:自定义的?)?"
+    r"(?:分支|节点)$"
+)
+_UNNAMED_ADD_EN = re.compile(
+    r"^(?:please\s+)?"
+    r"(?:add|create|insert)\s+"
+    r"(?:a\s+|an\s+|the\s+)?"
+    r"(?:new\s+|custom\s+)?"
+    r"(?:branch|node)$",
+    re.IGNORECASE,
+)
+
+
+def is_placeholder_edit_label(label: str) -> bool:
+    """True when the captured label is an adjective, not a branch name."""
+    return label.strip().lower() in _PLACEHOLDER_LABELS
+
+
+def _nameless_add_command() -> Dict[str, Any]:
+    return {"action": "add_node", "confidence": 0.9}
 
 
 def _clean_label(raw: str) -> str:
@@ -326,6 +351,9 @@ def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str,
     if _WHOLE_AUTO_COMPLETE_ZH.match(text) or _WHOLE_AUTO_COMPLETE_EN.match(text):
         return {"action": "auto_complete", "confidence": 0.95}
 
+    if _UNNAMED_ADD_ZH.match(text) or _UNNAMED_ADD_EN.match(text):
+        return _nameless_add_command()
+
     for pattern in (
         _COMPLETE_BRANCH_ZH,
         _COMPLETE_BRANCH_ZH_SUFFIX,
@@ -386,6 +414,8 @@ def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str,
         if add_auto is None:
             continue
         label = _clean_label(add_auto.group("label"))
+        if is_placeholder_edit_label(label):
+            return _nameless_add_command()
         if label:
             return {
                 "action": "add_node",
@@ -429,6 +459,8 @@ def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str,
         if match is None:
             continue
         label = _clean_label(match.group("label"))
+        if is_placeholder_edit_label(label):
+            return _nameless_add_command()
         if not label:
             continue
         return {

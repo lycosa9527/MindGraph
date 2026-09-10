@@ -21,11 +21,13 @@ from services.kitty.infra.redis.kitty_redis_keys import (
     kitty_redis_ttl_seconds,
     kitty_scope_owner_key,
 )
+from services.kitty.routing.pending_clarify_store import migrate_pending_kitty_keys
 from services.kitty.infra.scope.kitty_scope_access import user_may_access_kitty_scope
 from services.kitty.session.one_sentence_session_pg import (
     ensure_one_sentence_session,
     migrate_one_sentence_scope_pg,
 )
+from services.kitty.session.one_sentence_command_detail import normalize_command_detail
 from services.kitty.session.one_sentence_turn_pg import (
     list_one_sentence_turns_pg,
     schedule_one_sentence_turn_pg,
@@ -81,8 +83,8 @@ def _normalize_turn_payload(payload: Dict[str, Any]) -> Optional[Dict[str, Any]]
         if value is not None and str(value).strip():
             turn[optional_key] = str(value).strip()
 
-    detail = payload.get("command_detail")
-    if isinstance(detail, dict) and detail:
+    detail = normalize_command_detail(payload.get("command_detail"))
+    if detail:
         turn["command_detail"] = detail
 
     return turn
@@ -466,6 +468,8 @@ async def migrate_one_sentence_scope(
         return {"ok": False, "reason": "access_denied"}
     if not await user_may_access_kitty_scope(user_id, target_scope):
         return {"ok": False, "reason": "access_denied"}
+
+    await migrate_pending_kitty_keys(user_id, source_scope, target_scope)
 
     pg_ok = await migrate_one_sentence_scope_pg(
         user_id=user_id,

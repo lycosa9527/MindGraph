@@ -10,6 +10,11 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 
 from services.kitty.routing.diagram_agent_context import resolve_diagram_node_ref
+from services.kitty.routing.pending_clarify_store import (
+    delete_pending_intent_slot_payload,
+    load_pending_intent_slot_payload,
+    persist_pending_intent_slot_payload,
+)
 
 PENDING_INTENT_SLOT_KEY = "_pending_intent_slot"
 _CANCEL_TEXTS = frozenset(
@@ -139,9 +144,86 @@ def default_intent_clarify_command(
     }
 
 
+_VALUE_SLOT_ACTIONS = frozenset(
+    {
+        "update_center",
+        "add_node",
+        "update_node",
+        "delete_node",
+        "auto_complete_branch",
+    }
+)
+_SLOT_COPY_KEYS = ("node_id", "parent_ref", "side")
+_REFERENT_KEYS = ("target", "node_id", "node_identifier", "node_label")
+
+
 def is_intent_slot_cancel(text: str) -> bool:
     """True when the user backs out of a follow-up slot."""
     return " ".join(text.strip().lower().split()) in _CANCEL_TEXTS
+
+
+def _copy_optional_str_fields(
+    source: Dict[str, Any],
+    dest: Dict[str, Any],
+    keys: Tuple[str, ...],
+) -> None:
+    for key in keys:
+        raw = source.get(key)
+        if isinstance(raw, str) and raw.strip():
+            dest[key] = raw.strip()
+
+
+def _edit_value(command: Dict[str, Any]) -> str:
+    action = str(command.get("action") or "").strip()
+    if action in {"delete_node", "auto_complete_branch"}:
+        keys = _REFERENT_KEYS
+    elif action == "update_node":
+        keys = ("new_text", "target")
+    else:
+        keys = ("target", "text")
+    for key in keys:
+        raw = command.get(key)
+        if isinstance(raw, str) and raw.strip():
+            return raw.strip()
+    return ""
+
+
+def default_slot_followup(action: str, *, lang: str) -> str:
+    """Prompt for the missing add / rename / topic / referent value."""
+    use_en = lang == "en"
+    if action == "add_node":
+        return "What branch should I add?" if use_en else "要添加哪条分支？"
+    if action == "update_center":
+        return "What should the topic be?" if use_en else "主题想改成什么？"
+    if action == "update_node":
+        return "What is the new name?" if use_en else "想改成什么名称？"
+    if action == "delete_node":
+        return "Which branch should I delete?" if use_en else "要删除哪个分支？"
+    if action == "auto_complete_branch":
+        return "Which branch should I fill?" if use_en else "要补全哪个分支？"
+    return "What should it be?" if use_en else "请再说具体一点。"
+
+
+def rewrite_valueless_edit_to_followup(
+    command: Dict[str, Any],
+    *,
+    lang: str,
+) -> Dict[str, Any]:
+    """Turn a nameless add/rename/topic edit into ask_followup."""
+    action = str(command.get("action") or "").strip()
+    if action not in _VALUE_SLOT_ACTIONS or _edit_value(command):
+        return command
+    rewritten: Dict[str, Any] = {
+        "action": "ask_followup",
+        "confidence": command.get("confidence", 0.9),
+        "slot_action": action,
+        "followup": default_slot_followup(action, lang=lang),
+    }
+    existing_followup = command.get("followup")
+    if isinstance(existing_followup, str) and existing_followup.strip():
+        rewritten["followup"] = existing_followup.strip()
+    _copy_optional_str_fields(command, rewritten, _SLOT_COPY_KEYS)
+    return rewritten
 
 
 def arm_pending_intent_slot(
@@ -153,12 +235,10 @@ def arm_pending_intent_slot(
         return False
     slot_action = command.get("slot_action")
     action = slot_action.strip() if isinstance(slot_action, str) else ""
-    if action not in {"update_center", "add_node", "update_node"}:
+    if action not in _VALUE_SLOT_ACTIONS:
         return False
     slot: Dict[str, Any] = {"action": action}
-    node_id = command.get("node_id")
-    if isinstance(node_id, str) and node_id.strip():
-        slot["node_id"] = node_id.strip()
+    _copy_optional_str_fields(command, slot, _SLOT_COPY_KEYS)
     followup = command.get("followup")
     if isinstance(followup, str) and followup.strip():
         slot["followup"] = followup.strip()
@@ -167,9 +247,38 @@ def arm_pending_intent_slot(
 
 
 def clear_pending_intent_slot(session: Optional[Dict[str, Any]]) -> None:
-    """Drop a follow-up slot."""
+    """Drop a follow-up slot from the live session."""
     if isinstance(session, dict):
         session.pop(PENDING_INTENT_SLOT_KEY, None)
+
+
+async def persist_armed_intent_slot(session: Optional[Dict[str, Any]]) -> None:
+    """Mirror the armed follow-up slot to Redis for reconnect."""
+    raw = session.get(PENDING_INTENT_SLOT_KEY) if isinstance(session, dict) else None
+    await persist_pending_intent_slot_payload(
+        session,
+        raw if isinstance(raw, dict) else None,
+    )
+
+
+async def restore_pending_intent_slot(session: Optional[Dict[str, Any]]) -> bool:
+    """Re-arm a follow-up slot from Redis when the in-memory session is new."""
+    if not isinstance(session, dict):
+        return False
+    existing = session.get(PENDING_INTENT_SLOT_KEY)
+    if isinstance(existing, dict) and existing:
+        return True
+    payload = await load_pending_intent_slot_payload(session)
+    if payload is None:
+        return False
+    session[PENDING_INTENT_SLOT_KEY] = payload
+    return True
+
+
+async def clear_pending_intent_slot_async(session: Optional[Dict[str, Any]]) -> None:
+    """Drop live + Redis follow-up slot so a reconnect cannot fill a stale edit."""
+    clear_pending_intent_slot(session)
+    await delete_pending_intent_slot_payload(session)
 
 
 def consume_pending_intent_slot(
@@ -187,16 +296,14 @@ def consume_pending_intent_slot(
         session.pop(PENDING_INTENT_SLOT_KEY, None)
         return None
     action = str(raw.get("action") or "").strip()
-    if action not in {"update_center", "add_node", "update_node"}:
+    if action not in _VALUE_SLOT_ACTIONS:
         session.pop(PENDING_INTENT_SLOT_KEY, None)
         return None
     session.pop(PENDING_INTENT_SLOT_KEY, None)
     command: Dict[str, Any] = {"action": action, "confidence": 0.9, "target": filled}
     if action == "update_node":
         command["new_text"] = filled
-    node_id = raw.get("node_id")
-    if isinstance(node_id, str) and node_id.strip():
-        command["node_id"] = node_id.strip()
+    _copy_optional_str_fields(raw, command, _SLOT_COPY_KEYS)
     return command
 
 

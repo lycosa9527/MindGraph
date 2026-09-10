@@ -803,6 +803,12 @@ async def test_one_sentence_clarify_options_emits_numbered_ack() -> None:
         ack_text = mock_await_args(ack_mock)[2]
         assert "1)" in ack_text
         assert "2)" in ack_text
+        ack_kwargs = mock_await_kwargs(ack_mock)
+        assert ack_kwargs["clarify_options"] == [
+            "补全「中国」分支",
+            "新增「中国」分支",
+        ]
+        assert ack_kwargs["clarify_question"] == "你是想："
         assert voice_sessions[vid].get("pending_clarify_options") is not None
     finally:
         voice_sessions.pop(vid, None)

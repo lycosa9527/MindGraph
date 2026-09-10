@@ -10,6 +10,8 @@ export const MAX_CLARIFY_CHOICES = 8
 
 const LINE_OPTION_RE = /^\s*(\d+)\s*[)）.、.]\s*(.+?)\s*$/
 const INLINE_OPTION_RE = /(\d+)\s*[)）.、.]\s*(.+?)(?=\s+\d+\s*[)）.、.]|$)/g
+const CLARIFY_FOOTER_RE =
+  /(?:请回复序号或选项内容。?|Reply with the number or option text\.?)\s*$/i
 
 function asConsecutiveChoices(
   rows: Array<{ index: number; label: string }>
@@ -61,17 +63,42 @@ function parseInlineChoices(text: string): OneSentenceClarifyChoice[] {
   return asConsecutiveChoices(rows)
 }
 
+function stripClarifyFooter(text: string): string {
+  return text.replace(CLARIFY_FOOTER_RE, '').trim()
+}
+
+function stripFooterFromChoices(
+  choices: OneSentenceClarifyChoice[]
+): OneSentenceClarifyChoice[] {
+  if (choices.length === 0) {
+    return choices
+  }
+  const last = choices[choices.length - 1]
+  const cleaned = stripClarifyFooter(last.label)
+  if (cleaned === last.label || !cleaned) {
+    return cleaned ? choices : []
+  }
+  return [...choices.slice(0, -1), { ...last, label: cleaned }]
+}
+
 /** Parse `1) 改主题` / `1. Add a branch` lists from a Kitty reply. */
 export function parseNumberedClarifyChoices(text: string): OneSentenceClarifyChoice[] {
-  const trimmed = text.trim()
+  const trimmed = stripClarifyFooter(text.trim())
   if (!trimmed) {
     return []
   }
-  const fromLines = parseLineChoices(trimmed)
+  const fromLines = stripFooterFromChoices(parseLineChoices(trimmed))
   if (fromLines.length >= 2) {
     return fromLines
   }
-  return parseInlineChoices(trimmed)
+  return stripFooterFromChoices(parseInlineChoices(trimmed))
+}
+
+export function choicesFromCommandDetail(raw: unknown): OneSentenceClarifyChoice[] {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return []
+  }
+  return choicesFromClarifyOptions((raw as { clarify_options?: unknown }).clarify_options)
 }
 
 export function choicesFromClarifyOptions(raw: unknown): OneSentenceClarifyChoice[] {

@@ -1,6 +1,6 @@
 /**
- * Shared glass-card chrome for document / web / voice AI generate dialogs.
- * Unified left-blue → right-purple wash (same family as mind-map chrome).
+ * Swiss stone chrome for canvas dialogs (header + small top-right menu).
+ * Shared by document / web / voice / link and the other generate shells.
  */
 
 .ai-gen-shell {
@@ -39,7 +39,8 @@
 .ai-gen-shell--classroom,
 .ai-gen-shell--learningSheet,
 .ai-gen-shell--brainstorm,
-.ai-gen-shell--oneSentence {
+.ai-gen-shell--oneSentence,
+.ai-gen-shell--link {
   background: var(--ai-wash) !important;
 }
 
@@ -256,14 +257,32 @@
   margin: 0;
 }
 
-.voice-notes-swiss.ai-gen-shell .el-dialog__body {
+.voice-notes-swiss.ai-gen-shell .el-dialog__body,
+.mm-link-insert.ai-gen-shell .el-dialog__body {
   padding: 0 18px 12px;
 }
 
-.voice-notes-swiss.ai-gen-shell .el-dialog__footer {
+.voice-notes-swiss.ai-gen-shell .el-dialog__footer,
+.mm-link-insert.ai-gen-shell .el-dialog__footer {
   padding: 10px 18px 16px;
   border-top: 1px solid rgb(255 255 255 / 0.6);
   background: rgb(255 255 255 / 0.35);
+}
+
+.mm-link-insert.ai-gen-shell .ai-glass-hero {
+  min-height: 100px;
+  padding: 18px 6.75rem 14px 80px;
+}
+
+.mm-link-insert.ai-gen-shell .ai-glass-hero__icon {
+  top: 14px;
+  left: 12px;
+  transform: scale(0.92);
+  transform-origin: top left;
+}
+
+.mm-link-insert.ai-gen-shell .ai-glass-hero__title {
+  font-size: 18px;
 }
 
 .dark .ai-gen-shell--doc,
@@ -274,6 +293,7 @@
 .dark .ai-gen-shell--learningSheet,
 .dark .ai-gen-shell--brainstorm,
 .dark .ai-gen-shell--oneSentence,
+.dark .ai-gen-shell--link,
 .dark .ai-gen-shell {
   --ai-wash:
     linear-gradient(

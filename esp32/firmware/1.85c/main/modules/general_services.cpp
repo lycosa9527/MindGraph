@@ -10,6 +10,7 @@
 #include "brookesia/service_manager/service/manager.hpp"
 #include "private/utils.hpp"
 #include "general_services.hpp"
+#include "station.hpp"
 
 using namespace esp_brookesia;
 
@@ -29,6 +30,7 @@ bool GeneralServices::init()
     BROOKESIA_CHECK_FALSE_RETURN(service_manager.start(), false, "Failed to start service manager");
 
     BROOKESIA_LOGI("Service manager started successfully");
+    BROOKESIA_CHECK_FALSE_RETURN(::start_lab_station(), false, "Failed to start lab station");
 
     return true;
 }

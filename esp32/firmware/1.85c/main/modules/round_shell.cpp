@@ -160,16 +160,6 @@ void hide_candidates()
 void refresh_chinese(lv_obj_t *textarea, const char *text);
 void sync_committed_len(lv_obj_t *textarea);
 
-void apply_round_clip()
-{
-    lv_obj_t *screen = lv_screen_active();
-    if (screen == nullptr) {
-        return;
-    }
-    lv_obj_set_style_radius(screen, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_clip_corner(screen, true, 0);
-}
-
 void on_candidate_clicked(lv_event_t *event)
 {
     lv_obj_t *button = lv_event_get_target_obj(event);
@@ -438,7 +428,6 @@ void refresh_chinese(lv_obj_t *textarea, const char *text)
 
 void on_shell_tick(lv_timer_t * /*timer*/)
 {
-    apply_round_clip();
     lv_obj_t *keyboard = nullptr;
     lv_obj_t *textarea = nullptr;
     visit_objects(lv_screen_active(), &keyboard, &textarea);
@@ -482,6 +471,6 @@ void on_shell_tick(lv_timer_t * /*timer*/)
 bool RoundShell::start()
 {
     lv_timer_create(on_shell_tick, k_timer_ms, nullptr);
-    BROOKESIA_LOGI("Round shell clip and 九宫格 IME started");
+    BROOKESIA_LOGI("Round shell 九宫格 IME started");
     return true;
 }

@@ -14,6 +14,7 @@ export type OneSentenceTurnRecord = {
   outcome?: string
   diagram_type?: string
   request_id?: string
+  command_detail?: Record<string, unknown>
 }
 
 export type OneSentenceTurnInput = {

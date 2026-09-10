@@ -95,3 +95,15 @@ def kitty_one_sentence_meta_key(ws_session_id: str) -> str:
     """Owner + session metadata for one-sentence turn log (same Redis slot as turns)."""
     tag = str(ws_session_id).strip()
     return f"{{{tag}}}kitty:one_sentence:meta"
+
+
+def kitty_pending_clarify_key(user_id: int, scope: str) -> str:
+    """Armed clarify-option commands so a tap still works after WS reconnect."""
+    tag = str(scope).strip()
+    return f"{{{tag}}}kitty:pending_clarify:{int(user_id)}"
+
+
+def kitty_pending_intent_slot_key(user_id: int, scope: str) -> str:
+    """Armed ask-followup slot so a name typed after reconnect still fills the edit."""
+    tag = str(scope).strip()
+    return f"{{{tag}}}kitty:pending_intent_slot:{int(user_id)}"

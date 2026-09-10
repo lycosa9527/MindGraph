@@ -1,5 +1,6 @@
-"""Typed-text OpenAI-compatible tool loop for Kitty."""
+"""Typed-text OpenAI-compatible tool loop for Kitty.
 
-from services.kitty.agent_loop.loop import run_typed_agent_loop
-
-__all__ = ["run_typed_agent_loop"]
+Import ``run_typed_agent_loop`` from ``services.kitty.agent_loop.loop``.
+This package init stays import-light so routing helpers can use
+``intent_clarify`` without a tools ↔ pending-clarify cycle.
+"""

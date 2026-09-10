@@ -1448,6 +1448,7 @@ export default {
   'canvas.ribbon.insertComingSoon': '該插入能力即將開放',
   'canvas.ribbon.summaryNeedSiblings': '請選擇同一父節點下連續的節點',
   'canvas.ribbon.summaryDelete': '刪除概要',
+  'canvas.ribbon.linkName': '名稱',
   'canvas.ribbon.linkUrl': '連結地址',
   'canvas.ribbon.linkInvalid': '請輸入有效的 http(s) 連結',
   'canvas.ribbon.linkConfirm': '新增連結',
@@ -1490,4 +1491,8 @@ export default {
   'canvas.ribbon.aiHero.oneSentence.title': '對話式修改',
   'canvas.ribbon.aiHero.oneSentence.line1': '用一句話描述主題或修改要求',
   'canvas.ribbon.aiHero.oneSentence.line2': '智能生成並調整導圖',
+  'canvas.ribbon.aiHero.link.ribbon': '插入',
+  'canvas.ribbon.aiHero.link.title': '新增連結',
+  'canvas.ribbon.aiHero.link.line1': '節點顯示名稱，完整地址藏在連結圖示裡',
+  'canvas.ribbon.aiHero.link.line2': '',
 } as const

@@ -1,4 +1,4 @@
-"""LIVE_LLM: every library node action on five real mindmaps.
+"""LIVE_LLM: every library node action on ten real mindmaps.
 
 Run (WSL + conda):
   LIVE_LLM=1 python -m pytest tests/test_kitty_agent_loop_five_maps_live.py -q -s
@@ -317,5 +317,56 @@ async def test_add_brand_branch_starts_autocomplete_live(slug: str) -> None:
         start_ac_mock.assert_awaited()
         assert start_ac_mock.await_args is not None
         assert start_ac_mock.await_args.kwargs.get("node_id") == created
+    finally:
+        voice_sessions.pop(vid, None)
+
+
+@pytest.mark.usefixtures("_live_llm_ready")
+@pytest.mark.asyncio
+@pytest.mark.parametrize("slug", [mmap.slug for mmap in _MAPS], ids=[mmap.slug for mmap in _MAPS])
+async def test_unnamed_add_asks_for_name_live(slug: str) -> None:
+    """「添加一个自定义的分支」 asks for the name on every map (no placement quiz)."""
+    mmap = _MAP_BY_SLUG[slug]
+    utterance = "添加一个自定义的分支"
+    ws = MagicMock()
+    vid = create_voice_session(
+        user_id="live-unnamed",
+        diagram_session_id=f"scope-{slug}-unnamed",
+        diagram_type="mindmap",
+    )
+    voice_sessions[vid]["context"] = mmap.context
+    voice_sessions[vid]["active_panel"] = "one_sentence"
+    bus_mock = AsyncMock(return_value=_applied("add_node", mmap.branch_id))
+    chat_mock = AsyncMock(side_effect=AssertionError("unnamed add must not call the model"))
+    try:
+        with (
+            patch("services.kitty.agent_loop.loop.llm_service.chat_raw", chat_mock),
+            patch("services.kitty.agent_loop.tools.apply_kitty_legacy_diagram_command", bus_mock),
+            patch("services.kitty.agent_loop.loop.emit_user_ack", new=AsyncMock(return_value=True)),
+            patch("services.kitty.agent_loop.tools.emit_user_ack", new=AsyncMock(return_value=True)),
+            patch("services.kitty.agent_loop.loop.load_kitty_live_context", new=AsyncMock(return_value=None)),
+            patch(
+                "services.kitty.agent_loop.loop.throttled_refresh_voice_context_from_library",
+                new=AsyncMock(),
+            ),
+            patch(
+                "services.kitty.agent_loop.loop.live_spec_newer_than_library",
+                new=AsyncMock(return_value=True),
+            ),
+            patch(
+                "services.kitty.agent_loop.loop.fanout_voice_phase_from_session",
+                new=AsyncMock(),
+            ),
+        ):
+            result = await run_typed_agent_loop(ws, vid, utterance, dict(mmap.context))
+        print(f"\n[{slug}/unnamed_add] outcome={result.outcome} action={result.action} reason={result.reason}")
+        assert result.outcome == RouteOutcome.EXECUTED, result
+        assert result.action == "ask_followup", result
+        assert result.reason == "heuristic", result
+        chat_mock.assert_not_awaited()
+        bus_mock.assert_not_awaited()
+        pending = voice_sessions[vid].get("_pending_intent_slot")
+        assert isinstance(pending, dict)
+        assert pending.get("action") == "add_node"
     finally:
         voice_sessions.pop(vid, None)

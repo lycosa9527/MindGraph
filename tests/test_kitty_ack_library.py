@@ -16,7 +16,7 @@ from services.kitty.ack.ack_library import (
 )
 from services.kitty.ack.ack_phrase_pool import ack_pool_lines
 from services.kitty.ack.ack_slots import slots_from_command
-from tests.typing_helpers import mock_await_args
+from tests.typing_helpers import mock_await_args, mock_await_kwargs
 
 
 def test_render_update_node_progress_zh() -> None:
@@ -419,12 +419,13 @@ async def test_emit_user_ack_includes_clarify_options() -> None:
     """Clarify acks carry structured options for one-sentence choice buttons."""
     ws = MagicMock()
     send_mock = AsyncMock(return_value=True)
+    persist_mock = AsyncMock()
     with (
         patch("services.kitty.ack.ack_emit.safe_websocket_send", send_mock),
         patch("services.kitty.ack.ack_emit.speak_kitty_final_reply", new=AsyncMock()),
         patch(
             "services.kitty.ack.ack_emit.persist_one_sentence_turn_from_voice_session",
-            new=AsyncMock(),
+            persist_mock,
         ),
     ):
         await emit_user_ack(
@@ -440,3 +441,9 @@ async def test_emit_user_ack_includes_clarify_options() -> None:
     assert payload["clarify_question"] == "你是想："
     assert payload["clarify_options"] == ["第一个 地理位置", "第二个 地理位置"]
     assert payload["action"] == "clarify_options"
+    persist_kwargs = mock_await_kwargs(persist_mock)
+    assert persist_kwargs["command_detail"]["clarify_options"] == [
+        "第一个 地理位置",
+        "第二个 地理位置",
+    ]
+    assert persist_kwargs["command_detail"]["clarify_question"] == "你是想："

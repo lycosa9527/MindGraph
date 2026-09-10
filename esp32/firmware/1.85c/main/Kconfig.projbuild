@@ -1,0 +1,23 @@
+menu "MindGraph 1.85C station"
+
+    config MINDGRAPH_STA_SSID
+        string "Home AP SSID (empty disables boot connect)"
+        default ""
+        help
+            Seeded at boot after a full-flash (NVS is wiped at 0x00).
+            Prefer sdkconfig.defaults.local so the password stays untracked.
+
+    config MINDGRAPH_STA_PASSWORD
+        string "Home AP password"
+        default ""
+        help
+            Used only when MINDGRAPH_STA_SSID is non-empty.
+
+    config MINDGRAPH_STA_TIMEZONE
+        string "POSIX timezone for the status clock"
+        default "CST-8"
+        help
+            Settings China option is CST-8 (UTC+8). Applied at boot so the
+            clock is not UTC after NVS is wiped.
+
+endmenu

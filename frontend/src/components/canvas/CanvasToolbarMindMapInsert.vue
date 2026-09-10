@@ -20,7 +20,11 @@ import { useMindMapAssociationLine } from '@/composables/mindMap/useMindMapAssoc
 import { useDiagramStore } from '@/stores'
 import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
 import { summaryInsertFailureReason } from '@/stores/diagram/mindMapSummaryOps'
-import { readNodeAdornment } from '@/utils/mindMapAdornments'
+import {
+  readNodeAdornment,
+  resolveMindMapLinkDisplayName,
+  seedMindMapLinkDialog,
+} from '@/utils/mindMapAdornments'
 import { mindMapAssociationSameSide } from '@/utils/mindMapAssociationLine'
 
 const props = withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
@@ -47,11 +51,21 @@ const canInsertAssociation = computed(() => {
 
 const selectedNodeId = computed(() => diagramStore.selectedNodes[0] ?? '')
 
-const initialLinkHref = computed(
-  () =>
+const selectedNodeText = computed(() => {
+  const node = diagramStore.data?.nodes?.find((item) => item.id === selectedNodeId.value)
+  return String(node?.text ?? (node?.data as { label?: string } | undefined)?.label ?? '')
+})
+
+const linkDialogSeeds = computed(() =>
+  seedMindMapLinkDialog(
+    selectedNodeText.value,
     readNodeAdornment(diagramStore.data, selectedNodeId.value, diagramStore.data?.connections)
       ?.href ?? ''
+  )
 )
+
+const initialLinkHref = computed(() => linkDialogSeeds.value.href)
+const initialLinkName = computed(() => linkDialogSeeds.value.name)
 const initialImageUrl = computed(
   () =>
     readNodeAdornment(diagramStore.data, selectedNodeId.value, diagramStore.data?.connections)
@@ -132,10 +146,17 @@ function onIconClear(): void {
   diagramStore.setMindMapNodeIcon(selectedNodeId.value, '')
 }
 
-function onLinkConfirm(href: string): void {
+function onLinkConfirm(href: string, name: string): void {
   if (!selectedNodeId.value) return
   const ok = diagramStore.setMindMapNodeHref(selectedNodeId.value, href)
-  if (!ok) notify.warning(t('canvas.ribbon.linkInvalid'))
+  if (!ok) {
+    notify.warning(t('canvas.ribbon.linkInvalid'))
+    return
+  }
+  const nextText = resolveMindMapLinkDisplayName(name, href, selectedNodeText.value)
+  if (nextText && nextText !== selectedNodeText.value.trim()) {
+    diagramStore.updateNode(selectedNodeId.value, { text: nextText })
+  }
 }
 
 function onImageConfirm(imageUrl: string): void {
@@ -287,6 +308,7 @@ function onMathConfirm(latex: string): void {
   <CanvasLinkInsertDialog
     v-model="linkOpen"
     :initial-href="initialLinkHref"
+    :initial-name="initialLinkName"
     @confirm="onLinkConfirm"
   />
   <CanvasImageInsertDialog

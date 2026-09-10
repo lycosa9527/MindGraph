@@ -26,6 +26,8 @@ def build_system_prompt(mode: LoopMode, *, lang: str) -> str:
                 "Do not use path or leftover branch-* ids as keys. "
                 "Greetings and vague asks (hi, change this) must call "
                 "node_action.clarify_options with 2-3 short suggestions. "
+                "If the user wants to add a branch but did not name it, ask for "
+                "the name (ask_followup / add_node). Do not ask placement first. "
                 "Never reply with only text when the intent is unclear. "
                 "When the goal is done, reply with a short confirmation and no tools. "
                 "If you cannot apply a change, say so briefly without pretending it applied."
@@ -45,6 +47,7 @@ def build_system_prompt(mode: LoopMode, *, lang: str) -> str:
             "不要把 path 或遗留的 branch-* 当作主键。"
             "问候或「改一下/这个」等意图不清时，必须调用 node_action.clarify_options，"
             "给出 2–3 个短建议，不要只用纯文本回复。"
+            "用户要加分支但没说名称时，问分支名（ask_followup / add_node），不要先问位置。"
             "完成后用一句短确认结束，不要再调用工具。"
             "无法修改时如实说明，不要假装已应用。"
         )

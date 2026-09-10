@@ -18,6 +18,7 @@ import {
   buildK12ChemFormulasKeyLabels,
   buildK12EquationsKeyLabels,
 } from '@/composables/canvas/mathLiveKeyboardI18n'
+import { loadMathLive } from '@/composables/canvas/loadMathLive'
 import { mapUiLocaleToMathLiveLocale } from '@/composables/canvas/mathLiveLocale'
 import { useLanguage } from '@/composables/core/useLanguage'
 
@@ -39,10 +40,8 @@ const mathliveReady = ref(false)
 /** Snapshot of window.mathVirtualKeyboard.layouts before we add MindGraph tabs. */
 let savedVirtualKeyboardLayouts: ReadonlyArray<string | object> | null = null
 
-type MathfieldElementCtor = { locale: string }
-
 async function syncMathLiveLocale(): Promise<void> {
-  const ml = (await import('mathlive')) as unknown as { MathfieldElement?: MathfieldElementCtor }
+  const ml = await loadMathLive()
   if (ml.MathfieldElement) {
     ml.MathfieldElement.locale = mapUiLocaleToMathLiveLocale(String(currentLanguage.value))
   }
@@ -51,8 +50,7 @@ async function syncMathLiveLocale(): Promise<void> {
 async function ensureMathlive(): Promise<void> {
   if (!mathliveReady.value) {
     try {
-      await import('mathlive')
-      await import('mathlive/fonts.css')
+      await loadMathLive()
       mathliveReady.value = true
     } catch (err) {
       mathLoadError.value = err instanceof Error ? err.message : 'MathLive load failed'

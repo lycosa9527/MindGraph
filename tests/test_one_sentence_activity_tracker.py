@@ -51,6 +51,20 @@ def test_normalize_command_detail_rejects_non_dict() -> None:
     assert normalize_command_detail({"action": "add_node"}) == {"action": "add_node"}
 
 
+def test_normalize_command_detail_strips_option_commands() -> None:
+    """History may keep chip labels, never the executable option commands."""
+    cleaned = normalize_command_detail(
+        {
+            "action": "clarify_options",
+            "clarify_options": ["改主题", "添加分支"],
+            "option_commands": [{"action": "add_node", "target": "品牌"}],
+        }
+    )
+    assert cleaned is not None
+    assert cleaned["clarify_options"] == ["改主题", "添加分支"]
+    assert "option_commands" not in cleaned
+
+
 def test_turn_dict_to_row_keeps_command_detail() -> None:
     """PG row mapping preserves nested command_detail bus fields."""
     row = turn_dict_to_row(

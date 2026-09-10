@@ -268,6 +268,7 @@ esp32/**/.cache/
 esp32/**/.brookesia/
 esp32/**/sdkconfig
 esp32/**/sdkconfig.old
+esp32/**/sdkconfig.defaults.local
 esp32/**/dependencies.lock
 esp32/**/sign/
 esp32/**/node_modules/

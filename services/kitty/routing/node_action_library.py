@@ -207,7 +207,13 @@ def build_node_action_tools() -> List[Dict[str, Any]]:
                             },
                             "slot_action": {
                                 "type": "string",
-                                "enum": ["update_center", "add_node", "update_node"],
+                                "enum": [
+                                    "update_center",
+                                    "add_node",
+                                    "update_node",
+                                    "delete_node",
+                                    "auto_complete_branch",
+                                ],
                                 "description": "Edit to apply after the user answers ask_followup",
                             },
                         },

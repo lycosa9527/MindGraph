@@ -1,4 +1,5 @@
 import type { Connection, DiagramNode } from '@/types'
+import { voidMindMapAssociationsAcrossSides } from '@/utils/mindMapAssociationLine'
 import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 
 import { getMindMapCollapsedNodeIds, getMindMapCollapsedPaths } from './mindMapCollapse'
@@ -56,6 +57,7 @@ export function syncMindMapStoreLayoutPositions(ctx: DiagramContext): void {
   // v2: sole layout owner is mindMapV2LayoutResult — write-back only (no second compute).
   if (v2Family && ctx.writeBackMindMapV2LayoutFromComputed) {
     ctx.writeBackMindMapV2LayoutFromComputed()
+    dropCrossSideMindMapAssociations(ctx)
     return
   }
 
@@ -84,6 +86,19 @@ export function syncMindMapStoreLayoutPositions(ctx: DiagramContext): void {
   const merged = mergeMindMapLayoutPositions(ctx.data.value.nodes, laidOut)
   if (merged !== ctx.data.value.nodes) {
     ctx.data.value.nodes = merged
+  }
+  dropCrossSideMindMapAssociations(ctx)
+}
+
+function dropCrossSideMindMapAssociations(ctx: DiagramContext): void {
+  const data = ctx.data.value
+  if (!data?.connections?.length || !data.nodes) return
+  const next = voidMindMapAssociationsAcrossSides(data.connections, data.nodes)
+  if (next === data.connections) return
+  data.connections = next
+  const selected = ctx.selectedConnectionId.value
+  if (selected && !next.some((conn) => conn.id === selected)) {
+    ctx.selectedConnectionId.value = null
   }
 }
 

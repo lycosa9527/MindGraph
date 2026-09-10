@@ -82,6 +82,8 @@ from services.kitty.routing.pending_branch_autocomplete import (
 from services.kitty.routing.command_grounding import UNGROUNDED_ERROR, apply_command_grounding
 from services.kitty.routing.pending_clarify_options import (
     arm_pending_clarify_options,
+    clarify_option_labels,
+    persist_armed_pending_clarify,
     try_consume_pending_clarify_options,
 )
 from services.kitty.routing.structural_diagram_route import route_structural_diagram_command
@@ -586,6 +588,8 @@ async def route_voice_command(
                     "labels": (command.get("options") or [])[:3],
                 },
             )
+            if isinstance(live_voice, dict) and armed:
+                await persist_armed_pending_clarify(live_voice)
             await emit_user_ack(
                 websocket,
                 voice_session_id,
@@ -593,6 +597,8 @@ async def route_voice_command(
                 one_sentence_action="clarify_options",
                 one_sentence_outcome="executed",
                 one_sentence_user_text=command_text,
+                clarify_question=str(command.get("question") or "") or None,
+                clarify_options=clarify_option_labels(command) or None,
             )
             memory = get_session_memory(voice_session_id)
             memory.append_action_turn(ack_text, action="clarify_options")

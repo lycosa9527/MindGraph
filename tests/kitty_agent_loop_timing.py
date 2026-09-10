@@ -55,7 +55,7 @@ def format_summary(sink: TimingSink) -> str:
         return "no timings recorded"
     lines = [
         "",
-        "Kitty five-map live timings",
+        "Kitty ten-map live timings",
         "dispatch = after the model picked a tool (identity + add/delete/auto-complete trigger).",
         "Canvas verify / auto-complete generation are mocked in this suite.",
         "",

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Frosted-glass hero for document / web / voice generate dialogs.
+ * Swiss stone header for canvas dialogs — title block plus the small top-right menu.
  */
 import { computed } from 'vue'
 
@@ -31,6 +31,7 @@ const props = withDefaults(
       | 'learningSheet'
       | 'brainstorm'
       | 'oneSentence'
+      | 'link'
     showClose?: boolean
   }>(),
   { showClose: true }
@@ -287,6 +288,12 @@ const copy = computed(() => ({
           :size="34"
           :stroke-width="2"
         />
+        <Link2
+          v-else-if="variant === 'link'"
+          class="ai-glass-icon__glyph"
+          :size="32"
+          :stroke-width="2"
+        />
         <svg
           v-else
           class="ai-glass-icon__glyph"
@@ -350,6 +357,11 @@ const copy = computed(() => ({
         />
         <Sparkles
           v-else-if="variant === 'oneSentence'"
+          :size="12"
+          :stroke-width="2.4"
+        />
+        <PenLine
+          v-else-if="variant === 'link'"
           :size="12"
           :stroke-width="2.4"
         />

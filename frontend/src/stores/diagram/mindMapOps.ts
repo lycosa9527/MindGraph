@@ -11,6 +11,7 @@ import {
   resolveSessionMindMapCanvasMode,
 } from '@/utils/mindMapCanvasMode'
 import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
+import { voidMindMapAssociationsAcrossSides } from '@/utils/mindMapAssociationLine'
 import {
   buildMindMapTreeChildrenMap,
   isMindMapAssociationConnection,
@@ -214,7 +215,7 @@ function preserveMindMapAssociationConnections(
       id: idTaken ? `assoc-${safeRandomUUID()}` : conn.id,
     })
   }
-  return next
+  return voidMindMapAssociationsAcrossSides(next, newNodes)
 }
 
 function getMindMapParentId(connections: Connection[], nodeId: string): string | null {

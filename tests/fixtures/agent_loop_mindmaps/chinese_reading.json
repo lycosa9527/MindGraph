@@ -1,0 +1,187 @@
+{
+  "topic": "小学语文阅读",
+  "nodes": [
+    {
+      "id": "topic",
+      "type": "topic",
+      "text": "小学语文阅读",
+      "position": {
+        "x": 400.0,
+        "y": 300.0
+      }
+    },
+    {
+      "id": "b5b0b878-66f3-57c7-b9e5-d0df2b4a7b1d",
+      "type": "branch",
+      "text": "字词",
+      "position": {
+        "x": 620.0,
+        "y": 220.0
+      },
+      "data": {
+        "mindMapUid": "b5b0b878-66f3-57c7-b9e5-d0df2b4a7b1d",
+        "mindMapSide": "right",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "61500c0f-56ac-5b60-bddd-6ba1f3f08c39",
+      "type": "branch",
+      "text": "生字",
+      "position": {
+        "x": 840.0,
+        "y": 220.0
+      },
+      "data": {
+        "mindMapUid": "61500c0f-56ac-5b60-bddd-6ba1f3f08c39",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "28f939cc-53df-5c01-81b6-5ab399c773a5",
+      "type": "branch",
+      "text": "词语",
+      "position": {
+        "x": 840.0,
+        "y": 270.0
+      },
+      "data": {
+        "mindMapUid": "28f939cc-53df-5c01-81b6-5ab399c773a5",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "5645941d-d3ba-50b8-9e04-41a3e45092be",
+      "type": "branch",
+      "text": "句子",
+      "position": {
+        "x": 620.0,
+        "y": 310.0
+      },
+      "data": {
+        "mindMapUid": "5645941d-d3ba-50b8-9e04-41a3e45092be",
+        "mindMapSide": "right",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "0cfe067c-82b6-5fc5-9e4d-74be00d1df3f",
+      "type": "branch",
+      "text": "关键句",
+      "position": {
+        "x": 840.0,
+        "y": 310.0
+      },
+      "data": {
+        "mindMapUid": "0cfe067c-82b6-5fc5-9e4d-74be00d1df3f",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "79745e02-9eed-50ff-97a1-1691f40be7fd",
+      "type": "branch",
+      "text": "段落",
+      "position": {
+        "x": 620.0,
+        "y": 400.0
+      },
+      "data": {
+        "mindMapUid": "79745e02-9eed-50ff-97a1-1691f40be7fd",
+        "mindMapSide": "left",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "a3bd19a3-61e0-53e2-8ebd-d073aaa668a0",
+      "type": "branch",
+      "text": "段意",
+      "position": {
+        "x": 840.0,
+        "y": 400.0
+      },
+      "data": {
+        "mindMapUid": "a3bd19a3-61e0-53e2-8ebd-d073aaa668a0",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "f9cdd3f8-f41e-5f31-b66c-aa82196224b4",
+      "type": "branch",
+      "text": "中心思想",
+      "position": {
+        "x": 620.0,
+        "y": 490.0
+      },
+      "data": {
+        "mindMapUid": "f9cdd3f8-f41e-5f31-b66c-aa82196224b4",
+        "mindMapSide": "left",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "89cbf9bc-6751-5cec-ae4d-c18e989b9759",
+      "type": "branch",
+      "text": "作者意图",
+      "position": {
+        "x": 840.0,
+        "y": 490.0
+      },
+      "data": {
+        "mindMapUid": "89cbf9bc-6751-5cec-ae4d-c18e989b9759",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "e-topic-b5b0b878-66f3-57c7-b9e5-d0df2b4a7b1d",
+      "source": "topic",
+      "target": "b5b0b878-66f3-57c7-b9e5-d0df2b4a7b1d"
+    },
+    {
+      "id": "e-b5b0b878-66f3-57c7-b9e5-d0df2b4a7b1d-61500c0f-56ac-5b60-bddd-6ba1f3f08c39",
+      "source": "b5b0b878-66f3-57c7-b9e5-d0df2b4a7b1d",
+      "target": "61500c0f-56ac-5b60-bddd-6ba1f3f08c39"
+    },
+    {
+      "id": "e-b5b0b878-66f3-57c7-b9e5-d0df2b4a7b1d-28f939cc-53df-5c01-81b6-5ab399c773a5",
+      "source": "b5b0b878-66f3-57c7-b9e5-d0df2b4a7b1d",
+      "target": "28f939cc-53df-5c01-81b6-5ab399c773a5"
+    },
+    {
+      "id": "e-topic-5645941d-d3ba-50b8-9e04-41a3e45092be",
+      "source": "topic",
+      "target": "5645941d-d3ba-50b8-9e04-41a3e45092be"
+    },
+    {
+      "id": "e-5645941d-d3ba-50b8-9e04-41a3e45092be-0cfe067c-82b6-5fc5-9e4d-74be00d1df3f",
+      "source": "5645941d-d3ba-50b8-9e04-41a3e45092be",
+      "target": "0cfe067c-82b6-5fc5-9e4d-74be00d1df3f"
+    },
+    {
+      "id": "e-topic-79745e02-9eed-50ff-97a1-1691f40be7fd",
+      "source": "topic",
+      "target": "79745e02-9eed-50ff-97a1-1691f40be7fd"
+    },
+    {
+      "id": "e-79745e02-9eed-50ff-97a1-1691f40be7fd-a3bd19a3-61e0-53e2-8ebd-d073aaa668a0",
+      "source": "79745e02-9eed-50ff-97a1-1691f40be7fd",
+      "target": "a3bd19a3-61e0-53e2-8ebd-d073aaa668a0"
+    },
+    {
+      "id": "e-topic-f9cdd3f8-f41e-5f31-b66c-aa82196224b4",
+      "source": "topic",
+      "target": "f9cdd3f8-f41e-5f31-b66c-aa82196224b4"
+    },
+    {
+      "id": "e-f9cdd3f8-f41e-5f31-b66c-aa82196224b4-89cbf9bc-6751-5cec-ae4d-c18e989b9759",
+      "source": "f9cdd3f8-f41e-5f31-b66c-aa82196224b4",
+      "target": "89cbf9bc-6751-5cec-ae4d-c18e989b9759"
+    }
+  ]
+}

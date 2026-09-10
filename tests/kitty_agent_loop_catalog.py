@@ -1,4 +1,4 @@
-"""Catalog of five real mindmaps for Kitty agent-loop action coverage."""
+"""Catalog of ten real mindmaps for Kitty agent-loop action coverage."""
 
 from __future__ import annotations
 
@@ -18,6 +18,11 @@ MAP_FILES: Tuple[Tuple[str, Path], ...] = (
     ("new_energy_vehicles", _FIXTURES / "agent_loop_mindmaps" / "new_energy_vehicles.json"),
     ("chinese_tea", _FIXTURES / "agent_loop_mindmaps" / "chinese_tea.json"),
     ("beijing_trip", _FIXTURES / "agent_loop_mindmaps" / "beijing_trip.json"),
+    ("water_cycle", _FIXTURES / "agent_loop_mindmaps" / "water_cycle.json"),
+    ("labor_contract", _FIXTURES / "agent_loop_mindmaps" / "labor_contract.json"),
+    ("chinese_reading", _FIXTURES / "agent_loop_mindmaps" / "chinese_reading.json"),
+    ("supply_chain", _FIXTURES / "agent_loop_mindmaps" / "supply_chain.json"),
+    ("immune_system", _FIXTURES / "agent_loop_mindmaps" / "immune_system.json"),
 )
 
 NODE_ACTIONS: Tuple[str, ...] = (
@@ -116,10 +121,10 @@ def load_real_mindmap(slug: str, path: Path) -> RealMindmap:
 
 
 def load_all_real_mindmaps() -> List[RealMindmap]:
-    """Load the five committed real mindmaps."""
+    """Load the committed real mindmaps."""
     maps = [load_real_mindmap(slug, path) for slug, path in MAP_FILES]
-    if len(maps) != 5:
-        raise AssertionError(f"expected 5 mindmaps, got {len(maps)}")
+    if len(maps) != len(MAP_FILES):
+        raise AssertionError(f"expected {len(MAP_FILES)} mindmaps, got {len(maps)}")
     return maps
 
 

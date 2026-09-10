@@ -53,7 +53,7 @@ def blit_face(plate: Image.Image, face: Image.Image) -> None:
 
 def draw_status(draw: ImageDraw.ImageDraw, font: ImageFont.FreeTypeFont) -> None:
     """Wear-style 12 o'clock capsule."""
-    draw.rounded_rectangle((100, 34, 260, 58), radius=12, fill=STATUS)
+    draw.rounded_rectangle((114, 30, 246, 58), radius=14, fill=STATUS)
     draw.ellipse((118, 42, 126, 50), fill=(125, 221, 136))
     draw.text((168, 38), "19:05", font=font, fill=TEXT)
 

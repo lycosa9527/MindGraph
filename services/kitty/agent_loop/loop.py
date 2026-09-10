@@ -21,9 +21,12 @@ from services.kitty.ack.ack_emit import emit_user_ack
 from services.kitty.ack.ack_library import render_not_understood_ack
 from services.kitty.agent_loop.intent_clarify import (
     PENDING_INTENT_SLOT_KEY,
+    clear_pending_intent_slot_async,
     consume_pending_intent_slot,
     default_intent_clarify_command,
     is_intent_slot_cancel,
+    restore_pending_intent_slot,
+    rewrite_valueless_edit_to_followup,
 )
 from services.kitty.agent_loop.messages import (
     LoopMode,
@@ -69,7 +72,7 @@ from services.kitty.routing.command_grounding import UNGROUNDED_ERROR
 from services.kitty.routing.pending_branch_autocomplete import try_consume_pending_branch_autocomplete
 from services.kitty.routing.pending_clarify_options import (
     classify_clarify_option_pick,
-    clear_pending_clarify_options,
+    clear_pending_clarify_options_async,
     get_pending_clarify_options,
     try_consume_pending_clarify_options,
 )
@@ -277,9 +280,21 @@ async def _last_resort_heuristic(
         command_text=command_text,
         verify_required=verify_required,
     )
-    if dispatched.mutated or dispatched.action in {"auto_complete", "auto_complete_branch"}:
+    if _heuristic_dispatch_ok(dispatched):
         return _finish(voice_session_id, RouteOutcome.EXECUTED, action=dispatched.action, reason="heuristic")
     return None
+
+
+def _heuristic_dispatch_ok(dispatched: Any) -> bool:
+    """True when a heuristic command applied or correctly asked for a missing value."""
+    status = str(dispatched.payload.get("status") or "")
+    if status in {"failed", "rejected"}:
+        return False
+    return bool(dispatched.mutated) or dispatched.action in {
+        "auto_complete",
+        "auto_complete_branch",
+        "ask_followup",
+    }
 
 
 async def run_typed_agent_loop(
@@ -312,6 +327,8 @@ async def run_typed_agent_loop(
     live_for_slot = voice_sessions.get(voice_session_id)
     slot_cancelled = False
     if picked is None and isinstance(live_for_slot, dict):
+        if not isinstance(live_for_slot.get(PENDING_INTENT_SLOT_KEY), dict):
+            await restore_pending_intent_slot(live_for_slot)
         had_slot = isinstance(live_for_slot.get(PENDING_INTENT_SLOT_KEY), dict)
         slot_cmd = consume_pending_intent_slot(live_for_slot, text)
         if slot_cmd is not None:
@@ -319,6 +336,8 @@ async def run_typed_agent_loop(
             grounding_source = "ask_followup"
         elif had_slot and is_intent_slot_cancel(text):
             slot_cancelled = True
+        if had_slot:
+            await clear_pending_intent_slot_async(live_for_slot)
     live = voice_sessions.get(voice_session_id)
     live_dict = live if isinstance(live, dict) else None
     pending_note = ""
@@ -331,7 +350,7 @@ async def run_typed_agent_loop(
             labels = [item for item in labels_raw if isinstance(item, str)] if isinstance(labels_raw, list) else None
             if classify_clarify_option_pick(text, count, labels) is None:
                 pending_note = _pending_clarify_note(live_dict)
-                clear_pending_clarify_options(live_dict)
+                await clear_pending_clarify_options_async(live_dict)
 
     context = await _refresh_live_context(voice_session_id, session_context)
     ensure_live_mindmap_identity(context)
@@ -365,6 +384,16 @@ async def run_typed_agent_loop(
         outcome = RouteOutcome.EXECUTED if dispatched.mutated or dispatched.action else RouteOutcome.FAILED
         if dispatched.payload.get("status") in {"failed", "rejected"}:
             outcome = RouteOutcome.FAILED
+            if dispatched.action != "ask_followup":
+                lang = resolve_voice_interaction_language(context)
+                await emit_user_ack(
+                    websocket,
+                    voice_session_id,
+                    render_not_understood_ack(lang=lang),
+                    one_sentence_action=dispatched.action or None,
+                    one_sentence_outcome="failed",
+                    one_sentence_user_text=text,
+                )
         pick_reason = "ask_followup" if dispatched.action == "ask_followup" else "clarify_pick"
         return _finish(voice_session_id, outcome, action=dispatched.action, reason=pick_reason)
 
@@ -372,6 +401,27 @@ async def run_typed_agent_loop(
     diagram_type = _diagram_type(voice_session_id, context)
     verify_required = is_mindmap_diagram_type(diagram_type)
     lang = resolve_voice_interaction_language(context)
+    if mode == "edit":
+        heuristic = heuristic_one_sentence_edit_command(text)
+        if heuristic is not None:
+            followup = rewrite_valueless_edit_to_followup(heuristic, lang=lang)
+            if followup.get("action") == "ask_followup":
+                dispatched = await dispatch_prepared_command(
+                    websocket,
+                    voice_session_id,
+                    command=followup,
+                    session_context=context,
+                    diagram_type=diagram_type,
+                    command_text=text,
+                    verify_required=verify_required,
+                )
+                if _heuristic_dispatch_ok(dispatched):
+                    return _finish(
+                        voice_session_id,
+                        RouteOutcome.EXECUTED,
+                        action=dispatched.action,
+                        reason="heuristic",
+                    )
     snapshot = render_diagram_snapshot_block(
         context,
         diagram_type=diagram_type,

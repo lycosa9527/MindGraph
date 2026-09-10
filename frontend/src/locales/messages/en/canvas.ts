@@ -1540,6 +1540,7 @@ export default {
   'canvas.ribbon.insertComingSoon': 'This insert tool is coming soon',
   'canvas.ribbon.summaryNeedSiblings': 'Select consecutive sibling nodes',
   'canvas.ribbon.summaryDelete': 'Delete summary',
+  'canvas.ribbon.linkName': 'Name',
   'canvas.ribbon.linkUrl': 'Link URL',
   'canvas.ribbon.linkInvalid': 'Enter a valid http(s) URL',
   'canvas.ribbon.linkConfirm': 'Add link',
@@ -1583,4 +1584,8 @@ export default {
   'canvas.ribbon.aiHero.oneSentence.title': 'Conversational edit',
   'canvas.ribbon.aiHero.oneSentence.line1': 'Describe a topic or change in one sentence',
   'canvas.ribbon.aiHero.oneSentence.line2': 'Generate and refine the mind map',
+  'canvas.ribbon.aiHero.link.ribbon': 'Insert',
+  'canvas.ribbon.aiHero.link.title': 'Add a link',
+  'canvas.ribbon.aiHero.link.line1': 'The node shows the name. The full URL stays on the icon.',
+  'canvas.ribbon.aiHero.link.line2': '',
 } as const

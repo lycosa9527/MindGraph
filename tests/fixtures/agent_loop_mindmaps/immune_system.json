@@ -1,0 +1,206 @@
+{
+  "topic": "免疫系统",
+  "nodes": [
+    {
+      "id": "topic",
+      "type": "topic",
+      "text": "免疫系统",
+      "position": {
+        "x": 400.0,
+        "y": 300.0
+      }
+    },
+    {
+      "id": "9494e88f-d722-5264-aba9-c3cd22462b36",
+      "type": "branch",
+      "text": "先天免疫",
+      "position": {
+        "x": 620.0,
+        "y": 220.0
+      },
+      "data": {
+        "mindMapUid": "9494e88f-d722-5264-aba9-c3cd22462b36",
+        "mindMapSide": "right",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "ac2c3923-8a8a-55ec-a845-5dc2fba8ed91",
+      "type": "branch",
+      "text": "皮肤屏障",
+      "position": {
+        "x": 840.0,
+        "y": 220.0
+      },
+      "data": {
+        "mindMapUid": "ac2c3923-8a8a-55ec-a845-5dc2fba8ed91",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "f03ff7cd-e497-53c1-9dfd-1c3d0da9cb78",
+      "type": "branch",
+      "text": "吞噬细胞",
+      "position": {
+        "x": 840.0,
+        "y": 270.0
+      },
+      "data": {
+        "mindMapUid": "f03ff7cd-e497-53c1-9dfd-1c3d0da9cb78",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "c5c43ef8-b491-5888-bbb7-53ce3abf2d67",
+      "type": "branch",
+      "text": "适应性免疫",
+      "position": {
+        "x": 620.0,
+        "y": 310.0
+      },
+      "data": {
+        "mindMapUid": "c5c43ef8-b491-5888-bbb7-53ce3abf2d67",
+        "mindMapSide": "right",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "73a9cef4-e583-54ec-b9e4-92d6bcdf240b",
+      "type": "branch",
+      "text": "T细胞",
+      "position": {
+        "x": 840.0,
+        "y": 310.0
+      },
+      "data": {
+        "mindMapUid": "73a9cef4-e583-54ec-b9e4-92d6bcdf240b",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "5309a33a-c2d2-5dc8-9d67-58f5399bc1c8",
+      "type": "branch",
+      "text": "B细胞",
+      "position": {
+        "x": 840.0,
+        "y": 360.0
+      },
+      "data": {
+        "mindMapUid": "5309a33a-c2d2-5dc8-9d67-58f5399bc1c8",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "b93d578f-e308-5773-a199-dce3bad8fba5",
+      "type": "branch",
+      "text": "抗体",
+      "position": {
+        "x": 620.0,
+        "y": 400.0
+      },
+      "data": {
+        "mindMapUid": "b93d578f-e308-5773-a199-dce3bad8fba5",
+        "mindMapSide": "left",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "68e63bbf-9658-56ff-a8c1-c1904f282460",
+      "type": "branch",
+      "text": "IgG",
+      "position": {
+        "x": 840.0,
+        "y": 400.0
+      },
+      "data": {
+        "mindMapUid": "68e63bbf-9658-56ff-a8c1-c1904f282460",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "a5d4f5b9-9a7a-52b6-be80-5b11b0e1eb89",
+      "type": "branch",
+      "text": "疫苗",
+      "position": {
+        "x": 620.0,
+        "y": 490.0
+      },
+      "data": {
+        "mindMapUid": "a5d4f5b9-9a7a-52b6-be80-5b11b0e1eb89",
+        "mindMapSide": "left",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "6fae7020-ad4a-5872-bb10-6f37380a20b1",
+      "type": "branch",
+      "text": "主动免疫",
+      "position": {
+        "x": 840.0,
+        "y": 490.0
+      },
+      "data": {
+        "mindMapUid": "6fae7020-ad4a-5872-bb10-6f37380a20b1",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "e-topic-9494e88f-d722-5264-aba9-c3cd22462b36",
+      "source": "topic",
+      "target": "9494e88f-d722-5264-aba9-c3cd22462b36"
+    },
+    {
+      "id": "e-9494e88f-d722-5264-aba9-c3cd22462b36-ac2c3923-8a8a-55ec-a845-5dc2fba8ed91",
+      "source": "9494e88f-d722-5264-aba9-c3cd22462b36",
+      "target": "ac2c3923-8a8a-55ec-a845-5dc2fba8ed91"
+    },
+    {
+      "id": "e-9494e88f-d722-5264-aba9-c3cd22462b36-f03ff7cd-e497-53c1-9dfd-1c3d0da9cb78",
+      "source": "9494e88f-d722-5264-aba9-c3cd22462b36",
+      "target": "f03ff7cd-e497-53c1-9dfd-1c3d0da9cb78"
+    },
+    {
+      "id": "e-topic-c5c43ef8-b491-5888-bbb7-53ce3abf2d67",
+      "source": "topic",
+      "target": "c5c43ef8-b491-5888-bbb7-53ce3abf2d67"
+    },
+    {
+      "id": "e-c5c43ef8-b491-5888-bbb7-53ce3abf2d67-73a9cef4-e583-54ec-b9e4-92d6bcdf240b",
+      "source": "c5c43ef8-b491-5888-bbb7-53ce3abf2d67",
+      "target": "73a9cef4-e583-54ec-b9e4-92d6bcdf240b"
+    },
+    {
+      "id": "e-c5c43ef8-b491-5888-bbb7-53ce3abf2d67-5309a33a-c2d2-5dc8-9d67-58f5399bc1c8",
+      "source": "c5c43ef8-b491-5888-bbb7-53ce3abf2d67",
+      "target": "5309a33a-c2d2-5dc8-9d67-58f5399bc1c8"
+    },
+    {
+      "id": "e-topic-b93d578f-e308-5773-a199-dce3bad8fba5",
+      "source": "topic",
+      "target": "b93d578f-e308-5773-a199-dce3bad8fba5"
+    },
+    {
+      "id": "e-b93d578f-e308-5773-a199-dce3bad8fba5-68e63bbf-9658-56ff-a8c1-c1904f282460",
+      "source": "b93d578f-e308-5773-a199-dce3bad8fba5",
+      "target": "68e63bbf-9658-56ff-a8c1-c1904f282460"
+    },
+    {
+      "id": "e-topic-a5d4f5b9-9a7a-52b6-be80-5b11b0e1eb89",
+      "source": "topic",
+      "target": "a5d4f5b9-9a7a-52b6-be80-5b11b0e1eb89"
+    },
+    {
+      "id": "e-a5d4f5b9-9a7a-52b6-be80-5b11b0e1eb89-6fae7020-ad4a-5872-bb10-6f37380a20b1",
+      "source": "a5d4f5b9-9a7a-52b6-be80-5b11b0e1eb89",
+      "target": "6fae7020-ad4a-5872-bb10-6f37380a20b1"
+    }
+  ]
+}

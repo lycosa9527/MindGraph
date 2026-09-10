@@ -23,6 +23,10 @@ SETTINGS_ROW_TEMPLATES = (
     "templates/setting_row.json",
     "templates/switch_row.json",
 )
+WIFI_SSID_TEMPLATES = (
+    "templates/wifi_network_item.json",
+    "templates/wifi_connected_item.json",
+)
 
 
 def load_json(path: Path) -> dict:
@@ -82,7 +86,9 @@ def patch_round_status_bar(super_root: Path) -> None:
     status["placement"]["x"] = (
         "${expr((${env.widthDp} - ${constant.ui.overlay.metric.statusClusterWidth}) / 2)}"
     )
+    status["placement"]["y"] = "${constant.ui.overlay.metric.statusBarExpandedY}"
     status["placement"]["width"] = "${constant.ui.overlay.metric.statusClusterWidth}"
+    status["placement"]["height"] = "${constant.ui.overlay.metric.topBarHeight}"
     status_right = find_by_id(status, "status_right")
     if status_right is None:
         raise RuntimeError("round_ui: overlay.json is missing status_right")
@@ -90,11 +96,8 @@ def patch_round_status_bar(super_root: Path) -> None:
     status_right["layout"]["mainAlign"] = "center"
     status_right.setdefault("placement", {})
     status_right["placement"]["width"] = "match"
-    bindings = status.get("bindings")
-    if isinstance(bindings, dict):
-        bindings.pop("placement.y", None)
-        if not bindings:
-            status.pop("bindings", None)
+    bindings = status.setdefault("bindings", {})
+    bindings["placement.y"] = "system_ui_status_y"
     save_json(overlay_path, document)
 
     style_path = super_root / "shell" / "styles" / "shell.json"
@@ -236,6 +239,18 @@ def patch_app_store_padding(store_res: Path) -> None:
     save_json(path, document)
 
 
+def ellipsize_label(node: dict, label_id: str, align: str = "left") -> None:
+    """Pin a label to its cell and clip with an ellipsis."""
+    label = find_by_id(node, label_id)
+    if label is None:
+        return
+    label.setdefault("style", {})
+    label["style"]["textOverflow"] = "ellipsis"
+    label["style"]["textAlign"] = align
+    label.setdefault("placement", {})
+    label["placement"]["width"] = "match"
+
+
 def patch_settings_row_gaps(settings_res: Path) -> None:
     """Tighten Settings rows and ellipsize titles that hit the bezel."""
     for relative in SETTINGS_ROW_TEMPLATES:
@@ -246,16 +261,43 @@ def patch_settings_row_gaps(settings_res: Path) -> None:
         node = document.get("node", document)
         node.setdefault("layout", {})
         node["layout"]["gap"] = "6dp"
-        title = find_by_id(node, "title")
-        if title is not None:
-            title.setdefault("style", {})
-            title["style"]["textOverflow"] = "ellipsis"
-            title["style"]["textAlign"] = "center"
-            title.setdefault("placement", {})
-            title["placement"]["width"] = "match"
+        ellipsize_label(node, "title", "left")
+        if document.get("id") == "nav_menu_item":
+            node["layout"]["gridTemplateColumns"] = [
+                "${constant.settings.layout.navIconColumn}",
+                "72dp",
+                "${constant.settings.layout.navValueColumn}",
+                "${constant.settings.layout.chevronWidth}",
+            ]
+            title_box = find_by_id(node, "title_box")
+            if title_box is not None:
+                title_box.setdefault("placement", {})
+                title_box["placement"]["width"] = "match"
+            value_box = find_by_id(node, "value_box")
+            if value_box is not None:
+                value_box.setdefault("placement", {})
+                value_box["placement"]["width"] = "match"
+            ellipsize_label(node, "value", "right")
         if document.get("id") == "switch_row":
             node.setdefault("placement", {})
             node["placement"]["height"] = "${constant.settings.layout.rowHeight}"
+        save_json(path, document)
+
+
+def patch_wifi_ssid_labels(settings_res: Path) -> None:
+    """Keep SSIDs on one ellipsized line inside the inscribed page."""
+    for relative in WIFI_SSID_TEMPLATES:
+        path = settings_res / relative
+        if not path.is_file():
+            continue
+        document = load_json(path)
+        node = document.get("node", document)
+        text = find_by_id(node, "text")
+        if text is not None:
+            text.setdefault("placement", {})
+            text["placement"]["width"] = "match"
+        ellipsize_label(node, "ssid", "left")
+        ellipsize_label(node, "detail", "left")
         save_json(path, document)
 
 
@@ -310,6 +352,11 @@ def apply(littlefs: Path, overlay: Path) -> None:
     copy_tree(overlay / "super", super_root)
     if (overlay / "settings").exists() and settings_res.exists():
         copy_tree(overlay / "settings", settings_res)
+    watch_font = overlay / "fonts" / "NotoSansSC-Regular.subset.ttf"
+    staged_font = littlefs / "system" / "fonts" / "NotoSansSC-Regular.subset.ttf"
+    if watch_font.is_file() and staged_font.parent.is_dir():
+        copy_tree(watch_font, staged_font)
+        print(f"round_ui: watch CJK font {watch_font.stat().st_size} bytes")
     patch_round_status_bar(super_root)
     patch_keyboard_composer(super_root)
     patch_launcher_frame(super_root)
@@ -319,6 +366,7 @@ def apply(littlefs: Path, overlay: Path) -> None:
     if settings_res.exists():
         patch_settings_header(settings_res)
         patch_settings_row_gaps(settings_res)
+        patch_wifi_ssid_labels(settings_res)
         patch_settings_display(settings_res)
         patch_wifi_connect_actions(settings_res)
 
@@ -343,7 +391,13 @@ def apply(littlefs: Path, overlay: Path) -> None:
         changed = apply_app_overlay(store_res, overlay / "app_store", APP_STORE_ASSETS) or changed
         patch_app_store_padding(store_res)
 
-    launcher_cpp = littlefs.parent / "managed_components" / "espressif__brookesia_system_super" / "src" / "shell_app_launcher.cpp"
+    launcher_cpp = (
+        littlefs.parent
+        / "managed_components"
+        / "espressif__brookesia_system_super"
+        / "src"
+        / "shell_app_launcher.cpp"
+    )
     if launcher_cpp.is_file():
         launcher_changed = patch_launcher_cpp(launcher_cpp)
         print(f"round_ui: launcher grid ({launcher_changed})")

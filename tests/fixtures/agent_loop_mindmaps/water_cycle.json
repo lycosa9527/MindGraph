@@ -1,0 +1,206 @@
+{
+  "topic": "水循环",
+  "nodes": [
+    {
+      "id": "topic",
+      "type": "topic",
+      "text": "水循环",
+      "position": {
+        "x": 400.0,
+        "y": 300.0
+      }
+    },
+    {
+      "id": "7a6bc9da-2fc4-5775-ba48-3f95d1a9b575",
+      "type": "branch",
+      "text": "蒸发",
+      "position": {
+        "x": 620.0,
+        "y": 220.0
+      },
+      "data": {
+        "mindMapUid": "7a6bc9da-2fc4-5775-ba48-3f95d1a9b575",
+        "mindMapSide": "right",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "56eb29c0-86a9-56a7-b302-be3ec38a8332",
+      "type": "branch",
+      "text": "海面蒸发",
+      "position": {
+        "x": 840.0,
+        "y": 220.0
+      },
+      "data": {
+        "mindMapUid": "56eb29c0-86a9-56a7-b302-be3ec38a8332",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "83717015-08b4-5e5e-8f76-a19a81d8ad9e",
+      "type": "branch",
+      "text": "植物蒸腾",
+      "position": {
+        "x": 840.0,
+        "y": 270.0
+      },
+      "data": {
+        "mindMapUid": "83717015-08b4-5e5e-8f76-a19a81d8ad9e",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "9711cd54-5e6b-541f-bc46-75730a5515a1",
+      "type": "branch",
+      "text": "凝结",
+      "position": {
+        "x": 620.0,
+        "y": 310.0
+      },
+      "data": {
+        "mindMapUid": "9711cd54-5e6b-541f-bc46-75730a5515a1",
+        "mindMapSide": "right",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "4206b0cb-4ea8-5930-91f5-bc4e200a8e15",
+      "type": "branch",
+      "text": "云的形成",
+      "position": {
+        "x": 840.0,
+        "y": 310.0
+      },
+      "data": {
+        "mindMapUid": "4206b0cb-4ea8-5930-91f5-bc4e200a8e15",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "a1371d20-0033-5190-b2b3-4a8ab206ddab",
+      "type": "branch",
+      "text": "降水",
+      "position": {
+        "x": 620.0,
+        "y": 400.0
+      },
+      "data": {
+        "mindMapUid": "a1371d20-0033-5190-b2b3-4a8ab206ddab",
+        "mindMapSide": "left",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "9fdd5db6-ba80-5afe-8350-74d73de2f8e4",
+      "type": "branch",
+      "text": "降雨",
+      "position": {
+        "x": 840.0,
+        "y": 400.0
+      },
+      "data": {
+        "mindMapUid": "9fdd5db6-ba80-5afe-8350-74d73de2f8e4",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "123e8ae5-6ebc-5298-a9ee-53858f193756",
+      "type": "branch",
+      "text": "降雪",
+      "position": {
+        "x": 840.0,
+        "y": 450.0
+      },
+      "data": {
+        "mindMapUid": "123e8ae5-6ebc-5298-a9ee-53858f193756",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "484ed44d-ce8a-51c3-b338-c91a2843c155",
+      "type": "branch",
+      "text": "径流",
+      "position": {
+        "x": 620.0,
+        "y": 490.0
+      },
+      "data": {
+        "mindMapUid": "484ed44d-ce8a-51c3-b338-c91a2843c155",
+        "mindMapSide": "left",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "2022fcc5-20c7-5a61-96e6-c76c586ad3bf",
+      "type": "branch",
+      "text": "地表径流",
+      "position": {
+        "x": 840.0,
+        "y": 490.0
+      },
+      "data": {
+        "mindMapUid": "2022fcc5-20c7-5a61-96e6-c76c586ad3bf",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "e-topic-7a6bc9da-2fc4-5775-ba48-3f95d1a9b575",
+      "source": "topic",
+      "target": "7a6bc9da-2fc4-5775-ba48-3f95d1a9b575"
+    },
+    {
+      "id": "e-7a6bc9da-2fc4-5775-ba48-3f95d1a9b575-56eb29c0-86a9-56a7-b302-be3ec38a8332",
+      "source": "7a6bc9da-2fc4-5775-ba48-3f95d1a9b575",
+      "target": "56eb29c0-86a9-56a7-b302-be3ec38a8332"
+    },
+    {
+      "id": "e-7a6bc9da-2fc4-5775-ba48-3f95d1a9b575-83717015-08b4-5e5e-8f76-a19a81d8ad9e",
+      "source": "7a6bc9da-2fc4-5775-ba48-3f95d1a9b575",
+      "target": "83717015-08b4-5e5e-8f76-a19a81d8ad9e"
+    },
+    {
+      "id": "e-topic-9711cd54-5e6b-541f-bc46-75730a5515a1",
+      "source": "topic",
+      "target": "9711cd54-5e6b-541f-bc46-75730a5515a1"
+    },
+    {
+      "id": "e-9711cd54-5e6b-541f-bc46-75730a5515a1-4206b0cb-4ea8-5930-91f5-bc4e200a8e15",
+      "source": "9711cd54-5e6b-541f-bc46-75730a5515a1",
+      "target": "4206b0cb-4ea8-5930-91f5-bc4e200a8e15"
+    },
+    {
+      "id": "e-topic-a1371d20-0033-5190-b2b3-4a8ab206ddab",
+      "source": "topic",
+      "target": "a1371d20-0033-5190-b2b3-4a8ab206ddab"
+    },
+    {
+      "id": "e-a1371d20-0033-5190-b2b3-4a8ab206ddab-9fdd5db6-ba80-5afe-8350-74d73de2f8e4",
+      "source": "a1371d20-0033-5190-b2b3-4a8ab206ddab",
+      "target": "9fdd5db6-ba80-5afe-8350-74d73de2f8e4"
+    },
+    {
+      "id": "e-a1371d20-0033-5190-b2b3-4a8ab206ddab-123e8ae5-6ebc-5298-a9ee-53858f193756",
+      "source": "a1371d20-0033-5190-b2b3-4a8ab206ddab",
+      "target": "123e8ae5-6ebc-5298-a9ee-53858f193756"
+    },
+    {
+      "id": "e-topic-484ed44d-ce8a-51c3-b338-c91a2843c155",
+      "source": "topic",
+      "target": "484ed44d-ce8a-51c3-b338-c91a2843c155"
+    },
+    {
+      "id": "e-484ed44d-ce8a-51c3-b338-c91a2843c155-2022fcc5-20c7-5a61-96e6-c76c586ad3bf",
+      "source": "484ed44d-ce8a-51c3-b338-c91a2843c155",
+      "target": "2022fcc5-20c7-5a61-96e6-c76c586ad3bf"
+    }
+  ]
+}

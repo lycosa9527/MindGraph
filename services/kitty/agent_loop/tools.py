@@ -27,6 +27,8 @@ from services.kitty.agent_loop.messages import LoopMode, read_diagram_tool_schem
 from services.kitty.agent_loop.intent_clarify import (
     arm_pending_intent_slot,
     ask_followup_text,
+    persist_armed_intent_slot,
+    rewrite_valueless_edit_to_followup,
 )
 from services.kitty.agent_loop.results import (
     arm_pending_autocomplete,
@@ -60,7 +62,11 @@ from services.kitty.routing.pending_branch_autocomplete import (
     emit_auto_complete_branch,
     maybe_start_background_branch_autocomplete,
 )
-from services.kitty.routing.pending_clarify_options import arm_pending_clarify_options
+from services.kitty.routing.pending_clarify_options import (
+    arm_pending_clarify_options,
+    clarify_option_labels,
+    persist_armed_pending_clarify,
+)
 from services.kitty.session.runtime_state import voice_sessions
 
 STRUCTURAL_ACTIONS = frozenset(
@@ -277,8 +283,9 @@ async def dispatch_prepared_command(
     ensure_live_mindmap_identity(session_context)
     leftover = leftover_live_key(command, session_context)
     command = enrich_node_action_command(command, session_context)
-    action = str(command.get("action") or "")
     lang = resolve_voice_interaction_language(session_context)
+    command = rewrite_valueless_edit_to_followup(command, lang=lang)
+    action = str(command.get("action") or "")
 
     if action == "read_diagram":
         snapshot = render_diagram_snapshot_block(
@@ -305,7 +312,10 @@ async def dispatch_prepared_command(
 
     if action == "ask_followup":
         live = voice_sessions.get(voice_session_id)
-        armed = arm_pending_intent_slot(live if isinstance(live, dict) else None, command)
+        live_dict = live if isinstance(live, dict) else None
+        armed = arm_pending_intent_slot(live_dict, command)
+        if armed:
+            await persist_armed_intent_slot(live_dict)
         prompt = ask_followup_text(command, lang=lang)
         await emit_user_ack(
             websocket,
@@ -327,7 +337,10 @@ async def dispatch_prepared_command(
 
     if action == "clarify_options":
         live = voice_sessions.get(voice_session_id)
-        armed = arm_pending_clarify_options(live if isinstance(live, dict) else None, command)
+        live_dict = live if isinstance(live, dict) else None
+        armed = arm_pending_clarify_options(live_dict, command)
+        if armed:
+            await persist_armed_pending_clarify(live_dict)
         ack_text = render_clarify_options_ack(command, lang=lang)
         await emit_user_ack(
             websocket,
@@ -337,7 +350,7 @@ async def dispatch_prepared_command(
             one_sentence_outcome="executed",
             one_sentence_user_text=command_text,
             clarify_question=str(command.get("question") or "") or None,
-            clarify_options=list(command.get("options") or []) if isinstance(command.get("options"), list) else None,
+            clarify_options=clarify_option_labels(command) or None,
         )
         return ToolDispatchResult(
             payload=ui_result_content(

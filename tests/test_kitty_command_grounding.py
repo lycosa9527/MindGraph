@@ -234,6 +234,26 @@ def test_clarify_pick_does_not_need_the_label_again() -> None:
     assert decision.reason == "grounded_clarify"
 
 
+def test_clarify_pick_add_node_does_not_need_label_again() -> None:
+    """Placement pick of a already-named branch may add without repeating the name."""
+    top_level = apply_command_grounding(
+        {"action": "add_node", "target": "罗技"},
+        user_text="2",
+        session_context=_ctx(),
+        source="clarify_pick",
+    )
+    child = apply_command_grounding(
+        {"action": "add_node", "target": "罗技", "parent_ref": "竞争对手"},
+        user_text="1",
+        session_context=_ctx(),
+        source="clarify_pick",
+    )
+    assert top_level.allowed is True
+    assert top_level.reason == "grounded_clarify"
+    assert child.allowed is True
+    assert child.reason == "grounded_clarify"
+
+
 def _tool_reply(name: str, arguments: str) -> Dict[str, Any]:
     return {
         "content": None,

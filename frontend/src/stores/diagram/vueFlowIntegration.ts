@@ -12,7 +12,10 @@ import {
   vueFlowNodeToDiagramNode,
 } from '@/types/vueflow'
 import { withClassicMindMapTopicSourceHandle } from '@/utils/classicMindMapTopicHandles'
-import { withMindMapAssociationHandles } from '@/utils/mindMapAssociationLine'
+import {
+  mindMapAssociationShouldVoid,
+  withMindMapAssociationHandles,
+} from '@/utils/mindMapAssociationLine'
 import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import { isMindMapAssociationConnection, mindMapNodeSide } from '@/utils/mindMapLocation'
@@ -374,7 +377,13 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       (diagramType === 'mindmap' || diagramType === 'mind_map') &&
       effectiveMindMapMode.value === 'v2'
 
-    const edges = connections.map((conn) => {
+    const edges = connections
+      .filter(
+        (conn) =>
+          !isMindMapAssociationConnection(conn) ||
+          !mindMapAssociationShouldVoid(conn.source, conn.target, { nodes, connections })
+      )
+      .map((conn) => {
       const isAssoc = isMindMapAssociationConnection(conn)
       let effectiveConn =
         diagramType === 'concept_map' ? augmentConnectionWithOptimalHandles(conn, nodes) : conn

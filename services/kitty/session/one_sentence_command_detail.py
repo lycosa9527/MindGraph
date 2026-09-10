@@ -166,8 +166,21 @@ def build_one_sentence_command_detail(
     return detail
 
 
+def _public_clarify_options(raw: Any) -> list[str]:
+    if not isinstance(raw, list):
+        return []
+    labels: list[str] = []
+    for item in raw:
+        if not isinstance(item, str) or not item.strip():
+            continue
+        labels.append(item.strip()[:120])
+        if len(labels) >= 3:
+            break
+    return labels
+
+
 def normalize_command_detail(raw: Any) -> Optional[Dict[str, Any]]:
-    """Accept dict or JSON string; return a bounded dict or None."""
+    """Accept dict or JSON string; return a bounded public dict or None."""
     if raw is None:
         return None
     if isinstance(raw, str):
@@ -181,7 +194,14 @@ def normalize_command_detail(raw: Any) -> Optional[Dict[str, Any]]:
         raw = parsed
     if not isinstance(raw, dict) or not raw:
         return None
-    encoded = json.dumps(raw, ensure_ascii=False, default=str)
+    out = dict(raw)
+    out.pop("option_commands", None)
+    labels = _public_clarify_options(out.get("clarify_options"))
+    if labels:
+        out["clarify_options"] = labels
+    else:
+        out.pop("clarify_options", None)
+    encoded = json.dumps(out, ensure_ascii=False, default=str)
     if len(encoded) > _MAX_DETAIL_CHARS:
         return None
-    return dict(raw)
+    return out

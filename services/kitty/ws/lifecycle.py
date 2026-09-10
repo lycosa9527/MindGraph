@@ -43,6 +43,8 @@ from services.kitty.session.ops import (
     get_voice_session,
 )
 from services.kitty.session.canvas_owner import agent_session_id_for_scope
+from services.kitty.agent_loop.intent_clarify import restore_pending_intent_slot
+from services.kitty.routing.pending_clarify_options import restore_armed_pending_clarify
 from services.kitty.session.one_sentence_memory_hydrate import (
     hydrate_one_sentence_session_memory,
 )
@@ -425,6 +427,10 @@ async def start_kitty_session(
             user_id=int(auth.current_user.id),
             diagram_scope=diagram_session_id,
         )
+
+    live_session = voice_sessions.get(voice_session_id)
+    await restore_armed_pending_clarify(live_session)
+    await restore_pending_intent_slot(live_session)
 
     inbound_ctx = build_kitty_inbound_context(
         websocket=websocket,

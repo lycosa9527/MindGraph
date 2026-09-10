@@ -6,7 +6,12 @@ import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { mindMapTextCenterAnchorY } from '@/config/mindMapGeometry'
 import type { Connection, DiagramNode, MindMapSummaryLineStyle, NodeStyle } from '@/types'
 import { parseCubicBezierPath, pointOnCubicBezierPath } from '@/utils/bezierSplit'
-import { isMindMapTopicId, mindMapNodeSide, type MindMapSide } from '@/utils/mindMapLocation'
+import {
+  isMindMapAssociationConnection,
+  isMindMapTopicId,
+  mindMapNodeSide,
+  type MindMapSide,
+} from '@/utils/mindMapLocation'
 import {
   MINDMAP_SUMMARY_DEFAULT_STROKE_WIDTH,
   MINDMAP_SUMMARY_STROKE_WIDTH_MAX,
@@ -400,4 +405,55 @@ export function mindMapAssociationSameSide(
   const targetSide = mindMapNodeSide(targetId, options)
   if (sourceSide == null || targetSide == null) return true
   return sourceSide === targetSide
+}
+
+function associationNodeCenterX(node: NodeBox | undefined): number | null {
+  if (!node) return null
+  return nodeCenterX(node)
+}
+
+/**
+ * True when both ends sit on opposite sides of the topic after layout
+ * (stamped side or X), so the curve would cut across the diagram.
+ */
+export function mindMapAssociationShouldVoid(
+  sourceId: string,
+  targetId: string,
+  options?: SideLookup
+): boolean {
+  if (!mindMapAssociationSameSide(sourceId, targetId, options)) return true
+  if (isMindMapTopicId(sourceId) || isMindMapTopicId(targetId)) return false
+  const nodes = options?.nodes
+  if (!nodes) return false
+  const topic = nodes.find((node) => isTopicLike(node))
+  const source = nodes.find((node) => node.id === sourceId)
+  const target = nodes.find((node) => node.id === targetId)
+  const mid = associationNodeCenterX(topic)
+  const sourceX = associationNodeCenterX(source)
+  const targetX = associationNodeCenterX(target)
+  if (mid == null || sourceX == null || targetX == null) return false
+  const slop = 8
+  if (Math.abs(sourceX - mid) < slop || Math.abs(targetX - mid) < slop) return false
+  return (sourceX - mid) * (targetX - mid) < 0
+}
+
+/** Drop association overlays that would cross the topic after a side change. */
+export function voidMindMapAssociationsAcrossSides(
+  connections: readonly Connection[],
+  nodes: readonly DiagramNode[]
+): Connection[] {
+  const options = { nodes, connections }
+  let dropped = false
+  const kept: Connection[] = []
+  for (const conn of connections) {
+    if (
+      isMindMapAssociationConnection(conn) &&
+      mindMapAssociationShouldVoid(conn.source, conn.target, options)
+    ) {
+      dropped = true
+      continue
+    }
+    kept.push(conn)
+  }
+  return dropped ? kept : (connections as Connection[])
 }

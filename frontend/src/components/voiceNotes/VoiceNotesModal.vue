@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Voice notes transcript modal — Swiss stone shell, pill actions.
+ * Voice notes transcript modal — Swiss stone (header + small top-right menu, pill actions).
  * Closing mid-record asks first; capture keeps running after hide.
  */
 import { computed } from 'vue'

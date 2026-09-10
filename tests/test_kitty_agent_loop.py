@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import uuid
 from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -102,7 +103,11 @@ async def _run_loop(
     branch_ac_mock: Optional[AsyncMock] = None,
 ) -> tuple[Any, str, AsyncMock, AsyncMock]:
     ws = MagicMock()
-    vid = create_voice_session(user_id="1", diagram_session_id="scope-loop", diagram_type=diagram_type)
+    vid = create_voice_session(
+        user_id="1",
+        diagram_session_id=f"scope-loop-{uuid.uuid4().hex[:8]}",
+        diagram_type=diagram_type,
+    )
     voice_sessions[vid]["context"] = context
     if context.get("active_panel"):
         voice_sessions[vid]["active_panel"] = context.get("active_panel")

@@ -195,36 +195,79 @@ def _bind_node(command: Dict[str, Any], resolved: Dict[str, str]) -> None:
             command.setdefault("target", label.strip())
 
 
-def _parent_grounded(command: Dict[str, Any], utterance: str, session_context: Dict[str, Any]) -> bool:
+def _resolve_parent(
+    command: Dict[str, Any],
+    session_context: Dict[str, Any],
+) -> Optional[Dict[str, str]]:
+    parent = command.get("parent_ref") or command.get("parent_node_id")
+    if not isinstance(parent, str) or not parent.strip():
+        return None
+    token = parent.strip()
+    if token in _TOPIC_KEYS:
+        return {"node_id": token, "node_label": token}
+    resolved = resolve_diagram_node_ref(_diagram_data(session_context), node_id=token)
+    if resolved is None:
+        resolved = resolve_diagram_node_ref(_diagram_data(session_context), label=token)
+    return resolved
+
+
+def _parent_grounded(
+    command: Dict[str, Any],
+    utterance: str,
+    session_context: Dict[str, Any],
+    *,
+    source: str = "",
+) -> bool:
     parent = command.get("parent_ref") or command.get("parent_node_id")
     if not isinstance(parent, str) or not parent.strip():
         return True
     token = parent.strip()
     if token in _TOPIC_KEYS:
         return True
+    resolved = _resolve_parent(command, session_context)
+    if source in CLARIFY_SOURCES:
+        return resolved is not None
     if label_mentioned(utterance, token):
         return True
-    resolved = resolve_diagram_node_ref(_diagram_data(session_context), node_id=token)
-    if resolved is None:
-        resolved = resolve_diagram_node_ref(_diagram_data(session_context), label=token)
     if resolved is None:
         return False
     parent_label = resolved.get("node_label") or ""
     return bool(parent_label) and label_mentioned(utterance, parent_label)
 
 
-def _ground_add(command: Dict[str, Any], utterance: str, session_context: Dict[str, Any]) -> GroundingDecision:
+def _ground_add(
+    command: Dict[str, Any],
+    utterance: str,
+    session_context: Dict[str, Any],
+    *,
+    source: str,
+) -> GroundingDecision:
     label = _command_label(command)
-    if not label or not label_mentioned(utterance, label):
+    if not label:
         return _deny(UNGROUNDED_ERROR)
-    if not _parent_grounded(command, utterance, session_context):
+    if source in CLARIFY_SOURCES:
+        if not _parent_grounded(command, utterance, session_context, source=source):
+            return _deny(UNGROUNDED_ERROR)
+        return _allow("grounded_clarify", label=label)
+    if not label_mentioned(utterance, label):
+        return _deny(UNGROUNDED_ERROR)
+    if not _parent_grounded(command, utterance, session_context, source=source):
         return _deny(UNGROUNDED_ERROR)
     return _allow("grounded_add", label=label)
 
 
-def _ground_center(command: Dict[str, Any], utterance: str) -> GroundingDecision:
+def _ground_center(
+    command: Dict[str, Any],
+    utterance: str,
+    *,
+    source: str,
+) -> GroundingDecision:
     new_text = _new_text(command)
-    if new_text and label_mentioned(utterance, new_text):
+    if not new_text:
+        return _deny(UNGROUNDED_ERROR)
+    if source in CLARIFY_SOURCES:
+        return _allow("grounded_clarify", label=new_text)
+    if label_mentioned(utterance, new_text):
         return _allow("grounded_center", label=new_text)
     return _deny(UNGROUNDED_ERROR)
 
@@ -303,9 +346,9 @@ def apply_command_grounding(
     if not utterance:
         return _deny(UNGROUNDED_ERROR)
     if action in ADD_ACTIONS:
-        return _ground_add(command, utterance, session_context)
+        return _ground_add(command, utterance, session_context, source=source)
     if action in CENTER_ACTIONS:
-        return _ground_center(command, utterance)
+        return _ground_center(command, utterance, source=source)
     if action in MAP_ACTIONS:
         return _ground_map(utterance, session_context)
     return _ground_node(command, utterance, session_context, source=source)

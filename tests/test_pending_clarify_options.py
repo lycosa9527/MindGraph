@@ -67,6 +67,28 @@ async def test_try_consume_pending_clarify_options_returns_command() -> None:
     assert get_pending_clarify_options(session) is None
 
 
+def test_arm_rewrites_nameless_add_and_fill_to_followup() -> None:
+    """Incomplete add / fill options become ask_followup so a pick can ask for the name."""
+    session: dict = {}
+    command = {
+        "action": "clarify_options",
+        "options": ["添加新顶级分支", "补全某个分支的子节点"],
+        "option_commands": [
+            {"action": "add_node", "confidence": 0.9},
+            {"action": "auto_complete_branch", "confidence": 0.9},
+        ],
+    }
+    assert arm_pending_clarify_options(session, command) is True
+    pending = get_pending_clarify_options(session)
+    assert pending is not None
+    cmds = pending.get("option_commands")
+    assert isinstance(cmds, list)
+    assert cmds[0]["action"] == "ask_followup"
+    assert cmds[0]["slot_action"] == "add_node"
+    assert cmds[1]["action"] == "ask_followup"
+    assert cmds[1]["slot_action"] == "auto_complete_branch"
+
+
 def test_arm_backfills_missing_target_from_sibling() -> None:
     """Placement-only options inherit target from sibling option_commands."""
     session: dict = {}
@@ -194,3 +216,51 @@ async def test_try_consume_keeps_pending_on_unrecognized_reply() -> None:
 
     assert picked is None
     assert get_pending_clarify_options(session) is not None
+
+
+@pytest.mark.asyncio
+async def test_try_consume_restores_pending_from_redis() -> None:
+    """A tap after WS reconnect still dispatches the stored option command."""
+    session = {"user_id": "3", "diagram_session_id": "scope-restore"}
+    payload = {
+        "question": "想怎么改这张图？",
+        "options": ["改主题", "添加分支"],
+        "option_commands": [
+            {"action": "ask_followup", "slot_action": "update_center"},
+            {"action": "add_node", "target": "品牌"},
+        ],
+    }
+    websocket = MagicMock()
+    with (
+        patch(
+            "services.kitty.routing.pending_clarify_options.voice_sessions",
+            {"voice_test": session},
+        ),
+        patch(
+            "services.kitty.routing.pending_clarify_options.emit_user_ack",
+            new=AsyncMock(),
+        ),
+        patch(
+            "services.kitty.routing.pending_clarify_options.get_session_memory",
+        ) as mem,
+        patch(
+            "services.kitty.routing.pending_clarify_options.load_pending_clarify_payload",
+            new=AsyncMock(return_value=payload),
+        ),
+        patch(
+            "services.kitty.routing.pending_clarify_options.delete_pending_clarify_payload",
+            new=AsyncMock(),
+        ),
+    ):
+        mem.return_value.append_action_turn = MagicMock()
+        picked = await try_consume_pending_clarify_options(
+            websocket,
+            "voice_test",
+            "2",
+            {"language": "zh"},
+        )
+
+    assert picked is not None
+    assert picked["action"] == "add_node"
+    assert picked["target"] == "品牌"
+    assert get_pending_clarify_options(session) is None

@@ -44,7 +44,7 @@
             },
             "placement": {
                 "x": "${constant.ui.keyboard.marginX}",
-                "y": "${expr(${env.heightDp} - ${constant.ui.keyboard.marginBottom} - ${constant.ui.keyboard.keyboardHeight} - ${constant.ui.keyboard.popoverHeight} - ${constant.ui.keyboard.inputGap} - ${constant.ui.keyboard.inputHeight})}",
+                "y": "${constant.ui.keyboard.inputY}",
                 "width": "${expr(${env.widthDp} - ${constant.ui.keyboard.marginX} * 2)}",
                 "height": "${constant.ui.keyboard.inputHeight}"
             },
@@ -85,7 +85,7 @@
                     "placement": {
                         "x": 0,
                         "y": 0,
-                        "width": "${expr(${env.widthDp} - ${constant.ui.keyboard.marginX} * 2 - ${constant.ui.keyboard.okButtonWidth} - ${constant.ui.keyboard.eyeButtonSize} - ${constant.ui.keyboard.eyeInset} * 2)}",
+                        "width": "${expr(${env.widthDp} - ${constant.ui.keyboard.marginX} * 2 - ${constant.ui.keyboard.eyeButtonSize} - ${constant.ui.keyboard.eyeInset} * 2)}",
                         "height": "match"
                     },
                     "styleRefs": [
@@ -120,7 +120,7 @@
                         "crossAlign": "center"
                     },
                     "placement": {
-                        "x": "${expr(${env.widthDp} - ${constant.ui.keyboard.marginX} * 2 - ${constant.ui.keyboard.okButtonWidth} - ${constant.ui.keyboard.eyeButtonSize} - ${constant.ui.keyboard.eyeInset})}",
+                        "x": "${expr(${env.widthDp} - ${constant.ui.keyboard.marginX} * 2 - ${constant.ui.keyboard.eyeButtonSize} - ${constant.ui.keyboard.eyeInset})}",
                         "y": 0,
                         "width": "${constant.ui.keyboard.eyeButtonSize}",
                         "height": "match"
@@ -148,53 +148,6 @@
                             ]
                         }
                     ]
-                },
-                {
-                    "type": "button",
-                    "id": "done",
-                    "interactionRefs": [
-                        "press.scale"
-                    ],
-                    "events": [
-                        {
-                            "type": "clicked",
-                            "effects": [
-                                {
-                                    "type": "emitAction",
-                                    "action": "super.keyboard.submit.input",
-                                    "requireValidPress": true
-                                }
-                            ]
-                        }
-                    ],
-                    "layout": {
-                        "type": "flex",
-                        "mainAlign": "center",
-                        "crossAlign": "center"
-                    },
-                    "placement": {
-                        "x": "${expr(${env.widthDp} - ${constant.ui.keyboard.marginX} * 2 - ${constant.ui.keyboard.okButtonWidth})}",
-                        "y": 0,
-                        "width": "${constant.ui.keyboard.okButtonWidth}",
-                        "height": "match"
-                    },
-                    "children": [
-                        {
-                            "type": "label",
-                            "commonProps": {
-                                "clickable": false
-                            },
-                            "labelProps": {
-                                "text": "OK"
-                            },
-                            "style": {
-                                "fontSize": "${constant.ui.keyboard.keyFontSize}"
-                            }
-                        }
-                    ],
-                    "styleRefs": [
-                        "shell.keyboardKeyAction"
-                    ]
                 }
             ]
         },
@@ -202,7 +155,7 @@
             "type": "container",
             "id": "keyboard_panel",
             "commonProps": {
-                "clickable": true,
+                "clickable": false,
                 "hidden": true,
                 "scrollable": false
             },
@@ -243,23 +196,23 @@
                         },
                         "layouts": {
                             "text": [
-                                [{"text": "1"}, {"text": "2\nABC"}, {"text": "3\nDEF"}],
-                                [{"text": "4\nGHI"}, {"text": "5\nJKL"}, {"text": "6\nMNO"}],
-                                [{"text": "7\nPQRS"}, {"text": "8\nTUV"}, {"text": "9\nWXYZ"}],
+                                ["1", "2 ABC", "3 DEF"],
+                                ["4 GHI", "5 JKL", "6 MNO"],
+                                ["7 PQRS", "8 TUV", "9 WXYZ"],
                                 [
                                     { "text": "EN", "role": "mode", "mode": "upper" },
-                                    { "text": "0", "role": "space" },
-                                    { "text": "⌫", "role": "backspace" }
+                                    { "text": "Del", "role": "backspace" },
+                                    { "text": "OK", "role": "ok" }
                                 ]
                             ],
                             "upper": [
-                                [{"text": "1"}, {"text": "2\nABC"}, {"text": "3\nDEF"}],
-                                [{"text": "4\nGHI"}, {"text": "5\nJKL"}, {"text": "6\nMNO"}],
-                                [{"text": "7\nPQRS"}, {"text": "8\nTUV"}, {"text": "9\nWXYZ"}],
+                                ["1", "2 ABC", "3 DEF"],
+                                ["4 GHI", "5 JKL", "6 MNO"],
+                                ["7 PQRS", "8 TUV", "9 WXYZ"],
                                 [
-                                    { "text": "中", "role": "mode", "mode": "text" },
-                                    { "text": "0", "role": "space" },
-                                    { "text": "⌫", "role": "backspace" }
+                                    { "text": "abc", "role": "mode", "mode": "text" },
+                                    { "text": "Del", "role": "backspace" },
+                                    { "text": "OK", "role": "ok" }
                                 ]
                             ],
                             "number": [
@@ -267,9 +220,9 @@
                                 ["4", "5", "6"],
                                 ["7", "8", "9"],
                                 [
-                                    { "text": "中", "role": "mode", "mode": "text" },
+                                    { "text": "abc", "role": "mode", "mode": "text" },
                                     "0",
-                                    { "text": "⌫", "role": "backspace" }
+                                    { "text": "OK", "role": "ok" }
                                 ]
                             ],
                             "special": [
@@ -289,9 +242,9 @@
                                     { "text": "=", "styleClass": "special" }
                                 ],
                                 [
-                                    { "text": "中", "role": "mode", "mode": "text" },
+                                    { "text": "abc", "role": "mode", "mode": "text" },
                                     { "text": "123", "role": "mode", "mode": "number" },
-                                    { "text": "⌫", "role": "backspace" }
+                                    { "text": "OK", "role": "ok" }
                                 ]
                             ]
                         }

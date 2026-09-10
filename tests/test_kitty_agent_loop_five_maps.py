@@ -1,4 +1,4 @@
-"""All library node actions on five real mindmaps (mocked LLM, real identity)."""
+"""All library node actions on ten real mindmaps (mocked LLM, real identity)."""
 
 from __future__ import annotations
 
@@ -133,8 +133,8 @@ async def test_five_maps_all_node_actions(slug: str, action: str) -> None:
         voice_sessions.pop(vid, None)
 
 
-def test_five_real_mindmaps_loaded() -> None:
-    """Catalog exposes five distinct hydrated maps with UUID branches."""
+def test_ten_real_mindmaps_loaded() -> None:
+    """Catalog exposes ten distinct hydrated maps with UUID branches."""
     slugs = [mmap.slug for mmap in _MAPS]
     assert slugs == [
         "sams_club",
@@ -142,9 +142,14 @@ def test_five_real_mindmaps_loaded() -> None:
         "new_energy_vehicles",
         "chinese_tea",
         "beijing_trip",
+        "water_cycle",
+        "labor_contract",
+        "chinese_reading",
+        "supply_chain",
+        "immune_system",
     ]
     topics = {mmap.topic for mmap in _MAPS}
-    assert len(topics) == 5
+    assert len(topics) == 10
     for mmap in _MAPS:
         assert mmap.branch_label
         assert mmap.branch_id

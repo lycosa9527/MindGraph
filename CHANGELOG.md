@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.65] - 2026-09-10
+
+> **Kitty follow-ups survive reconnect; insert-link gets Name+URL; 1.85C Wi-Fi and subset CJK font.**
+
+### Added
+
+- **Kitty Redis slots** — Clarify chips and ask-followup slots persist by user + diagram so a reconnect or chip tap still dispatches. Valueless add/rename/delete/fill edits become a follow-up instead of failing.
+- **Insert link Name** — Swiss stone dialog: display name on the node, URL on the icon. URL-like topic text seeds the href, not Name.
+- **1.85C station Wi-Fi** — Lab STA seed (Kconfig SSID/password), Settings scan/saved-AP patches, default-on radio. Subset NotoSans SC via MEMFS FreeType so CJK fits the 2.5MB heap.
+
+### Changed
+
+- **Association lines** — Drop overlays that would cut across the topic after a side change.
+- **插入公式** — Vite serves `mathlive.min.mjs` from node_modules (no stale `.vite/deps` 404/504).
+- **Clarify chips** — Strip the "reply with number" footer from parsed options; hydrate chips from `command_detail`.
+
+### Tests
+
+- [`tests/test_pending_clarify_store.py`](tests/test_pending_clarify_store.py), [`tests/test_kitty_intent_clarify.py`](tests/test_kitty_intent_clarify.py), [`frontend/tests/mindMapAdornments.spec.ts`](frontend/tests/mindMapAdornments.spec.ts), [`frontend/tests/mindMapAssociationLine.spec.ts`](frontend/tests/mindMapAssociationLine.spec.ts), [`frontend/tests/oneSentenceClarifyChoices.spec.ts`](frontend/tests/oneSentenceClarifyChoices.spec.ts), [`frontend/tests/oneSentenceStore.spec.ts`](frontend/tests/oneSentenceStore.spec.ts)
+
 ## [5.180.64] - 2026-09-09
 
 > **Voice notes bind to the open canvas; 概要 braces wrap whole subtrees; Kitty clarify chips survive hydrate.**

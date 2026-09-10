@@ -1,0 +1,206 @@
+{
+  "topic": "供应链管理",
+  "nodes": [
+    {
+      "id": "topic",
+      "type": "topic",
+      "text": "供应链管理",
+      "position": {
+        "x": 400.0,
+        "y": 300.0
+      }
+    },
+    {
+      "id": "3db4c972-3420-543f-808d-45b4e2064899",
+      "type": "branch",
+      "text": "采购",
+      "position": {
+        "x": 620.0,
+        "y": 220.0
+      },
+      "data": {
+        "mindMapUid": "3db4c972-3420-543f-808d-45b4e2064899",
+        "mindMapSide": "right",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "86596dfc-4128-56e0-bdef-15611c72a835",
+      "type": "branch",
+      "text": "供应商",
+      "position": {
+        "x": 840.0,
+        "y": 220.0
+      },
+      "data": {
+        "mindMapUid": "86596dfc-4128-56e0-bdef-15611c72a835",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "1a64f40e-36e2-523b-a4a7-7496bacd9a06",
+      "type": "branch",
+      "text": "询价",
+      "position": {
+        "x": 840.0,
+        "y": 270.0
+      },
+      "data": {
+        "mindMapUid": "1a64f40e-36e2-523b-a4a7-7496bacd9a06",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "72eb95c2-ae8f-5bf5-9210-b7177941cbc2",
+      "type": "branch",
+      "text": "仓储",
+      "position": {
+        "x": 620.0,
+        "y": 310.0
+      },
+      "data": {
+        "mindMapUid": "72eb95c2-ae8f-5bf5-9210-b7177941cbc2",
+        "mindMapSide": "right",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "047bbac4-0651-5868-8d27-b24b5c884e4b",
+      "type": "branch",
+      "text": "库存",
+      "position": {
+        "x": 840.0,
+        "y": 310.0
+      },
+      "data": {
+        "mindMapUid": "047bbac4-0651-5868-8d27-b24b5c884e4b",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "b82a2f1f-9418-5db6-906c-43ed39a8ca8c",
+      "type": "branch",
+      "text": "物流",
+      "position": {
+        "x": 620.0,
+        "y": 400.0
+      },
+      "data": {
+        "mindMapUid": "b82a2f1f-9418-5db6-906c-43ed39a8ca8c",
+        "mindMapSide": "left",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "512043f5-c67a-5857-a0f6-e5119d1a9c27",
+      "type": "branch",
+      "text": "运输",
+      "position": {
+        "x": 840.0,
+        "y": 400.0
+      },
+      "data": {
+        "mindMapUid": "512043f5-c67a-5857-a0f6-e5119d1a9c27",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "ff82e873-f6dd-570e-b723-234deed77cef",
+      "type": "branch",
+      "text": "配送",
+      "position": {
+        "x": 840.0,
+        "y": 450.0
+      },
+      "data": {
+        "mindMapUid": "ff82e873-f6dd-570e-b723-234deed77cef",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "d7b05836-657c-5cf2-b665-12749901048b",
+      "type": "branch",
+      "text": "售后",
+      "position": {
+        "x": 620.0,
+        "y": 490.0
+      },
+      "data": {
+        "mindMapUid": "d7b05836-657c-5cf2-b665-12749901048b",
+        "mindMapSide": "left",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "ea2b802a-c9e4-586f-91f4-49b93a9c3768",
+      "type": "branch",
+      "text": "退换货",
+      "position": {
+        "x": 840.0,
+        "y": 490.0
+      },
+      "data": {
+        "mindMapUid": "ea2b802a-c9e4-586f-91f4-49b93a9c3768",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "e-topic-3db4c972-3420-543f-808d-45b4e2064899",
+      "source": "topic",
+      "target": "3db4c972-3420-543f-808d-45b4e2064899"
+    },
+    {
+      "id": "e-3db4c972-3420-543f-808d-45b4e2064899-86596dfc-4128-56e0-bdef-15611c72a835",
+      "source": "3db4c972-3420-543f-808d-45b4e2064899",
+      "target": "86596dfc-4128-56e0-bdef-15611c72a835"
+    },
+    {
+      "id": "e-3db4c972-3420-543f-808d-45b4e2064899-1a64f40e-36e2-523b-a4a7-7496bacd9a06",
+      "source": "3db4c972-3420-543f-808d-45b4e2064899",
+      "target": "1a64f40e-36e2-523b-a4a7-7496bacd9a06"
+    },
+    {
+      "id": "e-topic-72eb95c2-ae8f-5bf5-9210-b7177941cbc2",
+      "source": "topic",
+      "target": "72eb95c2-ae8f-5bf5-9210-b7177941cbc2"
+    },
+    {
+      "id": "e-72eb95c2-ae8f-5bf5-9210-b7177941cbc2-047bbac4-0651-5868-8d27-b24b5c884e4b",
+      "source": "72eb95c2-ae8f-5bf5-9210-b7177941cbc2",
+      "target": "047bbac4-0651-5868-8d27-b24b5c884e4b"
+    },
+    {
+      "id": "e-topic-b82a2f1f-9418-5db6-906c-43ed39a8ca8c",
+      "source": "topic",
+      "target": "b82a2f1f-9418-5db6-906c-43ed39a8ca8c"
+    },
+    {
+      "id": "e-b82a2f1f-9418-5db6-906c-43ed39a8ca8c-512043f5-c67a-5857-a0f6-e5119d1a9c27",
+      "source": "b82a2f1f-9418-5db6-906c-43ed39a8ca8c",
+      "target": "512043f5-c67a-5857-a0f6-e5119d1a9c27"
+    },
+    {
+      "id": "e-b82a2f1f-9418-5db6-906c-43ed39a8ca8c-ff82e873-f6dd-570e-b723-234deed77cef",
+      "source": "b82a2f1f-9418-5db6-906c-43ed39a8ca8c",
+      "target": "ff82e873-f6dd-570e-b723-234deed77cef"
+    },
+    {
+      "id": "e-topic-d7b05836-657c-5cf2-b665-12749901048b",
+      "source": "topic",
+      "target": "d7b05836-657c-5cf2-b665-12749901048b"
+    },
+    {
+      "id": "e-d7b05836-657c-5cf2-b665-12749901048b-ea2b802a-c9e4-586f-91f4-49b93a9c3768",
+      "source": "d7b05836-657c-5cf2-b665-12749901048b",
+      "target": "ea2b802a-c9e4-586f-91f4-49b93a9c3768"
+    }
+  ]
+}

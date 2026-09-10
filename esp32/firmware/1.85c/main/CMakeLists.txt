@@ -32,6 +32,34 @@ execute_process(
 if(NOT ROUND_KEYBOARD_PATCH EQUAL 0)
     message(FATAL_ERROR "round keyboard C++ patch failed")
 endif()
+execute_process(
+    COMMAND python3 "${ROUND_UI_OVERLAY}/patch_super_freetype.py"
+    RESULT_VARIABLE ROUND_FREETYPE_PATCH
+)
+if(NOT ROUND_FREETYPE_PATCH EQUAL 0)
+    message(FATAL_ERROR "round FreeType file-backend patch failed")
+endif()
+execute_process(
+    COMMAND python3 "${ROUND_UI_OVERLAY}/patch_super_apps.py"
+    RESULT_VARIABLE ROUND_APPS_PATCH
+)
+if(NOT ROUND_APPS_PATCH EQUAL 0)
+    message(FATAL_ERROR "round Super app-install patch failed")
+endif()
+execute_process(
+    COMMAND python3 "${ROUND_UI_OVERLAY}/patch_settings_wifi.py"
+    RESULT_VARIABLE ROUND_WIFI_PATCH
+)
+if(NOT ROUND_WIFI_PATCH EQUAL 0)
+    message(FATAL_ERROR "round Settings Wi-Fi list patch failed")
+endif()
+execute_process(
+    COMMAND python3 "${ROUND_UI_OVERLAY}/patch_super_status.py"
+    RESULT_VARIABLE ROUND_STATUS_PATCH
+)
+if(NOT ROUND_STATUS_PATCH EQUAL 0)
+    message(FATAL_ERROR "round Super status-bar patch failed")
+endif()
 add_custom_target(
     mindgraph_round_ui
     COMMAND python3 "${ROUND_UI_OVERLAY}/apply_round_ui.py"

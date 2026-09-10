@@ -25,7 +25,9 @@ import {
   mindMapAssociationCurveFromEnds,
   mindMapAssociationCurvePath,
   mindMapAssociationSameSide,
+  mindMapAssociationShouldVoid,
   snapMindMapAssociationEndpoint,
+  voidMindMapAssociationsAcrossSides,
   withMindMapAssociationHandles,
 } from '@/utils/mindMapAssociationLine'
 import {
@@ -211,6 +213,41 @@ describe('mind map association connections', () => {
     expect(mindMapAssociationSameSide('l1', 'l2', options)).toBe(true)
     expect(mindMapAssociationSameSide('l1', 'r1', options)).toBe(false)
     expect(mindMapAssociationSameSide('topic', 'l1', options)).toBe(true)
+  })
+
+  it('voids association overlays after a node flips to the other side', () => {
+    const topic: DiagramNode = {
+      id: 'topic',
+      text: 'T',
+      type: 'topic',
+      position: { x: 400, y: 0 },
+      data: { estimatedWidth: 120 },
+    }
+    const left = branch('l1', 'left', 80, 40)
+    const flipped = branch('was-right', 'left', 80, 120)
+    const right = branch('r1', 'right', 720, 40)
+    const nodes = [topic, left, flipped, right]
+    const connections: Connection[] = [
+      { id: 'e-l', source: 'topic', target: 'l1', sourceHandle: 'mindmap-left' },
+      { id: 'e-f', source: 'topic', target: 'was-right', sourceHandle: 'mindmap-left' },
+      { id: 'e-r', source: 'topic', target: 'r1', sourceHandle: 'mindmap-right' },
+      {
+        id: 'assoc-cross',
+        source: 'was-right',
+        target: 'r1',
+        edgeType: MIND_MAP_ASSOCIATION_EDGE_TYPE,
+      },
+      {
+        id: 'assoc-same',
+        source: 'l1',
+        target: 'was-right',
+        edgeType: MIND_MAP_ASSOCIATION_EDGE_TYPE,
+      },
+    ]
+    expect(mindMapAssociationShouldVoid('was-right', 'r1', { nodes, connections })).toBe(true)
+    expect(mindMapAssociationShouldVoid('l1', 'was-right', { nodes, connections })).toBe(false)
+    const next = voidMindMapAssociationsAcrossSides(connections, nodes)
+    expect(next.map((c) => c.id)).toEqual(['e-l', 'e-f', 'e-r', 'assoc-same'])
   })
 
   it('stamps left/right handles onto an association connection', () => {

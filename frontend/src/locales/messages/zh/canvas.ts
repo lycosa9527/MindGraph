@@ -1448,6 +1448,7 @@ export default {
   'canvas.ribbon.insertComingSoon': '该插入能力即将开放',
   'canvas.ribbon.summaryNeedSiblings': '请选择同一父节点下连续的节点',
   'canvas.ribbon.summaryDelete': '删除概要',
+  'canvas.ribbon.linkName': '名称',
   'canvas.ribbon.linkUrl': '链接地址',
   'canvas.ribbon.linkInvalid': '请输入有效的 http(s) 链接',
   'canvas.ribbon.linkConfirm': '添加链接',
@@ -1490,4 +1491,8 @@ export default {
   'canvas.ribbon.aiHero.oneSentence.title': '对话式修改',
   'canvas.ribbon.aiHero.oneSentence.line1': '用一句话描述主题或修改要求',
   'canvas.ribbon.aiHero.oneSentence.line2': '智能生成并调整导图',
+  'canvas.ribbon.aiHero.link.ribbon': '插入',
+  'canvas.ribbon.aiHero.link.title': '添加链接',
+  'canvas.ribbon.aiHero.link.line1': '节点显示名称，完整地址藏在链接图标里',
+  'canvas.ribbon.aiHero.link.line2': '',
 } as const

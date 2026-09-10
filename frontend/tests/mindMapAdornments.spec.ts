@@ -2,12 +2,15 @@ import { describe, expect, it } from 'vitest'
 
 import type { Connection, DiagramNode } from '@/types'
 import {
+  hostnameFromMindMapHref,
   mergeNodeAdornment,
   parseMindMapAdornments,
   remapMindMapAdornmentsAfterReload,
   resolveMindMapAdornmentParts,
+  resolveMindMapLinkDisplayName,
   sanitizeMindMapHref,
   sanitizeMindMapImageUrl,
+  seedMindMapLinkDialog,
 } from '@/utils/mindMapAdornments'
 
 describe('mind map adornments', () => {
@@ -24,6 +27,28 @@ describe('mind map adornments', () => {
       image: true,
       inline: true,
     })
+  })
+
+  it('seeds name above the URL and hides a full link on the node', () => {
+    expect(seedMindMapLinkDialog('Wikipedia', 'https://en.wikipedia.org/wiki/X')).toEqual({
+      name: 'Wikipedia',
+      href: 'https://en.wikipedia.org/wiki/X',
+    })
+    expect(seedMindMapLinkDialog('https://en.wikipedia.org/wiki/X', '')).toEqual({
+      name: '',
+      href: 'https://en.wikipedia.org/wiki/X',
+    })
+    expect(hostnameFromMindMapHref('https://www.example.com/path?q=1')).toBe('example.com')
+    expect(
+      resolveMindMapLinkDisplayName(
+        '',
+        'https://www.example.com/very/long',
+        'https://www.example.com/very/long'
+      )
+    ).toBe('example.com')
+    expect(
+      resolveMindMapLinkDisplayName('Docs', 'https://example.com/a', 'https://example.com/a')
+    ).toBe('Docs')
   })
 
   it('rejects javascript and data hrefs', () => {
