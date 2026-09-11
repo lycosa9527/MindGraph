@@ -19,6 +19,6 @@ Do not flash from WSL. After `idf.py merge-bin`, copy the image to the Windows D
 
 Round overlay ([`round_ui/`](round_ui)) is applied when the littlefs image is built: circular safe area, zh_CN, and the 九宫格 IME.
 
-Kitty watch is an LVGL face on the 360 panel (Kitty智能体, mascot, library chip, round mic). Set `CONFIG_MINDGRAPH_KITTY_SERVER_URL`, `CONFIG_MINDGRAPH_KITTY_MGAT`, and `CONFIG_MINDGRAPH_KITTY_ACCOUNT` in gitignored `sdkconfig.defaults.local`. Auth is flash-time account + `mgat_` only.
+Kitty watch is an LVGL face on the 360 panel (Kitty智能体, mascot, library chip, round mic). **语音笔记** is a third Super tile matching the mobile recorder: live words on top, pause / 录 / stop, then 生成思维导图. It streams PCM to `/api/ws/voice-notes` and finishes through `POST /api/voice-notes/watch/finish`. **校本培训** is an inset puzzle pad (上一页 | 下一页, full-width 停止, 锁定 | 自由) plus bottom school / 开始 pills and a Kitty-style green/orange status disk. It calls `/api/training` with the same baked `mgat_` as Kitty. The account must be the session lead; `FEATURE_TRAINING` must be on. Set `CONFIG_MINDGRAPH_KITTY_SERVER_URL`, `CONFIG_MINDGRAPH_KITTY_MGAT`, and `CONFIG_MINDGRAPH_KITTY_ACCOUNT` in gitignored `sdkconfig.defaults.local`. Auth is flash-time account + `mgat_` only.
 
 `managed_components/` is gitignored; the first configure downloads Brookesia from the [component registry](https://components.espressif.com/).

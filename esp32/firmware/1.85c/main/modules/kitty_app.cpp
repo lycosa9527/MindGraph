@@ -4,6 +4,7 @@
 #include "brookesia/system_core/app/iapp.hpp"
 #include "private/utils.hpp"
 
+#include "kitty_agent.hpp"
 #include "kitty_ui.hpp"
 
 namespace mindgraph::kitty {
@@ -71,7 +72,8 @@ public:
     {
         (void)context;
         kitty_ui_hide();
-        BROOKESIA_LOGI("Kitty app paused");
+        kitty_agent_request_leave();
+        BROOKESIA_LOGI("Kitty app paused; session leaving");
         return {};
     }
 
@@ -79,7 +81,8 @@ public:
     {
         (void)context;
         kitty_ui_hide();
-        BROOKESIA_LOGI("Kitty app stopped");
+        kitty_agent_request_leave();
+        BROOKESIA_LOGI("Kitty app stopped; session leaving");
         return {};
     }
 };

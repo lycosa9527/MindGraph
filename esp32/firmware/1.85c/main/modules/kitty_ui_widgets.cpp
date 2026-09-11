@@ -12,7 +12,11 @@ constexpr uint32_t k_mute = 0x64748B;
 constexpr uint32_t k_card = 0xFFFFFF;
 constexpr uint32_t k_line = 0xE2E8F0;
 constexpr uint32_t k_violet = 0x7C3AED;
-constexpr int32_t k_mic_hit_slop = 20;
+constexpr int32_t k_mic = 64;
+constexpr int32_t k_mic_hit = 80;
+constexpr int32_t k_mic_cx = 270;
+constexpr int32_t k_mic_cy = 290;
+constexpr int32_t k_mic_hit_slop = 8;
 
 lv_obj_t *make_label(
     lv_obj_t *parent,
@@ -201,14 +205,29 @@ KittyWidgets kitty_ui_build(
 
     widgets.mic_ring_b = make_ring(widgets.root, 226, 246, 88);
     widgets.mic_ring_a = make_ring(widgets.root, 234, 254, 72);
-    widgets.mic = make_disk(widgets.root, 244, 264, 52, k_violet);
-    lv_obj_add_flag(widgets.mic, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_set_ext_click_area(widgets.mic, k_mic_hit_slop);
+    widgets.mic_hit = make_disk(
+        widgets.root,
+        k_mic_cx - k_mic_hit / 2,
+        k_mic_cy - k_mic_hit / 2,
+        k_mic_hit,
+        k_violet
+    );
+    lv_obj_set_style_bg_opa(widgets.mic_hit, LV_OPA_TRANSP, 0);
+    lv_obj_add_flag(widgets.mic_hit, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_ext_click_area(widgets.mic_hit, k_mic_hit_slop);
+    widgets.mic = make_disk(
+        widgets.root,
+        k_mic_cx - k_mic / 2,
+        k_mic_cy - k_mic / 2,
+        k_mic,
+        k_violet
+    );
+    lv_obj_clear_flag(widgets.mic, LV_OBJ_FLAG_CLICKABLE);
     kitty_ui_mic_draw(widgets.mic);
     if (on_hold != nullptr) {
-        lv_obj_add_event_cb(widgets.mic, on_hold, LV_EVENT_PRESSED, nullptr);
-        lv_obj_add_event_cb(widgets.mic, on_hold, LV_EVENT_RELEASED, nullptr);
-        lv_obj_add_event_cb(widgets.mic, on_hold, LV_EVENT_PRESS_LOST, nullptr);
+        lv_obj_add_event_cb(widgets.mic_hit, on_hold, LV_EVENT_PRESSED, nullptr);
+        lv_obj_add_event_cb(widgets.mic_hit, on_hold, LV_EVENT_RELEASED, nullptr);
+        lv_obj_add_event_cb(widgets.mic_hit, on_hold, LV_EVENT_PRESS_LOST, nullptr);
     }
 
     widgets.picker = make_card(widgets.root, 40, 62, 280, 198, 16);
@@ -229,8 +248,11 @@ KittyWidgets kitty_ui_build(
     if (widgets.work_ring != nullptr) {
         lv_obj_move_foreground(widgets.work_ring);
     }
-    lv_obj_remove_flag(widgets.mic, LV_OBJ_FLAG_GESTURE_BUBBLE);
+    lv_obj_remove_flag(widgets.mic_hit, LV_OBJ_FLAG_GESTURE_BUBBLE);
     lv_obj_remove_flag(widgets.picker_list, LV_OBJ_FLAG_GESTURE_BUBBLE);
+    if (widgets.mic_hit != nullptr) {
+        lv_obj_move_foreground(widgets.mic_hit);
+    }
     if (widgets.mic != nullptr) {
         lv_obj_move_foreground(widgets.mic);
         const uint32_t n = lv_obj_get_child_count(widgets.mic);

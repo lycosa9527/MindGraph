@@ -6,6 +6,8 @@ from __future__ import annotations
 import argparse
 import json
 import shutil
+import struct
+import zlib
 from pathlib import Path
 
 from patch_super_keyboard import apply_keyboard_patches
@@ -335,11 +337,39 @@ def patch_wifi_connect_actions(settings_res: Path) -> None:
     save_json(path, document)
 
 
-def stage_kitty_app(littlefs: Path, overlay: Path) -> None:
-    """Install the native Kitty Super package next to Settings and Files."""
-    dest_res = littlefs / "apps" / "com.mindgraph.kitty" / "res"
+def write_png_rgb(path: Path, width: int, height: int, rgb: tuple[int, int, int]) -> None:
+    """Write a solid-color RGB PNG for a Super launcher tile."""
+    raw = b"".join(b"\x00" + bytes(rgb) * width for _ in range(height))
+
+    def chunk(tag: bytes, data: bytes) -> bytes:
+        return (
+            struct.pack(">I", len(data))
+            + tag
+            + data
+            + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
+        )
+
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    path.write_bytes(
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", ihdr)
+        + chunk(b"IDAT", zlib.compress(raw, 9))
+        + chunk(b"IEND", b"")
+    )
+
+
+def stage_super_app(
+    littlefs: Path,
+    overlay: Path,
+    app_id: str,
+    host_name: str,
+    icon_src: Path | None,
+    fallback_rgb: tuple[int, int, int],
+) -> None:
+    """Install a native Super package next to Settings and Files."""
+    dest_res = littlefs / "apps" / app_id / "res"
     dest_res.mkdir(parents=True, exist_ok=True)
-    host = overlay / "kitty"
+    host = overlay / host_name
     if (host / "root.json").is_file():
         copy_tree(host / "root.json", dest_res / "root.json")
     if (host / "profile.json").is_file():
@@ -350,9 +380,11 @@ def stage_kitty_app(littlefs: Path, overlay: Path) -> None:
         copy_tree(host / "flows", dest_res / "flows")
     dest_images = dest_res / "images"
     dest_images.mkdir(parents=True, exist_ok=True)
-    icon_src = overlay.parent.parent.parent / "apps" / "kitty" / "src" / "res" / "images" / "launcher_icon.png"
-    if icon_src.is_file():
-        shutil.copy2(icon_src, dest_images / "launcher_icon.png")
+    dest_icon = dest_images / "launcher_icon.png"
+    if icon_src is not None and icon_src.is_file():
+        shutil.copy2(icon_src, dest_icon)
+    else:
+        write_png_rgb(dest_icon, 92, 92, fallback_rgb)
     save_json(
         dest_images / "index.json",
         {
@@ -367,7 +399,46 @@ def stage_kitty_app(littlefs: Path, overlay: Path) -> None:
             ],
         },
     )
-    print(f"round_ui: kitty Super app -> {dest_res.parent}")
+    print(f"round_ui: {host_name} Super app -> {dest_res.parent}")
+
+
+def stage_kitty_app(littlefs: Path, overlay: Path) -> None:
+    """Install the native Kitty Super package next to Settings and Files."""
+    icon_src = overlay.parent.parent.parent / "apps" / "kitty" / "src" / "res" / "images" / "launcher_icon.png"
+    stage_super_app(
+        littlefs,
+        overlay,
+        "com.mindgraph.kitty",
+        "kitty",
+        icon_src,
+        (124, 58, 237),
+    )
+
+
+def stage_training_app(littlefs: Path, overlay: Path) -> None:
+    """Install the native 校本培训 remote Super package."""
+    icon_src = overlay / "training" / "images" / "launcher_icon.png"
+    stage_super_app(
+        littlefs,
+        overlay,
+        "com.mindgraph.training",
+        "training",
+        icon_src,
+        (22, 163, 74),
+    )
+
+
+def stage_recorder_app(littlefs: Path, overlay: Path) -> None:
+    """Install the native 语音笔记 recorder Super package."""
+    icon_src = overlay / "recorder" / "images" / "launcher_icon.png"
+    stage_super_app(
+        littlefs,
+        overlay,
+        "com.mindgraph.recorder",
+        "recorder",
+        icon_src,
+        (220, 38, 38),
+    )
 
 
 def apply_app_overlay(res_dir: Path, overlay_dir: Path, assets: list[str]) -> bool:
@@ -446,6 +517,8 @@ def apply(littlefs: Path, overlay: Path) -> None:
 
     prepare_kitty_stills(littlefs)
     stage_kitty_app(littlefs, overlay)
+    stage_training_app(littlefs, overlay)
+    stage_recorder_app(littlefs, overlay)
     print(f"round_ui: applied to {littlefs} (variants_changed={changed})")
 
 

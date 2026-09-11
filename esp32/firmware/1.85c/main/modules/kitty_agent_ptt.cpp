@@ -56,13 +56,13 @@ bool encode_asr_frame(const int16_t *samples, size_t count, std::string &encoded
     return kitty_b64_encode(reinterpret_cast<const uint8_t *>(samples), count * sizeof(int16_t), encoded);
 }
 
-void stream_mic_until(const std::string &utterance_id, bool hold_only)
+bool stream_mic_until(const std::string &utterance_id, bool hold_only)
 {
     std::vector<int16_t> frame(k_kitty_frame_samples, 0);
     int hold_peak = 0;
     int frames_sent = 0;
     int idle_ticks = 0;
-    while (kitty_ws_is_open()) {
+    while (kitty_ws_is_open() && !kitty_ui_is_hidden()) {
         if (hold_only && !kitty_ui_hold_active()) {
             break;
         }
@@ -112,14 +112,21 @@ void stream_mic_until(const std::string &utterance_id, bool hold_only)
         ++frames_sent;
     }
     kitty_audio_mic_close();
+    kitty_ui_clear_hold();
+    if (kitty_ui_is_hidden() || !kitty_ws_is_open()) {
+        ESP_LOGI(TAG, "ptt aborted home utt=%s frames=%d", utterance_id.c_str(), frames_sent);
+        return false;
+    }
     boost::json::object stop;
     stop["type"] = "asr_stop";
     stop["utterance_id"] = utterance_id;
     stop["peak"] = hold_peak;
     kitty_send_obj(std::move(stop));
-    kitty_ui_clear_hold();
     ESP_LOGI(TAG, "ptt stop utt=%s frames=%d peak=%d", utterance_id.c_str(), frames_sent, hold_peak);
     for (int i = 0; i < 160; ++i) {
+        if (kitty_ui_is_hidden() || !kitty_ws_is_open()) {
+            return false;
+        }
         bool done = false;
         {
             std::lock_guard<std::mutex> lock(g_kitty_asr_mutex);
@@ -130,6 +137,7 @@ void stream_mic_until(const std::string &utterance_id, bool hold_only)
         }
         boost::this_thread::sleep_for(boost::chrono::milliseconds(50));
     }
+    return true;
 }
 
 } // namespace
@@ -196,7 +204,7 @@ void kitty_agent_commit_asr()
 static bool hold_is_stable()
 {
     for (int i = 0; i < 10; ++i) {
-        if (!kitty_ui_hold_active()) {
+        if (!kitty_ui_hold_active() || kitty_ui_is_hidden()) {
             return false;
         }
         boost::this_thread::sleep_for(boost::chrono::milliseconds(k_kitty_hold_poll_ms));
@@ -207,14 +215,14 @@ static bool hold_is_stable()
 void kitty_agent_run_ptt()
 {
     reset_asr();
-    if (!hold_is_stable()) {
+    if (!hold_is_stable() || kitty_ui_is_hidden()) {
         return;
     }
     interrupt_speech();
     kitty_agent_begin_user_turn();
     if (!kitty_audio_mic_open()) {
         kitty_ui_set_kitty_text("麦克风不可用");
-        while (kitty_ui_hold_active()) {
+        while (kitty_ui_hold_active() && !kitty_ui_is_hidden()) {
             boost::this_thread::sleep_for(boost::chrono::milliseconds(k_kitty_hold_poll_ms));
         }
         return;
@@ -222,7 +230,9 @@ void kitty_agent_run_ptt()
     kitty_ui_set_state(KittyUiState::listening);
     const std::string utterance_id = next_utterance_id();
     send_asr_start(utterance_id);
-    stream_mic_until(utterance_id, true);
+    if (!stream_mic_until(utterance_id, true)) {
+        return;
+    }
     kitty_agent_commit_asr();
 }
 
@@ -240,7 +250,9 @@ void kitty_agent_run_auto_listen()
     kitty_ui_set_state(KittyUiState::listening);
     const std::string utterance_id = next_utterance_id();
     send_asr_start(utterance_id);
-    stream_mic_until(utterance_id, false);
+    if (!stream_mic_until(utterance_id, false)) {
+        return;
+    }
     kitty_agent_commit_asr();
 }
 

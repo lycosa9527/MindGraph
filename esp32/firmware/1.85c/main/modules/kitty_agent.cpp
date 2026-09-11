@@ -68,6 +68,9 @@ bool wait_for_token()
 bool wait_for_network()
 {
     for (int i = 0; i < 80; ++i) {
+        if (kitty_ui_is_hidden()) {
+            return false;
+        }
         esp_netif_t *sta = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
         esp_netif_ip_info_t ip{};
         const bool have_ip = sta != nullptr
@@ -94,14 +97,41 @@ bool kitty_agent_has_library_scope()
     return kitty_agent_is_library_id(g_kitty_scope);
 }
 
+void kitty_agent_request_leave()
+{
+    g_kitty_interrupt.store(true);
+    g_kitty_pending_auto_listen.store(false);
+    g_kitty_speaking.store(false);
+    g_kitty_playing_pcm.store(false);
+}
+
+void kitty_agent_leave_session()
+{
+    kitty_agent_request_leave();
+    kitty_audio_spk_stop();
+    if (!kitty_ws_is_open()) {
+        return;
+    }
+    kitty_send_obj({{"type", "abort"}, {"reason", "home"}});
+    kitty_send_obj({{"type", "stop"}});
+    kitty_ws_close();
+    ESP_LOGI(TAG, "session closed after home");
+}
+
 bool kitty_agent_bind_ws()
 {
+    g_kitty_interrupt.store(false);
+    g_kitty_pending_auto_listen.store(false);
     kitty_ui_set_state(KittyUiState::connecting);
     kitty_ws_set_handler(kitty_agent_handle_inbound);
     if (!kitty_ws_connect(kitty_net_ws_url(g_kitty_scope), g_kitty_token)) {
         return false;
     }
     for (int i = 0; i < 80 && !kitty_ws_is_open(); ++i) {
+        if (kitty_ui_is_hidden()) {
+            kitty_ws_close();
+            return false;
+        }
         boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
     }
     if (!kitty_ws_is_open()) {
@@ -124,8 +154,14 @@ bool kitty_agent_bind_ws()
 
 bool kitty_agent_connect_session()
 {
+    if (kitty_ui_is_hidden()) {
+        return false;
+    }
     kitty_ui_set_state(KittyUiState::connecting);
     wait_for_network();
+    if (kitty_ui_is_hidden()) {
+        return false;
+    }
     if (!kitty_agent_has_library_scope()) {
         std::string title;
         std::string diagram_type;
@@ -234,7 +270,14 @@ void agent_loop()
         ESP_LOGW(TAG, "MINDGRAPH_KITTY_MGAT is empty");
         return;
     }
-    while (!kitty_agent_connect_session()) {
+    for (;;) {
+        if (kitty_ui_is_hidden()) {
+            boost::this_thread::sleep_for(boost::chrono::milliseconds(k_kitty_hold_poll_ms));
+            continue;
+        }
+        if (kitty_agent_connect_session()) {
+            break;
+        }
         kitty_ui_set_live("重连中");
         boost::this_thread::sleep_for(boost::chrono::seconds(3));
     }
@@ -243,6 +286,13 @@ void agent_loop()
     int reconnect_fails = 0;
     std::time_t user_override_until = 0;
     for (;;) {
+        if (kitty_ui_is_hidden()) {
+            if (kitty_ws_is_open()) {
+                kitty_agent_leave_session();
+            }
+            boost::this_thread::sleep_for(boost::chrono::milliseconds(k_kitty_hold_poll_ms));
+            continue;
+        }
         if (kitty_ui_picker_needs_list()) {
             refresh_library();
         }

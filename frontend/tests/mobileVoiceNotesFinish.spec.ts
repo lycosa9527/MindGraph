@@ -134,6 +134,7 @@ describe('resolveVoiceNotesActions', () => {
     expect(live.canPause).toBe(true)
     expect(live.canStop).toBe(true)
     expect(live.canCopy).toBe(true)
+    expect(live.canGenerate).toBe(false)
 
     const saving = resolveVoiceNotesActions({ ...idle, ingesting: true, hasTranscript: true })
     expect(saving.canStart).toBe(false)
@@ -153,6 +154,32 @@ describe('resolveVoiceNotesActions', () => {
     const enabledIdle = resolveVoiceNotesActions({ ...idle, enabled: true })
     expect(enabledIdle.canStart).toBe(true)
     expect(enabledIdle.canGenerate).toBe(false)
+  })
+
+  it('greys generate while recording and enables it after stop', () => {
+    const recording = resolveVoiceNotesActions({
+      ...idle,
+      recording: true,
+      sessionReady: true,
+      hasActiveCapture: true,
+      hasTranscript: true,
+    })
+    expect(recording.canGenerate).toBe(false)
+
+    const paused = resolveVoiceNotesActions({
+      ...idle,
+      recording: true,
+      paused: true,
+      hasActiveCapture: true,
+      hasTranscript: true,
+    })
+    expect(paused.canGenerate).toBe(false)
+
+    const afterStop = resolveVoiceNotesActions({
+      ...idle,
+      hasTranscript: true,
+    })
+    expect(afterStop.canGenerate).toBe(true)
   })
 })
 

@@ -100,7 +100,8 @@ bool kitty_net_http_json(
     const std::string &bearer,
     int &status,
     std::string &response,
-    size_t max_bytes
+    size_t max_bytes,
+    int timeout_ms
 )
 {
     const size_t cap = max_bytes == 0 ? k_http_max : max_bytes;
@@ -110,7 +111,7 @@ bool kitty_net_http_json(
     }
     esp_http_client_config_t config = {};
     config.url = url.c_str();
-    config.timeout_ms = k_http_timeout_ms;
+    config.timeout_ms = timeout_ms > 0 ? timeout_ms : k_http_timeout_ms;
     config.transport_type = HTTP_TRANSPORT_OVER_SSL;
     config.tls_version = ESP_HTTP_CLIENT_TLS_VER_TLS_1_2;
     config.user_agent = "MindGraph-Watch/1.0";

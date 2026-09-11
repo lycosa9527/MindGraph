@@ -21,7 +21,10 @@ from services.features.voice_notes_asr_bridge import (
     run_voice_notes_asr_relay,
     voice_notes_error_json,
 )
-from services.features.voice_notes_markdown import strip_voice_notes_markdown_meta
+from services.features.voice_notes_markdown import (
+    strip_voice_notes_markdown_meta,
+    wrap_voice_notes_markdown,
+)
 from services.features.voice_notes_usage import (
     VOICE_NOTES_MODEL_ALIAS,
     VOICE_NOTES_PREFLIGHT_TOKENS,
@@ -343,3 +346,13 @@ def test_strip_voice_notes_markdown_meta_keeps_talker_lines() -> None:
     )
     assert strip_voice_notes_markdown_meta(markdown) == "说话人1：你好\nRoy：在的"
     assert strip_voice_notes_markdown_meta("说话人1：你好") == "说话人1：你好"
+
+
+def test_wrap_voice_notes_markdown_matches_mobile_meta() -> None:
+    """Watch COS blobs use the same trailing comment mobile Voice Notes writes."""
+    wrapped = wrap_voice_notes_markdown("会议先定三个目标", saved_at_ms=1_000, elapsed_ms=12)
+    assert strip_voice_notes_markdown_meta(wrapped) == "会议先定三个目标"
+    assert "<!-- mg-voice-notes:1" in wrapped
+    assert '"saved_at":1000' in wrapped
+    assert '"elapsed_ms":12' in wrapped
+    assert wrap_voice_notes_markdown("  \n") == ""

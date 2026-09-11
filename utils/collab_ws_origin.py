@@ -45,9 +45,17 @@ def parse_collab_ws_allowed_origins(raw: str | None) -> FrozenSet[str]:
     return frozenset(parts)
 
 
+def first_party_ws_origins_from_env() -> FrozenSet[str]:
+    """Public site origin from ``EXTERNAL_BASE_URL`` (Word Voice, ESP32 watch)."""
+    return parse_collab_ws_allowed_origins(os.environ.get("EXTERNAL_BASE_URL"))
+
+
 def load_collab_ws_allowed_origins_env() -> FrozenSet[str]:
-    """Load collab ws allowed origins env."""
-    return parse_collab_ws_allowed_origins(os.environ.get("COLLAB_WS_ALLOWED_ORIGINS"))
+    """Load CSWSH allowlist; policy off when ``COLLAB_WS_ALLOWED_ORIGINS`` is empty."""
+    configured = parse_collab_ws_allowed_origins(os.environ.get("COLLAB_WS_ALLOWED_ORIGINS"))
+    if not configured:
+        return frozenset()
+    return frozenset(configured | first_party_ws_origins_from_env())
 
 
 def canvas_collab_websocket_origin_is_allowed(
@@ -59,6 +67,8 @@ def canvas_collab_websocket_origin_is_allowed(
 
     When ``allowed_normalized`` is empty, returns True (policy off).
     When policy is active, browsers send ``Origin``; missing header fails.
+    The public site (``EXTERNAL_BASE_URL``) is also first-party — same host as
+    the Word Voice dialog and the watch's configured server URL.
     Native / test clients without ``Origin`` can set
     ``COLLAB_WS_ALLOW_MISSING_ORIGIN=1`` to permit empty header when policy is on.
     """
@@ -72,7 +82,8 @@ def canvas_collab_websocket_origin_is_allowed(
         return bool(missing_ok)
 
     cand = normalize_origin_header(raw)
-    return cand in allowed_normalized
+    permitted = frozenset(allowed_normalized | first_party_ws_origins_from_env())
+    return cand in permitted
 
 
 async def close_ws_if_origin_disallowed(websocket: Any, context: str) -> bool:
@@ -86,7 +97,11 @@ async def close_ws_if_origin_disallowed(websocket: Any, context: str) -> bool:
     allowed = load_collab_ws_allowed_origins_env()
     if canvas_collab_websocket_origin_is_allowed(websocket.headers, allowed):
         return False
-    logger.warning("[%s] WebSocket origin rejected (CSWSH guard)", context)
+    logger.warning(
+        "[%s] WebSocket origin rejected (CSWSH guard) origin=%s",
+        context,
+        websocket.headers.get("origin"),
+    )
     try:
         await websocket.close(code=1008, reason="Cross-origin connection is not allowed")
     except (RuntimeError, OSError, ConnectionError) as exc:

@@ -64,7 +64,7 @@ export default {
   'auth.voiceNotes.recordingContinues': '录音仍在继续，可随时重新打开录音总结。',
   'auth.voiceNotes.noCurrentDiagram': '请先保存当前思维导图，再使用录音总结。',
   'auth.voiceNotes.restoreFailed': '无法加载已保存的录音转录。',
-  'auth.voiceNotes.retryGenerate': '生成思维导图',
+  'auth.voiceNotes.retryGenerate': '生导图',
   'auth.voiceNotes.historyTitle': '历史语音笔记',
   'auth.voiceNotes.historyEmpty': '还没有语音笔记',
   'auth.voiceNotes.separateTalkers': '说话人编辑',

@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.72] - 2026-09-12
+
+> **1.85C Super tiles for 语音笔记 and 校本培训; watch Voice Notes sends a real Origin.**
+
+### Added
+
+- **1.85C 语音笔记** — Native Super app (`com.mindgraph.recorder`) next to Kitty. The 360 face matches mobile Voice Notes: live transcript, pause / 录 / stop, then 生导图. Same baked `mgat_` as Kitty. PCM goes to `/api/ws/voice-notes`; stop and generate call `POST /api/voice-notes/watch/finish` (server persists the spec so the watch never pulls a full map). Rec starts on tap; pause / stop need a 2.5s hold. Swipe-home is blocked while recording. Each take is a new `source_channel=voice_notes` history item.
+- **1.85C 校本培训** — Native Super clicker (`com.mindgraph.training`). Polls `/api/training` with the same flash-time token. Puzzle pad: 上一页 / 下一页, 停止, 锁定 / 自由, school + 开始.
+- **Watch WS Origin** — ESP-IDF now sends `Origin` as the configured HTTPS server URL (same first-party origin as the Word Voice dialog). `esp32-watch` is a known `X-MG-Client` label for TokenAudit only.
+
+### Changed
+
+- **CSWSH** — Voice Notes and every other collab WS still require a matching `Origin`. Missing header fails. When `COLLAB_WS_ALLOWED_ORIGINS` is on, `EXTERNAL_BASE_URL` is also first-party. No client-label skip.
+- **Mobile Voice Notes** — 生导图 is enabled only after stop (not while recording or paused). Pill width follows the shorter label.
+
+### Tests
+
+- [`tests/test_voice_notes_watch.py`](tests/test_voice_notes_watch.py) ingest-only finish, generate persist, empty transcript.
+- [`tests/test_collab_stability_helpers.py`](tests/test_collab_stability_helpers.py) public-site Origin, missing Origin, policy-off.
+- [`frontend/tests/mobileVoiceNotesFinish.spec.ts`](frontend/tests/mobileVoiceNotesFinish.spec.ts) generate gated until stop.
+
 ## [5.180.71] - 2026-09-11
 
 > **Kitty stacked edits and long paste use qwen3.8-flash; Fun-ASR stop starts the turn.**

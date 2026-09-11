@@ -108,6 +108,10 @@ bool kitty_ws_connect(const std::string &url, const std::string &bearer)
         const std::string auth = "Bearer " + bearer;
         esp_websocket_client_append_header(g_client, "Authorization", auth.c_str());
     }
+    const std::string http_origin = kitty_net_origin();
+    if (!http_origin.empty()) {
+        esp_websocket_client_append_header(g_client, "Origin", http_origin.c_str());
+    }
     esp_websocket_client_append_header(g_client, "X-MG-Client", "esp32-watch");
     const std::string account = kitty_net_account();
     if (!account.empty()) {

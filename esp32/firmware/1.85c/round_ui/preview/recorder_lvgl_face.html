@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>语音笔记 LVGL face — 360 preview</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans CJK SC", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #0b0c10;
+      color: #f2f2f2;
+      padding: 24px;
+    }
+    h1 { font-size: 20px; font-weight: 600; margin: 0 0 8px; }
+    p { color: #9aa0a8; margin: 0 0 16px; max-width: 860px; line-height: 1.45; }
+    .row { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+    figure { margin: 0; text-align: center; }
+    figcaption { margin-top: 10px; font-size: 13px; color: #9aa0a8; }
+    .watch {
+      width: 360px;
+      height: 360px;
+      border-radius: 50%;
+      background: #F9FAFB;
+      color: #1C1917;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 0 10px #1a1a1a;
+    }
+    .title {
+      position: absolute; left: 80px; top: 16px; width: 200px; height: 22px;
+      text-align: center; font-size: 16px; font-weight: 600; line-height: 22px;
+    }
+    .status {
+      position: absolute; left: 48px; top: 40px; width: 264px; height: 22px;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      font-size: 12px; font-weight: 600; color: #57534E;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #A8A29E; flex: 0 0 8px; }
+    .dot.live { background: #DC2626; box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.15); }
+    .dot.paused { background: #D97706; }
+    .card {
+      position: absolute; left: 44px; top: 66px; width: 272px; height: 190px;
+      border: 1px solid #E5E7EB; border-radius: 12px; background: #fff;
+      padding: 10px 12px; font-size: 13px; line-height: 1.45; color: #1C1917;
+      overflow: hidden; text-align: left;
+    }
+    .pause, .stop {
+      position: absolute; top: 272px; width: 44px; height: 44px; border-radius: 50%;
+      background: #F3F4F6; border: 2px solid #78716C;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pause { left: 56px; }
+    .stop { left: 172px; }
+    .pause-bars {
+      display: flex; gap: 5px; align-items: center;
+    }
+    .pause-bars span { width: 5px; height: 16px; border-radius: 1px; background: #1C1917; }
+    .stop-sq { width: 14px; height: 14px; border-radius: 2px; background: #B91C1C; }
+    .main {
+      position: absolute; left: 104px; top: 262px; width: 64px; height: 64px;
+      border-radius: 50%; background: #DC2626; z-index: 2;
+    }
+    .main.play::after, .main.resume::after {
+      content: "";
+      position: absolute; left: 26px; top: 21px;
+      border-style: solid;
+      border-width: 11px 0 11px 16px;
+      border-color: transparent transparent transparent #fff;
+    }
+    .main.resume { background: #111827; }
+    .gen {
+      position: absolute; left: 238px; top: 276px; width: 64px; height: 36px;
+      border-radius: 18px; background: #1C1917; color: #FAFAF9;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600;
+    }
+    .gen.off { background: #F3F4F6; color: #57534E; }
+    .home {
+      position: absolute; left: 152px; top: 339px; width: 56px; height: 5px;
+      border-radius: 3px; background: #111827; opacity: 0.35;
+    }
+    .home.off { display: none; }
+    .dim { opacity: 0.4; }
+    code { color: #d8d8d8; }
+  </style>
+</head>
+<body>
+  <h1>语音笔记 recorder preview (not Super WASM)</h1>
+  <p>
+    Pixel layout from <code>recorder_ui_face.cpp</code>: pause 44 @ (56,272),
+    record 64 @ (104,262), stop 44 @ (172,272), 4px gaps,
+    <strong>生导图</strong> 64 @ (238,276). Grey until Stop.
+    Swipe-home is blocked while recording or paused; after Stop the bar works.
+  </p>
+  <div class="row">
+    <figure>
+      <div class="watch">
+        <div class="title">语音笔记</div>
+        <div class="status"><span class="dot"></span>等待开始<span>00:00</span></div>
+        <div class="card">点红色按钮开始录音</div>
+        <div class="pause dim"><div class="pause-bars"><span></span><span></span></div></div>
+        <div class="main play"></div>
+        <div class="stop dim"><div class="stop-sq"></div></div>
+        <div class="gen off">生导图</div>
+        <div class="home"></div>
+      </div>
+      <figcaption>Idle — red + triangle</figcaption>
+    </figure>
+    <figure>
+      <div class="watch">
+        <div class="title">语音笔记</div>
+        <div class="status"><span class="dot live"></span>录音中<span>01:24</span></div>
+        <div class="card">今天会议先定三个目标：完成原型、对齐接口、确认上线窗口。</div>
+        <div class="pause"><div class="pause-bars"><span></span><span></span></div></div>
+        <div class="main"></div>
+        <div class="stop"><div class="stop-sq"></div></div>
+        <div class="gen off">生导图</div>
+        <div class="home off"></div>
+      </div>
+      <figcaption>Recording — swipe-home blocked</figcaption>
+    </figure>
+    <figure>
+      <div class="watch">
+        <div class="title">语音笔记</div>
+        <div class="status"><span class="dot paused"></span>已暂停<span>03:10</span></div>
+        <div class="card">今天会议先定三个目标：完成原型、对齐接口、确认上线窗口。下午再补风险清单。</div>
+        <div class="pause dim"><div class="pause-bars"><span></span><span></span></div></div>
+        <div class="main resume"></div>
+        <div class="stop"><div class="stop-sq"></div></div>
+        <div class="gen off">生导图</div>
+        <div class="home off"></div>
+      </div>
+      <figcaption>Paused — swipe-home still blocked</figcaption>
+    </figure>
+    <figure>
+      <div class="watch">
+        <div class="title">语音笔记</div>
+        <div class="status"><span class="dot"></span>已保存<span>03:10</span></div>
+        <div class="card">今天会议先定三个目标：完成原型、对齐接口、确认上线窗口。下午再补风险清单。</div>
+        <div class="pause dim"><div class="pause-bars"><span></span><span></span></div></div>
+        <div class="main play"></div>
+        <div class="stop dim"><div class="stop-sq"></div></div>
+        <div class="gen">生导图</div>
+        <div class="home"></div>
+      </div>
+      <figcaption>Stopped — triangle back, swipe home</figcaption>
+    </figure>
+  </div>
+</body>
+</html>

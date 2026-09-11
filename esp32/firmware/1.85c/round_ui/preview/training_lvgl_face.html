@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>校本培训 LVGL face — 360 preview</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans CJK SC", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #0b0c10;
+      color: #f2f2f2;
+      padding: 24px;
+    }
+    h1 { font-size: 20px; font-weight: 600; margin: 0 0 8px; }
+    p { color: #9aa0a8; margin: 0 0 16px; max-width: 780px; line-height: 1.45; }
+    .row { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+    .watch {
+      width: 360px;
+      height: 360px;
+      border-radius: 50%;
+      background: #E2E8F0;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 0 10px #1a1a1a;
+    }
+    .title {
+      position: absolute; left: 100px; top: 16px; width: 160px; height: 22px;
+      text-align: center; font-size: 15px; font-weight: 600; line-height: 22px;
+      color: #0F172A;
+    }
+    .status {
+      position: absolute; left: 64px; top: 42px; width: 232px; height: 24px;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      font-size: 13px; line-height: 24px; font-weight: 600;
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px;
+    }
+    .dot.green { background: #22C55E; }
+    .dot.orange { background: #F59E0B; }
+    .status.good { color: #15803D; }
+    .status.wait { color: #C2410C; }
+    .piece {
+      position: absolute; display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 700; color: #fff;
+      border: 2px solid #F8FAFC;
+    }
+    .prev { left: 30px; top: 84px; width: 150px; height: 52px; background: #0284C7; }
+    .next { left: 180px; top: 84px; width: 150px; height: 52px; background: #059669; }
+    .stop { left: 30px; top: 136px; width: 300px; height: 52px; background: #DC2626; }
+    .lock { left: 30px; top: 188px; width: 150px; height: 52px; background: #1D4ED8; }
+    .free { left: 180px; top: 188px; width: 150px; height: 52px; background: #14B8A6; }
+    .pill {
+      position: absolute; display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: #fff;
+      border: 2px solid #F8FAFC; border-radius: 22px;
+    }
+    .drop { left: 54px; top: 260px; width: 136px; height: 44px; background: #475569; }
+    .host { left: 206px; top: 260px; width: 100px; height: 44px; background: #DC2626; }
+    .host.start { background: #16A34A; }
+    .dim { opacity: 0.7; }
+    code { color: #d8d8d8; }
+  </style>
+</head>
+<body>
+  <h1>校本培训 remote preview (not Super WASM)</h1>
+  <p>
+    Pixel layout from <code>training_ui_face.cpp</code>: inset puzzle pad with
+    shared edges. 上一页 | 下一页, full-width 停止, 锁定 | 自由. School and 开始
+    stay pills at the bottom. Status uses the same green / orange disk as Kitty.
+  </p>
+  <div class="row">
+    <figure>
+      <div class="watch">
+        <div class="title">校本培训</div>
+        <div class="status good"><span class="dot green"></span>1 / 8</div>
+        <div class="piece prev">上一页</div>
+        <div class="piece next">下一页</div>
+        <div class="piece stop">停止</div>
+        <div class="piece lock">锁定</div>
+        <div class="piece free">自由</div>
+        <div class="pill drop">双气泡图教程</div>
+        <div class="pill host">停止</div>
+      </div>
+    </figure>
+    <figure>
+      <div class="watch">
+        <div class="title">校本培训</div>
+        <div class="status wait"><span class="dot orange"></span>等待选择学校</div>
+        <div class="piece prev dim">上一页</div>
+        <div class="piece next dim">下一页</div>
+        <div class="piece stop dim">停止</div>
+        <div class="piece lock dim">锁定</div>
+        <div class="piece free dim">自由</div>
+        <div class="pill drop">选择学校</div>
+        <div class="pill host start">开始</div>
+      </div>
+    </figure>
+  </div>
+</body>
+</html>

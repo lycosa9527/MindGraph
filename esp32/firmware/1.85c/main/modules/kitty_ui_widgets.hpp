@@ -14,6 +14,7 @@ struct KittyWidgets {
     lv_obj_t *library = nullptr;
     lv_obj_t *library_label = nullptr;
     lv_obj_t *mic = nullptr;
+    lv_obj_t *mic_hit = nullptr;
     lv_obj_t *mic_ring_a = nullptr;
     lv_obj_t *mic_ring_b = nullptr;
     lv_obj_t *picker = nullptr;

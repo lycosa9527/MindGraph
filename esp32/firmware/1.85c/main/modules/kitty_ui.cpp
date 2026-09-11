@@ -19,6 +19,7 @@ namespace {
 constexpr uint32_t k_violet = 0x7C3AED;
 constexpr uint32_t k_violet_hold = 0x4F46E5;
 constexpr uint32_t k_ink = 0x0F172A;
+constexpr uint32_t k_hold_arm_ms = 2500;
 constexpr int k_pick_max = 12;
 
 struct PickRow {
@@ -63,6 +64,7 @@ uint8_t g_painted_pick = 0;
 bool g_hold_down = false;
 bool g_touch_hold = false;
 bool g_boot_hold = false;
+uint32_t g_press_since = 0;
 
 void copy_field(char *dest, size_t dest_size, const std::string &src)
 {
@@ -119,14 +121,13 @@ void set_choice_chip(lv_obj_t *chip, const char *text)
     lv_obj_remove_flag(chip, LV_OBJ_FLAG_HIDDEN);
 }
 
-void set_hold(bool hold)
+void set_armed(bool armed)
 {
-    if (g_hold_down == hold && g_model.hold == hold) {
+    if (g_model.hold == armed) {
         return;
     }
-    g_model.hold = hold;
-    g_hold_down = hold;
-    if (!hold) {
+    g_model.hold = armed;
+    if (!armed) {
         g_model.mic_level = 0;
         BROOKESIA_LOGI("Kitty mic hold end");
         return;
@@ -137,7 +138,21 @@ void set_hold(bool hold)
 
 void sync_hold()
 {
-    set_hold(g_touch_hold || g_boot_hold);
+    const bool down = g_touch_hold || g_boot_hold;
+    if (!down) {
+        g_press_since = 0;
+        g_hold_down = false;
+        set_armed(false);
+        return;
+    }
+    g_hold_down = true;
+    if (g_press_since == 0) {
+        g_press_since = lv_tick_get();
+        BROOKESIA_LOGI("Kitty mic press");
+    }
+    if (!g_model.hold && lv_tick_elaps(g_press_since) >= k_hold_arm_ms) {
+        set_armed(true);
+    }
 }
 
 void poll_boot_hold()
@@ -145,11 +160,7 @@ void poll_boot_hold()
     if (g_model.hidden) {
         return;
     }
-    const bool boot = kitty_ptt_button_held();
-    if (boot == g_boot_hold) {
-        return;
-    }
-    g_boot_hold = boot;
+    g_boot_hold = kitty_ptt_button_held();
     sync_hold();
 }
 
@@ -228,6 +239,7 @@ void hide_face()
     g_hold_down = false;
     g_touch_hold = false;
     g_boot_hold = false;
+    g_press_since = 0;
     g_teardown_pending = true;
 }
 
@@ -243,9 +255,18 @@ void poll_pointer()
             lv_indev_get_point(indev, &point);
             const bool pressed = lv_indev_get_state(indev) == LV_INDEV_STATE_PRESSED;
             const bool on_mic = pressed
-                && g_widgets.mic != nullptr
-                && lv_obj_is_valid(g_widgets.mic)
-                && lv_obj_hit_test(g_widgets.mic, &point);
+                && (
+                    (
+                        g_widgets.mic_hit != nullptr
+                        && lv_obj_is_valid(g_widgets.mic_hit)
+                        && lv_obj_hit_test(g_widgets.mic_hit, &point)
+                    )
+                    || (
+                        g_widgets.mic != nullptr
+                        && lv_obj_is_valid(g_widgets.mic)
+                        && lv_obj_hit_test(g_widgets.mic, &point)
+                    )
+                );
             std::lock_guard<std::mutex> lock(g_mutex);
             if (on_mic) {
                 g_touch_hold = true;
@@ -402,6 +423,8 @@ void teardown_widgets()
     g_cjk_font = nullptr;
     g_hold_down = false;
     g_touch_hold = false;
+    g_boot_hold = false;
+    g_press_since = 0;
 }
 
 void ensure_widgets()

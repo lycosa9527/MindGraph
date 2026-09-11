@@ -8,6 +8,9 @@ idf_component_register(
         "${CMAKE_CURRENT_LIST_DIR}/assets/kitty_mic.png"
 )
 target_link_libraries(${COMPONENT_LIB} INTERFACE "-u kitty_app_provider_symbol")
+target_link_libraries(${COMPONENT_LIB} INTERFACE "-u training_app_provider_symbol")
+target_link_libraries(${COMPONENT_LIB} INTERFACE "-u recorder_app_provider_symbol")
+target_link_libraries(${COMPONENT_LIB} INTERFACE "-u mindgraph_home_gesture_allowed")
 
 get_property(brookesia_runtime_app_stage_targets GLOBAL PROPERTY BROOKESIA_RUNTIME_APP_STAGE_TARGETS)
 if(brookesia_runtime_app_stage_targets)
@@ -68,6 +71,13 @@ execute_process(
 )
 if(NOT ROUND_HOME_INDICATOR_PATCH EQUAL 0)
     message(FATAL_ERROR "round Super home-indicator patch failed")
+endif()
+execute_process(
+    COMMAND python3 "${ROUND_UI_OVERLAY}/patch_super_home_gate.py"
+    RESULT_VARIABLE ROUND_HOME_GATE_PATCH
+)
+if(NOT ROUND_HOME_GATE_PATCH EQUAL 0)
+    message(FATAL_ERROR "round Super home-gate patch failed")
 endif()
 execute_process(
     COMMAND python3 "${ROUND_UI_OVERLAY}/patch_audio_volume.py"

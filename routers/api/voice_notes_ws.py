@@ -107,7 +107,10 @@ async def voice_notes_websocket(websocket: WebSocket) -> None:
 
     allowed = load_collab_ws_allowed_origins_env()
     if not canvas_collab_websocket_origin_is_allowed(websocket.headers, allowed):
-        logger.warning("[VoiceNotesASR] WebSocket origin rejected (CSWSH guard)")
+        logger.warning(
+            "[VoiceNotesASR] WebSocket origin rejected (CSWSH guard) origin=%s",
+            websocket.headers.get("origin"),
+        )
         await _reject_voice_notes_websocket(
             websocket,
             1008,

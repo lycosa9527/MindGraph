@@ -54,8 +54,8 @@ void kitty_ui_mic_paint(lv_obj_t *mic, lv_obj_t *ring_a, lv_obj_t *ring_b, bool 
         return;
     }
     const int32_t scale = hold ? k_scale_hold : k_scale_one;
-    lv_obj_set_style_transform_pivot_x(mic, 26, 0);
-    lv_obj_set_style_transform_pivot_y(mic, 26, 0);
+    lv_obj_set_style_transform_pivot_x(mic, 32, 0);
+    lv_obj_set_style_transform_pivot_y(mic, 32, 0);
     lv_obj_set_style_transform_scale_x(mic, scale, 0);
     lv_obj_set_style_transform_scale_y(mic, scale, 0);
     const uint8_t pulse = hold ? static_cast<uint8_t>(40 + (level > 200 ? 200 : level) / 2) : 0;

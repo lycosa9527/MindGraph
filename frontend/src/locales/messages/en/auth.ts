@@ -67,7 +67,7 @@ export default {
   'auth.voiceNotes.recordingContinues': 'Recording continues. Reopen Recording summary anytime.',
   'auth.voiceNotes.noCurrentDiagram': 'Save this mindmap first, then use Recording summary.',
   'auth.voiceNotes.restoreFailed': 'Could not load the saved recording transcript.',
-  'auth.voiceNotes.retryGenerate': 'Generate mindmap',
+  'auth.voiceNotes.retryGenerate': 'Mind map',
   'auth.voiceNotes.historyTitle': 'Previous voice notes',
   'auth.voiceNotes.historyEmpty': 'No voice notes yet',
   'auth.voiceNotes.separateTalkers': 'Edit speakers',

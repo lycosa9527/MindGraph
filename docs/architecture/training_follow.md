@@ -51,6 +51,12 @@ The remote hydrates `GET /api/training/sessions/active` (instructor pointer, no 
 
 While the host is on `/m/training` (or any `/m/*` page), follow applies the snapshot but does not navigate the phone. Teachers still force-nav. Desktop pad, friends rail, notes, lesson overlay, and focus ring stay off on every mobile route (`shouldHideTrainingDesktopChrome`). The friends rail still sends the owner heartbeat while hidden, so leaving the remote for `/m` does not drop the room. The mobile shell keeps its header (home + 校本培训). The three columns are controls (stacked play pad), the online list (no jump), and speaker notes as a teleprompter (scroll resets on seq / step). Portrait shows a rotate hint. Stop uses an in-page confirm. Another lead who is not the host sees a waiting / foreign message, not steer buttons. After Stop the remote returns to waiting.
 
+## ESP32 instructor remote
+
+The 1.85C Super tile **校本培训** (`com.mindgraph.training`) is a host + clicker. It does not use SSE. Auth is the same flash-time `mgat_` + `X-MG-Account` as Kitty.
+
+While the app is foreground it polls `GET /api/training/sessions/active` every 2s and heartbeats every 15s when it owns the room. The play pad posts `/step` (`delta` ±1) and `/free` (`锁定` is `{"free":false}`, `自由` is `{"free":true}`). Stop (pad or red host piece) confirms, then `POST .../end`. The 360 face is a circular puzzle: 上一 | 下一 share a band, 停止 is a full section, 锁定 | 自由 share the lower band, and the bottom crescent is school + green **开始** / red **停止**. Status uses the same green / orange disk as Kitty. Green **开始** is `POST /sessions` with `confirm_teacher_total` from `/orgs/{id}/ready` (arm only); picking a course after the room is armed is `POST .../play`. First-page lists are `GET /orgs` then `GET /courses`. A single leadable school is auto-selected. Pause, resume, takeover, roster, and notes stay off the 360 face. Swipe-home (Super pause/stop) ends an owned room with `POST .../end` on the remote thread, then drops the poll so Kitty keeps the RAM. A school you were only watching is left alone. Reopening the tile starts a new remote loop; it does not resume the ended room.
+
 ## Proxy
 
 Existing `/api` `proxy_read_timeout 300s` and `proxy_buffering off` in [production_security_deploy.md](production_security_deploy.md) cover this stream as long as keepalives continue.

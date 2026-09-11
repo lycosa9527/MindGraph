@@ -24,7 +24,9 @@ def test_sanitize_known_clients() -> None:
     assert sanitize_mg_client_label(" openclaw ") == "openclaw"
     assert sanitize_mg_client_label("workbuddy") == "workbuddy"
     assert sanitize_mg_client_label("file-reader") == "file-reader"
+    assert sanitize_mg_client_label("ESP32-Watch") == "esp32-watch"
     assert "chrome-extension" in KNOWN_MG_CLIENTS
+    assert "esp32-watch" in KNOWN_MG_CLIENTS
 
 
 def test_sanitize_rejects_garbage() -> None:
@@ -77,5 +79,6 @@ def test_display_labels() -> None:
     assert mg_client_display_label("openclaw") == "OpenClaw"
     assert mg_client_display_label("workbuddy") == "WorkBuddy"
     assert mg_client_display_label("mcp") == "MCP"
+    assert mg_client_display_label("esp32-watch") == "ESP32 watch"
     assert "mcp" in KNOWN_MG_CLIENTS
     assert mg_client_display_label("custom-bot") == "custom-bot"

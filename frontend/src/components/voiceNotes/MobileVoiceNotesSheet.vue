@@ -297,9 +297,10 @@ function onGenerate(): void {
   justify-content: center;
   flex-shrink: 1;
   box-sizing: border-box;
-  width: 7.5rem;
+  width: auto;
+  min-width: 4.25rem;
   min-height: 2.15rem;
-  padding: 0.35rem 0.55rem;
+  padding: 0.35rem 0.7rem;
   border: 1px solid #1c1917;
   border-radius: 9999px;
   background: transparent;

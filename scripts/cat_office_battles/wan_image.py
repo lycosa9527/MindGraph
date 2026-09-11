@@ -95,7 +95,27 @@ def submit_storyboard(prompt: str, refs: list[Path], n: int) -> str:
             "enable_sequential": True,
         },
     }
-    submitted = _post_json("/services/aigc/image-generation/generation", body)
+    return _task_id(_post_json("/services/aigc/image-generation/generation", body))
+
+
+def submit_icon(prompt: str, refs: list[Path], size: str = "1280*1280") -> str:
+    """Submit one square Wan still (app icon). Returns task id."""
+    content: list[dict[str, str]] = [{"image": jpeg_data_url(path)} for path in refs]
+    content.append({"text": prompt[:5000]})
+    body: dict[str, Any] = {
+        "model": MODEL,
+        "input": {"messages": [{"role": "user", "content": content}]},
+        "parameters": {
+            "n": 1,
+            "size": size,
+            "watermark": False,
+            "enable_sequential": False,
+        },
+    }
+    return _task_id(_post_json("/services/aigc/image-generation/generation", body))
+
+
+def _task_id(submitted: dict[str, Any]) -> str:
     output = submitted.get("output") if isinstance(submitted.get("output"), dict) else {}
     task_id = output.get("task_id") if isinstance(output, dict) else None
     if not isinstance(task_id, str) or not task_id:

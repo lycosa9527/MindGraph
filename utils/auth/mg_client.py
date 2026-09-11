@@ -37,6 +37,7 @@ KNOWN_MG_CLIENTS = frozenset(
         "file-reader",
         "mcp",
         "word-addin",
+        "esp32-watch",
         MG_CLIENT_UNSPECIFIED,
     }
 )
@@ -50,6 +51,7 @@ MG_CLIENT_DISPLAY_LABELS = {
     "file-reader": "File reader",
     "mcp": "MCP",
     "word-addin": "Word add-in",
+    "esp32-watch": "ESP32 watch",
     MG_CLIENT_UNSPECIFIED: "Unspecified",
 }
 

@@ -38,6 +38,7 @@ from . import (
     image_generation,
     image_proxy,
     live_translate_ws,
+    voice_notes_watch,
     voice_notes_ws,
     llm_operations,
     mindmate_export,
@@ -127,6 +128,7 @@ if mindmate_notify_ws_module is not None:
 router.include_router(asr_realtime_ws.router)
 router.include_router(live_translate_ws.router)
 router.include_router(voice_notes_ws.router)
+router.include_router(voice_notes_watch.router)
 
 # Knowledge Space router (has its own prefix)
 if KNOWLEDGE_SPACE_MODULE is not None:

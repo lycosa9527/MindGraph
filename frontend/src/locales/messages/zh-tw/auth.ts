@@ -64,7 +64,7 @@ export default {
   'auth.voiceNotes.recordingContinues': '錄音仍在繼續，可隨時重新打開錄音總結。',
   'auth.voiceNotes.noCurrentDiagram': '請先保存當前思維導圖，再使用錄音總結。',
   'auth.voiceNotes.restoreFailed': '無法加載已保存的錄音轉錄。',
-  'auth.voiceNotes.retryGenerate': '生成思維導圖',
+  'auth.voiceNotes.retryGenerate': '生導圖',
   'auth.voiceNotes.historyTitle': '歷史語音筆記',
   'auth.voiceNotes.historyEmpty': '還沒有語音筆記',
   'auth.voiceNotes.separateTalkers': '說話人編輯',

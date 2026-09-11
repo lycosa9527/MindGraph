@@ -15,7 +15,7 @@ constexpr const char *TAG = "kitty_in";
 
 void play_pcm_mono(const std::vector<uint8_t> &bytes)
 {
-    if (bytes.size() < 2 || g_kitty_interrupt.load()) {
+    if (bytes.size() < 2 || g_kitty_interrupt.load() || kitty_ui_is_hidden()) {
         return;
     }
     if (!kitty_audio_spk_open()) {
@@ -152,14 +152,14 @@ void kitty_agent_handle_inbound(const std::string &raw)
             kitty_ui_set_user_text(spoken);
             ESP_LOGI(TAG, "asr %s: %s", type.c_str(), spoken.c_str());
         }
-        if (late_commit) {
+        if (late_commit && !kitty_ui_is_hidden()) {
             kitty_agent_commit_asr();
         }
         return;
     }
     if (type == "audio_chunk") {
         const auto *audio = obj.if_contains("audio");
-        if (audio == nullptr || !audio->is_string() || g_kitty_interrupt.load()) {
+        if (audio == nullptr || !audio->is_string() || g_kitty_interrupt.load() || kitty_ui_is_hidden()) {
             return;
         }
         std::vector<uint8_t> pcm;

@@ -21,7 +21,8 @@ bool kitty_net_http_json(
     const std::string &bearer,
     int &status,
     std::string &response,
-    size_t max_bytes = 8192
+    size_t max_bytes = 8192,
+    int timeout_ms = 0
 );
 bool kitty_net_bootstrap(const std::string &token, std::string &scope, std::string &title, std::string &diagram_type);
 bool kitty_net_list_diagrams(const std::string &token, std::vector<KittyDiagramItem> &items);
