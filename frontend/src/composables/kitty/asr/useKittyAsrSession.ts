@@ -44,6 +44,7 @@ export function useKittyAsrSession(options: {
   const holdTranscript = ref('')
   const holdHadSpeech = ref(false)
   const holdListening = ref(false)
+  const holdReleased = ref(false)
   const activeUtteranceId = ref<string | null>(null)
   const asrFinalCommitted = ref(false)
   let lastAsrCommitText = ''
@@ -74,6 +75,7 @@ export function useKittyAsrSession(options: {
     holdTranscript.value = ''
     holdListening.value = false
     holdHadSpeech.value = false
+    holdReleased.value = false
     activeUtteranceId.value = null
   }
 
@@ -188,12 +190,13 @@ export function useKittyAsrSession(options: {
     if (!text) {
       return
     }
+    const lateAfterRelease = holdReleased.value
     holdListening.value = true
     holdHadSpeech.value = true
     holdTranscript.value = text
     options.draft.value = text
     asrFinalCommitted.value = false
-    if (modeValue() === 'final_or_stopped') {
+    if (modeValue() === 'final_or_stopped' || lateAfterRelease) {
       commitTranscript(text, payload.utteranceId)
       resetHold()
     }
@@ -210,8 +213,9 @@ export function useKittyAsrSession(options: {
     const payloadText = typeof payload?.text === 'string' ? payload.text.trim() : ''
     const text = (payloadText || holdTranscript.value).trim()
     if (modeValue() === 'release_only') {
-      if (!holdHadSpeech.value || !text) {
-        resetHold()
+      if (!text) {
+        holdReleased.value = true
+        holdListening.value = false
         return
       }
       commitTranscript(text, payload?.utteranceId)
@@ -229,6 +233,7 @@ export function useKittyAsrSession(options: {
       activeUtteranceId.value = payload.utteranceId
     }
     holdListening.value = true
+    holdReleased.value = false
     recordPipelineEvent({
       ctx: {
         requestId: `asr-start-${Date.now()}`,

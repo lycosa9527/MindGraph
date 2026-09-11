@@ -223,12 +223,6 @@ KITTY_SPECIAL_FLOWS: List[Dict[str, Any]] = [
         "notes": "Fishbone, org chart, etc. — templated in-development ack via ack_library.",
     },
     {
-        "name": "paragraph_path",
-        "channel": "mixed",
-        "hub_op": "replace_context or patch_context",
-        "notes": "Qwen Plus extraction; large specs may use replace or batched patch (bridge policy).",
-    },
-    {
         "name": "conversation_image",
         "channel": "http",
         "hub_op": "library replace (hand-drawn) or doc_summary extract",

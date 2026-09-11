@@ -164,6 +164,23 @@ describe('useMobileKittyChat', () => {
     expect(events).toContain('kitty:pipeline_step')
   })
 
+  it('on asr_stopped with text commits even without a prior asr_final', async () => {
+    const { chat, handlers } = mountChat()
+    await nextTick()
+    await Promise.resolve()
+
+    const onStopped = handlers.get('kitty:asr_stopped')
+    expect(onStopped).toBeTypeOf('function')
+    onStopped?.({ utteranceId: 'utt-late-1', text: '自动补完这幅思维导图。' })
+
+    await vi.waitFor(() => {
+      expect(runKittyEditTurnMock).toHaveBeenCalled()
+    })
+    expect(
+      chat.messages.value.some((m) => m.role === 'user' && m.text === '自动补完这幅思维导图。')
+    ).toBe(true)
+  })
+
   it('on asr_final only buffers until asr_stopped (release-only submit)', async () => {
     const { chat, draft, handlers } = mountChat()
     await nextTick()

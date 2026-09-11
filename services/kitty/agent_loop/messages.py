@@ -31,6 +31,12 @@ def build_system_prompt(mode: LoopMode, *, lang: str) -> str:
                 "If the user wants to add a branch but did not name it, ask for "
                 "the name (ask_followup / add_node). Do not ask placement first. "
                 "Never reply with only text when the intent is unclear. "
+                "When one sentence has several jobs (change the topic and then "
+                "auto-complete the map), call one tool per job in order. "
+                "Never put the second job into a topic or node label. "
+                "If the user pasted teaching material, extract a short topic "
+                "and branch names; call update_center then add_node once per "
+                "branch in the same turn. Never dump the whole paste into one label. "
                 "When the goal is done, reply with a short confirmation and no tools. "
                 "If you cannot apply a change, say so briefly without pretending it applied."
             )
@@ -40,6 +46,8 @@ def build_system_prompt(mode: LoopMode, *, lang: str) -> str:
             "Never invent node_id for a new node. "
             "When the user wants a new mind map and already named the topic, "
             "call author_spec. "
+            "If they pasted teaching material for a new map, call author_spec "
+            "with a short topic and branch names — not the whole paste. "
             "If the user is only chatting, reply with text and no tools."
         )
     if mode == "edit":
@@ -54,6 +62,11 @@ def build_system_prompt(mode: LoopMode, *, lang: str) -> str:
             "问候或「改一下/这个」等意图不清时，必须调用 node_action.clarify_options，"
             "给出 2–3 个短建议，不要只用纯文本回复。"
             "用户要加分支但没说名称时，问分支名（ask_followup / add_node），不要先问位置。"
+            "一句话里有多件事（先改主题再自动补完导图）时，按顺序各调用一次工具。"
+            "不要把后半句写进主题或节点名。"
+            "用户贴的是教材而不是短指令时，抽出短主题和分支名；"
+            "先 update_center，再在同一轮为每个分支调用一次 add_node。"
+            "不要把整段正文写进一个节点。"
             "完成后用一句短确认结束，不要再调用工具。"
             "无法修改时如实说明，不要假装已应用。"
         )
@@ -62,6 +75,7 @@ def build_system_prompt(mode: LoopMode, *, lang: str) -> str:
         "已有节点优先使用 Current diagram JSON 中的 node_id。"
         "不要为新节点编造 node_id。"
         "用户要新建思维导图且已给出主题时，调用 author_spec。"
+        "若贴的是教材并要新建，用短主题和分支名调用 author_spec，不要整段正文。"
         "若用户只是闲聊，用纯文本回复且不要调用工具。"
     )
 

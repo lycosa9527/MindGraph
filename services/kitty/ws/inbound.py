@@ -8,7 +8,6 @@ Proprietary License
 from __future__ import annotations
 
 import logging
-import uuid
 from typing import Any, Awaitable, Callable, Dict
 
 from fastapi import WebSocket
@@ -21,7 +20,12 @@ from services.kitty.audio.session_bridge import (
     start_session_asr,
     stop_session_asr,
 )
-from services.kitty.session.turn_task import cancel_active_turn
+from services.kitty.ws.inbound_text import (
+    KittyTextIngest,
+    asr_utterance_already_ingested,
+    ingest_kitty_user_text,
+    mark_asr_utterance_ingested,
+)
 from services.kitty.ws.inbound_hello import (
     abort_reason,
     handle_hello,
@@ -34,9 +38,8 @@ from services.kitty.infra.desktop.kitty_voice_phase_fanout import (
 )
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.kitty.session.events import KittyEvent, get_session_event_bus
-from services.kitty.session.manager import get_kitty_session_manager
 from services.kitty.session.runtime_state import voice_sessions
-from services.kitty.ws.guards import KITTY_WS_MAX_AUDIO_B64_CHARS, KITTY_WS_MAX_TEXT_CHARS
+from services.kitty.ws.guards import KITTY_WS_MAX_AUDIO_B64_CHARS
 from services.kitty.ws.inbound_context import (
     handle_context_update,
     handle_diagram_mutation_ack,
@@ -50,8 +53,6 @@ __all__ = [
     "build_kitty_inbound_context",
     "dispatch_kitty_ws_inbound_message",
 ]
-
-_INGRESS_SOURCES = frozenset({"asr", "text", "clarify_choice", "ui_create"})
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +150,24 @@ async def _handle_asr_stop(ctx: KittyWsInboundContext, message: dict) -> KittyIn
         stopped_payload["utterance_id"] = utterance_id
     await safe_websocket_send(ctx.websocket, stopped_payload)
     await fanout_voice_phase_from_outbound_type(ctx.voice_session_id, "asr_stopped")
-    return "continue"
+    cleaned = final_text.strip()
+    if not cleaned:
+        return "continue"
+    mark_asr_utterance_ingested(ctx.voice_session_id, utterance_id)
+    kitty_wf_log(
+        "asr_auto_ingest",
+        cleaned[:120],
+        voice_session_id=ctx.voice_session_id,
+    )
+    return await ingest_kitty_user_text(
+        ctx,
+        cleaned,
+        KittyTextIngest(
+            utterance_id=utterance_id,
+            ingress_source="asr",
+            cancel_prior=False,
+        ),
+    )
 
 
 async def _handle_prefetch(ctx: KittyWsInboundContext, message: dict) -> KittyInboundFlow:
@@ -197,85 +215,27 @@ async def _handle_tts_set_enabled(ctx: KittyWsInboundContext, message: dict) -> 
 
 
 async def _handle_text(ctx: KittyWsInboundContext, message: dict) -> KittyInboundFlow:
-    await cancel_active_turn(ctx.voice_session_id, reason="text_input")
-    await _interrupt_tts(ctx)
-    text = message.get("text", "").strip()
-    if len(text) > KITTY_WS_MAX_TEXT_CHARS:
-        await safe_websocket_send(
-            ctx.websocket,
-            {"type": "error", "error": "Text too long"},
-        )
-        return "continue"
-    if not text:
-        return "continue"
-    logger.debug("Received text message (%d chars)", len(text))
-    kitty_wf_log(
-        "text_inbound",
-        text[:120],
-        voice_session_id=ctx.voice_session_id,
-    )
-    voice_sessions[ctx.voice_session_id]["conversation_history"].append({"role": "user", "content": text})
-    raw_request_id = message.get("request_id")
-    request_id = str(raw_request_id).strip() if isinstance(raw_request_id, str) and str(raw_request_id).strip() else ""
-    if not request_id:
-        request_id = str(uuid.uuid4())
-    voice_sessions[ctx.voice_session_id]["_one_sentence_request_id"] = request_id
-    raw_source = message.get("ingress_source")
-    ingress_source = (
-        str(raw_source).strip()
-        if isinstance(raw_source, str) and str(raw_source).strip() in _INGRESS_SOURCES
-        else "text"
-    )
     raw_utt = message.get("utterance_id")
     utterance_id = str(raw_utt).strip() if isinstance(raw_utt, str) and str(raw_utt).strip() else None
-    if utterance_id:
-        voice_sessions[ctx.voice_session_id]["_one_sentence_utterance_id"] = utterance_id
-    lane_raw = voice_sessions[ctx.voice_session_id].get("_kitty_client_lane")
-    lane = lane_raw.strip() if isinstance(lane_raw, str) and lane_raw.strip() else None
-    if lane != "mobile":
-        gate = await get_kitty_session_manager().require_desktop_ingress_allowed(
-            int(ctx.current_user.id),
-            ctx.diagram_session_id,
+    if asr_utterance_already_ingested(ctx.voice_session_id, utterance_id):
+        kitty_wf_log(
+            "text_inbound_dedup",
+            (utterance_id or "—")[:16],
             voice_session_id=ctx.voice_session_id,
+        )
+        return "continue"
+    await _interrupt_tts(ctx)
+    raw_request_id = message.get("request_id")
+    request_id = str(raw_request_id).strip() if isinstance(raw_request_id, str) and str(raw_request_id).strip() else ""
+    return await ingest_kitty_user_text(
+        ctx,
+        str(message.get("text") or ""),
+        KittyTextIngest(
+            utterance_id=utterance_id,
+            ingress_source=str(message.get("ingress_source") or "text"),
             request_id=request_id,
-        )
-        if not gate.ok:
-            await safe_websocket_send(
-                ctx.websocket,
-                {
-                    "type": "error",
-                    "error": gate.error_code or "mobile_owns_ingress",
-                    "message": gate.message or "Mobile Kitty owns edit input for this diagram",
-                    "request_id": request_id,
-                },
-            )
-            return "continue"
-    await get_kitty_session_manager().begin_ingress(
-        user_id=int(ctx.current_user.id),
-        scope=ctx.diagram_session_id,
-        request_id=request_id,
-        source=ingress_source,
-        text=text,
-        lane=lane,
-        voice_session_id=ctx.voice_session_id,
-        utterance_id=utterance_id,
+        ),
     )
-    bus = get_session_event_bus(ctx.voice_session_id)
-    inbound_payload: dict[str, Any] = {
-        "text": text,
-        "request_id": request_id,
-        "ingress_source": ingress_source,
-    }
-    if utterance_id:
-        inbound_payload["utterance_id"] = utterance_id
-    await bus.emit(
-        KittyEvent(
-            kind="text_inbound",
-            voice_session_id=ctx.voice_session_id,
-            payload=inbound_payload,
-        )
-    )
-    return "continue"
 
 
 async def _handle_auto_complete_done(ctx: KittyWsInboundContext, message: dict) -> KittyInboundFlow:

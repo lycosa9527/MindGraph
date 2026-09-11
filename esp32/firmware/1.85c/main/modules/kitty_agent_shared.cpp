@@ -17,6 +17,7 @@ std::atomic<bool> g_kitty_playing_pcm{false};
 std::atomic<bool> g_kitty_interrupt{false};
 std::atomic<bool> g_kitty_listen_auto{false};
 std::atomic<bool> g_kitty_pending_auto_listen{false};
+std::atomic<bool> g_kitty_asr_late_commit{false};
 std::atomic<uint32_t> g_kitty_utterance{1};
 
 bool kitty_b64_encode(const uint8_t *data, size_t length, std::string &out)

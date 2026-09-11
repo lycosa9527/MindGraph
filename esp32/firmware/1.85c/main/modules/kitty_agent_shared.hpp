@@ -27,6 +27,7 @@ extern std::atomic<bool> g_kitty_playing_pcm;
 extern std::atomic<bool> g_kitty_interrupt;
 extern std::atomic<bool> g_kitty_listen_auto;
 extern std::atomic<bool> g_kitty_pending_auto_listen;
+extern std::atomic<bool> g_kitty_asr_late_commit;
 extern std::atomic<uint32_t> g_kitty_utterance;
 
 bool kitty_b64_encode(const uint8_t *data, size_t length, std::string &out);

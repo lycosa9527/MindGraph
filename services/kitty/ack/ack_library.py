@@ -329,10 +329,6 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
             "Try a {alternative_label} for now; I can open one on desktop if you want."
         ),
     },
-    "paragraph.processing": {
-        "zh": "正在分析段落内容，请稍候…",
-        "en": "Analyzing the paragraph — one moment…",
-    },
 }
 
 _WS_ACTION_TO_DONE_KEY: Dict[str, str] = {

@@ -207,12 +207,16 @@ async def test_clarify_options_stops_without_mutate() -> None:
 
 @pytest.mark.asyncio
 async def test_multi_step_includes_first_tool_result_and_revision() -> None:
-    """改主题再加分支 is one compound apply, not a Qwen walk."""
+    """改主题再加分支 is planned by Qwen as two tools, not a regex stack."""
     context = _mindmap_context()
     result, vid, chat_mock, bus_mock = await _run_loop(
         "主题改成运动，再添加一个跑步的分支",
         context=context,
-        chat_side_effect=[],
+        chat_side_effect=[
+            _tool_reply("diagram.update_center", '{"new_text":"运动"}', "call_c"),
+            _tool_reply("diagram.add_node", '{"text":"跑步"}', "call_a"),
+            _text_reply("好"),
+        ],
         bus_side_effect=[
             _applied(revision=2, op="update_center"),
             _applied(revision=3, node_id="uid-run", op="add_node"),
@@ -220,8 +224,8 @@ async def test_multi_step_includes_first_tool_result_and_revision() -> None:
     )
     try:
         assert result.outcome == RouteOutcome.EXECUTED
-        assert result.reason == "fast_compound"
-        assert chat_mock.await_count == 0
+        assert result.reason != "fast_structural"
+        assert chat_mock.await_count >= 1
         assert bus_mock.await_count == 2
         center_cmd = bus_mock.await_args_list[0].args[2]
         assert center_cmd["action"] == "update_center"
@@ -510,7 +514,27 @@ async def test_heuristics_are_last_resort_after_empty_tools() -> None:
 
 @pytest.mark.asyncio
 async def test_heuristics_run_on_llm_timeout() -> None:
-    """Timeout still uses the obvious add-branch phrase as last resort."""
+    """Timeout still applies a single-intent fill phrase as last resort."""
+    context = _mindmap_context()
+    result, vid, chat_mock, bus_mock = await _run_loop(
+        "补全历史这个分支",
+        context=context,
+        chat_side_effect=LLMTimeoutError("timed out"),
+        bus_side_effect=[],
+    )
+    try:
+        assert chat_mock.await_count == 1
+        assert result.reason == "heuristic"
+        assert result.action == "auto_complete_branch"
+        assert result.outcome == RouteOutcome.EXECUTED
+        bus_mock.assert_not_awaited()
+    finally:
+        voice_sessions.pop(vid, None)
+
+
+@pytest.mark.asyncio
+async def test_stacked_timeout_does_not_partial_apply() -> None:
+    """Timeout on 改主题并补完 must not apply a swallowed topic via regex."""
     context = _mindmap_context()
     result, vid, chat_mock, bus_mock = await _run_loop(
         "添加一个饮品分析的分支并补全",
@@ -520,12 +544,11 @@ async def test_heuristics_run_on_llm_timeout() -> None:
     )
     try:
         assert chat_mock.await_count == 1
-        assert bus_mock.await_count == 1
-        assert result.reason == "heuristic"
+        assert result.reason == "intent_clarify"
         assert result.outcome == RouteOutcome.EXECUTED
-        command = mock_await_args(bus_mock)[2]
-        assert command.get("action") == "add_node"
-        assert command.get("target") == "饮品分析"
+        if bus_mock.await_count:
+            command = mock_await_args(bus_mock)[2]
+            assert command.get("action") != "add_node"
     finally:
         voice_sessions.pop(vid, None)
 

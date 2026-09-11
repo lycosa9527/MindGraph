@@ -29,6 +29,7 @@ void reset_asr()
     std::lock_guard<std::mutex> lock(g_kitty_asr_mutex);
     g_kitty_asr_text.clear();
     g_kitty_asr_done = false;
+    g_kitty_asr_late_commit.store(false);
     g_turn_ready.store(false);
 }
 
@@ -118,7 +119,7 @@ void stream_mic_until(const std::string &utterance_id, bool hold_only)
     kitty_send_obj(std::move(stop));
     kitty_ui_clear_hold();
     ESP_LOGI(TAG, "ptt stop utt=%s frames=%d peak=%d", utterance_id.c_str(), frames_sent, hold_peak);
-    for (int i = 0; i < 100; ++i) {
+    for (int i = 0; i < 160; ++i) {
         bool done = false;
         {
             std::lock_guard<std::mutex> lock(g_kitty_asr_mutex);
@@ -168,12 +169,14 @@ void kitty_agent_commit_asr()
         g_kitty_asr_done = false;
     }
     if (text.empty()) {
+        g_kitty_asr_late_commit.store(true);
         if (g_turn_ready.load()) {
             kitty_ui_set_user_text("没听清");
         }
         kitty_ui_set_state(KittyUiState::idle);
         return;
     }
+    g_kitty_asr_late_commit.store(false);
     kitty_ui_set_user_text(text);
     kitty_ui_set_state(KittyUiState::thinking);
     boost::json::object msg;
@@ -183,7 +186,11 @@ void kitty_agent_commit_asr()
     if (!utterance_id.empty()) {
         msg["utterance_id"] = utterance_id;
     }
-    kitty_send_obj(std::move(msg));
+    const std::string payload = boost::json::serialize(msg);
+    if (!kitty_ws_send_json(payload)) {
+        ESP_LOGW(TAG, "commit send failed utt=%s", utterance_id.c_str());
+        g_kitty_asr_late_commit.store(true);
+    }
 }
 
 static bool hold_is_stable()

@@ -20,11 +20,10 @@ def test_kitty_llmops_manifest_keys():
     assert "update_center" in m["diagram_voice_intents"]
     assert len(m["modules"]) >= 3
     assert "mermaid_flow" in m
-    assert len(m["special_flows"]) == 3
+    assert len(m["special_flows"]) == 2
     flow_names = {row["name"] for row in m["special_flows"]}
     assert flow_names == {
         "unsupported_diagram_type",
-        "paragraph_path",
         "conversation_image",
     }
 

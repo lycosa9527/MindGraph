@@ -1,9 +1,9 @@
-"""Live audit: five compound edits on ten Postgres mindmaps.
+"""Live audit: five stacked teacher sentences on ten Postgres mindmaps.
 
-In-session apply only. No library writeback, no canvas verify, no CosyVoice.
-Named and vague stacks must not call the LLM.
+In-session apply only. No library writeback. Auto-complete generation is stubbed;
+planning uses live qwen3.8-flash.
 
-  PYTHONPATH=. python -u scripts/audit_kitty_compound_live.py
+  LIVE_LLM=1 PYTHONPATH=. python -u scripts/audit_kitty_compound_live.py
 """
 
 from __future__ import annotations
@@ -25,16 +25,15 @@ from services.agent_hub.diagram_spine.types import DiagramCommandResult
 from services.kitty.adapters.diagram_command import (
     apply_kitty_legacy_diagram_command as real_apply,
 )
-from services.kitty.agent_loop.compound import parse_compound_turn
-from services.kitty.agent_loop.intent_clarify import PENDING_INTENT_SLOT_KEY
-from services.kitty.agent_loop.loop import run_typed_agent_loop
+from services.kitty.agent_loop.loop import AGENT_LOOP_MODEL, run_typed_agent_loop
 from services.kitty.routing.outcomes import RouteOutcome
 from services.kitty.session.ops import create_voice_session
 from services.kitty.session.runtime_state import voice_sessions
+from services.llm import llm_service
 from services.redis.redis_client import init_redis_sync
-from services.utils.error_types import REDIS_ERRORS
+from services.utils.error_types import LLM_PIPELINE_ERRORS, REDIS_ERRORS
 from tests.kitty_agent_loop_catalog import RealMindmap
-from tests.smoke.mindmap_smoke_helpers import mindmap_smoke_helpers_load_dotenv
+from tests.smoke.mindmap_smoke_helpers import live_llm_enabled, mindmap_smoke_helpers_load_dotenv
 from tests.typing_helpers import as_type
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -99,10 +98,25 @@ def compound_cases(mmap: RealMindmap) -> Tuple[Tuple[str, str], ...]:
     return (
         ("center_then_add", f"主题改成{topic}导学，再添加一个{ADD_ONE}的分支"),
         ("two_named_adds", f"再加两个分支：{ADD_A}、{ADD_B}"),
-        ("vague_two", f"主题改成{topic}导学，再加两个分支"),
+        ("center_then_fill", f"把主题改成{topic}，并自动补完这幅思维导图"),
+        ("add_then_fill", f"添加一个{ADD_ONE}的分支并补全"),
         ("delete_then_add", f"删除{branch}这个分支，再加一个{ADD_GEO}的分支"),
-        ("rename_then_add", f"把{branch}改成{RENAME_TO}，再加一个{ADD_B}的分支"),
     )
+
+
+def _tool_names(recorded: List[Dict[str, Any]]) -> List[str]:
+    names: List[str] = []
+    for row in recorded:
+        calls = row.get("tool_calls")
+        if not isinstance(calls, list):
+            continue
+        for call in calls:
+            if not isinstance(call, dict):
+                continue
+            fn = call.get("function")
+            if isinstance(fn, dict) and isinstance(fn.get("name"), str):
+                names.append(fn["name"])
+    return names
 
 
 def _applied_actions(applies: List[Dict[str, str]]) -> List[str]:
@@ -119,60 +133,46 @@ def _score(
     after: Dict[str, Any],
     applies: List[Dict[str, str]],
     result: Any,
-    llm_calls: int,
-    acks: List[str],
-    slot: Any,
+    tools: List[str],
+    ui_actions: List[str],
 ) -> List[str]:
     errors: List[str] = []
     texts = "".join(_texts(after))
-    actions = _applied_actions(applies)
+    applied = _applied_actions(applies)
     targets = _applied_targets(applies)
     if result.outcome != RouteOutcome.EXECUTED:
         errors.append(f"outcome={result.outcome}")
-    if llm_calls:
-        errors.append(f"llm_calls={llm_calls}")
-    if len(acks) != 1:
-        errors.append(f"acks={len(acks)}")
-    if action == "vague_two":
-        if result.reason != "fast_compound_vague":
-            errors.append(f"reason={result.reason}")
-        if f"{mmap.topic}导学" not in texts and f"{mmap.topic}导学" not in targets:
-            errors.append("center_missing_导学")
-        if actions.count("add_node") < 2:
-            errors.append(f"adds={actions.count('add_node')}")
-        if "新分支" not in targets and "新分支" not in texts:
-            errors.append("missing_placeholder")
-        if not (isinstance(slot, dict) and len(slot.get("node_ids") or []) == 2):
-            errors.append("slot_node_ids")
-        if acks and "叫什么" not in acks[0]:
-            errors.append("no_ask")
-        return errors
-    if result.reason != "fast_compound":
-        errors.append(f"reason={result.reason}")
+    if result.reason == "fast_structural":
+        errors.append("fast_structural")
     if action == "center_then_add":
         if f"{mmap.topic}导学" not in texts and f"{mmap.topic}导学" not in targets:
             errors.append("center_missing_导学")
         if ADD_ONE not in texts and ADD_ONE not in targets:
             errors.append(f"missing_{ADD_ONE}")
-        if actions.count("add_node") < 1:
-            errors.append(f"adds={actions.count('add_node')}")
-    if action == "two_named_adds":
+        if applied.count("add_node") < 1:
+            errors.append(f"adds={applied.count('add_node')}")
+    elif action == "two_named_adds":
         if ADD_A not in texts and ADD_A not in targets:
             errors.append(f"missing_{ADD_A}")
         if ADD_B not in texts and ADD_B not in targets:
             errors.append(f"missing_{ADD_B}")
-        if actions.count("add_node") < 2:
-            errors.append(f"adds={actions.count('add_node')}")
-    if action == "delete_then_add":
-        if actions.count("delete_node") < 1:
+        if applied.count("add_node") < 2:
+            errors.append(f"adds={applied.count('add_node')}")
+    elif action == "center_then_fill":
+        if mmap.topic not in texts and mmap.topic not in targets:
+            errors.append("center_missing")
+        if "node_action.auto_complete" not in tools and "auto_complete" not in ui_actions:
+            errors.append("no_auto_complete")
+    elif action == "add_then_fill":
+        if ADD_ONE not in texts and ADD_ONE not in targets:
+            errors.append(f"missing_{ADD_ONE}")
+        if "node_action.auto_complete_branch" not in tools and "auto_complete_branch" not in ui_actions:
+            errors.append("no_branch_fill")
+    elif action == "delete_then_add":
+        if applied.count("delete_node") < 1:
             errors.append("no_delete")
         if ADD_GEO not in texts and ADD_GEO not in targets:
             errors.append(f"missing_{ADD_GEO}")
-    if action == "rename_then_add":
-        if RENAME_TO not in texts and RENAME_TO not in targets:
-            errors.append(f"missing_{RENAME_TO}")
-        if ADD_B not in texts and ADD_B not in targets:
-            errors.append(f"missing_{ADD_B}")
     return errors
 
 
@@ -183,7 +183,7 @@ async def run_one(
     *,
     fake_ws_cls: Any,
 ) -> Dict[str, Any]:
-    """One compound utterance on a deep-copied session."""
+    """One stacked utterance on a deep-copied session."""
     ws = fake_ws_cls()
     ctx = copy.deepcopy(mmap.context)
     vid = create_voice_session(
@@ -194,18 +194,21 @@ async def run_one(
     voice_sessions[vid]["context"] = ctx
     voice_sessions[vid]["active_panel"] = "one_sentence"
     applies: List[Dict[str, str]] = []
-    acks: List[str] = []
+    ui_actions: List[str] = []
+    recorded: List[Dict[str, Any]] = []
     apply_ms = 0.0
-    llm_calls = 0
+    llm_ms = 0.0
+    real_chat = llm_service.chat_raw
 
-    async def _forbid_llm(*_args: Any, **_kwargs: Any) -> Any:
-        nonlocal llm_calls
-        llm_calls += 1
-        raise AssertionError("compound path must not call chat_raw")
-
-    async def _capture_ack(_ws: Any, _vid: str, message: str, **_kwargs: Any) -> bool:
-        acks.append(message)
-        return True
+    async def _chat(*args: Any, **kwargs: Any) -> Any:
+        nonlocal llm_ms
+        kwargs["timeout"] = 30.0
+        started = time.perf_counter()
+        result = await real_chat(*args, **kwargs)
+        llm_ms += (time.perf_counter() - started) * 1000.0
+        if isinstance(result, dict):
+            recorded.append(result)
+        return result
 
     async def _timed_apply(
         websocket: Any,
@@ -268,24 +271,31 @@ async def run_one(
         )
         return result
 
+    async def _capture_ac(*_args: Any, **_kwargs: Any) -> bool:
+        ui_actions.append("auto_complete_branch")
+        return True
+
+    async def _capture_ws(_ws: Any, _vid: str, message: Any, **_kwargs: Any) -> bool:
+        if isinstance(message, dict) and message.get("action") == "auto_complete":
+            ui_actions.append("auto_complete")
+        return True
+
     started = time.perf_counter()
-    parsed = parse_compound_turn(utterance)
     errors: List[str] = []
-    slot: Any = None
     try:
         with (
-            patch("services.kitty.agent_loop.loop.llm_service.chat_raw", new=_forbid_llm),
+            patch("services.kitty.agent_loop.loop.llm_service.chat_raw", new=_chat),
             patch("services.kitty.agent_loop.tools.apply_kitty_legacy_diagram_command", new=_timed_apply),
             patch(
                 "services.kitty.agent_loop.tools.maybe_start_background_branch_autocomplete",
                 new=AsyncMock(return_value=False),
             ),
-            patch("services.kitty.agent_loop.tools.emit_auto_complete_branch", new=AsyncMock(return_value=True)),
-            patch("services.kitty.agent_loop.tools.send_kitty_ws_action", new=AsyncMock(return_value=True)),
-            patch("services.kitty.agent_loop.compound.emit_user_ack", new=_capture_ack),
+            patch("services.kitty.agent_loop.tools.emit_auto_complete_branch", new=_capture_ac),
+            patch("services.kitty.agent_loop.tools.send_kitty_ws_action", new=_capture_ws),
+            patch("services.kitty.agent_loop.compound.emit_user_ack", new=AsyncMock(return_value=True)),
             patch("services.kitty.agent_loop.tools.emit_user_ack", new=AsyncMock(return_value=True)),
+            patch("services.kitty.agent_loop.loop.emit_user_ack", new=AsyncMock(return_value=True)),
             patch("services.kitty.agent_loop.tools.interrupt_kitty_tts", new=AsyncMock()),
-            patch("services.kitty.agent_loop.compound.persist_armed_intent_slot", new=AsyncMock()),
             patch("services.kitty.agent_loop.loop.persist_armed_intent_slot", new=AsyncMock()),
             patch("services.kitty.agent_loop.loop.load_kitty_live_context", new=AsyncMock(return_value=None)),
             patch(
@@ -296,27 +306,17 @@ async def run_one(
                 "services.kitty.agent_loop.loop.live_spec_newer_than_library",
                 new=AsyncMock(return_value=True),
             ),
-            patch(
-                "services.kitty.agent_loop.loop.fanout_voice_phase_from_session",
-                new=AsyncMock(),
-            ),
-            patch(
-                "services.kitty.diagram.diagram_execute.try_sync_voice_diagram_to_hub",
-                new=AsyncMock(),
-            ),
-            patch(
-                "services.kitty.context.messaging.publish_kitty_diagram_update",
-                new=AsyncMock(return_value=True),
-            ),
+            patch("services.kitty.agent_loop.loop.fanout_voice_phase_from_session", new=AsyncMock()),
+            patch("services.kitty.agent_loop.tools.fanout_voice_command_from_session", new=AsyncMock()),
+            patch("services.kitty.diagram.diagram_execute.try_sync_voice_diagram_to_hub", new=AsyncMock()),
+            patch("services.kitty.context.messaging.publish_kitty_diagram_update", new=AsyncMock(return_value=True)),
         ):
             result = await run_typed_agent_loop(as_type(ws, WebSocket), vid, utterance, ctx)
         total_ms = (time.perf_counter() - started) * 1000.0
         after = _diagram_from_session(vid)
-        live = voice_sessions.get(vid) or {}
-        slot = live.get(PENDING_INTENT_SLOT_KEY) if isinstance(live, dict) else None
-        errors.extend(_score(action, mmap, after, applies, result, llm_calls, acks, slot))
-        if parsed is None:
-            errors.append("parse_none")
+        tools = _tool_names(recorded)
+        errors.extend(_score(action, mmap, after, applies, result, tools, ui_actions))
+        path = "llm" if recorded else str(result.reason or "unknown")
         return {
             "slug": mmap.slug,
             "topic": mmap.topic,
@@ -328,17 +328,19 @@ async def run_one(
             "outcome": str(result.outcome),
             "reason": str(result.reason or ""),
             "loop_action": str(result.action or ""),
-            "ack": acks[0] if acks else "",
+            "path": path,
+            "model": AGENT_LOOP_MODEL if recorded else "",
+            "tools": tools,
+            "ui_actions": ui_actions,
             "applies": applies,
             "apply_n": len(applies),
             "applied_n": sum(1 for row in applies if row.get("status") == "applied"),
+            "llm_ms": round(llm_ms, 1),
             "apply_ms": round(apply_ms, 1),
             "total_ms": round(total_ms, 1),
-            "llm_calls": llm_calls,
-            "parse_kind": parsed.kind if parsed is not None else "",
-            "slot": slot if isinstance(slot, dict) else None,
+            "llm_calls": len(recorded),
         }
-    except AssertionError as exc:
+    except (*LLM_PIPELINE_ERRORS, AssertionError) as exc:
         return {
             "slug": mmap.slug,
             "topic": mmap.topic,
@@ -350,14 +352,17 @@ async def run_one(
             "outcome": "error",
             "reason": "",
             "loop_action": "",
-            "ack": acks[0] if acks else "",
+            "path": "error",
+            "model": AGENT_LOOP_MODEL,
+            "tools": _tool_names(recorded),
+            "ui_actions": ui_actions,
             "applies": applies,
             "apply_n": len(applies),
             "applied_n": sum(1 for row in applies if row.get("status") == "applied"),
+            "llm_ms": round(llm_ms, 1),
             "apply_ms": round(apply_ms, 1),
             "total_ms": round((time.perf_counter() - started) * 1000.0, 1),
-            "llm_calls": llm_calls,
-            "parse_kind": parsed.kind if parsed is not None else "",
+            "llm_calls": len(recorded),
         }
     finally:
         voice_sessions.pop(vid, None)
@@ -373,6 +378,9 @@ def _print_maps(pairs: List[tuple[Dict[str, Any], RealMindmap]]) -> None:
 
 async def _async_main(limit: int) -> int:
     mindmap_smoke_helpers_load_dotenv(ROOT / ".env")
+    if not live_llm_enabled():
+        print("Need LIVE_LLM=1 and QWEN_API_KEY")
+        return 2
     pg_mod = _load_module(_PG_AUDIT, "audit_kitty_pg_node_actions")
     timing_mod = _load_module(_TIMING, "audit_kitty_structural_timing")
     rows = await pg_mod.fetch_pg_mindmaps(limit=max(limit, 16))
@@ -386,6 +394,8 @@ async def _async_main(limit: int) -> int:
         init_redis_sync()
     except REDIS_ERRORS as exc:
         print(f"Redis init skipped: {exc}")
+    llm_service.initialize()
+    print(f"LLM: live {AGENT_LOOP_MODEL}")
 
     cases: List[Dict[str, Any]] = []
     wall_started = time.perf_counter()
@@ -399,18 +409,21 @@ async def _async_main(limit: int) -> int:
             )
             cases.append(result)
             flag = "PASS" if result["ok"] else "FAIL"
+            tools = ",".join(result.get("tools") or [])
             print(
                 f"[{flag}] {mmap.slug}/{action} "
-                f"apply={result['applied_n']} {result['total_ms']:.0f}ms "
-                f"{result['reason']} {result['errors']}"
+                f"path={result['path']} reason={result['reason']} "
+                f"llm={result['llm_calls']}@{result['llm_ms']:.0f}ms "
+                f"apply={result['applied_n']}@{result['apply_ms']:.0f}ms "
+                f"total={result['total_ms']:.0f}ms "
+                f"tools={tools} {result['errors']}"
             )
 
     wall_ms = (time.perf_counter() - wall_started) * 1000.0
-    by_action = {
-        name: [row for row in cases if row.get("action") == name]
-        for name in ("center_then_add", "two_named_adds", "vague_two", "delete_then_add", "rename_then_add")
-    }
+    names = [action for action, _utterance in compound_cases(pairs[0][1])]
+    by_action = {name: [row for row in cases if row.get("action") == name] for name in names}
     report = {
+        "model": AGENT_LOOP_MODEL,
         "maps": [
             {
                 "id": row["id"],
@@ -421,14 +434,18 @@ async def _async_main(limit: int) -> int:
             }
             for row, mmap in pairs
         ],
-        "commands": [action for action, _utterance in compound_cases(pairs[0][1])],
+        "commands": names,
         "wall_ms": round(wall_ms, 1),
         "passed": sum(1 for row in cases if row["ok"]),
         "n": len(cases),
         "timing_all_ms": _ms_stats([float(row.get("total_ms") or 0) for row in cases]),
+        "timing_llm_ms": _ms_stats([float(row.get("llm_ms") or 0) for row in cases]),
         "timing_apply_ms": _ms_stats([float(row.get("apply_ms") or 0) for row in cases]),
         "timing_by_action_ms": {
             name: _ms_stats([float(row.get("total_ms") or 0) for row in rows]) for name, rows in by_action.items()
+        },
+        "llm_by_action_ms": {
+            name: _ms_stats([float(row.get("llm_ms") or 0) for row in rows]) for name, rows in by_action.items()
         },
         "llm_calls": sum(int(row.get("llm_calls") or 0) for row in cases),
         "cases": cases,
@@ -437,15 +454,16 @@ async def _async_main(limit: int) -> int:
     OUT_JSON.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(
         f"\n{report['passed']}/{report['n']}  "
-        f"llm={report['llm_calls']}  "
-        f"p50={report['timing_all_ms']['p50']}ms  "
+        f"model={AGENT_LOOP_MODEL}  llm_calls={report['llm_calls']}  "
+        f"p50_total={report['timing_all_ms']['p50']}ms  "
+        f"p50_llm={report['timing_llm_ms']['p50']}ms  "
         f"wall {wall_ms / 1000:.1f}s  wrote {OUT_JSON}"
     )
     return 0 if report["passed"] == report["n"] else 1
 
 
 def main() -> int:
-    """CLI entry for the compound-command upgrade audit."""
+    """CLI entry for the compound-command live timing audit."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--limit", type=int, default=16)
     args = parser.parse_args()

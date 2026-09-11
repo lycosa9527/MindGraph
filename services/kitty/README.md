@@ -14,7 +14,6 @@ One backend package. There is no separate `kitty_voice` module.
 | `services/kitty/ack/` | User-facing acknowledgment templates (`text_chunk` + CosyVoice) |
 | `services/kitty/diagram/` | Diagram mutations via agent hub |
 | `services/kitty/context/` | Voice context merge + library refresh |
-| `services/kitty/content/` | Paragraph batch apply |
 | `services/kitty/http/` | REST handlers + LLMOps manifest |
 | `services/kitty/infra/redis/` | Key templates, live_spec, refcount |
 | `services/kitty/infra/desktop/` | Mobile/desktop pairing, wake, actions |

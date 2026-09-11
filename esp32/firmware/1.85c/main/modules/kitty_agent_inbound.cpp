@@ -132,21 +132,28 @@ void kitty_agent_handle_inbound(const std::string &raw)
         const std::string spoken = (text != nullptr && text->is_string())
             ? std::string(text->as_string().c_str())
             : "";
+        bool late_commit = false;
         {
             std::lock_guard<std::mutex> lock(g_kitty_asr_mutex);
             if (!spoken.empty()) {
                 g_kitty_asr_text = spoken;
             }
-            if (type == "asr_final") {
+            if (type == "asr_final" && !spoken.empty()) {
                 g_kitty_asr_done = true;
             } else if (type == "asr_stopped" && !g_kitty_asr_text.empty()) {
                 g_kitty_asr_done = true;
+            }
+            if (g_kitty_asr_done) {
+                late_commit = g_kitty_asr_late_commit.exchange(false);
             }
         }
         if (!spoken.empty()) {
             kitty_agent_begin_user_turn_once();
             kitty_ui_set_user_text(spoken);
             ESP_LOGI(TAG, "asr %s: %s", type.c_str(), spoken.c_str());
+        }
+        if (late_commit) {
+            kitty_agent_commit_asr();
         }
         return;
     }

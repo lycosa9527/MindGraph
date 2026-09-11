@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.71] - 2026-09-11
+
+> **Kitty stacked edits and long paste use qwen3.8-flash; Fun-ASR stop starts the turn.**
+
+### Changed
+
+- **ASR auto-ingest** — Fun-ASR final text starts `run_typed_agent_loop` on `asr_stopped`. A later client `text` with the same `utterance_id` is ignored so it cannot cancel that turn. Short watch holds no longer sit idle after ASR.
+- **Stacked jobs** — `改主题并补完` / `再加A、B` go to **qwen3.8-flash** tools (one tool per job). Regex no longer plans the task list. A single clean add / rename / delete / preference stays on the fast path (~1 ms apply). Live PG audit: 10 maps × 5 stacks, 47/50, p50 4.6 s (almost all model wait).
+- **Long paste** — The qwen-plus paragraph extractor is gone. Flash extracts a short topic and branch names and calls `update_center` / `add_node` (or `author_spec` for a new map).
+
+### Tests
+
+- [`tests/test_kitty_asr_auto_ingest.py`](tests/test_kitty_asr_auto_ingest.py), [`tests/test_kitty_compound.py`](tests/test_kitty_compound.py), [`tests/test_kitty_fast_structural.py`](tests/test_kitty_fast_structural.py), [`tests/test_kitty_paragraph_loop.py`](tests/test_kitty_paragraph_loop.py); live audit [`scripts/audit_kitty_compound_live.py`](scripts/audit_kitty_compound_live.py).
+
 ## [5.180.70] - 2026-09-11
 
 > **Watch rematches when desktop first-saves a new mind map UUID.**

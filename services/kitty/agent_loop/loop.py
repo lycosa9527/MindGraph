@@ -21,7 +21,6 @@ from services.infrastructure.http.error_handler import (
 from services.kitty.ack.ack_emit import emit_user_ack
 from services.kitty.ack.ack_library import render_not_understood_ack
 from services.kitty.agent_loop.compound import (
-    parse_compound_turn,
     run_compound_plan,
     take_placeholder_rename_plan,
 )
@@ -68,8 +67,6 @@ from services.kitty.infra.redis.kitty_session_redis import (
     apply_redis_live_to_voice_session,
     load_kitty_live_context,
 )
-from services.kitty.content.paragraph import process_paragraph_with_qwen_plus
-from services.kitty.diagram.diagram_utils import is_paragraph_text
 from services.kitty.routing.node_action_library import render_diagram_snapshot_block
 from services.kitty.routing.outcomes import RouteOutcome, RouteResult
 from services.kitty.routing.one_sentence_edit_heuristics import heuristic_one_sentence_edit_command
@@ -91,11 +88,18 @@ from services.kitty.session.runtime_state import voice_sessions
 from services.llm import llm_service
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 
-AGENT_LOOP_MODEL = "qwen3.6-flash"
+AGENT_LOOP_MODEL = "qwen3.8-flash"
 MAX_TOOL_ROUNDS = 5
 _FAST_STRUCTURAL_ACTIONS = frozenset({"add_node", "delete_node", "update_node", "update_center"})
 _FAST_PREFERENCE_ACTIONS = frozenset({"set_content_level", "set_branch_numbering"})
-_COMPOUND_UTTERANCE_RE = re.compile(r"再|然后|并且|and then|, then|，再|，然后")
+# Fast path is a skip-LLM gate only. Stacked jobs go to qwen3.8-flash.
+# Do not treat a leading 再加一个… as stacked — that is one add.
+_JOB_JOIN_RE = re.compile(
+    r"并且|，并|并自动|and then|, then|，再|，然后|"
+    r"(?:改成|换成|改为|变成|设为).{1,40}再"
+)
+_FILL_JOB_RE = re.compile(r"补全|补完|完善|填充|自动完成|完成这")
+_STACKED_JOB_RE = re.compile(rf"(?:{_JOB_JOIN_RE.pattern})|(?:{_FILL_JOB_RE.pattern})")
 
 
 def _is_fast_structural_command(command: Dict[str, Any], utterance: str = "") -> bool:
@@ -106,10 +110,12 @@ def _is_fast_structural_command(command: Dict[str, Any], utterance: str = "") ->
     follows = command.get("follow_up_actions")
     if isinstance(follows, list) and follows:
         return False
-    if utterance and _COMPOUND_UTTERANCE_RE.search(utterance):
+    if utterance and _STACKED_JOB_RE.search(utterance):
         return False
     target = command.get("target")
-    return isinstance(target, str) and bool(target.strip())
+    if not isinstance(target, str) or not target.strip():
+        return False
+    return "，" not in target and "," not in target
 
 
 def _is_fast_preference_command(command: Dict[str, Any], utterance: str = "") -> bool:
@@ -120,7 +126,7 @@ def _is_fast_preference_command(command: Dict[str, Any], utterance: str = "") ->
     follows = command.get("follow_up_actions")
     if isinstance(follows, list) and follows:
         return False
-    if utterance and _COMPOUND_UTTERANCE_RE.search(utterance):
+    if utterance and _STACKED_JOB_RE.search(utterance):
         return False
     if action == "set_content_level":
         return isinstance(command.get("level"), str) and bool(str(command.get("level")).strip())
@@ -309,10 +315,10 @@ async def _last_resort_heuristic(
     diagram_type: str,
     verify_required: bool,
 ) -> Optional[RouteResult]:
+    if _JOB_JOIN_RE.search(command_text):
+        return None
     heuristic = heuristic_one_sentence_edit_command(command_text)
     if heuristic is None:
-        return None
-    if _COMPOUND_UTTERANCE_RE.search(command_text) and heuristic.get("action") == "update_center":
         return None
     dispatched = await dispatch_prepared_command(
         websocket,
@@ -484,39 +490,11 @@ async def run_typed_agent_loop(
         pick_reason = "ask_followup" if dispatched.action == "ask_followup" else "clarify_pick"
         return _finish(voice_session_id, outcome, action=dispatched.action, reason=pick_reason)
 
-    if is_paragraph_text(text):
-        executed = await process_paragraph_with_qwen_plus(
-            websocket,
-            voice_session_id,
-            text,
-            context,
-        )
-        if executed:
-            return _finish(voice_session_id, RouteOutcome.EXECUTED, action="paragraph")
-        return _finish(
-            voice_session_id,
-            RouteOutcome.FAILED,
-            reason="paragraph_processing_failed",
-            action="paragraph",
-        )
-
     mode = _resolve_mode(context, live_dict)
     diagram_type = _diagram_type(voice_session_id, context)
     verify_required = is_mindmap_diagram_type(diagram_type)
     lang = resolve_voice_interaction_language(context)
     if mode == "edit":
-        compound = parse_compound_turn(text)
-        if compound is not None:
-            return await run_compound_plan(
-                websocket,
-                voice_session_id,
-                plan=compound,
-                session_context=context,
-                diagram_type=diagram_type,
-                command_text=text,
-                verify_required=verify_required,
-                lang=lang,
-            )
         heuristic = heuristic_one_sentence_edit_command(text)
         if heuristic is not None:
             followup = rewrite_valueless_edit_to_followup(heuristic, lang=lang)
