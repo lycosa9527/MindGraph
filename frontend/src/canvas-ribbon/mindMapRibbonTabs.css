@@ -84,11 +84,11 @@
   box-shadow: none;
 }
 
-:global(.dark) .mm-ribbon-tabs--topbar .mm-ribbon-tabs__tab {
+.dark .mm-ribbon-tabs--topbar .mm-ribbon-tabs__tab {
   color: #e5e7eb;
 }
 
-:global(.dark) .mm-ribbon-tabs--topbar .mm-ribbon-tabs__tab.is-active {
+.dark .mm-ribbon-tabs--topbar .mm-ribbon-tabs__tab.is-active {
   background: #1f2937;
   color: #93c5fd;
   box-shadow: none;
