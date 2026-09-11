@@ -10,6 +10,12 @@ from unittest.mock import MagicMock
 import pytest
 from websockets.exceptions import ConnectionClosedOK
 
+from services.kitty.asr.audio_format import (
+    ASR_FORMAT_OPUS,
+    ASR_FORMAT_PCM,
+    normalize_asr_audio_format,
+    parse_asr_audio_format,
+)
 from services.kitty.asr.fun_asr_realtime import (
     FunAsrRealtimeClient,
     build_fun_asr_finish_task,
@@ -48,6 +54,27 @@ def test_fun_asr_run_task_payload() -> None:
     assert payload["payload"]["parameters"]["sample_rate"] == 16000
     assert payload["payload"]["parameters"]["semantic_punctuation_enabled"] is False
     assert payload["payload"]["parameters"]["language_hints"] == ["zh"]
+
+
+def test_normalize_asr_audio_format() -> None:
+    """Watch sends opus; browsers omit the field and stay PCM."""
+    assert normalize_asr_audio_format("opus") == ASR_FORMAT_OPUS
+    assert normalize_asr_audio_format("PCM") == ASR_FORMAT_PCM
+    assert normalize_asr_audio_format("webm") == ASR_FORMAT_PCM
+    assert parse_asr_audio_format({"format": "opus"}) == ASR_FORMAT_OPUS
+    assert parse_asr_audio_format({"audio_format": "opus"}) == ASR_FORMAT_OPUS
+    assert parse_asr_audio_format({}) == ASR_FORMAT_PCM
+
+
+def test_fun_asr_run_task_opus_format() -> None:
+    """Watch asr_start format=opus is forwarded to Fun-ASR run-task."""
+    payload = build_fun_asr_run_task(
+        "task-opus",
+        model="fun-asr-realtime",
+        audio_format="opus",
+    )
+    assert payload["payload"]["parameters"]["format"] == "opus"
+    assert payload["payload"]["parameters"]["sample_rate"] == 16000
 
 
 def test_fun_asr_finish_task_payload() -> None:
@@ -327,12 +354,16 @@ async def test_start_session_asr_echoes_utterance_id(monkeypatch) -> None:
             on_partial: PartialCb,
             on_error: Optional[ErrorCb] = None,
             language_hints: Optional[list[str]] = None,
+            semantic_punctuation_enabled: bool = False,
+            audio_format: str = ASR_FORMAT_PCM,
         ) -> None:
             """Capture callbacks then no-op start."""
             super().__init__(
                 on_partial=on_partial,
                 on_error=on_error,
                 language_hints=language_hints,
+                semantic_punctuation_enabled=semantic_punctuation_enabled,
+                audio_format=audio_format,
             )
             self.partial_cb = on_partial
 
@@ -366,6 +397,7 @@ async def test_start_session_asr_echoes_utterance_id(monkeypatch) -> None:
             utterance_id="utt-hold-9",
         )
         assert any(frame.get("type") == "asr_started" and frame.get("utterance_id") == "utt-hold-9" for frame in sent)
+        assert voice_sessions[vid]["_fun_asr_audio_format"] == "pcm"
         client = voice_sessions[vid]["_fun_asr_client"]
         assert isinstance(client, ImmediateAsr)
         await client.partial_cb("你好", True)
@@ -629,4 +661,97 @@ async def test_lecture_tts_done_includes_lecture_and_step(monkeypatch: pytest.Mo
         assert done.get("step_id") == "step-overview"
     finally:
         await bridge.teardown_session_audio(vid)
+        voice_sessions.pop(vid, None)
+
+
+def test_pcm16le_peak_reads_little_endian_int16() -> None:
+    """Watch / browser PCM peak is the max absolute int16 sample."""
+    quiet = (1).to_bytes(2, "little", signed=True) * 8
+    loud = (12000).to_bytes(2, "little", signed=True)
+    negative = (-8000).to_bytes(2, "little", signed=True)
+    assert bridge.pcm16le_peak(quiet) == 1
+    assert bridge.pcm16le_peak(quiet + loud + negative) == 12000
+    assert bridge.pcm16le_peak(b"") == 0
+
+
+@pytest.mark.asyncio
+async def test_feed_session_asr_tracks_pcm_peak() -> None:
+    """First-frame and hold peak must come from decoded PCM, not frame count."""
+    vid = "voice-asr-peak"
+    sent_pcm: list[bytes] = []
+
+    class TrackingAsr(FunAsrRealtimeClient):
+        """Record PCM frames."""
+
+        def __init__(self) -> None:
+            """Initialize with a no-op partial callback."""
+            super().__init__(on_partial=lambda _t, _e: asyncio.sleep(0))
+
+        async def send_pcm(self, pcm: bytes) -> None:
+            """Capture PCM."""
+            sent_pcm.append(pcm)
+
+        async def finish(self) -> None:
+            """No-op finish."""
+            return None
+
+    voice_sessions[vid] = {
+        "_fun_asr_client": TrackingAsr(),
+        "_fun_asr_utterance_id": "w1",
+        "_kitty_client_lane": "mobile",
+        "_fun_asr_audio_frames": 0,
+        "_fun_asr_audio_bytes": 0,
+        "_fun_asr_audio_peak": 0,
+        "_fun_asr_first_audio_logged": False,
+        "_fun_asr_dropped_before_start": 0,
+    }
+    try:
+        quiet = base64.b64encode((40).to_bytes(2, "little", signed=True) * 8).decode("ascii")
+        loud = base64.b64encode((9000).to_bytes(2, "little", signed=True) * 8).decode("ascii")
+        await bridge.feed_session_asr_audio(vid, quiet, utterance_id="w1")
+        await bridge.feed_session_asr_audio(vid, loud, utterance_id="w1")
+        assert voice_sessions[vid]["_fun_asr_audio_peak"] == 9000
+        assert await bridge.stop_session_asr(vid, utterance_id="w1") == ""
+        assert len(sent_pcm) == 2
+    finally:
+        voice_sessions.pop(vid, None)
+
+
+@pytest.mark.asyncio
+async def test_feed_session_asr_opus_skips_pcm_peak() -> None:
+    """Opus packets are not int16 PCM; peak stays 0 and bytes still forward."""
+    vid = "voice-asr-opus-peak"
+    sent: list[bytes] = []
+
+    class TrackingAsr(FunAsrRealtimeClient):
+        """Record forwarded frames."""
+
+        def __init__(self) -> None:
+            """Initialize with a no-op partial callback."""
+            super().__init__(on_partial=lambda _t, _e: asyncio.sleep(0))
+
+        async def send_pcm(self, pcm: bytes) -> None:
+            """Capture binary audio."""
+            sent.append(pcm)
+
+    packet = bytes(range(40, 80))
+    voice_sessions[vid] = {
+        "_fun_asr_client": TrackingAsr(),
+        "_fun_asr_utterance_id": "w-opus",
+        "_fun_asr_audio_format": "opus",
+        "_fun_asr_audio_frames": 0,
+        "_fun_asr_audio_bytes": 0,
+        "_fun_asr_audio_peak": 0,
+        "_fun_asr_first_audio_logged": False,
+        "_fun_asr_dropped_before_start": 0,
+    }
+    try:
+        await bridge.feed_session_asr_audio(
+            vid,
+            base64.b64encode(packet).decode("ascii"),
+            utterance_id="w-opus",
+        )
+        assert sent == [packet]
+        assert voice_sessions[vid]["_fun_asr_audio_peak"] == 0
+    finally:
         voice_sessions.pop(vid, None)

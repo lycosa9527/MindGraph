@@ -54,30 +54,30 @@ const statusSubtitle = computed(() => {
   if (!props.interactive) {
     switch (props.state) {
       case 'listening':
-        return t('canvas.kittyMobileIndicatorListening', '手机正在聆听')
+        return t('canvas.kittyMobileIndicatorListening')
       case 'speaking':
-        return t('canvas.kittyMobileIndicatorSpeaking', '手机正在回复')
+        return t('canvas.kittyMobileIndicatorSpeaking')
       case 'thinking':
-        return t('canvas.kittyMobileIndicatorThinking', '手机正在思考')
+        return t('canvas.kittyMobileIndicatorThinking')
       default:
         return t('canvas.kittyMobileIndicatorHint')
     }
   }
   switch (props.state) {
     case 'error':
-      return '连接异常 · 点击重试'
+      return t('canvas.kittyAnchor.error')
     case 'connecting':
-      return '连接中…'
+      return t('canvas.kittyAnchor.connecting')
     case 'listening':
-      return '正在聆听'
+      return t('canvas.kittyAnchor.listening')
     case 'speaking':
-      return '正在回复'
+      return t('canvas.kittyAnchor.speaking')
     case 'thinking':
-      return '正在思考'
+      return t('canvas.kittyAnchor.thinking')
     case 'active':
-      return '已连接 · 点击使用'
+      return t('canvas.kittyAnchor.active')
     default:
-      return '语音与图示助手 · 点击打开'
+      return t('canvas.kittyAnchor.idle')
   }
 })
 
@@ -85,35 +85,35 @@ const ariaLabel = computed(() => {
   if (!props.interactive) {
     switch (props.state) {
       case 'listening':
-        return t('canvas.kittyMobileIndicatorListeningAria', 'Kitty 手机端正在聆听')
+        return t('canvas.kittyMobileIndicatorListeningAria')
       case 'speaking':
-        return t('canvas.kittyMobileIndicatorSpeakingAria', 'Kitty 手机端正在回复')
+        return t('canvas.kittyMobileIndicatorSpeakingAria')
       case 'thinking':
-        return t('canvas.kittyMobileIndicatorThinkingAria', 'Kitty 手机端正在思考')
+        return t('canvas.kittyMobileIndicatorThinkingAria')
       default:
         return t('canvas.kittyMobileIndicatorAria')
     }
   }
   switch (props.state) {
     case 'error':
-      return 'Kitty 智能体，连接异常，点击打开'
+      return t('canvas.kittyAnchor.aria.error')
     case 'connecting':
-      return 'Kitty 智能体，连接中，点击打开'
+      return t('canvas.kittyAnchor.aria.connecting')
     case 'listening':
-      return 'Kitty 智能体，正在聆听，点击打开'
+      return t('canvas.kittyAnchor.aria.listening')
     case 'speaking':
-      return 'Kitty 智能体，正在回复，点击打开'
+      return t('canvas.kittyAnchor.aria.speaking')
     case 'thinking':
-      return 'Kitty 智能体，正在思考，点击打开'
+      return t('canvas.kittyAnchor.aria.thinking')
     case 'active':
-      return 'Kitty 智能体，已连接，点击打开'
+      return t('canvas.kittyAnchor.aria.active')
     default:
-      return 'Kitty 智能体，点击连接或打开面板'
+      return t('canvas.kittyAnchor.aria.idle')
   }
 })
 
 const inlineTitle = computed(() =>
-  props.interactive ? 'Kitty 智能体' : t('canvas.kittyMobileIndicatorTitle')
+  props.interactive ? t('canvas.kittyAnchor.title') : t('canvas.kittyMobileIndicatorTitle')
 )
 
 const fabPhaseClass = computed(() => {

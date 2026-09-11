@@ -11,6 +11,7 @@ import type { KittyAgentContext } from '@/composables/kitty/useKittyAgent'
 import { resolveMindMapAudienceInstructions } from '@/composables/mindMap/audience/aiContentLevelInstructions'
 import { buildDiagramData } from '@/composables/nodePalette/diagramDataBuilder'
 import { i18n } from '@/i18n'
+import { useAiContentLevelStore } from '@/stores/aiContentLevel'
 import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -105,6 +106,7 @@ export function buildKittyDiagramContext(
   const audienceInstructions = isMindMapDiagramType(dt)
     ? resolveMindMapAudienceInstructions(kittyInteractionLanguageFromUi())
     : undefined
+  const contentLevel = useAiContentLevelStore().level
 
   return {
     diagram_type: dt,
@@ -117,6 +119,7 @@ export function buildKittyDiagramContext(
     one_sentence_phase: options?.oneSentencePhase,
     diagram_write_lock: { holder: getDiagramWriteLockHolder() },
     selected_llm_model: selectedLlmModel,
+    ai_content_level: contentLevel,
     ...(audienceInstructions ? { audience_instructions: audienceInstructions } : {}),
   }
 }

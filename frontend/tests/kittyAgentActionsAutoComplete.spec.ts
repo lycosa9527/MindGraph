@@ -17,9 +17,27 @@ vi.mock('@/composables/kitty/kittySelectionApply', () => ({
   applyKittySelectionTarget: vi.fn(),
 }))
 
+const setLevelMock = vi.fn()
+const setNumberingMock = vi.fn()
+const setNumberingPrefixMock = vi.fn()
+
+vi.mock('@/stores/aiContentLevel', () => ({
+  useAiContentLevelStore: () => ({ setLevel: setLevelMock }),
+}))
+
+vi.mock('@/stores', () => ({
+  useDiagramStore: () => ({
+    setMindMapBranchNumbering: setNumberingMock,
+    setMindMapBranchNumberingPrefix: setNumberingPrefixMock,
+  }),
+}))
+
 describe('executeKittyAgentAction auto_complete topic', () => {
   beforeEach(() => {
     emitMock.mockClear()
+    setLevelMock.mockClear()
+    setNumberingMock.mockClear()
+    setNumberingPrefixMock.mockClear()
   })
 
   it('emits diagram:auto_complete_requested with topic from params', async () => {
@@ -49,5 +67,24 @@ describe('executeKittyAgentAction auto_complete topic', () => {
     executeKittyAgentAction('explain_node', { node_id: 'n1', node_label: '广东' })
     expect(emitMock).toHaveBeenCalledWith('mindmap:explain_node_requested', { nodeId: 'n1' })
     expect(emitMock).not.toHaveBeenCalledWith('mindmate:send_message', expect.anything())
+  })
+
+  it('sets AI content level from Kitty', async () => {
+    const { executeKittyAgentAction } = await import('@/composables/kitty/kittyAgentActions')
+    executeKittyAgentAction('set_content_level', { level: 'primary' })
+    expect(setLevelMock).toHaveBeenCalledWith('primary')
+  })
+
+  it('toggles branch numbering from Kitty', async () => {
+    const { executeKittyAgentAction } = await import('@/composables/kitty/kittyAgentActions')
+    executeKittyAgentAction('set_branch_numbering', { enabled: true })
+    expect(setNumberingMock).toHaveBeenCalledWith(true)
+  })
+
+  it('sets branch numbering prefix from Kitty', async () => {
+    const { executeKittyAgentAction } = await import('@/composables/kitty/kittyAgentActions')
+    executeKittyAgentAction('set_branch_numbering', { enabled: true, prefix: 'chinese' })
+    expect(setNumberingPrefixMock).toHaveBeenCalledWith('chinese')
+    expect(setNumberingMock).not.toHaveBeenCalled()
   })
 })

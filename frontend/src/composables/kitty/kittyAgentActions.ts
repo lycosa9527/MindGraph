@@ -1,6 +1,10 @@
 import { eventBus } from '@/composables/core/useEventBus'
 import { applyKittySelectionTarget } from '@/composables/kitty/kittySelectionApply'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
+import { isAiContentLevelId } from '@/config/aiContentLevels'
+import { useAiContentLevelStore } from '@/stores/aiContentLevel'
+import { useDiagramStore } from '@/stores'
+import { isMindMapNumberingGlyphStyle } from '@/utils/mindMapBranchNumbering'
 
 export function executeKittyAgentAction(action: string, params: Record<string, unknown>): void {
   eventBus.emit('voice:action_executed', { action, params })
@@ -37,6 +41,28 @@ export function executeKittyAgentAction(action: string, params: Record<string, u
         source: 'kitty_agent',
         topic,
       })
+      break
+    }
+
+    case 'set_content_level': {
+      const levelRaw = params.level
+      if (isAiContentLevelId(levelRaw)) {
+        void useAiContentLevelStore().setLevel(levelRaw)
+      }
+      break
+    }
+
+    case 'set_branch_numbering': {
+      const store = useDiagramStore()
+      if (params.enabled === false) {
+        store.setMindMapBranchNumbering(false)
+        break
+      }
+      if (isMindMapNumberingGlyphStyle(params.prefix)) {
+        store.setMindMapBranchNumberingPrefix(params.prefix)
+        break
+      }
+      store.setMindMapBranchNumbering(true)
       break
     }
 

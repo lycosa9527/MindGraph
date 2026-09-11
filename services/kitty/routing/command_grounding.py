@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 from services.kitty.routing.diagram_agent_context import resolve_diagram_node_ref
+from services.kitty.routing.mindmap_branch_numbers import outline_ref_mentioned
 
 UNGROUNDED_ERROR = "ungrounded_target"
 
@@ -301,14 +302,20 @@ def _ground_node(
 
     if resolved is not None:
         label = resolved.get("node_label") or ""
-        if label and label_mentioned(utterance, label):
+        mentioned = bool(label) and label_mentioned(utterance, label)
+        numbered = outline_ref_mentioned(
+            utterance,
+            _diagram_data(session_context),
+            resolved.get("node_id") or "",
+        )
+        if mentioned or numbered:
             if command.get("action") == "update_node":
                 new_text = _new_text(command)
                 if new_text and new_text != label and not label_mentioned(utterance, new_text):
                     return _deny(UNGROUNDED_ERROR)
             _bind_node(command, resolved)
             return _allow(
-                "grounded_mention",
+                "grounded_number" if numbered and not mentioned else "grounded_mention",
                 node_id=resolved.get("node_id") or "",
                 label=label,
             )

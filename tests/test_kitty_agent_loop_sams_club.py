@@ -20,6 +20,7 @@ from services.kitty.routing.diagram_agent_context import (
     build_diagram_agent_payload,
     resolve_diagram_node_ref,
 )
+from services.kitty.routing.mindmap_branch_numbers import build_outline_number_by_id
 from services.kitty.session.ops import create_voice_session
 from services.kitty.session.runtime_state import voice_sessions
 from tests.typing_helpers import mock_await_args
@@ -148,6 +149,11 @@ def test_sams_club_hydrate_uses_uuid_not_leftover() -> None:
     resolved = resolve_diagram_node_ref(live, label="竞争对手")
     assert resolved is not None
     assert resolved["node_id"] == COMPETITOR_UID
+    numbers = build_outline_number_by_id(live)
+    assert numbers[COMPETITOR_UID] == "1"
+    first = resolve_diagram_node_ref(live, label="第1个")
+    assert first is not None
+    assert first["node_id"] == COMPETITOR_UID
 
 
 def test_sams_club_unhydrated_snapshot_prefers_uid() -> None:
@@ -226,13 +232,10 @@ async def test_sams_club_add_then_created_id_is_observed() -> None:
     )
     try:
         assert result.outcome == RouteOutcome.EXECUTED
+        assert result.reason == "fast_structural"
+        assert chat_mock.await_count == 0
         command = mock_await_args(bus_mock)[2]
         assert command["action"] == "add_node"
         assert command.get("target") == "会员制度"
-        second = chat_mock.await_args_list[1].kwargs["messages"]
-        tool_rows = [row for row in second if row.get("role") == "tool"]
-        assert tool_rows
-        assert created in tool_rows[0]["content"]
-        assert "会员制度" in tool_rows[0]["content"]
     finally:
         voice_sessions.pop(vid, None)

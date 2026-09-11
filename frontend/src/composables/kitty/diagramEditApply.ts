@@ -15,6 +15,7 @@ import {
   persistVerifiedDiagramToHub,
   type DiagramHubPersistDeps,
 } from '@/composables/kitty/diagramEditHubPersist'
+import { reportKittyDiagramEditFailure } from '@/composables/kitty/kittyDiagramEditFeedback'
 import { useDiagramStore } from '@/stores/diagram'
 import { loadSpecForDiagramType } from '@/stores/specLoader'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
@@ -125,6 +126,13 @@ function noopAck(_payload: Record<string, unknown>): void {
   /* local-only verified commits (no pending BE mutation future) */
 }
 
+function fingerprintsMatch(left: DiagramFingerprint, right: DiagramFingerprint): boolean {
+  return (
+    JSON.stringify(left.nodes) === JSON.stringify(right.nodes) &&
+    JSON.stringify(left.connections) === JSON.stringify(right.connections)
+  )
+}
+
 function nodeLabel(node: DiagramNode): string {
   const direct = node.text
   if (typeof direct === 'string' && direct.trim() !== '') {
@@ -169,6 +177,7 @@ export async function commitVerifiedLocalDiagramMutation(options: {
   hubPersist?: DiagramHubPersistDeps
   /** When true, missing hubPersist is a hard failure (Kitty owning-tab path). */
   requireHubPersist?: boolean
+  action?: string
 }): Promise<DiagramEditApplyResult> {
   const store = useDiagramStore()
   const nodes = store.data?.nodes ?? []
@@ -231,32 +240,7 @@ export async function commitVerifiedLocalDiagramMutation(options: {
     }
   }
 
-  let hubPersistOk = false
-  let hubRevision: number | undefined
-
-  if (options.hubPersist) {
-    const persistResult = await persistVerifiedDiagramToHub(options.hubPersist)
-    hubPersistOk = persistResult.ok
-    hubRevision = persistResult.revision
-    if (!hubPersistOk) {
-      reloadFromFingerprint(store, before)
-      sendCombinedAck(sendAck, {
-        mutationId: options.mutationId,
-        verified: false,
-        hubPersistOk: false,
-        hubRevision: options.hubRevision ?? null,
-        errorCode: 'hub_persist_failed',
-        message: persistResult.error,
-      })
-      return {
-        applied: true,
-        verified: false,
-        hubPersistOk: false,
-        evidence,
-        verificationError: persistResult.error ?? 'hub_persist_failed',
-      }
-    }
-  } else if (options.requireHubPersist) {
+  if (options.requireHubPersist && !options.hubPersist) {
     reloadFromFingerprint(store, before)
     sendCombinedAck(sendAck, {
       mutationId: options.mutationId,
@@ -273,20 +257,43 @@ export async function commitVerifiedLocalDiagramMutation(options: {
       evidence,
       verificationError: 'hub_persist_required',
     }
-  } else {
-    hubPersistOk = true
-    hubRevision =
-      typeof options.hubRevision === 'number' ? options.hubRevision : undefined
   }
 
+  const earlyRevision =
+    typeof options.hubRevision === 'number' ? options.hubRevision : undefined
   sendCombinedAck(sendAck, {
     mutationId: options.mutationId,
     verified: true,
     hubPersistOk: true,
-    hubRevision: hubRevision ?? options.hubRevision ?? null,
+    hubRevision: earlyRevision ?? null,
     evidence,
     createdNodeIds: resolveCreatedNodeIds(before, evidence, options.expectedEffect),
   })
+
+  let hubPersistOk = true
+  let hubRevision = earlyRevision
+  if (options.hubPersist) {
+    const persistResult = await persistVerifiedDiagramToHub(options.hubPersist)
+    hubPersistOk = persistResult.ok
+    hubRevision = persistResult.revision ?? earlyRevision
+    if (!hubPersistOk) {
+      const afterNodes = store.data?.nodes ?? []
+      const afterConnections = store.data?.connections ?? []
+      const now = captureDiagramFingerprint(
+        afterNodes as DiagramNode[],
+        afterConnections as Connection[]
+      )
+      if (fingerprintsMatch(now, evidence)) {
+        reloadFromFingerprint(store, before)
+      }
+      reportKittyDiagramEditFailure({
+        action: options.action ?? 'diagram_update',
+        errorCode: 'hub_persist_failed',
+        message: persistResult.error,
+        lane: 'desktop',
+      })
+    }
+  }
 
   return {
     applied: true,
@@ -318,5 +325,6 @@ export async function applyVerifiedDiagramUpdate(
     sendAck: options.sendAck,
     hubRevision: options.hubRevision,
     hubPersist: options.hubPersist,
+    action,
   })
 }

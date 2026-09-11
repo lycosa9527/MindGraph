@@ -81,6 +81,8 @@ export default {
   'mindmate.historyTitle': 'Historiku i bisedave',
   'mindmate.imagePreview': 'Pamja paraprake e imazhit',
   'mindmate.input.attachFile': 'Bashkëngjit skedar',
+  'mindmate.input.unsupportedFile': 'Only images, Word, PDF, and PowerPoint are allowed',
+  'mindmate.input.fileTooLarge': 'File is too large (max {limit}MB)',
   'mindmate.input.placeholder': 'Shkruani pyetjen tuaj…',
   'mindmate.newChat': 'Bisedë e re',
   'mindmate.otherModules': 'Module të tjera',

@@ -1,7 +1,7 @@
 """Kitty product package — realtime agent, diagram commands, session infrastructure.
 
 Subpackages:
-    ws, omni, session, routing, diagram, context, content, http — realtime agent
+    ws, agent_loop, session, routing, diagram, context, content, http — realtime agent
     infra — redis, desktop, control, scope, bootstrap, guards
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)

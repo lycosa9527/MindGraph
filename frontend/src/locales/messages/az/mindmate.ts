@@ -81,6 +81,8 @@ export default {
   'mindmate.historyTitle': 'Söhbət tarixçəsi',
   'mindmate.imagePreview': 'Şəkil önbaxışı',
   'mindmate.input.attachFile': 'Fayl əlavə et',
+  'mindmate.input.unsupportedFile': 'Only images, Word, PDF, and PowerPoint are allowed',
+  'mindmate.input.fileTooLarge': 'File is too large (max {limit}MB)',
   'mindmate.input.placeholder': 'Sualınızı yazın...',
   'mindmate.newChat': 'Yeni söhbət',
   'mindmate.otherModules': 'Digər modullar',

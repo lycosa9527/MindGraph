@@ -1,4 +1,4 @@
-# Display + touch only. V1 audio is PCM5101 (not ES8311); skip for first image.
+# Display + touch + V1 I2S audio (PCM5101 out, MEMS digital mic in).
 devices:
   - name: gpio_expander
     chip: tca9554
@@ -70,3 +70,27 @@ devices:
     version: default
     peripherals:
       - name: ledc_backlight
+
+  # I2S-only DAC (no I2C). chip=internal uses the dummy codec + I2S data path.
+  - name: audio_dac
+    chip: internal
+    type: audio_codec
+    version: default
+    config:
+      adc_enabled: false
+      dac_enabled: true
+      mclk_enabled: false
+    peripherals:
+      - name: i2s_audio_out
+
+  # Digital MEMS mic on I2S1 (not analog ADC).
+  - name: audio_adc
+    chip: internal
+    type: audio_codec
+    version: default
+    config:
+      adc_enabled: true
+      dac_enabled: false
+      mclk_enabled: false
+    peripherals:
+      - name: i2s_audio_in

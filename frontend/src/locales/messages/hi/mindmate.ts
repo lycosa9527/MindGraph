@@ -81,6 +81,8 @@ export default {
   'mindmate.historyTitle': 'बातचीत इतिहास',
   'mindmate.imagePreview': 'छवि पूर्वावलोकन',
   'mindmate.input.attachFile': 'फ़ाइल संलग्न',
+  'mindmate.input.unsupportedFile': 'Only images, Word, PDF, and PowerPoint are allowed',
+  'mindmate.input.fileTooLarge': 'File is too large (max {limit}MB)',
   'mindmate.input.placeholder': 'अपना प्रश्न लिखें...',
   'mindmate.newChat': 'नई चैट',
   'mindmate.otherModules': 'अन्य मॉड्यूल',

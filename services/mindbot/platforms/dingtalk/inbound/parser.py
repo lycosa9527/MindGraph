@@ -25,6 +25,8 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
+from services.dify.file_upload_types import dify_chat_file_type, dify_upload_content_type
+
 _MAX_PROMPT = 48000
 _MAX_JSON_SNIPPET = 4000
 
@@ -440,7 +442,7 @@ def media_filename_and_types(
     """
     Guess (filename, mime_type, dify_file_type) for Dify upload.
 
-    dify_file_type: image | video | audio | document
+    dify_file_type: image | video | audio | document | custom
     """
     cd = _content_dict(body)
     if normalized_msg_type == "picture":
@@ -452,20 +454,5 @@ def media_filename_and_types(
     name = _as_str(cd.get("fileName") or cd.get("file_name"))
     if not name:
         name = "dingtalk_file.bin"
-    ext = name.lower().rsplit(".", 1)[-1] if "." in name else "bin"
-    mime = "application/octet-stream"
-    if ext in ("pdf",):
-        mime = "application/pdf"
-    elif ext in ("doc", "docx"):
-        mime = (
-            "application/msword"
-            if ext == "doc"
-            else ("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-        )
-    elif ext in ("xlsx", "xls"):
-        mime = (
-            "application/vnd.ms-excel"
-            if ext == "xls"
-            else ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        )
-    return (name, mime, "document")
+    mime = dify_upload_content_type(name, None)
+    return (name, mime, dify_chat_file_type(name, mime))

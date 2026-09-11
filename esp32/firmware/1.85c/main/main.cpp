@@ -11,6 +11,7 @@
 #include "brookesia/system_super.hpp"
 #include "modules/general_services.hpp"
 #include "modules/display.hpp"
+#include "modules/kitty_agent.hpp"
 
 using namespace esp_brookesia;
 
@@ -32,7 +33,6 @@ extern "C" void app_main(void)
         BROOKESIA_CHECK_FALSE_EXIT(
             GeneralServices::get_instance().start_audio_services(), "Failed to start audio services"
         );
-
         /* Create system instance */
         static std::unique_ptr<system::super::System> system_instance;
         system_instance = std::make_unique<system::super::System>();
@@ -55,6 +55,7 @@ extern "C" void app_main(void)
         BROOKESIA_CHECK_FALSE_EXIT(init_result, "System init failed: %1%", init_result.error());
         auto start_result = system_instance->start();
         BROOKESIA_CHECK_FALSE_EXIT(start_result, "System start failed: %1%", start_result.error());
+        BROOKESIA_CHECK_FALSE_EXIT(start_kitty_watch(), "Failed to start Kitty watch");
 
         boost::this_thread::sleep_for(boost::chrono::seconds(10));
 

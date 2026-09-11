@@ -1,6 +1,4 @@
-/**
- * zh-tw UI � showcase
- */
+/** zh-tw UI — showcase */
 
 export default {
   'showcase.title': '案例廣場',
@@ -52,19 +50,31 @@ export default {
   'showcase.publishModal.uploadingFiles': '正在上傳文件（{current}/{total}）…',
   'showcase.publishModal.uploadingFile': '正在上傳 {name}（{current}/{total}）…',
   'showcase.publishModal.finishing': '即將完成…',
-  'showcase.publishModal.uploadFailedRolledBack': '上传失败，草稿已撤销，请重试。',
-  'showcase.publishModal.uploadCorsFailed': '文件未能上传到对象存储（常见原因：存储桶 CORS 未允许当前网站，或网站 CSP 未放行 COS 域名）。草稿已撤销，请联系管理员配置后重试。',
-  'showcase.publishModal.uploadStorageRejected': '对象存储拒绝了本次上传。草稿已撤销，请稍后重试；若反复失败请联系管理员。',
+  'showcase.publishModal.uploadFailedRolledBack':
+    '上传失败，草稿已撤销，请重试。',
+  'showcase.publishModal.uploadCorsFailed':
+    '文件未能上传到对象存储（常见原因：存储桶 CORS 未允许当前网站，或网站 CSP 未放行 COS 域名）。草稿已撤销，请联系管理员配置后重试。',
+  'showcase.publishModal.uploadStorageRejected':
+    '对象存储拒绝了本次上传。草稿已撤销，请稍后重试；若反复失败请联系管理员。',
   'showcase.publishModal.uploadFailed': '上傳失敗，請重試。',
-  'showcase.publishModal.uploadCoverTooLarge': '封面图超过 2MB 限制。请压缩预览图或换用更小的图片后重试。',
-  'showcase.publishModal.uploadAttachmentTooLarge': '文件超过大小限制（文档/图片 20MB，视频 100MB）。请压缩后重试。',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': '文件超过大小限制（文档/图片 20MB，视频 100MB）。草稿已撤销，请压缩后重试。',
-  'showcase.publishModal.uploadFileTooLarge': '文件过大，超出当前上传类型的限制，请确认大小后重试。',
-  'showcase.publishModal.uploadFileTooLargeRolledBack': '文件过大，超出当前上传类型的限制。草稿已撤销，请确认大小后重试。',
-  'showcase.publishModal.coverUploadSkipped': '案例已提交，但封面上传失败。可稍后编辑案例以更新封面。',
-  'showcase.publishModal.coverGenerating': '封面正在后台生成，稍后会显示在卡片上。',
-  'showcase.publishModal.coverFailed': '案例已提交，但封面生成失败。可稍后编辑案例以刷新封面。',
-  'showcase.publishModal.coverFailedTimeout': '案例已提交，但封面生成超时。可稍后编辑案例以刷新封面。',
+  'showcase.publishModal.uploadCoverTooLarge':
+    '封面图超过 2MB 限制。请压缩预览图或换用更小的图片后重试。',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    '文件超过大小限制（文档/图片 20MB，视频 100MB）。请压缩后重试。',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    '文件超过大小限制（文档/图片 20MB，视频 100MB）。草稿已撤销，请压缩后重试。',
+  'showcase.publishModal.uploadFileTooLarge':
+    '文件过大，超出当前上传类型的限制，请确认大小后重试。',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    '文件过大，超出当前上传类型的限制。草稿已撤销，请确认大小后重试。',
+  'showcase.publishModal.coverUploadSkipped':
+    '案例已提交，但封面上传失败。可稍后编辑案例以更新封面。',
+  'showcase.publishModal.coverGenerating':
+    '封面正在后台生成，稍后会显示在卡片上。',
+  'showcase.publishModal.coverFailed':
+    '案例已提交，但封面生成失败。可稍后编辑案例以刷新封面。',
+  'showcase.publishModal.coverFailedTimeout':
+    '案例已提交，但封面生成超时。可稍后编辑案例以刷新封面。',
   'showcase.publishModal.success': '案例已提交，等待管理員審核',
   'showcase.publishModal.fromCanvas': '從畫布發佈',
   'showcase.publishModal.step1Title': '基本信息',
@@ -78,18 +88,21 @@ export default {
   'showcase.publishModal.uploadLabel': '上傳文件',
   'showcase.publishModal.uploadImage': '上傳圖片',
   'showcase.publishModal.uploadFile': '上傳文件',
-  'showcase.publishModal.directUploadDisabled': '本地直传暂时不可用，仍可从历史记录选择图示。',
-  'showcase.publishModal.uploadViaStorage': '文件将通过安全短时链接上传至对象存储。',
+  'showcase.publishModal.directUploadDisabled':
+    '本地直传暂时不可用，仍可从历史记录选择图示。',
+  'showcase.publishModal.uploadViaStorage':
+    '文件将通过安全短时链接上传至对象存储。',
   'showcase.publishModal.pickHistory': '從個人庫中選擇圖示',
   'showcase.publishModal.removeFile': '移除',
   'showcase.publishModal.teachingDocHint': '支持 .docx / .pdf / .pptx / .doc（轉換後完整預覽）',
-  'showcase.publishModal.teachingDocHintWithLimit': '支持 .docx / .pdf / .pptx / .doc（轉換後完整預覽），單個文檔不超過 {maxMb} MB',
+  'showcase.publishModal.teachingDocHintWithLimit':
+    '支持 .docx / .pdf / .pptx / .doc（转换后完整预览），单个文档不超过 {maxMb} MB',
   'showcase.publishModal.teachingDocTooLarge': '文檔大小超過 {maxMb} MB 上限，請壓縮後重新上傳',
   'showcase.publishModal.diagramImageHint': '支持 .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': '上傳圖片（可多選）',
   'showcase.publishModal.galleryHint': '圖示案例可添加多張圖片和多個歷史圖示，最多 {max} 項',
   'showcase.publishModal.galleryHintCase': '可添加多張圖片和多個歷史圖示，最多 {max} 項',
-  'showcase.publishModal.galleryHintTemplate': '可上傳 .mg 檔案，並選擇多個歷史圖示，最多 {max} 項',
+  'showcase.publishModal.galleryHintTemplate': '可上傳 .mg 文件，並選擇多個歷史圖示，最多 {max} 項',
   'showcase.publishModal.galleryCount': '已添加 {count}/{max} 項',
   'showcase.publishModal.galleryImageItem': '圖片：{name}',
   'showcase.publishModal.galleryDiagramItem': '圖示：{name}',
@@ -124,7 +137,7 @@ export default {
   'showcase.publishModal.aiGenerateDiagramSuccess': '已根據圖示生成圖示簡介與課堂應用，請核對後編輯',
   'showcase.publishModal.aiGenerateFailed': 'AI生成失敗，請稍後重試',
   'showcase.publishModal.aiGenerateNeedFile': '請先在上一步上傳教學設計文檔',
-  'showcase.publishModal.aiGenerateNeedDiagram': '請先在上一步上傳圖片、選擇個人庫圖示或上傳 .mg 檔案',
+  'showcase.publishModal.aiGenerateNeedDiagram': '請先在上一步上傳圖片、選擇個人庫圖示或上傳 .mg 文件',
   'showcase.publishModal.aiGenerateTeachingOnly': 'AI生成目前僅支持教學設計案例',
   'showcase.publishModal.reflectionLabel': '教學反思',
   'showcase.publishModal.introPlaceholder': '簡要描述案例內容和適用場景',
@@ -134,7 +147,8 @@ export default {
   'showcase.publishModal.tagRecommended': '推薦標籤',
   'showcase.publishModal.tagCountHint': '（最多 {max} 個）',
   'showcase.publishModal.tagMaxCount': '最多隻能添加 {max} 個標籤',
-  'showcase.publishModal.networkError': '提交失败：上传连接中断。请 Ctrl+F5 刷新后重试；若含视频请确认单文件≤100MB、合计≤105MB',
+  'showcase.publishModal.networkError':
+    '提交失败：上传连接中断。请 Ctrl+F5 刷新后重试；若含视频请确认单文件≤100MB、合计≤105MB',
   'showcase.publishModal.fileTooLarge': '「{name}」超過 {maxMb}MB 大小限制',
   'showcase.publishModal.uploadTotalTooLarge': '上傳文件總大小超過限制，請減小附件或視頻體積',
   'showcase.publishModal.tagAdd': '添加',
@@ -151,9 +165,12 @@ export default {
   'showcase.publishModal.validationDiagramType': '請選擇圖示類型',
   'showcase.publishModal.invalidFileType': '文件格式不支持',
   'showcase.publishModal.invalidMgFile': '無法讀取 .mg 文件，請確認文件來自 MindGraph 導出',
-  'showcase.publishModal.cannotPreview': '无法生成封面预览，案例仍将提交；可尝试 PNG/JPG 或从历史图示选择',
-  'showcase.publishModal.cannotPreviewHistory': '无法从该历史图示生成封面，案例仍将提交；请重新选择，或先在画布中打开并重新保存',
-  'showcase.publishModal.cannotPreviewTemplate': '无法生成封面预览，案例仍将提交；请确认 .mg 文件有效或重新选择历史图示',
+  'showcase.publishModal.cannotPreview':
+    '无法生成封面预览，案例仍将提交；可尝试 PNG/JPG 或从历史图示选择',
+  'showcase.publishModal.cannotPreviewHistory':
+    '无法从该历史图示生成封面，案例仍将提交；请重新选择，或先在画布中打开并重新保存',
+  'showcase.publishModal.cannotPreviewTemplate':
+    '无法生成封面预览，案例仍将提交；请确认 .mg 文件有效或重新选择历史图示',
   'showcase.publishModal.historyTitle': '個人庫',
   'showcase.publishModal.historySearch': '搜索圖示名稱…',
   'showcase.publishModal.historyEmpty': '個人庫暫無圖示',
@@ -202,11 +219,12 @@ export default {
   'showcase.detail.openDocument': '在新標籤頁打開',
   'showcase.detail.enterFullscreen': '全屏閱讀',
   'showcase.detail.exitFullscreen': '退出全屏',
-  'showcase.detail.pptxPreviewPending': '正在轉換文件以供預覽…',
-  'showcase.detail.officePreviewPending': '正在轉換文件以供預覽…',
+  'showcase.detail.pptxPreviewPending': '正在轉換文檔以供預覽…',
+  'showcase.detail.officePreviewPending': '正在轉換文檔以供預覽…',
   'showcase.detail.docPreviewLoading': '正在加載文檔…',
   'showcase.detail.docPreviewFailed': '文檔預覽加載失敗，請嘗試在新標籤頁打開',
-  'showcase.detail.legacyDocHint': '此 .doc 檔案仍在轉換預覽，或轉換暫不可用。請下載/新標籤頁打開，或重新上傳以重新產生預覽。',
+  'showcase.detail.legacyDocHint':
+    '该 Office 文档预览转换暂不可用。请下载/新标签页打开，或重新上传以重新生成预览。',
   'showcase.detail.noDocument': '暫無文檔預覽',
   'showcase.detail.noDiagramPreview': '暫無圖示預覽',
   'showcase.detail.diagramPreviewLoading': '正在加載圖示…',

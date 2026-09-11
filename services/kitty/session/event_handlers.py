@@ -28,6 +28,7 @@ from services.kitty.session.events import (
 )
 from services.kitty.session.memory import get_session_memory
 from services.kitty.session.one_sentence_text_reply import reply_text_only_conversational
+from services.kitty.session.turn_task import run_cancellable_turn
 from services.kitty.session.one_sentence_turns import (
     persist_one_sentence_turn_from_voice_session,
 )
@@ -52,7 +53,10 @@ async def setup_session_event_handlers(runtime: KittySessionRuntime) -> SessionE
         if event.kind == "transcription":
             await _handle_transcription(runtime, event.payload)
         elif event.kind == "text_inbound":
-            await _handle_text_inbound(runtime, event.payload)
+            await run_cancellable_turn(
+                runtime.voice_session_id,
+                _handle_text_inbound(runtime, event.payload),
+            )
         elif event.kind == "assistant_text":
             mem = get_session_memory(runtime.voice_session_id)
             chunk = event.payload.get("text")

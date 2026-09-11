@@ -1,5 +1,6 @@
 /**
  * Ribbon height + last tab. Account default in Postgres; no browser storage.
+ * File is a destination tab and is never persisted as the landing tab.
  */
 import { onUnmounted, ref, watch } from 'vue'
 
@@ -9,7 +10,7 @@ import { authFetch } from '@/utils/api'
 import {
   DEFAULT_MIND_MAP_RIBBON_TAB,
   type MindMapRibbonTabId,
-  normalizeMindMapRibbonTabId,
+  resolveLandingMindMapRibbonTab,
 } from './mindMapRibbonTypes'
 
 const API_PATH = '/api/auth/diagram-preferences'
@@ -30,7 +31,7 @@ export function useMindMapRibbonState() {
       return
     }
     classic.value = user.v3RibbonClassic === true
-    activeTab.value = normalizeMindMapRibbonTabId(user.v3RibbonTab) ?? DEFAULT_MIND_MAP_RIBBON_TAB
+    activeTab.value = resolveLandingMindMapRibbonTab(user.v3RibbonTab)
   }
 
   hydrateFromUser()
@@ -43,6 +44,11 @@ export function useMindMapRibbonState() {
     }
   )
 
+  function tabToPersist(): MindMapRibbonTabId {
+    if (activeTab.value !== 'file') return activeTab.value
+    return resolveLandingMindMapRibbonTab(authStore.user?.v3RibbonTab)
+  }
+
   function patchAuthUser(nextClassic: boolean, nextTab: MindMapRibbonTabId): void {
     if (!authStore.user) return
     authStore.patchPersistedUser({
@@ -54,13 +60,14 @@ export function useMindMapRibbonState() {
   async function persistNow(): Promise<void> {
     if (!authStore.isAuthenticated) return
     persistInFlight = true
+    const landingTab = tabToPersist()
     try {
       const response = await authFetch(API_PATH, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           v3_ribbon_classic: classic.value,
-          v3_ribbon_tab: activeTab.value,
+          v3_ribbon_tab: landingTab,
         }),
       })
       if (!response.ok) return
@@ -69,9 +76,11 @@ export function useMindMapRibbonState() {
         v3_ribbon_tab?: string | null
       }
       const savedClassic = data.v3_ribbon_classic === true
-      const savedTab = normalizeMindMapRibbonTabId(data.v3_ribbon_tab) ?? activeTab.value
+      const savedTab = resolveLandingMindMapRibbonTab(data.v3_ribbon_tab)
       classic.value = savedClassic
-      activeTab.value = savedTab
+      if (activeTab.value !== 'file') {
+        activeTab.value = savedTab
+      }
       patchAuthUser(savedClassic, savedTab)
     } finally {
       persistInFlight = false
@@ -92,7 +101,7 @@ export function useMindMapRibbonState() {
   function setClassic(next: boolean): void {
     if (classic.value === next) return
     classic.value = next
-    patchAuthUser(next, activeTab.value)
+    patchAuthUser(next, tabToPersist())
     schedulePersist()
   }
 
@@ -103,6 +112,7 @@ export function useMindMapRibbonState() {
   function setActiveTab(tab: MindMapRibbonTabId): void {
     if (activeTab.value === tab) return
     activeTab.value = tab
+    if (tab === 'file') return
     patchAuthUser(classic.value, tab)
     schedulePersist()
   }

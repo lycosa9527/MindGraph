@@ -81,6 +81,8 @@ export default {
   'mindmate.historyTitle': '대화 기록',
   'mindmate.imagePreview': '이미지 미리보기',
   'mindmate.input.attachFile': '파일 첨부',
+  'mindmate.input.unsupportedFile': 'Only images, Word, PDF, and PowerPoint are allowed',
+  'mindmate.input.fileTooLarge': 'File is too large (max {limit}MB)',
   'mindmate.input.placeholder': '질문을 입력하세요...',
   'mindmate.newChat': '새 대화',
   'mindmate.otherModules': '다른 모듈',

@@ -39,7 +39,7 @@ Frontend apply path: Kitty WS `diagram_update` emits `kitty:diagram_mutation_req
 `registerKittyDiagramMutationBus` owns Pinia apply + Hub persist (inbound does not mutate Pinia directly).
 Owning tab skips legacy SSE fanout without `mutation_id` (`ownsKittySession`); observers recover via Hub `live_context`.
 
-Kitty voice I/O (text-first): Fun-ASR realtime mic + CosyVoice realtime TTS on the shared MaaS
+Kitty voice I/O (text-first): Fun-ASR realtime mic (browser PCM, watch Opus) + CosyVoice realtime TTS on the shared MaaS
 inference WebSocket (`build_dashscope_inference_ws_url`). Omni duplex is not used for Kitty commands.
 
 ## v1 scope

@@ -24,6 +24,7 @@ from config.dashscope_urls import (
     normalize_dashscope_region,
 )
 from config.settings import config
+from services.kitty.asr.audio_format import ASR_FORMAT_PCM, normalize_asr_audio_format
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 
 logger = logging.getLogger(__name__)
@@ -55,10 +56,11 @@ def build_fun_asr_run_task(
     model: str,
     language_hints: Optional[list[str]] = None,
     semantic_punctuation_enabled: bool = False,
+    audio_format: str = ASR_FORMAT_PCM,
 ) -> dict[str, Any]:
-    """Client ``run-task`` for Fun-ASR realtime (PCM 16 kHz)."""
+    """Client ``run-task`` for Fun-ASR realtime (16 kHz PCM or raw Opus)."""
     parameters: dict[str, Any] = {
-        "format": "pcm",
+        "format": normalize_asr_audio_format(audio_format),
         "sample_rate": 16000,
         "semantic_punctuation_enabled": bool(semantic_punctuation_enabled),
     }
@@ -114,11 +116,13 @@ class FunAsrRealtimeClient:
         on_error: Optional[ErrorCallback] = None,
         language_hints: Optional[list[str]] = None,
         semantic_punctuation_enabled: bool = False,
+        audio_format: str = ASR_FORMAT_PCM,
     ) -> None:
         self._on_partial = on_partial
         self._on_error = on_error
         self._language_hints = language_hints
         self._semantic_punctuation_enabled = bool(semantic_punctuation_enabled)
+        self._audio_format = normalize_asr_audio_format(audio_format)
         self._ws: Optional[ClientConnection] = None
         self._task_id = ""
         self._reader_task: Optional[asyncio.Task[None]] = None
@@ -170,6 +174,7 @@ class FunAsrRealtimeClient:
                     model=model,
                     language_hints=self._language_hints,
                     semantic_punctuation_enabled=self._semantic_punctuation_enabled,
+                    audio_format=self._audio_format,
                 )
             )
         )
@@ -181,7 +186,7 @@ class FunAsrRealtimeClient:
             raise RuntimeError("Fun-ASR task-started timeout") from exc
 
     async def send_pcm(self, pcm: bytes) -> None:
-        """Forward binary PCM frames to Fun-ASR."""
+        """Forward one binary audio frame (PCM or Opus) to Fun-ASR."""
         if self._closed or self._ws is None or not pcm:
             return
         try:

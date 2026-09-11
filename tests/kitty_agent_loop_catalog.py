@@ -78,9 +78,8 @@ def _first_l1_branch(diagram_data: Dict[str, Any]) -> Tuple[str, str]:
     raise AssertionError("mindmap has no named branch")
 
 
-def load_real_mindmap(slug: str, path: Path) -> RealMindmap:
-    """Hydrate a canvas/spec JSON into one-sentence edit session context."""
-    spec = json.loads(path.read_text(encoding="utf-8"))
+def load_real_mindmap_from_spec(slug: str, spec: Dict[str, Any]) -> RealMindmap:
+    """Hydrate a canvas/library spec dict into one-sentence edit session context."""
     live = diagram_data_from_saved_spec(spec, "mindmap")
     topic = ""
     raw_topic = spec.get("topic")
@@ -118,6 +117,12 @@ def load_real_mindmap(slug: str, path: Path) -> RealMindmap:
         branch_id=branch_id,
         context=context,
     )
+
+
+def load_real_mindmap(slug: str, path: Path) -> RealMindmap:
+    """Hydrate a canvas/spec JSON file into one-sentence edit session context."""
+    spec = json.loads(path.read_text(encoding="utf-8"))
+    return load_real_mindmap_from_spec(slug, spec)
 
 
 def load_all_real_mindmaps() -> List[RealMindmap]:

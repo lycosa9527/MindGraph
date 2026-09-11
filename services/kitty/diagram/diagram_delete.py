@@ -241,6 +241,13 @@ async def voice_apply_delete_node_action(
                 resolved_node_index = idx
                 break
 
+    if resolved_node_id and resolved_node_index is None:
+        rid = str(resolved_node_id)
+        for idx, node in enumerate(nodes):
+            if isinstance(node, dict) and str(node.get("id") or "") == rid:
+                resolved_node_index = idx
+                break
+
     if resolved_node_id:
         diagram_type = voice_sessions[voice_session_id].get("diagram_type")
 
@@ -272,12 +279,18 @@ async def voice_apply_delete_node_action(
         if resolved_node_index is not None and 0 <= resolved_node_index < len(nodes):
             nodes.pop(resolved_node_index)
             logger.debug("Node %d removed from session context", resolved_node_index)
+        diagram_data = session_context.get("diagram_data", {})
+        vue_nodes = diagram_data.get("nodes")
+        if isinstance(vue_nodes, list):
+            rid = str(resolved_node_id)
+            diagram_data["nodes"] = [
+                node for node in vue_nodes if not (isinstance(node, dict) and str(node.get("id") or "") == rid)
+            ]
 
         # Update agent state and instructions
         # CRITICAL: Agent is scoped to diagram_session_id, not voice_session_id
         agent_session_id = get_agent_session_id(voice_session_id)
         agent = kitty_agent_manager.get_or_create(agent_session_id)
-        diagram_data = session_context.get("diagram_data", {})
         diagram_data["diagram_type"] = voice_sessions[voice_session_id].get("diagram_type")
         agent.update_diagram_state(diagram_data)
 

@@ -81,6 +81,8 @@ export default {
   'mindmate.historyTitle': 'Sejarah Perbualan',
   'mindmate.imagePreview': 'Pratinjau Gambar',
   'mindmate.input.attachFile': 'Lampirkan berkas',
+  'mindmate.input.unsupportedFile': 'Only images, Word, PDF, and PowerPoint are allowed',
+  'mindmate.input.fileTooLarge': 'File is too large (max {limit}MB)',
   'mindmate.input.placeholder': 'Ketik pertanyaan Anda...',
   'mindmate.newChat': 'Sembang Baru',
   'mindmate.otherModules': 'Modul lainnya',

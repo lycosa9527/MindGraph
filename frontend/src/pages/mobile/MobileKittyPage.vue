@@ -43,6 +43,7 @@ import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSele
 import { useMobileKittyPairing } from '@/composables/kitty/useMobileKittyPairing'
 import { prepareMobileKittyPhotoCapture } from '@/composables/mobile/prepareMobileKittyPhotoCapture'
 import { useMobileKittyChat } from '@/composables/mobile/useMobileKittyChat'
+import { useMobileKittyListenMode } from '@/composables/mobile/useMobileKittyListenMode'
 import { useMobileKittyMicPtt } from '@/composables/mobile/useMobileKittyMicPtt'
 import { useMobileKittyPageLifecycle } from '@/composables/mobile/useMobileKittyPageLifecycle'
 import { useAuthStore, useFeatureFlagsStore } from '@/stores'
@@ -66,8 +67,8 @@ const draft = ref('')
 const micDenied = ref(false)
 const cameraDenied = ref(false)
 const photoUploading = ref(false)
-/** Park mobile Kitty camera until photo ingest is ready again. */
-const kittyCameraEnabled = false
+/** Conversation image REST is live — camera / gallery unparked. */
+const kittyCameraEnabled = true
 const isDevBuild = import.meta.env.DEV
 
 const KITTY_DEBUG_MAX = 42
@@ -509,6 +510,19 @@ const funAsr = useKittyFunAsrMic({
 
 const kittyVoiceInputActive = computed(() => funAsr.listening.value)
 
+const {
+  listenMode,
+  asrCommitMode,
+  micInsecure,
+  toggleListenMode,
+  onAutoMicTap,
+} = useMobileKittyListenMode({
+  kitty,
+  funAsr,
+  micDenied,
+  kittyServerEnabled,
+})
+
 const chatPhase = computed(() => resolveMobileOneSentencePhase())
 
 const {
@@ -527,6 +541,7 @@ const {
   ensureConnected,
   buildContext: buildMobileKittyContext,
   onDebugLine: pushKittyDebugLine,
+  asrCommitMode,
 })
 
 // Chat turns refetch whenever kittyPairScope changes (library follow / pick / ephemeral).
@@ -566,6 +581,38 @@ const {
     pushKittyDebugLine('#ptt', detail)
   },
 })
+
+function onMicPointerDown(ev: PointerEvent): void {
+  if (listenMode.value === 'auto' || micInsecure.value) {
+    return
+  }
+  onKittyMicPointerDown(ev)
+}
+
+function onMicPointerUp(ev: PointerEvent): void {
+  if (listenMode.value === 'auto') {
+    return
+  }
+  onKittyMicPointerUp(ev)
+}
+
+function onMicTouchEnd(ev: TouchEvent): void {
+  if (listenMode.value === 'auto') {
+    return
+  }
+  onKittyMicTouchEnd(ev)
+}
+
+function onMicClick(): void {
+  if (listenMode.value !== 'auto') {
+    return
+  }
+  onAutoMicTap()
+}
+
+const micButtonDisabled = computed(
+  () => !kittyServerEnabled.value || micDenied.value || micInsecure.value
+)
 
 let scopeReconnectTimer: ReturnType<typeof setTimeout> | null = null
 let deferredScopeReconnect: string | null = null
@@ -800,13 +847,40 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
           v-if="connected"
           class="text-[10px] text-emerald-600 font-medium"
         >
-          {{ t('mobile.kittyLive', '实时对话') }}
+          {{
+            kittyVoiceState === 'listening'
+              ? t('mobile.kittyListening', '正在聆听')
+              : kittyVoiceState === 'speaking'
+                ? t('mobile.kittySpeaking', '正在回复')
+                : kittyVoiceState === 'thinking'
+                  ? t('mobile.kittyThinking', '正在思考')
+                  : t('mobile.kittyLive', '实时对话')
+          }}
         </div>
       </div>
       <div
         v-if="connected"
         class="flex items-center gap-1.5 shrink-0"
       >
+        <button
+          type="button"
+          class="text-[10px] px-2 h-9 rounded-full border shrink-0"
+          :class="
+            listenMode === 'auto'
+              ? 'bg-violet-100 text-violet-800 border-violet-200'
+              : 'bg-gray-100 text-gray-700 border-gray-200/80'
+          "
+          :aria-pressed="listenMode === 'auto'"
+          :aria-label="t('mobile.kittyListenModeToggle', '切换自动听')"
+          :title="t('mobile.kittyListenAutoHint', '半双工：仅在聆听时开麦')"
+          @click="toggleListenMode"
+        >
+          {{
+            listenMode === 'auto'
+              ? t('mobile.kittyListenAuto', '自动听')
+              : t('mobile.kittyListenManual', '按住说')
+          }}
+        </button>
         <button
           type="button"
           class="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 text-gray-700 active:bg-gray-200 border border-gray-200/80"
@@ -1076,14 +1150,23 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
           data-kitty-mic-ptt
           class="kitty-side-control kitty-side-control--mic kitty-side-control--mic-ptt"
           :class="{ 'kitty-side-control--mic-hold': kittyVoiceInputActive || pttPointerActive }"
-          :disabled="!kittyServerEnabled || micDenied"
+          :disabled="micButtonDisabled"
           :aria-busy="connecting || voiceStartInFlight"
-          :aria-label="t('mobile.kittyMicPttAria', '按住说话')"
-          :title="t('mobile.kittyMicPttTitle', '按住说话，松开发送')"
-          @pointerdown="onKittyMicPointerDown"
-          @pointerup="onKittyMicPointerUp"
-          @pointercancel="onKittyMicPointerUp"
-          @touchend="onKittyMicTouchEnd"
+          :aria-label="
+            listenMode === 'auto'
+              ? t('mobile.kittyTapToListen', '点按开始听')
+              : t('mobile.kittyMicPttAria', '按住说话')
+          "
+          :title="
+            listenMode === 'auto'
+              ? t('mobile.kittyListenAutoHint', '半双工：仅在聆听时开麦')
+              : t('mobile.kittyMicPttTitle', '按住说话，松开发送')
+          "
+          @pointerdown="onMicPointerDown"
+          @pointerup="onMicPointerUp"
+          @pointercancel="onMicPointerUp"
+          @touchend="onMicTouchEnd"
+          @click="onMicClick"
           @contextmenu.prevent
           @selectstart.prevent
           @dragstart.prevent
@@ -1096,9 +1179,13 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
             <Mic class="kitty-side-control__icon kitty-side-control__icon--mic-ptt" />
             <span class="kitty-mic-ptt-label">
               {{
-                kittyVoiceInputActive || pttPointerActive
-                  ? t('mobile.kittyReleaseToSend', '松开发送')
-                  : t('mobile.kittyHoldToSpeak', '按住说话')
+                listenMode === 'auto'
+                  ? kittyVoiceInputActive
+                    ? t('mobile.kittyTapToStopListen', '点按停止')
+                    : t('mobile.kittyTapToListen', '点按开始听')
+                  : kittyVoiceInputActive || pttPointerActive
+                    ? t('mobile.kittyReleaseToSend', '松开发送')
+                    : t('mobile.kittyHoldToSpeak', '按住说话')
               }}
             </span>
           </template>
@@ -1119,10 +1206,13 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
       </p>
 
       <p
-        v-if="micDenied || cameraDenied"
+        v-if="micDenied || cameraDenied || micInsecure"
         class="text-center text-xs text-amber-600 pb-2 px-4"
       >
-        <span v-if="micDenied">{{ t('mobile.kittyMicDenied', '麦克风不可用') }}</span>
+        <span v-if="micInsecure">{{
+          t('mobile.kittyMicInsecure', '当前页面不是安全连接（HTTPS），麦克风已关闭。请改用键盘输入。')
+        }}</span>
+        <span v-else-if="micDenied">{{ t('mobile.kittyMicDenied', '麦克风不可用') }}</span>
         <span v-if="cameraDenied">{{ t('mobile.kittyCameraDenied', '相机或图片不可用') }}</span>
       </p>
     </div>

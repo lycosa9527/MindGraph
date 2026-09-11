@@ -307,13 +307,13 @@ async def _handle_update_node_action(
                     node["label"] = target
             else:
                 nodes[resolved_node_index] = target
-        else:
-            vue_nodes = session_context.get("diagram_data", {}).get("nodes", [])
-            if isinstance(vue_nodes, list):
-                for node in vue_nodes:
-                    if isinstance(node, dict) and str(node.get("id") or "") == str(resolved_node_id):
-                        node["text"] = target
-                        break
+        vue_nodes = session_context.get("diagram_data", {}).get("nodes", [])
+        if isinstance(vue_nodes, list) and resolved_node_id:
+            rid = str(resolved_node_id)
+            for node in vue_nodes:
+                if isinstance(node, dict) and str(node.get("id") or "") == rid:
+                    node["text"] = target
+                    break
 
         # Update agent state and instructions
         # CRITICAL: Agent is scoped to diagram_session_id, not voice_session_id

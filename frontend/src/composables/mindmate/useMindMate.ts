@@ -17,6 +17,7 @@ import { computed, onActivated, onUnmounted, ref, shallowRef, watch } from 'vue'
 
 import { useQueryClient } from '@tanstack/vue-query'
 
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore, useMindMateStore } from '@/stores'
 import type { ModelLoadPhase } from '@/stores/llmResults'
 import type {
@@ -32,8 +33,11 @@ import {
 import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
 import { consumeSseDataLines } from '@/utils/mindMateSseStream'
 import {
+  difyUploadMaxBytes,
+  isDifyGatewayUploadableFile,
   isMindmateComposerUploadableFile,
-  mindMateFileTypeFromMimeAndName,
+  parseDifyUploadErrorDetail,
+  resolveDifyChatFileType,
 } from '@/utils/mindmateComposerUpload'
 import {
   queueMindmateDiagramPreviewPersist,
@@ -118,6 +122,7 @@ export function useMindMate(options: MindMateOptions = {}) {
   const authStore = useAuthStore()
   const mindMateStore = useMindMateStore()
   const queryClient = useQueryClient()
+  const { t } = useLanguage()
 
   // =========================================================================
   // Vue Query
@@ -359,50 +364,28 @@ export function useMindMate(options: MindMateOptions = {}) {
   // File Upload
   // =========================================================================
 
-  /** Extensions accepted by ``/api/dify/files/upload`` (documents + images). */
-  const DIFY_UPLOAD_EXTENSIONS = new Set([
-    'jpg',
-    'jpeg',
-    'png',
-    'gif',
-    'webp',
-    'svg',
-    'txt',
-    'md',
-    'markdown',
-    'pdf',
-    'html',
-    'htm',
-    'xlsx',
-    'xls',
-    'doc',
-    'docx',
-    'csv',
-    'xml',
-    'epub',
-    'ppt',
-    'pptx',
-  ])
-
-  function isDifyUploadableFile(file: File): boolean {
-    if (file.type.startsWith('image/')) return true
-    const ext = (file.name.split('.').pop() || '').toLowerCase()
-    return DIFY_UPLOAD_EXTENSIONS.has(ext)
-  }
-
   async function uploadFile(
     file: File,
     options: { allowDocuments?: boolean } = {}
   ): Promise<MindMateFile | null> {
-    // Composer paperclip: images + Word. Showcase handoffs may send other Dify docs.
+    // Composer paperclip: images + Word/PDF/PPT. Showcase may send other Dify docs.
     const allowDocuments = options.allowDocuments === true
     const allowed = allowDocuments
-      ? isDifyUploadableFile(file)
+      ? isDifyGatewayUploadableFile(file)
       : isMindmateComposerUploadableFile(file)
     if (!allowed) {
       const errorMsg = allowDocuments
         ? 'Unsupported file type for MindMate'
-        : 'Only images and Word documents (.doc, .docx) are allowed'
+        : String(t('mindmate.input.unsupportedFile'))
+      eventBus.emit('mindmate:error', { error: errorMsg })
+      onError?.(errorMsg)
+      return null
+    }
+
+    const maxBytes = difyUploadMaxBytes(file.name)
+    if (file.size > maxBytes) {
+      const limit = String(Math.round(maxBytes / 1024 / 1024))
+      const errorMsg = String(t('mindmate.input.fileTooLarge', { limit }))
       eventBus.emit('mindmate:error', { error: errorMsg })
       onError?.(errorMsg)
       return null
@@ -429,7 +412,7 @@ export function useMindMate(options: MindMateOptions = {}) {
           throw new Error('Session expired')
         }
         const error = await response.json().catch(() => ({ detail: 'Upload failed' }))
-        throw new Error(error.detail || 'Upload failed')
+        throw new Error(parseDifyUploadErrorDetail(error))
       }
 
       const result = await response.json()
@@ -440,14 +423,17 @@ export function useMindMate(options: MindMateOptions = {}) {
         throw new Error('Invalid response from file upload API')
       }
 
+      const filename = data.name || file.name
+      const mimeType = data.mime_type || file.type
+      const fileType = resolveDifyChatFileType(data.type, mimeType, filename)
       const uploadedFile: MindMateFile = {
         id: data.id,
-        name: data.name || file.name,
-        type: mindMateFileTypeFromMimeAndName(data.mime_type || file.type, data.name || file.name),
+        name: filename,
+        type: fileType,
         size: data.size || file.size,
         extension: data.extension || file.name.split('.').pop() || '',
-        mime_type: data.mime_type || file.type,
-        preview_url: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+        mime_type: mimeType,
+        preview_url: fileType === 'image' ? URL.createObjectURL(file) : undefined,
       }
 
       pendingFiles.value.push(uploadedFile)

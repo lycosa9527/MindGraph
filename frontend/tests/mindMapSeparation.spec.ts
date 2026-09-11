@@ -78,6 +78,8 @@ function makeMindMapCtx(data: DiagramData): DiagramContext {
     mindMapPreserveIncomingYNodeId: ref(null),
     mindMapBulkLoading: ref(false),
     mindMapCanvasMode: ref(useUIStore().mindMapCanvasMode),
+    collabSessionActive: ref(false),
+    collabForeignLockedNodeIds: ref(new Set<string>()),
     pushHistory: vi.fn(),
     scheduleMindMapRecalc: vi.fn(),
   } as DiagramContext

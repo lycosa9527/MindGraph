@@ -63,7 +63,7 @@ from services.kitty.infra.redis.kitty_session_redis import (
     apply_redis_live_to_voice_session,
     load_kitty_live_context,
 )
-from services.kitty.omni.tools import omni_function_call_to_command, parse_node_index_from_identifier
+from services.kitty.agent_loop.ui_tools import parse_node_index_from_identifier
 from services.kitty.routing.intent_parser import (
     parse_one_sentence_edit_intent,
     parse_voice_intent_with_tools,
@@ -1155,23 +1155,3 @@ async def route_voice_command(
             RouteOutcome.CONVERSATIONAL_FALLBACK,
             reason=str(e),
         )
-
-
-async def route_omni_function_call(
-    websocket: WebSocket,
-    voice_session_id: str,
-    function_name: str,
-    arguments_json: str,
-    session_context: Dict[str, Any],
-) -> RouteResult:
-    """Map a leftover UI tool name to the same command router as typed tools."""
-    command = omni_function_call_to_command(function_name, arguments_json)
-    return await route_voice_command(
-        websocket,
-        voice_session_id,
-        "",
-        session_context,
-        is_text_message=False,
-        from_voice=True,
-        pre_parsed_command=command,
-    )

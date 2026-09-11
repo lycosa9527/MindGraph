@@ -12,6 +12,11 @@ from typing import Any, Dict, List, Literal
 
 from services.diagram.mindmap_identity import identity_aliases, is_machine_node_id, read_mindmap_uid
 from services.diagram.mindmap_location import is_leftover_mindmap_branch_id, mindmap_location_path_key
+from services.kitty.routing.mindmap_branch_numbers import (
+    is_branch_numbering_enabled,
+    resolve_outline_number_ref,
+    stamp_outline_numbers,
+)
 
 Lang = Literal["zh", "en"]
 
@@ -248,6 +253,11 @@ def build_diagram_agent_payload(
         if selected_entries:
             payload["selected"] = selected_entries
 
+    level = session_context.get("ai_content_level")
+    if isinstance(level, str) and level.strip():
+        payload["audience_level"] = level.strip()
+    stamp_outline_numbers(payload, diagram_data)
+
     return payload
 
 
@@ -289,8 +299,17 @@ def serialize_diagram_for_node_action(
     else:
         body = raw
 
+    numbering_on = False
+    diagram_data = session_context.get("diagram_data")
+    if isinstance(diagram_data, dict):
+        numbering_on = is_branch_numbering_enabled(diagram_data)
     if lang == "en":
-        header = "Current diagram (JSON — ground truth for labels and node ids):"
+        if numbering_on:
+            header = "Current diagram (JSON — labels, ids, and outline no; target with 1 / 1.1 / number 2):"
+        else:
+            header = "Current diagram (JSON — ground truth for labels and node ids):"
+    elif numbering_on:
+        header = "当前导图（JSON，名称、id 与编号 no 以此为准；可用 1 / 1.1 / 第2个 定位）："
     else:
         header = "当前导图（JSON，节点名称与 id 以此为准）："
     return f"{header}\n{body}", truncated
@@ -373,6 +392,12 @@ def resolve_diagram_node_ref(
     if not isinstance(label, str) or not label.strip():
         return None
     wanted_label = label.strip()
+    numbered_id = resolve_outline_number_ref(data, wanted_label)
+    if numbered_id:
+        for nid, lbl in pairs:
+            if nid == numbered_id:
+                return {"node_id": nid, "node_label": lbl or nid}
+        return {"node_id": numbered_id, "node_label": numbered_id}
     for nid, lbl in pairs:
         if lbl == wanted_label:
             return {"node_id": nid, "node_label": lbl}
@@ -471,11 +496,15 @@ def enrich_node_action_command(
         resolved = resolve_diagram_node_ref(diagram_data, node_id=ident)
     if resolved:
         out["node_id"] = resolved["node_id"]
-        if resolved.get("node_label"):
+        label = resolved.get("node_label")
+        if label:
+            current_target = out.get("target")
+            outline_target = isinstance(current_target, str) and resolve_outline_number_ref(
+                diagram_data, current_target.strip()
+            )
             if action in ("auto_complete_branch", "update_node", "delete_node"):
-                current_target = out.get("target")
-                if not current_target or is_machine_node_id(str(current_target)):
-                    out["target"] = resolved["node_label"]
-            if action == "update_node" and not out.get("node_identifier"):
-                out["node_identifier"] = resolved["node_id"]
+                if not current_target or is_machine_node_id(str(current_target)) or outline_target:
+                    out["target"] = label
+        if action in ("update_node", "delete_node"):
+            out["node_identifier"] = resolved["node_id"]
     return out

@@ -11,6 +11,8 @@ export const ONE_SENTENCE_NODE_ACTION_SUGGESTION_KEYS = [
   'canvas.mindMapOneSentence.suggestion.delete_node',
   'canvas.mindMapOneSentence.suggestion.auto_complete_branch',
   'canvas.mindMapOneSentence.suggestion.auto_complete',
+  'canvas.mindMapOneSentence.suggestion.set_content_level',
+  'canvas.mindMapOneSentence.suggestion.set_branch_numbering',
 ] as const
 
 export type OneSentenceNodeActionSuggestionKey =

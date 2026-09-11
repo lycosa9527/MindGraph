@@ -125,45 +125,16 @@ export const FIT_PADDING = {
    */
   PRESENTATION_SIDE_TOOLBAR_RIGHT_PX: 50,
   /**
-   * Mind map v2 vertical side toolbar (MindMapSideToolbar): `left-3` + handle + optional card + buffer.
-   * Keeps fit-view / initial center from placing nodes under the floating toolbar.
-   */
-  MIND_MAP_SIDE_TOOLBAR: {
-    /** Tailwind `left-3` */
-    OFFSET_LEFT_PX: 12,
-    /** `.mind-map-side-toolbar__handle` width (1.125rem) */
-    HANDLE_WIDTH_PX: 18,
-    /** `.mind-map-side-toolbar__card.is-expanded` width (5.75rem) */
-    CARD_WIDTH_PX: 92,
-    /** Gap between toolbar edge and diagram content */
-    BUFFER_PX: 20,
-  },
-  /**
-   * Top padding in pixels — clears merged canvas chrome (CanvasTopBar `min-h-12` = 48px).
-   * Mind-map V2 two-row chrome (title + ribbon tools) uses MIND_MAP_TWO_ROW_CHROME_PX.
+   * Top padding in pixels — clears classic merged canvas chrome (CanvasTopBar `min-h-12` = 48px).
+   * New-canvas ribbon chrome is in page flow; fit-view uses STANDARD_PX instead.
    */
   TOP_UI_HEIGHT_PX: 48,
-  /** Title row (~44px) + tool row (~44px) for mind-map V2 ribbon chrome. */
-  MIND_MAP_TWO_ROW_CHROME_PX: 88,
   /** Extra top padding for concept map - leaves space for menu icon above main topic node (icon ~20px + margin) */
   MAIN_TOPIC_MENU_ICON_PX: 35,
   /** Bottom padding in pixels - ZoomControls + AIModelSelector (bottom-4 + compact bar ~48px + margin) */
   BOTTOM_UI_HEIGHT_PX: 88,
-  /** Extra bottom ratio for fitWithPanel (adds ~13% to base) */
-  BOTTOM_UI_EXTRA: 0.13,
   /** Extra bottom padding (px) for tree map when alternative_dimensions overlay is shown below nodes */
   TREE_MAP_ALTERNATIVE_DIMENSIONS_EXTRA_PX: 70,
-  /**
-   * Standard padding with extra top/bottom for overlay UI.
-   * Vue Flow object format: { top, right, bottom, left } - supports "40px" or ratio
-   * top: clears merged canvas chrome; bottom: clears AI selector + Zoom controls
-   */
-  STANDARD_WITH_BOTTOM_UI: {
-    top: '48px',
-    right: '40px',
-    bottom: '88px',
-    left: '40px',
-  } as const,
   /** Export padding for tight fit (5%) */
   EXPORT: 0.05,
   /** Minimal padding (2%) */

@@ -49,6 +49,8 @@ constexpr const char *kStationTimezone = CONFIG_MINDGRAPH_STA_TIMEZONE;
 constexpr const char *kStationTimezone = "CST-8";
 #endif
 
+bool apply_clock_seed();
+
 bool hold_service(service::ServiceBinding &slot, const char *name)
 {
     if (slot.get_service() == nullptr) {
@@ -152,18 +154,16 @@ void join_seeded_ap()
         const auto state = read_wifi_state();
         if (state == BROOKESIA_DESCRIBE_TO_STR(WifiHelper::GeneralState::Connected)) {
             BROOKESIA_LOGI("Boot Wi-Fi already connected to AP '%1%'", kStationSsid);
+            apply_clock_seed();
             return;
         }
         if (wifi_state_can_join(state)) {
-            if (state == BROOKESIA_DESCRIBE_TO_STR(WifiHelper::GeneralState::Connecting)) {
-                BROOKESIA_LOGI("Boot Wi-Fi is already joining AP '%1%'", kStationSsid);
-                return;
+            if (state != BROOKESIA_DESCRIBE_TO_STR(WifiHelper::GeneralState::Connecting)) {
+                if (!trigger_wifi_action(WifiHelper::GeneralAction::Connect, kStationSsid)) {
+                    return;
+                }
+                BROOKESIA_LOGI("Boot Wi-Fi connect issued for AP '%1%' after state(%2%)", kStationSsid, state);
             }
-            if (!trigger_wifi_action(WifiHelper::GeneralAction::Connect, kStationSsid)) {
-                return;
-            }
-            BROOKESIA_LOGI("Boot Wi-Fi connect issued for AP '%1%' after state(%2%)", kStationSsid, state);
-            return;
         }
         boost::this_thread::sleep_for(boost::chrono::milliseconds(STATION_JOIN_POLL_MS));
     }
@@ -220,7 +220,7 @@ bool seed_wifi()
     return true;
 }
 
-bool seed_clock()
+bool apply_clock_seed()
 {
     if (!SNTPHelper::is_available()) {
         BROOKESIA_LOGW("SNTP service is not available, skip boot clock seed");
@@ -239,6 +239,7 @@ bool seed_clock()
                     );
     if (!timezone) {
         BROOKESIA_LOGW("Failed to set boot timezone '%1%': %2%", kStationTimezone, timezone.error());
+        return false;
     }
 
     boost::json::array servers;
@@ -252,15 +253,24 @@ bool seed_clock()
                        );
     if (!set_servers) {
         BROOKESIA_LOGW("Failed to set boot NTP servers: %1%", set_servers.error());
+        return false;
     }
 
     auto start = SNTPHelper::call_function_sync<void>(SNTPHelper::FunctionId::Start, timeout);
     if (!start) {
         BROOKESIA_LOGW("Failed to start SNTP after boot seed: %1%", start.error());
-        return true;
+        return false;
     }
 
     BROOKESIA_LOGI("Boot clock seed timezone(%1%)", kStationTimezone);
+    return true;
+}
+
+bool seed_clock()
+{
+    if (!apply_clock_seed()) {
+        BROOKESIA_LOGW("Boot clock seed will retry after Wi-Fi joins");
+    }
     return true;
 }
 

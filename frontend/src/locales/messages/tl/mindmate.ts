@@ -81,6 +81,8 @@ export default {
   'mindmate.historyTitle': 'Kasaysayan ng Pag-uusap',
   'mindmate.imagePreview': 'Preview ng Larawan',
   'mindmate.input.attachFile': 'Mag-attach ng file',
+  'mindmate.input.unsupportedFile': 'Only images, Word, PDF, and PowerPoint are allowed',
+  'mindmate.input.fileTooLarge': 'File is too large (max {limit}MB)',
   'mindmate.input.placeholder': 'I-type ang iyong tanong...',
   'mindmate.newChat': 'Bagong Chat',
   'mindmate.otherModules': 'Iba pang mga module',

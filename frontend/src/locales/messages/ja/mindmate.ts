@@ -81,6 +81,8 @@ export default {
   'mindmate.historyTitle': '会話履歴',
   'mindmate.imagePreview': '画像プレビュー',
   'mindmate.input.attachFile': 'ファイルを添付',
+  'mindmate.input.unsupportedFile': 'Only images, Word, PDF, and PowerPoint are allowed',
+  'mindmate.input.fileTooLarge': 'File is too large (max {limit}MB)',
   'mindmate.input.placeholder': '質問を入力…',
   'mindmate.newChat': '新しいチャット',
   'mindmate.otherModules': 'その他のモジュール',

@@ -114,17 +114,19 @@ class KittySessionMemory:
         return "\n".join(lines)
 
     def compact_for_loop(self, *, current_user_text: str, lang: str) -> str:
-        """Last tool observation + previous user line (not a raw chat dump)."""
+        """Last three tool observations + last two prior user lines (capped)."""
         goal = current_user_text.strip()
-        last_obs: Optional[KittyTurn] = None
-        prev_user: Optional[KittyTurn] = None
+        observations: List[KittyTurn] = []
+        prev_users: List[KittyTurn] = []
         for turn in reversed(self.turns):
-            if last_obs is None and turn.source == "tool":
-                last_obs = turn
-            if prev_user is None and turn.role == "user" and turn.content.strip() != goal:
-                prev_user = turn
-            if last_obs is not None and prev_user is not None:
+            if turn.source == "tool" and len(observations) < 3:
+                observations.append(turn)
+            if turn.role == "user" and turn.content.strip() != goal and len(prev_users) < 2:
+                prev_users.append(turn)
+            if len(observations) >= 3 and len(prev_users) >= 2:
                 break
+        observations.reverse()
+        prev_users.reverse()
         if lang == "en":
             obs_label = "Last observation"
             prev_label = "Previous user"
@@ -133,11 +135,12 @@ class KittySessionMemory:
             obs_label = "上次工具结果"
             prev_label = "上一轮用户"
             none = "（无）"
-        lines = [
-            f"{obs_label}: {last_obs.content if last_obs else none}",
-        ]
-        if prev_user is not None:
-            lines.append(f"{prev_label}: {prev_user.content}")
+        if not observations:
+            lines = [f"{obs_label}: {none}"]
+        else:
+            lines = [f"{obs_label}: {item.content}" for item in observations]
+        for item in prev_users:
+            lines.append(f"{prev_label}: {item.content}")
         return "\n".join(lines)
 
 

@@ -26,6 +26,6 @@ dependencies:
   espressif/brookesia_app_store:
     version: "0.8.*"
     require: public
-  espressif/brookesia_app_files:
-    version: "0.8.*"
-    require: public
+  espressif/esp_websocket_client: "^1.4.0"
+  espressif/esp_codec_dev: "~1.5"
+  espressif/esp_audio_codec: "^2.3"

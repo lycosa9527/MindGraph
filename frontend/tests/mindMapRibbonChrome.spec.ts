@@ -7,6 +7,7 @@ import {
   DEFAULT_MIND_MAP_RIBBON_TAB,
   MIND_MAP_RIBBON_TABS,
   isMindMapRibbonTabId,
+  resolveLandingMindMapRibbonTab,
 } from '@/canvas-ribbon/mindMapRibbonTypes'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -25,6 +26,9 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     expect(tabs).toContain('mindmap-ribbon-tab-')
     expect([...MIND_MAP_RIBBON_TABS]).toEqual(['file', 'edit', 'ai', 'teaching', 'research'])
     expect(DEFAULT_MIND_MAP_RIBBON_TAB).toBe('edit')
+    expect(resolveLandingMindMapRibbonTab('file')).toBe('edit')
+    expect(resolveLandingMindMapRibbonTab('teaching')).toBe('teaching')
+    expect(resolveLandingMindMapRibbonTab(null)).toBe('edit')
     expect(isMindMapRibbonTabId('ai')).toBe(true)
     expect(isMindMapRibbonTabId('draw')).toBe(false)
     expect(isMindMapRibbonTabId('learn')).toBe(false)

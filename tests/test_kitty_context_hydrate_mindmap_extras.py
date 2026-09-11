@@ -12,6 +12,7 @@ def test_diagram_data_from_saved_spec_keeps_mindmap_extras() -> None:
                 "id": "branch-r-1-0",
                 "text": "分支1",
                 "type": "branch",
+                "position": {"x": 240.0, "y": 80.0},
                 "data": {
                     "mindMapUid": "uid-branch-1",
                     "estimatedWidth": 120,
@@ -46,6 +47,7 @@ def test_diagram_data_from_saved_spec_keeps_mindmap_extras() -> None:
     assert branch["data"]["mindMapUid"] == "uid-branch-1"
     assert branch["data"]["mindMapLegacyId"] == "branch-r-1-0"
     assert branch["data"]["mindMapSide"] == "right"
+    assert branch["position"] == {"x": 240.0, "y": 80.0}
 
 
 def test_diagram_data_from_saved_spec_skips_extras_for_non_mindmap() -> None:

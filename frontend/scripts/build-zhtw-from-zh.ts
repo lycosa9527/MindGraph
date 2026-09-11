@@ -26,6 +26,7 @@ const FILES = [
   'workshop.ts',
   'showcase.ts',
   'thinkingCoins.ts',
+  'training.ts',
 ] as const
 
 function convertFileContent(text: string, convert: (s: string) => string): string {

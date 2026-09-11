@@ -85,11 +85,15 @@ def get_diagram_edit_tools() -> list[dict[str, Any]]:
         ),
         _fn(
             "diagram.update_node",
-            "Rename an existing node. Prefer node_id from Current diagram JSON.",
+            (
+                "Rename an existing node. Prefer node_id from Current diagram JSON. "
+                "node_identifier may be the canvas outline no (1, 1.1, 2.1) "
+                "or 第2个, e.g. 把2.1改成绿茶."
+            ),
             {
                 "node_identifier": {
                     "type": "string",
-                    "description": "Node id from diagram JSON (preferred) or label/index",
+                    "description": ("Node id from diagram JSON (preferred), outline no (1 / 1.1 / 2.1), or label"),
                 },
                 "new_text": {"type": "string", "description": "New node text"},
             },
@@ -97,16 +101,24 @@ def get_diagram_edit_tools() -> list[dict[str, Any]]:
         ),
         _fn(
             "diagram.delete_node",
-            "Delete an existing node. Prefer node_id from Current diagram JSON.",
+            (
+                "Delete an existing node. Prefer node_id from Current diagram JSON. "
+                "Outline no (1 / 1.1 / 2.1) or 第2个 targets the painted node."
+            ),
             {
                 "node_identifier": {
                     "type": "string",
-                    "description": "Node id from diagram JSON (preferred) or label/index",
+                    "description": ("Node id from diagram JSON (preferred), outline no (1 / 1.1 / 2.1), or label"),
                 },
             },
             ["node_identifier"],
         ),
     ]
+
+
+def _legacy_edit_cmd(action: str) -> dict[str, Any]:
+    """Base Kitty command dict for a diagram_edit tool name."""
+    return {"action": action, "confidence": 0.95}
 
 
 def diagram_edit_function_call_to_legacy_command(
@@ -123,14 +135,14 @@ def diagram_edit_function_call_to_legacy_command(
 
     if name == "diagram.update_center":
         new_text = args.get("new_text") or args.get("target")
-        cmd: dict[str, Any] = {"action": "update_center", "confidence": 0.95}
+        cmd = _legacy_edit_cmd("update_center")
         if isinstance(new_text, str) and new_text.strip():
             cmd["target"] = new_text.strip()
         return cmd
 
     if name == "diagram.add_node":
         text = args.get("text") or args.get("target")
-        cmd = {"action": "add_node", "confidence": 0.95}
+        cmd = _legacy_edit_cmd("add_node")
         if isinstance(text, str):
             cmd["target"] = text.strip()
         parent = args.get("parent_ref")
@@ -157,16 +169,22 @@ def diagram_edit_function_call_to_legacy_command(
         return cmd
 
     if name == "diagram.update_node":
-        return {
-            "action": "update_node",
-            "node_identifier": args.get("node_identifier"),
-            "target": args.get("new_text") or args.get("target"),
-            "confidence": 0.95,
-        }
+        ident = args.get("node_identifier") or args.get("node_id")
+        new_text = args.get("new_text")
+        cmd = _legacy_edit_cmd("update_node")
+        if isinstance(ident, str) and ident.strip():
+            text = ident.strip()
+            cmd["node_identifier"] = text
+            cmd["target"] = text
+            if CANVAS_UUID_RE.fullmatch(text):
+                cmd["node_id"] = text
+        if isinstance(new_text, str) and new_text.strip():
+            cmd["new_text"] = new_text.strip()
+        return cmd
 
     if name == "diagram.delete_node":
         ident = args.get("node_identifier") or args.get("node_id") or args.get("target")
-        cmd = {"action": "delete_node", "confidence": 0.95}
+        cmd = _legacy_edit_cmd("delete_node")
         if isinstance(ident, str) and ident.strip():
             text = ident.strip()
             cmd["node_identifier"] = text

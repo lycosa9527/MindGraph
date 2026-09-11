@@ -1,5 +1,5 @@
 board: esp32_s3_touch_lcd_1_85c
 chip: esp32s3
 version: 1.0.0
-description: "Waveshare ESP32-S3-Touch-LCD-1.85C V1 (round 360x360, PCM5101 audio unused)"
+description: "Waveshare ESP32-S3-Touch-LCD-1.85C V1 (round 360x360, PCM5101 + MEMS I2S)"
 manufacturer: "Waveshare"

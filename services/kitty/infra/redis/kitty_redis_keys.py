@@ -107,3 +107,18 @@ def kitty_pending_intent_slot_key(user_id: int, scope: str) -> str:
     """Armed ask-followup slot so a name typed after reconnect still fills the edit."""
     tag = str(scope).strip()
     return f"{{{tag}}}kitty:pending_intent_slot:{int(user_id)}"
+
+
+def kitty_device_user_key(user_id: int) -> str:
+    """Hash of device_id → hello record for one account (admin device list)."""
+    return f"kitty:devices:{int(user_id)}"
+
+
+def kitty_device_index_key() -> str:
+    """Set of user ids that have at least one hello device."""
+    return "kitty:device_index"
+
+
+def kitty_user_defaults_key(user_id: int) -> str:
+    """JSON listen_mode / TTS defaults for one account."""
+    return f"kitty:user_defaults:{int(user_id)}"

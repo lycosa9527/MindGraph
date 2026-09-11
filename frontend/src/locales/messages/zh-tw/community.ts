@@ -1,6 +1,4 @@
-/**
- * zh-tw UI � community
- */
+/** zh-tw UI — community */
 
 export default {
   'community.category.all': '全部',
@@ -78,7 +76,8 @@ export default {
   'debateverse.coinTossModalBody': '賽前通過擲硬幣決定發言順序或選擇正反方立場',
   'debateverse.coinTossNegativeFirst': '反方先發言',
   'debateverse.coinTossOrder': '擲硬幣決定發言順序',
-  'debateverse.coinTossRules': 'AI模型已随机分配给各个辩论角色，赛前通过掷硬币决定发言顺序或选择正反方立场',
+  'debateverse.coinTossRules':
+    'AI模型已随机分配给各个辩论角色，赛前通过掷硬币决定发言顺序或选择正反方立场',
   'debateverse.coinTossStageTitle': '擲硬幣階段',
   'debateverse.debateTopicLabel': '辯論主題：',
   'debateverse.executeCoinToss': '執行擲硬幣',

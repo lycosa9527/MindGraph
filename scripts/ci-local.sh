@@ -150,6 +150,7 @@ run_backend() {
     tests/test_org_subscription.py \
     tests/test_school_tier.py \
     tests/test_dify_user_key.py \
+    tests/test_dify_file_upload_types.py \
     tests/test_mindbot_bind_messages.py \
     tests/test_dingtalk_bind_imports.py \
     tests/test_mindbot_pair_code_handler.py \

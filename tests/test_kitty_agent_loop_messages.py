@@ -138,7 +138,7 @@ def test_compact_for_loop_uses_last_observation_not_raw_dump() -> None:
     assert "上次工具结果" in compact
     assert "applied add_node uid-hist" in compact
     assert "再补历史" in compact
-    assert compact.count("先改主题") == 0
+    assert "先改主题" in compact
     turn = build_user_turn(
         "把历史改成史记",
         snapshot="Current diagram: {}",

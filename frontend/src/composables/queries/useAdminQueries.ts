@@ -19,6 +19,8 @@ import {
   fetchAdminCosStatus,
   fetchAdminFeatureOrgAccess,
   fetchAdminKittyLlmopsArchitecture,
+  fetchAdminKittyDevices,
+  fetchAdminKittySessions,
   fetchAdminManagers,
   fetchAdminMindbotConfigs,
   fetchAdminMindbotStreamingStatus,
@@ -772,6 +774,24 @@ export function useAdminKittyLlmopsArchitecture(options?: {
     queryKey: adminKeys.kittyLlmops.architecture(),
     queryFn: fetchAdminKittyLlmopsArchitecture,
     staleTime: ADMIN_STALE_MS.default,
+    enabled: options?.enabled,
+  })
+}
+
+export function useAdminKittyDevices(options?: { enabled?: MaybeRefOrGetter<boolean> }) {
+  return useQuery({
+    queryKey: adminKeys.kittyLlmops.devices(),
+    queryFn: fetchAdminKittyDevices,
+    staleTime: ADMIN_STALE_MS.default,
+    enabled: options?.enabled,
+  })
+}
+
+export function useAdminKittySessions(options?: { enabled?: MaybeRefOrGetter<boolean> }) {
+  return useQuery({
+    queryKey: adminKeys.kittyLlmops.sessions(),
+    queryFn: fetchAdminKittySessions,
+    staleTime: 10_000,
     enabled: options?.enabled,
   })
 }

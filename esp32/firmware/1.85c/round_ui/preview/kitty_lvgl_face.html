@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Kitty LVGL face — 360 preview</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans CJK SC", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #0b0c10;
+      color: #f2f2f2;
+      padding: 24px;
+    }
+    h1 { font-size: 20px; font-weight: 600; margin: 0 0 8px; }
+    p { color: #9aa0a8; margin: 0 0 16px; max-width: 780px; line-height: 1.45; }
+    .row { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+    .tabs button {
+      border: 1px solid #3a404c;
+      background: #2a2f38;
+      color: #f2f2f2;
+      border-radius: 999px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .tabs button.active { background: #7C3AED; border-color: #7C3AED; }
+    figure { margin: 0; text-align: center; }
+    figcaption { margin-top: 10px; font-size: 13px; color: #9aa0a8; }
+    .watch {
+      width: 360px;
+      height: 360px;
+      border-radius: 50%;
+      background: #F8FAFC;
+      color: #0F172A;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 0 10px #1a1a1a;
+    }
+    .title {
+      position: absolute; left: 70px; top: 28px; width: 220px; height: 22px;
+      text-align: center; font-size: 16px; font-weight: 600; line-height: 22px;
+    }
+    .live {
+      position: absolute; left: 70px; top: 50px; width: 220px; height: 16px;
+      text-align: center; font-size: 12px; line-height: 16px; color: #64748B;
+    }
+    .user {
+      position: absolute; left: 52px; top: 70px; width: 256px; height: 20px;
+      text-align: right; font-size: 13px; line-height: 20px; color: #7C3AED;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .kitty {
+      position: absolute; left: 52px; top: 92px; width: 256px; height: 20px;
+      text-align: left; font-size: 13px; line-height: 20px; color: #0F172A;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .chip {
+      position: absolute; top: 116px; width: 118px; height: 28px;
+      border-radius: 14px; background: #FFFFFF; border: 1px solid #E2E8F0;
+      font-size: 12px; line-height: 26px; text-align: center;
+      color: #0F172A; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .chip.a { left: 58px; }
+    .chip.b { left: 184px; }
+    .mascot {
+      position: absolute; left: 110px; top: 136px; width: 140px; height: 140px;
+      object-fit: contain;
+    }
+    .library {
+      position: absolute; left: 68px; top: 264px; width: 164px; height: 52px;
+      border-radius: 26px; background: #FFFFFF; border: 1px solid #E2E8F0;
+      font-size: 13px; line-height: 52px; text-align: center; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap; padding: 0 12px;
+    }
+    .mic {
+      position: absolute; left: 244px; top: 264px; width: 52px; height: 52px;
+      border-radius: 50%; background: #7C3AED; display: flex; align-items: center;
+      justify-content: center;
+    }
+    .mic.hold { background: #4F46E5; }
+    .mic img { width: 28px; height: 28px; }
+    .picker {
+      position: absolute; left: 48px; top: 150px; width: 264px; height: 120px;
+      border-radius: 16px; background: #FFFFFF; border: 1px solid #E2E8F0;
+      padding: 16px 12px; font-size: 13px; line-height: 1.45; text-align: center;
+      color: #0F172A;
+    }
+    .hidden { display: none; }
+    .note {
+      max-width: 420px; color: #9aa0a8; font-size: 13px; line-height: 1.5;
+    }
+    code { color: #d8d8d8; }
+  </style>
+</head>
+<body>
+  <h1>LVGL face preview (not Super WASM)</h1>
+  <p>
+    Pixel layout copied from <code>kitty_ui_widgets.cpp</code>: 360 circle, light Swiss,
+    title, two chat lines, chips, pixel-cat still, 图库 card + 56px violet mic.
+    Mascot PNG is the same LittleFS asset the watch will load.
+  </p>
+  <div class="tabs">
+    <button class="active" data-scene="idle">Idle</button>
+    <button data-scene="hold">Hold</button>
+    <button data-scene="ask">Ask</button>
+    <button data-scene="choose">Choose</button>
+    <button data-scene="speak">Speak</button>
+    <button data-scene="picker">Library tap</button>
+  </div>
+  <div class="row">
+    <figure>
+      <div class="watch" id="face">
+        <div class="title">Kitty智能体</div>
+        <div class="live" id="live">连接中</div>
+        <div class="user" id="user"></div>
+        <div class="kitty" id="kitty"></div>
+        <div class="chip a hidden" id="chipA"></div>
+        <div class="chip b hidden" id="chipB"></div>
+        <img class="mascot" id="mascot" src="kitty/mascot.png" alt="">
+        <div class="library" id="library">图库</div>
+        <div class="mic" id="mic"><img src="kitty/mic.png" alt=""></div>
+        <div class="picker hidden" id="picker"></div>
+      </div>
+      <figcaption>Same 360×360 clip the ST77916 will draw</figcaption>
+    </figure>
+    <div class="note" id="note"></div>
+  </div>
+  <script>
+    const scenes = {
+      idle: {
+        live: "实时对话",
+        user: "",
+        kitty: "",
+        a: "",
+        b: "",
+        hold: false,
+        speak: false,
+        picker: "",
+        lib: "图库",
+        note: "What boots today: bootstrap context has no diagram_title, so the chip stays 图库. Token works; desktop_focus is 未命名思维导图."
+      },
+      hold: {
+        live: "聆听中",
+        user: "",
+        kitty: "",
+        a: "",
+        b: "",
+        hold: true,
+        speak: false,
+        picker: "",
+        lib: "图库",
+        note: "Mic pressed. Firmware sends asr_start + 16 kHz PCM, then asr_stop."
+      },
+      ask: {
+        live: "思考中",
+        user: "打开支付宝那张图",
+        kitty: "",
+        a: "",
+        b: "",
+        hold: false,
+        speak: false,
+        picker: "",
+        lib: "图库",
+        note: "User line is right-aligned violet. Watch does not fetch GET /api/diagrams yet."
+      },
+      choose: {
+        live: "思考中",
+        user: "打开支付宝那张图",
+        kitty: "用哪一张？",
+        a: "支付宝合同",
+        b: "未命名导图",
+        hold: false,
+        speak: false,
+        picker: "",
+        lib: "图库",
+        note: "Two chips only. Real account has 114 diagrams; firmware picker is not a list yet."
+      },
+      speak: {
+        live: "说话中",
+        user: "打开支付宝那张图",
+        kitty: "已切到支付宝支付服务合同",
+        a: "",
+        b: "",
+        hold: false,
+        speak: true,
+        picker: "",
+        lib: "支付宝支付服务合同",
+        note: "Speaking still swaps mascot.png → speaking.png. CosyVoice PCM is 22050 Hz."
+      },
+      picker: {
+        live: "实时对话",
+        user: "",
+        kitty: "",
+        a: "",
+        b: "",
+        hold: false,
+        speak: false,
+        picker: "当前：图库\n桌面焦点：未命名思维导图\n库里共 114 张（手表还没拉列表）",
+        lib: "图库",
+        note: "Tap 图库 toggles this card. It only shows the current title string, not the 114-row library."
+      }
+    };
+
+    function apply(name) {
+      const s = scenes[name];
+      document.getElementById("live").textContent = s.live;
+      document.getElementById("user").textContent = s.user;
+      document.getElementById("kitty").textContent = s.kitty;
+      document.getElementById("library").textContent = s.lib;
+      document.getElementById("note").textContent = s.note;
+      document.getElementById("mascot").src = s.speak ? "kitty/speaking.png" : "kitty/mascot.png";
+      document.getElementById("mic").classList.toggle("hold", s.hold);
+      const a = document.getElementById("chipA");
+      const b = document.getElementById("chipB");
+      a.textContent = s.a;
+      b.textContent = s.b;
+      a.classList.toggle("hidden", !s.a);
+      b.classList.toggle("hidden", !s.b);
+      const p = document.getElementById("picker");
+      p.textContent = s.picker;
+      p.classList.toggle("hidden", !s.picker);
+    }
+
+    document.querySelectorAll(".tabs button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tabs button").forEach((el) => el.classList.remove("active"));
+        btn.classList.add("active");
+        apply(btn.dataset.scene);
+      });
+    });
+    apply("idle");
+  </script>
+</body>
+</html>

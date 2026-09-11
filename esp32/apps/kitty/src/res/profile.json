@@ -1,0 +1,10 @@
+{
+  "root": "root.json",
+  "icon_id": "launcher_icon",
+  "screen_flows": [
+    {
+      "screen_flow": "main",
+      "layer": "AppDefault"
+    }
+  ]
+}

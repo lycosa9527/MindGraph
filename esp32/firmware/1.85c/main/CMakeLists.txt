@@ -1,11 +1,13 @@
 file(GLOB_RECURSE SRCS "${CMAKE_CURRENT_LIST_DIR}/*.cpp" "${CMAKE_CURRENT_LIST_DIR}/*.c")
-set(EMBEDDED_FILES "")
 
 idf_component_register(
     SRCS ${SRCS}
     INCLUDE_DIRS "."
-    EMBED_TXTFILES ${EMBEDDED_FILES}
+    EMBED_FILES
+        "${CMAKE_CURRENT_LIST_DIR}/assets/kitty_mascot.png"
+        "${CMAKE_CURRENT_LIST_DIR}/assets/kitty_mic.png"
 )
+target_link_libraries(${COMPONENT_LIB} INTERFACE "-u kitty_app_provider_symbol")
 
 get_property(brookesia_runtime_app_stage_targets GLOBAL PROPERTY BROOKESIA_RUNTIME_APP_STAGE_TARGETS)
 if(brookesia_runtime_app_stage_targets)
@@ -59,6 +61,20 @@ execute_process(
 )
 if(NOT ROUND_STATUS_PATCH EQUAL 0)
     message(FATAL_ERROR "round Super status-bar patch failed")
+endif()
+execute_process(
+    COMMAND python3 "${ROUND_UI_OVERLAY}/patch_super_home_indicator.py"
+    RESULT_VARIABLE ROUND_HOME_INDICATOR_PATCH
+)
+if(NOT ROUND_HOME_INDICATOR_PATCH EQUAL 0)
+    message(FATAL_ERROR "round Super home-indicator patch failed")
+endif()
+execute_process(
+    COMMAND python3 "${ROUND_UI_OVERLAY}/patch_audio_volume.py"
+    RESULT_VARIABLE ROUND_AUDIO_VOLUME_PATCH
+)
+if(NOT ROUND_AUDIO_VOLUME_PATCH EQUAL 0)
+    message(FATAL_ERROR "round AudioPlayback volume patch failed")
 endif()
 add_custom_target(
     mindgraph_round_ui

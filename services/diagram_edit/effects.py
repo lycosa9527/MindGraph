@@ -239,7 +239,11 @@ def build_expected_effect(
             or _normalized_text(legacy.get("node_identifier"))
             or _normalized_text(legacy.get("target"))
         )
-        text = _normalized_text(args.get("new_text")) or _normalized_text(legacy.get("target"))
+        text = (
+            _normalized_text(args.get("new_text"))
+            or _normalized_text(legacy.get("new_text"))
+            or _normalized_text(legacy.get("target"))
+        )
         return ExpectedEffect(
             op="update_node",
             text=text,

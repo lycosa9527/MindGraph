@@ -1,0 +1,15 @@
+{
+    "type": "viewScreen",
+    "id": "main",
+    "commonProps": {
+        "scrollable": false,
+        "clickable": false
+    },
+    "placement": {
+        "width": "${env.widthDp}",
+        "height": "${env.heightDp}"
+    },
+    "style": {
+        "bgColor": "#F8FAFC"
+    }
+}

@@ -81,6 +81,8 @@ export default {
   'mindmate.historyTitle': 'Sohbet geçmişi',
   'mindmate.imagePreview': 'Görsel önizleme',
   'mindmate.input.attachFile': 'Dosya ekle',
+  'mindmate.input.unsupportedFile': 'Only images, Word, PDF, and PowerPoint are allowed',
+  'mindmate.input.fileTooLarge': 'File is too large (max {limit}MB)',
   'mindmate.input.placeholder': 'Sorunuzu yazın...',
   'mindmate.newChat': 'Yeni sohbet',
   'mindmate.otherModules': 'Diğer modüller',

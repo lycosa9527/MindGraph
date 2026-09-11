@@ -18,6 +18,12 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from models import Messages, get_request_language
 from models.domain.auth import User
+from services.dify.file_upload_types import (
+    DIFY_GATEWAY_UPLOAD_EXTENSIONS,
+    dify_chat_file_type,
+    dify_upload_content_type,
+    dify_upload_max_bytes,
+)
 from services.dify.org_mindmate_client import resolve_mindmate_dify_client_short_lived
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from services.utils.safe_upload import UnsafeUploadPathError, safe_upload_basename
@@ -27,44 +33,6 @@ from utils.dify_mindmate_user_id import mindmate_dify_user_id
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["api"])
-
-# Extensions accepted for Dify upload (mirrors the documented supported set).
-_ALLOWED_DIFY_EXTENSIONS = frozenset(
-    {
-        "jpg",
-        "jpeg",
-        "png",
-        "gif",
-        "webp",
-        "svg",
-        "txt",
-        "md",
-        "markdown",
-        "pdf",
-        "html",
-        "htm",
-        "xlsx",
-        "xls",
-        "doc",
-        "docx",
-        "csv",
-        "xml",
-        "epub",
-        "ppt",
-        "pptx",
-        "mp3",
-        "m4a",
-        "wav",
-        "webm",
-        "mpga",
-        "amr",
-        "aac",
-        "mp4",
-        "mov",
-        "mpeg",
-        "mpg",
-    }
-)
 
 # Magic-byte signatures for the most spoofable (image) types.
 _IMAGE_MAGIC_PREFIXES = {
@@ -87,7 +55,7 @@ def _validate_dify_upload(filename: str, content: bytes) -> None:
         raise HTTPException(status_code=400, detail="Invalid filename") from exc
 
     ext = Path(base).suffix.lower().lstrip(".")
-    if ext not in _ALLOWED_DIFY_EXTENSIONS:
+    if ext not in DIFY_GATEWAY_UPLOAD_EXTENSIONS:
         raise HTTPException(status_code=400, detail=f"Unsupported file type: .{ext}")
 
     if ext in _IMAGE_MAGIC_PREFIXES:
@@ -127,7 +95,8 @@ async def upload_file_to_dify(
         name: Original filename
         size: File size in bytes
         extension: File extension
-        mime_type: File MIME type
+        mime_type: File MIME type stored by Dify
+        type: Dify chat-messages file type (image, document, audio, video, custom)
     """
     if current_user is None:
         raise HTTPException(
@@ -145,24 +114,28 @@ async def upload_file_to_dify(
         detail=Messages.error("ai_not_configured", lang),
     )
 
-    if not file.filename:
+    raw_name = file.filename
+    if not raw_name:
         raise HTTPException(status_code=400, detail="No filename provided")
 
     content = await file.read()
     file_size = len(content)
+    upload_name = raw_name
+    content_type = dify_upload_content_type(upload_name, file.content_type)
 
-    max_size = 15 * 1024 * 1024
+    max_size = dify_upload_max_bytes(upload_name)
     if file_size > max_size:
+        limit_mb = max_size / 1024 / 1024
         raise HTTPException(
             status_code=413,
-            detail=f"File too large. Maximum size is 15MB, got {file_size / 1024 / 1024:.1f}MB",
+            detail=(f"File too large. Maximum size is {limit_mb:.0f}MB, got {file_size / 1024 / 1024:.1f}MB"),
         )
 
-    _validate_dify_upload(file.filename, content)
+    _validate_dify_upload(upload_name, content)
 
     logger.info(
         "Uploading file to Dify: %s (%s bytes) for user %s",
-        file.filename,
+        upload_name,
         file_size,
         effective_user_id,
     )
@@ -171,19 +144,24 @@ async def upload_file_to_dify(
         result = await client.upload_file(
             user_id=effective_user_id,
             file_bytes=content,
-            filename=file.filename,
-            content_type=file.content_type or "application/octet-stream",
+            filename=upload_name,
+            content_type=content_type,
         )
         logger.info("File uploaded successfully: %s", result.get("id"))
+        raw_stored_name = result.get("name")
+        stored_name = raw_stored_name if isinstance(raw_stored_name, str) and raw_stored_name else upload_name
+        raw_stored_mime = result.get("mime_type")
+        stored_mime = raw_stored_mime if isinstance(raw_stored_mime, str) and raw_stored_mime else content_type
 
         return {
             "success": True,
             "data": {
                 "id": result.get("id"),
-                "name": result.get("name"),
+                "name": stored_name,
                 "size": result.get("size"),
                 "extension": result.get("extension"),
-                "mime_type": result.get("mime_type"),
+                "mime_type": stored_mime,
+                "type": dify_chat_file_type(stored_name, stored_mime),
                 "created_at": result.get("created_at"),
             },
         }

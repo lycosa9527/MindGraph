@@ -40,7 +40,12 @@ from services.kitty.context.messaging import resolve_voice_interaction_language,
 from services.kitty.diagram.hub_bridge import try_sync_voice_diagram_to_hub
 from services.kitty.infra.desktop.kitty_desktop_wake_fanout import publish_kitty_selection_update
 from services.kitty.infra.desktop.kitty_voice_command_fanout import fanout_voice_command_from_session
-from services.kitty.omni.tools import build_omni_diagram_tools, omni_function_call_to_command
+from services.kitty.agent_loop.preference_tools import dispatch_preference_action
+from services.kitty.agent_loop.author_spec import (
+    author_spec_tool_schema,
+    dispatch_author_spec,
+)
+from services.kitty.agent_loop.ui_tools import build_ui_diagram_tools, ui_tool_call_to_command
 from services.kitty.routing.command_grounding import (
     GROUNDED_ACTIONS,
     UNGROUNDED_ERROR,
@@ -108,6 +113,9 @@ EDIT_LOOP_TOOL_NAMES = frozenset(
         "node_action.clarify_options",
         "node_action.auto_complete_branch",
         "node_action.auto_complete",
+        "node_action.set_content_level",
+        "node_action.set_branch_numbering",
+        "author_spec",
     }
 )
 
@@ -136,9 +144,10 @@ def loop_tool_schemas(mode: LoopMode = "general") -> List[Dict[str, Any]]:
     """Edit: read + structural + clarify + fill. General also offers canvas UI tools."""
     schemas = list(build_node_action_tools())
     schemas.append(read_diagram_tool_schema())
+    schemas.append(author_spec_tool_schema())
     if mode == "edit":
         return [item for item in schemas if _schema_name(item) in EDIT_LOOP_TOOL_NAMES]
-    for item in build_omni_diagram_tools():
+    for item in build_ui_diagram_tools():
         name = _schema_name(item)
         if name in _OMNI_UI_NAMES:
             schemas.append(item)
@@ -151,7 +160,7 @@ def map_tool_call_to_command(name: str, arguments_json: str) -> Dict[str, Any]:
         return {"action": "read_diagram", "confidence": 1.0}
     if name.startswith("diagram.") or name.startswith("node_action."):
         return command_from_tool_call(name, arguments_json)
-    return omni_function_call_to_command(name, arguments_json)
+    return ui_tool_call_to_command(name, arguments_json)
 
 
 def ensure_live_mindmap_identity(session_context: Dict[str, Any]) -> None:
@@ -255,6 +264,19 @@ async def dispatch_loop_tool(
     grounding_source: str = "",
 ) -> ToolDispatchResult:
     """Resolve identity, then Bus / UI / clarify. Never fake structural applied."""
+    if name == "author_spec":
+        lang = resolve_voice_interaction_language(session_context)
+        payload = await dispatch_author_spec(
+            voice_session_id,
+            arguments_json=arguments_json,
+            lang=lang,
+        )
+        return ToolDispatchResult(
+            payload=payload,
+            action="author_spec",
+            stop_after=True,
+            mutated=str(payload.get("status") or "") == "ok",
+        )
     command = map_tool_call_to_command(name, arguments_json)
     return await dispatch_prepared_command(
         websocket,
@@ -452,7 +474,6 @@ async def _dispatch_structural(
             command_text=command_text,
         )
         if action == "add_node":
-            # Always fill a new L1 branch; do not wait for a second “补全” turn.
             stop_after = await maybe_start_background_branch_autocomplete(
                 websocket,
                 voice_session_id,
@@ -489,7 +510,23 @@ async def _dispatch_ui(
     lang: str,
 ) -> ToolDispatchResult:
     """Canvas / panel actions that are not structural ExpectedEffect verifies."""
-    del session_context
+    preference = await dispatch_preference_action(
+        websocket,
+        voice_session_id,
+        command=command,
+        session_context=session_context,
+        command_text=command_text,
+        lang=lang,
+    )
+    if preference is not None:
+        payload = preference["payload"]
+        status = str(payload.get("status") or "") if isinstance(payload, dict) else ""
+        return ToolDispatchResult(
+            payload=payload,
+            action=str(preference.get("action") or ""),
+            mutated=status == "ok",
+            stop_nonretryable=bool(preference.get("stop_nonretryable")),
+        )
     action = str(command.get("action") or "")
     if action == "auto_complete":
         sent = await send_kitty_ws_action(

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Keep Super init moving on this 1.85C PSRAM heap.
 
-- Skip App Store at boot (Settings + Files need the RAM).
+- Skip App Store and Files at boot (Settings + Kitty need the RAM).
 - Continue if a registered app fails to install.
 - Always complete run_task_sync promises so a GUI-worker bad_alloc
   cannot leave the startup logo up forever.
@@ -41,10 +41,15 @@ FAIL_NEW = (
     "            continue;\n"
 )
 
-SKIP_MARKER = "Skipping registered app on 1.85C"
+SKIP_MARKER = "brookesia.general.files"
 SKIP_OLD = """    for (auto &[name, provider] : providers) {
         if (!provider) {
             BROOKESIA_LOGW("App provider is null: name(%1%)", name);
+            continue;
+        }
+"""
+SKIP_STORE_ONLY = """        if (name == "brookesia.general.app_store") {
+            BROOKESIA_LOGW("Skipping registered app on 1.85C: %1%", name);
             continue;
         }
 """
@@ -53,7 +58,12 @@ SKIP_NEW = """    for (auto &[name, provider] : providers) {
             BROOKESIA_LOGW("App provider is null: name(%1%)", name);
             continue;
         }
-        if (name == "brookesia.general.app_store") {
+        if (name == "brookesia.general.app_store" || name == "brookesia.general.files") {
+            BROOKESIA_LOGW("Skipping registered app on 1.85C: %1%", name);
+            continue;
+        }
+"""
+SKIP_BOTH = """        if (name == "brookesia.general.app_store" || name == "brookesia.general.files") {
             BROOKESIA_LOGW("Skipping registered app on 1.85C: %1%", name);
             continue;
         }
@@ -104,12 +114,18 @@ def replace_once(path: Path, old: str, new: str, already: str) -> int:
 
 
 def main() -> int:
+    """Patch Super app install to skip unused apps and survive GUI worker faults."""
     if not MANAGER_CPP.is_file() or not IMPL_HPP.is_file():
         print("missing Super core sources")
         return 1
     status = 0
     status |= replace_once(MANAGER_CPP, FAIL_OLD, FAIL_NEW, FAIL_NEW)
-    status |= replace_once(MANAGER_CPP, SKIP_OLD, SKIP_NEW, SKIP_MARKER)
+    if SKIP_BOTH in MANAGER_CPP.read_text():
+        print(f"already patched {MANAGER_CPP.name} files skip")
+    elif SKIP_STORE_ONLY in MANAGER_CPP.read_text():
+        status |= replace_once(MANAGER_CPP, SKIP_STORE_ONLY, SKIP_BOTH, SKIP_BOTH)
+    else:
+        status |= replace_once(MANAGER_CPP, SKIP_OLD, SKIP_NEW, SKIP_MARKER)
     status |= replace_once(IMPL_HPP, SYNC_OLD, SYNC_NEW, "set_exception(std::current_exception())")
     return status
 

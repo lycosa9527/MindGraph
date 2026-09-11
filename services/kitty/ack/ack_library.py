@@ -285,6 +285,30 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "zh": "抱歉，没能自动补全整张导图。请确认电脑端画布已打开后再试一次。",
         "en": "Sorry — I couldn't auto-complete the diagram. Make sure the desktop canvas is open, then try again.",
     },
+    "ui.set_content_level": {
+        "zh": "已将专业内容设为「{level}」。之后的生成会按这个受众来。",
+        "en": 'Content level set to "{level}". Later generation will match that audience.',
+    },
+    "ui.set_content_level.failed": {
+        "zh": "抱歉，没能把专业内容设为「{level}」。请确认电脑端画布已打开后再试。",
+        "en": 'Sorry — I couldn\'t set the content level to "{level}". Open the desktop canvas and try again.',
+    },
+    "ui.set_branch_numbering.on": {
+        "zh": "已启用编号。你可以说「删除第2个」或「把1.1改成…」来定位节点。",
+        "en": "Numbering is on. You can say “delete number 2” or “rename 1.1 to …” to target a node.",
+    },
+    "ui.set_branch_numbering.style": {
+        "zh": "已启用{style}编号。你可以说「删除第2个」或「把1.1改成…」来定位节点。",
+        "en": "{style} numbering is on. You can say “delete number 2” or “rename 1.1 to …” to target a node.",
+    },
+    "ui.set_branch_numbering.off": {
+        "zh": "已隐藏编号。",
+        "en": "Numbering is hidden.",
+    },
+    "ui.set_branch_numbering.failed": {
+        "zh": "抱歉，没能切换编号。请确认电脑端画布已打开后再试。",
+        "en": "Sorry — I couldn't change numbering. Open the desktop canvas and try again.",
+    },
     "ui.start_inline_recommendations": {
         "zh": "好的，已打开联想建议，请从推荐里选一个。",
         "en": "OK — inline suggestions are open. Pick one when ready.",

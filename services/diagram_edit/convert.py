@@ -51,11 +51,24 @@ def legacy_command_to_diagram_edit(
             if key in legacy:
                 args[key] = legacy[key]
     elif tool == "diagram.update_node":
-        ident = legacy.get("node_identifier")
-        new_text = legacy.get("target") or legacy.get("new_text")
-        if isinstance(ident, str):
+        node_id = legacy.get("node_id")
+        ident = legacy.get("node_identifier") or legacy.get("target")
+        new_text = legacy.get("new_text")
+        if not (isinstance(new_text, str) and new_text.strip()):
+            fallback = legacy.get("target")
+            ident_keys = {
+                value.strip()
+                for value in (legacy.get("node_id"), legacy.get("node_identifier"))
+                if isinstance(value, str) and value.strip()
+            }
+            if isinstance(fallback, str) and fallback.strip() and fallback.strip() not in ident_keys:
+                new_text = fallback
+        if isinstance(node_id, str) and node_id.strip():
+            args["node_id"] = node_id.strip()
+            args["node_identifier"] = node_id.strip()
+        elif isinstance(ident, str) and ident.strip():
             args["node_identifier"] = ident.strip()
-        if isinstance(new_text, str):
+        if isinstance(new_text, str) and new_text.strip():
             args["new_text"] = new_text.strip()
     elif tool == "diagram.delete_node":
         ident = legacy.get("node_identifier") or legacy.get("target")

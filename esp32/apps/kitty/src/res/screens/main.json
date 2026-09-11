@@ -1,0 +1,333 @@
+{
+  "type": "viewScreen",
+  "id": "main",
+  "commonProps": {
+    "scrollable": false
+  },
+  "placement": {
+    "width": "${env.widthDp}",
+    "height": "${env.heightDp}"
+  },
+  "style": {
+    "bgColor": "${color.bg.app}"
+  },
+  "children": [
+    {
+      "type": "label",
+      "id": "title",
+      "labelProps": {
+        "text": "Kitty\u00a0Agent"
+      },
+      "style": {
+        "fontSize": "16sp",
+        "textAlign": "center",
+        "textColor": "${color.text.default}"
+      },
+      "placement": {
+        "mode": "absolute",
+        "x": "24dp",
+        "y": "10dp",
+        "width": "312dp",
+        "height": "22dp"
+      }
+    },
+    {
+      "type": "label",
+      "id": "live",
+      "labelProps": {
+        "text": "Live"
+      },
+      "style": {
+        "fontSize": "11sp",
+        "textAlign": "center",
+        "textColor": "${color.text.muted}"
+      },
+      "placement": {
+        "mode": "absolute",
+        "x": "24dp",
+        "y": "32dp",
+        "width": "312dp",
+        "height": "16dp"
+      }
+    },
+    {
+      "type": "label",
+      "id": "user_bubble",
+      "labelProps": {
+        "text": "Set\u00a0center\u00a0to\u00a0recycle"
+      },
+      "style": {
+        "fontSize": "12sp",
+        "textAlign": "right",
+        "textColor": "${color.text.default}"
+      },
+      "placement": {
+        "mode": "absolute",
+        "x": "40dp",
+        "y": "52dp",
+        "width": "280dp",
+        "height": "20dp"
+      }
+    },
+    {
+      "type": "label",
+      "id": "kitty_bubble",
+      "labelProps": {
+        "text": "Center\u00a0or\u00a0whole\u00a0theme?"
+      },
+      "style": {
+        "fontSize": "12sp",
+        "textAlign": "left",
+        "textColor": "${color.text.default}"
+      },
+      "placement": {
+        "mode": "absolute",
+        "x": "40dp",
+        "y": "74dp",
+        "width": "280dp",
+        "height": "20dp"
+      }
+    },
+    {
+      "type": "button",
+      "id": "choice_center",
+      "style": {
+        "bgColor": "${color.surface.base}",
+        "borderColor": "${color.border.default}",
+        "borderWidth": "1dp",
+        "radius": "14dp"
+      },
+      "placement": {
+        "mode": "absolute",
+        "x": "48dp",
+        "y": "100dp",
+        "width": "120dp",
+        "height": "28dp"
+      },
+      "children": [
+        {
+          "type": "label",
+          "id": "choice_center_label",
+          "labelProps": {
+            "text": "1\u00a0Center"
+          },
+          "style": {
+            "fontSize": "11sp",
+            "textAlign": "center",
+            "textColor": "${color.text.default}"
+          }
+        }
+      ]
+    },
+    {
+      "type": "button",
+      "id": "choice_theme",
+      "style": {
+        "bgColor": "${color.surface.base}",
+        "borderColor": "${color.border.default}",
+        "borderWidth": "1dp",
+        "radius": "14dp"
+      },
+      "placement": {
+        "mode": "absolute",
+        "x": "192dp",
+        "y": "100dp",
+        "width": "120dp",
+        "height": "28dp"
+      },
+      "children": [
+        {
+          "type": "label",
+          "id": "choice_theme_label",
+          "labelProps": {
+            "text": "2\u00a0Theme"
+          },
+          "style": {
+            "fontSize": "11sp",
+            "textAlign": "center",
+            "textColor": "${color.text.default}"
+          }
+        }
+      ]
+    },
+    {
+      "type": "image",
+      "id": "mascot",
+      "commonProps": {
+        "clickable": false
+      },
+      "imageProps": {
+        "src": "${image.mascot}",
+        "innerAlign": "contain"
+      },
+      "placement": {
+        "mode": "absolute",
+        "x": "110dp",
+        "y": "118dp",
+        "width": "140dp",
+        "height": "140dp"
+      }
+    },
+    {
+      "type": "button",
+      "id": "node_center",
+      "style": {
+        "bgColor": "${color.surface.base}",
+        "borderColor": "${color.primary.fill}",
+        "borderWidth": "1dp",
+        "radius": "12dp"
+      },
+      "placement": {
+        "mode": "absolute",
+        "x": "36dp",
+        "y": "266dp",
+        "width": "88dp",
+        "height": "24dp"
+      },
+      "children": [
+        {
+          "type": "label",
+          "id": "node_center_label",
+          "labelProps": {
+            "text": "Center"
+          },
+          "style": {
+            "fontSize": "10sp",
+            "textAlign": "center",
+            "textColor": "${color.text.default}"
+          }
+        }
+      ]
+    },
+    {
+      "type": "button",
+      "id": "node_reduce",
+      "style": {
+        "bgColor": "${color.surface.base}",
+        "borderColor": "${color.border.default}",
+        "borderWidth": "1dp",
+        "radius": "12dp"
+      },
+      "placement": {
+        "mode": "absolute",
+        "x": "136dp",
+        "y": "266dp",
+        "width": "88dp",
+        "height": "24dp"
+      },
+      "children": [
+        {
+          "type": "label",
+          "id": "node_reduce_label",
+          "labelProps": {
+            "text": "Reduce"
+          },
+          "style": {
+            "fontSize": "10sp",
+            "textAlign": "center",
+            "textColor": "${color.text.default}"
+          }
+        }
+      ]
+    },
+    {
+      "type": "button",
+      "id": "node_reuse",
+      "style": {
+        "bgColor": "${color.surface.base}",
+        "borderColor": "${color.border.default}",
+        "borderWidth": "1dp",
+        "radius": "12dp"
+      },
+      "placement": {
+        "mode": "absolute",
+        "x": "236dp",
+        "y": "266dp",
+        "width": "88dp",
+        "height": "24dp"
+      },
+      "children": [
+        {
+          "type": "label",
+          "id": "node_reuse_label",
+          "labelProps": {
+            "text": "Reuse"
+          },
+          "style": {
+            "fontSize": "10sp",
+            "textAlign": "center",
+            "textColor": "${color.text.default}"
+          }
+        }
+      ]
+    },
+    {
+      "type": "button",
+      "id": "library",
+      "style": {
+        "bgColor": "${color.surface.raised}",
+        "borderColor": "${color.border.default}",
+        "borderWidth": "1dp",
+        "radius": "16dp"
+      },
+      "placement": {
+        "mode": "absolute",
+        "x": "20dp",
+        "y": "292dp",
+        "width": "216dp",
+        "height": "52dp"
+      },
+      "children": [
+        {
+          "type": "label",
+          "id": "library_label",
+          "labelProps": {
+            "text": "Library"
+          },
+          "style": {
+            "fontSize": "14sp",
+            "textAlign": "center",
+            "textColor": "${color.text.default}"
+          }
+        }
+      ]
+    },
+    {
+      "type": "button",
+      "id": "mic",
+      "layout": {
+        "type": "flex",
+        "mainAlign": "center",
+        "crossAlign": "center"
+      },
+      "style": {
+        "bgColor": "#7C3AED",
+        "radius": "28dp"
+      },
+      "placement": {
+        "mode": "absolute",
+        "x": "248dp",
+        "y": "288dp",
+        "width": "56dp",
+        "height": "56dp"
+      },
+      "children": [
+        {
+          "type": "image",
+          "id": "mic_icon",
+          "commonProps": {
+            "clickable": false
+          },
+          "imageProps": {
+            "src": "${image.mic}",
+            "innerAlign": "contain"
+          },
+          "placement": {
+            "width": "28dp",
+            "height": "28dp"
+          }
+        }
+      ]
+    }
+  ]
+}

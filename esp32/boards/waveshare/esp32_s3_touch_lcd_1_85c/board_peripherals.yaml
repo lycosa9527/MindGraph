@@ -42,3 +42,46 @@ peripherals:
       freq_hz: 5000
       duty: 4000
       duty_resolution: LEDC_TIMER_13_BIT
+
+  # PCM5101 + NS8002 speaker path (factory Test). No MCLK; attach a speaker to the pads.
+  - name: i2s_audio_out
+    type: i2s
+    role: master
+    format: std-out
+    config:
+      port: 0
+      sample_rate_hz: 22050
+      mclk_multiple: 256
+      data_bit_width: 16
+      slot_bit_width: I2S_SLOT_BIT_WIDTH_AUTO
+      slot_mode: I2S_SLOT_MODE_STEREO
+      slot_mask: I2S_STD_SLOT_BOTH
+      ws_width: 16
+      pins:
+        mclk: -1
+        bclk: 48
+        ws: 38
+        dout: 47
+        din: -1
+
+  # Onboard MEMS I2S mic (V1). 24-bit left-justified in 32-bit Philips slots.
+  # 16-bit mono LEFT captured the LSBs (near silence) so Fun-ASR returned empty.
+  - name: i2s_audio_in
+    type: i2s
+    role: master
+    format: std-in
+    config:
+      port: 1
+      sample_rate_hz: 16000
+      mclk_multiple: 256
+      data_bit_width: 32
+      slot_bit_width: I2S_SLOT_BIT_WIDTH_32BIT
+      slot_mode: I2S_SLOT_MODE_STEREO
+      slot_mask: I2S_STD_SLOT_BOTH
+      ws_width: 32
+      pins:
+        mclk: -1
+        bclk: 15
+        ws: 2
+        dout: -1
+        din: 39

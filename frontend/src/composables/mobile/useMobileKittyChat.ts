@@ -3,6 +3,8 @@
  */
 import { type ComputedRef, type Ref, onUnmounted, ref, watch } from 'vue'
 
+import type { KittyAsrCommitMode } from '@/composables/kitty/asr/useKittyAsrSession'
+
 import { storeToRefs } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
@@ -42,6 +44,7 @@ export type UseMobileKittyChatOptions = {
   ensureConnected: () => Promise<boolean>
   buildContext: () => KittyAgentContext
   onDebugLine?: (prefix: string, detail: string) => void
+  asrCommitMode?: KittyAsrCommitMode | Ref<KittyAsrCommitMode>
 }
 
 export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
@@ -55,6 +58,7 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
     ensureConnected,
     buildContext,
     onDebugLine,
+    asrCommitMode,
   } = options
 
   const { t, promptLanguage } = useLanguage()
@@ -71,7 +75,7 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
   })
 
   const asr = useKittyAsrSession({
-    mode: 'release_only',
+    mode: asrCommitMode ?? 'release_only',
     lane: 'mobile',
     getScope: () => diagramScope.value,
     draft,

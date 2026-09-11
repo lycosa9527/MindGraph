@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.67] - 2026-09-11
+
+> **1.85C Kitty watch, spec authoring, auto-listen, and canvas chrome that matches the ribbon.**
+
+### Added
+
+- **1.85C Kitty watch** — Native Super app (`com.mindgraph.kitty`): LVGL face, PTT mic, Opus, and the same `/ws/kitty` mobile lane as `/m/kitty`. Flash-time `mgat_` + account in gitignored `sdkconfig.defaults.local`. Brookesia WASM stub under `esp32/apps/kitty/` for the 360 simulator only.
+- **`author_spec`** — Typed-loop tool: topic + named branches → cookbook mind-map spec → library save. Watch and phone can create a map without hosting an on-device LLM.
+- **Listen modes** — Hello handshake stores `manual` (PTT, default) or `auto` (half-duplex: mic open only while listening). Mobile toggle plus per-user defaults. Admin LLMOps lists hello devices, live sessions, and those defaults.
+- **Preference voice** — `set_content_level` and `set_branch_numbering` (decimal / 中文 / circled / letters / 章节). One-sentence guide and clockwise outline order so “把2.1改成…” hits the same node as the canvas.
+- **MindMate paperclip** — Composer accepts images plus Word, PDF, and PowerPoint. Upload MIME and chat `files[].type` follow Dify’s Service API (extension first). Images 10MB, documents 15MB.
+
+### Changed
+
+- **Canvas chrome** — Fit-view / zoom-to-fit no longer reserves the removed left toolbar. Ribbon chrome sits in page flow; only edge breathing room is inset. New canvas opens the **Edit** tab (saved File preference is ignored on first entry).
+- **Kitty inbound** — WS `hello` / context / types split out of the monolith. Fast path applies valued add / rename / delete without a full LLM turn.
+- **Watch mic** — LVGL `ext_click_area` plus press / release / press-lost (not first-sample-only hit test) so PTT is easier to hold.
+- **Kitty canvas copy** — Desktop FAB and mobile-session chip no longer hardcode Chinese. Keys under `canvas.kittyAnchor.*` and `canvas.kittyMobileIndicatorListening|Speaking|Thinking` (plus ARIA). Authored in `zh`, translated to `en`, filled elsewhere from English; `zh-tw` via OpenCC.
+- **1.85C CJK font** — Watch subset rebuilt from full U+4E00–9FFF Han (`round_ui/fonts/build_cjk_font.py`).
+
+### Tests
+
+- [`frontend/tests/mindmateComposerUpload.spec.ts`](frontend/tests/mindmateComposerUpload.spec.ts), [`frontend/tests/mindMapFitChromeInsets.spec.ts`](frontend/tests/mindMapFitChromeInsets.spec.ts), [`frontend/tests/oneSentenceNodeActionGuide.spec.ts`](frontend/tests/oneSentenceNodeActionGuide.spec.ts), [`frontend/tests/useMobileKittyListenMode.spec.ts`](frontend/tests/useMobileKittyListenMode.spec.ts), [`frontend/tests/useMindMapRibbonState.spec.ts`](frontend/tests/useMindMapRibbonState.spec.ts), [`tests/test_dify_file_upload_types.py`](tests/test_dify_file_upload_types.py), [`tests/test_kitty_author_spec.py`](tests/test_kitty_author_spec.py), [`tests/test_kitty_fast_structural.py`](tests/test_kitty_fast_structural.py), [`tests/test_kitty_preference_actions.py`](tests/test_kitty_preference_actions.py), [`tests/test_kitty_voice_session.py`](tests/test_kitty_voice_session.py)
+
 ## [5.180.66] - 2026-09-10
 
 > **Swiss glass dialogs across the app; status-bar diagram translate keeps the original until you leave.**

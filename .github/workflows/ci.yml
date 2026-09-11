@@ -55,7 +55,7 @@ jobs:
             tests/test_workshop_editor_redis_merge.py tests/test_ws_fanout.py \
             tests/test_collab_synthetic_probe.py tests/test_workshop_join_resume_tokens.py \
             tests/test_organization_mindmate_avatar.py tests/test_org_subscription.py \
-            tests/test_school_tier.py tests/test_dify_user_key.py \
+            tests/test_school_tier.py tests/test_dify_user_key.py tests/test_dify_file_upload_types.py \
             tests/test_mindbot_bind_messages.py tests/test_dingtalk_bind_imports.py \
             tests/test_mindbot_pair_code_handler.py tests/test_bind_code_parse.py \
             tests/test_generate_dingtalk_identity.py tests/test_temp_image_storage.py tests/test_serve_temp_image.py tests/test_library_save_user_notices.py \

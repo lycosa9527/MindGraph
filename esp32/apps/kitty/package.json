@@ -1,0 +1,9 @@
+{
+  "name": "com.mindgraph.kitty",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "doctor": "brookesia doctor",
+    "simulate": "brookesia simulate --resolution 360x360"
+  }
+}

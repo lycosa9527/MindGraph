@@ -81,6 +81,8 @@ export default {
   'mindmate.historyTitle': 'Gespreksgeschiedenis',
   'mindmate.imagePreview': 'Afbeeldingsvoorbeeld',
   'mindmate.input.attachFile': 'Bestand bijvoegen',
+  'mindmate.input.unsupportedFile': 'Only images, Word, PDF, and PowerPoint are allowed',
+  'mindmate.input.fileTooLarge': 'File is too large (max {limit}MB)',
   'mindmate.input.placeholder': 'Typ uw vraag...',
   'mindmate.newChat': 'Nieuwe chat',
   'mindmate.otherModules': 'Andere modules',

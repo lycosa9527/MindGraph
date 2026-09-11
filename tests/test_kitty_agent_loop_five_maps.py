@@ -113,7 +113,7 @@ async def test_five_maps_all_node_actions(slug: str, action: str) -> None:
                 start_ac_mock.assert_awaited()
                 assert start_ac_mock.await_args is not None
                 assert start_ac_mock.await_args.kwargs.get("node_id") == mmap.branch_id
-                assert result.reason == "await_canvas"
+                assert result.reason == "fast_structural"
             if action == "update_center":
                 assert "导学" in str(command.get("target") or ""), command
         elif action == "auto_complete_branch":

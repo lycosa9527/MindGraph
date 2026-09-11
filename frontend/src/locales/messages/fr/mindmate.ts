@@ -81,6 +81,8 @@ export default {
   'mindmate.historyTitle': 'Historique des conversations',
   'mindmate.imagePreview': 'Aperçu de l’image',
   'mindmate.input.attachFile': 'Joindre un fichier',
+  'mindmate.input.unsupportedFile': 'Only images, Word, PDF, and PowerPoint are allowed',
+  'mindmate.input.fileTooLarge': 'File is too large (max {limit}MB)',
   'mindmate.input.placeholder': 'Saisissez votre question…',
   'mindmate.newChat': 'Nouveau chat',
   'mindmate.otherModules': 'Autres modules',

@@ -27,6 +27,8 @@ export interface KittyAgentContext {
   selected_llm_model?: string | null
   /** Mind-map 专业程度 block; ignored on classic diagrams. */
   audience_instructions?: string
+  /** Same seven ids as the 专业内容 control; keeps voice session in sync. */
+  ai_content_level?: string
 }
 
 export interface KittyLibrarySnapshot {

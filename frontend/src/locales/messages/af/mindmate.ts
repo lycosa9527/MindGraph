@@ -81,6 +81,8 @@ export default {
   'mindmate.historyTitle': 'Gesprekgeskiedenis',
   'mindmate.imagePreview': 'Beeldvoorskou',
   'mindmate.input.attachFile': 'Heg lêer aan',
+  'mindmate.input.unsupportedFile': 'Only images, Word, PDF, and PowerPoint are allowed',
+  'mindmate.input.fileTooLarge': 'File is too large (max {limit}MB)',
   'mindmate.input.placeholder': 'Tik u vraag...',
   'mindmate.newChat': 'Nuwe klets',
   'mindmate.otherModules': 'Ander modules',

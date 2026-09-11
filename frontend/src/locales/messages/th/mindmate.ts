@@ -81,6 +81,8 @@ export default {
   'mindmate.historyTitle': 'ประวัติบทสนทนา',
   'mindmate.imagePreview': 'ตัวอย่างรูปภาพ',
   'mindmate.input.attachFile': 'แนบไฟล์',
+  'mindmate.input.unsupportedFile': 'Only images, Word, PDF, and PowerPoint are allowed',
+  'mindmate.input.fileTooLarge': 'File is too large (max {limit}MB)',
   'mindmate.input.placeholder': 'พิมพ์คำถามของคุณ...',
   'mindmate.newChat': 'แชทใหม่',
   'mindmate.otherModules': 'โมดูลอื่น',

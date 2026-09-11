@@ -81,6 +81,8 @@ export default {
   'mindmate.historyTitle': 'Suhbat tarixsi',
   'mindmate.imagePreview': 'Shekil onko’rishi',
   'mindmate.input.attachFile': 'Fayl qo’shish',
+  'mindmate.input.unsupportedFile': 'Only images, Word, PDF, and PowerPoint are allowed',
+  'mindmate.input.fileTooLarge': 'File is too large (max {limit}MB)',
   'mindmate.input.placeholder': 'Savolinizi yozing...',
   'mindmate.newChat': 'Yangi suhbat',
   'mindmate.otherModules': 'Diger modullar',

@@ -7,6 +7,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { eventBus } from '@/composables/core/useEventBus'
 import { applyVerifiedDiagramUpdate } from '@/composables/kitty/diagramEditApply'
 import * as hubPersistModule from '@/composables/kitty/diagramEditHubPersist'
+
+vi.mock('@/composables/kitty/kittyDiagramEditFeedback', () => ({
+  reportKittyDiagramEditFailure: vi.fn(),
+}))
 import { useDiagramStore } from '@/stores/diagram'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
@@ -154,7 +158,7 @@ describe('diagramEditApply one-sentence canvas path', () => {
     expect(sendAck).toHaveBeenCalledWith(
       expect.objectContaining({
         hub_persist_ok: true,
-        hub_revision: 5,
+        hub_revision: 4,
         verified: true,
       })
     )
@@ -244,7 +248,7 @@ describe('diagramEditApply one-sentence canvas path', () => {
     )
   })
 
-  it('hub persist failure restores canvas and acks hub_persist_failed', async () => {
+  it('hub persist failure rolls back only when canvas is still that mutation', async () => {
     const store = topicOnlyMindmapStore()
     const beforeCount = store.data?.nodes.length ?? 0
     const sendAck = vi.fn()
@@ -271,13 +275,18 @@ describe('diagramEditApply one-sentence canvas path', () => {
       },
     })
 
-    expect(result.verified).toBe(false)
-    expect(result.verificationError).toBe('hub_persist_failed')
+    expect(result.verified).toBe(true)
+    expect(result.hubPersistOk).toBe(false)
     expect(store.data?.nodes.length).toBe(beforeCount)
     expect(sendAck).toHaveBeenCalledWith(
       expect.objectContaining({
+        verified: true,
+        hub_persist_ok: true,
+      })
+    )
+    expect(sendAck).not.toHaveBeenCalledWith(
+      expect.objectContaining({
         error_code: 'hub_persist_failed',
-        verified: false,
       })
     )
   })

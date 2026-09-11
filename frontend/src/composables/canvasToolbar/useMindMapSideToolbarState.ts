@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { getAiBrainstorm } from '@/composables/aiBrainstorm/useAiBrainstorm'
@@ -15,11 +15,8 @@ export type MindMapSideToolId =
   | 'one_sentence'
   | 'document_summary'
 
-/** Active side tool panel; null = sidebar visible, no panel. */
+/** Active side tool panel; null = no overlay panel. */
 const activeTool = ref<MindMapSideToolId | null>(null)
-
-/** Left toolbar expand/collapse — survives panel open/close (toolbar unmounts via v-if). */
-const sidebarExpanded = ref(false)
 
 export function useMindMapSideToolbarState() {
   const route = useRoute()
@@ -29,10 +26,6 @@ export function useMindMapSideToolbarState() {
   const notify = useNotifications()
   const { t } = useLanguage()
   const { handleMindMapAiGenerate } = useMindMapAudienceGenerate()
-
-  const sidebarVisible = computed(() => activeTool.value === null)
-  const outlinePanelOpen = computed(() => activeTool.value === 'outline')
-  const aiPanelOpen = computed(() => activeTool.value === 'one_sentence')
 
   function requireDiagram(): boolean {
     if (!diagramStore.data?.nodes?.length) {
@@ -66,7 +59,6 @@ export function useMindMapSideToolbarState() {
   function closeActiveTool(): void {
     const closing = activeTool.value
     activeTool.value = null
-    sidebarExpanded.value = true
     if (closing === 'waterfall' && panelsStore.aiBrainstormPanel.isOpen) {
       getAiBrainstorm().dismiss()
     }
@@ -121,10 +113,6 @@ export function useMindMapSideToolbarState() {
 
   return {
     activeTool,
-    sidebarVisible,
-    sidebarExpanded,
-    outlinePanelOpen,
-    aiPanelOpen,
     openTool,
     closeActiveTool,
     handleToolSelect,
@@ -147,5 +135,4 @@ export function bindMindMapExternalPanelClose(
 /** Reset side-toolbar UI when the canvas returns to the default template. */
 export function resetMindMapSideToolbarState(): void {
   activeTool.value = null
-  sidebarExpanded.value = false
 }

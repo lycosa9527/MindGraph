@@ -132,6 +132,8 @@ export const adminKeys = {
   kittyLlmops: {
     all: () => [...adminKeys.all, 'kitty-llmops'] as const,
     architecture: () => [...adminKeys.all, 'kitty-llmops', 'architecture'] as const,
+    devices: () => [...adminKeys.all, 'kitty-llmops', 'devices'] as const,
+    sessions: () => [...adminKeys.all, 'kitty-llmops', 'sessions'] as const,
   },
 
   mindmateExport: {

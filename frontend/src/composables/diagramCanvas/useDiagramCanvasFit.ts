@@ -1,9 +1,8 @@
 import type { Ref } from 'vue'
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 
 import { useVueFlow } from '@vue-flow/core'
 
-import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { ANIMATION, CANVAS, FIT_PADDING, PANEL, ZOOM } from '@/config/uiConfig'
@@ -13,12 +12,12 @@ import {
   isDesktopConceptMapManualViewport,
   isMindMapDiagramType,
 } from '@/utils/conceptMapDesktopViewport'
-import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { computePanToKeepNodeInSafeFraction } from '@/utils/mindMapEnsureNodeVisible'
 import {
-  parseFitPaddingPx,
-  resolveMindMapSideToolbarLeftReservePx,
-} from '@/utils/mindMapSideToolbarFitReserve'
+  type DiagramFitChromeInsets,
+  formatFitPaddingPx,
+  resolveDiagramFitChromeInsetsPx,
+} from '@/utils/mindMapFitChromeInsets'
 import { animateViewportTransition, cancelViewportTransition } from '@/utils/viewportTransition'
 
 type DiagramStore = ReturnType<typeof useDiagramSession>
@@ -85,10 +84,6 @@ export function useDiagramCanvasFit(options: {
 
   const viewBus = diagramStore.viewBus
   const uiStore = useUIStore()
-  const useMindMapV2 = computed(() =>
-    isSessionMindMapV2VisualDesignActive(diagramStore.mindMapCanvasMode)
-  )
-  const { sidebarExpanded } = useMindMapSideToolbarState()
   const mindMapV2Chrome = useMindMapV2Chrome()
   const isFittedForPanel = ref(false)
   const hasInitialFitDoneForDiagram = ref(false)
@@ -179,10 +174,6 @@ export function useDiagramCanvasFit(options: {
     return width
   }
 
-  function getLeftPanelWidth(): number {
-    return 0
-  }
-
   function isAnyPanelOpen(): boolean {
     return panelsStore.anyPanelOpen
   }
@@ -194,54 +185,48 @@ export function useDiagramCanvasFit(options: {
     })
   }
 
-  function getFitViewTopPx(): number {
-    const chromeTop = mindMapV2Chrome.value
-      ? FIT_PADDING.MIND_MAP_TWO_ROW_CHROME_PX
-      : FIT_PADDING.TOP_UI_HEIGHT_PX
-    return diagramStore.type === 'concept_map'
-      ? chromeTop + FIT_PADDING.MAIN_TOPIC_MENU_ICON_PX
-      : chromeTop
-  }
-
-  function getFitViewBottomPx(): number {
-    if (diagramStore.type !== 'tree_map') return FIT_PADDING.BOTTOM_UI_HEIGHT_PX
+  function hasTreeMapAlternativeDimensions(): boolean {
+    if (diagramStore.type !== 'tree_map') return false
     const data = diagramStore.data
     if (!data || typeof data !== 'object' || !('alternative_dimensions' in data)) {
-      return FIT_PADDING.BOTTOM_UI_HEIGHT_PX
+      return false
     }
     const altDims = (data as { alternative_dimensions?: unknown }).alternative_dimensions
-    const hasAltDims =
-      Array.isArray(altDims) && altDims.some((d) => typeof d === 'string' && d.trim())
-    return hasAltDims
-      ? FIT_PADDING.BOTTOM_UI_HEIGHT_PX + FIT_PADDING.TREE_MAP_ALTERNATIVE_DIMENSIONS_EXTRA_PX
-      : FIT_PADDING.BOTTOM_UI_HEIGHT_PX
+    return Array.isArray(altDims) && altDims.some((d) => typeof d === 'string' && d.trim())
   }
 
-  function isMindMapSideToolbarAffectingFit(): boolean {
-    return (
-      isMindMapDiagramType(diagramStore.type) &&
-      useMindMapV2.value &&
-      !presentationRailOpen.value &&
-      sidebarExpanded.value
-    )
-  }
-
-  function getFitViewLeftPx(): string {
-    return `${resolveMindMapSideToolbarLeftReservePx({
-      active: isMindMapSideToolbarAffectingFit(),
-      expanded: sidebarExpanded.value,
-    })}px`
-  }
-
-  function getFitViewRightPx(): string {
+  function getFitChromeInsets(): DiagramFitChromeInsets {
     const railVisible =
       presentationRailOpen.value &&
       presentationToolIsNotTimer.value &&
       presentationSideToolbarVisible.value
-    const px = railVisible
-      ? Math.max(FIT_PADDING.STANDARD_PX, FIT_PADDING.PRESENTATION_SIDE_TOOLBAR_RIGHT_PX)
-      : FIT_PADDING.STANDARD_PX
-    return `${px}px`
+    return resolveDiagramFitChromeInsetsPx({
+      ribbonChrome: mindMapV2Chrome.value,
+      conceptMap: diagramStore.type === 'concept_map',
+      treeMapAltDims: hasTreeMapAlternativeDimensions(),
+      presentationRailVisible: railVisible,
+    })
+  }
+
+  function fitPaddingFromInsets(
+    insets: DiagramFitChromeInsets
+  ): { top: string; right: string; bottom: string; left: string } {
+    return {
+      top: formatFitPaddingPx(insets.top),
+      right: formatFitPaddingPx(insets.right),
+      bottom: formatFitPaddingPx(insets.bottom),
+      left: formatFitPaddingPx(insets.left),
+    }
+  }
+
+  function runChromeFitView(
+    padding: { top: string; right: string | number; bottom: string; left: string | number },
+    animate: boolean
+  ): void {
+    fitView({
+      padding,
+      duration: animate ? ANIMATION.DURATION_NORMAL : 0,
+    } as Parameters<FitViewFn>[0])
   }
 
   function fitToFullCanvas(animate = true): void {
@@ -249,16 +234,7 @@ export function useDiagramCanvasFit(options: {
 
     isFittedForPanel.value = false
 
-    fitView({
-      padding: {
-        ...FIT_PADDING.STANDARD_WITH_BOTTOM_UI,
-        top: `${getFitViewTopPx()}px`,
-        bottom: `${getFitViewBottomPx()}px`,
-        right: getFitViewRightPx(),
-        left: getFitViewLeftPx(),
-      },
-      duration: animate ? ANIMATION.DURATION_NORMAL : 0,
-    } as Parameters<FitViewFn>[0])
+    runChromeFitView(fitPaddingFromInsets(getFitChromeInsets()), animate)
 
     viewBus.emit('view:fit_completed', {
       mode: 'full_canvas',
@@ -270,10 +246,8 @@ export function useDiagramCanvasFit(options: {
     if (getNodes().length === 0) return
 
     const rightPanelWidth = getRightPanelWidth()
-    const leftPanelWidth = getLeftPanelWidth()
-    const totalPanelWidth = rightPanelWidth + leftPanelWidth
 
-    if (totalPanelWidth === 0) {
+    if (rightPanelWidth === 0) {
       fitToFullCanvas(animate)
       return
     }
@@ -281,45 +255,33 @@ export function useDiagramCanvasFit(options: {
     isFittedForPanel.value = true
 
     const container = canvasContainer.value
+    const insets = getFitChromeInsets()
     if (!container) {
-      fitView({
-        padding: {
-          ...FIT_PADDING.STANDARD_WITH_BOTTOM_UI,
-          top: `${getFitViewTopPx()}px`,
-          bottom: `${getFitViewBottomPx()}px`,
-          right: getFitViewRightPx(),
-          left: getFitViewLeftPx(),
-        },
-        duration: animate ? ANIMATION.DURATION_NORMAL : 0,
-      } as Parameters<FitViewFn>[0])
+      runChromeFitView(fitPaddingFromInsets(insets), animate)
       return
     }
 
     const containerWidth = container.clientWidth
     const basePadding = FIT_PADDING.STANDARD
-    const panelPaddingRatio = totalPanelWidth / containerWidth
+    const panelPaddingRatio = rightPanelWidth / containerWidth
     const adjustedPadding = basePadding + panelPaddingRatio * 0.3
 
-    fitView({
-      padding: {
-        top: `${getFitViewTopPx()}px`,
-        right: presentationRailOpen.value ? getFitViewRightPx() : adjustedPadding,
-        bottom: `${getFitViewBottomPx()}px`,
-        left: isMindMapSideToolbarAffectingFit() ? getFitViewLeftPx() : adjustedPadding,
+    runChromeFitView(
+      {
+        top: formatFitPaddingPx(insets.top),
+        right: presentationRailOpen.value ? formatFitPaddingPx(insets.right) : adjustedPadding,
+        bottom: formatFitPaddingPx(insets.bottom),
+        left: adjustedPadding,
       },
-      duration: animate ? ANIMATION.DURATION_NORMAL : 0,
-    } as Parameters<FitViewFn>[0])
+      animate
+    )
 
     const delay = animate ? ANIMATION.FIT_VIEWPORT_DELAY : ANIMATION.PANEL_DELAY
     setTimeout(() => {
       const currentViewport = getViewport()
-      const rightOffset = rightPanelWidth / 2
-      const leftOffset = leftPanelWidth / 2
-      const netOffset = leftOffset - rightOffset
-
       setViewport(
         {
-          x: currentViewport.x + netOffset,
+          x: currentViewport.x - rightPanelWidth / 2,
           y: currentViewport.y,
           zoom: currentViewport.zoom,
         },
@@ -330,7 +292,7 @@ export function useDiagramCanvasFit(options: {
     viewBus.emit('view:fit_completed', {
       mode: 'with_panel',
       animate,
-      panelWidth: totalPanelWidth,
+      panelWidth: rightPanelWidth,
     })
   }
 
@@ -447,12 +409,7 @@ export function useDiagramCanvasFit(options: {
         viewWidth,
         viewHeight,
         safeFraction,
-        chromeInsets: {
-          top: getFitViewTopPx(),
-          bottom: getFitViewBottomPx(),
-          left: parseFitPaddingPx(getFitViewLeftPx()),
-          right: parseFitPaddingPx(getFitViewRightPx()),
-        },
+        chromeInsets: getFitChromeInsets(),
       })
       if (!result.changed) return
 
@@ -653,7 +610,7 @@ export function useDiagramCanvasFit(options: {
   )
 
   watch(
-    () => useMindMapV2.value,
+    () => mindMapV2Chrome.value,
     (isV2, wasV2) => {
       if (wasV2 === undefined) return
       if (!isMindMapDiagramType(diagramStore.type)) return

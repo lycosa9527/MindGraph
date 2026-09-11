@@ -28,9 +28,9 @@ from services.kitty.ws.narrate import handle_kitty_narrate, handle_kitty_prefetc
 def test_inbound_routes_narrate_before_text_ingress() -> None:
     """Narrate is handled before WS text ingress and does not begin_ingress."""
     source = Path("services/kitty/ws/inbound.py").read_text(encoding="utf-8")
-    prefetch_at = source.index('if msg_type == "prefetch"')
-    narrate_at = source.index('if msg_type == "narrate"')
-    text_at = source.index('if msg_type == "text"')
+    prefetch_at = source.index('"prefetch": _handle_prefetch')
+    narrate_at = source.index('"narrate": _handle_narrate')
+    text_at = source.index('"text": _handle_text')
     assert prefetch_at < narrate_at < text_at
     narrate_src = Path("services/kitty/ws/narrate.py").read_text(encoding="utf-8")
     assert "begin_ingress" not in narrate_src

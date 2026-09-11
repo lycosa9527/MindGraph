@@ -23,7 +23,7 @@ Overlay: [`../../firmware/1.85c/round_ui`](../../firmware/1.85c/round_ui). Shell
 |---|---|---|
 | Audio DAC | PCM5101 | ES8311 |
 | Mic | MEMS I2S | ES7210 dual analog |
-| First firmware | display + touch only | can enable Brookesia audio later |
+| First firmware | display + touch + I2S Kitty HAL | ES8311/ES7210 (different YAML) |
 
 Onboard I2C for touch / TCA9554 / RTC is still **GPIO10 SCL / GPIO11 SDA** on V1 (factory Test demo). The V1-vs-V2 “GPIO10/11 NC” table is about header/audio remapping, not that bus.
 
@@ -37,3 +37,7 @@ Onboard I2C for touch / TCA9554 / RTC is still **GPIO10 SCL / GPIO11 SDA** on V1
 | I2C SDA / SCL | 11 / 10 |
 | LCD RST | TCA9554 EXIO2 |
 | Touch RST | TCA9554 EXIO1 |
+| MEMS I2S mic WS / SCK / SD | 2 / 15 / 39 |
+| PCM5101 DIN / LRCK / BCK | 47 / 38 / 48 |
+
+V1 is **mono, no AEC**. Kitty uses half-duplex hold-to-talk. Audio HAL is on (`PCM5101` dummy DAC + digital mic); AFE/WakeNet stay off. Hooking up a speaker is attaching a driver to the PCM5101/NS8002 pads.

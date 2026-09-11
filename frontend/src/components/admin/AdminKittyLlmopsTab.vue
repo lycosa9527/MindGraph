@@ -1,10 +1,16 @@
 <script setup lang="ts">
 /**
- * Admin — Kitty LLMOps: module map and hub contract (read-only).
+ * Admin — Kitty LLMOps: devices, live sessions, defaults, module map.
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
-import { useAdminKittyLlmopsArchitecture } from '@/composables/queries'
+import { useLanguage, useNotifications } from '@/composables'
+import {
+  putAdminKittyDefaults,
+  useAdminKittyDevices,
+  useAdminKittyLlmopsArchitecture,
+  useAdminKittySessions,
+} from '@/composables/queries'
 
 interface LlmopsModule {
   id: string
@@ -31,15 +37,175 @@ interface LlmopsManifest {
   special_flows?: SpecialFlowRow[]
 }
 
+const { t } = useLanguage()
+const notify = useNotifications()
+
 const architectureQuery = useAdminKittyLlmopsArchitecture()
+const devicesQuery = useAdminKittyDevices()
+const sessionsQuery = useAdminKittySessions()
 
 const loading = computed(() => architectureQuery.isFetching.value)
 const manifest = computed(() => architectureQuery.data.value as LlmopsManifest | null | undefined)
 const flowText = computed(() => manifest.value?.mermaid_flow ?? '')
+const devices = computed(() => devicesQuery.data.value?.devices ?? [])
+const sessions = computed(() => sessionsQuery.data.value?.sessions ?? [])
+
+const defaultsUserId = ref('')
+const defaultsListenMode = ref('manual')
+const defaultsTts = ref(true)
+const defaultsSaving = ref(false)
+
+function formatSeen(epoch: number): string {
+  if (!epoch) {
+    return '—'
+  }
+  return new Date(epoch * 1000).toLocaleString()
+}
+
+async function saveDefaults(): Promise<void> {
+  const userId = Number.parseInt(defaultsUserId.value, 10)
+  if (!Number.isFinite(userId) || userId < 1) {
+    return
+  }
+  defaultsSaving.value = true
+  try {
+    await putAdminKittyDefaults(userId, {
+      listen_mode: defaultsListenMode.value,
+      tts_enabled: defaultsTts.value,
+    })
+    notify.success(t('admin.kittyDefaultsSaved'))
+  } catch {
+    notify.warning(t('admin.featureSaveFailed'))
+  } finally {
+    defaultsSaving.value = false
+  }
+}
 </script>
 
 <template>
   <div class="kitty-llmops space-y-6">
+    <el-card shadow="never">
+      <template #header>{{ t('admin.kittyDevicesTitle') }}</template>
+      <el-table
+        v-if="devices.length"
+        :data="devices"
+        stripe
+        size="small"
+      >
+        <el-table-column
+          prop="user_id"
+          :label="t('admin.kittyDeviceUser')"
+          width="90"
+        />
+        <el-table-column
+          prop="device_id"
+          :label="t('admin.kittyDeviceId')"
+          min-width="140"
+        />
+        <el-table-column
+          prop="firmware"
+          :label="t('admin.kittyDeviceFirmware')"
+          width="120"
+        />
+        <el-table-column
+          prop="listen_mode"
+          :label="t('admin.kittyDeviceListenMode')"
+          width="120"
+        />
+        <el-table-column
+          :label="t('admin.kittyDeviceLastSeen')"
+          width="180"
+        >
+          <template #default="{ row }">
+            {{ formatSeen(row.last_seen) }}
+          </template>
+        </el-table-column>
+      </el-table>
+      <p
+        v-else
+        class="text-sm text-gray-500"
+      >
+        {{ t('admin.kittyDevicesEmpty') }}
+      </p>
+    </el-card>
+
+    <el-card shadow="never">
+      <template #header>{{ t('admin.kittySessionsTitle') }}</template>
+      <el-table
+        v-if="sessions.length"
+        :data="sessions"
+        stripe
+        size="small"
+      >
+        <el-table-column
+          prop="user_id"
+          :label="t('admin.kittyDeviceUser')"
+          width="90"
+        />
+        <el-table-column
+          prop="lane"
+          label="Lane"
+          width="100"
+        />
+        <el-table-column
+          prop="voice_phase"
+          :label="t('admin.kittySessionPhase')"
+          width="120"
+        />
+        <el-table-column
+          prop="listen_mode"
+          :label="t('admin.kittyDeviceListenMode')"
+          width="120"
+        />
+        <el-table-column
+          prop="scope"
+          label="Scope"
+          min-width="160"
+        />
+      </el-table>
+      <p
+        v-else
+        class="text-sm text-gray-500"
+      >
+        {{ t('admin.kittySessionsEmpty') }}
+      </p>
+    </el-card>
+
+    <el-card shadow="never">
+      <template #header>{{ t('admin.kittyDefaultsTitle') }}</template>
+      <div class="flex flex-wrap gap-3 items-end">
+        <el-input
+          v-model="defaultsUserId"
+          :placeholder="t('admin.kittyDefaultsUserId')"
+          class="w-36"
+        />
+        <el-select
+          v-model="defaultsListenMode"
+          class="w-40"
+        >
+          <el-option
+            label="manual"
+            value="manual"
+          />
+          <el-option
+            label="auto"
+            value="auto"
+          />
+        </el-select>
+        <el-switch
+          v-model="defaultsTts"
+          :active-text="t('admin.kittyDefaultsTts')"
+        />
+        <el-button
+          type="primary"
+          :loading="defaultsSaving"
+          @click="saveDefaults"
+        >
+          {{ t('admin.kittyDefaultsSave') }}
+        </el-button>
+      </div>
+    </el-card>
+
     <p class="text-sm text-gray-600">
       Read-only map of Kitty modules and MindGraphAgentHub responsibilities. For operational details
       see

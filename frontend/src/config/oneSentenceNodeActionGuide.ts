@@ -3,6 +3,16 @@
  * Mirrors ``NODE_ACTION_ROWS`` edit actions (excludes clarify_options meta).
  */
 
+export const VOICE_NUMBERING_STYLE_IDS = [
+  'decimal',
+  'chinese',
+  'circled',
+  'upperAlpha',
+  'chineseChapter',
+] as const
+
+export type VoiceNumberingStyleId = (typeof VOICE_NUMBERING_STYLE_IDS)[number]
+
 export type OneSentenceNodeActionGuideRow = {
   id: string
   /** Action id for ``kitty.voiceCommand.*`` label. */
@@ -41,5 +51,15 @@ export const ONE_SENTENCE_NODE_ACTION_GUIDE_ROWS: OneSentenceNodeActionGuideRow[
     id: 'auto_complete',
     action: 'auto_complete',
     exampleKey: 'canvas.mindMapOneSentence.suggestion.auto_complete',
+  },
+  {
+    id: 'set_content_level',
+    action: 'set_content_level',
+    exampleKey: 'canvas.mindMapOneSentence.suggestion.set_content_level',
+  },
+  {
+    id: 'set_branch_numbering',
+    action: 'set_branch_numbering',
+    exampleKey: 'canvas.mindMapOneSentence.suggestion.set_branch_numbering',
   },
 ]

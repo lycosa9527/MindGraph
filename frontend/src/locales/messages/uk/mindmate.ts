@@ -81,6 +81,8 @@ export default {
   'mindmate.historyTitle': 'Історія розмов',
   'mindmate.imagePreview': 'Попередній перегляд зображення',
   'mindmate.input.attachFile': 'Додати файл',
+  'mindmate.input.unsupportedFile': 'Only images, Word, PDF, and PowerPoint are allowed',
+  'mindmate.input.fileTooLarge': 'File is too large (max {limit}MB)',
   'mindmate.input.placeholder': 'Введіть питання…',
   'mindmate.newChat': 'Новий чат',
   'mindmate.otherModules': 'Інші модулі',

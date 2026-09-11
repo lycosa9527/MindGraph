@@ -6,12 +6,12 @@ One backend package. There is no separate `kitty_voice` module.
 
 | Path | Role |
 |------|------|
-| `services/kitty/ws/` | WebSocket transport (connect, lifecycle, inbound) |
-| `services/kitty/omni/` | Qwen Omni realtime loop + tools |
-| `services/kitty/session/` | Per-scope session registry, events, cleanup |
+| `services/kitty/ws/` | WebSocket transport (connect, lifecycle, inbound, hello) |
+| `services/kitty/agent_loop/` | Typed tool loop, UI tools, author_spec |
+| `services/kitty/session/` | Per-scope session registry, voice phase, turn Task, events, cleanup |
 | `services/kitty/session/manager/` | **Session Manager** — alignment snapshot, WS pairing leases, action journal, verified-edit gate |
 | `services/kitty/routing/` | Intent catalog + command router |
-| `services/kitty/ack/` | User-facing acknowledgment templates (`text_chunk` + optional Omni) |
+| `services/kitty/ack/` | User-facing acknowledgment templates (`text_chunk` + CosyVoice) |
 | `services/kitty/diagram/` | Diagram mutations via agent hub |
 | `services/kitty/context/` | Voice context merge + library refresh |
 | `services/kitty/content/` | Paragraph batch apply |
@@ -163,7 +163,7 @@ Canvas uses the shared **mobile_active** hub (fed by the leader tab's desktop wa
 
 ## Context parity (desktop-only edits while mobile Kitty is open)
 
-If the phone does not mirror every canvas edit, **`merge_voice_context_with_library`** can still prefer stale node data from the client. The API therefore runs **`throttled_refresh_voice_context_from_library`** (see `services/kitty/context/library_refresh.py`) with `prefer_server_diagram_nodes=True` on throttled **audio** sends and with **`force=True`** at the start of **text command** handling, so library-backed sessions re-read the saved diagram before routing commands. Omni instructions and the LangGraph agent diagram state are updated after each refresh.
+If the phone does not mirror every canvas edit, **`merge_voice_context_with_library`** can still prefer stale node data from the client. The typed loop refreshes from the library when live_spec is older and the session is not still fresh from a recent mutation or ``context_update``. The canvas-owner WebSocket applies structural edits; Fun-ASR + CosyVoice stay the voice I/O.
 
 ## Multi-worker
 
@@ -175,13 +175,19 @@ Control pub/sub is **at-most-once**; a restarting worker can miss a single “ki
 
 ## Production checklist
 
-- **Auth:** all Kitty REST routes use `get_current_user`; SSE wake requires `kitty_http_allowed`.
+- **Auth:** Kitty REST and WS use account + token (`Authorization: Bearer mgat_…` and `X-MG-Account`). SSE wake requires `kitty_http_allowed`.
 - **User scoping:** Redis keys/channels are always `:{user_id}` from the authenticated session.
 - **Atomic mobile_active:** mark/clear use Redis `WATCH`/`MULTI` (see `kitty_mobile_active.py`).
 - **Leader tab:** one `BroadcastChannel` leader per browser profile; resign on tab close for fast failover.
 - **SSE cap:** 2 concurrent wake streams per user **per worker** (`kitty_desktop_wake_stream.py`).
 - **Stale gate:** SSE heartbeats re-read `mobile_active`; canvas hub fallback polls only when hub is stale (>35s).
 - **Metrics:** watch `ws_kitty_refcount_meta_drift_total` if pairing state looks stuck after disconnect.
+
+## ESP32 watch auth
+
+The 1.85C watch is a **mobile-lane** Kitty client (`client_lane: mobile`). Auth is baked at flash time (`CONFIG_MINDGRAPH_KITTY_MGAT` + `CONFIG_MINDGRAPH_KITTY_ACCOUNT` in gitignored `sdkconfig.defaults.local`).
+
+Watch `GET /api/kitty/mobile_open_bootstrap` then `WS /ws/kitty/{scope}` with `Authorization: Bearer` / `X-MG-Account` and `{type:"start", client_lane:"mobile"}`. After `connected`, clients send `{type:"hello", listen_mode, firmware, device_id}` (manual PTT default; `auto` is half-duplex). `abort` cancels the in-flight turn Task and CosyVoice generation. Admin device list is `GET /admin/kitty-llmops/devices`.
 
 ## REST cleanup
 

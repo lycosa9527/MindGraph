@@ -22,6 +22,8 @@ def build_system_prompt(mode: LoopMode, *, lang: str) -> str:
                 "You are Kitty's mind-map edit agent. "
                 "Call tools to change the canvas. "
                 "Prefer node_id from the Current diagram JSON for existing nodes. "
+                "When numbering is on, JSON includes no (1, 1.1, 2.1); "
+                "「把2.1改成X」 targets that node. "
                 "Never invent node_id for a new node; use created ids from tool results. "
                 "Do not use path or leftover branch-* ids as keys. "
                 "Greetings and vague asks (hi, change this) must call "
@@ -36,6 +38,8 @@ def build_system_prompt(mode: LoopMode, *, lang: str) -> str:
             "You are Kitty. Call tools for canvas or UI actions. "
             "Prefer node_id from the Current diagram JSON. "
             "Never invent node_id for a new node. "
+            "When the user wants a new mind map and already named the topic, "
+            "call author_spec. "
             "If the user is only chatting, reply with text and no tools."
         )
     if mode == "edit":
@@ -43,6 +47,8 @@ def build_system_prompt(mode: LoopMode, *, lang: str) -> str:
             "你是 Kitty 的思维导图编辑代理。"
             "用工具修改画布。"
             "已有节点优先使用 Current diagram JSON 中的 node_id。"
+            "编号与画布顺时针一致（右上往下，再左下往上）。JSON no 即 1、1.1、2.1；"
+            "「把2.1改成X」或「第2个」就改那个节点。"
             "不要为新节点编造 node_id，使用工具结果里的 created id。"
             "不要把 path 或遗留的 branch-* 当作主键。"
             "问候或「改一下/这个」等意图不清时，必须调用 node_action.clarify_options，"
@@ -55,6 +61,7 @@ def build_system_prompt(mode: LoopMode, *, lang: str) -> str:
         "你是 Kitty。画布或界面操作请调用工具。"
         "已有节点优先使用 Current diagram JSON 中的 node_id。"
         "不要为新节点编造 node_id。"
+        "用户要新建思维导图且已给出主题时，调用 author_spec。"
         "若用户只是闲聊，用纯文本回复且不要调用工具。"
     )
 

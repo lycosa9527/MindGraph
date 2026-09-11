@@ -15,6 +15,7 @@ from typing import Any, Optional
 from fastapi import WebSocket
 from websockets.exceptions import ConnectionClosed, ConnectionClosedError, ConnectionClosedOK
 
+from services.kitty.asr.audio_format import ASR_FORMAT_PCM, normalize_asr_audio_format
 from services.kitty.asr.fun_asr_realtime import FunAsrRealtimeClient
 from services.kitty.context.messaging import safe_websocket_send
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
@@ -56,10 +57,25 @@ _TTS_SPEAKING_KEY = "_kitty_tts_speaking"
 _COSYVOICE_KEY = "_cosyvoice_client"
 _ASR_AUDIO_FRAMES_KEY = "_fun_asr_audio_frames"
 _ASR_AUDIO_BYTES_KEY = "_fun_asr_audio_bytes"
+_ASR_AUDIO_PEAK_KEY = "_fun_asr_audio_peak"
 _ASR_FIRST_AUDIO_LOGGED_KEY = "_fun_asr_first_audio_logged"
 _ASR_DROPPED_BEFORE_START_KEY = "_fun_asr_dropped_before_start"
 _ASR_UTTERANCE_ID_KEY = "_fun_asr_utterance_id"
 _ASR_LAST_TEXT_KEY = "_fun_asr_last_text"
+_ASR_AUDIO_FORMAT_KEY = "_fun_asr_audio_format"
+
+
+def pcm16le_peak(pcm: bytes) -> int:
+    """Max absolute amplitude of little-endian int16 PCM."""
+    peak = 0
+    offset = 0
+    limit = len(pcm) - 1
+    while offset < limit:
+        sample = int.from_bytes(pcm[offset : offset + 2], "little", signed=True)
+        amp = -sample if sample < 0 else sample
+        peak = max(peak, amp)
+        offset += 2
+    return peak
 
 
 def _tts_generation(session: dict[str, Any]) -> int:
@@ -390,10 +406,12 @@ def _reset_asr_audio_counters(session: dict[str, Any]) -> None:
     """Clear per-hold PCM counters used for PTT debug logs."""
     session[_ASR_AUDIO_FRAMES_KEY] = 0
     session[_ASR_AUDIO_BYTES_KEY] = 0
+    session[_ASR_AUDIO_PEAK_KEY] = 0
     session[_ASR_FIRST_AUDIO_LOGGED_KEY] = False
     session[_ASR_DROPPED_BEFORE_START_KEY] = 0
     session[_ASR_LAST_TEXT_KEY] = ""
     session[_ASR_UTTERANCE_ID_KEY] = None
+    session[_ASR_AUDIO_FORMAT_KEY] = ASR_FORMAT_PCM
 
 
 def _session_client_lane(session: dict[str, Any]) -> str:
@@ -408,6 +426,7 @@ async def start_session_asr(
     *,
     language_hints: Optional[list[str]] = None,
     utterance_id: Optional[str] = None,
+    audio_format: str = ASR_FORMAT_PCM,
 ) -> None:
     """Start Fun-ASR for this Kitty session (one task per mic session)."""
     await interrupt_kitty_tts(voice_session_id)
@@ -426,6 +445,8 @@ async def start_session_asr(
         return
     lane = _session_client_lane(session)
     _reset_asr_audio_counters(session)
+    resolved_format = normalize_asr_audio_format(audio_format)
+    session[_ASR_AUDIO_FORMAT_KEY] = resolved_format
     session[_ASR_UTTERANCE_ID_KEY] = utterance_id
     existing = session.get("_fun_asr_client")
     session["_fun_asr_client"] = None
@@ -477,6 +498,7 @@ async def start_session_asr(
         on_partial=on_partial,
         on_error=on_error,
         language_hints=language_hints,
+        audio_format=resolved_format,
     )
     session["_fun_asr_client"] = client
     try:
@@ -488,15 +510,16 @@ async def start_session_asr(
         await fanout_voice_phase_from_session(voice_session_id, "listening")
         hints = language_hints or ["zh"]
         logger.info(
-            "Fun-ASR started sid=%s lane=%s hints=%s utt=%s",
+            "Fun-ASR started sid=%s lane=%s hints=%s fmt=%s utt=%s",
             voice_session_id[:12],
             lane,
             hints,
+            resolved_format,
             (utterance_id or "—")[:16],
         )
         kitty_wf_log(
             "asr_started",
-            f"lane={lane} hints={hints} utt={utterance_id or '—'}",
+            f"lane={lane} hints={hints} fmt={resolved_format} utt={utterance_id or '—'}",
             voice_session_id=voice_session_id,
         )
     except LLM_PIPELINE_ERRORS as exc:
@@ -527,7 +550,7 @@ async def feed_session_asr_audio(
     *,
     utterance_id: Optional[str] = None,
 ) -> None:
-    """Decode base64 PCM and forward to Fun-ASR."""
+    """Decode base64 PCM or Opus and forward to Fun-ASR."""
     session = voice_sessions.get(voice_session_id)
     if not session:
         return
@@ -558,20 +581,27 @@ async def feed_session_asr_audio(
         return
     frames = int(session.get(_ASR_AUDIO_FRAMES_KEY) or 0) + 1
     nbytes = int(session.get(_ASR_AUDIO_BYTES_KEY) or 0) + len(pcm)
+    audio_format = normalize_asr_audio_format(session.get(_ASR_AUDIO_FORMAT_KEY))
+    frame_peak = pcm16le_peak(pcm) if audio_format == ASR_FORMAT_PCM else 0
+    hold_peak = int(session.get(_ASR_AUDIO_PEAK_KEY) or 0)
+    if frame_peak > hold_peak:
+        hold_peak = frame_peak
+        session[_ASR_AUDIO_PEAK_KEY] = hold_peak
     session[_ASR_AUDIO_FRAMES_KEY] = frames
     session[_ASR_AUDIO_BYTES_KEY] = nbytes
     if not session.get(_ASR_FIRST_AUDIO_LOGGED_KEY):
         session[_ASR_FIRST_AUDIO_LOGGED_KEY] = True
         lane = _session_client_lane(session)
         logger.info(
-            "Fun-ASR first audio frame sid=%s lane=%s bytes=%d",
+            "Fun-ASR first audio frame sid=%s lane=%s bytes=%d peak=%d",
             voice_session_id[:12],
             lane,
             len(pcm),
+            frame_peak,
         )
         kitty_wf_log(
             "asr_audio_first",
-            f"lane={lane} bytes={len(pcm)}",
+            f"lane={lane} bytes={len(pcm)} peak={frame_peak}",
             voice_session_id=voice_session_id,
         )
     await client.send_pcm(pcm)
@@ -611,19 +641,21 @@ async def stop_session_asr(
     frames = int(session.get(_ASR_AUDIO_FRAMES_KEY) or 0)
     nbytes = int(session.get(_ASR_AUDIO_BYTES_KEY) or 0)
     dropped = int(session.get(_ASR_DROPPED_BEFORE_START_KEY) or 0)
+    hold_peak = int(session.get(_ASR_AUDIO_PEAK_KEY) or 0)
     lane = _session_client_lane(session)
     logger.info(
-        "Fun-ASR stop sid=%s lane=%s frames=%d bytes=%d dropped_before_ready=%d has_client=%s",
+        "Fun-ASR stop sid=%s lane=%s frames=%d bytes=%d peak=%d dropped_before_ready=%d has_client=%s",
         voice_session_id[:12],
         lane,
         frames,
         nbytes,
+        hold_peak,
         dropped,
         isinstance(client, FunAsrRealtimeClient),
     )
     kitty_wf_log(
         "asr_stop_summary",
-        f"lane={lane} frames={frames} bytes={nbytes} dropped={dropped}",
+        f"lane={lane} frames={frames} bytes={nbytes} peak={hold_peak} dropped={dropped}",
         voice_session_id=voice_session_id,
     )
     if not isinstance(client, FunAsrRealtimeClient):
@@ -638,7 +670,22 @@ async def stop_session_asr(
         logger.debug("Fun-ASR stop pipeline error: %s", exc)
         asyncio.create_task(_finish_asr_client_background(client))
     last = session.get(_ASR_LAST_TEXT_KEY)
-    return last if isinstance(last, str) else ""
+    text = last if isinstance(last, str) else ""
+    if not text:
+        logger.info(
+            "Fun-ASR empty sid=%s lane=%s frames=%d bytes=%d peak=%d",
+            voice_session_id[:12],
+            lane,
+            frames,
+            nbytes,
+            hold_peak,
+        )
+        kitty_wf_log(
+            "asr_empty",
+            f"lane={lane} frames={frames} bytes={nbytes} peak={hold_peak}",
+            voice_session_id=voice_session_id,
+        )
+    return text
 
 
 async def teardown_session_audio(voice_session_id: str) -> None:

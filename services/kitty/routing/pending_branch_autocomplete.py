@@ -77,6 +77,40 @@ _AFFIRM_RE = re.compile(
     r"(好的?|可以|需要|要补全|自动补全|帮我补全|请补全|\byes\b|\bok\b|\bokay\b|\bsure\b)",
     re.IGNORECASE,
 )
+_FILL_RE = re.compile(
+    r"(补全|补完|自动补全|auto[-\s]?complete|fill (it|the branch|this))",
+    re.IGNORECASE,
+)
+_FILL_FOLLOW_UPS = frozenset({"auto_complete", "auto_complete_branch"})
+
+
+def utterance_asks_branch_fill(command_text: str, command: Dict[str, Any]) -> bool:
+    """True when the user asked to fill the new branch, not merely add it."""
+    if str(command.get("action") or "") == "auto_complete_branch":
+        return True
+    follows = command.get("follow_up_actions")
+    if isinstance(follows, list):
+        for item in follows:
+            if isinstance(item, dict) and item.get("action") in _FILL_FOLLOW_UPS:
+                return True
+    text = (command_text or "").strip()
+    if not text:
+        return False
+    if _FILL_RE.search(text):
+        return True
+    heuristic = heuristic_one_sentence_edit_command(text)
+    if heuristic is None:
+        return False
+    if heuristic.get("action") == "auto_complete_branch":
+        return True
+    heur_follows = heuristic.get("follow_up_actions")
+    if isinstance(heur_follows, list):
+        for item in heur_follows:
+            if isinstance(item, dict) and item.get("action") in _FILL_FOLLOW_UPS:
+                return True
+    return False
+
+
 _DECLINE_RE = re.compile(
     r"(不用|不要|先不用|暂时不用|算了|\bno\b|\bnope\b|\bskip\b|not now)",
     re.IGNORECASE,
@@ -227,14 +261,16 @@ async def maybe_start_background_branch_autocomplete(
     node_id: str | None = None,
 ) -> bool:
     """
-    Fixed product rule: every new mind-map main branch starts silent auto-complete.
+    Start silent branch auto-complete only when the utterance asked to fill.
 
-    Call after a verified ``add_node``. No extra utterance gate — “添加一个X分支”
-    is enough. Child adds are skipped by ``classify_add_node_variant``. Does not
-    arm the legacy yes/no offer. ``node_id`` is the canvas id from apply when known.
+    Call after a verified ``add_node``. Child adds are skipped by
+    ``classify_add_node_variant``. Does not arm the legacy yes/no offer.
+    ``node_id`` is the canvas id from apply when known.
 
     Returns True when the canvas action was emitted.
     """
+    if not utterance_asks_branch_fill(command_text, command):
+        return False
     if classify_add_node_variant(command, session_context) != "branch":
         return False
     target = command.get("target")

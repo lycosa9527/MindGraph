@@ -15,7 +15,7 @@ import notification from './notification.ts'
 import sidebar from './sidebar.ts'
 import { thinkingCoinsMessages as thinkingCoins } from './thinkingCoins.ts'
 import workshop from './workshop.ts'
-import training from '../zh/training.ts'
+import training from './training.ts'
 
 export default {
   ...common,

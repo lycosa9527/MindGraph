@@ -20,4 +20,23 @@ menu "MindGraph 1.85C station"
             Settings China option is CST-8 (UTC+8). Applied at boot so the
             clock is not UTC after NVS is wiped.
 
+    config MINDGRAPH_KITTY_SERVER_URL
+        string "MindGraph origin for Kitty watch (https://host or http://host:9527)"
+        default ""
+        help
+            Used by the mobile-lane Kitty client. Prefer sdkconfig.defaults.local.
+
+    config MINDGRAPH_KITTY_MGAT
+        string "Baked mgat_ API token (required for Kitty watch)"
+        default ""
+        help
+            Watch auth is flash-time only. Prefer sdkconfig.defaults.local.
+            Do not commit. Empty means the watch cannot authenticate.
+
+    config MINDGRAPH_KITTY_ACCOUNT
+        string "X-MG-Account phone for baked mgat_"
+        default ""
+        help
+            Phone bound to the baked token. Prefer sdkconfig.defaults.local.
+
 endmenu

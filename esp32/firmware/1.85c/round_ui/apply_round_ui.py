@@ -10,6 +10,7 @@ from pathlib import Path
 
 from patch_super_keyboard import apply_keyboard_patches
 from patch_super_launcher import patch_launcher_cpp
+from prepare_kitty_stills import prepare as prepare_kitty_stills
 
 ROUND_WHEN = "${expr(${env.widthDp} == 360dp && ${env.heightDp} == 360dp)}"
 THEME_ASSETS = ["font/360.json", "size/360.json"]
@@ -98,6 +99,10 @@ def patch_round_status_bar(super_root: Path) -> None:
     status_right["placement"]["width"] = "match"
     bindings = status.setdefault("bindings", {})
     bindings["placement.y"] = "system_ui_status_y"
+    indicator = find_by_id(document, "gesture_indicator")
+    if indicator is None:
+        raise RuntimeError("round_ui: overlay.json is missing gesture_indicator")
+    indicator.setdefault("commonProps", {})["hidden"] = False
     save_json(overlay_path, document)
 
     style_path = super_root / "shell" / "styles" / "shell.json"
@@ -330,6 +335,41 @@ def patch_wifi_connect_actions(settings_res: Path) -> None:
     save_json(path, document)
 
 
+def stage_kitty_app(littlefs: Path, overlay: Path) -> None:
+    """Install the native Kitty Super package next to Settings and Files."""
+    dest_res = littlefs / "apps" / "com.mindgraph.kitty" / "res"
+    dest_res.mkdir(parents=True, exist_ok=True)
+    host = overlay / "kitty"
+    if (host / "root.json").is_file():
+        copy_tree(host / "root.json", dest_res / "root.json")
+    if (host / "profile.json").is_file():
+        copy_tree(host / "profile.json", dest_res / "profile.json")
+    if (host / "screens").is_dir():
+        copy_tree(host / "screens", dest_res / "screens")
+    if (host / "flows").is_dir():
+        copy_tree(host / "flows", dest_res / "flows")
+    dest_images = dest_res / "images"
+    dest_images.mkdir(parents=True, exist_ok=True)
+    icon_src = overlay.parent.parent.parent / "apps" / "kitty" / "src" / "res" / "images" / "launcher_icon.png"
+    if icon_src.is_file():
+        shutil.copy2(icon_src, dest_images / "launcher_icon.png")
+    save_json(
+        dest_images / "index.json",
+        {
+            "type": "imageSet",
+            "images": [
+                {
+                    "id": "launcher_icon",
+                    "src": "launcher_icon.png",
+                    "width": 92,
+                    "height": 92,
+                }
+            ],
+        },
+    )
+    print(f"round_ui: kitty Super app -> {dest_res.parent}")
+
+
 def apply_app_overlay(res_dir: Path, overlay_dir: Path, assets: list[str]) -> bool:
     """Copy an app overlay and register its 360 variant. True when root.json changed."""
     if overlay_dir.exists() and res_dir.exists():
@@ -404,6 +444,8 @@ def apply(littlefs: Path, overlay: Path) -> None:
     motion_changed, password_changed = apply_keyboard_patches()
     print(f"round_ui: keyboard motion={motion_changed} password={password_changed}")
 
+    prepare_kitty_stills(littlefs)
+    stage_kitty_app(littlefs, overlay)
     print(f"round_ui: applied to {littlefs} (variants_changed={changed})")
 
 

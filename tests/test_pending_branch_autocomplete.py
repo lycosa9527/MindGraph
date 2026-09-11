@@ -82,7 +82,7 @@ async def test_maybe_start_background_branch_autocomplete_emits_without_pending(
             "bg-branch-ac",
             command,
             ctx,
-            command_text="增加一个罗技分支",
+            command_text="增加一个罗技分支并补全",
             node_id="branch-r-1-12",
         )
     assert started is True
@@ -115,6 +115,31 @@ async def test_maybe_start_background_branch_autocomplete_skips_child_add() -> N
             "bg-branch-skip",
             command,
             ctx,
+        )
+    assert started is False
+    send_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_maybe_start_background_branch_autocomplete_skips_add_without_fill() -> None:
+    """Plain add_node does not start branch autocomplete."""
+    command = {"action": "add_node", "target": "罗技"}
+    ctx = {
+        "diagram_type": "mindmap",
+        "interaction_language": "zh",
+        "conversation_history": [{"role": "user", "content": "增加一个罗技分支"}],
+    }
+    websocket = MagicMock()
+    with patch(
+        "services.kitty.routing.pending_branch_autocomplete.send_kitty_ws_action",
+        new_callable=AsyncMock,
+    ) as send_mock:
+        started = await maybe_start_background_branch_autocomplete(
+            websocket,
+            "bg-branch-no-fill",
+            command,
+            ctx,
+            command_text="增加一个罗技分支",
         )
     assert started is False
     send_mock.assert_not_awaited()

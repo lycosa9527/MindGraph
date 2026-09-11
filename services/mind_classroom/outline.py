@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from services.diagram.mindmap_identity import as_live_mindmap_node_id, migrate_mindmap_diagram_payload
 from services.diagram.mindmap_location import mindmap_node_side
+from services.diagram.mindmap_outline_order import (
+    node_coord,
+    sort_child_ids_by_y,
+    sort_topic_branch_ids_clockwise,
+)
 
 
 @dataclass
@@ -56,122 +60,6 @@ def _clean_text(value: Any) -> str:
     return clean_node_text(value)
 
 
-def _node_coord(node: dict[str, Any], axis: str) -> Optional[float]:
-    position = node.get("position")
-    if not isinstance(position, dict):
-        return None
-    raw = position.get(axis)
-    if isinstance(raw, (int, float)):
-        return float(raw)
-    return None
-
-
-def sort_child_ids_by_y(
-    child_ids: list[str],
-    by_id: dict[str, dict[str, Any]],
-    *,
-    reverse: bool = False,
-) -> list[str]:
-    """Top→bottom on canvas (ascending Y); stable via original index on ties."""
-    if len(child_ids) <= 1:
-        return list(child_ids)
-
-    def sort_key(node_id: str) -> tuple[float, int]:
-        node = by_id.get(node_id) or {}
-        y_val = _node_coord(node, "y")
-        return (y_val if y_val is not None else 0.0, child_ids.index(node_id))
-
-    ordered = sorted(child_ids, key=sort_key, reverse=reverse)
-    return ordered
-
-
-def _sort_ids_by_y(
-    child_ids: list[str],
-    by_id: dict[str, dict[str, Any]],
-    *,
-    reverse: bool = False,
-) -> list[str]:
-    return sort_child_ids_by_y(child_ids, by_id, reverse=reverse)
-
-
-def _topic_and_children_have_positions(
-    child_ids: list[str],
-    by_id: dict[str, dict[str, Any]],
-    topic_id: str,
-) -> bool:
-    topic = by_id.get(topic_id) or {}
-    if _node_coord(topic, "x") is None or _node_coord(topic, "y") is None:
-        return False
-    for node_id in child_ids:
-        node = by_id.get(node_id) or {}
-        if _node_coord(node, "x") is None or _node_coord(node, "y") is None:
-            return False
-    return True
-
-
-def _sort_ids_by_side_of_topic(
-    child_ids: list[str],
-    by_id: dict[str, dict[str, Any]],
-    topic_id: str,
-) -> list[str]:
-    """
-    Geometric clockwise helper: right of topic top→bottom, then left bottom→top.
-
-    Side is ``x >= topic.x`` → right, else left.
-    """
-    topic = by_id.get(topic_id) or {}
-    tx = _node_coord(topic, "x")
-    if tx is None:
-        return _sort_ids_by_y(child_ids, by_id)
-
-    right: list[str] = []
-    left: list[str] = []
-    for node_id in child_ids:
-        node = by_id.get(node_id) or {}
-        x_val = _node_coord(node, "x")
-        if x_val is None or x_val >= tx:
-            right.append(node_id)
-        else:
-            left.append(node_id)
-
-    return [
-        *_sort_ids_by_y(right, by_id),
-        *_sort_ids_by_y(left, by_id, reverse=True),
-    ]
-
-
-def _sort_ids_clockwise_from_topic(
-    child_ids: list[str],
-    by_id: dict[str, dict[str, Any]],
-    topic_id: str,
-) -> list[str]:
-    """
-    Clockwise from 12 o'clock around the topic using node positions.
-
-    Angle 0 = above topic; increases through right → bottom → left.
-    """
-    if len(child_ids) <= 1:
-        return list(child_ids)
-    topic = by_id.get(topic_id) or {}
-    tx = _node_coord(topic, "x")
-    ty = _node_coord(topic, "y")
-    if tx is None or ty is None:
-        return _sort_ids_by_y(child_ids, by_id)
-
-    def angle_key(node_id: str) -> tuple[float, int]:
-        node = by_id.get(node_id) or {}
-        x_val = _node_coord(node, "x")
-        y_val = _node_coord(node, "y")
-        if x_val is None or y_val is None:
-            return (math.tau, child_ids.index(node_id))
-        angle = math.atan2(x_val - tx, -(y_val - ty))
-        if angle < 0:
-            angle += math.tau
-        return (angle, child_ids.index(node_id))
-
-    return sorted(child_ids, key=angle_key)
-
-
 def canvas_place_code(
     node_id: str,
     by_id: dict[str, dict[str, Any]],
@@ -183,8 +71,8 @@ def canvas_place_code(
         return "center"
     topic = by_id.get(topic_id) or {}
     node = by_id.get(node_id) or {}
-    topic_x = _node_coord(topic, "x")
-    node_x = _node_coord(node, "x")
+    topic_x = node_coord(topic, "x")
+    node_x = node_coord(node, "x")
     if node_x is not None and topic_x is not None:
         side = "right" if node_x >= topic_x else "left"
     elif mindmap_node_side(node_id, nodes=list(by_id.values()), node=by_id.get(node_id)) == "right":
@@ -196,7 +84,7 @@ def canvas_place_code(
     same_side = [sibling for sibling in sibling_ids if _same_canvas_side(sibling, side, by_id, topic_id)]
     if node_id not in same_side:
         same_side.append(node_id)
-    has_y = any(_node_coord(by_id.get(sibling) or {}, "y") is not None for sibling in same_side)
+    has_y = any(node_coord(by_id.get(sibling) or {}, "y") is not None for sibling in same_side)
     if len(same_side) <= 1 or not has_y:
         return side
     ordered = sort_child_ids_by_y(same_side, by_id)
@@ -215,8 +103,8 @@ def _same_canvas_side(
 ) -> bool:
     topic = by_id.get(topic_id) or {}
     node = by_id.get(node_id) or {}
-    topic_x = _node_coord(topic, "x")
-    node_x = _node_coord(node, "x")
+    topic_x = node_coord(topic, "x")
+    node_x = node_coord(node, "x")
     if node_x is not None and topic_x is not None:
         actual = "right" if node_x >= topic_x else "left"
         return actual == side
@@ -224,46 +112,6 @@ def _same_canvas_side(
     if resolved:
         return resolved == side
     return False
-
-
-def sort_topic_branch_ids_clockwise(
-    child_ids: list[str],
-    by_id: dict[str, dict[str, Any]],
-    topic_id: str,
-) -> list[str]:
-    """
-    Match canvas presentation order: right column top→bottom, then left
-    column bottom→top (continuation of clockwise).
-
-    Prefer geometric side-of-topic when positions exist; else stamped /
-    positional location; else polar angle.
-    """
-    if len(child_ids) <= 1:
-        return list(child_ids)
-
-    if _topic_and_children_have_positions(child_ids, by_id, topic_id):
-        return _sort_ids_by_side_of_topic(child_ids, by_id, topic_id)
-
-    nodes = list(by_id.values())
-    right = [
-        node_id for node_id in child_ids if mindmap_node_side(node_id, nodes=nodes, node=by_id.get(node_id)) == "right"
-    ]
-    left = [
-        node_id for node_id in child_ids if mindmap_node_side(node_id, nodes=nodes, node=by_id.get(node_id)) == "left"
-    ]
-    other = [
-        node_id for node_id in child_ids if mindmap_node_side(node_id, nodes=nodes, node=by_id.get(node_id)) is None
-    ]
-
-    if not right and not left:
-        return _sort_ids_clockwise_from_topic(child_ids, by_id, topic_id)
-
-    # Left stack is stored/drawn top→bottom; reverse for clockwise continuation.
-    return [
-        *_sort_ids_by_y(right, by_id),
-        *_sort_ids_by_y(left, by_id, reverse=True),
-        *_sort_ids_by_y(other, by_id),
-    ]
 
 
 def _child_texts(node: dict[str, Any]) -> list[str]:
@@ -379,7 +227,7 @@ def _branches_from_nodes(spec: dict[str, Any]) -> tuple[str, list[MindMapBranchO
         text = _clean_text(node.get("text") or node.get("label"))
         if not text:
             continue
-        grandchild_ids = _sort_ids_by_y(list(children_map.get(child_id, [])), by_id)
+        grandchild_ids = sort_child_ids_by_y(list(children_map.get(child_id, [])), by_id)
         grandchild_texts = []
         for gid in grandchild_ids:
             gnode = by_id.get(gid)

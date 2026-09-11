@@ -1,5 +1,5 @@
 /**
- * zh-tw UI � knowledge
+ * zh UI — knowledge
  */
 
 export default {
@@ -123,18 +123,25 @@ export default {
   'knowledge.header.title': '個人知識庫',
   'knowledge.header.upload': '上傳文檔',
   'knowledge.ragGuide.title': '資料包、RAG 與維基是怎麼工作的？',
-  'knowledge.ragGuide.subtitle': '不用懂技术术语——先把参考资料放进资料包。系统会先建立可搜索的 RAG 索引，再自动编译简短的维基笔记；AI 生成导图时会同时参考两者。',
+  'knowledge.ragGuide.subtitle':
+    '不用懂技术术语——先把参考资料放进资料包。系统会先建立可搜索的 RAG 索引，再自动编译简短的维基笔记；AI 生成导图时会同时参考两者。',
   'knowledge.ragGuide.step1.title': '選一個資料包',
-  'knowledge.ragGuide.step1.body': '资料包就像 Zotero 里的收藏夹。左侧最多可建 3 个，每个通常对应一张思维导图。在侧边栏点选资料包即可管理其中的文档。',
+  'knowledge.ragGuide.step1.body':
+    '资料包就像 Zotero 里的收藏夹。左侧最多可建 3 个，每个通常对应一张思维导图。在侧边栏点选资料包即可管理其中的文档。',
   'knowledge.ragGuide.step2.title': '添加並索引文檔（RAG）',
-  'knowledge.ragGuide.step2.body': '上传 PDF、Word、笔记或网页。系统会把长文档切成可检索的分块并写入向量索引——这是 RAG 层，会最先就绪。',
+  'knowledge.ragGuide.step2.body':
+    '上传 PDF、Word、笔记或网页。系统会把长文档切成可检索的分块并写入向量索引——这是 RAG 层，会最先就绪。',
   'knowledge.ragGuide.step3.title': '維基筆記自動編譯',
-  'knowledge.ragGuide.step3.body': '索引完成后，LLM 会在磁盘上编译概览与主题维基页。这些是精简笔记（不是原文摘录），帮助快速把握资料包结构。',
+  'knowledge.ragGuide.step3.body':
+    '索引完成后，LLM 会在磁盘上编译概览与主题维基页。这些是精简笔记（不是原文摘录），帮助快速把握资料包结构。',
   'knowledge.ragGuide.step4.title': '檢索時同時使用維基與分塊',
-  'knowledge.ragGuide.step4.body': '展开分支或生成总结时，系统先匹配相关维基页，再检索最相关的分块段落（混合 RAG）。',
+  'knowledge.ragGuide.step4.body':
+    '展开分支或生成总结时，系统先匹配相关维基页，再检索最相关的分块段落（混合 RAG）。',
   'knowledge.ragGuide.step5.title': 'AI 基於來源作答',
-  'knowledge.ragGuide.step5.body': 'AI 参考维基笔记与检索到的片段生成内容，而不是凭空编造——来源越相关、索引与维基越完整，导图就越准确。',
-  'knowledge.ragGuide.footer': '提示：在画布打开「文档总结」也会自动创建资料包；Chrome 扩展保存的网页同样会出现在左侧列表中。',
+  'knowledge.ragGuide.step5.body':
+    'AI 参考维基笔记与检索到的片段生成内容，而不是凭空编造——来源越相关、索引与维基越完整，导图就越准确。',
+  'knowledge.ragGuide.footer':
+    '提示：在画布打开「文档总结」也会自动创建资料包；Chrome 扩展保存的网页同样会出现在左侧列表中。',
   'knowledge.pipeline.title': '流水線狀態',
   'knowledge.pipeline.ragIdle': 'RAG 索引',
   'knowledge.pipeline.ragIdleDetail': '尚無已索引的資料包。請在資料包中添加來源並執行索引。',
@@ -234,7 +241,8 @@ export default {
   'knowledge.settings.retrievalSection': '檢索設置',
   'knowledge.settings.title': '知識庫設置',
   'knowledge.settings.helpTitle': '這些設置如何生效',
-  'knowledge.settings.helpBody': '检索相关选项会立即用于搜索与 AI 回答。分块大小与重叠仅作用于新索引的文档——修改后请对已有来源重新执行索引。',
+  'knowledge.settings.helpBody':
+    '检索相关选项会立即用于搜索与 AI 回答。分块大小与重叠仅作用于新索引的文档——修改后请对已有来源重新执行索引。',
   'knowledge.settings.tokens': 'token',
   'knowledge.settings.serverSection': '服務器（只讀）',
   'knowledge.settings.rerankingMode': '重排序',
@@ -245,7 +253,8 @@ export default {
   'knowledge.settings.wikiDisabled': '已關閉',
   'knowledge.settings.saveSuccess': '設置已保存',
   'knowledge.settings.saveFailed': '保存設置失敗',
-  'knowledge.settings.reindexRequired': '分块参数已变更——请在资料包中对已有文档重新索引后才会生效。',
+  'knowledge.settings.reindexRequired':
+    '分块参数已变更——请在资料包中对已有文档重新索引后才会生效。',
   'knowledge.upload.click': '點擊上傳',
   'knowledge.upload.drag': '或拖拽文件到此處',
   'knowledge.upload.fileTooLarge': '文件大小不能超過10MB',
@@ -265,4 +274,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': '文檔上傳成功，正在處理中...',
   'rag.retrievalTest.failed': '檢索測試失敗',
   'rag.retrievalTest.success': '檢索測試完成',
-} as const
+}

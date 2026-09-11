@@ -50,16 +50,19 @@ async def execute_diagram_update(
         if action == "update_center":
             executed = await _handle_update_center_action(websocket, voice_session_id, command, session_context, target)
 
-        elif action == "update_node" and target:
-            executed = await _handle_update_node_action(
-                websocket,
-                voice_session_id,
-                command,
-                session_context,
-                target,
-                node_index,
-                node_identifier,
-            )
+        elif action == "update_node":
+            new_raw = command.get("new_text")
+            apply_text = new_raw.strip() if isinstance(new_raw, str) and new_raw.strip() else target
+            if apply_text:
+                executed = await _handle_update_node_action(
+                    websocket,
+                    voice_session_id,
+                    command,
+                    session_context,
+                    apply_text,
+                    node_index,
+                    node_identifier,
+                )
 
         elif action == "add_node":
             executed = await voice_apply_add_node_action(websocket, voice_session_id, command, session_context)

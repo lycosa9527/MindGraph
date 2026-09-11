@@ -37,6 +37,52 @@ describe('useMindMapRibbonState', () => {
     vi.unstubAllGlobals()
   })
 
+  it('does not restore File as the landing tab', () => {
+    const authStore = useAuthStore()
+    authStore.user = {
+      id: '3',
+      username: 'teacher',
+      role: 'teacher',
+      v3RibbonClassic: false,
+      v3RibbonTab: 'file',
+    }
+    const scope = effectScope()
+    const state = scope.run(() => useMindMapRibbonState())
+    if (!state) {
+      throw new Error('expected ribbon state')
+    }
+    expect(state.activeTab.value).toBe('edit')
+    scope.stop()
+  })
+
+  it('does not persist File as the last tab', async () => {
+    const fetchMock = vi.mocked(authFetch)
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ v3_ribbon_classic: false, v3_ribbon_tab: 'teaching' }),
+    } as Response)
+    const authStore = useAuthStore()
+    authStore.user = {
+      id: '4',
+      username: 'teacher',
+      role: 'teacher',
+      v3RibbonClassic: false,
+      v3RibbonTab: 'teaching',
+    }
+    const scope = effectScope()
+    const state = scope.run(() => useMindMapRibbonState())
+    if (!state) {
+      throw new Error('expected ribbon state')
+    }
+    expect(state.activeTab.value).toBe('teaching')
+    state.setActiveTab('file')
+    expect(state.activeTab.value).toBe('file')
+    await vi.runAllTimersAsync()
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(authStore.user?.v3RibbonTab).toBe('teaching')
+    scope.stop()
+  })
+
   it('keeps guest height and tab in memory only', () => {
     const scope = effectScope()
     const state = scope.run(() => useMindMapRibbonState())
@@ -62,7 +108,7 @@ describe('useMindMapRibbonState', () => {
     const fetchMock = vi.mocked(authFetch)
     fetchMock.mockResolvedValue({
       ok: true,
-      json: async () => ({ v3_ribbon_classic: true, v3_ribbon_tab: 'file' }),
+      json: async () => ({ v3_ribbon_classic: true, v3_ribbon_tab: 'teaching' }),
     } as Response)
     const authStore = useAuthStore()
     authStore.user = {
@@ -79,7 +125,7 @@ describe('useMindMapRibbonState', () => {
     }
     expect(state.activeTab.value).toBe('edit')
     state.setClassic(true)
-    state.setActiveTab('file')
+    state.setActiveTab('teaching')
     await vi.runAllTimersAsync()
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/auth/diagram-preferences',
@@ -87,7 +133,7 @@ describe('useMindMapRibbonState', () => {
         method: 'PATCH',
         body: JSON.stringify({
           v3_ribbon_classic: true,
-          v3_ribbon_tab: 'file',
+          v3_ribbon_tab: 'teaching',
         }),
       })
     )

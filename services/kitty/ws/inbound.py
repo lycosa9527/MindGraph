@@ -7,68 +7,340 @@ Proprietary License
 
 from __future__ import annotations
 
-import copy
 import logging
 import uuid
-from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, Awaitable, Callable, Dict
 
 from fastapi import WebSocket
 
 from models.domain.auth import User
-from services.agent_hub import build_desktop_pairing_snapshot, get_mind_graph_agent_hub
-from services.diagram_edit.ack import complete_mutation_ack_from_client
+from services.kitty.asr.audio_format import parse_asr_audio_format
 from services.kitty.audio.session_bridge import (
     feed_session_asr_audio,
     interrupt_kitty_tts,
     start_session_asr,
     stop_session_asr,
 )
+from services.kitty.session.turn_task import cancel_active_turn
+from services.kitty.ws.inbound_hello import (
+    abort_reason,
+    handle_hello,
+    interrupt_turn_and_tts,
+)
 from services.kitty.ws.narrate import handle_kitty_narrate, handle_kitty_prefetch
-from services.kitty.context.hub_context import apply_kitty_ws_context_patch
 from services.kitty.context.messaging import safe_websocket_send
 from services.kitty.infra.desktop.kitty_voice_phase_fanout import (
     fanout_voice_phase_from_outbound_type,
 )
-from services.kitty.infra.bootstrap.kitty_context_hydrate import (
-    diagram_data_has_visible_content,
-    merge_voice_context_with_library,
-)
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
-from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
-    kitty_llm_model_update_from_context,
-    publish_kitty_llm_model_update,
-    publish_kitty_selection_update,
-)
-from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.session.events import KittyEvent, get_session_event_bus
 from services.kitty.session.manager import get_kitty_session_manager
-from services.kitty.session.ops import (
-    get_agent_session_id,
-    update_panel_context,
-)
 from services.kitty.session.runtime_state import voice_sessions
 from services.kitty.ws.guards import KITTY_WS_MAX_AUDIO_B64_CHARS, KITTY_WS_MAX_TEXT_CHARS
+from services.kitty.ws.inbound_context import (
+    handle_context_update,
+    handle_diagram_mutation_ack,
+    handle_get_desktop_session_snapshot,
+)
+from services.kitty.ws.inbound_types import KittyInboundFlow, KittyWsInboundContext
+
+__all__ = [
+    "KittyInboundFlow",
+    "KittyWsInboundContext",
+    "build_kitty_inbound_context",
+    "dispatch_kitty_ws_inbound_message",
+]
 
 _INGRESS_SOURCES = frozenset({"asr", "text", "clarify_choice", "ui_create"})
 
 logger = logging.getLogger(__name__)
 
-KittyInboundFlow = Literal["continue", "stop"]
+KittyInboundHandler = Callable[[KittyWsInboundContext, dict], Awaitable[KittyInboundFlow]]
 
 
-@dataclass(slots=True)
-class KittyWsInboundContext:
-    """Per-connection state required to dispatch one client JSON message."""
+async def _handle_asr_start(ctx: KittyWsInboundContext, message: dict) -> KittyInboundFlow:
+    hints_raw = message.get("language_hints")
+    language_hints: list[str] | None = None
+    if isinstance(hints_raw, list):
+        language_hints = [str(item) for item in hints_raw if str(item).strip()]
+    elif str(message.get("language") or "").strip().lower().startswith("zh"):
+        language_hints = ["zh"]
+    utterance_raw = message.get("utterance_id")
+    utterance_id = str(utterance_raw).strip() if isinstance(utterance_raw, str) and str(utterance_raw).strip() else None
+    sess = voice_sessions.get(ctx.voice_session_id) or {}
+    lane_raw = sess.get("_kitty_client_lane")
+    lane = lane_raw if isinstance(lane_raw, str) and lane_raw.strip() else "—"
+    debug_ctx = message.get("debug_ctx")
+    ctx_label = str(debug_ctx) if debug_ctx is not None else "—"
+    audio_format = parse_asr_audio_format(message)
+    logger.info(
+        "Kitty PTT asr_start sid=%s lane=%s hints=%s fmt=%s ctx=%s utt=%s",
+        ctx.voice_session_id[:12],
+        lane,
+        language_hints or ["zh"],
+        audio_format,
+        ctx_label,
+        (utterance_id or "—")[:16],
+    )
+    kitty_wf_log(
+        "asr_start",
+        f"lane={lane} hints={language_hints or ['zh']} fmt={audio_format} ctx={ctx_label} utt={utterance_id or '—'}",
+        voice_session_id=ctx.voice_session_id,
+    )
+    await start_session_asr(
+        ctx.websocket,
+        ctx.voice_session_id,
+        language_hints=language_hints,
+        utterance_id=utterance_id,
+        audio_format=audio_format,
+    )
+    return "continue"
 
-    websocket: WebSocket
-    current_user: User
-    diagram_session_id: str
-    voice_session_id: str
-    hub_session_id: str
-    hub: Any
-    agent_session_id: str
-    user_id: str
+
+async def _handle_asr_audio(ctx: KittyWsInboundContext, message: dict) -> KittyInboundFlow:
+    audio_data = message.get("data")
+    if isinstance(audio_data, str) and audio_data:
+        if len(audio_data) > KITTY_WS_MAX_AUDIO_B64_CHARS:
+            logger.warning(
+                "Kitty PTT asr_audio too large sid=%s chars=%d",
+                ctx.voice_session_id[:12],
+                len(audio_data),
+            )
+            await safe_websocket_send(
+                ctx.websocket,
+                {"type": "error", "error": "Audio frame too large"},
+            )
+            return "continue"
+        utterance_raw = message.get("utterance_id")
+        utterance_id = (
+            str(utterance_raw).strip() if isinstance(utterance_raw, str) and str(utterance_raw).strip() else None
+        )
+        await feed_session_asr_audio(
+            ctx.voice_session_id,
+            audio_data,
+            utterance_id=utterance_id,
+        )
+    return "continue"
+
+
+async def _handle_asr_stop(ctx: KittyWsInboundContext, message: dict) -> KittyInboundFlow:
+    sess = voice_sessions.get(ctx.voice_session_id) or {}
+    lane_raw = sess.get("_kitty_client_lane")
+    lane = lane_raw if isinstance(lane_raw, str) and lane_raw.strip() else "—"
+    utterance_raw = message.get("utterance_id")
+    utterance_id = str(utterance_raw).strip() if isinstance(utterance_raw, str) and str(utterance_raw).strip() else None
+    peak_raw = message.get("peak")
+    client_peak = peak_raw if isinstance(peak_raw, int) and not isinstance(peak_raw, bool) else None
+    logger.info(
+        "Kitty PTT asr_stop sid=%s lane=%s utt=%s peak=%s",
+        ctx.voice_session_id[:12],
+        lane,
+        (utterance_id or "—")[:16],
+        client_peak if client_peak is not None else "—",
+    )
+    kitty_wf_log(
+        "asr_stop",
+        f"lane={lane} client release utt={utterance_id or '—'}",
+        voice_session_id=ctx.voice_session_id,
+    )
+    final_text = await stop_session_asr(ctx.voice_session_id, utterance_id=utterance_id)
+    stopped_payload: dict[str, object] = {"type": "asr_stopped", "text": final_text}
+    if utterance_id:
+        stopped_payload["utterance_id"] = utterance_id
+    await safe_websocket_send(ctx.websocket, stopped_payload)
+    await fanout_voice_phase_from_outbound_type(ctx.voice_session_id, "asr_stopped")
+    return "continue"
+
+
+async def _handle_prefetch(ctx: KittyWsInboundContext, message: dict) -> KittyInboundFlow:
+    await handle_kitty_prefetch(ctx.websocket, ctx.voice_session_id, message)
+    return "continue"
+
+
+async def _handle_narrate(ctx: KittyWsInboundContext, message: dict) -> KittyInboundFlow:
+    await handle_kitty_narrate(ctx.websocket, ctx.voice_session_id, message)
+    return "continue"
+
+
+async def _interrupt_tts(ctx: KittyWsInboundContext) -> None:
+    await interrupt_kitty_tts(ctx.voice_session_id)
+    await safe_websocket_send(ctx.websocket, {"type": "tts_interrupted"})
+
+
+async def _handle_tts_interrupt(ctx: KittyWsInboundContext, _message: dict) -> KittyInboundFlow:
+    await _interrupt_tts(ctx)
+    return "continue"
+
+
+async def _handle_abort(ctx: KittyWsInboundContext, message: dict) -> KittyInboundFlow:
+    await interrupt_turn_and_tts(ctx, reason=abort_reason(message))
+    return "continue"
+
+
+async def _handle_cancel_response(ctx: KittyWsInboundContext, message: dict) -> KittyInboundFlow:
+    await interrupt_turn_and_tts(
+        ctx,
+        reason=abort_reason(message),
+        extra_type="response_cancelled",
+    )
+    return "continue"
+
+
+async def _handle_tts_set_enabled(ctx: KittyWsInboundContext, message: dict) -> KittyInboundFlow:
+    enabled = bool(message.get("enabled", True))
+    voice_sessions[ctx.voice_session_id]["_kitty_tts_enabled"] = enabled
+    await safe_websocket_send(
+        ctx.websocket,
+        {"type": "tts_enabled", "enabled": enabled},
+    )
+    return "continue"
+
+
+async def _handle_text(ctx: KittyWsInboundContext, message: dict) -> KittyInboundFlow:
+    await cancel_active_turn(ctx.voice_session_id, reason="text_input")
+    await _interrupt_tts(ctx)
+    text = message.get("text", "").strip()
+    if len(text) > KITTY_WS_MAX_TEXT_CHARS:
+        await safe_websocket_send(
+            ctx.websocket,
+            {"type": "error", "error": "Text too long"},
+        )
+        return "continue"
+    if not text:
+        return "continue"
+    logger.debug("Received text message (%d chars)", len(text))
+    kitty_wf_log(
+        "text_inbound",
+        text[:120],
+        voice_session_id=ctx.voice_session_id,
+    )
+    voice_sessions[ctx.voice_session_id]["conversation_history"].append({"role": "user", "content": text})
+    raw_request_id = message.get("request_id")
+    request_id = str(raw_request_id).strip() if isinstance(raw_request_id, str) and str(raw_request_id).strip() else ""
+    if not request_id:
+        request_id = str(uuid.uuid4())
+    voice_sessions[ctx.voice_session_id]["_one_sentence_request_id"] = request_id
+    raw_source = message.get("ingress_source")
+    ingress_source = (
+        str(raw_source).strip()
+        if isinstance(raw_source, str) and str(raw_source).strip() in _INGRESS_SOURCES
+        else "text"
+    )
+    raw_utt = message.get("utterance_id")
+    utterance_id = str(raw_utt).strip() if isinstance(raw_utt, str) and str(raw_utt).strip() else None
+    if utterance_id:
+        voice_sessions[ctx.voice_session_id]["_one_sentence_utterance_id"] = utterance_id
+    lane_raw = voice_sessions[ctx.voice_session_id].get("_kitty_client_lane")
+    lane = lane_raw.strip() if isinstance(lane_raw, str) and lane_raw.strip() else None
+    if lane != "mobile":
+        gate = await get_kitty_session_manager().require_desktop_ingress_allowed(
+            int(ctx.current_user.id),
+            ctx.diagram_session_id,
+            voice_session_id=ctx.voice_session_id,
+            request_id=request_id,
+        )
+        if not gate.ok:
+            await safe_websocket_send(
+                ctx.websocket,
+                {
+                    "type": "error",
+                    "error": gate.error_code or "mobile_owns_ingress",
+                    "message": gate.message or "Mobile Kitty owns edit input for this diagram",
+                    "request_id": request_id,
+                },
+            )
+            return "continue"
+    await get_kitty_session_manager().begin_ingress(
+        user_id=int(ctx.current_user.id),
+        scope=ctx.diagram_session_id,
+        request_id=request_id,
+        source=ingress_source,
+        text=text,
+        lane=lane,
+        voice_session_id=ctx.voice_session_id,
+        utterance_id=utterance_id,
+    )
+    bus = get_session_event_bus(ctx.voice_session_id)
+    inbound_payload: dict[str, Any] = {
+        "text": text,
+        "request_id": request_id,
+        "ingress_source": ingress_source,
+    }
+    if utterance_id:
+        inbound_payload["utterance_id"] = utterance_id
+    await bus.emit(
+        KittyEvent(
+            kind="text_inbound",
+            voice_session_id=ctx.voice_session_id,
+            payload=inbound_payload,
+        )
+    )
+    return "continue"
+
+
+async def _handle_auto_complete_done(ctx: KittyWsInboundContext, message: dict) -> KittyInboundFlow:
+    status_raw = message.get("status")
+    status = status_raw.strip() if isinstance(status_raw, str) and status_raw.strip() else "finished"
+    node_raw = message.get("node_id")
+    node_id = node_raw.strip() if isinstance(node_raw, str) else None
+    done_payload: dict[str, Any] = {"status": status}
+    if node_id:
+        done_payload["node_id"] = node_id
+    bus = get_session_event_bus(ctx.voice_session_id)
+    await bus.emit(
+        KittyEvent(
+            kind="auto_complete_done",
+            voice_session_id=ctx.voice_session_id,
+            payload=done_payload,
+        )
+    )
+    return "continue"
+
+
+async def _handle_stop(_ctx: KittyWsInboundContext, _message: dict) -> KittyInboundFlow:
+    return "stop"
+
+
+async def _handle_append_image(ctx: KittyWsInboundContext, _message: dict) -> KittyInboundFlow:
+    await safe_websocket_send(
+        ctx.websocket,
+        {
+            "type": "error",
+            "error": "append_image is retired; use POST /api/kitty/conversation_image",
+        },
+    )
+    return "continue"
+
+
+async def _handle_listen(ctx: KittyWsInboundContext, message: dict) -> KittyInboundFlow:
+    """Alias of asr_start / asr_stop (Xiaozhi listen shape, Kitty wire)."""
+    state_raw = message.get("state")
+    state = str(state_raw).strip().lower() if state_raw is not None else ""
+    if state == "stop":
+        return await _handle_asr_stop(ctx, message)
+    return await _handle_asr_start(ctx, message)
+
+
+_HANDLERS: Dict[str, KittyInboundHandler] = {
+    "asr_start": _handle_asr_start,
+    "asr_audio": _handle_asr_audio,
+    "asr_stop": _handle_asr_stop,
+    "listen": _handle_listen,
+    "hello": handle_hello,
+    "prefetch": _handle_prefetch,
+    "narrate": _handle_narrate,
+    "tts_interrupt": _handle_tts_interrupt,
+    "abort": _handle_abort,
+    "cancel_response": _handle_cancel_response,
+    "tts_set_enabled": _handle_tts_set_enabled,
+    "text": _handle_text,
+    "auto_complete_done": _handle_auto_complete_done,
+    "get_desktop_session_snapshot": handle_get_desktop_session_snapshot,
+    "context_update": handle_context_update,
+    "diagram_mutation_ack": handle_diagram_mutation_ack,
+    "stop": _handle_stop,
+    "append_image": _handle_append_image,
+}
 
 
 async def dispatch_kitty_ws_inbound_message(
@@ -82,531 +354,13 @@ async def dispatch_kitty_ws_inbound_message(
         ``continue`` to keep the receive loop running, ``stop`` when the client
         asked to end the conversation (``type: stop``).
     """
-    websocket = ctx.websocket
-    current_user = ctx.current_user
-    diagram_session_id = ctx.diagram_session_id
-    voice_session_id = ctx.voice_session_id
-    hub_session_id = ctx.hub_session_id
-    hub = ctx.hub
-
     msg_type = message.get("type")
-
-    if msg_type == "audio":
-        # Omni duplex retired; mic PCM uses asr_start / asr_audio / asr_stop (Fun-ASR).
-        logger.debug("Ignoring legacy Omni audio frame on text-first Kitty session")
+    if not isinstance(msg_type, str) or not msg_type.strip():
         return "continue"
-
-    if msg_type == "asr_start":
-        hints_raw = message.get("language_hints")
-        language_hints: list[str] | None = None
-        if isinstance(hints_raw, list):
-            language_hints = [str(item) for item in hints_raw if str(item).strip()]
-        elif str(message.get("language") or "").strip().lower().startswith("zh"):
-            language_hints = ["zh"]
-        utterance_raw = message.get("utterance_id")
-        utterance_id = (
-            str(utterance_raw).strip() if isinstance(utterance_raw, str) and str(utterance_raw).strip() else None
-        )
-        sess = voice_sessions.get(voice_session_id) or {}
-        lane_raw = sess.get("_kitty_client_lane")
-        lane = lane_raw if isinstance(lane_raw, str) and lane_raw.strip() else "—"
-        debug_ctx = message.get("debug_ctx")
-        ctx_label = str(debug_ctx) if debug_ctx is not None else "—"
-        logger.info(
-            "Kitty PTT asr_start sid=%s lane=%s hints=%s ctx=%s utt=%s",
-            voice_session_id[:12],
-            lane,
-            language_hints or ["zh"],
-            ctx_label,
-            (utterance_id or "—")[:16],
-        )
-        kitty_wf_log(
-            "asr_start",
-            f"lane={lane} hints={language_hints or ['zh']} ctx={ctx_label} utt={utterance_id or '—'}",
-            voice_session_id=voice_session_id,
-        )
-        await start_session_asr(
-            websocket,
-            voice_session_id,
-            language_hints=language_hints,
-            utterance_id=utterance_id,
-        )
+    handler = _HANDLERS.get(msg_type.strip())
+    if handler is None:
         return "continue"
-
-    if msg_type == "asr_audio":
-        audio_data = message.get("data")
-        if isinstance(audio_data, str) and audio_data:
-            if len(audio_data) > KITTY_WS_MAX_AUDIO_B64_CHARS:
-                logger.warning(
-                    "Kitty PTT asr_audio too large sid=%s chars=%d",
-                    voice_session_id[:12],
-                    len(audio_data),
-                )
-                await safe_websocket_send(
-                    websocket,
-                    {"type": "error", "error": "Audio frame too large"},
-                )
-                return "continue"
-            utterance_raw = message.get("utterance_id")
-            utterance_id = (
-                str(utterance_raw).strip() if isinstance(utterance_raw, str) and str(utterance_raw).strip() else None
-            )
-            await feed_session_asr_audio(
-                voice_session_id,
-                audio_data,
-                utterance_id=utterance_id,
-            )
-        return "continue"
-
-    if msg_type == "asr_stop":
-        sess = voice_sessions.get(voice_session_id) or {}
-        lane_raw = sess.get("_kitty_client_lane")
-        lane = lane_raw if isinstance(lane_raw, str) and lane_raw.strip() else "—"
-        utterance_raw = message.get("utterance_id")
-        utterance_id = (
-            str(utterance_raw).strip() if isinstance(utterance_raw, str) and str(utterance_raw).strip() else None
-        )
-        logger.info(
-            "Kitty PTT asr_stop sid=%s lane=%s utt=%s",
-            voice_session_id[:12],
-            lane,
-            (utterance_id or "—")[:16],
-        )
-        kitty_wf_log(
-            "asr_stop",
-            f"lane={lane} client release utt={utterance_id or '—'}",
-            voice_session_id=voice_session_id,
-        )
-        final_text = await stop_session_asr(voice_session_id, utterance_id=utterance_id)
-        stopped_payload: dict[str, object] = {"type": "asr_stopped"}
-        if utterance_id:
-            stopped_payload["utterance_id"] = utterance_id
-        if final_text:
-            stopped_payload["text"] = final_text
-        await safe_websocket_send(websocket, stopped_payload)
-        await fanout_voice_phase_from_outbound_type(voice_session_id, "asr_stopped")
-        return "continue"
-
-    if msg_type == "prefetch":
-        await handle_kitty_prefetch(websocket, voice_session_id, message)
-        return "continue"
-
-    if msg_type == "narrate":
-        await handle_kitty_narrate(websocket, voice_session_id, message)
-        return "continue"
-
-    if msg_type == "tts_interrupt":
-        await interrupt_kitty_tts(voice_session_id)
-        await safe_websocket_send(websocket, {"type": "tts_interrupted"})
-        return "continue"
-
-    if msg_type == "tts_set_enabled":
-        enabled = bool(message.get("enabled", True))
-        voice_sessions[voice_session_id]["_kitty_tts_enabled"] = enabled
-        await safe_websocket_send(
-            websocket,
-            {"type": "tts_enabled", "enabled": enabled},
-        )
-        return "continue"
-
-    if msg_type == "text":
-        await interrupt_kitty_tts(voice_session_id)
-        await safe_websocket_send(websocket, {"type": "tts_interrupted"})
-        text = message.get("text", "").strip()
-        if len(text) > KITTY_WS_MAX_TEXT_CHARS:
-            await safe_websocket_send(
-                websocket,
-                {"type": "error", "error": "Text too long"},
-            )
-            return "continue"
-        if text:
-            logger.debug("Received text message (%d chars)", len(text))
-            kitty_wf_log(
-                "text_inbound",
-                text[:120],
-                voice_session_id=voice_session_id,
-            )
-            voice_sessions[voice_session_id]["conversation_history"].append({"role": "user", "content": text})
-            raw_request_id = message.get("request_id")
-            request_id = (
-                str(raw_request_id).strip() if isinstance(raw_request_id, str) and str(raw_request_id).strip() else ""
-            )
-            if not request_id:
-                request_id = str(uuid.uuid4())
-            voice_sessions[voice_session_id]["_one_sentence_request_id"] = request_id
-            raw_source = message.get("ingress_source")
-            ingress_source = (
-                str(raw_source).strip()
-                if isinstance(raw_source, str) and str(raw_source).strip() in _INGRESS_SOURCES
-                else "text"
-            )
-            raw_utt = message.get("utterance_id")
-            utterance_id = str(raw_utt).strip() if isinstance(raw_utt, str) and str(raw_utt).strip() else None
-            if utterance_id:
-                voice_sessions[voice_session_id]["_one_sentence_utterance_id"] = utterance_id
-            lane_raw = voice_sessions[voice_session_id].get("_kitty_client_lane")
-            lane = lane_raw.strip() if isinstance(lane_raw, str) and lane_raw.strip() else None
-            # S14: desktop must not send edit text while mobile owns same-scope ingress.
-            if lane != "mobile":
-                gate = await get_kitty_session_manager().require_desktop_ingress_allowed(
-                    int(current_user.id),
-                    diagram_session_id,
-                    voice_session_id=voice_session_id,
-                    request_id=request_id,
-                )
-                if not gate.ok:
-                    await safe_websocket_send(
-                        websocket,
-                        {
-                            "type": "error",
-                            "error": gate.error_code or "mobile_owns_ingress",
-                            "message": gate.message or "Mobile Kitty owns edit input for this diagram",
-                            "request_id": request_id,
-                        },
-                    )
-                    return "continue"
-            await get_kitty_session_manager().begin_ingress(
-                user_id=int(current_user.id),
-                scope=diagram_session_id,
-                request_id=request_id,
-                source=ingress_source,
-                text=text,
-                lane=lane,
-                voice_session_id=voice_session_id,
-                utterance_id=utterance_id,
-            )
-            bus = get_session_event_bus(voice_session_id)
-            inbound_payload: dict[str, Any] = {
-                "text": text,
-                "request_id": request_id,
-                "ingress_source": ingress_source,
-            }
-            if utterance_id:
-                inbound_payload["utterance_id"] = utterance_id
-            await bus.emit(
-                KittyEvent(
-                    kind="text_inbound",
-                    voice_session_id=voice_session_id,
-                    payload=inbound_payload,
-                )
-            )
-        return "continue"
-
-    if msg_type == "auto_complete_done":
-        status_raw = message.get("status")
-        status = status_raw.strip() if isinstance(status_raw, str) and status_raw.strip() else "finished"
-        node_raw = message.get("node_id")
-        node_id = node_raw.strip() if isinstance(node_raw, str) else None
-        done_payload: dict[str, Any] = {"status": status}
-        if node_id:
-            done_payload["node_id"] = node_id
-        bus = get_session_event_bus(voice_session_id)
-        await bus.emit(
-            KittyEvent(
-                kind="auto_complete_done",
-                voice_session_id=voice_session_id,
-                payload=done_payload,
-            )
-        )
-        return "continue"
-
-    if msg_type == "get_desktop_session_snapshot":
-        lane = voice_sessions[voice_session_id].get("_kitty_client_lane")
-        snapshot_payload = await build_desktop_pairing_snapshot(
-            int(current_user.id),
-            diagram_session_id,
-            client_lane=lane if isinstance(lane, str) else None,
-        )
-        await safe_websocket_send(
-            websocket,
-            {
-                "type": "desktop_session_snapshot",
-                "snapshot": snapshot_payload,
-            },
-        )
-        return "continue"
-
-    if msg_type == "context_update":
-        new_context_in = message.get("context", {}) or {}
-        cur_panel = voice_sessions[voice_session_id].get("active_panel", "none")
-        active_panel = message.get("active_panel") or new_context_in.get("active_panel") or cur_panel or "none"
-        session_dt = (
-            voice_sessions[voice_session_id].get("diagram_type") or new_context_in.get("diagram_type") or "circle_map"
-        )
-        client_lane = voice_sessions[voice_session_id].get("_kitty_client_lane")
-        delta_dd_raw = new_context_in.get("diagram_data")
-        delta_dd: dict[str, Any] = delta_dd_raw if isinstance(delta_dd_raw, dict) else {}
-        lib_raw = new_context_in.get("diagram_library_id")
-        prefer_server = bool(
-            client_lane == "mobile"
-            and isinstance(lib_raw, str)
-            and lib_raw.strip()
-            and not diagram_data_has_visible_content(delta_dd)
-        )
-        merged_ctx, res_dt, res_panel = await merge_voice_context_with_library(
-            current_user.id,
-            new_context_in,
-            diagram_type=session_dt,
-            active_panel=active_panel,
-            prefer_server_diagram_nodes=prefer_server,
-        )
-        new_diagram_type = res_dt
-
-        old_diagram_type = voice_sessions[voice_session_id].get("diagram_type")
-        voice_sessions[voice_session_id]["diagram_type"] = new_diagram_type
-        if old_diagram_type != new_diagram_type:
-            logger.info(
-                "VOIC | Diagram type updated: %s -> %s for session %s",
-                old_diagram_type,
-                new_diagram_type,
-                voice_session_id,
-            )
-
-        update_panel_context(voice_session_id, res_panel)
-        voice_sessions[voice_session_id]["context"] = copy.deepcopy(merged_ctx)
-        voice_sessions[voice_session_id]["context"]["diagram_type"] = new_diagram_type
-
-        agent_session_id_mu = get_agent_session_id(voice_session_id)
-        agent = kitty_agent_manager.get_or_create(agent_session_id_mu)
-        diagram_data = dict(merged_ctx.get("diagram_data", {}))
-        diagram_data["diagram_type"] = new_diagram_type
-        agent.update_diagram_state(diagram_data)
-        agent.update_panel_state(res_panel, merged_ctx.get("panels", {}))
-
-        ctx_reason = "diagram_type_change" if old_diagram_type != new_diagram_type else "context_update"
-        bus = get_session_event_bus(voice_session_id)
-        await bus.emit(
-            KittyEvent(
-                kind="context_update",
-                voice_session_id=voice_session_id,
-                payload={"diagram_type": new_diagram_type, "reason": ctx_reason},
-            )
-        )
-
-        hub_rev_raw = voice_sessions[voice_session_id].get("_hub_scope_revision")
-        hub_rev = hub_rev_raw if isinstance(hub_rev_raw, int) else None
-        client_rev_raw = message.get("expected_revision")
-        if isinstance(client_rev_raw, int):
-            hub_rev = client_rev_raw
-        elif isinstance(client_rev_raw, (float, str)):
-            try:
-                hub_rev = int(client_rev_raw)
-            except (TypeError, ValueError):
-                pass
-        idempotency_key_raw = message.get("idempotency_key")
-        idempotency_key = (
-            str(idempotency_key_raw).strip()
-            if isinstance(idempotency_key_raw, str) and idempotency_key_raw.strip()
-            else None
-        )
-        persist_library = message.get("persist_library") is True
-        library_snapshot_raw = message.get("library_snapshot")
-        library_snapshot = library_snapshot_raw if isinstance(library_snapshot_raw, dict) else None
-        try:
-            mutation_out = await apply_kitty_ws_context_patch(
-                hub,
-                hub_session_id=hub_session_id,
-                diagram_scope=diagram_session_id,
-                merged_context=merged_ctx,
-                diagram_type=new_diagram_type,
-                active_panel=res_panel,
-                expected_revision=hub_rev,
-                idempotency_key=idempotency_key,
-                persist_library=persist_library,
-                library_snapshot=library_snapshot,
-            )
-        except ValueError as mut_err:
-            if "stale expected revision" in str(mut_err).lower():
-                fresh_rev = get_mind_graph_agent_hub().get_binding_revision(hub_session_id)
-                if fresh_rev is not None:
-                    try:
-                        mutation_out = await apply_kitty_ws_context_patch(
-                            hub,
-                            hub_session_id=hub_session_id,
-                            diagram_scope=diagram_session_id,
-                            merged_context=merged_ctx,
-                            diagram_type=new_diagram_type,
-                            active_panel=res_panel,
-                            expected_revision=fresh_rev,
-                            idempotency_key=(f"{idempotency_key}-retry" if idempotency_key else None),
-                            persist_library=persist_library,
-                            library_snapshot=library_snapshot,
-                        )
-                    except ValueError as retry_err:
-                        logger.warning(
-                            "Hub mutation retry rejected for %s: %s",
-                            voice_session_id,
-                            retry_err,
-                        )
-                        kitty_wf_log(
-                            "hub_context_fail",
-                            str(retry_err)[:120],
-                            voice_session_id=voice_session_id,
-                            scope=diagram_session_id,
-                        )
-                        await safe_websocket_send(
-                            websocket,
-                            {
-                                "type": "context_mutation_ack",
-                                "ok": False,
-                                "error": str(retry_err),
-                                "idempotency_key": idempotency_key,
-                                "persist_library": persist_library,
-                            },
-                        )
-                        return "continue"
-                else:
-                    logger.warning("Hub mutation rejected for %s: %s", voice_session_id, mut_err)
-                    kitty_wf_log(
-                        "hub_context_fail",
-                        str(mut_err)[:120],
-                        voice_session_id=voice_session_id,
-                        scope=diagram_session_id,
-                    )
-                    await safe_websocket_send(
-                        websocket,
-                        {
-                            "type": "context_mutation_ack",
-                            "ok": False,
-                            "error": str(mut_err),
-                            "idempotency_key": idempotency_key,
-                            "persist_library": persist_library,
-                        },
-                    )
-                    return "continue"
-            else:
-                logger.warning("Hub mutation rejected for %s: %s", voice_session_id, mut_err)
-                kitty_wf_log(
-                    "hub_context_fail",
-                    str(mut_err)[:120],
-                    voice_session_id=voice_session_id,
-                    scope=diagram_session_id,
-                )
-                await safe_websocket_send(
-                    websocket,
-                    {
-                        "type": "context_mutation_ack",
-                        "ok": False,
-                        "error": str(mut_err),
-                        "idempotency_key": idempotency_key,
-                        "persist_library": persist_library,
-                    },
-                )
-                return "continue"
-        new_rev = mutation_out.get("revision")
-        if isinstance(new_rev, int):
-            voice_sessions[voice_session_id]["_hub_scope_revision"] = new_rev
-        live_ts = mutation_out.get("live_spec_updated_at")
-        if isinstance(live_ts, int) and live_ts > 0:
-            voice_sessions[voice_session_id]["_kitty_redis_seen_ts"] = live_ts
-
-        nodes_raw = diagram_data.get("nodes")
-        nodes_count = len(nodes_raw) if isinstance(nodes_raw, list) else 0
-        children_count = len(diagram_data.get("children", []))
-
-        kitty_wf_log(
-            "hub_context",
-            f"ack ok rev={new_rev} persist={persist_library} nodes={nodes_count or children_count}",
-            voice_session_id=voice_session_id,
-            scope=diagram_session_id,
-        )
-
-        await safe_websocket_send(
-            websocket,
-            {
-                "type": "context_mutation_ack",
-                "ok": True,
-                "revision": new_rev,
-                "library_snapshot_saved": mutation_out.get("library_snapshot_saved"),
-                "library_snapshot_error": mutation_out.get("library_snapshot_error"),
-                "idempotency_key": idempotency_key,
-                "persist_library": persist_library,
-            },
-        )
-
-        logger.debug(
-            "Context updated for %s with %d nodes",
-            voice_session_id,
-            nodes_count or children_count,
-        )
-        sel_raw = merged_ctx.get("selected_nodes")
-        selected_nodes: list[str] = []
-        if isinstance(sel_raw, list):
-            for item in sel_raw:
-                if isinstance(item, str) and item.strip():
-                    selected_nodes.append(item.strip())
-        if selected_nodes:
-            await publish_kitty_selection_update(
-                int(current_user.id),
-                diagram_session_id,
-                selected_nodes,
-            )
-        should_llm, llm_model = kitty_llm_model_update_from_context(merged_ctx)
-        if should_llm:
-            await publish_kitty_llm_model_update(
-                int(current_user.id),
-                diagram_session_id,
-                llm_model,
-            )
-        return "continue"
-
-    if msg_type == "diagram_mutation_ack":
-        matched = complete_mutation_ack_from_client(message)
-        mid_raw = message.get("mutation_id")
-        mid = mid_raw.strip() if isinstance(mid_raw, str) and mid_raw.strip() else None
-        sess = voice_sessions.get(voice_session_id)
-        if mid and isinstance(sess, dict):
-            req_raw = sess.get("_one_sentence_request_id")
-            req_id = req_raw.strip() if isinstance(req_raw, str) and req_raw.strip() else None
-            lane_raw = sess.get("_kitty_client_lane")
-            lane = lane_raw.strip() if isinstance(lane_raw, str) and lane_raw.strip() else None
-            verified = message.get("verified") is True or message.get("ok") is True
-            await get_kitty_session_manager().link_mutation(
-                user_id=int(current_user.id),
-                scope=diagram_session_id,
-                mutation_id=mid,
-                request_id=req_id,
-                voice_session_id=voice_session_id,
-                lane=lane,
-                outcome="ack",
-                detail={"matched": matched, "verified": verified},
-            )
-        kitty_wf_log(
-            "diagram_ack",
-            "matched" if matched else "orphan",
-            voice_session_id=voice_session_id,
-        )
-        return "continue"
-
-    if msg_type == "stop":
-        return "stop"
-
-    if msg_type == "cancel_response":
-        logger.debug("User requested to cancel response (no Omni; CosyVoice interrupt separate)")
-        await safe_websocket_send(websocket, {"type": "response_cancelled"})
-        return "continue"
-
-    if msg_type == "clear_audio_buffer":
-        logger.debug("Ignoring clear_audio_buffer (Omni retired)")
-        await safe_websocket_send(websocket, {"type": "audio_buffer_cleared"})
-        return "continue"
-
-    if msg_type == "commit_audio_buffer":
-        logger.debug("Ignoring commit_audio_buffer (Omni retired)")
-        await safe_websocket_send(websocket, {"type": "audio_buffer_committed"})
-        return "continue"
-
-    if msg_type == "append_image":
-        await safe_websocket_send(
-            websocket,
-            {
-                "type": "error",
-                "error": ("append_image is retired; use POST /api/kitty/conversation_image"),
-            },
-        )
-        return "continue"
-
-    return "continue"
+    return await handler(ctx, message)
 
 
 def build_kitty_inbound_context(

@@ -1,0 +1,5 @@
+build/
+dist/
+sign/
+node_modules/
+.brookesia/

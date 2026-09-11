@@ -50,8 +50,8 @@ NODE_ACTION_ROWS: List[NodeActionRow] = [
         "description_en": "Rename an existing node",
         "when_to_use_zh": "用户要改某个已有节点的名称",
         "when_to_use_en": "User wants to rename an existing node",
-        "examples_zh": ["把饮品分析改成饮料分析"],
-        "examples_en": ["rename Brewing Methods to Brew Methods"],
+        "examples_zh": ["把饮品分析改成饮料分析", "把2.1改成绿茶"],
+        "examples_en": ["rename Brewing Methods to Brew Methods", "rename 2.1 to green tea"],
     },
     {
         "name": "update_center",
@@ -102,6 +102,53 @@ NODE_ACTION_ROWS: List[NodeActionRow] = [
         "when_to_use_en": "Greetings, chitchat, vague edits, or add-new vs fill-existing",
         "examples_zh": ["中国 → 添加分支还是补全已有？"],
         "examples_en": ["China → add new branch or fill existing?"],
+    },
+    {
+        "name": "set_content_level",
+        "tool_name": "node_action.set_content_level",
+        "description_zh": "把专业内容改成通用/小学/初中/高中/大学/成人/专家",
+        "description_en": "Set AI content audience to general, primary, or expert",
+        "when_to_use_zh": "用户要改底部「专业内容」受众难度",
+        "when_to_use_en": "User wants to change the AI content audience level",
+        "examples_zh": [
+            "专业内容改成通用",
+            "专业内容改成小学",
+            "专业内容改成初中",
+            "专业内容改成高中",
+            "专业内容改成大学",
+            "专业内容改成成人",
+            "专业内容改成专家",
+        ],
+        "examples_en": [
+            "set content to general",
+            "set content to primary",
+            "set content to middle school",
+            "set content to high school",
+            "set content to university",
+            "set content to adult",
+            "set content to expert",
+        ],
+    },
+    {
+        "name": "set_branch_numbering",
+        "tool_name": "node_action.set_branch_numbering",
+        "description_zh": "启用数字/中文/圆圈等编号，或隐藏编号",
+        "description_en": "Enable decimal/Chinese/circled numbering, or hide numbers",
+        "when_to_use_zh": "用户要启用某种编号风格，或隐藏编号；启用后可用 1、1.1、第2个 定位",
+        "when_to_use_en": "User wants a numbering style, or to hide numbers for targeting",
+        "examples_zh": [
+            "启用编号",
+            "启用数字编号",
+            "启用中文编号",
+            "启用圆圈编号",
+            "隐藏编号",
+        ],
+        "examples_en": [
+            "enable numbering",
+            "enable decimal numbering",
+            "enable Chinese numbering",
+            "hide numbering",
+        ],
     },
 ]
 
@@ -157,6 +204,63 @@ def build_node_action_tools() -> List[Dict[str, Any]]:
             ),
             {},
             [],
+        ),
+        _fn(
+            "node_action.set_content_level",
+            (
+                "Set the AI content audience (专业内容): general, primary, junior, "
+                "senior, university, adult, or expert. Use when the user asks to "
+                "change difficulty / school stage / professional level."
+            ),
+            {
+                "level": {
+                    "type": "string",
+                    "enum": [
+                        "general",
+                        "primary",
+                        "junior",
+                        "senior",
+                        "university",
+                        "adult",
+                        "expert",
+                    ],
+                    "description": "Audience level id",
+                },
+            },
+            ["level"],
+        ),
+        _fn(
+            "node_action.set_branch_numbering",
+            (
+                "Show or hide mind-map branch numbering, optionally choosing a "
+                "prefix style (decimal, chinese, circled). Outline nos in the "
+                "diagram JSON match painted chrome; 第2个 / 2.1 also work as "
+                "spoken ordinals."
+            ),
+            {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "true to show numbers, false to hide",
+                },
+                "prefix": {
+                    "type": "string",
+                    "enum": [
+                        "decimal",
+                        "decimalParen",
+                        "paren",
+                        "circled",
+                        "chinese",
+                        "chineseParen",
+                        "chineseChapter",
+                        "chineseArticle",
+                        "upperAlpha",
+                        "lowerAlpha",
+                        "lowerAlphaParen",
+                    ],
+                    "description": "L1 glyph style; setting a prefix also enables numbering",
+                },
+            },
+            ["enabled"],
         ),
         _fn(
             "node_action.clarify_options",
@@ -305,6 +409,29 @@ def command_from_tool_call(name: str, arguments_json: str) -> Dict[str, Any]:
 
     if name == "node_action.auto_complete":
         return {"action": "auto_complete", "confidence": 0.95}
+
+    if name == "node_action.set_content_level":
+        level = args.get("level")
+        cmd = {"action": "set_content_level", "confidence": 0.95}
+        if isinstance(level, str) and level.strip():
+            cmd["level"] = level.strip()
+        return cmd
+
+    if name == "node_action.set_branch_numbering":
+        prefix = args.get("prefix") or args.get("style")
+        enabled = args.get("enabled")
+        if isinstance(prefix, str) and prefix.strip() and enabled is not False:
+            enabled_flag = True
+        else:
+            enabled_flag = enabled is True
+        numbering: Dict[str, Any] = {
+            "action": "set_branch_numbering",
+            "enabled": enabled_flag,
+            "confidence": 0.95,
+        }
+        if enabled_flag and isinstance(prefix, str) and prefix.strip():
+            numbering["prefix"] = prefix.strip()
+        return numbering
 
     if name == "node_action.clarify_options":
         question = args.get("question")

@@ -70,7 +70,7 @@ def build_kitty_llmops_manifest() -> Dict[str, Any]:
                     "services/kitty/ws/inbound.py",
                     "services/kitty/ws/lifecycle.py",
                 ],
-                "role": "text / asr_* / tts_* / context_update / control messages (Omni retired).",
+                "role": "text / asr_* / listen / hello / abort / tts_* / context_update.",
                 "hub_calls": ["apply_diagram_spec_mutation via apply_kitty_ws_context_patch on context_update"],
             },
             {
@@ -97,7 +97,7 @@ def build_kitty_llmops_manifest() -> Dict[str, Any]:
                     "services/kitty/audio/session_bridge.py",
                     "config/dashscope_urls.py",
                 ],
-                "role": "Mic PCM → MaaS inference WS → asr_partial/asr_final; FE owns user bubble send.",
+                "role": "Mic PCM or Opus → MaaS inference WS → asr_partial/asr_final; FE owns user bubble send.",
                 "hub_calls": [],
             },
             {
@@ -118,7 +118,19 @@ def build_kitty_llmops_manifest() -> Dict[str, Any]:
                     "services/kitty/agent_loop/loop.py",
                     "services/kitty/agent_loop/tools.py",
                 ],
-                "role": "Keyboard and Fun-ASR text → OpenAI-compatible tool loop (no Qwen-Omni duplex).",
+                "role": "Keyboard and Fun-ASR text → OpenAI-compatible tool loop; cancellable turn Task.",
+                "hub_calls": [],
+            },
+            {
+                "id": "voice_session",
+                "title": "Voice phase + hello devices",
+                "paths": [
+                    "services/kitty/session/voice_phase.py",
+                    "services/kitty/session/listen_modes.py",
+                    "services/kitty/session/turn_task.py",
+                    "services/kitty/session/device_hello.py",
+                ],
+                "role": ("Half-duplex phases; manual/auto listen; hello device registry; abort cancels the turn Task."),
                 "hub_calls": [],
             },
             {

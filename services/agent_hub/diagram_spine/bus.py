@@ -101,7 +101,7 @@ class DiagramCommandBus:
             user_id=request.user_id,
             transport=self._transport,
             verify_required=request.verify_required,
-            require_hub_persist=request.verify_required,
+            require_hub_persist=False,
         )
 
         result_rev = tool_result.revision if tool_result.status == "applied" else hub_rev

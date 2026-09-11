@@ -151,7 +151,7 @@ async def test_verify_failed_is_observed_then_retried() -> None:
     """Step 1 verify_failed is a role=tool row; the model retries to applied."""
     context = _mindmap_context()
     result, vid, chat_mock, bus_mock = await _run_loop(
-        "把历史改成史记",
+        "把历史改成史记，然后再确认一下",
         context=context,
         chat_side_effect=[
             _tool_reply("diagram.update_node", '{"node_identifier":"历史","new_text":"史记"}', "call_a"),
@@ -279,9 +279,9 @@ async def test_text_without_tools_after_apply_is_ack() -> None:
     )
     try:
         assert result.outcome == RouteOutcome.EXECUTED
-        assert result.reason == "text_stop"
+        assert result.reason == "fast_structural"
         assert bus_mock.await_count == 1
-        assert chat_mock.await_count == 2
+        assert chat_mock.await_count == 0
     finally:
         voice_sessions.pop(vid, None)
 
@@ -334,8 +334,8 @@ async def test_add_node_starts_background_branch_autocomplete() -> None:
     try:
         assert result.outcome == RouteOutcome.EXECUTED
         assert result.action == "add_node"
-        assert result.reason == "await_canvas"
-        assert chat_mock.await_count == 1
+        assert result.reason == "fast_structural"
+        assert chat_mock.await_count == 0
         bus_mock.assert_awaited_once()
         branch_ac.assert_awaited_once()
         ac_kwargs = mock_await_kwargs(branch_ac)
@@ -427,7 +427,7 @@ async def test_step_cap_stops_after_five_rounds() -> None:
     ]
     applies = [_applied(revision=index + 2, op="update_center") for index in range(MAX_TOOL_ROUNDS)]
     result, vid, chat_mock, bus_mock = await _run_loop(
-        "主题改成运动",
+        "请连续调用工具把中心改到运动",
         context=context,
         chat_side_effect=replies,
         bus_side_effect=applies,
@@ -494,7 +494,7 @@ async def test_heuristics_are_last_resort_after_empty_tools() -> None:
     """Edit-mode empty tools offer a short clarify menu instead of regex-guessing."""
     context = _mindmap_context()
     result, vid, chat_mock, bus_mock = await _run_loop(
-        "添加一个饮品分析的分支",
+        "帮我改一下这张图",
         context=context,
         chat_side_effect=[_text_reply("")],
         bus_side_effect=[_applied(revision=2, node_id="uid-drink", op="add_node")],
@@ -519,7 +519,7 @@ async def test_heuristics_run_on_llm_timeout() -> None:
     """Timeout still uses the obvious add-branch phrase as last resort."""
     context = _mindmap_context()
     result, vid, chat_mock, bus_mock = await _run_loop(
-        "添加一个饮品分析的分支",
+        "添加一个饮品分析的分支并补全",
         context=context,
         chat_side_effect=LLMTimeoutError("timed out"),
         bus_side_effect=[_applied(revision=2, node_id="uid-drink", op="add_node")],
@@ -541,7 +541,7 @@ async def test_thinking_coins_do_not_run_heuristics() -> None:
     """Budget failure must not pretend the edit applied via regex."""
     context = _mindmap_context()
     result, vid, chat_mock, bus_mock = await _run_loop(
-        "添加一个饮品分析的分支",
+        "帮我把这张图改得更好看",
         context=context,
         chat_side_effect=ThinkingCoinInsufficientError(0, 15),
         bus_side_effect=[],

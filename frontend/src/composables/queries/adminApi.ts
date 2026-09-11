@@ -1099,6 +1099,52 @@ export async function fetchAdminKittyLlmopsArchitecture(): Promise<Record<string
   return adminFetchJson('/api/auth/admin/kitty-llmops/architecture')
 }
 
+export type KittyHelloDevice = {
+  device_id: string
+  firmware: string
+  listen_mode: string
+  lane: string
+  voice_session_id: string
+  user_id: number
+  last_seen: number
+}
+
+export type KittyLiveSession = {
+  voice_session_id: string
+  user_id: number | null
+  scope: string
+  lane: string
+  listen_mode: string
+  voice_phase: string
+}
+
+export type KittyUserDefaults = {
+  listen_mode: string
+  tts_enabled: boolean
+}
+
+export async function fetchAdminKittyDevices(): Promise<{ devices: KittyHelloDevice[] }> {
+  return adminFetchJson('/api/auth/admin/kitty-llmops/devices')
+}
+
+export async function fetchAdminKittySessions(): Promise<{ sessions: KittyLiveSession[] }> {
+  return adminFetchJson('/api/auth/admin/kitty-llmops/sessions')
+}
+
+export async function fetchAdminKittyDefaults(userId: number): Promise<KittyUserDefaults> {
+  return adminFetchJson(`/api/auth/admin/kitty-llmops/defaults/${userId}`)
+}
+
+export async function putAdminKittyDefaults(
+  userId: number,
+  body: Partial<KittyUserDefaults>
+): Promise<KittyUserDefaults> {
+  return adminFetchJson(`/api/auth/admin/kitty-llmops/defaults/${userId}`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  })
+}
+
 // ============================================================================
 // Teacher usage
 // ============================================================================

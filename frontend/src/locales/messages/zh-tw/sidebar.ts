@@ -1,6 +1,4 @@
-/**
- * zh-tw UI � sidebar
- */
+/** zh-tw UI — sidebar */
 
 export default {
   'sidebar.actions.delete': '刪除',
@@ -94,7 +92,7 @@ export default {
   'sidebar.diagramType.flow_map': '流程圖',
   'sidebar.diagramType.mind_map': '思維導圖',
   'sidebar.diagramType.mindmap': '思維導圖',
-  'sidebar.diagramType.multi_flow_map': '複流圖',
+  'sidebar.diagramType.multi_flow_map': '復流圖',
   'sidebar.diagramType.tree_map': '樹形圖',
   'sidebar.expandSidebar': '展開側邊欄',
   'sidebar.history.pinned': '置頂',

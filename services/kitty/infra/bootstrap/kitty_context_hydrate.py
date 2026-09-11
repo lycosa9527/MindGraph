@@ -41,6 +41,18 @@ def _node_display_text(node: Dict[str, Any]) -> str:
     return ""
 
 
+def _live_node_position(node: Dict[str, Any]) -> Optional[Dict[str, float]]:
+    """Keep canvas x/y so voice outline numbers match painted chrome."""
+    position = node.get("position")
+    if not isinstance(position, dict):
+        return None
+    x_val = position.get("x")
+    y_val = position.get("y")
+    if not isinstance(x_val, (int, float)) or not isinstance(y_val, (int, float)):
+        return None
+    return {"x": float(x_val), "y": float(y_val)}
+
+
 def _mindmap_uid_data_for_live(node: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """Keep identity + stamped location through library→live hydrate."""
     data = node.get("data")
@@ -112,6 +124,9 @@ def diagram_data_from_saved_spec(spec: Dict[str, Any], diagram_type: str) -> Dic
         uid_data = _mindmap_uid_data_for_live(n)
         if uid_data is not None:
             vue_node["data"] = uid_data
+        position = _live_node_position(n)
+        if position is not None:
+            vue_node["position"] = position
         vue_nodes.append(vue_node)
 
     diagram_data: Dict[str, Any] = {

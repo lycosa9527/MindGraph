@@ -20,7 +20,7 @@ from services.kitty.infra.bootstrap.kitty_unsupported_diagram_types import (
     resolve_unsupported_diagram_type,
 )
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
-from services.kitty.omni.tools import build_omni_diagram_tools, omni_function_call_to_command
+from services.kitty.agent_loop.ui_tools import build_ui_diagram_tools, ui_tool_call_to_command
 from services.kitty.routing.diagram_agent_context import enrich_node_action_command
 from services.kitty.routing.node_action_agent import parse_node_action_intent
 from services.kitty.routing.node_action_debug import (
@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 def _tools_for_chat() -> List[Dict[str, Any]]:
     """Tools for chat."""
-    return build_omni_diagram_tools()
+    return build_ui_diagram_tools()
 
 
 def _extract_tool_call(result: Any) -> Optional[Dict[str, Any]]:
@@ -59,7 +59,7 @@ def _extract_tool_call(result: Any) -> Optional[Dict[str, Any]]:
     args_raw = fn.get("arguments") or "{}"
     if not isinstance(name, str):
         return None
-    return omni_function_call_to_command(name, str(args_raw))
+    return ui_tool_call_to_command(name, str(args_raw))
 
 
 async def parse_voice_intent_with_tools(

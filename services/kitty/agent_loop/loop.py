@@ -7,6 +7,7 @@ Proprietary License
 
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, List, Optional
 
 from fastapi import WebSocket
@@ -84,6 +85,38 @@ from services.utils.error_types import LLM_PIPELINE_ERRORS
 
 AGENT_LOOP_MODEL = "qwen3.6-flash"
 MAX_TOOL_ROUNDS = 5
+_FAST_STRUCTURAL_ACTIONS = frozenset({"add_node", "delete_node", "update_node", "update_center"})
+_FAST_PREFERENCE_ACTIONS = frozenset({"set_content_level", "set_branch_numbering"})
+_COMPOUND_UTTERANCE_RE = re.compile(r"再|然后|并且|and then|, then|，再|，然后")
+
+
+def _is_fast_structural_command(command: Dict[str, Any], utterance: str = "") -> bool:
+    """True for a single-intent valued add/delete/rename with no fill follow-ups."""
+    action = str(command.get("action") or "")
+    if action not in _FAST_STRUCTURAL_ACTIONS:
+        return False
+    follows = command.get("follow_up_actions")
+    if isinstance(follows, list) and follows:
+        return False
+    if utterance and _COMPOUND_UTTERANCE_RE.search(utterance):
+        return False
+    target = command.get("target")
+    return isinstance(target, str) and bool(target.strip())
+
+
+def _is_fast_preference_command(command: Dict[str, Any], utterance: str = "") -> bool:
+    """True for a single-intent content-level or numbering toggle."""
+    action = str(command.get("action") or "")
+    if action not in _FAST_PREFERENCE_ACTIONS:
+        return False
+    follows = command.get("follow_up_actions")
+    if isinstance(follows, list) and follows:
+        return False
+    if utterance and _COMPOUND_UTTERANCE_RE.search(utterance):
+        return False
+    if action == "set_content_level":
+        return isinstance(command.get("level"), str) and bool(str(command.get("level")).strip())
+    return "enabled" in command
 
 
 def _finish(voice_session_id: str, outcome: RouteOutcome, *, reason: str = "", action: str = "") -> RouteResult:
@@ -134,7 +167,7 @@ async def _refresh_live_context(voice_session_id: str, session_context: Dict[str
     context = dict(live_session.get("context") or session_context)
     user_id, _org = _session_user_ids(voice_session_id)
     lib_id = context.get("diagram_library_id")
-    skip_refresh = should_skip_library_refresh(voice_session_id, force=True)
+    skip_refresh = should_skip_library_refresh(voice_session_id, force=False)
     if (
         not skip_refresh
         and user_id is not None
@@ -149,7 +182,7 @@ async def _refresh_live_context(voice_session_id: str, session_context: Dict[str
                 user_id=user_id,
                 voice_session_id=voice_session_id,
                 diagram_session_id=ws_diagram_id.strip(),
-                force=True,
+                force=False,
             )
             context = dict(live_session.get("context") or context)
     return context
@@ -280,9 +313,7 @@ async def _last_resort_heuristic(
         command_text=command_text,
         verify_required=verify_required,
     )
-    if _heuristic_dispatch_ok(dispatched):
-        return _finish(voice_session_id, RouteOutcome.EXECUTED, action=dispatched.action, reason="heuristic")
-    return None
+    return _finish_heuristic_dispatch(voice_session_id, dispatched, reason="heuristic")
 
 
 def _heuristic_dispatch_ok(dispatched: Any) -> bool:
@@ -295,6 +326,32 @@ def _heuristic_dispatch_ok(dispatched: Any) -> bool:
         "auto_complete_branch",
         "ask_followup",
     }
+
+
+def _finish_heuristic_dispatch(
+    voice_session_id: str,
+    dispatched: Any,
+    *,
+    reason: str,
+) -> Optional[RouteResult]:
+    """EXECUTED on apply, FAILED when the dispatcher said not to retry, else None."""
+    if _heuristic_dispatch_ok(dispatched):
+        return _finish(
+            voice_session_id,
+            RouteOutcome.EXECUTED,
+            action=dispatched.action,
+            reason=reason,
+        )
+    if dispatched.stop_nonretryable:
+        payload = dispatched.payload if isinstance(dispatched.payload, dict) else {}
+        err = error_code_from_payload(payload) or "failed"
+        return _finish(
+            voice_session_id,
+            RouteOutcome.FAILED,
+            reason=err,
+            action=dispatched.action,
+        )
+    return None
 
 
 async def run_typed_agent_loop(
@@ -415,13 +472,49 @@ async def run_typed_agent_loop(
                     command_text=text,
                     verify_required=verify_required,
                 )
-                if _heuristic_dispatch_ok(dispatched):
-                    return _finish(
-                        voice_session_id,
-                        RouteOutcome.EXECUTED,
-                        action=dispatched.action,
-                        reason="heuristic",
-                    )
+                finished = _finish_heuristic_dispatch(
+                    voice_session_id,
+                    dispatched,
+                    reason="heuristic",
+                )
+                if finished is not None:
+                    return finished
+            elif _is_fast_structural_command(heuristic, text):
+                dispatched = await dispatch_prepared_command(
+                    websocket,
+                    voice_session_id,
+                    command=heuristic,
+                    session_context=context,
+                    diagram_type=diagram_type,
+                    command_text=text,
+                    verify_required=verify_required,
+                    grounding_source="fast_structural",
+                )
+                finished = _finish_heuristic_dispatch(
+                    voice_session_id,
+                    dispatched,
+                    reason="fast_structural",
+                )
+                if finished is not None:
+                    return finished
+            elif _is_fast_preference_command(heuristic, text):
+                dispatched = await dispatch_prepared_command(
+                    websocket,
+                    voice_session_id,
+                    command=heuristic,
+                    session_context=context,
+                    diagram_type=diagram_type,
+                    command_text=text,
+                    verify_required=False,
+                    grounding_source="fast_preference",
+                )
+                finished = _finish_heuristic_dispatch(
+                    voice_session_id,
+                    dispatched,
+                    reason="fast_preference",
+                )
+                if finished is not None:
+                    return finished
     snapshot = render_diagram_snapshot_block(
         context,
         diagram_type=diagram_type,

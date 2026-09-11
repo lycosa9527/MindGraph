@@ -6,6 +6,7 @@ from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from fastapi import WebSocket
 
 from services.kitty.diagram.diagram_utils import (
     child_node_live_id,
@@ -13,11 +14,34 @@ from services.kitty.diagram.diagram_utils import (
     session_context_child_record,
 )
 from services.kitty.infra.bootstrap.kitty_native_spec import native_spec_to_pseudo_nodes
-from services.kitty.omni.tools import omni_function_call_to_command
-from services.kitty.routing.command_router import RouteOutcome, route_omni_function_call
+from services.kitty.agent_loop.ui_tools import (
+    omni_function_call_to_command,
+    ui_tool_call_to_command,
+)
+from services.kitty.routing.command_router import RouteOutcome, route_voice_command
 from services.kitty.session.ops import create_voice_session
 from services.kitty.session.runtime_state import voice_sessions
-from tests.typing_helpers import mock_await_args
+from tests.typing_helpers import as_type, mock_await_args
+
+
+async def _route_ui_tool(
+    websocket: object,
+    voice_session_id: str,
+    function_name: str,
+    arguments_json: str,
+    session_context: dict,
+) -> RouteOutcome:
+    """Typed-loop stand-in for the retired Omni router wrapper."""
+    result = await route_voice_command(
+        as_type(websocket, WebSocket),
+        voice_session_id,
+        "",
+        session_context,
+        is_text_message=False,
+        from_voice=True,
+        pre_parsed_command=ui_tool_call_to_command(function_name, arguments_json),
+    )
+    return result.outcome
 
 
 def test_child_node_live_id_never_invents_mindmap_branch_n() -> None:
@@ -245,14 +269,14 @@ async def test_route_omni_add_node_with_recommendations() -> None:
                 new=AsyncMock(return_value=None),
             ),
         ):
-            result = await route_omni_function_call(
+            outcome = await _route_ui_tool(
                 ws,
                 vid,
                 "add_node_with_recommendations",
                 "{}",
                 dict(voice_sessions[vid]["context"]),
             )
-        assert result.outcome == RouteOutcome.EXECUTED
+        assert outcome == RouteOutcome.EXECUTED
         payload = mock_await_args(send_mock)[2]
         assert payload["action"] == "add_node_with_recommendations"
     finally:

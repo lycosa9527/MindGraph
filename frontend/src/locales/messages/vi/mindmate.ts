@@ -81,6 +81,8 @@ export default {
   'mindmate.historyTitle': 'Lịch sử hội thoại',
   'mindmate.imagePreview': 'Xem trước hình ảnh',
   'mindmate.input.attachFile': 'Đính kèm tập tin',
+  'mindmate.input.unsupportedFile': 'Only images, Word, PDF, and PowerPoint are allowed',
+  'mindmate.input.fileTooLarge': 'File is too large (max {limit}MB)',
   'mindmate.input.placeholder': 'Nhập câu hỏi của bạn...',
   'mindmate.newChat': 'Trò chuyện mới',
   'mindmate.otherModules': 'Các mô-đun khác',

@@ -14,6 +14,8 @@ from typing import Optional, Dict, Any, List
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from services.dify.file_upload_types import DIFY_CHAT_FILE_TYPES
+
 
 class AIAssistantFile(BaseModel):
     """File object for AI assistant requests (Dify API compatible)"""
@@ -22,6 +24,25 @@ class AIAssistantFile(BaseModel):
     transfer_method: str = Field(..., description="Transfer method: remote_url or local_file")
     url: Optional[str] = Field(None, description="File URL (for remote_url transfer method)")
     upload_file_id: Optional[str] = Field(None, description="Uploaded file ID (for local_file transfer method)")
+
+    @field_validator("type")
+    @classmethod
+    def validate_file_type(cls, value: str) -> str:
+        """Normalize to a Dify chat-messages file type."""
+        normalized = value.strip().lower()
+        if normalized not in DIFY_CHAT_FILE_TYPES:
+            allowed = ", ".join(sorted(DIFY_CHAT_FILE_TYPES))
+            raise ValueError(f"type must be one of: {allowed}")
+        return normalized
+
+    @field_validator("transfer_method")
+    @classmethod
+    def validate_transfer_method(cls, value: str) -> str:
+        """Normalize to a Dify transfer method."""
+        normalized = value.strip().lower()
+        if normalized not in {"remote_url", "local_file"}:
+            raise ValueError("transfer_method must be remote_url or local_file")
+        return normalized
 
     model_config = ConfigDict(
         json_schema_extra={

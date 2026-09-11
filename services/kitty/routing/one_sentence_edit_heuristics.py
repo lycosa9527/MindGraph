@@ -10,6 +10,8 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, Optional
 
+from services.kitty.routing.preference_action_heuristics import heuristic_preference_command
+
 _ADD_BRANCH_ZH = re.compile(
     r"^(?:请)?(?:帮我)?(?:再)?"
     r"(?:添加|增加|加|新建|加入)"
@@ -243,8 +245,37 @@ _DELETE_NODE_ZH = re.compile(
     r"(?:删除|去掉|移除)"
     r"(?:一下)?"
     r"(?P<label>.+?)"
+    r"(?:这个|这条)?"
     r"(?:的)?"
     r"(?:分支|节点)$"
+)
+
+_DELETE_NUMBER_ZH = re.compile(
+    r"^(?:请)?(?:帮我)?"
+    r"(?:删除|去掉|移除)"
+    r"(?:一下)?"
+    r"(?P<label>第?\d+(?:\.\d+)*号?|第[一二三四五六七八九十]+个?|[①-⑳])$"
+)
+
+_UPDATE_NODE_ZH = re.compile(
+    r"^(?:请)?(?:帮我)?(?:把|将)"
+    r"(?P<old>.+?)"
+    r"(?:这个|这条)?"
+    r"(?:的)?"
+    r"(?:分支|节点)?"
+    r"(?:改成|换成|改为|变成|改成是|设为|设置为)"
+    r"(?P<new>.+)$"
+)
+
+_UPDATE_NODE_EN = re.compile(
+    r"^(?:please\s+)?"
+    r"(?:rename|change)\s+"
+    r"(?:the\s+|a\s+|an\s+)?"
+    r"(?:branch|node\s+)?"
+    r"[\"']?(?P<old>.+?)[\"']?\s+"
+    r"(?:to|as)\s+"
+    r"[\"']?(?P<new>.+?)[\"']?$",
+    re.IGNORECASE,
 )
 
 _DELETE_NODE_EN = re.compile(
@@ -348,6 +379,10 @@ def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str,
     if not text:
         return None
 
+    preference = heuristic_preference_command(text)
+    if preference is not None:
+        return preference
+
     if _WHOLE_AUTO_COMPLETE_ZH.match(text) or _WHOLE_AUTO_COMPLETE_EN.match(text):
         return {"action": "auto_complete", "confidence": 0.95}
 
@@ -442,7 +477,23 @@ def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str,
                 "confidence": 0.92,
             }
 
-    for pattern in (_DELETE_NODE_ZH, _DELETE_NODE_EN):
+    for pattern in (_UPDATE_NODE_ZH, _UPDATE_NODE_EN):
+        rename = pattern.match(text)
+        if rename is None:
+            continue
+        old_label = _clean_label(rename.group("old"))
+        new_label = _clean_label(rename.group("new"))
+        if old_label in {"主题", "中心", "标题", "topic", "center", "title"}:
+            continue
+        if old_label and new_label and old_label != new_label:
+            return {
+                "action": "update_node",
+                "target": old_label,
+                "new_text": new_label,
+                "confidence": 0.92,
+            }
+
+    for pattern in (_DELETE_NUMBER_ZH, _DELETE_NODE_ZH, _DELETE_NODE_EN):
         delete = pattern.match(text)
         if delete is None:
             continue

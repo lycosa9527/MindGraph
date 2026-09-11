@@ -30,7 +30,7 @@ async def apply_paragraph_batch_add_nodes(
     log_label: str,
 ) -> bool:
     """
-    Send batch ``add_nodes`` to the client, persist session context, sync hub, refresh Omni.
+    Send batch ``add_nodes`` to the client, persist session context, and sync hub.
 
     Returns True when nodes were applied.
     """

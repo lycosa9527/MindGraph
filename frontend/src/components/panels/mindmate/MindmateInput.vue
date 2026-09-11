@@ -7,7 +7,7 @@ import { Close, VideoPause } from '@element-plus/icons-vue'
 
 import { Paperclip, Send } from '@lucide/vue'
 
-import { useLanguage } from '@/composables'
+import { useLanguage, useNotifications } from '@/composables'
 import type { MindMateFile } from '@/composables/mindmate/useMindMate'
 import { useAuthStore } from '@/stores/auth'
 import {
@@ -57,6 +57,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
+const notify = useNotifications()
 const authStore = useAuthStore()
 const isFullpageMode = computed(() => props.mode === 'fullpage')
 const fileInputRef = ref<HTMLInputElement | null>(null)
@@ -99,7 +100,7 @@ function triggerFileUpload() {
   fileInputRef.value?.click()
 }
 
-// Handle file selection — images and Word .doc / .docx
+// Handle file selection — images, Word, PDF, and PowerPoint
 function handleFileSelect(event: Event) {
   // Check authentication before allowing file upload
   if (!authStore.isAuthenticated) {
@@ -113,10 +114,14 @@ function handleFileSelect(event: Event) {
   const files = input.files
   if (!files || files.length === 0) return
 
-  const allowedFiles = Array.from(files).filter((file) => isMindmateComposerUploadableFile(file))
+  const selected = Array.from(files)
+  const allowedFiles = selected.filter((file) => isMindmateComposerUploadableFile(file))
+
+  if (allowedFiles.length < selected.length) {
+    notify.error(String(t('mindmate.input.unsupportedFile')))
+  }
 
   if (allowedFiles.length === 0) {
-    console.warn('Only images and Word documents (.doc, .docx) are allowed')
     input.value = ''
     return
   }

@@ -5,20 +5,44 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from fastapi import WebSocket
 
 from services.kitty.diagram.diagram_spec_sync import sync_diagram_data_to_spec_shape
 from services.kitty.diagram.diagram_utils import is_paragraph_text
-from services.kitty.omni.tools import omni_function_call_to_command
+from services.kitty.agent_loop.ui_tools import (
+    omni_function_call_to_command,
+    ui_tool_call_to_command,
+)
 from services.agent_hub.diagram_spine.types import DiagramCommandResult
 from services.diagram_edit.types import ToolResult
 from services.kitty.routing.command_router import (
     RouteOutcome,
-    route_omni_function_call,
+    RouteResult,
     route_voice_command,
 )
 from services.kitty.session.ops import create_voice_session
 from services.kitty.session.runtime_state import voice_sessions
-from tests.typing_helpers import mock_await_args, mock_await_kwargs
+from tests.typing_helpers import as_type, mock_await_args, mock_await_kwargs
+
+
+async def _route_ui_tool(
+    websocket: object,
+    voice_session_id: str,
+    function_name: str,
+    arguments_json: str,
+    session_context: dict,
+) -> RouteResult:
+    """Typed-loop stand-in for the retired Omni router wrapper."""
+    command = ui_tool_call_to_command(function_name, arguments_json)
+    return await route_voice_command(
+        as_type(websocket, WebSocket),
+        voice_session_id,
+        "",
+        session_context,
+        is_text_message=False,
+        from_voice=True,
+        pre_parsed_command=command,
+    )
 
 
 def test_sync_circle_map_children_to_context() -> None:
@@ -77,7 +101,7 @@ def test_is_paragraph_text_short_commands(text: str, is_paragraph: bool) -> None
 
 
 @pytest.mark.asyncio
-async def test_route_omni_function_call_open_panel() -> None:
+async def test__route_ui_tool_open_panel() -> None:
     """Test route omni function call open panel."""
     ws = MagicMock()
     vid = create_voice_session(user_id="1", diagram_session_id="scope_test", diagram_type="circle_map")
@@ -94,7 +118,7 @@ async def test_route_omni_function_call_open_panel() -> None:
                 new=AsyncMock(return_value=None),
             ),
         ):
-            result = await route_omni_function_call(
+            result = await _route_ui_tool(
                 ws,
                 vid,
                 "open_panel",
@@ -132,7 +156,7 @@ def test_omni_open_desktop_canvas_double_bubble() -> None:
 
 
 @pytest.mark.asyncio
-async def test_route_omni_function_call_open_desktop_canvas() -> None:
+async def test__route_ui_tool_open_desktop_canvas() -> None:
     """Voice open_desktop_canvas creates a library draft then open_library_diagram."""
     ws = MagicMock()
     vid = create_voice_session(user_id="42", diagram_session_id="scope_test", diagram_type="circle_map")
@@ -193,7 +217,7 @@ async def test_route_omni_function_call_open_desktop_canvas() -> None:
                 new=AsyncMock(return_value=None),
             ),
         ):
-            result = await route_omni_function_call(
+            result = await _route_ui_tool(
                 ws,
                 vid,
                 "open_desktop_canvas",
@@ -226,7 +250,7 @@ async def test_route_omni_function_call_open_desktop_canvas() -> None:
 
 
 @pytest.mark.asyncio
-async def test_route_omni_function_call_inline_recommendations_selected() -> None:
+async def test__route_ui_tool_inline_recommendations_selected() -> None:
     """Test route omni function call inline recommendations selected."""
     ws = MagicMock()
     vid = create_voice_session(user_id="7", diagram_session_id="scope_test", diagram_type="mindmap")
@@ -268,7 +292,7 @@ async def test_route_omni_function_call_inline_recommendations_selected() -> Non
                 new=AsyncMock(return_value=None),
             ),
         ):
-            result = await route_omni_function_call(
+            result = await _route_ui_tool(
                 ws,
                 vid,
                 "start_inline_recommendations",
@@ -448,7 +472,7 @@ async def test_route_open_desktop_canvas_fishbone_emits_unsupported_ack() -> Non
                 new=AsyncMock(return_value=None),
             ),
         ):
-            result = await route_omni_function_call(
+            result = await _route_ui_tool(
                 ws,
                 vid,
                 "open_desktop_canvas",

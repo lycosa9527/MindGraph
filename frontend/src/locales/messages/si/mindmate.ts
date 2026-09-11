@@ -81,6 +81,8 @@ export default {
   'mindmate.historyTitle': 'සංවාද ඉතිහාසය',
   'mindmate.imagePreview': 'රූප පෙරදසුන',
   'mindmate.input.attachFile': 'ගොනුව අමුණන්න',
+  'mindmate.input.unsupportedFile': 'Only images, Word, PDF, and PowerPoint are allowed',
+  'mindmate.input.fileTooLarge': 'File is too large (max {limit}MB)',
   'mindmate.input.placeholder': 'ඔබේ ප්‍රශ්නය ටයිප් කරන්න...',
   'mindmate.newChat': 'නව කතාබස්',
   'mindmate.otherModules': 'වෙනත් මොඩියුල',

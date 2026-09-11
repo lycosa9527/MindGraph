@@ -1,7 +1,6 @@
 /**
- * zh-tw UI � maite
+ * zh UI — Mate Learning (迈特学习法)
  */
-
 export default {
   'maite.title': '邁特學習法',
   'maite.subtitle': '逆向分解 · 四階診斷 · 靶向補救 · 變式遷移',
