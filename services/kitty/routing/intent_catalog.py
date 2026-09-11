@@ -158,10 +158,10 @@ KITTY_INTENT_ROWS: List[IntentRow] = [
         "channel": "bus",
         "hub_op": "patch_context",
         "notes": (
-            "One-sentence follow_up_actions chain: order "
-            "update_center→delete_node→update_node→add_node; coalesced "
-            "diagram.multi_step acks; deferred silent auto_complete_branch for "
-            "created branches; skip whole-map auto_complete after those fills."
+            "Typed-loop compound: split on 再/然后/并且, one "
+            "diagram.multi_step.done line, then ordered structural applies. "
+            "Vague count hangs placeholders and asks for names. Auto-complete "
+            "stacks stay on the Qwen loop."
         ),
     },
     {

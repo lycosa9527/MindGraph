@@ -5,7 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.68] - 2026-09-11
+
+> **Kitty speaks the office line first, then applies; stacked teacher sentences stay one turn.**
+
+### Added
+
+- **Speak then apply** — Typed `/ws/kitty` commits speak the colleague line, then the map moves (speech and canvas overlap). Failed apply cuts TTS and speaks one fail line; it does not fall through to an LLM retry.
+- **Compound one-shot** — Split on 再 / 然后 / 并且, one `diagram.multi_step.done` line, then ordered structural applies. Named stacks skip Qwen. Vague “再加两个分支” hangs placeholders and asks for names on the existing intent slot.
+
+### Changed
+
+- **One door** — Watch, `/m/kitty`, and desktop one-sentence all run `run_typed_agent_loop`. Long paste is a tool inside that loop. The old `command_router` / `structural_chain` editor is gone.
+- **Office copy** — Live spoken done lines stay colleague-tense (no 正在 / 已将 / 请回复序号). `删掉` is a delete synonym next to `删除`.
+- **Dead chain leftovers** — Unused `node_action_order`, follow-up peelers, and unused `diagram.multi_step.progress` / `.done_with_complete` templates removed.
+
+### Tests
+
+- [`tests/test_kitty_speak_then_apply.py`](tests/test_kitty_speak_then_apply.py), [`tests/test_kitty_compound.py`](tests/test_kitty_compound.py), [`tests/test_kitty_paragraph_loop.py`](tests/test_kitty_paragraph_loop.py); live PG audit [`scripts/audit_kitty_compound_live.py`](scripts/audit_kitty_compound_live.py) (10 maps × 5 stacks, 50/50, p50 2.4 ms, no LLM).
+
 ## [5.180.67] - 2026-09-11
+
 
 > **1.85C Kitty watch, spec authoring, auto-listen, and canvas chrome that matches the ribbon.**
 

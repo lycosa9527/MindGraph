@@ -17,7 +17,7 @@ from services.kitty.routing.command_grounding import (
     label_mentioned,
 )
 from services.kitty.adapters.diagram_command import apply_kitty_legacy_diagram_command
-from services.kitty.routing.command_router import RouteOutcome
+from services.kitty.routing.outcomes import RouteOutcome
 from services.kitty.routing.diagram_agent_context import (
     enrich_node_action_command,
     resolve_diagram_node_ref,

@@ -15,7 +15,7 @@ from services.diagram_edit.types import ToolResult
 from services.kitty.agent_loop.loop import run_typed_agent_loop
 from services.kitty.agent_loop.tools import leftover_live_key
 from services.kitty.infra.bootstrap.kitty_context_hydrate import diagram_data_from_saved_spec
-from services.kitty.routing.command_router import RouteOutcome
+from services.kitty.routing.outcomes import RouteOutcome
 from services.kitty.routing.diagram_agent_context import (
     build_diagram_agent_payload,
     resolve_diagram_node_ref,

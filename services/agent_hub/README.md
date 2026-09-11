@@ -50,8 +50,7 @@ Typical successful `/ws/kitty/{diagram_session_id}` session matches this order i
 
 Inbound JSON dispatch for audio/text/control is centralized in
 [`services/kitty/ws/inbound.py`](../kitty/ws/inbound.py).
-Diagram intents route through [`services/kitty/routing/command_router.py`](../kitty/routing/command_router.py)
-and Omni native tool calling.
+Diagram intents route through [`services/kitty/agent_loop/loop.py`](../kitty/agent_loop/loop.py).
 
 | Path | Role |
 |------|------|

@@ -104,6 +104,18 @@ def test_sanitize_pending_intent_slot_keeps_add() -> None:
     assert sanitize_pending_intent_slot({"action": "open_thinkguide"}) is None
 
 
+def test_sanitize_pending_intent_slot_keeps_node_ids() -> None:
+    """Placeholder rename slots persist the created canvas ids."""
+    slot = sanitize_pending_intent_slot(
+        {"action": "update_node", "node_ids": ["uid-a", "uid-b", ""], "followup": "叫什么？"}
+    )
+    assert slot == {
+        "action": "update_node",
+        "followup": "叫什么？",
+        "node_ids": ["uid-a", "uid-b"],
+    }
+
+
 @pytest.mark.asyncio
 async def test_persist_load_delete_pending_clarify_roundtrip() -> None:
     """Armed options survive a process-local Redis mock round-trip."""

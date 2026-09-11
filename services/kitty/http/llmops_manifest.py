@@ -29,10 +29,10 @@ def build_kitty_llmops_manifest() -> Dict[str, Any]:
         "  Inbound --> FunASR[FunAsrRealtime]\n"
         "  Inbound --> TextCmd[text_inbound]\n"
         "  Inbound --> HubPatch[apply_kitty_ws_context_patch]\n"
-        "  TextCmd --> Commands[route_voice_command]\n"
+        "  TextCmd --> Loop[run_typed_agent_loop]\n"
         "  FunASR --> TextCmd\n"
-        "  Commands --> HubBridge[diagram_hub_bridge]\n"
-        "  Commands --> Cosy[CosyVoiceRealtime]\n"
+        "  Loop --> HubBridge[diagram_hub_bridge]\n"
+        "  Loop --> Cosy[CosyVoiceRealtime]\n"
         "  HubPatch --> AgentHub[MindGraphAgentHub]\n"
         "  HubBridge --> AgentHub\n"
         "  AgentHub --> Redis[(Redis_live_spec)]\n"
@@ -138,7 +138,7 @@ def build_kitty_llmops_manifest() -> Dict[str, Any]:
                 "title": "KittyAgent / commands",
                 "paths": [
                     "services/kitty/session/agent_state.py",
-                    "services/kitty/routing/command_router.py",
+                    "services/kitty/agent_loop/loop.py",
                     "services/kitty/adapters/diagram_command.py",
                     "services/agent_hub/diagram_spine/bus.py",
                     "services/diagram_edit/executor.py",

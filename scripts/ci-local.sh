@@ -223,6 +223,9 @@ run_backend() {
     tests/test_diagram_agent_context.py \
     tests/test_kitty_ack_library.py \
     tests/test_kitty_agent_loop.py \
+    tests/test_kitty_speak_then_apply.py \
+    tests/test_kitty_compound.py \
+    tests/test_kitty_paragraph_loop.py \
     tests/test_kitty_agent_loop_messages.py \
     tests/test_kitty_agent_loop_five_maps.py \
     tests/test_kitty_agent_loop_sams_club.py \

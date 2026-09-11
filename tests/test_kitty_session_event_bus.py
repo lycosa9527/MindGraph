@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from services.kitty.agent_loop.results import PENDING_AUTOCOMPLETE_KEY, arm_pending_autocomplete
-from services.kitty.routing.command_router import RouteOutcome
+from services.kitty.routing.outcomes import RouteOutcome
 from services.kitty.session.event_handlers import (
     KittySessionRuntime,
     setup_session_event_handlers,
@@ -84,9 +84,9 @@ async def test_transcription_event_memory_only_no_router() -> None:
     try:
         bus = get_session_event_bus(voice_session_id)
         with patch(
-            "services.kitty.session.event_handlers.route_voice_command",
+            "services.kitty.session.event_handlers.run_typed_agent_loop",
             new=AsyncMock(),
-        ) as route_mock:
+        ) as loop_mock:
             await bus.emit(
                 KittyEvent(
                     kind="transcription",
@@ -96,7 +96,7 @@ async def test_transcription_event_memory_only_no_router() -> None:
             )
             await _drain_bus()
 
-        route_mock.assert_not_awaited()
+        loop_mock.assert_not_awaited()
         mem = get_session_memory(voice_session_id)
         assert any(t.content == "add node apple" and t.source == "transcription" for t in mem.turns)
         history = voice_sessions[voice_session_id].get("conversation_history")
@@ -112,16 +112,10 @@ async def test_text_inbound_routes_typed_agent_loop() -> None:
     _, voice_session_id = await _make_event_runtime()
     try:
         bus = get_session_event_bus(voice_session_id)
-        with (
-            patch(
-                "services.kitty.session.event_handlers.run_typed_agent_loop",
-                new=AsyncMock(return_value=MagicMock(outcome=RouteOutcome.EXECUTED)),
-            ) as loop_mock,
-            patch(
-                "services.kitty.session.event_handlers.route_voice_command",
-                new=AsyncMock(),
-            ) as route_mock,
-        ):
+        with patch(
+            "services.kitty.session.event_handlers.run_typed_agent_loop",
+            new=AsyncMock(return_value=MagicMock(outcome=RouteOutcome.EXECUTED)),
+        ) as loop_mock:
             await bus.emit(
                 KittyEvent(
                     kind="text_inbound",
@@ -132,7 +126,6 @@ async def test_text_inbound_routes_typed_agent_loop() -> None:
             await _drain_bus()
 
         loop_mock.assert_awaited_once()
-        route_mock.assert_not_awaited()
         assert mock_await_args(loop_mock)[2] == "open mindmate"
     finally:
         await _cleanup_event_runtime(voice_session_id)
@@ -144,16 +137,10 @@ async def test_text_inbound_asr_uses_same_agent_loop() -> None:
     _, voice_session_id = await _make_event_runtime()
     try:
         bus = get_session_event_bus(voice_session_id)
-        with (
-            patch(
-                "services.kitty.session.event_handlers.run_typed_agent_loop",
-                new=AsyncMock(return_value=MagicMock(outcome=RouteOutcome.EXECUTED)),
-            ) as loop_mock,
-            patch(
-                "services.kitty.session.event_handlers.route_voice_command",
-                new=AsyncMock(),
-            ) as route_mock,
-        ):
+        with patch(
+            "services.kitty.session.event_handlers.run_typed_agent_loop",
+            new=AsyncMock(return_value=MagicMock(outcome=RouteOutcome.EXECUTED)),
+        ) as loop_mock:
             await bus.emit(
                 KittyEvent(
                     kind="text_inbound",
@@ -164,7 +151,6 @@ async def test_text_inbound_asr_uses_same_agent_loop() -> None:
             await _drain_bus()
 
         loop_mock.assert_awaited_once()
-        route_mock.assert_not_awaited()
     finally:
         await _cleanup_event_runtime(voice_session_id)
 
@@ -197,6 +183,35 @@ async def test_text_inbound_conversational_fallback_uses_text_reply() -> None:
 
         reply_mock.assert_awaited_once()
         assert mock_await_args(reply_mock)[2] == "hello there"
+    finally:
+        await _cleanup_event_runtime(voice_session_id)
+
+
+@pytest.mark.asyncio
+async def test_text_inbound_paragraph_uses_agent_loop() -> None:
+    """Long paste uses the same door as a short edit."""
+    _, voice_session_id = await _make_event_runtime()
+    paragraph = (
+        "光合作用是绿色植物利用光能把二氧化碳和水合成有机物并释放氧气的过程。"
+        "它发生在叶绿体中。第一是光反应。第二是暗反应。"
+    )
+    try:
+        bus = get_session_event_bus(voice_session_id)
+        with patch(
+            "services.kitty.session.event_handlers.run_typed_agent_loop",
+            new=AsyncMock(return_value=MagicMock(outcome=RouteOutcome.EXECUTED)),
+        ) as loop_mock:
+            await bus.emit(
+                KittyEvent(
+                    kind="text_inbound",
+                    voice_session_id=voice_session_id,
+                    payload={"text": paragraph},
+                )
+            )
+            await _drain_bus()
+
+        loop_mock.assert_awaited_once()
+        assert mock_await_args(loop_mock)[2] == paragraph
     finally:
         await _cleanup_event_runtime(voice_session_id)
 

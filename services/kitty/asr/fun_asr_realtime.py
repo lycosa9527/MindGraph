@@ -58,7 +58,7 @@ def build_fun_asr_run_task(
     semantic_punctuation_enabled: bool = False,
     audio_format: str = ASR_FORMAT_PCM,
 ) -> dict[str, Any]:
-    """Client ``run-task`` for Fun-ASR realtime (16 kHz PCM or raw Opus)."""
+    """Client ``run-task`` for Fun-ASR realtime (16 kHz PCM16LE, or Ogg Opus)."""
     parameters: dict[str, Any] = {
         "format": normalize_asr_audio_format(audio_format),
         "sample_rate": 16000,

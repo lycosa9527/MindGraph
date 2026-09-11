@@ -1,4 +1,4 @@
-"""Kitty mic wire formats. Fun-ASR accepts PCM or raw Opus packets.
+"""Kitty mic wire formats. Fun-ASR accepts PCM16LE; Opus only if Ogg-wrapped.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -26,3 +26,9 @@ def parse_asr_audio_format(message: dict) -> str:
     if "format" in message:
         return normalize_asr_audio_format(message.get("format"))
     return normalize_asr_audio_format(message.get("audio_format"))
+
+
+def is_silent_asr_provider_error(err: str) -> bool:
+    """DashScope uses this for a hold that never contained speech."""
+    text = err.strip().lower()
+    return "no valid audio" in text

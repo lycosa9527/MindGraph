@@ -12,7 +12,9 @@ from services.kitty.ack.ack_library import (
     render_ack,
     render_ack_for_command,
     render_ack_for_diagram_update,
+    render_clarify_options_ack,
     render_low_confidence_ack,
+    render_not_understood_ack,
 )
 from services.kitty.ack.ack_phrase_pool import ack_pool_lines
 from services.kitty.ack.ack_slots import slots_from_command
@@ -43,15 +45,16 @@ def test_render_update_node_progress_rotates_variants() -> None:
 
 
 def test_render_update_node_done_zh() -> None:
-    """Rename done ack uses past tense."""
+    """Rename done ack is a short office line."""
     text = render_ack(
         "diagram.update_node.done",
         {"old_text": "食", "new_text": "小吃"},
         lang="zh",
         variant_index=0,
     )
-    assert text.startswith("已将「食」改为「小吃」。")
-    assert "还需要改别的吗" in text
+    assert text == "好，「食」改成「小吃」。"
+    assert "还需要改" not in text
+    assert "已将" not in text
 
 
 def test_render_ack_for_command_update_node_progress() -> None:
@@ -83,7 +86,7 @@ def test_render_ack_for_command_update_center_done() -> None:
         phase="done",
         variant_index=0,
     )
-    assert text == "主题已更新为「猫屎咖啡」。"
+    assert text == "好，主题换成「猫屎咖啡」。"
 
 
 def test_render_low_confidence_echo_back() -> None:
@@ -142,8 +145,7 @@ def test_render_ack_for_diagram_update_with_command() -> None:
         session_context={},
         variant_index=0,
     )
-    assert text.startswith("已将「食」改为「小吃」。")
-    assert "还需要改别的吗" in text
+    assert text == "好，「食」改成「小吃」。"
 
 
 def test_render_add_branch_progress_zh() -> None:
@@ -198,7 +200,7 @@ def test_render_add_branch_done_zh() -> None:
         session_context=session,
         variant_index=0,
     )
-    assert text == "「历史」分支已添加，正在自动补全…"
+    assert text == "好，补上「历史」。"
 
 
 def test_render_add_child_with_branch_label() -> None:
@@ -225,7 +227,7 @@ def test_render_add_child_with_branch_label() -> None:
         variant_index=0,
     )
     assert progress == "好的，正在向「历史」分支添加「唐朝」…"
-    assert done == "「唐朝」已添加到「历史」分支。"
+    assert done == "好，在「历史」下加上「唐朝」。"
 
 
 def test_render_delete_node_progress_and_done() -> None:
@@ -247,8 +249,7 @@ def test_render_delete_node_progress_and_done() -> None:
         variant_index=0,
     )
     assert progress == "好的，正在删除「饮食」…"
-    assert done.startswith("「饮食」已删除。")
-    assert "还需要改别的吗" in done
+    assert done == "好，删掉「饮食」。"
 
 
 def test_render_delete_branch_progress_and_done() -> None:
@@ -274,8 +275,7 @@ def test_render_delete_branch_progress_and_done() -> None:
         variant_index=0,
     )
     assert progress == "好的，正在删除「历史」分支…"
-    assert done.startswith("「历史」分支已删除。")
-    assert "还需要改别的吗" in done
+    assert done == "好，删掉「历史」分支。"
 
 
 def test_render_delete_branch_uses_label_not_uuid() -> None:
@@ -358,7 +358,7 @@ def test_render_delete_child_with_branch_label() -> None:
         variant_index=0,
     )
     assert progress == "好的，正在删除「历史」分支下的子项…"
-    assert done == "「历史」分支下的子项已删除。"
+    assert done == "好，删掉「历史」下的子项。"
 
 
 @pytest.mark.asyncio
@@ -431,7 +431,7 @@ async def test_emit_user_ack_includes_clarify_options() -> None:
         await emit_user_ack(
             ws,
             "voice-clarify",
-            "你是想：\n1) A\n2) B\n请回复序号或选项内容。",
+            "你是想：\n1) A\n2) B",
             one_sentence_action="clarify_options",
             clarify_question="你是想：",
             clarify_options=["第一个 地理位置", "第二个 地理位置"],
@@ -447,3 +447,49 @@ async def test_emit_user_ack_includes_clarify_options() -> None:
         "第二个 地理位置",
     ]
     assert persist_kwargs["command_detail"]["clarify_question"] == "你是想："
+
+
+_OFFICE_DONE_KEYS = (
+    "diagram.update_node.done",
+    "diagram.update_node.done_no_old",
+    "diagram.update_center.done",
+    "diagram.add_node.done",
+    "diagram.add_branch.done",
+    "diagram.add_child.done",
+    "diagram.add_child.branch.done",
+    "diagram.delete_node.done",
+    "diagram.delete_branch.done",
+    "diagram.delete_child.done",
+    "diagram.delete_child.target.done",
+    "diagram.delete_child.branch.done",
+    "diagram.multi_step.done",
+)
+
+
+def test_live_spoken_keys_are_office_register() -> None:
+    """Live spoken lines stay colleague-tense, not status-bar copy."""
+    slots = {
+        "old_text": "食",
+        "new_text": "小吃",
+        "target": "历史",
+        "branch_label": "历史",
+    }
+    banned = ("正在", "已将", "还需要改", "请回复序号")
+    for key in _OFFICE_DONE_KEYS:
+        text = render_ack(key, slots, lang="zh", variant_index=0)
+        for token in banned:
+            assert token not in text, f"{key}: {text}"
+        for line in ack_pool_lines(key, "zh"):
+            filled = line.format_map({**slots, "left": "A", "right": "B"})
+            for token in banned:
+                assert token not in filled, f"{key} pool: {filled}"
+    clarify = render_clarify_options_ack(
+        {"question": "改主题，还是加分支？", "options": ["改主题", "加分支"]},
+        lang="zh",
+    )
+    assert "请回复序号" not in clarify
+    assert "改主题" in clarify
+    understood = render_not_understood_ack(lang="zh")
+    assert "您" not in understood
+    for token in banned:
+        assert token not in understood

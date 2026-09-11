@@ -15,7 +15,7 @@ from services.infrastructure.http.error_handler import LLMTimeoutError, Thinking
 from services.kitty.agent_loop.loop import MAX_TOOL_ROUNDS, run_typed_agent_loop
 from services.kitty.agent_loop.messages import build_system_prompt
 from services.kitty.agent_loop.tools import leftover_live_key, loop_tool_schemas
-from services.kitty.routing.command_router import RouteOutcome
+from services.kitty.routing.outcomes import RouteOutcome
 from services.kitty.routing.one_sentence_edit_helpers import should_use_verified_diagram_edit
 from services.kitty.session.ops import create_voice_session
 from services.kitty.session.runtime_state import voice_sessions
@@ -121,6 +121,8 @@ async def _run_loop(
             patch("services.kitty.agent_loop.tools.apply_kitty_legacy_diagram_command", bus_mock),
             patch("services.kitty.agent_loop.loop.emit_user_ack", new=AsyncMock(return_value=True)),
             patch("services.kitty.agent_loop.tools.emit_user_ack", new=AsyncMock(return_value=True)),
+            patch("services.kitty.agent_loop.compound.emit_user_ack", new=AsyncMock(return_value=True)),
+            patch("services.kitty.agent_loop.tools.interrupt_kitty_tts", new=AsyncMock()),
             patch("services.kitty.agent_loop.tools.emit_auto_complete_branch", new=AsyncMock(return_value=True)),
             patch("services.kitty.agent_loop.tools.maybe_start_background_branch_autocomplete", ac_mock),
             patch("services.kitty.agent_loop.tools.send_kitty_ws_action", new=AsyncMock(return_value=True)),
@@ -147,8 +149,8 @@ async def _run_loop(
 
 
 @pytest.mark.asyncio
-async def test_verify_failed_is_observed_then_retried() -> None:
-    """Step 1 verify_failed is a role=tool row; the model retries to applied."""
+async def test_verify_failed_stops_without_llm_retry() -> None:
+    """Spoken apply fail stops the loop; the model does not get a second turn."""
     context = _mindmap_context()
     result, vid, chat_mock, bus_mock = await _run_loop(
         "把历史改成史记，然后再确认一下",
@@ -164,14 +166,10 @@ async def test_verify_failed_is_observed_then_retried() -> None:
         ],
     )
     try:
-        assert result.outcome == RouteOutcome.EXECUTED
-        assert bus_mock.await_count == 2
-        assert chat_mock.await_count == 3
-        second = _messages_at(chat_mock, 1)
-        tool_rows = [row for row in second if row.get("role") == "tool"]
-        assert tool_rows
-        assert tool_rows[0]["tool_call_id"] == "call_a"
-        assert "verify_failed" in tool_rows[0]["content"]
+        assert result.outcome == RouteOutcome.FAILED
+        assert result.reason == "verify_failed"
+        assert bus_mock.await_count == 1
+        assert chat_mock.await_count == 1
     finally:
         voice_sessions.pop(vid, None)
 
@@ -209,16 +207,12 @@ async def test_clarify_options_stops_without_mutate() -> None:
 
 @pytest.mark.asyncio
 async def test_multi_step_includes_first_tool_result_and_revision() -> None:
-    """改主题再加分支: second LLM call sees first apply + new revision."""
+    """改主题再加分支 is one compound apply, not a Qwen walk."""
     context = _mindmap_context()
     result, vid, chat_mock, bus_mock = await _run_loop(
         "主题改成运动，再添加一个跑步的分支",
         context=context,
-        chat_side_effect=[
-            _tool_reply("diagram.update_center", '{"new_text":"运动"}', "call_center"),
-            _tool_reply("diagram.add_node", '{"text":"跑步"}', "call_add"),
-            _text_reply("完成"),
-        ],
+        chat_side_effect=[],
         bus_side_effect=[
             _applied(revision=2, op="update_center"),
             _applied(revision=3, node_id="uid-run", op="add_node"),
@@ -226,12 +220,12 @@ async def test_multi_step_includes_first_tool_result_and_revision() -> None:
     )
     try:
         assert result.outcome == RouteOutcome.EXECUTED
+        assert result.reason == "fast_compound"
+        assert chat_mock.await_count == 0
         assert bus_mock.await_count == 2
-        second = _messages_at(chat_mock, 1)
-        tool_rows = [row for row in second if row.get("role") == "tool"]
-        assert tool_rows
-        assert '"revision": 2' in tool_rows[0]["content"]
-        assert '"status": "applied"' in tool_rows[0]["content"]
+        center_cmd = bus_mock.await_args_list[0].args[2]
+        assert center_cmd["action"] == "update_center"
+        assert center_cmd.get("target") == "运动"
         add_cmd = bus_mock.await_args_list[1].args[2]
         assert add_cmd["action"] == "add_node"
         assert add_cmd.get("target") == "跑步"

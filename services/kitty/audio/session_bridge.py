@@ -15,7 +15,11 @@ from typing import Any, Optional
 from fastapi import WebSocket
 from websockets.exceptions import ConnectionClosed, ConnectionClosedError, ConnectionClosedOK
 
-from services.kitty.asr.audio_format import ASR_FORMAT_PCM, normalize_asr_audio_format
+from services.kitty.asr.audio_format import (
+    ASR_FORMAT_PCM,
+    is_silent_asr_provider_error,
+    normalize_asr_audio_format,
+)
 from services.kitty.asr.fun_asr_realtime import FunAsrRealtimeClient
 from services.kitty.context.messaging import safe_websocket_send
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
@@ -477,6 +481,26 @@ async def start_session_asr(
         await safe_websocket_send(websocket, payload)
 
     async def on_error(err: str) -> None:
+        active_utt = session.get(_ASR_UTTERANCE_ID_KEY)
+        utt = active_utt if isinstance(active_utt, str) and active_utt.strip() else ""
+        if is_silent_asr_provider_error(err):
+            session[_ASR_LAST_TEXT_KEY] = ""
+            logger.info(
+                "Fun-ASR silent hold sid=%s lane=%s utt=%s",
+                voice_session_id[:12],
+                lane,
+                utt[:16] or "—",
+            )
+            kitty_wf_log(
+                "asr_empty_provider",
+                f"lane={lane} utt={utt or '—'}",
+                voice_session_id=voice_session_id,
+            )
+            stopped: dict[str, object] = {"type": "asr_stopped", "text": ""}
+            if utt:
+                stopped["utterance_id"] = utt
+            await safe_websocket_send(websocket, stopped)
+            return
         logger.warning(
             "Fun-ASR runtime error sid=%s lane=%s: %s",
             voice_session_id[:12],
@@ -489,9 +513,8 @@ async def start_session_asr(
             voice_session_id=voice_session_id,
         )
         err_payload: dict[str, object] = {"type": "error", "error": f"ASR failed: {err}"}
-        active_utt = session.get(_ASR_UTTERANCE_ID_KEY)
-        if isinstance(active_utt, str) and active_utt.strip():
-            err_payload["utterance_id"] = active_utt
+        if utt:
+            err_payload["utterance_id"] = utt
         await safe_websocket_send(websocket, err_payload)
 
     client = FunAsrRealtimeClient(

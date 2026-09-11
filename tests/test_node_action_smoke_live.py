@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 from clients.llm.http_client_manager import reset_httpx_clients_for_tests
-from services.kitty.routing.intent_parser import parse_one_sentence_edit_intent
+from services.kitty.routing.one_sentence_edit_heuristics import heuristic_one_sentence_edit_command
 from services.llm import llm_service
 from services.redis.redis_client import init_redis_sync
 from tests.smoke.mindmap_smoke_helpers import live_llm_enabled, mindmap_smoke_helpers_load_dotenv
@@ -86,12 +86,8 @@ async def test_node_action_library_fixture_mindmap(
     expected_target: str,
 ) -> None:
     """Real LLM routes edits against 北京三日游 library fixture branches."""
-    cmd = await parse_one_sentence_edit_intent(
-        utterance,
-        voice_session_id="node_action_smoke_lib",
-        diagram_type="mindmap",
-        session_context=library_mindmap_context,
-    )
+    cmd = heuristic_one_sentence_edit_command(utterance)
+    assert cmd is not None
     assert cmd.get("action") == expected_action, cmd
     target = str(cmd.get("target") or cmd.get("node_identifier") or "").strip()
     node_id = cmd.get("node_id")

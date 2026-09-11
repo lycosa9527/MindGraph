@@ -22,7 +22,7 @@ import pytest
 from agents.core.workflow import agent_graph_workflow_with_styles
 from clients.llm.http_client_manager import reset_httpx_clients_for_tests
 from services.infrastructure.http.error_handler import LLMServiceError, LLMTimeoutError
-from services.kitty.routing.intent_parser import parse_one_sentence_edit_intent
+from services.kitty.routing.one_sentence_edit_heuristics import heuristic_one_sentence_edit_command
 from services.llm import llm_service
 from services.redis.redis_client import init_redis_sync
 from services.utils.error_types import LLM_PIPELINE_ERRORS
@@ -106,31 +106,22 @@ def layout_has_positions(canvas: dict) -> bool:
 
 
 async def _assert_intent_add(text: str, expected_label: str) -> None:
-    cmd = await parse_one_sentence_edit_intent(
-        text,
-        voice_session_id="smoke_live_add",
-        diagram_type="mindmap",
-    )
+    cmd = heuristic_one_sentence_edit_command(text)
+    assert cmd is not None
     assert cmd.get("action") == "add_node", cmd
     assert str(cmd.get("target") or "").strip() == expected_label
 
 
 async def _assert_intent_update_center(text: str, expected_topic: str) -> None:
-    cmd = await parse_one_sentence_edit_intent(
-        text,
-        voice_session_id="smoke_live_center",
-        diagram_type="mindmap",
-    )
+    cmd = heuristic_one_sentence_edit_command(text)
+    assert cmd is not None
     assert cmd.get("action") == "update_center", cmd
     assert str(cmd.get("target") or "").strip() == expected_topic
 
 
 async def _assert_intent_delete(text: str, expected_label: str) -> None:
-    cmd = await parse_one_sentence_edit_intent(
-        text,
-        voice_session_id="smoke_live_delete",
-        diagram_type="mindmap",
-    )
+    cmd = heuristic_one_sentence_edit_command(text)
+    assert cmd is not None
     assert cmd.get("action") == "delete_node", cmd
     assert str(cmd.get("target") or "").strip() == expected_label
 

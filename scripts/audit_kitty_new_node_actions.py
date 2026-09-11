@@ -22,7 +22,7 @@ from services.agent_hub.diagram_spine.types import DiagramCommandResult
 from services.diagram_edit.types import ToolResult
 from services.kitty.agent_loop.loop import run_typed_agent_loop
 from services.kitty.agent_loop.tools import dispatch_loop_tool as real_dispatch_loop_tool
-from services.kitty.routing.command_router import RouteOutcome
+from services.kitty.routing.outcomes import RouteOutcome
 from services.kitty.routing.mindmap_branch_numbers import build_outline_number_by_id
 from services.kitty.session.ops import create_voice_session
 from services.kitty.session.runtime_state import voice_sessions

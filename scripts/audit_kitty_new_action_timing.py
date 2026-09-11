@@ -32,7 +32,7 @@ from services.kitty.adapters.diagram_command import (
 from services.kitty.agent_loop.loop import run_typed_agent_loop
 from services.kitty.agent_loop.tools import dispatch_loop_tool as real_dispatch_loop_tool
 from services.kitty.context.messaging import send_kitty_ws_action as real_send_ws
-from services.kitty.routing.command_router import RouteOutcome
+from services.kitty.routing.outcomes import RouteOutcome
 from services.kitty.session.ops import create_voice_session
 from services.kitty.session.runtime_state import voice_sessions
 from tests.kitty_agent_loop_catalog import RealMindmap

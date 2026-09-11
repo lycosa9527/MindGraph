@@ -44,6 +44,7 @@ _ALLOWED_SLOT_ACTIONS = frozenset(
     }
 )
 _SLOT_KEYS = ("action", "node_id", "parent_ref", "side", "followup")
+_MAX_SLOT_NODE_IDS = 4
 _CMD_KEYS = (
     "action",
     "target",
@@ -212,6 +213,18 @@ def sanitize_pending_intent_slot(raw: Dict[str, Any]) -> Optional[Dict[str, Any]
         clipped = _clip_str(raw.get(key), max_len=240)
         if clipped is not None:
             slot[key] = clipped
+    raw_ids = raw.get("node_ids")
+    if isinstance(raw_ids, list):
+        ids: List[str] = []
+        for item in raw_ids:
+            clipped = _clip_str(item, max_len=80)
+            if clipped is None or clipped in ids:
+                continue
+            ids.append(clipped)
+            if len(ids) >= _MAX_SLOT_NODE_IDS:
+                break
+        if ids:
+            slot["node_ids"] = ids
     return slot
 
 

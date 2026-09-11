@@ -20,12 +20,18 @@ from services.infrastructure.http.error_handler import (
 )
 from services.kitty.ack.ack_emit import emit_user_ack
 from services.kitty.ack.ack_library import render_not_understood_ack
+from services.kitty.agent_loop.compound import (
+    parse_compound_turn,
+    run_compound_plan,
+    take_placeholder_rename_plan,
+)
 from services.kitty.agent_loop.intent_clarify import (
     PENDING_INTENT_SLOT_KEY,
     clear_pending_intent_slot_async,
     consume_pending_intent_slot,
     default_intent_clarify_command,
     is_intent_slot_cancel,
+    persist_armed_intent_slot,
     restore_pending_intent_slot,
     rewrite_valueless_edit_to_followup,
 )
@@ -62,8 +68,10 @@ from services.kitty.infra.redis.kitty_session_redis import (
     apply_redis_live_to_voice_session,
     load_kitty_live_context,
 )
-from services.kitty.routing.command_router import RouteOutcome, RouteResult
+from services.kitty.content.paragraph import process_paragraph_with_qwen_plus
+from services.kitty.diagram.diagram_utils import is_paragraph_text
 from services.kitty.routing.node_action_library import render_diagram_snapshot_block
+from services.kitty.routing.outcomes import RouteOutcome, RouteResult
 from services.kitty.routing.one_sentence_edit_heuristics import heuristic_one_sentence_edit_command
 from services.kitty.routing.one_sentence_edit_helpers import (
     is_mindmap_diagram_type,
@@ -304,6 +312,8 @@ async def _last_resort_heuristic(
     heuristic = heuristic_one_sentence_edit_command(command_text)
     if heuristic is None:
         return None
+    if _COMPOUND_UTTERANCE_RE.search(command_text) and heuristic.get("action") == "update_center":
+        return None
     dispatched = await dispatch_prepared_command(
         websocket,
         voice_session_id,
@@ -383,18 +393,24 @@ async def run_typed_agent_loop(
     grounding_source = "clarify_pick" if picked is not None else ""
     live_for_slot = voice_sessions.get(voice_session_id)
     slot_cancelled = False
+    rename_plan = None
     if picked is None and isinstance(live_for_slot, dict):
         if not isinstance(live_for_slot.get(PENDING_INTENT_SLOT_KEY), dict):
             await restore_pending_intent_slot(live_for_slot)
         had_slot = isinstance(live_for_slot.get(PENDING_INTENT_SLOT_KEY), dict)
-        slot_cmd = consume_pending_intent_slot(live_for_slot, text)
-        if slot_cmd is not None:
-            picked = slot_cmd
-            grounding_source = "ask_followup"
-        elif had_slot and is_intent_slot_cancel(text):
-            slot_cancelled = True
+        rename_plan = take_placeholder_rename_plan(live_for_slot, text) if had_slot else None
+        if rename_plan is None:
+            slot_cmd = consume_pending_intent_slot(live_for_slot, text)
+            if slot_cmd is not None:
+                picked = slot_cmd
+                grounding_source = "ask_followup"
+            elif had_slot and is_intent_slot_cancel(text):
+                slot_cancelled = True
         if had_slot:
-            await clear_pending_intent_slot_async(live_for_slot)
+            if isinstance(live_for_slot.get(PENDING_INTENT_SLOT_KEY), dict):
+                await persist_armed_intent_slot(live_for_slot)
+            else:
+                await clear_pending_intent_slot_async(live_for_slot)
     live = voice_sessions.get(voice_session_id)
     live_dict = live if isinstance(live, dict) else None
     pending_note = ""
@@ -411,6 +427,20 @@ async def run_typed_agent_loop(
 
     context = await _refresh_live_context(voice_session_id, session_context)
     ensure_live_mindmap_identity(context)
+    if rename_plan is not None:
+        diagram_type = _diagram_type(voice_session_id, context)
+        verify_required = is_mindmap_diagram_type(diagram_type)
+        lang = resolve_voice_interaction_language(context)
+        return await run_compound_plan(
+            websocket,
+            voice_session_id,
+            plan=rename_plan,
+            session_context=context,
+            diagram_type=diagram_type,
+            command_text=text,
+            verify_required=verify_required,
+            lang=lang,
+        )
     if slot_cancelled:
         diagram_type = _diagram_type(voice_session_id, context)
         verify_required = is_mindmap_diagram_type(diagram_type)
@@ -454,11 +484,39 @@ async def run_typed_agent_loop(
         pick_reason = "ask_followup" if dispatched.action == "ask_followup" else "clarify_pick"
         return _finish(voice_session_id, outcome, action=dispatched.action, reason=pick_reason)
 
+    if is_paragraph_text(text):
+        executed = await process_paragraph_with_qwen_plus(
+            websocket,
+            voice_session_id,
+            text,
+            context,
+        )
+        if executed:
+            return _finish(voice_session_id, RouteOutcome.EXECUTED, action="paragraph")
+        return _finish(
+            voice_session_id,
+            RouteOutcome.FAILED,
+            reason="paragraph_processing_failed",
+            action="paragraph",
+        )
+
     mode = _resolve_mode(context, live_dict)
     diagram_type = _diagram_type(voice_session_id, context)
     verify_required = is_mindmap_diagram_type(diagram_type)
     lang = resolve_voice_interaction_language(context)
     if mode == "edit":
+        compound = parse_compound_turn(text)
+        if compound is not None:
+            return await run_compound_plan(
+                websocket,
+                voice_session_id,
+                plan=compound,
+                session_context=context,
+                diagram_type=diagram_type,
+                command_text=text,
+                verify_required=verify_required,
+                lang=lang,
+            )
         heuristic = heuristic_one_sentence_edit_command(text)
         if heuristic is not None:
             followup = rewrite_valueless_edit_to_followup(heuristic, lang=lang)
@@ -532,23 +590,20 @@ async def run_typed_agent_loop(
     )
     user_id, organization_id = _session_user_ids(voice_session_id)
     await fanout_voice_phase_from_session(voice_session_id, "thinking")
-    try:
-        return await _run_loop_rounds(
-            websocket,
-            voice_session_id,
-            text=text,
-            context=context,
-            messages=messages,
-            memory=memory,
-            mode=mode,
-            diagram_type=diagram_type,
-            verify_required=verify_required,
-            lang=lang,
-            user_id=user_id,
-            organization_id=organization_id,
-        )
-    finally:
-        await fanout_voice_phase_from_session(voice_session_id, "active")
+    return await _run_loop_rounds(
+        websocket,
+        voice_session_id,
+        text=text,
+        context=context,
+        messages=messages,
+        memory=memory,
+        mode=mode,
+        diagram_type=diagram_type,
+        verify_required=verify_required,
+        lang=lang,
+        user_id=user_id,
+        organization_id=organization_id,
+    )
 
 
 async def _run_loop_rounds(

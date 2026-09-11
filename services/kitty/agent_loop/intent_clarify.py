@@ -242,6 +242,11 @@ def arm_pending_intent_slot(
     followup = command.get("followup")
     if isinstance(followup, str) and followup.strip():
         slot["followup"] = followup.strip()
+    node_ids = command.get("node_ids")
+    if isinstance(node_ids, list):
+        cleaned = [item.strip() for item in node_ids if isinstance(item, str) and item.strip()]
+        if cleaned:
+            slot["node_ids"] = cleaned
     session[PENDING_INTENT_SLOT_KEY] = slot
     return True
 

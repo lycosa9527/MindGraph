@@ -19,10 +19,12 @@ from services.diagram.mindmap_identity import (
 )
 from services.diagram.mindmap_location import is_leftover_mindmap_branch_id
 from services.diagram_edit.types import ToolResult
+from services.diagram_edit.transport.kitty_ws import MULTI_STEP_SUPPRESS_DIAGRAM_CHAT_KEY
 from services.kitty.ack.ack_emit import emit_user_ack
 from services.kitty.ack.ack_library import render_ack, render_ack_for_command, render_clarify_options_ack
 from services.kitty.ack.ack_slots import enrich_ack_session_context
 from services.kitty.adapters.diagram_command import apply_kitty_legacy_diagram_command
+from services.kitty.audio.session_bridge import interrupt_kitty_tts
 from services.kitty.agent_loop.messages import LoopMode, read_diagram_tool_schema
 from services.kitty.agent_loop.intent_clarify import (
     arm_pending_intent_slot,
@@ -300,6 +302,8 @@ async def dispatch_prepared_command(
     command_text: str,
     verify_required: bool,
     grounding_source: str = "",
+    skip_ack: bool = False,
+    skip_background_autocomplete: bool = False,
 ) -> ToolDispatchResult:
     """Dispatch an already-mapped legacy command (identity resolve first)."""
     ensure_live_mindmap_identity(session_context)
@@ -412,6 +416,8 @@ async def dispatch_prepared_command(
             lang=lang,
             command_text=command_text,
             grounding_source=grounding_source,
+            skip_ack=skip_ack,
+            skip_background_autocomplete=skip_background_autocomplete,
         )
 
     return await _dispatch_ui(
@@ -435,6 +441,8 @@ async def _dispatch_structural(
     lang: str,
     command_text: str,
     grounding_source: str = "",
+    skip_ack: bool = False,
+    skip_background_autocomplete: bool = False,
 ) -> ToolDispatchResult:
     """Apply one structural command through the DiagramCommandBus."""
     action = str(command.get("action") or "")
@@ -448,55 +456,77 @@ async def _dispatch_structural(
         return ToolDispatchResult(payload=payload, action=action, stop_nonretryable=True)
 
     use_verify = verify_required and is_mindmap_diagram_type(diagram_type)
-    bus_result = await apply_kitty_legacy_diagram_command(
-        websocket,
-        voice_session_id,
-        command,
+    live = voice_sessions.get(voice_session_id)
+    ack_ctx = enrich_ack_session_context(
         session_context,
-        scope=scope,
+        live if isinstance(live, dict) else None,
         diagram_type=diagram_type,
-        user_id=_session_user_id(voice_session_id),
-        verify_required=use_verify,
-        user_text=command_text,
-        grounding_source=grounding_source,
+        command_text=command_text,
     )
+    if not skip_ack:
+        ack_text = render_ack_for_command(action, command, ack_ctx, lang=lang, phase="done")
+        if ack_text:
+            await emit_user_ack(
+                websocket,
+                voice_session_id,
+                ack_text,
+                one_sentence_action=action,
+                one_sentence_outcome="executed",
+                one_sentence_user_text=command_text,
+            )
+    live_after_ack = voice_sessions.get(voice_session_id)
+    if isinstance(live_after_ack, dict) and not skip_ack:
+        live_after_ack[MULTI_STEP_SUPPRESS_DIAGRAM_CHAT_KEY] = True
+    try:
+        bus_result = await apply_kitty_legacy_diagram_command(
+            websocket,
+            voice_session_id,
+            command,
+            session_context,
+            scope=scope,
+            diagram_type=diagram_type,
+            user_id=_session_user_id(voice_session_id),
+            verify_required=use_verify,
+            user_text=command_text,
+            grounding_source=grounding_source,
+        )
+    finally:
+        live_clear = voice_sessions.get(voice_session_id)
+        if isinstance(live_clear, dict) and not skip_ack:
+            live_clear.pop(MULTI_STEP_SUPPRESS_DIAGRAM_CHAT_KEY, None)
     tool_result: ToolResult = bus_result.tool_result
     payload = tool_result_content(tool_result)
     error_code = tool_result.error_code
     mutated = tool_result.status == "applied"
     stop_after = False
-    if mutated:
-        live = voice_sessions.get(voice_session_id)
-        ack_ctx = enrich_ack_session_context(
-            session_context,
-            live if isinstance(live, dict) else None,
-            diagram_type=diagram_type,
-            command_text=command_text,
-        )
-        if action == "add_node":
-            stop_after = await maybe_start_background_branch_autocomplete(
-                websocket,
-                voice_session_id,
-                command,
-                ack_ctx,
-                command_text=command_text,
-                node_id=created_node_id_from_applied_ops(tool_result.applied_ops),
-            )
-        ack_text = render_ack_for_command(action, command, ack_ctx, lang=lang, phase="done")
-        await emit_user_ack(
+    if mutated and action == "add_node" and not skip_background_autocomplete:
+        stop_after = await maybe_start_background_branch_autocomplete(
             websocket,
             voice_session_id,
-            ack_text,
-            one_sentence_action=action,
-            one_sentence_outcome="executed",
-            one_sentence_user_text=command_text,
+            command,
+            ack_ctx,
+            command_text=command_text,
+            node_id=created_node_id_from_applied_ops(tool_result.applied_ops),
         )
+    if not mutated:
+        await interrupt_kitty_tts(voice_session_id)
+        fail_text = render_ack("diagram.execute_failed", lang=lang)
+        if fail_text:
+            await emit_user_ack(
+                websocket,
+                voice_session_id,
+                fail_text,
+                one_sentence_action=action,
+                one_sentence_outcome="failed",
+                one_sentence_user_text=command_text,
+            )
     return ToolDispatchResult(
         payload=payload,
         action=action,
         mutated=mutated,
         stop_after=stop_after,
-        stop_nonretryable=error_code in {"access_denied", "no_owner", "collab_active", "busy_llm_generating"},
+        stop_nonretryable=not mutated
+        or error_code in {"access_denied", "no_owner", "collab_active", "busy_llm_generating"},
     )
 
 

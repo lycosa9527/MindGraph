@@ -135,14 +135,14 @@ Context field `diagram_write_lock: { holder: "llm" | "tool" | null }`. Executor 
 ## Kitty adapter
 
 - Client sends `one_sentence_phase: "edit"` in `context_update`.
-- Edit NL: `parse_one_sentence_edit_intent` → **NodeActionAgent** (`node_action_agent.py`) with
-  `build_node_action_tools()` from `node_action_library.py` (structural `diagram.*` plus
-  `auto_complete_branch`, `auto_complete`, `clarify_options`). Regex heuristics in
-  `one_sentence_edit_heuristics.py` run only on LLM timeout or empty tool result.
+- Edit NL: `run_typed_agent_loop` with `build_node_action_tools()` from `node_action_library.py`
+  (structural `diagram.*` plus `auto_complete_branch`, `auto_complete`, `clarify_options`).
+  Regex heuristics in `one_sentence_edit_heuristics.py` run before the LLM for obvious
+  single-intent phrases.
 - Agent reads full diagram JSON snapshot (nodes, ids, nested children) from session
   context — ground truth for matching labels and stable ``node_id`` targets.
-- `command_router`: mindmap edit → `apply_kitty_legacy_diagram_command` (Bus); `action:none` → `FAILED`,
-  never conversational; `clarify_options` → numbered chat ack + optional pending pick.
+- Typed loop: mindmap edit speaks then `apply_kitty_legacy_diagram_command` (Bus);
+  `clarify_options` → chat ack + chips.
 - Verified path: no `try_sync_voice_diagram_to_hub` while `mutation_id` extras are stashed —
   Hub revision bumps only after client `context_update` (Pinia SoT). Legacy voice still syncs.
 - FE hub-persist wait is 3s; BE `wait_for_ack` default is **8s** so the client can finish Hub

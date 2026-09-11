@@ -11,7 +11,7 @@ from services.diagram_edit.convert import legacy_command_to_diagram_edit
 from services.diagram_edit.effects import build_expected_effect
 from services.diagram_edit.types import ToolResult
 from services.kitty.agent_loop.loop import _is_fast_structural_command, run_typed_agent_loop
-from services.kitty.routing.command_router import RouteOutcome
+from services.kitty.routing.outcomes import RouteOutcome
 from services.kitty.routing.one_sentence_edit_heuristics import heuristic_one_sentence_edit_command
 from services.kitty.session.ops import create_voice_session
 from services.kitty.session.runtime_state import voice_sessions

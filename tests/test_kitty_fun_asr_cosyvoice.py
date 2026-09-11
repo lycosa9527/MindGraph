@@ -13,6 +13,7 @@ from websockets.exceptions import ConnectionClosedOK
 from services.kitty.asr.audio_format import (
     ASR_FORMAT_OPUS,
     ASR_FORMAT_PCM,
+    is_silent_asr_provider_error,
     normalize_asr_audio_format,
     parse_asr_audio_format,
 )
@@ -57,7 +58,7 @@ def test_fun_asr_run_task_payload() -> None:
 
 
 def test_normalize_asr_audio_format() -> None:
-    """Watch sends opus; browsers omit the field and stay PCM."""
+    """Watch and browsers send PCM; opus is accepted only if a client sends it."""
     assert normalize_asr_audio_format("opus") == ASR_FORMAT_OPUS
     assert normalize_asr_audio_format("PCM") == ASR_FORMAT_PCM
     assert normalize_asr_audio_format("webm") == ASR_FORMAT_PCM
@@ -66,8 +67,15 @@ def test_normalize_asr_audio_format() -> None:
     assert parse_asr_audio_format({}) == ASR_FORMAT_PCM
 
 
+def test_is_silent_asr_provider_error() -> None:
+    """DashScope silence is an empty hold, not a hard ASR failure."""
+    assert is_silent_asr_provider_error("No valid audio error")
+    assert is_silent_asr_provider_error("ASR failed: no valid audio")
+    assert not is_silent_asr_provider_error("task-started timeout")
+
+
 def test_fun_asr_run_task_opus_format() -> None:
-    """Watch asr_start format=opus is forwarded to Fun-ASR run-task."""
+    """asr_start format=opus is forwarded to Fun-ASR run-task."""
     payload = build_fun_asr_run_task(
         "task-opus",
         model="fun-asr-realtime",
@@ -366,6 +374,7 @@ async def test_start_session_asr_echoes_utterance_id(monkeypatch) -> None:
                 audio_format=audio_format,
             )
             self.partial_cb = on_partial
+            self.error_cb = on_error
 
         async def start(self) -> None:
             """Mark started without DashScope."""
@@ -409,6 +418,13 @@ async def test_start_session_asr_echoes_utterance_id(monkeypatch) -> None:
         )
         assert await bridge.stop_session_asr(vid, utterance_id="utt-hold-9") == "你好"
         assert await bridge.stop_session_asr(vid, utterance_id="utt-other") == ""
+        assert client.error_cb is not None
+        await client.error_cb("No valid audio error")
+        assert any(
+            frame.get("type") == "asr_stopped" and frame.get("text") == "" and frame.get("utterance_id") == "utt-hold-9"
+            for frame in sent
+        )
+        assert not any(frame.get("type") == "error" for frame in sent)
     finally:
         voice_sessions.pop(vid, None)
 

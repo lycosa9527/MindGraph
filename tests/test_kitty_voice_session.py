@@ -152,7 +152,7 @@ async def test_hello_and_listen_aliases() -> None:
 
 @pytest.mark.asyncio
 async def test_asr_start_forwards_opus_format() -> None:
-    """Watch asr_start format=opus reaches Fun-ASR; omitted format stays PCM."""
+    """asr_start format=opus reaches Fun-ASR; omitted format stays PCM."""
     sid = _make_session()
     ctx = KittyWsInboundContext(
         websocket=MagicMock(),

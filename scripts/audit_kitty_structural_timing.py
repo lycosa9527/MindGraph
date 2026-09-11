@@ -33,7 +33,7 @@ from services.kitty.adapters.diagram_command import (
 )
 from services.kitty.agent_loop.loop import run_typed_agent_loop
 from services.kitty.agent_loop.tools import dispatch_loop_tool as real_dispatch_loop_tool
-from services.kitty.routing.command_router import RouteOutcome
+from services.kitty.routing.outcomes import RouteOutcome
 from services.kitty.session.ops import create_voice_session
 from services.kitty.session.runtime_state import voice_sessions
 from tests.kitty_agent_loop_catalog import (
@@ -233,6 +233,16 @@ def _check_applied(
         if "remove_nodes" not in ws_acts:
             errors.append(f"ws={ws_acts}")
     return errors
+
+
+def check_structural_applied(
+    action: str,
+    mmap: RealMindmap,
+    after: Dict[str, Any],
+    sent: List[Dict[str, Any]],
+) -> List[str]:
+    """Public wrapper for in-session structural apply checks."""
+    return _check_applied(action, mmap, after, sent)
 
 
 def _ms_stats(values: List[float]) -> Dict[str, float]:

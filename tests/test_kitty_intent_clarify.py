@@ -16,7 +16,7 @@ from services.kitty.agent_loop.intent_clarify import (
     rewrite_valueless_edit_to_followup,
 )
 from services.kitty.agent_loop.loop import run_typed_agent_loop
-from services.kitty.routing.command_router import RouteOutcome
+from services.kitty.routing.outcomes import RouteOutcome
 from services.kitty.routing.pending_clarify_options import classify_clarify_option_pick
 from services.kitty.session.ops import create_voice_session
 from services.kitty.session.runtime_state import voice_sessions

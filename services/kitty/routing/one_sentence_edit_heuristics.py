@@ -242,7 +242,7 @@ _UPDATE_CENTER_EN = re.compile(
 
 _DELETE_NODE_ZH = re.compile(
     r"^(?:请)?(?:帮我)?"
-    r"(?:删除|去掉|移除)"
+    r"(?:删除|删掉|去掉|移除)"
     r"(?:一下)?"
     r"(?P<label>.+?)"
     r"(?:这个|这条)?"
@@ -252,7 +252,7 @@ _DELETE_NODE_ZH = re.compile(
 
 _DELETE_NUMBER_ZH = re.compile(
     r"^(?:请)?(?:帮我)?"
-    r"(?:删除|去掉|移除)"
+    r"(?:删除|删掉|去掉|移除)"
     r"(?:一下)?"
     r"(?P<label>第?\d+(?:\.\d+)*号?|第[一二三四五六七八九十]+个?|[①-⑳])$"
 )
@@ -326,7 +326,7 @@ def _clean_label(raw: str) -> str:
     return label.strip()
 
 
-def _split_multi_labels(raw: str) -> list[str]:
+def split_multi_labels(raw: str) -> list[str]:
     """Split a user-listed branch string into clean labels (need ≥2)."""
     normalized = (raw or "").strip()
     # 「A、B和C」 / "A, B, and C" → normalize list separators.
@@ -426,7 +426,7 @@ def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str,
         if center_multi is None:
             continue
         topic = _clean_label(center_multi.group("topic"))
-        labels = _split_multi_labels(center_multi.group("labels"))
+        labels = split_multi_labels(center_multi.group("labels"))
         cmd = _multi_add_command(labels, topic=topic)
         if cmd is not None:
             return cmd
@@ -435,7 +435,7 @@ def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str,
         multi_add = pattern.match(text)
         if multi_add is None:
             continue
-        labels = _split_multi_labels(multi_add.group("labels"))
+        labels = split_multi_labels(multi_add.group("labels"))
         cmd = _multi_add_command(labels)
         if cmd is not None:
             return cmd

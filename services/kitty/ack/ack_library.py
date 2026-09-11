@@ -32,12 +32,12 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "en": 'OK — updating the node to "{new_text}"…',
     },
     "diagram.update_node.done": {
-        "zh": "已将「{old_text}」改为「{new_text}」。还需要改别的吗？",
-        "en": 'Changed "{old_text}" to "{new_text}". Anything else to change?',
+        "zh": "好，「{old_text}」改成「{new_text}」。",
+        "en": 'OK — "{old_text}" is now "{new_text}".',
     },
     "diagram.update_node.done_no_old": {
-        "zh": "节点已更新为「{new_text}」。还需要改别的吗？",
-        "en": 'Node updated to "{new_text}". Anything else to change?',
+        "zh": "好，改成「{new_text}」。",
+        "en": 'OK — it\'s "{new_text}".',
     },
     "diagram.update_node.failed": {
         "zh": "抱歉，没能把「{old_text}」改为「{new_text}」。请确认节点名称后再试。",
@@ -52,8 +52,8 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "en": 'OK — updating the topic to "{new_text}"…',
     },
     "diagram.update_center.done": {
-        "zh": "主题已更新为「{new_text}」。",
-        "en": 'Topic updated to "{new_text}".',
+        "zh": "好，主题换成「{new_text}」。",
+        "en": 'OK — topic is "{new_text}".',
     },
     "diagram.update_center.failed": {
         "zh": "抱歉，没能把主题更新为「{new_text}」。请再试一次。",
@@ -64,8 +64,8 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "en": 'OK — updating to "{left}" and "{right}"…',
     },
     "diagram.update_center.double_bubble.done": {
-        "zh": "已更新为「{left}」和「{right}」。",
-        "en": 'Updated to "{left}" and "{right}".',
+        "zh": "好，写成「{left}」和「{right}」。",
+        "en": 'OK — "{left}" and "{right}".',
     },
     "diagram.update_center.double_bubble.failed": {
         "zh": "抱歉，没能更新为「{left}」和「{right}」。请再试一次。",
@@ -76,8 +76,8 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "en": 'OK — adding "{target}"…',
     },
     "diagram.add_node.done": {
-        "zh": "「{target}」已添加。",
-        "en": '"{target}" added.',
+        "zh": "好，加上「{target}」。",
+        "en": 'OK — adding "{target}".',
     },
     "diagram.add_node.failed": {
         "zh": "抱歉，没能添加「{target}」。请换个说法再试。",
@@ -88,8 +88,8 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "en": 'OK — adding the "{target}" branch…',
     },
     "diagram.add_branch.done": {
-        "zh": "「{target}」分支已添加，正在自动补全…",
-        "en": 'Branch "{target}" added — auto-completing…',
+        "zh": "好，补上「{target}」。",
+        "en": 'OK — adding the "{target}" branch.',
     },
     "diagram.add_branch.failed": {
         "zh": "抱歉，没能添加「{target}」分支。请再试一次。",
@@ -107,21 +107,13 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "zh": "抱歉，没能为「{target}」分支自动补全。你可以再说一次「自动补全」。",
         "en": 'Sorry — I couldn\'t auto-complete the "{target}" branch. You can ask again to auto-complete.',
     },
-    "diagram.multi_step.progress": {
-        "zh": "好的，{detail}…",
-        "en": "OK — {detail}…",
-    },
     "diagram.multi_step.done": {
-        "zh": "{detail}",
-        "en": "{detail}",
-    },
-    "diagram.multi_step.done_with_complete": {
-        "zh": "{detail}开始为它们自动补全…",
-        "en": "{detail}Starting auto-complete for them…",
+        "zh": "好，{detail}",
+        "en": "OK — {detail}",
     },
     "diagram.clarify_options": {
-        "zh": "{question}\n{options_list}\n请回复序号或选项内容。",
-        "en": "{question}\n{options_list}\nReply with the number or option text.",
+        "zh": "{question}\n{options_list}",
+        "en": "{question}\n{options_list}",
     },
     "diagram.clarify_options.picked": {
         "zh": "好的，{label}。",
@@ -132,8 +124,8 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "en": 'OK — adding sub-item "{target}"…',
     },
     "diagram.add_child.done": {
-        "zh": "子项「{target}」已添加。",
-        "en": 'Sub-item "{target}" added.',
+        "zh": "好，加上子项「{target}」。",
+        "en": 'OK — adding "{target}".',
     },
     "diagram.add_child.failed": {
         "zh": "抱歉，没能添加子项「{target}」。请确认要加在哪个分支下。",
@@ -144,8 +136,8 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "en": 'OK — adding "{target}" under branch "{branch_label}"…',
     },
     "diagram.add_child.branch.done": {
-        "zh": "「{target}」已添加到「{branch_label}」分支。",
-        "en": 'Added "{target}" under branch "{branch_label}".',
+        "zh": "好，在「{branch_label}」下加上「{target}」。",
+        "en": 'OK — "{target}" under "{branch_label}".',
     },
     "diagram.add_child.branch.failed": {
         "zh": "抱歉，没能向「{branch_label}」分支添加「{target}」。请确认分支名称后再试。",
@@ -156,8 +148,8 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "en": 'OK — removing "{target}"…',
     },
     "diagram.delete_node.done": {
-        "zh": "「{target}」已删除。还需要改别的吗？",
-        "en": '"{target}" removed. Anything else to change?',
+        "zh": "好，删掉「{target}」。",
+        "en": 'OK — removing "{target}".',
     },
     "diagram.delete_node.failed": {
         "zh": "抱歉，没能删除「{target}」。请确认节点名称后再试。",
@@ -168,8 +160,8 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "en": 'OK — removing branch "{target}"…',
     },
     "diagram.delete_branch.done": {
-        "zh": "「{target}」分支已删除。还需要改别的吗？",
-        "en": 'Branch "{target}" removed. Anything else to change?',
+        "zh": "好，删掉「{target}」分支。",
+        "en": 'OK — removing the "{target}" branch.',
     },
     "diagram.delete_branch.failed": {
         "zh": "抱歉，没能删除「{target}」分支。请确认分支名称后再试。",
@@ -180,16 +172,16 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "en": "OK — removing the sub-item…",
     },
     "diagram.delete_child.done": {
-        "zh": "子项已删除。",
-        "en": "Sub-item removed.",
+        "zh": "好，子项删掉了。",
+        "en": "OK — that sub-item is gone.",
     },
     "diagram.delete_child.target.progress": {
         "zh": "好的，正在删除子项「{target}」…",
         "en": 'OK — removing sub-item "{target}"…',
     },
     "diagram.delete_child.target.done": {
-        "zh": "子项「{target}」已删除。",
-        "en": 'Sub-item "{target}" removed.',
+        "zh": "好，删掉子项「{target}」。",
+        "en": 'OK — removing "{target}".',
     },
     "diagram.delete_child.failed": {
         "zh": "抱歉，没能删除子项。请说明要删哪个。",
@@ -200,8 +192,8 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "en": 'OK — removing a sub-item under branch "{branch_label}"…',
     },
     "diagram.delete_child.branch.done": {
-        "zh": "「{branch_label}」分支下的子项已删除。",
-        "en": 'Sub-item under branch "{branch_label}" removed.',
+        "zh": "好，删掉「{branch_label}」下的子项。",
+        "en": 'OK — removing a sub-item under "{branch_label}".',
     },
     "diagram.delete_child.branch.failed": {
         "zh": "抱歉，没能删除「{branch_label}」分支下的子项。请再说具体一点。",
@@ -248,14 +240,8 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "en": "I'm not sure what to change. Tell me which node to edit, or which branch to add.",
     },
     "diagram.not_understood": {
-        "zh": (
-            "没太明白您的意思。我可以帮您改节点、添加或删除分支、更换主题，"
-            "自动补全，或打开联想建议——请说一下要改哪个节点。"
-        ),
-        "en": (
-            "I didn't quite catch that. I can rename nodes, add or remove branches, "
-            "change the topic, auto-complete, or show suggestions — which node should I change?"
-        ),
+        "zh": "没听清要改哪。改节点、加分支，还是换主题？",
+        "en": "Which should I change — a node, a branch, or the topic?",
     },
     "diagram.unsupported_type": {
         "zh": (

@@ -10,7 +10,7 @@ One backend package. There is no separate `kitty_voice` module.
 | `services/kitty/agent_loop/` | Typed tool loop, UI tools, author_spec |
 | `services/kitty/session/` | Per-scope session registry, voice phase, turn Task, events, cleanup |
 | `services/kitty/session/manager/` | **Session Manager** — alignment snapshot, WS pairing leases, action journal, verified-edit gate |
-| `services/kitty/routing/` | Intent catalog + command router |
+| `services/kitty/routing/` | Intent catalog, heuristics, grounding, pending slots |
 | `services/kitty/ack/` | User-facing acknowledgment templates (`text_chunk` + CosyVoice) |
 | `services/kitty/diagram/` | Diagram mutations via agent hub |
 | `services/kitty/context/` | Voice context merge + library refresh |
@@ -34,7 +34,7 @@ Diagram edits, UI actions, low-confidence clarifications, and **unsupported diag
 - **`ack_slots.py`** — slot extraction from router commands and diagram_update payloads (implicit confirmation: old/new text, targets).
 - **`ack_emit.py`** — `emit_user_ack()` sends `text_chunk` for text clients (一句话 panel) and speaks via CosyVoice when voice is on.
 
-The command router calls `emit_user_ack` after successful `execute_diagram_update`; `send_kitty_diagram_update` adds the same text as `user_summary` on the WebSocket payload so canvas and chat stay aligned.
+The typed agent loop calls `emit_user_ack` when the edit is known, then applies the canvas change. `send_kitty_diagram_update` skips `user_summary` on that turn so chat is not doubled.
 
 ## Session Manager (`services/kitty/session/manager/`)
 

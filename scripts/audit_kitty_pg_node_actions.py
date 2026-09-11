@@ -25,7 +25,7 @@ from services.diagram.mindmap_location import is_leftover_mindmap_branch_id
 from services.diagram_edit.types import ToolResult
 from services.kitty.agent_loop.loop import run_typed_agent_loop
 from services.kitty.agent_loop.tools import dispatch_loop_tool as real_dispatch_loop_tool
-from services.kitty.routing.command_router import RouteOutcome
+from services.kitty.routing.outcomes import RouteOutcome
 from services.kitty.session.ops import create_voice_session
 from services.kitty.session.runtime_state import voice_sessions
 from services.llm import llm_service
@@ -206,12 +206,13 @@ async def run_one(
     recorded: List[Dict[str, Any]] = []
     llm_ms = 0.0
     errors: List[str] = []
+    real_chat = llm_service.chat_raw
 
     async def _chat(*args: Any, **kwargs: Any) -> Any:
         nonlocal llm_ms
         kwargs["timeout"] = 30.0
         started = time.perf_counter()
-        result = await llm_service.chat_raw(*args, **kwargs)
+        result = await real_chat(*args, **kwargs)
         llm_ms += (time.perf_counter() - started) * 1000.0
         if isinstance(result, dict):
             recorded.append(result)
@@ -254,6 +255,7 @@ async def run_one(
             patch("services.kitty.agent_loop.tools.send_kitty_ws_action", ws_mock),
             patch("services.kitty.agent_loop.loop.emit_user_ack", new=AsyncMock(return_value=True)),
             patch("services.kitty.agent_loop.tools.emit_user_ack", new=AsyncMock(return_value=True)),
+            patch("services.kitty.agent_loop.tools.interrupt_kitty_tts", new=AsyncMock()),
             patch("services.kitty.agent_loop.loop.load_kitty_live_context", new=AsyncMock(return_value=None)),
             patch(
                 "services.kitty.agent_loop.loop.throttled_refresh_voice_context_from_library",

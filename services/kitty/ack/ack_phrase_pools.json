@@ -31,28 +31,28 @@
   },
   "diagram.update_center.done": {
     "zh": [
-      "主题已更新为「{new_text}」。",
-      "好了，现在主题是「{new_text}」。",
-      "改好了——中心是「{new_text}」。",
-      "「{new_text}」已经是主题啦。",
+      "好，主题换成「{new_text}」。",
+      "行，中心用「{new_text}」。",
+      "嗯，主题改成「{new_text}」。",
+      "好，「{new_text}」当主题。",
       "主题换成「{new_text}」了。",
-      "搞定，主题就是「{new_text}」。",
-      "嗯，中心节点已是「{new_text}」。",
-      "主题改完了：「{new_text}」。",
-      "已经帮你设成「{new_text}」。",
-      "好的，「{new_text}」写上了。"
+      "行，就用「{new_text}」。",
+      "嗯，中心写成「{new_text}」。",
+      "好，主题是「{new_text}」。",
+      "行，设成「{new_text}」。",
+      "好，「{new_text}」写上。"
     ],
     "en": [
-      "Topic updated to \"{new_text}\".",
-      "Done — the topic is now \"{new_text}\".",
-      "All set — center reads \"{new_text}\".",
-      "\"{new_text}\" is the topic now.",
-      "Switched the topic to \"{new_text}\".",
-      "Nice — topic is \"{new_text}\".",
-      "Yep, center node says \"{new_text}\".",
-      "Topic rename done: \"{new_text}\".",
-      "I set the topic to \"{new_text}\".",
-      "Okay — \"{new_text}\" is in place."
+      "OK — topic is \"{new_text}\".",
+      "Sure — center is \"{new_text}\".",
+      "Yep — topic becomes \"{new_text}\".",
+      "OK — \"{new_text}\" is the topic.",
+      "Switching the topic to \"{new_text}\".",
+      "Right — topic is \"{new_text}\".",
+      "Yep, center says \"{new_text}\".",
+      "OK — renaming to \"{new_text}\".",
+      "Setting the topic to \"{new_text}\".",
+      "OK — \"{new_text}\" is in."
     ]
   },
   "diagram.update_node.progress": {
@@ -113,54 +113,54 @@
   },
   "diagram.update_node.done": {
     "zh": [
-      "已将「{old_text}」改为「{new_text}」。还需要改别的吗？",
-      "好了，「{old_text}」现在是「{new_text}」。还要继续吗？",
-      "改好啦：「{old_text}」→「{new_text}」。还想动哪里？",
-      "「{new_text}」写上了。还有别的吗？",
-      "嗯，已经从「{old_text}」改成「{new_text}」了。",
-      "搞定，节点是「{new_text}」了。下一步呢？",
-      "文案换好了。要不要再改别处？",
-      "好的，「{new_text}」已经生效。继续说就行。",
-      "改完了。还想调整哪个？",
-      "已经帮你改好了。还有其他想改的吗？"
+      "好，「{old_text}」改成「{new_text}」。",
+      "行，「{old_text}」换成「{new_text}」。",
+      "嗯，「{old_text}」→「{new_text}」。",
+      "好，「{new_text}」写上。",
+      "嗯，改成「{new_text}」。",
+      "行，节点是「{new_text}」。",
+      "好，文案换成「{new_text}」。",
+      "好的，「{new_text}」。",
+      "行，改「{new_text}」。",
+      "嗯，帮你改成「{new_text}」。"
     ],
     "en": [
-      "Changed \"{old_text}\" to \"{new_text}\". Anything else to change?",
-      "Done — \"{old_text}\" is now \"{new_text}\". Keep going?",
-      "All set: \"{old_text}\" → \"{new_text}\". What next?",
-      "\"{new_text}\" is in. Anything else?",
-      "Yep — was \"{old_text}\", now \"{new_text}\".",
-      "Nice — it reads \"{new_text}\". What should we do next?",
-      "Text updated. Want to tweak another node?",
-      "Okay — \"{new_text}\" stuck. Just keep talking.",
-      "Edit done. Which one next?",
-      "I've got that changed. Anything else?"
+      "OK — \"{old_text}\" is now \"{new_text}\".",
+      "Sure — \"{old_text}\" becomes \"{new_text}\".",
+      "Yep: \"{old_text}\" → \"{new_text}\".",
+      "OK — \"{new_text}\" is in.",
+      "Yep — now \"{new_text}\".",
+      "Right — it reads \"{new_text}\".",
+      "OK — changing it to \"{new_text}\".",
+      "OK — \"{new_text}\".",
+      "Sure — \"{new_text}\".",
+      "Got it — \"{new_text}\"."
     ]
   },
   "diagram.update_node.done_no_old": {
     "zh": [
-      "节点已更新为「{new_text}」。还需要改别的吗？",
-      "好了，现在是「{new_text}」。还要继续吗？",
-      "改成「{new_text}」啦。还要动哪里？",
-      "「{new_text}」写好了。还有别的吗？",
-      "嗯，标签已是「{new_text}」。下一步？",
-      "搞定，「{new_text}」在了。",
-      "文案更新好了。还要改吗？",
-      "好的，「{new_text}」已生效。继续说就行。",
-      "改好了。还想调整哪个？",
-      "已经帮你改完。还有其他修改吗？"
+      "好，改成「{new_text}」。",
+      "行，现在是「{new_text}」。",
+      "嗯，写成「{new_text}」。",
+      "好，「{new_text}」写上。",
+      "嗯，标签是「{new_text}」。",
+      "行，「{new_text}」在了。",
+      "好，文案换成「{new_text}」。",
+      "好的，「{new_text}」。",
+      "行，改「{new_text}」。",
+      "嗯，改完「{new_text}」。"
     ],
     "en": [
-      "Node updated to \"{new_text}\". Anything else to change?",
-      "Done — it now reads \"{new_text}\". Keep going?",
-      "Changed to \"{new_text}\". What next?",
-      "\"{new_text}\" is written. Anything else?",
-      "Yep — label is \"{new_text}\". Next?",
-      "All set — \"{new_text}\" is there.",
-      "Text updated. More edits?",
-      "Okay — \"{new_text}\" applied. Just keep talking.",
-      "Done. Which one should we tweak next?",
-      "I finished that. Any other changes?"
+      "OK — it's \"{new_text}\".",
+      "Sure — now \"{new_text}\".",
+      "Yep — \"{new_text}\".",
+      "OK — \"{new_text}\" is in.",
+      "Yep — label is \"{new_text}\".",
+      "Right — \"{new_text}\" is there.",
+      "OK — changing it to \"{new_text}\".",
+      "OK — \"{new_text}\".",
+      "Sure — \"{new_text}\".",
+      "Got it — \"{new_text}\"."
     ]
   },
   "diagram.add_node.progress": {
@@ -195,28 +195,28 @@
   },
   "diagram.add_node.done": {
     "zh": [
-      "「{target}」已添加。",
-      "好了，「{target}」加上了。",
-      "「{target}」已经在图上啦。",
-      "加好了：「{target}」。",
-      "嗯，「{target}」就位了。",
-      "搞定，新节点「{target}」好了。",
-      "「{target}」加完了。还要继续吗？",
-      "已经帮你加上「{target}」。",
-      "「{target}」创建成功。",
-      "好的，「{target}」写上了。"
+      "好，加上「{target}」。",
+      "行，「{target}」加上。",
+      "嗯，「{target}」挂上。",
+      "好，「{target}」。",
+      "嗯，「{target}」就位。",
+      "行，新节点「{target}」。",
+      "好，补上「{target}」。",
+      "嗯，帮你加上「{target}」。",
+      "好，「{target}」来了。",
+      "好的，「{target}」写上。"
     ],
     "en": [
-      "\"{target}\" added.",
-      "Done — \"{target}\" is on the map.",
-      "\"{target}\" is there now.",
-      "Added \"{target}\".",
-      "Yep — \"{target}\" is in place.",
-      "Nice — new node \"{target}\" is ready.",
-      "\"{target}\" added. Want to continue?",
-      "I added \"{target}\" for you.",
-      "Created \"{target}\".",
-      "Okay — \"{target}\" is written."
+      "OK — adding \"{target}\".",
+      "Sure — \"{target}\" is on the map.",
+      "Yep — \"{target}\" is there.",
+      "OK — \"{target}\".",
+      "Yep — \"{target}\" is in.",
+      "Right — new node \"{target}\".",
+      "OK — adding \"{target}\".",
+      "Got it — \"{target}\".",
+      "Sure — \"{target}\" is in.",
+      "OK — \"{target}\" is written."
     ]
   },
   "diagram.add_branch.progress": {
@@ -251,28 +251,28 @@
   },
   "diagram.add_branch.done": {
     "zh": [
-      "「{target}」分支已添加，正在自动补全…",
-      "好了，「{target}」挂上了，我接着帮你补内容…",
-      "「{target}」加上了，稍等我补全这一支…",
-      "分支好了，开始给「{target}」填点子…",
-      "嗯，「{target}」就位，我来自动补全…",
-      "搞定分支，正在把「{target}」补完整…",
-      "已添加「{target}」，马上帮你补完…",
-      "分支加好了，我去生成「{target}」下的内容…",
-      "「{target}」出现了，我来补点细节…",
-      "好，分支有了；接下来我帮你补全…"
+      "好，补上「{target}」。",
+      "行，「{target}」挂上。",
+      "嗯，加上「{target}」。",
+      "好，「{target}」这一支。",
+      "嗯，「{target}」就位。",
+      "行，分支「{target}」。",
+      "好，加上「{target}」。",
+      "嗯，新分支「{target}」。",
+      "好，「{target}」来了。",
+      "好，分支有了。"
     ],
     "en": [
-      "Branch \"{target}\" added — auto-completing…",
-      "Done — \"{target}\" is up; I'll fill it in…",
-      "\"{target}\" added — give me a moment to complete it…",
-      "Branch ready — adding ideas under \"{target}\"…",
-      "Yep — \"{target}\" is in place; auto-completing…",
-      "Branch set — finishing \"{target}\" now…",
-      "Added \"{target}\"; I'll complete that branch…",
-      "Branch added — generating content under \"{target}\"…",
-      "\"{target}\" is there — I'll add some detail…",
-      "Okay — branch added; next I'll auto-complete…"
+      "OK — adding the \"{target}\" branch.",
+      "Sure — \"{target}\" is up.",
+      "Yep — adding \"{target}\".",
+      "OK — the \"{target}\" branch.",
+      "Yep — \"{target}\" is in.",
+      "Right — branch \"{target}\".",
+      "OK — \"{target}\".",
+      "Got it — new branch \"{target}\".",
+      "Sure — \"{target}\" is there.",
+      "OK — branch added."
     ]
   },
   "diagram.branch_autocomplete.accepted": {
@@ -333,16 +333,16 @@
   },
   "diagram.add_child.done": {
     "zh": [
-      "子项「{target}」已添加。",
-      "好了，「{target}」加上了。",
-      "「{target}」已经挂上啦。",
-      "加好了：「{target}」。",
-      "嗯，「{target}」就位了。",
-      "搞定，「{target}」好了。",
-      "「{target}」加完了。",
-      "已经帮你加上「{target}」。",
-      "子节点「{target}」创建成功。",
-      "好的，「{target}」写上了。"
+      "好，加上子项「{target}」。",
+      "行，「{target}」加上。",
+      "嗯，「{target}」挂上。",
+      "好，「{target}」。",
+      "嗯，「{target}」就位。",
+      "行，「{target}」好了。",
+      "好，补上「{target}」。",
+      "嗯，帮你加上「{target}」。",
+      "好，子项「{target}」。",
+      "好的，「{target}」写上。"
     ],
     "en": [
       "Sub-item \"{target}\" added.",
@@ -385,16 +385,16 @@
   },
   "diagram.add_child.branch.done": {
     "zh": [
-      "「{target}」已添加到「{branch_label}」分支。",
-      "好了，「{target}」已在「{branch_label}」下。",
-      "已经把「{target}」挂到「{branch_label}」啦。",
-      "「{branch_label}」多了「{target}」。",
-      "嗯，加好了：「{branch_label}」/「{target}」。",
-      "搞定，「{target}」就位了。",
-      "「{target}」加到「{branch_label}」了。",
-      "已经帮你更新「{branch_label}」。",
-      "好的，「{target}」写上了。",
-      "成功加到「{branch_label}」了。"
+      "好，在「{branch_label}」下加上「{target}」。",
+      "行，「{target}」挂在「{branch_label}」下。",
+      "嗯，把「{target}」加到「{branch_label}」。",
+      "好，「{branch_label}」多了「{target}」。",
+      "嗯，「{branch_label}」/「{target}」。",
+      "行，「{target}」就位。",
+      "好，「{target}」加到「{branch_label}」。",
+      "嗯，更新「{branch_label}」。",
+      "好的，「{target}」写上。",
+      "行，加到「{branch_label}」。"
     ],
     "en": [
       "Added \"{target}\" under branch \"{branch_label}\".",
@@ -437,28 +437,28 @@
   },
   "diagram.delete_node.done": {
     "zh": [
-      "「{target}」已删除。还需要改别的吗？",
-      "好了，「{target}」已去掉。还要继续吗？",
-      "已经删掉「{target}」。还要动哪里？",
-      "「{target}」移除完成。还有别的吗？",
-      "嗯，删好了。下一步想做什么？",
-      "搞定，「{target}」不在图上了。",
-      "节点已删除。还需要改吗？",
-      "「{target}」清掉了。继续说就行。",
-      "删完了。还想调整哪个？",
-      "已经帮你处理好了。还有其他修改吗？"
+      "好，删掉「{target}」。",
+      "行，「{target}」去掉。",
+      "嗯，删掉「{target}」。",
+      "好，「{target}」没了。",
+      "嗯，删好了。",
+      "行，「{target}」不在了。",
+      "好，这个删了。",
+      "好，「{target}」清掉。",
+      "嗯，删完。",
+      "行，处理好了。"
     ],
     "en": [
-      "\"{target}\" removed. Anything else to change?",
-      "Done — \"{target}\" is gone. Keep going?",
-      "Deleted \"{target}\". What next?",
-      "\"{target}\" is removed. Anything else?",
-      "Yep — removed. What should we do next?",
-      "All set — \"{target}\" is off the map.",
-      "Node deleted. More edits?",
-      "\"{target}\" cleared. Just keep talking.",
-      "Delete done. Which one next?",
-      "I handled that. Any other changes?"
+      "OK — removing \"{target}\".",
+      "Sure — \"{target}\" is gone.",
+      "Yep — deleting \"{target}\".",
+      "OK — \"{target}\" is off.",
+      "Yep — removed.",
+      "Right — \"{target}\" is off the map.",
+      "OK — that node's gone.",
+      "OK — \"{target}\" cleared.",
+      "Sure — deleted.",
+      "Got it."
     ]
   },
   "diagram.delete_branch.progress": {
@@ -489,28 +489,28 @@
   },
   "diagram.delete_branch.done": {
     "zh": [
-      "「{target}」分支已删除。还需要改别的吗？",
-      "好了，「{target}」分支已去掉。还要继续吗？",
-      "已经删掉「{target}」分支。还要动哪里？",
-      "分支「{target}」移除完成。还有别的吗？",
-      "嗯，删好了。下一步想做什么？",
-      "搞定，「{target}」分支不在了。",
-      "分支已删除。还需要改吗？",
-      "「{target}」整支清掉了。继续说就行。",
-      "删完了。还想调整哪个？",
-      "已经帮你处理好了。还有其他修改吗？"
+      "好，删掉「{target}」分支。",
+      "行，「{target}」分支去掉。",
+      "嗯，删掉「{target}」这一支。",
+      "好，分支「{target}」没了。",
+      "嗯，删好了。",
+      "行，「{target}」分支不在了。",
+      "好，这支删了。",
+      "好，「{target}」整支清掉。",
+      "嗯，删完。",
+      "行，处理好了。"
     ],
     "en": [
-      "Branch \"{target}\" removed. Anything else to change?",
-      "Done — the \"{target}\" branch is gone. Keep going?",
-      "Deleted branch \"{target}\". What next?",
-      "Branch \"{target}\" is removed. Anything else?",
-      "Yep — removed. What should we do next?",
-      "All set — branch \"{target}\" is gone.",
-      "Branch deleted. More edits?",
-      "Whole \"{target}\" branch cleared. Just keep talking.",
-      "Delete done. Which one next?",
-      "I handled that. Any other changes?"
+      "OK — removing the \"{target}\" branch.",
+      "Sure — the \"{target}\" branch is gone.",
+      "Yep — deleting branch \"{target}\".",
+      "OK — branch \"{target}\" is off.",
+      "Yep — removed.",
+      "Right — branch \"{target}\" is gone.",
+      "OK — that branch is gone.",
+      "OK — whole \"{target}\" branch cleared.",
+      "Sure — deleted.",
+      "Got it."
     ]
   },
   "diagram.delete_child.progress": {
@@ -541,28 +541,28 @@
   },
   "diagram.delete_child.done": {
     "zh": [
-      "子项已删除。",
-      "好了，子项已去掉。",
-      "已经删掉该子项。",
-      "子节点移除完成。",
+      "好，子项删掉了。",
+      "行，子项去掉。",
+      "嗯，删掉子项。",
+      "好，那个子项没了。",
       "嗯，删好了。",
-      "搞定，子项不在了。",
-      "清掉了。",
-      "删完了。",
-      "子项已移除。",
-      "已经帮你处理好了。"
+      "行，子项不在了。",
+      "好，清掉了。",
+      "嗯，删完。",
+      "好，子项去掉了。",
+      "行，处理好了。"
     ],
     "en": [
-      "Sub-item removed.",
-      "Done — that child is gone.",
-      "Deleted the sub-item.",
-      "Child node removal complete.",
+      "OK — that sub-item is gone.",
+      "Sure — child is off.",
+      "Yep — deleting the sub-item.",
+      "OK — that child is gone.",
       "Yep — removed.",
-      "All set — sub-item is gone.",
-      "Cleared.",
-      "Delete done.",
-      "Sub-item removed from the map.",
-      "I handled that."
+      "Right — sub-item is off.",
+      "OK — cleared.",
+      "Sure — deleted.",
+      "OK — sub-item is off the map.",
+      "Got it."
     ]
   },
   "diagram.delete_child.target.progress": {
@@ -593,28 +593,28 @@
   },
   "diagram.delete_child.target.done": {
     "zh": [
-      "子项「{target}」已删除。",
-      "好了，「{target}」已去掉。",
-      "已经删掉「{target}」。",
-      "「{target}」移除完成。",
-      "嗯，删好了：「{target}」。",
-      "搞定，「{target}」不在了。",
-      "「{target}」清掉了。",
-      "删完了。",
-      "子项已移除。",
-      "已经帮你处理好「{target}」。"
+      "好，删掉子项「{target}」。",
+      "行，「{target}」去掉。",
+      "嗯，删掉「{target}」。",
+      "好，「{target}」没了。",
+      "嗯，删好了。",
+      "行，「{target}」不在了。",
+      "好，这个删了。",
+      "好，「{target}」清掉。",
+      "嗯，删完。",
+      "行，处理好了。"
     ],
     "en": [
-      "Sub-item \"{target}\" removed.",
-      "Done — \"{target}\" is gone.",
-      "Deleted \"{target}\".",
-      "\"{target}\" removal complete.",
-      "Yep — removed \"{target}\".",
-      "All set — \"{target}\" is gone.",
-      "\"{target}\" cleared.",
-      "Delete done.",
-      "Sub-item removed.",
-      "I handled \"{target}\"."
+      "OK — removing \"{target}\".",
+      "Sure — \"{target}\" is gone.",
+      "Yep — deleting \"{target}\".",
+      "OK — \"{target}\" is off.",
+      "Yep — removed.",
+      "Right — \"{target}\" is off.",
+      "OK — that child's gone.",
+      "OK — \"{target}\" cleared.",
+      "Sure — deleted.",
+      "Got it."
     ]
   },
   "diagram.delete_child.branch.progress": {
@@ -645,28 +645,28 @@
   },
   "diagram.delete_child.branch.done": {
     "zh": [
-      "「{branch_label}」分支下的子项已删除。",
-      "好了，「{branch_label}」下已去掉该项。",
-      "已经从「{branch_label}」删掉子项。",
-      "「{branch_label}」清理完成。",
+      "好，删掉「{branch_label}」下的子项。",
+      "行，「{branch_label}」下那项去掉。",
+      "嗯，删掉「{branch_label}」里的子项。",
+      "好，「{branch_label}」下没了。",
       "嗯，删好了。",
-      "搞定，「{branch_label}」已更新。",
-      "子项清掉了。",
-      "删完了。",
-      "「{branch_label}」分支已更新。",
-      "已经帮你处理好了。"
+      "行，「{branch_label}」下清掉了。",
+      "好，这支下的子项删了。",
+      "好，「{branch_label}」下清掉。",
+      "嗯，删完。",
+      "行，处理好了。"
     ],
     "en": [
-      "Sub-item under branch \"{branch_label}\" removed.",
-      "Done — removed that item under \"{branch_label}\".",
-      "Deleted the sub-item from \"{branch_label}\".",
-      "\"{branch_label}\" cleaned up.",
+      "OK — removing a sub-item under \"{branch_label}\".",
+      "Sure — that item under \"{branch_label}\" is gone.",
+      "Yep — deleting under \"{branch_label}\".",
+      "OK — \"{branch_label}\" is clear.",
       "Yep — removed.",
-      "All set — \"{branch_label}\" updated.",
-      "Sub-item cleared.",
-      "Delete done.",
-      "Branch \"{branch_label}\" updated.",
-      "I handled that."
+      "Right — cleared under \"{branch_label}\".",
+      "OK — that child is gone.",
+      "OK — cleared under \"{branch_label}\".",
+      "Sure — deleted.",
+      "Got it."
     ]
   },
   "ui.auto_complete": {
@@ -753,28 +753,28 @@
   },
   "diagram.update_center.double_bubble.done": {
     "zh": [
-      "已更新为「{left}」和「{right}」。",
-      "好了，现在是「{left}」与「{right}」。",
-      "双主题已设为「{left}」「{right}」。",
-      "「{left}」和「{right}」改好了。",
-      "嗯，更新完成。",
-      "搞定，两侧主题已改好。",
-      "已经写入「{left}」和「{right}」。",
-      "双气泡主题更新好了。",
-      "改好了：「{left}」/「{right}」。",
-      "已经帮你处理好了。"
+      "好，写成「{left}」和「{right}」。",
+      "行，现在是「{left}」与「{right}」。",
+      "嗯，「{left}」和「{right}」。",
+      "好，「{left}」和「{right}」。",
+      "嗯，两侧改好了。",
+      "行，两边都改了。",
+      "好，写入「{left}」和「{right}」。",
+      "行，双主题好了。",
+      "好：「{left}」/「{right}」。",
+      "嗯，处理好了。"
     ],
     "en": [
-      "Updated to \"{left}\" and \"{right}\".",
-      "Done — now \"{left}\" and \"{right}\".",
-      "Dual topics set to \"{left}\" and \"{right}\".",
-      "\"{left}\" and \"{right}\" are updated.",
-      "Yep — update complete.",
-      "All set — both sides updated.",
-      "Wrote \"{left}\" and \"{right}\".",
-      "Double-bubble topics updated.",
-      "Done: \"{left}\" / \"{right}\".",
-      "I handled that."
+      "OK — \"{left}\" and \"{right}\".",
+      "Sure — now \"{left}\" and \"{right}\".",
+      "Yep — \"{left}\" and \"{right}\".",
+      "OK — \"{left}\" and \"{right}\" are in.",
+      "Yep — both sides.",
+      "Right — both sides updated.",
+      "OK — writing \"{left}\" and \"{right}\".",
+      "Sure — both topics.",
+      "OK: \"{left}\" / \"{right}\".",
+      "Got it."
     ]
   }
 }

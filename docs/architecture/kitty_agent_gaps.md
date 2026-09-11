@@ -25,7 +25,7 @@ flowchart TD
 
 ## Phase 1 — Typed core
 
-Highest behavior value. Stay inside `agent_loop/` + memory. Do not grow [`command_router.py`](../../services/kitty/routing/command_router.py).
+Highest behavior value. Stay inside `agent_loop/` + memory.
 
 ### 1a. Split tool schemas by mode
 
@@ -70,7 +70,6 @@ Library dump is not injected into the typed loop. Leftover `render_library_promp
 - pi / OpenClaw / `@mariozechner/pi-agent-core`
 - LangGraph / Qwen-Agent / DashScope hosted Agent
 - Bash, browser, MCP, session-tree coding extensions
-- Growing [`command_router.py`](../../services/kitty/routing/command_router.py)
 - Expanding verified diagram types in the first ship
 
 ## Checklist
