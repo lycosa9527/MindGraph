@@ -6,13 +6,13 @@
 #include "esp_log.h"
 
 #include "kitty_audio.hpp"
-#include "kitty_opus.hpp"
 #include "kitty_ui.hpp"
 #include "kitty_ws.hpp"
 
 namespace {
 
 constexpr const char *TAG = "kitty_ptt";
+std::atomic<bool> g_turn_ready{false};
 
 void interrupt_speech()
 {
@@ -29,6 +29,7 @@ void reset_asr()
     std::lock_guard<std::mutex> lock(g_kitty_asr_mutex);
     g_kitty_asr_text.clear();
     g_kitty_asr_done = false;
+    g_turn_ready.store(false);
 }
 
 std::string next_utterance_id()
@@ -38,33 +39,27 @@ std::string next_utterance_id()
     return g_kitty_utterance_id;
 }
 
-void send_asr_start(const std::string &utterance_id, bool use_opus)
+void send_asr_start(const std::string &utterance_id)
 {
     boost::json::object start;
     start["type"] = "asr_start";
     start["utterance_id"] = utterance_id;
     start["language_hints"] = boost::json::array{"zh"};
-    start["format"] = use_opus ? "opus" : "pcm";
+    start["format"] = "pcm";
     start["sample_rate"] = 16000;
     kitty_send_obj(std::move(start));
 }
 
-bool encode_asr_frame(const int16_t *samples, size_t count, bool use_opus, std::string &encoded)
+bool encode_asr_frame(const int16_t *samples, size_t count, std::string &encoded)
 {
-    if (use_opus) {
-        std::vector<uint8_t> packet;
-        if (!kitty_opus_encode(samples, count, packet)) {
-            return false;
-        }
-        return kitty_b64_encode(packet.data(), packet.size(), encoded);
-    }
     return kitty_b64_encode(reinterpret_cast<const uint8_t *>(samples), count * sizeof(int16_t), encoded);
 }
 
-void stream_mic_until(const std::string &utterance_id, bool hold_only, bool use_opus)
+void stream_mic_until(const std::string &utterance_id, bool hold_only)
 {
     std::vector<int16_t> frame(k_kitty_frame_samples, 0);
     int hold_peak = 0;
+    int frames_sent = 0;
     int idle_ticks = 0;
     while (kitty_ws_is_open()) {
         if (hold_only && !kitty_ui_hold_active()) {
@@ -104,25 +99,25 @@ void stream_mic_until(const std::string &utterance_id, bool hold_only, bool use_
         kitty_ui_set_mic_level(static_cast<uint8_t>(peak > 32767 ? 255 : peak / 128));
         kitty_audio_boost_pcm(frame.data(), frame.size());
         std::string encoded;
-        if (!encode_asr_frame(frame.data(), frame.size(), use_opus, encoded)) {
+        if (!encode_asr_frame(frame.data(), frame.size(), encoded)) {
             continue;
         }
         boost::json::object audio;
         audio["type"] = "asr_audio";
         audio["data"] = encoded;
-        audio["format"] = use_opus ? "opus" : "pcm";
+        audio["format"] = "pcm";
         audio["utterance_id"] = utterance_id;
         kitty_send_obj(std::move(audio));
+        ++frames_sent;
     }
     kitty_audio_mic_close();
-    kitty_opus_close();
     boost::json::object stop;
     stop["type"] = "asr_stop";
     stop["utterance_id"] = utterance_id;
     stop["peak"] = hold_peak;
     kitty_send_obj(std::move(stop));
     kitty_ui_clear_hold();
-    ESP_LOGI(TAG, "ptt stop utt=%s peak=%d", utterance_id.c_str(), hold_peak);
+    ESP_LOGI(TAG, "ptt stop utt=%s frames=%d peak=%d", utterance_id.c_str(), frames_sent, hold_peak);
     for (int i = 0; i < 100; ++i) {
         bool done = false;
         {
@@ -138,6 +133,29 @@ void stream_mic_until(const std::string &utterance_id, bool hold_only, bool use_
 
 } // namespace
 
+static void clear_choices()
+{
+    for (std::string &choice : g_kitty_choices) {
+        choice.clear();
+    }
+}
+
+void kitty_agent_begin_user_turn()
+{
+    clear_choices();
+    kitty_ui_begin_user_turn();
+    g_turn_ready.store(true);
+}
+
+void kitty_agent_begin_user_turn_once()
+{
+    if (g_turn_ready.exchange(true)) {
+        return;
+    }
+    clear_choices();
+    kitty_ui_begin_user_turn();
+}
+
 void kitty_agent_commit_asr()
 {
     std::string text;
@@ -150,7 +168,9 @@ void kitty_agent_commit_asr()
         g_kitty_asr_done = false;
     }
     if (text.empty()) {
-        kitty_ui_set_user_text("没听清");
+        if (g_turn_ready.load()) {
+            kitty_ui_set_user_text("没听清");
+        }
         kitty_ui_set_state(KittyUiState::idle);
         return;
     }
@@ -166,10 +186,25 @@ void kitty_agent_commit_asr()
     kitty_send_obj(std::move(msg));
 }
 
+static bool hold_is_stable()
+{
+    for (int i = 0; i < 10; ++i) {
+        if (!kitty_ui_hold_active()) {
+            return false;
+        }
+        boost::this_thread::sleep_for(boost::chrono::milliseconds(k_kitty_hold_poll_ms));
+    }
+    return kitty_ui_hold_active();
+}
+
 void kitty_agent_run_ptt()
 {
-    interrupt_speech();
     reset_asr();
+    if (!hold_is_stable()) {
+        return;
+    }
+    interrupt_speech();
+    kitty_agent_begin_user_turn();
     if (!kitty_audio_mic_open()) {
         kitty_ui_set_kitty_text("麦克风不可用");
         while (kitty_ui_hold_active()) {
@@ -179,9 +214,8 @@ void kitty_agent_run_ptt()
     }
     kitty_ui_set_state(KittyUiState::listening);
     const std::string utterance_id = next_utterance_id();
-    const bool use_opus = kitty_opus_open();
-    send_asr_start(utterance_id, use_opus);
-    stream_mic_until(utterance_id, true, use_opus);
+    send_asr_start(utterance_id);
+    stream_mic_until(utterance_id, true);
     kitty_agent_commit_asr();
 }
 
@@ -198,18 +232,21 @@ void kitty_agent_run_auto_listen()
     }
     kitty_ui_set_state(KittyUiState::listening);
     const std::string utterance_id = next_utterance_id();
-    const bool use_opus = kitty_opus_open();
-    send_asr_start(utterance_id, use_opus);
-    stream_mic_until(utterance_id, false, use_opus);
+    send_asr_start(utterance_id);
+    stream_mic_until(utterance_id, false);
     kitty_agent_commit_asr();
 }
 
 void kitty_agent_send_clarify_choice(int index)
 {
-    const std::string &label = index == 2 ? g_kitty_choice_b : g_kitty_choice_a;
+    if (index < 1 || index > k_kitty_choice_max) {
+        return;
+    }
+    const std::string label = g_kitty_choices[index - 1];
     if (label.empty()) {
         return;
     }
+    kitty_agent_begin_user_turn();
     kitty_ui_set_user_text(label);
     kitty_ui_set_state(KittyUiState::thinking);
     boost::json::object msg;

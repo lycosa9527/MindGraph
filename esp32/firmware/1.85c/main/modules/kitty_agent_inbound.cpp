@@ -1,5 +1,7 @@
 #include "kitty_agent_shared.hpp"
 
+#include <cstring>
+
 #include "boost/json.hpp"
 #include "esp_log.h"
 
@@ -38,7 +40,7 @@ void apply_clarify_options(const boost::json::object &obj)
     }
     int index = 1;
     for (const auto &item : opts->as_array()) {
-        if (index > 2) {
+        if (index > k_kitty_choice_max) {
             break;
         }
         std::string label;
@@ -58,11 +60,7 @@ void apply_clarify_options(const boost::json::object &obj)
             continue;
         }
         kitty_ui_set_choice(index, label);
-        if (index == 1) {
-            g_kitty_choice_a = label;
-        } else {
-            g_kitty_choice_b = label;
-        }
+        g_kitty_choices[index - 1] = label;
         ++index;
     }
 }
@@ -114,11 +112,14 @@ void kitty_agent_handle_inbound(const std::string &raw)
             if (!spoken.empty()) {
                 g_kitty_asr_text = spoken;
             }
-            if (type != "asr_partial") {
+            if (type == "asr_final") {
+                g_kitty_asr_done = true;
+            } else if (type == "asr_stopped" && !g_kitty_asr_text.empty()) {
                 g_kitty_asr_done = true;
             }
         }
         if (!spoken.empty()) {
+            kitty_agent_begin_user_turn_once();
             kitty_ui_set_user_text(spoken);
             ESP_LOGI(TAG, "asr %s: %s", type.c_str(), spoken.c_str());
         }
@@ -151,13 +152,22 @@ void kitty_agent_handle_inbound(const std::string &raw)
             std::lock_guard<std::mutex> lock(g_kitty_asr_mutex);
             g_kitty_asr_done = true;
         }
-        kitty_ui_set_state(KittyUiState::error);
         const auto *msg = obj.if_contains("message");
         const auto *errv = obj.if_contains("error");
+        const char *err = nullptr;
         if (msg != nullptr && msg->is_string()) {
-            kitty_ui_set_kitty_text(std::string(msg->as_string().c_str()));
+            err = msg->as_string().c_str();
         } else if (errv != nullptr && errv->is_string()) {
-            kitty_ui_set_kitty_text(std::string(errv->as_string().c_str()));
+            err = errv->as_string().c_str();
+        }
+        if (err != nullptr && std::strstr(err, "valid audio") != nullptr) {
+            kitty_ui_set_user_text("没听清");
+            kitty_ui_set_state(KittyUiState::idle);
+            return;
+        }
+        kitty_ui_set_state(KittyUiState::error);
+        if (err != nullptr) {
+            kitty_ui_set_kitty_text(std::string(err));
         }
     }
 }

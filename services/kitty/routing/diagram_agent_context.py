@@ -17,6 +17,7 @@ from services.kitty.routing.mindmap_branch_numbers import (
     resolve_outline_number_ref,
     stamp_outline_numbers,
 )
+from services.kitty.routing.one_sentence_edit_heuristics import normalize_edit_label
 
 Lang = Literal["zh", "en"]
 
@@ -391,7 +392,9 @@ def resolve_diagram_node_ref(
 
     if not isinstance(label, str) or not label.strip():
         return None
-    wanted_label = label.strip()
+    wanted_label = normalize_edit_label(label)
+    if not wanted_label:
+        return None
     numbered_id = resolve_outline_number_ref(data, wanted_label)
     if numbered_id:
         for nid, lbl in pairs:
@@ -399,7 +402,7 @@ def resolve_diagram_node_ref(
                 return {"node_id": nid, "node_label": lbl or nid}
         return {"node_id": numbered_id, "node_label": numbered_id}
     for nid, lbl in pairs:
-        if lbl == wanted_label:
+        if normalize_edit_label(lbl) == wanted_label:
             return {"node_id": nid, "node_label": lbl}
     return None
 

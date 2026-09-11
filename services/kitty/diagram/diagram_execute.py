@@ -18,6 +18,7 @@ from services.kitty.diagram.diagram_handlers import (
 )
 from services.kitty.diagram.diagram_spec_sync import sync_diagram_data_to_spec_shape
 from services.kitty.diagram.hub_bridge import try_sync_voice_diagram_to_hub
+from services.kitty.routing.one_sentence_edit_heuristics import normalize_edit_label
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.kitty.session.events import emit_diagram_mutated
 from services.kitty.session.runtime_state import logger, voice_sessions
@@ -38,10 +39,14 @@ async def execute_diagram_update(
     Hub revision must bump only after the owning client persists Pinia via ``context_update``.
     """
     target = command.get("target")
+    if isinstance(target, str):
+        cleaned_target = normalize_edit_label(target)
+        if cleaned_target:
+            target = cleaned_target
     if not (isinstance(target, str) and target.strip()):
         new_text = command.get("new_text")
         if isinstance(new_text, str) and new_text.strip():
-            target = new_text.strip()
+            target = normalize_edit_label(new_text) or new_text.strip()
     node_index = command.get("node_index")
     node_identifier = command.get("node_identifier")
 
@@ -52,7 +57,11 @@ async def execute_diagram_update(
 
         elif action == "update_node":
             new_raw = command.get("new_text")
-            apply_text = new_raw.strip() if isinstance(new_raw, str) and new_raw.strip() else target
+            apply_text = (
+                normalize_edit_label(new_raw) or new_raw.strip()
+                if isinstance(new_raw, str) and new_raw.strip()
+                else target
+            )
             if apply_text:
                 executed = await _handle_update_node_action(
                     websocket,

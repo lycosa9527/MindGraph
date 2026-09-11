@@ -11,6 +11,7 @@ from fastapi import WebSocket
 
 from services.kitty.context.messaging import send_kitty_diagram_update
 from services.kitty.diagram.diagram_utils import child_node_live_id
+from services.kitty.routing.one_sentence_edit_heuristics import normalize_edit_label
 from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.session.ops import get_agent_session_id
 from services.kitty.session.runtime_state import logger, voice_sessions
@@ -232,14 +233,19 @@ async def voice_apply_delete_node_action(
     # Also try to resolve by target text if we have it
     if not resolved_node_id and target:
         diagram_type = str(voice_sessions[voice_session_id].get("diagram_type") or "circle_map")
+        want = normalize_edit_label(str(target))
         for idx, node in enumerate(nodes):
             node_text = node.get("text") if isinstance(node, dict) else str(node)
-            if node_text and target and node_text == target:
-                resolved_node_id = child_node_live_id(node, idx, diagram_type)
-                if not resolved_node_id:
-                    continue
-                resolved_node_index = idx
-                break
+            got = normalize_edit_label(str(node_text or ""))
+            if not want or not got:
+                continue
+            if got != want and want not in got and got not in want:
+                continue
+            resolved_node_id = child_node_live_id(node, idx, diagram_type)
+            if not resolved_node_id:
+                continue
+            resolved_node_index = idx
+            break
 
     if resolved_node_id and resolved_node_index is None:
         rid = str(resolved_node_id)

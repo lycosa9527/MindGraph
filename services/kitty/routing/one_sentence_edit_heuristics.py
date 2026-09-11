@@ -289,6 +289,10 @@ _DELETE_NODE_EN = re.compile(
 )
 
 _STRIP_TRAILING_PUNCT = re.compile(r"[。.!！？?\s]+$")
+_WRAP_QUOTES = "\"'「」『』“”‘’《》"
+# Fun-ASR wraps the name; 这个/这条 is spoken glue before 分支, not the name.
+_WRAPPED_SPAN = re.compile(r"[\"'「『“‘《]([^\"'」』”’》]+)[\"'」』”’》]")
+_TRAILING_DEICTIC = re.compile(r"(?:这个|这条)$")
 _PLACEHOLDER_LABELS = frozenset({"自定义", "新", "新的", "个", "custom", "new"})
 _UNNAMED_ADD_ZH = re.compile(
     r"^(?:请)?(?:帮我)?(?:再)?"
@@ -316,14 +320,41 @@ def _nameless_add_command() -> Dict[str, Any]:
     return {"action": "add_node", "confidence": 0.9}
 
 
-def _clean_label(raw: str) -> str:
+def normalize_edit_label(raw: str) -> str:
+    """Peel speech wrappers so the remaining text is the canvas name.
+
+    Fun-ASR often emits ``“Name”这个``. The quoted span is the name; otherwise
+    a trailing 这个/这条 is a demonstrative, not part of the label.
+    """
     label = _STRIP_TRAILING_PUNCT.sub("", (raw or "").strip())
-    label = label.strip("\"'「」『』")
+    wrapped = _WRAPPED_SPAN.search(label)
+    if wrapped is not None:
+        label = wrapped.group(1).strip()
+    else:
+        label = _TRAILING_DEICTIC.sub("", label).strip()
+        label = label.strip(_WRAP_QUOTES)
+    label = _STRIP_TRAILING_PUNCT.sub("", label).strip()
     if label.startswith("和") and len(label) > 1:
         label = label[1:].strip()
     if re.match(r"(?i)^and\s+", label):
         label = label[3:].strip()
     return label.strip()
+
+
+def edit_labels_match(left: str, right: str) -> bool:
+    """True when two labels are equal after quote and punct strip."""
+    want = normalize_edit_label(left)
+    got = normalize_edit_label(right)
+    return bool(want) and want == got
+
+
+def edit_labels_overlap(left: str, right: str) -> bool:
+    """Exact or contains match after quote strip (apply / preview lookup)."""
+    want = normalize_edit_label(left)
+    got = normalize_edit_label(right)
+    if not want or not got:
+        return False
+    return got == want or want in got or got in want
 
 
 def split_multi_labels(raw: str) -> list[str]:
@@ -334,7 +365,7 @@ def split_multi_labels(raw: str) -> list[str]:
     normalized = re.sub(r"(?i),\s*and\s+", "、", normalized)
     labels: list[str] = []
     for chunk in _LABEL_LIST_SPLIT.split(normalized):
-        label = _clean_label(chunk)
+        label = normalize_edit_label(chunk)
         if label:
             labels.append(label)
     return labels
@@ -398,7 +429,7 @@ def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str,
         complete = pattern.match(text)
         if complete is None:
             continue
-        label = _clean_label(complete.group("label"))
+        label = normalize_edit_label(complete.group("label"))
         if label:
             return {
                 "action": "auto_complete_branch",
@@ -410,7 +441,7 @@ def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str,
         center_auto = pattern.match(text)
         if center_auto is None:
             continue
-        label = _clean_label(center_auto.group("label"))
+        label = normalize_edit_label(center_auto.group("label"))
         if label:
             return {
                 "action": "update_center",
@@ -425,7 +456,7 @@ def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str,
         center_multi = pattern.match(text)
         if center_multi is None:
             continue
-        topic = _clean_label(center_multi.group("topic"))
+        topic = normalize_edit_label(center_multi.group("topic"))
         labels = split_multi_labels(center_multi.group("labels"))
         cmd = _multi_add_command(labels, topic=topic)
         if cmd is not None:
@@ -448,7 +479,7 @@ def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str,
         add_auto = pattern.match(text)
         if add_auto is None:
             continue
-        label = _clean_label(add_auto.group("label"))
+        label = normalize_edit_label(add_auto.group("label"))
         if is_placeholder_edit_label(label):
             return _nameless_add_command()
         if label:
@@ -469,7 +500,7 @@ def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str,
         center = pattern.match(text)
         if center is None:
             continue
-        label = _clean_label(center.group("label"))
+        label = normalize_edit_label(center.group("label"))
         if label:
             return {
                 "action": "update_center",
@@ -481,8 +512,8 @@ def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str,
         rename = pattern.match(text)
         if rename is None:
             continue
-        old_label = _clean_label(rename.group("old"))
-        new_label = _clean_label(rename.group("new"))
+        old_label = normalize_edit_label(rename.group("old"))
+        new_label = normalize_edit_label(rename.group("new"))
         if old_label in {"主题", "中心", "标题", "topic", "center", "title"}:
             continue
         if old_label and new_label and old_label != new_label:
@@ -497,7 +528,7 @@ def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str,
         delete = pattern.match(text)
         if delete is None:
             continue
-        label = _clean_label(delete.group("label"))
+        label = normalize_edit_label(delete.group("label"))
         if label:
             return {
                 "action": "delete_node",
@@ -509,7 +540,7 @@ def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str,
         match = pattern.match(text)
         if match is None:
             continue
-        label = _clean_label(match.group("label"))
+        label = normalize_edit_label(match.group("label"))
         if is_placeholder_edit_label(label):
             return _nameless_add_command()
         if not label:

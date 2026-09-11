@@ -12,7 +12,10 @@ from services.diagram_edit.effects import build_expected_effect
 from services.diagram_edit.types import ToolResult
 from services.kitty.agent_loop.loop import _is_fast_structural_command, run_typed_agent_loop
 from services.kitty.routing.outcomes import RouteOutcome
-from services.kitty.routing.one_sentence_edit_heuristics import heuristic_one_sentence_edit_command
+from services.kitty.routing.one_sentence_edit_heuristics import (
+    heuristic_one_sentence_edit_command,
+    normalize_edit_label,
+)
 from services.kitty.session.ops import create_voice_session
 from services.kitty.session.runtime_state import voice_sessions
 
@@ -32,6 +35,16 @@ def _edit_context() -> dict:
             ],
         },
     }
+
+
+def test_normalize_edit_label_peels_asr_wrappers() -> None:
+    """Quoted span is the name; 这个 after it is spoken glue, not a regex special case."""
+    assert normalize_edit_label("“新分支测试”这个") == "新分支测试"
+    assert normalize_edit_label("“反思与研究能力”") == "反思与研究能力"
+    assert normalize_edit_label("教师专业发展量表这个") == "教师专业发展量表"
+    assert normalize_edit_label("Mechanism") == "Mechanism"
+    assert normalize_edit_label("「食」") == "食"
+    assert normalize_edit_label("市场部") == "市场部"
 
 
 def test_fast_structural_allows_valued_add_without_follow_ups() -> None:
@@ -63,6 +76,35 @@ def test_fast_structural_rename_and_delete_this_branch() -> None:
     assert delete == {
         "action": "delete_node",
         "target": "地理区位",
+        "confidence": 0.92,
+    }
+    quoted = heuristic_one_sentence_edit_command("删除“反思与研究能力”这个分支。")
+    assert quoted == {
+        "action": "delete_node",
+        "target": "反思与研究能力",
+        "confidence": 0.92,
+    }
+    add_quoted = heuristic_one_sentence_edit_command("添加“新分支测试”这个分支")
+    assert add_quoted == {
+        "action": "add_node",
+        "target": "新分支测试",
+        "confidence": 0.92,
+    }
+    add_then_fill = heuristic_one_sentence_edit_command("添加“教师专业发展量表”这个分支并补完")
+    assert add_then_fill is not None
+    assert add_then_fill.get("action") == "add_node"
+    assert add_then_fill.get("target") == "教师专业发展量表"
+    complete_quoted = heuristic_one_sentence_edit_command("补全“Mechanism”这个分支")
+    assert complete_quoted == {
+        "action": "auto_complete_branch",
+        "target": "Mechanism",
+        "confidence": 0.95,
+    }
+    rename_quoted = heuristic_one_sentence_edit_command("把“Boundary”改成测试名称")
+    assert rename_quoted == {
+        "action": "update_node",
+        "target": "Boundary",
+        "new_text": "测试名称",
         "confidence": 0.92,
     }
     assert _is_fast_structural_command(delete, "删除地理区位这个分支") is True

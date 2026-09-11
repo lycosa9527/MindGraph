@@ -8,8 +8,8 @@ struct KittyWidgets {
     lv_obj_t *live = nullptr;
     lv_obj_t *user = nullptr;
     lv_obj_t *kitty = nullptr;
-    lv_obj_t *choice_a = nullptr;
-    lv_obj_t *choice_b = nullptr;
+    lv_obj_t *choice_grid = nullptr;
+    lv_obj_t *choices[4] = {};
     lv_obj_t *mascot = nullptr;
     lv_obj_t *library = nullptr;
     lv_obj_t *library_label = nullptr;

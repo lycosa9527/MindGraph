@@ -12,14 +12,14 @@
 
 constexpr size_t k_kitty_frame_samples = 1600;
 constexpr uint32_t k_kitty_hold_poll_ms = 20;
+constexpr int k_kitty_choice_max = 4;
 
 extern std::string g_kitty_token;
 extern std::string g_kitty_scope;
 extern std::string g_kitty_diagram_type;
 extern std::string g_kitty_asr_text;
 extern std::string g_kitty_utterance_id;
-extern std::string g_kitty_choice_a;
-extern std::string g_kitty_choice_b;
+extern std::string g_kitty_choices[k_kitty_choice_max];
 extern std::mutex g_kitty_asr_mutex;
 extern bool g_kitty_asr_done;
 extern std::atomic<bool> g_kitty_speaking;
@@ -37,6 +37,8 @@ void kitty_agent_run_ptt();
 void kitty_agent_run_auto_listen();
 void kitty_agent_commit_asr();
 void kitty_agent_send_clarify_choice(int index);
+void kitty_agent_begin_user_turn();
+void kitty_agent_begin_user_turn_once();
 bool kitty_agent_has_library_scope();
 bool kitty_agent_bind_ws();
 bool kitty_agent_connect_session();

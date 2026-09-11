@@ -9,6 +9,7 @@
 #include "lvgl.h"
 #include "private/utils.hpp"
 
+#include "kitty_ptt_button.hpp"
 #include "kitty_ui_mascot.hpp"
 #include "kitty_ui_widgets.hpp"
 #include "kitty_ui_work_ring.hpp"
@@ -31,8 +32,7 @@ struct UiSnapshot {
     char live[40] = {};
     char user[96] = {};
     char kitty[96] = {};
-    char choice_a[40] = {};
-    char choice_b[40] = {};
+    char choices[4][48] = {};
     char library[80] = {};
     char picker_status[40] = {};
     PickRow picks[k_pick_max] = {};
@@ -57,6 +57,8 @@ lv_timer_t *g_timer = nullptr;
 const lv_font_t *g_cjk_font = nullptr;
 uint8_t g_painted_pick = 0;
 bool g_hold_down = false;
+bool g_touch_hold = false;
+bool g_boot_hold = false;
 
 void copy_field(char *dest, size_t dest_size, const std::string &src)
 {
@@ -129,16 +131,36 @@ void set_hold(bool hold)
     BROOKESIA_LOGI("Kitty mic hold start");
 }
 
+void sync_hold()
+{
+    set_hold(g_touch_hold || g_boot_hold);
+}
+
+void poll_boot_hold()
+{
+    if (g_model.hidden) {
+        return;
+    }
+    const bool boot = kitty_ptt_button_held();
+    if (boot == g_boot_hold) {
+        return;
+    }
+    g_boot_hold = boot;
+    sync_hold();
+}
+
 void on_hold(lv_event_t *event)
 {
     const lv_event_code_t code = lv_event_get_code(event);
     std::lock_guard<std::mutex> lock(g_mutex);
     if (code == LV_EVENT_PRESSED) {
-        set_hold(true);
+        g_touch_hold = true;
+        sync_hold();
         return;
     }
     if (code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) {
-        set_hold(false);
+        g_touch_hold = false;
+        sync_hold();
     }
 }
 
@@ -196,6 +218,8 @@ void hide_face()
     g_model.hold = false;
     g_model.click = false;
     g_hold_down = false;
+    g_touch_hold = false;
+    g_boot_hold = false;
     g_teardown_pending = true;
 }
 
@@ -214,12 +238,13 @@ void poll_pointer()
                 && g_widgets.mic != nullptr
                 && lv_obj_is_valid(g_widgets.mic)
                 && lv_obj_hit_test(g_widgets.mic, &point);
-            if (on_mic && !g_hold_down) {
-                std::lock_guard<std::mutex> lock(g_mutex);
-                set_hold(true);
-            } else if (!pressed && g_hold_down) {
-                std::lock_guard<std::mutex> lock(g_mutex);
-                set_hold(false);
+            std::lock_guard<std::mutex> lock(g_mutex);
+            if (on_mic) {
+                g_touch_hold = true;
+                sync_hold();
+            } else if (!pressed) {
+                g_touch_hold = false;
+                sync_hold();
             }
         }
         indev = lv_indev_get_next(indev);
@@ -334,6 +359,7 @@ void paint_picker(const UiSnapshot &snap)
         return;
     }
     lv_obj_remove_flag(g_widgets.picker, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_move_foreground(g_widgets.picker);
     if (g_widgets.picker_row != nullptr) {
         lv_obj_add_flag(g_widgets.picker_row, LV_OBJ_FLAG_HIDDEN);
     }
@@ -367,6 +393,7 @@ void teardown_widgets()
     g_painted_pick = 0;
     g_cjk_font = nullptr;
     g_hold_down = false;
+    g_touch_hold = false;
 }
 
 void ensure_widgets()
@@ -407,6 +434,10 @@ void tick(lv_timer_t *timer)
         teardown_widgets();
         return;
     }
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        poll_boot_hold();
+    }
     ensure_widgets();
     if (g_widgets.root == nullptr) {
         return;
@@ -440,8 +471,14 @@ void tick(lv_timer_t *timer)
     }
     set_label_if_changed(g_widgets.user, snap.user);
     set_label_if_changed(g_widgets.kitty, snap.kitty);
-    set_choice_chip(g_widgets.choice_a, snap.choice_a);
-    set_choice_chip(g_widgets.choice_b, snap.choice_b);
+    for (int i = 0; i < 4; ++i) {
+        set_choice_chip(g_widgets.choices[i], snap.choices[i]);
+    }
+    if (g_widgets.choice_grid != nullptr && !snap.picker
+        && (snap.choices[0][0] != '\0' || snap.choices[1][0] != '\0'
+            || snap.choices[2][0] != '\0' || snap.choices[3][0] != '\0')) {
+        lv_obj_move_foreground(g_widgets.choice_grid);
+    }
     set_label_if_changed(
         g_widgets.library_label,
         snap.library[0] != '\0' ? snap.library : "图库"
@@ -470,6 +507,7 @@ bool kitty_ui_start()
     if (g_timer != nullptr) {
         return true;
     }
+    kitty_ptt_button_init();
     g_timer = lv_timer_create(tick, 80, nullptr);
     return g_timer != nullptr;
 }
@@ -502,12 +540,19 @@ void kitty_ui_set_kitty_text(const std::string &text)
 void kitty_ui_set_choice(int index, const std::string &text)
 {
     std::lock_guard<std::mutex> lock(g_mutex);
-    if (index == 1) {
-        copy_field(g_model.choice_a, sizeof(g_model.choice_a), text);
+    if (index < 1 || index > 4) {
         return;
     }
-    if (index == 2) {
-        copy_field(g_model.choice_b, sizeof(g_model.choice_b), text);
+    copy_field(g_model.choices[index - 1], sizeof(g_model.choices[index - 1]), text);
+}
+
+void kitty_ui_begin_user_turn()
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    g_model.user[0] = '\0';
+    g_model.kitty[0] = '\0';
+    for (auto &choice : g_model.choices) {
+        choice[0] = '\0';
     }
 }
 
@@ -582,6 +627,7 @@ bool kitty_ui_take_create_mindmap()
 bool kitty_ui_hold_active()
 {
     std::lock_guard<std::mutex> lock(g_mutex);
+    poll_boot_hold();
     return g_model.hold;
 }
 

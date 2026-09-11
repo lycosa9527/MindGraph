@@ -19,6 +19,10 @@ from services.kitty.diagram.diagram_utils import (
     session_context_child_record,
 )
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
+from services.kitty.routing.one_sentence_edit_heuristics import (
+    edit_labels_overlap,
+    normalize_edit_label,
+)
 from services.kitty.session.ops import get_voice_session
 from services.kitty.session.runtime_state import logger
 
@@ -59,11 +63,12 @@ def _preview_update_center(command: Dict[str, Any], diagram_data: Dict[str, Any]
     new_text = command.get("target") or command.get("new_text")
     if not isinstance(new_text, str) or not new_text.strip():
         return False
+    apply_text = normalize_edit_label(new_text) or new_text.strip()
     center = diagram_data.setdefault("center", {})
     if not isinstance(center, dict):
-        diagram_data["center"] = {"text": new_text.strip()}
+        diagram_data["center"] = {"text": apply_text}
     else:
-        center["text"] = new_text.strip()
+        center["text"] = apply_text
     return True
 
 
@@ -73,11 +78,23 @@ def _preview_update_node(
     diagram_type: str,
 ) -> bool:
     """Preview update node."""
-    target = command.get("target")
-    if not isinstance(target, str) or not target.strip():
+    raw_new = command.get("new_text")
+    raw_target = command.get("target")
+    apply_raw = raw_new if isinstance(raw_new, str) and raw_new.strip() else raw_target
+    if not isinstance(apply_raw, str) or not apply_raw.strip():
         return False
+    apply_text = normalize_edit_label(apply_raw) or apply_raw.strip()
     node_index = command.get("node_index")
     node_identifier = command.get("node_identifier")
+    lookup = node_identifier
+    if (
+        not lookup
+        and isinstance(raw_target, str)
+        and raw_target.strip()
+        and isinstance(raw_new, str)
+        and raw_new.strip()
+    ):
+        lookup = raw_target
     resolved_node_id = command.get("node_id")
     resolved_node_index: Optional[int] = node_index if isinstance(node_index, int) else None
 
@@ -91,10 +108,10 @@ def _preview_update_node(
         node = nodes[resolved_node_index]
         if not resolved_node_id:
             resolved_node_id = child_node_live_id(node, resolved_node_index, diagram_type)
-    elif node_identifier and not resolved_node_id:
+    elif lookup and not resolved_node_id:
         for idx, node in enumerate(nodes):
             node_text = node.get("text") if isinstance(node, dict) else str(node)
-            if node_text and (node_identifier in node_text or node_text in node_identifier):
+            if node_text and edit_labels_overlap(str(lookup), str(node_text)):
                 live_id = child_node_live_id(node, idx, diagram_type)
                 if not live_id:
                     continue
@@ -107,19 +124,20 @@ def _preview_update_node(
 
     node = nodes[resolved_node_index]
     if isinstance(node, dict):
-        node["text"] = target.strip()
+        node["text"] = apply_text
         if "label" in node:
-            node["label"] = target.strip()
+            node["label"] = apply_text
     else:
-        nodes[resolved_node_index] = target.strip()
+        nodes[resolved_node_index] = apply_text
     return True
 
 
 def _preview_add_node(command: Dict[str, Any], diagram_data: Dict[str, Any], diagram_type: str) -> bool:
     """Preview add node."""
-    target = command.get("target")
-    if not isinstance(target, str) or not target.strip():
+    raw_target = command.get("target")
+    if not isinstance(raw_target, str) or not raw_target.strip():
         return False
+    target = normalize_edit_label(raw_target) or raw_target.strip()
     nodes = diagram_data.setdefault("children", [])
     if not isinstance(nodes, list):
         return False
@@ -129,16 +147,16 @@ def _preview_add_node(command: Dict[str, Any], diagram_data: Dict[str, Any], dia
         if 0 <= add_node_index < len(nodes):
             existing_node = nodes[add_node_index]
             if isinstance(existing_node, dict):
-                existing_node["text"] = target.strip()
+                existing_node["text"] = target
             else:
-                nodes[add_node_index] = target.strip()
+                nodes[add_node_index] = target
         else:
-            new_node = session_context_child_record(target.strip(), add_node_index, diagram_type)
+            new_node = session_context_child_record(target, add_node_index, diagram_type)
             while len(nodes) < add_node_index:
                 nodes.append(None)
             nodes.insert(add_node_index, new_node)
     else:
-        new_node = session_context_child_record(target.strip(), len(nodes), diagram_type)
+        new_node = session_context_child_record(target, len(nodes), diagram_type)
         nodes.append(new_node)
     return True
 
@@ -160,9 +178,11 @@ def _preview_delete_node(command: Dict[str, Any], diagram_data: Dict[str, Any], 
             resolved_node_id = child_node_live_id(node, resolved_node_index, diagram_type)
 
     if not resolved_node_id and isinstance(target, str) and target.strip():
+        want = normalize_edit_label(target)
         for idx, node in enumerate(nodes):
             node_text = node.get("text") if isinstance(node, dict) else str(node)
-            if node_text and (target in node_text or node_text in target):
+            got = normalize_edit_label(str(node_text or ""))
+            if want and got and (got == want or want in got or got in want):
                 live_id = child_node_live_id(node, idx, diagram_type)
                 if not live_id:
                     continue

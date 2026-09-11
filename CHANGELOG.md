@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.69] - 2026-09-11
+
+> **Watch PTT is PCM plus the BOOT key; Fun-ASR quotes peel so add/delete/rename hit the node.**
+
+### Added
+
+- **BOOT as mic hold** — GPIO0 (active-low, 20 ms press / 80 ms release debounce) is a second PTT next to the on-screen mic. Board notes: RESET is `CHIP_PU`, not a GPIO.
+- **Four clarify chips** — Watch shows up to four wrap-grid choices (was two fixed A/B chips). A new user turn clears them.
+
+### Changed
+
+- **Watch ASR is PCM** — Fun-ASR `format=opus` needs Ogg; raw ESP Opus came back `no valid audio`. Hello and frames are 16 kHz PCM16LE like browser Kitty. That error speaks 没听清 and returns to idle instead of an error card.
+- **ASR label peel** — `normalize_edit_label` takes the quoted span, or strips a trailing 这个/这条, so `“Name”这个` is the canvas name. Add, rename, delete, complete, and hub preview apply the peeled text.
+
+### Tests
+
+- [`tests/test_kitty_command_grounding.py`](tests/test_kitty_command_grounding.py) quoted-label resolve; [`tests/test_kitty_fast_structural.py`](tests/test_kitty_fast_structural.py) peel plus quoted add/delete/rename/complete. Compound helpers drop `except Exception` so the four-rule audit stays at zero.
+
 ## [5.180.68] - 2026-09-11
 
 > **Kitty speaks the office line first, then applies; stacked teacher sentences stay one turn.**

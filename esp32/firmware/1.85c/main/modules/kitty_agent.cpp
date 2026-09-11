@@ -49,7 +49,7 @@ void kitty_agent_send_hello()
     hello["listen_mode"] = g_kitty_listen_auto.load() ? "auto" : "manual";
     hello["firmware"] = "1.85c";
     hello["device_id"] = watch_device_id();
-    hello["audio_format"] = "opus";
+    hello["audio_format"] = "pcm";
     kitty_send_obj(std::move(hello));
 }
 

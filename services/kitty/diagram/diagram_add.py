@@ -16,6 +16,7 @@ from services.kitty.diagram.diagram_utils import (
     session_context_child_record,
 )
 from services.kitty.routing.diagram_agent_context import resolve_diagram_node_ref
+from services.kitty.routing.one_sentence_edit_heuristics import normalize_edit_label
 from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.session.ops import get_agent_session_id
 from services.kitty.session.runtime_state import logger, voice_sessions
@@ -62,6 +63,10 @@ async def voice_apply_add_node_action(
 ) -> bool:
     """Handle add_node actions including palette-open when target is empty."""
     target = command.get("target")
+    if isinstance(target, str):
+        cleaned = normalize_edit_label(target)
+        if cleaned:
+            target = cleaned
     if target:
         # Check if node_index is specified (for structured input like "branch 1", "branch 2")
         add_node_index = command.get("node_index")

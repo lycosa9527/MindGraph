@@ -59,6 +59,36 @@ def test_resolve_is_exact_label_only() -> None:
     assert resolve_diagram_node_ref(data, label="竞争") is None
 
 
+def test_resolve_strips_curly_quotes() -> None:
+    """Fun-ASR wraps names in “”; lookup still binds the canvas node."""
+    data = _ctx()["diagram_data"]
+    quoted = resolve_diagram_node_ref(data, label="“竞争对手”")
+    assert quoted is not None
+    assert quoted["node_id"] == "uid-comp"
+    assert quoted["node_label"] == "竞争对手"
+    ctx = _ctx()
+    utterance = "删除“竞争对手”这个分支。"
+    llm_cmd = {
+        "action": "delete_node",
+        "target": "“竞争对手”",
+        "node_identifier": "“竞争对手”",
+    }
+    enriched = enrich_node_action_command(dict(llm_cmd), ctx)
+    assert enriched.get("node_id") == "uid-comp"
+    decision = apply_command_grounding(
+        dict(llm_cmd),
+        user_text=utterance,
+        session_context=ctx,
+    )
+    assert decision.allowed is True
+    select_cmd = {"action": "select_node", "target": "“衣”", "node_identifier": "“衣”"}
+    select_enriched = enrich_node_action_command(dict(select_cmd), ctx)
+    assert select_enriched.get("node_id") == "uid-yi"
+    complete_cmd = {"action": "auto_complete_branch", "target": "“竞争对手”"}
+    complete_enriched = enrich_node_action_command(dict(complete_cmd), ctx)
+    assert complete_enriched.get("node_id") == "uid-comp"
+
+
 def test_enrich_does_not_bind_silent_selection() -> None:
     """Empty delete must not inherit the current selection."""
     ctx = _ctx()

@@ -150,6 +150,7 @@ async def _run_compound(
         acks.append(message)
         return True
 
+    finished = False
     try:
         with (
             patch("services.kitty.agent_loop.loop.llm_service.chat_raw", chat_mock),
@@ -181,10 +182,11 @@ async def _run_compound(
             patch("services.kitty.agent_loop.loop.fanout_voice_phase_from_session", new=AsyncMock()),
         ):
             result = await run_typed_agent_loop(ws, vid, text, dict(ctx))
+        finished = True
         return result, vid, bus_mock
-    except Exception:
-        voice_sessions.pop(vid, None)
-        raise
+    finally:
+        if not finished:
+            voice_sessions.pop(vid, None)
 
 
 @pytest.mark.asyncio
@@ -341,6 +343,7 @@ async def _run_with_slot(text: str, *, bus_side_effect: list) -> tuple[RouteResu
         "node_ids": ["uid-p1", "uid-p2"],
     }
     bus_mock = AsyncMock(side_effect=bus_side_effect)
+    finished = False
     try:
         with (
             patch("services.kitty.agent_loop.loop.llm_service.chat_raw", new=AsyncMock()),
@@ -361,10 +364,11 @@ async def _run_with_slot(text: str, *, bus_side_effect: list) -> tuple[RouteResu
             patch("services.kitty.agent_loop.loop.fanout_voice_phase_from_session", new=AsyncMock()),
         ):
             result = await run_typed_agent_loop(ws, vid, text, dict(context))
+        finished = True
         return result, vid, bus_mock
-    except Exception:
-        voice_sessions.pop(vid, None)
-        raise
+    finally:
+        if not finished:
+            voice_sessions.pop(vid, None)
 
 
 @pytest.mark.asyncio

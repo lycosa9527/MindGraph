@@ -11,6 +11,7 @@ import re
 from typing import Any
 
 from services.diagram.mindmap_identity import as_live_mindmap_node_id, identity_aliases
+from services.kitty.routing.one_sentence_edit_heuristics import edit_labels_match
 from services.kitty.session.runtime_state import logger
 
 NODE_TARGET_ACTIONS = frozenset(
@@ -253,7 +254,7 @@ def resolve_voice_node_reference(
     if ident:
         for idx, node in enumerate(children):
             text = _voice_node_text(node)
-            if text and ident == text:
+            if text and edit_labels_match(ident, text):
                 resolved_id = child_node_live_id(node, idx, diagram_type)
                 if not resolved_id:
                     resolved_id = typed_node_id_by_unique_label(node, typed_nodes)

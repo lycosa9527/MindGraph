@@ -39,5 +39,9 @@ Onboard I2C for touch / TCA9554 / RTC is still **GPIO10 SCL / GPIO11 SDA** on V1
 | Touch RST | TCA9554 EXIO1 |
 | MEMS I2S mic WS / SCK / SD | 2 / 15 / 39 |
 | PCM5101 DIN / LRCK / BCK | 47 / 38 / 48 |
+| BOOT (Kitty mic hold) | GPIO0, active low |
+| RESET | `CHIP_PU` (hard reset, not a GPIO) |
 
-V1 is **mono, no AEC**. Kitty uses half-duplex hold-to-talk. Audio HAL is on (`PCM5101` dummy DAC + digital mic); AFE/WakeNet stay off. Hooking up a speaker is attaching a driver to the PCM5101/NS8002 pads.
+V1 is **mono, no AEC**. Kitty uses half-duplex hold-to-talk (on-screen mic **or** BOOT). Audio HAL is on (`PCM5101` dummy DAC + digital mic); AFE/WakeNet stay off. Hooking up a speaker is attaching a driver to the PCM5101/NS8002 pads.
+
+Fun-ASR `format=opus` requires **Ogg** encapsulation. The watch therefore streams **16 kHz PCM16LE** (same as browser Kitty). Raw ESP Opus packets were rejected as `no valid audio`.

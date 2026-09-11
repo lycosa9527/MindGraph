@@ -65,15 +65,36 @@ lv_obj_t *make_card(lv_obj_t *parent, int32_t x, int32_t y, int32_t width, int32
     return card;
 }
 
-lv_obj_t *make_choice(lv_obj_t *parent, int32_t x, int32_t y, int32_t index, lv_event_cb_t on_choice)
+lv_obj_t *make_choice_grid(lv_obj_t *parent)
 {
-    lv_obj_t *chip = make_card(parent, x, y, 118, 28, 14);
+    lv_obj_t *grid = lv_obj_create(parent);
+    lv_obj_remove_style_all(grid);
+    lv_obj_set_pos(grid, 62, 94);
+    lv_obj_set_size(grid, 236, 132);
+    lv_obj_set_flex_flow(grid, LV_FLEX_FLOW_ROW_WRAP);
+    lv_obj_set_flex_align(grid, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_row(grid, 8, 0);
+    lv_obj_set_style_pad_column(grid, 8, 0);
+    lv_obj_set_style_bg_opa(grid, LV_OPA_TRANSP, 0);
+    lv_obj_clear_flag(grid, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(grid, LV_OBJ_FLAG_CLICKABLE);
+    return grid;
+}
+
+lv_obj_t *make_choice(lv_obj_t *parent, int32_t index, lv_event_cb_t on_choice)
+{
+    lv_obj_t *chip = make_card(parent, 0, 0, 114, 62, 16);
+    lv_obj_set_style_clip_corner(chip, true, 0);
+    lv_obj_set_style_border_color(chip, lv_color_hex(k_violet), 0);
+    lv_obj_set_style_border_width(chip, 2, 0);
     lv_obj_add_flag(chip, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_ext_click_area(chip, 6);
     lv_obj_add_event_cb(chip, on_choice, LV_EVENT_CLICKED, reinterpret_cast<void *>(static_cast<intptr_t>(index)));
     lv_obj_t *label = lv_label_create(chip);
     lv_obj_set_style_text_color(label, lv_color_hex(k_ink), 0);
-    lv_label_set_long_mode(label, LV_LABEL_LONG_DOT);
-    lv_obj_set_width(label, 106);
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
+    lv_obj_set_size(label, 98, 48);
     lv_obj_center(label);
     lv_label_set_text(label, "");
     lv_obj_add_flag(chip, LV_OBJ_FLAG_HIDDEN);
@@ -161,8 +182,10 @@ KittyWidgets kitty_ui_build(
     lv_obj_set_style_bg_opa(widgets.kitty, LV_OPA_TRANSP, 0);
     lv_obj_clear_flag(widgets.kitty, LV_OBJ_FLAG_CLICKABLE);
 
-    widgets.choice_a = make_choice(widgets.root, 58, 228, 1, on_choice);
-    widgets.choice_b = make_choice(widgets.root, 184, 228, 2, on_choice);
+    widgets.choice_grid = make_choice_grid(widgets.root);
+    for (int32_t i = 0; i < 4; ++i) {
+        widgets.choices[i] = make_choice(widgets.choice_grid, i + 1, on_choice);
+    }
 
     widgets.library = make_card(widgets.root, 68, 264, 164, 52, 26);
     lv_obj_add_flag(widgets.library, LV_OBJ_FLAG_CLICKABLE);
@@ -213,6 +236,15 @@ KittyWidgets kitty_ui_build(
         const uint32_t n = lv_obj_get_child_count(widgets.mic);
         for (uint32_t i = 0; i < n; ++i) {
             lv_obj_remove_flag(lv_obj_get_child(widgets.mic, i), LV_OBJ_FLAG_GESTURE_BUBBLE);
+        }
+    }
+    if (widgets.choice_grid != nullptr) {
+        lv_obj_move_foreground(widgets.choice_grid);
+        lv_obj_remove_flag(widgets.choice_grid, LV_OBJ_FLAG_GESTURE_BUBBLE);
+        for (lv_obj_t *chip : widgets.choices) {
+            if (chip != nullptr) {
+                lv_obj_remove_flag(chip, LV_OBJ_FLAG_GESTURE_BUBBLE);
+            }
         }
     }
     return widgets;

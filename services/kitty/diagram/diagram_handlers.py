@@ -15,6 +15,7 @@ from services.kitty.context.messaging import (
     send_kitty_diagram_update,
 )
 from services.kitty.diagram.diagram_utils import child_node_live_id
+from services.kitty.routing.one_sentence_edit_heuristics import edit_labels_overlap
 from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.session.ops import get_agent_session_id
 from services.kitty.session.runtime_state import logger, voice_sessions
@@ -239,7 +240,7 @@ async def _handle_update_node_action(
     elif node_identifier and not resolved_node_id:
         for idx, node in enumerate(nodes):
             node_text = node.get("text") if isinstance(node, dict) else str(node)
-            if node_text and (node_identifier in node_text or node_text in node_identifier):
+            if node_text and edit_labels_overlap(str(node_identifier), str(node_text)):
                 live_id = child_node_live_id(node, idx, diagram_type)
                 if not live_id:
                     continue

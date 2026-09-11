@@ -20,6 +20,7 @@ void kitty_ui_set_live(const std::string &text);
 void kitty_ui_set_user_text(const std::string &text);
 void kitty_ui_set_kitty_text(const std::string &text);
 void kitty_ui_set_choice(int index, const std::string &text);
+void kitty_ui_begin_user_turn();
 void kitty_ui_set_library(const std::string &title);
 void kitty_ui_set_mic_level(uint8_t level);
 void kitty_ui_set_diagrams(const std::vector<KittyDiagramItem> &items);
