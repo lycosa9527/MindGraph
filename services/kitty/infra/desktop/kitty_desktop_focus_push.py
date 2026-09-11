@@ -34,6 +34,7 @@ from services.kitty.infra.control.kitty_control_secret import get_kitty_control_
 from services.kitty.infra.control.kitty_observability import kitty_extra
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.kitty.session.runtime_state import voice_sessions
+from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
@@ -64,24 +65,67 @@ def _auth_ok(envelope: Dict[str, Any], *, scope: str, user_id: int, reason: str)
     return hmac.compare_digest(token, expected)
 
 
+def _optional_focus_text(raw: Any, max_len: int) -> Optional[str]:
+    if not isinstance(raw, str):
+        return None
+    cut = raw.strip()
+    if not cut:
+        return None
+    return cut[:max_len]
+
+
 def _focus_body(
     diagram_library_id: Optional[str],
     updated_at: Optional[int],
+    *,
+    title: Optional[str] = None,
+    diagram_type: Optional[str] = None,
 ) -> Dict[str, Any]:
-    return {
+    body: Dict[str, Any] = {
         "type": "desktop_focus_update",
         "diagram_library_id": diagram_library_id,
         "updated_at": updated_at,
     }
+    title_cut = _optional_focus_text(title, 80)
+    if title_cut:
+        body["title"] = title_cut
+    type_cut = _optional_focus_text(diagram_type, 32)
+    if type_cut:
+        body["diagram_type"] = type_cut
+    return body
+
+
+async def resolve_desktop_focus_library_meta(
+    user_id: int,
+    diagram_library_id: Optional[str],
+) -> tuple[Optional[str], Optional[str]]:
+    """Return ``(title, diagram_type)`` for a library id, or ``(None, None)``."""
+    if not diagram_library_id or not str(diagram_library_id).strip():
+        return None, None
+    try:
+        row = await get_diagram_cache().get_diagram(int(user_id), str(diagram_library_id).strip())
+    except (RuntimeError, ValueError, TypeError, OSError):
+        return None, None
+    if not isinstance(row, dict):
+        return None, None
+    return _optional_focus_text(row.get("title"), 80), _optional_focus_text(row.get("diagram_type"), 32)
 
 
 async def push_kitty_desktop_focus_to_local_mobile(
     user_id: int,
     diagram_library_id: Optional[str],
     updated_at: Optional[int],
+    *,
+    title: Optional[str] = None,
+    diagram_type: Optional[str] = None,
 ) -> int:
     """Send ``desktop_focus_update`` to mobile-lane Kitty sockets on this worker."""
-    body = _focus_body(diagram_library_id, updated_at)
+    body = _focus_body(
+        diagram_library_id,
+        updated_at,
+        title=title,
+        diagram_type=diagram_type,
+    )
     sent = 0
     for _sid, sess in list(voice_sessions.items()):
         if not isinstance(sess, dict):
@@ -117,6 +161,9 @@ async def publish_desktop_focus_relay(
     user_id: int,
     diagram_library_id: Optional[str],
     updated_at: Optional[int],
+    *,
+    title: Optional[str] = None,
+    diagram_type: Optional[str] = None,
 ) -> bool:
     """Fan out focus so other workers can push to their local mobile sockets."""
     if not getattr(config, "DEBUG", True) and get_kitty_control_shared_secret() is None:
@@ -138,6 +185,12 @@ async def publish_desktop_focus_relay(
         "diagram_library_id": diagram_library_id,
         "updated_at": updated_at,
     }
+    title_cut = _optional_focus_text(title, 80)
+    if title_cut:
+        payload["title"] = title_cut
+    type_cut = _optional_focus_text(diagram_type, 32)
+    if type_cut:
+        payload["diagram_type"] = type_cut
     auth = _sign(scope, int(user_id), reason)
     if auth:
         payload["auth"] = auth
@@ -191,7 +244,15 @@ async def handle_desktop_focus_relay(envelope: Dict[str, Any]) -> bool:
         updated_at = int(raw_ts)
     else:
         updated_at = None
-    sent = await push_kitty_desktop_focus_to_local_mobile(user_id, lib_id, updated_at)
+    title = _optional_focus_text(envelope.get("title"), 80)
+    diagram_type = _optional_focus_text(envelope.get("diagram_type"), 32)
+    sent = await push_kitty_desktop_focus_to_local_mobile(
+        user_id,
+        lib_id,
+        updated_at,
+        title=title,
+        diagram_type=diagram_type,
+    )
     return sent > 0
 
 
@@ -201,5 +262,18 @@ async def notify_kitty_desktop_focus_changed(
     updated_at: Optional[int],
 ) -> None:
     """Local mobile push + Redis control relay for cross-worker mobile Kitty."""
-    await push_kitty_desktop_focus_to_local_mobile(user_id, diagram_library_id, updated_at)
-    await publish_desktop_focus_relay(user_id, diagram_library_id, updated_at)
+    title, diagram_type = await resolve_desktop_focus_library_meta(user_id, diagram_library_id)
+    await push_kitty_desktop_focus_to_local_mobile(
+        user_id,
+        diagram_library_id,
+        updated_at,
+        title=title,
+        diagram_type=diagram_type,
+    )
+    await publish_desktop_focus_relay(
+        user_id,
+        diagram_library_id,
+        updated_at,
+        title=title,
+        diagram_type=diagram_type,
+    )

@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.70] - 2026-09-11
+
+> **Watch rematches when desktop first-saves a new mind map UUID.**
+
+### Changed
+
+- **1.85C Kitty watch** — `desktop_focus_update` queues a follow: first desktop save rematches `/ws/kitty/{new-uuid}` and the library chip title. A cleared focus leaves the old library so voice cannot edit it. No second `open_library` bounce. Phone Kitty already followed this path.
+
 ## [5.180.69] - 2026-09-11
 
 > **Watch PTT is PCM plus the BOOT key; Fun-ASR quotes peel so add/delete/rename hit the node.**

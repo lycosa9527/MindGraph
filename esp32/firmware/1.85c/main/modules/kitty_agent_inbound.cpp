@@ -1,6 +1,7 @@
 #include "kitty_agent_shared.hpp"
 
 #include <cstring>
+#include <string>
 
 #include "boost/json.hpp"
 #include "esp_log.h"
@@ -80,6 +81,30 @@ void kitty_agent_handle_inbound(const std::string &raw)
         return;
     }
     const std::string type(type_v->as_string().c_str());
+    if (type == "desktop_focus_update") {
+        KittyDiagramItem item;
+        const auto *lib = obj.if_contains("diagram_library_id");
+        if (lib != nullptr && lib->is_string()) {
+            item.id = std::string(lib->as_string().c_str());
+        }
+        const auto *title = obj.if_contains("title");
+        if (title != nullptr && title->is_string()) {
+            item.title = std::string(title->as_string().c_str());
+        }
+        const auto *dtype = obj.if_contains("diagram_type");
+        if (dtype != nullptr && dtype->is_string()) {
+            item.type = std::string(dtype->as_string().c_str());
+        }
+        if (kitty_agent_is_library_id(item.id)) {
+            kitty_ui_queue_desktop_focus(item);
+            ESP_LOGI(TAG, "desktop focus queued id=%s title=%s", item.id.c_str(), item.title.c_str());
+            return;
+        }
+        item.id.clear();
+        kitty_ui_queue_desktop_focus(item);
+        ESP_LOGI(TAG, "desktop focus cleared");
+        return;
+    }
     if (type == "connected" || type == "hello") {
         kitty_ui_set_state(KittyUiState::idle);
         if (type == "hello") {

@@ -84,9 +84,14 @@ bool wait_for_network()
 
 } // namespace
 
+bool kitty_agent_is_library_id(const std::string &id)
+{
+    return id.size() == 36 && id[8] == '-';
+}
+
 bool kitty_agent_has_library_scope()
 {
-    return g_kitty_scope.size() == 36 && g_kitty_scope[8] == '-';
+    return kitty_agent_is_library_id(g_kitty_scope);
 }
 
 bool kitty_agent_bind_ws()
@@ -135,20 +140,68 @@ bool kitty_agent_connect_session()
     return kitty_agent_bind_ws();
 }
 
-bool kitty_agent_attach_scope(const KittyDiagramItem &item)
+namespace {
+
+bool bind_kitty_scope(const KittyDiagramItem &item, bool enqueue_desktop)
 {
     if (item.id.empty()) {
         return false;
     }
     g_kitty_scope = item.id;
-    g_kitty_diagram_type = item.type.empty() ? "circle_map" : item.type;
+    g_kitty_diagram_type = item.type.empty() ? "mindmap" : item.type;
     kitty_ui_set_library(kitty_net_diagram_caption(item.title, item.type));
-    if (!kitty_net_enqueue_open_library(g_kitty_token, item.id, item.title)) {
-        ESP_LOGW(TAG, "desktop open_library enqueue failed id=%s", item.id.c_str());
-    } else {
-        ESP_LOGI(TAG, "desktop open_library enqueued id=%s", item.id.c_str());
+    if (enqueue_desktop) {
+        if (!kitty_net_enqueue_open_library(g_kitty_token, item.id, item.title)) {
+            ESP_LOGW(TAG, "desktop open_library enqueue failed id=%s", item.id.c_str());
+        } else {
+            ESP_LOGI(TAG, "desktop open_library enqueued id=%s", item.id.c_str());
+        }
     }
     return kitty_agent_bind_ws();
+}
+
+} // namespace
+
+bool kitty_agent_attach_scope(const KittyDiagramItem &item)
+{
+    return bind_kitty_scope(item, true);
+}
+
+bool kitty_agent_follow_library(const KittyDiagramItem &item)
+{
+    if (item.id.empty()) {
+        if (!kitty_agent_has_library_scope()) {
+            return true;
+        }
+        KittyDiagramItem cleared;
+        cleared.id = "watch";
+        cleared.title = "";
+        cleared.type = "mindmap";
+        ESP_LOGI(TAG, "follow desktop focus clear → watch");
+        return bind_kitty_scope(cleared, false);
+    }
+    if (item.id == g_kitty_scope) {
+        if (!item.title.empty()) {
+            const std::string dtype = item.type.empty() ? g_kitty_diagram_type : item.type;
+            if (!item.type.empty()) {
+                g_kitty_diagram_type = item.type;
+            }
+            kitty_ui_set_library(kitty_net_diagram_caption(item.title, dtype));
+        }
+        return true;
+    }
+    if (!kitty_agent_is_library_id(item.id)) {
+        return true;
+    }
+    KittyDiagramItem bind = item;
+    if (bind.title.empty()) {
+        bind.title = "思维导图";
+    }
+    if (bind.type.empty()) {
+        bind.type = "mindmap";
+    }
+    ESP_LOGI(TAG, "follow desktop library id=%s title=%s", bind.id.c_str(), bind.title.c_str());
+    return bind_kitty_scope(bind, false);
 }
 
 namespace {
@@ -188,11 +241,14 @@ void agent_loop()
     kitty_ui_set_state(KittyUiState::idle);
 
     int reconnect_fails = 0;
+    std::time_t user_override_until = 0;
     for (;;) {
         if (kitty_ui_picker_needs_list()) {
             refresh_library();
         }
         if (kitty_ui_take_create_mindmap()) {
+            kitty_ui_clear_desktop_focus();
+            user_override_until = std::time(nullptr) + 3;
             kitty_ui_set_live("新建中");
             KittyDiagramItem created;
             if (!kitty_net_create_mindmap(g_kitty_token, created)) {
@@ -204,8 +260,33 @@ void agent_loop()
             }
         }
         KittyDiagramItem picked;
-        if (kitty_ui_take_diagram_pick(picked) && !kitty_agent_attach_scope(picked)) {
-            kitty_ui_set_live("重连中");
+        if (kitty_ui_take_diagram_pick(picked)) {
+            kitty_ui_clear_desktop_focus();
+            user_override_until = std::time(nullptr) + 3;
+            if (!kitty_agent_attach_scope(picked)) {
+                kitty_ui_set_live("重连中");
+            }
+        }
+        if (std::time(nullptr) < user_override_until) {
+            KittyDiagramItem ignored;
+            kitty_ui_take_desktop_focus(ignored);
+        } else if (
+            !kitty_ui_hold_active()
+            && !g_kitty_speaking.load()
+            && !g_kitty_playing_pcm.load()
+        ) {
+            KittyDiagramItem focus;
+            if (kitty_ui_take_desktop_focus(focus)) {
+                const bool leave_library = focus.id.empty() && kitty_agent_has_library_scope();
+                const bool join_library =
+                    kitty_agent_is_library_id(focus.id) && focus.id != g_kitty_scope;
+                if (leave_library || join_library) {
+                    kitty_ui_set_live("同步中");
+                }
+                if (!kitty_agent_follow_library(focus)) {
+                    kitty_ui_set_live("重连中");
+                }
+            }
         }
         const int choice = kitty_ui_take_choice();
         if (choice > 0) {

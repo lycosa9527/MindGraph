@@ -41,6 +41,10 @@ struct UiSnapshot {
     int pending_choice = 0;
     int pending_pick = -1;
     bool pending_create = false;
+    bool pending_focus = false;
+    char pending_focus_id[40] = {};
+    char pending_focus_title[64] = {};
+    char pending_focus_type[24] = {};
     bool hold = false;
     bool picker = false;
     bool picker_fetch = false;
@@ -215,6 +219,10 @@ void hide_face()
     g_model.hidden = true;
     g_model.picker = false;
     g_model.pending_create = false;
+    g_model.pending_focus = false;
+    g_model.pending_focus_id[0] = '\0';
+    g_model.pending_focus_title[0] = '\0';
+    g_model.pending_focus_type[0] = '\0';
     g_model.hold = false;
     g_model.click = false;
     g_hold_down = false;
@@ -622,6 +630,43 @@ bool kitty_ui_take_create_mindmap()
     const bool pending = g_model.pending_create;
     g_model.pending_create = false;
     return pending;
+}
+
+void kitty_ui_queue_desktop_focus(const KittyDiagramItem &item)
+{
+    if (item.id.size() >= sizeof(UiSnapshot::pending_focus_id)) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(g_mutex);
+    copy_field(g_model.pending_focus_id, sizeof(g_model.pending_focus_id), item.id);
+    copy_field(g_model.pending_focus_title, sizeof(g_model.pending_focus_title), item.title);
+    copy_field(g_model.pending_focus_type, sizeof(g_model.pending_focus_type), item.type);
+    g_model.pending_focus = true;
+}
+
+bool kitty_ui_take_desktop_focus(KittyDiagramItem &item)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    if (!g_model.pending_focus) {
+        return false;
+    }
+    item.id = g_model.pending_focus_id;
+    item.title = g_model.pending_focus_title;
+    item.type = g_model.pending_focus_type;
+    g_model.pending_focus = false;
+    g_model.pending_focus_id[0] = '\0';
+    g_model.pending_focus_title[0] = '\0';
+    g_model.pending_focus_type[0] = '\0';
+    return true;
+}
+
+void kitty_ui_clear_desktop_focus()
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    g_model.pending_focus = false;
+    g_model.pending_focus_id[0] = '\0';
+    g_model.pending_focus_title[0] = '\0';
+    g_model.pending_focus_type[0] = '\0';
 }
 
 bool kitty_ui_hold_active()
