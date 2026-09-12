@@ -244,6 +244,101 @@ void recorder_face_add_play_glyph(lv_obj_t *btn, uint32_t color)
     lv_obj_align(play, LV_ALIGN_CENTER, 2, 0);
 }
 
+void recorder_face_set_hidden(lv_obj_t *obj, bool hidden)
+{
+    if (obj == nullptr) {
+        return;
+    }
+    if (hidden) {
+        lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
+        return;
+    }
+    lv_obj_remove_flag(obj, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_invalidate(obj);
+}
+
+lv_obj_t *recorder_face_add_vu(lv_obj_t *btn)
+{
+    lv_obj_t *vu = lv_obj_create(btn);
+    lv_obj_remove_style_all(vu);
+    lv_obj_set_size(vu, 22, 22);
+    lv_obj_add_flag(vu, LV_OBJ_FLAG_USER_1);
+    lv_obj_clear_flag(vu, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_clear_flag(vu, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_opa(vu, LV_OPA_TRANSP, 0);
+    lv_obj_align(vu, LV_ALIGN_CENTER, 0, 0);
+    for (int i = 0; i < 4; ++i) {
+        lv_obj_t *bar = recorder_face_glyph(vu, 3, 6, 0xFFFFFF, 1);
+        lv_obj_set_pos(bar, static_cast<int32_t>(i * 5 + 1), 16);
+    }
+    lv_obj_add_flag(vu, LV_OBJ_FLAG_HIDDEN);
+    return vu;
+}
+
+void recorder_face_paint_vu(lv_obj_t *vu, uint8_t level, bool live)
+{
+    if (vu == nullptr) {
+        return;
+    }
+    recorder_face_set_hidden(vu, !live);
+    if (!live) {
+        return;
+    }
+    static const uint8_t k_weight[4] = {72, 100, 86, 58};
+    const uint32_t count = lv_obj_get_child_count(vu);
+    for (uint32_t i = 0; i < count && i < 4; ++i) {
+        lv_obj_t *bar = lv_obj_get_child(vu, i);
+        int32_t height = 4 + static_cast<int32_t>(level) * static_cast<int32_t>(k_weight[i]) / 1600;
+        if (height < 4) {
+            height = 4;
+        }
+        if (height > 22) {
+            height = 22;
+        }
+        lv_obj_set_height(bar, height);
+        lv_obj_set_pos(bar, static_cast<int32_t>(i * 5 + 1), 22 - height);
+        lv_obj_set_style_bg_color(bar, lv_color_hex(0xFFFFFF), 0);
+        lv_obj_set_style_bg_opa(bar, LV_OPA_COVER, 0);
+    }
+}
+
+lv_obj_t *recorder_face_hold_arc(lv_obj_t *parent, int32_t x, int32_t y, int32_t size, uint32_t color)
+{
+    lv_obj_t *arc = lv_arc_create(parent);
+    lv_obj_set_pos(arc, x, y);
+    lv_obj_set_size(arc, size, size);
+    lv_arc_set_bg_angles(arc, 0, 360);
+    lv_arc_set_rotation(arc, 270);
+    lv_arc_set_angles(arc, 0, 0);
+    lv_obj_set_style_arc_width(arc, 3, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_color(arc, lv_color_hex(color), LV_PART_INDICATOR);
+    lv_obj_set_style_arc_opa(arc, LV_OPA_COVER, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_rounded(arc, true, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_width(arc, 3, LV_PART_MAIN);
+    lv_obj_set_style_arc_color(arc, lv_color_hex(k_line), LV_PART_MAIN);
+    lv_obj_set_style_arc_opa(arc, LV_OPA_40, LV_PART_MAIN);
+    lv_obj_set_style_opa(arc, LV_OPA_TRANSP, LV_PART_KNOB);
+    lv_obj_set_style_pad_all(arc, 0, LV_PART_KNOB);
+    lv_obj_clear_flag(arc, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_clear_flag(arc, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_add_flag(arc, LV_OBJ_FLAG_HIDDEN);
+    return arc;
+}
+
+void recorder_face_paint_hold(lv_obj_t *arc, uint8_t progress, bool armed)
+{
+    if (arc == nullptr) {
+        return;
+    }
+    if (!armed || progress == 0) {
+        recorder_face_set_hidden(arc, true);
+        return;
+    }
+    recorder_face_set_hidden(arc, false);
+    const int32_t end = static_cast<int32_t>(progress) * 360 / 100;
+    lv_arc_set_angles(arc, 0, end);
+}
+
 lv_obj_t *recorder_face_btn(
     lv_obj_t *parent,
     int32_t x,
@@ -394,6 +489,13 @@ RecorderWidgets recorder_face_build(lv_obj_t *layer, lv_event_cb_t on_action)
     );
     recorder_face_add_play_glyph(widgets.main, 0xFFFFFF);
     widgets.main_label = lv_obj_get_child(widgets.main, 0);
+    widgets.vu = recorder_face_add_vu(widgets.main);
+    widgets.pause_arc = recorder_face_hold_arc(
+        widgets.root, k_cluster_x - 4, k_side_y - 4, k_side_btn + 8, k_ink
+    );
+    widgets.stop_arc = recorder_face_hold_arc(
+        widgets.root, stop_x - 4, k_side_y - 4, k_side_btn + 8, 0xB91C1C
+    );
     lv_obj_move_foreground(widgets.main);
 
     widgets.generate = lv_obj_create(widgets.root);
@@ -426,7 +528,13 @@ void recorder_face_paint(RecorderWidgets &widgets, const RecorderUiSnapshot &sna
     if (widgets.dot != nullptr) {
         lv_obj_set_style_bg_color(widgets.dot, lv_color_hex(recorder_face_dot_color(snap)), 0);
     }
-    recorder_face_set_label(widgets.status, recorder_face_phase_status(snap));
+    const char *status = recorder_face_phase_status(snap);
+    if (snap.hold_progress > 0 && snap.hold_action == RecorderUiAction::pause) {
+        status = "按住暂停";
+    } else if (snap.hold_progress > 0 && snap.hold_action == RecorderUiAction::stop) {
+        status = "按住停止";
+    }
+    recorder_face_set_label(widgets.status, status);
     recorder_face_set_label(widgets.elapsed, snap.elapsed[0] != '\0' ? snap.elapsed : "00:00");
     const char *words = snap.transcript[0] != '\0' ? snap.transcript : "点红色按钮开始录音";
     if (recorder_face_set_label(widgets.transcript, words)) {
@@ -434,25 +542,33 @@ void recorder_face_paint(RecorderWidgets &widgets, const RecorderUiSnapshot &sna
     }
     recorder_face_style_btn(widgets.pause, k_side, k_ink, snap.can_pause && !snap.busy);
     recorder_face_style_btn(widgets.stop, k_side, 0xB91C1C, snap.can_stop && !snap.busy);
+    const bool live = snap.phase == RecorderUiPhase::recording;
     const bool main_ok = (snap.can_start || snap.can_resume || snap.can_pause) && !snap.busy;
     const uint32_t main_bg = snap.can_resume ? k_resume : k_live;
     recorder_face_style_btn(widgets.main, main_bg, 0xFFFFFF, main_ok);
-    if (widgets.main_label != nullptr) {
-        if ((snap.can_start || snap.can_resume) && !snap.busy) {
-            lv_obj_remove_flag(widgets.main_label, LV_OBJ_FLAG_HIDDEN);
-        } else {
-            lv_obj_add_flag(widgets.main_label, LV_OBJ_FLAG_HIDDEN);
-        }
+    recorder_face_set_hidden(widgets.main_label, live);
+    recorder_face_paint_vu(widgets.vu, snap.mic_level, live);
+    if (widgets.main_label != nullptr && !live) {
+        lv_obj_invalidate(widgets.main_label);
     }
     if (widgets.main_ring != nullptr) {
-        const bool live = snap.phase == RecorderUiPhase::recording && snap.mic_level > 0;
         const uint8_t level = live ? snap.mic_level : 0;
         const int32_t rec_x = k_cluster_x + k_side_btn + k_gap;
-        const int32_t grow = static_cast<int32_t>(level) / 16;
-        lv_obj_set_style_border_opa(widgets.main_ring, live ? LV_OPA_50 : LV_OPA_0, 0);
+        const int32_t grow = live ? (6 + static_cast<int32_t>(level) / 8) : 0;
+        lv_obj_set_style_border_opa(widgets.main_ring, live ? LV_OPA_70 : LV_OPA_0, 0);
         lv_obj_set_size(widgets.main_ring, k_rec + 12 + grow, k_rec + 12 + grow);
         lv_obj_set_pos(widgets.main_ring, rec_x - 6 - grow / 2, k_dock_y - 6 - grow / 2);
     }
+    recorder_face_paint_hold(
+        widgets.pause_arc,
+        snap.hold_progress,
+        snap.hold_action == RecorderUiAction::pause
+    );
+    recorder_face_paint_hold(
+        widgets.stop_arc,
+        snap.hold_progress,
+        snap.hold_action == RecorderUiAction::stop
+    );
     if (widgets.generate != nullptr) {
         const bool on = snap.can_generate && !snap.busy;
         lv_obj_set_style_bg_color(widgets.generate, lv_color_hex(on ? k_generate : k_side), 0);

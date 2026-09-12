@@ -187,6 +187,18 @@ void tick(lv_timer_t *timer)
         std::lock_guard<std::mutex> lock(g_mutex);
         snap = g_model;
     }
+    if (g_hold_since != 0) {
+        const uint32_t held = lv_tick_elaps(g_hold_since);
+        snap.hold_action = g_hold_action;
+        if (held >= k_hold_arm_ms) {
+            snap.hold_progress = 100;
+        } else {
+            snap.hold_progress = static_cast<uint8_t>((held * 100U) / k_hold_arm_ms);
+        }
+    } else {
+        snap.hold_progress = 0;
+        snap.hold_action = RecorderUiAction::none;
+    }
     if (snap.hidden) {
         teardown_widgets();
         return;

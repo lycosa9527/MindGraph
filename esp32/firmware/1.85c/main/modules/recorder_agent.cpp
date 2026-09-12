@@ -253,6 +253,7 @@ bool begin_capture()
         recorder_ui_set_busy(false);
         recorder_ui_set_phase(RecorderUiPhase::error);
         recorder_ui_set_status("无法连接");
+        paint_flags();
         return false;
     }
     if (!recorder_session_wait_ready(15000)) {
@@ -261,6 +262,7 @@ bool begin_capture()
         recorder_ui_set_busy(false);
         recorder_ui_set_phase(RecorderUiPhase::error);
         recorder_ui_set_status("语音服务超时");
+        paint_flags();
         return false;
     }
     g_capture.store(true);
@@ -415,7 +417,23 @@ void handle_action(RecorderUiAction action)
     }
 }
 
-void leave_session()
+void reset_session_state()
+{
+    recorder_session_clear_transcript();
+    g_diagram_id.clear();
+    g_title.clear();
+    g_persisted.store(false);
+    g_paused_ms = 0;
+    g_started_at = 0;
+    g_capture.store(false);
+    g_paused.store(false);
+    g_block_home.store(false);
+    recorder_ui_set_elapsed("00:00");
+    recorder_ui_set_mic_level(0);
+    recorder_ui_set_transcript("");
+}
+
+void leave_session(bool fresh_face)
 {
     if (recorder_session_is_open()) {
         recorder_session_request_stop();
@@ -426,10 +444,14 @@ void leave_session()
     persist_transcript();
     recorder_session_close();
     kitty_audio_mic_close();
+    if (fresh_face) {
+        reset_session_state();
+    }
 }
 
 void agent_loop()
 {
+    reset_session_state();
     recorder_ui_set_status("连接中");
     if (!wait_for_network() || !wait_for_token()) {
         g_run.store(false);
@@ -439,7 +461,7 @@ void agent_loop()
     apply_idle();
     while (g_run.load()) {
         if (recorder_ui_is_hidden()) {
-            leave_session();
+            leave_session(true);
             while (g_run.load() && recorder_ui_is_hidden()) {
                 boost::this_thread::sleep_for(boost::chrono::milliseconds(k_loop_ms));
             }
@@ -457,14 +479,14 @@ void agent_loop()
         if (recorder_session_take_error(error)) {
             recorder_ui_set_phase(RecorderUiPhase::error);
             recorder_ui_set_status(error);
-            leave_session();
+            leave_session(false);
             g_capture.store(false);
             g_paused.store(false);
             paint_flags();
         }
         boost::this_thread::sleep_for(boost::chrono::milliseconds(k_loop_ms));
     }
-    leave_session();
+    leave_session(true);
     g_thread_live.store(false);
 }
 

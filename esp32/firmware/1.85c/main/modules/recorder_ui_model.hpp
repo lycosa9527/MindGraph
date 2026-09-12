@@ -20,6 +20,8 @@ struct RecorderUiSnapshot {
     bool can_generate = false;
     bool busy = false;
     bool hidden = true;
+    uint8_t hold_progress = 0;
+    RecorderUiAction hold_action = RecorderUiAction::none;
 };
 
 struct RecorderWidgets {
@@ -29,10 +31,13 @@ struct RecorderWidgets {
     lv_obj_t *elapsed = nullptr;
     lv_obj_t *transcript = nullptr;
     lv_obj_t *pause = nullptr;
+    lv_obj_t *pause_arc = nullptr;
     lv_obj_t *main = nullptr;
     lv_obj_t *main_label = nullptr;
     lv_obj_t *main_ring = nullptr;
+    lv_obj_t *vu = nullptr;
     lv_obj_t *stop = nullptr;
+    lv_obj_t *stop_arc = nullptr;
     lv_obj_t *generate = nullptr;
 };
 

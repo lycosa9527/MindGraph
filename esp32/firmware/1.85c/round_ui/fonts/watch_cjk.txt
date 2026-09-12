@@ -7,5 +7,6 @@ Kitty智能体
 语音笔记等待开始录音中已暂停停止保存中正在生成思维导图
 可生成没有听到内容点红色按钮麦克风续录暂停停止
 没有网络需要无法连接语音服务超时转录已在本地生成失败先录一段再生成
+按住暂停按住停止
 abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
 .,?!…·—-_/:@ 

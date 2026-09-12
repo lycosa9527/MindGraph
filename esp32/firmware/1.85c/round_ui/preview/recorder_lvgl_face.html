@@ -69,6 +69,34 @@
       border-color: transparent transparent transparent #fff;
     }
     .main.resume { background: #111827; }
+    .main-ring {
+      position: absolute; left: 92px; top: 250px; width: 88px; height: 88px;
+      border-radius: 50%; border: 2px solid rgba(220, 38, 38, 0.7);
+      z-index: 1;
+    }
+    .vu {
+      position: absolute; left: 21px; top: 21px; width: 22px; height: 22px;
+      display: flex; align-items: flex-end; gap: 2px;
+    }
+    .vu span {
+      width: 3px; border-radius: 1px; background: #fff;
+    }
+    .hold-arc {
+      position: absolute; width: 52px; height: 52px; border-radius: 50%;
+      box-sizing: border-box;
+    }
+    .hold-arc.pause {
+      left: 52px; top: 268px;
+      background: conic-gradient(#1C1917 0 210deg, #E5E7EB 210deg 360deg);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+      mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+    }
+    .hold-arc.stop {
+      left: 168px; top: 268px;
+      background: conic-gradient(#B91C1C 0 140deg, #E5E7EB 140deg 360deg);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+      mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+    }
     .gen {
       position: absolute; left: 238px; top: 276px; width: 64px; height: 36px;
       border-radius: 18px; background: #1C1917; color: #FAFAF9;
@@ -92,6 +120,8 @@
     record 64 @ (104,262), stop 44 @ (172,272), 4px gaps,
     <strong>生导图</strong> 64 @ (238,276). Grey until Stop.
     Swipe-home is blocked while recording or paused; after Stop the bar works.
+    Rec keeps the triangle until live, then 4-bar gain VU. Pause/stop fill a 2.5s hold ring.
+    Swipe-home and reopen starts a blank take.
   </p>
   <div class="row">
     <figure>
@@ -113,12 +143,13 @@
         <div class="status"><span class="dot live"></span>录音中<span>01:24</span></div>
         <div class="card">今天会议先定三个目标：完成原型、对齐接口、确认上线窗口。</div>
         <div class="pause"><div class="pause-bars"><span></span><span></span></div></div>
-        <div class="main"></div>
+        <div class="main-ring"></div>
+        <div class="main"><div class="vu"><span style="height:10px"></span><span style="height:18px"></span><span style="height:14px"></span><span style="height:8px"></span></div></div>
         <div class="stop"><div class="stop-sq"></div></div>
         <div class="gen off">生导图</div>
         <div class="home off"></div>
       </div>
-      <figcaption>Recording — swipe-home blocked</figcaption>
+      <figcaption>Recording — gain VU, no triangle</figcaption>
     </figure>
     <figure>
       <div class="watch">
@@ -145,6 +176,34 @@
         <div class="home"></div>
       </div>
       <figcaption>Stopped — triangle back, swipe home</figcaption>
+    </figure>
+    <figure>
+      <div class="watch">
+        <div class="title">语音笔记</div>
+        <div class="status"><span class="dot live"></span>按住停止<span>01:24</span></div>
+        <div class="card">今天会议先定三个目标：完成原型、对齐接口、确认上线窗口。</div>
+        <div class="hold-arc stop"></div>
+        <div class="pause"><div class="pause-bars"><span></span><span></span></div></div>
+        <div class="main-ring"></div>
+        <div class="main"><div class="vu"><span style="height:8px"></span><span style="height:12px"></span><span style="height:10px"></span><span style="height:6px"></span></div></div>
+        <div class="stop"><div class="stop-sq"></div></div>
+        <div class="gen off">生导图</div>
+        <div class="home off"></div>
+      </div>
+      <figcaption>Hold stop — ring fills to 2.5s</figcaption>
+    </figure>
+    <figure>
+      <div class="watch">
+        <div class="title">语音笔记</div>
+        <div class="status"><span class="dot"></span>等待开始<span>00:00</span></div>
+        <div class="card">点红色按钮开始录音</div>
+        <div class="pause dim"><div class="pause-bars"><span></span><span></span></div></div>
+        <div class="main play"></div>
+        <div class="stop dim"><div class="stop-sq"></div></div>
+        <div class="gen off">生导图</div>
+        <div class="home"></div>
+      </div>
+      <figcaption>After swipe-home — fresh take</figcaption>
     </figure>
   </div>
 </body>
