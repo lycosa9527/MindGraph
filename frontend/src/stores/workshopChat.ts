@@ -130,6 +130,8 @@ export interface ChatMessage {
 export interface DirectMessageItem {
   id: number
   sender_id: number
+  sender_name?: string
+  sender_avatar?: string | null
   recipient_id: number
   content: string
   message_type: string
@@ -248,6 +250,8 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
   const workshopHomeViewActive = ref(false)
   /** True: center column shows topic_id-null stream instead of the topic grid. */
   const mainChannelFeedActive = ref(false)
+  /** Sidebar “New DM” asks the chat page to open the contacts rail. */
+  const requestOpenContacts = ref(false)
   const dialogChannelSettingsId = ref<number | null>(null)
   const dialogTopicEdit = ref<{
     topicId: number
@@ -590,6 +594,9 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
         const conv = dmConversations.value.find((row) => row.partner_id === partnerId)
         if (conv) {
           conv.unread_count = 0
+        }
+        if (!prependOlder) {
+          void markDMPartnerRead(partnerId)
         }
         return msgs
       }
@@ -1208,6 +1215,35 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     return false
   }
 
+  function applyRemoteEditedMessage(updated: ChatMessage): void {
+    applyEditedChatMessage(channelMessages.value, updated)
+    applyEditedChatMessage(topicMessages.value, updated)
+  }
+
+  function applyRemoteDeletedMessage(messageId: number): void {
+    applyDeletedChatMessage(channelMessages.value, messageId)
+    applyDeletedChatMessage(topicMessages.value, messageId)
+  }
+
+  async function resyncAfterReconnect(): Promise<void> {
+    await fetchChannels({ force: true })
+    await fetchDMConversations()
+    const topicId = currentTopicId.value
+    const channelId = currentChannelId.value
+    const partnerId = currentDMPartnerId.value
+    if (topicId != null && channelId != null) {
+      await fetchTopicMessages(channelId, topicId)
+      return
+    }
+    if (mainChannelFeedActive.value && channelId != null) {
+      await fetchChannelMessages(channelId)
+      return
+    }
+    if (partnerId != null) {
+      await fetchDMMessages(partnerId)
+    }
+  }
+
   async function deleteMessage(messageId: number): Promise<boolean> {
     try {
       const res = await apiRequest(`/api/chat/messages/${messageId}`, {
@@ -1710,6 +1746,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     showChannelBrowser.value = false
     workshopHomeViewActive.value = false
     mainChannelFeedActive.value = false
+    requestOpenContacts.value = false
     dialogChannelSettingsId.value = null
     dialogTopicEdit.value = null
     createChannelDialogVisible.value = false
@@ -1822,11 +1859,15 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     deleteTopic,
     editMessage,
     deleteMessage,
+    applyRemoteEditedMessage,
+    applyRemoteDeletedMessage,
+    resyncAfterReconnect,
     markTopicRead,
     setTopicVisibility,
     showChannelBrowser,
     workshopHomeViewActive,
     mainChannelFeedActive,
+    requestOpenContacts,
     openMainChannelFeed,
     leaveMainChannelFeed,
     openWorkshopInboxHome,

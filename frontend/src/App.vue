@@ -74,6 +74,9 @@ const TrainingInstructorPad = defineAsyncComponent(
 const ChatMessageToast = defineAsyncComponent(
   () => import('@/components/common/ChatMessageToast.vue')
 )
+const WorkshopChatWsHost = defineAsyncComponent(
+  () => import('@/components/workshop-chat/WorkshopChatWsHost.vue')
+)
 const GeoLiteNotification = defineAsyncComponent(
   () => import('@/components/common/GeoLiteNotification.vue')
 )
@@ -376,6 +379,7 @@ onUnmounted(() => {
     <GeoLiteNotification />
 
     <ChatMessageToast />
+    <WorkshopChatWsHost />
 
     <LoginModal
       v-model:visible="authStore.showSessionExpiredModal"

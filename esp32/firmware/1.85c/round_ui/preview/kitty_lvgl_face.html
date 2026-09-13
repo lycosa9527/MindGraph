@@ -73,20 +73,26 @@
       border-radius: 26px; background: #FFFFFF; border: 1px solid #E2E8F0;
       font-size: 13px; line-height: 52px; text-align: center; overflow: hidden;
       text-overflow: ellipsis; white-space: nowrap; padding: 0 12px;
+      z-index: 5;
     }
     .mic {
       position: absolute; left: 238px; top: 258px; width: 64px; height: 64px;
       border-radius: 50%; background: #7C3AED; display: flex; align-items: center;
-      justify-content: center;
+      justify-content: center; z-index: 6;
     }
     .mic.hold { background: #4F46E5; }
     .mic img { width: 28px; height: 28px; }
     .picker {
-      position: absolute; left: 48px; top: 150px; width: 264px; height: 120px;
+      position: absolute; left: 40px; top: 62px; width: 280px; height: 198px;
       border-radius: 16px; background: #FFFFFF; border: 1px solid #E2E8F0;
-      padding: 16px 12px; font-size: 13px; line-height: 1.45; text-align: center;
-      color: #0F172A;
+      padding: 8px; overflow: hidden; z-index: 4;
     }
+    .picker-row {
+      height: 40px; margin-bottom: 6px; border-radius: 12px;
+      background: #F1F5F9; color: #0F172A; font-size: 13px; line-height: 40px;
+      padding: 0 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .picker-row.create { background: #7C3AED; color: #FFFFFF; }
     .hidden { display: none; }
     .note {
       max-width: 420px; color: #9aa0a8; font-size: 13px; line-height: 1.5;
@@ -121,7 +127,12 @@
         <img class="mascot" id="mascot" src="kitty/mascot.png" alt="">
         <div class="library" id="library">图库</div>
         <div class="mic" id="mic"><img src="kitty/mic.png" alt=""></div>
-        <div class="picker hidden" id="picker"></div>
+        <div class="picker hidden" id="picker">
+          <div class="picker-row create">新建思维导图</div>
+          <div class="picker-row">未命名思维导图 · 思维导图</div>
+          <div class="picker-row">运动会 · 思维导图</div>
+          <div class="picker-row">支付宝合同 · 思维导图</div>
+        </div>
       </div>
       <figcaption>Same 360×360 clip the ST77916 will draw</figcaption>
     </figure>
@@ -137,7 +148,7 @@
         b: "",
         hold: false,
         speak: false,
-        picker: "",
+        picker: false,
         lib: "图库",
         note: "What boots today: bootstrap context has no diagram_title, so the chip stays 图库. Token works; desktop_focus is 未命名思维导图."
       },
@@ -149,7 +160,7 @@
         b: "",
         hold: true,
         speak: false,
-        picker: "",
+        picker: false,
         lib: "图库",
         note: "Mic pressed. Firmware sends asr_start + 16 kHz PCM, then asr_stop."
       },
@@ -161,7 +172,7 @@
         b: "",
         hold: false,
         speak: false,
-        picker: "",
+        picker: false,
         lib: "图库",
         note: "User line is right-aligned violet. Watch does not fetch GET /api/diagrams yet."
       },
@@ -173,7 +184,7 @@
         b: "未命名导图",
         hold: false,
         speak: false,
-        picker: "",
+        picker: false,
         lib: "图库",
         note: "Two chips only. Real account has 114 diagrams; firmware picker is not a list yet."
       },
@@ -185,7 +196,7 @@
         b: "",
         hold: false,
         speak: true,
-        picker: "",
+        picker: false,
         lib: "支付宝支付服务合同",
         note: "Speaking still swaps mascot.png → speaking.png. CosyVoice PCM is 22050 Hz."
       },
@@ -197,9 +208,9 @@
         b: "",
         hold: false,
         speak: false,
-        picker: "当前：图库\n桌面焦点：未命名思维导图\n库里共 114 张（手表还没拉列表）",
+        picker: true,
         lib: "图库",
-        note: "Tap 图库 toggles this card. It only shows the current title string, not the 114-row library."
+        note: "Tap 图库 opens the list on LVGL layer_top, above the RGBA mascot and leftover Super widgets. The cat stays; the sheet covers it."
       }
     };
 
@@ -218,9 +229,7 @@
       b.textContent = s.b;
       a.classList.toggle("hidden", !s.a);
       b.classList.toggle("hidden", !s.b);
-      const p = document.getElementById("picker");
-      p.textContent = s.picker;
-      p.classList.toggle("hidden", !s.picker);
+      document.getElementById("picker").classList.toggle("hidden", !s.picker);
     }
 
     document.querySelectorAll(".tabs button").forEach((btn) => {

@@ -234,3 +234,35 @@ std::string training_session_url(const TrainingSnapshot &snap, const char *tail)
 {
     return "/api/training/sessions/" + snap.session_id + tail + "?org_id=" + std::to_string(snap.org_id);
 }
+
+std::string training_ws_url()
+{
+    std::string origin = kitty_net_origin();
+    if (origin.rfind("https://", 0) == 0) {
+        origin.replace(0, 5, "wss");
+    } else if (origin.rfind("http://", 0) == 0) {
+        origin.replace(0, 4, "ws");
+    }
+    return origin + "/api/ws/training-remote";
+}
+
+bool training_parse_ws_frame(const std::string &body, TrainingSnapshot &out)
+{
+    boost::system::error_code err;
+    const auto root = boost::json::parse(body, err);
+    if (err || !root.is_object()) {
+        return false;
+    }
+    const auto &obj = root.as_object();
+    const auto *type_field = obj.if_contains("type");
+    if (type_field != nullptr && type_field->is_string()) {
+        const std::string kind(type_field->as_string().c_str());
+        if (kind == "ping" || kind == "pong") {
+            return false;
+        }
+        if (kind != "training_snapshot" && kind != "") {
+            return false;
+        }
+    }
+    return training_parse_snapshot(body, out);
+}

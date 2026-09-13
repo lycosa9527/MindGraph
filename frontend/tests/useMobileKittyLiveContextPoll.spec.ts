@@ -38,6 +38,7 @@ vi.mock('@/stores/diagram', () => ({
   }),
 }))
 
+import { eventBus } from '@/composables/core/useEventBus'
 import { useMobileKittyLiveContextPoll } from '@/composables/kitty/useMobileKittyLiveContextPoll'
 
 describe('useMobileKittyLiveContextPoll', () => {
@@ -102,5 +103,60 @@ describe('useMobileKittyLiveContextPoll', () => {
 
     await vi.advanceTimersByTimeAsync(0)
     expect(apiRequestMock).not.toHaveBeenCalled()
+  })
+
+  it('does not start a 12s interval after the connect GET', async () => {
+    apiRequestMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: true, updated_at: 1, diagram_type: 'mindmap', diagram_data: {} }),
+    })
+    const setIntervalSpy = vi.spyOn(window, 'setInterval')
+    useMobileKittyLiveContextPoll({
+      libraryDiagramId: computed(() => 'lib-1'),
+      enabled: computed(() => true),
+      editPipelineActive: computed(() => false),
+    })
+    await vi.advanceTimersByTimeAsync(0)
+    await Promise.resolve()
+    await vi.advanceTimersByTimeAsync(12_000)
+    expect(setIntervalSpy).not.toHaveBeenCalled()
+    expect(apiRequestMock).toHaveBeenCalledTimes(1)
+    setIntervalSpy.mockRestore()
+  })
+
+  it('applies inbound live_context_update without another GET', async () => {
+    apiRequestMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        ok: true,
+        updated_at: 1,
+        diagram_type: 'mindmap',
+        diagram_data: { nodes: [{ id: 'topic', text: 'A' }], connections: [] },
+      }),
+    })
+    useMobileKittyLiveContextPoll({
+      libraryDiagramId: computed(() => 'lib-1'),
+      enabled: computed(() => true),
+      editPipelineActive: computed(() => false),
+    })
+    await vi.advanceTimersByTimeAsync(0)
+    await Promise.resolve()
+    await Promise.resolve()
+    apiRequestMock.mockClear()
+    syncMock.mockClear()
+    eventBus.emit('kitty:live_context_update', {
+      scope: 'lib-1',
+      payload: {
+        ok: true,
+        updated_at: 2,
+        diagram_type: 'mindmap',
+        diagram_data: { nodes: [{ id: 'topic', text: 'B' }], connections: [] },
+      },
+    })
+    await Promise.resolve()
+    expect(apiRequestMock).not.toHaveBeenCalled()
+    expect(syncMock).toHaveBeenCalled()
   })
 })

@@ -23,8 +23,8 @@ export function trainingRemotePrompterKey(snapshot: TrainingSnapshot): string {
 }
 
 export function trainingRemoteShouldPollHost(
-  phase: TrainingRemotePhase,
+  _phase: TrainingRemotePhase,
   leadingOrgId: number | null
 ): boolean {
-  return phase === 'waiting' || leadingOrgId == null
+  return leadingOrgId == null
 }

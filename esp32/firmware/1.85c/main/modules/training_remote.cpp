@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <ctime>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -14,29 +15,33 @@
 #include "private/utils.hpp"
 
 #include "kitty_net.hpp"
+#include "kitty_ws.hpp"
 #include "training_remote_net.hpp"
 #include "training_ui.hpp"
 
 namespace {
 
 constexpr const char *TAG = "training_remote";
-constexpr int k_poll_ms = 2000;
 constexpr int k_heartbeat_ms = 15000;
 constexpr int k_steer_ms = 500;
 constexpr int k_loop_ms = 120;
+constexpr int k_draw_settle_ms = 1000;
 
 std::atomic<bool> g_run{false};
 std::atomic<bool> g_thread_live{false};
+std::mutex g_mutex;
 std::string g_token;
 std::vector<TrainingOrgItem> g_orgs;
 std::vector<TrainingCourseItem> g_courses;
 TrainingSnapshot g_hosted;
 TrainingSnapshot g_org_view;
+TrainingSnapshot g_incoming;
+bool g_incoming_ready = false;
+bool g_own_ws = false;
 int g_org_id = 0;
 std::string g_org_name;
 int g_teacher_total = 0;
 bool g_owns = false;
-int64_t g_last_poll_ms = 0;
 int64_t g_last_beat_ms = 0;
 int64_t g_last_steer_ms = 0;
 bool g_lists_loaded = false;
@@ -220,6 +225,95 @@ void select_org(int org_id)
     training_ui_set_dropdown_open(false);
     training_ui_set_dropdown_mode(TrainingDropdownMode::courses);
     paint_host();
+}
+
+void apply_ws_snapshot(const TrainingSnapshot &snap)
+{
+    const bool active = training_session_active(snap);
+    if (active) {
+        if (g_owns || g_hosted.session_id == snap.session_id) {
+            apply_owned(snap);
+        }
+        if (g_org_id <= 0 || snap.org_id == g_org_id) {
+            g_org_view = snap;
+        }
+        paint_host();
+        return;
+    }
+    if (g_owns && (snap.session_id.empty() || snap.session_id == g_hosted.session_id)) {
+        g_hosted = TrainingSnapshot{};
+        g_owns = false;
+    }
+    if (g_org_id > 0 && snap.org_id == g_org_id) {
+        g_org_view = snap;
+    }
+    paint_host();
+}
+
+void on_ws_frame(const std::string &raw)
+{
+    TrainingSnapshot snap;
+    if (!training_parse_ws_frame(raw, snap)) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(g_mutex);
+    g_incoming = snap;
+    g_incoming_ready = true;
+}
+
+void drain_incoming()
+{
+    TrainingSnapshot snap;
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        if (!g_incoming_ready) {
+            return;
+        }
+        snap = g_incoming;
+        g_incoming_ready = false;
+    }
+    apply_ws_snapshot(snap);
+}
+
+void release_ws()
+{
+    if (!g_own_ws && !kitty_ws_owned_by(KittyWsOwner::training)) {
+        return;
+    }
+    kitty_ws_set_handler(nullptr);
+    kitty_ws_close_owned(KittyWsOwner::training);
+    g_own_ws = false;
+}
+
+bool bind_ws()
+{
+    if (kitty_ws_is_open() && kitty_ws_owned_by(KittyWsOwner::training)) {
+        g_own_ws = true;
+        return true;
+    }
+    if (kitty_ws_is_connecting() && kitty_ws_owned_by(KittyWsOwner::training)) {
+        return false;
+    }
+    kitty_ws_set_handler(on_ws_frame);
+    if (!kitty_ws_connect(training_ws_url(), g_token, KittyWsOwner::training)) {
+        g_own_ws = false;
+        return false;
+    }
+    for (int i = 0; i < 80 && !kitty_ws_is_open(); ++i) {
+        if (!g_run.load() || training_ui_is_hidden()) {
+            release_ws();
+            return false;
+        }
+        boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
+    }
+    if (!kitty_ws_is_open()) {
+        ESP_LOGW(TAG, "ws open timeout");
+        release_ws();
+        return false;
+    }
+    g_own_ws = true;
+    ESP_LOGI(TAG, "ws ready");
+    return true;
 }
 
 void hydrate()
@@ -516,19 +610,31 @@ void remote_loop()
         g_thread_live.store(false);
         return;
     }
+    for (int i = 0; i < k_draw_settle_ms / k_loop_ms && g_run.load(); ++i) {
+        if (!training_ui_is_hidden()) {
+            break;
+        }
+        boost::this_thread::sleep_for(boost::chrono::milliseconds(k_loop_ms));
+    }
+    for (int i = 0; i < k_draw_settle_ms / k_loop_ms && g_run.load() && !training_ui_is_hidden(); ++i) {
+        boost::this_thread::sleep_for(boost::chrono::milliseconds(k_loop_ms));
+    }
     g_lists_loaded = refresh_lists();
     if (g_orgs.size() == 1) {
         select_org(g_orgs[0].id);
     }
-    hydrate();
+    int reconnect_fails = 0;
     while (g_run.load()) {
         if (training_ui_is_hidden()) {
+            release_ws();
             leave_owned_session();
             while (g_run.load() && training_ui_is_hidden()) {
                 boost::this_thread::sleep_for(boost::chrono::milliseconds(k_loop_ms));
             }
+            reconnect_fails = 0;
             continue;
         }
+        drain_incoming();
         if (!g_lists_loaded) {
             g_lists_loaded = refresh_lists();
             if (g_orgs.size() == 1 && g_org_id == 0) {
@@ -539,17 +645,30 @@ void remote_loop()
         if (action != TrainingUiAction::none) {
             handle_action(action);
         }
-        const int64_t now = now_ms();
-        if (now - g_last_poll_ms >= k_poll_ms) {
-            g_last_poll_ms = now;
-            hydrate();
+        if (kitty_ws_is_open() && kitty_ws_owned_by(KittyWsOwner::training)) {
+            g_own_ws = true;
+        } else if (kitty_ws_is_connecting() && kitty_ws_owned_by(KittyWsOwner::training)) {
+            training_ui_set_status("连接中");
+        } else if (!kitty_ws_is_open()) {
+            training_ui_set_status("连接中");
+            if (bind_ws()) {
+                reconnect_fails = 0;
+            } else if (!(kitty_ws_is_connecting() && kitty_ws_owned_by(KittyWsOwner::training))) {
+                hydrate();
+                reconnect_fails += 1;
+                const int wait_s = reconnect_fails > 4 ? 5 : reconnect_fails;
+                training_ui_set_status("重连中");
+                boost::this_thread::sleep_for(boost::chrono::seconds(wait_s));
+            }
         }
+        const int64_t now = now_ms();
         if (g_owns && now - g_last_beat_ms >= k_heartbeat_ms) {
             g_last_beat_ms = now;
             post_heartbeat();
         }
         boost::this_thread::sleep_for(boost::chrono::milliseconds(k_loop_ms));
     }
+    release_ws();
     leave_owned_session();
     g_thread_live.store(false);
 }

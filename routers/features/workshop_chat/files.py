@@ -30,6 +30,7 @@ router = APIRouter()
 
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_file(
+    request: Request,
     file: UploadFile = File(...),
     message_id: int = 0,
     dm_id: int = 0,
@@ -42,6 +43,12 @@ async def upload_file(
     specific message.  Pass neither (both 0) to upload first and
     associate later.
     """
+    await check_endpoint_rate_limit(
+        "workshop_chat_upload",
+        get_rate_limit_identifier(current_user, request),
+        max_requests=20,
+        window_seconds=60,
+    )
     try:
         result = await file_service.save_attachment(
             db,

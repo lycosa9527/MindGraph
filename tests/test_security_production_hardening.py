@@ -236,7 +236,11 @@ def test_production_guard_allows_default_db_password() -> None:
         with patch.object(guard, "_guard_redis_url", return_value=None):
             with patch.dict(
                 "os.environ",
-                {"DATABASE_URL": default_url, "CAPTCHA_PROVIDER": "legacy"},
+                {
+                    "DATABASE_URL": default_url,
+                    "CAPTCHA_PROVIDER": "legacy",
+                    "FEATURE_WORKSHOP_CHAT": "False",
+                },
                 clear=False,
             ):
                 guard.enforce_production_security_guards()
@@ -260,6 +264,7 @@ def test_production_guard_warns_on_removed_oauth_master_flag(
                             "CAPTCHA_PROVIDER": "legacy",
                             "FEATURE_GEWE": "False",
                             "FEATURE_SMART_RESPONSE": "False",
+                            "FEATURE_WORKSHOP_CHAT": "False",
                         },
                         clear=False,
                     ):
@@ -287,6 +292,7 @@ def test_production_guard_allows_oauth_without_wechat_secrets() -> None:
                             "CAPTCHA_PROVIDER": "legacy",
                             "FEATURE_GEWE": "False",
                             "FEATURE_SMART_RESPONSE": "False",
+                            "FEATURE_WORKSHOP_CHAT": "False",
                         },
                         clear=False,
                     ):
@@ -310,6 +316,7 @@ def test_production_guard_ignores_partial_wechat_secrets_when_wechat_off() -> No
                             "CAPTCHA_PROVIDER": "legacy",
                             "FEATURE_GEWE": "False",
                             "FEATURE_SMART_RESPONSE": "False",
+                            "FEATURE_WORKSHOP_CHAT": "False",
                         },
                         clear=False,
                     ):
@@ -356,6 +363,29 @@ def test_production_guard_rejects_unauthenticated_redis_when_required() -> None:
         ):
             with pytest.raises(RuntimeError, match="REDIS_URL"):
                 guard.enforce_production_security_guards()
+
+
+def test_production_guard_requires_fanout_secret_when_workshop_chat_on() -> None:
+    """研习社 + Redis fan-out must stamp envelopes in production."""
+    guard = production_secrets_guard_module
+    with patch.object(guard, "_require_non_debug", return_value=True):
+        with patch.object(guard, "_guard_database_url", return_value=None):
+            with patch.object(guard, "_guard_redis_url", return_value=None):
+                with patch.object(guard, "AUTH_MODE", "standard"):
+                    with patch.dict(
+                        "os.environ",
+                        {
+                            "FEATURE_WORKSHOP_CHAT": "True",
+                            "WS_REDIS_FANOUT_ENABLED": "true",
+                            "COLLAB_FANOUT_ORIGIN_SECRET": "",
+                            "CAPTCHA_PROVIDER": "legacy",
+                            "FEATURE_GEWE": "False",
+                            "FEATURE_SMART_RESPONSE": "False",
+                        },
+                        clear=False,
+                    ):
+                        with pytest.raises(RuntimeError, match="COLLAB_FANOUT_ORIGIN_SECRET"):
+                            guard.enforce_production_security_guards()
 
 
 def test_allows_same_origin_showcase_frame_for_teaching_attachments() -> None:

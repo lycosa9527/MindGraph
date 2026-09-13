@@ -20,6 +20,8 @@ lv_timer_t *g_timer = nullptr;
 const lv_font_t *g_cjk_font = nullptr;
 uint8_t g_painted_list = 0;
 bool g_teardown_pending = false;
+bool g_have_paint = false;
+SlidesUiSnapshot g_last_paint;
 
 void copy_field(char *dest, size_t dest_size, const std::string &src)
 {
@@ -85,6 +87,28 @@ void on_pick(lv_event_t *event)
     g_model.picker_open = false;
 }
 
+bool paint_unchanged(const SlidesUiSnapshot &snap)
+{
+    if (!g_have_paint) {
+        return false;
+    }
+    return snap.phase == g_last_paint.phase
+        && snap.step_index == g_last_paint.step_index
+        && snap.step_count == g_last_paint.step_count
+        && snap.can_prev == g_last_paint.can_prev
+        && snap.can_next == g_last_paint.can_next
+        && snap.autoplay == g_last_paint.autoplay
+        && snap.deep == g_last_paint.deep
+        && snap.pad_enabled == g_last_paint.pad_enabled
+        && snap.busy == g_last_paint.busy
+        && snap.picker_open == g_last_paint.picker_open
+        && snap.list_serial == g_last_paint.list_serial
+        && snap.diagram_count == g_last_paint.diagram_count
+        && std::strcmp(snap.status, g_last_paint.status) == 0
+        && std::strcmp(snap.library, g_last_paint.library) == 0
+        && std::strcmp(snap.picker_status, g_last_paint.picker_status) == 0;
+}
+
 void teardown_widgets()
 {
     if (g_widgets.root != nullptr && lv_obj_is_valid(g_widgets.root)) {
@@ -93,10 +117,16 @@ void teardown_widgets()
     g_widgets = {};
     g_painted_list = 0;
     g_cjk_font = nullptr;
+    g_have_paint = false;
+    g_last_paint = {};
 }
 
 void ensure_widgets()
 {
+    if (g_widgets.root != nullptr && !lv_obj_is_valid(g_widgets.root)) {
+        g_widgets = {};
+        g_have_paint = false;
+    }
     if (g_widgets.root != nullptr) {
         return;
     }
@@ -144,7 +174,12 @@ void tick(lv_timer_t *timer)
         return;
     }
     lv_obj_remove_flag(g_widgets.root, LV_OBJ_FLAG_HIDDEN);
+    if (paint_unchanged(snap)) {
+        return;
+    }
     slides_face_paint(g_widgets, snap, g_cjk_font, g_painted_list, on_pick);
+    g_last_paint = snap;
+    g_have_paint = true;
 }
 
 } // namespace

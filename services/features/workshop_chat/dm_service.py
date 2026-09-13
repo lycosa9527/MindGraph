@@ -35,6 +35,24 @@ MAX_PAGE_SIZE = 200
 MAX_CONTENT_LENGTH = 5000
 
 
+def _format_dm(msg: DirectMessage) -> Dict[str, Any]:
+    """Format a DM row including sender identity for the message list."""
+    sender = msg.sender
+    return {
+        "id": msg.id,
+        "sender_id": msg.sender_id,
+        "sender_name": sender.name if sender else f"User {msg.sender_id}",
+        "sender_avatar": sender.avatar if sender else None,
+        "recipient_id": msg.recipient_id,
+        "content": msg.content,
+        "message_type": msg.message_type,
+        "is_read": msg.is_read,
+        "mentioned_user_ids": list(msg.mentioned_user_ids or []),
+        "created_at": msg.created_at.isoformat(),
+        "edited_at": msg.edited_at.isoformat() if msg.edited_at else None,
+    }
+
+
 class DirectMessageService:
     """1:1 direct message operations."""
 
@@ -167,20 +185,7 @@ class DirectMessageService:
             result = await db.execute(stmt)
             messages.extend(result.scalars().all())
 
-        return [
-            {
-                "id": m.id,
-                "sender_id": m.sender_id,
-                "recipient_id": m.recipient_id,
-                "content": m.content,
-                "message_type": m.message_type,
-                "is_read": m.is_read,
-                "mentioned_user_ids": list(m.mentioned_user_ids or []),
-                "created_at": m.created_at.isoformat(),
-                "edited_at": m.edited_at.isoformat() if m.edited_at else None,
-            }
-            for m in messages
-        ]
+        return [_format_dm(m) for m in messages]
 
     @staticmethod
     async def search_messages(
@@ -215,20 +220,7 @@ class DirectMessageService:
             stmt = stmt.order_by(DirectMessage.id.desc()).limit(lim)
         result = await db.execute(stmt)
         rows = result.scalars().all()
-        return [
-            {
-                "id": m.id,
-                "sender_id": m.sender_id,
-                "recipient_id": m.recipient_id,
-                "content": m.content,
-                "message_type": m.message_type,
-                "is_read": m.is_read,
-                "mentioned_user_ids": list(m.mentioned_user_ids or []),
-                "created_at": m.created_at.isoformat(),
-                "edited_at": m.edited_at.isoformat() if m.edited_at else None,
-            }
-            for m in reversed(rows)
-        ]
+        return [_format_dm(m) for m in reversed(rows)]
 
     @staticmethod
     async def send(
@@ -268,18 +260,7 @@ class DirectMessageService:
         await db.commit()
         await db.refresh(msg)
 
-        return {
-            "id": msg.id,
-            "sender_id": msg.sender_id,
-            "sender_name": sender.name if sender else f"User {sender_id}",
-            "sender_avatar": sender.avatar if sender else None,
-            "recipient_id": msg.recipient_id,
-            "content": msg.content,
-            "message_type": msg.message_type,
-            "is_read": msg.is_read,
-            "mentioned_user_ids": list(msg.mentioned_user_ids or []),
-            "created_at": msg.created_at.isoformat(),
-        }
+        return _format_dm(msg)
 
     @staticmethod
     async def mark_read(

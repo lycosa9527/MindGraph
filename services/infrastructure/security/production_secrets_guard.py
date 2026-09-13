@@ -147,6 +147,21 @@ def enforce_production_security_guards() -> None:
     if (wechat_login_on or dingtalk_login_on) and not os.getenv("EXTERNAL_BASE_URL", "").strip():
         logger.warning("OAuth QR is on but EXTERNAL_BASE_URL is unset; OAuth redirect URIs may fail")
 
+    workshop_on = os.getenv("FEATURE_WORKSHOP_CHAT", "False").strip().lower() in (
+        "true",
+        "1",
+        "yes",
+    )
+    fanout_on = os.getenv("WS_REDIS_FANOUT_ENABLED", "true").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    if workshop_on and fanout_on and not os.getenv("COLLAB_FANOUT_ORIGIN_SECRET", "").strip():
+        _fail(
+            "COLLAB_FANOUT_ORIGIN_SECRET is required when FEATURE_WORKSHOP_CHAT=True and WebSocket fan-out is enabled"
+        )
+
     if requested_captcha_provider() == PROVIDER_TSEC and not tsec_credentials_ready():
         _fail(
             "CAPTCHA_PROVIDER=tsec requires TENCENT_CAPTCHA_APP_ID, "

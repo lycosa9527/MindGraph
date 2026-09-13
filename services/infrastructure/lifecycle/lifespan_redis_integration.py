@@ -18,6 +18,11 @@ from services.features.slides_remote.wake_listener import (
     start_slides_remote_wake_listener,
     stop_slides_remote_wake_listener,
 )
+from services.features.training.wake_listener import (
+    await_training_remote_wake_listener_stopped,
+    start_training_remote_wake_listener,
+    stop_training_remote_wake_listener,
+)
 from services.features.ws_pg_notify_fanout import stop_pg_notify_listener
 from services.features.ws_redis_fanout_listener import (
     await_ws_fanout_listener_stopped,
@@ -135,6 +140,14 @@ async def lifespan_init_redis_phase(is_main_worker: bool) -> None:
                     slides_wake_exc,
                 )
         try:
+            start_training_remote_wake_listener(loop)
+        except BACKGROUND_INFRA_ERRORS as training_wake_exc:
+            if is_main_worker:
+                logger.warning(
+                    "[LIFESPAN] Training-remote wake Redis listener: %s",
+                    training_wake_exc,
+                )
+        try:
             start_env_reload_listener(loop)
         except BACKGROUND_INFRA_ERRORS as env_reload_exc:
             if is_main_worker:
@@ -195,6 +208,12 @@ async def stop_fanout_listeners(is_main_worker: bool) -> None:
     except BACKGROUND_INFRA_ERRORS as exc:
         if is_main_worker:
             logger.warning("Failed to stop slide-remote wake listener: %s", exc)
+    try:
+        stop_training_remote_wake_listener()
+        await await_training_remote_wake_listener_stopped(timeout=5.0)
+    except BACKGROUND_INFRA_ERRORS as exc:
+        if is_main_worker:
+            logger.warning("Failed to stop training-remote wake listener: %s", exc)
     try:
         stop_env_reload_listener()
         await await_env_reload_listener_stopped(timeout=5.0)

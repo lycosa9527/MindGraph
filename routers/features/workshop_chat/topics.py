@@ -191,15 +191,18 @@ async def move_topic(
     await access_channel(db, body.target_channel_id, current_user)
     result = await topic_service.move_topic(db, topic_id, body.target_channel_id)
     if result:
-        await chat_ws_manager.broadcast_to_channel(
-            channel_id,
-            {
-                "type": "topic_moved",
-                "channel_id": channel_id,
-                "target_channel_id": body.target_channel_id,
-                "topic_id": topic_id,
-            },
-        )
+        moved_payload = {
+            "type": "topic_moved",
+            "channel_id": channel_id,
+            "target_channel_id": body.target_channel_id,
+            "topic_id": topic_id,
+        }
+        await chat_ws_manager.broadcast_to_channel(channel_id, moved_payload)
+        if body.target_channel_id != channel_id:
+            await chat_ws_manager.broadcast_to_channel(
+                body.target_channel_id,
+                moved_payload,
+            )
     return result
 
 

@@ -183,17 +183,17 @@ async def list_channels(
     Admins may pass ``org_id`` to view channels of another organization.
     """
     effective_org_id = get_effective_org_id(current_user, org_id)
-    etag = await channels_list_etag(
-        db,
-        effective_org_id,
-        current_user.id,
-        current_user,
-    )
     channels_body = await channel_service.list_channels(
         db,
         effective_org_id,
         current_user.id,
         current_user=current_user,
+    )
+    etag = await channels_list_etag(
+        db,
+        effective_org_id,
+        current_user.id,
+        current_user,
     )
     return workshop_list_json_response(
         request,

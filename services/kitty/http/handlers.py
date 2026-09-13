@@ -20,6 +20,7 @@ from services.kitty.infra.desktop.kitty_desktop_action_queue import (
     mark_kitty_desktop_action_explicit_drain,
     pop_kitty_desktop_action_wait,
 )
+from services.kitty.infra.control.kitty_event_push import notify_kitty_live_context_changed
 from services.kitty.infra.desktop.kitty_desktop_focus_push import (
     notify_kitty_desktop_focus_changed,
 )
@@ -434,6 +435,8 @@ async def kitty_rest_live_context_put(
         preserve_mobile_lane=True,
         live_payload=live_payload,
     )
+    live_payload["updated_at"] = updated_at
+    await notify_kitty_live_context_changed(uid, scope, live_payload)
     return {"ok": True, "updated_at": updated_at}
 
 

@@ -296,6 +296,21 @@ export type EventTypes = {
     diagram_library_id: string | null
     updated_at: number | null
   }
+  /** Desktop canvas live_spec PUT — same shape as GET /live_context. */
+  'kitty:live_context_update': {
+    scope?: string
+    payload: Record<string, unknown>
+  }
+  /** Peer-lane one-sentence turn after persist. */
+  'kitty:conversation_turn': {
+    scope?: string
+    turn: import('@/composables/kitty/applyKittyConversationTurn').KittyConversationTurnPayload
+    requestId?: string
+  }
+  /** Session Manager snapshot after canvas-owner / alignment change. */
+  'kitty:session_snapshot': {
+    session: import('@/composables/kitty/useKittySessionManager').KittySessionSnapshotDto
+  }
   'kitty:workflow_trace': {
     lane: 'mobile' | 'desktop' | 'hub'
     stage: string

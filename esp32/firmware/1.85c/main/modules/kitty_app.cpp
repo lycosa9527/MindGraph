@@ -58,7 +58,9 @@ public:
     std::expected<void, std::string> on_start(esp_brookesia::system::core::AppContext &context) override
     {
         (void)context;
+        kitty_ui_start();
         kitty_ui_show();
+        kitty_agent_start();
         BROOKESIA_LOGI("Kitty app started");
         return {};
     }
@@ -72,7 +74,7 @@ public:
     {
         (void)context;
         kitty_ui_hide();
-        kitty_agent_request_leave();
+        kitty_agent_stop();
         BROOKESIA_LOGI("Kitty app paused; session leaving");
         return {};
     }
@@ -81,7 +83,7 @@ public:
     {
         (void)context;
         kitty_ui_hide();
-        kitty_agent_request_leave();
+        kitty_agent_stop();
         BROOKESIA_LOGI("Kitty app stopped; session leaving");
         return {};
     }

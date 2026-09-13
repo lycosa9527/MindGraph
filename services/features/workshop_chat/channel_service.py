@@ -10,8 +10,9 @@ channels under their parent groups.
 
 Unread semantics (aligned with ``TopicService.list_topics`` and DM APIs):
 
-- **Channel list badge:** non-deleted ``ChatMessage`` rows in the channel
-  with ``id > ChannelMember.last_read_message_id`` (per member).
+- **Channel list badge:** main-stream (``topic_id IS NULL``) above the
+  member waterline, plus still-unread topic messages (see
+  ``channel_unread``). Topic read does not raise the waterline.
 - **Topic row without** ``UserTopicPreference``: same waterline
   (``id > last_read_message_id``).
 - **Topic row with preference:** non-deleted messages with
@@ -30,7 +31,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional, Tuple
 
-from sqlalchemy import and_, case, func, or_, select, update
+from sqlalchemy import case, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.functions import count as sql_count
@@ -42,6 +43,13 @@ from models.domain.workshop_chat import (
     ChatMessage,
     ChatTopic,
     UserTopicPreference,
+)
+from services.features.workshop_chat.channel_unread import batch_channel_unread_counts
+from services.features.workshop_chat.group_lesson_membership import (
+    backfill_joined_group_lessons,
+    join_channel_with_lessons,
+    leave_channel_with_lessons,
+    subscribe_group_members_to_lesson,
 )
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import is_admin
@@ -87,9 +95,11 @@ class ChannelService:
                 ChatChannel.name,
             )
         )
-        channels = result.scalars().all()
+        channels = list(result.scalars().all())
+        if user_id:
+            await backfill_joined_group_lessons(db, user_id, channels)
 
-        member_map = await ChannelService._build_member_map(db, user_id, list(channels))
+        member_map = await ChannelService._build_member_map(db, user_id, channels)
         user_is_admin = is_admin(current_user) if current_user else False
         member_counts, topic_counts, unread_counts = await ChannelService._batch_channel_list_metrics(
             db,
@@ -170,49 +180,7 @@ class ChannelService:
         )
         topic_counts = {int(a): int(b) for a, b in tc_result.all()}
 
-        unread_counts: Dict[int, int] = {cid: 0 for cid in channel_ids}
-        if not member_map:
-            return member_counts, topic_counts, unread_counts
-
-        mids = [cid for cid in member_map if cid in channel_ids]
-        or_clauses = [
-            and_(
-                ChatMessage.channel_id == cid,
-                ChatMessage.id > (member_map[cid].last_read_message_id or 0),
-            )
-            for cid in mids
-        ]
-        uid = member_map[mids[0]].user_id if mids else None
-        muted_topic_ids: tuple = ()
-        if uid is not None:
-            muted_result = await db.execute(
-                select(UserTopicPreference.topic_id).where(
-                    UserTopicPreference.user_id == uid,
-                    UserTopicPreference.visibility_policy == "muted",
-                )
-            )
-            muted_topic_ids = tuple(int(row[0]) for row in muted_result.all())
-        if or_clauses:
-            unread_stmt = select(
-                ChatMessage.channel_id,
-                sql_count(ChatMessage.id),
-            ).where(
-                ChatMessage.channel_id.in_(mids),
-                ChatMessage.is_deleted.is_(False),
-                or_(*or_clauses),
-            )
-            if muted_topic_ids:
-                unread_stmt = unread_stmt.where(
-                    or_(
-                        ChatMessage.topic_id.is_(None),
-                        ChatMessage.topic_id.notin_(muted_topic_ids),
-                    )
-                )
-            unread_stmt = unread_stmt.group_by(ChatMessage.channel_id)
-            unread_result = await db.execute(unread_stmt)
-            for row_cid, cnt in unread_result.all():
-                unread_counts[int(row_cid)] = int(cnt)
-
+        unread_counts = await batch_channel_unread_counts(db, channel_ids, member_map)
         return member_counts, topic_counts, unread_counts
 
     @staticmethod
@@ -295,6 +263,14 @@ class ChannelService:
             current = member.last_read_message_id or 0
             if max_msg_id > current:
                 member.last_read_message_id = max_msg_id
+        await db.execute(
+            update(UserTopicPreference)
+            .where(
+                UserTopicPreference.user_id == user_id,
+                UserTopicPreference.topic_id.in_(select(ChatTopic.id).where(ChatTopic.channel_id == channel_id)),
+            )
+            .values(last_updated=datetime.now(UTC))
+        )
         try:
             await db.commit()
         except DATABASE_ERRORS:
@@ -356,6 +332,13 @@ class ChannelService:
             role="owner",
         )
         db.add(owner_member)
+        if parent_id is not None:
+            await subscribe_group_members_to_lesson(
+                db,
+                parent_id,
+                channel.id,
+                skip_user_ids={created_by},
+            )
         try:
             await db.commit()
         except DATABASE_ERRORS:
@@ -499,34 +482,8 @@ class ChannelService:
         channel_id: int,
         user_id: int,
     ) -> bool:
-        """Join a channel as a member."""
-        result = await db.execute(
-            select(ChannelMember).where(
-                ChannelMember.channel_id == channel_id,
-                ChannelMember.user_id == user_id,
-            )
-        )
-        existing = result.scalar_one_or_none()
-        if existing:
-            return True
-        db.add(
-            ChannelMember(
-                channel_id=channel_id,
-                user_id=user_id,
-                role="member",
-            )
-        )
-        try:
-            await db.commit()
-        except DATABASE_ERRORS:
-            await db.rollback()
-            raise
-        logger.info(
-            "[WorkshopChat] User %d joined channel %d",
-            user_id,
-            channel_id,
-        )
-        return True
+        """Join a channel; a 教研组 join also subscribes to its 课例."""
+        return await join_channel_with_lessons(db, channel_id, user_id)
 
     @staticmethod
     async def leave_channel(
@@ -534,28 +491,8 @@ class ChannelService:
         channel_id: int,
         user_id: int,
     ) -> bool:
-        """Leave a channel."""
-        result = await db.execute(
-            select(ChannelMember).where(
-                ChannelMember.channel_id == channel_id,
-                ChannelMember.user_id == user_id,
-            )
-        )
-        member = result.scalar_one_or_none()
-        if not member:
-            return False
-        await db.delete(member)
-        try:
-            await db.commit()
-        except DATABASE_ERRORS:
-            await db.rollback()
-            raise
-        logger.info(
-            "[WorkshopChat] User %d left channel %d",
-            user_id,
-            channel_id,
-        )
-        return True
+        """Leave a channel; leaving a 教研组 also leaves its 课例."""
+        return await leave_channel_with_lessons(db, channel_id, user_id)
 
     @staticmethod
     async def get_channel_members(

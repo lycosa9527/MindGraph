@@ -18,7 +18,6 @@
 namespace {
 
 constexpr uint32_t k_violet = 0x7C3AED;
-constexpr uint32_t k_violet_hold = 0x4F46E5;
 constexpr uint32_t k_ink = 0x0F172A;
 constexpr uint32_t k_hold_arm_ms = 2500;
 constexpr int k_pick_max = 12;
@@ -66,6 +65,8 @@ bool g_hold_down = false;
 bool g_touch_hold = false;
 bool g_boot_hold = false;
 uint32_t g_press_since = 0;
+bool g_have_live_color = false;
+bool g_live_online = false;
 
 void copy_field(char *dest, size_t dest_size, const std::string &src)
 {
@@ -416,6 +417,9 @@ void paint_picker(const UiSnapshot &snap)
 
 void teardown_widgets()
 {
+    if (g_widgets.picker != nullptr && lv_obj_is_valid(g_widgets.picker)) {
+        lv_obj_delete(g_widgets.picker);
+    }
     if (g_widgets.root != nullptr && lv_obj_is_valid(g_widgets.root)) {
         lv_obj_delete(g_widgets.root);
     }
@@ -426,10 +430,25 @@ void teardown_widgets()
     g_touch_hold = false;
     g_boot_hold = false;
     g_press_since = 0;
+    g_have_live_color = false;
 }
 
 void ensure_widgets()
 {
+    if (g_widgets.root != nullptr && !lv_obj_is_valid(g_widgets.root)) {
+        if (g_widgets.picker != nullptr && lv_obj_is_valid(g_widgets.picker)) {
+            lv_obj_delete(g_widgets.picker);
+        }
+        g_widgets = {};
+        g_painted_pick = 0;
+    }
+    if (g_widgets.picker != nullptr && !lv_obj_is_valid(g_widgets.picker)) {
+        if (g_widgets.root != nullptr && lv_obj_is_valid(g_widgets.root)) {
+            lv_obj_delete(g_widgets.root);
+        }
+        g_widgets = {};
+        g_painted_pick = 0;
+    }
     if (g_widgets.root != nullptr) {
         return;
     }
@@ -444,6 +463,7 @@ void ensure_widgets()
     }
     if (g_cjk_font != nullptr) {
         apply_cjk_font(g_widgets.root, g_cjk_font);
+        apply_cjk_font(g_widgets.picker, g_cjk_font);
         BROOKESIA_LOGI("Kitty face using Super CJK font");
     } else {
         BROOKESIA_LOGW("Kitty face has no Super CJK font");
@@ -485,6 +505,7 @@ void tick(lv_timer_t *timer)
         return;
     }
     lv_obj_remove_flag(g_widgets.root, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_move_foreground(g_widgets.root);
     const bool online = is_online_state(snap);
     if (g_widgets.online != nullptr) {
         if (online) {
@@ -495,14 +516,32 @@ void tick(lv_timer_t *timer)
     }
     if (g_widgets.live != nullptr) {
         set_label_if_changed(g_widgets.live, live_for(snap));
-        lv_obj_set_style_text_color(
-            g_widgets.live,
-            lv_color_hex(online ? 0x15803D : 0x64748B),
-            0
-        );
+        if (!g_have_live_color || g_live_online != online) {
+            lv_obj_set_style_text_color(
+                g_widgets.live,
+                lv_color_hex(online ? 0x15803D : 0x64748B),
+                0
+            );
+            g_live_online = online;
+            g_have_live_color = true;
+        }
     }
-    set_label_if_changed(g_widgets.user, snap.user);
-    set_label_if_changed(g_widgets.kitty, snap.kitty);
+    if (g_widgets.user != nullptr) {
+        if (snap.user[0] == '\0') {
+            lv_obj_add_flag(g_widgets.user, LV_OBJ_FLAG_HIDDEN);
+        } else {
+            lv_obj_remove_flag(g_widgets.user, LV_OBJ_FLAG_HIDDEN);
+            set_label_if_changed(g_widgets.user, snap.user);
+        }
+    }
+    if (g_widgets.kitty != nullptr) {
+        if (snap.kitty[0] == '\0') {
+            lv_obj_add_flag(g_widgets.kitty, LV_OBJ_FLAG_HIDDEN);
+        } else {
+            lv_obj_remove_flag(g_widgets.kitty, LV_OBJ_FLAG_HIDDEN);
+            set_label_if_changed(g_widgets.kitty, snap.kitty);
+        }
+    }
     for (int i = 0; i < 4; ++i) {
         set_choice_chip(g_widgets.choices[i], snap.choices[i]);
     }
@@ -519,11 +558,6 @@ void tick(lv_timer_t *timer)
     kitty_ui_work_ring_paint(g_widgets.work_ring, snap.state);
     kitty_ui_mascot_tick(snap.state);
     if (g_widgets.mic != nullptr) {
-        lv_obj_set_style_bg_color(
-            g_widgets.mic,
-            lv_color_hex(g_hold_down ? k_violet_hold : k_violet),
-            0
-        );
         uint8_t level = snap.mic_level;
         if (g_hold_down && level < 24) {
             level = static_cast<uint8_t>(24 + (lv_tick_get() / 80) % 80);

@@ -299,10 +299,12 @@ export function useMobileKittyPairing(
       liveContextLibraryId.value != null
   )
   const liveContextEditPipelineActive = computed(() => options.editPipelineActive?.value === true)
+  const liveContextWsConnected = computed(() => kitty.isConnected.value === true)
   useMobileKittyLiveContextPoll({
     libraryDiagramId: liveContextLibraryId,
     enabled: liveContextPollEnabled,
     editPipelineActive: liveContextEditPipelineActive,
+    wsConnected: liveContextWsConnected,
     onDebugLine: options.onDebugLine,
   })
 

@@ -58,7 +58,9 @@ void kitty_ui_work_ring_paint(lv_obj_t *ring, KittyUiState state)
         return;
     }
     if (!is_working(state)) {
-        lv_obj_add_flag(ring, LV_OBJ_FLAG_HIDDEN);
+        if (!lv_obj_has_flag(ring, LV_OBJ_FLAG_HIDDEN)) {
+            lv_obj_add_flag(ring, LV_OBJ_FLAG_HIDDEN);
+        }
         return;
     }
     lv_obj_remove_flag(ring, LV_OBJ_FLAG_HIDDEN);

@@ -40,3 +40,5 @@ bool training_load_courses(const std::string &token, std::vector<TrainingCourseI
 bool training_fetch_ready(const std::string &token, int org_id, int &teacher_total);
 bool training_fetch_active(const std::string &token, int org_id, TrainingSnapshot &out, int &status);
 std::string training_session_url(const TrainingSnapshot &snap, const char *tail);
+std::string training_ws_url();
+bool training_parse_ws_frame(const std::string &body, TrainingSnapshot &out);

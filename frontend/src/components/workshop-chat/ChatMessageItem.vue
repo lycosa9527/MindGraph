@@ -63,6 +63,12 @@ const editFormRef = ref<{ markSaveFailed: () => void }>()
 const canEdit = computed(
   () => props.isOwn && props.message.channel_id != null && !props.message.is_deleted
 )
+const canDelete = computed(
+  () =>
+    props.message.channel_id != null &&
+    !props.message.is_deleted &&
+    (props.isOwn || props.canModerate)
+)
 
 const contentRef = ref<HTMLDivElement>()
 const isCondensed = ref(false)
@@ -170,11 +176,10 @@ async function saveInlineEdit(content: string): Promise<void> {
       class="msg-row__actions"
     >
       <MessageActionBar
-        :is-own="isOwn"
         :is-starred="isStarred"
         :is-condensed="isCondensed"
         :can-edit="canEdit"
-        :can-moderate="props.canModerate"
+        :can-delete="canDelete"
         @add-reaction="handleAddReaction"
         @toggle-star="emit('toggleStar', message.id)"
         @quote="emit('quote', message)"

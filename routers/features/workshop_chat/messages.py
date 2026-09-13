@@ -16,17 +16,21 @@ Proprietary License
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.workshop_chat import ChatTopic
+from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.features.workshop_chat.dependencies import (
     access_channel,
     access_channel_message,
+    filter_accessible_message_ids,
+    parse_batch_message_ids,
     require_membership_unless_announce,
+    require_membership_unless_open_post,
     require_post_permission,
 )
 from routers.features.workshop_chat.schemas import (
@@ -43,6 +47,7 @@ from services.features.workshop_chat import (
 from services.features.workshop_chat.mention_resolution import (
     MentionResolutionError,
 )
+from services.features.workshop_chat.message_service import MessageNarrowError
 from services.features.workshop_chat_ws_manager import chat_ws_manager
 from utils.auth import get_current_user
 
@@ -79,12 +84,19 @@ async def get_channel_messages(
 async def search_channel_messages(
     channel_id: int,
     q: str,
+    request: Request,
     topic_id: Optional[int] = None,
     limit: int = 40,
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Search message bodies within a channel; optional topic narrow (Zulip-style)."""
+    await check_endpoint_rate_limit(
+        "workshop_chat_search",
+        get_rate_limit_identifier(current_user, request),
+        max_requests=30,
+        window_seconds=60,
+    )
     channel = await access_channel(db, channel_id, current_user)
     await require_membership_unless_announce(db, channel, current_user.id)
     if topic_id is not None:
@@ -113,12 +125,19 @@ async def search_channel_messages(
 async def send_channel_message(
     channel_id: int,
     body: SendMessageRequest,
+    request: Request,
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Send a general channel message."""
+    await check_endpoint_rate_limit(
+        "workshop_chat_send",
+        get_rate_limit_identifier(current_user, request),
+        max_requests=60,
+        window_seconds=60,
+    )
     channel = await access_channel(db, channel_id, current_user)
-    await require_membership_unless_announce(db, channel, current_user.id)
+    await require_membership_unless_open_post(db, channel, current_user.id)
     require_post_permission(channel, current_user)
     try:
         result = await message_service.send_message(
@@ -129,6 +148,8 @@ async def send_channel_message(
             message_type=body.message_type,
             parent_id=body.parent_id,
         )
+    except MessageNarrowError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except MentionResolutionError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -142,12 +163,11 @@ async def send_channel_message(
         user=current_user,
         module="workshop",
         redis_activity_type="workshop_chat",
-        details={"channel_id": channel_id},
+        details={"channel_id": channel_id, "content_len": len(body.content)},
         detail=f"channel={channel_id}",
         usage_source="mindgraph",
         usage_action="workshop_chat",
         title=f"channel:{channel_id}",
-        prompt_preview=body.content,
     )
     await chat_ws_manager.broadcast_to_channel(
         channel_id,
@@ -195,12 +215,19 @@ async def send_topic_message(
     channel_id: int,
     topic_id: int,
     body: SendMessageRequest,
+    request: Request,
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Send a message to a topic."""
+    await check_endpoint_rate_limit(
+        "workshop_chat_send",
+        get_rate_limit_identifier(current_user, request),
+        max_requests=60,
+        window_seconds=60,
+    )
     channel = await access_channel(db, channel_id, current_user)
-    await require_membership_unless_announce(db, channel, current_user.id)
+    await require_membership_unless_open_post(db, channel, current_user.id)
     require_post_permission(channel, current_user)
     try:
         result = await message_service.send_message(
@@ -212,6 +239,8 @@ async def send_topic_message(
             message_type=body.message_type,
             parent_id=body.parent_id,
         )
+    except MessageNarrowError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except MentionResolutionError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -225,12 +254,15 @@ async def send_topic_message(
         user=current_user,
         module="workshop",
         redis_activity_type="workshop_chat",
-        details={"channel_id": channel_id, "topic_id": topic_id},
+        details={
+            "channel_id": channel_id,
+            "topic_id": topic_id,
+            "content_len": len(body.content),
+        },
         detail=f"channel={channel_id} topic={topic_id}",
         usage_source="mindgraph",
         usage_action="workshop_chat",
         title=f"topic:{topic_id}",
-        prompt_preview=body.content,
     )
     await chat_ws_manager.broadcast_to_channel(
         channel_id,
@@ -275,6 +307,15 @@ async def edit_message(
         ) from exc
     if not result:
         raise HTTPException(status_code=404, detail="Message not found or not yours")
+    await chat_ws_manager.broadcast_to_channel(
+        result["channel_id"],
+        {
+            "type": "message_edited",
+            "channel_id": result["channel_id"],
+            "topic_id": result.get("topic_id"),
+            "message": result,
+        },
+    )
     return result
 
 
@@ -285,13 +326,22 @@ async def delete_message(
     current_user: User = Depends(get_current_user),
 ):
     """Soft-delete a message (sender or org/realm moderator)."""
-    await access_channel_message(db, message_id, current_user)
+    message, channel = await access_channel_message(db, message_id, current_user)
     success = await message_service.delete_message(db, message_id, current_user)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Message not found or not permitted",
         )
+    await chat_ws_manager.broadcast_to_channel(
+        channel.id,
+        {
+            "type": "message_deleted",
+            "channel_id": channel.id,
+            "topic_id": message.topic_id,
+            "message_id": message_id,
+        },
+    )
     return {"ok": True}
 
 
@@ -332,10 +382,11 @@ async def get_starred_messages(
 async def get_reactions_batch(
     ids: str,
     db: AsyncSession = Depends(get_async_db),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Batch-fetch grouped reactions for multiple messages."""
-    message_ids = [int(x) for x in ids.split(",") if x.strip().isdigit()]
+    raw_ids = parse_batch_message_ids(ids)
+    message_ids = await filter_accessible_message_ids(db, current_user, raw_ids)
     return await reaction_service.get_reactions_batch(db, message_ids)
 
 
@@ -346,7 +397,8 @@ async def get_starred_batch(
     current_user: User = Depends(get_current_user),
 ):
     """Return which of the given message IDs are starred by the user."""
-    message_ids = [int(x) for x in ids.split(",") if x.strip().isdigit()]
+    raw_ids = parse_batch_message_ids(ids)
+    message_ids = await filter_accessible_message_ids(db, current_user, raw_ids)
     return list(await star_service.is_starred_batch(db, message_ids, current_user.id))
 
 
@@ -354,8 +406,9 @@ async def get_starred_batch(
 async def get_attachments_batch(
     ids: str,
     db: AsyncSession = Depends(get_async_db),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Batch-fetch attachments for multiple messages."""
-    message_ids = [int(x) for x in ids.split(",") if x.strip().isdigit()]
+    raw_ids = parse_batch_message_ids(ids)
+    message_ids = await filter_accessible_message_ids(db, current_user, raw_ids)
     return await file_service.get_attachments_batch(db, message_ids)

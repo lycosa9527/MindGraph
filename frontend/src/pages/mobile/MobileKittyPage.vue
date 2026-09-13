@@ -196,7 +196,7 @@ const {
 } = useKittySessionManager({
   scope: kittyPairScope,
   enabled: sessionMgrEnabled,
-  pollIntervalMs: 12000,
+  pollIntervalMs: 0,
 })
 
 /** Library scope linked but desktop canvas-owner WS not present — edits will fail closed. */

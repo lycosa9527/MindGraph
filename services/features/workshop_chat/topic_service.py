@@ -17,7 +17,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional, Tuple
 
-from sqlalchemy import and_, func, select, update
+from sqlalchemy import and_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.functions import count as sql_count
@@ -340,11 +340,10 @@ class TopicService:
         topic_id: int,
         user_id: int,
     ) -> Dict[str, Any]:
-        """Update topic read state and advance channel last-read waterline.
+        """Update per-topic read state without moving the channel waterline.
 
-        Channel-level ``unread_count`` uses ``ChannelMember.last_read_message_id``.
-        Advancing it to the latest message id in this topic clears those messages
-        from the channel aggregate while per-topic unreads use ``last_updated``.
+        Channel badges use main-stream waterline plus topic prefs; advancing
+        ``ChannelMember.last_read_message_id`` here would clear sibling topics.
         """
         result = await db.execute(select(ChatTopic).where(ChatTopic.id == topic_id))
         topic = result.scalar_one_or_none()
@@ -366,26 +365,6 @@ class TopicService:
             )
             db.add(pref)
         pref.last_updated = datetime.now(UTC)
-
-        max_result = await db.execute(
-            select(func.max(ChatMessage.id)).where(
-                ChatMessage.topic_id == topic_id,
-                ChatMessage.is_deleted.is_(False),
-            )
-        )
-        max_msg_id = max_result.scalar()
-        if max_msg_id:
-            member_result = await db.execute(
-                select(ChannelMember).where(
-                    ChannelMember.channel_id == topic.channel_id,
-                    ChannelMember.user_id == user_id,
-                )
-            )
-            member = member_result.scalar_one_or_none()
-            if member:
-                current = member.last_read_message_id or 0
-                if max_msg_id > current:
-                    member.last_read_message_id = max_msg_id
 
         await db.commit()
         return {"topic_id": topic_id, "marked_read": True}

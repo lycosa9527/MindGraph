@@ -20,6 +20,8 @@ std::mutex g_mutex;
 std::string g_rx;
 std::string g_url;
 bool g_open = false;
+bool g_connecting = false;
+KittyWsOwner g_owner = KittyWsOwner::none;
 
 void dispatch_text(const std::string &payload)
 {
@@ -40,11 +42,13 @@ void on_event(void *arg, esp_event_base_t base, int32_t event_id, void *event_da
     auto *event = static_cast<esp_websocket_event_data_t *>(event_data);
     if (event_id == WEBSOCKET_EVENT_CONNECTED) {
         g_open = true;
+        g_connecting = false;
         ESP_LOGI(TAG, "connected");
         return;
     }
     if (event_id == WEBSOCKET_EVENT_DISCONNECTED || event_id == WEBSOCKET_EVENT_ERROR) {
         g_open = false;
+        g_connecting = false;
         g_rx.clear();
         ESP_LOGW(TAG, "socket closed id=%d", static_cast<int>(event_id));
         return;
@@ -71,6 +75,8 @@ void on_event(void *arg, esp_event_base_t base, int32_t event_id, void *event_da
 void destroy_client()
 {
     g_open = false;
+    g_connecting = false;
+    g_owner = KittyWsOwner::none;
     g_rx.clear();
     if (g_client == nullptr) {
         return;
@@ -86,10 +92,10 @@ void destroy_client()
 
 } // namespace
 
-bool kitty_ws_connect(const std::string &url, const std::string &bearer)
+bool kitty_ws_connect(const std::string &url, const std::string &bearer, KittyWsOwner owner)
 {
     destroy_client();
-    if (url.empty()) {
+    if (url.empty() || owner == KittyWsOwner::none) {
         return false;
     }
     g_url = url;
@@ -124,6 +130,8 @@ bool kitty_ws_connect(const std::string &url, const std::string &bearer)
         destroy_client();
         return false;
     }
+    g_owner = owner;
+    g_connecting = true;
     ESP_LOGI(TAG, "connecting %s", g_url.c_str());
     return true;
 }
@@ -133,9 +141,27 @@ void kitty_ws_close()
     destroy_client();
 }
 
+void kitty_ws_close_owned(KittyWsOwner owner)
+{
+    if (!kitty_ws_owned_by(owner)) {
+        return;
+    }
+    destroy_client();
+}
+
 bool kitty_ws_is_open()
 {
-    return g_open && g_client != nullptr && esp_websocket_client_is_connected(g_client);
+    return g_open && g_client != nullptr;
+}
+
+bool kitty_ws_is_connecting()
+{
+    return g_connecting && g_client != nullptr;
+}
+
+bool kitty_ws_owned_by(KittyWsOwner owner)
+{
+    return owner != KittyWsOwner::none && g_owner == owner;
 }
 
 bool kitty_ws_send_json(const std::string &json)

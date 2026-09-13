@@ -34,6 +34,17 @@ describe('userCanAccessWorkshopChat', () => {
     ).toBe(true)
   })
 
+  it('allows any org when the preview list is empty and no DB row exists', () => {
+    expect(userCanAccessWorkshopChat(false, '7', '10', [], undefined)).toBe(true)
+    expect(userCanAccessWorkshopChat(false, '3', '10', [], undefined)).toBe(true)
+  })
+
+  it('still honors a restricted DB row when the preview list is empty', () => {
+    const restricted = { restrict: true, organization_ids: [3], user_ids: [] }
+    expect(userCanAccessWorkshopChat(false, '3', '10', [], restricted)).toBe(true)
+    expect(userCanAccessWorkshopChat(false, '7', '10', [], restricted)).toBe(false)
+  })
+
   it('requires a matching grant when the DB row is restricted', () => {
     const restricted = { restrict: true, organization_ids: [5], user_ids: [] }
     expect(userCanAccessWorkshopChat(false, '5', '10', PREVIEW, restricted)).toBe(true)

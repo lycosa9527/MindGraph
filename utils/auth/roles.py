@@ -184,17 +184,21 @@ def _global_feature_flag_enabled(feature_key: str) -> bool:
 
 
 def _legacy_workshop_preview_or_open(feature_key: str, current_user) -> bool:
-    """Legacy workshop preview or open."""
+    """Legacy workshop preview or open.
+
+    Empty ``WORKSHOP_CHAT_PREVIEW_ORG_IDS`` means the global flag alone
+    grants access (same as other features with no Permissions row).
+    """
     if feature_key != "feature_workshop_chat":
         return True
     return _workshop_preview_org_allows(current_user)
 
 
 def _workshop_preview_org_allows(current_user) -> bool:
-    """True when the user's organization is in WORKSHOP_CHAT_PREVIEW_ORG_IDS."""
+    """True when preview orgs are unset, or the user's org is on the list."""
     preview = config.WORKSHOP_CHAT_PREVIEW_ORG_IDS
     if not preview:
-        return False
+        return True
     org_id = getattr(current_user, "organization_id", None)
     return org_id is not None and org_id in preview
 
@@ -214,8 +218,9 @@ async def user_has_feature_access(current_user, feature_key: str) -> bool:
 
     Superadmins always pass when the global flag is on. School admins pass for
     every feature except ``FEATURE_KEYS_SCHOOL_ADMIN_GRANT_GATED`` (MindBot,
-    MindMate export, Workshop Chat): those use ``feature_access_*`` grants or
-    the Workshop Chat preview-org list, same as regular users.
+    MindMate export, Workshop Chat): those use ``feature_access_*`` grants.
+    Workshop Chat with no Permissions row follows the preview-org list when
+    set, otherwise the global flag alone is enough.
     """
     if not _global_feature_flag_enabled(feature_key):
         return False
@@ -239,7 +244,7 @@ async def user_has_feature_access(current_user, feature_key: str) -> bool:
 
 
 async def can_access_workshop_chat(current_user) -> bool:
-    """Workshop Chat gate: global flag, then DB rules or WORKSHOP_CHAT_PREVIEW_ORG_IDS."""
+    """Workshop Chat gate: global flag, optional preview orgs, then DB grants."""
     return await user_has_feature_access(current_user, "feature_workshop_chat")
 
 

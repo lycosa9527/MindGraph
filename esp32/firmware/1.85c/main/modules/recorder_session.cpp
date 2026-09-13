@@ -65,7 +65,7 @@ bool recorder_session_open(const std::string &token)
     g_stopped.store(false);
     kitty_ws_set_handler(recorder_session_handle_json);
     const std::string url = recorder_net_ws_url();
-    if (!kitty_ws_connect(url, token)) {
+    if (!kitty_ws_connect(url, token, KittyWsOwner::recorder)) {
         ESP_LOGW(TAG, "connect failed");
         return false;
     }

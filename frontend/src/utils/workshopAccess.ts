@@ -1,9 +1,9 @@
 /**
  * Workshop Chat access (aligned with server `user_has_feature_access` / `can_access_workshop_chat`).
  *
- * Superadmins pass. Everyone else must belong to `workshop_chat_preview_org_ids`
- * when that list is non-empty, then `feature_org_access.feature_workshop_chat`
- * when a DB row exists.
+ * Superadmins pass. An empty `workshop_chat_preview_org_ids` list means the
+ * global flag alone is enough. A non-empty list is an extra org filter, then
+ * `feature_org_access.feature_workshop_chat` when a DB row exists.
  */
 import type { FeatureOrgAccessEntry } from '@/stores/featureFlags'
 
@@ -40,7 +40,7 @@ export function userCanAccessWorkshopChat(
     return false
   }
   if (accessEntry === undefined) {
-    return previewOrgIds.length > 0
+    return true
   }
   if (!accessEntry.restrict) {
     return true

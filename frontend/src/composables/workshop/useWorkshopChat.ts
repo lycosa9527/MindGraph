@@ -6,7 +6,7 @@
  *
  * Uses @vueuse/core useWebSocket for auto-reconnect.
  */
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import { useWebSocket } from '@vueuse/core'
 
@@ -19,12 +19,13 @@ import {
 import { useLanguage, useNotifications } from '@/composables'
 import { usePresenceActivity } from '@/composables/workshop/usePresenceActivity'
 import { useAuthStore } from '@/stores/auth'
-import { useWorkshopChatStore } from '@/stores/workshopChat'
+import { type ChatMessage, useWorkshopChatStore } from '@/stores/workshopChat'
 import { handleMindmateCollabPokeFrame } from '@/utils/mindmateCollabPokeNotify'
-import {
-  registerWorkshopChatWsDisconnect,
-  unregisterWorkshopChatWsDisconnect,
-} from '@/utils/workshopChatWsRegistry'
+import { registerWorkshopChatWsDisconnect } from '@/utils/workshopChatWsRegistry'
+
+type WorkshopChatSession = ReturnType<typeof createWorkshopChatSession>
+
+let workshopChatSession: WorkshopChatSession | null = null
 
 function buildWsUrl(): string {
   const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
@@ -32,14 +33,14 @@ function buildWsUrl(): string {
   return `${proto}://${host}/api/ws/chat`
 }
 
-export function useWorkshopChatComposable() {
+function createWorkshopChatSession() {
   const store = useWorkshopChatStore()
   const authStore = useAuthStore()
   const { t } = useLanguage()
   const notify = useNotifications()
   const notifications = useChatNotifications()
-  const connected = ref(false)
   const wsUrl = ref('')
+  let hasOpenedOnce = false
 
   const { send, close, open, status } = useWebSocket(wsUrl, {
     immediate: false,
@@ -57,7 +58,6 @@ export function useWorkshopChatComposable() {
       pongTimeout: 10000,
     },
     onConnected() {
-      connected.value = true
       sendSubscribePresence()
       const channelIds = store.joinedChannels.map((c) => c.id)
       if (channelIds.length > 0) {
@@ -67,9 +67,12 @@ export function useWorkshopChatComposable() {
       if (userId) {
         store.updatePresence(userId, 'active')
       }
+      if (hasOpenedOnce) {
+        void store.resyncAfterReconnect()
+      }
+      hasOpenedOnce = true
     },
     onDisconnected() {
-      connected.value = false
       const userId = Number(authStore.user?.id)
       if (userId) {
         store.updatePresence(userId, 'offline')
@@ -118,7 +121,6 @@ export function useWorkshopChatComposable() {
 
   function disconnect(): void {
     close()
-    connected.value = false
   }
 
   function handleMessage(raw: string): void {
@@ -195,6 +197,20 @@ export function useWorkshopChatComposable() {
         const deletedId = Number(data.topic_id)
         if (Number.isFinite(deletedId)) {
           store.removeTopic(deletedId)
+        }
+        break
+      }
+      case 'message_edited': {
+        const edited = data.message as ChatMessage | undefined
+        if (edited && typeof edited.id === 'number') {
+          store.applyRemoteEditedMessage(edited)
+        }
+        break
+      }
+      case 'message_deleted': {
+        const deletedId = Number(data.message_id)
+        if (Number.isFinite(deletedId)) {
+          store.applyRemoteDeletedMessage(deletedId)
         }
         break
       }
@@ -321,18 +337,7 @@ export function useWorkshopChatComposable() {
     }
   )
 
-  onMounted(() => {
-    requestNotificationPermission()
-    registerWorkshopChatWsDisconnect(disconnect)
-  })
-
-  onUnmounted(() => {
-    unregisterWorkshopChatWsDisconnect(disconnect)
-    disconnect()
-  })
-
   return {
-    connected,
     isConnected,
     connect,
     disconnect,
@@ -346,4 +351,15 @@ export function useWorkshopChatComposable() {
     subscribeChannels,
     sendPresence,
   }
+}
+
+export function useWorkshopChatComposable() {
+  if (!workshopChatSession) {
+    workshopChatSession = createWorkshopChatSession()
+  }
+  onMounted(() => {
+    requestNotificationPermission()
+    registerWorkshopChatWsDisconnect(workshopChatSession!.disconnect)
+  })
+  return workshopChatSession
 }

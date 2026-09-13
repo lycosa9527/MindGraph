@@ -60,6 +60,10 @@ async def test_notify_focus_pushes_resolved_title() -> None:
             "services.kitty.infra.desktop.kitty_desktop_focus_push.publish_desktop_focus_relay",
             AsyncMock(return_value=True),
         ) as relay,
+        patch(
+            "services.kitty.infra.desktop.kitty_desktop_focus_push.notify_kitty_session_snapshot_changed",
+            AsyncMock(),
+        ),
     ):
         await notify_kitty_desktop_focus_changed(3, "lib-saved", 1_700_000_000)
     push.assert_awaited_once_with(

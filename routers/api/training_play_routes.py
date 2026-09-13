@@ -20,7 +20,7 @@ from services.features.training.session_store import (
     bump_and_save,
     require_owner_active,
 )
-from services.features.training.sse import publish_event
+from services.features.training.remote_notify import notify_training_session_changed
 from services.features.training.training_logger import log_training
 from utils.auth import get_current_user
 
@@ -111,7 +111,7 @@ async def play_course(
         updated = await bump_and_save(session, extra=extras, rate_limit_steer=True)
     except TrainingSessionError as exc:
         raise _http_for_session_error(exc) from exc
-    await publish_event(org_id, "seq", {"seq": int(updated.get("seq") or 0)})
+    await notify_training_session_changed(org_id, updated)
     step = steps[0]
     await _log_teacher_pull(
         "course_play",
@@ -158,7 +158,7 @@ async def step_course(
         updated = await bump_and_save(session, extra=extras, rate_limit_steer=True)
     except TrainingSessionError as exc:
         raise _http_for_session_error(exc) from exc
-    await publish_event(org_id, "seq", {"seq": int(updated.get("seq") or 0)})
+    await notify_training_session_changed(org_id, updated)
     step = steps[target]
     await _log_teacher_pull(
         "course_step",
@@ -193,7 +193,7 @@ async def free_teachers(
         )
     except TrainingSessionError as exc:
         raise _http_for_session_error(exc) from exc
-    await publish_event(org_id, "seq", {"seq": int(updated.get("seq") or 0)})
+    await notify_training_session_changed(org_id, updated)
     event = "teachers_free" if body.free else "teachers_pull"
     await _log_teacher_pull(
         event,

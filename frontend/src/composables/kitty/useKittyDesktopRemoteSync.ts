@@ -386,10 +386,7 @@ export function useKittyDesktopRemoteSync(options: {
     const forceRecovery = tickOpts?.forceRecovery === true || pollTickCount % 8 === 0
     const mobileFresh = isKittyMobileActiveHubFresh()
     const sseFresh = Date.now() - lastDiagramSseAt.value < KITTY_LIVE_CONTEXT_POLL_MS * 2
-    if (mobileFresh && sseFresh && !forceRecovery) {
-      return
-    }
-    if (mobileFresh && !forceRecovery) {
+    if ((sseFresh || mobileFresh) && !forceRecovery) {
       return
     }
 

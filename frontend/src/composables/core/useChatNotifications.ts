@@ -139,6 +139,7 @@ export function useChatNotifications() {
       !isDocumentHidden() &&
       msg.channel_id === store.currentChannelId &&
       store.currentTopicId === null &&
+      store.mainChannelFeedActive &&
       store.activeTab === 'channels'
 
     const mentioned = isUserMentionedInMessage(msg)

@@ -41,6 +41,17 @@ from services.kitty.infra.control.kitty_control_channel import (
 )
 from services.kitty.infra.control.kitty_control_secret import get_kitty_control_shared_secret
 from services.kitty.infra.control.kitty_observability import kitty_extra
+from services.kitty.infra.control.kitty_event_push import (
+    KITTY_CONTROL_ACTION_CONVERSATION_TURN,
+    KITTY_CONTROL_ACTION_LIVE_CONTEXT,
+    KITTY_CONTROL_ACTION_SESSION_SNAPSHOT,
+    KITTY_EVENT_RELAY_ACTIONS,
+    handle_conversation_turn_relay,
+    handle_live_context_relay,
+    handle_session_snapshot_relay,
+    notify_kitty_session_snapshot_changed,
+)
+from services.kitty.session.manager.ws_control import set_pairing_changed_hook
 from services.kitty.infra.desktop.kitty_desktop_focus_push import (
     KITTY_CONTROL_ACTION_DESKTOP_FOCUS,
     handle_desktop_focus_relay,
@@ -51,6 +62,8 @@ from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
+
+set_pairing_changed_hook(notify_kitty_session_snapshot_changed)
 
 KITTY_CONTROL_ACTION_CLOSE_SCOPE = "close_scope"
 KITTY_CONTROL_ACTION_MUTATION_ACK = "mutation_ack"
@@ -63,6 +76,14 @@ _KITTY_CONTROL_ACTIONS = frozenset(
         KITTY_CONTROL_ACTION_CLOSE_SCOPE,
         KITTY_CONTROL_ACTION_MUTATION_ACK,
         KITTY_CONTROL_ACTION_DESKTOP_FOCUS,
+        *KITTY_EVENT_RELAY_ACTIONS,
+    }
+)
+_KITTY_CONTROL_RELAY_ACTIONS = frozenset(
+    {
+        KITTY_CONTROL_ACTION_MUTATION_ACK,
+        KITTY_CONTROL_ACTION_DESKTOP_FOCUS,
+        *KITTY_EVENT_RELAY_ACTIONS,
     }
 )
 
@@ -186,7 +207,7 @@ def parse_kitty_control_envelope(raw: str) -> Optional[Dict[str, Any]]:
     if action not in _KITTY_CONTROL_ACTIONS:
         return None
     # Relay envelopes are validated in their own handlers (ack shape + auth).
-    if action in {KITTY_CONTROL_ACTION_MUTATION_ACK, KITTY_CONTROL_ACTION_DESKTOP_FOCUS}:
+    if action in _KITTY_CONTROL_RELAY_ACTIONS:
         data["_parsed_action"] = action
         return data
     scope = data.get("scope")
@@ -285,6 +306,15 @@ async def handle_kitty_control_dispatch(raw: str, local_instance: str) -> None:
         return
     if parsed_action == KITTY_CONTROL_ACTION_DESKTOP_FOCUS:
         await handle_desktop_focus_relay(envelope)
+        return
+    if parsed_action == KITTY_CONTROL_ACTION_LIVE_CONTEXT:
+        await handle_live_context_relay(envelope)
+        return
+    if parsed_action == KITTY_CONTROL_ACTION_CONVERSATION_TURN:
+        await handle_conversation_turn_relay(envelope)
+        return
+    if parsed_action == KITTY_CONTROL_ACTION_SESSION_SNAPSHOT:
+        await handle_session_snapshot_relay(envelope)
         return
 
     if not verify_kitty_control_shared_secret(envelope):

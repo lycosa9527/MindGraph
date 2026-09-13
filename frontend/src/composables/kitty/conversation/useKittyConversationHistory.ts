@@ -23,6 +23,10 @@ import {
 import { useLanguage } from '@/composables/core/useLanguage'
 import { failKittyTurn, recordPipelineEvent } from '@/composables/kitty/pipeline/trace'
 import type { KittyTurnContext } from '@/composables/kitty/pipeline/types'
+import {
+  type KittyConversationTurnPayload,
+  mergeKittyConversationTurn,
+} from '@/composables/kitty/applyKittyConversationTurn'
 import type {
   OneSentenceChatMessage,
   OneSentencePhase,
@@ -58,6 +62,7 @@ export function useKittyConversationHistory(options: {
   activeRequestId: Ref<string | null>
   pushUserMessage: (text: string, requestId: string) => string
   findByRequestId: (requestId: string) => OneSentenceChatMessage | undefined
+  applyPeerTurn: (turn: KittyConversationTurnPayload) => boolean
 } {
   const { t: _t, currentLanguage } = useLanguage()
   void _t
@@ -369,6 +374,16 @@ export function useKittyConversationHistory(options: {
     return messages.value.find((m) => m.requestId === requestId)
   }
 
+  function applyPeerTurn(turn: KittyConversationTurnPayload): boolean {
+    const next = mergeKittyConversationTurn(messages.value, turn, nextMessageId())
+    if (next == null) {
+      return false
+    }
+    messages.value = next
+    scrollChatToBottom()
+    return true
+  }
+
   return {
     messages,
     sessionHydrated,
@@ -385,6 +400,7 @@ export function useKittyConversationHistory(options: {
     activeRequestId,
     pushUserMessage,
     findByRequestId,
+    applyPeerTurn,
   }
 }
 

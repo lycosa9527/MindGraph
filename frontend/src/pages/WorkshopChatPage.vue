@@ -95,6 +95,20 @@ const isAdmin = computed(() => authStore.isAdmin)
 const isManager = computed(() => authStore.isManager)
 
 const showRightSidebar = ref(true)
+
+let lastReadChannelSent = { channelId: 0, messageId: 0 }
+
+function handleScrolledToLatest(messageId: number): void {
+  const channelId = store.currentChannelId
+  if (channelId == null || !store.mainChannelFeedActive) {
+    return
+  }
+  if (lastReadChannelSent.channelId === channelId && lastReadChannelSent.messageId === messageId) {
+    return
+  }
+  lastReadChannelSent = { channelId, messageId }
+  ws.sendReadChannel(channelId, messageId)
+}
 const showChannelSettings = ref(false)
 const channelSettingsId = ref<number>(0)
 const showTopicEdit = ref(false)
@@ -690,6 +704,17 @@ watch(
       messageListRef.value?.scrollToMessageId(focusDm)
       maybeStripMessageFromUrlAfterFocus(focusDm)
     }
+  }
+)
+
+watch(
+  () => store.requestOpenContacts,
+  (open) => {
+    if (!open) {
+      return
+    }
+    showRightSidebar.value = true
+    store.requestOpenContacts = false
   }
 )
 
@@ -1310,6 +1335,7 @@ function handleTopicMove(topicId: number): void {
               @load-more="handleLoadMoreChannelMessages"
               @back-to-topic-list="store.leaveMainChannelFeed()"
               @delete-message="handleDeleteMessage"
+              @scrolled-to-latest="handleScrolledToLatest"
             >
               <template #recipientActions>
                 <el-dropdown

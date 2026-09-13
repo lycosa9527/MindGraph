@@ -32,7 +32,6 @@ import { mergeMindMapPresentationExtrasIntoSpec } from '@/utils/mindMapLiveSpecE
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 const OWNER_ID = 'MobileKittyChat'
-const PEER_HISTORY_POLL_MS = 4000
 
 export type UseMobileKittyChatOptions = {
   kitty: ReturnType<typeof useKittyAgent>
@@ -314,29 +313,36 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
   }
   eventBus.onWithOwner('kitty:pipeline_step', onPipelineStep, `${OWNER_ID}:trace`)
 
-  // Peer history refresh — desktop may append replies while phone waits.
-  let peerPollTimer: ReturnType<typeof setInterval> | null = null
-  function startPeerHistoryPoll(): void {
-    stopPeerHistoryPoll()
-    peerPollTimer = setInterval(() => {
-      if (pipelineStore.editPipelineActive) {
-        return
-      }
-      void history.refreshHistory()
-    }, PEER_HISTORY_POLL_MS)
-  }
-  function stopPeerHistoryPoll(): void {
-    if (peerPollTimer != null) {
-      clearInterval(peerPollTimer)
-      peerPollTimer = null
+  const onConversationTurn = (payload: {
+    scope?: string
+    turn: import('@/composables/kitty/applyKittyConversationTurn').KittyConversationTurnPayload
+    requestId?: string
+  }) => {
+    const scope = payload.scope?.trim() ?? ''
+    if (scope && scope !== diagramScope.value) {
+      return
     }
+    const requestId = payload.requestId?.trim() || payload.turn.request_id?.trim() || ''
+    if (pipelineStore.editPipelineActive && requestId && requestId === history.activeRequestId.value) {
+      return
+    }
+    history.applyPeerTurn(payload.turn)
   }
-  startPeerHistoryPoll()
+  eventBus.onWithOwner('kitty:conversation_turn', onConversationTurn, `${OWNER_ID}:turn`)
+
+  watch(
+    () => kitty.isConnected.value,
+    (connected) => {
+      if (connected) {
+        void history.refreshHistory()
+      }
+    }
+  )
 
   onUnmounted(() => {
-    stopPeerHistoryPoll()
     replyBus.dispose()
     eventBus.removeAllListenersForOwner(`${OWNER_ID}:trace`)
+    eventBus.removeAllListenersForOwner(`${OWNER_ID}:turn`)
     funAsr.stopListening()
     // Leave shared pipeline idle so a later desktop/mobile surface is not blocked.
     pipelineStore.resetToIdle()

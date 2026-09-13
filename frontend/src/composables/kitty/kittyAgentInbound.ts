@@ -158,6 +158,40 @@ export function handleKittyServerMessage(
       break
     }
 
+    case 'live_context_update': {
+      eventBus.emit('kitty:live_context_update', {
+        scope: typeof data.scope === 'string' ? data.scope : undefined,
+        payload: data,
+      })
+      break
+    }
+
+    case 'conversation_turn': {
+      const turn = data.turn
+      if (typeof turn === 'object' && turn !== null) {
+        const record = turn as Record<string, unknown>
+        eventBus.emit('kitty:conversation_turn', {
+          scope: typeof data.scope === 'string' ? data.scope : undefined,
+          turn: record,
+          requestId:
+            typeof record.request_id === 'string' && record.request_id.trim()
+              ? record.request_id.trim()
+              : undefined,
+        })
+      }
+      break
+    }
+
+    case 'session_snapshot': {
+      const session = data.session
+      if (typeof session === 'object' && session !== null) {
+        eventBus.emit('kitty:session_snapshot', {
+          session: session as import('@/composables/kitty/useKittySessionManager').KittySessionSnapshotDto,
+        })
+      }
+      break
+    }
+
     case 'transcription':
       deps.lastTranscription.value = String(data.text ?? '')
       eventBus.emit('voice:transcription', { text: String(data.text ?? '') })

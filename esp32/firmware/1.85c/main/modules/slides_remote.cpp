@@ -25,6 +25,7 @@ namespace {
 constexpr const char *TAG = "slides_remote";
 constexpr int k_steer_ms = 400;
 constexpr int k_loop_ms = 120;
+constexpr int k_draw_settle_ms = 1000;
 
 std::atomic<bool> g_run{false};
 std::atomic<bool> g_thread_live{false};
@@ -153,30 +154,38 @@ void hydrate()
 
 void release_ws()
 {
-    if (!g_own_ws) {
+    if (!g_own_ws && !kitty_ws_owned_by(KittyWsOwner::slides)) {
         return;
     }
     kitty_ws_set_handler(nullptr);
-    kitty_ws_close();
+    kitty_ws_close_owned(KittyWsOwner::slides);
     g_own_ws = false;
 }
 
 bool bind_ws()
 {
+    if (kitty_ws_is_open() && kitty_ws_owned_by(KittyWsOwner::slides)) {
+        g_own_ws = true;
+        return true;
+    }
+    if (kitty_ws_is_connecting() && kitty_ws_owned_by(KittyWsOwner::slides)) {
+        return false;
+    }
     kitty_ws_set_handler(on_ws_frame);
-    if (!kitty_ws_connect(slides_ws_url(), g_token)) {
+    if (!kitty_ws_connect(slides_ws_url(), g_token, KittyWsOwner::slides)) {
+        g_own_ws = false;
         return false;
     }
     for (int i = 0; i < 80 && !kitty_ws_is_open(); ++i) {
         if (!g_run.load() || slides_ui_is_hidden()) {
-            kitty_ws_close();
+            release_ws();
             return false;
         }
         boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
     }
     if (!kitty_ws_is_open()) {
         ESP_LOGW(TAG, "ws open timeout");
-        kitty_ws_close();
+        release_ws();
         return false;
     }
     g_own_ws = true;
@@ -298,6 +307,15 @@ void remote_loop()
         g_thread_live.store(false);
         return;
     }
+    for (int i = 0; i < k_draw_settle_ms / k_loop_ms && g_run.load(); ++i) {
+        if (!slides_ui_is_hidden()) {
+            break;
+        }
+        boost::this_thread::sleep_for(boost::chrono::milliseconds(k_loop_ms));
+    }
+    for (int i = 0; i < k_draw_settle_ms / k_loop_ms && g_run.load() && !slides_ui_is_hidden(); ++i) {
+        boost::this_thread::sleep_for(boost::chrono::milliseconds(k_loop_ms));
+    }
     int reconnect_fails = 0;
     while (g_run.load()) {
         if (slides_ui_is_hidden()) {
@@ -316,11 +334,15 @@ void remote_loop()
         if (action != SlidesUiAction::none) {
             handle_action(action);
         }
-        if (!kitty_ws_is_open()) {
+        if (kitty_ws_is_open() && kitty_ws_owned_by(KittyWsOwner::slides)) {
+            g_own_ws = true;
+        } else if (kitty_ws_is_connecting() && kitty_ws_owned_by(KittyWsOwner::slides)) {
+            slides_ui_set_status("连接中");
+        } else if (!kitty_ws_is_open()) {
             slides_ui_set_status("连接中");
             if (bind_ws()) {
                 reconnect_fails = 0;
-            } else {
+            } else if (!(kitty_ws_is_connecting() && kitty_ws_owned_by(KittyWsOwner::slides))) {
                 hydrate();
                 reconnect_fails += 1;
                 const int wait_s = reconnect_fails > 4 ? 5 : reconnect_fails;

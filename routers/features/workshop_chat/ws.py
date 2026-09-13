@@ -34,9 +34,13 @@ from services.features.workshop_chat import (
     dm_service,
     message_service,
 )
+from services.features.workshop_chat.group_lesson_membership import (
+    ensure_lesson_membership_if_group_member,
+)
 from services.features.workshop_chat.mention_resolution import (
     MentionResolutionError,
 )
+from services.features.workshop_chat.message_service import MessageNarrowError
 from services.features.workshop_chat_ws_manager import chat_ws_manager
 from services.monitoring.module_activity import schedule_module_activity
 from services.infrastructure.monitoring.ws_metrics import (
@@ -88,7 +92,8 @@ async def _ws_channel_post_gate(
         await websocket.send_text(json.dumps({"type": "error", "message": _ws_access_error_message(exc)}))
         return None
     if channel.channel_type != "announce":
-        if not await channel_service.is_channel_member(db, channel_id, user.id):
+        open_post = channel.channel_type == "public" and channel.posting_policy == "everyone"
+        if not open_post and not await ensure_lesson_membership_if_group_member(db, channel_id, user.id):
             await websocket.send_text(
                 json.dumps(
                     {
@@ -194,7 +199,10 @@ async def chat_websocket(websocket: WebSocket):
         except JSON_PARSE_ERRORS:
             logger.exception("[ChatWS] Error in WS loop for user %d", user.id)
         finally:
-            old_channels, presence_org = await chat_ws_manager.disconnect(user.id)
+            old_channels, presence_org = await chat_ws_manager.disconnect(
+                user.id,
+                websocket,
+            )
             if presence_org is not None:
                 await chat_ws_manager.broadcast_org_presence(
                     user.id,
@@ -228,7 +236,7 @@ async def _handle_message(websocket: WebSocket, user, data: dict):
 
 
 async def _handle_subscribe_channels(
-    _websocket: WebSocket,
+    websocket: WebSocket,
     user,
     data: dict,
 ):
@@ -253,7 +261,7 @@ async def _handle_subscribe_channels(
         announce_ids = {row[0] for row in announce_result.all()}
     allowed = member_ids | announce_ids
     valid_ids = [cid for cid in channel_ids if cid in allowed]
-    chat_ws_manager.subscribe_channels(user.id, valid_ids)
+    chat_ws_manager.subscribe_channels(user.id, valid_ids, websocket)
 
 
 async def _handle_subscribe_presence(
@@ -316,6 +324,9 @@ async def _handle_channel_message(
                 user.id,
                 content,
             )
+        except MessageNarrowError as exc:
+            await websocket.send_text(json.dumps({"type": "error", "message": str(exc)}))
+            return
         except MentionResolutionError as exc:
             await websocket.send_text(
                 json.dumps(
@@ -334,12 +345,11 @@ async def _handle_channel_message(
             module="workshop",
             redis_activity_type="workshop_chat",
             request=websocket,
-            details={"channel_id": channel_id},
+            details={"channel_id": channel_id, "content_len": len(content)},
             detail=f"ws channel={channel_id}",
             usage_source="mindgraph",
             usage_action="workshop_chat",
             title=f"channel:{channel_id}",
-            prompt_preview=content,
         )
         await chat_ws_manager.send_to_user(
             user.id,
@@ -389,13 +399,19 @@ async def _handle_topic_message(
                 module="workshop",
                 redis_activity_type="workshop_chat",
                 request=websocket,
-                details={"channel_id": channel_id, "topic_id": topic_id},
+                details={
+                    "channel_id": channel_id,
+                    "topic_id": topic_id,
+                    "content_len": len(content),
+                },
                 detail=f"ws channel={channel_id} topic={topic_id}",
                 usage_source="mindgraph",
                 usage_action="workshop_chat",
                 title=f"topic:{topic_id}",
-                prompt_preview=content,
             )
+        except MessageNarrowError as exc:
+            await websocket.send_text(json.dumps({"type": "error", "message": str(exc)}))
+            return
         except MentionResolutionError as exc:
             await websocket.send_text(
                 json.dumps(
@@ -491,12 +507,15 @@ async def _handle_dm(
             module="workshop",
             redis_activity_type="workshop_chat",
             request=websocket,
-            details={"partner_id": recipient_id, "endpoint": "dm_ws"},
+            details={
+                "partner_id": recipient_id,
+                "endpoint": "dm_ws",
+                "content_len": len(content),
+            },
             detail=f"ws dm partner={recipient_id}",
             usage_source="mindgraph",
             usage_action="workshop_chat",
             title=f"dm:{recipient_id}",
-            prompt_preview=content,
         )
         await chat_ws_manager.send_to_user(
             user.id,

@@ -4,6 +4,7 @@
  */
 import { type Ref, computed, onUnmounted, ref, watch } from 'vue'
 
+import { eventBus } from '@/composables/core/useEventBus'
 import { shouldLockDesktopOneSentenceForMobileKitty } from '@/composables/canvasToolbar/desktopOneSentenceMobileKittyLock'
 import type { KittyMobileActiveSnapshot } from '@/composables/kitty/kittyDesktopMobileActiveHub'
 import type { OneSentencePhase } from '@/stores/oneSentence'
@@ -281,6 +282,22 @@ export function useKittySessionManager(options: {
     }, pollMs)
   }
 
+  function applySnapshot(next: KittySessionSnapshotDto | null): void {
+    if (!options.enabled.value) {
+      return
+    }
+    const scope = options.scope.value?.trim() ?? ''
+    if (!scope || next == null) {
+      return
+    }
+    if (next.requested_scope !== scope) {
+      return
+    }
+    refreshGeneration += 1
+    snapshot.value = next
+    lastFetchedScope.value = scope
+  }
+
   watch(
     [options.enabled, options.scope],
     () => {
@@ -289,7 +306,13 @@ export function useKittySessionManager(options: {
     { flush: 'post' }
   )
 
+  const onSessionPush = (payload: { session: KittySessionSnapshotDto }) => {
+    applySnapshot(payload.session)
+  }
+  eventBus.on('kitty:session_snapshot', onSessionPush)
+
   onUnmounted(() => {
+    eventBus.off('kitty:session_snapshot', onSessionPush)
     stopPoll()
     refreshGeneration += 1
     snapshot.value = null

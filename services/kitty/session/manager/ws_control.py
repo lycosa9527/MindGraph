@@ -10,7 +10,7 @@ Proprietary License
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Awaitable, Callable, Optional
 
 from services.diagram_edit.pending import fail_pending_for_scope
 from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_session_id
@@ -21,6 +21,41 @@ from services.kitty.session.manager.redis_sot import (
     sot_mark_canvas_owner_present,
     sot_mark_mobile_active,
 )
+
+_PairingChanged = Callable[[int, str], Awaitable[None]]
+
+
+class PairingChangedSink:
+    """Always-callable pairing snapshot sink (no-op until fanout binds)."""
+
+    async def emit(self, user_id: int, scope: str) -> None:
+        """Ignore pairing changes until a real hook is registered."""
+        del user_id, scope
+
+
+class _BoundPairingSink(PairingChangedSink):
+    """Forwards pairing changes to the Session Manager snapshot publisher."""
+
+    def __init__(self, callback: _PairingChanged) -> None:
+        self._callback = callback
+
+    async def emit(self, user_id: int, scope: str) -> None:
+        await self._callback(user_id, scope)
+
+
+class _PairingHookState:
+    """Process-local snapshot fanout hook (wired after event_push finishes import)."""
+
+    sink: PairingChangedSink = PairingChangedSink()
+
+
+def set_pairing_changed_hook(callback: _PairingChanged) -> None:
+    """Register Session Manager snapshot push after canvas-owner / lane changes."""
+    _PairingHookState.sink = _BoundPairingSink(callback)
+
+
+async def _emit_pairing_changed(user_id: int, scope: str) -> None:
+    await _PairingHookState.sink.emit(user_id, scope)
 
 
 async def attach_lane(
@@ -56,6 +91,7 @@ async def attach_lane(
         voice_session_id=voice_session_id,
         detail={"canvas_owner": bool(canvas_owner)},
     )
+    await _emit_pairing_changed(uid, normalized)
 
 
 async def detach_lane(
@@ -97,3 +133,4 @@ async def detach_lane(
         voice_session_id=voice_session_id,
         detail={"canvas_owner": bool(canvas_owner)},
     )
+    await _emit_pairing_changed(uid, normalized)

@@ -11,7 +11,6 @@
 #include "brookesia/system_super.hpp"
 #include "modules/general_services.hpp"
 #include "modules/display.hpp"
-#include "modules/kitty_agent.hpp"
 #include "modules/station.hpp"
 
 using namespace esp_brookesia;
@@ -66,7 +65,6 @@ extern "C" void app_main(void)
             }
             BROOKESIA_LOGI("Launcher app ready: %1% (%2%)", app.manifest.id, app.manifest.name);
         }
-        BROOKESIA_CHECK_FALSE_EXIT(start_kitty_watch(), "Failed to start Kitty watch");
         if (!::start_lab_station()) {
             BROOKESIA_LOGW("Lab station seed failed, Super continues offline");
         }

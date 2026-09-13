@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.75] - 2026-09-14
+
+> **校本培训 clicker is WebSocket + Redis wake; Kitty live context and 研习社 unread push without poll.**
+
+### Added
+
+- **校本培训 transport** — Watch shares `/api/ws/training-remote` (cookie or `mgat_`). Session snapshot PUBLISHes `training_remote:user:*:wake` / `training_remote:org:*:wake`; each worker pattern-subscribes (O(workers)). `GET /sessions/active` is fallback hydrate only.
+- **Kitty event push** — Desktop `live_context` PUT, one-sentence persist, and Session Manager pairing changes PUBLISH on the Kitty control bus. Mobile applies `live_context_update` / `conversation_turn` / `session_snapshot` on the existing WS. Connect GET is recovery only.
+- **研习社 app-wide socket** — `WorkshopChatWsHost` keeps `/api/ws/chat` alive on MindMate / canvas so toasts and sidebar unread update. Reconnect resyncs the open narrow.
+
+### Changed
+
+- **研习社 unread** — Channel badge = main-stream above the member waterline plus still-unread topics. Opening a topic does not advance the channel waterline. Scrolling the main stream sends `read_channel`.
+- **研习社 membership** — Joining a 教研组 subscribes the teacher to every live 课例; creating a lesson copies current group members.
+- **研习社 access** — Empty `WORKSHOP_CHAT_PREVIEW_ORG_IDS` means `FEATURE_WORKSHOP_CHAT=True` is enough. Production requires `COLLAB_FANOUT_ORIGIN_SECRET` when chat fan-out is on.
+- **研习社 edit/delete** — REST edit/delete broadcast `message_edited` / `message_deleted` so other tabs update without reload. Batch reaction/attachment lists hide private-channel ids.
+- **1.85C Super tiles** — Shared WS client is owned (Kitty / 校本培训 / 演讲模式). Kitty stops the agent when the face is hidden so another tile can reuse the socket. Training HUD paints from the wake snapshot.
+
+### Tests
+
+- [`tests/test_training_remote_wake.py`](tests/test_training_remote_wake.py), [`tests/test_kitty_event_push.py`](tests/test_kitty_event_push.py)
+- [`tests/test_workshop_unread.py`](tests/test_workshop_unread.py), [`tests/test_workshop_edit_delete_ws.py`](tests/test_workshop_edit_delete_ws.py), [`tests/test_workshop_group_lesson_membership.py`](tests/test_workshop_group_lesson_membership.py), [`tests/test_workshop_batch_acl.py`](tests/test_workshop_batch_acl.py), [`tests/test_workshop_search_normalize.py`](tests/test_workshop_search_normalize.py), [`tests/test_workshop_message_narrow.py`](tests/test_workshop_message_narrow.py), [`tests/test_workshop_dm_format.py`](tests/test_workshop_dm_format.py)
+- [`frontend/tests/applyKittyConversationTurn.spec.ts`](frontend/tests/applyKittyConversationTurn.spec.ts), [`frontend/tests/useMobileKittyLiveContextPoll.spec.ts`](frontend/tests/useMobileKittyLiveContextPoll.spec.ts), [`frontend/tests/useKittySessionManager.spec.ts`](frontend/tests/useKittySessionManager.spec.ts), [`frontend/tests/workshopAccess.spec.ts`](frontend/tests/workshopAccess.spec.ts)
+
 ## [5.180.74] - 2026-09-13
 
 > **演讲模式 clicker is WebSocket + Redis wake; desktop start waits for the mind-map fit.**

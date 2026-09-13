@@ -63,7 +63,7 @@ def channel_content_match(
     pattern, ilim = ilike_pattern_from_text(text, limit)
     if pattern is None:
         return None
-    return content_column.ilike(pattern), None, ilim
+    return content_column.ilike(pattern, escape="\\"), None, ilim
 
 
 def dm_content_match(

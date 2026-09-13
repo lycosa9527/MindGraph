@@ -35,6 +35,10 @@ ACTIVITY_SUMMARY_KEY: Final[str] = "training:org:{org_id}:activity_summary"
 ACTIVITY_SSE_MIN_SECONDS: Final[int] = 1
 ACTIVITY_SUMMARY_TTL_SECONDS: Final[int] = 3
 EVENTS_CHANNEL: Final[str] = "training:org:{org_id}:events"
+WAKE_USER_CHANNEL: Final[str] = "training_remote:user:{user_id}:wake"
+WAKE_ORG_CHANNEL: Final[str] = "training_remote:org:{org_id}:wake"
+WAKE_CHANNEL_PATTERN: Final[str] = "training_remote:*:wake"
+SNAPSHOT_TYPE: Final[str] = "training_snapshot"
 
 VALID_DIAGRAM_TYPES: frozenset[str] = frozenset(
     {

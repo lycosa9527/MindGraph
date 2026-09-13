@@ -28,7 +28,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
 from models.domain.workshop_chat import ChatChannel, ChatMessage
-from services.features.workshop_chat.channel_service import channel_service
+from services.features.workshop_chat.group_lesson_membership import (
+    ensure_lesson_membership_if_group_member,
+)
 from utils.auth import (
     can_moderate_workshop_channel,
     is_admin,
@@ -90,7 +92,7 @@ async def access_channel(
         )
 
     if channel.channel_type == "private":
-        if not await channel_service.is_channel_member(
+        if not await ensure_lesson_membership_if_group_member(
             db,
             channel_id,
             current_user.id,
@@ -132,8 +134,10 @@ def require_post_permission(
 
     - Announce channels: admin-only.
     - Posting policy 'managers': only managers/admins can post.
-    - Posting policy 'members_only': only channel members (handled by
-      membership check elsewhere).
+    - Posting policy 'everyone' on a public channel: any org member may
+      post without joining (membership is skipped by
+      ``require_membership_unless_open_post``).
+    - Posting policy 'members_only': channel members only.
     """
     if channel.channel_type == "announce":
         if not is_admin(current_user):
@@ -160,7 +164,7 @@ async def require_membership(
 
     Analogous to checking ``Subscription`` existence in Zulip.
     """
-    if not await channel_service.is_channel_member(db, channel_id, user_id):
+    if not await ensure_lesson_membership_if_group_member(db, channel_id, user_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You must join this channel first",
@@ -180,6 +184,55 @@ async def require_membership_unless_announce(
     if channel.channel_type == "announce":
         return
     await require_membership(db, channel.id, user_id)
+
+
+async def require_membership_unless_open_post(
+    db: AsyncSession,
+    channel: ChatChannel,
+    user_id: int,
+) -> None:
+    """Require membership to post, except announce or public ``everyone``.
+
+    Public channels with ``posting_policy == 'everyone'`` allow any org
+    member (already checked by ``access_channel``) to post without joining.
+    """
+    if channel.channel_type == "announce":
+        return
+    if channel.channel_type == "public" and channel.posting_policy == "everyone":
+        return
+    await require_membership(db, channel.id, user_id)
+
+
+BATCH_MESSAGE_ID_CAP = 100
+
+
+def parse_batch_message_ids(ids: str) -> list[int]:
+    """Parse a comma-separated id list and cap it."""
+    parsed: list[int] = []
+    for raw in ids.split(","):
+        token = raw.strip()
+        if not token.isdigit():
+            continue
+        parsed.append(int(token))
+        if len(parsed) >= BATCH_MESSAGE_ID_CAP:
+            break
+    return parsed
+
+
+async def filter_accessible_message_ids(
+    db: AsyncSession,
+    current_user: User,
+    message_ids: list[int],
+) -> list[int]:
+    """Keep message ids the user may read (same rules as ``access_channel_message``)."""
+    visible: list[int] = []
+    for message_id in message_ids:
+        try:
+            await access_channel_message(db, message_id, current_user)
+        except HTTPException:
+            continue
+        visible.append(message_id)
+    return visible
 
 
 def require_channel_manager(

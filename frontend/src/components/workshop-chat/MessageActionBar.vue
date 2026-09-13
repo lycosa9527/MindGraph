@@ -18,13 +18,12 @@ import EmojiPicker from './EmojiPicker.vue'
 const { t } = useLanguage()
 
 defineProps<{
-  isOwn: boolean
   isStarred: boolean
   isCondensed: boolean
   /** Own channel messages (not DMs): show the in-row edit control. */
   canEdit?: boolean
-  /** Admin / school manager: delete others' messages (server enforces). */
-  canModerate?: boolean
+  /** Channel messages only — DMs have no delete API. */
+  canDelete?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -131,7 +130,7 @@ function handleCopyLink(): void {
 
     <!-- Delete (own or moderator) -->
     <button
-      v-if="isOwn || canModerate"
+      v-if="canDelete"
       class="action-btn action-btn--danger"
       title="Delete"
       @click="emit('delete')"

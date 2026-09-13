@@ -42,6 +42,10 @@ MAX_PAGE_SIZE = 200
 MAX_CONTENT_LENGTH = 5000
 
 
+class MessageNarrowError(ValueError):
+    """Raised when topic_id or parent_id does not belong to the target channel."""
+
+
 def _format_message(msg: ChatMessage) -> Dict[str, Any]:
     """Format a ChatMessage ORM object into a response dict."""
     sender = msg.sender
@@ -208,6 +212,8 @@ class MessageService:
         ch_row = await db.execute(select(ChatChannel).where(ChatChannel.id == channel_id))
         channel = ch_row.scalar_one_or_none()
         org_id = channel.organization_id if channel else None
+        topic = await _require_topic_in_channel(db, channel_id, topic_id)
+        await _require_parent_in_narrow(db, channel_id, topic_id, parent_id)
         mention_ids = await resolve_mentioned_user_ids(
             db,
             sender,
@@ -232,11 +238,8 @@ class MessageService:
             message_id=msg.id,
         )
 
-        if topic_id:
-            t_row = await db.execute(select(ChatTopic).where(ChatTopic.id == topic_id))
-            topic = t_row.scalar_one_or_none()
-            if topic:
-                topic.updated_at = datetime.now(UTC)
+        if topic is not None:
+            topic.updated_at = datetime.now(UTC)
 
         await db.commit()
         await db.refresh(msg)
@@ -349,6 +352,38 @@ class MessageService:
         if member and (member.last_read_message_id is None or message_id > member.last_read_message_id):
             member.last_read_message_id = message_id
             await db.commit()
+
+
+async def _require_topic_in_channel(
+    db: AsyncSession,
+    channel_id: int,
+    topic_id: Optional[int],
+) -> Optional[ChatTopic]:
+    """Load the topic and reject a foreign or missing topic_id."""
+    if topic_id is None:
+        return None
+    t_row = await db.execute(select(ChatTopic).where(ChatTopic.id == topic_id))
+    topic = t_row.scalar_one_or_none()
+    if not topic or topic.channel_id != channel_id:
+        raise MessageNarrowError("Topic not found in this channel")
+    return topic
+
+
+async def _require_parent_in_narrow(
+    db: AsyncSession,
+    channel_id: int,
+    topic_id: Optional[int],
+    parent_id: Optional[int],
+) -> None:
+    """Reject a reply parent that lives in another channel or topic."""
+    if parent_id is None:
+        return
+    p_row = await db.execute(select(ChatMessage).where(ChatMessage.id == parent_id))
+    parent = p_row.scalar_one_or_none()
+    if not parent or parent.channel_id != channel_id:
+        raise MessageNarrowError("Parent message not found in this channel")
+    if parent.topic_id != topic_id:
+        raise MessageNarrowError("Parent message not found in this narrow")
 
 
 message_service = MessageService()

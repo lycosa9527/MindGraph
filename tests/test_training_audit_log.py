@@ -193,7 +193,7 @@ async def test_play_logs_pull_and_teacher_counts(caplog: pytest.LogCaptureFixtur
         patch("routers.api.training_play_routes.require_owner_active", new=AsyncMock(return_value=session)),
         patch("routers.api.training_play_routes._load_serialized_steps", new=AsyncMock(return_value=steps)),
         patch("routers.api.training_play_routes.bump_and_save", new=AsyncMock(return_value=updated)),
-        patch("routers.api.training_play_routes.publish_event", new=AsyncMock()),
+        patch("routers.api.training_play_routes.notify_training_session_changed", new=AsyncMock()),
         patch(
             "routers.api.training_play_routes.activity_summary",
             new=AsyncMock(return_value={"online": 6, "generating": 1, "done": 0}),

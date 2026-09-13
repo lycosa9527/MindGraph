@@ -112,4 +112,28 @@ describe('useKittySessionManager helpers', () => {
     expect(mgr.divergence.value).toBeNull()
     expect(mgr.syncChoices.value).toEqual([])
   })
+
+  it('applies inbound session_snapshot for the watched scope', async () => {
+    const { eventBus } = await import('@/composables/core/useEventBus')
+    const { useKittySessionManager } = await import('@/composables/kitty/useKittySessionManager')
+    const scope = ref('lib-a')
+    const enabled = computed(() => true)
+    const mgr = useKittySessionManager({ scope, enabled, pollIntervalMs: 0 })
+    const snap: KittySessionSnapshotDto = {
+      user_id: 3,
+      requested_scope: 'lib-a',
+      desktop_focus_library_id: 'lib-a',
+      desktop_focus_updated_at: 1,
+      mobile_active: true,
+      mobile_scopes: ['lib-a'],
+      mobile_primary_scope: 'lib-a',
+      canvas_owner_present: true,
+      alignment: 'no_owner',
+      ingress_owner: 'mobile',
+      error_code: 'no_owner',
+    }
+    eventBus.emit('kitty:session_snapshot', { session: snap })
+    expect(mgr.snapshot.value?.canvas_owner_present).toBe(true)
+    expect(mgr.alignment.value).toBe('no_owner')
+  })
 })

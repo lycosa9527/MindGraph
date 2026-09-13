@@ -38,6 +38,7 @@ const emit = defineEmits<{
   backToTopicList: []
   deleteMessage: [messageId: number]
   quote: [message: ChatMessage]
+  scrolledToLatest: [messageId: number]
 }>()
 
 const { t } = useLanguage()
@@ -129,10 +130,20 @@ function scrollToMessageId(messageId: number): void {
   })
 }
 
+function emitScrolledToLatest(): void {
+  const last = props.messages[props.messages.length - 1]
+  if (last) {
+    emit('scrolledToLatest', last.id)
+  }
+}
+
 function handleScroll(): void {
   if (!containerRef.value) return
   const el = containerRef.value
   isAtBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight < 50
+  if (isAtBottom.value) {
+    emitScrolledToLatest()
+  }
   if (!props.hasMore || props.loading || props.loadingMore) return
   if (el.scrollHeight <= el.clientHeight + 8) return
   if (el.scrollTop >= 100 || props.messages.length === 0) return

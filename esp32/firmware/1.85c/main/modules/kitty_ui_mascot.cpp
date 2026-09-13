@@ -7,7 +7,6 @@ extern const uint8_t kitty_mic_png_end[] asm("_binary_kitty_mic_png_end");
 
 namespace {
 
-constexpr int32_t k_scale_one = 256;
 constexpr int32_t k_scale_hold = 320;
 constexpr uint32_t k_wave = 0xA78BFA;
 
@@ -53,29 +52,43 @@ void kitty_ui_mic_paint(lv_obj_t *mic, lv_obj_t *ring_a, lv_obj_t *ring_b, bool 
     if (mic == nullptr) {
         return;
     }
-    const int32_t scale = hold ? k_scale_hold : k_scale_one;
-    lv_obj_set_style_transform_pivot_x(mic, 32, 0);
-    lv_obj_set_style_transform_pivot_y(mic, 32, 0);
-    lv_obj_set_style_transform_scale_x(mic, scale, 0);
-    lv_obj_set_style_transform_scale_y(mic, scale, 0);
-    const uint8_t pulse = hold ? static_cast<uint8_t>(40 + (level > 200 ? 200 : level) / 2) : 0;
-    if (ring_a != nullptr) {
-        if (hold) {
-            lv_obj_remove_flag(ring_a, LV_OBJ_FLAG_HIDDEN);
-            lv_obj_set_style_border_opa(ring_a, static_cast<lv_opa_t>(80 + pulse / 3), 0);
-            lv_obj_set_style_border_color(ring_a, lv_color_hex(k_wave), 0);
-        } else {
+    static lv_obj_t *last_mic = nullptr;
+    static bool last_hold = false;
+    static uint8_t last_level = 0;
+    if (last_mic == mic && hold == last_hold && (!hold || level == last_level)) {
+        return;
+    }
+    last_mic = mic;
+    last_hold = hold;
+    last_level = level;
+    lv_obj_set_style_bg_color(mic, lv_color_hex(hold ? 0x4F46E5 : 0x7C3AED), 0);
+    if (!hold) {
+        lv_obj_remove_local_style_prop(mic, LV_STYLE_TRANSFORM_SCALE_X, 0);
+        lv_obj_remove_local_style_prop(mic, LV_STYLE_TRANSFORM_SCALE_Y, 0);
+        lv_obj_remove_local_style_prop(mic, LV_STYLE_TRANSFORM_PIVOT_X, 0);
+        lv_obj_remove_local_style_prop(mic, LV_STYLE_TRANSFORM_PIVOT_Y, 0);
+        if (ring_a != nullptr) {
             lv_obj_add_flag(ring_a, LV_OBJ_FLAG_HIDDEN);
         }
-    }
-    if (ring_b != nullptr) {
-        if (hold) {
-            lv_obj_remove_flag(ring_b, LV_OBJ_FLAG_HIDDEN);
-            lv_obj_set_style_border_opa(ring_b, static_cast<lv_opa_t>(40 + pulse / 4), 0);
-            lv_obj_set_style_border_color(ring_b, lv_color_hex(k_wave), 0);
-        } else {
+        if (ring_b != nullptr) {
             lv_obj_add_flag(ring_b, LV_OBJ_FLAG_HIDDEN);
         }
+        return;
+    }
+    lv_obj_set_style_transform_pivot_x(mic, 32, 0);
+    lv_obj_set_style_transform_pivot_y(mic, 32, 0);
+    lv_obj_set_style_transform_scale_x(mic, k_scale_hold, 0);
+    lv_obj_set_style_transform_scale_y(mic, k_scale_hold, 0);
+    const uint8_t pulse = static_cast<uint8_t>(40 + (level > 200 ? 200 : level) / 2);
+    if (ring_a != nullptr) {
+        lv_obj_remove_flag(ring_a, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_style_border_opa(ring_a, static_cast<lv_opa_t>(80 + pulse / 3), 0);
+        lv_obj_set_style_border_color(ring_a, lv_color_hex(k_wave), 0);
+    }
+    if (ring_b != nullptr) {
+        lv_obj_remove_flag(ring_b, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_style_border_opa(ring_b, static_cast<lv_opa_t>(40 + pulse / 4), 0);
+        lv_obj_set_style_border_color(ring_b, lv_color_hex(k_wave), 0);
     }
 }
 

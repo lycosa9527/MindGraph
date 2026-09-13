@@ -361,8 +361,6 @@ SlidesWidgets slides_face_build(lv_obj_t *layer, lv_event_cb_t on_action, lv_eve
     lv_obj_set_pos(widgets.root, 0, 0);
     lv_obj_set_style_bg_color(widgets.root, lv_color_hex(k_grout), 0);
     lv_obj_set_style_bg_opa(widgets.root, LV_OPA_COVER, 0);
-    lv_obj_set_style_radius(widgets.root, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_clip_corner(widgets.root, true, 0);
     lv_obj_clear_flag(widgets.root, LV_OBJ_FLAG_SCROLLABLE);
 
     lv_obj_t *title = slides_face_label(

@@ -46,9 +46,9 @@ describe('trainingRemoteView', () => {
     )
   })
 
-  it('polls the hosted pointer only while waiting or the school is unknown', () => {
+  it('polls the hosted pointer only while the school is unknown', () => {
     expect(trainingRemoteShouldPollHost('waiting', null)).toBe(true)
-    expect(trainingRemoteShouldPollHost('waiting', 10)).toBe(true)
+    expect(trainingRemoteShouldPollHost('waiting', 10)).toBe(false)
     expect(trainingRemoteShouldPollHost('live', 10)).toBe(false)
     expect(trainingRemoteShouldPollHost('foreign', 10)).toBe(false)
     expect(trainingRemoteShouldPollHost('live', null)).toBe(true)

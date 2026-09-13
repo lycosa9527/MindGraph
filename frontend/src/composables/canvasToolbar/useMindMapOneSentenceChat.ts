@@ -39,6 +39,7 @@ import {
 import { useEventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useKittyAsrSession } from '@/composables/kitty/asr/useKittyAsrSession'
+import { mergeKittyConversationTurn } from '@/composables/kitty/applyKittyConversationTurn'
 import { buildKittyDiagramContext } from '@/composables/kitty/buildKittyDiagramContext'
 import {
   KITTY_CANVAS_OWNER_KEY,
@@ -134,7 +135,7 @@ export function useMindMapOneSentenceChat() {
   } = useKittySessionManager({
     scope: diagramScope,
     enabled: sessionMgrEnabled,
-    pollIntervalMs: 12000,
+    pollIntervalMs: 0,
   })
 
   /** Edit-phase only: phone owns input when Mobile Kitty WS is on this diagram scope. */
@@ -1004,24 +1005,28 @@ export function useMindMapOneSentenceChat() {
     }
   }
 
-  // When phone owns mic/chat for this scope, refresh shared turns so desktop panel stays in sync.
-  let peerHistoryTimer: ReturnType<typeof setInterval> | null = null
-  watch(
-    mobileKittyOwnsEditInput,
-    (locked) => {
-      if (peerHistoryTimer != null) {
-        clearInterval(peerHistoryTimer)
-        peerHistoryTimer = null
-      }
-      if (!locked) {
-        return
-      }
-      peerHistoryTimer = setInterval(() => {
-        void bootstrapSession()
-      }, 4000)
-    },
-    { immediate: true }
-  )
+  const onConversationTurn = (payload: {
+    scope?: string
+    turn: import('@/composables/kitty/applyKittyConversationTurn').KittyConversationTurnPayload
+    requestId?: string
+  }) => {
+    const scope = payload.scope?.trim() ?? ''
+    if (scope && scope !== diagramScope.value) {
+      return
+    }
+    const requestId = payload.requestId?.trim() || payload.turn.request_id?.trim() || ''
+    if (requestId && requestId === activeRequestId.value) {
+      return
+    }
+    const next = mergeKittyConversationTurn(
+      messages.value,
+      payload.turn,
+      `kitty-peer-${Date.now()}`
+    )
+    if (next != null) {
+      messages.value = next
+    }
+  }
 
   onMounted(() => {
     generateWatchReady = true
@@ -1046,6 +1051,7 @@ export function useMindMapOneSentenceChat() {
       hydratedScope = null
       void bootstrapSession()
     })
+    bus.on('kitty:conversation_turn', onConversationTurn)
   })
 
   onUnmounted(() => {
@@ -1056,10 +1062,6 @@ export function useMindMapOneSentenceChat() {
     if (hubSyncTimer != null) {
       clearTimeout(hubSyncTimer)
       hubSyncTimer = null
-    }
-    if (peerHistoryTimer != null) {
-      clearInterval(peerHistoryTimer)
-      peerHistoryTimer = null
     }
     funAsr.stopListening()
     // Panel may unmount mid-LLM; clear write lock so context is not stuck locked.

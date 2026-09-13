@@ -30,6 +30,7 @@ from services.kitty.infra.control.kitty_control_channel import (
     get_kitty_control_instance_id,
     kitty_control_channel,
 )
+from services.kitty.infra.control.kitty_event_push import notify_kitty_session_snapshot_changed
 from services.kitty.infra.control.kitty_control_secret import get_kitty_control_shared_secret
 from services.kitty.infra.control.kitty_observability import kitty_extra
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
@@ -276,4 +277,8 @@ async def notify_kitty_desktop_focus_changed(
         updated_at,
         title=title,
         diagram_type=diagram_type,
+    )
+    await notify_kitty_session_snapshot_changed(
+        int(user_id),
+        str(diagram_library_id) if diagram_library_id else None,
     )

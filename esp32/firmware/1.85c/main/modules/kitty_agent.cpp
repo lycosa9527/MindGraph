@@ -1,6 +1,7 @@
 #include "kitty_agent.hpp"
 #include "kitty_agent_shared.hpp"
 
+#include <atomic>
 #include <cstdio>
 #include <ctime>
 
@@ -22,6 +23,39 @@
 namespace {
 
 constexpr const char *TAG = "kitty_agent";
+constexpr int k_draw_settle_ms = 1000;
+
+std::atomic<bool> g_run{false};
+std::atomic<bool> g_thread_live{false};
+
+bool agent_active()
+{
+    return g_run.load() && !kitty_ui_is_hidden();
+}
+
+bool wait_draw_settle()
+{
+    const int ticks = k_draw_settle_ms / static_cast<int>(k_kitty_hold_poll_ms);
+    for (int i = 0; i < ticks; ++i) {
+        if (!agent_active()) {
+            return false;
+        }
+        boost::this_thread::sleep_for(boost::chrono::milliseconds(k_kitty_hold_poll_ms));
+    }
+    return agent_active();
+}
+
+bool wait_reconnect(int seconds)
+{
+    const int ticks = seconds * 1000 / static_cast<int>(k_kitty_hold_poll_ms);
+    for (int i = 0; i < ticks; ++i) {
+        if (!g_run.load() || kitty_ui_is_hidden()) {
+            return false;
+        }
+        boost::this_thread::sleep_for(boost::chrono::milliseconds(k_kitty_hold_poll_ms));
+    }
+    return agent_active();
+}
 
 std::string watch_device_id()
 {
@@ -68,7 +102,7 @@ bool wait_for_token()
 bool wait_for_network()
 {
     for (int i = 0; i < 80; ++i) {
-        if (kitty_ui_is_hidden()) {
+        if (!agent_active()) {
             return false;
         }
         esp_netif_t *sta = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
@@ -109,11 +143,13 @@ void kitty_agent_leave_session()
 {
     kitty_agent_request_leave();
     kitty_audio_spk_stop();
-    if (!kitty_ws_is_open()) {
+    if (!kitty_ws_owned_by(KittyWsOwner::kitty)) {
         return;
     }
-    kitty_send_obj({{"type", "abort"}, {"reason", "home"}});
-    kitty_send_obj({{"type", "stop"}});
+    if (kitty_ws_is_open()) {
+        kitty_send_obj({{"type", "abort"}, {"reason", "home"}});
+        kitty_send_obj({{"type", "stop"}});
+    }
     kitty_ws_close();
     ESP_LOGI(TAG, "session closed after home");
 }
@@ -124,11 +160,11 @@ bool kitty_agent_bind_ws()
     g_kitty_pending_auto_listen.store(false);
     kitty_ui_set_state(KittyUiState::connecting);
     kitty_ws_set_handler(kitty_agent_handle_inbound);
-    if (!kitty_ws_connect(kitty_net_ws_url(g_kitty_scope), g_kitty_token)) {
+    if (!kitty_ws_connect(kitty_net_ws_url(g_kitty_scope), g_kitty_token, KittyWsOwner::kitty)) {
         return false;
     }
     for (int i = 0; i < 80 && !kitty_ws_is_open(); ++i) {
-        if (kitty_ui_is_hidden()) {
+        if (!agent_active()) {
             kitty_ws_close();
             return false;
         }
@@ -154,12 +190,12 @@ bool kitty_agent_bind_ws()
 
 bool kitty_agent_connect_session()
 {
-    if (kitty_ui_is_hidden()) {
+    if (!agent_active()) {
         return false;
     }
     kitty_ui_set_state(KittyUiState::connecting);
     wait_for_network();
-    if (kitty_ui_is_hidden()) {
+    if (!agent_active()) {
         return false;
     }
     if (!kitty_agent_has_library_scope()) {
@@ -252,10 +288,15 @@ void refresh_library()
     kitty_ui_set_diagrams(items);
 }
 
+void finish_agent()
+{
+    kitty_agent_leave_session();
+    g_thread_live.store(false);
+}
+
 void agent_loop()
 {
     BROOKESIA_LOGI("Kitty watch agent starting");
-    kitty_ui_start();
     kitty_audio_init();
     kitty_audio_run_smoke();
 
@@ -263,35 +304,33 @@ void agent_loop()
         kitty_ui_set_state(KittyUiState::error);
         kitty_ui_set_kitty_text("设置服务器地址");
         ESP_LOGW(TAG, "MINDGRAPH_KITTY_SERVER_URL is empty");
+        finish_agent();
         return;
     }
 
     if (!wait_for_token()) {
         ESP_LOGW(TAG, "MINDGRAPH_KITTY_MGAT is empty");
+        finish_agent();
         return;
     }
-    for (;;) {
-        if (kitty_ui_is_hidden()) {
-            boost::this_thread::sleep_for(boost::chrono::milliseconds(k_kitty_hold_poll_ms));
-            continue;
-        }
-        if (kitty_agent_connect_session()) {
-            break;
-        }
-        kitty_ui_set_live("重连中");
-        boost::this_thread::sleep_for(boost::chrono::seconds(3));
-    }
-    kitty_ui_set_state(KittyUiState::idle);
 
     int reconnect_fails = 0;
     std::time_t user_override_until = 0;
-    for (;;) {
+    bool was_hidden = false;
+    while (g_run.load()) {
         if (kitty_ui_is_hidden()) {
+            was_hidden = true;
             if (kitty_ws_is_open()) {
                 kitty_agent_leave_session();
             }
             boost::this_thread::sleep_for(boost::chrono::milliseconds(k_kitty_hold_poll_ms));
             continue;
+        }
+        if (was_hidden) {
+            if (!wait_draw_settle()) {
+                continue;
+            }
+            was_hidden = false;
         }
         if (kitty_ui_picker_needs_list()) {
             refresh_library();
@@ -342,7 +381,7 @@ void agent_loop()
         if (choice > 0) {
             kitty_agent_send_clarify_choice(choice);
         }
-        if (!kitty_ws_is_open() && !kitty_ui_is_hidden()) {
+        if (!kitty_ws_is_open() && agent_active()) {
             kitty_ui_set_state(KittyUiState::connecting);
             if (kitty_agent_connect_session()) {
                 reconnect_fails = 0;
@@ -350,7 +389,7 @@ void agent_loop()
                 reconnect_fails += 1;
                 const int wait_s = reconnect_fails > 4 ? 5 : reconnect_fails;
                 kitty_ui_set_live("重连中");
-                boost::this_thread::sleep_for(boost::chrono::seconds(wait_s));
+                wait_reconnect(wait_s);
             }
         }
         if (kitty_ui_take_click()) {
@@ -369,12 +408,18 @@ void agent_loop()
         }
         boost::this_thread::sleep_for(boost::chrono::milliseconds(k_kitty_hold_poll_ms));
     }
+    finish_agent();
 }
 
 } // namespace
 
-bool start_kitty_watch()
+bool kitty_agent_start()
 {
+    g_run.store(true);
+    bool expected = false;
+    if (!g_thread_live.compare_exchange_strong(expected, true)) {
+        return true;
+    }
     BROOKESIA_THREAD_CONFIG_GUARD({
         .name = "kitty_agent",
         .stack_size = 48 * 1024,
@@ -382,4 +427,10 @@ bool start_kitty_watch()
     });
     boost::thread(agent_loop).detach();
     return true;
+}
+
+void kitty_agent_stop()
+{
+    g_run.store(false);
+    kitty_agent_request_leave();
 }

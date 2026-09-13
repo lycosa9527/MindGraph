@@ -100,6 +100,60 @@ async def test_unrestricted_db_row_still_limited_to_preview_org(
 
 
 @pytest.mark.asyncio
+async def test_flag_on_empty_preview_allows_all_authenticated(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """FEATURE_WORKSHOP_CHAT alone opens 研习社 when preview orgs are unset."""
+    monkeypatch.setattr(
+        "utils.auth.roles.config",
+        SimpleNamespace(
+            FEATURE_WORKSHOP_CHAT=True,
+            WORKSHOP_CHAT_PREVIEW_ORG_IDS=frozenset(),
+        ),
+    )
+    monkeypatch.setattr(
+        "utils.auth.roles._get_feature_access_map_cached",
+        AsyncMock(return_value=None),
+    )
+    assert await can_access_workshop_chat(_user(role="teacher", organization_id=7))
+    assert await can_access_workshop_chat(_user(role="school_admin", organization_id=3))
+
+
+@pytest.mark.asyncio
+async def test_empty_preview_still_honors_restricted_db_row(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A restricted Permissions row still limits access when preview orgs are empty."""
+    monkeypatch.setattr(
+        "utils.auth.roles.config",
+        SimpleNamespace(
+            FEATURE_WORKSHOP_CHAT=True,
+            WORKSHOP_CHAT_PREVIEW_ORG_IDS=frozenset(),
+        ),
+    )
+    monkeypatch.setattr(
+        "utils.auth.roles._get_feature_access_map_cached",
+        AsyncMock(
+            return_value={
+                "feature_workshop_chat": FeatureOrgAccessEntry(
+                    restrict=True,
+                    organization_ids=[3],
+                    user_ids=[],
+                ),
+            }
+        ),
+    )
+    assert await user_has_feature_access(
+        _user(role="teacher", organization_id=3),
+        "feature_workshop_chat",
+    )
+    assert not await user_has_feature_access(
+        _user(role="teacher", organization_id=7),
+        "feature_workshop_chat",
+    )
+
+
+@pytest.mark.asyncio
 async def test_flag_off_denies_preview_org(monkeypatch: pytest.MonkeyPatch) -> None:
     """Preview-org membership does not override a disabled global flag."""
     monkeypatch.setattr(

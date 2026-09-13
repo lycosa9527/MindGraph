@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional
 
 from redis.exceptions import RedisError
 
+from services.kitty.infra.control.kitty_event_push import notify_kitty_conversation_turn
 from services.kitty.infra.redis.kitty_redis_keys import (
     kitty_one_sentence_meta_key,
     kitty_one_sentence_turns_key,
@@ -244,6 +245,7 @@ async def append_one_sentence_turn(
         str(turn.get("turn_id") or "")[:12],
         redis_ok,
     )
+    await notify_kitty_conversation_turn(user_id, scope, turn)
     return turn
 
 

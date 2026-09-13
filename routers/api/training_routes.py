@@ -31,7 +31,6 @@ from services.features.training.constants import (
     GENERATE_STATES,
     MAX_TOPIC_OPTIONS,
     ROSTER_PAGE_MAX,
-    STATE_ENDED,
     STATE_LIVE,
     VALID_DIAGRAM_TYPES,
 )
@@ -64,6 +63,7 @@ from services.features.training.session_store import (
     start_session,
     takeover_session,
 )
+from services.features.training.remote_notify import notify_training_session_changed
 from services.features.training.sse import iter_org_events, publish_event
 from services.features.training.training_logger import log_training
 from utils.auth import get_current_user
@@ -101,8 +101,7 @@ async def _require_leader(user: User, org_id: int) -> None:
 
 
 async def _publish_seq(org_id: int, session: dict) -> None:
-    event = "ended" if session.get("state") == STATE_ENDED else "seq"
-    await publish_event(org_id, event, {"seq": int(session.get("seq") or 0)})
+    await notify_training_session_changed(org_id, session)
 
 
 async def _present_org_session(org_id: int, session: Optional[dict]) -> Optional[dict]:

@@ -193,6 +193,9 @@ function goToInbox(): void {
 
 function startNewDM(): void {
   store.showChannelBrowser = false
+  store.activeTab = 'dms'
+  store.selectDMPartner(null)
+  store.requestOpenContacts = true
   router.push('/workshop-chat')
 }
 

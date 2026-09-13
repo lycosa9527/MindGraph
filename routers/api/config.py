@@ -185,6 +185,6 @@ async def get_feature_flags(
         feature_test_server_banner=config.FEATURE_TEST_SERVER_BANNER,
         captcha_provider=effective_captcha_provider(),
         tencent_captcha_app_id=public_captcha_app_id(),
-        workshop_chat_preview_org_ids=sorted(config.WORKSHOP_CHAT_PREVIEW_ORG_IDS),
+        workshop_chat_preview_org_ids=([] if current_user is None else sorted(config.WORKSHOP_CHAT_PREVIEW_ORG_IDS)),
         feature_org_access=access_map,
     )

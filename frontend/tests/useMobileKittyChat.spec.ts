@@ -296,4 +296,11 @@ describe('useMobileKittyChat', () => {
       expect(fetchOneSentenceTurnsMock).toHaveBeenCalledWith('lib-diagram-1')
     })
   })
+
+  it('does not start a 4s peer history interval', () => {
+    const setIntervalSpy = vi.spyOn(window, 'setInterval')
+    mountChat('edit')
+    expect(setIntervalSpy).not.toHaveBeenCalled()
+    setIntervalSpy.mockRestore()
+  })
 })

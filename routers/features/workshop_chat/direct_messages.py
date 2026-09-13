@@ -15,11 +15,12 @@ Proprietary License
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
+from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.features.workshop_chat.dependencies import access_dm_partner
 from routers.features.workshop_chat.schemas import SendDMRequest
 from services.features.workshop_chat import dm_service
@@ -48,11 +49,18 @@ async def list_dm_conversations(
 async def search_dm_messages(
     partner_id: int,
     q: str,
+    request: Request,
     limit: int = 40,
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Search within the 1:1 DM narrow (same partner only)."""
+    await check_endpoint_rate_limit(
+        "workshop_chat_search",
+        get_rate_limit_identifier(current_user, request),
+        max_requests=30,
+        window_seconds=60,
+    )
     await access_dm_partner(db, current_user, partner_id)
     return await dm_service.search_messages(
         db,
@@ -101,10 +109,17 @@ async def mark_dm_read(
 async def send_dm(
     partner_id: int,
     body: SendDMRequest,
+    request: Request,
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Send a direct message (same org only)."""
+    await check_endpoint_rate_limit(
+        "workshop_chat_send",
+        get_rate_limit_identifier(current_user, request),
+        max_requests=60,
+        window_seconds=60,
+    )
     await access_dm_partner(db, current_user, partner_id)
     try:
         result = await dm_service.send(
@@ -127,12 +142,15 @@ async def send_dm(
         user=current_user,
         module="workshop",
         redis_activity_type="workshop_chat",
-        details={"partner_id": partner_id, "endpoint": "dm"},
+        details={
+            "partner_id": partner_id,
+            "endpoint": "dm",
+            "content_len": len(body.content),
+        },
         detail=f"dm partner={partner_id}",
         usage_source="mindgraph",
         usage_action="workshop_chat",
         title=f"dm:{partner_id}",
-        prompt_preview=body.content,
     )
     await chat_ws_manager.send_to_user(
         partner_id,

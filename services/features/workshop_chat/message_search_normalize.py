@@ -9,10 +9,15 @@ Proprietary License
 from typing import Optional, Tuple
 
 
+def _escape_ilike_literal(text: str) -> str:
+    """Escape ``%``, ``_``, ``\\`` for ILIKE with PostgreSQL ESCAPE '\\'."""
+    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 def ilike_pattern_from_text(text: str, limit: int) -> Tuple[Optional[str], int]:
     """Return ``(ILIKE pattern, limit)``; pattern is None when there is nothing to search."""
     raw = (text or "").strip()
     if not raw or len(raw) > 200:
         return None, 0
     lim = min(max(limit, 1), 100)
-    return f"%{raw}%", lim
+    return f"%{_escape_ilike_literal(raw)}%", lim
