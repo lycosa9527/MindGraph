@@ -1,10 +1,13 @@
 /**
  * Desktop side of the 演讲模式 watch clicker: publish HUD, drain commands.
  * Start is accepted while idle so the watch can open a library diagram into slides.
+ * Commands arrive via WebSocket wake + instant LPOP. HUD is published only when
+ * it changes. Redis TTL is refreshed by the desktop socket, not an HTTP timer.
  */
 import { onUnmounted, watch } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { bindSlideRemoteWakeDrain } from '@/composables/mindMap/bindSlideRemoteWakeDrain'
 import type { useMindMapSlidePresentation } from '@/composables/mindMap/useMindMapSlidePresentation'
 import { applySlideRemoteCommand } from '@/utils/applySlideRemoteCommand'
 import {
@@ -23,9 +26,6 @@ import {
   shouldJumpForSlideRemoteStart,
 } from '@/utils/slideRemotePendingStart'
 
-const SNAPSHOT_MS = 2000
-const DRAIN_MS = 400
-
 type SlidePresentation = ReturnType<typeof useMindMapSlidePresentation>
 
 export function useSlideRemote(options: {
@@ -37,24 +37,8 @@ export function useSlideRemote(options: {
   enterSlides: () => void
   exitPresentation: () => void
 }): void {
-  let snapshotTimer: ReturnType<typeof setInterval> | null = null
-  let drainTimer: ReturnType<typeof setInterval> | null = null
   let inFlight = false
   let opened = false
-
-  function clearSnapshotTimer(): void {
-    if (snapshotTimer !== null) {
-      clearInterval(snapshotTimer)
-      snapshotTimer = null
-    }
-  }
-
-  function clearDrainTimer(): void {
-    if (drainTimer !== null) {
-      clearInterval(drainTimer)
-      drainTimer = null
-    }
-  }
 
   function enterIfPending(): void {
     const pending = peekSlideRemotePendingStart()
@@ -119,24 +103,12 @@ export function useSlideRemote(options: {
     }
   }
 
-  function startPublish(): void {
-    clearSnapshotTimer()
-    void publish()
-    snapshotTimer = window.setInterval(() => {
-      void publish()
-    }, SNAPSHOT_MS)
-  }
-
-  function startListen(): void {
-    if (drainTimer !== null) return
-    void drain()
-    drainTimer = window.setInterval(() => {
-      void drain()
-    }, DRAIN_MS)
-  }
+  const wake = bindSlideRemoteWakeDrain({
+    drain,
+    shouldRun: () => true,
+  })
 
   async function stopPublish(): Promise<void> {
-    clearSnapshotTimer()
     if (!opened) return
     opened = false
     try {
@@ -147,14 +119,27 @@ export function useSlideRemote(options: {
   }
 
   watch(
-    () => options.slidesActive(),
-    (active) => {
-      startListen()
-      if (active) {
-        startPublish()
+    () => {
+      const slides = options.slidePresentation
+      return [
+        options.slidesActive(),
+        options.diagramId(),
+        options.title(),
+        slides.slideIndex.value,
+        slides.slideCount.value,
+        slides.traversalMode.value,
+        slides.autoPlay.value,
+        slides.canGoPrev.value,
+        slides.canGoNext.value,
+      ] as const
+    },
+    (current) => {
+      wake.start()
+      if (!current[0]) {
+        void stopPublish()
         return
       }
-      void stopPublish()
+      void publish()
     },
     { immediate: true }
   )
@@ -171,8 +156,7 @@ export function useSlideRemote(options: {
   onUnmounted(() => {
     stopLoaded()
     clearSlideRemoteCanvasDrain()
-    clearSnapshotTimer()
-    clearDrainTimer()
+    wake.stop()
     if (opened) {
       void endSlideRemoteSession()
       opened = false

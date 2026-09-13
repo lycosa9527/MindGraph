@@ -99,3 +99,35 @@ bool slides_post_command(const std::string &token, const std::string &json, int 
     std::string body;
     return slides_http_json(token, "POST", "/api/slides/remote/command", json, status, body);
 }
+
+std::string slides_ws_url()
+{
+    std::string origin = kitty_net_origin();
+    if (origin.rfind("https://", 0) == 0) {
+        origin.replace(0, 5, "wss");
+    } else if (origin.rfind("http://", 0) == 0) {
+        origin.replace(0, 4, "ws");
+    }
+    return origin + "/api/ws/slides-remote";
+}
+
+bool slides_parse_ws_frame(const std::string &body, SlidesSnapshot &out)
+{
+    boost::system::error_code err;
+    const auto root = boost::json::parse(body, err);
+    if (err || !root.is_object()) {
+        return false;
+    }
+    const auto &obj = root.as_object();
+    const auto *type_field = obj.if_contains("type");
+    if (type_field != nullptr && type_field->is_string()) {
+        const std::string kind(type_field->as_string().c_str());
+        if (kind == "ping" || kind == "pong" || kind == "slides_command_pending") {
+            return false;
+        }
+        if (kind != "slides_snapshot" && kind != "") {
+            return false;
+        }
+    }
+    return slides_parse_snapshot(body, out);
+}

@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <ctime>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -15,23 +16,26 @@
 #include "private/utils.hpp"
 
 #include "kitty_net.hpp"
+#include "kitty_ws.hpp"
 #include "slides_remote_net.hpp"
 #include "slides_ui.hpp"
 
 namespace {
 
 constexpr const char *TAG = "slides_remote";
-constexpr int k_poll_ms = 2000;
 constexpr int k_steer_ms = 400;
 constexpr int k_loop_ms = 120;
 
 std::atomic<bool> g_run{false};
 std::atomic<bool> g_thread_live{false};
+std::mutex g_mutex;
 std::string g_token;
 SlidesSnapshot g_snap;
+SlidesSnapshot g_incoming;
+bool g_incoming_ready = false;
+bool g_own_ws = false;
 std::vector<KittyDiagramItem> g_diagrams;
 std::string g_diagram_id;
-int64_t g_last_poll_ms = 0;
 int64_t g_last_steer_ms = 0;
 
 int64_t now_ms()
@@ -106,6 +110,32 @@ void paint_snap(const SlidesSnapshot &snap)
     slides_ui_set_status(g_diagram_id.empty() ? "请选图库" : "点开始放映");
 }
 
+void on_ws_frame(const std::string &raw)
+{
+    SlidesSnapshot snap;
+    if (!slides_parse_ws_frame(raw, snap)) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(g_mutex);
+    g_incoming = snap;
+    g_incoming_ready = true;
+}
+
+void drain_incoming()
+{
+    SlidesSnapshot snap;
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        if (!g_incoming_ready) {
+            return;
+        }
+        snap = g_incoming;
+        g_incoming_ready = false;
+    }
+    g_snap = snap;
+    paint_snap(g_snap);
+}
+
 void hydrate()
 {
     int status = 0;
@@ -119,6 +149,39 @@ void hydrate()
     }
     g_snap = snap;
     paint_snap(g_snap);
+}
+
+void release_ws()
+{
+    if (!g_own_ws) {
+        return;
+    }
+    kitty_ws_set_handler(nullptr);
+    kitty_ws_close();
+    g_own_ws = false;
+}
+
+bool bind_ws()
+{
+    kitty_ws_set_handler(on_ws_frame);
+    if (!kitty_ws_connect(slides_ws_url(), g_token)) {
+        return false;
+    }
+    for (int i = 0; i < 80 && !kitty_ws_is_open(); ++i) {
+        if (!g_run.load() || slides_ui_is_hidden()) {
+            kitty_ws_close();
+            return false;
+        }
+        boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
+    }
+    if (!kitty_ws_is_open()) {
+        ESP_LOGW(TAG, "ws open timeout");
+        kitty_ws_close();
+        return false;
+    }
+    g_own_ws = true;
+    ESP_LOGI(TAG, "ws ready");
+    return true;
 }
 
 void refresh_library()
@@ -159,7 +222,7 @@ void post_action(const std::string &json, bool need_live)
             note_auth_status(status);
             slides_ui_set_status("发送失败");
         }
-    } else {
+    } else if (!g_own_ws || !kitty_ws_is_open()) {
         hydrate();
     }
     slides_ui_set_busy(false);
@@ -235,14 +298,17 @@ void remote_loop()
         g_thread_live.store(false);
         return;
     }
-    hydrate();
+    int reconnect_fails = 0;
     while (g_run.load()) {
         if (slides_ui_is_hidden()) {
+            release_ws();
             while (g_run.load() && slides_ui_is_hidden()) {
                 boost::this_thread::sleep_for(boost::chrono::milliseconds(k_loop_ms));
             }
+            reconnect_fails = 0;
             continue;
         }
+        drain_incoming();
         if (slides_ui_picker_needs_list()) {
             refresh_library();
         }
@@ -250,13 +316,21 @@ void remote_loop()
         if (action != SlidesUiAction::none) {
             handle_action(action);
         }
-        const int64_t now = now_ms();
-        if (now - g_last_poll_ms >= k_poll_ms) {
-            g_last_poll_ms = now;
-            hydrate();
+        if (!kitty_ws_is_open()) {
+            slides_ui_set_status("连接中");
+            if (bind_ws()) {
+                reconnect_fails = 0;
+            } else {
+                hydrate();
+                reconnect_fails += 1;
+                const int wait_s = reconnect_fails > 4 ? 5 : reconnect_fails;
+                slides_ui_set_status("重连中");
+                boost::this_thread::sleep_for(boost::chrono::seconds(wait_s));
+            }
         }
         boost::this_thread::sleep_for(boost::chrono::milliseconds(k_loop_ms));
     }
+    release_ws();
     g_thread_live.store(false);
 }
 

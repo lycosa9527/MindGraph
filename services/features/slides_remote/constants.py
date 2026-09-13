@@ -13,14 +13,17 @@ STATE_LIVE: Final[str] = "live"
 STATE_ENDED: Final[str] = "ended"
 
 SESSION_TTL_SECONDS: Final[int] = 120
+SESSION_TOUCH_SECONDS: Final[int] = 45
 COMMAND_QUEUE_MAX: Final[int] = 8
 TITLE_MAX: Final[int] = 80
 DIAGRAM_ID_MAX: Final[int] = 64
 
 USER_KEY: Final[str] = "slide_remote:user:{user_id}"
 COMMAND_KEY: Final[str] = "slide_remote:user:{user_id}:cmds"
+WAKE_CHANNEL: Final[str] = "slide_remote:user:{user_id}:wake"
+WAKE_CHANNEL_PATTERN: Final[str] = "slide_remote:user:*:wake"
+COMMAND_PENDING_TYPE: Final[str] = "slides_command_pending"
+SNAPSHOT_TYPE: Final[str] = "slides_snapshot"
 
 TRAVERSAL_MODES: frozenset[str] = frozenset({"firstLevel", "deep"})
-COMMAND_ACTIONS: frozenset[str] = frozenset(
-    {"next", "prev", "autoplay", "traversal", "quit", "start"}
-)
+COMMAND_ACTIONS: frozenset[str] = frozenset({"next", "prev", "autoplay", "traversal", "quit", "start"})

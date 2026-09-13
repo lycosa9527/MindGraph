@@ -1,19 +1,19 @@
 /**
  * Drain 演讲模式 Start when the desktop is not on /canvas.
  * Canvas useSlideRemote owns the queue while the editor is open.
+ * WebSocket wake + instant LPOP. No interval poll.
  */
 import { onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
 
+import { bindSlideRemoteWakeDrain } from '@/composables/mindMap/bindSlideRemoteWakeDrain'
 import { useAuthStore } from '@/stores/auth'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import { drainSlideRemoteCommands } from '@/utils/slideRemoteApi'
 import { slideRemoteCanvasIsDraining } from '@/utils/slideRemoteCanvasDrainLock'
 import { setSlideRemotePendingStart } from '@/utils/slideRemotePendingStart'
-
-const DRAIN_MS = 400
 
 export function useSlideRemoteDesktopPoll(): void {
   const authStore = useAuthStore()
@@ -21,7 +21,6 @@ export function useSlideRemoteDesktopPoll(): void {
   const route = useRoute()
   const router = useRouter()
 
-  let timer: ReturnType<typeof setInterval> | null = null
   let inFlight = false
 
   function surfaceAllowsPoll(): boolean {
@@ -57,34 +56,20 @@ export function useSlideRemoteDesktopPoll(): void {
     }
   }
 
-  function stop(): void {
-    if (timer !== null) {
-      clearInterval(timer)
-      timer = null
-    }
-  }
-
-  function start(): void {
-    if (timer !== null) return
-    void drain()
-    timer = window.setInterval(() => {
-      void drain()
-    }, DRAIN_MS)
-  }
+  const wake = bindSlideRemoteWakeDrain({
+    drain,
+    shouldRun: surfaceAllowsPoll,
+  })
 
   function sync(): void {
     if (surfaceAllowsPoll()) {
-      start()
+      wake.start()
       return
     }
-    stop()
+    wake.stop()
   }
 
-  function onVisibility(): void {
-    sync()
-  }
-
-  document.addEventListener('visibilitychange', onVisibility)
+  document.addEventListener('visibilitychange', sync)
 
   watch(
     () => [isAuthenticated.value, route.path, route.meta.layout] as const,
@@ -95,7 +80,7 @@ export function useSlideRemoteDesktopPoll(): void {
   )
 
   onUnmounted(() => {
-    document.removeEventListener('visibilitychange', onVisibility)
-    stop()
+    document.removeEventListener('visibilitychange', sync)
+    wake.stop()
   })
 }

@@ -27,6 +27,10 @@ from services.features.slides_remote.constants import (
     TRAVERSAL_MODES,
     USER_KEY,
 )
+from services.features.slides_remote.wake_fanout import (
+    publish_slides_command_pending,
+    publish_slides_snapshot_view,
+)
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import JSON_PARSE_ERRORS, REDIS_ERRORS
 
@@ -132,6 +136,23 @@ async def _require_redis() -> Any:
     return redis
 
 
+async def touch_session(user_id: int) -> bool:
+    """Refresh Redis TTL when a desktop socket is still holding the room."""
+    try:
+        redis = get_async_redis()
+        if redis is None:
+            return False
+        key = _user_key(user_id)
+        if not await redis.exists(key):
+            return False
+        await redis.expire(key, SESSION_TTL_SECONDS)
+        await redis.expire(_command_key(user_id), SESSION_TTL_SECONDS)
+        return True
+    except REDIS_ERRORS as exc:
+        logger.debug("[SlideRemote] touch_session failed: %s", exc)
+        return False
+
+
 async def get_session(user_id: int) -> Optional[dict[str, Any]]:
     """Load the live document. Readers never write."""
     try:
@@ -142,6 +163,23 @@ async def get_session(user_id: int) -> Optional[dict[str, Any]]:
     except REDIS_ERRORS as exc:
         logger.debug("[SlideRemote] get_session failed: %s", exc)
         return None
+
+
+def _hud_key(session: Optional[dict[str, Any]]) -> tuple[Any, ...]:
+    """HUD fields the watch paints. Seq / heartbeat are not part of the face."""
+    view = public_snapshot(session)
+    return (
+        view["state"],
+        view["session_id"],
+        view["diagram_id"],
+        view["title"],
+        view["slide_index"],
+        view["slide_count"],
+        view["traversal"],
+        view["autoplay"],
+        view["can_prev"],
+        view["can_next"],
+    )
 
 
 def _apply_fields(session: dict[str, Any], fields: dict[str, Any]) -> None:
@@ -175,9 +213,12 @@ async def upsert_session(user_id: int, fields: dict[str, Any]) -> dict[str, Any]
     session["user_id"] = int(user_id)
     session["heartbeat_at"] = now
     _apply_fields(session, fields)
+    changed = _hud_key(existing) != _hud_key(session)
     payload = json.dumps(session, separators=(",", ":"))
     await redis.set(_user_key(user_id), payload, ex=SESSION_TTL_SECONDS)
     await redis.expire(_command_key(user_id), SESSION_TTL_SECONDS)
+    if changed:
+        await publish_slides_snapshot_view(user_id, public_snapshot(session))
     return session
 
 
@@ -190,6 +231,8 @@ async def end_session(user_id: int) -> None:
         await redis.delete(_user_key(user_id), _command_key(user_id))
     except REDIS_ERRORS as exc:
         logger.debug("[SlideRemote] end_session failed: %s", exc)
+        return
+    await publish_slides_snapshot_view(user_id, public_snapshot(None))
 
 
 def normalize_command(payload: dict[str, Any]) -> dict[str, Any]:
@@ -225,6 +268,7 @@ async def enqueue_command(user_id: int, payload: dict[str, Any]) -> dict[str, An
     await redis.rpush(key, json.dumps(row, separators=(",", ":")))
     await redis.ltrim(key, -COMMAND_QUEUE_MAX, -1)
     await redis.expire(key, SESSION_TTL_SECONDS)
+    await publish_slides_command_pending(user_id)
     return row
 
 

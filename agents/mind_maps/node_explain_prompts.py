@@ -190,17 +190,13 @@ _MEANING_TASKS: Dict[PromptShell, Dict[str, str]] = {
             "Təxminən 30–45 söz. İerarxiya, salam, sual və siyahı olmasın."
         ),
         "senior": (
-            "Lisey səviyyəsində bu düyünün mövzu ilə əlaqəsini deyin. "
-            "Təxminən 40–60 söz. Populyar-elm dolğusu olmasın."
+            "Lisey səviyyəsində bu düyünün mövzu ilə əlaqəsini deyin. Təxminən 40–60 söz. Populyar-elm dolğusu olmasın."
         ),
         "university": (
             "Akademik cümlələrlə bu düyünün mexanizm və ya nəzəri yerini deyin. "
             "Təxminən 40–70 söz. Məktəb dərs tonu olmasın."
         ),
-        "adult": (
-            "Peşəkar, işə yönəlmiş bir-iki cümlə ilə bu düyünün praktik mənasını deyin. "
-            "Təxminən 40–70 söz."
-        ),
+        "adult": ("Peşəkar, işə yönəlmiş bir-iki cümlə ilə bu düyünün praktik mənasını deyin. Təxminən 40–70 söz."),
         "expert": (
             "Həmkar üçün sıx, dəqiq, yoxlanıla bilən izah: mexanizm, sərhəd və ya mübahisə. "
             "Populyar-elm açılışı olmasın. Təxminən 35–60 söz."

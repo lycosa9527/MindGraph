@@ -71,13 +71,9 @@ def build_mind_map_branch_expand_user_message(
             joined = ", ".join(existing_branch_children)
             lines.append(f"Existing children under this branch (do not duplicate): {joined}")
         if is_main_branch:
-            lines.append(
-                "Generate 4–6 direct child nodes for this main branch only (one level; no deeper nesting)."
-            )
+            lines.append("Generate 4–6 direct child nodes for this main branch only (one level; no deeper nesting).")
         else:
-            lines.append(
-                "Generate 4–6 direct child nodes for this sub-node only (one level; no deeper nesting)."
-            )
+            lines.append("Generate 4–6 direct child nodes for this sub-node only (one level; no deeper nesting).")
     message = append_audience_instructions("\n".join(lines), generation_instructions)
     rag = (rag_context_block or "").strip()
     if not rag:

@@ -91,7 +91,7 @@ async def active_session(
 async def pop_commands(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
-    """Desktop drains queued watch clicks."""
+    """Desktop drains queued watch clicks (instant LPOP after WS wake)."""
     items = await drain_commands(_user_id(current_user))
     return {"items": items}
 

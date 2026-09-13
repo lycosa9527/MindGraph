@@ -26,3 +26,5 @@ bool slides_parse_snapshot(const std::string &body, SlidesSnapshot &out);
 bool slides_session_live(const SlidesSnapshot &snap);
 bool slides_fetch_active(const std::string &token, SlidesSnapshot &out, int &status);
 bool slides_post_command(const std::string &token, const std::string &json, int &status);
+std::string slides_ws_url();
+bool slides_parse_ws_frame(const std::string &body, SlidesSnapshot &out);

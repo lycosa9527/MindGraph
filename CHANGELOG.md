@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.74] - 2026-09-13
+
+> **演讲模式 clicker is WebSocket + Redis wake; desktop start waits for the mind-map fit.**
+
+### Changed
+
+- **演讲模式 transport** — Watch and desktop share `/api/ws/slides-remote` (cookie or `mgat_`). Watch `POST /command` PUBLISHes `slides_command_pending`; each worker pattern-subscribes `slide_remote:user:*:wake` (O(workers)). Desktop LPOPs instantly. HUD `PUT`s only when fields change; desktop sockets `EXPIRE` the Redis room (watch sockets do not). The 1.85C face closes the socket when hidden so Kitty can reuse the client. `GET /sessions/active` is fallback hydrate only.
+- **Desktop 演讲模式 start** — Watch `start` opens the 放映 rail, then plays after measure-batch + two frames so the first slide is not a tight zoom on the center.
+
+### Tests
+
+- [`tests/test_slides_remote_wake.py`](tests/test_slides_remote_wake.py), [`tests/test_slides_remote_session.py`](tests/test_slides_remote_session.py)
+- [`frontend/tests/createSlideRemoteWakeSocket.spec.ts`](frontend/tests/createSlideRemoteWakeSocket.spec.ts), [`frontend/tests/bindSlideRemoteWakeDrain.spec.ts`](frontend/tests/bindSlideRemoteWakeDrain.spec.ts), [`frontend/tests/createSlideRemoteDesktopPlay.spec.ts`](frontend/tests/createSlideRemoteDesktopPlay.spec.ts), [`frontend/tests/emitMindMapSlideViewportFit.spec.ts`](frontend/tests/emitMindMapSlideViewportFit.spec.ts), [`frontend/tests/waitForMindMapSlidePlayReady.spec.ts`](frontend/tests/waitForMindMapSlidePlayReady.spec.ts), [`frontend/tests/useSlideRemoteDesktopPoll.spec.ts`](frontend/tests/useSlideRemoteDesktopPoll.spec.ts)
+
 ## [5.180.73] - 2026-09-13
 
 > **1.75C AMOLED watch plus 演讲模式 Super tile; format painter, history versions, and Kitty 节点解释.**

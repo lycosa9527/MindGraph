@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -16,16 +16,19 @@ from services.features.slides_remote.session_store import (
     idle_snapshot,
     normalize_command,
     public_snapshot,
+    touch_session,
     upsert_session,
 )
 
 
 class FakeRedis:
-    """In-memory stand-in for get/set/delete/rpush/lpop/ltrim/expire."""
+    """In-memory stand-in for get/set/delete/rpush/lpop/ltrim/expire/publish."""
 
     def __init__(self) -> None:
         self.kv: dict[str, str] = {}
         self.lists: dict[str, list[str]] = {}
+        self.published: list[tuple[str, str]] = []
+        self.expires: list[tuple[str, int]] = []
 
     async def get(self, key: str) -> str | None:
         """Return a stored string or None."""
@@ -61,9 +64,18 @@ class FakeRedis:
             return
         self.lists[key] = rows[start : end + 1]
 
+    async def exists(self, key: str) -> int:
+        """Return 1 when the string key is present."""
+        return 1 if key in self.kv else 0
+
     async def expire(self, key: str, ttl: int) -> None:
-        """No-op TTL (tests do not expire keys)."""
-        del key, ttl
+        """Record TTL refresh (tests do not drop keys)."""
+        self.expires.append((key, ttl))
+
+    async def publish(self, channel: str, message: str) -> int:
+        """Record a pub/sub wake (used when fanout shares this client)."""
+        self.published.append((channel, message))
+        return 1
 
 
 def _fields(**overrides: Any) -> dict[str, Any]:
@@ -171,6 +183,46 @@ async def test_enqueue_start_without_session() -> None:
 
 
 @pytest.mark.asyncio
+async def test_enqueue_publishes_command_pending_wake() -> None:
+    """A queued click must wake desktop sockets."""
+    redis = FakeRedis()
+    with (
+        patch(
+            "services.features.slides_remote.session_store.get_async_redis",
+            return_value=redis,
+        ),
+        patch(
+            "services.features.slides_remote.session_store.publish_slides_command_pending",
+            new=AsyncMock(),
+        ) as wake,
+    ):
+        await enqueue_command(3, {"action": "start", "diagram_id": "d9"})
+        wake.assert_awaited_once_with(3)
+
+
+@pytest.mark.asyncio
+async def test_upsert_publishes_snapshot_only_when_hud_changes() -> None:
+    """TTL heartbeats must not wake the watch; HUD changes must."""
+    redis = FakeRedis()
+    with (
+        patch(
+            "services.features.slides_remote.session_store.get_async_redis",
+            return_value=redis,
+        ),
+        patch(
+            "services.features.slides_remote.session_store.publish_slides_snapshot_view",
+            new=AsyncMock(),
+        ) as snap,
+    ):
+        await upsert_session(2, _fields())
+        assert snap.await_count == 1
+        await upsert_session(2, _fields())
+        assert snap.await_count == 1
+        await upsert_session(2, _fields(slide_index=3))
+        assert snap.await_count == 2
+
+
+@pytest.mark.asyncio
 async def test_upsert_refreshes_same_room() -> None:
     """A second publish keeps the session_id and bumps seq."""
     redis = FakeRedis()
@@ -184,3 +236,19 @@ async def test_upsert_refreshes_same_room() -> None:
         assert second["seq"] == first["seq"] + 1
         assert second["autoplay"] is True
         assert second["slide_index"] == 2
+
+
+@pytest.mark.asyncio
+async def test_touch_session_refreshes_ttl_when_live() -> None:
+    """Desktop socket keep-alive is EXPIRE, not another PUT."""
+    redis = FakeRedis()
+    with patch(
+        "services.features.slides_remote.session_store.get_async_redis",
+        return_value=redis,
+    ):
+        await upsert_session(4, _fields())
+        redis.expires.clear()
+        assert await touch_session(4) is True
+        keys = {key for key, _ttl in redis.expires}
+        assert "slide_remote:user:4" in keys
+        assert await touch_session(99) is False

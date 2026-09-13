@@ -138,6 +138,7 @@ import { useKittyDesktopSelectionPublish } from '@/composables/kitty/useKittyDes
 import { useKittyDesktopVoicePhase } from '@/composables/kitty/useKittyDesktopVoicePhase'
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
 import { requestClassroomStop } from '@/composables/mindMap/classroomCommands'
+import { createSlideRemoteDesktopPlay } from '@/composables/mindMap/createSlideRemoteDesktopPlay'
 import {
   learningSheetNeedsPresentationConfirm,
   resumeLearningSheetAfterPresentation,
@@ -533,6 +534,19 @@ const slidePresentation = useMindMapSlidePresentation({
   },
 })
 
+const slideRemotePlay = createSlideRemoteDesktopPlay({
+  isRailOpen: () => presentationRailOpen.value,
+  openRail: handleStartPresentation,
+  shouldUseSlidesTool: () => useMindMapV2.value,
+  setSlidesTool: () => {
+    if (mindMapPresentationTool.value === 'slides') {
+      void slidePresentation.startSlideShow()
+      return
+    }
+    mindMapPresentationTool.value = 'slides'
+  },
+})
+
 useSlideRemote({
   slidesActive: () => isMindMapPresentationMode.value && mindMapPresentationTool.value === 'slides',
   slidePresentation,
@@ -542,18 +556,7 @@ useSlideRemote({
     if (currentDiagramId.value === diagramId) return
     await router.push({ path: '/canvas', query: { diagramId } }).catch(() => undefined)
   },
-  enterSlides: () => {
-    if (!presentationRailOpen.value) {
-      handleStartPresentation()
-    }
-    void nextTick(() => {
-      void nextTick(() => {
-        if (useMindMapV2.value) {
-          mindMapPresentationTool.value = 'slides'
-        }
-      })
-    })
-  },
+  enterSlides: () => slideRemotePlay.requestPlay(),
   exitPresentation: () => {
     if (presentationRailOpen.value) {
       handleStartPresentation()
@@ -1065,6 +1068,9 @@ watch(
       void enterPresentationFullscreen().finally(() => {
         void nextTick(() => {
           setTimeout(() => {
+            if (slideRemotePlay.consumePending()) {
+              return
+            }
             eventBus.emit('view:fit_to_canvas_requested', { animate: true, userInitiated: true })
           }, ANIMATION.FIT_VIEWPORT_DELAY)
         })
@@ -1074,10 +1080,14 @@ watch(
       presentationTool.value = 'laser'
       void nextTick(() => {
         setTimeout(() => {
+          if (slideRemotePlay.consumePending()) {
+            return
+          }
           eventBus.emit('view:fit_to_canvas_requested', { animate: true, userInitiated: true })
         }, ANIMATION.FIT_VIEWPORT_DELAY)
       })
     } else {
+      slideRemotePlay.clearPending()
       mindMapPresentationTool.value = 'pointer'
       slidePresentation.reset()
       if (useMindMapV2.value) {

@@ -80,6 +80,17 @@ describe('useSlideRemoteDesktopPoll', () => {
     stop()
   })
 
+  it('does not start an interval poll', async () => {
+    const setIntervalSpy = vi.spyOn(window, 'setInterval')
+    const stop = mountPoll()
+    await vi.waitFor(() => {
+      expect(drainMock).toHaveBeenCalled()
+    })
+    expect(setIntervalSpy).not.toHaveBeenCalled()
+    stop()
+    setIntervalSpy.mockRestore()
+  })
+
   it('does not drain while the canvas editor is open', async () => {
     routePath.value = '/canvas'
     drainMock.mockResolvedValueOnce([{ action: 'start', diagram_id: 'diag-9' }])

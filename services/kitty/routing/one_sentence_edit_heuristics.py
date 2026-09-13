@@ -340,11 +340,7 @@ def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str,
     if preference is not None:
         return preference
 
-    if (
-        _EXPLAIN_DEICTIC_ZH.match(text)
-        or _EXPLAIN_DEICTIC_ZH_SUFFIX.match(text)
-        or _EXPLAIN_DEICTIC_EN.match(text)
-    ):
+    if _EXPLAIN_DEICTIC_ZH.match(text) or _EXPLAIN_DEICTIC_ZH_SUFFIX.match(text) or _EXPLAIN_DEICTIC_EN.match(text):
         return {"action": "explain_node", "confidence": 0.9}
 
     for pattern in (_EXPLAIN_ZH, _EXPLAIN_ZH_SUFFIX, _EXPLAIN_EN):

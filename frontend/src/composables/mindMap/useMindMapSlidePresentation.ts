@@ -6,12 +6,21 @@ import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import {
+  MIND_MAP_SLIDE_TRANSITION_MS,
+  emitMindMapSlideViewportFit,
+} from '@/composables/mindMap/emitMindMapSlideViewportFit'
+import { waitForMindMapSlidePlayReady } from '@/composables/mindMap/waitForMindMapSlidePlayReady'
 import { useDiagramStore } from '@/stores'
 import { setMindMapCollapsedPaths } from '@/stores/diagram/mindMapCollapse'
-import { buildMindMapSlides, type MindMapSlide, type MindMapSlideTraversalMode } from '@/utils/mindMapSlides'
+import {
+  type MindMapSlide,
+  type MindMapSlideTraversalMode,
+  buildMindMapSlides,
+} from '@/utils/mindMapSlides'
 
 export const MIND_MAP_SLIDE_AUTOPLAY_MS = 4500
-export const MIND_MAP_SLIDE_TRANSITION_MS = 920
+export { MIND_MAP_SLIDE_TRANSITION_MS }
 const AUTOPLAY_PROGRESS_TICK_MS = 50
 
 interface SlidePreShowSnapshot {
@@ -36,6 +45,8 @@ export function useMindMapSlidePresentation(options: {
   let autoPlayTimer: ReturnType<typeof setTimeout> | null = null
   let autoPlayProgressTimer: ReturnType<typeof setInterval> | null = null
   let preShowSnapshot: SlidePreShowSnapshot | null = null
+  let disposed = false
+  let startToken = 0
 
   const slideCount = computed(() => slides.value.length)
   const currentSlide = computed(() => slides.value[slideIndex.value] ?? null)
@@ -105,18 +116,7 @@ export function useMindMapSlidePresentation(options: {
       diagramStore.expandMindMapPathToNode(slide.branchNodeId)
     }
     void nextTick(() => {
-      eventBus.emit('view:fit_to_nodes_requested', {
-        nodeIds: slide.focusNodeIds,
-        animate: true,
-        duration: MIND_MAP_SLIDE_TRANSITION_MS,
-        padding:
-          slide.kind === 'overview'
-            ? 0.28
-            : slide.focusNodeIds.length <= 1
-              ? 0.45
-              : 0.38,
-        userInitiated: true,
-      })
+      emitMindMapSlideViewportFit(slide)
     })
   }
 
@@ -239,13 +239,21 @@ export function useMindMapSlidePresentation(options: {
     options.onExitSlides()
   }
 
-  function startSlideShow(): void {
+  async function startSlideShow(): Promise<void> {
+    const token = startToken + 1
+    startToken = token
     capturePreShowState()
     rebuildSlides()
     autoPlay.value = false
     clearAutoPlayTimer()
     clearAutoPlayProgressTimer()
     resetAutoPlayProgress()
+    transitioning.value = true
+    await waitForMindMapSlidePlayReady(() => diagramStore.mindMapBulkLoading)
+    if (disposed || token !== startToken || !options.active()) {
+      transitioning.value = false
+      return
+    }
     goToSlide(0, { force: true })
   }
 
@@ -343,6 +351,8 @@ export function useMindMapSlidePresentation(options: {
   )
 
   onUnmounted(() => {
+    disposed = true
+    startToken += 1
     window.removeEventListener('keydown', handleSlideKeyboard, true)
     unsubPaneClick()
     clearAutoPlayTimer()

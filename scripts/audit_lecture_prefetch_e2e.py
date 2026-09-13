@@ -159,9 +159,7 @@ async def main() -> int:
     ok = await run_canvas_tour_job(job_id)
     job = await load_ready_job(job_id)
     if not ok or job["status"] not in {"ready", "partial"}:
-        raise RuntimeError(
-            f"Canvas tour failed status={job['status']} error={job.get('error_message')}"
-        )
+        raise RuntimeError(f"Canvas tour failed status={job['status']} error={job.get('error_message')}")
 
     spoken = spoken_lecture_steps(_job_steps(job.get("result_json")))
     script_md = write_job_script(job, OUT_DIR / "lesson_plan.md")
