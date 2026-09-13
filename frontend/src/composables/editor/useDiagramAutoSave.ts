@@ -502,6 +502,15 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     setSuppressWindow(SAVE.SUPPRESS_AFTER_LOAD_MS)
   }
 
+  /** True when persist would write a spec that differs from the last successful save. */
+  function isCanvasAheadOfLastSave(): boolean {
+    if (!diagramStore.data) {
+      return false
+    }
+    const currentFull = getFullFingerprint(diagramStore.data as DiagramDataLike)
+    return Boolean(currentFull && currentFull !== lastSavedFullFingerprint)
+  }
+
   const stopIsGenerating = watch(
     () => llmResultsStore.isGenerating,
     (isGen) => {
@@ -600,6 +609,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     drainPersistQueue,
     performSave,
     setSuppressFromLibrary,
+    isCanvasAheadOfLastSave,
     cancelTimer: cancelDebounce,
     teardown,
     lastSavedAt,

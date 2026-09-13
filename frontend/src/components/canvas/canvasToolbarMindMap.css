@@ -184,6 +184,58 @@
   flex-shrink: 0;
 }
 
+.mm-history-versions {
+  display: inline-flex;
+  align-items: stretch;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.mm-history-versions__main.is-expanded {
+  gap: 6px;
+  border-radius: 6px 0 0 6px;
+  padding-right: 6px;
+}
+
+.mm-history-versions__main.is-busy {
+  opacity: 0.7;
+}
+
+.mm-history-versions__camera {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0 6px 6px 0;
+  background: #dbeafe;
+  color: #2563eb;
+  cursor: pointer;
+}
+
+.mm-history-versions__camera:hover:not(:disabled) {
+  background: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.mm-history-versions__camera:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+:global(.dark) .mm-history-versions__camera {
+  background: rgb(37 99 235 / 0.35);
+  color: #93c5fd;
+}
+
+:global(.dark) .mm-history-versions__camera:hover:not(:disabled) {
+  background: rgb(37 99 235 / 0.5);
+  color: #bfdbfe;
+}
+
 .mm-ls-entry.is-expanded {
   gap: 6px;
   padding-right: 4px;

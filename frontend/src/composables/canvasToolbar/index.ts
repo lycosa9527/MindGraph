@@ -10,11 +10,14 @@ export {
   toggleCanvasVirtualKeyboard,
 } from './useCanvasVirtualKeyboardOpen'
 export {
+  applyFormatBrushToNode,
   formatBrushActive,
   formatBrushLocked,
+  handleFormatBrush,
   resetFormatBrushState,
-  useCanvasToolbarFormatting,
-} from './useCanvasToolbarFormatting'
+  useCanvasFormatBrush,
+} from './useCanvasFormatBrush'
+export { useCanvasToolbarFormatting } from './useCanvasToolbarFormatting'
 export { useFollowNodeStyleToolbar, setFollowNodeStyleToolbar } from './useFollowNodeStyleToolbar'
 export {
   useMindMapSideToolbarState,

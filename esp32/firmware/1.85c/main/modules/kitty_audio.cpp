@@ -1,7 +1,7 @@
 /*
- * V1 PCM5101 playback + MEMS I2S capture.
- * Speaker goes through HAL CodecPlayer so Settings volume/mute apply.
- * Mic stays on the board-manager device (32-bit MEMS unpack).
+ * Playback through HAL CodecPlayer (Settings volume/mute).
+ * Capture: ES7210 AEC layout (RMNN) uses CodecRecorder; V1 MEMS stays
+ * on the board-manager device with the louder-channel unpack.
  */
 #include "sdkconfig.h"
 
@@ -17,6 +17,7 @@
 #if CONFIG_BROOKESIA_HAL_ADAPTOR_ENABLE_AUDIO_DEVICE
 #include "brookesia/hal_interface/interface.hpp"
 #include "brookesia/hal_interface/interfaces/audio/codec_player.hpp"
+#include "brookesia/hal_interface/interfaces/audio/codec_recorder.hpp"
 #include "dev_audio_codec.h"
 #include "esp_board_manager.h"
 #include "esp_codec_dev.h"
@@ -34,12 +35,25 @@ constexpr int k_spk_ch = 2;
 
 #if CONFIG_BROOKESIA_HAL_ADAPTOR_ENABLE_AUDIO_DEVICE
 using CodecPlayerIface = esp_brookesia::hal::audio::CodecPlayerIface;
+using CodecRecorderIface = esp_brookesia::hal::audio::CodecRecorderIface;
 using PlayerHandle = esp_brookesia::hal::InterfaceHandle<CodecPlayerIface>;
+using RecorderHandle = esp_brookesia::hal::InterfaceHandle<CodecRecorderIface>;
 
 void *g_mic_handles = nullptr;
+RecorderHandle g_recorder;
 std::vector<int32_t> g_mic_raw;
 bool g_mic_open = false;
 bool g_spk_open = false;
+
+bool mic_has_aec_ref()
+{
+#ifdef CONFIG_BROOKESIA_HAL_ADAPTOR_AUDIO_CODEC_RECORDER_MIC_LAYOUT
+    const char *layout = CONFIG_BROOKESIA_HAL_ADAPTOR_AUDIO_CODEC_RECORDER_MIC_LAYOUT;
+    return layout != nullptr && layout[0] == 'R';
+#else
+    return false;
+#endif
+}
 
 PlayerHandle &speaker_player()
 {
@@ -100,6 +114,17 @@ bool open_dev(void *handles, int sample_rate, int channel, int bits, bool in)
     return true;
 }
 
+int16_t clamp_i16(int32_t sample)
+{
+    if (sample > 32767) {
+        return 32767;
+    }
+    if (sample < -32768) {
+        return -32768;
+    }
+    return static_cast<int16_t>(sample);
+}
+
 void unpack_mems_frame(const int32_t *raw, int16_t *out, size_t frames)
 {
     for (size_t i = 0; i < frames; ++i) {
@@ -107,13 +132,14 @@ void unpack_mems_frame(const int32_t *raw, int16_t *out, size_t frames)
         const int32_t right = raw[i * 2 + 1] >> 16;
         const int left_amp = left < 0 ? -left : left;
         const int right_amp = right < 0 ? -right : right;
-        int32_t chosen = left_amp >= right_amp ? left : right;
-        if (chosen > 32767) {
-            chosen = 32767;
-        } else if (chosen < -32768) {
-            chosen = -32768;
-        }
-        out[i] = static_cast<int16_t>(chosen);
+        out[i] = clamp_i16(left_amp >= right_amp ? left : right);
+    }
+}
+
+void unpack_es7210_frame(const int32_t *raw, int16_t *out, size_t frames)
+{
+    for (size_t i = 0; i < frames; ++i) {
+        out[i] = clamp_i16(raw[i * 2 + 1] >> 16);
     }
 }
 
@@ -184,6 +210,14 @@ bool kitty_audio_init()
     ESP_LOGW(TAG, "audio HAL disabled");
     return false;
 #else
+    if (mic_has_aec_ref()) {
+        g_recorder = esp_brookesia::hal::acquire_first_interface<CodecRecorderIface>();
+        if (g_recorder) {
+            ESP_LOGI(TAG, "audio devices mic=es7210 aec");
+            return true;
+        }
+        ESP_LOGW(TAG, "ES7210 recorder missing, falling back to board ADC");
+    }
     const bool mic = init_named_device("audio_adc", &g_mic_handles);
     ESP_LOGI(TAG, "audio devices mic=%d", static_cast<int>(mic));
     return mic;
@@ -195,26 +229,21 @@ void kitty_audio_run_smoke()
 #if !CONFIG_BROOKESIA_HAL_ADAPTOR_ENABLE_AUDIO_DEVICE
     return;
 #else
-    if (g_mic_handles != nullptr && open_dev(g_mic_handles, k_mic_rate, k_mic_ch, k_mic_bits, true)) {
+    if (kitty_audio_mic_open()) {
         std::vector<int16_t> frame(1600, 0);
-        g_mic_raw.assign(frame.size() * 2, 0);
-        const esp_err_t err = esp_codec_dev_read(
-            codec_dev(g_mic_handles),
-            g_mic_raw.data(),
-            static_cast<int>(g_mic_raw.size() * sizeof(int32_t))
-        );
-        if (err == ESP_CODEC_DEV_OK) {
-            unpack_mems_frame(g_mic_raw.data(), frame.data(), frame.size());
+        const bool ok = kitty_audio_mic_read(frame.data(), frame.size());
+        if (ok) {
             kitty_audio_boost_pcm(frame.data(), frame.size());
         }
         ESP_LOGI(
             TAG,
-            "mic smoke 16kHz n=%u rms=%d err=%d wide32",
+            "mic smoke 16kHz n=%u rms=%d ok=%d aec=%d",
             static_cast<unsigned>(frame.size()),
             static_cast<int>(rms_i16(frame.data(), frame.size())),
-            static_cast<int>(err)
+            static_cast<int>(ok),
+            static_cast<int>(mic_has_aec_ref())
         );
-        close_dev(g_mic_handles);
+        kitty_audio_mic_close();
     }
     if (kitty_audio_spk_open()) {
         std::vector<int16_t> tone;
@@ -239,6 +268,10 @@ bool kitty_audio_mic_open()
     if (g_mic_open) {
         return true;
     }
+    if (g_recorder) {
+        g_mic_open = g_recorder->open();
+        return g_mic_open;
+    }
     g_mic_open = open_dev(g_mic_handles, k_mic_rate, k_mic_ch, k_mic_bits, true);
     return g_mic_open;
 #endif
@@ -248,7 +281,11 @@ void kitty_audio_mic_close()
 {
 #if CONFIG_BROOKESIA_HAL_ADAPTOR_ENABLE_AUDIO_DEVICE
     if (g_mic_open) {
-        close_dev(g_mic_handles);
+        if (g_recorder) {
+            g_recorder->close();
+        } else {
+            close_dev(g_mic_handles);
+        }
         g_mic_open = false;
     }
 #endif
@@ -310,10 +347,18 @@ bool kitty_audio_mic_read(int16_t *samples, size_t count)
     if (g_mic_raw.size() < count * 2) {
         g_mic_raw.resize(count * 2);
     }
+    const size_t bytes = count * 2 * sizeof(int32_t);
+    if (g_recorder) {
+        if (!g_recorder->read_data(reinterpret_cast<uint8_t *>(g_mic_raw.data()), bytes)) {
+            return false;
+        }
+        unpack_es7210_frame(g_mic_raw.data(), samples, count);
+        return true;
+    }
     const esp_err_t err = esp_codec_dev_read(
         codec_dev(g_mic_handles),
         g_mic_raw.data(),
-        static_cast<int>(count * 2 * sizeof(int32_t))
+        static_cast<int>(bytes)
     );
     if (err != ESP_CODEC_DEV_OK) {
         return false;

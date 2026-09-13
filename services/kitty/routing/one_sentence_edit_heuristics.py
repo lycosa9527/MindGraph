@@ -180,6 +180,74 @@ _UNNAMED_ADD_EN = re.compile(
     re.IGNORECASE,
 )
 
+_EXPLAIN_DEICTIC_ZH = re.compile(
+    r"^(?:请)?(?:帮我)?"
+    r"(?:解释|介绍|讲解|说明)"
+    r"(?:一?下)?"
+    r"(?:这个|那个|此项|该)(?:节点|分支)?$"
+)
+
+_EXPLAIN_DEICTIC_ZH_SUFFIX = re.compile(
+    r"^(?:请)?(?:帮我)?"
+    r"(?:把|将|给)"
+    r"(?:这个|那个|此项|该)(?:节点|分支)"
+    r"(?:解释|介绍|讲解|说明)(?:一?下)?$"
+)
+
+_EXPLAIN_DEICTIC_EN = re.compile(
+    r"^(?:please\s+)?"
+    r"(?:explain|introduce)\s+"
+    r"(?:this|that)\s+"
+    r"(?:branch|node)?$",
+    re.IGNORECASE,
+)
+
+_EXPLAIN_ZH = re.compile(
+    r"^(?:请)?(?:帮我)?"
+    r"(?:解释|介绍|讲解|说明)(?:一?下)?"
+    r"(?P<label>.+?)"
+    r"(?:这个|这条)?"
+    r"(?:的)?"
+    r"(?:分支|节点)?$"
+)
+
+_EXPLAIN_ZH_SUFFIX = re.compile(
+    r"^(?:请)?(?:帮我)?(?:把|将)?"
+    r"(?P<label>.+?)"
+    r"(?:这个|这条)?"
+    r"(?:的)?"
+    r"(?:分支|节点)?"
+    r"(?:解释|介绍|讲解)(?:一?下)?$"
+)
+
+_EXPLAIN_EN = re.compile(
+    r"^(?:please\s+)?"
+    r"(?:explain|introduce|tell\s+me\s+about)\s+"
+    r"(?:the\s+|a\s+|an\s+)?"
+    r"(?:branch|node\s+)?"
+    r"(?:called\s+|named\s+|for\s+)?"
+    r"[\"']?(?P<label>.+?)[\"']?"
+    r"(?:\s+(?:branch|node))?$",
+    re.IGNORECASE,
+)
+
+_EXPLAIN_MAP_LABELS = frozenset(
+    {
+        "这张图",
+        "这张导图",
+        "整张导图",
+        "导图",
+        "思维导图",
+        "图",
+        "the diagram",
+        "the map",
+        "the mind map",
+        "diagram",
+        "map",
+    }
+)
+_EXPLAIN_DEICTIC_LABELS = frozenset({"这个", "那个", "this", "that"})
+
 
 def is_placeholder_edit_label(label: str) -> bool:
     """True when the captured label is an adjective, not a branch name."""
@@ -241,6 +309,23 @@ def split_multi_labels(raw: str) -> list[str]:
     return labels
 
 
+def is_fast_explain_command(command: Dict[str, Any]) -> bool:
+    """True for a single-intent 节点解释 with no stacked follow-ups."""
+    if str(command.get("action") or "") != "explain_node":
+        return False
+    follows = command.get("follow_up_actions")
+    return not (isinstance(follows, list) and follows)
+
+
+def _explain_command(label: str) -> Optional[Dict[str, Any]]:
+    cleaned = normalize_edit_label(label)
+    if not cleaned or cleaned.lower() in _EXPLAIN_MAP_LABELS:
+        return None
+    if cleaned.lower() in _EXPLAIN_DEICTIC_LABELS:
+        return {"action": "explain_node", "confidence": 0.9}
+    return {"action": "explain_node", "target": cleaned, "confidence": 0.95}
+
+
 def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str, Any]]:
     """
     Map clear structural edit phrases to legacy Kitty commands.
@@ -254,6 +339,21 @@ def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str,
     preference = heuristic_preference_command(text)
     if preference is not None:
         return preference
+
+    if (
+        _EXPLAIN_DEICTIC_ZH.match(text)
+        or _EXPLAIN_DEICTIC_ZH_SUFFIX.match(text)
+        or _EXPLAIN_DEICTIC_EN.match(text)
+    ):
+        return {"action": "explain_node", "confidence": 0.9}
+
+    for pattern in (_EXPLAIN_ZH, _EXPLAIN_ZH_SUFFIX, _EXPLAIN_EN):
+        explained = pattern.match(text)
+        if explained is None:
+            continue
+        command = _explain_command(explained.group("label"))
+        if command is not None:
+            return command
 
     if _WHOLE_AUTO_COMPLETE_ZH.match(text) or _WHOLE_AUTO_COMPLETE_EN.match(text):
         return {"action": "auto_complete", "confidence": 0.95}

@@ -2,6 +2,7 @@
  * Shared Pinia / module clears for canvas Reset and leave-canvas teardown.
  * Does not touch diagram data, autosave, collab sessions, or emit reset_requested.
  */
+import { resetFormatBrushState } from '@/composables/canvasToolbar/useCanvasFormatBrush'
 import { canvasVirtualKeyboardOpen } from '@/composables/canvasToolbar/useCanvasVirtualKeyboardOpen'
 import { resetMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { resetLearningSheetCustomModeUi } from '@/composables/mindMap/useLearningSheetCustomMode'
@@ -34,6 +35,7 @@ export function clearCanvasEphemeralSession(): void {
   useCanvasNodeIndicatorsStore().clearAll()
   resetLearningSheetCustomModeUi()
   resetMindMapSideToolbarState()
+  resetFormatBrushState()
   canvasVirtualKeyboardOpen.value = false
   useAiContentLevelStore().resetGeneratedLevelSession()
   const classroom = useMindClassroomStore()

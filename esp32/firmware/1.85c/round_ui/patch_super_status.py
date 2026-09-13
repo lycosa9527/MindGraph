@@ -62,8 +62,8 @@ int32_t get_expanded_status_bar_y(const gui::Environment &environment)
     const auto height_dp = static_cast<int32_t>(
                                std::max(1.0F, static_cast<float>(environment.height_px) / density)
                            );
-    if (width_dp == 360 && height_dp == 360) {
-        return 30;
+    if ((width_dp == 360 && height_dp == 360) || (width_dp == 466 && height_dp == 466)) {
+        return width_dp == 466 ? 40 : 30;
     }
     return SUPER_STATUS_BAR_EXPANDED_Y;
 }
@@ -107,9 +107,20 @@ def main() -> int:
         print(f"round status: skip, missing {IMPL_HPP}")
         return 0
     changed = 0
-    changed += replace_once(
-        IMPL_HPP, HELPER_OLD, HELPER_NEW, "get_expanded_status_bar_y"
-    )
+    text = IMPL_HPP.read_text(encoding="utf-8")
+    old_y = """    if (width_dp == 360 && height_dp == 360) {
+        return 30;
+    }"""
+    new_y = """    if ((width_dp == 360 && height_dp == 360) || (width_dp == 466 && height_dp == 466)) {
+        return width_dp == 466 ? 40 : 30;
+    }"""
+    if old_y in text:
+        IMPL_HPP.write_text(text.replace(old_y, new_y, 1), encoding="utf-8")
+        changed += 1
+    else:
+        changed += replace_once(
+            IMPL_HPP, HELPER_OLD, HELPER_NEW, "get_expanded_status_bar_y"
+        )
     if LAUNCH_CPP.is_file():
         changed += replace_once(
             LAUNCH_CPP, LAUNCH_OLD, LAUNCH_NEW, "get_expanded_status_bar_y(owner_"

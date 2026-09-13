@@ -330,7 +330,7 @@ export function useMindMapDocumentSummary() {
         return false
       }
 
-      return applyMindMapResult(result)
+      return await applyMindMapResult(result)
     } catch (error) {
       console.error('[DocumentSummary] generate from package failed:', error)
       notify.error(t('canvas.mindMapDocumentSummary.generateFailed'))

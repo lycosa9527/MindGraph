@@ -136,6 +136,7 @@ export type EventTypes = {
   'snapshot:requested': Record<string, never>
   'snapshot:recall_requested': { versionNumber: number }
   'snapshot:delete_requested': { versionNumber: number }
+  'snapshot:current_requested': Record<string, never>
   'diagram:workshop_snapshot_applied': Record<string, never>
   'mindmap:ai_subgraph_requested': { nodeId?: string }
   'mindmap:explain_node_requested': { nodeId?: string }
@@ -718,11 +719,12 @@ export type EventTypes = {
   'node:selected': { nodeId: string; nodeData?: unknown }
   'node:text_updated': { nodeId: string; text: string }
   'node:resized': { nodeId?: string }
-  'node:edit_requested': { nodeId: string }
+  'node:edit_requested': { nodeId: string; replaceContent?: boolean }
   'inline_recommendation:applied': { nodeId: string; text: string; appliedToConnectionId?: string }
 
   // Canvas Events
   'canvas:pane_clicked': Record<string, never>
+  'canvas:node_clicked': { nodeId: string }
   'canvas:fitted_with_panel': { panelWidth: number }
   'canvas:fitted_full': Record<string, never>
   'canvas:resized': { width: number; height: number }

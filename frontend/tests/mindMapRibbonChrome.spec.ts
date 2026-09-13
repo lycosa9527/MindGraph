@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_MIND_MAP_RIBBON_TAB,
   MIND_MAP_RIBBON_TABS,
+  MIND_MAP_RIBBON_TOOLS_ID,
   isMindMapRibbonTabId,
   resolveLandingMindMapRibbonTab,
 } from '@/canvas-ribbon/mindMapRibbonTypes'
@@ -21,9 +22,17 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     const topBar = readSrc('src/components/canvas/CanvasTopBar.vue')
     const tabs = readSrc('src/canvas-ribbon/MindMapRibbonTabs.vue')
     expect(topBar).toContain('<MindMapRibbonTabs')
+    expect(topBar).toContain('selectTab')
+    expect(topBar).toContain('canvas-top-bar__tools-row--collapsed')
+    expect(topBar).toContain('MIND_MAP_RIBBON_TOOLS_ID')
     expect(tabs).toContain('mm-ribbon-tabs--topbar')
+    expect(tabs).toContain('mm-ribbon-tabs--collapsed')
+    expect(readSrc('src/canvas-ribbon/mindMapRibbonTabs.css')).toContain(
+      '.mm-ribbon-tabs--topbar.mm-ribbon-tabs--collapsed .mm-ribbon-tabs__tab {\n  border-radius: 8px;'
+    )
     expect(tabs).toContain('role="tablist"')
     expect(tabs).toContain('mindmap-ribbon-tab-')
+    expect(MIND_MAP_RIBBON_TOOLS_ID).toBe('mindmap-ribbon-tools')
     expect([...MIND_MAP_RIBBON_TABS]).toEqual(['file', 'edit', 'ai', 'teaching', 'research'])
     expect(DEFAULT_MIND_MAP_RIBBON_TAB).toBe('edit')
     expect(resolveLandingMindMapRibbonTab('file')).toBe('edit')
@@ -66,6 +75,11 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     expect(status).toContain('data-testid="mindmap-ribbon-zoom-percent"')
     expect(status).toContain('data-testid="mindmap-ribbon-fit-view"')
     expect(status).toContain('data-testid="mindmap-ribbon-hand-tool"')
+    expect(status).toContain('data-testid="mindmap-ribbon-virtual-keyboard"')
+    expect(status).toContain('data-virtual-keyboard-chrome')
+    expect(status).toContain('actions.toggleVirtualKeyboard')
+    const keyboard = readSrc('src/components/canvas/CanvasVirtualKeyboardPanel.vue')
+    expect(keyboard).not.toContain('MindGraphLanguageSwitcher')
     expect(chrome).toMatch(/\.mm-status\s*\{[\s\S]*?display:\s*flex/)
     expect(chrome).toContain('flex-wrap: nowrap')
     expect(chrome).toContain('max-height: 40px')
@@ -88,6 +102,32 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     expect(topBar).toContain('canvas-top-bar__global')
     expect(topBar).toContain('<CanvasOnlineCollabMenu')
     expect(mmToolbar).not.toContain("openCollab('organization')")
+  })
+
+  it('puts version history with a camera addon on the Research tab', () => {
+    const mmToolbar = readSrc('src/components/canvas/CanvasToolbarMindMap.vue')
+    const history = readSrc('src/components/canvas/CanvasToolbarMindMapHistoryVersions.vue')
+    expect(mmToolbar).toContain("ribbonTab === 'research'")
+    expect(mmToolbar).toContain('<CanvasToolbarMindMapHistoryVersions')
+    expect(history).toContain('canvas.ribbon.historyVersions')
+    expect(history).toContain('canvas.ribbon.historyCurrent')
+    expect(history).toContain('mindmap-history-versions-camera')
+    expect(history).toContain('requestSnapshot')
+    expect(history).toContain('restoreCurrentVersion')
+    expect(history).toContain('snapshotsNewestFirst')
+    expect(history).toContain('mm-toolbar-popper--history')
+    expect(history).toContain('canMutateDiagramSnapshots')
+    expect(history).toContain('role="menu"')
+    expect(history).not.toContain('role="button"')
+    expect(readSrc('src/components/canvas/canvasToolbarMindMapPopper.css')).toContain(
+      '.mm-toolbar-popper--history.el-popper'
+    )
+    const library = readSrc('src/composables/canvasPage/useCanvasPageLibrarySnapshots.ts')
+    expect(library).toContain('isCanvasAheadOfLastSave')
+    expect(library).toContain('setSuppressFromLibrary')
+    expect(library).toContain('shouldPersistBeforeVersionJump')
+    expect(library).toContain('handleRestoreCurrentVersion')
+    expect(library).toContain('persistCanvasBeforeVersionJump')
   })
 
   it('sits the live collab session bar flush against the mind-map toolbar', () => {

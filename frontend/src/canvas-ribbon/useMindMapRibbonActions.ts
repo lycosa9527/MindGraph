@@ -5,6 +5,10 @@ import { computed, reactive } from 'vue'
 
 import { useCanvasReset } from '@/composables/canvasPage/useCanvasReset'
 import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
+import {
+  canvasVirtualKeyboardOpen,
+  toggleCanvasVirtualKeyboard,
+} from '@/composables/canvasToolbar/useCanvasVirtualKeyboardOpen'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -26,7 +30,7 @@ export function useMindMapRibbonActions() {
   const { handleAddChild, handleAddSibling, handleAddBranch, handleDeleteNode } = useNodeActions({
     registerEventBusListeners: false,
   })
-  const { handleMoreAppItem, moreApps, handleAIGenerate } = useCanvasToolbarApps()
+  const { handleAIGenerate } = useCanvasToolbarApps()
   const sideToolbar = useMindMapSideToolbarState()
   const learningSheet = useLearningSheetCustomMode()
   const canvasExportStore = useCanvasExportStore()
@@ -104,6 +108,10 @@ export function useMindMapRibbonActions() {
     eventBus.emit('snapshot:delete_requested', { versionNumber })
   }
 
+  function restoreCurrentVersion(): void {
+    eventBus.emit('snapshot:current_requested', {})
+  }
+
   async function resetTemplate(): Promise<void> {
     await resetToDefaultTemplate()
   }
@@ -166,10 +174,7 @@ export function useMindMapRibbonActions() {
   }
 
   function toggleVirtualKeyboard(): void {
-    const app = moreApps.value.find((item) => item.appKey === 'virtual_keyboard')
-    if (app) {
-      handleMoreAppItem(app)
-    }
+    toggleCanvasVirtualKeyboard()
   }
 
   function resetNodeStyles(): void {
@@ -196,6 +201,7 @@ export function useMindMapRibbonActions() {
     exportMenuItems: CANVAS_MINDMAP_EXPORT_MENU_ITEMS,
     requestWorksheetText,
     requestSnapshot,
+    restoreCurrentVersion,
     recallSnapshot,
     deleteSnapshot,
     resetTemplate,
@@ -211,6 +217,7 @@ export function useMindMapRibbonActions() {
     openSideTool,
     requestAiSubgraph,
     requestExplainNode,
+    virtualKeyboardOpen: canvasVirtualKeyboardOpen,
     toggleVirtualKeyboard,
     resetNodeStyles,
     learningSheet,

@@ -1,8 +1,10 @@
 import { createApp, defineComponent, h, nextTick } from 'vue'
 
 import { createPinia, setActivePinia } from 'pinia'
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { applyFormatBrushToNode } from '@/composables/canvasToolbar/useCanvasFormatBrush'
 import {
   formatBrushActive,
   formatBrushLocked,
@@ -142,5 +144,88 @@ describe('useCanvasToolbarFormatting format brush', () => {
     expect(formatBrushActive.value).toBe(true)
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     expect(formatBrushActive.value).toBe(false)
+  })
+
+  it('paints a clicked node even when selection does not change', () => {
+    const store = useDiagramStore()
+    const { sourceId, targetId } = threePaintNodes()
+    store.updateNode(sourceId, {
+      style: {
+        backgroundColor: '#00aa00',
+        textColor: '#ffffff',
+      },
+    })
+    store.selectNodes(sourceId)
+
+    handleFormatBrush?.()
+    expect(formatBrushActive.value).toBe(true)
+
+    expect(applyFormatBrushToNode(targetId)).toBe(true)
+    expect(store.data?.nodes.find((node) => node.id === targetId)?.style?.backgroundColor).toBe(
+      '#00aa00'
+    )
+    expect(formatBrushActive.value).toBe(false)
+  })
+
+  it('still paints after the toolbar instance that armed the brush unmounts', async () => {
+    const store = useDiagramStore()
+    const { sourceId, targetId } = threePaintNodes()
+    store.updateNode(sourceId, { style: { backgroundColor: '#112233' } })
+    store.selectNodes(sourceId)
+
+    handleFormatBrush?.()
+    expect(formatBrushActive.value).toBe(true)
+
+    app?.unmount()
+    app = null
+    handleFormatBrush = null
+
+    store.selectNodes(targetId)
+    await nextTick()
+    expect(store.data?.nodes.find((node) => node.id === targetId)?.style?.backgroundColor).toBe(
+      '#112233'
+    )
+    expect(formatBrushActive.value).toBe(false)
+  })
+
+  it('drops the brush when a new diagram loads', () => {
+    const store = useDiagramStore()
+    const { sourceId } = threePaintNodes()
+    store.selectNodes(sourceId)
+    handleFormatBrush?.()
+    expect(formatBrushActive.value).toBe(true)
+
+    eventBus.emit('diagram:loaded', { diagramType: 'mindmap' })
+    expect(formatBrushActive.value).toBe(false)
+    expect(formatBrushLocked.value).toBe(false)
+  })
+
+  it('leaves the brush armed when Escape is typed in a field', () => {
+    const store = useDiagramStore()
+    const { sourceId } = threePaintNodes()
+    store.selectNodes(sourceId)
+    handleFormatBrush?.()
+    expect(formatBrushActive.value).toBe(true)
+
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(formatBrushActive.value).toBe(true)
+    input.remove()
+  })
+
+  it('does not cancel an in-flight apply when the pane click lands in the same turn', () => {
+    const store = useDiagramStore()
+    const { sourceId, targetId } = threePaintNodes()
+    store.updateNode(sourceId, { style: { backgroundColor: '#445566' } })
+    store.selectNodes(sourceId)
+
+    handleFormatBrush?.({ lock: true })
+    expect(applyFormatBrushToNode(targetId)).toBe(true)
+    eventBus.emit('canvas:pane_clicked', {})
+    expect(formatBrushActive.value).toBe(true)
+    expect(store.data?.nodes.find((node) => node.id === targetId)?.style?.backgroundColor).toBe(
+      '#445566'
+    )
   })
 })

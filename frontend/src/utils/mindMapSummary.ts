@@ -10,7 +10,13 @@ import type {
   MindMapSummaryLineStyle,
   MindMapSummarySpec,
 } from '@/types'
-import { MINDMAP_TOPIC_ID, isMindMapTopicId, mindMapLocationPathKey } from '@/utils/mindMapLocation'
+import {
+  MINDMAP_TOPIC_ID,
+  buildMindMapTreeChildrenMap,
+  isMindMapTopicId,
+  mindMapLocationPathKey,
+  mindMapTreeParentId,
+} from '@/utils/mindMapLocation'
 
 export const MINDMAP_SUMMARY_KINDS = ['brace', 'bracket', 'paren'] as const
 export const MINDMAP_SUMMARY_LINE_STYLES = ['solid', 'dashed', 'dotted'] as const
@@ -68,8 +74,12 @@ export function mindMapSummaryStrokeDasharray(
   return undefined
 }
 
-function mindMapNodePathKey(nodeId: string, connections: Connection[]): string | null {
-  return mindMapLocationPathKey(nodeId, connections)
+function mindMapNodePathKey(
+  nodeId: string,
+  connections: Connection[],
+  nodes?: readonly DiagramNode[]
+): string | null {
+  return mindMapLocationPathKey(nodeId, connections, nodes ? { nodes } : undefined)
 }
 
 function findNodeIdByPathKey(
@@ -81,7 +91,7 @@ function findNodeIdByPathKey(
     return nodes.find((n) => n.id === MINDMAP_TOPIC_ID)?.id ?? null
   }
   for (const node of nodes) {
-    if (mindMapNodePathKey(node.id, connections) === pathKey) {
+    if (mindMapNodePathKey(node.id, connections, nodes) === pathKey) {
       return node.id
     }
   }
@@ -271,7 +281,7 @@ export function siblingPathsSharingParent(
   const paths: string[] = []
   for (const node of nodes) {
     if (isMindMapSummaryNode(node)) continue
-    const path = mindMapNodePathKey(node.id, connections as Connection[])
+    const path = mindMapNodePathKey(node.id, connections as Connection[], nodes)
     if (!path || pathParentPrefix(path) !== prefix) continue
     if (!paths.includes(path)) paths.push(path)
   }
@@ -334,7 +344,7 @@ export function resolveConsecutiveSiblingRange(
 
   const paths: string[] = []
   for (const id of ids) {
-    const path = mindMapNodePathKey(id, connections as Connection[])
+    const path = mindMapNodePathKey(id, connections as Connection[], nodes)
     if (!path || path === MINDMAP_TOPIC_ID) return { ok: false, reason: 'not-siblings' }
     paths.push(path)
   }
@@ -344,6 +354,58 @@ export function resolveConsecutiveSiblingRange(
     return { ok: false, reason: sameParent ? 'not-consecutive' : 'not-siblings' }
   }
   return { ok: true, coveredPaths: sortSiblingPaths(paths) }
+}
+
+function isTreeAncestor(
+  ancestorId: string,
+  nodeId: string,
+  connections: readonly Connection[]
+): boolean {
+  const seen = new Set<string>()
+  let current: string | null = nodeId
+  while (current && !seen.has(current)) {
+    if (current === ancestorId) return true
+    seen.add(current)
+    current = mindMapTreeParentId(connections, current)
+  }
+  return false
+}
+
+function selectedSubtreeRoot(
+  ids: readonly string[],
+  connections: readonly Connection[]
+): string | null {
+  for (const candidate of ids) {
+    if (ids.every((id) => isTreeAncestor(candidate, id, connections))) {
+      return candidate
+    }
+  }
+  return null
+}
+
+/**
+ * Insert 概要 range. A selected branch with children covers every direct child
+ * (XMind-style). A parent plus some descendants still covers the full child list.
+ * Consecutive sibling picks stay as-is.
+ */
+export function resolveMindMapSummaryInsertRange(
+  nodeIds: readonly string[],
+  nodes: readonly DiagramNode[],
+  connections: readonly Connection[]
+): SiblingRangeResult {
+  const ids = nodeIds.filter((id, index, list) => list.indexOf(id) === index)
+  if (ids.length === 0) return { ok: false, reason: 'need-nodes' }
+  if (ids.some((id) => isMindMapTopicId(id))) return { ok: false, reason: 'topic' }
+  if (ids.some((id) => isMindMapSummaryNodeId(id))) return { ok: false, reason: 'summary' }
+
+  const rootId = ids.length === 1 ? ids[0] : selectedSubtreeRoot(ids, connections)
+  if (rootId) {
+    const children = buildMindMapTreeChildrenMap(connections).get(rootId) ?? []
+    if (children.length > 0) {
+      return resolveConsecutiveSiblingRange(children, nodes, connections)
+    }
+  }
+  return resolveConsecutiveSiblingRange(ids, nodes, connections)
 }
 
 export function remapSummaryCoveredPaths(
@@ -366,7 +428,7 @@ export function remapSummaryCoveredPaths(
     if (!oldId) continue
     const newId = remapNodeId(oldId, oldNodes, oldConnections, newNodes, newConnections)
     if (!newId) continue
-    const newPath = mindMapNodePathKey(newId, newConnections)
+    const newPath = mindMapNodePathKey(newId, newConnections, newNodes)
     if (newPath && newPath !== MINDMAP_TOPIC_ID) next.push(newPath)
   }
   const unique = next.filter((p, i, list) => list.indexOf(p) === i)

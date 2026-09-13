@@ -15,6 +15,7 @@ import {
   parseMindMapSummaryNodeId,
   remapSummaryCoveredPaths,
   resolveConsecutiveSiblingRange,
+  resolveMindMapSummaryInsertRange,
   siblingPathsSharingParent,
 } from '@/utils/mindMapSummary'
 import { mindMapSummaryBracePath, mindMapSummaryConnectorPath } from '@/utils/mindMapSummaryBrace'
@@ -52,6 +53,42 @@ describe('mind map summary range', () => {
       'not-consecutive'
     )
     expect(resolveConsecutiveSiblingRange(['topic'], nodes, connections).reason).toBe('topic')
+  })
+
+  it('covers every direct child when inserting on a branch', () => {
+    const tree: DiagramNode[] = [
+      ...nodes,
+      { id: 'a0', text: 'A0', type: 'branch', data: { mindMapSide: 'right', mindMapDepth: 2 } },
+      { id: 'a1', text: 'A1', type: 'branch', data: { mindMapSide: 'right', mindMapDepth: 2 } },
+      { id: 'a2', text: 'A2', type: 'branch', data: { mindMapSide: 'right', mindMapDepth: 2 } },
+    ]
+    const links: Connection[] = [
+      ...connections,
+      { id: 'e5', source: 'a', target: 'a0', sourceHandle: 'mindmap-right' },
+      { id: 'e6', source: 'a', target: 'a1', sourceHandle: 'mindmap-right' },
+      { id: 'e7', source: 'a', target: 'a2', sourceHandle: 'mindmap-right' },
+    ]
+    expect(resolveMindMapSummaryInsertRange(['a'], tree, links)).toEqual({
+      ok: true,
+      coveredPaths: ['r/0/0', 'r/0/1', 'r/0/2'],
+    })
+    expect(resolveMindMapSummaryInsertRange(['a', 'a0'], tree, links)).toEqual({
+      ok: true,
+      coveredPaths: ['r/0/0', 'r/0/1', 'r/0/2'],
+    })
+    expect(resolveMindMapSummaryInsertRange(['a0'], tree, links)).toEqual({
+      ok: true,
+      coveredPaths: ['r/0/0'],
+    })
+    expect(resolveMindMapSummaryInsertRange(['a0', 'a1'], tree, links)).toEqual({
+      ok: true,
+      coveredPaths: ['r/0/0', 'r/0/1'],
+    })
+    expect(resolveMindMapSummaryInsertRange(['b'], tree, links)).toEqual({
+      ok: true,
+      coveredPaths: ['r/1'],
+    })
+    expect(resolveMindMapSummaryInsertRange(['topic'], tree, links).reason).toBe('topic')
   })
 
   it('keeps only a consecutive run after a covered child is deleted', () => {

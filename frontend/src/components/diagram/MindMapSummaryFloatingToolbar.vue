@@ -50,9 +50,31 @@ const props = defineProps<{
   themeStroke: string
 }>()
 
+type SummaryToolbarPanel = 'kind' | 'line' | 'color'
+
 const { t } = useLanguage()
 const diagramStore = useDiagramSession()
-const colorOpen = ref(false)
+const openPanel = ref<SummaryToolbarPanel | null>(null)
+
+function setPanel(panel: SummaryToolbarPanel, open: boolean): void {
+  if (open) {
+    openPanel.value = panel
+    return
+  }
+  if (openPanel.value === panel) {
+    openPanel.value = null
+  }
+}
+
+const kindOpen = computed({
+  get: () => openPanel.value === 'kind',
+  set: (open: boolean) => setPanel('kind', open),
+})
+
+const lineOpen = computed({
+  get: () => openPanel.value === 'line',
+  set: (open: boolean) => setPanel('line', open),
+})
 
 const spec = computed(() =>
   readMindMapSummaries(diagramStore.data).find((item) => item.id === props.summaryId)
@@ -100,7 +122,7 @@ function onColorPick(color: string): void {
   const parsed = parseMindMapSummaryStrokeColor(color)
   if (!parsed) return
   applyChrome({ strokeColor: parsed })
-  colorOpen.value = false
+  openPanel.value = null
 }
 
 function onCustomColor(event: Event): void {
@@ -113,10 +135,11 @@ function bumpWidth(delta: number): void {
     Math.max(MINDMAP_SUMMARY_STROKE_WIDTH_MIN, strokeWidth.value + delta)
   )
   applyChrome({ strokeWidth: next })
+  openPanel.value = null
 }
 
 function toggleColor(): void {
-  colorOpen.value = !colorOpen.value
+  setPanel('color', openPanel.value !== 'color')
 }
 </script>
 
@@ -134,6 +157,7 @@ function toggleColor(): void {
       <div class="mm-summary-toolbar__row">
         <span class="mm-summary-toolbar__label">{{ t('canvas.floatingToolbar.summaryType') }}</span>
         <ElDropdown
+          v-model:visible="kindOpen"
           trigger="click"
           placement="bottom-end"
           popper-class="mm-summary-toolbar-popper"
@@ -166,6 +190,7 @@ function toggleColor(): void {
         <span class="mm-summary-toolbar__label">{{ t('canvas.floatingToolbar.summaryLine') }}</span>
         <div class="mm-summary-toolbar__pair">
           <ElDropdown
+            v-model:visible="lineOpen"
             trigger="click"
             placement="bottom-end"
             popper-class="mm-summary-toolbar-popper"
@@ -237,7 +262,7 @@ function toggleColor(): void {
               <ChevronDown class="mm-summary-toolbar__chevron" />
             </button>
             <div
-              v-if="colorOpen"
+              v-if="openPanel === 'color'"
               class="mm-summary-toolbar__palette"
             >
               <button
@@ -333,6 +358,13 @@ function toggleColor(): void {
 .mm-summary-toolbar__row :deep(.el-dropdown) {
   flex: 1;
   min-width: 0;
+  overflow: visible;
+}
+
+.mm-summary-toolbar__row :deep(.el-tooltip__trigger),
+.mm-summary-toolbar__row :deep(.el-dropdown > span) {
+  display: block;
+  width: 100%;
 }
 
 .mm-summary-toolbar__field,
@@ -449,6 +481,24 @@ function toggleColor(): void {
 </style>
 
 <style>
+.mm-summary-toolbar-popper.el-popper {
+  z-index: 5100 !important;
+  min-width: 148px !important;
+  padding: 4px !important;
+  overflow: visible !important;
+}
+
+.mm-summary-toolbar-popper .el-dropdown-menu {
+  min-width: 140px !important;
+}
+
+.mm-summary-toolbar-popper .el-dropdown-menu__item {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
 .mm-summary-toolbar-popper .el-dropdown-menu__item.is-active {
   color: #2563eb;
   font-weight: 600;

@@ -2,7 +2,7 @@
  * Shared Voice Notes generate path: stop → ingest → document-summary
  * mindmap → persist → canvas. Used by mobile page and desktop modal/FAB.
  */
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -64,7 +64,6 @@ export function useVoiceNotesGenerate() {
     }
 
     finishing.value = true
-    generating.value = true
     try {
       const diagramId = snapshot.diagramId
       if (!diagramId || snapshot.packageId == null) return
@@ -73,6 +72,8 @@ export function useVoiceNotesGenerate() {
         diagramId,
       })
       if (!generated) return
+      await nextTick()
+      voiceNotes.closeModal()
       const saved = await persistGeneratedSpec(diagramId)
       if (!saved) return
       await voiceNotes.exit()
@@ -81,7 +82,6 @@ export function useVoiceNotesGenerate() {
         query: { diagramId },
       })
     } finally {
-      generating.value = false
       finishing.value = false
     }
   }
@@ -92,11 +92,17 @@ export function useVoiceNotesGenerate() {
   }
 
   async function generateMindmap(): Promise<void> {
-    if (voiceNotes.hasActiveCapture) {
-      await voiceNotes.stopRecording('user')
+    if (finishing.value || generating.value) return
+    generating.value = true
+    try {
+      if (voiceNotes.hasActiveCapture) {
+        await voiceNotes.stopRecording('user')
+      }
+      await voiceNotes.flushTranscriptIfEdited()
+      await finishAfterStop()
+    } finally {
+      generating.value = false
     }
-    await voiceNotes.flushTranscriptIfEdited()
-    await finishAfterStop()
   }
 
   return {

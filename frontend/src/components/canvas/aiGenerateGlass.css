@@ -77,6 +77,16 @@
   padding: 18px 6.75rem 14px 80px;
 }
 
+.mind-map-one-sentence-panel.ai-gen-shell .ai-glass-hero {
+  min-height: 112px;
+  padding: 18px 5.5rem 16px 80px;
+}
+
+.mind-map-one-sentence-panel.ai-gen-shell .ai-glass-hero__line {
+  display: block;
+  white-space: nowrap;
+}
+
 .ai-brainstorm-panel.ai-gen-shell .ai-glass-hero__icon,
 .mind-map-one-sentence-panel.ai-gen-shell .ai-glass-hero__icon,
 .ai-glass-hero--compact .ai-glass-hero__icon {
@@ -223,21 +233,15 @@
   color: var(--ai-muted);
 }
 
+.ai-glass-hero__line {
+  display: block;
+}
+
 .ai-gen-shell .doc-summary-tab-strip {
   margin-left: 16px;
   margin-right: 16px;
   background: rgb(255 255 255 / 0.55);
   border-color: rgb(255 255 255 / 0.8);
-}
-
-.ai-gen-shell .doc-summary-generate-btn {
-  background: var(--ai-ribbon-fill);
-  border-color: transparent;
-  color: #fff;
-}
-
-.ai-gen-shell .doc-summary-generate-btn:hover:not(:disabled) {
-  filter: brightness(1.05);
 }
 
 .ai-gen-shell .mind-map-side-rail-btn--primary {

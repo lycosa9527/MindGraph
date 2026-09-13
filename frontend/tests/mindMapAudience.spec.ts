@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   buildMindMapAudienceInstructions,
   mergeMindMapAudienceInstructions,
+  resolveCanvasAudienceLevel,
   resolveMindMapAudienceInstructions,
 } from '@/composables/mindMap/audience/aiContentLevelInstructions'
 import { withMindMapAudienceContext } from '@/composables/mindMap/audience/withMindMapAudienceContext'
@@ -66,9 +67,11 @@ describe('mind-map 专业程度 audience instructions', () => {
     store.level = 'university'
     store.userSet = false
     expect(resolveMindMapAudienceInstructions('en')).toBeUndefined()
+    expect(resolveCanvasAudienceLevel()).toBe('general')
 
     store.setLevel('university')
     expect(resolveMindMapAudienceInstructions('en')).toContain('university')
+    expect(resolveCanvasAudienceLevel()).toBe('university')
   })
 
   it('merges audience text ahead of caller instructions', () => {
@@ -80,7 +83,11 @@ describe('mind-map 专业程度 audience instructions', () => {
   it('attaches generation_instructions and educational_context when a level is set', () => {
     const store = useAiContentLevelStore()
     store.setLevel('primary')
-    const next = withMindMapAudienceContext({ prompt: 'topic', language: 'zh' }, 'zh')
+    const next = withMindMapAudienceContext(
+      { prompt: 'topic', language: 'zh', audience_level: resolveCanvasAudienceLevel() },
+      'zh'
+    )
+    expect(next.audience_level).toBe('primary')
     expect(String(next.generation_instructions)).toContain('小学')
     const edu = next.educational_context as { raw_message?: string }
     expect(edu.raw_message).toContain('小学')

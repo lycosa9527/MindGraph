@@ -1,6 +1,8 @@
 /**
  * Ribbon height + last tab. Account default in Postgres; no browser storage.
  * File is a destination tab and is never persisted as the landing tab.
+ * Tools start collapsed; click a tab to expand, click the active tab again
+ * to collapse. `classic` is the expanded tools row.
  */
 import { onUnmounted, ref, watch } from 'vue'
 
@@ -117,6 +119,23 @@ export function useMindMapRibbonState() {
     schedulePersist()
   }
 
+  /**
+   * Title-row tab click: collapsed → expand (and switch tab);
+   * expanded + same tab → collapse; expanded + other tab → switch.
+   */
+  function selectTab(tab: MindMapRibbonTabId): void {
+    if (!classic.value) {
+      setActiveTab(tab)
+      setClassic(true)
+      return
+    }
+    if (activeTab.value === tab) {
+      setClassic(false)
+      return
+    }
+    setActiveTab(tab)
+  }
+
   onUnmounted(() => {
     if (persistTimer !== 0) {
       window.clearTimeout(persistTimer)
@@ -131,5 +150,6 @@ export function useMindMapRibbonState() {
     setClassic,
     toggleClassic,
     setActiveTab,
+    selectTab,
   }
 }

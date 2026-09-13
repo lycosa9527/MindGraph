@@ -1,4 +1,4 @@
-import { type ComputedRef } from 'vue'
+import { nextTick, type ComputedRef } from 'vue'
 import { useRouter } from 'vue-router'
 
 import {
@@ -8,6 +8,12 @@ import {
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import {
+  CURRENT_DIAGRAM_VERSION,
+  canMutateDiagramSnapshots,
+  canProceedAfterVersionJumpPersist,
+  shouldPersistBeforeVersionJump,
+} from '@/composables/editor/diagramSnapshotVersions'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import { useSnapshotHistory } from '@/composables/editor/useSnapshotHistory'
 import { useDiagramStore, useLLMResultsStore, useUIStore } from '@/stores'
@@ -26,6 +32,7 @@ import { shouldSkipLibraryReloadForActiveDiagram } from './skipLibraryReloadDuri
 import { unloadCanvasForLibrarySwitch } from './unloadCanvasForLibrarySwitch'
 
 type SnapshotHistoryApi = ReturnType<typeof useSnapshotHistory>
+type SavedDiagramSpec = Record<string, unknown>
 
 export function useCanvasPageLibrarySnapshots(options: {
   diagramAutoSave: ReturnType<typeof useDiagramAutoSave>
@@ -34,6 +41,7 @@ export function useCanvasPageLibrarySnapshots(options: {
 }): {
   loadDiagramFromLibrary: (diagramId: string) => Promise<boolean>
   handleSnapshotRecall: (versionNumber: number) => Promise<void>
+  handleRestoreCurrentVersion: () => Promise<void>
   handleSnapshotDelete: (versionNumber: number) => Promise<void>
 } {
   const { diagramAutoSave, snapshotHistory, isDiagramOwner } = options
@@ -154,9 +162,58 @@ export function useCanvasPageLibrarySnapshots(options: {
     return null
   }
 
+  function canMutateSnapshots(): boolean {
+    return canMutateDiagramSnapshots({
+      collabSessionActive: diagramStore.collabSessionActive,
+      isDiagramOwner: isDiagramOwner?.value,
+    })
+  }
+
+  async function persistCanvasBeforeVersionJump(): Promise<boolean> {
+    const shouldPersist = shouldPersistBeforeVersionJump({
+      canvasAheadOfLastSave: diagramAutoSave.isCanvasAheadOfLastSave(),
+    })
+    if (!shouldPersist) {
+      return true
+    }
+    const result = await diagramAutoSave.flush()
+    if (canProceedAfterVersionJumpPersist(result, diagramStore.collabSessionActive)) {
+      return true
+    }
+    notify.warning(t('canvas.library.saveBeforeSwitchFailed'))
+    return false
+  }
+
+  async function applySpecToCanvas(
+    spec: SavedDiagramSpec,
+    diagramId: string,
+    diagramType: DiagramType,
+    historyLabel?: string
+  ): Promise<boolean> {
+    if (historyLabel) {
+      diagramStore.pushHistory(historyLabel)
+    }
+    if (diagramSpecLikelyNeedsMarkdownPipeline(spec)) {
+      await loadDiagramMarkdownPipeline({ bumpLayout: false })
+    }
+    diagramAutoSave.setSuppressFromLibrary()
+    const loadOpts = mindMapLibraryLoadOptions(diagramType, spec)
+    const loaded = diagramStore.loadFromSpec(spec, diagramType, loadOpts)
+    if (loaded) {
+      eventBus.emit('diagram:loaded_from_library', { diagramId, diagramType })
+    }
+    await nextTick()
+    if (loaded) {
+      diagramAutoSave.setSuppressFromLibrary()
+    }
+    return loaded
+  }
+
   async function handleSnapshotRecall(versionNumber: number): Promise<void> {
-    if (diagramStore.collabSessionActive && isDiagramOwner?.value === false) return
+    if (!canMutateSnapshots()) return
     if (snapshotHistory.recallingVersion.value !== null) return
+    if (snapshotHistory.isTaking.value) return
+    if (snapshotHistory.activeSnapshotVersion.value === versionNumber) return
     const diagramId = savedDiagramsStore.activeDiagramId
     const diagramType = resolveDiagramTypeForRecall()
     if (!diagramId) {
@@ -168,28 +225,35 @@ export function useCanvasPageLibrarySnapshots(options: {
       return
     }
 
+    const flushedUnsaved = diagramAutoSave.isCanvasAheadOfLastSave()
     snapshotHistory.setRecallingVersion(versionNumber)
     try {
-      if (diagramAutoSave.isDirty.value) {
-        await diagramAutoSave.flush()
+      if (!(await persistCanvasBeforeVersionJump())) {
+        return
       }
 
       const recallResult = await snapshotHistory.recallSnapshot(diagramId, versionNumber)
       if (!recallResult.ok) {
+        if (flushedUnsaved) {
+          snapshotHistory.setActiveVersion(null)
+        }
         notify.error(recallResult.message || t('canvas.topBar.snapshotRecallFailed'))
         return
       }
-      const spec = recallResult.spec
 
-      diagramStore.pushHistory(t('canvas.topBar.snapshotRecallHistory', { n: versionNumber }))
       llmResultsStore.clearCache()
-      if (diagramSpecLikelyNeedsMarkdownPipeline(spec)) {
-        await loadDiagramMarkdownPipeline({ bumpLayout: false })
-      }
-      const loadOpts = mindMapLibraryLoadOptions(diagramType, spec)
-      const recalled = diagramStore.loadFromSpec(spec, diagramType, loadOpts)
-      if (recalled) {
-        eventBus.emit('diagram:loaded_from_library', { diagramId, diagramType })
+      const loaded = await applySpecToCanvas(
+        recallResult.spec,
+        diagramId,
+        diagramType,
+        t('canvas.topBar.snapshotRecallHistory', { n: versionNumber })
+      )
+      if (!loaded) {
+        if (flushedUnsaved) {
+          snapshotHistory.setActiveVersion(null)
+        }
+        notify.error(t('canvas.topBar.snapshotRecallFailed'))
+        return
       }
       snapshotHistory.setActiveVersion(versionNumber)
     } finally {
@@ -197,8 +261,71 @@ export function useCanvasPageLibrarySnapshots(options: {
     }
   }
 
+  async function restoreSavedCurrentToCanvas(
+    diagramId: string,
+    diagramType: DiagramType
+  ): Promise<boolean> {
+    const result = await savedDiagramsStore.getDiagram(diagramId, { force: true })
+    if (!result.ok) {
+      notify.error(t('canvas.topBar.snapshotRecallFailed'))
+      return false
+    }
+    const spec = result.diagram.spec as SavedDiagramSpec
+    const { specForLoad, saved: llmResults } = splitSavedLlmResultsFromSpec(spec)
+    if (llmResults) {
+      llmResultsStore.restoreFromSaved(llmResults, result.diagram.diagram_type)
+    } else {
+      llmResultsStore.clearCache()
+    }
+    const loaded = await applySpecToCanvas(
+      specForLoad,
+      diagramId,
+      diagramType,
+      t('canvas.ribbon.historyRestoreUndo')
+    )
+    if (loaded && result.diagram.title) {
+      diagramStore.initTitle(result.diagram.title)
+    }
+    return loaded
+  }
+
+  async function handleRestoreCurrentVersion(): Promise<void> {
+    if (!canMutateSnapshots()) return
+    if (snapshotHistory.recallingVersion.value !== null) return
+    if (snapshotHistory.isTaking.value) return
+    if (snapshotHistory.activeSnapshotVersion.value === null) return
+    const diagramId = savedDiagramsStore.activeDiagramId
+    const diagramType = resolveDiagramTypeForRecall()
+    if (!diagramId) {
+      notify.warning(t('canvas.topBar.snapshotRecallNoDiagram'))
+      return
+    }
+    if (!diagramType) {
+      notify.warning(t('canvas.topBar.snapshotRecallNoType'))
+      return
+    }
+
+    const flushedUnsaved = diagramAutoSave.isCanvasAheadOfLastSave()
+    snapshotHistory.setRecallingVersion(CURRENT_DIAGRAM_VERSION)
+    try {
+      if (!(await persistCanvasBeforeVersionJump())) {
+        return
+      }
+      if (flushedUnsaved) {
+        snapshotHistory.setActiveVersion(null)
+        return
+      }
+      const restored = await restoreSavedCurrentToCanvas(diagramId, diagramType)
+      if (restored) {
+        snapshotHistory.setActiveVersion(null)
+      }
+    } finally {
+      snapshotHistory.setRecallingVersion(null)
+    }
+  }
+
   async function handleSnapshotDelete(versionNumber: number): Promise<void> {
-    if (diagramStore.collabSessionActive && isDiagramOwner?.value === false) return
+    if (!canMutateSnapshots()) return
     const diagramId = savedDiagramsStore.activeDiagramId
     if (!diagramId) return
 
@@ -213,6 +340,7 @@ export function useCanvasPageLibrarySnapshots(options: {
   return {
     loadDiagramFromLibrary,
     handleSnapshotRecall,
+    handleRestoreCurrentVersion,
     handleSnapshotDelete,
   }
 }

@@ -37,6 +37,24 @@ def test_payload_includes_all_pinia_nodes() -> None:
     assert payload["selected"][0]["node_label"] == "中国"
 
 
+def test_snapshot_block_appends_audience_instructions() -> None:
+    """Conversational edit prompts include the 专业内容 wording/depth block."""
+    ctx = {
+        "diagram_data": {
+            "center": {"text": "茶叶"},
+            "children": [{"text": "中国", "id": "n1"}],
+        },
+        "ai_content_level": "junior",
+        "audience_instructions": "请按「初中」专业程度生成内容。\n用语：清晰白话。",
+    }
+    zh_block = render_diagram_snapshot_block(ctx, diagram_type="mindmap", lang="zh")
+    assert "受众规则：" in zh_block
+    assert "请按「初中」专业程度生成内容。" in zh_block
+    en_block = render_diagram_snapshot_block(ctx, diagram_type="mindmap", lang="en")
+    assert "Audience rules:" in en_block
+    assert "请按「初中」专业程度生成内容。" in en_block
+
+
 def test_snapshot_block_is_json_with_header() -> None:
     """render_diagram_snapshot_block emits full JSON, not a 4-line summary."""
     ctx = {

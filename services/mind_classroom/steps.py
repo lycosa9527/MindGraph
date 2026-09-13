@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from services.diagram.mindmap_identity import identity_aliases, remap_id_list, remap_optional_id
+from services.mind_classroom.focus import resolve_whole_map_focus_node_ids
 
 MAX_STEPS_DEFAULT = 40
 _KINDS = frozenset({"overview", "branch", "closing"})
@@ -89,6 +90,11 @@ def normalize_steps(
             if remapped_branch is not None:
                 step["branch_node_id"] = remapped_branch
             out.append(step)
+    whole_map = resolve_whole_map_focus_node_ids(spec)
+    if whole_map:
+        for step in out:
+            if step["kind"] in {"overview", "closing"}:
+                step["focus_node_ids"] = list(whole_map)
     return out
 
 

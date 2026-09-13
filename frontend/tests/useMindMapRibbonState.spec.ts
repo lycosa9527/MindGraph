@@ -145,4 +145,27 @@ describe('useMindMapRibbonState', () => {
     ).toEqual([])
     scope.stop()
   })
+
+  it('expands on tab click when collapsed and collapses when the active tab is clicked again', () => {
+    const scope = effectScope()
+    const state = scope.run(() => useMindMapRibbonState())
+    if (!state) {
+      throw new Error('expected ribbon state')
+    }
+    expect(state.classic.value).toBe(false)
+    expect(state.activeTab.value).toBe('edit')
+    state.selectTab('edit')
+    expect(state.classic.value).toBe(true)
+    expect(state.activeTab.value).toBe('edit')
+    state.selectTab('teaching')
+    expect(state.classic.value).toBe(true)
+    expect(state.activeTab.value).toBe('teaching')
+    state.selectTab('teaching')
+    expect(state.classic.value).toBe(false)
+    expect(state.activeTab.value).toBe('teaching')
+    state.selectTab('ai')
+    expect(state.classic.value).toBe(true)
+    expect(state.activeTab.value).toBe('ai')
+    scope.stop()
+  })
 })

@@ -51,13 +51,29 @@ const rows = computed(() =>
             ? t('canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint')
             : row.id === 'update_node'
               ? t('canvas.mindMapOneSentence.suggestion.update_node.hint')
-              : '',
+              : row.id === 'explain_node'
+                ? t('canvas.mindMapOneSentence.suggestion.explain_node.hint')
+                : '',
       chips: chipsForRow(row.id),
     }
   })
 )
 
 function chipsForRow(rowId: string): GuideChip[] {
+  if (rowId === 'explain_node') {
+    return [
+      {
+        id: 'by_label',
+        label: String(t('canvas.mindMapOneSentence.suggestion.explain_node')),
+        phrase: String(t('canvas.mindMapOneSentence.suggestion.explain_node')),
+      },
+      {
+        id: 'this_node',
+        label: String(t('canvas.mindMapOneSentence.suggestion.explain_node.this')),
+        phrase: String(t('canvas.mindMapOneSentence.suggestion.explain_node.this')),
+      },
+    ]
+  }
   if (rowId === 'update_node') {
     return [
       {

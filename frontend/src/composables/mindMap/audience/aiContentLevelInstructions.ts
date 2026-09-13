@@ -28,6 +28,15 @@ export function resolveMindMapAudienceInstructions(language: string): string | u
   return buildMindMapAudienceInstructions(store.level, language)
 }
 
+/** Canvas 专业程度 id for APIs that pick a prompt variant, not only appended text. */
+export function resolveCanvasAudienceLevel(): AiContentLevelId {
+  const store = useAiContentLevelStore()
+  if (!store.userSet) {
+    return DEFAULT_AI_CONTENT_LEVEL
+  }
+  return store.level
+}
+
 export function mergeMindMapAudienceInstructions(
   audienceBlock: string | undefined,
   callerInstructions: string | undefined

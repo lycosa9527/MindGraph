@@ -9,6 +9,7 @@ import type {
   MindClassroomTourScopeId,
 } from '@/config/mindClassroom'
 import type { Connection, DiagramNode } from '@/types'
+import { buildMindMapTreeChildrenMap } from '@/utils/mindMapLocation'
 import {
   type MindMapSlide,
   type MindMapSlideTraversalMode,
@@ -78,10 +79,55 @@ export function shouldExpandLectureBranchSubtree(
   return tourScope !== 'each_node'
 }
 
+function uniqueNodeIds(ids: Iterable<string>): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const id of ids) {
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    out.push(id)
+  }
+  return out
+}
+
+function lectureTopicNodeId(
+  step: Pick<MindClassroomLectureStep, 'focusNodeIds' | 'branchNodeId'>,
+  nodes: readonly DiagramNode[] = []
+): string | undefined {
+  if (step.branchNodeId) return step.branchNodeId
+  if (step.focusNodeIds[0]) return step.focusNodeIds[0]
+  return nodes.find((node) => node.type === 'topic' || node.id === 'topic')?.id
+}
+
+/**
+ * Overview / closing talk about the whole map. Frame the topic plus first-level
+ * main branches so the camera does not zoom onto the topic node alone.
+ */
+function expandWholeMapMainBranchFocus(
+  step: Pick<MindClassroomLectureStep, 'focusNodeIds' | 'branchNodeId'>,
+  getDescendantIds: (rootNodeId: string) => Set<string>,
+  getChildIds?: (rootNodeId: string) => Iterable<string>
+): string[] {
+  const topicId = lectureTopicNodeId(step)
+  if (!topicId) return [...step.focusNodeIds]
+  if (getChildIds) {
+    const children = uniqueNodeIds(getChildIds(topicId))
+    if (children.length) {
+      return uniqueNodeIds([topicId, ...children])
+    }
+  }
+  const descendants = getDescendantIds(topicId)
+  if (descendants.size > 1) {
+    return [...descendants]
+  }
+  return uniqueNodeIds([topicId, ...step.focusNodeIds])
+}
+
 /**
  * Canvas dim/fit ids for a lecture step.
  *
  * Remote jobs store only the branch head (backend: FE expands children).
+ * Overview / closing frame the topic plus first-level main branches.
  * Main-branch / slide-deck tours keep the whole subtree lit; each-node stays
  * on that node. Selection / pulse glow still uses ``branchNodeId`` only.
  */
@@ -89,8 +135,12 @@ export function expandLectureFocusNodeIds(
   step: Pick<MindClassroomLectureStep, 'kind' | 'focusNodeIds' | 'branchNodeId'>,
   tourScope: MindClassroomTourScopeId,
   getDescendantIds: (rootNodeId: string) => Set<string>,
-  presentation?: MindClassroomPresentationId | null
+  presentation?: MindClassroomPresentationId | null,
+  getChildIds?: (rootNodeId: string) => Iterable<string>
 ): string[] {
+  if (step.kind === 'overview' || step.kind === 'closing') {
+    return expandWholeMapMainBranchFocus(step, getDescendantIds, getChildIds)
+  }
   if (step.kind !== 'branch' || !shouldExpandLectureBranchSubtree(tourScope, presentation)) {
     return [...step.focusNodeIds]
   }
@@ -107,6 +157,35 @@ export function expandLectureFocusNodeIds(
     }
   }
   return expanded.size > 0 ? [...expanded] : [...step.focusNodeIds]
+}
+
+/** Fit ids for a live canvas lecture step (resolves topic when the job omitted it). */
+export function lectureStepFitNodeIds(
+  step: Pick<MindClassroomLectureStep, 'kind' | 'focusNodeIds' | 'branchNodeId'>,
+  tourScope: MindClassroomTourScopeId,
+  getDescendantIds: (rootNodeId: string) => Set<string>,
+  presentation: MindClassroomPresentationId | null | undefined,
+  diagram: {
+    connections: readonly Connection[]
+    nodes: readonly DiagramNode[]
+  }
+): string[] {
+  const childrenMap = buildMindMapTreeChildrenMap(diagram.connections)
+  const topicId =
+    step.kind === 'overview' || step.kind === 'closing'
+      ? lectureTopicNodeId(step, diagram.nodes)
+      : undefined
+  return expandLectureFocusNodeIds(
+    {
+      kind: step.kind,
+      focusNodeIds: step.focusNodeIds.length ? step.focusNodeIds : topicId ? [topicId] : [],
+      branchNodeId: step.branchNodeId || topicId,
+    },
+    tourScope,
+    getDescendantIds,
+    presentation,
+    (rootId) => childrenMap.get(rootId) ?? []
+  )
 }
 
 function childBulletList(slide: MindMapSlide, nodeById: Map<string, DiagramNode>): string[] {

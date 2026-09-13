@@ -70,7 +70,7 @@ describe('formatBrushStyle', () => {
 
   it('skips empty selection and keeps source nodes unpainted', () => {
     expect(formatBrushTargetsFromSelection([], ['a'])).toEqual([])
-    expect(formatBrushTargetsFromSelection([''], ['a'])).toEqual([''])
+    expect(formatBrushTargetsFromSelection([''], ['a'])).toEqual([])
   })
 
   it('locks immediately when the painter requests lock from idle', () => {

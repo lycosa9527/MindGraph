@@ -35,6 +35,9 @@ export const MIND_MAP_RIBBON_TAB_LABEL_KEYS: Record<MindMapRibbonTabId, string> 
 
 export const DEFAULT_MIND_MAP_RIBBON_TAB: MindMapRibbonTabId = 'edit'
 
+/** Tools row under the title-row tabs — toggled by clicking the active tab. */
+export const MIND_MAP_RIBBON_TOOLS_ID = 'mindmap-ribbon-tools'
+
 /**
  * Tab to show when opening a canvas. File is a destination, not a landing tab —
  * a saved `file` preference still opens Edit (same as Word Home vs File).

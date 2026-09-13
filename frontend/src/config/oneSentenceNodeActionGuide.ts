@@ -53,6 +53,11 @@ export const ONE_SENTENCE_NODE_ACTION_GUIDE_ROWS: OneSentenceNodeActionGuideRow[
     exampleKey: 'canvas.mindMapOneSentence.suggestion.auto_complete',
   },
   {
+    id: 'explain_node',
+    action: 'explain_node',
+    exampleKey: 'canvas.mindMapOneSentence.suggestion.explain_node',
+  },
+  {
     id: 'set_content_level',
     action: 'set_content_level',
     exampleKey: 'canvas.mindMapOneSentence.suggestion.set_content_level',

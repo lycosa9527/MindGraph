@@ -4,19 +4,19 @@
 #include <cstring>
 
 #include "lvgl.h"
+#include "watch_face.hpp"
 
-constexpr int32_t k_face = 360;
-constexpr int32_t k_card_h = 190;
-constexpr int32_t k_rec = 64;
-constexpr int32_t k_side_btn = 44;
-constexpr int32_t k_gap = 4;
-constexpr int32_t k_cluster_x = 56;
-constexpr int32_t k_dock_y = 262;
-constexpr int32_t k_side_y = 272;
-constexpr int32_t k_gen_x = 238;
-constexpr int32_t k_gen_y = 276;
-constexpr int32_t k_gen_w = 64;
-constexpr int32_t k_gen_h = 36;
+constexpr int32_t k_card_h = watch_px(190);
+constexpr int32_t k_rec = watch_px(64);
+constexpr int32_t k_side_btn = watch_px(44);
+constexpr int32_t k_gap = watch_px(4);
+constexpr int32_t k_cluster_x = watch_px(56);
+constexpr int32_t k_dock_y = watch_px(262);
+constexpr int32_t k_side_y = watch_px(272);
+constexpr int32_t k_gen_x = watch_px(238);
+constexpr int32_t k_gen_y = watch_px(276);
+constexpr int32_t k_gen_w = watch_px(64);
+constexpr int32_t k_gen_h = watch_px(36);
 constexpr uint32_t k_page = 0xF9FAFB;
 constexpr uint32_t k_ink = 0x1C1917;
 constexpr uint32_t k_muted = 0x57534E;
@@ -233,7 +233,7 @@ void recorder_face_add_play_glyph(lv_obj_t *btn, uint32_t color)
 {
     lv_obj_t *play = lv_obj_create(btn);
     lv_obj_remove_style_all(play);
-    lv_obj_set_size(play, 18, 22);
+    lv_obj_set_size(play, watch_px(18), watch_px(22));
     lv_obj_add_flag(play, LV_OBJ_FLAG_USER_1);
     lv_obj_clear_flag(play, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_clear_flag(play, LV_OBJ_FLAG_SCROLLABLE);
@@ -241,7 +241,7 @@ void recorder_face_add_play_glyph(lv_obj_t *btn, uint32_t color)
     lv_obj_set_style_text_color(play, lv_color_hex(color), 0);
     lv_obj_set_style_text_opa(play, LV_OPA_COVER, 0);
     lv_obj_add_event_cb(play, recorder_face_draw_play, LV_EVENT_DRAW_MAIN, nullptr);
-    lv_obj_align(play, LV_ALIGN_CENTER, 2, 0);
+    lv_obj_align(play, LV_ALIGN_CENTER, watch_px(2), 0);
 }
 
 void recorder_face_set_hidden(lv_obj_t *obj, bool hidden)
@@ -261,7 +261,7 @@ lv_obj_t *recorder_face_add_vu(lv_obj_t *btn)
 {
     lv_obj_t *vu = lv_obj_create(btn);
     lv_obj_remove_style_all(vu);
-    lv_obj_set_size(vu, 22, 22);
+    lv_obj_set_size(vu, watch_px(22), watch_px(22));
     lv_obj_add_flag(vu, LV_OBJ_FLAG_USER_1);
     lv_obj_clear_flag(vu, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_clear_flag(vu, LV_OBJ_FLAG_SCROLLABLE);
@@ -433,30 +433,32 @@ RecorderWidgets recorder_face_build(lv_obj_t *layer, lv_event_cb_t on_action)
     lv_obj_set_style_clip_corner(widgets.root, true, 0);
     lv_obj_clear_flag(widgets.root, LV_OBJ_FLAG_SCROLLABLE);
 
-    lv_obj_t *title = recorder_face_label(widgets.root, 80, 16, 200, 22, LV_TEXT_ALIGN_CENTER, k_ink);
+    lv_obj_t *title = recorder_face_label(
+        widgets.root, watch_px(80), watch_px(16), watch_px(200), watch_px(22), LV_TEXT_ALIGN_CENTER, k_ink
+    );
     lv_label_set_text(title, "语音笔记");
 
     lv_obj_t *status_row = lv_obj_create(widgets.root);
     lv_obj_remove_style_all(status_row);
-    lv_obj_set_pos(status_row, 48, 40);
-    lv_obj_set_size(status_row, 264, 22);
+    lv_obj_set_pos(status_row, watch_px(48), watch_px(40));
+    lv_obj_set_size(status_row, watch_px(264), watch_px(22));
     lv_obj_set_flex_flow(status_row, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(status_row, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_column(status_row, 6, 0);
+    lv_obj_set_style_pad_column(status_row, watch_px(6), 0);
     lv_obj_clear_flag(status_row, LV_OBJ_FLAG_SCROLLABLE);
-    widgets.dot = recorder_face_disk(status_row, 0, 0, 8, k_idle_dot);
+    widgets.dot = recorder_face_disk(status_row, 0, 0, watch_px(8), k_idle_dot);
     widgets.status = lv_label_create(status_row);
     lv_obj_set_style_text_color(widgets.status, lv_color_hex(k_muted), 0);
     lv_label_set_long_mode(widgets.status, LV_LABEL_LONG_DOT);
-    lv_obj_set_width(widgets.status, 168);
+    lv_obj_set_width(widgets.status, watch_px(168));
     lv_label_set_text(widgets.status, "等待开始");
     widgets.elapsed = lv_label_create(status_row);
     lv_obj_set_style_text_color(widgets.elapsed, lv_color_hex(k_muted), 0);
     lv_label_set_text(widgets.elapsed, "00:00");
 
-    lv_obj_t *card = recorder_face_card(widgets.root, 44, 66, 272, k_card_h);
+    lv_obj_t *card = recorder_face_card(widgets.root, watch_px(44), watch_px(66), watch_px(272), k_card_h);
     widgets.transcript = lv_label_create(card);
-    lv_obj_set_width(widgets.transcript, 248);
+    lv_obj_set_width(widgets.transcript, watch_px(248));
     lv_obj_set_style_text_color(widgets.transcript, lv_color_hex(k_ink), 0);
     lv_obj_set_style_text_align(widgets.transcript, LV_TEXT_ALIGN_LEFT, 0);
     lv_label_set_long_mode(widgets.transcript, LV_LABEL_LONG_WRAP);
@@ -478,7 +480,9 @@ RecorderWidgets recorder_face_build(lv_obj_t *layer, lv_event_cb_t on_action)
     lv_obj_set_style_border_color(widgets.stop, lv_color_hex(k_side_ring), 0);
     lv_obj_set_style_border_opa(widgets.stop, LV_OPA_COVER, 0);
     recorder_face_add_stop_glyph(widgets.stop, 0xB91C1C);
-    widgets.main_ring = recorder_face_disk(widgets.root, rec_x - 6, k_dock_y - 6, k_rec + 12, k_live);
+    widgets.main_ring = recorder_face_disk(
+        widgets.root, rec_x - watch_px(6), k_dock_y - watch_px(6), k_rec + watch_px(12), k_live
+    );
     lv_obj_set_style_bg_opa(widgets.main_ring, LV_OPA_0, 0);
     lv_obj_set_style_border_width(widgets.main_ring, 2, 0);
     lv_obj_set_style_border_color(widgets.main_ring, lv_color_hex(k_live), 0);
@@ -491,10 +495,10 @@ RecorderWidgets recorder_face_build(lv_obj_t *layer, lv_event_cb_t on_action)
     widgets.main_label = lv_obj_get_child(widgets.main, 0);
     widgets.vu = recorder_face_add_vu(widgets.main);
     widgets.pause_arc = recorder_face_hold_arc(
-        widgets.root, k_cluster_x - 4, k_side_y - 4, k_side_btn + 8, k_ink
+        widgets.root, k_cluster_x - watch_px(4), k_side_y - watch_px(4), k_side_btn + watch_px(8), k_ink
     );
     widgets.stop_arc = recorder_face_hold_arc(
-        widgets.root, stop_x - 4, k_side_y - 4, k_side_btn + 8, 0xB91C1C
+        widgets.root, stop_x - watch_px(4), k_side_y - watch_px(4), k_side_btn + watch_px(8), 0xB91C1C
     );
     lv_obj_move_foreground(widgets.main);
 
@@ -502,7 +506,7 @@ RecorderWidgets recorder_face_build(lv_obj_t *layer, lv_event_cb_t on_action)
     lv_obj_remove_style_all(widgets.generate);
     lv_obj_set_pos(widgets.generate, k_gen_x, k_gen_y);
     lv_obj_set_size(widgets.generate, k_gen_w, k_gen_h);
-    lv_obj_set_style_radius(widgets.generate, 18, 0);
+    lv_obj_set_style_radius(widgets.generate, watch_px(18), 0);
     lv_obj_set_style_bg_color(widgets.generate, lv_color_hex(k_generate), 0);
     lv_obj_set_style_bg_opa(widgets.generate, LV_OPA_COVER, 0);
     lv_obj_set_style_pad_all(widgets.generate, 0, 0);
@@ -554,10 +558,12 @@ void recorder_face_paint(RecorderWidgets &widgets, const RecorderUiSnapshot &sna
     if (widgets.main_ring != nullptr) {
         const uint8_t level = live ? snap.mic_level : 0;
         const int32_t rec_x = k_cluster_x + k_side_btn + k_gap;
-        const int32_t grow = live ? (6 + static_cast<int32_t>(level) / 8) : 0;
+        const int32_t grow = live ? (watch_px(6) + static_cast<int32_t>(level) / 8) : 0;
         lv_obj_set_style_border_opa(widgets.main_ring, live ? LV_OPA_70 : LV_OPA_0, 0);
-        lv_obj_set_size(widgets.main_ring, k_rec + 12 + grow, k_rec + 12 + grow);
-        lv_obj_set_pos(widgets.main_ring, rec_x - 6 - grow / 2, k_dock_y - 6 - grow / 2);
+        lv_obj_set_size(widgets.main_ring, k_rec + watch_px(12) + grow, k_rec + watch_px(12) + grow);
+        lv_obj_set_pos(
+            widgets.main_ring, rec_x - watch_px(6) - grow / 2, k_dock_y - watch_px(6) - grow / 2
+        );
     }
     recorder_face_paint_hold(
         widgets.pause_arc,

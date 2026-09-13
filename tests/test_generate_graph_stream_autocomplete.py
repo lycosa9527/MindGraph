@@ -270,3 +270,32 @@ def test_build_workflow_kwargs_uses_user_prompt_not_prompt() -> None:
     assert kwargs["forced_diagram_type"] == "circle_map"
     assert kwargs["model"] == "qwen"
     assert kwargs["locked_topic"] == "circle topic"
+    assert kwargs["generation_instructions"] is None
+
+
+def test_build_workflow_kwargs_forwards_generation_instructions() -> None:
+    """专业内容 must stay a first-class workflow kwarg for subgraph expand."""
+    req = GenerateRequest.model_validate(
+        {
+            "prompt": "中心主题：光合作用\n要扩展的分支：光反应",
+            "diagram_type": DiagramType.MIND_MAP,
+            "language": "zh",
+            "llm": LLMModel.QWEN,
+            "request_type": "autocomplete",
+            "expand_branch": "光反应",
+            "mind_map_topic": "光合作用",
+            "generation_instructions": "请按「小学」专业程度生成内容。",
+        }
+    )
+    prepared = {
+        "prompt": "中心主题：光合作用\n要扩展的分支：光反应",
+        "language": "zh",
+        "llm_model": "qwen",
+        "user_id": 3,
+        "organization_id": None,
+        "request_type": "autocomplete",
+        "endpoint_path": "/api/generate_graph",
+    }
+    kwargs = _build_workflow_kwargs(req, prepared)
+    assert kwargs["expand_branch"] == "光反应"
+    assert kwargs["generation_instructions"] == "请按「小学」专业程度生成内容。"

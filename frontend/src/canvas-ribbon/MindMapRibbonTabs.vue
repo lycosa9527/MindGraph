@@ -6,12 +6,21 @@ import { GraduationCap, Folder, Palette, Users } from '@lucide/vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 
 import MindMapRibbonAiMark from './MindMapRibbonAiMark.vue'
-import { type MindMapRibbonTabId, MIND_MAP_RIBBON_TABS, MIND_MAP_RIBBON_TAB_LABEL_KEYS } from './mindMapRibbonTypes'
+import {
+  type MindMapRibbonTabId,
+  MIND_MAP_RIBBON_TABS,
+  MIND_MAP_RIBBON_TAB_LABEL_KEYS,
+  MIND_MAP_RIBBON_TOOLS_ID,
+} from './mindMapRibbonTypes'
 import './mindMapRibbonTabs.css'
 
-defineProps<{
-  activeTab: MindMapRibbonTabId
-}>()
+const props = withDefaults(
+  defineProps<{
+    activeTab: MindMapRibbonTabId
+    expanded?: boolean
+  }>(),
+  { expanded: true }
+)
 
 const emit = defineEmits<{
   'update:activeTab': [tab: MindMapRibbonTabId]
@@ -33,11 +42,22 @@ function tabLabel(tab: MindMapRibbonTabId): string {
 function lucideTabIcon(tab: MindMapRibbonTabId): Component | undefined {
   return tab === 'ai' ? undefined : TAB_ICONS[tab]
 }
+
+function tabTitle(tab: MindMapRibbonTabId): string {
+  if (!props.expanded) {
+    return t('canvas.ribbon.expand')
+  }
+  if (props.activeTab === tab) {
+    return t('canvas.ribbon.collapse')
+  }
+  return tabLabel(tab)
+}
 </script>
 
 <template>
   <div
     class="mm-ribbon-tabs mm-ribbon-tabs--topbar"
+    :class="{ 'mm-ribbon-tabs--collapsed': !expanded }"
     role="tablist"
     data-testid="mindmap-ribbon-tabs"
   >
@@ -49,6 +69,9 @@ function lucideTabIcon(tab: MindMapRibbonTabId): Component | undefined {
       role="tab"
       :class="{ 'is-active': activeTab === tab, 'mm-ribbon-tabs__tab--ai': tab === 'ai' }"
       :aria-selected="activeTab === tab"
+      :aria-controls="MIND_MAP_RIBBON_TOOLS_ID"
+      :aria-expanded="activeTab === tab ? expanded : undefined"
+      :title="tabTitle(tab)"
       :data-testid="`mindmap-ribbon-tab-${tab}`"
       @click="emit('update:activeTab', tab)"
     >

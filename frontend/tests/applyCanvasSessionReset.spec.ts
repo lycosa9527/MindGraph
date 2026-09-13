@@ -1,7 +1,12 @@
 import { createPinia, setActivePinia } from 'pinia'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { applyCanvasSessionReset } from '@/composables/canvasPage/applyCanvasSessionReset'
+import {
+  formatBrushActive,
+  resetFormatBrushState,
+} from '@/composables/canvasToolbar/useCanvasFormatBrush'
 import { canvasVirtualKeyboardOpen } from '@/composables/canvasToolbar/useCanvasVirtualKeyboardOpen'
 import { resetMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { eventBus } from '@/composables/core/useEventBus'
@@ -20,17 +25,21 @@ import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 describe('applyCanvasSessionReset', () => {
   beforeEach(() => {
-    vi.stubGlobal('matchMedia', vi.fn(() => ({
-      matches: false,
-      media: '',
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    })))
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({
+        matches: false,
+        media: '',
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }))
+    )
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }))
     resetMindMapSideToolbarState()
+    resetFormatBrushState()
     canvasVirtualKeyboardOpen.value = false
   })
 
@@ -85,6 +94,7 @@ describe('applyCanvasSessionReset', () => {
     savedDiagrams.setActiveDiagram('diagram-a')
 
     canvasVirtualKeyboardOpen.value = true
+    formatBrushActive.value = true
 
     const resetRequested = vi.fn()
     eventBus.on('diagram:reset_requested', resetRequested)
@@ -115,6 +125,7 @@ describe('applyCanvasSessionReset', () => {
     expect(oneSentence.ephemeralScope).not.toBe(ephemeralBefore)
     expect(savedDiagrams.activeDiagramId).toBeNull()
     expect(canvasVirtualKeyboardOpen.value).toBe(false)
+    expect(formatBrushActive.value).toBe(false)
     expect(resetRequested).toHaveBeenCalledTimes(1)
 
     eventBus.off('diagram:reset_requested', resetRequested)

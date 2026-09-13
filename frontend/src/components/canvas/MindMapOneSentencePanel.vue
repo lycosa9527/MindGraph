@@ -176,7 +176,7 @@ onUnmounted(() => {
 
 <template>
   <aside
-    class="mind-map-side-rail-panel mind-map-one-sentence-panel pointer-events-auto w-88 ai-gen-shell ai-gen-shell--oneSentence"
+    class="mind-map-side-rail-panel mind-map-one-sentence-panel pointer-events-auto w-104 max-w-[calc(100%-1.5rem)] ai-gen-shell ai-gen-shell--oneSentence"
     :aria-label="t('canvas.mindMapSideToolbar.oneSentence')"
   >
     <AiGenerateGlassHero

@@ -14,6 +14,7 @@ from typing import Optional, Dict, Any, List, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from services.utils.ai_content_level import is_valid_ai_content_level
 from utils.prompt_output_languages import is_prompt_output_language
 
 
@@ -73,6 +74,11 @@ class NodePaletteStartRequest(BaseModel):
     llm_models: Optional[List[str]] = Field(
         None,
         description="Optional subset of palette LLMs to run (e.g. single model for mind-map concept parking lot)",
+    )
+    generation_instructions: Optional[str] = Field(
+        None,
+        max_length=5000,
+        description="Optional mind-map audience / content-expertise instructions",
     )
 
     @field_validator("llm_models")
@@ -152,6 +158,11 @@ class NodePaletteNextRequest(BaseModel):
     stage_data: Optional[Dict[str, Any]] = Field(
         None,
         description=("Stage-specific data (e.g., {'dimension': 'Habitat', 'category_name': 'Water Animals'})"),
+    )
+    generation_instructions: Optional[str] = Field(
+        None,
+        max_length=5000,
+        description="Optional mind-map audience / content-expertise instructions",
     )
 
     @field_validator("language")
@@ -441,6 +452,11 @@ class MindMapNodeExplainRequest(BaseModel):
         max_length=5000,
         description="Optional mind-map audience / content-expertise instructions",
     )
+    audience_level: str = Field(
+        "general",
+        max_length=32,
+        description="Canvas 专业程度 id (general/primary/junior/senior/university/adult/expert)",
+    )
     diagram_id: Optional[str] = Field(None, max_length=64, description="Saved diagram id for collab guard")
 
     @field_validator("language")
@@ -448,3 +464,12 @@ class MindMapNodeExplainRequest(BaseModel):
     def validate_language(cls, value: str) -> str:
         """Normalize and validate generation language code."""
         return _validate_node_palette_language(value)
+
+    @field_validator("audience_level")
+    @classmethod
+    def validate_audience_level(cls, value: str) -> str:
+        """Unknown 专业程度 ids fall back to general."""
+        stripped = (value or "").strip().lower()
+        if is_valid_ai_content_level(stripped):
+            return stripped
+        return "general"

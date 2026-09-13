@@ -18,18 +18,19 @@ import { computed, onUnmounted, ref } from 'vue'
 
 import { useVueFlow } from '@vue-flow/core'
 
-import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
+import { formatBrushActive } from '@/composables/canvasToolbar/useCanvasFormatBrush'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
   getDropPreviewBorderRadius,
   getDropTargetShapeClass,
 } from '@/composables/diagramCanvas/diagramCanvasZoomPaneStyles'
+import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
 import { isLearningSheetCustomPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
-import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { mindMapBranchFontSize, resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { ANIMATION } from '@/config/uiConfig'
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { MindGraphNode } from '@/types'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
@@ -153,9 +154,7 @@ export interface BranchMoveState {
 
 export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
   const diagramStore = useDiagramSession()
-  const { screenToFlowCoordinate, getNodes, getViewport } = useVueFlow(
-    diagramStore.vueFlowId
-  )
+  const { screenToFlowCoordinate, getNodes, getViewport } = useVueFlow(diagramStore.vueFlowId)
 
   const pendingNodeId = ref<string | null>(null)
   const longPressNodeId = ref<string | null>(null)
@@ -194,12 +193,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
   }))
 
   function resolveDiagramType(node?: MindGraphNode): string {
-    return (
-      node?.data?.diagramType ??
-      diagramStore.type ??
-      diagramStore.data?.type ??
-      ''
-    )
+    return node?.data?.diagramType ?? diagramStore.type ?? diagramStore.data?.type ?? ''
   }
 
   function isMindMapBranchNode(nodeId: string, node?: MindGraphNode): boolean {
@@ -308,9 +302,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     const isUnderline = v2Visuals && nodeShape === 'underline'
     const fontSizePx =
       dataStyle.fontSize ??
-      (v2Visuals
-        ? mindMapBranchFontSize(nodeId, node, diagramStore.data?.connections)
-        : 16)
+      (v2Visuals ? mindMapBranchFontSize(nodeId, node, diagramStore.data?.connections) : 16)
     const fontSize =
       typeof fontSizePx === 'number' ? `${fontSizePx}px` : String(fontSizePx ?? '16px')
     const shapeClass = getDropTargetShapeClass(node as MindGraphNode)
@@ -329,12 +321,14 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
           vueStyle.backgroundColor ??
           (isUnderline ? 'transparent' : v2Visuals ? theme.backgroundColor : branchPalette.fill)
       ),
-      textColor: String(dataStyle.textColor ?? vueStyle.color ?? (v2Visuals ? theme.textColor : '#333333')),
+      textColor: String(
+        dataStyle.textColor ?? vueStyle.color ?? (v2Visuals ? theme.textColor : '#333333')
+      ),
       borderColor: String(
         dataStyle.borderColor ??
           vueStyle.borderColor ??
           (v2Visuals
-            ? resolveMindMapTopicBorderColor(null) ?? theme.borderColor
+            ? (resolveMindMapTopicBorderColor(null) ?? theme.borderColor)
             : branchPalette.border)
       ),
       fontSize,
@@ -401,7 +395,6 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
       if (h.has(nid) || nid === draggedId) continue
       const hit = classifyBranchDrop(node, flowX, flowY)
       if (!hit) continue
-      const pos = node.position ?? { x: 0, y: 0 }
       const { w: nodeW, h: nodeH } = getNodeDimensions(node)
       const area = nodeW * nodeH
       if (area < bestArea) {
@@ -682,6 +675,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     fromTouch?: boolean
   ): boolean {
     if (isDiagramPresentationReadOnly() || Boolean(diagramStore.isReadonly)) return false
+    if (formatBrushActive.value) return false
     if (isLearningSheetCustomPickActive()) return false
     if (options?.allowNodeMove && !options.allowNodeMove()) return false
     const dt = diagramStore.type

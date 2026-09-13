@@ -473,6 +473,7 @@ def test_edit_schemas_exclude_ui_tools() -> None:
     assert "diagram.add_node" in edit_names
     assert "node_action.clarify_options" in edit_names
     assert "node_action.auto_complete" in edit_names
+    assert "node_action.explain_node" in edit_names
     assert "open_panel" not in edit_names
     assert "open_desktop_canvas" not in edit_names
     assert "open_panel" in general_names

@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.73] - 2026-09-13
+
+> **1.75C AMOLED watch plus 演讲模式 Super tile; format painter, history versions, and Kitty 节点解释.**
+
+### Added
+
+- **1.75C AMOLED** — Super firmware now targets Waveshare ESP32-S3-Touch-AMOLED-1.75C (466×466 CO5300, ES8311 + ES7210 AEC, 32MB flash). Custom HAL + AXP2101 backlight. The 1.85C LCD YAML stays.
+- **演讲模式 Super tile** — Native clicker (`com.mindgraph.slides`). Watch polls `/api/slides/remote` with the same flash-time `mgat_`. Pick 图库, then green **开始** opens that diagram on desktop canvas in 演讲模式. Pad: 一级分支 / 深度遍历, 上一页 | 下一页, 自动轮播, red **退出**. Desktop heartbeats the HUD; the watch never hosts the room. Doc: [`docs/architecture/slide_remote.md`](docs/architecture/slide_remote.md).
+- **Format painter** — Word-like click-to-apply (double-click locks). Session lives on the event bus so ribbon remounts cannot drop the apply path.
+- **History versions** — File ribbon lists snapshots newest-first. Persist-before-switch only when the canvas is ahead of the last save. Collab guests cannot mutate.
+- **Kitty 节点解释** — `explain_node` typed-loop tool plus one-sentence suggestions (「解释一下中国」「介绍这个节点」). Voice, length, and depth follow canvas 专业程度.
+
+### Changed
+
+- **Virtual keyboard** — English on-screen keys; CJK uses the system IME. Typing with a node selected replaces the label; double-click still edits in place.
+- **Audience** — Node explain, concept palette, and branch expand take `generation_instructions` / `audience_level`. Branch expand can attach RAG context.
+- **思维讲堂** — Overview / closing frames the topic plus first-level branches (not a tight zoom on the center). Lecture prefetch audit scripts walk the map before the talk.
+- **Document summary** — Tree-aware sibling / ancestor ranges so summaries stay attached after moves.
+- **Round overlay** — Circular safe area for both 360 and 466. Kitty / 语音笔记 / 校本培训 / 演讲模式 share the 466 face. 32MB partition option for the CJK font.
+
+### Tests
+
+- [`tests/test_slides_remote_routes.py`](tests/test_slides_remote_routes.py), [`tests/test_slides_remote_session.py`](tests/test_slides_remote_session.py), [`frontend/tests/applySlideRemoteCommand.spec.ts`](frontend/tests/applySlideRemoteCommand.spec.ts), [`frontend/tests/useSlideRemote.spec.ts`](frontend/tests/useSlideRemote.spec.ts), [`frontend/tests/useSlideRemoteDesktopPoll.spec.ts`](frontend/tests/useSlideRemoteDesktopPoll.spec.ts), [`frontend/tests/slideRemotePendingStart.spec.ts`](frontend/tests/slideRemotePendingStart.spec.ts)
+- [`tests/test_kitty_explain_node.py`](tests/test_kitty_explain_node.py), [`tests/test_mind_map_node_explain.py`](tests/test_mind_map_node_explain.py), [`tests/test_generation_instructions_api.py`](tests/test_generation_instructions_api.py), [`tests/test_mind_map_branch_expand.py`](tests/test_mind_map_branch_expand.py)
+- [`frontend/tests/useCanvasToolbarFormatBrush.spec.ts`](frontend/tests/useCanvasToolbarFormatBrush.spec.ts), [`frontend/tests/diagramSnapshotVersions.spec.ts`](frontend/tests/diagramSnapshotVersions.spec.ts), [`frontend/tests/virtualKeyboardIme.spec.ts`](frontend/tests/virtualKeyboardIme.spec.ts), [`frontend/tests/mindClassroomScript.spec.ts`](frontend/tests/mindClassroomScript.spec.ts), [`frontend/tests/mindMapSummary.spec.ts`](frontend/tests/mindMapSummary.spec.ts)
+
 ## [5.180.72] - 2026-09-12
 
 > **1.85C Super tiles for 语音笔记 and 校本培训; watch Voice Notes sends a real Origin.**

@@ -30,6 +30,7 @@ _ALLOWED_OPTION_ACTIONS = frozenset(
         "delete_node",
         "auto_complete_branch",
         "auto_complete",
+        "explain_node",
         "ask_followup",
         "decline_branch_autocomplete",
     }

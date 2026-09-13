@@ -74,6 +74,10 @@ vi.mock('@/stores/mindMapSubgraphPreview', () => ({
   useMindMapSubgraphPreviewStore: () => ({ clear: vi.fn() }),
 }))
 
+vi.mock('@/composables/canvasToolbar/useCanvasFormatBrush', () => ({
+  resetFormatBrushState: vi.fn(),
+}))
+
 vi.mock('@/composables/canvasToolbar/useCanvasVirtualKeyboardOpen', () => ({
   canvasVirtualKeyboardOpen: { value: false },
 }))
@@ -101,9 +105,8 @@ describe('unloadCanvasForLibrarySwitch', () => {
   })
 
   it('clears previous canvas data and applies next chrome type', async () => {
-    const { unloadCanvasForLibrarySwitch } = await import(
-      '@/composables/canvasPage/unloadCanvasForLibrarySwitch'
-    )
+    const { unloadCanvasForLibrarySwitch } =
+      await import('@/composables/canvasPage/unloadCanvasForLibrarySwitch')
 
     unloadCanvasForLibrarySwitch('mindmap')
 
@@ -121,9 +124,8 @@ describe('unloadCanvasForLibrarySwitch', () => {
   })
 
   it('preserves collabSessionActive when a workshop was live', async () => {
-    const { unloadCanvasForLibrarySwitch } = await import(
-      '@/composables/canvasPage/unloadCanvasForLibrarySwitch'
-    )
+    const { unloadCanvasForLibrarySwitch } =
+      await import('@/composables/canvasPage/unloadCanvasForLibrarySwitch')
     diagramState.collabSessionActive = true
 
     unloadCanvasForLibrarySwitch('circle_map')

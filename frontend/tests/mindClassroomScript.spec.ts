@@ -6,6 +6,7 @@ import {
   buildMindClassroomLectureSteps,
   expandLectureFocusNodeIds,
   lectureCaptionDwellMs,
+  lectureStepFitNodeIds,
   lectureTtsSafetyMs,
 } from '@/utils/mindClassroomScript'
 
@@ -109,16 +110,64 @@ describe('buildMindClassroomLectureSteps', () => {
     ).toEqual(['branch-a', 'leaf-a'])
     expect(
       expandLectureFocusNodeIds(
-        { kind: 'overview', focusNodeIds: ['topic', 'branch-a'] },
+        { kind: 'overview', focusNodeIds: ['topic'] },
+        'main_branch',
+        descendants,
+        'canvas_tour',
+        (id) => connections.filter((c) => c.source === id).map((c) => c.target)
+      )
+    ).toEqual(['topic', 'branch-a', 'branch-b'])
+    expect(
+      expandLectureFocusNodeIds(
+        { kind: 'overview', focusNodeIds: ['topic'] },
         'main_branch',
         descendants
       )
-    ).toEqual(['topic', 'branch-a'])
+    ).toEqual(['topic', 'branch-a', 'leaf-a', 'branch-b'])
+    expect(
+      expandLectureFocusNodeIds(
+        { kind: 'closing', focusNodeIds: ['topic'] },
+        'main_branch',
+        descendants,
+        'canvas_tour',
+        (id) => connections.filter((c) => c.source === id).map((c) => c.target)
+      )
+    ).toEqual(['topic', 'branch-a', 'branch-b'])
     expect(
       expandLectureFocusNodeIds(
         { kind: 'branch', focusNodeIds: [], branchNodeId: undefined },
         'main_branch',
         descendants
+      )
+    ).toEqual([])
+  })
+
+  it('frames overview on live topic plus first-level branches when the job only sent the topic', () => {
+    expect(
+      lectureStepFitNodeIds(
+        { kind: 'overview', focusNodeIds: ['topic'] },
+        'main_branch',
+        descendants,
+        'canvas_tour',
+        { connections, nodes }
+      )
+    ).toEqual(['topic', 'branch-a', 'branch-b'])
+    expect(
+      lectureStepFitNodeIds(
+        { kind: 'overview', focusNodeIds: [] },
+        'main_branch',
+        descendants,
+        'slide_deck',
+        { connections, nodes }
+      )
+    ).toEqual(['topic', 'branch-a', 'branch-b'])
+    expect(
+      lectureStepFitNodeIds(
+        { kind: 'branch', focusNodeIds: [], branchNodeId: undefined },
+        'main_branch',
+        descendants,
+        'canvas_tour',
+        { connections, nodes }
       )
     ).toEqual([])
   })

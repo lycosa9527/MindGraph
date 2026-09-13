@@ -10,6 +10,7 @@ idf_component_register(
 target_link_libraries(${COMPONENT_LIB} INTERFACE "-u kitty_app_provider_symbol")
 target_link_libraries(${COMPONENT_LIB} INTERFACE "-u training_app_provider_symbol")
 target_link_libraries(${COMPONENT_LIB} INTERFACE "-u recorder_app_provider_symbol")
+target_link_libraries(${COMPONENT_LIB} INTERFACE "-u slides_app_provider_symbol")
 target_link_libraries(${COMPONENT_LIB} INTERFACE "-u mindgraph_home_gesture_allowed")
 
 get_property(brookesia_runtime_app_stage_targets GLOBAL PROPERTY BROOKESIA_RUNTIME_APP_STAGE_TARGETS)
@@ -64,6 +65,20 @@ execute_process(
 )
 if(NOT ROUND_STATUS_PATCH EQUAL 0)
     message(FATAL_ERROR "round Super status-bar patch failed")
+endif()
+execute_process(
+    COMMAND python3 "${ROUND_UI_OVERLAY}/patch_lvgl_psram.py"
+    RESULT_VARIABLE ROUND_LVGL_PSRAM_PATCH
+)
+if(NOT ROUND_LVGL_PSRAM_PATCH EQUAL 0)
+    message(FATAL_ERROR "round LVGL PSRAM display-buffer patch failed")
+endif()
+execute_process(
+    COMMAND python3 "${ROUND_UI_OVERLAY}/patch_bmgr_i2s.py"
+    RESULT_VARIABLE ROUND_BMGR_I2S_PATCH
+)
+if(NOT ROUND_BMGR_I2S_PATCH EQUAL 0)
+    message(FATAL_ERROR "round bmgr I2S patch failed")
 endif()
 execute_process(
     COMMAND python3 "${ROUND_UI_OVERLAY}/patch_super_home_indicator.py"

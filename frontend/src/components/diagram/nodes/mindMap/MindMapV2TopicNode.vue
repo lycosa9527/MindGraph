@@ -11,8 +11,13 @@ import { storeToRefs } from 'pinia'
 
 import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
 import { aiBrainstormGlowingNodeIds } from '@/composables/aiBrainstorm/useAiBrainstorm'
+import {
+  applyFormatBrushToNode,
+  formatBrushActive,
+} from '@/composables/canvasToolbar/useCanvasFormatBrush'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import {
   handleLearningSheetPickNodeClick,
@@ -33,7 +38,6 @@ import {
 } from '@/config/mindMapGeometry'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
 import { useLLMResultsStore } from '@/stores'
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { markMindMapLoadShellMounted } from '@/utils/mindMapLoadDebug'
@@ -59,12 +63,11 @@ const resolvedStyle = computed(() => ({
   ...(props.data.style || {}),
 }))
 
-const topicNodeShape = computed(
-  (): NodeShape =>
-    resolveMindMapNodeShape(
-      { id: props.id, type: 'topic', style: resolvedStyle.value },
-      diagramStore.data?._mindmap_diagram_style as string | undefined
-    )
+const topicNodeShape = computed((): NodeShape =>
+  resolveMindMapNodeShape(
+    { id: props.id, type: 'topic', style: resolvedStyle.value },
+    diagramStore.data?._mindmap_diagram_style as string | undefined
+  )
 )
 
 const isUnderlineTopic = computed(() => topicNodeShape.value === 'underline')
@@ -77,7 +80,10 @@ function finalizeMindMapExportNodeStyle(style: CSSProperties): CSSProperties {
 }
 
 const isTextReadonly = computed(
-  () => props.data.hidden === true || (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly))
+  () =>
+    props.data.hidden === true ||
+    diagramPresentationReadOnlyRef.value ||
+    toValue(diagramStore.isReadonly)
 )
 
 const { getNodeStyle } = useTheme({
@@ -86,8 +92,7 @@ const { getNodeStyle } = useTheme({
 
 const defaultStyle = computed(() => getNodeStyle('topic'))
 const isTopicAutoCompleteGlowing = computed(
-  () =>
-    isWholeDiagramGenerating.value || aiBrainstormGlowingNodeIds.value.has(props.id)
+  () => isWholeDiagramGenerating.value || aiBrainstormGlowingNodeIds.value.has(props.id)
 )
 const defaultMindMapTheme = computed(() => getMindMapThemeForDiagram(diagramStore.data))
 
@@ -239,6 +244,12 @@ function handleEditCancel() {
 
 function handleTopicNodeClick(event: MouseEvent): void {
   if (isEditing.value) return
+  if (formatBrushActive.value) {
+    event.stopPropagation()
+    event.preventDefault()
+    applyFormatBrushToNode(props.id)
+    return
+  }
   if (isLearningSheetCustomPickActive()) {
     event.stopPropagation()
     event.preventDefault()

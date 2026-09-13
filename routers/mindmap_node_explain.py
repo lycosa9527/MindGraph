@@ -1,5 +1,5 @@
 """
-Mind map node explain API — short everyday gloss stream for a selected node.
+Mind map node explain API — 专业程度-aware gloss stream for a selected node.
 """
 
 from __future__ import annotations
@@ -209,6 +209,7 @@ async def _stream_explain(
             child_branches=req.child_branches or [],
             language=effective_lang,
             facet=facet,
+            audience_level=req.audience_level,
             user_id=user_id,
             organization_id=org_id,
             diagram_id=diagram_id,
@@ -305,7 +306,7 @@ async def explain_mindmap_node(
     request: Request,
     current_user: User = Depends(get_current_user),
 ):
-    """Stream a short everyday gloss for a mind map node."""
+    """Stream a 专业程度-aware gloss for a mind map node."""
     session_id = req.session_id.strip()
     # Ephemeral assist: track live activity + logs only. Do not persist LLM text
     # (or usage-timeline previews) — results live in the bubble for this open only.

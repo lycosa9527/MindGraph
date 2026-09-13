@@ -1,48 +1,105 @@
 """Tests for mind map node-explain facet prompts and billing wiring."""
 
-from agents.mind_maps.node_explain import _build_facet_prompt, _normalize_facet
+from agents.mind_maps.node_explain_prompts import (
+    build_facet_prompt,
+    max_tokens_for_audience,
+    normalize_facet,
+    style_band_for_level,
+)
+from models.requests.requests_thinking import MindMapNodeExplainRequest
 from services.redis.redis_activity_tracker import RedisActivityTracker
 from utils.auth.thinking_coin_config import CANVAS_ASSIST_REQUEST_TYPES
+
+_PROMPT_KWARGS = {
+    "node_label": "光合作用",
+    "topic": "植物",
+    "diagram_type": "mindmap",
+    "top_level_branches": ["根", "茎", "叶"],
+    "ancestor_path": ["叶"],
+    "sibling_branches": ["呼吸作用"],
+    "child_branches": [],
+}
 
 
 def test_normalize_facet_accepts_known_values() -> None:
     """Known facet strings should round-trip unchanged."""
-    assert _normalize_facet("meaning") == "meaning"
-    assert _normalize_facet("conflict") == "conflict"
-    assert _normalize_facet("questions") == "questions"
+    assert normalize_facet("meaning") == "meaning"
+    assert normalize_facet("conflict") == "conflict"
+    assert normalize_facet("questions") == "questions"
 
 
 def test_normalize_facet_defaults_unknown_to_meaning() -> None:
     """Unknown facet values fall back to meaning."""
-    assert _normalize_facet("") == "meaning"
-    assert _normalize_facet("other") == "meaning"
+    assert normalize_facet("") == "meaning"
+    assert normalize_facet("other") == "meaning"
 
 
-def test_meaning_prompt_asks_for_short_everyday_gloss() -> None:
-    """Meaning facet should ask for a short everyday gloss, not a long definition."""
-    prompt = _build_facet_prompt(
-        facet="meaning",
-        node_label="光合作用",
-        topic="植物",
-        diagram_type="mindmap",
-        top_level_branches=["根", "茎", "叶"],
-        ancestor_path=["叶"],
-        sibling_branches=["呼吸作用"],
-        child_branches=[],
-        language="zh",
-    )
+def test_style_bands_split_kid_school_and_professional() -> None:
+    """Primary stays kid-friendly; audits use the professional band."""
+    assert style_band_for_level("primary") == "kid"
+    assert style_band_for_level("junior") == "school"
+    assert style_band_for_level("senior") == "school"
+    assert style_band_for_level("university") == "pro"
+    assert style_band_for_level("adult") == "pro"
+    assert style_band_for_level("expert") == "pro"
+    assert style_band_for_level("general") == "general"
+    assert style_band_for_level("unknown") == "general"
+
+
+def test_token_budget_grows_for_professional_levels() -> None:
+    """Kid glosses stay short; expert / audit glosses need more tokens."""
+    assert max_tokens_for_audience("primary") == 96
+    assert max_tokens_for_audience("expert") == 192
+    assert max_tokens_for_audience("expert") > max_tokens_for_audience("primary")
+
+
+def test_general_meaning_prompt_is_neutral() -> None:
+    """Unset 专业程度 must not force a children's apple gloss."""
+    prompt = build_facet_prompt(facet="meaning", language="zh", **_PROMPT_KWARGS)
     assert "光合作用" in prompt
     assert "中心主题：植物" in prompt
+    assert "【专业程度】" in prompt
+    assert "专业程度：通用" in prompt
+    assert "不要故意小学化" in prompt
+    assert "小朋友" not in prompt
+    assert "苹果是长在树上的红色水果" not in prompt
+
+
+def test_primary_meaning_prompt_uses_kid_voice() -> None:
+    """小学 专业程度 keeps the everyday children's gloss."""
+    prompt = build_facet_prompt(
+        facet="meaning",
+        language="zh",
+        audience_level="primary",
+        **_PROMPT_KWARGS,
+    )
     assert "日常口语" in prompt
+    assert "小朋友" in prompt
+    assert "苹果是长在树上的红色水果" in prompt
     assert "40–50 字" in prompt
-    assert "不要讲层级位置" in prompt
-    assert "不要写认知冲突" in prompt
-    assert "不要列问题" in prompt
+    assert "专业程度：小学" in prompt
+    assert "禁止术语" in prompt
 
 
-def test_english_meaning_prompt_asks_for_twenty_five_words() -> None:
-    """English meaning facet should cap the gloss at about 25–30 words."""
-    prompt = _build_facet_prompt(
+def test_expert_meaning_prompt_is_audit_ready() -> None:
+    """专家 专业程度 asks for a peer / audit gloss, not a kid story."""
+    prompt = build_facet_prompt(
+        facet="meaning",
+        language="zh",
+        audience_level="expert",
+        **_PROMPT_KWARGS,
+    )
+    assert "领域术语" in prompt
+    assert "可审阅" in prompt
+    assert "禁止科普开场" in prompt
+    assert "专业程度：专家" in prompt
+    assert "小朋友" not in prompt
+    assert "苹果是长在树上的红色水果" not in prompt
+
+
+def test_english_primary_meaning_prompt_keeps_apple_example() -> None:
+    """English primary still uses the short everyday apple gloss."""
+    prompt = build_facet_prompt(
         facet="meaning",
         node_label="Apple",
         topic="Fruit",
@@ -52,16 +109,50 @@ def test_english_meaning_prompt_asks_for_twenty_five_words() -> None:
         sibling_branches=["Pear"],
         child_branches=[],
         language="en",
+        audience_level="primary",
     )
     assert "Apple" in prompt
     assert "25–30 words" in prompt
     assert "red fruit that grows on trees" in prompt
-    assert "No hierarchy lecture" in prompt
+    assert "Expertise: primary school" in prompt
+
+
+def test_english_expert_meaning_prompt_asks_for_audit_gloss() -> None:
+    """English expert meaning should be dense and audit-ready."""
+    prompt = build_facet_prompt(
+        facet="meaning",
+        node_label="Photosynthesis",
+        topic="Plants",
+        diagram_type="mindmap",
+        top_level_branches=["Roots", "Leaves"],
+        ancestor_path=["Leaves"],
+        sibling_branches=["Respiration"],
+        child_branches=[],
+        language="en",
+        audience_level="expert",
+    )
+    assert "audit-ready" in prompt
+    assert "Domain terminology" in prompt
+    assert "Expertise: expert peer" in prompt
+    assert "red fruit that grows on trees" not in prompt
+
+
+def test_generation_instructions_are_appended() -> None:
+    """Frontend 专业程度 templates still land on the prompt."""
+    prompt = build_facet_prompt(
+        facet="meaning",
+        language="zh",
+        audience_level="primary",
+        generation_instructions="请按「小学」专业程度生成内容。\n用语：只用日常具体词。",
+        **_PROMPT_KWARGS,
+    )
+    assert "请按「小学」专业程度生成内容。" in prompt
+    assert "只用日常具体词" in prompt
 
 
 def test_conflict_prompt_excludes_full_definition() -> None:
     """Conflict facet should focus on tension and avoid full definitions."""
-    prompt = _build_facet_prompt(
+    prompt = build_facet_prompt(
         facet="conflict",
         node_label="Photosynthesis",
         topic="Plants",
@@ -79,7 +170,7 @@ def test_conflict_prompt_excludes_full_definition() -> None:
 
 def test_questions_prompt_asks_for_three_items() -> None:
     """Questions facet should request exactly three numbered inquiry prompts."""
-    prompt = _build_facet_prompt(
+    prompt = build_facet_prompt(
         facet="questions",
         node_label="Photosynthesis",
         topic="Plants",
@@ -92,6 +183,32 @@ def test_questions_prompt_asks_for_three_items() -> None:
     )
     assert "3 short" in prompt
     assert "1. 2. 3." in prompt
+
+
+def test_explain_request_accepts_audience_level() -> None:
+    """Explain API should take a first-class 专业程度 id."""
+    req = MindMapNodeExplainRequest.model_validate(
+        {
+            "session_id": "explain01",
+            "node_id": "n1",
+            "node_label": "光合作用",
+            "audience_level": "expert",
+        }
+    )
+    assert req.audience_level == "expert"
+
+
+def test_explain_request_unknown_audience_falls_back_to_general() -> None:
+    """Unknown 专业程度 ids must not break the stream."""
+    req = MindMapNodeExplainRequest.model_validate(
+        {
+            "session_id": "explain01",
+            "node_id": "n1",
+            "node_label": "光合作用",
+            "audience_level": "phd",
+        }
+    )
+    assert req.audience_level == "general"
 
 
 def test_mindmap_node_explain_is_canvas_assist_request_type() -> None:

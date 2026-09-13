@@ -322,6 +322,50 @@ describe('useMindClassroomLecture lifecycle', () => {
     app.unmount()
   })
 
+  it('fits overview audio to the topic plus first-level branches', async () => {
+    const pinia = createPinia()
+    const app = createApp(LectureProbe)
+    app.use(pinia)
+    app.mount(document.createElement('div'))
+
+    const diagram = useDiagramStore(pinia)
+    diagram.data = {
+      type: 'mindmap',
+      nodes: [
+        { id: 'topic', text: 'Topic', type: 'topic', position: { x: 0, y: 0 } },
+        { id: 'branch-a', text: 'A', type: 'branch', position: { x: 200, y: 0 } },
+        { id: 'leaf-a', text: 'Leaf', type: 'branch', position: { x: 400, y: 0 } },
+        { id: 'branch-b', text: 'B', type: 'branch', position: { x: -200, y: 0 } },
+      ],
+      connections: [
+        { id: 'edge-a', source: 'topic', target: 'branch-a' },
+        { id: 'edge-leaf', source: 'branch-a', target: 'leaf-a' },
+        { id: 'edge-b', source: 'topic', target: 'branch-b' },
+      ],
+    } satisfies DiagramData
+    const classroom = useMindClassroomStore(pinia)
+    classroom.beginSession(
+      [
+        {
+          ...steps[0],
+          focusNodeIds: ['topic'],
+        },
+      ],
+      'canvas_tour'
+    )
+    const emitSpy = vi.spyOn(eventBus, 'emit')
+    lecture?.goToStep(0)
+    await nextTick()
+    expect(emitSpy).toHaveBeenCalledWith(
+      'view:fit_to_nodes_requested',
+      expect.objectContaining({
+        nodeIds: ['topic', 'branch-a', 'branch-b'],
+      })
+    )
+    emitSpy.mockRestore()
+    app.unmount()
+  })
+
   it('starts playback without cancelling first-slide warmup', async () => {
     const pinia = createPinia()
     const app = createApp(LectureProbe)

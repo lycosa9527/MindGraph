@@ -69,7 +69,10 @@ from services.kitty.infra.redis.kitty_session_redis import (
 )
 from services.kitty.routing.node_action_library import render_diagram_snapshot_block
 from services.kitty.routing.outcomes import RouteOutcome, RouteResult
-from services.kitty.routing.one_sentence_edit_heuristics import heuristic_one_sentence_edit_command
+from services.kitty.routing.one_sentence_edit_heuristics import (
+    heuristic_one_sentence_edit_command,
+    is_fast_explain_command,
+)
 from services.kitty.routing.one_sentence_edit_helpers import (
     is_mindmap_diagram_type,
     is_one_sentence_edit_mode,
@@ -341,6 +344,7 @@ def _heuristic_dispatch_ok(dispatched: Any) -> bool:
         "auto_complete",
         "auto_complete_branch",
         "ask_followup",
+        "explain_node",
     }
 
 
@@ -548,6 +552,24 @@ async def run_typed_agent_loop(
                     voice_session_id,
                     dispatched,
                     reason="fast_preference",
+                )
+                if finished is not None:
+                    return finished
+            elif is_fast_explain_command(heuristic) and not _STACKED_JOB_RE.search(text):
+                dispatched = await dispatch_prepared_command(
+                    websocket,
+                    voice_session_id,
+                    command=heuristic,
+                    session_context=context,
+                    diagram_type=diagram_type,
+                    command_text=text,
+                    verify_required=False,
+                    grounding_source="fast_explain",
+                )
+                finished = _finish_heuristic_dispatch(
+                    voice_session_id,
+                    dispatched,
+                    reason="fast_explain",
                 )
                 if finished is not None:
                     return finished

@@ -35,6 +35,7 @@ import MindMapAppearanceDropdown from '@/components/canvas/MindMapAppearanceDrop
 import MindMapExportOptionsPanel from '@/components/canvas/MindMapExportOptionsPanel.vue'
 import MindMapNumberingControls from '@/components/canvas/MindMapNumberingControls.vue'
 import CanvasToolbarMindMapFormat from '@/components/canvas/CanvasToolbarMindMapFormat.vue'
+import CanvasToolbarMindMapHistoryVersions from '@/components/canvas/CanvasToolbarMindMapHistoryVersions.vue'
 import CanvasToolbarMindMapInsert from '@/components/canvas/CanvasToolbarMindMapInsert.vue'
 import CanvasToolbarMindMapNodeStyle from '@/components/canvas/CanvasToolbarMindMapNodeStyle.vue'
 import MindMapInsertNodeIcon from '@/components/canvas/MindMapInsertNodeIcon.vue'
@@ -964,6 +965,7 @@ watch(
               >
             </button>
           </ElTooltip>
+          <CanvasToolbarMindMapHistoryVersions :compact="props.compact" />
         </div>
       </template>
     </div>

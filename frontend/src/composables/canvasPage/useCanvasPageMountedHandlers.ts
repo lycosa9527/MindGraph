@@ -16,6 +16,7 @@ import { type ComputedRef, nextTick, onMounted } from 'vue'
 import { useLanguage, useNotifications, useSnapshotHistory } from '@/composables'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { eventBus } from '@/composables/core/useEventBus'
+import { canMutateDiagramSnapshots } from '@/composables/editor/diagramSnapshotVersions'
 import { SAVE } from '@/config'
 import {
   useAuthStore,
@@ -53,7 +54,14 @@ export function useCanvasPageMountedHandlers(options: {
     eventBus.onWithOwner(
       'snapshot:requested',
       async () => {
-        if (diagramStore.collabSessionActive && isDiagramOwner?.value === false) return
+        if (
+          !canMutateDiagramSnapshots({
+            collabSessionActive: diagramStore.collabSessionActive,
+            isDiagramOwner: isDiagramOwner?.value,
+          })
+        ) {
+          return
+        }
         const diagramId = savedDiagramsStore.activeDiagramId
         if (!diagramId) return
         const spec = getDiagramPersistBaseSpec()

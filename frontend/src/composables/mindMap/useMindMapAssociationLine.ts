@@ -1,15 +1,15 @@
 import { computed, ref, watch } from 'vue'
 
-import { resetFormatBrushState } from '@/composables/canvasToolbar/useCanvasToolbarFormatting'
+import { resetFormatBrushState } from '@/composables/canvasToolbar/useCanvasFormatBrush'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
+  type AssociationCurveOffset,
   computeMindMapAssociationHandles,
   mindMapAssociationSameSide,
   parseAssociationCurveOffset,
-  type AssociationCurveOffset,
 } from '@/utils/mindMapAssociationLine'
 import {
   MIND_MAP_ASSOCIATION_EDGE_TYPE,
@@ -64,9 +64,9 @@ function isAssociationToolbarEvent(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false
   return Boolean(
     target.closest('.mm-summary-toolbar') ||
-      target.closest('.mm-summary-toolbar-popper') ||
-      target.closest('.mm-summary-handle-btn') ||
-      target.closest('.mg-association-delete')
+    target.closest('.mm-summary-toolbar-popper') ||
+    target.closest('.mm-summary-handle-btn') ||
+    target.closest('.mg-association-delete')
   )
 }
 

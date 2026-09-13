@@ -9,6 +9,7 @@ export function registerMindMapRibbonPageBridge(options: {
   handleSaveKey: () => void | Promise<void>
   handleSnapshotRecall: (version: number) => void
   handleSnapshotDelete: (version: number) => void
+  handleRestoreCurrentVersion: () => void
   handleStartPresentationWithTier: () => void | Promise<void>
   handleOpenCollab: (mode: 'organization' | 'network' | 'stop') => void
   handleHandToolToggle: (active: boolean) => void
@@ -24,14 +25,21 @@ export function registerMindMapRibbonPageBridge(options: {
   eventBus.onWithOwner(
     'snapshot:recall_requested',
     ({ versionNumber }) => {
-      options.handleSnapshotRecall(versionNumber)
+      void options.handleSnapshotRecall(versionNumber)
     },
     'CanvasPage'
   )
   eventBus.onWithOwner(
     'snapshot:delete_requested',
     ({ versionNumber }) => {
-      options.handleSnapshotDelete(versionNumber)
+      void options.handleSnapshotDelete(versionNumber)
+    },
+    'CanvasPage'
+  )
+  eventBus.onWithOwner(
+    'snapshot:current_requested',
+    () => {
+      void options.handleRestoreCurrentVersion()
     },
     'CanvasPage'
   )

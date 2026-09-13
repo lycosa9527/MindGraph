@@ -18,6 +18,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useKittyDesktopActionPoll } from '@/composables/kitty/useKittyDesktopActionPoll'
+import { useSlideRemoteDesktopPoll } from '@/composables/mindMap/useSlideRemoteDesktopPoll'
 import { useTrainingFollow } from '@/composables/training/useTrainingFollow'
 import { useTrainingSessionEngine } from '@/composables/training/useTrainingSessionEngine'
 import { privacyPageUiCode } from '@/composables/usePrivacyPageLocale'
@@ -38,6 +39,7 @@ import { shouldShowTestServerBannerOnVisit } from '@/utils/testServerBanner'
 const notify = useNotifications()
 
 useKittyDesktopActionPoll()
+useSlideRemoteDesktopPoll()
 useTrainingFollow()
 useTrainingSessionEngine()
 

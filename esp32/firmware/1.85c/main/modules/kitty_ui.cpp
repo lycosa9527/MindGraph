@@ -13,6 +13,7 @@
 #include "kitty_ui_mascot.hpp"
 #include "kitty_ui_widgets.hpp"
 #include "kitty_ui_work_ring.hpp"
+#include "watch_face.hpp"
 
 namespace {
 
@@ -353,11 +354,11 @@ lv_obj_t *add_picker_row(
 {
     lv_obj_t *row = lv_obj_create(g_widgets.picker_list);
     lv_obj_remove_style_all(row);
-    lv_obj_set_size(row, 264, 40);
-    lv_obj_set_style_radius(row, 12, 0);
+    lv_obj_set_size(row, watch_px(264), watch_px(40));
+    lv_obj_set_style_radius(row, watch_px(12), 0);
     lv_obj_set_style_bg_color(row, lv_color_hex(bg), 0);
     lv_obj_set_style_bg_opa(row, LV_OPA_COVER, 0);
-    lv_obj_set_style_pad_hor(row, 10, 0);
+    lv_obj_set_style_pad_hor(row, watch_px(10), 0);
     lv_obj_set_style_clip_corner(row, true, 0);
     if (on_click != nullptr) {
         lv_obj_add_flag(row, LV_OBJ_FLAG_CLICKABLE);
@@ -365,7 +366,7 @@ lv_obj_t *add_picker_row(
     }
     lv_obj_add_flag(row, LV_OBJ_FLAG_GESTURE_BUBBLE);
     lv_obj_t *label = lv_label_create(row);
-    lv_obj_set_size(label, 240, 32);
+    lv_obj_set_size(label, watch_px(240), watch_px(32));
     lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_style_anim_duration(label, lv_anim_speed_clamped(14, 3000, 10000), 0);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_LEFT, 0);

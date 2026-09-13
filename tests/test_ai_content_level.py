@@ -4,6 +4,7 @@ from prompts.ai_content_level import (
     append_audience_instructions,
     extract_appended_generation_instructions,
     merge_generation_instructions,
+    resolve_generation_instructions,
 )
 
 
@@ -38,3 +39,19 @@ def test_extract_appended_generation_instructions_round_trips() -> None:
     assert extract_appended_generation_instructions(merged, "zh") == "小学短句"
     assert extract_appended_generation_instructions("主题", "zh") is None
     assert extract_appended_generation_instructions("小学短句", "zh") is None
+
+
+def test_resolve_generation_instructions_prefers_explicit_field() -> None:
+    """The request field wins over a router-merged prompt suffix."""
+    merged = merge_generation_instructions("主题", "merged-block", "zh")
+    assert resolve_generation_instructions("explicit-block", merged, "zh") == "explicit-block"
+    assert resolve_generation_instructions("  explicit-block  ", "主题", "zh") == "explicit-block"
+
+
+def test_resolve_generation_instructions_falls_back_to_merged_prompt() -> None:
+    """Empty request field still recovers the locale-marker suffix."""
+    merged = merge_generation_instructions("主题", "小学短句", "zh")
+    assert resolve_generation_instructions(None, merged, "zh") == "小学短句"
+    assert resolve_generation_instructions("  ", merged, "zh") == "小学短句"
+    assert resolve_generation_instructions(None, "主题", "zh") is None
+    assert resolve_generation_instructions(None, "", "") is None

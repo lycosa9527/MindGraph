@@ -1,16 +1,15 @@
 # ESP32 / Brookesia
 
-MindGraph device work for the Waveshare **ESP32-S3-Touch-LCD-1.85C V1** (round 360×360). Docs: [Waveshare 1.85C](https://docs.waveshare.net/ESP32-S3-Touch-LCD-1.85C/?variant=ESP32-S3-Touch-LCD-1.85C).
+MindGraph device work for Waveshare round Super watches.
 
 | Path | Purpose |
 |------|---------|
-| `firmware/1.85c` | System Super firmware (WSL IDF 6.1 build; copy merged bin to Desktop to flash) |
-| `boards/waveshare/esp32_s3_touch_lcd_1_85c` | Custom HAL for V1 display + touch |
-| `apps/kitty` | Kitty智能体 JS app — `brookesia simulate --resolution 360x360` |
+| `firmware/1.85c` | System Super firmware (WSL IDF 6.1; merge-bin then flash) |
+| `boards/waveshare/esp32_s3_touch_amoled_1_75c` | **Current:** 1.75C AMOLED 466×466, ES8311 + ES7210 AEC |
+| `boards/waveshare/esp32_s3_touch_lcd_1_85c` | 1.85C V1 LCD 360×360, PCM5101 + MEMS (no AEC) |
+| `apps/kitty` | Kitty智能体 JS app |
 
-The V1 HAL is **360×360**. Super is a rectangular shell; [`firmware/1.85c/round_ui`](firmware/1.85c/round_ui) applies a circular safe area (status capsule, launcher, Settings/Files/App Store, 九宫格 keyboard with Chinese T9). Native Super apps: **Kitty智能体** (voice), **语音笔记** (recorder — transcript on top, pause / mic / stop, 生成思维导图), and **校本培训** (instructor remote — inset puzzle pad plus school / 开始 pills). There is no Brookesia JS `.bpk` remote.
-
-V1 audio is PCM5101, not ES8311. First firmware image is display/touch only.
+**1.75C** docs: [Waveshare 1.75C](https://docs.waveshare.net/ESP32-S3-Touch-AMOLED-1.75C). Dual mics + ES7210 playback reference enable Brookesia AFE (`MIC_LAYOUT=RMNN`). Super is a rectangular shell; [`firmware/1.85c/round_ui`](firmware/1.85c/round_ui) applies a circular safe area for 360 and 466. Native Super apps: **Kitty智能体**, **语音笔记**, **校本培训**, **演讲模式**.
 
 IDF: **6.1** in WSL (`~/esp/esp-idf`, conda env `idf61`). Do not use `C:\Espressif\frameworks\esp-idf-v5.5.2`.
 

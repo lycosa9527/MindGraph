@@ -36,6 +36,11 @@ import { shouldPreferSingleLineNoWrap } from '@/stores/specLoader/textMeasuremen
 import { focusHtmlControl, selectHtmlControl } from '@/utils/focusHtmlControl'
 import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import { isWhitespaceOnlyNodeText, resolveInlineNodeTextForSave } from '@/utils/nodeEditableText'
+import {
+  isVirtualKeyboardChromeElement,
+  isVirtualKeyboardChromeEvent,
+  isVirtualKeyboardPanelOpen,
+} from '@/utils/virtualKeyboardChrome'
 
 const props = withDefaults(
   defineProps<{
@@ -216,7 +221,7 @@ function refocusInlineEditInput(source: string): boolean {
   return focused
 }
 
-function handleEditRequested(payload: { nodeId?: string }): void {
+function handleEditRequested(payload: { nodeId?: string; replaceContent?: boolean }): void {
   if (props.readonly) return
   if (payload?.nodeId !== props.nodeId) return
 
@@ -231,6 +236,11 @@ function handleEditRequested(payload: { nodeId?: string }): void {
         refocusInlineEditInput('refocus-while-editing')
       })
     }
+    return
+  }
+
+  if (payload.replaceContent) {
+    startEditing({ replaceContent: true })
     return
   }
 
@@ -581,7 +591,7 @@ const wrapperStyle = computed(() => {
 /**
  * Start editing mode
  */
-function startEditing(): void {
+function startEditing(options?: { replaceContent?: boolean }): void {
   if (localIsEditing.value || props.readonly) {
     markMindMapInlineEditStage('edit:start-blocked', {
       nodeId: props.nodeId,
@@ -638,10 +648,13 @@ function startEditing(): void {
   }
 
   if (props.focusQuestionEditableSplit) {
-    editBody.value = props.focusQuestionEditableSplit.body
     originalComposed.value = props.text
+    editBody.value = options?.replaceContent ? '' : props.focusQuestionEditableSplit.body
   } else {
     originalText.value = editText.value
+    if (options?.replaceContent) {
+      editText.value = ''
+    }
   }
 
   localIsEditing.value = true
@@ -915,6 +928,12 @@ function handleKeydown(event: KeyboardEvent): void {
 function handleBlur(): void {
   setTimeout(() => {
     if (!localIsEditing.value) return
+    if (inputRef.value && document.activeElement === inputRef.value) return
+    if (isVirtualKeyboardChromeElement(document.activeElement)) return
+    if (isVirtualKeyboardPanelOpen()) {
+      focusHtmlControl(inputRef.value)
+      return
+    }
     // Post-add / remount: layout write-back steals focus — refocus, don't commit.
     if (isMindMapStickyEditOwner()) {
       const ageMs = Date.now() - mindMapEditOpenedAtMs
@@ -960,6 +979,7 @@ function isEventInsideEditor(event: Event): boolean {
 function commitEditOnOutsidePointer(event: Event): void {
   if (!localIsEditing.value) return
   if (isEventInsideEditor(event)) return
+  if (isVirtualKeyboardChromeEvent(event)) return
   // Keep sticky edit only for toast/overlay focus theft — not canvas clicks.
   if (isMindMapStickyEditOwner() && isEphemeralOutsideEditTarget(event)) {
     return

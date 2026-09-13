@@ -48,7 +48,8 @@
     margin 0.18s ease,
     padding 0.18s ease,
     color 0.18s ease,
-    background 0.18s ease;
+    background 0.18s ease,
+    border-radius 0.18s ease;
 }
 
 .mm-ribbon-tabs__inner {
@@ -84,6 +85,22 @@
   box-shadow: none;
 }
 
+.mm-ribbon-tabs--topbar.mm-ribbon-tabs--collapsed .mm-ribbon-tabs__tab {
+  border-radius: 8px;
+}
+
+.mm-ribbon-tabs--topbar.mm-ribbon-tabs--collapsed .mm-ribbon-tabs__tab.is-active {
+  height: 36px;
+  margin-bottom: 0;
+  padding: 0 14px;
+  background: rgb(255 255 255 / 0.88);
+  border-radius: 8px;
+}
+
+.mm-ribbon-tabs--topbar.mm-ribbon-tabs--collapsed .mm-ribbon-tabs__tab.is-active .mm-ribbon-tabs__inner {
+  transform: none;
+}
+
 .dark .mm-ribbon-tabs--topbar .mm-ribbon-tabs__tab {
   color: #e5e7eb;
 }
@@ -92,6 +109,10 @@
   background: #1f2937;
   color: #93c5fd;
   box-shadow: none;
+}
+
+.dark .mm-ribbon-tabs--topbar.mm-ribbon-tabs--collapsed .mm-ribbon-tabs__tab.is-active {
+  background: rgb(31 41 55 / 0.88);
 }
 
 .mm-ribbon-tabs__glyph {

@@ -2,21 +2,21 @@
 
 #include "kitty_ui_mascot.hpp"
 #include "kitty_ui_work_ring.hpp"
+#include "watch_face.hpp"
 
 namespace {
 
-constexpr int32_t k_face = 360;
 constexpr uint32_t k_bg = 0xF8FAFC;
 constexpr uint32_t k_ink = 0x0F172A;
 constexpr uint32_t k_mute = 0x64748B;
 constexpr uint32_t k_card = 0xFFFFFF;
 constexpr uint32_t k_line = 0xE2E8F0;
 constexpr uint32_t k_violet = 0x7C3AED;
-constexpr int32_t k_mic = 64;
-constexpr int32_t k_mic_hit = 80;
-constexpr int32_t k_mic_cx = 270;
-constexpr int32_t k_mic_cy = 290;
-constexpr int32_t k_mic_hit_slop = 8;
+constexpr int32_t k_mic = watch_px(64);
+constexpr int32_t k_mic_hit = watch_px(80);
+constexpr int32_t k_mic_cx = watch_px(270);
+constexpr int32_t k_mic_cy = watch_px(290);
+constexpr int32_t k_mic_hit_slop = watch_px(8);
 
 lv_obj_t *make_label(
     lv_obj_t *parent,
@@ -73,8 +73,8 @@ lv_obj_t *make_choice_grid(lv_obj_t *parent)
 {
     lv_obj_t *grid = lv_obj_create(parent);
     lv_obj_remove_style_all(grid);
-    lv_obj_set_pos(grid, 62, 94);
-    lv_obj_set_size(grid, 236, 132);
+    lv_obj_set_pos(grid, watch_px(62), watch_px(94));
+    lv_obj_set_size(grid, watch_px(236), watch_px(132));
     lv_obj_set_flex_flow(grid, LV_FLEX_FLOW_ROW_WRAP);
     lv_obj_set_flex_align(grid, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_row(grid, 8, 0);
@@ -87,7 +87,7 @@ lv_obj_t *make_choice_grid(lv_obj_t *parent)
 
 lv_obj_t *make_choice(lv_obj_t *parent, int32_t index, lv_event_cb_t on_choice)
 {
-    lv_obj_t *chip = make_card(parent, 0, 0, 114, 62, 16);
+    lv_obj_t *chip = make_card(parent, 0, 0, watch_px(114), watch_px(62), watch_px(16));
     lv_obj_set_style_clip_corner(chip, true, 0);
     lv_obj_set_style_border_color(chip, lv_color_hex(k_violet), 0);
     lv_obj_set_style_border_width(chip, 2, 0);
@@ -98,7 +98,7 @@ lv_obj_t *make_choice(lv_obj_t *parent, int32_t index, lv_event_cb_t on_choice)
     lv_obj_set_style_text_color(label, lv_color_hex(k_ink), 0);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
     lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
-    lv_obj_set_size(label, 98, 48);
+    lv_obj_set_size(label, watch_px(98), watch_px(48));
     lv_obj_center(label);
     lv_label_set_text(label, "");
     lv_obj_add_flag(chip, LV_OBJ_FLAG_HIDDEN);
@@ -149,13 +149,15 @@ KittyWidgets kitty_ui_build(
     lv_obj_add_flag(widgets.root, LV_OBJ_FLAG_CLICKABLE);
     widgets.work_ring = kitty_ui_work_ring_build(widgets.root);
 
-    lv_obj_t *title = make_label(widgets.root, 70, 28, 220, 22, LV_TEXT_ALIGN_CENTER, k_ink);
+    lv_obj_t *title = make_label(
+        widgets.root, watch_px(70), watch_px(28), watch_px(220), watch_px(22), LV_TEXT_ALIGN_CENTER, k_ink
+    );
     lv_label_set_text(title, "Kitty智能体");
 
     lv_obj_t *status = lv_obj_create(widgets.root);
     lv_obj_remove_style_all(status);
-    lv_obj_set_pos(status, 70, 50);
-    lv_obj_set_size(status, 220, 18);
+    lv_obj_set_pos(status, watch_px(70), watch_px(50));
+    lv_obj_set_size(status, watch_px(220), watch_px(18));
     lv_obj_set_flex_flow(status, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(status, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(status, 6, 0);
@@ -169,19 +171,23 @@ KittyWidgets kitty_ui_build(
 
     widgets.mascot = lv_obj_create(widgets.root);
     lv_obj_remove_style_all(widgets.mascot);
-    lv_obj_set_pos(widgets.mascot, 110, 88);
-    lv_obj_set_size(widgets.mascot, 140, 140);
+    lv_obj_set_pos(widgets.mascot, watch_px(110), watch_px(88));
+    lv_obj_set_size(widgets.mascot, watch_px(140), watch_px(140));
     lv_obj_set_style_bg_opa(widgets.mascot, LV_OPA_TRANSP, 0);
     lv_obj_set_style_pad_all(widgets.mascot, 0, 0);
     lv_obj_clear_flag(widgets.mascot, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_clear_flag(widgets.mascot, LV_OBJ_FLAG_CLICKABLE);
     kitty_ui_mascot_build(widgets.mascot);
 
-    widgets.user = make_label(widgets.root, 40, 92, 280, 40, LV_TEXT_ALIGN_RIGHT, k_violet);
+    widgets.user = make_label(
+        widgets.root, watch_px(40), watch_px(92), watch_px(280), watch_px(40), LV_TEXT_ALIGN_RIGHT, k_violet
+    );
     lv_label_set_long_mode(widgets.user, LV_LABEL_LONG_WRAP);
     lv_obj_set_style_bg_opa(widgets.user, LV_OPA_TRANSP, 0);
     lv_obj_clear_flag(widgets.user, LV_OBJ_FLAG_CLICKABLE);
-    widgets.kitty = make_label(widgets.root, 40, 136, 280, 40, LV_TEXT_ALIGN_LEFT, k_ink);
+    widgets.kitty = make_label(
+        widgets.root, watch_px(40), watch_px(136), watch_px(280), watch_px(40), LV_TEXT_ALIGN_LEFT, k_ink
+    );
     lv_label_set_long_mode(widgets.kitty, LV_LABEL_LONG_WRAP);
     lv_obj_set_style_bg_opa(widgets.kitty, LV_OPA_TRANSP, 0);
     lv_obj_clear_flag(widgets.kitty, LV_OBJ_FLAG_CLICKABLE);
@@ -191,20 +197,20 @@ KittyWidgets kitty_ui_build(
         widgets.choices[i] = make_choice(widgets.choice_grid, i + 1, on_choice);
     }
 
-    widgets.library = make_card(widgets.root, 68, 264, 164, 52, 26);
+    widgets.library = make_card(widgets.root, watch_px(68), watch_px(264), watch_px(164), watch_px(52), watch_px(26));
     lv_obj_add_flag(widgets.library, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_set_style_clip_corner(widgets.library, true, 0);
     lv_obj_add_event_cb(widgets.library, on_library, LV_EVENT_CLICKED, nullptr);
     widgets.library_label = lv_label_create(widgets.library);
-    lv_obj_set_size(widgets.library_label, 140, 22);
+    lv_obj_set_size(widgets.library_label, watch_px(140), watch_px(22));
     lv_obj_set_style_text_align(widgets.library_label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_style_text_color(widgets.library_label, lv_color_hex(k_ink), 0);
     lv_label_set_long_mode(widgets.library_label, LV_LABEL_LONG_DOT);
     lv_obj_center(widgets.library_label);
     lv_label_set_text(widgets.library_label, "图库");
 
-    widgets.mic_ring_b = make_ring(widgets.root, 226, 246, 88);
-    widgets.mic_ring_a = make_ring(widgets.root, 234, 254, 72);
+    widgets.mic_ring_b = make_ring(widgets.root, watch_px(226), watch_px(246), watch_px(88));
+    widgets.mic_ring_a = make_ring(widgets.root, watch_px(234), watch_px(254), watch_px(72));
     widgets.mic_hit = make_disk(
         widgets.root,
         k_mic_cx - k_mic_hit / 2,
@@ -230,15 +236,17 @@ KittyWidgets kitty_ui_build(
         lv_obj_add_event_cb(widgets.mic_hit, on_hold, LV_EVENT_PRESS_LOST, nullptr);
     }
 
-    widgets.picker = make_card(widgets.root, 40, 62, 280, 198, 16);
+    widgets.picker = make_card(widgets.root, watch_px(40), watch_px(62), watch_px(280), watch_px(198), watch_px(16));
     lv_obj_add_flag(widgets.picker, LV_OBJ_FLAG_HIDDEN);
-    widgets.picker_row = make_label(widgets.picker, 12, 80, 256, 36, LV_TEXT_ALIGN_CENTER, k_mute);
+    widgets.picker_row = make_label(
+        widgets.picker, watch_px(12), watch_px(80), watch_px(256), watch_px(36), LV_TEXT_ALIGN_CENTER, k_mute
+    );
     lv_label_set_long_mode(widgets.picker_row, LV_LABEL_LONG_WRAP);
     lv_label_set_text(widgets.picker_row, "");
     widgets.picker_list = lv_obj_create(widgets.picker);
     lv_obj_remove_style_all(widgets.picker_list);
-    lv_obj_set_pos(widgets.picker_list, 8, 8);
-    lv_obj_set_size(widgets.picker_list, 264, 182);
+    lv_obj_set_pos(widgets.picker_list, watch_px(8), watch_px(8));
+    lv_obj_set_size(widgets.picker_list, watch_px(264), watch_px(182));
     lv_obj_set_flex_flow(widgets.picker_list, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_style_pad_row(widgets.picker_list, 6, 0);
     lv_obj_set_scroll_dir(widgets.picker_list, LV_DIR_VER);

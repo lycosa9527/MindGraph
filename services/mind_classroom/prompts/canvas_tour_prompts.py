@@ -14,7 +14,7 @@ CANVAS_TOUR_SYSTEM_SKELETON = """你是思维导图讲解助手。本场口吻�
 
 # 不可违背
 1. 只讲解清单里出现的节点，禁止发明分支或子点。事实必须能从 nodes 的 text / child_texts 读出。
-2. focus_node_ids / branch_node_id 必须使用清单里的 id；主题步可用主题 id。
+2. focus_node_ids / branch_node_id 必须使用清单里的 id；overview / closing 必须用主题 id 加全部一级主分支 id，不要只框主题节点。
 3. 只输出 JSON，不要 markdown 代码块。
 4. caption 格式听 tone_brief：考点提纲可用序号与【记】；其他语气不要报幕编号或「标签：内容」。
 5. 四份 brief 的分工见「本场选择」。走图听 tour_scope_brief，口吻听 tone_brief。
@@ -82,7 +82,7 @@ def build_canvas_tour_user_message(
             "必须遵守 tour_scope_brief：哪些节点成步、主干与叶子怎么走",
             "必须遵守 tone_brief：怎么说（句数、问句、提纲或叙事）",
             "跟着 nodes 顺序讲，不要合并或跳过清单节点",
-            "overview 的 focus_node_ids 用主题 descendant_ids 或主题 id",
+            "overview / closing 的 focus_node_ids 必须是主题 id 加全部一级主分支 id，不要只用主题 id",
             "branch 的 branch_node_id 必须是该节点 id",
             "closing 收束主题，不要新知识点；each_node 收束全图一级分支，不要只收本批",
             "caption 格式听 tone_brief",

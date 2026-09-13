@@ -63,7 +63,7 @@ import {
   remapPreparedStepsToLive,
 } from '@/utils/mindClassroomRemoteSteps'
 import {
-  expandLectureFocusNodeIds,
+  lectureStepFitNodeIds,
   type MindClassroomLectureStep,
 } from '@/utils/mindClassroomScript'
 
@@ -166,13 +166,21 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
     } else {
       diagramStore.clearSelection()
     }
-    const focusIds = expandLectureFocusNodeIds(
+    const focusIds = lectureStepFitNodeIds(
       step,
       classroomStore.sessionTourScope,
       (id) => diagramStore.getMindMapDescendantIds(id),
-      classroomStore.activeMode
+      classroomStore.activeMode,
+      {
+        connections: diagramStore.data?.connections ?? [],
+        nodes: diagramStore.data?.nodes ?? [],
+      }
     )
     void nextTick(() => {
+      if (!focusIds.length) {
+        eventBus.emit('view:fit_diagram_requested', {})
+        return
+      }
       eventBus.emit('view:fit_to_nodes_requested', {
         nodeIds: focusIds,
         animate: true,

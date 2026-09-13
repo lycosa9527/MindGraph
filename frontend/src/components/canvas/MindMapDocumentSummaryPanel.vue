@@ -5,7 +5,7 @@
  * Resumes an existing session package on open; creates one only on first ingest
  * or when the user requests a chat pairing code.
  */
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { ElProgress } from 'element-plus'
 
@@ -17,12 +17,12 @@ import {
   Link2,
   Loader2,
   MessageSquare,
-  Sparkles,
   Trash2,
   Upload,
   X,
 } from '@lucide/vue'
 
+import AiBusyGenerateButton from '@/components/canvas/AiBusyGenerateButton.vue'
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.vue'
 import '@/components/canvas/aiGenerateGlass.css'
@@ -34,6 +34,7 @@ import { useFileCenterMutations, usePackageDetail } from '@/composables/fileCent
 import { useFileCenterActivePackage } from '@/composables/fileCenter/useFileCenterActivePackage'
 import { useChatHandoff } from '@/composables/mindMap/useChatHandoff'
 import {
+  isLiteSourceReadyStatus,
   resolveLiteDraftKind,
   waitForDocSummarySourceReady,
   docSummaryLiteIntent,
@@ -199,10 +200,14 @@ function formatPendingFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+const pipelineBusy = ref(false)
+const generateBusy = computed(
+  () => pipelineBusy.value || isGenerating.value || isAdding.value
+)
+
 const canGenerate = computed(() => {
   if (
-    isGenerating.value ||
-    isAdding.value ||
+    generateBusy.value ||
     sessionStarting.value ||
     collabActive.value ||
     isSourceProcessing.value ||
@@ -324,6 +329,22 @@ onUnmounted(() => {
 
 function handleClose(): void {
   emit('close')
+}
+
+async function closeIfGenerated(ok: boolean): Promise<void> {
+  if (!ok) return
+  await nextTick()
+  handleClose()
+}
+
+async function generateAndShowDiagram(packageId?: number | null): Promise<boolean> {
+  const ok = await generateFromPackage({
+    packageId,
+    diagramId: activeDiagramId.value,
+    topicHint: diagramStore.effectiveTitle || undefined,
+  })
+  await closeIfGenerated(ok)
+  return ok
 }
 
 function switchTab(tab: SummaryTab): void {
@@ -480,7 +501,11 @@ async function ingestPendingLiteDraft(): Promise<{
       }
       return { packageId: id, ready: false, visionApplied: false }
     }
-    return { packageId: id, ready: uploaded.status === 'completed', visionApplied: false }
+    return {
+      packageId: id,
+      ready: isLiteSourceReadyStatus(uploaded.status),
+      visionApplied: false,
+    }
   }
 
   if (kind === 'paste') {
@@ -489,20 +514,28 @@ async function ingestPendingLiteDraft(): Promise<{
       notify.warning(t('canvas.mindMapDocumentSummary.pasteTooLong'))
       throw new Error('paste_too_long')
     }
-    await ingestText.mutateAsync({
+    const uploaded = await ingestText.mutateAsync({
       packageId: id,
       payload: { content, title: uploadedFileName.value.trim() || undefined },
     })
     pastedText.value = ''
-    return { packageId: id, ready: true, visionApplied: false }
+    return {
+      packageId: id,
+      ready: isLiteSourceReadyStatus(uploaded.status),
+      visionApplied: false,
+    }
   }
 
   if (kind === 'web') {
     const url = webUrl.value.trim()
     notify.info(t('canvas.mindMapDocumentSummary.webFetchStarted'))
-    await ingestWebUrl.mutateAsync({ packageId: id, payload: { page_url: url } })
+    const uploaded = await ingestWebUrl.mutateAsync({ packageId: id, payload: { page_url: url } })
     webUrl.value = ''
-    return { packageId: id, ready: true, visionApplied: false }
+    return {
+      packageId: id,
+      ready: isLiteSourceReadyStatus(uploaded.status),
+      visionApplied: false,
+    }
   }
 
   return { packageId: id, ready: isSourceReady.value, visionApplied: false }
@@ -548,6 +581,7 @@ async function handleAddToCorpus(): Promise<void> {
       const vision = await rebuildFromImageFile(fileForVision)
       if (vision.applied) {
         clearUploadedFile()
+        handleClose()
         return
       }
       await uploadFile.mutateAsync({ packageId: id, file: fileForVision })
@@ -571,26 +605,48 @@ async function handleAddToCorpus(): Promise<void> {
   }
 }
 
+async function waitUntilLiteSourceReady(): Promise<boolean> {
+  const waitResult = await waitForDocSummarySourceReady({
+    detailQuery,
+    documents,
+  })
+  if (waitResult === 'failed') {
+    notify.error(t('canvas.mindMapDocumentSummary.extractFailed'))
+    return false
+  }
+  if (waitResult === 'timeout') {
+    notify.error(t('canvas.mindMapDocumentSummary.generateFailed'))
+    return false
+  }
+  if (sourceExceedsModelInput.value) {
+    notify.error(t('canvas.mindMapDocumentSummary.extractTooLongForModel'))
+    return false
+  }
+  return true
+}
+
 async function handleLiteSaveAndGenerate(): Promise<void> {
   if (collabActive.value) {
     notify.warning(t('canvas.mindMapDocumentSummary.collabDisabled'))
     return
   }
-  if (isGenerating.value || isAdding.value || sessionStarting.value || isSourceProcessing.value) {
+  if (generateBusy.value || sessionStarting.value || isSourceProcessing.value) {
     return
   }
 
+  pipelineBusy.value = true
   let packageId = activePackageId.value
   if (isSourceReady.value && packageId !== null && !hasPendingLiteDraft.value) {
-    await generateFromPackage({
-      packageId,
-      diagramId: activeDiagramId.value,
-      topicHint: diagramStore.effectiveTitle || undefined,
-    })
+    try {
+      await generateAndShowDiagram(packageId)
+    } finally {
+      pipelineBusy.value = false
+    }
     return
   }
 
   if (!hasPendingLiteDraft.value) {
+    pipelineBusy.value = false
     notify.warning(t('canvas.mindMapDocumentSummary.generateNoCorpusLite'))
     return
   }
@@ -600,38 +656,23 @@ async function handleLiteSaveAndGenerate(): Promise<void> {
   try {
     const ingest = await ingestPendingLiteDraft()
     packageId = ingest.packageId
-    if (ingest.visionApplied) return
-
-    if (!ingest.ready) {
-      const waitResult = await waitForDocSummarySourceReady({
-        detailQuery,
-        documents,
-      })
-      if (waitResult === 'failed') {
-        notify.error(t('canvas.mindMapDocumentSummary.extractFailed'))
-        return
-      }
-      if (waitResult === 'timeout') {
-        notify.error(t('canvas.mindMapDocumentSummary.generateFailed'))
-        return
-      }
-      if (sourceExceedsModelInput.value) {
-        notify.error(t('canvas.mindMapDocumentSummary.extractTooLongForModel'))
-        return
-      }
+    if (ingest.visionApplied) {
+      await closeIfGenerated(true)
+      return
     }
 
-    await generateFromPackage({
-      packageId,
-      diagramId: activeDiagramId.value,
-      topicHint: diagramStore.effectiveTitle || undefined,
-    })
+    if (!ingest.ready && !(await waitUntilLiteSourceReady())) {
+      return
+    }
+
+    await generateAndShowDiagram(packageId)
   } catch (error) {
     if (error instanceof Error && error.message === 'paste_too_long') return
     console.error('[DocumentSummary] lite save-and-generate failed:', error)
   } finally {
     isAdding.value = false
     suppressExtractWatchToasts.value = false
+    pipelineBusy.value = false
   }
 }
 
@@ -645,11 +686,12 @@ async function handleGenerate(): Promise<void> {
     return
   }
   if (!canGenerate.value) return
-  await generateFromPackage({
-    packageId: activePackageId.value,
-    diagramId: activeDiagramId.value,
-    topicHint: diagramStore.effectiveTitle || undefined,
-  })
+  pipelineBusy.value = true
+  try {
+    await generateAndShowDiagram(activePackageId.value)
+  } finally {
+    pipelineBusy.value = false
+  }
 }
 
 const canAdd = computed(() => {
@@ -1307,24 +1349,19 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
         </button>
       </div>
 
-      <div class="shrink-0 border-t border-(--swiss-border,#e7e5e4) px-3 py-3">
-        <button
-          type="button"
-          class="doc-summary-generate-btn w-full"
+      <div class="doc-summary-generate-bar shrink-0 border-t border-(--swiss-border,#e7e5e4) px-3 py-3">
+        <AiBusyGenerateButton
+          :busy="generateBusy"
           :disabled="!canGenerate"
-          :title="collabActive ? t('canvas.mindMapDocumentSummary.collabDisabled') : undefined"
-          @click="handleGenerate"
-        >
-          <Sparkles
-            class="h-4 w-4 shrink-0"
-            :stroke-width="2"
-          />
-          {{
-            isGenerating || isAdding
+          :label="
+            generateBusy
               ? t('canvas.toolbar.aiGenerating')
               : t('canvas.mindMapDocumentSummary.generateButton')
-          }}
-        </button>
+          "
+          :title="collabActive ? t('canvas.mindMapDocumentSummary.collabDisabled') : undefined"
+          :block="false"
+          @click="handleGenerate"
+        />
       </div>
     </template>
   </aside>
@@ -1533,44 +1570,8 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
   cursor: not-allowed;
 }
 
-.doc-summary-generate-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border: 1px solid var(--swiss-ink, #1c1917);
-  border-radius: 10px;
-  background: var(--swiss-ink, #1c1917);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: #fafaf9;
-  cursor: pointer;
-  transition:
-    opacity 0.15s ease,
-    background 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.doc-summary-generate-btn:hover:not(:disabled) {
-  background: #292524;
-  border-color: #292524;
-}
-
-.doc-summary-generate-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.ai-gen-shell .doc-summary-generate-btn {
-  background: var(--ai-ribbon-fill);
-  border-color: transparent;
-}
-
-.ai-gen-shell .doc-summary-generate-btn:hover:not(:disabled) {
-  background: var(--ai-ribbon-fill);
-  border-color: transparent;
-  filter: brightness(1.06);
+.doc-summary-generate-bar {
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

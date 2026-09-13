@@ -52,3 +52,65 @@ def resolve_frame_focus_node_ids(
     if role == "open":
         return []
     return [hint]
+
+
+def _topic_node_id(spec: dict[str, Any]) -> str:
+    nodes = spec.get("nodes")
+    if not isinstance(nodes, list):
+        return ""
+    for node in nodes:
+        if not isinstance(node, dict):
+            continue
+        node_id = str(node.get("id") or "").strip()
+        node_type = str(node.get("type") or "").lower()
+        if node_id and (node_type == "topic" or node_id == "topic"):
+            return node_id
+    return ""
+
+
+def _first_level_branch_ids(spec: dict[str, Any], topic_id: str) -> list[str]:
+    if not topic_id:
+        return []
+    known: set[str] = set()
+    nodes = spec.get("nodes")
+    if isinstance(nodes, list):
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+            node_id = str(node.get("id") or "").strip()
+            if node_id:
+                known.add(node_id)
+    connections = spec.get("connections")
+    if not isinstance(connections, list):
+        return []
+    branch_ids: list[str] = []
+    seen: set[str] = set()
+    for conn in connections:
+        if not isinstance(conn, dict):
+            continue
+        if str(conn.get("edgeType") or "") == "association":
+            continue
+        if str(conn.get("source") or "") != topic_id:
+            continue
+        target = str(conn.get("target") or "").strip()
+        if not target or target == topic_id or target in seen:
+            continue
+        if known and target not in known:
+            continue
+        seen.add(target)
+        branch_ids.append(target)
+    return branch_ids
+
+
+def resolve_whole_map_focus_node_ids(spec: dict[str, Any]) -> list[str]:
+    """
+    Topic plus first-level main branches for overview / closing canvas framing.
+
+    Jobs often persist only the topic id; the camera should still show the
+    whole-map trunk, not a tight zoom on the center node.
+    """
+    topic_id = _topic_node_id(spec)
+    branch_ids = _first_level_branch_ids(spec, topic_id)
+    if topic_id:
+        return [topic_id, *branch_ids]
+    return branch_ids

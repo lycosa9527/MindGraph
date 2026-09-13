@@ -27,6 +27,7 @@ import { ChatDotRound, Download } from '@element-plus/icons-vue'
 import { ArrowLeft, FileImage, FileJson, FileText, ImageDown, RotateCcw, Share2 } from '@lucide/vue'
 
 import MindMapRibbonTabs from '@/canvas-ribbon/MindMapRibbonTabs.vue'
+import { MIND_MAP_RIBBON_TOOLS_ID } from '@/canvas-ribbon/mindMapRibbonTypes'
 import { useMindMapRibbonState } from '@/canvas-ribbon/useMindMapRibbonState'
 import CanvasOnlineCollabMenu from '@/components/canvas/CanvasOnlineCollabMenu.vue'
 import CanvasToolbar from '@/components/canvas/CanvasToolbar.vue'
@@ -133,7 +134,7 @@ const diagramTypeForName = computed(
 )
 
 const isMindMapEditor = useMindMapV2Chrome()
-const { activeTab, setActiveTab } = useMindMapRibbonState()
+const { activeTab, classic, selectTab } = useMindMapRibbonState()
 
 /**
  * Generate default diagram name (simple, no timestamp)
@@ -299,6 +300,7 @@ async function handleReset() {
       isMindMapEditor
         ? {
             'canvas-top-bar--mindmap': true,
+            'canvas-top-bar--collapsed': !classic,
             'canvas-top-bar--collab-flush': Boolean(workshopCode),
           }
         : 'px-2 sm:px-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1 sm:gap-x-2 border-b border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md'
@@ -389,7 +391,8 @@ async function handleReset() {
       >
         <MindMapRibbonTabs
           :active-tab="activeTab"
-          @update:active-tab="setActiveTab"
+          :expanded="classic"
+          @update:active-tab="selectTab"
         />
       </div>
       <div
@@ -406,8 +409,13 @@ async function handleReset() {
 
     <!-- Col 2: editing toolbar (hidden for viewers) -->
     <div
+      :id="isMindMapEditor ? MIND_MAP_RIBBON_TOOLS_ID : undefined"
       class="min-w-0 flex justify-center items-center self-center overflow-x-auto px-0.5 z-5"
-      :class="{ 'canvas-top-bar__tools-row': isMindMapEditor }"
+      :class="{
+        'canvas-top-bar__tools-row': isMindMapEditor,
+        'canvas-top-bar__tools-row--collapsed': isMindMapEditor && !classic,
+      }"
+      :aria-hidden="isMindMapEditor && !classic"
     >
       <span
         v-if="props.isViewer"
@@ -627,6 +635,11 @@ async function handleReset() {
   border: none;
   background: transparent;
   box-shadow: none;
+  transition: padding 0.18s ease;
+}
+
+.canvas-top-bar--collapsed .canvas-top-bar__title-row--mindmap {
+  padding-bottom: 2px;
 }
 
 .canvas-top-bar--mindmap {
@@ -646,6 +659,11 @@ async function handleReset() {
   backdrop-filter: blur(18px) saturate(1.12);
   -webkit-backdrop-filter: blur(18px) saturate(1.12);
   box-shadow: 0 8px 22px rgb(168 176 228 / 0.14);
+  transition: padding 0.18s ease;
+}
+
+.canvas-top-bar--mindmap.canvas-top-bar--collapsed {
+  padding-bottom: 6px;
 }
 
 /* Live session banner sits in the next flex row — drop the card-shadow inset. */
@@ -731,6 +749,25 @@ async function handleReset() {
   border-radius: 14px;
   background: #ffffff;
   box-shadow: 0 10px 18px -8px rgb(15 23 42 / 0.12);
+  transition:
+    height 0.18s ease,
+    min-height 0.18s ease,
+    max-height 0.18s ease,
+    padding 0.18s ease,
+    margin 0.18s ease,
+    opacity 0.16s ease;
+}
+
+.canvas-top-bar__tools-row--collapsed {
+  height: 0;
+  min-height: 0;
+  max-height: 0;
+  margin: 0 auto;
+  padding: 0 10px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: none;
 }
 
 .canvas-top-bar__tools-row :deep(.canvas-toolbar),

@@ -11,6 +11,7 @@ import { ONE_SENTENCE_NODE_ACTION_SUGGESTION_KEYS } from '@/config/oneSentenceNo
 describe('one-sentence node action guide', () => {
   it('lists content level and numbering next to the structural actions', () => {
     const ids = ONE_SENTENCE_NODE_ACTION_GUIDE_ROWS.map((row) => row.id)
+    expect(ids).toContain('explain_node')
     expect(ids).toContain('set_content_level')
     expect(ids).toContain('set_branch_numbering')
     expect(AI_CONTENT_LEVEL_IDS).toHaveLength(7)
@@ -27,6 +28,12 @@ describe('one-sentence node action guide', () => {
   })
 
   it('rotates the new phrases in the empty-input suggestions', () => {
+    expect(ONE_SENTENCE_NODE_ACTION_SUGGESTION_KEYS).toContain(
+      'canvas.mindMapOneSentence.suggestion.explain_node'
+    )
+    expect(ONE_SENTENCE_NODE_ACTION_SUGGESTION_KEYS).toContain(
+      'canvas.mindMapOneSentence.suggestion.explain_node.this'
+    )
     expect(ONE_SENTENCE_NODE_ACTION_SUGGESTION_KEYS).toContain(
       'canvas.mindMapOneSentence.suggestion.set_content_level'
     )

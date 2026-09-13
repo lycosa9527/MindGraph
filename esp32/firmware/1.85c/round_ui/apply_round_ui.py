@@ -14,10 +14,13 @@ from patch_super_keyboard import apply_keyboard_patches
 from patch_super_launcher import patch_launcher_cpp
 from prepare_kitty_stills import prepare as prepare_kitty_stills
 
-ROUND_WHEN = "${expr(${env.widthDp} == 360dp && ${env.heightDp} == 360dp)}"
+ROUND_WHEN_360 = "${expr(${env.widthDp} == 360dp && ${env.heightDp} == 360dp)}"
+ROUND_WHEN_466 = "${expr(${env.widthDp} == 466dp && ${env.heightDp} == 466dp)}"
 THEME_ASSETS = ["font/360.json", "size/360.json"]
-SHELL_ASSETS = ["constants/360.json"]
+SHELL_ASSETS_360 = ["constants/360.json"]
+SHELL_ASSETS_466 = ["constants/466.json"]
 SETTINGS_ASSETS = ["constants/360.json"]
+SETTINGS_ASSETS_466 = ["constants/466.json"]
 FILES_ASSETS = ["constants/360.json"]
 APP_STORE_ASSETS = ["constants/360.json"]
 SETTINGS_ROW_TEMPLATES = (
@@ -42,16 +45,16 @@ def save_json(path: Path, value: dict) -> None:
     path.write_text(json.dumps(value, indent=4, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-def ensure_variant(document: dict, assets: list[str]) -> bool:
-    """Attach or refresh the 360x360 asset variant. True when the document changed."""
+def ensure_variant(document: dict, assets: list[str], when: str) -> bool:
+    """Attach or refresh a round-watch asset variant. True when the document changed."""
     variants = document.setdefault("variants", [])
     for variant in variants:
-        if variant.get("when") == ROUND_WHEN:
+        if variant.get("when") == when:
             if variant.get("assets") != assets:
                 variant["assets"] = assets
                 return True
             return False
-    variants.append({"when": ROUND_WHEN, "assets": assets})
+    variants.append({"when": when, "assets": assets})
     return True
 
 
@@ -104,7 +107,7 @@ def patch_round_status_bar(super_root: Path) -> None:
     indicator = find_by_id(document, "gesture_indicator")
     if indicator is None:
         raise RuntimeError("round_ui: overlay.json is missing gesture_indicator")
-    indicator.setdefault("commonProps", {})["hidden"] = False
+    indicator.setdefault("commonProps", {})["hidden"] = True
     save_json(overlay_path, document)
 
     style_path = super_root / "shell" / "styles" / "shell.json"
@@ -147,8 +150,17 @@ def patch_launcher_labels(super_root: Path) -> None:
     save_json(path, document)
 
 
+def bind_launcher_layer_size(node: dict | None) -> None:
+    """Let the icon layer grow taller than the viewport for vertical scroll."""
+    if node is None:
+        return
+    bindings = node.setdefault("bindings", {})
+    bindings["placement.height"] = "content_height"
+    bindings.pop("placement.width", None)
+
+
 def patch_launcher_frame(super_root: Path) -> None:
-    """Inset the launcher content band to the circular safe area."""
+    """Inset the launcher band and scroll extra rows inside the circle."""
     path = super_root / "shell" / "screens" / "app_launcher.json"
     if not path.is_file():
         return
@@ -156,10 +168,27 @@ def patch_launcher_frame(super_root: Path) -> None:
     content = find_by_id(document, "content")
     if content is None:
         return
+    content.setdefault("commonProps", {})
+    content["commonProps"]["scrollable"] = False
     content.setdefault("placement", {})
     content["placement"]["x"] = "${constant.ui.content.metric.x}"
     content["placement"]["width"] = "${constant.ui.content.metric.width}"
     content["placement"]["height"] = "${constant.ui.content.metric.height}"
+    grid_stage = find_by_id(document, "grid_stage")
+    if grid_stage is not None:
+        grid_stage.setdefault("commonProps", {})
+        grid_stage["commonProps"]["scrollable"] = True
+        grid_stage.setdefault("placement", {})
+        grid_stage["placement"]["x"] = 0
+        grid_stage["placement"]["y"] = "${constant.ui.content.metric.launcherGridTop}"
+        grid_stage["placement"]["width"] = "match"
+        grid_stage["placement"]["height"] = (
+            "${expr(${constant.ui.content.metric.height} - "
+            "${constant.ui.content.metric.launcherGridTop})}"
+        )
+    bind_launcher_layer_size(find_by_id(document, "slot_grid"))
+    bind_launcher_layer_size(find_by_id(document, "item_layer"))
+    bind_launcher_layer_size(find_by_id(document, "drag_layer"))
     save_json(path, document)
 
 
@@ -441,15 +470,34 @@ def stage_recorder_app(littlefs: Path, overlay: Path) -> None:
     )
 
 
-def apply_app_overlay(res_dir: Path, overlay_dir: Path, assets: list[str]) -> bool:
-    """Copy an app overlay and register its 360 variant. True when root.json changed."""
+def stage_slides_app(littlefs: Path, overlay: Path) -> None:
+    """Install the native 演讲模式 remote Super package."""
+    icon_src = overlay / "slides" / "images" / "launcher_icon.png"
+    stage_super_app(
+        littlefs,
+        overlay,
+        "com.mindgraph.slides",
+        "slides",
+        icon_src,
+        (29, 78, 216),
+    )
+
+
+def apply_app_overlay(
+    res_dir: Path,
+    overlay_dir: Path,
+    assets: list[str],
+    assets_466: list[str] | None = None,
+) -> bool:
+    """Copy an app overlay and register 360/466 variants. True when root.json changed."""
     if overlay_dir.exists() and res_dir.exists():
         copy_tree(overlay_dir, res_dir)
     root = res_dir / "root.json"
     if not root.is_file():
         return False
     document = load_json(root)
-    changed = ensure_variant(document, assets)
+    changed = ensure_variant(document, assets, ROUND_WHEN_360)
+    changed = ensure_variant(document, assets_466 or assets, ROUND_WHEN_466) or changed
     save_json(root, document)
     return changed
 
@@ -485,16 +533,23 @@ def apply(littlefs: Path, overlay: Path) -> None:
     for name in ("light.json", "dark.json"):
         path = super_root / "themes" / name
         document = load_json(path)
-        changed = ensure_variant(document, THEME_ASSETS) or changed
+        changed = ensure_variant(document, THEME_ASSETS, ROUND_WHEN_360) or changed
+        changed = ensure_variant(document, THEME_ASSETS, ROUND_WHEN_466) or changed
         save_json(path, document)
 
     shell_root = super_root / "shell" / "root.json"
     document = load_json(shell_root)
-    changed = ensure_variant(document, SHELL_ASSETS) or changed
+    changed = ensure_variant(document, SHELL_ASSETS_360, ROUND_WHEN_360) or changed
+    changed = ensure_variant(document, SHELL_ASSETS_466, ROUND_WHEN_466) or changed
     save_json(shell_root, document)
 
     if settings_res.is_dir():
-        changed = apply_app_overlay(settings_res, overlay / "settings", SETTINGS_ASSETS) or changed
+        changed = apply_app_overlay(
+            settings_res,
+            overlay / "settings",
+            SETTINGS_ASSETS,
+            SETTINGS_ASSETS_466,
+        ) or changed
     if files_res.is_dir():
         changed = apply_app_overlay(files_res, overlay / "files", FILES_ASSETS) or changed
         patch_files_header(files_res)
@@ -519,6 +574,7 @@ def apply(littlefs: Path, overlay: Path) -> None:
     stage_kitty_app(littlefs, overlay)
     stage_training_app(littlefs, overlay)
     stage_recorder_app(littlefs, overlay)
+    stage_slides_app(littlefs, overlay)
     print(f"round_ui: applied to {littlefs} (variants_changed={changed})")
 
 

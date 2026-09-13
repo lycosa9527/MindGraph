@@ -51,6 +51,7 @@ from . import (
     web_content_generation,
     workshop_ws,
     training_routes,
+    slides_remote_routes,
 )
 
 logger = logging.getLogger(__name__)
@@ -119,6 +120,7 @@ router.include_router(diagram_folders.router)
 router.include_router(diagram_node_ops.router)
 router.include_router(workshop_ws.router)
 router.include_router(training_routes.router)
+router.include_router(slides_remote_routes.router)
 if mindmate_collab_routes_module is not None:
     router.include_router(mindmate_collab_routes_module.router)
 if mindmate_collab_ws_module is not None:

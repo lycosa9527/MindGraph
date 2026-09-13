@@ -22,7 +22,19 @@ def test_build_node_action_tools_includes_ui_actions() -> None:
     assert "diagram.add_node" in names
     assert "node_action.auto_complete_branch" in names
     assert "node_action.auto_complete" in names
+    assert "node_action.explain_node" in names
     assert "node_action.clarify_options" in names
+
+
+def test_command_from_tool_call_explain_node() -> None:
+    """Explain tool maps node_id and label onto explain_node."""
+    cmd = command_from_tool_call(
+        "node_action.explain_node",
+        json.dumps({"node_id": "uid-cn", "target": "中国"}),
+    )
+    assert cmd["action"] == "explain_node"
+    assert cmd["node_id"] == "uid-cn"
+    assert cmd["target"] == "中国"
 
 
 def test_command_from_tool_call_auto_complete_branch() -> None:
@@ -65,6 +77,7 @@ def test_render_library_prompt_zh() -> None:
     """Library prompt lists OpenAI tool names, not legacy action keys."""
     text = render_library_prompt("zh")
     assert "node_action.auto_complete_branch" in text
+    assert "node_action.explain_node" in text
     assert "node_action.clarify_options" in text
     assert "diagram.add_node" in text
 

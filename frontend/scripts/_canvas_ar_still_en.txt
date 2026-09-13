@@ -50,7 +50,6 @@ canvas.toolbar.mathKeyboardChemFCh3oh	CH₃OH
 canvas.toolbar.mathKeyboardChemFC2h4	C₂H₄
 canvas.toolbar.mathKeyboardChemFC2h2	C₂H₂
 canvas.presentationTimer.minSuffix	m
-canvas.toolbar.formatBrushDev	Format painter is in development
 canvas.toolbar.formatBrushSelectSource	Please select a source node first
 canvas.toolbar.formatLabel	Format
 canvas.toolbar.formatPainter	Format Painter

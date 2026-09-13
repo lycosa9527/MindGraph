@@ -19,7 +19,6 @@ import {
   verifySubgraphChildTextsPresent,
 } from '@/composables/kitty/diagramEditApply'
 import type { DiagramHubPersistDeps } from '@/composables/kitty/diagramEditHubPersist'
-import { withMindMapAudienceContext } from '@/composables/mindMap/audience/withMindMapAudienceContext'
 import { i18n } from '@/i18n'
 import { useDiagramStore, useLLMResultsStore, useSavedDiagramsStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
@@ -41,9 +40,9 @@ import {
 } from '@/utils/mindMapSubgraphMerge'
 import {
   collectMindMapSubgraphContext,
-  formatMindMapSubgraphPrompt,
   isMindMapSubgraphExpandable,
 } from '@/utils/mindMapSubgraphContext'
+import { buildMindMapSubgraphGenerateBody } from '@/utils/mindMapSubgraphRequest'
 import {
   beginMindMapSubgraphDebugRun,
   debugMindMapSubgraphMergeLookup,
@@ -440,28 +439,13 @@ async function runMindMapSubgraphGeneration(
   try {
     const diagramId = savedDiagramsStore.activeDiagramId
     const llmModel = resolveDiagramLlmModel(llmResultsStore.selectedModel)
-    const subgraphPrompt = formatMindMapSubgraphPrompt(subgraphContext, promptLanguage)
-
-    const requestBody: Record<string, unknown> = {
-      prompt: subgraphPrompt,
-      diagram_type: 'mindmap',
+    const requestBody = buildMindMapSubgraphGenerateBody({
+      context: subgraphContext,
       language: promptLanguage,
-      request_type: 'autocomplete',
       llm: llmModel,
-      mind_map_topic: subgraphContext.topic || undefined,
-      expand_branch: subgraphContext.expandBranch,
-      reference_branches:
-        subgraphContext.referenceBranches.length > 0
-          ? subgraphContext.referenceBranches
-          : undefined,
-      existing_branch_children:
-        subgraphContext.existingChildren.length > 0
-          ? subgraphContext.existingChildren
-          : undefined,
-      parent_branch: subgraphContext.parentBranch,
-      ...(diagramId ? { diagram_id: diagramId } : {}),
-    }
-    Object.assign(requestBody, withMindMapAudienceContext(requestBody, promptLanguage))
+      diagramId,
+    })
+    const subgraphPrompt = String(requestBody.prompt ?? '')
 
     const requestDebug: MindMapSubgraphRequestDebug = {
       endpoint: '/api/generate_graph',

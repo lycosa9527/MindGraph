@@ -1,5 +1,5 @@
 /**
- * Stream a short everyday gloss for one mind-map node.
+ * Stream a 专业程度-aware gloss for one mind-map node.
  */
 import { onUnmounted, ref, watch } from 'vue'
 
@@ -8,6 +8,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
+import { resolveCanvasAudienceLevel } from '@/composables/mindMap/audience/aiContentLevelInstructions'
 import { withMindMapAudienceContext } from '@/composables/mindMap/audience/withMindMapAudienceContext'
 import { useSavedDiagramsStore } from '@/stores'
 import type { DiagramType } from '@/types'
@@ -88,6 +89,7 @@ export function useMindMapNodeExplain() {
         sibling_branches: ctx?.siblingBranches ?? [],
         child_branches: ctx?.childBranches ?? [],
         language: promptLanguage.value,
+        audience_level: resolveCanvasAudienceLevel(),
         diagram_id: savedDiagramsStore.activeDiagramId ?? undefined,
       },
       promptLanguage.value

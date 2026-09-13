@@ -17,7 +17,7 @@ import {
   parseMindMapSummaryNodeId,
   readMindMapSummaries,
   remapMindMapSummariesAfterReload,
-  resolveConsecutiveSiblingRange,
+  resolveMindMapSummaryInsertRange,
   sameMindMapSummaryPaths,
   updateSummaryChildText,
   writeMindMapSummaries,
@@ -49,7 +49,7 @@ export function insertMindMapSummaryFromSelection(
   if (isDiagramPresentationReadOnly(ctx)) return false
   const data = ctx.data.value
   if (!data?.nodes || !data.connections) return false
-  const range = resolveConsecutiveSiblingRange(
+  const range = resolveMindMapSummaryInsertRange(
     ctx.selectedNodes.value,
     data.nodes,
     data.connections
@@ -234,6 +234,6 @@ export function summaryInsertFailureReason(
   nodeIds: readonly string[],
   nodes: readonly DiagramNode[],
   connections: readonly Connection[]
-): ReturnType<typeof resolveConsecutiveSiblingRange> {
-  return resolveConsecutiveSiblingRange(nodeIds, nodes, connections)
+): ReturnType<typeof resolveMindMapSummaryInsertRange> {
+  return resolveMindMapSummaryInsertRange(nodeIds, nodes, connections)
 }

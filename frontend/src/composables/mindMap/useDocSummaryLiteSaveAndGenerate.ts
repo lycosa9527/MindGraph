@@ -29,6 +29,10 @@ export function isValidDocSummaryWebUrl(url: string): boolean {
   }
 }
 
+export function isLiteSourceReadyStatus(status: string | undefined): boolean {
+  return status === 'completed'
+}
+
 export function resolveLiteDraftKind(options: {
   hasActiveSource: boolean
   activeTab: string

@@ -2,10 +2,11 @@
 /**
  * Icon / image / link chrome on a v2 mind-map topic or branch node.
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import { ExternalLink } from '@lucide/vue'
 
+import { ImagePreviewModal } from '@/components/common'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
@@ -26,6 +27,7 @@ const props = withDefaults(
 
 const { t } = useLanguage()
 const diagramStore = useDiagramSession()
+const previewOpen = ref(false)
 
 const adornment = computed(() => {
   if (isMindMapSummaryNodeId(props.nodeId)) return null
@@ -45,11 +47,20 @@ const visibleParts = computed(() =>
   )
 )
 
+const previewImageUrl = computed(() => adornment.value?.imageUrl ?? '')
+
 function openLink(event: MouseEvent): void {
   event.stopPropagation()
   event.preventDefault()
   if (!href.value) return
   window.open(href.value, '_blank', 'noopener,noreferrer')
+}
+
+function openImagePreview(event: MouseEvent): void {
+  event.stopPropagation()
+  event.preventDefault()
+  if (!previewImageUrl.value) return
+  previewOpen.value = true
 }
 </script>
 
@@ -59,12 +70,22 @@ function openLink(event: MouseEvent): void {
     class="mm-adornments"
     :class="{ 'mm-adornments--inline': props.part === 'inline' }"
   >
-    <img
+    <button
       v-if="visibleParts.image && adornment?.imageUrl"
-      class="mm-adornments__image"
-      :src="adornment.imageUrl"
-      alt=""
-    />
+      type="button"
+      class="mm-adornments__image-btn nodrag nopan"
+      :title="t('canvas.ribbon.enlargeImage')"
+      :aria-label="t('canvas.ribbon.enlargeImage')"
+      @click="openImagePreview"
+      @mousedown.stop
+      @pointerdown.stop
+    >
+      <img
+        class="mm-adornments__image"
+        :src="adornment.imageUrl"
+        alt=""
+      />
+    </button>
     <div
       v-if="visibleParts.inline"
       class="mm-adornments__row"
@@ -86,6 +107,12 @@ function openLink(event: MouseEvent): void {
         <ExternalLink :size="12" />
       </button>
     </div>
+    <ImagePreviewModal
+      v-if="visibleParts.image && previewImageUrl"
+      v-model:visible="previewOpen"
+      title=""
+      :image-url="previewImageUrl"
+    />
   </div>
 </template>
 
@@ -104,12 +131,29 @@ function openLink(event: MouseEvent): void {
   flex-shrink: 0;
 }
 
+.mm-adornments__image-btn {
+  display: block;
+  padding: 0;
+  border: none;
+  background: transparent;
+  line-height: 0;
+  cursor: zoom-in;
+  border-radius: 4px;
+}
+
+.mm-adornments__image-btn:hover .mm-adornments__image,
+.mm-adornments__image-btn:focus-visible .mm-adornments__image {
+  outline: 2px solid rgba(37, 99, 235, 0.45);
+  outline-offset: 1px;
+}
+
 .mm-adornments__image {
   display: block;
   max-width: 120px;
   max-height: 80px;
   object-fit: contain;
   border-radius: 4px;
+  pointer-events: none;
 }
 
 .mm-adornments__row {

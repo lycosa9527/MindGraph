@@ -42,6 +42,7 @@ from services.kitty.context.messaging import resolve_voice_interaction_language,
 from services.kitty.diagram.hub_bridge import try_sync_voice_diagram_to_hub
 from services.kitty.infra.desktop.kitty_desktop_wake_fanout import publish_kitty_selection_update
 from services.kitty.infra.desktop.kitty_voice_command_fanout import fanout_voice_command_from_session
+from services.kitty.agent_loop.explain_tools import dispatch_explain_node
 from services.kitty.agent_loop.preference_tools import dispatch_preference_action
 from services.kitty.agent_loop.author_spec import (
     author_spec_tool_schema,
@@ -90,6 +91,7 @@ IDENTITY_REQUIRED_ACTIONS = frozenset(
         "delete_node",
         "auto_complete_branch",
         "select_node",
+        "explain_node",
     }
 )
 _OMNI_UI_NAMES = frozenset(
@@ -115,6 +117,7 @@ EDIT_LOOP_TOOL_NAMES = frozenset(
         "node_action.clarify_options",
         "node_action.auto_complete_branch",
         "node_action.auto_complete",
+        "node_action.explain_node",
         "node_action.set_content_level",
         "node_action.set_branch_numbering",
         "author_spec",
@@ -557,6 +560,23 @@ async def _dispatch_ui(
             mutated=status == "ok",
             stop_nonretryable=bool(preference.get("stop_nonretryable")),
         )
+    explained = await dispatch_explain_node(
+        websocket,
+        voice_session_id,
+        command=command,
+        command_text=command_text,
+        lang=lang,
+    )
+    if explained is not None:
+        payload = explained["payload"]
+        status = str(payload.get("status") or "") if isinstance(payload, dict) else ""
+        return ToolDispatchResult(
+            payload=payload,
+            action=str(explained.get("action") or ""),
+            mutated=status == "ok",
+            stop_after=bool(explained.get("stop_after")),
+            stop_nonretryable=bool(explained.get("stop_nonretryable")),
+        )
     action = str(command.get("action") or "")
     if action == "auto_complete":
         sent = await send_kitty_ws_action(
@@ -741,9 +761,12 @@ def _ui_ws_action(action: str, command: Dict[str, Any]) -> Optional[Dict[str, An
             params["text"] = seed.strip()
         return {"type": "action", "action": "add_node_with_recommendations", "params": params}
     if action == "explain_node":
-        params = {}
+        explain_params: Dict[str, Any] = {}
         node_id = command.get("node_id")
         if isinstance(node_id, str) and node_id.strip():
-            params["node_id"] = node_id.strip()
-        return {"type": "action", "action": "explain_node", "params": params}
+            explain_params["node_id"] = node_id.strip()
+        label = command.get("target") or command.get("node_label")
+        if isinstance(label, str) and label.strip():
+            explain_params["node_label"] = label.strip()
+        return {"type": "action", "action": "explain_node", "params": explain_params}
     return None

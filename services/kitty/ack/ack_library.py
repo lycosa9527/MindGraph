@@ -271,6 +271,14 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "zh": "抱歉，没能自动补全整张导图。请确认电脑端画布已打开后再试一次。",
         "en": "Sorry — I couldn't auto-complete the diagram. Make sure the desktop canvas is open, then try again.",
     },
+    "ui.explain_node": {
+        "zh": "好的，正在打开「{target}」的节点解释…",
+        "en": 'OK — opening the node explanation for "{target}"…',
+    },
+    "ui.explain_node.failed": {
+        "zh": "抱歉，没能打开节点解释。请确认电脑端画布已打开后再试。",
+        "en": "Sorry — I couldn't open the node explanation. Make sure the desktop canvas is open, then try again.",
+    },
     "ui.set_content_level": {
         "zh": "已将专业内容设为「{level}」。之后的生成会按这个受众来。",
         "en": 'Content level set to "{level}". Later generation will match that audience.',

@@ -94,6 +94,16 @@ NODE_ACTION_ROWS: List[NodeActionRow] = [
         "examples_en": ["auto-complete the diagram", "run auto-complete"],
     },
     {
+        "name": "explain_node",
+        "tool_name": "node_action.explain_node",
+        "description_zh": "打开某节点或分支的节点解释",
+        "description_en": "Open the node-explanation panel for a branch or node",
+        "when_to_use_zh": "用户要解释、介绍、讲解某个已有节点或分支，或「介绍这个节点」",
+        "when_to_use_en": "User asks to explain or introduce an existing or selected node",
+        "examples_zh": ["解释一下中国", "介绍这个节点"],
+        "examples_en": ["explain China", "introduce this node"],
+    },
+    {
         "name": "clarify_options",
         "tool_name": "node_action.clarify_options",
         "description_zh": "向用户确认意图（2–3个短选项）",
@@ -206,6 +216,27 @@ def build_node_action_tools() -> List[Dict[str, Any]]:
             [],
         ),
         _fn(
+            "node_action.explain_node",
+            (
+                "Open 节点解释 (node explanation) for an EXISTING branch or node. "
+                "Use when the user asks to 解释/介绍/讲解/explain/introduce a named "
+                "or selected node (解释一下中国, 介绍这个节点). "
+                "Require node_id from Current diagram JSON when known; "
+                "omit it only for 这个/this when a node is selected."
+            ),
+            {
+                "node_id": {
+                    "type": "string",
+                    "description": "Stable node id from Current diagram JSON (preferred)",
+                },
+                "target": {
+                    "type": "string",
+                    "description": "Existing node/branch label (use when node_id unknown)",
+                },
+            },
+            [],
+        ),
+        _fn(
             "node_action.set_content_level",
             (
                 "Set the AI content audience (专业内容): general, primary, junior, "
@@ -286,6 +317,7 @@ def build_node_action_tools() -> List[Dict[str, Any]]:
                                     "delete_node",
                                     "auto_complete_branch",
                                     "auto_complete",
+                                    "explain_node",
                                     "ask_followup",
                                 ],
                             },
@@ -317,6 +349,7 @@ def build_node_action_tools() -> List[Dict[str, Any]]:
                                     "update_node",
                                     "delete_node",
                                     "auto_complete_branch",
+                                    "explain_node",
                                 ],
                                 "description": "Edit to apply after the user answers ask_followup",
                             },
@@ -409,6 +442,19 @@ def command_from_tool_call(name: str, arguments_json: str) -> Dict[str, Any]:
 
     if name == "node_action.auto_complete":
         return {"action": "auto_complete", "confidence": 0.95}
+
+    if name == "node_action.explain_node":
+        target = args.get("target") or args.get("node_label") or args.get("text")
+        node_id = args.get("node_id")
+        ident = args.get("node_identifier")
+        cmd = {"action": "explain_node", "confidence": 0.95}
+        if isinstance(node_id, str) and node_id.strip():
+            cmd["node_id"] = node_id.strip()
+        if isinstance(target, str) and target.strip():
+            cmd["target"] = target.strip()
+        if isinstance(ident, str) and ident.strip():
+            cmd["node_identifier"] = ident.strip()
+        return cmd
 
     if name == "node_action.set_content_level":
         level = args.get("level")
@@ -503,4 +549,8 @@ def render_diagram_snapshot_block(
         diagram_type=diagram_type,
         lang=lang,
     )
-    return block
+    audience = session_context.get("audience_instructions")
+    if not isinstance(audience, str) or not audience.strip():
+        return block
+    heading = "Audience rules:" if lang == "en" else "受众规则："
+    return f"{block}\n\n{heading}\n{audience.strip()}"

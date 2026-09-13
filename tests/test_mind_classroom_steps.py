@@ -13,6 +13,7 @@ from services.mind_classroom.canvas_tour import (
 )
 from services.mind_classroom.canvas_tour_chunks import merge_usage, split_each_node_families
 from services.mind_classroom.enqueue import TASK_SCRIPT, TASK_SLIDES, _task_name
+from services.mind_classroom.focus import resolve_whole_map_focus_node_ids
 from services.mind_classroom.steps import MAX_STEPS_DEFAULT, normalize_steps
 
 
@@ -33,6 +34,58 @@ def test_normalize_steps_caps_and_drops_unknown_ids() -> None:
     steps = normalize_steps(raw, spec=spec, max_steps=MAX_STEPS_DEFAULT)
     assert len(steps) == MAX_STEPS_DEFAULT
     assert steps[0]["focus_node_ids"] == ["topic"]
+
+
+def test_normalize_steps_frames_overview_on_main_branches() -> None:
+    """Overview / closing store topic plus first-level branches, not topic alone."""
+    spec = {
+        "nodes": [
+            {"id": "topic", "type": "topic"},
+            {"id": "b1"},
+            {"id": "leaf"},
+            {"id": "b2"},
+        ],
+        "connections": [
+            {"source": "topic", "target": "b1"},
+            {"source": "b1", "target": "leaf"},
+            {"source": "topic", "target": "b2"},
+        ],
+    }
+    steps = normalize_steps(
+        [
+            {
+                "kind": "overview",
+                "title": "Open",
+                "caption": "Hello",
+                "focus_node_ids": ["topic"],
+            },
+            {
+                "kind": "closing",
+                "title": "End",
+                "caption": "Bye",
+                "focus_node_ids": ["topic"],
+            },
+        ],
+        spec=spec,
+    )
+    assert steps[0]["focus_node_ids"] == ["topic", "b1", "b2"]
+    assert steps[1]["focus_node_ids"] == ["topic", "b1", "b2"]
+
+
+def test_whole_map_focus_skips_association_edges() -> None:
+    """Association overlays are not first-level lecture branches."""
+    spec = {
+        "nodes": [
+            {"id": "topic", "type": "topic"},
+            {"id": "b1"},
+            {"id": "note"},
+        ],
+        "connections": [
+            {"source": "topic", "target": "b1"},
+            {"source": "topic", "target": "note", "edgeType": "association"},
+        ],
+    }
+    assert resolve_whole_map_focus_node_ids(spec) == ["topic", "b1"]
 
 
 def test_parse_canvas_tour_json_strips_fence() -> None:

@@ -10,6 +10,7 @@ import { MessageSquare, Sparkles } from '@lucide/vue'
 import AiGenerateGlassHeroBadge from '@/components/canvas/AiGenerateGlassHeroBadge.vue'
 import AiGenerateGlassHeroGlyphs from '@/components/canvas/AiGenerateGlassHeroGlyphs.vue'
 import MindMapSidePanelCloseButton from '@/components/canvas/MindMapSidePanelCloseButton.vue'
+import ProfessionalContentAudienceBanner from '@/components/canvas/ProfessionalContentAudienceBanner.vue'
 import '@/components/canvas/aiGenerateGlass.css'
 import { useLanguage } from '@/composables/core/useLanguage'
 
@@ -23,6 +24,15 @@ export type AiGlassHeroVariant =
   | 'brainstorm'
   | 'oneSentence'
   | 'link'
+
+const AUDIENCE_HERO_VARIANTS: ReadonlySet<AiGlassHeroVariant> = new Set([
+  'doc',
+  'web',
+  'voice',
+  'chat',
+  'brainstorm',
+  'oneSentence',
+])
 
 const props = withDefaults(
   defineProps<{
@@ -76,6 +86,9 @@ const heroClass = computed(() => {
 
 const plateIcon = computed(() => props.icon ?? Sparkles)
 const badgeIcon = computed(() => props.badge ?? MessageSquare)
+const showAudience = computed(
+  () => Boolean(props.variant && AUDIENCE_HERO_VARIANTS.has(props.variant))
+)
 </script>
 
 <template>
@@ -122,8 +135,16 @@ const badgeIcon = computed(() => props.badge ?? MessageSquare)
     </div>
 
     <h2 class="ai-glass-hero__title">{{ copy.title }}</h2>
-    <p class="ai-glass-hero__lines">
-      {{ copy.line1 }}<template v-if="copy.line2"><br />{{ copy.line2 }}</template>
-    </p>
+    <div class="ai-glass-hero__lines">
+      <span class="ai-glass-hero__line">{{ copy.line1 }}</span>
+      <span
+        v-if="copy.line2"
+        class="ai-glass-hero__line"
+      >{{ copy.line2 }}</span>
+      <ProfessionalContentAudienceBanner
+        v-if="showAudience"
+        appearance="hero"
+      />
+    </div>
   </div>
 </template>

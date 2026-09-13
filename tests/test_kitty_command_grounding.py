@@ -97,6 +97,19 @@ def test_enrich_does_not_bind_silent_selection() -> None:
     assert "node_id" not in cmd
 
 
+def test_named_explain_node_is_grounded() -> None:
+    """User-named node may open 节点解释."""
+    command = {"action": "explain_node", "target": "竞争对手"}
+    decision = apply_command_grounding(
+        command,
+        user_text="解释一下竞争对手",
+        session_context=_ctx(),
+    )
+    assert decision.allowed is True
+    assert decision.reason == "grounded_mention"
+    assert command.get("node_id") == "uid-comp"
+
+
 def test_named_delete_is_grounded() -> None:
     """User-named node may be deleted."""
     decision = apply_command_grounding(

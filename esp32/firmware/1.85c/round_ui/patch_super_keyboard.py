@@ -10,7 +10,11 @@ SUPER_SRC = FIRMWARE_ROOT / "managed_components" / "espressif__brookesia_system_
 KEYBOARD_CPP = SUPER_SRC / "shell_keyboard.cpp"
 SHELL_IMPL = SUPER_SRC / "private" / "shell_impl.hpp"
 
-SHOW_MARKER = "stacked = screen_w == 360 && screen_h == 360"
+SHOW_MARKER = "stacked = (screen_w == 360 && screen_h == 360) || (screen_w == 466 && screen_h == 466);"
+BROKEN_STACKED = (
+    "const auto stacked = (screen_w == 360 && screen_h == 360) || "
+    "(screen_w == 466 && screen_h == 466)\n"
+)
 PASSWORD_MARKER = "options.password) {"
 
 OLD_SHOW = """    const auto final_input_y = input_frame->y;
@@ -24,7 +28,7 @@ NEW_SHOW = """    const auto final_input_y = input_frame->y;
     const auto environment = owner_.get_environment();
     const auto screen_w = environment.width_px;
     const auto screen_h = environment.height_px;
-    const auto stacked = screen_w == 360 && screen_h == 360;
+    const auto stacked = (screen_w == 360 && screen_h == 360) || (screen_w == 466 && screen_h == 466);
     const auto hidden_input_y = stacked ?
                                 final_input_y + screen_h :
                                 -std::max<int32_t>(input_frame->height, 1) - 2;
@@ -42,7 +46,7 @@ NEW_HIDE = """    auto completed_handler_ptr = std::make_shared<std::function<vo
     const auto environment = owner_.get_environment();
     const auto screen_w = environment.width_px;
     const auto screen_h = environment.height_px;
-    const auto stacked = screen_w == 360 && screen_h == 360;
+    const auto stacked = (screen_w == 360 && screen_h == 360) || (screen_w == 466 && screen_h == 466);
     const auto hidden_input_y = stacked ?
                                 input_frame->y + screen_h :
                                 -std::max<int32_t>(input_frame->height, 1) - 2;
@@ -81,6 +85,18 @@ def _replace_once(text: str, old: str, new: str, path: Path, label: str) -> str:
 def patch_keyboard_cpp(path: Path) -> bool:
     """Slide the composer and pad as one stack. True when the file changed."""
     text = path.read_text(encoding="utf-8")
+    old_stacked = "const auto stacked = screen_w == 360 && screen_h == 360;"
+    if BROKEN_STACKED in text:
+        text = text.replace(
+            BROKEN_STACKED,
+            SHOW_MARKER.replace("stacked = ", "const auto stacked = ") + "\n",
+        )
+        path.write_text(text, encoding="utf-8")
+        return True
+    if old_stacked in text:
+        text = text.replace(old_stacked, SHOW_MARKER.replace("stacked = ", "const auto stacked = "), 2)
+        path.write_text(text, encoding="utf-8")
+        return True
     if SHOW_MARKER in text and OLD_SHOW not in text and OLD_HIDE not in text:
         return False
     updated = _replace_once(text, OLD_SHOW, NEW_SHOW, path, "show animation")

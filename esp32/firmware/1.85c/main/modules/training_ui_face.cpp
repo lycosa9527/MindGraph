@@ -1,24 +1,51 @@
 #include "training_ui_model.hpp"
+#include "watch_face.hpp"
 
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 
-constexpr int32_t k_face = 360;
-constexpr int32_t k_inset = 30;
-constexpr int32_t k_mid = 180;
-constexpr int32_t k_col = 150;
-constexpr int32_t k_pad_w = 300;
-constexpr int32_t k_pad_y = 84;
-constexpr int32_t k_row = 52;
-constexpr int32_t k_pill_y = 260;
-constexpr int32_t k_pill_h = 44;
-constexpr int32_t k_pill_r = 22;
-constexpr int32_t k_school_x = 54;
-constexpr int32_t k_school_w = 136;
-constexpr int32_t k_start_x = 206;
-constexpr int32_t k_start_w = 100;
+constexpr int32_t k_inset = watch_px(30);
+constexpr int32_t k_mid = k_face / 2;
+constexpr int32_t k_col = watch_px(150);
+constexpr int32_t k_pad_w = watch_px(300);
+constexpr int32_t k_pad_y = watch_px(84);
+constexpr int32_t k_row = watch_px(52);
+constexpr int32_t k_pill_y = watch_px(260);
+constexpr int32_t k_pill_h = watch_px(44);
+constexpr int32_t k_pill_r = watch_px(22);
+constexpr int32_t k_school_x = watch_px(54);
+constexpr int32_t k_school_w = watch_px(136);
+constexpr int32_t k_start_x = watch_px(206);
+constexpr int32_t k_start_w = watch_px(100);
 constexpr int32_t k_tile_border = 2;
+constexpr int32_t k_title_x = watch_px(100);
+constexpr int32_t k_title_y = watch_px(16);
+constexpr int32_t k_title_w = watch_px(160);
+constexpr int32_t k_title_h = watch_px(22);
+constexpr int32_t k_status_x = watch_px(64);
+constexpr int32_t k_status_y = watch_px(42);
+constexpr int32_t k_status_w = watch_px(232);
+constexpr int32_t k_status_h = watch_px(24);
+constexpr int32_t k_dot = watch_px(8);
+constexpr int32_t k_picker_x = watch_px(44);
+constexpr int32_t k_picker_y = watch_px(72);
+constexpr int32_t k_picker_w = watch_px(272);
+constexpr int32_t k_picker_h = watch_px(176);
+constexpr int32_t k_picker_r = watch_px(16);
+constexpr int32_t k_list_pad = watch_px(8);
+constexpr int32_t k_list_w = watch_px(256);
+constexpr int32_t k_list_h = watch_px(160);
+constexpr int32_t k_row_w = watch_px(248);
+constexpr int32_t k_row_h = watch_px(36);
+constexpr int32_t k_row_label_w = watch_px(224);
+constexpr int32_t k_row_label_h = watch_px(28);
+constexpr int32_t k_label_h = watch_px(22);
+constexpr int32_t k_hit_slop = watch_px(4);
+constexpr int32_t k_confirm_x = watch_px(56);
+constexpr int32_t k_confirm_y = watch_px(110);
+constexpr int32_t k_confirm_w = watch_px(248);
+constexpr int32_t k_confirm_h = watch_px(140);
 constexpr uint32_t k_grout = 0xE2E8F0;
 constexpr uint32_t k_ink = 0x0F172A;
 constexpr uint32_t k_card = 0xFFFFFF;
@@ -221,7 +248,7 @@ lv_obj_t *training_face_btn(
         parent, x, y, width, height, bg, 0, k_tile_border, k_tile_line
     );
     lv_obj_add_flag(btn, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_set_ext_click_area(btn, 4);
+    lv_obj_set_ext_click_area(btn, k_hit_slop);
     lv_obj_add_event_cb(btn, on_action, LV_EVENT_CLICKED, reinterpret_cast<void *>(static_cast<intptr_t>(action)));
     lv_obj_t *label = lv_label_create(btn);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
@@ -243,18 +270,18 @@ lv_obj_t *training_face_picker_row(
 {
     lv_obj_t *row = lv_obj_create(list);
     lv_obj_remove_style_all(row);
-    lv_obj_set_size(row, 248, 36);
-    lv_obj_set_style_radius(row, 10, 0);
+    lv_obj_set_size(row, k_row_w, k_row_h);
+    lv_obj_set_style_radius(row, watch_px(10), 0);
     lv_obj_set_style_bg_color(row, lv_color_hex(bg), 0);
     lv_obj_set_style_bg_opa(row, LV_OPA_COVER, 0);
-    lv_obj_set_style_pad_hor(row, 10, 0);
+    lv_obj_set_style_pad_hor(row, watch_px(10), 0);
     lv_obj_set_style_clip_corner(row, true, 0);
     if (on_click != nullptr) {
         lv_obj_add_flag(row, LV_OBJ_FLAG_CLICKABLE);
         lv_obj_add_event_cb(row, on_click, LV_EVENT_CLICKED, reinterpret_cast<void *>(user));
     }
     lv_obj_t *label = lv_label_create(row);
-    lv_obj_set_size(label, 224, 28);
+    lv_obj_set_size(label, k_row_label_w, k_row_label_h);
     lv_label_set_long_mode(label, LV_LABEL_LONG_DOT);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_LEFT, 0);
     lv_obj_set_style_text_color(label, lv_color_hex(fg), 0);
@@ -286,18 +313,20 @@ TrainingWidgets training_face_build(
     lv_obj_set_style_clip_corner(widgets.root, true, 0);
     lv_obj_clear_flag(widgets.root, LV_OBJ_FLAG_SCROLLABLE);
 
-    lv_obj_t *title = training_face_label(widgets.root, 100, 16, 160, 22, LV_TEXT_ALIGN_CENTER, k_ink);
+    lv_obj_t *title = training_face_label(
+        widgets.root, k_title_x, k_title_y, k_title_w, k_title_h, LV_TEXT_ALIGN_CENTER, k_ink
+    );
     lv_label_set_text(title, "校本培训");
 
     lv_obj_t *status_row = lv_obj_create(widgets.root);
     lv_obj_remove_style_all(status_row);
-    lv_obj_set_pos(status_row, 64, 42);
-    lv_obj_set_size(status_row, 232, 24);
+    lv_obj_set_pos(status_row, k_status_x, k_status_y);
+    lv_obj_set_size(status_row, k_status_w, k_status_h);
     lv_obj_set_flex_flow(status_row, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(status_row, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_column(status_row, 6, 0);
+    lv_obj_set_style_pad_column(status_row, watch_px(6), 0);
     lv_obj_clear_flag(status_row, LV_OBJ_FLAG_SCROLLABLE);
-    widgets.online = training_face_disk(status_row, 8, k_wait);
+    widgets.online = training_face_disk(status_row, k_dot, k_wait);
     widgets.status = lv_label_create(status_row);
     lv_obj_set_style_text_align(widgets.status, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_style_text_color(widgets.status, lv_color_hex(k_wait_ink), 0);
@@ -339,7 +368,7 @@ TrainingWidgets training_face_build(
         reinterpret_cast<void *>(static_cast<intptr_t>(TrainingUiAction::toggle_dropdown))
     );
     widgets.dropdown_label = lv_label_create(widgets.dropdown);
-    lv_obj_set_size(widgets.dropdown_label, k_school_w - 20, 22);
+    lv_obj_set_size(widgets.dropdown_label, k_school_w - watch_px(20), k_label_h);
     lv_obj_set_style_text_align(widgets.dropdown_label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_style_text_color(widgets.dropdown_label, lv_color_hex(0xFFFFFF), 0);
     lv_label_set_long_mode(widgets.dropdown_label, LV_LABEL_LONG_DOT);
@@ -362,29 +391,65 @@ TrainingWidgets training_face_build(
     lv_label_set_text(widgets.pill_label, "开始");
     lv_obj_center(widgets.pill_label);
 
-    widgets.picker = training_face_card(widgets.root, 44, 72, 272, 176, 16);
+    widgets.picker = training_face_card(
+        widgets.root, k_picker_x, k_picker_y, k_picker_w, k_picker_h, k_picker_r
+    );
     lv_obj_add_flag(widgets.picker, LV_OBJ_FLAG_HIDDEN);
     widgets.picker_list = lv_obj_create(widgets.picker);
     lv_obj_remove_style_all(widgets.picker_list);
-    lv_obj_set_pos(widgets.picker_list, 8, 8);
-    lv_obj_set_size(widgets.picker_list, 256, 160);
+    lv_obj_set_pos(widgets.picker_list, k_list_pad, k_list_pad);
+    lv_obj_set_size(widgets.picker_list, k_list_w, k_list_h);
     lv_obj_set_flex_flow(widgets.picker_list, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_style_pad_row(widgets.picker_list, 6, 0);
+    lv_obj_set_style_pad_row(widgets.picker_list, watch_px(6), 0);
     lv_obj_set_scroll_dir(widgets.picker_list, LV_DIR_VER);
     lv_obj_add_flag(widgets.picker_list, LV_OBJ_FLAG_SCROLLABLE);
 
-    widgets.confirm = training_face_card(widgets.root, 56, 110, 248, 140, 16);
+    widgets.confirm = training_face_card(
+        widgets.root, k_confirm_x, k_confirm_y, k_confirm_w, k_confirm_h, k_picker_r
+    );
     lv_obj_add_flag(widgets.confirm, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_t *confirm_title = training_face_label(widgets.confirm, 16, 16, 216, 24, LV_TEXT_ALIGN_CENTER, k_ink);
+    lv_obj_t *confirm_title = training_face_label(
+        widgets.confirm,
+        watch_px(16),
+        watch_px(16),
+        watch_px(216),
+        watch_px(24),
+        LV_TEXT_ALIGN_CENTER,
+        k_ink
+    );
     lv_label_set_text(confirm_title, "停止");
-    lv_obj_t *confirm_body = training_face_label(widgets.confirm, 16, 44, 216, 36, LV_TEXT_ALIGN_CENTER, 0x64748B);
+    lv_obj_t *confirm_body = training_face_label(
+        widgets.confirm,
+        watch_px(16),
+        watch_px(44),
+        watch_px(216),
+        watch_px(36),
+        LV_TEXT_ALIGN_CENTER,
+        0x64748B
+    );
     lv_label_set_long_mode(confirm_body, LV_LABEL_LONG_WRAP);
     lv_label_set_text(confirm_body, "再按一次结束本场");
     lv_obj_t *ok = training_face_btn(
-        widgets.confirm, 20, 88, 100, 36, "结束", TrainingUiAction::confirm_end, on_action, k_stop
+        widgets.confirm,
+        watch_px(20),
+        watch_px(88),
+        watch_px(100),
+        watch_px(36),
+        "结束",
+        TrainingUiAction::confirm_end,
+        on_action,
+        k_stop
     );
     lv_obj_t *cancel = training_face_btn(
-        widgets.confirm, 128, 88, 100, 36, "取消", TrainingUiAction::cancel_end, on_action, 0x94A3B8
+        widgets.confirm,
+        watch_px(128),
+        watch_px(88),
+        watch_px(100),
+        watch_px(36),
+        "取消",
+        TrainingUiAction::cancel_end,
+        on_action,
+        0x94A3B8
     );
     training_face_style_btn(ok, k_stop, 0xFFFFFF, true);
     training_face_style_btn(cancel, 0x94A3B8, 0xFFFFFF, true);

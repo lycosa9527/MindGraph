@@ -3,6 +3,7 @@ import { ref } from 'vue'
 
 import {
   DOC_SUMMARY_WEB_URL_MAX_CHARS,
+  isLiteSourceReadyStatus,
   isValidDocSummaryWebUrl,
   resolveLiteDraftKind,
   waitForDocSummarySourceReady,
@@ -22,6 +23,16 @@ describe('isValidDocSummaryWebUrl', () => {
     expect(isValidDocSummaryWebUrl(`https://example.com/${'x'.repeat(DOC_SUMMARY_WEB_URL_MAX_CHARS)}`)).toBe(
       false
     )
+  })
+})
+
+describe('isLiteSourceReadyStatus', () => {
+  it('treats only completed extracts as ready to generate', () => {
+    expect(isLiteSourceReadyStatus('completed')).toBe(true)
+    expect(isLiteSourceReadyStatus('processing')).toBe(false)
+    expect(isLiteSourceReadyStatus('pending')).toBe(false)
+    expect(isLiteSourceReadyStatus('failed')).toBe(false)
+    expect(isLiteSourceReadyStatus(undefined)).toBe(false)
   })
 })
 

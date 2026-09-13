@@ -6,7 +6,9 @@ import pytest
 
 from models import GenerateRequest
 from models.common import LLMModel
+from models.requests.requests_thinking import NodePaletteStartRequest
 from prompts.ai_content_level import merge_generation_instructions
+from routers.node_palette_streaming import _merged_educational_context
 
 
 def test_generate_request_accepts_generation_instructions() -> None:
@@ -36,3 +38,33 @@ def test_generation_instructions_merge_marker(language: str, marker: str) -> Non
     merged = merge_generation_instructions(prompt, instructions, language)
     assert marker in merged
     assert instructions in merged
+
+
+def test_node_palette_start_accepts_generation_instructions() -> None:
+    """Brainstorm / palette start keeps 专业内容 on the request model."""
+    req = NodePaletteStartRequest.model_validate(
+        {
+            "session_id": "palette_abc12345",
+            "diagram_type": "mindmap",
+            "diagram_data": {"center": {"text": "茶叶"}},
+            "language": "zh",
+            "generation_instructions": "请按「初中」专业程度生成内容。",
+        }
+    )
+    assert req.generation_instructions == "请按「初中」专业程度生成内容。"
+
+
+def test_palette_merge_copies_generation_instructions_into_raw_message() -> None:
+    """Palette prompt builder reads audience text from educational_context.raw_message."""
+    req = NodePaletteStartRequest.model_validate(
+        {
+            "session_id": "palette_abc12345",
+            "diagram_type": "mindmap",
+            "diagram_data": {"center": {"text": "茶叶"}},
+            "language": "zh",
+            "generation_instructions": "请按「初中」专业程度生成内容。",
+        }
+    )
+    edu = _merged_educational_context(req, "zh")
+    assert edu is not None
+    assert edu["raw_message"] == "请按「初中」专业程度生成内容。"

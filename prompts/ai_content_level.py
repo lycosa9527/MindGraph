@@ -37,6 +37,20 @@ def extract_appended_generation_instructions(prompt: str, language: str) -> str 
     return block or None
 
 
+def resolve_generation_instructions(
+    explicit: str | None,
+    prompt: str = "",
+    language: str = "",
+) -> str | None:
+    """Prefer the request field; fall back to a router-merged prompt suffix."""
+    block = (explicit or "").strip()
+    if block:
+        return block
+    if not prompt or not language:
+        return None
+    return extract_appended_generation_instructions(prompt, language)
+
+
 def append_audience_instructions(prompt: str, audience_block: str | None) -> str:
     """Return prompt with a trailing audience block when one is provided."""
     base = (prompt or "").rstrip()

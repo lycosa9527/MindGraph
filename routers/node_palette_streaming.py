@@ -186,6 +186,15 @@ def _merged_educational_context(req: Any, effective_language: str | None = None)
         stripped = req_lang.strip().lower()
         if is_prompt_output_language(stripped):
             edu["language"] = stripped
+    instructions = getattr(req, "generation_instructions", None)
+    if isinstance(instructions, str):
+        block = instructions.strip()
+        if block:
+            existing = str(edu.get("raw_message") or "").strip()
+            if not existing:
+                edu["raw_message"] = block
+            elif block not in existing:
+                edu["raw_message"] = f"{block}\n\n{existing}"
     return edu if edu else None
 
 

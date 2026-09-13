@@ -48,7 +48,7 @@ export function formatBrushTargetsFromSelection(
   sourceIds: readonly string[]
 ): string[] {
   const sources = new Set(sourceIds)
-  return selectedIds.filter((id) => !sources.has(id))
+  return selectedIds.filter((id) => Boolean(id) && !sources.has(id))
 }
 
 /** Windows-like double-click window so the second painter click locks instead of cancelling. */

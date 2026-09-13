@@ -17,7 +17,6 @@ from contextlib import nullcontext
 from typing import TYPE_CHECKING
 
 from agents.concept_maps.concept_map_agent import ConceptMapAgent
-from agents.mind_maps.mind_map_agent import build_mind_map_branch_expand_user_message
 from agents.core.diagram_detection import _detect_diagram_type_from_prompt
 from agents.core.generate_events import (
     EventEmitter,
@@ -170,6 +169,8 @@ async def _generate_spec_with_agent(
     reference_branches: list | None = None,
     existing_branch_children: list | None = None,
     parent_branch: str | None = None,
+    generation_instructions: str | None = None,
+    rag_context_block: str = "",
     phase_emit: PhaseEmitter | None = None,
 ) -> dict:
     """
@@ -216,6 +217,11 @@ async def _generate_spec_with_agent(
             route.kwargs["reference_branches"] = reference_branches or []
             route.kwargs["existing_branch_children"] = existing_branch_children or []
             route.kwargs["parent_branch"] = (parent_branch or "").strip()
+            if generation_instructions:
+                route.kwargs["generation_instructions"] = generation_instructions
+            rag_block = (rag_context_block or "").strip()
+            if rag_block:
+                route.kwargs["rag_context_block"] = rag_block
         topic_lock = (locked_topic or "").strip()
         if topic_lock:
             route.kwargs["locked_topic"] = topic_lock
@@ -272,6 +278,7 @@ async def agent_graph_workflow_with_styles(
     reference_branches=None,
     existing_branch_children=None,
     parent_branch=None,
+    generation_instructions=None,
     phase_emit: PhaseEmitter | None = None,
     event_emit: EventEmitter | None = None,
     cancel_event: asyncio.Event | None = None,
@@ -555,16 +562,9 @@ Please generate a more accurate and detailed diagram based on the above context.
             logger.debug("[RAG] Prepared %d characters of context block", len(rag_context))
 
         if is_mind_map_branch_expand:
-            agent_user_message = build_mind_map_branch_expand_user_message(
-                expand_branch=expand_label,
-                mind_map_topic=(mind_map_topic or "").strip(),
-                reference_branches=list(reference_branches or []),
-                existing_branch_children=list(existing_branch_children or []),
-                parent_branch=(parent_branch or "").strip(),
-                language=language,
-            )
-            if rag_context_block.strip():
-                agent_user_message = f"{agent_user_message}\n\n{rag_context_block.strip()}"
+            # MindMapAgent is the only builder of the branch-expand LLM message.
+            # Forward the request prompt plus first-class audience / RAG kwargs.
+            agent_user_message = user_prompt
         else:
             agent_user_message = build_generation_user_message(
                 generation_central,
@@ -602,6 +602,8 @@ Please generate a more accurate and detailed diagram based on the above context.
                 reference_branches=reference_branches,
                 existing_branch_children=existing_branch_children,
                 parent_branch=parent_branch,
+                generation_instructions=generation_instructions,
+                rag_context_block=rag_context_block,
                 phase_emit=agent_phase_emit,
             )
         generation_time = time.time() - generation_start

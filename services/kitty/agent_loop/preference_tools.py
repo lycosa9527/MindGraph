@@ -77,6 +77,7 @@ async def _dispatch_content_level(
             "action": "set_content_level",
         }
     session_context["ai_content_level"] = level
+    session_context.pop("audience_instructions", None)
     _write_session_context(voice_session_id, session_context)
     sent = await send_kitty_ws_action(
         websocket,

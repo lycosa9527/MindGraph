@@ -42,6 +42,7 @@ _ACTIONS_NEEDING_TARGET_SEED = frozenset(
         "add_node",
         "delete_node",
         "auto_complete_branch",
+        "explain_node",
     }
 )
 

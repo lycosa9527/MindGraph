@@ -1,0 +1,54 @@
+{
+    "type": "constant",
+    "data": {
+        "settings": {
+            "layout": {
+                "pageX": "68dp",
+                "pageY": "118dp",
+                "pageWidth": "${expr(${env.widthDp} - 136dp)}",
+                "pageHeight": "${expr(${env.heightDp} - 192dp)}",
+                "pageGap": "8dp",
+                "cardGap": "8dp",
+                "cardRadius": "18dp",
+                "cardPadding": "10dp",
+                "rowHeight": "48dp",
+                "smallRowHeight": "44dp",
+                "iconSize": "26dp",
+                "navIconColumn": "30dp",
+                "navValueColumn": "match",
+                "menuValueColumn": "match",
+                "chevronWidth": "14dp",
+                "sliderHeight": "28dp",
+                "switchColumnWidth": "60dp",
+                "switchWidth": "54dp",
+                "switchHeight": "30dp",
+                "headerY": "72dp",
+                "headerHeight": "40dp",
+                "headerSideWidth": "40dp",
+                "headerBackSize": "36dp",
+                "headerIconSize": "22dp",
+                "themeModeCardWidth": "match",
+                "themeModeCardHeight": "96dp",
+                "themePreviewWidth": "140dp",
+                "themePreviewHeight": "44dp",
+                "wifiMetaColumn": "36dp",
+                "wifiRefreshColumnWidth": "40dp",
+                "wifiRefreshSize": "32dp",
+                "wifiHeaderHeight": "36dp",
+                "wifiStatusCardHeight": "52dp",
+                "wifiConnectedHeight": "56dp",
+                "wifiRowHeight": "48dp",
+                "wifiPasswordLabelColumn": "72dp",
+                "wifiConnectActionWidth": "match"
+            },
+            "font": {
+                "hero": "22sp",
+                "title": "18sp",
+                "section": "15sp",
+                "body": "15sp",
+                "caption": "13sp",
+                "small": "12sp"
+            }
+        }
+    }
+}

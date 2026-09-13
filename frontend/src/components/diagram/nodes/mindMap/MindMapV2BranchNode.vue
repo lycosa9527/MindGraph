@@ -10,6 +10,10 @@ import { Handle, Position } from '@vue-flow/core'
 import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { aiBrainstormGlowingNodeIds } from '@/composables/aiBrainstorm/useAiBrainstorm'
+import {
+  applyFormatBrushToNode,
+  formatBrushActive,
+} from '@/composables/canvasToolbar/useCanvasFormatBrush'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { diagramSessionRef, useDiagramSession } from '@/composables/diagram/useDiagramSession'
@@ -88,8 +92,8 @@ const { getNodeStyle } = useTheme({
   diagramType: computed(() => props.data.diagramType),
 })
 
-const isChild = computed(() =>
-  mindMapBranchDepth(props.id, { data: props.data }, diagramStore.data?.connections) >= 2
+const isChild = computed(
+  () => mindMapBranchDepth(props.id, { data: props.data }, diagramStore.data?.connections) >= 2
 )
 const themeNodeType = computed(() => (isChild.value ? 'child' : 'branch'))
 const defaultStyle = computed(() => getNodeStyle(themeNodeType.value))
@@ -397,6 +401,12 @@ function handleBranchNodeDoubleClick(): void {
 
 function handleBranchNodeClick(event: MouseEvent): void {
   if (isEditing.value) return
+  if (formatBrushActive.value) {
+    event.stopPropagation()
+    event.preventDefault()
+    applyFormatBrushToNode(props.id)
+    return
+  }
   if (isLearningSheetCustomPickActive()) {
     event.stopPropagation()
     event.preventDefault()

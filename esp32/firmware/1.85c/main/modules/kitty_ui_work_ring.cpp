@@ -1,9 +1,9 @@
 #include "kitty_ui_work_ring.hpp"
+#include "watch_face.hpp"
 
 namespace {
 
-constexpr int32_t k_face = 360;
-constexpr int32_t k_inset = 6;
+constexpr int32_t k_inset = watch_px(6);
 constexpr uint32_t k_period_ms = 2500;
 constexpr uint32_t k_head = 0x22C55E;
 constexpr uint32_t k_mid = 0x4ADE80;

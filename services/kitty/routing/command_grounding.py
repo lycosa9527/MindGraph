@@ -26,6 +26,7 @@ NODE_SCOPED_ACTIONS = frozenset(
         "update_node",
         "auto_complete_branch",
         "select_node",
+        "explain_node",
     }
 )
 CENTER_ACTIONS = frozenset({"update_center"})

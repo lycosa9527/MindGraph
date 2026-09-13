@@ -11,6 +11,13 @@ import { GraduationCap } from '@lucide/vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAiContentLevelStore } from '@/stores'
 
+withDefaults(
+  defineProps<{
+    appearance?: 'boxed' | 'hero'
+  }>(),
+  { appearance: 'boxed' }
+)
+
 const { t } = useLanguage()
 const { level } = storeToRefs(useAiContentLevelStore())
 
@@ -20,7 +27,10 @@ const audienceTitle = computed(() =>
 </script>
 
 <template>
-  <div class="pc-audience-banner">
+  <div
+    class="pc-audience-banner"
+    :class="`pc-audience-banner--${appearance}`"
+  >
     <GraduationCap
       class="pc-audience-banner__icon"
       :stroke-width="2"
@@ -37,12 +47,25 @@ const audienceTitle = computed(() =>
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: #f8fafc;
   font-size: 11px;
   line-height: 1.35;
   color: #64748b;
+}
+
+.pc-audience-banner--boxed {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.pc-audience-banner--hero {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  color: inherit;
 }
 
 .pc-audience-banner__icon {
@@ -52,8 +75,17 @@ const audienceTitle = computed(() =>
   opacity: 0.75;
 }
 
-:global(.dark) .pc-audience-banner {
+.pc-audience-banner--hero .pc-audience-banner__icon {
+  width: 13px;
+  height: 13px;
+}
+
+:global(.dark) .pc-audience-banner--boxed {
   background: rgb(30 41 59 / 0.85);
   color: #94a3b8;
+}
+
+:global(.dark) .pc-audience-banner--hero {
+  color: var(--ai-muted, #94a3b8);
 }
 </style>

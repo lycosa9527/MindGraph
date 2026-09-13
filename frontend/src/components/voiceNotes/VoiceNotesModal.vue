@@ -10,6 +10,7 @@ import { storeToRefs } from 'pinia'
 
 import { Copy, Mic, Pause, Square } from '@lucide/vue'
 
+import AiBusyGenerateButton from '@/components/canvas/AiBusyGenerateButton.vue'
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import '@/components/canvas/aiGenerateGlass.css'
 import VoiceNotesSpeakerEditor from '@/components/voiceNotes/VoiceNotesSpeakerEditor.vue'
@@ -77,6 +78,11 @@ function onStop(): void {
   void session.stopRecordingOnly()
 }
 
+const generateBusy = computed(() => session.generating.value)
+const generateLabel = computed(() =>
+  generateBusy.value ? t('canvas.toolbar.aiGenerating') : t('auth.voiceNotes.retryGenerate')
+)
+
 function onGenerate(): void {
   void session.generateMindmap()
 }
@@ -139,30 +145,6 @@ async function onCopy(): Promise<void> {
       <div class="vn-swiss__footer">
         <div class="vn-swiss__footer-left">
           <button
-            type="button"
-            class="vn-pill vn-pill--ghost"
-            :disabled="!actions.canCopy"
-            @click="onCopy"
-          >
-            <Copy
-              class="vn-pill__icon"
-              :size="14"
-              :stroke-width="2"
-            />
-            {{ t('auth.voiceNotes.copy') }}
-          </button>
-          <button
-            type="button"
-            class="vn-pill vn-pill--solid"
-            :disabled="!actions.canGenerate"
-            @click="onGenerate"
-          >
-            {{ t('auth.voiceNotes.retryGenerate') }}
-          </button>
-        </div>
-
-        <div class="vn-swiss__footer-right">
-          <button
             v-if="actions.canStart"
             type="button"
             class="vn-pill vn-pill--solid"
@@ -214,7 +196,28 @@ async function onCopy(): Promise<void> {
             />
             {{ t('auth.voiceNotes.stop') }}
           </button>
+          <button
+            type="button"
+            class="vn-pill vn-pill--ghost"
+            :disabled="!actions.canCopy"
+            @click="onCopy"
+          >
+            <Copy
+              class="vn-pill__icon"
+              :size="14"
+              :stroke-width="2"
+            />
+            {{ t('auth.voiceNotes.copy') }}
+          </button>
         </div>
+
+        <AiBusyGenerateButton
+          :busy="generateBusy"
+          :disabled="!actions.canGenerate"
+          :label="generateLabel"
+          :block="false"
+          @click="onGenerate"
+        />
       </div>
     </template>
   </el-dialog>
@@ -389,8 +392,7 @@ async function onCopy(): Promise<void> {
   flex-wrap: wrap;
 }
 
-.vn-swiss__footer-left,
-.vn-swiss__footer-right {
+.vn-swiss__footer-left {
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;

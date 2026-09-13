@@ -106,6 +106,7 @@ def _build_workflow_kwargs(req: GenerateRequest, prepared: dict[str, Any]) -> di
             req.existing_branch_children if hasattr(req, "existing_branch_children") else None
         ),
         "parent_branch": req.parent_branch if hasattr(req, "parent_branch") else None,
+        "generation_instructions": (req.generation_instructions or "").strip() or None,
     }
 
 

@@ -1,5 +1,12 @@
-import type { GraphNode, NodeChange, NodeDragEvent, NodeMouseEvent, NodeSelectionChange } from '@vue-flow/core'
+import type {
+  GraphNode,
+  NodeChange,
+  NodeDragEvent,
+  NodeMouseEvent,
+  NodeSelectionChange,
+} from '@vue-flow/core'
 
+import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphNode } from '@/types'
 
@@ -114,7 +121,9 @@ export function useDiagramCanvasVueFlowHandlers(
   })
 
   onNodeClick(({ node }) => {
-    emit('nodeClick', node as unknown as MindGraphNode)
+    const mindNode = node as unknown as MindGraphNode
+    eventBus.emit('canvas:node_clicked', { nodeId: mindNode.id })
+    emit('nodeClick', mindNode)
   })
 
   onNodeDoubleClick(({ node }) => {

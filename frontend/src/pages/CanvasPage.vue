@@ -146,6 +146,7 @@ import {
 import { useMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
 import { useMindMapSlidePresentation } from '@/composables/mindMap/useMindMapSlidePresentation'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import { useSlideRemote } from '@/composables/mindMap/useSlideRemote'
 import {
   setPresentationDiagramEditLocked,
   setPresentationFullscreenRoot,
@@ -529,6 +530,34 @@ const slidePresentation = useMindMapSlidePresentation({
   onExitSlides: () => {
     mindMapPresentationTool.value = 'pointer'
     presentationTool.value = 'laser'
+  },
+})
+
+useSlideRemote({
+  slidesActive: () => isMindMapPresentationMode.value && mindMapPresentationTool.value === 'slides',
+  slidePresentation,
+  diagramId: () => currentDiagramId.value,
+  title: () => slidePresentation.currentSlide.value?.title ?? '',
+  openDiagram: async (diagramId) => {
+    if (currentDiagramId.value === diagramId) return
+    await router.push({ path: '/canvas', query: { diagramId } }).catch(() => undefined)
+  },
+  enterSlides: () => {
+    if (!presentationRailOpen.value) {
+      handleStartPresentation()
+    }
+    void nextTick(() => {
+      void nextTick(() => {
+        if (useMindMapV2.value) {
+          mindMapPresentationTool.value = 'slides'
+        }
+      })
+    })
+  },
+  exitPresentation: () => {
+    if (presentationRailOpen.value) {
+      handleStartPresentation()
+    }
   },
 })
 
@@ -954,8 +983,12 @@ const diagramType = computed<DiagramType | null>(() => {
   return diagramTypeMap[chartType.value] || null
 })
 
-const { loadDiagramFromLibrary, handleSnapshotRecall, handleSnapshotDelete } =
-  useCanvasPageLibrarySnapshots({ diagramAutoSave, snapshotHistory, isDiagramOwner })
+const {
+  loadDiagramFromLibrary,
+  handleSnapshotRecall,
+  handleRestoreCurrentVersion,
+  handleSnapshotDelete,
+} = useCanvasPageLibrarySnapshots({ diagramAutoSave, snapshotHistory, isDiagramOwner })
 
 function normalizedRouteDiagramId(): string | undefined {
   const raw = route.query.diagramId ?? route.query.diagram_id
@@ -1149,6 +1182,7 @@ registerMindMapRibbonPageBridge({
   handleSaveKey,
   handleSnapshotRecall,
   handleSnapshotDelete,
+  handleRestoreCurrentVersion,
   handleStartPresentationWithTier,
   handleOpenCollab,
   handleHandToolToggle,
