@@ -5,6 +5,7 @@ import type { Ref } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import type { UseLanguageTranslate } from '@/composables/core/useLanguage'
+import { colorForUser, emojiForUser, lockRingColorForUser } from '@/shared/collabPalette'
 import type {
   ActiveEditor,
   NodeEditingEvent,
@@ -386,6 +387,8 @@ export function dispatchWorkshopMessage(
         deps.participantsWithNames.value.push({
           user_id: joinedId,
           username: joinDisplayName,
+          color: message.color,
+          emoji: message.emoji,
         })
       }
       deps.schedulePresenceNotification('joined', joinedId, joinDisplayName)
@@ -461,7 +464,7 @@ export function dispatchWorkshopMessage(
         deps.remoteSelectionsByUser.value.set(uid, {
           nodeId: nid,
           username: message.username || `User ${uid}`,
-          color: message.color || '#f97316',
+          color: lockRingColorForUser(uid, message.color),
         })
       }
       deps.remoteSelectionsByUser.value = new Map(deps.remoteSelectionsByUser.value)
@@ -637,30 +640,24 @@ export function dispatchWorkshopMessage(
       deps.recordTransportPong()
       break
 
-    case 'role_changed':
-      if (message.role) {
-        deps.workshopRole.value = message.role
-        eventBus.emit('workshop:role-changed', {
-          userId: message.user_id,
-          role: message.role,
-        })
-      }
-      break
-
-    case 'role_change_ack':
-      break
-
-    case 'write_locked': {
-      const writingUserId = message.user_id
-      if (writingUserId == null) {
+    case 'role_changed': {
+      if (!message.role) {
         break
       }
-      eventBus.emit('workshop:write-locked', {
-        userId: writingUserId,
-        locked: message.locked === true,
-      })
+      const targetId = message.user_id
+      if (targetId != null) {
+        const selfId = Number(deps.auth.getCurrentUserIdString())
+        if (!Number.isFinite(selfId) || selfId !== Number(targetId)) {
+          break
+        }
+      }
+      deps.workshopRole.value = message.role
       break
     }
+
+    case 'role_change_ack':
+    case 'write_locked':
+      break
 
     case 'node_edit_claimed': {
       const claimedNodeId = message.node_id
@@ -686,8 +683,8 @@ export function dispatchWorkshopMessage(
           updated.set(claimedNodeId, {
             user_id: message.held_by_user_id,
             username: deniedHolderLabel,
-            color: existing?.color ?? '',
-            emoji: existing?.emoji ?? '',
+            color: existing?.color || colorForUser(message.held_by_user_id),
+            emoji: existing?.emoji || emojiForUser(message.held_by_user_id),
           })
           deps.activeEditors.value = updated
         }

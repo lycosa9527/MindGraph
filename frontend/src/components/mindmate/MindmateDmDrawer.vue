@@ -10,6 +10,7 @@ import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
 import { authFetch } from '@/utils/api'
+import { firstRealPersonName, orgMemberById } from '@/utils/workshopDmInbox'
 
 const props = defineProps<{
   visible: boolean
@@ -33,10 +34,9 @@ const localMessages = ref<
 
 const partnerName = computed(() => {
   if (!props.partnerId) return ''
-  const fromMembers = store.orgMembers.find((m) => m.id === props.partnerId)
-  if (fromMembers) return fromMembers.name
+  const fromMembers = orgMemberById(store.orgMembers, props.partnerId)
   const fromDm = store.dmConversations.find((c) => c.partner_id === props.partnerId)
-  return fromDm?.partner_name || `#${props.partnerId}`
+  return firstRealPersonName(fromMembers?.name, fromDm?.partner_name) ?? ''
 })
 
 watch(

@@ -6,8 +6,10 @@ import { computed, onMounted, ref } from 'vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useWorkshopComposeDraft } from '@/composables/workshop/useWorkshopComposeDraft'
+import { useWorkshopImageLightbox } from '@/composables/workshop/useWorkshopImageLightbox'
 import { resolveMessageEditKeydown } from '@/utils/workshopMessageEditKeys'
 
+import ImageLightbox from './ImageLightbox.vue'
 import WorkshopComposeToolbar from './WorkshopComposeToolbar.vue'
 import WorkshopDiagramPicker from './WorkshopDiagramPicker.vue'
 
@@ -22,6 +24,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
+const { lightboxSrc, lightboxName, handleMarkdownImageClick, closeLightbox } =
+  useWorkshopImageLightbox(() => t('workshop.diagram'))
 const {
   content,
   isPreview,
@@ -135,6 +139,7 @@ defineExpose({ markSaveFailed })
       <div
         v-else
         v-html="previewHtml"
+        @click="handleMarkdownImageClick"
       />
     </div>
     <textarea
@@ -206,6 +211,12 @@ defineExpose({ markSaveFailed })
       :visible="showDiagramPicker"
       @update:visible="showDiagramPicker = $event"
       @insert="handleDiagramInsert"
+    />
+    <ImageLightbox
+      v-if="lightboxSrc"
+      :src="lightboxSrc"
+      :filename="lightboxName"
+      @close="closeLightbox"
     />
   </div>
 </template>
@@ -319,6 +330,11 @@ defineExpose({ markSaveFailed })
   max-width: 100%;
   max-height: 240px;
   border-radius: 6px;
+  cursor: pointer;
+}
+
+.msg-edit__preview :deep(img:hover) {
+  box-shadow: 0 2px 6px hsl(0deg 0% 0% / 10%);
 }
 
 .msg-edit__preview :deep(img[src*='/api/training/assets/roles/']) {
@@ -332,6 +348,8 @@ defineExpose({ markSaveFailed })
   object-fit: contain;
   border: none;
   background: transparent;
+  cursor: default;
+  box-shadow: none;
 }
 
 .msg-edit__preview :deep(blockquote) {

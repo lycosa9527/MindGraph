@@ -26,6 +26,7 @@ from services.online_collab.core.online_collab_status import (
     diagram_title_for_active_workshop,
     online_collab_visibility_for_diagram_id,
 )
+from services.online_collab.common.collab_palette import palette_for_user
 from services.online_collab.participant.collab_display_name import (
     workshop_collab_member_display_name,
 )
@@ -56,8 +57,6 @@ async def _replay_remote_node_editing_states(
     handle: AnyHandle,
     user: Any,
     editor_map: Dict[str, Dict[int, str]],
-    user_colors: List[str],
-    user_emojis: List[str],
 ) -> None:
     """
     Send the current node-editing presence state to a joining user.
@@ -69,8 +68,7 @@ async def _replay_remote_node_editing_states(
     for node_id, editors in editor_map.items():
         for editor_user_id, editor_username in editors.items():
             if editor_user_id != user.id:
-                color = user_colors[editor_user_id % len(user_colors)]
-                emoji = user_emojis[editor_user_id % len(user_emojis)]
+                color, emoji = palette_for_user(editor_user_id)
                 events.append(
                     {
                         "type": "node_editing",
@@ -96,8 +94,6 @@ async def send_canvas_collab_join_handshake(
     user: Any,
     diagram_id: str,
     owner_id: Any,
-    user_colors: List[str],
-    user_emojis: List[str],
 ) -> None:
     """
     Send joined payload, replay remote editors, broadcast user_joined.
@@ -193,14 +189,9 @@ async def send_canvas_collab_join_handshake(
         raise
 
     if not isinstance(handle, ViewerHandle):
-        await _replay_remote_node_editing_states(
-            handle,
-            user,
-            editor_map,
-            user_colors,
-            user_emojis,
-        )
+        await _replay_remote_node_editing_states(handle, user, editor_map)
 
+    join_color, join_emoji = palette_for_user(user.id)
     await broadcast_to_others(
         code,
         user.id,
@@ -208,6 +199,8 @@ async def send_canvas_collab_join_handshake(
             "type": "user_joined",
             "user_id": user.id,
             "username": username,
+            "color": join_color,
+            "emoji": join_emoji,
         },
     )
 

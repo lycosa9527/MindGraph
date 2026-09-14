@@ -23,6 +23,18 @@ USER_COLORS: list[str] = [
     "#F7DC6F",
     "#BB8FCE",
     "#85C1E2",
+    "#E11D48",
+    "#F59E0B",
+    "#65A30D",
+    "#059669",
+    "#0284C7",
+    "#4F46E5",
+    "#C026D3",
+    "#DB2777",
+    "#EA580C",
+    "#0D9488",
+    "#7C3AED",
+    "#2563EB",
 ]
 
 USER_EMOJIS: list[str] = [
@@ -34,6 +46,18 @@ USER_EMOJIS: list[str] = [
     "✍️",
     "🖍️",
     "🖌️",
+    "📎",
+    "📐",
+    "📏",
+    "📌",
+    "📍",
+    "🔖",
+    "✂️",
+    "⭐",
+    "🍀",
+    "🎵",
+    "🎯",
+    "🔮",
 ]
 
 
@@ -47,3 +71,8 @@ def emoji_for_user(user_id: int) -> str:
     """Deterministic emoji assignment from user_id (matches the frontend)."""
     idx = abs(int(user_id)) % len(USER_EMOJIS)
     return USER_EMOJIS[idx]
+
+
+def palette_for_user(user_id: int) -> tuple[str, str]:
+    """Color and emoji for one participant (join roster, lock ring, selection)."""
+    return color_for_user(user_id), emoji_for_user(user_id)

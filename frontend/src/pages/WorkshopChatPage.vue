@@ -53,6 +53,7 @@ import {
   workshopQueryFromState,
   workshopRouteQueriesEqual,
 } from '@/utils/workshopChatRoute'
+import { orgMemberById } from '@/utils/workshopDmInbox'
 
 const AccountInfoModal = defineAsyncComponent(
   () => import('@/components/auth/AccountInfoModal.vue')
@@ -420,7 +421,16 @@ const currentTopicDetail = computed(() => {
 
 const currentDMPartner = computed(() => {
   if (!store.currentDMPartnerId) return null
-  return store.dmConversations.find((c) => c.partner_id === store.currentDMPartnerId) ?? null
+  const existing = store.dmConversations.find((c) => c.partner_id === store.currentDMPartnerId)
+  if (existing) return existing
+  const member = orgMemberById(store.orgMembers, store.currentDMPartnerId)
+  return {
+    partner_id: store.currentDMPartnerId,
+    partner_name: member?.name || '',
+    partner_avatar: member?.avatar ?? null,
+    last_message: { content: null, created_at: null, is_mine: false },
+    unread_count: 0,
+  }
 })
 
 const channelStatusConfig: Record<string, { labelKey: string; color: string }> = {
@@ -521,6 +531,15 @@ async function applyWorkshopRouteFromQuery(): Promise<void> {
         store.selectDMPartner(parsed.partnerId)
         store.selectChannel(null)
         store.activeTab = 'dms'
+        {
+          const member = orgMemberById(store.orgMembers, parsed.partnerId)
+          const conv = store.dmConversations.find((row) => row.partner_id === parsed.partnerId)
+          store.ensurePartnerConversation(
+            parsed.partnerId,
+            conv?.partner_name || member?.name,
+            conv?.partner_avatar || member?.avatar
+          )
+        }
         break
       }
       case 'channel': {
@@ -999,22 +1018,13 @@ function handleStartDMPicker(): void {
 
 function handleStartDM(memberId: number): void {
   if (memberId === Number(authStore.user?.id)) return
+  const member = orgMemberById(store.orgMembers, memberId)
+  store.leaveWorkshopHomeView()
   store.selectDMPartner(memberId)
   store.selectChannel(null)
+  store.activeTab = 'dms'
   store.showChannelBrowser = false
-  const existing = store.dmConversations.find((c) => c.partner_id === memberId)
-  if (!existing) {
-    const member = store.orgMembers.find((m) => m.id === memberId)
-    if (member) {
-      store.dmConversations.unshift({
-        partner_id: member.id,
-        partner_name: member.name,
-        partner_avatar: member.avatar,
-        last_message: { content: null, created_at: null, is_mine: false },
-        unread_count: 0,
-      })
-    }
-  }
+  store.ensurePartnerConversation(memberId, member?.name, member?.avatar)
 }
 
 async function handleCreateTopic(): Promise<void> {

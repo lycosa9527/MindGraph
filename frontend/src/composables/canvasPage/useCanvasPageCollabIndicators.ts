@@ -1,153 +1,9 @@
-import { type ComputedRef, computed, nextTick, onScopeDispose, provide, watch } from 'vue'
+import { type ComputedRef, computed, onScopeDispose, provide, watch } from 'vue'
 
-import { eventBus } from '@/composables/core/useEventBus'
 import type { UseLanguageTranslate } from '@/composables/core/useLanguage'
 import type { ActiveEditor, RemoteNodeSelection } from '@/composables/workshop/useWorkshop'
+import { lockRingColorForUser } from '@/shared/collabPalette'
 import { useCanvasNodeIndicatorsStore } from '@/stores/canvasNodeIndicators'
-
-function isCssColorTransparent(value: string): boolean {
-  const v = value.trim().toLowerCase()
-  if (v === 'transparent') {
-    return true
-  }
-  const match = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+)\s*)?\)$/.exec(v)
-  if (match) {
-    const alpha = match[4]
-    if (alpha !== undefined && parseFloat(alpha) === 0) {
-      return true
-    }
-  }
-  return false
-}
-
-function isElementHiddenForAntSample(element: HTMLElement): boolean {
-  const cs = getComputedStyle(element)
-  return cs.display === 'none' || cs.visibility === 'hidden'
-}
-
-function antSampleElementArea(element: HTMLElement): number {
-  return Math.max(0, element.offsetWidth) * Math.max(0, element.offsetHeight)
-}
-
-function solidBorderPaintFromComputed(
-  styles: CSSStyleDeclaration
-): { width: number; color: string } | null {
-  const sides: Array<[number, string]> = [
-    [parseFloat(styles.borderTopWidth) || 0, styles.borderTopColor],
-    [parseFloat(styles.borderRightWidth) || 0, styles.borderRightColor],
-    [parseFloat(styles.borderBottomWidth) || 0, styles.borderBottomColor],
-    [parseFloat(styles.borderLeftWidth) || 0, styles.borderLeftColor],
-  ]
-  let bestWidth = 0
-  let bestColor: string | null = null
-  for (const [w, c] of sides) {
-    if (w > bestWidth && !isCssColorTransparent(c)) {
-      bestWidth = w
-      bestColor = c
-    }
-  }
-  if (bestWidth > 0 && bestColor !== null) {
-    return { width: bestWidth, color: bestColor }
-  }
-  return null
-}
-
-function samplePaintFromElement(element: HTMLElement): string | null {
-  const styles = getComputedStyle(element)
-  const borderPaint = solidBorderPaintFromComputed(styles)
-  if (borderPaint !== null) {
-    return borderPaint.color
-  }
-  const outlineWidth = parseFloat(styles.outlineWidth) || 0
-  if (outlineWidth > 0) {
-    const color = styles.outlineColor
-    if (!isCssColorTransparent(color)) {
-      return color
-    }
-  }
-  const fromText = styles.color
-  if (!isCssColorTransparent(fromText)) {
-    return fromText
-  }
-  const fromBg = styles.backgroundColor
-  if (!isCssColorTransparent(fromBg)) {
-    return fromBg
-  }
-  return null
-}
-
-function sampleBoundaryRingStroke(wrapper: HTMLElement): string | null {
-  const circle = wrapper.querySelector('circle')
-  if (!(circle instanceof SVGCircleElement)) {
-    return null
-  }
-  const stroke = getComputedStyle(circle).stroke
-  if (stroke && stroke !== 'none' && !isCssColorTransparent(stroke)) {
-    return stroke
-  }
-  return null
-}
-
-/**
- * Border of the visible node chrome (not the first DOM child only).
- * Concept maps wrap the pill plus a link handle: the handle is first in DOM but has no border;
- * we pick the direct child with real border (or largest area for text-only nodes).
- *
- * This is the only remaining DOM read in the indicator pipeline — a one-time sample taken
- * when a WS edit-start message arrives. The result is stored in the Pinia indicator store
- * and applied reactively via node.style; no further DOM access is needed.
- */
-function sampleWorkshopAntColorFromNodeWrapper(wrapper: HTMLElement): string | null {
-  const visibleDirect: HTMLElement[] = []
-  for (let i = 0; i < wrapper.children.length; i++) {
-    const el = wrapper.children[i]
-    if (!(el instanceof HTMLElement)) {
-      continue
-    }
-    if (isElementHiddenForAntSample(el)) {
-      continue
-    }
-    visibleDirect.push(el)
-  }
-
-  if (visibleDirect.length === 0) {
-    return sampleBoundaryRingStroke(wrapper)
-  }
-
-  let bestBorderColor: string | null = null
-  let bestBorderScore = -1
-  for (const el of visibleDirect) {
-    const paint = solidBorderPaintFromComputed(getComputedStyle(el))
-    if (paint === null) {
-      continue
-    }
-    const score = paint.width * 1e12 + antSampleElementArea(el)
-    if (score > bestBorderScore) {
-      bestBorderScore = score
-      bestBorderColor = paint.color
-    }
-  }
-  if (bestBorderColor !== null) {
-    return bestBorderColor
-  }
-
-  const fromRing = sampleBoundaryRingStroke(wrapper)
-  if (fromRing !== null) {
-    return fromRing
-  }
-
-  const byArea = [...visibleDirect].sort(
-    (a, b) => antSampleElementArea(b) - antSampleElementArea(a)
-  )
-  for (const el of byArea) {
-    const sampled = samplePaintFromElement(el)
-    if (sampled !== null) {
-      return sampled
-    }
-  }
-
-  return null
-}
 
 const STALE_EDITOR_PRUNE_MS = 60_000
 
@@ -194,11 +50,14 @@ export function useCanvasPageCollabIndicators(options: UseCanvasPageCollabIndica
   watch(
     () => options.remoteSelectionsByUser.value,
     (next) => {
-      const nodeIds: string[] = []
-      for (const [, sel] of next) {
-        nodeIds.push(sel.nodeId)
+      const entries: Array<{ nodeId: string; color: string }> = []
+      for (const [userId, sel] of next) {
+        entries.push({
+          nodeId: sel.nodeId,
+          color: lockRingColorForUser(userId, sel.color),
+        })
       }
-      indicatorStore.setCollabSelected(nodeIds)
+      indicatorStore.setCollabSelected(entries)
     },
     { deep: true }
   )
@@ -206,18 +65,10 @@ export function useCanvasPageCollabIndicators(options: UseCanvasPageCollabIndica
   function applyNodeEditingIndicator(nodeId: string, editor: ActiveEditor): void {
     if (editor.user_id === options.getCurrentUserId()) return
 
-    // One-time DOM read to sample the ant color from the rendered node element.
-    // If the node isn't in the DOM yet, we fall back to a neutral gray.
-    const nodeElement = document.querySelector(
-      `.vue-flow__node[data-id="${nodeId}"]`
-    ) as HTMLElement | null
-    const antColor = nodeElement
-      ? (sampleWorkshopAntColorFromNodeWrapper(nodeElement) ?? '#9ca3af')
-      : '#9ca3af'
-
+    const userColor = lockRingColorForUser(editor.user_id, editor.color)
     indicatorStore.setWorkshopEditing(nodeId, {
-      antColor,
-      editorColor: editor.color,
+      antColor: userColor,
+      editorColor: userColor,
       emoji: editor.emoji,
       label: options.t('workshopCanvas.editingNodeLabel', { username: editor.username }),
     })
@@ -279,23 +130,6 @@ export function useCanvasPageCollabIndicators(options: UseCanvasPageCollabIndica
   onScopeDispose(() => {
     window.clearInterval(staleEditorInterval)
   })
-
-  // Re-apply editing indicators after a snapshot re-creates node DOM elements —
-  // needed only for the one-time antColor DOM read; class application is reactive.
-  eventBus.onWithOwner(
-    'diagram:workshop_snapshot_applied',
-    () => {
-      const selfId = options.getCurrentUserId()
-      nextTick(() => {
-        for (const [nodeId, editor] of options.activeEditors.value) {
-          if (editor.user_id !== selfId) {
-            applyNodeEditingIndicator(nodeId, editor)
-          }
-        }
-      })
-    },
-    'CanvasPage'
-  )
 
   provide('collabCanvas', {
     isNodeLockedByOther: (nodeId: string) => {

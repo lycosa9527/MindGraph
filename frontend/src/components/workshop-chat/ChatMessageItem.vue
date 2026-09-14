@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, ref } from 'vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useRenderedMarkdown } from '@/composables/core/useRenderedMarkdown'
+import { useWorkshopImageLightbox } from '@/composables/workshop/useWorkshopImageLightbox'
 import {
   type ChatMessage,
   type FileAttachment,
@@ -14,6 +15,7 @@ import { workshopChatHrefFromState } from '@/utils/workshopChatRoute'
 import { inlineWorkshopRoleMarkdown } from '@/utils/workshopRoleEmbed'
 
 import FilePreview from './FilePreview.vue'
+import ImageLightbox from './ImageLightbox.vue'
 import MessageActionBar from './MessageActionBar.vue'
 import MessageEditForm from './MessageEditForm.vue'
 import MessageReactions from './MessageReactions.vue'
@@ -26,6 +28,9 @@ const { html: renderedContent } = useRenderedMarkdown(() =>
     ? ''
     : inlineWorkshopRoleMarkdown(stripMindmateDiagramIdComments(props.message.content))
 )
+
+const { lightboxSrc, lightboxName, handleMarkdownImageClick, closeLightbox } =
+  useWorkshopImageLightbox(() => t('workshop.diagram'))
 
 const previewAttachments = computed(() => {
   const body = props.message.content || ''
@@ -252,6 +257,7 @@ async function saveInlineEdit(content: string): Promise<void> {
             class="msg-content"
             :class="{ 'msg-content--condensed': isCondensed }"
             v-html="renderedContent"
+            @click="handleMarkdownImageClick"
           />
           <button
             v-if="canCondense"
@@ -283,6 +289,13 @@ async function saveInlineEdit(content: string): Promise<void> {
         />
       </div>
     </div>
+
+    <ImageLightbox
+      v-if="lightboxSrc"
+      :src="lightboxSrc"
+      :filename="lightboxName"
+      @close="closeLightbox"
+    />
   </div>
 </template>
 
@@ -546,6 +559,11 @@ async function saveInlineEdit(content: string): Promise<void> {
   border-radius: 6px;
   margin: 6px 0;
   border: 1px solid hsl(0deg 0% 0% / 8%);
+  cursor: pointer;
+}
+
+.msg-content :deep(img:hover) {
+  box-shadow: 0 2px 6px hsl(0deg 0% 0% / 10%);
 }
 
 .msg-content :deep(img[src*='/api/training/assets/roles/']) {
@@ -559,6 +577,8 @@ async function saveInlineEdit(content: string): Promise<void> {
   object-fit: contain;
   border: none;
   background: transparent;
+  cursor: default;
+  box-shadow: none;
 }
 
 .msg-content :deep(table) {

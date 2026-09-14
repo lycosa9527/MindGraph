@@ -222,31 +222,3 @@ async def resolve_canvas_collab_join(
     )
 
     return user, norm_code, diagram_id, owner_id
-
-
-async def authenticate_and_resolve_canvas_workshop(
-    websocket: WebSocket,
-    code: str,
-) -> Optional[Tuple[Any, str, str, Optional[int]]]:
-    """
-    Validate JWT and join the workshop (single-call path for tests/tools).
-
-    Production ``workshop_ws`` uses ``authenticate_canvas_collab_user`` then
-    policy gates then ``resolve_canvas_collab_join`` so Redis is not mutated
-    before Origin / VPN checks.
-    """
-    user, err = await authenticate_canvas_collab_user(websocket)
-    if err or user is None:
-        return None
-    norm_code = normalize_canvas_collab_code(code)
-    if norm_code is None:
-        await websocket.close(
-            code=1008,
-            reason="Invalid presentation code format",
-        )
-        logger.warning(
-            "[CanvasCollabWS] Invalid presentation code format: %s",
-            code.strip().upper(),
-        )
-        return None
-    return await resolve_canvas_collab_join(websocket, user, norm_code)

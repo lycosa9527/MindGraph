@@ -11,7 +11,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
 export interface WorkshopEditIndicator {
-  /** Sampled once from DOM when the WS edit-start message arrives. */
+  /** Session-assigned collab color (same as the participant rail). */
   antColor: string
   editorColor: string
   emoji: string
@@ -21,8 +21,8 @@ export interface WorkshopEditIndicator {
 export const useCanvasNodeIndicatorsStore = defineStore('canvasNodeIndicators', () => {
   /** nodeId → editor info; present while a remote peer is editing that node. */
   const workshopEditing = ref(new Map<string, WorkshopEditIndicator>())
-  /** nodeIds currently selected by a remote peer. */
-  const collabSelected = ref(new Set<string>())
+  /** nodeId → remote peer color; present while a peer has that node selected. */
+  const collabSelected = ref(new Map<string, string>())
   /** nodeId with the active AI tab-rec picker open; null when picker is dismissed. */
   const tabRecActive = ref<string | null>(null)
   /**
@@ -45,8 +45,8 @@ export const useCanvasNodeIndicatorsStore = defineStore('canvasNodeIndicators', 
     workshopEditing.value = next
   }
 
-  function setCollabSelected(nodeIds: string[]): void {
-    collabSelected.value = new Set(nodeIds)
+  function setCollabSelected(entries: Array<{ nodeId: string; color: string }>): void {
+    collabSelected.value = new Map(entries.map((entry) => [entry.nodeId, entry.color]))
   }
 
   function setTabRecActive(nodeId: string | null): void {
@@ -57,10 +57,16 @@ export const useCanvasNodeIndicatorsStore = defineStore('canvasNodeIndicators', 
     tabRecEdgeIds.value = edgeIds
   }
 
+  /** Drop lock-ring / remote-select maps when leaving a collab room. */
+  function clearCollabPresence(): void {
+    workshopEditing.value = new Map()
+    collabSelected.value = new Map()
+  }
+
   /** Wipe all indicator maps — canvas Reset and leave-canvas teardown. */
   function clearAll(): void {
     workshopEditing.value = new Map()
-    collabSelected.value = new Set()
+    collabSelected.value = new Map()
     tabRecActive.value = null
     tabRecEdgeIds.value = []
   }
@@ -75,6 +81,7 @@ export const useCanvasNodeIndicatorsStore = defineStore('canvasNodeIndicators', 
     setCollabSelected,
     setTabRecActive,
     setTabRecEdgeIds,
+    clearCollabPresence,
     clearAll,
   }
 })

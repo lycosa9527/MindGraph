@@ -95,6 +95,11 @@ vi.mock('@/composables/mindMap/useMindClassroomLecture', () => ({
   teardownMindClassroomLecture: (...args: unknown[]) => teardownMindClassroomLecture(...args),
 }))
 
+const leaveCanvasCollabRoom = vi.fn()
+vi.mock('@/composables/canvasPage/leaveCanvasCollabRoom', () => ({
+  leaveCanvasCollabRoom: (...args: unknown[]) => leaveCanvasCollabRoom(...args),
+}))
+
 describe('unloadCanvasForLibrarySwitch', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -110,6 +115,7 @@ describe('unloadCanvasForLibrarySwitch', () => {
 
     unloadCanvasForLibrarySwitch('mindmap')
 
+    expect(leaveCanvasCollabRoom).toHaveBeenCalledOnce()
     expect(reset).toHaveBeenCalledOnce()
     expect(clearActiveDiagram).toHaveBeenCalledOnce()
     expect(setDiagramType).toHaveBeenCalledWith('mindmap')
@@ -123,16 +129,17 @@ describe('unloadCanvasForLibrarySwitch', () => {
     expect(closeModal).toHaveBeenCalledOnce()
   })
 
-  it('preserves collabSessionActive when a workshop was live', async () => {
+  it('does not keep collabSessionActive across a library switch', async () => {
     const { unloadCanvasForLibrarySwitch } =
       await import('@/composables/canvasPage/unloadCanvasForLibrarySwitch')
     diagramState.collabSessionActive = true
 
     unloadCanvasForLibrarySwitch('circle_map')
 
+    expect(leaveCanvasCollabRoom).toHaveBeenCalledOnce()
     expect(reset).toHaveBeenCalledOnce()
-    expect(setCollabSessionActive).toHaveBeenCalledWith(true)
-    expect(diagramState.collabSessionActive).toBe(true)
+    expect(setCollabSessionActive).not.toHaveBeenCalled()
+    expect(diagramState.collabSessionActive).toBe(false)
     expect(setDiagramType).toHaveBeenCalledWith('circle_map')
   })
 })

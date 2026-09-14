@@ -397,6 +397,11 @@ class TestLockHelpers:
         redis_editors: dict[str, dict[int, str]] = {}
         assert not node_locked_by_other_user(self.CODE, self.BOB_ID, self.NODE_ID, local, redis_editors)
 
+    def test_redis_unavailable_falls_back_to_local_locks(self) -> None:
+        """Timeout / Redis miss must pass None so in-process locks still apply."""
+        local = _editors_with_lock(self.CODE, self.NODE_ID, self.ALICE_ID, "alice")
+        assert node_locked_by_other_user(self.CODE, self.BOB_ID, self.NODE_ID, local, None)
+
     def test_filter_granular_nodes_drops_locked(self) -> None:
         """Test filter granular nodes drops locked."""
         editors = _editors_with_lock(self.CODE, self.NODE_ID, self.ALICE_ID, "alice")

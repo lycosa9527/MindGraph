@@ -1,4 +1,5 @@
 import { clearCanvasEphemeralSession } from '@/composables/canvasPage/clearCanvasEphemeralSession'
+import { leaveCanvasCollabRoom } from '@/composables/canvasPage/leaveCanvasCollabRoom'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramStore, useOneSentenceStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -10,6 +11,7 @@ import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
  * file-center session).
  */
 export function applyCanvasSessionReset(): void {
+  leaveCanvasCollabRoom()
   clearCanvasEphemeralSession()
 
   const diagramStore = useDiagramStore()

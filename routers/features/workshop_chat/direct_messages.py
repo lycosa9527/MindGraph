@@ -152,11 +152,10 @@ async def send_dm(
         usage_action="workshop_chat",
         title=f"dm:{partner_id}",
     )
-    await chat_ws_manager.send_to_user(
-        partner_id,
-        {
-            "type": "dm",
-            "message": result,
-        },
-    )
+    payload = {
+        "type": "dm",
+        "message": result,
+    }
+    await chat_ws_manager.send_to_user(current_user.id, payload)
+    await chat_ws_manager.send_to_user(partner_id, payload)
     return result

@@ -6,6 +6,7 @@
 import { canvasVirtualKeyboardOpen } from '@/composables/canvasToolbar/useCanvasVirtualKeyboardOpen'
 import { resetMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { applyDiagramTypeForCanvasChrome } from '@/composables/canvasPage/diagramTypeMaps'
+import { leaveCanvasCollabRoom } from '@/composables/canvasPage/leaveCanvasCollabRoom'
 import { resetLearningSheetCustomModeUi } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { teardownMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
 import {
@@ -58,14 +59,9 @@ export function unloadCanvasForLibrarySwitch(
   const diagramStore = useDiagramStore()
   const savedDiagramsStore = useSavedDiagramsStore()
 
-  // reset() clears collabSessionActive, but workshopCode (CanvasPage) may still
-  // be live — restore the flag so autosave stays gated and remote patches apply.
-  const wasCollabSessionActive = diagramStore.collabSessionActive
-
+  // Leave the previous room before reset so diffs cannot land in the old session.
+  leaveCanvasCollabRoom()
   diagramStore.reset()
-  if (wasCollabSessionActive) {
-    diagramStore.setCollabSessionActive(true)
-  }
 
   savedDiagramsStore.clearActiveDiagram()
   applyDiagramTypeForCanvasChrome(

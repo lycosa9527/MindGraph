@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.76] - 2026-09-14
+
+> **研习社 DMs name the person and open from toast; canvas collab drops the room when you leave the map.**
+
+### Added
+
+- **研习社 image lightbox** — Click a markdown image in a message, edit preview, or compose preview to enlarge (Zulip-style). Role-cat stickers stay inline.
+- **研习社 first DM** — An incoming 1:1 creates the inbox row without refresh. Toast click opens the DM narrow (`?dm=`) so store→URL sync cannot bounce back to inbox.
+
+### Changed
+
+- **Canvas collab session** — Restore only on refresh of the same `?diagramId=`. Gallery, new map, library switch, and leaving canvas drop the room. The live room pins `diagramId` in the URL.
+- **Collab palette** — 24 colors and pens. Join handshake and presence include `color` / `emoji`. Lock rings and marching ants use the participant's color (V2 underline nodes march the bar). Remote selection outline uses the peer's color.
+- **研习社 DM identity** — Toasts and browser notifications use the person's name, not `User 123`. Send fans out the `dm` frame to both sides. Opening a thread from a toast or directory upserts the conversation.
+- **研习社 notify** — Ding / toast only when you are not already looking at that narrow on the 研习社 page.
+- **Lock deny** — `node_edit_claimed` includes who holds the node. Viewers do not enqueue diagram updates.
+
+### Tests
+
+- [`frontend/tests/workshopDmInbox.spec.ts`](frontend/tests/workshopDmInbox.spec.ts), [`frontend/tests/workshopMessageImageLightbox.spec.ts`](frontend/tests/workshopMessageImageLightbox.spec.ts), [`frontend/tests/workshopSessionStorage.spec.ts`](frontend/tests/workshopSessionStorage.spec.ts)
+- [`frontend/tests/leaveCanvasCollabRoom.spec.ts`](frontend/tests/leaveCanvasCollabRoom.spec.ts), [`frontend/tests/collabPalette.spec.ts`](frontend/tests/collabPalette.spec.ts), [`frontend/tests/useWorkshopOutboundDispatcher.spec.ts`](frontend/tests/useWorkshopOutboundDispatcher.spec.ts)
+- [`tests/test_workshop_dm_format.py`](tests/test_workshop_dm_format.py), [`tests/test_workshop_ws_integration.py`](tests/test_workshop_ws_integration.py), [`tests/test_workshop_collab_backend.py`](tests/test_workshop_collab_backend.py), [`tests/test_collab_palette_sync.py`](tests/test_collab_palette_sync.py)
+
 ## [5.180.75] - 2026-09-14
 
 > **校本培训 clicker is WebSocket + Redis wake; Kitty live context and 研习社 unread push without poll.**

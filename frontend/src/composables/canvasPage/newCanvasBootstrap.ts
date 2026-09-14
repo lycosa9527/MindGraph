@@ -14,6 +14,7 @@ import {
   VALID_DIAGRAM_TYPES,
   diagramTypeToChineseMap,
 } from '@/composables/canvasPage/diagramTypeMaps'
+import { leaveCanvasCollabRoom } from '@/composables/canvasPage/leaveCanvasCollabRoom'
 import type { DiagramType } from '@/types'
 
 /** Same-turn dedupe window so mount/helper/route-watch do not double measure-batch. */
@@ -147,6 +148,7 @@ export function loadBlankCanvasForType(options: LoadBlankCanvasForTypeOptions): 
   if (!options.setDiagramType(options.diagramType)) {
     return false
   }
+  leaveCanvasCollabRoom()
   options.clearActiveDiagram()
   if (!options.loadDefaultTemplate(options.diagramType)) {
     return false

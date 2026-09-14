@@ -14,7 +14,7 @@ Proprietary License
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import and_, case, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,14 +35,24 @@ MAX_PAGE_SIZE = 200
 MAX_CONTENT_LENGTH = 5000
 
 
-def _format_dm(msg: DirectMessage) -> Dict[str, Any]:
+def _sender_display_name(sender: Optional[User], sender_id: int) -> str:
+    """Prefer the user's real name; never emit a blank label."""
+    if sender is None:
+        return f"User {sender_id}"
+    name = sender.name
+    if isinstance(name, str) and name.strip():
+        return name.strip()
+    return f"User {sender_id}"
+
+
+def _format_dm(msg: DirectMessage, sender: Optional[User] = None) -> Dict[str, Any]:
     """Format a DM row including sender identity for the message list."""
-    sender = msg.sender
+    resolved = sender if sender is not None else msg.sender
     return {
         "id": msg.id,
         "sender_id": msg.sender_id,
-        "sender_name": sender.name if sender else f"User {msg.sender_id}",
-        "sender_avatar": sender.avatar if sender else None,
+        "sender_name": _sender_display_name(resolved, msg.sender_id),
+        "sender_avatar": resolved.avatar if resolved is not None else None,
         "recipient_id": msg.recipient_id,
         "content": msg.content,
         "message_type": msg.message_type,
@@ -260,7 +270,7 @@ class DirectMessageService:
         await db.commit()
         await db.refresh(msg)
 
-        return _format_dm(msg)
+        return _format_dm(msg, sender=sender)
 
     @staticmethod
     async def mark_read(

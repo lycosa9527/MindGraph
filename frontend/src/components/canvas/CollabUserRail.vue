@@ -11,7 +11,7 @@ import { ElTooltip } from 'element-plus'
 import { useLanguage } from '@/composables'
 import { useCanvasChromeBottomOffset } from '@/composables/canvas/useCanvasChromeBottomOffset'
 import type { ParticipantInfo } from '@/composables/workshop/useWorkshop'
-import { colorForUser } from '@/shared/collabPalette'
+import { lockRingColorForUser } from '@/shared/collabPalette'
 
 const { t } = useLanguage()
 
@@ -20,8 +20,12 @@ const props = defineProps<{
   participants: ParticipantInfo[] | undefined
 }>()
 
-function getUserColor(userId: number): string {
-  return colorForUser(userId)
+function getUserColor(participant: ParticipantInfo): string {
+  return lockRingColorForUser(participant.user_id, participant.color)
+}
+
+function isRosterParticipant(participant: ParticipantInfo): boolean {
+  return participant._overflow !== true && participant.user_id > 0
 }
 
 /** First character suitable for an avatar (handles CJK, Latin, emoji). */
@@ -43,27 +47,37 @@ function shortName(username: string): string {
  */
 const MAX_VISIBLE_PARTICIPANTS = 30
 
+const namedParticipants = computed(() =>
+  (props.participants ?? []).filter((participant) => isRosterParticipant(participant))
+)
+
+const serverHiddenCount = computed(() => {
+  const sentinel = (props.participants ?? []).find((participant) => participant._overflow)
+  if (!sentinel || typeof sentinel._total !== 'number') {
+    return 0
+  }
+  return Math.max(0, sentinel._total - namedParticipants.value.length)
+})
+
 const visibleParticipants = computed(() => {
-  const list = props.participants ?? []
+  const list = namedParticipants.value
   return list.length > MAX_VISIBLE_PARTICIPANTS ? list.slice(0, MAX_VISIBLE_PARTICIPANTS) : list
 })
 
 const overflowCount = computed(() => {
-  const total = props.participants?.length ?? 0
-  return total > MAX_VISIBLE_PARTICIPANTS ? total - MAX_VISIBLE_PARTICIPANTS : 0
+  const clientHidden = Math.max(0, namedParticipants.value.length - MAX_VISIBLE_PARTICIPANTS)
+  return clientHidden + serverHiddenCount.value
 })
 
 const overflowTooltip = computed(() => {
-  const list = props.participants ?? []
-  if (list.length <= MAX_VISIBLE_PARTICIPANTS) return ''
-  const hiddenNames = list
+  const hiddenNames = namedParticipants.value
     .slice(MAX_VISIBLE_PARTICIPANTS)
     .map((p) => p.username)
     .slice(0, 50)
   return hiddenNames.join(', ')
 })
 
-const visible = computed(() => !!props.workshopCode && (props.participants?.length ?? 0) > 0)
+const visible = computed(() => !!props.workshopCode && namedParticipants.value.length > 0)
 const { offsetPx, update, bindObserver } = useCanvasChromeBottomOffset(8)
 
 watch(visible, async (isVisible) => {
@@ -106,7 +120,7 @@ const railStyle = computed(() => {
         >
           <div
             class="rail-avatar"
-            :style="{ backgroundColor: getUserColor(participant.user_id) }"
+            :style="{ backgroundColor: getUserColor(participant) }"
           >
             {{ avatarChar(participant.username) }}
           </div>

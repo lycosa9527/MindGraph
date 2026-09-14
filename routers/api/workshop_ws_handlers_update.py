@@ -268,10 +268,10 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                 editors_redis = await load_editors(ctx.code)
         except asyncio.TimeoutError:
             logger.warning(
-                "[WorkshopTimeout] load_editors exceeded %.2fs — using empty map",
+                "[WorkshopTimeout] load_editors exceeded %.2fs — falling back to in-process locks",
                 DEFAULT_REDIS_HOT_PATH_TIMEOUT_SEC,
             )
-            editors_redis = {}
+            editors_redis = None
         finally:
             try:
                 record_ws_load_editors_latency_ms(

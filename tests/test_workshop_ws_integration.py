@@ -41,6 +41,7 @@ from routers.api.workshop_ws_handlers_update import (
     _diagram_update_validation_error,
     _full_spec_validation_error,
 )
+from services.online_collab.common.collab_palette import palette_for_user
 from utils.ws_limits import WebsocketMessageRateLimiter
 
 # ---------------------------------------------------------------------------
@@ -250,6 +251,11 @@ class _StubUserCache:
         return self._users.get(uid)
 
 
+def _named_participant(user_id: int, username: str) -> Dict[str, object]:
+    color, emoji = palette_for_user(user_id)
+    return {"user_id": user_id, "username": username, "color": color, "emoji": emoji}
+
+
 class TestBuildParticipantsWithNames:
     """TestBuildParticipantsWithNames helper."""
 
@@ -269,8 +275,8 @@ class TestBuildParticipantsWithNames:
         )
         out = await build_participants_with_names([1, 2])
         assert out == [
-            {"user_id": 1, "username": "alice"},
-            {"user_id": 2, "username": "bob"},
+            _named_participant(1, "alice"),
+            _named_participant(2, "bob"),
         ]
 
     @pytest.mark.asyncio
@@ -294,7 +300,7 @@ class TestBuildParticipantsWithNames:
             _StubUserCache({77: _UserWithBoth()}),
         )
         out = await build_participants_with_names([77])
-        assert out == [{"user_id": 77, "username": "Chen Laoshi"}]
+        assert out == [_named_participant(77, "Chen Laoshi")]
 
     @pytest.mark.asyncio
     async def test_missing_user_falls_back_to_numeric(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -304,7 +310,7 @@ class TestBuildParticipantsWithNames:
             _StubUserCache({}),
         )
         out = await build_participants_with_names([42])
-        assert out == [{"user_id": 42, "username": "User 42"}]
+        assert out == [_named_participant(42, "User 42")]
 
     @pytest.mark.asyncio
     async def test_cap_adds_overflow_sentinel(self, monkeypatch: pytest.MonkeyPatch) -> None:

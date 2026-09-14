@@ -5,6 +5,10 @@
 export interface ParticipantInfo {
   user_id: number
   username: string
+  color?: string
+  emoji?: string
+  _overflow?: boolean
+  _total?: number
 }
 
 export type ConnectionStatus = 'connected' | 'reconnecting' | 'failed'

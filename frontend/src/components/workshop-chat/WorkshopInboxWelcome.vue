@@ -9,6 +9,7 @@ import { Hash, Inbox, MessageSquare } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
+import { pushWorkshopDm } from '@/utils/workshopChatNavigate'
 
 const { t } = useLanguage()
 const store = useWorkshopChatStore()
@@ -30,11 +31,13 @@ const recentDmThreads = computed(() =>
 )
 
 function openRecentDm(partnerId: number): void {
+  const conv = store.dmConversations.find((row) => row.partner_id === partnerId)
   store.leaveWorkshopHomeView()
   store.selectDMPartner(partnerId)
   store.selectChannel(null)
   store.activeTab = 'dms'
-  void router.push('/workshop-chat')
+  store.ensurePartnerConversation(partnerId, conv?.partner_name, conv?.partner_avatar)
+  pushWorkshopDm(router, partnerId)
 }
 </script>
 

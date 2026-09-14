@@ -167,6 +167,7 @@ async def handle_join_repeat(
             ctx.diagram_id,
             code=ctx.code,
         ),
+        "role": ctx.role,
     }
     diag_title = await diagram_title_for_active_workshop(str(ctx.diagram_id))
     if diag_title:

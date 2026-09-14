@@ -19,6 +19,7 @@ import ChannelActionsPopover from '@/components/workshop-chat/ChannelActionsPopo
 import { useLanguage } from '@/composables/core/useLanguage'
 import { type ChatChannel, type ChatTopic, useWorkshopChatStore } from '@/stores/workshopChat'
 import { topicsForChannel } from '@/utils/workshopChannelTree'
+import { pushWorkshopDm } from '@/utils/workshopChatNavigate'
 import { workshopChatHrefFromState } from '@/utils/workshopChatRoute'
 
 defineProps<{
@@ -152,10 +153,14 @@ function navigateToAllTopics(channelId: number): void {
 }
 
 function navigateToDM(partnerId: number): void {
+  const conv = store.dmConversations.find((row) => row.partner_id === partnerId)
+  store.leaveWorkshopHomeView()
   store.selectDMPartner(partnerId)
+  store.selectChannel(null)
   store.activeTab = 'dms'
   store.showChannelBrowser = false
-  router.push('/workshop-chat')
+  store.ensurePartnerConversation(partnerId, conv?.partner_name, conv?.partner_avatar)
+  pushWorkshopDm(router, partnerId)
 }
 
 async function markDmReadSidebar(partnerId: number): Promise<void> {

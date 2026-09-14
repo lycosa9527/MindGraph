@@ -20,6 +20,7 @@ import {
 } from '@/composables/core/chatToastQueue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
+import { pushWorkshopDm } from '@/utils/workshopChatNavigate'
 
 const { t } = useLanguage()
 const router = useRouter()
@@ -30,8 +31,14 @@ function navigate(toast: ChatToastItem): void {
   dismissChatToast(toast.id)
   const { partnerId, channelId, topicId } = toast.nav
   if (partnerId !== undefined) {
+    store.leaveWorkshopHomeView()
     store.selectDMPartner(partnerId)
+    store.selectChannel(null)
     store.activeTab = 'dms'
+    store.showChannelBrowser = false
+    store.ensurePartnerConversation(partnerId, toast.senderName, toast.senderAvatar)
+    pushWorkshopDm(router, partnerId)
+    return
   } else if (channelId !== undefined) {
     store.selectChannel(channelId)
     store.activeTab = 'channels'

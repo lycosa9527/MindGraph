@@ -299,6 +299,11 @@
   max-width: 100%;
   max-height: 240px;
   border-radius: 6px;
+  cursor: pointer;
+}
+
+.compose__preview img:hover {
+  box-shadow: 0 2px 6px hsl(0deg 0% 0% / 10%);
 }
 
 .compose__preview img[src*='/api/training/assets/roles/'] {
@@ -312,6 +317,8 @@
   object-fit: contain;
   border: none;
   background: transparent;
+  cursor: default;
+  box-shadow: none;
 }
 
 .compose__preview table {

@@ -32,11 +32,18 @@ import {
   writeCachedChannels,
   writeCachedTopics,
 } from '@/utils/workshopChatLocalCache'
+import { isWorkshopChatPath } from '@/utils/workshopChatRoute'
 import { registerWorkshopChatResetOnAuthClear } from '@/utils/workshopChatWsRegistry'
 import {
   loadLastSeenOnlineFromStorage,
   saveLastSeenOnlineToStorage,
 } from '@/utils/workshopContactLastSeenStorage'
+import {
+  applyIncomingDm,
+  dmCounterpartyId,
+  ensureDmConversation,
+  orgMemberById,
+} from '@/utils/workshopDmInbox'
 import {
   hasWorkshopInitializedThisSession,
   markWorkshopInitializedThisSession,
@@ -1347,30 +1354,35 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
   }
 
   function addIncomingDM(msg: DirectMessageItem): void {
-    if (dmMessages.value.some((m) => m.id === msg.id)) {
-      return
+    const myId = Number(useAuthStore().user?.id)
+    const viewerId = Number.isFinite(myId) ? myId : -1
+    const partnerId = dmCounterpartyId(msg, viewerId)
+    const directory = orgMemberById(orgMembers.value, partnerId)
+    const result = applyIncomingDm({
+      msg,
+      myId: viewerId,
+      currentPartnerId: currentDMPartnerId.value,
+      conversations: dmConversations.value,
+      messages: dmMessages.value,
+      directoryName: directory?.name,
+      directoryAvatar: directory?.avatar,
+    })
+    const onWorkshop = isWorkshopChatPath(window.location.pathname)
+    const conv = dmConversations.value.find((row) => row.partner_id === partnerId)
+    if (!result.isMine && !(onWorkshop && result.viewingOpenThread) && conv) {
+      conv.unread_count += 1
     }
-    if (
-      msg.sender_id === currentDMPartnerId.value ||
-      msg.recipient_id === currentDMPartnerId.value
-    ) {
-      dmMessages.value.push(msg)
+    if (onWorkshop && result.viewingOpenThread && !result.isMine) {
+      void markDMPartnerRead(partnerId)
     }
-    const conv = dmConversations.value.find(
-      (c) => c.partner_id === msg.sender_id || c.partner_id === msg.recipient_id
-    )
-    if (conv) {
-      const myId = Number(useAuthStore().user?.id)
-      const isMine = Number.isFinite(myId) && msg.sender_id === myId
-      conv.last_message = {
-        content: msg.content.slice(0, 100),
-        created_at: msg.created_at,
-        is_mine: isMine,
-      }
-      if (!isMine && msg.sender_id !== currentDMPartnerId.value) {
-        conv.unread_count += 1
-      }
-    }
+  }
+
+  function ensurePartnerConversation(
+    partnerId: number,
+    name?: string | null,
+    avatar?: string | null
+  ): void {
+    ensureDmConversation(dmConversations.value, partnerId, name, avatar)
   }
 
   function setTyping(key: string, username: string): void {
@@ -1813,6 +1825,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     addIncomingChannelMessage,
     addIncomingTopicMessage,
     addIncomingDM,
+    ensurePartnerConversation,
     setTyping,
     updatePresence,
     updateTopic,

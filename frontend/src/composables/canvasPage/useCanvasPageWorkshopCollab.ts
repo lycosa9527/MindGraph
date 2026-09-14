@@ -9,6 +9,7 @@ import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useWorkshop } from '@/composables/workshop/useWorkshop'
 import { useAuthStore, useDiagramStore } from '@/stores'
+import { useCanvasNodeIndicatorsStore } from '@/stores/canvasNodeIndicators'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
@@ -202,6 +203,7 @@ export function useCanvasPageWorkshopCollab() {
       diagramStore.setCollabSessionActive(Boolean(code))
       if (!code) {
         diagramStore.setCollabForeignLockedNodeIds([])
+        useCanvasNodeIndicatorsStore().clearCollabPresence()
       }
     },
     { immediate: true }

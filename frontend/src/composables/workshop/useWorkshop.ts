@@ -10,6 +10,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useAuthStore } from '@/stores'
 import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
+import { clearWorkshopSessionStorage } from '@/utils/workshopSessionStorage'
 
 import { collectNodeIdsFromOutboundPayload, useCollabOutboundQueue } from './useCollabOutboundQueue'
 import { useCollabSyncVersion } from './useCollabSyncVersion'
@@ -350,9 +351,11 @@ export function useWorkshop(
         sock &&
         sock.readyState === WebSocket.OPEN &&
         !version.pendingResync.value &&
-        serverBaselineReady.value
+        serverBaselineReady.value &&
+        workshopRole.value !== 'viewer'
       )
     },
+    canEnqueueDiagramUpdate: () => workshopRole.value !== 'viewer',
     clearRoomIdleCountdownUi: presence.clearRoomIdleCountdownUi,
     enqueueUpdatePayload: (payload) => outboundQueue.enqueue(payload),
   })
@@ -455,26 +458,20 @@ export function useWorkshop(
 
         if (event.code === 4001) {
           // JWT expired mid-session — cannot reconnect with the same token.
-          // Clear session state and show a warning so the user knows to re-login.
-          disconnect()
-          sessionStorage.removeItem('mg_workshop_code')
-          sessionStorage.removeItem('mg_workshop_diagram_id')
-          eventBus.emit('workshop:code-changed', { code: null, visibility: null })
+          dropWorkshopRoom()
           notify.warning(t('workshopCanvas.sessionExpiredReconnect'))
           return
         }
 
         if (event.code === 4002) {
-          disconnect()
-          eventBus.emit('workshop:code-changed', { code: null, visibility: null })
+          dropWorkshopRoom()
           notify.info(t('workshopCanvas.returnedHomeIdle'))
           void router.replace({ name: 'MindGraph' }).catch(() => {})
           return
         }
 
         if (event.code === 4010) {
-          disconnect()
-          eventBus.emit('workshop:code-changed', { code: null, visibility: null })
+          dropWorkshopRoom()
           notify.info(t('workshopCanvas.returnedHomeRoomIdle'))
           void router.replace({ name: 'MindGraph' }).catch(() => {})
           return
@@ -482,8 +479,7 @@ export function useWorkshop(
 
         if (event.code === 4011) {
           const sendGuestHome = collaborationParticipantIsGuest()
-          disconnect()
-          eventBus.emit('workshop:code-changed', { code: null, visibility: null })
+          dropWorkshopRoom()
           if (sendGuestHome) {
             void router.replace({ name: 'MindGraph' }).catch(() => {})
           }
@@ -492,13 +488,13 @@ export function useWorkshop(
 
         if (event.code === 4003) {
           notify.info(event.reason || t('workshopCanvas.otherTabCollaborationActive'))
-          disconnect()
+          dropWorkshopRoom()
           return
         }
 
         if (event.code === 4014) {
           notify.warning(t('workshopCanvas.connectionClosedSlow'))
-          disconnect()
+          dropWorkshopRoom()
           return
         }
 
@@ -532,10 +528,7 @@ export function useWorkshop(
             notify.error(t('workshopCanvas.reconnectFailed'))
             connectionStatus.value = 'failed'
           }
-          disconnect()
-          sessionStorage.removeItem('mg_workshop_code')
-          sessionStorage.removeItem('mg_workshop_diagram_id')
-          eventBus.emit('workshop:code-changed', { code: null, visibility: null })
+          dropWorkshopRoom()
         }
       }
 
@@ -546,6 +539,12 @@ export function useWorkshop(
       }
       notify.error(t('workshopCanvas.connectFailed'))
     }
+  }
+
+  function dropWorkshopRoom(): void {
+    disconnect()
+    clearWorkshopSessionStorage()
+    eventBus.emit('workshop:code-changed', { code: null, visibility: null })
   }
 
   function disconnect() {
@@ -574,6 +573,7 @@ export function useWorkshop(
 
     isConnected.value = false
     connectionStatus.value = 'connected'
+    workshopRole.value = 'editor'
     participants.value = []
     participantsWithNames.value = []
     activeEditors.value.clear()

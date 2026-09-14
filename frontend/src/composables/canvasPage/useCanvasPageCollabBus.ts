@@ -6,6 +6,11 @@ import type { UseLanguageTranslate } from '@/composables/core/useLanguage'
 import { shouldFlashStructuralLock } from '@/composables/workshop/applyCollabEditorPresence'
 import type { CollabSyncVersion } from '@/composables/workshop/useCollabSyncVersion'
 import type { ActiveEditor } from '@/composables/workshop/useWorkshop'
+import {
+  clearWorkshopSessionStorage,
+  persistWorkshopSession,
+  queryWithSessionDiagramId,
+} from '@/utils/workshopSessionStorage'
 
 interface CanvasPageCollabNotify {
   warning: (message: string) => void
@@ -182,11 +187,20 @@ export function useCanvasPageCollabBus(options: UseCanvasPageCollabBusOptions) {
     [() => options.workshopCode.value, () => options.sessionDiagramId.value],
     ([code, diagId], [prevCode]) => {
       if (code && diagId) {
-        sessionStorage.setItem('mg_workshop_code', code)
-        sessionStorage.setItem('mg_workshop_diagram_id', String(diagId))
+        const diagramId = String(diagId)
+        persistWorkshopSession(code, diagramId)
+        options.setActiveDiagram(diagramId)
+        const nextQuery = queryWithSessionDiagramId(
+          options.route.query as Record<string, unknown>,
+          diagramId
+        )
+        if (nextQuery) {
+          void options.router.replace({
+            query: nextQuery as Record<string, string | string[] | undefined>,
+          })
+        }
       } else if (!code && prevCode) {
-        sessionStorage.removeItem('mg_workshop_code')
-        sessionStorage.removeItem('mg_workshop_diagram_id')
+        clearWorkshopSessionStorage()
       }
     }
   )

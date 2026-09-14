@@ -180,25 +180,35 @@
 
 /* ── Workshop collab: marching ants on the remote-edited node's shape ─────
  *
- * Ants render on the custom node root (`> *::before`) so the stroke
- * follows pills, capsules, and circles — not the Vue Flow wrapper rectangle.
- * The wrapper supplies `--workshop-ant-color` (sampled border/fill from the node),
- * `--editor-color`, plus a sticker on the top border (::after, vertically centered on the edge).
+ * Ants render on the painted node chrome so the stroke follows pills,
+ * capsules, and circles — not the Vue Flow wrapper rectangle.
+ * V2 mind-map topic/branch (and other LlmPhaseRing hosts) wrap chrome in
+ * `.llm-phase-ring`; ants must skip that ring and paint the inner node.
+ * The Vue Flow wrapper supplies `--workshop-ant-color` / `--editor-color`
+ * (the participant's assigned collab color) plus a sticker on the top border.
  *
  * While a peer is editing, suppress the selection pulse on the wrapper so only
  * the ant border reads as activity, and block pointer interaction so others
  * cannot select, drag, or open the inline editor (matches `isNodeLockedByOther`).
  *
- * `collab-remote-selected`: orange dashed outline on the wrapper; when editing
- * too, drop that outline — ants on the node replace it.
+ * `collab-remote-selected`: orange dashed outline on the painted chrome; when
+ * editing too, drop that outline — ants on the node replace it.
  * ──────────────────────────────────────────────────────────────────────── */
+
+.vue-flow__node.workshop-editing:not(.vue-flow__node-boundary) > :not(.llm-phase-ring),
+.vue-flow__node.workshop-editing:not(.vue-flow__node-boundary) > .llm-phase-ring > *,
+.vue-flow__node.collab-remote-selected:not(.vue-flow__node-boundary) > :not(.llm-phase-ring),
+.vue-flow__node.collab-remote-selected:not(.vue-flow__node-boundary) > .llm-phase-ring > * {
+  position: relative;
+  isolation: isolate;
+}
 
 .vue-flow__node.workshop-editing {
   --_ea-d: 10px;
   --_ea-g: 8px;
   --_ea-p: calc(var(--_ea-d) + var(--_ea-g));
   --_ea-w: 4px;
-  --_ea-c: var(--workshop-ant-color, #9ca3af);
+  --_ea-c: var(--workshop-ant-color, var(--editor-color, #9ca3af));
 
   border: none !important;
   background-image: none !important;
@@ -216,16 +226,16 @@
 }
 
 :root.dark .vue-flow__node.workshop-editing {
-  --_ea-c: var(--workshop-ant-color, #94a3b8);
+  --_ea-c: var(--workshop-ant-color, var(--editor-color, #94a3b8));
 }
 
-.vue-flow__node.workshop-editing:not(.vue-flow__node-boundary) > * {
-  position: relative;
-  isolation: isolate;
+.vue-flow__node.workshop-editing:not(.vue-flow__node-boundary) > :not(.llm-phase-ring),
+.vue-flow__node.workshop-editing:not(.vue-flow__node-boundary) > .llm-phase-ring > * {
   border-color: transparent !important;
 }
 
-.vue-flow__node.workshop-editing:not(.vue-flow__node-boundary) > *::before {
+.vue-flow__node.workshop-editing:not(.vue-flow__node-boundary) > :not(.llm-phase-ring)::before,
+.vue-flow__node.workshop-editing:not(.vue-flow__node-boundary) > .llm-phase-ring > *::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -292,6 +302,38 @@
       calc(100% - var(--_ea-p)) 100%,
       0 calc(100% - var(--_ea-p));
   }
+}
+
+@keyframes workshop-ants-underline {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: var(--_ea-p) 0;
+  }
+}
+
+/* V2 underline chrome is text + a bar, not a box. Box ants look like a
+ * rectangle around empty space — march the bar instead. */
+.vue-flow__node.workshop-editing .mind-map-underline-node::before {
+  content: none !important;
+  display: none !important;
+  animation: none !important;
+  background-image: none !important;
+}
+
+.vue-flow__node.workshop-editing .mind-map-underline-line {
+  background-color: transparent !important;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--_ea-c) 0,
+    var(--_ea-c) var(--_ea-d),
+    transparent var(--_ea-d),
+    transparent var(--_ea-p)
+  );
+  background-size: var(--_ea-p) 100%;
+  background-repeat: repeat-x;
+  animation: workshop-ants-underline 0.55s linear infinite;
 }
 
 /* Rotating dashed ring — used only for true-circle nodes (aspect-ratio: 1, border-radius: 50%).
@@ -367,19 +409,15 @@
 }
 
 /* ── Remote selection indicator ────────────────────────────────────────────
- * Uses > *::after so border-radius: inherit picks up the actual node shape
- * (Fix Bug 3: old `outline` was shape-blind — always rectangular except on circle wrappers).
+ * Uses painted-chrome ::after so border-radius: inherit picks up the node
+ * shape (skip `.llm-phase-ring` on V2 mind-map / topic hosts).
  * ──────────────────────────────────────────────────────────────────────── */
-.vue-flow__node.collab-remote-selected > * {
-  position: relative;
-  isolation: isolate;
-}
-
-.vue-flow__node.collab-remote-selected:not(.vue-flow__node-boundary) > *::after {
+.vue-flow__node.collab-remote-selected:not(.vue-flow__node-boundary) > :not(.llm-phase-ring)::after,
+.vue-flow__node.collab-remote-selected:not(.vue-flow__node-boundary) > .llm-phase-ring > *::after {
   content: '';
   position: absolute;
   inset: -3px;
-  border: 2px dashed #f97316;
+  border: 2px dashed var(--collab-select-color, #f97316);
   border-radius: inherit;
   box-sizing: border-box;
   pointer-events: none;
@@ -394,7 +432,8 @@
 }
 
 /* Editing + remote selection: workshop ants take precedence — hide the orange frame */
-.vue-flow__node.workshop-editing.collab-remote-selected > *::after {
+.vue-flow__node.workshop-editing.collab-remote-selected > :not(.llm-phase-ring)::after,
+.vue-flow__node.workshop-editing.collab-remote-selected > .llm-phase-ring > *::after {
   display: none !important;
 }
 

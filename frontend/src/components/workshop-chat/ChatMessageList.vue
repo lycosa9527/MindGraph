@@ -161,6 +161,8 @@ watch(
   messageIdsKey,
   (key) => {
     if (!key) return
+    // DM ids are not ChatMessage ids — batch endpoints would miss or collide.
+    if (props.dmPartnerName !== undefined) return
     const ids = props.messages.map((m) => m.id)
     store.fetchReactionsBatch(ids)
     store.fetchStarredBatch(ids)

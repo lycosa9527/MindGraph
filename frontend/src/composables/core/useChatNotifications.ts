@@ -20,6 +20,8 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
 import type { ChatMessage, DirectMessageItem } from '@/stores/workshopChat'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
+import { isWorkshopChatPath } from '@/utils/workshopChatRoute'
+import { orgMemberById, resolveDmPersonName } from '@/utils/workshopDmInbox'
 
 function playDing(): void {
   try {
@@ -106,6 +108,27 @@ export function useChatNotifications() {
     return document.hidden
   }
 
+  function isViewingWorkshopChat(): boolean {
+    return !isDocumentHidden() && isWorkshopChatPath(window.location.pathname)
+  }
+
+  function dmSenderDisplayName(msg: DirectMessageItem): string {
+    const conv = store.dmConversations.find((row) => row.partner_id === msg.sender_id)
+    const directory = orgMemberById(store.orgMembers, msg.sender_id)
+    return resolveDmPersonName(
+      msg.sender_id,
+      msg.sender_name,
+      conv?.partner_name,
+      directory?.name
+    )
+  }
+
+  function dmSenderAvatar(msg: DirectMessageItem): string | null {
+    const conv = store.dmConversations.find((row) => row.partner_id === msg.sender_id)
+    const directory = orgMemberById(store.orgMembers, msg.sender_id)
+    return msg.sender_avatar ?? conv?.partner_avatar ?? directory?.avatar ?? null
+  }
+
   function escapeRegExp(s: string): string {
     return s.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')
   }
@@ -136,7 +159,7 @@ export function useChatNotifications() {
     if (channel?.is_muted) return
 
     const isViewing =
-      !isDocumentHidden() &&
+      isViewingWorkshopChat() &&
       msg.channel_id === store.currentChannelId &&
       store.currentTopicId === null &&
       store.mainChannelFeedActive &&
@@ -179,7 +202,9 @@ export function useChatNotifications() {
     if (channel?.is_muted) return
 
     const isViewing =
-      !isDocumentHidden() && msg.topic_id === store.currentTopicId && store.activeTab === 'channels'
+      isViewingWorkshopChat() &&
+      msg.topic_id === store.currentTopicId &&
+      store.activeTab === 'channels'
 
     const mentioned = isUserMentionedInMessage(msg)
 
@@ -218,17 +243,17 @@ export function useChatNotifications() {
   function notifyDM(msg: DirectMessageItem): void {
     if (String(msg.sender_id) === myId()) return
 
-    const isViewing =
-      !isDocumentHidden() && msg.sender_id === store.currentDMPartnerId && store.activeTab === 'dms'
+    const isViewing = isViewingWorkshopChat() && msg.sender_id === store.currentDMPartnerId
+    const senderName = dmSenderDisplayName(msg)
+    const senderAvatar = dmSenderAvatar(msg)
 
     if (!isViewing) {
       playDing()
 
-      const conv = store.dmConversations.find((c) => c.partner_id === msg.sender_id)
       pushChatToast({
         type: 'dm',
-        senderName: conv?.partner_name ?? `User ${msg.sender_id}`,
-        senderAvatar: conv?.partner_avatar ?? null,
+        senderName,
+        senderAvatar,
         context: t('workshop.directMessage'),
         content: msg.content,
         nav: { partnerId: msg.sender_id },
@@ -236,12 +261,7 @@ export function useChatNotifications() {
     }
 
     if (isDocumentHidden()) {
-      const conv = store.dmConversations.find((c) => c.partner_id === msg.sender_id)
-      showBrowserNotification(
-        conv?.partner_name ?? `User ${msg.sender_id}`,
-        msg.content,
-        `dm-${msg.sender_id}`
-      )
+      showBrowserNotification(senderName, msg.content, `dm-${msg.sender_id}`)
     }
   }
 

@@ -20,6 +20,7 @@ from services.features.workshop_ws_connection_state import (
     enqueue,
 )
 from services.features.ws_redis_fanout_config import is_ws_fanout_enabled
+from services.online_collab.common.collab_palette import palette_for_user
 from services.online_collab.participant.canvas_collab_locks import (
     compute_subtree_node_ids_async,
     node_locked_by_other_user,
@@ -53,6 +54,34 @@ async def _presence_send(ctx: Any, payload: dict, msg_type: str = "error") -> No
         await ctx.websocket.send_json(payload)
 
 
+def _peer_lock_holder(
+    node_map: Dict[Any, Any],
+    self_user_id: int,
+) -> Tuple[Optional[int], Optional[str]]:
+    """First peer (not ``self_user_id``) listed as editing this node."""
+    for uid, uname in node_map.items():
+        if int(uid) != int(self_user_id):
+            holder_name = uname if isinstance(uname, str) else None
+            return int(uid), holder_name
+    return None, None
+
+
+def _node_edit_claim_denied_payload(
+    node_id: str,
+    held_by_user_id: Optional[int],
+    held_by_username: Optional[str],
+) -> Dict[str, Any]:
+    payload: Dict[str, Any] = {
+        "type": "node_edit_claimed",
+        "node_id": node_id,
+        "granted": False,
+    }
+    if held_by_user_id is not None:
+        payload["held_by_user_id"] = held_by_user_id
+        payload["held_by_username"] = held_by_username
+    return payload
+
+
 NODE_EDIT_DEDUP_WINDOW_SEC = 0.050
 NODE_EDIT_DEDUP_MAX_ENTRIES = 5000
 node_editing_dedup_cache: OrderedDict = OrderedDict()
@@ -84,7 +113,8 @@ async def resolve_participant_name(pid: int) -> Dict[str, Any]:
     now = time.monotonic()
     cached = username_cache.get(pid)
     if cached is not None and (now - cached[1]) < USERNAME_CACHE_TTL_SEC:
-        return {"user_id": pid, "username": cached[0]}
+        color, emoji = palette_for_user(pid)
+        return {"user_id": pid, "username": cached[0], "color": color, "emoji": emoji}
 
     username: str = f"User {pid}"
     if redis_user_cache:
@@ -98,20 +128,20 @@ async def resolve_participant_name(pid: int) -> Dict[str, Any]:
     if len(username_cache) >= USERNAME_CACHE_MAX:
         evict_username_cache()
     username_cache[pid] = (username, now)
-    return {"user_id": pid, "username": username}
+    color, emoji = palette_for_user(pid)
+    return {"user_id": pid, "username": username, "color": color, "emoji": emoji}
 
 
 async def build_participants_with_names(
     participant_ids: List[int],
 ) -> List[Dict[str, Any]]:
     """
-    Build ``{user_id, username}`` entries for ``participant_ids`` (parallel).
+    Build ``{user_id, username, color, emoji}`` entries for ``participant_ids``.
 
     Capped at ``PARTICIPANTS_WITH_NAMES_CAP`` (250) entries to keep the join
     handshake payload bounded in very large rooms. Beyond the cap, the client
     gets the first N plus a sentinel ``_overflow`` entry signalling the total
-    count; full name resolution for off-cap participants can be served via a
-    paginated ``/api/workshop/participants`` endpoint.
+    count. The rail already windows to 30 locally.
 
     Usernames are cached process-locally for ``USERNAME_CACHE_TTL_SEC`` seconds
     so that a burst of 500 participants joining the same room only pays Redis
@@ -129,7 +159,15 @@ async def build_participants_with_names(
     out: List[Dict[str, Any]] = []
     for pid, res in zip(effective_ids, results):
         if isinstance(res, BaseException):
-            out.append({"user_id": pid, "username": f"User {pid}"})
+            fallback_color, fallback_emoji = palette_for_user(pid)
+            out.append(
+                {
+                    "user_id": pid,
+                    "username": f"User {pid}",
+                    "color": fallback_color,
+                    "emoji": fallback_emoji,
+                }
+            )
         else:
             out.append(res)
     if truncated:
@@ -184,8 +222,7 @@ async def handle_node_editing(
     node_editors = room.setdefault(node_id, {})
     if editing:
         node_editors[ctx.user.id] = username
-        color = ctx.user_colors[ctx.user.id % len(ctx.user_colors)]
-        emoji = ctx.user_emojis[ctx.user.id % len(ctx.user_emojis)]
+        color, emoji = palette_for_user(ctx.user.id)
     else:
         node_editors.pop(ctx.user.id, None)
         if not node_editors:
@@ -304,8 +341,7 @@ async def handle_node_editing_batch(
         )
         return
 
-    color = ctx.user_colors[ctx.user.id % len(ctx.user_colors)] if editing else None
-    emoji = ctx.user_emojis[ctx.user.id % len(ctx.user_emojis)] if editing else None
+    color, emoji = palette_for_user(ctx.user.id) if editing else (None, None)
 
     if is_ws_fanout_enabled():
         effective_ids, ok_redis = await apply_node_editor_batch_delta_redis(
@@ -417,7 +453,7 @@ async def handle_node_selected(
     if not node_sel or not isinstance(node_sel, str) or len(node_sel) > 200:
         await _presence_send(ctx, {"type": "error", "message": "Invalid node_id"})
         return
-    sel_color = ctx.user_colors[ctx.user.id % len(ctx.user_colors)]
+    sel_color = palette_for_user(ctx.user.id)[0]
     await broadcast_to_others(
         ctx.code,
         ctx.user.id,
@@ -470,8 +506,7 @@ async def handle_claim_node_edit(
             room = active_editors.setdefault(ctx.code, {})
             node_editors = room.setdefault(node_id, {})
             node_editors[ctx.user.id] = username
-            color = ctx.user_colors[ctx.user.id % len(ctx.user_colors)]
-            emoji = ctx.user_emojis[ctx.user.id % len(ctx.user_emojis)]
+            color, emoji = palette_for_user(ctx.user.id)
             await broadcast_to_all(
                 ctx.code,
                 {
@@ -503,9 +538,21 @@ async def handle_claim_node_edit(
                 ctx.code,
                 node_id,
             )
+            atomic_holder_id: Optional[int] = None
+            atomic_holder_name: Optional[str] = None
+            if is_ws_fanout_enabled():
+                denied_editors = await load_editors(ctx.code)
+                atomic_holder_id, atomic_holder_name = _peer_lock_holder(
+                    denied_editors.get(str(node_id), {}),
+                    int(ctx.user.id),
+                )
             await _presence_send(
                 ctx,
-                {"type": "node_edit_claimed", "node_id": node_id, "granted": False},
+                _node_edit_claim_denied_payload(
+                    node_id,
+                    atomic_holder_id,
+                    atomic_holder_name,
+                ),
                 "node_edit_claimed",
             )
             return
@@ -524,24 +571,18 @@ async def handle_claim_node_edit(
     )
 
     if is_locked:
-        held_by_user_id: Optional[int] = None
-        held_by_username: Optional[str] = None
         editors_map = editors_from_redis if editors_from_redis is not None else active_editors.get(ctx.code, {})
-        node_map = editors_map.get(node_id, {})
-        for uid, uname in node_map.items():
-            if int(uid) != int(ctx.user.id):
-                held_by_user_id = int(uid)
-                held_by_username = uname
-                break
+        fallback_holder_id, fallback_holder_name = _peer_lock_holder(
+            editors_map.get(node_id, {}),
+            int(ctx.user.id),
+        )
         await _presence_send(
             ctx,
-            {
-                "type": "node_edit_claimed",
-                "node_id": node_id,
-                "granted": False,
-                "held_by_user_id": held_by_user_id,
-                "held_by_username": held_by_username,
-            },
+            _node_edit_claim_denied_payload(
+                node_id,
+                fallback_holder_id,
+                fallback_holder_name,
+            ),
             "node_edit_claimed",
         )
         logger.debug(
@@ -549,15 +590,14 @@ async def handle_claim_node_edit(
             ctx.user.id,
             ctx.code,
             node_id,
-            held_by_user_id,
+            fallback_holder_id,
         )
         return
 
     room = active_editors.setdefault(ctx.code, {})
     node_editors = room.setdefault(node_id, {})
     node_editors[ctx.user.id] = username
-    color = ctx.user_colors[ctx.user.id % len(ctx.user_colors)]
-    emoji = ctx.user_emojis[ctx.user.id % len(ctx.user_emojis)]
+    color, emoji = palette_for_user(ctx.user.id)
 
     if is_ws_fanout_enabled():
         ok_redis = await apply_node_editor_delta_redis(

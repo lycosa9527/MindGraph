@@ -78,6 +78,7 @@ import {
   canvasKittySeedQueryKeysPresent,
 } from '@/composables/canvasPage/applyCanvasKittySeedFromRoute'
 import { clearCanvasEphemeralSession } from '@/composables/canvasPage/clearCanvasEphemeralSession'
+import { leaveCanvasCollabRoom } from '@/composables/canvasPage/leaveCanvasCollabRoom'
 import {
   VALID_DIAGRAM_TYPES,
   diagramTypeMap,
@@ -197,6 +198,11 @@ import type { DiagramType } from '@/types'
 import type { MindMapPresentationToolId } from '@/types/diagram'
 import { MIND_MAP_PRESENTATION_EXPANDABLE_TOOLS } from '@/types/diagram'
 import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
+import {
+  clearWorkshopSessionStorage,
+  readWorkshopSession,
+  shouldRestoreWorkshopSession,
+} from '@/utils/workshopSessionStorage'
 
 const route = useRoute()
 const router = useRouter()
@@ -1175,8 +1181,7 @@ watch(canUsePresentationTools, (allowed) => {
 
 watch(canUseOnlineCollab, (allowed) => {
   if (!allowed) {
-    sessionStorage.removeItem('mg_workshop_code')
-    sessionStorage.removeItem('mg_workshop_diagram_id')
+    leaveCanvasCollabRoom()
   }
 })
 
@@ -1289,36 +1294,19 @@ onMounted(async () => {
     return
   }
 
-  // Priority 1.5: Restore a guest workshop session after a page refresh.
-  // applyJoinWorkshopFromQuery strips the ?join_workshop param from the URL, so
-  // on a subsequent refresh the URL carries no trace of the session. sessionStorage
-  // survives tab-level refreshes (but not tab close), making it the right scope.
-  // If both keys are present, re-join the live session and skip the DB diagram load.
-  // Guard: only restore when the URL does not request a different diagram — prevents
-  // a stale code (e.g. from a session that ended with 1008) from hijacking navigation
-  // to an unrelated diagram.
+  // Priority 1.5: Restore after refresh of the same collab diagram only.
+  // Gallery → new mind map must not re-attach the previous room.
   {
-    const savedCode = sessionStorage.getItem('mg_workshop_code')
-    const savedDiagramId = sessionStorage.getItem('mg_workshop_diagram_id')
-    const routeDiagramId =
-      typeof route.query.diagramId === 'string'
-        ? route.query.diagramId
-        : typeof route.query.diagram_id === 'string'
-          ? route.query.diagram_id
-          : null
-    const sessionMatchesRoute = !routeDiagramId || routeDiagramId === savedDiagramId
-    if (savedCode && savedDiagramId && sessionMatchesRoute) {
+    const saved = readWorkshopSession()
+    if (saved && shouldRestoreWorkshopSession(route.query as Record<string, unknown>)) {
       if (!canUseOnlineCollab.value) {
-        sessionStorage.removeItem('mg_workshop_code')
-        sessionStorage.removeItem('mg_workshop_diagram_id')
+        clearWorkshopSessionStorage()
       } else {
-        applyWorkshopCodeFromSession(savedCode, savedDiagramId)
+        applyWorkshopCodeFromSession(saved.code, saved.diagramId)
         return
       }
-    }
-    if (savedCode && savedDiagramId && !sessionMatchesRoute) {
-      sessionStorage.removeItem('mg_workshop_code')
-      sessionStorage.removeItem('mg_workshop_diagram_id')
+    } else if (saved) {
+      clearWorkshopSessionStorage()
     }
   }
 

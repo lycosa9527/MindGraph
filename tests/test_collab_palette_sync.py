@@ -6,7 +6,7 @@ overlay. If the two lists drift, a user can appear as blue on their own
 screen and red on a peer's, which wreaks havoc on the collaboration UX. This
 test parses the shared TypeScript mirror at
 ``frontend/src/shared/collabPalette.ts`` and diffs it against the Python
-source of truth at ``services/workshop/collab_palette.py``.
+source of truth at ``services/online_collab/common/collab_palette.py``.
 
 Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
 All Rights Reserved
@@ -57,6 +57,8 @@ def test_user_colors_match_frontend() -> None:
     """USER_COLORS must be byte-identical on both sides."""
     ts_source = _TS_PATH.read_text(encoding="utf-8")
     ts_colors = _extract_list_from_ts(ts_source, "USER_COLORS")
+    assert len(USER_COLORS) >= 20
+    assert len(USER_COLORS) == len(USER_EMOJIS)
     assert ts_colors == USER_COLORS, (
         f"Backend/frontend USER_COLORS drift:\n  backend: {USER_COLORS}\n  frontend: {ts_colors}"
     )

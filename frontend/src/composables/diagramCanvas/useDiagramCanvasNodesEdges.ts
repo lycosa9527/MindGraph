@@ -81,8 +81,10 @@ export function useDiagramCanvasNodesEdges(options: UseDiagramCanvasNodesEdgesOp
         extraStyle['--editor-label'] = `"${edit.label}"`
       }
       // collab-remote-selected is suppressed when workshop-editing is also active
-      if (collabSelected.has(n.id) && !edit) {
+      const selectColor = collabSelected.get(n.id)
+      if (selectColor && !edit) {
         classes.push('collab-remote-selected')
+        extraStyle['--collab-select-color'] = selectColor
       }
       if (tabRecActive === n.id) {
         classes.push('tab-rec-active')

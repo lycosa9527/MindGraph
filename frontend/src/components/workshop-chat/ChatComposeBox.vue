@@ -6,6 +6,7 @@ import { ChevronRight, X } from '@lucide/vue'
 import { TRAINING_ROLES } from '@/config/trainingRoles'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useRenderedMarkdown } from '@/composables/core/useRenderedMarkdown'
+import { useWorkshopImageLightbox } from '@/composables/workshop/useWorkshopImageLightbox'
 import { type OrgMember, useWorkshopChatStore } from '@/stores/workshopChat'
 import { apiUpload } from '@/utils/apiClient'
 import { stripMindmateDiagramIdComments } from '@/utils/mindmateDiagramMeta'
@@ -17,6 +18,7 @@ import {
 import { buildWorkshopRoleMarkdown, inlineWorkshopRoleMarkdown } from '@/utils/workshopRoleEmbed'
 
 import './ChatComposeBox.css'
+import ImageLightbox from './ImageLightbox.vue'
 import WorkshopComposeToolbar from './WorkshopComposeToolbar.vue'
 import WorkshopDiagramPicker from './WorkshopDiagramPicker.vue'
 
@@ -60,6 +62,9 @@ const mentionQuery = ref('')
 const { html: previewHtml } = useRenderedMarkdown(() =>
   inlineWorkshopRoleMarkdown(stripMindmateDiagramIdComments(content.value))
 )
+
+const { lightboxSrc, lightboxName, handleMarkdownImageClick, closeLightbox } =
+  useWorkshopImageLightbox(() => t('workshop.diagram'))
 
 let draftSaveTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -479,6 +484,7 @@ async function handleFileChange(event: Event): Promise<void> {
           <div
             v-else
             v-html="previewHtml"
+            @click="handleMarkdownImageClick"
           />
         </div>
         <textarea
@@ -525,6 +531,12 @@ async function handleFileChange(event: Event): Promise<void> {
       :visible="showDiagramPicker"
       @update:visible="showDiagramPicker = $event"
       @insert="handleDiagramInsert"
+    />
+    <ImageLightbox
+      v-if="lightboxSrc"
+      :src="lightboxSrc"
+      :filename="lightboxName"
+      @close="closeLightbox"
     />
   </div>
 </template>

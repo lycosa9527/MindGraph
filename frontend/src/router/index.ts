@@ -15,6 +15,10 @@ import { useUIStore } from '@/stores/ui'
 import { canSeeMobileOrgManagement } from '@/utils/adminCapabilities'
 import { CANVAS_ENTRY_PATH_KEY } from '@/utils/canvasBackNavigation'
 import {
+  clearWorkshopSessionStorage,
+  shouldClearWorkshopSessionOnNavigate,
+} from '@/utils/workshopSessionStorage'
+import {
   resolveMobileRouteRedirect,
   shouldSkipMobileRouteRedirect,
 } from '@/utils/mobileRouteRedirect'
@@ -408,6 +412,16 @@ router.beforeEach(async (to, from) => {
     sessionStorage.removeItem(CANVAS_ENTRY_PATH_KEY)
   } else if (toCanvas && !fromCanvas) {
     sessionStorage.setItem(CANVAS_ENTRY_PATH_KEY, fromPath)
+  }
+  if (
+    shouldClearWorkshopSessionOnNavigate(
+      fromPath,
+      toPath,
+      to.query as Record<string, unknown>,
+      from.matched.length > 0
+    )
+  ) {
+    clearWorkshopSessionStorage()
   }
 
   // Landing `/`: guests → auth; signed-in → mobile hub or MindMate (desktop)

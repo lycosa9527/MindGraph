@@ -288,8 +288,6 @@ async def canvas_collab_websocket(
                     user,
                     diagram_id,
                     owner_id,
-                    USER_COLORS,
-                    USER_EMOJIS,
                 )
             except BACKGROUND_INFRA_ERRORS as hs_exc:
                 logger.error(

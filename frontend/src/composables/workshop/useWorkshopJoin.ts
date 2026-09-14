@@ -36,11 +36,6 @@ export function useWorkshopJoin(options: UseWorkshopJoinOptions) {
     return { url }
   }
 
-  /** @deprecated Use getWebSocketConnectOptions — kept for callers that only need the URL string. */
-  function getWebSocketUrl(code: string): string {
-    return getWebSocketConnectOptions(code).url
-  }
-
   function clearAuthRefreshReconnect(): void {
     if (authRefreshReconnectTimeout) {
       clearTimeout(authRefreshReconnectTimeout)
@@ -72,7 +67,6 @@ export function useWorkshopJoin(options: UseWorkshopJoinOptions) {
   }
 
   return {
-    getWebSocketUrl,
     getWebSocketConnectOptions,
     clearAuthRefreshReconnect,
     scheduleAuthRefreshReconnect,

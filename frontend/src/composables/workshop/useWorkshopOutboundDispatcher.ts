@@ -7,6 +7,8 @@ interface UseWorkshopOutboundDispatcherOptions {
   queueSize: Readonly<Ref<number>>
   getSessionDiagramId: () => string | null
   canSendRealtimeControl: () => boolean
+  /** Viewers must not enqueue spec diffs; WS readiness is handled by the flush queue. */
+  canEnqueueDiagramUpdate: () => boolean
   clearRoomIdleCountdownUi: () => void
   enqueueUpdatePayload: (payload: Record<string, unknown> & { type: string }) => string
 }
@@ -69,6 +71,9 @@ export function useWorkshopOutboundDispatcher(options: UseWorkshopOutboundDispat
     deletedNodeIds?: string[],
     deletedConnectionIds?: string[]
   ): string | null {
+    if (!options.canEnqueueDiagramUpdate()) {
+      return null
+    }
     const payload = buildUpdatePayload(
       options,
       spec,

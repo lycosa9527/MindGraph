@@ -363,12 +363,6 @@ async function startNow() {
 
 /** Called by the toolbar dropdown "stop" action — skips the modal entirely. */
 async function stopNow() {
-  // Prefer the authoritative WS session diagram ID, then fall back to the
-  // resolved ID from the save flow.  This handles the case where the host
-  // navigated to a different diagram after starting a session.
-  const diagramId = props.sessionDiagramId ?? props.diagramId ?? resolvedDiagramId.value
-  if (!diagramId) return
-  resolvedDiagramId.value = diagramId
   await endCollaboration()
 }
 
@@ -397,8 +391,9 @@ async function copyJoinLink() {
 }
 
 async function endCollaboration() {
-  const diagramId = resolvedDiagramId.value
+  const diagramId = props.sessionDiagramId ?? props.diagramId ?? resolvedDiagramId.value
   if (!diagramId) return
+  resolvedDiagramId.value = diagramId
   isLoading.value = true
   try {
     const response = await authFetch(`/api/diagrams/${diagramId}/workshop/stop`, {

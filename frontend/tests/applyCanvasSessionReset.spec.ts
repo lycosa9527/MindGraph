@@ -83,7 +83,7 @@ describe('applyCanvasSessionReset', () => {
 
     const indicators = useCanvasNodeIndicatorsStore()
     indicators.setTabRecActive('topic')
-    indicators.setCollabSelected(['topic'])
+    indicators.setCollabSelected([{ nodeId: 'topic', color: '#FF6B6B' }])
 
     const oneSentence = useOneSentenceStore()
     const ephemeralBefore = oneSentence.ephemeralScope

@@ -195,3 +195,8 @@ export function workshopChatHrefFromState(state: WorkshopRouteQueryState): strin
   const qs = params.toString()
   return qs ? `${WORKSHOP_CHAT_PATH}?${qs}` : WORKSHOP_CHAT_PATH
 }
+
+/** True when the browser is on the 研习社 page (not MindMate / canvas). */
+export function isWorkshopChatPath(pathname: string): boolean {
+  return pathname === WORKSHOP_CHAT_PATH || pathname.startsWith(`${WORKSHOP_CHAT_PATH}/`)
+}
