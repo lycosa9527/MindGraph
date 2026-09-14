@@ -103,4 +103,15 @@ describe('kittyQuietBranchCompleteBatch', () => {
 
     eventBus.off('kitty:diagram_action_completed', spy)
   })
+
+  it('ignores unmatched end so user-asked fills do not emit a second chat line', () => {
+    const spy = vi.fn()
+    eventBus.on('kitty:diagram_action_completed', spy)
+
+    endQuietBranchComplete(true)
+    vi.advanceTimersByTime(50)
+
+    expect(spy).not.toHaveBeenCalled()
+    eventBus.off('kitty:diagram_action_completed', spy)
+  })
 })

@@ -35,9 +35,11 @@ from services.kitty.agent_loop.intent_clarify import (
 from services.kitty.agent_loop.results import (
     arm_pending_autocomplete,
     autocomplete_started_content,
+    mark_stacked_progress_pending,
     tool_result_content,
     ui_result_content,
 )
+from services.kitty.routing.stacked_job import utterance_has_stacked_job
 from services.kitty.context.messaging import resolve_voice_interaction_language, send_kitty_ws_action
 from services.kitty.diagram.hub_bridge import try_sync_voice_diagram_to_hub
 from services.kitty.infra.desktop.kitty_desktop_wake_fanout import publish_kitty_selection_update
@@ -466,20 +468,10 @@ async def _dispatch_structural(
         diagram_type=diagram_type,
         command_text=command_text,
     )
-    if not skip_ack:
-        ack_text = render_ack_for_command(action, command, ack_ctx, lang=lang, phase="done")
-        if ack_text:
-            await emit_user_ack(
-                websocket,
-                voice_session_id,
-                ack_text,
-                one_sentence_action=action,
-                one_sentence_outcome="executed",
-                one_sentence_user_text=command_text,
-            )
-    live_after_ack = voice_sessions.get(voice_session_id)
-    if isinstance(live_after_ack, dict) and not skip_ack:
-        live_after_ack[MULTI_STEP_SUPPRESS_DIAGRAM_CHAT_KEY] = True
+    stacked = utterance_has_stacked_job(command_text)
+    live_before_apply = voice_sessions.get(voice_session_id)
+    if isinstance(live_before_apply, dict) and not skip_ack:
+        live_before_apply[MULTI_STEP_SUPPRESS_DIAGRAM_CHAT_KEY] = True
     try:
         bus_result = await apply_kitty_legacy_diagram_command(
             websocket,
@@ -495,7 +487,7 @@ async def _dispatch_structural(
         )
     finally:
         live_clear = voice_sessions.get(voice_session_id)
-        if isinstance(live_clear, dict) and not skip_ack:
+        if isinstance(live_clear, dict) and not skip_ack and not stacked:
             live_clear.pop(MULTI_STEP_SUPPRESS_DIAGRAM_CHAT_KEY, None)
     tool_result: ToolResult = bus_result.tool_result
     payload = tool_result_content(tool_result)
@@ -522,6 +514,25 @@ async def _dispatch_structural(
                 one_sentence_action=action,
                 one_sentence_outcome="failed",
                 one_sentence_user_text=command_text,
+            )
+    elif not skip_ack:
+        ack_text = render_ack_for_command(action, command, ack_ctx, lang=lang, phase="done")
+        if ack_text:
+            live_ack = voice_sessions.get(voice_session_id)
+            if stacked:
+                mark_stacked_progress_pending(
+                    live_ack if isinstance(live_ack, dict) else None,
+                    action=action,
+                    text=ack_text,
+                )
+            await emit_user_ack(
+                websocket,
+                voice_session_id,
+                ack_text,
+                one_sentence_action=action,
+                one_sentence_outcome="executed",
+                one_sentence_user_text=command_text,
+                reply_kind="progress" if stacked else "final",
             )
     return ToolDispatchResult(
         payload=payload,
@@ -579,14 +590,25 @@ async def _dispatch_ui(
         )
     action = str(command.get("action") or "")
     if action == "auto_complete":
+        params: dict[str, Any] = {}
+        topic_raw = command.get("topic")
+        if isinstance(topic_raw, str) and topic_raw.strip():
+            params["topic"] = topic_raw.strip()
+        if command.get("is_learning_sheet") is True:
+            params["is_learning_sheet"] = True
         sent = await send_kitty_ws_action(
             websocket,
             voice_session_id,
-            {"type": "action", "action": "auto_complete", "params": {}},
+            {"type": "action", "action": "auto_complete", "params": params},
         )
         await fanout_voice_command_from_session(voice_session_id, "auto_complete")
         if sent:
-            await emit_user_ack(websocket, voice_session_id, render_ack("ui.auto_complete", lang=lang))
+            await emit_user_ack(
+                websocket,
+                voice_session_id,
+                render_ack("ui.auto_complete", lang=lang),
+                reply_kind="progress",
+            )
             live = voice_sessions.get(voice_session_id)
             arm_pending_autocomplete(
                 live if isinstance(live, dict) else None,

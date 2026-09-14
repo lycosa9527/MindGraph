@@ -21,12 +21,12 @@ from sqlalchemy import select
 
 from agents.core.generate_events import GenerateGraphEvent
 from agents.core.generate_pipeline import run_generate_pipeline
+from agents.core.prompt_understanding import prepare_generation_prompt
 from agents.core.utils import normalize_generate_graph_failure
 from agents.core.workflow import agent_graph_workflow_with_styles
 from models import GenerateRequest, GenerateResponse, Messages, get_request_language
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
-from prompts.ai_content_level import merge_generation_instructions
 from services.admin.user_usage_activity import schedule_user_usage_activity
 from services.auth.thinking_coin.event_hub import mutation_to_footer
 from services.auth.thinking_coin.usage_wire import thinking_coin_post_diagram_generation_mutation
@@ -106,7 +106,12 @@ def _build_workflow_kwargs(req: GenerateRequest, prepared: dict[str, Any]) -> di
             req.existing_branch_children if hasattr(req, "existing_branch_children") else None
         ),
         "parent_branch": req.parent_branch if hasattr(req, "parent_branch") else None,
-        "generation_instructions": (req.generation_instructions or "").strip() or None,
+        "generation_instructions": (
+            prepared["generation_instructions"]
+            if "generation_instructions" in prepared
+            else (req.generation_instructions or "").strip() or None
+        ),
+        "is_learning_sheet": prepared.get("is_learning_sheet"),
     }
 
 
@@ -128,11 +133,12 @@ async def _prepare_generate_graph(
     lang = get_request_language(x_language, accept_language)
     language = req.language
 
-    prompt = merge_generation_instructions(
+    understood = prepare_generation_prompt(
         (req.prompt or "").strip(),
-        (req.generation_instructions or "").strip(),
         req.language,
+        explicit_instructions=(req.generation_instructions or "").strip() or None,
     )
+    prompt = understood.merged_prompt()
     request_id = f"gen_{int(time.time() * 1000)}"
     llm_model = req.llm.value if hasattr(req.llm, "value") else str(req.llm)
 
@@ -178,6 +184,8 @@ async def _prepare_generate_graph(
         "organization_id": organization_id,
         "request_type": request_type,
         "endpoint_path": endpoint_path,
+        "generation_instructions": understood.generation_instructions,
+        "is_learning_sheet": understood.is_learning_sheet,
         "req": req,
         "current_user": current_user,
         "http_request": request,

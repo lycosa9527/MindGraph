@@ -13,6 +13,8 @@ from typing import Any, Dict, List, Optional
 from services.diagram_edit.types import ToolResult
 
 PENDING_AUTOCOMPLETE_KEY = "_pending_autocomplete_observe"
+ONE_SENTENCE_REQUEST_ID_KEY = "_one_sentence_request_id"
+STACKED_PROGRESS_KEY = "_stacked_progress_pending"
 
 NONRETRYABLE_ERROR_CODES = frozenset(
     {
@@ -72,6 +74,10 @@ def arm_pending_autocomplete(
         pending["node_id"] = node_id
     if target:
         pending["target"] = target
+    request_id = session_one_sentence_request_id(session)
+    if request_id:
+        pending["request_id"] = request_id
+    session.pop(STACKED_PROGRESS_KEY, None)
     session[PENDING_AUTOCOMPLETE_KEY] = pending
 
 
@@ -96,6 +102,9 @@ def finish_pending_autocomplete(
     target = raw.get("target")
     if isinstance(target, str) and target.strip():
         extra["target"] = target.strip()
+    request_id = _trim_request_id(raw.get("request_id"))
+    if request_id:
+        extra["request_id"] = request_id
     normalized = status.strip().lower() if status.strip() else "finished"
     if normalized not in {"finished", "failed"}:
         normalized = "finished"
@@ -105,6 +114,60 @@ def finish_pending_autocomplete(
         message=message,
         extra=extra or None,
     )
+
+
+def session_one_sentence_request_id(session: Optional[Dict[str, Any]]) -> Optional[str]:
+    """Current one-sentence request id on the voice session, if any."""
+    if not isinstance(session, dict):
+        return None
+    return _trim_request_id(session.get(ONE_SENTENCE_REQUEST_ID_KEY))
+
+
+def autocomplete_observation_is_stale(
+    session: Optional[Dict[str, Any]],
+    observation: Dict[str, Any],
+) -> bool:
+    """True when a pending generate belongs to an earlier one-sentence turn."""
+    pending_id = _trim_request_id(observation.get("request_id"))
+    if pending_id is None:
+        return False
+    return session_one_sentence_request_id(session) != pending_id
+
+
+def _trim_request_id(raw: Any) -> Optional[str]:
+    """Return a non-empty request id, or None."""
+    if isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    return None
+
+
+def mark_stacked_progress_pending(
+    session: Optional[Dict[str, Any]],
+    *,
+    action: str,
+    text: str,
+) -> None:
+    """Remember a mid-stack thinking line so the loop can promote it if fill never starts."""
+    if not isinstance(session, dict):
+        return
+    trimmed = text.strip()
+    if not trimmed:
+        return
+    session[STACKED_PROGRESS_KEY] = {"action": action, "text": trimmed}
+
+
+def take_stacked_progress_pending(session: Optional[Dict[str, Any]]) -> Optional[Dict[str, str]]:
+    """Consume a deferred stacked-job thinking line."""
+    if not isinstance(session, dict):
+        return None
+    raw = session.pop(STACKED_PROGRESS_KEY, None)
+    if not isinstance(raw, dict):
+        return None
+    action = str(raw.get("action") or "").strip()
+    text = str(raw.get("text") or "").strip()
+    if not text:
+        return None
+    return {"action": action or "multi_step", "text": text}
 
 
 def should_keep_pending_autocomplete(session_context: Dict[str, Any]) -> bool:

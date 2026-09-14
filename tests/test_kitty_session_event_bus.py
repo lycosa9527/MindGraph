@@ -22,7 +22,7 @@ from services.kitty.session.memory import get_session_memory
 from services.kitty.session.ops import create_voice_session
 from services.kitty.session.runtime_state import voice_sessions
 from services.kitty.session.session_teardown import teardown_session_event_handlers
-from tests.typing_helpers import mock_await_args
+from tests.typing_helpers import mock_await_args, mock_await_kwargs
 
 
 async def _drain_bus() -> None:
@@ -61,18 +61,55 @@ async def test_auto_complete_done_records_observation() -> None:
         session = voice_sessions[voice_session_id]
         arm_pending_autocomplete(session, action="auto_complete_branch", node_id="n1")
         bus = get_session_event_bus(voice_session_id)
-        await bus.emit(
-            KittyEvent(
-                kind="auto_complete_done",
-                voice_session_id=voice_session_id,
-                payload={"status": "finished", "node_id": "n1"},
+        with patch(
+            "services.kitty.session.event_handlers.emit_user_ack",
+            new=AsyncMock(return_value=True),
+        ) as ack_mock:
+            await bus.emit(
+                KittyEvent(
+                    kind="auto_complete_done",
+                    voice_session_id=voice_session_id,
+                    payload={"status": "finished", "node_id": "n1"},
+                )
             )
-        )
-        await _drain_bus()
+            await _drain_bus()
 
         mem = get_session_memory(voice_session_id)
         assert any(turn.source == "tool" and "finished" in turn.content for turn in mem.turns)
         assert PENDING_AUTOCOMPLETE_KEY not in session
+        ack_mock.assert_awaited()
+        assert mock_await_kwargs(ack_mock).get("one_sentence_action") == "auto_complete_branch"
+    finally:
+        await _cleanup_event_runtime(voice_session_id)
+
+
+@pytest.mark.asyncio
+async def test_auto_complete_done_skips_ack_after_newer_turn() -> None:
+    """A late generate-done must not speak on a newer one-sentence request."""
+    _, voice_session_id = await _make_event_runtime()
+    try:
+        session = voice_sessions[voice_session_id]
+        session["_one_sentence_request_id"] = "req-old"
+        arm_pending_autocomplete(session, action="auto_complete_branch", node_id="n1")
+        session["_one_sentence_request_id"] = "req-new"
+        bus = get_session_event_bus(voice_session_id)
+        with patch(
+            "services.kitty.session.event_handlers.emit_user_ack",
+            new=AsyncMock(return_value=True),
+        ) as ack_mock:
+            await bus.emit(
+                KittyEvent(
+                    kind="auto_complete_done",
+                    voice_session_id=voice_session_id,
+                    payload={"status": "finished", "node_id": "n1"},
+                )
+            )
+            await _drain_bus()
+
+        mem = get_session_memory(voice_session_id)
+        assert any(turn.source == "tool" and "finished" in turn.content for turn in mem.turns)
+        assert PENDING_AUTOCOMPLETE_KEY not in session
+        ack_mock.assert_not_awaited()
     finally:
         await _cleanup_event_runtime(voice_session_id)
 

@@ -15,6 +15,8 @@ AI_CONTENT_LEVELS = (
     "expert",
 )
 
+DEFAULT_AI_CONTENT_LEVEL = "general"
+
 AI_CONTENT_LEVEL_SET = frozenset(AI_CONTENT_LEVELS)
 
 

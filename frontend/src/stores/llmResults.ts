@@ -17,11 +17,13 @@ import { computed, nextTick, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
+import { attachLlmExportAttribution } from '@/utils/llmExportWatermark'
 import {
   isMindMapDiagramType,
   mergeMindMapPresentationExtrasIntoSpec,
 } from '@/utils/mindMapLiveSpecExtras'
 
+import { useAiContentLevelStore } from './aiContentLevel'
 import { useDiagramStore } from './diagram'
 import {
   isLlmResultForCurrentSession,
@@ -388,9 +390,14 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       return false
     }
 
+    const aiLevelStore = useAiContentLevelStore()
+    const savedDiagramsStore = useSavedDiagramsStore()
+    const generatedLevel = aiLevelStore.getGeneratedLevel(
+      aiLevelStore.diagramKey(savedDiagramsStore.activeDiagramId)
+    )
     storeResult(model, {
       success: true,
-      spec,
+      spec: attachLlmExportAttribution(spec, model, generatedLevel ?? aiLevelStore.level),
       diagramType,
       elapsed,
     })

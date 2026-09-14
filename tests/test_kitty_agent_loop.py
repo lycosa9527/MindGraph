@@ -122,6 +122,10 @@ async def _run_loop(
             patch("services.kitty.agent_loop.loop.emit_user_ack", new=AsyncMock(return_value=True)),
             patch("services.kitty.agent_loop.tools.emit_user_ack", new=AsyncMock(return_value=True)),
             patch("services.kitty.agent_loop.compound.emit_user_ack", new=AsyncMock(return_value=True)),
+            patch(
+                "services.kitty.agent_loop.stacked_progress.emit_user_ack",
+                new=AsyncMock(return_value=True),
+            ),
             patch("services.kitty.agent_loop.tools.interrupt_kitty_tts", new=AsyncMock()),
             patch("services.kitty.agent_loop.tools.emit_auto_complete_branch", new=AsyncMock(return_value=True)),
             patch("services.kitty.agent_loop.tools.maybe_start_background_branch_autocomplete", ac_mock),

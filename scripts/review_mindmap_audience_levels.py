@@ -23,6 +23,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from main import app
 from clients.llm.http_client_manager import reset_httpx_clients_for_tests
+from prompts.mind_map_audience import MIND_MAP_AUDIENCE_ZH
 from services.llm import llm_service
 from services.redis.redis_client import init_redis_sync
 from tests.smoke.mindmap_smoke_helpers import (
@@ -56,52 +57,7 @@ LEVELS: tuple[tuple[str, str], ...] = (
     ("expert", "专家"),
 )
 
-# Keep in sync with frontend/src/composables/mindMap/audience/aiContentLevelInstructions.zh.ts
-AUDIENCE_ZH: Dict[str, Optional[str]] = {
-    "general": None,
-    "primary": (
-        "请按「小学」专业程度生成内容。\n"
-        "用语：只用日常具体词，禁止术语、抽象概念名和英文缩写。\n"
-        "句子：短句；每条宜在十余字内，能朗读给小学生听。\n"
-        "前提：只假设生活常识，不假设任何学科基础。\n"
-        "深度：能指认、举例、说“是什么”；不要原理、分类框架或因果链。"
-    ),
-    "junior": (
-        "请按「初中」专业程度生成内容。\n"
-        "用语：清晰白话；可少量学科词，首次出现用生活说法带过。\n"
-        "句子：短到中等，一层意思一句。\n"
-        "前提：假设义务教育常识，不假设高中专项。\n"
-        "深度：覆盖是什么、简单分类与直接用途；少谈争议与理论模型。"
-    ),
-    "senior": (
-        "请按「高中」专业程度生成内容。\n"
-        "用语：可用规范学科用语，少科普铺垫。\n"
-        "句子：完整，把概念关系写清楚。\n"
-        "前提：假设高中该科常见概念。\n"
-        "深度：抽象完整；写清因果、对比与适用条件；不要大学论文腔。"
-    ),
-    "university": (
-        "请按「大学」专业程度生成内容。\n"
-        "用语：用学科术语与理论视角，不必解释入门词。\n"
-        "句子：按论证组织，可稍长。\n"
-        "前提：假设本科通识与该科基础。\n"
-        "深度：按学科框架写机制、证据与限度；可点出模型或流派，避免中小学教案口吻。"
-    ),
-    "adult": (
-        "请按「成人」专业程度生成内容。\n"
-        "用语：清晰专业，少课堂口吻。\n"
-        "句子：直接，面向做事。\n"
-        "前提：假设职场常识，不假设学历阶梯。\n"
-        "深度：侧重场景、决策与利弊；少定理推导与考试知识点罗列。"
-    ),
-    "expert": (
-        "请按「专家」专业程度生成内容。\n"
-        "用语：领域术语，禁止科普开场。\n"
-        "句子：密、准、短，去掉过渡句。\n"
-        "前提：假设同行背景。\n"
-        "深度：写机制、边界、争议与反例；不要定义课、类比故事或教学脚手架。"
-    ),
-}
+AUDIENCE_ZH: Dict[str, Optional[str]] = MIND_MAP_AUDIENCE_ZH
 
 
 def _font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:

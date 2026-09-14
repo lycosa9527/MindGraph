@@ -99,6 +99,10 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "zh": "好的，正在自动补全「{target}」分支…",
         "en": 'OK — auto-completing the "{target}" branch…',
     },
+    "diagram.branch_autocomplete.done": {
+        "zh": "「{target}」分支补全好了。",
+        "en": 'The "{target}" branch is complete.',
+    },
     "diagram.branch_autocomplete.declined": {
         "zh": "好的，先不补全。还需要改别的吗？",
         "en": "OK — skipping auto-complete for now. Anything else?",
@@ -267,13 +271,17 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "zh": "好的，正在自动补全整张导图…",
         "en": "OK — auto-completing the whole diagram…",
     },
+    "ui.auto_complete.done": {
+        "zh": "整张导图补全好了。",
+        "en": "The whole diagram is complete.",
+    },
     "ui.auto_complete.failed": {
         "zh": "抱歉，没能自动补全整张导图。请确认电脑端画布已打开后再试一次。",
         "en": "Sorry — I couldn't auto-complete the diagram. Make sure the desktop canvas is open, then try again.",
     },
     "ui.explain_node": {
-        "zh": "好的，正在打开「{target}」的节点解释…",
-        "en": 'OK — opening the node explanation for "{target}"…',
+        "zh": "已打开「{target}」的节点解释。",
+        "en": 'Opened the node explanation for "{target}".',
     },
     "ui.explain_node.failed": {
         "zh": "抱歉，没能打开节点解释。请确认电脑端画布已打开后再试。",

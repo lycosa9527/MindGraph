@@ -26,6 +26,7 @@ export function useMindMapAudienceGenerate() {
   async function handleMindMapAiGenerate(options?: {
     generationInstructions?: string
     topicOverride?: string
+    isLearningSheet?: boolean
   }): Promise<void> {
     if (!authStore.isAuthenticated) {
       notify.warning(t('notification.signInToUse'))
@@ -53,7 +54,8 @@ export function useMindMapAudienceGenerate() {
     const generatedDiagramKey = aiContentLevelStore.diagramKey(savedDiagramsStore.activeDiagramId)
 
     const result = await autoComplete({
-      promptSuffix: diagramStore.isLearningSheet ? ' 半成品' : undefined,
+      promptSuffix:
+        diagramStore.isLearningSheet || options?.isLearningSheet ? ' 半成品' : undefined,
       generationInstructions,
       topicOverride: options?.topicOverride,
     })

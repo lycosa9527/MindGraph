@@ -9,6 +9,7 @@ import { ElAvatar } from 'element-plus'
 import OneSentenceKittyAvatar from '@/components/canvas/OneSentenceKittyAvatar.vue'
 import { resolveMessageClarifyChoices } from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
 import { useLanguage } from '@/composables'
+import type { KittyAgentState } from '@/composables/kitty/useKittyAgent'
 import { useAuthStore } from '@/stores'
 import type {
   OneSentenceChatMessage,
@@ -18,6 +19,7 @@ import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 const props = defineProps<{
   messages: OneSentenceChatMessage[]
+  agentState?: KittyAgentState
 }>()
 
 const emit = defineEmits<{
@@ -30,6 +32,10 @@ const authStore = useAuthStore()
 const scrollEl = ref<HTMLElement | null>(null)
 
 const userAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
+
+const showFallbackThinking = computed(
+  () => props.agentState === 'thinking' && !props.messages.some((row) => row.thinking)
+)
 
 const choicesByMessageId = computed(() => {
   const map = new Map<string, OneSentenceClarifyChoice[]>()
@@ -111,7 +117,8 @@ onMounted(() => {
               'bg-violet-600 text-white rounded-br-md': msg.role === 'user',
               'bg-white text-slate-800 border border-slate-200/90 rounded-bl-md shadow-sm':
                 msg.role === 'kitty',
-              'opacity-80': msg.streaming,
+              'opacity-80': msg.streaming && !msg.thinking,
+              'kitty-mobile-chat__bubble--thinking italic text-slate-500': msg.thinking,
               'opacity-70': msg.status === 'queued',
               'ring-1 ring-rose-300': msg.status === 'failed',
             }"
@@ -148,6 +155,25 @@ onMounted(() => {
               {{ choice.label }}
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="showFallbackThinking"
+      class="kitty-mobile-chat__row flex w-full justify-start"
+      role="status"
+      aria-live="polite"
+    >
+      <div class="flex max-w-[92%] items-start gap-2">
+        <OneSentenceKittyAvatar
+          class="mt-0.5 shrink-0"
+          :size="32"
+        />
+        <div
+          class="kitty-mobile-chat__bubble kitty-mobile-chat__bubble--thinking rounded-2xl rounded-bl-md border border-slate-200/90 bg-white px-3 py-2.5 text-sm italic leading-relaxed text-slate-500 shadow-sm"
+        >
+          <p class="m-0">{{ t('canvas.kittyAnchor.thinking') }}</p>
         </div>
       </div>
     </div>

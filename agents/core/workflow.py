@@ -36,8 +36,8 @@ from agents.core.prompt_requirements import (
 )
 from agents.core.prompt_to_diagram_result import coerce_prompt_to_diagram_spec
 from agents.core.learning_sheet import (
-    _clean_prompt_for_learning_sheet,
-    _detect_learning_sheet_from_prompt,
+    clean_prompt_for_learning_sheet,
+    detect_learning_sheet_from_prompt,
 )
 from agents.core.utils import create_error_response, validate_inputs
 from agents.mind_maps.mind_map_agent import MindMapAgent
@@ -279,6 +279,7 @@ async def agent_graph_workflow_with_styles(
     existing_branch_children=None,
     parent_branch=None,
     generation_instructions=None,
+    is_learning_sheet: bool | None = None,
     phase_emit: PhaseEmitter | None = None,
     event_emit: EventEmitter | None = None,
     cancel_event: asyncio.Event | None = None,
@@ -454,13 +455,15 @@ auto-complete - user has dimension but no topic (generate topic and children)
         effective_dimension_only_mode = agent_params.dimension_only_mode
 
         # Continue to full spec generation for both free-form and forced diagram type
-        # Add learning sheet detection
-        is_learning_sheet = _detect_learning_sheet_from_prompt(user_prompt, language)
-        logger.debug("Learning sheet detected: %s", is_learning_sheet)
+        sheet_mode = (
+            is_learning_sheet
+            if is_learning_sheet is not None
+            else detect_learning_sheet_from_prompt(user_prompt, language)
+        )
+        logger.debug("Learning sheet detected: %s", sheet_mode)
 
-        # Clean the prompt for learning sheets to generate actual content, not meta-content
-        generation_prompt = _clean_prompt_for_learning_sheet(user_prompt) if is_learning_sheet else user_prompt
-        if is_learning_sheet:
+        generation_prompt = clean_prompt_for_learning_sheet(user_prompt) if sheet_mode else user_prompt
+        if sheet_mode:
             logger.debug("Using cleaned prompt for generation: '%s'", generation_prompt)
 
         # RAG Integration: Retrieve relevant context from Knowledge Space if enabled
@@ -645,7 +648,7 @@ Please generate a more accurate and detailed diagram based on the above context.
                 "topics": [],
                 "style_preferences": {},
                 "language": language,
-                "is_learning_sheet": is_learning_sheet,
+                "is_learning_sheet": sheet_mode,
                 "hidden_node_percentage": 0,
             }
             if isinstance(spec, dict):
@@ -658,15 +661,15 @@ Please generate a more accurate and detailed diagram based on the above context.
             return failure
 
         # Calculate hidden percentage for learning sheets (20%)
-        hidden_percentage = 0.2 if is_learning_sheet else 0
+        hidden_percentage = 0.2 if sheet_mode else 0
 
         # Add learning sheet metadata to spec object so renderers can access it
         if isinstance(spec, dict):
-            spec["is_learning_sheet"] = is_learning_sheet
+            spec["is_learning_sheet"] = sheet_mode
             spec["hidden_node_percentage"] = hidden_percentage
             logger.debug(
                 "Added learning sheet metadata to spec: is_learning_sheet=%s, hidden_percentage=%s",
-                is_learning_sheet,
+                sheet_mode,
                 hidden_percentage,
             )
 
@@ -679,7 +682,7 @@ Please generate a more accurate and detailed diagram based on the above context.
             "structure_mode": agent_params.structure_mode,
             "style_preferences": {},
             "language": language,
-            "is_learning_sheet": is_learning_sheet,
+            "is_learning_sheet": sheet_mode,
             "hidden_node_percentage": hidden_percentage,
             **agent_meta,
         }
@@ -693,7 +696,7 @@ Please generate a more accurate and detailed diagram based on the above context.
             detection_time,
             topic_time,
             generation_time,
-            is_learning_sheet,
+            sheet_mode,
         )
         return result
 

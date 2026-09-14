@@ -66,6 +66,10 @@ const showSuggestionBubble = computed(
   () => !inputDisabled.value && !draft.value.trim() && !nodeActionGuideOpen.value
 )
 
+const showFallbackThinking = computed(
+  () => kittyAgentState.value === 'thinking' && !messages.value.some((row) => row.thinking)
+)
+
 const activeSuggestionKey = computed(
   () => suggestionKeys[activeSuggestionIndex.value] ?? suggestionKeys[0]
 )
@@ -217,7 +221,8 @@ onUnmounted(() => {
             :class="{
               'one-sentence-chat-bubble--user': msg.role === 'user',
               'one-sentence-chat-bubble--kitty': msg.role === 'kitty',
-              'one-sentence-chat-bubble--streaming': msg.streaming,
+              'one-sentence-chat-bubble--streaming': msg.streaming && !msg.thinking,
+              'one-sentence-chat-bubble--thinking': msg.thinking,
               'one-sentence-chat-bubble--queued': msg.status === 'queued',
               'one-sentence-chat-bubble--failed': msg.status === 'failed',
             }"
@@ -255,6 +260,22 @@ onUnmounted(() => {
                 <span class="one-sentence-choice-label">{{ choice.label }}</span>
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        v-if="showFallbackThinking"
+        class="one-sentence-chat-row one-sentence-chat-row--kitty"
+        role="status"
+        aria-live="polite"
+      >
+        <div class="one-sentence-chat-message flex items-start gap-2">
+          <OneSentenceKittyAvatar :size="32" />
+          <div
+            class="one-sentence-chat-bubble one-sentence-chat-bubble--kitty one-sentence-chat-bubble--thinking"
+          >
+            <p class="one-sentence-chat-text">{{ t('canvas.kittyAnchor.thinking') }}</p>
           </div>
         </div>
       </div>
@@ -709,6 +730,18 @@ onUnmounted(() => {
 }
 
 .one-sentence-chat-bubble--streaming::after {
+  content: '…';
+  display: inline-block;
+  margin-left: 2px;
+  animation: one-sentence-stream-pulse 1s ease-in-out infinite;
+}
+
+.one-sentence-chat-bubble--thinking {
+  color: rgb(100 116 139);
+  font-style: italic;
+}
+
+.one-sentence-chat-bubble--thinking .one-sentence-chat-text::after {
   content: '…';
   display: inline-block;
   margin-left: 2px;

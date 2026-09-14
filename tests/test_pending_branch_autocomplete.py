@@ -93,6 +93,7 @@ async def test_maybe_start_background_branch_autocomplete_emits_without_pending(
     assert sent["action"] == "auto_complete_branch"
     assert sent["params"]["node_label"] == "罗技"
     assert sent["params"]["node_id"] == "branch-r-1-12"
+    assert sent["params"]["quiet_chat"] is True
     fanout_mock.assert_awaited()
     ack_mock.assert_not_awaited()
 
@@ -185,6 +186,7 @@ async def test_try_consume_accept_sends_auto_complete_branch_action() -> None:
     sent = send_mock.await_args.args[2]
     assert sent["action"] == "auto_complete_branch"
     assert sent["params"]["node_label"] == "中国"
+    assert "quiet_chat" not in sent["params"]
     fanout_mock.assert_awaited()
     ack_mock.assert_awaited()
     assert ack_mock.await_args is not None

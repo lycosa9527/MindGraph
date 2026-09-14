@@ -24,17 +24,15 @@ import aiofiles.os
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, PlainTextResponse, Response
 
-from agents.core.agent_utils import extract_json_from_response
 from agents.core.prompt_to_diagram_result import (
     coerce_prompt_to_diagram_spec,
     is_llm_clarification_dict,
     normalize_prompt_to_diagram_result,
 )
-from agents.core.learning_sheet import (
-    _clean_prompt_for_learning_sheet,
-    _detect_learning_sheet_from_prompt,
+from agents.core.prompt_to_diagram_run import (
+    attach_learning_sheet_metadata,
+    run_prompt_to_diagram_llm,
 )
-from config.settings import config
 from models import (
     ExportPNGRequest,
     GenerateDingTalkRequest,
@@ -44,9 +42,7 @@ from models import (
 )
 from models.domain.messages import Language
 from models.domain.auth import User
-from prompts import get_prompt
 from services.diagram.semantic_spec_validation import ensure_valid_semantic_spec
-from services.llm import llm_service
 from services.monitoring.activity_stream import get_activity_stream_service
 from services.redis.redis_token_buffer import get_token_tracker
 from services.diagram.dify_user_resolve import (
@@ -319,22 +315,24 @@ async def generate_png_from_prompt(
     )
 
     try:
-        # Detect learning sheet from prompt
-        is_learning_sheet = _detect_learning_sheet_from_prompt(prompt, language)
-        logger.debug("[GeneratePNG] Learning sheet detected: %s", is_learning_sheet)
+        api_key_id = None
+        if hasattr(request, "state"):
+            api_key_id = getattr(request.state, "api_key_id", None)
 
-        # Clean prompt for learning sheets to generate actual content, not meta-content
-        generation_prompt = _clean_prompt_for_learning_sheet(prompt) if is_learning_sheet else prompt
-        if is_learning_sheet:
-            logger.debug(
-                "[GeneratePNG] Using cleaned prompt for generation: %s",
-                _prompt_meta_for_log(generation_prompt),
-            )
+        run = await run_prompt_to_diagram_llm(
+            prompt=prompt,
+            language=language,
+            user_id=user_id,
+            organization_id=organization_id,
+            api_key_id=api_key_id,
+            endpoint_path="/api/generate_png",
+        )
+        is_learning_sheet = run.prepared.is_learning_sheet
+        start_time = run.started_at
+        usage_data = run.usage_data
+        logger.debug("[GeneratePNG] Audience level=%s", run.prepared.ai_content_level)
 
-        # Get prompt from centralized system
-        prompt_template = get_prompt("prompt_to_diagram", language, "generation")
-
-        if not prompt_template:
+        if run.missing_template:
             error_detail = Messages.error(
                 "generation_failed",
                 f"No prompt template found for language {language}",
@@ -342,57 +340,20 @@ async def generate_png_from_prompt(
             )
             raise HTTPException(status_code=500, detail=error_detail)
 
-        # Format prompt with cleaned user input
-        formatted_prompt = prompt_template.format(user_prompt=generation_prompt)
-
-        # Call LLM service - single call with Qwen only
-
-        # Get API key ID from request state if API key was used
-        api_key_id = None
-        if hasattr(request, "state"):
-            api_key_id = getattr(request.state, "api_key_id", None)
-            if api_key_id:
-                logger.debug("[GeneratePNG] Using API key ID %s for token tracking", api_key_id)
-        else:
-            logger.debug("[GeneratePNG] Request state not available")
-
-        start_time = time.time()
-        response, usage_data = await llm_service.chat_with_usage(
-            prompt=formatted_prompt,
-            model="qwen",  # Force Qwen only
-            max_tokens=2000,
-            temperature=config.LLM_TEMPERATURE,
-            user_id=user_id,
-            organization_id=organization_id,
-            api_key_id=api_key_id,
-            request_type="diagram_generation",
-            endpoint_path="/api/generate_png",
-        )
-
-        if not response:
+        if run.empty_response:
             raise HTTPException(
                 status_code=500,
                 detail=Messages.error("generate_png_unclear_intent", lang=lang),
             )
 
-        # Extract JSON from response
-        result = extract_json_from_response(response)
         spec, diagram_type = _resolve_prompt_to_diagram_payload(
-            result,
+            run.raw_result,
             endpoint_label="[GeneratePNG]",
             lang=lang,
         )
 
-        # Add learning sheet metadata to spec object so renderers can access it
         if isinstance(spec, dict):
-            hidden_percentage = 0.2 if is_learning_sheet else 0
-            spec["is_learning_sheet"] = is_learning_sheet
-            spec["hidden_node_percentage"] = hidden_percentage
-            logger.debug(
-                "[GeneratePNG] Added learning sheet metadata to spec: is_learning_sheet=%s, hidden_percentage=%s",
-                is_learning_sheet,
-                hidden_percentage,
-            )
+            spec = attach_learning_sheet_metadata(spec, is_learning_sheet)
 
         # Track tokens with correct diagram_type
         if usage_data:
@@ -546,22 +507,24 @@ async def generate_dingtalk_png(
                 persist_usage=False,
             )
 
-        # Detect learning sheet from prompt
-        is_learning_sheet = _detect_learning_sheet_from_prompt(prompt, language)
-        logger.debug("[GenerateDingTalk] Learning sheet detected: %s", is_learning_sheet)
+        api_key_id = None
+        if hasattr(request, "state"):
+            api_key_id = getattr(request.state, "api_key_id", None)
 
-        # Clean prompt for learning sheets to generate actual content, not meta-content
-        generation_prompt = _clean_prompt_for_learning_sheet(prompt) if is_learning_sheet else prompt
-        if is_learning_sheet:
-            logger.debug(
-                "[GenerateDingTalk] Using cleaned prompt for generation: %s",
-                _prompt_meta_for_log(generation_prompt),
-            )
+        run = await run_prompt_to_diagram_llm(
+            prompt=prompt,
+            language=language,
+            user_id=user_id,
+            organization_id=organization_id,
+            api_key_id=api_key_id,
+            endpoint_path="/api/generate_dingtalk",
+        )
+        is_learning_sheet = run.prepared.is_learning_sheet
+        start_time = run.started_at
+        usage_data = run.usage_data
+        logger.debug("[GenerateDingTalk] Audience level=%s", run.prepared.ai_content_level)
 
-        # Use simplified prompt-to-diagram approach (single Qwen call)
-        prompt_template = get_prompt("prompt_to_diagram", language, "generation")
-
-        if not prompt_template:
+        if run.missing_template:
             raise HTTPException(
                 status_code=500,
                 detail=Messages.error(
@@ -571,53 +534,20 @@ async def generate_dingtalk_png(
                 ),
             )
 
-        # Format prompt with cleaned user input
-        formatted_prompt = prompt_template.format(user_prompt=generation_prompt)
-
-        # Call LLM service - single call with Qwen only
-
-        # Get API key ID from request state if API key was used
-        api_key_id = None
-        if hasattr(request, "state"):
-            api_key_id = getattr(request.state, "api_key_id", None)
-
-        start_time = time.time()
-        response, usage_data = await llm_service.chat_with_usage(
-            prompt=formatted_prompt,
-            model="qwen",  # Force Qwen only
-            max_tokens=2000,
-            temperature=config.LLM_TEMPERATURE,
-            user_id=user_id,
-            organization_id=organization_id,
-            api_key_id=api_key_id,
-            request_type="diagram_generation",
-            endpoint_path="/api/generate_dingtalk",
-        )
-
-        if not response:
+        if run.empty_response:
             raise HTTPException(
                 status_code=500,
                 detail=Messages.error("generate_png_unclear_intent", lang=lang),
             )
 
-        # Extract JSON from response
-        result = extract_json_from_response(response)
         spec, diagram_type = _resolve_prompt_to_diagram_payload(
-            result,
+            run.raw_result,
             endpoint_label="[GenerateDingTalk]",
             lang=lang,
         )
 
-        # Add learning sheet metadata to spec object so renderers can access it
         if isinstance(spec, dict):
-            hidden_percentage = 0.2 if is_learning_sheet else 0
-            spec["is_learning_sheet"] = is_learning_sheet
-            spec["hidden_node_percentage"] = hidden_percentage
-            logger.debug(
-                "[GenerateDingTalk] Added learning sheet metadata to spec: is_learning_sheet=%s, hidden_percentage=%s",
-                is_learning_sheet,
-                hidden_percentage,
-            )
+            spec = attach_learning_sheet_metadata(spec, is_learning_sheet)
 
         # Track tokens with correct diagram_type
         if usage_data:

@@ -89,4 +89,50 @@ describe('createSlideRemoteWakeSocket', () => {
     expect(FakeWebSocket.instances).toHaveLength(2)
     stop()
   })
+
+  it('does not invoke onClose when the caller stops the socket', () => {
+    vi.stubGlobal('WebSocket', FakeWebSocket)
+    const onClose = vi.fn()
+    const stop = createSlideRemoteWakeSocket({
+      onCommandPending: vi.fn(),
+      onClose,
+    })
+    stop()
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('invokes onClose once on unexpected drop', () => {
+    vi.stubGlobal('WebSocket', FakeWebSocket)
+    const onClose = vi.fn()
+    const stop = createSlideRemoteWakeSocket({
+      shouldReconnect: () => false,
+      onCommandPending: vi.fn(),
+      onClose,
+    })
+    FakeWebSocket.instances[0]?.close()
+    expect(onClose).toHaveBeenCalledTimes(1)
+    stop()
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not recurse when onClose tears the socket down', () => {
+    vi.stubGlobal('WebSocket', FakeWebSocket)
+    let stop: (() => void) | null = null
+    let depth = 0
+    let maxDepth = 0
+    const onClose = vi.fn(() => {
+      depth += 1
+      maxDepth = Math.max(maxDepth, depth)
+      stop?.()
+      depth -= 1
+    })
+    stop = createSlideRemoteWakeSocket({
+      shouldReconnect: () => false,
+      onCommandPending: vi.fn(),
+      onClose,
+    })
+    FakeWebSocket.instances[0]?.close()
+    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(maxDepth).toBe(1)
+  })
 })

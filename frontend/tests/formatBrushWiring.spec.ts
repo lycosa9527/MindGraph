@@ -23,6 +23,7 @@ describe('format painter wiring', () => {
     const classic = readSrc('src/components/canvas/CanvasToolbar.vue')
     expect(format).toContain('@dblclick.prevent="handleFormatBrush({ lock: true })"')
     expect(classic).toContain('@dblclick.prevent="handleFormatBrush({ lock: true })"')
+    expect(classic).toContain("import { ArrowDownUp, Brush, Upload } from '@lucide/vue'")
   })
 
   it('cancels on canvas pane click and shows a copy cursor while active', () => {

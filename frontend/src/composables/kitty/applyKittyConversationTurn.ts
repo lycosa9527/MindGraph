@@ -78,5 +78,12 @@ export function mergeKittyConversationTurn(
   ) {
     return null
   }
-  return applyClarifyChoicesOnHydrate([...messages, row], messages)
+  const lastUser = [...messages].reverse().find((item) => item.role === 'user')
+  const dropThinking =
+    row.role === 'kitty' &&
+    Boolean(row.requestId) &&
+    Boolean(lastUser?.requestId) &&
+    lastUser?.requestId === row.requestId
+  const base = dropThinking ? messages.filter((item) => !item.thinking) : messages
+  return applyClarifyChoicesOnHydrate([...base, row], base)
 }

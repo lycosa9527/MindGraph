@@ -35,9 +35,10 @@ function failActiveEditTurn(
 }
 
 export type KittyEditReplyBusHandlers = {
-  showFinalReply: (text: string) => void
-  handleReplyPayload: (payload: OneSentenceReplyPayload) => void
+  showFinalReply: (text: string) => boolean | void
+  handleReplyPayload: (payload: OneSentenceReplyPayload) => boolean | void
   markActiveRequest: (status: 'done' | 'failed', requestId?: string | null) => void
+  hasInFlightThinking?: () => boolean
   activeRequestId: { value: string | null }
   onBusyLlm?: (errorCode?: string) => boolean
   finalizeConversationalStream?: () => void
@@ -57,8 +58,8 @@ export function useKittyEditReplyBus(
   const pipelineStore = useKittyPipelineStore()
 
   const onOneSentenceReply = (payload: OneSentenceReplyPayload) => {
-    handlers.handleReplyPayload(payload)
-    if (payload.kind === 'final') {
+    const promoted = handlers.handleReplyPayload(payload)
+    if (payload.kind === 'final' && promoted === true) {
       if (!payload.requestId || handlers.activeRequestId.value === payload.requestId) {
         handlers.markActiveRequest('done')
       }
@@ -81,6 +82,9 @@ export function useKittyEditReplyBus(
       markKittyServerStepOk(ctx, payload.action)
     }
     if (payload.verified === true) {
+      if (handlers.hasInFlightThinking?.()) {
+        return
+      }
       const summary = payload.userSummary?.trim()
       if (summary) {
         handlers.showFinalReply(summary)
@@ -115,6 +119,9 @@ export function useKittyEditReplyBus(
   }) => {
     if (payload.ok) {
       handlers.onVerifiedApplyOk?.(payload)
+      if (handlers.hasInFlightThinking?.()) {
+        return
+      }
       if (payload.userSummary?.trim()) {
         handlers.showFinalReply(payload.userSummary.trim())
       }

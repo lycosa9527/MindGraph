@@ -124,6 +124,12 @@ void kitty_agent_handle_inbound(const std::string &raw)
         }
         return;
     }
+    if (type == "thinking") {
+        if (!g_kitty_speaking.load()) {
+            kitty_ui_set_state(KittyUiState::thinking);
+        }
+        return;
+    }
     if (type == "text_chunk") {
         const auto *text = obj.if_contains("text");
         if (text != nullptr && text->is_string()) {

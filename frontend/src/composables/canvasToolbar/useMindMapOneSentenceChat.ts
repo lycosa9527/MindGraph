@@ -184,7 +184,7 @@ export function useMindMapOneSentenceChat() {
   function pushKittyMessage(
     text: string,
     streaming = false,
-    extras?: { choices?: OneSentenceClarifyChoice[] }
+    extras?: { choices?: OneSentenceClarifyChoice[]; requestId?: string; thinking?: boolean }
   ): string {
     const id = oneSentence.pushMessage('kitty', text, streaming, extras)
     if (!streaming) {
@@ -264,6 +264,7 @@ export function useMindMapOneSentenceChat() {
     pushKittyMessage,
     replaceKittyMessage,
     scrollChatToBottom,
+    isCanvasJobOpen: () => isAIGenerating.value,
   })
 
   const canvasOwnerInjected = inject(KITTY_CANVAS_OWNER_KEY, null)
@@ -436,6 +437,7 @@ export function useMindMapOneSentenceChat() {
     }
     await persistEditUserTurn(text, requestId)
     replyState.resetForNewTurn()
+    replyState.showProgressReply(t('canvas.kittyAnchor.thinking'))
 
     const result = await runKittyEditTurn(
       {
@@ -747,6 +749,7 @@ export function useMindMapOneSentenceChat() {
       // Empty Redis for this scope: drop Pinia bubbles from another diagram, then seed.
       // Same-scope refresh with a local welcome only keeps the thread (avoid re-seed flicker).
       oneSentence.resetChatUiForWelcome()
+      replyState.resetForNewTurn()
       if (
         shouldUseOneSentenceEditFlow(
           diagramStore,
@@ -809,8 +812,11 @@ export function useMindMapOneSentenceChat() {
 
   watch(isAIGenerating, (generating, wasGenerating) => {
     if (!generateWatchReady) return
-    if (wasGenerating && !generating && pendingGenerateReply && !llmResultsStore.selectedModel) {
-      handleGenerateFailure()
+    if (wasGenerating && !generating) {
+      replyState.flushWhenCanvasIdle()
+      if (pendingGenerateReply && !llmResultsStore.selectedModel) {
+        handleGenerateFailure()
+      }
     }
   })
 
@@ -880,6 +886,9 @@ export function useMindMapOneSentenceChat() {
     userSummary?: string
   }) => {
     if (payload.verified === true) {
+      if (replyState.hasInFlightThinking()) {
+        return
+      }
       const summary = payload.userSummary?.trim()
       if (summary) {
         replyState.showFinalReply(summary)
@@ -919,6 +928,9 @@ export function useMindMapOneSentenceChat() {
           lastHubFingerprint = getKittyDiagramContentFingerprint(diagramStore.data)
         }
       })
+      if (replyState.hasInFlightThinking()) {
+        return
+      }
       if (payload.userSummary?.trim()) {
         replyState.showFinalReply(payload.userSummary.trim())
       }
@@ -959,8 +971,8 @@ export function useMindMapOneSentenceChat() {
       replyState.showFinalReply(buildBusyQueuedReply())
       return
     }
-    replyState.handleReplyPayload(payload)
-    if (payload.kind === 'final') {
+    const promoted = replyState.handleReplyPayload(payload)
+    if (payload.kind === 'final' && promoted) {
       oneSentence.applyAckOutcome(payload.requestId || activeRequestId.value, 'done')
     }
   }
@@ -1018,6 +1030,12 @@ export function useMindMapOneSentenceChat() {
     if (requestId && requestId === activeRequestId.value) {
       return
     }
+    if (requestId && replyState.hasInFlightThinking()) {
+      const lastUser = [...messages.value].reverse().find((row) => row.role === 'user')
+      if (lastUser?.requestId === requestId) {
+        return
+      }
+    }
     const next = mergeKittyConversationTurn(
       messages.value,
       payload.turn,
@@ -1048,6 +1066,7 @@ export function useMindMapOneSentenceChat() {
     bus.on('oneSentence:request_failed', onRequestSettled)
     bus.on('oneSentence:messages_changed', onMessagesChanged)
     bus.on('oneSentence:session_reset', () => {
+      replyState.resetForNewTurn()
       hydratedScope = null
       void bootstrapSession()
     })

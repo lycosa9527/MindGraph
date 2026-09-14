@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 
 import type { HistoryEntry } from '@/types'
+import { clearLlmExportAttribution } from '@/utils/llmExportWatermark'
 
 import { MAX_HISTORY_SIZE } from './constants'
 import type { DiagramContext } from './types'
@@ -13,6 +14,7 @@ export function useHistorySlice(ctx: DiagramContext) {
 
   function pushHistory(action: string): void {
     if (!data.value) return
+    clearLlmExportAttribution(data.value as Record<string, unknown>)
 
     if (historyIndex.value < history.value.length - 1) {
       history.value = history.value.slice(0, historyIndex.value + 1)

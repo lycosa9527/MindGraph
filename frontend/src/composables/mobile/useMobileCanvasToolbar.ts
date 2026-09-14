@@ -27,6 +27,7 @@ export interface UseMobileCanvasToolbarOptions {
   handleAIGenerate: (options?: {
     generationInstructions?: string
     topicOverride?: string
+    isLearningSheet?: boolean
   }) => void | Promise<void>
   handleConceptGeneration: () => void
   translate: (key: string, fallback?: string) => string

@@ -16,6 +16,7 @@ from services.kitty.agent_loop.loop import (
     run_typed_agent_loop,
 )
 from services.kitty.routing.outcomes import RouteOutcome, RouteResult
+from services.kitty.routing.stacked_job import utterance_has_stacked_job
 from services.kitty.routing.one_sentence_edit_heuristics import (
     heuristic_one_sentence_edit_command,
     normalize_edit_label,
@@ -132,6 +133,8 @@ def test_stacked_jobs_are_not_fast_structural() -> None:
     }
     assert _is_fast_structural_command(swallowed, spoken) is False
     assert AGENT_LOOP_MODEL == "qwen3.8-flash"
+    assert utterance_has_stacked_job("主题改成中国高等教育并补完") is True
+    assert utterance_has_stacked_job("主题改成光合作用") is False
 
 
 def test_rename_heuristic_maps_new_text_not_old_target() -> None:

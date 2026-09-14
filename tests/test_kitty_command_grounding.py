@@ -204,6 +204,18 @@ def test_compound_center_then_fill_is_map_grounded() -> None:
     assert decision.allowed is True
 
 
+def test_fresh_diagram_auto_complete_allows_plain_topic() -> None:
+    """Fresh-map generate is already topic-extracted; it is not an edit-time 补全."""
+    decision = apply_command_grounding(
+        {"action": "auto_complete", "topic": "比较猫和狗"},
+        user_text="比较猫和狗",
+        session_context=_ctx(),
+        source="fresh_diagram",
+    )
+    assert decision.allowed is True
+    assert decision.reason == "fresh_diagram"
+
+
 def test_whole_map_fill_requires_map_object() -> None:
     """Whole-map fill is grounded by 导图/整张, not by a branch name."""
     mapped = apply_command_grounding(

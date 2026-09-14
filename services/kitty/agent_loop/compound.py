@@ -89,7 +89,7 @@ async def run_compound_plan(
     verify_required: bool,
     lang: str,
 ) -> RouteResult:
-    """Speak one office line, then apply each step with skip_ack."""
+    """Apply each step silently, then speak one office line when finished."""
     steps = list(plan.steps)
     if not steps:
         return _finish(voice_session_id, RouteOutcome.FAILED, reason="compound_empty")
@@ -98,20 +98,6 @@ async def run_compound_plan(
         live[MULTI_STEP_SUPPRESS_DIAGRAM_CHAT_KEY] = True
     last_action = str(steps[0].get("action") or "")
     try:
-        ack_text = render_ack(
-            "diagram.multi_step.done",
-            {"detail": _detail_line(steps, plan, lang=lang)},
-            lang=lang,
-        )
-        if ack_text:
-            await emit_user_ack(
-                websocket,
-                voice_session_id,
-                ack_text,
-                one_sentence_action="multi_step",
-                one_sentence_outcome="executed",
-                one_sentence_user_text=command_text,
-            )
         for command in steps:
             context = _live_context(voice_session_id, session_context)
             dispatched = await dispatch_prepared_command(
@@ -133,6 +119,20 @@ async def run_compound_plan(
                     reason="failed",
                     action=last_action,
                 )
+        ack_text = render_ack(
+            "diagram.multi_step.done",
+            {"detail": _detail_line(steps, plan, lang=lang)},
+            lang=lang,
+        )
+        if ack_text:
+            await emit_user_ack(
+                websocket,
+                voice_session_id,
+                ack_text,
+                one_sentence_action="multi_step",
+                one_sentence_outcome="executed",
+                one_sentence_user_text=command_text,
+            )
     finally:
         live_clear = voice_sessions.get(voice_session_id)
         if isinstance(live_clear, dict):

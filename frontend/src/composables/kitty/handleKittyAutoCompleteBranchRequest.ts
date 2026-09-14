@@ -65,6 +65,7 @@ export async function handleKittyAutoCompleteBranchRequest(
   payload: {
     nodeId?: string
     nodeLabel?: string
+    quietChat?: boolean
   },
   persistHooks?: KittyAutoCompletePersistHooks
 ): Promise<boolean> {
@@ -80,12 +81,18 @@ export async function handleKittyAutoCompleteBranchRequest(
     return false
   }
 
-  // Coalesce multi-branch Kitty fills into one short "branches ready" chat reply.
-  beginQuietBranchComplete()
+  // Background fills coalesce one FE chat line. User-asked fills stay silent
+  // here — the server speaks a single job-done ack after observe.
+  const quietChat = payload.quietChat === true
+  if (quietChat) {
+    beginQuietBranchComplete()
+  }
 
   const nodeId = await resolveAutoCompleteBranchNodeIdReady(payload)
   if (!nodeId) {
-    endQuietBranchComplete(false)
+    if (quietChat) {
+      endQuietBranchComplete(false)
+    }
     eventBus.emit('kitty:auto_complete_observe', {
       status: 'failed',
       action: 'auto_complete_branch',
@@ -97,7 +104,9 @@ export async function handleKittyAutoCompleteBranchRequest(
   if (persistHooks) {
     const connected = await persistHooks.ensureConnected()
     if (!connected) {
-      endQuietBranchComplete(false)
+      if (quietChat) {
+        endQuietBranchComplete(false)
+      }
       eventBus.emit('kitty:auto_complete_observe', {
         status: 'failed',
         nodeId,
@@ -114,8 +123,8 @@ export async function handleKittyAutoCompleteBranchRequest(
   const ok = await generateMindMapSubgraphForNode(nodeId, {
     persist,
     anchorLabel: payload.nodeLabel,
-    // Kitty already acked the turn; canvas glow is enough while fills run.
-    // Final chat line is coalesced by kittyQuietBranchCompleteBatch.
+    // Glow only while filling. User-asked done line is the server ack;
+    // background fills use kittyQuietBranchCompleteBatch.
     quietSuccess: true,
   })
   eventBus.emit('kitty:auto_complete_observe', {

@@ -200,6 +200,19 @@ export function handleKittyServerMessage(
       deps.state.value = deps.isVoiceActive.value ? 'listening' : 'active'
       break
 
+    case 'thinking':
+      {
+        deps.state.value = 'thinking'
+        const thinkingText = String(data.text ?? '').trim()
+        if (thinkingText !== '') {
+          eventBus.emit('kitty:one_sentence_reply', {
+            text: thinkingText,
+            kind: 'progress',
+          })
+        }
+      }
+      break
+
     case 'text_chunk':
       if (deps.isVoiceActive.value) break
       {
@@ -212,18 +225,22 @@ export function handleKittyServerMessage(
           })
           break
         }
-        const kind =
-          replyKindRaw === 'progress'
-            ? 'progress'
-            : replyKindRaw === 'final'
-              ? 'final'
-              : 'conversational'
+        if (replyKindRaw === 'progress') {
+          deps.state.value = 'thinking'
+          if (text.trim() !== '') {
+            eventBus.emit('kitty:one_sentence_reply', {
+              text,
+              kind: 'progress',
+            })
+          }
+          break
+        }
         const actionRaw = data.action
         const fromOptions = choicesFromClarifyOptions(data.clarify_options)
         const choices = fromOptions.length >= 2 ? fromOptions : parseNumberedClarifyChoices(text)
         eventBus.emit('kitty:one_sentence_reply', {
           text,
-          kind,
+          kind: 'final',
           action: typeof actionRaw === 'string' ? actionRaw : undefined,
           choices: choices.length >= 2 ? choices : undefined,
           requestId:
@@ -232,6 +249,7 @@ export function handleKittyServerMessage(
               : undefined,
         })
         eventBus.emit('voice:text_chunk', { text })
+        deps.state.value = deps.isVoiceActive.value ? 'listening' : 'active'
       }
       break
 

@@ -134,6 +134,9 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
       oneSentence.setLibraryScope(boundScope)
     }
 
+    history.replyState.resetForNewTurn()
+    history.replyState.showProgressReply(t('canvas.kittyAnchor.thinking'))
+
     const result = await runKittyEditTurn(
       {
         kitty,
@@ -293,6 +296,7 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
   const replyBus = useKittyEditReplyBus(OWNER_ID, {
     showFinalReply: (text) => history.replyState.showFinalReply(text),
     handleReplyPayload: (payload) => history.replyState.handleReplyPayload(payload),
+    hasInFlightThinking: () => history.replyState.hasInFlightThinking(),
     markActiveRequest: (status, requestId) => history.markActiveRequest(status, requestId),
     activeRequestId: history.activeRequestId,
     finalizeConversationalStream: () => history.replyState.finalizeConversationalStream(),

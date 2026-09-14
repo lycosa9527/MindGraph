@@ -42,7 +42,14 @@ async def test_paragraph_runs_flash_tool_loop() -> None:
         "one_sentence_phase": "edit",
         "active_panel": "one_sentence",
         "diagram_type": "mind_map",
-        "diagram_data": {"center": {"text": "主题"}, "children": []},
+        "diagram_data": {
+            "center": {"text": "Cars"},
+            "children": [{"id": "uid-hist", "text": "历史"}],
+            "nodes": [
+                {"id": "topic", "text": "Cars"},
+                {"id": "uid-hist", "text": "历史"},
+            ],
+        },
     }
     ws = MagicMock()
     vid = create_voice_session(

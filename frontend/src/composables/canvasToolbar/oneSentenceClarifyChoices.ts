@@ -178,6 +178,18 @@ export function applyClarifyChoicesOnHydrate(
   return next
 }
 
+/** Keep the live thinking bubble when Redis/PG hydrate replaces durable rows. */
+export function retainInFlightThinkingRows(
+  hydrated: OneSentenceChatMessage[],
+  previousRows: OneSentenceChatMessage[]
+): OneSentenceChatMessage[] {
+  const thinking = previousRows.filter((row) => row.thinking === true)
+  if (thinking.length === 0 || hydrated.some((row) => row.thinking === true)) {
+    return hydrated
+  }
+  return [...hydrated, ...thinking]
+}
+
 function previousOfferAlreadyAnswered(
   previousRows: OneSentenceChatMessage[],
   text: string

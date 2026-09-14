@@ -358,5 +358,7 @@ def apply_command_grounding(
     if action in CENTER_ACTIONS:
         return _ground_center(command, utterance, source=source)
     if action in MAP_ACTIONS:
+        if source == "fresh_diagram":
+            return _allow("fresh_diagram")
         return _ground_map(utterance, session_context)
     return _ground_node(command, utterance, session_context, source=source)

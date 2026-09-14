@@ -15,11 +15,12 @@ export function bindSlideRemoteWakeDrain(options: {
   let wakeConnected = false
 
   function stopWakeSocket(): void {
-    if (stopWake != null) {
-      stopWake()
-      stopWake = null
-    }
+    const stop = stopWake
+    stopWake = null
     wakeConnected = false
+    if (stop != null) {
+      stop()
+    }
   }
 
   function startWakeSocket(): void {

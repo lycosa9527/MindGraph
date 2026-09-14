@@ -40,6 +40,7 @@ export function executeKittyAgentAction(action: string, params: Record<string, u
       eventBus.emit('diagram:auto_complete_requested', {
         source: 'kitty_agent',
         topic,
+        ...(params.is_learning_sheet === true ? { isLearningSheet: true } : {}),
       })
       break
     }
@@ -80,6 +81,7 @@ export function executeKittyAgentAction(action: string, params: Record<string, u
         source: 'kitty_agent',
         nodeId,
         nodeLabel,
+        quietChat: params.quiet_chat === true,
       })
       break
     }

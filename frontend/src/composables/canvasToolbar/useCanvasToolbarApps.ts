@@ -158,6 +158,7 @@ export function useCanvasToolbarApps() {
   async function handleAIGenerate(options?: {
     generationInstructions?: string
     topicOverride?: string
+    isLearningSheet?: boolean
   }) {
     if (!authStore.isAuthenticated) {
       notify.warning(t('notification.signInToUse'))
@@ -185,7 +186,8 @@ export function useCanvasToolbarApps() {
     )
 
     const result = await autoComplete({
-      promptSuffix: diagramStore.isLearningSheet ? ' 半成品' : undefined,
+      promptSuffix:
+        diagramStore.isLearningSheet || options?.isLearningSheet ? ' 半成品' : undefined,
       generationInstructions,
       topicOverride: options?.topicOverride,
     })

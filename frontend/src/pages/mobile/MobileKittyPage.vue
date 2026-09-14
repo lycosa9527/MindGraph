@@ -1009,6 +1009,7 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
           <KittyMobileChatTranscript
             class="kitty-chat-overlay w-full flex-1 min-h-0"
             :messages="chatMessages"
+            :agent-state="kittyVoiceState"
             @select-choice="handleClarifyChoice"
             @bind-scroll="bindChatScroll"
           />

@@ -103,6 +103,19 @@ export function createKittyDesktopWakeStream(options: KittyDesktopWakeStreamOpti
     }
   }
 
+  /** Drop handlers before ``close()`` so teardown / replace cannot re-enter ``onerror``. */
+  function detachEventSource(): void {
+    const current = eventSource
+    eventSource = null
+    if (current == null) {
+      return
+    }
+    current.onerror = null
+    current.onopen = null
+    current.onmessage = null
+    current.close()
+  }
+
   function scheduleReconnect(): void {
     if (closed) {
       return
@@ -132,10 +145,7 @@ export function createKittyDesktopWakeStream(options: KittyDesktopWakeStreamOpti
     if (closed) {
       return
     }
-    if (eventSource != null) {
-      eventSource.close()
-      eventSource = null
-    }
+    detachEventSource()
     eventSource = new EventSource(KITTY_DESKTOP_WAKE_STREAM_URL, { withCredentials: true })
     eventSource.onopen = () => {
       const reconnected = retryCount > 0
@@ -191,10 +201,13 @@ export function createKittyDesktopWakeStream(options: KittyDesktopWakeStreamOpti
       }
     }
     eventSource.onerror = (ev: Event) => {
+      if (closed) {
+        return
+      }
       options.onError?.(ev)
-      if (eventSource != null) {
-        eventSource.close()
-        eventSource = null
+      detachEventSource()
+      if (closed) {
+        return
       }
       options.onClose?.()
       scheduleReconnect()
@@ -206,10 +219,6 @@ export function createKittyDesktopWakeStream(options: KittyDesktopWakeStreamOpti
   return () => {
     closed = true
     clearRetryTimer()
-    if (eventSource != null) {
-      eventSource.close()
-      eventSource = null
-    }
-    options.onClose?.()
+    detachEventSource()
   }
 }

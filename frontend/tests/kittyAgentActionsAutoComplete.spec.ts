@@ -53,6 +53,16 @@ describe('executeKittyAgentAction auto_complete topic', () => {
     })
   })
 
+  it('forwards learning-sheet flag from params', async () => {
+    const { executeKittyAgentAction } = await import('@/composables/kitty/kittyAgentActions')
+    executeKittyAgentAction('auto_complete', { topic: '茶叶', is_learning_sheet: true })
+    expect(emitMock).toHaveBeenCalledWith('diagram:auto_complete_requested', {
+      source: 'kitty_agent',
+      topic: '茶叶',
+      isLearningSheet: true,
+    })
+  })
+
   it('omits empty topic', async () => {
     const { executeKittyAgentAction } = await import('@/composables/kitty/kittyAgentActions')
     executeKittyAgentAction('auto_complete', {})

@@ -796,7 +796,7 @@ registerKittyDiagramMutationBus()
 
 eventBus.onWithOwner(
   'diagram:auto_complete_requested',
-  (data?: { source?: string; topic?: string; diagramType?: string }) => {
+  (data?: { source?: string; topic?: string; diagramType?: string; isLearningSheet?: boolean }) => {
     if (!authStore.isAuthenticated) {
       notify.warning(t('notification.signInToUse'))
       return
@@ -812,7 +812,10 @@ eventBus.onWithOwner(
     }
     const topicOverride =
       typeof data?.topic === 'string' && data.topic.trim() !== '' ? data.topic.trim() : undefined
-    void handleAIGenerate({ topicOverride }).then(() => {
+    void handleAIGenerate({
+      topicOverride,
+      isLearningSheet: data?.isLearningSheet === true,
+    }).then(() => {
       eventBus.emit('kitty:auto_complete_observe', {
         status: 'finished',
         action: 'auto_complete',

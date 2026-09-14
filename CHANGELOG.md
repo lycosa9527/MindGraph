@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.79] - 2026-09-14
+
+> **Gallery, DingTalk, and Kitty share prompt prep; Kitty thinks silently until the job is done; LLM PNG exports get a watermark.**
+
+### Added
+
+- **Shared prompt prep** — Gallery generate, DingTalk/PNG, and Kitty run the same no-LLM prep: learning-sheet cleanup, 专业程度 detection, topic seed, and diagram-type hint. DingTalk defaults to general when the prompt does not name a level; explicit canvas instructions still win.
+- **Kitty fresh-canvas generate** — On an empty map, Kitty extracts the topic and starts auto-complete without an extra LLM hop.
+- **LLM PNG watermark** — Untouched LLM generations stamp a bottom-right credit (e.g. 豆包小学版). User edits, history push, and remote collab edits clear it.
+
+### Changed
+
+- **Kitty job bubbles** — Thinking / searching / adding nodes stay on one thinking bubble (no TTS). When the job finishes, that bubble becomes the final reply. Face, mobile, and 1.85C inbound honor `thinking`. Stacked jobs (rename + fill) stay thinking until generate starts or idle finalize speaks.
+- **DingTalk / PNG generate** — Single-shot `prompt_to_diagram` shares the prep + Qwen call; PNG export no longer inlines its own LLM path.
+
+### Fixed
+
+- **Wake SSE / WS teardown** — Closing Kitty desktop wake EventSource or 演讲模式 wake WebSocket detaches handlers first so `onerror` / `onclose` cannot re-enter and blow the stack. Shared `useSSE` does the same.
+
+### Tests
+
+- [`frontend/tests/kittyJobStatus.spec.ts`](frontend/tests/kittyJobStatus.spec.ts), [`frontend/tests/oneSentenceReplyState.spec.ts`](frontend/tests/oneSentenceReplyState.spec.ts), [`frontend/tests/llmExportWatermark.spec.ts`](frontend/tests/llmExportWatermark.spec.ts), [`frontend/tests/createKittyDesktopWakeStream.spec.ts`](frontend/tests/createKittyDesktopWakeStream.spec.ts), [`frontend/tests/createSlideRemoteWakeSocket.spec.ts`](frontend/tests/createSlideRemoteWakeSocket.spec.ts)
+- [`tests/test_prompt_understanding.py`](tests/test_prompt_understanding.py), [`tests/test_prompt_to_diagram_run.py`](tests/test_prompt_to_diagram_run.py), [`tests/test_fresh_diagram_generate.py`](tests/test_fresh_diagram_generate.py), [`tests/test_mind_map_audience.py`](tests/test_mind_map_audience.py), [`tests/test_generate_graph_audience.py`](tests/test_generate_graph_audience.py), [`tests/test_generate_dingtalk_audience.py`](tests/test_generate_dingtalk_audience.py)
+
 ## [5.180.78] - 2026-09-14
 
 > **Training, Kitty, collab lists, and chat-handoff drop HTTP poll loops; presence is a connection lease.**

@@ -104,11 +104,18 @@ export type EventTypes = {
   'diagram:update_nodes': { nodes: unknown[]; source?: string }
   'diagram:add_nodes': { nodes: unknown[]; source?: string }
   'diagram:remove_nodes': { nodeIds: unknown[]; source?: string }
-  'diagram:auto_complete_requested': { source?: string; topic?: string; diagramType?: string }
+  'diagram:auto_complete_requested': {
+    source?: string
+    topic?: string
+    diagramType?: string
+    isLearningSheet?: boolean
+  }
   'diagram:auto_complete_branch_requested': {
     source?: string
     nodeId?: string
     nodeLabel?: string
+    /** Background fill — FE coalesces chat; server will not speak a done line. */
+    quietChat?: boolean
   }
   'diagram:position_saved': {
     nodeId: string

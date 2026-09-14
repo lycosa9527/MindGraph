@@ -22,6 +22,18 @@ export function useSSE() {
   let eventSource: EventSource | null = null
   let retryCount = 0
 
+  function detachEventSource(): void {
+    const current = eventSource
+    eventSource = null
+    if (current == null) {
+      return
+    }
+    current.onerror = null
+    current.onopen = null
+    current.onmessage = null
+    current.close()
+  }
+
   function connect(url: string, options: SSEOptions = {}): EventSource {
     const {
       onMessage,
@@ -81,10 +93,7 @@ export function useSSE() {
   }
 
   function close(): void {
-    if (eventSource) {
-      eventSource.close()
-      eventSource = null
-    }
+    detachEventSource()
     isConnected.value = false
     isConnecting.value = false
   }

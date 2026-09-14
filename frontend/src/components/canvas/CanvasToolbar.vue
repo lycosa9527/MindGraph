@@ -6,6 +6,8 @@ import { computed, ref } from 'vue'
 
 import { ElButton, ElTooltip } from 'element-plus'
 
+import { ArrowDownUp, Brush, Upload } from '@lucide/vue'
+
 import type { MindMapRibbonTabId } from '@/canvas-ribbon/mindMapRibbonTypes'
 import {
   tryCollabGuardedRedo,

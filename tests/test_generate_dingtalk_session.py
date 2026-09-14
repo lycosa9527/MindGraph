@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from agents.core import prompt_to_diagram_run as p2d
 from models.requests.requests_diagram import GenerateDingTalkRequest
 from routers.api import png_export as mod
 from services.diagram.dify_user_resolve import DiagramSaveIdentity
@@ -74,8 +75,8 @@ async def test_generate_dingtalk_closes_rls_before_llm_and_screenshot() -> None:
             "resolve_diagram_save_identity",
             new=AsyncMock(return_value=identity),
         ),
-        patch.object(mod, "get_prompt", return_value="User: {user_prompt}"),
-        patch.object(mod.llm_service, "chat_with_usage", new=AsyncMock(side_effect=_chat)),
+        patch.object(p2d, "get_prompt", return_value="User: {user_prompt}"),
+        patch.object(p2d.llm_service, "chat_with_usage", new=AsyncMock(side_effect=_chat)),
         patch.object(mod, "capture_diagram_screenshot", new=AsyncMock(side_effect=_shot)),
         patch.object(mod, "try_save_diagram_to_library", new=AsyncMock(return_value=None)),
         patch.object(

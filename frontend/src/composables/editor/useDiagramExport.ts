@@ -27,14 +27,16 @@ import {
 } from '@/utils/diagramExportLearningSheet'
 import { waitForDiagramExportFonts } from '@/utils/diagramExportPrep'
 import {
-  captureDiagramPngBlob,
+  canvasToPngBlob,
   captureDiagramPngData,
+  captureDiagramRasterCanvas,
   type DiagramRasterCapture,
 } from '@/utils/diagramExportRasterCapture'
 import {
   getDiagramCanvasHtmlToImageOptions,
   getDiagramCanvasPdfHtmlToImageOptions,
 } from '@/utils/diagramHtmlToImage'
+import { applyLlmExportWatermarkToCanvas } from '@/utils/llmExportWatermark'
 import {
   buildMindMapVectorSvgFromStores,
   canUseMindMapVectorExport,
@@ -247,7 +249,16 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     }
     await waitForExportFonts()
     const captureOptions = getDiagramCanvasHtmlToImageOptions()
-    const runCapture = () => captureDiagramPngBlob(container, captureOptions)
+    const runCapture = async () => {
+      const canvas = await captureDiagramRasterCanvas(container, captureOptions)
+      applyLlmExportWatermarkToCanvas(
+        canvas,
+        diagramStore.data as Record<string, unknown> | null,
+        (key) => t(key),
+        uiStore.language
+      )
+      return canvasToPngBlob(canvas)
+    }
     const blob = asShown
       ? await runAsShownRasterCapture(runCapture)
       : await runLearningSheetRasterCapture(diagramStore, exportOptions, runCapture)

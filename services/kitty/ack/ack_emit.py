@@ -56,18 +56,21 @@ async def emit_user_ack(
     """
     Send a user-facing ack on text_chunk and persist the one-sentence turn.
 
-    Speaks via CosyVoice in parallel with the chat text (progress + final).
-    ``reply_kind`` is ``progress`` for in-flight async canvas work; defaults to
-    ``final`` so one-sentence chat dedupes against diagram ``user_summary``.
-    Progress acks are UI-only (not durable history). Optional ``clarify_question`` /
+    ``reply_kind`` ``progress`` is thinking-only: no TTS, ephemeral chat
+    bubble. Defaults to ``final`` so one-sentence chat dedupes against
+    diagram ``user_summary``. Optional ``clarify_question`` /
     ``clarify_options`` drive one-sentence choice buttons.
-    ``command_detail`` stores node-action / Bus proof for diagram activity tracking.
+    ``command_detail`` stores node-action / Bus proof for diagram activity
+    tracking.
     """
     message = str(text or "").strip()
     if not message:
         return False
 
     kind = reply_kind.strip() if isinstance(reply_kind, str) and reply_kind.strip() else "final"
+    if kind == "progress":
+        return await _emit_thinking_status(websocket, voice_session_id, message)
+
     resolved_request_id = (
         request_id.strip()
         if isinstance(request_id, str) and request_id.strip()
@@ -98,22 +101,20 @@ async def emit_user_ack(
     if sent:
         await fanout_voice_phase_from_session(voice_session_id, "speaking")
 
-    # One durable kitty row per request — skip progress UI-only acks.
-    if kind != "progress":
-        await persist_one_sentence_turn_from_voice_session(
-            voice_session_id,
-            role="kitty",
-            content=message,
-            source="ack",
-            phase="edit",
-            action=one_sentence_action,
-            outcome=one_sentence_outcome,
-            user_text=one_sentence_user_text,
-            request_id=resolved_request_id,
-            command_detail=detail,
-        )
+    await persist_one_sentence_turn_from_voice_session(
+        voice_session_id,
+        role="kitty",
+        content=message,
+        source="ack",
+        phase="edit",
+        action=one_sentence_action,
+        outcome=one_sentence_outcome,
+        user_text=one_sentence_user_text,
+        request_id=resolved_request_id,
+        command_detail=detail,
+    )
 
-    # Chat text and TTS start together; serial queue + barge-in handle overlap.
+    # Final reply only: chat text and TTS start together.
     session = voice_sessions.get(voice_session_id)
     tts_will_run = (
         resolve_kitty_tts_enabled() and isinstance(session, dict) and session.get("_kitty_tts_enabled") is not False
@@ -123,4 +124,17 @@ async def emit_user_ack(
         # Text-only / TTS off: reply is a single chunk, not a stream — return to idle.
         await fanout_voice_phase_from_session(voice_session_id, "active")
 
+    return sent
+
+
+async def _emit_thinking_status(
+    websocket: WebSocket,
+    voice_session_id: str,
+    text: str,
+) -> bool:
+    """Keep the session in thinking — no speech and no durable history row."""
+    payload: dict[str, Any] = {"type": "thinking", "text": text, "reply_kind": "progress"}
+    sent = await safe_websocket_send(websocket, payload)
+    if sent:
+        await fanout_voice_phase_from_session(voice_session_id, "thinking")
     return sent

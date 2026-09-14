@@ -183,11 +183,12 @@ export function useKittyDesktopActionPoll(): void {
   }
 
   function stopWakeStreamConnection(): void {
-    if (stopWakeStream != null) {
-      stopWakeStream()
-      stopWakeStream = null
-    }
+    const stopStream = stopWakeStream
+    stopWakeStream = null
     wakeStreamConnected = false
+    if (stopStream != null) {
+      stopStream()
+    }
   }
 
   async function applyQueuedAction(action: unknown): Promise<void> {
@@ -364,7 +365,12 @@ export function useKittyDesktopActionPoll(): void {
       },
       onClose: () => {
         wakeStreamConnected = false
-        void tickWatch()
+        if (phase !== 'watching' || !pollingAllowed()) {
+          return
+        }
+        void tickWatch().catch(() => {
+          /* hydrate failures stay local — do not become unhandledrejection */
+        })
       },
     })
   }
@@ -415,7 +421,9 @@ export function useKittyDesktopActionPoll(): void {
     setPhase('watching')
     void loadKittyActionHandlers()
     startWakeStreamConnection()
-    void tickWatch()
+    void tickWatch().catch(() => {
+      /* hydrate failures stay local — do not become unhandledrejection */
+    })
   }
 
   function stop(): void {

@@ -25,6 +25,11 @@ import {
   remapCollabConnectionEndpoints,
   spliceCollabConnection,
 } from '@/utils/collabConnectionInsert'
+import {
+  clearLlmExportAttribution,
+  LLM_EXPORT_ATTRIBUTION_KEY,
+  readLlmExportAttribution,
+} from '@/utils/llmExportWatermark'
 import { migrateMindMapIdentityIds, resolveMindMapAliasId } from '@/utils/mindMapIdentityMigrate'
 import {
   beginMindMapSpecLoadSession,
@@ -535,6 +540,10 @@ export function useSpecIOSlice(ctx: DiagramContext) {
         spec._mindmap_adornments = adornments
       }
     }
+    const attribution = readLlmExportAttribution(dataRecord)
+    if (attribution) {
+      spec[LLM_EXPORT_ATTRIBUTION_KEY] = attribution
+    }
     return spec
   }
 
@@ -676,6 +685,14 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       }
     }
 
+    const hadRemoteEdit =
+      Boolean(updatedNodes?.length) ||
+      Boolean(updatedConnections?.length) ||
+      Boolean(deletedNodeIds?.length) ||
+      Boolean(deletedConnectionIds?.length)
+    if (hadRemoteEdit) {
+      clearLlmExportAttribution(ctx.data.value as Record<string, unknown>)
+    }
     return true
   }
 

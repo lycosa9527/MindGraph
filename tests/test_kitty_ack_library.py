@@ -387,18 +387,23 @@ async def test_emit_user_ack_sends_text_chunk() -> None:
 
 
 @pytest.mark.asyncio
-async def test_emit_user_ack_progress_also_speaks() -> None:
-    """Progress acks speak in parallel with chat text."""
+async def test_emit_user_ack_progress_is_thinking_only() -> None:
+    """Progress acks stay in thinking — no TTS and no chat text_chunk."""
     ws = MagicMock()
     speak_mock = AsyncMock()
     send_mock = AsyncMock(return_value=True)
+    persist_mock = AsyncMock()
     with (
         patch("services.kitty.ack.ack_emit.safe_websocket_send", send_mock),
         patch("services.kitty.ack.ack_emit.speak_kitty_final_reply", speak_mock),
         patch(
             "services.kitty.ack.ack_emit.persist_one_sentence_turn_from_voice_session",
-            new=AsyncMock(),
+            persist_mock,
         ),
+        patch(
+            "services.kitty.ack.ack_emit.fanout_voice_phase_from_session",
+            new=AsyncMock(),
+        ) as phase_mock,
     ):
         await emit_user_ack(
             ws,
@@ -407,11 +412,13 @@ async def test_emit_user_ack_progress_also_speaks() -> None:
             reply_kind="progress",
         )
         await asyncio.sleep(0)
-    speak_mock.assert_awaited_once()
-    assert speak_mock.await_args is not None
-    assert speak_mock.await_args.args[2] == "好的，正在添加「品牌」分支…"
+    speak_mock.assert_not_awaited()
+    persist_mock.assert_not_awaited()
     progress_payload = mock_await_args(send_mock)[1]
+    assert progress_payload["type"] == "thinking"
     assert progress_payload["reply_kind"] == "progress"
+    phase_mock.assert_awaited()
+    assert mock_await_args(phase_mock)[1] == "thinking"
 
 
 @pytest.mark.asyncio

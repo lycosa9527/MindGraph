@@ -30,6 +30,7 @@ export interface UseMobileCanvasEventHandlersOptions {
   handleAIGenerate: (options?: {
     generationInstructions?: string
     topicOverride?: string
+    isLearningSheet?: boolean
   }) => void | Promise<void>
   handleConceptGeneration: () => void
   translate: (key: string, fallback?: string) => string
@@ -123,7 +124,7 @@ export function useMobileCanvasEventHandlers(
 
   eventBus.onWithOwner(
     'diagram:auto_complete_requested',
-    (data?: { source?: string; topic?: string; diagramType?: string }) => {
+    (data?: { source?: string; topic?: string; diagramType?: string; isLearningSheet?: boolean }) => {
       if (!authStore.isAuthenticated) {
         notifyWarning(translate('notification.signInToUse'))
         return
@@ -135,7 +136,12 @@ export function useMobileCanvasEventHandlers(
       }
       const topicOverride =
         typeof data?.topic === 'string' && data.topic.trim() !== '' ? data.topic.trim() : undefined
-      void Promise.resolve(handleAIGenerate({ topicOverride })).then(() => {
+      void Promise.resolve(
+        handleAIGenerate({
+          topicOverride,
+          isLearningSheet: data?.isLearningSheet === true,
+        })
+      ).then(() => {
         eventBus.emit('kitty:auto_complete_observe', {
           status: 'finished',
           action: 'auto_complete',

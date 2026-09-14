@@ -6,6 +6,7 @@ import {
   choicesFromCommandDetail,
   parseNumberedClarifyChoices,
   resolveMessageClarifyChoices,
+  retainInFlightThinkingRows,
 } from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
 import type { OneSentenceChatMessage } from '@/stores/oneSentence'
 
@@ -168,6 +169,16 @@ describe('applyClarifyChoicesOnHydrate', () => {
     const hydrated = [kitty('turn-k', '1) 改主题\n2) 添加分支')]
     const next = applyClarifyChoicesOnHydrate(hydrated, live)
     expect(next[0]?.choicesConsumed).toBe(true)
+  })
+})
+
+describe('retainInFlightThinkingRows', () => {
+  it('appends a live thinking bubble after durable hydrate rows', () => {
+    const previous = [kitty('think', '正在思考…', { thinking: true })]
+    const hydrated = [user('u1', '加分支')]
+    const next = retainInFlightThinkingRows(hydrated, previous)
+    expect(next.map((row) => row.id)).toEqual(['u1', 'think'])
+    expect(next[1]?.thinking).toBe(true)
   })
 })
 

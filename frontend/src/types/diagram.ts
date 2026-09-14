@@ -218,6 +218,11 @@ export interface DiagramData {
   _mindmap_adornments?: MindMapAdornmentsByPath
   /** Custom positions set by user dragging (distinct from auto-layout) */
   _customPositions?: Record<string, Position>
+  /**
+   * Untouched LLM generation credit for PNG watermark (model + audience).
+   * Cleared on the first user edit.
+   */
+  _llm_export_attribution?: { model: string; level: string }
   /** Index signature for dynamic property access (e.g., 'attributes', 'steps', etc.) */
   [key: string]: unknown
 }

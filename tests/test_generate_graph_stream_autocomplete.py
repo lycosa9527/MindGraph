@@ -299,3 +299,28 @@ def test_build_workflow_kwargs_forwards_generation_instructions() -> None:
     kwargs = _build_workflow_kwargs(req, prepared)
     assert kwargs["expand_branch"] == "光反应"
     assert kwargs["generation_instructions"] == "请按「小学」专业程度生成内容。"
+    assert kwargs["is_learning_sheet"] is None
+
+
+def test_build_workflow_kwargs_forwards_learning_sheet_flag() -> None:
+    """Gallery prepare must keep is_learning_sheet after 半成品 is stripped."""
+    req = GenerateRequest.model_validate(
+        {
+            "prompt": "茶叶",
+            "diagram_type": DiagramType.MIND_MAP,
+            "language": "zh",
+            "llm": LLMModel.QWEN,
+        }
+    )
+    prepared = {
+        "prompt": "茶叶",
+        "language": "zh",
+        "llm_model": "qwen",
+        "user_id": 3,
+        "organization_id": None,
+        "request_type": "diagram_generation",
+        "endpoint_path": "/api/generate_graph",
+        "is_learning_sheet": True,
+    }
+    kwargs = _build_workflow_kwargs(req, prepared)
+    assert kwargs["is_learning_sheet"] is True

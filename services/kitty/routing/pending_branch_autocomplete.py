@@ -202,6 +202,8 @@ async def emit_auto_complete_branch(
     params: Dict[str, Any] = {"node_label": label}
     if isinstance(node_id, str) and node_id.strip():
         params["node_id"] = node_id.strip()
+    if silent_ack:
+        params["quiet_chat"] = True
     sent = await send_kitty_ws_action(
         websocket,
         voice_session_id,

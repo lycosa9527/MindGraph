@@ -74,6 +74,23 @@ describe('useOneSentenceStore', () => {
     )
   })
 
+  it('keeps an in-flight thinking bubble when hydrate replaces durable rows', () => {
+    const store = useOneSentenceStore()
+    store.pushMessage('kitty', '正在思考…', true, { thinking: true })
+
+    store.hydrateFromTurns([
+      {
+        turn_id: 'u1',
+        role: 'user',
+        content: '加分支',
+        request_id: 'req-1',
+      },
+    ])
+
+    expect(store.messages.some((row) => row.thinking)).toBe(true)
+    expect(store.messages.at(-1)?.text).toBe('正在思考…')
+  })
+
   it('attaches numbered clarify chips when hydrating the latest kitty turn', () => {
     const store = useOneSentenceStore()
     store.hydrateFromTurns([

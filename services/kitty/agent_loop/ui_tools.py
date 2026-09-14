@@ -251,7 +251,13 @@ def ui_tool_call_to_command(name: str, arguments_json: str) -> Dict[str, Any]:
         return {"action": "select_node", "target": ident, "confidence": 0.95}
 
     if name == "auto_complete":
-        return {"action": "auto_complete", "confidence": 0.95}
+        cmd = {"action": "auto_complete", "confidence": 0.95}
+        topic = args.get("topic")
+        if isinstance(topic, str) and topic.strip():
+            cmd["topic"] = topic.strip()
+        if args.get("is_learning_sheet") is True:
+            cmd["is_learning_sheet"] = True
+        return cmd
 
     if name == "start_inline_recommendations":
         ident = args.get("node_identifier") or args.get("target")

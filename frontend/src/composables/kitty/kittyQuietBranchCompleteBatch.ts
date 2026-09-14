@@ -78,7 +78,10 @@ export function beginQuietBranchComplete(): void {
  * When the wave finishes, emits one short chat summary (not the fill content).
  */
 export function endQuietBranchComplete(ok: boolean): void {
-  inflight = Math.max(0, inflight - 1)
+  if (inflight <= 0) {
+    return
+  }
+  inflight -= 1
   if (ok) {
     successCount += 1
   } else {

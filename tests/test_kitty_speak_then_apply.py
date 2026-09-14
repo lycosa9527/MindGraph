@@ -1,4 +1,4 @@
-"""Speak the office line before the canvas apply; fail replaces speech."""
+"""Apply first, then speak the office line; fail speaks only the fail ack."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ import pytest
 from services.agent_hub.diagram_spine.types import DiagramCommandResult
 from services.diagram_edit.types import ToolResult
 from services.kitty.agent_loop.loop import run_typed_agent_loop
+from services.kitty.agent_loop.tools import dispatch_prepared_command
 from services.kitty.routing.outcomes import RouteOutcome
 from services.kitty.session.ops import create_voice_session
 from services.kitty.session.runtime_state import voice_sessions
@@ -104,18 +105,62 @@ async def _run_center_turn(
 
 
 @pytest.mark.asyncio
-async def test_speak_then_apply_success_one_ack() -> None:
-    """Commit line is spoken before apply; success does not speak again."""
+async def test_apply_then_speak_success_one_ack() -> None:
+    """Canvas apply finishes first; one job-done ack follows."""
     order: list[str] = []
     outcome = await _run_center_turn(bus_result=_applied_result(), order=order)
     assert outcome == RouteOutcome.EXECUTED
-    assert order == ["ack", "apply"]
+    assert order == ["apply", "ack"]
 
 
 @pytest.mark.asyncio
-async def test_speak_then_apply_fail_interrupts() -> None:
-    """Failed apply cuts the commit line and speaks a fail ack."""
+async def test_apply_then_speak_fail_interrupts() -> None:
+    """Failed apply speaks a fail ack and does not claim success."""
     order: list[str] = []
     outcome = await _run_center_turn(bus_result=_failed_result(), order=order)
     assert outcome == RouteOutcome.FAILED
-    assert order == ["ack", "apply", "interrupt", "ack"]
+    assert order == ["apply", "interrupt", "ack"]
+
+
+@pytest.mark.asyncio
+async def test_stacked_topic_and_fill_ack_is_progress() -> None:
+    """改主题并补完 stays in the thinking bubble until generate finishes."""
+    context = _edit_context()
+    ws = MagicMock()
+    vid = create_voice_session(
+        user_id="1",
+        diagram_session_id="scope-stacked-progress",
+        diagram_type="mind_map",
+    )
+    voice_sessions[vid]["context"] = context
+    voice_sessions[vid]["active_panel"] = "one_sentence"
+    ack_kwargs: dict = {}
+
+    async def emit_ack(*_args, **kwargs):
+        ack_kwargs.update(kwargs)
+        return True
+
+    try:
+        with (
+            patch(
+                "services.kitty.agent_loop.tools.apply_kitty_legacy_diagram_command",
+                new=AsyncMock(return_value=_applied_result()),
+            ),
+            patch("services.kitty.agent_loop.tools.emit_user_ack", emit_ack),
+            patch(
+                "services.kitty.agent_loop.tools.maybe_start_background_branch_autocomplete",
+                new=AsyncMock(return_value=False),
+            ),
+        ):
+            await dispatch_prepared_command(
+                ws,
+                vid,
+                command={"action": "update_center", "target": "中国高等教育", "confidence": 0.95},
+                session_context=context,
+                diagram_type="mind_map",
+                command_text="主题改成中国高等教育并补完",
+                verify_required=True,
+            )
+        assert ack_kwargs.get("reply_kind") == "progress"
+    finally:
+        voice_sessions.pop(vid, None)

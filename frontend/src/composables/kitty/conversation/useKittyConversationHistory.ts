@@ -6,6 +6,7 @@ import { type Ref, ref } from 'vue'
 import {
   applyClarifyChoicesOnHydrate,
   choicesFromCommandDetail,
+  retainInFlightThinkingRows,
 } from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
 import {
   pickOneSentenceGenerateDone,
@@ -38,6 +39,7 @@ export function useKittyConversationHistory(options: {
   phase: Ref<OneSentencePhase> | { value: OneSentencePhase }
   /** When provided, use external messages (desktop oneSentence store). */
   messages?: Ref<OneSentenceChatMessage[]>
+  isCanvasJobOpen?: () => boolean
 }): {
   messages: Ref<OneSentenceChatMessage[]>
   sessionHydrated: Ref<boolean>
@@ -91,7 +93,7 @@ export function useKittyConversationHistory(options: {
   function pushKittyMessage(
     text: string,
     streaming = false,
-    extras?: { choices?: OneSentenceChatMessage['choices']; requestId?: string }
+    extras?: { choices?: OneSentenceChatMessage['choices']; requestId?: string; thinking?: boolean }
   ): string {
     const id = nextMessageId()
     const row: OneSentenceChatMessage = {
@@ -106,6 +108,9 @@ export function useKittyConversationHistory(options: {
     if (extras?.requestId?.trim()) {
       row.requestId = extras.requestId.trim()
     }
+    if (extras?.thinking) {
+      row.thinking = true
+    }
     messages.value = [...messages.value, row]
     scrollChatToBottom()
     return id
@@ -114,7 +119,6 @@ export function useKittyConversationHistory(options: {
   function replaceKittyMessage(messageId: string, text: string, streaming = false): void {
     const idx = messages.value.findIndex((m) => m.id === messageId)
     if (idx < 0) {
-      pushKittyMessage(text, streaming)
       return
     }
     const next = [...messages.value]
@@ -128,6 +132,7 @@ export function useKittyConversationHistory(options: {
     pushKittyMessage,
     replaceKittyMessage,
     scrollChatToBottom,
+    isCanvasJobOpen: options.isCanvasJobOpen,
   })
 
   function pushUserMessage(text: string, requestId: string): string {
@@ -214,7 +219,11 @@ export function useKittyConversationHistory(options: {
         ...(detailChoices.length >= 2 ? { choices: detailChoices } : {}),
       })
     }
-    messages.value = applyClarifyChoicesOnHydrate(rows, messages.value)
+    const previous = messages.value
+    messages.value = retainInFlightThinkingRows(
+      applyClarifyChoicesOnHydrate(rows, previous),
+      previous
+    )
     scrollChatToBottom()
   }
 
@@ -375,6 +384,13 @@ export function useKittyConversationHistory(options: {
   }
 
   function applyPeerTurn(turn: KittyConversationTurnPayload): boolean {
+    const requestId = turn.request_id?.trim() || ''
+    if (requestId && replyState.hasInFlightThinking()) {
+      const lastUser = [...messages.value].reverse().find((row) => row.role === 'user')
+      if (lastUser?.requestId === requestId) {
+        return false
+      }
+    }
     const next = mergeKittyConversationTurn(messages.value, turn, nextMessageId())
     if (next == null) {
       return false

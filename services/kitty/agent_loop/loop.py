@@ -7,7 +7,6 @@ Proprietary License
 
 from __future__ import annotations
 
-import re
 from typing import Any, Dict, List, Optional
 
 from fastapi import WebSocket
@@ -43,12 +42,16 @@ from services.kitty.agent_loop.messages import (
     extract_tool_calls,
 )
 from services.kitty.agent_loop.results import (
+    PENDING_AUTOCOMPLETE_KEY,
+    autocomplete_observation_is_stale,
     created_node_ids_from_payload,
     error_code_from_payload,
     finish_pending_autocomplete,
     should_keep_pending_autocomplete,
     summarize_payload_for_memory,
 )
+from services.kitty.agent_loop.fresh_diagram_generate import resolve_fresh_diagram_commands
+from services.kitty.agent_loop.stacked_progress import finalize_stacked_progress_if_idle
 from services.kitty.agent_loop.tools import (
     dispatch_loop_tool,
     dispatch_prepared_command,
@@ -69,6 +72,10 @@ from services.kitty.infra.redis.kitty_session_redis import (
 )
 from services.kitty.routing.node_action_library import render_diagram_snapshot_block
 from services.kitty.routing.outcomes import RouteOutcome, RouteResult
+from services.kitty.routing.stacked_job import (
+    JOB_JOIN_RE,
+    STACKED_JOB_RE,
+)
 from services.kitty.routing.one_sentence_edit_heuristics import (
     heuristic_one_sentence_edit_command,
     is_fast_explain_command,
@@ -95,14 +102,6 @@ AGENT_LOOP_MODEL = "qwen3.8-flash"
 MAX_TOOL_ROUNDS = 5
 _FAST_STRUCTURAL_ACTIONS = frozenset({"add_node", "delete_node", "update_node", "update_center"})
 _FAST_PREFERENCE_ACTIONS = frozenset({"set_content_level", "set_branch_numbering"})
-# Fast path is a skip-LLM gate only. Stacked jobs go to qwen3.8-flash.
-# Do not treat a leading 再加一个… as stacked — that is one add.
-_JOB_JOIN_RE = re.compile(
-    r"并且|，并|并自动|and then|, then|，再|，然后|"
-    r"(?:改成|换成|改为|变成|设为).{1,40}再"
-)
-_FILL_JOB_RE = re.compile(r"补全|补完|完善|填充|自动完成|完成这")
-_STACKED_JOB_RE = re.compile(rf"(?:{_JOB_JOIN_RE.pattern})|(?:{_FILL_JOB_RE.pattern})")
 
 
 def _is_fast_structural_command(command: Dict[str, Any], utterance: str = "") -> bool:
@@ -113,7 +112,7 @@ def _is_fast_structural_command(command: Dict[str, Any], utterance: str = "") ->
     follows = command.get("follow_up_actions")
     if isinstance(follows, list) and follows:
         return False
-    if utterance and _STACKED_JOB_RE.search(utterance):
+    if utterance and STACKED_JOB_RE.search(utterance):
         return False
     target = command.get("target")
     if not isinstance(target, str) or not target.strip():
@@ -129,7 +128,7 @@ def _is_fast_preference_command(command: Dict[str, Any], utterance: str = "") ->
     follows = command.get("follow_up_actions")
     if isinstance(follows, list) and follows:
         return False
-    if utterance and _STACKED_JOB_RE.search(utterance):
+    if utterance and STACKED_JOB_RE.search(utterance):
         return False
     if action == "set_content_level":
         return isinstance(command.get("level"), str) and bool(str(command.get("level")).strip())
@@ -276,6 +275,9 @@ def _record_pending_autocomplete_if_ready(
     live = voice_sessions.get(voice_session_id)
     if not isinstance(live, dict) or should_keep_pending_autocomplete(session_context):
         return
+    pending = live.get(PENDING_AUTOCOMPLETE_KEY)
+    if isinstance(pending, dict) and autocomplete_observation_is_stale(live, pending):
+        return
     payload = finish_pending_autocomplete(live)
     if payload is None:
         return
@@ -318,7 +320,7 @@ async def _last_resort_heuristic(
     diagram_type: str,
     verify_required: bool,
 ) -> Optional[RouteResult]:
-    if _JOB_JOIN_RE.search(command_text):
+    if JOB_JOIN_RE.search(command_text):
         return None
     heuristic = heuristic_one_sentence_edit_command(command_text)
     if heuristic is None:
@@ -498,6 +500,28 @@ async def run_typed_agent_loop(
     diagram_type = _diagram_type(voice_session_id, context)
     verify_required = is_mindmap_diagram_type(diagram_type)
     lang = resolve_voice_interaction_language(context)
+    fresh_commands = resolve_fresh_diagram_commands(text, context, lang)
+    if fresh_commands:
+        dispatched = None
+        for command in fresh_commands:
+            dispatched = await dispatch_prepared_command(
+                websocket,
+                voice_session_id,
+                command=command,
+                session_context=context,
+                diagram_type=diagram_type,
+                command_text=text,
+                verify_required=False,
+                grounding_source="fresh_diagram",
+            )
+        if dispatched is not None:
+            finished = _finish_heuristic_dispatch(
+                voice_session_id,
+                dispatched,
+                reason="fresh_diagram",
+            )
+            if finished is not None:
+                return finished
     if mode == "edit":
         heuristic = heuristic_one_sentence_edit_command(text)
         if heuristic is not None:
@@ -555,7 +579,7 @@ async def run_typed_agent_loop(
                 )
                 if finished is not None:
                     return finished
-            elif is_fast_explain_command(heuristic) and not _STACKED_JOB_RE.search(text):
+            elif is_fast_explain_command(heuristic) and not STACKED_JOB_RE.search(text):
                 dispatched = await dispatch_prepared_command(
                     websocket,
                     voice_session_id,
@@ -590,7 +614,7 @@ async def run_typed_agent_loop(
     )
     user_id, organization_id = _session_user_ids(voice_session_id)
     await fanout_voice_phase_from_session(voice_session_id, "thinking")
-    return await _run_loop_rounds(
+    result = await _run_loop_rounds(
         websocket,
         voice_session_id,
         text=text,
@@ -604,6 +628,8 @@ async def run_typed_agent_loop(
         user_id=user_id,
         organization_id=organization_id,
     )
+    await finalize_stacked_progress_if_idle(websocket, voice_session_id)
+    return result
 
 
 async def _run_loop_rounds(

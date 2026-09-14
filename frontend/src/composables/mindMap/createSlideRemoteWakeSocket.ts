@@ -43,6 +43,20 @@ export function createSlideRemoteWakeSocket(options: SlideRemoteWakeSocketOption
     }
   }
 
+  /** Drop handlers before ``close()`` so teardown / replace cannot re-enter ``onclose``. */
+  function detachSocket(): void {
+    const current = socket
+    socket = null
+    if (current == null) {
+      return
+    }
+    current.onerror = null
+    current.onopen = null
+    current.onmessage = null
+    current.onclose = null
+    current.close()
+  }
+
   function scheduleReconnect(): void {
     if (closed) {
       return
@@ -88,10 +102,7 @@ export function createSlideRemoteWakeSocket(options: SlideRemoteWakeSocketOption
     if (closed) {
       return
     }
-    if (socket != null) {
-      socket.close()
-      socket = null
-    }
+    detachSocket()
     socket = new WebSocket(buildSlideRemoteWakeWsUrl())
     socket.onopen = () => {
       retryCount = 0
@@ -104,6 +115,9 @@ export function createSlideRemoteWakeSocket(options: SlideRemoteWakeSocketOption
       /* onclose handles reconnect */
     }
     socket.onclose = () => {
+      if (closed) {
+        return
+      }
       socket = null
       options.onClose?.()
       scheduleReconnect()
@@ -115,10 +129,6 @@ export function createSlideRemoteWakeSocket(options: SlideRemoteWakeSocketOption
   return () => {
     closed = true
     clearRetryTimer()
-    if (socket != null) {
-      socket.close()
-      socket = null
-    }
-    options.onClose?.()
+    detachSocket()
   }
 }

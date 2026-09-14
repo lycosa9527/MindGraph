@@ -84,6 +84,10 @@ def _loop_patches(
         patch("services.kitty.agent_loop.compound.emit_user_ack", new=AsyncMock(return_value=True)),
         patch("services.kitty.agent_loop.tools.emit_user_ack", new=AsyncMock(return_value=True)),
         patch(
+            "services.kitty.agent_loop.stacked_progress.emit_user_ack",
+            new=AsyncMock(return_value=True),
+        ),
+        patch(
             "services.kitty.agent_loop.tools.interrupt_kitty_tts",
             interrupt if interrupt is not None else AsyncMock(),
         ),

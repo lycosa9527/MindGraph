@@ -15,9 +15,16 @@ from typing import Any, Dict
 from fastapi import WebSocket
 
 from services.kitty.ack.ack_emit import emit_user_ack
+from services.kitty.ack.ack_library import render_ack
 from services.kitty.agent_loop.loop import run_typed_agent_loop
-from services.kitty.agent_loop.results import finish_pending_autocomplete, summarize_payload_for_memory
+from services.diagram_edit.transport.kitty_ws import MULTI_STEP_SUPPRESS_DIAGRAM_CHAT_KEY
+from services.kitty.agent_loop.results import (
+    autocomplete_observation_is_stale,
+    finish_pending_autocomplete,
+    summarize_payload_for_memory,
+)
 from services.kitty.context.library_refresh import bump_voice_mutation_freshness
+from services.kitty.context.messaging import resolve_voice_interaction_language
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.kitty.routing.outcomes import RouteOutcome
 from services.kitty.session.events import (
@@ -70,15 +77,19 @@ async def setup_session_event_handlers(runtime: KittySessionRuntime) -> SessionE
             if sess is not None:
                 sess["_last_context_update_mono"] = time.monotonic()
         elif event.kind == "auto_complete_done":
-            _record_auto_complete_done(runtime.voice_session_id, event.payload)
+            await _record_auto_complete_done(runtime, event.payload)
 
     bus.add_handler(_on_event)
     await bus.start()
     return bus
 
 
-def _record_auto_complete_done(voice_session_id: str, payload: Dict[str, Any]) -> None:
+async def _record_auto_complete_done(
+    runtime: KittySessionRuntime,
+    payload: Dict[str, Any],
+) -> None:
     """Second generate observation when the canvas reports fill finished or failed."""
+    voice_session_id = runtime.voice_session_id
     session = voice_sessions.get(voice_session_id)
     status_raw = payload.get("status")
     status = status_raw.strip() if isinstance(status_raw, str) else "finished"
@@ -98,6 +109,43 @@ def _record_auto_complete_done(voice_session_id: str, payload: Dict[str, Any]) -
     get_session_memory(voice_session_id).append_observation(
         summarize_payload_for_memory(observation, action=action),
         action=action,
+    )
+    await _speak_auto_complete_done(runtime, observation)
+
+
+async def _speak_auto_complete_done(
+    runtime: KittySessionRuntime,
+    observation: Dict[str, Any],
+) -> None:
+    """Speak one job-done line after an armed auto-complete finishes."""
+    session = voice_sessions.get(runtime.voice_session_id)
+    live = session if isinstance(session, dict) else None
+    if live is not None:
+        live.pop(MULTI_STEP_SUPPRESS_DIAGRAM_CHAT_KEY, None)
+    if autocomplete_observation_is_stale(live, observation):
+        return
+    action = str(observation.get("action") or "auto_complete")
+    status = str(observation.get("status") or "")
+    context = live.get("context") if live is not None else {}
+    lang = resolve_voice_interaction_language(context if isinstance(context, dict) else {})
+    target_raw = observation.get("target")
+    target = target_raw.strip() if isinstance(target_raw, str) else ""
+    if status == "failed":
+        key = "diagram.branch_autocomplete.failed" if action == "auto_complete_branch" else "ui.auto_complete.failed"
+        outcome = "failed"
+    else:
+        key = "diagram.branch_autocomplete.done" if action == "auto_complete_branch" else "ui.auto_complete.done"
+        outcome = "executed"
+    slots = {"target": target} if target else {}
+    ack_text = render_ack(key, slots, lang=lang)
+    if not ack_text:
+        return
+    await emit_user_ack(
+        runtime.websocket,
+        runtime.voice_session_id,
+        ack_text,
+        one_sentence_action=action,
+        one_sentence_outcome=outcome,
     )
 
 
@@ -138,8 +186,11 @@ async def _handle_text_inbound(runtime: KittySessionRuntime, payload: Dict[str, 
     mem.append_user_turn(text, source="text")
 
     session = voice_sessions.get(runtime.voice_session_id) or {}
-    if request_id:
-        session["_one_sentence_request_id"] = request_id
+    if isinstance(session, dict):
+        if request_id:
+            session["_one_sentence_request_id"] = request_id
+        else:
+            session.pop("_one_sentence_request_id", None)
     session_context = dict(session.get("context") or {})
     ctx_phase = str(session_context.get("one_sentence_phase") or "").strip()
     user_phase = ctx_phase if ctx_phase in ("create", "edit") else "edit"

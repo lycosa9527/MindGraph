@@ -1,10 +1,11 @@
 /**
  * One-sentence Kitty chat reply state — decoupled from diagram mutations.
- * Structural success replies come from verified diagram events; progress from text_chunk.
+ * Thinking/progress is one ephemeral bubble; the final reply replaces it.
  */
 import type { Ref } from 'vue'
 
 import { resolveClarifyChoices } from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
+import { shouldPromoteKittyReplyToResponse } from '@/composables/kitty/kittyJobStatus'
 import type {
   OneSentenceChatMessage,
   OneSentenceClarifyChoice,
@@ -20,19 +21,31 @@ export type OneSentenceReplyPayload = {
   requestId?: string
 }
 
+export type OneSentencePushExtras = {
+  choices?: OneSentenceClarifyChoice[]
+  requestId?: string
+  thinking?: boolean
+}
+
 export function createOneSentenceReplyState(options: {
   messages: Ref<OneSentenceChatMessage[]>
   pushKittyMessage: (
     text: string,
     streaming?: boolean,
-    extras?: { choices?: OneSentenceClarifyChoice[]; requestId?: string }
+    extras?: OneSentencePushExtras
   ) => string
   replaceKittyMessage: (messageId: string, text: string, streaming?: boolean) => void
   scrollChatToBottom: () => void
+  isCanvasJobOpen?: () => boolean
 }) {
   let lastFinalReplyText = ''
   let streamingMessageId: string | null = null
-  let progressMessageId: string | null = null
+  let thinkingMessageId: string | null = null
+  let pendingFinal: {
+    text: string
+    choices?: OneSentenceClarifyChoice[]
+    requestId?: string
+  } | null = null
 
   function consumeOpenChoices(): void {
     const rows = options.messages.value
@@ -46,34 +59,60 @@ export function createOneSentenceReplyState(options: {
     )
   }
 
-  function finalizeConversationalStream(): void {
-    if (!streamingMessageId) {
-      return
+  function resolveThinkingMessageId(): string | null {
+    if (thinkingMessageId && options.messages.value.some((row) => row.id === thinkingMessageId)) {
+      return thinkingMessageId
     }
-    const idx = options.messages.value.findIndex((m) => m.id === streamingMessageId)
-    if (idx >= 0) {
-      const next = [...options.messages.value]
-      next[idx] = { ...next[idx], streaming: false }
-      options.messages.value = next
-    }
-    streamingMessageId = null
+    const leftover = options.messages.value.find((row) => row.thinking)
+    thinkingMessageId = leftover?.id ?? null
+    return thinkingMessageId
   }
 
-  function clearProgressMessage(): void {
-    progressMessageId = null
+  function removeThinkingMessage(): void {
+    resolveThinkingMessageId()
+    const id = thinkingMessageId
+    thinkingMessageId = null
+    if (!options.messages.value.some((row) => row.thinking || row.id === id)) {
+      return
+    }
+    options.messages.value = options.messages.value.filter(
+      (row) => !row.thinking && row.id !== id
+    )
+  }
+
+  function finalizeConversationalStream(): void {
+    const rows = options.messages.value
+    if (rows.some((row) => row.streaming && !row.thinking)) {
+      options.messages.value = rows.map((row) =>
+        row.streaming && !row.thinking ? { ...row, streaming: false } : row
+      )
+    }
+    streamingMessageId = null
   }
 
   function showFinalReply(
     text: string,
     choices?: OneSentenceClarifyChoice[],
-    requestId?: string
-  ): void {
+    requestId?: string,
+    action?: string
+  ): boolean {
     const trimmed = text.trim()
     if (trimmed === '') {
-      return
+      return false
     }
+    if (
+      !shouldPromoteKittyReplyToResponse({
+        replyKind: 'final',
+        action,
+        canvasGenerating: options.isCanvasJobOpen?.() === true,
+      })
+    ) {
+      pendingFinal = { text: trimmed, choices, requestId }
+      return false
+    }
+    pendingFinal = null
+    removeThinkingMessage()
     finalizeConversationalStream()
-    clearProgressMessage()
     const resolved = resolveClarifyChoices(choices, trimmed)
     const rid = requestId?.trim() || undefined
     const last = options.messages.value[options.messages.value.length - 1]
@@ -89,10 +128,10 @@ export function createOneSentenceReplyState(options: {
         }
         options.messages.value = next
       }
-      return
+      return true
     }
     if (trimmed === lastFinalReplyText && !resolved?.length) {
-      return
+      return true
     }
     consumeOpenChoices()
     options.pushKittyMessage(trimmed, false, {
@@ -100,6 +139,7 @@ export function createOneSentenceReplyState(options: {
       ...(rid ? { requestId: rid } : {}),
     })
     lastFinalReplyText = trimmed
+    return true
   }
 
   function showProgressReply(text: string): void {
@@ -108,67 +148,59 @@ export function createOneSentenceReplyState(options: {
       return
     }
     finalizeConversationalStream()
-    if (progressMessageId) {
-      options.replaceKittyMessage(progressMessageId, trimmed, false)
+    const existingId = resolveThinkingMessageId()
+    if (existingId) {
+      options.replaceKittyMessage(existingId, trimmed, true)
       return
     }
-    progressMessageId = options.pushKittyMessage(trimmed, false)
+    thinkingMessageId = options.pushKittyMessage(trimmed, true, { thinking: true })
   }
 
-  function appendConversationalStream(chunk: string): void {
-    const piece = chunk.trim()
-    if (piece === '') {
-      return
-    }
-    clearProgressMessage()
-
-    if (!streamingMessageId) {
-      streamingMessageId = options.pushKittyMessage(piece, true)
-      return
-    }
-
-    const idx = options.messages.value.findIndex((m) => m.id === streamingMessageId)
-    if (idx < 0) {
-      streamingMessageId = options.pushKittyMessage(piece, true)
-      return
-    }
-
-    const row = options.messages.value[idx]
-    const merged = `${row.text}${chunk}`
-    const next = [...options.messages.value]
-    next[idx] = { ...row, text: merged, streaming: true }
-    options.messages.value = next
-    options.scrollChatToBottom()
-  }
-
-  function handleReplyPayload(payload: OneSentenceReplyPayload): void {
+  function handleReplyPayload(payload: OneSentenceReplyPayload): boolean {
     const trimmed = payload.text.trim()
     if (trimmed === '') {
-      return
+      return false
     }
     if (payload.kind === 'progress') {
       showProgressReply(trimmed)
-      return
+      return false
     }
-    if (payload.kind === 'conversational') {
-      appendConversationalStream(trimmed)
-      return
-    }
-    showFinalReply(trimmed, payload.choices, payload.requestId)
+    return showFinalReply(trimmed, payload.choices, payload.requestId, payload.action)
   }
 
   function resetForNewTurn(): void {
     lastFinalReplyText = ''
-    clearProgressMessage()
+    pendingFinal = null
+    removeThinkingMessage()
     finalizeConversationalStream()
     consumeOpenChoices()
+  }
+
+  function flushWhenCanvasIdle(): void {
+    if (options.isCanvasJobOpen?.() === true || pendingFinal == null) {
+      return
+    }
+    if (resolveThinkingMessageId()) {
+      pendingFinal = null
+      return
+    }
+    const held = pendingFinal
+    pendingFinal = null
+    showFinalReply(held.text, held.choices, held.requestId)
+  }
+
+  function hasInFlightThinking(): boolean {
+    return resolveThinkingMessageId() != null
   }
 
   return {
     handleReplyPayload,
     showFinalReply,
+    showProgressReply,
     finalizeConversationalStream,
     resetForNewTurn,
     consumeOpenChoices,
+    hasInFlightThinking,
+    flushWhenCanvasIdle,
   }
 }

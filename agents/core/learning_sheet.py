@@ -15,7 +15,7 @@ import re
 logger = logging.getLogger(__name__)
 
 
-def _detect_learning_sheet_from_prompt(user_prompt: str, language: str = "zh") -> bool:
+def detect_learning_sheet_from_prompt(user_prompt: str, language: str = "zh") -> bool:
     """
     Detect if the prompt is requesting a learning sheet.
 
@@ -38,7 +38,7 @@ def _detect_learning_sheet_from_prompt(user_prompt: str, language: str = "zh") -
     return is_learning_sheet
 
 
-def _clean_prompt_for_learning_sheet(user_prompt: str) -> str:
+def clean_prompt_for_learning_sheet(user_prompt: str) -> str:
     """
     Remove learning sheet keywords from prompt so LLM generates actual content.
 

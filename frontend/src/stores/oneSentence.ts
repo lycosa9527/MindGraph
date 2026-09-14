@@ -8,6 +8,7 @@ import { defineStore } from 'pinia'
 import {
   applyClarifyChoicesOnHydrate,
   choicesFromCommandDetail,
+  retainInFlightThinkingRows,
 } from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
 import { eventBus } from '@/composables/core/useEventBus'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
@@ -27,6 +28,8 @@ export type OneSentenceChatMessage = {
   role: OneSentenceChatRole
   text: string
   streaming?: boolean
+  /** In-flight thinking bubble — removed when the final reply arrives. */
+  thinking?: boolean
   choices?: OneSentenceClarifyChoice[]
   /** True after the user picks or a newer turn starts. */
   choicesConsumed?: boolean
@@ -140,6 +143,7 @@ export const useOneSentenceStore = defineStore('oneSentence', () => {
       choices?: OneSentenceClarifyChoice[]
       requestId?: string
       status?: OneSentenceRequestStatus
+      thinking?: boolean
     }
   ): string {
     const id = nextMessageId()
@@ -152,6 +156,9 @@ export const useOneSentenceStore = defineStore('oneSentence', () => {
     }
     if (extras?.status) {
       row.status = extras.status
+    }
+    if (extras?.thinking) {
+      row.thinking = true
     }
     messages.value = [...messages.value, row]
     scrollHint()
@@ -166,10 +173,6 @@ export const useOneSentenceStore = defineStore('oneSentence', () => {
   ): void {
     const idx = messages.value.findIndex((m) => m.id === messageId)
     if (idx < 0) {
-      pushMessage('kitty', text, streaming, {
-        choices: extras?.choices,
-        status: extras?.status,
-      })
       return
     }
     const next = [...messages.value]
@@ -397,7 +400,11 @@ export const useOneSentenceStore = defineStore('oneSentence', () => {
       }
     }
 
-    messages.value = applyClarifyChoicesOnHydrate(rows, messages.value)
+    const previous = messages.value
+    messages.value = retainInFlightThinkingRows(
+      applyClarifyChoicesOnHydrate(rows, previous),
+      previous
+    )
     requests.value = nextRequests
     busyQueue.value = []
     activeRequestId.value = null
