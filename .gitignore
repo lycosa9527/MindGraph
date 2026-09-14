@@ -261,9 +261,14 @@ services/knowledge/rag_chunk_test/rag-test/
 frontend/tests/fixtures/pg_mindmaps/
 
 # ESP32 / Brookesia — track source under esp32/; ignore toolchain output
+# Push: firmware/1.85c/main, round_ui, boards/, apps/kitty/src, littlefs/kitty stills,
+#       sdkconfig.defaults (shared). Never push sdkconfig.defaults.local (Wi-Fi + mgat_).
 esp32/**/dist/
 esp32/**/build/
 esp32/**/managed_components/
+esp32/firmware/**/components/gen_bmgr_codes/
+esp32/firmware/**/littlefs/apps/
+esp32/firmware/**/littlefs/system/
 esp32/**/.cache/
 esp32/**/.brookesia/
 esp32/**/sdkconfig

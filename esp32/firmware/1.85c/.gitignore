@@ -1,2 +1,6 @@
+# Staged by round_ui/apply_round_ui.py from tracked round_ui/ + littlefs/kitty stills
 littlefs/apps/*
 littlefs/system/*
+
+# IDF board-manager codegen (idf.py gen-bmgr-config). Do not commit.
+components/gen_bmgr_codes/
