@@ -1,5 +1,5 @@
 /**
- * App-wide training snapshot listener (SSE doorbell + GET, poll fallback).
+ * App-wide training snapshot listener (SSE doorbell + GET).
  */
 import { onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -27,10 +27,6 @@ import {
 } from './applyTrainingSnapshot'
 import { applyTrainingUiTarget } from './applyTrainingUiTarget'
 
-const POLL_MS = 2000
-const POLL_MAX_MS = 15000
-const ACTIVITY_MS = 10000
-
 export function useTrainingFollow(): void {
   const authStore = useAuthStore()
   const flags = useFeatureFlagsStore()
@@ -40,10 +36,6 @@ export function useTrainingFollow(): void {
 
   let source: EventSource | null = null
   let sourceUrl: string | null = null
-  let pollTimer: ReturnType<typeof setTimeout> | null = null
-  let activityTimer: ReturnType<typeof setInterval> | null = null
-  let pollFallback = false
-  let pollDelay = POLL_MS
   let pullChain: Promise<void> = Promise.resolve()
   let pullQueued = false
   let activityInFlight = false
@@ -86,6 +78,10 @@ export function useTrainingFollow(): void {
 
   async function runPullCommand(): Promise<void> {
     if (!canRun() || !canOpenEvents()) return
+    if (authStore.isPlatformLevel && resolveOrgId() == null) {
+      await training.hydrateHostedSession()
+      return
+    }
     const orgId = resolveOrgId()
     const result = await fetchTrainingCommand(orgId, training.commandEtag)
     if (result.etag) training.setCommandEtag(result.etag)
@@ -148,7 +144,6 @@ export function useTrainingFollow(): void {
 
   function openSource(): void {
     if (typeof EventSource === 'undefined') {
-      pollFallback = true
       return
     }
     const url = trainingEventsUrl(resolveOrgId(), authStore.isPlatformLevel)
@@ -156,6 +151,10 @@ export function useTrainingFollow(): void {
     closeSource()
     const next = new EventSource(url)
     sourceUrl = url
+    let errorHydrated = false
+    next.onopen = () => {
+      errorHydrated = false
+    }
     next.addEventListener('seq', () => {
       void pullCommand()
     })
@@ -167,56 +166,25 @@ export function useTrainingFollow(): void {
       requestTrainingRosterInvalidate()
     })
     next.onerror = () => {
-      pollFallback = true
-      closeSource()
-      startPolling()
+      if (errorHydrated) return
+      errorHydrated = true
+      void pullCommand()
     }
     source = next
   }
 
-  function startPolling(): void {
-    if (pollTimer != null) return
-    const tick = (): void => {
-      if (pollFallback) {
-        void pullCommand()
-      }
-      pollDelay = Math.min(pollDelay * 2, POLL_MAX_MS)
-      pollTimer = window.setTimeout(tick, pollDelay)
-    }
-    pollTimer = window.setTimeout(tick, pollDelay)
-  }
-
-  function stopPolling(): void {
-    if (pollTimer != null) {
-      window.clearTimeout(pollTimer)
-      pollTimer = null
-    }
-    pollDelay = POLL_MS
-  }
-
-  function startActivity(): void {
-    if (activityTimer != null || !authStore.isTeacher) return
+  function sendActivity(): void {
+    if (!authStore.isTeacher) return
     if (isTrainingRemotePath(route.path)) return
-    const send = (): void => {
-      if (activityInFlight) return
-      activityInFlight = true
-      void postTrainingActivity({
-        diagram_type: training.snapshot.diagram_type,
-        page_key: trainingActivityPageKey(route.path, training.snapshot),
-        generate_state: 'idle',
-      }).finally(() => {
-        activityInFlight = false
-      })
-    }
-    send()
-    activityTimer = setInterval(send, ACTIVITY_MS)
-  }
-
-  function stopActivity(): void {
-    if (activityTimer != null) {
-      clearInterval(activityTimer)
-      activityTimer = null
-    }
+    if (activityInFlight) return
+    activityInFlight = true
+    void postTrainingActivity({
+      diagram_type: training.snapshot.diagram_type,
+      page_key: trainingActivityPageKey(route.path, training.snapshot),
+      generate_state: 'idle',
+    }).finally(() => {
+      activityInFlight = false
+    })
   }
 
   function connect(): void {
@@ -224,38 +192,23 @@ export function useTrainingFollow(): void {
       disconnect()
       return
     }
-    const url = trainingEventsUrl(resolveOrgId(), authStore.isPlatformLevel)
-    if (typeof EventSource === 'undefined') {
-      pollFallback = true
-    } else if (sourceUrl !== url) {
-      pollFallback = false
-      stopPolling()
-    }
     void pullCommand()
-    if (pollFallback) {
-      startPolling()
-    } else {
-      openSource()
-    }
-    stopActivity()
-    startActivity()
+    openSource()
+    sendActivity()
   }
 
   function disconnect(): void {
     closeSource()
-    stopPolling()
-    stopActivity()
   }
 
   function onVisibility(): void {
     if (document.visibilityState !== 'visible') return
     if (!canRun() || !canOpenEvents()) return
-    if (pollFallback && typeof EventSource !== 'undefined') {
-      pollFallback = false
-      stopPolling()
+    if (source == null) {
       openSource()
     }
     void pullCommand()
+    sendActivity()
   }
 
   watch(
@@ -272,8 +225,7 @@ export function useTrainingFollow(): void {
   watch(
     () => route.path,
     () => {
-      stopActivity()
-      startActivity()
+      sendActivity()
     }
   )
 

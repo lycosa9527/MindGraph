@@ -78,6 +78,8 @@ def _document_to_response(
     resolved_rag = rag_status or derive_document_rag_status(doc.status)
     extract_chars = metadata.get("extract_char_count")
     extract_char_count = int(extract_chars) if isinstance(extract_chars, int) else None
+    ingest_raw = metadata.get("ingest_source")
+    ingest_source = ingest_raw if isinstance(ingest_raw, str) else None
     return DocumentResponse(
         id=doc.id,
         file_name=doc.file_name,
@@ -93,6 +95,7 @@ def _document_to_response(
         rag_status=resolved_rag,
         wiki_status=wiki_status,
         extract_char_count=extract_char_count,
+        ingest_source=ingest_source,
         created_at=doc.created_at.isoformat(),
         updated_at=doc.updated_at.isoformat(),
     )

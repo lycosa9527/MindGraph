@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -18,6 +18,10 @@ async def test_resolve_mobile_bootstrap_prefers_fresher_focus_scope() -> None:
         patch(
             "services.kitty.infra.bootstrap.kitty_context_hydrate.get_kitty_desktop_focus_diagram",
             AsyncMock(return_value=("focus_scope", 200)),
+        ),
+        patch(
+            "services.kitty.infra.bootstrap.kitty_context_hydrate.has_kitty_canvas_owner_present",
+            AsyncMock(return_value=False),
         ),
         patch(
             "services.kitty.infra.bootstrap.kitty_context_hydrate.fetch_kitty_sessionmeta_for_user",
@@ -51,11 +55,15 @@ async def test_resolve_mobile_bootstrap_prefers_fresher_focus_scope() -> None:
 
 @pytest.mark.asyncio
 async def test_resolve_mobile_bootstrap_bare_focus_without_live_is_empty() -> None:
-    """Stale desktop_focus alone must not library-bind mobile when no live session."""
+    """Desktop_focus without a canvas-owner lease must not library-bind mobile."""
     with (
         patch(
             "services.kitty.infra.bootstrap.kitty_context_hydrate.get_kitty_desktop_focus_diagram",
             AsyncMock(return_value=("stale_focus_lib", 50)),
+        ),
+        patch(
+            "services.kitty.infra.bootstrap.kitty_context_hydrate.has_kitty_canvas_owner_present",
+            AsyncMock(return_value=False),
         ),
         patch(
             "services.kitty.infra.bootstrap.kitty_context_hydrate.fetch_kitty_sessionmeta_for_user",
@@ -77,6 +85,49 @@ async def test_resolve_mobile_bootstrap_bare_focus_without_live_is_empty() -> No
     assert out["desktop_focus"]["diagram_library_id"] == "stale_focus_lib"
     try_live.assert_awaited()
     merge_library.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_resolve_mobile_bootstrap_owner_present_without_live_binds_library() -> None:
+    """Open desktop canvas (canvas-owner WS lease) binds watch/mobile without live_spec."""
+    cache = MagicMock()
+    cache.get_diagram = AsyncMock(return_value={"id": "focus_lib"})
+    with (
+        patch(
+            "services.kitty.infra.bootstrap.kitty_context_hydrate.get_kitty_desktop_focus_diagram",
+            AsyncMock(return_value=("focus_lib", 1_700_000_000)),
+        ),
+        patch(
+            "services.kitty.infra.bootstrap.kitty_context_hydrate.has_kitty_canvas_owner_present",
+            AsyncMock(return_value=True),
+        ),
+        patch(
+            "services.kitty.infra.bootstrap.kitty_context_hydrate.fetch_kitty_sessionmeta_for_user",
+            AsyncMock(return_value=None),
+        ),
+        patch(
+            "services.kitty.infra.bootstrap.kitty_context_hydrate.try_build_context_from_live_spec",
+            AsyncMock(return_value=None),
+        ),
+        patch(
+            "services.kitty.infra.bootstrap.kitty_context_hydrate.merge_voice_context_with_library",
+            AsyncMock(
+                return_value=(
+                    {"diagram_data": {"children": [{"id": "n1"}]}, "diagram_type": "mindmap"},
+                    "mindmap",
+                    "none",
+                )
+            ),
+        ),
+        patch(
+            "services.kitty.infra.bootstrap.kitty_context_hydrate.get_diagram_cache",
+            return_value=cache,
+        ),
+    ):
+        out = await resolve_mobile_open_bootstrap(1)
+
+    assert out["source"] == "library"
+    assert out["recommended_scope"] == "focus_lib"
 
 
 @pytest.mark.asyncio

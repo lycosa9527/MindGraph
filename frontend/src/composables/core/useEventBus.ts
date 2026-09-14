@@ -133,7 +133,7 @@ export type EventTypes = {
     previousMode: 'legacy' | 'v2'
     newMode: 'legacy' | 'v2'
   }
-  'snapshot:requested': Record<string, never>
+  'snapshot:requested': { silent?: boolean }
   'snapshot:recall_requested': { versionNumber: number }
   'snapshot:delete_requested': { versionNumber: number }
   'snapshot:current_requested': Record<string, never>

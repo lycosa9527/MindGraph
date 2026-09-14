@@ -7,11 +7,13 @@ Proprietary License
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
+from services.features.training.connection_lease import refresh_user_connection_lease
 from services.features.training.payloads import snapshot_from_session
 from services.features.training.permissions import can_lead_any_training
 from services.features.training.session_store import get_instructor_pointer, get_session
@@ -32,6 +34,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 _PONG = json.dumps({"type": "pong"})
+_LEASE_SECONDS = 20.0
+
+
+async def _lease_while_socket_open(user_id: int) -> None:
+    """Refresh the hosted room without cancelling websocket.receive_text."""
+    while True:
+        await asyncio.sleep(_LEASE_SECONDS)
+        await refresh_user_connection_lease(user_id)
 
 
 async def _hosted_snapshot_frame(user_id: int) -> str:
@@ -76,6 +86,7 @@ async def training_remote_websocket(websocket: WebSocket) -> None:
     rate_limiter = WebsocketMessageRateLimiter(DEFAULT_MAX_WS_MESSAGES_PER_SECOND)
 
     async with ws_managed_session(websocket, user_id=user_id, endpoint="training-remote"):
+        lease_task = asyncio.create_task(_lease_while_socket_open(user_id))
         try:
             while True:
                 raw = await websocket.receive_text()
@@ -88,8 +99,11 @@ async def training_remote_websocket(websocket: WebSocket) -> None:
                 except json.JSONDecodeError:
                     continue
                 if str(data.get("type", "")) == "ping":
+                    await refresh_user_connection_lease(user_id)
                     await websocket.send_text(_PONG)
         except WebSocketDisconnect:
             logger.debug("[TrainingRemote] ws disconnected user=%s", user_id)
         finally:
+            lease_task.cancel()
+            await asyncio.gather(lease_task, return_exceptions=True)
             training_remote_ws_manager.disconnect(user_id, websocket)

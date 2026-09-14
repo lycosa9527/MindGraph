@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import time
 from unittest.mock import patch
 
@@ -15,7 +16,12 @@ from services.features.training.activity_store import (
 )
 from services.features.training.payloads import sanitize_activity_page_key
 from services.features.training.constants import EVENTS_CHANNEL
-from services.features.training.sse import format_sse, frame_from_payload, publish_event
+from services.features.training.sse import (
+    format_sse,
+    frame_from_payload,
+    frame_from_user_wake,
+    publish_event,
+)
 from tests.test_training_session_store import FakeRedis
 
 
@@ -133,3 +139,26 @@ def test_format_sse_ended_event() -> None:
     frame = format_sse("ended", {"seq": 12})
     assert frame.startswith("event: ended\n")
     assert '"seq":12' in frame
+
+
+def test_user_wake_snapshot_becomes_seq_doorbell() -> None:
+    """Watch/phone user-wake snapshots shrink to seq + org_id."""
+    raw = json.dumps(
+        {
+            "type": "training_snapshot",
+            "state": "live",
+            "seq": 4,
+            "org_id": 12,
+            "diagram_type": "circle_map",
+        }
+    )
+    frame = frame_from_user_wake(raw)
+    assert frame == format_sse("seq", {"seq": 4, "org_id": 12})
+    assert "diagram_type" not in (frame or "")
+
+
+def test_user_wake_ended_snapshot_uses_ended_event() -> None:
+    """Stop on desktop must doorbell the waiting phone."""
+    raw = json.dumps({"state": "ended", "seq": 9, "org_id": 3})
+    frame = frame_from_user_wake(raw)
+    assert frame == format_sse("ended", {"seq": 9, "org_id": 3})

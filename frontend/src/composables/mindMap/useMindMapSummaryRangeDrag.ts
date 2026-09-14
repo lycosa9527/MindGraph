@@ -5,7 +5,10 @@ import { type ComputedRef, type Ref, computed, toValue } from 'vue'
 
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
-import { siblingBoxesForSummary } from '@/stores/diagram/mindMapSummaryLayout'
+import {
+  type SummaryLiveNodeBox,
+  siblingBoxesForSummary,
+} from '@/stores/diagram/mindMapSummaryLayout'
 import type { MindMapSummarySpec } from '@/types'
 import { coveredPathsFromVerticalRange, sameMindMapSummaryPaths } from '@/utils/mindMapSummary'
 import { MINDMAP_SUMMARY_RANGE_PAD } from '@/utils/mindMapSummaryBrace'
@@ -74,6 +77,7 @@ export function useMindMapSummaryRangeDrag(options: {
   viewport: ComputedRef<{ x: number; y: number; zoom: number }>
   findRange: (summaryId: string) => SummaryRangeBox | null
   findSummary: (summaryId: string) => MindMapSummarySpec | undefined
+  liveById?: ComputedRef<ReadonlyMap<string, SummaryLiveNodeBox>>
 }) {
   const diagramStore = useDiagramSession()
   const rangeDrag = options.rangeDrag
@@ -121,7 +125,8 @@ export function useMindMapSummaryRangeDrag(options: {
       data.connections ?? [],
       summary,
       diagramStore.mindMapNodeWidths ?? {},
-      diagramStore.mindMapNodeHeights ?? {}
+      diagramStore.mindMapNodeHeights ?? {},
+      options.liveById?.value
     )
     if (slots.length === 0) return
     const dy = clientToCanvasY(event.clientY) - drag.startCanvasY

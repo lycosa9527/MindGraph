@@ -96,34 +96,19 @@ function presenceDotClass(sectionKey: string): string {
   return 'bg-stone-300'
 }
 
+function onRosterVisibility(): void {
+  if (document.visibilityState !== 'visible') return
+  if (!isPublicCollabSeminar.value || !props.sessionId) return
+  void refreshContacts()
+}
+
 onMounted(() => {
   void refreshContacts()
+  document.addEventListener('visibilitychange', onRosterVisibility)
 })
 
-let sessionRosterTimer: ReturnType<typeof setInterval> | null = null
-
-watch(
-  isPublicCollabSeminar,
-  (active) => {
-    if (sessionRosterTimer != null) {
-      clearInterval(sessionRosterTimer)
-      sessionRosterTimer = null
-    }
-    if (active) {
-      sessionRosterTimer = setInterval(() => {
-        if (props.sessionId) {
-          void refreshContacts()
-        }
-      }, 20_000)
-    }
-  },
-  { immediate: true },
-)
-
 onUnmounted(() => {
-  if (sessionRosterTimer != null) {
-    clearInterval(sessionRosterTimer)
-  }
+  document.removeEventListener('visibilitychange', onRosterVisibility)
 })
 
 watch(

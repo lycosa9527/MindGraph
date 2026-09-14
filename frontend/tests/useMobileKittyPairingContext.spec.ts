@@ -340,7 +340,7 @@ describe('useMobileKittyPairing one-sentence context', () => {
     expect(hydrateFromLibraryMock).toHaveBeenCalledWith('lib-diagram-2')
   })
 
-  it('ignores stale desktop_focus and does not follow', async () => {
+  it('does not follow a leftover desktop_focus that the hint never surfaced', async () => {
     const onFollow = vi.fn()
     const kitty = {
       isConnected: ref(true),
@@ -354,7 +354,6 @@ describe('useMobileKittyPairing one-sentence context', () => {
       })
     )
 
-    focusApi.setLibraryId('lib-diagram-stale', Math.floor(Date.now() / 1000) - 10_000)
     await new Promise((r) => setTimeout(r, 50))
     expect(onFollow).not.toHaveBeenCalled()
   })
@@ -467,6 +466,46 @@ describe('useMobileKittyPairing one-sentence context', () => {
     expect(kittyPairScopeWarning.value).toBeNull()
     expect(kittyPairScope.value).not.toBe('stale-lib')
     expect(kittyPairScope.value).not.toBe('lib-diagram-1')
+    expect(loadDefaultTemplateMock).toHaveBeenCalledWith('mindmap')
+  })
+
+  it('empty bootstrap with leftover desktop_focus stays ephemeral', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        recommended_scope: null,
+        desktop_focus: {
+          diagram_library_id: 'desktop-open-lib',
+          updated_at: Math.floor(Date.now() / 1000),
+          canvas_owner_present: false,
+        },
+        context: {
+          diagram_type: 'mindmap',
+          active_panel: 'none',
+          diagram_data: {},
+          selected_nodes: [],
+        },
+        diagram_type: 'mindmap',
+        active_panel: 'none',
+        source: 'empty',
+      }),
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const kitty = {
+      isConnected: ref(false),
+      updateContext: vi.fn(),
+    } as unknown as Parameters<typeof useMobileKittyPairing>[0]
+
+    const { ensureMobileKittyBootstrap } = scope.run(() =>
+      useMobileKittyPairing(kitty, {
+        kittyServerEnabled: computed(() => true),
+      })
+    )!
+
+    await ensureMobileKittyBootstrap()
+    expect(setActiveDiagramMock).not.toHaveBeenCalledWith('desktop-open-lib')
+    expect(hydrateFromLibraryMock).not.toHaveBeenCalledWith('desktop-open-lib')
     expect(loadDefaultTemplateMock).toHaveBeenCalledWith('mindmap')
   })
 

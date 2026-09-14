@@ -25,8 +25,6 @@ import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composa
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { authFetch } from '@/utils/api'
 
-const ORG_REFRESH_INTERVAL_MS = 30_000
-
 const { t } = useLanguage()
 const notify = useNotifications()
 const { canUseOnlineCollab } = useSchoolTierFeatures()
@@ -36,7 +34,6 @@ const collabPopoverVisible = ref(false)
 const collabPanelMode = ref<'organization' | 'network'>('network')
 
 // ── Org sessions ──────────────────────────────────────────────────────────
-let orgRefreshTimer: ReturnType<typeof setInterval> | null = null
 const orgSessionsLoading = ref(false)
 const orgSessions = ref<
   Array<{
@@ -145,21 +142,16 @@ async function fetchOrgSessions(showLoadingSpinner = true) {
   }
 }
 
-function stopOrgRefresh() {
-  if (orgRefreshTimer !== null) {
-    clearInterval(orgRefreshTimer)
-    orgRefreshTimer = null
-  }
+function onOrgVisibility(): void {
+  if (document.visibilityState !== 'visible') return
+  if (!collabPopoverVisible.value || collabPanelMode.value !== 'organization') return
+  void fetchOrgSessions(false)
 }
 
 async function openOrgPanel() {
   collabPanelMode.value = 'organization'
   orgSessions.value = []
   await fetchOrgSessions(true)
-  stopOrgRefresh()
-  orgRefreshTimer = setInterval(() => {
-    void fetchOrgSessions(false)
-  }, ORG_REFRESH_INTERVAL_MS)
 }
 
 async function joinOrgSession(session: { diagram_id: string }) {
@@ -202,7 +194,6 @@ function onCollabDropdownCommand(command: string) {
 
 function closeCollabPopover() {
   collabPopoverVisible.value = false
-  stopOrgRefresh()
 }
 
 /**
@@ -220,12 +211,13 @@ function prefillAndAutoJoin(rawCode: string) {
   }, 500)
 }
 
+document.addEventListener('visibilitychange', onOrgVisibility)
 onUnmounted(() => {
+  document.removeEventListener('visibilitychange', onOrgVisibility)
   if (autoJoinTimeout !== null) {
     clearTimeout(autoJoinTimeout)
     autoJoinTimeout = null
   }
-  stopOrgRefresh()
 })
 
 defineExpose({ prefillAndAutoJoin })

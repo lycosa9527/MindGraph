@@ -27,6 +27,9 @@ const props = withDefaults(
 
 const { t } = useLanguage()
 
+/** Clear the 40px mind-map status bar (大纲 / 节点 / 快捷键) plus a small gap. */
+const fabBottom = 'calc(56px + env(safe-area-inset-bottom, 0px))'
+
 const emit = defineEmits<{
   click: []
 }>()
@@ -161,7 +164,7 @@ const inlineShellClass = computed(() => {
       :class="fabShellClass"
       :style="{
         left: 'max(12px, env(safe-area-inset-left))',
-        bottom: 'max(12px, env(safe-area-inset-bottom))',
+        bottom: fabBottom,
       }"
       :aria-label="ariaLabel"
       :title="ariaLabel"
@@ -187,7 +190,7 @@ const inlineShellClass = computed(() => {
       :class="fabShellClass"
       :style="{
         left: 'max(12px, env(safe-area-inset-left))',
-        bottom: 'max(12px, env(safe-area-inset-bottom))',
+        bottom: fabBottom,
       }"
       :aria-label="ariaLabel"
       :title="ariaLabel"

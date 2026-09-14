@@ -14,6 +14,9 @@ from typing import Any, Dict, List, Optional, Tuple
 from services.diagram.mindmap_identity import migrate_mindmap_diagram_payload
 from services.infrastructure.monitoring.ws_metrics import record_kitty_hydrate_cache_miss
 from services.kitty.infra.bootstrap.kitty_native_spec import native_spec_to_pseudo_nodes
+from services.kitty.infra.desktop.kitty_canvas_owner_presence import (
+    has_kitty_canvas_owner_present,
+)
 from services.kitty.infra.desktop.kitty_desktop_focus import get_kitty_desktop_focus_diagram
 from services.kitty.infra.redis.kitty_session_redis import (
     fetch_kitty_sessionmeta_for_user,
@@ -23,6 +26,36 @@ from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_se
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 
 logger = logging.getLogger(__name__)
+
+
+async def _bootstrap_from_library_scope(
+    user_id: int,
+    scope: str,
+    desktop_focus: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Hydrate a library diagram as the mobile/watch recommended scope."""
+    merged, dt, panel = await merge_voice_context_with_library(
+        user_id,
+        {"diagram_library_id": scope, "diagram_data": {}},
+        diagram_type="circle_map",
+        active_panel="none",
+        prefer_server_diagram_nodes=True,
+    )
+    try:
+        cached = await get_diagram_cache().get_diagram(user_id, scope)
+    except (RuntimeError, ValueError, TypeError, OSError):
+        cached = None
+    has_row = cached is not None
+    has_visible = diagram_data_has_visible_content(merged.get("diagram_data") or {})
+    source: str = "library" if has_row or has_visible else "empty"
+    return {
+        "recommended_scope": scope if source != "empty" else None,
+        "desktop_focus": desktop_focus,
+        "context": merged,
+        "diagram_type": dt,
+        "active_panel": panel,
+        "source": source,
+    }
 
 
 def _node_display_text(node: Dict[str, Any]) -> str:
@@ -323,6 +356,11 @@ async def resolve_mobile_open_bootstrap(
     """
     Mobile Kitty preflight: desktop Redis live_spec (non-mobile) then library merge.
 
+    Pairing uses two events, not a freshness clock: ``desktop_focus`` is which
+    library the canvas last published; ``canvas_owner_present`` is whether that
+    canvas-owner WebSocket is still live. Clients must honor ``recommended_scope``
+    and must not bind from leftover ``desktop_focus.diagram_library_id`` alone.
+
     Returns keys: recommended_scope, desktop_focus, context, diagram_type, active_panel,
     source (live | library | empty).
     """
@@ -330,9 +368,13 @@ async def resolve_mobile_open_bootstrap(
     focus_norm = normalize_kitty_diagram_session_id(focus_lib_id) if focus_lib_id else None
     client_norm = normalize_kitty_diagram_session_id(client_suggested_scope) if client_suggested_scope else None
 
+    owner_present = False
+    if focus_norm:
+        owner_present = await has_kitty_canvas_owner_present(user_id, focus_norm)
     desktop_focus: Dict[str, Any] = {
         "diagram_library_id": focus_norm,
         "updated_at": focus_ts,
+        "canvas_owner_present": owner_present,
     }
 
     candidates: List[Tuple[str, int, int]] = []
@@ -363,31 +405,12 @@ async def resolve_mobile_open_bootstrap(
                 "source": "live",
             }
 
-    # Library hydrate only for an explicit mobile suggestion (already on a diagram).
-    # Bare desktop_focus must not bind mobile to a stale library when no live desktop session.
+    # Library hydrate: explicit mobile suggestion, or a live desktop canvas
+    # (canvas-owner WS lease). Crash leftovers without an owner stay unbound.
     if client_norm:
-        merged, dt, panel = await merge_voice_context_with_library(
-            user_id,
-            {"diagram_library_id": client_norm, "diagram_data": {}},
-            diagram_type="circle_map",
-            active_panel="none",
-            prefer_server_diagram_nodes=True,
-        )
-        try:
-            cached = await get_diagram_cache().get_diagram(user_id, client_norm)
-        except (RuntimeError, ValueError, TypeError, OSError):
-            cached = None
-        has_row = cached is not None
-        has_visible = diagram_data_has_visible_content(merged.get("diagram_data") or {})
-        source: str = "library" if has_row or has_visible else "empty"
-        return {
-            "recommended_scope": client_norm if source != "empty" else None,
-            "desktop_focus": desktop_focus,
-            "context": merged,
-            "diagram_type": dt,
-            "active_panel": panel,
-            "source": source,
-        }
+        return await _bootstrap_from_library_scope(user_id, client_norm, desktop_focus)
+    if focus_norm and owner_present:
+        return await _bootstrap_from_library_scope(user_id, focus_norm, desktop_focus)
 
     return {
         "recommended_scope": None,

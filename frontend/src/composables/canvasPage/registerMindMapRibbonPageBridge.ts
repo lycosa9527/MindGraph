@@ -6,7 +6,7 @@ import { type Ref } from 'vue'
 import { eventBus } from '@/composables/core/useEventBus'
 
 export function registerMindMapRibbonPageBridge(options: {
-  handleSaveKey: () => void | Promise<void>
+  handleSaveKey: (options?: { recordHistory?: boolean }) => void | Promise<void>
   handleSnapshotRecall: (version: number) => void
   handleSnapshotDelete: (version: number) => void
   handleRestoreCurrentVersion: () => void

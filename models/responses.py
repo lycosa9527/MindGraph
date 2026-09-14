@@ -314,6 +314,7 @@ class DocumentResponse(BaseModel):
     rag_status: Optional[str] = None
     wiki_status: Optional[str] = None
     extract_char_count: Optional[int] = None
+    ingest_source: Optional[str] = None
     created_at: str
     updated_at: str
 

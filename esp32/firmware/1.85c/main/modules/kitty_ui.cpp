@@ -19,7 +19,6 @@ namespace {
 
 constexpr uint32_t k_violet = 0x7C3AED;
 constexpr uint32_t k_ink = 0x0F172A;
-constexpr uint32_t k_hold_arm_ms = 2500;
 constexpr int k_pick_max = 12;
 
 struct PickRow {
@@ -134,7 +133,6 @@ void set_armed(bool armed)
         BROOKESIA_LOGI("Kitty mic hold end");
         return;
     }
-    g_model.click = true;
     BROOKESIA_LOGI("Kitty mic hold start");
 }
 
@@ -152,9 +150,7 @@ void sync_hold()
         g_press_since = lv_tick_get();
         BROOKESIA_LOGI("Kitty mic press");
     }
-    if (!g_model.hold && lv_tick_elaps(g_press_since) >= k_hold_arm_ms) {
-        set_armed(true);
-    }
+    set_armed(true);
 }
 
 void poll_boot_hold()
@@ -186,19 +182,36 @@ void queue_click()
     g_model.click = true;
 }
 
-void on_library(lv_event_t *event)
+void swallow_press()
 {
-    (void)event;
-    std::lock_guard<std::mutex> lock(g_mutex);
-    g_model.picker = !g_model.picker;
-    queue_click();
-    if (g_model.picker) {
-        g_model.picker_fetch = true;
+    lv_indev_t *indev = lv_indev_active();
+    if (indev != nullptr) {
+        lv_indev_wait_release(indev);
+    }
+}
+
+void set_picker(bool open)
+{
+    g_model.picker = open;
+    g_model.picker_fetch = open;
+    if (open) {
         copy_field(g_model.picker_status, sizeof(g_model.picker_status), "加载中");
         if (g_model.pick_count == 0) {
             ++g_model.pick_serial;
         }
     }
+    queue_click();
+    BROOKESIA_LOGI("Kitty library picker %s", open ? "open" : "close");
+}
+
+void on_library(lv_event_t *event)
+{
+    if (lv_event_get_code(event) != LV_EVENT_PRESSED) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(g_mutex);
+    swallow_press();
+    set_picker(!g_model.picker);
 }
 
 void on_choice(lv_event_t *event)
@@ -214,8 +227,8 @@ void on_pick_row(lv_event_t *event)
     const auto index = static_cast<int>(reinterpret_cast<intptr_t>(lv_event_get_user_data(event)));
     std::lock_guard<std::mutex> lock(g_mutex);
     g_model.pending_pick = index;
-    g_model.picker = false;
-    queue_click();
+    swallow_press();
+    set_picker(false);
 }
 
 void on_create_mindmap(lv_event_t *event)
@@ -223,15 +236,18 @@ void on_create_mindmap(lv_event_t *event)
     (void)event;
     std::lock_guard<std::mutex> lock(g_mutex);
     g_model.pending_create = true;
-    g_model.picker = false;
-    queue_click();
+    swallow_press();
+    set_picker(false);
 }
 
 void hide_face()
 {
     g_model.hidden = true;
     g_model.picker = false;
+    g_model.picker_fetch = false;
     g_model.pending_create = false;
+    g_model.pending_pick = -1;
+    g_model.pending_choice = 0;
     g_model.pending_focus = false;
     g_model.pending_focus_id[0] = '\0';
     g_model.pending_focus_title[0] = '\0';
@@ -245,6 +261,11 @@ void hide_face()
     g_teardown_pending = true;
 }
 
+bool hit_obj(lv_obj_t *obj, const lv_point_t *point)
+{
+    return obj != nullptr && lv_obj_is_valid(obj) && lv_obj_hit_test(obj, point);
+}
+
 void poll_pointer()
 {
     if (g_widgets.root == nullptr || lv_obj_has_flag(g_widgets.root, LV_OBJ_FLAG_HIDDEN)) {
@@ -256,18 +277,14 @@ void poll_pointer()
             lv_point_t point;
             lv_indev_get_point(indev, &point);
             const bool pressed = lv_indev_get_state(indev) == LV_INDEV_STATE_PRESSED;
+            const bool on_chrome = hit_obj(g_widgets.library, &point)
+                || hit_obj(g_widgets.picker, &point)
+                || hit_obj(g_widgets.picker_list, &point);
             const bool on_mic = pressed
+                && !on_chrome
                 && (
-                    (
-                        g_widgets.mic_hit != nullptr
-                        && lv_obj_is_valid(g_widgets.mic_hit)
-                        && lv_obj_hit_test(g_widgets.mic_hit, &point)
-                    )
-                    || (
-                        g_widgets.mic != nullptr
-                        && lv_obj_is_valid(g_widgets.mic)
-                        && lv_obj_hit_test(g_widgets.mic, &point)
-                    )
+                    hit_obj(g_widgets.mic_hit, &point)
+                    || hit_obj(g_widgets.mic, &point)
                 );
             std::lock_guard<std::mutex> lock(g_mutex);
             if (on_mic) {
@@ -368,8 +385,7 @@ lv_obj_t *add_picker_row(
     lv_obj_add_flag(row, LV_OBJ_FLAG_GESTURE_BUBBLE);
     lv_obj_t *label = lv_label_create(row);
     lv_obj_set_size(label, watch_px(240), watch_px(32));
-    lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
-    lv_obj_set_style_anim_duration(label, lv_anim_speed_clamped(14, 3000, 10000), 0);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_DOT);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_LEFT, 0);
     lv_obj_set_style_text_color(label, lv_color_hex(fg), 0);
     lv_label_set_text(label, caption);
@@ -385,14 +401,13 @@ void paint_picker(const UiSnapshot &snap)
     if (g_widgets.picker == nullptr || g_widgets.picker_list == nullptr) {
         return;
     }
+    kitty_ui_picker_present(g_widgets, snap.picker);
     if (!snap.picker) {
-        lv_obj_add_flag(g_widgets.picker, LV_OBJ_FLAG_HIDDEN);
+        if (lv_obj_get_child_count(g_widgets.picker_list) > 0) {
+            lv_obj_clean(g_widgets.picker_list);
+        }
+        g_painted_pick = 0;
         return;
-    }
-    lv_obj_remove_flag(g_widgets.picker, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_move_foreground(g_widgets.picker);
-    if (g_widgets.picker_row != nullptr) {
-        lv_obj_add_flag(g_widgets.picker_row, LV_OBJ_FLAG_HIDDEN);
     }
     if (g_painted_pick == snap.pick_serial && lv_obj_get_child_count(g_widgets.picker_list) > 0) {
         return;
@@ -417,9 +432,6 @@ void paint_picker(const UiSnapshot &snap)
 
 void teardown_widgets()
 {
-    if (g_widgets.picker != nullptr && lv_obj_is_valid(g_widgets.picker)) {
-        lv_obj_delete(g_widgets.picker);
-    }
     if (g_widgets.root != nullptr && lv_obj_is_valid(g_widgets.root)) {
         lv_obj_delete(g_widgets.root);
     }
@@ -431,30 +443,23 @@ void teardown_widgets()
     g_boot_hold = false;
     g_press_since = 0;
     g_have_live_color = false;
+    kitty_ui_mic_reset();
 }
 
-void ensure_widgets()
+bool ensure_widgets()
 {
     if (g_widgets.root != nullptr && !lv_obj_is_valid(g_widgets.root)) {
-        if (g_widgets.picker != nullptr && lv_obj_is_valid(g_widgets.picker)) {
-            lv_obj_delete(g_widgets.picker);
-        }
         g_widgets = {};
         g_painted_pick = 0;
-    }
-    if (g_widgets.picker != nullptr && !lv_obj_is_valid(g_widgets.picker)) {
-        if (g_widgets.root != nullptr && lv_obj_is_valid(g_widgets.root)) {
-            lv_obj_delete(g_widgets.root);
-        }
-        g_widgets = {};
-        g_painted_pick = 0;
+        g_cjk_font = nullptr;
+        kitty_ui_mic_reset();
     }
     if (g_widgets.root != nullptr) {
-        return;
+        return false;
     }
     lv_obj_t *host = lv_screen_active();
     if (host == nullptr) {
-        return;
+        return false;
     }
     g_widgets = kitty_ui_build(host, on_hold, on_library, on_choice);
     g_cjk_font = find_cjk_font(host);
@@ -463,12 +468,12 @@ void ensure_widgets()
     }
     if (g_cjk_font != nullptr) {
         apply_cjk_font(g_widgets.root, g_cjk_font);
-        apply_cjk_font(g_widgets.picker, g_cjk_font);
         BROOKESIA_LOGI("Kitty face using Super CJK font");
     } else {
         BROOKESIA_LOGW("Kitty face has no Super CJK font");
     }
     BROOKESIA_LOGI("Kitty Super app face ready");
+    return true;
 }
 
 void tick(lv_timer_t *timer)
@@ -490,7 +495,7 @@ void tick(lv_timer_t *timer)
         std::lock_guard<std::mutex> lock(g_mutex);
         poll_boot_hold();
     }
-    ensure_widgets();
+    const bool created = ensure_widgets();
     if (g_widgets.root == nullptr) {
         return;
     }
@@ -505,7 +510,9 @@ void tick(lv_timer_t *timer)
         return;
     }
     lv_obj_remove_flag(g_widgets.root, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_move_foreground(g_widgets.root);
+    if (created) {
+        lv_obj_move_foreground(g_widgets.root);
+    }
     const bool online = is_online_state(snap);
     if (g_widgets.online != nullptr) {
         if (online) {
@@ -526,37 +533,38 @@ void tick(lv_timer_t *timer)
             g_have_live_color = true;
         }
     }
-    if (g_widgets.user != nullptr) {
-        if (snap.user[0] == '\0') {
-            lv_obj_add_flag(g_widgets.user, LV_OBJ_FLAG_HIDDEN);
-        } else {
-            lv_obj_remove_flag(g_widgets.user, LV_OBJ_FLAG_HIDDEN);
-            set_label_if_changed(g_widgets.user, snap.user);
-        }
-    }
-    if (g_widgets.kitty != nullptr) {
-        if (snap.kitty[0] == '\0') {
-            lv_obj_add_flag(g_widgets.kitty, LV_OBJ_FLAG_HIDDEN);
-        } else {
-            lv_obj_remove_flag(g_widgets.kitty, LV_OBJ_FLAG_HIDDEN);
-            set_label_if_changed(g_widgets.kitty, snap.kitty);
-        }
-    }
-    for (int i = 0; i < 4; ++i) {
-        set_choice_chip(g_widgets.choices[i], snap.choices[i]);
-    }
-    if (g_widgets.choice_grid != nullptr && !snap.picker
-        && (snap.choices[0][0] != '\0' || snap.choices[1][0] != '\0'
-            || snap.choices[2][0] != '\0' || snap.choices[3][0] != '\0')) {
-        lv_obj_move_foreground(g_widgets.choice_grid);
-    }
     set_label_if_changed(
         g_widgets.library_label,
         snap.library[0] != '\0' ? snap.library : "图库"
     );
     paint_picker(snap);
+    if (!snap.picker) {
+        if (g_widgets.user != nullptr) {
+            if (snap.user[0] == '\0') {
+                lv_obj_add_flag(g_widgets.user, LV_OBJ_FLAG_HIDDEN);
+            } else {
+                lv_obj_remove_flag(g_widgets.user, LV_OBJ_FLAG_HIDDEN);
+                set_label_if_changed(g_widgets.user, snap.user);
+            }
+        }
+        if (g_widgets.kitty != nullptr) {
+            if (snap.kitty[0] == '\0') {
+                lv_obj_add_flag(g_widgets.kitty, LV_OBJ_FLAG_HIDDEN);
+            } else {
+                lv_obj_remove_flag(g_widgets.kitty, LV_OBJ_FLAG_HIDDEN);
+                set_label_if_changed(g_widgets.kitty, snap.kitty);
+            }
+        }
+        for (int i = 0; i < 4; ++i) {
+            set_choice_chip(g_widgets.choices[i], snap.choices[i]);
+        }
+        if (g_widgets.choice_grid != nullptr
+            && (snap.choices[0][0] != '\0' || snap.choices[1][0] != '\0'
+                || snap.choices[2][0] != '\0' || snap.choices[3][0] != '\0')) {
+            lv_obj_move_foreground(g_widgets.choice_grid);
+        }
+    }
     kitty_ui_work_ring_paint(g_widgets.work_ring, snap.state);
-    kitty_ui_mascot_tick(snap.state);
     if (g_widgets.mic != nullptr) {
         uint8_t level = snap.mic_level;
         if (g_hold_down && level < 24) {

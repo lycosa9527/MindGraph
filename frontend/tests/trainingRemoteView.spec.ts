@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import {
   trainingRemotePhase,
   trainingRemotePrompterKey,
-  trainingRemoteShouldPollHost,
 } from '@/composables/training/trainingRemoteView'
 import type { TrainingSnapshot } from '@/types/training'
 
@@ -46,11 +45,4 @@ describe('trainingRemoteView', () => {
     )
   })
 
-  it('polls the hosted pointer only while the school is unknown', () => {
-    expect(trainingRemoteShouldPollHost('waiting', null)).toBe(true)
-    expect(trainingRemoteShouldPollHost('waiting', 10)).toBe(false)
-    expect(trainingRemoteShouldPollHost('live', 10)).toBe(false)
-    expect(trainingRemoteShouldPollHost('foreign', 10)).toBe(false)
-    expect(trainingRemoteShouldPollHost('live', null)).toBe(true)
-  })
 })

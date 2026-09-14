@@ -15,7 +15,11 @@ from utils.auth import user_has_feature_access
 
 KITTY_MOBILE_BOOTSTRAP_DISABLED_BODY: Dict[str, Any] = {
     "recommended_scope": None,
-    "desktop_focus": {"diagram_library_id": None, "updated_at": None},
+    "desktop_focus": {
+        "diagram_library_id": None,
+        "updated_at": None,
+        "canvas_owner_present": False,
+    },
     "context": {
         "diagram_data": {},
         "selected_nodes": [],

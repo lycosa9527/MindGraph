@@ -1,7 +1,8 @@
 /*
  * Playback through HAL CodecPlayer (Settings volume/mute).
- * Capture: ES7210 AEC layout (RMNN) uses CodecRecorder; V1 MEMS stays
- * on the board-manager device with the louder-channel unpack.
+ * PTT capture is raw ES7210 / board ADC. Speaker is stopped first, so AFE
+ * AEC is not used — it delayed the first frames and distorted Fun-ASR.
+ * RMNN I2S: slot 0 is echo ref, slot 1 is the mic.
  */
 #include "sdkconfig.h"
 
@@ -32,6 +33,7 @@ constexpr int k_spk_bits = 16;
 constexpr int k_mic_bits = 32;
 constexpr int k_mic_ch = 2;
 constexpr int k_spk_ch = 2;
+constexpr int k_settle_frames = 2;
 
 #if CONFIG_BROOKESIA_HAL_ADAPTOR_ENABLE_AUDIO_DEVICE
 using CodecPlayerIface = esp_brookesia::hal::audio::CodecPlayerIface;
@@ -44,6 +46,7 @@ RecorderHandle g_recorder;
 std::vector<int32_t> g_mic_raw;
 bool g_mic_open = false;
 bool g_spk_open = false;
+int g_settle_left = 0;
 
 bool mic_has_aec_ref()
 {
@@ -125,21 +128,11 @@ int16_t clamp_i16(int32_t sample)
     return static_cast<int16_t>(sample);
 }
 
-void unpack_mems_frame(const int32_t *raw, int16_t *out, size_t frames)
+void unpack_mic_slot(const int32_t *raw, int16_t *out, size_t frames)
 {
+    const int slot = mic_has_aec_ref() ? 1 : 0;
     for (size_t i = 0; i < frames; ++i) {
-        const int32_t left = raw[i * 2] >> 16;
-        const int32_t right = raw[i * 2 + 1] >> 16;
-        const int left_amp = left < 0 ? -left : left;
-        const int right_amp = right < 0 ? -right : right;
-        out[i] = clamp_i16(left_amp >= right_amp ? left : right);
-    }
-}
-
-void unpack_es7210_frame(const int32_t *raw, int16_t *out, size_t frames)
-{
-    for (size_t i = 0; i < frames; ++i) {
-        out[i] = clamp_i16(raw[i * 2 + 1] >> 16);
+        out[i] = clamp_i16(raw[i * 2 + slot] >> 16);
     }
 }
 
@@ -200,6 +193,31 @@ const std::vector<int16_t> &click_pcm()
     }();
     return pcm;
 }
+
+bool read_raw_pcm(int16_t *samples, size_t count)
+{
+    if (g_mic_raw.size() < count * 2) {
+        g_mic_raw.resize(count * 2);
+    }
+    const size_t bytes = count * 2 * sizeof(int32_t);
+    if (g_recorder) {
+        if (!g_recorder->read_data(reinterpret_cast<uint8_t *>(g_mic_raw.data()), bytes)) {
+            return false;
+        }
+        unpack_mic_slot(g_mic_raw.data(), samples, count);
+        return true;
+    }
+    const esp_err_t err = esp_codec_dev_read(
+        codec_dev(g_mic_handles),
+        g_mic_raw.data(),
+        static_cast<int>(bytes)
+    );
+    if (err != ESP_CODEC_DEV_OK) {
+        return false;
+    }
+    unpack_mic_slot(g_mic_raw.data(), samples, count);
+    return true;
+}
 #endif
 
 } // namespace
@@ -213,7 +231,15 @@ bool kitty_audio_init()
     if (mic_has_aec_ref()) {
         g_recorder = esp_brookesia::hal::acquire_first_interface<CodecRecorderIface>();
         if (g_recorder) {
-            ESP_LOGI(TAG, "audio devices mic=es7210 aec");
+#ifdef CONFIG_BROOKESIA_HAL_ADAPTOR_AUDIO_CODEC_RECORDER_MIC_LAYOUT
+            ESP_LOGI(
+                TAG,
+                "audio capture=es7210 slot=1 layout=%s",
+                CONFIG_BROOKESIA_HAL_ADAPTOR_AUDIO_CODEC_RECORDER_MIC_LAYOUT
+            );
+#else
+            ESP_LOGI(TAG, "audio capture=es7210 slot=1");
+#endif
             return true;
         }
         ESP_LOGW(TAG, "ES7210 recorder missing, falling back to board ADC");
@@ -270,9 +296,12 @@ bool kitty_audio_mic_open()
     }
     if (g_recorder) {
         g_mic_open = g_recorder->open();
-        return g_mic_open;
+    } else {
+        g_mic_open = open_dev(g_mic_handles, k_mic_rate, k_mic_ch, k_mic_bits, true);
     }
-    g_mic_open = open_dev(g_mic_handles, k_mic_rate, k_mic_ch, k_mic_bits, true);
+    if (g_mic_open) {
+        g_settle_left = k_settle_frames;
+    }
     return g_mic_open;
 #endif
 }
@@ -287,6 +316,7 @@ void kitty_audio_mic_close()
             close_dev(g_mic_handles);
         }
         g_mic_open = false;
+        g_settle_left = 0;
     }
 #endif
 }
@@ -344,27 +374,13 @@ bool kitty_audio_mic_read(int16_t *samples, size_t count)
     if (!g_mic_open || samples == nullptr || count == 0) {
         return false;
     }
-    if (g_mic_raw.size() < count * 2) {
-        g_mic_raw.resize(count * 2);
-    }
-    const size_t bytes = count * 2 * sizeof(int32_t);
-    if (g_recorder) {
-        if (!g_recorder->read_data(reinterpret_cast<uint8_t *>(g_mic_raw.data()), bytes)) {
+    while (g_settle_left > 0) {
+        if (!read_raw_pcm(samples, count)) {
             return false;
         }
-        unpack_es7210_frame(g_mic_raw.data(), samples, count);
-        return true;
+        --g_settle_left;
     }
-    const esp_err_t err = esp_codec_dev_read(
-        codec_dev(g_mic_handles),
-        g_mic_raw.data(),
-        static_cast<int>(bytes)
-    );
-    if (err != ESP_CODEC_DEV_OK) {
-        return false;
-    }
-    unpack_mems_frame(g_mic_raw.data(), samples, count);
-    return true;
+    return read_raw_pcm(samples, count);
 #endif
 }
 
@@ -387,7 +403,17 @@ bool kitty_audio_spk_open()
         .sample_rate = k_spk_rate,
     };
     g_spk_open = player->open(config);
-    return g_spk_open;
+    if (!g_spk_open) {
+        ESP_LOGE(TAG, "speaker open failed");
+        return false;
+    }
+    if (player->is_pa_on_off_supported() && !player->set_pa_on_off(true)) {
+        ESP_LOGW(TAG, "speaker PA enable failed");
+    }
+    if (!player->set_volume(80)) {
+        ESP_LOGW(TAG, "speaker volume set failed");
+    }
+    return true;
 #endif
 }
 

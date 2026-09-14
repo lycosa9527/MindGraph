@@ -201,21 +201,10 @@ void kitty_agent_commit_asr()
     }
 }
 
-static bool hold_is_stable()
-{
-    for (int i = 0; i < 10; ++i) {
-        if (!kitty_ui_hold_active() || kitty_ui_is_hidden()) {
-            return false;
-        }
-        boost::this_thread::sleep_for(boost::chrono::milliseconds(k_kitty_hold_poll_ms));
-    }
-    return kitty_ui_hold_active();
-}
-
 void kitty_agent_run_ptt()
 {
     reset_asr();
-    if (!hold_is_stable() || kitty_ui_is_hidden()) {
+    if (!kitty_ui_hold_active() || kitty_ui_is_hidden()) {
         return;
     }
     interrupt_speech();

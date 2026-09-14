@@ -39,10 +39,11 @@ describe('trainingClient', () => {
     expect(trainingEventsUrl(null, true)).toBe('/api/training/events')
   })
 
-  it('does not open SSE for a platform lead until an org is known', () => {
-    expect(canOpenTrainingEvents(true, null)).toBe(false)
+  it('opens SSE for a platform lead before an org is known', () => {
+    expect(canOpenTrainingEvents(true, null)).toBe(true)
     expect(canOpenTrainingEvents(true, 12)).toBe(true)
-    expect(canOpenTrainingEvents(false, null)).toBe(true)
+    expect(canOpenTrainingEvents(false, 12)).toBe(true)
+    expect(canOpenTrainingEvents(false, null)).toBe(false)
   })
 
   it('hides the friends rail from teachers', () => {

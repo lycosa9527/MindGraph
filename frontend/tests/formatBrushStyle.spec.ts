@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest'
 import {
   collectFormatBrushStyle,
   formatBrushTargetsFromSelection,
+  omitNodeStyleLayoutSizes,
   pickFormatBrushStyle,
   resolveFormatPainterClick,
+  sanitizePersistedNodeStylesRecord,
 } from '@/composables/canvasToolbar/formatBrushStyle'
 
 describe('formatBrushStyle', () => {
@@ -49,6 +51,23 @@ describe('formatBrushStyle', () => {
     expect(copied.width).toBeUndefined()
     expect(copied.height).toBeUndefined()
     expect(copied.size).toBeUndefined()
+  })
+
+  it('drops leftover layout sizes from inline node.style', () => {
+    const style = { textColor: '#111', width: 12, height: 8, size: 20 }
+    const cleaned = omitNodeStyleLayoutSizes(style)
+    expect(cleaned).toEqual({ textColor: '#111' })
+    expect(omitNodeStyleLayoutSizes({ textColor: '#111' })).toEqual({ textColor: '#111' })
+    expect(omitNodeStyleLayoutSizes(undefined)).toBeUndefined()
+  })
+
+  it('scrubs leftover layout sizes from a persisted _node_styles map', () => {
+    const cleaned = sanitizePersistedNodeStylesRecord({
+      topic: { textColor: '#111', width: 240, height: 40, size: 20 },
+      'smry:s1': { width: 12, height: 8 },
+    })
+    expect(cleaned?.topic).toEqual({ textColor: '#111' })
+    expect(cleaned?.['smry:s1']).toBeUndefined()
   })
 
   it('applies to newly selected nodes and skips the source', () => {

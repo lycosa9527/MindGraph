@@ -26,6 +26,7 @@ int64_t now_us()
 
 bool kitty_ptt_button_init()
 {
+    gpio_reset_pin(k_boot_gpio);
     gpio_config_t cfg = {};
     cfg.pin_bit_mask = 1ULL << static_cast<uint32_t>(k_boot_gpio);
     cfg.mode = GPIO_MODE_INPUT;
@@ -40,7 +41,7 @@ bool kitty_ptt_button_init()
         ESP_LOGW(TAG, "BOOT GPIO0 init failed: %s", esp_err_to_name(err));
         return false;
     }
-    ESP_LOGI(TAG, "BOOT GPIO0 mapped as mic hold");
+    ESP_LOGI(TAG, "1.75C BOOT GPIO0 is mic PTT; PWR stays AXP on/off");
     return true;
 }
 

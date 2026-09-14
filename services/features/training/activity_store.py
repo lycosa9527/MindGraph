@@ -82,6 +82,21 @@ async def touch_activity(
         logger.debug("[Training] touch_activity failed: %s", exc)
 
 
+async def refresh_activity_lease(org_id: int, user_id: int) -> None:
+    """Bump an existing teacher row so a live SSE connection stays online."""
+    try:
+        redis = get_async_redis()
+        if redis is None:
+            return
+        previous = _decode_field(await redis.hget(_key(org_id), str(int(user_id))))
+    except REDIS_ERRORS as exc:
+        logger.debug("[Training] refresh_activity_lease failed: %s", exc)
+        return
+    if previous is None:
+        return
+    await touch_activity(org_id, user_id, {})
+
+
 async def list_activity(org_id: int) -> list[dict[str, Any]]:
     """Return non-stale activity rows."""
     try:

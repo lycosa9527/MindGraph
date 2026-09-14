@@ -1,6 +1,6 @@
 /**
  * Event-driven hosted-session hydrate for the phone remote and /m card.
- * Show / pageshow / mount GET; poll only while waiting so desktop Play lights up.
+ * GET on mount, pageshow, and visibility. Start wakes via user-level SSE.
  */
 import { onMounted, onUnmounted, watch } from 'vue'
 
@@ -8,16 +8,10 @@ import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useTrainingStore } from '@/stores/training'
 
-import { trainingRemotePhase, trainingRemoteShouldPollHost } from './trainingRemoteView'
-
-export const TRAINING_REMOTE_HYDRATE_MS = 2000
-
-export function useTrainingRemoteSync(options?: { pollWhileWaiting?: boolean }): void {
-  const pollWhileWaiting = options?.pollWhileWaiting !== false
+export function useTrainingRemoteSync(): void {
   const authStore = useAuthStore()
   const flags = useFeatureFlagsStore()
   const training = useTrainingStore()
-  let timer: ReturnType<typeof setInterval> | null = null
   let inFlight = false
 
   function mayHydrate(): boolean {
@@ -32,40 +26,16 @@ export function useTrainingRemoteSync(options?: { pollWhileWaiting?: boolean }):
     try {
       await training.hydrateHostedSession()
     } catch {
-      // Next visibility / poll tick retries.
+      // Next visibility or SSE doorbell retries.
     } finally {
       inFlight = false
     }
-  }
-
-  function wantsPoll(): boolean {
-    if (!pollWhileWaiting) return false
-    const phase = trainingRemotePhase(training.snapshot, Number(authStore.user?.id) || null)
-    return trainingRemoteShouldPollHost(phase, training.leadingOrgId)
-  }
-
-  function startPoll(): void {
-    if (timer != null) return
-    timer = setInterval(() => {
-      void hydrate()
-    }, TRAINING_REMOTE_HYDRATE_MS)
-  }
-
-  function stopPoll(): void {
-    if (timer == null) return
-    clearInterval(timer)
-    timer = null
   }
 
   function onShown(): void {
     if (document.visibilityState !== 'visible') return
     void hydrate()
   }
-
-  watch(wantsPoll, (should) => {
-    if (should) startPoll()
-    else stopPoll()
-  }, { immediate: true })
 
   watch(
     () => [
@@ -87,6 +57,5 @@ export function useTrainingRemoteSync(options?: { pollWhileWaiting?: boolean }):
   onUnmounted(() => {
     document.removeEventListener('visibilitychange', onShown)
     window.removeEventListener('pageshow', onShown)
-    stopPoll()
   })
 }

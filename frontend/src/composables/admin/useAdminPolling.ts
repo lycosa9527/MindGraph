@@ -15,17 +15,13 @@ export interface UseAdminPollingOptions {
 }
 
 export function useAdminPolling(options: UseAdminPollingOptions) {
-  const { pollKey, intervalMs, fetch, immediate = true } = options
+  const { pollKey, fetch, immediate = true } = options
   const adminPanel = useAdminPanelStore()
 
-  let intervalId: ReturnType<typeof setInterval> | null = null
   let tornDown = false
 
   function stopPolling(): void {
-    if (intervalId !== null) {
-      clearInterval(intervalId)
-      intervalId = null
-    }
+    adminPanel.unregisterPoll(pollKey)
   }
 
   function dispose(): void {
@@ -35,7 +31,6 @@ export function useAdminPolling(options: UseAdminPollingOptions) {
     tornDown = true
     document.removeEventListener('visibilitychange', onVisibility)
     stopPolling()
-    adminPanel.unregisterPoll(pollKey)
   }
 
   function onVisibility(): void {
@@ -48,15 +43,8 @@ export function useAdminPolling(options: UseAdminPollingOptions) {
     if (tornDown) {
       return
     }
-    stopPolling()
     adminPanel.registerPoll(pollKey)
     void fetch()
-    intervalId = setInterval(() => {
-      if (document.visibilityState === 'hidden') {
-        return
-      }
-      void fetch()
-    }, intervalMs)
   }
 
   onMounted(() => {

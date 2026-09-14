@@ -45,12 +45,12 @@ export function useChatHandoff(packageId: MaybeRef<number | null>) {
   const isMinting = ref(false)
   const mintError = ref<string | null>(null)
 
-  let pollTimer: ReturnType<typeof setInterval> | null = null
+  let source: EventSource | null = null
 
-  function stopPolling(): void {
-    if (pollTimer !== null) {
-      clearInterval(pollTimer)
-      pollTimer = null
+  function closeSource(): void {
+    if (source !== null) {
+      source.close()
+      source = null
     }
   }
 
@@ -58,18 +58,22 @@ export function useChatHandoff(packageId: MaybeRef<number | null>) {
     void queryClient.invalidateQueries({ queryKey: fileCenterKeys.package(packageIdValue) })
   }
 
-  async function pollStatus(code: string): Promise<void> {
+  function applyStatus(status: HandoffStatusResponse): void {
+    handoffStatus.value = status.status
+    if (status.status === 'done' || status.status === 'failed') {
+      closeSource()
+      invalidatePackageDetail(status.package_id)
+    }
+  }
+
+  async function hydrateStatus(code: string): Promise<void> {
     try {
       const status = await apiRequestJson<HandoffStatusResponse>(
         `${DOC_SUMMARY_CHAT_HANDOFF_BASE}/status?code=${encodeURIComponent(code)}`
       )
-      handoffStatus.value = status.status
-      if (status.status === 'done' || status.status === 'failed') {
-        stopPolling()
-        invalidatePackageDetail(status.package_id)
-      }
+      applyStatus(status)
     } catch {
-      stopPolling()
+      closeSource()
       if (
         handoffStatus.value === 'waiting'
         || handoffStatus.value === 'received'
@@ -80,13 +84,46 @@ export function useChatHandoff(packageId: MaybeRef<number | null>) {
     }
   }
 
-  function startPolling(code: string): void {
-    stopPolling()
+  function connectEvents(code: string): void {
+    closeSource()
     handoffStatus.value = 'waiting'
-    void pollStatus(code)
-    pollTimer = setInterval(() => {
-      void pollStatus(code)
-    }, 1500)
+    void hydrateStatus(code)
+    if (typeof EventSource === 'undefined') {
+      return
+    }
+    const next = new EventSource(
+      `${DOC_SUMMARY_CHAT_HANDOFF_BASE}/events?code=${encodeURIComponent(code)}`
+    )
+    let errorHydrated = false
+    next.onopen = () => {
+      errorHydrated = false
+    }
+    next.addEventListener('status', (event: MessageEvent<string>) => {
+      try {
+        const parsed = JSON.parse(event.data) as {
+          status?: string
+          package_id?: number
+          document_id?: number | null
+        }
+        if (!parsed.status || parsed.package_id == null) {
+          return
+        }
+        applyStatus({
+          code,
+          status: parsed.status,
+          package_id: parsed.package_id,
+          document_id: parsed.document_id ?? null,
+        })
+      } catch {
+        void hydrateStatus(code)
+      }
+    })
+    next.onerror = () => {
+      if (errorHydrated) return
+      errorHydrated = true
+      void hydrateStatus(code)
+    }
+    source = next
   }
 
   function resetHandoff(options?: {
@@ -105,7 +142,7 @@ export function useChatHandoff(packageId: MaybeRef<number | null>) {
     const shouldRevoke =
       options?.revoke !== false && Boolean(code) && !claimedOrFinished
 
-    stopPolling()
+    closeSource()
     pairingCode.value = null
     handoffStatus.value = 'idle'
     mintError.value = null
@@ -126,7 +163,7 @@ export function useChatHandoff(packageId: MaybeRef<number | null>) {
       if (pairingCode.value) {
         fireRevokeHandoff(pairingCode.value, id)
         pairingCode.value = null
-        stopPolling()
+        closeSource()
       }
       const response = await apiRequestJson<HandoffStartResponse>(
         `${DOC_SUMMARY_CHAT_HANDOFF_BASE}/start`,
@@ -137,7 +174,7 @@ export function useChatHandoff(packageId: MaybeRef<number | null>) {
       )
       pairingCode.value = response.code
       expiresInSeconds.value = response.expires_in_seconds
-      startPolling(response.code)
+      connectEvents(response.code)
       return response.code
     } catch (error) {
       mintError.value = error instanceof Error ? error.message : 'mint failed'

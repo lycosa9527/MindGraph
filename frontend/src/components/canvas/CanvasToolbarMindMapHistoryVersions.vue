@@ -3,11 +3,10 @@ import { computed, inject, ref, watch, type ComputedRef } from 'vue'
 
 import { ElDropdown, ElTooltip } from 'element-plus'
 
-import { Camera, Check, ChevronDown, Clock } from '@lucide/vue'
+import { Check, ChevronDown, Clock } from '@lucide/vue'
 
 import { useMindMapRibbonActions } from '@/canvas-ribbon/useMindMapRibbonActions'
 import { useLanguage } from '@/composables/core/useLanguage'
-import { useNotifications } from '@/composables/core/useNotifications'
 import {
   CURRENT_DIAGRAM_VERSION,
   canMutateDiagramSnapshots,
@@ -17,7 +16,6 @@ import {
 } from '@/composables/editor/diagramSnapshotVersions'
 import { useSnapshotHistory } from '@/composables/editor/useSnapshotHistory'
 import { useDiagramStore } from '@/stores'
-import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 const props = withDefaults(
   defineProps<{
@@ -27,10 +25,8 @@ const props = withDefaults(
 )
 
 const { t, currentLanguage } = useLanguage()
-const notify = useNotifications()
 const ribbon = useMindMapRibbonActions()
 const diagramStore = useDiagramStore()
-const savedDiagramsStore = useSavedDiagramsStore()
 const snapshotHistory = useSnapshotHistory()
 
 const collabCanvas = inject<{ isDiagramOwner?: ComputedRef<boolean> } | undefined>(
@@ -81,19 +77,6 @@ function onSelectSnapshot(versionNumber: number): void {
   if (!canMutateSnapshots.value || isBusy.value) return
   if (snapshotHistory.activeSnapshotVersion.value === versionNumber) return
   ribbon.recallSnapshot(versionNumber)
-}
-
-function onTakeSnapshot(): void {
-  if (!canMutateSnapshots.value || isBusy.value) return
-  if (!diagramStore.data?.nodes?.length) {
-    notify.warning(t('canvas.toolbar.createDiagramFirst'))
-    return
-  }
-  if (!savedDiagramsStore.activeDiagramId) {
-    notify.warning(t('canvas.toolbar.snapshotSaveFirst'))
-    return
-  }
-  ribbon.requestSnapshot()
 }
 
 watch(
@@ -163,24 +146,19 @@ watch(
               data-testid="mindmap-history-versions-menu"
             >
               <button
+                v-if="!isCurrentActive"
                 type="button"
                 class="mm-history-versions__item"
-                :class="{ 'is-active': isCurrentActive, 'is-dimmed': isRestoringCurrent }"
+                :class="{ 'is-dimmed': isRestoringCurrent }"
                 :disabled="isBusy"
                 role="menuitem"
-                :aria-current="isCurrentActive ? 'true' : undefined"
                 data-testid="mindmap-history-versions-current"
                 @click="onSelectCurrent"
               >
                 <span class="mm-history-versions__item-row">
                   <span class="mm-history-versions__item-label">{{
-                    t('canvas.ribbon.historyCurrent')
+                    t('canvas.ribbon.historyBackToLatest')
                   }}</span>
-                  <Check
-                    v-if="isCurrentActive"
-                    class="mm-history-versions__check"
-                    :size="16"
-                  />
                 </span>
               </button>
               <button
@@ -223,21 +201,6 @@ watch(
           </template>
         </ElDropdown>
       </span>
-    </ElTooltip>
-    <ElTooltip
-      :content="t('canvas.ribbon.historyTakeSnapshot')"
-      placement="bottom"
-    >
-      <button
-        type="button"
-        class="mm-history-versions__camera"
-        :disabled="isBusy"
-        :aria-label="t('canvas.ribbon.historyTakeSnapshot')"
-        data-testid="mindmap-history-versions-camera"
-        @click="onTakeSnapshot"
-      >
-        <Camera class="w-3.5 h-3.5" />
-      </button>
     </ElTooltip>
   </div>
 </template>

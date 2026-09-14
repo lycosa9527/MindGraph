@@ -189,19 +189,16 @@ bool kitty_net_bootstrap(const std::string &token, std::string &scope, std::stri
     scope.clear();
     title.clear();
     diagram_type = "circle_map";
-    if (const auto *focus = obj.if_contains("desktop_focus"); focus != nullptr && focus->is_object()) {
-        const auto *lib = focus->as_object().if_contains("diagram_library_id");
-        if (lib != nullptr && lib->is_string()) {
-            scope = std::string(lib->as_string().c_str());
-        }
-    }
-    if (scope.empty()) {
-        json_string_field(root, "recommended_scope", scope);
-    }
+    // Bind only recommended_scope. Leftover desktop_focus is not a live canvas.
+    json_string_field(root, "recommended_scope", scope);
     json_string_field(root, "diagram_type", diagram_type);
     if (const auto *ctx = obj.if_contains("context"); ctx != nullptr && ctx->is_object()) {
         const auto &ctx_obj = ctx->as_object();
-        if (const auto *name = ctx_obj.if_contains("diagram_title"); name != nullptr && name->is_string()) {
+        if (const auto *display = ctx_obj.if_contains("diagram_display_title");
+            display != nullptr && display->is_string()) {
+            title = std::string(display->as_string().c_str());
+        } else if (const auto *name = ctx_obj.if_contains("diagram_title");
+                   name != nullptr && name->is_string()) {
             title = std::string(name->as_string().c_str());
         } else if (const auto *alt = ctx_obj.if_contains("title"); alt != nullptr && alt->is_string()) {
             title = std::string(alt->as_string().c_str());

@@ -14,10 +14,10 @@ import {
 } from '@/composables/mindMap/useMindMapSummaryRangeDrag'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
 import {
+  type SummaryLiveNodeBox,
   coveredBoxesForSummary,
   extentBoxesForCoveredPaths,
   mindMapSummaryOutwardRangeRect,
-  siblingBoxesForSummary,
 } from '@/stores/diagram/mindMapSummaryLayout'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import {
@@ -62,6 +62,19 @@ const isV2MindMap = computed(() => {
 
 const summaries = computed(() => (isV2MindMap.value ? readMindMapSummaries(diagramStore.data) : []))
 
+const liveById = computed((): ReadonlyMap<string, SummaryLiveNodeBox> => {
+  const map = new Map<string, SummaryLiveNodeBox>()
+  for (const node of getNodes.value) {
+    map.set(node.id, {
+      x: node.position.x,
+      y: node.position.y,
+      width: node.dimensions?.width,
+      height: node.dimensions?.height,
+    })
+  }
+  return map
+})
+
 const themeStroke = computed(() => {
   const theme = getMindMapThemeForDiagram(diagramStore.data)
   return theme.borderColor || '#c2410c'
@@ -91,25 +104,34 @@ const elements = computed<BraceElement[]>(() => {
   const connections = data.connections ?? []
   const selectedId = toolbarSummaryId.value
   const out: BraceElement[] = []
+  const live = liveById.value
 
   const drag = rangeDrag.value
   for (const summary of summaries.value) {
-    const boxes = coveredBoxesForSummary(data.nodes, connections, summary, widths, heights)
+    const boxes = coveredBoxesForSummary(
+      data.nodes,
+      connections,
+      summary,
+      widths,
+      heights,
+      summary.coveredPaths,
+      live
+    )
     if (boxes.length === 0) continue
     const side = summary.coveredPaths[0]?.startsWith('l/') ? 'left' : 'right'
     const kind = resolveMindMapSummaryKind(summary)
     let layoutBoxes = boxes
     let layoutPaths = summary.coveredPaths
     if (drag && drag.summaryId === summary.id) {
-      const slots = siblingBoxesForSummary(data.nodes, connections, summary, widths, heights)
-      const previewBoxes = slots
-        .filter((slot) => drag.previewPaths.includes(slot.path))
-        .map((slot) => ({
-          x: slot.x,
-          y: slot.y,
-          width: slot.width,
-          height: slot.height,
-        }))
+      const previewBoxes = coveredBoxesForSummary(
+        data.nodes,
+        connections,
+        summary,
+        widths,
+        heights,
+        drag.previewPaths,
+        live
+      )
       if (previewBoxes.length > 0) {
         layoutBoxes = previewBoxes
         layoutPaths = drag.previewPaths
@@ -120,7 +142,8 @@ const elements = computed<BraceElement[]>(() => {
       connections,
       layoutPaths,
       widths,
-      heights
+      heights,
+      live
     )
     const outwardRange = mindMapSummaryOutwardRangeRect(layoutBoxes, extentBoxes, side)
     let rangeOverride = outwardRange ?? undefined
@@ -230,6 +253,7 @@ const { onRangeEdgeDown, onRangeEdgeMove, onRangeEdgeUp, clearRangeDrag } =
       return el ? { rangeY: el.rangeY, rangeH: el.rangeH } : null
     },
     findSummary: (summaryId) => summaries.value.find((item) => item.id === summaryId),
+    liveById,
   })
 
 function deleteSummary(summaryId: string): void {
@@ -332,7 +356,8 @@ onUnmounted(() => {
             :fill="el.selected ? 'rgba(37, 99, 235, 0.08)' : 'transparent'"
             :stroke="el.selected ? '#2563eb' : el.stroke"
             :stroke-width="Math.max(1, el.strokeWidth * (el.selected ? 0.9 : 0.65))"
-            :stroke-dasharray="el.dasharray"
+            stroke-linejoin="miter"
+            stroke-linecap="square"
           />
           <rect
             class="mm-summary-range-edge"

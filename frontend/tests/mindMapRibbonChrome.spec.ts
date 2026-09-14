@@ -104,25 +104,46 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     expect(mmToolbar).not.toContain("openCollab('organization')")
   })
 
-  it('puts version history with a camera addon on the Research tab', () => {
+  it('puts version history on the File tab and lets Save record a snapshot', () => {
     const mmToolbar = readSrc('src/components/canvas/CanvasToolbarMindMap.vue')
     const history = readSrc('src/components/canvas/CanvasToolbarMindMapHistoryVersions.vue')
-    expect(mmToolbar).toContain("ribbonTab === 'research'")
-    expect(mmToolbar).toContain('<CanvasToolbarMindMapHistoryVersions')
+    const fileTab = mmToolbar.slice(
+      mmToolbar.indexOf("template v-if=\"ribbonTab === 'file'\""),
+      mmToolbar.indexOf("ribbonTab === 'teaching'")
+    )
+    const researchTab = mmToolbar.slice(mmToolbar.indexOf("ribbonTab === 'research'"))
+    expect(fileTab).toContain('<CanvasToolbarMindMapHistoryVersions')
+    expect(fileTab.indexOf('ribbon.requestSave')).toBeLessThan(
+      fileTab.indexOf('<CanvasToolbarMindMapHistoryVersions')
+    )
+    expect(researchTab).not.toContain('<CanvasToolbarMindMapHistoryVersions')
     expect(history).toContain('canvas.ribbon.historyVersions')
-    expect(history).toContain('canvas.ribbon.historyCurrent')
-    expect(history).toContain('mindmap-history-versions-camera')
-    expect(history).toContain('requestSnapshot')
+    expect(history).toContain('canvas.ribbon.historyBackToLatest')
+    expect(history).toContain('v-if="!isCurrentActive"')
+    expect(history).not.toContain('mindmap-history-versions-camera')
+    expect(history).not.toContain('requestSnapshot')
+    expect(history).not.toContain('historyTakeSnapshot')
     expect(history).toContain('restoreCurrentVersion')
     expect(history).toContain('snapshotsNewestFirst')
     expect(history).toContain('mm-toolbar-popper--history')
     expect(history).toContain('canMutateDiagramSnapshots')
     expect(history).toContain('role="menu"')
     expect(history).not.toContain('role="button"')
+    expect(readSrc('src/components/canvas/canvasToolbarMindMap.css')).not.toContain(
+      'mm-history-versions__camera'
+    )
     expect(readSrc('src/components/canvas/canvasToolbarMindMapPopper.css')).toContain(
       '.mm-toolbar-popper--history.el-popper'
     )
+    const shortcuts = readSrc('src/composables/canvasPage/useCanvasPageEditorShortcuts.ts')
+    expect(shortcuts).toContain('shouldRecordManualSaveSnapshot')
+    expect(shortcuts).toContain("eventBus.emit('snapshot:requested', { silent: true })")
+    const page = readSrc('src/pages/CanvasPage.vue')
+    expect(page).toContain('handleSaveKey({ recordHistory: false })')
+    const autoSave = readSrc('src/composables/editor/useDiagramAutoSave.ts')
+    expect(autoSave).not.toContain('snapshot:requested')
     const library = readSrc('src/composables/canvasPage/useCanvasPageLibrarySnapshots.ts')
+    expect(library).not.toContain('snapshot:requested')
     expect(library).toContain('isCanvasAheadOfLastSave')
     expect(library).toContain('setSuppressFromLibrary')
     expect(library).toContain('shouldPersistBeforeVersionJump')

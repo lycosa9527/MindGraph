@@ -30,7 +30,32 @@ export function pickFormatBrushStyle(style: NodeStyle | Partial<NodeStyle> | und
   return copied
 }
 
-/** Merge theme defaults, persisted `_node_styles`, then inline `node.style`. */
+const NODE_STYLE_LAYOUT_KEYS = ['width', 'height', 'size'] as const
+
+/** Drop leftover layout sizes from inline `node.style` without touching format keys. */
+export function omitNodeStyleLayoutSizes(style: NodeStyle | undefined): NodeStyle | undefined {
+  if (!style) return undefined
+  if (NODE_STYLE_LAYOUT_KEYS.every((key) => style[key] === undefined)) return style
+  const next: NodeStyle = { ...style }
+  for (const key of NODE_STYLE_LAYOUT_KEYS) {
+    delete next[key]
+  }
+  return next
+}
+
+/** Drop layout leftovers (`width` / `height` / `size`) from persisted `_node_styles`. */
+export function sanitizePersistedNodeStylesRecord(
+  styles: Record<string, NodeStyle> | null | undefined
+): Record<string, NodeStyle> | undefined {
+  if (!styles) return undefined
+  const next: Record<string, NodeStyle> = {}
+  for (const [nodeId, style] of Object.entries(styles)) {
+    const cleaned = pickFormatBrushStyle(style)
+    if (Object.keys(cleaned).length > 0) next[nodeId] = cleaned
+  }
+  return Object.keys(next).length > 0 ? next : undefined
+}
+
 export function collectFormatBrushStyle(
   inlineStyle: NodeStyle | undefined,
   persistedStyle: NodeStyle | undefined,

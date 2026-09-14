@@ -45,7 +45,11 @@ function shortenDiagramScopeHint(raw: string, headChars = 8): string {
 /** JSON shape from ``GET /api/kitty/mobile_open_bootstrap`` (snake_case keys). */
 export interface MobileKittyBootstrapPayload {
   recommended_scope: string | null
-  desktop_focus: { diagram_library_id: string | null; updated_at: number | null }
+  desktop_focus: {
+    diagram_library_id: string | null
+    updated_at: number | null
+    canvas_owner_present?: boolean
+  }
   context: KittyAgentContext
   diagram_type: string
   active_panel: string
@@ -59,19 +63,6 @@ function createKittySessionId(): string {
 const KITTY_CONTEXT_SYNC_MS = 220
 /** Ignore desktop_focus switches briefly after the user picks a diagram on mobile. */
 const USER_DIAGRAM_OVERRIDE_MS = 3000
-/**
- * Desktop focus is trusted only when recently refreshed (canvas heartbeat keeps it warm).
- * Stale Redis leftovers after a crash/logout must not bind mobile to an old diagram.
- */
-const DESKTOP_FOCUS_FRESH_SEC = 180
-
-function isDesktopFocusFresh(updatedAtEpochSec: number | null): boolean {
-  if (updatedAtEpochSec == null || !Number.isFinite(updatedAtEpochSec)) {
-    return false
-  }
-  const ageSec = Math.floor(Date.now() / 1000) - updatedAtEpochSec
-  return ageSec >= 0 && ageSec <= DESKTOP_FOCUS_FRESH_SEC
-}
 
 export function useMobileKittyPairing(
   kitty: MobileKittyAgentApi,
@@ -223,8 +214,10 @@ export function useMobileKittyPairing(
     return true
   })
   const kittyFocusPushPreferred = computed(() => kitty.isConnected.value === true)
-  const { diagramLibraryId: kittyDesktopLibraryId, updatedAt: kittyDesktopFocusUpdatedAt } =
-    useKittyDesktopFocusHint(kittyDesktopPollOn, kittyFocusPushPreferred)
+  const { diagramLibraryId: kittyDesktopLibraryId } = useKittyDesktopFocusHint(
+    kittyDesktopPollOn,
+    kittyFocusPushPreferred
+  )
   const bootstrapLastFailureAt = ref(0)
   let bootstrapInFlight: Promise<void> | null = null
 
@@ -233,7 +226,8 @@ export function useMobileKittyPairing(
    * - force ephemeral / create-new → page session id
    * - user/follow library id → that id
    * - bootstrap live|library recommended_scope → that id
-   * - never bind from bare stale desktop_focus alone
+   * - never bind from bare leftover desktop_focus (needs canvas-owner WS lease)
+   * - live canvas-owner presence binds even without a live_spec snapshot
    */
   const kittyPairScope = computed(() => {
     if (forceEphemeralSession.value) {
@@ -630,9 +624,8 @@ export function useMobileKittyPairing(
   }
 
   watch(
-    [kittyDesktopLibraryId, kittyDesktopFocusUpdatedAt],
-    ([libraryId, focusUpdatedAt], previous) => {
-      const previousId = Array.isArray(previous) ? previous[0] : undefined
+    kittyDesktopLibraryId,
+    (libraryId, previousId) => {
       if (libraryId == null || libraryId === '') {
         const hadPrevious = typeof previousId === 'string' && previousId.trim() !== ''
         if (hadPrevious || (activeDiagramId.value != null && activeDiagramId.value !== '')) {
@@ -642,10 +635,6 @@ export function useMobileKittyPairing(
           })
           options.onDebugLine?.('#desk', 'focus cleared → ephemeral')
         }
-        return
-      }
-      if (!isDesktopFocusFresh(focusUpdatedAt)) {
-        options.onDebugLine?.('#desk', `stale focus ignored ${libraryId.slice(0, 8)}`)
         return
       }
       void applyDesktopFocusLibrary(libraryId)

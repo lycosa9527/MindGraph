@@ -19,6 +19,7 @@ from typing import List, Optional
 from sqlalchemy import select
 
 from models.domain.knowledge_space import KnowledgeDocument
+from services.knowledge.chat_handoff_sse import publish_handoff_status
 from services.redis.redis_async_ops import AsyncRedisOps
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.db.rls_context import RlsContext, rls_async_session
@@ -222,6 +223,7 @@ async def update_handoff_status(
     await AsyncRedisOps.set_with_ttl(_code_key(code), payload, HANDOFF_TTL_SECONDS)
     if status != "waiting":
         await AsyncRedisOps.set_remove(_user_codes_key(record.user_id), code)
+    await publish_handoff_status(code, status, record.package_id, document_id)
     return True
 
 

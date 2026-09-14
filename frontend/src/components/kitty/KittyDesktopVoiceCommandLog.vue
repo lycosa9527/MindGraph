@@ -30,7 +30,7 @@ function formatTime(at: number): string {
       class="kitty-voice-log pointer-events-none fixed z-[59] w-[min(17rem,calc(100vw-5rem))] select-none"
       :style="{
         left: 'max(12px, env(safe-area-inset-left))',
-        bottom: 'calc(max(12px, env(safe-area-inset-bottom)) + 4.5rem)',
+        bottom: 'calc(56px + env(safe-area-inset-bottom, 0px) + 4.5rem)',
       }"
       role="log"
       :aria-label="t('canvas.kittyVoiceCommandLogAria')"

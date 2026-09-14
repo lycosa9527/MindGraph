@@ -38,13 +38,7 @@ export { useCanvasKittyDesktopPairing } from './kitty/useCanvasKittyDesktopPairi
 export { useKittyDesktopRemoteSync } from './kitty/useKittyDesktopRemoteSync'
 export { useKittyDesktopLiveSpecSync } from './kitty/useKittyDesktopLiveSpecSync'
 export { useKittyDesktopDiagramUpdateBridge } from './kitty/useKittyDesktopDiagramUpdateBridge'
-export {
-  KITTY_DESKTOP_PAIR_WAIT_SEC,
-  KITTY_FOCUS_RECOVERY_POLL_MS,
-  KITTY_LIVE_CONTEXT_POLL_MS,
-  KITTY_MOBILE_WATCH_MS,
-  KITTY_PAIR_POLL_MS,
-} from './kitty/runKittyIntervalPoll'
+export { KITTY_DESKTOP_PAIR_WAIT_SEC } from './kitty/runKittyIntervalPoll'
 export {
   buildKittyDiagramContext,
   buildKittyContextPreferStore,

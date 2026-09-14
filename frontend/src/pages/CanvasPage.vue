@@ -1618,7 +1618,7 @@ onUnmounted(() => {
         :is-collab-guest="isCollabGuest"
         :is-viewer="isViewer"
         :workshop-role="workshopRole"
-        @save-requested="handleSaveKey"
+        @save-requested="() => handleSaveKey({ recordHistory: false })"
         @snapshot-recall="handleSnapshotRecall"
         @snapshot-delete="handleSnapshotDelete"
       />

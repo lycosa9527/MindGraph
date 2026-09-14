@@ -1,3 +1,7 @@
+import {
+  omitNodeStyleLayoutSizes,
+  pickFormatBrushStyle,
+} from '@/composables/canvasToolbar/formatBrushStyle'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { i18n } from '@/i18n'
@@ -96,12 +100,16 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
         (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') &&
         Object.keys(updates.style).length > 0
       ) {
+        merged = {
+          ...merged,
+          style: omitNodeStyleLayoutSizes(merged.style) ?? {},
+        }
         if (!ctx.data.value._node_styles) {
           ctx.data.value._node_styles = {}
         }
         ctx.data.value._node_styles[nodeId] = {
           ...(ctx.data.value._node_styles[nodeId] || {}),
-          ...merged.style,
+          ...pickFormatBrushStyle(merged.style),
         }
       }
     }

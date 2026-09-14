@@ -44,6 +44,7 @@ import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { DOC_SUMMARY_MAX_INPUT_CHARS } from '@/config/docSummaryApi'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import { useDiagramStore } from '@/stores'
+import { diagramSourceKindFromDocument } from '@/utils/diagramSourceKind'
 import { docSummarySourceLabel, toDocSummaryMarkdownName } from '@/utils/docSummaryMarkdownName'
 
 type SummaryTab = 'file' | 'paste' | 'chat' | 'document' | 'image' | 'web'
@@ -147,6 +148,31 @@ const isIndexing = computed(
 /** Lite mode keeps a single active source per diagram session. */
 const activeSource = computed(() => documents.value[0] ?? null)
 const hasActiveSource = computed(() => activeSource.value !== null)
+
+function applyLiteChromeForSource(): void {
+  if (!docSummaryLiteUi || !activeSource.value) {
+    return
+  }
+  const kind = diagramSourceKindFromDocument(activeSource.value)
+  if (kind === 'web') {
+    liteEntry.value = 'web'
+    activeTab.value = 'web'
+    return
+  }
+  liteEntry.value = 'doc'
+  if (activeTab.value === 'web') {
+    activeTab.value = 'file'
+  }
+}
+
+watch(
+  activeSource,
+  () => {
+    applyLiteChromeForSource()
+  },
+  { immediate: true }
+)
+
 const isSourceProcessing = computed(
   () => activeSource.value?.status === 'processing' || activeSource.value?.status === 'pending'
 )

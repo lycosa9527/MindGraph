@@ -59,6 +59,7 @@ import {
   CANVAS_ZHIHUI_DIAGRAM_MENU_ITEM,
 } from '@/config/canvasExportMenu'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
+import { useDiagramSourceLock } from '@/composables/mindMap/useDiagramSourceLock'
 import { docSummaryLiteIntent } from '@/composables/mindMap/useDocSummaryLiteSaveAndGenerate'
 import {
   useAuthStore,
@@ -92,6 +93,19 @@ const classroomStore = useMindClassroomStore()
 const voiceNotesStore = useVoiceNotesStore()
 const route = useRoute()
 const { activeTool, handleToolSelect, openTool } = useMindMapSideToolbarState()
+const sourceLock = useDiagramSourceLock()
+const docGenerateLocked = computed(() => sourceLock.isLocked('doc'))
+const webGenerateLocked = computed(() => sourceLock.isLocked('web'))
+const voiceSummaryLocked = computed(() => sourceLock.isLocked('voice'))
+const docGenerateTooltip = computed(() =>
+  docGenerateLocked.value ? sourceLock.lockMessage.value : t('canvas.ribbon.docGenerate')
+)
+const webGenerateTooltip = computed(() =>
+  webGenerateLocked.value ? sourceLock.lockMessage.value : t('canvas.ribbon.webGenerate')
+)
+const voiceSummaryTooltip = computed(() =>
+  voiceSummaryLocked.value ? sourceLock.lockMessage.value : t('canvas.ribbon.voiceSummary')
+)
 
 const showCommunityExport = computed(() => featureCommunity.value && authStore.isAuthenticated)
 
@@ -226,13 +240,22 @@ async function handleReset() {
 }
 
 function openDocGenerate(kind: 'file' | 'web'): void {
-  docSummaryLiteIntent.value = kind === 'web' ? 'web' : 'doc'
+  const requested = kind === 'web' ? 'web' : 'doc'
+  if (sourceLock.isLocked(requested)) {
+    sourceLock.notifyLocked()
+    return
+  }
+  docSummaryLiteIntent.value = requested
   const tab = kind === 'web' ? 'web' : DOC_SUMMARY_LITE_UI ? 'file' : 'document'
   openTool('document_summary')
   eventBus.emit('mindmap:doc_summary_tab', { tab })
 }
 
 function openVoiceSummary(): void {
+  if (sourceLock.isLocked('voice')) {
+    sourceLock.notifyLocked()
+    return
+  }
   void voiceNotesStore.enableAndShowModal()
 }
 
@@ -543,7 +566,7 @@ watch(
       <template v-if="ribbonTab === 'file'">
       <div class="mm-btn-group">
         <ElTooltip
-          :content="t('common.save')"
+          :content="t('canvas.ribbon.tip.save')"
           placement="bottom"
         >
           <button
@@ -560,6 +583,7 @@ watch(
             >
           </button>
         </ElTooltip>
+        <CanvasToolbarMindMapHistoryVersions :compact="props.compact" />
       </div>
       <span class="mm-sep" />
       <!-- Import / Export -->
@@ -818,64 +842,82 @@ watch(
             </button>
           </ElTooltip>
           <ElTooltip
-            :content="t('canvas.ribbon.docGenerate')"
+            :content="docGenerateTooltip"
             placement="bottom"
           >
-            <button
-              type="button"
-              class="mm-btn"
-              :class="{
-                'mm-btn--icon': props.compact,
-                'is-active': activeTool === 'document_summary',
-              }"
-              :aria-label="t('canvas.ribbon.docGenerate')"
+            <span
+              class="inline-flex shrink-0"
               @click="openDocGenerate('file')"
             >
-              <FileText class="w-4 h-4" />
-              <span
-                v-if="!props.compact"
-                class="mm-btn__label"
-                >{{ t('canvas.ribbon.docGenerate') }}</span
+              <button
+                type="button"
+                class="mm-btn"
+                :class="{
+                  'mm-btn--icon': props.compact,
+                  'is-active': activeTool === 'document_summary',
+                }"
+                :disabled="docGenerateLocked"
+                :aria-label="docGenerateTooltip"
+                @click.stop="openDocGenerate('file')"
               >
-            </button>
+                <FileText class="w-4 h-4" />
+                <span
+                  v-if="!props.compact"
+                  class="mm-btn__label"
+                  >{{ t('canvas.ribbon.docGenerate') }}</span
+                >
+              </button>
+            </span>
           </ElTooltip>
           <ElTooltip
-            :content="t('canvas.ribbon.webGenerate')"
+            :content="webGenerateTooltip"
             placement="bottom"
           >
-            <button
-              type="button"
-              class="mm-btn"
-              :class="{ 'mm-btn--icon': props.compact }"
-              :aria-label="t('canvas.ribbon.webGenerate')"
+            <span
+              class="inline-flex shrink-0"
               @click="openDocGenerate('web')"
             >
-              <Link2 class="w-4 h-4" />
-              <span
-                v-if="!props.compact"
-                class="mm-btn__label"
-                >{{ t('canvas.ribbon.webGenerate') }}</span
+              <button
+                type="button"
+                class="mm-btn"
+                :class="{ 'mm-btn--icon': props.compact }"
+                :disabled="webGenerateLocked"
+                :aria-label="webGenerateTooltip"
+                @click.stop="openDocGenerate('web')"
               >
-            </button>
+                <Link2 class="w-4 h-4" />
+                <span
+                  v-if="!props.compact"
+                  class="mm-btn__label"
+                  >{{ t('canvas.ribbon.webGenerate') }}</span
+                >
+              </button>
+            </span>
           </ElTooltip>
           <ElTooltip
-            :content="t('canvas.ribbon.voiceSummary')"
+            :content="voiceSummaryTooltip"
             placement="bottom"
           >
-            <button
-              type="button"
-              class="mm-btn"
-              :class="{ 'mm-btn--icon': props.compact }"
-              :aria-label="t('canvas.ribbon.voiceSummary')"
+            <span
+              class="inline-flex shrink-0"
               @click="openVoiceSummary"
             >
-              <Mic class="w-4 h-4" />
-              <span
-                v-if="!props.compact"
-                class="mm-btn__label"
-                >{{ t('canvas.ribbon.voiceSummary') }}</span
+              <button
+                type="button"
+                class="mm-btn"
+                :class="{ 'mm-btn--icon': props.compact }"
+                :disabled="voiceSummaryLocked"
+                :aria-label="voiceSummaryTooltip"
+                @click.stop="openVoiceSummary"
               >
-            </button>
+                <Mic class="w-4 h-4" />
+                <span
+                  v-if="!props.compact"
+                  class="mm-btn__label"
+                  >{{ t('canvas.ribbon.voiceSummary') }}</span
+                >
+              </button>
+            </span>
           </ElTooltip>
           <ElTooltip
             :content="t('canvas.mindMapSideToolbar.waterfall')"
@@ -965,7 +1007,6 @@ watch(
               >
             </button>
           </ElTooltip>
-          <CanvasToolbarMindMapHistoryVersions :compact="props.compact" />
         </div>
       </template>
     </div>

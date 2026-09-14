@@ -91,6 +91,17 @@ export function saveFlushFailureMessageKey(result: SaveFlushResult): string | nu
   }
 }
 
+/**
+ * History rows are manual checkpoints only. Autosave, leave flush, and the
+ * title-row status click persist the library row but must not add a version.
+ */
+export function shouldRecordManualSaveSnapshot(
+  result: SaveFlushResult,
+  recordHistory: boolean
+): boolean {
+  return recordHistory && result.saved === true
+}
+
 export interface DiagramSaveFlushFeedbackOptions {
   flush: () => Promise<SaveFlushResult>
   guardState: DiagramSaveGuardState

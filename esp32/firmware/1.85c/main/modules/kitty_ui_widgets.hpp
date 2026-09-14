@@ -19,7 +19,6 @@ struct KittyWidgets {
     lv_obj_t *mic_ring_b = nullptr;
     lv_obj_t *picker = nullptr;
     lv_obj_t *picker_list = nullptr;
-    lv_obj_t *picker_row = nullptr;
     lv_obj_t *work_ring = nullptr;
 };
 
@@ -29,3 +28,6 @@ KittyWidgets kitty_ui_build(
     lv_event_cb_t on_library,
     lv_event_cb_t on_choice
 );
+
+void kitty_ui_set_hidden(lv_obj_t *obj, bool hidden);
+void kitty_ui_picker_present(const KittyWidgets &widgets, bool open);

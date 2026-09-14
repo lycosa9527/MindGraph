@@ -16,9 +16,16 @@ constexpr const char *TAG = "kitty_in";
 void play_pcm_mono(const std::vector<uint8_t> &bytes)
 {
     if (bytes.size() < 2 || g_kitty_interrupt.load() || kitty_ui_is_hidden()) {
+        ESP_LOGW(
+            TAG,
+            "tts skip bytes=%u hidden=%d",
+            static_cast<unsigned>(bytes.size()),
+            static_cast<int>(kitty_ui_is_hidden())
+        );
         return;
     }
     if (!kitty_audio_spk_open()) {
+        ESP_LOGE(TAG, "tts speaker open failed");
         return;
     }
     g_kitty_playing_pcm.store(true);
@@ -29,7 +36,8 @@ void play_pcm_mono(const std::vector<uint8_t> &bytes)
         stereo[i * 2] = mono[i];
         stereo[i * 2 + 1] = mono[i];
     }
-    kitty_audio_spk_write(stereo.data(), stereo.size());
+    const bool wrote = kitty_audio_spk_write(stereo.data(), stereo.size());
+    ESP_LOGI(TAG, "tts play frames=%u ok=%d", static_cast<unsigned>(frames), static_cast<int>(wrote));
     g_kitty_playing_pcm.store(false);
 }
 

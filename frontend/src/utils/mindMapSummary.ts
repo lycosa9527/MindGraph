@@ -269,6 +269,71 @@ export function isMindMapSummaryExtentPath(
   return coveredPaths.some((covered) => path === covered || path.startsWith(`${covered}/`))
 }
 
+function childPathsOfParent(
+  parentPath: string,
+  nodes: readonly DiagramNode[],
+  connections: readonly Connection[]
+): string[] | null {
+  const parentId = findNodeIdByPathKey(
+    nodes as DiagramNode[],
+    connections as Connection[],
+    parentPath
+  )
+  if (!parentId || isMindMapTopicId(parentId)) return null
+  const childIds = buildMindMapTreeChildrenMap(connections).get(parentId) ?? []
+  if (childIds.length === 0) return null
+  const paths: string[] = []
+  for (const id of childIds) {
+    const path = mindMapNodePathKey(id, connections as Connection[], nodes)
+    if (!path) return null
+    paths.push(path)
+  }
+  return paths
+}
+
+/**
+ * Parent branch path when `coveredPaths` is every direct child of that branch.
+ * Topic is never returned.
+ */
+function fullyCoveredParentPath(
+  coveredPaths: readonly string[],
+  nodes: readonly DiagramNode[],
+  connections: readonly Connection[]
+): string | null {
+  if (coveredPaths.length === 0) return null
+  const prefix = pathParentPrefix(coveredPaths[0])
+  if (prefix == null || prefix === MINDMAP_TOPIC_ID) return null
+  if (!coveredPaths.every((path) => pathParentPrefix(path) === prefix)) return null
+  const childPaths = childPathsOfParent(prefix, nodes, connections)
+  if (!childPaths || childPaths.length !== coveredPaths.length) return null
+  const covered = new Set(coveredPaths)
+  if (!childPaths.every((path) => covered.has(path))) return null
+  return prefix
+}
+
+/**
+ * Ancestor branches whose entire child list is already in the 概要 range.
+ * Used so the brace also wraps those branch topics.
+ */
+export function expandSummaryRangePaths(
+  coveredPaths: readonly string[],
+  nodes: readonly DiagramNode[],
+  connections: readonly Connection[]
+): string[] {
+  const ancestors: string[] = []
+  let current: readonly string[] = coveredPaths
+  const seen = new Set<string>()
+  for (;;) {
+    const parent = fullyCoveredParentPath(current, nodes, connections)
+    if (parent == null || seen.has(parent)) break
+    seen.add(parent)
+    ancestors.unshift(parent)
+    current = [parent]
+  }
+  if (ancestors.length === 0) return [...coveredPaths]
+  return [...ancestors, ...coveredPaths]
+}
+
 /** Every tree path that shares the parent of the current 概要 range. */
 export function siblingPathsSharingParent(
   coveredPaths: readonly string[],
@@ -386,7 +451,8 @@ function selectedSubtreeRoot(
 /**
  * Insert 概要 range. A selected branch with children covers every direct child
  * (XMind-style). A parent plus some descendants still covers the full child list.
- * Consecutive sibling picks stay as-is.
+ * Consecutive sibling picks stay as-is. When that list is every child of a
+ * branch, the brace also wraps the branch (see `expandSummaryRangePaths`).
  */
 export function resolveMindMapSummaryInsertRange(
   nodeIds: readonly string[],

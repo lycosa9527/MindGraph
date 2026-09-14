@@ -7,6 +7,7 @@ import {
   saveBlockReasonToMessageKey,
   saveFlushFailureMessageKey,
   shouldAutoSaveAfterLlmModelCompleted,
+  shouldRecordManualSaveSnapshot,
 } from '@/composables/editor/diagramSaveFeedback'
 import { resolveAutoSaveTargetDiagramId } from '@/stores/savedDiagrams'
 import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
@@ -150,6 +151,17 @@ describe('diagram save guards and feedback', () => {
     expect(shouldAutoSaveAfterLlmModelCompleted(true)).toBe(true)
     expect(shouldAutoSaveAfterLlmModelCompleted(false)).toBe(false)
     expect(shouldAutoSaveAfterLlmModelCompleted(undefined)).toBe(false)
+  })
+
+  it('records a history version only after an explicit successful save', () => {
+    expect(shouldRecordManualSaveSnapshot({ saved: true, reason: 'success' }, true)).toBe(true)
+    expect(shouldRecordManualSaveSnapshot({ saved: true, reason: 'success' }, false)).toBe(false)
+    expect(shouldRecordManualSaveSnapshot({ saved: false, reason: 'skipped_guards' }, true)).toBe(
+      false
+    )
+    expect(shouldRecordManualSaveSnapshot({ saved: false, reason: 'skipped_empty' }, true)).toBe(
+      false
+    )
   })
 
   it('buildDiagramSaveGuardState maps store flags', () => {

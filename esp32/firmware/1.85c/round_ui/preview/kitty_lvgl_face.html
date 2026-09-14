@@ -73,7 +73,7 @@
       border-radius: 26px; background: #FFFFFF; border: 1px solid #E2E8F0;
       font-size: 13px; line-height: 52px; text-align: center; overflow: hidden;
       text-overflow: ellipsis; white-space: nowrap; padding: 0 12px;
-      z-index: 5;
+      z-index: 3;
     }
     .mic {
       position: absolute; left: 238px; top: 258px; width: 64px; height: 64px;
@@ -85,7 +85,7 @@
     .picker {
       position: absolute; left: 40px; top: 62px; width: 280px; height: 198px;
       border-radius: 16px; background: #FFFFFF; border: 1px solid #E2E8F0;
-      padding: 8px; overflow: hidden; z-index: 4;
+      padding: 8px; overflow: hidden; z-index: 5;
     }
     .picker-row {
       height: 40px; margin-bottom: 6px; border-radius: 12px;
@@ -150,7 +150,7 @@
         speak: false,
         picker: false,
         lib: "图库",
-        note: "What boots today: bootstrap context has no diagram_title, so the chip stays 图库. Token works; desktop_focus is 未命名思维导图."
+        note: "Idle face: cat, 图库 chip, mic. Chip shows the focused diagram title after a pick or desktop focus."
       },
       hold: {
         live: "聆听中",
@@ -174,7 +174,7 @@
         speak: false,
         picker: false,
         lib: "图库",
-        note: "User line is right-aligned violet. Watch does not fetch GET /api/diagrams yet."
+        note: "User line is right-aligned violet. Library list stays closed until 图库 is tapped."
       },
       choose: {
         live: "思考中",
@@ -186,7 +186,7 @@
         speak: false,
         picker: false,
         lib: "图库",
-        note: "Two chips only. Real account has 114 diagrams; firmware picker is not a list yet."
+        note: "Clarify chips sit over the cat. Opening 图库 hides chips and the cat so the list is the only face content."
       },
       speak: {
         live: "说话中",
@@ -198,7 +198,7 @@
         speak: true,
         picker: false,
         lib: "支付宝支付服务合同",
-        note: "Speaking still swaps mascot.png → speaking.png. CosyVoice PCM is 22050 Hz."
+        note: "Speaking keeps the idle cat still. CosyVoice PCM is 22050 Hz."
       },
       picker: {
         live: "实时对话",
@@ -210,7 +210,7 @@
         speak: false,
         picker: true,
         lib: "图库",
-        note: "Tap 图库 opens the list on LVGL layer_top, above the RGBA mascot and leftover Super widgets. The cat stays; the sheet covers it."
+        note: "图库 opens an exclusive list on the face (cat and chips hidden). 图库 stays in its own band below the list so a row tap cannot click-through."
       }
     };
 
@@ -221,15 +221,18 @@
       document.getElementById("kitty").textContent = s.kitty;
       document.getElementById("library").textContent = s.lib;
       document.getElementById("note").textContent = s.note;
-      document.getElementById("mascot").src = s.speak ? "kitty/speaking.png" : "kitty/mascot.png";
+      document.getElementById("mascot").src = "kitty/mascot.png";
       document.getElementById("mic").classList.toggle("hold", s.hold);
       const a = document.getElementById("chipA");
       const b = document.getElementById("chipB");
       a.textContent = s.a;
       b.textContent = s.b;
-      a.classList.toggle("hidden", !s.a);
-      b.classList.toggle("hidden", !s.b);
+      a.classList.toggle("hidden", s.picker || !s.a);
+      b.classList.toggle("hidden", s.picker || !s.b);
       document.getElementById("picker").classList.toggle("hidden", !s.picker);
+      document.getElementById("mascot").classList.toggle("hidden", s.picker);
+      document.getElementById("user").classList.toggle("hidden", s.picker || !s.user);
+      document.getElementById("kitty").classList.toggle("hidden", s.picker || !s.kitty);
     }
 
     document.querySelectorAll(".tabs button").forEach((btn) => {

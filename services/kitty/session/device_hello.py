@@ -233,6 +233,8 @@ async def apply_hello_to_session(
     sess = voice_sessions.get(voice_session_id)
     lane_raw = sess.get("_kitty_client_lane") if isinstance(sess, dict) else None
     lane = lane_raw.strip() if isinstance(lane_raw, str) and lane_raw.strip() else "unknown"
+    if isinstance(sess, dict) and "tts_enabled" in message:
+        sess["_kitty_tts_enabled"] = bool(message.get("tts_enabled"))
     if device_id and isinstance(sess, dict):
         sess["_kitty_device_id"] = device_id
         sess["_kitty_firmware"] = firmware

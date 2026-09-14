@@ -68,7 +68,7 @@ export function canOpenTrainingEvents(
   isPlatformLevel: boolean,
   orgId: number | null
 ): boolean {
-  if (!isPlatformLevel) return true
+  if (isPlatformLevel) return true
   return orgId != null
 }
 

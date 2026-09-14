@@ -43,6 +43,6 @@ void kitty_agent_begin_user_turn_once();
 bool kitty_agent_is_library_id(const std::string &id);
 bool kitty_agent_has_library_scope();
 bool kitty_agent_bind_ws();
-bool kitty_agent_connect_session();
+bool kitty_agent_connect_session(bool adopt_desktop);
 bool kitty_agent_attach_scope(const KittyDiagramItem &item);
 bool kitty_agent_follow_library(const KittyDiagramItem &item);

@@ -40,8 +40,6 @@ import {
   teardownMindmateCollabClient,
 } from '@/utils/mindmateCollabTeardown'
 
-const ORG_REFRESH_INTERVAL_MS = 30_000
-
 const props = withDefaults(
   defineProps<{
     /** Render inside ChatHistory scroll list (no outer chrome). */
@@ -71,7 +69,6 @@ const authStore = useAuthStore()
 const loading = ref(false)
 const orgSessions = ref<CollabSessionRow[]>([])
 const localSessions = ref<CollabSessionRow[]>([])
-let refreshTimer: ReturnType<typeof setInterval> | null = null
 
 const activeCode = computed(() => {
   const raw = route.query.code
@@ -272,18 +269,28 @@ async function stopSession(row: CollabSessionRow): Promise<void> {
   })
 }
 
+function onHistoryVisibility(): void {
+  if (document.visibilityState !== 'visible') return
+  void fetchSessions(false)
+}
+
+function onSessionsChanged(): void {
+  loadLocalSessions()
+  void fetchSessions(false)
+}
+
 onMounted(() => {
   loadLocalSessions()
   void fetchSessions(true)
-  refreshTimer = setInterval(() => void fetchSessions(false), ORG_REFRESH_INTERVAL_MS)
-  window.addEventListener(MINDMATE_COLLAB_SESSIONS_CHANGED_EVENT, loadLocalSessions)
+  document.addEventListener('visibilitychange', onHistoryVisibility)
+  window.addEventListener(MINDMATE_COLLAB_SESSIONS_CHANGED_EVENT, onSessionsChanged)
   window.addEventListener(MINDMATE_COLLAB_SESSION_REMOVED_EVENT, onSessionRemoved)
   window.addEventListener('storage', onStorage)
 })
 
 onUnmounted(() => {
-  if (refreshTimer) clearInterval(refreshTimer)
-  window.removeEventListener(MINDMATE_COLLAB_SESSIONS_CHANGED_EVENT, loadLocalSessions)
+  document.removeEventListener('visibilitychange', onHistoryVisibility)
+  window.removeEventListener(MINDMATE_COLLAB_SESSIONS_CHANGED_EVENT, onSessionsChanged)
   window.removeEventListener(MINDMATE_COLLAB_SESSION_REMOVED_EVENT, onSessionRemoved)
   window.removeEventListener('storage', onStorage)
 })

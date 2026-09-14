@@ -51,7 +51,6 @@ const emit = defineEmits<{
   }): void
 }>()
 
-const ORG_REFRESH_INTERVAL_MS = 30_000
 const CODE_SAFE_RE = /[^2-9A-HJ-KM-NP-Z]/g
 
 const { t } = useLanguage()
@@ -74,7 +73,6 @@ const orgSessions = ref<
 const joinCode = ref(['', '', '', '', '', ''])
 const isJoining = ref(false)
 const codeInputRefs = ref<(HTMLInputElement | null)[]>([])
-let orgRefreshTimer: ReturnType<typeof setInterval> | null = null
 let autoJoinTimeout: ReturnType<typeof setTimeout> | null = null
 
 function sanitizeChar(raw: string): string {
@@ -123,7 +121,6 @@ function navigateToRoom(
   options?: { seedThread?: boolean },
 ) {
   collabPopoverVisible.value = false
-  stopOrgRefresh()
   const formatted = formatMindmateCollabCode(code)
   if (props.embedInPanel) {
     if (sessionMeta) {
@@ -218,19 +215,16 @@ async function fetchOrgSessions(showSpinner = true) {
   }
 }
 
-function stopOrgRefresh() {
-  if (orgRefreshTimer !== null) {
-    clearInterval(orgRefreshTimer)
-    orgRefreshTimer = null
-  }
+function onOrgVisibility(): void {
+  if (document.visibilityState !== 'visible') return
+  if (!collabPopoverVisible.value || collabPanelMode.value !== 'organization') return
+  void fetchOrgSessions(false)
 }
 
 async function openOrgPanel() {
   collabPanelMode.value = 'organization'
   orgSessions.value = []
   await fetchOrgSessions(true)
-  stopOrgRefresh()
-  orgRefreshTimer = setInterval(() => void fetchOrgSessions(false), ORG_REFRESH_INTERVAL_MS)
 }
 
 function joinOrgSession(session: {
@@ -272,7 +266,6 @@ function onCollabDropdownCommand(command: string) {
 
 function closeCollabPopover() {
   collabPopoverVisible.value = false
-  stopOrgRefresh()
 }
 
 function prefillAndAutoJoin(rawCode: string) {
@@ -292,8 +285,9 @@ function prefillAndAutoJoin(rawCode: string) {
   }, 500)
 }
 
+document.addEventListener('visibilitychange', onOrgVisibility)
 onUnmounted(() => {
-  stopOrgRefresh()
+  document.removeEventListener('visibilitychange', onOrgVisibility)
   if (autoJoinTimeout !== null) {
     clearTimeout(autoJoinTimeout)
     autoJoinTimeout = null

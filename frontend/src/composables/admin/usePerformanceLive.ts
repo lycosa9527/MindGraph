@@ -1,6 +1,6 @@
 /**
- * Poll admin live performance snapshot (latest values only).
- * Teardown on tab unmount and on Vue Router navigation away (stops interval + aborts fetch).
+ * Admin live performance snapshot (latest values only).
+ * GET on mount and when the tab becomes visible.
  */
 import { computed, ref, shallowRef, watch } from 'vue'
 

@@ -9,7 +9,6 @@ import { useRouter } from 'vue-router'
 
 import { defineStore } from 'pinia'
 
-import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { getDefaultDiagramName } from '@/composables/editor/useDiagramLabels'
 import {
@@ -42,6 +41,11 @@ import {
 import { useLiveTranslationStore } from '@/stores/liveTranslation'
 import { getDefaultTemplate } from '@/stores/specLoader'
 import { apiRequestJson } from '@/utils/apiClient'
+import {
+  diagramSourceLockMessage,
+  fetchLockedDiagramSourceKind,
+  isDiagramSourceKindLocked,
+} from '@/utils/diagramSourceKind'
 import {
   VOICE_NOTES_SPEECH_RMS_THRESHOLD,
   VOICE_NOTES_TARGET_SAMPLE_RATE,
@@ -348,6 +352,49 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     if (!saved?.id) return null
     savedDiagramsStore.setActiveDiagram(saved.id)
     return saved.id
+  }
+
+  function notifyDiagramSourceLocked(kind: 'doc' | 'web' | 'voice'): void {
+    notify.warning(diagramSourceLockMessage((key, named) => t(key, named), kind))
+  }
+
+  async function resolvePackageIdForSourceLock(): Promise<number | null> {
+    if (packageId.value !== null) {
+      return packageId.value
+    }
+    const targetId = resolveCanvasDiagramId({
+      routeDiagramId: routeDiagramId(),
+      activeDiagramId: savedDiagramsStore.activeDiagramId,
+    })
+    if (!targetId) {
+      return null
+    }
+    const pkg = await apiRequestJson<DocSummaryPackage>(`${DOC_SUMMARY_API_BASE}/session/start`, {
+      method: 'POST',
+      body: JSON.stringify({
+        diagram_id: targetId,
+        diagram_title: titleForDiagram(targetId),
+        create_if_missing: false,
+      }),
+    })
+    return pkg.id
+  }
+
+  async function rejectIfForeignDiagramSource(): Promise<boolean> {
+    try {
+      const pkgId = await resolvePackageIdForSourceLock()
+      if (pkgId === null) return false
+      const locked = await fetchLockedDiagramSourceKind(pkgId)
+      if (!isDiagramSourceKindLocked(locked, 'voice')) {
+        return false
+      }
+      if (locked) {
+        notifyDiagramSourceLocked(locked)
+      }
+      return true
+    } catch {
+      return false
+    }
   }
 
   async function bindToDiagram(targetId: string, title: string): Promise<boolean> {
@@ -805,6 +852,9 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
       }
       const bound = await bindToDiagram(targetId, titleForDiagram(targetId))
       if (!bound) return
+      if (await rejectIfForeignDiagramSource()) {
+        return
+      }
     }
     modalOpen.value = true
   }
@@ -846,6 +896,9 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     }
     if (micConflictActive()) {
       notify.warning(t('auth.voiceNotes.micConflict'))
+      return
+    }
+    if (await rejectIfForeignDiagramSource()) {
       return
     }
 
@@ -981,7 +1034,6 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
       })
       transcriptDirty.value = false
       lastSavedAt.value = savedAt
-      tryOpenDocSummaryPanel()
     } catch (exc) {
       const msg = exc instanceof Error ? exc.message : t('auth.voiceNotes.ingestFailed')
       error.value = msg
@@ -989,19 +1041,6 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     } finally {
       ingesting.value = false
       if (transcriptDirty.value) scheduleTranscriptSave()
-    }
-  }
-
-  function tryOpenDocSummaryPanel(): void {
-    const id = diagramId.value
-    if (!id) return
-    const route = router.currentRoute.value
-    const routeDiagramId = typeof route.query.diagramId === 'string' ? route.query.diagramId : null
-    if (route.path !== '/canvas' || routeDiagramId !== id) return
-    try {
-      useMindMapSideToolbarState().openTool('document_summary')
-    } catch {
-      /* canvas toolbar may not be mounted yet */
     }
   }
 

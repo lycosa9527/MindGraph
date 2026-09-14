@@ -15,11 +15,6 @@ using namespace esp_brookesia;
 
 using AudioPlaybackHelper = esp_brookesia::service::helper::AudioPlayback;
 
-constexpr const char *AUDIO_WAKEUP_WORD_MODEL_PARTITION_LABEL = "model";
-constexpr const char *AUDIO_WAKEUP_WORD_MN_LANGUAGE = "cn";
-constexpr uint32_t AUDIO_WAKEUP_START_TIMEOUT_MS = 30000;
-constexpr uint32_t AUDIO_WAKEUP_END_TIMEOUT_MS = 10000;
-
 bool GeneralServices::init()
 {
     auto &service_manager = service::ServiceManager::get_instance();
@@ -53,12 +48,6 @@ bool GeneralServices::init_audio()
         .decoder = {},
         .afe = {
             .vad = hal::AudioProcessorAFE_VAD_Config{},
-            .wakenet = hal::AudioProcessorAFE_WakeNetConfig{
-                .model_partition_label = AUDIO_WAKEUP_WORD_MODEL_PARTITION_LABEL,
-                .mn_language = AUDIO_WAKEUP_WORD_MN_LANGUAGE,
-                .start_timeout_ms = AUDIO_WAKEUP_START_TIMEOUT_MS,
-                .end_timeout_ms = AUDIO_WAKEUP_END_TIMEOUT_MS,
-            },
         },
     };
     BROOKESIA_CHECK_FALSE_RETURN(
@@ -66,14 +55,7 @@ bool GeneralServices::init_audio()
         false,
         "Failed to configure audio processor"
     );
-    BROOKESIA_LOGI(
-        "Audio processor AFE configured: model_partition(%1%), mn_language(%2%), wake_start_timeout_ms(%3%), "
-        "wake_end_timeout_ms(%4%); agent AudioEncoder defaults keep enable_afe=true",
-        AUDIO_WAKEUP_WORD_MODEL_PARTITION_LABEL,
-        AUDIO_WAKEUP_WORD_MN_LANGUAGE,
-        AUDIO_WAKEUP_START_TIMEOUT_MS,
-        AUDIO_WAKEUP_END_TIMEOUT_MS
-    );
+    BROOKESIA_LOGI("Audio processor AFE configured for PTT (AEC/NS/AGC, WakeNet off)");
 #endif
 
     return true;

@@ -116,7 +116,7 @@ Treat Mobile Kitty, desktop canvas, and the one-sentence panel as **one session*
 
 | Domain | Direction | Channel | Notes |
 |--------|-----------|---------|-------|
-| Scope / pairing | Desktop → Mobile | Redis ``desktop_focus`` + WS ``desktop_focus_update`` (+ slow REST recovery) | Stale focus ignored (≤180s); empty → ephemeral |
+| Scope / pairing | Desktop → Mobile | Redis ``desktop_focus`` + WS ``desktop_focus_update`` (+ slow REST recovery) | Bind only while canvas-owner WS lease is live; leftover Redis without an owner stays unbound |
 | Open diagram | Mobile → Desktop | Redis action queue + SSE ``desktop_action_pending`` → instant LPOP | Library pick / durable create-new → ``open_library_diagram`` |
 | Diagram mutations (voice/Kitty) | Mobile → Desktop | Redis ``desktop_wake`` SSE ``diagram_update`` (+ local owner WS when same worker) | Verified ``mutation_id`` applied by canvas owner tab; observers skip |
 | Canvas actions (auto_complete…) | Mobile → Desktop | Redis ``desktop_wake`` SSE ``canvas_action`` (+ local owner WS when same worker) | Browser executes; no cross-worker WS lookup required |
@@ -148,7 +148,7 @@ While mobile Kitty is **off**, desktop opens **SSE** on `GET /api/kitty/desktop_
 
 **Tab leader:** `BroadcastChannel` (`kittyDesktopPollLeader.ts`) elects one desktop tab per browser profile to run the watch/SSE loop so multiple open MindGraph tabs do not multiply pairing traffic.
 
-**Mobile `desktop_focus`:** Desktop `PUT /api/kitty/desktop_focus` writes Redis and pushes ``desktop_focus_update`` to mobile Kitty WS on this worker, plus Redis control ``desktop_focus`` so other workers can push to their local mobile sockets. Mobile keeps a slow REST recovery poll while WS is connected (fast poll only pre-WS). Focus is trusted only when recently refreshed (desktop canvas heartbeat). After focus clear, mobile resets to an ephemeral session.
+**Mobile `desktop_focus`:** Desktop `PUT /api/kitty/desktop_focus` writes Redis on canvas open/switch and clears on unmount (no heartbeat). The write pushes ``desktop_focus_update`` to mobile Kitty WS on this worker, plus Redis control ``desktop_focus`` so other workers can push to their local mobile sockets. Mobile keeps a slow REST recovery poll while WS is connected (fast poll only pre-WS). Watch/phone bootstrap binds that library only while the desktop canvas-owner WebSocket lease is live; crash leftovers without an owner stay unbound. After focus clear, mobile resets to an ephemeral session.
 
 Desktop **canvas-owner start** on a scope **coexists** with mobile: sessionmeta may keep `client_lane: mobile` when the phone is still connected (`preserve_mobile_lane` for mobile starts), and desktop start does **not** clear `kitty:mobile_active` for that scope (see `lifecycle.py`).
 

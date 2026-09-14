@@ -284,20 +284,31 @@ export function createFileCenterActivePackage(enabled: Ref<boolean>) {
   }
 
   watch(
-    () => activeDiagramId.value,
-    (diagramId, previousDiagramId) => {
-      // Library / SPA switch: drop sticky package and rebind to the new diagram's COS.
-      if (diagramId && previousDiagramId && diagramId !== previousDiagramId) {
-        clearLocalSession()
-        if (enabled.value) {
-          void resolveSession()
-        }
+    () => [enabled.value, activeDiagramId.value] as const,
+    ([isEnabled, diagramId], previous) => {
+      if (!isEnabled || !diagramId) {
         return
       }
-      if (diagramId && !previousDiagramId && pendingPackageId.value !== null) {
-        void linkPendingPackage(diagramId)
+      const wasEnabled = previous?.[0] ?? false
+      const previousDiagramId = previous?.[1] ?? null
+      // Library / SPA switch: drop sticky package and rebind to the new diagram's COS.
+      if (previousDiagramId && diagramId !== previousDiagramId) {
+        clearLocalSession()
+        void resolveSession()
+        return
       }
-    }
+      const becameEnabled = !wasEnabled
+      const gainedDiagram = !previousDiagramId
+      if (!becameEnabled && !gainedDiagram) {
+        return
+      }
+      if (pendingPackageId.value !== null && gainedDiagram) {
+        void linkPendingPackage(diagramId)
+        return
+      }
+      void resolveSession()
+    },
+    { immediate: true }
   )
 
   return {

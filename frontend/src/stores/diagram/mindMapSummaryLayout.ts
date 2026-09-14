@@ -1,6 +1,11 @@
 /**
  * Place v2 summary (概要) nodes after the main mind-map tree layout.
  */
+import {
+  omitNodeStyleLayoutSizes,
+  pickFormatBrushStyle,
+  sanitizePersistedNodeStylesRecord,
+} from '@/composables/canvasToolbar/formatBrushStyle'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
 import type {
@@ -12,6 +17,7 @@ import type {
 } from '@/types'
 import { mindMapLocationPathKey } from '@/utils/mindMapLocation'
 import {
+  expandSummaryRangePaths,
   filterTreeMindMapNodes,
   isMindMapSummaryExtentPath,
   isMindMapSummaryNode,
@@ -32,16 +38,32 @@ export const MINDMAP_SUMMARY_CHILD_GAP_Y = 10
 
 type SizedBox = { x: number; y: number; width: number; height: number }
 
+export type SummaryLiveNodeBox = {
+  x?: number
+  y?: number
+  width?: number
+  height?: number
+}
+
 function nodeBox(
   node: DiagramNode,
   widths: Record<string, number>,
-  heights: Record<string, number>
+  heights: Record<string, number>,
+  live?: SummaryLiveNodeBox
 ): SizedBox | null {
-  const x = node.position?.x
-  const y = node.position?.y
+  const x = live?.x ?? node.position?.x
+  const y = live?.y ?? node.position?.y
   if (x == null || y == null) return null
-  const width = widths[node.id] ?? node.style?.width ?? MIND_MAP_GEOMETRY.minWidth
-  const height = heights[node.id] ?? node.style?.height ?? MIND_MAP_GEOMETRY.minHeight
+  const liveW = live?.width
+  const liveH = live?.height
+  const width =
+    liveW != null && liveW >= MIND_MAP_GEOMETRY.minWidth
+      ? liveW
+      : (widths[node.id] ?? MIND_MAP_GEOMETRY.minWidth)
+  const height =
+    liveH != null && liveH >= MIND_MAP_GEOMETRY.minHeight
+      ? liveH
+      : (heights[node.id] ?? MIND_MAP_GEOMETRY.minHeight)
   return { x, y, width, height }
 }
 
@@ -60,7 +82,21 @@ function unionBoxes(boxes: SizedBox[]): SizedBox | null {
   return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
 }
 
-function summaryStyle(data: DiagramData | null | undefined): DiagramNode['style'] {
+function scrubPersistedLayoutSizes(data: DiagramData | null | undefined): void {
+  if (!data?._node_styles) return
+  const cleaned = sanitizePersistedNodeStylesRecord(data._node_styles)
+  if (cleaned) data._node_styles = cleaned
+  else delete data._node_styles
+}
+
+function scrubInlineNodeStyleLayoutSizes(nodes: readonly DiagramNode[]): void {
+  for (const node of nodes) {
+    const cleaned = omitNodeStyleLayoutSizes(node.style)
+    if (cleaned !== node.style) node.style = cleaned
+  }
+}
+
+function summaryStyle(data: DiagramData | null | undefined, nodeId: string): DiagramNode['style'] {
   const theme = getMindMapThemeForDiagram(data as { _mindmap_theme?: string | null } | null)
   return {
     backgroundColor: theme.topicBackgroundColor,
@@ -68,6 +104,7 @@ function summaryStyle(data: DiagramData | null | undefined): DiagramNode['style'
     textColor: theme.topicTextColor,
     nodeShape: 'rounded',
     borderWidth: MIND_MAP_GEOMETRY.borderWidth,
+    ...pickFormatBrushStyle(data?._node_styles?.[nodeId]),
   }
 }
 
@@ -102,14 +139,15 @@ function collectBoxesForPaths(
   connections: readonly Connection[],
   match: (path: string) => boolean,
   widths: Record<string, number>,
-  heights: Record<string, number>
+  heights: Record<string, number>,
+  liveById?: ReadonlyMap<string, SummaryLiveNodeBox>
 ): SizedBox[] {
   const boxes: SizedBox[] = []
   for (const node of treeNodes) {
     if (isMindMapSummaryNode(node)) continue
     const path = mindMapLocationPathKey(node.id, connections)
     if (!path || !match(path)) continue
-    const box = nodeBox(node, widths, heights)
+    const box = nodeBox(node, widths, heights, liveById?.get(node.id))
     if (box) boxes.push(box)
   }
   return boxes
@@ -154,7 +192,7 @@ function placeChildColumn(
   originX: number,
   originY: number,
   outward: 1 | -1,
-  style: DiagramNode['style'],
+  data: DiagramData | null | undefined,
   widths: Record<string, number>,
   heights: Record<string, number>,
   prefix: number[]
@@ -179,7 +217,7 @@ function placeChildColumn(
     const height = boxes[index].height
     const x = outward === 1 ? originX : originX - width
     nodes.push(
-      makeSummaryNode(id, child.text, x, y, style, {
+      makeSummaryNode(id, child.text, x, y, summaryStyle(data, id), {
         summaryId,
         summaryChildPath: [...prefix, index],
         mindMapSide: outward === 1 ? 'right' : 'left',
@@ -195,7 +233,7 @@ function placeChildColumn(
         nestedOriginX,
         y + height / 2,
         outward,
-        style,
+        data,
         widths,
         heights,
         [...prefix, index]
@@ -214,7 +252,8 @@ export function placeMindMapSummaryNodes(
   widths: Record<string, number>,
   heights: Record<string, number>
 ): DiagramNode[] {
-  const style = summaryStyle(data)
+  scrubPersistedLayoutSizes(data)
+  scrubInlineNodeStyleLayoutSizes(treeNodes)
   const placed: DiagramNode[] = []
   const byPath = new Map<string, DiagramNode>()
   for (const node of treeNodes) {
@@ -225,10 +264,13 @@ export function placeMindMapSummaryNodes(
   for (const summary of summaries) {
     const siblingBoxes: SizedBox[] = []
     const extentBoxes: SizedBox[] = []
+    const rangePaths = new Set(
+      expandSummaryRangePaths(summary.coveredPaths, treeNodes, connections)
+    )
     for (const [path, node] of byPath) {
       const box = nodeBox(node, widths, heights)
       if (!box) continue
-      if (summary.coveredPaths.includes(path)) siblingBoxes.push(box)
+      if (rangePaths.has(path)) siblingBoxes.push(box)
       if (isMindMapSummaryExtentPath(path, summary.coveredPaths)) extentBoxes.push(box)
     }
     const union = unionBoxes(siblingBoxes)
@@ -255,7 +297,7 @@ export function placeMindMapSummaryNodes(
         : tipX - MINDMAP_SUMMARY_TIP_NODE_GAP - rootW
     const rootY = union.y + union.height / 2 - rootH / 2
     placed.push(
-      makeSummaryNode(rootId, summary.text, rootX, rootY, style, {
+      makeSummaryNode(rootId, summary.text, rootX, rootY, summaryStyle(data, rootId), {
         summaryId: summary.id,
         summaryChildPath: [],
         coveredPaths: summary.coveredPaths,
@@ -274,7 +316,7 @@ export function placeMindMapSummaryNodes(
         childOriginX,
         rootY + rootH / 2,
         outward,
-        style,
+        data,
         widths,
         heights,
         []
@@ -330,14 +372,18 @@ export function coveredBoxesForSummary(
   connections: readonly Connection[],
   summary: MindMapSummarySpec,
   widths: Record<string, number>,
-  heights: Record<string, number>
+  heights: Record<string, number>,
+  coveredPaths: readonly string[] = summary.coveredPaths,
+  liveById?: ReadonlyMap<string, SummaryLiveNodeBox>
 ): SizedBox[] {
+  const rangePaths = new Set(expandSummaryRangePaths(coveredPaths, treeNodes, connections))
   return collectBoxesForPaths(
     treeNodes,
     connections,
-    (path) => summary.coveredPaths.includes(path),
+    (path) => rangePaths.has(path),
     widths,
-    heights
+    heights,
+    liveById
   )
 }
 
@@ -347,14 +393,16 @@ export function extentBoxesForCoveredPaths(
   connections: readonly Connection[],
   coveredPaths: readonly string[],
   widths: Record<string, number>,
-  heights: Record<string, number>
+  heights: Record<string, number>,
+  liveById?: ReadonlyMap<string, SummaryLiveNodeBox>
 ): SizedBox[] {
   return collectBoxesForPaths(
     treeNodes,
     connections,
     (path) => isMindMapSummaryExtentPath(path, coveredPaths),
     widths,
-    heights
+    heights,
+    liveById
   )
 }
 
@@ -366,14 +414,15 @@ export function siblingBoxesForSummary(
   connections: readonly Connection[],
   summary: MindMapSummarySpec,
   widths: Record<string, number>,
-  heights: Record<string, number>
+  heights: Record<string, number>,
+  liveById?: ReadonlyMap<string, SummaryLiveNodeBox>
 ): SummarySiblingBox[] {
   const paths = siblingPathsSharingParent(summary.coveredPaths, treeNodes, connections)
   const boxes: SummarySiblingBox[] = []
   for (const path of paths) {
     const node = treeNodes.find((item) => mindMapLocationPathKey(item.id, connections) === path)
     if (!node) continue
-    const box = nodeBox(node, widths, heights)
+    const box = nodeBox(node, widths, heights, liveById?.get(node.id))
     if (box) boxes.push({ path, ...box })
   }
   return boxes

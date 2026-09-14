@@ -11,6 +11,7 @@ Proprietary License
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,6 +34,7 @@ from services.knowledge.chat_handoff_service import (
     revoke_waiting_handoffs_for_package,
     update_handoff_status,
 )
+from services.knowledge.chat_handoff_sse import iter_handoff_events
 from services.knowledge.chat_transcript_normalizer import normalize_chat_messages, normalize_raw_content
 from services.knowledge.doc_summary_ingest import DocSummaryIngestService
 from services.knowledge.doc_summary_limits import (
@@ -120,7 +122,7 @@ async def chat_handoff_status(
     code: str = Query(..., min_length=6, max_length=6),
     current_user: User = Depends(get_current_user),
 ):
-    """Poll pairing + document indexing status for the web panel."""
+    """Read pairing + document indexing status for the web panel."""
     identifier = get_rate_limit_identifier(current_user, http_request)
     await check_endpoint_rate_limit("chat_handoff_status", identifier, max_requests=120, window_seconds=60)
 
@@ -133,6 +135,34 @@ async def chat_handoff_status(
         "package_id": record.package_id,
         "document_id": record.document_id,
     }
+
+
+@router.get("/chat-handoff/events")
+async def chat_handoff_events(
+    request: Request,
+    code: str = Query(..., min_length=6, max_length=6),
+    current_user: User = Depends(get_current_user),
+):
+    """SSE doorbell for pairing + ingest status. Cookie-authenticated EventSource."""
+    record = await load_handoff(code)
+    if not record or record.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Pairing code not found or expired")
+
+    async def _stream():
+        async for chunk in iter_handoff_events(code):
+            if await request.is_disconnected():
+                break
+            yield chunk
+
+    return StreamingResponse(
+        _stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.post("/chat-handoff/cancel")

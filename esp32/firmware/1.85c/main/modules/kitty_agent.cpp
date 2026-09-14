@@ -84,6 +84,7 @@ void kitty_agent_send_hello()
     hello["firmware"] = "1.85c";
     hello["device_id"] = watch_device_id();
     hello["audio_format"] = "pcm";
+    hello["tts_enabled"] = true;
     kitty_send_obj(std::move(hello));
 }
 
@@ -184,11 +185,12 @@ bool kitty_agent_bind_ws()
     kitty_agent_send_hello();
     kitty_ui_set_state(KittyUiState::idle);
     kitty_ui_set_live("");
+    kitty_audio_play_click();
     ESP_LOGI(TAG, "start mobile lane scope=%s", g_kitty_scope.c_str());
     return true;
 }
 
-bool kitty_agent_connect_session()
+bool kitty_agent_connect_session(bool adopt_desktop)
 {
     if (!agent_active()) {
         return false;
@@ -198,16 +200,26 @@ bool kitty_agent_connect_session()
     if (!agent_active()) {
         return false;
     }
-    if (!kitty_agent_has_library_scope()) {
+    const bool need_boot = adopt_desktop || !kitty_agent_has_library_scope();
+    if (need_boot) {
+        std::string boot_scope;
         std::string title;
         std::string diagram_type;
-        if (!kitty_net_bootstrap(g_kitty_token, g_kitty_scope, title, diagram_type)) {
+        if (kitty_net_bootstrap(g_kitty_token, boot_scope, title, diagram_type)) {
+            if (kitty_agent_is_library_id(boot_scope)) {
+                g_kitty_scope = boot_scope;
+                g_kitty_diagram_type = diagram_type.empty() ? "mindmap" : diagram_type;
+                kitty_ui_set_library(kitty_net_diagram_caption(title, g_kitty_diagram_type));
+            } else if (adopt_desktop || !kitty_agent_has_library_scope()) {
+                g_kitty_scope = boot_scope.empty() ? "watch" : boot_scope;
+                g_kitty_diagram_type = diagram_type.empty() ? "mindmap" : diagram_type;
+                kitty_ui_set_library(kitty_net_diagram_caption(title, g_kitty_diagram_type));
+            }
+        } else if (!kitty_agent_has_library_scope()) {
             kitty_ui_set_state(KittyUiState::error);
             kitty_ui_set_kitty_text("无法打开桌面图");
             return false;
         }
-        g_kitty_diagram_type = diagram_type.empty() ? "circle_map" : diagram_type;
-        kitty_ui_set_library(kitty_net_diagram_caption(title, g_kitty_diagram_type));
     }
     return kitty_agent_bind_ws();
 }
@@ -298,7 +310,6 @@ void agent_loop()
 {
     BROOKESIA_LOGI("Kitty watch agent starting");
     kitty_audio_init();
-    kitty_audio_run_smoke();
 
     if (!kitty_net_server_configured()) {
         kitty_ui_set_state(KittyUiState::error);
@@ -383,7 +394,7 @@ void agent_loop()
         }
         if (!kitty_ws_is_open() && agent_active()) {
             kitty_ui_set_state(KittyUiState::connecting);
-            if (kitty_agent_connect_session()) {
+            if (kitty_agent_connect_session(std::time(nullptr) >= user_override_until)) {
                 reconnect_fails = 0;
             } else {
                 reconnect_fails += 1;
@@ -392,7 +403,7 @@ void agent_loop()
                 wait_reconnect(wait_s);
             }
         }
-        if (kitty_ui_take_click()) {
+        if (kitty_ui_take_click() && !kitty_ui_hold_active()) {
             kitty_audio_play_click();
         }
         if (kitty_ui_hold_active() && kitty_ws_is_open()) {

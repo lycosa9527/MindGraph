@@ -1,5 +1,6 @@
 /**
- * ``mobile_active`` for desktop canvas: prefers cross-tab SSE hub; REST poll only when stale.
+ * ``mobile_active`` for desktop canvas: SSE hub is SoT; one REST GET if the hub
+ * is empty when the canvas starts listening.
  */
 import { type Ref, computed, onUnmounted, ref, watch } from 'vue'
 
@@ -8,7 +9,6 @@ import {
   publishKittyMobileActiveHub,
   useKittyMobileActiveHubSnapshot,
 } from '@/composables/kitty/kittyDesktopMobileActiveHub'
-import { KITTY_MOBILE_WATCH_MS } from '@/composables/kitty/runKittyIntervalPoll'
 import { apiRequest } from '@/utils/apiClient'
 
 interface MobileActivePayload {
@@ -17,13 +17,12 @@ interface MobileActivePayload {
   primary_scope?: unknown
 }
 
-export function useKittyUserMobileActive(pollEnabled: Ref<boolean>) {
+export function useKittyUserMobileActive(listenEnabled: Ref<boolean>) {
   const hubSnapshot = useKittyMobileActiveHubSnapshot()
   const active = ref(false)
   const scopes = ref<string[]>([])
   const primaryScope = ref<string | null>(null)
-  let intervalId: ReturnType<typeof setInterval> | null = null
-  let tickInFlight = false
+  let hydrateInFlight = false
 
   function applyHubToRefs(): void {
     const hub = hubSnapshot.value
@@ -38,8 +37,8 @@ export function useKittyUserMobileActive(pollEnabled: Ref<boolean>) {
     primaryScope.value = null
   }
 
-  async function tick(): Promise<void> {
-    if (!pollEnabled.value) {
+  async function hydrate(): Promise<void> {
+    if (!listenEnabled.value) {
       clearRefs()
       return
     }
@@ -47,13 +46,13 @@ export function useKittyUserMobileActive(pollEnabled: Ref<boolean>) {
       applyHubToRefs()
       return
     }
-    if (tickInFlight) {
+    if (hydrateInFlight) {
       return
     }
-    tickInFlight = true
+    hydrateInFlight = true
     try {
       const res = await apiRequest('/api/kitty/mobile_active', { method: 'GET' })
-      if (!pollEnabled.value) {
+      if (!listenEnabled.value) {
         return
       }
       if (isKittyMobileActiveHubFresh()) {
@@ -74,60 +73,39 @@ export function useKittyUserMobileActive(pollEnabled: Ref<boolean>) {
     } catch {
       clearRefs()
     } finally {
-      tickInFlight = false
+      hydrateInFlight = false
     }
   }
 
-  function stopPolling(): void {
-    if (intervalId != null) {
-      clearInterval(intervalId)
-      intervalId = null
-    }
-  }
-
-  function syncPolling(): void {
-    stopPolling()
-    if (!pollEnabled.value) {
+  function syncListen(): void {
+    if (!listenEnabled.value) {
       clearRefs()
       return
     }
     applyHubToRefs()
-    if (isKittyMobileActiveHubFresh()) {
-      return
+    if (!isKittyMobileActiveHubFresh()) {
+      void hydrate()
     }
-    void tick()
-    intervalId = setInterval(() => {
-      if (isKittyMobileActiveHubFresh()) {
-        applyHubToRefs()
-        stopPolling()
-        return
-      }
-      void tick()
-    }, KITTY_MOBILE_WATCH_MS)
   }
 
-  watch(pollEnabled, syncPolling, { immediate: true })
+  watch(listenEnabled, syncListen, { immediate: true })
 
   watch(
     hubSnapshot,
     () => {
-      if (!pollEnabled.value) {
+      if (!listenEnabled.value) {
         return
       }
       applyHubToRefs()
-      if (isKittyMobileActiveHubFresh()) {
-        stopPolling()
-      }
     },
     { deep: true }
   )
 
   onUnmounted(() => {
-    stopPolling()
     clearRefs()
   })
 
   const hubFresh = computed(() => isKittyMobileActiveHubFresh())
 
-  return { active, scopes, primaryScope, refresh: tick, hubFresh }
+  return { active, scopes, primaryScope, refresh: hydrate, hubFresh }
 }

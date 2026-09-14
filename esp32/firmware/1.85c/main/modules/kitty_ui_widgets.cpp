@@ -13,10 +13,9 @@ constexpr uint32_t k_card = 0xFFFFFF;
 constexpr uint32_t k_line = 0xE2E8F0;
 constexpr uint32_t k_violet = 0x7C3AED;
 constexpr int32_t k_mic = watch_px(64);
-constexpr int32_t k_mic_hit = watch_px(80);
+constexpr int32_t k_mic_hit = watch_px(64);
 constexpr int32_t k_mic_cx = watch_px(270);
 constexpr int32_t k_mic_cy = watch_px(290);
-constexpr int32_t k_mic_hit_slop = watch_px(8);
 
 lv_obj_t *make_label(
     lv_obj_t *parent,
@@ -120,8 +119,6 @@ lv_obj_t *make_ring(lv_obj_t *parent, int32_t x, int32_t y, int32_t size)
     return ring;
 }
 
-} // namespace
-
 void bubble_home_gesture(lv_obj_t *node)
 {
     if (node == nullptr) {
@@ -134,6 +131,22 @@ void bubble_home_gesture(lv_obj_t *node)
         bubble_home_gesture(child);
     }
 }
+
+void raise_mic(const KittyWidgets &widgets)
+{
+    if (widgets.mic_hit != nullptr) {
+        lv_obj_move_foreground(widgets.mic_hit);
+    }
+    if (widgets.mic != nullptr) {
+        lv_obj_move_foreground(widgets.mic);
+        const uint32_t n = lv_obj_get_child_count(widgets.mic);
+        for (uint32_t i = 0; i < n; ++i) {
+            lv_obj_remove_flag(lv_obj_get_child(widgets.mic, i), LV_OBJ_FLAG_GESTURE_BUBBLE);
+        }
+    }
+}
+
+} // namespace
 
 KittyWidgets kitty_ui_build(
     lv_obj_t *layer,
@@ -206,7 +219,8 @@ KittyWidgets kitty_ui_build(
     widgets.library = make_card(widgets.root, watch_px(68), watch_px(264), watch_px(164), watch_px(52), watch_px(26));
     lv_obj_add_flag(widgets.library, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_set_style_clip_corner(widgets.library, true, 0);
-    lv_obj_add_event_cb(widgets.library, on_library, LV_EVENT_CLICKED, nullptr);
+    lv_obj_set_ext_click_area(widgets.library, watch_px(12));
+    lv_obj_add_event_cb(widgets.library, on_library, LV_EVENT_PRESSED, nullptr);
     widgets.library_label = lv_label_create(widgets.library);
     lv_obj_set_size(widgets.library_label, watch_px(140), watch_px(22));
     lv_obj_set_style_text_align(widgets.library_label, LV_TEXT_ALIGN_CENTER, 0);
@@ -226,7 +240,6 @@ KittyWidgets kitty_ui_build(
     );
     lv_obj_set_style_bg_opa(widgets.mic_hit, LV_OPA_TRANSP, 0);
     lv_obj_add_flag(widgets.mic_hit, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_set_ext_click_area(widgets.mic_hit, k_mic_hit_slop);
     widgets.mic = make_disk(
         widgets.root,
         k_mic_cx - k_mic / 2,
@@ -242,23 +255,14 @@ KittyWidgets kitty_ui_build(
         lv_obj_add_event_cb(widgets.mic_hit, on_hold, LV_EVENT_PRESS_LOST, nullptr);
     }
 
-    lv_obj_t *overlay = lv_layer_top();
-    if (overlay == nullptr) {
-        overlay = widgets.root;
-    }
-    widgets.picker = make_card(overlay, watch_px(40), watch_px(62), watch_px(280), watch_px(198), watch_px(16));
+    widgets.picker = make_card(widgets.root, watch_px(40), watch_px(62), watch_px(280), watch_px(186), watch_px(16));
     lv_obj_add_flag(widgets.picker, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(widgets.picker, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_clear_flag(widgets.picker, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_set_style_clip_corner(widgets.picker, true, 0);
-    widgets.picker_row = make_label(
-        widgets.picker, watch_px(12), watch_px(80), watch_px(256), watch_px(36), LV_TEXT_ALIGN_CENTER, k_mute
-    );
-    lv_label_set_long_mode(widgets.picker_row, LV_LABEL_LONG_WRAP);
-    lv_label_set_text(widgets.picker_row, "");
     widgets.picker_list = lv_obj_create(widgets.picker);
     lv_obj_remove_style_all(widgets.picker_list);
     lv_obj_set_pos(widgets.picker_list, watch_px(8), watch_px(8));
-    lv_obj_set_size(widgets.picker_list, watch_px(264), watch_px(182));
+    lv_obj_set_size(widgets.picker_list, watch_px(264), watch_px(170));
     lv_obj_set_flex_flow(widgets.picker_list, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_style_pad_row(widgets.picker_list, 6, 0);
     lv_obj_set_style_bg_color(widgets.picker_list, lv_color_hex(k_card), 0);
@@ -270,26 +274,15 @@ KittyWidgets kitty_ui_build(
     lv_obj_add_flag(widgets.picker_list, LV_OBJ_FLAG_CLICKABLE);
 
     bubble_home_gesture(widgets.root);
-    bubble_home_gesture(widgets.picker);
     lv_obj_move_foreground(widgets.root);
     if (widgets.work_ring != nullptr) {
         lv_obj_move_foreground(widgets.work_ring);
     }
     lv_obj_remove_flag(widgets.mic_hit, LV_OBJ_FLAG_GESTURE_BUBBLE);
+    lv_obj_remove_flag(widgets.library, LV_OBJ_FLAG_GESTURE_BUBBLE);
     lv_obj_remove_flag(widgets.picker, LV_OBJ_FLAG_GESTURE_BUBBLE);
     lv_obj_remove_flag(widgets.picker_list, LV_OBJ_FLAG_GESTURE_BUBBLE);
-    if (widgets.mic_hit != nullptr) {
-        lv_obj_move_foreground(widgets.mic_hit);
-    }
-    if (widgets.mic != nullptr) {
-        lv_obj_move_foreground(widgets.mic);
-        const uint32_t n = lv_obj_get_child_count(widgets.mic);
-        for (uint32_t i = 0; i < n; ++i) {
-            lv_obj_remove_flag(lv_obj_get_child(widgets.mic, i), LV_OBJ_FLAG_GESTURE_BUBBLE);
-        }
-    }
     if (widgets.choice_grid != nullptr) {
-        lv_obj_move_foreground(widgets.choice_grid);
         lv_obj_remove_flag(widgets.choice_grid, LV_OBJ_FLAG_GESTURE_BUBBLE);
         for (lv_obj_t *chip : widgets.choices) {
             if (chip != nullptr) {
@@ -297,5 +290,45 @@ KittyWidgets kitty_ui_build(
             }
         }
     }
+    raise_mic(widgets);
+    kitty_ui_picker_present(widgets, false);
     return widgets;
+}
+
+void kitty_ui_set_hidden(lv_obj_t *obj, bool hidden)
+{
+    if (obj == nullptr) {
+        return;
+    }
+    if (lv_obj_has_flag(obj, LV_OBJ_FLAG_HIDDEN) == hidden) {
+        return;
+    }
+    if (hidden) {
+        lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
+        return;
+    }
+    lv_obj_remove_flag(obj, LV_OBJ_FLAG_HIDDEN);
+}
+
+void kitty_ui_picker_present(const KittyWidgets &widgets, bool open)
+{
+    if (!open) {
+        kitty_ui_set_hidden(widgets.picker, true);
+        kitty_ui_set_hidden(widgets.mascot, false);
+        kitty_ui_set_hidden(widgets.choice_grid, false);
+        raise_mic(widgets);
+        return;
+    }
+    kitty_ui_set_hidden(widgets.mascot, true);
+    kitty_ui_set_hidden(widgets.user, true);
+    kitty_ui_set_hidden(widgets.kitty, true);
+    kitty_ui_set_hidden(widgets.choice_grid, true);
+    kitty_ui_set_hidden(widgets.picker, false);
+    if (widgets.picker != nullptr) {
+        lv_obj_move_foreground(widgets.picker);
+    }
+    raise_mic(widgets);
+    if (widgets.library != nullptr) {
+        lv_obj_move_foreground(widgets.library);
+    }
 }

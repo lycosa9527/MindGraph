@@ -21,6 +21,9 @@ from services.kitty.infra.desktop.kitty_desktop_action_queue import (
     pop_kitty_desktop_action_wait,
 )
 from services.kitty.infra.control.kitty_event_push import notify_kitty_live_context_changed
+from services.kitty.infra.desktop.kitty_canvas_owner_presence import (
+    has_kitty_canvas_owner_present,
+)
 from services.kitty.infra.desktop.kitty_desktop_focus_push import (
     notify_kitty_desktop_focus_changed,
 )
@@ -172,12 +175,25 @@ async def kitty_rest_mobile_active_get(current_user: User) -> Dict[str, Any]:
 
 async def kitty_rest_desktop_focus_get(current_user: User) -> Dict[str, Any]:
     """Last desktop library diagram id for mobile pairing."""
+    empty = {
+        "diagram_library_id": None,
+        "updated_at": None,
+        "canvas_owner_present": False,
+    }
     if not config.FEATURE_KITTY_WS_ENABLED:
-        return {"diagram_library_id": None, "updated_at": None}
+        return empty
     if not await kitty_http_allowed(current_user):
-        return {"diagram_library_id": None, "updated_at": None}
-    lib_id, updated_at = await get_kitty_session_manager().get_desktop_focus(int(current_user.id))
-    return {"diagram_library_id": lib_id, "updated_at": updated_at}
+        return empty
+    uid = int(current_user.id)
+    lib_id, updated_at = await get_kitty_session_manager().get_desktop_focus(uid)
+    owner_present = False
+    if lib_id:
+        owner_present = await has_kitty_canvas_owner_present(uid, lib_id)
+    return {
+        "diagram_library_id": lib_id,
+        "updated_at": updated_at,
+        "canvas_owner_present": owner_present,
+    }
 
 
 async def kitty_rest_desktop_focus_put(

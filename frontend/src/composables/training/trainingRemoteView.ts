@@ -21,10 +21,3 @@ export function trainingRemotePhase(
 export function trainingRemotePrompterKey(snapshot: TrainingSnapshot): string {
   return `${snapshot.session_id || 'none'}:${snapshot.seq}:${snapshot.step_index || 0}`
 }
-
-export function trainingRemoteShouldPollHost(
-  _phase: TrainingRemotePhase,
-  leadingOrgId: number | null
-): boolean {
-  return leadingOrgId == null
-}

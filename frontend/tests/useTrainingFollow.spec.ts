@@ -8,8 +8,10 @@ import { useTrainingFollow } from '@/composables/training/useTrainingFollow'
 import { useTrainingStore } from '@/stores/training'
 import type { TrainingSnapshot } from '@/types/training'
 import { MINDGRAPH_HEADLESS_EXPORT_KEY } from '@/utils/headlessExportSession'
+import { emptyTrainingSnapshot } from '@/utils/trainingClient'
 
 const fetchCommand = vi.hoisted(() => vi.fn())
+const fetchActive = vi.hoisted(() => vi.fn())
 const postActivity = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const navigateMock = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 const routePath = vi.hoisted(() => ({ value: '/mindmate' }))
@@ -36,6 +38,7 @@ vi.mock('@/stores/featureFlags', () => ({
 
 vi.mock('@/utils/trainingApi', () => ({
   fetchTrainingCommand: (...args: unknown[]) => fetchCommand(...args),
+  fetchActiveTraining: (...args: unknown[]) => fetchActive(...args),
   postTrainingActivity: (...args: unknown[]) => postActivity(...args),
 }))
 
@@ -129,6 +132,8 @@ function mountFollow() {
 describe('useTrainingFollow', () => {
   beforeEach(() => {
     fetchCommand.mockReset()
+    fetchActive.mockReset()
+    fetchActive.mockResolvedValue(emptyTrainingSnapshot())
     postActivity.mockClear()
     navigateMock.mockClear()
     routePath.value = '/mindmate'
@@ -197,14 +202,19 @@ describe('useTrainingFollow', () => {
     host.remove()
   })
 
-  it('falls back to polling after EventSource error', async () => {
+  it('hydrates once on EventSource error without a poll loop', async () => {
     vi.useFakeTimers()
     const { app, host } = mountFollow()
     await flushTurns()
     fetchCommand.mockClear()
     FakeEventSource.latest?.onerror?.()
-    await vi.advanceTimersByTimeAsync(2000)
-    expect(fetchCommand).toHaveBeenCalled()
+    await flushTurns()
+    expect(fetchCommand).toHaveBeenCalledTimes(1)
+    expect(FakeEventSource.latest?.closed).toBe(false)
+    FakeEventSource.latest?.onerror?.()
+    await flushTurns()
+    await vi.advanceTimersByTimeAsync(15000)
+    expect(fetchCommand).toHaveBeenCalledTimes(1)
     app.unmount()
     host.remove()
   })
@@ -321,12 +331,13 @@ describe('useTrainingFollow', () => {
     host.remove()
   })
 
-  it('does not open EventSource for a platform lead until the school is known', async () => {
+  it('opens user-wake EventSource for a platform lead before the school is known', async () => {
     authState.isPlatformLevel = true
     authState.user = { id: '3', schoolId: '' }
     const { app, host } = mountFollow()
     await flushTurns()
-    expect(FakeEventSource.latest).toBeNull()
+    expect(FakeEventSource.latest?.url).toBe('/api/training/events')
+    expect(fetchActive).toHaveBeenCalled()
     expect(fetchCommand).not.toHaveBeenCalled()
     app.unmount()
     host.remove()

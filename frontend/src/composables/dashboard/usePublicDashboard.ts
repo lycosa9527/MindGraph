@@ -97,10 +97,7 @@ export function usePublicDashboard(mapEl: { value: HTMLElement | null }) {
   const chart = shallowRef<EChartsType | null>(null)
   let eventSource: EventSource | null = null
   let pulseFrame: number | null = null
-  let fallbackTimer: ReturnType<typeof setInterval> | null = null
-  let sseFailedAt: number | null = null
   let latestActivityTs = 0
-  let mapPollTimer: ReturnType<typeof setInterval> | null = null
   let resizeObserver: ResizeObserver | null = null
 
   function diagramTypeLabel(diagramType: string | undefined): string {
@@ -393,35 +390,6 @@ export function usePublicDashboard(mapEl: { value: HTMLElement | null }) {
     }
   }
 
-  function stopFallbackPolling(): void {
-    if (fallbackTimer) {
-      clearInterval(fallbackTimer)
-      fallbackTimer = null
-    }
-  }
-
-  function startFallbackPolling(): void {
-    if (fallbackTimer) {
-      return
-    }
-    fallbackTimer = setInterval(() => {
-      void (async () => {
-        const data = await fetchJson<{ activities?: DashboardActivity[] }>(
-          '/api/public/activity-history?limit=100'
-        )
-        if (!data) {
-          return
-        }
-        for (const activity of [...(data.activities || [])].reverse()) {
-          const ts = new Date(activity.timestamp).getTime()
-          if (ts > latestActivityTs) {
-            prependActivity(activity)
-          }
-        }
-      })()
-    }, 10_000)
-  }
-
   function disconnectSse(): void {
     if (eventSource) {
       eventSource.close()
@@ -432,11 +400,6 @@ export function usePublicDashboard(mapEl: { value: HTMLElement | null }) {
   function connectActivityStream(): void {
     disconnectSse()
     eventSource = new EventSource('/api/public/activity-stream')
-
-    eventSource.onopen = () => {
-      sseFailedAt = null
-      stopFallbackPolling()
-    }
 
     eventSource.onmessage = (event) => {
       try {
@@ -461,8 +424,6 @@ export function usePublicDashboard(mapEl: { value: HTMLElement | null }) {
             diagram_type: data.diagram_type,
             action: data.action,
           })
-          sseFailedAt = null
-          stopFallbackPolling()
         } else if (data.type === 'stats_update') {
           applyStats({ connected_users: data.connected_users })
         } else if (data.type === 'initial' && data.stats) {
@@ -480,16 +441,9 @@ export function usePublicDashboard(mapEl: { value: HTMLElement | null }) {
       if (readyState !== EventSource.CLOSED) {
         return
       }
-      if (!sseFailedAt) {
-        sseFailedAt = Date.now()
-      }
-      if (Date.now() - sseFailedAt > 30_000 && !fallbackTimer) {
-        startFallbackPolling()
-      }
       void fetch('/api/public/stats', { credentials: 'include' })
         .then((response) => {
           if (response.status === 401 || response.status === 403) {
-            stopFallbackPolling()
             redirectOnAuthFailure(router, response.status)
             return
           }
@@ -518,9 +472,6 @@ export function usePublicDashboard(mapEl: { value: HTMLElement | null }) {
       await initMap()
       await Promise.all([loadStats(), loadMapData(), loadActivityHistory()])
       connectActivityStream()
-      mapPollTimer = setInterval(() => {
-        void loadMapData()
-      }, 20_000)
     } catch {
       notify.error(t('publicDashboard.networkError'))
     } finally {
@@ -528,14 +479,16 @@ export function usePublicDashboard(mapEl: { value: HTMLElement | null }) {
     }
   }
 
+  function onDashboardVisibility(): void {
+    if (document.visibilityState !== 'visible') return
+    void loadStats()
+    void loadMapData()
+  }
+
   function dispose(): void {
     stopPulse()
-    stopFallbackPolling()
     disconnectSse()
-    if (mapPollTimer) {
-      clearInterval(mapPollTimer)
-      mapPollTimer = null
-    }
+    document.removeEventListener('visibilitychange', onDashboardVisibility)
     resizeObserver?.disconnect()
     resizeObserver = null
     if (chart.value) {
@@ -545,6 +498,7 @@ export function usePublicDashboard(mapEl: { value: HTMLElement | null }) {
   }
 
   onMounted(() => {
+    document.addEventListener('visibilitychange', onDashboardVisibility)
     void bootstrap()
   })
 

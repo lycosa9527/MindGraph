@@ -65,7 +65,6 @@ describe('useTrainingHeartbeat', () => {
   })
 
   it('applies a gone snapshot and stops without rejecting', async () => {
-    vi.useFakeTimers()
     postHeartbeat.mockResolvedValue(emptyTrainingSnapshot())
     const { app, host, store } = mountHeartbeat()
     store.applySnapshot(snapshot())
@@ -74,7 +73,12 @@ describe('useTrainingHeartbeat', () => {
     expect(store.snapshot.session_id).toBeNull()
     expect(store.isActive).toBe(false)
     postHeartbeat.mockClear()
-    await vi.advanceTimersByTimeAsync(15000)
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+    await flushTurns()
     expect(postHeartbeat).not.toHaveBeenCalled()
     app.unmount()
     host.remove()

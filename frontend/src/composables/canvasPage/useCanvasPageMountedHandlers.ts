@@ -53,7 +53,7 @@ export function useCanvasPageMountedHandlers(options: {
     // ── snapshot:requested ────────────────────────────────────────────────
     eventBus.onWithOwner(
       'snapshot:requested',
-      async () => {
+      async (data) => {
         if (
           !canMutateDiagramSnapshots({
             collabSessionActive: diagramStore.collabSessionActive,
@@ -69,7 +69,9 @@ export function useCanvasPageMountedHandlers(options: {
         const result = await snapshotHistory.takeSnapshot(diagramId, spec)
         if (!result) return
         if (result.ok) {
-          notify.success(t('canvas.toolbar.snapshotTaken', { n: result.snapshot.version_number }))
+          if (!data.silent) {
+            notify.success(t('canvas.toolbar.snapshotTaken', { n: result.snapshot.version_number }))
+          }
           return
         }
         const { status, message } = result

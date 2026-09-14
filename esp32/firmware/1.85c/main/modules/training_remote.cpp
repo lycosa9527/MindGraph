@@ -22,7 +22,6 @@
 namespace {
 
 constexpr const char *TAG = "training_remote";
-constexpr int k_heartbeat_ms = 15000;
 constexpr int k_steer_ms = 500;
 constexpr int k_loop_ms = 120;
 constexpr int k_draw_settle_ms = 1000;
@@ -42,7 +41,6 @@ int g_org_id = 0;
 std::string g_org_name;
 int g_teacher_total = 0;
 bool g_owns = false;
-int64_t g_last_beat_ms = 0;
 int64_t g_last_steer_ms = 0;
 bool g_lists_loaded = false;
 
@@ -522,26 +520,6 @@ void post_play(const std::string &course_id)
     training_ui_set_busy(false);
 }
 
-void post_heartbeat()
-{
-    if (!g_owns || g_hosted.session_id.empty()) {
-        return;
-    }
-    int status = 0;
-    std::string body;
-    training_http_json(g_token, "POST", training_session_url(g_hosted, "/heartbeat"), "", status, body);
-    if (status == 200) {
-        TrainingSnapshot snap;
-        if (training_parse_snapshot(body, snap) && training_session_active(snap)) {
-            apply_owned(snap);
-            paint_host();
-        }
-    } else if (status == 403) {
-        g_owns = false;
-        paint_host();
-    }
-}
-
 void handle_action(TrainingUiAction action)
 {
     switch (action) {
@@ -660,11 +638,6 @@ void remote_loop()
                 training_ui_set_status("重连中");
                 boost::this_thread::sleep_for(boost::chrono::seconds(wait_s));
             }
-        }
-        const int64_t now = now_ms();
-        if (g_owns && now - g_last_beat_ms >= k_heartbeat_ms) {
-            g_last_beat_ms = now;
-            post_heartbeat();
         }
         boost::this_thread::sleep_for(boost::chrono::milliseconds(k_loop_ms));
     }

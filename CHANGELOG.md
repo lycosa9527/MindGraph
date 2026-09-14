@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.78] - 2026-09-14
+
+> **Training, Kitty, collab lists, and chat-handoff drop HTTP poll loops; presence is a connection lease.**
+
+### Changed
+
+- **校本培训 transport** — Phone waiting no longer GETs `/sessions/active` every 2s. Platform leads open `/api/training/events` immediately and subscribe to the user-wake channel until a school is known. Teachers without a school do not open `/events`. SSE keepalive and the watch training-remote socket refresh the owner / teacher lease; there is no 10s activity POST or 15s heartbeat interval. EventSource errors pull once per drop (not on every reconnect tick).
+- **1.85C 校本培训** — Super tile drops the 15s heartbeat POST; the open training-remote socket refreshes the owner lease.
+- **Kitty focus GET** — A leftover `desktop_focus` library id is cleared when the canvas-owner lease is not live. Hydrate binds `recommended_scope` only; leftover focus without an owner stays unbound.
+- **1.85C Kitty** — Watch binds `recommended_scope` (not leftover `desktop_focus`). WakeNet is off; PTT is AEC/NS/AGC. Library picker opens on press; long titles ellipsize; face chrome swallows the press so PTT does not arm under the picker.
+- **Collab session lists** — School workshop / MindMate org lists load when the panel opens or the tab is shown, not every 30s.
+- **Chat-handoff** — Pairing status is SSE (`/chat-handoff/events`) plus one GET; the 1.5s status poll is gone.
+- **Dashboard / admin** — Public map no longer 10s/20s fallback-polls. Admin live performance GETs on mount and visibility.
+
+### Tests
+
+- [`frontend/tests/useTrainingFollow.spec.ts`](frontend/tests/useTrainingFollow.spec.ts), [`frontend/tests/useTrainingHeartbeat.spec.ts`](frontend/tests/useTrainingHeartbeat.spec.ts), [`frontend/tests/trainingClient.spec.ts`](frontend/tests/trainingClient.spec.ts), [`frontend/tests/useMobileKittyPairingContext.spec.ts`](frontend/tests/useMobileKittyPairingContext.spec.ts)
+- [`tests/test_training_connection_lease.py`](tests/test_training_connection_lease.py), [`tests/test_training_activity_sse.py`](tests/test_training_activity_sse.py), [`tests/test_chat_handoff_sse.py`](tests/test_chat_handoff_sse.py), [`tests/test_kitty_hub_contract.py`](tests/test_kitty_hub_contract.py)
+
+## [5.180.77] - 2026-09-14
+
+> **One Document Summary source per diagram; Save records history versions; 概要 braces wrap full branches.**
+
+### Fixed
+
+- **Canvas source lock** — Each mind map keeps one markdown source (document, web link, or recording). The other generate buttons grey out and toast: start a new diagram to switch. Live recording no longer reopens Document Summary every 30s, which was resurfacing the previous upload as a 网页链接 window.
+
+### Changed
+
+- **History versions** — Click Save to record a checkpoint. Autosave, leave flush, and title-row persist do not add a version. History sits next to Save; the separate snapshot button is gone. Viewing an older version can return to latest.
+- **概要 brace** — When the range is every child of a branch, the brace also wraps that branch topic. Overlay uses live node boxes so the brace tracks drag.
+- **Format persist** — Node style records drop leftover width/height/size so layout sizes do not stick as format.
+
+### Tests
+
+- [`frontend/tests/diagramSourceKind.spec.ts`](frontend/tests/diagramSourceKind.spec.ts), [`frontend/tests/diagramSaveFlow.spec.ts`](frontend/tests/diagramSaveFlow.spec.ts), [`frontend/tests/formatBrushStyle.spec.ts`](frontend/tests/formatBrushStyle.spec.ts), [`frontend/tests/mindMapRibbonChrome.spec.ts`](frontend/tests/mindMapRibbonChrome.spec.ts), [`frontend/tests/mindMapSummary.spec.ts`](frontend/tests/mindMapSummary.spec.ts)
+
 ## [5.180.76] - 2026-09-14
 
 > **研习社 DMs name the person and open from toast; canvas collab drops the room when you leave the map.**

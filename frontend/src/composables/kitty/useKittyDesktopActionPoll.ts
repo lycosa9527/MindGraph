@@ -1,7 +1,7 @@
 /**
  * Desktop Kitty leader tab: SSE wake on ``GET /api/kitty/desktop_wake/stream``,
  * instant ``desktop_pairing?wait_sec=0`` drain on ``desktop_action_pending``,
- * and a 12s fallback watch only when SSE is disconnected.
+ * and one REST hydrate when SSE opens or drops (no interval).
  *
  * Actions stay in Redis FIFO (multi-worker safe via LPOP). Long-poll BLPOP chains
  * are no longer used — SSE carries the wake; REST only pops.
@@ -28,7 +28,6 @@ import {
 } from '@/composables/kitty/kittyDesktopMobileActiveHub'
 import { createKittyDesktopPollLeader } from '@/composables/kitty/kittyDesktopPollLeader'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
-import { KITTY_MOBILE_WATCH_MS } from '@/composables/kitty/runKittyIntervalPoll'
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -79,7 +78,6 @@ export function useKittyDesktopActionPoll(): void {
   const router = useRouter()
 
   let phase: PollPhase = 'off'
-  let intervalId: ReturnType<typeof setInterval> | null = null
   let isPollLeader = false
   let stopPollLeader: (() => void) | null = null
   let stopWakeStream: (() => void) | null = null
@@ -143,13 +141,6 @@ export function useKittyDesktopActionPoll(): void {
     stopPollLeader()
     stopPollLeader = null
     isPollLeader = false
-  }
-
-  function clearIntervalId(): void {
-    if (intervalId != null) {
-      clearInterval(intervalId)
-      intervalId = null
-    }
   }
 
   function setPhase(next: PollPhase): void {
@@ -373,13 +364,16 @@ export function useKittyDesktopActionPoll(): void {
       },
       onClose: () => {
         wakeStreamConnected = false
+        void tickWatch()
       },
     })
   }
 
   async function tickWatch(): Promise<void> {
-    if (!pollingAllowed()) {
-      stop()
+    if (phase !== 'watching' || !pollingAllowed()) {
+      if (!pollingAllowed()) {
+        stop()
+      }
       return
     }
     if (wakeStreamConnected || watchTickInFlight) {
@@ -418,23 +412,16 @@ export function useKittyDesktopActionPoll(): void {
   }
 
   function startWatching(): void {
-    clearIntervalId()
     setPhase('watching')
     void loadKittyActionHandlers()
     startWakeStreamConnection()
     void tickWatch()
-    intervalId = setInterval(() => {
-      if (!wakeStreamConnected) {
-        void tickWatch()
-      }
-    }, KITTY_MOBILE_WATCH_MS)
   }
 
   function stop(): void {
-    clearIntervalId()
+    setPhase('off')
     abortPairingFetch()
     stopWakeStreamConnection()
-    setPhase('off')
   }
 
   function syncPolling(): void {
@@ -451,7 +438,7 @@ export function useKittyDesktopActionPoll(): void {
       stop()
       return
     }
-    if (phase === 'watching' && intervalId != null && stopWakeStream != null) {
+    if (phase === 'watching' && stopWakeStream != null) {
       return
     }
     startWatching()

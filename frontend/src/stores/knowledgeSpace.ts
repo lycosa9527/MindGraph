@@ -23,6 +23,8 @@ export interface KnowledgeDocument {
   wiki_status?: 'disabled' | 'not_yet' | 'pending' | 'complete' | null
   /** Extracted markdown size when Document Summary lite has finished. */
   extract_char_count?: number | null
+  /** Document Summary ingest family: upload, paste, web, voice_notes, … */
+  ingest_source?: string | null
   created_at: string
   updated_at: string
 }

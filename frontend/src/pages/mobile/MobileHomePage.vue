@@ -50,7 +50,7 @@ const showOrgsCard = computed(() =>
   canSeeMobileOrgManagement(authStore.adminCapabilitiesPayload, authStore.adminCapabilitiesLoaded)
 )
 
-useTrainingRemoteSync({ pollWhileWaiting: false })
+useTrainingRemoteSync()
 
 onMounted(() => {
   void featureFlagsStore.fetchFlags()

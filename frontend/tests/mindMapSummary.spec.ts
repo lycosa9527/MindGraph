@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
+import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import {
+  coveredBoxesForSummary,
   mindMapSummaryOutwardRangeRect,
   placeMindMapSummaryNodes,
 } from '@/stores/diagram/mindMapSummaryLayout'
@@ -8,6 +10,7 @@ import type { Connection, DiagramNode } from '@/types'
 import {
   areConsecutiveSiblingPaths,
   coveredPathsFromVerticalRange,
+  expandSummaryRangePaths,
   isMindMapSummaryExtentPath,
   mindMapSummaryChildNodeId,
   mindMapSummaryRootNodeId,
@@ -89,6 +92,55 @@ describe('mind map summary range', () => {
       coveredPaths: ['r/1'],
     })
     expect(resolveMindMapSummaryInsertRange(['topic'], tree, links).reason).toBe('topic')
+  })
+
+  it('wraps the parent branch when 概要 already covers every child', () => {
+    const tree: DiagramNode[] = [
+      ...nodes,
+      { id: 'a0', text: 'A0', type: 'branch', data: { mindMapSide: 'right', mindMapDepth: 2 } },
+      { id: 'a1', text: 'A1', type: 'branch', data: { mindMapSide: 'right', mindMapDepth: 2 } },
+      { id: 'a2', text: 'A2', type: 'branch', data: { mindMapSide: 'right', mindMapDepth: 2 } },
+    ]
+    const links: Connection[] = [
+      ...connections,
+      { id: 'e5', source: 'a', target: 'a0', sourceHandle: 'mindmap-right' },
+      { id: 'e6', source: 'a', target: 'a1', sourceHandle: 'mindmap-right' },
+      { id: 'e7', source: 'a', target: 'a2', sourceHandle: 'mindmap-right' },
+    ]
+    expect(expandSummaryRangePaths(['r/0/0', 'r/0/1', 'r/0/2'], tree, links)).toEqual([
+      'r/0',
+      'r/0/0',
+      'r/0/1',
+      'r/0/2',
+    ])
+    expect(expandSummaryRangePaths(['r/0/0', 'r/0/1'], tree, links)).toEqual(['r/0/0', 'r/0/1'])
+    expect(expandSummaryRangePaths(['r/0/0'], tree, links)).toEqual(['r/0/0'])
+    expect(expandSummaryRangePaths(['r/0', 'r/1', 'r/2'], tree, links)).toEqual([
+      'r/0',
+      'r/1',
+      'r/2',
+    ])
+  })
+
+  it('walks up through a single-child ancestor chain', () => {
+    const tree: DiagramNode[] = [
+      ...nodes,
+      { id: 'a0', text: 'A0', type: 'branch', data: { mindMapSide: 'right', mindMapDepth: 2 } },
+      { id: 'a00', text: 'A00', type: 'branch', data: { mindMapSide: 'right', mindMapDepth: 3 } },
+      { id: 'a01', text: 'A01', type: 'branch', data: { mindMapSide: 'right', mindMapDepth: 3 } },
+    ]
+    const links: Connection[] = [
+      ...connections,
+      { id: 'e5', source: 'a', target: 'a0', sourceHandle: 'mindmap-right' },
+      { id: 'e6', source: 'a0', target: 'a00', sourceHandle: 'mindmap-right' },
+      { id: 'e7', source: 'a0', target: 'a01', sourceHandle: 'mindmap-right' },
+    ]
+    expect(expandSummaryRangePaths(['r/0/0/0', 'r/0/0/1'], tree, links)).toEqual([
+      'r/0',
+      'r/0/0',
+      'r/0/0/0',
+      'r/0/0/1',
+    ])
   })
 
   it('keeps only a consecutive run after a covered child is deleted', () => {
@@ -238,6 +290,140 @@ describe('mind map summary placement', () => {
     expect(range && range.x + range.width).toBeGreaterThan(330)
   })
 
+  it('includes the parent branch box when every child is covered', () => {
+    const tree: DiagramNode[] = [
+      { id: 'topic', text: 'T', type: 'topic', position: { x: 0, y: 100 } },
+      {
+        id: 'a',
+        text: 'A',
+        type: 'branch',
+        position: { x: 100, y: 80 },
+        data: { mindMapSide: 'right', mindMapDepth: 1 },
+      },
+      {
+        id: 'a0',
+        text: 'A0',
+        type: 'branch',
+        position: { x: 250, y: 40 },
+        data: { mindMapSide: 'right', mindMapDepth: 2 },
+      },
+      {
+        id: 'a1',
+        text: 'A1',
+        type: 'branch',
+        position: { x: 250, y: 80 },
+        data: { mindMapSide: 'right', mindMapDepth: 2 },
+      },
+    ]
+    const links: Connection[] = [
+      { id: 'e1', source: 'topic', target: 'a', sourceHandle: 'mindmap-right' },
+      { id: 'e2', source: 'a', target: 'a0', sourceHandle: 'mindmap-right' },
+      { id: 'e3', source: 'a', target: 'a1', sourceHandle: 'mindmap-right' },
+    ]
+    const widths = { a: 80, a0: 80, a1: 80 }
+    const heights = { a: 30, a0: 30, a1: 30 }
+    const boxes = coveredBoxesForSummary(
+      tree,
+      links,
+      { id: 's1', text: '概要', coveredPaths: ['r/0/0', 'r/0/1'] },
+      widths,
+      heights
+    )
+    expect(boxes.some((box) => box.x === 100 && box.y === 80)).toBe(true)
+    const partial = coveredBoxesForSummary(
+      tree,
+      links,
+      { id: 's2', text: '概要', coveredPaths: ['r/0/0'] },
+      widths,
+      heights
+    )
+    expect(partial.some((box) => box.x === 100 && box.y === 80)).toBe(false)
+  })
+
+  it('does not shrink the range from leftover node.style width after a color persist', () => {
+    const tree: DiagramNode[] = [
+      { id: 'topic', text: 'T', type: 'topic', position: { x: 0, y: 100 } },
+      {
+        id: 'a',
+        text: 'A',
+        type: 'branch',
+        position: { x: 100, y: 80 },
+        style: { width: 10, height: 4, textColor: '#e11d48' },
+        data: { mindMapSide: 'right', mindMapDepth: 1 },
+      },
+    ]
+    const links: Connection[] = [
+      { id: 'e1', source: 'topic', target: 'a', sourceHandle: 'mindmap-right' },
+    ]
+    const measured = coveredBoxesForSummary(
+      tree,
+      links,
+      { id: 's1', text: '概要', coveredPaths: ['r/0'] },
+      { a: 160 },
+      { a: 36 }
+    )
+    expect(measured[0]?.width).toBe(160)
+    expect(measured[0]?.height).toBe(36)
+    const fallback = coveredBoxesForSummary(
+      tree,
+      links,
+      { id: 's1', text: '概要', coveredPaths: ['r/0'] },
+      {},
+      {}
+    )
+    expect(fallback[0]?.width).toBe(MIND_MAP_GEOMETRY.minWidth)
+    expect(fallback[0]?.height).toBe(MIND_MAP_GEOMETRY.minHeight)
+    const liveLeftover = coveredBoxesForSummary(
+      tree,
+      links,
+      { id: 's1', text: '概要', coveredPaths: ['r/0'] },
+      { a: 160 },
+      { a: 36 },
+      ['r/0'],
+      new Map([['a', { x: 100, y: 80, width: 10, height: 4 }]])
+    )
+    expect(liveLeftover[0]?.width).toBe(160)
+    expect(liveLeftover[0]?.height).toBe(36)
+  })
+
+  it('scrubs leftover layout sizes from _node_styles when placing 概要 nodes', () => {
+    const tree: DiagramNode[] = [
+      { id: 'topic', text: 'T', type: 'topic', position: { x: 0, y: 100 } },
+      {
+        id: 'a',
+        text: 'A',
+        type: 'branch',
+        position: { x: 100, y: 80 },
+        data: { mindMapSide: 'right', mindMapDepth: 1 },
+      },
+    ]
+    const links: Connection[] = [
+      { id: 'e1', source: 'topic', target: 'a', sourceHandle: 'mindmap-right' },
+    ]
+    const rootId = mindMapSummaryRootNodeId('s1')
+    const data = {
+      type: 'mindmap' as const,
+      nodes: tree,
+      connections: links,
+      _node_styles: {
+        [rootId]: { textColor: '#16a34a', width: 12, height: 8 },
+        a: { textColor: '#dc2626', width: 400 },
+      },
+    }
+    tree[1].style = { textColor: '#dc2626', width: 12, height: 8 }
+    placeMindMapSummaryNodes(
+      tree,
+      links,
+      [{ id: 's1', text: '概要', coveredPaths: ['r/0'] }],
+      data,
+      { a: 80, [rootId]: 90 },
+      { a: 30, [rootId]: 34 }
+    )
+    expect(data._node_styles?.[rootId]).toEqual({ textColor: '#16a34a' })
+    expect(data._node_styles?.a).toEqual({ textColor: '#dc2626' })
+    expect(tree[1].style).toEqual({ textColor: '#dc2626' })
+  })
+
   it('places the 概要 node to the right of covered children', () => {
     const tree: DiagramNode[] = [
       { id: 'topic', text: 'T', type: 'topic', position: { x: 0, y: 100 } },
@@ -309,5 +495,61 @@ describe('mind map summary placement', () => {
     )
     const root = placed.find((node) => node.id === rootId)
     expect(root?.position?.x).toBeLessThan(120)
+  })
+
+  it('keeps persisted 概要 border, shape, and text color after rematerialize', () => {
+    const tree: DiagramNode[] = [
+      { id: 'topic', text: 'T', type: 'topic', position: { x: 0, y: 100 } },
+      {
+        id: 'a',
+        text: 'A',
+        type: 'branch',
+        position: { x: 100, y: 80 },
+        data: { mindMapSide: 'right', mindMapDepth: 1 },
+      },
+    ]
+    const links: Connection[] = [
+      { id: 'e1', source: 'topic', target: 'a', sourceHandle: 'mindmap-right' },
+    ]
+    const rootId = mindMapSummaryRootNodeId('s1')
+    const childId = mindMapSummaryChildNodeId('s1', [0])
+    const widths = { a: 80, [rootId]: 90, [childId]: 70 }
+    const heights = { a: 30, [rootId]: 34, [childId]: 28 }
+    const placed = placeMindMapSummaryNodes(
+      tree,
+      links,
+      [{ id: 's1', text: '概要', coveredPaths: ['r/0'], children: [{ text: '子题' }] }],
+      {
+        type: 'mindmap',
+        nodes: tree,
+        connections: links,
+        _node_styles: {
+          [rootId]: {
+            borderColor: '#dc2626',
+            textColor: '#16a34a',
+            nodeShape: 'rectangle',
+            fontSize: 20,
+            width: 12,
+            height: 8,
+          },
+          [childId]: {
+            borderColor: '#2563eb',
+            textColor: '#7c3aed',
+          },
+        },
+      },
+      widths,
+      heights
+    )
+    const root = placed.find((node) => node.id === rootId)
+    const child = placed.find((node) => node.id === childId)
+    expect(root?.style?.borderColor).toBe('#dc2626')
+    expect(root?.style?.textColor).toBe('#16a34a')
+    expect(root?.style?.nodeShape).toBe('rectangle')
+    expect(root?.style?.fontSize).toBe(20)
+    expect(root?.style?.width).toBeUndefined()
+    expect(root?.style?.height).toBeUndefined()
+    expect(child?.style?.borderColor).toBe('#2563eb')
+    expect(child?.style?.textColor).toBe('#7c3aed')
   })
 })

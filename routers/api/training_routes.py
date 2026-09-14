@@ -64,7 +64,7 @@ from services.features.training.session_store import (
     takeover_session,
 )
 from services.features.training.remote_notify import notify_training_session_changed
-from services.features.training.sse import iter_org_events, publish_event
+from services.features.training.sse import iter_org_events, iter_user_wake_events, publish_event
 from services.features.training.training_logger import log_training
 from utils.auth import get_current_user
 from utils.auth.roles import is_superadmin
@@ -438,14 +438,32 @@ async def training_events(
 ):
     """SSE doorbell. Cookie-authenticated same-origin EventSource."""
     target = _resolve_command_org(current_user, org_id)
+    viewer_id = int(current_user.id)
     if target is None:
-        raise HTTPException(status_code=400, detail="org_id is required")
+        if not can_lead_any_training(current_user):
+            raise HTTPException(status_code=400, detail="org_id is required")
+
+        async def _user_stream():
+            async for chunk in iter_user_wake_events(viewer_id):
+                if await request.is_disconnected():
+                    break
+                yield chunk
+
+        return StreamingResponse(
+            _user_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+            },
+        )
     if not is_org_teacher_target(current_user, target):
         if not await can_lead_training(current_user, target):
             raise HTTPException(status_code=403, detail="Training access required")
 
     async def _stream():
-        async for chunk in iter_org_events(target):
+        async for chunk in iter_org_events(target, viewer_user_id=viewer_id):
             if await request.is_disconnected():
                 break
             yield chunk

@@ -1,5 +1,6 @@
 import { nextTick } from 'vue'
 
+import { pickFormatBrushStyle } from '@/composables/canvasToolbar/formatBrushStyle'
 import type { MindMapDiagramStyleId } from '@/config/mindMapDiagramStyles'
 import {
   getMindMapDiagramStyleById,
@@ -50,10 +51,10 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
       data.value._node_styles = {}
     }
 
-    data.value._node_styles[nodeId] = {
+    data.value._node_styles[nodeId] = pickFormatBrushStyle({
       ...(data.value._node_styles[nodeId] || {}),
       ...style,
-    }
+    })
 
     emitCtxEvent(ctx, 'diagram:style_changed', { nodeId, style: data.value._node_styles[nodeId] })
   }

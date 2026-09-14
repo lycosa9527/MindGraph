@@ -18,6 +18,7 @@ import { useNotifications } from '@/composables/core/useNotifications'
 import {
   buildDiagramSaveGuardState,
   flushDiagramSaveWithFeedback,
+  shouldRecordManualSaveSnapshot,
 } from '@/composables/editor/diagramSaveFeedback'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import {
@@ -50,7 +51,7 @@ export function useCanvasPageEditorShortcuts(options: {
   relationshipActiveEntry: Ref<unknown>
   diagramAutoSave: DiagramAutoSaveApi
   isCollabGuest: Ref<boolean>
-}): { handleSaveKey: () => Promise<void> } {
+}): { handleSaveKey: (options?: { recordHistory?: boolean }) => Promise<void> } {
   initInlineEditEnterGuard()
 
   const { workshopCode, activeEditors, relationshipActiveEntry, diagramAutoSave, isCollabGuest } =
@@ -284,12 +285,12 @@ export function useCanvasPageEditorShortcuts(options: {
     diagramStore.recalculateDiagramLayout()
   }
 
-  async function handleSaveKey() {
+  async function handleSaveKey(options?: { recordHistory?: boolean }) {
     if (!authStore.isAuthenticated) {
       notify.warning(t('editor.saveNeedsLogin'))
       return
     }
-    await flushDiagramSaveWithFeedback({
+    const result = await flushDiagramSaveWithFeedback({
       flush: () => diagramAutoSave.flush({ bypassSuppressGuard: true }),
       guardState: buildDiagramSaveGuardState({
         llmGenerating: llmResultsStore.isGenerating,
@@ -302,6 +303,9 @@ export function useCanvasPageEditorShortcuts(options: {
       notifyWarning: (message) => notify.warning(message),
       onSlotsFull: () => eventBus.emit('canvas:show_slot_full_modal', {} as never),
     })
+    if (shouldRecordManualSaveSnapshot(result, options?.recordHistory !== false)) {
+      eventBus.emit('snapshot:requested', { silent: true })
+    }
   }
 
   function handleCopyKey(): void {

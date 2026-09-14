@@ -1,29 +1,24 @@
 /**
  * Desktop focus discovery (mobile) and publish (desktop PUT) for Kitty pairing.
  *
- * Primary path while mobile Kitty WS is up: server pushes ``desktop_focus_update``
- * (local WS + Redis control relay across workers). REST poll is recovery / pre-WS only.
+ * Publish is event-only: canvas open / diagram switch / leave.
+ * Discovery: one GET when pairing starts or Kitty WS connects; then WS
+ * ``desktop_focus_update``. GET applies only when ``canvas_owner_present``.
  */
 import { type Ref, onUnmounted, ref, watch } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import {
-  KITTY_FOCUS_RECOVERY_POLL_MS,
-  KITTY_PAIR_POLL_MS,
-} from '@/composables/kitty/runKittyIntervalPoll'
 import { apiRequest } from '@/utils/apiClient'
 import { awaitSessionRefreshIdle } from '@/utils/sessionRefresh'
 
 const DEBOUNCE_MS = 480
-/** Keep Redis focus fresh while canvas stays open (mobile freshness checks). */
-const FOCUS_HEARTBEAT_MS = 60_000
 
 async function putDesktopFocusDiagram(diagramLibraryId: string | null): Promise<void> {
   try {
     // Wait out Kitty / apiClient refresh so this PUT does not race Redis delete of
     // the access session and trigger a second token rotation.
     await awaitSessionRefreshIdle()
-    // apiRequest refreshes once on 401 then expires the session — stops idle heartbeat spam.
+    // apiRequest refreshes once on 401 then expires the session.
     await apiRequest('/api/kitty/desktop_focus', {
       method: 'PUT',
       body: JSON.stringify({ diagram_library_id: diagramLibraryId }),
@@ -34,21 +29,20 @@ async function putDesktopFocusDiagram(diagramLibraryId: string | null): Promise<
 }
 
 export function useKittyDesktopFocusHint(
-  pollEnabled: Ref<boolean>,
-  /** When true (mobile Kitty WS connected), poll slowly as recovery only. */
+  hydrateEnabled: Ref<boolean>,
+  /** When Kitty WS connects, hydrate once more then trust push. */
   pushPreferred?: Ref<boolean>
 ) {
   const diagramLibraryId = ref<string | null>(null)
   const updatedAt = ref<number | null>(null)
-  let intervalId: ReturnType<typeof setInterval> | null = null
 
   function applyFocus(lib: string | null, ts: number | null): void {
     diagramLibraryId.value = lib
     updatedAt.value = ts
   }
 
-  async function tick(): Promise<void> {
-    if (!pollEnabled.value) {
+  async function hydrate(): Promise<void> {
+    if (!hydrateEnabled.value) {
       return
     }
     try {
@@ -65,40 +59,24 @@ export function useKittyDesktopFocusHint(
         return
       }
       const raw = data as Record<string, unknown>
-      const lib = raw.diagram_library_id
+      const libRaw = raw.diagram_library_id
+      const lib = typeof libRaw === 'string' && libRaw.length > 0 ? libRaw : null
       const ts = raw.updated_at
-      applyFocus(
-        typeof lib === 'string' && lib.length > 0 ? lib : null,
+      const tsNum =
         typeof ts === 'number'
           ? ts
           : typeof ts === 'string' && /^\d+$/.test(ts)
             ? Number(ts)
             : null
-      )
+      // Bind only while the desktop canvas-owner WS lease is live.
+      if (raw.canvas_owner_present !== true) {
+        applyFocus(null, tsNum)
+        return
+      }
+      applyFocus(lib, tsNum)
     } catch {
       applyFocus(null, null)
     }
-  }
-
-  function pollIntervalMs(): number {
-    return pushPreferred != null && pushPreferred.value
-      ? KITTY_FOCUS_RECOVERY_POLL_MS
-      : KITTY_PAIR_POLL_MS
-  }
-
-  function startPolling(): void {
-    stopPolling()
-    void tick()
-    intervalId = setInterval(() => {
-      void tick()
-    }, pollIntervalMs())
-  }
-
-  function stopPolling(): void {
-    if (intervalId != null) {
-      clearInterval(intervalId)
-    }
-    intervalId = null
   }
 
   function onFocusPush(payload: {
@@ -112,12 +90,10 @@ export function useKittyDesktopFocusHint(
 
   watch(
     () =>
-      [pollEnabled.value, pushPreferred != null ? pushPreferred.value : false] as const,
-    () => {
-      if (pollEnabled.value) {
-        startPolling()
-      } else {
-        stopPolling()
+      [hydrateEnabled.value, pushPreferred != null ? pushPreferred.value : false] as const,
+    ([enabled]) => {
+      if (enabled) {
+        void hydrate()
       }
     },
     { immediate: true }
@@ -125,10 +101,9 @@ export function useKittyDesktopFocusHint(
 
   onUnmounted(() => {
     eventBus.off('kitty:desktop_focus_update', onFocusPush)
-    stopPolling()
   })
 
-  return { diagramLibraryId, updatedAt, refresh: tick }
+  return { diagramLibraryId, updatedAt, refresh: hydrate }
 }
 
 export function useKittyDesktopFocusPublish(options: {
@@ -136,7 +111,6 @@ export function useKittyDesktopFocusPublish(options: {
   enabled: Ref<boolean>
 }): void {
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
-  let heartbeatTimer: ReturnType<typeof setInterval> | null = null
 
   function flush(): void {
     const idRaw = options.libraryDiagramId.value
@@ -154,32 +128,10 @@ export function useKittyDesktopFocusPublish(options: {
     }, DEBOUNCE_MS)
   }
 
-  function stopHeartbeat(): void {
-    if (heartbeatTimer != null) {
-      clearInterval(heartbeatTimer)
-      heartbeatTimer = null
-    }
-  }
-
-  function startHeartbeat(): void {
-    stopHeartbeat()
-    heartbeatTimer = setInterval(() => {
-      if (!options.enabled.value) {
-        return
-      }
-      flush()
-    }, FOCUS_HEARTBEAT_MS)
-  }
-
   watch(
     () => [options.libraryDiagramId.value, options.enabled.value] as const,
-    ([, enabled]) => {
+    () => {
       schedule()
-      if (enabled) {
-        startHeartbeat()
-      } else {
-        stopHeartbeat()
-      }
     },
     { flush: 'post', immediate: true }
   )
@@ -189,7 +141,6 @@ export function useKittyDesktopFocusPublish(options: {
       clearTimeout(debounceTimer)
       debounceTimer = null
     }
-    stopHeartbeat()
     void putDesktopFocusDiagram(null)
   })
 }

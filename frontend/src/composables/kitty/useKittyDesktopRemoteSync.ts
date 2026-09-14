@@ -1,5 +1,6 @@
 /**
- * Desktop Kitty remote sync: incremental diagram_update + selection fanout / live_context poll.
+ * Desktop Kitty remote sync: SSE diagram/selection fanout; live_context GET on
+ * start, visibility, and hub persist — no interval.
  */
 import { type ComputedRef, type Ref, onUnmounted, ref, watch } from 'vue'
 
@@ -21,9 +22,6 @@ import {
 import { applyKittyRemoteLlmModel } from '@/composables/kitty/applyKittyRemoteLlmModel'
 import { applyKittyRemoteCanvasSelection } from '@/composables/kitty/kittySelectionApply'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
-import {
-  KITTY_LIVE_CONTEXT_POLL_MS,
-} from '@/composables/kitty/runKittyIntervalPoll'
 import type { KittyAgentContext } from '@/composables/kitty/kittyAgentTypes'
 import { syncDiagramStoreFromVoiceContext } from '@/composables/kitty/syncDiagramStoreFromVoiceContext'
 import { useDiagramStore } from '@/stores/diagram'
@@ -69,9 +67,7 @@ export function useKittyDesktopRemoteSync(options: {
   const mobileActiveHub = useKittyMobileActiveHubSnapshot()
   const lastAppliedUpdatedAt = ref<number | null>(null)
   const lastDiagramSseAt = ref(0)
-  let pollTickCount = 0
-  let pollTimer: ReturnType<typeof setTimeout> | null = null
-  let pollingActive = false
+  let listening = false
   let tickInFlight = false
   let visibilityBound = false
   let releaseHub: (() => void) | null = null
@@ -335,11 +331,9 @@ export function useKittyDesktopRemoteSync(options: {
         })
       : voiceFp
     const contentDiverged = hubContentFp.length > 0 && hubContentFp !== localFp
-    const sseMissed =
-      forceRecovery ||
-      (Date.now() - lastDiagramSseAt.value > KITTY_LIVE_CONTEXT_POLL_MS * 2 && contentDiverged)
+    const shouldRecover = forceRecovery && contentDiverged
 
-    if (sseMissed && diagramData != null && contentDiverged) {
+    if (shouldRecover && diagramData != null) {
       syncDiagramStoreFromVoiceContext(String(data.diagram_type ?? storeType), diagramData)
       traceKittyWorkflow(
         'desktop',
@@ -347,7 +341,7 @@ export function useKittyDesktopRemoteSync(options: {
         `updated_at=${appliedUpdatedAt} force=${forceRecovery}`,
         { scope: options.libraryDiagramId.value?.trim() }
       )
-    } else if (sseMissed && diagramData != null && !contentDiverged) {
+    } else if (forceRecovery && diagramData != null && !contentDiverged) {
       traceKittyWorkflow(
         'desktop',
         'live_context_skip',
@@ -381,11 +375,9 @@ export function useKittyDesktopRemoteSync(options: {
       return
     }
 
-    pollTickCount += 1
-    // SSE carries hot diagram/selection; poll is recovery (every ~8 ticks ≈ 96s when live).
-    const forceRecovery = tickOpts?.forceRecovery === true || pollTickCount % 8 === 0
+    const forceRecovery = tickOpts?.forceRecovery === true
     const mobileFresh = isKittyMobileActiveHubFresh()
-    const sseFresh = Date.now() - lastDiagramSseAt.value < KITTY_LIVE_CONTEXT_POLL_MS * 2
+    const sseFresh = lastDiagramSseAt.value > 0
     if ((sseFresh || mobileFresh) && !forceRecovery) {
       return
     }
@@ -417,8 +409,8 @@ export function useKittyDesktopRemoteSync(options: {
     }
   }
 
-  function stopPolling(): void {
-    pollingActive = false
+  function stopListening(): void {
+    listening = false
     if (visibilityBound && typeof document !== 'undefined') {
       document.removeEventListener('visibilitychange', onVisibilityChange)
       visibilityBound = false
@@ -427,74 +419,55 @@ export function useKittyDesktopRemoteSync(options: {
       releaseHub()
       releaseHub = null
     }
-    if (pollTimer != null) {
-      clearTimeout(pollTimer)
-      pollTimer = null
-    }
   }
 
-  function armNextPoll(): void {
-    if (!pollingActive) {
-      return
-    }
-    if (pollTimer != null) {
-      clearTimeout(pollTimer)
-    }
-    pollTimer = setTimeout(() => {
-      pollTimer = null
-      void runPollCycle()
-    }, KITTY_LIVE_CONTEXT_POLL_MS)
-  }
-
-  async function runPollCycle(): Promise<void> {
-    if (!pollingActive) {
+  async function runHydrate(tickOpts?: { forceRecovery?: boolean }): Promise<void> {
+    if (!listening) {
       return
     }
     if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
-      armNextPoll()
       return
     }
-    if (!tickInFlight) {
-      tickInFlight = true
-      try {
-        await tick()
-      } finally {
-        tickInFlight = false
-      }
+    if (tickInFlight) {
+      return
     }
-    armNextPoll()
+    tickInFlight = true
+    try {
+      await tick(tickOpts)
+    } finally {
+      tickInFlight = false
+    }
   }
 
   function onVisibilityChange(): void {
-    if (!pollingActive) {
+    if (!listening) {
       return
     }
     if (document.visibilityState === 'visible') {
-      void runPollCycle()
+      void runHydrate({ forceRecovery: true })
     }
   }
 
-  function startPolling(): void {
-    stopPolling()
-    pollingActive = true
+  function startListening(): void {
+    stopListening()
+    listening = true
     if (releaseHub == null) {
       releaseHub = acquireKittyMobileActiveHub()
     }
-    pollTickCount = 0
     if (typeof document !== 'undefined' && !visibilityBound) {
       document.addEventListener('visibilitychange', onVisibilityChange)
       visibilityBound = true
     }
-    void runPollCycle()
+    void runHydrate({ forceRecovery: true })
   }
 
   watch(
     () => options.syncEnabled.value,
     (on) => {
       if (on) {
-        startPolling()
+        startListening()
       } else {
-        stopPolling()
+        stopListening()
         lastAppliedUpdatedAt.value = null
         lastDiagramSseAt.value = 0
       }
@@ -590,7 +563,7 @@ export function useKittyDesktopRemoteSync(options: {
 
   onUnmounted(() => {
     eventBus.removeAllListenersForOwner('KittyDesktopRemoteSync')
-    stopPolling()
+    stopListening()
   })
 
   return { refresh: tick }

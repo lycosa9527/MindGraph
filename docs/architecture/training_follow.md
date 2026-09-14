@@ -8,7 +8,7 @@ Visiting instructors (superadmin, `platform_bd`, expert with invited orgs) steer
 
 ## Session
 
-Many schools may train at once: Redis keys and SSE channels are per `org_id`. One live-or-paused session per org and at most one hosted session per instructor. A new session always starts at `seq` 1; clients key follow state by `session_id`, not a process-wide seq. States: `live`, `paused`, `ended`. Hard TTL 4 hours. Instructor heartbeat every 15s.
+Many schools may train at once: Redis keys and SSE channels are per `org_id`. One live-or-paused session per org and at most one hosted session per instructor. A new session always starts at `seq` 1; clients key follow state by `session_id`, not a process-wide seq. States: `live`, `paused`, `ended`. Hard TTL 4 hours. Instructor presence is a connection lease: SSE keepalive (~20s) and the watch training-remote socket refresh `instructor_seen_at` while those sockets stay open. A one-shot POST `/heartbeat` still runs when the host tab becomes visible.
 
 **Stale rooms.** `GET` never writes Redis. The snapshot is an audience view: 3 minutes without a heartbeat looks `paused`; past `expires_at` looks `ended`. The first reader to notice takes a 30s SET NX gate and persists that pause or 60s ended tombstone once (CAS / `end_session`), then SSE doorbells so other tabs refetch. Losers of the gate still return the same view immediately. ETag is `"{session_id}:{seq}:{state}"` so a virtual pause is not a 304 against the live tag. Claim treats an expired live/paused document as free so a vanished 4h room does not block Start. Resume (or takeover) is how the instructor comes back; heartbeat alone does not un-pause.
 
@@ -16,9 +16,9 @@ Many schools may train at once: Redis keys and SSE channels are per `org_id`. On
 
 ## Transport
 
-- `GET /api/training/events` — SSE (`X-Accel-Buffering: no`, comment keepalive ~20s). Cookie auth, same-origin EventSource.
-- `GET /api/training/command` — snapshot + ETag (`"{session_id}:{seq}"` so a new session at seq 1 is not a 304).
-- Poll fallback (2s) if EventSource fails.
+- `GET /api/training/events` — SSE (`X-Accel-Buffering: no`, comment keepalive ~20s). Cookie auth, same-origin EventSource. Teachers and leads with an org subscribe to the org channel. Platform leads with no school yet subscribe to `training_remote:user:{id}:wake` so desktop Start doorbells the phone.
+- `GET /api/training/command` — snapshot + ETag (`"{session_id}:{seq}:{state}"` so a new session at seq 1 is not a 304).
+- EventSource errors pull command once and leave the socket open so the browser can reconnect. There is no HTTP poll fallback.
 
 Do not put tokens on the SSE query string. Recreate EventSource after access-token refresh.
 
@@ -47,7 +47,7 @@ Course Builder is `/training/builder`. Each slide picks a teacher-facing app pag
 
 `/m/training` is a landscape clicker for the session host. Platform leads see a 校本培训 card on `/m`. The phone does not start or play a course — desktop `/training` still arms the room and clicks the course.
 
-The remote hydrates `GET /api/training/sessions/active` (instructor pointer, no `org_id`) on mount, `pageshow`, and when the tab becomes visible, then sets `leadingOrgId` so SSE / command use the hosted school. While the phone is still waiting (or the school is unknown) it repeats that GET every 2s so desktop Start + Play lights up without a refresh; once the room is live or foreign, SSE takes over. Platform leads do not open `/events` or `/command` until an org is known (those routes 400 without one). The page also sends the 15s owner heartbeat on an interval and again when the tab is shown (the friends rail is hidden here, so it cannot keep the room alive). Teacher activity heartbeats are not posted from `/m/training`. Wake Lock is re-requested when the tab is visible again.
+The remote hydrates `GET /api/training/sessions/active` (instructor pointer, no `org_id`) on mount, `pageshow`, and when the tab becomes visible, then sets `leadingOrgId` so SSE / command use the hosted school. Platform leads open `/events` immediately: before a school is known the stream is the user-wake channel, so desktop Start doorbells the phone without a poll. After `leadingOrgId` is set the client switches to the org channel. Owner presence is the SSE/watch lease; the page POSTs `/heartbeat` once when it becomes visible. Teacher activity heartbeats are not posted from `/m/training`. Wake Lock is re-requested when the tab is visible again.
 
 While the host is on `/m/training` (or any `/m/*` page), follow applies the snapshot but does not navigate the phone. Teachers still force-nav. Desktop pad, friends rail, notes, lesson overlay, and focus ring stay off on every mobile route (`shouldHideTrainingDesktopChrome`). The friends rail still sends the owner heartbeat while hidden, so leaving the remote for `/m` does not drop the room. The mobile shell keeps its header (home + 校本培训). The three columns are controls (stacked play pad), the online list (no jump), and speaker notes as a teleprompter (scroll resets on seq / step). Portrait shows a rotate hint. Stop uses an in-page confirm. Another lead who is not the host sees a waiting / foreign message, not steer buttons. After Stop the remote returns to waiting.
 
@@ -55,7 +55,7 @@ While the host is on `/m/training` (or any `/m/*` page), follow applies the snap
 
 The 1.85C Super tile **校本培训** (`com.mindgraph.training`) is a host + clicker. It does not use SSE. Auth is the same flash-time `mgat_` + `X-MG-Account` as Kitty.
 
-While the app is foreground it polls `GET /api/training/sessions/active` every 2s and heartbeats every 15s when it owns the room. The play pad posts `/step` (`delta` ±1) and `/free` (`锁定` is `{"free":false}`, `自由` is `{"free":true}`). Stop (pad or red host piece) confirms, then `POST .../end`. The 360 face is a circular puzzle: 上一 | 下一 share a band, 停止 is a full section, 锁定 | 自由 share the lower band, and the bottom crescent is school + green **开始** / red **停止**. Status uses the same green / orange disk as Kitty. Green **开始** is `POST /sessions` with `confirm_teacher_total` from `/orgs/{id}/ready` (arm only); picking a course after the room is armed is `POST .../play`. First-page lists are `GET /orgs` then `GET /courses`. A single leadable school is auto-selected. Pause, resume, takeover, roster, and notes stay off the 360 face. Swipe-home (Super pause/stop) ends an owned room with `POST .../end` on the remote thread, then drops the poll so Kitty keeps the RAM. A school you were only watching is left alone. Reopening the tile starts a new remote loop; it does not resume the ended room.
+While the app is foreground it holds `/api/ws/training-remote`. Redis PUBLISH on `training_remote:user:{id}:wake` / `training_remote:org:{id}:wake` pushes the HUD snapshot; `GET /sessions/active` is reconnect hydrate only. The open socket refreshes the owner lease (no 15s POST heartbeat). The play pad posts `/step` (`delta` ±1) and `/free` (`锁定` is `{"free":false}`, `自由` is `{"free":true}`). Stop (pad or red host piece) confirms, then `POST .../end`. The 360 face is a circular puzzle: 上一 | 下一 share a band, 停止 is a full section, 锁定 | 自由 share the lower band, and the bottom crescent is school + green **开始** / red **停止**. Status uses the same green / orange disk as Kitty. Green **开始** is `POST /sessions` with `confirm_teacher_total` from `/orgs/{id}/ready` (arm only); picking a course after the room is armed is `POST .../play`. First-page lists are `GET /orgs` then `GET /courses`. A single leadable school is auto-selected. Pause, resume, takeover, roster, and notes stay off the 360 face. Swipe-home (Super pause/stop) ends an owned room with `POST .../end` on the remote thread, then drops the socket so Kitty keeps the RAM. A school you were only watching is left alone. Reopening the tile starts a new remote loop; it does not resume the ended room.
 
 ## Proxy
 
