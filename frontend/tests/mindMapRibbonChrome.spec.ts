@@ -64,6 +64,9 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     const toolbarApps = readSrc('src/composables/canvasToolbar/useCanvasToolbarApps.ts')
     expect(toolbarApps).toContain('useMindMapV2.value')
     expect(toolbarApps).toContain("appKey !== 'translate_diagram'")
+    expect(toolbarApps).toContain("guestBlock: 'ai'")
+    expect(toolbarApps).toContain("guestBlock: 'feature'")
+    expect(toolbarApps).not.toContain("a.appKey !== 'learning_sheet'")
   })
 
   it('puts zoom on the status bar', () => {

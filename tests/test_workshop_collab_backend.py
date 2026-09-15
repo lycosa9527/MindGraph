@@ -29,6 +29,7 @@ from services.online_collab.participant.canvas_collab_locks import (
     drop_nodes_paired_with_dropped_connections,
     filter_granular_connections_for_locks,
     filter_granular_nodes_for_locks,
+    layout_patch_for_locked_node,
     node_locked_by_other_user,
 )
 from services.online_collab.participant.online_collab_participant_ops import _hexpire_field
@@ -403,11 +404,32 @@ class TestLockHelpers:
         assert node_locked_by_other_user(self.CODE, self.BOB_ID, self.NODE_ID, local, None)
 
     def test_filter_granular_nodes_drops_locked(self) -> None:
-        """Test filter granular nodes drops locked."""
+        """Text-only patches on a foreign-locked node are dropped."""
         editors = _editors_with_lock(self.CODE, self.NODE_ID, self.ALICE_ID, "alice")
         nodes = [{"id": self.NODE_ID, "text": "bob change"}]
         result = filter_granular_nodes_for_locks(self.CODE, self.BOB_ID, nodes, editors, None)
         assert not result
+
+    def test_filter_granular_nodes_keeps_layout_on_locked(self) -> None:
+        """Peer reflow may move a node another user is editing; keep position."""
+        editors = _editors_with_lock(self.CODE, self.NODE_ID, self.ALICE_ID, "alice")
+        nodes = [
+            {
+                "id": self.NODE_ID,
+                "text": "stale label",
+                "position": {"x": 12, "y": 40},
+            }
+        ]
+        result = filter_granular_nodes_for_locks(self.CODE, self.BOB_ID, nodes, editors, None)
+        assert result == [{"id": self.NODE_ID, "position": {"x": 12.0, "y": 40.0}}]
+
+    def test_layout_patch_for_locked_node_ignores_bool(self) -> None:
+        """bool is a subclass of int and must not become a width."""
+        assert layout_patch_for_locked_node({"id": "n1", "width": True}) is None
+        assert layout_patch_for_locked_node({"id": "n1", "position": {"x": 1, "y": 2}}) == {
+            "id": "n1",
+            "position": {"x": 1.0, "y": 2.0},
+        }
 
     def test_filter_granular_nodes_allows_unlocked(self) -> None:
         """Test filter granular nodes allows unlocked."""
@@ -422,12 +444,12 @@ class TestLockHelpers:
         result = filter_granular_nodes_for_locks(self.CODE, self.ALICE_ID, nodes, editors, None)
         assert len(result) == 1
 
-    def test_filter_granular_connections_drops_if_source_locked(self) -> None:
-        """Test filter granular connections drops if source locked."""
+    def test_filter_granular_connections_allows_add_child_when_parent_locked(self) -> None:
+        """Text-editing a branch must not block adding a child under it."""
         editors = _editors_with_lock(self.CODE, "n1", self.ALICE_ID, "alice")
         conns = [{"source": "n1", "target": "n2"}]
         result = filter_granular_connections_for_locks(self.CODE, self.BOB_ID, conns, editors, None)
-        assert not result
+        assert result == conns
 
     def test_filter_granular_connections_drops_if_target_locked(self) -> None:
         """Test filter granular connections drops if target locked."""
@@ -453,6 +475,47 @@ class TestLockHelpers:
             [],
         )
         assert kept_nodes == []
+
+    def test_drop_nodes_paired_keeps_layout_echo_of_locked_child(self) -> None:
+        """Peer reflow of a locked child must not be treated as an orphan add."""
+        incoming_nodes = [
+            {"id": "new-child", "text": "stale", "position": {"x": 12, "y": 40}},
+            {"id": "sib", "position": {"x": 0, "y": 18}},
+        ]
+        filtered_nodes = [
+            {"id": "new-child", "position": {"x": 12.0, "y": 40.0}},
+            {"id": "sib", "position": {"x": 0, "y": 18}},
+        ]
+        incoming_conns = [{"id": "e-new", "source": "n1", "target": "new-child"}]
+        kept_nodes = drop_nodes_paired_with_dropped_connections(
+            incoming_nodes,
+            filtered_nodes,
+            incoming_conns,
+            [],
+        )
+        assert kept_nodes == filtered_nodes
+
+    def test_lock_pipeline_keeps_layout_when_child_edge_echo_dropped(self) -> None:
+        """Add-child echo: lock strips text, drops target edge, keeps layout."""
+        editors = _editors_with_lock(self.CODE, "new-child", self.ALICE_ID, "alice")
+        incoming_nodes = [
+            {"id": "new-child", "text": "stale", "position": {"x": 12, "y": 40}},
+            {"id": "sib", "text": "S", "position": {"x": 0, "y": 18}},
+        ]
+        incoming_conns = [{"id": "e-new", "source": "n1", "target": "new-child"}]
+        filtered_nodes = filter_granular_nodes_for_locks(self.CODE, self.BOB_ID, incoming_nodes, editors, None)
+        filtered_conns = filter_granular_connections_for_locks(self.CODE, self.BOB_ID, incoming_conns, editors, None)
+        kept_nodes = drop_nodes_paired_with_dropped_connections(
+            incoming_nodes,
+            filtered_nodes,
+            incoming_conns,
+            filtered_conns,
+        )
+        assert not filtered_conns
+        assert kept_nodes == [
+            {"id": "new-child", "position": {"x": 12.0, "y": 40.0}},
+            {"id": "sib", "text": "S", "position": {"x": 0, "y": 18}},
+        ]
 
     def test_filter_granular_nodes_no_id_passes_through(self) -> None:
         """Nodes without an id field are let through (cannot lock an anonymous node)."""

@@ -103,8 +103,8 @@ _ERROR_MESSAGES: dict[str, tuple[str, str]] = {
         "No response generated.",
     ),
     "collab_blocked": (
-        "协作编辑期间无法使用 AI。",
-        "AI generation is unavailable during live collaboration",
+        "协作模式下仅图示所有者可以使用 AI 生成",
+        "Only the diagram owner can use AI generation during collaboration",
     ),
 }
 
@@ -175,7 +175,7 @@ async def _stream_explain(
         await assert_collab_blocks_canvas_ai(diagram_id, user)
     except HTTPException as exc:
         error_type = "collab_blocked" if exc.status_code == 403 else "unknown"
-        msg = _localized_error(error_type, effective_lang, str(exc.detail) if exc.status_code != 403 else None)
+        msg = _localized_error(error_type, effective_lang, str(exc.detail))
         logger.warning(
             "%s Collab/guard blocked | session=%s facet=%s status=%s",
             _LOG_PREFIX,

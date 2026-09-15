@@ -244,7 +244,6 @@ export default {
   'canvas.toolbar.causeAdded': '已添加原因節點',
   'canvas.toolbar.childAdded': '已添加子項',
   'canvas.toolbar.collabAiBlocked': '協作模式下僅圖示所有者可以使用 AI 生成',
-  'canvas.toolbar.collabLiveAiDisabled': '在線協作期間無法使用 AI 生成圖示，以保持所有人畫布一致',
   'canvas.toolbar.collabGuestFeatureBlocked': '以協同訪客身份加入時無法使用此功能。',
   'canvas.toolbar.colorLabel': '顏色',
   'canvas.toolbar.conceptGeneration': '生成概念',
@@ -830,8 +829,6 @@ export default {
   'canvas.mindMapOneSentence.requestQueued': '排隊中',
   'canvas.mindMapOneSentence.requestFailed': '未完成',
   'canvas.mindMapOneSentence.kittyEditAccessDenied': '當前沒有權限修改這張導圖。',
-  'canvas.mindMapOneSentence.kittyEditCollabActive':
-    '实时协作进行中，Kitty 暂不修改导图，以免和协作编辑冲突。',
   'canvas.mindMapOneSentence.kittyEditStaleRevision':
     '导图刚被更新过，这次修改过期了。请再说一次你的修改。',
   'canvas.mindMapOneSentence.kittyEditTimeout': '這次修改超時了，導圖可能未更新。請再試一次。',

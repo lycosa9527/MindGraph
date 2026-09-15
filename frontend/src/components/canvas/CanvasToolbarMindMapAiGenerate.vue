@@ -7,9 +7,9 @@ import { ElTooltip } from 'element-plus'
 
 import { Sparkles } from '@lucide/vue'
 
+import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useMindMapAudienceGenerate } from '@/composables/mindMap/audience/useMindMapAudienceGenerate'
-import { useDiagramStore } from '@/stores'
 
 const props = withDefaults(
   defineProps<{
@@ -26,10 +26,14 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
-const diagramStore = useDiagramStore()
 const { isAIGenerating, handleMindMapAiGenerate } = useMindMapAudienceGenerate()
+const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
 
 function onGenerateClick(): void {
+  if (aiBlockedByCollab.value) {
+    notifyCollabGuestAiBlocked()
+    return
+  }
   if (props.delegateGenerate) {
     emit('aiGenerate')
     return
@@ -43,17 +47,33 @@ const generatingLabel = t('canvas.toolbar.aiGenerating')
 
 <template>
   <ElTooltip
-    v-if="!diagramStore.collabSessionActive"
-    :content="isAIGenerating ? generatingLabel : t('canvas.toolbar.aiGenerateTooltip')"
+    :content="
+      aiBlockedByCollab
+        ? t('canvas.toolbar.collabAiBlocked')
+        : isAIGenerating
+          ? generatingLabel
+          : t('canvas.toolbar.aiGenerateTooltip')
+    "
     :placement="props.tooltipPlacement"
-    :disabled="!props.compact"
+    :disabled="!props.compact && !aiBlockedByCollab"
   >
     <button
       type="button"
       class="mm-ai-generate"
-      :class="{ 'mm-ai-generate--compact': props.compact, 'mm-ai-generate--busy': isAIGenerating }"
+      :class="{
+        'mm-ai-generate--compact': props.compact,
+        'mm-ai-generate--busy': isAIGenerating,
+        'mm-ai-generate--blocked': aiBlockedByCollab,
+      }"
       :disabled="isAIGenerating"
-      :aria-label="isAIGenerating ? generatingLabel : generateLabel"
+      :aria-disabled="aiBlockedByCollab"
+      :aria-label="
+        aiBlockedByCollab
+          ? t('canvas.toolbar.collabAiBlocked')
+          : isAIGenerating
+            ? generatingLabel
+            : generateLabel
+      "
       @click="onGenerateClick"
     >
       <Sparkles
@@ -101,9 +121,15 @@ const generatingLabel = t('canvas.toolbar.aiGenerating')
   background: linear-gradient(180deg, rgb(37 99 235) 0%, rgb(29 78 216) 100%);
 }
 
-.mm-ai-generate:disabled {
+.mm-ai-generate:disabled,
+.mm-ai-generate--blocked {
   cursor: not-allowed;
-  opacity: 0.75;
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+.mm-ai-generate--blocked:hover {
+  background: linear-gradient(180deg, rgb(59 130 246) 0%, rgb(37 99 235) 100%);
 }
 
 .mm-ai-generate__label,

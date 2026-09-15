@@ -4,6 +4,7 @@
  * Trigger: topic valid, then Tab while editing a label (or concept map linked node: selection+
  * Tab delegates here from useConceptMapRelationshipTabFromSelection). Streams via SSE.
  */
+import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -376,9 +377,11 @@ export function useInlineRecommendations() {
       return { success: false, error: 'Already generating' }
     }
 
-    if (diagramStore.collabSessionActive) {
-      notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
-      return { success: false, error: 'Collab active' }
+    if (
+      isCollabGuestAiBlocked(diagramStore.collabSessionActive, diagramStore.collabIsDiagramOwner)
+    ) {
+      notify.warning(t('canvas.toolbar.collabAiBlocked'))
+      return { success: false, error: 'Collab guest AI blocked' }
     }
 
     if (!store.isReady) {

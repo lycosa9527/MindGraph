@@ -80,6 +80,11 @@ class NodePaletteStartRequest(BaseModel):
         max_length=5000,
         description="Optional mind-map audience / content-expertise instructions",
     )
+    diagram_id: Optional[str] = Field(
+        None,
+        max_length=64,
+        description="Saved diagram id for collab owner-only AI guard",
+    )
 
     @field_validator("llm_models")
     @classmethod
@@ -163,6 +168,11 @@ class NodePaletteNextRequest(BaseModel):
         None,
         max_length=5000,
         description="Optional mind-map audience / content-expertise instructions",
+    )
+    diagram_id: Optional[str] = Field(
+        None,
+        max_length=64,
+        description="Saved diagram id for collab owner-only AI guard",
     )
 
     @field_validator("language")
@@ -250,6 +260,11 @@ class RelationshipLabelsStartRequest(BaseModel):
         "en",
         description="Prompt / generation language code (see prompt output registry)",
     )
+    diagram_id: Optional[str] = Field(
+        None,
+        max_length=64,
+        description="Saved diagram id for collab owner-only AI guard",
+    )
 
     @field_validator("language")
     @classmethod
@@ -279,6 +294,11 @@ class RelationshipLabelsNextRequest(BaseModel):
     language: str = Field(
         "en",
         description="Prompt / generation language code (see prompt output registry)",
+    )
+    diagram_id: Optional[str] = Field(
+        None,
+        max_length=64,
+        description="Saved diagram id for collab owner-only AI guard",
     )
 
     @field_validator("language")

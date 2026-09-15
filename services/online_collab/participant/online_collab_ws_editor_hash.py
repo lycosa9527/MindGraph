@@ -408,3 +408,16 @@ async def hash_purge_user_from_all_nodes(
         code,
     )
     return [], False
+
+
+async def hash_refresh_editor_ttl_for_user(code: str, user_id: int) -> None:
+    """Re-apply field HEXPIRE for nodes this user still holds (WS ping activity)."""
+    redis = get_async_redis()
+    if not redis:
+        return
+    editors = await hash_load_editors(code)
+    uid = int(user_id)
+    key = _key(code)
+    for node_id, node_map in editors.items():
+        if uid in node_map:
+            await _call_hexpire(redis, key, _FIELD_TTL_SEC, _field(node_id))

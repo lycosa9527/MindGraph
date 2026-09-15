@@ -7,11 +7,12 @@
  * side via the diagram's linked package). The user still confirms the AI
  * children through the existing subgraph preview bar.
  *
- * Cost guards: once per branch node id on success, debounced, skipped during collab.
+ * Cost guards: once per branch node id on success, debounced, skipped for collab guests.
  */
 import { type Ref, computed, onUnmounted, ref, watch } from 'vue'
 
 import { eventBus } from '@/composables'
+import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
 import { TOPIC_NODE_ID, shouldAutoExpandBranch } from '@/composables/editor/branchAutoExpandGuard'
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
 import { useMindMapSubgraphSuggest } from '@/composables/editor/useMindMapSubgraphSuggest'
@@ -56,7 +57,10 @@ export function useMindMapRagBranchExpand(enabled: Ref<boolean>) {
     return shouldAutoExpandBranch({
       enabled: enabled.value,
       isMindMap: isMindMap(),
-      collabActive: diagramStore.collabSessionActive,
+      collabActive: isCollabGuestAiBlocked(
+        diagramStore.collabSessionActive,
+        diagramStore.collabIsDiagramOwner
+      ),
       isGenerating: isGenerating.value,
       alreadyAttempted: attempted.value.has(nodeId),
       completedSourceCount: completedSourceCount.value,

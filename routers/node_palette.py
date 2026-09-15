@@ -42,6 +42,7 @@ from models.requests.requests_thinking import (
     NodePaletteStartRequest,
     NodeSelectionRequest,
 )
+from routers.api.diagram_generation import assert_collab_blocks_canvas_ai
 from routers.node_palette_streaming import stream_node_palette
 from services.monitoring.module_activity import track_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
@@ -167,6 +168,7 @@ async def start_node_palette(
     NOTE: Kimi removed due to Volcengine server load issues
     """
     session_id = req.session_id
+    await assert_collab_blocks_canvas_ai(req.diagram_id, current_user)
 
     if current_user:
         await track_module_activity(
@@ -252,6 +254,7 @@ async def get_next_batch(req: NodePaletteNextRequest, current_user: User = Depen
     NOTE: Kimi removed due to Volcengine server load issues
     """
     session_id = req.session_id
+    await assert_collab_blocks_canvas_ai(req.diagram_id, current_user)
     logger.debug(
         "[NodePalette-API] POST /next_batch (V2 Concurrent) | Session: %s",
         session_id[:8],

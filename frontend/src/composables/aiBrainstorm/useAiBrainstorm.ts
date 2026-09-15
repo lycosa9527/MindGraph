@@ -11,6 +11,7 @@ import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 
 import { applyAiBrainstormSelection } from '@/composables/aiBrainstorm/applyAiBrainstormSelection'
+import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
 import { withMindMapAudienceContext } from '@/composables/mindMap/audience/withMindMapAudienceContext'
@@ -339,6 +340,12 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
   }
 
   async function startSession(sessionOptions?: { keepSessionId?: boolean }): Promise<boolean> {
+    if (
+      isCollabGuestAiBlocked(diagramStore.collabSessionActive, diagramStore.collabIsDiagramOwner)
+    ) {
+      errorMessage.value = t('canvas.toolbar.collabAiBlocked')
+      return false
+    }
     const dt = diagramStore.type
     if ((dt !== 'mindmap' && dt !== 'mind_map') || !diagramStore.data?.nodes?.length) {
       errorMessage.value = t('nodePalette.error.createDiagramFirst')
@@ -468,6 +475,12 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
   }
 
   async function loadNextBatch(): Promise<boolean> {
+    if (
+      isCollabGuestAiBlocked(diagramStore.collabSessionActive, diagramStore.collabIsDiagramOwner)
+    ) {
+      errorMessage.value = t('canvas.toolbar.collabAiBlocked')
+      return false
+    }
     if (isLoadingMore.value) return false
     ensureSessionId()
     if (!sessionId.value) return false

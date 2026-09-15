@@ -49,6 +49,7 @@ const emit = defineEmits<{
               v-for="app in apps"
               :key="app.appKey ?? app.handlerKey ?? app.name"
               class="canvas-more-apps-menu__item"
+              :class="{ 'is-dimmed': Boolean(app.guestBlock) }"
               @click="emit('selectApp', app)"
             >
               <div class="canvas-more-apps__row flex items-start">
@@ -176,6 +177,10 @@ const emit = defineEmits<{
   transition:
     background 0.12s,
     color 0.12s;
+}
+
+.canvas-more-apps-popper .canvas-more-apps-menu__item.el-dropdown-menu__item.is-dimmed {
+  opacity: 0.45;
 }
 
 .canvas-more-apps-popper .canvas-more-apps-menu__item.el-dropdown-menu__item:hover,

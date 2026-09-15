@@ -123,6 +123,7 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
   const layoutRecalcTrigger = ref(0)
   const sessionEditCount = ref(0)
   const collabSessionActive = ref(false)
+  const collabIsDiagramOwner = ref(true)
   const collabForeignLockedNodeIds = ref<Set<string>>(new Set())
 
   function resetSessionEditCount(): void {
@@ -132,12 +133,21 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
   function setCollabSessionActive(active: boolean): void {
     collabSessionActive.value = active
     if (!active) {
+      collabIsDiagramOwner.value = true
       collabForeignLockedNodeIds.value = new Set()
     }
   }
 
+  function setCollabIsDiagramOwner(isOwner: boolean): void {
+    collabIsDiagramOwner.value = isOwner
+  }
+
   function setCollabForeignLockedNodeIds(nodeIds: string[]): void {
     collabForeignLockedNodeIds.value = new Set(nodeIds)
+  }
+
+  function absorbMindMapDisplayLayout(): void {
+    syncMindMapStoreLayoutPositions(ctx)
   }
 
   // Shared context (two-phase: refs now, cross-deps wired after slice init)
@@ -501,6 +511,7 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     layoutRecalcTrigger.value = 0
     sessionEditCount.value = 0
     collabSessionActive.value = false
+    collabIsDiagramOwner.value = true
     collabForeignLockedNodeIds.value = new Set()
     // Readonly preview sessions must not clear the editor's concept-map picker.
     if (emitDiagramEvents && !isReadonly.value) {
@@ -565,8 +576,11 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     reconcileAfterHistoryRestore,
     collabSessionActive,
     setCollabSessionActive,
+    collabIsDiagramOwner,
+    setCollabIsDiagramOwner,
     collabForeignLockedNodeIds,
     setCollabForeignLockedNodeIds,
+    absorbMindMapDisplayLayout,
     updateNode,
     emptyNodeForLearningSheet,
     isNodeBlankedForLearningSheet,

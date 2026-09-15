@@ -66,6 +66,7 @@ export function useCanvasPageWorkshopCollab() {
     refreshActiveEditorsRef,
     watchCode: watchWorkshopCode,
     sessionDiagramTitle,
+    hasPendingOutbound,
   } = useWorkshop(
     workshopCode,
     currentDiagramId,
@@ -77,9 +78,11 @@ export function useCanvasPageWorkshopCollab() {
       applyingRemoteCollabPatch.value = true
       try {
         diagramStore.loadFromSpec(spec, tSpec)
+        diagramStore.absorbMindMapDisplayLayout()
         eventBus.emit('diagram:workshop_snapshot_applied', {})
       } finally {
         nextTick(() => {
+          diagramStore.absorbMindMapDisplayLayout()
           applyingRemoteCollabPatch.value = false
         })
       }
@@ -112,9 +115,11 @@ export function useCanvasPageWorkshopCollab() {
       applyingRemoteCollabPatch.value = true
       try {
         diagramStore.loadFromSpec(spec, tSpec)
+        diagramStore.absorbMindMapDisplayLayout()
         eventBus.emit('diagram:workshop_snapshot_applied', {})
       } finally {
         nextTick(() => {
+          diagramStore.absorbMindMapDisplayLayout()
           applyingRemoteCollabPatch.value = false
         })
       }
@@ -136,6 +141,9 @@ export function useCanvasPageWorkshopCollab() {
     clearRedoStack: () => diagramStore.clearRedoStack(),
     updateNode: (id, patch) => diagramStore.updateNode(id, patch),
     sendUpdate,
+    getForeignLockedNodeIds: () => diagramStore.collabForeignLockedNodeIds,
+    absorbRemoteLayout: () => diagramStore.absorbMindMapDisplayLayout(),
+    hasPendingOutbound: () => hasPendingOutbound.value,
   })
   collabDiff = collabDiffApi
 
@@ -168,6 +176,7 @@ export function useCanvasPageWorkshopCollab() {
     notifyNodeEditing,
     reconnect,
     collabSyncVersion,
+    applyingRemoteCollabPatch,
   })
   const { applyJoinWorkshopFromQuery, applyWorkshopCodeFromSession } = collabBus
 
@@ -198,9 +207,10 @@ export function useCanvasPageWorkshopCollab() {
   watchWorkshopCode()
 
   watch(
-    () => workshopCode.value,
-    (code) => {
+    () => [workshopCode.value, isDiagramOwner.value] as const,
+    ([code, owner]) => {
       diagramStore.setCollabSessionActive(Boolean(code))
+      diagramStore.setCollabIsDiagramOwner(!code || owner)
       if (!code) {
         diagramStore.setCollabForeignLockedNodeIds([])
         useCanvasNodeIndicatorsStore().clearCollabPresence()

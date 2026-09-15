@@ -35,6 +35,7 @@ from services.online_collab.participant.online_collab_ws_editor_hash import (
     hash_claim_node_exclusive,
     hash_load_editors,
     hash_purge_user_from_all_nodes,
+    hash_refresh_editor_ttl_for_user,
 )
 from services.online_collab.redis.online_collab_redis_keys import _tag
 from services.redis.redis_async_client import get_async_redis
@@ -138,6 +139,12 @@ def purge_user_from_editor_document(
     for nid in nodes_to_drop:
         editors.pop(nid, None)
     return touched
+
+
+async def refresh_editor_ttl_for_user(code: str, user_id: int) -> None:
+    """Keep HASH field TTLs alive while the holder is still connected (ping)."""
+    if editors_use_hash_backend():
+        await hash_refresh_editor_ttl_for_user(code, user_id)
 
 
 async def load_editors(code: str) -> Dict[str, Dict[int, str]]:

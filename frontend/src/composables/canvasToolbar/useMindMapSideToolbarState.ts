@@ -2,6 +2,7 @@ import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { getAiBrainstorm } from '@/composables/aiBrainstorm/useAiBrainstorm'
+import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useMindMapAudienceGenerate } from '@/composables/mindMap/audience/useMindMapAudienceGenerate'
@@ -26,6 +27,15 @@ export function useMindMapSideToolbarState() {
   const notify = useNotifications()
   const { t } = useLanguage()
   const { handleMindMapAiGenerate } = useMindMapAudienceGenerate()
+  const { aiBlockedByCollab, guardCollabGuestAi } = useCollabGuestAiGate()
+
+  function guardCollabGuestFeature(): boolean {
+    if (!aiBlockedByCollab.value) {
+      return true
+    }
+    notify.warning(t('canvas.toolbar.collabGuestFeatureBlocked'))
+    return false
+  }
 
   function requireDiagram(): boolean {
     if (!diagramStore.data?.nodes?.length) {
@@ -37,8 +47,13 @@ export function useMindMapSideToolbarState() {
 
   function openTool(toolId: MindMapSideToolId): void {
     if (!requireDiagram()) return
-    if (toolId === 'waterfall' && diagramStore.collabSessionActive) {
-      notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
+    if (toolId === 'learning_sheet' && !guardCollabGuestFeature()) {
+      return
+    }
+    if (
+      (toolId === 'waterfall' || toolId === 'one_sentence' || toolId === 'document_summary') &&
+      !guardCollabGuestAi()
+    ) {
       return
     }
     const previous = activeTool.value
@@ -65,8 +80,7 @@ export function useMindMapSideToolbarState() {
   }
 
   function runOneSentenceGenerate(generationInstructions?: string): void {
-    if (diagramStore.collabSessionActive) {
-      notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
+    if (!guardCollabGuestAi()) {
       return
     }
     void handleMindMapAiGenerate({ generationInstructions })

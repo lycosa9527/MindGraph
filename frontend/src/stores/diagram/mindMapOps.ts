@@ -66,7 +66,6 @@ import type { SpecLoaderResult } from '../specLoader/types'
 import {
   collabForeignLockBlocksAnyId,
   emitCollabDeleteBlocked,
-  emitCollabLockBlocked,
 } from './collabHelpers'
 import { emitCtxEvent, getMindMapCurveExtents } from './events'
 import { remapAdornmentsAfterTreeReload } from './mindMapAdornmentOps'
@@ -854,11 +853,6 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     if (isDiagramPresentationReadOnly(ctx)) return false
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
-    if (collabForeignLockBlocksAnyId(ctx, [parentNodeId])) {
-      emitCollabLockBlocked()
-      return false
-    }
-
     const connections = data.value.connections
     const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, connections)
     const found = findBranchByNodeId(
@@ -1293,12 +1287,6 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       recordMindMapSiblingInsertFailure('topic_without_insert_at', { nodeId, at })
       return false
     }
-    if (collabForeignLockBlocksAnyId(ctx, [nodeId])) {
-      emitCollabLockBlocked()
-      recordMindMapSiblingInsertFailure('collab_locked', { nodeId })
-      return false
-    }
-
     // v2: mint one id + edge; connection order is SoT — no loadMindMapSpec.
     if (ctxV2Visuals(ctx)) {
       // Stale free-index ids after an accidental library reload leave selection
@@ -1464,11 +1452,6 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
     const labels = lines.map((line) => line.trim()).filter(Boolean)
     if (labels.length === 0) return 0
-
-    if (collabForeignLockBlocksAnyId(ctx, [anchorNodeId])) {
-      emitCollabDeleteBlocked()
-      return 0
-    }
 
     // v2: shared in-place sibling helper (same path as Enter).
     if (ctxV2Visuals(ctx) && anchorNodeId !== 'topic') {

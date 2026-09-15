@@ -19,6 +19,7 @@ import { Sparkles, X } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
+import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { LLM_MODEL_COLORS } from '@/config/llmModelColors'
@@ -51,6 +52,7 @@ const props = withDefaults(
 
 const { t } = useLanguage()
 const { switchToModel, cancelGeneration } = useAutoComplete()
+const { aiBlockedByCollab, guardCollabGuestAi } = useCollabGuestAiGate()
 const diagramStore = useDiagramStore()
 const llmResultsStore = useLLMResultsStore()
 const inlineRecStore = useInlineRecommendationsStore()
@@ -64,6 +66,9 @@ const FOCUS_TOPIC_NODE_ID = 'topic'
 
 /** Concept map: single AI toggle enables relationship-label generation (all models on backend) */
 function toggleConceptMapAi(): void {
+  if (!guardCollabGuestAi()) {
+    return
+  }
   if (llmResultsStore.selectedModel) {
     llmResultsStore.setSelectedModel(null)
   } else {
@@ -278,6 +283,9 @@ function handleModelClick(modelKey: string) {
   }
 
   if (state === 'idle') {
+    if (!guardCollabGuestAi()) {
+      return
+    }
     if (isSelectedModel(modelKey)) {
       llmResultsStore.setSelectedModel(null)
     } else {
@@ -324,6 +332,9 @@ function hostBadgeAriaLabel(modelKey: string): string | undefined {
 }
 
 function tooltipForModel(modelKey: string): string {
+  if (aiBlockedByCollab.value && getModelState(modelKey) === 'idle') {
+    return String(t('canvas.toolbar.collabAiBlocked'))
+  }
   if (collabGuestHostBadge(modelKey)) {
     return String(t('aiModel.hostPickBadgeTooltip'))
   }
@@ -357,6 +368,10 @@ function getButtonClass(modelKey: string): string {
     classes.push('error')
   } else if (state === 'idle' && isSelectedModel(modelKey)) {
     classes.push('selected', 'blink-selected')
+  }
+
+  if (aiBlockedByCollab.value && state === 'idle') {
+    classes.push('model-btn--guest-blocked')
   }
 
   return classes.join(' ')
@@ -402,14 +417,22 @@ function getButtonStyle(modelKey: string) {
       >
         <ElTooltip
           :content="
-            llmResultsStore.selectedModel ? t('aiModel.conceptAiOn') : t('aiModel.conceptAiOff')
+            aiBlockedByCollab
+              ? t('canvas.toolbar.collabAiBlocked')
+              : llmResultsStore.selectedModel
+                ? t('aiModel.conceptAiOn')
+                : t('aiModel.conceptAiOff')
           "
           placement="top"
         >
           <button
             type="button"
             class="concept-ai-toggle-btn"
-            :class="{ 'concept-ai-toggle-btn--on': llmResultsStore.selectedModel }"
+            :class="{
+              'concept-ai-toggle-btn--on': llmResultsStore.selectedModel,
+              'concept-ai-toggle-btn--blocked': aiBlockedByCollab,
+            }"
+            :aria-disabled="aiBlockedByCollab"
             @click="toggleConceptMapAi"
           >
             <span class="font-semibold">{{ t('aiModel.enableAi') }}</span>
@@ -752,8 +775,13 @@ function getButtonStyle(modelKey: string) {
     border-color 0.2s ease;
 }
 
-.concept-ai-toggle-btn:hover {
+.concept-ai-toggle-btn:hover:not(.concept-ai-toggle-btn--blocked) {
   background: rgba(139, 92, 246, 0.2);
+}
+
+.concept-ai-toggle-btn--blocked {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .concept-ai-toggle-btn--on {
@@ -799,6 +827,11 @@ function getButtonStyle(modelKey: string) {
 
 .model-btn .btn-label {
   line-height: 1.25;
+}
+
+.model-btn--guest-blocked {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .model-btn-content {

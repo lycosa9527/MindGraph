@@ -259,8 +259,6 @@ export default {
   'canvas.toolbar.childAdded': 'Child added',
   'canvas.toolbar.collabAiBlocked':
     'Only the diagram owner can use AI generation during collaboration',
-  'canvas.toolbar.collabLiveAiDisabled':
-    'AI generation is unavailable during live collaboration so everyone stays in sync',
   'canvas.toolbar.collabGuestFeatureBlocked':
     'This feature is not available while you join as a collaboration guest.',
   'canvas.toolbar.colorLabel': 'Color',
@@ -886,8 +884,6 @@ export default {
   'canvas.mindMapOneSentence.requestFailed': 'Failed',
   'canvas.mindMapOneSentence.kittyEditAccessDenied':
     "You don't have permission to edit this diagram.",
-  'canvas.mindMapOneSentence.kittyEditCollabActive':
-    'Kitty diagram edits are paused during live collaboration so everyone stays in sync.',
   'canvas.mindMapOneSentence.kittyEditStaleRevision':
     'The diagram was just updated, so that edit is stale. Please repeat your change.',
   'canvas.mindMapOneSentence.kittyEditTimeout':

@@ -189,6 +189,11 @@
   align-items: center;
 }
 
+.mm-status__translate-btn.is-dimmed {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .mm-status__translate-btn.is-translating {
   background: rgb(13 94 88 / 0.94);
   color: #ecfdf5;

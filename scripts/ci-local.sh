@@ -141,6 +141,8 @@ run_backend() {
     tests/test_workshop_ws_integration.py \
     tests/test_online_collab_phase8.py \
     tests/test_workshop_collab_backend.py \
+    tests/test_online_collab_partial_jsonb.py \
+    tests/test_generate_graph_stream_collab.py \
     tests/test_collab_palette_sync.py \
     tests/test_workshop_editor_redis_merge.py \
     tests/test_ws_fanout.py \
@@ -324,7 +326,11 @@ run_frontend() {
     tests/enqueueKittyDesktopExplainNode.spec.ts \
     tests/kittyDesktopExplainNodeAction.spec.ts \
     tests/kittyPendingCanvasAction.spec.ts \
-    tests/uploadTrainingFile.spec.ts
+    tests/uploadTrainingFile.spec.ts \
+    tests/useCollabGuestAiGate.spec.ts \
+    tests/registerKittyDiagramMutationBusCollab.spec.ts \
+    tests/collabRemoteEchoFilter.spec.ts \
+    tests/applyCollabEditorPresence.spec.ts
 }
 
 run_chrome_extension() {

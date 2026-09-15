@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.82] - 2026-09-15
+
+> **Canvas collab: add-child no longer rejects peers; only the diagram owner may use AI (校内 and 共同).**
+
+### Fixed
+
+- **Add-child under a live lock** — Text lock no longer drops the whole node or its layout. Peers can add a child from a locked parent; lock still blocks text, delete, and rewire-into. Granular JSONB writes use `CAST(:name AS jsonb)` so SQLAlchemy binds no longer fall back to a full spec UPDATE.
+- **Collab apply path** — Remote patches flush FIFO (`client_op_id` / `update_ack`), then merge and absorb layout on `nextTick`. Nack still emits `workshop:collab-ack` (`flushDiff: false`) so the outbound queue does not stick. Time-based echo hold is gone.
+- **Lock chip** — “xxx is editing…” is `max-content` so English names are not clipped.
+
+### Changed
+
+- **Owner-only AI in a live room** — 校内 and 共同 share one gate: guests get greyed tools plus `canvas.toolbar.collabAiBlocked`; the host (and superadmin) may still generate. Server `assert_collab_blocks_canvas_ai` allows the diagram owner. Covers generate, subgraph, inline rec, explain, translate, palette / waterfall, relationship labels, and Kitty mutations (guests nack `collab_active`). Learning sheet and snapshot stay guest-blocked as features, not AI.
+
+### Tests
+
+- [`frontend/tests/useCollabGuestAiGate.spec.ts`](frontend/tests/useCollabGuestAiGate.spec.ts), [`frontend/tests/registerKittyDiagramMutationBusCollab.spec.ts`](frontend/tests/registerKittyDiagramMutationBusCollab.spec.ts), [`frontend/tests/collabRemoteEchoFilter.spec.ts`](frontend/tests/collabRemoteEchoFilter.spec.ts), [`frontend/tests/applyCollabEditorPresence.spec.ts`](frontend/tests/applyCollabEditorPresence.spec.ts), [`frontend/tests/mindMapRibbonChrome.spec.ts`](frontend/tests/mindMapRibbonChrome.spec.ts)
+- [`tests/test_generate_graph_stream_collab.py`](tests/test_generate_graph_stream_collab.py), [`tests/test_online_collab_partial_jsonb.py`](tests/test_online_collab_partial_jsonb.py), [`tests/test_workshop_collab_backend.py`](tests/test_workshop_collab_backend.py)
+
 ## [5.180.81] - 2026-09-15
 
 > **MindMate teaching-design replies export to Word; schools pick a template; 节点解释 records usage.**

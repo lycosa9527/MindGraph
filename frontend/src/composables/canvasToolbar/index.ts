@@ -1,5 +1,6 @@
 export {
   useCanvasToolbarApps,
+  type MoreAppGuestBlock,
   type MoreAppHandlerKey,
   type MoreAppItem,
 } from './useCanvasToolbarApps'

@@ -576,7 +576,9 @@ export function dispatchWorkshopMessage(
           typeof message.client_op_id === 'string' && message.client_op_id
             ? message.client_op_id
             : null
+        const nackNodeIds = deps.collectAcknowledgedNodeIds(nackOpId)
         deps.acknowledgeOutboundUpdate(nackOpId)
+        eventBus.emit('workshop:collab-ack', { nodeIds: nackNodeIds, flushDiff: false })
       }
       deps.notify.error(message.message || deps.t('workshopCanvas.errorGeneric'))
       if (

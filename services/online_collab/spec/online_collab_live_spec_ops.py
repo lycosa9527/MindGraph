@@ -48,6 +48,10 @@ from services.online_collab.spec.online_collab_live_spec import (
     spec_for_snapshot,
 )
 from services.online_collab.spec.online_collab_live_spec_json import json_get_live_spec
+from services.online_collab.spec.online_collab_partial_jsonb import (
+    PARTIAL_JSONB_FLUSH_KEYS,
+    build_partial_jsonb_flush_statement,
+)
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
@@ -460,8 +464,7 @@ async def flush_live_spec_to_db_in_session(
 
     changed_keys = await _read_changed_keys(redis, code)
 
-    partial_keys = frozenset({"nodes", "connections"})
-    use_partial = bool(changed_keys) and "__full__" not in changed_keys and changed_keys <= partial_keys
+    use_partial = bool(changed_keys) and "__full__" not in changed_keys and changed_keys <= PARTIAL_JSONB_FLUSH_KEYS
 
     snapshot = spec_for_snapshot(doc)
     # PG 18: set lock_timeout so UPDATE cannot wait indefinitely for a row
@@ -567,21 +570,18 @@ async def _partial_jsonb_flush(
     Falls back to returning ``None`` (caller does full UPDATE) on any error.
     """
     try:
+        stmt = build_partial_jsonb_flush_statement(changed_keys)
         params: Dict[str, Any] = {"diagram_id": diagram_id}
-        expr = "COALESCE(spec, '{}'::jsonb)"
         for key in sorted(changed_keys):
+            if key not in PARTIAL_JSONB_FLUSH_KEYS:
+                continue
             val = snapshot.get(key)
             if val is not None:
                 json_val = await dumps_maybe_offload(val)
             else:
                 json_val = "null"
-            param_name = f"val_{key}"
-            params[param_name] = json_val
-            expr = f"jsonb_set({expr}, '{{{key}}}', :{param_name}::jsonb)"
-        raw_sql = sql_text(
-            f"UPDATE diagrams SET spec = {expr} WHERE id = :diagram_id AND NOT is_deleted RETURNING id"
-        ).bindparams(**params)
-        result = await db.execute(raw_sql)
+            params[f"val_{key}"] = json_val
+        result = await db.execute(stmt, params)
         return result.scalar_one_or_none()
     except (RedisError, OSError, RuntimeError, TypeError, ValueError, AttributeError, SQLAlchemyError) as exc:
         logger.debug("[LiveSpec] partial jsonb_set failed diagram=%s: %s — full fallback", diagram_id, exc)

@@ -677,6 +677,7 @@ export function useWorkshop(
     sendNodeSelected,
     notifyNodeEditing,
     sendClaimNodeEdit,
+    hasPendingOutbound: outboundQueue.hasPending,
     setOwnerIdOptimistic,
     refreshActiveEditorsRef,
     watchCode,

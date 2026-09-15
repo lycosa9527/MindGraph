@@ -1,9 +1,12 @@
-import { type Ref, onScopeDispose, watch } from 'vue'
+import { type Ref, nextTick, onScopeDispose, watch } from 'vue'
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import type { UseLanguageTranslate } from '@/composables/core/useLanguage'
-import { shouldFlashStructuralLock } from '@/composables/workshop/applyCollabEditorPresence'
+import {
+  consumeRecentlyClosedFlash,
+  shouldFlashStructuralLock,
+} from '@/composables/workshop/applyCollabEditorPresence'
 import type { CollabSyncVersion } from '@/composables/workshop/useCollabSyncVersion'
 import type { ActiveEditor } from '@/composables/workshop/useWorkshop'
 import {
@@ -34,37 +37,35 @@ interface UseCanvasPageCollabBusOptions {
   notifyNodeEditing: (nodeId: string, editing: boolean) => void
   reconnect: () => void
   collabSyncVersion: CollabSyncVersion
+  /** Skip local presence flash while a remote WS patch is being applied. */
+  applyingRemoteCollabPatch?: Ref<boolean>
 }
 
-const SELECTION_SEND_DEBOUNCE_MS = 50
 const STUCK_VERSION_THRESHOLD_MS = 15_000
-const STRUCTURAL_LOCK_HOLD_MS = 400
-const EDITOR_CLOSE_COOLDOWN_MS = STRUCTURAL_LOCK_HOLD_MS + 200
-/** Re-claim open text editors before the Redis field TTL (30s) expires. */
-const TEXT_LOCK_REFRESH_MS = 15_000
 
 export function useCanvasPageCollabBus(options: UseCanvasPageCollabBusOptions) {
   let lastSentSelectionNodeId: string | null = null
-  let selectionSendTimer: ReturnType<typeof setTimeout> | null = null
+  let selectionSendScheduled = false
   let stuckVersionTimer: ReturnType<typeof setTimeout> | null = null
-  const structuralLockReleaseTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  const structuralHeldNodes = new Set<string>()
+  const draggingNodeIds = new Set<string>()
   const recentlyClosedEditorNodes = new Set<string>()
   const openTextEditorNodes = new Set<string>()
-  let textLockRefreshTimer: ReturnType<typeof setInterval> | null = null
 
   watch(
     () => [...options.getSelectedNodes()],
-    (ids) => {
+    () => {
       if (!options.workshopCode.value) {
         return
       }
-      if (selectionSendTimer !== null) {
-        clearTimeout(selectionSendTimer)
-        selectionSendTimer = null
+      if (selectionSendScheduled) {
+        return
       }
-      selectionSendTimer = setTimeout(() => {
-        selectionSendTimer = null
-        const primary = ids.length > 0 ? ids[0] : null
+      selectionSendScheduled = true
+      void nextTick(() => {
+        selectionSendScheduled = false
+        const current = options.getSelectedNodes()
+        const primary = current.length > 0 ? current[0] : null
         if (primary === lastSentSelectionNodeId) {
           return
         }
@@ -75,7 +76,7 @@ export function useCanvasPageCollabBus(options: UseCanvasPageCollabBusOptions) {
           options.sendNodeSelected(primary, true)
         }
         lastSentSelectionNodeId = primary
-      }, SELECTION_SEND_DEBOUNCE_MS)
+      })
     },
     { deep: true }
   )
@@ -106,38 +107,25 @@ export function useCanvasPageCollabBus(options: UseCanvasPageCollabBusOptions) {
     }
   )
 
-  function clearAllStructuralLockReleaseTimers(): void {
-    for (const timer of structuralLockReleaseTimers.values()) {
-      clearTimeout(timer)
+  function refreshOpenTextLocks(): void {
+    for (const nodeId of openTextEditorNodes) {
+      options.sendClaimNodeEdit(nodeId)
     }
-    structuralLockReleaseTimers.clear()
   }
 
-  function syncTextLockRefreshTimer(): void {
-    if (openTextEditorNodes.size === 0) {
-      if (textLockRefreshTimer !== null) {
-        clearInterval(textLockRefreshTimer)
-        textLockRefreshTimer = null
-      }
+  function beginStructuralLock(nodeId: string): void {
+    if (options.applyingRemoteCollabPatch?.value) {
       return
     }
-    if (textLockRefreshTimer !== null) {
+    if (consumeRecentlyClosedFlash(recentlyClosedEditorNodes, nodeId)) {
       return
     }
-    textLockRefreshTimer = setInterval(() => {
-      for (const nodeId of openTextEditorNodes) {
-        options.sendClaimNodeEdit(nodeId)
-      }
-    }, TEXT_LOCK_REFRESH_MS)
-  }
-
-  function flashStructuralLock(nodeId: string): void {
     const holder = options.activeEditors.value.get(nodeId)
     if (
       !shouldFlashStructuralLock({
         workshopActive: Boolean(options.workshopCode.value),
         nodeId,
-        recentlyClosed: recentlyClosedEditorNodes.has(nodeId),
+        recentlyClosed: false,
         textEditorOpen: openTextEditorNodes.has(nodeId),
         holderUserId: holder?.user_id ?? null,
         currentUserId: options.getCurrentUserId(),
@@ -145,20 +133,22 @@ export function useCanvasPageCollabBus(options: UseCanvasPageCollabBusOptions) {
     ) {
       return
     }
-    const existing = structuralLockReleaseTimers.get(nodeId)
-    if (existing) {
-      clearTimeout(existing)
-    } else {
-      options.notifyNodeEditing(nodeId, true)
+    if (structuralHeldNodes.has(nodeId)) {
+      return
     }
-    const timer = setTimeout(() => {
-      structuralLockReleaseTimers.delete(nodeId)
-      if (openTextEditorNodes.has(nodeId) || recentlyClosedEditorNodes.has(nodeId)) {
-        return
-      }
-      options.notifyNodeEditing(nodeId, false)
-    }, STRUCTURAL_LOCK_HOLD_MS)
-    structuralLockReleaseTimers.set(nodeId, timer)
+    structuralHeldNodes.add(nodeId)
+    options.notifyNodeEditing(nodeId, true)
+  }
+
+  function endStructuralLock(nodeId: string): void {
+    if (!structuralHeldNodes.has(nodeId)) {
+      return
+    }
+    if (openTextEditorNodes.has(nodeId) || draggingNodeIds.has(nodeId)) {
+      return
+    }
+    structuralHeldNodes.delete(nodeId)
+    options.notifyNodeEditing(nodeId, false)
   }
 
   function applyJoinWorkshopFromQuery(): void {
@@ -259,7 +249,6 @@ export function useCanvasPageCollabBus(options: UseCanvasPageCollabBusOptions) {
         return
       }
       openTextEditorNodes.add(nodeId)
-      syncTextLockRefreshTimer()
       options.sendClaimNodeEdit(nodeId)
     },
     'CanvasPage'
@@ -271,9 +260,8 @@ export function useCanvasPageCollabBus(options: UseCanvasPageCollabBusOptions) {
       const nodeId = (data as { nodeId: string }).nodeId
       if (nodeId && options.workshopCode.value) {
         openTextEditorNodes.delete(nodeId)
-        syncTextLockRefreshTimer()
         recentlyClosedEditorNodes.add(nodeId)
-        setTimeout(() => recentlyClosedEditorNodes.delete(nodeId), EDITOR_CLOSE_COOLDOWN_MS)
+        structuralHeldNodes.delete(nodeId)
         options.notifyNodeEditing(nodeId, false)
       }
     },
@@ -286,7 +274,7 @@ export function useCanvasPageCollabBus(options: UseCanvasPageCollabBusOptions) {
       const payload = data as { node?: { id?: string } } | undefined
       const nodeId = payload?.node?.id
       if (typeof nodeId === 'string' && nodeId) {
-        flashStructuralLock(nodeId)
+        beginStructuralLock(nodeId)
       }
     },
     'CanvasPage'
@@ -298,7 +286,7 @@ export function useCanvasPageCollabBus(options: UseCanvasPageCollabBusOptions) {
       const payload = data as { nodeId?: string } | undefined
       const nodeId = payload?.nodeId
       if (typeof nodeId === 'string' && nodeId) {
-        flashStructuralLock(nodeId)
+        beginStructuralLock(nodeId)
       }
     },
     'CanvasPage'
@@ -310,7 +298,7 @@ export function useCanvasPageCollabBus(options: UseCanvasPageCollabBusOptions) {
       const payload = data as { nodeId?: string } | undefined
       const nodeId = payload?.nodeId
       if (typeof nodeId === 'string' && nodeId) {
-        flashStructuralLock(nodeId)
+        beginStructuralLock(nodeId)
       }
     },
     'CanvasPage'
@@ -323,7 +311,7 @@ export function useCanvasPageCollabBus(options: UseCanvasPageCollabBusOptions) {
       if (Array.isArray(selected)) {
         for (const nodeId of selected) {
           if (typeof nodeId === 'string' && nodeId) {
-            flashStructuralLock(nodeId)
+            beginStructuralLock(nodeId)
           }
         }
       }
@@ -331,18 +319,59 @@ export function useCanvasPageCollabBus(options: UseCanvasPageCollabBusOptions) {
     'CanvasPage'
   )
 
+  eventBus.onWithOwner(
+    'interaction:drag_started',
+    (data) => {
+      const nodeId = (data as { nodeId?: string }).nodeId
+      if (typeof nodeId === 'string' && nodeId) {
+        draggingNodeIds.add(nodeId)
+        beginStructuralLock(nodeId)
+      }
+    },
+    'CanvasPage'
+  )
+
+  eventBus.onWithOwner(
+    'interaction:drag_ended',
+    (data) => {
+      const nodeId = (data as { nodeId?: string }).nodeId
+      if (typeof nodeId === 'string' && nodeId) {
+        draggingNodeIds.delete(nodeId)
+        endStructuralLock(nodeId)
+      }
+    },
+    'CanvasPage'
+  )
+
+  eventBus.onWithOwner(
+    'workshop:collab-ack',
+    (data) => {
+      const raw = (data as { nodeIds?: unknown }).nodeIds
+      if (Array.isArray(raw)) {
+        for (const item of raw) {
+          if (typeof item === 'string' && item) {
+            endStructuralLock(item)
+          }
+        }
+      }
+      refreshOpenTextLocks()
+    },
+    'CanvasPage'
+  )
+
   function resetBusTracking(): void {
-    clearAllStructuralLockReleaseTimers()
+    for (const nodeId of structuralHeldNodes) {
+      options.notifyNodeEditing(nodeId, false)
+    }
+    structuralHeldNodes.clear()
+    draggingNodeIds.clear()
+    recentlyClosedEditorNodes.clear()
     openTextEditorNodes.clear()
-    syncTextLockRefreshTimer()
     if (stuckVersionTimer !== null) {
       clearTimeout(stuckVersionTimer)
       stuckVersionTimer = null
     }
-    if (selectionSendTimer !== null) {
-      clearTimeout(selectionSendTimer)
-      selectionSendTimer = null
-    }
+    selectionSendScheduled = false
   }
 
   onScopeDispose(() => {

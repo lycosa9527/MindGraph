@@ -217,6 +217,8 @@
   filter: none !important;
   /* Peer is editing: observers must not select, drag, or open the inline editor. */
   pointer-events: none !important;
+  /* Sticker is wider than a short branch (EN “is editing…”); do not clip it. */
+  overflow: visible !important;
 }
 
 .diagram-canvas .vue-flow__node.workshop-editing.selected {
@@ -366,6 +368,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(80vw, 360px);
 
   background: var(--editor-color, #ff6b6b);
   color: #fff;
@@ -382,7 +387,6 @@
   box-shadow:
     0 2px 0 rgba(0, 0, 0, 0.06),
     0 4px 14px rgba(0, 0, 0, 0.18);
-  max-width: min(calc(100% - 16px), 320px);
   overflow: hidden;
   text-overflow: ellipsis;
   letter-spacing: 0.01em;

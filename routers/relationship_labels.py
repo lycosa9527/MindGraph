@@ -15,7 +15,7 @@ import json
 import logging
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,6 +28,7 @@ from models.requests.requests_thinking import (
     RelationshipLabelsNextRequest,
     RelationshipLabelsStartRequest,
 )
+from routers.api.diagram_generation import assert_collab_blocks_canvas_ai
 from services.infrastructure.http.error_handler import (
     LLMContentFilterError,
     LLMRateLimitError,
@@ -49,6 +50,11 @@ logger = logging.getLogger(__name__)
 
 async def _stream_labels(req, user: User | None, is_next: bool):
     """Async generator yielding SSE chunks from relationship labels generator."""
+    try:
+        await assert_collab_blocks_canvas_ai(getattr(req, "diagram_id", None), user)
+    except HTTPException as exc:
+        yield f"data: {json.dumps({'event': 'error', 'message': str(exc.detail)})}\n\n"
+        return
     generator = get_relationship_labels_generator()
     user_id = user.id if user and hasattr(user, "id") else None
     org_id = getattr(user, "organization_id", None) if user else None

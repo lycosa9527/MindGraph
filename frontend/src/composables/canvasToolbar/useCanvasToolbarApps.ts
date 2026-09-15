@@ -1,4 +1,4 @@
-import { type ComputedRef, computed, inject } from 'vue'
+import { computed } from 'vue'
 
 import {
   Camera,
@@ -12,6 +12,7 @@ import {
 
 import { useCanvasDiagramTranslate } from '@/composables/canvasToolbar/useCanvasDiagramTranslate'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
+import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -36,6 +37,8 @@ import {
 
 export type MoreAppHandlerKey = 'concept_map_modes'
 
+export type MoreAppGuestBlock = 'ai' | 'feature'
+
 export type MoreAppItem = {
   name: string
   icon: LucideIcon
@@ -45,6 +48,7 @@ export type MoreAppItem = {
   iconColor: string
   handlerKey?: MoreAppHandlerKey
   appKey?: 'waterfall' | 'learning_sheet' | 'snapshot' | 'virtual_keyboard' | 'translate_diagram'
+  guestBlock?: MoreAppGuestBlock
 }
 
 export function useCanvasToolbarApps() {
@@ -57,24 +61,7 @@ export function useCanvasToolbarApps() {
   const { t } = useLanguage()
   const notify = useNotifications()
   const { isGenerating: isAIGenerating, autoComplete, validateForAutoComplete } = useAutoComplete()
-
-  const collabCanvas = inject<
-    | {
-        isDiagramOwner?: ComputedRef<boolean>
-      }
-    | undefined
-  >('collabCanvas', undefined)
-
-  const aiBlockedByCollab = computed(() => {
-    if (!diagramStore.collabSessionActive) {
-      return false
-    }
-    const own = collabCanvas?.isDiagramOwner
-    if (!own) {
-      return false
-    }
-    return !own.value
-  })
+  const { aiBlockedByCollab, guardCollabGuestAi } = useCollabGuestAiGate()
 
   const isConceptMap = computed(() => diagramStore.type === 'concept_map')
   const useMindMapV2 = useMindMapV2Chrome()
@@ -141,18 +128,21 @@ export function useCanvasToolbarApps() {
     } else {
       list = withoutWaterfall
     }
-    if (aiBlockedByCollab.value) {
-      list = list.filter(
-        (a) =>
-          a.appKey !== 'learning_sheet' &&
-          a.appKey !== 'snapshot' &&
-          a.appKey !== 'translate_diagram'
-      )
-    }
     if (useMindMapV2.value) {
-      return list.filter((a) => a.appKey !== 'translate_diagram')
+      list = list.filter((a) => a.appKey !== 'translate_diagram')
     }
-    return list
+    if (!aiBlockedByCollab.value) {
+      return list
+    }
+    return list.map((app) => {
+      if (app.appKey === 'waterfall' || app.appKey === 'translate_diagram') {
+        return { ...app, guestBlock: 'ai' as const }
+      }
+      if (app.appKey === 'learning_sheet' || app.appKey === 'snapshot') {
+        return { ...app, guestBlock: 'feature' as const }
+      }
+      return app
+    })
   })
 
   async function handleAIGenerate(options?: {
@@ -164,8 +154,7 @@ export function useCanvasToolbarApps() {
       notify.warning(t('notification.signInToUse'))
       return
     }
-    if (diagramStore.collabSessionActive) {
-      notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
+    if (!guardCollabGuestAi()) {
       return
     }
     const validation = validateForAutoComplete({
@@ -197,6 +186,9 @@ export function useCanvasToolbarApps() {
   }
 
   function handleConceptGeneration() {
+    if (!guardCollabGuestAi()) {
+      return
+    }
     if (!diagramStore.data?.nodes?.length) {
       notify.warning(t('canvas.toolbar.createDiagramFirst'))
       return
@@ -228,16 +220,17 @@ export function useCanvasToolbarApps() {
   }
 
   async function handleMoreApp(app: MoreAppItem) {
-    if (
-      aiBlockedByCollab.value &&
-      (app.appKey === 'learning_sheet' ||
-        app.appKey === 'snapshot' ||
-        app.appKey === 'translate_diagram')
-    ) {
+    if (app.guestBlock === 'ai' && !guardCollabGuestAi()) {
+      return
+    }
+    if (app.guestBlock === 'feature') {
       notify.warning(t('canvas.toolbar.collabGuestFeatureBlocked'))
       return
     }
     if (app.appKey === 'waterfall') {
+      if (!guardCollabGuestAi()) {
+        return
+      }
       if (!diagramStore.data?.nodes?.length) {
         notify.warning(t('canvas.toolbar.createDiagramFirst'))
         return

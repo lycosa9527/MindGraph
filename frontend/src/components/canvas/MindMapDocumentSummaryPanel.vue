@@ -27,8 +27,9 @@ import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.vue'
 import '@/components/canvas/aiGenerateGlass.css'
 import { useLanguage, useNotifications } from '@/composables'
-import { eventBus } from '@/composables/core/useEventBus'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
+import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
+import { eventBus } from '@/composables/core/useEventBus'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useFileCenterMutations, usePackageDetail } from '@/composables/fileCenter/useFileCenter'
 import { useFileCenterActivePackage } from '@/composables/fileCenter/useFileCenterActivePackage'
@@ -137,6 +138,7 @@ const tabs = computed<Array<{ id: SummaryTab; labelKey: string }>>(() => {
 
 const docSummaryLiteUi = DOC_SUMMARY_LITE_UI
 
+const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
 const collabActive = computed(() => diagramStore.collabSessionActive)
 const documents = computed(() => detailQuery.data.value?.documents ?? [])
 const completedCount = computed(
@@ -235,7 +237,7 @@ const canGenerate = computed(() => {
   if (
     generateBusy.value ||
     sessionStarting.value ||
-    collabActive.value ||
+    aiBlockedByCollab.value ||
     isSourceProcessing.value ||
     sourceExceedsModelInput.value
   ) {
@@ -652,8 +654,8 @@ async function waitUntilLiteSourceReady(): Promise<boolean> {
 }
 
 async function handleLiteSaveAndGenerate(): Promise<void> {
-  if (collabActive.value) {
-    notify.warning(t('canvas.mindMapDocumentSummary.collabDisabled'))
+  if (aiBlockedByCollab.value) {
+    notifyCollabGuestAiBlocked()
     return
   }
   if (generateBusy.value || sessionStarting.value || isSourceProcessing.value) {
@@ -703,8 +705,8 @@ async function handleLiteSaveAndGenerate(): Promise<void> {
 }
 
 async function handleGenerate(): Promise<void> {
-  if (collabActive.value) {
-    notify.warning(t('canvas.mindMapDocumentSummary.collabDisabled'))
+  if (aiBlockedByCollab.value) {
+    notifyCollabGuestAiBlocked()
     return
   }
   if (docSummaryLiteUi) {
@@ -1375,7 +1377,10 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
         </button>
       </div>
 
-      <div class="doc-summary-generate-bar shrink-0 border-t border-(--swiss-border,#e7e5e4) px-3 py-3">
+      <div
+        class="doc-summary-generate-bar shrink-0 border-t border-(--swiss-border,#e7e5e4) px-3 py-3"
+        @click.capture="aiBlockedByCollab && notifyCollabGuestAiBlocked()"
+      >
         <AiBusyGenerateButton
           :busy="generateBusy"
           :disabled="!canGenerate"
@@ -1384,7 +1389,7 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
               ? t('canvas.toolbar.aiGenerating')
               : t('canvas.mindMapDocumentSummary.generateButton')
           "
-          :title="collabActive ? t('canvas.mindMapDocumentSummary.collabDisabled') : undefined"
+          :title="aiBlockedByCollab ? t('canvas.toolbar.collabAiBlocked') : undefined"
           :block="false"
           @click="handleGenerate"
         />

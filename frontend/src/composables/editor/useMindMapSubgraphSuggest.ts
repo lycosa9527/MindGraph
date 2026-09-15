@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
 import { notify } from '@/composables/core/notifications'
 import { eventBus } from '@/composables/core/useEventBus'
 import {
@@ -383,10 +384,10 @@ async function runMindMapSubgraphGeneration(
     }
     return failQuietGuard()
   }
-  if (diagramStore.collabSessionActive) {
-    mindMapSubgraphDebug('guard', 'aborted: collab session active')
+  if (isCollabGuestAiBlocked(diagramStore.collabSessionActive, diagramStore.collabIsDiagramOwner)) {
+    mindMapSubgraphDebug('guard', 'aborted: collab guest AI blocked')
     if (!quietSuccess) {
-      subgraphNotify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
+      subgraphNotify.warning(t('canvas.toolbar.collabAiBlocked'))
     }
     return failQuietGuard()
   }

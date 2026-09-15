@@ -6,7 +6,7 @@
  *
  * Features:
  * - Calls 3 LLMs in parallel (Qwen, DeepSeek, Doubao)
- * - Disabled while ``collabSessionActive`` for full-diagram multi-LLM generate only (concept-map 「生成概念」 / modal palette stays enabled)
+ * - Disabled for collab guests (host may still generate; concept-map palette stays viewable)
  * - First-result-wins: renders immediately when first LLM completes
  * - Caches results for switching between LLM perspectives
  * - Placeholder text detection and filtering
@@ -24,6 +24,7 @@
 import { computed } from 'vue'
 
 import { eventBus, useLanguage, useNotifications } from '@/composables'
+import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import {
   AUTO_COMPLETE_VALIDATION_I18N,
   validateAutoCompleteRules,
@@ -165,6 +166,7 @@ export function useAutoComplete() {
   const savedDiagramsStore = useSavedDiagramsStore()
   const { promptLanguage, t } = useLanguage()
   const notify = useNotifications()
+  const { guardCollabGuestAi } = useCollabGuestAiGate()
   // Expose store state
   const isGenerating = computed(() => llmResultsStore.isGenerating)
   const selectedModel = computed(() => llmResultsStore.selectedModel)
@@ -627,9 +629,8 @@ export function useAutoComplete() {
       topicOverride,
     } = options
 
-    if (diagramStore.collabSessionActive) {
-      notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
-      return { success: false, error: 'collab_live_ai_disabled' }
+    if (!guardCollabGuestAi()) {
+      return { success: false, error: 'collab_guest_ai_blocked' }
     }
 
     // Validate

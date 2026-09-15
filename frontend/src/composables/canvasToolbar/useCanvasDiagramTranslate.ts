@@ -1,12 +1,11 @@
 /**
  * Full-diagram label translate: More Apps (live) and new-canvas preview (original kept).
  */
-import { type ComputedRef, computed, inject } from 'vue'
-
 import {
   applyThinkingCoinMutation,
   extractThinkingCoinsFooter,
 } from '@/composables/auth/useThinkingCoinSync'
+import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -59,35 +58,14 @@ export function useCanvasDiagramTranslate() {
   const authStore = useAuthStore()
   const { t } = useLanguage()
   const notify = useNotifications()
-
-  const collabCanvas = inject<
-    | {
-        isDiagramOwner?: ComputedRef<boolean>
-      }
-    | undefined
-  >('collabCanvas', undefined)
-
-  const aiBlockedByCollab = computed(() => {
-    if (!diagramStore.collabSessionActive) {
-      return false
-    }
-    const own = collabCanvas?.isDiagramOwner
-    if (!own) {
-      return false
-    }
-    return !own.value
-  })
+  const { aiBlockedByCollab, guardCollabGuestAi } = useCollabGuestAiGate()
 
   function warnIfUnavailable(): boolean {
     if (!authStore.isAuthenticated) {
       notify.warning(t('notification.signInToUse'))
       return true
     }
-    if (!aiBlockedByCollab.value) {
-      return false
-    }
-    notify.warning(t('canvas.toolbar.collabGuestFeatureBlocked'))
-    return true
+    return !guardCollabGuestAi()
   }
 
   async function loadSpecView(

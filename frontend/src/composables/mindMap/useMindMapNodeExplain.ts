@@ -4,6 +4,7 @@
 import { onUnmounted, ref, watch } from 'vue'
 
 import { useLanguage } from '@/composables'
+import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
@@ -256,6 +257,12 @@ export function useMindMapNodeExplain() {
   }
 
   function openExplain(nodeId: string, nodeLabel?: string): void {
+    if (
+      isCollabGuestAiBlocked(diagramStore.collabSessionActive, diagramStore.collabIsDiagramOwner)
+    ) {
+      notify.warning(t('canvas.toolbar.collabAiBlocked'))
+      return
+    }
     const label = (nodeLabel ?? resolveNodeLabel(nodeId)).trim()
     if (!label || isPlaceholderText(label)) return
 

@@ -114,6 +114,7 @@ import {
   bindMindMapExternalPanelClose,
   useMindMapSideToolbarState,
 } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
+import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
 import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import {
   diagramSpecLikelyNeedsMarkdownPipeline,
@@ -801,8 +802,10 @@ eventBus.onWithOwner(
       notify.warning(t('notification.signInToUse'))
       return
     }
-    if (diagramStore.collabSessionActive && diagramStore.type !== 'concept_map') {
-      notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
+    if (
+      isCollabGuestAiBlocked(diagramStore.collabSessionActive, diagramStore.collabIsDiagramOwner)
+    ) {
+      notify.warning(t('canvas.toolbar.collabAiBlocked'))
       return
     }
     if (isAIGenerating.value) return
@@ -832,8 +835,10 @@ eventBus.onWithOwner(
       notify.warning(t('notification.signInToUse'))
       return
     }
-    if (diagramStore.collabSessionActive) {
-      notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
+    if (
+      isCollabGuestAiBlocked(diagramStore.collabSessionActive, diagramStore.collabIsDiagramOwner)
+    ) {
+      notify.warning(t('canvas.toolbar.collabAiBlocked'))
       return
     }
     void handleKittyAutoCompleteBranchRequest(data, {

@@ -8,16 +8,17 @@
  * For double_bubble_map: shows tabs (相似点/Similarities | 差异点/Differences).
  * Differences tab displays paired attributes for both Topic A and Topic B.
  */
-import { type ComputedRef, computed, inject, nextTick, onMounted } from 'vue'
+import { computed, nextTick, onMounted } from 'vue'
 
 import { ElButton, ElTooltip } from 'element-plus'
 
 import { Check, Loader2, RefreshCw, X } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { getNodePalette } from '@/composables/nodePalette/useNodePalette'
 import { getLLMColor } from '@/config/llmModelColors'
-import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
+import { usePanelsStore, useUIStore } from '@/stores'
 import type { NodeSuggestion } from '@/types/panels'
 
 const emit = defineEmits<{
@@ -28,17 +29,8 @@ const { t } = useLanguage()
 const notify = useNotifications()
 const uiStore = useUIStore()
 const panelsStore = usePanelsStore()
-const diagramStore = useDiagramStore()
-
-const collabCanvas = inject<{ isDiagramOwner?: ComputedRef<boolean> } | undefined>(
-  'collabCanvas',
-  undefined
-)
-const isGuestCollab = computed(() => {
-  if (!diagramStore.collabSessionActive) return false
-  const own = collabCanvas?.isDiagramOwner
-  return own ? !own.value : false
-})
+const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
+const isGuestCollab = aiBlockedByCollab
 
 const {
   isLoading,
@@ -219,13 +211,19 @@ function getNodeCardStyle(suggestion: { source_llm?: string }, isSelected: boole
 }
 
 async function handleTabSwitch(mode: 'similarities' | 'differences' | 'causes' | 'effects') {
-  if (isGuestCollab.value) return
+  if (isGuestCollab.value) {
+    notifyCollabGuestAiBlocked()
+    return
+  }
   if (mode === currentMode.value) return
   await switchTab(mode)
 }
 
 async function handleStageTabSwitch(parentId: string, parentName: string) {
-  if (isGuestCollab.value) return
+  if (isGuestCollab.value) {
+    notifyCollabGuestAiBlocked()
+    return
+  }
   if (panelsStore.nodePalettePanel.mode === parentName) return
   await switchStageTab(parentId, parentName)
 }
@@ -532,7 +530,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
                 : '',
             ]"
             :style="getNodeCardStyle(suggestion, selectedIds.includes(suggestion.id))"
-            @click="isGuestCollab ? undefined : toggleSelection(suggestion.id)"
+            @click="isGuestCollab ? notifyCollabGuestAiBlocked() : toggleSelection(suggestion.id)"
           >
             <div class="flex items-start gap-2">
               <div

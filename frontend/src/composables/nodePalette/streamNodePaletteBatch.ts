@@ -7,6 +7,7 @@ import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { eventBus } from '@/composables/core/useEventBus'
 import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
 import type { usePanelsStore } from '@/stores'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { authFetch } from '@/utils/api'
 
 export type PanelsStoreForStream = ReturnType<typeof usePanelsStore>
@@ -126,10 +127,13 @@ export async function streamNodePaletteBatch(
       throw new DOMException('The operation was aborted.', 'AbortError')
     }
     await ensureFontsForLanguageCode(promptLanguage.value)
+    const diagramId = useSavedDiagramsStore().activeDiagramId
+    const body =
+      diagramId && payload.diagram_id == null ? { ...payload, diagram_id: diagramId } : payload
     const response = await authFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
       signal: fetchSignal,
     })
 

@@ -1,15 +1,23 @@
 /**
- * Verified Kitty mutations must nack during live collab (not silent-drop / ack_timeout).
+ * Verified Kitty mutations nack for collab guests (not silent-drop / ack_timeout).
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
-const { emitMock, applyVerifiedMock, reportFailMock, collabActive, diagramType, onHandlers } =
-  vi.hoisted(() => ({
+const {
+  emitMock,
+  applyVerifiedMock,
+  reportFailMock,
+  collabActive,
+  collabIsOwner,
+  diagramType,
+  onHandlers,
+} = vi.hoisted(() => ({
     emitMock: vi.fn(),
     applyVerifiedMock: vi.fn(),
     reportFailMock: vi.fn(),
     collabActive: { value: true },
+    collabIsOwner: { value: false },
     diagramType: { value: 'mindmap' as string },
     onHandlers: new Map<string, (payload: unknown) => void>(),
   }))
@@ -53,6 +61,9 @@ vi.mock('@/stores/diagram', () => ({
     get collabSessionActive() {
       return collabActive.value
     },
+    get collabIsDiagramOwner() {
+      return collabIsOwner.value
+    },
     get type() {
       return diagramType.value
     },
@@ -69,11 +80,12 @@ describe('registerKittyDiagramMutationBus collab gate', () => {
     reportFailMock.mockClear()
     onHandlers.clear()
     collabActive.value = true
+    collabIsOwner.value = false
     diagramType.value = 'mindmap'
     registerKittyDiagramMutationBus()
   })
 
-  it('nacks verified mutation with collab_active and does not apply', async () => {
+  it('nacks verified mutation with collab_active for a guest and does not apply', async () => {
     const sendAck = vi.fn()
     const handler = onHandlers.get('kitty:diagram_mutation_requested')
     expect(handler).toBeTypeOf('function')
@@ -105,6 +117,30 @@ describe('registerKittyDiagramMutationBus collab gate', () => {
     expect(reportFailMock).toHaveBeenCalledWith(
       expect.objectContaining({ errorCode: 'collab_active' })
     )
+  })
+
+  it('applies when the diagram owner is in collab', async () => {
+    collabIsOwner.value = true
+    applyVerifiedMock.mockResolvedValue({
+      verified: true,
+      hubPersistOk: true,
+      verificationError: undefined,
+    })
+    const sendAck = vi.fn()
+    const handler = onHandlers.get('kitty:diagram_mutation_requested')
+
+    await Promise.resolve(
+      handler?.({
+        action: 'add_node',
+        updates: { text: 'A' },
+        mutationId: 'mut-owner-1',
+        sendAck,
+        lane: 'desktop',
+      })
+    )
+
+    expect(applyVerifiedMock).toHaveBeenCalled()
+    expect(reportFailMock).not.toHaveBeenCalled()
   })
 
   it('applies when collab is inactive', async () => {

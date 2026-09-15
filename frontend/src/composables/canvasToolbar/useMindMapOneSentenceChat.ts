@@ -36,6 +36,7 @@ import {
   createOneSentenceReplyState,
   type OneSentenceReplyPayload,
 } from '@/composables/canvasToolbar/oneSentenceReplyState'
+import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { useEventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useKittyAsrSession } from '@/composables/kitty/asr/useKittyAsrSession'
@@ -97,6 +98,8 @@ export function useMindMapOneSentenceChat() {
   const featureFlagsStore = useFeatureFlagsStore()
   const oneSentence = useOneSentenceStore()
   const { isAIGenerating, handleMindMapAiGenerate } = useMindMapAudienceGenerate()
+  const { aiBlockedByCollab, notifyCollabGuestAiBlocked, guardCollabGuestAi } =
+    useCollabGuestAiGate()
   const bus = useEventBus(PANEL_OWNER)
 
   const {
@@ -157,7 +160,7 @@ export function useMindMapOneSentenceChat() {
       !oneSentence.sessionReady ||
       isWaitingForFirstResult.value ||
       connecting.value ||
-      diagramStore.collabSessionActive ||
+      aiBlockedByCollab.value ||
       mobileKittyOwnsEditInput.value
   )
 
@@ -536,7 +539,7 @@ export function useMindMapOneSentenceChat() {
     const text = draft.value.trim()
     if (!text) return
     if (isInputBlocked.value) return
-    if (diagramStore.collabSessionActive) return
+    if (!guardCollabGuestAi()) return
 
     oneSentence.setDraft('')
     replyState.consumeOpenChoices()
@@ -578,7 +581,7 @@ export function useMindMapOneSentenceChat() {
   }
 
   async function selectClarifyChoice(choice: OneSentenceClarifyChoice): Promise<void> {
-    if (isInputBlocked.value || diagramStore.collabSessionActive) {
+    if (isInputBlocked.value || !guardCollabGuestAi()) {
       return
     }
     oneSentence.setDraft(String(choice.index))
@@ -593,8 +596,8 @@ export function useMindMapOneSentenceChat() {
    * Conversation image (same pipeline as mobile Kitty): OCR or hand-drawn rebuild.
    */
   async function uploadConversationImage(file: File): Promise<boolean> {
-    if (diagramStore.collabSessionActive) {
-      replyState.showFinalReply(t('canvas.mindMapOneSentence.kittyEditCollabActive'))
+    if (aiBlockedByCollab.value) {
+      notifyCollabGuestAiBlocked()
       return false
     }
     if (mobileKittyOwnsEditInput.value) {

@@ -258,8 +258,6 @@ export default {
   'canvas.toolbar.childAdded': 'Enfant ajouté',
   'canvas.toolbar.collabAiBlocked':
     'Seul le propriétaire du diagramme peut utiliser la génération IA pendant la collaboration',
-  'canvas.toolbar.collabLiveAiDisabled':
-    'La génération IA est indisponible pendant la collaboration en direct pour que tout le monde reste synchronisé',
   'canvas.toolbar.collabGuestFeatureBlocked':
     'Cette fonctionnalité n’est pas disponible lorsque vous rejoignez en tant qu’invité de collaboration.',
   'canvas.toolbar.colorLabel': 'Couleur',
@@ -878,8 +876,6 @@ export default {
   'canvas.mindMapOneSentence.requestFailed': 'Échec',
   'canvas.mindMapOneSentence.kittyEditAccessDenied':
     'Vous n’avez pas l’autorisation de modifier ce diagramme.',
-  'canvas.mindMapOneSentence.kittyEditCollabActive':
-    'Les modifications Kitty du diagramme sont en pause pendant la collaboration en direct pour que tout le monde reste synchronisé.',
   'canvas.mindMapOneSentence.kittyEditStaleRevision':
     'Le diagramme vient d’être mis à jour, cette modification est obsolète. Veuillez la répéter.',
   'canvas.mindMapOneSentence.kittyEditTimeout':

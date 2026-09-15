@@ -46,6 +46,7 @@ import {
   tryCollabGuardedRedo,
   tryCollabGuardedUndo,
 } from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
+import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -83,6 +84,7 @@ const props = withDefaults(
 
 const { t } = useLanguage()
 const notify = useNotifications()
+const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
 const diagramStore = useDiagramStore()
 const authStore = useAuthStore()
 const { featureCommunity } = useFeatureFlags()
@@ -97,15 +99,18 @@ const sourceLock = useDiagramSourceLock()
 const docGenerateLocked = computed(() => sourceLock.isLocked('doc'))
 const webGenerateLocked = computed(() => sourceLock.isLocked('web'))
 const voiceSummaryLocked = computed(() => sourceLock.isLocked('voice'))
-const docGenerateTooltip = computed(() =>
-  docGenerateLocked.value ? sourceLock.lockMessage.value : t('canvas.ribbon.docGenerate')
-)
-const webGenerateTooltip = computed(() =>
-  webGenerateLocked.value ? sourceLock.lockMessage.value : t('canvas.ribbon.webGenerate')
-)
-const voiceSummaryTooltip = computed(() =>
-  voiceSummaryLocked.value ? sourceLock.lockMessage.value : t('canvas.ribbon.voiceSummary')
-)
+const docGenerateTooltip = computed(() => {
+  if (aiBlockedByCollab.value) return t('canvas.toolbar.collabAiBlocked')
+  return docGenerateLocked.value ? sourceLock.lockMessage.value : t('canvas.ribbon.docGenerate')
+})
+const webGenerateTooltip = computed(() => {
+  if (aiBlockedByCollab.value) return t('canvas.toolbar.collabAiBlocked')
+  return webGenerateLocked.value ? sourceLock.lockMessage.value : t('canvas.ribbon.webGenerate')
+})
+const voiceSummaryTooltip = computed(() => {
+  if (aiBlockedByCollab.value) return t('canvas.toolbar.collabAiBlocked')
+  return voiceSummaryLocked.value ? sourceLock.lockMessage.value : t('canvas.ribbon.voiceSummary')
+})
 
 const showCommunityExport = computed(() => featureCommunity.value && authStore.isAuthenticated)
 
@@ -202,6 +207,15 @@ function requireNodeSelection(action: () => void): void {
   notify.warning(t('canvas.toolbar.selectNodesFirst'))
 }
 
+function onGuestAiToolClick(event: MouseEvent, run: () => void): void {
+  if (!aiBlockedByCollab.value) {
+    run()
+    return
+  }
+  event.preventDefault()
+  notifyCollabGuestAiBlocked()
+}
+
 function onFormatPainterClick(): void {
   if (formatBrushActive.value) {
     handleFormatBrush()
@@ -240,6 +254,10 @@ async function handleReset() {
 }
 
 function openDocGenerate(kind: 'file' | 'web'): void {
+  if (aiBlockedByCollab.value) {
+    notifyCollabGuestAiBlocked()
+    return
+  }
   const requested = kind === 'web' ? 'web' : 'doc'
   if (sourceLock.isLocked(requested)) {
     sourceLock.notifyLocked()
@@ -252,6 +270,10 @@ function openDocGenerate(kind: 'file' | 'web'): void {
 }
 
 function openVoiceSummary(): void {
+  if (aiBlockedByCollab.value) {
+    notifyCollabGuestAiBlocked()
+    return
+  }
   if (sourceLock.isLocked('voice')) {
     sourceLock.notifyLocked()
     return
@@ -705,7 +727,11 @@ watch(
       <template v-if="ribbonTab === 'teaching'">
           <div class="mm-btn-group">
             <ElTooltip
-              :content="t('canvas.mindMapSideToolbar.learningSheet')"
+              :content="
+                aiBlockedByCollab
+                  ? t('canvas.toolbar.collabGuestFeatureBlocked')
+                  : t('canvas.mindMapSideToolbar.learningSheet')
+              "
               placement="bottom"
             >
               <button
@@ -718,8 +744,14 @@ watch(
                     ribbon.learningSheet.isPickActive ||
                     ribbon.learningSheet.isLearningSheetActive,
                   'is-expanded': ribbon.learningSheet.isLearningSheetActive,
+                  'is-dimmed': aiBlockedByCollab,
                 }"
-                :aria-label="t('canvas.mindMapSideToolbar.learningSheet')"
+                :aria-disabled="aiBlockedByCollab"
+                :aria-label="
+                  aiBlockedByCollab
+                    ? t('canvas.toolbar.collabGuestFeatureBlocked')
+                    : t('canvas.mindMapSideToolbar.learningSheet')
+                "
                 @click="ribbon.openSideTool('learning_sheet')"
               >
                 <MindMapLearningSheetIcon kind="blanks" />
@@ -782,17 +814,29 @@ watch(
             </button>
           </ElTooltip>
           <ElTooltip
-            :content="t('canvas.floatingToolbar.explain')"
+            :content="
+              aiBlockedByCollab
+                ? t('canvas.toolbar.collabAiBlocked')
+                : t('canvas.floatingToolbar.explain')
+            "
             placement="bottom"
-            :disabled="!props.compact"
+            :disabled="!props.compact && !aiBlockedByCollab"
           >
             <button
               type="button"
               class="mm-btn"
-              :aria-disabled="!ribbon.hasSelection"
-              :class="{ 'is-dimmed': !ribbon.hasSelection }"
-              :aria-label="t('canvas.floatingToolbar.explain')"
-              @click="requireNodeSelection(() => ribbon.requestExplainNode())"
+              :aria-disabled="aiBlockedByCollab || !ribbon.hasSelection"
+              :class="{ 'is-dimmed': aiBlockedByCollab || !ribbon.hasSelection }"
+              :aria-label="
+                aiBlockedByCollab
+                  ? t('canvas.toolbar.collabAiBlocked')
+                  : t('canvas.floatingToolbar.explain')
+              "
+              @click="
+                onGuestAiToolClick($event, () =>
+                  requireNodeSelection(() => ribbon.requestExplainNode())
+                )
+              "
             >
               <Lightbulb class="w-4 h-4" />
               <span class="mm-btn__label">{{ t('canvas.floatingToolbar.explain') }}</span>
@@ -823,15 +867,27 @@ watch(
       <template v-if="ribbonTab === 'ai'">
         <div class="mm-btn-group">
           <ElTooltip
-            :content="t('canvas.ribbon.topicGenerate')"
+            :content="
+              aiBlockedByCollab
+                ? t('canvas.toolbar.collabAiBlocked')
+                : t('canvas.ribbon.topicGenerate')
+            "
             placement="bottom"
           >
             <button
               type="button"
               class="mm-btn"
-              :class="{ 'mm-btn--icon': props.compact }"
-              :aria-label="t('canvas.ribbon.topicGenerate')"
-              @click="ribbon.handleAIGenerate()"
+              :class="{
+                'mm-btn--icon': props.compact,
+                'is-dimmed': aiBlockedByCollab,
+              }"
+              :aria-disabled="aiBlockedByCollab"
+              :aria-label="
+                aiBlockedByCollab
+                  ? t('canvas.toolbar.collabAiBlocked')
+                  : t('canvas.ribbon.topicGenerate')
+              "
+              @click="onGuestAiToolClick($event, () => ribbon.handleAIGenerate())"
             >
               <Sparkles class="w-4 h-4" />
               <span
@@ -855,8 +911,10 @@ watch(
                 :class="{
                   'mm-btn--icon': props.compact,
                   'is-active': activeTool === 'document_summary',
+                  'is-dimmed': aiBlockedByCollab,
                 }"
                 :disabled="docGenerateLocked"
+                :aria-disabled="aiBlockedByCollab || docGenerateLocked"
                 :aria-label="docGenerateTooltip"
                 @click.stop="openDocGenerate('file')"
               >
@@ -880,8 +938,9 @@ watch(
               <button
                 type="button"
                 class="mm-btn"
-                :class="{ 'mm-btn--icon': props.compact }"
+                :class="{ 'mm-btn--icon': props.compact, 'is-dimmed': aiBlockedByCollab }"
                 :disabled="webGenerateLocked"
+                :aria-disabled="aiBlockedByCollab || webGenerateLocked"
                 :aria-label="webGenerateTooltip"
                 @click.stop="openDocGenerate('web')"
               >
@@ -905,8 +964,9 @@ watch(
               <button
                 type="button"
                 class="mm-btn"
-                :class="{ 'mm-btn--icon': props.compact }"
+                :class="{ 'mm-btn--icon': props.compact, 'is-dimmed': aiBlockedByCollab }"
                 :disabled="voiceSummaryLocked"
+                :aria-disabled="aiBlockedByCollab || voiceSummaryLocked"
                 :aria-label="voiceSummaryTooltip"
                 @click.stop="openVoiceSummary"
               >
@@ -920,15 +980,28 @@ watch(
             </span>
           </ElTooltip>
           <ElTooltip
-            :content="t('canvas.mindMapSideToolbar.waterfall')"
+            :content="
+              aiBlockedByCollab
+                ? t('canvas.toolbar.collabAiBlocked')
+                : t('canvas.mindMapSideToolbar.waterfall')
+            "
             placement="bottom"
           >
             <button
               type="button"
               class="mm-btn"
-              :class="{ 'mm-btn--icon': props.compact, 'is-active': activeTool === 'waterfall' }"
-              :aria-label="t('canvas.mindMapSideToolbar.waterfall')"
-              @click="handleToolSelect('waterfall')"
+              :class="{
+                'mm-btn--icon': props.compact,
+                'is-active': activeTool === 'waterfall',
+                'is-dimmed': aiBlockedByCollab,
+              }"
+              :aria-label="
+                aiBlockedByCollab
+                  ? t('canvas.toolbar.collabAiBlocked')
+                  : t('canvas.mindMapSideToolbar.waterfall')
+              "
+              :aria-disabled="aiBlockedByCollab"
+              @click="onGuestAiToolClick($event, () => handleToolSelect('waterfall'))"
             >
               <LayoutGrid class="w-4 h-4" />
               <span
@@ -939,7 +1012,11 @@ watch(
             </button>
           </ElTooltip>
           <ElTooltip
-            :content="t('canvas.mindMapSideToolbar.oneSentence')"
+            :content="
+              aiBlockedByCollab
+                ? t('canvas.toolbar.collabAiBlocked')
+                : t('canvas.mindMapSideToolbar.oneSentence')
+            "
             placement="bottom"
           >
             <button
@@ -948,9 +1025,15 @@ watch(
               :class="{
                 'mm-btn--icon': props.compact,
                 'is-active': activeTool === 'one_sentence',
+                'is-dimmed': aiBlockedByCollab,
               }"
-              :aria-label="t('canvas.mindMapSideToolbar.oneSentence')"
-              @click="ribbon.openSideTool('one_sentence')"
+              :aria-label="
+                aiBlockedByCollab
+                  ? t('canvas.toolbar.collabAiBlocked')
+                  : t('canvas.mindMapSideToolbar.oneSentence')
+              "
+              :aria-disabled="aiBlockedByCollab"
+              @click="onGuestAiToolClick($event, () => ribbon.openSideTool('one_sentence'))"
             >
               <MessageSquare class="w-4 h-4" />
               <span
@@ -961,16 +1044,31 @@ watch(
             </button>
           </ElTooltip>
           <ElTooltip
-            :content="t('canvas.floatingToolbar.aiSubgraph')"
+            :content="
+              aiBlockedByCollab
+                ? t('canvas.toolbar.collabAiBlocked')
+                : t('canvas.floatingToolbar.aiSubgraph')
+            "
             placement="bottom"
           >
             <button
               type="button"
               class="mm-btn"
-              :class="{ 'mm-btn--icon': props.compact, 'is-dimmed': !ribbon.hasSelection }"
-              :aria-disabled="!ribbon.hasSelection"
-              :aria-label="t('canvas.floatingToolbar.aiSubgraph')"
-              @click="requireNodeSelection(() => ribbon.requestAiSubgraph())"
+              :class="{
+                'mm-btn--icon': props.compact,
+                'is-dimmed': aiBlockedByCollab || !ribbon.hasSelection,
+              }"
+              :aria-disabled="aiBlockedByCollab || !ribbon.hasSelection"
+              :aria-label="
+                aiBlockedByCollab
+                  ? t('canvas.toolbar.collabAiBlocked')
+                  : t('canvas.floatingToolbar.aiSubgraph')
+              "
+              @click="
+                onGuestAiToolClick($event, () =>
+                  requireNodeSelection(() => ribbon.requestAiSubgraph())
+                )
+              "
             >
               <GitBranch class="w-4 h-4" />
               <span

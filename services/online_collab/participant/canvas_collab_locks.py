@@ -15,6 +15,41 @@ from typing import Any, Dict, List, Optional
 _MAX_SUBTREE_DEPTH = 50
 _MAX_SUBTREE_SIZE = 500
 _SUBTREE_OFFLOAD_THRESHOLD_NODES = 2000
+_LAYOUT_NODE_KEYS = frozenset({"id", "position", "width", "height"})
+
+
+def _finite_number(value: Any) -> Optional[float]:
+    """Return a JSON-safe float, or None when ``value`` is not a real number."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value)
+
+
+def layout_patch_for_locked_node(node: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """
+    Keep layout fields from a node another user is text-editing.
+
+    Peers reflow after a remote add and echo the new (locked) node. Dropping
+    that echo looks like a conflict; applying only position/size keeps the
+    editor's text and still lets the map move.
+    """
+    raw_id = node.get("id")
+    if not isinstance(raw_id, str) or not raw_id:
+        return None
+    out: Dict[str, Any] = {"id": raw_id}
+    position = node.get("position")
+    if isinstance(position, dict):
+        pos_x = _finite_number(position.get("x"))
+        pos_y = _finite_number(position.get("y"))
+        if pos_x is not None and pos_y is not None:
+            out["position"] = {"x": pos_x, "y": pos_y}
+    for key in ("width", "height"):
+        numeric = _finite_number(node.get(key))
+        if numeric is not None:
+            out[key] = numeric
+    if len(out) == 1:
+        return None
+    return out
 
 
 def node_locked_by_other_user(
@@ -54,7 +89,7 @@ def filter_granular_nodes_for_locks(
     active_editors_local: Dict[str, Dict[str, Dict[int, str]]],
     editors_from_redis: Optional[Dict[str, Dict[int, str]]],
 ) -> List[Dict[str, Any]]:
-    """Drop node patches the sender may not apply while another user holds the edit lock."""
+    """Drop text patches on foreign-locked nodes; keep layout so reflow can sync."""
     out: List[Dict[str, Any]] = []
     for node in nodes:
         if not isinstance(node, dict):
@@ -64,6 +99,9 @@ def filter_granular_nodes_for_locks(
             out.append(node)
             continue
         if node_locked_by_other_user(code, sender_id, raw_id, active_editors_local, editors_from_redis):
+            layout_only = layout_patch_for_locked_node(node)
+            if layout_only is not None:
+                out.append(layout_only)
             continue
         out.append(node)
     return out
@@ -76,7 +114,12 @@ def filter_granular_connections_for_locks(
     active_editors_local: Dict[str, Dict[str, Dict[int, str]]],
     editors_from_redis: Optional[Dict[str, Dict[int, str]]],
 ) -> List[Dict[str, Any]]:
-    """Drop connection patches that touch a node another user is editing."""
+    """
+    Drop connection patches that rewire a node another user is editing.
+
+    A text lock on the parent (source) must not block add-child. A lock on the
+    target still blocks reparenting or attaching to that node.
+    """
     out: List[Dict[str, Any]] = []
     for conn in connections:
         if not isinstance(conn, dict):
@@ -85,8 +128,6 @@ def filter_granular_connections_for_locks(
         tgt = conn.get("target")
         if not isinstance(src, str) or not isinstance(tgt, str):
             out.append(conn)
-            continue
-        if node_locked_by_other_user(code, sender_id, src, active_editors_local, editors_from_redis):
             continue
         if node_locked_by_other_user(code, sender_id, tgt, active_editors_local, editors_from_redis):
             continue
@@ -99,13 +140,23 @@ def _connection_pair_key(conn: Dict[str, Any]) -> tuple[Any, Any, Any]:
     return (conn.get("id"), conn.get("source"), conn.get("target"))
 
 
+def _is_layout_only_node(node: Dict[str, Any]) -> bool:
+    """True when the patch is id plus position/size — a peer reflow, not a new node."""
+    return bool(node) and all(key in _LAYOUT_NODE_KEYS for key in node)
+
+
 def drop_nodes_paired_with_dropped_connections(
     incoming_nodes: List[Any],
     filtered_nodes: List[Any],
     incoming_connections: List[Any],
     filtered_connections: List[Any],
 ) -> List[Any]:
-    """Drop new-node patches whose only edge in this batch was lock-filtered."""
+    """
+    Drop new-node patches whose only edge in this batch was lock-filtered.
+
+    Layout-only survivors stay. A peer reflow may echo the locked child plus
+    its parent edge; dropping that layout looks like a conflict toast.
+    """
     kept_pairs = {_connection_pair_key(conn) for conn in filtered_connections if isinstance(conn, dict)}
     dropped_targets: set[str] = set()
     for conn in incoming_connections:
@@ -122,7 +173,11 @@ def drop_nodes_paired_with_dropped_connections(
     paired = dropped_targets & incoming_ids
     if not paired:
         return filtered_nodes
-    return [node for node in filtered_nodes if not (isinstance(node, dict) and str(node.get("id", "")) in paired)]
+    return [
+        node
+        for node in filtered_nodes
+        if not (isinstance(node, dict) and str(node.get("id", "")) in paired and not _is_layout_only_node(node))
+    ]
 
 
 def filter_deleted_node_ids_for_locks(

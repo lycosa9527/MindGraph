@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { ActiveEditor } from '@/composables/workshop/useWorkshopTypes'
 import {
   applyActiveEditorPresence,
+  consumeRecentlyClosedFlash,
   purgeActiveEditorsForUser,
   shouldFlashStructuralLock,
 } from '@/composables/workshop/applyCollabEditorPresence'
@@ -126,5 +127,12 @@ describe('shouldFlashStructuralLock', () => {
 
   it('skips the close-cooldown window', () => {
     expect(shouldFlashStructuralLock({ ...base, recentlyClosed: true })).toBe(false)
+  })
+
+  it('consumes a close suppress on the next flash attempt only', () => {
+    const closed = new Set(['n1'])
+    expect(consumeRecentlyClosedFlash(closed, 'n1')).toBe(true)
+    expect(closed.has('n1')).toBe(false)
+    expect(consumeRecentlyClosedFlash(closed, 'n1')).toBe(false)
   })
 })

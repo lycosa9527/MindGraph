@@ -21,6 +21,7 @@ import {
   X,
 } from '@lucide/vue'
 
+import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import {
@@ -29,7 +30,7 @@ import {
   type AiContentLevelId,
   DEFAULT_AI_CONTENT_LEVEL,
 } from '@/config/aiContentLevels'
-import { useAiContentLevelStore, useDiagramStore, useSavedDiagramsStore } from '@/stores'
+import { useAiContentLevelStore, useSavedDiagramsStore } from '@/stores'
 
 const AI_CONTENT_LEVEL_ICONS: Record<AiContentLevelId, Component> = {
   general: Sparkles,
@@ -56,7 +57,7 @@ const popoverPlacement = computed(() => (props.anchor === 'bottom' ? 'top-start'
 
 const { t } = useLanguage()
 const notify = useNotifications()
-const diagramStore = useDiagramStore()
+const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
 const savedDiagramsStore = useSavedDiagramsStore()
 const aiContentLevelStore = useAiContentLevelStore()
 const {
@@ -92,12 +93,16 @@ const proContentButtonTitle = computed(
   () => `${t('canvas.toolbar.professionalContent.label')} · ${proContentActiveOption.value.title}`
 )
 
+const proContentTriggerTitle = computed(() =>
+  aiBlockedByCollab.value ? t('canvas.toolbar.collabAiBlocked') : proContentButtonTitle.value
+)
+
 const showProContentGuide = computed(
   () =>
     !props.hideGuide &&
     showFirstRunGuide.value &&
     proContentGuideReady.value &&
-    !diagramStore.collabSessionActive &&
+    !aiBlockedByCollab.value &&
     !proContentPanelOpen.value
 )
 
@@ -185,13 +190,25 @@ watch(showProContentGuide, (visible) => {
 })
 
 watch(proContentPanelOpen, (open) => {
+  if (open && aiBlockedByCollab.value) {
+    proContentPanelOpen.value = false
+    return
+  }
   if (open && showFirstRunGuide.value) {
     aiContentLevelStore.dismissGuide()
   }
 })
 
+function onProContentClick(event: MouseEvent): void {
+  if (!aiBlockedByCollab.value) return
+  event.preventDefault()
+  event.stopPropagation()
+  proContentPanelOpen.value = false
+  notifyCollabGuestAiBlocked()
+}
+
 onMounted(() => {
-  if (props.hideGuide || !showFirstRunGuide.value || diagramStore.collabSessionActive) return
+  if (props.hideGuide || !showFirstRunGuide.value || aiBlockedByCollab.value) return
   proContentGuideTimer = window.setTimeout(() => {
     updateProContentAnchorRect()
     if (proContentAnchor.value) {
@@ -214,6 +231,11 @@ function proContentLevelTitle(id: AiContentLevelId): string {
 }
 
 async function handleProContentPick(id: AiContentLevelId): Promise<void> {
+  if (aiBlockedByCollab.value) {
+    notifyCollabGuestAiBlocked()
+    proContentPanelOpen.value = false
+    return
+  }
   if (id === proContentLevel.value && aiContentLevelStore.userSet) {
     proContentPanelOpen.value = false
     return
@@ -276,7 +298,6 @@ function handleProContentKeydown(event: KeyboardEvent, id: AiContentLevelId): vo
 
 <template>
   <ElPopover
-    v-if="!diagramStore.collabSessionActive"
     v-model:visible="proContentPanelOpen"
     :placement="popoverPlacement"
     :width="220"
@@ -293,10 +314,13 @@ function handleProContentKeydown(event: KeyboardEvent, id: AiContentLevelId): vo
           'mm-btn--pro-content-compact': !showProContentHintLabel && !props.compact,
           'mm-btn--pro-content-guide': showProContentGuide,
           'is-open': proContentPanelOpen,
+          'is-dimmed': aiBlockedByCollab,
         }"
-        :title="proContentButtonTitle"
-        :aria-label="proContentButtonTitle"
+        :title="proContentTriggerTitle"
+        :aria-label="proContentTriggerTitle"
+        :aria-disabled="aiBlockedByCollab"
         :aria-expanded="proContentPanelOpen"
+        @click.capture="onProContentClick"
       >
         <span
           class="mm-pro-icon"

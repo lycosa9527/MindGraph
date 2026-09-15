@@ -16,17 +16,21 @@ import {
   Square,
 } from '@lucide/vue'
 
-import MindMapSubgraphAiMark from './MindMapSubgraphAiMark.vue'
-
 import { useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
-import { useLanguage } from '@/composables/core/useLanguage'
-import { FLOATING_TOOLBAR_COLORS, FLOATING_TOOLBAR_FONT_SIZES } from '@/config/floatingToolbarColors'
 import type {
   FloatingToolbarPosition,
   FloatingToolbarSize,
 } from '@/composables/canvasToolbar/useNodeFloatingToolbarPosition'
-import { NODE_SHAPE_OPTIONS, type NodeShape } from '@/utils/nodeShapeStyle'
+import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
+import { useLanguage } from '@/composables/core/useLanguage'
+import {
+  FLOATING_TOOLBAR_COLORS,
+  FLOATING_TOOLBAR_FONT_SIZES,
+} from '@/config/floatingToolbarColors'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { NODE_SHAPE_OPTIONS, type NodeShape } from '@/utils/nodeShapeStyle'
+
+import MindMapSubgraphAiMark from './MindMapSubgraphAiMark.vue'
 
 const props = defineProps<{
   position: FloatingToolbarPosition
@@ -81,6 +85,8 @@ onUnmounted(() => {
 })
 
 const { t } = useLanguage()
+const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
+const guestAiDisabled = computed(() => Boolean(props.aiDisabled) || aiBlockedByCollab.value)
 
 const formatting = useCanvasToolbarFormatting({
   silentUpdates: true,
@@ -115,6 +121,22 @@ const activeColorPanel = ref<'fill' | 'border' | 'text' | null>(null)
 const typographyOpen = ref(false)
 
 const aiSubgraphVisible = computed(() => props.showAiSubgraph !== false)
+
+function onAiSubgraphClick(): void {
+  if (guestAiDisabled.value) {
+    notifyCollabGuestAiBlocked()
+    return
+  }
+  emit('aiSubgraphGenerate')
+}
+
+function onExplainClick(): void {
+  if (aiBlockedByCollab.value) {
+    notifyCollabGuestAiBlocked()
+    return
+  }
+  emit('explainNode')
+}
 
 const toolbarStyle = computed(() => ({
   left: `${props.position.left}px`,
@@ -177,10 +199,18 @@ function onShapePick(shape: NodeShape) {
           v-if="aiSubgraphVisible"
           type="button"
           class="nft-btn nft-btn--ai"
-          :class="{ 'nft-btn--ai-loading': aiGenerating }"
-          :title="t('canvas.floatingToolbar.aiSubgraph')"
-          :disabled="aiGenerating || aiDisabled"
-          @click="emit('aiSubgraphGenerate')"
+          :class="{
+            'nft-btn--ai-loading': aiGenerating,
+            'nft-btn--ai-blocked': guestAiDisabled && !aiGenerating,
+          }"
+          :title="
+            guestAiDisabled
+              ? t('canvas.toolbar.collabAiBlocked')
+              : t('canvas.floatingToolbar.aiSubgraph')
+          "
+          :aria-disabled="guestAiDisabled"
+          :disabled="aiGenerating"
+          @click="onAiSubgraphClick"
         >
           <MindMapSubgraphAiMark :loading="aiGenerating" />
         </button>
@@ -498,9 +528,15 @@ function onShapePick(shape: NodeShape) {
         <button
           type="button"
           class="nft-btn nft-btn--explain"
-          :title="t('canvas.floatingToolbar.explain')"
+          :class="{ 'nft-btn--explain-blocked': aiBlockedByCollab }"
+          :title="
+            aiBlockedByCollab
+              ? t('canvas.toolbar.collabAiBlocked')
+              : t('canvas.floatingToolbar.explain')
+          "
           :disabled="!nodeId"
-          @click="emit('explainNode')"
+          :aria-disabled="aiBlockedByCollab"
+          @click="onExplainClick"
         >
           <Lightbulb
             class="nft-icon nft-icon--explain"
@@ -567,8 +603,10 @@ function onShapePick(shape: NodeShape) {
   filter: drop-shadow(0 0 6px rgba(124, 58, 237, 0.55));
 }
 
-.nft-btn--ai:disabled {
-  opacity: 0.55;
+.nft-btn--ai:disabled,
+.nft-btn--ai-blocked,
+.nft-btn--explain-blocked {
+  opacity: 0.45;
   cursor: not-allowed;
 }
 

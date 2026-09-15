@@ -51,6 +51,9 @@ from services.online_collab.participant.collab_display_name import (
 from services.online_collab.participant.online_collab_snapshots import (
     websocket_send_live_spec_snapshot,
 )
+from services.online_collab.participant.online_collab_ws_editor_redis import (
+    refresh_editor_ttl_for_user,
+)
 from services.online_collab.participant.workshop_join_resume_tokens import (
     mint_join_resume_token_async,
 )
@@ -128,6 +131,10 @@ async def handle_ping(ctx: CollabWsContext, _message: Dict[str, Any]) -> None:
         )
     except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("[CanvasCollabWS] ping participant TTL refresh skipped: %s", exc)
+    try:
+        await refresh_editor_ttl_for_user(ctx.code, ctx.user.id)
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.debug("[CanvasCollabWS] ping editor TTL refresh skipped: %s", exc)
     try:
         await get_online_collab_manager().touch_activity(ctx.code)
     except BACKGROUND_INFRA_ERRORS as exc:

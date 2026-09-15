@@ -61,15 +61,20 @@ async def _query_diagram_ownership(diagram_id):
 
 
 async def assert_collab_blocks_canvas_ai(diagram_id: Optional[str], user: Optional[User]) -> None:
-    """Block AI generation for all users when the diagram is in a live workshop session."""
+    """Block canvas AI for collab guests; the diagram owner may still generate."""
     if not diagram_id or not user:
         return
-    workshop_code, _ = await _query_diagram_ownership(diagram_id)
-    if workshop_code and not is_superadmin(user):
-        raise HTTPException(
-            status_code=403,
-            detail="AI generation is unavailable during live collaboration",
-        )
+    workshop_code, diagram_user_id = await _query_diagram_ownership(diagram_id)
+    if not workshop_code:
+        return
+    if is_superadmin(user):
+        return
+    if diagram_user_id == user.id:
+        return
+    raise HTTPException(
+        status_code=403,
+        detail="Only the diagram owner can use AI generation during collaboration",
+    )
 
 
 def _build_workflow_kwargs(req: GenerateRequest, prepared: dict[str, Any]) -> dict[str, Any]:

@@ -597,7 +597,9 @@ export type EventTypes = {
   }
   'workshop:host-started': Record<string, never>
   /** Emitted when the server acks a sent update; carries the set of node ids that were in that op. */
-  'workshop:collab-ack': { nodeIds: string[] }
+  'workshop:collab-ack': { nodeIds: string[]; flushDiff?: boolean }
+  /** Remote WS `update` finished merge + layout absorb (not a timer). */
+  'workshop:remote-patch-applied': { nodeIds: string[] }
   /** Emitted when a subset of node patches were silently dropped by the server's lock filter. */
   'workshop:partial-filtered': { nodeIds: string[] }
   /** Emitted when the server denies a node_edit claim because another user holds the lock. */

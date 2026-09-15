@@ -3,6 +3,11 @@ import { type Ref, nextTick, watch } from 'vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramTranslateUiStore } from '@/stores/diagramTranslateUi'
 import type { DiagramNode } from '@/types/diagram'
+import {
+  applyForeignLockToOutboundConnections,
+  applyForeignLockToOutboundNodes,
+  asReadonlyIdSet,
+} from '@/utils/collabRemoteEchoFilter'
 import { mindMapLiveSpecExtrasFingerprint } from '@/utils/mindMapLiveSpecExtras'
 
 import { calculateDiff } from './diagramDiff'
@@ -39,10 +44,13 @@ interface UseCanvasPageCollabDiffOptions {
     deletedNodeIds?: string[],
     deletedConnectionIds?: string[]
   ) => string | null
+  /** Node ids another collaborator is text-editing (layout-only outbound). */
+  getForeignLockedNodeIds?: () => ReadonlySet<string>
+  /** Write display layout into Pinia as part of a remote WS apply (no timer). */
+  absorbRemoteLayout?: () => void
+  /** True while an outbound ``update`` is queued or in flight (FIFO backpressure). */
+  hasPendingOutbound?: () => boolean
 }
-
-const DIFF_DEBOUNCE_MS = 40
-const DIFF_MAX_WAIT_MS = 200
 
 /** Must match ``routers/api/workshop_ws_handlers_update_validate.py`` granular limits. */
 const MAX_GRANULAR_NODES = 100
@@ -54,18 +62,20 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
   let previousNodes: Array<Record<string, unknown>> = []
   let previousConnections: Array<Record<string, unknown>> = []
   let previousMindMapExtrasFp = ''
-  let diffFlushTimer: ReturnType<typeof setTimeout> | null = null
-  let diffFirstDirtyAt = 0
+  let diffDirty = false
+  let diffFlushScheduled = false
 
   /** Pre-send node clones for ``update_partial_filtered`` rollback. */
   const preSendNodeSnapshots = new Map<string, Record<string, unknown>>()
 
-  function clearPendingDiffTimer(): void {
-    if (diffFlushTimer !== null) {
-      clearTimeout(diffFlushTimer)
-      diffFlushTimer = null
-    }
-    diffFirstDirtyAt = 0
+  function clearPendingDiff(): void {
+    diffDirty = false
+    diffFlushScheduled = false
+  }
+
+  function absorbRemoteApplyLayout(): void {
+    options.absorbRemoteLayout?.()
+    syncPreviousFromCurrent()
   }
 
   function extrasFingerprintFromData(data: CanvasDiagramData | null | undefined): string {
@@ -111,6 +121,12 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
         inDelConns: deletedConnectionIds?.length ?? 0,
       })
     }
+    if (!options.applyingRemoteCollabPatch.value) {
+      runDiffAndSend()
+    }
+    const appliedNodeIds = (nodes ?? [])
+      .map((row) => (typeof row.id === 'string' ? row.id : ''))
+      .filter((id) => id.length > 0)
     options.applyingRemoteCollabPatch.value = true
     try {
       const ok = options.mergeGranularUpdate(
@@ -123,20 +139,21 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
         console.log('[CollabDebug] mergeGranularUpdate result', ok)
       }
       options.clearRedoStack()
+      absorbRemoteApplyLayout()
+      clearPendingDiff()
     } finally {
-      // mergeGranularUpdate mutates diagramStore.data.nodes in-place without
-      // replacing the data object reference. Keep local diff cursors in sync.
-      syncPreviousFromCurrent()
-      clearPendingDiffTimer()
+      // Vue computed layout runs after this WS apply mutates Pinia. Stay in
+      // apply until that flush write-back is absorbed — no wall-clock hold.
       nextTick(() => {
+        absorbRemoteApplyLayout()
         options.applyingRemoteCollabPatch.value = false
+        eventBus.emit('workshop:remote-patch-applied', { nodeIds: appliedNodeIds })
       })
     }
   }
 
   function runDiffAndSend(): void {
-    diffFlushTimer = null
-    diffFirstDirtyAt = 0
+    diffDirty = false
     const currentData = options.getDiagramData()
     if (!currentData?.nodes) {
       if (import.meta.env.DEV) {
@@ -157,9 +174,6 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
       if (import.meta.env.DEV) {
         console.log('[CollabDebug] runDiffAndSend short-circuit reason=applying-remote-patch')
       }
-      void nextTick(() => {
-        scheduleDiffFlush()
-      })
       return
     }
 
@@ -182,15 +196,23 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
       return
     }
 
-    const changedNodes = calculateDiff(previousNodes as Array<{ id: string }>, currentNodes)
-    const changedConnections = calculateDiff(
-      previousConnections as Array<{ id: string }>,
-      currentConnections
+    const changedNodesRaw = calculateDiff(previousNodes as Array<{ id: string }>, currentNodes)
+    const foreignLockedIds = asReadonlyIdSet(options.getForeignLockedNodeIds?.())
+    const changedNodes = applyForeignLockToOutboundNodes(
+      changedNodesRaw as Array<Record<string, unknown>>,
+      foreignLockedIds
+    )
+    const changedConnections = applyForeignLockToOutboundConnections(
+      calculateDiff(
+        previousConnections as Array<{ id: string }>,
+        currentConnections
+      ) as Array<Record<string, unknown>>,
+      foreignLockedIds
     )
 
     const currentNodeIds = new Set(currentNodes.map((n) => n.id))
     const deletedNodeIds = (previousNodes as Array<{ id: string }>)
-      .filter((n) => n.id && !currentNodeIds.has(n.id))
+      .filter((n) => n.id && !currentNodeIds.has(n.id) && !foreignLockedIds.has(n.id))
       .map((n) => n.id)
 
     const previousConnectionIds = new Set(
@@ -279,21 +301,25 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
     previousMindMapExtrasFp = currentExtrasFp
   }
 
-  function scheduleDiffFlush(): void {
-    const now = Date.now()
-    if (diffFirstDirtyAt === 0) {
-      diffFirstDirtyAt = now
-    }
-    if (diffFlushTimer !== null) {
-      clearTimeout(diffFlushTimer)
-    }
-    const elapsed = now - diffFirstDirtyAt
-    if (elapsed >= DIFF_MAX_WAIT_MS) {
-      runDiffAndSend()
+  function requestDiffSend(): void {
+    diffDirty = true
+    if (options.applyingRemoteCollabPatch.value) {
       return
     }
-    const wait = Math.min(DIFF_DEBOUNCE_MS, DIFF_MAX_WAIT_MS - elapsed)
-    diffFlushTimer = setTimeout(runDiffAndSend, wait)
+    if (diffFlushScheduled) {
+      return
+    }
+    diffFlushScheduled = true
+    void nextTick(() => {
+      diffFlushScheduled = false
+      if (!diffDirty || options.applyingRemoteCollabPatch.value) {
+        return
+      }
+      if (options.hasPendingOutbound?.()) {
+        return
+      }
+      runDiffAndSend()
+    })
   }
 
   watch(
@@ -318,13 +344,10 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
         previousNodes = JSON.parse(JSON.stringify(nodes))
         previousConnections = JSON.parse(JSON.stringify(connections))
         previousMindMapExtrasFp = extrasFingerprintFromData(newData)
-        void nextTick(() => {
-          scheduleDiffFlush()
-        })
         return
       }
 
-      scheduleDiffFlush()
+      requestDiffSend()
     },
     { deep: true }
   )
@@ -362,7 +385,7 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
     previousConnections = []
     previousMindMapExtrasFp = ''
     preSendNodeSnapshots.clear()
-    clearPendingDiffTimer()
+    clearPendingDiff()
   }
 
   eventBus.onWithOwner(
@@ -376,7 +399,15 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
   eventBus.onWithOwner(
     'workshop:collab-ack',
     (data) => {
-      acknowledgeNodes((data as { nodeIds?: unknown }).nodeIds)
+      const payload = data as { nodeIds?: unknown; flushDiff?: boolean }
+      acknowledgeNodes(payload.nodeIds)
+      if (payload.flushDiff === false) {
+        clearPendingDiff()
+        return
+      }
+      if (diffDirty) {
+        requestDiffSend()
+      }
     },
     'CanvasPage'
   )

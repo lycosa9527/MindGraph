@@ -1,4 +1,4 @@
-"""Collab workshop blocks canvas AI generation for all users."""
+"""Collab workshop blocks canvas AI for guests; the owner may still generate."""
 
 from __future__ import annotations
 
@@ -13,9 +13,9 @@ from tests.typing_helpers import as_user
 
 
 @pytest.mark.asyncio
-async def test_assert_collab_blocks_non_superadmin_during_workshop() -> None:
-    """Non-superadmin users are blocked during live workshop."""
-    user = as_user(SimpleNamespace(id=1, role="teacher"))
+async def test_assert_collab_blocks_guest_during_workshop() -> None:
+    """Non-owner collaborators are blocked during live workshop."""
+    user = as_user(SimpleNamespace(id=9, role="teacher"))
     with patch(
         "routers.api.diagram_generation._query_diagram_ownership",
         new=AsyncMock(return_value=("WS-CODE", 1)),
@@ -23,13 +23,24 @@ async def test_assert_collab_blocks_non_superadmin_during_workshop() -> None:
         with pytest.raises(HTTPException) as exc_info:
             await assert_collab_blocks_canvas_ai("diagram-1", user)
     assert exc_info.value.status_code == 403
-    assert "live collaboration" in str(exc_info.value.detail)
+    assert "diagram owner" in str(exc_info.value.detail)
+
+
+@pytest.mark.asyncio
+async def test_assert_collab_allows_owner_during_workshop() -> None:
+    """The diagram owner may use canvas AI during live workshop."""
+    user = as_user(SimpleNamespace(id=1, role="teacher"))
+    with patch(
+        "routers.api.diagram_generation._query_diagram_ownership",
+        new=AsyncMock(return_value=("WS-CODE", 1)),
+    ):
+        await assert_collab_blocks_canvas_ai("diagram-1", user)
 
 
 @pytest.mark.asyncio
 async def test_assert_collab_allows_superadmin_during_workshop() -> None:
     """Superadmin users may use canvas AI during live workshop."""
-    user = as_user(SimpleNamespace(id=1, role="superadmin"))
+    user = as_user(SimpleNamespace(id=9, role="superadmin"))
     with patch(
         "routers.api.diagram_generation._query_diagram_ownership",
         new=AsyncMock(return_value=("WS-CODE", 1)),

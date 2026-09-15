@@ -10,12 +10,14 @@
  */
 import { ref } from 'vue'
 
+import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
 import { registerLocaleLabelCacheInvalidator } from '@/i18n/localeLabelCache'
 import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import { useDiagramStore } from '@/stores/diagram'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { getAllTopicRootRelationshipLabels } from '@/stores/diagram/diagramDefaultLabels'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { authFetch } from '@/utils/api'
@@ -68,10 +70,13 @@ async function streamRelationshipLabels(
   onError?: (msg: string) => void,
   signal?: AbortSignal
 ): Promise<number> {
+  const diagramId = useSavedDiagramsStore().activeDiagramId
+  const body =
+    diagramId && payload.diagram_id == null ? { ...payload, diagram_id: diagramId } : payload
   const response = await authFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
     signal,
   })
   if (!response.ok) {
@@ -165,6 +170,12 @@ export function useConceptMapRelationship() {
     sourceId: string,
     targetId: string
   ): Promise<{ success: boolean; error?: string }> {
+    if (
+      isCollabGuestAiBlocked(diagramStore.collabSessionActive, diagramStore.collabIsDiagramOwner)
+    ) {
+      notify.warning(t('canvas.toolbar.collabAiBlocked'))
+      return { success: false, error: 'collab_guest' }
+    }
     if (generatingConnectionIds.value.has(connectionId)) {
       return { success: false, error: 'Already generating' }
     }
@@ -245,6 +256,12 @@ export function useConceptMapRelationship() {
 
   /** Fetch next batch when user presses = and we're at the end of current labels */
   async function fetchNextBatch(connectionId: string): Promise<boolean> {
+    if (
+      isCollabGuestAiBlocked(diagramStore.collabSessionActive, diagramStore.collabIsDiagramOwner)
+    ) {
+      notify.warning(t('canvas.toolbar.collabAiBlocked'))
+      return false
+    }
     if (loadingMoreConnectionIds.value.has(connectionId)) return false
 
     const conn = diagramStore.data?.connections?.find((c) => c.id === connectionId)

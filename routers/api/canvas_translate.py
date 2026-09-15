@@ -43,11 +43,11 @@ from services.infrastructure.http.error_handler import (
 from services.llm import llm_service
 from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, JSON_PARSE_ERRORS
-from utils.auth import get_current_user_or_api_key, is_superadmin
+from utils.auth import get_current_user_or_api_key
 from utils.auth.thinking_coin_config import EVENT_DIAGRAM_TRANSLATE, THINKING_COIN_MODE_BATCH_INNER
 from utils.db.session_open import actor_rls_session
 
-from .diagram_generation import _query_diagram_ownership
+from .diagram_generation import assert_collab_blocks_canvas_ai
 from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 
 logger = logging.getLogger(__name__)
@@ -312,14 +312,7 @@ async def _ownership_check_diagram_translate(
     current_user: Optional[User],
 ) -> None:
     """Ownership check diagram translate."""
-    if diagram_id and current_user:
-        workshop_code, diagram_user_id = await _query_diagram_ownership(diagram_id)
-        if workshop_code:
-            if not is_superadmin(current_user) and diagram_user_id != current_user.id:
-                raise HTTPException(
-                    status_code=403,
-                    detail=("Only the diagram owner can use AI generation during collaboration"),
-                )
+    await assert_collab_blocks_canvas_ai(diagram_id, current_user)
 
 
 @router.post("/canvas/translate_node_label")

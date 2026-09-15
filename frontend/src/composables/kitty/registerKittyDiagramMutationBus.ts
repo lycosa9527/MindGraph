@@ -1,6 +1,7 @@
 /**
  * Single FE diagram mutation apply path — inbound emits bus events only.
  */
+import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { applyVerifiedDiagramUpdate } from '@/composables/kitty/diagramEditApply'
 import { applyKittyDiagramUpdate } from '@/composables/kitty/kittyAgentActions'
@@ -19,7 +20,13 @@ import { useKittySessionStore } from '@/stores/kittySession'
 
 function collabBlocksKittyDiagramEdits(): boolean {
   const diagramStore = useDiagramStore()
-  return diagramStore.collabSessionActive === true && diagramStore.type !== 'concept_map'
+  if (diagramStore.type === 'concept_map') {
+    return false
+  }
+  return isCollabGuestAiBlocked(
+    diagramStore.collabSessionActive,
+    diagramStore.collabIsDiagramOwner
+  )
 }
 
 export type KittyDiagramMutationRequest = {
