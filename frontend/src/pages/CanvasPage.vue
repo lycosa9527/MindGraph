@@ -284,6 +284,7 @@ const {
   connectionStatus,
   reconnect,
   isDiagramOwner,
+  isCollabGuest,
   workshopRole,
   isViewer,
   sessionDiagramId,
@@ -291,8 +292,6 @@ const {
 } = useCanvasPageWorkshopCollab()
 
 useCanvasPageTabRecIndicator()
-
-const isCollabGuest = computed(() => workshopCode.value != null && !isDiagramOwner.value)
 
 const currentDiagramId = computed(() => savedDiagramsStore.activeDiagramId ?? null)
 
@@ -760,6 +759,7 @@ const kittyRemoteSyncEnabled = computed(
     featureFlagsStore.getFeatureKittyAgent() &&
     authStore.isAuthenticated &&
     !isViewer.value &&
+    !isCollabGuest.value &&
     kittyOwnerScope.value != null &&
     kittyOwnerScope.value !== ''
 )

@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Add-child under a live lock** — Text lock no longer drops the whole node or its layout. Peers can add a child from a locked parent; lock still blocks text, delete, and rewire-into. Granular JSONB writes use `CAST(:name AS jsonb)` so SQLAlchemy binds no longer fall back to a full spec UPDATE.
+- **Collab live-spec persist** — Full flush CAST-parses the dumped JSON into a JSONB object (the ORM path stored a string scalar, so later `jsonb_set` died with `cannot set path in scalar`). Partial flush unwraps leftover scalars. Guests keep host identity after the room code is cleared, so leave/autosave no longer PUT the host diagram (404).
+- **Collab leftovers** — Guests skip Kitty remote sync (owner-only WS). Slides-remote wake does not retry a handshake that never opened (403/1008). Remote granular merge holds outbound before apply so stale Pinia is not echoed as a full spec. Leave count logs after HDEL, not HLEN-before-remove.
 - **Collab apply path** — Remote patches flush FIFO (`client_op_id` / `update_ack`), then merge and absorb layout on `nextTick`. Nack still emits `workshop:collab-ack` (`flushDiff: false`) so the outbound queue does not stick. Time-based echo hold is gone.
 - **Lock chip** — “xxx is editing…” is `max-content` so English names are not clipped.
 
@@ -21,8 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- [`frontend/tests/useCollabGuestAiGate.spec.ts`](frontend/tests/useCollabGuestAiGate.spec.ts), [`frontend/tests/registerKittyDiagramMutationBusCollab.spec.ts`](frontend/tests/registerKittyDiagramMutationBusCollab.spec.ts), [`frontend/tests/collabRemoteEchoFilter.spec.ts`](frontend/tests/collabRemoteEchoFilter.spec.ts), [`frontend/tests/applyCollabEditorPresence.spec.ts`](frontend/tests/applyCollabEditorPresence.spec.ts), [`frontend/tests/mindMapRibbonChrome.spec.ts`](frontend/tests/mindMapRibbonChrome.spec.ts)
-- [`tests/test_generate_graph_stream_collab.py`](tests/test_generate_graph_stream_collab.py), [`tests/test_online_collab_partial_jsonb.py`](tests/test_online_collab_partial_jsonb.py), [`tests/test_workshop_collab_backend.py`](tests/test_workshop_collab_backend.py)
+- [`frontend/tests/useCollabGuestAiGate.spec.ts`](frontend/tests/useCollabGuestAiGate.spec.ts), [`frontend/tests/registerKittyDiagramMutationBusCollab.spec.ts`](frontend/tests/registerKittyDiagramMutationBusCollab.spec.ts), [`frontend/tests/collabRemoteEchoFilter.spec.ts`](frontend/tests/collabRemoteEchoFilter.spec.ts), [`frontend/tests/applyCollabEditorPresence.spec.ts`](frontend/tests/applyCollabEditorPresence.spec.ts), [`frontend/tests/mindMapRibbonChrome.spec.ts`](frontend/tests/mindMapRibbonChrome.spec.ts), [`frontend/tests/workshopOwnerIdentity.spec.ts`](frontend/tests/workshopOwnerIdentity.spec.ts), [`frontend/tests/createSlideRemoteWakeSocket.spec.ts`](frontend/tests/createSlideRemoteWakeSocket.spec.ts)
+- [`tests/test_generate_graph_stream_collab.py`](tests/test_generate_graph_stream_collab.py), [`tests/test_online_collab_partial_jsonb.py`](tests/test_online_collab_partial_jsonb.py), [`tests/test_workshop_collab_backend.py`](tests/test_workshop_collab_backend.py), [`tests/test_diagram_spec_coerce.py`](tests/test_diagram_spec_coerce.py)
 
 ## [5.180.81] - 2026-09-15
 

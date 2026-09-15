@@ -49,6 +49,7 @@ from services.redis.cache._redis_diagram_cache_helpers import (
     count_diagrams_from_db,
 )
 from services.diagram.source_channel import list_items_missing_source_channel_field
+from services.diagram.spec_coerce import coerce_diagram_spec
 from services.redis.cache.diagram_new_id import assign_id_for_new_diagram
 from services.redis.cache.diagram_save_errors import describe_diagram_db_error
 from services.redis.cache.redis_cache_stampede import with_stampede_lock
@@ -539,16 +540,7 @@ class RedisDiagramCache:
                 if not diagram:
                     return None
 
-                raw_spec = getattr(diagram, "spec", None)
-                if isinstance(raw_spec, dict):
-                    spec = raw_spec
-                elif isinstance(raw_spec, str):
-                    try:
-                        spec = json.loads(raw_spec)
-                    except (ValueError, TypeError):
-                        spec = {}
-                else:
-                    spec = {}
+                spec = coerce_diagram_spec(getattr(diagram, "spec", None))
 
                 created_at_val = getattr(diagram, "created_at", None)
                 updated_at_val = getattr(diagram, "updated_at", None)

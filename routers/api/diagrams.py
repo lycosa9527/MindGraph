@@ -62,6 +62,7 @@ from services.online_collab.spec.online_collab_live_spec import (
     spec_for_snapshot,
 )
 from services.diagram.semantic_spec_validation import ensure_valid_semantic_spec
+from services.diagram.spec_coerce import coerce_diagram_spec
 from services.diagram.source_channel import (
     parse_list_source_channel,
     resolve_diagram_source_channel,
@@ -165,16 +166,7 @@ async def _get_diagram_as_org_workshop_participant(
             d, _ = row
             if is_online_collab_expired(d.workshop_expires_at):
                 return None
-            raw_spec = getattr(d, "spec", None)
-            if isinstance(raw_spec, dict):
-                spec: dict = raw_spec
-            elif isinstance(raw_spec, str):
-                try:
-                    spec = json.loads(raw_spec)
-                except (ValueError, TypeError):
-                    spec = {}
-            else:
-                spec = {}
+            spec: dict = coerce_diagram_spec(getattr(d, "spec", None))
             created_at_val = getattr(d, "created_at", None)
             updated_at_val = getattr(d, "updated_at", None)
             return {

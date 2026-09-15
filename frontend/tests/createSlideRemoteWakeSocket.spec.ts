@@ -62,6 +62,19 @@ describe('createSlideRemoteWakeSocket', () => {
     stop()
   })
 
+  it('does not reconnect when the handshake never opens', () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('WebSocket', FakeWebSocket)
+    const stop = createSlideRemoteWakeSocket({
+      shouldReconnect: () => true,
+      onCommandPending: vi.fn(),
+    })
+    FakeWebSocket.instances[0]?.close()
+    vi.advanceTimersByTime(60_000)
+    expect(FakeWebSocket.instances).toHaveLength(1)
+    stop()
+  })
+
   it('does not schedule reconnect when shouldReconnect returns false', () => {
     vi.useFakeTimers()
     vi.stubGlobal('WebSocket', FakeWebSocket)
@@ -70,6 +83,7 @@ describe('createSlideRemoteWakeSocket', () => {
       shouldReconnect,
       onCommandPending: vi.fn(),
     })
+    FakeWebSocket.instances[0]?.onopen?.(new Event('open'))
     FakeWebSocket.instances[0]?.close()
     expect(shouldReconnect).toHaveBeenCalled()
     vi.advanceTimersByTime(60_000)
@@ -84,6 +98,7 @@ describe('createSlideRemoteWakeSocket', () => {
       shouldReconnect: () => true,
       onCommandPending: vi.fn(),
     })
+    FakeWebSocket.instances[0]?.onopen?.(new Event('open'))
     FakeWebSocket.instances[0]?.close()
     vi.advanceTimersByTime(1000)
     expect(FakeWebSocket.instances).toHaveLength(2)

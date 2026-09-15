@@ -129,9 +129,6 @@ const GUEST_FORCED_EXIT_KICK_REASONS = new Set([
 ])
 
 function workshopGuestEligibleForForcedExit(deps: WorkshopMessageDispatchDeps): boolean {
-  if (!deps.workshopCode.value) {
-    return false
-  }
   const oid = deps.diagramOwnerId.value
   if (oid == null) {
     return false

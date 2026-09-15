@@ -39,6 +39,7 @@ import type {
   WorkshopRole,
 } from './useWorkshopTypes'
 import { isWorkshopUpdate } from './useWorkshopTypes'
+import { workshopUserIsCollabGuest, workshopUserOwnsDiagram } from './workshopOwnerIdentity'
 
 export type {
   ActiveEditor,
@@ -217,15 +218,12 @@ export function useWorkshop(
     pendingResyncTimer = setTimeout(runStep, WORKSHOP_RESYNC_WATCHDOG.INITIAL_WAIT_MS)
   }
 
-  const isDiagramOwner = computed(() => {
-    if (!workshopCode.value) {
-      return true
-    }
-    if (diagramOwnerId.value == null) {
-      return false
-    }
-    return String(diagramOwnerId.value) === String(authStore.user?.id ?? '')
-  })
+  const isDiagramOwner = computed(() =>
+    workshopUserOwnsDiagram(diagramOwnerId.value, authStore.user?.id, Boolean(workshopCode.value))
+  )
+  const isCollabGuest = computed(() =>
+    workshopUserIsCollabGuest(diagramOwnerId.value, authStore.user?.id)
+  )
 
   const { getWebSocketConnectOptions, clearAuthRefreshReconnect, scheduleAuthRefreshReconnect } =
     useWorkshopJoin({
@@ -242,12 +240,9 @@ export function useWorkshop(
     getCurrentUserIdString: () => String(authStore.user?.id ?? ''),
   }
 
-  /** True when joined as a collaborator who is not the diagram owner (host). */
+  /** True when this canvas belongs to someone else (including after the room ends). */
   function collaborationParticipantIsGuest(): boolean {
-    if (!workshopCode.value || diagramOwnerId.value == null || authStore.user?.id == null) {
-      return false
-    }
-    return String(authStore.user.id) !== String(diagramOwnerId.value)
+    return workshopUserIsCollabGuest(diagramOwnerId.value, authStore.user?.id)
   }
 
   let guestForcedExitHandled = false
@@ -579,7 +574,6 @@ export function useWorkshop(
     activeEditors.value.clear()
     remoteSelectionsByUser.value.clear()
     remoteHostDisplayedLlmModel.value = null
-    diagramOwnerId.value = null
     sessionMutable.sessionDiagramId = null
     sessionDiagramIdRef.value = null
     serverBaselineReady.value = false
@@ -650,6 +644,10 @@ export function useWorkshop(
     diagramOwnerId.value = userId
   }
 
+  function clearDiagramOwnerId(): void {
+    diagramOwnerId.value = null
+  }
+
   function refreshActiveEditorsRef(): void {
     activeEditors.value = new Map(activeEditors.value)
   }
@@ -668,6 +666,7 @@ export function useWorkshop(
     roomIdleSecondsRemaining: computed(() => presence.roomIdleSecondsRemaining.value),
     workshopRole: computed(() => workshopRole.value),
     isDiagramOwner,
+    isCollabGuest,
     sessionDiagramId: computed(() => sessionDiagramIdRef.value),
     sessionDiagramTitle: computed(() => sessionDiagramTitleRef.value),
     connect,
@@ -679,6 +678,7 @@ export function useWorkshop(
     sendClaimNodeEdit,
     hasPendingOutbound: outboundQueue.hasPending,
     setOwnerIdOptimistic,
+    clearDiagramOwnerId,
     refreshActiveEditorsRef,
     watchCode,
   }

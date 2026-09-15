@@ -17,6 +17,7 @@ from typing import Any
 
 from models.domain.diagrams import Diagram
 from services.diagram.mindmap_identity import identity_aliases, migrate_mindmap_diagram_payload
+from services.diagram.spec_coerce import coerce_diagram_spec
 from services.diagram.mindmap_location import is_leftover_mindmap_branch_id
 from services.online_collab.spec.online_collab_live_spec_json import (
     json_get_live_spec,
@@ -27,25 +28,8 @@ logger = logging.getLogger(__name__)
 
 
 def _parse_db_spec(diagram: Diagram) -> dict[str, Any]:
-    """Parse db spec."""
-    raw = diagram.spec
-    if raw is None:
-        return {}
-    if isinstance(raw, dict):
-        return raw
-    if isinstance(raw, (bytes, bytearray)):
-        text = raw.decode("utf-8", errors="replace")
-    elif isinstance(raw, str):
-        text = raw
-    else:
-        return {}
-    if not text.strip():
-        return {}
-    try:
-        data = json.loads(text)
-        return data if isinstance(data, dict) else {}
-    except (json.JSONDecodeError, TypeError, ValueError):
-        return {}
+    """Parse db spec, including leftover JSON-string scalars."""
+    return coerce_diagram_spec(getattr(diagram, "spec", None))
 
 
 def _is_leftover_id(value: Any) -> bool:

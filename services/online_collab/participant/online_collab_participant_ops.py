@@ -139,7 +139,7 @@ async def remove_participant_from_online_collab(code: str, user_id: int) -> None
             diagram_id_val = raw_did if isinstance(raw_did, str) else raw_did.decode("utf-8")
             await schedule_live_spec_db_flush(code, diagram_id_val)
         await maybe_flush_live_spec_when_room_empty(redis, code)
-        logger.debug(
+        logger.info(
             "[OnlineCollabParticipantOps] Removed participant %s from workshop %s count_after=%s",
             user_id,
             code,

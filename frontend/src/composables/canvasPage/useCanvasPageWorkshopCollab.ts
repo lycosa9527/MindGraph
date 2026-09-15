@@ -53,6 +53,7 @@ export function useCanvasPageWorkshopCollab() {
     remoteSelectionsByUser,
     remoteHostDisplayedLlmModel,
     isDiagramOwner,
+    isCollabGuest,
     connectionStatus,
     reconnect,
     participantsWithNames,
@@ -63,6 +64,7 @@ export function useCanvasPageWorkshopCollab() {
     workshopRole,
     sessionDiagramId,
     setOwnerIdOptimistic,
+    clearDiagramOwnerId,
     refreshActiveEditorsRef,
     watchCode: watchWorkshopCode,
     sessionDiagramTitle,
@@ -210,7 +212,7 @@ export function useCanvasPageWorkshopCollab() {
     () => [workshopCode.value, isDiagramOwner.value] as const,
     ([code, owner]) => {
       diagramStore.setCollabSessionActive(Boolean(code))
-      diagramStore.setCollabIsDiagramOwner(!code || owner)
+      diagramStore.setCollabIsDiagramOwner(owner)
       if (!code) {
         diagramStore.setCollabForeignLockedNodeIds([])
         useCanvasNodeIndicatorsStore().clearCollabPresence()
@@ -224,6 +226,8 @@ export function useCanvasPageWorkshopCollab() {
   function resetPreviousDiagramTracking(): void {
     collabBus.resetBusTracking()
     collabDiffApi.resetDiffTracking()
+    clearDiagramOwnerId()
+    diagramStore.setCollabIsDiagramOwner(true)
   }
 
   /**
@@ -275,6 +279,7 @@ export function useCanvasPageWorkshopCollab() {
     remoteSelectionsByUser,
     remoteHostDisplayedLlmModel,
     isDiagramOwner,
+    isCollabGuest,
     workshopRole,
     isViewer,
     connectionStatus,

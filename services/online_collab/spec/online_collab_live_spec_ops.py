@@ -485,6 +485,8 @@ async def flush_live_spec_to_db_in_session(
         updated_id = await _partial_jsonb_flush(db, diagram_id, snapshot, changed_keys)
     else:
         try:
+            # Offload large dumps; CAST(:p_spec AS jsonb) parses text into an
+            # object. Binding a Python str through ORM JSONB stored a scalar.
             serialised_spec = await dumps_maybe_offload(snapshot)
         except (TypeError, ValueError):
             logger.warning("[LiveSpec] flush: JSON serialize failed diagram=%s", diagram_id)

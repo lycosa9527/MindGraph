@@ -35,6 +35,7 @@ export function createSlideRemoteWakeSocket(options: SlideRemoteWakeSocketOption
   let socket: WebSocket | null = null
   let retryTimer: ReturnType<typeof setTimeout> | null = null
   let retryCount = 0
+  let reachedOpen = false
 
   function clearRetryTimer(): void {
     if (retryTimer != null) {
@@ -105,6 +106,7 @@ export function createSlideRemoteWakeSocket(options: SlideRemoteWakeSocketOption
     detachSocket()
     socket = new WebSocket(buildSlideRemoteWakeWsUrl())
     socket.onopen = () => {
+      reachedOpen = true
       retryCount = 0
       options.onOpen?.()
     }
@@ -120,6 +122,11 @@ export function createSlideRemoteWakeSocket(options: SlideRemoteWakeSocketOption
       }
       socket = null
       options.onClose?.()
+      // HTTP 403 / 1008 before accept never fires onopen — do not retry forever.
+      if (!reachedOpen) {
+        return
+      }
+      reachedOpen = false
       scheduleReconnect()
     }
   }

@@ -350,7 +350,6 @@ async def canvas_collab_websocket(
                     record_ws_viewer_connection_delta(-1)
                 else:
                     record_ws_editor_connection_delta(-1)
-                await get_online_collab_manager().on_leave(code, user.id)
                 await finalize_canvas_collab_disconnect(
                     code=code,
                     user=user,

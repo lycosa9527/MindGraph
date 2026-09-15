@@ -121,12 +121,10 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
         inDelConns: deletedConnectionIds?.length ?? 0,
       })
     }
-    if (!options.applyingRemoteCollabPatch.value) {
-      runDiffAndSend()
-    }
     const appliedNodeIds = (nodes ?? [])
       .map((row) => (typeof row.id === 'string' ? row.id : ''))
       .filter((id) => id.length > 0)
+    // Hold outbound before merge so we never echo stale Pinia as a full spec.
     options.applyingRemoteCollabPatch.value = true
     try {
       const ok = options.mergeGranularUpdate(

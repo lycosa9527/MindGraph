@@ -380,31 +380,6 @@ class OnlineCollabManager:
         name = (meta.get("owner_name") or "").strip()
         return name or None
 
-    async def on_leave(self, code: str, user_id: int) -> None:
-        """
-        Called when a user disconnects from WebSocket.
-
-        Participant removal and touch_leave are handled by
-        remove_participant_from_online_collab (workshop_participant_ops). This method
-        only logs the event with the post-removal count.
-        """
-        redis = get_async_redis()
-        count_after: Optional[int] = None
-        if redis:
-            try:
-                count_after = await cast(
-                    Awaitable[Any],
-                    redis.hlen(participants_key(code)),
-                )
-            except (RedisError, OSError, TypeError, RuntimeError):
-                pass
-        logger.info(
-            "[OnlineCollabMgr] participant_left code=%s user_id=%s count_after=%s",
-            code,
-            user_id,
-            count_after,
-        )
-
     async def touch_leave(self, code: str) -> None:
         """
         Update idle_scores after a participant departs.

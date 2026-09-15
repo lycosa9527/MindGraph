@@ -26,9 +26,11 @@ Proprietary License
 from __future__ import annotations
 
 from sqlalchemy import bindparam, select
-from sqlalchemy import update as sa_update
 
 from models.domain.diagrams import Diagram
+from services.online_collab.spec.online_collab_partial_jsonb import (
+    build_full_jsonb_flush_statement,
+)
 
 STMT_DIAGRAM_BY_ID = select(Diagram).where(
     Diagram.id == bindparam("p_id"),
@@ -40,12 +42,5 @@ STMT_DIAGRAM_SPEC_BY_ID = select(Diagram.id, Diagram.spec).where(
     ~Diagram.is_deleted,
 )
 
-STMT_DIAGRAM_UPDATE_SPEC = (
-    sa_update(Diagram)
-    .where(
-        Diagram.id == bindparam("p_id"),
-        ~Diagram.is_deleted,
-    )
-    .values(spec=bindparam("p_spec"))
-    .returning(Diagram.id)
-)
+# CAST so a dumped JSON string becomes a JSONB object, not a string scalar.
+STMT_DIAGRAM_UPDATE_SPEC = build_full_jsonb_flush_statement()
