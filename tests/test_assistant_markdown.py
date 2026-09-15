@@ -52,3 +52,11 @@ def test_strip_diagram_id_html_comments() -> None:
     assert f"![mg:{_UUID}]" in stripped
     assert answer_has_library_diagram_uuid(_DIFY_ANSWER) is True
     assert answer_contains_diagram_preview(_DIFY_ANSWER) is True
+
+
+def test_strip_diagram_id_html_comments_hides_reply_kind() -> None:
+    """DingTalk outbound markdown must hide teaching-instruction markers."""
+    text = f"{_DIFY_ANSWER}\n[mg-reply-kind:teaching_instruction]"
+    stripped = strip_diagram_id_html_comments(text)
+    assert "mg-reply-kind" not in stripped
+    assert f"![mg:{_UUID}]" in stripped

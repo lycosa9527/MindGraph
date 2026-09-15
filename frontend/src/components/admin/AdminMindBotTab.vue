@@ -6,11 +6,8 @@ import { computed, onMounted, ref } from 'vue'
 
 import { ElTable } from 'element-plus'
 
-import { Settings2 } from '@lucide/vue'
-
 import AdminMindBotConfigDialog from '@/components/admin/AdminMindBotConfigDialog.vue'
 import type { MindbotConfigRow, OrgOption } from '@/components/admin/mindbotConfigTypes'
-import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { MINDBOT_BOT_CAP, useAdminMindBotConfig } from '@/composables/admin/useAdminMindBotConfig'
@@ -483,17 +480,29 @@ defineExpose({
       </el-card>
     </template>
 
-    <SwissGlassDialog
+    <el-dialog
       v-model="moveDialogVisible"
-      :ribbon="t('swissGlass.hero.adminInline.ribbon')"
-      :title="t('swissGlass.hero.adminInline.title')"
-      :line1="t('swissGlass.hero.adminInline.line1')"
-      :line2="t('admin.mindbot.moveTitle')"
-      :icon="Settings2"
+      class="mindbot-settings-dialog mindbot-swiss-dialog mindbot-move-dialog"
       width="min(480px, 94vw)"
-      dialog-class="mindbot-move-dialog"
-      @close="onMoveDialogClosed"
+      destroy-on-close
+      append-to-body
+      align-center
+      modal-class="mindbot-swiss-backdrop"
+      :show-close="true"
+      @closed="onMoveDialogClosed"
     >
+      <template #header>
+        <div class="mindbot-swiss-header mindbot-config-header">
+          <span class="mindbot-swiss-header__glyph">◇</span>
+          <span class="mindbot-swiss-header__title">{{ t('admin.mindbot.move') }}</span>
+          <span
+            class="mindbot-swiss-header__divider"
+            aria-hidden="true"
+            >·</span
+          >
+          <span class="mindbot-swiss-header__note">{{ t('admin.mindbot.moveTitle') }}</span>
+        </div>
+      </template>
       <div class="mindbot-config-body">
         <div
           class="mindbot-config-scanlines"
@@ -525,25 +534,25 @@ defineExpose({
         </div>
       </div>
       <template #footer>
-        <div class="swiss-glass-footer">
-          <button
-            type="button"
-            class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+        <div class="mindbot-dialog-footer flex w-full justify-end gap-2">
+          <el-button
+            class="mindbot-pill mindbot-pill--footer-cancel"
             @click="moveDialogVisible = false"
           >
             {{ t('common.cancel') }}
-          </button>
-          <button
-            type="button"
-            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
-            :disabled="moveSubmitting || moveTargetOrgId == null || moveTargetOptions.length === 0"
+          </el-button>
+          <el-button
+            type="primary"
+            class="mindbot-pill mindbot-pill--footer-save"
+            :loading="moveSubmitting"
+            :disabled="moveTargetOrgId == null || moveTargetOptions.length === 0"
             @click="confirmMoveBot"
           >
             {{ t('admin.mindbot.move') }}
-          </button>
+          </el-button>
         </div>
       </template>
-    </SwissGlassDialog>
+    </el-dialog>
 
     <AdminMindBotConfigDialog
       v-if="isAdmin"
@@ -572,6 +581,10 @@ defineExpose({
     />
   </div>
 </template>
+
+<style>
+@import '@/styles/admin-mindbot-swiss-dialog-chrome.css';
+</style>
 
 <style scoped>
 .mindbot-pill.el-button {

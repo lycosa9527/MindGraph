@@ -242,6 +242,7 @@ const trendOrg = ref<{
   expires_at?: string | null
   school_tier?: string | null
   extra_member_seats?: number
+  teaching_design_template_key?: string | null
   dify_api_base_url?: string | null
   dify_api_key_masked?: string | null
   dify_api_base_url_2?: string | null
@@ -300,6 +301,8 @@ function openTrendModal(
     expires_at: row.expires_at as string | null | undefined,
     school_tier: row.school_tier as string | null | undefined,
     extra_member_seats: (row.extra_member_seats as number | undefined) ?? 0,
+    teaching_design_template_key:
+      (row.teaching_design_template_key as string | null | undefined) ?? null,
     dify_api_base_url: row.dify_api_base_url as string | null | undefined,
     dify_api_key_masked: row.dify_api_key_masked as string | null | undefined,
     dify_api_base_url_2: row.dify_api_base_url_2 as string | null | undefined,
@@ -341,6 +344,8 @@ function syncTrendOrgFromSchools() {
       expires_at: updated.expires_at as string | null | undefined,
       school_tier: updated.school_tier as string | null | undefined,
       extra_member_seats: (updated.extra_member_seats as number | undefined) ?? 0,
+      teaching_design_template_key:
+        (updated.teaching_design_template_key as string | null | undefined) ?? null,
       dify_api_base_url: updated.dify_api_base_url as string | null | undefined,
       dify_api_key_masked: updated.dify_api_key_masked as string | null | undefined,
       dify_api_base_url_2: updated.dify_api_base_url_2 as string | null | undefined,
@@ -702,6 +707,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
       :org-expires-at="trendOrg?.expires_at"
       :org-school-tier="trendOrg?.school_tier"
       :org-extra-member-seats="trendOrg?.extra_member_seats ?? 0"
+      :org-teaching-design-template-key="trendOrg?.teaching_design_template_key"
       :org-dify-api-base-url="trendOrg?.dify_api_base_url"
       :org-dify-api-key-masked="trendOrg?.dify_api_key_masked"
       :org-dify-api-base-url2="trendOrg?.dify_api_base_url_2"

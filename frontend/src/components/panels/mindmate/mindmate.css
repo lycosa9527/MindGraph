@@ -935,6 +935,119 @@
   font-style: italic;
 }
 
+@property --mm-stone-ring-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* Swiss stone pill — Word export (native, so the travel ring is not an ElButton spinner) */
+.mindmate-stone-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 0.875rem;
+  border: 1px solid #d6d3d1;
+  border-radius: 9999px;
+  background: #fafaf9;
+  color: #1c1917;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  overflow: visible;
+}
+
+.mindmate-stone-btn:hover:not(:disabled) {
+  background: #f5f5f4;
+  border-color: #a8a29e;
+}
+
+.mindmate-stone-btn:focus-visible {
+  outline: 2px solid #a8a29e;
+  outline-offset: 2px;
+}
+
+.mindmate-stone-btn.is-busy {
+  cursor: wait;
+  overflow: hidden;
+  background: #e7e5e4;
+  border-color: transparent;
+}
+
+.mindmate-stone-btn.is-busy .mindmate-stone-btn__label {
+  position: relative;
+  z-index: 1;
+}
+
+.mindmate-stone-btn.is-busy::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  padding: 2px;
+  --mm-stone-ring-angle: 0deg;
+  pointer-events: none;
+  z-index: 0;
+  background: conic-gradient(
+    from var(--mm-stone-ring-angle) at 50% 50%,
+    rgb(231 229 228 / 0.25) 0deg,
+    rgb(245 245 244 / 0.18) 50deg,
+    #d6d3d1 130deg,
+    #fafaf9 180deg,
+    #a8a29e 230deg,
+    rgb(245 245 244 / 0.18) 310deg,
+    rgb(231 229 228 / 0.25) 360deg
+  );
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  animation: mm-stone-ring-spin 2.5s linear infinite;
+}
+
+@keyframes mm-stone-ring-spin {
+  to {
+    --mm-stone-ring-angle: 360deg;
+  }
+}
+
+.dark .mindmate-stone-btn {
+  background: #292524;
+  border-color: #57534e;
+  color: #fafaf9;
+}
+
+.dark .mindmate-stone-btn:hover:not(:disabled) {
+  background: #44403c;
+  border-color: #78716c;
+}
+
+.dark .mindmate-stone-btn.is-busy {
+  background: #1c1917;
+  border-color: transparent;
+}
+
+.dark .mindmate-stone-btn.is-busy::before {
+  background: conic-gradient(
+    from var(--mm-stone-ring-angle) at 50% 50%,
+    rgb(68 64 60 / 0.3) 0deg,
+    rgb(87 83 78 / 0.2) 50deg,
+    #a8a29e 130deg,
+    #f5f5f4 180deg,
+    #78716c 230deg,
+    rgb(87 83 78 / 0.2) 310deg,
+    rgb(68 64 60 / 0.3) 360deg
+  );
+}
+
 /* Canvas entry — Swiss stone pill in message action bar */
 .mindmate-canvas-btn.el-button {
   --el-button-bg-color: #fafaf9;

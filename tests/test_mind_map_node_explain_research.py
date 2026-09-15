@@ -104,6 +104,7 @@ async def test_meaning_path_uses_research_tools() -> None:
         [
             {"type": "status", "phase": "searching", "query": "光合作用"},
             {"type": "token", "content": "叶片把光变成糖。"},
+            {"type": "usage", "usage": {"input_tokens": 5, "output_tokens": 2, "total_tokens": 7}},
         ],
         image_events=[{"type": "image", "images": [{"url": "https://example.com/leaf.jpg"}]}],
     )
@@ -120,6 +121,9 @@ async def test_meaning_path_uses_research_tools() -> None:
     assert "status" in kinds
     assert "token" in kinds
     assert "image" in kinds
+    assert "usage" in kinds
+    usage = next(event for event in events if event["event"] == "usage")
+    assert usage["usage"]["total_tokens"] == 7
     assert events[-1] == {"event": "end", "facet": "meaning"}
 
 
@@ -185,6 +189,25 @@ async def test_merge_yields_write_before_slow_images() -> None:
     assert events[0] == {"type": "token", "content": "gloss"}
     assert events[1]["type"] == "status"
     assert events[2]["type"] == "image"
+
+
+@pytest.mark.asyncio
+async def test_merge_keeps_usage_from_both_lanes() -> None:
+    """Write and image usage events are tagged so the router can log token counts."""
+
+    async def _write() -> AsyncGenerator[Dict[str, Any], None]:
+        yield {"type": "token", "content": "gloss"}
+        yield {"type": "usage", "usage": {"input_tokens": 8, "output_tokens": 2, "total_tokens": 10}}
+
+    async def _images() -> AsyncGenerator[Dict[str, Any], None]:
+        yield {"type": "usage", "usage": {"input_tokens": 3, "output_tokens": 1, "total_tokens": 4}}
+
+    events = [event async for event in merge_research_streams(_write(), _images())]
+    usage = [event for event in events if event.get("type") == "usage"]
+    lanes = {event.get("lane") for event in usage}
+    assert lanes == {"write", "image"}
+    assert any(event["usage"]["total_tokens"] == 10 for event in usage)
+    assert any(event["usage"]["total_tokens"] == 4 for event in usage)
 
 
 @pytest.mark.asyncio

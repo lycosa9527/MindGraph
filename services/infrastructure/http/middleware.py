@@ -74,6 +74,9 @@ WORKSHEET_DOCX_MAX_BODY_SIZE = 22 * 1024 * 1024
 DOC_SUMMARY_UPLOAD_MAX_BODY_SIZE = 22 * 1024 * 1024
 # Course Builder assets: video/media 100MB + multipart overhead (bytes go API → COS)
 TRAINING_ASSET_MAX_BODY_SIZE = 105 * 1024 * 1024
+# MindMate / Dify chat upload: Dify video cap 100MB + multipart overhead
+DIFY_FILES_UPLOAD_MAX_BODY_SIZE = 105 * 1024 * 1024
+DIFY_FILES_UPLOAD_PATH = "/api/dify/files/upload"
 
 
 def _is_document_upload_path(path: str) -> bool:
@@ -94,6 +97,8 @@ def max_request_body_size_for_path(path: str) -> int:
         return WORKSHEET_DOCX_MAX_BODY_SIZE
     if path == "/api/training/assets/complete":
         return TRAINING_ASSET_MAX_BODY_SIZE
+    if path == DIFY_FILES_UPLOAD_PATH:
+        return DIFY_FILES_UPLOAD_MAX_BODY_SIZE
     if _is_document_upload_path(path):
         return DOC_SUMMARY_UPLOAD_MAX_BODY_SIZE
     showcase_paths = (

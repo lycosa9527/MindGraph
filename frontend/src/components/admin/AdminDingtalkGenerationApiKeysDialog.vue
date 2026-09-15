@@ -5,15 +5,11 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { ElTable, ElTableColumn } from 'element-plus'
+import { ElMessageBox, ElTable, ElTableColumn } from 'element-plus'
 
 import { DocumentCopy, Plus } from '@element-plus/icons-vue'
 
-import { KeyRound } from '@lucide/vue'
-
-import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { useAdminApiKeys, useCreateAdminApiKey, useDeleteAdminApiKey } from '@/composables/queries'
 import '@/styles/admin-mindbot-swiss-api-keys.css'
 import '@/styles/admin-mindbot-swiss-dialog-chrome.css'
@@ -129,13 +125,17 @@ async function submitCreate(): Promise<void> {
 
 async function confirmDelete(row: AdminApiKeyRow): Promise<void> {
   try {
-    await swissGlassConfirm(
+    await ElMessageBox.confirm(
       t('admin.apiKeysDeleteConfirm', { name: row.name }),
       t('common.warning'),
       {
         type: 'warning',
         confirmButtonText: t('common.confirm'),
         cancelButtonText: t('common.cancel'),
+        customClass: 'mindbot-swiss-message-box mindbot-swiss-msg--delete',
+        modalClass: 'mindbot-swiss-backdrop',
+        cancelButtonClass: 'mindbot-pill mindbot-pill--footer-cancel',
+        showClose: true,
       }
     )
   } catch {
@@ -181,16 +181,28 @@ function cancelCreate(): void {
 </script>
 
 <template>
-  <SwissGlassDialog
+  <el-dialog
     v-model="modelValue"
-    :ribbon="t('swissGlass.hero.adminApiKeys.ribbon')"
-    :title="t('swissGlass.hero.adminApiKeys.title')"
-    :line1="t('swissGlass.hero.adminApiKeys.line1')"
-    :line2="t('admin.dingtalkApiKeysDialogNote')"
-    :icon="KeyRound"
+    class="mindbot-settings-dialog mindbot-swiss-dialog api-keys-main-dialog"
     width="min(920px, 92vw)"
-    dialog-class="api-keys-main-dialog"
+    align-center
+    destroy-on-close
+    append-to-body
+    :show-close="true"
+    modal-class="mindbot-swiss-backdrop"
   >
+    <template #header>
+      <div class="mindbot-swiss-header mindbot-config-header">
+        <span class="mindbot-swiss-header__glyph">◇</span>
+        <span class="mindbot-swiss-header__title">{{ t('admin.dingtalkApiKeysDialogTitle') }}</span>
+        <span
+          class="mindbot-swiss-header__divider"
+          aria-hidden="true"
+          >·</span
+        >
+        <span class="mindbot-swiss-header__note">{{ t('admin.dingtalkApiKeysDialogNote') }}</span>
+      </div>
+    </template>
     <div class="mindbot-config-body">
       <div
         class="mindbot-config-scanlines"
@@ -352,17 +364,23 @@ function cancelCreate(): void {
     </div>
 
     <!-- Create -->
-    <SwissGlassDialog
+    <el-dialog
       v-model="createOpen"
-      :ribbon="t('swissGlass.hero.adminApiKeys.ribbon')"
-      :title="t('swissGlass.hero.adminApiKeys.title')"
-      :line1="t('swissGlass.hero.adminApiKeys.line1')"
-      :line2="t('admin.createApiKey')"
-      :icon="KeyRound"
+      class="mindbot-settings-dialog mindbot-swiss-dialog mindbot-api-key-nested"
       width="min(480px, 94vw)"
-      dialog-class="mindbot-api-key-nested"
+      align-center
+      append-to-body
+      destroy-on-close
+      :show-close="true"
+      modal-class="mindbot-swiss-backdrop"
       @close="resetCreateForm"
     >
+      <template #header>
+        <div class="mindbot-swiss-header mindbot-config-header">
+          <span class="mindbot-swiss-header__glyph">◇</span>
+          <span class="mindbot-swiss-header__title">{{ t('admin.createApiKey') }}</span>
+        </div>
+      </template>
       <div class="mindbot-config-body">
         <div
           class="mindbot-config-scanlines"
@@ -408,38 +426,47 @@ function cancelCreate(): void {
         </div>
       </div>
       <template #footer>
-        <div class="swiss-glass-footer">
-          <button
-            type="button"
-            class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
-            @click="cancelCreate"
-          >
-            {{ t('common.cancel') }}
-          </button>
-          <button
-            type="button"
-            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
-            :disabled="createSubmitting"
-            @click="submitCreate"
-          >
-            {{ t('admin.createApiKey') }}
-          </button>
+        <div class="mindbot-dialog-footer w-full">
+          <div class="api-keys-nested-footer">
+            <el-button
+              class="mindbot-pill mindbot-pill--footer-cancel"
+              @click="cancelCreate"
+            >
+              {{ t('common.cancel') }}
+            </el-button>
+            <el-button
+              type="primary"
+              class="mindbot-pill mindbot-pill--footer-save"
+              :loading="createSubmitting"
+              @click="submitCreate"
+            >
+              {{ t('admin.createApiKey') }}
+            </el-button>
+          </div>
         </div>
       </template>
-    </SwissGlassDialog>
+    </el-dialog>
 
     <!-- New key one-shot -->
-    <SwissGlassDialog
+    <el-dialog
       v-model="newKeyDialogOpen"
-      :ribbon="t('swissGlass.hero.adminApiKeys.ribbon')"
-      :title="t('swissGlass.hero.adminApiKeys.title')"
-      :line1="t('swissGlass.hero.adminApiKeys.line1')"
-      :line2="t('admin.apiKeysCreatedSecretTitle')"
-      :icon="KeyRound"
+      class="mindbot-settings-dialog mindbot-swiss-dialog mindbot-api-key-nested--wide"
       width="min(520px, 94vw)"
-      dialog-class="mindbot-api-key-nested--wide"
-      @close="onNewKeyDialogClosed"
+      align-center
+      append-to-body
+      destroy-on-close
+      :show-close="true"
+      modal-class="mindbot-swiss-backdrop"
+      @closed="onNewKeyDialogClosed"
     >
+      <template #header>
+        <div class="mindbot-swiss-header mindbot-config-header">
+          <span class="mindbot-swiss-header__glyph">◇</span>
+          <span class="mindbot-swiss-header__title">{{
+            t('admin.apiKeysCreatedSecretTitle')
+          }}</span>
+        </div>
+      </template>
       <div class="mindbot-config-body">
         <div
           class="mindbot-config-scanlines"
@@ -462,25 +489,28 @@ function cancelCreate(): void {
         </div>
       </div>
       <template #footer>
-        <div class="swiss-glass-footer">
-          <button
-            v-if="newKeyPlaintext"
-            type="button"
-            class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
-            @click="() => newKeyPlaintext && void copyToClipboard(newKeyPlaintext)"
-          >
-            <el-icon class="mr-1"><DocumentCopy /></el-icon>
-            {{ t('admin.apiKeyCopy') }}
-          </button>
-          <button
-            type="button"
-            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
-            @click="newKeyDialogOpen = false"
-          >
-            {{ t('common.close') }}
-          </button>
+        <div class="mindbot-dialog-footer w-full">
+          <div class="api-keys-nested-footer">
+            <el-button
+              v-if="newKeyPlaintext"
+              class="mindbot-pill mindbot-pill--copy"
+              :icon="DocumentCopy"
+              type="primary"
+              plain
+              @click="() => newKeyPlaintext && void copyToClipboard(newKeyPlaintext)"
+            >
+              {{ t('admin.apiKeyCopy') }}
+            </el-button>
+            <el-button
+              type="primary"
+              class="mindbot-pill mindbot-pill--footer-save"
+              @click="newKeyDialogOpen = false"
+            >
+              {{ t('common.close') }}
+            </el-button>
+          </div>
         </div>
       </template>
-    </SwissGlassDialog>
-  </SwissGlassDialog>
+    </el-dialog>
+  </el-dialog>
 </template>

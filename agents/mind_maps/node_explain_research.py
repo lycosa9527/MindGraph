@@ -19,7 +19,7 @@ _DONE = object()
 
 def _keep_image_event(event: Dict[str, Any]) -> bool:
     kind = event.get("type")
-    if kind == "image":
+    if kind in {"image", "usage"}:
         return True
     return kind == "status" and event.get("phase") == "images"
 
@@ -99,6 +99,11 @@ async def merge_research_streams(
                     )
                 else:
                     logger.warning("[NodeExplain] image research failed")
+                continue
+            if isinstance(payload, dict) and payload.get("type") == "usage":
+                tagged = dict(payload)
+                tagged["lane"] = "write" if is_write else "image"
+                yield tagged
                 continue
             if not is_write and isinstance(payload, dict) and payload.get("type") == "image":
                 clipped, image_kept = clip_research_images(payload, image_kept)

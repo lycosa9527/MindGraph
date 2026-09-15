@@ -92,6 +92,19 @@ describe('mindMateActiveThread helpers', () => {
     expect(mapped[1].feedback).toBe('like')
   })
 
+  it('mapDifyMessagesToMindMate flags teaching-instruction markers', () => {
+    const mapped = mapDifyMessagesToMindMate([
+      {
+        id: 'dify-2',
+        query: '请帮我生成《呼吸作用》的教学设计。',
+        answer: '课例正文\n[mg-reply-kind:teaching_instruction]',
+        created_at: 100,
+      },
+    ])
+    expect(mapped[1].exportWordTemplate).toBe(true)
+    expect(mapped[1].replyKind).toBe('teaching_instruction')
+  })
+
   it('threadsContentEqual compares role and content only', () => {
     const a: MindMateMessage[] = [
       { id: 'a', role: 'user', content: 'q', timestamp: 1 },

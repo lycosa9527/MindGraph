@@ -1,6 +1,7 @@
 /** Parse diagram library metadata embedded in MindMate assistant markdown. */
 
 import { rewriteMindmateTempImageUrls } from '@/utils/mindmateTempImageUrl'
+import { stripTeachingDesignFlags } from '@/utils/mindmateTeachingDesignFlag'
 
 export { rewriteMindmateTempImageUrls } from '@/utils/mindmateTempImageUrl'
 
@@ -44,7 +45,8 @@ export function parseMindmateDiagramLibraryId(content: string): string | null {
 
 /** Remove embedded library-id HTML comments before rendering assistant markdown. */
 export function stripMindmateDiagramIdComments(content: string): string {
-  return (content || '').replace(DIAGRAM_ID_COMMENT_STRIP_RE, '').trimEnd()
+  const withoutDiagram = (content || '').replace(DIAGRAM_ID_COMMENT_STRIP_RE, '').trimEnd()
+  return stripTeachingDesignFlags(withoutDiagram)
 }
 
 /** First markdown image src in assistant content (same-origin rewrite applied when pageHost set). */

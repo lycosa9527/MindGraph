@@ -18,7 +18,7 @@ import { useMindMate } from '@/composables/mindmate/useMindMate'
 import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
-import { useAuthStore, useMindMateStore } from '@/stores'
+import { useAuthStore, useMindMateStore, useTeachingDesignExportStore } from '@/stores'
 import { useUIStore } from '@/stores/ui'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 import { copyMindmateAssistantMessage } from '@/utils/copyMindmateMessage'
@@ -87,6 +87,8 @@ const mindMateStore = useMindMateStore()
 const uiStore = useUIStore()
 const featureFlagsStore = useFeatureFlagsStore()
 const { loadPhase: mindMateLoadPhase } = storeToRefs(mindMateStore)
+const teachingDesignExport = useTeachingDesignExportStore()
+const { exportingMessageId: exportingWordTemplateId } = storeToRefs(teachingDesignExport)
 
 const showMindmateCollab = computed(() => featureFlagsStore.getFeatureMindmateCollab())
 
@@ -507,6 +509,23 @@ function openShareModal() {
   showShareModal.value = true
 }
 
+function previousUserPrompt(messageId: string): string | undefined {
+  const msgIndex = mindMate.messages.value.findIndex((item) => item.id === messageId)
+  for (let index = msgIndex - 1; index >= 0; index -= 1) {
+    if (mindMate.messages.value[index].role === 'user') {
+      return mindMate.messages.value[index].content
+    }
+  }
+  return undefined
+}
+
+function exportWordTemplate(message: MindMateMessage) {
+  void teachingDesignExport.exportAssistantMessage(
+    message,
+    previousUserPrompt(message.id)
+  )
+}
+
 // Start editing message
 function startEdit(message: { id: string; content: string }) {
   editingMessageId.value = message.id
@@ -674,6 +693,7 @@ function isLastAssistantMessage(messageId: string): boolean {
           :hovered-message-id="hoveredMessageId"
           :is-last-assistant-message="isLastAssistantMessage"
           :has-previous-user-message="hasPreviousUserMessage"
+          :exporting-word-template-id="exportingWordTemplateId"
           @edit="startEdit"
           @cancel-edit="cancelEdit"
           @save-edit="saveEdit"
@@ -681,6 +701,7 @@ function isLastAssistantMessage(messageId: string): boolean {
           @regenerate="regenerateMessage"
           @feedback="handleFeedback"
           @share="openShareModal"
+          @export-word-template="exportWordTemplate"
           @message-hover="hoveredMessageId = $event"
         />
 

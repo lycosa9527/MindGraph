@@ -5,6 +5,10 @@
 import { computed, ref, watch } from 'vue'
 
 import AdminSchoolOauthSettings from '@/components/admin/AdminSchoolOauthSettings.vue'
+import {
+  fetchTeachingDesignTemplateOptions,
+  type TeachingDesignTemplateOption,
+} from '@/composables/admin/teachingDesignTemplateApi'
 import { useLanguage } from '@/composables'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import {
@@ -21,6 +25,9 @@ const displayNameEdit = defineModel<string>('displayNameEdit', { required: true 
 const expiresAtEdit = defineModel<string | null>('expiresAtEdit', { required: true })
 const schoolTierEdit = defineModel<SchoolTier>('schoolTierEdit', { required: true })
 const extraMemberSeatsEdit = defineModel<number>('extraMemberSeatsEdit', { required: true })
+const teachingDesignTemplateKeyEdit = defineModel<string>('teachingDesignTemplateKeyEdit', {
+  required: true,
+})
 
 const props = defineProps<{
   orgId: number
@@ -135,6 +142,61 @@ function tierOptionLabel(tier: SchoolTier): string {
   })
 }
 
+const templateOptions = ref<TeachingDesignTemplateOption[]>([])
+const templateOptionsReady = ref(false)
+
+async function loadTemplateOptions(): Promise<void> {
+  try {
+    templateOptions.value = await fetchTeachingDesignTemplateOptions()
+    templateOptionsReady.value = true
+  } catch {
+    templateOptions.value = [
+      { key: 'system', source: 'system', filename: '' },
+      { key: 'bundled', source: 'bundled', filename: '' },
+    ]
+    templateOptionsReady.value = false
+  }
+}
+
+function templateOptionLabel(option: TeachingDesignTemplateOption): string {
+  if (option.key === 'system') {
+    return t('admin.teachingDesignTemplate.optionSystem')
+  }
+  const named = option.name?.trim()
+  if (named) {
+    return named
+  }
+  if (option.key === 'bundled') {
+    return t('admin.teachingDesignTemplate.optionBundled')
+  }
+  if (option.filename) {
+    return t('admin.teachingDesignTemplate.optionUploaded', {
+      filename: option.filename,
+    })
+  }
+  return option.key
+}
+
+watch(
+  () => props.generalTabActive,
+  (active) => {
+    if (active !== false) {
+      void loadTemplateOptions()
+    }
+  },
+  { immediate: true }
+)
+
+watch(templateOptions, (options) => {
+  if (!templateOptionsReady.value) {
+    return
+  }
+  const keys = new Set(options.map((item) => item.key))
+  if (options.length > 0 && !keys.has(teachingDesignTemplateKeyEdit.value)) {
+    teachingDesignTemplateKeyEdit.value = 'system'
+  }
+})
+
 const oauthSettingsRef = ref<InstanceType<typeof AdminSchoolOauthSettings> | null>(null)
 
 async function saveOauthSettings(): Promise<boolean> {
@@ -223,6 +285,33 @@ defineExpose({ saveOauthSettings })
             controls-position="right"
             class="mindbot-swiss-input w-full max-w-xs"
           />
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <span :class="labelClass">{{ t('admin.teachingDesignTemplate.schoolLabel') }}</span>
+        <div class="flex-1 min-w-0 max-w-2xl space-y-1.5">
+          <el-select
+            v-model="teachingDesignTemplateKeyEdit"
+            :disabled="props.readOnly"
+            class="mindbot-swiss-select w-full"
+            teleported
+            :popper-class="MINDBOT_SWISS_SELECT_POPPER_WIDE"
+          >
+            <el-option
+              v-for="option in templateOptions"
+              :key="option.key"
+              :label="templateOptionLabel(option)"
+              :value="option.key"
+            >
+              <span class="mindbot-swiss-select-option__label">{{
+                templateOptionLabel(option)
+              }}</span>
+            </el-option>
+          </el-select>
+          <p class="mindbot-swiss-hint text-xs m-0 leading-relaxed">
+            {{ t('admin.teachingDesignTemplate.schoolHint') }}
+          </p>
         </div>
       </div>
 

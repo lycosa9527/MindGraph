@@ -33,6 +33,11 @@ import {
 import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
 import { consumeSseDataLines } from '@/utils/mindMateSseStream'
 import {
+  isTeachingInstructionOutputs,
+  isTeachingInstructionReply,
+  TEACHING_INSTRUCTION_KIND,
+} from '@/utils/mindmateTeachingDesignFlag'
+import {
   difyUploadMaxBytes,
   isDifyGatewayUploadableFile,
   isMindmateComposerUploadableFile,
@@ -101,6 +106,8 @@ interface SSEData {
   workflow_run_id?: string
   task_id?: string
   data?: Record<string, unknown>
+  reply_kind?: string
+  export_word_template?: boolean
 }
 
 interface DifyMessage extends DifyHistoryMessage {}
@@ -342,6 +349,26 @@ export function useMindMate(options: MindMateOptions = {}) {
     return id
   }
 
+  function applyTeachingInstructionFlag(messageId: string | null): void {
+    if (!messageId) {
+      const last = [...messages.value].reverse().find((item) => item.role === 'assistant')
+      if (!last) {
+        return
+      }
+      messageId = last.id
+    }
+    const index = messages.value.findIndex((item) => item.id === messageId)
+    if (index === -1) {
+      return
+    }
+    const current = messages.value[index]
+    messages.value[index] = {
+      ...current,
+      exportWordTemplate: true,
+      replyKind: TEACHING_INSTRUCTION_KIND,
+    }
+  }
+
   function updateMessage(
     id: string,
     content: string,
@@ -350,12 +377,17 @@ export function useMindMate(options: MindMateOptions = {}) {
   ): void {
     const index = messages.value.findIndex((m) => m.id === id)
     if (index !== -1) {
+      const current = messages.value[index]
+      const flagged = current.exportWordTemplate || isTeachingInstructionReply(content)
       // Replace the object to ensure Vue reactivity triggers properly
       messages.value[index] = {
-        ...messages.value[index],
+        ...current,
         content,
         isStreaming,
         ...(difyMessageId && { difyMessageId }),
+        ...(flagged
+          ? { exportWordTemplate: true, replyKind: TEACHING_INSTRUCTION_KIND }
+          : {}),
       }
     }
   }
@@ -771,6 +803,15 @@ export function useMindMate(options: MindMateOptions = {}) {
         )
         break
 
+      case 'mindmate_meta':
+        if (
+          data.reply_kind === TEACHING_INSTRUCTION_KIND ||
+          data.export_word_template === true
+        ) {
+          applyTeachingInstructionFlag(currentStreamingId.value)
+        }
+        break
+
       case 'message_replace':
         // Replace entire message content (used by Dify for content edits)
         if (data.answer && currentStreamingId.value) {
@@ -801,6 +842,16 @@ export function useMindMate(options: MindMateOptions = {}) {
           task_id: data.task_id,
           data: data.data,
         })
+        if (
+          data.event === 'workflow_finished' &&
+          isTeachingInstructionOutputs(
+            data.data && typeof data.data === 'object'
+              ? (data.data as { outputs?: unknown }).outputs
+              : undefined
+          )
+        ) {
+          applyTeachingInstructionFlag(currentStreamingId.value)
+        }
         break
 
       case 'tts_message':

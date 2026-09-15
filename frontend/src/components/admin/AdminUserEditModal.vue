@@ -4,13 +4,11 @@
  */
 import { computed, ref, watch } from 'vue'
 
+import { ElMessageBox } from 'element-plus'
+
 import { Delete } from '@element-plus/icons-vue'
 
-import { User } from '@lucide/vue'
-
-import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import {
   useAdminOrganizations,
   useAdminUser,
@@ -306,13 +304,17 @@ async function confirmDeleteUser(): Promise<void> {
     return
   }
   try {
-    await swissGlassConfirm(
+    await ElMessageBox.confirm(
       t('admin.schoolDeleteUserConfirm', { name: deleteTargetName.value }),
       t('admin.delete'),
       {
         type: 'warning',
+        customClass: 'mindbot-swiss-message-box mindbot-swiss-msg--delete',
+        modalClass: 'mindbot-swiss-backdrop',
+        cancelButtonClass: 'mindbot-pill mindbot-pill--footer-cancel',
         confirmButtonText: t('admin.delete'),
         cancelButtonText: t('common.cancel'),
+        showClose: true,
       }
     )
   } catch {
@@ -355,16 +357,29 @@ watch(visible, (open) => {
 </script>
 
 <template>
-  <SwissGlassDialog
+  <el-dialog
     v-model="visible"
-    :ribbon="t('swissGlass.hero.adminUser.ribbon')"
-    :title="t('swissGlass.hero.adminUser.title')"
-    :line1="t('swissGlass.hero.adminUser.line1')"
-    :line2="headerNote"
-    :icon="User"
+    class="mindbot-settings-dialog mindbot-swiss-dialog admin-user-edit-dialog"
     width="min(520px, 94vw)"
-    dialog-class="admin-user-edit-dialog"
+    destroy-on-close
+    append-to-body
+    align-center
+    modal-class="mindbot-swiss-backdrop"
+    :show-close="true"
   >
+    <template #header>
+      <div class="mindbot-swiss-header mindbot-config-header">
+        <span class="mindbot-swiss-header__glyph">◇</span>
+        <span class="mindbot-swiss-header__title">{{ t('admin.userEditModalTitle') }}</span>
+        <span
+          class="mindbot-swiss-header__divider"
+          aria-hidden="true"
+        >
+          ·
+        </span>
+        <span class="mindbot-swiss-header__note">{{ headerNote }}</span>
+      </div>
+    </template>
     <div
       v-loading="loading"
       class="mindbot-config-body admin-user-edit-body"
@@ -489,46 +504,50 @@ watch(visible, (open) => {
 
     <template #footer>
       <div
-        class="swiss-glass-footer flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+        class="mindbot-dialog-footer flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
       >
-        <button
+        <el-button
           v-if="userId != null"
-          type="button"
-          class="mind-map-side-rail-btn mind-map-side-rail-btn--danger min-w-22 order-2 self-start sm:order-1"
-          :disabled="deleting || loading || !detail || saving"
+          type="danger"
+          plain
+          class="mindbot-pill mindbot-pill--footer-danger order-2 self-start sm:order-1"
+          :loading="deleting"
+          :disabled="loading || !detail || saving"
           @click="confirmDeleteUser"
         >
           <el-icon class="mr-1"><Delete /></el-icon>
           {{ t('admin.delete') }}
-        </button>
+        </el-button>
         <div
           class="order-1 flex w-full flex-col-reverse gap-2 sm:order-2 sm:ml-auto sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-2"
         >
-          <button
-            type="button"
-            class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          <el-button
+            class="mindbot-pill mindbot-pill--footer-cancel"
             @click="onClose"
           >
             {{ t('common.cancel') }}
-          </button>
-          <button
-            type="button"
-            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
-            :disabled="saving || loading || !detail || deleting"
+          </el-button>
+          <el-button
+            type="primary"
+            class="mindbot-pill mindbot-pill--footer-save"
+            :loading="saving"
+            :disabled="loading || !detail || deleting"
             @click="saveUser"
           >
             {{ t('common.save') }}
-          </button>
+          </el-button>
         </div>
       </div>
     </template>
-  </SwissGlassDialog>
+  </el-dialog>
 </template>
 
 <style scoped>
-.admin-user-edit-dialog {
+.admin-user-edit-dialog.mindbot-settings-dialog.mindbot-swiss-dialog {
   width: min(520px, 94vw) !important;
   max-width: 100%;
+  border-radius: 2px;
+  overflow: hidden;
 }
 
 .admin-user-edit-body {
@@ -542,6 +561,7 @@ watch(visible, (open) => {
 }
 </style>
 
-<style scoped>
+<style>
 @import '@/styles/admin-mindbot-swiss-dialog-chrome.css';
+@import '@/styles/admin-mindbot-swiss-messagebox.css';
 </style>

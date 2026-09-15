@@ -149,6 +149,9 @@ run_backend() {
     tests/test_organization_mindmate_avatar.py \
     tests/test_org_subscription.py \
     tests/test_school_tier.py \
+    tests/test_teaching_design_template_store.py \
+    tests/test_teaching_design_template_admin.py \
+    tests/test_teaching_design_docx_export_api.py \
     tests/test_dify_user_key.py \
     tests/test_dify_file_upload_types.py \
     tests/test_mindbot_bind_messages.py \

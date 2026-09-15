@@ -20,9 +20,15 @@ import { useMindMate } from '@/composables/mindmate/useMindMate'
 import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
-import { useAuthStore, useMindMateStore, useVoiceStore } from '@/stores'
+import {
+  useAuthStore,
+  useMindMateStore,
+  useTeachingDesignExportStore,
+  useVoiceStore,
+} from '@/stores'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 import { copyMindmateAssistantMessage } from '@/utils/copyMindmateMessage'
+import type { MindMateMessage } from '@/stores/mindmateActiveThread'
 
 const router = useRouter()
 const { promptLanguage, t } = useLanguage()
@@ -30,6 +36,8 @@ const notify = useNotifications()
 const authStore = useAuthStore()
 const mindMateStore = useMindMateStore()
 const { loadPhase: mindMateLoadPhase } = storeToRefs(mindMateStore)
+const teachingDesignExport = useTeachingDesignExportStore()
+const { exportingMessageId: exportingWordTemplateId } = storeToRefs(teachingDesignExport)
 const voiceStore = useVoiceStore()
 
 const { displayName, avatarUrl } = useMindMateBranding('md')
@@ -212,6 +220,23 @@ function regenerateMessage(messageId: string) {
   mindMate.regenerateMessage(messageId)
 }
 
+function previousUserPrompt(messageId: string): string | undefined {
+  const msgIndex = mindMate.messages.value.findIndex((item) => item.id === messageId)
+  for (let index = msgIndex - 1; index >= 0; index -= 1) {
+    if (mindMate.messages.value[index].role === 'user') {
+      return mindMate.messages.value[index].content
+    }
+  }
+  return undefined
+}
+
+function exportWordTemplate(message: MindMateMessage) {
+  void teachingDesignExport.exportAssistantMessage(
+    message,
+    previousUserPrompt(message.id)
+  )
+}
+
 async function handleFeedback(messageId: string, rating: FeedbackRating) {
   const message = mindMate.messages.value.find((m) => m.id === messageId)
   if (!message) return
@@ -387,6 +412,7 @@ onUnmounted(() => {
         :hovered-message-id="hoveredMessageId"
         :is-last-assistant-message="isLastAssistantMessage"
         :has-previous-user-message="hasPreviousUserMessage"
+        :exporting-word-template-id="exportingWordTemplateId"
         @edit="startEdit"
         @cancel-edit="cancelEdit"
         @save-edit="saveEdit"
@@ -394,6 +420,7 @@ onUnmounted(() => {
         @regenerate="regenerateMessage"
         @feedback="handleFeedback"
         @share="showShareModal = true"
+        @export-word-template="exportWordTemplate"
         @message-hover="hoveredMessageId = $event"
       />
 

@@ -92,6 +92,7 @@ const props = defineProps<{
   orgExpiresAt?: string | null
   orgSchoolTier?: string | null
   orgExtraMemberSeats?: number
+  orgTeachingDesignTemplateKey?: string | null
   orgDifyApiBaseUrl?: string | null
   orgDifyApiKeyMasked?: string | null
   orgDifyApiBaseUrl2?: string | null
@@ -297,6 +298,7 @@ const deleteLoading = ref(false)
 const expiresAtEdit = ref<string | null>(null)
 const schoolTierEdit = ref<SchoolTier>('trial')
 const extraMemberSeatsEdit = ref(0)
+const teachingDesignTemplateKeyEdit = ref('system')
 
 const selectedTierLimits = computed(() => SCHOOL_TIER_LIMITS[schoolTierEdit.value])
 
@@ -591,6 +593,7 @@ async function saveGeneralSettings() {
         expires_at: expiresAtPayload,
         school_tier: schoolTierEdit.value,
         extra_member_seats: schoolTierEdit.value === 'trial' ? 0 : extraMemberSeatsEdit.value,
+        teaching_design_template_key: teachingDesignTemplateKeyEdit.value,
       },
     })
     const savedTier = updated.school_tier
@@ -601,6 +604,11 @@ async function saveGeneralSettings() {
     if (typeof savedExtra === 'number' && Number.isFinite(savedExtra)) {
       extraMemberSeatsEdit.value = Math.max(0, Math.trunc(savedExtra))
     }
+    const savedTemplate = updated.teaching_design_template_key
+    teachingDesignTemplateKeyEdit.value =
+      typeof savedTemplate === 'string' && savedTemplate.trim()
+        ? savedTemplate.trim()
+        : 'system'
     if (orgGeneralTabRef.value) {
       const oauthOk = await orgGeneralTabRef.value.saveOauthSettings()
       if (!oauthOk) {
@@ -711,6 +719,7 @@ watch(
         expiresAtEdit.value = parseExpiresAtToDate(props.orgExpiresAt)
         schoolTierEdit.value = normalizeSchoolTier(props.orgSchoolTier)
         extraMemberSeatsEdit.value = Math.max(0, Math.trunc(props.orgExtraMemberSeats ?? 0))
+        teachingDesignTemplateKeyEdit.value = props.orgTeachingDesignTemplateKey?.trim() || 'system'
         loadGeneralTabData()
       }
     } else {
@@ -762,6 +771,7 @@ watch(
       props.orgExpiresAt,
       props.orgSchoolTier,
       props.orgExtraMemberSeats,
+      props.orgTeachingDesignTemplateKey,
       props.userId,
       props.userName,
     ] as const,
@@ -781,6 +791,7 @@ watch(
       expiresAtEdit.value = parseExpiresAtToDate(props.orgExpiresAt)
       schoolTierEdit.value = normalizeSchoolTier(props.orgSchoolTier)
       extraMemberSeatsEdit.value = Math.max(0, Math.trunc(props.orgExtraMemberSeats ?? 0))
+      teachingDesignTemplateKeyEdit.value = props.orgTeachingDesignTemplateKey?.trim() || 'system'
       if (schoolDialogTab.value === 'general') {
         loadGeneralTabData()
       }
@@ -795,19 +806,31 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <SwissGlassDialog
+  <el-dialog
     v-if="type === 'org'"
     :model-value="visible"
-    :ribbon="t('swissGlass.hero.adminTrend.ribbon')"
-    :title="schoolModalHeaderTitle"
-    :line1="t('swissGlass.hero.adminTrend.line1')"
-    :line2="schoolHeaderNote"
-    :icon="TrendingUp"
+    class="school-settings-dialog mindbot-settings-dialog mindbot-swiss-dialog"
     width="min(760px, 94vw)"
-    dialog-class="school-settings-dialog"
+    destroy-on-close
+    append-to-body
+    align-center
+    modal-class="mindbot-swiss-backdrop"
+    :show-close="true"
     @update:model-value="onSchoolModalVisibleChange"
     @close="handleClose"
   >
+    <template #header>
+      <div class="mindbot-swiss-header mindbot-config-header">
+        <span class="mindbot-swiss-header__glyph">◇</span>
+        <span class="mindbot-swiss-header__title">{{ schoolModalHeaderTitle }}</span>
+        <span
+          class="mindbot-swiss-header__divider"
+          aria-hidden="true"
+          >·</span
+        >
+        <span class="mindbot-swiss-header__note">{{ schoolHeaderNote }}</span>
+      </div>
+    </template>
     <div class="mindbot-config-body">
       <div
         class="mindbot-config-scanlines"
@@ -929,6 +952,7 @@ onBeforeUnmount(() => {
               v-model:expires-at-edit="expiresAtEdit"
               v-model:school-tier-edit="schoolTierEdit"
               v-model:extra-member-seats-edit="extraMemberSeatsEdit"
+              v-model:teaching-design-template-key-edit="teachingDesignTemplateKeyEdit"
               v-model:pending-manager-ids="pendingManagerIds"
               :org-id="orgId"
               :org-name="orgName"
@@ -952,19 +976,18 @@ onBeforeUnmount(() => {
     <template #footer>
       <div
         v-if="isInsightsMode"
-        class="flex justify-end"
+        class="mindbot-dialog-footer flex justify-end"
       >
-        <button
-          type="button"
-          class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+        <el-button
+          class="mindbot-pill mindbot-pill--footer-cancel"
           @click="close"
         >
           {{ t('common.close') }}
-        </button>
+        </el-button>
       </div>
       <div
         v-else
-        class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+        class="mindbot-dialog-footer flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
       >
         <div
           v-if="showMindbotFooterEnable && !panelReadOnly"
@@ -980,60 +1003,62 @@ onBeforeUnmount(() => {
           v-if="!panelReadOnly || (schoolDialogTab === 'general' && canEditOrgGeneral)"
           class="flex shrink-0 flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:flex-wrap sm:ml-auto"
         >
-          <button
+          <el-button
             v-if="schoolDialogTab === 'general' && orgId && canEditOrgGeneral"
-            type="button"
-            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
-            :disabled="generalTabSaving || tierDowngradeBlocked"
+            type="primary"
+            class="mindbot-pill mindbot-pill--footer-save w-full sm:w-auto"
+            :loading="generalTabSaving"
+            :disabled="tierDowngradeBlocked"
             @click="saveGeneralSettings"
           >
             {{ t('admin.save') }}
-          </button>
+          </el-button>
           <el-tooltip
             v-else-if="schoolDialogTab === 'dify' && orgId"
             :disabled="Boolean(mindmateDifyRef?.canSave)"
             :content="t('admin.schoolDifyAuthRequiredBeforeSave')"
             placement="top"
           >
-            <button
-              type="button"
-              class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
-              :disabled="Boolean(mindmateDifyRef?.saving) || !mindmateDifyRef?.canSave"
+            <el-button
+              type="primary"
+              class="mindbot-pill mindbot-pill--footer-save w-full sm:w-auto"
+              :loading="mindmateDifyRef?.saving"
+              :disabled="!mindmateDifyRef?.canSave"
               @click="mindmateDifyRef?.saveSettings()"
             >
               {{ t('admin.save') }}
-            </button>
+            </el-button>
           </el-tooltip>
-          <button
+          <el-button
             v-else-if="isMindbotSchoolTab(schoolDialogTab) && orgId && mindbotSaveEnabled"
-            type="button"
-            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
-            :disabled="mindbotSaving"
+            type="primary"
+            class="mindbot-pill mindbot-pill--footer-save w-full sm:w-auto"
+            :loading="mindbotSaving"
             @click="saveMindbotSettings()"
           >
             {{ t('admin.mindbot.save') }}
-          </button>
-          <button
-            type="button"
-            class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
+          </el-button>
+          <el-button
+            class="mindbot-pill mindbot-pill--footer-cancel w-full sm:w-auto"
             @click="close"
           >
             {{ t('common.close') }}
-          </button>
-          <button
+          </el-button>
+          <el-button
             v-if="orgId"
-            type="button"
-            class="mind-map-side-rail-btn mind-map-side-rail-btn--danger min-w-22"
-            :disabled="deleteLoading"
+            type="danger"
+            plain
+            class="mindbot-pill mindbot-pill--footer-danger w-full sm:w-auto"
+            :loading="deleteLoading"
             @click="deleteOrganization"
           >
             <el-icon class="mr-1"><Delete /></el-icon>
             {{ t('admin.deleteOrganization') }}
-          </button>
+          </el-button>
         </div>
       </div>
     </template>
-  </SwissGlassDialog>
+  </el-dialog>
 
   <SwissGlassDialog
     v-else
@@ -1105,9 +1130,11 @@ onBeforeUnmount(() => {
 </style>
 
 <style scoped>
-.school-settings-dialog {
+.school-settings-dialog.mindbot-swiss-dialog {
   width: min(92vw, 800px) !important;
   max-width: 100%;
+  border-radius: 2px;
+  overflow: hidden;
 }
 
 .school-dialog-tabs :deep(.el-tabs__content) {

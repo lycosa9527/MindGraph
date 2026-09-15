@@ -13,6 +13,7 @@ import AdminLibraryTab from '@/components/admin/AdminLibraryTab.vue'
 import AdminPerformanceTab from '@/components/admin/AdminPerformanceTab.vue'
 import AdminPublicDashboardTab from '@/components/admin/AdminPublicDashboardTab.vue'
 import AdminRolesTab from '@/components/admin/AdminRolesTab.vue'
+import AdminTeachingDesignTemplateTab from '@/components/admin/AdminTeachingDesignTemplateTab.vue'
 import AdminThinkingCoinsTab from '@/components/admin/AdminThinkingCoinsTab.vue'
 import GeweLoginComponent from '@/components/admin/GeweLoginComponent.vue'
 import {
@@ -84,6 +85,7 @@ watch(
     :class="{ 'embedded-settings-body--fullscreen': activeSubtab === 'public_dashboard' }"
   >
     <AdminFeaturesTab v-if="activeSubtab === 'features'" />
+    <AdminTeachingDesignTemplateTab v-else-if="activeSubtab === 'teaching_design'" />
     <AdminRolesTab v-else-if="activeSubtab === 'roles'" />
     <AdminLibraryTab v-else-if="activeSubtab === 'library'" />
     <AdminDatabaseTab v-else-if="activeSubtab === 'database'" />

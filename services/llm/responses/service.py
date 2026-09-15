@@ -41,6 +41,43 @@ def _request_type(value: Any) -> str:
     return "mindmap_node_explain"
 
 
+def _token_int(usage: Dict[str, Any] | None, *keys: str) -> int:
+    if not usage:
+        return 0
+    for key in keys:
+        raw = usage.get(key)
+        if isinstance(raw, bool) or not isinstance(raw, int):
+            continue
+        return max(0, raw)
+    return 0
+
+
+def _log_usage(
+    model: str,
+    usage_data: Dict[str, Any] | None,
+    metadata: Dict[str, Any],
+    duration: float,
+    *,
+    billed: bool,
+) -> None:
+    input_tokens = _token_int(usage_data, "input_tokens", "prompt_tokens")
+    output_tokens = _token_int(usage_data, "output_tokens", "completion_tokens")
+    total_tokens = _token_int(usage_data, "total_tokens")
+    if total_tokens <= 0:
+        total_tokens = input_tokens + output_tokens
+    logger.info(
+        "[ResponsesService] usage type=%s model=%s in=%d out=%d total=%d duration=%.2fs billed=%s session=%s",
+        _request_type(metadata.get("request_type")),
+        model,
+        input_tokens,
+        output_tokens,
+        total_tokens,
+        duration,
+        billed,
+        metadata.get("session_id") or "-",
+    )
+
+
 class _ServiceHolder:
     """Holds the singleton Responses service."""
 
@@ -112,6 +149,7 @@ class LLMResponsesService:
                     raw_usage = event.get("usage")
                     if isinstance(raw_usage, dict):
                         usage_data = raw_usage
+                    yield event
                     continue
                 if event.get("type") == "error":
                     message = event.get("content")
@@ -190,6 +228,7 @@ class LLMResponsesService:
                 success=True,
                 duration=duration,
             )
+            _log_usage(model, usage_data, metadata, duration, billed=False)
             return
         coins_user = await thinking_coins_apply_to_user(
             _optional_int(metadata.get("user_id")),
@@ -205,6 +244,7 @@ class LLMResponsesService:
             duration=duration,
             skip_token_buffer=coins_user,
         )
+        _log_usage(model, usage_data, metadata, duration, billed=bill_usage)
         usage_snapshot = (
             build_token_usage_snapshot(usage_data, metadata, model, duration) if coins_user and usage_data else None
         )

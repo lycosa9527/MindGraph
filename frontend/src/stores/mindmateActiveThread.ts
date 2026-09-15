@@ -5,6 +5,10 @@
  * (MindMate → canvas → back). Prefetch cache remains for other use cases.
  */
 import { displayMindmateUserQueryForUi } from '@/utils/mindmateExtensionPageContext'
+import {
+  isTeachingInstructionReply,
+  TEACHING_INSTRUCTION_KIND,
+} from '@/utils/mindmateTeachingDesignFlag'
 
 export type FeedbackRating = 'like' | 'dislike' | null
 
@@ -27,6 +31,8 @@ export interface MindMateMessage {
   files?: MindMateFile[]
   difyMessageId?: string
   feedback?: FeedbackRating
+  replyKind?: typeof TEACHING_INSTRUCTION_KIND
+  exportWordTemplate?: boolean
 }
 
 export interface DifyHistoryMessage {
@@ -104,6 +110,10 @@ export function mapDifyMessagesToMindMate(difyMessages: DifyHistoryMessage[]): M
       const feedback = extractFeedback(msg.feedback)
       if (feedback) {
         mapped.feedback = feedback
+      }
+      if (isTeachingInstructionReply(msg.answer)) {
+        mapped.replyKind = TEACHING_INSTRUCTION_KIND
+        mapped.exportWordTemplate = true
       }
       result.push(mapped)
       seq += 1

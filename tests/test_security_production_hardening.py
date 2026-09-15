@@ -474,6 +474,15 @@ def test_training_asset_complete_body_size_limit_path() -> None:
     assert resolver("/api/training/assets/init") == middleware_module.MAX_REQUEST_BODY_SIZE
 
 
+def test_dify_files_upload_body_size_limit_path() -> None:
+    """MindMate Dify uploads may exceed the default 5MB API body cap."""
+    resolver = middleware_module.max_request_body_size_for_path
+    limit = middleware_module.DIFY_FILES_UPLOAD_MAX_BODY_SIZE
+    assert resolver("/api/dify/files/upload") == limit
+    assert limit > middleware_module.MAX_REQUEST_BODY_SIZE
+    assert resolver("/api/dify/app/parameters") == middleware_module.MAX_REQUEST_BODY_SIZE
+
+
 @pytest.mark.asyncio
 async def test_block_showcase_static_uploads_returns_404() -> None:
     """Direct /static/case_square/ and /static/showcase/ access must be denied."""

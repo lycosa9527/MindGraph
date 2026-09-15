@@ -133,6 +133,8 @@ def _format_detail(detail: Optional[str], details: Optional[Mapping[str, Any]]) 
         "endpoint",
         "method",
         "action",
+        "total_tokens",
+        "tokens",
     ):
         value = details.get(key)
         if value is None:

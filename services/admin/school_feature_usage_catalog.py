@@ -32,6 +32,7 @@ _ACTION_TO_MODULE: dict[str, str] = {
     "diagram_save": "canvas",
     "export_diagram": "canvas",
     "canvas_translate": "canvas",
+    "mindmap_node_explain": "canvas",
     "relationship_labels": "canvas",
     "autocomplete": "canvas",
     "chat_turn": "mindmate",

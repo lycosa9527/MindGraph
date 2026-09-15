@@ -1,5 +1,13 @@
 """Tests for mind map node-explain facet prompts and billing wiring."""
 
+from unittest.mock import MagicMock, patch
+
+from agents.mind_maps.node_explain_activity import (
+    ExplainActivityContext,
+    ExplainStreamStats,
+    is_internal_explain_event,
+    schedule_explain_completion_activity,
+)
 from agents.mind_maps.node_explain_prompts import (
     RESEARCH_IMAGE_TOOLS,
     RESEARCH_TOOLS,
@@ -11,6 +19,8 @@ from agents.mind_maps.node_explain_prompts import (
     style_band_for_level,
 )
 from models.requests.requests_thinking import MindMapNodeExplainRequest
+from services.admin.school_feature_usage_catalog import resolve_feature_module
+from services.admin.user_usage_activity import VALID_ACTIVITY_ACTIONS
 from services.redis.redis_activity_tracker import RedisActivityTracker
 from utils.auth.thinking_coin_config import CANVAS_ASSIST_REQUEST_TYPES
 
@@ -256,3 +266,84 @@ def test_mindmap_node_explain_is_canvas_assist_request_type() -> None:
 def test_mindmap_node_explain_live_activity_label_registered() -> None:
     """Redis live activity tracks explain opens; LLM text itself is not persisted."""
     assert "mindmap_node_explain" in RedisActivityTracker.ACTIVITY_TYPES
+
+
+def test_mindmap_node_explain_usage_action_is_registered() -> None:
+    """Completion writes a usage-timeline row with token counts."""
+    assert "mindmap_node_explain" in VALID_ACTIVITY_ACTIONS
+    assert resolve_feature_module("mindmap_node_explain", None, "mindgraph") == "canvas"
+
+
+def test_explain_stream_stats_count_related_activities_and_tokens() -> None:
+    """Search, sources, images, and write/image token lanes fold into one total."""
+    stats = ExplainStreamStats()
+    stats.observe({"event": "status", "phase": "searching", "query": "光合作用"})
+    stats.observe(
+        {
+            "event": "search_source",
+            "query": "光合作用",
+            "sources": [{"url": "https://a.example"}, {"url": "https://b.example"}],
+        }
+    )
+    stats.observe({"event": "image", "images": [{"url": "https://img.example/1.jpg"}]})
+    stats.observe(
+        {
+            "event": "usage",
+            "lane": "write",
+            "usage": {"input_tokens": 100, "output_tokens": 40, "total_tokens": 140},
+        }
+    )
+    stats.observe(
+        {
+            "event": "usage",
+            "lane": "image",
+            "usage": {"input_tokens": 20, "output_tokens": 10, "total_tokens": 30},
+        }
+    )
+    assert stats.searches == 1
+    assert stats.sources == 2
+    assert stats.images == 1
+    assert stats.queries == ["光合作用"]
+    assert stats.write_tokens == 140
+    assert stats.image_tokens == 30
+    assert stats.total_tokens == 170
+    assert is_internal_explain_event("usage")
+    assert not is_internal_explain_event("token")
+
+
+def test_explain_completion_activity_includes_token_counts() -> None:
+    """Tracker + usage timeline receive search/image counts and billed tokens."""
+    user = MagicMock()
+    user.id = 9
+    stats = ExplainStreamStats()
+    stats.observe({"event": "status", "phase": "searching", "query": "光合作用"})
+    stats.observe(
+        {
+            "event": "usage",
+            "lane": "write",
+            "usage": {"input_tokens": 12, "output_tokens": 8, "total_tokens": 20},
+        }
+    )
+    ctx = ExplainActivityContext(
+        user=user,
+        request=None,
+        diagram_type="mindmap",
+        diagram_id="11111111-1111-1111-1111-111111111111",
+        session_id="explain01",
+        facet="meaning",
+        node_label="光合作用",
+        topic="植物",
+    )
+    with patch(
+        "agents.mind_maps.node_explain_activity.schedule_module_activity",
+    ) as scheduled:
+        schedule_explain_completion_activity(ctx, stats, success=True)
+
+    kwargs = scheduled.call_args.kwargs
+    assert kwargs["redis_activity_type"] == "mindmap_node_explain"
+    assert kwargs["usage_action"] == "mindmap_node_explain"
+    assert kwargs["persist_usage"] is True
+    assert kwargs["total_tokens"] == 20
+    assert kwargs["details"]["searches"] == 1
+    assert kwargs["details"]["write_tokens"] == 20
+    assert kwargs["details"]["queries"] == "光合作用"

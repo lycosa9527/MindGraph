@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.81] - 2026-09-15
+
+> **MindMate teaching-design replies export to Word; schools pick a template; 节点解释 records usage.**
+
+### Added
+
+- **MindMate 教学设计 Word** — Teaching-instruction replies (Dify `mg_reply_kind` / `export_word_template`, or a hidden `mg-reply-kind` marker) show **导出 Word 模板**. The server fills the school's template (bundled 北师大思维发展型课堂教学设计 form by default). Generation continues after you leave the page; markers stay out of the chat markdown.
+- **Admin 教学设计模板** — Superadmin settings tab: upload, rename, preview, replace, delete, and pin a system default. Each school can follow that default or pin a catalog row. Alembic `0117` stores `organizations.teaching_design_template_key`.
+- **节点解释 usage** — Write and image lanes emit token usage for logs and the admin activity timeline (`mindmap_node_explain`). Usage chunks stay off the SSE wire.
+
+### Fixed
+
+- **MindMate file upload** — `/api/dify/files/upload` accepts the Dify video cap (100MB + multipart) instead of the default 5MB API body limit.
+
+### Tests
+
+- [`frontend/tests/exportTeachingDesignDocx.spec.ts`](frontend/tests/exportTeachingDesignDocx.spec.ts), [`frontend/tests/mindmateTeachingDesignFlag.spec.ts`](frontend/tests/mindmateTeachingDesignFlag.spec.ts), [`frontend/tests/mindMateActiveThread.spec.ts`](frontend/tests/mindMateActiveThread.spec.ts), [`frontend/tests/adminCapabilities.spec.ts`](frontend/tests/adminCapabilities.spec.ts)
+- [`tests/test_teaching_design_docx.py`](tests/test_teaching_design_docx.py), [`tests/test_teaching_design_docx_export_api.py`](tests/test_teaching_design_docx_export_api.py), [`tests/test_teaching_design_flag.py`](tests/test_teaching_design_flag.py), [`tests/test_teaching_design_parse.py`](tests/test_teaching_design_parse.py), [`tests/test_teaching_design_template_admin.py`](tests/test_teaching_design_template_admin.py), [`tests/test_teaching_design_template_store.py`](tests/test_teaching_design_template_store.py)
+- [`tests/test_mind_map_node_explain.py`](tests/test_mind_map_node_explain.py), [`tests/test_mind_map_node_explain_research.py`](tests/test_mind_map_node_explain_research.py), [`tests/test_assistant_markdown.py`](tests/test_assistant_markdown.py), [`tests/test_security_production_hardening.py`](tests/test_security_production_hardening.py)
+
 ## [5.180.80] - 2026-09-15
 
 > **节点解释 ships as a bubble + 配图 panel: longer cited gloss, live images, no leftover session.**

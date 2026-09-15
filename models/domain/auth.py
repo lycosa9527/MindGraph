@@ -68,6 +68,7 @@ class Organization(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     school_tier: Mapped[str] = mapped_column(String(32), nullable=False, default="trial")
     extra_member_seats: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    teaching_design_template_key: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     dify_api_base_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     dify_api_key: Mapped[str | None] = mapped_column(Text, nullable=True)

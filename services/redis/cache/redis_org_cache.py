@@ -83,6 +83,7 @@ class OrganizationCache:
             "is_active": "1" if is_active_val else "0",
             "school_tier": str(getattr(org, "school_tier", None) or "trial"),
             "extra_member_seats": str(int(getattr(org, "extra_member_seats", 0) or 0)),
+            "teaching_design_template_key": str(getattr(org, "teaching_design_template_key", None) or ""),
         }
 
     def _deserialize_org(self, data: dict[bytes | str, bytes | str]) -> Organization:
@@ -142,6 +143,13 @@ class OrganizationCache:
                 org,
                 "extra_member_seats",
                 max(0, min(extra_seats, EXTRA_MEMBER_SEATS_MAX)),
+            )
+
+        if hasattr(Organization, "teaching_design_template_key"):
+            setattr(
+                org,
+                "teaching_design_template_key",
+                normalized.get("teaching_design_template_key") or None,
             )
 
         return org

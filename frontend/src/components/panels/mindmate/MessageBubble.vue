@@ -31,6 +31,7 @@ import {
   needsLibrarySaveHint,
   parseMindmateDiagramLibraryId,
 } from '@/utils/mindmateDiagramMeta'
+import { isTeachingInstructionReply } from '@/utils/mindmateTeachingDesignFlag'
 
 import MindmateAgentAvatar from './MindmateAgentAvatar.vue'
 
@@ -44,6 +45,7 @@ const props = defineProps<{
   hasPreviousUserMessage?: boolean
   isLoading?: boolean
   agentLoadPhase?: ModelLoadPhase
+  exportingWordTemplate?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -54,6 +56,7 @@ const emit = defineEmits<{
   (e: 'regenerate', messageId: string): void
   (e: 'feedback', messageId: string, rating: FeedbackRating): void
   (e: 'share'): void
+  (e: 'exportWordTemplate', message: MindMateMessage): void
   (e: 'mouseenter'): void
   (e: 'mouseleave'): void
 }>()
@@ -75,6 +78,13 @@ const libraryDiagramId = computed(() => {
 })
 
 const showCanvasButton = computed(() => libraryDiagramId.value !== null)
+
+const showWordTemplateExport = computed(() => {
+  if (props.message.role !== 'assistant' || props.message.isStreaming) {
+    return false
+  }
+  return Boolean(props.message.exportWordTemplate) || isTeachingInstructionReply(props.message.content)
+})
 
 const showLibrarySaveHint = computed(() => {
   if (props.message.role !== 'assistant' || props.message.isStreaming || !props.isLastAssistant) {
@@ -608,6 +618,18 @@ function handleMarkdownClick(event: MouseEvent) {
                 <ElIcon :size="18"><Share /></ElIcon>
               </ElButton>
             </ElTooltip>
+
+            <button
+              v-if="showWordTemplateExport"
+              type="button"
+              class="mindmate-stone-btn action-bar-canvas-btn"
+              :class="{ 'is-busy': exportingWordTemplate }"
+              :disabled="exportingWordTemplate"
+              :title="t('mindmate.tooltip.exportWordTemplate')"
+              @click="emit('exportWordTemplate', message)"
+            >
+              <span class="mindmate-stone-btn__label">{{ t('mindmate.exportWordTemplate') }}</span>
+            </button>
 
             <!-- Open in canvas -->
             <ElButton

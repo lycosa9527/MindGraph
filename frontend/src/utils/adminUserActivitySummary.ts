@@ -75,6 +75,7 @@ const ACTION_VERBS_ZH: Record<string, string> = {
   library_engage: '图书馆',
   showcase_engage: '展示墙',
   canvas_translate: '画布翻译',
+  mindmap_node_explain: '节点解释',
   relationship_labels: '关系标签',
 }
 
@@ -99,6 +100,7 @@ const ACTION_VERBS_EN: Record<string, string> = {
   library_engage: 'Library',
   showcase_engage: 'Showcase',
   canvas_translate: 'Canvas translate',
+  mindmap_node_explain: 'Node explanation',
   relationship_labels: 'Relationship labels',
 }
 

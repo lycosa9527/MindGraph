@@ -14,6 +14,13 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from agents.mind_maps.node_explain import get_mind_map_node_explain_generator
+from agents.mind_maps.node_explain_activity import (
+    ExplainActivityContext,
+    ExplainStreamStats,
+    is_internal_explain_event,
+    log_explain_complete,
+    schedule_explain_completion_activity,
+)
 from models.domain.auth import User
 from models.requests.requests_thinking import MindMapNodeExplainRequest
 from routers.api.diagram_generation import assert_collab_blocks_canvas_ai
@@ -141,12 +148,14 @@ def _resolve_error_type(exc: Exception) -> str:
 async def _stream_explain(
     req: MindMapNodeExplainRequest,
     user: User | None,
+    request: Request,
 ):
     """Async generator yielding SSE chunks for one explain facet."""
     session_id = req.session_id.strip()
     facet = req.facet
     request_token = uuid.uuid4().hex[:12]
     session_short = session_id[:8]
+    stats = ExplainStreamStats()
 
     yield ": stream_open\n\n"
 
@@ -187,6 +196,17 @@ async def _stream_explain(
     org_id = getattr(user, "organization_id", None) if user else None
     chunk_count = 0
     terminal_sent = False
+    saw_error = False
+    activity_ctx = ExplainActivityContext(
+        user=user,
+        request=request,
+        diagram_type=req.diagram_type,
+        diagram_id=diagram_id,
+        session_id=session_id,
+        facet=facet,
+        node_label=req.node_label,
+        topic=req.topic,
+    )
 
     logger.info(
         "%s Stream start | session=%s facet=%s node=%s topic=%s user=%s",
@@ -218,9 +238,14 @@ async def _stream_explain(
             generation_instructions=req.generation_instructions,
         ):
             chunk_count += 1
-            event = chunk.get("event")
+            event = str(chunk.get("event") or "")
+            stats.observe(chunk)
+            if is_internal_explain_event(event):
+                continue
             if event in ("end", "error"):
                 terminal_sent = True
+            if event == "error":
+                saw_error = True
             yield f"data: {json.dumps(chunk)}\n\n"
 
         if chunk_count == 0 and not terminal_sent:
@@ -231,28 +256,43 @@ async def _stream_explain(
                 session_short,
                 facet,
             )
+            log_explain_complete(
+                session_short=session_short,
+                facet=facet,
+                node_label=req.node_label,
+                chunk_count=chunk_count,
+                stats=stats,
+                success=False,
+                extra="no_response",
+            )
+            schedule_explain_completion_activity(activity_ctx, stats, success=False)
             yield _error_sse(
                 error_type="no_response",
                 facet=facet,
                 language=effective_lang,
             )
         else:
-            logger.info(
-                "%s Stream complete | session=%s facet=%s chunks=%d",
-                _LOG_PREFIX,
-                session_short,
-                facet,
-                chunk_count,
+            log_explain_complete(
+                session_short=session_short,
+                facet=facet,
+                node_label=req.node_label,
+                chunk_count=chunk_count,
+                stats=stats,
+                success=not saw_error,
             )
+            schedule_explain_completion_activity(activity_ctx, stats, success=not saw_error)
 
     except asyncio.CancelledError:
-        logger.info(
-            "%s Stream cancelled | session=%s facet=%s chunks=%d",
-            _LOG_PREFIX,
-            session_short,
-            facet,
-            chunk_count,
+        log_explain_complete(
+            session_short=session_short,
+            facet=facet,
+            node_label=req.node_label,
+            chunk_count=chunk_count,
+            stats=stats,
+            success=False,
+            extra="cancelled",
         )
+        schedule_explain_completion_activity(activity_ctx, stats, success=False)
         raise
 
     except (
@@ -277,6 +317,16 @@ async def _stream_explain(
             facet,
             str(exc),
         )
+        log_explain_complete(
+            session_short=session_short,
+            facet=facet,
+            node_label=req.node_label,
+            chunk_count=chunk_count,
+            stats=stats,
+            success=False,
+            extra=error_type,
+        )
+        schedule_explain_completion_activity(activity_ctx, stats, success=False)
         yield _error_sse(
             error_type=error_type,
             facet=facet,
@@ -293,6 +343,16 @@ async def _stream_explain(
             str(exc),
             exc_info=True,
         )
+        log_explain_complete(
+            session_short=session_short,
+            facet=facet,
+            node_label=req.node_label,
+            chunk_count=chunk_count,
+            stats=stats,
+            success=False,
+            extra="unknown",
+        )
+        schedule_explain_completion_activity(activity_ctx, stats, success=False)
         yield _error_sse(
             error_type="unknown",
             facet=facet,
@@ -333,7 +393,7 @@ async def explain_mindmap_node(
         req.node_label[:24],
     )
     return StreamingResponse(
-        _stream_explain(req, current_user),
+        _stream_explain(req, current_user, request),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

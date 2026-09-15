@@ -410,9 +410,15 @@ def test_redis_org_cache_roundtrips_extra_member_seats():
 
     payload = serialize_org(org)
     assert payload["extra_member_seats"] == "25"
+    assert payload["teaching_design_template_key"] == ""
 
     restored = deserialize_org(cast(dict[bytes | str, bytes | str], payload))
     assert restored.extra_member_seats == 25
+    assert restored.teaching_design_template_key is None
+
+    payload["teaching_design_template_key"] = "bundled"
+    pinned = deserialize_org(cast(dict[bytes | str, bytes | str], payload))
+    assert pinned.teaching_design_template_key == "bundled"
 
     legacy_payload = {key: value for key, value in payload.items() if key != "extra_member_seats"}
     legacy_restored = deserialize_org(cast(dict[bytes | str, bytes | str], legacy_payload))

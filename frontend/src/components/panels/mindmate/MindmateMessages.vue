@@ -41,6 +41,7 @@ const props = defineProps<{
   hoveredMessageId?: string | null
   isLastAssistantMessage?: (messageId: string) => boolean
   hasPreviousUserMessage?: (messageId: string) => boolean
+  exportingWordTemplateId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -51,6 +52,7 @@ const emit = defineEmits<{
   (e: 'regenerate', messageId: string): void
   (e: 'feedback', messageId: string, rating: 'like' | 'dislike' | null): void
   (e: 'share'): void
+  (e: 'exportWordTemplate', message: MindMateMessage): void
   (e: 'messageHover', messageId: string | null): void
   (e: 'scrollToBottom', force?: boolean): void
 }>()
@@ -188,6 +190,7 @@ watch(
             :is-last-assistant="isLastAssistantMessage?.(message.id) ?? false"
             :has-previous-user-message="hasPreviousUserMessage?.(message.id) ?? false"
             :is-loading="isLoading"
+            :exporting-word-template="exportingWordTemplateId === message.id"
             @edit="emit('edit', $event)"
             @cancel-edit="emit('cancelEdit')"
             @save-edit="emit('saveEdit', $event)"
@@ -198,6 +201,7 @@ watch(
                 emit('feedback', messageId, rating)
             "
             @share="emit('share')"
+            @export-word-template="emit('exportWordTemplate', $event)"
             @mouseenter="emit('messageHover', message.id)"
             @mouseleave="emit('messageHover', null)"
           />

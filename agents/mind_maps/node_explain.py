@@ -264,6 +264,16 @@ class MindMapNodeExplainGenerator:
             if not message:
                 return None
             return {"event": "error", "message": message, "facet": "meaning"}
+        if kind == "usage":
+            usage = chunk.get("usage")
+            if not isinstance(usage, dict):
+                return None
+            return {
+                "event": "usage",
+                "usage": usage,
+                "lane": chunk.get("lane") or "write",
+                "facet": "meaning",
+            }
         return None
 
     async def _stream_chat_tokens(

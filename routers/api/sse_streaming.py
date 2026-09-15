@@ -41,6 +41,11 @@ from services.auth.thinking_coin.usage_wire import (
 from services.auth.thinking_coin.event_hub import mutation_to_footer
 from services.monitoring.module_activity import track_module_activity
 from services.redis.redis_token_buffer import get_token_tracker
+from services.mindmate.teaching_design_flag import (
+    is_teaching_instruction_text,
+    mindmate_meta_from_workflow_chunk,
+    mindmate_meta_payload,
+)
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth.user_daily_token_quota import daily_token_limit_message
 from utils.auth import get_current_user_or_api_key
@@ -158,6 +163,7 @@ async def ai_assistant_stream(
         captured_usage: Dict[str, Any] = {}
         captured_conversation_id: Optional[str] = None
         reply_parts: list[str] = []
+        emitted_teaching_meta = False
         skip_activity_log = message.lower() == "start" and not req.conversation_id
 
         try:
@@ -274,8 +280,15 @@ async def ai_assistant_stream(
                         reply_parts.append(answer_part)
 
                 yield f"data: {json.dumps(chunk)}\n\n"
+                if not emitted_teaching_meta:
+                    meta_event = mindmate_meta_from_workflow_chunk(chunk)
+                    if meta_event:
+                        yield f"data: {json.dumps(meta_event)}\n\n"
+                        emitted_teaching_meta = True
 
             logger.debug("[STREAM] Streaming completed. Total chunks: %s", chunk_count)
+            if not emitted_teaching_meta and is_teaching_instruction_text("".join(reply_parts)):
+                yield f"data: {json.dumps(mindmate_meta_payload())}\n\n"
 
             activity_total_tokens: Optional[int] = None
             usage_snapshot = None

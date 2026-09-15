@@ -136,6 +136,8 @@ export const adminKeys = {
     sessions: () => [...adminKeys.all, 'kitty-llmops', 'sessions'] as const,
   },
 
+  teachingDesignTemplate: () => [...adminKeys.all, 'teaching-design-template'] as const,
+
   mindmateExport: {
     all: () => [...adminKeys.all, 'mindmate-export'] as const,
     users: (orgId: number | null) =>

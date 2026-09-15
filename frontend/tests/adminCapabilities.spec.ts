@@ -117,6 +117,16 @@ describe('adminCapabilities', () => {
     ])
   })
 
+  it('teaching_design settings subtab is superadmin-only', () => {
+    expect(settingsSubtabRequiresCapabilities('teaching_design')).toEqual([
+      'tab.settings.teaching_design',
+    ])
+    expect(fallbackCapabilitiesForRole('superadmin')).toContain('tab.settings.teaching_design')
+    expect(fallbackCapabilitiesForRole('school_admin')).not.toContain(
+      'tab.settings.teaching_design'
+    )
+  })
+
   it('canSeeMobileOrgManagement hides the card until API caps load', () => {
     expect(canSeeMobileOrgManagement(null, false)).toBe(false)
     expect(canSeeMobileOrgManagement(null, true)).toBe(false)

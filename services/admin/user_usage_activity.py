@@ -54,6 +54,7 @@ VALID_ACTIVITY_ACTIONS = frozenset(
         "library_engage",
         "showcase_engage",
         "canvas_translate",
+        "mindmap_node_explain",
         "relationship_labels",
         "maite_problem",
         "maite_ocr",

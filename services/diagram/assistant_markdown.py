@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import re
 
+from services.mindmate.teaching_design_flag import strip_reply_kind_markers
+
 GENERATED_PREVIEW_MD_RE = re.compile(
     r"!\[[^\]]*\]\((https://[^)\s]+/api/temp_images/dingtalk_[^)\s]+)\)",
     re.IGNORECASE,
@@ -79,8 +81,9 @@ def answer_contains_diagram_preview(text: str) -> bool:
 
 
 def strip_diagram_id_html_comments(text: str) -> str:
-    """Remove invisible library-id HTML comments from display markdown."""
-    return MG_DIAGRAM_ID_COMMENT_STRIP_RE.sub("", text or "")
+    """Remove invisible library-id and teaching-instruction markers from display markdown."""
+    cleaned = MG_DIAGRAM_ID_COMMENT_STRIP_RE.sub("", text or "")
+    return strip_reply_kind_markers(cleaned)
 
 
 def should_buffer_diagram_markdown_reply(text: str) -> bool:

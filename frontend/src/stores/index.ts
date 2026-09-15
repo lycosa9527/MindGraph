@@ -31,6 +31,7 @@ export {
 } from './ui'
 export { useVoiceStore, useVoiceStore as useKittyAgentStore } from './voice'
 export { useMindMateStore, type MindMateConversation, type MindMateMessage } from './mindmate'
+export { useTeachingDesignExportStore } from './teachingDesignExport'
 export {
   useSavedDiagramsStore,
   type SavedDiagram,

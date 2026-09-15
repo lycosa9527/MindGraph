@@ -44,6 +44,10 @@ from services.admin.user_usage_activity import (
     list_org_usage_activities,
 )
 from services.auth.user_fk_cleanup import delete_user_fk_dependent_rows
+from services.mindmate.teaching_design_template_store import (
+    normalize_template_key,
+    teaching_design_template_list_field,
+)
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS, REDIS_ERRORS
@@ -222,6 +226,7 @@ async def list_organizations_admin(
                 **mindmate_branding_list_fields(org),
                 **org_privatization_list_field(org),
                 **school_tier_list_fields(org, user_count),
+                **teaching_design_template_list_field(org),
             }
         )
     return result
@@ -545,6 +550,19 @@ async def update_organization_admin(
         await assert_organization_tier_allows_current_managers(db, org, lang)
         await assert_organization_tier_allows_current_members(db, org, lang)
 
+    if "teaching_design_template_key" in request:
+        try:
+            setattr(
+                org,
+                "teaching_design_template_key",
+                normalize_template_key(request.get("teaching_design_template_key")),
+            )
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(exc),
+            ) from exc
+
     await propagate_org_dify_settings_to_mindbot_configs(db, org)
 
     try:
@@ -581,6 +599,7 @@ async def update_organization_admin(
         **mindmate_branding_list_fields(org),
         **org_privatization_list_field(org),
         **school_tier_list_fields(org, member_count),
+        **teaching_design_template_list_field(org),
     }
 
 

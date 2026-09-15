@@ -30,6 +30,13 @@ export interface AdminFeaturesToolbarState {
   saving: boolean
 }
 
+export interface AdminTeachingDesignToolbarState {
+  uploading: boolean
+  restoring: boolean
+  canEdit: boolean
+  canRestore: boolean
+}
+
 export const useAdminPanelStore = defineStore('adminPanel', () => {
   const selectedOrgId = ref<number | null>(null)
   const activeTab = ref<string>('data_center')
@@ -39,6 +46,7 @@ export const useAdminPanelStore = defineStore('adminPanel', () => {
   const usersToolbar = ref<AdminUsersToolbarState | null>(null)
   const rolesToolbar = ref<AdminRolesToolbarState | null>(null)
   const featuresToolbar = ref<AdminFeaturesToolbarState | null>(null)
+  const teachingDesignToolbar = ref<AdminTeachingDesignToolbarState | null>(null)
 
   function setSelectedOrgId(orgId: number | null): void {
     selectedOrgId.value = orgId
@@ -115,6 +123,21 @@ export const useAdminPanelStore = defineStore('adminPanel', () => {
     featuresToolbar.value = null
   }
 
+  function setTeachingDesignToolbar(state: AdminTeachingDesignToolbarState | null): void {
+    teachingDesignToolbar.value = state
+  }
+
+  function patchTeachingDesignToolbar(partial: Partial<AdminTeachingDesignToolbarState>): void {
+    if (!teachingDesignToolbar.value) {
+      return
+    }
+    teachingDesignToolbar.value = { ...teachingDesignToolbar.value, ...partial }
+  }
+
+  function clearTeachingDesignToolbar(): void {
+    teachingDesignToolbar.value = null
+  }
+
   return {
     selectedOrgId,
     activeTab,
@@ -124,6 +147,7 @@ export const useAdminPanelStore = defineStore('adminPanel', () => {
     usersToolbar,
     rolesToolbar,
     featuresToolbar,
+    teachingDesignToolbar,
     setSelectedOrgId,
     registerPoll,
     unregisterPoll,
@@ -138,5 +162,8 @@ export const useAdminPanelStore = defineStore('adminPanel', () => {
     setFeaturesToolbar,
     patchFeaturesToolbar,
     clearFeaturesToolbar,
+    setTeachingDesignToolbar,
+    patchTeachingDesignToolbar,
+    clearTeachingDesignToolbar,
   }
 })

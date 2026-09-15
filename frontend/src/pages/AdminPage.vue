@@ -20,6 +20,7 @@ import AdminSystemSettingsTab from '@/components/admin/AdminSystemSettingsTab.vu
 import AdminFeaturesHeaderToolbar from '@/components/admin/AdminFeaturesHeaderToolbar.vue'
 import AdminMindMateExportHeaderToolbar from '@/components/admin/AdminMindMateExportHeaderToolbar.vue'
 import AdminRolesHeaderToolbar from '@/components/admin/AdminRolesHeaderToolbar.vue'
+import AdminTeachingDesignHeaderToolbar from '@/components/admin/AdminTeachingDesignHeaderToolbar.vue'
 import AdminUsersHeaderToolbar from '@/components/admin/AdminUsersHeaderToolbar.vue'
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel.vue'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
@@ -86,6 +87,13 @@ const showFeaturesApplyButton = computed(
 
 const showRolesHeaderToolbar = computed(
   () => activeTab.value === 'settings' && route.query.subtab === 'roles' && can('tab.settings.roles')
+)
+
+const showTeachingDesignHeaderToolbar = computed(
+  () =>
+    activeTab.value === 'settings' &&
+    route.query.subtab === 'teaching_design' &&
+    can('tab.settings.teaching_design')
 )
 
 const showMindMateExportHeaderToolbar = computed(
@@ -162,6 +170,7 @@ onMounted(async () => {
       <div class="admin-header-actions flex flex-1 items-center justify-end gap-3 min-w-0">
         <AdminFeaturesHeaderToolbar v-if="showFeaturesApplyButton" />
         <AdminRolesHeaderToolbar v-if="showRolesHeaderToolbar" />
+        <AdminTeachingDesignHeaderToolbar v-if="showTeachingDesignHeaderToolbar" />
         <AdminMindMateExportHeaderToolbar v-if="showMindMateExportHeaderToolbar" />
         <AdminUsersHeaderToolbar v-if="activeTab === 'users'" />
         <SchoolDashboardOrgPicker
