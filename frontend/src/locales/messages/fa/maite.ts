@@ -1,9 +1,9 @@
 /**
- * fa UI � maite
+ * en UI � maite
  */
 
 export default {
-  'maite.title': 't0',
+  'maite.title': 'Mate Learning',
   'maite.subtitle': 'Reverse decompose · Four-stage diagnosis · Targeted remedy · Variant transfer',
   'maite.mode.demo': 'Demo',
   'maite.mode.inquiry': 'Inquiry',
@@ -12,7 +12,7 @@ export default {
   'maite.stage.diagnosis': 'Diagnosis',
   'maite.stage.remedy': 'Remedy',
   'maite.stage.variant': 'Variants',
-  'maite.stage.completed': 'تکمیل',
+  'maite.stage.completed': 'Completed',
   'maite.problem.placeholder': 'Enter or paste the problem text…',
   'maite.problem.ocr': 'OCR upload',
   'maite.stream.working': 'Generating…',
@@ -65,13 +65,13 @@ export default {
   'maite.map.title': 'Learning map',
   'maite.map.refresh': 'Refresh',
   'maite.map.refreshing': 'Refreshing…',
-  'maite.map.type.knowledge': 'آگاهی',
+  'maite.map.type.knowledge': 'Knowledge',
   'maite.map.type.thinking': 'Thinking',
   'maite.map.status.unknown': 'Not started',
-  'maite.map.status.pending': 'در انتظار',
-  'maite.map.status.in_progress': 'در حال پردازش',
+  'maite.map.status.pending': 'Pending',
+  'maite.map.status.in_progress': 'In progress',
   'maite.map.status.mastered': 'Mastered',
-  'maite.map.status.completed': 'تکمیل',
+  'maite.map.status.completed': 'Completed',
   'maite.report.view': 'View report',
   'maite.report.copy': 'Copy report',
   'maite.report.loading': 'Loading report…',

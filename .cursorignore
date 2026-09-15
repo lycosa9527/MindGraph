@@ -161,3 +161,20 @@ celerybeat.pid
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# Secrets (also gitignored; keep out of Agent / Tab / @ mention)
+.env
+chrome-extension/.env.edge-publish
+data/alipay-certs/
+esp32/**/sdkconfig.defaults.local
+
+# ESP32 toolchain + staged Super trees (IDF/Brookesia dumps; source stays readable)
+esp32/**/build/
+esp32/**/dist/
+esp32/**/managed_components/
+esp32/firmware/**/components/gen_bmgr_codes/
+esp32/firmware/**/littlefs/apps/
+esp32/firmware/**/littlefs/system/
+esp32/**/sdkconfig
+esp32/**/sdkconfig.old
+esp32/**/dependencies.lock

@@ -1,5 +1,5 @@
 /**
- * ha UI � common
+ * en UI � common
  */
 
 export default {
@@ -69,6 +69,7 @@ export default {
   'common.success': 'Success',
   'common.unit.chars': 'chars',
   'common.warning': 'Warning',
+  'swissGlass.confirm.ribbon': 'Confirm',
   'demo.enterCode': 'Please enter a demo code',
   'demo.invalidCode': 'Invalid demo code',
   'demo.loginOk': 'Login successful',
@@ -116,10 +117,10 @@ export default {
   'meta.pageTitle.library': 'Library',
   'meta.pageTitle.libraryBookmark': 'Bookmark',
   'meta.pageTitle.libraryViewer': 'Library viewer',
-  'meta.pageTitle.voiceNotes': 'Voice notes',
   'meta.pageTitle.login': 'Sign in',
   'meta.pageTitle.main': 'Mind Platform',
   'meta.pageTitle.mindgraph': 'MindGraph',
+  'meta.pageTitle.voiceNotes': 'Voice notes',
   'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.kitty': 'Kitty',
@@ -314,7 +315,7 @@ export default {
   'settings.language.eBlackboardOff': 'Off',
   'settings.language.eBlackboardOn': 'On',
   'settings.language.eBlackboardHint':
-    'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
+    'Enlarges branch + and collapse controls on the new canvas; tap to select, double-tap to edit, two-finger drag to pan/zoom — for classroom e-blackboards',
   'settings.language.sidebarPoem': 'Sidebar poem',
   'settings.language.sidebarPoemHint':
     'When off, token usage for today is shown under your name',
@@ -352,12 +353,11 @@ export default {
   'landing.international.modules': 'Modules',
   'landing.international.mindmateCard.title': 'MindMate',
   'landing.international.mindmateCard.desc': 'Your virtual teaching and research partner',
-  'landing.international.shareSite': 'Share site',
-  'landing.international.shareSiteModalTitle': 'Share site',
+  'landing.international.shareSite': 'Quick registration',
+  'landing.international.shareSiteModalTitle': 'Quick registration',
   'landing.international.shareSiteModalHint': '',
   'landing.international.shareSiteCopy': 'Copy link',
   'landing.international.shareSiteCopied': 'Link copied',
-  'swissGlass.confirm.ribbon': 'Confirm',
   'swissGlass.hero.settings.ribbon': 'Settings',
   'swissGlass.hero.settings.title': 'Language and display',
   'swissGlass.hero.settings.line1': 'Choose interface language, prompt language, and canvas chrome',

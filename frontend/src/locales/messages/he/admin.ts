@@ -1,5 +1,5 @@
 /**
- * he UI � admin
+ * en UI � admin
  */
 
 export default {
@@ -83,7 +83,7 @@ export default {
   'admin.feature.kittyAgentHint': 'Kitty edits the canvas with Fun-ASR, CosyVoice, and a typed edit loop; WebSocket and REST respect org/user access rules.',
   'admin.feature.mindClassroomSlideDeck': 'Mind Classroom slide lecture',
   'admin.feature.mindClassroomSlideDeckHint':
-    'When off, slide lecture stays visible but greyed out. Off by default.',
+    'When off, 幻灯片讲解 stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Template resources',
   'admin.feature.templateHint': 'Template gallery and related APIs.',
   'admin.feature.workshopChat': 'Workshop (研习社)',
@@ -258,10 +258,10 @@ export default {
   'admin.mindbot.managerNoOrg': 'Your account has no organization assigned.',
   'admin.mindbot.tabDingtalk': 'DingTalk API auth',
   'admin.oauth.sectionTitle': 'QR sign-in',
-  'admin.oauth.intro': 'Enable WeChat or DingTalk QR login for this school. WeChat AppID/Secret are in server .env; DingTalk requires school IT credentials.',
+  'admin.oauth.intro': 'WeChat QR login is platform-wide (FEATURE_WECHAT_LOGIN + AppID/Secret; default off, production only — Open Platform allows one callback domain). DingTalk is per school (FEATURE_DINGTALK_LOGIN + AppKey/Secret from school IT; default off).',
   'admin.oauth.officialDocsHint': 'Matches official docs: WeChat WxLogin + code exchange; DingTalk OAuth 2.0 DTFrameLogin + immediate authCode exchange (not legacy oapi.dingtalk.com).',
-  'admin.oauth.wechatToggle': 'Enable WeChat QR login',
-  'admin.oauth.wechatHint': 'Teachers must link WeChat under Account linking first. Platform AppID/Secret are set in server .env.',
+  'admin.oauth.wechatToggle': 'WeChat QR login',
+  'admin.oauth.wechatHint': 'Server .env only. Production sets FEATURE_WECHAT_LOGIN=True. Teachers bind WeChat under Account linking before QR login works.',
   'admin.oauth.wechatOn': 'On',
   'admin.oauth.wechatOff': 'Off',
   'admin.oauth.dingtalkToggle': 'Enable DingTalk QR login',
@@ -430,16 +430,16 @@ export default {
   'admin.outShort': 'Out',
   'admin.outputTokens': 'Output Tokens (All Time)',
   'admin.overallTokenSummary': 'Overall Token Usage Summary',
-  'admin.dingtalkGenerationCard': 'DingTalk generation',
+  'admin.dingtalkGenerationCard': 'External API',
   'admin.externalApiDiagramLabel': 'Diagram',
   'admin.externalApiImageLabel': 'ZhiHui image',
   'admin.dingtalkCardTotalUses': 'Total: {count} times',
   'admin.dingtalkCardClickToEditApiKeys': 'Click to edit API keys',
-  'admin.dingtalkApiKeysDialogTitle': 'DingTalk image — integration API keys',
-  'admin.dingtalkApiKeysDialogNote': 'X-API-Key · generate_dingtalk & temp image URLs',
-  'admin.dingtalkApiKeysDialogIntro': 'Use the X-API-Key header. These keys authenticate public API calls such as diagram PNG generation for DingTalk. Responses are markdown with time-limited image URLs; fetching an image only needs the signed link, not this key.',
+  'admin.dingtalkApiKeysDialogTitle': 'External API — integration keys',
+  'admin.dingtalkApiKeysDialogNote': 'X-API-Key · generate_dingtalk & generate-text-to-image',
+  'admin.dingtalkApiKeysDialogIntro': 'Use the X-API-Key header. The same keys authenticate external callers (e.g. Dify) for diagram generation (/api/generate_dingtalk) and ZhiHui text-to-image (/api/generate-text-to-image). Responses include signed image URLs; fetching the image only needs the signed link. Diagram and image calls are counted separately.',
   'admin.apiKeysTableStats': 'Tokens (all time)',
-  'admin.apiKeysRequestCount': 'Requests',
+  'admin.apiKeysRequestCount': 'Total requests',
   'admin.apiKeysDiagramRequestCount': 'Diagram',
   'admin.apiKeysImageRequestCount': 'Image',
   'admin.apiKeysTableQuota': 'Quota',
@@ -728,7 +728,7 @@ export default {
   'admin.schoolFeatureUsage.visits': 'Annual visitors',
   'admin.schoolFeatureUsage.completed': 'Annual completed uses',
   'admin.schoolFeatureUsage.uses': 'Annual uses',
-  'admin.schoolFeatureUsage.ops': 'Operations per visitor',
+  'admin.schoolFeatureUsage.ops': 'Uses per visitor',
   'admin.schoolFeatureUsage.passRate': 'Process pass rate',
   'admin.schoolFeatureUsage.failRate': 'Fail rate',
   'admin.schoolFeatureUsage.llmFailRate': 'LLM fail rate',
@@ -742,23 +742,23 @@ export default {
   'admin.schoolFeatureUsage.capacity.ample': 'Ample',
   'admin.schoolFeatureUsage.capacity.normal': 'Typical',
   'admin.schoolFeatureUsage.durationEmpty':
-    'No handling-duration records (feature events do not store start and end times).',
+    'No LLM response-time records for this module this year (no token usage rows).',
   'admin.schoolFeatureUsage.loadError': 'Failed to load feature usage',
   'admin.schoolFeatureUsage.nameSep': ', ',
   'admin.schoolFeatureUsage.noneListed': 'none',
   'admin.schoolFeatureUsage.bottleneckNone':
-    'Pass rates are steady this year and no handling bottleneck stands out. Failures are rarely persisted, so capacity reads volume and idle modules first.',
+    'Process pass rates are steady this year and LLM response time is not unusually slow (above the median and over the module floor: 8s canvas, 90s chat). Pass rate is from feature events; LLM fail rate is from token usage.',
   'admin.schoolFeatureUsage.bottleneckVolume':
-    'Pass rates are generally high (failures are rarely persisted). Constraints come from volume mix and idle modules ({idle}), not failed handling.',
-  'admin.schoolFeatureUsage.bottleneckPass':
-    'Lower pass-rate processes: {lowest}. Constrained capacity: {tense}. Failures are rarely persisted; read this with volume.',
+    'Process pass rates are generally high. Constraints come from volume mix and idle modules ({idle}), not failed or slow handling.',
   'admin.schoolFeatureUsage.bottleneckSlow':
-    'Pass rates are steady. LLM handling is slower than typical on {slow} (includes canvas autocomplete).',
+    'Process pass rates are steady. LLM response is above the median and over the module floor on {slow}.',
+  'admin.schoolFeatureUsage.bottleneckPass':
+    'Lower process pass-rate modules: {lowest}. Constrained capacity: {tense}. Pass rate is from feature events; read this with volume.',
   'admin.schoolFeatureUsage.bottleneckPassSlow':
-    'Lower pass-rate processes: {lowest}. Constrained capacity: {tense}. Slower LLM handling: {slow}.',
+    'Lower process pass-rate modules: {lowest}. Constrained capacity: {tense}. Slower LLM response (above median and over the module floor): {slow}.',
+  'admin.schoolFeatureUsage.top5Title': '1. Core feature coverage ranking (TOP 5)',
   'admin.schoolFeatureUsage.top5Empty': 'No module had visitors this year.',
   'admin.schoolFeatureUsage.usageRateHint': 'Coverage = annual unique visitors / current enrolled members.',
-  'admin.schoolFeatureUsage.top5Title': '1. Core feature usage-rate ranking (TOP 5)',
   'admin.schoolFeatureUsage.highTitle': '2. High-frequency features',
   'admin.schoolFeatureUsage.lowIdleTitle': '3. Low-frequency and long-idle features',
   'admin.schoolFeatureUsage.lowIdleBody':
@@ -768,7 +768,7 @@ export default {
     'Usage concentrates on {top}. Idle or unpersisted modules: {idle}. Volume clusters on a few core features; idle items may be disabled.',
   'admin.schoolFeatureUsage.conclusionSpread':
     'Usage is relatively spread; leading modules are {top}. Idle or unpersisted modules: {idle}. Idle items may be disabled.',
-  'admin.schoolFeatureUsage.usageRate': 'Usage rate',
+  'admin.schoolFeatureUsage.usageRate': 'Coverage',
   'admin.schoolFeatureUsage.module.canvas': 'Diagram canvas',
   'admin.schoolFeatureUsage.module.mindmate': 'MindMate',
   'admin.schoolFeatureUsage.module.kitty': 'Kitty Agent',

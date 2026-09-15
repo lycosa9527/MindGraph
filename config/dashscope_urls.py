@@ -174,6 +174,16 @@ def build_chat_completions_url(
     return f"{base.rstrip('/')}/chat/completions"
 
 
+def build_responses_url(
+    *,
+    workspace_id: Optional[str] = None,
+    region: DashScopeRegion = "cn-beijing",
+) -> str:
+    """Full OpenAI-compatible Responses API URL."""
+    base = build_compatible_mode_base(workspace_id=workspace_id, region=region)
+    return f"{base.rstrip('/')}/responses"
+
+
 def build_embeddings_url(
     *,
     workspace_id: Optional[str] = None,
@@ -294,6 +304,21 @@ def resolve_chat_completions_url(
     if _clean_workspace_id(workspace_id):
         return build_chat_completions_url(workspace_id=workspace_id, region=region)
     return LEGACY_CHAT_COMPLETIONS_URL
+
+
+def resolve_responses_url(
+    *,
+    explicit_chat_url: Optional[str],
+    workspace_id: Optional[str],
+    region: DashScopeRegion,
+) -> str:
+    """Derive ``…/responses`` from the same base as chat completions."""
+    base = resolve_compatible_mode_base(
+        explicit_chat_url=explicit_chat_url,
+        workspace_id=workspace_id,
+        region=region,
+    )
+    return f"{base.rstrip('/')}/responses"
 
 
 def resolve_api_v1_base(

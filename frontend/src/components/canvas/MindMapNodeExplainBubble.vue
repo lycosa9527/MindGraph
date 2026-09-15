@@ -2,12 +2,21 @@
 /**
  * Short gloss bubble anchored beside a mind-map node (or a compact fallback card).
  */
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 
 import { X } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
-import type { MindMapNodeExplainTarget } from '@/composables/mindMap/useMindMapNodeExplain'
+import type {
+  ExplainResearchSource,
+  MindMapNodeExplainTarget,
+} from '@/composables/mindMap/useMindMapNodeExplain'
+import {
+  citedExplainIndexes,
+  hostFromUrl,
+  lastThinkingLines,
+  splitExplainCitationParts,
+} from '@/utils/mindMapExplainResearch'
 import type {
   ExplainBubblePosition,
   ExplainBubbleSize,
@@ -21,11 +30,23 @@ const props = withDefaults(
     text: string
     loading: boolean
     error?: string | null
+    thinking?: string
+    thinkingDone?: boolean
+    pagesFound?: number
+    pagesFetched?: number
+    sources?: ExplainResearchSource[]
     position: ExplainBubblePosition
     /** When false, wait for a node-anchored position (canvas). */
     allowFallback?: boolean
   }>(),
-  { allowFallback: true }
+  {
+    allowFallback: true,
+    thinking: '',
+    thinkingDone: false,
+    pagesFound: 0,
+    pagesFetched: 0,
+    sources: () => [],
+  }
 )
 
 const showBubble = computed(() => visible.value && (props.position.visible || props.allowFallback))
@@ -48,7 +69,89 @@ const bodyText = computed(() => {
   return ''
 })
 
-const awaiting = computed(() => props.loading && !bodyText.value)
+const thinkingText = computed(() => lastThinkingLines(props.thinking))
+
+const pageStats = computed(() => {
+  if (props.pagesFound <= 0 && props.pagesFetched <= 0) return ''
+  return t('canvas.mindMapNodeExplain.pageStats', {
+    found: String(props.pagesFound),
+    fetched: String(props.pagesFetched),
+  })
+})
+
+const thinkingLive = computed(
+  () => props.loading && !bodyText.value && !props.thinkingDone
+)
+
+const thinkingLabel = computed(() =>
+  thinkingLive.value
+    ? t('canvas.mindMapNodeExplain.thinking')
+    : t('canvas.mindMapNodeExplain.thinkingDone')
+)
+
+const showThinking = computed(
+  () => props.loading || !!thinkingText.value || !!pageStats.value
+)
+
+const thinkingExpanded = ref(true)
+const thinkBodyEl = ref<HTMLElement | null>(null)
+
+function scrollThinkingToEnd(): void {
+  const el = thinkBodyEl.value
+  if (!el) return
+  el.scrollTop = el.scrollHeight
+}
+
+watch(
+  () => [visible.value, bodyText.value, props.loading] as const,
+  ([isOpen, body, loading]) => {
+    if (!isOpen) {
+      thinkingExpanded.value = true
+      return
+    }
+    if (body) {
+      thinkingExpanded.value = false
+      return
+    }
+    if (loading) thinkingExpanded.value = true
+  }
+)
+
+watch(
+  () => props.thinking,
+  () => {
+    if (!thinkingExpanded.value || bodyText.value) return
+    void nextTick(scrollThinkingToEnd)
+  }
+)
+
+function onThinkToggle(event: Event): void {
+  const target = event.currentTarget
+  if (!(target instanceof HTMLDetailsElement)) return
+  thinkingExpanded.value = target.open
+}
+
+const awaiting = computed(() => props.loading && !bodyText.value && !showThinking.value)
+
+const bodyParts = computed(() => splitExplainCitationParts(bodyText.value))
+
+const citedChips = computed(() => {
+  const chips: { index: number; title: string; url: string }[] = []
+  citedExplainIndexes(bodyText.value).forEach((index) => {
+    const source = props.sources[index - 1]
+    if (!source) return
+    chips.push({
+      index,
+      url: source.url,
+      title: source.title.trim() || hostFromUrl(source.url),
+    })
+  })
+  return chips
+})
+
+function sourceForCite(index: number): ExplainResearchSource | undefined {
+  return props.sources[index - 1]
+}
 
 const bubbleStyle = computed(() => {
   if (!props.position.visible) {
@@ -141,6 +244,7 @@ onUnmounted(() => {
         {
           'ne-bubble--streaming': loading,
           'ne-bubble--error': !!error && !loading,
+          'ne-bubble--agent': showThinking,
         },
       ]"
       :style="bubbleStyle"
@@ -173,17 +277,85 @@ onUnmounted(() => {
           />
         </button>
       </header>
+      <details
+        v-if="showThinking"
+        class="ne-bubble__think"
+        :class="{ 'ne-bubble__think--live': thinkingLive }"
+        :open="thinkingExpanded"
+        @toggle="onThinkToggle"
+      >
+        <summary class="ne-bubble__think-title">
+          {{ thinkingLabel }}
+          <span
+            v-if="thinkingLive"
+            class="ne-bubble__pulse"
+            aria-hidden="true"
+          />
+        </summary>
+        <div
+          v-if="thinkingText"
+          ref="thinkBodyEl"
+          class="ne-bubble__think-body"
+        >
+          {{ thinkingText }}
+        </div>
+      </details>
+      <p
+        v-if="pageStats"
+        class="ne-bubble__pages"
+      >
+        {{ pageStats }}
+      </p>
       <p
         class="ne-bubble__body"
         aria-live="polite"
       >
-        <template v-if="bodyText">{{ bodyText }}</template>
+        <template v-if="bodyText">
+          <template
+            v-for="(part, partIndex) in bodyParts"
+            :key="`${part.kind}-${partIndex}`"
+          >
+            <template v-if="part.kind === 'text'">{{ part.value }}</template>
+            <a
+              v-else-if="sourceForCite(part.index)"
+              class="ne-bubble__cite"
+              :href="sourceForCite(part.index)?.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              :aria-label="t('canvas.mindMapNodeExplain.citation', { n: String(part.index) })"
+              >[{{ part.index }}]</a
+            >
+            <span
+              v-else
+              class="ne-bubble__cite ne-bubble__cite--plain"
+              >[{{ part.index }}]</span
+            >
+          </template>
+        </template>
         <span
           v-else-if="awaiting"
           class="ne-bubble__pulse"
           aria-hidden="true"
         />
       </p>
+      <ol
+        v-if="citedChips.length"
+        class="ne-bubble__refs"
+      >
+        <li
+          v-for="chip in citedChips"
+          :key="`${chip.index}-${chip.url}`"
+        >
+          <a
+            :href="chip.url"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span class="ne-bubble__ref-n">{{ chip.index }}</span>
+            <span class="ne-bubble__ref-title">{{ chip.title }}</span>
+          </a>
+        </li>
+      </ol>
     </div>
   </Teleport>
 </template>
@@ -210,6 +382,10 @@ onUnmounted(() => {
   box-shadow:
     0 10px 15px -3px rgb(28 25 23 / 0.1),
     0 4px 6px -4px rgb(28 25 23 / 0.08);
+}
+
+.ne-bubble--agent {
+  width: min(22rem, calc(100vw - 1.5rem));
 }
 
 .ne-bubble--fallback {
@@ -311,6 +487,47 @@ onUnmounted(() => {
   background: var(--swiss-hover, #f5f5f4);
 }
 
+.ne-bubble__think {
+  position: relative;
+  z-index: 1;
+  margin: 0 0 0.28rem;
+  font-size: 0.72rem;
+  color: var(--ne-muted);
+}
+
+.ne-bubble__think-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: var(--ne-accent);
+}
+
+.ne-bubble__think-title::-webkit-details-marker {
+  display: none;
+}
+
+.ne-bubble__think-body {
+  margin: 0.2rem 0 0;
+  max-height: calc(1.4em * 3);
+  overflow-x: hidden;
+  overflow-y: auto;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.ne-bubble__pages {
+  position: relative;
+  z-index: 1;
+  margin: 0 0 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ne-ink);
+}
+
 .ne-bubble__body {
   position: relative;
   z-index: 1;
@@ -321,11 +538,70 @@ onUnmounted(() => {
   word-break: break-word;
 }
 
+.ne-bubble__cite {
+  margin: 0 0.05em;
+  font-size: 0.68em;
+  font-weight: 700;
+  vertical-align: super;
+  color: var(--ne-accent);
+  text-decoration: none;
+}
+
+.ne-bubble__cite:hover {
+  text-decoration: underline;
+}
+
+.ne-bubble__cite--plain {
+  color: var(--ne-muted);
+}
+
+.ne-bubble__refs {
+  position: relative;
+  z-index: 1;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ne-bubble__refs li + li {
+  margin-top: 0.2rem;
+}
+
+.ne-bubble__refs a {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.ne-bubble__refs a:hover .ne-bubble__ref-title {
+  text-decoration: underline;
+}
+
+.ne-bubble__ref-n {
+  flex-shrink: 0;
+  min-width: 1rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--ne-accent);
+}
+
+.ne-bubble__ref-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.7rem;
+  color: var(--ne-muted);
+}
+
 .ne-bubble__pulse {
   display: inline-block;
   width: 0.45rem;
   height: 0.45rem;
-  margin-top: 0.2rem;
+  flex-shrink: 0;
   border-radius: 9999px;
   background: color-mix(in srgb, var(--ne-accent) 55%, var(--ne-muted));
   animation: ne-bubble-pulse 1.1s ease-in-out infinite;

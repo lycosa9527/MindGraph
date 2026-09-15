@@ -23,13 +23,48 @@ ExplainFacet = Literal["meaning", "conflict", "questions"]
 StyleBand = Literal["kid", "school", "pro", "general"]
 
 _MAX_TOKENS_BY_LEVEL: Dict[str, int] = {
-    "primary": 96,
-    "junior": 128,
-    "general": 128,
-    "senior": 160,
-    "university": 192,
-    "adult": 192,
-    "expert": 192,
+    "primary": 512,
+    "junior": 640,
+    "general": 640,
+    "senior": 768,
+    "university": 768,
+    "adult": 768,
+    "expert": 768,
+}
+
+RESEARCH_MAX_OUTPUT_TOKENS = 8192
+RESEARCH_IMAGE_MAX_OUTPUT_TOKENS = 1024
+RESEARCH_IMAGE_MAX = 24
+RESEARCH_TOOLS = ("web_search",)
+RESEARCH_IMAGE_TOOLS = ("web_search_image",)
+
+_RESEARCH_BLOCKS: Dict[PromptShell, str] = {
+    "zh": (
+        "【联网研究】\n"
+        "必须调用 web_search。"
+        "搜索一返回就根据标题和摘要写释义，不要打开网页，不要再搜一轮。"
+        "正文不少于 250 字，目标 250–400 字。"
+        "句末用 [1][2] 标注依据，编号与搜索结果顺序一致（第一条为 [1]）。"
+        "不要在释义里列出网址或标题。标注不算扩写。"
+        "最终回复只写这段释义加标注，不要写检索过程，不要列提纲。"
+    ),
+    "en": (
+        "【Web research】\n"
+        "You must run web_search. "
+        "Write the gloss from search titles and snippets as soon as search returns — "
+        "do not open pages or start another search. "
+        "Write at least 160 words, target 160–260 words. "
+        "Cite sources as [1][2] in search order (first result is [1]). "
+        "Do not list URLs or titles in the gloss. Marks are not extra prose. "
+        "The final reply is that paragraph plus citations only — no search diary."
+    ),
+    "az": (
+        "【Veb tədqiqat】\n"
+        "Alət: web_search. "
+        "Axtarış gələndən dərhal başlıq və qısa mətndən izah yazın. "
+        "Ən azı 160 söz, hədəf 160–260 söz. "
+        "Mənbələri [1][2] ilə işarələyin. Səhifə açmayın. Hesabat olmasın."
+    ),
 }
 
 _DIAGRAM_TYPE_LABELS: Dict[str, Dict[str, str]] = {
@@ -107,99 +142,104 @@ _STYLE_LINES: Dict[PromptShell, Dict[StyleBand, str]] = {
 _MEANING_TASKS: Dict[PromptShell, Dict[str, str]] = {
     "zh": {
         "general": (
-            "用一两句清楚的话说明这个节点在中心主题里是什么、指什么。"
-            "约 40–60 字。不要讲层级位置，不要寒暄，不要写认知冲突，不要列问题，不要分点。"
+            "用一段完整说明把这个节点在中心主题里是什么、指什么讲清楚。"
+            "正文不少于 250 字，目标 250–400 字。不要讲层级位置，不要寒暄，不要写认知冲突，不要列问题，不要分点。"
             "不要故意小学化，也不要专家腔。"
         ),
         "primary": (
-            "用一两句日常口语说明这个节点是什么，像给小朋友解释「苹果」："
+            "用一段日常口语说明这个节点是什么，像给小朋友解释「苹果」："
             "苹果是长在树上的红色水果。"
-            "站在中心主题的视角，只说它是什么、指什么；约 40–50 字，最多不超过 60 字。"
+            "站在中心主题的视角，只说它是什么、指什么；正文不少于 250 字，目标 250–400 字。"
             "不要讲层级位置，不要寒暄，不要写认知冲突，不要列问题，不要分点。"
         ),
         "junior": (
-            "用一两句适合初中生的话说明这个节点是什么。可用一个学科词，首次用生活说法带过。"
-            "约 50–70 字。不要讲层级位置，不要寒暄，不要写认知冲突，不要列问题，不要分点。"
+            "用一段适合初中生的话说明这个节点是什么。可用一个学科词，首次用生活说法带过。"
+            "正文不少于 250 字，目标 250–400 字。不要讲层级位置，不要寒暄，不要写认知冲突，不要列问题，不要分点。"
         ),
         "senior": (
-            "用一两句规范学科用语说明这个节点在主题中的含义与关系。少科普铺垫。"
-            "约 60–90 字。不要讲层级位置，不要寒暄，不要写认知冲突，不要列问题，不要分点。"
+            "用一段规范学科用语说明这个节点在主题中的含义与关系。少科普铺垫。"
+            "正文不少于 250 字，目标 250–400 字。不要讲层级位置，不要寒暄，不要写认知冲突，不要列问题，不要分点。"
         ),
         "university": (
-            "用一两句学科术语说明这个节点的机制或理论位置，不必解释入门词。"
-            "约 60–100 字。不要中小学教案口吻，不要讲层级位置，不要寒暄，不要列问题。"
+            "用一段学科术语说明这个节点的机制或理论位置，不必解释入门词。"
+            "正文不少于 250 字，目标 250–400 字。不要中小学教案口吻，不要讲层级位置，不要寒暄，不要列问题。"
         ),
         "adult": (
-            "用一两句专业、面向做事的话说明这个节点是什么、在实务上意味着什么。"
-            "约 60–100 字。少课堂口吻。不要讲层级位置，不要寒暄，不要列问题。"
+            "用一段专业、面向做事的话说明这个节点是什么、在实务上意味着什么。"
+            "正文不少于 250 字，目标 250–400 字。少课堂口吻。不要讲层级位置，不要寒暄，不要列问题。"
         ),
         "expert": (
-            "用一两句领域术语给出同行级、可审阅的释义：机制、边界或争议即可。"
-            "禁止科普开场与类比故事。约 50–90 字，密、准、短。"
+            "用一段领域术语给出同行级、可审阅的释义：机制、边界或争议即可。"
+            "禁止科普开场与类比故事。正文不少于 250 字，目标 250–400 字，密、准。"
             "不要讲层级位置，不要寒暄，不要列问题。"
         ),
     },
     "en": {
         "general": (
-            "In one or two clear sentences, say what this node is in the central topic. "
-            "About 25–40 words. No hierarchy lecture, no opener, no cognitive conflict, no questions, no lists. "
+            "In one paragraph, say what this node is in the central topic. "
+            "At least 160 words, target 160–260. "
+            "No hierarchy lecture, no opener, no cognitive conflict, no questions, no lists. "
             "Neither a child's gloss nor an expert-peer note."
         ),
         "primary": (
-            "In one or two everyday sentences, say what this node is — like explaining apple: "
+            "In one everyday paragraph, say what this node is — like explaining apple: "
             "a red fruit that grows on trees. From the central topic's perspective, only what it is "
-            "and what it means here. About 25–30 words, never more than 35. "
+            "and what it means here. At least 160 words, target 160–260. "
             "No hierarchy lecture, no soft opener, no cognitive conflict, no questions, no lists."
         ),
         "junior": (
-            "In one or two middle-school sentences, say what this node is. "
-            "One subject word is fine if you gloss it. About 30–45 words. "
+            "In one middle-school paragraph, say what this node is. "
+            "One subject word is fine if you gloss it. At least 160 words, target 160–260. "
             "No hierarchy lecture, no opener, no cognitive conflict, no questions, no lists."
         ),
         "senior": (
-            "In one or two high-school sentences, name what this node is and how it relates to the topic. "
-            "Subject terms are fine; skip popular-science padding. About 40–60 words. "
+            "In one high-school paragraph, name what this node is and how it relates to the topic. "
+            "Subject terms are fine; skip popular-science padding. At least 160 words, target 160–260. "
             "No hierarchy lecture, no opener, no questions, no lists."
         ),
         "university": (
-            "In one or two disciplinary sentences, place this node in its mechanism or theoretical frame. "
-            "Do not define introductory words. About 40–70 words. No K–12 lesson tone, no opener, no lists."
+            "In one disciplinary paragraph, place this node in its mechanism or theoretical frame. "
+            "Do not define introductory words. At least 160 words, target 160–260. "
+            "No K–12 lesson tone, no opener, no lists."
         ),
         "adult": (
-            "In one or two professional sentences, say what this node is and what it means in practice. "
-            "Little classroom tone. About 40–70 words. No hierarchy lecture, no opener, no lists."
+            "In one professional paragraph, say what this node is and what it means in practice. "
+            "Little classroom tone. At least 160 words, target 160–260. "
+            "No hierarchy lecture, no opener, no lists."
         ),
         "expert": (
-            "In one or two dense peer sentences, give an audit-ready gloss: mechanism, bound, or disagreement. "
-            "Domain terminology. No popular-science opening or analogy story. About 35–60 words. "
+            "In one dense peer paragraph, give an audit-ready gloss: mechanism, bound, or disagreement. "
+            "Domain terminology. No popular-science opening or analogy story. "
+            "At least 160 words, target 160–260. "
             "No hierarchy lecture, no opener, no questions, no lists."
         ),
     },
     "az": {
         "general": (
-            "Bir-iki aydın cümlə ilə bu düyünün mərkəz mövzuda nə olduğunu deyin. "
-            "Təxminən 25–40 söz. İerarxiya, salam, konflikt, sual və siyahı olmasın."
+            "Qısa bir abzasla bu düyünün mərkəz mövzuda nə olduğunu deyin. "
+            "Təxminən 160–260 söz. İerarxiya, salam, konflikt, sual və siyahı olmasın."
         ),
         "primary": (
-            "Bir-iki gündəlik cümlə ilə bu düyünün nə olduğunu deyin — alma kimi: "
-            "ağacda bitən qırmızı meyvə. Təxminən 25–30 söz, 35-dən çox olmasın. "
+            "Qısa gündəlik abzasla bu düyünün nə olduğunu deyin — alma kimi: "
+            "ağacda bitən qırmızı meyvə. Təxminən 160–260 söz. "
             "İerarxiya, giriş salamı, koqnitiv konflikt, sual və siyahı olmasın."
         ),
         "junior": (
-            "Orta məktəb səviyyəsində bir-iki cümlə ilə bu düyünün nə olduğunu deyin. "
-            "Təxminən 30–45 söz. İerarxiya, salam, sual və siyahı olmasın."
+            "Orta məktəb səviyyəsində qısa abzasla bu düyünün nə olduğunu deyin. "
+            "Təxminən 160–260 söz. İerarxiya, salam, sual və siyahı olmasın."
         ),
         "senior": (
-            "Lisey səviyyəsində bu düyünün mövzu ilə əlaqəsini deyin. Təxminən 40–60 söz. Populyar-elm dolğusu olmasın."
+            "Lisey səviyyəsində bu düyünün mövzu ilə əlaqəsini deyin. "
+            "Təxminən 160–260 söz. Populyar-elm dolğusu olmasın."
         ),
         "university": (
-            "Akademik cümlələrlə bu düyünün mexanizm və ya nəzəri yerini deyin. "
-            "Təxminən 40–70 söz. Məktəb dərs tonu olmasın."
+            "Akademik abzasla bu düyünün mexanizm və ya nəzəri yerini deyin. "
+            "Təxminən 160–260 söz. Məktəb dərs tonu olmasın."
         ),
-        "adult": ("Peşəkar, işə yönəlmiş bir-iki cümlə ilə bu düyünün praktik mənasını deyin. Təxminən 40–70 söz."),
+        "adult": ("Peşəkar, işə yönəlmiş qısa abzasla bu düyünün praktik mənasını deyin. Təxminən 160–260 söz."),
         "expert": (
             "Həmkar üçün sıx, dəqiq, yoxlanıla bilən izah: mexanizm, sərhəd və ya mübahisə. "
-            "Populyar-elm açılışı olmasın. Təxminən 35–60 söz."
+            "Populyar-elm açılışı olmasın. Təxminən 160–260 söz."
         ),
     },
 }
@@ -265,7 +305,7 @@ def style_band_for_level(level: str) -> StyleBand:
 
 
 def max_tokens_for_audience(level: str) -> int:
-    """Token budget so professional glosses are not cut off at the kid cap."""
+    """Token budget so a 250–400 character gloss is not cut off."""
     return _MAX_TOKENS_BY_LEVEL[normalize_audience_level(level)]
 
 
@@ -363,9 +403,17 @@ def _build_context_block(fields: Dict[str, str], shell: PromptShell) -> str:
     )
 
 
+_MEANING_LENGTH_GUARD: Dict[PromptShell, str] = {
+    "zh": "正文不少于 250 字，目标 250–400 字。",
+    "en": "Write at least 160 words, target 160–260 words.",
+    "az": "Ən azı 160 söz, hədəf 160–260 söz.",
+}
+
+
 def _facet_task(facet: ExplainFacet, shell: PromptShell, level: str) -> str:
     if facet == "meaning":
-        return _MEANING_TASKS[shell][normalize_audience_level(level)]
+        task = _MEANING_TASKS[shell][normalize_audience_level(level)]
+        return f"{_MEANING_LENGTH_GUARD[shell]}{task}"
     return _SHARED_FACET_TASKS[shell][facet]
 
 
@@ -420,4 +468,67 @@ def build_facet_prompt(
             f"{brief}"
         ),
         generation_instructions,
+    )
+
+
+def build_research_meaning_prompt(
+    *,
+    node_label: str,
+    topic: str,
+    diagram_type: str,
+    top_level_branches: List[str],
+    ancestor_path: List[str],
+    sibling_branches: List[str],
+    child_branches: List[str],
+    language: str,
+    audience_level: Optional[str] = None,
+    generation_instructions: Optional[str] = None,
+) -> str:
+    """Meaning prompt plus search-then-write research instructions."""
+    base = build_facet_prompt(
+        facet="meaning",
+        node_label=node_label,
+        topic=topic,
+        diagram_type=diagram_type,
+        top_level_branches=top_level_branches,
+        ancestor_path=ancestor_path,
+        sibling_branches=sibling_branches,
+        child_branches=child_branches,
+        language=language,
+        audience_level=audience_level,
+        generation_instructions=generation_instructions,
+    )
+    shell = prompt_shell_key(language)
+    return f"{base}\n\n{_RESEARCH_BLOCKS[shell]}"
+
+
+def build_research_image_prompt(
+    *,
+    node_label: str,
+    topic: str,
+    language: str,
+) -> str:
+    """Short prompt that only asks for image search, never a gloss."""
+    shell = prompt_shell_key(language)
+    node_text = node_label.strip() or _UNTITLED_LABELS[shell]
+    topic_text = topic.strip() or _UNTITLED_LABELS[shell]
+    if shell == "zh":
+        return (
+            f"{output_language_instruction(language)}\n"
+            f"只调用一次 web_search_image，为节点「{node_text}」（主题：{topic_text}）检索约 "
+            f"{RESEARCH_IMAGE_MAX} 张配图，最多 30 张。"
+            "不要写释义，不要调用 web_search，不要打开网页，不要再搜一轮。"
+        )
+    if shell == "az":
+        return (
+            f"{output_language_instruction(language)}\n"
+            f"Bir dəfə web_search_image: düyün «{node_text}» (mövzu: {topic_text}), "
+            f"təxminən {RESEARCH_IMAGE_MAX} şəkil, 30-dan çox olmasın. "
+            "İzah yazmayın, web_search və səhifə açmayın."
+        )
+    return (
+        f"{output_language_instruction(language)}\n"
+        f'Call web_search_image once for node "{node_text}" (topic: {topic_text}). '
+        f"About {RESEARCH_IMAGE_MAX} images, never more than 30. "
+        "Do not write a gloss, call web_search, open pages, or search again."
     )

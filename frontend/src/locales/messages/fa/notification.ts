@@ -1,5 +1,5 @@
 /**
- * fa UI � notification
+ * en UI � notification
  */
 
 export default {
@@ -14,7 +14,7 @@ export default {
   'notification.conversationDeleted': 'Conversation deleted',
   'notification.copied': 'Copied to clipboard',
   'notification.copyFailed': 'Failed to copy',
-  'notification.deleteFailed': 'حذف نشد',
+  'notification.deleteFailed': 'Failed to delete',
   'notification.deleted': 'Item deleted successfully',
   'notification.feedbackCancelled': 'Feedback removed',
   'notification.feedbackThanks': 'Thanks for your feedback',

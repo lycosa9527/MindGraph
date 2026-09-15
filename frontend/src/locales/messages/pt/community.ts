@@ -1,5 +1,5 @@
 /**
- * pt UI � community
+ * en UI � community
  */
 
 export default {
@@ -42,11 +42,11 @@ export default {
   'community.post.noPreview': 'No preview',
   'community.post.unlike': 'Unlike',
   'community.searchPlaceholder': 'Search posts…',
-  'community.shareModal.cancel': 'Cancelar',
+  'community.shareModal.cancel': 'Cancel',
   'community.shareModal.cannotPreview': 'Cannot generate preview',
   'community.shareModal.categoryLabel': 'Category',
   'community.shareModal.categoryPlaceholder': 'Select category',
-  'community.shareModal.descriptionLabel': 'Descrição',
+  'community.shareModal.descriptionLabel': 'Description',
   'community.shareModal.descriptionPlaceholder': 'Describe your work...',
   'community.shareModal.enterTitle': 'Please enter a title',
   'community.shareModal.noDiagramData': 'No diagram data to share',
@@ -66,7 +66,7 @@ export default {
   'community.time.daysAgo': '{n}d ago',
   'community.time.hoursAgo': '{n}h ago',
   'community.time.minutesAgo': '{n}m ago',
-  'community.title': 'Partilha da comunidade',
+  'community.title': 'Community sharing',
   'community.type.mindgraph': 'MindGraph',
   'community.type.mindmate': 'MindMate',
   'debateverse.advanceStage': 'Advance Stage',
@@ -100,7 +100,7 @@ export default {
   'debateverse.page.create': 'Create New Debate',
   'debateverse.page.empty': 'No debate yet',
   'debateverse.page.newDebate': 'New Debate',
-  'debateverse.page.title': 'Para',
+  'debateverse.page.title': 'DebateVerse',
   'debateverse.roleLabel.debater': 'Play as Debater',
   'debateverse.roleLabel.judgeRole': 'Play as Judge',
   'debateverse.roleLabel.viewer': 'Play as Viewer',
@@ -138,7 +138,7 @@ export default {
   'library.other': 'Other',
   'library.premiumCollection': 'Featured collection',
   'library.slotFull.body': 'You have {max} saved diagrams. Delete one to save a new diagram.',
-  'library.slotFull.cancel': 'Cancelar',
+  'library.slotFull.cancel': 'Cancel',
   'library.slotFull.deleteAndSave': 'Delete & Save',
   'library.slotFull.networkError': 'Network error, operation failed',
   'library.slotFull.saveFailed': 'Save failed',

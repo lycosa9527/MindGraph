@@ -14,6 +14,12 @@ import { useSavedDiagramsStore } from '@/stores'
 import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
 import { collectMindMapExplainContext } from '@/utils/mindMapExplainContext'
+import {
+  applyExplainResearchEvent,
+  emptyExplainResearchState,
+  type ExplainResearchImage,
+  type ExplainResearchSource,
+} from '@/utils/mindMapExplainResearch'
 import { consumeSseDataLines } from '@/utils/mindMateSseStream'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
@@ -22,7 +28,7 @@ export type MindMapNodeExplainTarget = {
   nodeLabel: string
 }
 
-export type MindMapExplainFacet = 'meaning' | 'conflict' | 'questions'
+export type { ExplainResearchImage, ExplainResearchSource }
 
 function normalizeDiagramType(type: DiagramType | null): string {
   if (!type) return 'mindmap'
@@ -58,6 +64,10 @@ export function useMindMapNodeExplain() {
   const visible = ref(false)
   const target = ref<MindMapNodeExplainTarget | null>(null)
   const text = ref('')
+  const thinking = ref('')
+  const thinkingDone = ref(false)
+  const sources = ref<ExplainResearchSource[]>([])
+  const images = ref<ExplainResearchImage[]>([])
   const error = ref<string | null>(null)
   const loading = ref(false)
   const abortController = ref<AbortController | null>(null)
@@ -83,7 +93,7 @@ export function useMindMapNodeExplain() {
         node_label: nodeLabel,
         topic: ctx?.topic || fallbackTopic,
         diagram_type: normalizeDiagramType(diagramStore.type),
-        facet: 'meaning' satisfies MindMapExplainFacet,
+        facet: 'meaning',
         top_level_branches: ctx?.topLevelBranches ?? [],
         ancestor_path: ctx?.ancestorPath ?? [],
         sibling_branches: ctx?.siblingBranches ?? [],
@@ -102,13 +112,17 @@ export function useMindMapNodeExplain() {
     activeRunId.value += 1
     target.value = null
     text.value = ''
+    thinking.value = ''
+    thinkingDone.value = false
+    sources.value = []
+    images.value = []
     error.value = null
     loading.value = false
   }
 
   function close(): void {
-    clearSession()
     visible.value = false
+    clearSession()
   }
 
   function notifyRunError(runId: number, message: string, errorType?: string): void {
@@ -128,7 +142,12 @@ export function useMindMapNodeExplain() {
 
     loading.value = true
     text.value = ''
+    thinking.value = ''
+    thinkingDone.value = false
+    sources.value = []
+    images.value = []
     error.value = null
+    let research = emptyExplainResearchState()
 
     try {
       const response = await authFetch('/thinking_mode/mindmap/explain_node', {
@@ -174,10 +193,6 @@ export function useMindMapNodeExplain() {
           }
 
           const event = eventPayload.event as string | undefined
-          if (event === 'token' && typeof eventPayload.text === 'string') {
-            text.value += eventPayload.text
-            return
-          }
           if (event === 'error' && typeof eventPayload.message === 'string') {
             error.value = eventPayload.message
             const errorType =
@@ -188,6 +203,12 @@ export function useMindMapNodeExplain() {
           if (event === 'end') {
             return false
           }
+          research = applyExplainResearchEvent(research, eventPayload)
+          text.value = research.text
+          thinking.value = research.thinking
+          thinkingDone.value = research.thinkingDone
+          sources.value = research.sources
+          images.value = research.images
         },
         signal
       )
@@ -287,6 +308,10 @@ export function useMindMapNodeExplain() {
     visible,
     target,
     text,
+    thinking,
+    thinkingDone,
+    sources,
+    images,
     error,
     loading,
     openExplain,

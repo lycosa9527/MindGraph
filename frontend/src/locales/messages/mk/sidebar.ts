@@ -1,5 +1,5 @@
 /**
- * mk UI � sidebar
+ * en UI � sidebar
  */
 
 export default {
@@ -104,7 +104,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.deleted': 'Package deleted',
   'sidebar.knowledgeSpaceHistory.empty': 'No packages yet',
   'sidebar.knowledgeSpaceHistory.title': 'Packages',
-  'sidebar.languageSettings': 'Language Settings',
+  'sidebar.languageSettings': 'UI settings',
   'sidebar.tokenUsageToday': 'Today {usage}',
   'sidebar.library': 'Library',
   'sidebar.mindGraph': 'MindGraph',

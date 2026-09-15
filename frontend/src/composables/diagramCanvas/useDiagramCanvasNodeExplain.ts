@@ -5,6 +5,7 @@ import {
   type ExplainBubbleSize,
 } from '@/composables/canvasToolbar'
 import { useMindMapNodeExplain } from '@/composables/mindMap/useMindMapNodeExplain'
+import { resolveExplainResearchSide } from '@/utils/mindMapExplainResearch'
 
 type PositionedNode = {
   id: string
@@ -20,6 +21,10 @@ export function useDiagramCanvasNodeExplain(options: {
     visible: nodeExplainVisible,
     target: nodeExplainTarget,
     text: nodeExplainText,
+    thinking: nodeExplainThinking,
+    thinkingDone: nodeExplainThinkingDone,
+    sources: nodeExplainSources,
+    images: nodeExplainImages,
     error: nodeExplainError,
     loading: nodeExplainLoading,
     openExplain: openNodeExplain,
@@ -27,6 +32,13 @@ export function useDiagramCanvasNodeExplain(options: {
   } = useMindMapNodeExplain()
 
   const explainBubbleNodeId = computed(() => nodeExplainTarget.value?.nodeId ?? null)
+  const nodeExplainResearchSide = computed(() => {
+    const nodeId = explainBubbleNodeId.value
+    if (!nodeId) return resolveExplainResearchSide(undefined, undefined)
+    const node = options.nodes.value.find((item) => item.id === nodeId)
+    const topic = options.nodes.value.find((item) => item.id === 'topic')
+    return resolveExplainResearchSide(node?.position?.x, topic?.position?.x)
+  })
   const explainBubbleSize = ref<ExplainBubbleSize | null>(null)
   const { position: explainBubblePosition, scheduleMeasure: scheduleExplainBubbleMeasure } =
     useNodeExplainBubblePosition({
@@ -62,6 +74,11 @@ export function useDiagramCanvasNodeExplain(options: {
     nodeExplainVisible,
     nodeExplainTarget,
     nodeExplainText,
+    nodeExplainThinking,
+    nodeExplainThinkingDone,
+    nodeExplainSources,
+    nodeExplainImages,
+    nodeExplainResearchSide,
     nodeExplainError,
     nodeExplainLoading,
     explainBubblePosition,

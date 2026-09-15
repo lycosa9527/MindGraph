@@ -1,5 +1,5 @@
 /**
- * ru UI � mindmate
+ * en UI � mindmate
  */
 
 export default {
@@ -80,7 +80,7 @@ export default {
   'mindmate.defaultSuggestion9': 'What are effective strategies for listening instruction?',
   'mindmate.historyTitle': 'Conversation History',
   'mindmate.imagePreview': 'Image Preview',
-  'mindmate.input.attachFile': 'Attach file',
+  'mindmate.input.attachFile': 'Attach image, Word, PDF, or PPT',
   'mindmate.input.unsupportedFile': 'Only images, Word, PDF, and PowerPoint are allowed',
   'mindmate.input.fileTooLarge': 'File is too large (max {limit}MB)',
   'mindmate.input.placeholder': 'Type your question...',
@@ -102,7 +102,7 @@ export default {
   'mindmate.tooltip.copy': 'Copy',
   'mindmate.tooltip.dislike': 'Dislike',
   'mindmate.tooltip.edit': 'Edit',
-  'mindmate.tooltip.like': 'Нравится',
+  'mindmate.tooltip.like': 'Like',
   'mindmate.tooltip.regenerate': 'Regenerate',
   'mindmate.tooltip.share': 'Share',
   'mindmate.untitled': 'Untitled',
@@ -235,6 +235,6 @@ export default {
   'mindmate.collabErrorUnknown': 'Something went wrong. Please try again.',
   'mindmate.collabRetryConnection': 'Reconnect',
   'mindmate.dmDrawerTitle': 'Direct message',
-  'mindmate.dmDrawerPlaceholder': 'Введите сообщение',
+  'mindmate.dmDrawerPlaceholder': 'Type a message…',
   'mindmate.dmSendFailed': 'Could not send message',
 } as const

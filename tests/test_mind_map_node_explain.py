@@ -1,7 +1,11 @@
 """Tests for mind map node-explain facet prompts and billing wiring."""
 
 from agents.mind_maps.node_explain_prompts import (
+    RESEARCH_IMAGE_TOOLS,
+    RESEARCH_TOOLS,
     build_facet_prompt,
+    build_research_image_prompt,
+    build_research_meaning_prompt,
     max_tokens_for_audience,
     normalize_facet,
     style_band_for_level,
@@ -48,8 +52,8 @@ def test_style_bands_split_kid_school_and_professional() -> None:
 
 def test_token_budget_grows_for_professional_levels() -> None:
     """Kid glosses stay short; expert / audit glosses need more tokens."""
-    assert max_tokens_for_audience("primary") == 96
-    assert max_tokens_for_audience("expert") == 192
+    assert max_tokens_for_audience("primary") == 512
+    assert max_tokens_for_audience("expert") == 768
     assert max_tokens_for_audience("expert") > max_tokens_for_audience("primary")
 
 
@@ -61,6 +65,11 @@ def test_general_meaning_prompt_is_neutral() -> None:
     assert "【专业程度】" in prompt
     assert "专业程度：通用" in prompt
     assert "不要故意小学化" in prompt
+    assert "不少于 250 字" in prompt
+    assert "250–400 字" in prompt
+    assert "40–60" not in prompt
+    assert "一两句" not in prompt
+    assert "短释义" not in prompt
     assert "小朋友" not in prompt
     assert "苹果是长在树上的红色水果" not in prompt
 
@@ -76,7 +85,8 @@ def test_primary_meaning_prompt_uses_kid_voice() -> None:
     assert "日常口语" in prompt
     assert "小朋友" in prompt
     assert "苹果是长在树上的红色水果" in prompt
-    assert "40–50 字" in prompt
+    assert "不少于 250 字" in prompt
+    assert "250–400 字" in prompt
     assert "专业程度：小学" in prompt
     assert "禁止术语" in prompt
 
@@ -112,7 +122,7 @@ def test_english_primary_meaning_prompt_keeps_apple_example() -> None:
         audience_level="primary",
     )
     assert "Apple" in prompt
-    assert "25–30 words" in prompt
+    assert "160–260 words" in prompt
     assert "red fruit that grows on trees" in prompt
     assert "Expertise: primary school" in prompt
 
@@ -209,6 +219,33 @@ def test_explain_request_unknown_audience_falls_back_to_general() -> None:
         }
     )
     assert req.audience_level == "general"
+
+
+def test_research_meaning_prompt_writes_from_search() -> None:
+    """Meaning research writes from search; page fetch is not advertised."""
+    prompt = build_research_meaning_prompt(language="zh", **_PROMPT_KWARGS)
+    assert "【联网研究】" in prompt
+    assert "web_search" in prompt
+    assert "web_search_image" not in prompt
+    assert "web_extractor" not in prompt
+    assert "搜索一返回就根据标题和摘要写释义" in prompt
+    assert "不少于 250 字" in prompt
+    assert "250–400 字" in prompt
+    assert "40–60" not in prompt
+    assert "一两句" not in prompt
+    assert "短释义" not in prompt
+    assert "不要打开网页" in prompt
+    assert "[1][2]" in prompt
+    assert RESEARCH_TOOLS == ("web_search",)
+    assert RESEARCH_IMAGE_TOOLS == ("web_search_image",)
+    image_prompt = build_research_image_prompt(
+        node_label="光合作用",
+        topic="植物",
+        language="zh",
+    )
+    assert "web_search_image" in image_prompt
+    assert "不要写释义" in image_prompt
+    assert "约 24 张配图" in image_prompt
 
 
 def test_mindmap_node_explain_is_canvas_assist_request_type() -> None:

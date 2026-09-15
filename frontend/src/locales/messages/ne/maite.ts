@@ -1,5 +1,5 @@
 /**
- * ne UI � maite
+ * en UI � maite
  */
 
 export default {

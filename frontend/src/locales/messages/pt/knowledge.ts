@@ -1,5 +1,5 @@
 /**
- * pt UI � knowledge
+ * en UI � knowledge
  */
 
 export default {
@@ -11,7 +11,7 @@ export default {
   'fileCenterLibrary.badgeUpload': 'Upload',
   'chunkTest.history.confirmDeleteBody': 'Are you sure you want to delete this test? This cannot be undone.',
   'chunkTest.history.confirmDeleteTitle': 'Delete Test',
-  'chunkTest.history.delete': 'Excluir',
+  'chunkTest.history.delete': 'Delete',
   'chunkTest.history.deleteFailed': 'Failed to delete test',
   'chunkTest.history.deleted': 'Test deleted successfully',
   'chunkTest.history.empty': 'No tests yet',
@@ -43,7 +43,7 @@ export default {
   'chunkTest.stage.failed': 'Failed',
   'chunkTest.stage.pending': 'Pending',
   'chunkTest.stage.retrieval': 'Retrieval Testing',
-  'chunkTestResults.actions': 'Ações',
+  'chunkTestResults.actions': 'Actions',
   'chunkTestResults.answerCoverage': 'Answer Coverage',
   'chunkTestResults.answerQuality': 'Answer Quality',
   'chunkTestResults.avgLatency': 'Avg Latency',
@@ -93,13 +93,13 @@ export default {
   'knowledge.chunkPreview.pageLabel': 'Page {n}',
   'knowledge.chunkPreview.title': 'Document Chunks — {fileName}',
   'knowledge.chunkPreview.totalChunks': 'Total {n} chunks',
-  'knowledge.dataset.colDescription': 'Descrição',
+  'knowledge.dataset.colDescription': 'Description',
   'knowledge.dataset.colName': 'Dataset Name',
   'knowledge.dataset.colSource': 'Source',
   'knowledge.dataset.colVersion': 'Version/Date',
   'knowledge.dataset.empty': 'No datasets available',
   'knowledge.dataset.noData': 'No data',
-  'knowledge.doc.colActions': 'Ações',
+  'knowledge.doc.colActions': 'Actions',
   'knowledge.doc.colChunks': 'Chunks',
   'knowledge.doc.colDataset': 'Dataset',
   'knowledge.doc.colName': 'Document Name',
@@ -241,8 +241,8 @@ export default {
   'knowledge.settings.hybridWeights': 'Hybrid weights (vector / keyword)',
   'knowledge.settings.chunkingEngine': 'Chunking engine',
   'knowledge.settings.wikiCompile': 'Wiki compile',
-  'knowledge.settings.wikiEnabled': 'Ativado',
-  'knowledge.settings.wikiDisabled': 'Desativado',
+  'knowledge.settings.wikiEnabled': 'Enabled',
+  'knowledge.settings.wikiDisabled': 'Disabled',
   'knowledge.settings.saveSuccess': 'Settings saved',
   'knowledge.settings.saveFailed': 'Failed to save settings',
   'knowledge.settings.reindexRequired': 'Chunk settings changed — re-index existing documents in your packages for the new sizes to take effect.',

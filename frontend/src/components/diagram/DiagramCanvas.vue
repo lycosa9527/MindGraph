@@ -25,6 +25,7 @@ import { storeToRefs } from 'pinia'
 import { ExportToCommunityModal } from '@/components/canvas'
 import CanvasWorksheetTextModal from '@/components/canvas/CanvasWorksheetTextModal.vue'
 import MindMapNodeExplainBubble from '@/components/canvas/MindMapNodeExplainBubble.vue'
+import MindMapNodeExplainResearchPanel from '@/components/canvas/MindMapNodeExplainResearchPanel.vue'
 import { useBranchMoveDrag, useLanguage } from '@/composables'
 import type { CanvasExportColorMode, CanvasExportLayout } from '@/config/canvasExportOptions'
 import type { CanvasWorksheetTextOptions } from '@/config/canvasWorksheetText'
@@ -410,6 +411,11 @@ const {
   nodeExplainVisible,
   nodeExplainTarget,
   nodeExplainText,
+  nodeExplainThinking,
+  nodeExplainThinkingDone,
+  nodeExplainSources,
+  nodeExplainImages,
+  nodeExplainResearchSide,
   nodeExplainError,
   nodeExplainLoading,
   explainBubblePosition,
@@ -846,12 +852,27 @@ defineExpose({
       v-model:visible="nodeExplainVisible"
       :target="nodeExplainTarget"
       :text="nodeExplainText"
+      :thinking="nodeExplainThinking"
+      :thinking-done="nodeExplainThinkingDone"
+      :pages-found="nodeExplainSources.length"
+      :pages-fetched="nodeExplainSources.length"
+      :sources="nodeExplainSources"
       :error="nodeExplainError"
       :loading="nodeExplainLoading"
       :position="explainBubblePosition"
       :allow-fallback="false"
       @close="closeNodeExplain"
       @size-change="handleExplainBubbleSizeChange"
+    />
+
+    <MindMapNodeExplainResearchPanel
+      :visible="nodeExplainVisible"
+      :node-label="nodeExplainTarget?.nodeLabel || ''"
+      :images="nodeExplainImages"
+      :side="nodeExplainResearchSide"
+      :canvas-container="canvasContainer"
+      :loading="nodeExplainLoading"
+      @close="closeNodeExplain"
     />
 
     <ExportToCommunityModal

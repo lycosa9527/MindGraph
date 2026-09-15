@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.80] - 2026-09-15
+
+> **节点解释 ships as a bubble + 配图 panel: longer cited gloss, live images, no leftover session.**
+
+### Changed
+
+- **节点解释** — One meaning gloss (250–400 字 / 160–260 words) from web-search cards, with DeepSeek-style `[1][2]` citations. Thinking stays in a 3-line fold that flips from 思考中 to 思考完毕; page counts sit under it. The 配图 panel is Swiss-stone, opposite the node, up to half the canvas, and ping-pong scrolls as tiles stream in. Closing the bubble (or leaving the map) aborts the stream and drops images, sources, and the image-strip timer. Dead 3-panel copy, step timeline, and unused `steps`/`phase` session fields are gone.
+
+### Tests
+
+- [`frontend/tests/mindMapExplainResearch.spec.ts`](frontend/tests/mindMapExplainResearch.spec.ts), [`frontend/tests/safeI18nTranslate.spec.ts`](frontend/tests/safeI18nTranslate.spec.ts)
+- [`tests/test_mind_map_node_explain.py`](tests/test_mind_map_node_explain.py), [`tests/test_mind_map_node_explain_research.py`](tests/test_mind_map_node_explain_research.py)
+
 ## [5.180.79] - 2026-09-14
 
 > **Gallery, DingTalk, and Kitty share prompt prep; Kitty thinks silently until the job is done; LLM PNG exports get a watermark.**

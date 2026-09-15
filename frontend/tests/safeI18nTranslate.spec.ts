@@ -23,8 +23,8 @@ describe('safeI18nTranslate', () => {
     const translate = (): never => {
       throw new SyntaxError('26')
     }
-    expect(safeI18nTranslate(translate, 'canvas.mindMapNodeExplain.panelMeaning')).toBe(
-      'canvas.mindMapNodeExplain.panelMeaning'
+    expect(safeI18nTranslate(translate, 'canvas.mindMapNodeExplain.requestFailed')).toBe(
+      'canvas.mindMapNodeExplain.requestFailed'
     )
   })
 

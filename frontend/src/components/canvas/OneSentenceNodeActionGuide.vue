@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Collapsible Kitty node-action library — same card style as shortcut / voice guides.
+ * Collapsible Kitty node-action library — same card / row style as the shortcut guide.
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
@@ -40,21 +40,13 @@ const rows = computed(() =>
     const raw = formatKittyVoiceCommandLabel(row.action, undefined, (key, params) =>
       t(key, params ?? {})
     )
+    const example = String(t(row.exampleKey))
+    const chips = chipsForRow(row.id)
     return {
       id: row.id,
       label: raw.replace(/[：:]\s*$/u, '').trim() || raw,
-      example: t(row.exampleKey),
-      hint:
-        row.id === 'set_content_level'
-          ? t('canvas.mindMapOneSentence.suggestion.set_content_level.hint')
-          : row.id === 'set_branch_numbering'
-            ? t('canvas.mindMapOneSentence.suggestion.set_branch_numbering.hint')
-            : row.id === 'update_node'
-              ? t('canvas.mindMapOneSentence.suggestion.update_node.hint')
-              : row.id === 'explain_node'
-                ? t('canvas.mindMapOneSentence.suggestion.explain_node.hint')
-                : '',
-      chips: chipsForRow(row.id),
+      example,
+      pills: chips.length ? chips : [{ id: 'example', label: example, phrase: example }],
     }
   })
 )
@@ -64,12 +56,12 @@ function chipsForRow(rowId: string): GuideChip[] {
     return [
       {
         id: 'by_label',
-        label: String(t('canvas.mindMapOneSentence.suggestion.explain_node')),
+        label: String(t('canvas.mindMapOneSentence.nodeActionGuide.chip.byName')),
         phrase: String(t('canvas.mindMapOneSentence.suggestion.explain_node')),
       },
       {
         id: 'this_node',
-        label: String(t('canvas.mindMapOneSentence.suggestion.explain_node.this')),
+        label: String(t('canvas.mindMapOneSentence.nodeActionGuide.chip.thisNode')),
         phrase: String(t('canvas.mindMapOneSentence.suggestion.explain_node.this')),
       },
     ]
@@ -78,7 +70,7 @@ function chipsForRow(rowId: string): GuideChip[] {
     return [
       {
         id: 'by_label',
-        label: String(t('canvas.mindMapOneSentence.suggestion.update_node')),
+        label: String(t('canvas.mindMapOneSentence.nodeActionGuide.chip.byName')),
         phrase: String(t('canvas.mindMapOneSentence.suggestion.update_node')),
       },
       {
@@ -196,26 +188,26 @@ onUnmounted(() => {
     <Transition name="one-sentence-node-action-guide-card">
       <div
         v-if="open"
-        class="one-sentence-node-action-guide-card w-60 overflow-hidden rounded-xl border border-violet-200/80 bg-white shadow-lg"
+        class="one-sentence-node-action-guide-card w-60 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-600 dark:bg-gray-900"
         role="dialog"
         :aria-label="t('canvas.mindMapOneSentence.nodeActionGuide.title')"
       >
         <div
-          class="flex items-center justify-between gap-2 border-b border-violet-100 px-3 pb-1 pt-2"
+          class="flex items-center justify-between gap-2 border-b border-slate-100 px-3 pb-1 pt-2 dark:border-slate-700"
         >
           <div class="flex min-w-0 items-center gap-2">
             <ListTree
-              class="shrink-0 text-violet-500"
+              class="shrink-0 text-blue-500"
               :size="15"
               :stroke-width="2"
             />
-            <span class="truncate text-xs font-bold text-slate-800">
+            <span class="truncate text-xs font-bold text-slate-800 dark:text-slate-100">
               {{ t('canvas.mindMapOneSentence.nodeActionGuide.title') }}
             </span>
           </div>
           <button
             type="button"
-            class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-slate-200/80 bg-slate-50 text-slate-500 transition-colors hover:border-slate-300 hover:bg-white hover:text-slate-700"
+            class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-slate-200/80 bg-slate-50 text-slate-500 transition-colors hover:border-slate-300 hover:bg-white hover:text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400"
             :aria-label="t('canvas.mindMapOneSentence.nodeActionGuide.collapse')"
             @click="close"
           >
@@ -226,40 +218,29 @@ onUnmounted(() => {
           </button>
         </div>
 
-        <ul class="flex max-h-[min(40vh,15rem)] flex-col gap-1 overflow-y-auto px-2 pb-1.5 pt-0">
+        <ul class="flex max-h-[min(50vh,17.5rem)] flex-col gap-1 overflow-y-auto px-2 pb-1.5 pt-0">
           <li
             v-for="row in rows"
             :key="row.id"
+            class="flex items-center justify-between gap-2 rounded-md border border-slate-100 bg-slate-50/80 px-2 py-1.5 dark:border-slate-700/80 dark:bg-slate-800/60"
           >
-            <div
-              class="flex w-full flex-col gap-0.5 rounded-md border border-violet-50 bg-violet-50/60 px-2 py-1.5 text-left"
+            <button
+              type="button"
+              class="min-w-0 truncate text-left text-xs text-slate-700 dark:text-slate-200"
+              @click="onSelect(row.pills[0]?.phrase || row.example)"
             >
+              {{ row.label }}
+            </button>
+            <div class="flex max-w-[58%] shrink-0 flex-wrap items-center justify-end gap-1">
               <button
+                v-for="pill in row.pills"
+                :key="pill.id"
                 type="button"
-                class="flex flex-col gap-0.5 text-left transition-colors hover:text-violet-800"
-                @click="onSelect(row.chips[0]?.phrase || row.example)"
+                class="node-action-kbd"
+                @click="onSelect(pill.phrase)"
               >
-                <span class="text-xs font-medium text-slate-700">
-                  {{ row.label }}
-                </span>
-                <span class="text-[10px] leading-snug text-slate-500">
-                  {{ row.hint || row.example }}
-                </span>
+                {{ pill.label }}
               </button>
-              <div
-                v-if="row.chips.length"
-                class="mt-0.5 flex flex-wrap gap-1"
-              >
-                <button
-                  v-for="chip in row.chips"
-                  :key="chip.id"
-                  type="button"
-                  class="rounded border border-violet-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-violet-700 transition-colors hover:border-violet-400 hover:bg-violet-50"
-                  @click="onSelect(chip.phrase)"
-                >
-                  {{ chip.label }}
-                </button>
-              </div>
             </div>
           </li>
         </ul>
@@ -269,6 +250,34 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.node-action-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.25rem;
+  max-width: 100%;
+  padding: 0.125rem 0.375rem;
+  border: 1px solid rgb(226 232 240);
+  border-radius: 0.25rem;
+  background: rgb(255 255 255);
+  color: rgb(51 65 85);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
+}
+
+:global(.dark) .node-action-kbd {
+  border-color: rgb(75 85 99);
+  background: rgb(30 41 59);
+  color: rgb(226 232 240);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+}
+
 .one-sentence-node-action-guide-card-enter-active,
 .one-sentence-node-action-guide-card-leave-active {
   transition:

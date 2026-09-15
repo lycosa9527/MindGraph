@@ -1,5 +1,5 @@
 /**
- * pt UI � mindmate
+ * en UI � mindmate
  */
 
 export default {
@@ -80,7 +80,7 @@ export default {
   'mindmate.defaultSuggestion9': 'What are effective strategies for listening instruction?',
   'mindmate.historyTitle': 'Conversation History',
   'mindmate.imagePreview': 'Image Preview',
-  'mindmate.input.attachFile': 'Attach file',
+  'mindmate.input.attachFile': 'Attach image, Word, PDF, or PPT',
   'mindmate.input.unsupportedFile': 'Only images, Word, PDF, and PowerPoint are allowed',
   'mindmate.input.fileTooLarge': 'File is too large (max {limit}MB)',
   'mindmate.input.placeholder': 'Type your question...',
@@ -99,7 +99,7 @@ export default {
   'mindmate.openCanvasSwitchOk': 'Open',
   'mindmate.diagramLibraryFull': 'Diagram library is full. Delete old diagrams and try again.',
   'mindmate.diagramPreviewExpired': 'This preview is no longer in your browser cache—the temporary image was cleared. Tap this notice or use «Edit in canvas» below to open the diagram.',
-  'mindmate.tooltip.copy': 'Copiar',
+  'mindmate.tooltip.copy': 'Copy',
   'mindmate.tooltip.dislike': 'Dislike',
   'mindmate.tooltip.edit': 'Edit',
   'mindmate.tooltip.like': 'Like',
@@ -110,7 +110,7 @@ export default {
   'mindmate.welcomeSubtitle': 'AI virtual teaching research platform — think anywhere, anytime',
   'nodePalette.bridgeAnalogy': 'Analogy',
   'nodePalette.bridgeSource': 'Source',
-  'nodePalette.cancel': 'Cancelar',
+  'nodePalette.cancel': 'Cancel',
   'nodePalette.causes': 'Causes',
   'nodePalette.differences': 'Differences',
   'nodePalette.effects': 'Effects',

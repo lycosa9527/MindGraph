@@ -1,5 +1,5 @@
 /**
- * ru UI � thinkingCoins
+ * en UI � thinkingCoins
  */
 
 export const thinkingCoinsMessages = {
@@ -10,7 +10,7 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.inviteRegister': 'Invite friends to register',
   'thinkingCoins.earnMore': 'Earn tokens',
   'thinkingCoins.upgrade': 'Upgrade',
-  'thinkingCoins.upgradePageTitle': 'Обновление членства',
+  'thinkingCoins.upgradePageTitle': 'Upgrade membership',
   'thinkingCoins.subscriptionRef': 'Subscription reference',
   'thinkingCoins.ledgerTitle': 'Transaction history',
   'thinkingCoins.ledgerEmpty': 'No transactions yet',

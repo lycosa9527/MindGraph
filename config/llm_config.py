@@ -64,6 +64,11 @@ class LLMConfigMixin:
         return self._get_cached_value("QWEN_MODEL_GENERATION", "qwen3.6-flash")
 
     @property
+    def QWEN_MODEL_NODE_EXPLAIN(self):
+        """DashScope model for mind-map node-explain Responses research."""
+        return self._get_cached_value("QWEN_MODEL_NODE_EXPLAIN", "qwen3.8-flash")
+
+    @property
     def DEEPSEEK_MODEL(self):
         """DeepSeek model name on DashScope (non-reasoning; faster than R1).
 

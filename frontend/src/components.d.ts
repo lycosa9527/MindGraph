@@ -336,6 +336,7 @@ declare module 'vue' {
     MindMapLegacyTopicNode: typeof import('./components/diagram/nodes/mindMap/MindMapLegacyTopicNode.vue')['default']
     MindMapNodeAdornments: typeof import('./components/diagram/nodes/mindMap/MindMapNodeAdornments.vue')['default']
     MindMapNodeExplainBubble: typeof import('./components/canvas/MindMapNodeExplainBubble.vue')['default']
+    MindMapNodeExplainResearchPanel: typeof import('./components/canvas/MindMapNodeExplainResearchPanel.vue')['default']
     MindMapNumberingControls: typeof import('./components/canvas/MindMapNumberingControls.vue')['default']
     MindMapOneSentencePanel: typeof import('./components/canvas/MindMapOneSentencePanel.vue')['default']
     MindMapOrthogonalEdge: typeof import('./components/diagram/edges/MindMapOrthogonalEdge.vue')['default']

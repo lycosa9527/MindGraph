@@ -10,11 +10,13 @@ from config.dashscope_urls import (
     build_multimodal_generation_url,
     build_qwen_tts_realtime_ws_url,
     build_realtime_ws_base,
+    build_responses_url,
     build_speech_synthesizer_url,
     dashscope_endpoint_summary,
     normalize_dashscope_region,
     resolve_chat_completions_url,
     resolve_realtime_ws_base,
+    resolve_responses_url,
 )
 
 
@@ -131,6 +133,22 @@ def test_build_dashscope_headers_omits_workspace_when_unset() -> None:
     """Legacy mode keeps Bearer-only headers."""
     headers = build_dashscope_headers("sk-test", workspace_id=None, content_type=None)
     assert headers == {"Authorization": "Bearer sk-test"}
+
+
+def test_build_workspace_responses_url() -> None:
+    """Responses API sits next to chat completions on compatible-mode."""
+    url = build_responses_url(workspace_id="ws-test123", region="cn-beijing")
+    assert url == ("https://ws-test123.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/responses")
+
+
+def test_resolve_responses_url_strips_chat_completions_suffix() -> None:
+    """QWEN_API_URL ending in /chat/completions still yields /responses."""
+    url = resolve_responses_url(
+        explicit_chat_url="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+        workspace_id=None,
+        region="cn-beijing",
+    )
+    assert url == "https://dashscope.aliyuncs.com/compatible-mode/v1/responses"
 
 
 def test_speech_and_qwen_tts_http_and_realtime_urls() -> None:

@@ -21,6 +21,7 @@ from config.dashscope_urls import (
     resolve_chat_completions_url,
     resolve_compatible_mode_base,
     resolve_realtime_ws_base,
+    resolve_responses_url,
 )
 
 
@@ -101,6 +102,16 @@ class DashScopeEndpointConfigMixin:
         """OpenAI-compatible REST base ``…/compatible-mode/v1``."""
         explicit_chat, _, _, workspace_id, region, _ = self._dashscope_url_inputs()
         return resolve_compatible_mode_base(
+            explicit_chat_url=explicit_chat,
+            workspace_id=workspace_id,
+            region=region,
+        )
+
+    @property
+    def QWEN_RESPONSES_URL(self) -> str:
+        """OpenAI-compatible Responses API URL (``…/responses``)."""
+        explicit_chat, _, _, workspace_id, region, _ = self._dashscope_url_inputs()
+        return resolve_responses_url(
             explicit_chat_url=explicit_chat,
             workspace_id=workspace_id,
             region=region,
