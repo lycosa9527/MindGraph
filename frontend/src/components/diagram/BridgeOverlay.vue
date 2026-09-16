@@ -13,6 +13,7 @@ import { useVueFlow } from '@vue-flow/core'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { findBridgePairSide } from '@/utils/bridgeMapIdentity'
 
 // Diagram store for diagram type and spec metadata
 const diagramStore = useDiagramSession()
@@ -382,8 +383,10 @@ function handleDeleteButtonMouseEnter(pairIndex: number) {
  */
 function handleDeletePair(pairIndex: number, event: MouseEvent) {
   event.stopPropagation()
-  const leftNodeId = `pair-${pairIndex}-left`
-  const rightNodeId = `pair-${pairIndex}-right`
+  const liveNodes = diagramStore.data?.nodes ?? []
+  const leftNodeId = findBridgePairSide(liveNodes, pairIndex, 'left')?.id
+  const rightNodeId = findBridgePairSide(liveNodes, pairIndex, 'right')?.id
+  if (!leftNodeId || !rightNodeId) return
 
   // Delete both nodes
   if (diagramStore.removeNode(leftNodeId) && diagramStore.removeNode(rightNodeId)) {

@@ -4,7 +4,9 @@ import { describe, expect, it } from 'vitest'
 import {
   captureDiagramFingerprint,
   resolveCreatedNodeIds,
+  verifyDiagramEffect,
   verifyMindMapEffect,
+  verifyThinkingMapEffect,
 } from '@/utils/diagramEditVerify'
 
 describe('diagramEditVerify', () => {
@@ -133,5 +135,40 @@ describe('diagramEditVerify', () => {
       3
     )
     expect(miss.ok).toBe(false)
+  })
+
+  it('verifies thinking-map update/delete by UUID and reserved root', () => {
+    const after = captureDiagramFingerprint(
+      [
+        { id: 'topic', type: 'topic', text: '水', position: { x: 0, y: 0 } },
+        { id: 'uid-evap', text: '蒸腾', position: { x: 0, y: 0 } },
+      ],
+      [{ source: 'topic', target: 'uid-evap' }]
+    )
+    const update = verifyThinkingMapEffect(
+      { op: 'update_node', node_id: 'uid-evap', text: '蒸腾' },
+      after,
+      2,
+      'circle_map'
+    )
+    expect(update.ok).toBe(true)
+    const deleted = captureDiagramFingerprint(
+      [{ id: 'topic', type: 'topic', text: '水', position: { x: 0, y: 0 } }],
+      []
+    )
+    const gone = verifyThinkingMapEffect(
+      { op: 'delete_node', node_identifier: 'uid-evap' },
+      deleted,
+      2,
+      'circle_map'
+    )
+    expect(gone.ok).toBe(true)
+    const leftoverKey = verifyDiagramEffect(
+      { op: 'update_node', node_id: 'context-0', text: '蒸腾' },
+      after,
+      2,
+      'circle_map'
+    )
+    expect(leftoverKey.ok).toBe(false)
   })
 })

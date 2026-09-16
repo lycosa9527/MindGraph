@@ -18,6 +18,16 @@ from services.diagram.mindmap_identity import (
     read_mindmap_uid,
 )
 from services.diagram.mindmap_location import is_leftover_mindmap_branch_id
+from services.diagram.thinking_map_identity import (
+    migrate_thinking_map_diagram_payload,
+    thinking_map_identity_aliases,
+)
+from services.diagram.thinking_map_patterns import (
+    is_any_thinking_map_leftover_id,
+    is_leftover_thinking_map_id,
+    is_thinking_map_diagram_type,
+    normalize_diagram_type,
+)
 from services.diagram_edit.types import ToolResult
 from services.diagram_edit.transport.kitty_ws import MULTI_STEP_SUPPRESS_DIAGRAM_CHAT_KEY
 from services.kitty.ack.ack_emit import emit_user_ack
@@ -62,7 +72,7 @@ from services.kitty.routing.node_action_library import (
     command_from_tool_call,
     render_diagram_snapshot_block,
 )
-from services.kitty.routing.one_sentence_edit_helpers import is_mindmap_diagram_type
+from services.kitty.routing.one_sentence_edit_helpers import is_verified_edit_diagram_type
 from services.kitty.infra.bootstrap.kitty_diagram_vocabulary import (
     normalize_voice_desktop_canvas_diagram_type,
 )
@@ -170,11 +180,28 @@ def map_tool_call_to_command(name: str, arguments_json: str) -> Dict[str, Any]:
     return ui_tool_call_to_command(name, arguments_json)
 
 
-def ensure_live_mindmap_identity(session_context: Dict[str, Any]) -> None:
-    """Rewrite leftover ``branch-*`` live ids to UUID before targeting."""
+def _diagram_type_from_context(session_context: Dict[str, Any]) -> str:
+    raw = session_context.get("diagram_type")
+    if isinstance(raw, str) and raw.strip():
+        return normalize_diagram_type(raw)
     diagram_data = session_context.get("diagram_data")
     if isinstance(diagram_data, dict):
-        migrate_mindmap_diagram_payload(diagram_data)
+        nested = diagram_data.get("diagram_type")
+        if isinstance(nested, str):
+            return normalize_diagram_type(nested)
+    return ""
+
+
+def ensure_live_mindmap_identity(session_context: Dict[str, Any]) -> None:
+    """Rewrite leftover invented live ids to UUID before targeting."""
+    diagram_data = session_context.get("diagram_data")
+    if not isinstance(diagram_data, dict):
+        return
+    diagram_type = _diagram_type_from_context(session_context)
+    if is_thinking_map_diagram_type(diagram_type):
+        migrate_thinking_map_diagram_payload(diagram_data, diagram_type)
+        return
+    migrate_mindmap_diagram_payload(diagram_data)
 
 
 def _aliases_from_context(session_context: Dict[str, Any]) -> Dict[str, str]:
@@ -186,6 +213,9 @@ def _aliases_from_context(session_context: Dict[str, Any]) -> Dict[str, str]:
     if not typed:
         return {}
     aliases = identity_aliases(typed)
+    diagram_type = _diagram_type_from_context(session_context)
+    if is_thinking_map_diagram_type(diagram_type):
+        aliases.update(thinking_map_identity_aliases(diagram_type, typed))
     for node in typed:
         node_id = node.get("id")
         uid = read_mindmap_uid(node)
@@ -209,20 +239,29 @@ def leftover_live_key(
     command: Dict[str, Any],
     session_context: Optional[Dict[str, Any]] = None,
 ) -> Optional[str]:
-    """Return leftover ``branch-*`` when used as a live key (aliases are allowed)."""
+    """Return leftover invented id when used as a live key (aliases are allowed)."""
     action = str(command.get("action") or "")
     if action not in IDENTITY_REQUIRED_ACTIONS:
         return None
-    aliases = _aliases_from_context(session_context or {})
+    context = session_context or {}
+    aliases = _aliases_from_context(context)
+    diagram_type = _diagram_type_from_context(context)
+
+    def _is_leftover(text: str) -> bool:
+        return (
+            is_leftover_mindmap_branch_id(text)
+            or is_leftover_thinking_map_id(diagram_type, text)
+            or is_any_thinking_map_leftover_id(text)
+        )
 
     def _unaliased_leftover(raw: Any) -> Optional[str]:
         if not isinstance(raw, str) or not raw.strip():
             return None
         text = raw.strip()
-        if not is_leftover_mindmap_branch_id(text):
+        if not _is_leftover(text):
             return None
         mapped = aliases.get(text)
-        if isinstance(mapped, str) and mapped.strip() and not is_leftover_mindmap_branch_id(mapped):
+        if isinstance(mapped, str) and mapped.strip() and not _is_leftover(mapped):
             return None
         return text
 
@@ -230,7 +269,7 @@ def leftover_live_key(
     if leftover_id:
         return leftover_id
     node_id = command.get("node_id")
-    if isinstance(node_id, str) and node_id.strip() and not is_leftover_mindmap_branch_id(node_id.strip()):
+    if isinstance(node_id, str) and node_id.strip() and not _is_leftover(node_id.strip()):
         return None
     for key in ("node_identifier", "target"):
         leftover = _unaliased_leftover(command.get(key))
@@ -460,7 +499,7 @@ async def _dispatch_structural(
         )
         return ToolDispatchResult(payload=payload, action=action, stop_nonretryable=True)
 
-    use_verify = verify_required and is_mindmap_diagram_type(diagram_type)
+    use_verify = verify_required and is_verified_edit_diagram_type(diagram_type)
     live = voice_sessions.get(voice_session_id)
     ack_ctx = enrich_ack_session_context(
         session_context,

@@ -8,6 +8,11 @@ import {
   NODE_MIN_DIMENSIONS,
 } from '@/composables/diagrams/layoutConfig'
 import type { DiagramNode } from '@/types'
+import {
+  TREE_TOPIC_NODE_ID,
+  isTreeMapCategoryNode,
+  isTreeMapLeafNode,
+} from '@/utils/treeMapIdentity'
 
 import {
   diagramLabelLikelyNeedsRenderedMeasure,
@@ -122,8 +127,8 @@ export function applyTreeMapTopicLayoutToNodes(
     const n = next[i]
     if (
       n.id === 'dimension-label' ||
-      /^tree-cat-\d+$/.test(n.id ?? '') ||
-      /^tree-leaf-\d+-\d+$/.test(n.id ?? '')
+      isTreeMapCategoryNode(n) ||
+      isTreeMapLeafNode(n)
     ) {
       const py = n.position?.y ?? 0
       const px = n.position?.x ?? 0
@@ -138,7 +143,7 @@ export function applyTreeMapTopicLayoutToNodes(
 
 /** Saved diagrams without topic dimensions: measure once on load */
 export function ensureTreeMapTopicLayout(nodes: DiagramNode[]): DiagramNode[] {
-  const topicIdx = nodes.findIndex((n) => n.id === 'tree-topic' && n.type === 'topic')
+  const topicIdx = nodes.findIndex((n) => n.id === TREE_TOPIC_NODE_ID && n.type === 'topic')
   if (topicIdx === -1) return nodes
   const topic = nodes[topicIdx]
   if (topic.style?.width != null && topic.style?.height != null) {

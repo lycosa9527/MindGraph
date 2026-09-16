@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
+from services.diagram.thinking_map_patterns import is_thinking_map_diagram_type
+
 # Client already toasted + chat-acked these; BE must not emit a second failure ack.
 CLIENT_REPORTED_FAILURE_CODES = frozenset(
     {
@@ -27,6 +29,11 @@ def is_mindmap_diagram_type(diagram_type: Any) -> bool:
         return False
     norm = diagram_type.strip().lower()
     return norm in ("mindmap", "mind_map")
+
+
+def is_verified_edit_diagram_type(diagram_type: Any) -> bool:
+    """True when structural edits use the verified DiagramCommandBus."""
+    return is_mindmap_diagram_type(diagram_type) or is_thinking_map_diagram_type(diagram_type)
 
 
 def is_one_sentence_edit_mode(
@@ -59,7 +66,7 @@ def should_use_verified_diagram_edit(
     *,
     is_text_message: bool,
 ) -> bool:
-    """Typed mindmap structural ops use verified DiagramCommandBus."""
+    """Typed mindmap / Thinking Map structural ops use verified DiagramCommandBus."""
     del session_context
     del live_session
-    return is_text_message and is_mindmap_diagram_type(diagram_type)
+    return is_text_message and is_verified_edit_diagram_type(diagram_type)

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 /**
  * BranchNodeDiagram — non-mind-map branch node (tree map, bridge map, etc.).
  */
@@ -11,6 +10,7 @@ import { Handle, Position } from '@vue-flow/core'
 import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
@@ -19,8 +19,14 @@ import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import { computeScriptAwareMaxWidth } from '@/stores/specLoader/textMeasurementFallback'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
+import { isBridgeMapPairNode } from '@/utils/bridgeMapIdentity'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { applyNodeShapeToStyle, resolveNodeShape } from '@/utils/nodeShapeStyle'
+import {
+  isTreeMapCategoryNode,
+  isTreeMapLeafNode,
+  readTreeCategoryIndex,
+} from '@/utils/treeMapIdentity'
 
 import InlineEditableText from './InlineEditableText.vue'
 
@@ -30,7 +36,8 @@ const diagramStore = useDiagramSession()
 const isTextReadonly = computed(
   () =>
     (props.data.hidden === true && diagramStore.isLearningSheet) ||
-    (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly))
+    diagramPresentationReadOnlyRef.value ||
+    toValue(diagramStore.isReadonly)
 )
 const branchNodeRef = ref<HTMLDivElement | null>(null)
 
@@ -64,9 +71,8 @@ const treeMapGroupColors = computed(() => {
   if (!isTreeMap.value) return null
   let idx = props.data.groupIndex as number | undefined
   if (idx === undefined) {
-    const catMatch = props.id.match(/^tree-cat-(\d+)$/)
-    const leafMatch = props.id.match(/^tree-leaf-(\d+)-\d+$/)
-    idx = catMatch ? parseInt(catMatch[1], 10) : leafMatch ? parseInt(leafMatch[1], 10) : undefined
+    const stamped = readTreeCategoryIndex({ id: props.id, data: props.data })
+    idx = stamped >= 0 ? stamped : undefined
   }
   return idx !== undefined ? getMindmapBranchColor(idx) : null
 })
@@ -178,8 +184,9 @@ const branchMove = inject<{
 const supportsBranchMove = computed(
   () =>
     (props.data.diagramType === 'tree_map' &&
-      (props.id?.startsWith('tree-cat-') || props.id?.startsWith('tree-leaf-'))) ||
-    (isBridgeMap.value && props.id?.startsWith('pair-'))
+      (isTreeMapCategoryNode({ id: props.id, data: props.data }) ||
+        isTreeMapLeafNode({ id: props.id, data: props.data }))) ||
+    (isBridgeMap.value && isBridgeMapPairNode({ id: props.id, data: props.data }))
 )
 
 function handleBranchMovePointerDown(event: MouseEvent): void {
@@ -224,7 +231,7 @@ function handleEditCancel() {
 }
 
 function handleBranchNodeDoubleClick(): void {
-  if ((diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly))) return
+  if (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)) return
   if ((props.data.hidden === true && diagramStore.isLearningSheet) || isEditing.value) return
   if (collabCanvas?.isNodeLockedByOther?.(props.id)) {
     notifyCollab.warning(t('collab.nodeLocked'))

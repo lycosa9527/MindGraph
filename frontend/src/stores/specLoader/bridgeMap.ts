@@ -8,6 +8,15 @@ import {
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
 import type { Connection, DiagramNode } from '@/types'
+import {
+  BRIDGE_DIMENSION_LABEL_ID,
+  BRIDGE_MAP_UID_DATA_KEY,
+  findBridgePairSide,
+  isBridgeMapPairNode,
+  readBridgePairIndex,
+  stampBridgePairData,
+  takeBridgeMapStableId,
+} from '@/utils/bridgeMapIdentity'
 
 import type { SpecLoaderResult } from './types'
 
@@ -34,29 +43,28 @@ export function recalculateBridgeMapLayout(
 
   const getW = (id: string): number => nodeDimensions[id]?.width ?? DEFAULT_NODE_WIDTH
 
-  const pairNodes = nodes.filter((n) => n.id?.startsWith('pair-'))
-  const otherNodes = nodes.filter((n) => !n.id?.startsWith('pair-'))
+  const pairNodes = nodes.filter((n) => isBridgeMapPairNode(n))
+  const otherNodes = nodes.filter((n) => !isBridgeMapPairNode(n))
 
   if (pairNodes.length === 0) return nodes
 
   const maxPairIndex = pairNodes.reduce((max, n) => {
-    const idx = Number(n.data?.pairIndex ?? -1)
+    const idx = readBridgePairIndex(n)
     return idx > max ? idx : max
   }, -1)
 
   const result = otherNodes.map((n) => ({ ...n }))
 
-  let currentX = nodes.find((n) => n.id === 'pair-0-left')?.position?.x ?? DEFAULT_PADDING + 110
+  const firstLeft = findBridgePairSide(pairNodes, 0, 'left')
+  let currentX = firstLeft?.position?.x ?? DEFAULT_PADDING + 110
 
   for (let i = 0; i <= maxPairIndex; i++) {
-    const leftId = `pair-${i}-left`
-    const rightId = `pair-${i}-right`
-    const leftNode = pairNodes.find((n) => n.id === leftId)
-    const rightNode = pairNodes.find((n) => n.id === rightId)
+    const leftNode = findBridgePairSide(pairNodes, i, 'left')
+    const rightNode = findBridgePairSide(pairNodes, i, 'right')
     if (!leftNode || !rightNode) continue
 
-    const leftH = getH(leftId)
-    const pairWidth = Math.max(getW(leftId), getW(rightId))
+    const leftH = getH(leftNode.id)
+    const pairWidth = Math.max(getW(leftNode.id), getW(rightNode.id))
 
     const leftY = centerY - BRIDGE_VERTICAL_GAP - leftH
     const rightY = centerY + BRIDGE_VERTICAL_GAP
@@ -126,6 +134,7 @@ export function loadBridgeMapSpec(spec: Record<string, unknown>): SpecLoaderResu
 
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
+  const claimedIds = new Set<string>([BRIDGE_DIMENSION_LABEL_ID])
 
   // Calculate positions based on actual node edges (not centers)
   let currentX = startX
@@ -146,28 +155,23 @@ export function loadBridgeMapSpec(spec: Record<string, unknown>): SpecLoaderResu
     // Top-left Y = centerY + verticalGap + nodeHeight/2 - nodeHeight/2 = centerY + verticalGap
     const rightNodeY = centerY + verticalGap
 
+    const leftId = takeBridgeMapStableId(claimedIds)
+    const rightId = takeBridgeMapStableId(claimedIds)
+
     nodes.push({
-      id: `pair-${index}-left`,
+      id: leftId,
       text: analogy.left,
       type: 'branch',
       position: { x: nodeX, y: leftNodeY },
-      data: {
-        pairIndex: index,
-        position: 'left',
-        diagramType: 'bridge_map',
-      },
+      data: stampBridgePairData(index, 'left', { [BRIDGE_MAP_UID_DATA_KEY]: leftId }),
     })
 
     nodes.push({
-      id: `pair-${index}-right`,
+      id: rightId,
       text: analogy.right,
       type: 'branch',
       position: { x: nodeX, y: rightNodeY },
-      data: {
-        pairIndex: index,
-        position: 'right',
-        diagramType: 'bridge_map',
-      },
+      data: stampBridgePairData(index, 'right', { [BRIDGE_MAP_UID_DATA_KEY]: rightId }),
     })
 
     // Move to next position: right edge of current node + gap
@@ -187,7 +191,7 @@ export function loadBridgeMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   const labelX = DEFAULT_PADDING
 
   nodes.push({
-    id: 'dimension-label',
+    id: BRIDGE_DIMENSION_LABEL_ID,
     text: dimension,
     type: 'label',
     position: { x: labelX, y: labelY },

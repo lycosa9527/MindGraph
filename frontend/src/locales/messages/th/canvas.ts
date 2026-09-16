@@ -380,6 +380,7 @@ export default {
   'canvas.presentationTimer.exitTimer': 'ออก',
   'canvas.presentationTimer.startPresenting': 'เริ่มนำเสนอ',
   'canvas.presentationTimer.closeHud': 'ปิดตัวจับเวลา',
+  'canvas.cachedResult.notice': 'Cached result. Use the function again for a fresh result.',
   'canvas.presentation.learningSheetConfirmTitle': 'เริ่มการนำเสนอ?',
   'canvas.presentation.learningSheetConfirmBody': 'คุณยังกำลังแก้ไขใบเรียนรู้ การเริ่มนำเสนอจะจบการแก้ไขช่องว่าง ช่องว่างที่มีอยู่จะคงอยู่ ดำเนินการต่อ?',
   'canvas.presentation.learningSheetConfirmProceed': 'เริ่มการนำเสนอ',

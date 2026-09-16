@@ -14,15 +14,17 @@ import { X } from '@lucide/vue'
 import { useLanguage } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
+import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
-import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { isFlowMapStepNode } from '@/utils/flowMapIdentity'
+import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
 
 import InlineEditableText from './InlineEditableText.vue'
 
@@ -47,8 +49,12 @@ const isPillShape = computed(
 )
 const isMultiFlowMap = computed(() => props.data.diagramType === 'multi_flow_map')
 // For multi-flow map: causes connect from right, effects connect to left
-const isCause = computed(() => isMultiFlowMap.value && props.id.startsWith('cause-'))
-const isEffect = computed(() => isMultiFlowMap.value && props.id.startsWith('effect-'))
+const isCause = computed(
+  () => isMultiFlowMap.value && isMultiFlowCauseNode({ id: props.id, data: props.data })
+)
+const isEffect = computed(
+  () => isMultiFlowMap.value && isMultiFlowEffectNode({ id: props.id, data: props.data })
+)
 
 // Per-group color from mindmap palette for flow map steps and multi-flow map causes/effects
 const groupColor = computed(() => {
@@ -230,7 +236,9 @@ const branchMove = inject<{
 }>('branchMove', { onBranchMovePointerDown: () => false, onBranchMovePointerUp: () => {} })
 
 const supportsBranchMove = computed(() => {
-  if (isFlowMap.value) return props.id?.startsWith('flow-step-')
+  if (isFlowMap.value) {
+    return isFlowMapStepNode({ id: props.id, type: props.type, data: props.data })
+  }
   if (isMultiFlowMap.value) return isCause.value || isEffect.value
   return false
 })

@@ -63,7 +63,10 @@ def _topic_node_id(spec: dict[str, Any]) -> str:
             continue
         node_id = str(node.get("id") or "").strip()
         node_type = str(node.get("type") or "").lower()
-        if node_id and (node_type == "topic" or node_id == "topic"):
+        if node_id and (
+            node_type in {"topic", "center", "whole", "event"}
+            or node_id in {"topic", "flow-topic", "tree-topic", "brace-whole", "event", "left-topic"}
+        ):
             return node_id
     return ""
 

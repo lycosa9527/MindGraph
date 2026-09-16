@@ -324,3 +324,69 @@ def test_build_workflow_kwargs_forwards_learning_sheet_flag() -> None:
     }
     kwargs = _build_workflow_kwargs(req, prepared)
     assert kwargs["is_learning_sheet"] is True
+
+
+@pytest.mark.asyncio
+async def test_stream_cache_hit_emits_accepted_then_complete() -> None:
+    """Org cache hit skips the LLM pipeline and still finishes the SSE contract."""
+    req = GenerateRequest.model_validate(
+        {
+            "prompt": "aaa",
+            "language": "zh",
+            "llm": LLMModel.QWEN,
+            "request_type": "diagram_generation",
+        }
+    )
+    prepared = {
+        "lang": "zh",
+        "prompt": "aaa",
+        "request_id": "gen_cache_hit",
+        "llm_model": "qwen",
+        "language": "zh",
+        "user_id": 11,
+        "organization_id": 11,
+        "request_type": "diagram_generation",
+        "endpoint_path": "/api/generate_graph/stream",
+        "generation_instructions": None,
+        "is_learning_sheet": False,
+        "req": req,
+        "current_user": None,
+        "workflow_kwargs": {"user_prompt": "aaa", "language": "zh", "model": "qwen"},
+    }
+    cached = {
+        "success": True,
+        "spec": {"topic": "aaa", "children": []},
+        "diagram_type": "mind_map",
+        "language": "zh",
+    }
+
+    async def fake_finalize(result: dict[str, Any], _prepared: dict[str, Any]) -> dict[str, Any]:
+        result["llm_model"] = _prepared["llm_model"]
+        result["request_id"] = _prepared["request_id"]
+        return result
+
+    pipeline = AsyncMock()
+    events: list[dict[str, Any]] = []
+    with (
+        patch(
+            "services.diagram.generation_result_cache.get_cached_generation_result",
+            new=AsyncMock(return_value=cached),
+        ),
+        patch(
+            "routers.api.diagram_generation.run_generate_pipeline",
+            new=pipeline,
+        ),
+        patch(
+            "routers.api.diagram_generation._finalize_generate_graph_result",
+            new=AsyncMock(side_effect=fake_finalize),
+        ),
+    ):
+        async for chunk in _stream_generate_graph_events(prepared):
+            if chunk.startswith("data: "):
+                events.append(json.loads(chunk.removeprefix("data: ").strip()))
+
+    pipeline.assert_not_awaited()
+    assert [item["event"] for item in events] == ["accepted", "complete"]
+    assert events[-1]["spec"]["topic"] == "aaa"
+    assert events[-1]["request_id"] == "gen_cache_hit"
+    assert events[-1]["cached"] is True

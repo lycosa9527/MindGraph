@@ -165,6 +165,10 @@ run_backend() {
     tests/test_serve_temp_image.py \
     tests/test_library_save_user_notices.py \
     tests/test_generation_skip_registry.py \
+    tests/test_generation_result_cache.py \
+    tests/test_generation_result_coalesce.py \
+    tests/test_generation_result_cache_live.py \
+    tests/test_org_result_cache.py \
     tests/test_mindbot_library_save_reply.py \
     tests/test_assistant_markdown.py \
     tests/test_mindbot_dingtalk_diagram_display.py \
@@ -223,6 +227,7 @@ run_backend() {
     tests/test_zhihui_outline_and_shell.py \
     tests/test_zhihui_lease.py \
     tests/test_mindmap_identity.py \
+    tests/test_thinking_map_identity.py \
     tests/test_mindmap_identity_kitty_e2e.py \
     tests/test_diagram_edit.py \
     tests/test_diagram_agent_context.py \
@@ -235,6 +240,7 @@ run_backend() {
     tests/test_kitty_agent_loop_five_maps.py \
     tests/test_kitty_agent_loop_sams_club.py \
     tests/test_prompt_to_diagram_result.py \
+    tests/test_prompt_to_diagram_run.py \
     tests/test_tsec_captcha.py \
     tests/test_tsec_aid_encrypted.py \
     tests/test_tsec_result.py \
@@ -258,6 +264,7 @@ run_backend() {
     tests/test_kitty_mobile_active.py \
     tests/scripts/test_training_roles_kit.py \
     tests/scripts/test_white_cat_emoji.py \
+    tests/scripts/test_siamese_cat_emoji.py \
     tests/scripts/test_cat_office_battles.py \
     tests/scripts/test_cat_emoji_stills.py
 }
@@ -293,6 +300,11 @@ run_frontend() {
     tests/llmResultsPersist.spec.ts tests/llmResultsPersistAudit.spec.ts \
     tests/llmResultsTeardown.spec.ts tests/shouldFlushBeforeLibrarySwitch.spec.ts \
     tests/mindMapIdentityMigrate.spec.ts \
+    tests/thinkingMapsIdentity.spec.ts \
+    tests/thinkingMapsAutocompleteLayout.spec.ts \
+    tests/flowMapIdentity.spec.ts \
+    tests/flowMapSubsteps.spec.ts \
+    tests/orgGenerationCache.spec.ts \
     tests/branchMoveHitTest.spec.ts tests/mindMapDropPreviewShapes.spec.ts \
     tests/mindMapSeparation.spec.ts tests/mindMapLoadPreserveSides.spec.ts \
     tests/mindMapNodeUid.spec.ts tests/mindMapSubgraphMerge.spec.ts \

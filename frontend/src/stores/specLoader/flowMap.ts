@@ -16,7 +16,21 @@ import {
 } from '@/composables/diagrams/layoutConfig'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
+import {
+  FLOW_MAP_UID_DATA_KEY,
+  FLOW_TOPIC_NODE_ID,
+  stampFlowMapStepData,
+  stampFlowMapSubstepData,
+  takeFlowMapStableId,
+} from '@/utils/flowMapIdentity'
 
+import {
+  type FlowSubstepEntry,
+  orderFlowStepNodes,
+  resolveFlowMapOrientation,
+  resolveFlowSubstepsForSteps,
+  substepsForFlowStep,
+} from './flowMapSubsteps'
 import { measureTextWidth } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 
@@ -31,19 +45,12 @@ const FLOW_TOPIC_MAX_TEXT_WIDTH = 300
 const FLOW_SUBSTEP_MAX_TEXT_WIDTH = 180
 const FLOW_BALANCE_PADDING = 5
 
-interface FlowSubstepEntry {
-  step: string
-  substeps: string[]
-}
-
 /**
  * Load flow map spec into diagram nodes and connections
  *
  * @param spec - Flow map spec with steps, substeps, and orientation
  * @returns SpecLoaderResult with nodes and connections
  */
-const FLOW_TOPIC_NODE_ID = 'flow-topic'
-
 type FlowTypographyRole = 'topic' | 'step' | 'substep'
 
 function flowNodeTypography(
@@ -147,7 +154,7 @@ export function recalculateFlowMapLayout(
   const topicDims = nodeDimensions[FLOW_TOPIC_NODE_ID]
   if (!topicDims) return nodes
 
-  const stepNodes = nodes.filter((n) => n.type === 'flow')
+  const stepNodes = orderFlowStepNodes(nodes)
   if (stepNodes.length === 0) return nodes
 
   const firstStep = stepNodes[0]
@@ -156,24 +163,16 @@ export function recalculateFlowMapLayout(
   const firstStepDims = nodeDimensions[firstStep.id]
   if (!firstStepDims) return nodes
 
-  const orientation =
-    ((topicNode.data as Record<string, unknown>)?.orientation as string) || 'horizontal'
+  const orientation = resolveFlowMapOrientation(topicNode, stepNodes)
 
   const result = nodes.map((n) => ({ ...n }))
   const topicIndex = result.findIndex((n) => n.id === FLOW_TOPIC_NODE_ID)
 
   if (orientation === 'horizontal') {
-    const orderedSteps = result
-      .filter((n) => n.type === 'flow')
-      .sort((a, b) => {
-        const ga = ((a.data as Record<string, unknown>)?.groupIndex as number) ?? 0
-        const gb = ((b.data as Record<string, unknown>)?.groupIndex as number) ?? 0
-        return ga - gb
-      })
+    const orderedSteps = orderFlowStepNodes(result)
     const substepNodesH = result.filter((n) => n.type === 'flowSubstep')
 
     const groupInfos = orderedSteps.map((stepNode) => {
-      const groupIdx = ((stepNode.data as Record<string, unknown>)?.groupIndex as number) ?? 0
       const stepTyp = flowNodeTypography(stepNode, 'step')
       const stepW = getEffectiveFlowWidth(
         stepNode.id,
@@ -185,9 +184,7 @@ export function recalculateFlowMapLayout(
         stepTyp.fontWeight,
         stepTyp.fontFamily
       )
-      const groupSubsteps = substepNodesH.filter((n) =>
-        n.id.startsWith(`flow-substep-${groupIdx}-`)
-      )
+      const groupSubsteps = substepsForFlowStep(substepNodesH, stepNode)
       const maxSubW = groupSubsteps.reduce((maxW, sub) => {
         const subTyp = flowNodeTypography(sub, 'substep')
         const subW = getEffectiveFlowWidth(
@@ -230,11 +227,7 @@ export function recalculateFlowMapLayout(
         position: { x: stepX, y: stepY },
       }
 
-      const sortedSubsteps = [...group.groupSubsteps].sort((a, b) => {
-        const aIdx = parseInt(a.id.split('-').pop() ?? '0')
-        const bIdx = parseInt(b.id.split('-').pop() ?? '0')
-        return aIdx - bIdx
-      })
+      const sortedSubsteps = group.groupSubsteps
       let subY = stepY + stepH + FLOW_SUBSTEP_OFFSET_X
       sortedSubsteps.forEach((sub) => {
         const subTyp = flowNodeTypography(sub, 'substep')
@@ -279,21 +272,15 @@ export function recalculateFlowMapLayout(
     // Restack step groups from top to bottom using measured heights so that
     // text-wrapped (taller) nodes don't overlap the ones beneath them.
     const substepNodes = result.filter((n) => n.type === 'flowSubstep')
-    const orderedSteps = result
-      .filter((n) => n.type === 'flow')
-      .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0))
+    const orderedSteps = orderFlowStepNodes(result)
 
     let currentY = orderedSteps[0]?.position?.y ?? firstStep.position.y
 
-    orderedSteps.forEach((stepNode, stepOrder) => {
+    orderedSteps.forEach((stepNode) => {
       const stepDims = nodeDimensions[stepNode.id]
       const stepH = stepDims?.height ?? FLOW_MAP_PILL_HEIGHT
 
-      // Substep IDs are flow-substep-{stepIndex}-{i}; stepIndex == position in
-      // the original sorted order so we can match them without needing connections.
-      const groupSubsteps = substepNodes
-        .filter((n) => n.id.startsWith(`flow-substep-${stepOrder}-`))
-        .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0))
+      const groupSubsteps = substepsForFlowStep(substepNodes, stepNode)
 
       if (groupSubsteps.length > 0) {
         let substepColumnH = 0
@@ -335,7 +322,7 @@ export function recalculateFlowMapLayout(
       }
     })
 
-    orderedSteps.forEach((stepNode, stepOrder) => {
+    orderedSteps.forEach((stepNode) => {
       const stepResultNode = result.find((n) => n.id === stepNode.id)
       if (!stepResultNode) return
       const stepTyp = flowNodeTypography(stepNode, 'step')
@@ -351,7 +338,7 @@ export function recalculateFlowMapLayout(
       )
       const substepBaseX = (stepResultNode.position?.x ?? 0) + stepW + FLOW_SUBSTEP_OFFSET_X
 
-      const groupSubs = substepNodes.filter((n) => n.id.startsWith(`flow-substep-${stepOrder}-`))
+      const groupSubs = substepsForFlowStep(substepNodes, stepNode)
       groupSubs.forEach((sub) => {
         const subResultIdx = result.findIndex((n) => n.id === sub.id)
         const subHorizPrevPos = result[subResultIdx].position
@@ -362,7 +349,9 @@ export function recalculateFlowMapLayout(
       })
     })
 
-    const stepCenterX = firstStep.position.x + firstStepDims.width / 2
+    const firstLaidOut = result.find((n) => n.id === firstStep.id)
+    const firstLaidOutX = firstLaidOut?.position?.x ?? firstStep.position.x
+    const stepCenterX = firstLaidOutX + firstStepDims.width / 2
     const correctedX = Math.round(stepCenterX - topicDims.width / 2)
     result[topicIndex] = {
       ...result[topicIndex],
@@ -380,21 +369,15 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   const substepsData = (spec.substeps as FlowSubstepEntry[]) || []
   const title = (spec.title as string) || ''
 
-  // Normalize steps to objects with text
-  const steps = rawSteps.map((step, index) => {
+  const claimedIds = new Set<string>([FLOW_TOPIC_NODE_ID])
+  const steps = rawSteps.map((step) => {
     if (typeof step === 'string') {
-      return { id: `flow-step-${index}`, text: step }
+      return { id: takeFlowMapStableId(claimedIds), text: step }
     }
-    return { id: step.id || `flow-step-${index}`, text: step.text }
+    return { id: takeFlowMapStableId(claimedIds, step.id), text: step.text }
   })
 
-  // Build substeps mapping: stepText -> substeps array
-  const stepToSubsteps: Record<string, string[]> = {}
-  substepsData.forEach((entry) => {
-    if (entry && entry.step && Array.isArray(entry.substeps)) {
-      stepToSubsteps[entry.step] = entry.substeps
-    }
-  })
+  const substepsByStep = resolveFlowSubstepsForSteps(steps, substepsData)
 
   const isVertical = orientation === 'vertical'
   const nodes: DiagramNode[] = []
@@ -441,14 +424,14 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
 
     steps.forEach((step, stepIndex) => {
       const stepId = step.id
-      const substeps = stepToSubsteps[step.text] || []
+      const substeps = substepsByStep[stepIndex] || []
 
       if (substeps.length > 0) {
         // Substeps on the right of step: stacked vertically
         const positions: { id: string; y: number }[] = []
 
-        substeps.forEach((_, i) => {
-          const substepId = `flow-substep-${stepIndex}-${i}`
+        substeps.forEach((item, i) => {
+          const substepId = takeFlowMapStableId(claimedIds, item.id)
           const y = i * (pillHeight + FLOW_SUBSTEP_SPACING)
           positions.push({ id: substepId, y })
         })
@@ -462,7 +445,7 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
           stepId,
           stepText: step.text,
           substepIds: positions.map((p) => p.id),
-          substepTexts: substeps,
+          substepTexts: substeps.map((item) => item.text),
           groupHeight,
           substepPositions: positions,
         })
@@ -502,7 +485,10 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
           text: group.stepText,
           type: 'flow',
           position: { x: stepX, y: stepY },
-          data: { groupIndex: groupIndex },
+          data: {
+            ...stampFlowMapStepData(groupIndex),
+            [FLOW_MAP_UID_DATA_KEY]: group.stepId,
+          },
         })
 
         // Substeps on the right of step, stacked vertically
@@ -513,7 +499,10 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
             text,
             type: 'flowSubstep',
             position: { x: substepX, y: groupStartY + pos.y },
-            data: { groupIndex: groupIndex },
+            data: {
+              ...stampFlowMapSubstepData(groupIndex, i, group.stepId),
+              [FLOW_MAP_UID_DATA_KEY]: pos.id,
+            },
           })
         })
 
@@ -525,7 +514,10 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
           text: group.stepText,
           type: 'flow',
           position: { x: stepX, y: groupStartY },
-          data: { groupIndex: groupIndex },
+          data: {
+            ...stampFlowMapStepData(groupIndex),
+            [FLOW_MAP_UID_DATA_KEY]: group.stepId,
+          },
         })
 
         currentY += pillHeight + FLOW_MIN_STEP_SPACING
@@ -608,20 +600,21 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
     interface HGroupInfo {
       stepId: string
       stepText: string
-      substepEntries: { text: string; estimatedWidth: number }[]
+      substepEntries: { id?: string; text: string; estimatedWidth: number }[]
       stepEstimatedWidth: number
       footprintWidth: number
     }
 
-    const hGroups: HGroupInfo[] = steps.map((step) => {
-      const subs = stepToSubsteps[step.text] || []
+    const hGroups: HGroupInfo[] = steps.map((step, stepIndex) => {
+      const subs = substepsByStep[stepIndex] || []
       const stepTextW = measureTextWidth(step.text, FLOW_STEP_FONT_SIZE)
       const stepEstW = Math.max(pillWidth, stepTextW + FLOW_NODE_PADDING_X)
 
-      const substepEntries = subs.map((txt) => {
-        const w = measureTextWidth(txt, FLOW_SUBSTEP_FONT_SIZE)
+      const substepEntries = subs.map((item) => {
+        const w = measureTextWidth(item.text, FLOW_SUBSTEP_FONT_SIZE)
         return {
-          text: txt,
+          id: item.id,
+          text: item.text,
           estimatedWidth: Math.max(FLOW_MAP_PILL_WIDTH, w + FLOW_NODE_PADDING_X),
         }
       })
@@ -659,7 +652,10 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
         text: group.stepText,
         type: 'flow',
         position: { x: stepX, y: stepY },
-        data: { groupIndex: stepIndex },
+        data: {
+          ...stampFlowMapStepData(stepIndex),
+          [FLOW_MAP_UID_DATA_KEY]: group.stepId,
+        },
       })
 
       const stepColor = getMindmapBranchColor(stepIndex).border
@@ -691,7 +687,7 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
       }
 
       group.substepEntries.forEach((substep, substepIndex) => {
-        const substepId = `flow-substep-${stepIndex}-${substepIndex}`
+        const substepId = takeFlowMapStableId(claimedIds, substep.id)
         const substepY =
           stepY +
           pillHeight +
@@ -704,7 +700,10 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
           text: substep.text,
           type: 'flowSubstep',
           position: { x: substepX, y: substepY },
-          data: { groupIndex: stepIndex },
+          data: {
+            ...stampFlowMapSubstepData(stepIndex, substepIndex, group.stepId),
+            [FLOW_MAP_UID_DATA_KEY]: substepId,
+          },
         })
 
         connections.push({

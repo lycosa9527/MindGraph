@@ -19,6 +19,7 @@ import { useInlineRecommendationsStore } from '@/stores/inlineRecommendations'
 import { useKittySessionStore } from '@/stores/kittySession'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
+import { useOrgGenerationCacheNoticeStore } from '@/stores/orgGenerationCacheNotice'
 import { useOneSentenceStore } from '@/stores/oneSentence'
 import { usePanelsStore } from '@/stores/panels'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -95,6 +96,7 @@ describe('applyCanvasSessionReset', () => {
 
     canvasVirtualKeyboardOpen.value = true
     formatBrushActive.value = true
+    useOrgGenerationCacheNoticeStore().show()
 
     const resetRequested = vi.fn()
     eventBus.on('diagram:reset_requested', resetRequested)
@@ -126,6 +128,7 @@ describe('applyCanvasSessionReset', () => {
     expect(savedDiagrams.activeDiagramId).toBeNull()
     expect(canvasVirtualKeyboardOpen.value).toBe(false)
     expect(formatBrushActive.value).toBe(false)
+    expect(useOrgGenerationCacheNoticeStore().visible).toBe(false)
     expect(resetRequested).toHaveBeenCalledTimes(1)
 
     eventBus.off('diagram:reset_requested', resetRequested)

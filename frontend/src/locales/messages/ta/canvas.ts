@@ -408,6 +408,7 @@ export default {
   'canvas.presentationTimer.exitTimer': 'Exit',
   'canvas.presentationTimer.startPresenting': 'Start presenting',
   'canvas.presentationTimer.closeHud': 'Close timer',
+  'canvas.cachedResult.notice': 'Cached result. Use the function again for a fresh result.',
   'canvas.presentation.learningSheetConfirmTitle': 'Start presentation?',
   'canvas.presentation.learningSheetConfirmBody':
     'You are still editing the learning sheet. Starting presentation will end blank editing; existing blanks will be kept. Continue?',

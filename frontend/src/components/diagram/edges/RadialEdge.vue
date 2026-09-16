@@ -13,6 +13,7 @@ import { type EdgeProps, useVueFlow } from '@vue-flow/core'
 
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphEdgeData } from '@/types'
+import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
 
@@ -21,12 +22,9 @@ const { getNodes } = useVueFlow(diagramStore.vueFlowId)
 
 /** True if target is a double-bubble similarity or difference capsule node */
 function isDoubleBubbleCapsuleTarget(targetId: string): boolean {
-  return (
-    diagramStore.type === 'double_bubble_map' &&
-    (/^similarity-\d+$/.test(targetId) ||
-      /^left-diff-\d+$/.test(targetId) ||
-      /^right-diff-\d+$/.test(targetId))
-  )
+  if (diagramStore.type !== 'double_bubble_map') return false
+  const node = diagramStore.data?.nodes.find((n) => n.id === targetId)
+  return Boolean(node && readDoubleBubbleRole(node))
 }
 
 // Calculate center-to-center path (or arc-handle path for double-bubble capsules)

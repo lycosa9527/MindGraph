@@ -209,3 +209,16 @@ TTL_MAITE_PRACTICE = 300
 # ---------------------------------------------------------------------------
 EMBED_SESSION_HANDOFF = "auth:embed:handoff:{code}"
 TTL_EMBED_SESSION_HANDOFF = 60
+
+# ---------------------------------------------------------------------------
+# Org-scoped generation result cache  (generation_result_cache.py)
+# Exact-match landing/fresh diagram specs. TTL 0 disables the cache.
+# ---------------------------------------------------------------------------
+GEN_RESULT = "gen:result:{org_id}:{fingerprint}"
+GEN_RESULT_LOCK = "gen:lock:{org_id}:{fingerprint}"
+ORG_LLM_RESULT = "orgllm:{ns}:{org_id}:{fingerprint}"
+ORG_LLM_LOCK = "orgllm:lock:{ns}:{org_id}:{fingerprint}"
+TTL_GEN_RESULT = int(os.getenv("GEN_RESULT_CACHE_TTL", "7200"))  # 2 h; 0 disables
+TTL_GEN_RESULT_LOCK = int(os.getenv("GEN_RESULT_CACHE_LOCK_TTL", "180"))
+GEN_RESULT_WAIT_TIMEOUT = float(os.getenv("GEN_RESULT_CACHE_WAIT_TIMEOUT", "150"))
+GEN_RESULT_POLL_INTERVAL = float(os.getenv("GEN_RESULT_CACHE_POLL_INTERVAL", "0.25"))

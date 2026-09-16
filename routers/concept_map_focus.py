@@ -28,6 +28,7 @@ from models.requests.requests_diagram import (
 )
 from prompts import get_prompt
 from services.llm import llm_service
+from services.llm.org_result_cache import load_or_generate_org_llm_result, normalize_org_cache_text
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user
 
@@ -387,7 +388,8 @@ async def root_concept_generate(
     org_id = getattr(current_user, "organization_id", None)
     system, user_tmpl = _get_root_concept_prompts(lang)
     user = user_tmpl.replace("{focus_question}", question)
-    try:
+
+    async def _generate_root() -> Dict[str, Any] | None:
         raw = await _chat_completion(
             ROOT_CONCEPT_MODEL,
             system,
@@ -401,7 +403,21 @@ async def root_concept_generate(
         if not raw.strip():
             raise ValueError("empty_response")
         parsed = _parse_json_object(raw)
-        norm = _normalize_root_concept_response(parsed)
+        return _normalize_root_concept_response(parsed)
+
+    try:
+        norm = await load_or_generate_org_llm_result(
+            "concept_root",
+            org_id,
+            {
+                "question": normalize_org_cache_text(question),
+                "language": normalize_org_cache_text(lang),
+                "model": ROOT_CONCEPT_MODEL,
+            },
+            _generate_root,
+        )
+        if not norm:
+            raise ValueError("empty_response")
         return JSONResponse(norm)
     except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning("[RootConcept] generate failed: %s", exc)
@@ -430,8 +446,26 @@ async def focus_question_validate(
         async with sem:
             return await _validate_one_model(m, question, lang, user_id, org_id)
 
-    results = await asyncio.gather(*[_bounded(m) for m in FOCUS_MODELS])
-    return JSONResponse({"results": list(results)})
+    async def _generate_validate() -> Dict[str, Any] | None:
+        rows = await asyncio.gather(*[_bounded(m) for m in FOCUS_MODELS])
+        result_rows = list(rows)
+        if result_rows and all(row.get("error") for row in result_rows):
+            return None
+        return {"results": result_rows}
+
+    cached = await load_or_generate_org_llm_result(
+        "concept_validate",
+        org_id,
+        {
+            "question": normalize_org_cache_text(question),
+            "language": normalize_org_cache_text(lang),
+            "models": list(FOCUS_MODELS),
+        },
+        _generate_validate,
+    )
+    if cached is None:
+        cached = {"results": []}
+    return JSONResponse(cached)
 
 
 @router.post("/focus_question_review/suggestions/stream")

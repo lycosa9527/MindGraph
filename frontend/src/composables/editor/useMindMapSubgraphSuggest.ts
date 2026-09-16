@@ -27,6 +27,7 @@ import { useKittySessionStore } from '@/stores/kittySession'
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 import { useUIStore } from '@/stores/ui'
 import { authFetch } from '@/utils/api'
+import { noteOrgGenerationCacheResult, withOrgGenerationCacheBypass } from '@/utils/orgGenerationCache'
 import { findMindMapNodeIdByLabel } from '@/utils/findMindMapNodeIdByLabel'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 import {
@@ -463,7 +464,7 @@ async function runMindMapSubgraphGeneration(
       authFetch('/api/generate_graph', {
         method: 'POST',
         signal,
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify(withOrgGenerationCacheBypass(requestBody)),
       })
     )
 
@@ -566,6 +567,7 @@ async function runMindMapSubgraphGeneration(
       return false
     }
 
+    noteOrgGenerationCacheResult(result)
     return enqueueSubgraphApply(() =>
       applyGeneratedSubgraphBranches({
         diagramStore,

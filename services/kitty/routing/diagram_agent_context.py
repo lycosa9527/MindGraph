@@ -12,6 +12,15 @@ from typing import Any, Dict, List, Literal
 
 from services.diagram.mindmap_identity import identity_aliases, is_machine_node_id, read_mindmap_uid
 from services.diagram.mindmap_location import is_leftover_mindmap_branch_id, mindmap_location_path_key
+from services.diagram.thinking_map_identity import (
+    read_thinking_map_uid,
+    thinking_map_identity_aliases,
+)
+from services.diagram.thinking_map_patterns import (
+    is_leftover_thinking_map_id,
+    is_thinking_map_diagram_type,
+    normalize_diagram_type,
+)
 from services.kitty.routing.mindmap_branch_numbers import (
     is_branch_numbering_enabled,
     resolve_outline_number_ref,
@@ -55,13 +64,22 @@ def _node_display_text(node: Dict[str, Any]) -> str:
     return ""
 
 
-def _live_snapshot_id(node: Dict[str, Any]) -> str:
-    """Prefer durable UUID over leftover ``branch-*`` when uid is present."""
+def _diagram_type_from_data(diagram_data: Dict[str, Any] | None) -> str:
+    if not isinstance(diagram_data, dict):
+        return ""
+    return normalize_diagram_type(str(diagram_data.get("diagram_type") or ""))
+
+
+def _live_snapshot_id(node: Dict[str, Any], diagram_type: str = "") -> str:
+    """Prefer durable UUID over leftover invented ids when uid is present."""
     raw_id = node.get("id")
     raw = raw_id.strip() if isinstance(raw_id, str) else ""
-    uid = read_mindmap_uid(node)
-    if raw and is_leftover_mindmap_branch_id(raw) and uid:
+    uid = read_mindmap_uid(node) or read_thinking_map_uid(diagram_type, node)
+    leftover = is_leftover_mindmap_branch_id(raw) or is_leftover_thinking_map_id(diagram_type, raw)
+    if raw and leftover and uid:
         return uid
+    if raw and not leftover:
+        return raw
     if raw:
         return raw
     return uid or ""
@@ -72,11 +90,12 @@ def _compact_node(
     *,
     connections: List[Dict[str, Any]] | None = None,
     nodes: List[Dict[str, Any]] | None = None,
+    diagram_type: str = "",
 ) -> Dict[str, str]:
     entry: Dict[str, str] = {}
     raw_id = node.get("id")
     raw = raw_id.strip() if isinstance(raw_id, str) else ""
-    live_id = _live_snapshot_id(node)
+    live_id = _live_snapshot_id(node, diagram_type)
     if live_id:
         entry["id"] = live_id
     text = _node_display_text(node)
@@ -140,6 +159,7 @@ def _compact_nodes_from_pinia(
     *,
     limit: int,
     connections: Any = None,
+    diagram_type: str = "",
 ) -> List[Dict[str, str]]:
     if not isinstance(nodes, list):
         return []
@@ -149,7 +169,7 @@ def _compact_nodes_from_pinia(
     for item in typed:
         if len(out) >= limit:
             break
-        entry = _compact_node(item, connections=conn_list, nodes=typed)
+        entry = _compact_node(item, connections=conn_list, nodes=typed, diagram_type=diagram_type)
         if entry.get("id") or entry.get("text"):
             out.append(entry)
     return out
@@ -206,6 +226,7 @@ def build_diagram_agent_payload(
         diagram_data.get("nodes"),
         limit=_MAX_NODES,
         connections=diagram_data.get("connections"),
+        diagram_type=diagram_type,
     )
     if pinia_nodes:
         payload["nodes"] = pinia_nodes
@@ -375,11 +396,16 @@ def resolve_diagram_node_ref(
     nodes_raw = data.get("nodes")
     typed = [node for node in nodes_raw if isinstance(node, dict)] if isinstance(nodes_raw, list) else []
     aliases = identity_aliases(typed)
+    diagram_type = _diagram_type_from_data(data)
+    if is_thinking_map_diagram_type(diagram_type):
+        aliases.update(thinking_map_identity_aliases(diagram_type, typed))
     pairs = _collect_id_text_pairs(data)
 
     if isinstance(node_id, str) and node_id.strip():
         wanted = node_id.strip()
         mapped = aliases.get(wanted)
+        if mapped and is_leftover_thinking_map_id(diagram_type, mapped):
+            mapped = None
         if mapped:
             for nid, lbl in pairs:
                 if nid == mapped:
@@ -450,6 +476,9 @@ def enrich_node_action_command(
     diagram_data = session_context.get("diagram_data")
     if not isinstance(diagram_data, dict):
         diagram_data = {}
+    session_type = session_context.get("diagram_type")
+    if isinstance(session_type, str) and session_type.strip() and "diagram_type" not in diagram_data:
+        diagram_data = {**diagram_data, "diagram_type": session_type.strip()}
 
     out = dict(command)
     if has_follow_ups:

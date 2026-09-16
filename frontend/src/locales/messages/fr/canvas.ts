@@ -408,6 +408,7 @@ export default {
   'canvas.presentationTimer.exitTimer': 'Quitter',
   'canvas.presentationTimer.startPresenting': 'Démarrer la présentation',
   'canvas.presentationTimer.closeHud': 'Fermer le minuteur',
+  'canvas.cachedResult.notice': 'Cached result. Use the function again for a fresh result.',
   'canvas.presentation.learningSheetConfirmTitle': 'Démarrer la présentation ?',
   'canvas.presentation.learningSheetConfirmBody':
     'Vous modifiez encore la fiche d’apprentissage. Démarrer la présentation mettra fin à l’édition des blancs ; les blancs existants seront conservés. Continuer ?',

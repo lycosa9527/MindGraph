@@ -10,6 +10,11 @@ from __future__ import annotations
 from typing import Any
 
 from services.diagram.mindmap_identity import as_live_mindmap_node_id, identity_aliases
+from services.diagram.thinking_map_identity import (
+    as_live_thinking_map_node_id,
+    thinking_map_identity_aliases,
+)
+from services.diagram.thinking_map_patterns import is_thinking_map_diagram_type
 from services.kitty.routing.one_sentence_edit_heuristics import edit_labels_match
 
 NODE_TARGET_ACTIONS = frozenset(
@@ -22,29 +27,6 @@ NODE_TARGET_ACTIONS = frozenset(
 )
 
 
-def get_diagram_prefix_map() -> dict[str, str]:
-    """
-    Get the node ID prefix map for all supported diagram types.
-    This ensures consistent node ID generation across the voice agent.
-
-    Returns:
-        Dictionary mapping diagram_type to node ID prefix
-    """
-    return {
-        "circle_map": "context",
-        "bubble_map": "attribute",
-        "double_bubble_map": "node",
-        "tree_map": "item",
-        "flow_map": "step",
-        "multi_flow_map": "step",  # Uses same prefix as flow_map
-        "brace_map": "part",
-        "bridge_map": "node",  # Bridge maps use node prefix
-        "mindmap": "branch",
-        "mind_map": "branch",  # Alias for mindmap
-        "concept_map": "concept",
-    }
-
-
 def _voice_node_text(node: object) -> str:
     """Voice node text."""
     if isinstance(node, dict):
@@ -55,38 +37,41 @@ def _voice_node_text(node: object) -> str:
     return str(node).strip()
 
 
-def _prefix_node_id(diagram_type: str, index: int) -> str:
-    """Prefix node id."""
-    prefix_map = get_diagram_prefix_map()
-    prefix = prefix_map.get(diagram_type, "node")
-    return f"{prefix}_{index}"
-
-
 def is_mindmap_diagram_type(diagram_type: str | None) -> bool:
     """True when the session is a mind map (UUID identity, never invent branch_N)."""
     return diagram_type in {"mindmap", "mind_map"}
 
 
+def _aliases_for_diagram(diagram_type: str, typed_nodes: list[dict[str, Any]]) -> dict[str, str]:
+    """Identity aliases for mindmap or Thinking Map nodes."""
+    if not typed_nodes:
+        return {}
+    if is_thinking_map_diagram_type(diagram_type):
+        return thinking_map_identity_aliases(diagram_type, typed_nodes)
+    return identity_aliases(typed_nodes)
+
+
 def child_node_live_id(node: object, index: int, diagram_type: str) -> str | None:
-    """Prefer the child's live canvas id. Never invent or echo leftover mind-map ids."""
+    """Prefer the child's live canvas id. Never invent leftover slot ids."""
+    del index
     if isinstance(node, dict):
         raw = node.get("id")
         if isinstance(raw, str) and raw.strip():
             live = raw.strip()
             if is_mindmap_diagram_type(diagram_type):
                 return as_live_mindmap_node_id(live)
+            if is_thinking_map_diagram_type(diagram_type):
+                return as_live_thinking_map_node_id(diagram_type, live)
             return live
-    if is_mindmap_diagram_type(diagram_type):
+    if is_mindmap_diagram_type(diagram_type) or is_thinking_map_diagram_type(diagram_type):
         return None
-    return _prefix_node_id(diagram_type, index)
+    return None
 
 
 def session_context_child_record(text: str, index: int, diagram_type: str) -> dict[str, Any]:
-    """Voice ``children[]`` snapshot. Mind maps omit invented prefix ids."""
-    record: dict[str, Any] = {"index": index, "text": text}
-    if not is_mindmap_diagram_type(diagram_type):
-        record["id"] = _prefix_node_id(diagram_type, index)
-    return record
+    """Voice ``children[]`` snapshot. Never invent leftover prefix ids."""
+    del diagram_type
+    return {"index": index, "text": text}
 
 
 def typed_node_id_by_unique_label(
@@ -135,12 +120,17 @@ def resolve_voice_node_reference(
 
     nodes_raw = diagram_data.get("nodes")
     typed_nodes = [item for item in nodes_raw if isinstance(item, dict)] if isinstance(nodes_raw, list) else []
-    aliases = identity_aliases(typed_nodes) if typed_nodes else {}
+    aliases = _aliases_for_diagram(diagram_type, typed_nodes)
 
     if isinstance(node_id, str) and node_id.strip():
         resolved_id = node_id.strip()
         if is_mindmap_diagram_type(diagram_type):
             live = as_live_mindmap_node_id(resolved_id, aliases)
+            if live is None:
+                return None
+            resolved_id = live
+        elif is_thinking_map_diagram_type(diagram_type):
+            live = as_live_thinking_map_node_id(diagram_type, resolved_id, aliases)
             if live is None:
                 return None
             resolved_id = live
@@ -199,6 +189,11 @@ def resolve_voice_node_reference(
         sel_id = selected[0]
         if is_mindmap_diagram_type(diagram_type):
             live = as_live_mindmap_node_id(sel_id, aliases)
+            if live is None:
+                return None
+            sel_id = live
+        elif is_thinking_map_diagram_type(diagram_type):
+            live = as_live_thinking_map_node_id(diagram_type, sel_id, aliases)
             if live is None:
                 return None
             sel_id = live

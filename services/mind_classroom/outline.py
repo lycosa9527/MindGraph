@@ -6,6 +6,13 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from services.diagram.mindmap_identity import as_live_mindmap_node_id, migrate_mindmap_diagram_payload
+from services.diagram.thinking_map_identity import migrate_thinking_map_diagram_payload
+from services.diagram.thinking_map_patterns import (
+    is_any_thinking_map_leftover_id,
+    is_thinking_map_diagram_type,
+    normalize_diagram_type,
+    topic_node_id_for,
+)
 from services.diagram.mindmap_location import mindmap_node_side
 from services.diagram.mindmap_outline_order import (
     node_coord,
@@ -147,7 +154,11 @@ def _branch_from_item(item: Any) -> Optional[MindMapBranchOutline]:
     if not text:
         return None
     raw_id = item.get("uid") or item.get("id")
-    node_id = as_live_mindmap_node_id(str(raw_id).strip() if isinstance(raw_id, str) else None)
+    text_id = raw_id.strip() if isinstance(raw_id, str) else ""
+    if text_id and is_any_thinking_map_leftover_id(text_id):
+        node_id = None
+    else:
+        node_id = as_live_mindmap_node_id(text_id or None)
     return MindMapBranchOutline(
         id=node_id,
         text=text,
@@ -207,7 +218,16 @@ def _branches_from_nodes(spec: dict[str, Any]) -> tuple[str, list[MindMapBranchO
     topic_text = ""
     for node_id, node in by_id.items():
         node_type = str(node.get("type") or "").lower()
-        if node_type == "topic" or node_id == "topic":
+        reserved = topic_node_id_for(str(spec.get("type") or spec.get("diagram_type") or ""))
+        if node_type in {"topic", "center", "whole", "event"} or node_id in {
+            "topic",
+            reserved,
+            "flow-topic",
+            "tree-topic",
+            "brace-whole",
+            "event",
+            "left-topic",
+        }:
             topic_id = node_id
             topic_text = _clean_text(node.get("text") or node.get("label"))
             break
@@ -267,8 +287,12 @@ def extract_mindmap_outline(
         pass
 
     working = dict(spec)
+    slug = normalize_diagram_type(str(type_hint or ""))
     if isinstance(working.get("nodes"), list):
-        migrate_mindmap_diagram_payload(working)
+        if is_thinking_map_diagram_type(slug):
+            migrate_thinking_map_diagram_payload(working, slug)
+        else:
+            migrate_mindmap_diagram_payload(working)
 
     topic = _clean_text(working.get("topic") or working.get("title") or working.get("centralTopic"))
     branches = _branches_from_hierarchical(working)
@@ -285,11 +309,30 @@ def extract_mindmap_outline(
 
     if not topic:
         topic = _clean_text(fallback_title) or "未命名主题"
+    if not branches and is_thinking_map_diagram_type(slug):
+        reserved = {
+            topic_node_id_for(slug),
+            "topic",
+            "outer-boundary",
+            "dimension-label",
+            "right-topic",
+        }
+        nodes = working.get("nodes")
+        if isinstance(nodes, list):
+            for node in nodes:
+                if not isinstance(node, dict):
+                    continue
+                node_id = str(node.get("id") or "").strip()
+                if not node_id or node_id in reserved:
+                    continue
+                text = _clean_text(node.get("text") or node.get("label"))
+                if text:
+                    branches.append(MindMapBranchOutline(id=node_id, text=text))
     if not branches:
         raise ValueError("Mind map has no first-level branches to teach from")
 
     return MindMapOutline(
         topic=topic,
         branches=branches,
-        diagram_type="mind_map",
+        diagram_type=slug or "mind_map",
     )

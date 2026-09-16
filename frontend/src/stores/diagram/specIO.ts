@@ -11,30 +11,28 @@ import {
   mindMapStyleFromTheme,
   nodeHasMindMapThemeColors,
 } from '@/config/mindMapThemes'
-import {
-  applyRainbowMindMapColors,
-  isRainbowMindMapTheme,
-} from '@/config/mindMapVibrantThemes'
+import { applyRainbowMindMapColors, isRainbowMindMapTheme } from '@/config/mindMapVibrantThemes'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
-import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
-import {
-  isMindMapV2FamilyMode,
-  resolveSessionMindMapCanvasMode,
-} from '@/utils/mindMapCanvasMode'
 import {
   remapCollabConnectionEndpoints,
   spliceCollabConnection,
 } from '@/utils/collabConnectionInsert'
+import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
 import {
-  clearLlmExportAttribution,
+  DOUBLE_BUBBLE_LEFT_TOPIC_ID,
+  DOUBLE_BUBBLE_RIGHT_TOPIC_ID,
+  isDoubleBubbleRoleNode,
+  readDoubleBubbleIndex,
+} from '@/utils/doubleBubbleMapIdentity'
+import { resolveThinkingMapAliasId } from '@/utils/thinkingMapIdentity'
+import {
   LLM_EXPORT_ATTRIBUTION_KEY,
+  clearLlmExportAttribution,
   readLlmExportAttribution,
 } from '@/utils/llmExportWatermark'
+import { isMindMapV2FamilyMode, resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 import { migrateMindMapIdentityIds, resolveMindMapAliasId } from '@/utils/mindMapIdentityMigrate'
-import {
-  beginMindMapSpecLoadSession,
-  markMindMapLoadStage,
-} from '@/utils/mindMapLoadDebug'
+import { beginMindMapSpecLoadSession, markMindMapLoadStage } from '@/utils/mindMapLoadDebug'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import {
@@ -43,6 +41,7 @@ import {
   recalculateBubbleMapLayout,
   recalculateTreeMapLayout,
 } from '../specLoader'
+import { collectFlowMapSpecFromNodes } from '../specLoader/flowMapSubsteps'
 import { useUIStore } from '../ui'
 import { getMindMapCurveExtents } from './events'
 import {
@@ -104,7 +103,9 @@ export function useSpecIOSlice(ctx: DiagramContext) {
         : undefined
 
     const preserveMindMapMeasures = options?.preserveMindMapMeasures === true
-    const preservedMindMapWidths = preserveMindMapMeasures ? { ...ctx.mindMapNodeWidths.value } : null
+    const preservedMindMapWidths = preserveMindMapMeasures
+      ? { ...ctx.mindMapNodeWidths.value }
+      : null
     const preservedMindMapHeights = preserveMindMapMeasures
       ? { ...ctx.mindMapNodeHeights.value }
       : null
@@ -188,12 +189,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
             return {
               ...node,
               style: {
-                ...mindMapStyleFromTheme(
-                  node,
-                  themeFromSpec,
-                  diagramStyleId,
-                  result.connections
-                ),
+                ...mindMapStyleFromTheme(node, themeFromSpec, diagramStyleId, result.connections),
                 ...(node.style || {}),
               },
             }
@@ -224,6 +220,29 @@ export function useSpecIOSlice(ctx: DiagramContext) {
 
     if (diagramTypeValue === 'multi_flow_map') {
       ctx.topicNodeWidth.value = MULTI_FLOW_MAP_TOPIC_WIDTH
+    }
+
+    if (ctx.selectedNodes.value.length > 0) {
+      const remapped = ctx.selectedNodes.value
+        .map((id) => resolveThinkingMapAliasId(diagramTypeValue, id, nodesToStore) ?? id)
+        .filter((id) => nodesToStore.some((node) => node.id === id))
+      if (remapped.length > 0 || diagramTypeValue === 'flow_map') {
+        ctx.selectedNodes.value = [...new Set(remapped)]
+      }
+    }
+    if (diagramTypeValue === 'flow_map') {
+      const topic = nodesToStore.find((n) => n.id === 'flow-topic')
+      const topicOri = (topic?.data as Record<string, unknown> | undefined)?.orientation
+      const specOri = spec.orientation
+      const resolved =
+        topicOri === 'vertical' || topicOri === 'horizontal'
+          ? topicOri
+          : specOri === 'vertical' || specOri === 'horizontal'
+            ? specOri
+            : undefined
+      if (topic && resolved && topicOri !== resolved) {
+        topic.data = { ...(topic.data || {}), orientation: resolved }
+      }
     }
 
     for (const node of nodesToStore) {
@@ -327,40 +346,26 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     const nodes = ctx.data.value.nodes
     let left = ''
     let right = ''
-    const leftNode = nodes.find((n) => n.id === 'left-topic')
-    const rightNode = nodes.find((n) => n.id === 'right-topic')
+    const leftNode = nodes.find((n) => n.id === DOUBLE_BUBBLE_LEFT_TOPIC_ID)
+    const rightNode = nodes.find((n) => n.id === DOUBLE_BUBBLE_RIGHT_TOPIC_ID)
     if (leftNode) left = String(leftNode.text ?? '').trim()
     if (rightNode) right = String(rightNode.text ?? '').trim()
-    const simIndices = [
-      ...new Set(
-        nodes
-          .filter((n) => /^similarity-\d+$/.test(n.id))
-          .map((n) => parseInt(n.id.replace('similarity-', ''), 10))
-      ),
-    ].sort((a, b) => a - b)
-    const leftDiffIndices = [
-      ...new Set(
-        nodes
-          .filter((n) => /^left-diff-\d+$/.test(n.id))
-          .map((n) => parseInt(n.id.replace('left-diff-', ''), 10))
-      ),
-    ].sort((a, b) => a - b)
-    const rightDiffIndices = [
-      ...new Set(
-        nodes
-          .filter((n) => /^right-diff-\d+$/.test(n.id))
-          .map((n) => parseInt(n.id.replace('right-diff-', ''), 10))
-      ),
-    ].sort((a, b) => a - b)
-    const similarities = simIndices.map((i) =>
-      String(nodes.find((n) => n.id === `similarity-${i}`)?.text ?? '').trim()
-    )
-    const leftDifferences = leftDiffIndices.map((i) =>
-      String(nodes.find((n) => n.id === `left-diff-${i}`)?.text ?? '').trim()
-    )
-    const rightDifferences = rightDiffIndices.map((i) =>
-      String(nodes.find((n) => n.id === `right-diff-${i}`)?.text ?? '').trim()
-    )
+    const roleNodes = (role: 'similarity' | 'leftDiff' | 'rightDiff') =>
+      nodes
+        .filter((n) => isDoubleBubbleRoleNode(n, role))
+        .sort((a, b) => readDoubleBubbleIndex(a) - readDoubleBubbleIndex(b))
+    const simNodes = roleNodes('similarity')
+    const leftDiffNodes = roleNodes('leftDiff')
+    const rightDiffNodes = roleNodes('rightDiff')
+    const similarities = simNodes.map((n) => ({ id: n.id, text: String(n.text ?? '').trim() }))
+    const leftDifferences = leftDiffNodes.map((n) => ({
+      id: n.id,
+      text: String(n.text ?? '').trim(),
+    }))
+    const rightDifferences = rightDiffNodes.map((n) => ({
+      id: n.id,
+      text: String(n.text ?? '').trim(),
+    }))
     const radiusFromDom = (nodeId: string): number | undefined => {
       const d = ctx.nodeDimensions.value[nodeId]
       if (!d || d.width <= 0 || d.height <= 0) return undefined
@@ -395,54 +400,27 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       _doubleBubbleMeasureHints[nodeId] = hint
     }
 
-    addMeasureHint('left-topic', leftNode)
-    addMeasureHint('right-topic', rightNode)
-    simIndices.forEach((i) => {
-      addMeasureHint(
-        `similarity-${i}`,
-        nodes.find((n) => n.id === `similarity-${i}`)
-      )
-    })
-    leftDiffIndices.forEach((i) => {
-      addMeasureHint(
-        `left-diff-${i}`,
-        nodes.find((n) => n.id === `left-diff-${i}`)
-      )
-    })
-    rightDiffIndices.forEach((i) => {
-      addMeasureHint(
-        `right-diff-${i}`,
-        nodes.find((n) => n.id === `right-diff-${i}`)
-      )
-    })
+    addMeasureHint(DOUBLE_BUBBLE_LEFT_TOPIC_ID, leftNode)
+    addMeasureHint(DOUBLE_BUBBLE_RIGHT_TOPIC_ID, rightNode)
+    for (const node of [...simNodes, ...leftDiffNodes, ...rightDiffNodes]) {
+      addMeasureHint(node.id, node)
+    }
 
     const _doubleBubbleMapNodeSizes: Record<string, unknown> = {}
     if (leftNode) {
-      const r = mergedRadius('left-topic', leftNode)
+      const r = mergedRadius(DOUBLE_BUBBLE_LEFT_TOPIC_ID, leftNode)
       if (r != null) _doubleBubbleMapNodeSizes['leftTopicR'] = r
     }
     if (rightNode) {
-      const r = mergedRadius('right-topic', rightNode)
+      const r = mergedRadius(DOUBLE_BUBBLE_RIGHT_TOPIC_ID, rightNode)
       if (r != null) _doubleBubbleMapNodeSizes['rightTopicR'] = r
     }
-    const simRadii = simIndices.map((i) => {
-      const id = `similarity-${i}`
-      const nd = nodes.find((n) => n.id === id)
-      return mergedRadius(id, nd)
-    })
+    const simRadii = simNodes.map((n) => mergedRadius(n.id, n))
     if (simRadii.some((r) => r != null)) _doubleBubbleMapNodeSizes['simRadii'] = simRadii
-    const leftDiffRadii = leftDiffIndices.map((i) => {
-      const id = `left-diff-${i}`
-      const nd = nodes.find((n) => n.id === id)
-      return mergedRadius(id, nd)
-    })
+    const leftDiffRadii = leftDiffNodes.map((n) => mergedRadius(n.id, n))
     if (leftDiffRadii.some((r) => r != null))
       _doubleBubbleMapNodeSizes['leftDiffRadii'] = leftDiffRadii
-    const rightDiffRadii = rightDiffIndices.map((i) => {
-      const id = `right-diff-${i}`
-      const nd = nodes.find((n) => n.id === id)
-      return mergedRadius(id, nd)
-    })
+    const rightDiffRadii = rightDiffNodes.map((n) => mergedRadius(n.id, n))
     if (rightDiffRadii.some((r) => r != null))
       _doubleBubbleMapNodeSizes['rightDiffRadii'] = rightDiffRadii
 
@@ -551,29 +529,9 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     if (!ctx.data.value || ctx.type.value !== 'flow_map') return null
     const topicNode = ctx.data.value.nodes.find((n) => n.id === 'flow-topic')
     const title = topicNode?.text ?? (ctx.data.value as Record<string, unknown>).title ?? ''
-    const stepNodes = ctx.data.value.nodes.filter((n) => n.type === 'flow')
-    const substepNodes = ctx.data.value.nodes.filter((n) => n.type === 'flowSubstep')
-    const steps = stepNodes.map((node) => node.text)
-    const stepToSubsteps: Record<string, string[]> = {}
-    substepNodes.forEach((node) => {
-      const match = node.id.match(/flow-substep-(\d+)-/)
-      if (match) {
-        const stepIndex = parseInt(match[1], 10)
-        if (stepIndex < stepNodes.length) {
-          const stepText = stepNodes[stepIndex].text
-          if (!stepToSubsteps[stepText]) {
-            stepToSubsteps[stepText] = []
-          }
-          stepToSubsteps[stepText].push(node.text)
-        }
-      }
-    })
-    const substeps = Object.entries(stepToSubsteps).map(([step, subs]) => ({
-      step,
-      substeps: subs,
-    }))
+    const collected = collectFlowMapSpecFromNodes(ctx.data.value.nodes)
     const orientation = (ctx.data.value as Record<string, unknown>).orientation ?? 'horizontal'
-    return { title, steps, substeps, orientation }
+    return { title, steps: collected.steps, substeps: collected.substeps, orientation }
   }
 
   function loadDefaultTemplate(diagramTypeValue: DiagramType): boolean {
@@ -591,10 +549,12 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     if (!ctx.data.value) return false
 
     const liveNodes = ctx.data.value.nodes
-    const remapPatchId = (hint: string): string =>
-      ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map'
-        ? resolveMindMapAliasId(hint, liveNodes) ?? hint
-        : hint
+    const remapPatchId = (hint: string): string => {
+      if (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') {
+        return resolveMindMapAliasId(hint, liveNodes) ?? hint
+      }
+      return resolveThinkingMapAliasId(ctx.type.value, hint, liveNodes) ?? hint
+    }
     const deletedHints = deletedNodeIds ? deletedNodeIds.filter(Boolean).map(remapPatchId) : []
     const deletedThisBatch = new Set(deletedHints)
 
@@ -656,7 +616,10 @@ export function useSpecIOSlice(ctx: DiagramContext) {
           ctx.data.value.connections = conns
         }
 
-        spliceCollabConnection(conns as Array<{ id?: string; source?: string; target?: string }>, remapped)
+        spliceCollabConnection(
+          conns as Array<{ id?: string; source?: string; target?: string }>,
+          remapped
+        )
       }
     }
 

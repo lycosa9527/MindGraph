@@ -380,6 +380,7 @@ export default {
   'canvas.presentationTimer.exitTimer': 'Verlaat',
   'canvas.presentationTimer.startPresenting': 'Begin aanbieding',
   'canvas.presentationTimer.closeHud': 'Sluit tydhouer',
+  'canvas.cachedResult.notice': 'Cached result. Use the function again for a fresh result.',
   'canvas.presentation.learningSheetConfirmTitle': 'Begin aanbieding?',
   'canvas.presentation.learningSheetConfirmBody': 'U redigeer nog die leerblad. Om aanbieding te begin, eindig leë-redigering; bestaande leë plekke bly behoue. Gaan voort?',
   'canvas.presentation.learningSheetConfirmProceed': 'Begin aanbieding',

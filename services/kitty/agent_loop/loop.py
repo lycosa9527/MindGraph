@@ -81,7 +81,7 @@ from services.kitty.routing.one_sentence_edit_heuristics import (
     is_fast_explain_command,
 )
 from services.kitty.routing.one_sentence_edit_helpers import (
-    is_mindmap_diagram_type,
+    is_verified_edit_diagram_type,
     is_one_sentence_edit_mode,
 )
 from services.kitty.routing.command_grounding import UNGROUNDED_ERROR
@@ -441,7 +441,7 @@ async def run_typed_agent_loop(
     ensure_live_mindmap_identity(context)
     if rename_plan is not None:
         diagram_type = _diagram_type(voice_session_id, context)
-        verify_required = is_mindmap_diagram_type(diagram_type)
+        verify_required = is_verified_edit_diagram_type(diagram_type)
         lang = resolve_voice_interaction_language(context)
         return await run_compound_plan(
             websocket,
@@ -455,7 +455,7 @@ async def run_typed_agent_loop(
         )
     if slot_cancelled:
         diagram_type = _diagram_type(voice_session_id, context)
-        verify_required = is_mindmap_diagram_type(diagram_type)
+        verify_required = is_verified_edit_diagram_type(diagram_type)
         lang = resolve_voice_interaction_language(context)
         return await _offer_intent_clarify(
             websocket,
@@ -469,7 +469,7 @@ async def run_typed_agent_loop(
     if picked is not None:
         context = dict(live_dict.get("context") or context) if live_dict else context
         diagram_type = _diagram_type(voice_session_id, context)
-        verify_required = is_mindmap_diagram_type(diagram_type)
+        verify_required = is_verified_edit_diagram_type(diagram_type)
         dispatched = await dispatch_prepared_command(
             websocket,
             voice_session_id,
@@ -498,7 +498,7 @@ async def run_typed_agent_loop(
 
     mode = _resolve_mode(context, live_dict)
     diagram_type = _diagram_type(voice_session_id, context)
-    verify_required = is_mindmap_diagram_type(diagram_type)
+    verify_required = is_verified_edit_diagram_type(diagram_type)
     lang = resolve_voice_interaction_language(context)
     fresh_commands = resolve_fresh_diagram_commands(text, context, lang)
     if fresh_commands:

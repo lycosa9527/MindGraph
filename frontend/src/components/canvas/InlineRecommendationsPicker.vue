@@ -9,14 +9,16 @@ import { computed, onMounted, onUnmounted, watch } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
-import { useInlineRecommendations } from '@/composables/editor/useInlineRecommendations'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useInlineRecommendations } from '@/composables/editor/useInlineRecommendations'
 import { useDiagramStore, useInlineRecommendationsStore } from '@/stores'
 import type { DiagramNode } from '@/types'
+import { isBridgeMapPairNode, readBridgePairSide } from '@/utils/bridgeMapIdentity'
 import {
   conceptMapUsesRelationshipInlineRec,
   getConceptMapPrimaryIncidentConnection,
 } from '@/utils/conceptMapInlineRec'
+import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
 
 const diagramStore = useDiagramStore()
 const { t } = useLanguage()
@@ -35,11 +37,13 @@ const isLoadingMore = computed(() =>
  */
 const isFractionPairTabRec = computed(() => {
   const id = activeNodeId.value ?? ''
+  const node = diagramStore.data?.nodes.find((n) => n.id === id)
   if (diagramStore.type === 'double_bubble_map') {
-    return id.startsWith('left-diff-') || id.startsWith('right-diff-')
+    const role = node ? readDoubleBubbleRole(node) : null
+    return role === 'leftDiff' || role === 'rightDiff'
   }
   if (diagramStore.type === 'bridge_map') {
-    return /^pair-\d+-left$/.test(id) || /^pair-\d+-right$/.test(id)
+    return Boolean(node && isBridgeMapPairNode(node))
   }
   return false
 })
@@ -86,12 +90,15 @@ const currentHighlightText = computed(() => {
   return (node?.text ?? '').trim()
 })
 
-/** Top line of fraction = left-diff / pair-*-left; bottom = right-diff / pair-*-right */
+/** Top line of fraction = left/right-diff or bridge pair side, via identity helpers. */
 function isLeftLineOfPair(nodeId: string): boolean {
-  if (nodeId.startsWith('left-diff-')) return true
-  if (nodeId.startsWith('right-diff-')) return false
-  if (nodeId.endsWith('-left')) return true
-  if (nodeId.endsWith('-right')) return false
+  const node = diagramStore.data?.nodes.find((n) => n.id === nodeId)
+  if (diagramStore.type === 'double_bubble_map') {
+    return readDoubleBubbleRole(node ?? { id: nodeId }) !== 'rightDiff'
+  }
+  if (diagramStore.type === 'bridge_map') {
+    return readBridgePairSide(node ?? { id: nodeId }) !== 'right'
+  }
   return true
 }
 

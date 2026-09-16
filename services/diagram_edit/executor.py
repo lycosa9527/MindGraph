@@ -30,7 +30,7 @@ from services.diagram_edit.registry import dispatch_tool
 from services.diagram_edit.transport.kitty_ws import KittyWsTransport
 from services.diagram_edit.transport.protocol import CanvasTransport
 from services.diagram_edit.types import (
-    MINDMAP_DIAGRAM_TYPES,
+    VERIFIED_DIAGRAM_TYPES,
     STRUCTURAL_TOOLS,
     DiagramEditCommand,
     ErrorCode,
@@ -136,7 +136,7 @@ async def execute_diagram_edit(
     if command.tool not in STRUCTURAL_TOOLS:
         return _rejected(mutation_id, "unsupported_tool", f"Unknown tool: {command.tool}")
 
-    if diagram_type not in MINDMAP_DIAGRAM_TYPES:
+    if diagram_type not in VERIFIED_DIAGRAM_TYPES:
         return _rejected(mutation_id, "unsupported_diagram_type")
 
     if user_id is not None:

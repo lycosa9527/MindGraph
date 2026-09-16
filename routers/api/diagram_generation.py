@@ -30,6 +30,7 @@ from models.domain.diagrams import Diagram
 from services.admin.user_usage_activity import schedule_user_usage_activity
 from services.auth.thinking_coin.event_hub import mutation_to_footer
 from services.auth.thinking_coin.usage_wire import thinking_coin_post_diagram_generation_mutation
+from services.diagram.generation_result_cache import load_or_generate_cached_result
 from services.infrastructure.http.error_handler import (
     LLMContentFilterError,
     LLMRateLimitError,
@@ -290,12 +291,22 @@ async def _finalize_generate_graph_result(result: dict[str, Any], prepared: dict
     return result
 
 
+def _log_detached_generation_task(task: asyncio.Task[None]) -> None:
+    """Avoid 'exception was never retrieved' when a cache winner outlives the SSE client."""
+    if task.cancelled():
+        return
+    exc = task.exception()
+    if exc is not None:
+        logger.warning("Detached generate_graph task failed: %s", exc)
+
+
 async def _stream_generate_graph_events(prepared: dict[str, Any]):
     """Async generator yielding SSE chunks for auto-complete phase UI."""
     queue: asyncio.Queue = asyncio.Queue()
     lang = prepared["lang"]
     cancel_event = asyncio.Event()
     http_request = prepared.get("http_request")
+    keep_winner_alive = False
 
     async def phase_emit(event: str) -> None:
         payload: dict[str, Any] = {"event": event}
@@ -309,12 +320,28 @@ async def _stream_generate_graph_events(prepared: dict[str, Any]):
             payload["model"] = prepared["llm_model"]
         await queue.put(payload)
 
+    async def mark_generation_winner() -> None:
+        nonlocal keep_winner_alive
+        keep_winner_alive = True
+
+    async def emit_waiting_once() -> None:
+        await phase_emit("waiting")
+
+    async def generate_spec() -> dict[str, Any]:
+        return await run_generate_pipeline(
+            **prepared["workflow_kwargs"],
+            phase_emit=phase_emit,
+            event_emit=event_emit,
+            cancel_event=cancel_event,
+        )
+
     async def run_workflow() -> None:
         try:
-            result = await run_generate_pipeline(
-                **prepared["workflow_kwargs"],
-                phase_emit=phase_emit,
-                event_emit=event_emit,
+            result = await load_or_generate_cached_result(
+                prepared,
+                generate_spec,
+                on_waiting=emit_waiting_once,
+                on_acquired=mark_generation_winner,
                 cancel_event=cancel_event,
             )
             final = await _finalize_generate_graph_result(result, prepared)
@@ -361,6 +388,8 @@ async def _stream_generate_graph_events(prepared: dict[str, Any]):
             return
         while not task.done():
             if await http_request.is_disconnected():
+                if keep_winner_alive:
+                    return
                 cancel_event.set()
                 task.cancel()
                 return
@@ -376,12 +405,15 @@ async def _stream_generate_graph_events(prepared: dict[str, Any]):
     finally:
         monitor_task.cancel()
         if not task.done():
-            cancel_event.set()
-            task.cancel()
-            try:
-                await task
-            except asyncio.CancelledError:
-                pass
+            if keep_winner_alive:
+                task.add_done_callback(_log_detached_generation_task)
+            else:
+                cancel_event.set()
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
         try:
             await monitor_task
         except asyncio.CancelledError:
@@ -411,7 +443,11 @@ async def generate_graph(
             x_language,
             endpoint_path="/api/generate_graph",
         )
-        result = await agent_graph_workflow_with_styles(**prepared["workflow_kwargs"])
+
+        async def generate_spec() -> dict[str, Any]:
+            return await agent_graph_workflow_with_styles(**prepared["workflow_kwargs"])
+
+        result = await load_or_generate_cached_result(prepared, generate_spec)
         return await _finalize_generate_graph_result(result, prepared)
     except LLMTimeoutError as e:
         request_id = f"gen_{int(time.time() * 1000)}"

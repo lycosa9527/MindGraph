@@ -2,10 +2,35 @@
  * Node Palette placeholder helpers - detect and collect placeholder nodes for replacement
  */
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
-import type { DiagramType } from '@/types'
-import { isMindMapBranchNode, isMindMapL1, mindMapNodeDepth } from '@/utils/mindMapLocation'
-
 import { isLearningSheetBlankDisplayText } from '@/stores/specLoader/utils'
+import type { DiagramType } from '@/types'
+import {
+  findBraceMapWholeId,
+  isBraceMapPartNode,
+  isBraceMapReservedId,
+  readBraceGroupIndex,
+} from '@/utils/braceMapIdentity'
+import {
+  isBridgeMapPairNode,
+  readBridgePairIndex,
+  readBridgePairSide,
+} from '@/utils/bridgeMapIdentity'
+import { isBubbleMapAttributeNode, readBubbleGroupIndex } from '@/utils/bubbleMapIdentity'
+import { isCircleMapContextNode, readCircleContextIndex } from '@/utils/circleMapIdentity'
+import { isDoubleBubbleRoleNode, readDoubleBubbleIndex } from '@/utils/doubleBubbleMapIdentity'
+import { readFlowStepIndex, readFlowSubstepIndex } from '@/utils/flowMapIdentity'
+import { isMindMapBranchNode, isMindMapL1, mindMapNodeDepth } from '@/utils/mindMapLocation'
+import {
+  isMultiFlowCauseNode,
+  isMultiFlowEffectNode,
+  readMultiFlowIndex,
+} from '@/utils/multiFlowMapIdentity'
+import {
+  isTreeMapCategoryNode,
+  isTreeMapLeafNode,
+  readTreeCategoryIndex,
+  readTreeLeafIndex,
+} from '@/utils/treeMapIdentity'
 
 import { LEARNING_SHEET_PLACEHOLDER } from './constants'
 
@@ -26,9 +51,16 @@ function normalizeDiagramType(dt: DiagramType | null): DiagramType | null {
  * @param parentId - For stage 2: only return placeholders of this parent (part_id, category_id, branch id)
  * @param connections - Used to filter placeholders by parent
  */
+type PlaceholderNode = {
+  id: string
+  text: string
+  type?: string
+  data?: Record<string, unknown>
+}
+
 export function getPlaceholderNodes(
   diagramType: DiagramType | null,
-  nodes: Array<{ id: string; text: string; type?: string }>,
+  nodes: PlaceholderNode[],
   mode?: string | null,
   stage?: string | null,
   parentId?: string | null,
@@ -42,80 +74,52 @@ export function getPlaceholderNodes(
   switch (dt) {
     case 'circle_map':
       return nodes
-        .filter(
-          (n) =>
-            (n.type === 'bubble' || n.type === 'context') &&
-            n.id.startsWith('context-') &&
-            isPlaceholder(n)
-        )
-        .sort(
-          (a, b) =>
-            parseInt(a.id.replace('context-', ''), 10) - parseInt(b.id.replace('context-', ''), 10)
-        )
+        .filter((n) => isCircleMapContextNode(n) && isPlaceholder(n))
+        .sort((a, b) => readCircleContextIndex(a) - readCircleContextIndex(b))
     case 'bubble_map':
       return nodes
-        .filter(
-          (n) =>
-            (n.type === 'bubble' || n.type === 'attribute') &&
-            n.id.startsWith('bubble-') &&
-            isPlaceholder(n)
-        )
-        .sort(
-          (a, b) =>
-            parseInt(a.id.replace('bubble-', ''), 10) - parseInt(b.id.replace('bubble-', ''), 10)
-        )
+        .filter((n) => isBubbleMapAttributeNode(n) && isPlaceholder(n))
+        .sort((a, b) => readBubbleGroupIndex(a) - readBubbleGroupIndex(b))
     case 'multi_flow_map': {
-      const slot = mode === 'effects' ? 'effect' : 'cause'
+      const isSlot = mode === 'effects' ? isMultiFlowEffectNode : isMultiFlowCauseNode
       return nodes
-        .filter((n) => n.id.startsWith(`${slot}-`) && isPlaceholder(n))
-        .sort(
-          (a, b) =>
-            parseInt(a.id.replace(`${slot}-`, ''), 10) - parseInt(b.id.replace(`${slot}-`, ''), 10)
-        )
+        .filter((n) => isSlot(n) && isPlaceholder(n))
+        .sort((a, b) => readMultiFlowIndex(a) - readMultiFlowIndex(b))
     }
     case 'double_bubble_map':
       if (mode === 'differences') {
         const leftNodes = nodes
-          .filter((n) => /^left-diff-\d+$/.test(n.id) && isPlaceholder(n))
-          .sort(
-            (a, b) =>
-              parseInt(a.id.replace('left-diff-', ''), 10) -
-              parseInt(b.id.replace('left-diff-', ''), 10)
-          )
+          .filter((n) => isDoubleBubbleRoleNode(n, 'leftDiff') && isPlaceholder(n))
+          .sort((a, b) => readDoubleBubbleIndex(a) - readDoubleBubbleIndex(b))
         const rightNodes = nodes
-          .filter((n) => /^right-diff-\d+$/.test(n.id) && isPlaceholder(n))
-          .sort(
-            (a, b) =>
-              parseInt(a.id.replace('right-diff-', ''), 10) -
-              parseInt(b.id.replace('right-diff-', ''), 10)
-          )
+          .filter((n) => isDoubleBubbleRoleNode(n, 'rightDiff') && isPlaceholder(n))
+          .sort((a, b) => readDoubleBubbleIndex(a) - readDoubleBubbleIndex(b))
         return leftNodes.map((l, i) => ({
           id: `${l.id}|${rightNodes[i]?.id ?? ''}`,
           text: l.text,
         }))
       }
       return nodes
-        .filter((n) => /^similarity-\d+$/.test(n.id) && isPlaceholder(n))
-        .sort(
-          (a, b) =>
-            parseInt(a.id.replace('similarity-', ''), 10) -
-            parseInt(b.id.replace('similarity-', ''), 10)
-        )
+        .filter((n) => isDoubleBubbleRoleNode(n, 'similarity') && isPlaceholder(n))
+        .sort((a, b) => readDoubleBubbleIndex(a) - readDoubleBubbleIndex(b))
     case 'flow_map': {
       if (stage === 'substeps') {
-        let substepNodes = nodes.filter((n) => n.id.startsWith('flow-substep-') && isPlaceholder(n))
-        if (parentId) {
-          const stepMatch = parentId.match(/flow-step-(\d+)/)
-          const stepIndex = stepMatch ? stepMatch[1] : null
-          if (stepIndex !== null) {
-            substepNodes = substepNodes.filter((n) => n.id.startsWith(`flow-substep-${stepIndex}-`))
-          }
+        let substepNodes = nodes.filter((n) => n.type === 'flowSubstep' && isPlaceholder(n))
+        if (parentId && connections?.length) {
+          const childIds = new Set(
+            connections.filter((c) => c.source === parentId).map((c) => c.target)
+          )
+          substepNodes = substepNodes.filter((n) => childIds.has(n.id))
         }
-        return substepNodes.sort((a, b) => a.id.localeCompare(b.id))
+        return substepNodes.sort(
+          (a, b) =>
+            readFlowStepIndex(a) - readFlowStepIndex(b) ||
+            readFlowSubstepIndex(a) - readFlowSubstepIndex(b)
+        )
       }
       return nodes
-        .filter((n) => n.id.startsWith('flow-step-') && isPlaceholder(n))
-        .sort((a, b) => a.id.localeCompare(b.id))
+        .filter((n) => n.type === 'flow' && isPlaceholder(n))
+        .sort((a, b) => readFlowStepIndex(a) - readFlowStepIndex(b))
     }
     case 'mindmap': {
       if (stage === 'children' && parentId && connections?.length) {
@@ -144,12 +148,10 @@ export function getPlaceholderNodes(
         return []
       }
       return nodes
-        .filter((n) => /^pair-\d+-left$/.test(n.id) && isPlaceholder(n))
-        .sort(
-          (a, b) =>
-            parseInt(a.id.replace('pair-', '').replace('-left', ''), 10) -
-            parseInt(b.id.replace('pair-', '').replace('-left', ''), 10)
+        .filter(
+          (n) => isBridgeMapPairNode(n) && readBridgePairSide(n) === 'left' && isPlaceholder(n)
         )
+        .sort((a, b) => readBridgePairIndex(a) - readBridgePairIndex(b))
     }
     case 'tree_map': {
       if (stage === 'dimensions') {
@@ -160,7 +162,7 @@ export function getPlaceholderNodes(
         return []
       }
       if (stage === 'children') {
-        let leafNodes = nodes.filter((n) => /^tree-leaf-\d+-\d+$/.test(n.id) && isPlaceholder(n))
+        let leafNodes = nodes.filter((n) => isTreeMapLeafNode(n) && isPlaceholder(n))
         if (parentId && connections?.length) {
           const descendantIds = new Set<string>()
           const collect = (id: string) => {
@@ -174,15 +176,15 @@ export function getPlaceholderNodes(
           collect(parentId)
           leafNodes = leafNodes.filter((n) => descendantIds.has(n.id))
         }
-        return leafNodes.sort((a, b) => a.id.localeCompare(b.id))
+        return leafNodes.sort(
+          (a, b) =>
+            readTreeCategoryIndex(a) - readTreeCategoryIndex(b) ||
+            readTreeLeafIndex(a) - readTreeLeafIndex(b)
+        )
       }
       return nodes
-        .filter((n) => /^tree-cat-\d+$/.test(n.id) && isPlaceholder(n))
-        .sort(
-          (a, b) =>
-            parseInt(a.id.replace('tree-cat-', ''), 10) -
-            parseInt(b.id.replace('tree-cat-', ''), 10)
-        )
+        .filter((n) => isTreeMapCategoryNode(n) && isPlaceholder(n))
+        .sort((a, b) => readTreeCategoryIndex(a) - readTreeCategoryIndex(b))
     }
     case 'brace_map': {
       if (stage === 'dimensions') {
@@ -193,28 +195,31 @@ export function getPlaceholderNodes(
         return []
       }
       if (stage === 'subparts') {
-        const isSubpartId = (id: string) =>
-          id.startsWith('brace-subpart-') ||
-          /^brace-\d+-\d+$/.test(id) ||
-          /^brace-part-\d+-\d+$/.test(id)
         let subpartNodes = nodes.filter(
-          (n) => isSubpartId(n.id) && n.type === 'brace' && isPlaceholder(n)
+          (n) => isBraceMapPartNode(n) && !isBraceMapReservedId(n.id) && isPlaceholder(n)
         )
         if (parentId && connections?.length) {
           const childIds = new Set(
             connections.filter((c) => c.source === parentId).map((c) => c.target)
           )
           subpartNodes = subpartNodes.filter((n) => childIds.has(n.id))
+        } else if (connections?.length) {
+          const rootTargets = new Set(connections.map((c) => c.target))
+          const rootId = findBraceMapWholeId(nodes, connections)
+          const partIds = new Set(
+            connections.filter((c) => c.source === rootId).map((c) => c.target)
+          )
+          subpartNodes = subpartNodes.filter((n) => !partIds.has(n.id) && rootTargets.has(n.id))
         }
-        return subpartNodes.sort((a, b) => a.id.localeCompare(b.id))
+        return subpartNodes.sort((a, b) => readBraceGroupIndex(a) - readBraceGroupIndex(b))
       }
-      const partNodes = nodes.filter(
-        (n) =>
-          (n.id.startsWith('brace-part-') || /^brace-1-\d+$/.test(n.id)) &&
-          n.type === 'brace' &&
-          isPlaceholder(n)
-      )
-      return partNodes.sort((a, b) => a.id.localeCompare(b.id))
+      const partNodes = nodes.filter((n) => {
+        if (!isBraceMapPartNode(n) || isBraceMapReservedId(n.id) || !isPlaceholder(n)) return false
+        if (!connections?.length) return true
+        const rootId = findBraceMapWholeId(nodes, connections)
+        return connections.some((c) => c.source === rootId && c.target === n.id)
+      })
+      return partNodes.sort((a, b) => readBraceGroupIndex(a) - readBraceGroupIndex(b))
     }
     case 'concept_map':
       return []

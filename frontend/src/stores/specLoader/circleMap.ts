@@ -8,6 +8,15 @@
 import { DEFAULT_CONTEXT_RADIUS } from '@/composables/diagrams/layoutConfig'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
+import {
+  CIRCLE_BOUNDARY_NODE_ID,
+  CIRCLE_MAP_UID_DATA_KEY,
+  CIRCLE_TOPIC_NODE_ID,
+  isCircleMapContextNode,
+  readCircleContextIndex,
+  stampCircleContextData,
+  takeCircleMapStableId,
+} from '@/utils/circleMapIdentity'
 
 import { CONTEXT_FONT_SIZE, TOPIC_FONT_SIZE } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
@@ -28,12 +37,8 @@ export function recalculateCircleMapLayout(
 
   const topicNode = nodes.find((n) => n.type === 'topic' || n.type === 'center')
   const contextNodes = nodes
-    .filter((n) => n.type === 'bubble' && n.id.startsWith('context-'))
-    .sort((a, b) => {
-      const i = parseInt(a.id.replace(/^context-/, ''), 10)
-      const j = parseInt(b.id.replace(/^context-/, ''), 10)
-      return i - j
-    })
+    .filter((n) => isCircleMapContextNode(n))
+    .sort((a, b) => readCircleContextIndex(a) - readCircleContextIndex(b))
   const nodeCount = contextNodes.length
   const contextTexts = contextNodes.map((n) => n.text)
   const topicText = topicNode?.text ?? ''
@@ -71,7 +76,7 @@ export function recalculateCircleMapLayout(
 
   // Outer boundary node (giant outer circle)
   result.push({
-    id: 'outer-boundary',
+    id: CIRCLE_BOUNDARY_NODE_ID,
     text: '',
     type: 'boundary',
     position: {
@@ -88,7 +93,8 @@ export function recalculateCircleMapLayout(
       fontSize: topicNode.style?.fontSize ?? TOPIC_FONT_SIZE,
     }
     result.push({
-      id: 'topic',
+      ...topicNode,
+      id: CIRCLE_TOPIC_NODE_ID,
       text: topicNode.text,
       type: 'center',
       position: {
@@ -120,11 +126,15 @@ export function recalculateCircleMapLayout(
         borderColor: color.border,
       }
       result.push({
-        id: `context-${index}`,
+        ...node,
+        id: node.id,
         text: node.text,
         type: 'bubble',
         position: { x, y },
-        data: { ...node.data, groupIndex: index },
+        data: stampCircleContextData(index, {
+          ...node.data,
+          [CIRCLE_MAP_UID_DATA_KEY]: node.id,
+        }),
         style: contextStyle,
       })
     })
@@ -152,10 +162,11 @@ export function loadCircleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
 
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
+  const claimedIds = new Set<string>([CIRCLE_TOPIC_NODE_ID, CIRCLE_BOUNDARY_NODE_ID])
 
   // Outer boundary node (giant outer circle)
   nodes.push({
-    id: 'outer-boundary',
+    id: CIRCLE_BOUNDARY_NODE_ID,
     text: '',
     type: 'boundary',
     position: {
@@ -166,7 +177,7 @@ export function loadCircleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   })
 
   nodes.push({
-    id: 'topic',
+    id: CIRCLE_TOPIC_NODE_ID,
     text: topic,
     type: 'center',
     position: {
@@ -189,17 +200,18 @@ export function loadCircleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
         layout.centerY + layout.childrenRadius * Math.sin(angleRad) - contextRadius
       )
       const color = getMindmapBranchColor(index)
+      const contextId = takeCircleMapStableId(claimedIds)
 
       nodes.push({
-        id: `context-${index}`,
+        id: contextId,
         text: ctx,
         type: 'bubble',
         position: { x, y },
-        data: {
-          groupIndex: index,
+        data: stampCircleContextData(index, {
+          [CIRCLE_MAP_UID_DATA_KEY]: contextId,
           estimatedWidth: uniformContextDiameter,
           estimatedHeight: uniformContextDiameter,
-        },
+        }),
         style: {
           size: uniformContextDiameter,
           fontSize: CONTEXT_FONT_SIZE,

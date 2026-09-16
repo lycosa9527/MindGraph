@@ -33,6 +33,8 @@ export type NodeType =
   | 'brace' // Brace map part node
   | 'label' // Classification dimension label
   | 'summary' // Mind-map v2 sibling-range summary topic
+  | 'whole' // Brace-map whole node
+  | 'event' // Multi-flow event node
 
 export interface NodeStyle {
   backgroundColor?: string

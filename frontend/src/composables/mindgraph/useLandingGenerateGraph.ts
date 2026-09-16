@@ -15,6 +15,7 @@ import {
 } from '@/composables/mindgraph/landingGenerateGraphErrors'
 import type { ModelLoadPhase } from '@/stores/llmResults'
 import { authFetch } from '@/utils/api'
+import { noteOrgGenerationCacheResult, withOrgGenerationCacheBypass } from '@/utils/orgGenerationCache'
 import {
   consumeGenerateGraphStream,
   type GenerateGraphCompletePayload,
@@ -225,10 +226,10 @@ export function useLandingGenerateGraph(options: {
     shownToastBuckets = new Set()
     serverProgressTopic = undefined
     serverProgressDiagramType = undefined
-    const payload = {
+    const payload = withOrgGenerationCacheBypass({
       request_type: 'diagram_generation',
       ...requestBody,
-    }
+    })
 
     loadPhase.value = 'sending'
     notifyPhase('client_sent')
@@ -279,6 +280,9 @@ export function useLandingGenerateGraph(options: {
             )
           }
           const parsed = parseSuccessResult(completePayload)
+          if (parsed.ok) {
+            noteOrgGenerationCacheResult(completePayload)
+          }
           if (!parsed.ok) {
             return failGeneration(
               parsed.error,
@@ -319,6 +323,9 @@ export function useLandingGenerateGraph(options: {
         error_type?: string
       }
       const parsed = parseSuccessResult(result)
+      if (parsed.ok) {
+        noteOrgGenerationCacheResult(result)
+      }
       if (!parsed.ok) {
         return failGeneration(
           parsed.error,

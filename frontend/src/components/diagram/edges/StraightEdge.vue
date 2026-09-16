@@ -7,17 +7,23 @@ import { computed } from 'vue'
 
 import { EdgeLabelRenderer, type EdgeProps, getStraightPath } from '@vue-flow/core'
 
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphEdgeData } from '@/types'
+import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
+const diagramStore = useDiagramSession()
 
 // Check if this is a multi-flow map edge (causes/effects connecting to event)
 const isMultiFlowMapEdge = computed(() => {
-  const sourceId = props.source
-  const targetId = props.target
+  if (diagramStore.type !== 'multi_flow_map') return false
+  const source = diagramStore.data?.nodes.find((n) => n.id === props.source)
+  const target = diagramStore.data?.nodes.find((n) => n.id === props.target)
+  const sourceSide = source && (isMultiFlowCauseNode(source) || isMultiFlowEffectNode(source))
+  const targetSide = target && (isMultiFlowCauseNode(target) || isMultiFlowEffectNode(target))
   return (
-    ((sourceId?.startsWith('cause-') || sourceId?.startsWith('effect-')) && targetId === 'event') ||
-    (sourceId === 'event' && (targetId?.startsWith('cause-') || targetId?.startsWith('effect-')))
+    (Boolean(sourceSide) && props.target === 'event') ||
+    (props.source === 'event' && Boolean(targetSide))
   )
 })
 

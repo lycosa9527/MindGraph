@@ -5,9 +5,21 @@ import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useDiagramStore, usePanelsStore } from '@/stores'
+import { flowStepIndexFromNodeId } from '@/stores/specLoader/flowMapSubsteps'
 import type { DiagramNode, DiagramType } from '@/types'
-import { isMindMapBranchNode } from '@/utils/mindMapLocation'
 import type { NodeSuggestion } from '@/types/panels'
+import { findBraceMapWholeId } from '@/utils/braceMapIdentity'
+import {
+  findBridgePairSide,
+  isBridgeMapPairNode,
+  readBridgePairIndex,
+  takeBridgeMapStableId,
+} from '@/utils/bridgeMapIdentity'
+import { takeBubbleMapStableId } from '@/utils/bubbleMapIdentity'
+import { takeCircleMapStableId } from '@/utils/circleMapIdentity'
+import { readFlowStepIndex, resolveFlowMapAliasId } from '@/utils/flowMapIdentity'
+import { isMindMapBranchNode } from '@/utils/mindMapLocation'
+import { takeMultiFlowMapStableId } from '@/utils/multiFlowMapIdentity'
 
 import {
   STAGED_DIAGRAM_TYPES,
@@ -138,14 +150,15 @@ export async function applySelectionToDiagram(ctx: ApplySelectionContext): Promi
 
     if (slot.id === 'dimension-label') {
       diagramStore.updateNode('dimension-label', { text: suggestion.text })
-    } else if (diagramTypeVal === 'bridge_map' && /^pair-\d+-left$/.test(slot.id)) {
-      const pairIndex = slot.id.replace('pair-', '').replace('-left', '')
-      const rightId = `pair-${pairIndex}-right`
+    } else if (diagramTypeVal === 'bridge_map') {
+      const leftNode = nodes.find((n) => n.id === slot.id)
+      const pairIndex = leftNode ? readBridgePairIndex(leftNode) : -1
+      const right = pairIndex >= 0 ? findBridgePairSide(nodes, pairIndex, 'right') : undefined
       const parts = suggestion.text.split('|').map((p) => p.trim())
       const leftText = parts[0] ?? suggestion.text
       const rightText = parts[1] ?? ''
       diagramStore.updateNode(slot.id, { text: leftText })
-      diagramStore.updateNode(rightId, { text: rightText })
+      if (right) diagramStore.updateNode(right.id, { text: rightText })
     } else {
       diagramStore.updateNode(slot.id, { text: suggestion.text })
     }
@@ -265,20 +278,12 @@ function applyMultiFlowMap(
   }
   const remainderCauses = toApplyCauses.slice(causeIdx)
   const remainderEffects = toApplyEffects.slice(effectIdx)
-  const addMultiFlowNodes = (suggestions: NodeSuggestion[], prefix: string, category: string) => {
-    const existing = nodes
-      .filter(
-        (n): n is typeof n & { id: string } =>
-          n.id != null &&
-          n.id.startsWith(`${prefix}-`) &&
-          /^\d+$/.test(n.id.replace(prefix + '-', ''))
-      )
-      .map((n) => parseInt(n.id.replace(prefix + '-', ''), 10))
-    const nextIndex = existing.length > 0 ? Math.max(...existing) + 1 : 0
-    suggestions.forEach((s, i) => {
+  const addMultiFlowNodes = (suggestions: NodeSuggestion[], category: string) => {
+    suggestions.forEach((suggestion) => {
+      const claimed = new Set((diagramStore.data?.nodes ?? []).map((n) => n.id).filter(Boolean))
       diagramStore.addNode({
-        id: `${prefix}-${nextIndex + i}`,
-        text: s.text ?? '',
+        id: takeMultiFlowMapStableId(claimed),
+        text: suggestion.text ?? '',
         type: 'flow',
         position: { x: 0, y: 0 },
         style: {},
@@ -286,8 +291,8 @@ function applyMultiFlowMap(
       } as DiagramNode & { category?: string })
     })
   }
-  addMultiFlowNodes(remainderCauses, 'cause', 'causes')
-  addMultiFlowNodes(remainderEffects, 'effect', 'effects')
+  addMultiFlowNodes(remainderCauses, 'causes')
+  addMultiFlowNodes(remainderEffects, 'effects')
   if (toApplyCauses.length > 0 || toApplyEffects.length > 0) {
     panelsStore.updateNodePalette({ selected: [] })
     panelsStore.clearNodePaletteSession(diagramKey)
@@ -409,12 +414,13 @@ function applyStage2MultipleParents(
       const s = toApplyParent[idx]
       if (slot.id === 'dimension-label') {
         diagramStore.updateNode('dimension-label', { text: s.text })
-      } else if (diagramTypeVal === 'bridge_map' && /^pair-\d+-left$/.test(slot.id)) {
-        const pairIndex = slot.id.replace('pair-', '').replace('-left', '')
-        const rightId = `pair-${pairIndex}-right`
+      } else if (diagramTypeVal === 'bridge_map') {
+        const leftNode = nodes.find((n) => n.id === slot.id)
+        const pairIndex = leftNode ? readBridgePairIndex(leftNode) : -1
+        const right = pairIndex >= 0 ? findBridgePairSide(nodes, pairIndex, 'right') : undefined
         const parts = (s.text ?? '').split('|').map((p) => p.trim())
         diagramStore.updateNode(slot.id, { text: parts[0] ?? s.text })
-        diagramStore.updateNode(rightId, { text: parts[1] ?? '' })
+        if (right) diagramStore.updateNode(right.id, { text: parts[1] ?? '' })
       } else {
         diagramStore.updateNode(slot.id, { text: s.text })
       }
@@ -430,8 +436,17 @@ function applyStage2MultipleParents(
       if (diagramTypeVal === 'mindmap') {
         diagramStore.addMindMapChild(parent.id, text)
       } else if (diagramTypeVal === 'flow_map') {
-        const stepText = nodes.find((n) => n.id === parent.id)?.text ?? parent.name
-        diagramStore.addFlowMapSubstep(stepText, text)
+        const parentNode = nodes.find((n) => n.id === parent.id)
+        const stepText = parentNode?.text ?? parent.name
+        const parentStepIndex = parentNode
+          ? readFlowStepIndex(parentNode)
+          : flowStepIndexFromNodeId(parent.id)
+        diagramStore.addFlowMapSubstep(
+          stepText,
+          text,
+          parentStepIndex >= 0 ? parentStepIndex : undefined,
+          parent.id
+        )
       } else if (diagramTypeVal === 'tree_map') {
         diagramStore.addTreeMapChild(parent.id, text)
       } else if (diagramTypeVal === 'brace_map') {
@@ -469,9 +484,17 @@ function applyStage2MultipleParents(
         if (diagramTypeVal === 'mindmap') {
           diagramStore.addMindMapChild(fallbackParent.id, text)
         } else if (diagramTypeVal === 'flow_map') {
-          const stepText =
-            nodes.find((n) => n.id === fallbackParent.id)?.text ?? fallbackParent.name
-          diagramStore.addFlowMapSubstep(stepText, text)
+          const fallbackNode = nodes.find((n) => n.id === fallbackParent.id)
+          const stepText = fallbackNode?.text ?? fallbackParent.name
+          const fallbackStepIndex = fallbackNode
+            ? readFlowStepIndex(fallbackNode)
+            : flowStepIndexFromNodeId(fallbackParent.id)
+          diagramStore.addFlowMapSubstep(
+            stepText,
+            text,
+            fallbackStepIndex >= 0 ? fallbackStepIndex : undefined,
+            fallbackParent.id
+          )
         } else if (diagramTypeVal === 'tree_map') {
           diagramStore.addTreeMapChild(fallbackParent.id, text)
         } else if (diagramTypeVal === 'brace_map') {
@@ -595,14 +618,7 @@ async function applyStage1ToStage2Transition(
 function applyRemainder(
   ctx: ApplySelectionContext,
   remainder: NodeSuggestion[],
-  nodes: Array<{
-    id: string
-    text?: string
-    type?: string
-    position?: { x?: number; y?: number }
-    style?: { width?: number }
-    data?: Record<string, unknown>
-  }>,
+  nodes: DiagramNode[],
   connections: Array<{ source: string; target: string }> | undefined
 ): void {
   const { diagramStore, diagramType, stage, stageData } = ctx
@@ -619,11 +635,10 @@ function applyRemainder(
   }
 
   if (diagramTypeVal === 'circle_map') {
-    const contextNodes = nodes.filter((n) => n.id.startsWith('context-'))
-    const nextIndex = contextNodes.length
-    remainder.forEach((suggestion, i) => {
+    remainder.forEach((suggestion) => {
+      const claimed = new Set((diagramStore.data?.nodes ?? []).map((n) => n.id).filter(Boolean))
       diagramStore.addNode({
-        id: `context-${nextIndex + i}`,
+        id: takeCircleMapStableId(claimed),
         text: suggestion.text ?? '',
         type: 'bubble',
         position: { x: 0, y: 0 },
@@ -631,13 +646,10 @@ function applyRemainder(
       } as DiagramNode)
     })
   } else if (diagramTypeVal === 'bubble_map') {
-    const bubbleNodes = nodes.filter(
-      (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-')
-    )
-    const nextIndex = bubbleNodes.length
-    remainder.forEach((suggestion, i) => {
+    remainder.forEach((suggestion) => {
+      const claimed = new Set((diagramStore.data?.nodes ?? []).map((n) => n.id).filter(Boolean))
       diagramStore.addNode({
-        id: `bubble-${nextIndex + i}`,
+        id: takeBubbleMapStableId(claimed),
         text: suggestion.text ?? '',
         type: 'bubble',
         position: { x: 0, y: 0 },
@@ -664,9 +676,7 @@ function applyRemainder(
       const branchName = (stageDataTyped.branch_name ?? '').trim()
       let resolvedParentId =
         branchId ??
-        nodes.find(
-          (n) => isMindMapBranchNode(n) && (n.text ?? '').trim() === branchName
-        )?.id
+        nodes.find((n) => isMindMapBranchNode(n) && (n.text ?? '').trim() === branchName)?.id
       if (!resolvedParentId && branchName && connections) {
         const fallbackParents = getStage2ParentsForDiagram(diagramTypeVal, nodes, connections)
         const match = fallbackParents.find((p) => (p.name ?? '').trim() === branchName)
@@ -683,20 +693,29 @@ function applyRemainder(
       remainder.forEach((s) => {
         const text = (s.text ?? '').trim()
         if (text)
-          diagramStore.addMindMapBranch(
-            undefined,
-            text,
-            String(i18n.global.t('diagram.newChild'))
-          )
+          diagramStore.addMindMapBranch(undefined, text, String(i18n.global.t('diagram.newChild')))
       })
     }
   } else if (diagramTypeVal === 'flow_map') {
     if (stage === 'substeps') {
       const stepId = stageDataTyped.step_id
       const stepName = stageDataTyped.step_name
-      const stepText = (stepId && nodes.find((n) => n.id === stepId)?.text) || stepName
+      const resolvedStepId =
+        typeof stepId === 'string' ? (resolveFlowMapAliasId(stepId, nodes) ?? stepId) : ''
+      const stepNode = resolvedStepId ? nodes.find((n) => n.id === resolvedStepId) : undefined
+      const stepText = stepNode?.text || stepName
+      const remainderStepIndex = stepNode
+        ? readFlowStepIndex(stepNode)
+        : flowStepIndexFromNodeId(typeof stepId === 'string' ? stepId : '')
       if (stepText) {
-        remainder.forEach((s) => diagramStore.addFlowMapSubstep(stepText, s.text))
+        remainder.forEach((s) =>
+          diagramStore.addFlowMapSubstep(
+            stepText,
+            s.text,
+            remainderStepIndex >= 0 ? remainderStepIndex : undefined,
+            stepNode?.id
+          )
+        )
       }
     } else {
       const stepCount = nodes.filter((n) => n.type === 'flow').length
@@ -719,11 +738,7 @@ function applyRemainder(
       remainder.forEach((s) => diagramStore.addTreeMapCategory(s.text))
     }
   } else if (diagramTypeVal === 'brace_map') {
-    const targetIds = new Set(diagramStore.data?.connections?.map((c) => c.target) ?? [])
-    const wholeId =
-      nodes.find((n) => n.id === 'brace-whole' || n.id === 'brace-0-0')?.id ??
-      nodes.find((n) => n.type === 'topic')?.id ??
-      nodes.find((n) => !targetIds.has(n.id ?? ''))?.id
+    const wholeId = findBraceMapWholeId(nodes, diagramStore.data?.connections)
     const gt = i18n.global.t as (key: string, values?: Record<string, unknown>) => string
     const subpartTexts: [string, string] = [
       gt('braceMap.defaultSubpartFirst'),
@@ -737,15 +752,11 @@ function applyRemainder(
       )
     }
   } else if (diagramTypeVal === 'bridge_map' && stage !== 'dimensions') {
-    const pairNodes = nodes.filter(
-      (n) =>
-        (n as { data?: { pairIndex?: number } }).data?.pairIndex !== undefined &&
-        !(n as { data?: { isDimensionLabel?: boolean } }).data?.isDimensionLabel
-    )
+    const pairNodes = nodes.filter((n) => isBridgeMapPairNode(n))
     let maxPairIndex = -1
     pairNodes.forEach((n) => {
-      const idx = (n as { data?: { pairIndex?: number } }).data?.pairIndex
-      if (typeof idx === 'number' && idx > maxPairIndex) maxPairIndex = idx
+      const idx = readBridgePairIndex(n)
+      if (idx > maxPairIndex) maxPairIndex = idx
     })
     const gapBetweenPairs = 50
     const verticalGap = 5
@@ -766,8 +777,9 @@ function applyRemainder(
       const leftText = suggestion.left ?? parts[0] ?? suggestion.text
       const rightText = suggestion.right ?? parts[1] ?? ''
       const x = nextX + i * (nodeWidth + gapBetweenPairs)
+      const claimed = new Set((diagramStore.data?.nodes ?? []).map((n) => n.id).filter(Boolean))
       diagramStore.addNode({
-        id: `pair-${newPairIndex}-left`,
+        id: takeBridgeMapStableId(claimed),
         text: leftText,
         type: 'branch',
         position: { x, y: centerY - verticalGap - nodeHeight },
@@ -778,7 +790,7 @@ function applyRemainder(
         },
       } as DiagramNode)
       diagramStore.addNode({
-        id: `pair-${newPairIndex}-right`,
+        id: takeBridgeMapStableId(claimed),
         text: rightText,
         type: 'branch',
         position: { x, y: centerY + verticalGap },

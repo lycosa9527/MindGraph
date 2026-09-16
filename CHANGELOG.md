@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.83] - 2026-09-16
+
+> **Thinking Maps share mind-map UUID identity; same-school teachers reuse exact-match generate results.**
+
+### Added
+
+- **Thinking Map node identity** — Circle, bubble, double-bubble, tree, brace, flow, multi-flow, and bridge use the same resolve contract as mind maps: live `node.id` (UUID or reserved root), stamped `data.*MapUid`, then unique label. Leftover invented ids (`context-0`, `flow-step-N`, …) stay aliases only. Kitty never writes those leftovers as live ids. See [`docs/architecture/thinking_map_node_identity.md`](docs/architecture/thinking_map_node_identity.md).
+- **Org generate / LLM cache** — Teachers in the same school who submit a complete-match prompt (text, language, model, diagram type, instructions) reuse the first successful spec for `GEN_RESULT_CACHE_TTL` seconds (default 2 hours; `0` disables). Covers landing / fresh `generate_graph`, translate, concept-map focus, prompt-to-diagram, and 节点解释. RAG and users without an organization are never stored. Canvas shows a grey “缓存结果” hint; using the function again sends `skip_cache`.
+- **Siamese tester cat kit** — Green-screen stills under `scripts/cat_emoji/stills/siamese/` plus [`scripts/siamese_cat_emoji/`](scripts/siamese_cat_emoji/) (glasses, keyed).
+
+### Changed
+
+- **Kitty + diagram edit on Thinking Maps** — Verified add / update / delete / center now cover all eight maps. One-sentence heuristics name map roles (相同点, 特征, 步骤, …). Autocomplete, inline recommendations, voice mutations, clipboard, collab live-spec, classroom outline, and showcase outline resolve through the same identity helpers.
+- **Flow-map substeps** — Spec collect / resolve is UUID-first; leftover `flow-step-N` / substep refs are address only.
+
+### Tests
+
+- [`frontend/tests/thinkingMapsIdentity.spec.ts`](frontend/tests/thinkingMapsIdentity.spec.ts), [`frontend/tests/thinkingMapsAutocompleteLayout.spec.ts`](frontend/tests/thinkingMapsAutocompleteLayout.spec.ts), [`frontend/tests/flowMapIdentity.spec.ts`](frontend/tests/flowMapIdentity.spec.ts), [`frontend/tests/flowMapSubsteps.spec.ts`](frontend/tests/flowMapSubsteps.spec.ts), [`frontend/tests/orgGenerationCache.spec.ts`](frontend/tests/orgGenerationCache.spec.ts), [`frontend/tests/diagramEditVerify.spec.ts`](frontend/tests/diagramEditVerify.spec.ts)
+- [`tests/test_thinking_map_identity.py`](tests/test_thinking_map_identity.py), [`tests/test_generation_result_cache.py`](tests/test_generation_result_cache.py), [`tests/test_generation_result_coalesce.py`](tests/test_generation_result_coalesce.py), [`tests/test_generation_result_cache_live.py`](tests/test_generation_result_cache_live.py), [`tests/test_org_result_cache.py`](tests/test_org_result_cache.py), [`tests/scripts/test_siamese_cat_emoji.py`](tests/scripts/test_siamese_cat_emoji.py)
+
 ## [5.180.82] - 2026-09-15
 
 > **Canvas collab: add-child no longer rejects peers; only the diagram owner may use AI (校内 and 共同).**

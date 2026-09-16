@@ -25,6 +25,7 @@ export interface GenerateGraphCompletePayload {
   request_id?: string
   is_learning_sheet?: boolean
   hidden_node_percentage?: number
+  cached?: boolean
 }
 
 export interface GenerateGraphProgressMetadata {

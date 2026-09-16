@@ -39,6 +39,19 @@ def coerce_error_code(raw: Optional[str], default: ErrorCode) -> ErrorCode:
 
 
 MINDMAP_DIAGRAM_TYPES = frozenset({"mindmap", "mind_map"})
+THINKING_MAP_DIAGRAM_TYPES = frozenset(
+    {
+        "circle_map",
+        "bubble_map",
+        "double_bubble_map",
+        "tree_map",
+        "brace_map",
+        "flow_map",
+        "multi_flow_map",
+        "bridge_map",
+    }
+)
+VERIFIED_DIAGRAM_TYPES = MINDMAP_DIAGRAM_TYPES | THINKING_MAP_DIAGRAM_TYPES
 
 STRUCTURAL_TOOLS = frozenset(
     {

@@ -3,7 +3,9 @@
  */
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
 import type { DiagramType } from '@/types'
+import { findBraceMapWholeId } from '@/utils/braceMapIdentity'
 import { isMindMapL1, mindMapNodeDepth } from '@/utils/mindMapLocation'
+import { isTreeMapCategoryNode } from '@/utils/treeMapIdentity'
 
 import { DIMENSION_FIRST_TYPES, STAGED_DIAGRAM_TYPES } from './constants'
 
@@ -57,7 +59,7 @@ export function getDefaultStage(
       return hasBranchesWithRealText ? 'children' : 'branches'
     }
     case 'flow_map': {
-      const stepNodes = nodes.filter((n) => n.type === 'flow' && n.id?.startsWith('flow-step-'))
+      const stepNodes = nodes.filter((n) => n.type === 'flow')
       const hasStepsWithRealText =
         stepNodes.length > 0 &&
         stepNodes.some((n) => n.text && n.text.trim() && !isPlaceholderText(n.text))
@@ -65,7 +67,7 @@ export function getDefaultStage(
     }
     case 'tree_map': {
       if (!hasDimension(dt, nodes, dataDimension)) return 'dimensions'
-      const categoryNodes = nodes.filter((n) => /^tree-cat-\d+$/.test(n.id ?? ''))
+      const categoryNodes = nodes.filter((n) => isTreeMapCategoryNode(n))
       const hasCategoriesWithRealText =
         categoryNodes.length > 0 &&
         categoryNodes.some((n) => n.text && n.text.trim() && !isPlaceholderText(n.text))
@@ -73,12 +75,7 @@ export function getDefaultStage(
     }
     case 'brace_map': {
       if (!hasDimension(dt, nodes, dataDimension)) return 'dimensions'
-      const rootId =
-        nodes.find((n) => n.id === 'brace-whole' || n.id === 'brace-0-0')?.id ??
-        nodes.find((n) => n.type === 'topic')?.id ??
-        (connections
-          ? nodes.find((n) => !new Set(connections.map((c) => c.target)).has(n.id ?? ''))?.id
-          : undefined)
+      const rootId = findBraceMapWholeId(nodes, connections)
       const directParts = nodes.filter(
         (n) =>
           n.type === 'brace' &&
@@ -137,15 +134,11 @@ export function getStage2ParentsForDiagram(
   }
   if (dt === 'tree_map') {
     return nodes
-      .filter((n) => /^tree-cat-\d+$/.test(n.id ?? '') && hasRealText(n))
+      .filter((n) => isTreeMapCategoryNode(n) && hasRealText(n))
       .map((n) => ({ id: n.id ?? '', name: String(n.text) }))
   }
   if (dt === 'brace_map') {
-    const targetIds = new Set(connections?.map((c) => c.target) ?? [])
-    const rootId =
-      nodes.find((n) => n.id === 'brace-whole' || n.id === 'brace-0-0')?.id ??
-      nodes.find((n) => n.type === 'topic')?.id ??
-      nodes.find((n) => !targetIds.has(n.id ?? ''))?.id
+    const rootId = findBraceMapWholeId(nodes, connections)
     return nodes
       .filter(
         (n) =>

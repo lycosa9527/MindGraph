@@ -155,6 +155,9 @@ Same `idempotency_key` returns cached `ToolResult`; must not apply a second muta
 
 ## P2
 
-Non-mindmap `ExpectedEffect` tables and optional `POST /api/diagram_edit/execute` are out of v1.
-One-sentence **verified** edit is mindmap-only by design (`_should_use_verified_diagram_edit`);
-other diagram types still use the legacy Bus path (`verify_required=false`).
+Thinking Maps now share the verified DiagramCommandBus with mindmap
+(`should_use_verified_diagram_edit` + `VERIFIED_DIAGRAM_TYPES`).
+Update/delete postconditions key on live UUID; leftover slot ids are never
+verify keys. Concept map remains out of verified edit.
+
+Optional `POST /api/diagram_edit/execute` is still out of scope.

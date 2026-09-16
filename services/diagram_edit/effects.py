@@ -11,6 +11,7 @@ import re
 from typing import Any, Dict, List, Optional
 
 from services.diagram.mindmap_identity import is_leftover_mindmap_branch_id, is_machine_node_id
+from services.diagram.thinking_map_patterns import is_any_thinking_map_leftover_id
 from services.diagram_edit.types import DiagramEditCommand, ExpectedEffect
 from services.diagram_edit.verify import normalize_diagram_text
 
@@ -102,7 +103,12 @@ def _resolve_delete_verify_label(
         _normalized_text(legacy.get("node_id")),
     )
     for raw_id in id_first:
-        if raw_id and not is_leftover_mindmap_branch_id(raw_id) and _id_exists_in_snapshot(before_snapshot, raw_id):
+        if (
+            raw_id
+            and not is_leftover_mindmap_branch_id(raw_id)
+            and not is_any_thinking_map_leftover_id(raw_id)
+            and _id_exists_in_snapshot(before_snapshot, raw_id)
+        ):
             return raw_id
 
     human_candidates = (
@@ -131,7 +137,11 @@ def _resolve_delete_verify_label(
     for raw_id in id_candidates:
         if not raw_id:
             continue
-        if not is_leftover_mindmap_branch_id(raw_id) and _is_human_label_candidate(raw_id):
+        if (
+            not is_leftover_mindmap_branch_id(raw_id)
+            and not is_any_thinking_map_leftover_id(raw_id)
+            and _is_human_label_candidate(raw_id)
+        ):
             if not snapshot_nodes:
                 return normalize_diagram_text(raw_id)
             matches = _label_match_count(before_snapshot, raw_id)

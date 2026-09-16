@@ -1,3 +1,12 @@
+import {
+  TREE_TOPIC_NODE_ID,
+  isTreeMapCategoryNode,
+  isTreeMapLeafNode,
+  readTreeCategoryIndex,
+  readTreeLeafIndex,
+  readTreeParentCategoryId,
+} from '@/utils/treeMapIdentity'
+
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import { emitCtxEvent } from './events'
@@ -9,29 +18,21 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
   function buildTreeMapSpecFromNodes(): Record<string, unknown> | null {
     if (!data.value || type.value !== 'tree_map') return null
     const nodes = data.value.nodes
-    const rootNode = nodes.find((n) => n.id === 'tree-topic')
+    const rootNode = nodes.find((n) => n.id === TREE_TOPIC_NODE_ID)
     if (!rootNode) return null
-    const rootId = rootNode.id ?? 'tree-topic'
+    const rootId = rootNode.id ?? TREE_TOPIC_NODE_ID
     const categoryNodes = nodes
-      .filter((n) => /^tree-cat-\d+$/.test(n.id ?? ''))
-      .sort(
-        (a, b) =>
-          parseInt((a.id ?? '0').replace('tree-cat-', ''), 10) -
-          parseInt((b.id ?? '0').replace('tree-cat-', ''), 10)
-      )
+      .filter((n) => isTreeMapCategoryNode(n))
+      .sort((a, b) => readTreeCategoryIndex(a) - readTreeCategoryIndex(b))
     const categories = categoryNodes.map((cat) => {
-      const idMatch = (cat.id ?? '').match(/^tree-cat-(\d+)$/)
-      const categoryNum = idMatch ? parseInt(idMatch[1], 10) : -1
       const leaves = nodes
         .filter((n) => {
-          const m = (n.id ?? '').match(/^tree-leaf-(\d+)-(\d+)$/)
-          return m && parseInt(m[1], 10) === categoryNum
+          if (!isTreeMapLeafNode(n)) return false
+          const parentId = readTreeParentCategoryId(n)
+          if (parentId) return parentId === cat.id
+          return readTreeCategoryIndex(n) === readTreeCategoryIndex(cat)
         })
-        .sort(
-          (a, b) =>
-            parseInt((a.id ?? '0').split('-').pop() ?? '0', 10) -
-            parseInt((b.id ?? '0').split('-').pop() ?? '0', 10)
-        )
+        .sort((a, b) => readTreeLeafIndex(a) - readTreeLeafIndex(b))
       return {
         id: cat.id,
         text: cat.text,
@@ -60,9 +61,14 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
     if (!spec) return 0
 
     const idsToRemove = new Set(nodeIds)
-    if (idsToRemove.has('tree-topic') || idsToRemove.has('dimension-label')) return 0
+    if (idsToRemove.has(TREE_TOPIC_NODE_ID) || idsToRemove.has('dimension-label')) return 0
 
-    const categoryIdsToRemove = new Set(nodeIds.filter((id) => /^tree-cat-\d+$/.test(id)))
+    const categoryIdsToRemove = new Set(
+      nodeIds.filter((id) => {
+        const node = data.value?.nodes.find((n) => n.id === id)
+        return Boolean(node && isTreeMapCategoryNode(node))
+      })
+    )
 
     const root = spec.root as {
       id?: string
@@ -107,14 +113,14 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
             }
             return true
           })
-          .map((leaf) => ({ text: leaf.text })),
+          .map((leaf) => ({ id: leaf.id, text: leaf.text })),
       }))
 
     if (deletedCount === 0) return 0
 
     const newSpec = {
       ...spec,
-      root: { ...root, id: undefined, children: newCategories },
+      root: { ...root, id: TREE_TOPIC_NODE_ID, children: newCategories },
     }
     ctx.loadFromSpec(newSpec, 'tree_map', { mergePreviousNodeStyles: true })
 
@@ -136,7 +142,8 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
 
   function getTreeMapDescendantIds(nodeId: string): Set<string> {
     const result = new Set<string>([nodeId])
-    if (/^tree-leaf-\d+-\d+$/.test(nodeId)) return result
+    const node = data.value?.nodes.find((n) => n.id === nodeId)
+    if (node && isTreeMapLeafNode(node)) return result
     if (!data.value?.connections) return result
     const childrenMap = new Map<string, string[]>()
     data.value.connections.forEach((c) => {
@@ -146,9 +153,11 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
     })
     function collect(id: string): void {
       for (const childId of childrenMap.get(id) ?? []) {
+        const child = data.value?.nodes.find((n) => n.id === childId)
         if (
-          (childId.startsWith('tree-cat-') || childId.startsWith('tree-leaf-')) &&
-          childId !== 'tree-topic'
+          child &&
+          (isTreeMapCategoryNode(child) || isTreeMapLeafNode(child)) &&
+          childId !== TREE_TOPIC_NODE_ID
         ) {
           result.add(childId)
           collect(childId)
@@ -180,13 +189,17 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
     }
     const categories = root.children ?? []
 
-    const isCategory = (id: string) => /^tree-cat-\d+$/.test(id)
-    const isLeaf = (id: string) => /^tree-leaf-\d+-\d+$/.test(id)
-
-    const findCategoryIndex = (id: string) => {
-      const m = id.match(/^tree-cat-(\d+)$/)
-      return m ? parseInt(m[1], 10) : -1
+    const nodeById = new Map((data.value?.nodes ?? []).map((n) => [n.id, n]))
+    const isCategory = (id: string) => {
+      const node = nodeById.get(id)
+      return Boolean(node && isTreeMapCategoryNode(node))
     }
+    const isLeaf = (id: string) => {
+      const node = nodeById.get(id)
+      return Boolean(node && isTreeMapLeafNode(node))
+    }
+
+    const findCategoryIndex = (id: string) => categories.findIndex((cat) => cat.id === id)
 
     let sourceCatIdx: number
     let sourceLeafIdx = -1
@@ -197,12 +210,12 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
       if (sourceCatIdx < 0 || sourceCatIdx >= categories.length) return false
       sourceItem = categories[sourceCatIdx]
     } else if (isLeaf(nodeId)) {
-      const m = nodeId.match(/^tree-leaf-(\d+)-(\d+)$/)
-      if (!m) return false
-      sourceCatIdx = parseInt(m[1], 10)
-      sourceLeafIdx = parseInt(m[2], 10)
+      sourceCatIdx = categories.findIndex((cat) =>
+        (cat.children ?? []).some((leaf) => leaf.id === nodeId)
+      )
       const cat = categories[sourceCatIdx]
       const leaves = cat?.children ?? []
+      sourceLeafIdx = leaves.findIndex((leaf) => leaf.id === nodeId)
       if (sourceLeafIdx < 0 || sourceLeafIdx >= leaves.length) return false
       sourceItem = leaves[sourceLeafIdx]
     } else {
@@ -225,10 +238,12 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
           categories.splice(sourceCatIdx, 0, removedTarget)
         }
       } else if (isLeaf(nodeId) && isLeaf(targetId)) {
-        const tm = targetId.match(/^tree-leaf-(\d+)-(\d+)$/)
-        if (!tm) return false
-        const targetCatIdx = parseInt(tm[1], 10)
-        const targetLeafIdx = parseInt(tm[2], 10)
+        const targetCatIdx = categories.findIndex((cat) =>
+          (cat.children ?? []).some((leaf) => leaf.id === targetId)
+        )
+        const targetLeafIdx = (categories[targetCatIdx]?.children ?? []).findIndex(
+          (leaf) => leaf.id === targetId
+        )
         const srcCat = categories[sourceCatIdx]
         const tgtCat = categories[targetCatIdx]
         const srcLeaves = srcCat?.children ?? []
@@ -258,7 +273,7 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
       const [removed] = srcLeaves.splice(sourceLeafIdx, 1)
       if (!tgtCat.children) tgtCat.children = []
       tgtCat.children.push(removed)
-    } else if (targetType === 'topic' && targetId === 'tree-topic') {
+    } else if (targetType === 'topic' && targetId === TREE_TOPIC_NODE_ID) {
       if (isLeaf(nodeId)) return false
       const [removed] = categories.splice(sourceCatIdx, 1)
       categories.push(removed)
@@ -267,10 +282,14 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
     }
 
     const cleanCategories = categories.map((cat) => ({
+      id: cat.id,
       text: cat.text,
-      children: (cat.children ?? []).map((leaf) => ({ text: leaf.text })),
+      children: (cat.children ?? []).map((leaf) => ({ id: leaf.id, text: leaf.text })),
     }))
-    const newSpec = { ...spec, root: { ...root, id: undefined, children: cleanCategories } }
+    const newSpec = {
+      ...spec,
+      root: { ...root, id: TREE_TOPIC_NODE_ID, children: cleanCategories },
+    }
     ctx.loadFromSpec(newSpec, 'tree_map', { mergePreviousNodeStyles: true })
     if (data.value?._customPositions) data.value._customPositions = {}
     if (data.value?._node_styles) data.value._node_styles = {}

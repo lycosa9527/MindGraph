@@ -25,6 +25,17 @@ import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
 import { useDiagramStore, useInlineRecommendationsStore } from '@/stores'
 import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
+import {
+  findBridgePairSide,
+  isBridgeMapPairNode,
+  readBridgePairIndex,
+  readBridgePairSide,
+} from '@/utils/bridgeMapIdentity'
+import {
+  isDoubleBubbleRoleNode,
+  readDoubleBubbleIndex,
+  readDoubleBubbleRole,
+} from '@/utils/doubleBubbleMapIdentity'
 
 const TOPIC_NODE_IDS = new Set([
   'topic',
@@ -33,7 +44,6 @@ const TOPIC_NODE_IDS = new Set([
   'flow-topic',
   'tree-topic',
   'brace-whole',
-  'brace-0-0',
   'whole',
   'left-topic',
   'right-topic',
@@ -54,22 +64,30 @@ const DEBOUNCE_MS = 300
 function selectionStillCoversInlineActive(
   activeId: string,
   selectedNodes: string[],
-  diagramType: string | null
+  diagramType: string | null,
+  nodes: Array<{ id?: string; data?: Record<string, unknown> }> = []
 ): boolean {
   const selected = new Set(selectedNodes)
   if (selected.has(activeId)) return true
   const dt = diagramType === 'mind_map' ? 'mindmap' : diagramType
-  if (dt === 'double_bubble_map') {
-    const leftM = activeId.match(/^left-diff-(\d+)$/)
-    const rightM = activeId.match(/^right-diff-(\d+)$/)
-    if (leftM?.[1] && selected.has(`right-diff-${leftM[1]}`)) return true
-    if (rightM?.[1] && selected.has(`left-diff-${rightM[1]}`)) return true
+  const active = nodes.find((n) => n.id === activeId)
+  if (dt === 'double_bubble_map' && active) {
+    const role = readDoubleBubbleRole(active)
+    const idx = readDoubleBubbleIndex(active)
+    if (role === 'leftDiff' || role === 'rightDiff') {
+      const partnerRole = role === 'leftDiff' ? 'rightDiff' : 'leftDiff'
+      const partner = nodes.find(
+        (n) => isDoubleBubbleRoleNode(n, partnerRole) && readDoubleBubbleIndex(n) === idx
+      )
+      if (partner && selected.has(partner.id ?? '')) return true
+    }
   }
-  if (dt === 'bridge_map') {
-    const leftM = activeId.match(/^pair-(\d+)-left$/)
-    const rightM = activeId.match(/^pair-(\d+)-right$/)
-    if (leftM?.[1] && selected.has(`pair-${leftM[1]}-right`)) return true
-    if (rightM?.[1] && selected.has(`pair-${rightM[1]}-left`)) return true
+  if (dt === 'bridge_map' && active && isBridgeMapPairNode(active)) {
+    const idx = readBridgePairIndex(active)
+    const side = readBridgePairSide(active)
+    const partnerSide = side === 'left' ? 'right' : 'left'
+    const partner = findBridgePairSide(nodes, idx, partnerSide)
+    if (partner && selected.has(partner.id ?? '')) return true
   }
   return false
 }
@@ -156,7 +174,15 @@ export function useInlineRecommendationsCoordinator() {
   function onSelectionChanged(selectedNodes: string[]): void {
     const activeId = store.activeNodeId
     if (!activeId) return
-    if (selectionStillCoversInlineActive(activeId, selectedNodes, diagramStore.type)) return
+    if (
+      selectionStillCoversInlineActive(
+        activeId,
+        selectedNodes,
+        diagramStore.type,
+        diagramStore.data?.nodes ?? []
+      )
+    )
+      return
     store.invalidateAll()
   }
 

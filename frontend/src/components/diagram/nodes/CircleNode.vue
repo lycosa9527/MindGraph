@@ -18,10 +18,10 @@ import { Handle, Position } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
-import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
-import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { TOPIC_FONT_SIZE } from '@/stores/specLoader/textMeasurement'
 import {
   CONTEXT_MAX_TEXT_WIDTH,
@@ -30,7 +30,10 @@ import {
 } from '@/stores/specLoader/utils'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
+import { isBubbleMapAttributeNode } from '@/utils/bubbleMapIdentity'
+import { isCircleMapContextNode } from '@/utils/circleMapIdentity'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
 
 import InlineEditableText from './InlineEditableText.vue'
 
@@ -283,14 +286,18 @@ const branchMove = inject<{
 const supportsBranchMove = computed(() => {
   if (isTopicNode.value) return false
   const dt = diagramStore.type
-  if (dt === 'bubble_map') return props.id?.startsWith('bubble-')
-  if (dt === 'circle_map') return props.id?.startsWith('context-')
+  if (dt === 'bubble_map')
+    return isBubbleMapAttributeNode({
+      id: props.id,
+      type: (props.data?.nodeType as string) ?? props.type,
+    })
+  if (dt === 'circle_map')
+    return isCircleMapContextNode({
+      id: props.id,
+      type: (props.data?.nodeType as string) ?? props.type,
+    })
   if (dt === 'double_bubble_map') {
-    return (
-      props.id?.startsWith('similarity-') ||
-      props.id?.startsWith('left-diff-') ||
-      props.id?.startsWith('right-diff-')
-    )
+    return readDoubleBubbleRole({ id: props.id, data: props.data }) != null
   }
   return false
 })

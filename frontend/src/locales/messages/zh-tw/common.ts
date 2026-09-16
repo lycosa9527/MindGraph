@@ -169,7 +169,7 @@ export default {
   'kitty.voiceCommand.set_branch_numbering': '編號：{detail}',
   'kitty.voiceCommand.start_inline_recommendations': '聯想推薦',
   'kitty.voiceCommand.add_node_with_recommendations': '添加節點並推薦：{detail}',
-  'kitty.voiceCommand.explain_node': '解釋節點：{detail}',
+  'kitty.voiceCommand.explain_node': '節點解釋：{detail}',
   'mobile.mindgraphDesc': '思維圖示智能體',
   'mobile.mindmateDesc': '思維教研智能體',
   'mobile.navHome': '首頁',

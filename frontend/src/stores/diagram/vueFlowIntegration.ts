@@ -225,8 +225,8 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
 
     if (diagramType === 'multi_flow_map') {
       const recalculatedNodes = multiFlowMapLayoutNodes.value
-      const causeNodes = recalculatedNodes.filter((n) => n.id.startsWith('cause-'))
-      const effectNodes = recalculatedNodes.filter((n) => n.id.startsWith('effect-'))
+      const causeNodes = recalculatedNodes.filter((n) => n.data?.multiFlowRole === 'cause')
+      const effectNodes = recalculatedNodes.filter((n) => n.data?.multiFlowRole === 'effect')
 
       return recalculatedNodes.map((node) => {
         const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
@@ -236,7 +236,10 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
           vueFlowNode.data.causeCount = causeNodes.length
           vueFlowNode.data.effectCount = effectNodes.length
         }
-        if ((node.id.startsWith('cause-') || node.id.startsWith('effect-')) && node.style) {
+        if (
+          (node.data?.multiFlowRole === 'cause' || node.data?.multiFlowRole === 'effect') &&
+          node.style
+        ) {
           vueFlowNode.style = {
             ...vueFlowNode.style,
             width: node.style.width,

@@ -14,7 +14,21 @@ import type { useDiagramStore } from '@/stores/diagram'
 import { braceMapRootId, isBraceMapSubpartNode } from '@/stores/diagram/braceMapParentResolve'
 import { recalculateCircleMapLayout } from '@/stores/specLoader'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
+import {
+  isBridgeMapPairNode,
+  readBridgePairIndex,
+  takeBridgeMapStableId,
+} from '@/utils/bridgeMapIdentity'
+import { takeBubbleMapStableId } from '@/utils/bubbleMapIdentity'
+import { takeCircleMapStableId } from '@/utils/circleMapIdentity'
+import { findFlowMapParentStep, readFlowStepIndex } from '@/utils/flowMapIdentity'
 import { mindMapNodeDepth } from '@/utils/mindMapLocation'
+import { readMultiFlowRole, takeMultiFlowMapStableId } from '@/utils/multiFlowMapIdentity'
+import {
+  isTreeMapCategoryNode,
+  isTreeMapLeafNode,
+  readTreeParentCategoryId,
+} from '@/utils/treeMapIdentity'
 
 type DiagramPiniaStore = ReturnType<typeof useDiagramStore>
 
@@ -77,11 +91,9 @@ function addNodeForDiagramType(
   const placeholder = optionalText?.trim() || translate('canvas.toolbar.newAttribute', '…')
 
   if (diagramType === 'bubble_map') {
-    const bubbleNodes = store.data.nodes.filter(
-      (node) => (node.type === 'bubble' || node.type === 'child') && node.id.startsWith('bubble-')
-    )
+    const claimed = new Set(store.data.nodes.map((node) => node.id).filter(Boolean))
     store.addNode({
-      id: `bubble-${bubbleNodes.length}`,
+      id: takeBubbleMapStableId(claimed),
       text: placeholder,
       type: 'bubble',
       position: { x: 0, y: 0 },
@@ -91,11 +103,9 @@ function addNodeForDiagramType(
   }
 
   if (diagramType === 'circle_map') {
-    const contextNodes = store.data.nodes.filter(
-      (node) => node.type === 'bubble' && node.id.startsWith('context-')
-    )
+    const claimed = new Set(store.data.nodes.map((node) => node.id).filter(Boolean))
     store.addNode({
-      id: `context-${contextNodes.length}`,
+      id: takeCircleMapStableId(claimed),
       text: placeholder,
       type: 'bubble',
       position: { x: 0, y: 0 },
@@ -123,14 +133,15 @@ function addNodeForDiagramType(
       ? store.data.nodes.find((node) => node.id === selectedId)
       : undefined
     if (selectedNode?.type === 'flowSubstep') {
-      const match = selectedNode.id?.match(/^flow-substep-(\d+)-/)
-      const stepIndex = match ? parseInt(match[1], 10) : -1
-      const stepNode =
-        stepIndex >= 0
-          ? store.data.nodes.find((node) => node.id === `flow-step-${stepIndex}`)
-          : undefined
+      const stepNode = findFlowMapParentStep(selectedNode, store.data.nodes)
       if (!stepNode?.text) return false
-      return store.addFlowMapSubstep(stepNode.text, placeholder)
+      const stepIndex = readFlowStepIndex(stepNode)
+      return store.addFlowMapSubstep(
+        stepNode.text,
+        placeholder,
+        stepIndex >= 0 ? stepIndex : undefined,
+        stepNode.id
+      )
     }
     const stepCount = store.data.nodes.filter((node) => node.type === 'flow').length
     const stepNum = stepCount + 1
@@ -147,17 +158,15 @@ function addNodeForDiagramType(
       return store.addTreeMapCategory(placeholder)
     }
     if (selectedId === 'dimension-label') return false
-    const leafMatch = selectedId.match(/^tree-leaf-(\d+)-\d+$/)
     const selectedNode = store.data.nodes.find((node) => node.id === selectedId)
-    const groupIndex = selectedNode?.data?.groupIndex
-    const catId = selectedId.startsWith('tree-cat-')
-      ? selectedId
-      : leafMatch
-        ? `tree-cat-${leafMatch[1]}`
-        : typeof groupIndex === 'number'
-          ? `tree-cat-${groupIndex}`
+    const catId = selectedNode
+      ? isTreeMapCategoryNode(selectedNode)
+        ? selectedNode.id
+        : isTreeMapLeafNode(selectedNode)
+          ? readTreeParentCategoryId(selectedNode)
           : null
-    if (!catId || !/^tree-cat-\d+$/.test(catId)) return false
+      : null
+    if (!catId) return false
     return store.addTreeMapChild(catId, placeholder)
   }
 
@@ -167,13 +176,11 @@ function addNodeForDiagramType(
       ? store.data.nodes.find((node) => node.id === selectedId)
       : undefined
     const catRaw = (selectedNode as (DiagramNode & { category?: string }) | undefined)?.category
-    const isEffect =
-      catRaw === 'effects' || (typeof selectedId === 'string' && selectedId.startsWith('effect-'))
-    const idPrefix = isEffect ? 'effect' : 'cause'
-    const existing = store.data.nodes.filter((node) => node.id.startsWith(`${idPrefix}-`))
-    const nextNum = existing.length
+    const selectedRole = selectedNode ? readMultiFlowRole(selectedNode) : null
+    const isEffect = catRaw === 'effects' || selectedRole === 'effect'
+    const claimed = new Set(store.data.nodes.map((node) => node.id).filter(Boolean))
     store.addNode({
-      id: `${idPrefix}-${nextNum}`,
+      id: takeMultiFlowMapStableId(claimed),
       text: placeholder,
       type: 'flow',
       position: { x: 0, y: 0 },
@@ -207,19 +214,13 @@ function addNodeForDiagramType(
   }
 
   if (diagramType === 'bridge_map') {
-    const pairNodes = store.data.nodes.filter(
-      (node) =>
-        node.data?.diagramType === 'bridge_map' &&
-        node.data?.pairIndex !== undefined &&
-        !node.data?.isDimensionLabel
-    )
+    const pairNodes = store.data.nodes.filter((node) => isBridgeMapPairNode(node))
     let maxPairIndex = -1
     pairNodes.forEach((node) => {
-      const pairIndex = node.data?.pairIndex
-      if (typeof pairIndex === 'number' && pairIndex > maxPairIndex) {
-        maxPairIndex = pairIndex
-      }
+      const pairIndex = readBridgePairIndex(node)
+      if (pairIndex > maxPairIndex) maxPairIndex = pairIndex
     })
+    const claimed = new Set(store.data.nodes.map((node) => node.id).filter(Boolean))
     const newPairIndex = maxPairIndex + 1
     const centerY = DEFAULT_CENTER_Y
     const verticalGap = 5
@@ -232,7 +233,7 @@ function addNodeForDiagramType(
       nextX = rightmostX + nodeWidth + 50
     }
     store.addNode({
-      id: `pair-${newPairIndex}-left`,
+      id: takeBridgeMapStableId(claimed),
       text: placeholder,
       type: 'branch',
       position: { x: nextX, y: centerY - verticalGap - nodeHeight },

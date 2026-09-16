@@ -1,39 +1,81 @@
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection } from '@/types'
+import {
+  findBridgePairSide,
+  isBridgeMapPairNode,
+  readBridgePairIndex,
+} from '@/utils/bridgeMapIdentity'
+import {
+  BUBBLE_MAP_UID_DATA_KEY,
+  BUBBLE_TOPIC_NODE_ID,
+  isBubbleMapAttributeNode,
+  stampBubbleAttributeData,
+} from '@/utils/bubbleMapIdentity'
+import { isCircleMapContextNode } from '@/utils/circleMapIdentity'
+import {
+  isDoubleBubbleRoleNode,
+  readDoubleBubbleIndex,
+  readDoubleBubbleRole,
+} from '@/utils/doubleBubbleMapIdentity'
+import {
+  flowMapChildBelongsToStep,
+  isFlowMapStepNode,
+  isFlowMapSubstepNode,
+  readFlowParentStepId,
+  readFlowStepIndex,
+  readFlowSubstepIndex,
+} from '@/utils/flowMapIdentity'
+import {
+  isMultiFlowCauseNode,
+  isMultiFlowEffectNode,
+  readMultiFlowRole,
+} from '@/utils/multiFlowMapIdentity'
 
-import { recalculateBraceMapLayout, recalculateBubbleMapLayout } from '../specLoader'
+import {
+  recalculateBraceMapLayout,
+  recalculateBubbleMapLayout,
+  recalculateCircleMapLayout,
+} from '../specLoader'
+import {
+  type FlowSubstepEntry,
+  findFlowSubstepEntry,
+  swapFlowMapCollectedSteps,
+} from '../specLoader/flowMapSubsteps'
 import { emitCtxEvent } from './events'
 import type { DiagramContext } from './types'
 
 export function useNodeSwapOpsSlice(ctx: DiagramContext) {
-  function parseDiffIndex(nodeId: string): number {
-    const match = nodeId.match(/^(?:left|right)-diff-(\d+)$/)
-    return match ? parseInt(match[1], 10) : -1
-  }
-
   function getNodeGroupIds(nodeId: string): Set<string> {
     const result = new Set<string>([nodeId])
     const dt = ctx.type.value
     if (!dt || !ctx.data.value) return result
+    const nodes = ctx.data.value.nodes
 
     if (dt === 'bridge_map') {
-      const pairMatch = nodeId.match(/^pair-(\d+)-(left|right)$/)
-      if (pairMatch) {
-        const idx = pairMatch[1]
-        result.add(`pair-${idx}-left`)
-        result.add(`pair-${idx}-right`)
+      const node = nodes.find((n) => n.id === nodeId)
+      if (node && isBridgeMapPairNode(node)) {
+        const pairIndex = readBridgePairIndex(node)
+        const left = findBridgePairSide(nodes, pairIndex, 'left')
+        const right = findBridgePairSide(nodes, pairIndex, 'right')
+        if (left) result.add(left.id)
+        if (right) result.add(right.id)
       }
     } else if (dt === 'double_bubble_map') {
-      const leftMatch = nodeId.match(/^left-diff-(\d+)$/)
-      const rightMatch = nodeId.match(/^right-diff-(\d+)$/)
-      if (leftMatch) result.add(`right-diff-${leftMatch[1]}`)
-      else if (rightMatch) result.add(`left-diff-${rightMatch[1]}`)
+      const node = nodes.find((n) => n.id === nodeId)
+      const role = node ? readDoubleBubbleRole(node) : null
+      if (node && (role === 'leftDiff' || role === 'rightDiff')) {
+        const pairIndex = readDoubleBubbleIndex(node)
+        const partnerRole = role === 'leftDiff' ? 'rightDiff' : 'leftDiff'
+        const partner = nodes.find(
+          (n) => isDoubleBubbleRoleNode(n, partnerRole) && readDoubleBubbleIndex(n) === pairIndex
+        )
+        if (partner) result.add(partner.id)
+      }
     } else if (dt === 'flow_map') {
-      const stepMatch = nodeId.match(/^flow-step-(\d+)$/)
-      if (stepMatch) {
-        const stepIdx = stepMatch[1]
+      const stepNode = ctx.data.value.nodes.find((n) => n.id === nodeId)
+      if (stepNode && isFlowMapStepNode(stepNode)) {
         ctx.data.value.nodes
-          .filter((n) => n.id.startsWith(`flow-substep-${stepIdx}-`))
+          .filter((n) => isFlowMapSubstepNode(n) && flowMapChildBelongsToStep(n, stepNode))
           .forEach((n) => result.add(n.id))
       }
     } else if (dt === 'brace_map' && ctx.data.value.connections) {
@@ -59,141 +101,127 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
     return result
   }
 
-  function swapBubbleMapNodes(sourceId: string, targetId: string): boolean {
+  function swapNodeText(sourceId: string, targetId: string): boolean {
     if (!ctx.data.value?.nodes) return false
-    const srcIdx = parseInt(sourceId.replace('bubble-', ''), 10)
-    const tgtIdx = parseInt(targetId.replace('bubble-', ''), 10)
-    const bubbles = ctx.data.value.nodes
-      .filter((n) => n.id.startsWith('bubble-'))
-      .sort(
-        (a, b) =>
-          parseInt(a.id.replace('bubble-', ''), 10) - parseInt(b.id.replace('bubble-', ''), 10)
-      )
-    if (srcIdx < 0 || srcIdx >= bubbles.length || tgtIdx < 0 || tgtIdx >= bubbles.length)
-      return false
-    const srcText = bubbles[srcIdx].text
-    bubbles[srcIdx].text = bubbles[tgtIdx].text
-    bubbles[tgtIdx].text = srcText
+    const src = ctx.data.value.nodes.find((n) => n.id === sourceId)
+    const tgt = ctx.data.value.nodes.find((n) => n.id === targetId)
+    if (!src || !tgt) return false
+    const tmp = src.text
+    src.text = tgt.text
+    tgt.text = tmp
+    return true
+  }
+
+  function swapBubbleMapNodes(sourceId: string, targetId: string): boolean {
+    if (!swapNodeText(sourceId, targetId) || !ctx.data.value?.nodes) return false
     const recalculatedNodes = recalculateBubbleMapLayout(
       ctx.data.value.nodes,
       ctx.nodeDimensions.value
     )
-    const recalcBubbles = recalculatedNodes.filter(
-      (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-')
-    )
+    const recalcBubbles = recalculatedNodes.filter((n) => isBubbleMapAttributeNode(n))
+    recalcBubbles.forEach((bubbleNode, i) => {
+      bubbleNode.data = stampBubbleAttributeData(i, {
+        ...bubbleNode.data,
+        [BUBBLE_MAP_UID_DATA_KEY]: bubbleNode.id,
+      })
+    })
     ctx.data.value.nodes = recalculatedNodes
-    ctx.data.value.connections = recalcBubbles.map((_, i) => ({
-      id: `edge-topic-bubble-${i}`,
-      source: 'topic',
-      target: `bubble-${i}`,
+    ctx.data.value.connections = recalcBubbles.map((bubbleNode, i) => ({
+      id: `edge-${BUBBLE_TOPIC_NODE_ID}-${bubbleNode.id}`,
+      source: BUBBLE_TOPIC_NODE_ID,
+      target: bubbleNode.id,
       style: { strokeColor: getMindmapBranchColor(i).border },
     }))
     return true
   }
 
   function swapCircleMapNodes(sourceId: string, targetId: string): boolean {
-    if (!ctx.data.value?.nodes) return false
-    const srcIdx = parseInt(sourceId.replace('context-', ''), 10)
-    const tgtIdx = parseInt(targetId.replace('context-', ''), 10)
-    const contexts = ctx.data.value.nodes
-      .filter((n) => n.id.startsWith('context-'))
-      .sort(
-        (a, b) =>
-          parseInt(a.id.replace('context-', ''), 10) - parseInt(b.id.replace('context-', ''), 10)
-      )
-    if (srcIdx < 0 || srcIdx >= contexts.length || tgtIdx < 0 || tgtIdx >= contexts.length)
-      return false
-    const topic = ctx.data.value.nodes.find((n) => n.id === 'topic')?.text ?? ''
-    const contextTexts = contexts.map((n) => n.text)
-    const tmp = contextTexts[srcIdx]
-    contextTexts[srcIdx] = contextTexts[tgtIdx]
-    contextTexts[tgtIdx] = tmp
-    return ctx.loadFromSpec({ topic, context: contextTexts }, 'circle_map', {
-      mergePreviousNodeStyles: true,
-    })
+    if (!swapNodeText(sourceId, targetId) || !ctx.data.value?.nodes) return false
+    if (!isCircleMapContextNode({ id: sourceId, type: 'bubble' })) return true
+    ctx.data.value.nodes = recalculateCircleMapLayout(
+      ctx.data.value.nodes,
+      ctx.nodeDimensions.value
+    )
+    return true
   }
 
   function swapDoubleBubbleMapNodes(sourceId: string, targetId: string): boolean {
-    const spec = ctx.getDoubleBubbleSpecFromData()
-    if (!spec) return false
-
-    const similarities = spec.similarities as string[]
-    const leftDiffs = spec.leftDifferences as string[]
-    const rightDiffs = spec.rightDifferences as string[]
-
-    const srcSimMatch = sourceId.match(/^similarity-(\d+)$/)
-    const tgtSimMatch = targetId.match(/^similarity-(\d+)$/)
-
-    if (srcSimMatch && tgtSimMatch) {
-      const si = parseInt(srcSimMatch[1], 10)
-      const ti = parseInt(tgtSimMatch[1], 10)
-      if (si >= 0 && si < similarities.length && ti >= 0 && ti < similarities.length) {
-        const tmp = similarities[si]
-        similarities[si] = similarities[ti]
-        similarities[ti] = tmp
-        return ctx.loadFromSpec(spec, 'double_bubble_map', { mergePreviousNodeStyles: true })
-      }
-      return false
+    if (!ctx.data.value?.nodes) return false
+    const nodes = ctx.data.value.nodes
+    const src = nodes.find((n) => n.id === sourceId)
+    const tgt = nodes.find((n) => n.id === targetId)
+    if (!src || !tgt) return false
+    const srcRole = readDoubleBubbleRole(src)
+    const tgtRole = readDoubleBubbleRole(tgt)
+    if (srcRole === 'similarity' && tgtRole === 'similarity') {
+      return swapNodeText(sourceId, targetId)
     }
-
-    const srcDiffIdx = parseDiffIndex(sourceId)
-    const tgtDiffIdx = parseDiffIndex(targetId)
     if (
-      srcDiffIdx >= 0 &&
-      tgtDiffIdx >= 0 &&
-      srcDiffIdx < leftDiffs.length &&
-      tgtDiffIdx < leftDiffs.length &&
-      srcDiffIdx < rightDiffs.length &&
-      tgtDiffIdx < rightDiffs.length
+      (srcRole === 'leftDiff' || srcRole === 'rightDiff') &&
+      (tgtRole === 'leftDiff' || tgtRole === 'rightDiff')
     ) {
-      const tmpL = leftDiffs[srcDiffIdx]
-      leftDiffs[srcDiffIdx] = leftDiffs[tgtDiffIdx]
-      leftDiffs[tgtDiffIdx] = tmpL
-      const tmpR = rightDiffs[srcDiffIdx]
-      rightDiffs[srcDiffIdx] = rightDiffs[tgtDiffIdx]
-      rightDiffs[tgtDiffIdx] = tmpR
-      return ctx.loadFromSpec(spec, 'double_bubble_map', { mergePreviousNodeStyles: true })
+      const srcIdx = readDoubleBubbleIndex(src)
+      const tgtIdx = readDoubleBubbleIndex(tgt)
+      const srcLeft = nodes.find(
+        (n) => isDoubleBubbleRoleNode(n, 'leftDiff') && readDoubleBubbleIndex(n) === srcIdx
+      )
+      const srcRight = nodes.find(
+        (n) => isDoubleBubbleRoleNode(n, 'rightDiff') && readDoubleBubbleIndex(n) === srcIdx
+      )
+      const tgtLeft = nodes.find(
+        (n) => isDoubleBubbleRoleNode(n, 'leftDiff') && readDoubleBubbleIndex(n) === tgtIdx
+      )
+      const tgtRight = nodes.find(
+        (n) => isDoubleBubbleRoleNode(n, 'rightDiff') && readDoubleBubbleIndex(n) === tgtIdx
+      )
+      if (!srcLeft || !srcRight || !tgtLeft || !tgtRight) return false
+      swapNodeText(srcLeft.id, tgtLeft.id)
+      swapNodeText(srcRight.id, tgtRight.id)
+      return true
     }
     return false
   }
 
   function swapFlowMapNodes(sourceId: string, targetId: string): boolean {
     const spec = ctx.buildFlowMapSpecFromNodes()
-    if (!spec) return false
-    const steps = spec.steps as string[]
-    const substepsList = spec.substeps as Array<{ step: string; substeps: string[] }>
+    if (!spec || !ctx.data.value) return false
+    const steps = spec.steps as Array<string | { id?: string; text: string }>
+    const substepsList = spec.substeps as FlowSubstepEntry[]
+    const srcNode = ctx.data.value.nodes.find((n) => n.id === sourceId)
+    const tgtNode = ctx.data.value.nodes.find((n) => n.id === targetId)
+    if (!srcNode || !tgtNode) return false
 
-    const srcStepMatch = sourceId.match(/^flow-step-(\d+)$/)
-    const tgtStepMatch = targetId.match(/^flow-step-(\d+)$/)
-    if (srcStepMatch && tgtStepMatch) {
-      const si = parseInt(srcStepMatch[1], 10)
-      const ti = parseInt(tgtStepMatch[1], 10)
+    const stepLabel = (step: string | { id?: string; text: string }): string =>
+      typeof step === 'string' ? step : step.text
+
+    if (isFlowMapStepNode(srcNode) && isFlowMapStepNode(tgtNode)) {
+      const si = readFlowStepIndex(srcNode)
+      const ti = readFlowStepIndex(tgtNode)
       if (si >= 0 && si < steps.length && ti >= 0 && ti < steps.length) {
-        const srcText = steps[si]
-        const tgtText = steps[ti]
-        const srcSubs = substepsList.find((e) => e.step === srcText)
-        const tgtSubs = substepsList.find((e) => e.step === tgtText)
-        steps[si] = tgtText
-        steps[ti] = srcText
-        if (srcSubs) srcSubs.step = srcText
-        if (tgtSubs) tgtSubs.step = tgtText
+        swapFlowMapCollectedSteps(steps, substepsList, si, ti)
         return ctx.loadFromSpec(spec, 'flow_map', { mergePreviousNodeStyles: true })
       }
       return false
     }
 
-    const srcSubMatch = sourceId.match(/^flow-substep-(\d+)-(\d+)$/)
-    const tgtSubMatch = targetId.match(/^flow-substep-(\d+)-(\d+)$/)
-    if (srcSubMatch && tgtSubMatch) {
-      const srcStep = parseInt(srcSubMatch[1], 10)
-      const srcSub = parseInt(srcSubMatch[2], 10)
-      const tgtStep = parseInt(tgtSubMatch[1], 10)
-      const tgtSub = parseInt(tgtSubMatch[2], 10)
-      if (srcStep < steps.length && tgtStep < steps.length) {
-        const srcStepText = steps[srcStep]
-        const tgtStepText = steps[tgtStep]
-        const srcEntry = substepsList.find((e) => e.step === srcStepText)
-        const tgtEntry = substepsList.find((e) => e.step === tgtStepText)
+    if (isFlowMapSubstepNode(srcNode) && isFlowMapSubstepNode(tgtNode)) {
+      const srcStep = readFlowStepIndex(srcNode)
+      const srcSub = readFlowSubstepIndex(srcNode)
+      const tgtStep = readFlowStepIndex(tgtNode)
+      const tgtSub = readFlowSubstepIndex(tgtNode)
+      if (srcStep < steps.length && tgtStep < steps.length && srcSub >= 0 && tgtSub >= 0) {
+        const srcEntry = findFlowSubstepEntry(
+          substepsList,
+          stepLabel(steps[srcStep]),
+          srcStep,
+          readFlowParentStepId(srcNode) ?? undefined
+        )
+        const tgtEntry = findFlowSubstepEntry(
+          substepsList,
+          stepLabel(steps[tgtStep]),
+          tgtStep,
+          readFlowParentStepId(tgtNode) ?? undefined
+        )
         if (
           srcEntry &&
           tgtEntry &&
@@ -213,35 +241,46 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
 
   function moveFlowMapNode(sourceId: string, targetId: string): boolean {
     const spec = ctx.buildFlowMapSpecFromNodes()
-    if (!spec) return false
-    const steps = spec.steps as string[]
-    const substepsList = spec.substeps as Array<{ step: string; substeps: string[] }>
-
-    const srcSubMatch = sourceId.match(/^flow-substep-(\d+)-(\d+)$/)
-    const tgtStepMatch = targetId.match(/^flow-step-(\d+)$/)
+    if (!spec || !ctx.data.value) return false
+    const steps = spec.steps as Array<string | { id?: string; text: string }>
+    const substepsList = spec.substeps as FlowSubstepEntry[]
+    const srcNode = ctx.data.value.nodes.find((n) => n.id === sourceId)
+    const tgtNode = ctx.data.value.nodes.find((n) => n.id === targetId)
+    const stepLabel = (step: string | { id?: string; text: string }): string =>
+      typeof step === 'string' ? step : step.text
 
     let success: boolean
 
-    if (srcSubMatch && tgtStepMatch) {
-      const srcStepIdx = parseInt(srcSubMatch[1], 10)
-      const srcSubIdx = parseInt(srcSubMatch[2], 10)
-      const tgtStepIdx = parseInt(tgtStepMatch[1], 10)
+    if (srcNode && tgtNode && isFlowMapSubstepNode(srcNode) && isFlowMapStepNode(tgtNode)) {
+      const srcStepIdx = readFlowStepIndex(srcNode)
+      const srcSubIdx = readFlowSubstepIndex(srcNode)
+      const tgtStepIdx = readFlowStepIndex(tgtNode)
 
       if (srcStepIdx === tgtStepIdx) return false
-      if (srcStepIdx >= steps.length || tgtStepIdx >= steps.length) return false
+      if (srcStepIdx >= steps.length || tgtStepIdx >= steps.length || srcSubIdx < 0) return false
 
-      const srcStepText = steps[srcStepIdx]
-      const tgtStepText = steps[tgtStepIdx]
-      const srcEntry = substepsList.find((e) => e.step === srcStepText)
+      const srcStepText = stepLabel(steps[srcStepIdx])
+      const tgtStepText = stepLabel(steps[tgtStepIdx])
+      const srcEntry = findFlowSubstepEntry(
+        substepsList,
+        srcStepText,
+        srcStepIdx,
+        readFlowParentStepId(srcNode) ?? undefined
+      )
       if (!srcEntry || srcSubIdx >= srcEntry.substeps.length) return false
 
       const [movedText] = srcEntry.substeps.splice(srcSubIdx, 1)
 
-      const tgtEntry = substepsList.find((e) => e.step === tgtStepText)
+      const tgtEntry = findFlowSubstepEntry(substepsList, tgtStepText, tgtStepIdx, tgtNode.id)
       if (tgtEntry) {
         tgtEntry.substeps.push(movedText)
       } else {
-        substepsList.push({ step: tgtStepText, substeps: [movedText] })
+        substepsList.push({
+          step: tgtStepText,
+          stepId: tgtNode.id,
+          stepIndex: tgtStepIdx,
+          substeps: [movedText],
+        })
       }
 
       success = ctx.loadFromSpec(spec, 'flow_map', { mergePreviousNodeStyles: true })
@@ -263,63 +302,19 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
 
   function swapMultiFlowMapNodes(sourceId: string, targetId: string): boolean {
     if (!ctx.data.value?.nodes) return false
-    const causeNodes = ctx.data.value.nodes
-      .filter((n) => n.id.startsWith('cause-'))
-      .sort(
-        (a, b) =>
-          parseInt(a.id.replace('cause-', ''), 10) - parseInt(b.id.replace('cause-', ''), 10)
-      )
-    const effectNodes = ctx.data.value.nodes
-      .filter((n) => n.id.startsWith('effect-'))
-      .sort(
-        (a, b) =>
-          parseInt(a.id.replace('effect-', ''), 10) - parseInt(b.id.replace('effect-', ''), 10)
-      )
-    const eventNode = ctx.data.value.nodes.find((n) => n.id === 'event')
-
-    const causes = causeNodes.map((n) => n.text)
-    const effects = effectNodes.map((n) => n.text)
-
-    const srcCause = sourceId.match(/^cause-(\d+)$/)
-    const tgtCause = targetId.match(/^cause-(\d+)$/)
-    if (srcCause && tgtCause) {
-      const si = parseInt(srcCause[1], 10)
-      const ti = parseInt(tgtCause[1], 10)
-      if (si >= 0 && si < causes.length && ti >= 0 && ti < causes.length) {
-        const tmp = causes[si]
-        causes[si] = causes[ti]
-        causes[ti] = tmp
-        return ctx.loadFromSpec(
-          { event: eventNode?.text ?? '', causes, effects },
-          'multi_flow_map',
-          {
-            mergePreviousNodeStyles: true,
-          }
-        )
-      }
+    const src = ctx.data.value.nodes.find((n) => n.id === sourceId)
+    const tgt = ctx.data.value.nodes.find((n) => n.id === targetId)
+    if (!src || !tgt) return false
+    const srcRole = readMultiFlowRole(src)
+    const tgtRole = readMultiFlowRole(tgt)
+    if (!srcRole || srcRole !== tgtRole) return false
+    if (
+      (srcRole === 'cause' && !isMultiFlowCauseNode(src)) ||
+      (srcRole === 'effect' && !isMultiFlowEffectNode(src))
+    ) {
       return false
     }
-
-    const srcEffect = sourceId.match(/^effect-(\d+)$/)
-    const tgtEffect = targetId.match(/^effect-(\d+)$/)
-    if (srcEffect && tgtEffect) {
-      const si = parseInt(srcEffect[1], 10)
-      const ti = parseInt(tgtEffect[1], 10)
-      if (si >= 0 && si < effects.length && ti >= 0 && ti < effects.length) {
-        const tmp = effects[si]
-        effects[si] = effects[ti]
-        effects[ti] = tmp
-        return ctx.loadFromSpec(
-          { event: eventNode?.text ?? '', causes, effects },
-          'multi_flow_map',
-          {
-            mergePreviousNodeStyles: true,
-          }
-        )
-      }
-      return false
-    }
-    return false
+    return swapNodeText(sourceId, targetId)
   }
 
   function swapBraceMapNodes(sourceId: string, targetId: string): boolean {
@@ -447,54 +442,21 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
 
   function swapBridgeMapPairs(sourceId: string, targetId: string): boolean {
     if (!ctx.data.value?.nodes) return false
-    const srcMatch = sourceId.match(/^pair-(\d+)-(left|right)$/)
-    const tgtMatch = targetId.match(/^pair-(\d+)-(left|right)$/)
-    if (!srcMatch || !tgtMatch) return false
-
-    const srcPairIdx = parseInt(srcMatch[1], 10)
-    const tgtPairIdx = parseInt(tgtMatch[1], 10)
-    if (srcPairIdx === tgtPairIdx) return false
-
-    const pairIndices = [
-      ...new Set(
-        ctx.data.value.nodes
-          .filter((n) => n.id.startsWith('pair-'))
-          .map((n) => parseInt(n.id.match(/^pair-(\d+)/)?.[1] ?? '-1', 10))
-          .filter((i) => i >= 0)
-      ),
-    ].sort((a, b) => a - b)
-
-    if (!pairIndices.includes(srcPairIdx) || !pairIndices.includes(tgtPairIdx)) return false
-
-    const rawDimension = (ctx.data.value as Record<string, unknown>).dimension as string | undefined
-    const rawFactor = (ctx.data.value as Record<string, unknown>).relating_factor as
-      | string
-      | undefined
-    const dimension = rawDimension || rawFactor || ''
-    const altDims = (ctx.data.value as Record<string, unknown>).alternative_dimensions as
-      | string[]
-      | undefined
-
-    const bridgeNodes = ctx.data.value.nodes
-    const analogies = pairIndices.map((i) => {
-      const leftNode = bridgeNodes.find((n) => n.id === `pair-${i}-left`)
-      const rightNode = bridgeNodes.find((n) => n.id === `pair-${i}-right`)
-      return { left: leftNode?.text ?? '', right: rightNode?.text ?? '' }
-    })
-
-    const srcPos = pairIndices.indexOf(srcPairIdx)
-    const tgtPos = pairIndices.indexOf(tgtPairIdx)
-    const tmp = analogies[srcPos]
-    analogies[srcPos] = analogies[tgtPos]
-    analogies[tgtPos] = tmp
-
-    const spec: Record<string, unknown> = {
-      relating_factor: dimension,
-      dimension,
-      analogies,
-    }
-    if (altDims) spec.alternative_dimensions = altDims
-    return ctx.loadFromSpec(spec, 'bridge_map', { mergePreviousNodeStyles: true })
+    const nodes = ctx.data.value.nodes
+    const src = nodes.find((n) => n.id === sourceId)
+    const tgt = nodes.find((n) => n.id === targetId)
+    if (!src || !tgt || !isBridgeMapPairNode(src) || !isBridgeMapPairNode(tgt)) return false
+    const srcPairIdx = readBridgePairIndex(src)
+    const tgtPairIdx = readBridgePairIndex(tgt)
+    if (srcPairIdx < 0 || tgtPairIdx < 0 || srcPairIdx === tgtPairIdx) return false
+    const srcLeft = findBridgePairSide(nodes, srcPairIdx, 'left')
+    const srcRight = findBridgePairSide(nodes, srcPairIdx, 'right')
+    const tgtLeft = findBridgePairSide(nodes, tgtPairIdx, 'left')
+    const tgtRight = findBridgePairSide(nodes, tgtPairIdx, 'right')
+    if (!srcLeft || !srcRight || !tgtLeft || !tgtRight) return false
+    swapNodeText(srcLeft.id, tgtLeft.id)
+    swapNodeText(srcRight.id, tgtRight.id)
+    return true
   }
 
   function moveNodeBySwap(sourceId: string, targetId: string): boolean {

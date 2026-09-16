@@ -1,5 +1,6 @@
-import { DEFAULT_CENTER_X, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { eventBus } from '@/composables/core/useEventBus'
+import { DEFAULT_CENTER_X, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
+import { resolveThinkingMapAliasId } from '@/utils/thinkingMapIdentity'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import { getMindMapCurveExtents } from './events'
@@ -23,17 +24,24 @@ export function reconcileAfterHistoryRestore(ctx: DiagramContext): void {
     mindMapCurveExtentBaseline,
   } = ctx
 
-  if (!data.value) {
+  const snapshot = data.value
+  if (!snapshot) {
     return
   }
 
-  const nodeIds = new Set(data.value.nodes.map((node) => node.id))
-  selectedNodes.value = selectedNodes.value.filter((id) => nodeIds.has(id))
+  const nodeIds = new Set(snapshot.nodes.map((node) => node.id))
+  selectedNodes.value = [
+    ...new Set(
+      selectedNodes.value
+        .map((id) => resolveThinkingMapAliasId(type.value, id, snapshot.nodes) ?? id)
+        .filter((id) => nodeIds.has(id))
+    ),
+  ]
 
   const activeConnectionId = selectedConnectionId.value
   if (
     activeConnectionId &&
-    !data.value.connections?.some((connection) => connection.id === activeConnectionId)
+    !snapshot.connections?.some((connection) => connection.id === activeConnectionId)
   ) {
     selectedConnectionId.value = null
   }
@@ -41,7 +49,7 @@ export function reconcileAfterHistoryRestore(ctx: DiagramContext): void {
   copiedNodes.value = []
 
   nodeDimensions.value = {}
-  for (const node of data.value.nodes) {
+  for (const node of snapshot.nodes) {
     const estimatedWidth = node.data?.estimatedWidth as number | undefined
     const estimatedHeight = node.data?.estimatedHeight as number | undefined
     if (estimatedWidth && estimatedHeight && node.id) {
@@ -55,7 +63,7 @@ export function reconcileAfterHistoryRestore(ctx: DiagramContext): void {
     const widths: Record<string, number> = {}
     const heights: Record<string, number> = {}
     let topicWidth: number | null = null
-    for (const node of data.value.nodes) {
+    for (const node of snapshot.nodes) {
       const estimatedWidth = node.data?.estimatedWidth as number | undefined
       const estimatedHeight = node.data?.estimatedHeight as number | undefined
       if (estimatedWidth !== undefined) widths[node.id] = estimatedWidth
@@ -74,19 +82,17 @@ export function reconcileAfterHistoryRestore(ctx: DiagramContext): void {
     mindMapTopicBranchGaps.value = null
     mindMapRecalcTrigger.value += 1
 
-    const topicNode = data.value.nodes.find(
+    const topicNode = snapshot.nodes.find(
       (node) => node.id === 'topic' && (node.type === 'topic' || node.type === 'center')
     )
     if (topicNode) {
       const resolvedTopicWidth =
-        topicWidth ??
-        (topicNode.data?.estimatedWidth as number | undefined) ??
-        DEFAULT_NODE_WIDTH
+        topicWidth ?? (topicNode.data?.estimatedWidth as number | undefined) ?? DEFAULT_NODE_WIDTH
       const centerX =
         topicNode.position != null
           ? topicNode.position.x + resolvedTopicWidth / 2
           : DEFAULT_CENTER_X
-      mindMapCurveExtentBaseline.value = getMindMapCurveExtents(data.value.nodes, centerX)
+      mindMapCurveExtentBaseline.value = getMindMapCurveExtents(snapshot.nodes, centerX)
     } else {
       mindMapCurveExtentBaseline.value = null
     }

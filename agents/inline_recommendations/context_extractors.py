@@ -11,6 +11,19 @@ Proprietary License
 
 from typing import Any, Dict, List, Optional
 
+from agents.inline_recommendations.thinking_map_node_kinds import (
+    bridge_pair_index,
+    bridge_pair_side,
+    double_bubble_index,
+    double_bubble_role,
+    is_bubble_attribute_node,
+    is_circle_context_node,
+    is_flow_step_node,
+    is_flow_substep_node,
+    is_multi_cause_node,
+    is_multi_effect_node,
+    is_tree_category_node,
+)
 from services.diagram.mindmap_location import is_mindmap_l1, mindmap_node_depth
 from utils.placeholder import is_placeholder_text
 
@@ -122,24 +135,35 @@ def _find_flow_step_context(
     if not current_node:
         return (None, "", [])
     nid = current_node.get("id") or ""
-    if nid.startswith("flow-step-"):
+    if is_flow_step_node(current_node):
         return (
             nid,
             _get_node_text(current_node),
             _get_children_texts(nid, nodes, connections),
         )
-    if nid.startswith("flow-substep-"):
-        for conn in connections:
-            if conn.get("target") == current_node_id:
-                pid = conn.get("source")
-                parent = next((n for n in nodes if n.get("id") == pid), None)
-                if isinstance(pid, str) and parent and pid.startswith("flow-step-"):
-                    return (
-                        pid,
-                        _get_node_text(parent),
-                        _get_children_texts(pid, nodes, connections),
-                    )
-                break
+    if is_flow_substep_node(current_node):
+        parent_id = ""
+        data = current_node.get("data")
+        if isinstance(data, dict):
+            raw_parent = data.get("parentStepId")
+            if isinstance(raw_parent, str):
+                parent_id = raw_parent
+        if not parent_id:
+            for conn in connections:
+                if conn.get("target") == current_node_id:
+                    pid = conn.get("source")
+                    if isinstance(pid, str):
+                        parent_id = pid
+                    break
+        parent = None
+        if parent_id:
+            parent = next((n for n in nodes if n.get("id") == parent_id), None)
+        if parent:
+            return (
+                parent_id,
+                _get_node_text(parent),
+                _get_children_texts(parent_id, nodes, connections),
+            )
     return (None, "", [])
 
 
@@ -161,7 +185,7 @@ def extract_flow_map_context(
     )
     topic = _get_node_text(topic_node) if topic_node else ""
 
-    step_nodes = [n for n in nodes if n.get("type") == "flow" and (n.get("id") or "").startswith("flow-step-")]
+    step_nodes = [n for n in nodes if is_flow_step_node(n)]
     step_names = [_get_node_text(n) for n in step_nodes if _has_real_text(n)]
 
     step_id, step_name, substep_texts = (None, "", [])
@@ -187,7 +211,7 @@ def _find_tree_category_context(
     if not current_node:
         return (None, "", [])
     nid = current_node.get("id") or ""
-    if nid.startswith("tree-cat-"):
+    if is_tree_category_node(current_node):
         return (
             nid,
             _get_node_text(current_node),
@@ -197,7 +221,7 @@ def _find_tree_category_context(
         if conn.get("target") == current_node_id:
             pid = conn.get("source")
             parent = next((n for n in nodes if n.get("id") == pid), None)
-            if isinstance(pid, str) and parent and pid.startswith("tree-cat-"):
+            if isinstance(pid, str) and parent and is_tree_category_node(parent):
                 return (
                     pid,
                     _get_node_text(parent),
@@ -233,7 +257,7 @@ def extract_tree_map_context(
     if is_placeholder_text(dimension):
         dimension = ""
 
-    category_nodes = [n for n in nodes if (n.get("id") or "").startswith("tree-cat-")]
+    category_nodes = [n for n in nodes if is_tree_category_node(n)]
     category_names = [_get_node_text(n) for n in category_nodes if _has_real_text(n)]
 
     cat_id, category_name, item_texts = (None, "", [])
@@ -353,12 +377,7 @@ def extract_circle_map_context(
     )
     topic = _get_node_text(topic_node) if topic_node else ""
 
-    context_nodes = [
-        n
-        for n in nodes
-        if (n.get("id") or "").startswith("context-")
-        and (n.get("type") == "bubble" or (n.get("id") or "").startswith("context-"))
-    ]
+    context_nodes = [n for n in nodes if is_circle_context_node(n)]
     context_texts = [_get_node_text(n) for n in context_nodes if _has_real_text(n)]
 
     return {"topic": topic, "context_texts": context_texts}
@@ -467,7 +486,7 @@ def extract_bubble_map_context(
     )
     topic = _get_node_text(topic_node) if topic_node else ""
 
-    attr_nodes = [n for n in nodes if (n.get("id") or "").startswith("bubble-")]
+    attr_nodes = [n for n in nodes if is_bubble_attribute_node(n)]
     attribute_texts = [_get_node_text(n) for n in attr_nodes if _has_real_text(n)]
 
     return {"topic": topic, "attribute_texts": attribute_texts}
@@ -477,8 +496,14 @@ def _get_double_bubble_difference_texts(
     nodes: List[Dict[str, Any]],
 ) -> List[str]:
     """Extract difference pair texts (left | right) from double bubble nodes."""
-    diff_left = [n for n in nodes if (n.get("id") or "").startswith("left-diff-")]
-    diff_right = [n for n in nodes if (n.get("id") or "").startswith("right-diff-")]
+    diff_left = sorted(
+        [node for node in nodes if double_bubble_role(node) == "leftDiff"],
+        key=double_bubble_index,
+    )
+    diff_right = sorted(
+        [node for node in nodes if double_bubble_role(node) == "rightDiff"],
+        key=double_bubble_index,
+    )
     result = []
     for i in range(max(len(diff_left), len(diff_right))):
         ltxt = _get_node_text(diff_left[i]) if i < len(diff_left) else ""
@@ -505,12 +530,13 @@ def extract_double_bubble_context(
     left_topic = _get_node_text(left_node) if left_node else ""
     right_topic = _get_node_text(right_node) if right_node else ""
 
-    sim_nodes = [n for n in nodes if (n.get("id") or "").startswith("similarity-")]
+    sim_nodes = [node for node in nodes if double_bubble_role(node) == "similarity"]
     similarity_texts = [_get_node_text(n) for n in sim_nodes if _has_real_text(n)]
     difference_texts = _get_double_bubble_difference_texts(nodes)
 
     mode = "similarities"
-    if current_node_id and (current_node_id.startswith("left-diff-") or current_node_id.startswith("right-diff-")):
+    current = next((node for node in nodes if node.get("id") == current_node_id), None)
+    if current and double_bubble_role(current) in {"leftDiff", "rightDiff"}:
         mode = "differences"
 
     return {
@@ -540,17 +566,17 @@ def extract_multi_flow_context(
     )
     event = _get_node_text(event_node) if event_node else ""
 
-    cause_nodes = [n for n in nodes if (n.get("id") or "").startswith("cause-")]
-    effect_nodes = [n for n in nodes if (n.get("id") or "").startswith("effect-")]
+    cause_nodes = [n for n in nodes if is_multi_cause_node(n)]
+    effect_nodes = [n for n in nodes if is_multi_effect_node(n)]
     cause_texts = [_get_node_text(n) for n in cause_nodes if _has_real_text(n)]
     effect_texts = [_get_node_text(n) for n in effect_nodes if _has_real_text(n)]
 
     mode = "causes"
     if current_node_id:
-        nid = current_node_id
-        if nid.startswith("effect-"):
+        current = next((n for n in nodes if n.get("id") == current_node_id), None)
+        if current and is_multi_effect_node(current):
             mode = "effects"
-        elif nid.startswith("cause-"):
+        elif current and is_multi_cause_node(current):
             mode = "causes"
 
     return {
@@ -563,17 +589,19 @@ def extract_multi_flow_context(
 
 def _get_bridge_pair_texts(nodes: List[Dict[str, Any]]) -> List[str]:
     """Extract pair texts (left | right) from bridge map nodes."""
-    pair_indices = set()
-    for n in nodes:
-        nid = n.get("id") or ""
-        if nid.startswith("pair-") and "-left" in nid:
-            idx = nid.replace("pair-", "").replace("-left", "")
-            if idx.isdigit():
-                pair_indices.add(int(idx))
+    pair_indices = {
+        bridge_pair_index(node) for node in nodes if bridge_pair_index(node) >= 0 and bridge_pair_side(node) == "left"
+    }
     result = []
     for idx in sorted(pair_indices):
-        left_n = next((x for x in nodes if x.get("id") == f"pair-{idx}-left"), None)
-        right_n = next((x for x in nodes if x.get("id") == f"pair-{idx}-right"), None)
+        left_n = next(
+            (item for item in nodes if bridge_pair_index(item) == idx and bridge_pair_side(item) == "left"),
+            None,
+        )
+        right_n = next(
+            (item for item in nodes if bridge_pair_index(item) == idx and bridge_pair_side(item) == "right"),
+            None,
+        )
         lt = _get_node_text(left_n) if left_n else ""
         rt = _get_node_text(right_n) if right_n else ""
         if lt and rt and not is_placeholder_text(lt) and not is_placeholder_text(rt):

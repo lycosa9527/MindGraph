@@ -186,7 +186,7 @@ Control pub/sub is **at-most-once**; a restarting worker can miss a single “ki
 
 The 1.85C watch is a **mobile-lane** Kitty client (`client_lane: mobile`). Auth is baked at flash time (`CONFIG_MINDGRAPH_KITTY_MGAT` + `CONFIG_MINDGRAPH_KITTY_ACCOUNT` in gitignored `sdkconfig.defaults.local`).
 
-Watch `GET /api/kitty/mobile_open_bootstrap` then `WS /ws/kitty/{scope}` with `Authorization: Bearer` / `X-MG-Account` and `{type:"start", client_lane:"mobile"}`. After `connected`, clients send `{type:"hello", listen_mode, firmware, device_id}` (manual PTT default; `auto` is half-duplex). `abort` cancels the in-flight turn Task and CosyVoice generation. Admin device list is `GET /admin/kitty-llmops/devices`.
+Watch `GET /api/kitty/mobile_open_bootstrap` then `WS /ws/kitty/{scope}` with `Authorization: Bearer` / `X-MG-Account` and `{type:"start", client_lane:"mobile"}`. After `connected`, clients send `{type:"hello", listen_mode, firmware, device_id}` (manual PTT default; `auto` is half-duplex). Super Kitty (`com.mindgraph.super_kitty`) sends `firmware: "super_kitty"` and `listen_mode: "auto"`; it stays awake while the tile is Running and only starts Fun-ASR after English MultiNet hears **ni hao kitty**. `abort` cancels the in-flight turn Task and CosyVoice generation. Admin device list is `GET /admin/kitty-llmops/devices`.
 
 ## REST cleanup
 

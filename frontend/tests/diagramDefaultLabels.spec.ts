@@ -37,5 +37,8 @@ describe('diagram default label display contrast', () => {
     expect(isMindmapDefaultNodeLabel('branch-r-1-0', 'Branch 1')).toBe(true)
     expect(shouldReplaceLabelWithMathInsert('mindmap', 'uid-branch', 'Branch 1')).toBe(true)
     expect(shouldReplaceLabelWithMathInsert('mindmap', 'uid-custom', 'Custom')).toBe(false)
+    expect(shouldReplaceLabelWithMathInsert('circle_map', 'uid-context', 'Context 1')).toBe(true)
+    expect(shouldReplaceLabelWithMathInsert('circle_map', 'context-0', 'Context 1')).toBe(true)
+    expect(shouldReplaceLabelWithMathInsert('circle_map', 'uid-context', 'Custom')).toBe(false)
   })
 })

@@ -1,1 +1,1 @@
-"""Shared green-screen stills for black-cat, white-cat, and office-battle kits."""
+"""Shared green-screen stills for black, white, Siamese, and office-battle kits."""

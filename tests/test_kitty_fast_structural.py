@@ -50,6 +50,111 @@ def test_normalize_edit_label_peels_asr_wrappers() -> None:
     assert normalize_edit_label("Mechanism") == "Mechanism"
     assert normalize_edit_label("「食」") == "食"
     assert normalize_edit_label("市场部") == "市场部"
+    assert normalize_edit_label("我的“自画像”写作支架导学") == "我的“自画像”写作支架导学"
+    center = heuristic_one_sentence_edit_command("主题改成我的“自画像”写作支架导学")
+    assert center == {
+        "action": "update_center",
+        "target": "我的“自画像”写作支架导学",
+        "confidence": 0.92,
+    }
+    rename = heuristic_one_sentence_edit_command("把我的“自画像”写作支架改成要点提纲")
+    assert rename == {
+        "action": "update_node",
+        "target": "我的“自画像”写作支架",
+        "new_text": "要点提纲",
+        "confidence": 0.92,
+    }
+    delete = heuristic_one_sentence_edit_command("删除我的“自画像”写作支架这个节点")
+    assert delete == {
+        "action": "delete_node",
+        "target": "我的“自画像”写作支架",
+        "confidence": 0.92,
+    }
+    assert normalize_edit_label("“Name” 这个") == "Name"
+    assert heuristic_one_sentence_edit_command("删除冰淇淋这个背景") == {
+        "action": "delete_node",
+        "target": "冰淇淋",
+        "confidence": 0.92,
+    }
+    assert heuristic_one_sentence_edit_command("把冰淇淋这个背景改成雪糕") == {
+        "action": "update_node",
+        "target": "冰淇淋",
+        "new_text": "雪糕",
+        "confidence": 0.92,
+    }
+
+
+def test_thinking_map_named_add_is_fast_structural() -> None:
+    """Role words (背景/特征/左边不同点/…) are add_node, not a clarify turn."""
+    cases = (
+        ("添加一个叫冰淇淋的背景", {"action": "add_node", "target": "冰淇淋", "confidence": 0.92}),
+        ("添加一个叫冰淇淋的特征", {"action": "add_node", "target": "冰淇淋", "confidence": 0.92}),
+        (
+            "添加一个左边不同点冰淇淋",
+            {
+                "action": "add_node",
+                "target": "冰淇淋",
+                "confidence": 0.92,
+                "category": "left_difference",
+            },
+        ),
+        ("添加一个叫冰淇淋的类别", {"action": "add_node", "target": "冰淇淋", "confidence": 0.92}),
+        ("添加一个叫冰淇淋的部分", {"action": "add_node", "target": "冰淇淋", "confidence": 0.92}),
+        ("添加一个叫冰淇淋的步骤", {"action": "add_node", "target": "冰淇淋", "confidence": 0.92}),
+        (
+            "添加一个叫冰淇淋的原因",
+            {
+                "action": "add_node",
+                "target": "冰淇淋",
+                "confidence": 0.92,
+                "category": "cause",
+            },
+        ),
+        (
+            "添加一对类比 冰淇淋 和 雪糕",
+            {
+                "action": "add_node",
+                "target": "冰淇淋",
+                "confidence": 0.92,
+                "left": "冰淇淋",
+                "right": "雪糕",
+            },
+        ),
+        (
+            "add a left-diff ice cream",
+            {
+                "action": "add_node",
+                "target": "ice cream",
+                "confidence": 0.92,
+                "category": "left_difference",
+            },
+        ),
+    )
+    for spoken, expected in cases:
+        command = heuristic_one_sentence_edit_command(spoken)
+        assert command is not None, spoken
+        assert command == expected, spoken
+        assert _is_fast_structural_command(command, spoken) is True
+
+    named_branch = heuristic_one_sentence_edit_command("加一个叫市场部的分支")
+    assert named_branch == {
+        "action": "add_node",
+        "target": "市场部",
+        "confidence": 0.92,
+    }
+    converted = legacy_command_to_diagram_edit(
+        {
+            "action": "add_node",
+            "target": "冰淇淋",
+            "confidence": 0.92,
+            "category": "left_difference",
+        },
+        scope="scope-add-role",
+        diagram_type="double_bubble_map",
+    )
+    assert converted is not None
+    assert converted.args.get("text") == "冰淇淋"
+    assert converted.args.get("category") == "left_difference"
 
 
 def test_fast_structural_allows_valued_add_without_follow_ups() -> None:

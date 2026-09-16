@@ -16,6 +16,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
+from services.diagram.thinking_map_patterns import leftover_slot_role
 from services.kitty.infra.bootstrap.kitty_native_spec import native_spec_to_pseudo_nodes
 
 _DIAGRAM_TYPE_ZH: Dict[str, str] = {
@@ -355,6 +356,19 @@ def _outline_from_native_concept_map(spec: Dict[str, Any]) -> Optional[str]:
     return "\n".join(lines) if lines else None
 
 
+def _double_bubble_outline_role(node: Dict[str, Any]) -> str:
+    data = node.get("data")
+    data_dict = data if isinstance(data, dict) else {}
+    stamped = data_dict.get("doubleBubbleRole")
+    if stamped in {"similarity", "leftDiff", "rightDiff"}:
+        return str(stamped)
+    for candidate in (str(data_dict.get("doubleBubbleMapLegacyId") or ""), str(node.get("id") or "")):
+        role = leftover_slot_role("double_bubble_map", candidate)
+        if role in {"similarity", "leftDiff", "rightDiff"}:
+            return role
+    return ""
+
+
 def _outline_from_role_nodes(nodes: Iterable[Any]) -> Optional[str]:
     grouped: Dict[str, List[str]] = defaultdict(list)
     left_diffs: List[str] = []
@@ -365,18 +379,23 @@ def _outline_from_role_nodes(nodes: Iterable[Any]) -> Optional[str]:
         text = _node_text(node)
         if not text:
             continue
-        role = _clean_text(node.get("type")) or "node"
-        node_id = _clean_text(node.get("id"))
-        if role == "difference":
-            if node_id.startswith("left-diff"):
-                left_diffs.append(text)
-            elif node_id.startswith("right-diff"):
-                right_diffs.append(text)
-            else:
-                grouped["difference"].append(text)
+        db_role = _double_bubble_outline_role(node)
+        if db_role == "leftDiff":
+            left_diffs.append(text)
             continue
-        if role in _ROOT_ROLE_TYPES:
-            grouped[role].append(text)
+        if db_role == "rightDiff":
+            right_diffs.append(text)
+            continue
+        if db_role == "similarity":
+            grouped["similarity"].append(text)
+            continue
+        role = _clean_text(node.get("type")) or "node"
+        if role == "flow":
+            role = "step"
+        elif role == "flowSubstep":
+            role = "substep"
+        if role == "difference":
+            grouped["difference"].append(text)
             continue
         grouped[role].append(text)
 

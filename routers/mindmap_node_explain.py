@@ -36,6 +36,14 @@ from services.infrastructure.http.error_handler import (
     ThinkingCoinInsufficientError,
     UserDailyTokenCapExceededError,
 )
+from services.llm.org_result_cache import (
+    fingerprint_org_payload,
+    get_org_llm_result,
+    normalize_org_cache_list,
+    normalize_org_cache_text,
+    positive_org_id,
+    store_org_llm_result,
+)
 from services.monitoring.module_activity import track_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user
@@ -218,6 +226,50 @@ async def _stream_explain(
         user_id if user_id is not None else "-",
     )
 
+    explain_org = positive_org_id(org_id)
+    explain_fp = fingerprint_org_payload(
+        {
+            "node": normalize_org_cache_text(req.node_label),
+            "topic": normalize_org_cache_text(req.topic),
+            "type": normalize_org_cache_text(req.diagram_type),
+            "facet": facet,
+            "audience": normalize_org_cache_text(req.audience_level),
+            "language": normalize_org_cache_text(effective_lang),
+            "instructions": normalize_org_cache_text(req.generation_instructions),
+            "top": normalize_org_cache_list(req.top_level_branches),
+            "path": normalize_org_cache_list(req.ancestor_path),
+            "siblings": normalize_org_cache_list(req.sibling_branches),
+            "children": normalize_org_cache_list(req.child_branches),
+        }
+    )
+    if explain_org is not None:
+        cached_explain = await get_org_llm_result("node_explain", explain_org, explain_fp)
+        cached_events = cached_explain.get("events") if cached_explain else None
+        if isinstance(cached_events, list) and cached_events:
+            for chunk in cached_events:
+                if not isinstance(chunk, dict):
+                    continue
+                chunk_count += 1
+                stats.observe(chunk)
+                event = str(chunk.get("event") or "")
+                if event in ("end", "error"):
+                    terminal_sent = True
+                if event == "error":
+                    saw_error = True
+                yield f"data: {json.dumps(chunk)}\n\n"
+            log_explain_complete(
+                session_short=session_short,
+                facet=facet,
+                node_label=req.node_label,
+                chunk_count=chunk_count,
+                stats=stats,
+                success=not saw_error,
+                extra="cache_hit",
+            )
+            schedule_explain_completion_activity(activity_ctx, stats, success=not saw_error)
+            return
+
+    public_events: list[dict] = []
     try:
         async for chunk in generator.stream_explain(
             node_label=req.node_label,
@@ -246,6 +298,7 @@ async def _stream_explain(
                 terminal_sent = True
             if event == "error":
                 saw_error = True
+            public_events.append(chunk)
             yield f"data: {json.dumps(chunk)}\n\n"
 
         if chunk_count == 0 and not terminal_sent:
@@ -281,6 +334,13 @@ async def _stream_explain(
                 success=not saw_error,
             )
             schedule_explain_completion_activity(activity_ctx, stats, success=not saw_error)
+            if explain_org is not None and not saw_error and public_events:
+                await store_org_llm_result(
+                    "node_explain",
+                    explain_org,
+                    explain_fp,
+                    {"events": public_events},
+                )
 
     except asyncio.CancelledError:
         log_explain_complete(

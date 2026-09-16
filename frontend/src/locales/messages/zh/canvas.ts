@@ -391,6 +391,7 @@ export default {
   'canvas.presentationTimer.exitTimer': '退出',
   'canvas.presentationTimer.startPresenting': '开始演讲',
   'canvas.presentationTimer.closeHud': '关闭计时器',
+  'canvas.cachedResult.notice': '缓存结果，再次使用该功能可获取新结果',
   'canvas.presentation.learningSheetConfirmTitle': '进入放映？',
   'canvas.presentation.learningSheetConfirmBody':
     '您仍在挖空支架图编辑中。进入放映将结束挖空编辑，已挖空的内容会保留。是否继续？',

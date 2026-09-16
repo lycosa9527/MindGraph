@@ -36,6 +36,9 @@ export function isCircleMapDefaultNodeLabel(nodeId: string, text: string): boole
         if (trimmed === defaultsT('diagram.defaults.contextN', loc, { n: idx + 1 })) return true
       }
     }
+    for (let n = 1; n <= 30; n++) {
+      if (trimmed === defaultsT('diagram.defaults.contextN', loc, { n })) return true
+    }
   }
   return false
 }
@@ -54,6 +57,9 @@ export function isBubbleMapDefaultNodeLabel(nodeId: string, text: string): boole
       if (Number.isFinite(idx) && idx >= 0) {
         if (trimmed === defaultsT('diagram.defaults.attributeN', loc, { n: idx + 1 })) return true
       }
+    }
+    for (let n = 1; n <= 30; n++) {
+      if (trimmed === defaultsT('diagram.defaults.attributeN', loc, { n })) return true
     }
   }
   return false
@@ -95,6 +101,11 @@ export function isDoubleBubbleDefaultNodeLabel(nodeId: string, text: string): bo
           }
         }
       }
+      for (let n = 1; n <= 30; n++) {
+        if (trimmed === defaultsT('diagram.doubleBubble.similarityN', loc, { n })) return true
+        if (trimmed === defaultsT('diagram.doubleBubble.differenceAn', loc, { n })) return true
+        if (trimmed === defaultsT('diagram.doubleBubble.differenceBn', loc, { n })) return true
+      }
     }
   }
   return false
@@ -122,6 +133,22 @@ export function isMultiFlowDefaultNodeLabel(nodeId: string, text: string): boole
       if (Number.isFinite(idx) && idx >= 0) {
         if (trimmed === defaultsT('diagram.defaults.effectN', loc, { n: idx + 1 })) return true
       }
+    }
+    for (let n = 1; n <= 30; n++) {
+      if (trimmed === defaultsT('diagram.defaults.causeN', loc, { n })) return true
+      if (trimmed === defaultsT('diagram.defaults.effectN', loc, { n })) return true
+    }
+  }
+  return false
+}
+
+function isFlowMapDefaultStepOrSubstepText(trimmed: string, loc: LocaleCode): boolean {
+  for (let n = 1; n <= 30; n++) {
+    if (trimmed === defaultsT('diagram.defaults.stepN', loc, { n })) return true
+  }
+  for (let n = 1; n <= 20; n++) {
+    for (let m = 1; m <= 20; m++) {
+      if (trimmed === defaultsT('diagram.defaults.substepNM', loc, { n, m })) return true
     }
   }
   return false
@@ -155,7 +182,9 @@ export function isFlowMapDefaultNodeLabel(nodeId: string, text: string): boolean
           return true
         }
       }
+      continue
     }
+    if (isFlowMapDefaultStepOrSubstepText(trimmed, loc)) return true
   }
   return false
 }
@@ -191,6 +220,14 @@ export function isTreeMapDefaultNodeLabel(nodeId: string, text: string): boolean
         }
       }
     }
+    for (let n = 1; n <= 30; n++) {
+      if (trimmed === defaultsT('diagram.defaults.categoryN', loc, { n })) return true
+    }
+    for (let n = 1; n <= 20; n++) {
+      for (let m = 1; m <= 20; m++) {
+        if (trimmed === defaultsT('diagram.defaults.itemNM', loc, { n, m })) return true
+      }
+    }
   }
   return false
 }
@@ -224,6 +261,14 @@ export function isBraceMapDefaultNodeLabel(nodeId: string, text: string): boolea
         }
       }
     }
+    for (let n = 1; n <= 30; n++) {
+      if (trimmed === defaultsT('diagram.defaults.partN', loc, { n })) return true
+    }
+    for (let n = 1; n <= 20; n++) {
+      for (let m = 1; m <= 20; m++) {
+        if (trimmed === defaultsT('diagram.defaults.subpartNM', loc, { n, m })) return true
+      }
+    }
   }
   return false
 }
@@ -250,6 +295,10 @@ export function isBridgeMapDefaultNodeLabel(nodeId: string, text: string): boole
       if (Number.isFinite(idx) && idx >= 0) {
         if (trimmed === defaultsT('diagram.defaults.bridgeItemBN', loc, { n: idx + 1 })) return true
       }
+    }
+    for (let n = 1; n <= 30; n++) {
+      if (trimmed === defaultsT('diagram.defaults.bridgeItemAN', loc, { n })) return true
+      if (trimmed === defaultsT('diagram.defaults.bridgeItemBN', loc, { n })) return true
     }
   }
   return false

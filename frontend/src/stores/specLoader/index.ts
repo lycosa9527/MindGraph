@@ -9,6 +9,7 @@
 import type { MindMapCanvasMode } from '@/stores/ui'
 import type { DiagramType, NodeStyle } from '@/types'
 import { migrateMindMapIdentityIds } from '@/utils/mindMapIdentityMigrate'
+import { migrateThinkingMapIdentityIds } from '@/utils/thinkingMapIdentity'
 
 import { loadBraceMapSpec } from './braceMap'
 import { loadBridgeMapSpec } from './bridgeMap'
@@ -26,6 +27,31 @@ import type { SpecLoaderResult } from './types'
 import { applyLearningSheetHiddenNodes } from './utils'
 
 export { getDefaultTemplate } from './defaultTemplates'
+
+function applyThinkingMapIdentityMigrate(
+  spec: Record<string, unknown>,
+  result: SpecLoaderResult,
+  diagramType: DiagramType
+): SpecLoaderResult {
+  const styles =
+    spec._node_styles && typeof spec._node_styles === 'object'
+      ? (spec._node_styles as Record<string, NodeStyle>)
+      : undefined
+  const migrated = migrateThinkingMapIdentityIds(
+    diagramType,
+    result.nodes,
+    result.connections,
+    styles
+  )
+  if (!migrated) return result
+  const styleMeta = migrated.nodeStyles ? { _node_styles: migrated.nodeStyles } : undefined
+  return {
+    ...result,
+    nodes: migrated.nodes,
+    connections: migrated.connections,
+    metadata: styleMeta ? { ...(result.metadata || {}), ...styleMeta } : result.metadata,
+  }
+}
 
 // Re-export public APIs
 export { recalculateBraceMapLayout } from './braceMap'
@@ -91,9 +117,7 @@ export function loadSpecForDiagramType(
           ? (spec._node_styles as Record<string, NodeStyle>)
           : undefined
       const migrated = migrateMindMapIdentityIds(generic.nodes, generic.connections, styles)
-      const styleMeta = migrated.nodeStyles
-        ? { _node_styles: migrated.nodeStyles }
-        : undefined
+      const styleMeta = migrated.nodeStyles ? { _node_styles: migrated.nodeStyles } : undefined
       // Soft path: saved / model-cache specs already have stable ids + positions.
       if (hasConnections && options?.preferLaidOutMindMapNodes !== false) {
         result = {
@@ -122,11 +146,13 @@ export function loadSpecForDiagramType(
     if (diagramType === 'tree_map') {
       result = { ...result, nodes: ensureTreeMapTopicLayout(result.nodes) }
     }
+    result = applyThinkingMapIdentityMigrate(spec, result, diagramType)
   } else if (diagramType === 'mindmap' || diagramType === 'mind_map') {
     result = loadMindMapSpec(spec, { canvasMode: options?.mindMapCanvasMode })
   } else {
     const loader = SPEC_LOADERS[diagramType]
     result = loader ? loader(spec) : loadGenericSpec(spec)
+    result = applyThinkingMapIdentityMigrate(spec, result, diagramType)
   }
 
   return applyLearningSheetHiddenNodes(spec, result, diagramType)

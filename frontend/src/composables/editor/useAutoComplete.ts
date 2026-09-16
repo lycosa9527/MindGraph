@@ -30,18 +30,24 @@ import {
   validateAutoCompleteRules,
 } from '@/composables/editor/autoCompleteValidation'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
-import { useDiagramStore, useLLMResultsStore, type ModelLoadPhase } from '@/stores'
+import { type ModelLoadPhase, useDiagramStore, useLLMResultsStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { authFetch } from '@/utils/api'
+import { noteOrgGenerationCacheResult, withOrgGenerationCacheBypass } from '@/utils/orgGenerationCache'
+import {
+  isBridgeMapPairNode,
+  readBridgePairIndex,
+  readBridgePairSide,
+} from '@/utils/bridgeMapIdentity'
 import {
   extractFailureFromPayload,
   resolveGenerateGraphErrorMessage,
   shouldNotifyGenerateGraphError,
 } from '@/utils/generateGraphErrors'
 import {
-  consumeGenerateGraphStream,
   type GenerateGraphCompletePayload,
   type GenerateGraphStreamPhase,
+  consumeGenerateGraphStream,
 } from '@/utils/generateGraphStream'
 
 // LLM Models to use for parallel generation
@@ -178,7 +184,7 @@ export function useAutoComplete() {
     id?: string
     type?: string
     text?: string
-    data?: { label?: string }
+    data?: Record<string, unknown>
   }
 
   function getNodeText(n: NodeWithText | undefined): string {
@@ -270,7 +276,7 @@ export function useAutoComplete() {
 
   /**
    * Extract existing bridge map analogies from nodes.
-   * spec.analogies is filtered out on load; nodes use pair-X-left, pair-X-right.
+   * spec.analogies is filtered out on load; pair sides live in pairIndex + position.
    */
   function extractBridgeMapAnalogies(): Array<{ left: string; right: string }> {
     const spec = diagramStore.data as Record<string, unknown> | null
@@ -281,14 +287,25 @@ export function useAutoComplete() {
 
     const pairIndices = new Set(
       nodes
-        .filter((n) => /^pair-\d+-left$/.test(n.id ?? ''))
-        .map((n) => parseInt((n.id ?? '').replace('pair-', '').replace('-left', ''), 10))
+        .filter((n) => isBridgeMapPairNode(n))
+        .map((n) => readBridgePairIndex(n))
+        .filter((i) => i >= 0)
     )
 
     const result: Array<{ left: string; right: string }> = []
     for (const idx of [...pairIndices].sort((a, b) => a - b)) {
-      const leftNode = nodes.find((n) => n.id === `pair-${idx}-left`)
-      const rightNode = nodes.find((n) => n.id === `pair-${idx}-right`)
+      const leftNode = nodes.find(
+        (n) =>
+          isBridgeMapPairNode(n) &&
+          readBridgePairIndex(n) === idx &&
+          readBridgePairSide(n) === 'left'
+      )
+      const rightNode = nodes.find(
+        (n) =>
+          isBridgeMapPairNode(n) &&
+          readBridgePairIndex(n) === idx &&
+          readBridgePairSide(n) === 'right'
+      )
       const left = getNodeText(leftNode)
       const right = getNodeText(rightNode)
       if (left && right && !isPlaceholderText(left) && !isPlaceholderText(right)) {
@@ -346,8 +363,7 @@ export function useAutoComplete() {
     const rightNode = nodes.find((n) => n.id === 'right-topic')
     const left = getNodeText(leftNode)
     const right = getNodeText(rightNode)
-    const override =
-      typeof options?.topicOverride === 'string' ? options.topicOverride.trim() : ''
+    const override = typeof options?.topicOverride === 'string' ? options.topicOverride.trim() : ''
     const mainTopic = override || extractMainTopic()
 
     const result = validateAutoCompleteRules({
@@ -438,10 +454,7 @@ export function useAutoComplete() {
     }
   }
 
-  function formatModelFailureMessage(
-    rawError: string,
-    errorType?: string
-  ): string {
+  function formatModelFailureMessage(rawError: string, errorType?: string): string {
     const message = resolveGenerateGraphErrorMessage(
       rawError,
       errorType,
@@ -493,10 +506,12 @@ export function useAutoComplete() {
     try {
       const streamResponse = await authFetch('/api/generate_graph/stream', {
         method: 'POST',
-        body: JSON.stringify({
-          ...requestBody,
-          llm: model,
-        }),
+        body: JSON.stringify(
+          withOrgGenerationCacheBypass({
+            ...requestBody,
+            llm: model,
+          })
+        ),
         signal,
       })
 
@@ -536,6 +551,9 @@ export function useAutoComplete() {
           }
           if (completePayload) {
             const parsed = parseGenerateResponse(completePayload, model, requestBody, elapsed)
+            if (parsed.success) {
+              noteOrgGenerationCacheResult(completePayload)
+            }
             if (!parsed.success) {
               llmResultsStore.setModelPhase(model, 'error')
             }
@@ -558,10 +576,12 @@ export function useAutoComplete() {
 
       const response = await authFetch('/api/generate_graph', {
         method: 'POST',
-        body: JSON.stringify({
-          ...requestBody,
-          llm: model,
-        }),
+        body: JSON.stringify(
+          withOrgGenerationCacheBypass({
+            ...requestBody,
+            llm: model,
+          })
+        ),
         signal,
       })
 
@@ -580,6 +600,9 @@ export function useAutoComplete() {
 
       const result = await response.json()
       const parsed = parseGenerateResponse(result, model, requestBody, elapsed)
+      if (parsed.success) {
+        noteOrgGenerationCacheResult(result)
+      }
       if (!parsed.success) {
         llmResultsStore.setModelPhase(model, 'error')
       }

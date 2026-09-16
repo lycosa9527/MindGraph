@@ -38,7 +38,7 @@ def get_diagram_edit_tools() -> list[dict[str, Any]]:
     return [
         _fn(
             "diagram.update_center",
-            "Change the mind map center/topic/title text.",
+            "Change the diagram center/topic/title text.",
             {
                 "new_text": {"type": "string", "description": "New center/topic text"},
             },
@@ -166,6 +166,14 @@ def diagram_edit_function_call_to_legacy_command(
         pos = args.get("position") or args.get("node_index")
         if isinstance(pos, int):
             cmd["node_index"] = pos
+        category = args.get("category")
+        if isinstance(category, str) and category.strip():
+            cmd["category"] = category.strip()
+        left = args.get("left")
+        right = args.get("right")
+        if isinstance(left, str) and left.strip() and isinstance(right, str) and right.strip():
+            cmd["left"] = left.strip()
+            cmd["right"] = right.strip()
         return cmd
 
     if name == "diagram.update_node":

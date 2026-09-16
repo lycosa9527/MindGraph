@@ -9,6 +9,8 @@ from sqlalchemy import select
 
 from models.domain.diagrams import Diagram
 from services.diagram.mindmap_identity import migrate_mindmap_diagram_payload
+from services.diagram.thinking_map_identity import migrate_thinking_map_diagram_payload
+from services.diagram.thinking_map_patterns import is_thinking_map_diagram_type
 from utils.db.session_open import system_rls_session
 
 
@@ -32,4 +34,6 @@ async def load_owned_diagram_spec(diagram_id: str, user_id: int) -> dict[str, An
     diagram_type = str(spec.get("type") or diagram.diagram_type or "")
     if diagram_type in {"mindmap", "mind_map"}:
         migrate_mindmap_diagram_payload(spec)
+    elif is_thinking_map_diagram_type(diagram_type):
+        migrate_thinking_map_diagram_payload(spec, diagram_type)
     return spec

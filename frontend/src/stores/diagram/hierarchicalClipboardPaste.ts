@@ -1,20 +1,30 @@
 import { i18n } from '@/i18n'
-import { recalculateBraceMapLayout } from '@/stores/specLoader'
 import {
   braceMapRootId,
   isBraceMapPartAddTarget,
   resolveBraceMapSubpartAttachParentId,
 } from '@/stores/diagram/braceMapParentResolve'
+import { recalculateBraceMapLayout } from '@/stores/specLoader'
+import { type FlowSubstepEntry, findFlowSubstepEntry } from '@/stores/specLoader/flowMapSubsteps'
 import type { DiagramNode, DiagramType } from '@/types'
+import { takeBraceMapStableId } from '@/utils/braceMapIdentity'
+import { isFlowMapStepNode, readFlowStepIndex } from '@/utils/flowMapIdentity'
 import type { MindMapBranchSpec } from '@/utils/mindMapSubgraphMerge'
+import {
+  isTreeMapCategoryNode,
+  isTreeMapLeafNode,
+  readTreeCategoryIndex,
+  readTreeLeafIndex,
+  readTreeParentCategoryId,
+} from '@/utils/treeMapIdentity'
 
-import type { DiagramContext } from './types'
 import type {
   BraceMapClipboardNode,
   FlowMapClipboardPayload,
   HierarchicalClipboard,
   TreeMapClipboardPayload,
 } from './hierarchicalClipboardTypes'
+import type { DiagramContext } from './types'
 
 export type HierarchicalClipboardPasteDeps = {
   pasteMindMapClipboardBranches: (
@@ -61,31 +71,25 @@ function pasteTreeMapPayload(
   if (!rootNode) return false
 
   const categoryNodes = nodes
-    .filter((n) => /^tree-cat-\d+$/.test(n.id ?? ''))
-    .sort(
-      (a, b) =>
-        parseInt((a.id ?? '0').replace('tree-cat-', ''), 10) -
-        parseInt((b.id ?? '0').replace('tree-cat-', ''), 10)
-    )
+    .filter((n) => isTreeMapCategoryNode(n))
+    .sort((a, b) => readTreeCategoryIndex(a) - readTreeCategoryIndex(b))
 
   const categories = categoryNodes.map((cat) => {
-    const idMatch = (cat.id ?? '').match(/^tree-cat-(\d+)$/)
-    const categoryNum = idMatch ? parseInt(idMatch[1], 10) : -1
     const leaves = nodes
       .filter((n) => {
-        const m = (n.id ?? '').match(/^tree-leaf-(\d+)-(\d+)$/)
-        return m && parseInt(m[1], 10) === categoryNum
+        if (!isTreeMapLeafNode(n)) return false
+        const parentId = readTreeParentCategoryId(n)
+        if (parentId) return parentId === cat.id
+        return readTreeCategoryIndex(n) === readTreeCategoryIndex(cat)
       })
-      .sort(
-        (a, b) =>
-          parseInt((a.id ?? '0').split('-').pop() ?? '0', 10) -
-          parseInt((b.id ?? '0').split('-').pop() ?? '0', 10)
-      )
+      .sort((a, b) => readTreeLeafIndex(a) - readTreeLeafIndex(b))
     return {
       text: cat.text,
       children: leaves.map((l) => ({ text: l.text })),
     }
   })
+
+  const anchor = nodes.find((n) => n.id === anchorNodeId)
 
   if (payload.kind === 'category') {
     if (anchorNodeId === 'tree-topic') {
@@ -93,7 +97,7 @@ function pasteTreeMapPayload(
         text: payload.text,
         children: payload.leaves.map((leaf) => ({ text: leaf.text })),
       })
-    } else if (/^tree-cat-\d+$/.test(anchorNodeId)) {
+    } else if (anchor && isTreeMapCategoryNode(anchor)) {
       const idx = categoryNodes.findIndex((c) => c.id === anchorNodeId)
       const insertAt = idx >= 0 ? idx + 1 : categories.length
       categories.splice(insertAt, 0, {
@@ -105,7 +109,7 @@ function pasteTreeMapPayload(
     }
   } else if (payload.kind === 'leaf') {
     let targetIdx = -1
-    if (/^tree-cat-\d+$/.test(anchorNodeId)) {
+    if (anchor && isTreeMapCategoryNode(anchor)) {
       targetIdx = categoryNodes.findIndex((c) => c.id === anchorNodeId)
     } else if (anchorNodeId === 'tree-topic' && categories.length > 0) {
       targetIdx = 0
@@ -136,8 +140,8 @@ function addBraceSubtree(
   node: BraceMapClipboardNode,
   rootId: string
 ): void {
-  const baseId = Date.now()
-  const newId = `brace-part-${baseId}`
+  const claimed = new Set((ctx.data.value?.nodes ?? []).map((n) => n.id).filter(Boolean))
+  const newId = takeBraceMapStableId(claimed)
   ctx.addNode({
     id: newId,
     text: node.text,
@@ -146,10 +150,8 @@ function addBraceSubtree(
   })
   ctx.addConnection(parentId, newId)
 
-  let childIndex = 0
   for (const child of node.children) {
-    const childId = `brace-part-${baseId}-${childIndex}`
-    childIndex += 1
+    const childId = takeBraceMapStableId(claimed)
     ctx.addNode({
       id: childId,
       text: child.text,
@@ -203,32 +205,43 @@ function pasteFlowMapPayload(
   const spec = ctx.buildFlowMapSpecFromNodes()
   if (!spec) return false
 
-  const steps = [...(spec.steps as string[])]
-  const substeps = [
-    ...(spec.substeps as Array<{ step: string; substeps: string[] }>),
-  ]
+  const steps = [...(spec.steps as Array<string | { id?: string; text: string }>)]
+  const substeps = [...(spec.substeps as FlowSubstepEntry[])]
   const orientation = (ctx.data.value as Record<string, unknown>)?.orientation ?? spec.orientation
+  const anchorNode = ctx.data.value?.nodes.find((n) => n.id === anchorNodeId)
+  const anchorIsStep = anchorNode != null && isFlowMapStepNode(anchorNode)
 
   if (payload.kind === 'step') {
-    if (anchorNodeId === 'flow-topic' || anchorNodeId.startsWith('flow-step-')) {
-      steps.push(payload.step)
-      substeps.push({ step: payload.step, substeps: [...payload.substeps] })
+    if (anchorNodeId === 'flow-topic' || anchorIsStep) {
+      steps.push({ text: payload.step })
+      substeps.push({
+        step: payload.step,
+        stepIndex: steps.length - 1,
+        substeps: [...payload.substeps],
+      })
     } else {
       return false
     }
   } else if (payload.kind === 'substep') {
-    let stepText = ''
-    if (anchorNodeId.startsWith('flow-step-')) {
-      const match = anchorNodeId.match(/flow-step-(\d+)/)
-      const idx = match ? parseInt(match[1], 10) : -1
-      stepText = idx >= 0 && idx < steps.length ? steps[idx] : ''
-    }
+    if (!anchorIsStep || !anchorNode) return false
+    const stepText = anchorNode.text
+    const stepIndex = readFlowStepIndex(anchorNode)
     if (!stepText) return false
-    const entry = substeps.find((row) => row.step === stepText)
+    const entry = findFlowSubstepEntry(
+      substeps,
+      stepText,
+      stepIndex >= 0 ? stepIndex : undefined,
+      anchorNode.id
+    )
     if (entry) {
       entry.substeps.push(payload.text)
     } else {
-      substeps.push({ step: stepText, substeps: [payload.text] })
+      substeps.push({
+        step: stepText,
+        stepId: anchorNode.id,
+        stepIndex: stepIndex >= 0 ? stepIndex : undefined,
+        substeps: [payload.text],
+      })
     }
   }
 

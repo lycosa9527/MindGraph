@@ -21,6 +21,7 @@ import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConc
 import { useDiagramTranslateUiStore } from '@/stores/diagramTranslateUi'
 import { useKittySessionStore } from '@/stores/kittySession'
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
+import { useOrgGenerationCacheNoticeStore } from '@/stores/orgGenerationCacheNotice'
 
 export function clearCanvasEphemeralSession(): void {
   useLLMResultsStore().reset()
@@ -33,6 +34,7 @@ export function clearCanvasEphemeralSession(): void {
   usePanelsStore().reset()
   useKittySessionStore().resetSessionUi()
   useCanvasNodeIndicatorsStore().clearAll()
+  useOrgGenerationCacheNoticeStore().hide()
   resetLearningSheetCustomModeUi()
   resetMindMapSideToolbarState()
   resetFormatBrushState()

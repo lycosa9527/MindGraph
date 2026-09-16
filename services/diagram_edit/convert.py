@@ -47,6 +47,9 @@ def legacy_command_to_diagram_edit(
             "node_index",
             "after_node_id",
             "insert_index",
+            "category",
+            "left",
+            "right",
         ):
             if key in legacy:
                 args[key] = legacy[key]

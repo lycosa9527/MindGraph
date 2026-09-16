@@ -15,6 +15,14 @@ import { bubbleMapChildrenRadius, polarToPosition } from '@/composables/diagrams
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import {
+  BUBBLE_MAP_UID_DATA_KEY,
+  BUBBLE_TOPIC_NODE_ID,
+  isBubbleMapAttributeNode,
+  readBubbleGroupIndex,
+  stampBubbleAttributeData,
+  takeBubbleMapStableId,
+} from '@/utils/bubbleMapIdentity'
 
 import {
   CONTEXT_FONT_SIZE,
@@ -90,13 +98,8 @@ export function recalculateBubbleMapLayout(
 
   const topicNode = nodes.find((n) => n.type === 'topic' || n.type === 'center')
   const bubbleNodes = nodes
-    .filter((n) => n.type === 'bubble' || n.type === 'child')
-    .sort((a, b) => {
-      const i = parseInt(a.id.replace(/^bubble-/, ''), 10)
-      const j = parseInt(b.id.replace(/^bubble-/, ''), 10)
-      if (Number.isNaN(i) || Number.isNaN(j)) return 0
-      return i - j
-    })
+    .filter((n) => isBubbleMapAttributeNode(n))
+    .sort((a, b) => readBubbleGroupIndex(a) - readBubbleGroupIndex(b))
   const nodeCount = bubbleNodes.length
   const topicText = topicNode?.text ?? ''
   const topicStyle = topicNode?.style
@@ -147,7 +150,10 @@ export function recalculateBubbleMapLayout(
     result.push({
       ...node,
       position: pos,
-      data: { ...node.data, groupIndex: index },
+      data: stampBubbleAttributeData(index, {
+        ...node.data,
+        [BUBBLE_MAP_UID_DATA_KEY]: node.id,
+      }),
       style: {
         ...node.style,
         size: uniformRadius * 2,
@@ -188,8 +194,10 @@ export function loadBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
 
+  const claimedIds = new Set<string>([BUBBLE_TOPIC_NODE_ID])
+
   nodes.push({
-    id: 'topic',
+    id: BUBBLE_TOPIC_NODE_ID,
     text: topic,
     type: 'topic',
     position: { x: Math.round(centerX - topicR), y: Math.round(centerY - topicR) },
@@ -212,12 +220,13 @@ export function loadBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
         uniformRadius
       )
       const color = getMindmapBranchColor(index)
+      const bubbleId = takeBubbleMapStableId(claimedIds)
       nodes.push({
-        id: `bubble-${index}`,
+        id: bubbleId,
         text: attr,
         type: 'bubble',
         position: { x: Math.round(x), y: Math.round(y) },
-        data: { groupIndex: index },
+        data: stampBubbleAttributeData(index, { [BUBBLE_MAP_UID_DATA_KEY]: bubbleId }),
         style: {
           size: uniformDiameter,
           fontSize: CONTEXT_FONT_SIZE,
@@ -228,9 +237,9 @@ export function loadBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
       })
 
       connections.push({
-        id: `edge-topic-bubble-${index}`,
-        source: 'topic',
-        target: `bubble-${index}`,
+        id: `edge-${BUBBLE_TOPIC_NODE_ID}-${bubbleId}`,
+        source: BUBBLE_TOPIC_NODE_ID,
+        target: bubbleId,
         style: { strokeColor: color.border },
       })
     })

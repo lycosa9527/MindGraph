@@ -22,6 +22,19 @@ import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { measureTextDimensions } from '@/stores/specLoader/textMeasurement'
 import type { Connection, DiagramNode } from '@/types'
 
+import {
+  TREE_MAP_UID_DATA_KEY,
+  TREE_TOPIC_NODE_ID,
+  isTreeMapCategoryNode,
+  isTreeMapLeafNode,
+  readTreeCategoryIndex,
+  readTreeLeafIndex,
+  readTreeParentCategoryId,
+  stampTreeCategoryData,
+  stampTreeLeafData,
+  takeTreeMapStableId,
+} from '@/utils/treeMapIdentity'
+
 import { measureTreeMapTopicDimensions, treeMapTopicPositionFromLayout } from './treeMapTopicLayout'
 import type { SpecLoaderResult } from './types'
 
@@ -56,7 +69,7 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   let root: TreeNode | undefined = spec.root as TreeNode | undefined
   if (!root && spec.topic !== undefined) {
     root = {
-      id: 'tree-topic',
+      id: TREE_TOPIC_NODE_ID,
       text: (spec.topic as string) || '',
       children: (spec.children as TreeNode[]) || [],
     }
@@ -66,8 +79,9 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   const alternativeDimensions = spec.alternative_dimensions as string[] | undefined
 
   if (root) {
-    const rootId = 'tree-topic'
+    const rootId = TREE_TOPIC_NODE_ID
     const categories = root.children || []
+    const claimedIds = new Set<string>([TREE_TOPIC_NODE_ID, 'dimension-label'])
 
     // Custom layout: center-aligned vertical groups with reduced spacing
     const topicY = DEFAULT_PADDING
@@ -137,7 +151,7 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
     let columnLeft = DEFAULT_CENTER_X - totalCategoriesWidth / 2
 
     categories.forEach((category, catIndex) => {
-      const categoryId = `tree-cat-${catIndex}`
+      const categoryId = takeTreeMapStableId(claimedIds, category.id)
       const dims = groupDimsList[catIndex]
       const groupCenterX = columnLeft + dims.maxWidth / 2
       const categoryX = groupCenterX - dims.categoryWidth / 2
@@ -149,7 +163,7 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
         type: 'branch',
         position: { x: categoryX, y: categoryY },
         style: { width: dims.categoryWidth },
-        data: { nodeType: 'branch', groupIndex: catIndex },
+        data: stampTreeCategoryData(catIndex, { [TREE_MAP_UID_DATA_KEY]: categoryId }),
       })
 
       connections.push({
@@ -166,7 +180,7 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
       let leafY = categoryY + dims.categoryHeight + TREE_MAP_CATEGORY_TO_LEAF_GAP
 
       leaves.forEach((leaf, leafIndex) => {
-        const leafId = `tree-leaf-${catIndex}-${leafIndex}`
+        const leafId = takeTreeMapStableId(claimedIds, leaf.id)
         const leafWidth = dims.leafWidths[leafIndex] ?? NODE_MIN_DIMENSIONS.branch.minWidth
         const leafHeight = dims.leafHeights[leafIndex] ?? NODE_MIN_DIMENSIONS.branch.minHeight
         const leafX = groupCenterX - leafWidth / 2
@@ -176,10 +190,12 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
           type: 'branch',
           position: { x: leafX, y: leafY },
           style: { width: leafWidth },
-          data: { nodeType: 'leaf', groupIndex: catIndex },
+          data: stampTreeLeafData(catIndex, leafIndex, categoryId, {
+            [TREE_MAP_UID_DATA_KEY]: leafId,
+          }),
         })
 
-        const sourceId = leafIndex === 0 ? categoryId : `tree-leaf-${catIndex}-${leafIndex - 1}`
+        const sourceId = leafIndex === 0 ? categoryId : nodes[nodes.length - 2].id
         connections.push({
           id: `edge-${sourceId}-${leafId}`,
           source: sourceId,
@@ -255,7 +271,7 @@ export function recalculateTreeMapLayout(
     return nodes
   }
 
-  const topicIdx = nodes.findIndex((n) => n.id === 'tree-topic' && n.type === 'topic')
+  const topicIdx = nodes.findIndex((n) => n.id === TREE_TOPIC_NODE_ID && n.type === 'topic')
   if (topicIdx === -1) {
     return nodes
   }
@@ -263,27 +279,23 @@ export function recalculateTreeMapLayout(
   const topicNode = nodes[topicIdx]
   const topicText = topicNode.text ?? ''
 
-  const topicDims = resolveTreeMapBox('tree-topic', nodeDimensions, () =>
+  const topicDims = resolveTreeMapBox(TREE_TOPIC_NODE_ID, nodeDimensions, () =>
     measureTreeMapTopicDimensions(topicText, topicNode.style)
   )
 
   const topicY = topicNode.position?.y ?? DEFAULT_PADDING
   const topicPos = treeMapTopicPositionFromLayout(topicDims.width, topicY)
 
-  const catIds = nodes
-    .map((n) => n.id)
-    .filter((id): id is string => !!id && /^tree-cat-\d+$/.test(id))
-    .sort((a, b) => {
-      const ia = parseInt(a.replace('tree-cat-', ''), 10)
-      const ib = parseInt(b.replace('tree-cat-', ''), 10)
-      return ia - ib
-    })
+  const categoryNodes = nodes
+    .filter((n) => isTreeMapCategoryNode(n))
+    .sort((a, b) => readTreeCategoryIndex(a) - readTreeCategoryIndex(b))
+  const catIds = categoryNodes.map((n) => n.id)
 
   const groupDimsList: TreeMapGroupDims[] = []
 
   catIds.forEach((catId) => {
-    const catIndex = parseInt(catId.replace('tree-cat-', ''), 10)
     const catNode = nodes.find((n) => n.id === catId)
+    const catIndex = catNode ? readTreeCategoryIndex(catNode) : -1
     const catText = catNode?.text ?? ''
 
     const catBox = resolveTreeMapBox(catId, nodeDimensions, () => {
@@ -308,15 +320,12 @@ export function recalculateTreeMapLayout(
 
     const leafNodes = nodes
       .filter((n) => {
-        const id = n.id ?? ''
-        const m = id.match(new RegExp(`^tree-leaf-${catIndex}-(\\d+)$`))
-        return Boolean(m)
+        if (!isTreeMapLeafNode(n)) return false
+        const parentId = readTreeParentCategoryId(n)
+        if (parentId) return parentId === catId
+        return readTreeCategoryIndex(n) === catIndex
       })
-      .sort((a, b) => {
-        const ma = a.id?.match(/^tree-leaf-\d+-(\d+)$/)
-        const mb = b.id?.match(/^tree-leaf-\d+-(\d+)$/)
-        return parseInt(ma?.[1] ?? '0', 10) - parseInt(mb?.[1] ?? '0', 10)
-      })
+      .sort((a, b) => readTreeLeafIndex(a) - readTreeLeafIndex(b))
 
     const leafWidths: number[] = []
     const leafHeights: number[] = []
@@ -363,9 +372,9 @@ export function recalculateTreeMapLayout(
     }
   }
 
-  const topicMerged = byId.get('tree-topic')
+  const topicMerged = byId.get(TREE_TOPIC_NODE_ID)
   if (topicMerged) {
-    byId.set('tree-topic', {
+    byId.set(TREE_TOPIC_NODE_ID, {
       ...topicMerged,
       position: topicPos,
       style: {
@@ -396,19 +405,15 @@ export function recalculateTreeMapLayout(
       })
     }
 
+    const catIndexForLeaves = catNode ? readTreeCategoryIndex(catNode) : -1
     const leafNodes = nodes
       .filter((n) => {
-        const id = n.id ?? ''
-        const m = id.match(
-          new RegExp(`^tree-leaf-${parseInt(catId.replace('tree-cat-', ''), 10)}-(\\d+)$`)
-        )
-        return Boolean(m)
+        if (!isTreeMapLeafNode(n)) return false
+        const parentId = readTreeParentCategoryId(n)
+        if (parentId) return parentId === catId
+        return readTreeCategoryIndex(n) === catIndexForLeaves
       })
-      .sort((a, b) => {
-        const ma = a.id?.match(/^tree-leaf-\d+-(\d+)$/)
-        const mb = b.id?.match(/^tree-leaf-\d+-(\d+)$/)
-        return parseInt(ma?.[1] ?? '0', 10) - parseInt(mb?.[1] ?? '0', 10)
-      })
+      .sort((a, b) => readTreeLeafIndex(a) - readTreeLeafIndex(b))
 
     let leafY = categoryY + dims.categoryHeight + TREE_MAP_CATEGORY_TO_LEAF_GAP
 

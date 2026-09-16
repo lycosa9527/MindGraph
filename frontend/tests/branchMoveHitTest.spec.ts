@@ -23,8 +23,13 @@ describe('isHierarchicalDropCandidate', () => {
     expect(isHierarchicalDropCandidate('mindmap', uuid, 'topic', [])).toBe(false)
   })
 
-  it('keeps tree-map prefix matching', () => {
+  it('accepts leftover tree slot ids as hints and live UUID categories', () => {
     expect(isHierarchicalDropCandidate('tree_map', 'tree-cat-0', 'tree-topic')).toBe(true)
+    expect(
+      isHierarchicalDropCandidate('tree_map', uuid, 'tree-topic', [
+        { id: uuid, type: 'branch', data: { nodeType: 'branch' } },
+      ])
+    ).toBe(true)
     expect(isHierarchicalDropCandidate('tree_map', uuid, 'tree-topic', nodes)).toBe(false)
   })
 })

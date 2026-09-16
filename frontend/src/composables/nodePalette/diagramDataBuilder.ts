@@ -3,10 +3,17 @@
  */
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
 import { stripConceptMapFocusQuestionPrefix } from '@/stores/diagram/diagramDefaultLabels'
-import type { Connection, DiagramType } from '@/types'
-import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
-
 import { isLearningSheetBlankDisplayText } from '@/stores/specLoader/utils'
+import type { Connection, DiagramType } from '@/types'
+import { isBraceMapWholeNode } from '@/utils/braceMapIdentity'
+import {
+  isBridgeMapPairNode,
+  readBridgePairIndex,
+  readBridgePairSide,
+} from '@/utils/bridgeMapIdentity'
+import { isBubbleMapAttributeNode } from '@/utils/bubbleMapIdentity'
+import { isCircleMapContextNode } from '@/utils/circleMapIdentity'
+import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 
 /** Optional context for concept_map (focus question + root concept for palette prompts) */
 export type BuildDiagramDataOptions = {
@@ -37,9 +44,7 @@ export function buildDiagramData(
 
   switch (dt) {
     case 'circle_map': {
-      const contextNodes = nodes.filter(
-        (n) => (n.type === 'bubble' || n.type === 'context') && n.id.startsWith('context-')
-      )
+      const contextNodes = nodes.filter((n) => isCircleMapContextNode(n))
       return {
         topic: topicText,
         center: { text: topicText },
@@ -47,7 +52,7 @@ export function buildDiagramData(
       }
     }
     case 'bubble_map': {
-      const attrNodes = nodes.filter((n) => n.type === 'bubble' || n.type === 'attribute')
+      const attrNodes = nodes.filter((n) => isBubbleMapAttributeNode(n))
       return {
         topic: topicText,
         center: { text: topicText },
@@ -75,10 +80,7 @@ export function buildDiagramData(
       }
     }
     case 'brace_map': {
-      const wholeNode = nodes.find(
-        (n) =>
-          n.id === 'brace-whole' || n.id === 'brace-0-0' || n.id === 'whole' || n.type === 'whole'
-      )
+      const wholeNode = nodes.find((n) => isBraceMapWholeNode(n))
       const dimNode = nodes.find((n) => n.id === 'dimension-label')
       return {
         whole: wholeNode?.text ?? topicText,
@@ -91,13 +93,24 @@ export function buildDiagramData(
       )
       const pairIndices = new Set(
         nodes
-          .filter((n) => /^pair-\d+-left$/.test(n.id ?? ''))
-          .map((n) => parseInt((n.id ?? '').replace('pair-', '').replace('-left', ''), 10))
+          .filter((n) => isBridgeMapPairNode(n))
+          .map((n) => readBridgePairIndex(n))
+          .filter((i) => i >= 0)
       )
       const analogies: Array<{ left: string; right: string }> = []
       for (const idx of [...pairIndices].sort((a, b) => a - b)) {
-        const leftNode = nodes.find((n) => n.id === `pair-${idx}-left`)
-        const rightNode = nodes.find((n) => n.id === `pair-${idx}-right`)
+        const leftNode = nodes.find(
+          (n) =>
+            isBridgeMapPairNode(n) &&
+            readBridgePairIndex(n) === idx &&
+            readBridgePairSide(n) === 'left'
+        )
+        const rightNode = nodes.find(
+          (n) =>
+            isBridgeMapPairNode(n) &&
+            readBridgePairIndex(n) === idx &&
+            readBridgePairSide(n) === 'right'
+        )
         const left = (leftNode?.text ?? '').trim()
         const right = (rightNode?.text ?? '').trim()
         if (

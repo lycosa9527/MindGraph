@@ -12,6 +12,8 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 from services.diagram.mindmap_identity import migrate_mindmap_diagram_payload
+from services.diagram.thinking_map_identity import migrate_thinking_map_diagram_payload
+from services.diagram.thinking_map_patterns import is_thinking_map_diagram_type
 from services.infrastructure.monitoring.ws_metrics import record_kitty_hydrate_cache_miss
 from services.kitty.infra.bootstrap.kitty_native_spec import native_spec_to_pseudo_nodes
 from services.kitty.infra.desktop.kitty_canvas_owner_presence import (
@@ -26,6 +28,15 @@ from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_se
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 
 logger = logging.getLogger(__name__)
+
+
+def _migrate_identity_payload(payload: Dict[str, Any], diagram_type: str) -> None:
+    """Migrate leftover slot ids on a live diagram payload."""
+    if diagram_type in {"mindmap", "mind_map"}:
+        migrate_mindmap_diagram_payload(payload)
+        return
+    if is_thinking_map_diagram_type(diagram_type):
+        migrate_thinking_map_diagram_payload(payload, diagram_type)
 
 
 async def _bootstrap_from_library_scope(
@@ -86,24 +97,58 @@ def _live_node_position(node: Dict[str, Any]) -> Optional[Dict[str, float]]:
     return {"x": float(x_val), "y": float(y_val)}
 
 
-def _mindmap_uid_data_for_live(node: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+_IDENTITY_DATA_KEYS = (
+    "mindMapUid",
+    "mindMapSide",
+    "mindMapDepth",
+    "mindMapLegacyId",
+    "circleMapUid",
+    "circleMapLegacyId",
+    "bubbleMapUid",
+    "bubbleMapLegacyId",
+    "doubleBubbleMapUid",
+    "doubleBubbleMapLegacyId",
+    "doubleBubbleRole",
+    "treeMapUid",
+    "treeMapLegacyId",
+    "categoryIndex",
+    "leafIndex",
+    "parentCategoryId",
+    "nodeType",
+    "braceMapUid",
+    "braceMapLegacyId",
+    "flowMapUid",
+    "flowMapLegacyId",
+    "stepIndex",
+    "substepIndex",
+    "parentStepId",
+    "multiFlowMapUid",
+    "multiFlowMapLegacyId",
+    "multiFlowRole",
+    "bridgeMapUid",
+    "bridgeMapLegacyId",
+    "groupIndex",
+    "pairIndex",
+    "position",
+)
+
+
+def _identity_data_for_live(node: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """Keep identity + stamped location through library→live hydrate."""
     data = node.get("data")
     if not isinstance(data, dict):
         return None
     out: Dict[str, Any] = {}
-    uid = data.get("mindMapUid")
-    if isinstance(uid, str) and uid.strip():
-        out["mindMapUid"] = uid.strip()
-    side = data.get("mindMapSide")
-    if side in ("left", "right"):
-        out["mindMapSide"] = side
-    depth = data.get("mindMapDepth")
-    if isinstance(depth, int) and depth >= 1:
-        out["mindMapDepth"] = depth
-    legacy = data.get("mindMapLegacyId")
-    if isinstance(legacy, str) and legacy.strip():
-        out["mindMapLegacyId"] = legacy.strip()
+    for key in _IDENTITY_DATA_KEYS:
+        value = data.get(key)
+        if isinstance(value, str) and value.strip():
+            out[key] = value.strip()
+        elif isinstance(value, int) and not isinstance(value, bool):
+            out[key] = value
+        elif key == "position" and value in ("left", "right"):
+            out[key] = value
+        elif key in {"doubleBubbleRole", "multiFlowRole", "nodeType"} and isinstance(value, str):
+            out[key] = value
     return out or None
 
 
@@ -154,7 +199,7 @@ def diagram_data_from_saved_spec(spec: Dict[str, Any], diagram_type: str) -> Dic
         text = _node_display_text(n)
         children.append({"id": nid, "index": len(children), "text": text})
         vue_node: Dict[str, Any] = {"id": nid, "text": text, "type": n.get("type")}
-        uid_data = _mindmap_uid_data_for_live(n)
+        uid_data = _identity_data_for_live(n)
         if uid_data is not None:
             vue_node["data"] = uid_data
         position = _live_node_position(n)
@@ -181,8 +226,7 @@ def diagram_data_from_saved_spec(spec: Dict[str, Any], diagram_type: str) -> Dic
     elif isinstance(spec.get("center"), dict):
         diagram_data["center"] = spec["center"]
     _attach_mindmap_live_spec_extras(diagram_data, spec, diagram_type)
-    if diagram_type in ("mindmap", "mind_map"):
-        migrate_mindmap_diagram_payload(diagram_data)
+    _migrate_identity_payload(diagram_data, diagram_type)
     return diagram_data
 
 
@@ -319,8 +363,7 @@ async def try_build_context_from_live_spec(
         return None
 
     diagram_type = str(live.get("diagram_type") or diagram_data.get("diagram_type") or "circle_map")
-    if diagram_type in {"mindmap", "mind_map"}:
-        migrate_mindmap_diagram_payload(diagram_data)
+    _migrate_identity_payload(diagram_data, diagram_type)
     active_panel = str(live.get("active_panel") or "none")
     lib_raw = live.get("diagram_library_id")
     library_id = lib_raw if isinstance(lib_raw, str) and lib_raw.strip() else scope

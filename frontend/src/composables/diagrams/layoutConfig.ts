@@ -81,7 +81,7 @@ export const BRACE_NODE_HEIGHT = 40
  * Flow Map Layout Constants
  * These are DEFAULT values for initial positioning.
  * Actual layout uses runtime measurement after nodes are rendered.
- * See useFlowMapLayout.ts for dynamic layout calculation.
+ * Actual layout uses runtime measurement after nodes are rendered.
  */
 
 /** Default FlowNode height (used for initial layout, actual height measured at runtime) */

@@ -63,6 +63,10 @@ class GenerateResponse(BaseModel):
         None,
         description="Multiple relationship label options (3–5) for concept map picker",
     )
+    cached: Optional[bool] = Field(
+        False,
+        description="True when this spec was served from the organization result cache",
+    )
 
     model_config = ConfigDict(
         json_schema_extra={

@@ -54,6 +54,7 @@ import CanvasCollabOverlay from '@/components/canvas/CanvasCollabOverlay.vue'
 import CanvasTranslateProgressBanner from '@/components/canvas/CanvasTranslateProgressBanner.vue'
 import LearningSheetExportNudge from '@/components/canvas/LearningSheetExportNudge.vue'
 import LearningSheetFloatBar from '@/components/canvas/LearningSheetFloatBar.vue'
+import CanvasCachedResultNotice from '@/components/canvas/CanvasCachedResultNotice.vue'
 import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
 import KittyCanvasAnchor from '@/components/kitty/KittyCanvasAnchor.vue'
 import { MindmatePanel, NodePalettePanel, RootConceptModal } from '@/components/panels'
@@ -1703,6 +1704,7 @@ onUnmounted(() => {
         :class="{ 'mc-dual-lecture': mindClassroomSlideDeck }"
       >
         <div class="mc-dual-lecture__canvas flex-1 min-w-0 flex flex-col relative min-h-0">
+          <CanvasCachedResultNotice />
           <DiagramCanvasHost
             v-if="diagramStore.data"
             v-model:presentation-highlight-strokes="presentationHighlightStrokes"

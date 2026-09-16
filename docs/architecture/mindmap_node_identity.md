@@ -55,5 +55,8 @@ persisted classroom / Zhihui `focus_node_ids`.
 Delete and update postconditions target `node.id`. Update proves **this id’s**
 text changed. Recycled `branch-*` addresses are never used as a verify key.
 
+Thinking Maps use the same resolve order
+([`thinking_map_node_identity.md`](thinking_map_node_identity.md)).
+
 This is a different layer from account identity
 ([`identity_unification.md`](identity_unification.md)).

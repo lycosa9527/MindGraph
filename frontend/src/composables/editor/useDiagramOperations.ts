@@ -227,35 +227,104 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
     return String(i18n.global.t(key))
   }
 
+  function slotHintFromLeftover(nodeId: string): string {
+    const hyphen: Array<[RegExp, string]> = [
+      [/^context-(\d+)$/, 'context'],
+      [/^bubble-(\d+)$/, 'attribute'],
+      [/^similarity-(\d+)$/, 'similarity'],
+      [/^left-diff-(\d+)$/, 'left_difference'],
+      [/^right-diff-(\d+)$/, 'right_difference'],
+      [/^tree-cat-(\d+)$/, 'category'],
+      [/^tree-leaf-(\d+)-(\d+)$/, 'item'],
+      [/^brace-part-(\d+)$/, 'part'],
+      [/^flow-step-(\d+)$/, 'step'],
+      [/^cause-(\d+)$/, 'cause'],
+      [/^effect-(\d+)$/, 'effect'],
+      [/^pair-(\d+)-left$/, 'pair'],
+    ]
+    for (const [pattern, slot] of hyphen) {
+      const match = pattern.exec(nodeId)
+      if (match) return `${slot}_${match[1]}`
+    }
+    return nodeId
+  }
+
+  function findBySlotPattern(
+    spec: DiagramSpec,
+    nodeId: string
+  ): { type: string; index?: number; field?: string } | null {
+    if (!config.value) return null
+    const hint = slotHintFromLeftover(nodeId)
+    for (const protectedType of config.value.protectedNodes) {
+      if (hint === protectedType || hint.startsWith(`${protectedType}_`)) {
+        return { type: protectedType }
+      }
+    }
+    for (const [nodeType, field] of Object.entries(config.value.arrayFields)) {
+      const arr = (spec as Record<string, unknown>)[field]
+      if (!Array.isArray(arr)) continue
+      const match = hint.match(new RegExp(`^${nodeType}_(\\d+)$`))
+      if (!match) continue
+      const index = parseInt(match[1], 10)
+      if (index < arr.length) {
+        return { type: nodeType, index, field }
+      }
+    }
+    return null
+  }
+
+  function findByUniqueSpecText(
+    spec: DiagramSpec,
+    text: string
+  ): { type: string; index?: number; field?: string } | null {
+    if (!config.value) return null
+    const hits: Array<{ type: string; index: number; field: string }> = []
+    for (const [nodeType, field] of Object.entries(config.value.arrayFields)) {
+      const arr = (spec as Record<string, unknown>)[field]
+      if (!Array.isArray(arr)) continue
+      arr.forEach((item, index) => {
+        const itemText =
+          typeof item === 'string'
+            ? item.trim()
+            : item && typeof item === 'object' && 'text' in item
+              ? String((item as { text?: unknown }).text ?? '').trim()
+              : ''
+        if (itemText === text) {
+          hits.push({ type: nodeType, index, field })
+        }
+      })
+    }
+    return hits.length === 1 ? hits[0] : null
+  }
+
+  function readLegacySlotId(node: { data?: Record<string, unknown> }): string | null {
+    const data = node.data
+    if (!data) return null
+    for (const [key, value] of Object.entries(data)) {
+      if (key.endsWith('LegacyId') && typeof value === 'string' && value.trim()) {
+        return value.trim()
+      }
+    }
+    return null
+  }
+
   function findNodeInSpec(
     spec: DiagramSpec,
     nodeId: string
   ): { type: string; index?: number; field?: string } | null {
     if (!config.value || !spec) return null
-
-    // Check main/protected nodes first
-    for (const protectedType of config.value.protectedNodes) {
-      if (nodeId === protectedType || nodeId.startsWith(`${protectedType}_`)) {
-        return { type: protectedType }
-      }
+    const bySlot = findBySlotPattern(spec, nodeId)
+    if (bySlot) return bySlot
+    const store = useDiagramStore()
+    const live = store.data?.nodes?.find((node) => node.id === nodeId)
+    if (!live) return null
+    const legacy = readLegacySlotId(live)
+    if (legacy) {
+      const viaLegacy = findBySlotPattern(spec, legacy)
+      if (viaLegacy) return viaLegacy
     }
-
-    // Check array fields
-    for (const [nodeType, field] of Object.entries(config.value.arrayFields)) {
-      const arr = (spec as Record<string, unknown>)[field]
-      if (Array.isArray(arr)) {
-        // Match by pattern: nodeType_index (e.g., context_0, attribute_1)
-        const match = nodeId.match(new RegExp(`^${nodeType}_(\\d+)$`))
-        if (match) {
-          const index = parseInt(match[1], 10)
-          if (index < arr.length) {
-            return { type: nodeType, index, field }
-          }
-        }
-      }
-    }
-
-    return null
+    const text = (live.text ?? '').trim()
+    return text ? findByUniqueSpecText(spec, text) : null
   }
 
   // =========================================================================

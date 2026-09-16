@@ -380,6 +380,7 @@ export default {
   'canvas.presentationTimer.exitTimer': 'Çıx',
   'canvas.presentationTimer.startPresenting': 'Təqdimata başla',
   'canvas.presentationTimer.closeHud': 'Taymeri bağla',
+  'canvas.cachedResult.notice': 'Cached result. Use the function again for a fresh result.',
   'canvas.presentation.learningSheetConfirmTitle': 'Təqdimata başlayaq?',
   'canvas.presentation.learningSheetConfirmBody': 'Hələ öyrənmə vərəqini redaktə edirsiniz. Təqdimata başlamaq boşluq redaktəsini bitirəcək; mövcud boşluqlar saxlanılacaq. Davam edək?',
   'canvas.presentation.learningSheetConfirmProceed': 'Təqdimata başla',

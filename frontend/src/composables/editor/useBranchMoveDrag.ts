@@ -33,9 +33,25 @@ import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { ANIMATION } from '@/config/uiConfig'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { MindGraphNode } from '@/types'
+import { isBraceMapPartNode, isBraceMapReservedId } from '@/utils/braceMapIdentity'
+import { isBridgeMapPairNode } from '@/utils/bridgeMapIdentity'
+import { isBubbleMapAttributeNode } from '@/utils/bubbleMapIdentity'
+import { isCircleMapContextNode } from '@/utils/circleMapIdentity'
+import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
+import {
+  isFlowMapStepNode,
+  isFlowMapSubstepNode,
+  isLeftoverFlowMapId,
+} from '@/utils/flowMapIdentity'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { isMindMapBranchId, isPositionalMindMapBranchId } from '@/utils/mindMapLocation'
+import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
 import { nodeShapeBorderRadius } from '@/utils/nodeShapeStyle'
+import {
+  isLeftoverTreeMapId,
+  isTreeMapCategoryNode,
+  isTreeMapLeafNode,
+} from '@/utils/treeMapIdentity'
 
 const DEFAULT_NODE_WIDTH = 120
 const DEFAULT_NODE_HEIGHT = 50
@@ -44,12 +60,14 @@ const TOUCH_LONG_PRESS_MOVE_THRESHOLD_SQ = 28 * 28
 /** Start branch drag after this movement (px) — mouse only; no need to wait for long-press. */
 const DRAG_START_THRESHOLD_SQ = 8 * 8
 
-/** Tree map: categories (tree-cat-X) are top-level. */
-function isTopLevelTreeMapNode(nodeId: string): boolean {
-  return /^tree-cat-\d+$/.test(nodeId)
+/** Tree map: categories are top-level drop targets. */
+function isTopLevelTreeMapNode(
+  nodeId: string,
+  nodes?: readonly { id?: string; type?: string; data?: Record<string, unknown> }[] | null
+): boolean {
+  const node = nodes?.find((n) => n.id === nodeId)
+  return Boolean(node && isTreeMapCategoryNode(node))
 }
-
-const TREE_MAP_DROP_NODE_ID_RE = /^tree-(cat|leaf)-/
 
 /**
  * Hierarchical drop targets after identity migrate: live mind-map branches
@@ -59,10 +77,14 @@ export function isHierarchicalDropCandidate(
   diagramType: string,
   nodeId: string,
   topicId: string,
-  nodes?: readonly { id?: string; type?: string }[] | null
+  nodes?: readonly { id?: string; type?: string; data?: Record<string, unknown> }[] | null
 ): boolean {
   if (!nodeId || nodeId === topicId) return false
-  if (diagramType === 'tree_map') return TREE_MAP_DROP_NODE_ID_RE.test(nodeId)
+  if (diagramType === 'tree_map') {
+    const node = nodes?.find((n) => n.id === nodeId)
+    if (node) return isTreeMapCategoryNode(node) || isTreeMapLeafNode(node)
+    return isLeftoverTreeMapId(nodeId)
+  }
   if (diagramType === 'mindmap' || diagramType === 'mind_map') {
     return isMindMapBranchId(nodeId, nodes)
   }
@@ -76,35 +98,46 @@ export function isHierarchicalDropCandidate(
 function getSwapGroup(
   diagramType: string,
   nodeId: string,
-  nodes?: { id?: string; type?: string }[]
+  nodes?: { id?: string; type?: string; data?: Record<string, unknown> }[]
 ): string | null {
+  const node = nodes?.find((n) => n.id === nodeId)
   switch (diagramType) {
     case 'mindmap':
     case 'mind_map':
       return isMindMapBranchId(nodeId, nodes) ? 'branch' : null
     case 'tree_map':
-      if (nodeId.startsWith('tree-cat-') || nodeId.startsWith('tree-leaf-')) return 'tree-node'
+      if (node && (isTreeMapCategoryNode(node) || isTreeMapLeafNode(node))) return 'tree-node'
       return null
     case 'bubble_map':
-      return nodeId.startsWith('bubble-') ? 'bubble' : null
+      return node && isBubbleMapAttributeNode(node) ? 'bubble' : null
     case 'circle_map':
-      return nodeId.startsWith('context-') ? 'context' : null
-    case 'double_bubble_map':
-      if (nodeId.startsWith('similarity-')) return 'similarity'
-      if (nodeId.startsWith('left-diff-') || nodeId.startsWith('right-diff-')) return 'diff'
+      return node && isCircleMapContextNode(node) ? 'context' : null
+    case 'double_bubble_map': {
+      const role = node ? readDoubleBubbleRole(node) : null
+      if (role === 'similarity') return 'similarity'
+      if (role === 'leftDiff' || role === 'rightDiff') return 'diff'
       return null
-    case 'flow_map':
-      if (nodeId.startsWith('flow-step-') || nodeId.startsWith('flow-substep-')) return 'flow-node'
-      return null
+    }
+    case 'flow_map': {
+      if (node && (isFlowMapStepNode(node) || isFlowMapSubstepNode(node))) return 'flow-node'
+      return isLeftoverFlowMapId(nodeId) ? 'flow-node' : null
+    }
     case 'multi_flow_map':
-      if (nodeId.startsWith('cause-')) return 'cause'
-      if (nodeId.startsWith('effect-')) return 'effect'
+      if (node && isMultiFlowCauseNode(node)) return 'cause'
+      if (node && isMultiFlowEffectNode(node)) return 'effect'
       return null
     case 'brace_map':
-      if (nodeId.startsWith('label-') || nodeId.startsWith('dimension-')) return null
-      return 'brace'
+      if (
+        isBraceMapReservedId(nodeId) ||
+        nodeId.startsWith('label-') ||
+        nodeId.startsWith('dimension-')
+      ) {
+        return null
+      }
+      if (node && isBraceMapPartNode(node)) return 'brace'
+      return node ? 'brace' : null
     case 'bridge_map':
-      return nodeId.startsWith('pair-') ? 'pair' : null
+      return node && isBridgeMapPairNode(node) ? 'pair' : null
     default:
       return null
   }
@@ -492,9 +525,9 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
         diagramStore.moveTreeMapBranch(nodeId, 'topic', target.nodeId)
       } else if (target.type === 'before' || target.type === 'after') {
         diagramStore.moveTreeMapBranch(nodeId, 'sibling', target.nodeId)
-      } else if (isTopLevelTreeMapNode(nodeId)) {
+      } else if (isTopLevelTreeMapNode(nodeId, diagramStore.data?.nodes)) {
         diagramStore.moveTreeMapBranch(nodeId, 'sibling', target.nodeId)
-      } else if (isTopLevelTreeMapNode(target.nodeId)) {
+      } else if (isTopLevelTreeMapNode(target.nodeId, diagramStore.data?.nodes)) {
         diagramStore.moveTreeMapBranch(nodeId, 'child', target.nodeId)
       } else {
         diagramStore.moveTreeMapBranch(nodeId, 'sibling', target.nodeId)

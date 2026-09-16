@@ -22,6 +22,7 @@ from services.diagram.mindmap_location import (
     parse_positional_mindmap_branch_id,
     read_mindmap_uid,
 )
+from services.diagram.thinking_map_patterns import is_any_thinking_map_leftover_id
 
 CANVAS_UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
@@ -230,7 +231,11 @@ def is_machine_node_id(node_id: str | None) -> bool:
     text = node_id.strip()
     if not text:
         return False
-    return bool(CANVAS_UUID_RE.fullmatch(text)) or is_leftover_mindmap_branch_id(text)
+    return (
+        bool(CANVAS_UUID_RE.fullmatch(text))
+        or is_leftover_mindmap_branch_id(text)
+        or is_any_thinking_map_leftover_id(text)
+    )
 
 
 def identity_aliases(nodes: list[dict[str, Any]]) -> dict[str, str]:

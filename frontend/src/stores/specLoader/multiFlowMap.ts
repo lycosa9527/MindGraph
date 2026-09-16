@@ -15,6 +15,15 @@ import {
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import {
+  MULTI_FLOW_EVENT_NODE_ID,
+  MULTI_FLOW_UID_DATA_KEY,
+  isMultiFlowCauseNode,
+  isMultiFlowEffectNode,
+  readMultiFlowIndex,
+  stampMultiFlowData,
+  takeMultiFlowMapStableId,
+} from '@/utils/multiFlowMapIdentity'
 
 import {
   diagramLabelLikelyNeedsRenderedMeasure,
@@ -56,14 +65,14 @@ function computeFlowNodeWidth(node: DiagramNode): number {
 
 /**
  * Recalculate multi-flow map layout from existing nodes
- * Called when nodes are added/deleted to update positions and re-index IDs
- * Preserves node text content
+ * Called when nodes are added/deleted to update positions.
+ * Keeps live node ids; restamps cause/effect index only.
  *
  * @param nodes - Current diagram nodes
  * @param topicNodeWidth - Optional actual width of topic node (for dynamic width adjustment)
  * @param _nodeWidths - Unused, kept for call-site compatibility
  * @param nodeDimensions - DOM-measured node dimensions (height used for vertical stacking)
- * @returns Recalculated nodes with updated positions and sequential IDs
+ * @returns Recalculated nodes with updated positions
  */
 export function recalculateMultiFlowMapLayout(
   nodes: DiagramNode[],
@@ -76,25 +85,15 @@ export function recalculateMultiFlowMapLayout(
   }
 
   // Extract event, causes, and effects from current nodes
-  const eventNode = nodes.find((n) => n.id === 'event' || n.type === 'topic')
+  const eventNode = nodes.find((n) => n.id === MULTI_FLOW_EVENT_NODE_ID || n.type === 'topic')
   const causeNodes = nodes
-    .filter((n) => n.id?.startsWith('cause-'))
-    .sort((a, b) => {
-      const aIndex = parseInt(a.id?.replace('cause-', '') || '0', 10)
-      const bIndex = parseInt(b.id?.replace('cause-', '') || '0', 10)
-      return aIndex - bIndex
-    })
+    .filter((n) => isMultiFlowCauseNode(n))
+    .sort((a, b) => readMultiFlowIndex(a) - readMultiFlowIndex(b))
   const effectNodes = nodes
-    .filter((n) => n.id?.startsWith('effect-'))
-    .sort((a, b) => {
-      const aIndex = parseInt(a.id?.replace('effect-', '') || '0', 10)
-      const bIndex = parseInt(b.id?.replace('effect-', '') || '0', 10)
-      return aIndex - bIndex
-    })
+    .filter((n) => isMultiFlowEffectNode(n))
+    .sort((a, b) => readMultiFlowIndex(a) - readMultiFlowIndex(b))
 
   const event = eventNode?.text || ''
-  const causes = causeNodes.map((n) => n.text)
-  const effects = effectNodes.map((n) => n.text)
 
   // Layout constants
   const centerX = DEFAULT_CENTER_X
@@ -153,8 +152,8 @@ export function recalculateMultiFlowMapLayout(
     })
   }
 
-  const causeIds = causes.map((_, i) => `cause-${i}`)
-  const effectIds = effects.map((_, i) => `effect-${i}`)
+  const causeIds = causeNodes.map((node) => node.id)
+  const effectIds = effectNodes.map((node) => node.id)
   const causeYPositions = stackColumnYPositions(causeIds)
   const effectYPositions = stackColumnYPositions(effectIds)
 
@@ -163,14 +162,14 @@ export function recalculateMultiFlowMapLayout(
   // Event node - preserve style from original
   const eventStyle = eventNode?.style ? { ...eventNode.style } : undefined
   result.push({
-    id: 'event',
+    id: MULTI_FLOW_EVENT_NODE_ID,
     text: event,
     type: 'topic',
-    position: { x: topicLeftEdge, y: centerY - getH('event') / 2 },
+    position: { x: topicLeftEdge, y: centerY - getH(MULTI_FLOW_EVENT_NODE_ID) / 2 },
     ...(eventStyle && { style: eventStyle }),
   })
 
-  // Causes - re-index with sequential IDs (cause-0, cause-1, etc.)
+  // Causes — keep ids; restamp column index for color / stack order.
   causeNodes.forEach((node, index) => {
     const color = getMindmapBranchColor(index)
     const causeStyle = {
@@ -181,19 +180,23 @@ export function recalculateMultiFlowMapLayout(
       borderColor: color.border,
     }
     result.push({
-      id: `cause-${index}`,
+      ...node,
+      id: node.id,
       text: node.text,
       type: 'flow',
       position: {
         x: topicLeftEdge - arrowSpacing - uniformColumnWidth,
         y: causeYPositions[index],
       },
-      data: { ...node.data, groupIndex: index },
+      data: stampMultiFlowData('cause', index, {
+        ...node.data,
+        [MULTI_FLOW_UID_DATA_KEY]: node.id,
+      }),
       style: causeStyle,
     })
   })
 
-  // Effects - re-index with sequential IDs (effect-0, effect-1, etc.)
+  // Effects — keep ids; restamp column index for color / stack order.
   effectNodes.forEach((node, index) => {
     const color = getMindmapBranchColor(index)
     const effectStyle = {
@@ -204,14 +207,18 @@ export function recalculateMultiFlowMapLayout(
       borderColor: color.border,
     }
     result.push({
-      id: `effect-${index}`,
+      ...node,
+      id: node.id,
       text: node.text,
       type: 'flow',
       position: {
         x: topicRightEdge + arrowSpacing,
         y: effectYPositions[index],
       },
-      data: { ...node.data, groupIndex: index },
+      data: stampMultiFlowData('effect', index, {
+        ...node.data,
+        [MULTI_FLOW_UID_DATA_KEY]: node.id,
+      }),
       style: effectStyle,
     })
   })
@@ -243,8 +250,10 @@ export function loadMultiFlowMapSpec(spec: Record<string, unknown>): SpecLoaderR
   const connections: Connection[] = []
 
   // Event node - use multi-flow map specific width
+  const claimedIds = new Set<string>([MULTI_FLOW_EVENT_NODE_ID])
+
   nodes.push({
-    id: 'event',
+    id: MULTI_FLOW_EVENT_NODE_ID,
     text: event,
     type: 'topic',
     position: { x: centerX - topicWidth / 2, y: centerY - nodeHeight / 2 },
@@ -254,24 +263,25 @@ export function loadMultiFlowMapSpec(spec: Record<string, unknown>): SpecLoaderR
   const causeStartY = centerY - ((causes.length - 1) * verticalSpacing) / 2
   causes.forEach((cause, index) => {
     const color = getMindmapBranchColor(index)
+    const causeId = takeMultiFlowMapStableId(claimedIds)
     nodes.push({
-      id: `cause-${index}`,
+      id: causeId,
       text: cause,
       type: 'flow',
       position: {
         x: centerX - sideSpacing - nodeWidth / 2,
         y: causeStartY + index * verticalSpacing - nodeHeight / 2,
       },
-      data: { groupIndex: index },
+      data: stampMultiFlowData('cause', index, { [MULTI_FLOW_UID_DATA_KEY]: causeId }),
       style: {
         backgroundColor: color.fill,
         borderColor: color.border,
       },
     })
     connections.push({
-      id: `edge-cause-${index}`,
-      source: `cause-${index}`,
-      target: 'event',
+      id: `edge-${causeId}-${MULTI_FLOW_EVENT_NODE_ID}`,
+      source: causeId,
+      target: MULTI_FLOW_EVENT_NODE_ID,
       sourceHandle: 'right',
       targetHandle: `left-${index}`,
       style: { strokeColor: color.border },
@@ -282,24 +292,25 @@ export function loadMultiFlowMapSpec(spec: Record<string, unknown>): SpecLoaderR
   const effectStartY = centerY - ((effects.length - 1) * verticalSpacing) / 2
   effects.forEach((effect, index) => {
     const color = getMindmapBranchColor(index)
+    const effectId = takeMultiFlowMapStableId(claimedIds)
     nodes.push({
-      id: `effect-${index}`,
+      id: effectId,
       text: effect,
       type: 'flow',
       position: {
         x: centerX + sideSpacing - nodeWidth / 2,
         y: effectStartY + index * verticalSpacing - nodeHeight / 2,
       },
-      data: { groupIndex: index },
+      data: stampMultiFlowData('effect', index, { [MULTI_FLOW_UID_DATA_KEY]: effectId }),
       style: {
         backgroundColor: color.fill,
         borderColor: color.border,
       },
     })
     connections.push({
-      id: `edge-effect-${index}`,
-      source: 'event',
-      target: `effect-${index}`,
+      id: `edge-${MULTI_FLOW_EVENT_NODE_ID}-${effectId}`,
+      source: MULTI_FLOW_EVENT_NODE_ID,
+      target: effectId,
       sourceHandle: `right-${index}`,
       targetHandle: 'left',
       style: { strokeColor: color.border },

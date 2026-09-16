@@ -25,7 +25,7 @@ import {
   resolveCreatedNodeIds,
   type DiagramEditExpectedEffect,
   type DiagramFingerprint,
-  verifyMindMapEffect,
+  verifyDiagramEffect,
 } from '@/utils/diagramEditVerify'
 
 export type DiagramEditApplyResult = {
@@ -216,8 +216,13 @@ export async function commitVerifiedLocalDiagramMutation(options: {
     const report = options.verify(before, evidence)
     verified = report.ok
     verificationError = report.error
-  } else if (options.expectedEffect && diagramType === 'mindmap') {
-    const report = verifyMindMapEffect(options.expectedEffect, evidence, beforeCount)
+  } else if (options.expectedEffect) {
+    const report = verifyDiagramEffect(
+      options.expectedEffect,
+      evidence,
+      beforeCount,
+      diagramType ?? ''
+    )
     verified = report.ok
     verificationError = report.error
   }

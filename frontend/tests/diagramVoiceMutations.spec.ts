@@ -32,4 +32,22 @@ describe('resolveVoiceNodeId', () => {
       'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'
     )
   })
+
+  it('resolves leftover flow-step-N to the UUID step at that index', () => {
+    const nodes: DiagramNode[] = [
+      { id: 'flow-topic', type: 'topic', text: 'Process' },
+      {
+        id: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
+        type: 'flow',
+        text: 'First',
+        data: { stepIndex: 0, flowMapLegacyId: 'flow-step-0' },
+      },
+    ]
+    expect(resolveVoiceNodeId('flow_map', 'flow-step-0', nodes)).toBe(
+      'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'
+    )
+    expect(resolveVoiceNodeId('flow_map', 'step_0', nodes)).toBe(
+      'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'
+    )
+  })
 })

@@ -12,6 +12,18 @@ import { i18n } from '@/i18n'
 import { useDiagramStore } from '@/stores/diagram'
 import { recalculateCircleMapLayout } from '@/stores/specLoader'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
+import {
+  isBridgeMapPairNode,
+  readBridgePairIndex,
+  takeBridgeMapStableId,
+} from '@/utils/bridgeMapIdentity'
+import { takeBubbleMapStableId } from '@/utils/bubbleMapIdentity'
+import { takeCircleMapStableId } from '@/utils/circleMapIdentity'
+import {
+  isFlowMapStepNode,
+  readFlowStepIndex,
+  resolveFlowMapAliasId,
+} from '@/utils/flowMapIdentity'
 import { resolveMindMapIdentityId } from '@/utils/mindMapIdentityMigrate'
 import {
   isLeftoverMindMapBranchId,
@@ -19,6 +31,14 @@ import {
   mindMapNodeDepth,
   sortMindMapTopicChildIdsBySide,
 } from '@/utils/mindMapLocation'
+import { readMultiFlowRole, takeMultiFlowMapStableId } from '@/utils/multiFlowMapIdentity'
+import { resolveThinkingMapAliasId } from '@/utils/thinkingMapIdentity'
+import {
+  isTreeMapCategoryNode,
+  isTreeMapLeafNode,
+  readTreeCategoryIndex,
+  readTreeLeafIndex,
+} from '@/utils/treeMapIdentity'
 
 function normalizedDiagramType(storeType: DiagramType | null): string {
   if (!storeType) return ''
@@ -38,6 +58,10 @@ export function resolveVoiceNodeId(
   }
   const byAlias = resolveMindMapIdentityId(rawId, nodes)
   if (byAlias && !(mindmap && isLeftoverMindMapBranchId(byAlias))) return byAlias
+  const flowAlias = resolveFlowMapAliasId(rawId, nodes)
+  if (flowAlias) return flowAlias
+  const thinkingAlias = resolveThinkingMapAliasId(diagramType, rawId, nodes)
+  if (thinkingAlias) return thinkingAlias
 
   const m = /^([a-zA-Z][\w-]*)_(\d+)$/.exec(rawId)
   if (!m) return null
@@ -52,8 +76,13 @@ export function resolveVoiceNodeId(
       if (prefix === 'attribute' || prefix === 'bubble') candidates.push(`bubble-${idx}`)
       break
     case 'flow_map':
-      if (prefix === 'step') candidates.push(`flow-step-${idx}`)
-      if (prefix === 'flow') candidates.push(`flow-step-${idx}`)
+      if (prefix === 'step' || prefix === 'flow') {
+        const byIndex = nodes.find(
+          (n) => isFlowMapStepNode(n) && readFlowStepIndex(n) === Number(idx)
+        )
+        if (byIndex) return byIndex.id
+        candidates.push(`flow-step-${idx}`)
+      }
       break
     case 'multi_flow_map':
       if (prefix === 'cause') candidates.push(`cause-${idx}`)
@@ -81,6 +110,8 @@ export function resolveVoiceNodeId(
   }
 
   for (const c of candidates) {
+    const resolved = resolveThinkingMapAliasId(diagramType, c, nodes)
+    if (resolved) return resolved
     if (nodes.some((n) => n.id === c)) return c
   }
   return null
@@ -93,7 +124,9 @@ function topLevelMindmapBranchIds(nodes: DiagramNode[], connections: Connection[
     return sortMindMapTopicChildIdsBySide(childIds, { nodes, connections })
   }
   const childIds = nodes
-    .filter((n) => n.id !== 'topic' && mindMapNodeDepth(n.id, { node: n, nodes, connections }) === 1)
+    .filter(
+      (n) => n.id !== 'topic' && mindMapNodeDepth(n.id, { node: n, nodes, connections }) === 1
+    )
     .map((n) => n.id)
   return sortMindMapTopicChildIdsBySide(childIds, { nodes })
 }
@@ -149,6 +182,8 @@ function braceMapResolvePartParentId(
   const ordered = orderedParts[partIdx]
   if (ordered && nodes.some((n) => n.id === ordered)) return ordered
   const legacyId = `brace-part-${partIdx}`
+  const resolved = resolveThinkingMapAliasId('brace_map', legacyId, nodes)
+  if (resolved) return resolved
   if (nodes.some((n) => n.id === legacyId)) return legacyId
   return ordered ?? null
 }
@@ -166,6 +201,8 @@ function braceMapResolveChildIdByIndex(
   const byOrder = childrenIds[childIdx]
   if (byOrder && nodes.some((n) => n.id === byOrder)) return byOrder
   const legacyId = `brace-subpart-${partIdx}-${childIdx}`
+  const resolved = resolveThinkingMapAliasId('brace_map', legacyId, nodes)
+  if (resolved) return resolved
   if (nodes.some((n) => n.id === legacyId)) return legacyId
   return null
 }
@@ -196,16 +233,11 @@ function voiceAddBridgeMapAnalogyPair(
 ): boolean {
   const nodes = store.data?.nodes
   if (!nodes) return false
-  const pairNodes = nodes.filter(
-    (n) =>
-      n.data?.diagramType === 'bridge_map' &&
-      n.data?.pairIndex !== undefined &&
-      !n.data?.isDimensionLabel
-  )
+  const pairNodes = nodes.filter((n) => isBridgeMapPairNode(n))
   let maxPairIndex = -1
   for (const node of pairNodes) {
-    const pi = node.data?.pairIndex
-    if (typeof pi === 'number' && pi > maxPairIndex) maxPairIndex = pi
+    const pi = readBridgePairIndex(node)
+    if (pi > maxPairIndex) maxPairIndex = pi
   }
   const newPairIndex = maxPairIndex + 1
   const centerY = DEFAULT_CENTER_Y
@@ -220,15 +252,16 @@ function voiceAddBridgeMapAnalogyPair(
     nextX = rightmostX + nodeWidth + 50
   }
 
+  const claimed = new Set(nodes.map((n) => n.id).filter(Boolean))
   store.addNode({
-    id: `pair-${newPairIndex}-left`,
+    id: takeBridgeMapStableId(claimed),
     text: leftText,
     type: 'branch',
     position: { x: nextX, y: centerY - verticalGap - nodeHeight },
     data: { pairIndex: newPairIndex, position: 'left', diagramType: 'bridge_map' },
   })
   store.addNode({
-    id: `pair-${newPairIndex}-right`,
+    id: takeBridgeMapStableId(claimed),
     text: rightText,
     type: 'branch',
     position: { x: nextX, y: centerY + verticalGap },
@@ -334,10 +367,12 @@ export function applyVoiceDiagramAddNodes(
       const subIdx = typeof p.substep_index === 'number' ? p.substep_index : undefined
       const suffix = voiceFlowMapDefaultSubsteps(store)
       if (stepIdx !== undefined && text) {
-        const stepNode = store.data.nodes.find((n) => n.id === `flow-step-${stepIdx}`)
+        const stepNode = store.data.nodes.find(
+          (n) => isFlowMapStepNode(n) && readFlowStepIndex(n) === stepIdx
+        )
         const stepLabel = stepNode?.text?.trim() ?? ''
         if (subIdx !== undefined) {
-          if (stepLabel && store.addFlowMapSubstep(stepLabel, text)) count++
+          if (stepLabel && store.addFlowMapSubstep(stepLabel, text, stepIdx, stepNode?.id)) count++
         } else if (store.addFlowMapStep(text, suffix)) {
           count++
         }
@@ -351,10 +386,14 @@ export function applyVoiceDiagramAddNodes(
       const catIdx = typeof p.category_index === 'number' ? p.category_index : undefined
       const itemIdx = typeof p.item_index === 'number' ? p.item_index : undefined
       if (catIdx !== undefined && text) {
-        const catId = `tree-cat-${catIdx}`
+        const cat = store.data.nodes.find(
+          (n) => isTreeMapCategoryNode(n) && readTreeCategoryIndex(n) === catIdx
+        )
         if (itemIdx !== undefined) {
-          if (store.addTreeMapChild(catId, text)) count++
+          if (cat?.id && store.addTreeMapChild(cat.id, text)) count++
         } else if (store.addTreeMapCategory(text)) count++
+      } else if (text && store.addTreeMapCategory(text)) {
+        count++
       }
       continue
     }
@@ -412,15 +451,9 @@ export function applyVoiceDiagramAddNodes(
     }
 
     if (dt === 'circle_map' && text) {
-      const idxs = store.data.nodes
-        .map((n) => {
-          const m = /^context-(\d+)$/.exec(n.id)
-          return m ? parseInt(m[1], 10) : -1
-        })
-        .filter((i) => i >= 0)
-      const next = (idxs.length ? Math.max(...idxs) + 1 : 0).toString()
+      const claimed = new Set(store.data.nodes.map((n) => n.id).filter(Boolean))
       store.addNode({
-        id: `context-${next}`,
+        id: takeCircleMapStableId(claimed),
         text,
         type: 'bubble',
         position: { x: 0, y: 0 },
@@ -433,15 +466,15 @@ export function applyVoiceDiagramAddNodes(
 
     if (dt === 'multi_flow_map' && text) {
       const cat = String(p.category ?? '')
+      const selected =
+        typeof p.node_id === 'string' ? store.data.nodes.find((n) => n.id === p.node_id) : undefined
       const isEffect =
         cat === 'effect' ||
         cat === 'effects' ||
-        (typeof p.node_id === 'string' && p.node_id.startsWith('effect'))
-      const idPrefix = isEffect ? 'effect' : 'cause'
-      const existing = store.data.nodes.filter((n) => n.id.startsWith(`${idPrefix}-`))
-      const nextNum = existing.length
+        readMultiFlowRole(selected ?? { id: String(p.node_id ?? '') }) === 'effect'
+      const claimed = new Set(store.data.nodes.map((n) => n.id).filter(Boolean))
       store.addNode({
-        id: `${idPrefix}-${nextNum}`,
+        id: takeMultiFlowMapStableId(claimed),
         text,
         type: 'flow',
         position: { x: 0, y: 0 },
@@ -486,12 +519,9 @@ export function applyVoiceDiagramAddNodes(
     }
 
     if (dt === 'bubble_map' && text) {
-      const bubbles = store.data.nodes.filter(
-        (n) => n.id.startsWith('bubble-') && (n.type === 'bubble' || n.type === 'child')
-      )
-      const next = bubbles.length.toString()
+      const claimed = new Set(store.data.nodes.map((n) => n.id).filter(Boolean))
       store.addNode({
-        id: `bubble-${next}`,
+        id: takeBubbleMapStableId(claimed),
         text,
         type: 'bubble',
         position: { x: 0, y: 0 },
@@ -573,8 +603,13 @@ export function applyVoiceDiagramRemoveNodes(
         typeof o.category_index === 'number' &&
         typeof o.item_index === 'number'
       ) {
-        const leafId = `tree-leaf-${o.category_index}-${o.item_index}`
-        removed += store.removeTreeMapNodes([leafId])
+        const leaf = store.data.nodes.find(
+          (n) =>
+            isTreeMapLeafNode(n) &&
+            readTreeCategoryIndex(n) === o.category_index &&
+            readTreeLeafIndex(n) === o.item_index
+        )
+        if (leaf) removed += store.removeTreeMapNodes([leaf.id])
         continue
       }
 
@@ -590,8 +625,10 @@ export function applyVoiceDiagramRemoveNodes(
           removeId = braceMapResolvePartParentId(store.data.nodes, orderedParts, pi)
         }
         if (!removeId) {
-          removeId = si !== null ? `brace-subpart-${pi}-${si}` : `brace-part-${pi}`
+          const leftover = si !== null ? `brace-subpart-${pi}-${si}` : `brace-part-${pi}`
+          removeId = resolveThinkingMapAliasId('brace_map', leftover, store.data.nodes)
         }
+        if (!removeId) continue
         const nRemoved = store.removeBraceMapNodes([removeId])
         removed += nRemoved
         removedNeedHistory += nRemoved

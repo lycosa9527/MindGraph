@@ -12,8 +12,22 @@ import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useDiagramStore, useInlineRecommendationsStore, useSavedDiagramsStore } from '@/stores'
 import type { Connection, DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
+import { findBraceMapWholeId } from '@/utils/braceMapIdentity'
+import {
+  findBridgePairSide,
+  isBridgeMapPairNode,
+  readBridgePairIndex,
+} from '@/utils/bridgeMapIdentity'
 import { getConceptMapPrimaryIncidentConnection } from '@/utils/conceptMapInlineRec'
+import {
+  isDoubleBubbleRoleNode,
+  readDoubleBubbleIndex,
+  readDoubleBubbleRole,
+} from '@/utils/doubleBubbleMapIdentity'
+import { isFlowMapStepNode } from '@/utils/flowMapIdentity'
 import { isMindMapL1, mindMapNodeDepth } from '@/utils/mindMapLocation'
+import { isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
+import { isTreeMapCategoryNode } from '@/utils/treeMapIdentity'
 
 import {
   INLINE_RECOMMENDATIONS_NEXT,
@@ -31,7 +45,7 @@ const getInlineRecStore = () => useInlineRecommendationsStore()
 function getStageForNode(
   nodeId: string,
   diagramType: string,
-  nodes: Array<{ id?: string; text?: string; type?: string }>,
+  nodes: Array<{ id?: string; text?: string; type?: string; data?: Record<string, unknown> }>,
   connections?: Connection[]
 ): { stage: string; stageData: Record<string, unknown> } {
   const dt = diagramType === 'mind_map' ? 'mindmap' : diagramType
@@ -66,7 +80,7 @@ function getStageForNode(
   }
 
   if (dt === 'flow_map') {
-    if (nid.startsWith('flow-step-')) {
+    if (isFlowMapStepNode(node)) {
       const hasSubsteps = connections?.some((c) => c.source === nid)
       return hasSubsteps
         ? {
@@ -89,7 +103,7 @@ function getStageForNode(
     if (nid === 'dimension-label') {
       return { stage: 'dimensions', stageData: {} }
     }
-    if (/^tree-cat-\d+$/.test(nid)) {
+    if (isTreeMapCategoryNode(node)) {
       const hasChildren = connections?.some((c) => c.source === nid)
       return hasChildren
         ? {
@@ -112,7 +126,7 @@ function getStageForNode(
     if (nid === 'dimension-label') {
       return { stage: 'dimensions', stageData: {} }
     }
-    const rootId = nodes.find((n) => n.id === 'brace-whole' || n.id === 'brace-0-0')?.id
+    const rootId = findBraceMapWholeId(nodes, connections)
     const isPart =
       node.type === 'brace' &&
       rootId &&
@@ -149,17 +163,15 @@ function getStageForNode(
   }
 
   if (dt === 'double_bubble_map') {
-    if (nid.startsWith('similarity-')) {
-      return { stage: 'similarities', stageData: {} }
-    }
-    if (nid.startsWith('left-diff-') || nid.startsWith('right-diff-')) {
+    const role = readDoubleBubbleRole(node)
+    if (role === 'leftDiff' || role === 'rightDiff') {
       return { stage: 'differences', stageData: {} }
     }
     return { stage: 'similarities', stageData: {} }
   }
 
   if (dt === 'multi_flow_map') {
-    if (nid.startsWith('effect-')) {
+    if (isMultiFlowEffectNode(node)) {
       return { stage: 'effects', stageData: {} }
     }
     return { stage: 'causes', stageData: {} }
@@ -168,9 +180,6 @@ function getStageForNode(
   if (dt === 'bridge_map') {
     if (nid === 'dimension-label') {
       return { stage: 'dimensions', stageData: {} }
-    }
-    if (nid.startsWith('pair-') && (nid.endsWith('-left') || nid.endsWith('-right'))) {
-      return { stage: 'pairs', stageData: {} }
     }
     return { stage: 'pairs', stageData: {} }
   }
@@ -296,23 +305,29 @@ export function useInlineRecommendations() {
 
     if (dt === 'double_bubble_map' && text.includes('|')) {
       const [leftPart, rightPart] = text.split('|').map((s) => s.trim())
-      const leftMatch = nodeId.match(/^left-diff-(\d+)$/)
-      const rightMatch = nodeId.match(/^right-diff-(\d+)$/)
-      const idx = leftMatch?.[1] ?? rightMatch?.[1]
-      if (idx !== undefined && leftPart && rightPart) {
-        diagramStore.updateNode(`left-diff-${idx}`, { text: leftPart })
-        diagramStore.updateNode(`right-diff-${idx}`, { text: rightPart })
+      const nodes = diagramStore.data?.nodes ?? []
+      const current = nodes.find((n) => n.id === nodeId)
+      const idx = current ? readDoubleBubbleIndex(current) : -1
+      const left = nodes.find(
+        (n) => isDoubleBubbleRoleNode(n, 'leftDiff') && readDoubleBubbleIndex(n) === idx
+      )
+      const right = nodes.find(
+        (n) => isDoubleBubbleRoleNode(n, 'rightDiff') && readDoubleBubbleIndex(n) === idx
+      )
+      if (left && right && leftPart && rightPart) {
+        diagramStore.updateNode(left.id, { text: leftPart })
+        diagramStore.updateNode(right.id, { text: rightPart })
         diagramStore.pushHistory('AI recommendation')
         eventBus.emit('inline_recommendation:applied', {
-          nodeId: `left-diff-${idx}`,
+          nodeId: left.id,
           text: leftPart,
         })
         eventBus.emit('inline_recommendation:applied', {
-          nodeId: `right-diff-${idx}`,
+          nodeId: right.id,
           text: rightPart,
         })
-        eventBus.emit('node:text_updated', { nodeId: `left-diff-${idx}`, text: leftPart })
-        eventBus.emit('node:text_updated', { nodeId: `right-diff-${idx}`, text: rightPart })
+        eventBus.emit('node:text_updated', { nodeId: left.id, text: leftPart })
+        eventBus.emit('node:text_updated', { nodeId: right.id, text: rightPart })
         return true
       }
     }
@@ -341,23 +356,25 @@ export function useInlineRecommendations() {
 
     if (dt === 'bridge_map' && text.includes('|')) {
       const [leftPart, rightPart] = text.split('|').map((s) => s.trim())
-      const leftMatch = nodeId.match(/^pair-(\d+)-left$/)
-      const rightMatch = nodeId.match(/^pair-(\d+)-right$/)
-      const idx = leftMatch?.[1] ?? rightMatch?.[1]
-      if (idx !== undefined && leftPart && rightPart) {
-        diagramStore.updateNode(`pair-${idx}-left`, { text: leftPart })
-        diagramStore.updateNode(`pair-${idx}-right`, { text: rightPart })
+      const nodes = diagramStore.data?.nodes ?? []
+      const current = nodes.find((n) => n.id === nodeId)
+      const idx = current && isBridgeMapPairNode(current) ? readBridgePairIndex(current) : -1
+      const left = idx >= 0 ? findBridgePairSide(nodes, idx, 'left') : undefined
+      const right = idx >= 0 ? findBridgePairSide(nodes, idx, 'right') : undefined
+      if (left && right && leftPart && rightPart) {
+        diagramStore.updateNode(left.id, { text: leftPart })
+        diagramStore.updateNode(right.id, { text: rightPart })
         diagramStore.pushHistory('AI recommendation')
         eventBus.emit('inline_recommendation:applied', {
-          nodeId: `pair-${idx}-left`,
+          nodeId: left.id,
           text: leftPart,
         })
         eventBus.emit('inline_recommendation:applied', {
-          nodeId: `pair-${idx}-right`,
+          nodeId: right.id,
           text: rightPart,
         })
-        eventBus.emit('node:text_updated', { nodeId: `pair-${idx}-left`, text: leftPart })
-        eventBus.emit('node:text_updated', { nodeId: `pair-${idx}-right`, text: rightPart })
+        eventBus.emit('node:text_updated', { nodeId: left.id, text: leftPart })
+        eventBus.emit('node:text_updated', { nodeId: right.id, text: rightPart })
         return true
       }
     }
@@ -406,8 +423,7 @@ export function useInlineRecommendations() {
 
     const diagramData = diagramStore.data as Record<string, unknown> | undefined
     const educationalContext = diagramData?.educational_context as
-      | Record<string, unknown>
-      | undefined
+      Record<string, unknown> | undefined
 
     const payload = {
       session_id: nodeId,
@@ -498,8 +514,7 @@ export function useInlineRecommendations() {
 
     const diagramData = diagramStore.data as Record<string, unknown> | undefined
     const educationalContext = diagramData?.educational_context as
-      | Record<string, unknown>
-      | undefined
+      Record<string, unknown> | undefined
 
     const payload = {
       session_id: nodeId,

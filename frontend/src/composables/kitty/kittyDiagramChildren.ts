@@ -2,12 +2,16 @@
  * Pure Kitty diagram child indexing — shared by voice context, click wheel, and canvas actions.
  */
 import { resolveVoiceNodeId } from '@/composables/editor/diagramVoiceMutations'
-import {
-  sortMindMapChildIds,
-  sortMindMapTopicChildIds,
-} from '@/config/mindMapGeometry'
+import { sortMindMapChildIds, sortMindMapTopicChildIds } from '@/config/mindMapGeometry'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
+import { isBraceMapPartNode } from '@/utils/braceMapIdentity'
+import { isBridgeMapPairNode, readBridgePairSide } from '@/utils/bridgeMapIdentity'
+import { isBubbleMapAttributeNode } from '@/utils/bubbleMapIdentity'
+import { isCircleMapContextNode } from '@/utils/circleMapIdentity'
+import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
 import { isMindMapBranchId, isMindMapBranchNode } from '@/utils/mindMapLocation'
+import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
+import { isTreeMapCategoryNode, isTreeMapLeafNode } from '@/utils/treeMapIdentity'
 
 export type KittyVoiceContextNode = {
   id: string
@@ -54,36 +58,23 @@ export function buildKittyChildren(
 
   switch (dt) {
     case 'circle_map':
-      return nodes
-        .filter((n) => (n.type === 'bubble' || n.type === 'context') && n.id.startsWith('context-'))
-        .map(toChild)
+      return nodes.filter((n) => isCircleMapContextNode(n)).map(toChild)
     case 'bubble_map':
-      return nodes.filter((n) => n.type === 'bubble' || n.type === 'attribute').map(toChild)
+      return nodes.filter((n) => isBubbleMapAttributeNode(n)).map(toChild)
     case 'flow_map':
-      return nodes.filter((n) => n.id.startsWith('flow-step-')).map(toChild)
+      return nodes.filter((n) => n.type === 'flow').map(toChild)
     case 'multi_flow_map':
-      return nodes
-        .filter((n) => n.id.startsWith('cause-') || n.id.startsWith('effect-'))
-        .map(toChild)
+      return nodes.filter((n) => isMultiFlowCauseNode(n) || isMultiFlowEffectNode(n)).map(toChild)
     case 'double_bubble_map':
-      return nodes
-        .filter(
-          (n) =>
-            n.id.startsWith('similarity-') ||
-            n.id.startsWith('left-diff-') ||
-            n.id.startsWith('right-diff-')
-        )
-        .map(toChild)
+      return nodes.filter((n) => readDoubleBubbleRole(n) != null).map(toChild)
     case 'brace_map':
-      return nodes
-        .filter((n) => n.id.startsWith('brace-part-') || n.id.startsWith('brace-subpart-'))
-        .map(toChild)
+      return nodes.filter((n) => isBraceMapPartNode(n)).map(toChild)
     case 'bridge_map':
-      return nodes.filter((n) => /^pair-\d+-left$/.test(n.id)).map(toChild)
-    case 'tree_map':
       return nodes
-        .filter((n) => n.id.startsWith('tree-cat-') || n.id.startsWith('tree-leaf-'))
+        .filter((n) => isBridgeMapPairNode(n) && readBridgePairSide(n) === 'left')
         .map(toChild)
+    case 'tree_map':
+      return nodes.filter((n) => isTreeMapCategoryNode(n) || isTreeMapLeafNode(n)).map(toChild)
     case 'concept_map':
       return nodes.filter((n) => n.id.startsWith('concept-') && n.id !== 'topic').map(toChild)
     case 'mindmap':
@@ -130,7 +121,9 @@ function wheelRootId(
 ): string | null {
   const kind = dt === 'mind_map' ? 'mindmap' : dt
   if (kind === 'mindmap') {
-    return nodes.find((n) => n.id === 'topic')?.id ?? nodes.find((n) => n.type === 'topic')?.id ?? null
+    return (
+      nodes.find((n) => n.id === 'topic')?.id ?? nodes.find((n) => n.type === 'topic')?.id ?? null
+    )
   }
   if (kind === 'tree_map') {
     return (
@@ -151,11 +144,7 @@ function wheelRootId(
   return null
 }
 
-function sortWheelSiblings(
-  dt: DiagramType,
-  parentId: string,
-  childIds: string[]
-): string[] {
+function sortWheelSiblings(dt: DiagramType, parentId: string, childIds: string[]): string[] {
   const kind = dt === 'mind_map' ? 'mindmap' : dt
   if (kind === 'mindmap') {
     if (parentId === 'topic') {
@@ -180,7 +169,8 @@ function isWheelVisitableNode(
     return isMindMapBranchId(nodeId, nodes)
   }
   if (kind === 'tree_map') {
-    return nodeId.startsWith('tree-cat-') || nodeId.startsWith('tree-leaf-')
+    const node = nodes.find((n) => n.id === nodeId)
+    return Boolean(node && (isTreeMapCategoryNode(node) || isTreeMapLeafNode(node)))
   }
   if (kind === 'brace_map') {
     return true
@@ -199,8 +189,7 @@ export function buildKittyClickWheelNodes(
 ): KittyClickWheelNode[] {
   const rootId = wheelRootId(dt, nodes, connections)
   const hasHierarchy =
-    rootId != null &&
-    (connections.length > 0 || nodes.some((n) => (n.childIds?.length ?? 0) > 0))
+    rootId != null && (connections.length > 0 || nodes.some((n) => (n.childIds?.length ?? 0) > 0))
 
   if (!hasHierarchy || rootId == null) {
     return buildKittyChildren(dt, nodes)

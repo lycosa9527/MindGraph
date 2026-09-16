@@ -17,8 +17,17 @@ from typing import Any
 
 from models.domain.diagrams import Diagram
 from services.diagram.mindmap_identity import identity_aliases, migrate_mindmap_diagram_payload
-from services.diagram.spec_coerce import coerce_diagram_spec
 from services.diagram.mindmap_location import is_leftover_mindmap_branch_id
+from services.diagram.spec_coerce import coerce_diagram_spec
+from services.diagram.thinking_map_identity import (
+    migrate_thinking_map_diagram_payload,
+    thinking_map_identity_aliases,
+)
+from services.diagram.thinking_map_patterns import (
+    is_any_thinking_map_leftover_id,
+    is_thinking_map_diagram_type,
+    normalize_diagram_type,
+)
 from services.online_collab.spec.online_collab_live_spec_json import (
     json_get_live_spec,
     json_set_live_spec,
@@ -32,9 +41,33 @@ def _parse_db_spec(diagram: Diagram) -> dict[str, Any]:
     return coerce_diagram_spec(getattr(diagram, "spec", None))
 
 
+def _spec_diagram_type(spec: dict[str, Any] | None) -> str:
+    if not isinstance(spec, dict):
+        return ""
+    raw = spec.get("type") or spec.get("diagram_type") or ""
+    return normalize_diagram_type(str(raw))
+
+
+def _migrate_live_spec(spec: dict[str, Any]) -> None:
+    """Migrate leftover invented ids on a live spec."""
+    if not isinstance(spec.get("nodes"), list):
+        return
+    diagram_type = _spec_diagram_type(spec)
+    if diagram_type in {"mindmap", "mind_map"}:
+        migrate_mindmap_diagram_payload(spec)
+        return
+    if is_thinking_map_diagram_type(diagram_type):
+        migrate_thinking_map_diagram_payload(spec, diagram_type)
+        return
+    migrate_mindmap_diagram_payload(spec)
+    migrate_thinking_map_diagram_payload(spec, diagram_type)
+
+
 def _is_leftover_id(value: Any) -> bool:
-    """True when ``value`` is a leftover invented mind-map branch id."""
-    return isinstance(value, str) and is_leftover_mindmap_branch_id(value)
+    """True when ``value`` is a leftover invented mind-map or Thinking Map id."""
+    if not isinstance(value, str):
+        return False
+    return is_leftover_mindmap_branch_id(value) or is_any_thinking_map_leftover_id(value)
 
 
 def granular_has_leftover_mindmap_ids(
@@ -190,6 +223,9 @@ def merge_granular_into_spec(
     """
     typed_nodes = [row for row in (spec.get("nodes") or []) if isinstance(row, dict)]
     aliases = identity_aliases(typed_nodes) if typed_nodes else {}
+    diagram_type = _spec_diagram_type(spec)
+    if is_thinking_map_diagram_type(diagram_type):
+        aliases.update(thinking_map_identity_aliases(diagram_type, typed_nodes))
 
     def remap_hint(hint: Any) -> str:
         text = str(hint or "").strip()
@@ -251,8 +287,7 @@ def merge_granular_into_spec(
         spec["connections"] = _merge_connection_patches(conns, remapped_conns)
 
     _prune_dangling_connections(spec)
-    if isinstance(spec.get("nodes"), list):
-        migrate_mindmap_diagram_payload(spec)
+    _migrate_live_spec(spec)
 
 
 _CHANGED_FULL = frozenset({"__full__"})
@@ -289,8 +324,7 @@ def apply_live_update(
     if spec is not None and not is_granular:
         if isinstance(spec, dict):
             out = deepcopy(spec)
-            if isinstance(out.get("nodes"), list):
-                migrate_mindmap_diagram_payload(out)
+            _migrate_live_spec(out)
             out.pop("v", None)
             out["v"] = next_v
             return out, next_v, _CHANGED_FULL
@@ -386,8 +420,7 @@ async def seed_live_spec_from_diagram(
     parsed = _parse_db_spec(diagram)
     if "type" not in parsed and diagram.diagram_type:
         parsed["type"] = diagram.diagram_type
-    if isinstance(parsed.get("nodes"), list):
-        migrate_mindmap_diagram_payload(parsed)
+    _migrate_live_spec(parsed)
     parsed["v"] = 1
     await write_live_spec(redis, code, parsed, ttl_sec)
     return parsed

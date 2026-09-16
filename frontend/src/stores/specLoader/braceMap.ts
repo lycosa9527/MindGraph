@@ -19,6 +19,12 @@ import {
 } from '@/composables/diagrams/layoutConfig'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
+import {
+  BRACE_MAP_UID_DATA_KEY,
+  BRACE_WHOLE_NODE_ID,
+  isLeftoverBraceMapId,
+  takeBraceMapStableId,
+} from '@/utils/braceMapIdentity'
 
 import {
   diagramLabelLikelyNeedsRenderedMeasure,
@@ -160,9 +166,20 @@ function flattenTree(
   parentId: string | null,
   nodes: FlatNode[],
   edges: { source: string; target: string }[],
-  counter: { value: number }
+  counter: { value: number },
+  claimedIds: Set<string>
 ): string {
-  const nodeId = node.id || `brace-${depth}-${counter.value++}`
+  const preferred =
+    depth === 0
+      ? BRACE_WHOLE_NODE_ID
+      : node.id && !isLeftoverBraceMapId(node.id)
+        ? node.id
+        : undefined
+  const nodeId =
+    preferred === BRACE_WHOLE_NODE_ID
+      ? BRACE_WHOLE_NODE_ID
+      : takeBraceMapStableId(claimedIds, preferred)
+  claimedIds.add(nodeId)
   const nodeWidth = estimateBraceNodeWidth(node.text, depth)
   const nodeHeight = estimateBraceNodeHeight(node.text, depth)
 
@@ -174,7 +191,7 @@ function flattenTree(
 
   if (node.parts && node.parts.length > 0) {
     node.parts.forEach((part) => {
-      flattenTree(part, depth + 1, nodeId, nodes, edges, counter)
+      flattenTree(part, depth + 1, nodeId, nodes, edges, counter, claimedIds)
     })
   }
 
@@ -372,16 +389,13 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
     wholeNode = spec.whole as BraceNode
   } else if (typeof spec.whole === 'string') {
     const parts = spec.parts as
-      | Array<{ name: string; subparts?: Array<{ name: string }> }>
-      | undefined
+      Array<{ name: string; subparts?: Array<{ name: string }> }> | undefined
     wholeNode = {
-      id: 'brace-whole',
+      id: BRACE_WHOLE_NODE_ID,
       text: spec.whole,
-      parts: parts?.map((p, i) => ({
-        id: `brace-part-${i}`,
+      parts: parts?.map((p) => ({
         text: p.name || '',
-        parts: p.subparts?.map((sp, j) => ({
-          id: `brace-subpart-${i}-${j}`,
+        parts: p.subparts?.map((sp) => ({
           text: sp.name || '',
         })),
       })),
@@ -391,7 +405,15 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
   if (wholeNode) {
     const flatNodes: FlatNode[] = []
     const edges: { source: string; target: string }[] = []
-    flattenTree(wholeNode, 0, null, flatNodes, edges, { value: 0 })
+    flattenTree(
+      wholeNode,
+      0,
+      null,
+      flatNodes,
+      edges,
+      { value: 0 },
+      new Set<string>([BRACE_WHOLE_NODE_ID, 'dimension-label'])
+    )
 
     const layout = computeColumnLayout(flatNodes, edges)
     const groupIndexMap = computeGroupIndices(flatNodes, edges)
@@ -407,6 +429,7 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
         data: {
           estimatedWidth: fn.width,
           estimatedHeight: fn.height,
+          ...(fn.depth > 0 ? { [BRACE_MAP_UID_DATA_KEY]: fn.id } : {}),
         },
       }
       if (groupIndex !== undefined) {
@@ -497,7 +520,11 @@ export function recalculateBraceMapLayout(
   const wholeNode = buildTree(rootId)
   const flatNodes: FlatNode[] = []
   const edges: { source: string; target: string }[] = []
-  flattenTree(wholeNode, 0, null, flatNodes, edges, { value: 0 })
+  const claimedIds = new Set<string>([BRACE_WHOLE_NODE_ID, 'dimension-label'])
+  for (const treeNode of treeNodes) {
+    if (treeNode.id) claimedIds.add(treeNode.id)
+  }
+  flattenTree(wholeNode, 0, null, flatNodes, edges, { value: 0 }, claimedIds)
 
   const diagramById = new Map<string, DiagramNode>()
   for (const n of treeNodes) {

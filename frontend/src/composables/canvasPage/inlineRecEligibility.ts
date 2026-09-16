@@ -1,6 +1,14 @@
 import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
 import type { Connection } from '@/types'
+import { isBraceMapPartNode } from '@/utils/braceMapIdentity'
+import { isBridgeMapPairNode } from '@/utils/bridgeMapIdentity'
+import { isBubbleMapAttributeNode } from '@/utils/bubbleMapIdentity'
+import { isCircleMapContextNode } from '@/utils/circleMapIdentity'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
+import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
+import { isFlowMapStepNode, isFlowMapSubstepNode } from '@/utils/flowMapIdentity'
+import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
+import { isTreeMapCategoryNode, isTreeMapLeafNode } from '@/utils/treeMapIdentity'
 
 /**
  * Whether a node can show inline recommendations (Tab while editing).
@@ -17,33 +25,28 @@ export function isNodeEligibleForInlineRec(
     return false
   const nid = node.id ?? ''
   if (dt === 'flow_map') {
-    return nid.startsWith('flow-step-') || nid.startsWith('flow-substep-')
+    return isFlowMapStepNode(node) || isFlowMapSubstepNode(node)
   }
   if (dt === 'tree_map') {
-    return nid === 'dimension-label' || /^tree-cat-\d+$/.test(nid) || /^tree-leaf-/.test(nid)
+    return nid === 'dimension-label' || isTreeMapCategoryNode(node) || isTreeMapLeafNode(node)
   }
   if (dt === 'brace_map') {
-    return nid === 'dimension-label' || node.type === 'brace' || nid.startsWith('brace-')
+    return nid === 'dimension-label' || isBraceMapPartNode(node)
   }
   if (dt === 'circle_map') {
-    return nid.startsWith('context-')
+    return isCircleMapContextNode(node)
   }
   if (dt === 'bubble_map') {
-    return nid.startsWith('bubble-')
+    return isBubbleMapAttributeNode(node)
   }
   if (dt === 'double_bubble_map') {
-    return (
-      nid.startsWith('similarity-') || nid.startsWith('left-diff-') || nid.startsWith('right-diff-')
-    )
+    return readDoubleBubbleRole(node) != null
   }
   if (dt === 'multi_flow_map') {
-    return nid.startsWith('cause-') || nid.startsWith('effect-')
+    return isMultiFlowCauseNode(node) || isMultiFlowEffectNode(node)
   }
   if (dt === 'bridge_map') {
-    return (
-      nid === 'dimension-label' ||
-      (nid.startsWith('pair-') && (nid.endsWith('-left') || nid.endsWith('-right')))
-    )
+    return nid === 'dimension-label' || isBridgeMapPairNode(node)
   }
   if (dt === 'concept_map') {
     const d = node.data

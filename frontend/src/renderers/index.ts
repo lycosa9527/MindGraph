@@ -5,13 +5,12 @@
  *
  * New Architecture:
  * - Components: @/components/diagram/ (DiagramCanvas, nodes, edges)
- * - Composables: @/composables/diagrams/ (useBubbleMap, useCircleMap, etc.)
+ * - Spec loaders: @/stores/specLoader/
  * - Types: @/types/vueflow.ts (MindGraphNode, MindGraphEdge, etc.)
  *
  * To render diagrams, mount `DiagramCanvas` with diagram data loaded into the diagram store
  * (`useDiagramStore`). The canvas reads `vueFlowNodes` / `vueFlowEdges` from the store; it does
- * not take `:nodes` / `:edges` props. Diagram-type composables under `@/composables/diagrams`
- * update that store.
+ * not take `:nodes` / `:edges` props.
  *
  * @example
  * ```vue
@@ -20,7 +19,7 @@
  * import { useDiagramStore } from '@/stores'
  *
  * const diagramStore = useDiagramStore()
- * // Load a spec or use diagram composables so diagramStore.data is set.
+ * // Load a spec so diagramStore.data is set.
  * </script>
  *
  * <template>
@@ -28,16 +27,6 @@
  * </template>
  * ```
  */
-
-// Re-export diagram composables for backward compatibility
-export {
-  useBubbleMap,
-  useCircleMap,
-  useTreeMap,
-  useFlowMap,
-  useBraceMap,
-  useBridgeMap,
-} from '@/composables/diagrams'
 
 // Re-export types
 export type {

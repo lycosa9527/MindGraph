@@ -10,7 +10,11 @@ from __future__ import annotations
 import unicodedata
 from typing import Any, Dict, List, Optional, Set
 
-from services.diagram_edit.types import ExpectedEffect, VerificationReport
+from services.diagram.thinking_map_patterns import (
+    is_thinking_map_diagram_type,
+    topic_node_id_for,
+)
+from services.diagram_edit.types import ExpectedEffect, VERIFIED_DIAGRAM_TYPES, VerificationReport
 
 
 def normalize_diagram_text(value: Any) -> str:
@@ -44,6 +48,15 @@ def _snapshot_nodes_connections(
 
 def _topic_nodes(nodes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return [n for n in nodes if n.get("id") == "topic" or n.get("type") == "topic"]
+
+
+def _reserved_root_nodes(nodes: List[Dict[str, Any]], diagram_type: str) -> List[Dict[str, Any]]:
+    reserved = topic_node_id_for(diagram_type)
+    return [
+        node
+        for node in nodes
+        if node.get("id") == reserved or node.get("type") in {"topic", "center", "whole", "event"}
+    ]
 
 
 def verify_mindmap_effect(
@@ -133,6 +146,81 @@ def verify_mindmap_effect(
     return VerificationReport(ok=False, checks=[], error="unsupported_effect")
 
 
+def verify_thinking_map_effect(
+    effect: ExpectedEffect,
+    evidence: Dict[str, Any],
+    *,
+    before_node_count: Optional[int] = None,
+    diagram_type: str,
+) -> VerificationReport:
+    """Postconditions for Thinking Map structural edits (UUID + reserved root)."""
+    nodes, connections = _snapshot_nodes_connections(evidence)
+    passed: List[str] = []
+    failed: List[str] = []
+
+    def record(check: str, ok: bool) -> None:
+        if ok:
+            passed.append(check)
+        else:
+            failed.append(check)
+
+    roots = _reserved_root_nodes(nodes, diagram_type)
+    if effect.op == "update_center":
+        record("reserved_root_present", len(roots) >= 1)
+        if effect.text and roots:
+            record("topic_text_matches", _node_text(roots[0]) == normalize_diagram_text(effect.text))
+        return _report(passed, failed)
+
+    if effect.op in {"add_branch", "add_child"}:
+        record("reserved_root_present", len(roots) >= 1)
+        if before_node_count is not None:
+            record("delta_nodes", len(nodes) == before_node_count + 1)
+        if effect.text:
+            matches = [node for node in nodes if _node_text(node) == normalize_diagram_text(effect.text)]
+            record("node_exists", len(matches) > 0)
+            record("text_matches", len(matches) > 0)
+            if matches:
+                new_id = str(matches[-1].get("id") or "")
+                has_edge = any(conn.get("target") == new_id for conn in connections)
+                record("parent_edge_exists", has_edge)
+        return _report(passed, failed)
+
+    if effect.op == "update_node":
+        record("node_count_unchanged", before_node_count is None or len(nodes) == before_node_count)
+        ident = effect.node_identifier or effect.node_id
+        if ident:
+            by_id = next((node for node in nodes if node.get("id") == ident), None)
+            record("node_exists", by_id is not None)
+            if effect.text:
+                record(
+                    "text_matches",
+                    by_id is not None and _node_text(by_id) == normalize_diagram_text(effect.text),
+                )
+            return _report(passed, failed)
+        if effect.text:
+            matches = [node for node in nodes if _node_text(node) == normalize_diagram_text(effect.text)]
+            record("text_matches", len(matches) > 0)
+            record("node_exists", len(matches) > 0)
+        return _report(passed, failed)
+
+    if effect.op == "delete_node":
+        if effect.node_identifier:
+            ident = normalize_diagram_text(effect.node_identifier)
+            absent = not any(node.get("id") == ident or _node_text(node) == ident for node in nodes)
+            record("node_absent", absent)
+        target_ids: Set[str] = {str(node.get("id") or "") for node in nodes}
+        dangling = any(
+            conn.get("source") not in target_ids or conn.get("target") not in target_ids
+            for conn in connections
+            if conn.get("source") and conn.get("target")
+        )
+        record("no_dangling_edges", not dangling)
+        record("reserved_root_present", len(roots) >= 1)
+        return _report(passed, failed)
+
+    return VerificationReport(ok=False, checks=[], error="unsupported_effect")
+
+
 def _report(passed: List[str], failed: List[str]) -> VerificationReport:
     if failed:
         return VerificationReport(
@@ -179,7 +267,14 @@ def verify_effect_on_snapshot(
     before_node_count: Optional[int] = None,
     diagram_type: str = "mindmap",
 ) -> VerificationReport:
-    """Dispatch verification by diagram type (v1: mindmap only)."""
-    if diagram_type not in ("mindmap", "mind_map"):
-        return VerificationReport(ok=False, checks=[], error="unsupported_diagram_type")
-    return verify_mindmap_effect(effect, evidence, before_node_count=before_node_count)
+    """Dispatch verification by diagram type."""
+    if diagram_type in ("mindmap", "mind_map"):
+        return verify_mindmap_effect(effect, evidence, before_node_count=before_node_count)
+    if is_thinking_map_diagram_type(diagram_type) or diagram_type in VERIFIED_DIAGRAM_TYPES:
+        return verify_thinking_map_effect(
+            effect,
+            evidence,
+            before_node_count=before_node_count,
+            diagram_type=diagram_type,
+        )
+    return VerificationReport(ok=False, checks=[], error="unsupported_diagram_type")

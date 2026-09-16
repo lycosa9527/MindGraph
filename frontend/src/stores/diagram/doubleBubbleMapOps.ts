@@ -1,25 +1,37 @@
+import {
+  isDoubleBubbleRoleNode,
+  readDoubleBubbleIndex,
+  type DoubleBubbleRole,
+} from '@/utils/doubleBubbleMapIdentity'
+
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
 
+type SpecItem = string | { id?: string; text?: string }
+
+function asItems(raw: unknown): SpecItem[] {
+  return Array.isArray(raw) ? (raw as SpecItem[]) : []
+}
+
 export function useDoubleBubbleMapOpsSlice(ctx: DiagramContext) {
   function addDoubleBubbleMapNode(
-    group: 'similarity' | 'leftDiff' | 'rightDiff',
+    group: DoubleBubbleRole,
     defaultText: string,
     pairText?: string
   ): boolean {
     const spec = ctx.getDoubleBubbleSpecFromData()
     if (!spec) return false
 
-    const similarities = (spec.similarities as string[]) || []
-    const leftDifferences = (spec.leftDifferences as string[]) || []
-    const rightDifferences = (spec.rightDifferences as string[]) || []
+    const similarities = asItems(spec.similarities)
+    const leftDifferences = asItems(spec.leftDifferences)
+    const rightDifferences = asItems(spec.rightDifferences)
 
     if (group === 'similarity') {
-      spec.similarities = [...similarities, defaultText]
+      spec.similarities = [...similarities, { text: defaultText }]
     } else {
-      spec.leftDifferences = [...leftDifferences, defaultText]
-      spec.rightDifferences = [...rightDifferences, pairText ?? defaultText]
+      spec.leftDifferences = [...leftDifferences, { text: defaultText }]
+      spec.rightDifferences = [...rightDifferences, { text: pairText ?? defaultText }]
     }
 
     return ctx.loadFromSpec(spec, 'double_bubble_map', { mergePreviousNodeStyles: true })
@@ -35,35 +47,27 @@ export function useDoubleBubbleMapOpsSlice(ctx: DiagramContext) {
       return 0
     }
 
-    const simIndices = new Set(
-      nodeIds
-        .filter((id) => /^similarity-\d+$/.test(id))
-        .map((id) => parseInt(id.replace('similarity-', ''), 10))
-    )
-    const leftDiffIndices = new Set(
-      nodeIds
-        .filter((id) => /^left-diff-\d+$/.test(id))
-        .map((id) => parseInt(id.replace('left-diff-', ''), 10))
-    )
-    const rightDiffIndices = new Set(
-      nodeIds
-        .filter((id) => /^right-diff-\d+$/.test(id))
-        .map((id) => parseInt(id.replace('right-diff-', ''), 10))
-    )
+    const nodes = ctx.data.value?.nodes ?? []
+    const removeIds = new Set(nodeIds)
+    const removeByRole = (role: DoubleBubbleRole): Set<number> => {
+      const indices = new Set<number>()
+      for (const node of nodes) {
+        if (!removeIds.has(node.id) || !isDoubleBubbleRoleNode(node, role)) continue
+        const index = readDoubleBubbleIndex(node)
+        if (index >= 0) indices.add(index)
+      }
+      return indices
+    }
 
-    const similarities = ((spec.similarities as string[]) || []).filter(
-      (_, i) => !simIndices.has(i)
-    )
-    const leftDifferences = ((spec.leftDifferences as string[]) || []).filter(
-      (_, i) => !leftDiffIndices.has(i)
-    )
-    const rightDifferences = ((spec.rightDifferences as string[]) || []).filter(
+    const simIndices = removeByRole('similarity')
+    const leftDiffIndices = removeByRole('leftDiff')
+    const rightDiffIndices = removeByRole('rightDiff')
+
+    spec.similarities = asItems(spec.similarities).filter((_, i) => !simIndices.has(i))
+    spec.leftDifferences = asItems(spec.leftDifferences).filter((_, i) => !leftDiffIndices.has(i))
+    spec.rightDifferences = asItems(spec.rightDifferences).filter(
       (_, i) => !rightDiffIndices.has(i)
     )
-
-    spec.similarities = similarities
-    spec.leftDifferences = leftDifferences
-    spec.rightDifferences = rightDifferences
 
     ctx.loadFromSpec(spec, 'double_bubble_map', { mergePreviousNodeStyles: true })
     return simIndices.size + leftDiffIndices.size + rightDiffIndices.size

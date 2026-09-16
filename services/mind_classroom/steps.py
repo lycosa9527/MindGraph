@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from services.diagram.mindmap_identity import identity_aliases, remap_id_list, remap_optional_id
+from services.diagram.mindmap_identity import remap_id_list, remap_optional_id
+from services.diagram.thinking_map_identity import diagram_spec_identity_aliases
 from services.mind_classroom.focus import resolve_whole_map_focus_node_ids
 
 MAX_STEPS_DEFAULT = 40
@@ -16,8 +17,7 @@ def collect_spec_node_ids(spec: dict[str, Any]) -> set[str]:
     nodes = spec.get("nodes")
     if not isinstance(nodes, list):
         return set()
-    typed = [node for node in nodes if isinstance(node, dict)]
-    return set(identity_aliases(typed).keys())
+    return set(diagram_spec_identity_aliases(spec).keys())
 
 
 def normalize_step(raw: Any, *, known_ids: set[str], index: int) -> Optional[dict[str, Any]]:
@@ -74,9 +74,7 @@ def normalize_steps(
     """Validate and cap a step list against the spec snapshot."""
     if not isinstance(raw_steps, list):
         return []
-    nodes_raw = spec.get("nodes")
-    typed = [node for node in nodes_raw if isinstance(node, dict)] if isinstance(nodes_raw, list) else []
-    aliases = identity_aliases(typed)
+    aliases = diagram_spec_identity_aliases(spec)
     known = set(aliases.keys())
     cap = max(1, int(max_steps))
     out: list[dict[str, Any]] = []

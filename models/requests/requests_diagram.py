@@ -152,6 +152,10 @@ class GenerateRequest(BaseModel):
         max_length=500,
         description="Parent branch label when expand_branch is not a top-level branch",
     )
+    skip_cache: Optional[bool] = Field(
+        False,
+        description="Bypass the org result cache and generate a fresh spec without storing it",
+    )
 
     @field_validator("language")
     @classmethod

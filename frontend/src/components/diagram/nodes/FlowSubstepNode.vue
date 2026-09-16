@@ -17,6 +17,7 @@ import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import { isFlowMapSubstepNode } from '@/utils/flowMapIdentity'
 
 import InlineEditableText from './InlineEditableText.vue'
 
@@ -109,7 +110,10 @@ const branchMove = inject<{
   onBranchMovePointerUp: () => void
 }>('branchMove', { onBranchMovePointerDown: () => false, onBranchMovePointerUp: () => {} })
 
-const supportsBranchMove = computed(() => isFlowMap.value && props.id?.startsWith('flow-substep-'))
+const supportsBranchMove = computed(
+  () =>
+    isFlowMap.value && isFlowMapSubstepNode({ id: props.id, type: props.type, data: props.data })
+)
 
 function handleBranchMovePointerDown(event: MouseEvent): void {
   if (supportsBranchMove.value) {

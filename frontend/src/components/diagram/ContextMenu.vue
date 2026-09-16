@@ -18,6 +18,16 @@ import { useUIStore } from '@/stores'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { isProtectedClipboardNode } from '@/stores/diagram/hierarchicalClipboardExtract'
 import type { DiagramNode, MindGraphNode } from '@/types'
+import {
+  isBridgeMapPairNode,
+  readBridgePairIndex,
+  takeBridgeMapStableId,
+} from '@/utils/bridgeMapIdentity'
+import { takeBubbleMapStableId } from '@/utils/bubbleMapIdentity'
+import { takeCircleMapStableId } from '@/utils/circleMapIdentity'
+import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
+import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
+import { takeMultiFlowMapStableId } from '@/utils/multiFlowMapIdentity'
 
 interface MenuItem {
   label?: string
@@ -53,14 +63,10 @@ const { t } = useLanguage()
 const notify = useNotifications()
 const menuRef = ref<HTMLElement | null>(null)
 
-/** Resolve double bubble group from node id: similarity-*, left-diff-*, right-diff-* */
-function getDoubleBubbleGroupFromNodeId(
-  nodeId: string
+function getDoubleBubbleGroupFromNode(
+  node: { id?: string; data?: Record<string, unknown> } | undefined
 ): 'similarity' | 'leftDiff' | 'rightDiff' | null {
-  if (/^similarity-\d+$/.test(nodeId)) return 'similarity'
-  if (/^left-diff-\d+$/.test(nodeId)) return 'leftDiff'
-  if (/^right-diff-\d+$/.test(nodeId)) return 'rightDiff'
-  return null
+  return node ? readDoubleBubbleRole(node) : null
 }
 
 // Build menu items based on context (reactive to UI locale via uiStore.language)
@@ -122,12 +128,13 @@ const menuItems = computed<MenuItem[]>(() => {
     items.push({ divider: true })
 
     if (diagramStore.type === 'multi_flow_map') {
-      if (node.id.startsWith('cause-')) {
+      if (isMultiFlowCauseNode(node)) {
         items.push({
           label: t('diagram.contextMenu.addCause'),
           action: () => {
+            const claimed = new Set((diagramStore.data?.nodes ?? []).map((n) => n.id).filter(Boolean))
             diagramStore.addNode({
-              id: 'cause-temp',
+              id: takeMultiFlowMapStableId(claimed),
               text: t('diagram.flow.newCause'),
               type: 'flow',
               position: { x: 0, y: 0 },
@@ -137,12 +144,13 @@ const menuItems = computed<MenuItem[]>(() => {
             emit('close')
           },
         })
-      } else if (node.id.startsWith('effect-')) {
+      } else if (isMultiFlowEffectNode(node)) {
         items.push({
           label: t('diagram.contextMenu.addEffect'),
           action: () => {
+            const claimed = new Set((diagramStore.data?.nodes ?? []).map((n) => n.id).filter(Boolean))
             diagramStore.addNode({
-              id: 'effect-temp',
+              id: takeMultiFlowMapStableId(claimed),
               text: t('diagram.flow.newEffect'),
               type: 'flow',
               position: { x: 0, y: 0 },
@@ -158,7 +166,7 @@ const menuItems = computed<MenuItem[]>(() => {
     }
 
     if (diagramStore.type === 'double_bubble_map') {
-      const group = getDoubleBubbleGroupFromNodeId(node.id)
+      const group = getDoubleBubbleGroupFromNode(node)
       if (group) {
         const spec = diagramStore.getDoubleBubbleSpecFromData()
         if (spec) {
@@ -263,8 +271,9 @@ const menuItems = computed<MenuItem[]>(() => {
       items.push({
         label: t('diagram.contextMenu.addCause'),
         action: () => {
+          const claimed = new Set((diagramStore.data?.nodes ?? []).map((n) => n.id).filter(Boolean))
           diagramStore.addNode({
-            id: 'cause-temp',
+            id: takeMultiFlowMapStableId(claimed),
             text: t('diagram.flow.newCause'),
             type: 'flow',
             position: { x: 0, y: 0 },
@@ -278,8 +287,9 @@ const menuItems = computed<MenuItem[]>(() => {
       items.push({
         label: t('diagram.contextMenu.addEffect'),
         action: () => {
+          const claimed = new Set((diagramStore.data?.nodes ?? []).map((n) => n.id).filter(Boolean))
           diagramStore.addNode({
-            id: 'effect-temp',
+            id: takeMultiFlowMapStableId(claimed),
             text: t('diagram.flow.newEffect'),
             type: 'flow',
             position: { x: 0, y: 0 },
@@ -298,12 +308,9 @@ const menuItems = computed<MenuItem[]>(() => {
             emit('close')
             return
           }
-          const bubbleNodes = diagramStore.data.nodes.filter(
-            (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-')
-          )
-          const newIndex = bubbleNodes.length
+          const claimed = new Set(diagramStore.data.nodes.map((n) => n.id).filter(Boolean))
           diagramStore.addNode({
-            id: `bubble-${newIndex}`,
+            id: takeBubbleMapStableId(claimed),
             text: t('diagram.newAttribute'),
             type: 'bubble',
             position: { x: 0, y: 0 },
@@ -321,12 +328,9 @@ const menuItems = computed<MenuItem[]>(() => {
             emit('close')
             return
           }
-          const contextNodes = diagramStore.data.nodes.filter(
-            (n) => n.type === 'bubble' && n.id.startsWith('context-')
-          )
-          const newIndex = contextNodes.length
+          const claimed = new Set(diagramStore.data.nodes.map((n) => n.id).filter(Boolean))
           diagramStore.addNode({
-            id: `context-${newIndex}`,
+            id: takeCircleMapStableId(claimed),
             text: t('diagram.contextMenu.circleNewIdea'),
             type: 'bubble',
             position: { x: 0, y: 0 },
@@ -352,20 +356,14 @@ const menuItems = computed<MenuItem[]>(() => {
             emit('close')
             return
           }
-          const pairNodes = diagramStore.data.nodes.filter(
-            (n) =>
-              n.data?.diagramType === 'bridge_map' &&
-              n.data?.pairIndex !== undefined &&
-              !n.data?.isDimensionLabel
-          )
+          const pairNodes = diagramStore.data.nodes.filter((n) => isBridgeMapPairNode(n))
           let maxPairIndex = -1
           pairNodes.forEach((node) => {
-            const pairIndex = node.data?.pairIndex
-            if (typeof pairIndex === 'number' && pairIndex > maxPairIndex) {
-              maxPairIndex = pairIndex
-            }
+            const pairIndex = readBridgePairIndex(node)
+            if (pairIndex > maxPairIndex) maxPairIndex = pairIndex
           })
           const newPairIndex = maxPairIndex + 1
+          const claimed = new Set(diagramStore.data.nodes.map((n) => n.id).filter(Boolean))
           const centerY = DEFAULT_CENTER_Y
           const gapBetweenPairs = 50
           const verticalGap = 5
@@ -388,7 +386,7 @@ const menuItems = computed<MenuItem[]>(() => {
           const leftNodeY = centerY - verticalGap - nodeHeight
           const rightNodeY = centerY + verticalGap
           const leftNode: DiagramNode = {
-            id: `pair-${newPairIndex}-left`,
+            id: takeBridgeMapStableId(claimed),
             text: t('diagram.contextMenu.bridgeItemA'),
             type: 'branch',
             position: { x: nextX, y: leftNodeY },
@@ -399,7 +397,7 @@ const menuItems = computed<MenuItem[]>(() => {
             },
           }
           const rightNode: DiagramNode = {
-            id: `pair-${newPairIndex}-right`,
+            id: takeBridgeMapStableId(claimed),
             text: t('diagram.contextMenu.bridgeItemB'),
             type: 'branch',
             position: { x: nextX, y: rightNodeY },
@@ -417,7 +415,10 @@ const menuItems = computed<MenuItem[]>(() => {
       })
     } else if (diagramType === 'double_bubble_map') {
       const selectedId = diagramStore.selectedNodes[0]
-      const group = getDoubleBubbleGroupFromNodeId(selectedId)
+      const selectedNode = selectedId
+        ? diagramStore.data?.nodes.find((n) => n.id === selectedId)
+        : undefined
+      const group = getDoubleBubbleGroupFromNode(selectedNode)
       items.push({
         label: t('diagram.contextMenu.addNode'),
         action: () => {

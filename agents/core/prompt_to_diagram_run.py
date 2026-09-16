@@ -11,6 +11,7 @@ from agents.core.prompt_understanding import PreparedGenerationPrompt, prepare_g
 from config.settings import config
 from prompts import get_prompt
 from services.llm import llm_service
+from services.llm.org_result_cache import load_or_generate_org_llm_result, normalize_org_cache_text
 
 
 @dataclass(frozen=True)
@@ -55,24 +56,43 @@ async def run_prompt_to_diagram_llm(
         )
     formatted = template.format(user_prompt=prepared.merged_prompt())
     started_at = time.time()
-    response, usage_data = await llm_service.chat_with_usage(
-        prompt=formatted,
-        model="qwen",
-        max_tokens=2000,
-        temperature=config.LLM_TEMPERATURE,
-        user_id=user_id,
-        organization_id=organization_id,
-        api_key_id=api_key_id,
-        request_type="diagram_generation",
-        endpoint_path=endpoint_path,
+    cache_payload = {
+        "prompt": normalize_org_cache_text(prepared.merged_prompt()),
+        "language": normalize_org_cache_text(prepared.language),
+        "model": "qwen",
+        "endpoint": "prompt_to_diagram",
+    }
+    winner_usage: list[Optional[dict[str, Any]]] = [None]
+
+    async def _call_llm() -> dict[str, Any] | None:
+        response, usage_data = await llm_service.chat_with_usage(
+            prompt=formatted,
+            model="qwen",
+            max_tokens=2000,
+            temperature=config.LLM_TEMPERATURE,
+            user_id=user_id,
+            organization_id=organization_id,
+            api_key_id=api_key_id,
+            request_type="diagram_generation",
+            endpoint_path=endpoint_path,
+        )
+        if not response:
+            return None
+        winner_usage[0] = usage_data if isinstance(usage_data, dict) else None
+        return {"raw_result": extract_json_from_response(response)}
+
+    cached = await load_or_generate_org_llm_result(
+        "prompt_to_diagram",
+        organization_id,
+        cache_payload,
+        _call_llm,
     )
-    usage = usage_data if isinstance(usage_data, dict) else None
-    if not response:
+    if cached is None or cached.get("raw_result") is None:
         return PromptToDiagramRun(
             prepared=prepared,
             formatted_prompt=formatted,
             raw_result=None,
-            usage_data=usage,
+            usage_data=winner_usage[0],
             started_at=started_at,
             empty_response=True,
             missing_template=False,
@@ -80,8 +100,8 @@ async def run_prompt_to_diagram_llm(
     return PromptToDiagramRun(
         prepared=prepared,
         formatted_prompt=formatted,
-        raw_result=extract_json_from_response(response),
-        usage_data=usage,
+        raw_result=cached.get("raw_result"),
+        usage_data=winner_usage[0],
         started_at=started_at,
         empty_response=False,
         missing_template=False,

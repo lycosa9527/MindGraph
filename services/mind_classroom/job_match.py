@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from services.diagram.mindmap_identity import identity_aliases
+from services.diagram.thinking_map_identity import diagram_spec_identity_aliases
 
 _LAUNCH_SETTING_KEYS = (
     "mode",
@@ -51,8 +51,7 @@ def spec_snapshot_node_ids(spec: Any) -> list[str]:
     nodes = spec.get("nodes")
     if not isinstance(nodes, list):
         return []
-    typed = [node for node in nodes if isinstance(node, dict)]
-    return list(identity_aliases(typed).keys())
+    return list(diagram_spec_identity_aliases(spec).keys())
 
 
 def job_matches_live_nodes(job_node_ids: Any, live_ids: set[str]) -> bool:

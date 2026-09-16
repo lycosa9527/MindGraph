@@ -6,13 +6,53 @@ import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { i18n } from '@/i18n'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
+import {
+  BRIDGE_MAP_UID_DATA_KEY,
+  type BridgePairSide,
+  isBridgeMapPairNode,
+  stampBridgePairData,
+  takeBridgeMapStableId,
+} from '@/utils/bridgeMapIdentity'
+import {
+  BUBBLE_MAP_UID_DATA_KEY,
+  BUBBLE_TOPIC_NODE_ID,
+  isBubbleMapAttributeNode,
+  stampBubbleAttributeData,
+  takeBubbleMapStableId,
+} from '@/utils/bubbleMapIdentity'
+import {
+  CIRCLE_BOUNDARY_NODE_ID,
+  CIRCLE_MAP_UID_DATA_KEY,
+  CIRCLE_TOPIC_NODE_ID,
+  isCircleMapContextNode,
+  stampCircleContextData,
+  takeCircleMapStableId,
+} from '@/utils/circleMapIdentity'
+import {
+  flowMapChildBelongsToStep,
+  isFlowMapStepNode,
+  isFlowMapSubstepNode,
+} from '@/utils/flowMapIdentity'
 import { mindMapBranchNumberMapFromData } from '@/utils/mindMapBranchNumbering'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
+import {
+  MULTI_FLOW_EVENT_NODE_ID,
+  MULTI_FLOW_UID_DATA_KEY,
+  isMultiFlowCauseNode,
+  isMultiFlowEffectNode,
+  readMultiFlowRole,
+  stampMultiFlowData,
+  takeMultiFlowMapStableId,
+} from '@/utils/multiFlowMapIdentity'
 import { resolveNodeShape } from '@/utils/nodeShapeStyle'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
-import { recalculateBubbleMapLayout, recalculateMultiFlowMapLayout } from '../specLoader'
+import {
+  recalculateBubbleMapLayout,
+  recalculateCircleMapLayout,
+  recalculateMultiFlowMapLayout,
+} from '../specLoader'
 import {
   estimateNodeWidth as estimateMindMapBranchWidth,
   estimateNumberedBranchWidth,
@@ -40,39 +80,14 @@ function shouldInvalidateNodeDimensionsOnTextEdit(
 ): boolean {
   switch (diagramType) {
     case 'multi_flow_map':
-      return nodeId === 'event' || nodeId.startsWith('cause-') || nodeId.startsWith('effect-')
     case 'circle_map':
-      return nodeId === 'topic' || nodeId.startsWith('context-')
     case 'bubble_map':
-      return nodeId === 'topic' || nodeId.startsWith('bubble-')
     case 'tree_map':
-      return (
-        nodeId === 'tree-topic' ||
-        nodeId === 'dimension-label' ||
-        nodeId.startsWith('tree-cat-') ||
-        nodeId.startsWith('tree-leaf-')
-      )
     case 'flow_map':
-      return (
-        nodeId === 'flow-topic' ||
-        nodeId.startsWith('flow-step-') ||
-        nodeId.startsWith('flow-substep-')
-      )
     case 'brace_map':
-      return (
-        nodeId === 'brace-whole' ||
-        nodeId === 'dimension-label' ||
-        nodeId.startsWith('brace-part-') ||
-        nodeId.startsWith('brace-subpart-')
-      )
     case 'double_bubble_map':
-      return (
-        nodeId === 'left-topic' ||
-        nodeId === 'right-topic' ||
-        nodeId.startsWith('similarity-') ||
-        nodeId.startsWith('left-diff-') ||
-        nodeId.startsWith('right-diff-')
-      )
+    case 'bridge_map':
+      return true
     default:
       return false
   }
@@ -172,6 +187,9 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       shouldInvalidateNodeDimensionsOnTextEdit(ctx.type.value, nodeId)
     ) {
       delete ctx.nodeDimensions.value[nodeId]
+      if (ctx.type.value === 'flow_map') {
+        ctx.layoutRecalcTrigger.value++
+      }
     }
 
     if (
@@ -246,7 +264,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       (updates.style.fontSize !== undefined ||
         updates.style.fontWeight !== undefined ||
         updates.style.fontFamily !== undefined) &&
-      (nodeId === 'topic' || nodeId.startsWith('bubble-'))
+      (nodeId === BUBBLE_TOPIC_NODE_ID || oldNode.type === 'bubble' || oldNode.type === 'child')
     ) {
       delete ctx.nodeDimensions.value[nodeId]
       ctx.layoutRecalcTrigger.value++
@@ -258,9 +276,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       (updates.style.fontSize !== undefined ||
         updates.style.fontWeight !== undefined ||
         updates.style.fontFamily !== undefined) &&
-      (nodeId === 'flow-topic' ||
-        nodeId.startsWith('flow-step-') ||
-        nodeId.startsWith('flow-substep-'))
+      (nodeId === 'flow-topic' || oldNode.type === 'flow' || oldNode.type === 'flowSubstep')
     ) {
       delete ctx.nodeDimensions.value[nodeId]
       ctx.layoutRecalcTrigger.value++
@@ -272,10 +288,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       (updates.style.fontSize !== undefined ||
         updates.style.fontWeight !== undefined ||
         updates.style.fontFamily !== undefined) &&
-      (nodeId === 'brace-whole' ||
-        nodeId.startsWith('brace-part-') ||
-        nodeId.startsWith('brace-subpart-') ||
-        nodeId === 'dimension-label')
+      (nodeId === 'brace-whole' || oldNode.type === 'brace' || nodeId === 'dimension-label')
     ) {
       delete ctx.nodeDimensions.value[nodeId]
       ctx.layoutRecalcTrigger.value++
@@ -412,17 +425,16 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
 
     if (ctx.type.value === 'multi_flow_map') {
       const category = (node as unknown as { category?: string }).category
-      const isCause = category === 'causes' || node.id?.startsWith('cause-')
-      const isEffect = category === 'effects' || node.id?.startsWith('effect-')
+      const selected = ctx.data.value.nodes.find((n) => n.id === ctx.selectedNodes.value[0])
+      const selectedRole = selected ? readMultiFlowRole(selected) : null
+      const isCause = category === 'causes' || readMultiFlowRole(node) === 'cause'
+      const isEffect = category === 'effects' || readMultiFlowRole(node) === 'effect'
 
       let targetCategory: 'causes' | 'effects' | null = null
-      if (!category && ctx.selectedNodes.value.length > 0) {
-        const selectedId = ctx.selectedNodes.value[0]
-        if (selectedId.startsWith('cause-')) {
-          targetCategory = 'causes'
-        } else if (selectedId.startsWith('effect-')) {
-          targetCategory = 'effects'
-        }
+      if (!category && selectedRole === 'cause') {
+        targetCategory = 'causes'
+      } else if (!category && selectedRole === 'effect') {
+        targetCategory = 'effects'
       }
 
       if (!node.text) {
@@ -436,7 +448,22 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
         }
       }
 
-      ctx.data.value.nodes.push(node)
+      const role = isCause || targetCategory === 'causes' ? 'cause' : 'effect'
+      const claimed = new Set(ctx.data.value.nodes.map((n) => n.id).filter(Boolean))
+      claimed.add(MULTI_FLOW_EVENT_NODE_ID)
+      const nextId = takeMultiFlowMapStableId(claimed, node.id)
+      const groupIndex = ctx.data.value.nodes.filter((n) =>
+        role === 'cause' ? isMultiFlowCauseNode(n) : isMultiFlowEffectNode(n)
+      ).length
+      ctx.data.value.nodes.push({
+        ...node,
+        id: nextId,
+        type: 'flow',
+        data: stampMultiFlowData(role, groupIndex, {
+          ...node.data,
+          [MULTI_FLOW_UID_DATA_KEY]: nextId,
+        }),
+      })
 
       const recalculatedNodes = recalculateMultiFlowMapLayout(
         ctx.data.value.nodes,
@@ -445,14 +472,14 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
         ctx.nodeDimensions.value
       )
       const recalculatedConnections: Connection[] = []
-      const causeNodes = recalculatedNodes.filter((n) => n.id.startsWith('cause-'))
-      const effectNodes = recalculatedNodes.filter((n) => n.id.startsWith('effect-'))
+      const causeNodes = recalculatedNodes.filter((n) => isMultiFlowCauseNode(n))
+      const effectNodes = recalculatedNodes.filter((n) => isMultiFlowEffectNode(n))
 
       causeNodes.forEach((causeNode, causeIndex) => {
         recalculatedConnections.push({
-          id: `edge-cause-${causeIndex}`,
+          id: `edge-${causeNode.id}-${MULTI_FLOW_EVENT_NODE_ID}`,
           source: causeNode.id,
-          target: 'event',
+          target: MULTI_FLOW_EVENT_NODE_ID,
           sourceHandle: 'right',
           targetHandle: `left-${causeIndex}`,
           style: { strokeColor: getMindmapBranchColor(causeIndex).border },
@@ -461,8 +488,8 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
 
       effectNodes.forEach((effectNode, effectIndex) => {
         recalculatedConnections.push({
-          id: `edge-effect-${effectIndex}`,
-          source: 'event',
+          id: `edge-${MULTI_FLOW_EVENT_NODE_ID}-${effectNode.id}`,
+          source: MULTI_FLOW_EVENT_NODE_ID,
           target: effectNode.id,
           sourceHandle: `right-${effectIndex}`,
           targetHandle: 'left',
@@ -472,20 +499,61 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
 
       ctx.data.value.nodes = recalculatedNodes
       ctx.data.value.connections = recalculatedConnections
-    } else if (ctx.type.value === 'bubble_map' && node.id?.startsWith('bubble-')) {
-      ctx.data.value.nodes.push(node)
+    } else if (ctx.type.value === 'circle_map' && isCircleMapContextNode(node)) {
+      const claimed = new Set(ctx.data.value.nodes.map((n) => n.id).filter(Boolean))
+      claimed.add(CIRCLE_TOPIC_NODE_ID)
+      claimed.add(CIRCLE_BOUNDARY_NODE_ID)
+      const nextId = takeCircleMapStableId(claimed, node.id)
+      const groupIndex = ctx.data.value.nodes.filter((n) => isCircleMapContextNode(n)).length
+      ctx.data.value.nodes.push({
+        ...node,
+        id: nextId,
+        type: 'bubble',
+        data: stampCircleContextData(groupIndex, {
+          ...node.data,
+          [CIRCLE_MAP_UID_DATA_KEY]: nextId,
+        }),
+      })
+      ctx.data.value.nodes = recalculateCircleMapLayout(
+        ctx.data.value.nodes,
+        ctx.nodeDimensions.value
+      )
+    } else if (ctx.type.value === 'bridge_map' && isBridgeMapPairNode(node)) {
+      const claimed = new Set(ctx.data.value.nodes.map((n) => n.id).filter(Boolean))
+      const nextId = takeBridgeMapStableId(claimed, node.id)
+      const pairIndex = typeof node.data?.pairIndex === 'number' ? node.data.pairIndex : 0
+      const side: BridgePairSide = node.data?.position === 'right' ? 'right' : 'left'
+      ctx.data.value.nodes.push({
+        ...node,
+        id: nextId,
+        data: {
+          ...stampBridgePairData(pairIndex, side, node.data),
+          [BRIDGE_MAP_UID_DATA_KEY]: nextId,
+        },
+      })
+    } else if (ctx.type.value === 'bubble_map' && isBubbleMapAttributeNode(node)) {
+      const claimed = new Set(ctx.data.value.nodes.map((n) => n.id).filter(Boolean))
+      claimed.add(BUBBLE_TOPIC_NODE_ID)
+      const nextId = takeBubbleMapStableId(claimed, node.id)
+      const groupIndex = ctx.data.value.nodes.filter((n) => isBubbleMapAttributeNode(n)).length
+      ctx.data.value.nodes.push({
+        ...node,
+        id: nextId,
+        data: stampBubbleAttributeData(groupIndex, {
+          ...node.data,
+          [BUBBLE_MAP_UID_DATA_KEY]: nextId,
+        }),
+      })
       const recalculatedNodes = recalculateBubbleMapLayout(
         ctx.data.value.nodes,
         ctx.nodeDimensions.value
       )
-      const bubbleNodes = recalculatedNodes.filter(
-        (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-')
-      )
+      const bubbleNodes = recalculatedNodes.filter((n) => isBubbleMapAttributeNode(n))
       ctx.data.value.nodes = recalculatedNodes
-      ctx.data.value.connections = bubbleNodes.map((_, i) => ({
-        id: `edge-topic-bubble-${i}`,
-        source: 'topic',
-        target: `bubble-${i}`,
+      ctx.data.value.connections = bubbleNodes.map((bubbleNode, i) => ({
+        id: `edge-${BUBBLE_TOPIC_NODE_ID}-${bubbleNode.id}`,
+        source: BUBBLE_TOPIC_NODE_ID,
+        target: bubbleNode.id,
         style: { strokeColor: getMindmapBranchColor(i).border },
       }))
     } else if (ctx.type.value === 'concept_map') {
@@ -529,32 +597,20 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
 
       ctx.data.value.nodes.splice(index, 1)
 
-      const oldCauseNodes = ctx.data.value.nodes
-        .filter((n) => n.id.startsWith('cause-'))
-        .sort((a, b) => {
-          const aIndex = parseInt(a.id.replace('cause-', ''), 10)
-          const bIndex = parseInt(b.id.replace('cause-', ''), 10)
-          return aIndex - bIndex
-        })
-      const oldEffectNodes = ctx.data.value.nodes
-        .filter((n) => n.id.startsWith('effect-'))
-        .sort((a, b) => {
-          const aIndex = parseInt(a.id.replace('effect-', ''), 10)
-          const bIndex = parseInt(b.id.replace('effect-', ''), 10)
-          return aIndex - bIndex
-        })
+      const oldCauseNodes = ctx.data.value.nodes.filter((n) => isMultiFlowCauseNode(n))
+      const oldEffectNodes = ctx.data.value.nodes.filter((n) => isMultiFlowEffectNode(n))
 
       const newNodeWidths: Record<string, number> = {}
-      oldCauseNodes.forEach((oldNode, newIndex) => {
+      oldCauseNodes.forEach((oldNode) => {
         const oldWidth = ctx.nodeWidths.value[oldNode.id]
         if (oldWidth) {
-          newNodeWidths[`cause-${newIndex}`] = oldWidth
+          newNodeWidths[oldNode.id] = oldWidth
         }
       })
-      oldEffectNodes.forEach((oldNode, newIndex) => {
+      oldEffectNodes.forEach((oldNode) => {
         const oldWidth = ctx.nodeWidths.value[oldNode.id]
         if (oldWidth) {
-          newNodeWidths[`effect-${newIndex}`] = oldWidth
+          newNodeWidths[oldNode.id] = oldWidth
         }
       })
 
@@ -567,14 +623,14 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
         ctx.nodeDimensions.value
       )
       const recalculatedConnections: Connection[] = []
-      const causeNodes = recalculatedNodes.filter((n) => n.id.startsWith('cause-'))
-      const effectNodes = recalculatedNodes.filter((n) => n.id.startsWith('effect-'))
+      const causeNodes = recalculatedNodes.filter((n) => isMultiFlowCauseNode(n))
+      const effectNodes = recalculatedNodes.filter((n) => isMultiFlowEffectNode(n))
 
       causeNodes.forEach((causeNode, causeIndex) => {
         recalculatedConnections.push({
-          id: `edge-cause-${causeIndex}`,
+          id: `edge-${causeNode.id}-${MULTI_FLOW_EVENT_NODE_ID}`,
           source: causeNode.id,
-          target: 'event',
+          target: MULTI_FLOW_EVENT_NODE_ID,
           sourceHandle: 'right',
           targetHandle: `left-${causeIndex}`,
           style: { strokeColor: getMindmapBranchColor(causeIndex).border },
@@ -583,8 +639,8 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
 
       effectNodes.forEach((effectNode, effectIndex) => {
         recalculatedConnections.push({
-          id: `edge-effect-${effectIndex}`,
-          source: 'event',
+          id: `edge-${MULTI_FLOW_EVENT_NODE_ID}-${effectNode.id}`,
+          source: MULTI_FLOW_EVENT_NODE_ID,
           target: effectNode.id,
           sourceHandle: `right-${effectIndex}`,
           targetHandle: 'left',
@@ -601,16 +657,12 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       ctx.multiFlowMapRecalcTrigger.value++
     } else if (ctx.type.value === 'flow_map') {
       const idsToRemove = new Set<string>([nodeId])
-      if (node.type === 'flow') {
-        const stepMatch = nodeId.match(/flow-step-(\d+)/)
-        if (stepMatch) {
-          const stepIndex = stepMatch[1]
-          ctx.data.value.nodes
-            .filter((n) => n.id?.startsWith(`flow-substep-${stepIndex}-`))
-            .forEach((n) => {
-              if (n.id) idsToRemove.add(n.id)
-            })
-        }
+      if (isFlowMapStepNode(node)) {
+        ctx.data.value.nodes
+          .filter((n) => isFlowMapSubstepNode(n) && flowMapChildBelongsToStep(n, node))
+          .forEach((n) => {
+            if (n.id) idsToRemove.add(n.id)
+          })
       }
       ctx.data.value.nodes = ctx.data.value.nodes.filter((n) => !idsToRemove.has(n.id ?? ''))
       ctx.data.value.connections = (ctx.data.value.connections ?? []).filter(
@@ -627,19 +679,20 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       }
       emitCtxEvent(ctx, 'diagram:nodes_deleted', { nodeIds: [...idsToRemove] })
       return true
-    } else if (ctx.type.value === 'bubble_map' && nodeId.startsWith('bubble-')) {
+    } else if (ctx.type.value === 'bubble_map' && isBubbleMapAttributeNode(node)) {
       ctx.data.value.nodes.splice(index, 1)
 
-      const bubbleNodes = ctx.data.value.nodes.filter(
-        (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-')
-      )
+      const bubbleNodes = ctx.data.value.nodes.filter((n) => isBubbleMapAttributeNode(n))
       bubbleNodes.forEach((bubbleNode, i) => {
-        bubbleNode.id = `bubble-${i}`
+        bubbleNode.data = stampBubbleAttributeData(i, {
+          ...bubbleNode.data,
+          [BUBBLE_MAP_UID_DATA_KEY]: bubbleNode.id,
+        })
       })
-      ctx.data.value.connections = bubbleNodes.map((_, i) => ({
-        id: `edge-topic-bubble-${i}`,
-        source: 'topic',
-        target: `bubble-${i}`,
+      ctx.data.value.connections = bubbleNodes.map((bubbleNode, i) => ({
+        id: `edge-${BUBBLE_TOPIC_NODE_ID}-${bubbleNode.id}`,
+        source: BUBBLE_TOPIC_NODE_ID,
+        target: bubbleNode.id,
         style: { strokeColor: getMindmapBranchColor(i).border },
       }))
       if (ctx.emitDiagramEvents && !ctx.isReadonly.value) {

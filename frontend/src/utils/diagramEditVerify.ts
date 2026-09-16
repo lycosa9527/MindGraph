@@ -45,6 +45,40 @@ function topicNodes(nodes: DiagramNode[]): DiagramNode[] {
   return nodes.filter((n) => n.id === 'topic' || n.type === 'topic')
 }
 
+const THINKING_MAP_TYPES = new Set([
+  'circle_map',
+  'bubble_map',
+  'double_bubble_map',
+  'tree_map',
+  'brace_map',
+  'flow_map',
+  'multi_flow_map',
+  'bridge_map',
+])
+
+const RESERVED_ROOT_BY_TYPE: Record<string, string> = {
+  circle_map: 'topic',
+  bubble_map: 'topic',
+  double_bubble_map: 'left-topic',
+  tree_map: 'tree-topic',
+  brace_map: 'brace-whole',
+  flow_map: 'flow-topic',
+  multi_flow_map: 'event',
+  bridge_map: 'dimension-label',
+}
+
+function reservedRootNodes(nodes: DiagramNode[], diagramType: string): DiagramNode[] {
+  const reserved = RESERVED_ROOT_BY_TYPE[diagramType] ?? 'topic'
+  return nodes.filter(
+    (node) =>
+      node.id === reserved ||
+      node.type === 'topic' ||
+      node.type === 'center' ||
+      node.type === 'whole' ||
+      node.type === 'event'
+  )
+}
+
 export function captureDiagramFingerprint(
   nodes: DiagramNode[],
   connections: Connection[]
@@ -200,4 +234,86 @@ function report(passed: string[], failed: string[]): DiagramEditVerificationRepo
     return { ok: false, checks: passed, error: `failed: ${failed.join(', ')}` }
   }
   return { ok: true, checks: passed }
+}
+
+export function verifyThinkingMapEffect(
+  effect: DiagramEditExpectedEffect,
+  fingerprint: DiagramFingerprint,
+  beforeNodeCount: number | undefined,
+  diagramType: string
+): DiagramEditVerificationReport {
+  const nodes = fingerprint.nodes
+  const connections = fingerprint.connections
+  const passed: string[] = []
+  const failed: string[] = []
+  const record = (check: string, ok: boolean): void => {
+    if (ok) passed.push(check)
+    else failed.push(check)
+  }
+  const roots = reservedRootNodes(nodes, diagramType)
+
+  if (effect.op === 'update_center') {
+    record('reserved_root_present', roots.length >= 1)
+    if (effect.text && roots.length > 0) {
+      record('topic_text_matches', nodeText(roots[0]) === normalizeDiagramText(effect.text))
+    }
+    return report(passed, failed)
+  }
+
+  if (effect.op === 'add_branch' || effect.op === 'add_child') {
+    record('reserved_root_present', roots.length >= 1)
+    if (beforeNodeCount !== undefined) {
+      record('delta_nodes', nodes.length === beforeNodeCount + 1)
+    }
+    if (effect.text) {
+      const want = normalizeDiagramText(effect.text)
+      const matches = nodes.filter((node) => nodeText(node) === want)
+      record('node_exists', matches.length > 0)
+      record('text_matches', matches.length > 0)
+      if (matches.length > 0) {
+        const newId = matches[matches.length - 1].id
+        record(
+          'parent_edge_exists',
+          connections.some((connection) => connection.target === newId)
+        )
+      }
+    }
+    return report(passed, failed)
+  }
+
+  if (effect.op === 'update_node') {
+    return verifyMindMapEffect(effect, fingerprint, beforeNodeCount)
+  }
+
+  if (effect.op === 'delete_node') {
+    if (effect.node_identifier) {
+      const ident = normalizeDiagramText(effect.node_identifier)
+      const absent = !nodes.some((node) => node.id === ident || nodeText(node) === ident)
+      record('node_absent', absent)
+    }
+    const ids = new Set(nodes.map((node) => node.id))
+    const dangling = connections.some(
+      (connection) => !ids.has(connection.source) || !ids.has(connection.target)
+    )
+    record('no_dangling_edges', !dangling)
+    record('reserved_root_present', roots.length >= 1)
+    return report(passed, failed)
+  }
+
+  return { ok: false, checks: [], error: 'unsupported_effect' }
+}
+
+export function verifyDiagramEffect(
+  effect: DiagramEditExpectedEffect,
+  fingerprint: DiagramFingerprint,
+  beforeNodeCount: number | undefined,
+  diagramType: string
+): DiagramEditVerificationReport {
+  if (diagramType === 'mindmap' || diagramType === 'mind_map') {
+    return verifyMindMapEffect(effect, fingerprint, beforeNodeCount)
+  }
+  if (THINKING_MAP_TYPES.has(diagramType)) {
+    return verifyThinkingMapEffect(effect, fingerprint, beforeNodeCount, diagramType)
+  }
+  return { ok: false, checks: [], error: 'unsupported_diagram_type' }
 }

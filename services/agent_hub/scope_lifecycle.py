@@ -19,6 +19,8 @@ from uuid import uuid4
 from fastapi import WebSocket
 
 from services.diagram.mindmap_identity import migrate_mindmap_diagram_payload
+from services.diagram.thinking_map_identity import migrate_thinking_map_diagram_payload
+from services.diagram.thinking_map_patterns import is_thinking_map_diagram_type
 from services.diagram_edit.ack import configure_mutation_ack_relay
 from services.infrastructure.monitoring.ws_metrics import (
     record_kitty_refcount_attach,
@@ -468,10 +470,12 @@ class MindGraphAgentHub:
                 diagram_type = res_dt
                 active_panel = res_panel
 
-        if diagram_type in {"mindmap", "mind_map"}:
-            live_dd = context_payload.get("diagram_data")
-            if isinstance(live_dd, dict):
+        live_dd = context_payload.get("diagram_data")
+        if isinstance(live_dd, dict):
+            if diagram_type in {"mindmap", "mind_map"}:
                 migrate_mindmap_diagram_payload(live_dd)
+            elif is_thinking_map_diagram_type(diagram_type):
+                migrate_thinking_map_diagram_payload(live_dd, diagram_type)
 
         mut_id = _new_hub_mutation_id()
         request_id = _new_hub_request_id()
@@ -486,6 +490,8 @@ class MindGraphAgentHub:
                 if isinstance(spec, dict):
                     if diagram_type in {"mindmap", "mind_map"}:
                         migrate_mindmap_diagram_payload(spec)
+                    elif is_thinking_map_diagram_type(diagram_type):
+                        migrate_thinking_map_diagram_payload(spec, diagram_type)
                     title_raw = lib_snapshot.get("title") or context_payload.get("diagram_display_title") or "Untitled"
                     title = str(title_raw).strip() or "Untitled"
                     language = str(lib_snapshot.get("language") or "zh")

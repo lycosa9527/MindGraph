@@ -17,7 +17,8 @@ import asyncio
 import json
 import logging
 import time
-from typing import Optional
+from types import SimpleNamespace
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -25,6 +26,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from agents.core.workflow import agent_graph_workflow_with_styles
 from models import GenerateRequest, LLMHealthResponse, Messages, get_request_language
 from models.domain.auth import User
+from services.diagram.generation_result_cache import load_or_generate_cached_result
 from services.llm import llm_service
 from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
@@ -35,6 +37,63 @@ from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["api"])
+
+
+async def _cached_multi_model_workflow(
+    *,
+    prompt: str,
+    language: str,
+    diagram_type: Optional[str],
+    model: str,
+    req: GenerateRequest,
+    user_id: Any,
+    organization_id: Any,
+    endpoint_path: str,
+) -> dict[str, Any]:
+    """Run the agent workflow, sharing the org generate_graph cache per model."""
+    req_ns = SimpleNamespace(
+        use_rag=False,
+        rag_document_ids=None,
+        expand_branch=None,
+        locked_topic=None,
+        dimension_only_mode=None,
+        concept_map_relationship_only=None,
+        mind_map_topic=None,
+        existing_analogies=None,
+        parent_branch=None,
+        reference_branches=None,
+        existing_branch_children=None,
+        concept_a=None,
+        concept_b=None,
+        skip_cache=bool(getattr(req, "skip_cache", False)),
+        diagram_type=SimpleNamespace(value=diagram_type) if diagram_type else None,
+        dimension_preference=getattr(req, "dimension_preference", None),
+        fixed_dimension=None,
+    )
+    prepared = {
+        "req": req_ns,
+        "organization_id": organization_id,
+        "request_type": "diagram_generation",
+        "prompt": prompt,
+        "language": language,
+        "llm_model": model,
+        "generation_instructions": getattr(req, "generation_instructions", None),
+        "is_learning_sheet": False,
+    }
+
+    async def _generate() -> dict[str, Any]:
+        return await agent_graph_workflow_with_styles(
+            prompt,
+            language=language,
+            forced_diagram_type=diagram_type,
+            dimension_preference=req.dimension_preference if hasattr(req, "dimension_preference") else None,
+            model=model,
+            user_id=user_id,
+            organization_id=organization_id,
+            endpoint_path=endpoint_path,
+        )
+
+    return await load_or_generate_cached_result(prepared, _generate)
 
 
 @router.get("/llm/metrics")
@@ -227,12 +286,12 @@ async def generate_multi_parallel(
             model_start = time.time()
             try:
                 # Call agent - this uses proper system prompts!
-                spec_result = await agent_graph_workflow_with_styles(
-                    prompt,
+                spec_result = await _cached_multi_model_workflow(
+                    prompt=prompt,
                     language=language,
-                    forced_diagram_type=diagram_type,
-                    dimension_preference=req.dimension_preference if hasattr(req, "dimension_preference") else None,
+                    diagram_type=diagram_type,
                     model=model,
+                    req=req,
                     user_id=user_id,
                     organization_id=organization_id,
                     endpoint_path="/api/generate_multi_parallel",
@@ -391,12 +450,12 @@ async def generate_multi_progressive(
                 model_start = time.time()
                 try:
                     # Call agent
-                    spec_result = await agent_graph_workflow_with_styles(
-                        prompt,
+                    spec_result = await _cached_multi_model_workflow(
+                        prompt=prompt,
                         language=language,
-                        forced_diagram_type=diagram_type,
-                        dimension_preference=req.dimension_preference if hasattr(req, "dimension_preference") else None,
+                        diagram_type=diagram_type,
                         model=model,
+                        req=req,
                         user_id=user_id,
                         organization_id=organization_id,
                         endpoint_path="/api/generate_multi_progressive",

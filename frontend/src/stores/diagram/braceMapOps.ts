@@ -1,4 +1,5 @@
 import { i18n } from '@/i18n'
+import { BRACE_MAP_UID_DATA_KEY, takeBraceMapStableId } from '@/utils/braceMapIdentity'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import { recalculateBraceMapLayout } from '../specLoader'
@@ -35,14 +36,17 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
 
     const t = i18n.global.t
     const partText = text ?? String(isAddingPart ? t('diagram.newPart') : t('diagram.newSubpart'))
-    const baseId = Date.now()
-    const newId = `brace-part-${baseId}`
+    const claimed = new Set(data.value.nodes.map((n) => n.id).filter(Boolean))
+    claimed.add('brace-whole')
+    claimed.add('dimension-label')
+    const newId = takeBraceMapStableId(claimed)
 
     ctx.addNode({
       id: newId,
       text: partText,
       type: 'brace',
       position: { x: 0, y: 0 },
+      data: { [BRACE_MAP_UID_DATA_KEY]: newId },
     })
     ctx.addConnection(attachParentId, newId)
 
@@ -51,19 +55,21 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
         `${String(t('diagram.newSubpart'))} 1`,
         `${String(t('diagram.newSubpart'))} 2`,
       ]
-      const sub1Id = `brace-part-${baseId}-1`
-      const sub2Id = `brace-part-${baseId}-2`
+      const sub1Id = takeBraceMapStableId(claimed)
+      const sub2Id = takeBraceMapStableId(claimed)
       ctx.addNode({
         id: sub1Id,
         text: sub1Text,
         type: 'brace',
         position: { x: 0, y: 0 },
+        data: { [BRACE_MAP_UID_DATA_KEY]: sub1Id },
       })
       ctx.addNode({
         id: sub2Id,
         text: sub2Text,
         type: 'brace',
         position: { x: 0, y: 0 },
+        data: { [BRACE_MAP_UID_DATA_KEY]: sub2Id },
       })
       ctx.addConnection(newId, sub1Id)
       ctx.addConnection(newId, sub2Id)

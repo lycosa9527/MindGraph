@@ -578,8 +578,8 @@ async def test_thinking_coins_do_not_run_heuristics() -> None:
 
 
 def test_verified_edit_is_all_typed_mindmap() -> None:
-    """Typed mindmap structural ops use verified Bus even outside one-sentence."""
+    """Typed mindmap / Thinking Map structural ops use verified Bus even outside one-sentence."""
     context = {"one_sentence_phase": "create"}
     assert should_use_verified_diagram_edit(context, None, "mind_map", is_text_message=True) is True
     assert should_use_verified_diagram_edit(context, None, "mind_map", is_text_message=False) is False
-    assert should_use_verified_diagram_edit(context, None, "circle_map", is_text_message=True) is False
+    assert should_use_verified_diagram_edit(context, None, "circle_map", is_text_message=True) is True

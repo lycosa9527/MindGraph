@@ -1,10 +1,20 @@
-import {
-  findBranchByNodeId,
-  nodesAndConnectionsToMindMapSpec,
-} from '@/stores/specLoader/mindMap'
+import { findBranchByNodeId, nodesAndConnectionsToMindMapSpec } from '@/stores/specLoader/mindMap'
 import type { Connection, DiagramData, DiagramNode, DiagramType } from '@/types'
+import { isBraceMapPartNode } from '@/utils/braceMapIdentity'
+import {
+  isFlowMapStepNode,
+  isFlowMapSubstepNode,
+  readFlowParentStepId,
+} from '@/utils/flowMapIdentity'
 import { isMindMapBranchId } from '@/utils/mindMapLocation'
 import { deepCloneMindMapBranch } from '@/utils/mindMapSubgraphMerge'
+import {
+  isTreeMapCategoryNode,
+  isTreeMapLeafNode,
+  readTreeCategoryIndex,
+  readTreeLeafIndex,
+  readTreeParentCategoryId,
+} from '@/utils/treeMapIdentity'
 
 import type {
   BraceMapClipboardNode,
@@ -75,12 +85,7 @@ function extractMindMapBranches(
 
   const branches = branchIds
     .map((nodeId) => {
-      const found = findBranchByNodeId(
-        spec.rightBranches,
-        spec.leftBranches,
-        nodeId,
-        connections
-      )
+      const found = findBranchByNodeId(spec.rightBranches, spec.leftBranches, nodeId, connections)
       return found ? deepCloneMindMapBranch(found.branch) : null
     })
     .filter((b): b is NonNullable<typeof b> => b !== null)
@@ -95,26 +100,18 @@ function buildTreeMapSpecFromData(data: DiagramData): Record<string, unknown> | 
   if (!rootNode) return null
 
   const categoryNodes = nodes
-    .filter((n) => /^tree-cat-\d+$/.test(n.id ?? ''))
-    .sort(
-      (a, b) =>
-        parseInt((a.id ?? '0').replace('tree-cat-', ''), 10) -
-        parseInt((b.id ?? '0').replace('tree-cat-', ''), 10)
-    )
+    .filter((n) => isTreeMapCategoryNode(n))
+    .sort((a, b) => readTreeCategoryIndex(a) - readTreeCategoryIndex(b))
 
   const categories = categoryNodes.map((cat) => {
-    const idMatch = (cat.id ?? '').match(/^tree-cat-(\d+)$/)
-    const categoryNum = idMatch ? parseInt(idMatch[1], 10) : -1
     const leaves = nodes
       .filter((n) => {
-        const m = (n.id ?? '').match(/^tree-leaf-(\d+)-(\d+)$/)
-        return m && parseInt(m[1], 10) === categoryNum
+        if (!isTreeMapLeafNode(n)) return false
+        const parentId = readTreeParentCategoryId(n)
+        if (parentId) return parentId === cat.id
+        return readTreeCategoryIndex(n) === readTreeCategoryIndex(cat)
       })
-      .sort(
-        (a, b) =>
-          parseInt((a.id ?? '0').split('-').pop() ?? '0', 10) -
-          parseInt((b.id ?? '0').split('-').pop() ?? '0', 10)
-      )
+      .sort((a, b) => readTreeLeafIndex(a) - readTreeLeafIndex(b))
     return {
       id: cat.id,
       text: cat.text,
@@ -140,15 +137,18 @@ function extractTreeMapPayload(
   const topIds = filterTopLevelNodeIds(nodeIds, (root, cand) =>
     getTreeMapDescendantIds(root).has(cand)
   )
-  const nodeId = topIds.find((id) => /^tree-cat-\d+$/.test(id) || /^tree-leaf-\d+-\d+$/.test(id))
+  const nodeId = topIds.find((id) => {
+    const node = data.nodes.find((n) => n.id === id)
+    return Boolean(node && (isTreeMapCategoryNode(node) || isTreeMapLeafNode(node)))
+  })
   if (!nodeId) return null
 
   const root = spec.root as {
     children?: Array<{ id?: string; text: string; children?: Array<{ id?: string; text: string }> }>
   }
   const categories = root.children ?? []
-
-  if (/^tree-cat-\d+$/.test(nodeId)) {
+  const selected = data.nodes.find((n) => n.id === nodeId)
+  if (selected && isTreeMapCategoryNode(selected)) {
     const cat = categories.find((c) => c.id === nodeId)
     if (!cat) return null
     const payload: TreeMapClipboardPayload = {
@@ -159,12 +159,13 @@ function extractTreeMapPayload(
     return { kind: 'tree_map', payload }
   }
 
-  const leafMatch = nodeId.match(/^tree-leaf-(\d+)-(\d+)$/)
-  if (!leafMatch) return null
-  const catIdx = parseInt(leafMatch[1], 10)
-  const leafIdx = parseInt(leafMatch[2], 10)
-  const cat = categories[catIdx]
-  const leaf = cat?.children?.[leafIdx]
+  if (!selected || !isTreeMapLeafNode(selected)) return null
+  const parentId = readTreeParentCategoryId(selected)
+  const cat =
+    categories.find((c) => c.id === parentId) ??
+    categories.find((c) => c.children?.some((leaf) => leaf.id === nodeId))
+  const leaf =
+    cat?.children?.find((row) => row.id === nodeId) ?? cat?.children?.[readTreeLeafIndex(selected)]
   if (!leaf) return null
   const payload: TreeMapClipboardPayload = { kind: 'leaf', text: leaf.text }
   return { kind: 'tree_map', payload }
@@ -197,7 +198,10 @@ function extractBraceMapPayload(
   getDescendantIds: (rootId: string) => Set<string>
 ): HierarchicalClipboardPayload | null {
   const topIds = filterTopLevelNodeIds(
-    nodeIds.filter((id) => id.startsWith('brace-part-') || id.startsWith('brace-subpart-')),
+    nodeIds.filter((id) => {
+      const node = data.nodes.find((n) => n.id === id)
+      return Boolean(node && isBraceMapPartNode(node))
+    }),
     (root, cand) => getDescendantIds(root).has(cand)
   )
   const nodeId = topIds[0]
@@ -211,26 +215,22 @@ function extractFlowMapPayload(
   data: DiagramData,
   nodeIds: string[]
 ): HierarchicalClipboardPayload | null {
-  const nodeId = nodeIds.find(
-    (id) => id.startsWith('flow-step-') || id.startsWith('flow-substep-')
-  )
+  const nodeId = nodeIds.find((id) => {
+    const node = data.nodes.find((n) => n.id === id)
+    return node != null && (isFlowMapStepNode(node) || isFlowMapSubstepNode(node))
+  })
   if (!nodeId) return null
 
-  const stepNodes = data.nodes.filter((n) => n.type === 'flow')
-  const substepNodes = data.nodes.filter((n) => n.type === 'flowSubstep')
+  const picked = data.nodes.find((n) => n.id === nodeId)
+  if (!picked) return null
 
-  if (nodeId.startsWith('flow-step-')) {
-    const stepMatch = nodeId.match(/flow-step-(\d+)/)
-    if (!stepMatch) return null
-    const stepIndex = parseInt(stepMatch[1], 10)
-    const stepNode = stepNodes[stepIndex]
-    if (!stepNode) return null
-    const substeps = substepNodes
-      .filter((n) => n.id?.startsWith(`flow-substep-${stepIndex}-`))
+  if (isFlowMapStepNode(picked)) {
+    const substeps = data.nodes
+      .filter((n) => isFlowMapSubstepNode(n) && readFlowParentStepId(n) === picked.id)
       .map((n) => n.text)
     const payload: FlowMapClipboardPayload = {
       kind: 'step',
-      step: stepNode.text,
+      step: picked.text,
       substeps,
     }
     return { kind: 'flow_map', payload }
@@ -242,7 +242,10 @@ function extractFlowMapPayload(
   return { kind: 'flow_map', payload }
 }
 
-function extractFlatNodes(data: DiagramData, nodeIds: string[]): HierarchicalClipboardPayload | null {
+function extractFlatNodes(
+  data: DiagramData,
+  nodeIds: string[]
+): HierarchicalClipboardPayload | null {
   const nodesToCopy = data.nodes.filter((n) => nodeIds.includes(n.id))
   if (nodesToCopy.length === 0) return null
   const nodes = nodesToCopy.map((node) => ({

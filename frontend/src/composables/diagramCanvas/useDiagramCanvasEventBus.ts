@@ -8,7 +8,7 @@ import { ANIMATION } from '@/config/uiConfig'
 import { useCanvasExportStore } from '@/stores'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { useUIStore } from '@/stores/ui'
-import type { Connection, DiagramNode, DiagramType, MindGraphNode } from '@/types'
+import type { Connection, DiagramNode, MindGraphNode } from '@/types'
 import { runWithExportVisualMode } from '@/utils/canvasExportVisualMode'
 import { isManualViewportMode } from '@/utils/conceptMapDesktopViewport'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
@@ -322,18 +322,6 @@ export function useDiagramCanvasEventBus(): {
         const alreadyUpdated = currentText === text.trim()
         if (!alreadyUpdated) {
           diagramStore.updateNode(nodeId, { text })
-          if (diagramStore.type === 'flow_map') {
-            const spec = diagramStore.buildFlowMapSpecFromNodes()
-            if (spec) {
-              diagramStore.loadFromSpec(
-                spec as Record<string, unknown>,
-                'flow_map' as DiagramType,
-                {
-                  mergePreviousNodeStyles: true,
-                }
-              )
-            }
-          }
           diagramStore.pushHistory('Edit node text')
         }
         if (diagramStore.type === 'concept_map') {

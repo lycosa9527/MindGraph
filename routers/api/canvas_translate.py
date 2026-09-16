@@ -41,6 +41,14 @@ from services.infrastructure.http.error_handler import (
     UserDailyTokenCapExceededError,
 )
 from services.llm import llm_service
+from services.llm.org_result_cache import (
+    fingerprint_org_payload,
+    get_org_llm_result,
+    load_or_generate_org_llm_result,
+    normalize_org_cache_text,
+    positive_org_id,
+    store_org_llm_result,
+)
 from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, JSON_PARSE_ERRORS
 from utils.auth import get_current_user_or_api_key
@@ -123,6 +131,16 @@ def _parse_translations_json(llm_text: str, expected_len: int) -> list[str]:
 _CANVAS_TRANSLATE_REQUEST_TYPE = "canvas_translate"
 
 
+def _translate_cache_payload(text: str, lang_name: str, extra_rules: str) -> dict[str, Any]:
+    """Exact-match key for one source label."""
+    return {
+        "text": normalize_org_cache_text(text),
+        "lang": normalize_org_cache_text(lang_name),
+        "rules": normalize_org_cache_text(extra_rules),
+        "model": CANVAS_TRANSLATE_MODEL,
+    }
+
+
 async def _translate_unique_texts_chunk(
     texts: list[str],
     lang_name: str,
@@ -134,40 +152,63 @@ async def _translate_unique_texts_chunk(
     endpoint_path: str = "/api/canvas/translate_diagram_labels",
     batch_billing: bool = False,
 ) -> list[str]:
-    """Translate unique texts chunk."""
-    payload = json.dumps(texts, ensure_ascii=False)
-    system_message = (
-        "You translate diagram labels (node or relationship text). Output rules:\n"
-        '- Respond with only a JSON object: {"translations": ["...", ...]}.\n'
-        "- The translations array MUST have exactly the same length and order as the input JSON array.\n"
-        "- Each element must be only the translated string.\n"
-        "- No markdown fences, no explanations.\n"
-        "- Preserve meaning. Keep proper nouns when commonly left untranslated.\n"
-        "- Do not add prefixes.\n"
-        f"- Target language: {lang_name}."
-        f"{extra_rules}"
-    )
-    user_message = f"Translate each string in this JSON array (same order):\n{payload}"
-    max_tokens = min(8192, max(384, 64 * len(texts) + 400))
-    llm_kwargs: dict[str, Any] = {}
-    if batch_billing:
-        llm_kwargs["thinking_coin_mode"] = THINKING_COIN_MODE_BATCH_INNER
-    raw = await llm_service.chat(
-        prompt=user_message,
-        system_message=system_message,
-        model=CANVAS_TRANSLATE_MODEL,
-        temperature=0.2,
-        max_tokens=max_tokens,
-        use_knowledge_base=False,
-        skip_load_balancing=False,
-        user_id=user_id,
-        organization_id=organization_id,
-        request_type=_CANVAS_TRANSLATE_REQUEST_TYPE,
-        diagram_type=diagram_type,
-        endpoint_path=endpoint_path,
-        **llm_kwargs,
-    )
-    return _parse_translations_json(_coerce_llm_text(raw), len(texts))
+    """Translate unique texts chunk, filling org cache hits first."""
+    resolved: dict[str, str] = {}
+    misses: list[str] = []
+    org_id = positive_org_id(organization_id)
+    for text in texts:
+        if org_id is None:
+            misses.append(text)
+            continue
+        fingerprint = fingerprint_org_payload(_translate_cache_payload(text, lang_name, extra_rules))
+        cached = await get_org_llm_result("translate", org_id, fingerprint)
+        translated = cached.get("text") if cached else None
+        if isinstance(translated, str) and translated.strip():
+            resolved[text] = translated
+        else:
+            misses.append(text)
+
+    if misses:
+        payload = json.dumps(misses, ensure_ascii=False)
+        system_message = (
+            "You translate diagram labels (node or relationship text). Output rules:\n"
+            '- Respond with only a JSON object: {"translations": ["...", ...]}.\n'
+            "- The translations array MUST have exactly the same length and order as the input JSON array.\n"
+            "- Each element must be only the translated string.\n"
+            "- No markdown fences, no explanations.\n"
+            "- Preserve meaning. Keep proper nouns when commonly left untranslated.\n"
+            "- Do not add prefixes.\n"
+            f"- Target language: {lang_name}."
+            f"{extra_rules}"
+        )
+        user_message = f"Translate each string in this JSON array (same order):\n{payload}"
+        max_tokens = min(8192, max(384, 64 * len(misses) + 400))
+        llm_kwargs: dict[str, Any] = {}
+        if batch_billing:
+            llm_kwargs["thinking_coin_mode"] = THINKING_COIN_MODE_BATCH_INNER
+        raw = await llm_service.chat(
+            prompt=user_message,
+            system_message=system_message,
+            model=CANVAS_TRANSLATE_MODEL,
+            temperature=0.2,
+            max_tokens=max_tokens,
+            use_knowledge_base=False,
+            skip_load_balancing=False,
+            user_id=user_id,
+            organization_id=organization_id,
+            request_type=_CANVAS_TRANSLATE_REQUEST_TYPE,
+            diagram_type=diagram_type,
+            endpoint_path=endpoint_path,
+            **llm_kwargs,
+        )
+        generated = _parse_translations_json(_coerce_llm_text(raw), len(misses))
+        for source, translated in zip(misses, generated, strict=True):
+            resolved[source] = translated
+            if org_id is None:
+                continue
+            fingerprint = fingerprint_org_payload(_translate_cache_payload(source, lang_name, extra_rules))
+            await store_org_llm_result("translate", org_id, fingerprint, {"text": translated})
+    return [resolved[text] for text in texts]
 
 
 def _diagram_ordered_unique_texts(req: TranslateDiagramLabelsRequest) -> list[str]:
@@ -369,7 +410,9 @@ async def translate_node_label(
         getattr(current_user, "organization_id", None) if current_user and hasattr(current_user, "id") else None
     )
 
-    try:
+    cache_fields = _translate_cache_payload(source_text, lang_name, "")
+
+    async def _generate_label() -> dict[str, Any] | None:
         raw = await llm_service.chat(
             prompt=user_message,
             system_message=system_message,
@@ -384,6 +427,20 @@ async def translate_node_label(
             diagram_type=req.diagram_type,
             endpoint_path="/api/canvas/translate_node_label",
         )
+        if isinstance(raw, list):
+            raw = raw[0] if raw else ""
+        normalized_inner = _normalize_translated_text(str(raw))
+        if not normalized_inner:
+            return None
+        return {"text": normalized_inner}
+
+    try:
+        cached = await load_or_generate_org_llm_result(
+            "translate",
+            organization_id,
+            cache_fields,
+            _generate_label,
+        )
     except LLMServiceError as exc:
         if isinstance(exc, (ThinkingCoinInsufficientError, UserDailyTokenCapExceededError)):
             raise
@@ -393,11 +450,8 @@ async def translate_node_label(
         logger.error("canvas_translate failed: %s", exc, exc_info=True)
         raise HTTPException(status_code=503, detail="Translation failed") from exc
 
-    if isinstance(raw, list):
-        raw = raw[0] if raw else ""
-
-    normalized = _normalize_translated_text(str(raw))
-    if not normalized:
+    normalized = cached.get("text") if cached else ""
+    if not isinstance(normalized, str) or not normalized:
         raise HTTPException(status_code=502, detail="Translation produced an empty result")
 
     earn_footer = await _claim_diagram_translate_earn(current_user)
