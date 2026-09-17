@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import { ElButton, ElIcon, ElInput, ElTooltip } from 'element-plus'
 
@@ -9,11 +9,13 @@ import { Paperclip, Send } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import type { MindMateFile } from '@/composables/mindmate/useMindMate'
+import { useMindmateMentionPicker } from '@/composables/mindmate/useMindmateMentionPicker'
 import { useAuthStore } from '@/stores/auth'
 import {
   MINDMATE_COMPOSER_FILE_ACCEPT,
   isMindmateComposerUploadableFile,
 } from '@/utils/mindmateComposerUpload'
+import type { MindmateMentionCandidate } from '@/utils/mindmateMention'
 
 import SuggestionBubbles from '../../common/SuggestionBubbles.vue'
 
@@ -32,6 +34,9 @@ const props = withDefaults(
     placeholder?: string
     /** Max length for input (e.g. 1000 for comments) */
     maxlength?: number
+    /** Seminar composer: @MindMate and org contacts. */
+    enableMentions?: boolean
+    mentionCandidates?: MindmateMentionCandidate[]
   }>(),
   {
     mode: 'panel',
@@ -44,6 +49,8 @@ const props = withDefaults(
     showFileUpload: true,
     placeholder: '',
     maxlength: undefined,
+    enableMentions: false,
+    mentionCandidates: () => [],
   }
 )
 
@@ -61,6 +68,28 @@ const notify = useNotifications()
 const authStore = useAuthStore()
 const isFullpageMode = computed(() => props.mode === 'fullpage')
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const chatInputRef = ref<InstanceType<typeof ElInput> | null>(null)
+
+function nativeTextarea(): HTMLTextAreaElement | null {
+  const root = chatInputRef.value?.$el
+  if (!(root instanceof HTMLElement)) {
+    return null
+  }
+  return root.querySelector('textarea')
+}
+
+const {
+  showMentionPicker,
+  mentionPickerResults,
+  syncMentionPicker,
+  insertMention,
+  dismissMentionPicker,
+} = useMindmateMentionPicker({
+  text: () => props.inputText,
+  setText: (value) => emit('update:inputText', value),
+  textarea: nativeTextarea,
+  candidates: () => props.mentionCandidates,
+})
 
 /** Grow with newlines without Element Plus autosize (avoids unmount nextTick race). */
 const textareaRows = computed(() => {
@@ -145,10 +174,36 @@ function handleKeydown(event: Event | KeyboardEvent) {
     return
   }
 
+  if (props.enableMentions && showMentionPicker.value) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      const first = mentionPickerResults.value[0]
+      if (first) {
+        insertMention(first)
+      }
+      return
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      dismissMentionPicker()
+      return
+    }
+  }
+
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
     handleSend()
   }
+}
+
+function handleInputUpdate(value: string) {
+  emit('update:inputText', value)
+  if (!props.enableMentions) {
+    return
+  }
+  void nextTick(() => {
+    syncMentionPicker()
+  })
 }
 
 // Handle input focus - show login modal if not authenticated
@@ -238,11 +293,29 @@ function handleSuggestionSelect(suggestion: string) {
       </div>
 
       <!-- Input Container -->
-      <div class="input-container-fullpage">
+      <div class="input-container-fullpage mindmate-input-compose">
+        <div
+          v-if="enableMentions && showMentionPicker"
+          class="mindmate-mention-picker"
+          role="listbox"
+        >
+          <button
+            v-for="row in mentionPickerResults"
+            :key="row.id"
+            type="button"
+            class="mindmate-mention-picker__item"
+            role="option"
+            @mousedown.prevent="insertMention(row)"
+          >
+            <span class="mindmate-mention-picker__avatar">{{ row.avatar || '👤' }}</span>
+            <span class="mindmate-mention-picker__name">{{ row.name }}</span>
+          </button>
+        </div>
         <!-- Text Input -->
         <div class="input-field-fullpage">
           <ElInput
             id="mindmate-chat-input"
+            ref="chatInputRef"
             :model-value="inputText"
             type="textarea"
             name="mindmate-chat-input"
@@ -253,7 +326,7 @@ function handleSuggestionSelect(suggestion: string) {
             :show-word-limit="maxlength != null"
             class="fullpage-textarea"
             :aria-label="placeholder || t('mindmate.input.placeholder')"
-            @update:model-value="emit('update:inputText', $event)"
+            @update:model-value="handleInputUpdate"
             @keydown="handleKeydown"
             @focus="handleInputFocus"
           />
@@ -309,4 +382,54 @@ function handleSuggestionSelect(suggestion: string) {
 
 <style scoped>
 @import './mindmate.css';
+
+.mindmate-input-compose {
+  position: relative;
+}
+
+.mindmate-mention-picker {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 6px);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 20;
+  border-radius: 10px;
+  border: 1px solid #e7e5e4;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(28, 25, 23, 0.1);
+  padding: 4px;
+}
+
+.mindmate-mention-picker__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+  color: #1c1917;
+}
+
+.mindmate-mention-picker__item:hover {
+  background: #f5f5f4;
+}
+
+.mindmate-mention-picker__avatar {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.mindmate-mention-picker__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 </style>

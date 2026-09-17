@@ -1,9 +1,10 @@
 /**
  * si UI — showcase
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
-  'showcase.title': 'Showcase',
+  'showcase.title': 'කේස් චතුරස්රය',
   'showcase.subtitle': 'AI-බලගැන්වූ චින්තන පාඩම් සොයාගෙන ඔබේ උගන්වන කටයුතු බෙදාගන්න',
   'showcase.publish': 'නඩුව ප්‍රකාශ කරන්න',
   'showcase.searchPlaceholder': 'ශීර්ෂය, විස්තරය හෝ ටැග් සොයන්න…',
@@ -85,11 +86,11 @@ export default {
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: සීමිත preview)',
   'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc: සීමිත preview) — ලේඛනයකට උපරිම {maxMb} MB',
   'showcase.publishModal.teachingDocTooLarge': 'ලේඛනය {maxMb} MB සීමාව ඉක්මවයි. සංකෝචනය කර නැවත උත්සාහ කරන්න.',
-  'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif',
+  'showcase.publishModal.diagramImageHint': 'සහාය .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'රූප උඩුගත කරන්න (බහු)',
   'showcase.publishModal.galleryHint': 'රූප සහ සුරැකි රූප සටහන් කිහිපයක් එක් කරන්න, {max} දක්වා',
-  'showcase.publishModal.galleryHintCase': 'Add multiple images and saved diagrams, up to {max} items',
-  'showcase.publishModal.galleryHintTemplate': 'Upload a .mg file and pick saved diagrams, up to {max} items',
+  'showcase.publishModal.galleryHintCase': 'අයිතම {max} දක්වා බහු පින්තූර සහ ඓතිහාසික අයිකන එක් කළ හැක',
+  'showcase.publishModal.galleryHintTemplate': 'ඔබට .mg ගොනු උඩුගත කිරීමට සහ {max} අයිතම දක්වා බහු ඓතිහාසික අයිකන තෝරාගත හැක.',
   'showcase.publishModal.galleryCount': '{count}/{max} අයිතම එක් කරන ලදි',
   'showcase.publishModal.galleryImageItem': 'රූපය: {name}',
   'showcase.publishModal.galleryDiagramItem': 'රූප සටහන: {name}',
@@ -121,7 +122,7 @@ export default {
   'showcase.publishModal.aiGenerateStop': 'නවත්වන්න',
   'showcase.publishModal.aiGenerateCancelled': 'AI ජනනය අවලංගු — නැවත ජනනය කිරීමට නැවත ක්‍ලික් කරන්න',
   'showcase.publishModal.aiGenerateSuccess': 'ලේඛනයෙන් පිරවූ හැඳින්වීම සහ උද්දීපනය - සමාලෝචනය සහ සංස්කරණය කිරීම; ඉගැන්වීමේ පරාවර්තනය ඔබම ලියන්න',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'Filled diagram intro and classroom use from the diagram — review and edit',
+  'showcase.publishModal.aiGenerateDiagramSuccess': 'නිදර්ශන හැඳින්වීම සහ පන්තිකාමර යෙදුම නිදර්ශනය මත පදනම්ව ජනනය කර ඇත. කරුණාකර පරීක්ෂා කර සංස්කරණය කරන්න.',
   'showcase.publishModal.aiGenerateFailed': 'AI ජනනය අසාර්ථක — නැවත උත්සාහ කරන්න',
   'showcase.publishModal.aiGenerateNeedFile': 'පළමුව පෙර පියවරෙන් උගන්වන-නිර්මාණ ලේඛනයක් උඩුගත කරන්න',
   'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
@@ -157,7 +158,7 @@ export default {
   'showcase.publishModal.historyTitle': 'සුරැකි රූප සටහන තෝරන්න',
   'showcase.publishModal.historySearch': 'රූප සටහන නම සොයන්න…',
   'showcase.publishModal.historyEmpty': 'සුරැකි රූප සටහන් නැත',
-  'showcase.publishModal.historyUncategorized': 'Uncategorized',
+  'showcase.publishModal.historyUncategorized': 'වර්ගීකරණය නොකළ',
   'showcase.publishModal.typeDesc.teachingDesign': 'චින්තන-කු‍ශල පන්‍ති පාඩම් නිර්මාණය',
   'showcase.publishModal.typeDesc.diagramCase': 'උගන්වීමේ විශිෂ්‍ට රූප සටහන් සහ visualization',
   'showcase.publishModal.typeDesc.diagramTemplate': 'නැවත භාවිතය හෝ අනුවර්තනය සඳහා රූප සටහන්',
@@ -225,5 +226,5 @@ export default {
   'showcase.deleteConfirmTitle': 'මකාදැමීම තහවුරු',
   'showcase.deleteConfirmBody': 'මෙම නඩුව මකන්නද?',
   'showcase.deleted': 'මකන ලදි',
-  'meta.pageTitle.showcase': 'Showcase',
+  'meta.pageTitle.showcase': 'කේස් චතුරස්රය',
 } as const

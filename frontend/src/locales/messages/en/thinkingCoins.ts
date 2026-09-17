@@ -1,5 +1,6 @@
 /**
- * en UI � thinkingCoins
+ * en UI — thinkingCoins
+ * FILL — English of zh. Copy into other locales only for keys that do not exist yet.
  */
 
 export const thinkingCoinsMessages = {

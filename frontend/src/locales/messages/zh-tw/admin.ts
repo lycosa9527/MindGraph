@@ -1,4 +1,7 @@
-/** zh-tw UI — admin */
+/**
+ * zh-tw UI — admin
+ * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
+ */
 
 export default {
   'admin.actions': '操作',
@@ -144,6 +147,23 @@ export default {
   'admin.teachingDesignTemplate.previewFail': '無法預覽該模板',
   'admin.teachingDesignTemplate.schoolLabel': '教學設計模板',
   'admin.teachingDesignTemplate.schoolHint': '該校老師導出 Word 時使用所選模板',
+  'admin.customLlm.sectionTitle': 'MindGraph 自定義 AI 服務器',
+  'admin.customLlm.hint':
+    '填写学校自己的地址、密钥和模型名即可；模型名会显示在画布上。默认继续使用平台 DashScope/Volcengine。',
+  'admin.customLlm.typePlatform': 'DashScope/Volcengine',
+  'admin.customLlm.typeOpenAiChat': 'OpenAI Chat',
+  'admin.customLlm.typeOpenAiResponse': 'OpenAI Response',
+  'admin.customLlm.typeAnthropic': 'Anthropic Messages',
+  'admin.customLlm.baseUrl': 'API 根地址',
+  'admin.customLlm.baseUrlPlaceholder': 'https://llm.school.edu/v1',
+  'admin.customLlm.apiKey': 'API 密鑰',
+  'admin.customLlm.apiKeyPlaceholder': '學校提供的密鑰',
+  'admin.customLlm.secretSet': '已保存密鑰（{masked}）',
+  'admin.customLlm.modelName': '模型名稱',
+  'admin.customLlm.modelNamePlaceholder': '畫布上顯示的模型名，同時作為 API model',
+  'admin.customLlm.probe': '測試連接',
+  'admin.customLlm.probeOk': '學校 AI 服務器連接成功。',
+  'admin.customLlm.probeFail': '連接失敗，請檢查協議、地址、密鑰和模型名稱。',
   'admin.teachingDesignTemplate.optionSystem': '跟隨系統（當前模板）',
   'admin.teachingDesignTemplate.optionBundled': '內置北師大模板',
   'admin.teachingDesignTemplate.optionUploaded': '{filename}（已上傳）',

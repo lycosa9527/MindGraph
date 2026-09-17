@@ -1,5 +1,6 @@
 /**
- * fr UI � showcase
+ * fr UI — showcase
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
@@ -40,7 +41,7 @@ export default {
   'showcase.publishModal.titleLabel': 'Titre du cas',
   'showcase.publishModal.titleHint': 'Gardez le titre concis — jusqu’à {max} caractères recommandés',
   'showcase.publishModal.titlePlaceholder': 'p. ex. Deux enfants débattent du soleil — conception de leçon',
-  'showcase.publishModal.descriptionLabel': 'Description',
+  'showcase.publishModal.descriptionLabel': 'Introduction',
   'showcase.publishModal.tagsLabel': 'Balises',
   'showcase.publishModal.tagsHint': 'Séparez les balises par des virgules, p. ex. conflit cognitif, maths collège',
   'showcase.publishModal.caseTypeLabel': 'Type de cas',
@@ -85,11 +86,11 @@ export default {
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc : aperçu limité)',
   'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc : aperçu limité) — max {maxMb} Mo par document',
   'showcase.publishModal.teachingDocTooLarge': 'Le document dépasse la limite de {maxMb} Mo. Compressez et réessayez.',
-  'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif',
+  'showcase.publishModal.diagramImageHint': 'Prise en charge .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Téléverser des images (plusieurs)',
   'showcase.publishModal.galleryHint': 'Ajoutez plusieurs images et diagrammes enregistrés, jusqu’à {max} éléments',
-  'showcase.publishModal.galleryHintCase': 'Add multiple images and saved diagrams, up to {max} items',
-  'showcase.publishModal.galleryHintTemplate': 'Upload a .mg file and pick saved diagrams, up to {max} items',
+  'showcase.publishModal.galleryHintCase': 'Plusieurs images et icônes historiques peuvent être ajoutées, jusqu\'à {max} éléments',
+  'showcase.publishModal.galleryHintTemplate': 'Vous pouvez télécharger des fichiers .mg et sélectionner plusieurs icônes historiques, jusqu\'à {max} éléments.',
   'showcase.publishModal.galleryCount': '{count}/{max} éléments ajoutés',
   'showcase.publishModal.galleryImageItem': 'Image : {name}',
   'showcase.publishModal.galleryDiagramItem': 'Diagramme : {name}',
@@ -98,7 +99,7 @@ export default {
   'showcase.publishModal.galleryPickerDone': 'Terminé',
   'showcase.publishModal.galleryUploadFailed': 'Échec du téléversement d’image de galerie — veuillez republier',
   'showcase.publishModal.galleryReuploadHint': 'Certaines images de galerie n’ont pas été enregistrées — resélectionnez-les avant de soumettre',
-  'showcase.detail.galleryImage': 'Image',
+  'showcase.detail.galleryImage': 'image',
   'showcase.detail.galleryDiagram': 'Diagramme',
   'showcase.detail.galleryPrev': 'Précédent',
   'showcase.detail.galleryNext': 'Suivant',
@@ -121,7 +122,7 @@ export default {
   'showcase.publishModal.aiGenerateStop': 'Arrêter',
   'showcase.publishModal.aiGenerateCancelled': 'Génération IA annulée — cliquez à nouveau pour régénérer',
   'showcase.publishModal.aiGenerateSuccess': 'Intro et points forts remplis à partir du document — relisez et modifiez ; rédigez vous-même la réflexion pédagogique',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'Filled diagram intro and classroom use from the diagram — review and edit',
+  'showcase.publishModal.aiGenerateDiagramSuccess': 'L’introduction de l’illustration et l’application en classe ont été générées sur la base de l’illustration. Veuillez vérifier et modifier.',
   'showcase.publishModal.aiGenerateFailed': 'Échec de la génération IA — veuillez réessayer',
   'showcase.publishModal.aiGenerateNeedFile': 'Téléversez d’abord un document de conception pédagogique à l’étape précédente',
   'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
@@ -132,7 +133,7 @@ export default {
   'showcase.publishModal.classroomAppPlaceholder': 'Comment ce diagramme est utilisé en classe',
   'showcase.publishModal.tagInputPlaceholder': 'Saisissez une balise (max 10 car.), appuyez sur Entrée',
   'showcase.publishModal.tagRecommended': 'Balises suggérées',
-  'showcase.publishModal.tagCountHint': '(max {max})',
+  'showcase.publishModal.tagCountHint': '(Maximum {max})',
   'showcase.publishModal.tagMaxCount': 'Vous pouvez ajouter au plus {max} balises',
   'showcase.publishModal.networkError': 'Échec de la soumission — vérifiez que le serveur tourne et que les tailles de fichiers sont dans les limites',
   'showcase.publishModal.fileTooLarge': '« {name} » dépasse la limite de {maxMb} Mo',
@@ -157,7 +158,7 @@ export default {
   'showcase.publishModal.historyTitle': 'Choisir un diagramme enregistré',
   'showcase.publishModal.historySearch': 'Rechercher le nom du diagramme…',
   'showcase.publishModal.historyEmpty': 'Aucun diagramme enregistré',
-  'showcase.publishModal.historyUncategorized': 'Uncategorized',
+  'showcase.publishModal.historyUncategorized': 'Non classé',
   'showcase.publishModal.typeDesc.teachingDesign': 'Conception de leçon en classe axée sur les compétences de pensée',
   'showcase.publishModal.typeDesc.diagramCase': 'Excellents diagrammes et visualisation en enseignement',
   'showcase.publishModal.typeDesc.diagramTemplate': 'Diagrammes à réutiliser ou adapter',

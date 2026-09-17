@@ -1,5 +1,6 @@
 /**
- * en UI � sidebar
+ * en UI — sidebar
+ * FILL — English of zh. Copy into other locales only for keys that do not exist yet.
  */
 
 export default {

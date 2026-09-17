@@ -1,4 +1,7 @@
-/** zh-tw UI — sidebar */
+/**
+ * zh-tw UI — sidebar
+ * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
+ */
 
 export default {
   'sidebar.actions.delete': '刪除',

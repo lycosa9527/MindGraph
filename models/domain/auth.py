@@ -70,6 +70,11 @@ class Organization(Base):
     extra_member_seats: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     teaching_design_template_key: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
+    custom_llm_api_type: Mapped[str] = mapped_column(String(32), nullable=False, default="dashscope_volcengine")
+    custom_llm_base_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    custom_llm_api_key: Mapped[str | None] = mapped_column(Text, nullable=True)
+    custom_llm_model: Mapped[str | None] = mapped_column(String(128), nullable=True)
+
     dify_api_base_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     dify_api_key: Mapped[str | None] = mapped_column(Text, nullable=True)
     dify_api_base_url_2: Mapped[str | None] = mapped_column(String(512), nullable=True)

@@ -1,4 +1,7 @@
-/** zh UI — auth */
+/**
+ * zh UI — auth
+ * SOURCE — author new keys here in Simplified Chinese first.
+ */
 
 export default {
   'auth.accountInfo': '账户信息',

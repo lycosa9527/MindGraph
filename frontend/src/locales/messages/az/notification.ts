@@ -1,5 +1,6 @@
 /**
- * az UI � notification
+ * az UI — notification
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
@@ -26,7 +27,7 @@ export default {
   'notification.geoLiteMissingTitle': 'GeoLite2 Ölkə məlumat bazası yoxdur',
   'notification.fullscreenFailed': 'Tam ekrana keçmək mümkün olmadı',
   'notification.generationCancelled': 'Generasiya ləğv edildi',
-  'notification.conceptMapTabNeedsAi': 'Please enable AI in the bar before Tab recommendations.',
+  'notification.conceptMapTabNeedsAi': 'Lütfən, Tab tövsiyələrini istifadə etməzdən əvvəl yuxarı paneldə "Start AI" funksiyasını aktivləşdirin',
   'notification.historyClearNodes': 'Düyün mətnini təmizlə',
   'notification.historyEmptyLearning': 'Düyünü boşalt və cavab əlavə et',
   'notification.importInvalidData': 'İdxal uğursuz: etibarsız diaqram məlumatı',
@@ -35,10 +36,10 @@ export default {
   'notification.importSlotsFull': 'Kitabxana doludur; diaqram idxal edildi amma saxlanılmadı',
   'notification.importSuccess': 'Diaqram idxal edildi və kitabxanaya saxlanıldı',
   'notification.importUnsupportedType': 'İdxal uğursuz: dəstəklənməyən diaqram növü',
-  'notification.inlineRecEmpty': 'No recommendations were generated. Try again or edit the topic.',
+  'notification.inlineRecEmpty': 'Tövsiyə olunan məzmun yaradılmayıb, lütfən, yenidən cəhd edin və ya temanı tənzimləyib yenidən cəhd edin',
   'notification.loadMoreFailed': 'Daha çox yükləmək mümkün olmadı',
   'notification.networkError': 'Şəbəkə xətası',
-  'notification.nodeNotEligible': 'This node does not support Tab recommendations.',
+  'notification.nodeNotEligible': 'Bu qovşaq Tab tövsiyələrini dəstəkləmir',
   'notification.newVersionAvailable': 'Yeni versiya mövcuddur. Yeniləmək üçün klikləyin.',
   'notification.recommendationFailed': 'Tövsiyə alınmadı: {msg}',
   'notification.relationshipGenerationFailed': 'Əlaqə generasiyası uğursuz oldu',
@@ -47,7 +48,7 @@ export default {
   'notification.saved': 'Dəyişikliklər uğurla yadda saxlanıldı',
   'notification.selectNodeToClear': 'Təmizləmək üçün düyün seçin',
   'notification.sessionInvalidated': 'Cihazların maksimum sayını keçdiyiniz üçün sistemdən çıxdınız',
-  'notification.sessionKicked': 'This sign-in was ended from another device',
+  'notification.sessionKicked': 'Bu hesab digər cihazlarda bu hesaba oflayn daxil olub',
   'notification.signInToUse': 'İstifadə üçün daxil olun',
   'notification.signInToValidateFocus': 'Fokus sualını yoxlamaq üçün daxil olun',
 } as const

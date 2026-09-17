@@ -19,7 +19,10 @@ from typing import Any, Optional
 import orjson
 
 from services.diagram.generation_result_coalesce import coalesce_generation
+from services.llm.org_custom_config import org_custom_llm_cache_stamp
+from services.llm.org_custom_llm_constants import API_TYPE_PLATFORM
 from services.redis import keys as redis_keys
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
 from services.utils.error_types import REDIS_ERRORS
@@ -156,7 +159,12 @@ async def load_or_generate_org_llm_result(
     org_id = positive_org_id(organization_id)
     if org_id is None or org_llm_ttl_seconds() <= 0:
         return await generate()
-    fingerprint = fingerprint_org_payload(payload)
+    try:
+        stamp = await org_custom_llm_cache_stamp(org_id)
+    except BACKGROUND_INFRA_ERRORS:
+        stamp = API_TYPE_PLATFORM
+    stamped = {**payload, "custom_llm": stamp}
+    fingerprint = fingerprint_org_payload(stamped)
     cached = await get_org_llm_result(namespace, org_id, fingerprint)
     if cached is not None:
         return cached

@@ -49,6 +49,10 @@ import { useMobileKittyPageLifecycle } from '@/composables/mobile/useMobileKitty
 import { useAuthStore, useFeatureFlagsStore } from '@/stores'
 import { useKittyPipelineStore } from '@/stores/kittyPipeline'
 import type { OneSentenceClarifyChoice } from '@/stores/oneSentence'
+import {
+  kittyMicPttLabelImageSrc,
+  resolveKittyMicPttLabelText,
+} from '@/utils/kittyMicPttLabelImage'
 import { mobileDebugLog } from '@/utils/loadMobileDebugConsole'
 
 const router = useRouter()
@@ -612,6 +616,17 @@ function onMicClick(): void {
 
 const micButtonDisabled = computed(
   () => !kittyServerEnabled.value || micDenied.value || micInsecure.value
+)
+
+const kittyMicPttLabelSrc = computed(() =>
+  kittyMicPttLabelImageSrc(
+    resolveKittyMicPttLabelText(
+      listenMode.value,
+      kittyVoiceInputActive.value,
+      pttPointerActive.value,
+      t
+    )
+  )
 )
 
 let scopeReconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -1178,17 +1193,13 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
           />
           <template v-else>
             <Mic class="kitty-side-control__icon kitty-side-control__icon--mic-ptt" />
-            <span class="kitty-mic-ptt-label">
-              {{
-                listenMode === 'auto'
-                  ? kittyVoiceInputActive
-                    ? t('mobile.kittyTapToStopListen', '点按停止')
-                    : t('mobile.kittyTapToListen', '点按开始听')
-                  : kittyVoiceInputActive || pttPointerActive
-                    ? t('mobile.kittyReleaseToSend', '松开发送')
-                    : t('mobile.kittyHoldToSpeak', '按住说话')
-              }}
-            </span>
+            <img
+              class="kitty-mic-ptt-label"
+              :src="kittyMicPttLabelSrc"
+              alt=""
+              draggable="false"
+              aria-hidden="true"
+            />
           </template>
           <span
             v-if="!connecting && (kittyVoiceInputActive || pttPointerActive)"
@@ -1358,11 +1369,11 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
 }
 
 .kitty-mic-ptt-label {
-  font-size: clamp(0.6875rem, 3.2vw, 0.8125rem);
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  line-height: 1.1;
+  height: 1.125em;
+  width: auto;
+  max-width: min(11rem, 72%);
+  object-fit: contain;
+  object-position: left center;
   pointer-events: none;
   user-select: none;
   -webkit-user-select: none;

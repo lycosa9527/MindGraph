@@ -4,10 +4,9 @@
  */
 import { ref, watch } from 'vue'
 
-import { Users } from '@lucide/vue'
-
 import MindmateCollabMembersPanel from '@/components/mindmate/MindmateCollabMembersPanel.vue'
 import MindmateCollabRoom from '@/components/mindmate/MindmateCollabRoom.vue'
+import MindmateContactsToggleButton from '@/components/mindmate/MindmateContactsToggleButton.vue'
 import MindmateDmDrawer from '@/components/mindmate/MindmateDmDrawer.vue'
 import { useLanguage } from '@/composables'
 import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
@@ -43,14 +42,14 @@ const { t } = useLanguage()
 
 const sessionId = ref('')
 const roomVisibility = ref('organization')
-const showMembers = ref(false)
+const showContacts = defineModel<boolean>('showContacts', { default: false })
 
 watch(
   () => props.roomCode,
   () => {
     sessionId.value = ''
     roomVisibility.value = 'organization'
-    showMembers.value = false
+    showContacts.value = false
   }
 )
 
@@ -80,8 +79,8 @@ function onRoomMeta(payload: {
   })
 }
 
-function toggleMembers(): void {
-  showMembers.value = !showMembers.value
+function toggleContacts(): void {
+  showContacts.value = !showContacts.value
 }
 </script>
 
@@ -91,20 +90,13 @@ function toggleMembers(): void {
   >
     <main class="mindmate-collab-embed__main flex flex-col flex-1 min-w-0 min-h-0">
       <div
-        class="mindmate-collab-embed__toolbar shrink-0 flex justify-end px-3 py-2 border-b border-stone-100 md:hidden"
+        v-if="!embedded"
+        class="mindmate-collab-embed__toolbar shrink-0 flex justify-end px-3 py-2 border-b border-stone-100"
       >
-        <button
-          type="button"
-          class="inline-flex items-center gap-1.5 text-xs font-medium text-stone-600 px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white"
-          :aria-expanded="showMembers"
-          @click="toggleMembers"
-        >
-          <Users
-            class="w-4 h-4"
-            aria-hidden="true"
-          />
-          {{ t('mindmate.collabMembersTitle') }}
-        </button>
+        <MindmateContactsToggleButton
+          :open="showContacts"
+          @toggle="toggleContacts"
+        />
       </div>
       <MindmateCollabRoom
         :embedded="embedded"
@@ -116,8 +108,8 @@ function toggleMembers(): void {
     </main>
 
     <aside
+      v-if="showContacts"
       class="mindmate-collab-embed__aside shrink-0 w-[17.5rem] max-w-[38vw] min-w-0 border-l border-stone-200 flex flex-col min-h-0 bg-stone-50"
-      :class="{ 'mindmate-collab-embed__aside--open': showMembers }"
       :aria-label="t('mindmate.collabMembersTitle')"
     >
       <MindmateCollabMembersPanel
@@ -139,7 +131,6 @@ function toggleMembers(): void {
 <style scoped>
 @media (max-width: 768px) {
   .mindmate-collab-embed__aside {
-    display: none;
     position: absolute;
     top: 0;
     right: 0;
@@ -148,10 +139,6 @@ function toggleMembers(): void {
     width: min(17.5rem, 88vw);
     max-width: 88vw;
     box-shadow: -8px 0 24px rgba(15, 23, 42, 0.12);
-  }
-
-  .mindmate-collab-embed__aside--open {
-    display: flex;
   }
 }
 

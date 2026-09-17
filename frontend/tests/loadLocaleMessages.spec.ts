@@ -11,6 +11,12 @@ import {
 } from '@/i18n'
 import { INTERFACE_LANGUAGE_PICKER_CODES, UI_LOCALE_CODES } from '@/i18n/locales'
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
+import arMessages from '@/locales/messages/ar'
+import deMessages from '@/locales/messages/de'
+import esMessages from '@/locales/messages/es'
+import jaMessages from '@/locales/messages/ja'
+import ptMessages from '@/locales/messages/pt'
+import ruMessages from '@/locales/messages/ru'
 import siMessages from '@/locales/messages/si'
 
 describe('loadLocaleMessages', () => {
@@ -58,12 +64,19 @@ describe('loadLocaleMessages', () => {
     }
   }, 30_000)
 
-  it('ships Sinhala UI copy for locale si', () => {
-    const enBundle = i18n.global.getLocaleMessage('en') as Record<string, string>
-    const login = siMessages['app.guestMainLoginPrompt']
-    expect(login).toMatch(/[\u0D80-\u0DFF]/)
-    expect(login).not.toBe(enBundle['app.guestMainLoginPrompt'])
-    expect(siMessages['training.title']).toMatch(/[\u0D80-\u0DFF]/)
+  it('ships native UI copy for restored picker locales', () => {
+    const enLogin = (i18n.global.getLocaleMessage('en') as Record<string, string>)[
+      'app.guestMainLoginPrompt'
+    ]
+    expect(siMessages['app.guestMainLoginPrompt']).toMatch(/[\u0D80-\u0DFF]/)
+    expect(siMessages['app.guestMainLoginPrompt']).not.toBe(enLogin)
+    expect(jaMessages['app.guestMainLoginPrompt']).toMatch(/[\u3040-\u30ff\u4e00-\u9fff]/)
+    expect(deMessages['app.guestMainLoginPrompt']).toMatch(/Melden Sie sich/)
+    expect(esMessages['app.guestMainLoginPrompt']).toMatch(/Inicie sesión/)
+    expect(arMessages['app.guestMainLoginPrompt']).toMatch(/[\u0600-\u06FF]/)
+    expect(arMessages['app.guestMainLoginPrompt']).not.toBe(enLogin)
+    expect(ptMessages['app.guestMainLoginPrompt']).toMatch(/Faça login/)
+    expect(ruMessages['app.guestMainLoginPrompt']).toMatch(/[\u0400-\u04FF]/)
   })
 
   it('loads dedicated fr bundle separately from English', async () => {

@@ -28,6 +28,7 @@ from models.requests.requests_diagram import (
 )
 from prompts import get_prompt
 from services.llm import llm_service
+from services.llm.org_custom_client import collapse_org_custom_models
 from services.llm.org_result_cache import load_or_generate_org_llm_result, normalize_org_cache_text
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user
@@ -40,6 +41,11 @@ FOCUS_MODELS: Tuple[str, ...] = ("qwen", "deepseek", "doubao")
 FOCUS_SUGGESTION_COUNT = 5
 FOCUS_REASON_MAX_LEN = 4000
 ROOT_CONCEPT_MODEL = "deepseek"
+
+
+async def _focus_models_for_org(organization_id: Optional[int]) -> List[str]:
+    """One model when the school custom LLM override is active."""
+    return await collapse_org_custom_models(organization_id, list(FOCUS_MODELS))
 
 
 def _sse_data(obj: Dict[str, Any]) -> str:
@@ -439,15 +445,16 @@ async def focus_question_validate(
     question, lang = _question_lang_or_raise(req)
     user_id = current_user.id
     org_id = getattr(current_user, "organization_id", None)
+    focus_models = await _focus_models_for_org(org_id)
 
-    sem = asyncio.Semaphore(len(FOCUS_MODELS))
+    sem = asyncio.Semaphore(len(focus_models))
 
     async def _bounded(m: str):
         async with sem:
             return await _validate_one_model(m, question, lang, user_id, org_id)
 
     async def _generate_validate() -> Dict[str, Any] | None:
-        rows = await asyncio.gather(*[_bounded(m) for m in FOCUS_MODELS])
+        rows = await asyncio.gather(*[_bounded(m) for m in focus_models])
         result_rows = list(rows)
         if result_rows and all(row.get("error") for row in result_rows):
             return None
@@ -459,7 +466,7 @@ async def focus_question_validate(
         {
             "question": normalize_org_cache_text(question),
             "language": normalize_org_cache_text(lang),
-            "models": list(FOCUS_MODELS),
+            "models": list(focus_models),
         },
         _generate_validate,
     )
@@ -488,11 +495,12 @@ async def focus_question_suggestions_stream(
     avoid = req.avoid
     user_id = current_user.id
     org_id = getattr(current_user, "organization_id", None)
+    focus_models = await _focus_models_for_org(org_id)
 
     async def event_gen() -> AsyncIterator[str]:
         tasks = {
             asyncio.create_task(_suggestions_for_model_task(m, question, lang, avoid, user_id, org_id)): m
-            for m in FOCUS_MODELS
+            for m in focus_models
         }
         try:
             while tasks:
@@ -556,11 +564,12 @@ async def root_concept_suggestions_stream(
     avoid = req.avoid
     user_id = current_user.id
     org_id = getattr(current_user, "organization_id", None)
+    focus_models = await _focus_models_for_org(org_id)
 
     async def event_gen() -> AsyncIterator[str]:
         tasks = {
             asyncio.create_task(_root_suggestions_for_model_task(m, question, lang, avoid, user_id, org_id)): m
-            for m in FOCUS_MODELS
+            for m in focus_models
         }
         try:
             while tasks:

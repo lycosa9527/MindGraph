@@ -1,5 +1,6 @@
 /**
- * th UI � mindmate
+ * th UI — mindmate
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
@@ -81,8 +82,8 @@ export default {
   'mindmate.historyTitle': 'ประวัติบทสนทนา',
   'mindmate.imagePreview': 'ตัวอย่างรูปภาพ',
   'mindmate.input.attachFile': 'แนบไฟล์',
-  'mindmate.input.unsupportedFile': 'Only images, Word, PDF, and PowerPoint are allowed',
-  'mindmate.input.fileTooLarge': 'File is too large (max {limit}MB)',
+  'mindmate.input.unsupportedFile': 'รองรับเฉพาะรูปภาพ, Word, PDF หรือ PPT',
+  'mindmate.input.fileTooLarge': 'ไฟล์มีขนาดใหญ่เกินไป ขนาดสูงสุดคือ {limit}MB',
   'mindmate.input.placeholder': 'พิมพ์คำถามของคุณ...',
   'mindmate.newChat': 'แชทใหม่',
   'mindmate.otherModules': 'โมดูลอื่น',
@@ -105,15 +106,15 @@ export default {
   'mindmate.tooltip.like': 'ชอบ',
   'mindmate.tooltip.regenerate': 'สร้างใหม่',
   'mindmate.tooltip.share': 'แชร์',
-  'mindmate.exportWordTemplate': 'Export Word template',
-  'mindmate.tooltip.exportWordTemplate': 'Export using the BNU thinking-classroom lesson-design template',
-  'mindmate.exportWordTemplateOk': 'Lesson-design Word file exported',
-  'mindmate.exportWordTemplateStarted': 'Generating the lesson-design Word file. It will download when ready — you can leave this page.',
-  'mindmate.exportWordTemplateFail': 'Word template export failed, please try again',
-  'mindmate.exportWordTemplateFailNotFlagged': 'This reply cannot be exported as a Word template',
-  'mindmate.exportWordTemplateFailTooLarge': 'The lesson design is too long to export',
-  'mindmate.exportWordTemplateFailNetwork': 'Network error. The Word file did not finish downloading. Please try again.',
-  'mindmate.exportWordTemplateFailServer': 'The server could not generate the Word file. Please try again later.',
+  'mindmate.exportWordTemplate': 'ส่งออกเทมเพลต Word',
+  'mindmate.tooltip.exportWordTemplate': 'ส่งออกตามเทมเพลตการออกแบบการสอนห้องเรียนการพัฒนาความคิดของ Beijing Normal University',
+  'mindmate.exportWordTemplateOk': 'คำออกแบบการเรียนการสอนได้ถูกส่งออกแล้ว',
+  'mindmate.exportWordTemplateStarted': 'การออกแบบการเรียนการสอน Word กำลังถูกสร้างขึ้นและจะถูกดาวน์โหลดโดยอัตโนมัติหลังจากเสร็จสิ้น (คุณสามารถออกจากหน้านี้ได้)',
+  'mindmate.exportWordTemplateFail': 'ส่งออกเทมเพลต Word ไม่สำเร็จ โปรดลองอีกครั้ง',
+  'mindmate.exportWordTemplateFailNotFlagged': 'การตอบกลับนี้ไม่สามารถส่งออกเป็นเทมเพลต Word ได้',
+  'mindmate.exportWordTemplateFailTooLarge': 'เนื้อหาการออกแบบการเรียนการสอนยาวเกินไปและไม่สามารถส่งออกได้',
+  'mindmate.exportWordTemplateFailNetwork': 'เครือข่ายทำงานผิดปกติ การดาวน์โหลด Word ยังไม่เสร็จสมบูรณ์ โปรดลองอีกครั้ง',
+  'mindmate.exportWordTemplateFailServer': 'เซิร์ฟเวอร์ล้มเหลวในการสร้าง Word โปรดลองอีกครั้งในภายหลัง',
   'mindmate.untitled': 'ไม่มีชื่อ',
   'mindmate.welcome': 'สวัสดี {username} ฉันคือ {agentName} คู่หูสอนการคิดของคุณ',
   'mindmate.welcomeSubtitle': 'แพลตฟอร์มวิจัยสอนเสมือน AI — คิดได้ทุกที่ทุกเวลา',
@@ -143,7 +144,7 @@ export default {
   'nodePalette.refresh': 'รีเฟรช',
   'nodePalette.selected': 'ที่เลือก',
   'nodePalette.similarities': 'ความเหมือน',
-  'panel.mindmate': 'MindMate AI',
+  'panel.mindmate': 'มายด์เมท เอไอ',
   'panel.nodePalette': 'พาเลตโหนด',
   'panel.properties': 'คุณสมบัติ',
   'panels.property.background': 'พื้นหลัง',
@@ -191,6 +192,8 @@ export default {
   'mindmate.collabInviteCodeBreadcrumb': 'รหัสเชิญ: {code}',
   'mindmate.collabSessionMembersTitle': 'สมาชิกสัมมนา',
   'mindmate.collabMembersTitle': 'สมาชิกโรงเรียน',
+  'mindmate.collabToggleContacts': 'ผู้ติดต่อ',
+  'mindmate.collabToggleContactsTitle': 'แสดงหรือซ่อนผู้ติดต่อ',
   'mindmate.collabPoke': 'เตือน',
   'mindmate.collabPokeToast': '{name} รอให้คุณเข้าร่วมสัมมนาของ {seminar}',
   'mindmate.collabPokeSomeone': 'เพื่อนร่วมงาน',

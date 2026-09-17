@@ -1,5 +1,6 @@
 /**
- * fr UI � notification
+ * fr UI — notification
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
@@ -26,7 +27,7 @@ export default {
   'notification.geoLiteMissingTitle': 'Base de données GeoLite2 Country manquante',
   'notification.fullscreenFailed': 'Impossible d’entrer en mode plein écran',
   'notification.generationCancelled': 'Génération annulée',
-  'notification.conceptMapTabNeedsAi': 'Please enable AI in the bar before Tab recommendations.',
+  'notification.conceptMapTabNeedsAi': 'Veuillez activer "Démarrer AI" dans la barre supérieure avant d\'utiliser les recommandations des onglets.',
   'notification.historyClearNodes': 'Effacer le texte du nœud',
   'notification.historyEmptyLearning': 'Vider le nœud et ajouter une réponse',
   'notification.importInvalidData': 'Échec de l’importation : données de diagramme invalides',
@@ -35,10 +36,10 @@ export default {
   'notification.importSlotsFull': 'Bibliothèque pleine ; le diagramme a été importé mais non enregistré dans la bibliothèque',
   'notification.importSuccess': 'Diagramme importé et enregistré dans la bibliothèque',
   'notification.importUnsupportedType': 'Échec de l’importation : type de diagramme non pris en charge',
-  'notification.inlineRecEmpty': 'No recommendations were generated. Try again or edit the topic.',
+  'notification.inlineRecEmpty': 'Aucun contenu recommandé n\'a été généré, veuillez réessayer ou ajuster le thème et réessayer',
   'notification.loadMoreFailed': 'Impossible de charger davantage',
   'notification.networkError': 'Erreur réseau',
-  'notification.nodeNotEligible': 'This node does not support Tab recommendations.',
+  'notification.nodeNotEligible': 'Ce nœud ne prend pas en charge les recommandations d\'onglets',
   'notification.newVersionAvailable': 'Une nouvelle version est disponible. Cliquez pour actualiser.',
   'notification.recommendationFailed': 'La recommandation a échoué : {msg}',
   'notification.relationshipGenerationFailed': 'La génération de la relation a échoué',
@@ -47,7 +48,7 @@ export default {
   'notification.saved': 'Les modifications ont été enregistrées avec succès',
   'notification.selectNodeToClear': 'Veuillez sélectionner un nœud à effacer',
   'notification.sessionInvalidated': 'Vous avez été déconnecté car vous avez dépassé le nombre maximal d’appareils autorisés',
-  'notification.sessionKicked': 'This sign-in was ended from another device',
+  'notification.sessionKicked': 'Ce compte a connecté ce compte hors ligne sur d\'autres appareils',
   'notification.signInToUse': 'Connectez-vous pour utiliser cette fonctionnalité',
   'notification.signInToValidateFocus': 'Connectez-vous pour valider la question cible',
 } as const

@@ -93,6 +93,10 @@ const props = defineProps<{
   orgSchoolTier?: string | null
   orgExtraMemberSeats?: number
   orgTeachingDesignTemplateKey?: string | null
+  orgCustomLlmApiType?: string | null
+  orgCustomLlmBaseUrl?: string | null
+  orgCustomLlmApiKeyMasked?: string | null
+  orgCustomLlmModel?: string | null
   orgDifyApiBaseUrl?: string | null
   orgDifyApiKeyMasked?: string | null
   orgDifyApiBaseUrl2?: string | null
@@ -594,6 +598,7 @@ async function saveGeneralSettings() {
         school_tier: schoolTierEdit.value,
         extra_member_seats: schoolTierEdit.value === 'trial' ? 0 : extraMemberSeatsEdit.value,
         teaching_design_template_key: teachingDesignTemplateKeyEdit.value,
+        ...(orgGeneralTabRef.value?.getCustomLlmPayload() ?? {}),
       },
     })
     const savedTier = updated.school_tier
@@ -965,6 +970,10 @@ onBeforeUnmount(() => {
               :lock-loading="lockLoading"
               :read-only="orgGeneralReadOnly"
               :general-tab-active="schoolDialogTab === 'general'"
+              :custom-llm-api-type="orgCustomLlmApiType"
+              :custom-llm-base-url="orgCustomLlmBaseUrl"
+              :custom-llm-api-key-masked="orgCustomLlmApiKeyMasked"
+              :custom-llm-model="orgCustomLlmModel"
               @toggleLock="toggleLock"
               @addManagers="addManagers"
               @removeManager="removeManager"

@@ -25,6 +25,7 @@ import { computed } from 'vue'
 
 import { eventBus, useLanguage, useNotifications } from '@/composables'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
+import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 import {
   AUTO_COMPLETE_VALIDATION_I18N,
   validateAutoCompleteRules,
@@ -49,9 +50,6 @@ import {
   type GenerateGraphStreamPhase,
   consumeGenerateGraphStream,
 } from '@/utils/generateGraphStream'
-
-// LLM Models to use for parallel generation
-const LLM_MODELS = ['qwen', 'deepseek', 'doubao'] as const
 
 // Chinese placeholder patterns (from old JS diagram-validator.js)
 const CHINESE_PLACEHOLDERS = [
@@ -173,6 +171,7 @@ export function useAutoComplete() {
   const { promptLanguage, t } = useLanguage()
   const notify = useNotifications()
   const { guardCollabGuestAi } = useCollabGuestAiGate()
+  const { canvasModels } = useOrgCustomLlm()
   // Expose store state
   const isGenerating = computed(() => llmResultsStore.isGenerating)
   const selectedModel = computed(() => llmResultsStore.selectedModel)
@@ -644,7 +643,7 @@ export function useAutoComplete() {
     } = {}
   ): Promise<{ success: boolean; error?: string }> {
     const {
-      modelsToRun = [...LLM_MODELS],
+      modelsToRun = [...canvasModels.value],
       onFirstResult,
       onAllComplete,
       promptSuffix,

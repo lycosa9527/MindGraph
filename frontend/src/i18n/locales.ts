@@ -1,8 +1,9 @@
 /**
  * UI locale helpers and prompt-registry integration.
  * The locale table lives in `supportedUiLocales.ts` (`SUPPORTED_UI_LOCALES`).
- * When adding a code: edit `supportedUiLocales.ts`, then stub or run `npm run i18n:materialize-from-en`,
- * `elementPlusLocale.ts`, and `scripts/check-i18n-keys.ts`. Loaders come from `import.meta.glob` in `i18n/index.ts`.
+ * When adding a **new** code: edit `supportedUiLocales.ts`, then stub or run `npm run i18n:materialize-from-en`
+ * only if `messages/<code>/` does not exist. Never rematerialize a translated locale from English.
+ * Then `elementPlusLocale.ts` and `scripts/check-i18n-keys.ts`. Loaders come from `import.meta.glob` in `i18n/index.ts`.
  * Translate UI copy by editing values in `src/locales/messages/<code>/*.ts` (same keys as `en/`), e.g. in Cursor/Composer.
  */
 import promptLanguageRegistry from '../../../data/prompt_language_registry.json' with { type: 'json' }
@@ -19,7 +20,8 @@ export const UI_LOCALE_CODES: LocaleCode[] = SUPPORTED_UI_LOCALES.filter((e) => 
 /**
  * Locales listed in Settings → Interface language (and mobile account UI picker).
  *
- * Policy: add a code only after all 10 message modules are translated (no materialize stub in any file).
+ * Policy: list only locales that are already translated (no materialize stub in any file).
+ * Enabled registry locales that are still English fill stay out of this list.
  * See repo docs: `docs/i18n-belt-and-road-master-plan.md` (strategy + locale completion criteria).
  * Guard: `npm run i18n:check-picker-stubs` (from `frontend/`).
  */

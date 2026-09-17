@@ -93,6 +93,10 @@ export interface User {
   thinkingCoins?: ThinkingCoinsSummary
   /** Per-user daily LLM token budget from /me */
   dailyTokens?: DailyTokensSummary
+  /** School custom native LLM is active */
+  customLlmEnabled?: boolean
+  /** School model name shown on the canvas */
+  customLlmModel?: string | null
 }
 
 /**
@@ -118,6 +122,8 @@ export interface BackendUser {
         school_tier?: string | null
         school_tier_features?: SchoolTierFeatures | null
         subscription_expired?: boolean
+        custom_llm_enabled?: boolean
+        custom_llm_model?: string | null
       }
   schoolId?: string
   schoolName?: string

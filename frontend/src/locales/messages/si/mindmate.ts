@@ -1,5 +1,6 @@
 /**
  * si UI — mindmate
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
@@ -81,8 +82,8 @@ export default {
   'mindmate.historyTitle': 'සංවාද ඉතිහාසය',
   'mindmate.imagePreview': 'රූප පෙරදසුන',
   'mindmate.input.attachFile': 'ගොනුව අමුණන්න',
-  'mindmate.input.unsupportedFile': 'Only images, Word, PDF, and PowerPoint are allowed',
-  'mindmate.input.fileTooLarge': 'File is too large (max {limit}MB)',
+  'mindmate.input.unsupportedFile': 'පින්තූර, Word, PDF හෝ PPT සඳහා පමණක් සහය දක්වයි',
+  'mindmate.input.fileTooLarge': 'ගොනුව විශාල වැඩියි, උපරිම ප්‍රමාණය {limit}MB වේ',
   'mindmate.input.placeholder': 'ඔබේ ප්‍රශ්නය ටයිප් කරන්න...',
   'mindmate.newChat': 'නව කතාබස්',
   'mindmate.otherModules': 'වෙනත් මොඩියුල',
@@ -191,6 +192,8 @@ export default {
   'mindmate.collabInviteCodeBreadcrumb': 'ආරාධනා කේතය: {code}',
   'mindmate.collabSessionMembersTitle': 'සම්මන්ත්‍රණ සාමාජිකයන්',
   'mindmate.collabMembersTitle': 'පාසල් සාමාජිකයන්',
+  'mindmate.collabToggleContacts': 'ඇමතිය යුතු පුද්ගලයා',
+  'mindmate.collabToggleContactsTitle': 'සම්බන්ධතා පෙන්වන්න හෝ සඟවන්න',
   'mindmate.collabPoke': 'තල්ලු කරන්න',
   'mindmate.collabPokeToast': '{name} ඔබ {seminar} හි සම්මන්ත්‍රණයට සම්බන්ධ වන තෙක් බලා සිටී',
   'mindmate.collabPokeSomeone': 'සගයෙක්',

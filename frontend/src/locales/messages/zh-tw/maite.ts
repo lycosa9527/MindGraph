@@ -1,6 +1,8 @@
 /**
- * zh UI — Mate Learning (迈特学习法)
+ * zh-tw UI — maite
+ * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
  */
+
 export default {
   'maite.title': '邁特學習法',
   'maite.subtitle': '逆向分解 · 四階診斷 · 靶向補救 · 變式遷移',

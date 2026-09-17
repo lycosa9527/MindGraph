@@ -1,5 +1,6 @@
 /**
  * zh UI — knowledge
+ * SOURCE — author new keys here in Simplified Chinese first.
  */
 
 export default {

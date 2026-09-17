@@ -8,8 +8,9 @@ Proprietary License
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
+from services.llm.org_custom_config import session_custom_llm_fields
 from utils.auth.org_subscription import (
     effective_school_tier_for_org,
     is_org_subscription_expired,
@@ -42,8 +43,9 @@ def _org_mindmate_avatar_url(org) -> Optional[str]:
     return stripped or None
 
 
-def organization_session_payload(org) -> dict:
+def organization_session_payload(org, custom_llm: Optional[dict[str, Any]] = None) -> dict:
     """Build organization object for login, register, and /me responses."""
+    llm_fields = custom_llm if custom_llm is not None else session_custom_llm_fields(org)
     if not org:
         return {
             "id": None,
@@ -55,6 +57,7 @@ def organization_session_payload(org) -> dict:
             "school_tier": None,
             "school_tier_features": school_tier_features_for_no_org(),
             "subscription_expired": False,
+            **llm_fields,
         }
     display_raw = getattr(org, "display_name", None)
     display_stripped = (str(display_raw).strip() if display_raw else "") or None
@@ -69,4 +72,5 @@ def organization_session_payload(org) -> dict:
         "school_tier": tier,
         "school_tier_features": school_tier_features_payload(tier),
         "subscription_expired": is_org_subscription_expired(org),
+        **llm_fields,
     }

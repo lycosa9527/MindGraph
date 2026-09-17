@@ -1,5 +1,6 @@
 /**
- * az UI � sidebar
+ * az UI — sidebar
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
@@ -38,13 +39,13 @@ export default {
   'sidebar.chunkTest': 'RAG chunk testi',
   'sidebar.collapseSidebar': 'Yan paneli yığ',
   'sidebar.showcase': 'Vitrin',
-  'sidebar.zhihui': 'ZhiHui',
-  'sidebar.zhihuiHistory.title': 'Generation history',
-  'sidebar.zhihuiHistory.empty': 'No generations yet',
-  'sidebar.zhihuiHistory.deleteConfirm': 'Delete this generation? This cannot be undone.',
+  'sidebar.zhihui': 'Chie',
+  'sidebar.zhihuiHistory.title': 'Tarix qurun',
+  'sidebar.zhihuiHistory.empty': 'Hələ nəsil rekordu yoxdur',
+  'sidebar.zhihuiHistory.deleteConfirm': 'Bu yaradılan qeydi silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz.',
   'sidebar.community': 'İcma',
   'sidebar.courses': 'Düşüncə kursları',
-  'sidebar.mateLearning': 'Mate Learning',
+  'sidebar.mateLearning': 'Matt öyrənmə üsulu',
   'sidebar.debateHistory.deleteConfirm': 'Bu debatı silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz.',
   'sidebar.debateHistory.empty': 'Hələ debat yoxdur',
   'sidebar.debateHistory.loginPrompt': 'Debatları görmək üçün daxil olun',
@@ -105,7 +106,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'Hələ paket yoxdur',
   'sidebar.knowledgeSpaceHistory.title': 'Paketlər',
   'sidebar.languageSettings': 'Dil parametrləri',
-  'sidebar.tokenUsageToday': 'Today {usage}',
+  'sidebar.tokenUsageToday': 'Bu gün {usage}',
   'sidebar.library': 'Kitabxana',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
@@ -113,13 +114,13 @@ export default {
   'sidebar.mindbot': 'MindBot',
   'sidebar.smartResponse': 'Ağıllı cavab',
   'sidebar.teacherUsage': 'Müəllim istifadəsi',
-  'sidebar.training': 'Training',
-  'sidebar.trainingCourses': 'Courses',
-  'sidebar.trainingBuilder': 'Course Builder Assistant',
+  'sidebar.training': 'məktəb əsaslı təlim',
+  'sidebar.trainingCourses': 'kurs',
+  'sidebar.trainingBuilder': 'Kursun tikintisi üzrə köməkçi',
   'sidebar.templateResources': 'Şablonlar',
   'sidebar.orgEdition': '{org} xüsusi',
   'sidebar.personalEdition': 'Şəxsi xüsusi',
-  'sidebar.userSubtitleDefault': 'MindGraph Pro',
+  'sidebar.userSubtitleDefault': 'MindGraph Professional Edition',
   'sidebar.account': 'Hesab',
   'sidebar.roleSuperAdmin': 'Super admin',
   'sidebar.rolePlatformAdmin': 'Tədris tədqiqatçısı',

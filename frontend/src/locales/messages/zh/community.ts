@@ -1,4 +1,7 @@
-/** zh UI — community */
+/**
+ * zh UI — community
+ * SOURCE — author new keys here in Simplified Chinese first.
+ */
 
 export default {
   'community.category.all': '全部',

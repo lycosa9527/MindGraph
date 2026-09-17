@@ -1,5 +1,6 @@
 /**
- * en UI � notification
+ * en UI — notification
+ * FILL — English of zh. Copy into other locales only for keys that do not exist yet.
  */
 
 export default {

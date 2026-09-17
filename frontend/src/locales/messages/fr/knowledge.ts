@@ -1,5 +1,6 @@
 /**
- * fr UI � knowledge
+ * fr UI — knowledge
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
@@ -7,7 +8,7 @@ export default {
   'fileCenterLibrary.subtitle': 'Collections de sources regroupées par diagramme (Résumé de document).',
   'fileCenterLibrary.openDiagram': 'Ouvrir le diagramme',
   'fileCenterLibrary.badgeCanvas': 'Canevas',
-  'fileCenterLibrary.badgeExtension': 'Extension',
+  'fileCenterLibrary.badgeExtension': 'Développer',
   'fileCenterLibrary.badgeUpload': 'Téléversement',
   'chunkTest.history.confirmDeleteBody': 'Êtes-vous sûr de vouloir supprimer ce test ? Cette action est irréversible.',
   'chunkTest.history.confirmDeleteTitle': 'Supprimer le test',
@@ -150,12 +151,12 @@ export default {
   'knowledge.pipeline.wikiPendingDetail': '{count} paquet(s) en attente de pages Wiki après indexation.',
   'knowledge.pipeline.wikiReady': 'Wiki prêt',
   'knowledge.pipeline.wikiReadyDetail': '{count} paquet(s) disposent de notes Wiki compilées.',
-  'knowledge.pipelineBadge.rag.label': 'RAG',
+  'knowledge.pipelineBadge.rag.label': 'CHIFFON',
   'knowledge.pipelineBadge.rag.notYet': 'Pas encore',
   'knowledge.pipelineBadge.rag.processing': 'En cours',
   'knowledge.pipelineBadge.rag.complete': 'Terminé',
   'knowledge.pipelineBadge.rag.failed': 'Échoué',
-  'knowledge.pipelineBadge.wiki.label': 'Wiki',
+  'knowledge.pipelineBadge.wiki.label': 'wiki',
   'knowledge.pipelineBadge.wiki.disabled': 'Désactivé',
   'knowledge.pipelineBadge.wiki.notYet': 'Pas encore',
   'knowledge.pipelineBadge.wiki.pending': 'En cours',

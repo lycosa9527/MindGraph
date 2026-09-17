@@ -1,4 +1,7 @@
-/** zh UI — 智绘 */
+/**
+ * zh UI — zhihui
+ * SOURCE — author new keys here in Simplified Chinese first.
+ */
 
 export default {
   'meta.pageTitle.zhihui': '智绘',

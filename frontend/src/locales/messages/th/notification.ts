@@ -1,5 +1,6 @@
 /**
- * th UI � notification
+ * th UI — notification
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
@@ -26,7 +27,7 @@ export default {
   'notification.geoLiteMissingTitle': 'ฐานข้อมูลประเทศ GeoLite2 หายไป',
   'notification.fullscreenFailed': 'ไม่สามารถเข้าสู่โหมดเต็มจอ',
   'notification.generationCancelled': 'ยกเลิกการสร้างแล้ว',
-  'notification.conceptMapTabNeedsAi': 'Please enable AI in the bar before Tab recommendations.',
+  'notification.conceptMapTabNeedsAi': 'โปรดเปิดใช้งาน "เริ่ม AI" ในแถบด้านบนก่อนที่จะใช้คำแนะนำแท็บ',
   'notification.historyClearNodes': 'ล้างข้อความโหนด',
   'notification.historyEmptyLearning': 'ล้างโหนดและเพิ่มคำตอบ',
   'notification.importInvalidData': 'นำเข้าล้มเหลว: ข้อมูลไดอะแกรมไม่ถูกต้อง',
@@ -35,10 +36,10 @@ export default {
   'notification.importSlotsFull': 'ห้องสมุดเต็ม นำเข้าไดอะแกรมแล้วแต่ไม่ได้บันทึกไปยังห้องสมุด',
   'notification.importSuccess': 'นำเข้าไดอะแกรมและบันทึกไปยังห้องสมุดแล้ว',
   'notification.importUnsupportedType': 'นำเข้าล้มเหลว: ประเภทไดอะแกรมไม่รองรับ',
-  'notification.inlineRecEmpty': 'No recommendations were generated. Try again or edit the topic.',
+  'notification.inlineRecEmpty': 'ไม่มีการสร้างเนื้อหาที่แนะนำ โปรดลองอีกครั้งหรือปรับธีมแล้วลองอีกครั้ง',
   'notification.loadMoreFailed': 'ไม่สามารถโหลดเพิ่มเติม',
   'notification.networkError': 'ข้อผิดพลาดของเครือข่าย',
-  'notification.nodeNotEligible': 'This node does not support Tab recommendations.',
+  'notification.nodeNotEligible': 'โหนดนี้ไม่รองรับคำแนะนำแท็บ',
   'notification.newVersionAvailable': 'มีเวอร์ชันใหม่ คลิกเพื่อรีเฟรช',
   'notification.recommendationFailed': 'การแนะนำล้มเหลว: {msg}',
   'notification.relationshipGenerationFailed': 'การสร้างความสัมพันธ์ล้มเหลว',
@@ -47,7 +48,7 @@ export default {
   'notification.saved': 'บันทึกการเปลี่ยนแปลงสำเร็จ',
   'notification.selectNodeToClear': 'กรุณาเลือกโหนดเพื่อล้าง',
   'notification.sessionInvalidated': 'คุณถูกออกจากระบบเนื่องจากเกินจำนวนอุปกรณ์สูงสุด',
-  'notification.sessionKicked': 'This sign-in was ended from another device',
+  'notification.sessionKicked': 'บัญชีนี้ได้บันทึกบัญชีนี้แบบออฟไลน์บนอุปกรณ์อื่น',
   'notification.signInToUse': 'เข้าสู่ระบบเพื่อใช้งาน',
   'notification.signInToValidateFocus': 'เข้าสู่ระบบเพื่อตรวจสอบคำถามโฟกัส',
 } as const

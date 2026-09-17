@@ -50,6 +50,10 @@ async def test_get_me_touches_signed_in_presence() -> None:
         patch("routers.auth.session_user_payload.get_user_role", return_value="teacher"),
         patch("routers.auth.session_user_payload.current_user_daily_token_payload", tokens),
         patch("routers.auth.session_user_payload.organization_session_payload", return_value=None),
+        patch(
+            "routers.auth.session_user_payload.session_custom_llm_fields_for_org_id",
+            AsyncMock(return_value={"custom_llm_enabled": False, "custom_llm_model": None}),
+        ),
     ):
         payload = await get_me(request, user, db)
 
@@ -81,6 +85,10 @@ async def test_get_me_returns_profile_if_presence_raises() -> None:
         patch("routers.auth.session_user_payload.get_user_role", return_value="teacher"),
         patch("routers.auth.session_user_payload.current_user_daily_token_payload", tokens),
         patch("routers.auth.session_user_payload.organization_session_payload", return_value=None),
+        patch(
+            "routers.auth.session_user_payload.session_custom_llm_fields_for_org_id",
+            AsyncMock(return_value={"custom_llm_enabled": False, "custom_llm_model": None}),
+        ),
     ):
         payload = await get_me(request, user, db)
 

@@ -13,6 +13,8 @@ import { Plus } from '@element-plus/icons-vue'
 
 import { PanelLeftOpen } from '@lucide/vue'
 
+import MindmateContactsToggleButton from '@/components/mindmate/MindmateContactsToggleButton.vue'
+
 import { useLanguage, useNotifications } from '@/composables'
 import { useMindMate } from '@/composables/mindmate/useMindMate'
 import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
@@ -122,6 +124,7 @@ const collabVisibility = ref<'organization' | 'network'>('organization')
 const collabSessionId = ref('')
 const collabOwnerId = ref<number | null>(null)
 const collabSeedMessages = ref<MindmateCollabMessage[]>([])
+const showCollabContacts = ref(false)
 
 function mapThreadToCollabSeed(msgs: MindMateMessage[]): MindmateCollabMessage[] {
   return msgs
@@ -237,6 +240,7 @@ function exitCollabChatroomMode(options: { removeFromHistory?: boolean } = {}) {
   collabSessionId.value = ''
   collabOwnerId.value = null
   collabSeedMessages.value = []
+  showCollabContacts.value = false
   teardownMindmateCollabClient(code, options)
 }
 
@@ -630,6 +634,11 @@ function isLastAssistantMessage(messageId: string): boolean {
         @session-started="handleCollabSessionStarted"
       />
       <div class="mindmate-toolbar-actions flex items-center gap-1.5 shrink-0">
+        <MindmateContactsToggleButton
+          v-if="isCollabChatroomMode"
+          :open="showCollabContacts"
+          @toggle="showCollabContacts = !showCollabContacts"
+        />
         <el-button
           v-if="isCollabChatroomMode && canStopCollabSession"
           class="end-seminar-btn shrink-0"
@@ -658,15 +667,19 @@ function isLastAssistantMessage(messageId: string): boolean {
       :conversations="mindMate.conversations.value"
       :is-loading-history="historyLoading"
       :current-conversation-id="mindMateStore.currentConversationId"
+      :show-contacts-toggle="isCollabChatroomMode"
+      :contacts-open="showCollabContacts"
       @new-conversation="startNewConversation"
       @close="emit('close')"
       @load-history="loadConversationFromHistory"
       @delete-history="deleteConversationFromHistory"
+      @toggle-contacts="showCollabContacts = !showCollabContacts"
     />
 
     <!-- Collab chatroom mode (chat + right member column) -->
     <MindmateCollabEmbed
       v-if="isCollabChatroomMode && collabRoomCode"
+      v-model:show-contacts="showCollabContacts"
       class="flex-1 min-h-0 min-w-0"
       :room-code="collabRoomCode"
       :seed-messages="collabSeedMessages"

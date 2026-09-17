@@ -1,5 +1,6 @@
 /**
- * th UI � thinkingCoins
+ * th UI — thinkingCoins
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export const thinkingCoinsMessages = {
@@ -55,15 +56,15 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.tier.annual': 'รายปี',
   'thinkingCoins.reason.signup_grant': 'โบนัสสมัคร',
   'thinkingCoins.reason.daily_checkin': 'เช็คอินรายวัน',
-  'thinkingCoins.reason.daily_expire': 'Daily check-in expired',
+  'thinkingCoins.reason.daily_expire': 'การลงชื่อเข้าใช้หมดอายุและถูกล้างแล้ว',
   'thinkingCoins.reason.task_reward': 'รางวัลภารกิจ',
   'thinkingCoins.reason.ai_spend': 'การใช้ AI',
   'thinkingCoins.reason.admin_adjust': 'ปรับยอด',
   'thinkingCoins.reason.referral_reward': 'รางวัลแนะนำเพื่อน',
   'thinkingCoins.reason.case_reward': 'รางวัลเคส',
   'thinkingCoins.reason.subscription_grant': 'สิทธิ์จากสมาชิก',
-  'thinkingCoins.dailyExpiresHint': 'Check-in reward expires at midnight',
-  'thinkingCoins.dailyBalanceRemaining': 'Check-in remaining today: {n}',
+  'thinkingCoins.dailyExpiresHint': 'รางวัลการลงชื่อเข้าใช้จะใช้ได้ในวันเดียวกันและจะถูกรีเซ็ตเวลา 24:00 น',
+  'thinkingCoins.dailyBalanceRemaining': 'เช็คอินวันนี้เหลือ {n}',
   'thinkingCoins.admin.tab': 'โทเค็นความคิด',
   'thinkingCoins.admin.tasksTitle': 'ภารกิจรับโทเค็น',
   'thinkingCoins.admin.settingsTitle': 'ตั้งค่ารวม',
@@ -87,7 +88,7 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.systemTask': 'ระบบ',
   'thinkingCoins.admin.monthlyCap': 'เพดานรายเดือน',
   'thinkingCoins.admin.sortOrder': 'เรียง',
-  'thinkingCoins.admin.slug': 'Slug',
+  'thinkingCoins.admin.slug': 'โลโก้',
   'thinkingCoins.admin.handlerAutoLogin': 'เช็คอินอัตโนมัติ',
   'thinkingCoins.admin.handlerUsageDaily': 'การใช้งานรายวัน',
   'thinkingCoins.admin.handlerNavigate': 'นำทาง',

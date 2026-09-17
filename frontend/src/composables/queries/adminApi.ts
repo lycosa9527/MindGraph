@@ -379,6 +379,22 @@ export async function probeAdminOrganizationMindmateDifyHealth(
   })
 }
 
+export type CustomLlmApiType =
+  | 'dashscope_volcengine'
+  | 'openai_chat'
+  | 'openai_responses'
+  | 'anthropic_messages'
+
+export async function probeAdminOrganizationCustomLlmHealth(
+  orgId: number,
+  body: Record<string, unknown> = {}
+): Promise<{ online: boolean; error?: string | null; custom_llm_api_type?: string }> {
+  return adminFetchJson(`/api/auth/admin/organizations/${orgId}/custom-llm-health`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
 // ============================================================================
 // Users
 // ============================================================================

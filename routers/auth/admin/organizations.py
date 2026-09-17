@@ -44,6 +44,7 @@ from services.admin.user_usage_activity import (
     list_org_usage_activities,
 )
 from services.auth.user_fk_cleanup import delete_user_fk_dependent_rows
+from services.llm.org_custom_config import invalidate_org_custom_llm_cache
 from services.mindmate.teaching_design_template_store import (
     normalize_template_key,
     teaching_design_template_list_field,
@@ -88,6 +89,12 @@ from ..dependencies import (
     require_organizations_read,
 )
 from ..helpers import utc_to_beijing_iso
+from .organization_custom_llm import (
+    apply_custom_llm_on_update,
+    custom_llm_list_fields,
+    probe_custom_llm_health,
+    request_updates_custom_llm_settings,
+)
 from .organization_dify import (
     apply_dify_on_create,
     apply_dify_on_update,
@@ -227,6 +234,7 @@ async def list_organizations_admin(
                 **org_privatization_list_field(org),
                 **school_tier_list_fields(org, user_count),
                 **teaching_design_template_list_field(org),
+                **custom_llm_list_fields(org),
             }
         )
     return result
@@ -266,6 +274,23 @@ async def post_organization_mindmate_dify_health_admin(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
     body = request if isinstance(request, dict) else None
     return await probe_mindmate_dify_health(org, body)
+
+
+@router.post("/admin/organizations/{org_id}/custom-llm-health")
+async def post_organization_custom_llm_health_admin(
+    org_id: int,
+    request: Optional[dict] = Body(None),
+    _scope: AdminScope = Depends(require_global_organizations_edit),
+    db: AsyncSession = Depends(get_async_db),
+    lang: Language = Depends(get_language_dependency),
+):
+    """Probe school custom LLM credentials (draft body; never exposes secrets)."""
+    org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
+    if not org:
+        error_msg = Messages.error("organization_not_found", lang, org_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+    body = request if isinstance(request, dict) else None
+    return await probe_custom_llm_health(org, body, lang)
 
 
 @router.get("/admin/organizations/{org_id}/invitation-code")
@@ -534,6 +559,9 @@ async def update_organization_admin(
     if request_updates_dify_settings(request):
         apply_dify_on_update(org, request, lang)
 
+    if request_updates_custom_llm_settings(request):
+        apply_custom_llm_on_update(org, request, lang)
+
     if "mindmate_agent_name" in request or "mindmate_agent_avatar_url" in request:
         apply_mindmate_branding_on_update(org, request, lang)
 
@@ -576,6 +604,9 @@ async def update_organization_admin(
             detail=Messages.error("failed_update_organization", lang),
         ) from e
 
+    if request_updates_custom_llm_settings(request):
+        invalidate_org_custom_llm_cache(int(org.id))
+
     if not await org_cache.write_through(org, old_code, old_invite):
         logger.warning("[Auth] Cache write-through failed for org ID %s", org_id)
         await org_cache.recover_after_failed_write_through(org, old_code, old_invite)
@@ -600,6 +631,7 @@ async def update_organization_admin(
         **org_privatization_list_field(org),
         **school_tier_list_fields(org, member_count),
         **teaching_design_template_list_field(org),
+        **custom_llm_list_fields(org),
     }
 
 

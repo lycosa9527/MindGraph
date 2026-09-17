@@ -65,6 +65,7 @@ jobs:
             tests/test_generate_dingtalk_identity.py tests/test_temp_image_storage.py tests/test_serve_temp_image.py tests/test_library_save_user_notices.py \
             tests/test_generation_skip_registry.py tests/test_generation_result_cache.py tests/test_generation_result_coalesce.py \
             tests/test_generation_result_cache_live.py tests/test_org_result_cache.py \
+            tests/test_org_custom_llm.py \
             tests/test_mindbot_library_save_reply.py tests/test_assistant_markdown.py \
             tests/test_mindbot_dingtalk_diagram_display.py \
             tests/test_user_daily_token_quota.py tests/auth/test_user_session_prefs.py \

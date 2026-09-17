@@ -1,6 +1,8 @@
 /**
  * en UI messages — merged namespace bundles.
+ * FILL — English of zh. Copy into other locales only for keys that do not exist yet.
  */
+
 import admin from './admin.ts'
 import auth from './auth.ts'
 import canvas from './canvas.ts'

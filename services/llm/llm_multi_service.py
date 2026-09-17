@@ -23,6 +23,7 @@ from services.auth.thinking_coin.usage_wire import (
 )
 from services.infrastructure.http.error_handler import LLMServiceError
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
+from services.llm.org_custom_client import collapse_org_custom_models
 from services.monitoring.error_reporting import record_failure
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.auth.thinking_coin_config import THINKING_COIN_MODE_BATCH_INNER
@@ -41,6 +42,14 @@ class LLMMultiService:
             llm_service: LLMService instance for single model calls
         """
         self.llm_service = llm_service
+
+    async def _models_for_org(
+        self,
+        models: List[str],
+        organization_id: Optional[int],
+    ) -> List[str]:
+        """Keep a single alias when the school custom LLM override is active."""
+        return await collapse_org_custom_models(organization_id, models)
 
     async def generate_multi(
         self,
@@ -69,6 +78,7 @@ class LLMMultiService:
         """
         if models is None:
             models = ["qwen", "deepseek", "kimi"]
+        models = await self._models_for_org(models, kwargs.get("organization_id"))
 
         start_time = time.time()
         logger.debug("[LLMMultiService] generate_multi() - %s models in parallel", len(models))
@@ -142,6 +152,7 @@ class LLMMultiService:
         """
         if models is None:
             models = ["qwen", "deepseek", "kimi"]
+        models = await self._models_for_org(models, kwargs.get("organization_id"))
 
         logger.debug("[LLMMultiService] generate_progressive() - %s models", len(models))
 
@@ -254,6 +265,7 @@ class LLMMultiService:
         # NOTE: Kimi removed from node palette default
         if models is None:
             models = ["qwen", "deepseek", "doubao"]
+        models = await self._models_for_org(models, organization_id)
 
         # Map logical models to physical models
         physical_models = models
@@ -463,6 +475,7 @@ class LLMMultiService:
         """
         if models is None:
             models = ["qwen-turbo", "qwen", "deepseek"]
+        models = await self._models_for_org(models, kwargs.get("organization_id"))
 
         logger.debug("[LLMMultiService] generate_race() - first of %s models", len(models))
 
@@ -572,6 +585,7 @@ class LLMMultiService:
         """
         if models is None:
             models = ["qwen", "deepseek", "kimi"]
+        models = await self._models_for_org(models, kwargs.get("organization_id"))
 
         results = await self.generate_multi(
             prompt=prompt,

@@ -1,5 +1,6 @@
 /**
  * zh UI — mindmate
+ * SOURCE — author new keys here in Simplified Chinese first.
  */
 
 export default {
@@ -199,6 +200,8 @@ export default {
   'mindmate.collabInviteCodeBreadcrumb': '邀请码：{code}',
   'mindmate.collabSessionMembersTitle': '研讨会成员',
   'mindmate.collabMembersTitle': '本校教师',
+  'mindmate.collabToggleContacts': '联系人',
+  'mindmate.collabToggleContactsTitle': '显示或隐藏联系人',
   'mindmate.collabPoke': '戳',
   'mindmate.collabPokeToast': '{name}在等你加入{seminar}的研讨会',
   'mindmate.collabPokeSomeone': '同事',

@@ -33,6 +33,7 @@ from services.llm.llm_multi_service import LLMMultiService
 from services.llm.llm_request_executor import LLMRequestExecutor
 from services.llm.llm_service_init import LLMServiceInitializer
 from services.llm.llm_utils import LLMUtils
+from services.llm.org_custom_client import resolve_chat_routing, usage_model_name
 from services.monitoring.performance_tracker import performance_tracker
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from services.utils.prompt_manager import prompt_manager
@@ -82,6 +83,22 @@ class LLMService:
         self.doubao_rate_limiter = None
 
         logger.info("[LLMService] Initialized")
+
+    async def _route_chat_client(
+        self,
+        organization_id: Optional[int],
+        model: str,
+        skip_load_balancing: bool,
+    ) -> Tuple[Any, str, Optional[str], bool]:
+        """Resolve school override or platform client (skip LB when custom)."""
+        return await resolve_chat_routing(
+            organization_id=organization_id,
+            model=model,
+            skip_load_balancing=skip_load_balancing,
+            client_manager=self.client_manager,
+            load_balancer_helper=self.load_balancer_helper,
+            load_balancer=self.load_balancer,
+        )
 
     @staticmethod
     def _record_chat_failure(
@@ -288,6 +305,8 @@ class LLMService:
         """
         start_time = time.time()
         provider: str | None = None
+        used_custom = False
+        actual_model = model
         thinking_coin_mode = pop_thinking_coin_mode(kwargs)
 
         if not is_batch_inner_thinking_coin_mode(thinking_coin_mode):
@@ -314,29 +333,29 @@ class LLMService:
                 len(chat_messages),
             )
 
-            # Apply load balancing
-            actual_model, provider = await self.load_balancer_helper.apply_load_balancing(
-                model=model,
-                skip_load_balancing=skip_load_balancing,
-                load_balancer=self.load_balancer,
+            client, actual_model, provider, used_custom = await self._route_chat_client(
+                organization_id,
+                model,
+                skip_load_balancing,
             )
-
-            # Get client for actual model
-            client = self.client_manager.get_client(actual_model)
 
             # Set timeout (per-model defaults)
             if timeout is None:
                 timeout = LLMUtils.get_default_timeout(model)
 
             # Get appropriate rate limiter
-            rate_limiter = LLMUtils.get_rate_limiter(
-                model=model,
-                actual_model=actual_model,
-                provider=provider,
-                rate_limiter=self.rate_limiter,
-                load_balancer_rate_limiter=self.load_balancer_rate_limiter,
-                kimi_rate_limiter=self.kimi_rate_limiter,
-                doubao_rate_limiter=self.doubao_rate_limiter,
+            rate_limiter = (
+                None
+                if used_custom
+                else LLMUtils.get_rate_limiter(
+                    model=model,
+                    actual_model=actual_model,
+                    provider=provider,
+                    rate_limiter=self.rate_limiter,
+                    load_balancer_rate_limiter=self.load_balancer_rate_limiter,
+                    kimi_rate_limiter=self.kimi_rate_limiter,
+                    doubao_rate_limiter=self.doubao_rate_limiter,
+                )
             )
 
             # Execute request
@@ -378,7 +397,7 @@ class LLMService:
             }
             coins_user = await thinking_coins_apply_to_user(user_id, organization_id)
             await self.metrics_tracker.track_all(
-                model=model,
+                model=usage_model_name(model, actual_model, used_custom),
                 usage_data=usage_data,
                 metadata=metadata,
                 provider=provider,
@@ -420,7 +439,7 @@ class LLMService:
                 "http_request_id": http_request_id,
             }
             await self.metrics_tracker.track_all(
-                model=model,
+                model=usage_model_name(model, actual_model, used_custom),
                 usage_data=None,
                 metadata=metadata,
                 provider=provider,
@@ -476,6 +495,8 @@ class LLMService:
         """
         start_time = time.time()
         provider: str | None = None
+        used_custom = False
+        actual_model = model
         thinking_coin_mode = pop_thinking_coin_mode(kwargs)
 
         if not is_batch_inner_thinking_coin_mode(thinking_coin_mode):
@@ -501,25 +522,27 @@ class LLMService:
                 len(chat_messages),
             )
 
-            actual_model, provider = await self.load_balancer_helper.apply_load_balancing(
-                model=model,
-                skip_load_balancing=skip_load_balancing,
-                load_balancer=self.load_balancer,
+            client, actual_model, provider, used_custom = await self._route_chat_client(
+                organization_id,
+                model,
+                skip_load_balancing,
             )
-
-            client = self.client_manager.get_client(actual_model)
 
             if timeout is None:
                 timeout = LLMUtils.get_default_timeout(model)
 
-            rate_limiter = LLMUtils.get_rate_limiter(
-                model=model,
-                actual_model=actual_model,
-                provider=provider,
-                rate_limiter=self.rate_limiter,
-                load_balancer_rate_limiter=self.load_balancer_rate_limiter,
-                kimi_rate_limiter=self.kimi_rate_limiter,
-                doubao_rate_limiter=self.doubao_rate_limiter,
+            rate_limiter = (
+                None
+                if used_custom
+                else LLMUtils.get_rate_limiter(
+                    model=model,
+                    actual_model=actual_model,
+                    provider=provider,
+                    rate_limiter=self.rate_limiter,
+                    load_balancer_rate_limiter=self.load_balancer_rate_limiter,
+                    kimi_rate_limiter=self.kimi_rate_limiter,
+                    doubao_rate_limiter=self.doubao_rate_limiter,
+                )
             )
 
             response = await self.request_executor.execute_chat_request(
@@ -558,7 +581,7 @@ class LLMService:
             }
             coins_user = await thinking_coins_apply_to_user(user_id, organization_id)
             await self.metrics_tracker.track_all(
-                model=model,
+                model=usage_model_name(model, actual_model, used_custom),
                 usage_data=usage_data if isinstance(usage_data, dict) else {},
                 metadata=metadata,
                 provider=provider,
@@ -599,7 +622,7 @@ class LLMService:
                 "http_request_id": http_request_id,
             }
             await self.metrics_tracker.track_all(
-                model=model,
+                model=usage_model_name(model, actual_model, used_custom),
                 usage_data=None,
                 metadata=metadata,
                 provider=provider,
@@ -660,6 +683,8 @@ class LLMService:
         """
         start_time = time.time()
         provider: str | None = None
+        used_custom = False
+        actual_model = model
         thinking_coin_mode = pop_thinking_coin_mode(kwargs)
 
         req_type = str(kwargs.get("request_type", "diagram_generation"))
@@ -685,27 +710,29 @@ class LLMService:
                 len(chat_messages),
             )
 
-            # Apply load balancing
-            actual_model, provider = await self.load_balancer_helper.apply_load_balancing(
-                model=model, skip_load_balancing=False, load_balancer=self.load_balancer
+            client, actual_model, provider, used_custom = await self._route_chat_client(
+                req_org_id if isinstance(req_org_id, int) else None,
+                model,
+                False,
             )
-
-            # Get client for actual model
-            client = self.client_manager.get_client(actual_model)
 
             # Set timeout
             if timeout is None:
                 timeout = LLMUtils.get_default_timeout(model)
 
             # Get appropriate rate limiter
-            rate_limiter = LLMUtils.get_rate_limiter(
-                model=model,
-                actual_model=actual_model,
-                provider=provider,
-                rate_limiter=self.rate_limiter,
-                load_balancer_rate_limiter=self.load_balancer_rate_limiter,
-                kimi_rate_limiter=self.kimi_rate_limiter,
-                doubao_rate_limiter=self.doubao_rate_limiter,
+            rate_limiter = (
+                None
+                if used_custom
+                else LLMUtils.get_rate_limiter(
+                    model=model,
+                    actual_model=actual_model,
+                    provider=provider,
+                    rate_limiter=self.rate_limiter,
+                    load_balancer_rate_limiter=self.load_balancer_rate_limiter,
+                    kimi_rate_limiter=self.kimi_rate_limiter,
+                    doubao_rate_limiter=self.doubao_rate_limiter,
+                )
             )
 
             # Execute request
@@ -737,7 +764,7 @@ class LLMService:
             self.metrics_tracker.record_performance_metrics(model=model, duration=duration, success=True)
 
             # Record provider metrics for load balancing
-            if provider and self.load_balancer:
+            if provider and self.load_balancer and not used_custom:
                 await self.metrics_tracker.record_provider_metrics(
                     provider=provider,
                     load_balancer=self.load_balancer,
@@ -865,6 +892,8 @@ class LLMService:
         """
         start_time = time.time()
         provider: str | None = None
+        used_custom = False
+        actual_model = model
         thinking_coin_mode = pop_thinking_coin_mode(kwargs)
 
         if not is_batch_inner_thinking_coin_mode(thinking_coin_mode):
@@ -888,15 +917,11 @@ class LLMService:
                 len(prompt) if isinstance(prompt, str) else 0,
             )
 
-            # Apply load balancing
-            actual_model, provider = await self.load_balancer_helper.apply_load_balancing(
-                model=model,
-                skip_load_balancing=skip_load_balancing,
-                load_balancer=self.load_balancer,
+            client, actual_model, provider, used_custom = await self._route_chat_client(
+                organization_id,
+                model,
+                skip_load_balancing,
             )
-
-            # Get client for actual model
-            client = self.client_manager.get_client(actual_model)
 
             # Build messages
             chat_messages = self.message_builder.build_chat_messages(
@@ -908,14 +933,18 @@ class LLMService:
                 timeout = LLMUtils.get_default_timeout(model)
 
             # Get appropriate rate limiter
-            rate_limiter = LLMUtils.get_rate_limiter(
-                model=model,
-                actual_model=actual_model,
-                provider=provider,
-                rate_limiter=self.rate_limiter,
-                load_balancer_rate_limiter=self.load_balancer_rate_limiter,
-                kimi_rate_limiter=self.kimi_rate_limiter,
-                doubao_rate_limiter=self.doubao_rate_limiter,
+            rate_limiter = (
+                None
+                if used_custom
+                else LLMUtils.get_rate_limiter(
+                    model=model,
+                    actual_model=actual_model,
+                    provider=provider,
+                    rate_limiter=self.rate_limiter,
+                    load_balancer_rate_limiter=self.load_balancer_rate_limiter,
+                    kimi_rate_limiter=self.kimi_rate_limiter,
+                    doubao_rate_limiter=self.doubao_rate_limiter,
+                )
             )
 
             # Check if client supports streaming
@@ -930,6 +959,9 @@ class LLMService:
                     system_message=system_message,
                     skip_load_balancing=True,
                     use_knowledge_base=False,  # Already enhanced
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    request_type=request_type,
                     **kwargs,
                 )
                 yield response
@@ -974,7 +1006,7 @@ class LLMService:
             }
             coins_user = await thinking_coins_apply_to_user(user_id, organization_id)
             await self.metrics_tracker.track_all(
-                model=model,
+                model=usage_model_name(model, actual_model, used_custom),
                 usage_data=usage_data,
                 metadata=metadata,
                 provider=provider,
@@ -1012,7 +1044,7 @@ class LLMService:
                 "conversation_id": conversation_id,
             }
             await self.metrics_tracker.track_all(
-                model=model,
+                model=usage_model_name(model, actual_model, used_custom),
                 usage_data=None,
                 metadata=metadata,
                 provider=provider,

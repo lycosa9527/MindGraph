@@ -1,3 +1,8 @@
+/**
+ * en UI — training
+ * FILL — English of zh. Copy into other locales only for keys that do not exist yet.
+ */
+
 export default {
   'training.title': 'Training',
   'training.subtitle': 'Pull this school’s teachers to the same diagram page.',

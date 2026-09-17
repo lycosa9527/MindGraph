@@ -1,5 +1,6 @@
 /**
  * si UI — maite
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {

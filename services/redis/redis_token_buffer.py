@@ -464,6 +464,7 @@ class RedisTokenBuffer:
         endpoint_path: Optional[str] = None,
         response_time: Optional[float] = None,
         success: bool = True,
+        model_provider: Optional[str] = None,
         **kwargs: Any,
     ) -> bool:
         """
@@ -485,15 +486,12 @@ class RedisTokenBuffer:
             if total_tokens is None:
                 total_tokens = input_tokens + output_tokens
 
-            # Get pricing info
             pricing = self.MODEL_PRICING.get(model_alias, {"input": 0.4, "output": 1.2, "provider": "unknown"})
-
-            # Calculate cost
             input_cost = input_tokens * pricing["input"] / 1_000_000
             output_cost = output_tokens * pricing["output"] / 1_000_000
             total_cost = input_cost + output_cost
-
             model_name = self.MODEL_NAME_MAP.get(model_alias, model_alias)
+            recorded_provider = (model_provider or "").strip() or pricing["provider"]
 
             # Build record
             if kwargs:
@@ -504,7 +502,7 @@ class RedisTokenBuffer:
                 "api_key_id": api_key_id,
                 "session_id": session_id or f"session_{os.urandom(8).hex()}",
                 "conversation_id": conversation_id,
-                "model_provider": pricing["provider"],
+                "model_provider": recorded_provider,
                 "model_name": model_name,
                 "model_alias": model_alias,
                 "input_tokens": input_tokens,

@@ -1,5 +1,6 @@
 /**
- * af UI � sidebar
+ * af UI — sidebar
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
@@ -25,7 +26,7 @@ export default {
   'sidebar.bookmarks.pageN': 'Bladsy {n}',
   'sidebar.bookmarks.title': 'Onlangse boekmerke',
   'sidebar.bookmarks.unknownDoc': 'Onbekende dokument',
-  'sidebar.brandTitle': '迈特教研',
+  'sidebar.brandTitle': 'Matt Onderrig en Navorsing',
   'sidebar.chatHistory.deleteConfirm': 'Is jy seker jy wil hierdie gesprek verwyder? Dit kan nie ongedaan gemaak word nie.',
   'sidebar.chatHistory.deleteTitle': 'Verwyder gesprek',
   'sidebar.chatHistory.empty': 'Nog geen gesprekke nie',
@@ -38,13 +39,13 @@ export default {
   'sidebar.chunkTest': 'RAG-stuk-toets',
   'sidebar.collapseSidebar': 'Vou kantbalk in',
   'sidebar.showcase': 'Uitstalling',
-  'sidebar.zhihui': 'ZhiHui',
-  'sidebar.zhihuiHistory.title': 'Generation history',
-  'sidebar.zhihuiHistory.empty': 'No generations yet',
-  'sidebar.zhihuiHistory.deleteConfirm': 'Delete this generation? This cannot be undone.',
+  'sidebar.zhihui': 'Chie',
+  'sidebar.zhihuiHistory.title': 'Bou geskiedenis',
+  'sidebar.zhihuiHistory.empty': 'Nog geen generasie rekord nie',
+  'sidebar.zhihuiHistory.deleteConfirm': 'Is jy seker jy wil hierdie gegenereerde rekord uitvee? Hierdie handeling kan nie ontdoen word nie.',
   'sidebar.community': 'Gemeenskap',
   'sidebar.courses': 'Denkkursusse',
-  'sidebar.mateLearning': 'Mate Learning',
+  'sidebar.mateLearning': 'Matt leer metode',
   'sidebar.debateHistory.deleteConfirm': 'Is jy seker jy wil hierdie debat verwyder? Dit kan nie ongedaan gemaak word nie.',
   'sidebar.debateHistory.empty': 'Nog geen debatte nie',
   'sidebar.debateHistory.loginPrompt': 'Teken in om debatte te sien',
@@ -105,7 +106,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'Nog geen pakkette nie',
   'sidebar.knowledgeSpaceHistory.title': 'Pakkette',
   'sidebar.languageSettings': 'Taalinstellings',
-  'sidebar.tokenUsageToday': 'Today {usage}',
+  'sidebar.tokenUsageToday': 'Vandag {usage}',
   'sidebar.library': 'Biblioteek',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
@@ -113,13 +114,13 @@ export default {
   'sidebar.mindbot': 'MindBot',
   'sidebar.smartResponse': 'Slim antwoord',
   'sidebar.teacherUsage': 'Onderwysergebruik',
-  'sidebar.training': 'Training',
-  'sidebar.trainingCourses': 'Courses',
-  'sidebar.trainingBuilder': 'Course Builder Assistant',
+  'sidebar.training': 'skoolgebaseerde opleiding',
+  'sidebar.trainingCourses': 'kursus',
+  'sidebar.trainingBuilder': 'Kursus konstruksie assistent',
   'sidebar.templateResources': 'Sjablone',
   'sidebar.orgEdition': '{org}-eksklusief',
   'sidebar.personalEdition': 'Persoonlik eksklusief',
-  'sidebar.userSubtitleDefault': 'MindGraph Pro',
+  'sidebar.userSubtitleDefault': 'MindGraph Professional Edition',
   'sidebar.account': 'Rekening',
   'sidebar.roleSuperAdmin': 'Superadmin',
   'sidebar.rolePlatformAdmin': 'Onderrignavorser',
@@ -133,6 +134,6 @@ export default {
   'sidebar.mindmateCollabHistory.title': 'Aanlyn-samewerking',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'Beëindig seminaar',
   'sidebar.mindmateCollabHistory.stopConfirm': 'Dit beëindig die sessie vir almal. Deelnemers sal die kamer verlaat.',
-  'sidebar.mindmateCollabHistory.visibilityOrg': 'Org',
+  'sidebar.mindmateCollabHistory.visibilityOrg': 'Op kampus',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Netwerk',
 } as const

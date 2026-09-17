@@ -12,6 +12,7 @@ Proprietary License
 import logging
 from typing import Any, Dict, Optional
 
+from services.llm.org_custom_llm_constants import CUSTOM_LLM_OVERRIDE_TYPES
 from services.monitoring.performance_tracker import performance_tracker
 from services.redis.redis_token_buffer import get_token_tracker
 from services.utils.error_types import REDIS_ERRORS
@@ -33,6 +34,7 @@ class LLMMetricsTracker:
         metadata: Dict[str, Any],
         success: bool,
         duration: float,
+        provider: Optional[str] = None,
     ) -> None:
         """
         Track token usage for a request.
@@ -82,6 +84,7 @@ class LLMMetricsTracker:
                 endpoint_path=metadata.get("endpoint_path"),
                 response_time=duration,
                 success=success,
+                model_provider=provider,
             )
         except REDIS_ERRORS as e:
             logger.debug("[LLMMetricsTracker] Token tracking failed (non-critical): %s", e)
@@ -151,7 +154,6 @@ class LLMMetricsTracker:
             error: Optional error message if failed
             skip_token_buffer: When True, skip async token buffer (sync insert elsewhere)
         """
-        # Track token usage
         if usage_data and not skip_token_buffer:
             await self.track_token_usage(
                 model=model,
@@ -159,13 +161,12 @@ class LLMMetricsTracker:
                 metadata=metadata,
                 success=success,
                 duration=duration,
+                provider=provider,
             )
 
-        # Record performance metrics
         self.record_performance_metrics(model=model, duration=duration, success=success, error=error)
 
-        # Record provider metrics (if load balancing enabled)
-        if provider and load_balancer:
+        if provider and load_balancer and provider not in CUSTOM_LLM_OVERRIDE_TYPES:
             await self.record_provider_metrics(
                 provider=provider,
                 load_balancer=load_balancer,

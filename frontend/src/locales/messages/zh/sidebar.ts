@@ -1,4 +1,7 @@
-/** zh UI — sidebar */
+/**
+ * zh UI — sidebar
+ * SOURCE — author new keys here in Simplified Chinese first.
+ */
 
 export default {
   'sidebar.actions.delete': '删除',

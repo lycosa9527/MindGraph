@@ -1,5 +1,6 @@
 /**
- * az UI � knowledge
+ * az UI — knowledge
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
@@ -155,7 +156,7 @@ export default {
   'knowledge.pipelineBadge.rag.processing': 'Davam edir',
   'knowledge.pipelineBadge.rag.complete': 'Tamamlandı',
   'knowledge.pipelineBadge.rag.failed': 'Uğursuz',
-  'knowledge.pipelineBadge.wiki.label': 'Wiki',
+  'knowledge.pipelineBadge.wiki.label': 'viki',
   'knowledge.pipelineBadge.wiki.disabled': 'Sönülü',
   'knowledge.pipelineBadge.wiki.notYet': 'Hələ yox',
   'knowledge.pipelineBadge.wiki.pending': 'Davam edir',

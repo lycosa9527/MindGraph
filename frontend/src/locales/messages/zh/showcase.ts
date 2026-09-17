@@ -1,4 +1,7 @@
-/** zh UI — showcase */
+/**
+ * zh UI — showcase
+ * SOURCE — author new keys here in Simplified Chinese first.
+ */
 
 export default {
   'showcase.title': '案例广场',

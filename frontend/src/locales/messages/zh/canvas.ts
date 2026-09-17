@@ -1,4 +1,7 @@
-/** zh UI — canvas */
+/**
+ * zh UI — canvas
+ * SOURCE — author new keys here in Simplified Chinese first.
+ */
 
 export default {
   'braceMap.defaultSubpartFirst': '新子部分 1',

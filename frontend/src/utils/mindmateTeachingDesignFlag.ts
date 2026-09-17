@@ -6,6 +6,8 @@ const COMMENT_RE = /<!--\s*mg-reply-kind:\s*([a-z0-9_-]+)\s*-->/i
 const COMMENT_STRIP_RE = /<!--\s*mg-reply-kind:[^>]+-->\s*/gi
 const BRACKET_RE = /\[\s*mg-reply-kind:\s*([a-z0-9_-]+)\s*\]/i
 const BRACKET_STRIP_RE = /\[\s*mg-reply-kind:[^\]]+\]\s*/gi
+const INCOMPLETE_COMMENT_RE = /<!--\s*mg-reply-kind:[\s\S]*$/i
+const INCOMPLETE_BRACKET_RE = /\[\s*mg-reply-kind:[^\]]*$/i
 
 function normalizeKind(raw: string | undefined | null): string | null {
   if (!raw) {
@@ -16,7 +18,12 @@ function normalizeKind(raw: string | undefined | null): string | null {
 }
 
 export function stripTeachingDesignFlags(content: string): string {
-  return (content || '').replace(COMMENT_STRIP_RE, '').replace(BRACKET_STRIP_RE, '').trim()
+  return (content || '')
+    .replace(COMMENT_STRIP_RE, '')
+    .replace(BRACKET_STRIP_RE, '')
+    .replace(INCOMPLETE_COMMENT_RE, '')
+    .replace(INCOMPLETE_BRACKET_RE, '')
+    .trim()
 }
 
 export function parseTeachingInstructionKind(content: string): string | null {

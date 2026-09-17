@@ -1,6 +1,8 @@
 /**
  * ru UI messages — merged namespace bundles.
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
+
 import admin from './admin.ts'
 import auth from './auth.ts'
 import canvas from './canvas.ts'

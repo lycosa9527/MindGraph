@@ -243,6 +243,10 @@ const trendOrg = ref<{
   school_tier?: string | null
   extra_member_seats?: number
   teaching_design_template_key?: string | null
+  custom_llm_api_type?: string | null
+  custom_llm_base_url?: string | null
+  custom_llm_api_key_masked?: string | null
+  custom_llm_model?: string | null
   dify_api_base_url?: string | null
   dify_api_key_masked?: string | null
   dify_api_base_url_2?: string | null
@@ -303,6 +307,10 @@ function openTrendModal(
     extra_member_seats: (row.extra_member_seats as number | undefined) ?? 0,
     teaching_design_template_key:
       (row.teaching_design_template_key as string | null | undefined) ?? null,
+    custom_llm_api_type: row.custom_llm_api_type as string | null | undefined,
+    custom_llm_base_url: row.custom_llm_base_url as string | null | undefined,
+    custom_llm_api_key_masked: row.custom_llm_api_key_masked as string | null | undefined,
+    custom_llm_model: row.custom_llm_model as string | null | undefined,
     dify_api_base_url: row.dify_api_base_url as string | null | undefined,
     dify_api_key_masked: row.dify_api_key_masked as string | null | undefined,
     dify_api_base_url_2: row.dify_api_base_url_2 as string | null | undefined,
@@ -358,6 +366,10 @@ function syncTrendOrgFromSchools() {
       show_chain_of_thought: orgShowChainOfThought(updated),
       mindmate_agent_name: updated.mindmate_agent_name as string | null | undefined,
       mindmate_agent_avatar_url: updated.mindmate_agent_avatar_url as string | null | undefined,
+      custom_llm_api_type: updated.custom_llm_api_type as string | null | undefined,
+      custom_llm_base_url: updated.custom_llm_base_url as string | null | undefined,
+      custom_llm_api_key_masked: updated.custom_llm_api_key_masked as string | null | undefined,
+      custom_llm_model: updated.custom_llm_model as string | null | undefined,
       initial_tab: currentTrend.initial_tab,
       initial_trend_period: currentTrend.initial_trend_period,
     }
@@ -708,6 +720,10 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
       :org-school-tier="trendOrg?.school_tier"
       :org-extra-member-seats="trendOrg?.extra_member_seats ?? 0"
       :org-teaching-design-template-key="trendOrg?.teaching_design_template_key"
+      :org-custom-llm-api-type="trendOrg?.custom_llm_api_type"
+      :org-custom-llm-base-url="trendOrg?.custom_llm_base_url"
+      :org-custom-llm-api-key-masked="trendOrg?.custom_llm_api_key_masked"
+      :org-custom-llm-model="trendOrg?.custom_llm_model"
       :org-dify-api-base-url="trendOrg?.dify_api_base_url"
       :org-dify-api-key-masked="trendOrg?.dify_api_key_masked"
       :org-dify-api-base-url2="trendOrg?.dify_api_base_url_2"

@@ -141,8 +141,13 @@ async function pruneStaleLocalSessions(): Promise<void> {
   }
 }
 
+const LIST_REFRESH_DEBOUNCE_MS = 2000
+let listRefreshTimer: ReturnType<typeof setTimeout> | null = null
+let listFetchInFlight = false
+
 async function fetchSessions(showSpinner = true): Promise<void> {
-  if (!authStore.isAuthenticated) return
+  if (!authStore.isAuthenticated || listFetchInFlight) return
+  listFetchInFlight = true
   if (showSpinner) loading.value = true
   try {
     const response = await authFetch('/api/mindmate/collab/organization/sessions')
@@ -154,7 +159,7 @@ async function fetchSessions(showSpinner = true): Promise<void> {
           ...row,
           live: true,
         }))
-    } else {
+    } else if (response.status !== 429) {
       notify.error(t('mindgraphLanding.loadOrgSessionsFailed'))
     }
     const hostedRes = await authFetch('/api/mindmate/collab/my/hosted')
@@ -170,8 +175,19 @@ async function fetchSessions(showSpinner = true): Promise<void> {
   } catch {
     notify.error(t('mindgraphLanding.networkError'))
   } finally {
+    listFetchInFlight = false
     if (showSpinner) loading.value = false
   }
+}
+
+function scheduleFetchSessions(): void {
+  if (listRefreshTimer != null) {
+    clearTimeout(listRefreshTimer)
+  }
+  listRefreshTimer = setTimeout(() => {
+    listRefreshTimer = null
+    void fetchSessions(false)
+  }, LIST_REFRESH_DEBOUNCE_MS)
 }
 
 function evictSessionByCode(code: string): void {
@@ -276,7 +292,7 @@ function onHistoryVisibility(): void {
 
 function onSessionsChanged(): void {
   loadLocalSessions()
-  void fetchSessions(false)
+  scheduleFetchSessions()
 }
 
 onMounted(() => {
@@ -289,6 +305,10 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (listRefreshTimer != null) {
+    clearTimeout(listRefreshTimer)
+    listRefreshTimer = null
+  }
   document.removeEventListener('visibilitychange', onHistoryVisibility)
   window.removeEventListener(MINDMATE_COLLAB_SESSIONS_CHANGED_EVENT, onSessionsChanged)
   window.removeEventListener(MINDMATE_COLLAB_SESSION_REMOVED_EVENT, onSessionRemoved)

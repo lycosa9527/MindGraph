@@ -1,9 +1,10 @@
 /**
- * az UI � maite
+ * az UI — maite
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
-  'maite.title': 'Mate Learning',
+  'maite.title': 'Matt öyrənmə üsulu',
   'maite.subtitle': 'Əks parçalama · Dörd mərhələli diaqnostika · Hədəfli düzəliş · Variant transferi',
   'maite.mode.demo': 'Demo',
   'maite.mode.inquiry': 'Sorğu',

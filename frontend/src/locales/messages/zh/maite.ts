@@ -1,6 +1,8 @@
 /**
- * zh UI — Mate Learning (迈特学习法)
+ * zh UI — maite
+ * SOURCE — author new keys here in Simplified Chinese first.
  */
+
 export default {
   'maite.title': '迈特学习法',
   'maite.subtitle': '逆向分解 · 四阶诊断 · 靶向补救 · 变式迁移',

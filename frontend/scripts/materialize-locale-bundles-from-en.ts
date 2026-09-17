@@ -1,13 +1,15 @@
 /**
  * Materialize `locales/messages/<code>/` from English namespaces + root re-export.
- * Skips: en, zh, zh-tw, az, th, fr, af (existing dedicated bundles).
+ * Creates a new English-fill locale dir only when it does not exist.
+ * Never deletes or overwrites an existing `messages/<code>/` tree (that is how
+ * 5.180.80 wiped picker translations). Add missing keys with sync-messages; fill
+ * English leftovers from zh with `i18n:gap-fill`.
  *
- * Does not modify `src/i18n/index.ts` â€?locale loading is lazy via `import.meta.glob`
- * in that file (eager bundles: en + zh only).
+ * Does not modify `src/i18n/index.ts` — locale loading is lazy via `import.meta.glob`.
  *
  * Run: node scripts/materialize-locale-bundles-from-en.ts
  */
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -17,8 +19,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '../src/locales/messages')
 const EN = join(ROOT, 'en')
 
-/** Locales that already have nonâ€“English-copy bundles; do not overwrite. */
-const SKIP_COPY = new Set(['en', 'zh', 'zh-tw', 'az', 'th', 'fr', 'af'])
+const SKIP_COPY = new Set(['en', 'zh', 'zh-tw'])
 
 const NS_FILES = [
   'admin.ts',
@@ -47,7 +48,10 @@ function patchNamespaceHeader(content: string, code: string): string {
 function materializeLocale(code: string): void {
   const dest = join(ROOT, code)
   if (existsSync(dest)) {
-    rmSync(dest, { recursive: true })
+    console.warn(
+      `skip existing ${code} (will not overwrite). Add missing keys only; do not rematerialize from English.`
+    )
+    return
   }
   mkdirSync(dest, { recursive: true })
   for (const f of NS_FILES) {

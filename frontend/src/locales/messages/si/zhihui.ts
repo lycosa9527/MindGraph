@@ -1,12 +1,13 @@
 /**
  * si UI — zhihui
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
-  'meta.pageTitle.zhihui': 'ZhiHui',
-  'zhihui.title': 'ZhiHui',
-  'zhihui.brand': 'ZhiHui',
-  'zhihui.subtitle': 'Text-to-image · text-to-video · diagram-to-image',
+  'meta.pageTitle.zhihui': 'චි',
+  'zhihui.title': 'චි',
+  'zhihui.brand': 'චි',
+  'zhihui.subtitle': 'වින්සන්ට් පින්තූර · වින්සන්ට් වීඩියෝ · පින්තූරවල නිදර්ශන',
   'zhihui.modeAria': 'ZhiHui උත්පාදන මාදිලිය',
   'zhihui.mode.image': 'රූපය',
   'zhihui.mode.video': 'වීඩියෝ',

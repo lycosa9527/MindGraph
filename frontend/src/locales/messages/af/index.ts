@@ -1,6 +1,8 @@
 /**
- * af (af) UI messages — merged namespace bundles.
+ * af UI messages — merged namespace bundles.
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
+
 import admin from './admin.ts'
 import auth from './auth.ts'
 import canvas from './canvas.ts'
@@ -15,7 +17,7 @@ import sidebar from './sidebar.ts'
 import { thinkingCoinsMessages as thinkingCoins } from './thinkingCoins.ts'
 import maite from './maite.ts'
 import workshop from './workshop.ts'
-import training from '../en/training.ts'
+import training from './training.ts'
 
 export default {
   ...common,

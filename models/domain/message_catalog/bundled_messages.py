@@ -1051,6 +1051,16 @@ ERRORS = {
         "en": "Organization ID {} not found",
         "az": "Təşkilat ID {} tapılmadı",
     },
+    "custom_llm_incomplete": {
+        "zh": "自定义 AI 服务器须同时填写地址、密钥和模型名称。",
+        "en": "Custom AI server requires base URL, API key, and model name.",
+        "az": "Custom AI server requires base URL, API key, and model name.",
+    },
+    "custom_llm_invalid_type": {
+        "zh": "不支持的自定义 AI 协议。",
+        "en": "Unsupported custom AI protocol.",
+        "az": "Unsupported custom AI protocol.",
+    },
     "organization_code_empty": {
         "zh": "组织代码不能为空",
         "en": "Organization code cannot be empty",

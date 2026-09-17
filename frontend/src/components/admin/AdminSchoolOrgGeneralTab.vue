@@ -4,6 +4,7 @@
  */
 import { computed, ref, watch } from 'vue'
 
+import AdminSchoolCustomLlmSettings from '@/components/admin/AdminSchoolCustomLlmSettings.vue'
 import AdminSchoolOauthSettings from '@/components/admin/AdminSchoolOauthSettings.vue'
 import {
   fetchTeachingDesignTemplateOptions,
@@ -41,6 +42,10 @@ const props = defineProps<{
   lockLoading: boolean
   readOnly?: boolean
   generalTabActive?: boolean
+  customLlmApiType?: string | null
+  customLlmBaseUrl?: string | null
+  customLlmApiKeyMasked?: string | null
+  customLlmModel?: string | null
 }>()
 
 const pendingManagerIds = defineModel<number[]>('pendingManagerIds', { required: true })
@@ -198,6 +203,7 @@ watch(templateOptions, (options) => {
 })
 
 const oauthSettingsRef = ref<InstanceType<typeof AdminSchoolOauthSettings> | null>(null)
+const customLlmSettingsRef = ref<InstanceType<typeof AdminSchoolCustomLlmSettings> | null>(null)
 
 async function saveOauthSettings(): Promise<boolean> {
   if (!oauthSettingsRef.value) {
@@ -206,7 +212,14 @@ async function saveOauthSettings(): Promise<boolean> {
   return oauthSettingsRef.value.saveConfig()
 }
 
-defineExpose({ saveOauthSettings })
+function getCustomLlmPayload(): Record<string, unknown> {
+  if (!customLlmSettingsRef.value) {
+    return {}
+  }
+  return customLlmSettingsRef.value.getSavePayload()
+}
+
+defineExpose({ saveOauthSettings, getCustomLlmPayload })
 </script>
 
 <template>
@@ -438,6 +451,16 @@ defineExpose({ saveOauthSettings })
         </div>
       </div>
     </div>
+
+    <AdminSchoolCustomLlmSettings
+      ref="customLlmSettingsRef"
+      :org-id="orgId"
+      :read-only="props.readOnly"
+      :custom-llm-api-type="props.customLlmApiType"
+      :custom-llm-base-url="props.customLlmBaseUrl"
+      :custom-llm-api-key-masked="props.customLlmApiKeyMasked"
+      :custom-llm-model="props.customLlmModel"
+    />
 
     <AdminSchoolOauthSettings
       ref="oauthSettingsRef"

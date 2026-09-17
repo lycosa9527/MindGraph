@@ -349,7 +349,7 @@ async def list_organization_sessions(
     """List active org-visible MindMate collab rooms for the viewer's school."""
     await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit("mindmate_collab_list", identifier, max_requests=30, window_seconds=60)
+    await check_endpoint_rate_limit("mindmate_collab_list", identifier, max_requests=60, window_seconds=60)
 
     sessions = await get_mindmate_collab_manager().list_org_sessions(
         current_user.id,
@@ -407,7 +407,7 @@ async def my_hosted_session(
     await check_endpoint_rate_limit(
         "mindmate_collab_my_hosted",
         identifier,
-        max_requests=30,
+        max_requests=60,
         window_seconds=60,
     )
     hosted = await get_mindmate_collab_manager().get_hosted_session(current_user.id)

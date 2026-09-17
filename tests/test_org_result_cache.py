@@ -100,6 +100,7 @@ async def test_load_or_generate_returns_cache_without_llm(monkeypatch: pytest.Mo
     generate = AsyncMock(return_value={"text": "fresh"})
     monkeypatch.setattr(cache_mod, "positive_org_id", lambda _org: 8)
     monkeypatch.setattr(cache_mod, "org_llm_ttl_seconds", lambda: 7200)
+    monkeypatch.setattr(cache_mod, "org_custom_llm_cache_stamp", AsyncMock(return_value="dashscope_volcengine"))
     monkeypatch.setattr(cache_mod, "get_org_llm_result", AsyncMock(return_value=cached))
     result = await cache_mod.load_or_generate_org_llm_result("translate", 8, {"text": "a"}, generate)
     assert result == cached

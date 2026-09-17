@@ -1,4 +1,7 @@
-/** zh-tw UI — community */
+/**
+ * zh-tw UI — community
+ * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
+ */
 
 export default {
   'community.category.all': '全部',

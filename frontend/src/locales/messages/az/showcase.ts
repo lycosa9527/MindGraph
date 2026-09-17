@@ -1,5 +1,6 @@
 /**
- * az UI � showcase
+ * az UI — showcase
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
@@ -85,11 +86,11 @@ export default {
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: məhdud önbaxış)',
   'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc: məhdud önbaxış) — sənəd başına maks. {maxMb} MB',
   'showcase.publishModal.teachingDocTooLarge': 'Sənəd {maxMb} MB limitini aşır. Sıxışdırıb yenidən cəhd edin.',
-  'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif',
+  'showcase.publishModal.diagramImageHint': 'Dəstək .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Şəkillər yüklə (bir neçə)',
   'showcase.publishModal.galleryHint': 'Bir neçə şəkil və saxlanmış diaqram əlavə edin, ən çox {max} element',
-  'showcase.publishModal.galleryHintCase': 'Add multiple images and saved diagrams, up to {max} items',
-  'showcase.publishModal.galleryHintTemplate': 'Upload a .mg file and pick saved diagrams, up to {max} items',
+  'showcase.publishModal.galleryHintCase': '{max} elementə qədər çoxlu şəkil və tarixi nişanlar əlavə edilə bilər',
+  'showcase.publishModal.galleryHintTemplate': 'Siz .mg faylları yükləyə və {max} elementə qədər çoxlu tarixi nişanlar seçə bilərsiniz',
   'showcase.publishModal.galleryCount': '{count}/{max} element əlavə edilib',
   'showcase.publishModal.galleryImageItem': 'Şəkil: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Diaqram: {name}',
@@ -121,7 +122,7 @@ export default {
   'showcase.publishModal.aiGenerateStop': 'Dayandır',
   'showcase.publishModal.aiGenerateCancelled': 'AI generasiyası ləğv edildi — yenidən yaratmaq üçün klikləyin',
   'showcase.publishModal.aiGenerateSuccess': 'Təqdimat və vurğular sənəddən dolduruldu — nəzərdən keçirin və redaktə edin; tədris refleksiyasını özünüz yazın',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'Filled diagram intro and classroom use from the diagram — review and edit',
+  'showcase.publishModal.aiGenerateDiagramSuccess': 'İllüstrasiyaya əsaslanaraq illüstrasiya təqdimatı və sinif tətbiqi yaradılmışdır. Zəhmət olmasa yoxlayın və redaktə edin.',
   'showcase.publishModal.aiGenerateFailed': 'AI generasiyası uğursuz oldu — yenidən cəhd edin',
   'showcase.publishModal.aiGenerateNeedFile': 'Əvvəlki addımda əvvəlcə tədris dizaynı sənədi yükləyin',
   'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
@@ -157,7 +158,7 @@ export default {
   'showcase.publishModal.historyTitle': 'Saxlanmış diaqram seçin',
   'showcase.publishModal.historySearch': 'Diaqram adı axtar…',
   'showcase.publishModal.historyEmpty': 'Saxlanmış diaqram yoxdur',
-  'showcase.publishModal.historyUncategorized': 'Uncategorized',
+  'showcase.publishModal.historyUncategorized': 'Kateqoriyasız',
   'showcase.publishModal.typeDesc.teachingDesign': 'Düşüncə bacarıqları üçün sinif dərs dizaynı',
   'showcase.publishModal.typeDesc.diagramCase': 'Tədrisdə əla diaqramlar və vizuallaşdırma',
   'showcase.publishModal.typeDesc.diagramTemplate': 'Təkrar istifadə və ya uyğunlaşdırma üçün diaqramlar',

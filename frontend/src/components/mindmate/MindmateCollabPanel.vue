@@ -205,7 +205,7 @@ async function fetchOrgSessions(showSpinner = true) {
     if (response.ok) {
       const data = await response.json()
       orgSessions.value = data.sessions || []
-    } else {
+    } else if (response.status !== 429) {
       notify.error(t('mindgraphLanding.loadOrgSessionsFailed'))
     }
   } catch {

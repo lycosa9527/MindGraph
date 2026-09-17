@@ -11,14 +11,22 @@ from __future__ import annotations
 import re
 from typing import Iterable, Optional
 
-_MINDMATE_MENTION_RE = re.compile(r"@mindmate\b", re.IGNORECASE)
+# @MindMate / @**MindMate** then end, whitespace, or a non-name character.
+_MENTION_BOUND = r"(?=$|\s|[^\w])"
+_MINDMATE_MENTION_RE = re.compile(
+    rf"@(?:\*\*)?mindmate(?:\*\*)?{_MENTION_BOUND}",
+    re.IGNORECASE,
+)
 
 
 def _alias_pattern(alias: str) -> Optional[re.Pattern[str]]:
-    cleaned = alias.strip().lstrip("@")
+    cleaned = alias.strip().lstrip("@").strip("*").strip()
     if not cleaned:
         return None
-    return re.compile(rf"@{re.escape(cleaned)}\b", re.IGNORECASE)
+    return re.compile(
+        rf"@(?:\*\*)?{re.escape(cleaned)}(?:\*\*)?{_MENTION_BOUND}",
+        re.IGNORECASE,
+    )
 
 
 def message_mentions_mindmate(content: str, agent_aliases: Iterable[str] = ()) -> bool:

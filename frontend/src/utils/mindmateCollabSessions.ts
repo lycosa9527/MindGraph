@@ -140,7 +140,12 @@ export function loadLocalMindmateCollabSessions(): LocalMindmateCollabSession[] 
 
 export function persistLocalMindmateCollabSessions(rows: LocalMindmateCollabSession[]): void {
   try {
-    localStorage.setItem(LOCAL_MINDMATE_COLLAB_SESSIONS_KEY, JSON.stringify(rows))
+    const next = JSON.stringify(rows)
+    const prev = localStorage.getItem(LOCAL_MINDMATE_COLLAB_SESSIONS_KEY)
+    if (prev === next) {
+      return
+    }
+    localStorage.setItem(LOCAL_MINDMATE_COLLAB_SESSIONS_KEY, next)
     notifySessionsChanged()
   } catch {
     // quota exceeded or private browsing — skip persist
@@ -164,13 +169,27 @@ export function mergeMindmateCollabSessionLists<T extends { code: string }>(
   return Array.from(byCode.values())
 }
 
+function isSameTrackedSession(
+  current: LocalMindmateCollabSession,
+  incoming: LocalMindmateCollabSession,
+): boolean {
+  return (
+    normalizeMindmateCollabCode(current.code) === normalizeMindmateCollabCode(incoming.code)
+    && (current.session_id || '') === (incoming.session_id || '')
+  )
+}
+
 export function trackLocalMindmateCollabSession(row: LocalMindmateCollabSession): void {
   if (wasMindmateCollabCodeRecentlyEnded(row.code)) {
     return
   }
   const key = normalizeMindmateCollabCode(row.code)
   const existing = loadLocalMindmateCollabSessions()
-  const next = [row, ...existing.filter((s) => normalizeMindmateCollabCode(s.code) !== key)]
+  const current = existing.find((item) => normalizeMindmateCollabCode(item.code) === key)
+  if (current && isSameTrackedSession(current, row)) {
+    return
+  }
+  const next = [row, ...existing.filter((item) => normalizeMindmateCollabCode(item.code) !== key)]
   persistLocalMindmateCollabSessions(next.slice(0, 10))
 }
 

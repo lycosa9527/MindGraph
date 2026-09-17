@@ -1,3 +1,8 @@
+/**
+ * zh UI — training
+ * SOURCE — author new keys here in Simplified Chinese first.
+ */
+
 export default {
   'training.title': '校本培训',
   'training.subtitle': '将该校教师拉到同一图示页。',

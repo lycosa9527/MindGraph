@@ -1,3 +1,8 @@
+/**
+ * zh-tw UI — thinkingCoins
+ * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
+ */
+
 export const thinkingCoinsMessages = {
   'thinkingCoins.title': '我的思維幣',
   'thinkingCoins.balanceUnit': '思維幣',

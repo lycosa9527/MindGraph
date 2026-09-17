@@ -1,9 +1,10 @@
 /**
- * fr UI � maite
+ * fr UI — maite
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
-  'maite.title': 'Mate Learning',
+  'maite.title': 'Méthode d\'apprentissage Matt',
   'maite.subtitle': 'Décomposition inverse · Diagnostic en quatre étapes · Remédiation ciblée · Transfert de variantes',
   'maite.mode.demo': 'Démo',
   'maite.mode.inquiry': 'Enquête',

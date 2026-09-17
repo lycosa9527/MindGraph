@@ -1,4 +1,7 @@
-/** zh-tw UI — canvas */
+/**
+ * zh-tw UI — canvas
+ * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
+ */
 
 export default {
   'braceMap.defaultSubpartFirst': '新子部分 1',

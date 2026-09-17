@@ -1,5 +1,6 @@
 /**
  * si UI — knowledge
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
@@ -155,7 +156,7 @@ export default {
   'knowledge.pipelineBadge.rag.processing': 'සිදු වෙමින්',
   'knowledge.pipelineBadge.rag.complete': 'සම්පූර්ණ',
   'knowledge.pipelineBadge.rag.failed': 'අසාර්ථක',
-  'knowledge.pipelineBadge.wiki.label': 'Wiki',
+  'knowledge.pipelineBadge.wiki.label': 'විකි',
   'knowledge.pipelineBadge.wiki.disabled': 'අක්‍රියයි',
   'knowledge.pipelineBadge.wiki.notYet': 'තවම නැත',
   'knowledge.pipelineBadge.wiki.pending': 'සිදු වෙමින්',
@@ -223,7 +224,7 @@ export default {
   'knowledge.retrieval.timingSearch': 'සොයන්න',
   'knowledge.retrieval.timingTotal': 'කාලය',
   'knowledge.retrieval.title': 'Retrieval පරීක්‍ෂණය',
-  'knowledge.retrieval.topK': 'Top K',
+  'knowledge.retrieval.topK': 'ආපසු පැමිණීමේ ප්රමාණය',
   'knowledge.settings.characters': 'අක්ෂර',
   'knowledge.settings.chunkOverlap': 'කොටස් අතික්රමණය',
   'knowledge.settings.chunkSection': 'කොටස් සැකසුම්',

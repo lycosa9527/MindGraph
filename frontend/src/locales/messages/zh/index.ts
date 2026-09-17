@@ -1,6 +1,8 @@
 /**
  * zh UI messages — merged namespace bundles.
+ * SOURCE — author new keys here in Simplified Chinese first.
  */
+
 import admin from './admin.ts'
 import auth from './auth.ts'
 import canvas from './canvas.ts'

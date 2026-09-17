@@ -1,5 +1,6 @@
 /**
- * fr UI � community
+ * fr UI — community
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
@@ -67,7 +68,7 @@ export default {
   'community.time.hoursAgo': 'Il y a {n} heures',
   'community.time.minutesAgo': 'Il y a {n} minutes',
   'community.title': 'Partage communautaire',
-  'community.type.mindgraph': 'MindGraph',
+  'community.type.mindgraph': 'Graphique mental',
   'community.type.mindmate': 'MindMate',
   'debateverse.advanceStage': 'Phase avancée',
   'debateverse.affirmativePositionLabel': 'Position affirmative : ',
@@ -100,7 +101,7 @@ export default {
   'debateverse.page.create': 'Créer un nouveau débat',
   'debateverse.page.empty': 'Aucun débat pour le moment',
   'debateverse.page.newDebate': 'Nouveau débat',
-  'debateverse.page.title': 'DebateVerse',
+  'debateverse.page.title': 'Sur la situation',
   'debateverse.roleLabel.debater': 'Jouer en tant que débatteur',
   'debateverse.roleLabel.judgeRole': 'Jouer en tant que juge',
   'debateverse.roleLabel.viewer': 'Jouer en tant que spectateur',

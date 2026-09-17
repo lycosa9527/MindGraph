@@ -440,11 +440,11 @@ function handleMarkdownClick(event: MouseEvent) {
         <!-- Message content -->
         <template v-else>
           <div
-            class="message-content max-w-[70%] relative"
+            class="message-content relative"
             :class="[
               message.role === 'user'
-                ? 'bg-[#606266] text-white px-4 py-1.5 rounded-2xl'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white px-3 py-2 rounded-lg',
+                ? 'bg-[#606266] text-white px-4 py-1.5 rounded-2xl max-w-[70%] w-fit'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white px-3 py-2 rounded-lg w-full max-w-[92%]',
               message.isStreaming ? 'streaming' : '',
             ]"
           >

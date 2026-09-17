@@ -8,6 +8,7 @@ import {
   markdownRendererReady,
   renderRichMarkdownHtml,
 } from '@/composables/core/lazyMarkdown'
+import { stripTeachingDesignFlags } from '@/utils/mindmateTeachingDesignFlag'
 
 export interface UseRenderedMarkdownOptions {
   /** Strip MindMate-style thinking blocks before render (MindMate bubbles). */
@@ -35,7 +36,7 @@ export function useRenderedMarkdown(
     void markdownRendererReady.value
     let text = source() || ''
     if (options?.stripThinkBlocks) {
-      text = stripThinkBlocksFromContent(text)
+      text = stripTeachingDesignFlags(stripThinkBlocksFromContent(text))
     }
     if (!text) {
       return ''

@@ -1,4 +1,7 @@
-/** zh-tw UI — showcase */
+/**
+ * zh-tw UI — showcase
+ * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
+ */
 
 export default {
   'showcase.title': '案例廣場',

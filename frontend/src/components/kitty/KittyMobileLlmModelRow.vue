@@ -5,6 +5,7 @@
 import { computed } from 'vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 import { LLM_MODEL_COLORS } from '@/config/llmModelColors'
 import { useLLMResultsStore, type LLMModel } from '@/stores/llmResults'
 
@@ -14,14 +15,9 @@ const props = defineProps<{
 
 const { t } = useLanguage()
 const llmResultsStore = useLLMResultsStore()
+const { canvasModels, displayNameForModel } = useOrgCustomLlm()
 
-const MODEL_LABELS: Record<LLMModel, string> = {
-  qwen: 'Qwen',
-  deepseek: 'DeepSeek',
-  doubao: 'Doubao',
-}
-
-const models = computed(() => llmResultsStore.models as readonly LLMModel[])
+const models = computed(() => canvasModels.value as readonly LLMModel[])
 
 function isSelected(model: LLMModel): boolean {
   return llmResultsStore.selectedModel === model
@@ -99,7 +95,7 @@ async function onModelClick(model: LLMModel): Promise<void> {
       :disabled="modelState(model) === 'loading'"
       @click="onModelClick(model)"
     >
-      {{ MODEL_LABELS[model] }}
+      {{ displayNameForModel(model) }}
     </button>
   </div>
 </template>

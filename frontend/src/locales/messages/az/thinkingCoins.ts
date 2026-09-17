@@ -1,5 +1,6 @@
 /**
- * az UI � thinkingCoins
+ * az UI — thinkingCoins
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export const thinkingCoinsMessages = {
@@ -55,15 +56,15 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.tier.annual': 'İllik',
   'thinkingCoins.reason.signup_grant': 'Qeydiyyat bonusu',
   'thinkingCoins.reason.daily_checkin': 'Gündəlik giriş',
-  'thinkingCoins.reason.daily_expire': 'Daily check-in expired',
+  'thinkingCoins.reason.daily_expire': 'Daxil olma müddəti bitdi və silindi',
   'thinkingCoins.reason.task_reward': 'Tapşırıq mükafatı',
   'thinkingCoins.reason.ai_spend': 'AI istifadəsi',
   'thinkingCoins.reason.admin_adjust': 'Düzəliş',
   'thinkingCoins.reason.referral_reward': 'Tövsiyə mükafatı',
   'thinkingCoins.reason.case_reward': 'Keys mükafatı',
   'thinkingCoins.reason.subscription_grant': 'Abunəlik krediti',
-  'thinkingCoins.dailyExpiresHint': 'Check-in reward expires at midnight',
-  'thinkingCoins.dailyBalanceRemaining': 'Check-in remaining today: {n}',
+  'thinkingCoins.dailyExpiresHint': 'Giriş mükafatları eyni gündə etibarlıdır və saat 24:00-da sıfırlanacaq',
+  'thinkingCoins.dailyBalanceRemaining': 'Bugünkü qeydiyyat qalıb {n}',
   'thinkingCoins.admin.tab': 'Düşüncə tokenləri',
   'thinkingCoins.admin.tasksTitle': 'Qazanc tapşırıqları',
   'thinkingCoins.admin.settingsTitle': 'Qlobal parametrlər',
@@ -87,7 +88,7 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.systemTask': 'Sistem',
   'thinkingCoins.admin.monthlyCap': 'Aylıq limit',
   'thinkingCoins.admin.sortOrder': 'Sıra',
-  'thinkingCoins.admin.slug': 'Slug',
+  'thinkingCoins.admin.slug': 'loqo',
   'thinkingCoins.admin.handlerAutoLogin': 'Avtomatik giriş',
   'thinkingCoins.admin.handlerUsageDaily': 'Gündəlik istifadə',
   'thinkingCoins.admin.handlerNavigate': 'Naviqasiya',

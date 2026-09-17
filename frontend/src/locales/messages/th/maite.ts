@@ -1,9 +1,10 @@
 /**
- * th UI � maite
+ * th UI — maite
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
-  'maite.title': 'Mate Learning',
+  'maite.title': 'วิธีการเรียนรู้แบบแมตต์',
   'maite.subtitle': 'ถอดโจทย์ย้อนกลับ · วินิจฉัย 4 ขั้น · เสริมจุดอ่อน · ฝึกโจทย์แปรรูป',
   'maite.mode.demo': 'สาธิต',
   'maite.mode.inquiry': 'สอบถาม',

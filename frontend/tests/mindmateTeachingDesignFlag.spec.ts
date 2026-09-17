@@ -30,4 +30,9 @@ describe('mindmateTeachingDesignFlag', () => {
     expect(stripMindmateDiagramIdComments(raw)).toBe('课例正文')
     expect(stripMindmateDiagramIdComments(raw)).not.toContain('mg-reply-kind')
   })
+
+  it('strips incomplete trailing markers while streaming', () => {
+    expect(stripTeachingDesignFlags('课例\n<!-- mg-reply-kind:teaching_instru')).toBe('课例')
+    expect(stripTeachingDesignFlags('课例\n[mg-reply-kind:teaching_')).toBe('课例')
+  })
 })

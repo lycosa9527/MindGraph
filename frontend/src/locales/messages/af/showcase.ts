@@ -1,5 +1,6 @@
 /**
- * af UI � showcase
+ * af UI — showcase
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
@@ -85,21 +86,21 @@ export default {
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: beperkte voorskou)',
   'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc: beperkte voorskou) — maks. {maxMb} MB per dokument',
   'showcase.publishModal.teachingDocTooLarge': 'Dokument oorskry die {maxMb} MB-limiet. Komprimeer en probeer weer.',
-  'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif',
+  'showcase.publishModal.diagramImageHint': 'Ondersteun .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Laai beelde op (meervoudig)',
   'showcase.publishModal.galleryHint': 'Voeg verskeie beelde en gestoorde diagramme by, tot {max} items',
-  'showcase.publishModal.galleryHintCase': 'Add multiple images and saved diagrams, up to {max} items',
-  'showcase.publishModal.galleryHintTemplate': 'Upload a .mg file and pick saved diagrams, up to {max} items',
+  'showcase.publishModal.galleryHintCase': 'Veelvuldige prente en historiese ikone kan bygevoeg word, tot {max} items',
+  'showcase.publishModal.galleryHintTemplate': 'Jy kan .mg-lêers oplaai en verskeie historiese ikone kies, tot {max} items',
   'showcase.publishModal.galleryCount': '{count}/{max} items bygevoeg',
   'showcase.publishModal.galleryImageItem': 'Beeld: {name}',
-  'showcase.publishModal.galleryDiagramItem': 'Diagram: {name}',
+  'showcase.publishModal.galleryDiagramItem': 'Illustrasie: {name}',
   'showcase.publishModal.galleryLimit': 'U kan hoogstens {max} items byvoeg',
   'showcase.publishModal.galleryDuplicateDiagram': 'Hierdie gestoorde diagram is reeds in die lys',
   'showcase.publishModal.galleryPickerDone': 'Klaar',
   'showcase.publishModal.galleryUploadFailed': 'Galerybeeld-oplaai het misluk — probeer asseblief weer publiseer',
   'showcase.publishModal.galleryReuploadHint': 'Sommige galerybeelde is nie gestoor nie — kies hulle asseblief weer voor indiening',
   'showcase.detail.galleryImage': 'Beeld',
-  'showcase.detail.galleryDiagram': 'Diagram',
+  'showcase.detail.galleryDiagram': 'Illustrasie',
   'showcase.detail.galleryPrev': 'Vorige',
   'showcase.detail.galleryNext': 'Volgende',
   'showcase.detail.gallerySwipeHint': 'Vee links of regs',
@@ -118,10 +119,10 @@ export default {
   'showcase.publishModal.teachingIntroPlaceholder': 'Stel kortliks die lesagtergrond, doelwitte en konteks bekend',
   'showcase.publishModal.aiGenerate': 'KI genereer',
   'showcase.publishModal.aiGenerating': 'Genereer…',
-  'showcase.publishModal.aiGenerateStop': 'Stop',
+  'showcase.publishModal.aiGenerateStop': 'stop',
   'showcase.publishModal.aiGenerateCancelled': 'KI-generering gekanselleer — klik weer om te hergenereer',
   'showcase.publishModal.aiGenerateSuccess': 'Inleiding en hoogtepunte uit die dokument ingevul — hersien en wysig; skryf die onderrigrefleksie self',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'Filled diagram intro and classroom use from the diagram — review and edit',
+  'showcase.publishModal.aiGenerateDiagramSuccess': 'Die illustrasie-inleiding en klaskamertoepassing is op grond van die illustrasie gegenereer. Kontroleer en wysig asseblief.',
   'showcase.publishModal.aiGenerateFailed': 'KI-generering het misluk — probeer asseblief weer',
   'showcase.publishModal.aiGenerateNeedFile': 'Laai eers \'n onderrigontwerp-dokument in die vorige stap op',
   'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
@@ -157,7 +158,7 @@ export default {
   'showcase.publishModal.historyTitle': 'Kies gestoorde diagram',
   'showcase.publishModal.historySearch': 'Soek diagramnaam…',
   'showcase.publishModal.historyEmpty': 'Geen gestoorde diagramme nie',
-  'showcase.publishModal.historyUncategorized': 'Uncategorized',
+  'showcase.publishModal.historyUncategorized': 'Ongekategoriseer',
   'showcase.publishModal.typeDesc.teachingDesign': 'Denkvaardighede-klaskamerlesontwerp',
   'showcase.publishModal.typeDesc.diagramCase': 'Uitstekende diagramme en visualisering in onderrig',
   'showcase.publishModal.typeDesc.diagramTemplate': 'Diagramme vir hergebruik of aanpassing',

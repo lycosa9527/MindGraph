@@ -1,5 +1,6 @@
 /**
- * th UI � community
+ * th UI — community
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
@@ -67,8 +68,8 @@ export default {
   'community.time.hoursAgo': '{n} ชั่วโมงที่แล้ว',
   'community.time.minutesAgo': '{n} นาทีที่แล้ว',
   'community.title': 'การแชร์ชุมชน',
-  'community.type.mindgraph': 'MindGraph',
-  'community.type.mindmate': 'MindMate',
+  'community.type.mindgraph': 'มายด์กราฟ',
+  'community.type.mindmate': 'มายด์เมท',
   'debateverse.advanceStage': 'ไปขั้นตอนถัดไป',
   'debateverse.affirmativePositionLabel': 'จุดยืนฝ่ายเห็นด้วย: ',
   'debateverse.avatar.viewer': 'ผู้ชม',
@@ -100,7 +101,7 @@ export default {
   'debateverse.page.create': 'สร้างการดีเบตใหม่',
   'debateverse.page.empty': 'ยังไม่มีการดีเบต',
   'debateverse.page.newDebate': 'การดีเบตใหม่',
-  'debateverse.page.title': 'DebateVerse',
+  'debateverse.page.title': 'เกี่ยวกับสถานการณ์',
   'debateverse.roleLabel.debater': 'เล่นเป็นผู้ดีเบต',
   'debateverse.roleLabel.judgeRole': 'เล่นเป็นผู้ตัดสิน',
   'debateverse.roleLabel.viewer': 'เล่นเป็นผู้ชม',

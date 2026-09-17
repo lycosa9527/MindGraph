@@ -8,21 +8,29 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { ElButton } from 'element-plus'
 
 import MindmateCollabBreadcrumb from '@/components/mindmate/MindmateCollabBreadcrumb.vue'
+import MindmateCollabMessageRow from '@/components/mindmate/MindmateCollabMessageRow.vue'
 import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
+import ShareExportModal from '@/components/panels/ShareExportModal.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import {
-  ensureMarkdownRenderer,
-  markdownRendererReady,
-  renderRichMarkdownHtml,
-} from '@/composables/core/lazyMarkdown'
+import { ensureMarkdownRenderer } from '@/composables/core/lazyMarkdown'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
+import type { MindMateMessage } from '@/composables/mindmate/useMindMate'
 import {
   type MindmateCollabMessage,
   useMindmateCollab,
 } from '@/composables/mindmate/useMindmateCollab'
+import { createMindmateCollabOrgBackend } from '@/composables/social/createMindmateCollabOrgBackend'
 import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
 import { confirmMindmateCollabStop } from '@/utils/mindmateCollabConfirm'
+import {
+  type CollabFeedbackRating,
+  collabMessageRowKey,
+  collabMessagesForShareExport,
+  lastFinishedAssistantIndex,
+  nextCollabFeedback,
+  previousCollabUserPrompt,
+} from '@/utils/mindmateCollabDisplay'
 import {
   formatMindmateCollabCode,
   markMindmateCollabCodeEnded,
@@ -33,6 +41,10 @@ import {
   requestMindmateCollabStop,
   teardownMindmateCollabClient,
 } from '@/utils/mindmateCollabTeardown'
+import {
+  type MindmateMentionCandidate,
+  contentMentionsMindmate,
+} from '@/utils/mindmateMention'
 
 const props = withDefaults(
   defineProps<{
@@ -90,12 +102,36 @@ const {
   seedMessages: () => props.seedMessages ?? [],
 })
 
+const mentionRoster = createMindmateCollabOrgBackend(
+  () => room.value?.code || normalizedCode.value,
+  () => room.value?.visibility || 'organization',
+)
+
+const mentionCandidates = computed((): MindmateMentionCandidate[] => {
+  const agentName = mindmateAgentName.value.trim() || 'MindMate'
+  const agent: MindmateMentionCandidate = {
+    id: 'agent-mindmate',
+    name: agentName,
+    avatar: '✨',
+    kind: 'agent',
+  }
+  const people = mentionRoster.members.value.map((member) => ({
+    id: `user-${member.id}`,
+    name: member.name,
+    avatar: member.avatar,
+    kind: 'user' as const,
+  }))
+  return [agent, ...people]
+})
+
 let joinGeneration = 0
 
 const inputText = ref('')
 const joining = ref(false)
 type CollabRecipientMode = 'mindmate' | 'all'
 const recipientMode = ref<CollabRecipientMode>('all')
+const showShareModal = ref(false)
+const feedbackByKey = ref<Record<string, CollabFeedbackRating>>({})
 
 const inputPlaceholder = computed(() =>
   recipientMode.value === 'mindmate'
@@ -235,6 +271,16 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => room.value?.sessionId,
+  (sessionId) => {
+    if (!sessionId) {
+      return
+    }
+    void mentionRoster.fetchMembers({ limit: 200 })
+  },
+)
+
 async function stopRoom() {
   const sessionId = room.value?.sessionId
   if (!sessionId) {
@@ -264,9 +310,31 @@ function handleSend() {
   if (!trimmed || !canSend.value || joining.value) {
     return
   }
-  const toMindmate = recipientMode.value === 'mindmate'
+  const toMindmate =
+    recipientMode.value === 'mindmate' ||
+    contentMentionsMindmate(trimmed, [mindmateAgentName.value])
   sendChat(trimmed, { toMindmate })
   inputText.value = ''
+}
+
+function handleRegenerate(prompt: string | undefined): void {
+  const text = prompt?.trim()
+  if (!text || !canSend.value || joining.value) {
+    return
+  }
+  sendChat(text, { toMindmate: true })
+}
+
+function handleFeedback(key: string, clicked: 'like' | 'dislike'): void {
+  const next = nextCollabFeedback(feedbackByKey.value[key], clicked)
+  feedbackByKey.value = { ...feedbackByKey.value, [key]: next }
+  notify.success(
+    next === 'like'
+      ? t('notification.feedbackThanks')
+      : next === 'dislike'
+        ? t('notification.feedbackThanksDislike')
+        : t('notification.feedbackCancelled'),
+  )
 }
 
 function handleRetryConnection(): void {
@@ -289,15 +357,21 @@ function isOwnMessage(msg: MindmateCollabMessage): boolean {
   return selfId > 0 && senderId === selfId
 }
 
-const transcript = computed(() => {
-  void markdownRendererReady.value
-  return messages.value.map((msg, idx) => ({
-    key: msg.id ?? msg.clientKey ?? `msg-${idx}-${msg.role}`,
+const lastAssistantIdx = computed(() => lastFinishedAssistantIndex(messages.value))
+
+const shareExportMessages = computed(
+  () => collabMessagesForShareExport(messages.value) as MindMateMessage[],
+)
+
+const transcript = computed(() =>
+  messages.value.map((msg, idx) => ({
+    key: collabMessageRowKey(msg, idx),
     msg,
     isOwn: isOwnMessage(msg),
-    html: msg.role === 'assistant' ? renderRichMarkdownHtml(msg.content) : null,
+    isLastAssistant: idx === lastAssistantIdx.value,
+    userPrompt: msg.role === 'assistant' ? previousCollabUserPrompt(messages.value, idx) : undefined,
   }))
-})
+)
 
 const messagesScrollEl = ref<HTMLElement | null>(null)
 
@@ -398,64 +472,21 @@ watch(messages, async () => {
           {{ t('mindmate.collabJoining') }}
         </div>
 
-        <div
+        <MindmateCollabMessageRow
           v-for="row in transcript"
           :key="row.key"
-          class="mindmate-collab-room__msg-row"
-          :class="row.isOwn ? 'mindmate-collab-room__msg-row--own' : 'mindmate-collab-room__msg-row--other'"
-        >
-          <div
-            v-if="!row.isOwn"
-            class="w-8 h-8 rounded-full shrink-0 overflow-hidden bg-stone-100 border border-stone-200"
-          >
-            <img
-              v-if="row.msg.role === 'assistant'"
-              :src="mindmateAvatarUrl"
-              :alt="mindmateAgentName"
-              class="w-full h-full object-cover"
-            />
-            <span
-              v-else
-              class="flex w-full h-full items-center justify-center text-xs font-medium text-stone-600"
-              aria-hidden="true"
-            >
-              {{ (row.msg.username || '?').trim().slice(0, 1).toUpperCase() }}
-            </span>
-          </div>
-          <div class="mindmate-collab-room__msg-body">
-            <div
-              v-if="row.msg.role === 'assistant'"
-              class="text-[11px] text-stone-500 mb-1 px-1"
-            >
-              {{ mindmateAgentName }}
-            </div>
-            <div
-              v-else-if="!row.isOwn && row.msg.username"
-              class="text-[11px] text-stone-500 mb-1 px-1"
-            >
-              {{ row.msg.username }}
-            </div>
-            <div
-              class="mindmate-collab-room__bubble text-sm rounded-2xl px-3.5 py-2.5 leading-relaxed"
-              :class="[
-                row.isOwn
-                  ? 'bg-stone-800 text-stone-50 text-left'
-                  : 'bg-stone-100 text-stone-800 border border-stone-200/80',
-                row.msg.streaming ? 'mindmate-collab-room__bubble--streaming' : '',
-                row.html ? '' : 'whitespace-pre-wrap',
-              ]"
-            >
-              <div
-                v-if="row.html"
-                class="mindmate-collab-room__markdown"
-                v-html="row.html"
-              />
-              <template v-else>
-                {{ row.msg.content }}
-              </template>
-            </div>
-          </div>
-        </div>
+          :message="row.msg"
+          :is-own="row.isOwn"
+          :user-prompt="row.userPrompt"
+          :agent-name="mindmateAgentName"
+          :agent-avatar-url="mindmateAvatarUrl"
+          :is-last-assistant="row.isLastAssistant"
+          :regenerate-disabled="!canSend || joining || isStreaming"
+          :feedback="feedbackByKey[row.key]"
+          @regenerate="handleRegenerate(row.userPrompt)"
+          @share="showShareModal = true"
+          @feedback="handleFeedback(row.key, $event)"
+        />
         </div>
       </div>
     </div>
@@ -496,11 +527,19 @@ watch(messages, async () => {
           :is-streaming="isStreaming || !canSend"
           :show-file-upload="false"
           :placeholder="inputPlaceholder"
+          enable-mentions
+          :mention-candidates="mentionCandidates"
           @update:input-text="inputText = $event"
           @send="handleSend"
         />
       </div>
     </div>
+
+    <ShareExportModal
+      v-model:visible="showShareModal"
+      :messages="shareExportMessages"
+      :conversation-title="roomTitle"
+    />
   </div>
 </template>
 
@@ -527,83 +566,13 @@ watch(messages, async () => {
 .mindmate-collab-room__messages-inner {
   width: 100%;
   min-width: 0;
-  max-width: 48rem;
-  margin: 0 auto;
-  padding: 1rem;
+  max-width: none;
+  margin: 0;
+  padding: 1rem 1.25rem 1.5rem;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-}
-
-.mindmate-collab-room__msg-row {
-  display: flex;
-  gap: 0.625rem;
-  width: 100%;
-  min-width: 0;
-}
-
-.mindmate-collab-room__msg-row--own {
-  flex-direction: row-reverse;
-}
-
-.mindmate-collab-room__msg-body {
-  min-width: 0;
-  max-width: min(85%, 42rem);
-  display: flex;
-  flex-direction: column;
-}
-
-.mindmate-collab-room__msg-row--own .mindmate-collab-room__msg-body {
-  align-items: flex-end;
-}
-
-.mindmate-collab-room__msg-row--other .mindmate-collab-room__msg-body {
-  align-items: flex-start;
-}
-
-.mindmate-collab-room__bubble {
-  max-width: 100%;
-  width: fit-content;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-.mindmate-collab-room__bubble--streaming::after {
-  content: '▍';
-  margin-left: 0.1em;
-  animation: mmc-caret 1s step-end infinite;
-}
-
-@keyframes mmc-caret {
-  50% {
-    opacity: 0;
-  }
-}
-
-.mindmate-collab-room__markdown :deep(p) {
-  margin: 0 0 0.5em;
-}
-
-.mindmate-collab-room__markdown :deep(p:last-child) {
-  margin-bottom: 0;
-}
-
-.mindmate-collab-room__markdown :deep(pre) {
-  overflow-x: auto;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  background: rgba(28, 25, 23, 0.06);
-}
-
-.mindmate-collab-room__markdown :deep(code) {
-  font-size: 0.85em;
-}
-
-.mindmate-collab-room__markdown :deep(ul),
-.mindmate-collab-room__markdown :deep(ol) {
-  margin: 0 0 0.5em;
-  padding-left: 1.25em;
 }
 
 .mindmate-collab-room__end-btn {
@@ -659,13 +628,13 @@ watch(messages, async () => {
   font-size: 12px;
   font-weight: 500;
   line-height: 1.25;
-  padding: 0.35rem 0.75rem;
+  padding: 0.4rem 1rem;
   border: none;
   border-radius: 9999px;
   background: transparent;
   color: #78716c;
   cursor: pointer;
-  max-width: min(9.5rem, 42vw);
+  max-width: min(18rem, 70vw);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -1,9 +1,10 @@
 /**
- * th UI � showcase
+ * th UI — showcase
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
-  'showcase.title': 'Showcase',
+  'showcase.title': 'เคสสแควร์',
   'showcase.subtitle': 'ค้นพบบทเรียนการคิดด้วย AI และแชร์งานสอนของคุณ',
   'showcase.publish': 'เผยแพร่เคส',
   'showcase.searchPlaceholder': 'ค้นหาชื่อ คำอธิบาย หรือแท็ก…',
@@ -85,11 +86,11 @@ export default {
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: ตัวอย่างจำกัด)',
   'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc: ตัวอย่างจำกัด) — สูงสุด {maxMb} MB ต่อเอกสาร',
   'showcase.publishModal.teachingDocTooLarge': 'เอกสารเกินจำกัด {maxMb} MB บีบอัดแล้วลองใหม่',
-  'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif',
+  'showcase.publishModal.diagramImageHint': 'รองรับ .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'อัปโหลดรูป (หลายรูป)',
   'showcase.publishModal.galleryHint': 'เพิ่มรูปและไดอะแกรมที่บันทึกได้สูงสุด {max} รายการ',
-  'showcase.publishModal.galleryHintCase': 'Add multiple images and saved diagrams, up to {max} items',
-  'showcase.publishModal.galleryHintTemplate': 'Upload a .mg file and pick saved diagrams, up to {max} items',
+  'showcase.publishModal.galleryHintCase': 'คุณสามารถเพิ่มรูปภาพและไอคอนประวัติได้หลายรายการ สูงสุด {max} รายการ',
+  'showcase.publishModal.galleryHintTemplate': 'คุณสามารถอัปโหลดไฟล์ .mg และเลือกไอคอนประวัติได้หลายรายการ สูงสุด {max} รายการ',
   'showcase.publishModal.galleryCount': 'เพิ่มแล้ว {count}/{max} รายการ',
   'showcase.publishModal.galleryImageItem': 'รูป: {name}',
   'showcase.publishModal.galleryDiagramItem': 'ไดอะแกรม: {name}',
@@ -121,7 +122,7 @@ export default {
   'showcase.publishModal.aiGenerateStop': 'หยุด',
   'showcase.publishModal.aiGenerateCancelled': 'ยกเลิกการสร้าง AI แล้ว — คลิกอีกครั้งเพื่อสร้างใหม่',
   'showcase.publishModal.aiGenerateSuccess': 'เติมคำแนะนำและจุดเด่นจากเอกสารแล้ว — ตรวจและแก้ไข การสะท้อนการสอนเขียนเอง',
-  'showcase.publishModal.aiGenerateDiagramSuccess': 'Filled diagram intro and classroom use from the diagram — review and edit',
+  'showcase.publishModal.aiGenerateDiagramSuccess': 'การแนะนำภาพประกอบและการประยุกต์ใช้ในชั้นเรียนถูกสร้างขึ้นตามภาพประกอบ กรุณาตรวจสอบและแก้ไข',
   'showcase.publishModal.aiGenerateFailed': 'สร้างด้วย AI ล้มเหลว — กรุณาลองอีกครั้ง',
   'showcase.publishModal.aiGenerateNeedFile': 'อัปโหลดเอกสารออกแบบการสอนในขั้นตอนก่อนก่อน',
   'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
@@ -157,7 +158,7 @@ export default {
   'showcase.publishModal.historyTitle': 'เลือกไดอะแกรมที่บันทึก',
   'showcase.publishModal.historySearch': 'ค้นหาชื่อไดอะแกรม…',
   'showcase.publishModal.historyEmpty': 'ไม่มีไดอะแกรมที่บันทึก',
-  'showcase.publishModal.historyUncategorized': 'Uncategorized',
+  'showcase.publishModal.historyUncategorized': 'ไม่มีหมวดหมู่',
   'showcase.publishModal.typeDesc.teachingDesign': 'การออกแบบบทเรียนทักษะการคิดในชั้นเรียน',
   'showcase.publishModal.typeDesc.diagramCase': 'ไดอะแกรมและการแสดงภาพที่ยอดเยี่ยมในการสอน',
   'showcase.publishModal.typeDesc.diagramTemplate': 'ไดอะแกรมสำหรับนำกลับมาใช้หรือปรับ',
@@ -225,5 +226,5 @@ export default {
   'showcase.deleteConfirmTitle': 'ยืนยันการลบ',
   'showcase.deleteConfirmBody': 'ลบเคสนี้?',
   'showcase.deleted': 'ลบแล้ว',
-  'meta.pageTitle.showcase': 'Showcase',
+  'meta.pageTitle.showcase': 'เคสสแควร์',
 } as const

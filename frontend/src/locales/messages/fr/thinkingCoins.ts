@@ -1,5 +1,6 @@
 /**
- * fr UI � thinkingCoins
+ * fr UI — thinkingCoins
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export const thinkingCoinsMessages = {
@@ -55,15 +56,15 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.tier.annual': 'Annuel',
   'thinkingCoins.reason.signup_grant': 'Bonus d’inscription',
   'thinkingCoins.reason.daily_checkin': 'Présence quotidienne',
-  'thinkingCoins.reason.daily_expire': 'Daily check-in expired',
+  'thinkingCoins.reason.daily_expire': 'Connexion expirée et effacée',
   'thinkingCoins.reason.task_reward': 'Récompense de tâche',
   'thinkingCoins.reason.ai_spend': 'Usage IA',
   'thinkingCoins.reason.admin_adjust': 'Ajustement',
   'thinkingCoins.reason.referral_reward': 'Récompense de parrainage',
   'thinkingCoins.reason.case_reward': 'Récompense de cas',
   'thinkingCoins.reason.subscription_grant': 'Attribution d’abonnement',
-  'thinkingCoins.dailyExpiresHint': 'Check-in reward expires at midnight',
-  'thinkingCoins.dailyBalanceRemaining': 'Check-in remaining today: {n}',
+  'thinkingCoins.dailyExpiresHint': 'Les récompenses de connexion sont valables le même jour et seront réinitialisées à minuit',
+  'thinkingCoins.dailyBalanceRemaining': 'Il reste {n} pour l\'enregistrement d\'aujourd\'hui.',
   'thinkingCoins.admin.tab': 'Jetons de pensée',
   'thinkingCoins.admin.tasksTitle': 'Tâches à accomplir',
   'thinkingCoins.admin.settingsTitle': 'Paramètres globaux',
@@ -79,7 +80,7 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.costDiagram': 'Coût génération de diagramme',
   'thinkingCoins.admin.costCanvas': 'Coût assistance canevas',
   'thinkingCoins.admin.panelTasks': 'Tâches',
-  'thinkingCoins.admin.panelSettings': 'Global',
+  'thinkingCoins.admin.panelSettings': 'situation globale',
   'thinkingCoins.admin.panelPreview': 'Aperçu',
   'thinkingCoins.admin.addTask': 'Ajouter une tâche',
   'thinkingCoins.admin.deleteTask': 'Supprimer',
@@ -95,7 +96,7 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.handlerClientEvent': 'Événement client',
   'thinkingCoins.admin.eventKey': 'Clé d’événement',
   'thinkingCoins.admin.requestType': 'Type de requête',
-  'thinkingCoins.admin.route': 'Route',
+  'thinkingCoins.admin.route': 'routage',
   'thinkingCoins.admin.createTaskTitle': 'Nouvelle tâche',
   'thinkingCoins.admin.referralLocked': 'Tâche de parrainage pas encore disponible',
   'thinkingCoins.ledgerLoadMore': 'Charger plus',

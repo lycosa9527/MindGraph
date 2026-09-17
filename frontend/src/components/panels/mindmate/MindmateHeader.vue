@@ -5,12 +5,12 @@ import { ElButton, ElDropdown, ElDropdownMenu, ElIcon, ElScrollbar } from 'eleme
 
 import { Close, Delete, DocumentCopy, Menu } from '@element-plus/icons-vue'
 
+import MindmateContactsToggleButton from '@/components/mindmate/MindmateContactsToggleButton.vue'
+import MindMateDingtalkBadge from '@/components/sidebar/MindMateDingtalkBadge.vue'
 import { useLanguage } from '@/composables'
 import type { LocaleCode } from '@/i18n/locales'
 import { intlLocaleForUiCode } from '@/i18n/locales'
 import type { MindMateConversation } from '@/stores'
-
-import MindMateDingtalkBadge from '@/components/sidebar/MindMateDingtalkBadge.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -22,6 +22,8 @@ const props = withDefaults(
     conversations?: MindMateConversation[]
     isLoadingHistory?: boolean
     currentConversationId?: string | null
+    showContactsToggle?: boolean
+    contactsOpen?: boolean
   }>(),
   {
     mode: 'panel',
@@ -31,6 +33,8 @@ const props = withDefaults(
     conversations: () => [],
     isLoadingHistory: false,
     currentConversationId: null,
+    showContactsToggle: false,
+    contactsOpen: false,
   }
 )
 
@@ -39,6 +43,7 @@ const emit = defineEmits<{
   (e: 'close'): void
   (e: 'loadHistory', conversationId: string): void
   (e: 'deleteHistory', conversationId: string): void
+  (e: 'toggleContacts'): void
 }>()
 
 const { t, currentLanguage } = useLanguage()
@@ -95,6 +100,11 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
       </h1>
     </div>
     <div class="flex items-center gap-2 shrink-0">
+      <MindmateContactsToggleButton
+        v-if="showContactsToggle"
+        :open="contactsOpen"
+        @toggle="emit('toggleContacts')"
+      />
       <!-- History dropdown - panel mode only, left of close -->
       <ElDropdown
         v-if="!isFullpageMode"

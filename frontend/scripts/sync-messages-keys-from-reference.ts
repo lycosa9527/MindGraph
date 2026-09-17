@@ -8,6 +8,8 @@ import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from '
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
+import { localeNamespaceBanner } from './i18nFileBanner.ts'
+
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '../src/locales/messages')
 
@@ -67,7 +69,7 @@ function formatRecord(keysInOrder: string[], out: Record<string, string>): strin
 }
 
 function banner(locale: string, ns: string): string {
-  return `/**\n * ${locale} UI — ${ns}\n */\n`
+  return localeNamespaceBanner(locale, ns)
 }
 
 async function loadMod(locale: string, ns: string): Promise<Record<string, string>> {

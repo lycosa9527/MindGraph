@@ -1,9 +1,10 @@
 /**
- * af UI � maite
+ * af UI — maite
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
-  'maite.title': 'Mate Learning',
+  'maite.title': 'Matt leer metode',
   'maite.subtitle': 'Omgekeerde ontbinding · Vierfase-diagnose · Gerigte remedie · Variant-oordrag',
   'maite.mode.demo': 'Demo',
   'maite.mode.inquiry': 'Ondersoek',
@@ -18,7 +19,7 @@ export default {
   'maite.stream.working': 'Genereer…',
   'maite.stream.receiving': 'Stroom resultate…',
   'maite.stream.fallback': 'Stroom het gestagneer — gebruik volle antwoord…',
-  'maite.stream.stop': 'Stop',
+  'maite.stream.stop': 'stop',
   'maite.tables.condition': 'Voorwaardetabel',
   'maite.tables.step': 'Staptabel',
   'maite.tables.model': 'Modeltabel',

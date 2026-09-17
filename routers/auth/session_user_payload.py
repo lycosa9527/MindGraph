@@ -8,6 +8,7 @@ from models.domain.auth import Organization, User
 from services.auth.thinking_coin.checkin_service import ensure_wallet_bootstrap
 from services.auth.thinking_coin.eligibility import user_eligible_for_thinking_coins
 from services.auth.thinking_coin.wallet_payload import build_wallet_payload
+from services.llm.org_custom_config import session_custom_llm_fields_for_org_id
 from services.redis.cache.redis_org_cache import org_cache
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_user_role
@@ -64,6 +65,8 @@ async def build_session_user_payload(
     daily_tokens = await current_user_daily_token_payload(int(user.id))
     created_at = user.created_at.isoformat() if user.created_at else None
     last_login = user.last_login.isoformat() if user.last_login else None
+    org_id = getattr(resolved_org, "id", None) or getattr(user, "organization_id", None)
+    custom_llm = await session_custom_llm_fields_for_org_id(int(org_id) if org_id is not None else None)
     return {
         "id": user.id,
         "phone": user.phone,
@@ -72,7 +75,7 @@ async def build_session_user_payload(
         "avatar": user.avatar or DEFAULT_USER_AVATAR_EMOJI,
         "role": get_user_role(user),
         "login_password_set": getattr(user, "login_password_set", True),
-        "organization": organization_session_payload(resolved_org),
+        "organization": organization_session_payload(resolved_org, custom_llm),
         "thinking_coins": thinking_coins,
         "daily_tokens": daily_tokens,
         "created_at": created_at,

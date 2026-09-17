@@ -1,5 +1,6 @@
 /**
- * en UI � mindmate
+ * en UI — mindmate
+ * FILL — English of zh. Copy into other locales only for keys that do not exist yet.
  */
 
 export default {
@@ -191,6 +192,8 @@ export default {
   'mindmate.collabInviteCodeBreadcrumb': 'Invite code: {code}',
   'mindmate.collabSessionMembersTitle': 'Seminar members',
   'mindmate.collabMembersTitle': 'School members',
+  'mindmate.collabToggleContacts': 'Contacts',
+  'mindmate.collabToggleContactsTitle': 'Show or hide contacts',
   'mindmate.collabPoke': 'Nudge',
   'mindmate.collabPokeToast': '{name} is waiting for you to join {seminar}\'s seminar',
   'mindmate.collabPokeSomeone': 'A colleague',

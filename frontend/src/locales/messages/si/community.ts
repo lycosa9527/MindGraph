@@ -1,5 +1,6 @@
 /**
  * si UI — community
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
@@ -100,7 +101,7 @@ export default {
   'debateverse.page.create': 'නව වාදයක් සාදන්න',
   'debateverse.page.empty': 'තවම වාදයක් නැත',
   'debateverse.page.newDebate': 'නව වාදය',
-  'debateverse.page.title': 'DebateVerse',
+  'debateverse.page.title': 'තත්ත්වය මත',
   'debateverse.roleLabel.debater': 'වාදකයෙක් ලෙස භාග වන්න',
   'debateverse.roleLabel.judgeRole': 'විනිසුරු ලෙස භාග වන්න',
   'debateverse.roleLabel.viewer': 'නරඹන්නෙක් ලෙස බලන්න',

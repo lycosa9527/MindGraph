@@ -1,4 +1,7 @@
-/** zh UI — common */
+/**
+ * zh UI — common
+ * SOURCE — author new keys here in Simplified Chinese first.
+ */
 
 export default {
   'app.aiDisclaimer': '内容由AI生成，请仔细甄别',

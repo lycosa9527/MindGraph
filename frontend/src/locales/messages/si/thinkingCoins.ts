@@ -1,5 +1,6 @@
 /**
  * si UI — thinkingCoins
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export const thinkingCoinsMessages = {
@@ -55,15 +56,15 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.tier.annual': 'වාර්ෂික',
   'thinkingCoins.reason.signup_grant': 'ලියාපදිංචි බෝනස්',
   'thinkingCoins.reason.daily_checkin': 'දිනපතා check-in',
-  'thinkingCoins.reason.daily_expire': 'Daily check-in expired',
+  'thinkingCoins.reason.daily_expire': 'පුරනය වීම කල් ඉකුත් වී නිෂ්කාශනය විය',
   'thinkingCoins.reason.task_reward': 'කාර්ය ත්‍යාග',
   'thinkingCoins.reason.ai_spend': 'AI භාවිතය',
   'thinkingCoins.reason.admin_adjust': 'සංශෝධනය',
   'thinkingCoins.reason.referral_reward': 'Referral ත්‍යාග',
   'thinkingCoins.reason.case_reward': 'Case ත්‍යාග',
   'thinkingCoins.reason.subscription_grant': 'දායකත්ව grant',
-  'thinkingCoins.dailyExpiresHint': 'Check-in reward expires at midnight',
-  'thinkingCoins.dailyBalanceRemaining': 'Check-in remaining today: {n}',
+  'thinkingCoins.dailyExpiresHint': 'පුරනය වීමේ ත්‍යාග එදිනම වලංගු වන අතර 24:00 ට යළි පිහිටුවනු ලැබේ',
+  'thinkingCoins.dailyBalanceRemaining': 'අද දින ඇතුල්වීම ඉතිරිව ඇත්තේ {n}',
   'thinkingCoins.admin.tab': 'චින්තන ටෝකන්',
   'thinkingCoins.admin.tasksTitle': 'ටෝකන් උපයන කාර්ය',
   'thinkingCoins.admin.settingsTitle': 'ගෝලීය සැකසුම්',
@@ -103,10 +104,10 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.ledgerExpandHint': 'පෙළහැරීමට තට්ට් කරන්න',
   'thinkingCoins.tasksExpandHint': 'පෙළහැරීමට තට්ට් කරන්න',
   'thinkingCoins.plan.free': 'නොමිලේ',
-  'thinkingCoins.plan.priceMonthly': '¥59/mo',
-  'thinkingCoins.plan.priceSub': '¥49/mo',
+  'thinkingCoins.plan.priceMonthly': '¥59/මසකට',
+  'thinkingCoins.plan.priceSub': '¥49/මසකට',
   'thinkingCoins.plan.priceSubNote': 'පෙර ¥59/මාස - දායකත්වයෙන් ¥10 ඉතිරි කරන්න',
-  'thinkingCoins.plan.priceAnnual': '¥398/yr',
+  'thinkingCoins.plan.priceAnnual': '¥398/වසරකට',
   'thinkingCoins.plan.priceAnnualNote': '~¥33.2/මාස - මාසික සමගඟ 44% ඉතිරි',
   'thinkingCoins.plan.currentPlan': 'වත්මන් සැලසුම',
   'thinkingCoins.plan.subscribeNow': 'දායකත්ව වන්න',

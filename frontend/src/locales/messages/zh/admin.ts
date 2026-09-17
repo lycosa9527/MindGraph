@@ -1,4 +1,7 @@
-/** zh UI — admin */
+/**
+ * zh UI — admin
+ * SOURCE — author new keys here in Simplified Chinese first.
+ */
 
 export default {
   'admin.actions': '操作',
@@ -144,6 +147,23 @@ export default {
   'admin.teachingDesignTemplate.previewFail': '无法预览该模板',
   'admin.teachingDesignTemplate.schoolLabel': '教学设计模板',
   'admin.teachingDesignTemplate.schoolHint': '该校老师导出 Word 时使用所选模板',
+  'admin.customLlm.sectionTitle': 'MindGraph 自定义 AI 服务器',
+  'admin.customLlm.hint':
+    '填写学校自己的地址、密钥和模型名即可；模型名会显示在画布上。默认继续使用平台 DashScope/Volcengine。',
+  'admin.customLlm.typePlatform': 'DashScope/Volcengine',
+  'admin.customLlm.typeOpenAiChat': 'OpenAI Chat',
+  'admin.customLlm.typeOpenAiResponse': 'OpenAI Response',
+  'admin.customLlm.typeAnthropic': 'Anthropic Messages',
+  'admin.customLlm.baseUrl': 'API 根地址',
+  'admin.customLlm.baseUrlPlaceholder': 'https://llm.school.edu/v1',
+  'admin.customLlm.apiKey': 'API 密钥',
+  'admin.customLlm.apiKeyPlaceholder': '学校提供的密钥',
+  'admin.customLlm.secretSet': '已保存密钥（{masked}）',
+  'admin.customLlm.modelName': '模型名称',
+  'admin.customLlm.modelNamePlaceholder': '画布上显示的模型名，同时作为 API model',
+  'admin.customLlm.probe': '测试连接',
+  'admin.customLlm.probeOk': '学校 AI 服务器连接成功。',
+  'admin.customLlm.probeFail': '连接失败，请检查协议、地址、密钥和模型名称。',
   'admin.teachingDesignTemplate.optionSystem': '跟随系统（当前模板）',
   'admin.teachingDesignTemplate.optionBundled': '内置北师大模板',
   'admin.teachingDesignTemplate.optionUploaded': '{filename}（已上传）',

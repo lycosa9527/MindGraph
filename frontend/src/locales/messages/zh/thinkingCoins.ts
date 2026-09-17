@@ -1,3 +1,8 @@
+/**
+ * zh UI — thinkingCoins
+ * SOURCE — author new keys here in Simplified Chinese first.
+ */
+
 export const thinkingCoinsMessages = {
   'thinkingCoins.title': '我的思维币',
   'thinkingCoins.balanceUnit': '思维币',

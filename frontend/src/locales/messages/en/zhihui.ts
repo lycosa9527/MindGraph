@@ -1,4 +1,7 @@
-/** en UI — ZhiHui (智绘) */
+/**
+ * en UI — zhihui
+ * FILL — English of zh. Copy into other locales only for keys that do not exist yet.
+ */
 
 export default {
   'meta.pageTitle.zhihui': 'ZhiHui',

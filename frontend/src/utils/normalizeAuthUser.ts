@@ -119,6 +119,17 @@ export function normalizeAuthUser(source: BackendUser | User): User {
   const subscriptionExpired = orgIsObject
     ? org.subscription_expired === true
     : raw.subscriptionExpired === true
+  const customLlmEnabled = orgIsObject
+    ? org.custom_llm_enabled === true
+    : raw.customLlmEnabled === true
+  const customLlmModelRaw = orgIsObject
+    ? org.custom_llm_model != null
+      ? String(org.custom_llm_model).trim()
+      : ''
+    : typeof raw.customLlmModel === 'string'
+      ? raw.customLlmModel.trim()
+      : ''
+  const customLlmModel = customLlmEnabled && customLlmModelRaw ? customLlmModelRaw : null
   const displayLabel = orgDisplayName || orgName || raw.schoolName || ''
 
   const allowsZh = resolveAllowsSimplifiedChinese(raw)
@@ -173,5 +184,7 @@ export function normalizeAuthUser(source: BackendUser | User): User {
     subscriptionExpired: subscriptionExpired ?? false,
     thinkingCoins: resolveThinkingCoins(raw),
     dailyTokens: resolveDailyTokens(raw),
+    customLlmEnabled,
+    customLlmModel,
   }
 }

@@ -1,5 +1,6 @@
 /**
- * af UI � notification
+ * af UI — notification
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
@@ -26,7 +27,7 @@ export default {
   'notification.geoLiteMissingTitle': 'GeoLite2 Land databasis ontbreek',
   'notification.fullscreenFailed': 'Kon nie volledige skerm open nie',
   'notification.generationCancelled': 'Generering geanker',
-  'notification.conceptMapTabNeedsAi': 'Please enable AI in the bar before Tab recommendations.',
+  'notification.conceptMapTabNeedsAi': 'Aktiveer asseblief "Begin AI" in die boonste balk voordat u Tab-aanbevelings gebruik',
   'notification.historyClearNodes': 'Skoon knopteks',
   'notification.historyEmptyLearning': 'Maak knop leeg en voeg antwoord by',
   'notification.importInvalidData': 'Importeer het misluk: ongeldige diagramdata',
@@ -35,10 +36,10 @@ export default {
   'notification.importSlotsFull': 'Biblioteek is vol; diagram is geïmporteer maar nie na biblioteek gestoor nie',
   'notification.importSuccess': 'Diagram geïmporteer en na biblioteek gestoor',
   'notification.importUnsupportedType': 'Importeer het misluk: nie-ondersteunde diagramtipe',
-  'notification.inlineRecEmpty': 'No recommendations were generated. Try again or edit the topic.',
+  'notification.inlineRecEmpty': 'Geen aanbevole inhoud is gegenereer nie, probeer asseblief weer of pas die tema aan en probeer weer',
   'notification.loadMoreFailed': 'Kon nie meer laai nie',
   'notification.networkError': 'Netwerkfout',
-  'notification.nodeNotEligible': 'This node does not support Tab recommendations.',
+  'notification.nodeNotEligible': 'Hierdie nodus ondersteun nie Tab-aanbevelings nie',
   'notification.newVersionAvailable': 'Nuwe weergawe beskikbaar. Klik om te herbelaai.',
   'notification.recommendationFailed': 'Aanbeveling het misluk: {msg}',
   'notification.relationshipGenerationFailed': 'Verwantskapgenerering het misluk',
@@ -47,7 +48,7 @@ export default {
   'notification.saved': 'Veranderings suksesvol gestoor',
   'notification.selectNodeToClear': 'Kies asseblief \'n knooppunt om te verwyder',
   'notification.sessionInvalidated': 'U is uitgeteken omdat u die maksimum aantal toestelle oorskry het',
-  'notification.sessionKicked': 'This sign-in was ended from another device',
+  'notification.sessionKicked': 'Hierdie rekening het hierdie rekening vanlyn op ander toestelle aangeteken',
   'notification.signInToUse': 'Teken in om hierdie te gebruik',
   'notification.signInToValidateFocus': 'Teken in om die fokusvraag te valideer',
 } as const

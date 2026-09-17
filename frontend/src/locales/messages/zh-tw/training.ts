@@ -1,3 +1,8 @@
+/**
+ * zh-tw UI — training
+ * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
+ */
+
 export default {
   'training.title': '校本培訓',
   'training.subtitle': '將該校教師拉到同一圖示頁。',

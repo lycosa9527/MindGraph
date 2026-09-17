@@ -1,6 +1,8 @@
 /**
- * zh-tw (Traditional Chinese) UI messages — merged namespace bundles.
+ * zh-tw UI messages — merged namespace bundles.
+ * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
  */
+
 import admin from './admin.ts'
 import auth from './auth.ts'
 import canvas from './canvas.ts'

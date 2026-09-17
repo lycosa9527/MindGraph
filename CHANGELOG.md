@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.85] - 2026-09-18
+
+> **Schools can paste their own LLM (OpenAI Chat, Responses, or Anthropic Messages); Settings picker keeps 28 translated locales.**
+
+### Added
+
+- **MindGraph 自定义 AI 服务器** — Admin 组织管理 → 其他设置: four-way protocol control (default DashScope/Volcengine, then OpenAI Chat Completions, OpenAI Responses, Anthropic Messages). School pastes base URL, API key (opaque, max 4096), and one model name used as both the API model and the canvas chip. 测试连接 pings the selected official wire. Override is all-or-nothing (type + URL + key + model).
+- **Official adapters** — School traffic skips DashScope/Volcengine load balancing and multi-LLM fan-out. Official OpenAI/Anthropic error envelopes map onto existing `LLM*` exceptions. Result-cache keys include a hashed school stamp so platform and school specs never mix.
+- **MindMate 教研会 @** — Collab input can @MindMate (and school agent aliases) to ask the AI; mention picker and teacher-visible vs AI recipient tabs.
+
+### Changed
+
+- **界面语言** — Dropdown lists only the 28 locales that already have translated bundles (`zh-tw` … `af`). Other enabled registry locales stay out until they are translated.
+- **研习社 training i18n** — `az` / `th` / `fr` / `af` no longer import English `training.ts`. Each has its own module, filled from `zh` on the Windows host.
+- **Picker leftover English** — Remaining Settings-locale strings still equal to English were translated `zh-CN` → target (`i18n:gap-fill`). Brands, formulas, and shortcuts stay English.
+- **i18n overwrite guard** — Picker locale files carry a `TRANSLATED` / `SOURCE` / `FILL` header. `i18n:check-banners` must pass before key edits; `i18n:materialize-from-en` skips existing locale directories.
+- **Kitty 按住说话** — Mobile PTT label is baked into an image so iOS cannot select the text.
+
+### Security
+
+- School API keys stay in PostgreSQL (`Text`) only. Redis org hashes, session JSON, and admin list responses never include the raw key (admin sees a mask). Session `custom_llm_enabled` / canvas model come from the DB-backed loader, not a Redis-detached org stub.
+
+### Tests
+
+- [`tests/test_org_custom_llm.py`](tests/test_org_custom_llm.py) — URL allowlist, official error mapping, admin apply, cache stamp, Redis omit key, usage model id
+- [`frontend/tests/useOrgCustomLlm.spec.ts`](frontend/tests/useOrgCustomLlm.spec.ts)
+- [`tests/test_mindmate_collab_mention.py`](tests/test_mindmate_collab_mention.py), [`frontend/tests/mindmateMention.spec.ts`](frontend/tests/mindmateMention.spec.ts)
+- `npm run i18n:check-keys` — 5847 keys × 77 locales
+- `npm run i18n:check-picker-stubs -- --strict` — 28 picker locales
+- [`frontend/tests/loadLocaleMessages.spec.ts`](frontend/tests/loadLocaleMessages.spec.ts)
+
 ## [5.180.84] - 2026-09-17
 
 > **Kicked devices stay out; account UI lists and signs out browsers; Super Kitty watch tile; learning-sheet blanks survive rebuilds.**
@@ -26,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **In-flight refresh after a sixth login** — FIFO eviction now writes a per-device fence (and kick notice) in the same Redis EVAL as the access-session SREM. `/refresh` checks that fence before validate and again before store/rotate, and `store_session(reject_if_evicted=True)` refuses to re-admit the oldest device. The same fence is set on a manual account-UI kick. A later login on that browser still clears the fence and gets a slot.
 - **False “设备数量超过上限”** — `GET /session-status` 401 (expired/rotated token, no kick payload) no longer uses the device-limit alert. The SPA treats that as a normal session expiry. True kicks still return `status: "invalidated"`.
 - **Learning-sheet blanks** — Hidden answers survive mind-map spec rebuilds (add / delete / restyle). Layout measures the answer width; the blank underline is stamped back after load.
+- **Interface language English overwrite** — Settings picker locales that 5.180.80 rematerialized from English (`si`, `ja`, `de`, `es`, `ar`, …) restore the last native bundles. Remaining English fill is translated from `zh` on the Windows host (`i18n:gap-fill`); brands stay English. The Settings dropdown lists only those translated picker locales.
 
 ### Tests
 

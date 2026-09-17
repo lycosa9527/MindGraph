@@ -116,6 +116,10 @@ async def test_session_user_payload_includes_thinking_coins() -> None:
             "routers.auth.session_user_payload.organization_session_payload",
             return_value={"id": 5, "name": "思源智教"},
         ),
+        patch(
+            "routers.auth.session_user_payload.session_custom_llm_fields_for_org_id",
+            AsyncMock(return_value={"custom_llm_enabled": False, "custom_llm_model": None}),
+        ),
     ):
         payload = await build_session_user_payload(db, user, org)
 
@@ -123,3 +127,41 @@ async def test_session_user_payload_includes_thinking_coins() -> None:
     assert payload["thinking_coins"] == {"balance": 12, "eligible": True}
     assert payload["daily_tokens"] == {"cap": 0, "used_today": 0, "remaining_today": 0}
     tokens.assert_awaited_once_with(6)
+
+
+@pytest.mark.asyncio
+async def test_session_user_payload_loads_custom_llm_from_config_not_redis_org() -> None:
+    """Redis orgs omit the school API key; session flags come from the DB loader."""
+    user = _session_user()
+    redis_org = MagicMock()
+    redis_org.id = 5
+    db = MagicMock(spec=AsyncSession)
+    overlay = {"custom_llm_enabled": True, "custom_llm_model": "校本大模型"}
+    with (
+        patch(
+            "routers.auth.session_user_payload.thinking_coins_session_summary",
+            AsyncMock(return_value={"balance": 0, "eligible": False}),
+        ),
+        patch(
+            "routers.auth.session_user_payload.current_user_daily_token_payload",
+            AsyncMock(return_value={"cap": 0, "used_today": 0, "remaining_today": 0}),
+        ),
+        patch(
+            "routers.auth.session_user_payload.get_user_role",
+            return_value="teacher",
+        ),
+        patch(
+            "routers.auth.session_user_payload.session_custom_llm_fields_for_org_id",
+            AsyncMock(return_value=overlay),
+        ) as loader,
+        patch(
+            "routers.auth.session_user_payload.organization_session_payload",
+            return_value={"id": 5, "custom_llm_enabled": True, "custom_llm_model": "校本大模型"},
+        ) as org_payload,
+    ):
+        payload = await build_session_user_payload(db, user, redis_org)
+
+    loader.assert_awaited_once_with(5)
+    org_payload.assert_called_once_with(redis_org, overlay)
+    assert payload["organization"]["custom_llm_enabled"] is True
+    assert payload["organization"]["custom_llm_model"] == "校本大模型"

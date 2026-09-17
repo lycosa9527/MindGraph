@@ -1,4 +1,7 @@
-/** zh-tw UI — common */
+/**
+ * zh-tw UI — common
+ * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
+ */
 
 export default {
   'app.aiDisclaimer': '內容由AI生成，請仔細甄別',

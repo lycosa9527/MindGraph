@@ -169,6 +169,7 @@ run_backend() {
     tests/test_generation_result_coalesce.py \
     tests/test_generation_result_cache_live.py \
     tests/test_org_result_cache.py \
+    tests/test_org_custom_llm.py \
     tests/test_mindbot_library_save_reply.py \
     tests/test_assistant_markdown.py \
     tests/test_mindbot_dingtalk_diagram_display.py \

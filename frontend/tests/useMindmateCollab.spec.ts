@@ -184,6 +184,28 @@ describe('recently ended collab codes', () => {
     expect(loadLocalMindmateCollabSessions()).toHaveLength(0)
   })
 
+  it('does not notify again when the same hosted room is re-tracked', () => {
+    let changed = 0
+    const onChanged = () => {
+      changed += 1
+    }
+    window.addEventListener('mindmate-collab-sessions-changed', onChanged)
+    trackLocalMindmateCollabSession({
+      session_id: 'sess-hosted',
+      code: '8K2-EUR',
+      title: 'Seminar',
+    })
+    expect(changed).toBe(1)
+    trackLocalMindmateCollabSession({
+      session_id: 'sess-hosted',
+      code: '8K2EUR',
+      title: 'Seminar (join)',
+    })
+    persistLocalMindmateCollabSessions(loadLocalMindmateCollabSessions())
+    expect(changed).toBe(1)
+    window.removeEventListener('mindmate-collab-sessions-changed', onChanged)
+  })
+
   it('does not reopen an embedded room that this tab just ended', () => {
     markMindmateCollabCodeEnded('CRK-G2H')
     setEmbeddedCollabRoomCode('CRK-G2H')

@@ -1,5 +1,6 @@
 /**
- * zh UI — mindmate
+ * zh-tw UI — mindmate
+ * SOURCE — generate from zh with i18n:build-zhtw (OpenCC). Do not fill from en.
  */
 
 export default {
@@ -199,6 +200,8 @@ export default {
   'mindmate.collabInviteCodeBreadcrumb': '邀請碼：{code}',
   'mindmate.collabSessionMembersTitle': '研討會成員',
   'mindmate.collabMembersTitle': '本校教師',
+  'mindmate.collabToggleContacts': '聯繫人',
+  'mindmate.collabToggleContactsTitle': '顯示或隱藏聯繫人',
   'mindmate.collabPoke': '戳',
   'mindmate.collabPokeToast': '{name}在等你加入{seminar}的研討會',
   'mindmate.collabPokeSomeone': '同事',

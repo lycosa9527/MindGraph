@@ -1,5 +1,6 @@
 /**
- * af UI � knowledge
+ * af UI — knowledge
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export default {
@@ -150,12 +151,12 @@ export default {
   'knowledge.pipeline.wikiPendingDetail': '{count} pakket(te) wag ná indeksering vir Wiki-bladsye.',
   'knowledge.pipeline.wikiReady': 'Wiki gereed',
   'knowledge.pipeline.wikiReadyDetail': '{count} pakket(te) het saamgestelde Wiki-notas.',
-  'knowledge.pipelineBadge.rag.label': 'RAG',
+  'knowledge.pipelineBadge.rag.label': 'JOOL',
   'knowledge.pipelineBadge.rag.notYet': 'Nog nie',
   'knowledge.pipelineBadge.rag.processing': 'Besig',
   'knowledge.pipelineBadge.rag.complete': 'Voltooi',
   'knowledge.pipelineBadge.rag.failed': 'Misluk',
-  'knowledge.pipelineBadge.wiki.label': 'Wiki',
+  'knowledge.pipelineBadge.wiki.label': 'wiki',
   'knowledge.pipelineBadge.wiki.disabled': 'Af',
   'knowledge.pipelineBadge.wiki.notYet': 'Nog nie',
   'knowledge.pipelineBadge.wiki.pending': 'Besig',

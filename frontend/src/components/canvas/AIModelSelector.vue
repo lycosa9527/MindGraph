@@ -5,7 +5,7 @@
  * Migrated from old JavaScript llm-progress-renderer.js and llm-autocomplete-manager.js
  *
  * Features:
- * - Shows all 3 AI models: Qwen, DeepSeek, Doubao
+ * - Shows Qwen / DeepSeek / Doubao, or the school model name when custom LLM is on
  * - Per-model loading/ready/error states with visual feedback
  * - Click ready model to switch to its cached result
  * - Glow effect when result becomes available
@@ -18,6 +18,7 @@ import { ElTooltip } from 'element-plus'
 import { Sparkles, X } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
+import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
@@ -51,6 +52,7 @@ const props = withDefaults(
 )
 
 const { t } = useLanguage()
+const { canvasModels, displayNameForModel } = useOrgCustomLlm()
 const { switchToModel, cancelGeneration } = useAutoComplete()
 const { aiBlockedByCollab, guardCollabGuestAi } = useCollabGuestAiGate()
 const diagramStore = useDiagramStore()
@@ -246,11 +248,8 @@ const tabRecBadgeGlowClass = computed(() => {
   return 'tab-rec-badge-wrap--idle'
 })
 
-// Model display names
-const modelDisplayNames: Record<string, string> = {
-  qwen: 'Qwen',
-  deepseek: 'DeepSeek',
-  doubao: 'Doubao',
+function modelLabel(modelKey: string): string {
+  return displayNameForModel(modelKey)
 }
 
 // Get model state
@@ -297,9 +296,7 @@ function handleModelClick(modelKey: string) {
 // Tooltip content based on state
 function getTooltipContent(modelKey: string): string {
   const state = getModelState(modelKey)
-  const displayName = modelDisplayNames[modelKey]
-
-  const name = displayName ?? modelKey
+  const name = modelLabel(modelKey)
 
   switch (state) {
     case 'loading':
@@ -327,7 +324,7 @@ function hostBadgeAriaLabel(modelKey: string): string | undefined {
   if (!collabGuestHostBadge(modelKey)) {
     return undefined
   }
-  const name = modelDisplayNames[modelKey] ?? modelKey
+  const name = modelLabel(modelKey)
   return String(t('aiModel.hostPickBadgeAria', { name }))
 }
 
@@ -493,7 +490,7 @@ function getButtonStyle(modelKey: string) {
         class="flex gap-1 shrink-0 justify-center items-center min-w-0"
       >
         <ElTooltip
-          v-for="modelKey in llmResultsStore.models"
+          v-for="modelKey in canvasModels"
           :key="modelKey"
           class="inline-flex self-center"
           :content="tooltipForModel(modelKey)"
@@ -523,7 +520,7 @@ function getButtonStyle(modelKey: string) {
                     class="w-3.5 h-3.5"
                   />
                 </span>
-                <span class="btn-label">{{ modelDisplayNames[modelKey] }}</span>
+                <span class="btn-label">{{ modelLabel(modelKey) }}</span>
               </span>
             </button>
           </span>

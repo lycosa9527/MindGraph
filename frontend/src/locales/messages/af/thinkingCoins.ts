@@ -1,5 +1,6 @@
 /**
- * af UI � thinkingCoins
+ * af UI — thinkingCoins
+ * TRANSLATED — do not overwrite values with English. Add missing keys only (fill new keys from en).
  */
 
 export const thinkingCoinsMessages = {
@@ -55,15 +56,15 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.tier.annual': 'Jaarliks',
   'thinkingCoins.reason.signup_grant': 'Registrasiebonus',
   'thinkingCoins.reason.daily_checkin': 'Daaglikse aantekening',
-  'thinkingCoins.reason.daily_expire': 'Daily check-in expired',
+  'thinkingCoins.reason.daily_expire': 'Aanmelding het verval en uitgevee',
   'thinkingCoins.reason.task_reward': 'Taakbeloning',
   'thinkingCoins.reason.ai_spend': 'KI-gebruik',
   'thinkingCoins.reason.admin_adjust': 'Aanpassing',
   'thinkingCoins.reason.referral_reward': 'Verwysingsbeloning',
   'thinkingCoins.reason.case_reward': 'Gevalbeloning',
   'thinkingCoins.reason.subscription_grant': 'Intekeningtoekenning',
-  'thinkingCoins.dailyExpiresHint': 'Check-in reward expires at midnight',
-  'thinkingCoins.dailyBalanceRemaining': 'Check-in remaining today: {n}',
+  'thinkingCoins.dailyExpiresHint': 'Aantekenbelonings is op dieselfde dag geldig en sal om 24:00 teruggestel word',
+  'thinkingCoins.dailyBalanceRemaining': 'Vandag se inklok bly {n}',
   'thinkingCoins.admin.tab': 'Denktekens',
   'thinkingCoins.admin.tasksTitle': 'Verdienste-take',
   'thinkingCoins.admin.settingsTitle': 'Globale instellings',
@@ -87,7 +88,7 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.systemTask': 'Stelsel',
   'thinkingCoins.admin.monthlyCap': 'Maandelikse plafon',
   'thinkingCoins.admin.sortOrder': 'Sorteer',
-  'thinkingCoins.admin.slug': 'Slug',
+  'thinkingCoins.admin.slug': 'logo',
   'thinkingCoins.admin.handlerAutoLogin': 'Outomatiese aantekening',
   'thinkingCoins.admin.handlerUsageDaily': 'Daaglikse gebruik',
   'thinkingCoins.admin.handlerNavigate': 'Navigeer',
@@ -103,10 +104,10 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.ledgerExpandHint': 'Tik om uit te vou',
   'thinkingCoins.tasksExpandHint': 'Tik om uit te vou',
   'thinkingCoins.plan.free': 'Gratis',
-  'thinkingCoins.plan.priceMonthly': '¥59/mo',
-  'thinkingCoins.plan.priceSub': '¥49/mo',
+  'thinkingCoins.plan.priceMonthly': '¥59/maand',
+  'thinkingCoins.plan.priceSub': '¥49/maand',
   'thinkingCoins.plan.priceSubNote': 'Was ¥59/mo — spaar ¥10 met intekening',
-  'thinkingCoins.plan.priceAnnual': '¥398/yr',
+  'thinkingCoins.plan.priceAnnual': '¥398/jaar',
   'thinkingCoins.plan.priceAnnualNote': '~¥33.2/mo — spaar 44% teenoor maandeliks',
   'thinkingCoins.plan.currentPlan': 'Huidige plan',
   'thinkingCoins.plan.subscribeNow': 'Teken in',
