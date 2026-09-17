@@ -129,7 +129,9 @@ export function useCanvasToolbarApps() {
       list = withoutWaterfall
     }
     if (useMindMapV2.value) {
-      list = list.filter((a) => a.appKey !== 'translate_diagram')
+      list = list.filter(
+        (a) => a.appKey !== 'translate_diagram' && a.appKey !== 'virtual_keyboard'
+      )
     }
     if (!aiBlockedByCollab.value) {
       return list

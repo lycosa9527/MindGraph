@@ -20,6 +20,7 @@
 #include "recorder_net.hpp"
 #include "recorder_session.hpp"
 #include "recorder_ui.hpp"
+#include "super_kitty_ui.hpp"
 
 namespace {
 
@@ -523,5 +524,8 @@ bool recorder_agent_allows_home()
 
 extern "C" bool mindgraph_home_gesture_allowed(void)
 {
-    return recorder_agent_allows_home();
+    if (!recorder_agent_allows_home()) {
+        return false;
+    }
+    return !super_kitty_ui_blocks_home();
 }

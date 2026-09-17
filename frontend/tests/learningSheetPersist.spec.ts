@@ -8,6 +8,7 @@ import {
   restoreLearningSheetUiFromDiagram,
   toggleLearningSheetAnswersVisibility,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
+import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { LEARNING_SHEET_BLANK_TEXT } from '@/stores/specLoader/utils'
 import { useDiagramStore } from '@/stores/diagram'
 
@@ -39,6 +40,12 @@ describe('learning sheet persistence', () => {
     }
 
     return { branchId: branch.id, branchText: String(branch.text ?? '').trim() }
+  }
+
+  function topicChildBranchIds(): string[] {
+    const diagramStore = useDiagramStore()
+    const connections = diagramStore.data?.connections ?? []
+    return connections.filter((connection) => connection.source === 'topic').map((c) => c.target)
   }
 
   it('round-trips learning sheet blanks and show-answers preference via spec save/load', () => {
@@ -98,5 +105,73 @@ describe('learning sheet persistence', () => {
 
     diagramStore.setLearningSheetMode(false)
     expect(toggleLearningSheetAnswersVisibility()).toBe(false)
+  })
+
+  it('restores blanked text after adding a child (tree rebuild)', () => {
+    const diagramStore = useDiagramStore()
+    loadMindMapWithBranch()
+    const l1Ids = topicChildBranchIds()
+    if (l1Ids.length < 2) {
+      throw new Error('expected at least two top-level branches')
+    }
+    const [blankId, addUnderId] = l1Ids
+    const branchText = String(
+      diagramStore.data?.nodes.find((node) => node.id === blankId)?.text ?? ''
+    ).trim()
+
+    diagramStore.setLearningSheetMode(true)
+    learningSheetPickActive.value = true
+    handleLearningSheetPickNodeClick(blankId)
+    expect(diagramStore.isNodeBlankedForLearningSheet(blankId)).toBe(true)
+
+    expect(diagramStore.addMindMapChild(addUnderId)).toBe(true)
+
+    expect(diagramStore.isLearningSheet).toBe(true)
+    expect(diagramStore.isNodeBlankedForLearningSheet(blankId)).toBe(true)
+    const afterAdd = diagramStore.data?.nodes.find((node) => node.id === blankId)
+    expect(afterAdd?.text).toBe(LEARNING_SHEET_BLANK_TEXT)
+    expect((afterAdd?.data as { hiddenAnswer?: string } | undefined)?.hiddenAnswer).toBe(branchText)
+
+    diagramStore.restoreFromLearningSheetMode()
+    expect(diagramStore.isLearningSheet).toBe(false)
+    const restored = diagramStore.data?.nodes.find((node) => node.id === blankId)
+    expect(restored?.text).toBe(branchText)
+  })
+
+  it('keeps underline-sized blanks and restore after deleting a sibling', () => {
+    const diagramStore = useDiagramStore()
+    loadMindMapWithBranch()
+    const l1Ids = topicChildBranchIds()
+    if (l1Ids.length < 2) {
+      throw new Error('expected at least two top-level branches')
+    }
+    const [blankId, deleteId] = l1Ids
+    const branchText = String(
+      diagramStore.data?.nodes.find((node) => node.id === blankId)?.text ?? ''
+    ).trim()
+
+    diagramStore.setLearningSheetMode(true)
+    learningSheetPickActive.value = true
+    handleLearningSheetPickNodeClick(blankId)
+    const blankedBefore = diagramStore.data?.nodes.find((node) => node.id === blankId)
+    const widthBefore = (blankedBefore?.data as { estimatedWidth?: number } | undefined)
+      ?.estimatedWidth
+    expect(widthBefore).toBeGreaterThanOrEqual(MIND_MAP_GEOMETRY.minWidth)
+
+    expect(diagramStore.removeMindMapNodes([deleteId])).toBeGreaterThan(0)
+
+    expect(diagramStore.isNodeBlankedForLearningSheet(blankId)).toBe(true)
+    const afterDelete = diagramStore.data?.nodes.find((node) => node.id === blankId)
+    expect(afterDelete?.text).toBe(LEARNING_SHEET_BLANK_TEXT)
+    expect((afterDelete?.data as { hiddenAnswer?: string } | undefined)?.hiddenAnswer).toBe(
+      branchText
+    )
+    const widthAfter = (afterDelete?.data as { estimatedWidth?: number } | undefined)
+      ?.estimatedWidth
+    expect(widthAfter).toBeGreaterThanOrEqual(widthBefore ?? MIND_MAP_GEOMETRY.minWidth)
+
+    diagramStore.restoreFromLearningSheetMode()
+    const restored = diagramStore.data?.nodes.find((node) => node.id === blankId)
+    expect(restored?.text).toBe(branchText)
   })
 })

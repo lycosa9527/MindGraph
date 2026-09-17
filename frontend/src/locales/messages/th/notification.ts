@@ -47,6 +47,7 @@ export default {
   'notification.saved': 'บันทึกการเปลี่ยนแปลงสำเร็จ',
   'notification.selectNodeToClear': 'กรุณาเลือกโหนดเพื่อล้าง',
   'notification.sessionInvalidated': 'คุณถูกออกจากระบบเนื่องจากเกินจำนวนอุปกรณ์สูงสุด',
+  'notification.sessionKicked': 'This sign-in was ended from another device',
   'notification.signInToUse': 'เข้าสู่ระบบเพื่อใช้งาน',
   'notification.signInToValidateFocus': 'เข้าสู่ระบบเพื่อตรวจสอบคำถามโฟกัส',
 } as const

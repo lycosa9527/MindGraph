@@ -11,7 +11,6 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    AccountApiTokenField: typeof import('./components/auth/AccountApiTokenField.vue')['default']
     AccountInfoModal: typeof import('./components/auth/AccountInfoModal.vue')['default']
     AdminCosBackupsPanel: typeof import('./components/admin/AdminCosBackupsPanel.vue')['default']
     AdminCosCrowdsecPanel: typeof import('./components/admin/AdminCosCrowdsecPanel.vue')['default']
@@ -290,6 +289,7 @@ declare module 'vue' {
     LibraryCommentsHistory: typeof import('./components/sidebar/LibraryCommentsHistory.vue')['default']
     LlmPhaseRing: typeof import('./components/shared/LlmPhaseRing.vue')['default']
     LoginAuthAltLinks: typeof import('./components/auth/LoginAuthAltLinks.vue')['default']
+    LoginDevicesModal: typeof import('./components/auth/LoginDevicesModal.vue')['default']
     LoginModal: typeof import('./components/auth/LoginModal.vue')['default']
     LogoQrScanModal: typeof import('./components/sidebar/LogoQrScanModal.vue')['default']
     MaiteDecomposeTables: typeof import('./components/maite/demo/MaiteDecomposeTables.vue')['default']

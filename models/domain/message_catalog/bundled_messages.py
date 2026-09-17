@@ -247,6 +247,26 @@ ERRORS = {
         "en": "Could not save your profile.",
         "az": "Profil yadda saxlanıla bilmədi.",
     },
+    "login_devices_unavailable": {
+        "zh": "暂时无法读取登录设备，请稍后重试。",
+        "en": "Signed-in devices are temporarily unavailable. Please try again.",
+        "az": "Daxil olmuş cihazlar müvəqqəti əlçatan deyil. Daha sonra cəhd edin.",
+    },
+    "login_device_invalid": {
+        "zh": "设备标识无效。",
+        "en": "That device id is not valid.",
+        "az": "Cihaz identifikatoru etibarsızdır.",
+    },
+    "login_device_not_found": {
+        "zh": "未找到该登录设备。",
+        "en": "That signed-in device was not found.",
+        "az": "Daxil olmuş cihaz tapılmadı.",
+    },
+    "session_kicked": {
+        "zh": "该账号已在其他设备上将此登录下线。",
+        "en": "This sign-in was ended from another device.",
+        "az": "Bu giriş başqa cihazdan sonlandırıldı.",
+    },
     "registration_not_available": {
         "zh": "{} 模式下注册不可用。请改用密钥认证。",
         "en": "Registration is not available in {} mode. Please use passkey authentication instead.",

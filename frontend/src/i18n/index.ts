@@ -2,7 +2,6 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/messages/en'
 
-import { isLocaleEnCopy, lazyLocaleLoaders } from './lazyLocaleLoaders'
 import { notifyLocaleLoaded } from './localeLabelCache'
 import type { LocaleCode } from './locales'
 import { htmlLangForUiCode } from './locales'
@@ -17,6 +16,28 @@ export const EAGER_LOCALES = ['en'] as const satisfies readonly LocaleCode[]
 
 const loadedLocales = new Set<LocaleCode>(EAGER_LOCALES)
 const inFlightLoads = new Map<LocaleCode, Promise<void>>()
+
+type LocaleModule = { default: Record<string, string> }
+
+/**
+ * One lazy chunk per `messages/<code>.ts`. Vite builds the map from files on disk,
+ * so adding a locale cannot drift from a generated loader table.
+ */
+const lazyLocaleModules = import.meta.glob<LocaleModule>(
+  ['../locales/messages/*.ts', '!../locales/messages/en.ts'],
+  { eager: false }
+)
+
+export function lazyLocaleModuleKey(locale: LocaleCode): string {
+  return `../locales/messages/${locale}.ts`
+}
+
+export function hasLazyLocaleBundle(locale: LocaleCode): boolean {
+  if (locale === 'en') {
+    return true
+  }
+  return lazyLocaleModules[lazyLocaleModuleKey(locale)] != null
+}
 
 export function isLocaleLoaded(locale: LocaleCode): boolean {
   return loadedLocales.has(locale)
@@ -51,15 +72,12 @@ export async function loadLocaleMessages(locale: LocaleCode): Promise<void> {
   }
 
   const loadPromise = (async () => {
-    if (isLocaleEnCopy(locale)) {
-      i18n.global.setLocaleMessage(locale, enMessages as Record<string, string>)
+    const loader = lazyLocaleModules[lazyLocaleModuleKey(locale)]
+    if (!loader) {
+      console.warn(`[i18n] No message bundle for locale: ${locale}; using English fallback`)
       loadedLocales.add(locale)
       notifyLocaleLoaded()
       return
-    }
-    const loader = lazyLocaleLoaders[locale]
-    if (!loader) {
-      throw new Error(`No message bundle loader for locale: ${locale}`)
     }
     const mod = await loader()
     i18n.global.setLocaleMessage(locale, mod.default)

@@ -1,0 +1,13 @@
+CompileFlags:
+  CompilationDatabase: build
+  Remove:
+    - -mlongcalls
+    - -mdisable-hardware-atomics
+    - -fstrict-volatile-bitfields
+    - -fno-jump-tables
+    - -fno-tree-switch-conversion
+    - -fno-ipa-cp-clone
+    - -fno-ipa-sra
+QueryDriver:
+  - **/*xtensa-esp32s3-elf-g++
+  - **/*xtensa-esp-elf-g++

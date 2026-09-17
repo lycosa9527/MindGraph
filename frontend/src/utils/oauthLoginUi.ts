@@ -54,28 +54,18 @@ export function resolveOAuthInviteCode(
 
 /**
  * Whether AccountInfoModal should show the account bindings section.
+ * DingTalk / MindBot bind is live and stays off this screen.
  */
 export function shouldShowAccountBindingsSection(input: {
   schoolId: string | null | undefined
-  featureMindbot: boolean
   featureWechatLogin: boolean
-  featureDingtalkLogin: boolean
   wechatAvailable: boolean
-  dingtalkLoginEnabled: boolean
+  wechatLinked?: boolean
 }): boolean {
-  if (!input.schoolId) {
+  if (!input.schoolId || !input.featureWechatLogin) {
     return false
   }
-  if (input.featureMindbot) {
-    return true
-  }
-  if (input.featureWechatLogin && input.wechatAvailable) {
-    return true
-  }
-  if (!input.featureDingtalkLogin) {
-    return false
-  }
-  return input.dingtalkLoginEnabled
+  return input.wechatAvailable || input.wechatLinked === true
 }
 
 /**

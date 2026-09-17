@@ -54,6 +54,10 @@ import {
   resolveShapeFromMeasureStyle,
 } from './mindMapTypographyMeasure'
 import { layoutMindMapSideV2 } from './mindMapV2Layout'
+import {
+  readLearningSheetBranchFromNode,
+  stampLearningSheetBlanksFromBranches,
+} from './mindMapLearningSheet'
 import type { SpecLoaderResult } from './types'
 
 export type { MindMapMeasureTypography }
@@ -399,10 +403,12 @@ export function nodesAndConnectionsToMindMapSpec(
         : leftover
           ? nodeId
           : undefined
+    const sheet = readLearningSheetBranchFromNode(node)
     return {
-      text: node.text ?? '',
+      text: sheet.text,
       uid,
       legacyId,
+      ...(sheet.hidden === true ? { hidden: true, hiddenAnswer: sheet.hiddenAnswer } : {}),
       children: children.length > 0 ? children : undefined,
     }
   }
@@ -668,6 +674,8 @@ export function loadMindMapSpec(
       }
     })
   }
+
+  stampLearningSheetBlanksFromBranches([...rightBranches, ...leftBranches], nodes)
 
   return { nodes, connections }
 }

@@ -2,7 +2,7 @@
  * UI locale helpers and prompt-registry integration.
  * The locale table lives in `supportedUiLocales.ts` (`SUPPORTED_UI_LOCALES`).
  * When adding a code: edit `supportedUiLocales.ts`, then stub or run `npm run i18n:materialize-from-en`,
- * `elementPlusLocale.ts`, and `scripts/check-i18n-keys.ts` (regenerate `i18n/index.ts` if the script is extended).
+ * `elementPlusLocale.ts`, and `scripts/check-i18n-keys.ts`. Loaders come from `import.meta.glob` in `i18n/index.ts`.
  * Translate UI copy by editing values in `src/locales/messages/<code>/*.ts` (same keys as `en/`), e.g. in Cursor/Composer.
  */
 import promptLanguageRegistry from '../../../data/prompt_language_registry.json' with { type: 'json' }

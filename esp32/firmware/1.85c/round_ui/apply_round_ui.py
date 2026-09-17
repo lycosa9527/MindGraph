@@ -444,6 +444,19 @@ def stage_kitty_app(littlefs: Path, overlay: Path) -> None:
     )
 
 
+def stage_super_kitty_app(littlefs: Path, overlay: Path) -> None:
+    """Install Super Kitty beside Kitty: always-awake AFE tile, no PTT chrome."""
+    icon_src = overlay.parent.parent.parent / "apps" / "kitty" / "src" / "res" / "images" / "launcher_icon.png"
+    stage_super_app(
+        littlefs,
+        overlay,
+        "com.mindgraph.super_kitty",
+        "super_kitty",
+        icon_src,
+        (79, 70, 229),
+    )
+
+
 def stage_training_app(littlefs: Path, overlay: Path) -> None:
     """Install the native 校本培训 remote Super package."""
     icon_src = overlay / "training" / "images" / "launcher_icon.png"
@@ -572,6 +585,7 @@ def apply(littlefs: Path, overlay: Path) -> None:
 
     prepare_kitty_stills(littlefs)
     stage_kitty_app(littlefs, overlay)
+    stage_super_kitty_app(littlefs, overlay)
     stage_training_app(littlefs, overlay)
     stage_recorder_app(littlefs, overlay)
     stage_slides_app(littlefs, overlay)

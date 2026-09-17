@@ -8,6 +8,7 @@ idf_component_register(
         "${CMAKE_CURRENT_LIST_DIR}/assets/kitty_mic.png"
 )
 target_link_libraries(${COMPONENT_LIB} INTERFACE "-u kitty_app_provider_symbol")
+target_link_libraries(${COMPONENT_LIB} INTERFACE "-u super_kitty_app_provider_symbol")
 target_link_libraries(${COMPONENT_LIB} INTERFACE "-u training_app_provider_symbol")
 target_link_libraries(${COMPONENT_LIB} INTERFACE "-u recorder_app_provider_symbol")
 target_link_libraries(${COMPONENT_LIB} INTERFACE "-u slides_app_provider_symbol")

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Allow file-backed FreeType when PSRAM XIP is off.
+"""Allow file-backed FreeType compile when PSRAM XIP is off.
 
-Brookesia otherwise forces MEMFS, which memcpy's NotoSansSC (~1.6 MB) into the
-2.5 MB PSRAM heap on this 1.85C and then OOMs while installing apps.
+Do not switch Super onto file-backed glyph I/O: littlefs flash reads from a
+PSRAM-stack task trip esp_task_stack_is_sane_cache_disabled() and reboot.
+CJK still uses MEMFS; keep that TTF small enough that MultiNet fits.
 """
 
 from __future__ import annotations
@@ -43,14 +44,14 @@ def main() -> int:
     if not STYLE_IMPL.is_file():
         print(f"missing {STYLE_IMPL}")
         return 1
-    text = STYLE_IMPL.read_text()
+    text = STYLE_IMPL.read_text(encoding="utf-8")
     if NEW in text:
         print("freetype file-backend guard already patched")
         return 0
     if OLD not in text:
         print("freetype XIP/MEMFS guard not found")
         return 1
-    STYLE_IMPL.write_text(text.replace(OLD, NEW, 1))
+    STYLE_IMPL.write_text(text.replace(OLD, NEW, 1), encoding="utf-8")
     print(f"patched {STYLE_IMPL}")
     return 0
 

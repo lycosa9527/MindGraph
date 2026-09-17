@@ -7,16 +7,13 @@
 import { computed, ref, watch } from 'vue'
 
 import { Loader2, UserRound } from '@lucide/vue'
-import { useQueryClient } from '@tanstack/vue-query'
 
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
-import { difyKeys } from '@/composables/queries/difyKeys'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
-import { logPairAudit } from '@/utils/dingtalkPairAuditLog'
 import {
   canStartWechatBind,
   shouldShowAccountBindingsSection,
@@ -24,19 +21,16 @@ import {
 } from '@/utils/oauthLoginUi'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
-import AccountApiTokenField from './AccountApiTokenField.vue'
 import ApiTokenModal from './ApiTokenModal.vue'
+import LoginDevicesModal from './LoginDevicesModal.vue'
 import AvatarSelectModal from './AvatarSelectModal.vue'
-import BindDingTalkAccountModal from './BindDingTalkAccountModal.vue'
 import ChangePasswordModal from './ChangePasswordModal.vue'
 import ChangePhoneModal from './ChangePhoneModal.vue'
-import DingTalkPairModal from './DingTalkPairModal.vue'
 import OAuthQrLoginModal from './OAuthQrLoginModal.vue'
 import SetPasswordWithSmsModal from './SetPasswordWithSmsModal.vue'
 
 const { t } = useLanguage()
 const notify = useNotifications()
-const queryClient = useQueryClient()
 
 const props = defineProps<{
   visible: boolean
@@ -48,8 +42,7 @@ const emit = defineEmits<{
 }>()
 
 const authStore = useAuthStore()
-const { featureMindbot, featureWechatLogin, featureDingtalkLogin, featureWordAddin } =
-  useFeatureFlags()
+const { featureWechatLogin, featureWordAddin } = useFeatureFlags()
 const { canUseApiToken, canUseChromeExtension, showAccountPlugins } = useSchoolTierFeatures()
 
 const isVisible = computed({
@@ -62,28 +55,8 @@ const showChangePhoneModal = ref(false)
 const showChangePasswordModal = ref(false)
 const showSetPasswordSmsModal = ref(false)
 const showApiTokenModal = ref(false)
-const apiTokenRefreshTick = ref(0)
-
-function bumpApiTokenRefresh() {
-  apiTokenRefreshTick.value += 1
-}
-
-function scheduleTokenRefreshAfterDownload() {
-  window.setTimeout(() => {
-    bumpApiTokenRefresh()
-  }, 2000)
-}
-const showBindDingTalkModal = ref(false)
-const showUnbindPairModal = ref(false)
+const showLoginDevicesModal = ref(false)
 const showOAuthBindModal = ref(false)
-const oauthBindProvider = ref<'wechat' | 'dingtalk'>('wechat')
-const dingtalkBindStatus = ref<{
-  linked: boolean
-  mindbot_available: boolean
-  dingtalk_staff_id?: string | null
-  rate_limited?: boolean
-} | null>(null)
-const dingtalkBindLoading = ref(false)
 const oauthLinksLoading = ref(false)
 const oauthLinks = ref<{
   wechat?: { nickname?: string | null; external_id_masked?: string }
@@ -108,18 +81,13 @@ const userPhone = computed(() => {
   }
   return phone
 })
-const userOrg = computed(() => authStore.user?.schoolName || '')
-
-const showMindbotBindRow = computed(() => featureMindbot.value && !!authStore.user?.schoolId)
 
 const showAccountBindingsSection = computed(() =>
   shouldShowAccountBindingsSection({
     schoolId: authStore.user?.schoolId,
-    featureMindbot: featureMindbot.value,
     featureWechatLogin: featureWechatLogin.value,
-    featureDingtalkLogin: featureDingtalkLogin.value,
     wechatAvailable: oauthLinks.value?.wechat_enabled === true,
-    dingtalkLoginEnabled: oauthLinks.value?.dingtalk_enabled === true,
+    wechatLinked: oauthLinks.value?.wechat != null,
   })
 )
 
@@ -139,21 +107,21 @@ const canBindWechat = computed(() =>
   })
 )
 
-const showDingtalkOAuthRow = computed(
-  () => featureDingtalkLogin.value && oauthLinks.value?.dingtalk_enabled === true
-)
-
 const wechatOAuthLinked = computed(() => oauthLinks.value?.wechat != null)
-const dingtalkOAuthLinked = computed(() => oauthLinks.value?.dingtalk != null)
 
-const canMintDingtalkBind = computed(() => dingtalkBindStatus.value?.mindbot_available === true)
-
-const dingtalkLinked = computed(() => dingtalkBindStatus.value?.linked === true)
-
-const dingtalkStaffMasked = computed(() => dingtalkBindStatus.value?.dingtalk_staff_id || '')
+const wechatBindingStatus = computed(() => {
+  if (!wechatOAuthLinked.value) {
+    return t('auth.bindingUnlinked')
+  }
+  return (
+    oauthLinks.value?.wechat?.nickname ||
+    oauthLinks.value?.wechat?.external_id_masked ||
+    t('auth.oauthLinkedFallback')
+  )
+})
 
 async function fetchOauthLinks() {
-  if (!authStore.user?.schoolId || (!featureDingtalkLogin.value && !featureWechatLogin.value)) {
+  if (!authStore.user?.schoolId || !featureWechatLogin.value) {
     oauthLinks.value = null
     return
   }
@@ -178,51 +146,15 @@ async function fetchOauthLinks() {
   }
 }
 
-async function fetchDingtalkBindStatus() {
-  if (!authStore.user?.schoolId || !featureMindbot.value) {
-    dingtalkBindStatus.value = null
-    return
-  }
-  dingtalkBindLoading.value = true
-  const previous = dingtalkBindStatus.value
-  try {
-    const res = await apiRequest('/api/auth/dingtalk-bind/status', { method: 'GET' })
-    if (res.ok) {
-      dingtalkBindStatus.value = (await res.json()) as typeof dingtalkBindStatus.value
-      return
-    }
-    if (res.status === 429 && previous) {
-      dingtalkBindStatus.value = { ...previous, rate_limited: true }
-      return
-    }
-    dingtalkBindStatus.value = {
-      linked: previous?.linked ?? false,
-      mindbot_available: previous?.mindbot_available ?? false,
-      dingtalk_staff_id: previous?.dingtalk_staff_id,
-    }
-  } catch {
-    if (previous) {
-      dingtalkBindStatus.value = previous
-      return
-    }
-    dingtalkBindStatus.value = { linked: false, mindbot_available: false }
-  } finally {
-    dingtalkBindLoading.value = false
-  }
-}
-
-function openOAuthBindModal(provider: 'wechat' | 'dingtalk') {
-  oauthBindProvider.value = provider
+function openWechatBindModal() {
   showOAuthBindModal.value = true
 }
 
-async function unbindOAuthProvider(provider: 'wechat' | 'dingtalk') {
+async function unbindWechat() {
   try {
-    const res = await apiRequest(`/api/auth/oauth/links/${provider}`, { method: 'DELETE' })
+    const res = await apiRequest('/api/auth/oauth/links/wechat', { method: 'DELETE' })
     if (res.ok) {
-      notify.success(
-        provider === 'wechat' ? t('auth.unbindWechatSuccess') : t('auth.unbindDingtalkOAuthSuccess')
-      )
+      notify.success(t('auth.unbindWechatSuccess'))
       await fetchOauthLinks()
       emit('success')
     } else {
@@ -238,54 +170,12 @@ function handleOAuthBindSuccess() {
   emit('success')
 }
 
-function openBindDingTalkModal() {
-  if (!canMintDingtalkBind.value) {
-    notify.warning(t('auth.dingtalkBindNoMindbot'))
-    return
-  }
-  logPairAudit('account_open_bind', { purpose: 'bind' }, { reportToServer: false })
-  void fetchDingtalkBindStatus().then(() => {
-    if (canMintDingtalkBind.value) {
-      showBindDingTalkModal.value = true
-    }
-  })
-}
-
-function handleDingtalkBindLinked() {
-  void fetchDingtalkBindStatus()
-  void queryClient.invalidateQueries({ queryKey: difyKeys.conversations() })
-  emit('success')
-}
-
-function openUnbindPairModal() {
-  if (!dingtalkLinked.value) {
-    return
-  }
-  logPairAudit('account_open_unbind', { purpose: 'unbind' }, { reportToServer: false })
-  void fetchDingtalkBindStatus().then(() => {
-    if (dingtalkLinked.value) {
-      showUnbindPairModal.value = true
-    }
-  })
-}
-
-function handleDingtalkUnbindCompleted() {
-  void fetchDingtalkBindStatus()
-  void queryClient.invalidateQueries({ queryKey: difyKeys.conversations() })
-  emit('success')
-}
-
-async function unbindDingtalk() {
-  openUnbindPairModal()
-}
 const currentAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
 
 /** Quick registration: server-only password until user sets one via SMS. */
 const needsSetLoginPassword = computed(() => authStore.user?.loginPasswordSet === false)
 
 function closeModal() {
-  showBindDingTalkModal.value = false
-  showUnbindPairModal.value = false
   showOAuthBindModal.value = false
   isVisible.value = false
 }
@@ -344,23 +234,14 @@ async function saveDisplayName() {
 }
 
 watch(
-  () =>
-    [
-      props.visible,
-      featureMindbot.value,
-      featureDingtalkLogin.value,
-      featureWechatLogin.value,
-    ] as const,
-  ([visible, mindbotEnabled, dingtalkEnabled, wechatEnabled]) => {
+  () => [props.visible, featureWechatLogin.value] as const,
+  ([visible, wechatEnabled]) => {
     if (visible) {
       const u = (authStore.user?.username || '').trim()
       const looksLikeName =
         u.length >= 2 && u.length <= 32 && !/^\d{11}$/.test(u) && !/^\d+$/.test(u)
       nameEdit.value = looksLikeName ? u : ''
-      if (mindbotEnabled && authStore.user?.schoolId) {
-        void fetchDingtalkBindStatus()
-      }
-      if ((dingtalkEnabled || wechatEnabled) && authStore.user?.schoolId) {
+      if (wechatEnabled && authStore.user?.schoolId) {
         void fetchOauthLinks()
       }
     }
@@ -472,170 +353,64 @@ watch(
           </div>
         </div>
 
-        <div>
-          <label
-            class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2"
-            for="account-info-org"
-          >
-            组织
-          </label>
-          <input
-            id="account-info-org"
-            :value="userOrg || '未设置组织'"
-            type="text"
-            name="account-info-org"
-            disabled
-            class="w-full px-4 py-3 bg-stone-100 border-0 rounded-lg text-stone-500 cursor-not-allowed"
-          />
-        </div>
-
-        <div v-if="showAccountBindingsSection">
-          <label class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2">
+        <div
+          v-if="showAccountBindingsSection"
+          class="space-y-4"
+        >
+          <label class="block text-xs font-medium text-stone-400 uppercase tracking-wide">
             {{ t('auth.accountBindingsSection') }}
           </label>
-          <p class="text-xs text-stone-500 mb-3 m-0">
-            {{ t('auth.accountBindingsHint') }}
-          </p>
-          <div class="flex flex-col gap-3">
-            <div
-              v-if="showMindbotBindRow"
-              class="flex flex-col gap-1"
-            >
-              <div class="flex flex-wrap items-center gap-2">
-                <button
-                  v-if="dingtalkLinked"
-                  type="button"
-                  class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary shrink-0"
-                  :disabled="dingtalkBindLoading"
-                  @click="unbindDingtalk"
-                >
-                  <Loader2
-                    v-if="dingtalkBindLoading"
-                    class="w-3.5 h-3.5 animate-spin"
-                  />
-                  {{ t('auth.unbindMindbot') }}
-                </button>
-                <button
-                  v-else
-                  type="button"
-                  class="mind-map-side-rail-btn mind-map-side-rail-btn--primary shrink-0"
-                  :disabled="dingtalkBindLoading || !canMintDingtalkBind"
-                  @click="openBindDingTalkModal"
-                >
-                  <Loader2
-                    v-if="dingtalkBindLoading"
-                    class="w-3.5 h-3.5 animate-spin"
-                  />
-                  {{ t('auth.bindMindbot') }}
-                </button>
-              </div>
-              <p
-                v-if="dingtalkLinked && dingtalkStaffMasked"
-                class="text-xs text-stone-500 m-0"
-              >
-                {{ t('auth.dingtalkBindLinkedLabel', { staff: dingtalkStaffMasked }) }}
-              </p>
-              <p
-                v-else-if="!dingtalkBindLoading && !canMintDingtalkBind && !dingtalkLinked"
-                class="text-xs text-stone-500 m-0"
-              >
-                {{ t('auth.dingtalkBindNoMindbot') }}
-              </p>
-            </div>
 
-            <div
-              v-if="showWechatOAuthRow"
-              class="flex flex-col gap-1"
+          <div v-if="showWechatOAuthRow">
+            <label
+              class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2"
+              for="account-binding-wechat"
             >
-              <div class="flex flex-wrap items-center gap-2">
-                <button
-                  v-if="wechatOAuthLinked"
-                  type="button"
-                  class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary shrink-0"
-                  :disabled="oauthLinksLoading"
-                  @click="unbindOAuthProvider('wechat')"
-                >
-                  <Loader2
-                    v-if="oauthLinksLoading"
-                    class="w-3.5 h-3.5 animate-spin"
-                  />
-                  {{ t('auth.unbindWechat') }}
-                </button>
-                <button
-                  v-else-if="canBindWechat"
-                  type="button"
-                  class="mind-map-side-rail-btn mind-map-side-rail-btn--primary shrink-0"
-                  :disabled="oauthLinksLoading"
-                  @click="openOAuthBindModal('wechat')"
-                >
-                  <Loader2
-                    v-if="oauthLinksLoading"
-                    class="w-3.5 h-3.5 animate-spin"
-                  />
-                  {{ t('auth.bindWechat') }}
-                </button>
-              </div>
-              <p
+              {{ t('auth.bindingWechat') }}
+            </label>
+            <div class="flex items-center gap-2">
+              <input
+                id="account-binding-wechat"
+                :value="wechatBindingStatus"
+                type="text"
+                name="account-binding-wechat"
+                disabled
+                class="min-w-0 flex-1 h-11 px-4 bg-stone-100 border-0 rounded-lg text-stone-500 cursor-not-allowed"
+              />
+              <button
                 v-if="wechatOAuthLinked"
-                class="text-xs text-stone-500 m-0"
+                type="button"
+                class="account-binding-action"
+                :disabled="oauthLinksLoading"
+                @click="unbindWechat"
               >
-                {{
-                  oauthLinks?.wechat?.nickname ||
-                  oauthLinks?.wechat?.external_id_masked ||
-                  t('auth.oauthLinkedFallback')
-                }}
-              </p>
-            </div>
-
-            <div
-              v-if="showDingtalkOAuthRow"
-              class="flex flex-col gap-1"
-            >
-              <div class="flex flex-wrap items-center gap-2">
-                <button
-                  v-if="dingtalkOAuthLinked"
-                  type="button"
-                  class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary shrink-0"
-                  :disabled="oauthLinksLoading"
-                  @click="unbindOAuthProvider('dingtalk')"
-                >
-                  <Loader2
-                    v-if="oauthLinksLoading"
-                    class="w-3.5 h-3.5 animate-spin"
-                  />
-                  {{ t('auth.unbindDingtalkOAuth') }}
-                </button>
-                <button
-                  v-else
-                  type="button"
-                  class="mind-map-side-rail-btn mind-map-side-rail-btn--primary shrink-0"
-                  :disabled="oauthLinksLoading"
-                  @click="openOAuthBindModal('dingtalk')"
-                >
-                  <Loader2
-                    v-if="oauthLinksLoading"
-                    class="w-3.5 h-3.5 animate-spin"
-                  />
-                  {{ t('auth.bindDingtalkOAuth') }}
-                </button>
-              </div>
-              <p
-                v-if="dingtalkOAuthLinked"
-                class="text-xs text-stone-500 m-0"
+                <Loader2
+                  v-if="oauthLinksLoading"
+                  class="w-3.5 h-3.5 animate-spin"
+                />
+                {{ t('auth.unbindWechat') }}
+              </button>
+              <button
+                v-else-if="canBindWechat"
+                type="button"
+                class="account-binding-action"
+                :disabled="oauthLinksLoading"
+                @click="openWechatBindModal"
               >
-                {{
-                  oauthLinks?.dingtalk?.nickname ||
-                  oauthLinks?.dingtalk?.external_id_masked ||
-                  t('auth.oauthLinkedFallback')
-                }}
-              </p>
+                <Loader2
+                  v-if="oauthLinksLoading"
+                  class="w-3.5 h-3.5 animate-spin"
+                />
+                {{ t('auth.bindWechat') }}
+              </button>
             </div>
           </div>
+
         </div>
 
-        <div v-if="showAccountPlugins">
+        <div>
           <label class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2">
-            {{ t('auth.accountPlugin') }}
+            {{ showAccountPlugins ? t('auth.accountPlugin') : t('auth.loginDevicesButton') }}
           </label>
           <div class="flex flex-wrap items-center gap-2">
             <a
@@ -644,7 +419,6 @@ watch(
               :href="openclawSkillZipUrl"
               :title="t('auth.downloadOpenclawSkillHint')"
               download
-              @click="scheduleTokenRefreshAfterDownload"
             >
               {{ t('auth.downloadOpenclawSkill') }}
             </a>
@@ -672,19 +446,14 @@ watch(
             >
               {{ t('auth.apiTokenButton') }}
             </button>
+            <button
+              type="button"
+              class="account-plugin-pill account-plugin-pill--devices"
+              @click="showLoginDevicesModal = true"
+            >
+              {{ t('auth.loginDevicesButton') }}
+            </button>
           </div>
-          <AccountApiTokenField
-            v-if="canUseApiToken"
-            class="mt-3"
-            :active="isVisible"
-            :refresh-tick="apiTokenRefreshTick"
-          />
-          <p
-            v-if="canUseApiToken"
-            class="mt-2 text-xs text-stone-400 leading-relaxed"
-          >
-            {{ t('auth.downloadOpenclawSkillHint') }}
-          </p>
         </div>
       </div>
     </div>
@@ -724,33 +493,57 @@ watch(
   <ApiTokenModal
     v-if="canUseApiToken"
     v-model:visible="showApiTokenModal"
-    @changed="bumpApiTokenRefresh"
   />
 
-  <BindDingTalkAccountModal
-    v-model="showBindDingTalkModal"
-    :linked-staff-id="dingtalkStaffMasked"
-    @linked="handleDingtalkBindLinked"
-  />
-
-  <DingTalkPairModal
-    v-model="showUnbindPairModal"
-    mode="unbind"
-    :linked-staff-id="dingtalkStaffMasked"
-    @completed="handleDingtalkUnbindCompleted"
-  />
+  <LoginDevicesModal v-model:visible="showLoginDevicesModal" />
 
   <OAuthQrLoginModal
     v-model:visible="showOAuthBindModal"
     invite-code=""
     mode="bind"
-    :initial-provider="oauthBindProvider"
+    initial-provider="wechat"
     lock-provider
     @success="handleOAuthBindSuccess"
   />
 </template>
 
 <style scoped>
+.account-binding-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2.75rem;
+  padding: 0 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--swiss-border-strong, #d6d3d1);
+  background: var(--swiss-surface, #ffffff);
+  color: var(--swiss-body, #44403c);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  font-family: inherit;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    opacity 0.15s ease,
+    color 0.15s ease;
+}
+
+.account-binding-action:hover:not(:disabled) {
+  border-color: var(--swiss-body, #44403c);
+  background: var(--swiss-hover, #f5f5f4);
+}
+
+.account-binding-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /*
  * Plugin row — light Swiss tones: cool mist, soft blue-gray, warm sand.
  * Dark text on pale fills; subtle border; hover deepens slightly.
@@ -820,5 +613,17 @@ watch(
   background: #e8e0d8;
   border-color: #ccc0b8;
   color: #1c1917;
+}
+
+.account-plugin-pill--devices {
+  color: #3f3f46;
+  background: #ececf0;
+  border-color: #d4d4d8;
+}
+
+.account-plugin-pill--devices:hover {
+  background: #e4e4e7;
+  border-color: #c4c4cc;
+  color: #18181b;
 }
 </style>

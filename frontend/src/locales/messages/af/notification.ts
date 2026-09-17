@@ -47,6 +47,7 @@ export default {
   'notification.saved': 'Veranderings suksesvol gestoor',
   'notification.selectNodeToClear': 'Kies asseblief \'n knooppunt om te verwyder',
   'notification.sessionInvalidated': 'U is uitgeteken omdat u die maksimum aantal toestelle oorskry het',
+  'notification.sessionKicked': 'This sign-in was ended from another device',
   'notification.signInToUse': 'Teken in om hierdie te gebruik',
   'notification.signInToValidateFocus': 'Teken in om die fokusvraag te valideer',
 } as const

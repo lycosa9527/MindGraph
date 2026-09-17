@@ -1,9 +1,17 @@
 /** Vitest: lazy locale loading */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { EAGER_LOCALES, i18n, isLocaleLoaded, loadLocaleMessages, setI18nLocale } from '@/i18n'
-import { LOCALE_EN_COPY_CODES } from '@/i18n/lazyLocaleLoaders'
+import {
+  EAGER_LOCALES,
+  hasLazyLocaleBundle,
+  i18n,
+  isLocaleLoaded,
+  loadLocaleMessages,
+  setI18nLocale,
+} from '@/i18n'
+import { INTERFACE_LANGUAGE_PICKER_CODES, UI_LOCALE_CODES } from '@/i18n/locales'
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
+import siMessages from '@/locales/messages/si'
 
 describe('loadLocaleMessages', () => {
   beforeEach(async () => {
@@ -33,25 +41,38 @@ describe('loadLocaleMessages', () => {
     expect(Object.keys(bundle).length).toBeGreaterThan(0)
   })
 
-  it('classifies tn as en-copy and fr as dedicated', () => {
-    expect(LOCALE_EN_COPY_CODES).toContain('tn')
-    expect(LOCALE_EN_COPY_CODES).not.toContain('fr')
+  it('has a glob bundle for every enabled UI locale', () => {
+    const uncovered = UI_LOCALE_CODES.filter((code) => !hasLazyLocaleBundle(code))
+    expect(uncovered).toEqual([])
   })
 
-  it('loads en-copy locale (tn) with the same strings as en', async () => {
-    await loadLocaleMessages('tn')
+  it('loads every enabled UI locale from its message file', async () => {
+    const pickerSet = new Set<string>(INTERFACE_LANGUAGE_PICKER_CODES)
+    expect(UI_LOCALE_CODES.some((code) => pickerSet.has(code))).toBe(true)
+    expect(UI_LOCALE_CODES.some((code) => !pickerSet.has(code))).toBe(true)
+    for (const code of UI_LOCALE_CODES) {
+      await loadLocaleMessages(code)
+      expect(isLocaleLoaded(code), code).toBe(true)
+      const bundle = i18n.global.getLocaleMessage(code) as Record<string, unknown>
+      expect(Object.keys(bundle).length, code).toBeGreaterThan(0)
+    }
+  }, 30_000)
+
+  it('ships Sinhala UI copy for locale si', () => {
     const enBundle = i18n.global.getLocaleMessage('en') as Record<string, string>
-    const tnBundle = i18n.global.getLocaleMessage('tn') as Record<string, string>
-    expect(tnBundle['app.brandName']).toBe(enBundle['app.brandName'])
-    expect(tnBundle['mindmate.welcome']).toBe(enBundle['mindmate.welcome'])
+    const login = siMessages['app.guestMainLoginPrompt']
+    expect(login).toMatch(/[\u0D80-\u0DFF]/)
+    expect(login).not.toBe(enBundle['app.guestMainLoginPrompt'])
+    expect(siMessages['training.title']).toMatch(/[\u0D80-\u0DFF]/)
   })
 
-  it('loads dedicated fr bundle separately from en-copy path', async () => {
+  it('loads dedicated fr bundle separately from English', async () => {
     await loadLocaleMessages('fr')
     const enBundle = i18n.global.getLocaleMessage('en') as Record<string, string>
     const frBundle = i18n.global.getLocaleMessage('fr') as Record<string, string>
     expect(Object.keys(frBundle).length).toBeGreaterThan(0)
     expect(frBundle).not.toBe(enBundle)
+    expect(frBundle['app.guestMainLoginPrompt']).not.toBe(enBundle['app.guestMainLoginPrompt'])
   })
 
   it('translateForUiLocale falls back to English for unloaded locale keys', () => {

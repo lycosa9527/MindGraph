@@ -47,6 +47,7 @@ export default {
   'notification.saved': 'Les modifications ont été enregistrées avec succès',
   'notification.selectNodeToClear': 'Veuillez sélectionner un nœud à effacer',
   'notification.sessionInvalidated': 'Vous avez été déconnecté car vous avez dépassé le nombre maximal d’appareils autorisés',
+  'notification.sessionKicked': 'This sign-in was ended from another device',
   'notification.signInToUse': 'Connectez-vous pour utiliser cette fonctionnalité',
   'notification.signInToValidateFocus': 'Connectez-vous pour valider la question cible',
 } as const

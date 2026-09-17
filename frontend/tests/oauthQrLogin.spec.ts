@@ -112,51 +112,39 @@ describe('oauthLoginUi', () => {
     expect(shouldShowWechatLoginLink(false)).toBe(false)
   })
 
-  it('shouldShowAccountBindingsSection when mindbot enabled', () => {
+  it('hides account bindings when only MindBot or DingTalk is on', () => {
     expect(
       shouldShowAccountBindingsSection({
         schoolId: '1',
-        featureMindbot: true,
-        featureDingtalkLogin: false,
         featureWechatLogin: false,
         wechatAvailable: false,
-        dingtalkLoginEnabled: false,
       })
-    ).toBe(true)
+    ).toBe(false)
   })
 
   it('shouldShowAccountBindingsSection when WeChat is on', () => {
     expect(
       shouldShowAccountBindingsSection({
         schoolId: '1',
-        featureMindbot: false,
-        featureDingtalkLogin: false,
         featureWechatLogin: true,
         wechatAvailable: true,
-        dingtalkLoginEnabled: false,
       })
     ).toBe(true)
   })
 
-  it('hides account bindings without school or providers', () => {
+  it('hides account bindings without school or WeChat', () => {
     expect(
       shouldShowAccountBindingsSection({
         schoolId: null,
-        featureMindbot: false,
-        featureDingtalkLogin: true,
         featureWechatLogin: true,
         wechatAvailable: true,
-        dingtalkLoginEnabled: false,
       })
     ).toBe(false)
     expect(
       shouldShowAccountBindingsSection({
         schoolId: '2',
-        featureMindbot: false,
-        featureDingtalkLogin: true,
         featureWechatLogin: false,
         wechatAvailable: false,
-        dingtalkLoginEnabled: false,
       })
     ).toBe(false)
   })

@@ -48,6 +48,7 @@ export default {
   'notification.saved': '保存成功',
   'notification.selectNodeToClear': '請先選擇要清空的節點',
   'notification.sessionInvalidated': '您已被登出，因為登錄設備數量超過上限',
+  'notification.sessionKicked': '該賬號已在其他設備上將此登錄下線',
   'notification.signInToUse': '請登錄後使用',
   'notification.signInToValidateFocus': '請登錄後檢驗焦點問題',
 }

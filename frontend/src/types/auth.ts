@@ -183,4 +183,5 @@ export interface AuthState {
 export interface SessionStatus {
   status: 'active' | 'invalidated' | 'unauthenticated'
   message?: string
+  reason?: string
 }

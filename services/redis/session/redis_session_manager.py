@@ -35,6 +35,13 @@ from services.redis import keys as _keys
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_async_ops import AsyncRedisOps
 from services.redis.redis_client import is_redis_available
+from services.redis.session.session_store_lua import (
+    FIFO_KICK_REASON,
+    STORE_SESSION_LUA,
+    evicted_device_key_prefix,
+    invalidation_notice_key_prefix,
+    is_device_kicked_eval_result,
+)
 from services.utils.error_types import REDIS_ERRORS
 from services.utils.typing_helpers import redis_decode_required
 from utils.auth.tokens import device_binding_matches
@@ -72,100 +79,6 @@ def _get_session_set_key(user_id: int) -> str:
 def _get_invalidation_notification_key(user_id: int, token_hash: str) -> str:
     """Get invalidation notification key."""
     return _keys.SESSION_INVALIDATED.format(user_id=user_id, token_hash=token_hash)
-
-
-# ---------------------------------------------------------------------------
-# Atomic Lua script for store_session (allow_multiple=True path).
-#
-# Runs entirely on the Redis server in a single round-trip, eliminating the
-# race window between the pipeline SCARD read and the follow-up SMEMBERS +
-# eviction that the old multi-step Python approach had.
-#
-# KEYS[1]  session set key
-# ARGV[1]  new token entry  "timestamp:device_hash:token_hash"
-# ARGV[2]  session TTL (seconds)
-# ARGV[3]  max concurrent sessions
-# ARGV[4]  device hash (empty string when not provided)
-# ARGV[5]  current time (float as string)
-# Returns  list of evicted session entries (Python creates notifications for them)
-# ---------------------------------------------------------------------------
-_STORE_SESSION_LUA = """
-local key      = KEYS[1]
-local entry    = ARGV[1]
-local ttl      = tonumber(ARGV[2])
-local max_s    = tonumber(ARGV[3])
-local dev      = ARGV[4]
-local now      = tonumber(ARGV[5])
-
--- 1. Remove expired (stale) sessions.
-local all = redis.call('SMEMBERS', key)
-for _, e in ipairs(all) do
-    local c = string.find(e, ':')
-    if c then
-        local ts = tonumber(string.sub(e, 1, c - 1))
-        if ts and (now - ts) > ttl then
-            redis.call('SREM', key, e)
-        end
-    end
-end
-
--- 2. Revoke any existing session from the same device.
-if dev ~= '' then
-    local rem = redis.call('SMEMBERS', key)
-    for _, e in ipairs(rem) do
-        local c1 = string.find(e, ':')
-        if c1 then
-            local rest = string.sub(e, c1 + 1)
-            local c2   = string.find(rest, ':')
-            local edev = c2 and string.sub(rest, 1, c2 - 1) or rest
-            if edev == dev then
-                redis.call('SREM', key, e)
-            end
-        end
-    end
-end
-
--- 3. Add new token and refresh TTL.
-redis.call('SADD',   key, entry)
-redis.call('EXPIRE', key, ttl)
-
--- 4. Evict oldest sessions when over the limit.
--- Never evict the entry just added (new device always keeps the slot).
--- Must match select_oldest_sessions_to_evict().
-if (not max_s) or max_s < 1 then
-    max_s = 1
-end
-local count   = redis.call('SCARD', key)
-local evicted = {}
-if count > max_s then
-    local cur = redis.call('SMEMBERS', key)
-    table.sort(cur, function(a, b)
-        local ca = string.find(a, ':')
-        local cb = string.find(b, ':')
-        local ta = ca and tonumber(string.sub(a, 1, ca - 1)) or 0
-        local tb = cb and tonumber(string.sub(b, 1, cb - 1)) or 0
-        if ta == tb then
-            if a == entry then return false end
-            if b == entry then return true end
-        end
-        return ta < tb
-    end)
-    local to_remove = count - max_s
-    local removed = 0
-    for i = 1, #cur do
-        if removed >= to_remove then
-            break
-        end
-        if cur[i] and cur[i] ~= entry then
-            redis.call('SREM', key, cur[i])
-            evicted[#evicted + 1] = cur[i]
-            removed = removed + 1
-        end
-    end
-end
-
-return evicted
-"""
 
 
 def _session_entry_timestamp(entry: str) -> float:
@@ -306,6 +219,8 @@ class RedisSessionManager:
         token: str,
         device_hash: str = "",
         allow_multiple: bool = True,
+        *,
+        reject_if_evicted: bool = False,
     ) -> bool:
         """
         Store active session for user.
@@ -321,6 +236,8 @@ class RedisSessionManager:
             token: JWT token string
             device_hash: Device fingerprint hash (for same-device session replacement)
             allow_multiple: If True (default), allow up to MAX_CONCURRENT_SESSIONS concurrent sessions
+            reject_if_evicted: If True, a FIFO/manual kick fence blocks re-entry
+                (refresh). Login leaves this False so the same browser can sign in again.
 
         Returns:
             True if stored successfully, False otherwise
@@ -361,10 +278,18 @@ class RedisSessionManager:
 
                 current_time = time.time()
                 token_entry = f"{current_time}:{device_hash}:{token_hash}"
+                notice_json = json.dumps(
+                    {
+                        "timestamp": datetime.now(tz=UTC).isoformat(),
+                        "ip_address": "unknown",
+                        "reason": FIFO_KICK_REASON,
+                    }
+                )
+                admit_evicted = "0" if reject_if_evicted else "1"
 
                 try:
                     evicted_entries = await redis.eval(
-                        _STORE_SESSION_LUA,
+                        STORE_SESSION_LUA,
                         1,
                         session_set_key,
                         token_entry,
@@ -372,12 +297,24 @@ class RedisSessionManager:
                         str(MAX_CONCURRENT_SESSIONS),
                         device_hash,
                         str(current_time),
+                        evicted_device_key_prefix(user_id),
+                        invalidation_notice_key_prefix(user_id),
+                        notice_json,
+                        admit_evicted,
                     )
                 except REDIS_ERRORS as lua_exc:
                     logger.error(
                         "[Session] Atomic store_session failed for user %s: %s",
                         user_id,
                         lua_exc,
+                    )
+                    return False
+
+                if is_device_kicked_eval_result(evicted_entries):
+                    logger.info(
+                        "[Session] store_session blocked (device kicked): user=%s, device=%s...",
+                        user_id,
+                        device_hash_preview,
                     )
                     return False
 
@@ -538,6 +475,87 @@ class RedisSessionManager:
                 exc_info=True,
             )
             return False
+
+    async def list_access_session_devices(self, user_id: int) -> Optional[list[dict[str, str]]]:
+        """
+        Return live access-session device rows, or None when Redis is down.
+
+        Each row has ``device_hash`` and ``created_at`` (UTC ISO from the
+        session timestamp).
+        """
+        if not self._use_redis():
+            return None
+
+        try:
+            redis = get_async_redis()
+            if not redis:
+                return None
+
+            session_set_key = _get_session_set_key(user_id)
+            if not await redis.exists(session_set_key):
+                return []
+
+            rows: list[dict[str, str]] = []
+            for session_entry in await redis.smembers(session_set_key):
+                timestamp, device_hash, _token_hash = self._parse_session_entry(session_entry)
+                created_at = datetime.fromtimestamp(timestamp, tz=UTC).isoformat() if timestamp else ""
+                rows.append({"device_hash": device_hash, "created_at": created_at})
+            return rows
+        except REDIS_ERRORS as list_error:
+            logger.error(
+                "[Session] Error listing access-session devices for user %s: %s",
+                user_id,
+                list_error,
+                exc_info=True,
+            )
+            return None
+
+    async def invalidate_sessions_for_device(
+        self,
+        user_id: int,
+        device_hash: str,
+        ip_address: Optional[str] = None,
+        reason: str = "device_kick",
+    ) -> int:
+        """Remove access sessions for one device and notify those tokens."""
+        if not device_hash or not self._use_redis():
+            return 0
+
+        try:
+            redis = get_async_redis()
+            if not redis:
+                return 0
+
+            session_set_key = _get_session_set_key(user_id)
+            if not await redis.exists(session_set_key):
+                return 0
+
+            removed = 0
+            for session_entry in await redis.smembers(session_set_key):
+                _timestamp, entry_device_hash, entry_token_hash = self._parse_session_entry(session_entry)
+                if entry_device_hash != device_hash:
+                    continue
+                if entry_token_hash:
+                    await self.notify_invalidation(
+                        user_id,
+                        entry_token_hash,
+                        ip_address=ip_address,
+                        reason=reason,
+                    )
+                await redis.srem(session_set_key, session_entry)
+                removed += 1
+            if removed:
+                await self.mark_device_evicted(user_id, device_hash, reason=reason)
+            return removed
+        except REDIS_ERRORS as kick_error:
+            logger.error(
+                "[Session] Error invalidating sessions for user %s device %s: %s",
+                user_id,
+                device_hash[:8],
+                kick_error,
+                exc_info=True,
+            )
+            return 0
 
     async def is_session_valid(self, user_id: int, token: str) -> bool:
         """
@@ -725,14 +743,21 @@ class RedisSessionManager:
             )
             return False
 
-    async def notify_invalidation(self, user_id: int, old_token_hash: str, ip_address: Optional[str] = None) -> bool:
+    async def notify_invalidation(
+        self,
+        user_id: int,
+        old_token_hash: str,
+        ip_address: Optional[str] = None,
+        reason: str = "max_devices_exceeded",
+    ) -> bool:
         """
         Store notification that session was invalidated.
 
         Args:
             user_id: User ID
             old_token_hash: Hash of invalidated token
-            ip_address: IP address of new login
+            ip_address: IP address of new login or kick
+            reason: Why the session ended (max devices vs manual kick)
 
         Returns:
             True if notification stored successfully, False otherwise
@@ -745,6 +770,7 @@ class RedisSessionManager:
             notification_data = {
                 "timestamp": datetime.now(tz=UTC).isoformat(),
                 "ip_address": ip_address or "unknown",
+                "reason": reason,
             }
 
             success = await AsyncRedisOps.set_with_ttl(
@@ -775,8 +801,9 @@ class RedisSessionManager:
         for evicted_entry in entries:
             _, evicted_device_hash, evicted_token_hash = self._parse_session_entry(evicted_entry)
             if evicted_token_hash:
-                await self.notify_invalidation(user_id, evicted_token_hash)
+                await self.notify_invalidation(user_id, evicted_token_hash, reason=FIFO_KICK_REASON)
             if evicted_device_hash:
+                await self.mark_device_evicted(user_id, evicted_device_hash, reason=FIFO_KICK_REASON)
                 await refresh_manager.revoke_refresh_tokens_for_device(user_id, evicted_device_hash)
 
         logger.info(
@@ -786,6 +813,60 @@ class RedisSessionManager:
             MAX_CONCURRENT_SESSIONS,
         )
         return len(entries)
+
+    def _evicted_device_key(self, user_id: int, device_hash: str) -> str:
+        """Redis key that fences a kicked device until the next login."""
+        return _keys.SESSION_EVICTED_DEVICE.format(user_id=user_id, device_hash=device_hash)
+
+    async def mark_device_evicted(
+        self,
+        user_id: int,
+        device_hash: str,
+        reason: str = FIFO_KICK_REASON,
+    ) -> bool:
+        """Fence a device so /refresh cannot rotate back in after a kick."""
+        if not device_hash or not self._use_redis():
+            return False
+        try:
+            return await AsyncRedisOps.set_with_ttl(
+                self._evicted_device_key(user_id, device_hash),
+                reason,
+                SESSION_TTL_SECONDS,
+            )
+        except REDIS_ERRORS as fence_error:
+            logger.error(
+                "[Session] Error marking evicted device: user=%s, error=%s",
+                user_id,
+                fence_error,
+                exc_info=True,
+            )
+            return False
+
+    async def get_device_eviction_reason(self, user_id: int, device_hash: str) -> Optional[str]:
+        """Return the kick reason if this device is fenced, else None."""
+        if not device_hash or not self._use_redis():
+            return None
+        try:
+            raw = await AsyncRedisOps.get(self._evicted_device_key(user_id, device_hash))
+        except REDIS_ERRORS as fence_error:
+            logger.error(
+                "[Session] Error reading evicted-device fence: user=%s, error=%s",
+                user_id,
+                fence_error,
+                exc_info=True,
+            )
+            return None
+        if not raw:
+            return None
+        reason = redis_decode_required(raw).strip()
+        if reason in {"1", "true", ""}:
+            return FIFO_KICK_REASON
+        return reason
+
+    async def is_device_evicted(self, user_id: int, device_hash: str) -> bool:
+        """True when FIFO or a manual kick has fenced this device."""
+        reason = await self.get_device_eviction_reason(user_id, device_hash)
+        return reason is not None
 
     async def check_invalidation_notification(self, user_id: int, token_hash: str) -> Optional[Dict[str, Any]]:
         """
@@ -987,14 +1068,19 @@ class RefreshTokenManager:
             )
             return 0
 
-    async def revoke_refresh_tokens_for_device(self, user_id: int, device_hash: str) -> int:
-        """Revoke refresh tokens bound to one device (max-device kick-off)."""
+    async def revoke_refresh_tokens_for_device(
+        self,
+        user_id: int,
+        device_hash: str,
+        reason: str = "max_devices_exceeded",
+    ) -> int:
+        """Revoke refresh tokens bound to one device (kick-off or account UI)."""
         if not device_hash:
             return 0
         return await self._revoke_existing_device_tokens(
             user_id,
             device_hash,
-            reason="max_devices_exceeded",
+            reason=reason,
         )
 
     async def store_refresh_token(
@@ -1004,6 +1090,8 @@ class RefreshTokenManager:
         ip_address: str,
         user_agent: str,
         device_hash: str,
+        *,
+        reject_if_evicted: bool = False,
     ) -> bool:
         """
         Store a refresh token with device binding.
@@ -1021,6 +1109,15 @@ class RefreshTokenManager:
         if not self._use_redis():
             logger.warning("[RefreshToken] Redis unavailable, cannot store refresh token")
             return False
+
+        if reject_if_evicted and device_hash:
+            if await get_session_manager().is_device_evicted(user_id, device_hash):
+                logger.info(
+                    "[RefreshToken] store blocked (device kicked): user=%s, device=%s...",
+                    user_id,
+                    device_hash[:8],
+                )
+                return False
 
         try:
             redis = get_async_redis()
@@ -1318,6 +1415,53 @@ class RefreshTokenManager:
             )
             return 0
 
+    async def list_refresh_records(self, user_id: int) -> Optional[list[dict[str, str]]]:
+        """
+        Return refresh-token metadata rows, or None when Redis is down.
+
+        Each row has token_hash, created_at, ip_address, user_agent, device_hash.
+        """
+        if not self._use_redis():
+            return None
+
+        try:
+            redis = get_async_redis()
+            if not redis:
+                return None
+
+            user_tokens_key = self._get_user_tokens_key(user_id)
+            token_hashes = await redis.smembers(user_tokens_key)
+            records: list[dict[str, str]] = []
+            for existing_token_hash in token_hashes:
+                token_key = self._get_token_key(user_id, existing_token_hash)
+                token_json = await AsyncRedisOps.get(token_key)
+                if not token_json:
+                    continue
+                try:
+                    token_data = json.loads(token_json)
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(token_data, dict):
+                    continue
+                records.append(
+                    {
+                        "token_hash": redis_decode_required(existing_token_hash),
+                        "created_at": str(token_data.get("created_at") or ""),
+                        "ip_address": str(token_data.get("ip_address") or ""),
+                        "user_agent": str(token_data.get("user_agent") or ""),
+                        "device_hash": str(token_data.get("device_hash") or ""),
+                    }
+                )
+            return records
+        except REDIS_ERRORS as list_error:
+            logger.error(
+                "[RefreshToken] Error listing tokens for user %s: %s",
+                user_id,
+                list_error,
+                exc_info=True,
+            )
+            return None
+
     async def enforce_max_tokens(self, user_id: int, protect_token_hash: str = "") -> int:
         """
         Enforce MAX_CONCURRENT_SESSIONS limit on refresh tokens.
@@ -1407,6 +1551,8 @@ class RefreshTokenManager:
         ip_address: str,
         user_agent: str,
         device_hash: str,
+        *,
+        reject_if_evicted: bool = False,
     ) -> bool:
         """
         Rotate a refresh token (revoke old, create new).
@@ -1425,6 +1571,15 @@ class RefreshTokenManager:
         Returns:
             True if rotation successful, False otherwise
         """
+        if reject_if_evicted and device_hash:
+            if await get_session_manager().is_device_evicted(user_id, device_hash):
+                logger.info(
+                    "[RefreshToken] rotate blocked (device kicked): user=%s, device=%s...",
+                    user_id,
+                    device_hash[:8],
+                )
+                return False
+
         # First revoke the old token
         await self.revoke_refresh_token(user_id, old_token_hash, reason="rotation")
 
@@ -1435,6 +1590,7 @@ class RefreshTokenManager:
             ip_address=ip_address,
             user_agent=user_agent,
             device_hash=device_hash,
+            reject_if_evicted=reject_if_evicted,
         )
 
 

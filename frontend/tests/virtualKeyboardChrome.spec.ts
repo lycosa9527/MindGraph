@@ -67,13 +67,20 @@ describe('virtual keyboard chrome vs inline edit', () => {
     expect(isEditableTextField(document.createElement('button'))).toBe(false)
   })
 
-  it('wires the editor and status bar so outside-pointer cannot kill the input', () => {
-    const editor = readSrc('src/components/diagram/nodes/InlineEditableText.vue')
+  it('does not mount the panel on new-canvas chrome', () => {
+    const toolbar = readSrc('src/components/canvas/CanvasToolbar.vue')
     const status = readSrc('src/canvas-ribbon/MindMapStatusBar.vue')
+    expect(toolbar).toContain('v-if="!useMindMapV2"')
+    expect(toolbar).toContain('CanvasVirtualKeyboardPanel')
+    expect(status).not.toContain('toggleVirtualKeyboard')
+    expect(status).not.toContain('data-virtual-keyboard-chrome')
+  })
+
+  it('wires the editor so outside-pointer cannot kill the input', () => {
+    const editor = readSrc('src/components/diagram/nodes/InlineEditableText.vue')
     const panel = readSrc('src/components/canvas/CanvasVirtualKeyboardPanel.vue')
     expect(editor).toContain('isVirtualKeyboardChromeEvent')
     expect(editor).toContain('isVirtualKeyboardPanelOpen')
-    expect(status).toContain('data-virtual-keyboard-chrome')
     expect(panel).toContain('lastEditableField')
     expect(panel).toContain('resolveTargetField')
     expect(panel).toContain('replaceContent: true')

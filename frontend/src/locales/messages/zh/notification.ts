@@ -48,6 +48,7 @@ export default {
   'notification.saved': '保存成功',
   'notification.selectNodeToClear': '请先选择要清空的节点',
   'notification.sessionInvalidated': '您已被登出，因为登录设备数量超过上限',
+  'notification.sessionKicked': '该账号已在其他设备上将此登录下线',
   'notification.signInToUse': '请登录后使用',
   'notification.signInToValidateFocus': '请登录后检验焦点问题',
 }

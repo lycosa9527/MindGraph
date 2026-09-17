@@ -47,6 +47,7 @@ export default {
   'notification.saved': 'Changes saved successfully',
   'notification.selectNodeToClear': 'Please select a node to clear',
   'notification.sessionInvalidated': 'You have been logged out because you exceeded the maximum number of devices',
+  'notification.sessionKicked': 'This sign-in was ended from another device',
   'notification.signInToUse': 'Sign in to use this',
   'notification.signInToValidateFocus': 'Sign in to validate the focus question',
 } as const

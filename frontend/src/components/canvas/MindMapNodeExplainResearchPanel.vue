@@ -47,32 +47,10 @@ const title = computed(
 const incomingImages = computed(() => props.images.filter((image) => image.url))
 const revealedImages = ref<ExplainResearchImage[]>([])
 const pendingImages = ref<ExplainResearchImage[]>([])
+const droppedUrls = new Set<string>()
 let revealTimer: number | null = null
 
-const pullingImages = computed(
-  () =>
-    revealedImages.value.length === 0 &&
-    (props.loading || pendingImages.value.length > 0 || incomingImages.value.length > 0)
-)
-
-const stillPulling = computed(
-  () =>
-    props.loading ||
-    pendingImages.value.length > 0 ||
-    revealedImages.value.length < incomingImages.value.length
-)
-
-const heroTitle = computed(() =>
-  stillPulling.value ? t('canvas.mindMapNodeExplain.research.imagesLoading') : title.value
-)
-
-const heroLine = computed(() => (stillPulling.value ? title.value : ''))
-
-const emptyCopy = computed(() =>
-  pullingImages.value
-    ? t('canvas.mindMapNodeExplain.research.imagesLoading')
-    : t('canvas.mindMapNodeExplain.research.imagesEmpty')
-)
+const showPanel = computed(() => props.visible && revealedImages.value.length > 0)
 
 const panelStyle = ref<Record<string, string> | undefined>()
 const viewportEl = ref<HTMLElement | null>(null)
@@ -197,12 +175,20 @@ function resetRevealQueue(): void {
   stopRevealTimer()
   pendingImages.value = []
   revealedImages.value = []
+  droppedUrls.clear()
+}
+
+function dropBrokenImage(url: string): void {
+  droppedUrls.add(url)
+  revealedImages.value = revealedImages.value.filter((image) => image.url !== url)
+  pendingImages.value = pendingImages.value.filter((image) => image.url !== url)
 }
 
 function enqueueIncomingImages(): void {
   const seen = new Set([
     ...revealedImages.value.map((image) => image.url),
     ...pendingImages.value.map((image) => image.url),
+    ...droppedUrls,
   ])
   const extra: ExplainResearchImage[] = []
   incomingImages.value.forEach((image) => {
@@ -232,11 +218,14 @@ function handleClose(): void {
   emit('close')
 }
 
-function hideBrokenImage(event: Event): void {
+function onShotLoad(event: Event, url: string): void {
   const target = event.target
-  if (!(target instanceof HTMLElement)) return
-  const shot = target.closest('.ne-research__shot')
-  if (shot instanceof HTMLElement) shot.hidden = true
+  if (!(target instanceof HTMLImageElement)) return
+  if (target.naturalWidth < 32 || target.naturalHeight < 32) {
+    dropBrokenImage(url)
+    return
+  }
+  startAutoScroll()
 }
 
 watch(
@@ -254,10 +243,15 @@ watch(
     }
     measurePanel()
     bindCanvasObserver()
-    void nextTick(startAutoScroll)
   },
   { immediate: true }
 )
+
+watch(showPanel, (open) => {
+  if (!open) return
+  measurePanel()
+  void nextTick(startAutoScroll)
+})
 
 watch(
   () => incomingImages.value.map((image) => image.url).join('\n'),
@@ -281,7 +275,7 @@ onUnmounted(() => {
 <template>
   <Teleport to="body">
     <aside
-      v-if="visible"
+      v-if="showPanel"
       class="ne-research ai-gen-shell"
       :class="`ne-research--${side}`"
       :style="panelStyle"
@@ -294,8 +288,7 @@ onUnmounted(() => {
       <AiGenerateGlassHero
         compact
         :ribbon="t('canvas.mindMapNodeExplain.research.images')"
-        :title="heroTitle"
-        :line1="heroLine"
+        :title="title"
         :icon="Images"
         :badge="Image"
         @close="handleClose"
@@ -303,7 +296,6 @@ onUnmounted(() => {
 
       <section class="ne-research__images">
         <div
-          v-if="revealedImages.length"
           ref="viewportEl"
           class="ne-research__viewport"
           @pointerdown="pauseAutoScrollForUser"
@@ -326,24 +318,12 @@ onUnmounted(() => {
                 :src="image.url"
                 :alt="image.title || t('canvas.mindMapNodeExplain.research.images')"
                 referrerpolicy="no-referrer"
-                @load="startAutoScroll"
-                @error="hideBrokenImage"
+                @load="onShotLoad($event, image.url)"
+                @error="dropBrokenImage(image.url)"
               />
             </a>
           </div>
         </div>
-        <p
-          v-else
-          class="ne-research__empty"
-          :class="{ 'ne-research__empty--live': pullingImages }"
-        >
-          <span
-            v-if="pullingImages"
-            class="ne-research__pulse"
-            aria-hidden="true"
-          />
-          {{ emptyCopy }}
-        </p>
       </section>
     </aside>
   </Teleport>
@@ -425,43 +405,6 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.ne-research__empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  margin: auto 0;
-  font-size: 0.82rem;
-  font-weight: 550;
-  color: var(--ai-muted, #6b7280);
-}
-
-.ne-research__empty--live {
-  color: var(--ai-ink, #1f2937);
-}
-
-.ne-research__pulse {
-  display: inline-block;
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 9999px;
-  background: var(--ai-accent, #6366f1);
-  animation: ne-research-pulse 1s ease-in-out infinite;
-}
-
-@keyframes ne-research-pulse {
-  0%,
-  100% {
-    opacity: 0.35;
-    transform: scale(0.85);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
 }
 
 @keyframes ne-research-shot-in {

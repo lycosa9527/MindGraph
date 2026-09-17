@@ -47,6 +47,7 @@ export default {
   'notification.saved': 'Dəyişikliklər uğurla yadda saxlanıldı',
   'notification.selectNodeToClear': 'Təmizləmək üçün düyün seçin',
   'notification.sessionInvalidated': 'Cihazların maksimum sayını keçdiyiniz üçün sistemdən çıxdınız',
+  'notification.sessionKicked': 'This sign-in was ended from another device',
   'notification.signInToUse': 'İstifadə üçün daxil olun',
   'notification.signInToValidateFocus': 'Fokus sualını yoxlamaq üçün daxil olun',
 } as const

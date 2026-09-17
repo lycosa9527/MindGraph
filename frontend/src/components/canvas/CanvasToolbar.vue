@@ -361,7 +361,10 @@ function handleToggleOrientation() {
       @confirm="handleMathInsertConfirm"
     />
 
-    <CanvasVirtualKeyboardPanel v-model="virtualKeyboardOpen" />
+    <CanvasVirtualKeyboardPanel
+      v-if="!useMindMapV2"
+      v-model="virtualKeyboardOpen"
+    />
   </div>
 </template>
 

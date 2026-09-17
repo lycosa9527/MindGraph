@@ -19,6 +19,7 @@ from . import (
     email,
     embed,
     login,
+    login_devices,
     password,
     personal_token,
     phone,
@@ -67,6 +68,7 @@ router.include_router(registration.router)
 router.include_router(registration_overseas.router)
 router.include_router(quick_register.router)
 router.include_router(login.router)
+router.include_router(login_devices.router)
 router.include_router(sms.router)
 router.include_router(email.router)
 router.include_router(captcha.router)

@@ -4,7 +4,7 @@
  */
 import { computed } from 'vue'
 
-import { Hand, Keyboard, ListTree, Maximize2, MonitorPlay } from '@lucide/vue'
+import { Hand, ListTree, Maximize2, MonitorPlay } from '@lucide/vue'
 
 import CanvasMindMapShortcutGuide from '@/components/canvas/CanvasMindMapShortcutGuide.vue'
 import CanvasToolbarMindMapAiGenerate from '@/components/canvas/CanvasToolbarMindMapAiGenerate.vue'
@@ -91,23 +91,6 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
     </div>
     <div class="mm-status__right mm-status__zoom">
       <CanvasDiagramTranslateLangPicker />
-      <button
-        type="button"
-        class="mm-status__zoom-btn"
-        :class="{ 'is-active': actions.virtualKeyboardOpen }"
-        :title="t('canvas.toolbar.moreAppVirtualKeyboard')"
-        data-testid="mindmap-ribbon-virtual-keyboard"
-        data-virtual-keyboard-chrome
-        :aria-label="t('canvas.toolbar.moreAppVirtualKeyboard')"
-        :aria-pressed="actions.virtualKeyboardOpen"
-        @mousedown.prevent
-        @click="actions.toggleVirtualKeyboard"
-      >
-        <Keyboard
-          class="h-3.5 w-3.5"
-          :stroke-width="2"
-        />
-      </button>
       <button
         type="button"
         class="mm-status__zoom-btn"

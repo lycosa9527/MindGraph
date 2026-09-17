@@ -124,6 +124,32 @@ async def test_live_fifo_third_login_kicks_oldest_fourth_kicks_next() -> None:
 
 
 @pytest.mark.asyncio
+async def test_live_kicked_device_cannot_store_via_refresh() -> None:
+    """FIFO fence blocks refresh re-entry; an explicit new login clears it."""
+    async with _live_managers() as (session_mgr, _refresh_mgr, _client):
+        assert await session_mgr.store_session(_USER_ID, "access-a", device_hash="deva")
+        assert await session_mgr.store_session(_USER_ID, "access-b", device_hash="devb")
+        assert await session_mgr.store_session(_USER_ID, "access-c", device_hash="devc")
+        assert await session_mgr.is_device_evicted(_USER_ID, "deva") is True
+        assert await session_mgr.get_device_eviction_reason(_USER_ID, "deva") == "max_devices_exceeded"
+        sneaked = await session_mgr.store_session(
+            _USER_ID,
+            "access-a-refresh",
+            device_hash="deva",
+            reject_if_evicted=True,
+        )
+        assert sneaked is False
+        assert await session_mgr.is_session_valid(_USER_ID, "access-a-refresh") is False
+        assert await session_mgr.is_session_valid(_USER_ID, "access-c") is True
+
+        relogin = await session_mgr.store_session(_USER_ID, "access-a-login", device_hash="deva")
+        assert relogin is True
+        assert await session_mgr.is_device_evicted(_USER_ID, "deva") is False
+        assert await session_mgr.is_session_valid(_USER_ID, "access-a-login") is True
+        assert await session_mgr.is_session_valid(_USER_ID, "access-c") is True
+
+
+@pytest.mark.asyncio
 async def test_live_kick_revokes_refresh_without_reuse_nuke() -> None:
     """Oldest refresh is dropped; presenting it must not wipe the new login."""
     async with _live_managers() as (session_mgr, refresh_mgr, client):

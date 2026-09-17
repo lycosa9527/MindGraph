@@ -30,6 +30,9 @@ export interface MindMapBranchSpec {
   uid?: string
   /** Leftover invented id from before the identity invert. */
   legacyId?: string
+  /** Learning-sheet: node is blanked; `text` is the answer used for layout. */
+  hidden?: boolean
+  hiddenAnswer?: string
 }
 
 function getBranchText(branch: { text?: string; label?: string }): string {

@@ -30,6 +30,12 @@ Waveshare’s 1.75C schematic / BSP, not the 1.75 MCLK=GPIO42 map.
 Software AEC uses Brookesia Audio Processor + `MIC_LAYOUT="RMNN"` (ref, mic, none,
 none). Dual analog mics plus the echo reference are what ES7210 is for.
 
+Super Kitty (`com.mindgraph.super_kitty`) captures through that AFE path while the
+tile is Running. Address phrase is **ni hao kitty** (English MultiNet `mn5q8_en`
+only; Fun-ASR starts after that hit). The `model` partition is 3072K so English
+`mn5q8` fits next to WakeNet; factory stays 9400K (~176KB / 2% free after Super
+Kitty). Chinese MultiNet is off so both models do not overflow 3072K.
+
 Keep `CONFIG_SPIRAM_FETCH_INSTRUCTIONS=n`. Mapping `.text` into the 8MB PSRAM
 window overflows `iram0_2_seg` once Super + AFE are linked.
 

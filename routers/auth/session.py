@@ -55,6 +55,7 @@ from utils.auth.request_helpers import CSRF_COOKIE_NAME
 
 from .dependencies import get_language_dependency
 from .helpers import auth_session_json_metadata, clear_auth_cookies, set_auth_cookies
+from .session_kick import find_session_kick, kick_http_detail, raise_refresh_kicked
 from .session_user_payload import build_session_user_payload
 
 _record_vpn_refresh_last_ip = record_vpn_refresh_last_ip
@@ -158,20 +159,11 @@ async def refresh_token(request: Request, response: Response):
             detail="Cannot determine user identity. Please log in again.",
         )
 
-    if access_token:
-        kicked_hash = hashlib.sha256(access_token.encode("utf-8")).hexdigest()
-        kick_notice = await get_session_manager().check_invalidation_notification(user_id, kicked_hash)
-        if kick_notice:
-            logger.info(
-                "[TokenAudit] Refresh FAILED - session kicked (max devices): user=%s, ip=%s",
-                user_id,
-                client_ip,
-            )
-            clear_auth_cookies(response, request)
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Session ended: maximum device limit exceeded",
-            )
+    current_device_hash = compute_device_hash(request)
+    session_manager = get_session_manager()
+    kick_notice = await find_session_kick(user_id, access_token, current_device_hash, session_manager)
+    if kick_notice:
+        raise_refresh_kicked(request, response, user_id, client_ip, kick_notice)
 
     # DEBUG: Log device fingerprint headers used for hash
     user_agent = request.headers.get("User-Agent", "")
@@ -188,9 +180,6 @@ async def refresh_token(request: Request, response: Response):
         sec_ch_platform,
         sec_ch_mobile,
     )
-
-    # Validate refresh token (refresh_manager and old_token_hash already computed above)
-    current_device_hash = compute_device_hash(request)
 
     logger.info(
         "[TokenAudit] Validating refresh token: user=%s, refresh_token=%s..., current_device=%s",
@@ -235,34 +224,57 @@ async def refresh_token(request: Request, response: Response):
         )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
+    kick_notice = await find_session_kick(user_id, access_token, current_device_hash, session_manager)
+    if kick_notice:
+        raise_refresh_kicked(request, response, user_id, client_ip, kick_notice)
+
     # Create new access token
     new_access_token = create_access_token(user)
 
-    # Rotate refresh token (revoke old, create new)
+    # Store the new access session before rotating refresh. A concurrent sixth
+    # login writes the device fence in the same Redis EVAL as eviction; if we
+    # rotated first, the kicked device would mint a fresh refresh token.
+    old_access_token = request.cookies.get("access_token")
+    if old_access_token:
+        await session_manager.delete_session(user_id, token=old_access_token)
+
+    stored = await session_manager.store_session(
+        user_id,
+        new_access_token,
+        device_hash=current_device_hash,
+        reject_if_evicted=True,
+    )
+    if not stored:
+        late_kick = await find_session_kick(user_id, access_token, current_device_hash, session_manager)
+        if late_kick:
+            raise_refresh_kicked(request, response, user_id, client_ip, late_kick)
+        logger.error(
+            "[TokenAudit] Refresh FAILED - could not store session: user=%s, ip=%s",
+            user_id,
+            client_ip,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Session storage unavailable. Please try again or log in again.",
+        )
+
     new_refresh_token, new_refresh_hash = create_refresh_token(user_id)
     user_agent = request.headers.get("User-Agent", "")
-
-    await refresh_manager.rotate_refresh_token(
+    rotated = await refresh_manager.rotate_refresh_token(
         user_id=user_id,
         old_token_hash=old_token_hash,
         new_token_hash=new_refresh_hash,
         ip_address=client_ip,
         user_agent=user_agent,
         device_hash=current_device_hash,
+        reject_if_evicted=True,
     )
-
-    # Remove old access token session before storing new one
-    # This prevents session accumulation on token refresh
-    session_manager = get_session_manager()
-    old_access_token = request.cookies.get("access_token")
-    if old_access_token:
-        await session_manager.delete_session(user_id, token=old_access_token)
-
-    # Store new session with device hash for same-device session tracking
-    stored = await session_manager.store_session(user_id, new_access_token, device_hash=current_device_hash)
-    if not stored:
+    if not rotated:
+        late_kick = await find_session_kick(user_id, access_token, current_device_hash, session_manager)
+        if late_kick:
+            raise_refresh_kicked(request, response, user_id, client_ip, late_kick)
         logger.error(
-            "[TokenAudit] Refresh FAILED - could not store session: user=%s, ip=%s",
+            "[TokenAudit] Refresh FAILED - could not rotate refresh token: user=%s, ip=%s",
             user_id,
             client_ip,
         )
@@ -417,16 +429,35 @@ async def get_session_status(
         notification = await session_manager.check_invalidation_notification(user_id, token_hash)
         if notification:
             await session_manager.clear_invalidation_notification(user_id, token_hash)
+            kick_reason = str(notification.get("reason") or "max_devices_exceeded")
             logger.info(
-                "[TokenAudit] Session status: INVALIDATED (max devices): user=%s, notification_ip=%s",
+                "[TokenAudit] Session status: INVALIDATED (%s): user=%s, notification_ip=%s",
+                kick_reason,
                 user_id,
                 notification.get("ip_address", "unknown"),
             )
             return {
                 "status": "invalidated",
-                "message": "Session ended: maximum device limit exceeded",
+                "reason": kick_reason,
+                "message": kick_http_detail(kick_reason),
                 "timestamp": notification.get("timestamp", datetime.now(tz=UTC).isoformat()),
                 "ip_address": notification.get("ip_address", "unknown"),
+            }
+
+        device_hash = compute_device_hash(request)
+        fence_reason = await session_manager.get_device_eviction_reason(user_id, device_hash)
+        if fence_reason:
+            logger.info(
+                "[TokenAudit] Session status: INVALIDATED (device fence %s): user=%s",
+                fence_reason,
+                user_id,
+            )
+            return {
+                "status": "invalidated",
+                "reason": fence_reason,
+                "message": kick_http_detail(fence_reason),
+                "timestamp": datetime.now(tz=UTC).isoformat(),
+                "ip_address": "unknown",
             }
 
         if await session_manager.is_session_valid(user_id, token):

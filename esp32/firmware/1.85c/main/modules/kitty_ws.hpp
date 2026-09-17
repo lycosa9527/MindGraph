@@ -10,6 +10,7 @@ enum class KittyWsOwner : uint8_t {
     slides,
     recorder,
     training,
+    super_kitty,
 };
 
 bool kitty_ws_connect(const std::string &url, const std::string &bearer, KittyWsOwner owner);

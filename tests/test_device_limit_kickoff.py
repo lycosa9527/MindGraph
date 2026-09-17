@@ -1,6 +1,6 @@
 """End-to-end contract for max-device kick-off: new login keeps the slot."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 from fastapi import FastAPI, HTTPException
@@ -16,6 +16,11 @@ from services.redis.session.redis_session_manager import (
     RedisSessionManager,
     select_oldest_refresh_hashes_to_revoke,
     select_oldest_sessions_to_evict,
+)
+from services.redis.session.session_store_lua import (
+    DEVICE_KICKED_SENTINEL,
+    FIFO_KICK_REASON,
+    is_device_kicked_eval_result,
 )
 
 
@@ -138,7 +143,7 @@ async def test_store_session_revokes_refresh_for_evicted_device() -> None:
                     stored = await mgr.store_session(7, "new-access-jwt", device_hash="newdevice")
 
     assert stored is True
-    notify.assert_awaited_once_with(7, "oldtokenhash")
+    notify.assert_awaited_once_with(7, "oldtokenhash", reason=FIFO_KICK_REASON)
     refresh.revoke_refresh_tokens_for_device.assert_awaited_once_with(7, "olddevicehash")
 
 
@@ -167,8 +172,8 @@ async def test_store_session_revokes_each_excess_oldest_device() -> None:
 
     assert stored is True
     assert notify.await_args_list == [
-        ((4, "hasha"),),
-        ((4, "hashb"),),
+        call(4, "hasha", reason=FIFO_KICK_REASON),
+        call(4, "hashb", reason=FIFO_KICK_REASON),
     ]
     assert refresh.revoke_refresh_tokens_for_device.await_args_list == [
         ((4, "olda"),),
@@ -199,8 +204,41 @@ async def test_store_session_single_eval_string_is_one_entry() -> None:
                     stored = await mgr.store_session(3, "new-access-jwt", device_hash="newdevice")
 
     assert stored is True
-    notify.assert_awaited_once_with(3, "oldtokenhash")
+    notify.assert_awaited_once_with(3, "oldtokenhash", reason=FIFO_KICK_REASON)
     refresh.revoke_refresh_tokens_for_device.assert_awaited_once_with(3, "olddevicehash")
+
+
+@pytest.mark.asyncio
+async def test_manual_device_kick_writes_fence() -> None:
+    """Account-UI kick must fence the device so /refresh cannot rotate back in."""
+    mgr = RedisSessionManager()
+    mock_redis = AsyncMock()
+    mock_redis.exists = AsyncMock(return_value=True)
+    mock_redis.smembers = AsyncMock(return_value=["1000.0:abcdabcd:oldhash"])
+    mock_redis.srem = AsyncMock(return_value=1)
+
+    with patch.object(mgr, "_use_redis", return_value=True):
+        with patch(
+            "services.redis.session.redis_session_manager.get_async_redis",
+            return_value=mock_redis,
+        ):
+            with patch.object(mgr, "notify_invalidation", new_callable=AsyncMock) as notify:
+                with patch.object(mgr, "mark_device_evicted", new_callable=AsyncMock) as fence:
+                    removed = await mgr.invalidate_sessions_for_device(
+                        8,
+                        "abcdabcd",
+                        ip_address="10.0.0.2",
+                        reason="device_kick",
+                    )
+
+    assert removed == 1
+    notify.assert_awaited_once_with(
+        8,
+        "oldhash",
+        ip_address="10.0.0.2",
+        reason="device_kick",
+    )
+    fence.assert_awaited_once_with(8, "abcdabcd", reason="device_kick")
 
 
 @pytest.mark.asyncio
@@ -279,8 +317,34 @@ async def test_session_status_reads_kick_without_live_session() -> None:
 
     assert result["status"] == "invalidated"
     assert result["message"] == "Session ended: maximum device limit exceeded"
+    assert result["reason"] == "max_devices_exceeded"
     mgr.is_session_valid.assert_not_called()
     mgr.clear_invalidation_notification.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_session_status_reads_manual_device_kick() -> None:
+    """Account-UI kick uses a distinct reason so the client can show its own copy."""
+    request = MagicMock()
+    request.cookies = {"access_token": "kicked-jwt"}
+    request.headers = {}
+    mgr = AsyncMock()
+    mgr.check_invalidation_notification = AsyncMock(
+        return_value={
+            "timestamp": "2026-01-01T00:00:00+00:00",
+            "ip_address": "10.0.0.1",
+            "reason": "device_kick",
+        }
+    )
+    mgr.clear_invalidation_notification = AsyncMock(return_value=True)
+
+    with patch("routers.auth.session.decode_access_token", return_value={"sub": "42"}):
+        with patch("routers.auth.session.get_session_manager", return_value=mgr):
+            result = await get_session_status(request, x_language=None)
+
+    assert result["status"] == "invalidated"
+    assert result["reason"] == "device_kick"
+    assert result["message"] == "Session ended: signed out from another device"
 
 
 @pytest.mark.asyncio
@@ -291,6 +355,7 @@ async def test_session_status_active_when_session_still_valid() -> None:
     request.headers = {}
     mgr = AsyncMock()
     mgr.check_invalidation_notification = AsyncMock(return_value=None)
+    mgr.get_device_eviction_reason = AsyncMock(return_value=None)
     mgr.is_session_valid = AsyncMock(return_value=True)
 
     with patch("routers.auth.session.decode_access_token", return_value={"sub": "42"}):
@@ -308,6 +373,7 @@ async def test_session_status_401_when_missing_notification_lets_refresh_run() -
     request.headers = {}
     mgr = AsyncMock()
     mgr.check_invalidation_notification = AsyncMock(return_value=None)
+    mgr.get_device_eviction_reason = AsyncMock(return_value=None)
     mgr.is_session_valid = AsyncMock(return_value=False)
 
     with patch("routers.auth.session.decode_access_token", return_value={"sub": "42"}):
@@ -358,6 +424,134 @@ async def test_refresh_rejects_kicked_access_without_reuse_check() -> None:
     assert exc_info.value.status_code == 401
     assert exc_info.value.detail == "Session ended: maximum device limit exceeded"
     refresh_mgr.validate_refresh_token.assert_not_called()
+
+
+def test_kicked_eval_sentinel_is_not_an_evicted_entry() -> None:
+    """EVAL's refuse-store marker must not be parsed as a session row."""
+    assert is_device_kicked_eval_result(DEVICE_KICKED_SENTINEL) is True
+    assert is_device_kicked_eval_result([DEVICE_KICKED_SENTINEL]) is True
+    assert is_device_kicked_eval_result([b"__device_kicked__"]) is True
+    assert is_device_kicked_eval_result(["1000.0:olda:hasha"]) is False
+
+
+@pytest.mark.asyncio
+async def test_store_session_rejects_fenced_device_on_refresh() -> None:
+    """Refresh must not re-add a FIFO-kicked device."""
+    mgr = RedisSessionManager()
+    mock_redis = AsyncMock()
+    mock_redis.exists = AsyncMock(return_value=False)
+    mock_redis.eval = AsyncMock(return_value=[DEVICE_KICKED_SENTINEL])
+
+    with patch.object(mgr, "_use_redis", return_value=True):
+        with patch(
+            "services.redis.session.redis_session_manager.get_async_redis",
+            return_value=mock_redis,
+        ):
+            with patch.object(mgr, "_apply_evicted_sessions", new_callable=AsyncMock) as apply_evicted:
+                stored = await mgr.store_session(
+                    5,
+                    "refresh-access-jwt",
+                    device_hash="kickeddev",
+                    reject_if_evicted=True,
+                )
+
+    assert stored is False
+    apply_evicted.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_session_status_reads_device_fence_without_notice() -> None:
+    """Lost kick notice still reports invalidated via the device fence."""
+    request = MagicMock()
+    request.cookies = {"access_token": "kicked-jwt", "mg_device": "abc123def456"}
+    request.headers = {}
+    mgr = AsyncMock()
+    mgr.check_invalidation_notification = AsyncMock(return_value=None)
+    mgr.get_device_eviction_reason = AsyncMock(return_value=FIFO_KICK_REASON)
+
+    with patch("routers.auth.session.decode_access_token", return_value={"sub": "42"}):
+        with patch("routers.auth.session.get_session_manager", return_value=mgr):
+            with patch("routers.auth.session.compute_device_hash", return_value="abc123def456"):
+                result = await get_session_status(request, x_language=None)
+
+    assert result["status"] == "invalidated"
+    assert result["reason"] == FIFO_KICK_REASON
+    assert result["message"] == "Session ended: maximum device limit exceeded"
+    mgr.is_session_valid.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_refresh_rejects_fenced_device_without_access_notice() -> None:
+    """In-flight refresh after Lua eviction must 401 even before the notice is read."""
+    request = MagicMock()
+    request.cookies = {"access_token": "old-jwt", "refresh_token": "old-refresh"}
+    request.headers = {}
+    response = MagicMock()
+    refresh_mgr = AsyncMock()
+    refresh_mgr.find_user_id_from_token = AsyncMock(return_value=42)
+    refresh_mgr.validate_refresh_token = AsyncMock()
+    session_mgr = AsyncMock()
+    session_mgr.check_invalidation_notification = AsyncMock(return_value=None)
+    session_mgr.get_device_eviction_reason = AsyncMock(return_value=FIFO_KICK_REASON)
+    limiter = AsyncMock()
+    limiter.check_and_record = AsyncMock(return_value=(True, 1, 0))
+
+    with patch("routers.auth.session.get_client_ip", return_value="10.0.0.1"):
+        with patch("routers.auth.session.get_rate_limiter", return_value=limiter):
+            with patch("routers.auth.session.hash_refresh_token", return_value="oldhash"):
+                with patch("routers.auth.session.get_refresh_token_manager", return_value=refresh_mgr):
+                    with patch("routers.auth.session.get_session_manager", return_value=session_mgr):
+                        with patch(
+                            "routers.auth.session.compute_device_hash",
+                            return_value="kickeddev",
+                        ):
+                            with pytest.raises(HTTPException) as exc_info:
+                                await refresh_token_endpoint(request, response)
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Session ended: maximum device limit exceeded"
+    refresh_mgr.validate_refresh_token.assert_not_called()
+    refresh_mgr.rotate_refresh_token.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_refresh_does_not_rotate_when_kicked_after_validate() -> None:
+    """A sixth login during /refresh must not mint a new refresh token."""
+    request = MagicMock()
+    request.cookies = {"access_token": "old-jwt", "refresh_token": "old-refresh"}
+    request.headers = {}
+    response = MagicMock()
+    refresh_mgr = AsyncMock()
+    refresh_mgr.find_user_id_from_token = AsyncMock(return_value=42)
+    refresh_mgr.validate_refresh_token = AsyncMock(return_value=(True, {"device_hash": "olda"}, None))
+    refresh_mgr.rotate_refresh_token = AsyncMock()
+    session_mgr = AsyncMock()
+    session_mgr.check_invalidation_notification = AsyncMock(
+        side_effect=[
+            None,
+            {"timestamp": "2026-01-01T00:00:00+00:00", "reason": FIFO_KICK_REASON},
+        ]
+    )
+    session_mgr.get_device_eviction_reason = AsyncMock(return_value=None)
+    session_mgr.store_session = AsyncMock()
+    limiter = AsyncMock()
+    limiter.check_and_record = AsyncMock(return_value=(True, 1, 0))
+    fake_user = MagicMock()
+    fake_user.id = 42
+
+    with patch("routers.auth.session.get_client_ip", return_value="10.0.0.1"):
+        with patch("routers.auth.session.get_rate_limiter", return_value=limiter):
+            with patch("routers.auth.session.hash_refresh_token", return_value="oldhash"):
+                with patch("routers.auth.session.get_refresh_token_manager", return_value=refresh_mgr):
+                    with patch("routers.auth.session.get_session_manager", return_value=session_mgr):
+                        with patch("routers.auth.session.user_cache.get_by_id", new=AsyncMock(return_value=fake_user)):
+                            with pytest.raises(HTTPException) as exc_info:
+                                await refresh_token_endpoint(request, response)
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Session ended: maximum device limit exceeded"
+    refresh_mgr.rotate_refresh_token.assert_not_called()
+    session_mgr.store_session.assert_not_called()
 
 
 def _session_http_client() -> TestClient:

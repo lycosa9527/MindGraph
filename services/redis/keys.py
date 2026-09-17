@@ -111,6 +111,7 @@ TTL_CACHE_LOADER_LOCK = 300
 SESSION_USER = "session:user:{user_id}"  # legacy single-session
 SESSION_USER_SET = "session:user:set:{user_id}"  # multi-session set
 SESSION_INVALIDATED = "session_invalidated:{user_id}:{token_hash}"
+SESSION_EVICTED_DEVICE = "session:evicted_device:{user_id}:{device_hash}"
 REFRESH_TOKEN = "refresh:{user_id}:{token_hash}"
 REFRESH_USER_SET = "refresh:user:{user_id}"
 REFRESH_LOOKUP = "refresh:lookup:{token_hash}"

@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.84] - 2026-09-17
+
+> **Kicked devices stay out; account UI lists and signs out browsers; Super Kitty watch tile; learning-sheet blanks survive rebuilds.**
+
+### Added
+
+- **登录设备** — Account info lists signed-in browsers (`GET /api/auth/login-devices`) and can kick one offline (`DELETE`). Kick sets the same Redis eviction fence as a sixth-login FIFO so that device cannot refresh back in. Current device is labeled; others show UA short name, last active, and IP.
+- **超级小猫 (watch)** — Native Super tile `com.mindgraph.super_kitty`: always-on AFE AEC, English MultiNet wake **ni hao kitty**, leftover 你好kitty / 你好凯蒂 / 你好小猫 prefixes stripped from the Fun-ASR transcript. CJK subset + 九宫格 IME stay on the 1.75C 466 panel; `model` partition is 3072K for WakeNet + `mn5q8_en`.
+
+### Changed
+
+- **Account bindings** — DingTalk / MindBot pair bind is off the account screen. The bindings block is WeChat-only (show when QR login is on, or when WeChat is already linked).
+- **i18n lazy locales** — Vite `import.meta.glob` loads `messages/<code>.ts` chunks. Generated `lazyLocaleLoaders.ts` / `localeEnCopyCodes.json` / `generate-lazy-locale-loaders.js` are gone; [`frontend/scripts/check-lazy-locale-loaders.ts`](frontend/scripts/check-lazy-locale-loaders.ts) checks bundle files exist.
+- **New canvas chrome** — Virtual keyboard is not exposed on V2 mind-map chrome (status bar, toolbar panel, and the shared open flag).
+- **节点解释配图** — Research image panel mounts only after a real shot reveals. Tiny or broken images are dropped instead of leaving an empty hero.
+
+### Fixed
+
+- **In-flight refresh after a sixth login** — FIFO eviction now writes a per-device fence (and kick notice) in the same Redis EVAL as the access-session SREM. `/refresh` checks that fence before validate and again before store/rotate, and `store_session(reject_if_evicted=True)` refuses to re-admit the oldest device. The same fence is set on a manual account-UI kick. A later login on that browser still clears the fence and gets a slot.
+- **False “设备数量超过上限”** — `GET /session-status` 401 (expired/rotated token, no kick payload) no longer uses the device-limit alert. The SPA treats that as a normal session expiry. True kicks still return `status: "invalidated"`.
+- **Learning-sheet blanks** — Hidden answers survive mind-map spec rebuilds (add / delete / restyle). Layout measures the answer width; the blank underline is stamped back after load.
+
+### Tests
+
+- [`tests/test_device_limit_kickoff.py`](tests/test_device_limit_kickoff.py) — fence blocks refresh; kick after validate does not rotate
+- [`tests/test_session_live_redis.py`](tests/test_session_live_redis.py) — live Redis fence vs re-login
+- [`tests/auth/test_login_devices.py`](tests/auth/test_login_devices.py) — list / kick / UA labels
+- [`tests/test_super_kitty_phrase.py`](tests/test_super_kitty_phrase.py) — leftover address prefixes
+- [`frontend/tests/sessionStatusOutcome.spec.ts`](frontend/tests/sessionStatusOutcome.spec.ts) — 401 is expiry, not a kick
+- [`frontend/tests/learningSheetPersist.spec.ts`](frontend/tests/learningSheetPersist.spec.ts), [`frontend/tests/mindMapLearningSheetReload.spec.ts`](frontend/tests/mindMapLearningSheetReload.spec.ts)
+- [`frontend/tests/loadLocaleMessages.spec.ts`](frontend/tests/loadLocaleMessages.spec.ts), [`frontend/tests/oauthQrLogin.spec.ts`](frontend/tests/oauthQrLogin.spec.ts), [`frontend/tests/virtualKeyboardChrome.spec.ts`](frontend/tests/virtualKeyboardChrome.spec.ts)
+
 ## [5.180.83] - 2026-09-16
 
 > **Thinking Maps share mind-map UUID identity; same-school teachers reuse exact-match generate results.**

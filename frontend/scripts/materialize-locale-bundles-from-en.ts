@@ -7,7 +7,6 @@
  *
  * Run: node scripts/materialize-locale-bundles-from-en.ts
  */
-import { execSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -78,11 +77,7 @@ function main(): void {
     materializeLocale(code)
     console.log('materialized', code)
   }
-  console.log('done (src/i18n/index.ts is hand-maintained for lazy loading)')
-  execSync('node scripts/generate-lazy-locale-loaders.js', {
-    cwd: join(__dirname, '..'),
-    stdio: 'inherit',
-  })
+  console.log('done (locale loading is import.meta.glob in src/i18n/index.ts)')
 }
 
 main()

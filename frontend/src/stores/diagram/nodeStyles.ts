@@ -37,6 +37,7 @@ import {
   measureNumberedBranchHeight,
   measureNumberedBranchUnderlineHeight,
 } from '../specLoader/mindMap'
+import { learningSheetLayoutText } from '../specLoader/mindMapLearningSheet'
 import { emitCtxEvent } from './events'
 import { snapshotMindMapCanvasBucket } from './mindMapCanvasModeSwitch'
 import type { DiagramContext } from './types'
@@ -83,7 +84,7 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
 
   function refreshMindMapNodeEstimatesAfterShapeChange(node: DiagramNode, nodeIndex: number): void {
     if (!data.value?.nodes) return
-    const text = node.text ?? ''
+    const text = learningSheetLayoutText(node)
     const mergedStyle = node.style
 
     if (node.id === 'topic') {
@@ -273,7 +274,7 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
     const nextHeights = { ...ctx.mindMapNodeHeights.value }
     nodes.forEach((node, nodeIndex) => {
       if (node.id === 'topic' || node.type === 'topic' || node.type === 'center') return
-      const rawText = node.text ?? ''
+      const rawText = learningSheetLayoutText(node)
       const prefix = numberMap.get(node.id) ?? ''
       const mergedStyle = node.style
       const newShape = resolveNodeShape(mergedStyle, true)

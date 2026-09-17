@@ -59,6 +59,7 @@ import {
   markSessionFreshAfterAuth,
   refreshSessionAccessToken,
 } from '@/utils/sessionRefresh'
+import { interpretSessionStatusResponse } from '@/utils/sessionStatusOutcome'
 import { normalizeUserRole } from '@/utils/userRoleDisplay'
 import { clearWorkshopChatCachesForUser } from '@/utils/workshopChatLocalCache'
 import {
@@ -1015,19 +1016,21 @@ export const useAuthStore = defineStore('auth', () => {
         credentials: 'same-origin',
       })
 
-      if (response.status === 401) {
+      const data = response.ok ? await response.json() : null
+      const outcome = interpretSessionStatusResponse(response.status, data)
+      if (outcome.kind === 'expired') {
         const refreshed = await ensureFreshSessionAfterAuthFailure(epochAtStart)
         if (!refreshed) {
-          handleSessionInvalidation(getTranslatedMessage('notification.sessionInvalidated'))
+          handleTokenExpired(undefined, undefined, { skipRecovery: true })
         }
         return
       }
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.status === 'invalidated') {
-          handleSessionInvalidation(data.message)
-        }
+      if (outcome.kind === 'invalidated') {
+        const kickedMessage =
+          outcome.reason === 'device_kick'
+            ? getTranslatedMessage('notification.sessionKicked')
+            : outcome.message
+        handleSessionInvalidation(kickedMessage)
       }
     } catch (error) {
       if (import.meta.env.DEV) {

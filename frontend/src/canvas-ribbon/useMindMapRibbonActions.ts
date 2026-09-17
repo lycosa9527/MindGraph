@@ -5,10 +5,6 @@ import { computed, reactive } from 'vue'
 
 import { useCanvasReset } from '@/composables/canvasPage/useCanvasReset'
 import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
-import {
-  canvasVirtualKeyboardOpen,
-  toggleCanvasVirtualKeyboard,
-} from '@/composables/canvasToolbar/useCanvasVirtualKeyboardOpen'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -173,10 +169,6 @@ export function useMindMapRibbonActions() {
     eventBus.emit('mindmap:explain_node_requested', { nodeId })
   }
 
-  function toggleVirtualKeyboard(): void {
-    toggleCanvasVirtualKeyboard()
-  }
-
   function resetNodeStyles(): void {
     const nodeId = diagramStore.selectedNodes[0]
     if (!nodeId) {
@@ -217,8 +209,6 @@ export function useMindMapRibbonActions() {
     openSideTool,
     requestAiSubgraph,
     requestExplainNode,
-    virtualKeyboardOpen: canvasVirtualKeyboardOpen,
-    toggleVirtualKeyboard,
     resetNodeStyles,
     learningSheet,
   })
