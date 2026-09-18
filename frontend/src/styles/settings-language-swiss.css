@@ -222,7 +222,7 @@
   outline: none;
 }
 
-.language-settings-canvas-segment :deep(.i18n-label) {
+.language-settings-canvas-segment .i18n-label {
   width: 100%;
 }
 
