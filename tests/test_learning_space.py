@@ -45,20 +45,24 @@ from tests.typing_helpers import as_type, as_user
 
 
 def test_assert_teacher_eligible_rejects_student() -> None:
+    """Reject classroom students as Learning Space pilots."""
     with pytest.raises(ValueError, match="Students cannot"):
         assert_teacher_eligible_for_pilot(as_user(SimpleNamespace(role="student", organization_id=1)), 1)
 
 
 def test_assert_teacher_eligible_rejects_org_mismatch() -> None:
+    """Reject pilots whose organization does not match the class school."""
     with pytest.raises(ValueError, match="Organization"):
         assert_teacher_eligible_for_pilot(as_user(SimpleNamespace(role="school_admin", organization_id=2)), 1)
 
 
 def test_assert_teacher_eligible_ok_for_school_admin() -> None:
+    """Allow school admins in the same organization to become pilots."""
     assert_teacher_eligible_for_pilot(as_user(SimpleNamespace(role="school_admin", organization_id=3)), 3)
 
 
 def test_assert_teacher_eligible_ok_for_legacy_user_role() -> None:
+    """Allow the legacy user role to become a pilot in the same org."""
     assert_teacher_eligible_for_pilot(as_user(SimpleNamespace(role="user", organization_id=3)), 3)
 
 
@@ -79,15 +83,18 @@ def test_assert_teacher_eligible_ok_for_platform_identities(role: str) -> None:
 
 
 def test_assert_teacher_eligible_rejects_missing_org() -> None:
+    """Reject accounts that are not attached to an organization."""
     with pytest.raises(ValueError, match="no organization"):
         assert_teacher_eligible_for_pilot(as_user(SimpleNamespace(role="personal_paid", organization_id=None)), 1)
 
 
 def test_initial_password_from_chinese_name() -> None:
+    """Derive the default student password from pinyin initials."""
     assert initial_password_from_name("张三") == "zs123"
 
 
 def test_normalize_and_preview_rejects_duplicate_names() -> None:
+    """Normalize names and flag duplicates in an import preview."""
     assert normalize_student_name("  张  三 ") == "张 三"
     rows = preview_student_names(["张三", "张三", "李四"])
     assert rows[0].ok is True
@@ -98,6 +105,7 @@ def test_normalize_and_preview_rejects_duplicate_names() -> None:
 
 
 def test_class_code_alphabet_excludes_ambiguous() -> None:
+    """Omit ambiguous characters from generated class codes."""
     code = generate_class_code(12)
     assert len(code) == 12
     assert "0" not in code
@@ -107,6 +115,7 @@ def test_class_code_alphabet_excludes_ambiguous() -> None:
 
 
 def test_class_update_normalizes_alnum_code() -> None:
+    """Uppercase alphanumeric class codes and reject invalid ones."""
     updated = ClassUpdate.model_validate({"class_code": "ab12cd"})
     assert updated.class_code == "AB12CD"
     with pytest.raises(ValidationError):
@@ -116,6 +125,7 @@ def test_class_update_normalizes_alnum_code() -> None:
 
 
 def test_merge_ai_permissions_defaults() -> None:
+    """Fill AI permission defaults and drop unknown keys."""
     merged = merge_ai_permissions({"node_palette": True, "unknown": True})
     assert merged["ai_assist"] is True
     assert merged["ai_brainstorm"] is True
@@ -133,6 +143,7 @@ def test_merge_ai_permissions_defaults() -> None:
 
 
 def test_merge_ai_assist_master_switch_off() -> None:
+    """Turn off granular AI tools when the master assist switch is off."""
     merged = merge_ai_permissions({"ai_assist": False, "topic_generate": True, "ai_brainstorm": True})
     assert merged["ai_assist"] is False
     assert merged["topic_generate"] is False
@@ -141,6 +152,7 @@ def test_merge_ai_assist_master_switch_off() -> None:
 
 
 def test_student_ai_gate_permission_matrix() -> None:
+    """Map legacy capability aliases onto merged assignment permissions."""
     perms = merge_ai_permissions({"ai_assist": True, "ai_brainstorm": True, "topic_generate": False})
     assert ai_permission_allowed(perms, "ai_brainstorm") is True
     assert ai_permission_allowed(perms, "node_palette") is True
@@ -150,6 +162,7 @@ def test_student_ai_gate_permission_matrix() -> None:
 
 
 def test_assert_can_edit_past_due() -> None:
+    """Block edits after the assignment due time."""
     assignment = LearningAssignment(
         class_id=1,
         title="t",
@@ -172,6 +185,7 @@ def test_assert_can_edit_past_due() -> None:
 
 
 def test_assert_can_edit_already_submitted() -> None:
+    """Block edits once a submission is already submitted."""
     assignment = LearningAssignment(
         class_id=1,
         title="t",
@@ -193,6 +207,7 @@ def test_assert_can_edit_already_submitted() -> None:
 
 
 def test_merge_copies_reference_diagrams() -> None:
+    """Keep unique reference diagram entries when merging permissions."""
     merged = merge_ai_permissions(
         {
             "ai_assist": False,
@@ -210,6 +225,7 @@ def test_merge_copies_reference_diagrams() -> None:
 
 
 def test_merge_copies_template_role() -> None:
+    """Preserve template role and start mode on merged permissions."""
     merged = merge_ai_permissions(
         {
             "ai_assist": False,
@@ -223,6 +239,7 @@ def test_merge_copies_template_role() -> None:
 
 
 def test_resolve_template_role_legacy() -> None:
+    """Infer template role from legacy has_teacher_template flags."""
     assert resolve_template_role({"has_teacher_template": False}) == "none"
     assert resolve_template_role({"has_teacher_template": True}) == "scaffold"
     assert resolve_template_role({}) == "scaffold"
@@ -230,6 +247,7 @@ def test_resolve_template_role_legacy() -> None:
 
 
 def test_blank_specs_are_semantically_valid() -> None:
+    """Ensure blank homework specs validate for each diagram type."""
     types = [
         "circle_map",
         "bubble_map",
@@ -250,6 +268,7 @@ def test_blank_specs_are_semantically_valid() -> None:
 
 
 def test_student_open_reference_uses_blank_not_teacher_spec() -> None:
+    """Open reference homework from a blank spec instead of the teacher map."""
     assignment = as_type(
         SimpleNamespace(
             title="桥形图练习",
@@ -275,6 +294,7 @@ def test_student_open_reference_uses_blank_not_teacher_spec() -> None:
 
 
 def test_student_open_scaffold_clones_teacher_spec() -> None:
+    """Clone the teacher spec when homework starts as a scaffold."""
     assignment = as_type(
         SimpleNamespace(
             title="补全",
@@ -302,11 +322,13 @@ def test_student_open_scaffold_clones_teacher_spec() -> None:
 
 
 def test_student_homework_diagram_title() -> None:
+    """Build student diagram titles from name or user id."""
     assert student_homework_diagram_title("张三", 9, "桥形图练习") == "张三_桥形图练习"
     assert student_homework_diagram_title("  ", 9, "作业A") == "9_作业A"
 
 
 def test_parse_account_phones_dedupes() -> None:
+    """Normalize phone numbers and drop duplicates on import."""
     assert normalize_account_phone(" 138-0013-8000 ") == "13800138000"
     phones = parse_account_phones("13800138000\n13800138000\n13900139000")
     assert phones == ["13800138000", "13900139000"]
