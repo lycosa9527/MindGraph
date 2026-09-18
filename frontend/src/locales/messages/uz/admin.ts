@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'Atlanan masalar',
   'admin.database.pgStagingRows': 'Setirleri bo’shaltin',
   'admin.database.pgLiveRows': 'Canli Siralar',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'Canli DB-ye birleshdirin',
   'admin.database.pgMergeConfirmTitle': 'PG Birleshmesini tasdiqlashyin',
   'admin.database.pgMergeConfirmMsg': 'Bu, zibilden olan ma’lumotlari canli ma’lumotlar bazasina birleshdirecek. Movcud qeydler qorunacaq. Davam etilsin?',

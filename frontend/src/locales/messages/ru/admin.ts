@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'пропущенная таблица',
   'admin.database.pgStagingRows': 'Количество строк дампа',
   'admin.database.pgLiveRows': 'Количество строк в строке',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'Объединить в онлайн-базу данных',
   'admin.database.pgMergeConfirmTitle': 'Подтвердить объединение PG',
   'admin.database.pgMergeConfirmMsg': 'Эта операция объединит данные дампа в онлайн-базу данных, а существующие записи будут сохранены. Продолжать?',

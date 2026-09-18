@@ -1421,6 +1421,7 @@ export default {
   'admin.database.pgSkippedTables': '跳過的表',
   'admin.database.pgStagingRows': '轉儲行數',
   'admin.database.pgLiveRows': '線上行數',
+  'admin.database.pgClearOrphans': '先清理孤立數據',
   'admin.database.pgExecuteMerge': '合併到線上數據庫',
   'admin.database.pgMergeConfirmTitle': '確認 PG 合併',
   'admin.database.pgMergeConfirmMsg':

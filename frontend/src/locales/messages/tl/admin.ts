@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'Nilaktawan ang mga mesa',
   'admin.database.pgStagingRows': 'Mga dump row',
   'admin.database.pgLiveRows': 'Mga Live na Hanay',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'Pagsamahin Sa Live DB',
   'admin.database.pgMergeConfirmTitle': 'Kumpirmahin ang PG Merge',
   'admin.database.pgMergeConfirmMsg': 'Isasama nito ang data mula sa dump sa live na database. Ang mga kasalukuyang tala ay pananatilihin. Magpatuloy?',

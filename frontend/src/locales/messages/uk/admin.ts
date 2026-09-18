@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'Пропущені таблиці',
   'admin.database.pgStagingRows': 'Рядки dump',
   'admin.database.pgLiveRows': 'Рядки live',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'Об\'єднати в live DB',
   'admin.database.pgMergeConfirmTitle': 'Підтвердити PG merge',
   'admin.database.pgMergeConfirmMsg': 'Це об\'єднає дані з dump у live базу даних. Існуючі записи буде збережено. Продовжити?',

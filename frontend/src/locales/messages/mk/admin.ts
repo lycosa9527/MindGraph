@@ -1362,6 +1362,7 @@ export default {
   'admin.database.pgSkippedTables': 'Skipped tables',
   'admin.database.pgStagingRows': 'Dump Rows',
   'admin.database.pgLiveRows': 'Live Rows',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'Merge Into Live DB',
   'admin.database.pgMergeConfirmTitle': 'Confirm PG Merge',
   'admin.database.pgMergeConfirmMsg': 'This will merge data from the dump into the live database. Existing records will be preserved. Continue?',

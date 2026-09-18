@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'Übersprungene Tabellen',
   'admin.database.pgStagingRows': 'Dump-Zeilen',
   'admin.database.pgLiveRows': 'Live-Zeilen',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'In Live-DB zusammenführen',
   'admin.database.pgMergeConfirmTitle': 'PG-Zusammenführung bestätigen',
   'admin.database.pgMergeConfirmMsg': 'Dump-Daten werden in die Live-Datenbank zusammengeführt. Vorhandene Datensätze bleiben erhalten. Fortfahren?',

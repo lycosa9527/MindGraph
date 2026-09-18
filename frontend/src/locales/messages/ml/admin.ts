@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'മേശ ഒഴിവാക്കി',
   'admin.database.pgStagingRows': 'ഡംപ് വരികളുടെ എണ്ണം',
   'admin.database.pgLiveRows': 'വരിയിലെ വരികളുടെ എണ്ണം',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'ഓൺലൈൻ ഡാറ്റാബേസിലേക്ക് ലയിപ്പിക്കുക',
   'admin.database.pgMergeConfirmTitle': 'പിജി ലയനം സ്ഥിരീകരിക്കുക',
   'admin.database.pgMergeConfirmMsg': 'ഈ പ്രവർത്തനം ഡംപിലെ ഡാറ്റയെ ഓൺലൈൻ ഡാറ്റാബേസിലേക്ക് ലയിപ്പിക്കുകയും നിലവിലുള്ള റെക്കോർഡുകൾ നിലനിർത്തുകയും ചെയ്യും. തുടരണോ?',

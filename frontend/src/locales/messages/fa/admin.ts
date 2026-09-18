@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'جدول حذف شده',
   'admin.database.pgStagingRows': 'تعداد ردیف های تخلیه',
   'admin.database.pgLiveRows': 'تعداد خطوط روی خط',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'ادغام در پایگاه داده آنلاین',
   'admin.database.pgMergeConfirmTitle': 'ادغام PG را تأیید کنید',
   'admin.database.pgMergeConfirmMsg': 'این عملیات داده های موجود در dump را در پایگاه داده آنلاین ادغام می کند و سوابق موجود حفظ می شود. ادامه دهید؟',

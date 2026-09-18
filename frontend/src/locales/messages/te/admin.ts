@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'దాటవేయబడిన పట్టిక',
   'admin.database.pgStagingRows': 'డంప్ అడ్డు వరుసల సంఖ్య',
   'admin.database.pgLiveRows': 'లైన్‌లోని పంక్తుల సంఖ్య',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'ఆన్‌లైన్ డేటాబేస్‌లో విలీనం చేయండి',
   'admin.database.pgMergeConfirmTitle': 'PG విలీనాన్ని నిర్ధారించండి',
   'admin.database.pgMergeConfirmMsg': 'ఈ ఆపరేషన్ డంప్‌లోని డేటాను ఆన్‌లైన్ డేటాబేస్‌లో విలీనం చేస్తుంది మరియు ఇప్పటికే ఉన్న రికార్డ్‌లు అలాగే ఉంచబడతాయి. కొనసాగించాలా?',

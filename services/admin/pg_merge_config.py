@@ -29,7 +29,7 @@ STATS_RECOMPUTE_TABLES: FrozenSet[str] = frozenset(
 
 # Config keys:
 #   order, pk_type, pk_column, dedup_key, dedup_columns, dedup_fingerprint,
-#   fk_remaps, self_ref, singleton_user, incremental_watermark,
+#   alt_dedup_keys, fk_remaps, self_ref, singleton_user, incremental_watermark,
 #   preserve_staging_pk, skip_dedup_key_when_null
 
 TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
@@ -68,6 +68,8 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
         "order": 1,
         "pk_type": "serial",
         "dedup_key": "phone",
+        "skip_dedup_key_when_null": True,
+        "alt_dedup_keys": ("email",),
         "fk_remaps": {"organization_id": "organizations"},
     },
     "api_keys": {
@@ -118,6 +120,17 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
         "singleton_user": True,
         "fk_remaps": {"user_id": "users"},
     },
+    "diagram_folders": {
+        "order": 2,
+        "pk_type": "uuid",
+        "fk_remaps": {"user_id": "users"},
+    },
+    "document_batches": {
+        "order": 2,
+        "pk_type": "serial",
+        "dedup_columns": ("user_id", "created_at", "name", "total_count"),
+        "fk_remaps": {"user_id": "users"},
+    },
     "pinned_conversations": {
         "order": 2,
         "pk_type": "serial",
@@ -136,11 +149,25 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
         "dedup_columns": ("user_id", "activity_type", "created_at"),
         "fk_remaps": {"user_id": "users"},
     },
+    # After diagrams: keep diagram_id when the UUID was merged, otherwise
+    # null it (deleted diagrams, DingTalk/workshop ids never persisted).
+    # Identity omits diagram_id — live ON DELETE SET NULL must not re-insert.
     "user_usage_activities": {
-        "order": 2,
+        "order": 4,
         "pk_type": "serial",
-        "dedup_columns": ("user_id", "source", "action", "created_at", "conversation_id"),
-        "fk_remaps": {"user_id": "users", "organization_id": "organizations"},
+        "dedup_columns": (
+            "user_id",
+            "source",
+            "action",
+            "created_at",
+            "conversation_id",
+            "title",
+        ),
+        "fk_remaps": {
+            "user_id": "users",
+            "organization_id": "organizations",
+            "diagram_id": "diagrams",
+        },
     },
     "dashboard_activities": {
         "order": 2,
@@ -182,17 +209,24 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
     "diagrams": {
         "order": 3,
         "pk_type": "uuid",
-        "fk_remaps": {"user_id": "users"},
-    },
-    "document_batches": {
-        "order": 3,
-        "pk_type": "serial",
-        "fk_remaps": {"user_id": "users"},
+        "fk_remaps": {
+            "user_id": "users",
+            "folder_id": "diagram_folders",
+            "knowledge_package_id": "document_batches",
+        },
     },
     "token_usage": {
         "order": 3,
         "pk_type": "serial",
-        "dedup_columns": ("user_id", "session_id", "created_at"),
+        "dedup_columns": (
+            "user_id",
+            "session_id",
+            "conversation_id",
+            "created_at",
+            "total_tokens",
+            "request_type",
+            "model_name",
+        ),
         "backfill_org_from_user": True,
         "fk_remaps": {
             "user_id": "users",
@@ -237,6 +271,7 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
     "library_documents": {
         "order": 3,
         "pk_type": "serial",
+        "dedup_columns": ("uploader_id", "title", "created_at", "file_path"),
         "fk_remaps": {"uploader_id": "users"},
     },
     "mindbot_usage_events": {
@@ -290,6 +325,7 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
     "chat_channels": {
         "order": 4,
         "pk_type": "serial",
+        "dedup_fingerprint": "chat_channel",
         "fk_remaps": {
             "organization_id": "organizations",
             "created_by": "users",
@@ -360,6 +396,7 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
     "debate_participants": {
         "order": 4,
         "pk_type": "serial",
+        "dedup_columns": ("session_id", "user_id", "role", "name"),
         "fk_remaps": {"user_id": "users", "session_id": "debate_sessions"},
     },
     "library_danmaku": {
@@ -372,11 +409,13 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
         "order": 4,
         "pk_type": "serial",
         "dedup_columns": ("document_id", "user_id", "page_number"),
+        "alt_dedup_keys": ("uuid",),
         "fk_remaps": {"document_id": "library_documents", "user_id": "users"},
     },
     "chat_topics": {
         "order": 5,
         "pk_type": "serial",
+        "dedup_columns": ("channel_id", "title", "created_at"),
         "fk_remaps": {"channel_id": "chat_channels", "created_by": "users"},
     },
     "channel_members": {
@@ -388,6 +427,7 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
     "document_chunks": {
         "order": 6,
         "pk_type": "serial",
+        "dedup_columns": ("document_id", "chunk_index"),
         "fk_remaps": {"document_id": "knowledge_documents"},
     },
     "document_versions": {
@@ -457,6 +497,7 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
     "evaluation_datasets": {
         "order": 6,
         "pk_type": "serial",
+        "dedup_columns": ("user_id", "space_id", "name"),
         "fk_remaps": {"user_id": "users", "space_id": "knowledge_spaces"},
     },
     "user_topic_preferences": {
@@ -486,6 +527,7 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
     "file_attachments": {
         "order": 7,
         "pk_type": "serial",
+        "dedup_columns": ("file_path", "uploader_id", "created_at"),
         "fk_remaps": {
             "message_id": "chat_messages",
             "dm_id": "direct_messages",
@@ -495,11 +537,13 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
     "child_chunks": {
         "order": 7,
         "pk_type": "serial",
+        "dedup_columns": ("parent_chunk_id", "position"),
         "fk_remaps": {"parent_chunk_id": "document_chunks"},
     },
     "chunk_attachments": {
         "order": 7,
         "pk_type": "serial",
+        "dedup_columns": ("chunk_id", "position"),
         "fk_remaps": {"chunk_id": "document_chunks"},
     },
     "embeddings": {
@@ -517,16 +561,19 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
     "chunk_test_results": {
         "order": 7,
         "pk_type": "serial",
+        "dedup_columns": ("user_id", "session_id", "created_at"),
         "fk_remaps": {"user_id": "users"},
     },
     "chunk_test_documents": {
         "order": 7,
         "pk_type": "serial",
+        "dedup_columns": ("user_id", "file_path", "created_at"),
         "fk_remaps": {"user_id": "users"},
     },
     "evaluation_results": {
         "order": 8,
         "pk_type": "serial",
+        "dedup_columns": ("dataset_id", "query_id", "method", "created_at"),
         "fk_remaps": {
             "dataset_id": "evaluation_datasets",
             "query_id": "knowledge_queries",
@@ -535,6 +582,7 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
     "query_feedback": {
         "order": 8,
         "pk_type": "serial",
+        "dedup_columns": ("query_id", "user_id", "created_at"),
         "fk_remaps": {
             "query_id": "knowledge_queries",
             "user_id": "users",
@@ -544,11 +592,13 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
     "query_templates": {
         "order": 8,
         "pk_type": "serial",
+        "dedup_columns": ("user_id", "space_id", "name"),
         "fk_remaps": {"user_id": "users", "space_id": "knowledge_spaces"},
     },
     "chunk_test_document_chunks": {
         "order": 8,
         "pk_type": "serial",
+        "dedup_columns": ("document_id", "chunk_index", "chunking_method"),
         "fk_remaps": {"document_id": "chunk_test_documents"},
     },
 }
@@ -560,3 +610,14 @@ def ordered_table_names() -> List[str]:
         TABLE_MERGE_CONFIG,
         key=lambda t: TABLE_MERGE_CONFIG[t]["order"],
     )
+
+
+def table_has_merge_identity(config: Dict[str, Any]) -> bool:
+    """True when a table can skip already-imported rows on a second merge."""
+    if config.get("pk_type") in ("uuid", "string_pk"):
+        return True
+    if config.get("singleton_user") or config.get("preserve_staging_pk"):
+        return True
+    if config.get("incremental_watermark"):
+        return True
+    return bool(config.get("dedup_key") or config.get("dedup_columns") or config.get("dedup_fingerprint"))

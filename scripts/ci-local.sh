@@ -209,6 +209,8 @@ run_backend() {
     tests/test_showcase_cos_live_matrix.py \
     tests/test_showcase_lifecycle_gates.py \
     tests/test_pg_merge_showcase_remap.py \
+    tests/test_pg_merge_log_coverage.py \
+    tests/test_pg_merge_usage_activities.py \
     tests/test_diagram_folders_api.py \
     tests/test_mind_classroom_tone_prompts.py \
     tests/test_mind_classroom_audience_prompts.py \
@@ -343,7 +345,8 @@ run_frontend() {
     tests/useCollabGuestAiGate.spec.ts \
     tests/registerKittyDiagramMutationBusCollab.spec.ts \
     tests/collabRemoteEchoFilter.spec.ts \
-    tests/applyCollabEditorPresence.spec.ts
+    tests/applyCollabEditorPresence.spec.ts \
+    tests/adminDatabaseMergeOrphans.spec.ts
 }
 
 run_chrome_extension() {

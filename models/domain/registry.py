@@ -29,6 +29,7 @@ from models.domain.thinking_coin import (
     ThinkingCoinWallet,
 )
 from models.domain.diagrams import Diagram
+from models.domain.diagram_folders import DiagramFolder
 from models.domain.diagram_snapshots import DiagramSnapshot
 from models.domain.knowledge_space import (
     KnowledgeSpace,
@@ -162,6 +163,7 @@ __all__ = [
     "ThinkingCoinSetting",
     "ThinkingCoinWallet",
     "Diagram",
+    "DiagramFolder",
     "DiagramSnapshot",
     "KnowledgeSpace",
     "KnowledgeDocument",

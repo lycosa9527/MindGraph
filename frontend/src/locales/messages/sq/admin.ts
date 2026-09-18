@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'Tabela të anashkaluara',
   'admin.database.pgStagingRows': 'Rreshta dump',
   'admin.database.pgLiveRows': 'Rreshta live',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'Bashko në DB live',
   'admin.database.pgMergeConfirmTitle': 'Konfirmo bashkimin PG',
   'admin.database.pgMergeConfirmMsg': 'Kjo do të bashkojë të dhënat nga dump në bazën live. Regjistrat ekzistues do të ruhen. Të vazhdohet?',

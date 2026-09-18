@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'tabela ignorada',
   'admin.database.pgStagingRows': 'Número de linhas de despejo',
   'admin.database.pgLiveRows': 'Número de linhas na linha',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'Mesclar em banco de dados on-line',
   'admin.database.pgMergeConfirmTitle': 'Confirmar mesclagem do PG',
   'admin.database.pgMergeConfirmMsg': 'Esta operação mesclará os dados do dump no banco de dados online e os registros existentes serão retidos. Continuar?',

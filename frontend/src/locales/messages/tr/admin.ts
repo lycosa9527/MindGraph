@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'atlanan tablo',
   'admin.database.pgStagingRows': 'Döküm satırlarının sayısı',
   'admin.database.pgLiveRows': 'Satırdaki satır sayısı',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'Çevrimiçi veritabanına birleştirme',
   'admin.database.pgMergeConfirmTitle': 'PG birleştirmeyi onaylayın',
   'admin.database.pgMergeConfirmMsg': 'Bu işlem, dökümdeki verileri çevrimiçi veritabanıyla birleştirecek ve mevcut kayıtlar korunacaktır. Devam etmek?',

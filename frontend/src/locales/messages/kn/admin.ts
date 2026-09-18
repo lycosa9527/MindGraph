@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'ಸ್ಕಿಪ್ಡ್ ಟೇಬಲ್',
   'admin.database.pgStagingRows': 'ಡಂಪ್ ಸಾಲುಗಳ ಸಂಖ್ಯೆ',
   'admin.database.pgLiveRows': 'ಸಾಲಿನಲ್ಲಿರುವ ಸಾಲುಗಳ ಸಂಖ್ಯೆ',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'ಆನ್‌ಲೈನ್ ಡೇಟಾಬೇಸ್‌ಗೆ ವಿಲೀನಗೊಳಿಸಿ',
   'admin.database.pgMergeConfirmTitle': 'PG ವಿಲೀನವನ್ನು ದೃಢೀಕರಿಸಿ',
   'admin.database.pgMergeConfirmMsg': 'ಈ ಕಾರ್ಯಾಚರಣೆಯು ಡಂಪ್‌ನಲ್ಲಿರುವ ಡೇಟಾವನ್ನು ಆನ್‌ಲೈನ್ ಡೇಟಾಬೇಸ್‌ಗೆ ವಿಲೀನಗೊಳಿಸುತ್ತದೆ ಮತ್ತು ಅಸ್ತಿತ್ವದಲ್ಲಿರುವ ದಾಖಲೆಗಳನ್ನು ಉಳಿಸಿಕೊಳ್ಳಲಾಗುತ್ತದೆ. ಮುಂದುವರಿಸುವುದೇ?',

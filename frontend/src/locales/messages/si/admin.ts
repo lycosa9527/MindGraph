@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'මඟ හැරුණු වගු',
   'admin.database.pgStagingRows': 'ඩම්ප් පේළි',
   'admin.database.pgLiveRows': 'සජීවී පේළි',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'සජීවී DB වෙත ඒකාබද්ධ කරන්න',
   'admin.database.pgMergeConfirmTitle': 'PG ඒකාබද්ධ කිරීම තහවුරු කරන්න',
   'admin.database.pgMergeConfirmMsg': 'මෙය ඩම්ප් වෙතින් දත්ත සජීවී දත්ත ගබඩාවට ඒකාබද්ධ කරනු ඇත. පවතින වාර්තා සුරැකෙනු ඇත. දිගටම කරගෙන යන්නද?',

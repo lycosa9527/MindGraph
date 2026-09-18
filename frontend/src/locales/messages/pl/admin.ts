@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'pominięty stół',
   'admin.database.pgStagingRows': 'Liczba wierszy zrzutu',
   'admin.database.pgLiveRows': 'Liczba linii w linii',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'Połącz się z internetową bazą danych',
   'admin.database.pgMergeConfirmTitle': 'Potwierdź połączenie PG',
   'admin.database.pgMergeConfirmMsg': 'Ta operacja spowoduje połączenie danych znajdujących się w zrzucie z internetową bazą danych, a istniejące rekordy zostaną zachowane. Kontynuować?',

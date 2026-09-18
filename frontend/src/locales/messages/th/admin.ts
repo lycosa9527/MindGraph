@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'ตารางที่ข้าม',
   'admin.database.pgStagingRows': 'แถวใน dump',
   'admin.database.pgLiveRows': 'แถวที่ใช้งานจริง',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'รวมเข้าฐานที่ใช้งานจริง',
   'admin.database.pgMergeConfirmTitle': 'ยืนยันการรวม PG',
   'admin.database.pgMergeConfirmMsg': 'การดำเนินการนี้จะรวมข้อมูลจาก dump เข้าฐานที่ใช้งานจริง เรคคอร์ดที่มีอยู่จะถูกรักษาไว้ ดำเนินการต่อ?',

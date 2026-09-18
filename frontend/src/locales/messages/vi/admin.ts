@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'Bỏ qua bảng',
   'admin.database.pgStagingRows': 'Hàng kết xuất',
   'admin.database.pgLiveRows': 'Hàng trực tiếp',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'Hợp nhất vào DB trực tiếp',
   'admin.database.pgMergeConfirmTitle': 'Xác nhận hợp nhất PG',
   'admin.database.pgMergeConfirmMsg': 'Điều này sẽ hợp nhất dữ liệu từ kết xuất vào cơ sở dữ liệu trực tiếp. Các hồ sơ hiện có sẽ được bảo tồn. Tiếp tục?',

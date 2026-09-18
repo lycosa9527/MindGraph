@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'تخطي الجدول',
   'admin.database.pgStagingRows': 'عدد صفوف التفريغ',
   'admin.database.pgLiveRows': 'عدد الخطوط على السطر',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'دمج في قاعدة البيانات على الانترنت',
   'admin.database.pgMergeConfirmTitle': 'تأكيد دمج PG',
   'admin.database.pgMergeConfirmMsg': 'ستقوم هذه العملية بدمج البيانات الموجودة في التفريغ في قاعدة البيانات عبر الإنترنت وسيتم الاحتفاظ بالسجلات الموجودة. يكمل؟',

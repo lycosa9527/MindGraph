@@ -69,6 +69,63 @@ def _build_dedup_lookup(
     return {}
 
 
+def _build_alt_dedup_lookups(
+    live_engine: Engine,
+    table_name: str,
+    pk_col: str,
+    config: Dict[str, Any],
+) -> Dict[str, Dict[Any, Any]]:
+    """Pre-fetch extra unique-column → live PK maps (email, bookmark uuid, …)."""
+    alt_keys: Tuple[str, ...] = tuple(config.get("alt_dedup_keys") or ())
+    lookups: Dict[str, Dict[Any, Any]] = {}
+    for key in alt_keys:
+        with live_engine.connect() as conn:
+            rows = conn.execute(text(f'SELECT "{key}", "{pk_col}" FROM "{table_name}"'))
+            lookups[key] = {row[0]: row[1] for row in rows if row[0] is not None}
+    return lookups
+
+
+def _record_alt_dedup(
+    row: Dict[str, Any],
+    alt_lookups: Dict[str, Dict[Any, Any]],
+    new_pk: Any,
+) -> None:
+    """Remember newly inserted unique-column values so later rows can skip."""
+    for key, lookup in alt_lookups.items():
+        key_val = row.get(key)
+        if key_val is not None:
+            lookup[key_val] = new_pk
+
+
+def _staging_rows_parents_first(
+    rows: Any,
+    self_ref: Optional[str],
+    pk_col: str,
+) -> List[Any]:
+    """Self-ref children only see mapped parents when roots merge first."""
+    if not self_ref:
+        return list(rows)
+    return sorted(rows, key=lambda row: (row.get(self_ref) is not None, str(row[pk_col])))
+
+
+def _apply_mapped_parent(
+    values: Dict[str, Any],
+    self_ref: Optional[str],
+    table_id_map: Dict[Any, Any],
+) -> Optional[Any]:
+    """Use an already-merged parent PK; return unmapped parent for a later update."""
+    if not self_ref:
+        return None
+    old_parent = values.get(self_ref)
+    if old_parent is None:
+        return None
+    mapped = table_id_map.get(old_parent)
+    if mapped is not None:
+        values[self_ref] = mapped
+        return None
+    return old_parent
+
+
 def _fetch_live_watermark(
     live_engine: Engine,
     table_name: str,
@@ -153,15 +210,15 @@ def _is_duplicate(
     dedup_key: Optional[str],
     dedup_columns: Optional[Tuple[str, ...]],
     dedup_fingerprint: Optional[str],
+    alt_lookups: Optional[Dict[str, Dict[Any, Any]]] = None,
 ) -> bool:
     """Return True when staging row already exists on live (maps old_pk in table_id_map)."""
     if dedup_key:
         key_val = values.get(dedup_key)
-        if config.get("skip_dedup_key_when_null") and key_val is None:
-            return False
-        if key_val in dedup_lookup:
-            table_id_map[old_pk] = dedup_lookup[key_val]
-            return True
+        if not (config.get("skip_dedup_key_when_null") and key_val is None):
+            if key_val in dedup_lookup:
+                table_id_map[old_pk] = dedup_lookup[key_val]
+                return True
     elif dedup_columns:
         key_tuple = dedup_tuple(values, dedup_columns)
         if key_tuple in dedup_lookup:
@@ -171,6 +228,11 @@ def _is_duplicate(
         fp = fingerprint_key(dedup_fingerprint, values)
         if fp is not None and fp in dedup_lookup:
             table_id_map[old_pk] = dedup_lookup[fp]
+            return True
+    for key, lookup in (alt_lookups or {}).items():
+        key_val = values.get(key)
+        if key_val is not None and key_val in lookup:
+            table_id_map[old_pk] = lookup[key_val]
             return True
     return False
 
@@ -243,14 +305,17 @@ def _classify_row(
     singleton = config.get("singleton_user", False)
     watermark_col: Optional[str] = config.get("incremental_watermark")
     preserve_pk = config.get("preserve_staging_pk", False)
+    self_ref: Optional[str] = config.get("self_ref")
 
     with staging_engine.connect() as conn:
         rows = conn.execute(text(f'SELECT * FROM "{table_name}"')).mappings().all()
+    rows = _staging_rows_parents_first(rows, self_ref, pk_col)
 
     if not rows:
         return {"new_rows": 0, "duplicate_rows": 0, "orphaned_rows": 0}
 
     dedup_lookup = _build_dedup_lookup(live_engine, table_name, pk_col, config)
+    alt_lookups = _build_alt_dedup_lookups(live_engine, table_name, pk_col, config)
     nullable_fk_cols = _fetch_nullable_fk_cols(live_engine, table_name, list(fk_remaps.keys()))
 
     singleton_map: Dict[int, int] = {}
@@ -294,6 +359,7 @@ def _classify_row(
             continue
 
         _backfill_org_from_user(values, config, user_org_cache)
+        _apply_mapped_parent(values, self_ref, scratch_id_map)
 
         if singleton:
             live_uid = values.get("user_id")
@@ -310,6 +376,7 @@ def _classify_row(
             dedup_key,
             dedup_columns,
             dedup_fingerprint,
+            alt_lookups,
         ):
             duplicate_rows += 1
             continue
@@ -354,15 +421,18 @@ def _simulate_new_row_ids(
     singleton = config.get("singleton_user", False)
     watermark_col: Optional[str] = config.get("incremental_watermark")
     preserve_pk = config.get("preserve_staging_pk", False)
+    self_ref: Optional[str] = config.get("self_ref")
 
     with staging_engine.connect() as conn:
         rows = conn.execute(text(f'SELECT * FROM "{table_name}"')).mappings().all()
+    rows = _staging_rows_parents_first(rows, self_ref, pk_col)
 
     if not rows:
         id_maps[table_name] = {}
         return
 
     dedup_lookup = _build_dedup_lookup(live_engine, table_name, pk_col, config)
+    alt_lookups = _build_alt_dedup_lookups(live_engine, table_name, pk_col, config)
     nullable_fk_cols = _fetch_nullable_fk_cols(live_engine, table_name, list(fk_remaps.keys()))
 
     singleton_map: Dict[int, int] = {}
@@ -402,6 +472,7 @@ def _simulate_new_row_ids(
             continue
 
         _backfill_org_from_user(values, config, user_org_cache)
+        _apply_mapped_parent(values, self_ref, table_id_map)
 
         if singleton:
             live_uid = values.get("user_id")
@@ -418,6 +489,7 @@ def _simulate_new_row_ids(
             dedup_key,
             dedup_columns,
             dedup_fingerprint,
+            alt_lookups,
         ):
             continue
 
@@ -480,12 +552,14 @@ def merge_table(
 
     with staging_engine.connect() as conn:
         rows = conn.execute(text(f'SELECT * FROM "{table_name}"')).mappings().all()
+    rows = _staging_rows_parents_first(rows, self_ref, pk_col)
 
     if not rows:
         id_maps[table_name] = {}
         return {"inserted": 0, "skipped": 0, "orphaned": 0}
 
     dedup_lookup = _build_dedup_lookup(live_engine, table_name, pk_col, config)
+    alt_lookups = _build_alt_dedup_lookups(live_engine, table_name, pk_col, config)
     nullable_fk_cols = _fetch_nullable_fk_cols(live_engine, table_name, list(fk_remaps.keys()))
 
     singleton_map: Dict[int, int] = {}
@@ -532,6 +606,7 @@ def merge_table(
             continue
 
         _backfill_org_from_user(values, config, user_org_cache)
+        pending_parent = _apply_mapped_parent(values, self_ref, table_id_map)
 
         if singleton:
             live_uid = values.get("user_id")
@@ -549,6 +624,7 @@ def merge_table(
             dedup_key,
             dedup_columns,
             dedup_fingerprint,
+            alt_lookups,
         ):
             skipped += 1
             continue
@@ -569,9 +645,8 @@ def merge_table(
                 skipped += 1
                 continue
 
-        old_self_ref = None
-        if self_ref and values.get(self_ref) is not None:
-            old_self_ref = values[self_ref]
+        old_self_ref = pending_parent
+        if pending_parent is not None and self_ref is not None:
             values[self_ref] = None
 
         if pk_type == "serial" and not preserve_pk:
@@ -625,7 +700,7 @@ def merge_table(
                         if old_self_ref is not None:
                             self_ref_updates.append((new_pk, old_self_ref))
 
-                        if dedup_key and not config.get("skip_dedup_key_when_null"):
+                        if dedup_key:
                             key_val = row.get(dedup_key)
                             if key_val is not None:
                                 dedup_lookup[key_val] = new_pk
@@ -636,6 +711,7 @@ def merge_table(
                             fp = fingerprint_key(dedup_fingerprint, row)
                             if fp is not None:
                                 dedup_lookup[fp] = new_pk
+                        _record_alt_dedup(row, alt_lookups, new_pk)
 
                     except DATABASE_ERRORS as exc:
                         savepoint.rollback()

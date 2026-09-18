@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'Melewati tabel',
   'admin.database.pgStagingRows': 'Baris Buang',
   'admin.database.pgLiveRows': 'Baris Langsung',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'Gabungkan Ke DB Langsung',
   'admin.database.pgMergeConfirmTitle': 'Konfirmasi Penggabungan PG',
   'admin.database.pgMergeConfirmMsg': 'Ini akan menggabungkan data dari dump ke database langsung. Catatan yang ada akan dipertahankan. Melanjutkan?',

@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': '건너뛴 테이블',
   'admin.database.pgStagingRows': '덤프 행',
   'admin.database.pgLiveRows': '라이브 행',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': '라이브 DB에 병합',
   'admin.database.pgMergeConfirmTitle': 'PG 병합 확인',
   'admin.database.pgMergeConfirmMsg': '덤프의 데이터를 라이브 데이터베이스에 병합합니다. 기존 기록은 유지됩니다. 계속할까요?',

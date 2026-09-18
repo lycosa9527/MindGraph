@@ -566,10 +566,19 @@ onMounted(() => {
           </el-table-column>
         </el-table>
 
-        <div class="mt-4 flex justify-end">
+        <div class="mt-4 flex justify-end gap-2">
+          <el-button
+            type="warning"
+            :loading="isCleaningOrphans"
+            :disabled="isMergingDump"
+            @click="cleanOrphans"
+          >
+            {{ t('admin.database.pgClearOrphans') }}
+          </el-button>
           <el-button
             type="success"
             :loading="isMergingDump"
+            :disabled="isCleaningOrphans"
             @click="executePgMerge"
           >
             {{ t('admin.database.pgExecuteMerge') }}

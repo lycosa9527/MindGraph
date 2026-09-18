@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'Tablas omitidas',
   'admin.database.pgStagingRows': 'Filas del dump',
   'admin.database.pgLiveRows': 'Filas en vivo',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'Fusionar en BD en vivo',
   'admin.database.pgMergeConfirmTitle': 'Confirmar fusión PG',
   'admin.database.pgMergeConfirmMsg': 'Esto fusionará datos del dump en la base de datos en vivo. Los registros existentes se conservarán. ¿Continuar?',

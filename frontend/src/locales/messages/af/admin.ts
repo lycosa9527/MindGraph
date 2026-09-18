@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'Tafels oorgeslaan',
   'admin.database.pgStagingRows': 'Gooi rye',
   'admin.database.pgLiveRows': 'Lewendige rye',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'Voeg saam in lewendige DB',
   'admin.database.pgMergeConfirmTitle': 'Bevestig PG Merge',
   'admin.database.pgMergeConfirmMsg': 'Dit sal data van die stortingsterrein saamvoeg in die lewendige databasis. Bestaande rekords sal bewaar word. Gaan voort?',

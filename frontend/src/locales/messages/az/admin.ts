@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'Atlanan masalar',
   'admin.database.pgStagingRows': 'Sətirləri boşaltın',
   'admin.database.pgLiveRows': 'Canlı Sıralar',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'Canlı DB-yə birləşdirin',
   'admin.database.pgMergeConfirmTitle': 'PG Birləşməsini təsdiqləyin',
   'admin.database.pgMergeConfirmMsg': 'Bu, zibildən olan məlumatları canlı verilənlər bazasına birləşdirəcək. Mövcud qeydlər qorunacaq. Davam edilsin?',

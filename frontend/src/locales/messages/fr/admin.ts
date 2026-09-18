@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'Tables ignorées',
   'admin.database.pgStagingRows': 'Lignes (dump)',
   'admin.database.pgLiveRows': 'Lignes (live)',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'Fusionner dans la base live',
   'admin.database.pgMergeConfirmTitle': 'Confirmer la fusion PG',
   'admin.database.pgMergeConfirmMsg': 'Fusionner les données du dump dans la base live. Les enregistrements existants sont conservés. Continuer ?',

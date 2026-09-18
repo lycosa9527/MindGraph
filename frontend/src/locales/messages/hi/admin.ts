@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'छोड़ी गई तालिकाएँ',
   'admin.database.pgStagingRows': 'Dump पंक्तियाँ',
   'admin.database.pgLiveRows': 'लाइव पंक्तियाँ',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'लाइव DB में मर्ज',
   'admin.database.pgMergeConfirmTitle': 'पुष्टि PG Merge',
   'admin.database.pgMergeConfirmMsg': 'यह will merge data from the dump into the live database. Existing records will be preserved. Continue?',

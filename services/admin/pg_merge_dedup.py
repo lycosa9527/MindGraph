@@ -41,8 +41,24 @@ def mindbot_usage_event_fingerprint(values: Dict[str, Any]) -> Optional[Tuple[An
     )
 
 
+def chat_channel_fingerprint(values: Dict[str, Any]) -> Optional[Tuple[Any, ...]]:
+    """Live announce is a singleton; other channels unique on org/parent/name."""
+    archived = bool(values.get("is_archived"))
+    if values.get("channel_type") == "announce" and not archived:
+        return ("announce",)
+    created_at = normalize_dedup_value(values.get("created_at")) if archived else None
+    return (
+        values.get("organization_id"),
+        values.get("parent_id"),
+        values.get("name"),
+        archived,
+        created_at,
+    )
+
+
 DEDUP_FINGERPRINT_FNS: Dict[str, DedupFingerprintFn] = {
     "mindbot_usage_event": mindbot_usage_event_fingerprint,
+    "chat_channel": chat_channel_fingerprint,
 }
 
 

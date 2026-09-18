@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'தவிர்க்கப்பட்ட அட்டவணை',
   'admin.database.pgStagingRows': 'டம்ப் வரிசைகளின் எண்ணிக்கை',
   'admin.database.pgLiveRows': 'வரியில் உள்ள கோடுகளின் எண்ணிக்கை',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'ஆன்லைன் தரவுத்தளத்தில் இணைக்கவும்',
   'admin.database.pgMergeConfirmTitle': 'PG ஒன்றிணைப்பை உறுதிப்படுத்தவும்',
   'admin.database.pgMergeConfirmMsg': 'இந்தச் செயல்பாடு டம்ப்பில் உள்ள தரவை ஆன்லைன் தரவுத்தளத்தில் ஒன்றிணைக்கும் மற்றும் ஏற்கனவே உள்ள பதிவுகள் தக்கவைக்கப்படும். தொடரவா?',

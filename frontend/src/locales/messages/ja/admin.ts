@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'スキップされたテーブル',
   'admin.database.pgStagingRows': 'ダンプ行数',
   'admin.database.pgLiveRows': '回線の行数',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'マージ Into Live DB',
   'admin.database.pgMergeConfirmTitle': '確認 PG マージ',
   'admin.database.pgMergeConfirmMsg': 'This will merge data from the dump into the live database. Existing records will be preserved. 続ける?',

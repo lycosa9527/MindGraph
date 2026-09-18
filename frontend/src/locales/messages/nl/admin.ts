@@ -1352,6 +1352,7 @@ export default {
   'admin.database.pgSkippedTables': 'Overgeslagen tafels',
   'admin.database.pgStagingRows': 'Rijen dumpen',
   'admin.database.pgLiveRows': 'Levende rijen',
+  'admin.database.pgClearOrphans': 'Clear orphans first',
   'admin.database.pgExecuteMerge': 'Samenvoegen in Live DB',
   'admin.database.pgMergeConfirmTitle': 'Bevestig PG-samenvoeging',
   'admin.database.pgMergeConfirmMsg': 'Hierdoor worden gegevens uit de dump samengevoegd met de live database. Bestaande documenten blijven behouden. Doorgaan?',
