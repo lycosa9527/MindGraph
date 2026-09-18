@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': 'Bu, sessiyanı hər kəs üçün bitirəcək. İştirakçılar otaqdan çıxacaq.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Təşkilat',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Şəbəkə',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

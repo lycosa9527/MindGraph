@@ -108,6 +108,7 @@ pycryptodome>=3.23.0  # AES decryption for bayi mode
 numpy>=2.5.1  # Numerical operations for embedding normalization and validation
 qdrant-client>=1.18.0,<1.19  # Match server 1.18.x; upgrade server via scripts/setup/update_qdrant_server.py
 jieba3>=1.0.2  # Chinese text segmentation for FTS5 full-text search (modern Python 3 rewrite, no pkg_resources)
+pypinyin>=0.55.0  # Student Learning Space initial password from Chinese name initials
 langdetect>=1.0.9  # Language detection for documents
 semchunk>=4.1.1  # Semantic text chunking (fast, token-aware, Chinese support)
 tiktoken>=0.13.0  # OpenAI tokenizer for semchunk (accurate token counting)

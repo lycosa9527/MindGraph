@@ -16,8 +16,10 @@ import {
 } from '@/composables/editor/diagramSnapshotVersions'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import { useSnapshotHistory } from '@/composables/editor/useSnapshotHistory'
-import { useDiagramStore, useLLMResultsStore, useUIStore } from '@/stores'
+import { studentHomeworkDiagramTitle } from '@/composables/learningSpace/lsHelpers'
+import { useAuthStore, useDiagramStore, useLLMResultsStore, useUIStore } from '@/stores'
 import { splitSavedLlmResultsFromSpec } from '@/stores/llmResultsPersist'
+import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import { mindMapLibraryLoadOptions } from '@/utils/mindMapLibraryLoadOptions'
@@ -50,8 +52,25 @@ export function useCanvasPageLibrarySnapshots(options: {
   const savedDiagramsStore = useSavedDiagramsStore()
   const llmResultsStore = useLLMResultsStore()
   const uiStore = useUIStore()
+  const authStore = useAuthStore()
+  const homeworkCanvas = useLearningAssignmentCanvasStore()
   const notify = useNotifications()
   const { t } = useLanguage()
+
+  function applyOpenedDiagramTitle(libraryTitle: string): void {
+    if (!homeworkCanvas.isActive) {
+      if (libraryTitle) diagramStore.initTitle(libraryTitle)
+      return
+    }
+    diagramStore.setTitle(
+      studentHomeworkDiagramTitle(
+        authStore.user?.username,
+        authStore.user?.id,
+        homeworkCanvas.assignment?.title
+      ),
+      true
+    )
+  }
 
   /** Invalidates in-flight library loads when the user selects another diagram. */
   let libraryLoadGeneration = 0
@@ -131,9 +150,7 @@ export function useCanvasPageLibrarySnapshots(options: {
     )
 
     if (loaded) {
-      if (diagram.title) {
-        diagramStore.initTitle(diagram.title)
-      }
+      applyOpenedDiagramTitle(diagram.title)
       // Emit after Pinia replace so listeners do not read the previous diagram.
       eventBus.emit('diagram:loaded_from_library', {
         diagramId,

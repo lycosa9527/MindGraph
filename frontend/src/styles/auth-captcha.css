@@ -9,33 +9,15 @@
 .captcha-row {
   --captcha-gap: 0.75rem;
   --captcha-input-min: 4.5rem;
-  --captcha-src-w: 160;
-  --captcha-src-h: 60;
-  --captcha-max-w: 128px;
-  --captcha-w: min(
-    var(--captcha-max-w),
-    max(0px, calc(100cqw - var(--captcha-gap) - var(--captcha-input-min)))
-  );
-  --captcha-h: calc(var(--captcha-w) * var(--captcha-src-h) / var(--captcha-src-w));
+  /* Fixed size: container-query `cqw` can be 0 on first paint and collapse the image. */
+  --captcha-w: 128px;
+  --captcha-h: 48px;
 
-  container-type: inline-size;
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: var(--captcha-gap);
   min-width: 0;
-}
-
-@container (max-width: 240px) {
-  .captcha-row {
-    --captcha-input-min: 4rem;
-  }
-}
-
-@container (max-width: 200px) {
-  .captcha-row {
-    --captcha-input-min: 3.25rem;
-  }
 }
 
 .captcha-row__input {
@@ -57,18 +39,28 @@
 .captcha-image,
 .captcha-placeholder {
   box-sizing: border-box;
-  display: block;
+  display: flex;
   flex: 0 0 var(--captcha-w);
+  align-items: center;
+  justify-content: center;
   width: var(--captcha-w);
   height: var(--captcha-h);
+  min-width: var(--captcha-w);
+  min-height: var(--captcha-h);
   border-radius: 8px;
   cursor: pointer;
   transition: opacity 0.2s ease;
 }
 
 .captcha-image {
+  display: block;
   object-fit: contain;
   object-position: center;
+  background: #f5f5f4;
+}
+
+.captcha-image--loading {
+  opacity: 0.55;
 }
 
 .captcha-image:hover,
@@ -79,38 +71,17 @@
 .captcha-placeholder {
   background: #f5f5f4;
   border: 1px solid #e7e5e4;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  gap: 0.25rem;
+  flex-direction: column;
+  color: #a8a29e;
+  font-size: 0.7rem;
+  line-height: 1.1;
+  user-select: none;
 }
 
-/* Fallback when container queries are unavailable (rare). */
-@supports not (width: 1cqw) {
-  .captcha-row {
-    --captcha-w: var(--captcha-max-w);
-    --captcha-h: 48px;
-  }
-
-  @media (max-width: 360px) {
-    .captcha-row {
-      --captcha-w: 112px;
-      --captcha-h: 42px;
-    }
-  }
-
-  @media (max-width: 320px) {
-    .captcha-row {
-      --captcha-w: 96px;
-      --captcha-h: 36px;
-    }
-  }
-
-  @media (max-width: 280px) {
-    .captcha-row {
-      --captcha-w: 80px;
-      --captcha-h: 30px;
-    }
-  }
+.captcha-placeholder__hint {
+  padding: 0 0.25rem;
+  text-align: center;
 }
 
 /* Tall auth modals: scroll inside overlay on mobile instead of center-clipping content */
@@ -131,5 +102,13 @@
 @media (min-width: 640px) {
   .auth-modal-scroll-shell {
     align-items: center;
+  }
+}
+
+@media (max-width: 360px) {
+  .captcha-row {
+    --captcha-w: 112px;
+    --captcha-h: 42px;
+    --captcha-input-min: 3.5rem;
   }
 }

@@ -424,7 +424,7 @@ export default {
   'canvas.classroomRemote.formatPainter': '格式刷',
   'canvas.classroomRemote.resetPosition': '雙擊標題欄可復位位置',
     'canvas.classroomRemote.tabTopics': '主題',
-'canvas.classroomRemote.tabView': '視圖',
+  'canvas.classroomRemote.tabView': '視圖',
   'canvas.classroomRemote.topicsAdd': '新增主題',
   'canvas.classroomRemote.topicsAddPlaceholder': '輸入主題',
   'canvas.classroomRemote.topicsApply': '套用到中心主題',

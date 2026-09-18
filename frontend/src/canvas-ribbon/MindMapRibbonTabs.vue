@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import type { Component } from 'vue'
+import { computed, type Component } from 'vue'
 
 import { Folder, GraduationCap, Palette, Users } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useAuthStore } from '@/stores'
 
 import MindMapRibbonAiMark from './MindMapRibbonAiMark.vue'
 import './mindMapRibbonTabs.css'
@@ -28,6 +29,14 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
+const authStore = useAuthStore()
+
+const visibleTabs = computed(() => {
+  if (authStore.user?.role === 'student') {
+    return MIND_MAP_RIBBON_TABS.filter((tab) => tab !== 'research')
+  }
+  return MIND_MAP_RIBBON_TABS
+})
 
 const TAB_ICONS: Record<Exclude<MindMapRibbonTabId, 'ai'>, Component> = {
   file: Folder,
@@ -63,7 +72,7 @@ function tabTitle(tab: MindMapRibbonTabId): string {
     data-testid="mindmap-ribbon-tabs"
   >
     <button
-      v-for="tab in MIND_MAP_RIBBON_TABS"
+      v-for="tab in visibleTabs"
       :key="tab"
       type="button"
       class="mm-ribbon-tabs__tab"

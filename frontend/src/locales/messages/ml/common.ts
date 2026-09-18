@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'ആശയ ഭൂപടം',
   'swissGlass.hero.focusQuestion.title': 'ശ്രദ്ധ കേന്ദ്രീകരിക്കുന്ന പ്രശ്നങ്ങൾ',
   'swissGlass.hero.focusQuestion.line1': 'കൺസെപ്റ്റ് മാപ്പിനായി പ്രധാന ചോദ്യം സജ്ജമാക്കുക',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

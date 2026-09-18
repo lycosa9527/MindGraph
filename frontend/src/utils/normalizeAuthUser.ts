@@ -59,6 +59,25 @@ function resolveLoginPasswordSet(source: AuthUserSource): boolean {
   return true
 }
 
+function resolveMustChangePassword(source: AuthUserSource): boolean {
+  if (source.must_change_password !== undefined) {
+    return Boolean(source.must_change_password)
+  }
+  if (source.mustChangePassword !== undefined) {
+    return Boolean(source.mustChangePassword)
+  }
+  return false
+}
+
+function resolveLearningClassId(source: AuthUserSource): number | null {
+  const raw = source.learning_class_id ?? source.learningClassId
+  if (raw == null) {
+    return null
+  }
+  const n = typeof raw === 'number' ? raw : Number(raw)
+  return Number.isFinite(n) ? n : null
+}
+
 function resolveThinkingCoins(source: AuthUserSource): User['thinkingCoins'] {
   const raw = source.thinking_coins ?? source.thinkingCoins
   if (!raw || typeof raw !== 'object') {
@@ -200,6 +219,8 @@ export function normalizeAuthUser(source: BackendUser | User): User {
     classroomRemoteVisible: remoteVisibleRaw !== false,
     allowsSimplifiedChinese: allowsZh,
     loginPasswordSet: resolveLoginPasswordSet(raw),
+    mustChangePassword: resolveMustChangePassword(raw),
+    learningClassId: resolveLearningClassId(raw),
     mindmateAgentName: mindmateAgentName || null,
     mindmateAgentAvatarUrl: mindmateAgentAvatarUrl || null,
     schoolTier: schoolTier ?? null,

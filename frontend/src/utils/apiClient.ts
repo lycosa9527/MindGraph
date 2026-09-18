@@ -81,6 +81,12 @@ function mergeApiHeaders(
   if (csrfToken && !merged['X-CSRF-Token']) {
     merged['X-CSRF-Token'] = csrfToken
   }
+  if (typeof sessionStorage !== 'undefined' && !merged['X-MG-Assignment-Id']) {
+    const assignmentId = sessionStorage.getItem('mg_learning_assignment_id')
+    if (assignmentId) {
+      merged['X-MG-Assignment-Id'] = assignmentId
+    }
+  }
   return merged
 }
 

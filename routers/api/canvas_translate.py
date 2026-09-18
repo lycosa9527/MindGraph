@@ -15,7 +15,9 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from config.database import get_async_db
 from models.domain.auth import User
 from models.requests.requests_canvas_translate import (
     CANVAS_TRANSLATE_LANGUAGE_NAMES_EN,
@@ -40,6 +42,7 @@ from services.infrastructure.http.error_handler import (
     ThinkingCoinInsufficientError,
     UserDailyTokenCapExceededError,
 )
+from services.learning_space.ai_gate import assert_student_ai_capability
 from services.llm import llm_service
 from services.llm.org_result_cache import (
     fingerprint_org_payload,
@@ -361,10 +364,13 @@ async def translate_node_label(
     req: TranslateNodeLabelRequest,
     request: Request,
     current_user: Optional[User] = Depends(get_current_user_or_api_key),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Translate a single diagram node label using DashScope ``qwen3.8-flash``.
     """
+    if current_user is not None:
+        await assert_student_ai_capability(db, current_user, request, "translate")
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "canvas_translate_node_label",
@@ -466,10 +472,13 @@ async def translate_diagram_labels(
     req: TranslateDiagramLabelsRequest,
     request: Request,
     current_user: Optional[User] = Depends(get_current_user_or_api_key),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Translate many diagram labels (node and connection text) in batched LLM calls.
     """
+    if current_user is not None:
+        await assert_student_ai_capability(db, current_user, request, "translate")
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "canvas_translate_diagram_labels",
@@ -576,10 +585,13 @@ async def translate_diagram_labels_stream(
     req: TranslateDiagramLabelsRequest,
     request: Request,
     current_user: Optional[User] = Depends(get_current_user_or_api_key),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Stream translated labels as NDJSON (progressive UX): start, item rows, done.
     """
+    if current_user is not None:
+        await assert_student_ai_capability(db, current_user, request, "translate")
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "canvas_translate_diagram_labels_stream",

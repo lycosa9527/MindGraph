@@ -33,6 +33,7 @@ from utils.auth.role_constants import (
     ROLE_PERSONAL_TRIAL,
     ROLE_PLATFORM_BD,
     ROLE_SCHOOL_ADMIN,
+    ROLE_STUDENT,
     ROLE_SUPERADMIN,
     ROLE_TEACHER,
     SUPERADMIN_ROLES,
@@ -68,6 +69,8 @@ CAP_TAB_SHOWCASE_PERMISSIONS: Final[str] = "tab.showcase.permissions"
 CAP_TAB_SHOWCASE_DASHBOARD: Final[str] = "tab.showcase.dashboard"
 CAP_TAB_VOD_VIEW: Final[str] = "tab.vod.view"
 CAP_TAB_VOD_EDIT: Final[str] = "tab.vod.edit"
+CAP_TAB_LEARNING_SPACE_VIEW: Final[str] = "tab.learning_space.view"
+CAP_TAB_LEARNING_SPACE_EDIT: Final[str] = "tab.learning_space.edit"
 
 CAP_SETTINGS_FEATURES: Final[str] = "tab.settings.features"
 CAP_SETTINGS_ROLES: Final[str] = "tab.settings.roles"
@@ -142,6 +145,8 @@ _SUPERADMIN_CAPS: frozenset[str] = (
             CAP_TAB_SHOWCASE_DASHBOARD,
             CAP_TAB_VOD_VIEW,
             CAP_TAB_VOD_EDIT,
+            CAP_TAB_LEARNING_SPACE_VIEW,
+            CAP_TAB_LEARNING_SPACE_EDIT,
             CAP_SCOPE_GLOBAL,
         }
     )
@@ -199,6 +204,7 @@ ROLE_PANEL_CAPABILITIES: dict[str, frozenset[str]] = {
     ROLE_EXPERT: _EXPERT_CAPS,
     ROLE_SCHOOL_ADMIN: _SCHOOL_ADMIN_CAPS,
     ROLE_TEACHER: frozenset(),
+    ROLE_STUDENT: frozenset(),
     ROLE_PERSONAL_TRIAL: frozenset(),
     ROLE_PERSONAL_PAID: frozenset(),
 }

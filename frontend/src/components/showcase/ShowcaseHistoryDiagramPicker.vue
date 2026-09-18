@@ -1,18 +1,27 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { Folder, History, Search } from '@lucide/vue'
+import { Folder, History, Search, X } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage } from '@/composables'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import '@/styles/learning-space.css'
 
-const props = defineProps<{
-  visible: boolean
-  /** Keep picker open after each selection (diagram-case gallery). */
-  multiSelect?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    visible: boolean
+    /** Keep picker open after each selection (diagram-case gallery). */
+    multiSelect?: boolean
+    /** `ls` matches Learning Space modals; default keeps showcase Swiss glass. */
+    variant?: 'swiss' | 'ls'
+  }>(),
+  {
+    multiSelect: false,
+    variant: 'swiss',
+  }
+)
 
 const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void
@@ -106,6 +115,7 @@ function formatModifiedAt(iso: string): string {
 
 <template>
   <SwissGlassCard
+    v-if="variant === 'swiss'"
     v-model="open"
     :ribbon="t('swissGlass.hero.historyPicker.ribbon')"
     ribbon-key="swissGlass.hero.historyPicker.ribbon"
@@ -190,4 +200,102 @@ function formatModifiedAt(iso: string): string {
       </div>
     </div>
   </SwissGlassCard>
+
+  <Teleport
+    v-else
+    to="body"
+  >
+    <div
+      v-if="open"
+      class="ls-modal-overlay"
+      @click.self="close"
+    >
+      <div
+        class="ls-modal ls-pick-modal"
+        role="dialog"
+        aria-modal="true"
+      >
+        <header class="ls-modal__head">
+          <div class="ls-modal__head-text">
+            <h2 class="ls-modal__title">{{ t('learningSpace.pickDiagram') }}</h2>
+          </div>
+          <button
+            type="button"
+            class="ls-modal__close"
+            :aria-label="t('common.close')"
+            @click="close"
+          >
+            <X :size="18" />
+          </button>
+        </header>
+        <div class="ls-modal__body">
+          <label class="ls-pick-search">
+            <Search :size="15" />
+            <input
+              v-model="searchQuery"
+              type="search"
+              :placeholder="t('showcase.publishModal.historySearch')"
+            />
+          </label>
+          <p
+            v-if="savedDiagramsStore.isLoading"
+            class="ls-empty"
+          >
+            …
+          </p>
+          <p
+            v-else-if="filteredDiagrams.length === 0"
+            class="ls-empty"
+          >
+            {{ t('showcase.publishModal.historyEmpty') }}
+          </p>
+          <div
+            v-else
+            class="ls-pick-grid"
+          >
+            <button
+              v-for="diagram in filteredDiagrams"
+              :key="diagram.id"
+              type="button"
+              class="ls-pick-card"
+              @click="pick(diagram)"
+            >
+              <div class="ls-pick-card__cover">
+                <img
+                  v-if="diagram.thumbnail"
+                  :src="diagram.thumbnail"
+                  alt=""
+                />
+                <span
+                  v-else
+                  class="ls-pick-card__ph"
+                >
+                  {{ t('learningSpace.noPreview') }}
+                </span>
+              </div>
+              <div class="ls-pick-card__meta">
+                <div class="ls-pick-card__title">{{ diagram.title }}</div>
+                <div class="ls-pick-card__sub">
+                  {{ formatModifiedAt(diagram.updated_at) }}
+                  · {{ folderLabel(diagram) }}
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+        <footer
+          v-if="multiSelect"
+          class="ls-modal__foot"
+        >
+          <button
+            type="button"
+            class="ls-btn ls-btn--primary"
+            @click="close"
+          >
+            {{ t('showcase.publishModal.galleryPickerDone') }}
+          </button>
+        </footer>
+      </div>
+    </div>
+  </Teleport>
 </template>

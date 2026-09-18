@@ -7,6 +7,7 @@ const MOBILE_ROUTE_MAP: Record<string, string> = {
   '/mindgraph': '/m/mindgraph',
   '/canvas': '/m/canvas',
   '/voice-notes': '/m/voice-notes',
+  '/learning-space': '/m/learning-space',
 }
 
 const MOBILE_REDIRECT_SKIP_PREFIXES = [

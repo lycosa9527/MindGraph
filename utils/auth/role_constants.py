@@ -18,6 +18,7 @@ ROLE_PLATFORM_BD: Final[str] = "platform_bd"
 ROLE_EXPERT: Final[str] = "expert"
 ROLE_SCHOOL_ADMIN: Final[str] = "school_admin"
 ROLE_TEACHER: Final[str] = "teacher"
+ROLE_STUDENT: Final[str] = "student"
 ROLE_PERSONAL_TRIAL: Final[str] = "personal_trial"
 ROLE_PERSONAL_PAID: Final[str] = "personal_paid"
 
@@ -33,6 +34,7 @@ ALL_USER_ROLES: frozenset[str] = frozenset(
         ROLE_EXPERT,
         ROLE_SCHOOL_ADMIN,
         ROLE_TEACHER,
+        ROLE_STUDENT,
         ROLE_PERSONAL_TRIAL,
         ROLE_PERSONAL_PAID,
     }
@@ -57,6 +59,8 @@ SUPERADMIN_ROLES: frozenset[str] = frozenset({ROLE_SUPERADMIN, LEGACY_ROLE_ADMIN
 SCHOOL_ADMIN_ROLES: frozenset[str] = frozenset({ROLE_SCHOOL_ADMIN, LEGACY_ROLE_MANAGER})
 
 TEACHER_ROLES: frozenset[str] = frozenset({ROLE_TEACHER, LEGACY_ROLE_USER})
+
+STUDENT_ROLES: frozenset[str] = frozenset({ROLE_STUDENT})
 
 # Capability keys — scaffolding for future feature gates
 CAPABILITY_PLATFORM_FULL_ADMIN: Final[str] = "platform_full_admin"

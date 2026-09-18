@@ -23,6 +23,7 @@ import { useTrainingFollow } from '@/composables/training/useTrainingFollow'
 import { useTrainingSessionEngine } from '@/composables/training/useTrainingSessionEngine'
 import { privacyPageUiCode } from '@/composables/usePrivacyPageLocale'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
+import { syncI18nLocale } from '@/i18n'
 import { loadElementPlusLocale } from '@/i18n/elementPlusLocale'
 import { isRtlUiLocale } from '@/i18n/locales'
 import { useAuthStore } from '@/stores/auth'
@@ -294,13 +295,24 @@ function handleSessionExpiredLoginSuccess() {
   authStore.closeSessionExpiredModal()
 
   const rawRedirect = authStore.getAndClearPendingRedirect()
+  const studentHome = '/learning-space'
+  const defaultHome = authStore.user?.role === 'student' ? studentHome : '/mindmate'
 
   if (rawRedirect) {
-    const redirectPath = getSafePostAuthPath(rawRedirect, '/mindmate')
-    router.push(redirectPath).catch(() => {
-      router.replace(redirectPath).catch(() => {
-        window.location.href = redirectPath
+    const redirectPath = getSafePostAuthPath(rawRedirect, defaultHome)
+    const target =
+      authStore.user?.role === 'student' &&
+      (redirectPath === '/mindmate' || redirectPath === '/')
+        ? studentHome
+        : redirectPath
+    router.push(target).catch(() => {
+      router.replace(target).catch(() => {
+        window.location.href = target
       })
+    })
+  } else if (authStore.user?.role === 'student') {
+    router.push(studentHome).catch(() => {
+      window.location.href = studentHome
     })
   } else {
     const currentPath = router.currentRoute.value.fullPath
@@ -319,6 +331,10 @@ onMounted(async () => {
   }
 
   await authStore.checkAuth().catch(() => false)
+
+  // Re-align vue-i18n with Pinia after auth (profile may no-op setLanguage when
+  // the code is unchanged, leaving a prior HMR desync unrepaired).
+  await syncI18nLocale(uiStore.language).catch(() => undefined)
 
   const featureFlagsStore = useFeatureFlagsStore()
   try {
@@ -379,7 +395,10 @@ onUnmounted(() => {
           name="fade"
           mode="out-in"
         >
-          <component :is="Component" />
+          <component
+            :is="Component"
+            :key="route.path"
+          />
         </transition>
       </router-view>
     </component>

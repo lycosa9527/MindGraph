@@ -22,7 +22,7 @@ import json
 import logging
 from typing import Any
 
-from fastapi import APIRouter, WebSocket
+from fastapi import APIRouter, HTTPException, WebSocket
 from fastapi.websockets import WebSocketState
 from starlette.websockets import WebSocketDisconnect
 
@@ -44,12 +44,15 @@ from services.infrastructure.http.error_handler import (
     UserDailyTokenCapExceededError,
 )
 from services.infrastructure.monitoring.ws_metrics import record_ws_auth_failure
+from services.learning_space.ai_gate import assert_student_ai_capability_for_assignment
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.auth.roles import is_student
 from utils.auth_ws import authenticate_websocket_user
 from utils.collab_ws_origin import (
     canvas_collab_websocket_origin_is_allowed,
     load_collab_ws_allowed_origins_env,
 )
+from utils.db.session_open import actor_rls_session
 from utils.ws_context import ws_managed_session
 from utils.ws_limits import (
     DEFAULT_MAX_WS_TEXT_BYTES,
@@ -125,6 +128,28 @@ async def voice_notes_websocket(websocket: WebSocket) -> None:
     if await maybe_close_websocket_for_vpn_cn_geo(websocket):
         logger.warning("[VoiceNotesASR] VPN/CN policy closed connection for user_id=%s", user.id)
         return
+
+    if is_student(user):
+        raw_aid = websocket.query_params.get("assignment_id")
+        assignment_id: int | None = None
+        if raw_aid and str(raw_aid).strip():
+            try:
+                assignment_id = int(raw_aid)
+            except (TypeError, ValueError):
+                assignment_id = None
+        try:
+            async with actor_rls_session(user) as db:
+                await assert_student_ai_capability_for_assignment(db, user, assignment_id, "voice_summary")
+        except HTTPException as exc:
+            detail = str(exc.detail) if exc.detail else "Voice notes not allowed"
+            with contextlib.suppress(Exception):
+                await safe_websocket_send_text(
+                    websocket,
+                    voice_notes_error_json("forbidden", detail[:_WS_CLOSE_REASON_MAX]),
+                )
+            with contextlib.suppress(Exception):
+                await websocket.close(code=4003)
+            return
 
     try:
         await _voice_notes_session(websocket, user)

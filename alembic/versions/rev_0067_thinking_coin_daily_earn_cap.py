@@ -18,7 +18,8 @@ def upgrade() -> None:
     if exists is None:
         op.execute(
             sa.text(
-                "INSERT INTO thinking_coin_settings (key, value_int, value_text) VALUES ('daily_earn_cap', 100, NULL)"
+                "INSERT INTO thinking_coin_settings (key, value_int, value_text, updated_at) "
+                "VALUES ('daily_earn_cap', 100, NULL, now())"
             )
         )
 

@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'mapa koncepcyjna',
   'swissGlass.hero.focusQuestion.title': 'problemy z koncentracją',
   'swissGlass.hero.focusQuestion.line1': 'Ustaw podstawowe pytanie dla mapy koncepcji',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

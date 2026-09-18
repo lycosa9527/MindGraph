@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'carte conceptuelle',
   'swissGlass.hero.focusQuestion.title': 'problèmes de concentration',
   'swissGlass.hero.focusQuestion.line1': 'Définir la question centrale de la carte conceptuelle',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

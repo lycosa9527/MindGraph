@@ -18,6 +18,7 @@ export function useAdminPanelTabs(options?: { loadOnMount?: boolean }) {
     featureKittyAgent,
     featureMindmateExport,
     featureVod,
+    featureStudentLearningSpace,
   } = useFeatureFlags()
   const { can, canViewTab, canViewSettingsSubtab, loadCapabilities } = useAdminAccess()
 
@@ -29,6 +30,9 @@ export function useAdminPanelTabs(options?: { loadOnMount?: boolean }) {
     // Showcase admin is capability-gated only (not hidden when FEATURE_SHOWCASE is off).
     if (!featureVod.value) {
       visible = visible.filter((tab) => tab.name !== 'vod')
+    }
+    if (!featureStudentLearningSpace.value) {
+      visible = visible.filter((tab) => tab.name !== 'learning_space')
     }
     if (!can('tab.billing.view')) {
       visible = visible.filter((tab) => tab.name !== 'billing')

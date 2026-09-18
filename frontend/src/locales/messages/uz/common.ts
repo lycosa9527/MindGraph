@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'kontseptsiya xaritasi',
   'swissGlass.hero.focusQuestion.title': 'e\'tibor masalalari',
   'swissGlass.hero.focusQuestion.line1': 'Kontseptsiya xaritasi uchun asosiy savolni belgilang',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

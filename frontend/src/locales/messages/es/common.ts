@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'mapa conceptual',
   'swissGlass.hero.focusQuestion.title': 'problemas de enfoque',
   'swissGlass.hero.focusQuestion.line1': 'Establecer la pregunta central para el mapa conceptual.',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

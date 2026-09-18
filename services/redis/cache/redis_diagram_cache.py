@@ -31,7 +31,7 @@ from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 import orjson
-from sqlalchemy import desc, select
+from sqlalchemy import desc, select, text
 from sqlalchemy import update as sa_update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
@@ -51,7 +51,7 @@ from services.redis.cache._redis_diagram_cache_helpers import (
 from services.diagram.source_channel import list_items_missing_source_channel_field
 from services.diagram.spec_coerce import coerce_diagram_spec
 from services.redis.cache.diagram_new_id import assign_id_for_new_diagram
-from services.redis.cache.diagram_save_errors import describe_diagram_db_error
+from services.redis.cache.diagram_save_errors import STALE_ACCOUNT_SAVE_ERROR, describe_diagram_db_error
 from services.redis.cache.redis_cache_stampede import with_stampede_lock
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
@@ -318,6 +318,9 @@ class RedisDiagramCache:
         try:
             async with user_rls_session(user_id, organization_id) as db:
                 try:
+                    owner = await db.execute(text("SELECT id FROM users WHERE id = :uid"), {"uid": user_id})
+                    if owner.scalar_one_or_none() is None:
+                        return False, STALE_ACCOUNT_SAVE_ERROR
                     values: Dict[str, Any] = {
                         "id": diagram_id,
                         "user_id": user_id,
@@ -342,11 +345,11 @@ class RedisDiagramCache:
                     if result.scalar_one_or_none() == diagram_id:
                         return True, None
                     return False, "Failed to save diagram to database"
-                except REDIS_ERRORS as exc:
+                except DATABASE_ERRORS as exc:
                     await db.rollback()
                     logger.error("[DiagramCache] Database create failed: %s", exc)
                     return False, describe_diagram_db_error(exc)
-        except REDIS_ERRORS as exc:
+        except DATABASE_ERRORS as exc:
             logger.error("[DiagramCache] Database connection failed: %s", exc)
             return False, describe_diagram_db_error(exc)
 

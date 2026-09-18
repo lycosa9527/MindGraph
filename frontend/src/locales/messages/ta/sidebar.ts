@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': 'இந்த பட்டறை அறை அனைத்து பங்கேற்பாளர்களுக்கும் மூடப்பட்டிருக்கும், மேலும் அனைவரும் அறையை விட்டு வெளியேறுவார்கள்.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'வளாகத்தில்',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'பள்ளிகள் முழுவதும்',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

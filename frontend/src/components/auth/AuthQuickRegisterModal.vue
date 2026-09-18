@@ -18,6 +18,8 @@ const props = defineProps<{
   quickRegToken: string
   lightBackdrop?: boolean
   persistent?: boolean
+  /** Dedicated `/auth` split: embed in the right panel. */
+  authPage?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -50,6 +52,8 @@ const isVisible = computed({
 /** `/auth`: footer legal link sits below the modal — overlay must not swallow clicks. */
 const passThroughFooterClicks = computed(() => Boolean(props.lightBackdrop && props.persistent))
 const inlineHost = isTrainingInlineHost()
+const authPageInline = computed(() => Boolean(props.authPage))
+const embedInline = computed(() => inlineHost || authPageInline.value)
 
 onMounted(async () => {
   if (!props.quickRegToken) {
@@ -145,19 +149,25 @@ async function submitQuickRegister() {
     :icon="UserPlus"
     :light-backdrop="lightBackdrop"
     :persistent="persistent"
-    :teleport-disabled="inlineHost"
+    :hide-hero="authPageInline"
+    :teleport-disabled="embedInline"
     :overlay-class="
       [
         'swiss-glass-card-overlay--auth',
         inlineHost ? 'swiss-glass-card-overlay--contained' : '',
+        authPageInline ? 'swiss-glass-card-overlay--auth-split' : '',
         passThroughFooterClicks ? 'pointer-events-none' : '',
-        lightBackdrop ? 'swiss-glass-card-overlay--auth-pad' : '',
+        lightBackdrop && !authPageInline ? 'swiss-glass-card-overlay--auth-pad' : '',
       ]
         .filter(Boolean)
         .join(' ')
     "
     :card-class="
-      ['swiss-glass-card--auth', passThroughFooterClicks ? 'pointer-events-auto' : '']
+      [
+        'swiss-glass-card--auth',
+        authPageInline ? 'swiss-glass-card--auth-split' : '',
+        passThroughFooterClicks ? 'pointer-events-auto' : '',
+      ]
         .filter(Boolean)
         .join(' ')
     "

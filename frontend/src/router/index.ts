@@ -296,6 +296,18 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, layout: 'main', ...pageTitle('knowledgeSpace') },
   },
   {
+    path: '/learning-space',
+    name: 'LearningSpace',
+    component: () => import('@/pages/LearningSpacePage.vue'),
+    meta: { requiresAuth: true, layout: 'main', ...pageTitle('learningSpace') },
+  },
+  {
+    path: '/m/learning-space',
+    name: 'MobileLearningSpace',
+    component: () => import('@/pages/LearningSpacePage.vue'),
+    meta: { requiresAuth: true, layout: 'mobile', ...pageTitle('learningSpace') },
+  },
+  {
     path: '/chunk-test',
     name: 'ChunkTest',
     component: () => import('@/pages/ChunkTestPage.vue'),
@@ -484,7 +496,9 @@ router.beforeEach(async (to, from) => {
     Boolean(to.meta.requiresFeatureFlag) ||
     to.meta.layout === 'main' ||
     to.meta.layout === 'canvas' ||
-    to.name === 'MobileCanvas'
+    to.name === 'MobileCanvas' ||
+    to.name === 'MobileLearningSpace' ||
+    to.name === 'LearningSpace'
   if (needsFeatureFlags) {
     await featureFlagsStore.fetchFlags()
   }
@@ -632,6 +646,20 @@ router.beforeEach(async (to, from) => {
   ) {
     return { name: 'MindMate' }
   }
+  if (
+    (to.name === 'LearningSpace' || to.name === 'MobileLearningSpace') &&
+    !featureFlagsStore.getFeatureStudentLearningSpace()
+  ) {
+    // Students are Learning Space accounts; do not bounce them to MindMate when the
+    // flag cache is still empty/stale. Teachers/others still need the feature on —
+    // but only after flags actually loaded (failed fetch defaults to all-off).
+    if (
+      authStore.user?.role !== 'student' &&
+      featureFlagsStore.hasLiveFeatureFlags()
+    ) {
+      return isMobile.value ? { path: '/m' } : { name: 'MindMate' }
+    }
+  }
   if (to.name === 'Library' && !featureFlagsStore.getFeatureLibrary()) {
     return { name: 'MindMate' }
   }
@@ -649,6 +677,9 @@ router.beforeEach(async (to, from) => {
     if (isAuthenticated) {
       const trainingAuth = to.name === 'Auth' && String(to.query.training || '') === '1'
       if (!trainingAuth) {
+        if (authStore.user?.role === 'student') {
+          return { path: isMobile.value ? '/m/learning-space' : '/learning-space' }
+        }
         if (isMobile.value) {
           return { path: '/m' }
         }

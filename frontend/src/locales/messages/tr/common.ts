@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'kavram haritası',
   'swissGlass.hero.focusQuestion.title': 'odaklanma sorunları',
   'swissGlass.hero.focusQuestion.line1': 'Kavram haritasının temel sorusunu belirleyin',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

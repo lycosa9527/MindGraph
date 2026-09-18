@@ -23,6 +23,7 @@ def _drop_policy(table: str, name: str) -> None:
 
 def _create_all_policy(table: str, name: str, using_expr: str, check_expr: str | None = None) -> None:
     check_sql = check_expr if check_expr is not None else using_expr
+    _drop_policy(table, name)
     op.execute(sa.text(f'CREATE POLICY "{name}" ON "{table}" FOR ALL USING ({using_expr}) WITH CHECK ({check_sql})'))
 
 

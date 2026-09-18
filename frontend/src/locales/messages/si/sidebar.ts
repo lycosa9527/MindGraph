@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': 'මෙය සියලු දෙයා සටසාහා සකසිය අවෂන් කරන්නදා. සහරාදිවන්නන් කාමරයේන් පිටවයේ ඇතත.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'කැම්පස් එකේ',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'පාසල් හරහා',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

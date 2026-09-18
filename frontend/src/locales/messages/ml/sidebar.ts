@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': 'ഈ വർക്ക്ഷോപ്പ് റൂം എല്ലാ പങ്കാളികൾക്കും അടച്ചിരിക്കും, എല്ലാവരും മുറിയിൽ നിന്ന് പുറത്തുകടക്കും.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'കാമ്പസിൽ',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'സ്കൂളുകളിലുടനീളം',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

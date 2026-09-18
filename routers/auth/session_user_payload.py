@@ -75,6 +75,8 @@ async def build_session_user_payload(
         "avatar": user.avatar or DEFAULT_USER_AVATAR_EMOJI,
         "role": get_user_role(user),
         "login_password_set": getattr(user, "login_password_set", True),
+        "must_change_password": bool(getattr(user, "must_change_password", False)),
+        "learning_class_id": getattr(user, "learning_class_id", None),
         "organization": organization_session_payload(resolved_org, custom_llm),
         "thinking_coins": thinking_coins,
         "daily_tokens": daily_tokens,

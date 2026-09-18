@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.celery import celery_app
+from config.database import get_async_db
 from config.settings import config
 from models.domain.auth import User
 from models.domain.mind_classroom import MindClassroomJob
@@ -18,6 +19,7 @@ from repositories.mind_classroom_repo import MindClassroomJobRepository, MindCla
 from repositories.zhihui_repo import ZhihuiConversationRepository, ZhihuiGenerationRepository
 from routers.auth.dependencies import get_async_db_with_request_rls, get_current_user
 from routers.features.zhihui.routes import _conversation_list_item, _generation_payload
+from services.learning_space.ai_gate import assert_student_ai_capability
 from services.mind_classroom.celery_log import log_classroom_celery
 from services.mind_classroom.diagram_spec import load_owned_diagram_spec
 from services.mind_classroom.enqueue import ClassroomJobsBusy, create_and_enqueue_job
@@ -131,9 +133,12 @@ async def _refresh_queued_job(row: MindClassroomJob, db: AsyncSession) -> MindCl
 @router.post("/jobs", status_code=status.HTTP_202_ACCEPTED)
 async def start_classroom_job(
     body: ClassroomJobRequest,
+    request: Request,
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ) -> dict[str, Any]:
     """Create a lecture job and enqueue Celery."""
+    await assert_student_ai_capability(db, current_user, request, "mind_classroom")
     user_id = int(current_user.id)
     await _sweep_stale(user_id)
     spec = body.spec_snapshot if isinstance(body.spec_snapshot, dict) else {}

@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'концептуальна карта',
   'swissGlass.hero.focusQuestion.title': 'питання фокусування',
   'swissGlass.hero.focusQuestion.line1': 'Встановіть ключове питання для концептуальної карти',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

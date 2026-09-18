@@ -12,9 +12,9 @@
  * - Reference: Linear, Vercel, Stripe aesthetics
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 
-import { ArrowLeft, Eye, EyeOff, Loader2, LogIn, RefreshCw } from '@lucide/vue'
+import { ArrowLeft, Eye, EyeOff, GraduationCap, Loader2, LogIn, RefreshCw, UserRound } from '@lucide/vue'
 
 import LoginAuthAltLinks from '@/components/auth/LoginAuthAltLinks.vue'
 import OAuthQrLoginModal from '@/components/auth/OAuthQrLoginModal.vue'
@@ -48,6 +48,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void
   (e: 'success'): void
+  (e: 'contact'): void
 }>()
 
 const {
@@ -55,12 +56,18 @@ const {
   t,
   currentView,
   activeTab,
+  loginAudience,
+  showLoginAudienceTabs,
   loginForm,
+  studentLoginForm,
   registerForm,
   smsLoginForm,
   forgotForm,
+  rememberAccount,
+  agreeToTerms,
   captchaImage,
   captchaLoading,
+  captchaLoadFailed,
   smsSending,
   smsCountdown,
   smsSent,
@@ -72,11 +79,14 @@ const {
   pageHeaderTitle,
   closeModal,
   switchLoginRegisterTab,
+  switchLoginAudience,
   registrationEnabledUi,
   showSmsLogin,
   showForgotPassword,
   backToLogin,
   refreshCaptcha,
+  retryCaptcha,
+  onCaptchaImageError,
   showLegacyCaptcha,
   handleLogin,
   handleRegister,
@@ -141,14 +151,22 @@ const loginGlassCardRef = ref<SwissGlassCardExpose | null>(null)
 const loginFormRef = ref<HTMLFormElement | null>(null)
 const loginSubmitRef = ref<HTMLButtonElement | null>(null)
 
+/** `/auth`: footer legal link sits below the modal — overlay must not swallow clicks. */
+const passThroughFooterClicks = computed(() => Boolean(props.lightBackdrop && props.persistent))
+const inlineHost = isTrainingInlineHost()
+/** Dedicated `/auth` page: embed form in the white card (no teleport / glass hero). */
+const authPageInline = computed(() => Boolean(props.authPage))
+const embedInline = computed(() => inlineHost || authPageInline.value)
+
 let disposeLoginCatWalk: (() => void) | undefined
 
 watch(
-  [isVisible, currentView],
-  async ([visible, view]) => {
+  [isVisible, currentView, authPageInline],
+  async ([visible, view, inlineAuth]) => {
     disposeLoginCatWalk?.()
     disposeLoginCatWalk = undefined
-    if (!visible || view !== 'login') return
+    // Skip roof-cat on `/auth` white card — track chrome was covering the form.
+    if (!visible || view !== 'login' || inlineAuth) return
     await nextTick()
     await nextTick()
     const card = loginGlassCardRef.value?.getCardEl()
@@ -182,9 +200,19 @@ onBeforeUnmount(() => {
   disposeLoginCatWalk?.()
 })
 
-/** `/auth`: footer legal link sits below the modal — overlay must not swallow clicks. */
-const passThroughFooterClicks = computed(() => Boolean(props.lightBackdrop && props.persistent))
-const inlineHost = isTrainingInlineHost()
+function openLogin(): void {
+  switchLoginAudience('teacher')
+  switchLoginRegisterTab('login')
+}
+
+function openRegister(): void {
+  switchLoginAudience('teacher')
+  if (registrationEnabledUi.value) {
+    switchLoginRegisterTab('register')
+  }
+}
+
+defineExpose({ openLogin, openRegister })
 </script>
 
 <template>
@@ -201,29 +229,112 @@ const inlineHost = isTrainingInlineHost()
     :light-backdrop="lightBackdrop"
     :persistent="persistent"
     :show-close="!authPage"
-    :teleport-disabled="inlineHost"
+    :hide-hero="authPageInline"
+    :teleport-disabled="embedInline"
     :overlay-class="
       [
         'swiss-glass-card-overlay--auth',
+        // Training host only: absolute fill. Never on `/auth` (collapses the white card).
         inlineHost ? 'swiss-glass-card-overlay--contained' : '',
+        authPageInline ? 'swiss-glass-card-overlay--auth-split' : '',
         passThroughFooterClicks ? 'pointer-events-none' : '',
         authStore.showSessionExpiredModal ? 'pointer-events-auto' : '',
-        lightBackdrop ? 'swiss-glass-card-overlay--auth-pad' : '',
+        lightBackdrop && !authPageInline ? 'swiss-glass-card-overlay--auth-pad' : '',
       ]
         .filter(Boolean)
         .join(' ')
     "
     :card-class="
-      ['swiss-glass-card--auth', passThroughFooterClicks ? 'pointer-events-auto' : '']
+      [
+        'swiss-glass-card--auth',
+        authPageInline ? 'swiss-glass-card--auth-split' : '',
+        passThroughFooterClicks ? 'pointer-events-auto' : '',
+      ]
         .filter(Boolean)
         .join(' ')
     "
     @close="closeModal"
   >
-    <div>
-      <!-- Login / Register switch (hidden register tab when server disables signup) -->
+    <div :class="{ 'auth-page-form': authPageInline }">
+      <!-- /auth card primary tabs: Teacher | Student -->
       <div
-        v-if="registrationEnabledUi && (currentView === 'login' || currentView === 'register')"
+        v-if="authPageInline && showLoginAudienceTabs && currentView === 'login'"
+        class="auth-tab-switch auth-tab-switch--soft"
+        :class="{ 'auth-tab-switch--soft-end': loginAudience === 'student' }"
+        role="tablist"
+        :aria-label="t('auth.loginAudience')"
+      >
+        <span
+          class="auth-tab-switch__thumb"
+          aria-hidden="true"
+        />
+        <button
+          type="button"
+          role="tab"
+          :aria-selected="loginAudience === 'teacher'"
+          class="auth-tab-switch__btn"
+          :class="{ 'auth-tab-switch__btn--active': loginAudience === 'teacher' }"
+          @click="switchLoginAudience('teacher')"
+        >
+          <GraduationCap
+            class="auth-tab-switch__icon"
+            aria-hidden="true"
+          />
+          {{ t('auth.landing.teacherLoginTab') }}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          :aria-selected="loginAudience === 'student'"
+          class="auth-tab-switch__btn"
+          :class="{ 'auth-tab-switch__btn--active': loginAudience === 'student' }"
+          @click="switchLoginAudience('student')"
+        >
+          <UserRound
+            class="auth-tab-switch__icon"
+            aria-hidden="true"
+          />
+          {{ t('auth.landing.studentLoginTab') }}
+        </button>
+      </div>
+
+      <!-- Overlay / non-auth: Teacher / Student audience -->
+      <div
+        v-if="!authPageInline && showLoginAudienceTabs && currentView === 'login'"
+        class="auth-tab-switch"
+        role="tablist"
+        :aria-label="t('auth.loginAudience')"
+      >
+        <button
+          type="button"
+          role="tab"
+          :aria-selected="loginAudience === 'teacher'"
+          class="auth-tab-switch__btn"
+          :class="{ 'auth-tab-switch__btn--active': loginAudience === 'teacher' }"
+          @click="switchLoginAudience('teacher')"
+        >
+          {{ t('auth.loginAudienceTeacher') }}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          :aria-selected="loginAudience === 'student'"
+          class="auth-tab-switch__btn"
+          :class="{ 'auth-tab-switch__btn--active': loginAudience === 'student' }"
+          @click="switchLoginAudience('student')"
+        >
+          {{ t('auth.loginAudienceStudent') }}
+        </button>
+      </div>
+
+      <!-- Overlay modal: Login / Register switch -->
+      <div
+        v-if="
+          !authPageInline &&
+          registrationEnabledUi &&
+          (currentView === 'login' || currentView === 'register') &&
+          loginAudience === 'teacher'
+        "
         class="auth-tab-switch"
         role="tablist"
         :aria-label="t('auth.loginRegister')"
@@ -252,7 +363,12 @@ const inlineHost = isTrainingInlineHost()
         </button>
       </div>
       <div
-        v-else-if="currentView === 'login' || currentView === 'register'"
+        v-else-if="
+          !authPageInline &&
+          (currentView === 'login' || currentView === 'register') &&
+          loginAudience === 'teacher' &&
+          !showLoginAudienceTabs
+        "
         class="auth-tab-switch"
         role="tablist"
         :aria-label="t('auth.login')"
@@ -269,8 +385,13 @@ const inlineHost = isTrainingInlineHost()
 
       <!-- Sub-view header: back control is icon + label on one line (not el-page-header — it stacks title). -->
       <div
-        v-if="currentView === 'sms-login' || currentView === 'forgot-password'"
+        v-if="
+          currentView === 'sms-login' ||
+          currentView === 'forgot-password' ||
+          (authPageInline && currentView === 'register')
+        "
         class="page-header"
+        :class="{ 'page-header--auth': authPageInline }"
       >
         <div class="page-header__row">
           <button
@@ -290,19 +411,27 @@ const inlineHost = isTrainingInlineHost()
           >
             {{ pageHeaderTitle }}
           </span>
+          <span
+            v-else-if="authPageInline && currentView === 'register'"
+            class="page-header-title"
+          >
+            {{ t('auth.register') }}
+          </span>
         </div>
       </div>
 
-      <!-- Login Form -->
+      <!-- Teacher Login Form -->
       <form
-        v-if="currentView === 'login'"
+        v-if="currentView === 'login' && loginAudience === 'teacher'"
         ref="loginFormRef"
-        class="p-6 space-y-4"
+        class="space-y-4"
+        :class="authPageInline ? 'auth-page-teacher' : 'p-6'"
         @submit.prevent="handleLogin"
       >
         <div>
           <label
-            class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+            class="block text-xs font-medium tracking-wide mb-2"
+            :class="authPageInline ? 'auth-page-teacher__label' : 'text-stone-500'"
             for="login-phone"
           >
             <I18nText k="auth.loginPhoneOrEmail" />
@@ -315,13 +444,19 @@ const inlineHost = isTrainingInlineHost()
             :placeholder="t('auth.modal.forgotPhoneOrEmailPlaceholder')"
             maxlength="254"
             autocomplete="username"
-            class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+            class="w-full px-4 py-3 border-0 rounded-lg text-stone-900 placeholder-stone-400 transition-all"
+            :class="
+              authPageInline
+                ? 'auth-page-teacher__input'
+                : 'bg-stone-50 focus:ring-2 focus:ring-stone-900 focus:bg-white'
+            "
           />
         </div>
 
         <div>
           <label
-            class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+            class="block text-xs font-medium tracking-wide mb-2"
+            :class="authPageInline ? 'auth-page-teacher__label' : 'text-stone-500'"
             for="login-password"
           >
             <I18nText k="auth.password" />
@@ -334,11 +469,17 @@ const inlineHost = isTrainingInlineHost()
               name="password"
               :placeholder="t('auth.modal.passwordPlaceholder')"
               autocomplete="current-password"
-              class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+              class="w-full px-4 py-3 pr-12 border-0 rounded-lg text-stone-900 placeholder-stone-400 transition-all"
+              :class="
+                authPageInline
+                  ? 'auth-page-teacher__input'
+                  : 'bg-stone-50 focus:ring-2 focus:ring-stone-900 focus:bg-white'
+              "
             />
             <button
               type="button"
               class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
+              :class="{ 'auth-page-teacher__eye': authPageInline }"
               @click="showPassword = !showPassword"
             >
               <Eye
@@ -351,6 +492,57 @@ const inlineHost = isTrainingInlineHost()
               />
             </button>
           </div>
+        </div>
+
+        <div
+          v-if="authPageInline"
+          class="auth-page-teacher__prefs"
+        >
+          <label class="auth-page-remember">
+            <input
+              v-model="rememberAccount"
+              type="checkbox"
+              class="auth-page-remember__box"
+            />
+            {{ t('auth.landing.rememberAccount') }}
+          </label>
+        </div>
+
+        <label
+          v-if="authPageInline"
+          class="auth-page-teacher__agree"
+        >
+          <input
+            v-model="agreeToTerms"
+            type="checkbox"
+            class="auth-page-remember__box"
+          />
+          <span>
+            {{ t('auth.landing.agreeTermsPrefix') }}
+            <RouterLink
+              to="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="auth-page-teacher__agree-link"
+              @click.stop
+            >
+              {{ t('auth.softwareAgreementLink') }}
+            </RouterLink>
+          </span>
+        </label>
+
+        <div
+          v-else
+          class="flex items-center justify-between"
+        >
+          <label class="auth-page-remember text-stone-500">
+            <input
+              v-model="rememberAccount"
+              type="checkbox"
+              class="auth-page-remember__box"
+            />
+            {{ t('auth.landing.rememberAccount') }}
+          </label>
         </div>
 
         <div v-if="showLegacyCaptcha">
@@ -368,29 +560,39 @@ const inlineHost = isTrainingInlineHost()
               name="login-captcha"
               :placeholder="t('auth.modal.captchaPlaceholderShort')"
               maxlength="4"
-              class="captcha-row__input px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+              class="captcha-row__input px-4 py-3 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+              :class="authPageInline ? 'auth-page-teacher__input' : 'bg-stone-50'"
             />
             <img
-              v-if="captchaImage && !captchaLoading"
+              v-if="captchaImage"
               :src="captchaImage"
               :alt="t('auth.captcha')"
               class="captcha-image"
+              :class="{ 'captcha-image--loading': captchaLoading }"
               :title="t('auth.clickToRefresh')"
-              @click="refreshCaptcha"
+              @click="retryCaptcha"
+              @error="onCaptchaImageError"
             />
             <div
               v-else
               class="captcha-placeholder"
-              @click="refreshCaptcha"
+              :title="t('auth.clickToRefresh')"
+              @click="retryCaptcha"
             >
               <Loader2
                 v-if="captchaLoading"
                 class="w-5 h-5 text-stone-400 animate-spin"
               />
-              <RefreshCw
-                v-else
-                class="w-5 h-5 text-stone-400"
-              />
+              <template v-else>
+                <RefreshCw class="w-4 h-4 text-stone-400" />
+                <span class="captcha-placeholder__hint">
+                  {{
+                    captchaLoadFailed
+                      ? t('auth.modal.captchaLoadFailed')
+                      : t('auth.clickToRefresh')
+                  }}
+                </span>
+              </template>
             </div>
           </div>
         </div>
@@ -399,7 +601,12 @@ const inlineHost = isTrainingInlineHost()
           ref="loginSubmitRef"
           type="submit"
           :disabled="isLoading"
-          class="w-full py-3 px-4 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          class="w-full py-3 px-4 text-white font-medium rounded-lg focus:ring-2 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          :class="
+            authPageInline
+              ? 'auth-page-cta'
+              : 'bg-stone-900 hover:bg-stone-800 active:bg-stone-950 focus:ring-stone-900'
+          "
         >
           <Loader2
             v-if="isLoading"
@@ -413,17 +620,259 @@ const inlineHost = isTrainingInlineHost()
         </button>
 
         <LoginAuthAltLinks
+          v-if="!authPageInline"
           :show-wechat-login="shouldShowWechatLoginLink(featureWechatLogin)"
           @forgot="showForgotPassword"
           @sms="showSmsLogin"
           @wechat="openWechatQrLogin"
         />
+        <div
+          v-else
+          class="auth-page-teacher__footer"
+        >
+          <button
+            type="button"
+            class="auth-page-teacher__footer-link"
+            @click="showForgotPassword"
+          >
+            {{ t('auth.forgotPassword') }}
+          </button>
+          <span
+            class="auth-page-teacher__footer-sep"
+            aria-hidden="true"
+          >|</span>
+          <button
+            type="button"
+            class="auth-page-teacher__footer-link"
+            @click="showSmsLogin"
+          >
+            {{ t('auth.smsLogin') }}
+          </button>
+          <template v-if="shouldShowWechatLoginLink(featureWechatLogin)">
+            <span
+              class="auth-page-teacher__footer-sep"
+              aria-hidden="true"
+            >|</span>
+            <button
+              type="button"
+              class="auth-page-teacher__footer-link"
+              @click="openWechatQrLogin"
+            >
+              {{ t('auth.wechatLogin') }}
+            </button>
+          </template>
+          <template v-if="registrationEnabledUi">
+            <span
+              class="auth-page-teacher__footer-sep"
+              aria-hidden="true"
+            >|</span>
+            <button
+              type="button"
+              class="auth-page-teacher__footer-link auth-page-teacher__footer-link--accent"
+              @click="switchLoginRegisterTab('register')"
+            >
+              {{ t('auth.landing.registerNow') }}
+            </button>
+          </template>
+        </div>
+      </form>
+
+      <!-- Student Login Form -->
+      <form
+        v-if="currentView === 'login' && loginAudience === 'student' && showLoginAudienceTabs"
+        class="space-y-4"
+        :class="authPageInline ? 'auth-page-teacher' : 'p-6'"
+        @submit.prevent="handleLogin"
+      >
+        <div
+          v-if="authPageInline"
+          class="auth-page-student__beta"
+        >
+          <span class="auth-page-student__beta-badge">{{ t('auth.landing.studentBetaBadge') }}</span>
+          <span class="auth-page-student__beta-text">
+            {{ t('auth.landing.studentBetaHintBefore') }}
+            <button
+              type="button"
+              class="auth-page-student__beta-link"
+              @click="emit('contact')"
+            >
+              {{ t('auth.landing.navContact') }}
+            </button>
+          </span>
+        </div>
+
+        <div>
+          <label
+            class="block text-xs font-medium tracking-wide mb-2"
+            :class="authPageInline ? 'auth-page-teacher__label' : 'text-stone-500'"
+            for="student-class-code"
+          >
+            {{ t('auth.studentClassCode') }}
+          </label>
+          <input
+            id="student-class-code"
+            v-model="studentLoginForm.classCode"
+            type="text"
+            name="class_code"
+            :placeholder="t('auth.studentClassCodePlaceholder')"
+            maxlength="16"
+            autocomplete="off"
+            class="w-full px-4 py-3 border-0 rounded-lg text-stone-900 placeholder-stone-400 transition-all uppercase"
+            :class="
+              authPageInline
+                ? 'auth-page-teacher__input'
+                : 'bg-stone-50 focus:ring-2 focus:ring-stone-900 focus:bg-white'
+            "
+          />
+        </div>
+
+        <div>
+          <label
+            class="block text-xs font-medium tracking-wide mb-2"
+            :class="authPageInline ? 'auth-page-teacher__label' : 'text-stone-500'"
+            for="student-name"
+          >
+            {{ t('auth.name') }}
+          </label>
+          <input
+            id="student-name"
+            v-model="studentLoginForm.name"
+            type="text"
+            name="name"
+            :placeholder="t('auth.modal.namePlaceholder')"
+            maxlength="100"
+            autocomplete="name"
+            class="w-full px-4 py-3 border-0 rounded-lg text-stone-900 placeholder-stone-400 transition-all"
+            :class="
+              authPageInline
+                ? 'auth-page-teacher__input'
+                : 'bg-stone-50 focus:ring-2 focus:ring-stone-900 focus:bg-white'
+            "
+          />
+        </div>
+
+        <div>
+          <label
+            class="block text-xs font-medium tracking-wide mb-2"
+            :class="authPageInline ? 'auth-page-teacher__label' : 'text-stone-500'"
+            for="student-password"
+          >
+            {{ t('auth.password') }}
+          </label>
+          <div class="relative">
+            <input
+              id="student-password"
+              v-model="studentLoginForm.password"
+              :type="showPassword ? 'text' : 'password'"
+              name="password"
+              :placeholder="t('auth.modal.passwordPlaceholder')"
+              autocomplete="current-password"
+              class="w-full px-4 py-3 pr-12 border-0 rounded-lg text-stone-900 placeholder-stone-400 transition-all"
+              :class="
+                authPageInline
+                  ? 'auth-page-teacher__input'
+                  : 'bg-stone-50 focus:ring-2 focus:ring-stone-900 focus:bg-white'
+              "
+            />
+            <button
+              type="button"
+              class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
+              :class="{ 'auth-page-teacher__eye': authPageInline }"
+              @click="showPassword = !showPassword"
+            >
+              <Eye
+                v-if="showPassword"
+                class="w-4 h-4"
+              />
+              <EyeOff
+                v-else
+                class="w-4 h-4"
+              />
+            </button>
+          </div>
+        </div>
+
+        <div v-if="showLegacyCaptcha">
+          <label
+            class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+            for="student-captcha"
+          >
+            {{ t('auth.captcha') }}
+          </label>
+          <div class="captcha-row">
+            <input
+              id="student-captcha"
+              v-model="studentLoginForm.captcha"
+              type="text"
+              name="student-captcha"
+              :placeholder="t('auth.modal.captchaPlaceholderShort')"
+              maxlength="4"
+              class="captcha-row__input px-4 py-3 border-0 rounded-lg text-stone-900 placeholder-stone-400 transition-all"
+              :class="authPageInline ? 'auth-page-teacher__input' : 'bg-stone-50 focus:ring-2 focus:ring-stone-900 focus:bg-white'"
+            />
+            <img
+              v-if="captchaImage"
+              :src="captchaImage"
+              :alt="t('auth.captcha')"
+              class="captcha-image"
+              :class="{ 'captcha-image--loading': captchaLoading }"
+              :title="t('auth.clickToRefresh')"
+              @click="retryCaptcha"
+              @error="onCaptchaImageError"
+            />
+            <div
+              v-else
+              class="captcha-placeholder"
+              :title="t('auth.clickToRefresh')"
+              @click="retryCaptcha"
+            >
+              <Loader2
+                v-if="captchaLoading"
+                class="w-5 h-5 text-stone-400 animate-spin"
+              />
+              <template v-else>
+                <RefreshCw class="w-4 h-4 text-stone-400" />
+                <span class="captcha-placeholder__hint">
+                  {{
+                    captchaLoadFailed
+                      ? t('auth.modal.captchaLoadFailed')
+                      : t('auth.clickToRefresh')
+                  }}
+                </span>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          :disabled="isLoading"
+          class="w-full py-3 px-4 text-white font-medium rounded-lg focus:ring-2 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          :class="
+            authPageInline
+              ? 'auth-page-cta'
+              : 'bg-stone-900 hover:bg-stone-800 active:bg-stone-950 focus:ring-stone-900'
+          "
+        >
+          <Loader2
+            v-if="isLoading"
+            class="w-4 h-4 animate-spin"
+          />
+          {{
+            isLoading
+              ? t('auth.modal.loggingIn')
+              : authPageInline
+                ? t('auth.login')
+                : loginSubmitLabel
+          }}
+        </button>
       </form>
 
       <!-- Register Form -->
       <form
         v-if="currentView === 'register'"
-        class="p-6 space-y-4"
+        class="space-y-4"
+        :class="authPageInline ? 'auth-page-teacher' : 'p-6'"
         @submit.prevent="handleRegister"
       >
         <div
@@ -435,7 +884,35 @@ const inlineHost = isTrainingInlineHost()
         </div>
 
         <div
-          v-if="!registerRegionLoading && isBothRegister"
+          v-if="!registerRegionLoading && isBothRegister && authPageInline"
+          class="auth-tab-switch auth-tab-switch--soft"
+          :class="{ 'auth-tab-switch--soft-end': registerPath === 'phone' }"
+          role="group"
+          :aria-label="t('auth.modal.hybridRegisterGroupLabel')"
+        >
+          <span
+            class="auth-tab-switch__thumb"
+            aria-hidden="true"
+          />
+          <button
+            type="button"
+            class="auth-tab-switch__btn"
+            :class="{ 'auth-tab-switch__btn--active': registerPath === 'email' }"
+            @click="setRegisterPath('email')"
+          >
+            {{ hybridRegisterEmailTabLabel }}
+          </button>
+          <button
+            type="button"
+            class="auth-tab-switch__btn"
+            :class="{ 'auth-tab-switch__btn--active': registerPath === 'phone' }"
+            @click="setRegisterPath('phone')"
+          >
+            {{ t('auth.modal.hybridRegisterPhoneTab') }}
+          </button>
+        </div>
+        <div
+          v-else-if="!registerRegionLoading && isBothRegister"
           class="flex flex-wrap items-center justify-center gap-2"
           role="group"
           :aria-label="t('auth.modal.hybridRegisterGroupLabel')"
@@ -528,6 +1005,7 @@ const inlineHost = isTrainingInlineHost()
             <button
               type="button"
               class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
+              :class="{ 'auth-page-teacher__eye': authPageInline }"
               @click="showPassword = !showPassword"
             >
               <Eye
@@ -595,26 +1073,35 @@ const inlineHost = isTrainingInlineHost()
               class="captcha-row__input px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
             />
             <img
-              v-if="captchaImage && !captchaLoading"
+              v-if="captchaImage"
               :src="captchaImage"
               :alt="t('auth.captcha')"
               class="captcha-image"
+              :class="{ 'captcha-image--loading': captchaLoading }"
               :title="t('auth.clickToRefresh')"
-              @click="refreshCaptcha"
+              @click="retryCaptcha"
+              @error="onCaptchaImageError"
             />
             <div
               v-else
               class="captcha-placeholder"
-              @click="refreshCaptcha"
+              :title="t('auth.clickToRefresh')"
+              @click="retryCaptcha"
             >
               <Loader2
                 v-if="captchaLoading"
                 class="w-5 h-5 text-stone-400 animate-spin"
               />
-              <RefreshCw
-                v-else
-                class="w-5 h-5 text-stone-400"
-              />
+              <template v-else>
+                <RefreshCw class="w-4 h-4 text-stone-400" />
+                <span class="captcha-placeholder__hint">
+                  {{
+                    captchaLoadFailed
+                      ? t('auth.modal.captchaLoadFailed')
+                      : t('auth.clickToRefresh')
+                  }}
+                </span>
+              </template>
             </div>
           </div>
         </div>
@@ -641,7 +1128,12 @@ const inlineHost = isTrainingInlineHost()
             </div>
             <button
               type="button"
-              class="shrink-0 py-3 px-3 text-sm font-medium rounded-lg border border-stone-200 text-stone-800 hover:bg-stone-50 disabled:opacity-50"
+              class="shrink-0 py-3 px-3 text-sm font-medium rounded-lg disabled:opacity-50 transition-all"
+              :class="
+                authPageInline
+                  ? 'auth-page-cta auth-page-cta--compact'
+                  : 'border border-stone-200 text-stone-800 hover:bg-stone-50'
+              "
               :disabled="emailSending || emailCountdown > 0"
               @click="sendRegisterEmailCode"
             >
@@ -678,7 +1170,12 @@ const inlineHost = isTrainingInlineHost()
         <button
           type="submit"
           :disabled="isLoading || registerRegionLoading || registerRegion === null"
-          class="w-full py-3 px-4 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          class="w-full py-3 px-4 text-white font-medium rounded-lg focus:ring-2 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          :class="
+            authPageInline
+              ? 'auth-page-cta'
+              : 'bg-stone-900 hover:bg-stone-800 active:bg-stone-950 focus:ring-stone-900'
+          "
         >
           <Loader2
             v-if="isLoading"
@@ -691,7 +1188,8 @@ const inlineHost = isTrainingInlineHost()
       <!-- SMS Login Form -->
       <form
         v-if="currentView === 'sms-login'"
-        class="p-6 space-y-4"
+        class="space-y-4"
+        :class="authPageInline ? 'auth-page-teacher' : 'p-6'"
         @submit.prevent="handleSmsLogin"
       >
         <div>
@@ -733,26 +1231,35 @@ const inlineHost = isTrainingInlineHost()
               class="captcha-row__input px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
             />
             <img
-              v-if="captchaImage && !captchaLoading"
+              v-if="captchaImage"
               :src="captchaImage"
               :alt="t('auth.captcha')"
               class="captcha-image"
+              :class="{ 'captcha-image--loading': captchaLoading }"
               :title="t('auth.clickToRefresh')"
-              @click="refreshCaptcha"
+              @click="retryCaptcha"
+              @error="onCaptchaImageError"
             />
             <div
               v-else
               class="captcha-placeholder"
-              @click="refreshCaptcha"
+              :title="t('auth.clickToRefresh')"
+              @click="retryCaptcha"
             >
               <Loader2
                 v-if="captchaLoading"
                 class="w-5 h-5 text-stone-400 animate-spin"
               />
-              <RefreshCw
-                v-else
-                class="w-5 h-5 text-stone-400"
-              />
+              <template v-else>
+                <RefreshCw class="w-4 h-4 text-stone-400" />
+                <span class="captcha-placeholder__hint">
+                  {{
+                    captchaLoadFailed
+                      ? t('auth.modal.captchaLoadFailed')
+                      : t('auth.clickToRefresh')
+                  }}
+                </span>
+              </template>
             </div>
           </div>
         </div>
@@ -761,7 +1268,12 @@ const inlineHost = isTrainingInlineHost()
           v-if="!smsSent"
           type="button"
           :disabled="smsSending"
-          class="w-full py-3 px-4 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          class="w-full py-3 px-4 text-white font-medium rounded-lg focus:ring-2 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          :class="
+            authPageInline
+              ? 'auth-page-cta'
+              : 'bg-stone-900 hover:bg-stone-800 active:bg-stone-950 focus:ring-stone-900'
+          "
           @click="sendSmsCode('login')"
         >
           <Loader2
@@ -814,7 +1326,12 @@ const inlineHost = isTrainingInlineHost()
           <button
             type="submit"
             :disabled="isLoading"
-            class="w-full py-3 px-4 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            class="w-full py-3 px-4 text-white font-medium rounded-lg focus:ring-2 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            :class="
+              authPageInline
+                ? 'auth-page-cta'
+                : 'bg-stone-900 hover:bg-stone-800 active:bg-stone-950 focus:ring-stone-900'
+            "
           >
             <Loader2
               v-if="isLoading"
@@ -851,7 +1368,8 @@ const inlineHost = isTrainingInlineHost()
       <!-- Forgot Password Form -->
       <form
         v-if="currentView === 'forgot-password'"
-        class="p-6 space-y-4"
+        class="space-y-4"
+        :class="authPageInline ? 'auth-page-teacher' : 'p-6'"
         @submit.prevent="handleResetPassword"
       >
         <div>
@@ -893,26 +1411,35 @@ const inlineHost = isTrainingInlineHost()
               class="captcha-row__input px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
             />
             <img
-              v-if="captchaImage && !captchaLoading"
+              v-if="captchaImage"
               :src="captchaImage"
               :alt="t('auth.captcha')"
               class="captcha-image"
+              :class="{ 'captcha-image--loading': captchaLoading }"
               :title="t('auth.clickToRefresh')"
-              @click="refreshCaptcha"
+              @click="retryCaptcha"
+              @error="onCaptchaImageError"
             />
             <div
               v-else
               class="captcha-placeholder"
-              @click="refreshCaptcha"
+              :title="t('auth.clickToRefresh')"
+              @click="retryCaptcha"
             >
               <Loader2
                 v-if="captchaLoading"
                 class="w-5 h-5 text-stone-400 animate-spin"
               />
-              <RefreshCw
-                v-else
-                class="w-5 h-5 text-stone-400"
-              />
+              <template v-else>
+                <RefreshCw class="w-4 h-4 text-stone-400" />
+                <span class="captcha-placeholder__hint">
+                  {{
+                    captchaLoadFailed
+                      ? t('auth.modal.captchaLoadFailed')
+                      : t('auth.clickToRefresh')
+                  }}
+                </span>
+              </template>
             </div>
           </div>
         </div>
@@ -921,7 +1448,12 @@ const inlineHost = isTrainingInlineHost()
           v-if="!smsSent"
           type="button"
           :disabled="smsSending"
-          class="w-full py-3 px-4 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          class="w-full py-3 px-4 text-white font-medium rounded-lg focus:ring-2 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          :class="
+            authPageInline
+              ? 'auth-page-cta'
+              : 'bg-stone-900 hover:bg-stone-800 active:bg-stone-950 focus:ring-stone-900'
+          "
           @click="sendSmsCode('reset')"
         >
           <Loader2
@@ -1042,7 +1574,12 @@ const inlineHost = isTrainingInlineHost()
           <button
             type="submit"
             :disabled="isLoading"
-            class="w-full py-3 px-4 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            class="w-full py-3 px-4 text-white font-medium rounded-lg focus:ring-2 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            :class="
+              authPageInline
+                ? 'auth-page-cta'
+                : 'bg-stone-900 hover:bg-stone-800 active:bg-stone-950 focus:ring-stone-900'
+            "
           >
             <Loader2
               v-if="isLoading"
@@ -1120,6 +1657,300 @@ const inlineHost = isTrainingInlineHost()
   border-bottom-color: #1c1917;
 }
 
+.auth-tab-switch--soft {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  margin: 0 0 1rem;
+  padding: 0.28rem;
+  border: 0;
+  border-radius: 1rem;
+  background:
+    linear-gradient(180deg, rgb(248 250 252 / 0.95), rgb(241 245 249 / 0.9));
+  box-shadow: inset 0 1px 1px rgb(255 255 255 / 0.7);
+}
+
+.auth-tab-switch__thumb {
+  position: absolute;
+  top: 0.28rem;
+  bottom: 0.28rem;
+  left: 0.28rem;
+  width: calc(50% - 0.28rem);
+  border-radius: 0.78rem;
+  background: #fff;
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.04),
+    0 8px 20px rgb(99 102 241 / 0.12);
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-tab-switch--soft-end .auth-tab-switch__thumb {
+  transform: translateX(100%);
+}
+
+.auth-tab-switch--soft .auth-tab-switch__btn {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.72rem 0.65rem;
+  border: 0;
+  border-bottom: 0;
+  border-radius: 0.78rem;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  background: transparent;
+  transition:
+    color 0.28s ease,
+    transform 0.28s ease;
+}
+
+.auth-tab-switch--soft .auth-tab-switch__btn:hover {
+  color: #64748b;
+  background: transparent;
+}
+
+.auth-tab-switch--soft .auth-tab-switch__btn--active {
+  color: #4338ca;
+  background: transparent;
+  box-shadow: none;
+}
+
+.auth-tab-switch--soft .auth-tab-switch__icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  opacity: 0.72;
+  transition:
+    opacity 0.28s ease,
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.auth-tab-switch--soft .auth-tab-switch__btn--active .auth-tab-switch__icon {
+  opacity: 1;
+  transform: scale(1.06);
+}
+
+.auth-tab-switch__icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.auth-page-form {
+  width: 100%;
+}
+
+.auth-page-teacher {
+  padding: 0.15rem 0 0.35rem;
+}
+
+.auth-page-teacher label.block,
+.auth-page-teacher__label {
+  color: #475569;
+  font-weight: 600;
+}
+
+.auth-page-teacher :is(input[type='text'], input[type='email'], input[type='tel'], input[type='password']) {
+  border-radius: 0.85rem !important;
+  background: #eef2ff !important;
+  box-shadow: none;
+}
+
+.auth-page-teacher
+  :is(input[type='text'], input[type='email'], input[type='tel'], input[type='password']):focus {
+  background: #fff !important;
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(99 102 241 / 0.16);
+}
+
+.auth-page-teacher__input {
+  border-radius: 0.85rem !important;
+  background: #eef2ff !important;
+  box-shadow: none;
+}
+
+.auth-page-teacher__input:focus {
+  background: #fff !important;
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(99 102 241 / 0.16);
+}
+
+.auth-page-teacher__eye {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.4rem;
+  background: rgb(255 255 255 / 0.7);
+  color: #64748b;
+}
+
+.auth-page-teacher__eye:hover {
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+.auth-page-teacher__prefs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem 1.25rem;
+}
+
+.auth-page-teacher__agree {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #64748b;
+  cursor: pointer;
+  user-select: none;
+}
+
+.auth-page-teacher__agree .auth-page-remember__box {
+  margin-top: 0.15rem;
+}
+
+.auth-page-teacher__agree-link {
+  color: #4f46e5;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-page-teacher__agree-link:hover {
+  color: #4338ca;
+  text-decoration: underline;
+}
+
+.auth-page-cta,
+.auth-page-teacher__submit {
+  margin-top: 0.15rem;
+  background: linear-gradient(90deg, #3b82f6 0%, #7c5cbf 100%) !important;
+  border: 0 !important;
+  border-radius: 0.75rem !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 10px 24px rgb(99 102 241 / 0.28);
+}
+
+.auth-page-cta:hover:not(:disabled),
+.auth-page-teacher__submit:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.auth-page-cta--compact {
+  margin-top: 0;
+  min-width: 7.5rem;
+  padding-inline: 0.85rem !important;
+  box-shadow: 0 6px 16px rgb(99 102 241 / 0.22);
+}
+
+.auth-page-student__beta {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 0 0.15rem;
+}
+
+.auth-page-student__beta-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.5rem;
+  border-radius: 0.4rem;
+  background: linear-gradient(90deg, rgb(59 130 246 / 0.12), rgb(124 92 191 / 0.14));
+  color: #4f46e5;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.auth-page-student__beta-text {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  line-height: 1.35;
+}
+
+.auth-page-student__beta-link {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #4f46e5;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-page-student__beta-link:hover {
+  color: #4338ca;
+  text-decoration: underline;
+}
+
+.auth-page-teacher__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem 0.55rem;
+  padding-top: 0.15rem;
+  font-size: 0.85rem;
+}
+
+.auth-page-teacher__footer-link {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font: inherit;
+  cursor: pointer;
+}
+
+.auth-page-teacher__footer-link:hover {
+  color: #334155;
+}
+
+.auth-page-teacher__footer-link--accent {
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+.auth-page-teacher__footer-link--accent:hover {
+  color: #4338ca;
+}
+
+.auth-page-teacher__footer-sep {
+  color: #cbd5e1;
+  user-select: none;
+}
+
+.auth-page-remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: #64748b;
+  cursor: pointer;
+  user-select: none;
+}
+
+.auth-page-remember__box {
+  width: 0.95rem;
+  height: 0.95rem;
+  accent-color: #6366f1;
+}
+
 /* Element Plus Link Buttons - Swiss Design Override */
 .el-button.is-link {
   --el-button-text-color: #78716c;
@@ -1133,6 +1964,25 @@ const inlineHost = isTrainingInlineHost()
 .page-header {
   padding: 16px 24px;
   border-bottom: 1px solid #e7e5e4;
+}
+
+.page-header--auth {
+  margin: 0 0 0.85rem;
+  padding: 0 0 0.75rem;
+  border-bottom: 1px solid #e8eef6;
+}
+
+.page-header--auth .page-header__back {
+  color: #64748b;
+}
+
+.page-header--auth .page-header__back:hover {
+  color: #4f46e5;
+}
+
+.page-header--auth .page-header-title {
+  color: #334155;
+  font-weight: 700;
 }
 
 .page-header__row {

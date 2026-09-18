@@ -1,8 +1,10 @@
 """
 Apply the same email-login mainland CN GeoIP policy to authenticated API traffic.
 
-Phone-only accounts (no email on file) are unchanged. Email accounts use
-email_login_whitelisted_from_cn like browser email login routes.
+Phone-only accounts (no email on file) are unchanged. Learning Space students use
+synthetic ``@student.learning.local`` emails and are not email-login accounts — they
+are skipped. Real email accounts use email_login_whitelisted_from_cn like browser
+email login routes.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -22,11 +24,13 @@ from services.auth.http_auth_token import (
     extract_session_token,
     try_decode_access_token_payload_from_connection,
 )
+from services.learning_space.passwords import is_learning_space_synthetic_email
 from services.redis.cache.redis_user_cache import user_cache
 from utils.auth import get_client_ip
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR
 from utils.auth.config import AUTH_MODE, EMAIL_LOGIN_CN_BLOCK_ENABLED
 from utils.auth.connection_types import HttpOrWebSocket
+from utils.auth.role_constants import ROLE_STUDENT, normalize_role
 from utils.auth.user_tokens import validate_user_token
 
 
@@ -56,6 +60,15 @@ def _email_cn_geo_prereqs_ok(connection: HttpOrWebSocket) -> bool:
     if not _email_cn_geo_api_path_matches(connection.url.path):
         return False
     return True
+
+
+def _is_learning_space_student_user(user: User) -> bool:
+    """Learning Space students are not subject to email-login GeoIP policy."""
+    if normalize_role(getattr(user, "role", None)) == ROLE_STUDENT:
+        return True
+    if getattr(user, "learning_class_id", None):
+        return True
+    return is_learning_space_synthetic_email(getattr(user, "email", None))
 
 
 async def _resolve_user_for_email_cn_geo(connection: HttpOrWebSocket) -> User | None:
@@ -98,6 +111,9 @@ async def maybe_enforce_email_login_cn_geo_api_async(connection: HttpOrWebSocket
 
     user = await _resolve_user_for_email_cn_geo(connection)
     if user is None:
+        return None
+
+    if _is_learning_space_student_user(user):
         return None
 
     if not (user.email or "").strip():

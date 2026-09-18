@@ -13,7 +13,7 @@ import { useAuthStore } from '@/stores/auth'
 
 import App from './App.vue'
 import './fonts/eagerFonts'
-import { htmlLangForLocale, i18n, loadLocaleMessages, setI18nLocale } from './i18n'
+import { htmlLangForLocale, i18n, syncI18nLocale } from './i18n'
 import type { LocaleCode } from './i18n/locales'
 import { isUiLocale } from './i18n/locales'
 import router from './router'
@@ -74,8 +74,7 @@ async function bootstrap(): Promise<void> {
     bootstrapLang = uiStore.language
   }
 
-  await loadLocaleMessages(bootstrapLang)
-  setI18nLocale(bootstrapLang)
+  await syncI18nLocale(bootstrapLang)
   if (uiStore.language !== bootstrapLang) {
     uiStore.language = bootstrapLang
     document.documentElement.lang = htmlLangForLocale(bootstrapLang)

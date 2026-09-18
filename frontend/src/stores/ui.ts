@@ -395,21 +395,26 @@ export const useUIStore = defineStore('ui', () => {
         localStorage.setItem(PROMPT_LANGUAGE_KEY, matched)
       }
     }
-    if (language.value === newLanguage) {
-      document.documentElement.lang = htmlLangForLocale(newLanguage)
-      return
+    const changed = language.value !== newLanguage
+    if (changed) {
+      language.value = newLanguage
+      localStorage.setItem(LANGUAGE_KEY, newLanguage)
+      languageSwitchSeq += 1
     }
-    language.value = newLanguage
-    localStorage.setItem(LANGUAGE_KEY, newLanguage)
     document.documentElement.lang = htmlLangForLocale(newLanguage)
-    languageSwitchSeq += 1
+    // Always (re)sync vue-i18n — even when Pinia already has this code — so HMR /
+    // failed lazy loads cannot leave the switcher on "zh" while copy stays English.
     const seq = languageSwitchSeq
-    void loadLocaleMessages(newLanguage).then(() => {
-      if (seq !== languageSwitchSeq) {
-        return
-      }
-      setI18nLocale(newLanguage)
-    })
+    void loadLocaleMessages(newLanguage)
+      .then(() => {
+        if (seq !== languageSwitchSeq) {
+          return
+        }
+        setI18nLocale(newLanguage)
+      })
+      .catch(() => {
+        // Keep fallbackLocale (`en`) rather than crashing the shell.
+      })
   }
 
   function setPromptLanguage(lang: PromptLanguage): void {

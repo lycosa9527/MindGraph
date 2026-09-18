@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': '將為所有參與者結束此研討房間，所有人將退出房間。',
   'sidebar.mindmateCollabHistory.visibilityOrg': '校內',
   'sidebar.mindmateCollabHistory.visibilityNetwork': '跨校',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

@@ -13,9 +13,11 @@ import json
 import logging
 from contextlib import nullcontext
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from config.database import get_async_db
 from routers.api.diagram_generation import assert_collab_blocks_canvas_ai
 
 from agents.inline_recommendations import get_inline_recommendations_generator
@@ -32,6 +34,7 @@ from services.infrastructure.http.error_handler import (
     LLMTimeoutError,
 )
 from services.knowledge.package_rag_context import resolve_package_context_block
+from services.learning_space.ai_gate import assert_student_ai_capability
 from services.llm.rag_context_state import suppress_implicit_rag
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user
@@ -172,13 +175,16 @@ async def _stream_recommendations(req, user: User | None, is_next: bool):
 @router.post("/thinking_mode/inline_recommendations/start")
 async def start_inline_recommendations(
     req: InlineRecommendationsStartRequest,
+    request: Request,
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Start inline recommendations generation - fires 3 LLMs concurrently.
 
     Returns SSE stream with recommendation_generated events.
     """
+    await assert_student_ai_capability(db, current_user, request, "ai_brainstorm")
     logger.debug(
         "[InlineRec] Start: %s | Type: %s | Stage: %s | Node: %s",
         req.session_id[:8],

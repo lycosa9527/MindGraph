@@ -29,6 +29,7 @@ from utils.auth.role_constants import (
     ROLE_PLATFORM_BD,
     ROLE_SUPERADMIN,
     SCHOOL_ADMIN_ROLES,
+    STUDENT_ROLES,
     SUPERADMIN_ROLES,
     TEACHER_ROLES,
     normalize_role,
@@ -57,6 +58,7 @@ FEATURE_KEY_TO_CONFIG_ATTR = {
     "feature_kitty_agent": "FEATURE_KITTY_AGENT",
     "feature_training": "FEATURE_TRAINING",
     "feature_vod": "FEATURE_VOD",
+    "feature_student_learning_space": "FEATURE_STUDENT_LEARNING_SPACE",
 }
 
 # Keys whose Permissions UI is enforced by ``user_has_feature_access`` on the API.
@@ -126,6 +128,11 @@ def is_manager(current_user) -> bool:
 def is_teacher(current_user) -> bool:
     """B2B school member (教师用户), formerly user."""
     return role_in(current_user, TEACHER_ROLES)
+
+
+def is_student(current_user) -> bool:
+    """Classroom Learning Space student account."""
+    return role_in(current_user, STUDENT_ROLES)
 
 
 def is_personal_trial(current_user) -> bool:

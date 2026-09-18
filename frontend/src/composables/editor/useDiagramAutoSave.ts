@@ -173,10 +173,12 @@ function getFullFingerprint(data: DiagramDataLike): string {
 export interface SaveFlushResult {
   saved: boolean
   reason?: 'success' | 'skipped_guards' | 'skipped_slots_full' | 'skipped_empty' | 'error'
+  diagramId?: string
 }
 
 export interface UseDiagramAutoSaveOptions {
   getDiagramTitle?: () => string
+  getTargetDiagramId?: () => string | null
   onSaved?: (result: { action: string; diagramId?: string }) => void
   isCollabGuest?: ComputedRef<boolean>
   /**
@@ -320,7 +322,8 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
         language: promptLanguage.value,
         editCount: diagramStore.sessionEditCount,
         fullFingerprint: getFullFingerprint(diagramStore.data as DiagramDataLike),
-        targetDiagramId: savedDiagramsStore.activeDiagramId,
+        targetDiagramId:
+          options.getTargetDiagramId?.() ?? savedDiagramsStore.activeDiagramId,
       },
     }
   }
@@ -358,15 +361,17 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
             action: result.action,
             diagramId: result.diagramId,
           })
-          if (result.action === 'saved' && result.diagramId) {
+          if ((result.action === 'saved' || result.action === 'updated') && result.diagramId) {
             const canvasPath = canvasEditorPathForRoute(route.path)
             const currentId = route.query.diagramId
             if (String(currentId ?? '') !== String(result.diagramId)) {
-              router.replace({ path: canvasPath, query: { diagramId: result.diagramId } })
+              const nextQuery = { ...route.query, diagramId: result.diagramId }
+              delete nextQuery.diagram_id
+              router.replace({ path: canvasPath, query: nextQuery })
             }
           }
         }
-        return { saved: true, reason: 'success' }
+        return { saved: true, reason: 'success', diagramId: result.diagramId }
       }
 
       if (result.action === 'skipped' && result.error === 'No available slots') {

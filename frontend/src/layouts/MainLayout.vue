@@ -38,15 +38,15 @@ const showCollapsedSidebarExpand = computed(
     !route.path.startsWith('/mindmate') &&
     !route.path.startsWith('/mindgraph') &&
     !route.path.startsWith('/showcase') &&
-    !route.path.startsWith('/voice-notes')
+    !route.path.startsWith('/voice-notes') &&
+    !route.path.startsWith('/learning-space')
 )
 
 const isGuest = computed(() => !authStore.isAuthenticated)
 
-/** Super-admin national data center: hide app sidebar for a full-page map view. */
+/** Full-bleed views: national dashboard map. */
 const hideAppSidebar = computed(
-  () =>
-    isAdminPublicDashboardRoute(route) && canViewSettingsSubtab('public_dashboard')
+  () => isAdminPublicDashboardRoute(route) && canViewSettingsSubtab('public_dashboard')
 )
 
 /** Guests see a login overlay on main routes; sidebar stays clear. */

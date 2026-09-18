@@ -86,11 +86,49 @@
   padding-bottom: max(6.5rem, env(safe-area-inset-bottom, 0px));
 }
 
+/* `/auth`: form sits inside the white marketing card (in normal flow). */
+.swiss-glass-card-overlay--auth.swiss-glass-card-overlay--auth-split {
+  position: relative !important;
+  inset: auto;
+  z-index: 1;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+  align-items: stretch;
+  justify-content: stretch;
+  display: block;
+  background: transparent;
+  backdrop-filter: none;
+}
+
 .swiss-glass-card--auth {
   z-index: 1;
   width: min(480px, calc(100vw - 2rem));
   max-height: min(740px, calc(100dvh - 6.5rem));
   flex-shrink: 0;
+}
+
+.swiss-glass-card--auth.swiss-glass-card--auth-split {
+  width: 100%;
+  max-width: none;
+  max-height: none !important;
+  height: auto;
+  margin: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  backdrop-filter: none;
+  overflow: visible !important;
+}
+
+.swiss-glass-card--auth.swiss-glass-card--auth-split .swiss-glass-card__body {
+  flex: none;
+  min-height: 0;
+  overflow: visible;
+  padding: 0;
 }
 
 .swiss-glass-card-overlay--auth.swiss-glass-card-overlay--auth-pad .swiss-glass-card--auth {

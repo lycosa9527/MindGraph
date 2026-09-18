@@ -30,6 +30,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 
 import MindMapClassroomRemote from '@/canvas-ribbon/MindMapClassroomRemote.vue'
+import LearningAssignmentCanvasBar from '@/components/learningSpace/LearningAssignmentCanvasBar.vue
 import MindMapStatusBar from '@/canvas-ribbon/MindMapStatusBar.vue'
 import {
   CanvasBottomAiCluster,
@@ -194,6 +195,7 @@ import {
 } from '@/stores'
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
+import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { useKittySessionStore } from '@/stores/kittySession'
 import { splitSavedLlmResultsFromSpec } from '@/stores/llmResultsPersist'
 import { useOneSentenceStore } from '@/stores/oneSentence'
@@ -220,6 +222,7 @@ const relationshipStore = useConceptMapRelationshipStore()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
 const savedDiagramsStore = useSavedDiagramsStore()
+const learningAssignmentCanvas = useLearningAssignmentCanvasStore()
 const llmResultsStore = useLLMResultsStore()
 const panelsStore = usePanelsStore()
 const { promptLanguage, t, currentLanguage } = useLanguage()
@@ -934,7 +937,29 @@ function handleNodeDoubleClick(_node: { id?: string; type?: string }): void {
 // rejects REST PUT with 409 during an active session; changes are persisted
 // through the WebSocket collab pipeline instead.
 const isCollabActive = computed(() => diagramStore.collabSessionActive)
-const diagramAutoSave = useDiagramAutoSave({ isCollabGuest, isCollabActive })
+const diagramAutoSave = useDiagramAutoSave({
+  isCollabGuest,
+  isCollabActive,
+  getTargetDiagramId: () => {
+    const fromQuery = route.query.diagramId ?? route.query.diagram_id
+    const queryId = typeof fromQuery === 'string' && fromQuery ? fromQuery : null
+    const homeworkId = learningAssignmentCanvas.assignment?.submission?.diagram_id ?? null
+    const activeId = savedDiagramsStore.activeDiagramId
+    if (learningAssignmentCanvas.isActive) {
+      if (!learningAssignmentCanvas.draftHydrated) return null
+      if (activeId) return activeId
+      if (homeworkId) return homeworkId
+      return queryId
+    }
+    return activeId || queryId
+  },
+  onSaved: ({ diagramId }) => {
+    if (!diagramId || !learningAssignmentCanvas.isActive) return
+    void learningAssignmentCanvas.bindDraftDiagram(diagramId).catch((err: unknown) => {
+      console.error('[LearningSpace] Failed to bind homework draft', err)
+    })
+  },
+})
 
 eventBus.onWithOwner(
   'toolbar:zhihui_diagram_requested',
@@ -1282,6 +1307,10 @@ watch(
       }
       const loaded = await loadDiagramFromLibrary(newId)
       if (loaded) {
+        if (learningAssignmentCanvas.isActive) {
+          learningAssignmentCanvas.markDraftHydrated()
+          void learningAssignmentCanvas.bindDraftDiagram(newId, { force: true })
+        }
         void checkAndReconnectWorkshop(newId)
       }
     } else if (!newId && oldId) {
@@ -1291,8 +1320,27 @@ watch(
   }
 )
 
+watch(
+  () => route.query.assignmentId,
+  (raw) => {
+    const id = learningAssignmentCanvas.parseRouteAssignmentId(raw)
+    if (id != null) {
+      void learningAssignmentCanvas.activate(id)
+    } else if (learningAssignmentCanvas.isActive) {
+      learningAssignmentCanvas.clear()
+    }
+  }
+)
+
 onMounted(async () => {
   await ensureFontsForLanguageCode(uiStore.promptLanguage)
+
+  const routeAssignmentId = learningAssignmentCanvas.parseRouteAssignmentId(route.query.assignmentId)
+  if (routeAssignmentId != null) {
+    await learningAssignmentCanvas.activate(routeAssignmentId)
+  } else {
+    learningAssignmentCanvas.clear()
+  }
 
   // Initialize inline recommendations coordinator (topic updates, pane click, etc.)
   inlineRecCoordinator.setup()
@@ -1342,6 +1390,10 @@ onMounted(async () => {
   if (diagramId) {
     const loaded = await loadDiagramFromLibrary(String(diagramId))
     if (loaded) {
+      if (learningAssignmentCanvas.isActive) {
+        learningAssignmentCanvas.markDraftHydrated()
+        await learningAssignmentCanvas.bindDraftDiagram(String(diagramId), { force: true })
+      }
       void checkAndReconnectWorkshop(String(diagramId))
     }
     return
@@ -1457,6 +1509,7 @@ onMounted(async () => {
 onUnmounted(() => {
   // Capture spec + library id sync, then stop watches before Pinia reset.
   // clearActiveDiagram waits for the network persist so UPDATE cannot become CREATE.
+  const homeworkAssignmentId = learningAssignmentCanvas.assignmentId
   const flushPromise = diagramAutoSave.flushOnLeave()
   diagramAutoSave.teardown()
   inlineRecCoordinator.teardown()
@@ -1483,9 +1536,17 @@ onUnmounted(() => {
   void exitPresentationFullscreen()
   resetPreviousDiagramTracking()
 
-  void flushPromise.finally(() => {
-    savedDiagramsStore.clearActiveDiagram()
-  })
+  void flushPromise
+    .then(async (result) => {
+      if (!homeworkAssignmentId || !result.saved) return
+      const savedId = result.diagramId || savedDiagramsStore.activeDiagramId
+      if (!savedId) return
+      await learningAssignmentCanvas.bindDraftForAssignment(homeworkAssignmentId, savedId)
+    })
+    .finally(() => {
+      learningAssignmentCanvas.clear()
+      savedDiagramsStore.clearActiveDiagram()
+    })
 })
 </script>
 
@@ -1643,6 +1704,7 @@ onUnmounted(() => {
         @snapshot-recall="handleSnapshotRecall"
         @snapshot-delete="handleSnapshotDelete"
       />
+      <LearningAssignmentCanvasBar />
     </CanvasChrome>
 
     <LearningSheetExportNudge v-if="showLearningSheetExportNudge" />

@@ -30,6 +30,7 @@ import type {
   BackendUser,
   CaptchaResponse,
   LoginCredentials,
+  StudentLoginCredentials,
   LoginResponse,
   User,
   UserRole,
@@ -570,6 +571,44 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function loginStudent(credentials: StudentLoginCredentials): Promise<LoginResponse> {
+    loading.value = true
+    try {
+      const response = await fetch(`${API_BASE}/login/student`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          class_code: credentials.class_code,
+          name: credentials.name,
+          password: credentials.password,
+          captcha: credentials.captcha ?? '',
+          captcha_id: credentials.captcha_id ?? '',
+        }),
+        credentials: 'same-origin',
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.user) {
+        setUser(data.user)
+        hasVerifiedAuthThisSession.value = true
+        lastProfileRefreshTime.value = Date.now()
+        emitLoginSuccess()
+        startSessionMonitoring()
+        return { success: true, user: user.value ?? undefined }
+      }
+
+      return {
+        success: false,
+        message: parseApiErrorDetail(data, data.message || 'Login failed'),
+      }
+    } catch {
+      return { success: false, message: 'Network error' }
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function loginWithBayiPasskey(passkey: string): Promise<LoginResponse> {
     loading.value = true
     try {
@@ -963,21 +1002,63 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function fetchCaptcha(): Promise<CaptchaResponse | null> {
+    const controller = new AbortController()
+    const timer = window.setTimeout(() => controller.abort(), 10000)
     try {
-      const response = await fetch(`${API_BASE}/captcha/generate`, {
+      // Cache-bust so proxies / SW never reuse a stale empty body.
+      const response = await fetch(`${API_BASE}/captcha/generate?_=${Date.now()}`, {
+        method: 'GET',
         credentials: 'same-origin',
+        cache: 'no-store',
+        headers: {
+          Accept: 'application/json',
+        },
+        signal: controller.signal,
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        return {
-          captcha_id: data.captcha_id,
-          captcha_image: data.captcha_image,
-        }
+      if (!response.ok) {
+        console.warn('[Auth] captcha/generate failed:', response.status)
+        return null
       }
+
+      const rawText = await response.text()
+      const trimmed = rawText.replace(/^\uFEFF/, '').trim()
+      if (!trimmed) {
+        console.warn('[Auth] captcha/generate empty body')
+        return null
+      }
+
+      let data: {
+        captcha_id?: string
+        captcha_image?: string
+      }
+      try {
+        data = JSON.parse(trimmed) as {
+          captcha_id?: string
+          captcha_image?: string
+        }
+      } catch (parseError) {
+        console.warn('[Auth] captcha/generate JSON parse error:', parseError)
+        return null
+      }
+      if (
+        typeof data.captcha_id !== 'string' ||
+        !data.captcha_id ||
+        typeof data.captcha_image !== 'string' ||
+        !data.captcha_image.startsWith('data:image/')
+      ) {
+        console.warn('[Auth] captcha/generate missing fields')
+        return null
+      }
+      return {
+        captcha_id: data.captcha_id,
+        captcha_image: data.captcha_image,
+      }
+    } catch (error) {
+      console.warn('[Auth] captcha/generate error:', error)
       return null
-    } catch {
-      return null
+    } finally {
+      window.clearTimeout(timer)
     }
   }
 
@@ -1247,6 +1328,7 @@ export const useAuthStore = defineStore('auth', () => {
     setMode,
     clearAuth,
     login,
+    loginStudent,
     loginWithBayiPasskey,
     logout,
     checkAuth,

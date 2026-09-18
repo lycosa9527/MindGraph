@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': 'Thao tác này sẽ kết thúc phiên cho mọi người. Người tham gia sẽ rời phòng.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Trong khuôn viên trường',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Mạng',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

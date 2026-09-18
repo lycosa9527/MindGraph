@@ -27,7 +27,9 @@ export async function uploadVodFile(options: {
   onProgress?: (progress: VodUploadProgress) => void
 }): Promise<VodMediaItem> {
   const sign = await signVodUpload(options.organizationId)
-  const module = (await import('vod-js-sdk-v6')) as { default?: VodJsCtor } & VodJsCtor
+  const module = (await import(/* @vite-ignore */ 'vod-js-sdk-v6')) as {
+    default?: VodJsCtor
+  } & VodJsCtor
   const Ctor = module.default ?? module
   const client = new Ctor({
     getSignature: async () => sign.signature,

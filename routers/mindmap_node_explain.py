@@ -12,6 +12,7 @@ from typing import Type
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from agents.mind_maps.node_explain import get_mind_map_node_explain_generator
 from agents.mind_maps.node_explain_activity import (
@@ -21,6 +22,7 @@ from agents.mind_maps.node_explain_activity import (
     log_explain_complete,
     schedule_explain_completion_activity,
 )
+from config.database import get_async_db
 from models.domain.auth import User
 from models.requests.requests_thinking import MindMapNodeExplainRequest
 from routers.api.diagram_generation import assert_collab_blocks_canvas_ai
@@ -36,6 +38,7 @@ from services.infrastructure.http.error_handler import (
     ThinkingCoinInsufficientError,
     UserDailyTokenCapExceededError,
 )
+from services.learning_space.ai_gate import assert_student_ai_capability
 from services.llm.org_result_cache import (
     fingerprint_org_payload,
     get_org_llm_result,
@@ -425,8 +428,10 @@ async def explain_mindmap_node(
     req: MindMapNodeExplainRequest,
     request: Request,
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """Stream a 专业程度-aware gloss for a mind map node."""
+    await assert_student_ai_capability(db, current_user, request, "node_explain")
     session_id = req.session_id.strip()
     # Ephemeral assist: track live activity + logs only. Do not persist LLM text
     # (or usage-timeline previews) — results live in the bubble for this open only.

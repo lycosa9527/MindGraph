@@ -33,6 +33,7 @@ import { useAdminSettingsNav } from '@/composables/admin/useAdminSettingsNav'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
 import { useAskOnceStore } from '@/stores/askonce'
+import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { useZhihuiHistoryStore } from '@/stores/zhihuiHistory'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
 import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
@@ -88,6 +89,7 @@ export function useAppSidebar() {
     featureMindmateCollab,
     featureTraining,
     featureMindbot,
+    featureStudentLearningSpace,
     workshopChatPreviewOrgIds,
     featureOrgAccess,
     featureThinkingCoins,
@@ -107,6 +109,9 @@ export function useAppSidebar() {
       return 'mindgraph'
     }
     if (path.startsWith('/knowledge-space')) return 'knowledge-space'
+    if (path.startsWith('/learning-space') || path.startsWith('/m/learning-space')) {
+      return 'learning-space'
+    }
     if (path.startsWith('/chunk-test')) return 'chunk-test'
     if (path.startsWith('/askonce')) return 'askonce'
     if (path.startsWith('/maite')) return 'maite'
@@ -338,6 +343,7 @@ export function useAppSidebar() {
     mindmate: '/mindmate',
     mindgraph: '/mindgraph',
     'knowledge-space': '/knowledge-space',
+    'learning-space': '/learning-space',
     'chunk-test': '/chunk-test',
     askonce: '/askonce',
     maite: '/maite',
@@ -503,6 +509,25 @@ export function useAppSidebar() {
       if (target && !isOnRouteForMode('zhihui')) {
         void router.push(target)
       }
+      return
+    }
+    if (index === 'learning-space') {
+      expandedPanel.value = null
+      const path = router.currentRoute.value.path
+      const onMobile = path.startsWith('/m/')
+      const targetName = onMobile ? 'MobileLearningSpace' : 'LearningSpace'
+      const alreadyOn =
+        path === '/learning-space' ||
+        path.startsWith('/learning-space/') ||
+        path === '/m/learning-space' ||
+        path.startsWith('/m/learning-space/')
+      if (alreadyOn) {
+        useLearningAssignmentCanvasStore().bumpShell()
+        return
+      }
+      void router.push({ name: targetName }).catch((err: unknown) => {
+        console.error('[LearningSpace] sidebar navigation failed', err)
+      })
       return
     }
     const targetRoute = routeMap[index]
@@ -773,6 +798,62 @@ export function useAppSidebar() {
     () => featureTraining.value && authStore.isPlatformLevel && isAuthenticated.value
   )
 
+  const learningSpaceContextRole = ref<
+    'student' | 'pilot_teacher' | 'assistant' | 'learner' | 'superadmin' | 'none' | null
+  >(null)
+
+  const showLearningSpaceNav = computed(() => {
+    if (!isAuthenticated.value) {
+      return false
+    }
+    // Classroom students only exist for Learning Space — keep the nav visible even
+    // when feature flags briefly fall back to defaults (e.g. after a backend blip).
+    if (authStore.user?.role === 'student') {
+      return true
+    }
+    if (!featureStudentLearningSpace.value) {
+      return false
+    }
+    const role = learningSpaceContextRole.value
+    return (
+      role === 'pilot_teacher' ||
+      role === 'superadmin' ||
+      role === 'learner' ||
+      role === 'assistant'
+    )
+  })
+
+  /** Learning Space students: homepage sidebar is MindGraph + Learning Space only. */
+  const isLearningSpaceStudent = computed(
+    () => isAuthenticated.value && authStore.user?.role === 'student'
+  )
+
+  async function refreshLearningSpaceNav(): Promise<void> {
+    if (!featureStudentLearningSpace.value || !isAuthenticated.value) {
+      learningSpaceContextRole.value = null
+      return
+    }
+    if (authStore.user?.role === 'student') {
+      learningSpaceContextRole.value = 'student'
+      return
+    }
+    try {
+      const { fetchLearningSpaceContext } = await import('@/utils/learningSpaceApi')
+      const ctx = await fetchLearningSpaceContext()
+      learningSpaceContextRole.value = ctx.role
+    } catch {
+      learningSpaceContextRole.value = null
+    }
+  }
+
+  watch(
+    [isAuthenticated, featureStudentLearningSpace, () => authStore.user?.role],
+    () => {
+      void refreshLearningSpaceNav()
+    },
+    { immediate: true }
+  )
+
   return {
     t,
     router,
@@ -799,6 +880,9 @@ export function useAppSidebar() {
     showMindmateCollabSessions,
     featureTraining,
     showTrainingNav,
+    featureStudentLearningSpace,
+    showLearningSpaceNav,
+    isLearningSpaceStudent,
     featureMindbot,
     isCollapsed,
     currentMode,

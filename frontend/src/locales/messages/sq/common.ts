@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'harta e konceptit',
   'swissGlass.hero.focusQuestion.title': 'fokusi çështjet',
   'swissGlass.hero.focusQuestion.line1': 'Vendosni pyetjen thelbësore për hartën e konceptit',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

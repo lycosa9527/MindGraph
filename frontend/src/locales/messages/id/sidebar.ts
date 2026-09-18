@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': 'Ini akan mengakhiri sesi untuk semua orang. Peserta akan keluar dari ruangan.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Di kampus',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Jaringan',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

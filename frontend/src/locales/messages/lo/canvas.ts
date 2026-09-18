@@ -438,7 +438,7 @@ export default {
   'canvas.classroomRemote.formatPainter': 'Format painter',
   'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position',
     'canvas.classroomRemote.tabTopics': 'Topics',
-'canvas.classroomRemote.tabView': 'View',
+  'canvas.classroomRemote.tabView': 'View',
   'canvas.classroomRemote.topicsAdd': 'Add topic',
   'canvas.classroomRemote.topicsAddPlaceholder': 'Enter a topic',
   'canvas.classroomRemote.topicsApply': 'Apply as the center topic',

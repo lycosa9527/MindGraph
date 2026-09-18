@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': 'Matatapos nito ang session para sa lahat. Aalis ang mga kalahok sa room.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Sa campus',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'sa buong paaralan',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

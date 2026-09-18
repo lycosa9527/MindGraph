@@ -1,12 +1,18 @@
 <script setup lang="ts">
 /**
- * Dedicated /auth route — full login/register or quick registration when `quick_reg` is present.
+ * Dedicated /auth route — full-bleed brand background + white login card.
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { LocationQuery, RouteLocationNormalizedLoaded } from 'vue-router'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
-import { AuthQuickRegisterModal, LoginModal } from '@/components/auth'
+import {
+  AuthContactConsultModal,
+  AuthLandingBrand,
+  AuthMarketingNav,
+  AuthQuickRegisterModal,
+  LoginModal,
+} from '@/components/auth'
 import { useLanguage } from '@/composables'
 import { useAuthStore, useUIStore } from '@/stores'
 import { getSafePostAuthPath } from '@/utils/authRedirect'
@@ -26,12 +32,14 @@ const authStore = useAuthStore()
 const { t } = useLanguage()
 
 const showLoginModal = ref(true)
+const showContactModal = ref(false)
 const dismissedBySuccess = ref(false)
 const quickRegToken = ref('')
+const loginModalRef = ref<{
+  openRegister?: () => void
+  openLogin?: () => void
+} | null>(null)
 
-/**
- * Opaque quick-reg token from `?quick_reg=` or from `?redirect=` query string.
- */
 function extractQuickRegFromRoute(
   r: RouteLocationNormalizedLoaded | { query: LocationQuery }
 ): string {
@@ -124,10 +132,16 @@ watch(
 function onLoginSuccess() {
   clearPersistedOAuthLoginError()
   dismissedBySuccess.value = true
-  const redir = getSafePostAuthPath(route.query.redirect)
-  router.push(redir).catch(() => {
-    void router.replace(redir).catch(() => {
-      window.location.href = redir
+  const isStudent = authStore.user?.role === 'student'
+  const fallback = isStudent ? '/learning-space' : '/mindmate'
+  const redir = getSafePostAuthPath(route.query.redirect, fallback)
+  const target =
+    isStudent && (redir === '/mindmate' || redir === '/' || redir === '/m' || redir === '/m/mindmate')
+      ? '/learning-space'
+      : redir
+  router.push(target).catch(() => {
+    void router.replace(target).catch(() => {
+      window.location.href = target
     })
   })
 }
@@ -136,8 +150,6 @@ function onQuickRegSuccess() {
   dismissedBySuccess.value = true
   showLoginModal.value = false
   clearStoredQuickRegToken()
-  // Keep `quickRegToken` until the route leaves `/auth` so the login modal does not
-  // mount for a frame before navigation (avoids a flash of the standard sign-in).
   onLoginSuccess()
 }
 
@@ -146,6 +158,20 @@ function onQuickRegCancel() {
   quickRegToken.value = ''
   showLoginModal.value = true
   void router.replace({ path: '/auth' })
+}
+
+function onNavLogin() {
+  loginModalRef.value?.openLogin?.()
+  document.querySelector('.auth-page-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
+function onNavRegister() {
+  loginModalRef.value?.openRegister?.()
+  document.querySelector('.auth-page-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
+function onNavContact() {
+  showContactModal.value = true
 }
 
 watch(showLoginModal, (visible) => {
@@ -167,32 +193,180 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div>
-    <div
-      v-if="!useQuickRegPanel"
-      class="text-center py-6 px-2"
-    >
-      <p class="text-stone-400 text-sm tracking-widest uppercase">
-        {{ t('auth.modal.tagline') }}
-      </p>
+  <div class="auth-page">
+    <AuthMarketingNav
+      @login="onNavLogin"
+      @register="onNavRegister"
+      @contact="onNavContact"
+    />
+
+    <AuthContactConsultModal v-model="showContactModal" />
+
+    <div class="auth-page-stage">
+      <AuthLandingBrand class="auth-page-stage__brand" />
+
+      <div class="auth-page-stage__content">
+        <section class="auth-page-card">
+          <div class="auth-page-card__form">
+            <AuthQuickRegisterModal
+              v-if="useQuickRegPanel"
+              :quick-reg-token="quickRegToken"
+              auth-page
+              light-backdrop
+              persistent
+              @success="onQuickRegSuccess"
+              @cancel="onQuickRegCancel"
+            />
+
+            <LoginModal
+              v-else
+              ref="loginModalRef"
+              v-model:visible="showLoginModal"
+              auth-page
+              light-backdrop
+              persistent
+              @success="onLoginSuccess"
+              @contact="onNavContact"
+            />
+          </div>
+
+          <footer
+            v-if="useQuickRegPanel"
+            class="auth-page-card__legal"
+          >
+            <span>
+              {{ t('auth.landing.legalPrefix') }}
+              <RouterLink
+                to="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="auth-page-card__legal-link"
+              >
+                {{ t('auth.softwareAgreementLink') }}
+              </RouterLink>
+            </span>
+          </footer>
+        </section>
+      </div>
     </div>
 
-    <AuthQuickRegisterModal
-      v-if="useQuickRegPanel"
-      :quick-reg-token="quickRegToken"
-      light-backdrop
-      persistent
-      @success="onQuickRegSuccess"
-      @cancel="onQuickRegCancel"
-    />
-
-    <LoginModal
-      v-else
-      v-model:visible="showLoginModal"
-      auth-page
-      light-backdrop
-      persistent
-      @success="onLoginSuccess"
-    />
+    <p class="auth-page-icp">
+      {{ t('auth.landing.copyright') }}
+    </p>
   </div>
 </template>
+
+<style scoped>
+.auth-page {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: #e8eef8;
+}
+
+.auth-page-icp {
+  position: absolute;
+  left: 50%;
+  bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  z-index: 2;
+  margin: 0;
+  transform: translateX(-50%);
+  font-size: 0.75rem;
+  line-height: 1.2;
+  color: rgb(100 116 139);
+  text-align: center;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.auth-page-stage {
+  position: relative;
+  flex: 1;
+  min-height: calc(100dvh - 3.75rem);
+  overflow: hidden;
+}
+
+.auth-page-stage__brand {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.auth-page-stage__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1280px;
+  min-height: calc(100dvh - 3.75rem);
+  margin: 0 auto;
+  padding: clamp(1.25rem, 3vw, 2rem) 1.25rem;
+  pointer-events: none;
+}
+
+.auth-page-card {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 26.5rem);
+  max-height: min(calc(100dvh - 5.5rem), 52rem);
+  background: #fff;
+  border: 1px solid rgb(237 233 254);
+  border-radius: 1.35rem;
+  box-shadow:
+    0 24px 60px rgb(79 70 229 / 0.12),
+    0 4px 16px rgb(15 23 42 / 0.06);
+  overflow: auto;
+}
+
+.auth-page-card__form {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: auto;
+  overflow: visible;
+  padding: 1.15rem 1.35rem 0.5rem;
+}
+
+.auth-page-card__legal {
+  flex-shrink: 0;
+  padding: 0.65rem 1.25rem 1.1rem;
+  font-size: 0.75rem;
+  line-height: 1.55;
+  color: rgb(148 163 184);
+  text-align: center;
+}
+
+.auth-page-card__legal-link {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: rgb(79 70 229);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  display: inline;
+}
+
+.auth-page-card__legal-link:hover {
+  color: rgb(67 56 202);
+}
+
+@media (max-width: 899px) {
+  .auth-page-stage__content {
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 1rem;
+  }
+
+  .auth-page-card {
+    width: min(100%, 24rem);
+    max-height: none;
+  }
+}
+</style>

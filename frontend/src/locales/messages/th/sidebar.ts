@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': 'จะจบเซสชันสำหรับทุกคน ผู้เข้าร่วมจะออกจากห้อง',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'องค์กร',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'เครือข่าย',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

@@ -451,6 +451,16 @@ ERRORS = {
         "en": "Login failed. Phone number not found or password incorrect. {} attempt(s) remaining.",
         "az": "Giriş uğursuz oldu. Telefon nömrəsi tapılmadı və ya parol yanlışdır. {} cəhd qalıb.",
     },
+    "login_failed_student_credentials": {
+        "zh": "登录失败。班级码、姓名或密码不正确。还有 {} 次尝试机会。",
+        "en": "Login failed. Class code, name, or password is incorrect. {} attempt(s) remaining.",
+        "az": "Giriş uğursuz oldu. Sinif kodu, ad və ya parol yanlışdır. {} cəhd qalıb.",
+    },
+    "login_failed_student_class_disabled": {
+        "zh": "该班级已停用，暂时无法登录。请联系老师。",
+        "en": "This class is disabled. You cannot sign in until it is enabled again. Contact your teacher.",
+        "az": "Bu sinif deaktiv edilib. Yenidən aktiv edilənə qədər daxil ola bilməzsiniz. Müəlliminizlə əlaqə saxlayın.",
+    },
     "too_many_login_attempts": {
         "zh": "登录失败次数过多。请在 {} 分钟后重试。",
         "en": "Too many failed login attempts. Please try again in {} minutes.",

@@ -23,6 +23,7 @@ import {
   isEducationStage,
   mergeGenerationInstructions,
 } from '@/constants/educationStage'
+import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useDiagramStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -62,6 +63,7 @@ export function useCanvasToolbarApps() {
   const notify = useNotifications()
   const { isGenerating: isAIGenerating, autoComplete, validateForAutoComplete } = useAutoComplete()
   const { aiBlockedByCollab, guardCollabGuestAi } = useCollabGuestAiGate()
+  const { requireCapability } = useLearningAiGate()
 
   const isConceptMap = computed(() => diagramStore.type === 'concept_map')
   const useMindMapV2 = useMindMapV2Chrome()
@@ -156,6 +158,7 @@ export function useCanvasToolbarApps() {
       notify.warning(t('notification.signInToUse'))
       return
     }
+    if (!requireCapability('topic_generate')) return
     if (!guardCollabGuestAi()) {
       return
     }

@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'concept map',
   'swissGlass.hero.focusQuestion.title': 'tumutok sa mga isyu',
   'swissGlass.hero.focusQuestion.line1': 'Itakda ang pangunahing tanong para sa concept map',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

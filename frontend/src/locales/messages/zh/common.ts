@@ -117,6 +117,7 @@ export default {
   'meta.pageTitle.bayiPasskeyLogin': '学校访问',
   'meta.pageTitle.gewe': '格威',
   'meta.pageTitle.knowledgeSpace': '知识空间',
+  'meta.pageTitle.learningSpace': '学习空间',
   'meta.pageTitle.library': '图书馆',
   'meta.pageTitle.libraryBookmark': '书签',
   'meta.pageTitle.libraryViewer': '阅读',

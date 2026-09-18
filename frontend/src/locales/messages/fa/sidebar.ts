@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': 'این اتاق کارگاه برای همه شرکت کنندگان بسته خواهد بود و همه از اتاق خارج می شوند.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'در محوطه دانشگاه',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'در سراسر مدارس',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

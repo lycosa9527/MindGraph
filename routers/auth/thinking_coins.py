@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_async_db
 from models.domain.auth import User
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
+from routers.auth.dependencies import get_current_user_optional
 from services.auth.thinking_coin.checkin_service import ensure_wallet_bootstrap
 from services.auth.thinking_coin.school_consult_validation import (
     NAME_MAX_LEN,
@@ -243,9 +244,12 @@ class SchoolConsultationResponse(BaseModel):
 async def post_school_consultation(
     body: SchoolConsultationBody,
     request: Request,
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
 ) -> SchoolConsultationResponse:
-    """Forward school consultation inquiry to configured WeCom destinations."""
+    """Forward school consultation inquiry to configured WeCom destinations.
+
+    Available both signed-in (Thinking Coins school tab) and anonymous (`/auth` contact).
+    """
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
         "school_consultation",
@@ -254,12 +258,13 @@ async def post_school_consultation(
         window_seconds=3600,
     )
 
-    org = await _load_org(current_user)
     org_name: str | None = None
-    if org is not None:
-        org_name_raw = getattr(org, "name", None)
-        if isinstance(org_name_raw, str) and org_name_raw.strip():
-            org_name = org_name_raw.strip()
+    if current_user is not None:
+        org = await _load_org(current_user)
+        if org is not None:
+            org_name_raw = getattr(org, "name", None)
+            if isinstance(org_name_raw, str) and org_name_raw.strip():
+                org_name = org_name_raw.strip()
 
     note = body.note or None
     result = await send_school_consult_notification(

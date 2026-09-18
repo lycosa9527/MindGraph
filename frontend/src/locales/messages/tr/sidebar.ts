@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': 'Bu, oturumu herkes için sonlandırır. Katılımcılar odadan ayrılır.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Kurum',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Ağ',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

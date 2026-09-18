@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': '全員のセッションが終了します。参加者はルームから退出します。',
   'sidebar.mindmateCollabHistory.visibilityOrg': '組織',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'ネットワーク',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

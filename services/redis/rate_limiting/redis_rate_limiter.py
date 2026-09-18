@@ -257,7 +257,7 @@ def get_rate_limiter() -> RedisRateLimiter:
 
 # Default configuration
 DEFAULT_MAX_LOGIN_ATTEMPTS = 10
-DEFAULT_MAX_CAPTCHA_ATTEMPTS = 30
+DEFAULT_MAX_CAPTCHA_ATTEMPTS = 90
 DEFAULT_WINDOW_MINUTES = 15
 
 

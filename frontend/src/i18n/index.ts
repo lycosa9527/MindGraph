@@ -47,7 +47,8 @@ export function isLocaleLoaded(locale: LocaleCode): boolean {
 export const i18n = createI18n({
   legacy: false,
   globalInjection: true,
-  locale: 'zh',
+  // Match eager messages; lazy locales are applied via syncI18nLocale / bootstrap.
+  locale: 'en',
   fallbackLocale: 'en',
   messages: {
     en: enMessages as Record<string, string>,
@@ -56,13 +57,22 @@ export const i18n = createI18n({
   fallbackWarn: import.meta.env.DEV,
 })
 
+function localeHasMessages(locale: LocaleCode): boolean {
+  const bag = i18n.global.getLocaleMessage(locale) as Record<string, unknown> | undefined
+  return Boolean(bag) && Object.keys(bag).length > 0
+}
+
 /**
  * Load UI strings for a locale when not already eager-loaded.
  * Callers await this before `setI18nLocale` so bootstrap order stays stable.
+ * Reloads if the locale was marked loaded but the message bag is empty (HMR desync).
  */
 export async function loadLocaleMessages(locale: LocaleCode): Promise<void> {
-  if (isLocaleLoaded(locale)) {
+  if (isLocaleLoaded(locale) && localeHasMessages(locale)) {
     return
+  }
+  if (isLocaleLoaded(locale) && !localeHasMessages(locale)) {
+    loadedLocales.delete(locale)
   }
 
   const pending = inFlightLoads.get(locale)
@@ -80,7 +90,7 @@ export async function loadLocaleMessages(locale: LocaleCode): Promise<void> {
       return
     }
     const mod = await loader()
-    i18n.global.setLocaleMessage(locale, mod.default)
+    i18n.global.setLocaleMessage(locale, mod.default as Record<string, string>)
     loadedLocales.add(locale)
     notifyLocaleLoaded()
   })()
@@ -96,6 +106,12 @@ export async function loadLocaleMessages(locale: LocaleCode): Promise<void> {
 export function setI18nLocale(locale: LocaleCode): void {
   const loc = i18n.global.locale as { value: LocaleCode }
   loc.value = locale
+}
+
+/** Load messages (if needed) and set the active vue-i18n locale. */
+export async function syncI18nLocale(locale: LocaleCode): Promise<void> {
+  await loadLocaleMessages(locale)
+  setI18nLocale(locale)
 }
 
 /** BCP 47–friendly value for the document element. */

@@ -9,6 +9,7 @@ import community from './community.ts'
 import showcase from './showcase.ts'
 import zhihui from './zhihui.ts'
 import knowledge from './knowledge.ts'
+import learningSpace from './learningSpace.ts'
 import mindmate from './mindmate.ts'
 import maite from './maite.ts'
 import notification from './notification.ts'
@@ -26,6 +27,7 @@ export default {
   ...training,
   ...admin,
   ...knowledge,
+  ...learningSpace,
   ...community,
   ...showcase,
   ...zhihui,

@@ -57,6 +57,7 @@ interface FeatureFlagsResponse {
   feature_mindmate_collab: boolean
   feature_training?: boolean
   feature_vod?: boolean
+  feature_student_learning_space?: boolean
   feature_markets: boolean
   feature_mindbot: boolean
   feature_mindmate_export: boolean
@@ -106,6 +107,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
       feature_mindmate_collab: false,
       feature_training: false,
       feature_vod: false,
+      feature_student_learning_space: false,
       feature_markets: false,
       feature_mindbot: false,
       feature_mindmate_export: false,
@@ -159,10 +161,11 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         const fetchedAt = Date.now()
 
         if (!response.ok) {
-          // Default to all features disabled if endpoint is not available
+          // Default to all features disabled if endpoint is not available.
+          // Do not mark cache fresh — a backend restart must not hide toggles for 60s.
           const defaultFlags = defaultFeatureFlags()
           flags.value = defaultFlags
-          lastFetchTime.value = epochAtStart === staleEpoch ? fetchedAt : 0
+          lastFetchTime.value = 0
           syncMindMapCanvasModeForFlags(defaultFlags)
           return defaultFlags
         }
@@ -174,6 +177,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_mindmate_collab: raw.feature_mindmate_collab ?? false,
           feature_training: raw.feature_training ?? false,
           feature_vod: raw.feature_vod ?? false,
+          feature_student_learning_space: raw.feature_student_learning_space ?? false,
           feature_markets: raw.feature_markets ?? false,
           feature_mindbot: raw.feature_mindbot ?? false,
           feature_mindmate_export: raw.feature_mindmate_export ?? false,
@@ -305,6 +309,15 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     return flags.value?.feature_vod ?? false
   }
 
+  function getFeatureStudentLearningSpace(): boolean {
+    return flags.value?.feature_student_learning_space ?? false
+  }
+
+  /** True after a successful /api/config/features response (not the all-off fallback). */
+  function hasLiveFeatureFlags(): boolean {
+    return lastFetchTime.value > 0
+  }
+
   function getFeatureMarkets(): boolean {
     return flags.value?.feature_markets ?? false
   }
@@ -367,6 +380,8 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     getFeatureMindmateCollab,
     getFeatureTraining,
     getFeatureVod,
+    getFeatureStudentLearningSpace,
+    hasLiveFeatureFlags,
     getFeatureMarkets,
     getFeatureMindbot,
     getFeatureKittyAgent,

@@ -22,13 +22,16 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
+from config.settings import config
 from models.domain.auth import Organization, User
+from models.domain.learning_space import CLASS_STATUS_ACTIVE, LearningClass
 from models.domain.messages import Language, Messages
 from models.requests.requests_auth import (
     LoginRequest,
     LoginWithEmailRequest,
     LoginWithSMSRequest,
     PasskeyVerifyRequest,
+    StudentLoginRequest,
 )
 from services.auth.geo_cn_mainland_cookie import json_forbidden_cn_geo
 from services.auth.geoip_country import email_cn_geo_blocked
@@ -36,6 +39,7 @@ from services.auth.vpn_geo_enforcement import record_vpn_login_geo
 from services.infrastructure.security.abuseipdb_service import (
     schedule_abuseipdb_report_on_lockout,
 )
+from services.learning_space.passwords import normalize_student_name
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
@@ -74,6 +78,7 @@ from utils.auth import (
 )
 from utils.auth.config import BAYI_DEFAULT_ORG_CODE, BAYI_DEFAULT_ORG_ID, BAYI_PASSKEY
 from utils.auth.org_subscription import enforce_org_accessible_or_raise
+from utils.auth.role_constants import ROLE_STUDENT
 from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 from utils.email_mainland_china import raise_if_mainland_china_email_for_email_login
 from utils.email_validation import validate_email_for_api
@@ -105,6 +110,11 @@ def _fire_and_forget(coro: CoroutineType) -> None:
 def _generic_login_failed_message(lang: Language, attempts_left: int) -> str:
     """Uniform login failure text (unknown account vs bad password)."""
     return Messages.error("login_failed_phone_not_found", lang, attempts_left)
+
+
+def _student_login_failed_message(lang: Language, attempts_left: int) -> str:
+    """Student class-code login failure text."""
+    return Messages.error("login_failed_student_credentials", lang, attempts_left)
 
 
 def _raise_if_session_persistence_failed(
@@ -254,6 +264,121 @@ async def _complete_login_after_otp_verified(
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+@router.post("/login/student")
+async def login_student(
+    request: StudentLoginRequest,
+    http_request: Request,
+    response: Response,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
+    db: AsyncSession = Depends(get_async_db),
+    lang: Language = Depends(get_language_dependency),
+):
+    """Student Learning Space login: class_code + name + password."""
+    if not config.FEATURE_STUDENT_LEARNING_SPACE:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    class_code = (request.class_code or "").strip().upper()
+    name = normalize_student_name(request.name)
+    login_key = f"student:{class_code}:{name}"
+
+    client_ip = get_client_ip(http_request) if http_request else "unknown"
+    ip_allowed, _ip_error = await check_ip_rate_limit(client_ip)
+    if not ip_allowed:
+        error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
+
+    is_allowed, _ = await check_login_rate_limit(login_key)
+    if not is_allowed:
+        error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
+
+    class_row = await db.execute(select(LearningClass).where(LearningClass.class_code == class_code))
+    learning_class = class_row.scalar_one_or_none()
+    if learning_class is not None and learning_class.status != CLASS_STATUS_ACTIVE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=Messages.error("login_failed_student_class_disabled", lang),
+        )
+    cached_user = None
+    if learning_class is not None and name:
+        user_row = await db.execute(
+            select(User).where(
+                User.learning_class_id == learning_class.id,
+                User.role == ROLE_STUDENT,
+                User.name == name,
+            )
+        )
+        cached_user = user_row.scalar_one_or_none()
+
+    if not cached_user:
+        verify_password_timing_dummy(request.password)
+        attempts_left = await get_login_attempts_remaining(login_key)
+        if attempts_left > 0:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=_student_login_failed_message(lang, attempts_left),
+            )
+        error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
+
+    is_locked, _ = check_account_lockout(cached_user)
+    if is_locked:
+        error_msg = Messages.error("account_locked", lang, MAX_LOGIN_ATTEMPTS, LOCKOUT_DURATION_MINUTES)
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail=error_msg)
+
+    captcha_valid, captcha_error = await verify_captcha_with_retry(request.captcha_id, request.captcha)
+    if not captcha_valid:
+        if captcha_error == "database_locked":
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=Messages.error("captcha_database_unavailable", lang),
+            )
+        result = await db.execute(select(User).where(User.id == cached_user.id))
+        db_user = result.scalar_one_or_none()
+        if db_user:
+            await increment_failed_attempts(db_user, db)
+            attempts_left = MAX_LOGIN_ATTEMPTS - db_user.failed_login_attempts
+        else:
+            attempts_left = MAX_LOGIN_ATTEMPTS - cached_user.failed_login_attempts
+        captcha_msg = Messages.error("captcha_incorrect", lang)
+        if attempts_left > 0:
+            attempts_msg = Messages.error("captcha_retry_attempts", lang, attempts_left)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"{captcha_msg}{attempts_msg}")
+        schedule_abuseipdb_report_on_lockout(get_client_ip(http_request))
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail=Messages.error("captcha_account_locked", lang, MAX_LOGIN_ATTEMPTS, LOCKOUT_DURATION_MINUTES),
+        )
+
+    if not verify_password(request.password, cached_user.password_hash):
+        result = await db.execute(select(User).where(User.id == cached_user.id))
+        db_user = result.scalar_one_or_none()
+        if db_user:
+            await increment_failed_attempts(db_user, db)
+            attempts_left = MAX_LOGIN_ATTEMPTS - db_user.failed_login_attempts
+        else:
+            attempts_left = MAX_LOGIN_ATTEMPTS - cached_user.failed_login_attempts
+        if attempts_left > 0:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=_student_login_failed_message(lang, attempts_left),
+            )
+        schedule_abuseipdb_report_on_lockout(get_client_ip(http_request))
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail=Messages.error("account_locked", lang, MAX_LOGIN_ATTEMPTS, LOCKOUT_DURATION_MINUTES),
+        )
+
+    return await _complete_login_after_otp_verified(
+        cached_user,
+        http_request,
+        response,
+        db,
+        method="student_class_code",
+        lang=lang,
+    )
 
 
 @router.post("/login")

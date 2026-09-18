@@ -1,5 +1,6 @@
 """Seed exploration earn tasks and raise daily earn cap."""
 
+from datetime import UTC, datetime
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -20,10 +21,12 @@ def upgrade() -> None:
     if missing is None:
         conn.execute(
             sa.text(
-                "INSERT INTO thinking_coin_settings (key, value_int, value_text) VALUES ('daily_earn_cap', 100, NULL)"
+                "INSERT INTO thinking_coin_settings (key, value_int, value_text, updated_at) "
+                "VALUES ('daily_earn_cap', 100, NULL, now())"
             )
         )
 
+    stamped = datetime.now(UTC)
     tasks_table = sa.table(
         "thinking_coin_earn_tasks",
         sa.column("slug", sa.String),
@@ -38,68 +41,71 @@ def upgrade() -> None:
         sa.column("sort_order", sa.Integer),
         sa.column("is_active", sa.Boolean),
         sa.column("is_system", sa.Boolean),
+        sa.column("created_at", sa.DateTime(timezone=True)),
+        sa.column("updated_at", sa.DateTime(timezone=True)),
     )
-    op.bulk_insert(
-        tasks_table,
-        [
-            {
-                "slug": "daily_mindmate_share",
-                "title": "分享 MindMate 对话",
-                "subtitle": "导出分享图一次",
-                "title_en": "Share MindMate chat",
-                "subtitle_en": "Export a share image once today",
-                "reward_amount": 10,
-                "monthly_cap": None,
-                "handler_key": "client_event",
-                "action_config": {"event_key": "mindmate_share"},
-                "sort_order": 35,
-                "is_active": True,
-                "is_system": True,
-            },
-            {
-                "slug": "daily_diagram_export",
-                "title": "导出导图",
-                "subtitle": "PNG / PDF / SVG 等任一格式",
-                "title_en": "Export a diagram",
-                "subtitle_en": "Any export format once today",
-                "reward_amount": 10,
-                "monthly_cap": None,
-                "handler_key": "client_event",
-                "action_config": {"event_key": "diagram_export"},
-                "sort_order": 36,
-                "is_active": True,
-                "is_system": True,
-            },
-            {
-                "slug": "daily_learning_sheet",
-                "title": "使用半成品图示",
-                "subtitle": "开启学习单/挖空模式",
-                "title_en": "Use learning sheet",
-                "subtitle_en": "Enable blanks mode once today",
-                "reward_amount": 10,
-                "monthly_cap": None,
-                "handler_key": "client_event",
-                "action_config": {"event_key": "learning_sheet_enable"},
-                "sort_order": 37,
-                "is_active": True,
-                "is_system": True,
-            },
-            {
-                "slug": "daily_diagram_save",
-                "title": "保存导图",
-                "subtitle": "首次保存到云端",
-                "title_en": "Save a diagram",
-                "subtitle_en": "First cloud save today",
-                "reward_amount": 5,
-                "monthly_cap": None,
-                "handler_key": "client_event",
-                "action_config": {"event_key": "diagram_save"},
-                "sort_order": 38,
-                "is_active": True,
-                "is_system": True,
-            },
-        ],
-    )
+    rows = [
+        {
+            "slug": "daily_mindmate_share",
+            "title": "分享 MindMate 对话",
+            "subtitle": "导出分享图一次",
+            "title_en": "Share MindMate chat",
+            "subtitle_en": "Export a share image once today",
+            "reward_amount": 10,
+            "monthly_cap": None,
+            "handler_key": "client_event",
+            "action_config": {"event_key": "mindmate_share"},
+            "sort_order": 35,
+            "is_active": True,
+            "is_system": True,
+        },
+        {
+            "slug": "daily_diagram_export",
+            "title": "导出导图",
+            "subtitle": "PNG / PDF / SVG 等任一格式",
+            "title_en": "Export a diagram",
+            "subtitle_en": "Any export format once today",
+            "reward_amount": 10,
+            "monthly_cap": None,
+            "handler_key": "client_event",
+            "action_config": {"event_key": "diagram_export"},
+            "sort_order": 36,
+            "is_active": True,
+            "is_system": True,
+        },
+        {
+            "slug": "daily_learning_sheet",
+            "title": "使用半成品图示",
+            "subtitle": "开启学习单/挖空模式",
+            "title_en": "Use learning sheet",
+            "subtitle_en": "Enable blanks mode once today",
+            "reward_amount": 10,
+            "monthly_cap": None,
+            "handler_key": "client_event",
+            "action_config": {"event_key": "learning_sheet_enable"},
+            "sort_order": 37,
+            "is_active": True,
+            "is_system": True,
+        },
+        {
+            "slug": "daily_diagram_save",
+            "title": "保存导图",
+            "subtitle": "首次保存到云端",
+            "title_en": "Save a diagram",
+            "subtitle_en": "First cloud save today",
+            "reward_amount": 5,
+            "monthly_cap": None,
+            "handler_key": "client_event",
+            "action_config": {"event_key": "diagram_save"},
+            "sort_order": 38,
+            "is_active": True,
+            "is_system": True,
+        },
+    ]
+    for row in rows:
+        row["created_at"] = stamped
+        row["updated_at"] = stamped
+    op.bulk_insert(tasks_table, rows)
 
 
 def downgrade() -> None:

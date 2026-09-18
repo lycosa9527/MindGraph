@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'แผนที่แนวคิด',
   'swissGlass.hero.focusQuestion.title': 'ประเด็นสำคัญ',
   'swissGlass.hero.focusQuestion.line1': 'ตั้งคำถามหลักสำหรับแผนผังแนวคิด',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'konsepsiya xəritəsi',
   'swissGlass.hero.focusQuestion.title': 'diqqət məsələləri',
   'swissGlass.hero.focusQuestion.line1': 'Konsepsiya xəritəsi üçün əsas sualı təyin edin',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

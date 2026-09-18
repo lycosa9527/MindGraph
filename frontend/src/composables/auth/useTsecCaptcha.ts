@@ -24,8 +24,9 @@ export function useTsecCaptcha() {
   })
 
   const showLegacyCaptcha = computed(() => {
-    if (!featureFlagsStore.flags && featureFlagsStore.isLoading) {
-      return false
+    // Optimistic: show legacy box while flags load so /auth is not blank.
+    if (!featureFlagsStore.flags) {
+      return true
     }
     return !isTsecCaptcha.value
   })

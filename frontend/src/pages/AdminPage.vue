@@ -2,7 +2,7 @@
 /**
  * Admin Page — unified management panel; tab navigation lives in the sidebar.
  */
-import { computed, onMounted } from 'vue'
+import { computed, defineAsyncComponent, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { Plus } from '@element-plus/icons-vue'
@@ -15,7 +15,7 @@ import AdminMarketsTab from '@/components/admin/AdminMarketsTab.vue'
 import AdminSchoolsTab from '@/components/admin/AdminSchoolsTab.vue'
 import AdminFeatureDevTab from '@/components/admin/AdminFeatureDevTab.vue'
 import AdminShowcaseTab from '@/components/admin/AdminShowcaseTab.vue'
-import AdminVodTab from '@/components/admin/AdminVodTab.vue'
+import AdminLearningSpaceTab from '@/components/admin/AdminLearningSpaceTab.vue'
 import AdminSystemSettingsTab from '@/components/admin/AdminSystemSettingsTab.vue'
 import AdminFeaturesHeaderToolbar from '@/components/admin/AdminFeaturesHeaderToolbar.vue'
 import AdminMindMateExportHeaderToolbar from '@/components/admin/AdminMindMateExportHeaderToolbar.vue'
@@ -31,6 +31,9 @@ import { useAdminRouteSync } from '@/composables/admin/useAdminRouteSync'
 import { useLanguage } from '@/composables'
 import { useAdminPanelStore } from '@/stores'
 import { isAdminPublicDashboardRoute } from '@/utils/publicDashboardRoute'
+
+/** Lazy: VOD SDK packages may be absent locally; keep other admin tabs loadable. */
+const AdminVodTab = defineAsyncComponent(() => import('@/components/admin/AdminVodTab.vue'))
 
 const route = useRoute()
 const { t } = useLanguage()
@@ -224,6 +227,7 @@ onMounted(async () => {
         <AdminMarketsTab v-else-if="activeTab === 'billing'" />
         <AdminShowcaseTab v-else-if="activeTab === 'showcase'" />
         <AdminVodTab v-else-if="activeTab === 'vod'" />
+        <AdminLearningSpaceTab v-else-if="activeTab === 'learning_space'" />
         <AdminFeatureDevTab v-else-if="activeTab === 'feature_dev'" />
         <AdminSystemSettingsTab v-else-if="activeTab === 'settings'" />
       </div>

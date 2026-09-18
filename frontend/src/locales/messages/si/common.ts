@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'සංකල්ප සිතියම',
   'swissGlass.hero.focusQuestion.title': 'අවධානය යොමු ගැටළු',
   'swissGlass.hero.focusQuestion.line1': 'සංකල්ප සිතියම සඳහා මූලික ප්‍රශ්නය සකසන්න',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

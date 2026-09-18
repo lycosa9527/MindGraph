@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': 'Bu sessiyani hamma uchun tugatadi. Ishtirokchilar xonadan chiqadi.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Tashkilot',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Tarmoq',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

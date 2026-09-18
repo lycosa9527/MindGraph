@@ -44,6 +44,7 @@ from models.requests.requests_thinking import (
 )
 from routers.api.diagram_generation import assert_collab_blocks_canvas_ai
 from routers.node_palette_streaming import stream_node_palette
+from services.learning_space.ai_gate import assert_student_ai_capability
 from services.monitoring.module_activity import track_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user, is_teacher
@@ -167,6 +168,7 @@ async def start_node_palette(
     No limits - this is the start of infinite scrolling!
     NOTE: Kimi removed due to Volcengine server load issues
     """
+    await assert_student_ai_capability(db, current_user, request, "ai_brainstorm")
     session_id = req.session_id
     await assert_collab_blocks_canvas_ai(req.diagram_id, current_user)
 

@@ -21,7 +21,7 @@ import io
 import json
 import logging
 from datetime import UTC, datetime
-from typing import Optional
+from typing import Any, Optional
 
 import qrcode
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
@@ -68,12 +68,13 @@ from services.diagram.source_channel import (
     resolve_diagram_source_channel,
 )
 from services.redis.cache._redis_diagram_cache_helpers import MAX_SPEC_SIZE_KB
+from services.redis.cache.diagram_save_errors import STALE_ACCOUNT_SAVE_ERROR
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.auth.thinking_coin.client_event_service import load_user_org
 from services.auth.thinking_coin.event_hub import mutation_to_footer, track_client_event
 from services.monitoring.module_activity import schedule_module_activity
 from services.redis.redis_async_client import get_async_redis
-from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS, REDIS_ERRORS
 from utils.auth import get_current_user
 from utils.auth.school_tier import (
     TIER_FEATURE_ONLINE_COLLAB,
@@ -241,8 +242,12 @@ async def create_diagram(
     ensure_valid_semantic_spec(req.diagram_type, req.spec)
 
     cache = get_diagram_cache()
-    async with actor_rls_session(current_user) as tier_db:
-        diagram_cap = await max_diagrams_for_user(tier_db, current_user)
+    try:
+        async with actor_rls_session(current_user) as tier_db:
+            diagram_cap = await max_diagrams_for_user(tier_db, current_user)
+    except DATABASE_ERRORS as exc:
+        logger.exception("[Diagrams] diagram cap lookup failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Diagram service unavailable") from exc
 
     user_org_id = getattr(current_user, "organization_id", None)
     success, diagram_id, error = await cache.save_diagram(
@@ -259,6 +264,8 @@ async def create_diagram(
     )
 
     if not success:
+        if error == STALE_ACCOUNT_SAVE_ERROR:
+            raise HTTPException(status_code=401, detail=error)
         limit_detail = _diagram_limit_http_detail(error, lang)
         if limit_detail is not None:
             raise HTTPException(status_code=403, detail=limit_detail)
@@ -287,20 +294,37 @@ async def create_diagram(
         diagram_id=diagram_id,
     )
 
-    async with actor_rls_session(current_user) as db:
-        org = await load_user_org(current_user)
-        save_mutation = await track_client_event(db, current_user, org, EVENT_DIAGRAM_SAVE)
-        coins_footer = mutation_to_footer(save_mutation)
+    coins_footer: dict[str, Any] = {}
+    try:
+        async with actor_rls_session(current_user) as db:
+            org = await load_user_org(current_user)
+            save_mutation = await track_client_event(db, current_user, org, EVENT_DIAGRAM_SAVE)
+            coins_footer = mutation_to_footer(save_mutation)
+    except DATABASE_ERRORS as exc:
+        logger.warning("[Diagrams] thinking-coin footer failed diagram_id=%s: %s", diagram_id, exc)
+
+    created_raw = diagram.get("created_at")
+    updated_raw = diagram.get("updated_at")
+    try:
+        created_at = (
+            _as_utc_aware_datetime(created_raw) if isinstance(created_raw, (datetime, str)) else datetime.now(UTC)
+        )
+        updated_at = (
+            _as_utc_aware_datetime(updated_raw) if isinstance(updated_raw, (datetime, str)) else datetime.now(UTC)
+        )
+    except (TypeError, ValueError):
+        created_at = datetime.now(UTC)
+        updated_at = datetime.now(UTC)
 
     response = DiagramResponse(
-        id=diagram["id"],
+        id=str(diagram["id"]),
         title=diagram["title"],
         diagram_type=diagram["diagram_type"],
-        spec=diagram["spec"],
+        spec=diagram["spec"] if isinstance(diagram.get("spec"), dict) else {},
         language=diagram.get("language", "zh"),
         thumbnail=diagram.get("thumbnail"),
-        created_at=datetime.fromisoformat(diagram["created_at"]) if diagram.get("created_at") else datetime.now(UTC),
-        updated_at=datetime.fromisoformat(diagram["updated_at"]) if diagram.get("updated_at") else datetime.now(UTC),
+        created_at=created_at,
+        updated_at=updated_at,
     )
     if coins_footer.get("eligible"):
         return {**response.model_dump(), "thinking_coins": coins_footer}

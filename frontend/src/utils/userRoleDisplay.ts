@@ -10,6 +10,7 @@ export const USER_ROLES = [
   'expert',
   'school_admin',
   'teacher',
+  'student',
   'personal_trial',
   'personal_paid',
 ] as const satisfies readonly UserRole[]
@@ -70,6 +71,12 @@ const ROLE_PILL_STYLES: Record<UserRole, RolePillStyle> = {
     bgClass: 'bg-stone-100',
     textClass: 'text-stone-700',
     borderClass: 'border-stone-200',
+  },
+  student: {
+    labelKey: 'sidebar.roleStudent',
+    bgClass: 'bg-sky-100',
+    textClass: 'text-sky-800',
+    borderClass: 'border-sky-200',
   },
   personal_trial: {
     labelKey: 'sidebar.roleTrialEdition',

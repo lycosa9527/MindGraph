@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': '컨셉 맵',
   'swissGlass.hero.focusQuestion.title': '초점 문제',
   'swissGlass.hero.focusQuestion.line1': '컨셉맵의 핵심질문 설정',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

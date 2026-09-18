@@ -23,6 +23,7 @@ import {
 } from '@/composables/core/diagramMarkdownPipeline'
 import type { useInlineRecommendationsCoordinator } from '@/composables/editor/useInlineRecommendationsCoordinator'
 import { replayKittyPendingCanvasAction } from '@/composables/kitty/useKittyMobileHubActionBridge'
+import { studentHomeworkDiagramTitle } from '@/composables/learningSpace/lsHelpers'
 import { IMPORT_SPEC_KEY } from '@/config'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import type { LocaleCode } from '@/i18n/locales'
@@ -32,6 +33,7 @@ import type { useFeatureFlagsStore } from '@/stores/featureFlags'
 import type { useLLMResultsStore } from '@/stores/llmResults'
 import { splitSavedLlmResultsFromSpec } from '@/stores/llmResultsPersist'
 import type { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import type { useUIStore } from '@/stores/ui'
 import type { DiagramType } from '@/types'
 import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
@@ -88,6 +90,23 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
     onCollabClear,
     diagramAutoSave,
   } = options
+
+  const homeworkCanvas = useLearningAssignmentCanvasStore()
+
+  function applyOpenedDiagramTitle(libraryTitle: string): void {
+    if (!homeworkCanvas.isActive) {
+      if (libraryTitle) diagramStore.initTitle(libraryTitle)
+      return
+    }
+    diagramStore.setTitle(
+      studentHomeworkDiagramTitle(
+        authStore.user?.username,
+        authStore.user?.id,
+        homeworkCanvas.assignment?.title
+      ),
+      true
+    )
+  }
 
   /** Invalidates in-flight library loads when another diagram is selected. */
   let libraryLoadGeneration = 0
@@ -167,9 +186,7 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
       loadOpts
     )
     if (loaded) {
-      if (diagram.title) {
-        diagramStore.initTitle(diagram.title)
-      }
+      applyOpenedDiagramTitle(diagram.title)
       eventBus.emit('diagram:loaded_from_library', {
         diagramId,
         diagramType: diagram.diagram_type,

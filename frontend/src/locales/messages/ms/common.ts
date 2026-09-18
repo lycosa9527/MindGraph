@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'peta konsep',
   'swissGlass.hero.focusQuestion.title': 'fokus isu',
   'swissGlass.hero.focusQuestion.line1': 'Tetapkan soalan teras untuk peta konsep',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

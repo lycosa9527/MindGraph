@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'نقشه مفهومی',
   'swissGlass.hero.focusQuestion.title': 'تمرکز مسائل',
   'swissGlass.hero.focusQuestion.line1': 'سوال اصلی را برای نقشه مفهومی تنظیم کنید',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

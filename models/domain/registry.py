@@ -70,6 +70,13 @@ from models.domain.showcase import (
 from models.domain.zhihui import ZhihuiConversation, ZhihuiGeneration
 from models.domain.training import TrainingCourse, TrainingCourseAsset, TrainingCourseStep
 from models.domain.vod import VodMedia
+from models.domain.learning_space import (
+    LearningAssignment,
+    LearningClass,
+    LearningClassMembership,
+    LearningPilotTeacher,
+    LearningSubmission,
+)
 from models.domain.mind_classroom import MindClassroomJob, MindClassroomSlide
 from models.domain.showcase_admin import (
     ShowcaseAuditLog,
@@ -264,4 +271,9 @@ __all__ = [
     "TrainingCourseStep",
     "TrainingCourseAsset",
     "VodMedia",
+    "LearningPilotTeacher",
+    "LearningClass",
+    "LearningClassMembership",
+    "LearningAssignment",
+    "LearningSubmission",
 ]

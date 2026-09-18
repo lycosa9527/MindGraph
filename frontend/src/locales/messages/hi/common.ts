@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'संकल्पना मानचित्र',
   'swissGlass.hero.focusQuestion.title': 'फोकस मुद्दे',
   'swissGlass.hero.focusQuestion.line1': 'संकल्पना मानचित्र के लिए मुख्य प्रश्न निर्धारित करें',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

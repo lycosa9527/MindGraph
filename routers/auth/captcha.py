@@ -21,9 +21,13 @@ from typing import Optional, Tuple
 
 from fastapi import APIRouter, Header, HTTPException, Request, Response, status
 
+from config.settings import config
 from models.domain.messages import Language, Messages, get_request_language
 from services.auth.captcha_storage import get_captcha_storage
-from services.redis.rate_limiting.redis_rate_limiter import check_captcha_rate_limit
+from services.redis.rate_limiting.redis_rate_limiter import (
+    check_captcha_rate_limit,
+    clear_captcha_attempts,
+)
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 from utils.auth import CAPTCHA_SESSION_COOKIE_NAME, RATE_LIMIT_WINDOW_MINUTES, is_https
 
@@ -162,11 +166,21 @@ async def generate_captcha(
             is_allowed = True
 
         if not is_allowed:
-            logger.warning("Captcha rate limit exceeded for session: %s...", session_token[:8])
-            accept_language = request.headers.get("Accept-Language", "")
-            error_lang: Language = get_request_language(x_language, accept_language)
-            error_msg = Messages.error("too_many_login_attempts", error_lang, RATE_LIMIT_WINDOW_MINUTES)
-            raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
+            # Cookie-based generate limits are easy to burn during local refresh/HMR.
+            # Callers that omit the cookie already get a fresh budget each time, so
+            # rotating the session here restores UX without weakening that model.
+            logger.warning(
+                "Captcha rate limit exceeded for session %s... — rotating session",
+                session_token[:8],
+            )
+            try:
+                await clear_captcha_attempts(session_token)
+            except REDIS_ERRORS as clear_err:
+                logger.warning("Failed to clear captcha rate limit: %s", clear_err)
+            session_token = str(uuid.uuid4())
+            is_allowed = True
+            if config.debug:
+                logger.info("Captcha session rotated (DEBUG) to %s...", session_token[:8])
     except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Error in captcha generation (before generation): %s", e, exc_info=True)
         accept_language_err = request.headers.get("Accept-Language", "")

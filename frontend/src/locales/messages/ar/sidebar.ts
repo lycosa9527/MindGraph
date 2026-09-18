@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': 'ستكون غرفة الورشة مغلقة أمام جميع المشاركين وسيخرج الجميع من الغرفة.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'في الحرم الجامعي',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'عبر المدارس',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

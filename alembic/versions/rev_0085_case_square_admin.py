@@ -90,23 +90,25 @@ def upgrade() -> None:
     if not sa.inspect(bind).has_table("case_square_posts"):
         return
 
-    with op.batch_alter_table("case_square_posts") as batch:
-        batch.add_column(
-            sa.Column("submitted_by_id", sa.Integer(), nullable=True),
-        )
-        batch.add_column(
-            sa.Column("publish_source", sa.String(length=20), server_default="self", nullable=False),
-        )
-        batch.add_column(sa.Column("attribution", pg.JSONB(), nullable=True))
-        batch.create_foreign_key(
-            "fk_case_square_posts_submitted_by_id",
-            "users",
-            ["submitted_by_id"],
-            ["id"],
-        )
+    existing = {col["name"] for col in sa.inspect(bind).get_columns("case_square_posts")}
+    if "submitted_by_id" not in existing:
+        with op.batch_alter_table("case_square_posts") as batch:
+            batch.add_column(
+                sa.Column("submitted_by_id", sa.Integer(), nullable=True),
+            )
+            batch.add_column(
+                sa.Column("publish_source", sa.String(length=20), server_default="self", nullable=False),
+            )
+            batch.add_column(sa.Column("attribution", pg.JSONB(), nullable=True))
+            batch.create_foreign_key(
+                "fk_case_square_posts_submitted_by_id",
+                "users",
+                ["submitted_by_id"],
+                ["id"],
+            )
 
-    op.execute(sa.text("UPDATE case_square_posts SET submitted_by_id = author_id WHERE submitted_by_id IS NULL"))
-    op.alter_column("case_square_posts", "submitted_by_id", nullable=False)
+        op.execute(sa.text("UPDATE case_square_posts SET submitted_by_id = author_id WHERE submitted_by_id IS NULL"))
+        op.alter_column("case_square_posts", "submitted_by_id", nullable=False)
     op.create_index("ix_case_square_posts_submitted_by_id", "case_square_posts", ["submitted_by_id"])
     op.create_index("ix_case_square_posts_publish_source", "case_square_posts", ["publish_source"])
 

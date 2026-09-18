@@ -16,29 +16,32 @@ from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.dify import DifyFile
+from config.database import get_async_db
 from models import AIAssistantRequest, Messages, get_request_language
 from models.domain.auth import User
-from services.dify.org_mindmate_client import resolve_mindmate_dify_client_short_lived
 from services.admin.user_usage_activity import schedule_user_usage_activity
-from services.diagram.generation_session_registry import register_generation_session
-from services.infrastructure.monitoring.mindmate_streaming import (
-    mindmate_streaming_begin,
-    mindmate_streaming_end,
-)
-from services.infrastructure.http.error_handler import (
-    ThinkingCoinInsufficientError,
-    UserDailyTokenCapExceededError,
-)
-from services.infrastructure.http.sse_upstream_keepalive import iter_upstream_with_keepalive
+from services.auth.thinking_coin.event_hub import mutation_to_footer
 from services.auth.thinking_coin.token_usage_link import build_mindmate_usage_snapshot
 from services.auth.thinking_coin.usage_wire import (
     assert_llm_usage_budget,
     thinking_coin_post_llm_success_mutation,
     thinking_coins_apply_to_user,
 )
-from services.auth.thinking_coin.event_hub import mutation_to_footer
+from services.diagram.generation_session_registry import register_generation_session
+from services.dify.org_mindmate_client import resolve_mindmate_dify_client_short_lived
+from services.infrastructure.http.error_handler import (
+    ThinkingCoinInsufficientError,
+    UserDailyTokenCapExceededError,
+)
+from services.infrastructure.http.sse_upstream_keepalive import iter_upstream_with_keepalive
+from services.infrastructure.monitoring.mindmate_streaming import (
+    mindmate_streaming_begin,
+    mindmate_streaming_end,
+)
+from services.learning_space.ai_gate import assert_student_ai_capability
 from services.monitoring.module_activity import track_module_activity
 from services.redis.redis_token_buffer import get_token_tracker
 from services.mindmate.teaching_design_flag import (
@@ -47,8 +50,8 @@ from services.mindmate.teaching_design_flag import (
     mindmate_meta_payload,
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
-from utils.auth.user_daily_token_quota import daily_token_limit_message
 from utils.auth import get_current_user_or_api_key
+from utils.auth.user_daily_token_quota import daily_token_limit_message
 from utils.dify_mindmate_user_id import mindmate_dify_user_id
 
 logger = logging.getLogger(__name__)
@@ -66,6 +69,7 @@ async def ai_assistant_stream(
     request: Request,
     x_language: Optional[str] = None,
     current_user: Optional[User] = Depends(get_current_user_or_api_key),
+    db: AsyncSession = Depends(get_async_db),
 ) -> StreamingResponse:
     """
     Stream AI assistant responses using Dify API with SSE (async version).
@@ -77,6 +81,9 @@ async def ai_assistant_stream(
     # Get language for error messages
     accept_language = request.headers.get("Accept-Language", "")
     lang = get_request_language(x_language, accept_language)
+
+    if current_user is not None:
+        await assert_student_ai_capability(db, current_user, request, "conversational_edit")
 
     # Get message
     message = req.message.strip()

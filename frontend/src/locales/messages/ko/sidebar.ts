@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': '모든 참가자의 세션이 종료됩니다. 참가자는 방에서 나가게 됩니다.',
   'sidebar.mindmateCollabHistory.visibilityOrg': '기관',
   'sidebar.mindmateCollabHistory.visibilityNetwork': '네트워크',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

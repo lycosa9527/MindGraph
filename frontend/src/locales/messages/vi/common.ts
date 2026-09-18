@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'bản đồ khái niệm',
   'swissGlass.hero.focusQuestion.title': 'vấn đề trọng tâm',
   'swissGlass.hero.focusQuestion.line1': 'Đặt câu hỏi cốt lõi cho bản đồ khái niệm',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

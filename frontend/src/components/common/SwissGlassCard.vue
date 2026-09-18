@@ -29,6 +29,8 @@ const props = withDefaults(
     persistent?: boolean
     lightBackdrop?: boolean
     teleportDisabled?: boolean
+    /** Hide Swiss glass hero (inline `/auth` panel). */
+    hideHero?: boolean
     cardClass?: string
     overlayClass?: string
   }>(),
@@ -38,6 +40,7 @@ const props = withDefaults(
     persistent: false,
     lightBackdrop: false,
     teleportDisabled: false,
+    hideHero: false,
     cardClass: '',
     overlayClass: '',
   }
@@ -103,9 +106,10 @@ function onBackdrop(): void {
         ref="cardEl"
         :class="cardClassName"
         role="dialog"
-        aria-modal="true"
+        :aria-modal="teleportDisabled ? undefined : 'true'"
       >
         <AiGenerateGlassHero
+          v-if="!hideHero"
           compact
           :ribbon="ribbon"
           :ribbon-key="ribbonKey"

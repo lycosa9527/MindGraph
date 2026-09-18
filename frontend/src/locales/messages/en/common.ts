@@ -115,6 +115,7 @@ export default {
   'meta.pageTitle.bayiPasskeyLogin': 'School access',
   'meta.pageTitle.gewe': 'Gewe',
   'meta.pageTitle.knowledgeSpace': 'Knowledge space',
+  'meta.pageTitle.learningSpace': 'Learning Space',
   'meta.pageTitle.library': 'Library',
   'meta.pageTitle.libraryBookmark': 'Bookmark',
   'meta.pageTitle.libraryViewer': 'Library viewer',

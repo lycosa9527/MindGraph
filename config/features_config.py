@@ -240,6 +240,14 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_VOD", "False").lower() == "true"
 
     @property
+    def FEATURE_STUDENT_LEARNING_SPACE(self):
+        """Enable classroom Learning Space (student accounts / homework).
+
+        Disabled by default. Set FEATURE_STUDENT_LEARNING_SPACE=True in .env to enable.
+        """
+        return self._get_cached_value("FEATURE_STUDENT_LEARNING_SPACE", "False").lower() == "true"
+
+    @property
     def WORKSHOP_CHAT_PREVIEW_ORG_IDS(self) -> frozenset[int]:
         """Organization IDs allowed to use Workshop Chat (研习社).
 

@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': 'Kjo do ta përfundojë sesionin për të gjithë. Pjesëmarrësit do të largohen nga dhoma.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Org.',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Rrjet',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

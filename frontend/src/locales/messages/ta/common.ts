@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'கருத்து வரைபடம்',
   'swissGlass.hero.focusQuestion.title': 'கவனம் பிரச்சினைகள்',
   'swissGlass.hero.focusQuestion.line1': 'கருத்து வரைபடத்திற்கான முக்கிய கேள்வியை அமைக்கவும்',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

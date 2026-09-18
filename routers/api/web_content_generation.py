@@ -13,9 +13,11 @@ from typing import Optional, Tuple
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from agents.mind_maps.mind_map_agent import MindMapAgent
 from agents.mind_maps.web_content_mind_map_agent import WebContentMindMapAgent
+from config.database import get_async_db
 from config.settings import config
 from models import (
     CanvasDocumentMindmapRequest,
@@ -57,6 +59,7 @@ from services.knowledge.package_rag_scope import (
     resolve_package_rag_scope_by_id,
 )
 from services.knowledge.url_page_fetch import fetch_url_page_text as _fetch_url_page_text
+from services.learning_space.ai_gate import assert_student_ai_capability
 from services.admin.user_usage_activity import schedule_user_usage_activity
 from services.monitoring.module_activity import schedule_module_activity, track_module_activity
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
@@ -355,12 +358,15 @@ async def generate_from_web_content(
     req: WebContentGenerateRequest,
     request: Request,
     current_user: Optional[User] = Depends(get_current_user_or_api_key),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Generate a mind map specification from extracted web page text (mind map only).
 
     Rate limited: 100 requests per minute per user/IP.
     """
+    if current_user is not None:
+        await assert_student_ai_capability(db, current_user, request, "web_generate")
     return await _generate_mindmap_from_resolved_content(
         page_content=req.page_content.strip(),
         language=req.language,
@@ -380,8 +386,10 @@ async def canvas_generate_mindmap_from_document(
     req: CanvasDocumentMindmapRequest,
     request: Request,
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """Canvas document summary panel — text paste, uploaded doc, or web URL."""
+    await assert_student_ai_capability(db, current_user, request, "file_generate")
     page_content, page_title, page_url = await _resolve_canvas_page_content(req)
     return await _generate_mindmap_from_resolved_content(
         page_content=page_content,
@@ -403,8 +411,10 @@ async def canvas_generate_mindmap_from_document_file(
     file: UploadFile = File(...),
     language: str = Form("zh"),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """Canvas document summary panel — extract PDF/DOCX text then generate mind map."""
+    await assert_student_ai_capability(db, current_user, request, "file_generate")
     raw = await file.read()
     if not raw:
         raise HTTPException(status_code=400, detail="Empty file")
@@ -458,6 +468,7 @@ async def canvas_generate_mindmap_from_image(
     apply_to_library: bool = Form(False),
     generation_instructions: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """Vision auto-detect hand-drawn mind maps; else OCR text then generate.
 
@@ -466,6 +477,7 @@ async def canvas_generate_mindmap_from_image(
     Optional ``diagram_id`` + ``apply_to_library`` writes the rebuilt spec to the library
     and wakes desktop Kitty to reload.
     """
+    await assert_student_ai_capability(db, current_user, request, "file_generate")
     mime = _image_content_type(file)
     if mime not in _ALLOWED_IMAGE_TYPES:
         raise HTTPException(status_code=400, detail="Unsupported image type")
@@ -589,8 +601,10 @@ async def canvas_generate_mindmap_from_package(
     req: GenerateMindmapFromPackageRequest,
     request: Request,
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """Generate mind map from a Document Summary package (extracted markdown or RAG)."""
+    await assert_student_ai_capability(db, current_user, request, "file_generate")
     user_id = current_user.id
     query = (req.topic_hint or "").strip() or "key themes and structure"
     language = req.language

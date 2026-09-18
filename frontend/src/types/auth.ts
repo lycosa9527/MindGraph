@@ -11,6 +11,7 @@ export type AuthMode = 'standard' | 'bayi' | 'enterprise'
  * - expert: Platform expert — B2B school invites (own orgs) (专家)
  * - school_admin: Organization manager — own-school dashboard + user mgmt (学校管理员)
  * - teacher: B2B school member (教师用户 / 学校版)
+ * - student: Classroom Learning Space student (学生账号)
  * - personal_trial: C-end trial account (体验版)
  * - personal_paid: C-end paid account (超级会员)
  */
@@ -20,6 +21,7 @@ export type UserRole =
   | 'expert'
   | 'school_admin'
   | 'teacher'
+  | 'student'
   | 'personal_trial'
   | 'personal_paid'
 
@@ -85,6 +87,10 @@ export interface User {
   allowsSimplifiedChinese?: boolean
   /** False for quick-registration users until they set a known password (SMS) */
   loginPasswordSet?: boolean
+  /** Student Learning Space: force password change after initial login */
+  mustChangePassword?: boolean
+  /** Student Learning Space class id */
+  learningClassId?: number | null
   /** Per-school MindMate sidebar label when configured by admin */
   mindmateAgentName?: string | null
   /** Per-school MindMate avatar URL when configured by admin */
@@ -151,6 +157,8 @@ export interface BackendUser {
   classroomRemoteVisible?: boolean | null
   allows_simplified_chinese?: boolean
   login_password_set?: boolean
+  must_change_password?: boolean
+  learning_class_id?: number | null
   thinking_coins?: {
     balance?: number
     eligible?: boolean
@@ -170,6 +178,14 @@ export interface LoginCredentials {
   phone?: string
   email?: string
   username?: string
+  password: string
+  captcha?: string
+  captcha_id?: string
+}
+
+export interface StudentLoginCredentials {
+  class_code: string
+  name: string
   password: string
   captcha?: string
   captcha_id?: string

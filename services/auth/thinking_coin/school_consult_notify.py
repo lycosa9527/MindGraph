@@ -20,7 +20,7 @@ async def send_school_consult_notification(
     phone: str,
     organization: str,
     note: str | None,
-    user: User,
+    user: User | None,
     org_name: str | None,
 ) -> WeComNotifyResult:
     """Build and send school consultation lead to the school_consult profile."""
@@ -28,9 +28,12 @@ async def send_school_consult_notification(
         "姓名": name,
         "电话": phone,
         "学校/机构": organization,
-        "MindGraph用户ID": str(getattr(user, "id", "")),
-        "MindGraph账号": _user_display_name(user),
     }
+    if user is not None:
+        fields["MindGraph用户ID"] = str(getattr(user, "id", ""))
+        fields["MindGraph账号"] = _user_display_name(user)
+    else:
+        fields["来源"] = "登录页联系我们（未登录）"
     if org_name:
         fields["所属组织"] = org_name
     if note and note.strip():

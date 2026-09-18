@@ -203,6 +203,28 @@ class LoginRequest(BaseModel):
     )
 
 
+class StudentLoginRequest(BaseModel):
+    """Learning Space student login (class_code + name + password)."""
+
+    class_code: str = Field(..., min_length=4, max_length=16)
+    name: str = Field(..., min_length=1, max_length=100)
+    password: str = Field(..., min_length=1, max_length=128)
+    captcha: str = Field(..., min_length=4, max_length=4, description="4-character captcha code")
+    captcha_id: str = Field(..., description="Captcha session ID")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "class_code": "AB12CD",
+                "name": "张三",
+                "password": "zs123",
+                "captcha": "AB3D",
+                "captcha_id": "uuid-captcha-session",
+            }
+        }
+    )
+
+
 class PasskeyVerifyRequest(BaseModel):
     """Request body for 6-digit passkey verification (Bayi passkey login, public dashboard)."""
 

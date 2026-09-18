@@ -11,10 +11,12 @@ import { useLanguage, useNotifications } from '@/composables'
 import { useRegisterRegionDetection } from '@/composables/auth/useRegisterRegionDetection'
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import { useTsecCaptcha } from '@/composables/auth/useTsecCaptcha'
+import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useAuthStore, useFeatureFlagsStore, useUIStore } from '@/stores'
 import { parseApiErrorDetail } from '@/utils/apiClient'
 import { isBrowserLanguageSimplifiedChinese } from '@/utils/clientRegion'
 import {
+  clearSavedLoginCredentials,
   loadSavedLoginIdentifier,
   saveLoginIdentifier,
 } from '@/utils/savedLoginCredentials'
@@ -25,6 +27,7 @@ export type LoginModalViewState = 'login' | 'register' | 'sms-login' | 'forgot-p
 type LoginModalEmit = {
   (e: 'update:visible', value: boolean): void
   (e: 'success'): void
+  (e: 'contact'): void
 }
 
 export function useLoginModal(
@@ -34,12 +37,19 @@ export function useLoginModal(
   const authStore = useAuthStore()
   const uiStore = useUIStore()
   const featureFlagsStore = useFeatureFlagsStore()
+  const { featureStudentLearningSpace } = useFeatureFlags()
+  /** /auth always shows teacher/student tabs; overlay modals follow the live flag. */
+  const showLoginAudienceTabs = computed(
+    () => Boolean(props.authPage) || featureStudentLearningSpace.value
+  )
   const { t } = useLanguage()
   const notify = useNotifications()
   const { isTsecCaptcha, showLegacyCaptcha, resolveCaptchaProof } = useTsecCaptcha()
 
   const currentView = ref<LoginModalViewState>('login')
   const activeTab = ref<string>('login')
+  /** Teacher (phone/email) vs student (class code) password login. */
+  const loginAudience = ref<'teacher' | 'student'>('teacher')
 
   function createEmptyLoginForm() {
     const savedIdentifier = loadSavedLoginIdentifier()
@@ -50,12 +60,24 @@ export function useLoginModal(
     }
   }
 
-  /** Prefill login identifier from localStorage (remember-me on by default). */
+  const studentLoginForm = ref({
+    classCode: '',
+    name: '',
+    password: '',
+    captcha: '',
+  })
+
+  /** Prefill login identifier from localStorage (记住账号; on by default). */
+  const rememberAccount = ref(true)
+  /** `/auth` teacher login: must accept terms before submit. */
+  const agreeToTerms = ref(true)
+
   function restoreSavedLoginFields() {
     const savedIdentifier = loadSavedLoginIdentifier()
     if (!savedIdentifier) {
       return
     }
+    rememberAccount.value = true
     if (currentView.value === 'login') {
       loginForm.value.phone = savedIdentifier
     }
@@ -65,6 +87,14 @@ export function useLoginModal(
     if (currentView.value === 'forgot-password' && !forgotForm.value.phone.trim()) {
       forgotForm.value.phone = savedIdentifier
     }
+  }
+
+  function persistLoginIdentifier(identifier: string): void {
+    if (rememberAccount.value) {
+      saveLoginIdentifier(identifier)
+      return
+    }
+    clearSavedLoginCredentials()
   }
 
   const loginForm = ref(createEmptyLoginForm())
@@ -97,6 +127,9 @@ export function useLoginModal(
   const captchaId = ref('')
   const captchaImage = ref('')
   const captchaLoading = ref(false)
+  const captchaLoadFailed = ref(false)
+  let captchaRefreshGeneration = 0
+  let captchaRefreshInFlight: Promise<void> | null = null
 
   const smsSending = ref(false)
   const smsCountdown = ref(0)
@@ -266,22 +299,37 @@ export function useLoginModal(
     currentView.value = tab
     if (tab === 'login') {
       restoreSavedLoginFields()
+    } else {
+      loginAudience.value = 'teacher'
     }
-    void refreshCaptcha()
+    void refreshCaptcha({ force: true })
+  }
+
+  function switchLoginAudience(audience: 'teacher' | 'student') {
+    if (!showLoginAudienceTabs.value && audience === 'student') {
+      return
+    }
+    loginAudience.value = audience
+    currentView.value = 'login'
+    activeTab.value = 'login'
+    void refreshCaptcha({ force: true })
   }
 
   function showSmsLogin() {
+    loginAudience.value = 'teacher'
     currentView.value = 'sms-login'
-    void refreshCaptcha()
+    void refreshCaptcha({ force: true })
   }
 
   function showForgotPassword() {
+    loginAudience.value = 'teacher'
     currentView.value = 'forgot-password'
-    void refreshCaptcha()
+    void refreshCaptcha({ force: true })
   }
 
   function backToLogin() {
     currentView.value = 'login'
+    activeTab.value = 'login'
     smsSent.value = false
     smsCountdown.value = 0
     if (smsCountdownTimer.value) {
@@ -289,31 +337,71 @@ export function useLoginModal(
       smsCountdownTimer.value = null
     }
     restoreSavedLoginFields()
-    void refreshCaptcha()
+    void refreshCaptcha({ force: true })
   }
 
-  async function refreshCaptcha() {
-    if (!featureFlagsStore.flags) {
-      await featureFlagsStore.fetchFlags()
-    }
-    if (isTsecCaptcha.value) {
+  async function refreshCaptcha(options?: { retries?: number; force?: boolean }) {
+    // Prefer loading a legacy image immediately. Only skip when flags already
+    // confirm T-Sec *and* the legacy box is hidden.
+    if (featureFlagsStore.flags && isTsecCaptcha.value && !showLegacyCaptcha.value) {
       return
     }
-    captchaLoading.value = true
-    try {
-      const result = await authStore.fetchCaptcha()
-      if (result) {
-        captchaId.value = result.captcha_id
-        captchaImage.value = result.captcha_image
-      } else {
-        notify.error(t('auth.modal.captchaLoadFailed'))
-      }
-    } catch (error) {
-      console.error('Captcha error:', error)
-      notify.error(t('auth.modal.captchaNetworkError'))
-    } finally {
-      captchaLoading.value = false
+    if (!featureFlagsStore.flags) {
+      void featureFlagsStore.fetchFlags()
     }
+
+    if (captchaRefreshInFlight && !options?.force) {
+      return captchaRefreshInFlight
+    }
+
+    const maxAttempts = Math.max(1, (options?.retries ?? 2) + 1)
+    const generation = ++captchaRefreshGeneration
+    captchaLoading.value = true
+    captchaLoadFailed.value = false
+    if (options?.force) {
+      captchaImage.value = ''
+      captchaId.value = ''
+    }
+
+    const run = (async () => {
+      try {
+        for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+          if (generation !== captchaRefreshGeneration) {
+            return
+          }
+          if (featureFlagsStore.flags && isTsecCaptcha.value && !showLegacyCaptcha.value) {
+            return
+          }
+          const result = await authStore.fetchCaptcha()
+          if (generation !== captchaRefreshGeneration) {
+            return
+          }
+          if (result?.captcha_image && result.captcha_id) {
+            captchaId.value = result.captcha_id
+            captchaImage.value = result.captcha_image
+            captchaLoadFailed.value = false
+            return
+          }
+          if (attempt < maxAttempts - 1) {
+            await new Promise((resolve) => {
+              window.setTimeout(resolve, 350 * (attempt + 1))
+            })
+          }
+        }
+        if (generation === captchaRefreshGeneration && !captchaImage.value) {
+          captchaLoadFailed.value = true
+          notify.error(t('auth.modal.captchaLoadFailed'))
+        }
+      } finally {
+        if (generation === captchaRefreshGeneration) {
+          captchaRefreshInFlight = null
+          captchaLoading.value = false
+        }
+      }
+    })()
+
+    captchaRefreshInFlight = run
+    return run
   }
 
   watch(
@@ -324,7 +412,14 @@ export function useLoginModal(
         if (!authStore.isAuthenticated && !props.persistent) {
           uiStore.syncGuestLocaleFromBrowser()
         }
-        void refreshCaptcha()
+        void (async () => {
+          void refreshCaptcha({ retries: 3, force: true })
+          featureFlagsStore.markStale()
+          await featureFlagsStore.fetchFlags()
+          if (showLegacyCaptcha.value && !captchaImage.value) {
+            await refreshCaptcha({ retries: 3, force: true })
+          }
+        })()
         document.body.style.overflow = 'hidden'
       } else {
         document.body.style.overflow = ''
@@ -332,6 +427,13 @@ export function useLoginModal(
     },
     { immediate: true }
   )
+
+  // After flags resolve to legacy, ensure an image exists (covers T-Sec→legacy).
+  watch(showLegacyCaptcha, (show) => {
+    if (show && props.visible && !captchaImage.value) {
+      void refreshCaptcha({ retries: 3, force: true })
+    }
+  })
 
   onBeforeUnmount(() => {
     document.body.style.overflow = ''
@@ -345,9 +447,34 @@ export function useLoginModal(
     }
   })
 
+  function retryCaptcha(): void {
+    void refreshCaptcha({ force: true, retries: 3 })
+  }
+
+  function onCaptchaImageError(): void {
+    // Broken data-URL / decode failure: show placeholder, do not auto-loop.
+    if (!captchaImage.value) {
+      return
+    }
+    captchaImage.value = ''
+    captchaId.value = ''
+    captchaLoading.value = false
+    captchaLoadFailed.value = true
+  }
+
   async function handleLogin() {
+    if (loginAudience.value === 'student' && showLoginAudienceTabs.value) {
+      await handleStudentLogin()
+      return
+    }
+
     if (!loginForm.value.phone || !loginForm.value.password) {
       notify.warning(t('auth.modal.fillAllFields'))
+      return
+    }
+
+    if (props.authPage && !agreeToTerms.value) {
+      notify.warning(t('auth.landing.agreeTermsRequired'))
       return
     }
 
@@ -377,7 +504,7 @@ export function useLoginModal(
       )
 
       if (result.success) {
-        saveLoginIdentifier(id)
+        persistLoginIdentifier(id)
         const userName = result.user?.username || ''
         notify.success(
           userName
@@ -395,17 +522,69 @@ export function useLoginModal(
         }
       } else if (result.code === SCHOOL_EXPIRED_CODE) {
         loginForm.value.captcha = ''
-        void refreshCaptcha()
+        void refreshCaptcha({ force: true })
       } else {
         notify.error(result.message || t('auth.loginFailed'))
         loginForm.value.captcha = ''
-        void refreshCaptcha()
+        void refreshCaptcha({ force: true })
       }
     } catch (error) {
       console.error('Login error:', error)
       notify.error(t('auth.modal.networkLoginError'))
       loginForm.value.captcha = ''
-      void refreshCaptcha()
+      void refreshCaptcha({ force: true })
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function handleStudentLogin() {
+    const classCode = studentLoginForm.value.classCode.trim().toUpperCase()
+    const name = studentLoginForm.value.name.trim()
+    if (!classCode || !name || !studentLoginForm.value.password) {
+      notify.warning(t('auth.modal.fillAllFields'))
+      return
+    }
+
+    isLoading.value = true
+    try {
+      const proof = await resolveCaptchaProof(studentLoginForm.value.captcha, captchaId.value)
+      if (!proof) {
+        return
+      }
+      const result = await authStore.loginStudent({
+        class_code: classCode,
+        name,
+        password: studentLoginForm.value.password,
+        captcha: proof.captcha,
+        captcha_id: proof.captcha_id,
+      })
+
+      if (result.success) {
+        const userName = result.user?.username || name
+        notify.success(
+          userName
+            ? t('auth.modal.loginWelcome', { name: userName })
+            : t('auth.modal.loginSuccessPlain')
+        )
+        if (authStore.showSessionExpiredModal) {
+          emit('success')
+        } else {
+          setTimeout(() => {
+            emit('success')
+            closeModal()
+          }, 1500)
+        }
+      } else {
+        notify.error(result.message || t('auth.loginFailed'))
+        studentLoginForm.value.captcha = ''
+        void refreshCaptcha({ force: true })
+      }
+    } catch (error) {
+      console.error('Student login error:', error)
+      notify.error(t('auth.modal.networkLoginError'))
+      studentLoginForm.value.captcha = ''
+      void refreshCaptcha({ force: true })
     } finally {
       isLoading.value = false
     }
@@ -467,12 +646,12 @@ export function useLoginModal(
           typeof data.detail === 'string' ? data.detail : t('auth.modal.emailSendFailed')
         )
         registerForm.value.captcha = ''
-        void refreshCaptcha()
+        void refreshCaptcha({ force: true })
       }
     } catch {
       notify.error(t('auth.modal.networkRegisterError'))
       registerForm.value.captcha = ''
-      void refreshCaptcha()
+      void refreshCaptcha({ force: true })
     } finally {
       emailSending.value = false
     }
@@ -531,12 +710,12 @@ export function useLoginModal(
             typeof data.detail === 'string' ? data.detail : t('auth.modal.registerFailed')
           )
           registerForm.value.captcha = ''
-          void refreshCaptcha()
+          void refreshCaptcha({ force: true })
         }
       } catch {
         notify.error(t('auth.modal.networkRegisterError'))
         registerForm.value.captcha = ''
-        void refreshCaptcha()
+        void refreshCaptcha({ force: true })
       } finally {
         isLoading.value = false
       }
@@ -584,13 +763,13 @@ export function useLoginModal(
       } else {
         notify.error(data.detail || t('auth.modal.registerFailed'))
         registerForm.value.captcha = ''
-        void refreshCaptcha()
+        void refreshCaptcha({ force: true })
       }
     } catch (error) {
       console.error('Register error:', error)
       notify.error(t('auth.modal.networkRegisterError'))
       registerForm.value.captcha = ''
-      void refreshCaptcha()
+      void refreshCaptcha({ force: true })
     } finally {
       isLoading.value = false
     }
@@ -649,7 +828,7 @@ export function useLoginModal(
             typeof data.detail === 'string' ? data.detail : t('auth.modal.emailSendFailed')
           )
           form.captcha = ''
-          void refreshCaptcha()
+          void refreshCaptcha({ force: true })
         }
       } else {
         const endpoint = type === 'login' ? '/api/auth/sms/send-login' : '/api/auth/sms/send-reset'
@@ -672,7 +851,7 @@ export function useLoginModal(
         } else {
           notify.error(data.detail || t('auth.modal.smsSendFailed'))
           form.captcha = ''
-          void refreshCaptcha()
+          void refreshCaptcha({ force: true })
         }
       }
     } catch (error) {
@@ -681,7 +860,7 @@ export function useLoginModal(
         useEmail ? t('auth.modal.networkEmailCodeError') : t('auth.modal.networkSmsError')
       )
       form.captcha = ''
-      void refreshCaptcha()
+      void refreshCaptcha({ force: true })
     } finally {
       smsSending.value = false
     }
@@ -870,7 +1049,7 @@ export function useLoginModal(
       if (!allowed && currentView.value === 'register') {
         activeTab.value = 'login'
         currentView.value = 'login'
-        void refreshCaptcha()
+        void refreshCaptcha({ force: true })
       }
     }
   )
@@ -880,13 +1059,20 @@ export function useLoginModal(
     t,
     currentView,
     activeTab,
+    loginAudience,
+    featureStudentLearningSpace,
+    showLoginAudienceTabs,
     loginForm,
+    studentLoginForm,
     registerForm,
     smsLoginForm,
     forgotForm,
+    rememberAccount,
+    agreeToTerms,
     captchaId,
     captchaImage,
     captchaLoading,
+    captchaLoadFailed,
     smsSending,
     smsCountdown,
     smsSent,
@@ -914,11 +1100,14 @@ export function useLoginModal(
     pageHeaderTitle,
     closeModal,
     switchLoginRegisterTab,
+    switchLoginAudience,
     registrationEnabledUi,
     showSmsLogin,
     showForgotPassword,
     backToLogin,
     refreshCaptcha,
+    retryCaptcha,
+    onCaptchaImageError,
     showLegacyCaptcha,
     handleLogin,
     handleRegister,

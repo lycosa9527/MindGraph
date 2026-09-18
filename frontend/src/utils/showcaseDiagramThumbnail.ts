@@ -2,12 +2,23 @@ import type { DiagramType } from '@/types'
 import { toRaw } from 'vue'
 import { decodeMgFileToJsonText } from '@/utils/mgInterchange'
 
+function unwrapDecodedDiagramSpec(parsed: Record<string, unknown>): Record<string, unknown> {
+  const nested = parsed.spec
+  if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+    const inner = nested as Record<string, unknown>
+    if (inner.type || inner.topic || inner.data || inner.nodes) {
+      return inner
+    }
+  }
+  return parsed
+}
+
 export async function decodeMgUploadSpec(file: File): Promise<Record<string, unknown> | null> {
   try {
     const text = await decodeMgFileToJsonText(await file.arrayBuffer())
     const parsed = JSON.parse(text) as unknown
     if (!parsed || typeof parsed !== 'object') return null
-    return parsed as Record<string, unknown>
+    return unwrapDecodedDiagramSpec(parsed as Record<string, unknown>)
   } catch {
     return null
   }

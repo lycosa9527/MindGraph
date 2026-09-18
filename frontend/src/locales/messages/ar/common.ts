@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'خريطة المفاهيم',
   'swissGlass.hero.focusQuestion.title': 'قضايا التركيز',
   'swissGlass.hero.focusQuestion.line1': 'حدد السؤال الأساسي لخريطة المفاهيم',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

@@ -38,7 +38,7 @@ from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
 from services.utils.error_types import REDIS_ERRORS
 from services.utils.typing_helpers import redis_hash_to_str
-from utils.auth.role_constants import normalize_role
+from utils.auth.role_constants import ROLE_STUDENT, normalize_role
 from utils.db.session_open import system_rls_session, user_rls_session
 
 logger = logging.getLogger(__name__)
@@ -55,6 +55,14 @@ class UserCache:
 
     def __init__(self):
         """Initialize UserCache instance."""
+
+    @staticmethod
+    def _student_cache_needs_refresh(data: dict[bytes | str, bytes | str]) -> bool:
+        """True when a student Redis hash predates Learning Space field serialization."""
+        normalized = redis_hash_to_str(data)
+        if normalize_role(normalized.get("role")) != ROLE_STUDENT:
+            return False
+        return "learning_class_id" not in normalized or "must_change_password" not in normalized
 
     def _serialize_user(self, user: User) -> Dict[str, str]:
         """
@@ -88,6 +96,10 @@ class UserCache:
             "allows_simplified_chinese": "1" if getattr(user, "allows_simplified_chinese", True) else "0",
             "email_login_whitelisted_from_cn": "1" if getattr(user, "email_login_whitelisted_from_cn", False) else "0",
             "login_password_set": "1" if getattr(user, "login_password_set", True) else "0",
+            "must_change_password": "1" if getattr(user, "must_change_password", False) else "0",
+            "learning_class_id": (
+                str(user.learning_class_id) if getattr(user, "learning_class_id", None) is not None else ""
+            ),
             "education_stage": getattr(user, "education_stage", None) or "",
             "ai_content_level": getattr(user, "ai_content_level", None) or "",
             "v3_ribbon_classic": "1" if getattr(user, "v3_ribbon_classic", False) else "0",
@@ -164,6 +176,11 @@ class UserCache:
         lp = normalized.get("login_password_set", "1")
         user.login_password_set = lp not in ("0", "false", "False")
 
+        mcp = normalized.get("must_change_password", "0")
+        user.must_change_password = mcp in ("1", "true", "True")
+        class_id_val = normalized.get("learning_class_id") or ""
+        user.learning_class_id = int(class_id_val) if class_id_val else None
+
         user.education_stage = normalized.get("education_stage") or None
         user.ai_content_level = normalized.get("ai_content_level") or None
         ribbon_classic = normalized.get("v3_ribbon_classic", "0")
@@ -186,8 +203,12 @@ class UserCache:
         if not cached:
             return None
         try:
+            if self._student_cache_needs_refresh(cached):
+                return None
             return self._deserialize_user(cached)
         except REDIS_ERRORS:
+            return None
+        except (KeyError, ValueError, TypeError):
             return None
 
     async def _read_cached_by_phone(self, phone: str) -> Optional[User]:
@@ -325,6 +346,9 @@ class UserCache:
 
             if cached:
                 try:
+                    # Legacy student hashes omitted Learning Space fields; refresh once.
+                    if self._student_cache_needs_refresh(cached):
+                        return await self._load_from_database(user_id=user_id)
                     user = self._deserialize_user(cached)
                     return user
                 except (KeyError, ValueError, TypeError) as e:

@@ -40,6 +40,7 @@ import type { SnapshotMetadata } from '@/composables'
 import { useLanguage } from '@/composables'
 import { useCanvasReset } from '@/composables/canvasPage/useCanvasReset'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { studentHomeworkDiagramTitle } from '@/composables/learningSpace/lsHelpers'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import {
   CANVAS_COMMUNITY_EXPORT_MENU_ITEM,
@@ -47,6 +48,7 @@ import {
 } from '@/config/canvasExportMenu'
 import { CANVAS_TOP_BAR } from '@/config/uiConfig'
 import { useAuthStore, useCanvasExportStore, usePanelsStore } from '@/stores'
+import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { navigateBackFromCanvas } from '@/utils/canvasBackNavigation'
 import { isPdfExportCommand } from '@/utils/diagramPdfExport'
 
@@ -113,6 +115,8 @@ const diagramStore = useDiagramSession()
 
 const authStore = useAuthStore()
 const panelsStore = usePanelsStore()
+const lsCanvas = useLearningAssignmentCanvasStore()
+const isHomeworkCanvas = computed(() => lsCanvas.isActive)
 
 const { featureCommunity } = useFeatureFlags()
 
@@ -161,6 +165,19 @@ onUnmounted(() => {
   eventBus.removeAllListenersForOwner('CanvasTopBar')
 })
 
+function lockHomeworkFileName(): void {
+  if (!isHomeworkCanvas.value || isFileNameEditing.value) return
+  if (!lsCanvas.draftHydrated) return
+  const locked = studentHomeworkDiagramTitle(
+    authStore.user?.username,
+    authStore.user?.id,
+    lsCanvas.assignment?.title
+  )
+  if (diagramStore.title !== locked) {
+    diagramStore.setTitle(locked, true)
+  }
+}
+
 onMounted(() => {
   eventBus.onWithOwner(
     'canvas:show_slot_full_modal',
@@ -170,7 +187,9 @@ onMounted(() => {
     'CanvasTopBar'
   )
   // Initialize title if not already set (new diagram)
-  if (!diagramStore.title) {
+  if (isHomeworkCanvas.value) {
+    lockHomeworkFileName()
+  } else if (!diagramStore.title) {
     const topicText = diagramStore.getTopicNodeText()
     if (topicText) {
       diagramStore.initTitle(topicText)
@@ -195,6 +214,7 @@ onMounted(() => {
 watch(
   () => diagramStore.getTopicNodeText(),
   (newTopicText) => {
+    if (isHomeworkCanvas.value) return
     // Don't auto-update if user has manually edited the title
     if (!diagramStore.shouldAutoUpdateTitle()) return
     // Don't auto-update if currently editing the name
@@ -206,8 +226,25 @@ watch(
   }
 )
 
+watch(
+  () =>
+    [
+      isHomeworkCanvas.value,
+      lsCanvas.draftHydrated,
+      lsCanvas.assignment?.title,
+      authStore.user?.username,
+    ] as const,
+  () => {
+    lockHomeworkFileName()
+  }
+)
+
 function handleBack() {
   if (props.previewLock) return
+  if (lsCanvas.isActive) {
+    void router.push('/learning-space')
+    return
+  }
   navigateBackFromCanvas(router, route.path)
 }
 
@@ -314,7 +351,7 @@ async function handleReset() {
         :style="isMindMapEditor ? undefined : { maxWidth: CANVAS_TOP_BAR.LEFT_CLUSTER_MAX_WIDTH }"
       >
         <I18nTooltip
-          k="canvas.topBar.back"
+          :k="isHomeworkCanvas ? 'learningSpace.backToLearningSpace' : 'canvas.topBar.back'"
           placement="bottom"
         >
           <ElButton

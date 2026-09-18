@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': 'यह सभी के लिए सत्र समाप्त कर देगा। प्रतिभागी कक्ष छोड़ देंगे।',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'कैंपस में',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'स्कूलों में',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

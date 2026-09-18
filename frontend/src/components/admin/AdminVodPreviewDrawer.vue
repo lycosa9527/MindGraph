@@ -38,8 +38,8 @@ async function loadPlayer(): Promise<void> {
   try {
     const token = await playVodMedia(props.media.id, props.organizationId)
     const [TCPlayer] = await Promise.all([
-      import('tcplayer.js').then((mod) => mod.default),
-      import('tcplayer.js/dist/tcplayer.min.css'),
+      import(/* @vite-ignore */ 'tcplayer.js').then((mod) => mod.default),
+      import(/* @vite-ignore */ 'tcplayer.js/dist/tcplayer.min.css'),
     ])
     await nextTick()
     player = TCPlayer(playerId, {

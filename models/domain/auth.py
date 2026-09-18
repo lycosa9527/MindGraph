@@ -112,6 +112,7 @@ class User(Base):
     - 'expert': Platform expert — B2B school invites (own orgs)
     - 'school_admin': Organization manager (学校管理员) — own-school dashboard + user mgmt
     - 'teacher': B2B school member (教师用户)
+    - 'student': Classroom Learning Space student (学生账号, pilot)
     - 'personal_trial': C-end trial account (个人体验账号)
     - 'personal_paid': C-end paid account (个人付费账号)
     """
@@ -160,6 +161,13 @@ class User(Base):
 
     email_login_whitelisted_from_cn: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     login_password_set: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    learning_class_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("learning_classes.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    must_change_password: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     organization: Mapped["Organization | None"] = relationship(
         "Organization",

@@ -18,12 +18,14 @@ from typing import Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from agents.core.generate_events import GenerateGraphEvent
 from agents.core.generate_pipeline import run_generate_pipeline
 from agents.core.prompt_understanding import prepare_generation_prompt
 from agents.core.utils import normalize_generate_graph_failure
 from agents.core.workflow import agent_graph_workflow_with_styles
+from config.database import get_async_db
 from models import GenerateRequest, GenerateResponse, Messages, get_request_language
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
@@ -38,6 +40,7 @@ from services.infrastructure.http.error_handler import (
     LLMTimeoutError,
     ThinkingCoinInsufficientError,
 )
+from services.learning_space.ai_gate import assert_student_ai_capability
 from services.monitoring.activity_stream import get_activity_stream_service
 from services.monitoring.module_activity import track_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
@@ -426,6 +429,7 @@ async def generate_graph(
     request: Request,
     x_language: Optional[str] = None,
     current_user: Optional[User] = Depends(get_current_user_or_api_key),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Generate graph specification from user prompt using selected LLM model (async).
@@ -435,6 +439,9 @@ async def generate_graph(
 
     Rate limited: 100 requests per minute per user/IP.
     """
+    if current_user is not None:
+        capability = "node_subgraph" if getattr(req, "expand_branch", None) else "topic_generate"
+        await assert_student_ai_capability(db, current_user, request, capability)
     try:
         prepared = await _prepare_generate_graph(
             req,
@@ -489,6 +496,7 @@ async def generate_graph_stream(
     request: Request,
     x_language: Optional[str] = None,
     current_user: Optional[User] = Depends(get_current_user_or_api_key),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     SSE stream: phase events (accepted/waiting/streaming) + final complete payload.
@@ -496,6 +504,9 @@ async def generate_graph_stream(
     Used by canvas auto-complete and landing prompt generation.
     JSON ``POST /api/generate_graph`` remains for callers that do not need streaming.
     """
+    if current_user is not None:
+        capability = "node_subgraph" if getattr(req, "expand_branch", None) else "topic_generate"
+        await assert_student_ai_capability(db, current_user, request, capability)
     try:
         prepared = await _prepare_generate_graph(
             req,

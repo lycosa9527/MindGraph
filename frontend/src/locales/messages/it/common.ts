@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'mappa concettuale',
   'swissGlass.hero.focusQuestion.title': 'questioni di focalizzazione',
   'swissGlass.hero.focusQuestion.line1': 'Imposta la domanda principale per la mappa concettuale',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

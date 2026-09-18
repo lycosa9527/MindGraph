@@ -106,6 +106,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </transition>
 
         <el-tooltip
+          v-if="!s.isLearningSpaceStudent"
           :content="s.mindMateNavLabel"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -128,7 +129,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </el-tooltip>
         <transition name="panel-slide">
           <div
-            v-if="s.showPanel('mindmate')"
+            v-if="!s.isLearningSpaceStudent && s.showPanel('mindmate')"
             class="sidebar-panel sidebar-panel--fill"
           >
             <ChatHistory
@@ -141,7 +142,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 
         <!-- ZhiHui (智绘) — hidden from sidebar for now; /zhihui stays reachable -->
         <I18nTooltip
-          v-if="s.showZhihuiNav"
+          v-if="!s.isLearningSpaceStudent && s.showZhihuiNav"
           k="sidebar.zhihui"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -164,7 +165,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </I18nTooltip>
         <transition name="panel-slide">
           <div
-            v-if="s.showZhihuiNav && s.showPanel('zhihui')"
+            v-if="!s.isLearningSpaceStudent && s.showZhihuiNav && s.showPanel('zhihui')"
             class="sidebar-panel sidebar-panel--fill"
           >
             <ZhiHuiHistory />
@@ -181,9 +182,31 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             (s.showZhihuiNav && s.showPanel('zhihui')),
         }"
       >
+        <el-tooltip
+          v-if="s.showLearningSpaceNav"
+          :content="s.t('sidebar.learningSpace')"
+          placement="right"
+          :disabled="!s.isCollapsed"
+        >
+          <div
+            class="nav-item"
+            :class="s.navItemClass('learning-space')"
+            @click="s.setMode('learning-space')"
+          >
+            <GraduationCap
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label"
+              >{{ s.t('sidebar.learningSpace') }}</span
+            >
+          </div>
+        </el-tooltip>
         <!-- Knowledge Space -->
         <I18nTooltip
-          v-if="s.isAuthenticated && s.featureKnowledgeSpace && !s.hideKnowledgeSpaceNav"
+          v-if="!s.isLearningSpaceStudent && s.isAuthenticated && s.featureKnowledgeSpace && !s.hideKnowledgeSpaceNav"
           k="sidebar.knowledgeSpace"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -207,6 +230,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         <transition name="panel-slide">
           <div
             v-if="
+              !s.isLearningSpaceStudent &&
               s.isAuthenticated &&
               s.featureKnowledgeSpace &&
               !s.hideKnowledgeSpaceNav &&
@@ -220,7 +244,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 
         <!-- Chunk Test -->
         <I18nTooltip
-          v-if="s.isAuthenticated && s.featureRagChunkTest && !s.hideKnowledgeSpaceNav"
+          v-if="!s.isLearningSpaceStudent && s.isAuthenticated && s.featureRagChunkTest && !s.hideKnowledgeSpaceNav"
           k="sidebar.chunkTest"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -244,6 +268,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         <transition name="panel-slide">
           <div
             v-if="
+              !s.isLearningSpaceStudent &&
               s.isAuthenticated &&
               s.featureRagChunkTest &&
               !s.hideKnowledgeSpaceNav &&
@@ -257,7 +282,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 
         <!-- AskOnce -->
         <I18nTooltip
-          v-if="s.featureAskOnce"
+          v-if="!s.isLearningSpaceStudent && s.featureAskOnce"
           k="askonce.title"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -280,7 +305,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </I18nTooltip>
         <transition name="panel-slide">
           <div
-            v-if="s.featureAskOnce && s.showPanel('askonce')"
+            v-if="!s.isLearningSpaceStudent && s.featureAskOnce && s.showPanel('askonce')"
             class="sidebar-panel"
           >
             <AskOnceHistory />
@@ -288,7 +313,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </transition>
 
         <I18nTooltip
-          v-if="s.showTrainingNav"
+          v-if="!s.isLearningSpaceStudent && s.showTrainingNav"
           k="sidebar.training"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -316,7 +341,12 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </I18nTooltip>
         <transition name="admin-slide">
           <div
-            v-if="s.trainingExpanded && !s.isCollapsed && s.showTrainingNav"
+            v-if="
+              !s.isLearningSpaceStudent &&
+              s.trainingExpanded &&
+              !s.isCollapsed &&
+              s.showTrainingNav
+            "
             class="admin-subnav"
           >
             <button
@@ -340,7 +370,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 
         <!-- Debateverse -->
         <I18nTooltip
-          v-if="s.featureDebateverse"
+          v-if="!s.isLearningSpaceStudent && s.featureDebateverse"
           k="sidebar.debateverse"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -363,7 +393,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </I18nTooltip>
         <transition name="panel-slide">
           <div
-            v-if="s.featureDebateverse && s.showPanel('debateverse')"
+            v-if="!s.isLearningSpaceStudent && s.featureDebateverse && s.showPanel('debateverse')"
             class="sidebar-panel"
           >
             <DebateHistory />
@@ -372,7 +402,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 
         <!-- Templates -->
         <I18nTooltip
-          v-if="s.featureTemplate"
+          v-if="!s.isLearningSpaceStudent && s.featureTemplate"
           k="sidebar.templateResources"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -396,7 +426,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 
         <!-- Courses -->
         <I18nTooltip
-          v-if="s.featureCourse"
+          v-if="!s.isLearningSpaceStudent && s.featureCourse"
           k="sidebar.courses"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -420,7 +450,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 
         <!-- Mate Learning -->
         <I18nTooltip
-          v-if="s.featureMateLearning"
+          v-if="!s.isLearningSpaceStudent && s.featureMateLearning"
           k="sidebar.mateLearning"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -443,7 +473,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </I18nTooltip>
         <transition name="panel-slide">
           <div
-            v-if="s.featureMateLearning && s.showPanel('maite')"
+            v-if="!s.isLearningSpaceStudent && s.featureMateLearning && s.showPanel('maite')"
             class="sidebar-panel"
           >
             <MaitePracticeHistory />
@@ -452,7 +482,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 
         <!-- Community -->
         <I18nTooltip
-          v-if="s.featureCommunity"
+          v-if="!s.isLearningSpaceStudent && s.featureCommunity"
           k="sidebar.community"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -476,7 +506,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 
         <!-- Showcase -->
         <I18nTooltip
-          v-if="s.featureShowcase"
+          v-if="!s.isLearningSpaceStudent && s.featureShowcase"
           k="sidebar.showcase"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -500,7 +530,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 
         <!-- Library -->
         <I18nTooltip
-          v-if="s.featureLibrary"
+          v-if="!s.isLearningSpaceStudent && s.featureLibrary"
           k="sidebar.library"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -523,7 +553,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </I18nTooltip>
         <transition name="panel-slide">
           <div
-            v-if="s.featureLibrary && s.showPanel('library')"
+            v-if="!s.isLearningSpaceStudent && s.featureLibrary && s.showPanel('library')"
             class="sidebar-panel"
           >
             <LibraryCommentsHistory />
@@ -532,7 +562,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 
         <!-- Workshop Chat (研习社) — above 管理面板 -->
         <I18nTooltip
-          v-if="s.canAccessWorkshopChat"
+          v-if="!s.isLearningSpaceStudent && s.canAccessWorkshopChat"
           k="workshop.title"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -560,7 +590,12 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </I18nTooltip>
         <transition name="ws-slide">
           <div
-            v-if="s.workshopExpanded && !s.isCollapsed && s.canAccessWorkshopChat"
+            v-if="
+              !s.isLearningSpaceStudent &&
+              s.workshopExpanded &&
+              !s.isCollapsed &&
+              s.canAccessWorkshopChat
+            "
             class="workshop-panel-host"
           >
             <WorkshopChatHistory />
@@ -569,7 +604,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 
         <!-- Single management tab (e.g. school_admin users-only) -->
         <el-tooltip
-          v-if="s.isManagementPanelUser && s.singleAdminNavTab"
+          v-if="!s.isLearningSpaceStudent && s.isManagementPanelUser && s.singleAdminNavTab"
           :content="s.singleAdminNavTab.label"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -600,7 +635,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 
         <!-- Management panel (expandable sub-nav) -->
         <I18nTooltip
-          v-if="s.isManagementPanelUser && s.showManagementPanelSubnav"
+          v-if="!s.isLearningSpaceStudent && s.isManagementPanelUser && s.showManagementPanelSubnav"
           k="admin.title"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -634,7 +669,12 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </I18nTooltip>
         <transition name="admin-slide">
           <div
-            v-if="s.managementPanelExpanded && !s.isCollapsed && s.showManagementPanelSubnav"
+            v-if="
+              !s.isLearningSpaceStudent &&
+              s.managementPanelExpanded &&
+              !s.isCollapsed &&
+              s.showManagementPanelSubnav
+            "
             class="admin-subnav"
           >
             <template

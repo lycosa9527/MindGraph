@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'konsep kaart',
   'swissGlass.hero.focusQuestion.title': 'fokus kwessies',
   'swissGlass.hero.focusQuestion.line1': 'Stel die kernvraag vir die konsepkaart',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': 'Помещение семинара будет закрыто для всех участников, и все выйдут из помещения.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'На территории кампуса',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'в школах',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

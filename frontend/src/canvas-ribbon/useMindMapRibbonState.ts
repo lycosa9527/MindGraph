@@ -33,7 +33,7 @@ export function useMindMapRibbonState() {
       return
     }
     classic.value = user.v3RibbonClassic === true
-    activeTab.value = resolveLandingMindMapRibbonTab(user.v3RibbonTab)
+    activeTab.value = studentSafeRibbonTab(resolveLandingMindMapRibbonTab(user.v3RibbonTab))
   }
 
   hydrateFromUser()
@@ -46,9 +46,16 @@ export function useMindMapRibbonState() {
     }
   )
 
+  function studentSafeRibbonTab(tab: MindMapRibbonTabId): MindMapRibbonTabId {
+    if (authStore.user?.role === 'student' && tab === 'research') {
+      return DEFAULT_MIND_MAP_RIBBON_TAB
+    }
+    return tab
+  }
+
   function tabToPersist(): MindMapRibbonTabId {
     if (activeTab.value !== 'file') return activeTab.value
-    return resolveLandingMindMapRibbonTab(authStore.user?.v3RibbonTab)
+    return studentSafeRibbonTab(resolveLandingMindMapRibbonTab(authStore.user?.v3RibbonTab))
   }
 
   function patchAuthUser(nextClassic: boolean, nextTab: MindMapRibbonTabId): void {
@@ -78,7 +85,7 @@ export function useMindMapRibbonState() {
         v3_ribbon_tab?: string | null
       }
       const savedClassic = data.v3_ribbon_classic === true
-      const savedTab = resolveLandingMindMapRibbonTab(data.v3_ribbon_tab)
+      const savedTab = studentSafeRibbonTab(resolveLandingMindMapRibbonTab(data.v3_ribbon_tab))
       classic.value = savedClassic
       if (activeTab.value !== 'file') {
         activeTab.value = savedTab
@@ -112,10 +119,11 @@ export function useMindMapRibbonState() {
   }
 
   function setActiveTab(tab: MindMapRibbonTabId): void {
-    if (activeTab.value === tab) return
-    activeTab.value = tab
-    if (tab === 'file') return
-    patchAuthUser(classic.value, tab)
+    const next = studentSafeRibbonTab(tab)
+    if (activeTab.value === next) return
+    activeTab.value = next
+    if (next === 'file') return
+    patchAuthUser(classic.value, next)
     schedulePersist()
   }
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { Loader2 } from '@lucide/vue'
 
@@ -27,7 +27,10 @@ const { t } = useLanguage()
 const isReady = ref(false)
 const hasError = ref(false)
 const canvasMounted = ref(false)
+const hostEl = ref<HTMLElement | null>(null)
+const previewNonce = ref(0)
 let loadToken = 0
+let resizeObserver: ResizeObserver | null = null
 
 const emptyLabel = computed(() =>
   String(t(props.emptyLabelKey ?? 'showcase.publishModal.templatePreviewEmpty'))
@@ -49,30 +52,59 @@ const previewDiagramType = computed(() => {
 
 const previewSessionKey = computed(() => {
   if (!previewSpec.value || !previewDiagramType.value) return 'empty'
-  return `${previewDiagramType.value}:${JSON.stringify(previewSpec.value).length}`
+  return `${previewDiagramType.value}:${previewNonce.value}`
 })
+
+function hostHasSize(): boolean {
+  const el = hostEl.value
+  return Boolean(el && el.clientWidth > 8 && el.clientHeight > 8)
+}
+
+function mountWhenSized(token: number): void {
+  if (token !== loadToken) return
+  if (!props.spec) {
+    canvasMounted.value = false
+    isReady.value = false
+    return
+  }
+  if (!hostHasSize()) {
+    canvasMounted.value = false
+    isReady.value = false
+    return
+  }
+  canvasMounted.value = true
+  requestAnimationFrame(() => {
+    if (token !== loadToken) return
+    isReady.value = true
+  })
+}
 
 watch(
   () => [props.spec, props.diagramType] as const,
   ([spec]) => {
     const token = ++loadToken
-    if (!spec) {
-      isReady.value = false
-      hasError.value = false
-      canvasMounted.value = false
-      return
-    }
+    previewNonce.value += 1
     isReady.value = false
     hasError.value = false
-    canvasMounted.value = true
-    // Allow VueFlow to mount under the isolated session, then mark ready.
-    requestAnimationFrame(() => {
-      if (token !== loadToken) return
-      isReady.value = true
-    })
+    canvasMounted.value = false
+    if (!spec) return
+    void nextTick(() => mountWhenSized(token))
   },
   { immediate: true }
 )
+
+onMounted(() => {
+  resizeObserver = new ResizeObserver(() => {
+    mountWhenSized(loadToken)
+  })
+  if (hostEl.value) resizeObserver.observe(hostEl.value)
+  mountWhenSized(loadToken)
+})
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
+})
 
 async function captureThumbnail(): Promise<Blob | null> {
   if (!previewSpec.value || !previewDiagramType.value) return null
@@ -83,7 +115,10 @@ defineExpose({ captureThumbnail })
 </script>
 
 <template>
-  <div class="showcase-inline-diagram-preview flex h-full min-h-0 flex-col bg-gray-50">
+  <div
+    ref="hostEl"
+    class="showcase-inline-diagram-preview flex h-full min-h-0 flex-col bg-gray-50"
+  >
     <div
       v-if="!spec"
       class="flex flex-1 flex-col items-center justify-center px-6 text-center text-gray-400"
@@ -140,9 +175,11 @@ defineExpose({ captureThumbnail })
 </template>
 
 <style scoped>
-.showcase-inline-diagram-preview :deep(.diagram-canvas) {
+.showcase-inline-diagram-preview :deep(.diagram-canvas),
+.showcase-inline-diagram-preview :deep(.vue-flow) {
+  width: 100%;
   height: 100%;
-  min-height: 360px;
+  min-height: 0;
 }
 
 .showcase-inline-diagram-preview :deep(.diagram-canvas--hand-tool),

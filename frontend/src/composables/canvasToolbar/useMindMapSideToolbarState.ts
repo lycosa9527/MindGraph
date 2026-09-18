@@ -8,6 +8,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useMindMapAudienceGenerate } from '@/composables/mindMap/audience/useMindMapAudienceGenerate'
 import { getAiBrainstormDiagramKey } from '@/composables/nodePalette/sessionKeys'
+import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useDiagramStore, usePanelsStore, useSavedDiagramsStore } from '@/stores'
 
 export type MindMapSideToolId =
@@ -29,6 +30,7 @@ export function useMindMapSideToolbarState() {
   const { t } = useLanguage()
   const { handleMindMapAiGenerate } = useMindMapAudienceGenerate()
   const { aiBlockedByCollab, guardCollabGuestAi } = useCollabGuestAiGate()
+  const { requireCapability } = useLearningAiGate()
 
   function guardCollabGuestFeature(): boolean {
     if (!aiBlockedByCollab.value) {
@@ -57,6 +59,8 @@ export function useMindMapSideToolbarState() {
     ) {
       return
     }
+    if (toolId === 'waterfall' && !requireCapability('ai_brainstorm')) return
+    if (toolId === 'document_summary' && !requireCapability('file_generate')) return
     const previous = activeTool.value
     if (previous === 'waterfall' && toolId !== 'waterfall' && panelsStore.aiBrainstormPanel.isOpen) {
       getAiBrainstorm().dismiss()

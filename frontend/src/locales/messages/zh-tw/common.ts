@@ -563,4 +563,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': '概念圖',
   'swissGlass.hero.focusQuestion.title': '焦點問題',
   'swissGlass.hero.focusQuestion.line1': '為概念圖設定核心問題',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

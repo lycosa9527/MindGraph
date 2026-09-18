@@ -14,6 +14,7 @@ import { defineStore } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramStore } from '@/stores/diagram'
+import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { useUIStore } from '@/stores/ui'
 import type {
   ConceptMapTab,
@@ -112,6 +113,10 @@ export const usePanelsStore = defineStore('panels', () => {
 
   // Actions
   function openMindmate(options: Partial<MindmatePanelState> = {}): void {
+    const ls = useLearningAssignmentCanvasStore()
+    if (!ls.can('conversational_edit')) {
+      return
+    }
     const wasOpen = mindmate.value.open
     mindmate.value = {
       ...mindmate.value,
@@ -168,6 +173,9 @@ export const usePanelsStore = defineStore('panels', () => {
       conceptMapNodeText?: string
     } = {}
   ): void {
+    if (!useLearningAssignmentCanvasStore().can('ai_brainstorm')) {
+      return
+    }
     const wasOpen = nodePalette.value.open
     const { diagramKey, conceptMapNodeId, conceptMapNodeText, ...restOptions } = options
     const snapshot = diagramKey && nodePaletteSessionsByDiagram.value.get(diagramKey)
@@ -270,6 +278,9 @@ export const usePanelsStore = defineStore('panels', () => {
   function openAiBrainstorm(
     options: Partial<AiBrainstormPanelState> & { diagramKey?: string } = {}
   ): void {
+    if (!useLearningAssignmentCanvasStore().can('ai_brainstorm')) {
+      return
+    }
     const wasOpen = aiBrainstorm.value.open
     const { diagramKey, ...restOptions } = options
     const snapshot = diagramKey && aiBrainstormSessionsByDiagram.value.get(diagramKey)

@@ -8,6 +8,7 @@ import { storeToRefs } from 'pinia'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import {
   ClassroomJobsBusyError,
   type MindClassroomJobDetail,
@@ -147,6 +148,7 @@ export function teardownMindClassroomLecture(
 
 export function useMindClassroomLecture(options: MindClassroomLectureOptions = {}) {
   const { t, currentLanguage } = useLanguage()
+  const { requireCapability } = useLearningAiGate()
   const diagramStore = useDiagramStore()
   const classroomStore = useMindClassroomStore()
   const aiLevelStore = useAiContentLevelStore()
@@ -449,6 +451,9 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
   }
 
   async function startQueuedLecture(reuse = true): Promise<QueueStartResult> {
+    if (!requireCapability('mind_classroom')) {
+      return { ok: false, reason: 'failed' }
+    }
     classroomStore.clampGatedSlideDeck()
     const data = diagramStore.data
     const generation = classroomStore.queueGeneration

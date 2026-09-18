@@ -45,13 +45,15 @@ def fixture_authed_user() -> SimpleNamespace:
     return user
 
 
-def test_school_consultation_requires_auth(client: TestClient) -> None:
-    """Unauthenticated requests are rejected."""
+def test_school_consultation_allows_anonymous(client: TestClient) -> None:
+    """Anonymous landing-page contact may submit without auth (rate-limited by IP)."""
     response = client.post(
         "/api/auth/thinking-coins/school-consultation",
-        json={"name": "A", "phone": "1", "organization": "School"},
+        json={"name": "A", "phone": "13800138000", "organization": "School"},
     )
-    assert response.status_code == 401
+    # Without WeCom configured in tests this is typically 503; must not be 401.
+    assert response.status_code != 401
+    assert response.status_code in {200, 422, 502, 503}
 
 
 def test_school_consultation_validation(client: TestClient, authed_user: SimpleNamespace) -> None:

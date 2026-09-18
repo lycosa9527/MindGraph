@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': 'Isto terminará a sessão para todos. Os participantes sairão da sala.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Org.',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Rede',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

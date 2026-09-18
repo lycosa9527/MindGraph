@@ -33,6 +33,12 @@ const { t } = useLanguage()
 const displayName = computed(() => authStore.user?.username || '')
 
 const showKittyHubCard = computed(() => featureFlagsStore.flags?.feature_kitty_agent ?? false)
+const showLearningSpaceCard = computed(
+  () =>
+    authStore.user?.role === 'student' ||
+    Boolean(featureFlagsStore.flags?.feature_student_learning_space)
+)
+const isLearningSpaceStudent = computed(() => authStore.user?.role === 'student')
 const showTrainingCard = computed(
   () => Boolean(featureFlagsStore.flags?.feature_training) && authStore.isPlatformLevel
 )
@@ -84,6 +90,10 @@ function goToVoiceNotes() {
 function goToTraining() {
   router.push('/m/training')
 }
+
+function goToLearningSpace() {
+  router.push('/m/learning-space')
+}
 </script>
 
 <template>
@@ -126,8 +136,33 @@ function goToTraining() {
         />
       </button>
 
+      <button
+        v-if="showLearningSpaceCard"
+        class="feature-card w-full flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-200 active:bg-gray-50 transition-colors text-left"
+        @click="goToLearningSpace"
+      >
+        <div
+          class="flex items-center justify-center w-12 h-12 rounded-xl bg-sky-50 text-sky-700 shrink-0"
+        >
+          <GraduationCap :size="24" />
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-base font-semibold text-gray-900">
+            {{ t('sidebar.learningSpace') }}
+          </div>
+          <div class="text-sm text-gray-500 mt-0.5">
+            {{ t('learningSpace.mobileCardHint') }}
+          </div>
+        </div>
+        <ChevronRight
+          :size="20"
+          class="text-gray-400 shrink-0"
+        />
+      </button>
+
       <!-- MindMate Card -->
       <button
+        v-if="!isLearningSpaceStudent"
         class="feature-card w-full flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-200 active:bg-gray-50 transition-colors text-left"
         @click="goToMindMate"
       >
@@ -150,7 +185,7 @@ function goToTraining() {
 
       <!-- Kitty (only when FEATURE_KITTY_AGENT is enabled on the server) -->
       <button
-        v-if="showKittyHubCard"
+        v-if="showKittyHubCard && !isLearningSpaceStudent"
         class="feature-card w-full flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-200 active:bg-gray-50 transition-colors text-left"
         @click="goToKitty"
       >
@@ -203,6 +238,7 @@ function goToTraining() {
       </button>
 
       <button
+        v-if="!isLearningSpaceStudent"
         class="feature-card w-full flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-200 active:bg-gray-50 transition-colors text-left"
         @click="goToVoiceNotes"
       >
