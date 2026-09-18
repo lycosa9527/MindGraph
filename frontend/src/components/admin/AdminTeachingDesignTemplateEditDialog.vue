@@ -6,14 +6,15 @@ import { computed, ref, watch } from 'vue'
 
 import { Settings2 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import {
+  type TeachingDesignTemplateRow,
   deleteTeachingDesignTemplate,
   downloadTeachingDesignTemplateFile,
   patchTeachingDesignTemplate,
   replaceTeachingDesignTemplateFile,
-  type TeachingDesignTemplateRow,
 } from '@/composables/admin/teachingDesignTemplateApi'
 import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 
@@ -154,9 +155,13 @@ async function onDelete(): Promise<void> {
   <SwissGlassDialog
     v-model="visible"
     :ribbon="t('swissGlass.hero.adminInline.ribbon')"
+    ribbon-key="swissGlass.hero.adminInline.ribbon"
     :title="t('swissGlass.hero.adminInline.title')"
+    title-key="swissGlass.hero.adminInline.title"
     :line1="t('swissGlass.hero.adminInline.line1')"
+    line1-key="swissGlass.hero.adminInline.line1"
     :line2="t('admin.teachingDesignTemplate.editTitle')"
+    line2-key="admin.teachingDesignTemplate.editTitle"
     :icon="Settings2"
     width="min(480px, 92vw)"
   >
@@ -165,7 +170,7 @@ async function onDelete(): Promise<void> {
       class="space-y-4 text-sm"
     >
       <label class="block">
-        <span class="text-stone-600">{{ t('admin.teachingDesignTemplate.nameLabel') }}</span>
+        <span class="text-stone-600"><I18nText k="admin.teachingDesignTemplate.nameLabel" /></span>
         <el-input
           v-model="nameEdit"
           :placeholder="t('admin.teachingDesignTemplate.namePlaceholder')"
@@ -175,7 +180,7 @@ async function onDelete(): Promise<void> {
         />
       </label>
       <label class="flex items-center justify-between gap-3">
-        <span class="text-stone-600">{{ t('admin.teachingDesignTemplate.setDefault') }}</span>
+        <span class="text-stone-600"><I18nText k="admin.teachingDesignTemplate.setDefault" /></span>
         <el-switch
           v-model="isDefaultEdit"
           :disabled="!canEdit || row.is_default"
@@ -190,7 +195,7 @@ async function onDelete(): Promise<void> {
           class="admin-swiss-btn"
           @click="onDownload"
         >
-          {{ t('admin.teachingDesignTemplate.download') }}
+          <I18nText k="admin.teachingDesignTemplate.download" />
         </el-button>
         <el-button
           v-if="canEdit && row.source === 'uploaded'"
@@ -199,7 +204,7 @@ async function onDelete(): Promise<void> {
           :loading="replacing"
           @click="replaceInput?.click()"
         >
-          {{ t('admin.teachingDesignTemplate.replaceFile') }}
+          <I18nText k="admin.teachingDesignTemplate.replaceFile" />
         </el-button>
         <el-button
           v-if="canEdit && row.can_delete"
@@ -209,7 +214,7 @@ async function onDelete(): Promise<void> {
           :loading="deleting"
           @click="onDelete"
         >
-          {{ t('admin.teachingDesignTemplate.delete') }}
+          <I18nText k="admin.teachingDesignTemplate.delete" />
         </el-button>
       </div>
       <input
@@ -227,7 +232,7 @@ async function onDelete(): Promise<void> {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="visible = false"
         >
-          {{ t('common.cancel') }}
+          <I18nText k="common.cancel" />
         </button>
         <button
           v-if="canEdit"
@@ -236,7 +241,7 @@ async function onDelete(): Promise<void> {
           :disabled="saving || !displayName"
           @click="save"
         >
-          {{ t('admin.save') }}
+          <I18nText k="admin.save" />
         </button>
       </div>
     </template>

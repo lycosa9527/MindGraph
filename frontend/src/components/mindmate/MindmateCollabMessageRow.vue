@@ -4,7 +4,6 @@
  * MindMate teaching-instruction markers become Word / canvas actions, not raw tags.
  */
 import { computed, ref } from 'vue'
-
 import { useRoute, useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
@@ -96,11 +95,11 @@ async function handleCopy(): Promise<void> {
   try {
     await copyMindmateAssistantMessage(
       props.message.content,
-      typeof window !== 'undefined' ? window.location.host : undefined,
+      typeof window !== 'undefined' ? window.location.host : undefined
     )
-    notify.success(t('notification.copied'))
+    notify.successKey('notification.copied')
   } catch {
-    notify.error(t('notification.copyFailed'))
+    notify.errorKey('notification.copyFailed')
   }
 }
 
@@ -124,7 +123,7 @@ async function openInCanvas(): Promise<void> {
     return
   }
   if (!authStore.isAuthenticated) {
-    notify.warning(t('mindmate.openCanvasLoginRequired'))
+    notify.warningKey('mindmate.openCanvasLoginRequired')
     await router.push({ path: '/auth', query: { redirect: route.fullPath } })
     return
   }
@@ -158,7 +157,7 @@ async function openInCanvas(): Promise<void> {
     const canvasPath = canvasEditorPathForRoute(route.path)
     await router.push({ path: canvasPath, query: { diagramId } })
   } catch {
-    notify.error(t('mindmate.openCanvasFailed'))
+    notify.errorKey('mindmate.openCanvasFailed')
   } finally {
     openingCanvas.value = false
   }

@@ -10,6 +10,7 @@ import CanvasMindMapGestureGuide from '@/components/canvas/CanvasMindMapGestureG
 import CanvasMindMapShortcutGuide from '@/components/canvas/CanvasMindMapShortcutGuide.vue'
 import CanvasToolbarMindMapAiGenerate from '@/components/canvas/CanvasToolbarMindMapAiGenerate.vue'
 import CanvasToolbarMindMapAudiencePicker from '@/components/canvas/CanvasToolbarMindMapAudiencePicker.vue'
+import I18nText from '@/components/common/I18nText.vue'
 import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -56,10 +57,15 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
           class="inline h-3.5 w-3.5"
           :stroke-width="2"
         />
-        {{ t('canvas.mindMapSideToolbar.outline') }}
+        <I18nText k="canvas.mindMapSideToolbar.outline" />
       </button>
       <span class="mm-status__sep" />
-      <span>{{ t('canvas.ribbon.nodeCount', { count: actions.nodeCount }) }}</span>
+      <span>
+        <I18nText
+          k="canvas.ribbon.nodeCount"
+          :params="{ count: actions.nodeCount }"
+        />
+      </span>
       <span class="mm-status__sep" />
       <CanvasMindMapShortcutGuide variant="status" />
       <CanvasMindMapGestureGuide variant="status" />
@@ -69,7 +75,9 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
         anchor="bottom"
         hide-guide
       />
-      <span class="mm-status__label">{{ t('canvas.ribbon.aiModel') }}</span>
+      <span class="mm-status__label">
+        <I18nText k="canvas.ribbon.aiModel" />
+      </span>
       <div class="mm-llm-selector">
         <LlmPhaseRing
           v-for="model in actions.llmModels"

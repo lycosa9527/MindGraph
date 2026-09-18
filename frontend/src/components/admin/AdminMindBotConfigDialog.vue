@@ -13,6 +13,7 @@ import type {
   MindbotConfigRow,
   OrgOption,
 } from '@/components/admin/mindbotConfigTypes'
+import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminMindbotStreamingStatus } from '@/composables/queries'
 
@@ -263,10 +264,10 @@ function onDialogClosed(): void {
                 <div
                   class="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--mindbot-swiss-muted)] mb-1"
                 >
-                  {{ t('admin.mindbot.schoolCallbackUrl') }}
+                  <I18nText k="admin.mindbot.schoolCallbackUrl" />
                 </div>
                 <p class="mindbot-swiss-hint text-xs mb-3 leading-relaxed">
-                  {{ t('admin.mindbot.schoolCallbackUrlHint') }}
+                  <I18nText k="admin.mindbot.schoolCallbackUrlHint" />
                 </p>
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
                   <code
@@ -283,7 +284,7 @@ function onDialogClosed(): void {
                         emit('copyUrl', buildCallbackUrl(editingOrgRow.public_callback_token))
                       "
                     >
-                      {{ t('admin.mindbot.copyUrl') }}
+                      <I18nText k="admin.mindbot.copyUrl" />
                     </el-button>
                     <el-button
                       type="warning"
@@ -294,7 +295,7 @@ function onDialogClosed(): void {
                       class="mindbot-pill mindbot-pill--rotate"
                       @click="emit('rotateCallback')"
                     >
-                      {{ t('admin.mindbot.refreshCallbackUrl') }}
+                      <I18nText k="admin.mindbot.refreshCallbackUrl" />
                     </el-button>
                   </div>
                 </div>
@@ -303,7 +304,7 @@ function onDialogClosed(): void {
                 v-else-if="mode === 'create'"
                 class="mindbot-config-banner mb-4 rounded-sm border px-3 py-2.5 text-xs font-mono leading-snug text-[var(--mindbot-swiss-text)]"
               >
-                {{ t('admin.mindbot.callbackUrlAfterSave') }}
+                <I18nText k="admin.mindbot.callbackUrlAfterSave" />
               </div>
 
               <el-form-item
@@ -328,7 +329,7 @@ function onDialogClosed(): void {
               <div
                 class="mindbot-section-label mindbot-swiss-section-label text-[11px] font-semibold uppercase tracking-[0.14em] mb-1.5 mt-0.5"
               >
-                {{ t('admin.mindbot.sectionDingTalk') }}
+                <I18nText k="admin.mindbot.sectionDingTalk" />
               </div>
               <div
                 class="mindbot-section-card mindbot-section-card--compact mindbot-swiss-inset rounded-sm border border-[var(--mindbot-swiss-border)] bg-[var(--mindbot-swiss-inset)]"
@@ -338,9 +339,9 @@ function onDialogClosed(): void {
                   class="!mb-2"
                 >
                   <template #label>
-                    <span class="mindbot-swiss-inline-label text-sm font-normal">{{
-                      t('admin.mindbot.orgSelect')
-                    }}</span>
+                    <span class="mindbot-swiss-inline-label text-sm font-normal"
+                      ><I18nText k="admin.mindbot.orgSelect"
+                    /></span>
                   </template>
                   <span class="mindbot-swiss-inline-value text-sm font-mono">{{
                     managerSchoolDisplayName
@@ -355,7 +356,7 @@ function onDialogClosed(): void {
                     :placeholder="t('admin.mindbot.dingtalkClientIdPlaceholder')"
                   />
                   <div class="mindbot-swiss-hint text-xs mt-1.5 leading-relaxed max-w-2xl">
-                    {{ t('admin.mindbot.dingtalkClientIdHint') }}
+                    <I18nText k="admin.mindbot.dingtalkClientIdHint" />
                   </div>
                 </el-form-item>
                 <el-form-item
@@ -384,11 +385,11 @@ function onDialogClosed(): void {
                           size="small"
                           @click="emit('replaceDingtalkSecret')"
                         >
-                          {{ t('admin.mindbot.replaceSecret') }}
+                          <I18nText k="admin.mindbot.replaceSecret" />
                         </el-button>
                       </div>
                       <p class="mindbot-swiss-hint text-xs m-0 leading-relaxed">
-                        {{ t('admin.mindbot.dingtalkAppSecretMaskedHint') }}
+                        <I18nText k="admin.mindbot.dingtalkAppSecretMaskedHint" />
                       </p>
                     </div>
                   </template>
@@ -403,10 +404,10 @@ function onDialogClosed(): void {
                     />
                     <div class="mindbot-swiss-hint text-xs mt-1.5 leading-relaxed max-w-2xl">
                       <template v-if="mode === 'create'">
-                        {{ t('admin.mindbot.dingtalkAppSecretHint') }}
+                        <I18nText k="admin.mindbot.dingtalkAppSecretHint" />
                       </template>
                       <template v-else>
-                        {{ t('admin.mindbot.dingtalkAppSecretReplaceHint') }}
+                        <I18nText k="admin.mindbot.dingtalkAppSecretReplaceHint" />
                       </template>
                     </div>
                   </template>
@@ -430,7 +431,7 @@ function onDialogClosed(): void {
                     class="mindbot-input-robot mindbot-swiss-input w-full max-w-md"
                   />
                   <div class="mindbot-swiss-hint text-xs mt-1.5 leading-relaxed max-w-xl">
-                    {{ t('admin.mindbot.dingtalkRobotCodeHint') }}
+                    <I18nText k="admin.mindbot.dingtalkRobotCodeHint" />
                   </div>
                 </el-form-item>
                 <el-form-item :label="t('admin.mindbot.dingtalkAiCardTemplateId')">
@@ -458,7 +459,7 @@ function onDialogClosed(): void {
                         @click="checkAiCardStreaming"
                       >
                         <el-icon class="mr-0.5"><MagicStick /></el-icon>
-                        {{ t('admin.mindbot.dingtalkAiCardStreamCheck') }}
+                        <I18nText k="admin.mindbot.dingtalkAiCardStreamCheck" />
                       </el-button>
                     </el-tooltip>
                   </div>
@@ -472,7 +473,7 @@ function onDialogClosed(): void {
                     {{ aiCardStreamMessage.text }}
                   </p>
                   <p class="mindbot-swiss-hint text-xs mt-1.5 leading-relaxed max-w-2xl m-0">
-                    {{ t('admin.mindbot.dingtalkAiCardTemplateIdHint') }}
+                    <I18nText k="admin.mindbot.dingtalkAiCardTemplateIdHint" />
                   </p>
                 </el-form-item>
               </div>
@@ -485,12 +486,12 @@ function onDialogClosed(): void {
               <p
                 class="mindbot-config-banner rounded-sm border px-3 py-2 text-xs font-mono leading-snug m-0 mb-3"
               >
-                {{ t('admin.mindbot.standaloneDifySchoolHint') }}
+                <I18nText k="admin.mindbot.standaloneDifySchoolHint" />
               </p>
               <div
                 class="mindbot-section-label mindbot-swiss-section-label text-[11px] font-semibold uppercase tracking-[0.14em] mb-1.5 mt-0.5"
               >
-                {{ t('admin.mindbot.sectionDify') }}
+                <I18nText k="admin.mindbot.sectionDify" />
               </div>
               <div
                 class="mindbot-section-card mindbot-section-card--compact mindbot-swiss-inset rounded-sm border border-[var(--mindbot-swiss-border)] bg-[var(--mindbot-swiss-inset)]"
@@ -531,11 +532,11 @@ function onDialogClosed(): void {
                           size="small"
                           @click="emit('replaceDifyApiKey')"
                         >
-                          {{ t('admin.mindbot.replaceSecret') }}
+                          <I18nText k="admin.mindbot.replaceSecret" />
                         </el-button>
                       </div>
                       <p class="mindbot-swiss-hint text-xs m-0 leading-relaxed">
-                        {{ t('admin.mindbot.difyApiKeyMaskedHint') }}
+                        <I18nText k="admin.mindbot.difyApiKeyMaskedHint" />
                       </p>
                     </div>
                   </template>
@@ -550,10 +551,10 @@ function onDialogClosed(): void {
                     />
                     <div class="mindbot-swiss-hint text-xs mt-1.5 leading-relaxed max-w-2xl">
                       <template v-if="mode === 'create'">
-                        {{ t('admin.mindbot.difyApiKeyHint') }}
+                        <I18nText k="admin.mindbot.difyApiKeyHint" />
                       </template>
                       <template v-else>
-                        {{ t('admin.mindbot.difyApiKeyReplaceHint') }}
+                        <I18nText k="admin.mindbot.difyApiKeyReplaceHint" />
                       </template>
                     </div>
                   </template>
@@ -623,7 +624,7 @@ function onDialogClosed(): void {
         class="mindbot-dialog-footer flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
       >
         <div class="mindbot-footer-enable flex min-w-0 items-center gap-2 sm:gap-2.5">
-          <span class="mindbot-footer-enable__label">{{ t('admin.mindbot.enabled') }}</span>
+          <span class="mindbot-footer-enable__label"><I18nText k="admin.mindbot.enabled" /></span>
           <el-switch
             v-model="form.is_enabled"
             class="mindbot-footer-enabled-switch shrink-0"
@@ -636,7 +637,7 @@ function onDialogClosed(): void {
             class="mindbot-pill mindbot-pill--footer-cancel"
             @click="onClose"
           >
-            {{ t('admin.cancel') }}
+            <I18nText k="admin.cancel" />
           </el-button>
           <el-button
             type="primary"
@@ -644,7 +645,7 @@ function onDialogClosed(): void {
             :loading="saving"
             @click="emit('save')"
           >
-            {{ t('admin.mindbot.save') }}
+            <I18nText k="admin.mindbot.save" />
           </el-button>
         </div>
       </div>

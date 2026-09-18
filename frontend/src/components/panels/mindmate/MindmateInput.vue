@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
 
-import { ElButton, ElIcon, ElInput, ElTooltip } from 'element-plus'
+import { ElButton, ElIcon, ElInput } from 'element-plus'
 
 import { Close, VideoPause } from '@element-plus/icons-vue'
 
 import { Paperclip, Send } from '@lucide/vue'
 
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import type { MindMateFile } from '@/composables/mindmate/useMindMate'
 import { useMindmateMentionPicker } from '@/composables/mindmate/useMindmateMentionPicker'
@@ -335,9 +336,9 @@ function handleSuggestionSelect(suggestion: string) {
         <!-- Action buttons (right side) -->
         <div class="input-actions-fullpage">
           <!-- Upload Button (Paperclip) - hidden when showFileUpload is false -->
-          <ElTooltip
+          <I18nTooltip
             v-if="showFileUpload"
-            :content="t('mindmate.input.attachFile')"
+            k="mindmate.input.attachFile"
           >
             <ElButton
               text
@@ -354,7 +355,7 @@ function handleSuggestionSelect(suggestion: string) {
                 class="loading-dot"
               />
             </ElButton>
-          </ElTooltip>
+          </I18nTooltip>
 
           <!-- Send/Stop Button -->
           <ElButton

@@ -9,6 +9,7 @@ import { ElDropdown, ElTooltip } from 'element-plus'
 import { ChevronDown, ListOrdered } from '@lucide/vue'
 
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
+import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramStore } from '@/stores'
@@ -116,8 +117,9 @@ function handleDropdownVisible(visible: boolean): void {
           <span
             v-if="!compact"
             class="mm-btn__label"
-            >{{ numberingLabel }}</span
           >
+            <I18nText k="canvas.toolbar.mindMapAppearanceNumbering" />
+          </span>
           <ChevronDown
             :size="12"
             class="mm-btn__chevron"
@@ -138,7 +140,7 @@ function handleDropdownVisible(visible: boolean): void {
             >
               <section class="mm-numbering-field">
                 <div class="mm-numbering-kicker">
-                  {{ t('canvas.toolbar.mindMapAppearanceNumberingPrefix') }}
+                  <I18nText k="canvas.toolbar.mindMapAppearanceNumberingPrefix" />
                 </div>
                 <div
                   class="mm-numbering-chips"
@@ -163,7 +165,7 @@ function handleDropdownVisible(visible: boolean): void {
 
               <section class="mm-numbering-field">
                 <div class="mm-numbering-kicker">
-                  {{ t('canvas.toolbar.mindMapAppearanceNumberingNested') }}
+                  <I18nText k="canvas.toolbar.mindMapAppearanceNumberingNested" />
                 </div>
                 <div
                   class="mm-numbering-chips"
@@ -197,7 +199,7 @@ function handleDropdownVisible(visible: boolean): void {
   >
     <div class="mm-appearance-row mm-numbering__toggle">
       <span class="mm-appearance-row__label">
-        {{ t('canvas.toolbar.mindMapAppearanceNumbering') }}
+        <I18nText k="canvas.toolbar.mindMapAppearanceNumbering" />
       </span>
       <AdminSwissSegmented
         v-model="numberingVisibility"
@@ -213,7 +215,7 @@ function handleDropdownVisible(visible: boolean): void {
     >
       <section class="mm-numbering-field">
         <div class="mm-numbering-kicker">
-          {{ t('canvas.toolbar.mindMapAppearanceNumberingPrefix') }}
+          <I18nText k="canvas.toolbar.mindMapAppearanceNumberingPrefix" />
         </div>
         <div class="mm-numbering-chips">
           <button
@@ -232,7 +234,7 @@ function handleDropdownVisible(visible: boolean): void {
 
       <section class="mm-numbering-field">
         <div class="mm-numbering-kicker">
-          {{ t('canvas.toolbar.mindMapAppearanceNumberingNested') }}
+          <I18nText k="canvas.toolbar.mindMapAppearanceNumberingNested" />
         </div>
         <div class="mm-numbering-chips">
           <button

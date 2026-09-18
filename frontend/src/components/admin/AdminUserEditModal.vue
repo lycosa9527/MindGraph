@@ -8,6 +8,7 @@ import { ElMessageBox } from 'element-plus'
 
 import { Delete } from '@element-plus/icons-vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import {
   useAdminOrganizations,
@@ -370,7 +371,9 @@ watch(visible, (open) => {
     <template #header>
       <div class="mindbot-swiss-header mindbot-config-header">
         <span class="mindbot-swiss-header__glyph">◇</span>
-        <span class="mindbot-swiss-header__title">{{ t('admin.userEditModalTitle') }}</span>
+        <span class="mindbot-swiss-header__title">
+          <I18nText k="admin.userEditModalTitle" />
+        </span>
         <span
           class="mindbot-swiss-header__divider"
           aria-hidden="true"
@@ -495,7 +498,7 @@ watch(visible, (open) => {
               v-if="fullEdit"
               class="mindbot-swiss-hint mt-2 text-xs leading-relaxed"
             >
-              {{ t('admin.diagramRemainingHint') }}
+              <I18nText k="admin.diagramRemainingHint" />
             </p>
           </el-form-item>
         </el-form>
@@ -516,7 +519,7 @@ watch(visible, (open) => {
           @click="confirmDeleteUser"
         >
           <el-icon class="mr-1"><Delete /></el-icon>
-          {{ t('admin.delete') }}
+          <I18nText k="admin.delete" />
         </el-button>
         <div
           class="order-1 flex w-full flex-col-reverse gap-2 sm:order-2 sm:ml-auto sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-2"
@@ -525,7 +528,7 @@ watch(visible, (open) => {
             class="mindbot-pill mindbot-pill--footer-cancel"
             @click="onClose"
           >
-            {{ t('common.cancel') }}
+            <I18nText k="common.cancel" />
           </el-button>
           <el-button
             type="primary"
@@ -534,7 +537,7 @@ watch(visible, (open) => {
             :disabled="loading || !detail || deleting"
             @click="saveUser"
           >
-            {{ t('common.save') }}
+            <I18nText k="common.save" />
           </el-button>
         </div>
       </div>

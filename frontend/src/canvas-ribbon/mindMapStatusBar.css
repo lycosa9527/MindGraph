@@ -7,9 +7,8 @@
   gap: 12px;
   box-sizing: border-box;
   width: 100%;
-  height: 40px;
   min-height: 40px;
-  max-height: 40px;
+  height: auto;
   padding: 0 16px;
   overflow: visible;
   border-top: none;
@@ -46,9 +45,8 @@
   flex-wrap: nowrap;
   align-items: center;
   box-sizing: border-box;
-  height: 28px;
   min-height: 28px;
-  max-height: 28px;
+  height: auto;
   white-space: nowrap;
 }
 
@@ -80,20 +78,19 @@
 .mm-status .el-dropdown {
   display: inline-flex;
   align-items: center;
-  height: 28px;
-  max-height: 28px;
+  min-height: 28px;
+  height: auto;
   vertical-align: middle;
 }
 
 .mm-status .mm-status__center button.mm-btn--pro-content,
 .mm-status .mm-status__center button.mm-ai-generate {
   box-sizing: border-box;
-  height: 28px;
   min-height: 28px;
-  max-height: 28px;
-  padding: 0 10px;
+  height: auto;
+  padding: 3px 10px;
   font-size: 12px;
-  line-height: 1;
+  line-height: 1.15;
   border-radius: 6px;
 }
 
@@ -105,9 +102,10 @@
 .mm-status__label {
   display: inline-flex;
   align-items: center;
-  height: 28px;
+  min-height: 28px;
   color: #6b7280;
   font-weight: 600;
+  text-align: start;
 }
 
 .mm-status__sep {

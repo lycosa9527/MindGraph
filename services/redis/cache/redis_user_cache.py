@@ -83,6 +83,8 @@ class UserCache:
             "prompt_language": getattr(user, "prompt_language", None) or "",
             "ui_version": getattr(user, "ui_version", None) or "",
             "match_prompt_to_ui": "1" if getattr(user, "match_prompt_to_ui", True) else "0",
+            "bilingual_ui_enabled": "1" if getattr(user, "bilingual_ui_enabled", False) else "0",
+            "presenter_ui_locale": getattr(user, "presenter_ui_locale", None) or "",
             "allows_simplified_chinese": "1" if getattr(user, "allows_simplified_chinese", True) else "0",
             "email_login_whitelisted_from_cn": "1" if getattr(user, "email_login_whitelisted_from_cn", False) else "0",
             "login_password_set": "1" if getattr(user, "login_password_set", True) else "0",
@@ -149,6 +151,9 @@ class UserCache:
         user.ui_version = normalized.get("ui_version") or None
         mp = normalized.get("match_prompt_to_ui", "1")
         user.match_prompt_to_ui = mp not in ("0", "false", "False")
+        bilingual = normalized.get("bilingual_ui_enabled", "0")
+        user.bilingual_ui_enabled = bilingual in ("1", "true", "True")
+        user.presenter_ui_locale = normalized.get("presenter_ui_locale") or None
         asc = normalized.get("allows_simplified_chinese", "1")
         user.allows_simplified_chinese = asc not in ("0", "false", "False")
 

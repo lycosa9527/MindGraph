@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 
 import { Pencil } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
@@ -62,8 +63,11 @@ async function handleSave(): Promise<void> {
   <SwissGlassDialog
     v-model="open"
     :ribbon="t('swissGlass.hero.topicEdit.ribbon')"
+    ribbon-key="swissGlass.hero.topicEdit.ribbon"
     :title="t('swissGlass.hero.topicEdit.title')"
+    title-key="swissGlass.hero.topicEdit.title"
     :line1="t('swissGlass.hero.topicEdit.line1')"
+    line1-key="swissGlass.hero.topicEdit.line1"
     :icon="Pencil"
     width="min(380px, 92vw)"
   >
@@ -79,7 +83,7 @@ async function handleSave(): Promise<void> {
 
       <template v-if="mode === 'move'">
         <p class="text-xs text-stone-500 mb-1">
-          {{ t('workshop.moveTopic') }}: {{ currentTopic?.title }}
+          <I18nText k="workshop.moveTopic" />: {{ currentTopic?.title }}
         </p>
         <el-select
           v-model="targetChannelId"
@@ -103,7 +107,7 @@ async function handleSave(): Promise<void> {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="open = false"
         >
-          {{ t('workshop.dismiss') }}
+          <I18nText k="workshop.dismiss" />
         </button>
         <button
           type="button"
@@ -111,7 +115,7 @@ async function handleSave(): Promise<void> {
           :disabled="saving || (mode === 'rename' ? !newTitle.trim() : !targetChannelId)"
           @click="handleSave"
         >
-          {{ t('workshop.create') }}
+          <I18nText k="workshop.create" />
         </button>
       </div>
     </template>

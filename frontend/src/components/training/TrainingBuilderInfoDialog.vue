@@ -3,6 +3,7 @@ import { ElInput } from 'element-plus'
 
 import { GraduationCap } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables'
 
@@ -34,15 +35,18 @@ function onCover(event: Event): void {
   <SwissGlassDialog
     v-model="open"
     :ribbon="t('swissGlass.hero.trainingInfo.ribbon')"
+    ribbon-key="swissGlass.hero.trainingInfo.ribbon"
     :title="t('swissGlass.hero.trainingInfo.title')"
+    title-key="swissGlass.hero.trainingInfo.title"
     :line1="t('swissGlass.hero.trainingInfo.line1')"
+    line1-key="swissGlass.hero.trainingInfo.line1"
     :icon="GraduationCap"
     width="min(28rem, 92vw)"
     dialog-class="builder-info-dialog"
   >
     <div class="builder-info">
       <label>
-        {{ t('training.builder.title') }}
+        <I18nText k="training.builder.title" />
         <ElInput
           v-model="title"
           size="small"
@@ -50,7 +54,7 @@ function onCover(event: Event): void {
         />
       </label>
       <label>
-        {{ t('training.builder.desc') }}
+        <I18nText k="training.builder.desc" />
         <ElInput
           v-model="description"
           type="textarea"
@@ -63,7 +67,7 @@ function onCover(event: Event): void {
         v-if="!readonly"
         class="builder-info__cover"
       >
-        {{ t('training.builder.cover') }}
+        <I18nText k="training.builder.cover" />
         <input
           type="file"
           accept="image/png,image/jpeg,image/webp"
@@ -82,7 +86,7 @@ function onCover(event: Event): void {
           :disabled="busy"
           @click="emit('save')"
         >
-          {{ t('training.builder.save') }}
+          <I18nText k="training.builder.save" />
         </button>
       </div>
     </template>

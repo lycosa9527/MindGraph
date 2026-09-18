@@ -9,7 +9,7 @@ type Notify = ReturnType<typeof useNotifications>
 export function handleMindmateCollabPokeFrame(
   data: Record<string, unknown>,
   t: UseLanguageTranslate,
-  notify: Notify,
+  notify: Notify
 ): boolean {
   if (String(data.type || '') !== 'mindmate_collab_poke') {
     return false
@@ -19,12 +19,7 @@ export function handleMindmateCollabPokeFrame(
   const visibility = String(data.visibility || 'organization')
   const seminarLabel =
     roomTitle ||
-    (visibility === 'network'
-      ? t('mindmate.collabSeminarPublic')
-      : t('mindmate.collabSeminarOrg'))
-  notify.info(
-    t('mindmate.collabPokeToast', { name: fromName, seminar: seminarLabel }),
-    7000,
-  )
+    (visibility === 'network' ? t('mindmate.collabSeminarPublic') : t('mindmate.collabSeminarOrg'))
+  notify.infoKey('mindmate.collabPokeToast', { name: fromName, seminar: seminarLabel }, 7000)
   return true
 }

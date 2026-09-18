@@ -7,6 +7,7 @@ import { ElTooltip } from 'element-plus'
 
 import { Sparkles } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useMindMapAudienceGenerate } from '@/composables/mindMap/audience/useMindMapAudienceGenerate'
@@ -83,8 +84,11 @@ const generatingLabel = t('canvas.toolbar.aiGenerating')
       <span
         v-if="!props.compact"
         class="mm-ai-generate__label"
-        >{{ isAIGenerating ? generatingLabel : generateLabel }}</span
       >
+        <I18nText
+          :k="isAIGenerating ? 'canvas.toolbar.aiGenerating' : 'canvas.toolbar.aiGenerate'"
+        />
+      </span>
     </button>
   </ElTooltip>
 </template>
@@ -95,8 +99,9 @@ const generatingLabel = t('canvas.toolbar.aiGenerating')
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 32px;
-  padding: 0 12px;
+  min-height: 32px;
+  height: auto;
+  padding: 4px 12px;
   border: none;
   border-radius: 8px;
   color: #fff;
@@ -135,6 +140,11 @@ const generatingLabel = t('canvas.toolbar.aiGenerating')
 .mm-ai-generate__label,
 .mm-ai-generate__icon {
   color: #fff;
-  white-space: nowrap;
+}
+
+.mm-ai-generate__label {
+  text-align: start;
+  white-space: normal;
+  line-height: 1.15;
 }
 </style>

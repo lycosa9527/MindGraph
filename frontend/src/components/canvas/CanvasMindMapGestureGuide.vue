@@ -6,12 +6,13 @@ import { computed, onMounted, ref } from 'vue'
 
 import { ChevronDown, ChevronUp, Hand } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
+import { useLanguage } from '@/composables'
 import {
   activeCanvasGuideId,
   openCanvasGuide,
   toggleCanvasGuide,
 } from '@/composables/canvas/canvasGuideExclusive'
-import { useLanguage } from '@/composables'
 import { MIND_MAP_GESTURE_GUIDE_ROWS } from '@/config/mindMapGestureGuide'
 
 const STORAGE_KEY = 'mindgraph.mindmap.gestureGuide.expanded'
@@ -80,7 +81,7 @@ function toggleExpanded(): void {
       :title="t('canvas.gestureGuide.title')"
       @click="toggleExpanded"
     >
-      {{ t('canvas.gestureGuide.shortLabel') }}
+      <I18nText k="canvas.gestureGuide.shortLabel" />
       <Hand
         class="h-3.5 w-3.5"
         :stroke-width="2"
@@ -148,7 +149,9 @@ function toggleExpanded(): void {
             <span class="text-xs text-slate-700 dark:text-slate-200">
               {{ t(row.labelKey) }}
             </span>
-            <span class="max-w-[52%] shrink-0 text-right text-[10px] leading-tight text-slate-500 dark:text-slate-400">
+            <span
+              class="max-w-[52%] shrink-0 text-right text-[10px] leading-tight text-slate-500 dark:text-slate-400"
+            >
               {{ t(row.hintKey) }}
             </span>
           </li>

@@ -17,6 +17,11 @@ import {
   matchedPromptLanguageForUiLocale,
 } from '@/i18n/locales'
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
+import {
+  BILINGUAL_UI_KEY,
+  PRESENTER_UI_LOCALE_KEY,
+  defaultPresenterUiLocale,
+} from '@/stores/bilingualUiPrefs'
 import { computeIsMobileClient } from '@/utils/isMobileClient'
 import { isOfficeEmbedDesktop } from '@/utils/officeEmbed'
 
@@ -29,9 +34,7 @@ export type UiVersion = 'chinese' | 'international'
 export type MindMapCanvasMode = 'legacy' | 'v2'
 
 /** Accept leftover stored `v3` (removed chrome mode) as New canvas. */
-export function parseMindMapCanvasMode(
-  value: string | null | undefined
-): MindMapCanvasMode | null {
+export function parseMindMapCanvasMode(value: string | null | undefined): MindMapCanvasMode | null {
   if (value === 'legacy' || value === 'v2') {
     return value
   }
@@ -58,7 +61,6 @@ export const MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY =
   'mindgraph_mindmap_canvas_v2_default_migrated'
 export const E_BLACKBOARD_OPTIMIZE_KEY = 'mindgraph_e_blackboard_optimize'
 export const SIDEBAR_POEM_ENABLED_KEY = 'mindgraph_sidebar_poem_enabled'
-
 
 type CanvasModeStorage = Pick<Storage, 'getItem' | 'setItem'>
 
@@ -135,6 +137,9 @@ export const useUIStore = defineStore('ui', () => {
   const eBlackboardOptimize = ref(false)
   /** Sidebar poem under the user name. When off, daily token usage is shown instead. */
   const sidebarPoemEnabled = ref(true)
+  /** Dual-language UI chrome: audience locale + presenter locale. */
+  const bilingualUiEnabled = ref(false)
+  const presenterUiLocale = ref<Language>(defaultPresenterUiLocale(true))
   const isMobile = ref(false)
   // Word task panes are narrow — start collapsed; user can expand.
   const sidebarCollapsed = ref(isOfficeEmbedDesktop())
@@ -193,10 +198,20 @@ export const useUIStore = defineStore('ui', () => {
   function applyLanguageFromServerProfile(
     ui: string | null | undefined,
     prompt: string | null | undefined,
-    options?: { matchPromptToUi?: boolean | null }
+    options?: {
+      matchPromptToUi?: boolean | null
+      bilingualUiEnabled?: boolean | null
+      presenterUiLocale?: string | null
+    }
   ): void {
     if (options?.matchPromptToUi !== undefined && options.matchPromptToUi !== null) {
       setMatchPromptToUi(options.matchPromptToUi)
+    }
+    if (options?.bilingualUiEnabled !== undefined && options.bilingualUiEnabled !== null) {
+      setBilingualUiEnabled(options.bilingualUiEnabled)
+    }
+    if (options?.presenterUiLocale !== undefined && options.presenterUiLocale !== null) {
+      setPresenterUiLocale(options.presenterUiLocale)
     }
     const nextUi: Language = isValidLanguage(ui ?? null) ? (ui as Language) : language.value
     let nextPrompt: PromptLanguage
@@ -296,6 +311,16 @@ export const useUIStore = defineStore('ui', () => {
 
     eBlackboardOptimize.value = localStorage.getItem(E_BLACKBOARD_OPTIMIZE_KEY) === '1'
     sidebarPoemEnabled.value = localStorage.getItem(SIDEBAR_POEM_ENABLED_KEY) !== '0'
+    bilingualUiEnabled.value = localStorage.getItem(BILINGUAL_UI_KEY) === '1'
+    const storedPresenter = localStorage.getItem(PRESENTER_UI_LOCALE_KEY)
+    if (isValidLanguage(storedPresenter)) {
+      presenterUiLocale.value = storedPresenter
+    } else {
+      presenterUiLocale.value = defaultPresenterUiLocale(languagePolicyAllowZh.value)
+    }
+    if (bilingualUiEnabled.value) {
+      void loadLocaleMessages(presenterUiLocale.value)
+    }
 
     if (isValidLanguage(storedLanguage)) {
       language.value = storedLanguage
@@ -415,6 +440,29 @@ export const useUIStore = defineStore('ui', () => {
 
   function setLanguagePolicyAllowZh(allow: boolean): void {
     languagePolicyAllowZh.value = allow
+    if (!allow && presenterUiLocale.value === 'zh') {
+      setPresenterUiLocale('en')
+    }
+  }
+
+  function setBilingualUiEnabled(value: boolean): void {
+    bilingualUiEnabled.value = value
+    localStorage.setItem(BILINGUAL_UI_KEY, value ? '1' : '0')
+    if (value) {
+      void loadLocaleMessages(presenterUiLocale.value)
+    }
+  }
+
+  function setPresenterUiLocale(value: string): void {
+    const next: Language = isValidLanguage(value)
+      ? value
+      : defaultPresenterUiLocale(languagePolicyAllowZh.value)
+    const coerced = !languagePolicyAllowZh.value && next === 'zh' ? 'en' : next
+    presenterUiLocale.value = coerced
+    localStorage.setItem(PRESENTER_UI_LOCALE_KEY, coerced)
+    if (bilingualUiEnabled.value) {
+      void loadLocaleMessages(coerced)
+    }
   }
 
   function toggleLanguage(): void {
@@ -617,6 +665,8 @@ export const useUIStore = defineStore('ui', () => {
     templateSlots.value = {}
     freeInputValue.value = ''
     languagePolicyAllowZh.value = true
+    bilingualUiEnabled.value = false
+    presenterUiLocale.value = defaultPresenterUiLocale(true)
     uiVersion.value = detectDefaultUiVersion()
     localStorage.removeItem(THEME_KEY)
     localStorage.removeItem(LANGUAGE_KEY)
@@ -629,6 +679,8 @@ export const useUIStore = defineStore('ui', () => {
     localStorage.removeItem(MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY)
     localStorage.removeItem(E_BLACKBOARD_OPTIMIZE_KEY)
     localStorage.removeItem(SIDEBAR_POEM_ENABLED_KEY)
+    localStorage.removeItem(BILINGUAL_UI_KEY)
+    localStorage.removeItem(PRESENTER_UI_LOCALE_KEY)
     applyTheme()
     initFromStorage()
   }
@@ -648,6 +700,8 @@ export const useUIStore = defineStore('ui', () => {
     mindMapCanvasMode,
     eBlackboardOptimize,
     sidebarPoemEnabled,
+    bilingualUiEnabled,
+    presenterUiLocale,
     isMobile,
     sidebarCollapsed,
     wireframeMode,
@@ -678,6 +732,8 @@ export const useUIStore = defineStore('ui', () => {
     setMindMapCanvasMode,
     setEBlackboardOptimize,
     setSidebarPoemEnabled,
+    setBilingualUiEnabled,
+    setPresenterUiLocale,
     applyUiVersionFromServerProfile,
     applyLanguageFromServerProfile,
     applyGuestLocaleFromBrowser,

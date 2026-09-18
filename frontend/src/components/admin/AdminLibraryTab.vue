@@ -8,6 +8,7 @@ import { FolderOpened, Loading } from '@element-plus/icons-vue'
 import { Settings2 } from '@lucide/vue'
 
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
@@ -647,9 +648,13 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
     <SwissGlassDialog
       v-model="renameDialog.visible"
       :ribbon="t('swissGlass.hero.adminInline.ribbon')"
+      ribbon-key="swissGlass.hero.adminInline.ribbon"
       :title="t('swissGlass.hero.adminInline.title')"
+      title-key="swissGlass.hero.adminInline.title"
       :line1="t('swissGlass.hero.adminInline.line1')"
+      line1-key="swissGlass.hero.adminInline.line1"
       :line2="t('admin.library.renameDialogTitle')"
+      line2-key="admin.library.renameDialogTitle"
       :icon="Settings2"
       width="560px"
     >
@@ -657,7 +662,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
         <!-- Book name prefix -->
         <div class="mb-5">
           <label class="block text-[13px] font-medium text-stone-600 mb-1">
-            {{ t('admin.library.renameBookNameLabel') }}
+            <I18nText k="admin.library.renameBookNameLabel" />
           </label>
           <div class="flex gap-2">
             <el-input
@@ -670,11 +675,11 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
               :loading="renameDialog.isLoadingPreview"
               @click="previewRename"
             >
-              {{ t('admin.library.renamePreview') }}
+              <I18nText k="admin.library.renamePreview" />
             </el-button>
           </div>
           <p class="mt-1.5 text-[11px] text-stone-400">
-            {{ t('admin.library.renameBookNameHint') }}:
+            <I18nText k="admin.library.renameBookNameHint" />:
             <span class="font-mono text-stone-500">
               {{ renameDialog.bookName || '…' }}_01.jpg, {{ renameDialog.bookName || '…' }}_02.jpg …
             </span>
@@ -687,9 +692,9 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
           class="flex items-center py-5"
         >
           <el-icon class="is-loading"><Loading /></el-icon>
-          <span class="ml-2 text-sm text-stone-400">{{
-            t('admin.library.renamePreviewLoading')
-          }}</span>
+          <span class="ml-2 text-sm text-stone-400"
+            ><I18nText k="admin.library.renamePreviewLoading"
+          /></span>
         </div>
 
         <!-- No changes needed -->
@@ -698,7 +703,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
           class="text-center py-6 text-green-500"
         >
           <el-icon :size="28"><CircleCheck /></el-icon>
-          <p class="mt-2 text-sm">{{ t('admin.library.renameNoChanges') }}</p>
+          <p class="mt-2 text-sm"><I18nText k="admin.library.renameNoChanges" /></p>
         </div>
 
         <!-- Preview table -->
@@ -706,12 +711,12 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
           <div class="flex items-center gap-2 mb-2">
             <span class="text-[13px] font-semibold text-stone-800">
               {{ renameDialog.result.rename_count }}
-              {{ t('admin.library.renameFilesToRename') }}
+              <I18nText k="admin.library.renameFilesToRename" />
             </span>
             <span class="text-stone-300">·</span>
             <span class="text-stone-400 text-sm">
               {{ renameDialog.result.skip_count }}
-              {{ t('admin.library.renameFilesAlreadyOk') }}
+              <I18nText k="admin.library.renameFilesAlreadyOk" />
             </span>
           </div>
           <el-table
@@ -739,7 +744,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
             class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
             @click="renameDialog.visible = false"
           >
-            {{ t('common.cancel') }}
+            <I18nText k="common.cancel" />
           </button>
           <button
             v-if="renameDialog.result && renameDialog.result.rename_count > 0"
@@ -748,7 +753,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
             :disabled="renameDialog.isApplying"
             @click="applyRename"
           >
-            {{ t('admin.library.renameApply') }}
+            <I18nText k="admin.library.renameApply" />
           </button>
         </div>
       </template>

@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'Inviamo un codice al telefono collegato. Dopo aver impostato una password puoi accedere con password o codice di verifica.',
   'auth.setPasswordWithSmsSubmit': 'Salva password',
   'auth.setPasswordWithSmsSubmitting': 'Salvataggio…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Nome visualizzato',
   'auth.accountNamePlaceholder': 'Almeno 2 caratteri, senza cifre',
   'auth.accountNameSave': 'Salva nome',

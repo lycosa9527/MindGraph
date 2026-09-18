@@ -20,6 +20,7 @@ import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useTsecCaptcha } from '@/composables/auth/useTsecCaptcha'
 import { useAuthStore, useFeatureFlagsStore } from '@/stores'
+import I18nText from '@/components/common/I18nText.vue'
 
 const notify = useNotifications()
 const { t } = useLanguage()
@@ -291,8 +292,11 @@ async function handleSubmit() {
   <SwissGlassCard
     v-model="isVisible"
     :ribbon="t('swissGlass.hero.phone.ribbon')"
+    ribbon-key="swissGlass.hero.phone.ribbon"
     :title="t('swissGlass.hero.phone.title')"
+    title-key="swissGlass.hero.phone.title"
     :line1="t('swissGlass.hero.phone.line1')"
+    line1-key="swissGlass.hero.phone.line1"
     :icon="Smartphone"
     @close="closeModal"
   >
@@ -387,7 +391,7 @@ async function handleSubmit() {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="closeModal"
         >
-          {{ t('common.cancel') }}
+          <I18nText k="common.cancel" />
         </button>
         <button
           v-if="!smsSent"

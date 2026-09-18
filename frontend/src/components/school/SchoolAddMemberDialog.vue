@@ -8,6 +8,7 @@ import { DocumentCopy } from '@element-plus/icons-vue'
 
 import { Loader2, UserPlus } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminOrgScope } from '@/composables/admin/useAdminOrgScope'
@@ -375,8 +376,11 @@ watch(visible, (open) => {
   <SwissGlassCard
     v-model="visible"
     :ribbon="t('swissGlass.hero.schoolMember.ribbon')"
+    ribbon-key="swissGlass.hero.schoolMember.ribbon"
     :title="t('swissGlass.hero.schoolMember.title')"
+    title-key="swissGlass.hero.schoolMember.title"
     :line1="t('swissGlass.hero.schoolMember.line1')"
+    line1-key="swissGlass.hero.schoolMember.line1"
     :line2="modalTitle"
     :icon="UserPlus"
     card-class="swiss-glass-card--wide"
@@ -392,7 +396,7 @@ watch(visible, (open) => {
             class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
             for="add-member-name"
           >
-            {{ t('admin.schoolAddMemberName') }}
+            <I18nText k="admin.schoolAddMemberName" />
             <span class="text-stone-400">*</span>
           </label>
           <input
@@ -410,7 +414,7 @@ watch(visible, (open) => {
             class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
             for="add-member-contact"
           >
-            {{ t('admin.schoolAddMemberContact') }}
+            <I18nText k="admin.schoolAddMemberContact" />
             <span class="text-stone-400">*</span>
           </label>
           <input
@@ -436,10 +440,10 @@ watch(visible, (open) => {
         </span>
         <span class="min-w-0 text-left">
           <span class="block text-sm font-medium text-stone-800">
-            {{ t('admin.schoolAddMemberBatchTitle') }}
+            <I18nText k="admin.schoolAddMemberBatchTitle" />
           </span>
           <span class="block text-xs text-stone-500 leading-relaxed mt-1">
-            {{ t('admin.schoolAddMemberBatchHint') }}
+            <I18nText k="admin.schoolAddMemberBatchHint" />
           </span>
         </span>
       </button>
@@ -467,27 +471,39 @@ watch(visible, (open) => {
           v-if="batchParseErrorKey"
           class="school-add-member-meta school-add-member-meta--error"
         >
-          {{ t(batchParseErrorKey, batchParseResult.errorParams ?? {}) }}
+          <I18nText
+            :k="batchParseErrorKey"
+            :params="batchParseResult.errorParams ?? {}"
+          />
         </p>
         <p
           v-else-if="batchPreviewCount > 0"
           class="school-add-member-meta"
         >
-          {{ t('admin.schoolAddMemberBatchPreview', { count: batchPreviewCount }) }}
+          <I18nText
+            k="admin.schoolAddMemberBatchPreview"
+            :params="{ count: batchPreviewCount }"
+          />
           <template v-if="batchDuplicateCount > 0">
             {{ ' ' }}
-            {{ t('admin.schoolAddMemberBatchDuplicatesRemoved', { count: batchDuplicateCount }) }}
+            <I18nText
+              k="admin.schoolAddMemberBatchDuplicatesRemoved"
+              :params="{ count: batchDuplicateCount }"
+            />
           </template>
           <template v-if="batchSkippedInvalidCount > 0">
             {{ ' ' }}
-            {{ t('admin.schoolAddMemberBatchSkippedRows', { count: batchSkippedInvalidCount }) }}
+            <I18nText
+              k="admin.schoolAddMemberBatchSkippedRows"
+              :params="{ count: batchSkippedInvalidCount }"
+            />
           </template>
         </p>
         <p
           v-else
           class="school-add-member-meta school-add-member-meta--hint"
         >
-          {{ t('admin.schoolAddMemberBatchPasteHint') }}
+          <I18nText k="admin.schoolAddMemberBatchPasteHint" />
         </p>
 
         <div
@@ -495,8 +511,8 @@ watch(visible, (open) => {
           class="school-add-member-preview"
         >
           <div class="school-add-member-preview__head">
-            <span>{{ t('admin.schoolAddMemberContact') }}</span>
-            <span>{{ t('admin.schoolAddMemberName') }}</span>
+            <span><I18nText k="admin.schoolAddMemberContact" /></span>
+            <span><I18nText k="admin.schoolAddMemberName" /></span>
           </div>
           <div
             v-for="row in batchPreviewRows"
@@ -510,11 +526,10 @@ watch(visible, (open) => {
             v-if="batchPreviewCount > batchPreviewRows.length"
             class="school-add-member-preview__more"
           >
-            {{
-              t('admin.schoolAddMemberBatchPreviewMore', {
-                count: batchPreviewCount - batchPreviewRows.length,
-              })
-            }}
+            <I18nText
+              k="admin.schoolAddMemberBatchPreviewMore"
+              :params="{ count: batchPreviewCount - batchPreviewRows.length }"
+            />
           </p>
         </div>
 
@@ -523,17 +538,16 @@ watch(visible, (open) => {
           class="school-add-member-invalid-panel"
         >
           <p class="school-add-member-invalid-panel__title">
-            {{
-              t('admin.schoolAddMemberBatchInvalidRowsTitle', {
-                count: batchInvalidRows.length,
-              })
-            }}
+            <I18nText
+              k="admin.schoolAddMemberBatchInvalidRowsTitle"
+              :params="{ count: batchInvalidRows.length }"
+            />
           </p>
           <div class="school-add-member-preview school-add-member-preview--invalid">
             <div class="school-add-member-preview__head school-add-member-preview__head--invalid">
-              <span>{{ t('admin.schoolAddMemberContact') }}</span>
-              <span>{{ t('admin.schoolAddMemberName') }}</span>
-              <span>{{ t('admin.schoolAddMemberBatchFailedReason') }}</span>
+              <span><I18nText k="admin.schoolAddMemberContact" /></span>
+              <span><I18nText k="admin.schoolAddMemberName" /></span>
+              <span><I18nText k="admin.schoolAddMemberBatchFailedReason" /></span>
             </div>
             <div class="school-add-member-invalid-panel__list">
               <div
@@ -544,7 +558,10 @@ watch(visible, (open) => {
                 <span>{{ row.contactRaw || '—' }}</span>
                 <span>{{ row.name || '—' }}</span>
                 <span class="school-add-member-preview__reason">
-                  {{ t(row.errorKey, row.errorParams ?? {}) }}
+                  <I18nText
+                    :k="row.errorKey"
+                    :params="row.errorParams ?? {}"
+                  />
                 </span>
               </div>
             </div>
@@ -553,11 +570,10 @@ watch(visible, (open) => {
             v-if="batchInvalidRows.length > batchInvalidPreviewRows.length"
             class="school-add-member-preview__more"
           >
-            {{
-              t('admin.schoolAddMemberBatchPreviewMore', {
-                count: batchInvalidRows.length - batchInvalidPreviewRows.length,
-              })
-            }}
+            <I18nText
+              k="admin.schoolAddMemberBatchPreviewMore"
+              :params="{ count: batchInvalidRows.length - batchInvalidPreviewRows.length }"
+            />
           </p>
         </div>
       </div>
@@ -568,7 +584,7 @@ watch(visible, (open) => {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="closeModal"
         >
-          {{ t('common.cancel') }}
+          <I18nText k="common.cancel" />
         </button>
         <button
           type="submit"
@@ -592,12 +608,13 @@ watch(visible, (open) => {
         class="school-add-member-result-summary"
         :class="`school-add-member-result-summary--${batchResultSummaryTone}`"
       >
-        {{
-          t(batchResultSummaryKey ?? 'admin.schoolAddMemberBatchResultSuccess', {
+        <I18nText
+          :k="batchResultSummaryKey ?? 'admin.schoolAddMemberBatchResultSuccess'"
+          :params="{
             created: batchImportResult.createdCount,
             failed: batchImportResult.failedCount,
-          })
-        }}
+          }"
+        />
       </p>
 
       <div
@@ -605,17 +622,16 @@ watch(visible, (open) => {
         class="school-add-member-failed-panel"
       >
         <p class="school-add-member-failed-panel__title">
-          {{
-            t('admin.schoolAddMemberBatchFailedListTitle', {
-              count: batchImportResult.failedCount,
-            })
-          }}
+          <I18nText
+            k="admin.schoolAddMemberBatchFailedListTitle"
+            :params="{ count: batchImportResult.failedCount }"
+          />
         </p>
         <div class="school-add-member-preview school-add-member-preview--failed">
           <div class="school-add-member-preview__head school-add-member-preview__head--failed">
-            <span>{{ t('admin.schoolAddMemberContact') }}</span>
-            <span>{{ t('admin.schoolAddMemberName') }}</span>
-            <span>{{ t('admin.schoolAddMemberBatchFailedReason') }}</span>
+            <span><I18nText k="admin.schoolAddMemberContact" /></span>
+            <span><I18nText k="admin.schoolAddMemberName" /></span>
+            <span><I18nText k="admin.schoolAddMemberBatchFailedReason" /></span>
           </div>
           <div class="school-add-member-failed-panel__list">
             <div
@@ -637,7 +653,7 @@ watch(visible, (open) => {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
           @click="closeBatchResult"
         >
-          {{ t('admin.schoolAddMemberBatchResultDone') }}
+          <I18nText k="admin.schoolAddMemberBatchResultDone" />
         </button>
       </div>
     </div>

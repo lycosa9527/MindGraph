@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 
 import { Folder, History, Search } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage } from '@/composables'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -107,8 +108,11 @@ function formatModifiedAt(iso: string): string {
   <SwissGlassCard
     v-model="open"
     :ribbon="t('swissGlass.hero.historyPicker.ribbon')"
+    ribbon-key="swissGlass.hero.historyPicker.ribbon"
     :title="t('swissGlass.hero.historyPicker.title')"
+    title-key="swissGlass.hero.historyPicker.title"
     :line1="t('swissGlass.hero.historyPicker.line1')"
+    line1-key="swissGlass.hero.historyPicker.line1"
     :icon="History"
     card-class="swiss-glass-card--xl"
     @close="close"
@@ -137,7 +141,7 @@ function formatModifiedAt(iso: string): string {
           v-else-if="filteredDiagrams.length === 0"
           class="py-8 text-center text-sm text-gray-400"
         >
-          {{ t('showcase.publishModal.historyEmpty') }}
+          <I18nText k="showcase.publishModal.historyEmpty" />
         </p>
         <ul
           v-else
@@ -181,7 +185,7 @@ function formatModifiedAt(iso: string): string {
           class="w-full rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
           @click="close"
         >
-          {{ t('showcase.publishModal.galleryPickerDone') }}
+          <I18nText k="showcase.publishModal.galleryPickerDone" />
         </button>
       </div>
     </div>

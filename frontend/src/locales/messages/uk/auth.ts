@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'Ми надішлемо код на ваш прив\'язаний телефон. Після встановлення пароля ви зможете входити паролем або кодом підтвердження.',
   'auth.setPasswordWithSmsSubmit': 'Зберегти пароль',
   'auth.setPasswordWithSmsSubmitting': 'Збереження…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Відображуване ім\'я',
   'auth.accountNamePlaceholder': 'Щонайменше 2 символи, без цифр',
   'auth.accountNameSave': 'Зберегти ім\'я',

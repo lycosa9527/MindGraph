@@ -11,6 +11,8 @@ import { Delete } from '@element-plus/icons-vue'
 import { TrendingUp } from '@lucide/vue'
 import type { Chart as ChartInstance } from 'chart.js'
 
+import I18nText from '@/components/common/I18nText.vue'
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
@@ -611,9 +613,7 @@ async function saveGeneralSettings() {
     }
     const savedTemplate = updated.teaching_design_template_key
     teachingDesignTemplateKeyEdit.value =
-      typeof savedTemplate === 'string' && savedTemplate.trim()
-        ? savedTemplate.trim()
-        : 'system'
+      typeof savedTemplate === 'string' && savedTemplate.trim() ? savedTemplate.trim() : 'system'
     if (orgGeneralTabRef.value) {
       const oauthOk = await orgGeneralTabRef.value.saveOauthSettings()
       if (!oauthOk) {
@@ -991,7 +991,7 @@ onBeforeUnmount(() => {
           class="mindbot-pill mindbot-pill--footer-cancel"
           @click="close"
         >
-          {{ t('common.close') }}
+          <I18nText k="common.close" />
         </el-button>
       </div>
       <div
@@ -1002,7 +1002,7 @@ onBeforeUnmount(() => {
           v-if="showMindbotFooterEnable && !panelReadOnly"
           class="mindbot-footer-enable flex min-w-0 items-center gap-2 sm:gap-2.5 order-last sm:order-first"
         >
-          <span class="mindbot-footer-enable__label">{{ t('admin.mindbot.enabled') }}</span>
+          <span class="mindbot-footer-enable__label"><I18nText k="admin.mindbot.enabled" /></span>
           <el-switch
             v-model="mindbotEnabled"
             class="mindbot-footer-enabled-switch shrink-0"
@@ -1020,12 +1020,12 @@ onBeforeUnmount(() => {
             :disabled="tierDowngradeBlocked"
             @click="saveGeneralSettings"
           >
-            {{ t('admin.save') }}
+            <I18nText k="admin.save" />
           </el-button>
-          <el-tooltip
+          <I18nTooltip
             v-else-if="schoolDialogTab === 'dify' && orgId"
             :disabled="Boolean(mindmateDifyRef?.canSave)"
-            :content="t('admin.schoolDifyAuthRequiredBeforeSave')"
+            k="admin.schoolDifyAuthRequiredBeforeSave"
             placement="top"
           >
             <el-button
@@ -1035,9 +1035,9 @@ onBeforeUnmount(() => {
               :disabled="!mindmateDifyRef?.canSave"
               @click="mindmateDifyRef?.saveSettings()"
             >
-              {{ t('admin.save') }}
+              <I18nText k="admin.save" />
             </el-button>
-          </el-tooltip>
+          </I18nTooltip>
           <el-button
             v-else-if="isMindbotSchoolTab(schoolDialogTab) && orgId && mindbotSaveEnabled"
             type="primary"
@@ -1045,13 +1045,13 @@ onBeforeUnmount(() => {
             :loading="mindbotSaving"
             @click="saveMindbotSettings()"
           >
-            {{ t('admin.mindbot.save') }}
+            <I18nText k="admin.mindbot.save" />
           </el-button>
           <el-button
             class="mindbot-pill mindbot-pill--footer-cancel w-full sm:w-auto"
             @click="close"
           >
-            {{ t('common.close') }}
+            <I18nText k="common.close" />
           </el-button>
           <el-button
             v-if="orgId"
@@ -1062,7 +1062,7 @@ onBeforeUnmount(() => {
             @click="deleteOrganization"
           >
             <el-icon class="mr-1"><Delete /></el-icon>
-            {{ t('admin.deleteOrganization') }}
+            <I18nText k="admin.deleteOrganization" />
           </el-button>
         </div>
       </div>
@@ -1073,8 +1073,11 @@ onBeforeUnmount(() => {
     v-else
     :model-value="visible"
     :ribbon="t('swissGlass.hero.adminTrend.ribbon')"
+    ribbon-key="swissGlass.hero.adminTrend.ribbon"
     :title="t('swissGlass.hero.adminTrend.title')"
+    title-key="swissGlass.hero.adminTrend.title"
     :line1="t('swissGlass.hero.adminTrend.line1')"
+    line1-key="swissGlass.hero.adminTrend.line1"
     :line2="userName"
     :icon="TrendingUp"
     width="min(760px, 94vw)"
@@ -1125,7 +1128,7 @@ onBeforeUnmount(() => {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="close"
         >
-          {{ t('common.close') }}
+          <I18nText k="common.close" />
         </button>
       </div>
     </template>

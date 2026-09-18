@@ -148,6 +148,8 @@ class User(Base):
     ui_language: Mapped[str | None] = mapped_column(String(32), nullable=True)
     prompt_language: Mapped[str | None] = mapped_column(String(32), nullable=True)
     match_prompt_to_ui: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    bilingual_ui_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    presenter_ui_locale: Mapped[str | None] = mapped_column(String(32), nullable=True)
     ui_version: Mapped[str | None] = mapped_column(String(32), nullable=True, default="international")
     allows_simplified_chinese: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     education_stage: Mapped[str | None] = mapped_column(String(32), nullable=True)

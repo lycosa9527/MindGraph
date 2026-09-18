@@ -4,11 +4,13 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { ElDropdown, ElTooltip } from 'element-plus'
+import { ElDropdown } from 'element-plus'
 
 import { Check, ChevronDown, Palette } from '@lucide/vue'
 
 import MindMapDiagramStylePreview from '@/components/canvas/MindMapDiagramStylePreview.vue'
+import I18nText from '@/components/common/I18nText.vue'
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import {
@@ -94,8 +96,8 @@ function handlePickRainbow(): void {
 </script>
 
 <template>
-  <ElTooltip
-    :content="t('canvas.toolbar.mindMapAppearanceLabel')"
+  <I18nTooltip
+    k="canvas.toolbar.mindMapAppearanceLabel"
     placement="bottom"
   >
     <span class="inline-flex shrink-0">
@@ -122,8 +124,9 @@ function handlePickRainbow(): void {
           <span
             v-if="!props.compact"
             class="mm-btn__label"
-            >{{ t('canvas.ribbon.themeStyle') }}</span
           >
+            <I18nText k="canvas.ribbon.themeStyle" />
+          </span>
           <ChevronDown
             :size="12"
             class="mm-btn__chevron"
@@ -132,12 +135,12 @@ function handlePickRainbow(): void {
         <template #dropdown>
           <div class="mm-appearance-card">
             <div class="mm-appearance-card__title">
-              {{ t('canvas.toolbar.mindMapAppearanceLabel') }}
+              <I18nText k="canvas.toolbar.mindMapAppearanceLabel" />
             </div>
 
             <div class="mm-appearance-row">
               <span class="mm-appearance-row__label">
-                {{ t('canvas.toolbar.mindMapAppearanceThemeColor') }}
+                <I18nText k="canvas.toolbar.mindMapAppearanceThemeColor" />
               </span>
               <div
                 class="mm-appearance-colors"
@@ -184,7 +187,7 @@ function handlePickRainbow(): void {
 
             <div class="mm-appearance-style-section">
               <div class="mm-appearance-section-label">
-                {{ t('canvas.toolbar.mindMapAppearanceDiagramStyle') }}
+                <I18nText k="canvas.toolbar.mindMapAppearanceDiagramStyle" />
               </div>
               <div
                 class="mm-appearance-style-grid"
@@ -214,7 +217,7 @@ function handlePickRainbow(): void {
         </template>
       </ElDropdown>
     </span>
-  </ElTooltip>
+  </I18nTooltip>
 </template>
 
 <style scoped>

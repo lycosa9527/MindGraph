@@ -8,6 +8,7 @@ import { storeToRefs } from 'pinia'
 
 import { ChevronLeft, ChevronRight, Pause, Play, Square, Volume2, VolumeX, X } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import KittyBlackCatMascot from '@/components/kitty/KittyBlackCatMascot.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { KittyAgentState } from '@/composables/kitty/useKittyAgent'
@@ -43,15 +44,15 @@ const kittyState = computed<KittyAgentState>(() => {
   return 'active'
 })
 
-const kindLabel = computed(() => {
+const kindLabelKey = computed(() => {
   const kind = currentStep.value?.kind
-  if (kind === 'overview') return t('canvas.mindClassroom.slide.kindOverview')
-  if (kind === 'closing') return t('canvas.mindClassroom.slide.kindClosing')
-  return t('canvas.mindClassroom.slide.kindBranch')
+  if (kind === 'overview') return 'canvas.mindClassroom.slide.kindOverview'
+  if (kind === 'closing') return 'canvas.mindClassroom.slide.kindClosing'
+  return 'canvas.mindClassroom.slide.kindBranch'
 })
 
-const styleTitle = computed(() =>
-  t(`canvas.mindClassroom.settings.slideStyle.${slideStyle.value}.title`)
+const styleTitleKey = computed(
+  () => `canvas.mindClassroom.settings.slideStyle.${slideStyle.value}.title`
 )
 </script>
 
@@ -76,8 +77,9 @@ const styleTitle = computed(() =>
         </button>
         <div class="min-w-0">
           <p class="mc-slide-pane__kicker">
-            {{ t('canvas.mindClassroom.settings.presentation.slide_deck.title') }}
-            · {{ styleTitle }}
+            <I18nText k="canvas.mindClassroom.settings.presentation.slide_deck.title" />
+            ·
+            <I18nText :k="styleTitleKey" />
           </p>
           <p class="mc-slide-pane__heading truncate">
             {{ currentStep?.title }}
@@ -104,7 +106,9 @@ const styleTitle = computed(() =>
         aria-live="polite"
         aria-atomic="true"
       >
-        <span class="mc-slide-card__kind">{{ kindLabel }}</span>
+        <span class="mc-slide-card__kind">
+          <I18nText :k="kindLabelKey" />
+        </span>
         <img
           v-if="currentStep?.imageUrl"
           class="mc-slide-card__image"

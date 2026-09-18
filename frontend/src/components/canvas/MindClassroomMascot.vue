@@ -11,8 +11,10 @@ import { ElDialog } from 'element-plus'
 import { ChevronDown } from '@lucide/vue'
 
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
-import '@/components/canvas/aiGenerateGlass.css'
 import MindClassroomLaunchContent from '@/components/canvas/MindClassroomLaunchContent.vue'
+import '@/components/canvas/aiGenerateGlass.css'
+import I18nText from '@/components/common/I18nText.vue'
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useEventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -133,7 +135,7 @@ eventBus.on('classroom:queue_result', (result) => {
           v-if="bubbleVisible && !docked"
           class="mc-sprite__bubble"
         >
-          {{ t('canvas.mindClassroom.mascotBubble') }}
+          <I18nText k="canvas.mindClassroom.mascotBubble" />
         </div>
       </Transition>
 
@@ -537,19 +539,23 @@ eventBus.on('classroom:queue_result', (result) => {
         </svg>
       </button>
 
-      <button
+      <I18nTooltip
         v-if="!docked"
-        type="button"
-        class="mc-sprite__dock"
-        :aria-label="t('canvas.mindClassroom.mascotDismiss')"
-        :title="t('canvas.mindClassroom.mascotDismiss')"
-        @click="handleDock"
+        k="canvas.mindClassroom.mascotDismiss"
+        placement="left"
       >
-        <ChevronDown
-          class="h-3.5 w-3.5"
-          :stroke-width="2.5"
-        />
-      </button>
+        <button
+          type="button"
+          class="mc-sprite__dock"
+          :aria-label="t('canvas.mindClassroom.mascotDismiss')"
+          @click="handleDock"
+        >
+          <ChevronDown
+            class="h-3.5 w-3.5"
+            :stroke-width="2.5"
+          />
+        </button>
+      </I18nTooltip>
     </div>
   </div>
 

@@ -6,6 +6,7 @@ import { computed } from 'vue'
 
 import { TriangleAlert } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import {
   getSwissGlassConfirmState,
@@ -34,9 +35,13 @@ function onCancel(): void {
   <SwissGlassDialog
     v-model="state.open"
     :ribbon="ribbon"
+    :ribbon-key="state.ribbonKey || 'swissGlass.confirm.ribbon'"
     :title="state.title"
+    :title-key="state.titleKey"
     :line1="state.line1"
+    :line1-key="state.line1Key"
     :line2="state.line2"
+    :line2-key="state.line2Key"
     :icon="plateIcon"
     width="min(440px, 92vw)"
     :close-on-click-modal="false"
@@ -49,7 +54,11 @@ function onCancel(): void {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="onCancel"
         >
-          {{ cancelLabel }}
+          <I18nText
+            v-if="!state.cancelLabel || state.cancelLabelKey"
+            :k="state.cancelLabelKey || 'common.cancel'"
+          />
+          <template v-else>{{ cancelLabel }}</template>
         </button>
         <button
           type="button"
@@ -59,7 +68,11 @@ function onCancel(): void {
           "
           @click="onConfirm"
         >
-          {{ confirmLabel }}
+          <I18nText
+            v-if="!state.confirmLabel || state.confirmLabelKey"
+            :k="state.confirmLabelKey || 'common.confirm'"
+          />
+          <template v-else>{{ confirmLabel }}</template>
         </button>
       </div>
     </template>

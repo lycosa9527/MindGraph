@@ -23,6 +23,7 @@ import {
   UserRound,
 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import QuickRegisterModal from '@/components/mindgraph/QuickRegisterModal.vue'
 import SidebarQuoteMarquee from '@/components/sidebar/SidebarQuoteMarquee.vue'
 import SidebarTokenUsage from '@/components/sidebar/SidebarTokenUsage.vue'
@@ -62,7 +63,6 @@ function openPlatformQuickGuide(): void {
 function handleVoiceNotes(): void {
   void voiceNotesStore.enableAndOpen()
 }
-
 </script>
 
 <template>
@@ -76,7 +76,7 @@ function handleVoiceNotes(): void {
           class="login-btn w-full"
           @click="s.openLoginModal"
         >
-          {{ s.t('auth.loginRegister') }}
+          <I18nText k="auth.loginRegister" />
         </el-button>
         <el-button
           v-else
@@ -109,7 +109,9 @@ function handleVoiceNotes(): void {
           <div class="flex items-center justify-between gap-2.5">
             <div class="tc-balance-label min-w-0">
               <span class="leading-tight truncate">
-                <span class="text-xs font-medium text-stone-600">{{ s.t('thinkingCoins.balanceUnit') }}:</span>
+                <span class="text-xs font-medium text-stone-600"
+                  ><I18nText k="thinkingCoins.balanceUnit" />:</span
+                >
                 <span class="text-base font-bold tabular-nums tracking-tight text-stone-900">
                   {{ s.thinkingCoinsBalanceFormatted }}
                 </span>
@@ -129,11 +131,13 @@ function handleVoiceNotes(): void {
                 @click="s.openThinkingCoinsUpgradeSchool()"
               >
                 <Star class="h-3 w-3 fill-current" />
-                {{ s.t('thinkingCoins.upgrade') }}
+                <I18nText k="thinkingCoins.upgrade" />
               </button>
             </div>
           </div>
-          <div class="tc-sidebar-promo mt-2.5 flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left">
+          <div
+            class="tc-sidebar-promo mt-2.5 flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left"
+          >
             <Gift class="h-4 w-4 shrink-0 text-orange-500" />
             <div class="tc-task-promo-viewport min-w-0 flex-1">
               <Transition
@@ -245,44 +249,44 @@ function handleVoiceNotes(): void {
               @click="triggerImport"
             >
               <Upload class="w-4 h-4 mr-2" />
-              {{ s.t('mindgraphLanding.import') }}
+              <I18nText k="mindgraphLanding.import" />
             </el-dropdown-item>
             <el-dropdown-item
               v-if="s.isAdminOrManager && s.registrationEnabled"
               @click="showShareSiteModal = true"
             >
               <Share2 class="w-4 h-4 mr-2" />
-              {{ s.t('landing.international.shareSite') }}
+              <I18nText k="landing.international.shareSite" />
             </el-dropdown-item>
             <el-dropdown-item
               divided
               @click="s.openLanguageSettingsModal"
             >
               <Languages class="w-4 h-4 mr-2" />
-              {{ s.t('sidebar.languageSettings') }}
+              <I18nText k="sidebar.languageSettings" />
             </el-dropdown-item>
             <el-dropdown-item @click="s.openAccountModal">
               <UserRound class="w-4 h-4 mr-2" />
-              {{ s.t('auth.accountInfo') }}
+              <I18nText k="auth.accountInfo" />
             </el-dropdown-item>
             <el-dropdown-item @click="handleVoiceNotes">
               <AudioLines class="w-4 h-4 mr-2" />
-              {{ s.t('auth.voiceNotes') }}
+              <I18nText k="auth.voiceNotes" />
             </el-dropdown-item>
             <el-dropdown-item @click="s.openUpdateLogModal">
               <ScrollText class="w-4 h-4 mr-2" />
-              {{ s.t('auth.updateLog') }}
+              <I18nText k="auth.updateLog" />
             </el-dropdown-item>
             <el-dropdown-item
               v-if="showPwaInstall"
               @click="handlePwaInstall"
             >
               <Link2 class="w-4 h-4 mr-2" />
-              {{ s.t('auth.downloadDesktopShortcut') }}
+              <I18nText k="auth.downloadDesktopShortcut" />
             </el-dropdown-item>
             <el-dropdown-item @click="openPlatformQuickGuide">
               <BookOpen class="w-4 h-4 mr-2" />
-              {{ s.t('auth.platformQuickGuide') }}
+              <I18nText k="auth.platformQuickGuide" />
             </el-dropdown-item>
             <el-dropdown-item
               divided
@@ -290,7 +294,7 @@ function handleVoiceNotes(): void {
               @click="s.handleLogout"
             >
               <LogOut class="w-4 h-4 mr-2" />
-              {{ s.t('auth.logout') }}
+              <I18nText k="auth.logout" />
             </el-dropdown-item>
           </el-dropdown-menu>
         </template>
@@ -331,44 +335,44 @@ function handleVoiceNotes(): void {
               @click="triggerImport"
             >
               <Upload class="w-4 h-4 mr-2" />
-              {{ s.t('mindgraphLanding.import') }}
+              <I18nText k="mindgraphLanding.import" />
             </el-dropdown-item>
             <el-dropdown-item
               v-if="s.isAdminOrManager && s.registrationEnabled"
               @click="showShareSiteModal = true"
             >
               <Share2 class="w-4 h-4 mr-2" />
-              {{ s.t('landing.international.shareSite') }}
+              <I18nText k="landing.international.shareSite" />
             </el-dropdown-item>
             <el-dropdown-item
               divided
               @click="s.openLanguageSettingsModal"
             >
               <Languages class="w-4 h-4 mr-2" />
-              {{ s.t('sidebar.languageSettings') }}
+              <I18nText k="sidebar.languageSettings" />
             </el-dropdown-item>
             <el-dropdown-item @click="s.openAccountModal">
               <UserRound class="w-4 h-4 mr-2" />
-              {{ s.t('auth.accountInfo') }}
+              <I18nText k="auth.accountInfo" />
             </el-dropdown-item>
             <el-dropdown-item @click="handleVoiceNotes">
               <AudioLines class="w-4 h-4 mr-2" />
-              {{ s.t('auth.voiceNotes') }}
+              <I18nText k="auth.voiceNotes" />
             </el-dropdown-item>
             <el-dropdown-item @click="s.openUpdateLogModal">
               <ScrollText class="w-4 h-4 mr-2" />
-              {{ s.t('auth.updateLog') }}
+              <I18nText k="auth.updateLog" />
             </el-dropdown-item>
             <el-dropdown-item
               v-if="showPwaInstall"
               @click="handlePwaInstall"
             >
               <Link2 class="w-4 h-4 mr-2" />
-              {{ s.t('auth.downloadDesktopShortcut') }}
+              <I18nText k="auth.downloadDesktopShortcut" />
             </el-dropdown-item>
             <el-dropdown-item @click="openPlatformQuickGuide">
               <BookOpen class="w-4 h-4 mr-2" />
-              {{ s.t('auth.platformQuickGuide') }}
+              <I18nText k="auth.platformQuickGuide" />
             </el-dropdown-item>
             <el-dropdown-item
               divided
@@ -376,7 +380,7 @@ function handleVoiceNotes(): void {
               @click="s.handleLogout"
             >
               <LogOut class="w-4 h-4 mr-2" />
-              {{ s.t('auth.logout') }}
+              <I18nText k="auth.logout" />
             </el-dropdown-item>
           </el-dropdown-menu>
         </template>

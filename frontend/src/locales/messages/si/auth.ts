@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'bind කළ දුරකථනයට කේතය යවමු. මුරපදය සකසා password හෝ verification code login කළ හැක.',
   'auth.setPasswordWithSmsSubmit': 'මුරපදය සුරකින්න',
   'auth.setPasswordWithSmsSubmitting': 'සුරකමින්…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'පෙන්‍ව‍න‍න‍ම',
   'auth.accountNamePlaceholder': 'අවම අකුරු 2, අංක නැත',
   'auth.accountNameSave': 'නම සුරකින්න',

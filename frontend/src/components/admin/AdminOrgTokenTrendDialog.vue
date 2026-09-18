@@ -7,6 +7,7 @@ import { Loading } from '@element-plus/icons-vue'
 import { TrendingUp } from '@lucide/vue'
 
 import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables'
 import {
@@ -58,8 +59,11 @@ defineExpose({
   <SwissGlassDialog
     :model-value="trendModalVisible"
     :ribbon="t('swissGlass.hero.adminOrgTrend.ribbon')"
+    ribbon-key="swissGlass.hero.adminOrgTrend.ribbon"
     :title="t('swissGlass.hero.adminOrgTrend.title')"
+    title-key="swissGlass.hero.adminOrgTrend.title"
     :line1="t('swissGlass.hero.adminOrgTrend.line1')"
+    line1-key="swissGlass.hero.adminOrgTrend.line1"
     :line2="trendChartTitle"
     :icon="TrendingUp"
     width="640px"
@@ -82,7 +86,7 @@ defineExpose({
         v-if="!trendChartHasData"
         class="flex justify-center items-center h-64 text-gray-500 dark:text-gray-400"
       >
-        {{ t('admin.trendChartNoData') }}
+        <I18nText k="admin.trendChartNoData" />
       </div>
       <div
         v-else
@@ -96,28 +100,28 @@ defineExpose({
       <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
           <AdminSwissPeriodCard
-            :label="t('admin.today')"
+            label-key="admin.today"
             :value="periodCards.today"
             :active="trendPeriod === 'today'"
             theme="storage"
             @click="switchTrendPeriod('today')"
           />
           <AdminSwissPeriodCard
-            :label="t('admin.pastWeek')"
+            label-key="admin.pastWeek"
             :value="periodCards.week"
             :active="trendPeriod === 'week'"
             theme="storage"
             @click="switchTrendPeriod('week')"
           />
           <AdminSwissPeriodCard
-            :label="t('admin.pastMonth')"
+            label-key="admin.pastMonth"
             :value="periodCards.month"
             :active="trendPeriod === 'month'"
             theme="storage"
             @click="switchTrendPeriod('month')"
           />
           <AdminSwissPeriodCard
-            :label="t('admin.allTime')"
+            label-key="admin.allTime"
             :value="periodCards.total"
             :active="trendPeriod === 'total'"
             theme="storage"
@@ -133,7 +137,7 @@ defineExpose({
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="closeTrendModal"
         >
-          {{ t('common.close') }}
+          <I18nText k="common.close" />
         </button>
       </div>
     </template>

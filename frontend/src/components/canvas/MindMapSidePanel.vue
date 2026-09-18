@@ -7,7 +7,7 @@ import { computed, watch } from 'vue'
 import { Hammer, Shuffle } from '@lucide/vue'
 
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
-
+import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables'
 import { type MindMapSideToolId } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
@@ -29,11 +29,7 @@ const emit = defineEmits<{
 const { t } = useLanguage()
 const diagramStore = useDiagramStore()
 
-const {
-  isPickActive,
-  activatePick,
-  startRandomLearningSheet,
-} = useLearningSheetCustomMode()
+const { isPickActive, activatePick, startRandomLearningSheet } = useLearningSheetCustomMode()
 
 const panelTitle = computed(() => {
   switch (props.tool) {
@@ -148,10 +144,10 @@ function onKeepAnswersChange(value: string | number | boolean): void {
               </span>
               <span class="min-w-0 flex-1 text-left">
                 <span class="block text-sm font-semibold text-slate-800">
-                  {{ t('canvas.mindMapSideToolbar.learningSheetRandomTitle') }}
+                  <I18nText k="canvas.mindMapSideToolbar.learningSheetRandomTitle" />
                 </span>
                 <span class="mt-0.5 block text-[11px] leading-snug text-slate-500">
-                  {{ t('canvas.mindMapSideToolbar.learningSheetRandomDesc') }}
+                  <I18nText k="canvas.mindMapSideToolbar.learningSheetRandomDesc" />
                 </span>
               </span>
             </button>
@@ -170,10 +166,10 @@ function onKeepAnswersChange(value: string | number | boolean): void {
               </span>
               <span class="min-w-0 flex-1 text-left">
                 <span class="block text-sm font-semibold text-slate-800">
-                  {{ t('canvas.mindMapSideToolbar.learningSheetCustomTitle') }}
+                  <I18nText k="canvas.mindMapSideToolbar.learningSheetCustomTitle" />
                 </span>
                 <span class="mt-0.5 block text-[11px] leading-snug text-slate-500">
-                  {{ t('canvas.mindMapSideToolbar.learningSheetCustomDesc') }}
+                  <I18nText k="canvas.mindMapSideToolbar.learningSheetCustomDesc" />
                 </span>
               </span>
             </button>
@@ -181,10 +177,10 @@ function onKeepAnswersChange(value: string | number | boolean): void {
             <label class="learning-sheet-keep-answers">
               <span class="learning-sheet-keep-answers__copy">
                 <span class="learning-sheet-keep-answers__label">
-                  {{ t('canvas.mindMapSideToolbar.learningSheetKeepAnswers') }}
+                  <I18nText k="canvas.mindMapSideToolbar.learningSheetKeepAnswers" />
                 </span>
                 <span class="learning-sheet-keep-answers__hint">
-                  {{ t('canvas.mindMapSideToolbar.learningSheetKeepAnswersHint') }}
+                  <I18nText k="canvas.mindMapSideToolbar.learningSheetKeepAnswersHint" />
                 </span>
               </span>
               <el-switch
@@ -236,13 +232,21 @@ function onKeepAnswersChange(value: string | number | boolean): void {
 .learning-sheet-mode-card__icon--amber {
   color: var(--swiss-geek-amber-ui, #b45309);
   background: var(--swiss-geek-amber-soft, #fffbeb);
-  border-color: color-mix(in srgb, var(--swiss-geek-amber-ui, #b45309) 22%, var(--swiss-border, #e7e5e4));
+  border-color: color-mix(
+    in srgb,
+    var(--swiss-geek-amber-ui, #b45309) 22%,
+    var(--swiss-border, #e7e5e4)
+  );
 }
 
 .learning-sheet-mode-card__icon--blue {
   color: var(--swiss-geek-cyan-ui, #0e7490);
   background: var(--swiss-geek-cyan-soft, #ecfeff);
-  border-color: color-mix(in srgb, var(--swiss-geek-cyan-ui, #0e7490) 22%, var(--swiss-border, #e7e5e4));
+  border-color: color-mix(
+    in srgb,
+    var(--swiss-geek-cyan-ui, #0e7490) 22%,
+    var(--swiss-border, #e7e5e4)
+  );
 }
 
 .learning-sheet-keep-answers {

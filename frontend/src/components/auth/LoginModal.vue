@@ -18,6 +18,7 @@ import { ArrowLeft, Eye, EyeOff, Loader2, LogIn, RefreshCw } from '@lucide/vue'
 
 import LoginAuthAltLinks from '@/components/auth/LoginAuthAltLinks.vue'
 import OAuthQrLoginModal from '@/components/auth/OAuthQrLoginModal.vue'
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLoginModal } from '@/composables/auth/useLoginModal'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
@@ -191,8 +192,11 @@ const inlineHost = isTrainingInlineHost()
     ref="loginGlassCardRef"
     v-model="isVisible"
     :ribbon="t('swissGlass.hero.login.ribbon')"
+    ribbon-key="swissGlass.hero.login.ribbon"
     :title="t('swissGlass.hero.login.title')"
+    title-key="swissGlass.hero.login.title"
     :line1="t('swissGlass.hero.login.line1')"
+    line1-key="swissGlass.hero.login.line1"
     :icon="LogIn"
     :light-backdrop="lightBackdrop"
     :persistent="persistent"
@@ -233,7 +237,7 @@ const inlineHost = isTrainingInlineHost()
           :class="{ 'auth-tab-switch__btn--active': activeTab === 'login' }"
           @click="switchLoginRegisterTab('login')"
         >
-          {{ t('auth.login') }}
+          <I18nText k="auth.login" />
         </button>
         <button
           type="button"
@@ -244,7 +248,7 @@ const inlineHost = isTrainingInlineHost()
           :class="{ 'auth-tab-switch__btn--active': activeTab === 'register' }"
           @click="switchLoginRegisterTab('register')"
         >
-          {{ t('auth.register') }}
+          <I18nText k="auth.register" />
         </button>
       </div>
       <div
@@ -259,7 +263,7 @@ const inlineHost = isTrainingInlineHost()
           :aria-selected="true"
           class="auth-tab-switch__btn auth-tab-switch__btn--active"
         >
-          {{ t('auth.login') }}
+          <I18nText k="auth.login" />
         </button>
       </div>
 
@@ -278,7 +282,7 @@ const inlineHost = isTrainingInlineHost()
               class="page-header__back-icon"
               aria-hidden="true"
             />
-            {{ t('auth.backToLogin') }}
+            <I18nText k="auth.backToLogin" />
           </button>
           <span
             v-if="currentView === 'sms-login'"
@@ -301,7 +305,7 @@ const inlineHost = isTrainingInlineHost()
             class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
             for="login-phone"
           >
-            {{ t('auth.loginPhoneOrEmail') }}
+            <I18nText k="auth.loginPhoneOrEmail" />
           </label>
           <input
             id="login-phone"
@@ -320,7 +324,7 @@ const inlineHost = isTrainingInlineHost()
             class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
             for="login-password"
           >
-            {{ t('auth.password') }}
+            <I18nText k="auth.password" />
           </label>
           <div class="relative">
             <input
@@ -354,7 +358,7 @@ const inlineHost = isTrainingInlineHost()
             class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
             for="login-captcha"
           >
-            {{ t('auth.captcha') }}
+            <I18nText k="auth.captcha" />
           </label>
           <div class="captcha-row">
             <input
@@ -401,7 +405,11 @@ const inlineHost = isTrainingInlineHost()
             v-if="isLoading"
             class="w-4 h-4 animate-spin"
           />
-          {{ isLoading ? t('auth.modal.loggingIn') : loginSubmitLabel }}
+          <I18nText
+            v-if="isLoading"
+            k="auth.modal.loggingIn"
+          />
+          <template v-else>{{ loginSubmitLabel }}</template>
         </button>
 
         <LoginAuthAltLinks
@@ -423,7 +431,7 @@ const inlineHost = isTrainingInlineHost()
           class="flex items-center gap-2 text-sm text-stone-500 py-1"
         >
           <Loader2 class="w-4 h-4 animate-spin shrink-0" />
-          <span>{{ t('auth.modal.detectingRegion') }}</span>
+          <span><I18nText k="auth.modal.detectingRegion" /></span>
         </div>
 
         <div
@@ -454,7 +462,7 @@ const inlineHost = isTrainingInlineHost()
             "
             @click="setRegisterPath('phone')"
           >
-            {{ t('auth.modal.hybridRegisterPhoneTab') }}
+            <I18nText k="auth.modal.hybridRegisterPhoneTab" />
           </button>
         </div>
 
@@ -463,7 +471,7 @@ const inlineHost = isTrainingInlineHost()
             class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
             for="register-phone"
           >
-            {{ t('auth.phone') }} *
+            <I18nText k="auth.phone" /> *
           </label>
           <input
             id="register-phone"
@@ -505,7 +513,7 @@ const inlineHost = isTrainingInlineHost()
             class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
             for="register-password"
           >
-            {{ t('auth.password') }} *
+            <I18nText k="auth.password" /> *
           </label>
           <div class="relative">
             <input
@@ -539,7 +547,7 @@ const inlineHost = isTrainingInlineHost()
             class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
             for="register-name"
           >
-            {{ t('auth.name') }} *
+            <I18nText k="auth.name" /> *
           </label>
           <input
             id="register-name"
@@ -557,7 +565,7 @@ const inlineHost = isTrainingInlineHost()
             class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
             for="register-invitation-code"
           >
-            {{ t('auth.invitationCode') }} *
+            <I18nText k="auth.invitationCode" /> *
           </label>
           <input
             id="register-invitation-code"
@@ -574,7 +582,7 @@ const inlineHost = isTrainingInlineHost()
             class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
             for="register-captcha"
           >
-            {{ t('auth.captcha') }} *
+            <I18nText k="auth.captcha" /> *
           </label>
           <div class="captcha-row">
             <input
@@ -618,7 +626,7 @@ const inlineHost = isTrainingInlineHost()
                 class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                 for="register-email-code"
               >
-                {{ t('auth.modal.emailCodeLabel') }} *
+                <I18nText k="auth.modal.emailCodeLabel" /> *
               </label>
               <input
                 id="register-email-code"
@@ -637,11 +645,15 @@ const inlineHost = isTrainingInlineHost()
               :disabled="emailSending || emailCountdown > 0"
               @click="sendRegisterEmailCode"
             >
-              {{
-                emailCountdown > 0
-                  ? t('auth.modal.resendIn', { seconds: emailCountdown })
-                  : t('auth.modal.sendEmailCode')
-              }}
+              <I18nText
+                v-if="emailCountdown > 0"
+                k="auth.modal.resendIn"
+                :params="{ seconds: emailCountdown }"
+              />
+              <I18nText
+                v-else
+                k="auth.modal.sendEmailCode"
+              />
             </button>
           </div>
           <label
@@ -660,7 +672,7 @@ const inlineHost = isTrainingInlineHost()
           v-if="showMainlandPhoneFlow"
           class="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 leading-relaxed"
         >
-          {{ t('auth.modal.mainlandSalesNotice') }}
+          <I18nText k="auth.modal.mainlandSalesNotice" />
         </p>
 
         <button
@@ -672,7 +684,7 @@ const inlineHost = isTrainingInlineHost()
             v-if="isLoading"
             class="w-4 h-4 animate-spin"
           />
-          {{ isLoading ? t('auth.modal.registering') : t('auth.register') }}
+          <I18nText :k="isLoading ? 'auth.modal.registering' : 'auth.register'" />
         </button>
       </form>
 
@@ -687,7 +699,7 @@ const inlineHost = isTrainingInlineHost()
             class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
             for="sms-login-phone"
           >
-            {{ t('auth.loginPhoneOrEmail') }}
+            <I18nText k="auth.loginPhoneOrEmail" />
           </label>
           <input
             id="sms-login-phone"
@@ -708,7 +720,7 @@ const inlineHost = isTrainingInlineHost()
             class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
             for="sms-login-captcha"
           >
-            {{ t('auth.captcha') }}
+            <I18nText k="auth.captcha" />
           </label>
           <div class="captcha-row">
             <input
@@ -756,15 +768,17 @@ const inlineHost = isTrainingInlineHost()
             v-if="smsSending"
             class="w-4 h-4 animate-spin"
           />
-          {{
-            smsSending
-              ? smsLoginUsesEmail
-                ? t('auth.modal.sendingEmailCode')
-                : t('auth.modal.sendingVerificationCode')
-              : smsLoginUsesEmail
-                ? t('auth.modal.sendEmailCode')
-                : t('auth.modal.sendVerificationCode')
-          }}
+          <I18nText
+            :k="
+              smsSending
+                ? smsLoginUsesEmail
+                  ? 'auth.modal.sendingEmailCode'
+                  : 'auth.modal.sendingVerificationCode'
+                : smsLoginUsesEmail
+                  ? 'auth.modal.sendEmailCode'
+                  : 'auth.modal.sendVerificationCode'
+            "
+          />
         </button>
 
         <template v-if="smsSent">
@@ -773,9 +787,9 @@ const inlineHost = isTrainingInlineHost()
               class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
               for="sms-login-code"
             >
-              {{
-                smsLoginUsesEmail ? t('auth.modal.emailCodeLabel') : t('auth.modal.smsCodeLabel')
-              }}
+              <I18nText
+                :k="smsLoginUsesEmail ? 'auth.modal.emailCodeLabel' : 'auth.modal.smsCodeLabel'"
+              />
             </label>
             <input
               id="sms-login-code"
@@ -792,7 +806,7 @@ const inlineHost = isTrainingInlineHost()
               class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
             />
             <p class="text-xs text-stone-400 mt-1">
-              {{ t('auth.modal.codeSentTo') }}
+              <I18nText k="auth.modal.codeSentTo" />
               {{ maskIdentifierForCodeSent(smsLoginForm.phone) }}
             </p>
           </div>
@@ -806,7 +820,11 @@ const inlineHost = isTrainingInlineHost()
               v-if="isLoading"
               class="w-4 h-4 animate-spin"
             />
-            {{ isLoading ? t('auth.modal.loggingIn') : loginSubmitLabel }}
+            <I18nText
+              v-if="isLoading"
+              k="auth.modal.loggingIn"
+            />
+            <template v-else>{{ loginSubmitLabel }}</template>
           </button>
 
           <div class="text-center">
@@ -816,11 +834,15 @@ const inlineHost = isTrainingInlineHost()
               class="text-sm text-stone-500 hover:text-stone-900 transition-colors disabled:opacity-50"
               @click="sendSmsCode('login')"
             >
-              {{
-                smsCountdown > 0
-                  ? t('auth.modal.resendIn', { seconds: smsCountdown })
-                  : t('auth.modal.resendCaptcha')
-              }}
+              <I18nText
+                v-if="smsCountdown > 0"
+                k="auth.modal.resendIn"
+                :params="{ seconds: smsCountdown }"
+              />
+              <I18nText
+                v-else
+                k="auth.modal.resendCaptcha"
+              />
             </button>
           </div>
         </template>
@@ -837,7 +859,7 @@ const inlineHost = isTrainingInlineHost()
             class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
             for="forgot-phone"
           >
-            {{ t('auth.loginPhoneOrEmail') }}
+            <I18nText k="auth.loginPhoneOrEmail" />
           </label>
           <input
             id="forgot-phone"
@@ -858,7 +880,7 @@ const inlineHost = isTrainingInlineHost()
             class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
             for="forgot-captcha"
           >
-            {{ t('auth.captcha') }}
+            <I18nText k="auth.captcha" />
           </label>
           <div class="captcha-row">
             <input
@@ -906,15 +928,17 @@ const inlineHost = isTrainingInlineHost()
             v-if="smsSending"
             class="w-4 h-4 animate-spin"
           />
-          {{
-            smsSending
-              ? forgotUsesEmail
-                ? t('auth.modal.sendingEmailCode')
-                : t('auth.modal.sendingVerificationCode')
-              : forgotUsesEmail
-                ? t('auth.modal.sendEmailCode')
-                : t('auth.modal.sendVerificationCode')
-          }}
+          <I18nText
+            :k="
+              smsSending
+                ? forgotUsesEmail
+                  ? 'auth.modal.sendingEmailCode'
+                  : 'auth.modal.sendingVerificationCode'
+                : forgotUsesEmail
+                  ? 'auth.modal.sendEmailCode'
+                  : 'auth.modal.sendVerificationCode'
+            "
+          />
         </button>
 
         <template v-if="smsSent">
@@ -923,7 +947,9 @@ const inlineHost = isTrainingInlineHost()
               class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
               for="forgot-sms-code"
             >
-              {{ forgotUsesEmail ? t('auth.modal.emailCodeLabel') : t('auth.modal.smsCodeLabel') }}
+              <I18nText
+                :k="forgotUsesEmail ? 'auth.modal.emailCodeLabel' : 'auth.modal.smsCodeLabel'"
+              />
             </label>
             <input
               id="forgot-sms-code"
@@ -940,7 +966,7 @@ const inlineHost = isTrainingInlineHost()
               class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
             />
             <p class="text-xs text-stone-400 mt-1">
-              {{ t('auth.modal.codeSentTo') }}
+              <I18nText k="auth.modal.codeSentTo" />
               {{ maskIdentifierForCodeSent(forgotForm.phone) }}
             </p>
           </div>
@@ -950,7 +976,7 @@ const inlineHost = isTrainingInlineHost()
               class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
               for="forgot-new-password"
             >
-              {{ t('auth.modal.newPassword') }}
+              <I18nText k="auth.modal.newPassword" />
             </label>
             <div class="relative">
               <input
@@ -984,7 +1010,7 @@ const inlineHost = isTrainingInlineHost()
               class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
               for="forgot-confirm-password"
             >
-              {{ t('auth.modal.confirmPassword') }}
+              <I18nText k="auth.modal.confirmPassword" />
             </label>
             <div class="relative">
               <input
@@ -1022,7 +1048,7 @@ const inlineHost = isTrainingInlineHost()
               v-if="isLoading"
               class="w-4 h-4 animate-spin"
             />
-            {{ isLoading ? t('auth.modal.resetting') : t('auth.resetPassword') }}
+            <I18nText :k="isLoading ? 'auth.modal.resetting' : 'auth.resetPassword'" />
           </button>
 
           <div class="text-center">
@@ -1032,11 +1058,15 @@ const inlineHost = isTrainingInlineHost()
               class="text-sm text-stone-500 hover:text-stone-900 transition-colors disabled:opacity-50"
               @click="sendSmsCode('reset')"
             >
-              {{
-                smsCountdown > 0
-                  ? t('auth.modal.resendIn', { seconds: smsCountdown })
-                  : t('auth.modal.resendCaptcha')
-              }}
+              <I18nText
+                v-if="smsCountdown > 0"
+                k="auth.modal.resendIn"
+                :params="{ seconds: smsCountdown }"
+              />
+              <I18nText
+                v-else
+                k="auth.modal.resendCaptcha"
+              />
             </button>
           </div>
         </template>

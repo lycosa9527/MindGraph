@@ -948,7 +948,8 @@
   align-items: center;
   justify-content: center;
   min-height: 28px;
-  padding: 0 0.875rem;
+  height: auto;
+  padding: 3px 0.875rem;
   border: 1px solid #d6d3d1;
   border-radius: 9999px;
   background: #fafaf9;
@@ -1059,7 +1060,8 @@
   --el-button-active-bg-color: #e7e5e4;
   --el-button-active-border-color: #78716c;
   min-height: 28px;
-  padding: 0 0.875rem;
+  height: auto;
+  padding: 3px 0.875rem;
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.04em;

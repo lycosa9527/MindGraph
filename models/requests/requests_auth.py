@@ -866,6 +866,8 @@ class LanguagePreferencesUpdate(BaseModel):
     prompt_language: Optional[str] = Field(None, max_length=32)
     ui_version: Optional[str] = Field(None, max_length=32)
     match_prompt_to_ui: Optional[bool] = None
+    bilingual_ui_enabled: Optional[bool] = None
+    presenter_ui_locale: Optional[str] = Field(None, max_length=32)
 
     @field_validator("ui_language")
     @classmethod
@@ -887,6 +889,17 @@ class LanguagePreferencesUpdate(BaseModel):
         stripped = value.strip().lower()
         if not is_prompt_output_language(stripped):
             raise ValueError("prompt_language must be a supported generation language code")
+        return stripped
+
+    @field_validator("presenter_ui_locale")
+    @classmethod
+    def validate_presenter_ui_locale(cls, value):
+        """Allow only codes in ``utils.ui_languages.UI_LANGUAGE_CODES``."""
+        if value is None:
+            return value
+        stripped = value.strip().lower()
+        if stripped not in UI_LANGUAGE_CODES:
+            raise ValueError("presenter_ui_locale must be a supported UI locale code")
         return stripped
 
     @field_validator("ui_version")

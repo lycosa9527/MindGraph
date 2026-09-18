@@ -5,6 +5,7 @@ import { ElButton, ElDropdown, ElDropdownMenu, ElIcon, ElScrollbar } from 'eleme
 
 import { Close, Delete, DocumentCopy, Menu } from '@element-plus/icons-vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import MindmateContactsToggleButton from '@/components/mindmate/MindmateContactsToggleButton.vue'
 import MindMateDingtalkBadge from '@/components/sidebar/MindMateDingtalkBadge.vue'
 import { useLanguage } from '@/composables'
@@ -132,14 +133,16 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
                 <div
                   class="animate-spin w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full"
                 />
-                <span class="text-xs text-gray-500">{{ t('common.loading') }}</span>
+                <span class="text-xs text-gray-500"><I18nText k="common.loading" /></span>
               </div>
               <div
                 v-else-if="!conversations?.length"
                 class="history-dropdown-empty"
               >
                 <ElIcon class="text-2xl text-gray-300"><DocumentCopy /></ElIcon>
-                <p class="text-xs text-gray-500">{{ t('mindmate.noHistory') }}</p>
+                <p class="text-xs text-gray-500">
+                  <I18nText k="mindmate.noHistory" />
+                </p>
               </div>
               <ElScrollbar
                 v-else

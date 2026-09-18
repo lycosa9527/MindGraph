@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'Envie um código de verificação por SMS para o celular vinculado. Após a configuração, você pode fazer login usando a senha ou código de verificação.',
   'auth.setPasswordWithSmsSubmit': 'Definir senha',
   'auth.setPasswordWithSmsSubmitting': 'Salvando…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Mostrar nome',
   'auth.accountNamePlaceholder': 'Pelo menos 2 caracteres, sem números',
   'auth.accountNameSave': 'salvar nome',

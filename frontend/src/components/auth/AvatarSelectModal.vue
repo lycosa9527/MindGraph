@@ -13,6 +13,7 @@ import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'
 import { DEFAULT_USER_AVATAR_EMOJI, resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
+import I18nText from '@/components/common/I18nText.vue'
 
 const notify = useNotifications()
 const { t } = useLanguage()
@@ -697,8 +698,11 @@ async function saveAvatar() {
   <SwissGlassCard
     v-model="isVisible"
     :ribbon="t('swissGlass.hero.avatar.ribbon')"
+    ribbon-key="swissGlass.hero.avatar.ribbon"
     :title="t('swissGlass.hero.avatar.title')"
+    title-key="swissGlass.hero.avatar.title"
     :line1="t('swissGlass.hero.avatar.line1')"
+    line1-key="swissGlass.hero.avatar.line1"
     :icon="Smile"
     @close="closeModal"
   >
@@ -751,7 +755,7 @@ async function saveAvatar() {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="closeModal"
         >
-          {{ t('common.cancel') }}
+          <I18nText k="common.cancel" />
         </button>
         <button
           type="button"
@@ -759,7 +763,7 @@ async function saveAvatar() {
           :disabled="isSaving"
           @click="saveAvatar"
         >
-          {{ t('common.save') }}
+          <I18nText k="common.save" />
         </button>
       </div>
     </template>

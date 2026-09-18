@@ -5,6 +5,7 @@
 import { computed } from 'vue'
 
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
+import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import type {
   CanvasExportAnswerMode,
@@ -50,7 +51,9 @@ const answerOptions = computed(() => [
 <template>
   <div class="mm-export-options">
     <div class="mm-export-options__row">
-      <span class="mm-export-options__label">{{ t('canvas.exportOptions.colorLabel') }}</span>
+      <span class="mm-export-options__label">
+        <I18nText k="canvas.exportOptions.colorLabel" />
+      </span>
       <AdminSwissSegmented
         v-model="colorMode"
         fit
@@ -63,7 +66,9 @@ const answerOptions = computed(() => [
       v-if="showAnswerOption"
       class="mm-export-options__row"
     >
-      <span class="mm-export-options__label">{{ t('canvas.exportOptions.answerLabel') }}</span>
+      <span class="mm-export-options__label">
+        <I18nText k="canvas.exportOptions.answerLabel" />
+      </span>
       <AdminSwissSegmented
         v-model="answerMode"
         fit

@@ -301,8 +301,9 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  height: 28px;
-  padding: 0 8px;
+  min-height: 28px;
+  height: auto;
+  padding: 3px 8px;
   border: none;
   border-radius: 6px;
   background: transparent;
@@ -349,6 +350,8 @@
 
 .mm-btn--icon {
   width: 32px;
+  height: 28px;
+  min-height: 28px;
   padding: 0;
 }
 

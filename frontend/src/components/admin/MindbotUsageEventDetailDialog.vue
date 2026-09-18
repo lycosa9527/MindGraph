@@ -2,6 +2,7 @@
 import { FileSearch } from '@lucide/vue'
 
 import type { MindbotUsageEventRow } from '@/components/admin/mindbotUsageTypes'
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables'
 
@@ -46,8 +47,11 @@ function formatTokens(row: MindbotUsageEventRow): string {
   <SwissGlassDialog
     v-model="visible"
     :ribbon="t('swissGlass.hero.adminEvent.ribbon')"
+    ribbon-key="swissGlass.hero.adminEvent.ribbon"
     :title="t('swissGlass.hero.adminEvent.title')"
+    title-key="swissGlass.hero.adminEvent.title"
     :line1="t('swissGlass.hero.adminEvent.line1')"
+    line1-key="swissGlass.hero.adminEvent.line1"
     :icon="FileSearch"
     width="min(560px, 92vw)"
     dialog-class="mindbot-usage-detail-dialog"
@@ -57,7 +61,7 @@ function formatTokens(row: MindbotUsageEventRow): string {
         class="mindbot-usage-detail-scroll max-h-[min(70vh,560px)] overflow-y-auto overflow-x-hidden pr-0.5"
       >
         <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-          {{ t('admin.mindbot.usageEventDetailPrivacy') }}
+          <I18nText k="admin.mindbot.usageEventDetailPrivacy" />
         </p>
         <el-descriptions
           :column="1"
@@ -65,66 +69,126 @@ function formatTokens(row: MindbotUsageEventRow): string {
           size="small"
           class="mindbot-usage-detail-desc w-full max-w-full"
         >
-          <el-descriptions-item :label="t('admin.mindbot.detailId')">
+          <el-descriptions-item>
+            <template #label>
+              <I18nText k="admin.mindbot.detailId" />
+            </template>
             <span class="font-mono text-xs break-all">{{ event.id }}</span>
           </el-descriptions-item>
-          <el-descriptions-item :label="t('admin.mindbot.colTime')">
+          <el-descriptions-item>
+            <template #label>
+              <I18nText k="admin.mindbot.colTime" />
+            </template>
             {{ formatTime(event.created_at) }}
           </el-descriptions-item>
-          <el-descriptions-item :label="t('admin.mindbot.colError')">
+          <el-descriptions-item>
+            <template #label>
+              <I18nText k="admin.mindbot.colError" />
+            </template>
             {{ event.error_code }}
           </el-descriptions-item>
-          <el-descriptions-item :label="t('admin.mindbot.detailStreaming')">
-            {{ event.streaming ? t('admin.mindbot.detailYes') : t('admin.mindbot.detailNo') }}
+          <el-descriptions-item>
+            <template #label>
+              <I18nText k="admin.mindbot.detailStreaming" />
+            </template>
+            <I18nText :k="event.streaming ? 'admin.mindbot.detailYes' : 'admin.mindbot.detailNo'" />
           </el-descriptions-item>
-          <el-descriptions-item :label="t('admin.mindbot.colDuration')">
+          <el-descriptions-item>
+            <template #label>
+              <I18nText k="admin.mindbot.colDuration" />
+            </template>
             {{ formatDur(event.duration_seconds) }}
           </el-descriptions-item>
-          <el-descriptions-item :label="t('admin.mindbot.colStaff')">
+          <el-descriptions-item>
+            <template #label>
+              <I18nText k="admin.mindbot.colStaff" />
+            </template>
             {{ event.sender_nick || event.dingtalk_staff_id }}
           </el-descriptions-item>
-          <el-descriptions-item :label="t('admin.mindbot.detailStaffId')">
+          <el-descriptions-item>
+            <template #label>
+              <I18nText k="admin.mindbot.detailStaffId" />
+            </template>
             {{ event.dingtalk_staff_id }}
           </el-descriptions-item>
-          <el-descriptions-item :label="t('admin.mindbot.detailSenderOpenId')">
+          <el-descriptions-item>
+            <template #label>
+              <I18nText k="admin.mindbot.detailSenderOpenId" />
+            </template>
             {{ event.dingtalk_sender_id ?? '—' }}
           </el-descriptions-item>
-          <el-descriptions-item :label="t('admin.mindbot.detailDifyUserKey')">
+          <el-descriptions-item>
+            <template #label>
+              <I18nText k="admin.mindbot.detailDifyUserKey" />
+            </template>
             <span class="font-mono text-xs break-all">{{ event.dify_user_key }}</span>
           </el-descriptions-item>
-          <el-descriptions-item :label="t('admin.mindbot.colTurn')">
+          <el-descriptions-item>
+            <template #label>
+              <I18nText k="admin.mindbot.colTurn" />
+            </template>
             {{ event.conversation_user_turn ?? '—' }}
           </el-descriptions-item>
-          <el-descriptions-item :label="t('admin.mindbot.colScope')">
+          <el-descriptions-item>
+            <template #label>
+              <I18nText k="admin.mindbot.colScope" />
+            </template>
             {{ event.dingtalk_chat_scope ?? '—' }}
           </el-descriptions-item>
-          <el-descriptions-item :label="t('admin.mindbot.detailInboundType')">
+          <el-descriptions-item>
+            <template #label>
+              <I18nText k="admin.mindbot.detailInboundType" />
+            </template>
             {{ event.inbound_msg_type ?? '—' }}
           </el-descriptions-item>
-          <el-descriptions-item :label="t('admin.mindbot.colMsgId')">
+          <el-descriptions-item>
+            <template #label>
+              <I18nText k="admin.mindbot.colMsgId" />
+            </template>
             <span class="font-mono text-xs break-all">{{ event.msg_id ?? '—' }}</span>
           </el-descriptions-item>
-          <el-descriptions-item :label="t('admin.mindbot.colDifyConv')">
+          <el-descriptions-item>
+            <template #label>
+              <I18nText k="admin.mindbot.colDifyConv" />
+            </template>
             <span class="font-mono text-xs break-all">{{ event.dify_conversation_id ?? '—' }}</span>
           </el-descriptions-item>
-          <el-descriptions-item :label="t('admin.mindbot.colDtConv')">
+          <el-descriptions-item>
+            <template #label>
+              <I18nText k="admin.mindbot.colDtConv" />
+            </template>
             <span class="font-mono text-xs break-all">{{
               event.dingtalk_conversation_id ?? '—'
             }}</span>
           </el-descriptions-item>
-          <el-descriptions-item :label="t('admin.mindbot.colChars')">
+          <el-descriptions-item>
+            <template #label>
+              <I18nText k="admin.mindbot.colChars" />
+            </template>
             {{ event.prompt_chars }} / {{ event.reply_chars }}
           </el-descriptions-item>
-          <el-descriptions-item :label="t('admin.mindbot.colTokens')">
+          <el-descriptions-item>
+            <template #label>
+              <I18nText k="admin.mindbot.colTokens" />
+            </template>
             {{ formatTokens(event) }}
           </el-descriptions-item>
-          <el-descriptions-item :label="t('admin.mindbot.detailOrgId')">
+          <el-descriptions-item>
+            <template #label>
+              <I18nText k="admin.mindbot.detailOrgId" />
+            </template>
             {{ event.organization_id }}
           </el-descriptions-item>
-          <el-descriptions-item :label="t('admin.mindbot.detailConfigId')">
+          <el-descriptions-item>
+            <template #label>
+              <I18nText k="admin.mindbot.detailConfigId" />
+            </template>
             {{ event.mindbot_config_id ?? '—' }}
           </el-descriptions-item>
-          <el-descriptions-item :label="t('admin.mindbot.detailLinkedUser')">
+          <el-descriptions-item>
+            <template #label>
+              <I18nText k="admin.mindbot.detailLinkedUser" />
+            </template>
             {{ event.linked_user_id ?? '—' }}
           </el-descriptions-item>
         </el-descriptions>

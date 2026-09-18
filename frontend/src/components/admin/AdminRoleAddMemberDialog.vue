@@ -8,6 +8,7 @@ import { Loading, Search, UserFilled } from '@element-plus/icons-vue'
 
 import { UserPlus } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage } from '@/composables'
 import type { CandidateUser } from '@/composables/admin/useAdminRoleControl'
@@ -62,8 +63,11 @@ watch(visible, async (open) => {
   <SwissGlassCard
     v-model="visible"
     :ribbon="t('swissGlass.hero.adminRoleMember.ribbon')"
+    ribbon-key="swissGlass.hero.adminRoleMember.ribbon"
     :title="t('swissGlass.hero.adminRoleMember.title')"
+    title-key="swissGlass.hero.adminRoleMember.title"
     :line1="t('swissGlass.hero.adminRoleMember.line1')"
+    line1-key="swissGlass.hero.adminRoleMember.line1"
     :line2="modalTitle"
     :icon="UserPlus"
     card-class="swiss-glass-card--wide"
@@ -73,7 +77,7 @@ watch(visible, async (open) => {
         class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
         for="role-add-member-search"
       >
-        {{ t('admin.searchUserByNameOrPhone') }}
+        <I18nText k="admin.searchUserByNameOrPhone" />
       </label>
       <div class="admin-role-add-modal__search">
         <el-icon class="admin-role-add-modal__search-icon">
@@ -97,11 +101,11 @@ watch(visible, async (open) => {
       >
         <template v-if="loading">
           <el-icon class="is-loading"><Loading /></el-icon>
-          <p>{{ t('admin.loading') }}</p>
+          <p><I18nText k="admin.loading" /></p>
         </template>
         <template v-else>
           <el-icon :size="32"><UserFilled /></el-icon>
-          <p>{{ t('admin.roleAddMemberNoSearchResults') }}</p>
+          <p><I18nText k="admin.roleAddMemberNoSearchResults" /></p>
         </template>
       </div>
 
@@ -119,10 +123,10 @@ watch(visible, async (open) => {
               {{ user.name || user.phone }}
             </p>
             <p class="admin-role-add-modal__meta">
-              {{ user.phone }} · {{ t('admin.currentRole') }}:
+              {{ user.phone }} · <I18nText k="admin.currentRole" />:
               {{ roleLabelFor(user.role) }}
               <template v-if="showSchoolInResults && schoolLabel(user)">
-                · {{ t('admin.schoolName') }}: {{ schoolLabel(user) }}
+                · <I18nText k="admin.schoolName" />: {{ schoolLabel(user) }}
               </template>
             </p>
           </div>
@@ -138,7 +142,7 @@ watch(visible, async (open) => {
             >
               <Loading />
             </el-icon>
-            {{ t('admin.grantRole') }}
+            <I18nText k="admin.grantRole" />
           </button>
         </li>
       </ul>
@@ -147,7 +151,7 @@ watch(visible, async (open) => {
         v-else
         class="admin-role-add-modal__hint"
       >
-        {{ t('admin.roleAddMemberSearchHint') }}
+        <I18nText k="admin.roleAddMemberSearchHint" />
       </p>
     </div>
   </SwissGlassCard>

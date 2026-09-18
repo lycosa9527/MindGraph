@@ -6,6 +6,7 @@ import { computed, ref, watch } from 'vue'
 
 import { Loader2, Smartphone } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { apiDelete, apiGet } from '@/utils/apiClient'
@@ -107,8 +108,11 @@ async function kickDevice(row: LoginDeviceRow) {
   <SwissGlassCard
     v-model="isVisible"
     :ribbon="t('swissGlass.hero.loginDevices.ribbon')"
+    ribbon-key="swissGlass.hero.loginDevices.ribbon"
     :title="t('swissGlass.hero.loginDevices.title')"
+    title-key="swissGlass.hero.loginDevices.title"
     :line1="t('swissGlass.hero.loginDevices.line1')"
+    line1-key="swissGlass.hero.loginDevices.line1"
     :icon="Smartphone"
     @close="closeModal"
   >
@@ -118,14 +122,14 @@ async function kickDevice(row: LoginDeviceRow) {
         class="flex items-center justify-center gap-2 py-6 text-sm text-stone-500"
       >
         <Loader2 class="w-4 h-4 animate-spin" />
-        {{ t('auth.apiTokenLoading') }}
+        <I18nText k="auth.apiTokenLoading" />
       </div>
 
       <p
         v-else-if="devices.length === 0"
         class="m-0 py-4 text-sm text-stone-500 text-center"
       >
-        {{ t('auth.loginDevicesEmpty') }}
+        <I18nText k="auth.loginDevicesEmpty" />
       </p>
 
       <ul
@@ -141,26 +145,36 @@ async function kickDevice(row: LoginDeviceRow) {
             <div class="min-w-0 space-y-1">
               <div class="flex flex-wrap items-center gap-2">
                 <span class="text-sm font-medium text-stone-800">
-                  {{ row.label || t('auth.loginDevicesUnknown') }}
+                  <template v-if="row.label">{{ row.label }}</template>
+                  <I18nText
+                    v-else
+                    k="auth.loginDevicesUnknown"
+                  />
                 </span>
                 <span
                   v-if="row.is_current"
                   class="rounded-full bg-stone-200 px-2 py-0.5 text-[11px] font-medium text-stone-600"
                 >
-                  {{ t('auth.loginDevicesCurrent') }}
+                  <I18nText k="auth.loginDevicesCurrent" />
                 </span>
               </div>
               <p
                 v-if="row.created_at"
                 class="m-0 text-xs text-stone-500"
               >
-                {{ t('auth.loginDevicesLastActive', { date: formatLastActive(row.created_at) }) }}
+                <I18nText
+                  k="auth.loginDevicesLastActive"
+                  :params="{ date: formatLastActive(row.created_at) }"
+                />
               </p>
               <p
                 v-if="row.ip_address"
                 class="m-0 text-xs text-stone-500"
               >
-                {{ t('auth.loginDevicesIp', { ip: row.ip_address }) }}
+                <I18nText
+                  k="auth.loginDevicesIp"
+                  :params="{ ip: row.ip_address }"
+                />
               </p>
             </div>
             <button
@@ -174,11 +188,11 @@ async function kickDevice(row: LoginDeviceRow) {
                 v-if="kickingId === row.device_id"
                 class="w-3.5 h-3.5 animate-spin"
               />
-              {{
-                kickingId === row.device_id
-                  ? t('auth.loginDevicesKicking')
-                  : t('auth.loginDevicesKick')
-              }}
+              <I18nText
+                :k="
+                  kickingId === row.device_id ? 'auth.loginDevicesKicking' : 'auth.loginDevicesKick'
+                "
+              />
             </button>
           </div>
         </li>
@@ -192,7 +206,7 @@ async function kickDevice(row: LoginDeviceRow) {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
           @click="closeModal"
         >
-          {{ t('common.close') }}
+          <I18nText k="common.close" />
         </button>
       </div>
     </template>

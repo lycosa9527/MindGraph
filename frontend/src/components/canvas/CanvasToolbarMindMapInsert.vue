@@ -4,7 +4,7 @@
  */
 import { computed, nextTick, ref } from 'vue'
 
-import { ElDropdown, ElTooltip } from 'element-plus'
+import { ElDropdown } from 'element-plus'
 
 import { Braces, ChevronDown, FunctionSquare, Image, Link2, Plus, Smile, Spline } from '@lucide/vue'
 
@@ -12,6 +12,8 @@ import CanvasIconInsertDialog from '@/components/canvas/CanvasIconInsertDialog.v
 import CanvasImageInsertDialog from '@/components/canvas/CanvasImageInsertDialog.vue'
 import CanvasLinkInsertDialog from '@/components/canvas/CanvasLinkInsertDialog.vue'
 import CanvasMathInsertDialog from '@/components/canvas/CanvasMathInsertDialog.vue'
+import I18nText from '@/components/common/I18nText.vue'
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimiter'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -201,8 +203,8 @@ function onMathConfirm(latex: string): void {
 </script>
 
 <template>
-  <ElTooltip
-    :content="t('canvas.ribbon.tabInsert')"
+  <I18nTooltip
+    k="canvas.ribbon.tabInsert"
     placement="bottom"
     :disabled="!props.compact"
   >
@@ -222,8 +224,9 @@ function onMathConfirm(latex: string): void {
           <span
             v-if="!props.compact"
             class="mm-btn__label"
-            >{{ t('canvas.ribbon.tabInsert') }}</span
           >
+            <I18nText k="canvas.ribbon.tabInsert" />
+          </span>
           <ChevronDown
             :size="12"
             class="mm-btn__chevron"
@@ -239,7 +242,7 @@ function onMathConfirm(latex: string): void {
               @click="requireNodeCount(2, insertAssociation)"
             >
               <Spline class="w-4 h-4 shrink-0" />
-              <span>{{ t('canvas.ribbon.assocLine') }}</span>
+              <span><I18nText k="canvas.ribbon.assocLine" /></span>
             </button>
             <button
               type="button"
@@ -249,7 +252,7 @@ function onMathConfirm(latex: string): void {
               @click="requireNodeCount(1, insertSummary)"
             >
               <Braces class="w-4 h-4 shrink-0" />
-              <span>{{ t('canvas.ribbon.summary') }}</span>
+              <span><I18nText k="canvas.ribbon.summary" /></span>
             </button>
             <button
               type="button"
@@ -259,7 +262,7 @@ function onMathConfirm(latex: string): void {
               @click="requireNodeCount(1, openImage)"
             >
               <Image class="w-4 h-4 shrink-0" />
-              <span>{{ t('canvas.ribbon.insertImage') }}</span>
+              <span><I18nText k="canvas.ribbon.insertImage" /></span>
             </button>
             <button
               type="button"
@@ -269,7 +272,7 @@ function onMathConfirm(latex: string): void {
               @click="requireNodeCount(1, openIcon)"
             >
               <Smile class="w-4 h-4 shrink-0" />
-              <span>{{ t('canvas.ribbon.insertIcon') }}</span>
+              <span><I18nText k="canvas.ribbon.insertIcon" /></span>
             </button>
             <button
               type="button"
@@ -279,7 +282,7 @@ function onMathConfirm(latex: string): void {
               @click="requireNodeCount(1, openLink)"
             >
               <Link2 class="w-4 h-4 shrink-0" />
-              <span>{{ t('canvas.ribbon.insertLink') }}</span>
+              <span><I18nText k="canvas.ribbon.insertLink" /></span>
             </button>
             <button
               type="button"
@@ -289,13 +292,13 @@ function onMathConfirm(latex: string): void {
               @click="requireNodeCount(1, openMath)"
             >
               <FunctionSquare class="w-4 h-4 shrink-0" />
-              <span>{{ t('canvas.toolbar.insertEquation') }}</span>
+              <span><I18nText k="canvas.toolbar.insertEquation" /></span>
             </button>
           </div>
         </template>
       </ElDropdown>
     </span>
-  </ElTooltip>
+  </I18nTooltip>
   <CanvasMathInsertDialog
     v-model="mathOpen"
     @confirm="onMathConfirm"

@@ -12,6 +12,7 @@ import { resolveMessageEditKeydown } from '@/utils/workshopMessageEditKeys'
 import ImageLightbox from './ImageLightbox.vue'
 import WorkshopComposeToolbar from './WorkshopComposeToolbar.vue'
 import WorkshopDiagramPicker from './WorkshopDiagramPicker.vue'
+import I18nText from '@/components/common/I18nText.vue'
 
 const props = defineProps<{
   initialContent: string
@@ -189,7 +190,7 @@ defineExpose({ markSaveFailed })
         :disabled="!canSave"
         @click="submitSave"
       >
-        {{ t('common.save') }}
+        <I18nText k="common.save" />
       </button>
       <button
         type="button"
@@ -197,7 +198,7 @@ defineExpose({ markSaveFailed })
         :disabled="saving"
         @click="emit('cancel')"
       >
-        {{ t('common.cancel') }}
+        <I18nText k="common.cancel" />
       </button>
       <span
         v-if="saveError"

@@ -7,6 +7,7 @@ import { nextTick, onUnmounted, ref, watch } from 'vue'
 
 import { Sigma } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { loadMathLive } from '@/composables/canvas/loadMathLive'
 import {
@@ -197,8 +198,11 @@ function handleCancel(): void {
   <SwissGlassDialog
     :model-value="modelValue"
     :ribbon="t('canvas.hero.math.ribbon')"
+    ribbon-key="canvas.hero.math.ribbon"
     :title="t('canvas.hero.math.title')"
+    title-key="canvas.hero.math.title"
     :line1="t('canvas.hero.math.line1')"
+    line1-key="canvas.hero.math.line1"
     :icon="Sigma"
     width="min(520px, 92vw)"
     @update:model-value="emit('update:modelValue', $event)"
@@ -221,7 +225,7 @@ function handleCancel(): void {
       class="text-sm py-4"
       style="color: var(--ai-muted, #6b7280)"
     >
-      {{ t('canvas.toolbar.insertEquationLoading') }}
+      <I18nText k="canvas.toolbar.insertEquationLoading" />
     </div>
     <template #footer>
       <div class="swiss-glass-footer">
@@ -230,14 +234,14 @@ function handleCancel(): void {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="handleCancel"
         >
-          {{ t('canvas.toolbar.insertEquationCancel') }}
+          <I18nText k="canvas.toolbar.insertEquationCancel" />
         </button>
         <button
           type="button"
           class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
           @click="handleConfirm"
         >
-          {{ t('canvas.toolbar.insertEquationConfirm') }}
+          <I18nText k="canvas.toolbar.insertEquationConfirm" />
         </button>
       </div>
     </template>

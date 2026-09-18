@@ -21,6 +21,7 @@ import {
   Trash2,
 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -344,15 +345,18 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
   <SwissGlassDialog
     v-model="open"
     :ribbon="t('swissGlass.hero.teachingGroups.ribbon')"
+    ribbon-key="swissGlass.hero.teachingGroups.ribbon"
     :title="t('swissGlass.hero.teachingGroups.title')"
+    title-key="swissGlass.hero.teachingGroups.title"
     :line1="t('swissGlass.hero.teachingGroups.line1')"
+    line1-key="swissGlass.hero.teachingGroups.line1"
     :icon="FolderKanban"
     width="min(560px, 92vw)"
     :close-on-click-modal="false"
     dialog-class="tg-manage-dialog"
   >
     <p class="tg-manage-dialog__blurb">
-      {{ t('workshop.manageTeachingGroupsBlurb') }}
+      <I18nText k="workshop.manageTeachingGroupsBlurb" />
     </p>
 
     <div class="tg-manage-dialog__actions">
@@ -368,7 +372,7 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
             class="tg-manage-dialog__btn-icon"
             :size="16"
           />
-          {{ t('workshop.addChannel') }}
+          <I18nText k="workshop.addChannel" />
         </span>
       </button>
       <button
@@ -381,7 +385,7 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
             class="tg-manage-dialog__btn-icon"
             :size="16"
           />
-          {{ t('workshop.browseChannels') }}
+          <I18nText k="workshop.browseChannels" />
         </span>
       </button>
     </div>
@@ -389,14 +393,16 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
       v-if="!canManage"
       class="tg-manage-dialog__need-admin"
     >
-      {{ t('workshop.manageNeedAdmin') }}
+      <I18nText k="workshop.manageNeedAdmin" />
     </p>
     <div
       v-if="addingGroup"
       class="tg-manage-dialog__add-form"
     >
       <div class="tg-manage-dialog__field">
-        <span class="tg-manage-dialog__field-label">{{ t('workshop.channelNameLabel') }}</span>
+        <span class="tg-manage-dialog__field-label"
+          ><I18nText k="workshop.channelNameLabel"
+        /></span>
         <el-input
           v-model="newGroupName"
           size="small"
@@ -409,7 +415,9 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
         />
       </div>
       <div class="tg-manage-dialog__field">
-        <span class="tg-manage-dialog__field-label">{{ t('workshop.topicDescription') }}</span>
+        <span class="tg-manage-dialog__field-label"
+          ><I18nText k="workshop.topicDescription"
+        /></span>
         <el-input
           v-model="newGroupDescription"
           type="textarea"
@@ -428,7 +436,7 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
           :disabled="savingNewGroup"
           @click="cancelAddGroup"
         >
-          {{ t('common.cancel') }}
+          <I18nText k="common.cancel" />
         </button>
         <button
           type="button"
@@ -440,7 +448,7 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
             v-if="savingNewGroup"
             class="w-3.5 h-3.5 animate-spin"
           />
-          {{ t('workshop.addChannel') }}
+          <I18nText k="workshop.addChannel" />
         </button>
       </div>
     </div>
@@ -465,14 +473,16 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
             <div class="tg-manage-dialog__row-title-line">
               <span class="tg-manage-dialog__row-name">{{ g.name }}</span>
               <span class="tg-manage-dialog__badge">
-                {{
-                  g.channel_type === 'private'
-                    ? t('workshop.channelTypePrivate')
-                    : t('workshop.channelTypePublic')
-                }}
+                <I18nText
+                  :k="
+                    g.channel_type === 'private'
+                      ? 'workshop.channelTypePrivate'
+                      : 'workshop.channelTypePublic'
+                  "
+                />
               </span>
               <span class="tg-manage-dialog__row-meta">
-                {{ g.member_count }} {{ t('workshop.members') }}
+                {{ g.member_count }} <I18nText k="workshop.members" />
               </span>
             </div>
             <p
@@ -518,7 +528,7 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
                 class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
                 @click="toggleEdit(g.id)"
               >
-                {{ editingGroupId === g.id ? t('common.cancel') : t('common.edit') }}
+                <I18nText :k="editingGroupId === g.id ? 'common.cancel' : 'common.edit'" />
               </button>
             </template>
             <button
@@ -532,7 +542,7 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
                   class="tg-manage-dialog__btn-icon"
                   :size="14"
                 />
-                {{ t('workshop.archiveTeachingGroup') }}
+                <I18nText k="workshop.archiveTeachingGroup" />
               </span>
             </button>
             <button
@@ -546,7 +556,7 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
                   class="tg-manage-dialog__btn-icon"
                   :size="14"
                 />
-                {{ t('workshop.deleteTeachingGroup') }}
+                <I18nText k="workshop.deleteTeachingGroup" />
               </span>
             </button>
           </div>
@@ -557,7 +567,9 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
           class="tg-manage-dialog__row-panel"
         >
           <div class="tg-manage-dialog__field">
-            <span class="tg-manage-dialog__field-label">{{ t('workshop.channelNameLabel') }}</span>
+            <span class="tg-manage-dialog__field-label"
+              ><I18nText k="workshop.channelNameLabel"
+            /></span>
             <el-input
               v-model="nameDrafts[g.id]"
               size="small"
@@ -568,7 +580,7 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
             />
           </div>
           <div class="tg-manage-dialog__field tg-manage-dialog__field--inline">
-            <span class="tg-manage-dialog__field-label">{{ t('workshop.channelType') }}</span>
+            <span class="tg-manage-dialog__field-label"><I18nText k="workshop.channelType" /></span>
             <el-select
               size="small"
               class="tg-manage-dialog__visibility-select"
@@ -586,7 +598,9 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
             </el-select>
           </div>
           <div class="tg-manage-dialog__field">
-            <span class="tg-manage-dialog__field-label">{{ t('workshop.topicDescription') }}</span>
+            <span class="tg-manage-dialog__field-label"
+              ><I18nText k="workshop.topicDescription"
+            /></span>
             <el-input
               v-model="descDrafts[g.id]"
               type="textarea"
@@ -600,7 +614,7 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
 
           <div class="tg-manage-dialog__members-block">
             <div class="tg-manage-dialog__members-heading">
-              {{ t('workshop.teachingGroupMembers') }} ({{ g.member_count }})
+              <I18nText k="workshop.teachingGroupMembers" /> ({{ g.member_count }})
             </div>
             <p
               v-if="membersLoading[g.id]"
@@ -648,7 +662,7 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
                 class="mind-map-side-rail-btn mind-map-side-rail-btn--primary"
                 @click="submitInvite(g.id)"
               >
-                {{ t('workshop.inviteMember') }}
+                <I18nText k="workshop.inviteMember" />
               </button>
             </div>
           </div>
@@ -663,7 +677,7 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
                 class="tg-manage-dialog__advanced-icon"
                 :size="16"
               />
-              {{ t('workshop.channelSettings') }}
+              <I18nText k="workshop.channelSettings" />
             </button>
           </div>
 
@@ -673,14 +687,14 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
               class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
               @click="cancelEditPanel"
             >
-              {{ t('common.cancel') }}
+              <I18nText k="common.cancel" />
             </button>
             <button
               type="button"
               class="mind-map-side-rail-btn mind-map-side-rail-btn--primary"
               @click="saveNameAndDescription(g.id)"
             >
-              {{ t('common.save') }}
+              <I18nText k="common.save" />
             </button>
           </div>
         </div>
@@ -690,7 +704,7 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
       v-else
       class="tg-manage-dialog__empty"
     >
-      {{ t('workshop.noTeachingGroupsListed') }}
+      <I18nText k="workshop.noTeachingGroupsListed" />
     </p>
 
     <template #footer>
@@ -700,7 +714,7 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="close"
         >
-          {{ t('common.close') }}
+          <I18nText k="common.close" />
         </button>
       </div>
     </template>

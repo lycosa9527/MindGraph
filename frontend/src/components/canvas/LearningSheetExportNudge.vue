@@ -7,6 +7,7 @@ import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 
 import { X } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables'
 import { measureCanvasChromeBottomPx } from '@/composables/canvas/useCanvasChromeBottomOffset'
 import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
@@ -46,10 +47,7 @@ const blankCount = computed(() => {
 
 const visible = computed(
   () =>
-    blankCount.value > 0 &&
-    !neverRemind.value &&
-    !sessionDismissed.value &&
-    !isFloatBarOpen.value
+    blankCount.value > 0 && !neverRemind.value && !sessionDismissed.value && !isFloatBarOpen.value
 )
 
 const nudgeStyle = computed(() => {
@@ -211,7 +209,7 @@ function onNeverRemindChange(event: Event): void {
             />
           </button>
           <p class="ls-export-nudge__title">
-            {{ t('canvas.toolbar.learningSheetExportNudgeTitle') }}
+            <I18nText k="canvas.toolbar.learningSheetExportNudgeTitle" />
           </p>
           <div class="ls-export-nudge__footer">
             <label class="ls-export-nudge__never">
@@ -221,14 +219,16 @@ function onNeverRemindChange(event: Event): void {
                 :checked="dontRemindChecked"
                 @change="onNeverRemindChange"
               />
-              <span>{{ t('canvas.toolbar.learningSheetExportNudgeNeverRemind') }}</span>
+              <span>
+                <I18nText k="canvas.toolbar.learningSheetExportNudgeNeverRemind" />
+              </span>
             </label>
             <button
               type="button"
               class="ls-export-nudge__action"
               @click="dismissForSession"
             >
-              {{ t('canvas.toolbar.learningSheetExportNudgeDismiss') }}
+              <I18nText k="canvas.toolbar.learningSheetExportNudgeDismiss" />
             </button>
           </div>
         </div>

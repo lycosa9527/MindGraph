@@ -6,12 +6,13 @@ import { computed, onMounted, ref } from 'vue'
 
 import { ChevronDown, ChevronUp, Hand, Keyboard, MousePointer2 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
+import { useLanguage } from '@/composables'
 import {
   activeCanvasGuideId,
   openCanvasGuide,
   toggleCanvasGuide,
 } from '@/composables/canvas/canvasGuideExclusive'
-import { useLanguage } from '@/composables'
 import { resolveMindMapShortcutGuideRows } from '@/config/mindMapShortcutGuide'
 import { useDiagramStore } from '@/stores'
 
@@ -88,7 +89,7 @@ function toggleExpanded(): void {
       :title="t('canvas.shortcutGuide.title')"
       @click="toggleExpanded"
     >
-      {{ t('canvas.shortcutGuide.shortLabel') }}
+      <I18nText k="canvas.shortcutGuide.shortLabel" />
       <Keyboard
         class="h-3.5 w-3.5"
         :stroke-width="2"
@@ -149,9 +150,7 @@ function toggleExpanded(): void {
           </button>
         </div>
 
-        <ul
-          class="flex max-h-[min(50vh,17.5rem)] flex-col gap-1 overflow-y-auto px-2 pb-1.5 pt-0"
-        >
+        <ul class="flex max-h-[min(50vh,17.5rem)] flex-col gap-1 overflow-y-auto px-2 pb-1.5 pt-0">
           <li
             v-for="row in rows"
             :key="row.id"
@@ -184,7 +183,9 @@ function toggleExpanded(): void {
               class="flex shrink-0 items-center gap-1"
             >
               <kbd class="shortcut-kbd">Space</kbd>
-              <span class="text-[10px] text-slate-400">{{ t('canvas.shortcutGuide.doubleClick') }}</span>
+              <span class="text-[10px] text-slate-400">{{
+                t('canvas.shortcutGuide.doubleClick')
+              }}</span>
             </div>
 
             <kbd

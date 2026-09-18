@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': '연결된 휴대폰으로 코드를 보냅니다. 비밀번호 설정 후 비밀번호 또는 인증 코드로 로그인할 수 있습니다.',
   'auth.setPasswordWithSmsSubmit': '비밀번호 저장',
   'auth.setPasswordWithSmsSubmitting': '저장 중…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': '표시 이름',
   'auth.accountNamePlaceholder': '2자 이상, 숫자 없음',
   'auth.accountNameSave': '이름 저장',

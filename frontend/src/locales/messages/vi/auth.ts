@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'Chúng tôi gửi mã tới số điện thoại đã liên kết. Sau khi đặt mật khẩu, bạn có thể đăng nhập bằng mật khẩu hoặc mã xác minh.',
   'auth.setPasswordWithSmsSubmit': 'Lưu mật khẩu',
   'auth.setPasswordWithSmsSubmitting': 'Đang lưu…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Tên hiển thị',
   'auth.accountNamePlaceholder': 'Ít nhất 2 ký tự, không có chữ số',
   'auth.accountNameSave': 'Lưu tên',

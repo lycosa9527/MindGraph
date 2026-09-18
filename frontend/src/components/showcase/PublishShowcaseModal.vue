@@ -3,6 +3,7 @@ import { computed } from 'vue'
 
 import { Loader2 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import {
   type PublishShowcaseModalProps,
@@ -114,8 +115,11 @@ const open = computed({
   <SwissGlassCard
     v-model="open"
     :ribbon="t('swissGlass.hero.publishShowcase.ribbon')"
+    ribbon-key="swissGlass.hero.publishShowcase.ribbon"
     :title="t('swissGlass.hero.publishShowcase.title')"
+    title-key="swissGlass.hero.publishShowcase.title"
     :line1="t('swissGlass.hero.publishShowcase.line1')"
+    line1-key="swissGlass.hero.publishShowcase.line1"
     :icon="Upload"
     card-class="swiss-glass-card--xl"
     @close="close"
@@ -132,15 +136,15 @@ const open = computed({
           <div class="flex flex-1 flex-col gap-8 pt-0.5">
             <div>
               <p :class="['text-sm font-medium', step >= 1 ? 'text-gray-900' : 'text-gray-400']">
-                {{ t('showcase.publishModal.step1Title') }}
+                <I18nText k="showcase.publishModal.step1Title" />
               </p>
-              <p class="text-xs text-gray-400">{{ t('showcase.publishModal.step1Desc') }}</p>
+              <p class="text-xs text-gray-400"><I18nText k="showcase.publishModal.step1Desc" /></p>
             </div>
             <div>
               <p :class="['text-sm font-medium', step >= 2 ? 'text-gray-900' : 'text-gray-400']">
-                {{ t('showcase.publishModal.step2Title') }}
+                <I18nText k="showcase.publishModal.step2Title" />
               </p>
-              <p class="text-xs text-gray-400">{{ t('showcase.publishModal.step2Desc') }}</p>
+              <p class="text-xs text-gray-400"><I18nText k="showcase.publishModal.step2Desc" /></p>
             </div>
           </div>
         </div>
@@ -161,22 +165,22 @@ const open = computed({
             class="shrink-0 border-b border-gray-100 bg-white px-4 py-3"
           >
             <p class="text-sm font-medium text-gray-700">
-              {{
-                t(
+              <I18nText
+                :k="
                   isDiagramTemplate
                     ? 'showcase.publishModal.templatePreviewLabel'
                     : 'showcase.publishModal.diagramCasePreviewLabel'
-                )
-              }}
+                "
+              />
             </p>
             <p class="mt-0.5 text-xs text-gray-400">
-              {{
-                t(
+              <I18nText
+                :k="
                   isDiagramTemplate
                     ? 'showcase.publishModal.templatePreviewHint'
                     : 'showcase.publishModal.diagramCasePreviewHint'
-                )
-              }}
+                "
+              />
             </p>
           </div>
           <div class="flex-1 min-h-90">
@@ -199,11 +203,11 @@ const open = computed({
                 class="mb-5 rounded-xl border border-amber-100 bg-amber-50/60 p-4"
               >
                 <p class="mb-3 text-sm font-medium text-gray-900">
-                  {{ t('admin.showcase.proxyAttributionTitle') }}
+                  <I18nText k="admin.showcase.proxyAttributionTitle" />
                 </p>
                 <div class="mb-3">
                   <label class="mb-1 block text-sm text-gray-700">
-                    {{ t('admin.showcase.proxyAuthorName') }}
+                    <I18nText k="admin.showcase.proxyAuthorName" />
                     <span class="text-red-500">*</span>
                   </label>
                   <input
@@ -215,7 +219,7 @@ const open = computed({
                 </div>
                 <div>
                   <label class="mb-1 block text-sm text-gray-700">
-                    {{ t('admin.showcase.proxyAuthorOrg') }}
+                    <I18nText k="admin.showcase.proxyAuthorOrg" />
                   </label>
                   <input
                     v-model="attributionOrg"
@@ -230,7 +234,7 @@ const open = computed({
                 v-if="fromCanvas"
                 class="mb-4 rounded-xl bg-gray-50 px-4 py-2 text-sm text-gray-600"
               >
-                {{ t('showcase.publishModal.fromCanvas') }}
+                <I18nText k="showcase.publishModal.fromCanvas" />
               </div>
 
               <div
@@ -238,7 +242,7 @@ const open = computed({
                 class="mb-5"
               >
                 <label class="mb-2 block text-sm font-medium text-gray-700">
-                  {{ t('showcase.publishModal.caseTypeLabel') }}
+                  <I18nText k="showcase.publishModal.caseTypeLabel" />
                   <span class="text-red-500">*</span>
                 </label>
                 <div class="grid grid-cols-3 gap-3">
@@ -263,9 +267,11 @@ const open = computed({
                         caseType === opt.value ? 'text-gray-900' : 'text-gray-400',
                       ]"
                     />
-                    <span class="text-sm font-semibold text-gray-900">{{ t(opt.labelKey) }}</span>
+                    <span class="text-sm font-semibold text-gray-900"
+                      ><I18nText :k="opt.labelKey"
+                    /></span>
                     <span class="mt-1.5 text-[11px] leading-snug text-gray-400">
-                      {{ t(opt.descKey) }}
+                      <I18nText :k="opt.descKey" />
                     </span>
                   </button>
                 </div>
@@ -275,11 +281,14 @@ const open = computed({
                 <div class="mb-2 flex items-end justify-between">
                   <div>
                     <label class="block text-sm font-medium text-gray-700">
-                      {{ t('showcase.publishModal.titleLabel') }}
+                      <I18nText k="showcase.publishModal.titleLabel" />
                       <span class="text-red-500">*</span>
                     </label>
                     <p class="mt-0.5 text-xs text-gray-400">
-                      {{ t('showcase.publishModal.titleHint', { max: TITLE_MAX_LENGTH }) }}
+                      <I18nText
+                        k="showcase.publishModal.titleHint"
+                        :params="{ max: TITLE_MAX_LENGTH }"
+                      />
                     </p>
                   </div>
                   <span
@@ -303,7 +312,7 @@ const open = computed({
               <div class="mb-4 grid grid-cols-2 gap-5">
                 <div class="min-w-0">
                   <label class="mb-2 block text-sm font-medium text-gray-700">
-                    {{ t('showcase.publishModal.subjectLabel') }}
+                    <I18nText k="showcase.publishModal.subjectLabel" />
                     <span class="text-red-500">*</span>
                   </label>
                   <ShowcaseFilterDropdown
@@ -317,7 +326,7 @@ const open = computed({
                 </div>
                 <div class="min-w-0">
                   <label class="mb-2 block text-sm font-medium text-gray-700">
-                    {{ t('showcase.publishModal.gradeLabel') }}
+                    <I18nText k="showcase.publishModal.gradeLabel" />
                     <span class="text-red-500">*</span>
                   </label>
                   <ShowcaseFilterDropdown
@@ -336,7 +345,7 @@ const open = computed({
                 class="mb-4"
               >
                 <label class="mb-2 block text-sm font-medium text-gray-700">
-                  {{ t('showcase.publishModal.diagramTypeLabel') }}
+                  <I18nText k="showcase.publishModal.diagramTypeLabel" />
                   <span class="text-red-500">*</span>
                 </label>
                 <div :class="{ 'pointer-events-none opacity-60': diagramTypeFromHistory }">
@@ -353,7 +362,7 @@ const open = computed({
                   v-if="diagramTypeFromHistory"
                   class="mt-1 text-xs text-gray-400"
                 >
-                  {{ t('showcase.publishModal.diagramTypeAutoMatched') }}
+                  <I18nText k="showcase.publishModal.diagramTypeAutoMatched" />
                 </p>
               </div>
 
@@ -362,7 +371,7 @@ const open = computed({
                 class="mb-2"
               >
                 <label class="mb-2 block text-sm font-medium text-gray-700">
-                  {{ t('showcase.publishModal.uploadLabel') }}
+                  <I18nText k="showcase.publishModal.uploadLabel" />
                   <span
                     v-if="directFileUploadsEnabled || caseType !== 'teaching_design'"
                     class="text-red-500"
@@ -373,7 +382,7 @@ const open = computed({
                   v-if="!directFileUploadsEnabled"
                   class="mb-3 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-800"
                 >
-                  {{ t('showcase.publishModal.directUploadDisabled') }}
+                  <I18nText k="showcase.publishModal.directUploadDisabled" />
                 </p>
 
                 <template v-if="caseType === 'teaching_design'">
@@ -387,15 +396,14 @@ const open = computed({
                     "
                   >
                     <Upload class="mb-2 h-8 w-8 text-gray-300" />
-                    <span class="text-sm text-gray-500">{{
-                      t('showcase.publishModal.uploadFile')
-                    }}</span>
+                    <span class="text-sm text-gray-500"
+                      ><I18nText k="showcase.publishModal.uploadFile"
+                    /></span>
                     <span class="mt-1 text-xs text-gray-400">
-                      {{
-                        t('showcase.publishModal.teachingDocHintWithLimit', {
-                          maxMb: showcaseMaxMegabytes(CASE_TEACHING_DOC_MAX_BYTES),
-                        })
-                      }}
+                      <I18nText
+                        k="showcase.publishModal.teachingDocHintWithLimit"
+                        :params="{ maxMb: showcaseMaxMegabytes(CASE_TEACHING_DOC_MAX_BYTES) }"
+                      />
                     </span>
                     <input
                       type="file"
@@ -409,14 +417,14 @@ const open = computed({
 
                 <template v-else-if="isDiagramGalleryCase">
                   <p class="mb-2 text-xs text-gray-400">
-                    {{
-                      t(
+                    <I18nText
+                      :k="
                         isDiagramTemplate
                           ? 'showcase.publishModal.galleryHintTemplate'
-                          : 'showcase.publishModal.galleryHintCase',
-                        { max: DIAGRAM_GALLERY_MAX_ITEMS }
-                      )
-                    }}
+                          : 'showcase.publishModal.galleryHintCase'
+                      "
+                      :params="{ max: DIAGRAM_GALLERY_MAX_ITEMS }"
+                    />
                   </p>
                   <div class="grid grid-cols-2 gap-3">
                     <label
@@ -429,11 +437,11 @@ const open = computed({
                       "
                     >
                       <Upload class="mb-2 h-6 w-6 text-gray-300" />
-                      <span class="text-xs text-gray-500">{{
-                        t('showcase.publishModal.uploadFile')
-                      }}</span>
+                      <span class="text-xs text-gray-500"
+                        ><I18nText k="showcase.publishModal.uploadFile"
+                      /></span>
                       <span class="mt-1 text-[10px] text-gray-400">
-                        {{ t('showcase.publishModal.templateFileHint') }}
+                        <I18nText k="showcase.publishModal.templateFileHint" />
                       </span>
                       <input
                         type="file"
@@ -454,10 +462,10 @@ const open = computed({
                     >
                       <Upload class="mb-2 h-6 w-6 text-gray-300" />
                       <span class="text-xs text-gray-500">
-                        {{ t('showcase.publishModal.uploadImages') }}
+                        <I18nText k="showcase.publishModal.uploadImages" />
                       </span>
                       <span class="mt-1 text-[10px] text-gray-400">
-                        {{ t('showcase.publishModal.diagramImageHint') }}
+                        <I18nText k="showcase.publishModal.diagramImageHint" />
                       </span>
                       <input
                         type="file"
@@ -479,7 +487,7 @@ const open = computed({
                     >
                       <History class="mb-2 h-6 w-6 text-gray-300" />
                       <span class="text-xs text-gray-500">
-                        {{ t('showcase.publishModal.pickHistory') }}
+                        <I18nText k="showcase.publishModal.pickHistory" />
                       </span>
                     </button>
                   </div>
@@ -488,12 +496,10 @@ const open = computed({
                     class="mt-3 space-y-2 rounded-xl border border-gray-100 bg-gray-50 p-3"
                   >
                     <p class="text-xs font-medium text-gray-500">
-                      {{
-                        t('showcase.publishModal.galleryCount', {
-                          count: galleryTotalCount,
-                          max: DIAGRAM_GALLERY_MAX_ITEMS,
-                        })
-                      }}
+                      <I18nText
+                        k="showcase.publishModal.galleryCount"
+                        :params="{ count: galleryTotalCount, max: DIAGRAM_GALLERY_MAX_ITEMS }"
+                      />
                     </p>
                     <div class="space-y-2">
                       <div
@@ -502,11 +508,10 @@ const open = computed({
                         class="flex items-center justify-between gap-2 rounded-lg border border-gray-100 bg-white px-3 py-2"
                       >
                         <span class="truncate text-xs text-gray-700">
-                          {{
-                            t('showcase.publishModal.galleryImageItem', {
-                              name: existing.filename,
-                            })
-                          }}
+                          <I18nText
+                            k="showcase.publishModal.galleryImageItem"
+                            :params="{ name: existing.filename }"
+                          />
                         </span>
                         <button
                           type="button"
@@ -515,7 +520,7 @@ const open = computed({
                             removeGalleryExistingImage(galleryExistingImages.indexOf(existing))
                           "
                         >
-                          {{ t('showcase.publishModal.removeFile') }}
+                          <I18nText k="showcase.publishModal.removeFile" />
                         </button>
                       </div>
                       <template v-if="!isDiagramTemplate">
@@ -537,7 +542,7 @@ const open = computed({
                             class="publish-remove-pill"
                             @click="removeGalleryImageDraft(draft.id)"
                           >
-                            {{ t('showcase.publishModal.removeFile') }}
+                            <I18nText k="showcase.publishModal.removeFile" />
                           </button>
                         </div>
                       </template>
@@ -547,14 +552,17 @@ const open = computed({
                         class="flex items-center justify-between gap-2 rounded-lg border border-gray-100 bg-white px-3 py-2"
                       >
                         <span class="truncate text-xs text-gray-700">
-                          {{ t('showcase.publishModal.galleryDiagramItem', { name: draft.title }) }}
+                          <I18nText
+                            k="showcase.publishModal.galleryDiagramItem"
+                            :params="{ name: draft.title }"
+                          />
                         </span>
                         <button
                           type="button"
                           class="publish-remove-pill"
                           @click="removeGalleryDiagramDraft(draft.id)"
                         >
-                          {{ t('showcase.publishModal.removeFile') }}
+                          <I18nText k="showcase.publishModal.removeFile" />
                         </button>
                       </div>
                     </div>
@@ -571,7 +579,7 @@ const open = computed({
                     class="publish-remove-pill"
                     @click="removeUploadedFile"
                   >
-                    {{ t('showcase.publishModal.removeFile') }}
+                    <I18nText k="showcase.publishModal.removeFile" />
                   </button>
                 </div>
               </div>
@@ -613,7 +621,7 @@ const open = computed({
               class="rounded-xl border border-gray-100 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
               @click="goPrev"
             >
-              {{ t('showcase.publishModal.prev') }}
+              <I18nText k="showcase.publishModal.prev" />
             </button>
             <button
               v-if="step === 1"
@@ -622,11 +630,13 @@ const open = computed({
               :disabled="!step1Complete || isStep1Advancing || isMgSpecDecoding"
               @click="goNext"
             >
-              {{
-                isStep1Advancing || isMgSpecDecoding
-                  ? t('showcase.publishModal.parsingMg')
-                  : t('showcase.publishModal.next')
-              }}
+              <I18nText
+                :k="
+                  isStep1Advancing || isMgSpecDecoding
+                    ? 'showcase.publishModal.parsingMg'
+                    : 'showcase.publishModal.next'
+                "
+              />
             </button>
             <button
               v-else

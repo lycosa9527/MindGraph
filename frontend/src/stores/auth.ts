@@ -41,18 +41,18 @@ import {
   roleHasPanelAccess,
 } from '@/utils/adminCapabilities'
 import { registerAiContentLevelAuthBridge } from '@/utils/aiContentLevelAuthBridge'
+import { parseApiErrorDetail } from '@/utils/apiClient'
 import { getAppQueryClient } from '@/utils/appQueryClient'
 import { getSafePostAuthPath } from '@/utils/authRedirect'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
-import { parseApiErrorDetail } from '@/utils/apiClient'
 import { normalizeAuthUser } from '@/utils/normalizeAuthUser'
+import { clearSavedLoginCredentials } from '@/utils/savedLoginCredentials'
 import {
   SCHOOL_EXPIRED_CODE,
   emitSchoolExpiredFromPayload,
   emitSchoolExpiredLockout,
   resetSchoolExpiredLockoutEmit,
 } from '@/utils/schoolExpiredLockout'
-import { clearSavedLoginCredentials } from '@/utils/savedLoginCredentials'
 import {
   ensureFreshSessionAfterAuthFailure,
   getSessionRefreshEpoch,
@@ -265,11 +265,23 @@ export const useAuthStore = defineStore('auth', () => {
       typeof target.uiLanguage === 'string' && target.uiLanguage.trim().length > 0
     const hasServerPrompt = isPromptOutputLanguageCode(target.promptLanguage ?? null)
     const hasServerMatch = typeof target.matchPromptToUi === 'boolean'
-    if (hasServerUi || hasServerPrompt || hasServerMatch) {
+    const hasServerBilingual = typeof target.bilingualUiEnabled === 'boolean'
+    const hasServerPresenter = isUiLocale(target.presenterUiLocale ?? null)
+    if (
+      hasServerUi ||
+      hasServerPrompt ||
+      hasServerMatch ||
+      hasServerBilingual ||
+      hasServerPresenter
+    ) {
       uiStore.applyLanguageFromServerProfile(
         hasServerUi ? (target.uiLanguage ?? null) : null,
         hasServerPrompt ? (target.promptLanguage ?? null) : null,
-        hasServerMatch ? { matchPromptToUi: target.matchPromptToUi } : undefined
+        {
+          ...(hasServerMatch ? { matchPromptToUi: target.matchPromptToUi } : {}),
+          ...(hasServerBilingual ? { bilingualUiEnabled: target.bilingualUiEnabled } : {}),
+          ...(hasServerPresenter ? { presenterUiLocale: target.presenterUiLocale } : {}),
+        }
       )
     }
     if (
@@ -285,6 +297,8 @@ export const useAuthStore = defineStore('auth', () => {
       try {
         const ok = await saveLanguagePreferences(uiStore.language, uiStore.promptLanguage, {
           matchPromptToUi: uiStore.matchPromptToUi,
+          bilingualUiEnabled: uiStore.bilingualUiEnabled,
+          presenterUiLocale: uiStore.presenterUiLocale,
           silent: true,
         })
         if (ok) {
@@ -330,7 +344,13 @@ export const useAuthStore = defineStore('auth', () => {
   async function saveLanguagePreferences(
     ui: Language,
     prompt: PromptLanguage,
-    options?: { uiVersion?: string; matchPromptToUi?: boolean; silent?: boolean }
+    options?: {
+      uiVersion?: string
+      matchPromptToUi?: boolean
+      bilingualUiEnabled?: boolean
+      presenterUiLocale?: Language
+      silent?: boolean
+    }
   ): Promise<boolean> {
     try {
       const body: Record<string, string | boolean> = {
@@ -342,6 +362,12 @@ export const useAuthStore = defineStore('auth', () => {
       }
       if (options?.matchPromptToUi !== undefined) {
         body.match_prompt_to_ui = options.matchPromptToUi
+      }
+      if (options?.bilingualUiEnabled !== undefined) {
+        body.bilingual_ui_enabled = options.bilingualUiEnabled
+      }
+      if (options?.presenterUiLocale) {
+        body.presenter_ui_locale = options.presenterUiLocale
       }
       const response = await fetch(`${API_BASE}/language-preferences`, {
         method: 'PATCH',
@@ -355,6 +381,8 @@ export const useAuthStore = defineStore('auth', () => {
         prompt_language?: string | null
         ui_version?: string | null
         match_prompt_to_ui?: boolean
+        bilingual_ui_enabled?: boolean
+        presenter_ui_locale?: string | null
       }
       if (!response.ok) {
         if (!options?.silent) {
@@ -372,6 +400,12 @@ export const useAuthStore = defineStore('auth', () => {
             typeof data.match_prompt_to_ui === 'boolean'
               ? data.match_prompt_to_ui
               : (options?.matchPromptToUi ?? user.value.matchPromptToUi),
+          bilingualUiEnabled:
+            typeof data.bilingual_ui_enabled === 'boolean'
+              ? data.bilingual_ui_enabled
+              : (options?.bilingualUiEnabled ?? user.value.bilingualUiEnabled),
+          presenterUiLocale:
+            data.presenter_ui_locale ?? options?.presenterUiLocale ?? user.value.presenterUiLocale,
         }
         user.value = next
         sessionStorage.setItem(USER_KEY, JSON.stringify(next))

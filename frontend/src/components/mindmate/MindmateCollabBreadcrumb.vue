@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { useLanguage } from '@/composables'
+import I18nText from '@/components/common/I18nText.vue'
 import { formatMindmateCollabCode } from '@/utils/mindmateCollabSessions'
 
 const props = withDefaults(
@@ -17,10 +17,8 @@ const props = withDefaults(
     sessionTitle: '',
     inviteCode: '',
     tone: 'light',
-  },
+  }
 )
-
-const { t } = useLanguage()
 
 const isPublicSeminar = computed(() => props.visibility === 'network')
 
@@ -33,18 +31,31 @@ const formattedInviteCode = computed(() => {
 })
 
 const breadcrumb = computed(() => {
-  const visLabel =
-    isPublicSeminar.value
-      ? t('mindmate.collabSeminarPublic')
-      : t('mindmate.collabSeminarOrg')
-  const name = props.sessionTitle.trim() || t('mindmate.collabPill')
-  const segments: Array<{ label: string; isCurrent: boolean }> = [
-    { label: visLabel, isCurrent: false },
-    { label: name, isCurrent: !isPublicSeminar.value || !formattedInviteCode.value },
+  const visKey = isPublicSeminar.value
+    ? 'mindmate.collabSeminarPublic'
+    : 'mindmate.collabSeminarOrg'
+  const name = props.sessionTitle.trim()
+  const segments: Array<{
+    k?: string
+    params?: Record<string, unknown>
+    label?: string
+    isCurrent: boolean
+  }> = [
+    { k: visKey, isCurrent: false },
+    name
+      ? {
+          label: name,
+          isCurrent: !isPublicSeminar.value || !formattedInviteCode.value,
+        }
+      : {
+          k: 'mindmate.collabPill',
+          isCurrent: !isPublicSeminar.value || !formattedInviteCode.value,
+        },
   ]
   if (isPublicSeminar.value && formattedInviteCode.value) {
     segments.push({
-      label: t('mindmate.collabInviteCodeBreadcrumb', { code: formattedInviteCode.value }),
+      k: 'mindmate.collabInviteCodeBreadcrumb',
+      params: { code: formattedInviteCode.value },
       isCurrent: true,
     })
   }
@@ -52,19 +63,17 @@ const breadcrumb = computed(() => {
 })
 
 const parentClass = computed(() =>
-  props.tone === 'toolbar'
-    ? 'text-gray-500 dark:text-gray-400'
-    : 'text-stone-500',
+  props.tone === 'toolbar' ? 'text-gray-500 dark:text-gray-400' : 'text-stone-500'
 )
 
 const currentClass = computed(() =>
   props.tone === 'toolbar'
     ? 'font-semibold text-gray-900 dark:text-white'
-    : 'font-semibold text-stone-900',
+    : 'font-semibold text-stone-900'
 )
 
 const sepClass = computed(() =>
-  props.tone === 'toolbar' ? 'text-gray-400 dark:text-gray-500' : 'text-stone-400',
+  props.tone === 'toolbar' ? 'text-gray-400 dark:text-gray-500' : 'text-stone-400'
 )
 </script>
 
@@ -89,7 +98,12 @@ const sepClass = computed(() =>
         class="truncate"
         :class="segment.isCurrent ? currentClass : parentClass"
       >
-        {{ segment.label }}
+        <I18nText
+          v-if="segment.k"
+          :k="segment.k"
+          :params="segment.params"
+        />
+        <template v-else>{{ segment.label }}</template>
       </span>
     </template>
   </nav>

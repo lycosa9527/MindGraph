@@ -211,6 +211,16 @@ watch(
 )
 
 watch(
+  () => [uiStore.bilingualUiEnabled, uiStore.presenterUiLocale] as const,
+  ([enabled, presenter]) => {
+    if (enabled) {
+      void ensureFontsForLanguageCode(presenter)
+    }
+  },
+  { immediate: true }
+)
+
+watch(
   () => route.meta.layout,
   (layout) => {
     if (layout === 'mobile' && showBrowserLocaleHint.value) {

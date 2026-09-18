@@ -6,6 +6,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { Hammer, Shuffle, X } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables'
 import { measureCanvasChromeBottomPx } from '@/composables/canvas/useCanvasChromeBottomOffset'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
@@ -93,20 +94,23 @@ onUnmounted(() => {
 
         <div class="ls-session-bar__copy">
           <p class="ls-session-bar__title">
-            {{
-              isPickActive
-                ? t('canvas.mindMapSideToolbar.learningSheetPickTitle')
-                : t('canvas.mindMapSideToolbar.learningSheetRandomTitle')
-            }}
+            <I18nText
+              :k="
+                isPickActive
+                  ? 'canvas.mindMapSideToolbar.learningSheetPickTitle'
+                  : 'canvas.mindMapSideToolbar.learningSheetRandomTitle'
+              "
+            />
           </p>
           <p class="ls-session-bar__hint">
-            {{
-              isPickActive
-                ? t('canvas.mindMapSideToolbar.learningSheetPickHint', { count: blankCount })
-                : t('canvas.mindMapSideToolbar.learningSheetRandomActiveHint', {
-                    count: blankCount,
-                  })
-            }}
+            <I18nText
+              :k="
+                isPickActive
+                  ? 'canvas.mindMapSideToolbar.learningSheetPickHint'
+                  : 'canvas.mindMapSideToolbar.learningSheetRandomActiveHint'
+              "
+              :params="{ count: blankCount }"
+            />
           </p>
         </div>
 
@@ -120,7 +124,7 @@ onUnmounted(() => {
             :checked="!showReferenceAnswers"
             @change="onHideAnswersChange"
           />
-          <span>{{ t('canvas.mindMapSideToolbar.learningSheetHideAnswers') }}</span>
+          <span><I18nText k="canvas.mindMapSideToolbar.learningSheetHideAnswers" /></span>
         </label>
 
         <button
@@ -128,7 +132,7 @@ onUnmounted(() => {
           class="ls-session-bar__done"
           @click="onDone"
         >
-          {{ t('canvas.mindMapSideToolbar.learningSheetPickDone') }}
+          <I18nText k="canvas.mindMapSideToolbar.learningSheetPickDone" />
         </button>
 
         <button
@@ -211,8 +215,9 @@ onUnmounted(() => {
   flex-shrink: 0;
   align-items: center;
   gap: 6px;
-  height: 28px;
-  padding: 0 10px;
+  min-height: 28px;
+  height: auto;
+  padding: 3px 10px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   color: #4b5563;
@@ -231,8 +236,9 @@ onUnmounted(() => {
 
 .ls-session-bar__done {
   flex-shrink: 0;
-  height: 28px;
-  padding: 0 14px;
+  min-height: 28px;
+  height: auto;
+  padding: 4px 14px;
   border: none;
   border-radius: 8px;
   background: #2563eb;

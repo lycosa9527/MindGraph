@@ -24,6 +24,7 @@ import { useLanguage, useNotifications } from '@/composables'
 import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { authFetch } from '@/utils/api'
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -243,8 +244,8 @@ defineExpose({ prefillAndAutoJoin })
           @command="onCollabDropdownCommand"
         >
           <span class="inline-flex">
-            <ElTooltip
-              :content="t('mindgraphLanding.collaborate')"
+            <I18nTooltip
+              k="mindgraphLanding.collaborate"
               placement="bottom"
             >
               <ElButton
@@ -260,7 +261,7 @@ defineExpose({ prefillAndAutoJoin })
                   aria-hidden="true"
                 />
               </ElButton>
-            </ElTooltip>
+            </I18nTooltip>
           </span>
           <template #dropdown>
             <ElDropdownMenu>

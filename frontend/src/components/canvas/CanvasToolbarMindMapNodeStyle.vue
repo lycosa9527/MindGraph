@@ -4,10 +4,12 @@
  */
 import { ref } from 'vue'
 
-import { ElDropdown, ElDropdownItem, ElDropdownMenu, ElPopover, ElTooltip } from 'element-plus'
+import { ElDropdown, ElDropdownItem, ElDropdownMenu, ElPopover } from 'element-plus'
 
 import { ChevronDown, Minus, Square } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -72,8 +74,9 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
     <span
       v-if="!compact"
       class="mm-style-kicker"
-      >{{ t('canvas.ribbon.nodeStyle') }}</span
     >
+      <I18nText k="canvas.ribbon.nodeStyle" />
+    </span>
     <ElDropdown
       trigger="click"
       placement="bottom-start"
@@ -124,8 +127,8 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
     >
       <template #reference>
         <span class="nft-color-ref">
-          <ElTooltip
-            :content="t('canvas.floatingToolbar.borderColor')"
+          <I18nTooltip
+            k="canvas.floatingToolbar.borderColor"
             placement="bottom"
           >
             <button
@@ -138,7 +141,7 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
                 :style="{ borderColor: borderColor }"
               />
             </button>
-          </ElTooltip>
+          </I18nTooltip>
         </span>
       </template>
       <div class="nft-color-grid">
@@ -168,8 +171,8 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
     >
       <template #reference>
         <span class="nft-color-ref">
-          <ElTooltip
-            :content="t('canvas.floatingToolbar.fillColor')"
+          <I18nTooltip
+            k="canvas.floatingToolbar.fillColor"
             placement="bottom"
           >
             <button
@@ -182,7 +185,7 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
                 :style="{ backgroundColor: backgroundColor }"
               />
             </button>
-          </ElTooltip>
+          </I18nTooltip>
         </span>
       </template>
       <div class="nft-color-grid">

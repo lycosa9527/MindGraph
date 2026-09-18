@@ -282,6 +282,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'We send a code to your bound phone. After setting a password you can sign in with password or a verification code.',
   'auth.setPasswordWithSmsSubmit': 'Save password',
   'auth.setPasswordWithSmsSubmitting': 'Saving…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Display name',
   'auth.accountNamePlaceholder': 'At least 2 characters, no digits',
   'auth.accountNameSave': 'Save name',

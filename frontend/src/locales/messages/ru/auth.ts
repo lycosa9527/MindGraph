@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'Отправьте SMS-код подтверждения на привязанный мобильный телефон. После настройки вы можете войти в систему, используя пароль или код подтверждения.',
   'auth.setPasswordWithSmsSubmit': 'Установить пароль',
   'auth.setPasswordWithSmsSubmitting': 'Сохранение…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Показать имя',
   'auth.accountNamePlaceholder': 'Минимум 2 символа, без цифр',
   'auth.accountNameSave': 'сохранить имя',

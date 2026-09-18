@@ -6,6 +6,7 @@ import { computed, ref, watch } from 'vue'
 
 import { QrCode } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage } from '@/composables'
 import type { OAuthProvider, OAuthQrMode } from '@/composables/auth/useOAuthQrLogin'
@@ -58,8 +59,11 @@ watch(
   <SwissGlassCard
     v-model="isVisible"
     :ribbon="t('swissGlass.hero.oauthQr.ribbon')"
+    ribbon-key="swissGlass.hero.oauthQr.ribbon"
     :title="t('swissGlass.hero.oauthQr.title')"
+    title-key="swissGlass.hero.oauthQr.title"
     :line1="t('swissGlass.hero.oauthQr.line1')"
+    line1-key="swissGlass.hero.oauthQr.line1"
     :icon="QrCode"
     @close="close"
   >
@@ -77,7 +81,7 @@ watch(
         "
         @click="activeProvider = 'wechat'"
       >
-        {{ t('auth.qrLoginWechatTab') }}
+        <I18nText k="auth.qrLoginWechatTab" />
       </button>
       <button
         type="button"
@@ -89,7 +93,7 @@ watch(
         "
         @click="activeProvider = 'dingtalk'"
       >
-        {{ t('auth.qrLoginDingtalkTab') }}
+        <I18nText k="auth.qrLoginDingtalkTab" />
       </button>
     </div>
 

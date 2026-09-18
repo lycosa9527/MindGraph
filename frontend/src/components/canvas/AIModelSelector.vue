@@ -17,12 +17,13 @@ import { ElTooltip } from 'element-plus'
 
 import { Sparkles, X } from '@lucide/vue'
 
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables'
-import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
+import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 import { LLM_MODEL_COLORS } from '@/config/llmModelColors'
 import {
   useConceptMapFocusReviewStore,
@@ -439,9 +440,9 @@ function getButtonStyle(modelKey: string) {
           v-if="showConceptMapTabBadgeRow"
           class="flex items-center gap-1 shrink-0"
         >
-          <ElTooltip
+          <I18nTooltip
             v-if="showConceptMapContentTabBadge"
-            :content="t('aiModel.conceptMapConceptTabTooltip')"
+            k="aiModel.conceptMapConceptTabTooltip"
             placement="top"
           >
             <span
@@ -452,10 +453,10 @@ function getButtonStyle(modelKey: string) {
                 t('aiModel.tabContentRecBadge')
               }}</span>
             </span>
-          </ElTooltip>
-          <ElTooltip
+          </I18nTooltip>
+          <I18nTooltip
             v-if="showConceptMapRelationshipTabBadge"
-            :content="t('aiModel.conceptMapRelationshipTabTooltip')"
+            k="aiModel.conceptMapRelationshipTabTooltip"
             placement="top"
           >
             <span
@@ -466,10 +467,10 @@ function getButtonStyle(modelKey: string) {
                 t('aiModel.tabRelationshipRecBadge')
               }}</span>
             </span>
-          </ElTooltip>
-          <ElTooltip
+          </I18nTooltip>
+          <I18nTooltip
             v-if="showConceptMapFocusQuestionTabBadge"
-            :content="t('aiModel.conceptMapFocusQuestionTabTooltip')"
+            k="aiModel.conceptMapFocusQuestionTabTooltip"
             placement="top"
           >
             <span
@@ -482,7 +483,7 @@ function getButtonStyle(modelKey: string) {
                 >{{ t('aiModel.tabFocusQuestionBadge') }}</span
               >
             </span>
-          </ElTooltip>
+          </I18nTooltip>
         </div>
       </div>
       <div
@@ -528,9 +529,9 @@ function getButtonStyle(modelKey: string) {
       </div>
 
       <!-- Inline rec ready indicator (thinking maps: edit node, press Tab for AI recommendations) -->
-      <ElTooltip
+      <I18nTooltip
         v-if="showInlineRecReady"
-        :content="t('aiModel.inlineRecTooltip')"
+        k="aiModel.inlineRecTooltip"
         placement="top"
       >
         <span
@@ -541,7 +542,7 @@ function getButtonStyle(modelKey: string) {
             t('aiModel.tabRecBadge')
           }}</span>
         </span>
-      </ElTooltip>
+      </I18nTooltip>
 
       <!-- Ready count indicator (hidden for concept map — no multi-model autocomplete) -->
       <div

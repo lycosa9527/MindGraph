@@ -7,6 +7,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { Loader2, Smartphone } from '@lucide/vue'
 import { useQueryClient } from '@tanstack/vue-query'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { difyKeys } from '@/composables/queries/difyKeys'
@@ -440,20 +441,30 @@ onBeforeUnmount(() => {
   <SwissGlassDialog
     v-model="visible"
     :ribbon="t('swissGlass.hero.dingtalk.ribbon')"
+    ribbon-key="swissGlass.hero.dingtalk.ribbon"
     :title="t('swissGlass.hero.dingtalk.title')"
+    title-key="swissGlass.hero.dingtalk.title"
     :line1="t('swissGlass.hero.dingtalk.line1')"
+    line1-key="swissGlass.hero.dingtalk.line1"
     :icon="Smartphone"
     width="min(420px, 92vw)"
     @close="close"
   >
     <div class="space-y-4 text-sm text-stone-700">
-      <p class="font-medium text-stone-800">{{ t(titleKey) }}</p>
-      <p>{{ t(instructionsKey) }}</p>
+      <p class="font-medium text-stone-800">
+        <I18nText :k="titleKey" />
+      </p>
+      <p>
+        <I18nText :k="instructionsKey" />
+      </p>
       <p
         v-if="isUnbind && props.linkedStaffId"
         class="text-stone-500"
       >
-        {{ t('auth.dingtalkBindAlreadyLinked', { staff: props.linkedStaffId }) }}
+        <I18nText
+          k="auth.dingtalkBindAlreadyLinked"
+          :params="{ staff: props.linkedStaffId }"
+        />
       </p>
 
       <div class="flex flex-col items-center gap-3 min-h-[240px] justify-center">
@@ -473,7 +484,7 @@ onBeforeUnmount(() => {
             {{ pairCodeDisplay }}
           </p>
           <p class="text-stone-500 text-xs text-center">
-            {{ t(codeHintKey) }}
+            <I18nText :k="codeHintKey" />
           </p>
           <div
             v-if="pairingActive"
@@ -485,32 +496,38 @@ onBeforeUnmount(() => {
               />
               <span class="relative inline-flex rounded-full h-2 w-2 bg-sky-600" />
             </span>
-            {{ t(waitingKey) }}
+            <I18nText :k="waitingKey" />
           </div>
         </div>
         <p
           v-if="completed"
           class="text-emerald-600 font-medium"
         >
-          {{ t(successKey) }}
+          <I18nText :k="successKey" />
         </p>
         <p
           v-else-if="expired"
           class="text-amber-600"
         >
-          {{ t(expiredKey) }}
+          <I18nText :k="expiredKey" />
         </p>
         <p
           v-else-if="token && !completed && codeRefreshIn > 0"
           class="text-stone-500 tabular-nums"
         >
-          {{ t('auth.dingtalkBindCodeRefreshIn', { s: codeRefreshIn }) }}
+          <I18nText
+            k="auth.dingtalkBindCodeRefreshIn"
+            :params="{ s: codeRefreshIn }"
+          />
         </p>
         <p
           v-else-if="token && !completed"
           class="text-stone-500 tabular-nums"
         >
-          {{ t('auth.dingtalkBindCountdown', { s: secondsLeft }) }}
+          <I18nText
+            k="auth.dingtalkBindCountdown"
+            :params="{ s: secondsLeft }"
+          />
         </p>
       </div>
     </div>
@@ -521,7 +538,7 @@ onBeforeUnmount(() => {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="close"
         >
-          {{ t('common.close') }}
+          <I18nText k="common.close" />
         </button>
         <button
           v-if="expired && !completed"
@@ -530,7 +547,7 @@ onBeforeUnmount(() => {
           :disabled="tokenLoading"
           @click="mintSession"
         >
-          {{ t(regenerateKey) }}
+          <I18nText :k="regenerateKey" />
         </button>
       </div>
     </template>

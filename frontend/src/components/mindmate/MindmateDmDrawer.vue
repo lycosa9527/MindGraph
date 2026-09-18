@@ -6,6 +6,7 @@ import { computed, ref, watch } from 'vue'
 
 import { ElButton, ElDrawer, ElInput } from 'element-plus'
 
+import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
@@ -81,7 +82,7 @@ async function sendMessage(): Promise<void> {
     })
     if (!response.ok) {
       localMessages.value = localMessages.value.filter((m) => m.id !== tempId)
-      notify.error(t('mindmate.dmSendFailed'))
+      notify.errorKey('mindmate.dmSendFailed')
       return
     }
     const saved = (await response.json()) as { id: number; content: string; sender_id: number }
@@ -90,7 +91,7 @@ async function sendMessage(): Promise<void> {
     )
   } catch {
     localMessages.value = localMessages.value.filter((m) => m.id !== tempId)
-    notify.error(t('mindmate.dmSendFailed'))
+    notify.errorKey('mindmate.dmSendFailed')
   } finally {
     sending.value = false
   }
@@ -141,7 +142,10 @@ function closeDrawer(): void {
           :loading="sending"
           @click="sendMessage"
         >
-          {{ t('mindmate.collabSend') }}
+          <I18nText
+            k="mindmate.collabSend"
+            dense
+          />
         </ElButton>
       </div>
     </div>

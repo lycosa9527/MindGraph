@@ -47,8 +47,11 @@ const previewUrl = computed(() =>
   <SwissGlassCard
     v-model="visible"
     :ribbon="t('admin.teachingDesignTemplate.previewRibbon')"
+    ribbon-key="admin.teachingDesignTemplate.previewRibbon"
     :title="t('admin.teachingDesignTemplate.previewTitle')"
+    title-key="admin.teachingDesignTemplate.previewTitle"
     :line1="t('admin.teachingDesignTemplate.previewHint')"
+    line1-key="admin.teachingDesignTemplate.previewHint"
     :line2="title"
     :icon="FileText"
     card-class="swiss-glass-card--xl admin-teaching-design-preview-card"

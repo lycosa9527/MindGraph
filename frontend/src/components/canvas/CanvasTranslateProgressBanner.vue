@@ -2,10 +2,9 @@
 /**
  * Full-width slate banner (matches CanvasCollabOverlay session strip) while diagram translate streams.
  */
-import { useLanguage } from '@/composables'
+import I18nText from '@/components/common/I18nText.vue'
 import { useDiagramTranslateUiStore } from '@/stores/diagramTranslateUi'
 
-const { t } = useLanguage()
 const ui = useDiagramTranslateUiStore()
 </script>
 
@@ -23,7 +22,7 @@ const ui = useDiagramTranslateUiStore()
           class="w-1.5 h-1.5 rounded-full shrink-0 bg-sky-400 animate-pulse"
           aria-hidden="true"
         />
-        <span>{{ t('canvas.toolbar.translateLabelBannerTitle') }}</span>
+        <I18nText k="canvas.toolbar.translateLabelBannerTitle" />
       </span>
       <span class="opacity-40">·</span>
       <span class="opacity-90 tabular-nums font-mono tracking-tight">{{ ui.progressLabel }}</span>

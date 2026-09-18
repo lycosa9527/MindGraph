@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed, inject, ref, watch, type ComputedRef } from 'vue'
+import { type ComputedRef, computed, inject, ref, watch } from 'vue'
 
-import { ElDropdown, ElTooltip } from 'element-plus'
+import { ElDropdown } from 'element-plus'
 
 import { Check, ChevronDown, Clock } from '@lucide/vue'
 
 import { useMindMapRibbonActions } from '@/canvas-ribbon/useMindMapRibbonActions'
+import I18nText from '@/components/common/I18nText.vue'
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import {
   CURRENT_DIAGRAM_VERSION,
@@ -83,9 +85,7 @@ watch(
   () => snapshotHistory.isTaking.value,
   (taking, wasTaking) => {
     if (taking && !wasTaking) {
-      newestIdentityWhenTakeStarted.value = newestSnapshotIdentity(
-        snapshotHistory.snapshots.value
-      )
+      newestIdentityWhenTakeStarted.value = newestSnapshotIdentity(snapshotHistory.snapshots.value)
       return
     }
     const nextIdentity = newestSnapshotIdentity(snapshotHistory.snapshots.value)
@@ -107,8 +107,8 @@ watch(
     class="mm-history-versions"
     data-testid="mindmap-history-versions"
   >
-    <ElTooltip
-      :content="t('canvas.ribbon.historyVersionsTip')"
+    <I18nTooltip
+      k="canvas.ribbon.historyVersionsTip"
       placement="bottom"
       :disabled="dropdownOpen"
     >
@@ -131,8 +131,9 @@ watch(
             <span
               v-if="!props.compact"
               class="mm-btn__label"
-              >{{ t('canvas.ribbon.historyVersions') }}</span
             >
+              <I18nText k="canvas.ribbon.historyVersions" />
+            </span>
             <ChevronDown
               :size="12"
               class="mm-btn__chevron"
@@ -195,12 +196,12 @@ watch(
                 v-if="!historyRows.length"
                 class="mm-history-versions__empty"
               >
-                {{ t('canvas.ribbon.historyEmpty') }}
+                <I18nText k="canvas.ribbon.historyEmpty" />
               </p>
             </div>
           </template>
         </ElDropdown>
       </span>
-    </ElTooltip>
+    </I18nTooltip>
   </div>
 </template>

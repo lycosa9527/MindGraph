@@ -497,9 +497,10 @@
 
 .mc-launch__start-label {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: visible;
+  text-align: start;
+  white-space: normal;
+  line-height: 1.2;
 }
 
 .mc-launch__start:hover:not(:disabled) {

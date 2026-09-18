@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'إرسال رمز التحقق عبر الرسائل القصيرة إلى الهاتف المحمول المرتبط. بعد الإعداد، يمكنك تسجيل الدخول باستخدام كلمة المرور أو رمز التحقق.',
   'auth.setPasswordWithSmsSubmit': 'تعيين كلمة المرور',
   'auth.setPasswordWithSmsSubmitting': 'توفير…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'إظهار الاسم',
   'auth.accountNamePlaceholder': 'حرفين على الأقل، بدون أرقام',
   'auth.accountNameSave': 'حفظ الاسم',

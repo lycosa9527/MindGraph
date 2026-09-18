@@ -11,6 +11,7 @@ import { ElForm, ElFormItem, ElInput, ElOption, ElSelect } from 'element-plus'
 
 import { Share2 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { type CommunityPost, createCommunityPost, updateCommunityPost } from '@/utils/apiClient'
@@ -73,10 +74,6 @@ const open = computed({
   get: () => props.visible,
   set: (value: boolean) => emit('update:visible', value),
 })
-const submitLabel = computed(() =>
-  isEdit.value ? t('community.shareModal.save') : t('community.shareModal.publish')
-)
-
 function categoryLabelKey(k: (typeof CATEGORY_CATALOG)[number]['key']): string {
   return `community.category.${k}`
 }
@@ -198,8 +195,13 @@ async function submit() {
   <SwissGlassDialog
     v-model="open"
     :ribbon="t('canvas.hero.communityExport.ribbon')"
+    ribbon-key="canvas.hero.communityExport.ribbon"
     :title="modalTitle"
+    :title-key="
+      isEdit ? 'canvas.hero.communityExport.editTitle' : 'canvas.hero.communityExport.title'
+    "
     :line1="t('canvas.hero.communityExport.line1')"
+    line1-key="canvas.hero.communityExport.line1"
     :icon="Share2"
     width="min(480px, 92vw)"
     :close-on-click-modal="false"
@@ -208,10 +210,10 @@ async function submit() {
       label-position="top"
       class="community-form"
     >
-      <el-form-item
-        :label="t('community.shareModal.titleLabel')"
-        required
-      >
+      <el-form-item required>
+        <template #label>
+          <I18nText k="community.shareModal.titleLabel" />
+        </template>
         <el-input
           v-model="title"
           :placeholder="t('community.shareModal.titlePlaceholder')"
@@ -219,7 +221,10 @@ async function submit() {
           show-word-limit
         />
       </el-form-item>
-      <el-form-item :label="t('community.shareModal.descriptionLabel')">
+      <el-form-item>
+        <template #label>
+          <I18nText k="community.shareModal.descriptionLabel" />
+        </template>
         <el-input
           v-model="description"
           type="textarea"
@@ -229,7 +234,10 @@ async function submit() {
           show-word-limit
         />
       </el-form-item>
-      <el-form-item :label="t('community.shareModal.categoryLabel')">
+      <el-form-item>
+        <template #label>
+          <I18nText k="community.shareModal.categoryLabel" />
+        </template>
         <el-select
           v-model="category"
           :placeholder="t('community.shareModal.categoryPlaceholder')"
@@ -253,7 +261,7 @@ async function submit() {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="close"
         >
-          {{ t('community.shareModal.cancel') }}
+          <I18nText k="community.shareModal.cancel" />
         </button>
         <button
           type="button"
@@ -261,7 +269,7 @@ async function submit() {
           :disabled="isSubmitting"
           @click="submit"
         >
-          {{ submitLabel }}
+          <I18nText :k="isEdit ? 'community.shareModal.save' : 'community.shareModal.publish'" />
         </button>
       </div>
     </template>

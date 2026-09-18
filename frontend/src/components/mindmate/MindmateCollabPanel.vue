@@ -6,20 +6,18 @@
 import { onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import {
-  ElButton,
-  ElDropdown,
-  ElDropdownItem,
-  ElDropdownMenu,
-  ElPopover,
-  ElTooltip,
-} from 'element-plus'
+import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElPopover } from 'element-plus'
 
 import { ArrowLeft, ChevronDown, Loader2, RefreshCw, Users } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
+import {
+  applyThinkingCoinMutation,
+  extractThinkingCoinsFooter,
+} from '@/composables/auth/useThinkingCoinSync'
 import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
 import { authFetch } from '@/utils/api'
 import {
@@ -39,16 +37,19 @@ const props = withDefaults(
     conversationTitle: '',
     embedInPanel: false,
     getSeedMessages: undefined,
-  },
+  }
 )
 
 const emit = defineEmits<{
-  (e: 'session-started', payload: {
-    code: string
-    visibility?: 'organization' | 'network'
-    ownerUserId?: number
-    seedThread?: boolean
-  }): void
+  (
+    e: 'session-started',
+    payload: {
+      code: string
+      visibility?: 'organization' | 'network'
+      ownerUserId?: number
+      seedThread?: boolean
+    }
+  ): void
 }>()
 
 const CODE_SAFE_RE = /[^2-9A-HJ-KM-NP-Z]/g
@@ -118,7 +119,7 @@ function getFormattedCode(): string {
 function navigateToRoom(
   code: string,
   sessionMeta?: Record<string, unknown>,
-  options?: { seedThread?: boolean },
+  options?: { seedThread?: boolean }
 ) {
   collabPopoverVisible.value = false
   const formatted = formatMindmateCollabCode(code)
@@ -148,11 +149,11 @@ function navigateToRoom(
 async function joinByCode() {
   const code = getFormattedCode()
   if (code.length !== 7) {
-    notify.warning(t('mindgraphLanding.codeIncomplete'))
+    notify.warningKey('mindgraphLanding.codeIncomplete')
     return
   }
   if (!/^[2-9A-HJ-KM-NP-Z]{3}-[2-9A-HJ-KM-NP-Z]{3}$/i.test(code)) {
-    notify.warning(t('mindgraphLanding.codeFormatInvalid'))
+    notify.warningKey('mindgraphLanding.codeFormatInvalid')
     return
   }
   isJoining.value = true
@@ -185,14 +186,19 @@ async function startSeminar(visibility: 'organization' | 'network') {
     if (response.ok) {
       const data = (await response.json()) as Record<string, unknown>
       applyThinkingCoinMutation(extractThinkingCoinsFooter(data))
-      notify.success(t('mindmate.collabStarted'))
+      notify.successKey('mindmate.collabStarted')
       navigateToRoom(String(data.code || ''), data, { seedThread: true })
     } else {
       const err = await response.json().catch(() => ({}))
-      notify.error((err as { detail?: string }).detail || t('mindmate.collabStartFailed'))
+      const detail = (err as { detail?: string }).detail
+      if (detail) {
+        notify.error(detail)
+      } else {
+        notify.errorKey('mindmate.collabStartFailed')
+      }
     }
   } catch {
-    notify.error(t('mindmate.collabStartFailed'))
+    notify.errorKey('mindmate.collabStartFailed')
   } finally {
     isJoining.value = false
   }
@@ -206,10 +212,10 @@ async function fetchOrgSessions(showSpinner = true) {
       const data = await response.json()
       orgSessions.value = data.sessions || []
     } else if (response.status !== 429) {
-      notify.error(t('mindgraphLanding.loadOrgSessionsFailed'))
+      notify.errorKey('mindgraphLanding.loadOrgSessionsFailed')
     }
   } catch {
-    notify.error(t('mindgraphLanding.networkError'))
+    notify.errorKey('mindgraphLanding.networkError')
   } finally {
     if (showSpinner) orgSessionsLoading.value = false
   }
@@ -317,8 +323,8 @@ defineExpose({ prefillAndAutoJoin })
           @command="onCollabDropdownCommand"
         >
           <span class="inline-flex">
-            <ElTooltip
-              :content="inConversation ? t('mindmate.collabLaunchTooltip') : t('mindgraphLanding.collaborate')"
+            <I18nTooltip
+              :k="inConversation ? 'mindmate.collabLaunchTooltip' : 'mindgraphLanding.collaborate'"
               placement="bottom"
             >
               <ElButton
@@ -326,7 +332,11 @@ defineExpose({ prefillAndAutoJoin })
                 class="join-workshop-btn join-workshop-btn--pill"
                 size="small"
                 :aria-haspopup="true"
-                :aria-label="inConversation ? t('mindmate.collabLaunchTooltip') : t('mindgraphLanding.collaborate')"
+                :aria-label="
+                  inConversation
+                    ? t('mindmate.collabLaunchTooltip')
+                    : t('mindgraphLanding.collaborate')
+                "
               >
                 <Users class="collab-trigger-icon-users" />
                 <ChevronDown
@@ -334,24 +344,36 @@ defineExpose({ prefillAndAutoJoin })
                   aria-hidden="true"
                 />
               </ElButton>
-            </ElTooltip>
+            </I18nTooltip>
           </span>
           <template #dropdown>
             <ElDropdownMenu>
               <template v-if="inConversation">
                 <ElDropdownItem command="launch-org">
-                  {{ t('mindmate.collabLaunchOrg') }}
+                  <I18nText
+                    k="mindmate.collabLaunchOrg"
+                    dense
+                  />
                 </ElDropdownItem>
                 <ElDropdownItem command="launch-network">
-                  {{ t('mindmate.collabLaunchNetwork') }}
+                  <I18nText
+                    k="mindmate.collabLaunchNetwork"
+                    dense
+                  />
                 </ElDropdownItem>
               </template>
               <template v-else>
                 <ElDropdownItem command="organization">
-                  {{ t('mindmate.collabJoinOrgSeminar') }}
+                  <I18nText
+                    k="mindmate.collabJoinOrgSeminar"
+                    dense
+                  />
                 </ElDropdownItem>
                 <ElDropdownItem command="network">
-                  {{ t('mindmate.collabJoinPublicSeminar') }}
+                  <I18nText
+                    k="mindmate.collabJoinPublicSeminar"
+                    dense
+                  />
                 </ElDropdownItem>
               </template>
             </ElDropdownMenu>
@@ -374,7 +396,7 @@ defineExpose({ prefillAndAutoJoin })
             class="sw-panel__back-icon"
             aria-hidden="true"
           />
-          {{ t('mindgraphLanding.dialogSchoolTitle') }}
+          <I18nText k="mindgraphLanding.dialogSchoolTitle" />
         </button>
         <button
           type="button"
@@ -399,14 +421,14 @@ defineExpose({ prefillAndAutoJoin })
           class="sw-panel__loading-icon"
           aria-hidden="true"
         />
-        <span>{{ t('common.loading') }}</span>
+        <span><I18nText k="common.loading" /></span>
       </div>
 
       <p
         v-else-if="orgSessions.length === 0"
         class="sw-panel__empty"
       >
-        {{ t('mindmate.collabNoOrgSessions') }}
+        <I18nText k="mindmate.collabNoOrgSessions" />
       </p>
 
       <ul
@@ -428,7 +450,8 @@ defineExpose({ prefillAndAutoJoin })
             <div :class="session.owner_name ? 'sw-session-owner' : 'sw-session-title'">
               {{ session.title }}
               <template v-if="session.owner_name">
-                · {{ session.participant_count }} {{ t('mindmate.collabParticipants') }}
+                · {{ session.participant_count }}
+                <I18nText k="mindmate.collabParticipants" />
               </template>
             </div>
           </div>
@@ -443,7 +466,10 @@ defineExpose({ prefillAndAutoJoin })
               class="sw-session-join__spinner"
               aria-hidden="true"
             />
-            {{ t('mindgraphLanding.join') }}
+            <I18nText
+              k="mindgraphLanding.join"
+              dense
+            />
           </button>
         </li>
       </ul>
@@ -463,11 +489,13 @@ defineExpose({ prefillAndAutoJoin })
             class="sw-panel__back-icon"
             aria-hidden="true"
           />
-          {{ t('mindmate.collabSharedPanelTitle') }}
+          <I18nText k="mindmate.collabSharedPanelTitle" />
         </button>
       </div>
 
-      <p class="sw-panel__hint">{{ t('mindmate.collabSharedCodeHint') }}</p>
+      <p class="sw-panel__hint">
+        <I18nText k="mindmate.collabSharedCodeHint" />
+      </p>
 
       <div class="code-input-container">
         <div class="code-input-boxes">
@@ -528,7 +556,10 @@ defineExpose({ prefillAndAutoJoin })
           class="sw-join-btn__spinner"
           aria-hidden="true"
         />
-        {{ t('mindgraphLanding.join') }}
+        <I18nText
+          k="mindgraphLanding.join"
+          dense
+        />
       </button>
     </div>
   </ElPopover>
@@ -749,7 +780,9 @@ defineExpose({ prefillAndAutoJoin })
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 5px 12px;
+  height: auto;
+  min-height: 28px;
+  padding: 4px 10px;
   background: #1c1917;
   color: #fff;
   font-size: 12px;
@@ -784,7 +817,9 @@ defineExpose({ prefillAndAutoJoin })
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 10px 16px;
+  height: auto;
+  min-height: 36px;
+  padding: 7px 16px;
   background: #1c1917;
   color: #fff;
   font-size: 13px;
@@ -919,18 +954,20 @@ defineExpose({ prefillAndAutoJoin })
 
 .collab-trigger-dropdown-popper .el-dropdown-menu__item {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
+  justify-content: flex-start;
   width: 100%;
   box-sizing: border-box;
-  padding: 8px 14px;
+  min-height: 32px;
+  height: auto;
+  padding: 6px 12px;
   font-size: 13px;
   font-weight: 500;
   color: #44403c;
   border-radius: 6px;
   line-height: 1.4;
   letter-spacing: 0.01em;
-  text-align: center;
+  text-align: start;
   transition:
     background 0.12s,
     color 0.12s;

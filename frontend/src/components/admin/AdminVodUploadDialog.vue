@@ -5,6 +5,7 @@ import { ElProgress } from 'element-plus'
 
 import { Video } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { uploadVodFile } from '@/composables/admin/uploadVodFile'
@@ -93,15 +94,18 @@ async function submit(): Promise<void> {
   <SwissGlassDialog
     v-model="open"
     :ribbon="t('swissGlass.hero.adminVod.ribbon')"
+    ribbon-key="swissGlass.hero.adminVod.ribbon"
     :title="t('swissGlass.hero.adminVod.title')"
+    title-key="swissGlass.hero.adminVod.title"
     :line1="t('swissGlass.hero.adminVod.line1')"
+    line1-key="swissGlass.hero.adminVod.line1"
     :icon="Video"
     width="28rem"
     :close-on-click-modal="!uploading"
     @close="close"
   >
     <label class="vod-field">
-      <span>{{ t('admin.vod.titleColumn') }}</span>
+      <span><I18nText k="admin.vod.titleColumn" /></span>
       <input
         v-model="title"
         type="text"
@@ -110,7 +114,7 @@ async function submit(): Promise<void> {
       />
     </label>
     <label class="vod-field">
-      <span>{{ t('admin.vod.uploadFile') }}</span>
+      <span><I18nText k="admin.vod.uploadFile" /></span>
       <input
         type="file"
         accept="video/*"
@@ -131,7 +135,7 @@ async function submit(): Promise<void> {
           :disabled="uploading"
           @click="close"
         >
-          {{ t('common.cancel') }}
+          <I18nText k="common.cancel" />
         </button>
         <button
           type="button"
@@ -139,7 +143,7 @@ async function submit(): Promise<void> {
           :disabled="uploading"
           @click="submit"
         >
-          {{ t('admin.vod.upload') }}
+          <I18nText k="admin.vod.upload" />
         </button>
       </div>
     </template>

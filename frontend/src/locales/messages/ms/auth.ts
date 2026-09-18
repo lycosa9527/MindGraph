@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'Kami mengirim kode ke telepon terikat Anda. Setelah mengatur kata sandi, Anda dapat masuk dengan kata sandi atau kode verifikasi.',
   'auth.setPasswordWithSmsSubmit': 'Simpan kata sandi',
   'auth.setPasswordWithSmsSubmitting': 'Menyimpan…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Nama tampilan',
   'auth.accountNamePlaceholder': 'Minimal 2 karakter, tanpa angka',
   'auth.accountNameSave': 'Simpan nama',

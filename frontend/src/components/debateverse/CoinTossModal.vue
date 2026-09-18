@@ -4,6 +4,7 @@
  */
 import { Coins } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 
@@ -28,15 +29,18 @@ function handleClose() {
   <SwissGlassDialog
     :model-value="visible"
     :ribbon="t('swissGlass.hero.coinToss.ribbon')"
+    ribbon-key="swissGlass.hero.coinToss.ribbon"
     :title="t('swissGlass.hero.coinToss.title')"
+    title-key="swissGlass.hero.coinToss.title"
     :line1="t('swissGlass.hero.coinToss.line1')"
+    line1-key="swissGlass.hero.coinToss.line1"
     :icon="Coins"
     width="min(500px, 92vw)"
     :close-on-click-modal="false"
     @close="handleClose"
   >
     <p class="text-center text-[var(--swiss-body,#44403c)] mb-2">
-      {{ t('debateverse.coinTossModalBody') }}
+      <I18nText k="debateverse.coinTossModalBody" />
     </p>
     <template #footer>
       <div class="swiss-glass-footer">
@@ -45,7 +49,7 @@ function handleClose() {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
           @click="handleClose"
         >
-          {{ t('debateverse.coinTossGotIt') }}
+          <I18nText k="debateverse.coinTossGotIt" />
         </button>
       </div>
     </template>

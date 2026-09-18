@@ -42,7 +42,9 @@
   position: absolute;
   bottom: calc(100% + 4px);
   right: 8px;
-  max-width: 168px;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(22rem, calc(100vw - 2.5rem));
   padding: 8px 12px;
   border-radius: 16px;
   background: rgb(255 255 255 / 0.96);
@@ -50,11 +52,18 @@
   font-size: 12px;
   font-weight: 600;
   line-height: 1.35;
-  white-space: nowrap;
+  text-align: start;
+  white-space: normal;
   box-shadow:
     0 10px 28px rgb(14 165 233 / 0.16),
     0 1px 3px rgb(15 23 42 / 0.05);
   border: 1px solid rgb(186 230 253 / 0.9);
+}
+
+.mc-sprite__bubble :deep(.i18n-label) {
+  display: flex;
+  width: max-content;
+  max-width: 100%;
 }
 
 .mc-sprite__bubble::after {

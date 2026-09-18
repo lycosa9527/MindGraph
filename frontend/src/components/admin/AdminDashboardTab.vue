@@ -17,6 +17,7 @@ import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
 import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
 import AdminSwissServiceCard from '@/components/admin/swiss/AdminSwissServiceCard.vue'
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
@@ -1047,8 +1048,11 @@ onBeforeUnmount(() => {
     <SwissGlassDialog
       v-model="trendModalVisible"
       :ribbon="t('swissGlass.hero.adminInline.ribbon')"
+      ribbon-key="swissGlass.hero.adminInline.ribbon"
       :title="t('swissGlass.hero.adminInline.title')"
+      title-key="swissGlass.hero.adminInline.title"
       :line1="t('swissGlass.hero.adminInline.line1')"
+      line1-key="swissGlass.hero.adminInline.line1"
       :line2="trendChartTitle"
       :icon="Settings2"
       width="640px"
@@ -1070,7 +1074,7 @@ onBeforeUnmount(() => {
           v-if="!trendChartHasData"
           class="flex justify-center items-center h-64 text-gray-500 dark:text-gray-400"
         >
-          {{ t('admin.trendChartNoData') }}
+          <I18nText k="admin.trendChartNoData" />
         </div>
         <div
           v-else
@@ -1084,28 +1088,28 @@ onBeforeUnmount(() => {
         <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <AdminSwissPeriodCard
-              :label="t('admin.today')"
+              label-key="admin.today"
               :value="periodCards.today"
               :active="trendContext.period === 'today'"
               theme="storage"
               @click="switchTrendPeriod('today')"
             />
             <AdminSwissPeriodCard
-              :label="t('admin.pastWeek')"
+              label-key="admin.pastWeek"
               :value="periodCards.week"
               :active="trendContext.period === 'week'"
               theme="storage"
               @click="switchTrendPeriod('week')"
             />
             <AdminSwissPeriodCard
-              :label="t('admin.pastMonth')"
+              label-key="admin.pastMonth"
               :value="periodCards.month"
               :active="trendContext.period === 'month'"
               theme="storage"
               @click="switchTrendPeriod('month')"
             />
             <AdminSwissPeriodCard
-              :label="t('admin.allTime')"
+              label-key="admin.allTime"
               :value="periodCards.total"
               :active="trendContext.period === 'total'"
               theme="storage"
@@ -1121,7 +1125,7 @@ onBeforeUnmount(() => {
             class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
             @click="closeTrendModal"
           >
-            {{ t('common.close') }}
+            <I18nText k="common.close" />
           </button>
         </div>
       </template>

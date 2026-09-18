@@ -15,14 +15,14 @@ import { Loading } from '@element-plus/icons-vue'
 import { Check, Globe, PanelLeftOpen } from '@lucide/vue'
 
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
+import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import { useLandingGenerateGraph } from '@/composables/mindgraph/useLandingGenerateGraph'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
+import { useLandingGenerateGraph } from '@/composables/mindgraph/useLandingGenerateGraph'
 import { useAuthStore, useDiagramStore, useLLMResultsStore, useUIStore } from '@/stores'
 import { useLiveTranslationStore } from '@/stores/liveTranslation'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
-
 import { TRANSLATE_LANGUAGES } from '@/utils/translateLanguages'
 
 import DiagramPreviewSvg from './DiagramPreviewSvg.vue'
@@ -215,7 +215,10 @@ async function handlePromptSubmit() {
     }
 
     diagramStore.clearHistory()
-    const loaded = diagramStore.loadFromSpec(outcome.result.spec!, outcome.diagramType as DiagramType)
+    const loaded = diagramStore.loadFromSpec(
+      outcome.result.spec!,
+      outcome.diagramType as DiagramType
+    )
     if (loaded) {
       useLLMResultsStore().reset()
       router.push({ path: '/canvas' })
@@ -489,7 +492,9 @@ onMounted(() => {
 
       <!-- Diagram cards: thinking maps, then advanced diagrams below -->
       <div class="intl-gallery">
-        <h2 class="intl-section-title">{{ t('landing.international.sectionTitle') }}</h2>
+        <h2 class="intl-section-title">
+          <I18nText k="landing.international.sectionTitle" />
+        </h2>
         <div class="intl-grid">
           <div
             v-for="item in eightThinkingMapCards"
@@ -501,12 +506,16 @@ onMounted(() => {
             <div class="intl-card-preview">
               <DiagramPreviewSvg :type="item.type" />
             </div>
-            <h3 class="intl-card-title">{{ t(item.titleKey) }}</h3>
-            <p class="intl-card-desc">{{ t(item.descKey) }}</p>
+            <h3 class="intl-card-title">
+              <I18nText :k="item.titleKey" />
+            </h3>
+            <p class="intl-card-desc">
+              <I18nText :k="item.descKey" />
+            </p>
           </div>
         </div>
         <h2 class="intl-section-title intl-section-title--secondary">
-          {{ t('landing.international.advancedDiagramsTitle') }}
+          <I18nText k="landing.international.advancedDiagramsTitle" />
         </h2>
         <div class="intl-grid">
           <div
@@ -519,8 +528,12 @@ onMounted(() => {
             <div class="intl-card-preview">
               <DiagramPreviewSvg :type="item.type" />
             </div>
-            <h3 class="intl-card-title">{{ t(item.titleKey) }}</h3>
-            <p class="intl-card-desc">{{ t(item.descKey) }}</p>
+            <h3 class="intl-card-title">
+              <I18nText :k="item.titleKey" />
+            </h3>
+            <p class="intl-card-desc">
+              <I18nText :k="item.descKey" />
+            </p>
           </div>
         </div>
       </div>
@@ -1136,6 +1149,19 @@ onMounted(() => {
   font-weight: 600;
   color: var(--el-text-color-primary, #333);
   margin: 0 0 var(--card-title-mb);
+  text-align: center;
+}
+
+.intl-card-title :deep(.i18n-label),
+.intl-card-desc :deep(.i18n-label) {
+  align-items: center;
+  width: 100%;
+}
+
+.intl-card-title :deep(.i18n-label__primary),
+.intl-card-title :deep(.i18n-label__secondary),
+.intl-card-desc :deep(.i18n-label__primary),
+.intl-card-desc :deep(.i18n-label__secondary) {
   text-align: center;
 }
 

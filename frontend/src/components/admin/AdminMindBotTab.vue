@@ -8,6 +8,8 @@ import { ElTable } from 'element-plus'
 
 import AdminMindBotConfigDialog from '@/components/admin/AdminMindBotConfigDialog.vue'
 import type { MindbotConfigRow, OrgOption } from '@/components/admin/mindbotConfigTypes'
+import I18nText from '@/components/common/I18nText.vue'
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { MINDBOT_BOT_CAP, useAdminMindBotConfig } from '@/composables/admin/useAdminMindBotConfig'
@@ -348,9 +350,9 @@ defineExpose({
                 >
                   {{ t('admin.mindbot.edit') }}
                 </el-button>
-                <el-tooltip
+                <I18nTooltip
                   :disabled="canMoveBot(row as MindbotConfigRow)"
-                  :content="t('admin.mindbot.moveNoTargets')"
+                  k="admin.mindbot.moveNoTargets"
                   placement="top"
                 >
                   <span class="inline-block">
@@ -365,7 +367,7 @@ defineExpose({
                       {{ t('admin.mindbot.move') }}
                     </el-button>
                   </span>
-                </el-tooltip>
+                </I18nTooltip>
                 <el-button
                   type="danger"
                   size="small"
@@ -494,13 +496,13 @@ defineExpose({
       <template #header>
         <div class="mindbot-swiss-header mindbot-config-header">
           <span class="mindbot-swiss-header__glyph">◇</span>
-          <span class="mindbot-swiss-header__title">{{ t('admin.mindbot.move') }}</span>
+          <span class="mindbot-swiss-header__title"><I18nText k="admin.mindbot.move" /></span>
           <span
             class="mindbot-swiss-header__divider"
             aria-hidden="true"
             >·</span
           >
-          <span class="mindbot-swiss-header__note">{{ t('admin.mindbot.moveTitle') }}</span>
+          <span class="mindbot-swiss-header__note"><I18nText k="admin.mindbot.moveTitle" /></span>
         </div>
       </template>
       <div class="mindbot-config-body">
@@ -510,13 +512,13 @@ defineExpose({
         />
         <div class="mindbot-swiss-form-wrap">
           <p class="mindbot-swiss-hint text-xs mb-4 leading-relaxed">
-            {{ t('admin.mindbot.moveIntro') }}
+            <I18nText k="admin.mindbot.moveIntro" />
           </p>
           <div class="flex flex-col gap-2">
             <span
               class="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--mindbot-swiss-muted)"
-              >{{ t('admin.mindbot.moveTarget') }}</span
-            >
+              ><I18nText k="admin.mindbot.moveTarget"
+            /></span>
             <el-select
               v-model="moveTargetOrgId"
               class="mindbot-swiss-select w-full"
@@ -539,7 +541,7 @@ defineExpose({
             class="mindbot-pill mindbot-pill--footer-cancel"
             @click="moveDialogVisible = false"
           >
-            {{ t('common.cancel') }}
+            <I18nText k="common.cancel" />
           </el-button>
           <el-button
             type="primary"
@@ -548,7 +550,7 @@ defineExpose({
             :disabled="moveTargetOrgId == null || moveTargetOptions.length === 0"
             @click="confirmMoveBot"
           >
-            {{ t('admin.mindbot.move') }}
+            <I18nText k="admin.mindbot.move" />
           </el-button>
         </div>
       </template>

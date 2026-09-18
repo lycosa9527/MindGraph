@@ -8,6 +8,7 @@ import { Loading } from '@element-plus/icons-vue'
 
 import { BarChart3, Loader2 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import type { Teacher } from '@/composables/teacherUsage/teacherUsageTypes'
 import { teacherUsageInjectionKey } from '@/composables/teacherUsage/useTeacherUsagePage'
@@ -51,8 +52,11 @@ watch(showUserChartModal, (isOpen) => {
   <SwissGlassDialog
     v-model="showTeachersModal"
     :ribbon="t('swissGlass.hero.teacherUsage.ribbon')"
+    ribbon-key="swissGlass.hero.teacherUsage.ribbon"
     :title="t('swissGlass.hero.teacherUsage.title')"
+    title-key="swissGlass.hero.teacherUsage.title"
     :line1="t('swissGlass.hero.teacherUsage.line1')"
+    line1-key="swissGlass.hero.teacherUsage.line1"
     :icon="BarChart3"
     width="min(700px, 92vw)"
   >
@@ -68,17 +72,17 @@ watch(showUserChartModal, (isOpen) => {
       class="mb-4 pb-4 border-b border-stone-200"
     >
       <h4 class="text-sm font-semibold text-stone-700 mb-3">
-        {{ t('teacher.analytics.rulesTitle') }}
+        <I18nText k="teacher.analytics.rulesTitle" />
       </h4>
       <!-- 未使用: active_days = 0 (fixed, read-only) -->
       <div
         v-if="modalStatCardType === 'unused'"
         class="text-sm text-stone-600"
       >
-        <code class="bg-stone-100 px-2 py-1 rounded">{{
-          t('teacher.analytics.ruleUnusedLine')
-        }}</code>
-        <span class="ml-2">{{ t('teacher.analytics.ruleUnusedHint') }}</span>
+        <code class="bg-stone-100 px-2 py-1 rounded"
+          ><I18nText k="teacher.analytics.ruleUnusedLine"
+        /></code>
+        <span class="ml-2"><I18nText k="teacher.analytics.ruleUnusedHint" /></span>
       </div>
       <!-- 持续使用 -->
       <el-form
@@ -226,7 +230,7 @@ watch(showUserChartModal, (isOpen) => {
             v-if="isSavingConfig"
             class="w-3.5 h-3.5 animate-spin"
           />
-          {{ t('teacher.analytics.saveOnly') }}
+          <I18nText k="teacher.analytics.saveOnly" />
         </button>
         <button
           type="button"
@@ -238,7 +242,7 @@ watch(showUserChartModal, (isOpen) => {
             v-if="isRecomputing"
             class="w-3.5 h-3.5 animate-spin"
           />
-          {{ t('teacher.analytics.saveRecompute') }}
+          <I18nText k="teacher.analytics.saveRecompute" />
         </button>
       </div>
     </div>
@@ -291,7 +295,7 @@ watch(showUserChartModal, (isOpen) => {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
           @click="showTeachersModal = false"
         >
-          {{ t('common.close') }}
+          <I18nText k="common.close" />
         </button>
       </div>
     </template>
@@ -301,8 +305,11 @@ watch(showUserChartModal, (isOpen) => {
   <SwissGlassDialog
     v-model="showUserChartModal"
     :ribbon="t('swissGlass.hero.teacherUsage.ribbon')"
+    ribbon-key="swissGlass.hero.teacherUsage.ribbon"
     :title="t('swissGlass.hero.teacherUsage.title')"
+    title-key="swissGlass.hero.teacherUsage.title"
     :line1="t('swissGlass.hero.teacherUsage.line1')"
+    line1-key="swissGlass.hero.teacherUsage.line1"
     :icon="BarChart3"
     width="min(640px, 92vw)"
     @close="closeUserChartModal"
@@ -337,7 +344,7 @@ watch(showUserChartModal, (isOpen) => {
           class="token-stat-card"
         >
           <p class="text-xs text-gray-500 mb-1">
-            {{ t('common.date.today') }}
+            <I18nText k="common.date.today" />
           </p>
           <p class="text-lg font-semibold">
             {{ formatNumber(userDetailData.tokenStats.today.total_tokens) }}
@@ -348,7 +355,7 @@ watch(showUserChartModal, (isOpen) => {
           class="token-stat-card"
         >
           <p class="text-xs text-gray-500 mb-1">
-            {{ t('teacher.analytics.periodWeek') }}
+            <I18nText k="teacher.analytics.periodWeek" />
           </p>
           <p class="text-lg font-semibold">
             {{ formatNumber(userDetailData.tokenStats.week.total_tokens) }}
@@ -359,7 +366,7 @@ watch(showUserChartModal, (isOpen) => {
           class="token-stat-card"
         >
           <p class="text-xs text-gray-500 mb-1">
-            {{ t('teacher.analytics.periodMonth') }}
+            <I18nText k="teacher.analytics.periodMonth" />
           </p>
           <p class="text-lg font-semibold">
             {{ formatNumber(userDetailData.tokenStats.month.total_tokens) }}
@@ -370,7 +377,7 @@ watch(showUserChartModal, (isOpen) => {
           class="token-stat-card"
         >
           <p class="text-xs text-gray-500 mb-1">
-            {{ t('teacher.analytics.periodTotal') }}
+            <I18nText k="teacher.analytics.periodTotal" />
           </p>
           <p class="text-lg font-semibold">
             {{ formatNumber(userDetailData.tokenStats.total.total_tokens) }}
@@ -385,7 +392,7 @@ watch(showUserChartModal, (isOpen) => {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
           @click="closeUserChartModal"
         >
-          {{ t('common.close') }}
+          <I18nText k="common.close" />
         </button>
       </div>
     </template>

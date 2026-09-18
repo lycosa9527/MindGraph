@@ -20,6 +20,8 @@ def user_preference_fields(user: User) -> dict[str, Any]:
         "prompt_language": getattr(user, "prompt_language", None),
         "ui_version": getattr(user, "ui_version", None),
         "match_prompt_to_ui": _bool_pref(user, "match_prompt_to_ui", True),
+        "bilingual_ui_enabled": _bool_pref(user, "bilingual_ui_enabled", False),
+        "presenter_ui_locale": getattr(user, "presenter_ui_locale", None),
         "allows_simplified_chinese": _bool_pref(user, "allows_simplified_chinese", True),
         "education_stage": getattr(user, "education_stage", None),
         "ai_content_level": getattr(user, "ai_content_level", None),
@@ -36,4 +38,26 @@ def language_preference_patch_fields(user: User) -> dict[str, Any]:
         "prompt_language": prefs["prompt_language"],
         "ui_version": prefs["ui_version"],
         "match_prompt_to_ui": prefs["match_prompt_to_ui"],
+        "bilingual_ui_enabled": prefs["bilingual_ui_enabled"],
+        "presenter_ui_locale": prefs["presenter_ui_locale"],
     }
+
+
+def coerce_overseas_ui_language_prefs(user: User) -> bool:
+    """Rewrite zh UI prefs when Simplified Chinese is not allowed.
+
+    Returns True when any column changed so callers can persist once.
+    """
+    if getattr(user, "allows_simplified_chinese", True):
+        return False
+    changed = False
+    if (user.ui_language or "").lower() == "zh":
+        user.ui_language = "en"
+        changed = True
+    if (user.prompt_language or "").lower() == "zh":
+        user.prompt_language = "en"
+        changed = True
+    if (getattr(user, "presenter_ui_locale", None) or "").lower() == "zh":
+        user.presenter_ui_locale = "en"
+        changed = True
+    return changed

@@ -2,8 +2,11 @@
   <SwissGlassDialog
     v-model="visible"
     :ribbon="t('swissGlass.hero.watchAssign.ribbon')"
+    ribbon-key="swissGlass.hero.watchAssign.ribbon"
     :title="t('swissGlass.hero.watchAssign.title')"
+    title-key="swissGlass.hero.watchAssign.title"
     :line1="t('swissGlass.hero.watchAssign.line1')"
+    line1-key="swissGlass.hero.watchAssign.line1"
     :icon="Eye"
     width="min(500px, 92vw)"
     @close="handleClose"
@@ -12,16 +15,22 @@
       :model="form"
       label-width="100px"
     >
-      <el-form-item label="Watch ID">
+      <el-form-item>
+        <template #label>
+          <I18nText k="smartResponse.watchId" />
+        </template>
         <el-input
           :model-value="watchItem?.watch_id"
           disabled
         />
       </el-form-item>
-      <el-form-item label="Student">
+      <el-form-item>
+        <template #label>
+          <I18nText k="smartResponse.student" />
+        </template>
         <el-select
           v-model="form.student_id"
-          placeholder="Select student"
+          :placeholder="t('smartResponse.selectStudent')"
           filterable
           style="width: 100%"
         >
@@ -42,7 +51,7 @@
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="handleClose"
         >
-          Cancel
+          <I18nText k="common.cancel" />
         </button>
         <button
           type="button"
@@ -50,7 +59,7 @@
           :disabled="loading"
           @click="handleAssign"
         >
-          Assign
+          <I18nText k="common.confirm" />
         </button>
       </div>
     </template>
@@ -62,6 +71,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import { Eye } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { Watch } from '@/stores/smartResponse'

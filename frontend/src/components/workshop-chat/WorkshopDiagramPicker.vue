@@ -5,6 +5,7 @@ import { ElMessage } from 'element-plus'
 
 import { LayoutGrid } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -76,8 +77,11 @@ async function pick(diagram: SavedDiagram): Promise<void> {
   <SwissGlassDialog
     v-model="open"
     :ribbon="t('swissGlass.hero.diagramPicker.ribbon')"
+    ribbon-key="swissGlass.hero.diagramPicker.ribbon"
     :title="t('swissGlass.hero.diagramPicker.title')"
+    title-key="swissGlass.hero.diagramPicker.title"
     :line1="t('swissGlass.hero.diagramPicker.line1')"
+    line1-key="swissGlass.hero.diagramPicker.line1"
     :icon="LayoutGrid"
     width="min(560px, 92vw)"
     dialog-class="ws-diagram-picker"
@@ -86,13 +90,13 @@ async function pick(diagram: SavedDiagram): Promise<void> {
       v-if="isLoading"
       class="ws-diagram-picker__hint"
     >
-      {{ t('workshop.diagramInserting') }}
+      <I18nText k="workshop.diagramInserting" />
     </p>
     <p
       v-else-if="diagrams.length === 0"
       class="ws-diagram-picker__hint"
     >
-      {{ t('workshop.diagramPickerEmpty') }}
+      <I18nText k="workshop.diagramPickerEmpty" />
     </p>
     <ul
       v-else
@@ -120,7 +124,7 @@ async function pick(diagram: SavedDiagram): Promise<void> {
             v-if="insertingId === String(diagram.id)"
             class="ws-diagram-picker__busy"
           >
-            {{ t('workshop.diagramInserting') }}
+            <I18nText k="workshop.diagramInserting" />
           </span>
         </button>
       </li>

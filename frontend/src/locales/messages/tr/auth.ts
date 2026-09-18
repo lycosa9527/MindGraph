@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'Bağlı telefonunuza bir kod göndeririz. Şifre belirledikten sonra şifre veya doğrulama kodu ile giriş yapabilirsiniz.',
   'auth.setPasswordWithSmsSubmit': 'Şifreyi kaydet',
   'auth.setPasswordWithSmsSubmitting': 'Kaydediliyor…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Görünen ad',
   'auth.accountNamePlaceholder': 'En az 2 karakter, rakam yok',
   'auth.accountNameSave': 'Adı kaydet',

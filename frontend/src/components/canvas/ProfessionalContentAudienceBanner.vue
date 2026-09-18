@@ -8,6 +8,7 @@ import { storeToRefs } from 'pinia'
 
 import { GraduationCap } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAiContentLevelStore } from '@/stores'
 
@@ -37,7 +38,10 @@ const audienceTitle = computed(() =>
       aria-hidden="true"
     />
     <span>
-      {{ t('canvas.toolbar.professionalContent.audienceLine', { level: audienceTitle }) }}
+      <I18nText
+        k="canvas.toolbar.professionalContent.audienceLine"
+        :params="{ level: audienceTitle }"
+      />
     </span>
   </div>
 </template>

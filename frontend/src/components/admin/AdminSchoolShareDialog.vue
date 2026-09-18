@@ -6,6 +6,7 @@ import { computed } from 'vue'
 
 import { Copy, Share2 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 
@@ -75,8 +76,11 @@ async function copyShortInvite() {
   <SwissGlassCard
     v-model="isVisible"
     :ribbon="t('swissGlass.hero.adminSchoolShare.ribbon')"
+    ribbon-key="swissGlass.hero.adminSchoolShare.ribbon"
     :title="t('swissGlass.hero.adminSchoolShare.title')"
+    title-key="swissGlass.hero.adminSchoolShare.title"
     :line1="t('swissGlass.hero.adminSchoolShare.line1')"
+    line1-key="swissGlass.hero.adminSchoolShare.line1"
     :icon="Share2"
     card-class="swiss-glass-card--wide"
   >
@@ -92,7 +96,7 @@ async function copyShortInvite() {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="closeModal"
         >
-          {{ t('common.close') }}
+          <I18nText k="common.close" />
         </button>
         <button
           type="button"
@@ -100,7 +104,7 @@ async function copyShortInvite() {
           @click="copyShortInvite"
         >
           <Copy class="w-4 h-4" />
-          {{ t('admin.copyShortInvite') }}
+          <I18nText k="admin.copyShortInvite" />
         </button>
         <button
           type="button"
@@ -108,7 +112,7 @@ async function copyShortInvite() {
           @click="copyShareMessage"
         >
           <Copy class="w-4 h-4" />
-          {{ t('admin.copyShareMessage') }}
+          <I18nText k="admin.copyShareMessage" />
         </button>
       </div>
     </template>

@@ -6,6 +6,7 @@ import { computed, ref, watch } from 'vue'
 
 import { Building2, Copy, Loader2, RefreshCw } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 import { useCreateAdminOrganization } from '@/composables/queries'
@@ -146,8 +147,11 @@ watch(
   <SwissGlassCard
     v-model="isVisible"
     :ribbon="t('swissGlass.hero.adminSchool.ribbon')"
+    ribbon-key="swissGlass.hero.adminSchool.ribbon"
     :title="t('swissGlass.hero.adminSchool.title')"
+    title-key="swissGlass.hero.adminSchool.title"
     :line1="t('swissGlass.hero.adminSchool.line1')"
+    line1-key="swissGlass.hero.adminSchool.line1"
     :icon="Building2"
   >
     <form
@@ -159,7 +163,7 @@ watch(
           class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
           for="create-org-name"
         >
-          {{ t('admin.organizationName') }}
+          <I18nText k="admin.organizationName" />
           <span class="text-stone-400">*</span>
         </label>
         <input
@@ -178,7 +182,7 @@ watch(
           class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
           for="create-org-invitation"
         >
-          {{ t('admin.invitationCode') }}
+          <I18nText k="admin.invitationCode" />
         </label>
         <div class="flex gap-2">
           <input
@@ -208,7 +212,7 @@ watch(
           class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
           for="create-org-expires"
         >
-          {{ t('admin.validityPeriod') }}
+          <I18nText k="admin.validityPeriod" />
           <span class="text-stone-400">*</span>
         </label>
         <input
@@ -227,7 +231,7 @@ watch(
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="closeModal"
         >
-          {{ t('common.cancel') }}
+          <I18nText k="common.cancel" />
         </button>
         <button
           type="button"
@@ -236,7 +240,7 @@ watch(
           @click="copyInvitationCode"
         >
           <Copy class="w-4 h-4" />
-          {{ t('admin.copyInvitationCode') }}
+          <I18nText k="admin.copyInvitationCode" />
         </button>
         <button
           type="button"
@@ -248,7 +252,7 @@ watch(
             v-if="isSubmitting"
             class="w-4 h-4 animate-spin"
           />
-          {{ t('admin.createOrganization') }}
+          <I18nText k="admin.createOrganization" />
         </button>
       </div>
     </template>

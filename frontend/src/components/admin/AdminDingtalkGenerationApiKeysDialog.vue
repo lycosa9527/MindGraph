@@ -9,6 +9,7 @@ import { ElMessageBox, ElTable, ElTableColumn } from 'element-plus'
 
 import { DocumentCopy, Plus } from '@element-plus/icons-vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminApiKeys, useCreateAdminApiKey, useDeleteAdminApiKey } from '@/composables/queries'
 import '@/styles/admin-mindbot-swiss-api-keys.css'
@@ -194,13 +195,17 @@ function cancelCreate(): void {
     <template #header>
       <div class="mindbot-swiss-header mindbot-config-header">
         <span class="mindbot-swiss-header__glyph">◇</span>
-        <span class="mindbot-swiss-header__title">{{ t('admin.dingtalkApiKeysDialogTitle') }}</span>
+        <span class="mindbot-swiss-header__title"
+          ><I18nText k="admin.dingtalkApiKeysDialogTitle"
+        /></span>
         <span
           class="mindbot-swiss-header__divider"
           aria-hidden="true"
           >·</span
         >
-        <span class="mindbot-swiss-header__note">{{ t('admin.dingtalkApiKeysDialogNote') }}</span>
+        <span class="mindbot-swiss-header__note"
+          ><I18nText k="admin.dingtalkApiKeysDialogNote"
+        /></span>
       </div>
     </template>
     <div class="mindbot-config-body">
@@ -211,25 +216,25 @@ function cancelCreate(): void {
       <div class="mindbot-swiss-form-wrap">
         <div class="api-keys-hint-inset">
           <div class="api-keys-section-kicker">
-            {{ t('admin.dingtalkGenerationCard') }}
+            <I18nText k="admin.dingtalkGenerationCard" />
           </div>
           <p class="mindbot-swiss-hint api-keys-hint-bumper">
-            {{ t('admin.dingtalkApiKeysDialogIntro') }}
+            <I18nText k="admin.dingtalkApiKeysDialogIntro" />
           </p>
         </div>
 
         <div class="api-keys-tool-row">
           <span
             class="text-[0.65rem] font-semibold uppercase tracking-widest text-(--mindbot-swiss-muted)"
-            >{{ t('admin.apiKeys') }}</span
-          >
+            ><I18nText k="admin.apiKeys"
+          /></span>
           <el-button
             type="primary"
             :icon="Plus"
             class="api-keys-pill"
             @click="openCreate"
           >
-            {{ t('admin.createApiKey') }}
+            <I18nText k="admin.createApiKey" />
           </el-button>
         </div>
 
@@ -353,7 +358,7 @@ function cancelCreate(): void {
                     link
                     @click="confirmDelete(row as AdminApiKeyRow)"
                   >
-                    {{ t('admin.delete') }}
+                    <I18nText k="admin.delete" />
                   </el-button>
                 </div>
               </template>
@@ -378,7 +383,7 @@ function cancelCreate(): void {
       <template #header>
         <div class="mindbot-swiss-header mindbot-config-header">
           <span class="mindbot-swiss-header__glyph">◇</span>
-          <span class="mindbot-swiss-header__title">{{ t('admin.createApiKey') }}</span>
+          <span class="mindbot-swiss-header__title"><I18nText k="admin.createApiKey" /></span>
         </div>
       </template>
       <div class="mindbot-config-body">
@@ -432,7 +437,7 @@ function cancelCreate(): void {
               class="mindbot-pill mindbot-pill--footer-cancel"
               @click="cancelCreate"
             >
-              {{ t('common.cancel') }}
+              <I18nText k="common.cancel" />
             </el-button>
             <el-button
               type="primary"
@@ -440,7 +445,7 @@ function cancelCreate(): void {
               :loading="createSubmitting"
               @click="submitCreate"
             >
-              {{ t('admin.createApiKey') }}
+              <I18nText k="admin.createApiKey" />
             </el-button>
           </div>
         </div>
@@ -462,9 +467,9 @@ function cancelCreate(): void {
       <template #header>
         <div class="mindbot-swiss-header mindbot-config-header">
           <span class="mindbot-swiss-header__glyph">◇</span>
-          <span class="mindbot-swiss-header__title">{{
-            t('admin.apiKeysCreatedSecretTitle')
-          }}</span>
+          <span class="mindbot-swiss-header__title"
+            ><I18nText k="admin.apiKeysCreatedSecretTitle"
+          /></span>
         </div>
       </template>
       <div class="mindbot-config-body">
@@ -475,7 +480,7 @@ function cancelCreate(): void {
         <div class="mindbot-swiss-form-wrap">
           <div class="api-keys-hint-inset api-keys-hint-inset--banner">
             <p class="mindbot-swiss-hint text-xs leading-relaxed m-0">
-              {{ t('admin.apiKeysCreatedSecretBody') }}
+              <I18nText k="admin.apiKeysCreatedSecretBody" />
             </p>
           </div>
           <el-input
@@ -499,14 +504,14 @@ function cancelCreate(): void {
               plain
               @click="() => newKeyPlaintext && void copyToClipboard(newKeyPlaintext)"
             >
-              {{ t('admin.apiKeyCopy') }}
+              <I18nText k="admin.apiKeyCopy" />
             </el-button>
             <el-button
               type="primary"
               class="mindbot-pill mindbot-pill--footer-save"
               @click="newKeyDialogOpen = false"
             >
-              {{ t('common.close') }}
+              <I18nText k="common.close" />
             </el-button>
           </div>
         </div>

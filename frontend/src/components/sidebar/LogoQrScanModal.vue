@@ -7,6 +7,7 @@ import { computed } from 'vue'
 
 import { QrCode } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage } from '@/composables'
 import { usePublicSiteUrl } from '@/composables/core/usePublicSiteUrl'
@@ -46,8 +47,11 @@ function closeModal(): void {
   <SwissGlassCard
     v-model="isVisible"
     :ribbon="t('swissGlass.hero.logoQr.ribbon')"
+    ribbon-key="swissGlass.hero.logoQr.ribbon"
     :title="t('swissGlass.hero.logoQr.title')"
+    title-key="swissGlass.hero.logoQr.title"
     :line1="t('swissGlass.hero.logoQr.line1')"
+    line1-key="swissGlass.hero.logoQr.line1"
     :icon="QrCode"
     @close="closeModal"
     @pointerenter="emit('hoverEnter')"
@@ -57,7 +61,7 @@ function closeModal(): void {
       <p
         class="w-full max-w-sm px-1 text-center text-sm font-medium leading-snug tracking-tight text-slate-600"
       >
-        {{ t('sidebar.logoSiteQrHint') }}
+        <I18nText k="sidebar.logoSiteQrHint" />
       </p>
 
       <div class="logo-site-qr-stage">

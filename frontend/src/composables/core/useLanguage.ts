@@ -5,6 +5,7 @@ import { computed } from 'vue'
 
 import { i18n } from '@/i18n'
 import type { MessageSchema } from '@/i18n/messageSchema'
+import { resolveBilingual } from '@/i18n/resolveBilingual'
 import type { Language, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
 import { persistLanguagePreferencesIfAuthenticated } from '@/utils/persistLanguagePreferences'
@@ -57,6 +58,8 @@ export function useLanguage() {
   const isEn = computed(() => uiStore.language === 'en')
   const isAz = computed(() => uiStore.language === 'az')
   const promptLanguage = computed<PromptLanguage>(() => uiStore.promptLanguage)
+  const bilingualUiEnabled = computed(() => uiStore.bilingualUiEnabled)
+  const presenterUiLocale = computed(() => uiStore.presenterUiLocale)
 
   function t(key: MessageKey, fallback?: string): string
   function t(key: MessageKey, named: Record<string, unknown>): string
@@ -96,7 +99,10 @@ export function useLanguage() {
     isEn,
     isAz,
     promptLanguage,
+    bilingualUiEnabled,
+    presenterUiLocale,
     t,
+    resolveBilingual,
     setLanguage,
     setPromptLanguage,
     toggleLanguage,

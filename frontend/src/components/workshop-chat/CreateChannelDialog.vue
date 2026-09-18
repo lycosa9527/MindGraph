@@ -9,6 +9,7 @@ import { ElMessage } from 'element-plus'
 
 import { MessagesSquare } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
@@ -97,8 +98,11 @@ async function submit(): Promise<void> {
   <SwissGlassDialog
     v-model="open"
     :ribbon="t('swissGlass.hero.createChannel.ribbon')"
+    ribbon-key="swissGlass.hero.createChannel.ribbon"
     :title="t('swissGlass.hero.createChannel.title')"
+    title-key="swissGlass.hero.createChannel.title"
     :line1="t('swissGlass.hero.createChannel.line1')"
+    line1-key="swissGlass.hero.createChannel.line1"
     :icon="MessagesSquare"
     width="min(440px, 92vw)"
     :close-on-click-modal="false"
@@ -109,10 +113,10 @@ async function submit(): Promise<void> {
         class="flex flex-col items-start gap-2"
       >
         <el-radio value="group">
-          {{ t('workshop.channelKindGroup') }}
+          <I18nText k="workshop.channelKindGroup" />
         </el-radio>
         <el-radio value="lesson">
-          {{ t('workshop.channelKindLessonStudy') }}
+          <I18nText k="workshop.channelKindLessonStudy" />
         </el-radio>
       </el-radio-group>
 
@@ -141,7 +145,7 @@ async function submit(): Promise<void> {
             v-if="parentOptions.length === 0"
             class="text-xs text-amber-700 mt-1"
           >
-            {{ t('workshop.createChannelNoGroupsYet') }}
+            <I18nText k="workshop.createChannelNoGroupsYet" />
           </p>
         </el-form-item>
 
@@ -182,7 +186,7 @@ async function submit(): Promise<void> {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="open = false"
         >
-          {{ t('common.cancel') }}
+          <I18nText k="common.cancel" />
         </button>
         <button
           type="button"
@@ -190,7 +194,7 @@ async function submit(): Promise<void> {
           :disabled="saving || !name.trim() || (kind === 'lesson' && parentOptions.length === 0)"
           @click="submit"
         >
-          {{ t('workshop.create') }}
+          <I18nText k="workshop.create" />
         </button>
       </div>
     </template>

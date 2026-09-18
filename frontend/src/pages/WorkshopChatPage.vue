@@ -16,6 +16,7 @@ import {
   Users,
 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import OrgContactsPanel from '@/components/social/OrgContactsPanel.vue'
 import {
@@ -1712,8 +1713,11 @@ function handleTopicMove(topicId: number): void {
     <SwissGlassDialog
       v-model="showNewTopicDialog"
       :ribbon="t('swissGlass.hero.newTopic.ribbon')"
+      ribbon-key="swissGlass.hero.newTopic.ribbon"
       :title="t('swissGlass.hero.newTopic.title')"
+      title-key="swissGlass.hero.newTopic.title"
       :line1="t('swissGlass.hero.newTopic.line1')"
+      line1-key="swissGlass.hero.newTopic.line1"
       :icon="MessageSquarePlus"
       width="min(480px, 92vw)"
       :close-on-click-modal="false"
@@ -1746,7 +1750,7 @@ function handleTopicMove(topicId: number): void {
             class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
             @click="showNewTopicDialog = false"
           >
-            {{ t('common.cancel') }}
+            <I18nText k="common.cancel" />
           </button>
           <button
             type="button"
@@ -1754,7 +1758,7 @@ function handleTopicMove(topicId: number): void {
             :disabled="creatingTopic || !newTopicTitle.trim()"
             @click="handleCreateTopic"
           >
-            {{ t('workshop.create') }}
+            <I18nText k="workshop.create" />
           </button>
         </div>
       </template>
@@ -1797,8 +1801,11 @@ function handleTopicMove(topicId: number): void {
     <SwissGlassDialog
       v-model="workshopSettingsDialogVisible"
       :ribbon="t('swissGlass.hero.workshopSettings.ribbon')"
+      ribbon-key="swissGlass.hero.workshopSettings.ribbon"
       :title="t('swissGlass.hero.workshopSettings.title')"
+      title-key="swissGlass.hero.workshopSettings.title"
       :line1="t('swissGlass.hero.workshopSettings.line1')"
+      line1-key="swissGlass.hero.workshopSettings.line1"
       :icon="BookOpen"
       width="min(420px, 92vw)"
     >
@@ -1806,37 +1813,43 @@ function handleTopicMove(topicId: number): void {
         v-if="workshopSettingsPanel === 'notifications'"
         class="text-sm text-stone-600 leading-relaxed"
       >
-        {{ t('workshop.notificationsSettingsBlurb') }}
+        <I18nText k="workshop.notificationsSettingsBlurb" />
       </p>
       <p
         v-else-if="workshopSettingsPanel === 'preferences'"
         class="text-sm text-stone-600 leading-relaxed"
       >
-        {{ t('workshop.preferencesSettingsBlurb') }}
+        <I18nText k="workshop.preferencesSettingsBlurb" />
       </p>
     </SwissGlassDialog>
 
     <SwissGlassDialog
       v-model="showShortcutsHelp"
       :ribbon="t('swissGlass.hero.shortcuts.ribbon')"
+      ribbon-key="swissGlass.hero.shortcuts.ribbon"
       :title="t('swissGlass.hero.shortcuts.title')"
+      title-key="swissGlass.hero.shortcuts.title"
       :line1="t('swissGlass.hero.shortcuts.line1')"
+      line1-key="swissGlass.hero.shortcuts.line1"
       :icon="Keyboard"
       width="min(400px, 92vw)"
     >
       <ul class="text-sm text-stone-600 space-y-2 list-disc pl-4">
-        <li>{{ t('workshop.shortcutHelp') }}</li>
-        <li>{{ t('workshop.phase2RoadmapMovePreview') }}</li>
-        <li>{{ t('workshop.phase2RoadmapGroupsAlerts') }}</li>
-        <li>{{ t('workshop.phase2RoadmapPlatform') }}</li>
+        <li><I18nText k="workshop.shortcutHelp" /></li>
+        <li><I18nText k="workshop.phase2RoadmapMovePreview" /></li>
+        <li><I18nText k="workshop.phase2RoadmapGroupsAlerts" /></li>
+        <li><I18nText k="workshop.phase2RoadmapPlatform" /></li>
       </ul>
     </SwissGlassDialog>
 
     <SwissGlassDialog
       v-model="contactProfileDialogVisible"
       :ribbon="t('swissGlass.hero.contactProfile.ribbon')"
+      ribbon-key="swissGlass.hero.contactProfile.ribbon"
       :title="t('swissGlass.hero.contactProfile.title')"
+      title-key="swissGlass.hero.contactProfile.title"
       :line1="t('swissGlass.hero.contactProfile.line1')"
+      line1-key="swissGlass.hero.contactProfile.line1"
       :icon="User"
       width="min(360px, 92vw)"
     >
@@ -1849,7 +1862,7 @@ function handleTopicMove(topicId: number): void {
           <span class="font-medium text-stone-800">{{ contactProfileMember.name }}</span>
         </div>
         <p class="leading-relaxed">
-          {{ t('workshop.readOnlyProfileBlurb') }}
+          <I18nText k="workshop.readOnlyProfileBlurb" />
         </p>
       </div>
     </SwissGlassDialog>

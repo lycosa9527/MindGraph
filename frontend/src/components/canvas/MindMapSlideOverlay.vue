@@ -7,14 +7,16 @@ import { computed, ref } from 'vue'
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   ChevronsLeft,
   ChevronsRight,
-  ChevronUp,
   LogOut,
   Pause,
   Play,
 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables'
 import { PRESENTATION_Z } from '@/config/uiConfig'
 import type { MindMapSlideTraversalMode } from '@/utils/mindMapSlides'
@@ -51,7 +53,7 @@ const collapsed = ref(false)
 const regionLabel = computed(() => {
   const path =
     props.breadcrumb.length <= 1
-      ? props.breadcrumb[0] ?? props.slideTitle
+      ? (props.breadcrumb[0] ?? props.slideTitle)
       : props.breadcrumb.join(' › ')
   return `${path} · ${props.slideIndex + 1} / ${props.slideCount}`
 })
@@ -91,23 +93,27 @@ function toggleCollapsed(): void {
     role="region"
     :aria-label="regionLabel"
   >
-    <button
-      type="button"
-      class="dock-toggle"
-      :aria-label="collapseToggleLabel"
-      :title="collapseToggleLabel"
-      @click="toggleCollapsed"
+    <I18nTooltip
+      :k="collapsed ? 'canvas.mindMapSlideOverlay.expand' : 'canvas.mindMapSlideOverlay.collapse'"
+      placement="top"
     >
-      <ChevronUp
-        v-if="collapsed"
-        class="dock-toggle-icon"
-      />
-      <span
-        v-else
-        class="dock-toggle-grip"
-        aria-hidden="true"
-      />
-    </button>
+      <button
+        type="button"
+        class="dock-toggle"
+        :aria-label="collapseToggleLabel"
+        @click="toggleCollapsed"
+      >
+        <ChevronUp
+          v-if="collapsed"
+          class="dock-toggle-icon"
+        />
+        <span
+          v-else
+          class="dock-toggle-grip"
+          aria-hidden="true"
+        />
+      </button>
+    </I18nTooltip>
 
     <button
       type="button"
@@ -141,60 +147,78 @@ function toggleCollapsed(): void {
             type="button"
             class="traversal-mode-btn"
             :class="{ 'is-active': traversalMode === 'firstLevel' }"
-            :title="t('canvas.mindMapSlideOverlay.firstLevel')"
             @click="emit('updateTraversalMode', 'firstLevel')"
           >
-            {{ t('canvas.mindMapSlideOverlay.firstLevel') }}
+            <I18nText k="canvas.mindMapSlideOverlay.firstLevel" />
           </button>
           <button
             type="button"
             class="traversal-mode-btn"
             :class="{ 'is-active': traversalMode === 'deep' }"
-            :title="t('canvas.mindMapSlideOverlay.deep')"
             @click="emit('updateTraversalMode', 'deep')"
           >
-            {{ t('canvas.mindMapSlideOverlay.deep') }}
+            <I18nText k="canvas.mindMapSlideOverlay.deep" />
           </button>
         </div>
 
         <div class="nav-cluster">
-          <button
-            type="button"
-            class="icon-btn"
-            :disabled="!canGoPrev || transitioning"
-            :aria-label="t('canvas.mindMapSlideOverlay.first')"
-            @click="emit('first')"
+          <I18nTooltip
+            k="canvas.mindMapSlideOverlay.first"
+            placement="top"
           >
-            <ChevronsLeft class="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            class="icon-btn"
-            :disabled="!canGoPrev || transitioning"
-            :aria-label="t('canvas.mindMapSlideOverlay.prev')"
-            @click="emit('prev')"
+            <button
+              type="button"
+              class="icon-btn"
+              :disabled="!canGoPrev || transitioning"
+              :aria-label="t('canvas.mindMapSlideOverlay.first')"
+              @click="emit('first')"
+            >
+              <ChevronsLeft class="h-4 w-4" />
+            </button>
+          </I18nTooltip>
+          <I18nTooltip
+            k="canvas.mindMapSlideOverlay.prev"
+            placement="top"
           >
-            <ChevronLeft class="h-4 w-4" />
-          </button>
+            <button
+              type="button"
+              class="icon-btn"
+              :disabled="!canGoPrev || transitioning"
+              :aria-label="t('canvas.mindMapSlideOverlay.prev')"
+              @click="emit('prev')"
+            >
+              <ChevronLeft class="h-4 w-4" />
+            </button>
+          </I18nTooltip>
           <span class="nav-counter">{{ slideIndex + 1 }} / {{ slideCount }}</span>
-          <button
-            type="button"
-            class="icon-btn"
-            :disabled="!canGoNext || transitioning"
-            :aria-label="t('canvas.mindMapSlideOverlay.next')"
-            @click="emit('next')"
+          <I18nTooltip
+            k="canvas.mindMapSlideOverlay.next"
+            placement="top"
           >
-            <ChevronRight class="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            class="icon-btn"
-            :disabled="!canGoNext || transitioning"
-            :aria-label="t('canvas.mindMapSlideOverlay.last')"
-            @click="emit('last')"
+            <button
+              type="button"
+              class="icon-btn"
+              :disabled="!canGoNext || transitioning"
+              :aria-label="t('canvas.mindMapSlideOverlay.next')"
+              @click="emit('next')"
+            >
+              <ChevronRight class="h-4 w-4" />
+            </button>
+          </I18nTooltip>
+          <I18nTooltip
+            k="canvas.mindMapSlideOverlay.last"
+            placement="top"
           >
-            <ChevronsRight class="h-4 w-4" />
-          </button>
+            <button
+              type="button"
+              class="icon-btn"
+              :disabled="!canGoNext || transitioning"
+              :aria-label="t('canvas.mindMapSlideOverlay.last')"
+              @click="emit('last')"
+            >
+              <ChevronsRight class="h-4 w-4" />
+            </button>
+          </I18nTooltip>
         </div>
 
         <div class="toolbar-actions">
@@ -212,22 +236,30 @@ function toggleCollapsed(): void {
               v-else
               class="h-4 w-4 shrink-0"
             />
-            <span>{{
-              autoPlay
-                ? t('canvas.mindMapSlideOverlay.stopAutoPlay')
-                : t('canvas.mindMapSlideOverlay.startAutoPlay')
-            }}</span>
+            <span>
+              <I18nText
+                :k="
+                  autoPlay
+                    ? 'canvas.mindMapSlideOverlay.stopAutoPlay'
+                    : 'canvas.mindMapSlideOverlay.startAutoPlay'
+                "
+              />
+            </span>
           </button>
 
-          <button
-            type="button"
-            class="icon-btn icon-btn--exit"
-            :aria-label="t('canvas.mindMapSlideOverlay.exit')"
-            :title="t('canvas.mindMapSlideOverlay.exit')"
-            @click="emit('exit')"
+          <I18nTooltip
+            k="canvas.mindMapSlideOverlay.exit"
+            placement="top"
           >
-            <LogOut class="h-4 w-4" />
-          </button>
+            <button
+              type="button"
+              class="icon-btn icon-btn--exit"
+              :aria-label="t('canvas.mindMapSlideOverlay.exit')"
+              @click="emit('exit')"
+            >
+              <LogOut class="h-4 w-4" />
+            </button>
+          </I18nTooltip>
         </div>
       </div>
     </Transition>
@@ -382,8 +414,12 @@ function toggleCollapsed(): void {
   font-size: 0.6875rem;
   font-weight: 600;
   line-height: 1.2;
-  white-space: nowrap;
-  transition: background 0.15s ease, color 0.15s ease;
+  white-space: normal;
+  text-align: start;
+  line-height: 1.2;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .traversal-mode-btn.is-active {
@@ -431,7 +467,9 @@ function toggleCollapsed(): void {
   background: transparent;
   color: rgb(51 65 85);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .icon-btn:hover:not(:disabled) {
@@ -465,7 +503,9 @@ function toggleCollapsed(): void {
   font-weight: 600;
   box-shadow: inset 0 0 0 1px rgb(254 215 170 / 0.95);
   transition: background 0.15s ease;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: start;
+  line-height: 1.2;
 }
 
 .autoplay-btn.is-active {

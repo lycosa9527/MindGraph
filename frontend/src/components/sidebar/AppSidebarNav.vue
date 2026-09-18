@@ -19,14 +19,14 @@ import {
   Play,
   Settings,
   Share2,
-  TrendingUp,
   UserPlus,
   Wand2,
-  Watch,
   Waypoints,
   Wrench,
 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 
 const AskOnceHistory = defineAsyncComponent(() => import('./AskOnceHistory.vue'))
@@ -72,8 +72,9 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             (s.showZhihuiNav && s.showPanel('zhihui')),
         }"
       >
-        <el-tooltip
-          :content="s.t('sidebar.mindGraph')"
+        <I18nTooltip
+          k="sidebar.mindGraph"
+          primary-only
           placement="right"
           :disabled="!s.isCollapsed"
         >
@@ -89,10 +90,12 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
-              >{{ s.t('sidebar.mindGraph') }}</span
-            >
+              ><I18nText
+                k="sidebar.mindGraph"
+                primary-only
+            /></span>
           </div>
-        </el-tooltip>
+        </I18nTooltip>
         <transition name="panel-slide">
           <div
             v-if="s.showPanel('mindgraph')"
@@ -137,9 +140,9 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </transition>
 
         <!-- ZhiHui (智绘) — hidden from sidebar for now; /zhihui stays reachable -->
-        <el-tooltip
+        <I18nTooltip
           v-if="s.showZhihuiNav"
-          :content="s.t('sidebar.zhihui')"
+          k="sidebar.zhihui"
           placement="right"
           :disabled="!s.isCollapsed"
         >
@@ -155,10 +158,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
-              >{{ s.t('sidebar.zhihui') }}</span
-            >
+              ><I18nText k="sidebar.zhihui"
+            /></span>
           </div>
-        </el-tooltip>
+        </I18nTooltip>
         <transition name="panel-slide">
           <div
             v-if="s.showZhihuiNav && s.showPanel('zhihui')"
@@ -179,9 +182,9 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         }"
       >
         <!-- Knowledge Space -->
-        <el-tooltip
+        <I18nTooltip
           v-if="s.isAuthenticated && s.featureKnowledgeSpace && !s.hideKnowledgeSpaceNav"
-          :content="s.t('sidebar.knowledgeSpace')"
+          k="sidebar.knowledgeSpace"
           placement="right"
           :disabled="!s.isCollapsed"
         >
@@ -197,10 +200,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
-              >{{ s.t('sidebar.knowledgeSpace') }}</span
-            >
+              ><I18nText k="sidebar.knowledgeSpace"
+            /></span>
           </div>
-        </el-tooltip>
+        </I18nTooltip>
         <transition name="panel-slide">
           <div
             v-if="
@@ -216,9 +219,9 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </transition>
 
         <!-- Chunk Test -->
-        <el-tooltip
+        <I18nTooltip
           v-if="s.isAuthenticated && s.featureRagChunkTest && !s.hideKnowledgeSpaceNav"
-          :content="s.t('sidebar.chunkTest')"
+          k="sidebar.chunkTest"
           placement="right"
           :disabled="!s.isCollapsed"
         >
@@ -234,10 +237,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
-              >{{ s.t('sidebar.chunkTest') }}</span
-            >
+              ><I18nText k="sidebar.chunkTest"
+            /></span>
           </div>
-        </el-tooltip>
+        </I18nTooltip>
         <transition name="panel-slide">
           <div
             v-if="
@@ -253,9 +256,9 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </transition>
 
         <!-- AskOnce -->
-        <el-tooltip
+        <I18nTooltip
           v-if="s.featureAskOnce"
-          :content="s.t('askonce.title')"
+          k="askonce.title"
           placement="right"
           :disabled="!s.isCollapsed"
         >
@@ -271,10 +274,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
-              >{{ s.t('askonce.title') }}</span
-            >
+              ><I18nText k="askonce.title"
+            /></span>
           </div>
-        </el-tooltip>
+        </I18nTooltip>
         <transition name="panel-slide">
           <div
             v-if="s.featureAskOnce && s.showPanel('askonce')"
@@ -284,9 +287,9 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           </div>
         </transition>
 
-        <el-tooltip
+        <I18nTooltip
           v-if="s.showTrainingNav"
-          :content="s.t('sidebar.training')"
+          k="sidebar.training"
           placement="right"
           :disabled="!s.isCollapsed"
         >
@@ -303,14 +306,14 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
               v-if="!s.isCollapsed"
               class="nav-label admin-menu-title"
             >
-              {{ s.t('sidebar.training') }}
+              <I18nText k="sidebar.training" />
               <ChevronDown
                 class="admin-expand-chevron"
                 :class="{ 'admin-expand-chevron--open': s.trainingExpanded }"
               />
             </span>
           </div>
-        </el-tooltip>
+        </I18nTooltip>
         <transition name="admin-slide">
           <div
             v-if="s.trainingExpanded && !s.isCollapsed && s.showTrainingNav"
@@ -322,7 +325,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
               :class="s.trainingSubItemClass('courses')"
               @click="s.navigateTrainingSub('courses')"
             >
-              {{ s.t('sidebar.trainingCourses') }}
+              <I18nText k="sidebar.trainingCourses" />
             </button>
             <button
               type="button"
@@ -330,15 +333,15 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
               :class="s.trainingSubItemClass('builder')"
               @click="s.navigateTrainingSub('builder')"
             >
-              {{ s.t('sidebar.trainingBuilder') }}
+              <I18nText k="sidebar.trainingBuilder" />
             </button>
           </div>
         </transition>
 
         <!-- Debateverse -->
-        <el-tooltip
+        <I18nTooltip
           v-if="s.featureDebateverse"
-          :content="s.t('sidebar.debateverse')"
+          k="sidebar.debateverse"
           placement="right"
           :disabled="!s.isCollapsed"
         >
@@ -354,10 +357,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
-              >{{ s.t('sidebar.debateverse') }}</span
-            >
+              ><I18nText k="sidebar.debateverse"
+            /></span>
           </div>
-        </el-tooltip>
+        </I18nTooltip>
         <transition name="panel-slide">
           <div
             v-if="s.featureDebateverse && s.showPanel('debateverse')"
@@ -368,9 +371,9 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </transition>
 
         <!-- Templates -->
-        <el-tooltip
+        <I18nTooltip
           v-if="s.featureTemplate"
-          :content="s.t('sidebar.templateResources')"
+          k="sidebar.templateResources"
           placement="right"
           :disabled="!s.isCollapsed"
         >
@@ -386,15 +389,15 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
-              >{{ s.t('sidebar.templateResources') }}</span
-            >
+              ><I18nText k="sidebar.templateResources"
+            /></span>
           </div>
-        </el-tooltip>
+        </I18nTooltip>
 
         <!-- Courses -->
-        <el-tooltip
+        <I18nTooltip
           v-if="s.featureCourse"
-          :content="s.t('sidebar.courses')"
+          k="sidebar.courses"
           placement="right"
           :disabled="!s.isCollapsed"
         >
@@ -410,15 +413,15 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
-              >{{ s.t('sidebar.courses') }}</span
-            >
+              ><I18nText k="sidebar.courses"
+            /></span>
           </div>
-        </el-tooltip>
+        </I18nTooltip>
 
         <!-- Mate Learning -->
-        <el-tooltip
+        <I18nTooltip
           v-if="s.featureMateLearning"
-          :content="s.t('sidebar.mateLearning')"
+          k="sidebar.mateLearning"
           placement="right"
           :disabled="!s.isCollapsed"
         >
@@ -434,10 +437,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
-              >{{ s.t('sidebar.mateLearning') }}</span
-            >
+              ><I18nText k="sidebar.mateLearning"
+            /></span>
           </div>
-        </el-tooltip>
+        </I18nTooltip>
         <transition name="panel-slide">
           <div
             v-if="s.featureMateLearning && s.showPanel('maite')"
@@ -448,9 +451,9 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </transition>
 
         <!-- Community -->
-        <el-tooltip
+        <I18nTooltip
           v-if="s.featureCommunity"
-          :content="s.t('sidebar.community')"
+          k="sidebar.community"
           placement="right"
           :disabled="!s.isCollapsed"
         >
@@ -466,15 +469,15 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
-              >{{ s.t('sidebar.community') }}</span
-            >
+              ><I18nText k="sidebar.community"
+            /></span>
           </div>
-        </el-tooltip>
+        </I18nTooltip>
 
         <!-- Showcase -->
-        <el-tooltip
+        <I18nTooltip
           v-if="s.featureShowcase"
-          :content="s.t('sidebar.showcase')"
+          k="sidebar.showcase"
           placement="right"
           :disabled="!s.isCollapsed"
         >
@@ -490,15 +493,15 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
-              >{{ s.t('sidebar.showcase') }}</span
-            >
+              ><I18nText k="sidebar.showcase"
+            /></span>
           </div>
-        </el-tooltip>
+        </I18nTooltip>
 
         <!-- Library -->
-        <el-tooltip
+        <I18nTooltip
           v-if="s.featureLibrary"
-          :content="s.t('sidebar.library')"
+          k="sidebar.library"
           placement="right"
           :disabled="!s.isCollapsed"
         >
@@ -514,10 +517,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
-              >{{ s.t('sidebar.library') }}</span
-            >
+              ><I18nText k="sidebar.library"
+            /></span>
           </div>
-        </el-tooltip>
+        </I18nTooltip>
         <transition name="panel-slide">
           <div
             v-if="s.featureLibrary && s.showPanel('library')"
@@ -528,9 +531,9 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </transition>
 
         <!-- Workshop Chat (研习社) — above 管理面板 -->
-        <el-tooltip
+        <I18nTooltip
           v-if="s.canAccessWorkshopChat"
-          :content="s.t('workshop.title')"
+          k="workshop.title"
           placement="right"
           :disabled="!s.isCollapsed"
         >
@@ -547,14 +550,14 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
               v-if="!s.isCollapsed"
               class="nav-label ws-menu-title"
             >
-              {{ s.t('workshop.title') }}
+              <I18nText k="workshop.title" />
               <ChevronDown
                 class="ws-expand-chevron"
                 :class="{ 'ws-expand-chevron--open': s.workshopExpanded }"
               />
             </span>
           </div>
-        </el-tooltip>
+        </I18nTooltip>
         <transition name="ws-slide">
           <div
             v-if="s.workshopExpanded && !s.isCollapsed && s.canAccessWorkshopChat"
@@ -596,9 +599,9 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </el-tooltip>
 
         <!-- Management panel (expandable sub-nav) -->
-        <el-tooltip
+        <I18nTooltip
           v-if="s.isManagementPanelUser && s.showManagementPanelSubnav"
-          :content="s.t('admin.title')"
+          k="admin.title"
           placement="right"
           :disabled="!s.isCollapsed"
         >
@@ -615,7 +618,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
               v-if="!s.isCollapsed"
               class="nav-label admin-menu-title"
             >
-              {{ s.t('admin.title') }}
+              <I18nText k="admin.title" />
               <span
                 v-if="s.showcasePendingCount > 0"
                 class="nav-item-badge"
@@ -628,7 +631,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
               />
             </span>
           </div>
-        </el-tooltip>
+        </I18nTooltip>
         <transition name="admin-slide">
           <div
             v-if="s.managementPanelExpanded && !s.isCollapsed && s.showManagementPanelSubnav"
@@ -809,8 +812,9 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 .nav-item {
   display: flex;
   align-items: center;
-  height: 44px;
-  padding: 0 16px;
+  min-height: 44px;
+  height: auto;
+  padding: 8px 16px;
   border-radius: 8px;
   margin-bottom: 4px;
   font-weight: 500;
@@ -842,6 +846,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 .nav-item--collapsed {
   justify-content: center;
   padding: 0;
+  height: 44px;
 }
 .nav-item--collapsed .nav-icon {
   margin-right: 0;
@@ -852,6 +857,18 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
+  min-width: 0;
+}
+
+.nav-label :deep(.i18n-label) {
+  max-width: 100%;
+}
+
+.nav-label :deep(.i18n-label__primary),
+.nav-label :deep(.i18n-label__secondary) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nav-divider {

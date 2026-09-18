@@ -6,6 +6,7 @@ import { computed, ref, watch } from 'vue'
 
 import { KeyRound, Loader2 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useTsecCaptcha } from '@/composables/auth/useTsecCaptcha'
@@ -199,8 +200,11 @@ watch(
   <SwissGlassCard
     v-model="isVisible"
     :ribbon="t('swissGlass.hero.setPassword.ribbon')"
+    ribbon-key="swissGlass.hero.setPassword.ribbon"
     :title="t('swissGlass.hero.setPassword.title')"
+    title-key="swissGlass.hero.setPassword.title"
     :line1="t('swissGlass.hero.setPassword.line1')"
+    line1-key="swissGlass.hero.setPassword.line1"
     :icon="KeyRound"
     @close="close"
   >
@@ -208,7 +212,7 @@ watch(
       v-if="boundPhone"
       class="text-sm text-stone-600 mb-4"
     >
-      {{ t('auth.phone') }}: {{ boundPhone }}
+      <I18nText k="auth.phone" />: {{ boundPhone }}
     </p>
     <div class="space-y-3">
       <div v-if="showLegacyCaptcha">
@@ -216,7 +220,7 @@ watch(
           class="block text-xs text-stone-500 mb-1"
           for="sp-captcha"
         >
-          {{ t('auth.captcha') }}
+          <I18nText k="auth.captcha" />
         </label>
         <div class="captcha-row">
           <input
@@ -259,18 +263,22 @@ watch(
           v-if="smsSending"
           class="w-4 h-4 animate-spin"
         />
-        {{
-          smsCountdown > 0
-            ? t('auth.modal.resendIn', { seconds: smsCountdown })
-            : t('auth.modal.sendSmsCode')
-        }}
+        <I18nText
+          v-if="smsCountdown > 0"
+          k="auth.modal.resendIn"
+          :params="{ seconds: smsCountdown }"
+        />
+        <I18nText
+          v-else
+          k="auth.modal.sendSmsCode"
+        />
       </button>
       <div>
         <label
           class="block text-xs text-stone-500 mb-1"
           for="sp-sms"
         >
-          {{ t('auth.modal.smsCodeLabel') }}
+          <I18nText k="auth.modal.smsCodeLabel" />
         </label>
         <input
           id="sp-sms"
@@ -285,7 +293,7 @@ watch(
           class="block text-xs text-stone-500 mb-1"
           for="sp-np"
         >
-          {{ t('auth.modal.newPassword') }}
+          <I18nText k="auth.modal.newPassword" />
         </label>
         <input
           id="sp-np"
@@ -300,7 +308,7 @@ watch(
           class="block text-xs text-stone-500 mb-1"
           for="sp-cp"
         >
-          {{ t('auth.modal.confirmPassword') }}
+          <I18nText k="auth.modal.confirmPassword" />
         </label>
         <input
           id="sp-cp"
@@ -319,7 +327,7 @@ watch(
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="close"
         >
-          {{ t('common.cancel') }}
+          <I18nText k="common.cancel" />
         </button>
         <button
           type="button"
@@ -331,9 +339,9 @@ watch(
             v-if="submitting"
             class="w-4 h-4 animate-spin"
           />
-          {{
-            submitting ? t('auth.setPasswordWithSmsSubmitting') : t('auth.setPasswordWithSmsSubmit')
-          }}
+          <I18nText
+            :k="submitting ? 'auth.setPasswordWithSmsSubmitting' : 'auth.setPasswordWithSmsSubmit'"
+          />
         </button>
       </div>
     </template>

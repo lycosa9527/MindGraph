@@ -9,6 +9,7 @@ import { ElDropdown, ElDropdownItem, ElDropdownMenu, ElScrollbar } from 'element
 
 import { Download, Heart, MessageCircle, MoreVertical, Trash2, X } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
 import { useLanguage, useNotifications } from '@/composables'
@@ -275,8 +276,11 @@ function formatDate(iso: string): string {
   <SwissGlassDialog
     v-model="open"
     :ribbon="t('swissGlass.hero.communityPost.ribbon')"
+    ribbon-key="swissGlass.hero.communityPost.ribbon"
     :title="t('swissGlass.hero.communityPost.title')"
+    title-key="swissGlass.hero.communityPost.title"
     :line1="t('swissGlass.hero.communityPost.line1')"
+    line1-key="swissGlass.hero.communityPost.line1"
     :icon="MessageCircle"
     width="min(900px, 95vw)"
     dialog-class="community-post-detail-modal"
@@ -286,7 +290,7 @@ function formatDate(iso: string): string {
       v-if="isLoading"
       class="detail-loading flex items-center justify-center py-20"
     >
-      <span class="text-stone-400">{{ t('common.loading') }}</span>
+      <span class="text-stone-400"><I18nText k="common.loading" /></span>
     </div>
 
     <div
@@ -311,7 +315,7 @@ function formatDate(iso: string): string {
             v-else
             class="text-stone-400 text-sm"
           >
-            {{ t('community.post.noPreview') }}
+            <I18nText k="community.post.noPreview" />
           </div>
 
           <!-- Top-left: name · organization · time (no avatar) -->
@@ -350,7 +354,7 @@ function formatDate(iso: string): string {
             v-else
             class="detail-likes-text text-xs text-stone-400 flex-1"
           >
-            {{ t('community.post.noLikes') }}
+            <I18nText k="community.post.noLikes" />
           </p>
           <ElDropdown
             trigger="click"
@@ -372,14 +376,14 @@ function formatDate(iso: string): string {
                       post.is_liked ? 'text-rose-500' : 'text-stone-400',
                     ]"
                   />
-                  {{ post.is_liked ? t('community.post.unlike') : t('community.post.like') }}
+                  <I18nText :k="post.is_liked ? 'community.post.unlike' : 'community.post.like'" />
                 </ElDropdownItem>
                 <ElDropdownItem
                   command="import"
                   :disabled="!authStore.isAuthenticated || isImporting"
                 >
                   <Download class="w-4 h-4 mr-2 shrink-0 text-stone-400" />
-                  {{ t('community.post.importAction') }}
+                  <I18nText k="community.post.importAction" />
                 </ElDropdownItem>
               </ElDropdownMenu>
             </template>
@@ -479,14 +483,14 @@ function formatDate(iso: string): string {
               v-if="isCommentsLoading"
               class="text-center py-4 text-stone-400 text-sm"
             >
-              {{ t('community.post.loadingComments') }}
+              <I18nText k="community.post.loadingComments" />
             </div>
 
             <div
               v-else-if="!post.title && !post.description && comments.length === 0"
               class="text-center py-8 text-stone-400 text-sm"
             >
-              {{ t('community.post.noComments') }}
+              <I18nText k="community.post.noComments" />
             </div>
           </div>
         </el-scrollbar>
@@ -511,7 +515,7 @@ function formatDate(iso: string): string {
             v-else
             class="text-xs text-stone-400"
           >
-            {{ t('community.post.loginToComment') }}
+            <I18nText k="community.post.loginToComment" />
           </p>
         </div>
       </div>

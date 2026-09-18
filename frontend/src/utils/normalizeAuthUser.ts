@@ -39,6 +39,16 @@ function resolveMatchPromptToUi(source: AuthUserSource): boolean | undefined {
   return undefined
 }
 
+function resolveBilingualUiEnabled(source: AuthUserSource): boolean | undefined {
+  if (typeof source.bilingual_ui_enabled === 'boolean') {
+    return source.bilingual_ui_enabled
+  }
+  if (typeof source.bilingualUiEnabled === 'boolean') {
+    return source.bilingualUiEnabled
+  }
+  return undefined
+}
+
 function resolveLoginPasswordSet(source: AuthUserSource): boolean {
   if (source.login_password_set !== undefined) {
     return Boolean(source.login_password_set)
@@ -63,7 +73,8 @@ function resolveThinkingCoins(source: AuthUserSource): User['thinkingCoins'] {
 function readFiniteNumber(raw: Record<string, unknown>, keys: readonly string[]): number {
   for (const key of keys) {
     const value = raw[key]
-    const parsed = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN
+    const parsed =
+      typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN
     if (Number.isFinite(parsed)) {
       return parsed
     }
@@ -139,12 +150,20 @@ export function normalizeAuthUser(source: BackendUser | User): User {
     uiLang = coercedUi
   }
   let promptLang = firstNonEmptyString(raw.prompt_language, raw.promptLanguage)
+  let presenterLang = firstNonEmptyString(raw.presenter_ui_locale, raw.presenterUiLocale)
+  const coercedPresenter = coerceUiLocale(presenterLang)
+  if (coercedPresenter !== null) {
+    presenterLang = coercedPresenter
+  }
   if (!allowsZh) {
     if ((uiLang || '').toLowerCase() === 'zh') {
       uiLang = 'en'
     }
     if ((promptLang || '').toLowerCase() === 'zh') {
       promptLang = 'en'
+    }
+    if ((presenterLang || '').toLowerCase() === 'zh') {
+      presenterLang = 'en'
     }
   }
 
@@ -170,6 +189,8 @@ export function normalizeAuthUser(source: BackendUser | User): User {
     uiLanguage: uiLang,
     promptLanguage: promptLang,
     matchPromptToUi: resolveMatchPromptToUi(raw),
+    bilingualUiEnabled: resolveBilingualUiEnabled(raw),
+    presenterUiLocale: presenterLang,
     uiVersion: raw.ui_version ?? raw.uiVersion ?? null,
     educationStage: isEducationStage(educationRaw) ? educationRaw : null,
     aiContentLevel: isAiContentLevelId(aiLevelRaw) ? aiLevelRaw : null,

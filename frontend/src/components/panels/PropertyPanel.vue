@@ -7,6 +7,7 @@ import { computed, ref, watch } from 'vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useDiagramStore } from '@/stores'
 import type { DiagramNode } from '@/types'
+import I18nText from '@/components/common/I18nText.vue'
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -219,7 +220,7 @@ const fontWeightOptions = computed(() => [
             class="flex-1"
             @click="applyChanges"
           >
-            {{ t('common.save') }}
+            <I18nText k="common.save" />
           </el-button>
           <el-button
             type="danger"

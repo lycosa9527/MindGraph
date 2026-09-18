@@ -19,6 +19,10 @@ const props = withDefaults(
     title: string
     line1: string
     line2?: string
+    ribbonKey?: string
+    titleKey?: string
+    line1Key?: string
+    line2Key?: string
     icon?: Component
     badge?: Component
     showClose?: boolean
@@ -104,9 +108,13 @@ function onBackdrop(): void {
         <AiGenerateGlassHero
           compact
           :ribbon="ribbon"
+          :ribbon-key="ribbonKey"
           :title="title"
+          :title-key="titleKey"
           :line1="line1"
+          :line1-key="line1Key"
           :line2="line2"
+          :line2-key="line2Key"
           :icon="plateIcon"
           :badge="badge"
           :show-close="showClose"

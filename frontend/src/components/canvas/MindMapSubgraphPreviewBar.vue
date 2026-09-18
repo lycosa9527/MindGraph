@@ -6,7 +6,7 @@ import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 
 import { Check, X } from '@lucide/vue'
 
-import { useLanguage } from '@/composables/core/useLanguage'
+import I18nText from '@/components/common/I18nText.vue'
 
 const PREVIEW_BAR_GAP_PX = 12
 
@@ -21,8 +21,6 @@ const emit = defineEmits<{
   accept: []
   discard: []
 }>()
-
-const { t } = useLanguage()
 
 const position = ref({ left: 0, top: 0, visible: false })
 let rafId = 0
@@ -81,14 +79,14 @@ const barStyle = computed(() => ({
       @mousedown.stop
       @click.stop
     >
-      <span class="mspb-label">{{ t('canvas.subgraphPreview.hint') }}</span>
+      <span class="mspb-label"><I18nText k="canvas.subgraphPreview.hint" /></span>
       <button
         type="button"
         class="mspb-btn mspb-btn--accept"
         @click="emit('accept')"
       >
         <Check class="mspb-icon" />
-        {{ t('canvas.subgraphPreview.accept') }}
+        <I18nText k="canvas.subgraphPreview.accept" />
       </button>
       <button
         type="button"
@@ -96,7 +94,7 @@ const barStyle = computed(() => ({
         @click="emit('discard')"
       >
         <X class="mspb-icon" />
-        {{ t('canvas.subgraphPreview.discard') }}
+        <I18nText k="canvas.subgraphPreview.discard" />
       </button>
     </div>
   </Teleport>
@@ -139,7 +137,9 @@ const barStyle = computed(() => ({
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
+  transition:
+    background 0.15s,
+    transform 0.1s;
 }
 
 .mspb-btn:active {

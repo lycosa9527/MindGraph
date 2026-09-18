@@ -11,6 +11,7 @@ import { Close, Select } from '@element-plus/icons-vue'
 
 import { Download } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import {
@@ -311,8 +312,11 @@ async function exportAsPng() {
   <SwissGlassDialog
     v-model="open"
     :ribbon="t('swissGlass.hero.shareExport.ribbon')"
+    ribbon-key="swissGlass.hero.shareExport.ribbon"
     :title="t('swissGlass.hero.shareExport.title')"
+    title-key="swissGlass.hero.shareExport.title"
     :line1="t('swissGlass.hero.shareExport.line1')"
+    line1-key="swissGlass.hero.shareExport.line1"
     :icon="Download"
     width="min(640px, 92vw)"
     :close-on-click-modal="false"
@@ -323,13 +327,13 @@ async function exportAsPng() {
       <div class="modal-header">
         <div class="header-info">
           <div class="header-title">
-            {{ t('panels.share.selectMessages') }}
+            <I18nText k="panels.share.selectMessages" />
           </div>
           <div class="header-count">
             <span class="count-selected">{{ selectedMessages.length }}</span>
             <span class="count-divider">/</span>
             <span class="count-total">{{ selectableMessages.length }}</span>
-            <span class="count-label">{{ t('panels.share.selectionCountSuffix') }}</span>
+            <span class="count-label"><I18nText k="panels.share.selectionCountSuffix" /></span>
           </div>
         </div>
         <div class="header-actions">
@@ -339,7 +343,7 @@ async function exportAsPng() {
             @click="selectAll"
           >
             <el-icon><Select /></el-icon>
-            {{ t('common.all') }}
+            <I18nText k="common.all" />
           </button>
           <button
             type="button"
@@ -347,7 +351,7 @@ async function exportAsPng() {
             @click="deselectAll"
           >
             <el-icon><Close /></el-icon>
-            {{ t('common.clear') }}
+            <I18nText k="common.clear" />
           </button>
         </div>
       </div>
@@ -405,13 +409,13 @@ async function exportAsPng() {
           v-if="selectedMessages.length === 0"
           class="tip-warning"
         >
-          {{ t('panels.share.selectOne') }}
+          <I18nText k="panels.share.selectOne" />
         </span>
         <span
           v-else
           class="tip-info"
         >
-          {{ t('panels.share.clickToggle') }}
+          <I18nText k="panels.share.clickToggle" />
         </span>
       </div>
 
@@ -470,7 +474,7 @@ async function exportAsPng() {
 
           <!-- Footer -->
           <div class="export-footer">
-            <span>{{ t('panels.share.footerCredit') }}</span>
+            <span><I18nText k="panels.share.footerCredit" /></span>
           </div>
         </div>
       </div>
@@ -483,7 +487,7 @@ async function exportAsPng() {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="closeDialog"
         >
-          {{ t('common.cancel') }}
+          <I18nText k="common.cancel" />
         </button>
         <button
           type="button"
@@ -491,7 +495,7 @@ async function exportAsPng() {
           :disabled="isExporting || selectedMessages.length === 0"
           @click="exportAsPng"
         >
-          {{ t('panels.share.exportPng') }}
+          <I18nText k="panels.share.exportPng" />
         </button>
       </div>
     </template>

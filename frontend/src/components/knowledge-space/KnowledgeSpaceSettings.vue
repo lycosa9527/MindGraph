@@ -16,6 +16,7 @@ import {
   ElTag,
 } from 'element-plus'
 
+import I18nText from '@/components/common/I18nText.vue'
 import { notify, useLanguage } from '@/composables'
 import {
   type RAGSettings,
@@ -267,7 +268,7 @@ const handleSave = async () => {
 
       <div class="mt-6 flex justify-end gap-2">
         <ElButton @click="handleClose">
-          {{ t('common.cancel') }}
+          <I18nText k="common.cancel" />
         </ElButton>
         <ElButton
           type="primary"
@@ -275,7 +276,7 @@ const handleSave = async () => {
           :loading="saving"
           @click="handleSave"
         >
-          {{ t('common.save') }}
+          <I18nText k="common.save" />
         </ElButton>
       </div>
     </div>

@@ -23,6 +23,7 @@ import { useTrainingRemoteChrome } from '@/composables/training/useTrainingRemot
 import { useTrainingRemoteSync } from '@/composables/training/useTrainingRemoteSync'
 import { useAuthStore } from '@/stores/auth'
 import { useTrainingStore } from '@/stores/training'
+import I18nText from '@/components/common/I18nText.vue'
 
 const { t } = useLanguage()
 const authStore = useAuthStore()
@@ -124,7 +125,7 @@ function confirmStop(): void {
             class="remote__confirm-btn"
             @click="cancelStop"
           >
-            {{ t('common.cancel') }}
+            <I18nText k="common.cancel" />
           </button>
           <button
             type="button"

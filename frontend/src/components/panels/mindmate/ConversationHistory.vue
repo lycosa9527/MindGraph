@@ -5,12 +5,11 @@ import { ElButton, ElDrawer, ElIcon } from 'element-plus'
 
 import { Delete, DocumentCopy } from '@element-plus/icons-vue'
 
+import MindMateDingtalkBadge from '@/components/sidebar/MindMateDingtalkBadge.vue'
 import { useLanguage } from '@/composables'
 import type { LocaleCode } from '@/i18n/locales'
 import { intlLocaleForUiCode } from '@/i18n/locales'
 import { type MindMateConversation, useMindMateStore } from '@/stores'
-
-import MindMateDingtalkBadge from '@/components/sidebar/MindMateDingtalkBadge.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -92,7 +91,7 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
         <div
           class="animate-spin w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full mx-auto mb-2"
         />
-        <span class="text-sm">{{ t('common.loading') }}</span>
+        <span class="text-sm"><I18nText k="common.loading" /></span>
       </div>
 
       <!-- Empty State -->
@@ -101,7 +100,9 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
         class="text-center py-8 text-gray-500"
       >
         <ElIcon class="text-4xl mb-2 text-gray-300"><DocumentCopy /></ElIcon>
-        <p class="text-sm">{{ t('mindmate.noHistoryPanel') }}</p>
+        <p class="text-sm">
+          <I18nText k="mindmate.noHistoryPanel" />
+        </p>
       </div>
 
       <!-- Conversation List -->
@@ -120,7 +121,9 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
         >
           <div class="flex items-start justify-between gap-2">
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-gray-800 dark:text-white flex items-center gap-1.5 min-w-0">
+              <p
+                class="text-sm font-medium text-gray-800 dark:text-white flex items-center gap-1.5 min-w-0"
+              >
                 <span class="truncate">
                   {{ conv.name || t('mindmate.untitled') }}
                 </span>

@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'Wysyłamy kod na powiązany telefon. Po ustawieniu hasła możesz logować się hasłem lub kodem weryfikacyjnym.',
   'auth.setPasswordWithSmsSubmit': 'Zapisz hasło',
   'auth.setPasswordWithSmsSubmitting': 'Zapisywanie…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Nazwa wyświetlana',
   'auth.accountNamePlaceholder': 'Co najmniej 2 znaki, bez cyfr',
   'auth.accountNameSave': 'Zapisz nazwę',

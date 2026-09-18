@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 
-import { GraduationCap, Folder, Palette, Users } from '@lucide/vue'
+import { Folder, GraduationCap, Palette, Users } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 
 import MindMapRibbonAiMark from './MindMapRibbonAiMark.vue'
+import './mindMapRibbonTabs.css'
 import {
-  type MindMapRibbonTabId,
   MIND_MAP_RIBBON_TABS,
   MIND_MAP_RIBBON_TAB_LABEL_KEYS,
   MIND_MAP_RIBBON_TOOLS_ID,
+  type MindMapRibbonTabId,
 } from './mindMapRibbonTypes'
-import './mindMapRibbonTabs.css'
 
 const props = withDefaults(
   defineProps<{
@@ -89,7 +90,9 @@ function tabTitle(tab: MindMapRibbonTabId): string {
             :stroke-width="2.4"
           />
         </span>
-        <span class="mm-ribbon-tabs__label">{{ tabLabel(tab) }}</span>
+        <span class="mm-ribbon-tabs__label">
+          <I18nText :k="MIND_MAP_RIBBON_TAB_LABEL_KEYS[tab]" />
+        </span>
       </span>
     </button>
   </div>

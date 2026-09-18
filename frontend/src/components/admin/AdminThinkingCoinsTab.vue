@@ -7,6 +7,7 @@ import { computed, onMounted, ref } from 'vue'
 import { Plus, Settings2, Trash2 } from '@lucide/vue'
 
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import {
@@ -410,16 +411,20 @@ onMounted(() => {
     <SwissGlassDialog
       v-model="showCreateDialog"
       :ribbon="t('swissGlass.hero.adminInline.ribbon')"
+      ribbon-key="swissGlass.hero.adminInline.ribbon"
       :title="t('swissGlass.hero.adminInline.title')"
+      title-key="swissGlass.hero.adminInline.title"
       :line1="t('swissGlass.hero.adminInline.line1')"
+      line1-key="swissGlass.hero.adminInline.line1"
       :line2="t('thinkingCoins.admin.createTaskTitle')"
+      line2-key="thinkingCoins.admin.createTaskTitle"
       :icon="Settings2"
       width="480px"
       @close="resetCreateForm"
     >
       <div class="space-y-3 text-sm">
         <label class="block">
-          {{ t('thinkingCoins.admin.slug') }}
+          <I18nText k="thinkingCoins.admin.slug" />
           <input
             v-model="createForm.slug"
             type="text"
@@ -428,7 +433,7 @@ onMounted(() => {
           />
         </label>
         <label class="block">
-          {{ t('thinkingCoins.admin.tasksTitle') }}
+          <I18nText k="thinkingCoins.admin.tasksTitle" />
           <input
             v-model="createForm.title"
             type="text"
@@ -436,7 +441,7 @@ onMounted(() => {
           />
         </label>
         <label class="block">
-          {{ t('thinkingCoins.admin.reward') }}
+          <I18nText k="thinkingCoins.admin.reward" />
           <input
             v-model.number="createForm.reward_amount"
             type="number"
@@ -445,7 +450,7 @@ onMounted(() => {
           />
         </label>
         <label class="block">
-          {{ t('thinkingCoins.admin.handler') }}
+          <I18nText k="thinkingCoins.admin.handler" />
           <select
             v-model="createForm.handler_key"
             class="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 bg-white"
@@ -463,7 +468,7 @@ onMounted(() => {
           v-if="createForm.handler_key === 'usage_daily'"
           class="block"
         >
-          {{ t('thinkingCoins.admin.requestType') }}
+          <I18nText k="thinkingCoins.admin.requestType" />
           <input
             :value="String(createForm.action_config?.request_type ?? 'mindmate')"
             type="text"
@@ -477,7 +482,7 @@ onMounted(() => {
           v-if="createForm.handler_key === 'client_event'"
           class="block"
         >
-          {{ t('thinkingCoins.admin.eventKey') }}
+          <I18nText k="thinkingCoins.admin.eventKey" />
           <input
             :value="String(createForm.action_config?.event_key ?? '')"
             type="text"
@@ -491,7 +496,7 @@ onMounted(() => {
           v-if="createForm.handler_key === 'navigate'"
           class="block"
         >
-          {{ t('thinkingCoins.admin.route') }}
+          <I18nText k="thinkingCoins.admin.route" />
           <input
             :value="String(createForm.action_config?.route ?? '/community')"
             type="text"
@@ -500,7 +505,7 @@ onMounted(() => {
           />
         </label>
         <label class="block">
-          {{ t('thinkingCoins.admin.sortOrder') }}
+          <I18nText k="thinkingCoins.admin.sortOrder" />
           <input
             v-model.number="createForm.sort_order"
             type="number"
@@ -515,14 +520,14 @@ onMounted(() => {
             class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
             @click="showCreateDialog = false"
           >
-            {{ t('common.cancel') }}
+            <I18nText k="common.cancel" />
           </button>
           <button
             type="button"
             class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
             @click="submitCreateTask"
           >
-            {{ t('thinkingCoins.admin.save') }}
+            <I18nText k="thinkingCoins.admin.save" />
           </button>
         </div>
       </template>

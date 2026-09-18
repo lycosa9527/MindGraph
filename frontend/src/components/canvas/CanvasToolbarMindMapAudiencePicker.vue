@@ -21,6 +21,7 @@ import {
   X,
 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -338,8 +339,9 @@ function handleProContentKeydown(event: KeyboardEvent, id: AiContentLevelId): vo
         <span
           v-if="showProContentHintLabel"
           class="mm-btn__label"
-          >{{ t('canvas.toolbar.professionalContent.label') }}</span
         >
+          <I18nText k="canvas.toolbar.professionalContent.label" />
+        </span>
         <span
           v-if="!props.compact"
           class="mm-pro-level-tag"
@@ -360,7 +362,7 @@ function handleProContentKeydown(event: KeyboardEvent, id: AiContentLevelId): vo
       :aria-label="t('canvas.toolbar.professionalContent.panelTitle')"
     >
       <div class="mm-pro-panel__eyebrow">
-        {{ t('canvas.toolbar.professionalContent.panelTitle') }}
+        <I18nText k="canvas.toolbar.professionalContent.panelTitle" />
       </div>
       <div class="mm-pro-panel__list">
         <button
@@ -427,10 +429,10 @@ function handleProContentKeydown(event: KeyboardEvent, id: AiContentLevelId): vo
             />
           </button>
           <p class="mm-pro-guide__title">
-            {{ t('canvas.toolbar.professionalContent.guideTitle') }}
+            <I18nText k="canvas.toolbar.professionalContent.guideTitle" />
           </p>
           <p class="mm-pro-guide__body">
-            {{ t('canvas.toolbar.professionalContent.guideBody') }}
+            <I18nText k="canvas.toolbar.professionalContent.guideBody" />
           </p>
           <div class="mm-pro-guide__actions">
             <button
@@ -438,14 +440,14 @@ function handleProContentKeydown(event: KeyboardEvent, id: AiContentLevelId): vo
               class="mm-pro-guide__dismiss"
               @click="dismissProContentGuide"
             >
-              {{ t('canvas.toolbar.professionalContent.guideDismiss') }}
+              <I18nText k="canvas.toolbar.professionalContent.guideDismiss" />
             </button>
             <button
               type="button"
               class="mm-pro-guide__action"
               @click="openProContentFromGuide"
             >
-              {{ t('canvas.toolbar.professionalContent.guideAction') }}
+              <I18nText k="canvas.toolbar.professionalContent.guideAction" />
             </button>
           </div>
         </div>

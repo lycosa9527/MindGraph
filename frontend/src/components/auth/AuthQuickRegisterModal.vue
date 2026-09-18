@@ -7,6 +7,7 @@ import { computed, onMounted, ref } from 'vue'
 
 import { ArrowLeft, Loader2, UserPlus } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { isTrainingInlineHost } from '@/composables/training/trainingInlineHost'
@@ -136,8 +137,11 @@ async function submitQuickRegister() {
   <SwissGlassCard
     v-model="isVisible"
     :ribbon="t('swissGlass.hero.register.ribbon')"
+    ribbon-key="swissGlass.hero.register.ribbon"
     :title="t('swissGlass.hero.register.title')"
+    title-key="swissGlass.hero.register.title"
     :line1="t('swissGlass.hero.register.line1')"
+    line1-key="swissGlass.hero.register.line1"
     :icon="UserPlus"
     :light-backdrop="lightBackdrop"
     :persistent="persistent"
@@ -170,7 +174,7 @@ async function submitQuickRegister() {
             class="page-header__back-icon"
             aria-hidden="true"
           />
-          {{ t('auth.quickRegBackToSignIn') }}
+          <I18nText k="auth.quickRegBackToSignIn" />
         </button>
       </div>
     </div>
@@ -184,14 +188,14 @@ async function submitQuickRegister() {
         class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2"
         role="status"
       >
-        {{ t('auth.quickRegLinkInvalid') }}
+        <I18nText k="auth.quickRegLinkInvalid" />
       </p>
       <p
         v-else-if="tokenProbe === 'rate_limited'"
         class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2"
         role="status"
       >
-        {{ t('auth.quickRegProbeRateLimited') }}
+        <I18nText k="auth.quickRegProbeRateLimited" />
       </p>
 
       <div>
@@ -199,7 +203,7 @@ async function submitQuickRegister() {
           class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
           for="auth-qr-phone"
         >
-          {{ t('auth.phone') }}
+          <I18nText k="auth.phone" />
         </label>
         <input
           id="auth-qr-phone"
@@ -217,7 +221,7 @@ async function submitQuickRegister() {
           class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
           for="auth-qr-room"
         >
-          {{ t('auth.quickRegRoomCodeLabel') }}
+          <I18nText k="auth.quickRegRoomCodeLabel" />
         </label>
         <input
           id="auth-qr-room"
@@ -230,7 +234,7 @@ async function submitQuickRegister() {
           autocomplete="one-time-code"
         />
         <p class="text-xs text-stone-400 mt-1.5">
-          {{ t('auth.quickRegRoomCodeHint') }}
+          <I18nText k="auth.quickRegRoomCodeHint" />
         </p>
       </div>
 
@@ -243,7 +247,7 @@ async function submitQuickRegister() {
           v-if="submitting"
           class="w-4 h-4 animate-spin shrink-0"
         />
-        {{ submitting ? t('auth.quickRegSubmitting') : t('auth.quickRegSubmit') }}
+        <I18nText :k="submitting ? 'auth.quickRegSubmitting' : 'auth.quickRegSubmit'" />
       </button>
     </form>
   </SwissGlassCard>

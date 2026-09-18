@@ -4,18 +4,22 @@
  */
 import { computed } from 'vue'
 
-import type { AdminSwissStatTheme } from '@/constants/adminSwissStatTheme'
+import I18nText from '@/components/common/I18nText.vue'
 import { useSwissStatCardClasses } from '@/composables/admin/useSwissStatCardClasses'
+import type { AdminSwissStatTheme } from '@/constants/adminSwissStatTheme'
 
 const props = withDefaults(
   defineProps<{
-    label: string
+    label?: string
+    labelKey?: string
     value: string | number
     active?: boolean
     theme?: AdminSwissStatTheme
     clickable?: boolean
   }>(),
   {
+    label: '',
+    labelKey: '',
     active: false,
     theme: 'storage',
     clickable: true,
@@ -52,8 +56,17 @@ function onClick(event: MouseEvent): void {
 </script>
 
 <template>
-  <article :class="rootClasses" @click="onClick">
-    <p class="swiss-stat-card__period-label">{{ label }}</p>
+  <article
+    :class="rootClasses"
+    @click="onClick"
+  >
+    <p class="swiss-stat-card__period-label">
+      <I18nText
+        v-if="labelKey"
+        :k="labelKey"
+      />
+      <template v-else>{{ label }}</template>
+    </p>
     <p class="swiss-stat-card__period-value">{{ displayValue }}</p>
   </article>
 </template>

@@ -7,14 +7,15 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { ElButton } from 'element-plus'
 
+import I18nText from '@/components/common/I18nText.vue'
 import MindmateCollabBreadcrumb from '@/components/mindmate/MindmateCollabBreadcrumb.vue'
 import MindmateCollabMessageRow from '@/components/mindmate/MindmateCollabMessageRow.vue'
-import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
 import ShareExportModal from '@/components/panels/ShareExportModal.vue'
+import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { ensureMarkdownRenderer } from '@/composables/core/lazyMarkdown'
-import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import type { MindMateMessage } from '@/composables/mindmate/useMindMate'
+import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import {
   type MindmateCollabMessage,
   useMindmateCollab,
@@ -41,10 +42,7 @@ import {
   requestMindmateCollabStop,
   teardownMindmateCollabClient,
 } from '@/utils/mindmateCollabTeardown'
-import {
-  type MindmateMentionCandidate,
-  contentMentionsMindmate,
-} from '@/utils/mindmateMention'
+import { type MindmateMentionCandidate, contentMentionsMindmate } from '@/utils/mindmateMention'
 
 const props = withDefaults(
   defineProps<{
@@ -57,18 +55,21 @@ const props = withDefaults(
   {
     embedded: true,
     seedMessages: () => [],
-  },
+  }
 )
 
 const emit = defineEmits<{
   (e: 'ended', reason: 'idle' | 'host' | 'left'): void
-  (e: 'room-meta', payload: {
-    title: string
-    visibility: string
-    sessionId: string
-    code: string
-    ownerId: number
-  }): void
+  (
+    e: 'room-meta',
+    payload: {
+      title: string
+      visibility: string
+      sessionId: string
+      code: string
+      ownerId: number
+    }
+  ): void
 }>()
 
 const { t } = useLanguage()
@@ -104,7 +105,7 @@ const {
 
 const mentionRoster = createMindmateCollabOrgBackend(
   () => room.value?.code || normalizedCode.value,
-  () => room.value?.visibility || 'organization',
+  () => room.value?.visibility || 'organization'
 )
 
 const mentionCandidates = computed((): MindmateMentionCandidate[] => {
@@ -136,11 +137,11 @@ const feedbackByKey = ref<Record<string, CollabFeedbackRating>>({})
 const inputPlaceholder = computed(() =>
   recipientMode.value === 'mindmate'
     ? t('mindmate.collabInputPlaceholderMindmate')
-    : t('mindmate.collabInputPlaceholderAll'),
+    : t('mindmate.collabInputPlaceholderAll')
 )
 
 const showConnectionBanner = computed(
-  () => connectionStatus.value === 'reconnecting' || connectionStatus.value === 'failed',
+  () => connectionStatus.value === 'reconnecting' || connectionStatus.value === 'failed'
 )
 
 const connectionBannerText = computed(() => {
@@ -180,10 +181,9 @@ async function joinRoomAndConnect(): Promise<void> {
   const generation = ++joinGeneration
   joining.value = true
   try {
-    const response = await authFetch(
-      `/api/mindmate/collab/join?code=${encodeURIComponent(code)}`,
-      { method: 'POST' },
-    )
+    const response = await authFetch(`/api/mindmate/collab/join?code=${encodeURIComponent(code)}`, {
+      method: 'POST',
+    })
     if (generation !== joinGeneration) {
       return
     }
@@ -224,7 +224,7 @@ async function joinRoomAndConnect(): Promise<void> {
     })
     connect()
   } catch {
-    notify.error(t('mindgraphLanding.networkErrorJoin'))
+    notify.errorKey('mindgraphLanding.networkErrorJoin')
     emit('ended', 'left')
   } finally {
     joining.value = false
@@ -268,7 +268,7 @@ watch(
       })
     }
   },
-  { immediate: true },
+  { immediate: true }
 )
 
 watch(
@@ -278,7 +278,7 @@ watch(
       return
     }
     void mentionRoster.fetchMembers({ limit: 200 })
-  },
+  }
 )
 
 async function stopRoom() {
@@ -294,15 +294,17 @@ async function stopRoom() {
   disconnect()
   teardownMindmateCollabClient(code, { removeFromHistory: true })
   emit('ended', 'host')
-  void requestMindmateCollabStop(sessionId).then((ok) => {
-    if (ok) {
-      notify.success(t('mindmate.collabStopped'))
-    } else {
-      notify.error(t('collab.endFailed'))
-    }
-  }).catch(() => {
-    notify.error(t('collab.endFailed'))
-  })
+  void requestMindmateCollabStop(sessionId)
+    .then((ok) => {
+      if (ok) {
+        notify.successKey('mindmate.collabStopped')
+      } else {
+        notify.errorKey('collab.endFailed')
+      }
+    })
+    .catch(() => {
+      notify.errorKey('collab.endFailed')
+    })
 }
 
 function handleSend() {
@@ -328,13 +330,13 @@ function handleRegenerate(prompt: string | undefined): void {
 function handleFeedback(key: string, clicked: 'like' | 'dislike'): void {
   const next = nextCollabFeedback(feedbackByKey.value[key], clicked)
   feedbackByKey.value = { ...feedbackByKey.value, [key]: next }
-  notify.success(
+  const thanksKey =
     next === 'like'
-      ? t('notification.feedbackThanks')
+      ? 'notification.feedbackThanks'
       : next === 'dislike'
-        ? t('notification.feedbackThanksDislike')
-        : t('notification.feedbackCancelled'),
-  )
+        ? 'notification.feedbackThanksDislike'
+        : 'notification.feedbackCancelled'
+  notify.successKey(thanksKey)
 }
 
 function handleRetryConnection(): void {
@@ -360,7 +362,7 @@ function isOwnMessage(msg: MindmateCollabMessage): boolean {
 const lastAssistantIdx = computed(() => lastFinishedAssistantIndex(messages.value))
 
 const shareExportMessages = computed(
-  () => collabMessagesForShareExport(messages.value) as MindMateMessage[],
+  () => collabMessagesForShareExport(messages.value) as MindMateMessage[]
 )
 
 const transcript = computed(() =>
@@ -369,7 +371,8 @@ const transcript = computed(() =>
     msg,
     isOwn: isOwnMessage(msg),
     isLastAssistant: idx === lastAssistantIdx.value,
-    userPrompt: msg.role === 'assistant' ? previousCollabUserPrompt(messages.value, idx) : undefined,
+    userPrompt:
+      msg.role === 'assistant' ? previousCollabUserPrompt(messages.value, idx) : undefined,
   }))
 )
 
@@ -428,7 +431,10 @@ watch(messages, async () => {
         size="small"
         @click="stopRoom"
       >
-        {{ t('mindmate.collabEndSeminar') }}
+        <I18nText
+          k="mindmate.collabEndSeminar"
+          dense
+        />
       </ElButton>
     </header>
 
@@ -436,7 +442,10 @@ watch(messages, async () => {
       v-if="idleWarningSeconds != null"
       class="bg-amber-50 text-amber-800 text-xs px-4 py-2 text-center shrink-0 border-b border-amber-100"
     >
-      {{ t('mindmate.collabIdleWarning', { n: idleWarningSeconds }) }}
+      <I18nText
+        k="mindmate.collabIdleWarning"
+        :params="{ n: idleWarningSeconds }"
+      />
     </div>
 
     <div
@@ -455,7 +464,7 @@ watch(messages, async () => {
         class="underline font-medium hover:opacity-80"
         @click="handleRetryConnection"
       >
-        {{ t('mindmate.collabRetryConnection') }}
+        <I18nText k="mindmate.collabRetryConnection" />
       </button>
     </div>
 
@@ -465,28 +474,28 @@ watch(messages, async () => {
         class="mindmate-collab-room__messages-scroll"
       >
         <div class="mindmate-collab-room__messages-inner">
-        <div
-          v-if="joining && !connected"
-          class="text-sm text-stone-500 text-center py-12"
-        >
-          {{ t('mindmate.collabJoining') }}
-        </div>
+          <div
+            v-if="joining && !connected"
+            class="text-sm text-stone-500 text-center py-12"
+          >
+            <I18nText k="mindmate.collabJoining" />
+          </div>
 
-        <MindmateCollabMessageRow
-          v-for="row in transcript"
-          :key="row.key"
-          :message="row.msg"
-          :is-own="row.isOwn"
-          :user-prompt="row.userPrompt"
-          :agent-name="mindmateAgentName"
-          :agent-avatar-url="mindmateAvatarUrl"
-          :is-last-assistant="row.isLastAssistant"
-          :regenerate-disabled="!canSend || joining || isStreaming"
-          :feedback="feedbackByKey[row.key]"
-          @regenerate="handleRegenerate(row.userPrompt)"
-          @share="showShareModal = true"
-          @feedback="handleFeedback(row.key, $event)"
-        />
+          <MindmateCollabMessageRow
+            v-for="row in transcript"
+            :key="row.key"
+            :message="row.msg"
+            :is-own="row.isOwn"
+            :user-prompt="row.userPrompt"
+            :agent-name="mindmateAgentName"
+            :agent-avatar-url="mindmateAvatarUrl"
+            :is-last-assistant="row.isLastAssistant"
+            :regenerate-disabled="!canSend || joining || isStreaming"
+            :feedback="feedbackByKey[row.key]"
+            @regenerate="handleRegenerate(row.userPrompt)"
+            @share="showShareModal = true"
+            @feedback="handleFeedback(row.key, $event)"
+          />
         </div>
       </div>
     </div>
@@ -517,7 +526,10 @@ watch(messages, async () => {
             :aria-selected="recipientMode === 'all'"
             @click="recipientMode = 'all'"
           >
-            {{ t('mindmate.collabRecipientAll') }}
+            <I18nText
+              k="mindmate.collabRecipientAll"
+              dense
+            />
           </button>
         </div>
         <MindmateInput
@@ -586,6 +598,11 @@ watch(messages, async () => {
   --el-button-text-color: #92400e;
   font-weight: 500;
   border-radius: 9999px;
+  height: auto;
+  min-height: 32px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  line-height: 1.15;
 }
 
 .mindmate-collab-room__input-inner {
@@ -625,10 +642,14 @@ watch(messages, async () => {
 }
 
 .mindmate-collab-room__recipient-tab {
+  display: inline-flex;
+  align-items: center;
   font-size: 12px;
   font-weight: 500;
-  line-height: 1.25;
-  padding: 0.4rem 1rem;
+  line-height: 1.15;
+  height: auto;
+  min-height: 28px;
+  padding: 0.3rem 0.85rem;
   border: none;
   border-radius: 9999px;
   background: transparent;
@@ -636,8 +657,6 @@ watch(messages, async () => {
   cursor: pointer;
   max-width: min(18rem, 70vw);
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   transition:
     background 0.15s ease,
     color 0.15s ease,

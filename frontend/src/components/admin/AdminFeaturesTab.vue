@@ -7,6 +7,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Settings2 } from '@lucide/vue'
 import { useQueryClient } from '@tanstack/vue-query'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
@@ -534,8 +535,11 @@ onUnmounted(() => {
     <SwissGlassDialog
       v-model="dialogVisible"
       :ribbon="t('swissGlass.hero.adminInline.ribbon')"
+      ribbon-key="swissGlass.hero.adminInline.ribbon"
       :title="t('swissGlass.hero.adminInline.title')"
+      title-key="swissGlass.hero.adminInline.title"
       :line1="t('swissGlass.hero.adminInline.line1')"
+      line1-key="swissGlass.hero.adminInline.line1"
       :line2="dialogTitleKey ? t(dialogTitleKey) : ''"
       :icon="Settings2"
       width="min(520px, 92vw)"
@@ -547,10 +551,10 @@ onUnmounted(() => {
       >
         <div>
           <div class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
-            {{ t('admin.featurePermissionsRestrict') }}
+            <I18nText k="admin.featurePermissionsRestrict" />
           </div>
           <p class="text-xs text-gray-500 mb-2">
-            {{ t('admin.featurePermissionsRestrictHint') }}
+            <I18nText k="admin.featurePermissionsRestrictHint" />
           </p>
           <el-switch
             v-model="accessDraft[permissionDialogKey].restrict"
@@ -559,7 +563,7 @@ onUnmounted(() => {
         </div>
         <div>
           <div class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
-            {{ t('admin.featurePermissionsOrgs') }}
+            <I18nText k="admin.featurePermissionsOrgs" />
           </div>
           <el-select
             v-model="accessDraft[permissionDialogKey].organization_ids"
@@ -580,10 +584,10 @@ onUnmounted(() => {
         </div>
         <div>
           <div class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
-            {{ t('admin.featurePermissionsUserIds') }}
+            <I18nText k="admin.featurePermissionsUserIds" />
           </div>
           <p class="text-xs text-gray-500 mb-2">
-            {{ t('admin.featurePermissionsUserIdsHint') }}
+            <I18nText k="admin.featurePermissionsUserIdsHint" />
           </p>
           <el-input
             v-model="userIdsText"
@@ -600,7 +604,7 @@ onUnmounted(() => {
             class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
             @click="closePermissionDialog"
           >
-            {{ t('admin.cancel') }}
+            <I18nText k="admin.cancel" />
           </button>
           <button
             type="button"
@@ -608,7 +612,7 @@ onUnmounted(() => {
             :disabled="savingPermissions || !permissionDialogKey"
             @click="applyPermissionDialog"
           >
-            {{ t('admin.featurePermissionsApply') }}
+            <I18nText k="admin.featurePermissionsApply" />
           </button>
         </div>
       </template>

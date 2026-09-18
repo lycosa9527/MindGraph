@@ -4,6 +4,7 @@
  */
 import { Smile } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import EmojiPicker from '@/components/workshop-chat/EmojiPicker.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -36,8 +37,11 @@ function clearAndClose(): void {
   <SwissGlassDialog
     v-model="open"
     :ribbon="t('canvas.hero.icon.ribbon')"
+    ribbon-key="canvas.hero.icon.ribbon"
     :title="t('canvas.hero.icon.title')"
+    title-key="canvas.hero.icon.title"
     :line1="t('canvas.hero.icon.line1')"
+    line1-key="canvas.hero.icon.line1"
     :icon="Smile"
     width="min(380px, 92vw)"
   >
@@ -53,14 +57,14 @@ function clearAndClose(): void {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost min-w-22"
           @click="clearAndClose"
         >
-          {{ t('canvas.ribbon.clearIcon') }}
+          <I18nText k="canvas.ribbon.clearIcon" />
         </button>
         <button
           type="button"
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="close"
         >
-          {{ t('common.cancel') }}
+          <I18nText k="common.cancel" />
         </button>
       </div>
     </template>

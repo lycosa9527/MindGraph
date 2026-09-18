@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'Nagpapadala kami ng code sa naka-bind na phone mo. Pagkatapos magtakda ng password, maaari kang mag-sign in gamit ang password o verification code.',
   'auth.setPasswordWithSmsSubmit': 'I-save ang password',
   'auth.setPasswordWithSmsSubmitting': 'Sine-save…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Pangalan sa display',
   'auth.accountNamePlaceholder': 'Hindi bababa sa 2 character, walang digit',
   'auth.accountNameSave': 'I-save ang pangalan',

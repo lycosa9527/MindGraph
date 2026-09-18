@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'కట్టుబడి ఉన్న మొబైల్ ఫోన్‌కు SMS ధృవీకరణ కోడ్‌ను పంపండి. సెటప్ చేసిన తర్వాత, మీరు పాస్‌వర్డ్ లేదా ధృవీకరణ కోడ్‌ని ఉపయోగించి లాగిన్ చేయవచ్చు.',
   'auth.setPasswordWithSmsSubmit': 'పాస్వర్డ్ను సెట్ చేయండి',
   'auth.setPasswordWithSmsSubmitting': 'సేవ్ చేస్తోంది...',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'పేరు చూపించు',
   'auth.accountNamePlaceholder': 'కనీసం 2 అక్షరాలు, సంఖ్యలు లేవు',
   'auth.accountNameSave': 'పేరు సేవ్',

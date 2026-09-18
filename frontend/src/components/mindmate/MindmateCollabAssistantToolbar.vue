@@ -2,12 +2,14 @@
 /**
  * 1:1-matching action bar under a finished MindMate seminar reply.
  */
-import { ElButton, ElIcon, ElTooltip } from 'element-plus'
+import { ElButton, ElIcon } from 'element-plus'
 
 import { CopyDocument, RefreshRight, Share } from '@element-plus/icons-vue'
 
 import { ThumbsDown, ThumbsUp } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables'
 import type { CollabFeedbackRating } from '@/utils/mindmateCollabDisplay'
 
@@ -42,8 +44,8 @@ const { t } = useLanguage()
       'action-bar-hover': !isLastAssistant,
     }"
   >
-    <ElTooltip
-      :content="t('mindmate.tooltip.copy')"
+    <I18nTooltip
+      k="mindmate.tooltip.copy"
       placement="top"
     >
       <ElButton
@@ -53,11 +55,11 @@ const { t } = useLanguage()
       >
         <ElIcon :size="18"><CopyDocument /></ElIcon>
       </ElButton>
-    </ElTooltip>
+    </I18nTooltip>
 
-    <ElTooltip
+    <I18nTooltip
       v-if="canRegenerate"
-      :content="t('mindmate.tooltip.regenerate')"
+      k="mindmate.tooltip.regenerate"
       placement="top"
     >
       <ElButton
@@ -68,10 +70,10 @@ const { t } = useLanguage()
       >
         <ElIcon :size="18"><RefreshRight /></ElIcon>
       </ElButton>
-    </ElTooltip>
+    </I18nTooltip>
 
-    <ElTooltip
-      :content="t('mindmate.tooltip.like')"
+    <I18nTooltip
+      k="mindmate.tooltip.like"
       placement="top"
     >
       <ElButton
@@ -82,10 +84,10 @@ const { t } = useLanguage()
       >
         <ThumbsUp :size="16" />
       </ElButton>
-    </ElTooltip>
+    </I18nTooltip>
 
-    <ElTooltip
-      :content="t('mindmate.tooltip.dislike')"
+    <I18nTooltip
+      k="mindmate.tooltip.dislike"
       placement="top"
     >
       <ElButton
@@ -96,10 +98,10 @@ const { t } = useLanguage()
       >
         <ThumbsDown :size="16" />
       </ElButton>
-    </ElTooltip>
+    </I18nTooltip>
 
-    <ElTooltip
-      :content="t('mindmate.tooltip.share')"
+    <I18nTooltip
+      k="mindmate.tooltip.share"
       placement="top"
     >
       <ElButton
@@ -109,7 +111,7 @@ const { t } = useLanguage()
       >
         <ElIcon :size="18"><Share /></ElIcon>
       </ElButton>
-    </ElTooltip>
+    </I18nTooltip>
 
     <button
       v-if="showWordTemplateExport"
@@ -120,7 +122,12 @@ const { t } = useLanguage()
       :title="t('mindmate.tooltip.exportWordTemplate')"
       @click="emit('export-word')"
     >
-      <span class="mindmate-stone-btn__label">{{ t('mindmate.exportWordTemplate') }}</span>
+      <span class="mindmate-stone-btn__label">
+        <I18nText
+          k="mindmate.exportWordTemplate"
+          dense
+        />
+      </span>
     </button>
 
     <ElButton
@@ -130,7 +137,10 @@ const { t } = useLanguage()
       :loading="openingCanvas"
       @click="emit('open-canvas')"
     >
-      {{ t('mindmate.openInCanvas') }}
+      <I18nText
+        k="mindmate.openInCanvas"
+        dense
+      />
     </ElButton>
   </div>
 </template>

@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 
 import { Eye, Heart, Star } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import {
   type ShowcaseCaseType,
@@ -78,8 +79,11 @@ function openPost(post: ShowcasePost) {
   <SwissGlassCard
     v-model="open"
     :ribbon="t('swissGlass.hero.myFavorites.ribbon')"
+    ribbon-key="swissGlass.hero.myFavorites.ribbon"
     :title="t('swissGlass.hero.myFavorites.title')"
+    title-key="swissGlass.hero.myFavorites.title"
     :line1="t('swissGlass.hero.myFavorites.line1')"
+    line1-key="swissGlass.hero.myFavorites.line1"
     :icon="Star"
     card-class="swiss-glass-card--xl"
     @close="close"
@@ -96,8 +100,8 @@ function openPost(post: ShowcasePost) {
         class="py-12 text-center"
       >
         <Star class="mx-auto mb-3 h-12 w-12 text-gray-300" />
-        <p class="text-sm text-gray-400">{{ t('showcase.myFavoritesEmpty') }}</p>
-        <p class="mt-1 text-xs text-gray-300">{{ t('showcase.myFavoritesEmptyHint') }}</p>
+        <p class="text-sm text-gray-400"><I18nText k="showcase.myFavoritesEmpty" /></p>
+        <p class="mt-1 text-xs text-gray-300"><I18nText k="showcase.myFavoritesEmptyHint" /></p>
       </div>
       <div
         v-else

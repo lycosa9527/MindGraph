@@ -14,6 +14,7 @@ import {
   Undo2,
 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import ShowcaseDiagramPreview from '@/components/showcase/ShowcaseDiagramPreview.vue'
 import ShowcaseTeachingDocPreview from '@/components/showcase/ShowcaseTeachingDocPreview.vue'
@@ -97,8 +98,11 @@ const open = computed({
   <SwissGlassCard
     v-model="open"
     :ribbon="t('swissGlass.hero.showcaseDetail.ribbon')"
+    ribbon-key="swissGlass.hero.showcaseDetail.ribbon"
     :title="t('swissGlass.hero.showcaseDetail.title')"
+    title-key="swissGlass.hero.showcaseDetail.title"
     :line1="t('swissGlass.hero.showcaseDetail.line1')"
+    line1-key="swissGlass.hero.showcaseDetail.line1"
     :icon="LayoutTemplate"
     card-class="swiss-glass-card--xl"
     @close="close"
@@ -215,7 +219,7 @@ const open = computed({
                     class="h-4 w-4"
                     :class="post.is_liked ? 'fill-current' : ''"
                   />
-                  {{ post.is_liked ? t('showcase.detail.liked') : t('showcase.detail.like') }}
+                  <I18nText :k="post.is_liked ? 'showcase.detail.liked' : 'showcase.detail.like'" />
                   <span :class="post.is_liked ? 'text-red-100' : 'font-normal text-gray-400'">
                     {{ post.likes_count }}
                   </span>
@@ -236,22 +240,25 @@ const open = computed({
                     class="h-4 w-4"
                     :class="post.is_favorited ? 'fill-current' : ''"
                   />
-                  {{
-                    post.is_favorited
-                      ? t('showcase.detail.favorited')
-                      : t('showcase.detail.favorite')
-                  }}
+                  <I18nText
+                    :k="
+                      post.is_favorited ? 'showcase.detail.favorited' : 'showcase.detail.favorite'
+                    "
+                  />
                 </button>
                 <span
                   v-if="post.is_expert_recommended"
                   class="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-600"
                 >
                   <Award class="h-3.5 w-3.5" />
-                  {{ t('showcase.expertBadge') }}
+                  <I18nText k="showcase.expertBadge" />
                 </span>
                 <span class="inline-flex items-center gap-1 text-xs text-gray-400">
                   <Eye class="h-3.5 w-3.5" />
-                  {{ t('showcase.detail.views', { n: post.views_count }) }}
+                  <I18nText
+                    k="showcase.detail.views"
+                    :params="{ n: post.views_count }"
+                  />
                 </span>
               </div>
             </div>
@@ -267,7 +274,7 @@ const open = computed({
                 @click="askMindMate"
               >
                 <MessageCircle class="h-4 w-4" />
-                {{ t('showcase.detail.askMindmate') }}
+                <I18nText k="showcase.detail.askMindmate" />
               </button>
               <button
                 v-if="showExpertRecommend"
@@ -282,11 +289,13 @@ const open = computed({
                 @click="toggleRecommend"
               >
                 <Award class="h-4 w-4" />
-                {{
-                  post.is_expert_recommended
-                    ? t('showcase.detail.unrecommend')
-                    : t('showcase.detail.recommend')
-                }}
+                <I18nText
+                  :k="
+                    post.is_expert_recommended
+                      ? 'showcase.detail.unrecommend'
+                      : 'showcase.detail.recommend'
+                  "
+                />
               </button>
               <button
                 v-if="showDeleteButton"
@@ -296,7 +305,7 @@ const open = computed({
                 @click="remove"
               >
                 <Trash2 class="h-4 w-4" />
-                {{ t('showcase.detail.delete') }}
+                <I18nText k="showcase.detail.delete" />
               </button>
             </div>
 
@@ -311,7 +320,7 @@ const open = computed({
                 @click="openResubmit"
               >
                 <PenLine class="h-4 w-4" />
-                {{ t('showcase.detail.resubmit') }}
+                <I18nText k="showcase.detail.resubmit" />
               </button>
               <button
                 v-if="showAuthorWithdraw"
@@ -321,7 +330,7 @@ const open = computed({
                 @click="withdrawCase"
               >
                 <Undo2 class="h-4 w-4" />
-                {{ t('showcase.detail.withdraw') }}
+                <I18nText k="showcase.detail.withdraw" />
               </button>
               <button
                 v-if="showAuthorDelist"
@@ -331,7 +340,7 @@ const open = computed({
                 @click="delistCase"
               >
                 <Trash2 class="h-4 w-4" />
-                {{ t('showcase.detail.delist') }}
+                <I18nText k="showcase.detail.delist" />
               </button>
             </div>
 
@@ -378,14 +387,14 @@ const open = computed({
                     v-else
                     class="text-sm text-gray-400"
                   >
-                    {{ t('showcase.detail.emptySection') }}
+                    <I18nText k="showcase.detail.emptySection" />
                   </p>
                 </template>
                 <p
                   v-else
                   class="text-sm text-gray-400"
                 >
-                  {{ t('showcase.detail.emptySection') }}
+                  <I18nText k="showcase.detail.emptySection" />
                 </p>
 
                 <div
@@ -399,14 +408,14 @@ const open = computed({
                       :disabled="isActionBusy"
                       @click="approve"
                     >
-                      {{ t('showcase.detail.approve') }}
+                      <I18nText k="showcase.detail.approve" />
                     </button>
                     <button
                       type="button"
                       class="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
                       @click="showRejectInput = !showRejectInput"
                     >
-                      {{ t('showcase.detail.reject') }}
+                      <I18nText k="showcase.detail.reject" />
                     </button>
                   </div>
                   <div
@@ -425,7 +434,7 @@ const open = computed({
                       :disabled="isActionBusy"
                       @click="reject"
                     >
-                      {{ t('showcase.detail.reject') }}
+                      <I18nText k="showcase.detail.reject" />
                     </button>
                   </div>
                 </div>
@@ -555,7 +564,7 @@ const open = computed({
                     class="h-4 w-4"
                     :class="post.is_liked ? 'fill-current' : ''"
                   />
-                  {{ post.is_liked ? t('showcase.detail.liked') : t('showcase.detail.like') }}
+                  <I18nText :k="post.is_liked ? 'showcase.detail.liked' : 'showcase.detail.like'" />
                   <span :class="post.is_liked ? 'text-red-100' : 'font-normal text-gray-400'">
                     {{ post.likes_count }}
                   </span>
@@ -576,22 +585,25 @@ const open = computed({
                     class="h-4 w-4"
                     :class="post.is_favorited ? 'fill-current' : ''"
                   />
-                  {{
-                    post.is_favorited
-                      ? t('showcase.detail.favorited')
-                      : t('showcase.detail.favorite')
-                  }}
+                  <I18nText
+                    :k="
+                      post.is_favorited ? 'showcase.detail.favorited' : 'showcase.detail.favorite'
+                    "
+                  />
                 </button>
                 <span
                   v-if="post.is_expert_recommended"
                   class="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-600"
                 >
                   <Award class="h-3.5 w-3.5" />
-                  {{ t('showcase.expertBadge') }}
+                  <I18nText k="showcase.expertBadge" />
                 </span>
                 <span class="inline-flex items-center gap-1 text-xs text-gray-400">
                   <Eye class="h-3.5 w-3.5" />
-                  {{ t('showcase.detail.views', { n: post.views_count }) }}
+                  <I18nText
+                    k="showcase.detail.views"
+                    :params="{ n: post.views_count }"
+                  />
                 </span>
               </div>
             </div>
@@ -623,11 +635,13 @@ const open = computed({
                 @click="toggleRecommend"
               >
                 <Award class="h-3.5 w-3.5" />
-                {{
-                  post.is_expert_recommended
-                    ? t('showcase.detail.unrecommend')
-                    : t('showcase.detail.recommend')
-                }}
+                <I18nText
+                  :k="
+                    post.is_expert_recommended
+                      ? 'showcase.detail.unrecommend'
+                      : 'showcase.detail.recommend'
+                  "
+                />
               </button>
               <button
                 v-if="showDeleteButton"
@@ -637,7 +651,7 @@ const open = computed({
                 @click="remove"
               >
                 <Trash2 class="h-3.5 w-3.5" />
-                {{ t('showcase.detail.delete') }}
+                <I18nText k="showcase.detail.delete" />
               </button>
             </div>
 
@@ -652,7 +666,7 @@ const open = computed({
                 @click="openResubmit"
               >
                 <PenLine class="h-3.5 w-3.5" />
-                {{ t('showcase.detail.resubmit') }}
+                <I18nText k="showcase.detail.resubmit" />
               </button>
               <button
                 v-if="showAuthorWithdraw"
@@ -662,7 +676,7 @@ const open = computed({
                 @click="withdrawCase"
               >
                 <Undo2 class="h-3.5 w-3.5" />
-                {{ t('showcase.detail.withdraw') }}
+                <I18nText k="showcase.detail.withdraw" />
               </button>
               <button
                 v-if="showAuthorDelist"
@@ -672,7 +686,7 @@ const open = computed({
                 @click="delistCase"
               >
                 <Trash2 class="h-3.5 w-3.5" />
-                {{ t('showcase.detail.delist') }}
+                <I18nText k="showcase.detail.delist" />
               </button>
             </div>
 
@@ -707,7 +721,7 @@ const open = computed({
                   v-else
                   class="text-sm text-gray-400"
                 >
-                  {{ t('showcase.detail.emptySection') }}
+                  <I18nText k="showcase.detail.emptySection" />
                 </p>
 
                 <div
@@ -721,14 +735,14 @@ const open = computed({
                       :disabled="isActionBusy"
                       @click="approve"
                     >
-                      {{ t('showcase.detail.approve') }}
+                      <I18nText k="showcase.detail.approve" />
                     </button>
                     <button
                       type="button"
                       class="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
                       @click="showRejectInput = !showRejectInput"
                     >
-                      {{ t('showcase.detail.reject') }}
+                      <I18nText k="showcase.detail.reject" />
                     </button>
                   </div>
                   <div
@@ -747,7 +761,7 @@ const open = computed({
                       :disabled="isActionBusy"
                       @click="reject"
                     >
-                      {{ t('showcase.detail.reject') }}
+                      <I18nText k="showcase.detail.reject" />
                     </button>
                   </div>
                 </div>

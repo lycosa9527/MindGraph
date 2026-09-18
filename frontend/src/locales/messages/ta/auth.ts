@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'பிணைக்கப்பட்ட மொபைல் ஃபோனுக்கு SMS சரிபார்ப்புக் குறியீட்டை அனுப்பவும். அமைத்த பிறகு, கடவுச்சொல் அல்லது சரிபார்ப்புக் குறியீட்டைப் பயன்படுத்தி உள்நுழையலாம்.',
   'auth.setPasswordWithSmsSubmit': 'கடவுச்சொல்லை அமைக்கவும்',
   'auth.setPasswordWithSmsSubmitting': 'சேமிக்கிறது…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'பெயரைக் காட்டு',
   'auth.accountNamePlaceholder': 'குறைந்தது 2 எழுத்துகள், எண்கள் இல்லை',
   'auth.accountNameSave': 'பெயரை சேமிக்கவும்',

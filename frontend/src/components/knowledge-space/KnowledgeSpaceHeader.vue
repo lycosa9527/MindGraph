@@ -4,10 +4,11 @@
  */
 import { computed } from 'vue'
 
-import { ElButton, ElIcon, ElTooltip } from 'element-plus'
+import { ElButton, ElIcon } from 'element-plus'
 
 import { Search, Setting, Upload, VideoPlay } from '@element-plus/icons-vue'
 
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 
 const props = defineProps<{
@@ -64,9 +65,7 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
         <span
           class="truncate"
           :class="
-            index === breadcrumb.length - 1
-              ? 'font-semibold text-stone-900'
-              : 'text-stone-500'
+            index === breadcrumb.length - 1 ? 'font-semibold text-stone-900' : 'text-stone-500'
           "
         >
           {{ segment.label }}
@@ -118,7 +117,7 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
         {{ t('knowledge.header.processAll') }}
       </ElButton>
 
-      <ElTooltip :content="t('knowledge.header.retrievalTest')">
+      <I18nTooltip k="knowledge.header.retrievalTest">
         <ElButton
           text
           circle
@@ -129,9 +128,9 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
         >
           <ElIcon><Search /></ElIcon>
         </ElButton>
-      </ElTooltip>
+      </I18nTooltip>
 
-      <ElTooltip :content="t('knowledge.header.settings')">
+      <I18nTooltip k="knowledge.header.settings">
         <ElButton
           text
           circle
@@ -141,7 +140,7 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
         >
           <ElIcon><Setting /></ElIcon>
         </ElButton>
-      </ElTooltip>
+      </I18nTooltip>
     </div>
   </div>
 </template>

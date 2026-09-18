@@ -296,6 +296,8 @@ export default {
   'auth.setPasswordWithSmsHint': '向已绑定手机发送短信验证码，设置后可使用密码或验证码登录。',
   'auth.setPasswordWithSmsSubmit': '设置密码',
   'auth.setPasswordWithSmsSubmitting': '保存中…',
+  'auth.accountAvatar': '头像',
+  'auth.notSet': '未设置',
   'auth.accountDisplayName': '显示姓名',
   'auth.accountNamePlaceholder': '至少 2 个字符，不能含数字',
   'auth.accountNameSave': '保存姓名',

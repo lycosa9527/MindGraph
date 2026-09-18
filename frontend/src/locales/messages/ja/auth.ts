@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': '登録電話番号にコードを送信します。パスワード設定後、パスワードまたは認証コードでサインインできます。',
   'auth.setPasswordWithSmsSubmit': 'パスワードを保存',
   'auth.setPasswordWithSmsSubmitting': '保存中…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': '表示名',
   'auth.accountNamePlaceholder': '2 文字以上、数字不可',
   'auth.accountNameSave': '名前を保存',

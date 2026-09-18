@@ -49,8 +49,11 @@ onBeforeUnmount(() => {
   <SwissGlassCard
     v-model="open"
     :ribbon="t('swissGlass.hero.lightbox.ribbon')"
+    ribbon-key="swissGlass.hero.lightbox.ribbon"
     :title="t('swissGlass.hero.lightbox.title')"
+    title-key="swissGlass.hero.lightbox.title"
     :line1="t('swissGlass.hero.lightbox.line1')"
+    line1-key="swissGlass.hero.lightbox.line1"
     :icon="Image"
     card-class="swiss-glass-card--xl"
     overlay-class="image-lightbox-overlay"

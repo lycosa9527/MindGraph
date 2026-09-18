@@ -11,6 +11,7 @@ import { Document, Loading } from '@element-plus/icons-vue'
 
 import { FileSearch } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { apiRequest } from '@/utils/apiClient'
@@ -109,15 +110,21 @@ watch(
   <SwissGlassDialog
     v-model="dialogVisible"
     :ribbon="t('swissGlass.hero.chunkPreview.ribbon')"
+    ribbon-key="swissGlass.hero.chunkPreview.ribbon"
     :title="t('swissGlass.hero.chunkPreview.title')"
+    title-key="swissGlass.hero.chunkPreview.title"
     :line1="t('swissGlass.hero.chunkPreview.line1')"
+    line1-key="swissGlass.hero.chunkPreview.line1"
     :icon="FileSearch"
     width="min(800px, 92vw)"
     :close-on-click-modal="false"
     dialog-class="chunk-preview-modal"
   >
     <p class="text-sm font-medium text-stone-700 mb-3">
-      {{ t('knowledge.chunkPreview.title', { fileName: props.fileName }) }}
+      <I18nText
+        k="knowledge.chunkPreview.title"
+        :params="{ fileName: props.fileName }"
+      />
     </p>
     <div
       v-if="loading"
@@ -140,7 +147,10 @@ watch(
       class="chunk-list"
     >
       <div class="mb-4 text-sm text-stone-500">
-        {{ t('knowledge.chunkPreview.totalChunks', { n: total }) }}
+        <I18nText
+          k="knowledge.chunkPreview.totalChunks"
+          :params="{ n: total }"
+        />
       </div>
 
       <div class="space-y-4 max-h-[500px] overflow-y-auto pr-2">
@@ -154,23 +164,25 @@ watch(
               <Document />
             </ElIcon>
             <span class="text-sm font-medium text-stone-700">
-              {{ t('chunkTestResults.chunkLabel', { n: chunk.chunk_index + 1 }) }}
+              <I18nText
+                k="chunkTestResults.chunkLabel"
+                :params="{ n: chunk.chunk_index + 1 }"
+              />
             </span>
             <ElTag
               size="small"
               type="info"
             >
-              {{ chunk.text.length }} {{ t('common.unit.chars') }}
+              {{ chunk.text.length }} <I18nText k="common.unit.chars" />
             </ElTag>
             <ElTag
               v-if="chunk.metadata?.page_number"
               size="small"
             >
-              {{
-                t('knowledge.chunkPreview.pageLabel', {
-                  n: chunk.metadata.page_number as number,
-                })
-              }}
+              <I18nText
+                k="knowledge.chunkPreview.pageLabel"
+                :params="{ n: chunk.metadata.page_number as number }"
+              />
             </ElTag>
           </div>
           <div class="text-sm text-stone-600 leading-relaxed whitespace-pre-wrap">

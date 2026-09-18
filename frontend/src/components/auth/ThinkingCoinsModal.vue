@@ -22,6 +22,7 @@ import {
   Users,
 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage } from '@/composables'
 import { SHOW_PERSONAL_SUBSCRIPTION_TAB } from '@/composables/auth/thinkingCoinsUpgradeUi'
@@ -272,8 +273,11 @@ function onUpgradeClick() {
   <SwissGlassCard
     v-model="isVisible"
     :ribbon="t('swissGlass.hero.coins.ribbon')"
+    ribbon-key="swissGlass.hero.coins.ribbon"
     :title="t('swissGlass.hero.coins.title')"
+    title-key="swissGlass.hero.coins.title"
     :line1="t('swissGlass.hero.coins.line1')"
+    line1-key="swissGlass.hero.coins.line1"
     :icon="Coins"
     card-class="swiss-glass-card--wide"
     @close="closeModal"
@@ -291,19 +295,22 @@ function onUpgradeClick() {
           <div class="flex items-end justify-between gap-4">
             <div class="min-w-0">
               <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
-                {{ t('thinkingCoins.balanceUnit') }}
+                <I18nText k="thinkingCoins.balanceUnit" />
               </p>
               <p class="mt-1 text-4xl font-bold tabular-nums tracking-tight text-stone-900">
                 {{ balanceText }}
               </p>
               <p class="mt-2 text-xs text-stone-500">
-                {{ t('thinkingCoins.dailyExpiresHint') }}
+                <I18nText k="thinkingCoins.dailyExpiresHint" />
               </p>
               <p
                 v-if="dailyBalance > 0"
                 class="mt-1 text-xs tabular-nums text-amber-700"
               >
-                {{ t('thinkingCoins.dailyBalanceRemaining', { n: dailyBalance }) }}
+                <I18nText
+                  k="thinkingCoins.dailyBalanceRemaining"
+                  :params="{ n: dailyBalance }"
+                />
               </p>
             </div>
             <button
@@ -312,13 +319,13 @@ function onUpgradeClick() {
               @click="onUpgradeClick"
             >
               <Star class="h-3.5 w-3.5 fill-current" />
-              {{ t('thinkingCoins.upgrade') }}
+              <I18nText k="thinkingCoins.upgrade" />
             </button>
           </div>
         </div>
 
         <h3 class="mt-5 mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
-          {{ t('thinkingCoins.earnMore') }}
+          <I18nText k="thinkingCoins.earnMore" />
         </h3>
 
         <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
@@ -384,7 +391,7 @@ function onUpgradeClick() {
             :is="ledgerOpen ? ChevronDown : ChevronRight"
             class="h-4 w-4 shrink-0 text-stone-400"
           />
-          <span>{{ t('thinkingCoins.ledgerTitle') }}</span>
+          <span><I18nText k="thinkingCoins.ledgerTitle" /></span>
         </button>
 
         <div
@@ -395,7 +402,7 @@ function onUpgradeClick() {
             v-if="!ledger?.items.length"
             class="py-8 text-center text-sm text-stone-400"
           >
-            {{ t('thinkingCoins.ledgerEmpty') }}
+            <I18nText k="thinkingCoins.ledgerEmpty" />
           </div>
           <ul
             v-else
@@ -422,9 +429,9 @@ function onUpgradeClick() {
             :disabled="ledgerLoading"
             @click="loadMoreLedger"
           >
-            {{
-              ledgerLoading ? t('thinkingCoins.ledgerLoading') : t('thinkingCoins.ledgerLoadMore')
-            }}
+            <I18nText
+              :k="ledgerLoading ? 'thinkingCoins.ledgerLoading' : 'thinkingCoins.ledgerLoadMore'"
+            />
           </button>
         </div>
       </section>
@@ -434,7 +441,7 @@ function onUpgradeClick() {
         class="px-6 py-5"
       >
         <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
-          {{ t('thinkingCoins.subscriptionRef') }}
+          <I18nText k="thinkingCoins.subscriptionRef" />
         </h3>
 
         <div
@@ -451,7 +458,7 @@ function onUpgradeClick() {
             "
             @click="subscriptionTab = false"
           >
-            {{ t('thinkingCoins.personalTab') }}
+            <I18nText k="thinkingCoins.personalTab" />
           </button>
           <button
             type="button"
@@ -463,7 +470,7 @@ function onUpgradeClick() {
             "
             @click="subscriptionTab = true"
           >
-            {{ t('thinkingCoins.schoolTab') }}
+            <I18nText k="thinkingCoins.schoolTab" />
           </button>
         </div>
 
@@ -487,14 +494,14 @@ function onUpgradeClick() {
               </div>
               <div class="mb-2 text-xl font-bold text-stone-400 blur-[6px] select-none">¥ ··</div>
               <div class="mb-3 text-xs text-stone-500">
-                {{ t('thinkingCoins.pricePending') }}
+                <I18nText k="thinkingCoins.pricePending" />
               </div>
               <button
                 type="button"
                 disabled
                 class="w-full cursor-not-allowed rounded-lg border border-stone-200 py-2 text-xs font-medium text-stone-400"
               >
-                {{ t('thinkingCoins.comingSoon') }}
+                <I18nText k="thinkingCoins.comingSoon" />
               </button>
             </div>
           </div>
@@ -504,7 +511,7 @@ function onUpgradeClick() {
           v-else
           class="rounded-xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm leading-relaxed text-sky-900"
         >
-          {{ t('thinkingCoins.schoolInfo') }}
+          <I18nText k="thinkingCoins.schoolInfo" />
         </div>
       </section>
     </template>

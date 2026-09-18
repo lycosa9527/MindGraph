@@ -8,8 +8,14 @@ export interface SwissGlassConfirmHeroOptions {
   title: string
   line1: string
   line2?: string
+  ribbonKey?: string
+  titleKey?: string
+  line1Key?: string
+  line2Key?: string
   confirmLabel?: string
   cancelLabel?: string
+  confirmLabelKey?: string
+  cancelLabelKey?: string
   danger?: boolean
   icon?: Component
 }
@@ -27,8 +33,14 @@ interface SwissGlassConfirmState {
   title: string
   line1: string
   line2: string
+  ribbonKey: string
+  titleKey: string
+  line1Key: string
+  line2Key: string
   confirmLabel: string
   cancelLabel: string
+  confirmLabelKey: string
+  cancelLabelKey: string
   danger: boolean
   icon: Component | undefined
 }
@@ -41,8 +53,14 @@ const state = reactive<SwissGlassConfirmState>({
   title: '',
   line1: '',
   line2: '',
+  ribbonKey: '',
+  titleKey: '',
+  line1Key: '',
+  line2Key: '',
   confirmLabel: '',
   cancelLabel: '',
+  confirmLabelKey: '',
+  cancelLabelKey: '',
   danger: false,
   icon: undefined,
 })
@@ -74,8 +92,14 @@ export function swissGlassConfirmHero(options: SwissGlassConfirmHeroOptions): Pr
   state.title = options.title
   state.line1 = options.line1
   state.line2 = options.line2 ?? ''
+  state.ribbonKey = options.ribbonKey ?? ''
+  state.titleKey = options.titleKey ?? ''
+  state.line1Key = options.line1Key ?? ''
+  state.line2Key = options.line2Key ?? ''
   state.confirmLabel = options.confirmLabel ?? ''
   state.cancelLabel = options.cancelLabel ?? ''
+  state.confirmLabelKey = options.confirmLabelKey ?? ''
+  state.cancelLabelKey = options.cancelLabelKey ?? ''
   state.danger = options.danger === true
   state.icon = options.icon
   state.open = true

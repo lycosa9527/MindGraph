@@ -32,27 +32,25 @@ import { useMindMapRibbonState } from '@/canvas-ribbon/useMindMapRibbonState'
 import CanvasOnlineCollabMenu from '@/components/canvas/CanvasOnlineCollabMenu.vue'
 import CanvasToolbar from '@/components/canvas/CanvasToolbar.vue'
 import DiagramSlotFullModal from '@/components/canvas/DiagramSlotFullModal.vue'
+import I18nText from '@/components/common/I18nText.vue'
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useFeatureFlags } from '@/composables'
-import { useCanvasReset } from '@/composables/canvasPage/useCanvasReset'
-import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
-import {
-  eventBus,
-  getDefaultDiagramName,
-  useDiagramSpecForSave,
-  useNotifications,
-} from '@/composables'
+import { eventBus, getDefaultDiagramName, useDiagramSpecForSave } from '@/composables'
 import type { SnapshotMetadata } from '@/composables'
 import { useLanguage } from '@/composables'
-import { CANVAS_TOP_BAR } from '@/config/uiConfig'
-import { CANVAS_STANDARD_EXPORT_MENU_ITEMS, CANVAS_COMMUNITY_EXPORT_MENU_ITEM } from '@/config/canvasExportMenu'
-import { isPdfExportCommand } from '@/utils/diagramPdfExport'
+import { useCanvasReset } from '@/composables/canvasPage/useCanvasReset'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import {
+  CANVAS_COMMUNITY_EXPORT_MENU_ITEM,
+  CANVAS_STANDARD_EXPORT_MENU_ITEMS,
+} from '@/config/canvasExportMenu'
+import { CANVAS_TOP_BAR } from '@/config/uiConfig'
 import { useAuthStore, useCanvasExportStore, usePanelsStore } from '@/stores'
 import { navigateBackFromCanvas } from '@/utils/canvasBackNavigation'
+import { isPdfExportCommand } from '@/utils/diagramPdfExport'
 
 const { resetToDefaultTemplate } = useCanvasReset()
-
-const notify = useNotifications()
 
 const topBarRootRef = ref<HTMLElement | null>(null)
 /** Icon-only for MindMate / reset / export (first tier — wider breakpoint). */
@@ -310,81 +308,81 @@ async function handleReset() {
       class="canvas-top-bar__title-row"
       :class="{ 'canvas-top-bar__title-row--mindmap': isMindMapEditor }"
     >
-    <div
-      class="flex items-center gap-1 min-w-0 z-10"
-      :class="{ 'canvas-top-bar__doc': isMindMapEditor }"
-      :style="isMindMapEditor ? undefined : { maxWidth: CANVAS_TOP_BAR.LEFT_CLUSTER_MAX_WIDTH }"
-    >
-      <ElTooltip
-        :content="t('canvas.topBar.back')"
-        placement="bottom"
+      <div
+        class="flex items-center gap-1 min-w-0 z-10"
+        :class="{ 'canvas-top-bar__doc': isMindMapEditor }"
+        :style="isMindMapEditor ? undefined : { maxWidth: CANVAS_TOP_BAR.LEFT_CLUSTER_MAX_WIDTH }"
       >
-        <ElButton
-          text
-          circle
-          size="small"
-          @click="handleBack"
-        >
-          <ArrowLeft class="w-4.5 h-4.5 mg-icon-flip-rtl" />
-        </ElButton>
-      </ElTooltip>
-
-      <div class="h-5 border-r border-gray-200 dark:border-gray-600 mx-1 shrink-0" />
-
-      <div class="flex items-center gap-1.5 sm:gap-2 ml-1 min-w-0 flex-1 overflow-hidden">
-        <ElInput
-          v-if="isFileNameEditing"
-          ref="fileNameInputRef"
-          v-model="fileName"
-          size="small"
-          class="file-name-input"
-          :style="{ maxWidth: CANVAS_TOP_BAR.FILE_NAME_INPUT_MAX_WIDTH }"
-          @blur="handleFileNameBlur"
-          @keypress="handleFileNameKeyPress"
-        />
-        <ElTooltip
-          v-else
-          :content="fileName"
+        <I18nTooltip
+          k="canvas.topBar.back"
           placement="bottom"
         >
-          <span
-            class="file-name-label text-xs font-medium cursor-pointer transition-colors px-1.5 sm:px-2 py-1 rounded truncate"
-            :class="
-              isMindMapEditor
-                ? 'text-gray-800 hover:text-blue-600 hover:bg-white/70'
-                : 'text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-            "
-            :style="{ maxWidth: CANVAS_TOP_BAR.FILENAME_DISPLAY_MAX_WIDTH }"
-            @click="handleFileNameClick"
+          <ElButton
+            text
+            circle
+            size="small"
+            @click="handleBack"
           >
-            {{ fileName }}
-          </span>
-        </ElTooltip>
+            <ArrowLeft class="w-4.5 h-4.5 mg-icon-flip-rtl" />
+          </ElButton>
+        </I18nTooltip>
 
-        <span
-          v-if="props.autoSavedStatus && !props.isViewer"
-          class="auto-saved-status text-xs shrink-0 min-w-0 cursor-pointer transition-colors truncate"
-          :style="{ maxWidth: CANVAS_TOP_BAR.AUTOSAVE_STATUS_MAX_WIDTH }"
-          :title="autoSaveHoverTitle"
-          :class="[
-            props.isSaving
-              ? isMindMapEditor
-                ? 'text-blue-500'
-                : 'text-blue-500 dark:text-blue-400'
-              : props.isDirty
+        <div class="h-5 border-r border-gray-200 dark:border-gray-600 mx-1 shrink-0" />
+
+        <div class="flex items-center gap-1.5 sm:gap-2 ml-1 min-w-0 flex-1 overflow-hidden">
+          <ElInput
+            v-if="isFileNameEditing"
+            ref="fileNameInputRef"
+            v-model="fileName"
+            size="small"
+            class="file-name-input"
+            :style="{ maxWidth: CANVAS_TOP_BAR.FILE_NAME_INPUT_MAX_WIDTH }"
+            @blur="handleFileNameBlur"
+            @keypress="handleFileNameKeyPress"
+          />
+          <ElTooltip
+            v-else
+            :content="fileName"
+            placement="bottom"
+          >
+            <span
+              class="file-name-label text-xs font-medium cursor-pointer transition-colors px-1.5 sm:px-2 py-1 rounded truncate"
+              :class="
+                isMindMapEditor
+                  ? 'text-gray-800 hover:text-blue-600 hover:bg-white/70'
+                  : 'text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+              "
+              :style="{ maxWidth: CANVAS_TOP_BAR.FILENAME_DISPLAY_MAX_WIDTH }"
+              @click="handleFileNameClick"
+            >
+              {{ fileName }}
+            </span>
+          </ElTooltip>
+
+          <span
+            v-if="props.autoSavedStatus && !props.isViewer"
+            class="auto-saved-status text-xs shrink-0 min-w-0 cursor-pointer transition-colors truncate"
+            :style="{ maxWidth: CANVAS_TOP_BAR.AUTOSAVE_STATUS_MAX_WIDTH }"
+            :title="autoSaveHoverTitle"
+            :class="[
+              props.isSaving
                 ? isMindMapEditor
-                  ? 'text-amber-500'
-                  : 'text-amber-500 dark:text-amber-400'
-                : isMindMapEditor
-                  ? 'text-gray-500 hover:text-gray-700'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
-          ]"
-          @click="handleAutoSaveStatusClick"
-        >
-          {{ props.autoSavedStatus }}
-        </span>
+                  ? 'text-blue-500'
+                  : 'text-blue-500 dark:text-blue-400'
+                : props.isDirty
+                  ? isMindMapEditor
+                    ? 'text-amber-500'
+                    : 'text-amber-500 dark:text-amber-400'
+                  : isMindMapEditor
+                    ? 'text-gray-500 hover:text-gray-700'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
+            ]"
+            @click="handleAutoSaveStatusClick"
+          >
+            {{ props.autoSavedStatus }}
+          </span>
+        </div>
       </div>
-    </div>
       <div
         v-if="isMindMapEditor"
         class="canvas-top-bar__tabs"
@@ -421,7 +419,7 @@ async function handleReset() {
         v-if="props.isViewer"
         class="inline-flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-full px-2.5 py-1 select-none"
       >
-        👁 {{ t('canvas.topBar.viewOnly') }}
+        👁 <I18nText k="canvas.topBar.viewOnly" />
       </span>
       <CanvasToolbar
         v-else
@@ -484,9 +482,9 @@ async function handleReset() {
       </div>
 
       <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-        <ElTooltip
+        <I18nTooltip
           v-if="isMindMapEditor && !props.isViewer"
-          :content="t('canvas.topBar.resetTemplate')"
+          k="canvas.topBar.resetTemplate"
           placement="bottom"
           :disabled="!compactTopBarActions"
         >
@@ -501,13 +499,15 @@ async function handleReset() {
             <span
               v-if="!compactTopBarActions"
               class="mm-btn__label"
-            >{{ t('canvas.topBar.resetCanvas') }}</span>
+            >
+              <I18nText k="canvas.topBar.resetCanvas" />
+            </span>
           </button>
-        </ElTooltip>
+        </I18nTooltip>
 
-        <ElTooltip
+        <I18nTooltip
           v-if="!isMindMapEditor"
-          :content="t('canvas.topBar.teachingDesign')"
+          k="canvas.topBar.teachingDesign"
           placement="bottom"
           :disabled="!compactTopBarActions"
         >
@@ -518,13 +518,15 @@ async function handleReset() {
             :aria-label="t('canvas.topBar.teachingDesign')"
             @click="handleOpenMindmate"
           >
-            <span v-if="!compactTopBarActions">{{ t('canvas.topBar.teachingDesign') }}</span>
+            <span v-if="!compactTopBarActions">
+              <I18nText k="canvas.topBar.teachingDesign" />
+            </span>
           </ElButton>
-        </ElTooltip>
+        </I18nTooltip>
 
-        <ElTooltip
+        <I18nTooltip
           v-if="!isMindMapEditor"
-          :content="t('canvas.topBar.resetTemplate')"
+          k="canvas.topBar.resetTemplate"
           placement="bottom"
           :disabled="!compactTopBarActions"
         >
@@ -535,13 +537,15 @@ async function handleReset() {
             :aria-label="t('canvas.topBar.reset')"
             @click="handleReset"
           >
-            <span v-if="!compactTopBarActions">{{ t('canvas.topBar.reset') }}</span>
+            <span v-if="!compactTopBarActions">
+              <I18nText k="canvas.topBar.reset" />
+            </span>
           </ElButton>
-        </ElTooltip>
+        </I18nTooltip>
 
-        <ElTooltip
+        <I18nTooltip
           v-if="!isMindMapEditor"
-          :content="t('canvas.topBar.export')"
+          k="canvas.topBar.export"
           placement="bottom"
           :disabled="!compactTopBarActions"
         >
@@ -556,7 +560,9 @@ async function handleReset() {
                 :icon="Download"
                 :aria-label="t('canvas.topBar.export')"
               >
-                <span v-if="!compactTopBarActions">{{ t('canvas.topBar.export') }}</span>
+                <span v-if="!compactTopBarActions">
+                  <I18nText k="canvas.topBar.export" />
+                </span>
               </ElButton>
               <template #dropdown>
                 <ElDropdownMenu>
@@ -582,7 +588,7 @@ async function handleReset() {
                       v-else-if="item.command === 'mg'"
                       class="w-4 h-4 mr-2 text-amber-500"
                     />
-                    {{ t(item.labelKey) }}
+                    <I18nText :k="item.labelKey" />
                   </ElDropdownItem>
                   <ElDropdownItem
                     v-if="featureCommunity && authStore.isAuthenticated"
@@ -590,13 +596,13 @@ async function handleReset() {
                     :command="CANVAS_COMMUNITY_EXPORT_MENU_ITEM.command"
                   >
                     <Share2 class="w-4 h-4 mr-2 text-rose-500" />
-                    {{ t(CANVAS_COMMUNITY_EXPORT_MENU_ITEM.labelKey) }}
+                    <I18nText :k="CANVAS_COMMUNITY_EXPORT_MENU_ITEM.labelKey" />
                   </ElDropdownItem>
                 </ElDropdownMenu>
               </template>
             </ElDropdown>
           </span>
-        </ElTooltip>
+        </I18nTooltip>
       </div>
     </div>
 
@@ -735,9 +741,8 @@ async function handleReset() {
   box-sizing: border-box;
   width: calc(100% - 24px);
   max-width: calc(100% - 24px);
-  height: 50px;
   min-height: 50px;
-  max-height: 50px;
+  height: auto;
   flex-shrink: 0;
   align-self: center;
   justify-content: center;
@@ -752,7 +757,6 @@ async function handleReset() {
   transition:
     height 0.18s ease,
     min-height 0.18s ease,
-    max-height 0.18s ease,
     padding 0.18s ease,
     margin 0.18s ease,
     opacity 0.16s ease;

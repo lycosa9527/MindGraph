@@ -10,6 +10,7 @@ import { ElInput } from 'element-plus'
 import { FileText } from '@lucide/vue'
 
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useWorksheetDiagramPreviewDrag } from '@/composables/canvas/useWorksheetDiagramPreviewDrag'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -322,8 +323,13 @@ async function handleReset() {
   <SwissGlassDialog
     v-model="visible"
     :ribbon="t('canvas.hero.worksheet.ribbon')"
+    ribbon-key="canvas.hero.worksheet.ribbon"
     :title="modalTitle"
+    :title-key="
+      dedicatedLearningSheet ? 'canvas.ribbon.makeLearningSheet' : 'canvas.worksheetText.modalTitle'
+    "
     :line1="t('canvas.hero.worksheet.line1')"
+    line1-key="canvas.hero.worksheet.line1"
     :icon="FileText"
     width="min(920px, 96vw)"
     dialog-class="worksheet-text-modal"
@@ -335,14 +341,16 @@ async function handleReset() {
         :aria-label="t('canvas.worksheetText.previewLabel')"
       >
         <div class="worksheet-text-modal__preview-kicker">
-          <span>{{ t('canvas.worksheetText.previewLabel') }}</span>
+          <span><I18nText k="canvas.worksheetText.previewLabel" /></span>
           <span class="worksheet-text-modal__preview-kicker-meta">
             A4 ·
-            {{
-              draftLayout === 'portrait'
-                ? t('canvas.exportOptions.layoutPortrait')
-                : t('canvas.exportOptions.layoutLandscape')
-            }}
+            <I18nText
+              :k="
+                draftLayout === 'portrait'
+                  ? 'canvas.exportOptions.layoutPortrait'
+                  : 'canvas.exportOptions.layoutLandscape'
+              "
+            />
           </span>
         </div>
         <div class="worksheet-text-modal__paper-stage">
@@ -368,7 +376,7 @@ async function handleReset() {
                   v-if="draft.showName"
                   class="worksheet-text-modal__paper-field"
                 >
-                  <span>{{ t('canvas.worksheetText.fieldName') }}</span>
+                  <span><I18nText k="canvas.worksheetText.fieldName" /></span>
                   <span
                     class="worksheet-text-modal__paper-line"
                     aria-hidden="true"
@@ -378,7 +386,7 @@ async function handleReset() {
                   v-if="draft.showClass"
                   class="worksheet-text-modal__paper-field"
                 >
-                  <span>{{ t('canvas.worksheetText.fieldClass') }}</span>
+                  <span><I18nText k="canvas.worksheetText.fieldClass" /></span>
                   <span
                     class="worksheet-text-modal__paper-line worksheet-text-modal__paper-line--short"
                     aria-hidden="true"
@@ -388,7 +396,7 @@ async function handleReset() {
                   v-if="draft.showDate"
                   class="worksheet-text-modal__paper-field"
                 >
-                  <span>{{ t('canvas.worksheetText.fieldDate') }}</span>
+                  <span><I18nText k="canvas.worksheetText.fieldDate" /></span>
                   <span
                     class="worksheet-text-modal__paper-line"
                     aria-hidden="true"
@@ -399,7 +407,7 @@ async function handleReset() {
                 v-if="draft.showInstruction"
                 class="worksheet-text-modal__paper-instruction"
               >
-                {{ t('canvas.worksheetText.instructionPrefix') }}{{ previewInstruction }}
+                <I18nText k="canvas.worksheetText.instructionPrefix" />{{ previewInstruction }}
               </p>
             </div>
             <div class="worksheet-text-modal__paper-diagram">
@@ -458,13 +466,13 @@ async function handleReset() {
                   v-else-if="previewLoading"
                   class="worksheet-text-modal__paper-diagram-status"
                 >
-                  {{ t('canvas.worksheetText.previewLoading') }}
+                  <I18nText k="canvas.worksheetText.previewLoading" />
                 </p>
                 <p
                   v-else-if="previewFailed"
                   class="worksheet-text-modal__paper-diagram-status"
                 >
-                  {{ t('canvas.worksheetText.previewFailed') }}
+                  <I18nText k="canvas.worksheetText.previewFailed" />
                 </p>
               </div>
             </div>
@@ -474,7 +482,7 @@ async function handleReset() {
           v-if="diagramPreviewUrl"
           class="worksheet-text-modal__preview-hint"
         >
-          {{ t('canvas.worksheetText.dragDiagramHint') }}
+          <I18nText k="canvas.worksheetText.dragDiagramHint" />
         </p>
       </aside>
 
@@ -490,9 +498,9 @@ async function handleReset() {
             v-if="!dedicatedLearningSheet"
             class="worksheet-text-modal__mode-bar-header"
           >
-            <span class="worksheet-text-modal__mode-bar-title">{{
-              t('canvas.worksheetText.learningSheetMode')
-            }}</span>
+            <span class="worksheet-text-modal__mode-bar-title">
+              <I18nText k="canvas.worksheetText.learningSheetMode" />
+            </span>
             <AdminSwissSegmented
               v-model="learningSheetModeVisibility"
               fit
@@ -508,12 +516,12 @@ async function handleReset() {
               v-if="!dedicatedLearningSheet"
               class="worksheet-text-modal__sheet-panel-hint"
             >
-              {{ t('canvas.worksheetText.learningSheetPanelHint') }}
+              <I18nText k="canvas.worksheetText.learningSheetPanelHint" />
             </p>
             <div class="worksheet-text-modal__row">
-              <span class="worksheet-text-modal__label">{{
-                t('canvas.worksheetText.showTopic')
-              }}</span>
+              <span class="worksheet-text-modal__label">
+                <I18nText k="canvas.worksheetText.showTopic" />
+              </span>
               <AdminSwissSegmented
                 v-model="showTopicVisibility"
                 fit
@@ -523,9 +531,9 @@ async function handleReset() {
             </div>
 
             <div class="worksheet-text-modal__field-input">
-              <span class="worksheet-text-modal__kicker">{{
-                t('canvas.worksheetText.topicPreviewLabel')
-              }}</span>
+              <span class="worksheet-text-modal__kicker">
+                <I18nText k="canvas.worksheetText.topicPreviewLabel" />
+              </span>
               <ElInput
                 v-model="draft.topicText"
                 :placeholder="defaultTopic || t('canvas.worksheetText.topicPreviewLabel')"
@@ -534,9 +542,9 @@ async function handleReset() {
             </div>
 
             <div class="worksheet-text-modal__row">
-              <span class="worksheet-text-modal__label">{{
-                t('canvas.worksheetText.showName')
-              }}</span>
+              <span class="worksheet-text-modal__label">
+                <I18nText k="canvas.worksheetText.showName" />
+              </span>
               <AdminSwissSegmented
                 v-model="showNameVisibility"
                 fit
@@ -546,9 +554,9 @@ async function handleReset() {
             </div>
 
             <div class="worksheet-text-modal__row">
-              <span class="worksheet-text-modal__label">{{
-                t('canvas.worksheetText.showClass')
-              }}</span>
+              <span class="worksheet-text-modal__label">
+                <I18nText k="canvas.worksheetText.showClass" />
+              </span>
               <AdminSwissSegmented
                 v-model="showClassVisibility"
                 fit
@@ -558,9 +566,9 @@ async function handleReset() {
             </div>
 
             <div class="worksheet-text-modal__row">
-              <span class="worksheet-text-modal__label">{{
-                t('canvas.worksheetText.showDate')
-              }}</span>
+              <span class="worksheet-text-modal__label">
+                <I18nText k="canvas.worksheetText.showDate" />
+              </span>
               <AdminSwissSegmented
                 v-model="showDateVisibility"
                 fit
@@ -570,9 +578,9 @@ async function handleReset() {
             </div>
 
             <div class="worksheet-text-modal__row">
-              <span class="worksheet-text-modal__label">{{
-                t('canvas.worksheetText.showInstruction')
-              }}</span>
+              <span class="worksheet-text-modal__label">
+                <I18nText k="canvas.worksheetText.showInstruction" />
+              </span>
               <AdminSwissSegmented
                 v-model="showInstructionVisibility"
                 fit
@@ -584,9 +592,9 @@ async function handleReset() {
               v-if="draft.showInstruction"
               class="worksheet-text-modal__instruction"
             >
-              <span class="worksheet-text-modal__kicker">{{
-                t('canvas.worksheetText.instructionLabel')
-              }}</span>
+              <span class="worksheet-text-modal__kicker">
+                <I18nText k="canvas.worksheetText.instructionLabel" />
+              </span>
               <ElInput
                 v-model="draft.instructionText"
                 type="textarea"
@@ -603,12 +611,12 @@ async function handleReset() {
           :aria-label="t('canvas.worksheetText.exportSettings')"
         >
           <h3 class="worksheet-text-modal__export-panel-title">
-            {{ t('canvas.worksheetText.exportSettings') }}
+            <I18nText k="canvas.worksheetText.exportSettings" />
           </h3>
           <div class="worksheet-text-modal__row">
-            <span class="worksheet-text-modal__label">{{
-              t('canvas.exportOptions.colorLabel')
-            }}</span>
+            <span class="worksheet-text-modal__label">
+              <I18nText k="canvas.exportOptions.colorLabel" />
+            </span>
             <AdminSwissSegmented
               v-model="draftColorMode"
               fit
@@ -618,9 +626,9 @@ async function handleReset() {
           </div>
 
           <div class="worksheet-text-modal__row">
-            <span class="worksheet-text-modal__label">{{
-              t('canvas.exportOptions.layoutLabel')
-            }}</span>
+            <span class="worksheet-text-modal__label">
+              <I18nText k="canvas.exportOptions.layoutLabel" />
+            </span>
             <AdminSwissSegmented
               v-model="draftLayout"
               fit
@@ -629,7 +637,9 @@ async function handleReset() {
             />
           </div>
 
-          <p class="worksheet-text-modal__hint">{{ t('canvas.worksheetText.modalHint') }}</p>
+          <p class="worksheet-text-modal__hint">
+            <I18nText k="canvas.worksheetText.modalHint" />
+          </p>
         </section>
       </div>
     </div>
@@ -641,7 +651,7 @@ async function handleReset() {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost"
           @click="handleReset"
         >
-          {{ t('canvas.worksheetText.reset') }}
+          <I18nText k="canvas.worksheetText.reset" />
         </button>
         <div class="worksheet-text-modal__footer-actions">
           <button
@@ -649,21 +659,21 @@ async function handleReset() {
             class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
             @click="close"
           >
-            {{ t('canvas.worksheetText.cancel') }}
+            <I18nText k="canvas.worksheetText.cancel" />
           </button>
           <button
             type="button"
             class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
             @click="handleExportDocx"
           >
-            {{ t('canvas.worksheetText.exportDocx') }}
+            <I18nText k="canvas.worksheetText.exportDocx" />
           </button>
           <button
             type="button"
             class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
             @click="handleExportPdf"
           >
-            {{ t('canvas.worksheetText.exportPdf') }}
+            <I18nText k="canvas.worksheetText.exportPdf" />
           </button>
         </div>
       </div>

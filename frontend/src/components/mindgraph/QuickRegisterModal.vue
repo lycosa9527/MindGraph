@@ -8,6 +8,7 @@ import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-pl
 
 import { ChevronDown, Loader2, Share2 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useQuickRegisterDialogClose } from '@/composables/auth/useQuickRegisterDialogClose'
@@ -359,8 +360,11 @@ onBeforeUnmount(() => {
   <SwissGlassCard
     v-model="visible"
     :ribbon="t('swissGlass.hero.shareSite.ribbon')"
+    ribbon-key="swissGlass.hero.shareSite.ribbon"
     :title="t('swissGlass.hero.shareSite.title')"
+    title-key="swissGlass.hero.shareSite.title"
     :line1="t('swissGlass.hero.shareSite.line1')"
+    line1-key="swissGlass.hero.shareSite.line1"
     :icon="Share2"
     :persistent="dialogDismissLocked"
   >
@@ -446,7 +450,9 @@ onBeforeUnmount(() => {
             class="animate-spin"
             aria-hidden="true"
           />
-          <span class="text-sm font-medium text-slate-500">{{ t('auth.quickRegSubmitting') }}</span>
+          <span class="text-sm font-medium text-slate-500"
+            ><I18nText k="auth.quickRegSubmitting"
+          /></span>
         </div>
         <div
           v-else
@@ -530,7 +536,10 @@ onBeforeUnmount(() => {
         v-if="!tokenLoading"
         class="quick-reg-numeric-typography w-full max-w-sm px-1 text-center text-sm font-medium leading-snug tracking-tight text-slate-600"
       >
-        {{ t('auth.quickRegSessionSignups', { n: signupsCount }) }}
+        <I18nText
+          k="auth.quickRegSessionSignups"
+          :params="{ n: signupsCount }"
+        />
       </p>
     </div>
   </SwissGlassCard>

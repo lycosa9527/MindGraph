@@ -7,6 +7,7 @@ import { Settings2 } from '@lucide/vue'
 import { useQueryClient } from '@tanstack/vue-query'
 
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import {
@@ -294,9 +295,13 @@ onMounted(() => {
     <SwissGlassDialog
       v-model="editVisible"
       :ribbon="t('swissGlass.hero.adminInline.ribbon')"
+      ribbon-key="swissGlass.hero.adminInline.ribbon"
       :title="t('swissGlass.hero.adminInline.title')"
+      title-key="swissGlass.hero.adminInline.title"
       :line1="t('swissGlass.hero.adminInline.line1')"
+      line1-key="swissGlass.hero.adminInline.line1"
       :line2="t('admin.showcase.fields.editTitle')"
+      line2-key="admin.showcase.fields.editTitle"
       :icon="Settings2"
       width="420px"
     >
@@ -305,9 +310,9 @@ onMounted(() => {
         class="space-y-4"
       >
         <div>
-          <label class="mb-1 block text-xs text-gray-500">{{
-            t('admin.showcase.fields.value')
-          }}</label>
+          <label class="mb-1 block text-xs text-gray-500"
+            ><I18nText k="admin.showcase.fields.value"
+          /></label>
           <input
             :value="editingRow.value"
             type="text"
@@ -316,9 +321,9 @@ onMounted(() => {
           />
         </div>
         <div>
-          <label class="mb-1 block text-xs text-gray-500">{{
-            t('admin.showcase.fields.label')
-          }}</label>
+          <label class="mb-1 block text-xs text-gray-500"
+            ><I18nText k="admin.showcase.fields.label"
+          /></label>
           <input
             v-model="editLabel"
             type="text"
@@ -327,9 +332,9 @@ onMounted(() => {
           />
         </div>
         <div>
-          <label class="mb-1 block text-xs text-gray-500">{{
-            t('admin.showcase.fields.sortOrder')
-          }}</label>
+          <label class="mb-1 block text-xs text-gray-500"
+            ><I18nText k="admin.showcase.fields.sortOrder"
+          /></label>
           <input
             v-model.number="editSortOrder"
             type="number"
@@ -342,7 +347,7 @@ onMounted(() => {
             v-model="editActive"
             type="checkbox"
           />
-          {{ t('admin.showcase.fields.active') }}
+          <I18nText k="admin.showcase.fields.active" />
         </label>
       </div>
       <template #footer>
@@ -352,7 +357,7 @@ onMounted(() => {
             class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
             @click="editVisible = false"
           >
-            {{ t('admin.cancel') }}
+            <I18nText k="admin.cancel" />
           </button>
           <button
             type="button"
@@ -360,7 +365,7 @@ onMounted(() => {
             :disabled="isSaving"
             @click="saveEdit"
           >
-            {{ t('admin.save') }}
+            <I18nText k="admin.save" />
           </button>
         </div>
       </template>

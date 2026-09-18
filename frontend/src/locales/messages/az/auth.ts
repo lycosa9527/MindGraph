@@ -194,6 +194,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'Bağlı telefonunuza kod göndəririk. Şifrə təyin etdikdən sonra şifrə və ya doğrulama kodu ilə daxil ola bilərsiniz.',
   'auth.setPasswordWithSmsSubmit': 'Şifrəni saxla',
   'auth.setPasswordWithSmsSubmitting': 'Saxlanılır…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Görünən ad',
   'auth.accountNamePlaceholder': 'Ən azı 2 simvol, rəqəm olmasın',
   'auth.accountNameSave': 'Adı saxla',

@@ -4,31 +4,43 @@
  */
 import { computed, ref } from 'vue'
 
-import { Brush, Crosshair, Eraser, Hand, LogOut, MonitorPlay, MousePointer2, PenLine, Sun, Timer } from '@lucide/vue'
+import {
+  Brush,
+  Crosshair,
+  Eraser,
+  Hand,
+  LogOut,
+  MonitorPlay,
+  MousePointer2,
+  PenLine,
+  Sun,
+  Timer,
+} from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables'
 import { resolvePresentationTeleportTarget } from '@/composables/presentation/presentationDiagramEdit'
+import { PRESENTATION_HIGHLIGHTER_PALETTE_TOOLBAR } from '@/config/presentationHighlighter'
 import {
   PRESENTATION_LASER_SIZE_OPTIONS,
   type PresentationLaserSize,
   laserSizeFromScale,
 } from '@/config/presentationLaser'
 import {
-  PRESENTATION_SPOTLIGHT_SIZE_OPTIONS,
-  type PresentationSpotlightSize,
-  spotlightSizeFromScale,
-} from '@/config/presentationSpotlight'
-import {
   PRESENTATION_BOARD_COLORS_TOOLBAR,
   type PresentationBoardColorId,
   type PresentationBoardThickness,
 } from '@/config/presentationPen'
-import { PRESENTATION_HIGHLIGHTER_PALETTE_TOOLBAR } from '@/config/presentationHighlighter'
+import {
+  PRESENTATION_SPOTLIGHT_SIZE_OPTIONS,
+  type PresentationSpotlightSize,
+  spotlightSizeFromScale,
+} from '@/config/presentationSpotlight'
+import { PRESENTATION_Z } from '@/config/uiConfig'
 import {
   PRESENTATION_POINTER_SCALE_MAX,
   PRESENTATION_POINTER_SCALE_MIN,
 } from '@/stores/presentationPointer'
-import { PRESENTATION_Z } from '@/config/uiConfig'
 import type { MindMapPresentationToolId } from '@/types/diagram'
 
 const sideRailStyle = { zIndex: PRESENTATION_Z.SIDE_RAIL } as const
@@ -63,13 +75,13 @@ const thicknessOptions: PresentationBoardThickness[] = ['thin', 'medium', 'thick
 const activeLaserSize = computed(() => laserSizeFromScale(props.laserScale))
 const activeSpotlightSize = computed(() => spotlightSizeFromScale(props.spotlightScale))
 
-const floatingTip = ref<{ text: string; x: number; y: number } | null>(null)
+const floatingTip = ref<{ k: string; x: number; y: number } | null>(null)
 
-function showFloatingTipForElement(element: HTMLElement, text: string): void {
-  if (!text) return
+function showFloatingTipForElement(element: HTMLElement, key: string): void {
+  if (!key) return
   const rect = element.getBoundingClientRect()
   floatingTip.value = {
-    text,
+    k: key,
     x: rect.left - 12,
     y: rect.top + rect.height / 2,
   }
@@ -80,14 +92,14 @@ function hideFloatingTip(): void {
 }
 
 function onToolMouseEnter(event: MouseEvent): void {
-  const el = (event.target as HTMLElement).closest('[data-tip]') as HTMLElement | null
+  const el = (event.target as HTMLElement).closest('[data-tip-key]') as HTMLElement | null
   if (!el) return
-  showFloatingTipForElement(el, el.dataset.tip ?? '')
+  showFloatingTipForElement(el, el.dataset.tipKey ?? '')
 }
 
 function onToolMouseLeave(event: MouseEvent): void {
   const related = event.relatedTarget as HTMLElement | null
-  if (related?.closest('[data-tip]')) return
+  if (related?.closest('[data-tip-key]')) return
   hideFloatingTip()
 }
 
@@ -97,22 +109,22 @@ function toolClass(tool: MindMapPresentationToolId): string {
   return props.activeTool === tool ? 'presentation-tool-btn is-active' : 'presentation-tool-btn'
 }
 
-function thicknessLabel(value: PresentationBoardThickness): string {
-  if (value === 'thin') return t('canvas.mindMapPresentationToolbar.penThin')
-  if (value === 'thick') return t('canvas.mindMapPresentationToolbar.penThick')
-  return t('canvas.mindMapPresentationToolbar.penMedium')
+function thicknessKey(value: PresentationBoardThickness): string {
+  if (value === 'thin') return 'canvas.mindMapPresentationToolbar.penThin'
+  if (value === 'thick') return 'canvas.mindMapPresentationToolbar.penThick'
+  return 'canvas.mindMapPresentationToolbar.penMedium'
 }
 
-function laserSizeLabel(value: PresentationLaserSize): string {
-  if (value === 'small') return t('canvas.mindMapPresentationToolbar.laserSmall')
-  if (value === 'large') return t('canvas.mindMapPresentationToolbar.laserLarge')
-  return t('canvas.mindMapPresentationToolbar.laserMedium')
+function laserSizeKey(value: PresentationLaserSize): string {
+  if (value === 'small') return 'canvas.mindMapPresentationToolbar.laserSmall'
+  if (value === 'large') return 'canvas.mindMapPresentationToolbar.laserLarge'
+  return 'canvas.mindMapPresentationToolbar.laserMedium'
 }
 
-function spotlightSizeLabel(value: PresentationSpotlightSize): string {
-  if (value === 'small') return t('canvas.mindMapPresentationToolbar.spotlightSmall')
-  if (value === 'large') return t('canvas.mindMapPresentationToolbar.spotlightLarge')
-  return t('canvas.mindMapPresentationToolbar.spotlightMedium')
+function spotlightSizeKey(value: PresentationSpotlightSize): string {
+  if (value === 'small') return 'canvas.mindMapPresentationToolbar.spotlightSmall'
+  if (value === 'large') return 'canvas.mindMapPresentationToolbar.spotlightLarge'
+  return 'canvas.mindMapPresentationToolbar.spotlightMedium'
 }
 
 function onHighlighterScaleInput(event: Event): void {
@@ -141,8 +153,7 @@ function onHighlighterScaleInput(event: Event): void {
           <button
             type="button"
             :class="toolClass('pointer')"
-            :data-tip="t('canvas.mindMapPresentationToolbar.pointer')"
-            :title="t('canvas.mindMapPresentationToolbar.pointer')"
+            data-tip-key="canvas.mindMapPresentationToolbar.pointer"
             @click="emit('selectTool', 'pointer')"
           >
             <MousePointer2 class="h-5 w-5 shrink-0" />
@@ -153,8 +164,7 @@ function onHighlighterScaleInput(event: Event): void {
           <button
             type="button"
             :class="toolClass('hand')"
-            :data-tip="t('canvas.zoomControls.hand')"
-            :title="t('canvas.zoomControls.hand')"
+            data-tip-key="canvas.zoomControls.hand"
             @click="emit('selectTool', 'hand')"
           >
             <Hand class="h-5 w-5 shrink-0" />
@@ -165,8 +175,7 @@ function onHighlighterScaleInput(event: Event): void {
           <button
             type="button"
             :class="toolClass('laser')"
-            :data-tip="t('canvas.presentationSideToolbar.laser')"
-            :title="t('canvas.presentationSideToolbar.laser')"
+            data-tip-key="canvas.presentationSideToolbar.laser"
             @click="emit('selectTool', 'laser')"
           >
             <Crosshair class="h-5 w-5 shrink-0" />
@@ -192,9 +201,8 @@ function onHighlighterScaleInput(event: Event): void {
                 type="button"
                 class="laser-size-btn"
                 :class="{ 'is-selected': activeLaserSize === size }"
-                :data-tip="laserSizeLabel(size)"
-                :title="laserSizeLabel(size)"
-                :aria-label="laserSizeLabel(size)"
+                :data-tip-key="laserSizeKey(size)"
+                :aria-label="t(laserSizeKey(size))"
                 @click="emit('selectLaserSize', size)"
               >
                 <span
@@ -210,8 +218,7 @@ function onHighlighterScaleInput(event: Event): void {
           <button
             type="button"
             :class="toolClass('highlighter')"
-            :data-tip="t('canvas.presentationSideToolbar.highlighter')"
-            :title="t('canvas.presentationSideToolbar.highlighter')"
+            data-tip-key="canvas.presentationSideToolbar.highlighter"
             @click="emit('selectTool', 'highlighter')"
           >
             <Brush class="h-5 w-5 shrink-0" />
@@ -237,7 +244,7 @@ function onHighlighterScaleInput(event: Event): void {
                 type="button"
                 class="pen-color-btn"
                 :class="{ 'is-selected': props.highlighterColorIndex === index }"
-                :data-tip="t('canvas.mindMapPresentationToolbar.highlighterColor')"
+                data-tip-key="canvas.mindMapPresentationToolbar.highlighterColor"
                 @click="emit('selectHighlighterColor', index)"
               >
                 <span
@@ -280,8 +287,7 @@ function onHighlighterScaleInput(event: Event): void {
               type="button"
               class="presentation-tool-btn"
               :class="{ 'is-active': props.strokeEraserActive }"
-              :data-tip="t('canvas.mindMapPresentationToolbar.eraser')"
-              :title="t('canvas.mindMapPresentationToolbar.eraser')"
+              data-tip-key="canvas.mindMapPresentationToolbar.eraser"
               @click="emit('toggleStrokeEraser')"
             >
               <Eraser class="h-5 w-5 shrink-0" />
@@ -293,8 +299,7 @@ function onHighlighterScaleInput(event: Event): void {
           <button
             type="button"
             :class="[toolClass('pen'), 'presentation-tool-btn--pen']"
-            :data-tip="t('canvas.mindMapPresentationToolbar.classroomBoard')"
-            :title="t('canvas.mindMapPresentationToolbar.classroomBoard')"
+            data-tip-key="canvas.mindMapPresentationToolbar.classroomBoard"
             @click="emit('selectTool', 'pen')"
           >
             <PenLine class="h-5 w-5 shrink-0" />
@@ -321,8 +326,7 @@ function onHighlighterScaleInput(event: Event): void {
                 type="button"
                 class="pen-color-btn"
                 :class="{ 'is-selected': props.colorId === color.id }"
-                :data-tip="t(color.labelKey)"
-                :title="t(color.labelKey)"
+                :data-tip-key="color.labelKey"
                 @click="emit('selectColor', color.id)"
               >
                 <span
@@ -352,9 +356,8 @@ function onHighlighterScaleInput(event: Event): void {
                 type="button"
                 class="pen-thickness-btn"
                 :class="{ 'is-selected': props.thickness === option }"
-                :data-tip="thicknessLabel(option)"
-                :title="thicknessLabel(option)"
-                :aria-label="thicknessLabel(option)"
+                :data-tip-key="thicknessKey(option)"
+                :aria-label="t(thicknessKey(option))"
                 @click="emit('selectThickness', option)"
               >
                 <span
@@ -375,8 +378,7 @@ function onHighlighterScaleInput(event: Event): void {
               type="button"
               class="presentation-tool-btn"
               :class="{ 'is-active': props.strokeEraserActive }"
-              :data-tip="t('canvas.mindMapPresentationToolbar.eraser')"
-              :title="t('canvas.mindMapPresentationToolbar.eraser')"
+              data-tip-key="canvas.mindMapPresentationToolbar.eraser"
               @click="emit('toggleStrokeEraser')"
             >
               <Eraser class="h-5 w-5 shrink-0" />
@@ -388,8 +390,7 @@ function onHighlighterScaleInput(event: Event): void {
           <button
             type="button"
             :class="[toolClass('spotlight'), 'presentation-tool-btn--spotlight']"
-            :data-tip="t('canvas.presentationSideToolbar.spotlight')"
-            :title="t('canvas.presentationSideToolbar.spotlight')"
+            data-tip-key="canvas.presentationSideToolbar.spotlight"
             @click="emit('selectTool', 'spotlight')"
           >
             <Sun class="h-5 w-5 shrink-0" />
@@ -415,9 +416,8 @@ function onHighlighterScaleInput(event: Event): void {
                 type="button"
                 class="spotlight-size-btn"
                 :class="{ 'is-selected': activeSpotlightSize === size }"
-                :data-tip="spotlightSizeLabel(size)"
-                :title="spotlightSizeLabel(size)"
-                :aria-label="spotlightSizeLabel(size)"
+                :data-tip-key="spotlightSizeKey(size)"
+                :aria-label="t(spotlightSizeKey(size))"
                 @click="emit('selectSpotlightSize', size)"
               >
                 <span
@@ -433,8 +433,7 @@ function onHighlighterScaleInput(event: Event): void {
           <button
             type="button"
             :class="[toolClass('timer'), 'presentation-tool-btn--timer']"
-            :data-tip="t('canvas.presentationSideToolbar.timer')"
-            :title="t('canvas.presentationSideToolbar.timer')"
+            data-tip-key="canvas.presentationSideToolbar.timer"
             @click="emit('selectTool', 'timer')"
           >
             <Timer class="h-5 w-5 shrink-0" />
@@ -448,8 +447,7 @@ function onHighlighterScaleInput(event: Event): void {
           <button
             type="button"
             :class="toolClass('slides')"
-            :data-tip="t('canvas.mindMapPresentationToolbar.slides')"
-            :title="t('canvas.mindMapPresentationToolbar.slides')"
+            data-tip-key="canvas.mindMapPresentationToolbar.slides"
             @click="emit('selectTool', 'slides')"
           >
             <MonitorPlay class="h-5 w-5 shrink-0" />
@@ -465,8 +463,7 @@ function onHighlighterScaleInput(event: Event): void {
           <button
             type="button"
             class="presentation-tool-btn presentation-tool-btn--exit"
-            :data-tip="t('canvas.mindMapPresentationToolbar.exit')"
-            :title="t('canvas.mindMapPresentationToolbar.exit')"
+            data-tip-key="canvas.mindMapPresentationToolbar.exit"
             @click="emit('exit')"
           >
             <LogOut class="h-5 w-5 shrink-0" />
@@ -478,7 +475,7 @@ function onHighlighterScaleInput(event: Event): void {
     <Teleport :to="teleportTarget">
       <div
         v-if="floatingTip"
-        class="presentation-rail-floating-tip pointer-events-none fixed whitespace-nowrap"
+        class="presentation-rail-floating-tip pointer-events-none fixed"
         :style="{
           left: `${floatingTip.x}px`,
           top: `${floatingTip.y}px`,
@@ -486,7 +483,7 @@ function onHighlighterScaleInput(event: Event): void {
           zIndex: 100300,
         }"
       >
-        {{ floatingTip.text }}
+        <I18nText :k="floatingTip.k" />
       </div>
     </Teleport>
   </div>
@@ -519,13 +516,21 @@ function onHighlighterScaleInput(event: Event): void {
 }
 
 .presentation-rail-floating-tip {
+  max-width: min(16rem, calc(100vw - 5rem));
   padding: 0.35rem 0.55rem;
   border-radius: 0.5rem;
   background: rgb(17 24 39 / 0.92);
   color: #fff;
   font-size: 0.75rem;
   line-height: 1.25;
+  text-align: start;
+  white-space: normal;
   box-shadow: 0 4px 14px rgb(15 23 42 / 0.18);
+}
+
+.presentation-rail-floating-tip :deep(.i18n-label) {
+  display: flex;
+  width: 100%;
 }
 
 .presentation-tool-btn,

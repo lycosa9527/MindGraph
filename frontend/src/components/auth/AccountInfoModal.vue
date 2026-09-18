@@ -8,6 +8,7 @@ import { computed, ref, watch } from 'vue'
 
 import { Loader2, UserRound } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
@@ -22,10 +23,10 @@ import {
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 import ApiTokenModal from './ApiTokenModal.vue'
-import LoginDevicesModal from './LoginDevicesModal.vue'
 import AvatarSelectModal from './AvatarSelectModal.vue'
 import ChangePasswordModal from './ChangePasswordModal.vue'
 import ChangePhoneModal from './ChangePhoneModal.vue'
+import LoginDevicesModal from './LoginDevicesModal.vue'
 import OAuthQrLoginModal from './OAuthQrLoginModal.vue'
 import SetPasswordWithSmsModal from './SetPasswordWithSmsModal.vue'
 
@@ -253,8 +254,11 @@ watch(
   <SwissGlassCard
     v-model="isVisible"
     :ribbon="t('swissGlass.hero.account.ribbon')"
+    ribbon-key="swissGlass.hero.account.ribbon"
     :title="t('swissGlass.hero.account.title')"
+    title-key="swissGlass.hero.account.title"
     :line1="t('swissGlass.hero.account.line1')"
+    line1-key="swissGlass.hero.account.line1"
     :icon="UserRound"
     @close="closeModal"
   >
@@ -262,7 +266,7 @@ watch(
       <!-- Avatar Section -->
       <div>
         <label class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-4">
-          头像
+          <I18nText k="auth.accountAvatar" />
         </label>
         <div class="flex flex-wrap items-center gap-4">
           <div class="text-5xl shrink-0 mg-user-avatar-emoji">{{ currentAvatar }}</div>
@@ -271,7 +275,7 @@ watch(
             class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost shrink-0"
             @click="openAvatarModal"
           >
-            编辑
+            <I18nText k="common.edit" />
           </button>
         </div>
       </div>
@@ -283,7 +287,7 @@ watch(
             class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2"
             for="account-info-name"
           >
-            {{ t('auth.accountDisplayName') }}
+            <I18nText k="auth.accountDisplayName" />
           </label>
           <div class="flex flex-wrap items-center gap-2">
             <input
@@ -304,7 +308,7 @@ watch(
                 v-if="nameSaving"
                 class="w-3.5 h-3.5 animate-spin"
               />
-              {{ t('auth.accountNameSave') }}
+              <I18nText k="auth.accountNameSave" />
             </button>
           </div>
         </div>
@@ -314,12 +318,12 @@ watch(
             class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2"
             for="account-info-phone"
           >
-            手机号
+            <I18nText k="auth.phone" />
           </label>
           <div class="flex flex-wrap items-center gap-2">
             <input
               id="account-info-phone"
-              :value="userPhone || '未设置'"
+              :value="userPhone || t('auth.notSet')"
               type="text"
               name="account-info-phone"
               disabled
@@ -331,7 +335,7 @@ watch(
                 class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
                 @click="openChangePhoneModal"
               >
-                {{ t('auth.changePhoneButton') }}
+                <I18nText k="auth.changePhoneButton" />
               </button>
               <button
                 v-if="needsSetLoginPassword && authStore.user?.phone"
@@ -339,7 +343,7 @@ watch(
                 class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
                 @click="openSetPasswordSmsModal"
               >
-                {{ t('auth.setPasswordWithSms') }}
+                <I18nText k="auth.setPasswordWithSms" />
               </button>
               <button
                 v-else-if="!needsSetLoginPassword"
@@ -347,7 +351,7 @@ watch(
                 class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
                 @click="openChangePasswordModal"
               >
-                {{ t('auth.changePassword') }}
+                <I18nText k="auth.changePassword" />
               </button>
             </div>
           </div>
@@ -358,7 +362,7 @@ watch(
           class="space-y-4"
         >
           <label class="block text-xs font-medium text-stone-400 uppercase tracking-wide">
-            {{ t('auth.accountBindingsSection') }}
+            <I18nText k="auth.accountBindingsSection" />
           </label>
 
           <div v-if="showWechatOAuthRow">
@@ -366,7 +370,7 @@ watch(
               class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2"
               for="account-binding-wechat"
             >
-              {{ t('auth.bindingWechat') }}
+              <I18nText k="auth.bindingWechat" />
             </label>
             <div class="flex items-center gap-2">
               <input
@@ -388,7 +392,7 @@ watch(
                   v-if="oauthLinksLoading"
                   class="w-3.5 h-3.5 animate-spin"
                 />
-                {{ t('auth.unbindWechat') }}
+                <I18nText k="auth.unbindWechat" />
               </button>
               <button
                 v-else-if="canBindWechat"
@@ -401,16 +405,15 @@ watch(
                   v-if="oauthLinksLoading"
                   class="w-3.5 h-3.5 animate-spin"
                 />
-                {{ t('auth.bindWechat') }}
+                <I18nText k="auth.bindWechat" />
               </button>
             </div>
           </div>
-
         </div>
 
         <div>
           <label class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2">
-            {{ showAccountPlugins ? t('auth.accountPlugin') : t('auth.loginDevicesButton') }}
+            <I18nText :k="showAccountPlugins ? 'auth.accountPlugin' : 'auth.loginDevicesButton'" />
           </label>
           <div class="flex flex-wrap items-center gap-2">
             <a
@@ -420,7 +423,7 @@ watch(
               :title="t('auth.downloadOpenclawSkillHint')"
               download
             >
-              {{ t('auth.downloadOpenclawSkill') }}
+              <I18nText k="auth.downloadOpenclawSkill" />
             </a>
             <a
               v-if="canUseChromeExtension"
@@ -428,7 +431,7 @@ watch(
               :href="chromeExtensionZipUrl"
               download
             >
-              {{ t('auth.downloadChromeExtension') }}
+              <I18nText k="auth.downloadChromeExtension" />
             </a>
             <a
               v-if="featureWordAddin && canUseChromeExtension"
@@ -436,7 +439,7 @@ watch(
               :href="wordAddinZipUrl"
               download
             >
-              {{ t('auth.downloadWordAddin') }}
+              <I18nText k="auth.downloadWordAddin" />
             </a>
             <button
               v-if="canUseApiToken"
@@ -444,14 +447,14 @@ watch(
               class="account-plugin-pill account-plugin-pill--token"
               @click="showApiTokenModal = true"
             >
-              {{ t('auth.apiTokenButton') }}
+              <I18nText k="auth.apiTokenButton" />
             </button>
             <button
               type="button"
               class="account-plugin-pill account-plugin-pill--devices"
               @click="showLoginDevicesModal = true"
             >
-              {{ t('auth.loginDevicesButton') }}
+              <I18nText k="auth.loginDevicesButton" />
             </button>
           </div>
         </div>
@@ -465,7 +468,7 @@ watch(
           class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
           @click="closeModal"
         >
-          {{ t('common.close') }}
+          <I18nText k="common.close" />
         </button>
       </div>
     </template>
@@ -523,8 +526,11 @@ watch(
   font-weight: 600;
   letter-spacing: 0.01em;
   line-height: 1;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: start;
   flex-shrink: 0;
+  height: auto;
+  min-height: 2.75rem;
   cursor: pointer;
   font-family: inherit;
   transition:
@@ -560,7 +566,10 @@ watch(
   text-decoration: none;
   cursor: pointer;
   font-family: inherit;
-  line-height: 1.25;
+  line-height: 1.2;
+  white-space: normal;
+  text-align: start;
+  height: auto;
   transition:
     background 0.18s ease,
     border-color 0.18s ease,

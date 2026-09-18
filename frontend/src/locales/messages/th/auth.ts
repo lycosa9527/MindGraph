@@ -194,6 +194,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'เราส่งรหัสไปเบอร์ที่ผูกไว้ หลังตั้งรหัสผ่าน คุณเข้าสู่ระบบด้วยรหัสผ่านหรือรหัสยืนยันได้',
   'auth.setPasswordWithSmsSubmit': 'บันทึกรหัสผ่าน',
   'auth.setPasswordWithSmsSubmitting': 'กำลังบันทึก…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'ชื่อที่แสดง',
   'auth.accountNamePlaceholder': 'อย่างน้อย 2 ตัวอักษร ไม่มีตัวเลข',
   'auth.accountNameSave': 'บันทึกชื่อ',

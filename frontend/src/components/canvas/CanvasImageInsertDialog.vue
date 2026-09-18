@@ -6,6 +6,7 @@ import { ref, watch } from 'vue'
 
 import { Image } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { sanitizeMindMapImageUrl } from '@/utils/mindMapAdornments'
@@ -71,14 +72,17 @@ async function onFile(event: Event): Promise<void> {
   <SwissGlassDialog
     v-model="open"
     :ribbon="t('canvas.hero.image.ribbon')"
+    ribbon-key="canvas.hero.image.ribbon"
     :title="t('canvas.hero.image.title')"
+    title-key="canvas.hero.image.title"
     :line1="t('canvas.hero.image.line1')"
+    line1-key="canvas.hero.image.line1"
     :icon="Image"
     width="min(420px, 92vw)"
   >
     <div class="swiss-glass-stack">
       <label class="swiss-glass-field">
-        <span class="swiss-glass-field__kicker">{{ t('canvas.ribbon.imageUrl') }}</span>
+        <span class="swiss-glass-field__kicker"><I18nText k="canvas.ribbon.imageUrl" /></span>
         <input
           v-model="url"
           type="url"
@@ -103,7 +107,7 @@ async function onFile(event: Event): Promise<void> {
           :disabled="busy"
           @click="fileInput?.click()"
         >
-          {{ t('canvas.ribbon.imagePick') }}
+          <I18nText k="canvas.ribbon.imagePick" />
         </button>
       </div>
       <p
@@ -120,7 +124,7 @@ async function onFile(event: Event): Promise<void> {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="close"
         >
-          {{ t('common.cancel') }}
+          <I18nText k="common.cancel" />
         </button>
         <button
           type="button"
@@ -128,7 +132,7 @@ async function onFile(event: Event): Promise<void> {
           :disabled="busy"
           @click="confirmUrl"
         >
-          {{ t('canvas.ribbon.imageConfirm') }}
+          <I18nText k="canvas.ribbon.imageConfirm" />
         </button>
       </div>
     </template>

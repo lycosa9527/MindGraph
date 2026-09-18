@@ -84,6 +84,7 @@ from .email import verify_and_consume_email_code
 from .helpers import auth_session_json_metadata, issue_new_auth_cookies, track_user_activity
 from .session_user_payload import build_session_user_payload
 from .sms import _verify_and_consume_sms_code
+from .user_session_prefs import coerce_overseas_ui_language_prefs
 
 _bg_tasks: set[asyncio.Task] = set()
 
@@ -166,22 +167,14 @@ async def _complete_login_after_otp_verified(
         await reset_failed_attempts(db_user, db)
         user = db_user
 
-    if db_user and not getattr(db_user, "allows_simplified_chinese", True):
-        prefs_changed = False
-        if (db_user.ui_language or "").lower() == "zh":
-            db_user.ui_language = "en"
-            prefs_changed = True
-        if (db_user.prompt_language or "").lower() == "zh":
-            db_user.prompt_language = "en"
-            prefs_changed = True
-        if prefs_changed:
-            await db.commit()
-            await db.refresh(db_user)
-            user = db_user
-            try:
-                await user_cache.cache_user(db_user)
-            except REDIS_ERRORS as cache_exc:
-                logger.warning("[%s OTP login] failed to refresh user cache: %s", method, cache_exc)
+    if db_user and coerce_overseas_ui_language_prefs(db_user):
+        await db.commit()
+        await db.refresh(db_user)
+        user = db_user
+        try:
+            await user_cache.cache_user(db_user)
+        except REDIS_ERRORS as cache_exc:
+            logger.warning("[%s OTP login] failed to refresh user cache: %s", method, cache_exc)
 
     session_manager = get_session_manager()
     client_ip = get_client_ip(http_request) if http_request else "unknown"
@@ -413,18 +406,10 @@ async def login(
     else:
         user = cached_user
 
-    if db_user and not getattr(db_user, "allows_simplified_chinese", True):
-        prefs_changed = False
-        if (db_user.ui_language or "").lower() == "zh":
-            db_user.ui_language = "en"
-            prefs_changed = True
-        if (db_user.prompt_language or "").lower() == "zh":
-            db_user.prompt_language = "en"
-            prefs_changed = True
-        if prefs_changed:
-            await db.commit()
-            await db.refresh(db_user)
-            user = db_user
+    if db_user and coerce_overseas_ui_language_prefs(db_user):
+        await db.commit()
+        await db.refresh(db_user)
+        user = db_user
 
     # Get organization (use cache with database fallback)
     org = await org_cache.get_by_id(user.organization_id) if user.organization_id else None

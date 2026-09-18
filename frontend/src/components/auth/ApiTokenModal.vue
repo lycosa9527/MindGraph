@@ -11,6 +11,7 @@ import { Key, Loader2 } from '@lucide/vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage } from '@/composables'
 import { apiDelete, apiGet, apiPost } from '@/utils/apiClient'
+import I18nText from '@/components/common/I18nText.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -137,8 +138,11 @@ function doneTokenView() {
   <SwissGlassCard
     v-model="isVisible"
     :ribbon="t('swissGlass.hero.apiToken.ribbon')"
+    ribbon-key="swissGlass.hero.apiToken.ribbon"
     :title="t('swissGlass.hero.apiToken.title')"
+    title-key="swissGlass.hero.apiToken.title"
     :line1="t('swissGlass.hero.apiToken.line1')"
+    line1-key="swissGlass.hero.apiToken.line1"
     :icon="Key"
     @close="closeModal"
   >
@@ -285,7 +289,7 @@ function doneTokenView() {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
           @click="closeModal"
         >
-          {{ t('common.close') }}
+          <I18nText k="common.close" />
         </button>
       </div>
     </template>

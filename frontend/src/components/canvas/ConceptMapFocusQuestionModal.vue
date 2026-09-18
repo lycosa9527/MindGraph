@@ -11,6 +11,7 @@ import { Check, CircleHelp, CircleSlash, Equal, Loader2, Minus } from '@lucide/v
 
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import '@/components/canvas/aiGenerateGlass.css'
+import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { getLLMColor } from '@/config/llmModelColors'
 import { useUIStore } from '@/stores/ui'
@@ -516,13 +517,16 @@ function confirm() {
     <AiGenerateGlassHero
       compact
       :ribbon="t('swissGlass.hero.focusQuestion.ribbon')"
+      ribbon-key="swissGlass.hero.focusQuestion.ribbon"
       :title="t('swissGlass.hero.focusQuestion.title')"
+      title-key="swissGlass.hero.focusQuestion.title"
       :line1="t('swissGlass.hero.focusQuestion.line1')"
+      line1-key="swissGlass.hero.focusQuestion.line1"
       :icon="CircleHelp"
       :show-close="false"
     />
     <p class="px-[18px] text-xs text-[var(--swiss-muted,#78716c)] leading-relaxed mb-4">
-      {{ labels.help }}
+      <I18nText k="focusQuestion.help" />
     </p>
 
     <ElInput
@@ -541,7 +545,7 @@ function confirm() {
       class="mb-3"
       show-icon
     >
-      <span class="text-xs">{{ labels.loginHint }}</span>
+      <span class="text-xs"><I18nText k="focusQuestion.loginHint" /></span>
     </ElAlert>
 
     <!-- One row: AI检验 left, 跳过 centered, 确认 right (skip uses overlay so it stays true center) -->
@@ -554,7 +558,7 @@ function confirm() {
           :disabled="!canTryValidate"
           @click="runValidation"
         >
-          {{ labels.validate }}
+          <I18nText k="focusQuestion.validate" />
         </button>
       </div>
       <div class="flex min-w-0 flex-1 items-center justify-end">
@@ -564,7 +568,7 @@ function confirm() {
           :disabled="!canConfirm"
           @click="confirm"
         >
-          {{ labels.confirm }}
+          <I18nText k="focusQuestion.confirm" />
         </button>
       </div>
       <div
@@ -576,7 +580,7 @@ function confirm() {
           class="pointer-events-auto mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="doSkipAi"
         >
-          {{ labels.skip }}
+          <I18nText k="focusQuestion.skip" />
         </button>
       </div>
     </div>
@@ -639,7 +643,7 @@ function confirm() {
         <p
           class="text-xs font-medium text-gray-500 dark:text-gray-400 flex-1 min-w-0 pr-2 leading-snug"
         >
-          {{ labels.suggestionsHint }}
+          <I18nText k="focusQuestion.suggestionsHint" />
         </p>
         <div
           class="flex items-center gap-1 shrink-0"
@@ -681,7 +685,7 @@ function confirm() {
         v-if="!validating && !loadingMoreSuggestions && suggestionRows.length === 0"
         class="text-xs text-amber-700 dark:text-amber-300 mb-2"
       >
-        {{ labels.suggestionsEmpty }}
+        <I18nText k="focusQuestion.suggestionsEmpty" />
       </p>
 
       <ul
@@ -705,9 +709,13 @@ function confirm() {
               class="shrink-0 font-mono text-xs font-semibold tabular-nums text-blue-600 dark:text-blue-400"
               >0</span
             >
-            <span class="min-w-0 flex-1 truncate text-left text-gray-800 dark:text-gray-100">{{
-              ownQuestion.trim() || t('focusQuestion.emptyOwn')
-            }}</span>
+            <span class="min-w-0 flex-1 truncate text-left text-gray-800 dark:text-gray-100">
+              <template v-if="ownQuestion.trim()">{{ ownQuestion.trim() }}</template>
+              <I18nText
+                v-else
+                k="focusQuestion.emptyOwn"
+              />
+            </span>
           </button>
         </li>
         <li

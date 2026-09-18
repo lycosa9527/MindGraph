@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'बाउंड फ़ोन पर कोड भेजें। पासवर्ड सेट के बाद पासवर्ड या सत्यापन कोड से साइन इन।',
   'auth.setPasswordWithSmsSubmit': 'पासवर्ड सहेजें',
   'auth.setPasswordWithSmsSubmitting': 'सहेजा जा रहा…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'प्रदर्शन नाम',
   'auth.accountNamePlaceholder': 'कम से कम 2 अक्षर, अंक नहीं',
   'auth.accountNameSave': 'नाम सहेजें',

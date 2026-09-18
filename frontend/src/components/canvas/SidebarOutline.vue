@@ -4,11 +4,10 @@
  */
 import { computed, nextTick, ref } from 'vue'
 
-import { ElTooltip } from 'element-plus'
-
 import { ChevronDown, GitCommit, GripVertical, Plus, Trash2 } from '@lucide/vue'
 
 import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.vue'
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useMindMapBranchNumbering } from '@/composables/mindMap/useMindMapBranchNumbering'
@@ -303,8 +302,8 @@ function showActions(nodeId: string): boolean {
               class="sidebar-outline__actions shrink-0"
               :class="isSelected(row.node.id) ? 'is-visible' : ''"
             >
-              <ElTooltip
-                :content="t('canvas.mindMapSideToolbar.addChild')"
+              <I18nTooltip
+                k="canvas.mindMapSideToolbar.addChild"
                 placement="top"
                 :show-after="200"
               >
@@ -318,10 +317,10 @@ function showActions(nodeId: string): boolean {
                     :stroke-width="1.75"
                   />
                 </button>
-              </ElTooltip>
-              <ElTooltip
+              </I18nTooltip>
+              <I18nTooltip
                 v-if="row.node.id !== 'topic'"
-                :content="t('canvas.mindMapSideToolbar.addSibling')"
+                k="canvas.mindMapSideToolbar.addSibling"
                 placement="top"
                 :show-after="200"
               >
@@ -335,10 +334,10 @@ function showActions(nodeId: string): boolean {
                     :stroke-width="1.75"
                   />
                 </button>
-              </ElTooltip>
-              <ElTooltip
+              </I18nTooltip>
+              <I18nTooltip
                 v-if="row.node.id !== 'topic'"
-                :content="t('canvas.mindMapSideToolbar.deleteBranch')"
+                k="canvas.mindMapSideToolbar.deleteBranch"
                 placement="top"
                 :show-after="200"
               >
@@ -352,7 +351,7 @@ function showActions(nodeId: string): boolean {
                     :stroke-width="1.75"
                   />
                 </button>
-              </ElTooltip>
+              </I18nTooltip>
             </div>
           </div>
           <div

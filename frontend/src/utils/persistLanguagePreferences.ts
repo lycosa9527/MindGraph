@@ -17,11 +17,15 @@ export function persistLanguagePreferencesIfAuthenticated(): void {
     profile &&
     profile.uiLanguage === uiStore.language &&
     (profile.promptLanguage ?? uiStore.promptLanguage) === uiStore.promptLanguage &&
-    (profile.matchPromptToUi ?? uiStore.matchPromptToUi) === uiStore.matchPromptToUi
+    (profile.matchPromptToUi ?? uiStore.matchPromptToUi) === uiStore.matchPromptToUi &&
+    (profile.bilingualUiEnabled ?? uiStore.bilingualUiEnabled) === uiStore.bilingualUiEnabled &&
+    (profile.presenterUiLocale ?? uiStore.presenterUiLocale) === uiStore.presenterUiLocale
   ) {
     return
   }
   void authStore.saveLanguagePreferences(uiStore.language, uiStore.promptLanguage, {
     matchPromptToUi: uiStore.matchPromptToUi,
+    bilingualUiEnabled: uiStore.bilingualUiEnabled,
+    presenterUiLocale: uiStore.presenterUiLocale,
   })
 }

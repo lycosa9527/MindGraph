@@ -3,10 +3,11 @@
  * ChunkTestHeader - Header component for Chunk Test page
  * Swiss design style matching KnowledgeSpaceHeader
  */
-import { ElButton, ElIcon, ElTooltip } from 'element-plus'
+import { ElButton, ElIcon } from 'element-plus'
 
 import { RefreshRight, Upload, VideoPlay } from '@element-plus/icons-vue'
 
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 
 defineProps<{
@@ -38,8 +39,8 @@ const { t } = useLanguage()
     </div>
     <div class="flex items-center gap-2 shrink-0">
       <!-- Process Documents Button -->
-      <ElTooltip
-        :content="t('knowledge.chunkHeader.processPending')"
+      <I18nTooltip
+        k="knowledge.chunkHeader.processPending"
         :disabled="hasPendingDocuments"
         placement="bottom"
       >
@@ -52,10 +53,10 @@ const { t } = useLanguage()
           <ElIcon class="mr-1"><RefreshRight /></ElIcon>
           {{ t('knowledge.chunkHeader.processDocs') }}
         </ElButton>
-      </ElTooltip>
+      </I18nTooltip>
       <!-- Test Upload Documents Button -->
-      <ElTooltip
-        :content="t('knowledge.chunkHeader.waitForProcessing')"
+      <I18nTooltip
+        k="knowledge.chunkHeader.waitForProcessing"
         :disabled="hasDocuments"
         placement="bottom"
       >
@@ -68,7 +69,7 @@ const { t } = useLanguage()
           <ElIcon class="mr-1"><VideoPlay /></ElIcon>
           {{ t('knowledge.chunkHeader.testUpload') }}
         </ElButton>
-      </ElTooltip>
+      </I18nTooltip>
       <!-- Test All Datasets Button -->
       <ElButton
         class="test-all-datasets-btn"

@@ -89,8 +89,11 @@ function goNext() {
   <SwissGlassDialog
     v-model="open"
     :ribbon="t('swissGlass.hero.imagePreview.ribbon')"
+    ribbon-key="swissGlass.hero.imagePreview.ribbon"
     :title="t('swissGlass.hero.imagePreview.title')"
+    title-key="swissGlass.hero.imagePreview.title"
     :line1="t('swissGlass.hero.imagePreview.line1')"
+    line1-key="swissGlass.hero.imagePreview.line1"
     :icon="Image"
     width="80%"
     :before-close="handleClose"

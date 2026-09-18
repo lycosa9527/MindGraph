@@ -5,15 +5,12 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import {
-  ElButton,
-  ElDropdown,
-  ElDropdownItem,
-  ElDropdownMenu,
-} from 'element-plus'
+import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
 
 import { ChevronDown, Hand, Maximize2, Minus, Play, Plus, Square, Users } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables'
 import { ZOOM } from '@/config/uiConfig'
 
@@ -129,12 +126,6 @@ function handlePresentation() {
   emit('startPresentation')
 }
 
-const presentationTooltip = computed(() =>
-  props.presentationRailOpen
-    ? t('canvas.zoomControls.hidePresentationTools')
-    : t('canvas.zoomControls.presentationMode')
-)
-
 const emit = defineEmits<{
   (e: 'zoomChange', level: number): void
   (e: 'zoomIn'): void
@@ -155,9 +146,9 @@ defineExpose({
   <div class="zoom-controls z-20 flex items-center">
     <div class="rounded-xl p-1 flex items-center gap-0.5 shrink-0">
       <!-- Hand tool (hidden during presentation — use right-rail hand / pointer there) -->
-      <ElTooltip
+      <I18nTooltip
         v-if="!props.presentationRailOpen"
-        :content="t('canvas.zoomControls.hand')"
+        k="canvas.zoomControls.hand"
         placement="top"
       >
         <ElButton
@@ -168,7 +159,7 @@ defineExpose({
         >
           <Hand class="w-4 h-4" />
         </ElButton>
-      </ElTooltip>
+      </I18nTooltip>
 
       <div
         v-if="!props.presentationRailOpen"
@@ -176,8 +167,8 @@ defineExpose({
       />
 
       <!-- Zoom out -->
-      <ElTooltip
-        :content="t('editor.zoomOut')"
+      <I18nTooltip
+        k="editor.zoomOut"
         placement="top"
       >
         <ElButton
@@ -188,7 +179,7 @@ defineExpose({
         >
           <Minus class="w-4 h-4" />
         </ElButton>
-      </ElTooltip>
+      </I18nTooltip>
 
       <!-- Zoom level dropdown -->
       <ElDropdown
@@ -220,8 +211,8 @@ defineExpose({
       </ElDropdown>
 
       <!-- Zoom in -->
-      <ElTooltip
-        :content="t('editor.zoomIn')"
+      <I18nTooltip
+        k="editor.zoomIn"
         placement="top"
       >
         <ElButton
@@ -232,13 +223,13 @@ defineExpose({
         >
           <Plus class="w-4 h-4" />
         </ElButton>
-      </ElTooltip>
+      </I18nTooltip>
 
       <div class="divider" />
 
       <!-- Fit to screen -->
-      <ElTooltip
-        :content="t('canvas.zoomControls.fitCanvas')"
+      <I18nTooltip
+        k="canvas.zoomControls.fitCanvas"
         placement="top"
       >
         <ElButton
@@ -249,14 +240,18 @@ defineExpose({
         >
           <Maximize2 class="w-4 h-4" />
         </ElButton>
-      </ElTooltip>
+      </I18nTooltip>
 
       <div class="divider" />
 
       <!-- Toggle presentation tools rail (right) -->
-      <ElTooltip
+      <I18nTooltip
         v-if="props.allowPresentationTools"
-        :content="presentationTooltip"
+        :k="
+          props.presentationRailOpen
+            ? 'canvas.zoomControls.hidePresentationTools'
+            : 'canvas.zoomControls.presentationMode'
+        "
         placement="top"
       >
         <ElButton
@@ -274,7 +269,7 @@ defineExpose({
             class="w-4 h-4"
           />
         </ElButton>
-      </ElTooltip>
+      </I18nTooltip>
 
       <template v-if="!props.isCollabGuest && (props.allowOnlineCollab || props.workshopCode)">
         <div class="divider" />
@@ -289,7 +284,7 @@ defineExpose({
           <!-- Wrapper carries the traveling-ring animation when a session is live -->
           <div
             :class="['collab-btn-wrap', { 'collab-active': props.workshopCode }]"
-            :title="t('canvas.zoomControls.collaborate')"
+            :aria-label="t('canvas.zoomControls.collaborate')"
           >
             <ElButton
               text
@@ -306,20 +301,20 @@ defineExpose({
                 v-if="props.allowOnlineCollab"
                 command="organization"
               >
-                {{ t('canvas.zoomControls.collabWithinOrg') }}
+                <I18nText k="canvas.zoomControls.collabWithinOrg" />
               </ElDropdownItem>
               <ElDropdownItem
                 v-if="props.allowOnlineCollab"
                 command="network"
               >
-                {{ t('canvas.zoomControls.collabCrossOrg') }}
+                <I18nText k="canvas.zoomControls.collabCrossOrg" />
               </ElDropdownItem>
               <ElDropdownItem
                 v-if="props.workshopCode"
                 :divided="props.allowOnlineCollab"
                 command="stop"
               >
-                {{ t('canvas.zoomControls.collabTurnOff') }}
+                <I18nText k="canvas.zoomControls.collabTurnOff" />
               </ElDropdownItem>
             </ElDropdownMenu>
           </template>

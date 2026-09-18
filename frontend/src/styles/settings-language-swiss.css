@@ -181,8 +181,9 @@
   flex: 1 1 0;
   min-width: 0;
   margin: 0;
-  padding: 0.55rem 0.5rem;
+  padding: 0.4rem 0.5rem;
   min-height: 2.35rem;
+  height: auto;
   border: none;
   border-radius: 0;
   background: transparent;
@@ -192,8 +193,8 @@
   letter-spacing: 0.01em;
   line-height: 1.35;
   color: var(--lang-settings-muted);
-  text-align: center;
-  white-space: nowrap;
+  text-align: start;
+  white-space: normal;
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
@@ -219,6 +220,10 @@
 
 .language-settings-canvas-segment:focus {
   outline: none;
+}
+
+.language-settings-canvas-segment :deep(.i18n-label) {
+  width: 100%;
 }
 
 .language-settings-canvas-segment:focus-visible {

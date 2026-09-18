@@ -10,10 +10,11 @@
  */
 import { computed, nextTick, onMounted } from 'vue'
 
-import { ElButton, ElTooltip } from 'element-plus'
+import { ElButton } from 'element-plus'
 
 import { Check, Loader2, RefreshCw, X } from '@lucide/vue'
 
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { getNodePalette } from '@/composables/nodePalette/useNodePalette'
@@ -314,8 +315,8 @@ function getDisplayText(suggestion: NodeSuggestion): string {
               {{ selectedIds.length }} {{ t('nodePalette.selected') }}
             </span>
             <div class="palette-header-actions flex items-center gap-0">
-              <ElTooltip
-                :content="t('nodePalette.refresh')"
+              <I18nTooltip
+                k="nodePalette.refresh"
                 placement="bottom"
               >
                 <ElButton
@@ -328,7 +329,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
                 >
                   <RefreshCw :class="['w-4 h-4', isLoading ? 'animate-spin' : '']" />
                 </ElButton>
-              </ElTooltip>
+              </I18nTooltip>
               <ElButton
                 text
                 circle

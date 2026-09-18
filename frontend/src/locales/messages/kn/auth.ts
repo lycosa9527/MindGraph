@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'ಬೌಂಡ್ ಮಾಡಿದ ಮೊಬೈಲ್ ಫೋನ್‌ಗೆ SMS ಪರಿಶೀಲನೆ ಕೋಡ್ ಅನ್ನು ಕಳುಹಿಸಿ. ಹೊಂದಿಸಿದ ನಂತರ, ನೀವು ಪಾಸ್‌ವರ್ಡ್ ಅಥವಾ ಪರಿಶೀಲನೆ ಕೋಡ್ ಬಳಸಿ ಲಾಗ್ ಇನ್ ಮಾಡಬಹುದು.',
   'auth.setPasswordWithSmsSubmit': 'ಪಾಸ್ವರ್ಡ್ ಹೊಂದಿಸಿ',
   'auth.setPasswordWithSmsSubmitting': 'ಉಳಿಸಲಾಗುತ್ತಿದೆ...',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'ಹೆಸರು ತೋರಿಸು',
   'auth.accountNamePlaceholder': 'ಕನಿಷ್ಠ 2 ಅಕ್ಷರಗಳು, ಸಂಖ್ಯೆಗಳಿಲ್ಲ',
   'auth.accountNameSave': 'ಹೆಸರನ್ನು ಉಳಿಸಿ',

@@ -7,6 +7,7 @@ import { useRouter } from 'vue-router'
 
 import { ArrowDown, Moon, Sunny } from '@element-plus/icons-vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables'
 import { toolbarShortForUiCode } from '@/i18n/locales'
 import { useAuthStore, useUIStore } from '@/stores'
@@ -95,7 +96,7 @@ function goToAdmin(): void {
             type="primary"
             @click="router.push('/auth')"
           >
-            {{ t('auth.login') }}
+            <I18nText k="auth.login" />
           </el-button>
         </template>
       </div>

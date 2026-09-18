@@ -11,6 +11,7 @@ import { ElRadio, ElRadioGroup } from 'element-plus'
 
 import { FolderOpen, Loader2, Trash2 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useNotifications } from '@/composables'
 import { useLanguage } from '@/composables'
@@ -143,7 +144,9 @@ async function handleDeleteAndSave(): Promise<void> {
   <SwissGlassCard
     v-model="isVisible"
     :ribbon="t('canvas.hero.slotFull.ribbon')"
+    ribbon-key="canvas.hero.slotFull.ribbon"
     :title="t('canvas.hero.slotFull.title')"
+    title-key="canvas.hero.slotFull.title"
     :line1="t('library.slotFull.body', { max: maxDiagrams })"
     :icon="FolderOpen"
     card-class="swiss-glass-card--wide"
@@ -206,7 +209,7 @@ async function handleDeleteAndSave(): Promise<void> {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="closeModal"
         >
-          {{ t('library.slotFull.cancel') }}
+          <I18nText k="library.slotFull.cancel" />
         </button>
         <button
           type="button"
@@ -222,7 +225,7 @@ async function handleDeleteAndSave(): Promise<void> {
             v-else
             class="w-4 h-4"
           />
-          {{ t('library.slotFull.deleteAndSave') }}
+          <I18nText k="library.slotFull.deleteAndSave" />
         </button>
       </div>
     </template>

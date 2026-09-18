@@ -2,7 +2,7 @@
 /**
  * Vertical presentation tools rail — right edge, laser through timer.
  */
-import { ElButton, ElTooltip } from 'element-plus'
+import { ElButton } from 'element-plus'
 
 import {
   Brush,
@@ -16,6 +16,7 @@ import {
   Trash2,
 } from '@lucide/vue'
 
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables'
 import { PRESENTATION_Z } from '@/config/uiConfig'
 import type { PresentationToolId } from '@/types/diagram'
@@ -66,8 +67,9 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
           aria-hidden="true"
           >1</span
         >
-        <ElTooltip
-          :content="`${t('canvas.presentationSideToolbar.laser')} (Ctrl+1)`"
+        <I18nTooltip
+          k="canvas.presentationSideToolbar.laser"
+          suffix="Ctrl+1"
           placement="left"
         >
           <ElButton
@@ -78,7 +80,7 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
           >
             <MousePointer2 class="h-5 w-5 shrink-0" />
           </ElButton>
-        </ElTooltip>
+        </I18nTooltip>
       </div>
 
       <div
@@ -90,8 +92,9 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
           aria-hidden="true"
           >2</span
         >
-        <ElTooltip
-          :content="`${t('canvas.presentationSideToolbar.highlighter')} (Ctrl+2)`"
+        <I18nTooltip
+          k="canvas.presentationSideToolbar.highlighter"
+          suffix="Ctrl+2"
           placement="left"
         >
           <ElButton
@@ -102,7 +105,7 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
           >
             <Brush class="h-5 w-5 shrink-0" />
           </ElButton>
-        </ElTooltip>
+        </I18nTooltip>
       </div>
 
       <div
@@ -114,8 +117,9 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
           aria-hidden="true"
           >3</span
         >
-        <ElTooltip
-          :content="`${t('canvas.presentationSideToolbar.pen')} (Ctrl+3)`"
+        <I18nTooltip
+          k="canvas.presentationSideToolbar.pen"
+          suffix="Ctrl+3"
           placement="left"
         >
           <ElButton
@@ -126,7 +130,7 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
           >
             <PenLine class="h-5 w-5 shrink-0" />
           </ElButton>
-        </ElTooltip>
+        </I18nTooltip>
       </div>
 
       <div
@@ -138,8 +142,9 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
           aria-hidden="true"
           >4</span
         >
-        <ElTooltip
-          :content="`${t('canvas.presentationSideToolbar.spotlight')} (Ctrl+4)`"
+        <I18nTooltip
+          k="canvas.presentationSideToolbar.spotlight"
+          suffix="Ctrl+4"
           placement="left"
         >
           <ElButton
@@ -150,7 +155,7 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
           >
             <Sun class="h-5 w-5 shrink-0" />
           </ElButton>
-        </ElTooltip>
+        </I18nTooltip>
       </div>
 
       <div
@@ -162,8 +167,9 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
           aria-hidden="true"
           >5</span
         >
-        <ElTooltip
-          :content="`${t('canvas.presentationSideToolbar.timer')} (Ctrl+5)`"
+        <I18nTooltip
+          k="canvas.presentationSideToolbar.timer"
+          suffix="Ctrl+5"
           placement="left"
         >
           <ElButton
@@ -174,7 +180,7 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
           >
             <Timer class="h-5 w-5 shrink-0" />
           </ElButton>
-        </ElTooltip>
+        </I18nTooltip>
       </div>
 
       <div
@@ -186,8 +192,9 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
           aria-hidden="true"
           >6</span
         >
-        <ElTooltip
-          :content="`${t('canvas.toolbar.moreAppVirtualKeyboard')} (Ctrl+6)`"
+        <I18nTooltip
+          k="canvas.toolbar.moreAppVirtualKeyboard"
+          suffix="Ctrl+6"
           placement="left"
         >
           <ElButton
@@ -202,7 +209,7 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
           >
             <Keyboard class="h-5 w-5 shrink-0" />
           </ElButton>
-        </ElTooltip>
+        </I18nTooltip>
       </div>
 
       <div
@@ -211,8 +218,8 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
       />
 
       <div class="presentation-tool-slot flex h-10 w-full items-center justify-center">
-        <ElTooltip
-          :content="t('canvas.presentationContextMenu.clearHighlighter')"
+        <I18nTooltip
+          k="canvas.presentationContextMenu.clearHighlighter"
           placement="left"
         >
           <ElButton
@@ -223,12 +230,12 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
           >
             <Trash2 class="h-5 w-5 shrink-0" />
           </ElButton>
-        </ElTooltip>
+        </I18nTooltip>
       </div>
 
       <div class="presentation-tool-slot flex h-10 w-full items-center justify-center">
-        <ElTooltip
-          :content="t('canvas.zoomControls.fitCanvas')"
+        <I18nTooltip
+          k="canvas.zoomControls.fitCanvas"
           placement="left"
         >
           <ElButton
@@ -239,12 +246,12 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
           >
             <Maximize2 class="h-5 w-5 shrink-0" />
           </ElButton>
-        </ElTooltip>
+        </I18nTooltip>
       </div>
 
       <div class="presentation-tool-slot flex h-10 w-full items-center justify-center">
-        <ElTooltip
-          :content="t('canvas.zoomControls.hidePresentationTools')"
+        <I18nTooltip
+          k="canvas.zoomControls.hidePresentationTools"
           placement="left"
         >
           <ElButton
@@ -255,7 +262,7 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
           >
             <Square class="h-5 w-5 shrink-0" />
           </ElButton>
-        </ElTooltip>
+        </I18nTooltip>
       </div>
     </div>
   </div>

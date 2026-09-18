@@ -5,6 +5,7 @@
  * Features: Markdown rendering, code highlighting, message actions, stop generation
  */
 import { computed, defineAsyncComponent, nextTick, ref, watch } from 'vue'
+
 import { storeToRefs } from 'pinia'
 
 import { ElButton, ElIcon } from 'element-plus'
@@ -13,18 +14,23 @@ import { Plus } from '@element-plus/icons-vue'
 
 import { PanelLeftOpen } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import MindmateContactsToggleButton from '@/components/mindmate/MindmateContactsToggleButton.vue'
-
 import { useLanguage, useNotifications } from '@/composables'
+import {
+  embeddedCollabRoomCode,
+  setEmbeddedCollabRoomCode,
+} from '@/composables/mindmate/mindmateCollabEmbeddedBridge'
 import { useMindMate } from '@/composables/mindmate/useMindMate'
 import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
+import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
 import { useAuthStore, useMindMateStore, useTeachingDesignExportStore } from '@/stores'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import type { MindMateMessage } from '@/stores/mindmateActiveThread'
 import { useUIStore } from '@/stores/ui'
-import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 import { copyMindmateAssistantMessage } from '@/utils/copyMindmateMessage'
-import { authFetch } from '@/utils/api'
 import { confirmMindmateCollabStop } from '@/utils/mindmateCollabConfirm'
 import {
   loadLocalMindmateCollabSessions,
@@ -37,28 +43,22 @@ import {
   shouldRemoveCollabFromHistory,
   teardownMindmateCollabClient,
 } from '@/utils/mindmateCollabTeardown'
+import { displayMindmateUserQueryForUi } from '@/utils/mindmateExtensionPageContext'
+import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 import ShareExportModal from './ShareExportModal.vue'
 import MindmateHeader from './mindmate/MindmateHeader.vue'
 import MindmateInput from './mindmate/MindmateInput.vue'
 import MindmateMessages from './mindmate/MindmateMessages.vue'
-import { useFeatureFlagsStore } from '@/stores/featureFlags'
-import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
-import {
-  embeddedCollabRoomCode,
-  setEmbeddedCollabRoomCode,
-} from '@/composables/mindmate/mindmateCollabEmbeddedBridge'
-import type { MindMateMessage } from '@/stores/mindmateActiveThread'
-import { displayMindmateUserQueryForUi } from '@/utils/mindmateExtensionPageContext'
 
 const MindmateCollabPanel = defineAsyncComponent(
-  () => import('@/components/mindmate/MindmateCollabPanel.vue'),
+  () => import('@/components/mindmate/MindmateCollabPanel.vue')
 )
 const MindmateCollabEmbed = defineAsyncComponent(
-  () => import('@/components/mindmate/MindmateCollabEmbed.vue'),
+  () => import('@/components/mindmate/MindmateCollabEmbed.vue')
 )
 const MindmateCollabBreadcrumb = defineAsyncComponent(
-  () => import('@/components/mindmate/MindmateCollabBreadcrumb.vue'),
+  () => import('@/components/mindmate/MindmateCollabBreadcrumb.vue')
 )
 
 interface MindmateCollabPanelHandle {
@@ -133,7 +133,7 @@ function mapThreadToCollabSeed(msgs: MindMateMessage[]): MindmateCollabMessage[]
       role: m.role as 'user' | 'assistant',
       content: m.role === 'user' ? displayMindmateUserQueryForUi(m.content) : m.content,
       sender_user_id: m.role === 'user' ? Number(authStore.user?.id) || null : null,
-      username: m.role === 'user' ? authStore.user?.username ?? null : null,
+      username: m.role === 'user' ? (authStore.user?.username ?? null) : null,
     }))
 }
 
@@ -152,9 +152,8 @@ async function attachShowcasePost(postId: string): Promise<void> {
     mindMate.clearPendingFiles()
     mindMate.startNewConversation()
     const { getShowcasePost } = await import('@/utils/apiClient')
-    const { buildShowcaseMindMateAttachment } = await import(
-      '@/composables/showcase/buildShowcaseMindMateAttachment'
-    )
+    const { buildShowcaseMindMateAttachment } =
+      await import('@/composables/showcase/buildShowcaseMindMateAttachment')
     const post = await getShowcasePost(id)
     const file = await buildShowcaseMindMateAttachment(post)
     const uploaded = await mindMate.uploadFile(file, { allowDocuments: true })
@@ -186,16 +185,13 @@ const inConversation = computed(
     Boolean(mindMateStore.currentConversationId) ||
     mindMate.hasMessages.value ||
     mindMate.isLoading.value ||
-    mindMate.isStreaming.value,
+    mindMate.isStreaming.value
 )
 
 const isCollabChatroomMode = computed(() => Boolean(collabRoomCode.value))
 
 const collabSessionTitle = computed(
-  () =>
-    collabRoomTitle.value ||
-    mindMateStore.conversationTitle ||
-    t('mindmate.collabPill'),
+  () => collabRoomTitle.value || mindMateStore.conversationTitle || t('mindmate.collabPill')
 )
 
 const canStopCollabSession = computed(() => {
@@ -213,7 +209,7 @@ function handleCollabSessionStarted(payload: {
   seedThread?: boolean
 }) {
   if (wasMindmateCollabCodeRecentlyEnded(payload.code)) {
-    notify.info(t('mindmate.collabRoomEndedHost'))
+    notify.infoKey('mindmate.collabRoomEndedHost')
     return
   }
   collabSeedMessages.value = payload.seedThread
@@ -274,24 +270,23 @@ async function endCollabSession(): Promise<void> {
   if (!confirmed) {
     return
   }
-  const sessionId = resolveMindmateCollabSessionId(
-    collabSessionId.value,
-    collabRoomCode.value,
-  )
+  const sessionId = resolveMindmateCollabSessionId(collabSessionId.value, collabRoomCode.value)
   exitCollabChatroomMode({ removeFromHistory: true })
   if (!sessionId) {
-    notify.success(t('mindmate.collabStopped'))
+    notify.successKey('mindmate.collabStopped')
     return
   }
-  void requestMindmateCollabStop(sessionId).then((ok) => {
-    if (ok) {
-      notify.success(t('mindmate.collabStopped'))
-    } else {
-      notify.error(t('collab.endFailed'))
-    }
-  }).catch(() => {
-    notify.error(t('collab.endFailed'))
-  })
+  void requestMindmateCollabStop(sessionId)
+    .then((ok) => {
+      if (ok) {
+        notify.successKey('mindmate.collabStopped')
+      } else {
+        notify.errorKey('collab.endFailed')
+      }
+    })
+    .catch(() => {
+      notify.errorKey('collab.endFailed')
+    })
 }
 
 function syncHeaderTitleFromBranding() {
@@ -313,31 +308,28 @@ watch(showWelcome, (welcome) => {
   }
 })
 
-watch(
-  embeddedCollabRoomCode,
-  (code) => {
-    if (!isFullpageMode.value) {
+watch(embeddedCollabRoomCode, (code) => {
+  if (!isFullpageMode.value) {
+    return
+  }
+  if (code && code !== collabRoomCode.value) {
+    if (wasMindmateCollabCodeRecentlyEnded(code)) {
       return
     }
-    if (code && code !== collabRoomCode.value) {
-      if (wasMindmateCollabCodeRecentlyEnded(code)) {
-        return
-      }
-      collabRoomCode.value = code
-      const localRow = loadLocalMindmateCollabSessions().find(
-        (row) => normalizeMindmateCollabCode(row.code) === normalizeMindmateCollabCode(code),
-      )
-      if (localRow?.visibility === 'network' || localRow?.visibility === 'organization') {
-        collabVisibility.value = localRow.visibility
-      }
-      if (localRow?.title) {
-        collabRoomTitle.value = localRow.title
-      }
-    } else if (!code && collabRoomCode.value) {
-      exitCollabChatroomMode()
+    collabRoomCode.value = code
+    const localRow = loadLocalMindmateCollabSessions().find(
+      (row) => normalizeMindmateCollabCode(row.code) === normalizeMindmateCollabCode(code)
+    )
+    if (localRow?.visibility === 'network' || localRow?.visibility === 'organization') {
+      collabVisibility.value = localRow.visibility
     }
-  },
-)
+    if (localRow?.title) {
+      collabRoomTitle.value = localRow.title
+    }
+  } else if (!code && collabRoomCode.value) {
+    exitCollabChatroomMode()
+  }
+})
 
 // In panel mode (canvas mini-mindmate): fetch conversations from Dify and sync to store
 // ChatHistory sidebar is not mounted on canvas, so we must fetch here
@@ -402,15 +394,12 @@ async function startNewConversation() {
     if (!confirmed) {
       return
     }
-    const sessionId = resolveMindmateCollabSessionId(
-      collabSessionId.value,
-      collabRoomCode.value,
-    )
+    const sessionId = resolveMindmateCollabSessionId(collabSessionId.value, collabRoomCode.value)
     exitCollabChatroomMode({ removeFromHistory: true })
     if (sessionId) {
       void requestMindmateCollabStop(sessionId).then((ok) => {
         if (!ok) {
-          notify.error(t('collab.endFailed'))
+          notify.errorKey('collab.endFailed')
         }
       })
     }
@@ -430,9 +419,9 @@ async function loadConversationFromHistory(convId: string) {
 async function deleteConversationFromHistory(convId: string) {
   const success = await mindMate.deleteConversation(convId)
   if (success) {
-    notify.success(t('notification.conversationDeleted'))
+    notify.successKey('notification.conversationDeleted')
   } else {
-    notify.error(t('notification.deleteFailed'))
+    notify.errorKey('notification.deleteFailed')
   }
 }
 
@@ -477,9 +466,9 @@ async function copyMessage(content: string) {
       content,
       typeof window !== 'undefined' ? window.location.host : undefined
     )
-    notify.success(t('notification.copied'))
+    notify.successKey('notification.copied')
   } catch {
-    notify.error(t('notification.copyFailed'))
+    notify.errorKey('notification.copyFailed')
   }
 }
 
@@ -524,10 +513,7 @@ function previousUserPrompt(messageId: string): string | undefined {
 }
 
 function exportWordTemplate(message: MindMateMessage) {
-  void teachingDesignExport.exportAssistantMessage(
-    message,
-    previousUserPrompt(message.id)
-  )
+  void teachingDesignExport.exportAssistantMessage(message, previousUserPrompt(message.id))
 }
 
 // Start editing message
@@ -645,7 +631,10 @@ function isLastAssistantMessage(messageId: string): boolean {
           size="small"
           @click="endCollabSession"
         >
-          {{ t('mindmate.collabEndSeminar') }}
+          <I18nText
+            k="mindmate.collabEndSeminar"
+            dense
+          />
         </el-button>
         <el-button
           class="new-chat-btn shrink-0"
@@ -654,7 +643,10 @@ function isLastAssistantMessage(messageId: string): boolean {
           @click="startNewConversation"
         >
           <ElIcon class="mr-1"><Plus /></ElIcon>
-          {{ t('mindmate.newChat') }}
+          <I18nText
+            k="mindmate.newChat"
+            dense
+          />
         </el-button>
       </div>
     </div>
@@ -771,6 +763,11 @@ function isLastAssistantMessage(messageId: string): boolean {
   --el-button-text-color: #1c1917;
   font-weight: 500;
   border-radius: 9999px;
+  height: auto;
+  min-height: 32px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  line-height: 1.15;
 }
 
 .end-seminar-btn {
@@ -784,6 +781,11 @@ function isLastAssistantMessage(messageId: string): boolean {
   --el-button-text-color: #92400e;
   font-weight: 500;
   border-radius: 9999px;
+  height: auto;
+  min-height: 32px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  line-height: 1.15;
 }
 
 .dark .end-seminar-btn {

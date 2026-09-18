@@ -123,6 +123,7 @@ function handleJump(): void {
   <SwissGlassCard
     v-model="visible"
     :ribbon="t('swissGlass.hero.warning.ribbon')"
+    ribbon-key="swissGlass.hero.warning.ribbon"
     :title="titleText"
     :line1="bodyText"
     :icon="TriangleAlert"

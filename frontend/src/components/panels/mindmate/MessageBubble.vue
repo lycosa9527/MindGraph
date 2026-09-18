@@ -1,29 +1,28 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-
 import { useRoute, useRouter } from 'vue-router'
 
-import { ElAvatar, ElButton, ElIcon, ElInput, ElTooltip } from 'element-plus'
+import { ElAvatar, ElButton, ElIcon, ElInput } from 'element-plus'
 
 import { CopyDocument, Edit, RefreshRight, Share } from '@element-plus/icons-vue'
 
 import { ThumbsDown, ThumbsUp } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import {
   confirmCanvasLibraryDiagramOpen,
   decideCanvasLibraryDiagramOpen,
 } from '@/composables/canvasPage/canvasLibraryDiagramOpen'
 import { useRenderedMarkdown } from '@/composables/core/useRenderedMarkdown'
-import { useMindmateDiagramPreviewImage } from '@/composables/mindmate/useMindmateDiagramPreviewImage'
 import type { FeedbackRating, MindMateMessage } from '@/composables/mindmate/useMindMate'
+import { useMindmateDiagramPreviewImage } from '@/composables/mindmate/useMindmateDiagramPreviewImage'
 import { useAuthStore } from '@/stores/auth'
 import type { ModelLoadPhase } from '@/stores/llmResults'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { authFetch } from '@/utils/api'
 import { canvasEditorPathForRoute } from '@/utils/canvasBackNavigation'
-import { extractMindmatePreviewCacheKey } from '@/utils/mindmateDiagramPreviewCache'
-import { notifyMindmateDiagramPreviewExpired } from '@/utils/mindmateDiagramPreviewExpiredNotify'
 import {
   extractMindmatePreviewUniqueId,
   hasGeneratedDiagramImage,
@@ -31,6 +30,8 @@ import {
   needsLibrarySaveHint,
   parseMindmateDiagramLibraryId,
 } from '@/utils/mindmateDiagramMeta'
+import { extractMindmatePreviewCacheKey } from '@/utils/mindmateDiagramPreviewCache'
+import { notifyMindmateDiagramPreviewExpired } from '@/utils/mindmateDiagramPreviewExpiredNotify'
 import { isTeachingInstructionReply } from '@/utils/mindmateTeachingDesignFlag'
 
 import MindmateAgentAvatar from './MindmateAgentAvatar.vue'
@@ -83,7 +84,9 @@ const showWordTemplateExport = computed(() => {
   if (props.message.role !== 'assistant' || props.message.isStreaming) {
     return false
   }
-  return Boolean(props.message.exportWordTemplate) || isTeachingInstructionReply(props.message.content)
+  return (
+    Boolean(props.message.exportWordTemplate) || isTeachingInstructionReply(props.message.content)
+  )
 })
 
 const showLibrarySaveHint = computed(() => {
@@ -234,7 +237,7 @@ async function openInCanvas() {
     return
   }
   if (!authStore.isAuthenticated) {
-    notify.warning(t('mindmate.openCanvasLoginRequired'))
+    notify.warningKey('mindmate.openCanvasLoginRequired')
     await router.push({ path: '/auth', query: { redirect: route.fullPath } })
     return
   }
@@ -268,22 +271,21 @@ async function openInCanvas() {
     const canvasPath = canvasEditorPathForRoute(route.path)
     await router.push({ path: canvasPath, query: { diagramId } })
   } catch {
-    notify.error(t('mindmate.openCanvasFailed'))
+    notify.errorKey('mindmate.openCanvasFailed')
   } finally {
     openingCanvas.value = false
   }
 }
 
-const pageHost = computed(() =>
-  typeof window !== 'undefined' ? window.location.host : undefined
-)
+const pageHost = computed(() => (typeof window !== 'undefined' ? window.location.host : undefined))
 
-const { displayContent: mindmateDisplayContent, previewUnavailable } = useMindmateDiagramPreviewImage({
-  content: () => props.message.content,
-  isStreaming: () => Boolean(props.message.isStreaming),
-  pageHost: () => pageHost.value,
-  libraryDiagramId: () => libraryDiagramId.value,
-})
+const { displayContent: mindmateDisplayContent, previewUnavailable } =
+  useMindmateDiagramPreviewImage({
+    content: () => props.message.content,
+    isStreaming: () => Boolean(props.message.isStreaming),
+    pageHost: () => pageHost.value,
+    libraryDiagramId: () => libraryDiagramId.value,
+  })
 
 watch(
   () =>
@@ -424,14 +426,20 @@ function handleMarkdownClick(event: MouseEvent) {
                 size="small"
                 @click="handleCancelEdit"
               >
-                {{ t('common.cancel') }}
+                <I18nText
+                  k="common.cancel"
+                  dense
+                />
               </ElButton>
               <ElButton
                 type="primary"
                 size="small"
                 @click="handleSaveEdit"
               >
-                {{ t('common.save') }}
+                <I18nText
+                  k="common.save"
+                  dense
+                />
               </ElButton>
             </div>
           </div>
@@ -488,7 +496,7 @@ function handleMarkdownClick(event: MouseEvent) {
                 v-if="showLibraryFullHint"
                 class="mindmate-library-save-hint mt-2"
               >
-                {{ t('mindmate.diagramLibraryFull') }}
+                <I18nText k="mindmate.diagramLibraryFull" />
               </p>
               <p
                 v-else-if="showLibrarySaveHint && librarySaveHintText"
@@ -512,7 +520,7 @@ function handleMarkdownClick(event: MouseEvent) {
               opacity: isHovered ? 1 : 0,
             }"
           >
-            <ElTooltip :content="t('mindmate.tooltip.edit')">
+            <I18nTooltip k="mindmate.tooltip.edit">
               <ElButton
                 text
                 circle
@@ -521,8 +529,8 @@ function handleMarkdownClick(event: MouseEvent) {
               >
                 <ElIcon class="text-xs"><Edit /></ElIcon>
               </ElButton>
-            </ElTooltip>
-            <ElTooltip :content="t('mindmate.tooltip.copy')">
+            </I18nTooltip>
+            <I18nTooltip k="mindmate.tooltip.copy">
               <ElButton
                 text
                 circle
@@ -531,7 +539,7 @@ function handleMarkdownClick(event: MouseEvent) {
               >
                 <ElIcon class="text-xs"><CopyDocument /></ElIcon>
               </ElButton>
-            </ElTooltip>
+            </I18nTooltip>
           </div>
 
           <!-- AI message action bar -->
@@ -544,8 +552,8 @@ function handleMarkdownClick(event: MouseEvent) {
             }"
           >
             <!-- Copy -->
-            <ElTooltip
-              :content="t('mindmate.tooltip.copy')"
+            <I18nTooltip
+              k="mindmate.tooltip.copy"
               placement="top"
             >
               <ElButton
@@ -555,12 +563,12 @@ function handleMarkdownClick(event: MouseEvent) {
               >
                 <ElIcon :size="18"><CopyDocument /></ElIcon>
               </ElButton>
-            </ElTooltip>
+            </I18nTooltip>
 
             <!-- Regenerate -->
-            <ElTooltip
+            <I18nTooltip
               v-if="hasPreviousUserMessage"
-              :content="t('mindmate.tooltip.regenerate')"
+              k="mindmate.tooltip.regenerate"
               placement="top"
             >
               <ElButton
@@ -571,11 +579,11 @@ function handleMarkdownClick(event: MouseEvent) {
               >
                 <ElIcon :size="18"><RefreshRight /></ElIcon>
               </ElButton>
-            </ElTooltip>
+            </I18nTooltip>
 
             <!-- Like -->
-            <ElTooltip
-              :content="t('mindmate.tooltip.like')"
+            <I18nTooltip
+              k="mindmate.tooltip.like"
               placement="top"
             >
               <ElButton
@@ -586,11 +594,11 @@ function handleMarkdownClick(event: MouseEvent) {
               >
                 <ThumbsUp :size="16" />
               </ElButton>
-            </ElTooltip>
+            </I18nTooltip>
 
             <!-- Dislike -->
-            <ElTooltip
-              :content="t('mindmate.tooltip.dislike')"
+            <I18nTooltip
+              k="mindmate.tooltip.dislike"
               placement="top"
             >
               <ElButton
@@ -603,11 +611,11 @@ function handleMarkdownClick(event: MouseEvent) {
               >
                 <ThumbsDown :size="16" />
               </ElButton>
-            </ElTooltip>
+            </I18nTooltip>
 
             <!-- Share -->
-            <ElTooltip
-              :content="t('mindmate.tooltip.share')"
+            <I18nTooltip
+              k="mindmate.tooltip.share"
               placement="top"
             >
               <ElButton
@@ -617,7 +625,7 @@ function handleMarkdownClick(event: MouseEvent) {
               >
                 <ElIcon :size="18"><Share /></ElIcon>
               </ElButton>
-            </ElTooltip>
+            </I18nTooltip>
 
             <button
               v-if="showWordTemplateExport"
@@ -628,7 +636,12 @@ function handleMarkdownClick(event: MouseEvent) {
               :title="t('mindmate.tooltip.exportWordTemplate')"
               @click="emit('exportWordTemplate', message)"
             >
-              <span class="mindmate-stone-btn__label">{{ t('mindmate.exportWordTemplate') }}</span>
+              <span class="mindmate-stone-btn__label">
+                <I18nText
+                  k="mindmate.exportWordTemplate"
+                  dense
+                />
+              </span>
             </button>
 
             <!-- Open in canvas -->
@@ -639,7 +652,10 @@ function handleMarkdownClick(event: MouseEvent) {
               :loading="openingCanvas"
               @click="openInCanvas"
             >
-              {{ t('mindmate.openInCanvas') }}
+              <I18nText
+                k="mindmate.openInCanvas"
+                dense
+              />
             </ElButton>
           </div>
         </template>

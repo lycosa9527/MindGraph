@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'Dërgojmë një kod në telefonin tuaj të lidhur. Pas vendosjes së fjalëkalimit mund të hyni me fjalëkalim ose kod verifikimi.',
   'auth.setPasswordWithSmsSubmit': 'Ruaj fjalëkalimin',
   'auth.setPasswordWithSmsSubmitting': 'Duke ruajtur…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Emri i shfaqur',
   'auth.accountNamePlaceholder': 'Të paktën 2 karaktere, pa shifra',
   'auth.accountNameSave': 'Ruaj emrin',

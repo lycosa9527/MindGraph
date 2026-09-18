@@ -7,6 +7,7 @@ import { computed, ref, watch } from 'vue'
 
 import { ElDialog, ElScrollbar } from 'element-plus'
 
+import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables'
 import {
   ensureMarkdownRenderer,
@@ -102,13 +103,13 @@ watch(
     <template #header>
       <div class="ulog-header">
         <span class="ulog-header__glyph">◇</span>
-        <span class="ulog-header__title">{{ t('auth.updateLogModalTitle') }}</span>
+        <span class="ulog-header__title"><I18nText k="auth.updateLogModalTitle" /></span>
         <span
           class="ulog-header__divider"
           aria-hidden="true"
           >·</span
         >
-        <span class="ulog-header__note">{{ t('auth.updateLogMaintainerNote') }}</span>
+        <span class="ulog-header__note"><I18nText k="auth.updateLogMaintainerNote" /></span>
       </div>
     </template>
 
@@ -123,7 +124,7 @@ watch(
         class="ulog-loading"
       >
         <span class="ulog-loading__prompt">&gt;</span>
-        <span class="ulog-loading__text">{{ t('common.loading') }}</span>
+        <span class="ulog-loading__text"><I18nText k="common.loading" /></span>
         <span class="ulog-loading__cursor" />
       </div>
       <p

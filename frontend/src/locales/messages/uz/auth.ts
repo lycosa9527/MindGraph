@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'Bagli telefonninuza kod yuborishirik. Parol teyin etdikden sonra parol yoki dogrulama kodni bilan kirisha bilersiniz.',
   'auth.setPasswordWithSmsSubmit': 'Parolni saqlash',
   'auth.setPasswordWithSmsSubmitting': 'Saqlashnilir…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Gorunen ad',
   'auth.accountNamePlaceholder': 'Eng kami 2 belgi, raqam olmasin',
   'auth.accountNameSave': 'Adi saqlash',

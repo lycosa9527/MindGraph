@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'یک کد تأیید پیامکی به تلفن همراه متصل ارسال کنید. پس از راه اندازی، می توانید با استفاده از رمز عبور یا کد تأیید وارد شوید.',
   'auth.setPasswordWithSmsSubmit': 'رمز عبور را تنظیم کنید',
   'auth.setPasswordWithSmsSubmitting': 'در حال ذخیره…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'نمایش نام',
   'auth.accountNamePlaceholder': 'حداقل 2 کاراکتر بدون عدد',
   'auth.accountNameSave': 'ذخیره نام',

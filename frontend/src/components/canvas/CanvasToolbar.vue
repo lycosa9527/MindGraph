@@ -4,11 +4,13 @@
  */
 import { computed, ref } from 'vue'
 
-import { ElButton, ElTooltip } from 'element-plus'
+import { ElButton } from 'element-plus'
 
 import { ArrowDownUp, Brush, Upload } from '@lucide/vue'
 
 import type { MindMapRibbonTabId } from '@/canvas-ribbon/mindMapRibbonTypes'
+import I18nText from '@/components/common/I18nText.vue'
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import {
   tryCollabGuardedRedo,
   tryCollabGuardedUndo,
@@ -214,8 +216,8 @@ function handleToggleOrientation() {
 
         <div class="divider" />
 
-        <ElTooltip
-          :content="t('canvas.toolbar.formatPainter')"
+        <I18nTooltip
+          k="canvas.toolbar.formatPainter"
           placement="bottom"
         >
           <ElButton
@@ -230,11 +232,11 @@ function handleToggleOrientation() {
               :class="formatBrushActive ? 'text-purple-600' : 'text-purple-500'"
             />
           </ElButton>
-        </ElTooltip>
+        </I18nTooltip>
 
-        <ElTooltip
+        <I18nTooltip
           v-if="isFlowMap"
-          :content="t('canvas.toolbar.toggleDirection')"
+          k="canvas.toolbar.toggleDirection"
           placement="bottom"
           :disabled="!compactToolbar"
         >
@@ -244,9 +246,11 @@ function handleToggleOrientation() {
             @click="handleToggleOrientation"
           >
             <ArrowDownUp class="w-4 h-4 text-blue-500" />
-            <span v-if="!compactToolbar">{{ t('canvas.toolbar.directionLabel') }}</span>
+            <span v-if="!compactToolbar">
+              <I18nText k="canvas.toolbar.directionLabel" />
+            </span>
           </ElButton>
-        </ElTooltip>
+        </I18nTooltip>
 
         <div class="divider" />
 
@@ -331,9 +335,9 @@ function handleToggleOrientation() {
           class="divider"
         />
 
-        <ElTooltip
+        <I18nTooltip
           v-if="isConceptMap"
-          :content="t('canvas.toolbar.import')"
+          k="canvas.toolbar.import"
           placement="bottom"
           :disabled="!compactToolbar"
         >
@@ -343,9 +347,11 @@ function handleToggleOrientation() {
             @click="triggerConceptMapImportInPlace"
           >
             <Upload class="w-4 h-4 text-gray-500" />
-            <span v-if="!compactToolbar">{{ t('canvas.toolbar.import') }}</span>
+            <span v-if="!compactToolbar">
+              <I18nText k="canvas.toolbar.import" />
+            </span>
           </ElButton>
-        </ElTooltip>
+        </I18nTooltip>
 
         <CanvasToolbarMoreAppsDropdown
           :compact="compactToolbar"

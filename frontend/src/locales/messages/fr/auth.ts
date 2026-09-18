@@ -194,6 +194,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'Nous envoyons un code à votre téléphone lié. Après avoir défini un mot de passe, vous pourrez vous connecter avec le mot de passe ou un code de vérification.',
   'auth.setPasswordWithSmsSubmit': 'Enregistrer le mot de passe',
   'auth.setPasswordWithSmsSubmitting': 'Enregistrement…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Nom d’affichage',
   'auth.accountNamePlaceholder': 'Au moins 2 caractères, sans chiffres',
   'auth.accountNameSave': 'Enregistrer le nom',

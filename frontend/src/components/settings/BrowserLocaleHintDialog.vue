@@ -6,6 +6,7 @@ import { computed, ref, watch } from 'vue'
 
 import { Languages } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { SUPPORTED_UI_LOCALES, matchedPromptLanguageForUiLocale } from '@/i18n/locales'
@@ -69,13 +70,19 @@ function handleDontAsk(): void {
   <SwissGlassDialog
     v-model="visible"
     :ribbon="t('swissGlass.hero.localeHint.ribbon')"
+    ribbon-key="swissGlass.hero.localeHint.ribbon"
     :title="t('swissGlass.hero.localeHint.title')"
+    title-key="swissGlass.hero.localeHint.title"
     :line1="t('swissGlass.hero.localeHint.line1')"
+    line1-key="swissGlass.hero.localeHint.line1"
     :icon="Languages"
     width="min(400px, 92vw)"
   >
     <p class="text-stone-700 dark:text-stone-300 text-sm leading-relaxed">
-      {{ t('app.browserLocale.body', { name: targetDisplayName }) }}
+      <I18nText
+        k="app.browserLocale.body"
+        :params="{ name: targetDisplayName }"
+      />
     </p>
     <template #footer>
       <div class="swiss-glass-footer">
@@ -84,21 +91,21 @@ function handleDontAsk(): void {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="handleDontAsk"
         >
-          {{ t('app.browserLocale.dontAsk') }}
+          <I18nText k="app.browserLocale.dontAsk" />
         </button>
         <button
           type="button"
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="handleKeepChinese"
         >
-          {{ t('app.browserLocale.keepChinese') }}
+          <I18nText k="app.browserLocale.keepChinese" />
         </button>
         <button
           type="button"
           class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
           @click="handleSwitch"
         >
-          {{ t('app.browserLocale.switch') }}
+          <I18nText k="app.browserLocale.switch" />
         </button>
       </div>
     </template>

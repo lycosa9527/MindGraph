@@ -9,6 +9,7 @@ import { ElDialog } from 'element-plus'
 
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import '@/components/canvas/aiGenerateGlass.css'
+import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { sanitizeMindMapHref } from '@/utils/mindMapAdornments'
 
@@ -74,7 +75,7 @@ function confirm(): void {
 
     <div class="mm-link-stack">
       <label class="mm-link-field">
-        <span class="mm-link-field__kicker">{{ t('canvas.ribbon.linkName') }}</span>
+        <span class="mm-link-field__kicker"><I18nText k="canvas.ribbon.linkName" /></span>
         <input
           v-model="name"
           type="text"
@@ -85,7 +86,7 @@ function confirm(): void {
         />
       </label>
       <label class="mm-link-field">
-        <span class="mm-link-field__kicker">{{ t('canvas.ribbon.linkUrl') }}</span>
+        <span class="mm-link-field__kicker"><I18nText k="canvas.ribbon.linkUrl" /></span>
         <input
           v-model="href"
           type="url"
@@ -111,14 +112,14 @@ function confirm(): void {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="close"
         >
-          {{ t('common.cancel') }}
+          <I18nText k="common.cancel" />
         </button>
         <button
           type="button"
           class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
           @click="confirm"
         >
-          {{ t('canvas.ribbon.linkConfirm') }}
+          <I18nText k="canvas.ribbon.linkConfirm" />
         </button>
       </div>
     </template>

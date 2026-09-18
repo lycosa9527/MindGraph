@@ -8,13 +8,16 @@
  * Use: import { notify } from '@/composables/core/notifications' for stores/outside setup
  * Or: useNotifications() composable for components
  */
-import { h } from 'vue'
+import { type VNode, h } from 'vue'
 
 import type { MessageHandler } from 'element-plus'
 
 import { AlertTriangle, Check, CircleX, Info } from '@lucide/vue'
 
-type ElNotificationFn = (typeof import('element-plus/es/components/notification/index.mjs'))['ElNotification']
+import { bilingualNotifyMessage } from '@/i18n/bilingualNotifyMessage'
+
+type ElNotificationFn =
+  (typeof import('element-plus/es/components/notification/index.mjs'))['ElNotification']
 type ElMessageFn = (typeof import('element-plus/es/components/message/index.mjs'))['ElMessage']
 
 let programmaticStylesPromise: Promise<void> | null = null
@@ -54,7 +57,8 @@ export async function loadElMessage(): Promise<ElMessageFn> {
   return elMessagePromise
 }
 
-type ElMessageBoxApi = (typeof import('element-plus/es/components/message-box/index.mjs'))['ElMessageBox']
+type ElMessageBoxApi =
+  (typeof import('element-plus/es/components/message-box/index.mjs'))['ElMessageBox']
 
 let elMessageBoxPromise: Promise<ElMessageBoxApi> | null = null
 
@@ -99,7 +103,7 @@ const iconMap = {
 }
 
 function showNotification(
-  message: string,
+  message: string | VNode,
   type: NotificationType,
   duration = DEFAULT_DURATION_MS
 ): void {
@@ -116,6 +120,19 @@ function showNotification(
   })
 }
 
+function notifyByKey(
+  type: NotificationType,
+  key: string,
+  paramsOrDuration?: Record<string, unknown> | number,
+  duration = DEFAULT_DURATION_MS
+): void {
+  if (typeof paramsOrDuration === 'number') {
+    showNotification(bilingualNotifyMessage(key), type, paramsOrDuration)
+    return
+  }
+  showNotification(bilingualNotifyMessage(key, paramsOrDuration), type, duration)
+}
+
 export const notify = {
   success(message: string, duration = DEFAULT_DURATION_MS): void {
     showNotification(message, 'success', duration)
@@ -128,6 +145,34 @@ export const notify = {
   },
   info(message: string, duration = DEFAULT_DURATION_MS): void {
     showNotification(message, 'info', duration)
+  },
+  successKey(
+    key: string,
+    paramsOrDuration?: Record<string, unknown> | number,
+    duration = DEFAULT_DURATION_MS
+  ): void {
+    notifyByKey('success', key, paramsOrDuration, duration)
+  },
+  errorKey(
+    key: string,
+    paramsOrDuration?: Record<string, unknown> | number,
+    duration = DEFAULT_DURATION_MS
+  ): void {
+    notifyByKey('error', key, paramsOrDuration, duration)
+  },
+  warningKey(
+    key: string,
+    paramsOrDuration?: Record<string, unknown> | number,
+    duration = DEFAULT_DURATION_MS
+  ): void {
+    notifyByKey('warning', key, paramsOrDuration, duration)
+  },
+  infoKey(
+    key: string,
+    paramsOrDuration?: Record<string, unknown> | number,
+    duration = DEFAULT_DURATION_MS
+  ): void {
+    notifyByKey('info', key, paramsOrDuration, duration)
   },
 }
 

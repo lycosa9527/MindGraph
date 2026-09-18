@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'ബന്ധിപ്പിച്ച മൊബൈൽ ഫോണിലേക്ക് ഒരു SMS സ്ഥിരീകരണ കോഡ് അയയ്ക്കുക. സജ്ജീകരിച്ചതിന് ശേഷം, പാസ്‌വേഡ് അല്ലെങ്കിൽ സ്ഥിരീകരണ കോഡ് ഉപയോഗിച്ച് നിങ്ങൾക്ക് ലോഗിൻ ചെയ്യാൻ കഴിയും.',
   'auth.setPasswordWithSmsSubmit': 'പാസ്‌വേഡ് സജ്ജമാക്കുക',
   'auth.setPasswordWithSmsSubmitting': 'സംരക്ഷിക്കുന്നു...',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'പേര് കാണിക്കുക',
   'auth.accountNamePlaceholder': 'കുറഞ്ഞത് 2 പ്രതീകങ്ങൾ, അക്കങ്ങൾ ഇല്ല',
   'auth.accountNameSave': 'പേര് സംരക്ഷിക്കുക',

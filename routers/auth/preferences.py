@@ -44,10 +44,15 @@ async def update_language_preferences(
         and body.prompt_language is None
         and body.ui_version is None
         and body.match_prompt_to_ui is None
+        and body.bilingual_ui_enabled is None
+        and body.presenter_ui_locale is None
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Provide at least one of ui_language, prompt_language, ui_version, match_prompt_to_ui",
+            detail=(
+                "Provide at least one of ui_language, prompt_language, ui_version, "
+                "match_prompt_to_ui, bilingual_ui_enabled, presenter_ui_locale"
+            ),
         )
 
     result = await db.execute(select(User).where(User.id == current_user.id))
@@ -76,6 +81,17 @@ async def update_language_preferences(
         user.ui_version = body.ui_version
     if body.match_prompt_to_ui is not None:
         user.match_prompt_to_ui = body.match_prompt_to_ui
+    if body.bilingual_ui_enabled is not None:
+        user.bilingual_ui_enabled = body.bilingual_ui_enabled
+    if body.presenter_ui_locale is not None:
+        if body.presenter_ui_locale.lower() == "zh" and not getattr(
+            user, "allows_simplified_chinese", True
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=Messages.error("ui_language_zh_not_allowed", lang),
+            )
+        user.presenter_ui_locale = body.presenter_ui_locale
 
     try:
         await db.commit()

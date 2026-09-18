@@ -33,10 +33,11 @@
   justify-content: center;
   gap: 6px;
   box-sizing: border-box;
-  height: 36px;
+  min-height: 36px;
+  height: auto;
   min-width: 3.25rem;
   margin-top: 6px;
-  padding: 0 14px;
+  padding: 4px 14px;
   border-radius: 4px 4px 0 0;
   color: #4b5563;
   font-size: 13px;
@@ -75,9 +76,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 44px;
+  min-height: 44px;
+  height: auto;
   margin-bottom: -8px;
-  padding: 0 14px 8px;
+  padding: 4px 14px 8px;
   background: #ffffff;
   color: #2563eb;
   border: none;
@@ -89,10 +91,17 @@
   border-radius: 8px;
 }
 
+.mm-ribbon-tabs__label {
+  text-align: start;
+  line-height: 1.15;
+  white-space: normal;
+}
+
 .mm-ribbon-tabs--topbar.mm-ribbon-tabs--collapsed .mm-ribbon-tabs__tab.is-active {
-  height: 36px;
+  min-height: 36px;
+  height: auto;
   margin-bottom: 0;
-  padding: 0 14px;
+  padding: 4px 14px;
   background: rgb(255 255 255 / 0.88);
   border-radius: 8px;
 }

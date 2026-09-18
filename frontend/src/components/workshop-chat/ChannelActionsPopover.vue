@@ -27,6 +27,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
 import { workshopChatHrefFromState } from '@/utils/workshopChatRoute'
+import I18nText from '@/components/common/I18nText.vue'
 
 const props = defineProps<{
   channelId: number
@@ -440,8 +441,11 @@ export default { name: 'ChannelActionsPopover' }
   <SwissGlassDialog
     v-model="deadlineDialogVisible"
     :ribbon="t('swissGlass.hero.deadline.ribbon')"
+    ribbon-key="swissGlass.hero.deadline.ribbon"
     :title="t('swissGlass.hero.deadline.title')"
+    title-key="swissGlass.hero.deadline.title"
     :line1="t('swissGlass.hero.deadline.line1')"
+    line1-key="swissGlass.hero.deadline.line1"
     :icon="CalendarClock"
     width="min(400px, 92vw)"
   >
@@ -458,7 +462,7 @@ export default { name: 'ChannelActionsPopover' }
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="deadlineDialogVisible = false"
         >
-          {{ t('common.cancel') }}
+          <I18nText k="common.cancel" />
         </button>
         <button
           type="button"
@@ -466,7 +470,7 @@ export default { name: 'ChannelActionsPopover' }
           :disabled="!deadlineDraft"
           @click="handleSaveDeadline"
         >
-          {{ t('common.save') }}
+          <I18nText k="common.save" />
         </button>
       </div>
     </template>

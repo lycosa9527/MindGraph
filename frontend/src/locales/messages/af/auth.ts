@@ -194,6 +194,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'Ons stuur ’n kode na jou gekoppelde foon. Nadat jy ’n wagwoord gestel het, kan jy met wagwoord of ’n verifikasiekode aanmeld.',
   'auth.setPasswordWithSmsSubmit': 'Stoor wagwoord',
   'auth.setPasswordWithSmsSubmitting': 'Stoor…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Vertoonnaam',
   'auth.accountNamePlaceholder': 'Minstens 2 karakters, geen syfers nie',
   'auth.accountNameSave': 'Stoor naam',

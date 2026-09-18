@@ -25,6 +25,28 @@ describe('normalizeAuthUser', () => {
     expect(user.uiLanguage).toBe('zh')
     expect(user.promptLanguage).toBe('zh')
     expect(user.matchPromptToUi).toBe(true)
+    expect(user.bilingualUiEnabled).toBeUndefined()
+    expect(user.presenterUiLocale).toBeNull()
+  })
+
+  it('maps bilingual UI prefs from /me', () => {
+    const user = normalizeAuthUser({
+      ...loginPayload,
+      bilingual_ui_enabled: true,
+      presenter_ui_locale: 'ja',
+    })
+    expect(user.bilingualUiEnabled).toBe(true)
+    expect(user.presenterUiLocale).toBe('ja')
+  })
+
+  it('coerces presenter zh to en when Simplified Chinese is not allowed', () => {
+    const user = normalizeAuthUser({
+      ...loginPayload,
+      allows_simplified_chinese: false,
+      bilingual_ui_enabled: true,
+      presenter_ui_locale: 'zh',
+    })
+    expect(user.presenterUiLocale).toBe('en')
   })
 
   it('is idempotent so login + setUser does not drop camelCase language fields', () => {

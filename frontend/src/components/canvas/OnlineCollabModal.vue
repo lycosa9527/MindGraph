@@ -9,6 +9,7 @@ import { ElPopover, ElRadioButton, ElRadioGroup, ElTag } from 'element-plus'
 
 import { Copy, Loader2, Settings, Users } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useDiagramSpecForPersist, useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
@@ -427,8 +428,11 @@ async function endCollaboration() {
   <SwissGlassDialog
     v-model="showDialog"
     :ribbon="t('canvas.hero.collab.ribbon')"
+    ribbon-key="canvas.hero.collab.ribbon"
     :title="t('canvas.hero.collab.title')"
+    title-key="canvas.hero.collab.title"
     :line1="t('canvas.hero.collab.line1')"
+    line1-key="canvas.hero.collab.line1"
     :icon="Users"
     width="min(500px, 92vw)"
     :close-on-click-modal="false"
@@ -442,19 +446,19 @@ async function endCollaboration() {
           v-if="!(workshopCode && !isNetworkMode)"
           class="section-title"
         >
-          {{ isNetworkMode ? t('collab.sectionNetwork') : t('collab.sectionSchool') }}
+          <I18nText :k="isNetworkMode ? 'collab.sectionNetwork' : 'collab.sectionSchool'" />
         </h3>
 
         <p
           v-if="isNetworkMode && workshopCode && remainingSeconds !== null && remainingSeconds >= 0"
           class="session-remaining text-sm text-gray-500 mb-3"
         >
-          {{ t('collab.sessionRemaining') }}: {{ formatRemaining() }}
+          <I18nText k="collab.sessionRemaining" />: {{ formatRemaining() }}
         </p>
 
         <div v-if="workshopCode && isNetworkMode">
           <p class="description mb-4">
-            {{ t('collab.shareDescNetwork') }}
+            <I18nText k="collab.shareDescNetwork" />
           </p>
           <div class="share-container">
             <div class="qr-code-section">
@@ -466,7 +470,7 @@ async function endCollaboration() {
                   class="qr-code-image"
                 />
               </div>
-              <p class="qr-code-hint">{{ t('collab.scanToJoin') }}</p>
+              <p class="qr-code-hint"><I18nText k="collab.scanToJoin" /></p>
             </div>
             <div class="code-section">
               <div class="code-display">
@@ -483,7 +487,7 @@ async function endCollaboration() {
                   @click="copyCode"
                 >
                   <Copy class="w-4 h-4" />
-                  {{ t('collab.copy') }}
+                  <I18nText k="collab.copy" />
                 </button>
               </div>
               <p class="code-hint text-xs break-all px-2">{{ joinLinkDisplay }}</p>
@@ -492,7 +496,7 @@ async function endCollaboration() {
                 class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost mt-1"
                 @click="copyJoinLink"
               >
-                {{ t('collab.copyLink') }}
+                <I18nText k="collab.copyLink" />
               </button>
             </div>
           </div>
@@ -502,7 +506,10 @@ async function endCollaboration() {
           >
             <Users class="w-4 h-4" />
             <span>
-              {{ t('collab.participants', { n: participantCount }) }}
+              <I18nText
+                k="collab.participants"
+                :params="{ n: participantCount }"
+              />
             </span>
           </div>
           <div class="mt-4 flex justify-end">
@@ -516,7 +523,7 @@ async function endCollaboration() {
                 v-if="isLoading"
                 class="w-4 h-4 animate-spin"
               />
-              {{ t('collab.end') }}
+              <I18nText k="collab.end" />
             </button>
           </div>
         </div>
@@ -528,7 +535,10 @@ async function endCollaboration() {
           >
             <Users class="w-4 h-4" />
             <span>
-              {{ t('collab.participants', { n: participantCount }) }}
+              <I18nText
+                k="collab.participants"
+                :params="{ n: participantCount }"
+              />
             </span>
           </div>
           <div class="mt-4 flex justify-end">
@@ -542,7 +552,7 @@ async function endCollaboration() {
                 v-if="isLoading"
                 class="w-4 h-4 animate-spin"
               />
-              {{ t('collab.end') }}
+              <I18nText k="collab.end" />
             </button>
           </div>
         </div>
@@ -552,7 +562,7 @@ async function endCollaboration() {
           class="inactive-workshop"
         >
           <div class="duration-row mb-3 flex items-center gap-2">
-            <span class="text-sm text-gray-600">{{ t('collab.sessionDuration') }}</span>
+            <span class="text-sm text-gray-600"><I18nText k="collab.sessionDuration" /></span>
             <ElPopover
               placement="bottom"
               :width="280"
@@ -578,7 +588,7 @@ async function endCollaboration() {
                     :key="opt.value"
                     :label="opt.value"
                   >
-                    {{ t(opt.labelKey) }}
+                    <I18nText :k="opt.labelKey" />
                   </ElRadioButton>
                 </ElRadioGroup>
               </div>
@@ -597,7 +607,7 @@ async function endCollaboration() {
               v-if="isLoading"
               class="w-4 h-4 animate-spin"
             />
-            {{ t('collab.start') }}
+            <I18nText k="collab.start" />
           </button>
         </div>
       </div>

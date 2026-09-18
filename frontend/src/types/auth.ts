@@ -65,6 +65,10 @@ export interface User {
   promptLanguage?: string | null
   /** Persisted prompt/UI sync: when true, assistant language follows interface */
   matchPromptToUi?: boolean
+  /** Dual-language UI chrome (buttons / tooltips / modal chrome) */
+  bilingualUiEnabled?: boolean
+  /** Presenter locale for the smaller bilingual line */
+  presenterUiLocale?: string | null
   /** Persisted UI version (chinese | international); absent until loaded from server */
   uiVersion?: string | null
   /** Persisted AI generate audience (学段); null = unset */
@@ -135,6 +139,8 @@ export interface BackendUser {
   prompt_language?: string | null
   ui_version?: string | null
   match_prompt_to_ui?: boolean
+  bilingual_ui_enabled?: boolean
+  presenter_ui_locale?: string | null
   education_stage?: string | null
   ai_content_level?: string | null
   v3_ribbon_classic?: boolean | null

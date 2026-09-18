@@ -16,6 +16,7 @@ import { Send, Settings, Sparkles } from '@lucide/vue'
 
 import { AskOncePanel } from '@/components/askonce'
 import { LoginModal } from '@/components/auth'
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { ASKONCE_PROMPT_TEMPLATES, type PromptTemplate } from '@/config/askOncePrompts'
@@ -410,8 +411,11 @@ onUnmounted(() => {
     <SwissGlassDialog
       v-model="showSystemModal"
       :ribbon="t('swissGlass.hero.askOnce.ribbon')"
+      ribbon-key="swissGlass.hero.askOnce.ribbon"
       :title="t('swissGlass.hero.askOnce.title')"
+      title-key="swissGlass.hero.askOnce.title"
       :line1="t('swissGlass.hero.askOnce.line1')"
+      line1-key="swissGlass.hero.askOnce.line1"
       :icon="Sparkles"
       width="min(600px, 92vw)"
     >
@@ -420,7 +424,7 @@ onUnmounted(() => {
           class="block text-sm text-gray-600 mb-2"
           for="ask-once-template-select"
         >
-          {{ t('askOnce.selectTemplate') }}
+          <I18nText k="askOnce.selectTemplate" />
         </label>
         <ElSelect
           id="ask-once-template-select"
@@ -442,7 +446,7 @@ onUnmounted(() => {
           class="block text-sm text-gray-600 mb-2"
           for="ask-once-system-prompt"
         >
-          {{ t('askOnce.promptContent') }}
+          <I18nText k="askOnce.promptContent" />
         </label>
         <ElInput
           id="ask-once-system-prompt"
@@ -461,14 +465,14 @@ onUnmounted(() => {
             class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
             @click="clearPromptDraft"
           >
-            {{ t('askOnce.clearDraft') }}
+            <I18nText k="askOnce.clearDraft" />
           </button>
           <button
             type="button"
             class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
             @click="saveSystemPrompt"
           >
-            {{ t('askOnce.apply') }}
+            <I18nText k="askOnce.apply" />
           </button>
         </div>
       </template>

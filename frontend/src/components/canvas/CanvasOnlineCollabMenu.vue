@@ -7,6 +7,7 @@ import { computed } from 'vue'
 import { ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
 
 import { useMindMapRibbonActions } from '@/canvas-ribbon/useMindMapRibbonActions'
+import I18nText from '@/components/common/I18nText.vue'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramStore } from '@/stores'
@@ -31,15 +32,10 @@ const { canUseOnlineCollab } = useSchoolTierFeatures()
 const diagramStore = useDiagramStore()
 const actions = useMindMapRibbonActions()
 
-const sessionLive = computed(
-  () => Boolean(props.workshopCode) || diagramStore.collabSessionActive
-)
+const sessionLive = computed(() => Boolean(props.workshopCode) || diagramStore.collabSessionActive)
 
 const showMenu = computed(
-  () =>
-    !props.isViewer &&
-    !props.isCollabGuest &&
-    (canUseOnlineCollab.value || sessionLive.value)
+  () => !props.isViewer && !props.isCollabGuest && (canUseOnlineCollab.value || sessionLive.value)
 )
 </script>
 
@@ -57,10 +53,11 @@ const showMenu = computed(
       :class="{ 'is-live': sessionLive }"
       data-testid="canvas-title-collab"
       :aria-label="t('canvas.zoomControls.collaborate')"
-      :title="t('canvas.topBar.collabTooltip')"
     >
       <CanvasCollabDrawIcon class="canvas-title-collab__icon" />
-      <span class="canvas-title-collab__label">{{ t('canvas.zoomControls.collaborate') }}</span>
+      <span class="canvas-title-collab__label">
+        <I18nText k="canvas.zoomControls.collaborate" />
+      </span>
     </button>
     <template #dropdown>
       <ElDropdownMenu>
@@ -68,20 +65,20 @@ const showMenu = computed(
           v-if="canUseOnlineCollab"
           command="organization"
         >
-          {{ t('canvas.zoomControls.collabWithinOrg') }}
+          <I18nText k="canvas.zoomControls.collabWithinOrg" />
         </ElDropdownItem>
         <ElDropdownItem
           v-if="canUseOnlineCollab"
           command="network"
         >
-          {{ t('canvas.zoomControls.collabCrossOrg') }}
+          <I18nText k="canvas.zoomControls.collabCrossOrg" />
         </ElDropdownItem>
         <ElDropdownItem
           v-if="sessionLive"
           :divided="canUseOnlineCollab"
           command="stop"
         >
-          {{ t('canvas.zoomControls.collabTurnOff') }}
+          <I18nText k="canvas.zoomControls.collabTurnOff" />
         </ElDropdownItem>
       </ElDropdownMenu>
     </template>
@@ -93,8 +90,9 @@ const showMenu = computed(
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 28px;
-  padding: 0 10px;
+  min-height: 28px;
+  height: auto;
+  padding: 3px 10px;
   border: none;
   border-radius: 8px;
   background: transparent;

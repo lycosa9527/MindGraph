@@ -8,6 +8,7 @@ import { computed, ref, watch } from 'vue'
 
 import { Eye, EyeOff, KeyRound, Loader2, RefreshCw } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useTsecCaptcha } from '@/composables/auth/useTsecCaptcha'
@@ -174,8 +175,11 @@ async function handleSubmit() {
   <SwissGlassCard
     v-model="isVisible"
     :ribbon="t('swissGlass.hero.password.ribbon')"
+    ribbon-key="swissGlass.hero.password.ribbon"
     :title="t('swissGlass.hero.password.title')"
+    title-key="swissGlass.hero.password.title"
     :line1="t('swissGlass.hero.password.line1')"
+    line1-key="swissGlass.hero.password.line1"
     :icon="KeyRound"
     @close="closeModal"
   >
@@ -307,7 +311,7 @@ async function handleSubmit() {
           class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
           for="change-password-captcha"
         >
-          {{ t('auth.captcha') }}
+          <I18nText k="auth.captcha" />
         </label>
         <div class="captcha-row">
           <input

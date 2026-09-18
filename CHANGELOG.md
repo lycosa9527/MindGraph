@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.88] - 2026-09-19
+
+> **Bilingual UI chrome: primary language for the audience, smaller second line for the presenter.**
+
+### Added
+
+- **双语界面** — Settings → 界面UI设置 can show chrome in two languages at once. Primary (regular size) is the interface language the audience sees; second language is a smaller presenter line. Autocomplete and AI output stay in the primary language only. [`I18nText`](frontend/src/components/common/I18nText.vue) / [`I18nTooltip`](frontend/src/components/common/I18nTooltip.vue) wrap buttons, labels, dialogs, and tooltips; toasts use `notify.*Key`.
+- **Persisted prefs** — `users.bilingual_ui_enabled` and `users.presenter_ui_locale` (Alembic `0119`). Login, session payload, Redis user cache, and language-preference PATCH keep them. Overseas accounts that cannot use `zh` coerce the presenter locale to `en` the same way as UI/prompt language.
+
+### Tests
+
+- [`frontend/tests/resolveBilingual.spec.ts`](frontend/tests/resolveBilingual.spec.ts), [`frontend/tests/normalizeAuthUser.spec.ts`](frontend/tests/normalizeAuthUser.spec.ts)
+- [`tests/auth/test_user_session_prefs.py`](tests/auth/test_user_session_prefs.py)
+- `npm run i18n:check-keys` — 5887 keys × 79 locales
+- `npm run i18n:check-picker-stubs -- --strict` — 32 picker locales
+
 ## [5.180.87] - 2026-09-18
 
 > **Settings picker adds four Dravidian locales; host Google i18n and Wan image studio modules.**

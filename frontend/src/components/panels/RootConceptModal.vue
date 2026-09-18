@@ -10,10 +10,12 @@
  */
 import { computed, nextTick, onMounted, watch } from 'vue'
 
-import { ElButton, ElTooltip } from 'element-plus'
+import { ElButton } from 'element-plus'
 
 import { Check, Loader2, Plus, RefreshCw, X } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { PALETTE_CONCEPT_DRAG_MIME } from '@/composables/nodePalette/constants'
 import { getNodePalette } from '@/composables/nodePalette/useNodePalette'
@@ -194,8 +196,8 @@ onMounted(async () => {
             {{ rootConceptModalHeading }}
           </h3>
           <div class="palette-header-actions flex items-center gap-0 shrink-0">
-            <ElTooltip
-              :content="t('common.refresh')"
+            <I18nTooltip
+              k="common.refresh"
               placement="bottom"
             >
               <ElButton
@@ -208,7 +210,7 @@ onMounted(async () => {
               >
                 <RefreshCw :class="['w-4 h-4', isLoading ? 'animate-spin' : '']" />
               </ElButton>
-            </ElTooltip>
+            </I18nTooltip>
             <ElButton
               text
               circle
@@ -245,8 +247,8 @@ onMounted(async () => {
               {{ tabButtonLabel(tab) }}
             </button>
           </div>
-          <ElTooltip
-            :content="t('rootConceptModal.addBranchTooltip')"
+          <I18nTooltip
+            k="rootConceptModal.addBranchTooltip"
             placement="bottom"
           >
             <button
@@ -258,7 +260,7 @@ onMounted(async () => {
             >
               <Plus class="w-4 h-4" />
             </button>
-          </ElTooltip>
+          </I18nTooltip>
         </div>
       </div>
     </div>
@@ -270,7 +272,7 @@ onMounted(async () => {
       >
         <Loader2 class="w-8 h-8 animate-spin text-blue-500" />
         <p class="text-sm text-gray-500 dark:text-gray-400">
-          {{ t('rootConceptModal.splittingLoading') }}
+          <I18nText k="rootConceptModal.splittingLoading" />
         </p>
       </div>
 
@@ -290,7 +292,10 @@ onMounted(async () => {
           class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5"
         >
           <Loader2 class="w-3.5 h-3.5 animate-spin shrink-0" />
-          {{ t('nodePalette.generatingProgress', { count: suggestions.length }) }}
+          <I18nText
+            k="nodePalette.generatingProgress"
+            :params="{ count: suggestions.length }"
+          />
         </p>
         <div class="grid grid-cols-2 gap-2">
           <div
@@ -335,7 +340,7 @@ onMounted(async () => {
           size="small"
           @click="loadNextBatch"
         >
-          {{ t('nodePalette.loadMore') }}
+          <I18nText k="nodePalette.loadMore" />
         </el-button>
       </div>
       <div
@@ -350,10 +355,10 @@ onMounted(async () => {
         class="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
       >
         <p class="text-xs text-gray-500 dark:text-gray-400">
-          {{ t('rootConceptModal.helpFooter') }}
+          <I18nText k="rootConceptModal.helpFooter" />
         </p>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-          {{ t('nodePalette.helpFinish') }}
+          <I18nText k="nodePalette.helpFinish" />
         </p>
       </div>
     </div>
@@ -365,7 +370,7 @@ onMounted(async () => {
         size="default"
         @click="handleCancel"
       >
-        {{ t('nodePalette.cancel') }}
+        <I18nText k="nodePalette.cancel" />
       </ElButton>
       <ElButton
         type="primary"
@@ -373,7 +378,7 @@ onMounted(async () => {
         :disabled="selectedIds.length === 0"
         @click="handleFinish"
       >
-        {{ t('nodePalette.finish') }}
+        <I18nText k="nodePalette.finish" />
       </ElButton>
     </div>
   </div>

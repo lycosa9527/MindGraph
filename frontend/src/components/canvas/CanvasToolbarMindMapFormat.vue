@@ -6,6 +6,8 @@ import { ElTooltip } from 'element-plus'
 
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Paintbrush } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -49,8 +51,8 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
     v-if="!hidePainter"
     class="mm-btn-group"
   >
-    <ElTooltip
-      :content="t('canvas.toolbar.formatPainter')"
+    <I18nTooltip
+      k="canvas.toolbar.formatPainter"
       placement="bottom"
     >
       <button
@@ -63,7 +65,7 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
       >
         <Paintbrush class="w-4 h-4" />
       </button>
-    </ElTooltip>
+    </I18nTooltip>
   </div>
   <span
     v-if="!hidePainter"
@@ -78,8 +80,9 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
     <span
       v-if="hidePainter && !compact"
       class="mm-style-kicker"
-      >{{ t('canvas.ribbon.textStyle') }}</span
     >
+      <I18nText k="canvas.ribbon.textStyle" />
+    </span>
     <select
       class="mm-select"
       :value="fontFamily"

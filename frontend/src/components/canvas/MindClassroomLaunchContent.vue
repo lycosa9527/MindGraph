@@ -6,8 +6,6 @@ import { computed, nextTick, watch } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
-import { ElTooltip } from 'element-plus'
-
 import {
   BookOpenCheck,
   Check,
@@ -19,6 +17,8 @@ import {
 } from '@lucide/vue'
 
 import ProfessionalContentAudienceBanner from '@/components/canvas/ProfessionalContentAudienceBanner.vue'
+import I18nText from '@/components/common/I18nText.vue'
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -115,7 +115,7 @@ const presentationIcons = {
 const masteryOptions = computed(() =>
   MIND_CLASSROOM_MASTERY_IDS.map((id) => ({
     id,
-    title: t(`canvas.mindClassroom.settings.mastery.${id}.title`),
+    titleKey: `canvas.mindClassroom.settings.mastery.${id}.title`,
     icon: masteryIcons[id],
   }))
 )
@@ -123,8 +123,8 @@ const masteryOptions = computed(() =>
 const presentationOptions = computed(() =>
   MIND_CLASSROOM_PRESENTATION_IDS.map((id) => ({
     id,
-    title: t(`canvas.mindClassroom.settings.presentation.${id}.title`),
-    desc: t(`canvas.mindClassroom.settings.presentation.${id}.desc`),
+    titleKey: `canvas.mindClassroom.settings.presentation.${id}.title`,
+    descKey: `canvas.mindClassroom.settings.presentation.${id}.desc`,
     icon: presentationIcons[id],
     gated: id === 'slide_deck' && !featureMindClassroomSlideDeck.value,
   }))
@@ -147,22 +147,22 @@ watch(
 const tourScopeOptions = computed(() =>
   MIND_CLASSROOM_TOUR_SCOPE_IDS.map((id) => ({
     id,
-    title: t(`canvas.mindClassroom.settings.tourScope.${id}.title`),
-    desc: t(`canvas.mindClassroom.settings.tourScope.${id}.desc`),
+    titleKey: `canvas.mindClassroom.settings.tourScope.${id}.title`,
+    descKey: `canvas.mindClassroom.settings.tourScope.${id}.desc`,
   }))
 )
 
 const slideStyleOptions = computed(() =>
   MIND_CLASSROOM_SLIDE_STYLE_IDS.map((id) => ({
     id,
-    title: t(`canvas.mindClassroom.settings.slideStyle.${id}.title`),
+    titleKey: `canvas.mindClassroom.settings.slideStyle.${id}.title`,
   }))
 )
 
 const toneOptions = computed(() =>
   MIND_CLASSROOM_TONE_IDS.map((id) => ({
     id,
-    title: t(`canvas.mindClassroom.settings.tone.${id}`),
+    titleKey: `canvas.mindClassroom.settings.tone.${id}`,
   }))
 )
 
@@ -249,7 +249,7 @@ function handleRestart(): void {
         <header class="mc-block__head">
           <span class="mc-block__index">1</span>
           <h3 class="mc-block__title">
-            {{ t('canvas.mindClassroom.settings.masteryTitle') }}
+            <I18nText k="canvas.mindClassroom.settings.masteryTitle" />
           </h3>
         </header>
         <div
@@ -276,7 +276,7 @@ function handleRestart(): void {
               class="mc-seg__icon"
               :stroke-width="2"
             />
-            <span>{{ option.title }}</span>
+            <span><I18nText :k="option.titleKey" /></span>
           </button>
         </div>
       </section>
@@ -286,7 +286,7 @@ function handleRestart(): void {
         <header class="mc-block__head">
           <span class="mc-block__index">2</span>
           <h3 class="mc-block__title">
-            {{ t('canvas.mindClassroom.settings.presentationTitle') }}
+            <I18nText k="canvas.mindClassroom.settings.presentationTitle" />
           </h3>
         </header>
 
@@ -295,10 +295,10 @@ function handleRestart(): void {
           role="radiogroup"
           :aria-label="t('canvas.mindClassroom.settings.presentationTitle')"
         >
-          <ElTooltip
+          <I18nTooltip
             v-for="option in presentationOptions"
             :key="option.id"
-            :content="t('canvas.mindClassroom.settings.presentation.slide_deck.comingSoon')"
+            k="canvas.mindClassroom.settings.presentation.slide_deck.comingSoon"
             placement="top"
             :disabled="!option.gated"
           >
@@ -339,11 +339,15 @@ function handleRestart(): void {
                     :stroke-width="2.5"
                   />
                 </span>
-                <span class="mc-mode__title">{{ option.title }}</span>
-                <span class="mc-mode__desc">{{ option.desc }}</span>
+                <span class="mc-mode__title">
+                  <I18nText :k="option.titleKey" />
+                </span>
+                <span class="mc-mode__desc">
+                  <I18nText :k="option.descKey" />
+                </span>
               </button>
             </span>
-          </ElTooltip>
+          </I18nTooltip>
         </div>
 
         <div
@@ -351,7 +355,7 @@ function handleRestart(): void {
           class="mc-sub"
         >
           <p class="mc-sub__label">
-            {{ t('canvas.mindClassroom.settings.tourScopeTitle') }}
+            <I18nText k="canvas.mindClassroom.settings.tourScopeTitle" />
           </p>
           <div
             class="mc-sub__row"
@@ -378,8 +382,12 @@ function handleRestart(): void {
                 )
               "
             >
-              <span class="mc-sub__btn-title">{{ option.title }}</span>
-              <span class="mc-sub__btn-desc">{{ option.desc }}</span>
+              <span class="mc-sub__btn-title">
+                <I18nText :k="option.titleKey" />
+              </span>
+              <span class="mc-sub__btn-desc">
+                <I18nText :k="option.descKey" />
+              </span>
             </button>
           </div>
         </div>
@@ -389,7 +397,7 @@ function handleRestart(): void {
           class="mc-sub"
         >
           <p class="mc-sub__label">
-            {{ t('canvas.mindClassroom.settings.slideStyleTitle') }}
+            <I18nText k="canvas.mindClassroom.settings.slideStyleTitle" />
           </p>
           <div
             class="mc-skins"
@@ -420,7 +428,9 @@ function handleRestart(): void {
                 class="mc-skin__swatch"
                 aria-hidden="true"
               />
-              <span class="mc-skin__name">{{ option.title }}</span>
+              <span class="mc-skin__name">
+                <I18nText :k="option.titleKey" />
+              </span>
             </button>
           </div>
         </div>
@@ -431,7 +441,7 @@ function handleRestart(): void {
         <header class="mc-block__head">
           <span class="mc-block__index">3</span>
           <h3 class="mc-block__title">
-            {{ t('canvas.mindClassroom.settings.toneTitle') }}
+            <I18nText k="canvas.mindClassroom.settings.toneTitle" />
           </h3>
         </header>
         <div
@@ -452,7 +462,7 @@ function handleRestart(): void {
             @click="pickTone(option.id)"
             @keydown="handleRadioGroupKeydown($event, MIND_CLASSROOM_TONE_IDS, tone, pickTone)"
           >
-            {{ option.title }}
+            <I18nText :k="option.titleKey" />
           </button>
         </div>
       </section>
@@ -463,7 +473,7 @@ function handleRestart(): void {
         v-if="!authStore.isAuthenticated"
         class="mc-launch__hint"
       >
-        {{ t('canvas.mindClassroom.queue.loginRequired') }}
+        <I18nText k="canvas.mindClassroom.queue.loginRequired" />
       </p>
       <div class="mc-launch__actions">
         <button
@@ -494,7 +504,16 @@ function handleRestart(): void {
             :stroke-width="2.25"
             aria-hidden="true"
           />
-          <span class="mc-launch__start-label">{{ startLabel }}</span>
+          <span class="mc-launch__start-label">
+            <I18nText
+              :k="startLabelKey"
+              :params="{
+                name: progressStats.branchName,
+                done: progressStats.done,
+                total: progressStats.total,
+              }"
+            />
+          </span>
         </button>
         <button
           v-if="showRestart"
@@ -504,7 +523,7 @@ function handleRestart(): void {
           :title="t('canvas.mindClassroom.queue.restartHint')"
           @click="handleRestart"
         >
-          {{ t('canvas.mindClassroom.queue.restart') }}
+          <I18nText k="canvas.mindClassroom.queue.restart" />
         </button>
       </div>
       <ProfessionalContentAudienceBanner />

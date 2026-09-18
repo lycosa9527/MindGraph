@@ -11,6 +11,7 @@ import { Loading } from '@element-plus/icons-vue'
 
 import { ClipboardCheck, Loader2, Sparkles } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { notify } from '@/composables/core/notifications'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -149,8 +150,11 @@ watch(
   <SwissGlassDialog
     v-model="dialogVisible"
     :ribbon="t('swissGlass.hero.manualEval.ribbon')"
+    ribbon-key="swissGlass.hero.manualEval.ribbon"
     :title="t('swissGlass.hero.manualEval.title')"
+    title-key="swissGlass.hero.manualEval.title"
     :line1="t('swissGlass.hero.manualEval.line1')"
+    line1-key="swissGlass.hero.manualEval.line1"
     :icon="ClipboardCheck"
     width="min(900px, 92vw)"
     :close-on-click-modal="false"
@@ -159,13 +163,16 @@ watch(
   >
     <div class="evaluation-container">
       <p class="text-sm font-medium text-stone-700 mb-3">
-        {{ t('knowledge.manualEval.dialogTitle', { method: methodLabels[method] || method }) }}
+        <I18nText
+          k="knowledge.manualEval.dialogTitle"
+          :params="{ method: methodLabels[method] || method }"
+        />
       </p>
       <!-- Form Section -->
       <div class="form-section mb-6">
         <div class="mb-4">
           <label class="block text-sm font-medium text-stone-700 mb-2">
-            {{ t('knowledge.manualEval.queryLabel') }} <span class="text-red-500">*</span>
+            <I18nText k="knowledge.manualEval.queryLabel" /> <span class="text-red-500">*</span>
           </label>
           <ElInput
             v-model="query"
@@ -179,7 +186,7 @@ watch(
 
         <div class="mb-4">
           <label class="block text-sm font-medium text-stone-700 mb-2">
-            {{ t('knowledge.manualEval.groundTruthLabel') }}
+            <I18nText k="knowledge.manualEval.groundTruthLabel" />
           </label>
           <ElInput
             v-model="answer"
@@ -191,7 +198,7 @@ watch(
 
         <div class="mb-4">
           <label class="block text-sm font-medium text-stone-700 mb-2">
-            {{ t('knowledge.manualEval.modelLabel') }}
+            <I18nText k="knowledge.manualEval.modelLabel" />
           </label>
           <ElSelect
             v-model="model"
@@ -209,18 +216,20 @@ watch(
         <div class="mb-4">
           <div class="flex items-center justify-between mb-2">
             <label class="block text-sm font-medium text-stone-700">
-              {{ t('knowledge.manualEval.selectChunksHeading') }}
+              <I18nText k="knowledge.manualEval.selectChunksHeading" />
             </label>
             <button
               type="button"
               class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost"
               @click="selectAllChunks"
             >
-              {{
-                selectedChunkIds.length === chunks.length
-                  ? t('knowledge.manualEval.deselectAll')
-                  : t('knowledge.manualEval.selectAll')
-              }}
+              <I18nText
+                :k="
+                  selectedChunkIds.length === chunks.length
+                    ? 'knowledge.manualEval.deselectAll'
+                    : 'knowledge.manualEval.selectAll'
+                "
+              />
             </button>
           </div>
           <div
@@ -235,7 +244,7 @@ watch(
             v-else-if="chunks.length === 0"
             class="text-center py-8 text-stone-500"
           >
-            {{ t('knowledge.manualEval.noChunks') }}
+            <I18nText k="knowledge.manualEval.noChunks" />
           </div>
           <div
             v-else
@@ -256,7 +265,10 @@ watch(
               />
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-medium text-stone-900 mb-1">
-                  {{ t('chunkTestResults.chunkLabel', { n: chunk.chunk_index + 1 }) }}
+                  <I18nText
+                    k="chunkTestResults.chunkLabel"
+                    :params="{ n: chunk.chunk_index + 1 }"
+                  />
                 </div>
                 <div class="text-xs text-stone-600 truncate">
                   {{ chunk.text.substring(0, 100) }}{{ chunk.text.length > 100 ? '...' : '' }}
@@ -267,7 +279,10 @@ watch(
               v-if="chunks.length > 20"
               class="text-xs text-stone-500 text-center py-2"
             >
-              {{ t('knowledge.manualEval.showingFirst20', { total: chunks.length }) }}
+              <I18nText
+                k="knowledge.manualEval.showingFirst20"
+                :params="{ total: chunks.length }"
+              />
             </div>
           </div>
         </div>
@@ -286,7 +301,7 @@ watch(
             v-else
             class="w-4 h-4"
           />
-          {{ t('knowledge.manualEval.startEvaluation') }}
+          <I18nText k="knowledge.manualEval.startEvaluation" />
         </button>
       </div>
 
@@ -297,7 +312,7 @@ watch(
       >
         <ElDivider>
           <span class="text-sm font-medium text-stone-700">
-            {{ t('knowledge.manualEval.resultsTitle') }}
+            <I18nText k="knowledge.manualEval.resultsTitle" />
           </span>
         </ElDivider>
 
@@ -311,11 +326,13 @@ watch(
             <ElCard shadow="hover">
               <template #header>
                 <div class="font-semibold text-stone-900">
-                  {{
-                    result.type === 'answer_relevance'
-                      ? t('knowledge.manualEval.result.answerRelevance')
-                      : t('knowledge.manualEval.result.chunkQuality')
-                  }}
+                  <I18nText
+                    :k="
+                      result.type === 'answer_relevance'
+                        ? 'knowledge.manualEval.result.answerRelevance'
+                        : 'knowledge.manualEval.result.chunkQuality'
+                    "
+                  />
                 </div>
               </template>
 
@@ -367,7 +384,10 @@ watch(
                   class="chunk-eval-item mb-4 pb-4 border-b border-stone-200 last:border-0"
                 >
                   <div class="font-medium text-stone-900 mb-2">
-                    {{ t('chunkTestResults.chunkLabel', { n: eval_item.chunk_index + 1 }) }}
+                    <I18nText
+                      k="chunkTestResults.chunkLabel"
+                      :params="{ n: eval_item.chunk_index + 1 }"
+                    />
                   </div>
                   <div class="grid grid-cols-3 gap-3">
                     <div

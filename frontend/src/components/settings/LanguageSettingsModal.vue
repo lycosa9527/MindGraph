@@ -9,7 +9,9 @@ import { ElCheckbox } from 'element-plus'
 
 import { Settings } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
+import BilingualUiSettingsSection from '@/components/settings/BilingualUiSettingsSection.vue'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -39,6 +41,8 @@ const draftPrompt = ref<PromptLanguage>(uiStore.promptLanguage)
 const draftMindMapCanvasMode = ref<MindMapCanvasMode>(uiStore.mindMapCanvasMode)
 const draftEBlackboardOptimize = ref(uiStore.eBlackboardOptimize)
 const draftSidebarPoemEnabled = ref(uiStore.sidebarPoemEnabled)
+const draftBilingualUiEnabled = ref(uiStore.bilingualUiEnabled)
+const draftPresenterUiLocale = ref<Language>(uiStore.presenterUiLocale)
 const matchPromptToInterface = ref(uiStore.matchPromptToUi)
 
 const allowSimplifiedChinesePicker = computed(() => uiStore.languagePolicyAllowZh)
@@ -55,13 +59,20 @@ function buildUiLanguageSelectRows(): {
 }[] {
   const allow = allowSimplifiedChinesePicker.value
   const promptOpts = getPromptLanguageOptionsForPicker(allow)
-  const enabled = getLocalesForInterfaceLanguagePicker(draftUi.value, allow)
   const orderIndex = (code: string) => {
     const i = promptOpts.findIndex((p) => p.code === code)
     return i === -1 ? 9999 : i
   }
-  enabled.sort((a, b) => orderIndex(a.code) - orderIndex(b.code) || a.code.localeCompare(b.code))
-  return enabled.map((u) => {
+  const currentCodes = new Set<string>([draftUi.value, draftPresenterUiLocale.value])
+  const byCode = new Map<string, ReturnType<typeof getLocalesForInterfaceLanguagePicker>[number]>()
+  for (const code of currentCodes) {
+    for (const row of getLocalesForInterfaceLanguagePicker(code, allow)) {
+      byCode.set(row.code, row)
+    }
+  }
+  const merged = Array.from(byCode.values())
+  merged.sort((a, b) => orderIndex(a.code) - orderIndex(b.code) || a.code.localeCompare(b.code))
+  return merged.map((u) => {
     const prompt = promptOpts.find((p) => p.code === u.code)
     if (prompt) {
       return {
@@ -126,7 +137,13 @@ watch(visible, (v) => {
     draftMindMapCanvasMode.value = uiStore.mindMapCanvasMode
     draftEBlackboardOptimize.value = uiStore.eBlackboardOptimize
     draftSidebarPoemEnabled.value = uiStore.sidebarPoemEnabled
+    draftBilingualUiEnabled.value = uiStore.bilingualUiEnabled
+    draftPresenterUiLocale.value =
+      !allowSimplifiedChinesePicker.value && uiStore.presenterUiLocale === 'zh'
+        ? 'en'
+        : uiStore.presenterUiLocale
     matchPromptToInterface.value = uiStore.matchPromptToUi
+    void ensureFontsForLanguageCode(draftPresenterUiLocale.value)
     void ensureFontsForLanguageCode(draftPrompt.value)
     void ensureFontsForLanguageCode(draftUi.value)
   }
@@ -139,6 +156,12 @@ watch(draftPrompt, (code) => {
 })
 
 watch(draftUi, (code) => {
+  if (visible.value) {
+    void ensureFontsForLanguageCode(code)
+  }
+})
+
+watch(draftPresenterUiLocale, (code) => {
   if (visible.value) {
     void ensureFontsForLanguageCode(code)
   }
@@ -163,6 +186,40 @@ watch(matchPromptToInterface, (on) => {
   }
 })
 
+function complementaryUiLocale(primary: Language): Language {
+  if (primary !== 'zh' && allowSimplifiedChinesePicker.value) {
+    return 'zh'
+  }
+  if (primary !== 'en') {
+    return 'en'
+  }
+  const other = uiLanguageOptions.value.find((option) => option.code !== primary)
+  return other?.code ?? 'en'
+}
+
+function ensureDistinctSecondaryLocale(): void {
+  if (!draftBilingualUiEnabled.value) {
+    return
+  }
+  if (draftPresenterUiLocale.value !== draftUi.value) {
+    return
+  }
+  const next = complementaryUiLocale(draftUi.value)
+  if (next !== draftUi.value) {
+    draftPresenterUiLocale.value = next
+  }
+}
+
+watch(draftBilingualUiEnabled, (on) => {
+  if (on) {
+    ensureDistinctSecondaryLocale()
+  }
+})
+
+watch([draftUi, draftPresenterUiLocale], () => {
+  ensureDistinctSecondaryLocale()
+})
+
 async function save(): Promise<void> {
   const ui = draftUi.value
   const promptForPersist: PromptLanguage = matchPromptToInterface.value
@@ -171,12 +228,16 @@ async function save(): Promise<void> {
   if (authStore.isAuthenticated) {
     const ok = await authStore.saveLanguagePreferences(ui, promptForPersist, {
       matchPromptToUi: matchPromptToInterface.value,
+      bilingualUiEnabled: draftBilingualUiEnabled.value,
+      presenterUiLocale: draftPresenterUiLocale.value,
     })
     if (!ok) {
       return
     }
   }
   uiStore.setSidebarPoemEnabled(draftSidebarPoemEnabled.value)
+  uiStore.setBilingualUiEnabled(draftBilingualUiEnabled.value)
+  uiStore.setPresenterUiLocale(draftPresenterUiLocale.value)
   uiStore.setMatchPromptToUi(matchPromptToInterface.value)
   uiStore.setLanguage(ui)
   if (!matchPromptToInterface.value) {
@@ -203,8 +264,11 @@ function onClose(): void {
   <SwissGlassDialog
     v-model="visible"
     :ribbon="t('swissGlass.hero.settings.ribbon')"
+    ribbon-key="swissGlass.hero.settings.ribbon"
     :title="t('swissGlass.hero.settings.title')"
+    title-key="swissGlass.hero.settings.title"
     :line1="t('swissGlass.hero.settings.line1')"
+    line1-key="swissGlass.hero.settings.line1"
     :icon="Settings"
     width="min(480px, 92vw)"
     dialog-class="language-settings-dialog language-settings-swiss"
@@ -212,14 +276,25 @@ function onClose(): void {
   >
     <div class="language-settings-swiss__stack">
       <ElCheckbox v-model="matchPromptToInterface">
-        {{ t('settings.language.matchPrompt') }}
+        <I18nText k="settings.language.matchPrompt" />
       </ElCheckbox>
 
-      <section>
+      <BilingualUiSettingsSection
+        v-model:enabled="draftBilingualUiEnabled"
+        v-model:primary="draftUi"
+        v-model:secondary="draftPresenterUiLocale"
+        :ui-language-options="uiLanguageOptions"
+        :option-count="interfaceLanguageOptionCount"
+      />
+
+      <section v-if="!draftBilingualUiEnabled">
         <div class="language-settings-swiss__kicker">
-          <span>{{ t('settings.language.interface') }}</span>
+          <span><I18nText k="settings.language.interface" /></span>
           <span class="language-settings-swiss__kicker-count">
-            {{ t('settings.language.supportsCount', { n: interfaceLanguageOptionCount }) }}
+            <I18nText
+              k="settings.language.supportsCount"
+              :params="{ n: interfaceLanguageOptionCount }"
+            />
           </span>
         </div>
         <el-select
@@ -252,9 +327,12 @@ function onClose(): void {
 
       <section>
         <div class="language-settings-swiss__kicker">
-          <span>{{ t('settings.language.prompt') }}</span>
+          <span><I18nText k="settings.language.prompt" /></span>
           <span class="language-settings-swiss__kicker-count">
-            {{ t('settings.language.supportsCount', { n: promptLanguageOptionCount }) }}
+            <I18nText
+              k="settings.language.supportsCount"
+              :params="{ n: promptLanguageOptionCount }"
+            />
           </span>
         </div>
         <el-select
@@ -288,7 +366,7 @@ function onClose(): void {
 
       <section v-if="featureMindmapV2Canvas">
         <div class="language-settings-swiss__kicker">
-          <span>{{ t('settings.language.mindMapCanvas') }}</span>
+          <span><I18nText k="settings.language.mindMapCanvas" /></span>
         </div>
         <!--
           Swiss equal-split segmented control (Classic / New).
@@ -310,7 +388,7 @@ function onClose(): void {
             :aria-checked="draftMindMapCanvasMode === 'legacy'"
             @click="draftMindMapCanvasMode = 'legacy'"
           >
-            {{ t('settings.language.mindMapCanvasV1') }}
+            <I18nText k="settings.language.mindMapCanvasV1" />
           </button>
           <button
             type="button"
@@ -321,15 +399,15 @@ function onClose(): void {
             :aria-checked="draftMindMapCanvasMode === 'v2'"
             @click="draftMindMapCanvasMode = 'v2'"
           >
-            {{ t('settings.language.mindMapCanvasV2') }}
+            <I18nText k="settings.language.mindMapCanvasV2" />
           </button>
         </div>
         <p class="language-settings-swiss__hint">
-          {{ t('settings.language.mindMapCanvasRefreshHint') }}
+          <I18nText k="settings.language.mindMapCanvasRefreshHint" />
         </p>
 
         <div class="language-settings-swiss__kicker language-settings-swiss__kicker--spaced">
-          <span>{{ t('settings.language.eBlackboardOptimize') }}</span>
+          <span><I18nText k="settings.language.eBlackboardOptimize" /></span>
         </div>
         <div
           class="language-settings-canvas-segmented"
@@ -344,7 +422,7 @@ function onClose(): void {
             :aria-checked="!draftEBlackboardOptimize"
             @click="draftEBlackboardOptimize = false"
           >
-            {{ t('settings.language.eBlackboardOff') }}
+            <I18nText k="settings.language.eBlackboardOff" />
           </button>
           <button
             type="button"
@@ -354,17 +432,17 @@ function onClose(): void {
             :aria-checked="draftEBlackboardOptimize"
             @click="draftEBlackboardOptimize = true"
           >
-            {{ t('settings.language.eBlackboardOn') }}
+            <I18nText k="settings.language.eBlackboardOn" />
           </button>
         </div>
         <p class="language-settings-swiss__hint">
-          {{ t('settings.language.eBlackboardHint') }}
+          <I18nText k="settings.language.eBlackboardHint" />
         </p>
       </section>
 
       <section>
         <div class="language-settings-swiss__kicker">
-          <span>{{ t('settings.language.sidebarPoem') }}</span>
+          <span><I18nText k="settings.language.sidebarPoem" /></span>
         </div>
         <div
           class="language-settings-canvas-segmented"
@@ -379,7 +457,7 @@ function onClose(): void {
             :aria-checked="!draftSidebarPoemEnabled"
             @click="draftSidebarPoemEnabled = false"
           >
-            {{ t('settings.language.sidebarPoemOff') }}
+            <I18nText k="settings.language.sidebarPoemOff" />
           </button>
           <button
             type="button"
@@ -389,11 +467,11 @@ function onClose(): void {
             :aria-checked="draftSidebarPoemEnabled"
             @click="draftSidebarPoemEnabled = true"
           >
-            {{ t('settings.language.sidebarPoemOn') }}
+            <I18nText k="settings.language.sidebarPoemOn" />
           </button>
         </div>
         <p class="language-settings-swiss__hint">
-          {{ t('settings.language.sidebarPoemHint') }}
+          <I18nText k="settings.language.sidebarPoemHint" />
         </p>
       </section>
     </div>
@@ -405,14 +483,14 @@ function onClose(): void {
           class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
           @click="onClose"
         >
-          {{ t('common.cancel') }}
+          <I18nText k="common.cancel" />
         </button>
         <button
           type="button"
           class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
           @click="save"
         >
-          {{ t('common.save') }}
+          <I18nText k="common.save" />
         </button>
       </div>
     </template>

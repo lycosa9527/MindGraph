@@ -8,6 +8,7 @@ import { storeToRefs } from 'pinia'
 
 import { ChevronLeft, ChevronRight, Pause, Play, Square, Volume2, VolumeX } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import KittyBlackCatMascot from '@/components/kitty/KittyBlackCatMascot.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { KittyAgentState } from '@/composables/kitty/useKittyAgent'
@@ -68,7 +69,7 @@ const kittyState = computed<KittyAgentState>(() => {
       </div>
       <div class="mc-lecture-overlay__meta">
         <span class="mc-lecture-overlay__badge">
-          {{ t('canvas.mindClassroom.title') }}
+          <I18nText k="canvas.mindClassroom.title" />
         </span>
         <span class="mc-lecture-overlay__counter"> {{ stepIndex + 1 }} / {{ stepCount }} </span>
       </div>
@@ -170,7 +171,7 @@ const kittyState = computed<KittyAgentState>(() => {
         @click="requestClassroomStop()"
       >
         <Square class="h-3.5 w-3.5" />
-        <span>{{ t('canvas.mindClassroom.lecture.stop') }}</span>
+        <span><I18nText k="canvas.mindClassroom.lecture.stop" /></span>
       </button>
     </div>
   </div>
@@ -246,11 +247,14 @@ const kittyState = computed<KittyAgentState>(() => {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: 10px;
   background: #ecfeff;
   color: #0e7490;
   font-size: 11px;
   font-weight: 700;
+  text-align: start;
+  white-space: normal;
+  line-height: 1.2;
 }
 
 .mc-lecture-overlay__counter {
@@ -309,8 +313,9 @@ const kittyState = computed<KittyAgentState>(() => {
   justify-content: center;
   gap: 6px;
   min-width: 36px;
-  height: 36px;
-  padding: 0 10px;
+  min-height: 36px;
+  height: auto;
+  padding: 4px 10px;
   border: none;
   border-radius: 999px;
   color: #475569;

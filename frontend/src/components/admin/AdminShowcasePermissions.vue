@@ -7,6 +7,7 @@ import { ElTable } from 'element-plus'
 
 import { Settings2 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import {
@@ -317,8 +318,11 @@ onMounted(() => {
     <SwissGlassDialog
       v-model="dialogVisible"
       :ribbon="t('swissGlass.hero.adminInline.ribbon')"
+      ribbon-key="swissGlass.hero.adminInline.ribbon"
       :title="t('swissGlass.hero.adminInline.title')"
+      title-key="swissGlass.hero.adminInline.title"
       :line1="t('swissGlass.hero.adminInline.line1')"
+      line1-key="swissGlass.hero.adminInline.line1"
       :line2="
         editingGrant
           ? t('admin.showcase.permissions.editTitle')
@@ -329,9 +333,9 @@ onMounted(() => {
     >
       <div class="space-y-4">
         <div v-if="!editingGrant">
-          <label class="mb-1 block text-sm text-gray-700">{{
-            t('admin.showcase.permissions.searchUser')
-          }}</label>
+          <label class="mb-1 block text-sm text-gray-700"
+            ><I18nText k="admin.showcase.permissions.searchUser"
+          /></label>
           <input
             v-model="searchQuery"
             type="search"
@@ -346,7 +350,7 @@ onMounted(() => {
             "
             class="mt-2 text-xs text-gray-400"
           >
-            {{ t('admin.showcase.permissions.noSearchResults') }}
+            <I18nText k="admin.showcase.permissions.noSearchResults" />
           </p>
           <ul
             v-if="searchResults.length > 0"
@@ -372,9 +376,9 @@ onMounted(() => {
         </div>
 
         <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700">{{
-            t('admin.showcase.permissions.selectPerms')
-          }}</label>
+          <label class="mb-2 block text-sm font-medium text-gray-700"
+            ><I18nText k="admin.showcase.permissions.selectPerms"
+          /></label>
           <div class="space-y-2">
             <label
               v-for="opt in permissionOptions"
@@ -392,9 +396,9 @@ onMounted(() => {
         </div>
 
         <div>
-          <label class="mb-1 block text-sm text-gray-700">{{
-            t('admin.showcase.permissions.note')
-          }}</label>
+          <label class="mb-1 block text-sm text-gray-700"
+            ><I18nText k="admin.showcase.permissions.note"
+          /></label>
           <textarea
             v-model="grantNote"
             rows="2"
@@ -411,7 +415,7 @@ onMounted(() => {
             class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
             @click="dialogVisible = false"
           >
-            {{ t('admin.cancel') }}
+            <I18nText k="admin.cancel" />
           </button>
           <button
             type="button"
@@ -419,7 +423,7 @@ onMounted(() => {
             :disabled="isSaving"
             @click="saveGrant"
           >
-            {{ t('admin.save') }}
+            <I18nText k="admin.save" />
           </button>
         </div>
       </template>

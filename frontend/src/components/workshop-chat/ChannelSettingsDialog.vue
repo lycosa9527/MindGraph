@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 
 import { Hash, Loader2 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
@@ -109,8 +110,11 @@ async function savePermissions(): Promise<void> {
   <SwissGlassDialog
     v-model="open"
     :ribbon="t('swissGlass.hero.channelSettings.ribbon')"
+    ribbon-key="swissGlass.hero.channelSettings.ribbon"
     :title="t('swissGlass.hero.channelSettings.title')"
+    title-key="swissGlass.hero.channelSettings.title"
     :line1="t('swissGlass.hero.channelSettings.line1')"
+    line1-key="swissGlass.hero.channelSettings.line1"
     :icon="Hash"
     width="min(420px, 92vw)"
   >
@@ -125,11 +129,9 @@ async function savePermissions(): Promise<void> {
           v-if="channel.channel_type !== 'public'"
           class="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-500"
         >
-          {{
-            t(
-              `workshop.channelType${channel.channel_type.charAt(0).toUpperCase() + channel.channel_type.slice(1)}`
-            )
-          }}
+          <I18nText
+            :k="`workshop.channelType${channel.channel_type.charAt(0).toUpperCase() + channel.channel_type.slice(1)}`"
+          />
         </span>
       </div>
 
@@ -139,11 +141,11 @@ async function savePermissions(): Promise<void> {
         class="border-t border-stone-100 pt-3"
       >
         <h4 class="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">
-          {{ t('workshop.preferences') }}
+          <I18nText k="workshop.preferences" />
         </h4>
 
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs text-stone-600">{{ t('workshop.channelColor') }}</span>
+          <span class="text-xs text-stone-600"><I18nText k="workshop.channelColor" /></span>
           <el-color-picker
             v-model="localColor"
             size="small"
@@ -152,7 +154,7 @@ async function savePermissions(): Promise<void> {
         </div>
 
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs text-stone-600">{{ t('workshop.desktopNotifications') }}</span>
+          <span class="text-xs text-stone-600"><I18nText k="workshop.desktopNotifications" /></span>
           <el-switch
             v-model="localDesktopNotif"
             size="small"
@@ -161,7 +163,7 @@ async function savePermissions(): Promise<void> {
         </div>
 
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs text-stone-600">{{ t('workshop.emailNotifications') }}</span>
+          <span class="text-xs text-stone-600"><I18nText k="workshop.emailNotifications" /></span>
           <el-switch
             v-model="localEmailNotif"
             size="small"
@@ -176,14 +178,16 @@ async function savePermissions(): Promise<void> {
         class="border-t border-stone-100 pt-3"
       >
         <h4 class="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">
-          {{ t('workshop.permissions') }}
+          <I18nText k="workshop.permissions" />
         </h4>
 
         <div
           v-if="!isAnnounce"
           class="mb-3"
         >
-          <label class="text-xs text-stone-600 mb-1 block">{{ t('workshop.channelType') }}</label>
+          <label class="text-xs text-stone-600 mb-1 block"
+            ><I18nText k="workshop.channelType"
+          /></label>
           <el-select
             v-model="localChannelType"
             size="small"
@@ -199,7 +203,9 @@ async function savePermissions(): Promise<void> {
         </div>
 
         <div class="mb-3">
-          <label class="text-xs text-stone-600 mb-1 block">{{ t('workshop.postingPolicy') }}</label>
+          <label class="text-xs text-stone-600 mb-1 block"
+            ><I18nText k="workshop.postingPolicy"
+          /></label>
           <el-select
             v-model="localPostingPolicy"
             size="small"
@@ -215,7 +221,7 @@ async function savePermissions(): Promise<void> {
         </div>
 
         <div class="flex items-center justify-between mb-3">
-          <span class="text-xs text-stone-600">{{ t('workshop.defaultChannel') }}</span>
+          <span class="text-xs text-stone-600"><I18nText k="workshop.defaultChannel" /></span>
           <el-switch
             v-model="localIsDefault"
             size="small"
@@ -232,7 +238,7 @@ async function savePermissions(): Promise<void> {
             v-if="saving"
             class="w-3.5 h-3.5 animate-spin"
           />
-          {{ t('workshop.create') }}
+          <I18nText k="workshop.create" />
         </button>
       </div>
     </div>

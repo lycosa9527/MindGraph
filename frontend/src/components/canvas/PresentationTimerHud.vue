@@ -4,6 +4,7 @@
  */
 import { Pause, Play, RotateCcw, X } from '@lucide/vue'
 
+import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables'
 import { PRESENTATION_Z } from '@/config/uiConfig'
 
@@ -39,23 +40,29 @@ const hudStyle = {
 <template>
   <div
     class="presentation-timer-hud pointer-events-auto fixed bottom-4 right-4 flex items-center gap-2 rounded-2xl border border-gray-200/80 bg-white/92 px-3 py-2 shadow-xl backdrop-blur-md dark:border-gray-600/80 dark:bg-gray-900/88 sm:bottom-6 sm:right-6"
-      :style="hudStyle"
-      role="status"
-      :aria-label="t('canvas.presentationTimer.title')"
+    :style="hudStyle"
+    role="status"
+    :aria-label="t('canvas.presentationTimer.title')"
+  >
+    <span
+      class="min-w-[4.5rem] font-mono text-xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-gray-100"
+      :class="{ 'text-red-600 dark:text-red-400': remainingSeconds <= 60 && remainingSeconds > 0 }"
     >
-      <span
-        class="min-w-[4.5rem] font-mono text-xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-gray-100"
-        :class="{ 'text-red-600 dark:text-red-400': remainingSeconds <= 60 && remainingSeconds > 0 }"
-      >
-        {{ formatDisplay(remainingSeconds) }}
-      </span>
+      {{ formatDisplay(remainingSeconds) }}
+    </span>
 
-      <div class="mx-0.5 h-5 w-px bg-gray-200 dark:bg-gray-600" />
+    <div class="mx-0.5 h-5 w-px bg-gray-200 dark:bg-gray-600" />
 
+    <I18nTooltip
+      :k="running ? 'canvas.presentationTimer.pause' : 'canvas.presentationTimer.start'"
+      placement="top"
+    >
       <button
         type="button"
         class="timer-hud-btn"
-        :aria-label="running ? t('canvas.presentationTimer.pause') : t('canvas.presentationTimer.start')"
+        :aria-label="
+          running ? t('canvas.presentationTimer.pause') : t('canvas.presentationTimer.start')
+        "
         @click="emit('toggleRun')"
       >
         <Pause
@@ -67,7 +74,12 @@ const hudStyle = {
           class="h-4 w-4"
         />
       </button>
+    </I18nTooltip>
 
+    <I18nTooltip
+      k="canvas.presentationTimer.reset"
+      placement="top"
+    >
       <button
         type="button"
         class="timer-hud-btn"
@@ -76,7 +88,12 @@ const hudStyle = {
       >
         <RotateCcw class="h-4 w-4" />
       </button>
+    </I18nTooltip>
 
+    <I18nTooltip
+      k="canvas.presentationTimer.closeHud"
+      placement="top"
+    >
       <button
         type="button"
         class="timer-hud-btn timer-hud-btn--close"
@@ -85,6 +102,7 @@ const hudStyle = {
       >
         <X class="h-4 w-4" />
       </button>
+    </I18nTooltip>
   </div>
 </template>
 

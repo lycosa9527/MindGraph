@@ -279,6 +279,8 @@ export default {
   'auth.setPasswordWithSmsHint': 'Wij sturen een code naar uw gebonden telefoon. Nadat u een wachtwoord heeft ingesteld, kunt u inloggen met een wachtwoord of een verificatiecode.',
   'auth.setPasswordWithSmsSubmit': 'Wachtwoord opslaan',
   'auth.setPasswordWithSmsSubmitting': 'Besparing…',
+  'auth.accountAvatar': 'Avatar',
+  'auth.notSet': 'Not set',
   'auth.accountDisplayName': 'Weergavenaam',
   'auth.accountNamePlaceholder': 'Minimaal 2 tekens, geen cijfers',
   'auth.accountNameSave': 'Naam opslaan',

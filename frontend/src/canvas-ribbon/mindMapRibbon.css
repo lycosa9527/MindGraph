@@ -13,11 +13,10 @@
   justify-content: center;
   box-sizing: border-box;
   gap: 4px;
-  height: 28px;
   min-height: 28px;
-  max-height: 28px;
+  height: auto;
   min-width: 28px;
-  padding: 0 8px;
+  padding: 3px 8px;
   border: none;
   border-radius: 6px;
   background: transparent;

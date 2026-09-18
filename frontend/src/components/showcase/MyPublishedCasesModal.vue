@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 
 import { Eye, FileText, Heart, PenLine, Trash2, Undo2 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import {
   type ShowcaseCaseType,
@@ -180,8 +181,11 @@ function resubmitPost(post: ShowcasePost) {
   <SwissGlassCard
     v-model="open"
     :ribbon="t('swissGlass.hero.myPublished.ribbon')"
+    ribbon-key="swissGlass.hero.myPublished.ribbon"
     :title="t('swissGlass.hero.myPublished.title')"
+    title-key="swissGlass.hero.myPublished.title"
     :line1="t('swissGlass.hero.myPublished.line1')"
+    line1-key="swissGlass.hero.myPublished.line1"
     :icon="FileText"
     card-class="swiss-glass-card--xl"
     @close="close"
@@ -198,8 +202,8 @@ function resubmitPost(post: ShowcasePost) {
         class="py-12 text-center"
       >
         <FileText class="mx-auto mb-3 h-12 w-12 text-gray-300" />
-        <p class="text-sm text-gray-400">{{ t('showcase.myCasesEmpty') }}</p>
-        <p class="mt-1 text-xs text-gray-300">{{ t('showcase.myCasesEmptyHint') }}</p>
+        <p class="text-sm text-gray-400"><I18nText k="showcase.myCasesEmpty" /></p>
+        <p class="mt-1 text-xs text-gray-300"><I18nText k="showcase.myCasesEmptyHint" /></p>
       </div>
       <div
         v-else
@@ -270,7 +274,7 @@ function resubmitPost(post: ShowcasePost) {
               @click="resubmitPost(post)"
             >
               <PenLine class="h-3.5 w-3.5" />
-              {{ t('showcase.myCasesAction.edit') }}
+              <I18nText k="showcase.myCasesAction.edit" />
             </button>
             <button
               v-if="postCanWithdraw(post)"
@@ -280,7 +284,7 @@ function resubmitPost(post: ShowcasePost) {
               @click="withdrawPost(post)"
             >
               <Undo2 class="h-3.5 w-3.5" />
-              {{ t('showcase.detail.withdraw') }}
+              <I18nText k="showcase.detail.withdraw" />
             </button>
             <button
               v-if="postCanDelist(post)"
@@ -290,7 +294,7 @@ function resubmitPost(post: ShowcasePost) {
               @click="delistPost(post)"
             >
               <Trash2 class="h-3.5 w-3.5" />
-              {{ t('showcase.detail.delist') }}
+              <I18nText k="showcase.detail.delist" />
             </button>
           </div>
         </div>

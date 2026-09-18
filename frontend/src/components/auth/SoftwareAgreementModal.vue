@@ -35,8 +35,11 @@ const agreement = computed(() => softwareAgreementForUiCode(currentLanguage.valu
   <SwissGlassDialog
     v-model="isVisible"
     :ribbon="t('swissGlass.hero.agreement.ribbon')"
+    ribbon-key="swissGlass.hero.agreement.ribbon"
     :title="t('swissGlass.hero.agreement.title')"
+    title-key="swissGlass.hero.agreement.title"
     :line1="t('swissGlass.hero.agreement.line1')"
+    line1-key="swissGlass.hero.agreement.line1"
     :line2="t('auth.softwareAgreementUpdated', { date: agreement.updated })"
     :icon="FileText"
     width="min(640px, 94vw)"

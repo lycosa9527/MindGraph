@@ -13,6 +13,7 @@ import { Copy, Mic, Pause, Square } from '@lucide/vue'
 import AiBusyGenerateButton from '@/components/canvas/AiBusyGenerateButton.vue'
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import '@/components/canvas/aiGenerateGlass.css'
+import I18nText from '@/components/common/I18nText.vue'
 import VoiceNotesSpeakerEditor from '@/components/voiceNotes/VoiceNotesSpeakerEditor.vue'
 import VoiceNotesTranscriptPane from '@/components/voiceNotes/VoiceNotesTranscriptPane.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -132,7 +133,7 @@ async function onCopy(): Promise<void> {
 
     <div class="vn-swiss__stack">
       <div class="vn-swiss__kicker">
-        <span class="vn-swiss__kicker-label">{{ t('auth.voiceNotes.viewTranscript') }}</span>
+        <span class="vn-swiss__kicker-label"><I18nText k="auth.voiceNotes.viewTranscript" /></span>
         <VoiceNotesSpeakerEditor variant="pill" />
       </div>
 
@@ -155,7 +156,7 @@ async function onCopy(): Promise<void> {
               :size="14"
               :stroke-width="2"
             />
-            {{ t('auth.voiceNotes.start') }}
+            <I18nText k="auth.voiceNotes.start" />
           </button>
           <button
             v-if="actions.canPause"
@@ -168,7 +169,7 @@ async function onCopy(): Promise<void> {
               :size="14"
               :stroke-width="2"
             />
-            {{ t('auth.voiceNotes.pause') }}
+            <I18nText k="auth.voiceNotes.pause" />
           </button>
           <button
             v-if="actions.canResume"
@@ -181,7 +182,7 @@ async function onCopy(): Promise<void> {
               :size="14"
               :stroke-width="2"
             />
-            {{ t('auth.voiceNotes.resume') }}
+            <I18nText k="auth.voiceNotes.resume" />
           </button>
           <button
             v-if="actions.canStop"
@@ -194,7 +195,7 @@ async function onCopy(): Promise<void> {
               :size="12"
               :stroke-width="2.5"
             />
-            {{ t('auth.voiceNotes.stop') }}
+            <I18nText k="auth.voiceNotes.stop" />
           </button>
           <button
             type="button"
@@ -207,7 +208,7 @@ async function onCopy(): Promise<void> {
               :size="14"
               :stroke-width="2"
             />
-            {{ t('auth.voiceNotes.copy') }}
+            <I18nText k="auth.voiceNotes.copy" />
           </button>
         </div>
 
