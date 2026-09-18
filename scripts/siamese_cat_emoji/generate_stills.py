@@ -19,7 +19,6 @@ import shutil
 from pathlib import Path
 
 from scripts.cat_emoji.paths import BLACK_STILL_FRONT, BLACK_STILL_THREE_QUARTER
-from scripts.cat_office_battles.wan_image import download_image, poll_storyboard, submit_icon
 from scripts.siamese_cat_emoji.catalog import NEGATIVE, SHELL, STILL_SHOTS, StillShot, shot_by_id
 from scripts.siamese_cat_emoji.paths import (
     EXPORT_DIR,
@@ -29,6 +28,7 @@ from scripts.siamese_cat_emoji.paths import (
     export_still_path,
     repo_still_path,
 )
+from services.t2i.wan_image_studio import download_image, poll_storyboard, submit_icon
 
 
 def _select_shots(raw_ids: str | None) -> list[StillShot]:

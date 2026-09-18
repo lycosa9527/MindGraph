@@ -90,6 +90,11 @@ export async function loadElementPlusLocale(code: string): Promise<Language> {
       return (await import('element-plus/es/locale/lang/bn')).default
     case 'ta':
       return (await import('element-plus/es/locale/lang/ta')).default
+    case 'te':
+      return (await import('element-plus/es/locale/lang/te')).default
+    case 'kn':
+    case 'ml':
+      return enLocale
     case 'ca':
       return (await import('element-plus/es/locale/lang/ca')).default
     case 'bg':

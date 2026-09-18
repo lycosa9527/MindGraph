@@ -36,6 +36,7 @@ const NS_FILES = [
   'thinkingCoins.ts',
   'workshop.ts',
   'training.ts',
+  'zhihui.ts',
 ] as const
 
 function patchNamespaceHeader(content: string, code: string): string {

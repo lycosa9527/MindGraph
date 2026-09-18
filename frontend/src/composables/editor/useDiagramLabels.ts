@@ -154,6 +154,8 @@ const NEW_DIAGRAM_FALLBACK: Record<LocaleCode, string> = {
   bn: NEW_EN,
   bs: NEW_EN,
   ta: NEW_EN,
+  te: NEW_EN,
+  kn: NEW_EN,
   ca: NEW_EN,
   bg: NEW_EN,
   hr: NEW_EN,

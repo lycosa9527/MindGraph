@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.87] - 2026-09-18
+
+> **Settings picker adds four Dravidian locales; host Google i18n and Wan image studio modules.**
+
+### Added
+
+- **界面语言 Dravidian** — Settings dropdown adds Tamil (`ta`), Telugu (`te`), Kannada (`kn`), and Malayalam (`ml`). Copy is filled from `zh` on the Windows host. Telugu / Kannada / Malayalam use their pack keyboards; Tamil stays English (no Tamil layout).
+- **Host i18n module** — Google gap-fill lives in [`frontend/i18n-google/`](frontend/i18n-google/) (Windows VPN). Wan 2.7 image studio lives in [`services/t2i/wan_image_studio.py`](services/t2i/wan_image_studio.py).
+
+### Tests
+
+- [`frontend/tests/i18nGoogleGapFill.spec.ts`](frontend/tests/i18nGoogleGapFill.spec.ts), [`frontend/tests/interfaceLanguagePicker.spec.ts`](frontend/tests/interfaceLanguagePicker.spec.ts), [`tests/test_wan_image_studio.py`](tests/test_wan_image_studio.py)
+- `npm run i18n:check-keys` — 5872 keys × 79 locales
+- `npm run i18n:check-picker-stubs -- --strict` — 32 picker locales
+
 ## [5.180.86] - 2026-09-18
 
 > **Classroom IFP gesture guide; multi-flow event pills grow with the title; Kitty mic hold and CosyVoice close.**

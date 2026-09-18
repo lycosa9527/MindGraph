@@ -34,6 +34,7 @@ import ja from '../src/locales/messages/ja.ts'
 import ka from '../src/locales/messages/ka.ts'
 import kk from '../src/locales/messages/kk.ts'
 import km from '../src/locales/messages/km.ts'
+import kn from '../src/locales/messages/kn.ts'
 import ko from '../src/locales/messages/ko.ts'
 import ky from '../src/locales/messages/ky.ts'
 import lo from '../src/locales/messages/lo.ts'
@@ -63,6 +64,7 @@ import st from '../src/locales/messages/st.ts'
 import sv from '../src/locales/messages/sv.ts'
 import sw from '../src/locales/messages/sw.ts'
 import ta from '../src/locales/messages/ta.ts'
+import te from '../src/locales/messages/te.ts'
 import tg from '../src/locales/messages/tg.ts'
 import th from '../src/locales/messages/th.ts'
 import tk from '../src/locales/messages/tk.ts'
@@ -133,6 +135,7 @@ const NON_ZH_BUNDLES: { label: string; mod: Record<string, string> }[] = [
   { label: 'bn', mod: bn as Record<string, string> },
   { label: 'bs', mod: bs as Record<string, string> },
   { label: 'ta', mod: ta as Record<string, string> },
+  { label: 'te', mod: te as Record<string, string> },
   { label: 'ca', mod: ca as Record<string, string> },
   { label: 'bg', mod: bg as Record<string, string> },
   { label: 'hr', mod: hr as Record<string, string> },
@@ -142,6 +145,7 @@ const NON_ZH_BUNDLES: { label: string; mod: Record<string, string> }[] = [
   { label: 'ka', mod: ka as Record<string, string> },
   { label: 'km', mod: km as Record<string, string> },
   { label: 'kk', mod: kk as Record<string, string> },
+  { label: 'kn', mod: kn as Record<string, string> },
   { label: 'ky', mod: ky as Record<string, string> },
   { label: 'lo', mod: lo as Record<string, string> },
   { label: 'lt', mod: lt as Record<string, string> },

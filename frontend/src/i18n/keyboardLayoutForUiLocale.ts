@@ -25,6 +25,10 @@
  * | it | italian | |
  * | hi | hindi | Devanagari |
  * | si | english | No Sinhala layout in pack |
+ * | ta | english | No Tamil layout in pack |
+ * | te | telugu | |
+ * | kn | kannada | |
+ * | ml | malayalam | |
  * | id | english | Latin / QWERTY |
  * | tl | english | Latin / QWERTY |
  * | vi | english | No Telex/VNI in pack |
@@ -132,6 +136,10 @@ export const PICKER_VIRTUAL_KEYBOARD_PRESET_BY_UI_LOCALE = {
   it: 'italian',
   hi: 'hindi',
   si: 'english',
+  ta: 'english',
+  te: 'telugu',
+  kn: 'kannada',
+  ml: 'malayalam',
   id: 'english',
   tl: 'english',
   vi: 'english',
@@ -178,7 +186,6 @@ const EXTENDED_UI_LOCALE_TO_PRESET: Partial<Record<LocaleCode, LayoutPresetName>
   kk: 'russian',
   ky: 'russian',
   mk: 'macedonian',
-  ml: 'malayalam',
   mn: 'russian',
   my: 'burmese',
   ne: 'hindi',

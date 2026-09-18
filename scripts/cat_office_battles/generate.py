@@ -43,9 +43,9 @@ from scripts.cat_office_battles.paths import (
     WORK_DIR,
     zone_dir,
 )
-from scripts.cat_office_battles.wan_image import download_image, poll_storyboard, submit_storyboard
 from scripts.training_roles.env import dashscope_api_key
 from scripts.training_roles.wan_client import download_mp4, poll_video_url, submit_i2v
+from services.t2i.wan_image_studio import download_image, poll_storyboard, submit_storyboard
 
 
 def _select_zones(raw_ids: str | None) -> list[BattleZone]:

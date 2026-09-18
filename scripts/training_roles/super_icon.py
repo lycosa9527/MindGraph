@@ -7,8 +7,8 @@ from pathlib import Path
 from PIL import Image, ImageChops
 from requests.exceptions import RequestException
 
-from scripts.cat_office_battles.wan_image import download_image, poll_storyboard, submit_icon
 from scripts.training_roles.paths import WORK_DIR
+from services.t2i.wan_image_studio import download_image, poll_storyboard, submit_icon
 
 ICON_PX = 92
 DIFF_THRESHOLD = 36

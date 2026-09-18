@@ -1,7 +1,7 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.180.86",
+  "version": "5.180.87",
   "type": "module",
   "engines": {
     "node": ">=26.0.0"
@@ -32,7 +32,7 @@
     "i18n:materialize-from-en": "node scripts/materialize-locale-bundles-from-en.ts",
     "i18n:build-zhtw": "node scripts/build-zhtw-from-zh.ts",
     "i18n:translate-from-en": "node scripts/translate-ui-locales-from-en.ts",
-    "i18n:gap-fill": "node scripts/gap-fill-ui-locales-from-zh.ts",
+    "i18n:gap-fill": "node i18n-google/cli.ts",
     "i18n:check-prompts": "cd .. && python scripts/check_prompt_output_languages_sync.py",
     "i18n:check": "npm run i18n:check-banners && npm run i18n:check-keys && npm run i18n:check-lazy-loaders && npm run i18n:check-prompts",
     "i18n:verify-keyboard": "node scripts/verify-keyboard-layout-map.ts",

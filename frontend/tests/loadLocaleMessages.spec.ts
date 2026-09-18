@@ -17,7 +17,11 @@ import esMessages from '@/locales/messages/es'
 import jaMessages from '@/locales/messages/ja'
 import ptMessages from '@/locales/messages/pt'
 import ruMessages from '@/locales/messages/ru'
+import knMessages from '@/locales/messages/kn'
+import mlMessages from '@/locales/messages/ml'
 import siMessages from '@/locales/messages/si'
+import taMessages from '@/locales/messages/ta'
+import teMessages from '@/locales/messages/te'
 
 describe('loadLocaleMessages', () => {
   beforeEach(async () => {
@@ -70,6 +74,11 @@ describe('loadLocaleMessages', () => {
     ]
     expect(siMessages['app.guestMainLoginPrompt']).toMatch(/[\u0D80-\u0DFF]/)
     expect(siMessages['app.guestMainLoginPrompt']).not.toBe(enLogin)
+    expect(taMessages['app.guestMainLoginPrompt']).toMatch(/[\u0B80-\u0BFF]/)
+    expect(taMessages['app.guestMainLoginPrompt']).not.toBe(enLogin)
+    expect(teMessages['app.guestMainLoginPrompt']).toMatch(/[\u0C00-\u0C7F]/)
+    expect(knMessages['app.guestMainLoginPrompt']).toMatch(/[\u0C80-\u0CFF]/)
+    expect(mlMessages['app.guestMainLoginPrompt']).toMatch(/[\u0D00-\u0D7F]/)
     expect(jaMessages['app.guestMainLoginPrompt']).toMatch(/[\u3040-\u30ff\u4e00-\u9fff]/)
     expect(deMessages['app.guestMainLoginPrompt']).toMatch(/Melden Sie sich/)
     expect(esMessages['app.guestMainLoginPrompt']).toMatch(/Inicie sesión/)
