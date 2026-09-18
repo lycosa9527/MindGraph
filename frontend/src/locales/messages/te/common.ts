@@ -166,7 +166,7 @@ export default {
   'kitty.voiceCommand.auto_complete_branch': 'పూర్తి చేసే శాఖ: {detail}',
   'kitty.voiceCommand.set_content_level': 'వృత్తిపరమైన కంటెంట్: {detail}',
   'kitty.voiceCommand.set_branch_numbering': 'సంఖ్య: {detail}',
-  'kitty.voiceCommand.start_inline_recommendations': 'Lenovo ద్వారా సిఫార్సు చేయబడింది',
+  'kitty.voiceCommand.start_inline_recommendations': 'ఇన్‌లైన్ సిఫార్సులు',
   'kitty.voiceCommand.add_node_with_recommendations': 'నోడ్‌ని జోడించి, సిఫార్సు చేయండి: {detail}',
   'kitty.voiceCommand.explain_node': 'నోడ్ వివరణ: {detail}',
   'mobile.mindgraphDesc': 'ఆలోచన రేఖాచిత్రం ఏజెంట్',

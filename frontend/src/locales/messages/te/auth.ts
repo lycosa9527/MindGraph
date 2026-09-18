@@ -339,7 +339,7 @@ export default {
   'auth.bindingMindbot': 'MindBot',
   'auth.bindingUnlinked': 'కట్టుబడి లేదు',
   'auth.bindMindbot': 'బైండింగ్ మైండ్‌బాట్',
-  'auth.unbindMindbot': 'మైండ్‌బాట్ అన్‌బైండింగ్',
+  'auth.unbindMindbot': 'MindBot అన్‌లింక్',
   'auth.bindWechat': 'WeChatని బంధించండి',
   'auth.unbindWechat': 'WeChatని అన్‌బైండ్ చేయండి',
   'auth.bindDingtalkOAuth': 'బైండింగ్ డింగ్‌టాక్',

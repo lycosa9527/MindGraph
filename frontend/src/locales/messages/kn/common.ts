@@ -166,7 +166,7 @@ export default {
   'kitty.voiceCommand.auto_complete_branch': 'ಪೂರ್ಣಗೊಳಿಸುವಿಕೆ ಶಾಖೆ: {detail}',
   'kitty.voiceCommand.set_content_level': 'ವೃತ್ತಿಪರ ವಿಷಯ: {detail}',
   'kitty.voiceCommand.set_branch_numbering': 'ಸಂಖ್ಯೆ: {detail}',
-  'kitty.voiceCommand.start_inline_recommendations': 'Lenovo ನಿಂದ ಶಿಫಾರಸು ಮಾಡಲಾಗಿದೆ',
+  'kitty.voiceCommand.start_inline_recommendations': 'ಇನ್‌ಲೈನ್ ಶಿಫಾರಸುಗಳು',
   'kitty.voiceCommand.add_node_with_recommendations': 'ನೋಡ್ ಸೇರಿಸಿ ಮತ್ತು ಶಿಫಾರಸು ಮಾಡಿ: {detail}',
   'kitty.voiceCommand.explain_node': 'ನೋಡ್ ವಿವರಣೆ: {detail}',
   'mobile.mindgraphDesc': 'ಥಾಟ್ ರೇಖಾಚಿತ್ರ ಏಜೆಂಟ್',

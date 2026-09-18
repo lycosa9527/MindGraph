@@ -88,6 +88,16 @@ describe('loadLocaleMessages', () => {
     expect(ruMessages['app.guestMainLoginPrompt']).toMatch(/[\u0400-\u04FF]/)
   })
 
+  it('does not keep Google 联想→Lenovo or eaten {n} slots in Dravidian picker locales', () => {
+    const lenovo = /Lenovo|ലെനോവോ|లెనోవో|లెనోవా|ಲೆನೊವೊ|லெனோவா/i
+    for (const bundle of [taMessages, teMessages, knMessages, mlMessages]) {
+      expect(bundle['diagram.defaults.contextN']).not.toMatch(lenovo)
+      expect(bundle['canvas.toolbar.newAssociation']).not.toMatch(lenovo)
+      expect(bundle['diagram.defaults.contextN']).toContain('{n}')
+      expect(bundle['diagram.defaults.bridgeItemAN']).toContain('{n}')
+    }
+  })
+
   it('loads dedicated fr bundle separately from English', async () => {
     await loadLocaleMessages('fr')
     const enBundle = i18n.global.getLocaleMessage('en') as Record<string, string>

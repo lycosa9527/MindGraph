@@ -166,7 +166,7 @@ export default {
   'kitty.voiceCommand.auto_complete_branch': 'പൂർത്തീകരണ ശാഖ: {detail}',
   'kitty.voiceCommand.set_content_level': 'പ്രൊഫഷണൽ ഉള്ളടക്കം: {detail}',
   'kitty.voiceCommand.set_branch_numbering': 'നമ്പർ: {detail}',
-  'kitty.voiceCommand.start_inline_recommendations': 'Lenovo ശുപാർശ ചെയ്യുന്നത്',
+  'kitty.voiceCommand.start_inline_recommendations': 'ഇൻലൈൻ ശുപാർശകൾ',
   'kitty.voiceCommand.add_node_with_recommendations': 'നോഡ് ചേർത്ത് ശുപാർശ ചെയ്യുക: {detail}',
   'kitty.voiceCommand.explain_node': 'നോഡ് വിശദീകരണം: {detail}',
   'mobile.mindgraphDesc': 'ചിന്താ ഡയഗ്രമിംഗ് ഏജൻ്റ്',

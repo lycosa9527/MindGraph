@@ -166,7 +166,7 @@ export default {
   'kitty.voiceCommand.auto_complete_branch': 'நிறைவு கிளை: {detail}',
   'kitty.voiceCommand.set_content_level': 'தொழில்முறை உள்ளடக்கம்: {detail}',
   'kitty.voiceCommand.set_branch_numbering': 'எண்: {detail}',
-  'kitty.voiceCommand.start_inline_recommendations': 'Lenovo பரிந்துரைத்தது',
+  'kitty.voiceCommand.start_inline_recommendations': 'உள்ளமை பரிந்துரைகள்',
   'kitty.voiceCommand.add_node_with_recommendations': 'முனையைச் சேர்த்து, பரிந்துரைக்கவும்: {detail}',
   'kitty.voiceCommand.explain_node': 'முனை விளக்கம்: {detail}',
   'mobile.mindgraphDesc': 'சிந்தனை வரைபட முகவர்',
