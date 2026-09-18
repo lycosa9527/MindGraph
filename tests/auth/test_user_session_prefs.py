@@ -97,9 +97,7 @@ def test_coerce_overseas_rewrites_zh_presenter_locale() -> None:
 
 def test_language_preferences_accepts_bilingual_fields() -> None:
     """PATCH body accepts bilingual chrome prefs with a UI locale presenter."""
-    body = LanguagePreferencesUpdate.model_validate(
-        {"bilingual_ui_enabled": True, "presenter_ui_locale": "JA"}
-    )
+    body = LanguagePreferencesUpdate.model_validate({"bilingual_ui_enabled": True, "presenter_ui_locale": "JA"})
     assert body.bilingual_ui_enabled is True
     assert body.presenter_ui_locale == "ja"
 

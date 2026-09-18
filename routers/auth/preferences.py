@@ -84,9 +84,7 @@ async def update_language_preferences(
     if body.bilingual_ui_enabled is not None:
         user.bilingual_ui_enabled = body.bilingual_ui_enabled
     if body.presenter_ui_locale is not None:
-        if body.presenter_ui_locale.lower() == "zh" and not getattr(
-            user, "allows_simplified_chinese", True
-        ):
+        if body.presenter_ui_locale.lower() == "zh" and not getattr(user, "allows_simplified_chinese", True):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=Messages.error("ui_language_zh_not_allowed", lang),
