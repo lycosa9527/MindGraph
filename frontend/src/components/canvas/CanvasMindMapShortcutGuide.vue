@@ -6,6 +6,11 @@ import { computed, onMounted, ref } from 'vue'
 
 import { ChevronDown, ChevronUp, Hand, Keyboard, MousePointer2 } from '@lucide/vue'
 
+import {
+  activeCanvasGuideId,
+  openCanvasGuide,
+  toggleCanvasGuide,
+} from '@/composables/canvas/canvasGuideExclusive'
 import { useLanguage } from '@/composables'
 import { resolveMindMapShortcutGuideRows } from '@/config/mindMapShortcutGuide'
 import { useDiagramStore } from '@/stores'
@@ -23,16 +28,35 @@ const props = withDefaults(
 const { t } = useLanguage()
 const diagramStore = useDiagramStore()
 
-const expanded = ref(props.variant !== 'status')
+const expandedLocal = ref(props.variant !== 'status')
 const isStatus = computed(() => props.variant === 'status')
+const expanded = computed(() =>
+  isStatus.value ? activeCanvasGuideId.value === 'shortcut' : expandedLocal.value
+)
 
 const rows = computed(() => resolveMindMapShortcutGuideRows(diagramStore.isLearningSheet))
+
+function persistExpanded(next: boolean): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, String(next))
+  } catch {
+    /* ignore */
+  }
+}
 
 onMounted(() => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored !== null) {
-      expanded.value = stored === 'true'
+    if (stored === null) {
+      return
+    }
+    const next = stored === 'true'
+    if (isStatus.value) {
+      if (next) {
+        openCanvasGuide('shortcut')
+      }
+    } else {
+      expandedLocal.value = next
     }
   } catch {
     /* ignore private mode */
@@ -40,12 +64,12 @@ onMounted(() => {
 })
 
 function toggleExpanded(): void {
-  expanded.value = !expanded.value
-  try {
-    localStorage.setItem(STORAGE_KEY, String(expanded.value))
-  } catch {
-    /* ignore */
+  if (isStatus.value) {
+    persistExpanded(toggleCanvasGuide('shortcut'))
+    return
   }
+  expandedLocal.value = !expandedLocal.value
+  persistExpanded(expandedLocal.value)
 }
 </script>
 

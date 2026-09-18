@@ -30,6 +30,7 @@ from services.kitty.tts.cosyvoice_realtime import (
     build_cosyvoice_continue_task,
     build_cosyvoice_finish_task,
     build_cosyvoice_run_task,
+    close_dashscope_socket,
     resolve_kitty_tts_model_and_voice,
     split_cosyvoice_text,
 )
@@ -771,3 +772,17 @@ async def test_feed_session_asr_opus_skips_pcm_peak() -> None:
         assert voice_sessions[vid]["_fun_asr_audio_peak"] == 0
     finally:
         voice_sessions.pop(vid, None)
+
+
+@pytest.mark.asyncio
+async def test_close_dashscope_socket_times_out_hanging_close() -> None:
+    """DashScope WS close must not block Kitty reconnect for tens of seconds."""
+
+    class HangingWs:
+        """Provider close that never finishes."""
+
+        async def close(self) -> None:
+            """Sleep longer than the DashScope close timeout."""
+            await asyncio.sleep(30)
+
+    await asyncio.wait_for(close_dashscope_socket(HangingWs()), timeout=2.0)

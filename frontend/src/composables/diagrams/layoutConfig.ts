@@ -51,6 +51,18 @@ export const DEFAULT_NODE_HEIGHT = 50
 /** Default topic node width for multi-flow maps (optimized for "事件" - 2 Chinese characters) */
 export const MULTI_FLOW_MAP_TOPIC_WIDTH = 90
 
+/** Event-pill font size (matches TopicNodeDiagram defaultStyle fallback). */
+export const MULTI_FLOW_TOPIC_FONT_SIZE = 18
+
+/** Event-pill horizontal padding: px-6 = 24px each side. */
+export const MULTI_FLOW_TOPIC_PADDING_X = 48
+
+/**
+ * Max inner label width for the multi-flow event pill.
+ * Keep in sync with `topicMaxWidth` in `TopicNodeDiagram.vue`.
+ */
+export const MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH = 300
+
 /**
  * Max inner label width for multi-flow cause/effect pills (wrap cap).
  * Keep in sync with `flowMaxWidth` in `FlowNode.vue`.

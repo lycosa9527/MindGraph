@@ -27,7 +27,7 @@ const props = withDefaults(
 
 const { t } = useLanguage()
 
-/** Clear the 40px mind-map status bar (大纲 / 节点 / 快捷键) plus a small gap. */
+/** Clear the 40px mind-map status bar (大纲 / 节点 / 快捷键 / 手势) plus a small gap. */
 const fabBottom = 'calc(56px + env(safe-area-inset-bottom, 0px))'
 
 const emit = defineEmits<{

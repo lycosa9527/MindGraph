@@ -2,6 +2,7 @@ import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { getAiBrainstorm } from '@/composables/aiBrainstorm/useAiBrainstorm'
+import { eventBus } from '@/composables/core/useEventBus'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -124,6 +125,15 @@ export function useMindMapSideToolbarState() {
 
     openTool(toolId)
   }
+
+  eventBus.removeAllListenersForOwner('mindMapSideToolbarOutline')
+  eventBus.onWithOwner(
+    'mindmap:outline_toggle_requested',
+    () => {
+      handleToolSelect('outline')
+    },
+    'mindMapSideToolbarOutline'
+  )
 
   return {
     activeTool,

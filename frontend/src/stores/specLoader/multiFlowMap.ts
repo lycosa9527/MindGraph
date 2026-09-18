@@ -11,6 +11,9 @@ import {
   DEFAULT_VERTICAL_SPACING,
   MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH,
   MULTI_FLOW_MAP_TOPIC_WIDTH,
+  MULTI_FLOW_TOPIC_FONT_SIZE,
+  MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH,
+  MULTI_FLOW_TOPIC_PADDING_X,
 } from '@/composables/diagrams/layoutConfig'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
@@ -38,27 +41,63 @@ const FLOW_NODE_FONT_SIZE = 13
 /** FlowNode horizontal padding: px-5 = 20px each side */
 const FLOW_NODE_PADDING_X = 40
 
+function measureLabelInnerWidth(
+  text: string,
+  fontSize: number,
+  fontWeight: string | undefined,
+  fontFamily: string,
+  isTopic: boolean
+): number {
+  const trimmed = text.trim() || ' '
+  const fallback = estimateTextWidthFallbackPx(trimmed, fontSize, { isTopic })
+  if (typeof document === 'undefined') {
+    return fallback
+  }
+  const weight = fontWeight === 'bold' ? 'bold' : 'normal'
+  const measured = diagramLabelLikelyNeedsRenderedMeasure(trimmed)
+    ? measureRenderedDiagramLabelWidth(trimmed, fontSize, { fontFamily, fontWeight: weight })
+    : measureTextWidth(trimmed, fontSize, { fontFamily, fontWeight: weight })
+  return measured > 0 ? measured : fallback
+}
+
+/**
+ * Event-pill width from label + TopicNodeDiagram padding / wrap cap.
+ * Auto-complete must not keep the 90px "事件" slot when the event title is long.
+ */
+export function estimateMultiFlowTopicWidth(
+  text: string,
+  style?: { fontSize?: number; fontWeight?: string | number; fontFamily?: string }
+): number {
+  const fs = typeof style?.fontSize === 'number' ? style.fontSize : MULTI_FLOW_TOPIC_FONT_SIZE
+  const fontWeight = style?.fontWeight
+  const fontFamily = style?.fontFamily ?? DIAGRAM_NODE_FONT_STACK
+  const isBold = fontWeight === undefined || fontWeight === 'bold' || fontWeight === 700
+  const nowrapInner = measureLabelInnerWidth(
+    text,
+    fs,
+    isBold ? 'bold' : 'normal',
+    fontFamily,
+    true
+  )
+  const innerForLayout = Math.min(nowrapInner, MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH)
+  return Math.max(MULTI_FLOW_MAP_TOPIC_WIDTH, Math.ceil(innerForLayout + MULTI_FLOW_TOPIC_PADDING_X))
+}
+
 /**
  * Compute adaptive width for a cause/effect node from its text and typography.
  * Uses the same inner wrap cap as FlowNode so layout matches auto-wrapped labels.
  */
 function computeFlowNodeWidth(node: DiagramNode): number {
-  const trimmed = (node.text ?? '').trim() || ' '
   const fs = typeof node.style?.fontSize === 'number' ? node.style.fontSize : FLOW_NODE_FONT_SIZE
   const fontWeight = node.style?.fontWeight
   const fontFamily = node.style?.fontFamily ?? DIAGRAM_NODE_FONT_STACK
-  const nowrapInner =
-    typeof document !== 'undefined'
-      ? diagramLabelLikelyNeedsRenderedMeasure(trimmed)
-        ? measureRenderedDiagramLabelWidth(trimmed, fs, {
-            fontFamily,
-            fontWeight: fontWeight === 'bold' ? 'bold' : 'normal',
-          })
-        : measureTextWidth(trimmed, fs, {
-            fontFamily,
-            fontWeight: fontWeight === 'bold' ? 'bold' : 'normal',
-          })
-      : estimateTextWidthFallbackPx(trimmed, fs, { isTopic: fontWeight === 'bold' })
+  const nowrapInner = measureLabelInnerWidth(
+    node.text ?? '',
+    fs,
+    fontWeight === 'bold' ? 'bold' : 'normal',
+    fontFamily,
+    fontWeight === 'bold'
+  )
   const innerForLayout = Math.min(nowrapInner, MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH)
   return Math.max(DEFAULT_NODE_WIDTH, Math.ceil(innerForLayout + FLOW_NODE_PADDING_X))
 }
@@ -107,7 +146,8 @@ export function recalculateMultiFlowMapLayout(
     return pinia ?? DEFAULT_NODE_HEIGHT
   }
 
-  const actualTopicWidth = topicNodeWidth ?? MULTI_FLOW_MAP_TOPIC_WIDTH
+  const actualTopicWidth =
+    topicNodeWidth ?? estimateMultiFlowTopicWidth(event, eventNode?.style)
 
   // Calculate uniform width for visual balance using text measurement.
   // Pinia DOM widths are NOT used for width because font-loading timing can
@@ -244,7 +284,7 @@ export function loadMultiFlowMapSpec(spec: Record<string, unknown>): SpecLoaderR
   const verticalSpacing = DEFAULT_VERTICAL_SPACING + 10 // 70px
   const nodeWidth = DEFAULT_NODE_WIDTH
   const nodeHeight = DEFAULT_NODE_HEIGHT
-  const topicWidth = MULTI_FLOW_MAP_TOPIC_WIDTH
+  const topicWidth = estimateMultiFlowTopicWidth(event)
 
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []

@@ -128,6 +128,7 @@ declare module 'vue' {
     CanvasLinkInsertDialog: typeof import('./components/canvas/CanvasLinkInsertDialog.vue')['default']
     CanvasLiveSubtitleOverlay: typeof import('./components/canvas/CanvasLiveSubtitleOverlay.vue')['default']
     CanvasMathInsertDialog: typeof import('./components/canvas/CanvasMathInsertDialog.vue')['default']
+    CanvasMindMapGestureGuide: typeof import('./components/canvas/CanvasMindMapGestureGuide.vue')['default']
     CanvasMindMapShortcutGuide: typeof import('./components/canvas/CanvasMindMapShortcutGuide.vue')['default']
     CanvasNodeFloatingToolbar: typeof import('./components/canvas/CanvasNodeFloatingToolbar.vue')['default']
     CanvasOnlineCollabMenu: typeof import('./components/canvas/CanvasOnlineCollabMenu.vue')['default']

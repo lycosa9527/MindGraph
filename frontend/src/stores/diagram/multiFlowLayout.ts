@@ -7,6 +7,7 @@ import type { DiagramContext } from './types'
  */
 export function useMultiFlowLayoutSlice(ctx: DiagramContext) {
   function setTopicNodeWidth(width: number | null): void {
+    if (ctx.topicNodeWidth.value === width) return
     ctx.topicNodeWidth.value = width
     if (ctx.type.value === 'multi_flow_map') {
       ctx.multiFlowMapRecalcTrigger.value++

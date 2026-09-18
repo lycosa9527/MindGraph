@@ -78,6 +78,7 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     expect(status).toContain('data-testid="mindmap-ribbon-zoom-in"')
     expect(status).toContain('data-testid="mindmap-ribbon-zoom-percent"')
     expect(status).toContain('data-testid="mindmap-ribbon-fit-view"')
+    expect(status).toContain('<CanvasMindMapGestureGuide')
     expect(status).toContain('data-testid="mindmap-ribbon-hand-tool"')
     expect(status).not.toContain('mindmap-ribbon-virtual-keyboard')
     expect(status).not.toContain('toggleVirtualKeyboard')

@@ -127,6 +127,8 @@ interface Props {
    * mouse middle-button pan stays. Phone mobile uses panOnDragButtons instead.
    */
   enableTouchPanPinch?: boolean
+  /** Two-finger horizontal swipe flips mind-map slides (when the slide HUD is up). */
+  enableTwoFingerSlideSwipe?: boolean
   presentationRailOpen?: boolean
   presentationSideToolbarVisible?: boolean
 }
@@ -144,6 +146,7 @@ const props = withDefaults(defineProps<Props>(), {
   mindMapSlideDimFocusNodeIds: null,
   panOnDragButtons: null,
   enableTouchPanPinch: false,
+  enableTwoFingerSlideSwipe: false,
   presentationRailOpen: false,
   presentationSideToolbarVisible: true,
 })
@@ -599,6 +602,9 @@ const { setupMobileTouchZoom, mobileTouchCleanup } = useDiagramCanvasMobileTouch
   branchMove,
   // Phone mobile keeps 1-finger pan; e-blackboard uses 2-finger pan so 1-finger can select.
   allowSingleFingerPan: () => !props.enableTouchPanPinch,
+  canPageSwipe: () => props.enableTwoFingerSlideSwipe,
+  canFitOnDoubleTap: () =>
+    diagramStore.type !== 'concept_map' && !props.enableTwoFingerSlideSwipe,
 })
 
 function syncTouchPanPinchLayer(): void {

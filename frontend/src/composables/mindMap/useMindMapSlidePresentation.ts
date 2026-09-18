@@ -335,7 +335,19 @@ export function useMindMapSlidePresentation(options: {
     nextSlide()
   }
 
+  function handleSlideNextRequested(): void {
+    if (!options.active() || transitioning.value) return
+    nextSlide()
+  }
+
+  function handleSlidePrevRequested(): void {
+    if (!options.active() || transitioning.value) return
+    prevSlide()
+  }
+
   const unsubPaneClick = eventBus.on('canvas:pane_clicked', handleCanvasPaneClick)
+  const unsubSlideNext = eventBus.on('canvas:slide_next_requested', handleSlideNextRequested)
+  const unsubSlidePrev = eventBus.on('canvas:slide_prev_requested', handleSlidePrevRequested)
 
   watch(
     () => options.active(),
@@ -355,6 +367,8 @@ export function useMindMapSlidePresentation(options: {
     startToken += 1
     window.removeEventListener('keydown', handleSlideKeyboard, true)
     unsubPaneClick()
+    unsubSlideNext()
+    unsubSlidePrev()
     clearAutoPlayTimer()
     clearAutoPlayProgressTimer()
   })

@@ -76,6 +76,7 @@
 .mm-status .el-tooltip__trigger,
 .mm-status .el-only-child__content,
 .mm-status .shortcut-guide--status,
+.mm-status .gesture-guide--status,
 .mm-status .el-dropdown {
   display: inline-flex;
   align-items: center;

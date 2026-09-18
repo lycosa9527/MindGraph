@@ -43,16 +43,15 @@ import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSele
 import { useMobileKittyPairing } from '@/composables/kitty/useMobileKittyPairing'
 import { prepareMobileKittyPhotoCapture } from '@/composables/mobile/prepareMobileKittyPhotoCapture'
 import { useMobileKittyChat } from '@/composables/mobile/useMobileKittyChat'
-import { useMobileKittyListenMode } from '@/composables/mobile/useMobileKittyListenMode'
+import {
+  resolveKittyMicButtonAria,
+  useMobileKittyListenMode,
+} from '@/composables/mobile/useMobileKittyListenMode'
 import { useMobileKittyMicPtt } from '@/composables/mobile/useMobileKittyMicPtt'
 import { useMobileKittyPageLifecycle } from '@/composables/mobile/useMobileKittyPageLifecycle'
 import { useAuthStore, useFeatureFlagsStore } from '@/stores'
 import { useKittyPipelineStore } from '@/stores/kittyPipeline'
 import type { OneSentenceClarifyChoice } from '@/stores/oneSentence'
-import {
-  kittyMicPttLabelImageSrc,
-  resolveKittyMicPttLabelText,
-} from '@/utils/kittyMicPttLabelImage'
 import { mobileDebugLog } from '@/utils/loadMobileDebugConsole'
 
 const router = useRouter()
@@ -618,14 +617,16 @@ const micButtonDisabled = computed(
   () => !kittyServerEnabled.value || micDenied.value || micInsecure.value
 )
 
-const kittyMicPttLabelSrc = computed(() =>
-  kittyMicPttLabelImageSrc(
-    resolveKittyMicPttLabelText(
-      listenMode.value,
-      kittyVoiceInputActive.value,
-      pttPointerActive.value,
-      t
-    )
+const micHoldActive = computed(
+  () => kittyVoiceInputActive.value || pttPointerActive.value
+)
+
+const micButtonAria = computed(() =>
+  resolveKittyMicButtonAria(
+    listenMode.value,
+    kittyVoiceInputActive.value,
+    pttPointerActive.value,
+    t
   )
 )
 
@@ -1164,20 +1165,12 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
         <button
           type="button"
           data-kitty-mic-ptt
-          class="kitty-side-control kitty-side-control--mic kitty-side-control--mic-ptt"
-          :class="{ 'kitty-side-control--mic-hold': kittyVoiceInputActive || pttPointerActive }"
+          class="kitty-side-control kitty-side-control--mic"
+          :class="{ 'kitty-side-control--mic-hold': micHoldActive }"
           :disabled="micButtonDisabled"
           :aria-busy="connecting || voiceStartInFlight"
-          :aria-label="
-            listenMode === 'auto'
-              ? t('mobile.kittyTapToListen', '点按开始听')
-              : t('mobile.kittyMicPttAria', '按住说话')
-          "
-          :title="
-            listenMode === 'auto'
-              ? t('mobile.kittyListenAutoHint', '半双工：仅在聆听时开麦')
-              : t('mobile.kittyMicPttTitle', '按住说话，松开发送')
-          "
+          :aria-pressed="micHoldActive"
+          :aria-label="micButtonAria"
           @pointerdown="onMicPointerDown"
           @pointerup="onMicPointerUp"
           @pointercancel="onMicPointerUp"
@@ -1191,18 +1184,13 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
             v-if="connecting"
             class="kitty-side-control__icon animate-spin text-violet-100"
           />
-          <template v-else>
-            <Mic class="kitty-side-control__icon kitty-side-control__icon--mic-ptt" />
-            <img
-              class="kitty-mic-ptt-label"
-              :src="kittyMicPttLabelSrc"
-              alt=""
-              draggable="false"
-              aria-hidden="true"
-            />
-          </template>
+          <Mic
+            v-else
+            class="kitty-side-control__icon"
+            aria-hidden="true"
+          />
           <span
-            v-if="!connecting && (kittyVoiceInputActive || pttPointerActive)"
+            v-if="!connecting && micHoldActive"
             class="absolute inset-0 rounded-full ring-4 ring-violet-300/60 animate-pulse pointer-events-none"
             aria-hidden="true"
           />
@@ -1287,9 +1275,12 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
   --kitty-control-size: clamp(3.25rem, 14vw, 4rem);
   --kitty-control-gap: clamp(0.375rem, 2vw, 0.625rem);
   display: grid;
-  grid-template-columns: var(--kitty-control-size) minmax(0, 1fr) minmax(5.5rem, 7.5rem);
+  grid-template-columns: var(--kitty-control-size) minmax(0, 1fr) var(--kitty-control-size);
   align-items: center;
   column-gap: var(--kitty-control-gap);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .kitty-bottom-controls__center {
@@ -1339,46 +1330,11 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
   border: 1px solid rgba(167, 139, 250, 0.35);
   background: linear-gradient(to bottom right, #8b5cf6, #4f46e5);
   box-shadow: 0 4px 10px rgba(79, 70, 229, 0.28);
-}
-
-.kitty-side-control--mic-ptt {
-  width: 100%;
-  max-width: none;
-  height: var(--kitty-control-size);
-  border-radius: 9999px;
-  flex-direction: row;
-  gap: 0.35rem;
-  padding: 0 0.65rem;
-  justify-self: stretch;
-  /* Prevent scroll/pan from stealing the hold on iOS Safari */
   touch-action: none;
-  -webkit-touch-callout: none;
 }
 
-.kitty-side-control--mic-ptt > * {
+.kitty-side-control--mic > * {
   pointer-events: none;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-}
-
-.kitty-side-control__icon--mic-ptt {
-  width: clamp(1.125rem, 5vw, 1.375rem);
-  height: clamp(1.125rem, 5vw, 1.375rem);
-  pointer-events: none;
-}
-
-.kitty-mic-ptt-label {
-  height: 1.125em;
-  width: auto;
-  max-width: min(11rem, 72%);
-  object-fit: contain;
-  object-position: left center;
-  pointer-events: none;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-  -webkit-user-drag: none;
 }
 
 .kitty-side-control--mic:active:not(:disabled),

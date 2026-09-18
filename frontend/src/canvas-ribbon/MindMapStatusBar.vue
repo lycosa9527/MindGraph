@@ -6,6 +6,7 @@ import { computed } from 'vue'
 
 import { Hand, ListTree, Maximize2, MonitorPlay } from '@lucide/vue'
 
+import CanvasMindMapGestureGuide from '@/components/canvas/CanvasMindMapGestureGuide.vue'
 import CanvasMindMapShortcutGuide from '@/components/canvas/CanvasMindMapShortcutGuide.vue'
 import CanvasToolbarMindMapAiGenerate from '@/components/canvas/CanvasToolbarMindMapAiGenerate.vue'
 import CanvasToolbarMindMapAudiencePicker from '@/components/canvas/CanvasToolbarMindMapAudiencePicker.vue'
@@ -61,6 +62,7 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
       <span>{{ t('canvas.ribbon.nodeCount', { count: actions.nodeCount }) }}</span>
       <span class="mm-status__sep" />
       <CanvasMindMapShortcutGuide variant="status" />
+      <CanvasMindMapGestureGuide variant="status" />
     </div>
     <div class="mm-status__center">
       <CanvasToolbarMindMapAudiencePicker

@@ -34,9 +34,14 @@ describe('nextTouchGesturePhase', () => {
     expect(nextTouchGesturePhase(0, false)).toBe('idle')
   })
 
-  it('stays in pinch while two or more fingers remain', () => {
+  it('stays in pinch while two fingers remain', () => {
     expect(nextTouchGesturePhase(2, true)).toBe('pinch')
-    expect(nextTouchGesturePhase(3, false)).toBe('pinch')
+    expect(nextTouchGesturePhase(2, false)).toBe('pinch')
+  })
+
+  it('uses dedicated phases for three- and four-finger sets', () => {
+    expect(nextTouchGesturePhase(3, false)).toBe('three')
+    expect(nextTouchGesturePhase(4, true)).toBe('four')
   })
 })
 

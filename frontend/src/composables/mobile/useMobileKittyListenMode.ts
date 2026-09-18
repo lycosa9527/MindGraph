@@ -45,6 +45,23 @@ export function asrCommitModeForListen(mode: KittyListenMode): 'release_only' | 
   return mode === 'auto' ? 'final_or_stopped' : 'release_only'
 }
 
+export function resolveKittyMicButtonAria(
+  mode: KittyListenMode,
+  voiceActive: boolean,
+  pttActive: boolean,
+  translate: (key: string, fallback: string) => string
+): string {
+  if (mode === 'auto') {
+    return voiceActive
+      ? translate('mobile.kittyTapToStopListen', '点按停止')
+      : translate('mobile.kittyTapToListen', '点按开始听')
+  }
+  if (voiceActive || pttActive) {
+    return translate('mobile.kittyReleaseToSend', '松开发送')
+  }
+  return translate('mobile.kittyMicPttAria', '按住说话')
+}
+
 type FunAsrSlice = {
   listening: Ref<boolean>
   startListening: () => Promise<unknown>

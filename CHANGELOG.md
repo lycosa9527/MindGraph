@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.86] - 2026-09-18
+
+> **Classroom IFP gesture guide; multi-flow event pills grow with the title; Kitty mic hold and CosyVoice close.**
+
+### Added
+
+- **画布手势指南** — Status bar / bottom cluster next to 快捷键指南. Classroom IFP multi-touch: pinch-zoom, two-finger pan, double-tap empty to fit, two-finger tap to 100%, long-press menu, two-finger slide swipe, three-finger undo/redo, four-finger outline. No rotate. Desktop boards with 2+ touch points get the layer without flipping 电子白板优化.
+
+### Changed
+
+- **Kitty 按住说话** — Mobile mic is an icon-only circle (same size as camera). Hold animation (scale, pulse ring, darker fill) stays; no label so iOS cannot select the control. `touchend` finishes the hold (iOS long-press can omit `pointerup`).
+- **复流程图事件节点** — Event pill width follows the title instead of staying at the 90px「事件」slot after autocomplete; cause/effect columns shift out.
+
+### Fixed
+
+- **Kitty CosyVoice teardown** — DashScope WS `close()` can hang ~10s; reader cancel and socket close now time out at 0.5s so reconnect is not blocked.
+
+### Tests
+
+- [`frontend/tests/canvasTouchGestures.spec.ts`](frontend/tests/canvasTouchGestures.spec.ts), [`frontend/tests/mindMapGestureGuide.spec.ts`](frontend/tests/mindMapGestureGuide.spec.ts), [`frontend/tests/canvasGuideExclusive.spec.ts`](frontend/tests/canvasGuideExclusive.spec.ts)
+- [`frontend/tests/multiFlowMapLayout.spec.ts`](frontend/tests/multiFlowMapLayout.spec.ts)
+- [`frontend/tests/useMobileKittyMicPtt.spec.ts`](frontend/tests/useMobileKittyMicPtt.spec.ts)
+- [`tests/test_kitty_fun_asr_cosyvoice.py`](tests/test_kitty_fun_asr_cosyvoice.py) — hanging DashScope close times out
+- `npm run i18n:check-keys` — 5872 keys × 77 locales
+
 ## [5.180.85] - 2026-09-18
 
 > **Schools can paste their own LLM (OpenAI Chat, Responses, or Anthropic Messages); Settings picker keeps 28 translated locales.**

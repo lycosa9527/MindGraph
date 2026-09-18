@@ -59,7 +59,7 @@ export { recalculateBridgeMapLayout } from './bridgeMap'
 export { recalculateCircleMapLayout } from './circleMap'
 export { recalculateBubbleMapLayout } from './bubbleMap'
 export { recalculateFlowMapLayout } from './flowMap'
-export { recalculateMultiFlowMapLayout } from './multiFlowMap'
+export { estimateMultiFlowTopicWidth, recalculateMultiFlowMapLayout } from './multiFlowMap'
 export { recalculateTreeMapLayout } from './treeMap'
 export {
   distributeBranchesClockwise,

@@ -11,6 +11,8 @@
  *   (WebKit bug 180680) so PCM can flow during the hold after the stream is live.
  * - Space keydown is activation-triggering.
  * - Never disable the mic button while connecting (iOS pointercancel).
+ * - touchend must finish the hold: iOS long-press can omit pointerup after
+ *   ~500ms, which left Fun-ASR listening until the page unloaded.
  */
 import { type Ref, onUnmounted, ref } from 'vue'
 
@@ -146,8 +148,10 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
       return
     }
     windowPointerBound = false
-    window.removeEventListener('pointerup', onWindowPointerEnd)
-    window.removeEventListener('pointercancel', onWindowPointerEnd)
+    // Capture phase: iOS callouts / retargeting can swallow bubble pointerup.
+    window.removeEventListener('pointerup', onWindowPointerEnd, true)
+    window.removeEventListener('pointercancel', onWindowPointerEnd, true)
+    window.removeEventListener('touchend', onWindowTouchEnd, true)
   }
 
   function bindWindowPointerEnd(): void {
@@ -155,8 +159,9 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
       return
     }
     windowPointerBound = true
-    window.addEventListener('pointerup', onWindowPointerEnd)
-    window.addEventListener('pointercancel', onWindowPointerEnd)
+    window.addEventListener('pointerup', onWindowPointerEnd, true)
+    window.addEventListener('pointercancel', onWindowPointerEnd, true)
+    window.addEventListener('touchend', onWindowTouchEnd, true)
   }
 
   function releasePointerCaptureSafe(): void {
@@ -302,6 +307,14 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     finishPointerPtt(ev)
   }
 
+  function onWindowTouchEnd(ev: TouchEvent): void {
+    if (!pttPointerActive.value) {
+      return
+    }
+    blessIfActivationTriggering(ev)
+    finishPointerPtt()
+  }
+
   function isPrimaryPointerDown(ev: PointerEvent): boolean {
     // Mouse: only primary button. Touch/pen: WebKit has historically reported
     // incorrect `button` values — accept the contact regardless.
@@ -366,12 +379,13 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     finishPointerPtt(ev)
   }
 
-  /** WebKit lists touchend explicitly as activation-triggering. */
+  /** WebKit lists touchend explicitly as activation-triggering; also finish the hold. */
   function onKittyMicTouchEnd(ev: TouchEvent): void {
     if (!pttPointerActive.value) {
       return
     }
     blessIfActivationTriggering(ev)
+    finishPointerPtt()
   }
 
   function onKittySpacePttKeyDown(ev: KeyboardEvent): void {

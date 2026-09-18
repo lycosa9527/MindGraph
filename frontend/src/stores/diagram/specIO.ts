@@ -2,7 +2,6 @@ import { eventBus } from '@/composables/core/useEventBus'
 import {
   DEFAULT_CENTER_X,
   DEFAULT_NODE_WIDTH,
-  MULTI_FLOW_MAP_TOPIC_WIDTH,
 } from '@/composables/diagrams/layoutConfig'
 import { mindMapDiagramStyleUsesLayeredBranchColors } from '@/config/mindMapDiagramStyles'
 import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
@@ -36,6 +35,7 @@ import { beginMindMapSpecLoadSession, markMindMapLoadStage } from '@/utils/mindM
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import {
+  estimateMultiFlowTopicWidth,
   getDefaultTemplate,
   loadSpecForDiagramType,
   recalculateBubbleMapLayout,
@@ -219,7 +219,11 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     }
 
     if (diagramTypeValue === 'multi_flow_map') {
-      ctx.topicNodeWidth.value = MULTI_FLOW_MAP_TOPIC_WIDTH
+      const eventNode = nodesToStore.find((n) => n.id === 'event' || n.type === 'topic')
+      ctx.topicNodeWidth.value = estimateMultiFlowTopicWidth(
+        eventNode?.text ?? '',
+        eventNode?.style
+      )
     }
 
     if (ctx.selectedNodes.value.length > 0) {

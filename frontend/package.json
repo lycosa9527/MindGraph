@@ -1,7 +1,7 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.180.85",
+  "version": "5.180.86",
   "type": "module",
   "engines": {
     "node": ">=26.0.0"

@@ -39,6 +39,24 @@ V3_FLASH_FALLBACK_VOICE = "longyumi_v3"
 _TTS_CHUNK_CHARS = 90
 _TTS_CHUNK_FINISH_SEC = 45.0
 _SENTENCE_BREAKS = "。！？；!?…\n"
+_DASHSCOPE_CLOSE_TIMEOUT_SEC = 0.5
+
+
+async def close_dashscope_socket(ws_conn: object) -> None:
+    """Close a DashScope inference socket; provider ``close()`` can hang ~10s."""
+    closer = getattr(ws_conn, "close", None)
+    if closer is None:
+        return
+    try:
+        await asyncio.wait_for(closer(), timeout=_DASHSCOPE_CLOSE_TIMEOUT_SEC)
+    except (
+        asyncio.TimeoutError,
+        ConnectionClosed,
+        ConnectionClosedError,
+        ConnectionClosedOK,
+        OSError,
+    ):
+        pass
 
 
 def split_cosyvoice_text(text: str) -> list[str]:
@@ -231,24 +249,28 @@ class CosyVoiceRealtimeClient:
         )
         self._reader_task = asyncio.create_task(self._read_loop())
 
+    async def _await_cancelled_reader(self) -> None:
+        """Cancel the WS reader; DashScope teardown can hang without a timeout."""
+        reader = self._reader_task
+        self._reader_task = None
+        if reader is None or reader.done():
+            return
+        reader.cancel()
+        try:
+            await asyncio.wait_for(reader, timeout=_DASHSCOPE_CLOSE_TIMEOUT_SEC)
+        except (asyncio.TimeoutError, asyncio.CancelledError):
+            pass
+        except (ConnectionClosed, ConnectionClosedError, ConnectionClosedOK, OSError):
+            pass
+
     async def _release_socket(self) -> None:
         """Drop the inference socket without cancelling the current ``speak()``."""
         self._closed = True
-        reader = self._reader_task
-        self._reader_task = None
         socket = self._ws
         self._ws = None
-        if reader is not None and not reader.done():
-            reader.cancel()
-            try:
-                await reader
-            except (asyncio.CancelledError, ConnectionClosed, ConnectionClosedError):
-                pass
+        await self._await_cancelled_reader()
         if socket is not None:
-            try:
-                await socket.close()
-            except (ConnectionClosed, ConnectionClosedError, ConnectionClosedOK, OSError):
-                pass
+            await close_dashscope_socket(socket)
         self._closed = False
 
     async def speak(self, text: str) -> None:
@@ -316,23 +338,15 @@ class CosyVoiceRealtimeClient:
         self._finished.set()
 
     async def close(self) -> None:
-        """Close WebSocket and reader."""
+        """Close WebSocket and reader with short timeouts (DashScope close can hang ~10s)."""
         self._cancel_requested = True
         self._closed = True
         self._finished.set()
-        if self._reader_task is not None and not self._reader_task.done():
-            self._reader_task.cancel()
-            try:
-                await self._reader_task
-            except (asyncio.CancelledError, ConnectionClosed, ConnectionClosedError):
-                pass
-        self._reader_task = None
-        if self._ws is not None:
-            try:
-                await self._ws.close()
-            except (ConnectionClosed, ConnectionClosedError, ConnectionClosedOK, OSError):
-                pass
-            self._ws = None
+        await self._await_cancelled_reader()
+        ws_conn = self._ws
+        self._ws = None
+        if ws_conn is not None:
+            await close_dashscope_socket(ws_conn)
 
     async def _send_finish(self, *, cancel: bool = False) -> None:
         if self._ws is None or not self._task_id:

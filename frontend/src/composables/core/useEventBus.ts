@@ -147,6 +147,7 @@ export type EventTypes = {
   'diagram:workshop_snapshot_applied': Record<string, never>
   'mindmap:ai_subgraph_requested': { nodeId?: string }
   'mindmap:explain_node_requested': { nodeId?: string }
+  'mindmap:outline_toggle_requested': Record<string, never>
   'mindmap:doc_summary_tab': {
     tab: 'file' | 'web' | 'document' | 'image' | 'chat'
   }
@@ -742,6 +743,8 @@ export type EventTypes = {
 
   // Canvas Events
   'canvas:pane_clicked': Record<string, never>
+  'canvas:slide_next_requested': Record<string, never>
+  'canvas:slide_prev_requested': Record<string, never>
   'canvas:node_clicked': { nodeId: string }
   'canvas:fitted_with_panel': { panelWidth: number }
   'canvas:fitted_full': Record<string, never>

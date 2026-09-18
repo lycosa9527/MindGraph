@@ -34,6 +34,7 @@ import {
   CanvasBottomAiCluster,
   CanvasChrome,
   CanvasKittyVoiceCommandGuide,
+  CanvasMindMapGestureGuide,
   CanvasMindMapShortcutGuide,
   CanvasTopBar,
   ConceptMapFocusReviewPicker,
@@ -199,6 +200,7 @@ import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import type { MindMapPresentationToolId } from '@/types/diagram'
 import { MIND_MAP_PRESENTATION_EXPANDABLE_TOOLS } from '@/types/diagram'
+import { shouldEnableDesktopTouchPanPinch } from '@/utils/canvasTouchGestures'
 import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 import {
   clearWorkshopSessionStorage,
@@ -642,6 +644,13 @@ const showMindMapShortcutGuide = computed(
     !presentationRailOpen.value &&
     !mindClassroomSlideDeck.value &&
     Boolean(diagramStore.data)
+)
+
+const enableDesktopTouchPanPinch = computed(() =>
+  shouldEnableDesktopTouchPanPinch(
+    uiStore.eBlackboardOptimize,
+    typeof navigator === 'undefined' ? 0 : navigator.maxTouchPoints
+  )
 )
 
 const showMindMapSidePanel = computed(
@@ -1727,7 +1736,8 @@ onUnmounted(() => {
             :mind-map-slide-dim-focus-node-ids="mindMapTourDimFocusNodeIds"
             :presentation-rail-open="presentationRailOpen"
             :presentation-side-toolbar-visible="showMindMapPresentationSideToolbar"
-            :enable-touch-pan-pinch="uiStore.eBlackboardOptimize"
+            :enable-touch-pan-pinch="enableDesktopTouchPanPinch"
+            :enable-two-finger-slide-swipe="showMindMapSlideOverlay"
             @node-double-click="handleNodeDoubleClick"
           />
 
@@ -1781,6 +1791,7 @@ onUnmounted(() => {
       >
         <CanvasKittyVoiceCommandGuide v-if="showKittyDesktopIndicator" />
         <CanvasMindMapShortcutGuide v-else-if="showMindMapShortcutGuide" />
+        <CanvasMindMapGestureGuide v-if="showMindMapShortcutGuide || showKittyDesktopIndicator" />
         <div
           class="bottom-controls-card flex flex-col items-center md:flex-row md:flex-nowrap md:items-center gap-1.5 md:gap-0 rounded-xl shadow-lg p-1 md:p-1.5 border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md w-fit min-w-0 shrink-0"
         >

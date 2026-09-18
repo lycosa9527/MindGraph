@@ -2,7 +2,7 @@
 /**
  * TopicNodeDiagram — non-mind-map topic node (bubble, tree, flow, brace, multi-flow, etc.).
  */
-import { computed, nextTick, ref, toValue } from 'vue'
+import { computed, nextTick, onMounted, ref, toValue, watch } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
@@ -11,10 +11,11 @@ import { storeToRefs } from 'pinia'
 import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import { useLLMResultsStore } from '@/stores'
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -199,8 +200,7 @@ const topicRingBorderRadius = computed(() => {
   return '9999px'
 })
 
-const TOPIC_MAX_TEXT_WIDTH = 300
-const topicMaxWidth = computed(() => `${TOPIC_MAX_TEXT_WIDTH}px`)
+const topicMaxWidth = computed(() => `${MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH}px`)
 
 const isEditing = ref(false)
 const dynamicWidth = ref<number | null>(null)
@@ -250,6 +250,20 @@ function handleTopicNodeClick(): void {
   if (isEditing.value) return
   diagramStore.selectNodes(props.id)
 }
+
+onMounted(() => {
+  if (isMultiFlowMap.value) {
+    void flushMultiFlowTopicWidthFromPinia()
+  }
+})
+
+watch(
+  () => props.data.label,
+  () => {
+    if (!isMultiFlowMap.value || isEditing.value) return
+    void flushMultiFlowTopicWidthFromPinia()
+  }
+)
 
 function handleWidthChange(width: number) {
   if (isMultiFlowMap.value) {
