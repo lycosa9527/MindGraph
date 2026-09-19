@@ -2,13 +2,15 @@
 /**
  * Full-bleed cinematic hero for `/auth` — COS clip on test/prod, still in Vite.
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import authLandingPoster from '@/assets/auth/auth-landing-hero.png'
 import { useLanguage } from '@/composables'
 import {
+  AUTH_LOGIN_HERO_NARROW_QUERY,
   AUTH_LOGIN_HERO_STILL_SRC,
   authLoginHeroKind,
+  authLoginHeroShouldAnimate,
   authLoginHeroSrc,
   pickAuthLoginHeroId,
   type AuthLoginHeroKind,
@@ -20,16 +22,47 @@ const heroSrc = ref('')
 const heroKind = ref<AuthLoginHeroKind>('image')
 const videoFailed = ref(false)
 const reduceMotion = ref(false)
+const narrowViewport = ref(false)
 const showVideo = computed(
-  () => heroKind.value === 'video' && !reduceMotion.value && !videoFailed.value && Boolean(heroSrc.value)
+  () =>
+    heroKind.value === 'video' &&
+    authLoginHeroShouldAnimate({
+      reduceMotion: reduceMotion.value,
+      narrowViewport: narrowViewport.value,
+    }) &&
+    !videoFailed.value &&
+    Boolean(heroSrc.value)
 )
 
-onMounted(() => {
-  reduceMotion.value = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  const kind = reduceMotion.value ? 'image' : authLoginHeroKind()
+let motionMq: MediaQueryList | null = null
+let narrowMq: MediaQueryList | null = null
+
+function applyHeroKind(): void {
+  reduceMotion.value = Boolean(motionMq?.matches)
+  narrowViewport.value = Boolean(narrowMq?.matches)
+  const animate = authLoginHeroShouldAnimate({
+    reduceMotion: reduceMotion.value,
+    narrowViewport: narrowViewport.value,
+  })
+  const kind: AuthLoginHeroKind = animate ? authLoginHeroKind() : 'image'
   heroKind.value = kind
-  clipId.value = pickAuthLoginHeroId()
+  if (!clipId.value) {
+    clipId.value = pickAuthLoginHeroId()
+  }
   heroSrc.value = authLoginHeroSrc(clipId.value, kind)
+}
+
+onMounted(() => {
+  motionMq = window.matchMedia('(prefers-reduced-motion: reduce)')
+  narrowMq = window.matchMedia(AUTH_LOGIN_HERO_NARROW_QUERY)
+  motionMq.addEventListener('change', applyHeroKind)
+  narrowMq.addEventListener('change', applyHeroKind)
+  applyHeroKind()
+})
+
+onBeforeUnmount(() => {
+  motionMq?.removeEventListener('change', applyHeroKind)
+  narrowMq?.removeEventListener('change', applyHeroKind)
 })
 
 function onVideoError(): void {
@@ -198,8 +231,8 @@ function onVideoError(): void {
   }
 
   .auth-landing-brand__content {
-    gap: 1.1rem;
-    padding: 1.5rem 1.25rem 40vh;
+    gap: 0;
+    padding: 1rem 1.25rem 0;
     text-align: left;
     justify-content: flex-start;
   }
@@ -210,11 +243,12 @@ function onVideoError(): void {
 
   .auth-landing-brand__headline {
     max-width: none;
-    font-size: 1.45rem;
+    margin-bottom: 0;
+    font-size: 1.2rem;
   }
 
   .auth-landing-brand__subcopy {
-    font-size: 0.9rem;
+    display: none;
   }
 }
 </style>

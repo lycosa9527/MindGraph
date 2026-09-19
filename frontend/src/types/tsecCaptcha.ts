@@ -35,11 +35,22 @@ export interface TsecAidEncrypted {
   aidEncryptedType: TsecAidEncryptedType
 }
 
+export interface TencentCaptchaReadySize {
+  sdkView: { width: number; height: number }
+}
+
+export interface TencentCaptchaShowInfo {
+  duration?: number
+  sid?: string
+}
+
 export interface TencentCaptchaOptions {
   userLanguage?: string
   enableDarkMode?: boolean | 'force'
   aidEncrypted?: string
   aidEncryptedType?: TsecAidEncryptedType
+  ready?: (size: TencentCaptchaReadySize) => void
+  showFn?: (info: TencentCaptchaShowInfo) => void
 }
 
 export type TencentCaptchaConstructor = new (

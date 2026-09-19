@@ -108,12 +108,24 @@ describe('showTsecCaptcha', () => {
   })
 
   it('passes aidEncrypted and cbc type into TencentCaptcha options', async () => {
-    let captured: { aidEncrypted?: string; aidEncryptedType?: string } | undefined
+    let captured:
+      | {
+          aidEncrypted?: string
+          aidEncryptedType?: string
+          ready?: () => void
+          showFn?: () => void
+        }
+      | undefined
     window.TencentCaptcha = class {
       constructor(
         _appId: string,
         callback: (result: { ret: number; ticket: string; randstr: string }) => void,
-        options?: { aidEncrypted?: string; aidEncryptedType?: string }
+        options?: {
+          aidEncrypted?: string
+          aidEncryptedType?: string
+          ready?: () => void
+          showFn?: () => void
+        }
       ) {
         captured = options
         queueMicrotask(() => callback({ ret: 0, ticket: 'tr03ok', randstr: '@Vki' }))
@@ -131,6 +143,8 @@ describe('showTsecCaptcha', () => {
       aidEncryptedType: 'cbc',
       enableDarkMode: true,
     })
+    expect(typeof captured?.ready).toBe('function')
+    expect(typeof captured?.showFn).toBe('function')
   })
 
   it('rejects a missing aidEncrypted before loading the widget', async () => {

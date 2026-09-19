@@ -1,4 +1,4 @@
-/** Daily /auth video rotation. Local Vite uses one still (no COS). */
+/** /auth video rotation. Local Vite uses one still (no COS). */
 
 export const AUTH_LOGIN_HERO_IDS = [
   '01-awaken-cosmos',
@@ -10,18 +10,36 @@ export const AUTH_LOGIN_HERO_IDS = [
 export type AuthLoginHeroId = (typeof AUTH_LOGIN_HERO_IDS)[number]
 export type AuthLoginHeroKind = 'image' | 'video'
 
-export const AUTH_LOGIN_HERO_STORAGE_KEY = 'mg.authLoginHero.v1'
+export const AUTH_LOGIN_HERO_STORAGE_KEY = 'mg.authLoginHero.v2'
+export const AUTH_LOGIN_HERO_SESSION_KEY = 'mg.authLoginHero.session.v2'
 export const AUTH_LOGIN_HERO_STILL_SRC = '/auth-hero/login-hero.png'
 
-export function formatLocalDay(now: Date): string {
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+export type AuthLoginHeroPickOptions = {
+  durable?: Pick<Storage, 'getItem' | 'setItem'>
+  session?: Pick<Storage, 'getItem' | 'setItem'>
+  random?: () => number
 }
+
+type HeroBagState = {
+  bag: AuthLoginHeroId[]
+  last: AuthLoginHeroId | null
+}
+
+/** Same breakpoint as `/auth` mobile layout (`AuthPage` / `AuthLandingBrand`). */
+export const AUTH_LOGIN_HERO_NARROW_QUERY = '(max-width: 899px)'
 
 export function authLoginHeroKind(): AuthLoginHeroKind {
   return import.meta.env.DEV ? 'image' : 'video'
+}
+
+export function authLoginHeroShouldAnimate(options: {
+  reduceMotion?: boolean
+  narrowViewport?: boolean
+} = {}): boolean {
+  if (options.reduceMotion || options.narrowViewport) {
+    return false
+  }
+  return authLoginHeroKind() === 'video'
 }
 
 export function authLoginHeroSrc(
@@ -34,32 +52,63 @@ export function authLoginHeroSrc(
   return `/api/auth/login-hero/${clipId}.mp4`
 }
 
-function wrapIndex(index: number, length: number): number {
-  return ((index % length) + length) % length
+function isHeroId(value: unknown): value is AuthLoginHeroId {
+  return (
+    typeof value === 'string' &&
+    (AUTH_LOGIN_HERO_IDS as readonly string[]).includes(value)
+  )
+}
+
+export function shuffleAuthLoginHeroIds(
+  avoid: AuthLoginHeroId | null = null,
+  random: () => number = Math.random
+): AuthLoginHeroId[] {
+  const items = [...AUTH_LOGIN_HERO_IDS]
+  for (let index = items.length - 1; index > 0; index -= 1) {
+    const swapWith = Math.floor(random() * (index + 1))
+    const current = items[index]
+    items[index] = items[swapWith]
+    items[swapWith] = current
+  }
+  if (avoid && items.length > 1 && items[0] === avoid) {
+    items.push(items.shift() as AuthLoginHeroId)
+  }
+  return items
+}
+
+function readBag(durable: Pick<Storage, 'getItem' | 'setItem'>): HeroBagState {
+  const raw = durable.getItem(AUTH_LOGIN_HERO_STORAGE_KEY)
+  if (!raw) {
+    return { bag: [], last: null }
+  }
+  try {
+    const parsed = JSON.parse(raw) as { bag?: unknown; last?: unknown }
+    const bag = Array.isArray(parsed.bag) ? parsed.bag.filter(isHeroId) : []
+    const last = isHeroId(parsed.last) ? parsed.last : null
+    return { bag, last }
+  } catch {
+    return { bag: [], last: null }
+  }
 }
 
 export function pickAuthLoginHeroId(
-  now: Date = new Date(),
-  storage: Pick<Storage, 'getItem' | 'setItem'> = window.localStorage
+  options: AuthLoginHeroPickOptions = {}
 ): AuthLoginHeroId {
-  const day = formatLocalDay(now)
-  const length = AUTH_LOGIN_HERO_IDS.length
-  let index = 0
-  const raw = storage.getItem(AUTH_LOGIN_HERO_STORAGE_KEY)
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw) as { day?: string; index?: number }
-      if (typeof parsed.index === 'number' && Number.isInteger(parsed.index)) {
-        const wrapped = wrapIndex(parsed.index, length)
-        if (parsed.day === day) {
-          return AUTH_LOGIN_HERO_IDS[wrapped]
-        }
-        index = wrapIndex(wrapped + 1, length)
-      }
-    } catch {
-      index = 0
-    }
+  const durable = options.durable ?? window.localStorage
+  const session = options.session ?? window.sessionStorage
+  const random = options.random ?? Math.random
+  const sessionClip = session.getItem(AUTH_LOGIN_HERO_SESSION_KEY)
+  if (isHeroId(sessionClip)) {
+    return sessionClip
   }
-  storage.setItem(AUTH_LOGIN_HERO_STORAGE_KEY, JSON.stringify({ day, index }))
-  return AUTH_LOGIN_HERO_IDS[index]
+  const state = readBag(durable)
+  const bag =
+    state.bag.length > 0 ? state.bag : shuffleAuthLoginHeroIds(state.last, random)
+  const next = bag[0]
+  durable.setItem(
+    AUTH_LOGIN_HERO_STORAGE_KEY,
+    JSON.stringify({ bag: bag.slice(1), last: next })
+  )
+  session.setItem(AUTH_LOGIN_HERO_SESSION_KEY, next)
+  return next
 }

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from config.settings import config
 from scripts.auth_login_video.paths import DESKTOP_DIR, SHIPPED_HERO, WORK_DIR
 from services.auth.login_hero_clips import parse_hero_clip_id
-from services.infrastructure.utils.spa_handler import is_dev_mode
 from services.utils.tencent_cos_client import (
     cos_credentials_configured,
     cos_object_key,
@@ -32,8 +32,12 @@ def local_hero_path(clip_id: str) -> Path | None:
 
 
 def hero_presigned_url(clip_id: str) -> str | None:
-    """Short-lived COS GET URL. Local Vite cannot pull COS, so skip in dev."""
-    if is_dev_mode():
+    """Short-lived COS GET URL. Skip only when Vite owns the browser.
+
+    Test/prod may keep DEBUG=true. Those hosts serve a built SPA and must 302
+    to COS. Local ``npm run dev`` sets ``VITE_DEV_PORT`` and cannot fetch COS.
+    """
+    if os.getenv("VITE_DEV_PORT") is not None:
         return None
     if not config.COS_AUTH_LOGIN_ENABLED or not cos_credentials_configured():
         return None

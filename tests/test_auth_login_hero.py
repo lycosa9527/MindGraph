@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from fastapi import FastAPI
 from starlette.testclient import TestClient
 
@@ -50,11 +52,34 @@ def test_cos_login_hero_redirects(monkeypatch) -> None:
     assert response.headers["location"] == "https://example.com/01-awaken-cosmos.mp4"
 
 
-def test_dev_mode_skips_cos_presign(monkeypatch) -> None:
+def test_vite_dev_port_skips_cos_presign(monkeypatch) -> None:
     """Vite local cannot fetch COS, so /auth must not 302 there."""
-    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.setenv("VITE_DEV_PORT", "5173")
     monkeypatch.setenv("DEBUG", "true")
     assert login_hero_media.hero_presigned_url("01-awaken-cosmos") is None
+
+
+def test_debug_host_still_presigns_cos(monkeypatch) -> None:
+    """Test server may keep DEBUG=true and still 302 to COS."""
+    monkeypatch.delenv("VITE_DEV_PORT", raising=False)
+    monkeypatch.setenv("DEBUG", "true")
+    monkeypatch.setenv("ENVIRONMENT", "test")
+    monkeypatch.setattr(
+        login_hero_media,
+        "config",
+        SimpleNamespace(
+            COS_AUTH_LOGIN_ENABLED=True,
+            COS_AUTH_LOGIN_PREFIX="test/auth-login",
+            COS_AUTH_LOGIN_PRESIGN_GET_TTL=3600,
+        ),
+    )
+    monkeypatch.setattr(login_hero_media, "cos_credentials_configured", lambda: True)
+    monkeypatch.setattr(
+        login_hero_media,
+        "generate_presigned_get_url",
+        lambda *_args, **_kwargs: "https://example.com/hero.mp4",
+    )
+    assert login_hero_media.hero_presigned_url("01-awaken-cosmos") == ("https://example.com/hero.mp4")
 
 
 def test_hero_cos_prefixes_cover_shared_and_live(monkeypatch) -> None:

@@ -330,7 +330,9 @@ onMounted(async () => {
     return
   }
 
-  await authStore.checkAuth().catch(() => false)
+  if (!isGuestAuthPath(route.path)) {
+    await authStore.checkAuth().catch(() => false)
+  }
 
   // Re-align vue-i18n with Pinia after auth (profile may no-op setLanguage when
   // the code is unchanged, leaving a prior HMR desync unrepaired).

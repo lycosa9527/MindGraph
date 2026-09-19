@@ -42,7 +42,7 @@ import {
   roleHasPanelAccess,
 } from '@/utils/adminCapabilities'
 import { registerAiContentLevelAuthBridge } from '@/utils/aiContentLevelAuthBridge'
-import { parseApiErrorDetail } from '@/utils/apiClient'
+import { hasPersistedAuthUser, parseApiErrorDetail } from '@/utils/apiClient'
 import { getAppQueryClient } from '@/utils/appQueryClient'
 import { getSafePostAuthPath } from '@/utils/authRedirect'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
@@ -816,8 +816,8 @@ export const useAuthStore = defineStore('auth', () => {
         }
       }
 
-      // If 401, try to refresh the access token silently (refresh cookie may still be valid)
-      if (response.status === 401) {
+      // If 401, try to refresh only when a session hint exists (avoid guest /refresh 401s)
+      if (response.status === 401 && hasPersistedAuthUser()) {
         const recovered = await tryRecoverSessionFromRefresh(epochAtStart)
         if (recovered) {
           return true

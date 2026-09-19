@@ -319,7 +319,7 @@ run_frontend() {
     tests/mindMapSeparation.spec.ts tests/mindMapLoadPreserveSides.spec.ts \
     tests/mindMapNodeUid.spec.ts tests/mindMapSubgraphMerge.spec.ts \
     tests/mindMapStringChildrenAudit.spec.ts \
-    tests/tsecCaptcha.spec.ts \
+    tests/tsecCaptcha.spec.ts tests/positionTsecCaptcha.spec.ts \
     tests/markdownKatexSanitize.spec.ts tests/mindmateDiagramPreviewCache.spec.ts \
     tests/loginRestoresUiLanguage.spec.ts tests/authLoginHero.spec.ts \
     tests/normalizeAuthUser.spec.ts \

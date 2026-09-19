@@ -205,4 +205,25 @@ describe('auth bootstrap dedupe', () => {
 
     authStore.stopSessionMonitoring()
   })
+
+  it('does not call /refresh after a guest /me 401', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/auth/me')) {
+        return jsonResponse({}, 401)
+      }
+      if (url.includes('/refresh')) {
+        return jsonResponse({}, 401)
+      }
+      return jsonResponse({})
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const authStore = useAuthStore()
+    expect(await authStore.checkAuth()).toBe(false)
+    expect(meCallCount(fetchMock)).toBe(1)
+    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes('/refresh'))).toBe(
+      false
+    )
+  })
 })

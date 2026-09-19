@@ -165,11 +165,6 @@ function onNavLogin() {
   document.querySelector('.auth-page-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
-function onNavRegister() {
-  loginModalRef.value?.openRegister?.()
-  document.querySelector('.auth-page-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-}
-
 function onNavContact() {
   showContactModal.value = true
 }
@@ -196,7 +191,6 @@ onBeforeUnmount(() => {
   <div class="auth-page">
     <AuthMarketingNav
       @login="onNavLogin"
-      @register="onNavRegister"
       @contact="onNavContact"
     />
 
@@ -206,7 +200,10 @@ onBeforeUnmount(() => {
       <AuthLandingBrand class="auth-page-stage__brand" />
 
       <div class="auth-page-stage__content">
-        <section class="auth-page-card">
+        <section
+          class="auth-page-card"
+          data-tsec-anchor
+        >
           <div class="auth-page-card__form">
             <AuthQuickRegisterModal
               v-if="useQuickRegPanel"
@@ -361,7 +358,7 @@ onBeforeUnmount(() => {
   .auth-page-stage__content {
     justify-content: center;
     align-items: flex-start;
-    padding-top: 1rem;
+    padding-top: 4.75rem;
   }
 
   .auth-page-card {

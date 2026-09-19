@@ -1,27 +1,22 @@
 <script setup lang="ts">
 /**
- * Top marketing nav for `/auth` (mock: logo + links + login/register CTAs).
+ * Top marketing nav for `/auth` (logo + links + login). Register lives on the modal.
  */
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useLanguage } from '@/composables'
-import { useAuthStore } from '@/stores'
 
 const emit = defineEmits<{
   login: []
-  register: []
   contact: []
 }>()
 
 const { t } = useLanguage()
 const router = useRouter()
-const authStore = useAuthStore()
 
 /** Same KDocs doc as sidebar account menu 「快速指南」. */
 const PLATFORM_QUICK_GUIDE_URL = 'https://365.kdocs.cn/l/caSETdpB0Akg'
-
-const showRegisterCta = computed(() => authStore.registrationEnabled)
 
 const navLinks = computed(() => [
   { key: 'contact', label: t('auth.landing.navContact') },
@@ -79,7 +74,7 @@ function onNavLink(link: { key: string }) {
       <div class="auth-mkt-nav__right">
         <button
           type="button"
-          class="auth-mkt-nav__link auth-mkt-nav__link--muted"
+          class="auth-mkt-nav__link auth-mkt-nav__link--muted auth-mkt-nav__link--guide"
           @click="openPlatformQuickGuide"
         >
           {{ t('auth.platformQuickGuide') }}
@@ -90,14 +85,6 @@ function onNavLink(link: { key: string }) {
           @click="emit('login')"
         >
           {{ t('auth.login') }}
-        </button>
-        <button
-          v-if="showRegisterCta"
-          type="button"
-          class="auth-mkt-nav__register"
-          @click="emit('register')"
-        >
-          {{ t('auth.landing.navRegisterFree') }}
         </button>
       </div>
     </div>
@@ -110,6 +97,7 @@ function onNavLink(link: { key: string }) {
   top: 0;
   z-index: 30;
   height: 3.75rem;
+  overflow: hidden;
   background: #fff;
   border-bottom: 1px solid rgb(237 233 254);
 }
@@ -123,6 +111,7 @@ function onNavLink(link: { key: string }) {
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 1.25rem;
+  min-width: 0;
 }
 
 .auth-mkt-nav__left {
@@ -130,6 +119,7 @@ function onNavLink(link: { key: string }) {
   align-items: center;
   gap: 1.5rem;
   min-width: 0;
+  overflow: hidden;
 }
 
 .auth-mkt-nav__brand {
@@ -141,7 +131,7 @@ function onNavLink(link: { key: string }) {
   border: 0;
   background: transparent;
   cursor: pointer;
-  flex-shrink: 0;
+  min-width: 0;
 }
 
 .auth-mkt-nav__logo {
@@ -165,6 +155,7 @@ function onNavLink(link: { key: string }) {
   flex-direction: column;
   align-items: flex-start;
   gap: 0.05rem;
+  min-width: 0;
   line-height: 1.15;
   text-align: left;
 }
@@ -174,6 +165,9 @@ function onNavLink(link: { key: string }) {
   font-weight: 700;
   letter-spacing: -0.02em;
   color: rgb(28 25 23);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .auth-mkt-nav__tagline {
@@ -181,13 +175,17 @@ function onNavLink(link: { key: string }) {
   font-weight: 500;
   letter-spacing: 0.02em;
   color: rgb(148 163 184);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 14rem;
 }
 
 .auth-mkt-nav__links {
   display: flex;
   align-items: center;
   gap: 0.15rem;
+  flex-shrink: 0;
 }
 
 .auth-mkt-nav__link {
@@ -219,20 +217,30 @@ function onNavLink(link: { key: string }) {
   flex-shrink: 0;
 }
 
-.auth-mkt-nav__register {
-  margin-left: 0.35rem;
-  padding: 0.45rem 0.95rem;
-  border: 0;
-  border-radius: 999px;
-  background: rgb(237 233 254);
-  color: rgb(79 70 229);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s ease;
+@media (max-width: 899px) {
+  .auth-mkt-nav__inner {
+    gap: 0.5rem;
+    padding: 0 0.75rem;
+  }
+
+  .auth-mkt-nav__left {
+    gap: 0.25rem;
+  }
+
+  .auth-mkt-nav__tagline {
+    display: none;
+  }
+
+  .auth-mkt-nav__link {
+    padding: 0.35rem 0.45rem;
+    font-size: 0.8125rem;
+  }
 }
 
-.auth-mkt-nav__register:hover {
-  background: rgb(221 214 254);
+@media (max-width: 360px) {
+  .auth-mkt-nav__links,
+  .auth-mkt-nav__link--guide {
+    display: none;
+  }
 }
 </style>

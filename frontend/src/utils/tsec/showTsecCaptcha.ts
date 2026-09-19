@@ -1,5 +1,9 @@
 import type { TencentCaptchaResult, TsecAidEncrypted, TsecSolvedCaptcha } from '@/types/tsecCaptcha'
 import { loadTjCaptcha, tsecUserLanguage } from '@/utils/tsec/loadTjCaptcha'
+import {
+  applyTsecCaptchaToLoginCard,
+  bindTsecCaptchaToLoginCard,
+} from '@/utils/tsec/positionTsecCaptcha'
 import { tsecFrontendErrorReason } from '@/utils/tsec/tsecErrorCodes'
 
 export class TsecCaptchaClosedError extends Error {
@@ -20,6 +24,23 @@ function isDisasterTicket(ticket: string): boolean {
   return ticket.startsWith('trerror_') || ticket.startsWith('terror_')
 }
 
+function parseSolvedCaptcha(result: TencentCaptchaResult): TsecSolvedCaptcha {
+  const solved: TsecSolvedCaptcha = {
+    ticket: (result.ticket || '').trim(),
+    randstr: (result.randstr || '').trim(),
+  }
+  if (result.sid) {
+    solved.sid = result.sid
+  }
+  if (typeof result.verifyDuration === 'number') {
+    solved.verifyDuration = result.verifyDuration
+  }
+  if (typeof result.actionDuration === 'number') {
+    solved.actionDuration = result.actionDuration
+  }
+  return solved
+}
+
 export async function showTsecCaptcha(
   appId: string,
   uiLocale: string,
@@ -30,42 +51,45 @@ export async function showTsecCaptcha(
   }
   const TencentCaptcha = await loadTjCaptcha()
   return new Promise((resolve, reject) => {
+    const releasePosition = bindTsecCaptchaToLoginCard()
+    const finish = (next: () => void): void => {
+      releasePosition()
+      next()
+    }
     try {
       const captcha = new TencentCaptcha(
         appId,
         (result: TencentCaptchaResult) => {
           if (result.ret === 2) {
-            reject(new TsecCaptchaClosedError())
+            finish(() => reject(new TsecCaptchaClosedError()))
             return
           }
           const ticket = (result.ticket || '').trim()
           const randstr = (result.randstr || '').trim()
           if (result.ret !== 0 || !ticket || !randstr || result.errorCode || isDisasterTicket(ticket)) {
-            reject(new TsecCaptchaFailedError(tsecFrontendErrorReason(result.errorCode, result.errorMessage)))
+            finish(() =>
+              reject(new TsecCaptchaFailedError(tsecFrontendErrorReason(result.errorCode, result.errorMessage)))
+            )
             return
           }
-          const solved: TsecSolvedCaptcha = { ticket, randstr }
-          if (result.sid) {
-            solved.sid = result.sid
-          }
-          if (typeof result.verifyDuration === 'number') {
-            solved.verifyDuration = result.verifyDuration
-          }
-          if (typeof result.actionDuration === 'number') {
-            solved.actionDuration = result.actionDuration
-          }
-          resolve(solved)
+          finish(() => resolve(parseSolvedCaptcha(result)))
         },
         {
           userLanguage: tsecUserLanguage(uiLocale),
           enableDarkMode: true,
           aidEncrypted: aidAuth.aidEncrypted,
           aidEncryptedType: aidAuth.aidEncryptedType,
+          ready: () => {
+            applyTsecCaptchaToLoginCard()
+          },
+          showFn: () => {
+            applyTsecCaptchaToLoginCard()
+          },
         }
       )
       captcha.show()
     } catch {
-      reject(new TsecCaptchaFailedError('jsload_error'))
+      finish(() => reject(new TsecCaptchaFailedError('jsload_error')))
     }
   })
 }

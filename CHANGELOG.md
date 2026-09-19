@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.93] - 2026-09-20
+
+> **Mobile `/auth` drops the cinema clip, pins Tencent slide verify to the login card, and skips guest `/refresh`.**
+
+### Changed
+
+- **移动端 `/auth`** — No hero video (still only). Header tagline no longer overlaps nav links; the header register button is gone (register stays on the modal). Headline sits above the card; long subcopy is hidden.
+- **腾讯滑块验证** — Popup is centered on the login card on desktop and mobile instead of the viewport middle (`.tcaptcha-transform` + `data-tsec-anchor`).
+- **登录页电影背景** — Clip rotation is a session shuffle bag (all four before a reshuffle; no immediate repeat), not one clip per calendar day.
+- **测试/生产 COS 302** — Built SPA 302s to COS even when `DEBUG=true`. Only local Vite (`VITE_DEV_PORT`) skips the 302. See [`docs/architecture/production_security_deploy.md`](docs/architecture/production_security_deploy.md).
+- **访客 `/auth`** — Guest auth paths skip `checkAuth` on boot; `/me` 401 does not call `/refresh` unless a persisted user hint exists.
+
+### Tests
+
+- [`frontend/tests/positionTsecCaptcha.spec.ts`](frontend/tests/positionTsecCaptcha.spec.ts), [`frontend/tests/authLoginHero.spec.ts`](frontend/tests/authLoginHero.spec.ts), [`frontend/tests/tsecCaptcha.spec.ts`](frontend/tests/tsecCaptcha.spec.ts), [`frontend/tests/authBootstrapDedupe.spec.ts`](frontend/tests/authBootstrapDedupe.spec.ts)
+- [`tests/test_auth_login_hero.py`](tests/test_auth_login_hero.py)
+
 ## [5.180.92] - 2026-09-20
 
 > **Login `/auth` uses a still in Vite and daily COS cinema clips on test/prod.**
