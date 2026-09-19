@@ -37,6 +37,9 @@ describe('mind map classroom remote', () => {
     expect(remote).not.toContain('classroomRemote.collapse')
     expect(remote).toContain('mindmap-classroom-remote-close')
     expect(remote).toContain('onClose')
+    expect(readSrc('src/composables/canvas/useClassroomRemotePosition.ts')).toContain(
+      'classroom_remote_visible'
+    )
     expect(readSrc('src/canvas-ribbon/mindMapClassroomRemote.css')).toContain(
       'grid-template-columns: repeat(3, auto)'
     )

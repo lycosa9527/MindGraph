@@ -104,6 +104,13 @@ describe('normalizeAuthUser', () => {
     expect(normalizeAuthUser({ ...loginPayload, v3_ribbon_tab: 'ai' }).v3RibbonTab).toBe('ai')
   })
 
+  it('hydrates classroom remote visibility from /me', () => {
+    expect(
+      normalizeAuthUser({ ...loginPayload, classroom_remote_visible: false }).classroomRemoteVisible
+    ).toBe(false)
+    expect(normalizeAuthUser(loginPayload).classroomRemoteVisible).toBe(true)
+  })
+
   it('drops unknown ribbon tabs', () => {
     const user = normalizeAuthUser({
       ...loginPayload,

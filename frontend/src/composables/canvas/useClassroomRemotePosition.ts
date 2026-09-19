@@ -17,6 +17,11 @@ import {
   DEFAULT_CLASSROOM_REMOTE_TAB,
   isClassroomRemoteTabId,
 } from '@/canvas-ribbon/mindMapClassroomRemoteTypes'
+import { useAuthStore } from '@/stores'
+import { authFetch } from '@/utils/api'
+
+const CLASSROOM_REMOTE_PREFS_PATH = '/api/auth/diagram-preferences'
+const CLASSROOM_REMOTE_PREFS_DEBOUNCE_MS = 400
 
 export function clampClassroomRemotePosition(
   left: number,
@@ -99,33 +104,112 @@ function writeStoredRemote(next: ClassroomRemotePersisted): void {
   }
 }
 
+function viewportSize(): { width: number; height: number } {
+  if (typeof window === 'undefined') {
+    return { width: 1280, height: 720 }
+  }
+  return { width: window.innerWidth, height: window.innerHeight }
+}
+
 const sharedHidden = ref(readStoredRemote()?.hidden === true)
+let remotePersistTimer = 0
+let remotePersistInFlight = false
+
+function persistHiddenLocal(): void {
+  const stored = readStoredRemote()
+  if (stored) {
+    writeStoredRemote({ ...stored, hidden: sharedHidden.value })
+    return
+  }
+  const view = viewportSize()
+  const fallback = defaultClassroomRemotePosition(
+    CLASSROOM_REMOTE_DEFAULT_WIDTH_PX,
+    CLASSROOM_REMOTE_DEFAULT_HEIGHT_PX,
+    view.width,
+    view.height
+  )
+  writeStoredRemote({
+    left: fallback.left,
+    top: fallback.top,
+    hidden: sharedHidden.value,
+    tab: DEFAULT_CLASSROOM_REMOTE_TAB,
+  })
+}
 
 export function useClassroomRemoteVisibility() {
-  function persistHidden(): void {
-    const stored = readStoredRemote()
-    if (stored) {
-      writeStoredRemote({ ...stored, hidden: sharedHidden.value })
+  const authStore = useAuthStore()
+
+  function hydrateFromUser(): void {
+    if (!authStore.user) {
       return
     }
-    const view = viewportSize()
-    const fallback = defaultClassroomRemotePosition(
-      CLASSROOM_REMOTE_DEFAULT_WIDTH_PX,
-      CLASSROOM_REMOTE_DEFAULT_HEIGHT_PX,
-      view.width,
-      view.height
-    )
-    writeStoredRemote({
-      left: fallback.left,
-      top: fallback.top,
-      hidden: sharedHidden.value,
-      tab: DEFAULT_CLASSROOM_REMOTE_TAB,
-    })
+    sharedHidden.value = authStore.user.classroomRemoteVisible === false
+    persistHiddenLocal()
   }
+
+  function patchAuthUser(visible: boolean): void {
+    if (!authStore.user) {
+      return
+    }
+    authStore.patchPersistedUser({ classroomRemoteVisible: visible })
+  }
+
+  async function persistNow(): Promise<void> {
+    if (!authStore.isAuthenticated) {
+      return
+    }
+    remotePersistInFlight = true
+    const visible = !sharedHidden.value
+    try {
+      const response = await authFetch(CLASSROOM_REMOTE_PREFS_PATH, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classroom_remote_visible: visible }),
+      })
+      if (!response.ok) {
+        return
+      }
+      const data = (await response.json().catch(() => ({}))) as {
+        classroom_remote_visible?: boolean
+      }
+      const saved = data.classroom_remote_visible !== false
+      sharedHidden.value = !saved
+      persistHiddenLocal()
+      patchAuthUser(saved)
+    } finally {
+      remotePersistInFlight = false
+    }
+  }
+
+  function schedulePersist(): void {
+    if (!authStore.isAuthenticated) {
+      return
+    }
+    if (remotePersistTimer !== 0) {
+      window.clearTimeout(remotePersistTimer)
+    }
+    remotePersistTimer = window.setTimeout(() => {
+      remotePersistTimer = 0
+      void persistNow()
+    }, CLASSROOM_REMOTE_PREFS_DEBOUNCE_MS)
+  }
+
+  hydrateFromUser()
+  watch(
+    () => authStore.user?.id,
+    () => {
+      if (remotePersistInFlight || remotePersistTimer !== 0) {
+        return
+      }
+      hydrateFromUser()
+    }
+  )
 
   function setHidden(next: boolean): void {
     sharedHidden.value = next
-    persistHidden()
+    persistHiddenLocal()
+    patchAuthUser(!next)
+    schedulePersist()
   }
 
   function toggleHidden(): void {
@@ -133,13 +217,6 @@ export function useClassroomRemoteVisibility() {
   }
 
   return { hidden: sharedHidden, setHidden, toggleHidden }
-}
-
-function viewportSize(): { width: number; height: number } {
-  if (typeof window === 'undefined') {
-    return { width: 1280, height: 720 }
-  }
-  return { width: window.innerWidth, height: window.innerHeight }
 }
 
 export function useClassroomRemotePosition(panelRef: Ref<HTMLElement | null>) {

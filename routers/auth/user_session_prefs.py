@@ -27,6 +27,7 @@ def user_preference_fields(user: User) -> dict[str, Any]:
         "ai_content_level": getattr(user, "ai_content_level", None),
         "v3_ribbon_classic": bool(getattr(user, "v3_ribbon_classic", False)),
         "v3_ribbon_tab": getattr(user, "v3_ribbon_tab", None),
+        "classroom_remote_visible": _bool_pref(user, "classroom_remote_visible", True),
     }
 
 

@@ -26,6 +26,7 @@ def test_user_preference_fields_include_ui_version_and_languages() -> None:
     user.ai_content_level = "university"
     user.v3_ribbon_classic = True
     user.v3_ribbon_tab = "design"
+    user.classroom_remote_visible = False
     payload = user_preference_fields(user)
     assert payload["ui_language"] == "zh"
     assert payload["prompt_language"] == "zh"
@@ -38,6 +39,7 @@ def test_user_preference_fields_include_ui_version_and_languages() -> None:
     assert payload["ai_content_level"] == "university"
     assert payload["v3_ribbon_classic"] is True
     assert payload["v3_ribbon_tab"] == "design"
+    assert payload["classroom_remote_visible"] is False
 
 
 def test_user_preference_fields_defaults_when_unset() -> None:
@@ -55,6 +57,7 @@ def test_user_preference_fields_defaults_when_unset() -> None:
     assert "ai_content_level" in payload
     assert payload["v3_ribbon_classic"] is False
     assert payload["v3_ribbon_tab"] is None
+    assert payload["classroom_remote_visible"] is True
 
 
 def test_language_preference_patch_fields_are_the_settings_subset() -> None:
@@ -120,6 +123,13 @@ def test_diagram_preferences_accepts_v3_ribbon_fields() -> None:
     assert learn.v3_ribbon_tab == "teaching"
     ai = DiagramPreferencesUpdate.model_validate({"v3_ribbon_tab": "ai"})
     assert ai.v3_ribbon_tab == "ai"
+
+
+def test_diagram_preferences_accepts_classroom_remote_visible() -> None:
+    """Classroom remote open state can PATCH without 学段."""
+    body = DiagramPreferencesUpdate.model_validate({"classroom_remote_visible": False})
+    assert body.classroom_remote_visible is False
+    assert "education_stage" not in body.model_fields_set
 
 
 def test_diagram_preferences_rejects_unknown_v3_ribbon_tab() -> None:

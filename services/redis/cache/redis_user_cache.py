@@ -92,6 +92,7 @@ class UserCache:
             "ai_content_level": getattr(user, "ai_content_level", None) or "",
             "v3_ribbon_classic": "1" if getattr(user, "v3_ribbon_classic", False) else "0",
             "v3_ribbon_tab": getattr(user, "v3_ribbon_tab", None) or "",
+            "classroom_remote_visible": ("0" if getattr(user, "classroom_remote_visible", None) is False else "1"),
         }
 
     def _deserialize_user(self, data: dict[bytes | str, bytes | str]) -> User:
@@ -168,6 +169,8 @@ class UserCache:
         ribbon_classic = normalized.get("v3_ribbon_classic", "0")
         user.v3_ribbon_classic = ribbon_classic in ("1", "true", "True")
         user.v3_ribbon_tab = normalized.get("v3_ribbon_tab") or None
+        remote_visible = normalized.get("classroom_remote_visible", "1")
+        user.classroom_remote_visible = remote_visible not in ("0", "false", "False")
 
         return user
 

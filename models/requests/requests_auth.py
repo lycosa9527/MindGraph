@@ -952,6 +952,10 @@ class DiagramPreferencesUpdate(BaseModel):
         max_length=16,
         description="Last V3 ribbon tab (file|edit|ai|teaching|research)",
     )
+    classroom_remote_visible: Optional[bool] = Field(
+        None,
+        description="True when the new-canvas classroom remote is open",
+    )
 
     @field_validator("education_stage")
     @classmethod

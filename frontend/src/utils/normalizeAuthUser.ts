@@ -171,6 +171,7 @@ export function normalizeAuthUser(source: BackendUser | User): User {
   const aiLevelRaw = raw.ai_content_level ?? raw.aiContentLevel ?? null
   const ribbonClassicRaw = raw.v3_ribbon_classic ?? raw.v3RibbonClassic
   const ribbonTabRaw = raw.v3_ribbon_tab ?? raw.v3RibbonTab
+  const remoteVisibleRaw = raw.classroom_remote_visible ?? raw.classroomRemoteVisible
   const ribbonTab = normalizeMindMapRibbonTabId(
     typeof ribbonTabRaw === 'string' ? ribbonTabRaw : null
   )
@@ -196,6 +197,7 @@ export function normalizeAuthUser(source: BackendUser | User): User {
     aiContentLevel: isAiContentLevelId(aiLevelRaw) ? aiLevelRaw : null,
     v3RibbonClassic: ribbonClassicRaw === true,
     v3RibbonTab: ribbonTab,
+    classroomRemoteVisible: remoteVisibleRaw !== false,
     allowsSimplifiedChinese: allowsZh,
     loginPasswordSet: resolveLoginPasswordSet(raw),
     mindmateAgentName: mindmateAgentName || null,

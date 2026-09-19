@@ -156,6 +156,7 @@ class User(Base):
     ai_content_level: Mapped[str | None] = mapped_column(String(32), nullable=True)
     v3_ribbon_classic: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     v3_ribbon_tab: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    classroom_remote_visible: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
     email_login_whitelisted_from_cn: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     login_password_set: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

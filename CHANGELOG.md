@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.90] - 2026-09-19
+
+> **Classroom remote open state follows the account, not just this browser.**
+
+### Added
+
+- **课堂浮动工具可见性** — Closing the remote persists `users.classroom_remote_visible` (Alembic `0120`). Login, session payload, Redis user cache, and diagram-preferences PATCH keep it. Default is open. Same account on another IFP or browser hydrates from `/me`.
+
+### Tests
+
+- [`frontend/tests/normalizeAuthUser.spec.ts`](frontend/tests/normalizeAuthUser.spec.ts), [`frontend/tests/mindMapClassroomRemote.spec.ts`](frontend/tests/mindMapClassroomRemote.spec.ts)
+- [`tests/auth/test_user_session_prefs.py`](tests/auth/test_user_session_prefs.py)
+
 ## [5.180.89] - 2026-09-19
 
 > **New-canvas classroom remote: a draggable tool strip for 110" IFP boards that cannot reach the top ribbon.**

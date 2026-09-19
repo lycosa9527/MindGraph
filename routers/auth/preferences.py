@@ -21,7 +21,7 @@ from services.utils.error_types import REDIS_ERRORS
 from utils.auth import get_current_user
 
 from .dependencies import get_language_dependency
-from .user_session_prefs import language_preference_patch_fields
+from .user_session_prefs import language_preference_patch_fields, user_preference_fields
 
 logger = logging.getLogger(__name__)
 
@@ -119,15 +119,19 @@ async def update_diagram_preferences(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """Persist 学段, 专业程度, and/or V3 ribbon defaults for the signed-in user."""
+    """Persist 学段, 专业程度, V3 ribbon defaults, and/or classroom remote visibility."""
     stage_set = "education_stage" in body.model_fields_set
     level_set = "ai_content_level" in body.model_fields_set
     ribbon_classic_set = "v3_ribbon_classic" in body.model_fields_set
     ribbon_tab_set = "v3_ribbon_tab" in body.model_fields_set
-    if not stage_set and not level_set and not ribbon_classic_set and not ribbon_tab_set:
+    remote_set = "classroom_remote_visible" in body.model_fields_set
+    if not stage_set and not level_set and not ribbon_classic_set and not ribbon_tab_set and not remote_set:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=("Provide at least one of education_stage, ai_content_level, v3_ribbon_classic, v3_ribbon_tab"),
+            detail=(
+                "Provide at least one of education_stage, ai_content_level, "
+                "v3_ribbon_classic, v3_ribbon_tab, classroom_remote_visible"
+            ),
         )
 
     result = await db.execute(select(User).where(User.id == current_user.id))
@@ -146,6 +150,8 @@ async def update_diagram_preferences(
         user.v3_ribbon_classic = body.v3_ribbon_classic
     if ribbon_tab_set:
         user.v3_ribbon_tab = body.v3_ribbon_tab
+    if remote_set:
+        user.classroom_remote_visible = body.classroom_remote_visible
 
     try:
         await db.commit()
@@ -171,4 +177,5 @@ async def update_diagram_preferences(
         "ai_content_level": getattr(user, "ai_content_level", None),
         "v3_ribbon_classic": bool(getattr(user, "v3_ribbon_classic", False)),
         "v3_ribbon_tab": getattr(user, "v3_ribbon_tab", None),
+        "classroom_remote_visible": user_preference_fields(user)["classroom_remote_visible"],
     }
