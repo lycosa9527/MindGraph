@@ -38,6 +38,8 @@ export default {
   'learningSpace.deleteAssignmentConfirm': '确定删除「{title}」？学生提交与作品将一并删除，且无法恢复。',
   'learningSpace.assignmentDeleted': '作业已删除',
   'learningSpace.deleteFailed': '删除作业失败',
+  'learningSpace.noPublishableClass': '没有可布置作业的班级（需为启用中的班级负责人）',
+  'learningSpace.homeworkClosed': '作业已截止',
   'learningSpace.reqOverview': '基本信息',
   'learningSpace.reqAi': 'AI 权限',
   'learningSpace.aiAssistOn': '允许学生使用 AI 辅助',

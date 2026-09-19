@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'Dosen tamu dapat menarik guru sekolah tersebut ke halaman ikon yang sama.',
   'admin.feature.vod': 'Awan sesuai permintaan',
   'admin.feature.vodHint': 'Pustaka media on-demand Tencent Cloud di panel manajemen memungkinkan administrator sekolah menelusuri dan mengunggah video.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Tidak dapat memuat tanda fitur',
   'admin.featureSaveFailed': 'Tidak dapat menyimpan setelan',
   'admin.featuresIntro': 'Alihkan tanda modul. Nilai ditulis ke .env dan dimuat ulang di semua pekerja API sehingga UI dan API memeriksa pembaruan tanpa memulai ulang. Ruang Pengetahuan mungkin masih memerlukan Qdrant/Celery yang dimulai dengan proses.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

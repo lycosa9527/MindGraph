@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'வருகை தரும் விரிவுரையாளர் பள்ளியின் ஆசிரியரை அதே ஐகான் பக்கத்திற்கு இழுக்க முடியும்.',
   'admin.feature.vod': 'தேவைக்கேற்ப மேகம்',
   'admin.feature.vodHint': 'மேலாண்மை குழுவில் உள்ள டென்சென்ட் கிளவுட் ஆன்-டிமாண்ட் மீடியா லைப்ரரி பள்ளி நிர்வாகிகளை வீடியோக்களை உலாவவும் பதிவேற்றவும் அனுமதிக்கிறது.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'அம்ச சுவிட்சை ஏற்ற முடியவில்லை',
   'admin.featureSaveFailed': 'அமைப்புகளைச் சேமிக்க முடியவில்லை',
   'admin.featuresIntro': 'ஒவ்வொரு தொகுதியையும் இங்கே ஆன் மற்றும் ஆஃப் செய்யவும். இது .env க்கு எழுதப்பட்டு அனைத்து API செயல்முறைகளுக்கும் ஹாட்-லோட் செய்யப்படும். இடைமுகம் மற்றும் இடைமுகம் மறுதொடக்கம் செய்யாமல் செயல்படும். தொடக்கத்தில் தொடங்கப்படும் Qdrant/Celery ஐ நம்பியிருந்தால், அறிவு இடைவெளிகளுக்கு முழு மறுதொடக்கம் தேவைப்படலாம்.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

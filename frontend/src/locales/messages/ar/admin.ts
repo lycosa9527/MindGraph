@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'يمكن للمحاضر الزائر سحب معلم المدرسة إلى نفس صفحة الأيقونة.',
   'admin.feature.vod': 'السحابة عند الطلب',
   'admin.feature.vodHint': 'تتيح مكتبة الوسائط عند الطلب Tencent Cloud الموجودة في لوحة الإدارة لمسؤولي المدرسة تصفح مقاطع الفيديو وتحميلها.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'غير قادر على تحميل مفتاح الميزة',
   'admin.featureSaveFailed': 'غير قادر على حفظ الإعدادات',
   'admin.featuresIntro': 'قم بتشغيل وإيقاف كل وحدة هنا. سيتم كتابته إلى .env وتحميله سريعًا لجميع عمليات واجهة برمجة التطبيقات (API). سيتم تفعيل الواجهة والواجهة دون إعادة التشغيل. قد تظل مساحات المعرفة بحاجة إلى إعادة تشغيل كاملة إذا كانت تعتمد على تهيئة Qdrant/Celery عند بدء التشغيل.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

@@ -3,9 +3,9 @@
  * Assignment submission roster modal — green submitted / red pending chips.
  */
 import { computed } from 'vue'
-import { Bell, X } from '@lucide/vue'
+import { X } from '@lucide/vue'
 
-import { useLanguage, useNotifications } from '@/composables'
+import { useLanguage } from '@/composables'
 import type { LearningStudentRow } from '@/utils/learningSpaceApi'
 
 const visible = defineModel<boolean>({ required: true })
@@ -17,7 +17,6 @@ const props = defineProps<{
 }>()
 
 const { t } = useLanguage()
-const notify = useNotifications()
 
 const submittedSet = computed(() => new Set(props.submittedIds))
 
@@ -35,10 +34,6 @@ function avatarLabel(name: string): string {
   const trimmed = name.trim()
   if (!trimmed) return '?'
   return trimmed.length <= 2 ? trimmed : trimmed.slice(0, 2)
-}
-
-function onRemindAll(): void {
-  notify.info(t('learningSpace.remindSoon'))
 }
 
 function onClose(): void {
@@ -80,14 +75,6 @@ function onClose(): void {
               <h3>
                 {{ t('learningSpace.unsubmittedZone', { n: pendingCount }) }}
               </h3>
-              <button
-                type="button"
-                class="ls-status-remind"
-                @click="onRemindAll"
-              >
-                <Bell :size="14" />
-                {{ t('learningSpace.remindAll') }}
-              </button>
             </div>
             <div class="ls-status-chips">
               <span

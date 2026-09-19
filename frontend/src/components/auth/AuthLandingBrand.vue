@@ -1,11 +1,45 @@
 <script setup lang="ts">
 /**
- * Full-bleed brand backdrop for `/auth` — photo hero + overlay copy.
+ * Full-bleed cinematic hero for `/auth` — COS clip on test/prod, still in Vite.
  */
-import authLandingHero from '@/assets/auth/auth-landing-hero.png'
+import { computed, onMounted, ref } from 'vue'
+
+import authLandingPoster from '@/assets/auth/auth-landing-hero.png'
 import { useLanguage } from '@/composables'
+import {
+  AUTH_LOGIN_HERO_STILL_SRC,
+  authLoginHeroKind,
+  authLoginHeroSrc,
+  pickAuthLoginHeroId,
+  type AuthLoginHeroKind,
+} from '@/utils/authLoginHero'
 
 const { t } = useLanguage()
+const clipId = ref('')
+const heroSrc = ref('')
+const heroKind = ref<AuthLoginHeroKind>('image')
+const videoFailed = ref(false)
+const reduceMotion = ref(false)
+const showVideo = computed(
+  () => heroKind.value === 'video' && !reduceMotion.value && !videoFailed.value && Boolean(heroSrc.value)
+)
+
+onMounted(() => {
+  reduceMotion.value = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const kind = reduceMotion.value ? 'image' : authLoginHeroKind()
+  heroKind.value = kind
+  clipId.value = pickAuthLoginHeroId()
+  heroSrc.value = authLoginHeroSrc(clipId.value, kind)
+})
+
+function onVideoError(): void {
+  if (heroKind.value === 'video') {
+    heroKind.value = 'image'
+    heroSrc.value = AUTH_LOGIN_HERO_STILL_SRC
+    return
+  }
+  videoFailed.value = true
+}
 </script>
 
 <template>
@@ -13,15 +47,34 @@ const { t } = useLanguage()
     class="auth-landing-brand"
     aria-labelledby="auth-landing-brand-title"
   >
+    <video
+      v-if="showVideo"
+      :key="heroSrc"
+      class="auth-landing-brand__bg"
+      :poster="authLandingPoster"
+      autoplay
+      muted
+      loop
+      playsinline
+      preload="auto"
+      @error="onVideoError"
+    >
+      <source
+        :src="heroSrc"
+        type="video/mp4"
+      >
+    </video>
     <img
-      :src="authLandingHero"
+      v-else
+      :src="heroSrc || authLandingPoster"
       alt=""
       class="auth-landing-brand__bg"
-      width="2560"
-      height="1440"
+      width="2048"
+      height="1152"
       decoding="async"
       fetchpriority="high"
-    />
+    >
+
     <div
       class="auth-landing-brand__veil"
       aria-hidden="true"
@@ -50,8 +103,8 @@ const { t } = useLanguage()
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  color: rgb(41 37 36);
-  background: #e8eef8;
+  color: rgb(248 250 252);
+  background: #0b1220;
 }
 
 .auth-landing-brand__bg {
@@ -65,7 +118,6 @@ const { t } = useLanguage()
   image-rendering: auto;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  filter: contrast(1.06) saturate(1.04);
 }
 
 .auth-landing-brand__veil {
@@ -73,13 +125,12 @@ const { t } = useLanguage()
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  /* Minimal wash only near the login card so the hero stays crisp. */
   background: linear-gradient(
     90deg,
-    transparent 0%,
-    transparent 55%,
-    rgb(248 250 252 / 0.12) 78%,
-    rgb(248 250 252 / 0.32) 100%
+    rgb(8 15 30 / 0.22) 0%,
+    transparent 40%,
+    rgb(248 250 252 / 0.10) 78%,
+    rgb(248 250 252 / 0.28) 100%
   );
 }
 
@@ -100,7 +151,6 @@ const { t } = useLanguage()
 
 @media (min-width: 900px) {
   .auth-landing-brand__top {
-    /* Leave room for the login card on the same 1280px rail. */
     max-width: min(34rem, calc(100% - 26.5rem - 2rem));
   }
 }
@@ -112,11 +162,12 @@ const { t } = useLanguage()
   font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 1.2;
-  color: rgb(15 23 42);
+  color: #fff;
+  text-shadow: 0 2px 18px rgb(8 15 30 / 0.45);
 }
 
 .auth-landing-brand__accent {
-  background: linear-gradient(90deg, #3b82f6 0%, #7c5cbf 100%);
+  background: linear-gradient(90deg, #7dd3fc 0%, #c4b5fd 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -128,7 +179,8 @@ const { t } = useLanguage()
   max-width: 38em;
   font-size: 1rem;
   line-height: 1.7;
-  color: rgb(51 65 85);
+  color: rgb(226 232 240);
+  text-shadow: 0 1px 10px rgb(8 15 30 / 0.35);
 }
 
 @media (max-width: 899px) {
@@ -139,9 +191,9 @@ const { t } = useLanguage()
   .auth-landing-brand__veil {
     background: linear-gradient(
       180deg,
-      rgb(248 250 252 / 0.72) 0%,
-      rgb(248 250 252 / 0.35) 38%,
-      rgb(248 250 252 / 0.12) 100%
+      rgb(8 15 30 / 0.72) 0%,
+      rgb(8 15 30 / 0.35) 38%,
+      rgb(8 15 30 / 0.12) 100%
     );
   }
 

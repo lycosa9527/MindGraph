@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'O professor visitante pode puxar o professor da escola para a mesma página do ícone.',
   'admin.feature.vod': 'Nuvem sob demanda',
   'admin.feature.vodHint': 'A biblioteca de mídia sob demanda Tencent Cloud no painel de gerenciamento permite que os administradores escolares naveguem e carreguem vídeos.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Não foi possível carregar os sinalizadores de recursos',
   'admin.featureSaveFailed': 'Não foi possível gravar a configuração.',
   'admin.featuresIntro': 'Alternar sinalizadores do módulo. Os valores são gravados em .env e recarregados em todos os trabalhadores da API para que a interface do usuário e a API verifiquem a atualização sem reiniciar. O Espaço do Conhecimento ainda pode precisar de Qdrant/Aipo que foram iniciados com o processo.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

@@ -55,7 +55,9 @@ async def search_teachers_for_pilot(
         term = f"%{q}%"
         conditions.append((User.name.like(term)) | (User.phone.like(term)) | (User.email.like(term)))
 
-    result = await db.execute(select(User).where(*conditions).order_by(User.id.desc()).limit(max(1, min(limit, 50))))
+    result = await db.execute(
+        select(User).where(*conditions).order_by(User.name.asc(), User.id.desc()).limit(max(1, min(limit, 200)))
+    )
     users = list(result.scalars().all())
     if not users:
         return []

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import HTTPException
@@ -24,7 +25,10 @@ from models.domain.learning_space import (
 )
 from routers.features.learning_space.schemas import ClassUpdate
 from services.diagram.semantic_spec_validation import validate_semantic_spec
-from services.learning_space.access import assert_assignment_visible_to_learner
+from services.learning_space.access import (
+    assert_assignment_visible_to_learner,
+    get_class_for_staff,
+)
 from services.learning_space.assignments import (
     assert_can_edit_submission,
     student_homework_diagram_title,
@@ -41,6 +45,10 @@ from services.learning_space.passwords import (
     initial_password_from_name,
     merge_ai_permissions,
     normalize_student_name,
+)
+from services.learning_space.synthetic_email import (
+    is_learning_space_synthetic_email,
+    student_synthetic_email,
 )
 from services.learning_space.students import preview_student_names
 from tests.typing_helpers import as_type, as_user
@@ -93,6 +101,15 @@ def test_assert_teacher_eligible_rejects_missing_org() -> None:
 def test_initial_password_from_chinese_name() -> None:
     """Derive the default student password from pinyin initials."""
     assert initial_password_from_name("张三") == "zs123"
+
+
+def test_synthetic_student_email_is_not_a_real_login() -> None:
+    """Placeholder emails stay out of email-login GeoIP without importing pypinyin."""
+    assert student_synthetic_email(23, 4830) == "s23.4830@student.learning.local"
+    assert is_learning_space_synthetic_email("s23.4830@student.learning.local")
+    assert is_learning_space_synthetic_email("  S23.4830@STUDENT.LEARNING.LOCAL  ")
+    assert not is_learning_space_synthetic_email("teacher@school.edu")
+    assert not is_learning_space_synthetic_email(None)
 
 
 def test_normalize_and_preview_rejects_duplicate_names() -> None:
@@ -364,3 +381,45 @@ def test_parse_account_phones_dedupes() -> None:
     assert normalize_account_phone(" 138-0013-8000 ") == "13800138000"
     phones = parse_account_phones("13800138000\n13800138000\n13900139000")
     assert phones == ["13800138000", "13900139000"]
+
+
+def _staff_class() -> SimpleNamespace:
+    return SimpleNamespace(id=1, teacher_user_id=9, status="active")
+
+
+@pytest.mark.asyncio
+async def test_staff_owner_requires_enabled_pilot(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Disabled or missing pilots cannot review as class owner."""
+    db = AsyncMock()
+    db.get = AsyncMock(return_value=_staff_class())
+    monkeypatch.setattr("services.learning_space.access.get_enabled_pilot", AsyncMock(return_value=None))
+    monkeypatch.setattr("services.learning_space.access.is_class_assistant", AsyncMock(return_value=False))
+    with pytest.raises(HTTPException) as exc:
+        await get_class_for_staff(db, 1, 9)
+    assert exc.value.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_staff_owner_with_pilot_ok(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Enabled pilots may review classes they own."""
+    learning_class = _staff_class()
+    db = AsyncMock()
+    db.get = AsyncMock(return_value=learning_class)
+    monkeypatch.setattr(
+        "services.learning_space.access.get_enabled_pilot",
+        AsyncMock(return_value=SimpleNamespace(id=1)),
+    )
+    result = await get_class_for_staff(db, 1, 9)
+    assert result is learning_class
+
+
+@pytest.mark.asyncio
+async def test_staff_assistant_ok_without_pilot(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Assistants may review even when they are not pilots."""
+    learning_class = _staff_class()
+    db = AsyncMock()
+    db.get = AsyncMock(return_value=learning_class)
+    monkeypatch.setattr("services.learning_space.access.get_enabled_pilot", AsyncMock(return_value=None))
+    monkeypatch.setattr("services.learning_space.access.is_class_assistant", AsyncMock(return_value=True))
+    result = await get_class_for_staff(db, 1, 8)
+    assert result is learning_class

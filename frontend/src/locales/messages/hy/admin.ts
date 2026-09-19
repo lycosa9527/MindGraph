@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'Visiting instructors pull a school’s teachers to the same diagram page.',
   'admin.feature.vod': 'Cloud VOD',
   'admin.feature.vodHint': 'Tencent Cloud VOD library in the management panel for school admins to browse and upload videos.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Could not load feature flags',
   'admin.featureSaveFailed': 'Could not save settings',
   'admin.featuresIntro': 'Toggle module flags. Values are written to .env and reloaded on all API workers so the UI and API checks update without a restart. Knowledge Space may still need Qdrant/Celery that were started with the process.',
@@ -1640,6 +1643,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

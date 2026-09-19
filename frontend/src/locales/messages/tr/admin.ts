@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'Misafir öğretim görevlisi okulun öğretmenini aynı simge sayfasına çekebilir.',
   'admin.feature.vod': 'İsteğe bağlı bulut',
   'admin.feature.vodHint': 'Yönetim panelindeki Tencent Cloud isteğe bağlı medya kitaplığı, okul yöneticilerinin videolara göz atmasına ve yüklemesine olanak tanır.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Özellik bayrakları yüklenemedi',
   'admin.featureSaveFailed': 'Ayarlar kaydedilemedi',
   'admin.featuresIntro': 'Modül bayraklarını değiştirin. Değerler .env\'ye yazılır ve tüm API çalışanlarına yeniden yüklenir, böylece UI ve API yeniden başlatılmadan güncellemeyi kontrol eder. Knowledge Space, süreçle başlayan Qdrant/Celery\'ye hala ihtiyaç duyabilir.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

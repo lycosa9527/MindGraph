@@ -11,6 +11,7 @@ import { useRouter } from 'vue-router'
 import {
   Building2,
   ChevronRight,
+  ClipboardList,
   GraduationCap,
   MessageSquare,
   Mic,
@@ -144,7 +145,7 @@ function goToLearningSpace() {
         <div
           class="flex items-center justify-center w-12 h-12 rounded-xl bg-sky-50 text-sky-700 shrink-0"
         >
-          <GraduationCap :size="24" />
+          <ClipboardList :size="24" />
         </div>
         <div class="flex-1 min-w-0">
           <div class="text-base font-semibold text-gray-900">

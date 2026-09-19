@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'Lektori vizitues mund ta tërheqë mësuesin e shkollës në të njëjtën faqe ikonë.',
   'admin.feature.vod': 'Re sipas kërkesës',
   'admin.feature.vodHint': 'Biblioteka e medias sipas kërkesës së Tencent Cloud në panelin e menaxhimit lejon administratorët e shkollave të shfletojnë dhe ngarkojnë video.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Flamujt e funksioneve nuk u ngarkuan',
   'admin.featureSaveFailed': 'Cilësimet nuk u ruajtën',
   'admin.featuresIntro': 'Aktivizoni ose çaktivizoni modulet. Vlerat shkruhen në .env dhe ringarkohen në të gjithë workerët API që UI dhe kontrollet API të përditësohen pa rinisje. Hapësira e Njohurive mund të kërkojë ende Qdrant/Celery të nisur me procesin.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'De gastdocent kan de docent van de school naar dezelfde icoonpagina trekken.',
   'admin.feature.vod': 'Cloud op aanvraag',
   'admin.feature.vodHint': 'Met de on-demand mediabibliotheek van Tencent Cloud in het beheerpaneel kunnen schoolbeheerders video\'s bekijken en uploaden.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Kan functievlaggen niet laden',
   'admin.featureSaveFailed': 'Kan instellingen niet opslaan',
   'admin.featuresIntro': 'Schakel modulevlaggen in en uit. Waarden worden naar .env geschreven en opnieuw geladen op alle API-werkrollen, zodat de gebruikersinterface en API-controles worden bijgewerkt zonder opnieuw op te starten. Knowledge Space heeft mogelijk nog steeds Qdrant/Celery nodig die tijdens het proces zijn gestart.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

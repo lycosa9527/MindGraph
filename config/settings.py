@@ -29,6 +29,7 @@ import logging
 
 from dotenv import load_dotenv
 
+from config.auth_login_config import AuthLoginCosConfigMixin
 from config.base_config import BaseConfig
 from config.dashscope_endpoint_config import DashScopeEndpointConfigMixin
 from config.features_config import FeaturesConfigMixin
@@ -63,6 +64,7 @@ class Config(
     TrainingCosConfigMixin,
     WorkshopCosConfigMixin,
     LearningSpaceCosConfigMixin,
+    AuthLoginCosConfigMixin,
     VodConfigMixin,
     FeaturesConfigMixin,
 ):

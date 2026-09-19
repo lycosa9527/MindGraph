@@ -41,6 +41,9 @@ export default {
     'Delete “{title}”? Student submissions will also be removed and cannot be recovered.',
   'learningSpace.assignmentDeleted': 'Assignment deleted',
   'learningSpace.deleteFailed': 'Could not delete assignment',
+  'learningSpace.noPublishableClass':
+    'No class you can publish to (you must own an active class)',
+  'learningSpace.homeworkClosed': 'Assignment closed',
   'learningSpace.reqOverview': 'Overview',
   'learningSpace.reqAi': 'AI permissions',
   'learningSpace.aiAssistOn': 'Students may use AI assistance',

@@ -2,7 +2,7 @@
 /**
  * Learning Space admin — pilot teachers sub-page.
  */
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import { useRouter } from 'vue-router'
 
@@ -11,7 +11,6 @@ import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import {
   type AdminOrganizationOption,
   fetchAdminOrganizations,
-  fetchAdminUsers,
 } from '@/composables/queries/adminApi'
 import {
   type LearningPilot,
@@ -20,6 +19,7 @@ import {
   deleteAdminPilot,
   listAdminPilots,
   patchAdminPilot,
+  searchAdminTeachers,
 } from '@/utils/learningSpaceApi'
 
 const emit = defineEmits<{
@@ -41,6 +41,20 @@ const teacherHits = ref<LearningTeacherSearchRow[]>([])
 
 const teacherQuery = ref('')
 const teacherOrgFilter = ref<number | ''>('')
+const selectedTeacherId = ref<number | ''>('')
+
+const schoolSelected = computed(() => teacherOrgFilter.value !== '')
+const selectedTeacher = computed(
+  () => teacherHits.value.find((row) => row.id === Number(selectedTeacherId.value)) ?? null
+)
+
+function teacherOptionLabel(row: LearningTeacherSearchRow): string {
+  const label = row.name.trim() || row.phone || row.email || `#${row.id}`
+  if (row.already_pilot) {
+    return `${label} · ${t('admin.learningSpace.alreadyPilot')}`
+  }
+  return label
+}
 
 async function loadOrgs(): Promise<void> {
   try {
@@ -63,51 +77,53 @@ async function loadPilots(): Promise<void> {
   }
 }
 
-async function onSearchTeachers(): Promise<void> {
+async function loadTeachers(opts?: { quiet?: boolean }): Promise<void> {
   const q = teacherQuery.value.trim()
   const orgId = teacherOrgFilter.value === '' ? null : Number(teacherOrgFilter.value)
   if (!q && orgId == null) {
-    notify.warning(t('admin.learningSpace.searchHint'))
+    if (!opts?.quiet) {
+      notify.warning(t('admin.learningSpace.searchHint'))
+    }
     return
   }
   searching.value = true
   try {
-    const res = await fetchAdminUsers({
-      page: 1,
-      page_size: 50,
-      search: q,
-      organization_id: orgId ?? undefined,
+    const res = await searchAdminTeachers({
+      q,
+      organization_id: orgId,
+      limit: 200,
     })
     const pilotIds = new Set(pilots.value.map((p) => p.teacher_user_id))
-    teacherHits.value = res.users
-      .map((row) => {
-        const id = Number(row.id)
-        const organizationId =
-          row.organization_id == null || row.organization_id === ''
-            ? null
-            : Number(row.organization_id)
-        const role = typeof row.role === 'string' ? row.role : ''
-        return {
-          id,
-          name: typeof row.name === 'string' ? row.name : '',
-          phone: typeof row.phone === 'string' ? row.phone : null,
-          email: typeof row.email === 'string' ? row.email : null,
-          role,
-          organization_id: Number.isFinite(organizationId as number) ? organizationId : null,
-          organization_name:
-            typeof row.organization_name === 'string' ? row.organization_name : '',
-          already_pilot: pilotIds.has(id),
-        }
-      })
-      .filter((row) => row.role !== 'student' && row.organization_id != null)
-    if (teacherHits.value.length === 0) {
+    teacherHits.value = (Array.isArray(res.items) ? res.items : []).map((row) => ({
+      ...row,
+      already_pilot: row.already_pilot || pilotIds.has(row.id),
+    }))
+    const stillThere = teacherHits.value.some((row) => row.id === Number(selectedTeacherId.value))
+    if (!stillThere) {
+      selectedTeacherId.value = ''
+    }
+    if (teacherHits.value.length === 0 && !opts?.quiet) {
       notify.info(t('admin.learningSpace.searchEmpty'))
     }
   } catch {
+    teacherHits.value = []
+    selectedTeacherId.value = ''
     notify.error(t('admin.learningSpace.searchFailed'))
   } finally {
     searching.value = false
   }
+}
+
+async function onSearchTeachers(): Promise<void> {
+  await loadTeachers()
+}
+
+async function onMakeSelectedPilot(): Promise<void> {
+  if (selectedTeacher.value == null) {
+    notify.warning(t('admin.learningSpace.selectTeacherPlaceholder'))
+    return
+  }
+  await onMakePilot(selectedTeacher.value)
 }
 
 async function onMakePilot(row: LearningTeacherSearchRow): Promise<void> {
@@ -126,6 +142,9 @@ async function onMakePilot(row: LearningTeacherSearchRow): Promise<void> {
     })
     notify.success(t('admin.learningSpace.pilotCreated'))
     row.already_pilot = true
+    teacherHits.value = teacherHits.value.map((hit) =>
+      hit.id === row.id ? { ...hit, already_pilot: true } : hit
+    )
     await loadPilots()
   } catch {
     notify.error(t('admin.learningSpace.saveFailed'))
@@ -180,6 +199,15 @@ function goAddClass(pilot: LearningPilot): void {
   })
 }
 
+watch(teacherOrgFilter, (orgId) => {
+  selectedTeacherId.value = ''
+  teacherHits.value = []
+  if (orgId === '') {
+    return
+  }
+  void loadTeachers({ quiet: true })
+})
+
 onMounted(() => {
   void loadOrgs()
   void loadPilots()
@@ -189,7 +217,7 @@ defineExpose({ reload: loadPilots })
 </script>
 
 <template>
-  <div class="ls-panel">
+  <div class="ls-admin-stack">
     <p
       v-if="loading"
       class="ls-muted"
@@ -197,23 +225,48 @@ defineExpose({ reload: loadPilots })
       {{ t('common.loading') }}
     </p>
 
-    <section class="ls-section">
-      <h3 class="ls-h">{{ t('admin.learningSpace.addPilotSection') }}</h3>
+    <section class="ls-admin-card">
+      <div class="ls-section-title">
+        <h2>{{ t('admin.learningSpace.addPilotSection') }}</h2>
+      </div>
       <p class="ls-muted">{{ t('admin.learningSpace.pilotWorkflowHint') }}</p>
       <div
         v-if="canEdit()"
-        class="ls-row"
+        class="ls-toolbar"
       >
+        <select
+          v-if="schoolSelected"
+          v-model="selectedTeacherId"
+          class="ls-control ls-control--wide"
+          :disabled="searching || teacherHits.length === 0"
+        >
+          <option value="">
+            {{
+              searching
+                ? t('common.loading')
+                : t('admin.learningSpace.selectTeacherPlaceholder')
+            }}
+          </option>
+          <option
+            v-for="row in teacherHits"
+            :key="row.id"
+            :value="row.id"
+            :disabled="row.already_pilot"
+          >
+            {{ teacherOptionLabel(row) }}
+          </option>
+        </select>
         <input
+          v-else
           v-model="teacherQuery"
           type="text"
-          class="ls-input ls-input--wide"
+          class="ls-control ls-control--wide"
           :placeholder="t('admin.learningSpace.teacherSearchPlaceholder')"
           @keydown.enter.prevent="onSearchTeachers"
         />
         <select
           v-model="teacherOrgFilter"
-          class="ls-input ls-select"
+          class="ls-control ls-control--select"
         >
           <option value="">
             {{ t('admin.learningSpace.allOrganizations') }}
@@ -227,203 +280,129 @@ defineExpose({ reload: loadPilots })
           </option>
         </select>
         <button
+          v-if="schoolSelected"
           type="button"
-          class="ls-primary"
+          class="ls-btn ls-btn--primary"
+          :disabled="searching || selectedTeacher == null || selectedTeacher.already_pilot"
+          @click="onMakeSelectedPilot"
+        >
+          {{ t('admin.learningSpace.makePilot') }}
+        </button>
+        <button
+          v-else
+          type="button"
+          class="ls-btn ls-btn--primary"
           :disabled="searching"
           @click="onSearchTeachers"
         >
           {{ searching ? t('common.loading') : t('admin.learningSpace.searchTeachers') }}
         </button>
       </div>
-      <table
+      <div
         v-if="teacherHits.length"
-        class="ls-table"
+        class="ls-table-wrap"
       >
-        <thead>
-          <tr>
-            <th>{{ t('auth.name') }}</th>
-            <th>{{ t('admin.learningSpace.phone') }}</th>
-            <th>{{ t('admin.learningSpace.organization') }}</th>
-            <th v-if="canEdit()" />
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="row in teacherHits"
-            :key="row.id"
-          >
-            <td>{{ row.name || row.phone || '—' }}</td>
-            <td>{{ row.phone || '—' }}</td>
-            <td>{{ row.organization_name || '—' }}</td>
-            <td v-if="canEdit()">
-              <button
-                type="button"
-                class="ls-ghost"
-                :disabled="row.already_pilot || row.organization_id == null"
-                @click="onMakePilot(row)"
-              >
-                {{
-                  row.already_pilot
-                    ? t('admin.learningSpace.alreadyPilot')
-                    : t('admin.learningSpace.makePilot')
-                }}
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+        <table class="ls-table">
+          <thead>
+            <tr>
+              <th>{{ t('auth.name') }}</th>
+              <th>{{ t('admin.learningSpace.phone') }}</th>
+              <th>{{ t('admin.learningSpace.organization') }}</th>
+              <th v-if="canEdit()" />
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="row in teacherHits"
+              :key="row.id"
+            >
+              <td>{{ row.name || row.phone || '—' }}</td>
+              <td>{{ row.phone || '—' }}</td>
+              <td>{{ row.organization_name || '—' }}</td>
+              <td v-if="canEdit()">
+                <button
+                  type="button"
+                  class="ls-btn ls-btn--ghost ls-btn--sm"
+                  :disabled="row.already_pilot || row.organization_id == null"
+                  @click="onMakePilot(row)"
+                >
+                  {{
+                    row.already_pilot
+                      ? t('admin.learningSpace.alreadyPilot')
+                      : t('admin.learningSpace.makePilot')
+                  }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
-    <section class="ls-section">
-      <h3 class="ls-h">{{ t('admin.learningSpace.pilotList') }}</h3>
+    <section class="ls-admin-card">
+      <div class="ls-section-title">
+        <h2>{{ t('admin.learningSpace.pilotList') }}</h2>
+      </div>
       <p
         v-if="!pilots.length && !loading"
         class="ls-muted"
       >
         {{ t('admin.learningSpace.pilotsEmpty') }}
       </p>
-      <table
+      <div
         v-else
-        class="ls-table"
+        class="ls-table-wrap"
       >
-        <thead>
-          <tr>
-            <th>{{ t('auth.name') }}</th>
-            <th>{{ t('admin.learningSpace.organization') }}</th>
-            <th>{{ t('admin.learningSpace.enabled') }}</th>
-            <th>{{ t('admin.learningSpace.classCount') }}</th>
-            <th v-if="canEdit()" />
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="p in pilots"
-            :key="p.id"
-          >
-            <td>{{ p.teacher_name || '—' }}</td>
-            <td>{{ p.organization_name || '—' }}</td>
-            <td>{{ p.enabled ? t('admin.learningSpace.yes') : t('admin.learningSpace.no') }}</td>
-            <td>{{ p.class_count ?? 0 }}</td>
-            <td
-              v-if="canEdit()"
-              class="ls-actions"
+        <table class="ls-table">
+          <thead>
+            <tr>
+              <th>{{ t('auth.name') }}</th>
+              <th>{{ t('admin.learningSpace.organization') }}</th>
+              <th>{{ t('admin.learningSpace.enabled') }}</th>
+              <th>{{ t('admin.learningSpace.classCount') }}</th>
+              <th v-if="canEdit()" />
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="p in pilots"
+              :key="p.id"
             >
-              <button
-                type="button"
-                class="ls-ghost"
-                :disabled="!p.enabled"
-                @click="goAddClass(p)"
+              <td>{{ p.teacher_name || '—' }}</td>
+              <td>{{ p.organization_name || '—' }}</td>
+              <td>{{ p.enabled ? t('admin.learningSpace.yes') : t('admin.learningSpace.no') }}</td>
+              <td>{{ p.class_count ?? 0 }}</td>
+              <td
+                v-if="canEdit()"
+                class="ls-actions"
               >
-                {{ t('admin.learningSpace.addClass') }}
-              </button>
-              <button
-                type="button"
-                class="ls-ghost"
-                @click="onTogglePilot(p)"
-              >
-                {{ p.enabled ? t('admin.learningSpace.disable') : t('admin.learningSpace.enable') }}
-              </button>
-              <button
-                type="button"
-                class="ls-ghost ls-ghost--danger"
-                @click="onDeletePilot(p)"
-              >
-                {{ t('admin.learningSpace.delete') }}
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+                <button
+                  type="button"
+                  class="ls-btn ls-btn--ghost ls-btn--sm"
+                  :disabled="!p.enabled"
+                  @click="goAddClass(p)"
+                >
+                  {{ t('admin.learningSpace.addClass') }}
+                </button>
+                <button
+                  type="button"
+                  class="ls-btn ls-btn--ghost ls-btn--sm"
+                  @click="onTogglePilot(p)"
+                >
+                  {{ p.enabled ? t('admin.learningSpace.disable') : t('admin.learningSpace.enable') }}
+                </button>
+                <button
+                  type="button"
+                  class="ls-btn ls-btn--danger-soft ls-btn--sm"
+                  @click="onDeletePilot(p)"
+                >
+                  {{ t('admin.learningSpace.delete') }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
   </div>
 </template>
-
-<style scoped>
-.ls-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 1.75rem;
-}
-.ls-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-.ls-h {
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: #1c1917;
-}
-.ls-muted {
-  color: #78716c;
-  font-size: 0.875rem;
-  margin: 0;
-}
-.ls-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-}
-.ls-input {
-  min-width: 9rem;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #e7e5e4;
-  border-radius: 0.5rem;
-  background: #fafaf9;
-}
-.ls-input--wide {
-  min-width: 14rem;
-  flex: 1 1 12rem;
-}
-.ls-select {
-  min-width: 12rem;
-  max-width: 20rem;
-}
-.ls-primary,
-.ls-ghost {
-  padding: 0.45rem 0.85rem;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  cursor: pointer;
-}
-.ls-primary {
-  background: #1c1917;
-  color: #fff;
-  border: none;
-}
-.ls-primary:disabled,
-.ls-ghost:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.ls-ghost {
-  background: #fff;
-  border: 1px solid #d6d3d1;
-  color: #292524;
-}
-.ls-ghost--danger {
-  color: #b91c1c;
-  border-color: #fecaca;
-}
-.ls-ghost--danger:hover {
-  background: #fef2f2;
-}
-.ls-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-.ls-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
-}
-.ls-table th,
-.ls-table td {
-  text-align: left;
-  padding: 0.45rem 0.6rem;
-  border-bottom: 1px solid #f5f5f4;
-}
-</style>

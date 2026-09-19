@@ -20,6 +20,7 @@ from . import (
     embed,
     login,
     login_devices,
+    login_hero,
     password,
     personal_token,
     phone,
@@ -64,6 +65,7 @@ router = APIRouter()
 
 # Include all sub-routers
 router.include_router(public.router)
+router.include_router(login_hero.router)
 router.include_router(registration.router)
 router.include_router(registration_overseas.router)
 router.include_router(quick_register.router)

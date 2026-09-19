@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'مدرس مهمان می تواند معلم مدرسه را به همان صفحه نماد بکشد.',
   'admin.feature.vod': 'ابر بر حسب تقاضا',
   'admin.feature.vodHint': 'کتابخانه رسانه درخواستی Tencent Cloud در پانل مدیریت به مدیران مدرسه اجازه می دهد ویدیوها را مرور و آپلود کنند.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'نتوانستم پرچم‌های ویژگی را بارگیری کنم',
   'admin.featureSaveFailed': 'نتوانست تنظیمات را ذخیره کند.',
   'admin.featuresIntro': 'فعال/غیرفعال کردن پرچم‌های ماژول. مقادیر در .env نوشته شده و در تمام API workerها بارگذاری مجدد می‌شوند، بنابراین بررسی‌های رابط کاربری و API بدون راه‌اندازی مجدد به‌روزرسانی می‌شوند. ممکن است فضای دانش هنوز به Qdrant/Celery که با فرآیند آغاز شده‌اند، نیاز داشته باشد.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

@@ -26,8 +26,8 @@ from services.learning_space.memberships import count_class_learners, count_clas
 from services.learning_space.passwords import (
     initial_password_from_name,
     normalize_student_name,
-    student_synthetic_email,
 )
+from services.learning_space.synthetic_email import student_synthetic_email
 from services.redis.session.redis_session_manager import get_session_manager
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth.password import hash_password

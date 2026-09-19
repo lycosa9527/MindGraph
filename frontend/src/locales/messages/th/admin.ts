@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'วิทยากรรับเชิญสามารถดึงครูของโรงเรียนไปที่หน้าไอคอนเดียวกันได้',
   'admin.feature.vod': 'คลาวด์ตามความต้องการ',
   'admin.feature.vodHint': 'ไลบรารีสื่อตามความต้องการของ Tencent Cloud ในแผงการจัดการช่วยให้ผู้ดูแลระบบของโรงเรียนเรียกดูและอัปโหลดวิดีโอได้',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'ไม่สามารถโหลดแฟล็กฟีเจอร์',
   'admin.featureSaveFailed': 'ไม่สามารถบันทึกการตั้งค่า',
   'admin.featuresIntro': 'สลับแฟล็กโมดูล ค่าจะถูกเขียนใน .env และโหลดซ้ำในเซิร์ฟเวอร์ที่ทำงานอยู่ ดังนั้น UI และการตรวจสอบ API ส่วนใหญ่จะอัปเดตทันที หากโมดูลไม่เคยถูกโหลดตอนเริ่มต้น คุณอาจยังต้องรีสตาร์ทเต็มรูปแบบ',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

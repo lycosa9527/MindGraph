@@ -9,6 +9,7 @@ import { ArrowLeft, FileText, Send } from '@lucide/vue'
 
 import LearningSpaceRequirementsModal from '@/components/learningSpace/LearningSpaceRequirementsModal.vue'
 import { swissGlassConfirm, useLanguage, useNotifications } from '@/composables'
+import { studentCanSubmitAssignment } from '@/composables/learningSpace/lsHelpers'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { submitStudentAssignment } from '@/utils/learningSpaceApi'
 import '@/styles/learning-space.css'
@@ -23,10 +24,11 @@ const submitting = ref(false)
 
 const title = computed(() => lsCanvas.assignment?.title || t('learningSpace.title'))
 const submitted = computed(() => lsCanvas.assignment?.submission?.status === 'submitted')
+const canSubmit = computed(() => studentCanSubmitAssignment(lsCanvas.assignment))
 
 async function onSubmit(): Promise<void> {
   const id = lsCanvas.assignmentId
-  if (id == null || submitting.value) return
+  if (id == null || submitting.value || submitted.value || !canSubmit.value) return
   try {
     await swissGlassConfirm(
       t('learningSpace.submitConfirm'),
@@ -89,11 +91,17 @@ function onBack(): void {
       <button
         type="button"
         class="ls-btn ls-btn--primary ls-btn--sm"
-        :disabled="submitted || submitting"
+        :disabled="submitted || submitting || !canSubmit"
         @click="onSubmit"
       >
         <Send :size="14" />
-        {{ submitted ? t('learningSpace.statusSubmitted') : t('learningSpace.submit') }}
+        {{
+          submitted
+            ? t('learningSpace.statusSubmitted')
+            : canSubmit
+              ? t('learningSpace.submit')
+              : t('learningSpace.homeworkClosed')
+        }}
       </button>
     </div>
     <LearningSpaceRequirementsModal

@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'Giảng viên thỉnh giảng có thể kéo giáo viên của trường về trang biểu tượng tương tự.',
   'admin.feature.vod': 'Đám mây theo yêu cầu',
   'admin.feature.vodHint': 'Thư viện phương tiện theo yêu cầu của Tencent Cloud trong bảng quản lý cho phép quản trị viên trường học duyệt và tải video lên.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Không thể tải cờ tính năng',
   'admin.featureSaveFailed': 'Không thể lưu cài đặt',
   'admin.featuresIntro': 'Chuyển đổi cờ mô-đun. Các giá trị được ghi vào .env và được tải lại trên tất cả các nhân viên API để UI và API kiểm tra cập nhật mà không cần khởi động lại. Không gian Tri thức có thể vẫn cần Qdrant/Celery đã được bắt đầu trong quá trình này.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

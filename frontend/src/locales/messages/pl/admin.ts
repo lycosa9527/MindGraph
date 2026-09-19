@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'Wykładowca wizytujący może przeciągnąć nauczyciela szkoły na tę samą stronę z ikoną.',
   'admin.feature.vod': 'Chmura na żądanie',
   'admin.feature.vodHint': 'Biblioteka multimediów na żądanie Tencent Cloud w panelu zarządzania umożliwia administratorom szkół przeglądanie i przesyłanie filmów.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Nie można załadować przełącznika funkcji',
   'admin.featureSaveFailed': 'Nie można zapisać ustawień',
   'admin.featuresIntro': 'Tutaj możesz włączać i wyłączać każdy moduł. Zostanie zapisany w formacie .env i załadowany na gorąco do wszystkich procesów API. Interfejs i interfejs zaczną obowiązywać bez ponownego uruchamiania. Przestrzenie wiedzy mogą nadal wymagać całkowitego ponownego uruchomienia, jeśli polegają na inicjowaniu Qdrant/Seler podczas uruchamiania.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

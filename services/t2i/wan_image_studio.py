@@ -105,19 +105,29 @@ def submit_storyboard(prompt: str, refs: list[Path], n: int) -> str:
     return _task_id(_post_json("/services/aigc/image-generation/generation", body))
 
 
-def submit_icon(prompt: str, refs: list[Path], size: str = "1280*1280") -> str:
-    """Submit one square Wan still (app icon). Returns task id."""
-    content: list[dict[str, str]] = [{"image": jpeg_data_url(path)} for path in refs]
+def submit_icon(
+    prompt: str,
+    refs: list[Path] | None = None,
+    size: str = "1280*1280",
+    *,
+    model: str | None = None,
+    thinking_mode: bool | None = None,
+) -> str:
+    """Submit one Wan still. Optional refs lock character identity."""
+    content: list[dict[str, str]] = [{"image": jpeg_data_url(path)} for path in (refs or [])]
     content.append({"text": prompt[:5000]})
+    parameters: dict[str, Any] = {
+        "n": 1,
+        "size": size,
+        "watermark": False,
+        "enable_sequential": False,
+    }
+    if thinking_mode is not None:
+        parameters["thinking_mode"] = thinking_mode
     body: dict[str, Any] = {
-        "model": MODEL,
+        "model": (model or MODEL).strip(),
         "input": {"messages": [{"role": "user", "content": content}]},
-        "parameters": {
-            "n": 1,
-            "size": size,
-            "watermark": False,
-            "enable_sequential": False,
-        },
+        "parameters": parameters,
     }
     return _task_id(_post_json("/services/aigc/image-generation/generation", body))
 

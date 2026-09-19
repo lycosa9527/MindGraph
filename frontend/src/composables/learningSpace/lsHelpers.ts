@@ -79,6 +79,25 @@ export function studentAssignmentDone(a: LearningAssignment): boolean {
   return a.submission?.status === 'submitted'
 }
 
+export function assignmentAllowsLate(a: LearningAssignment | null | undefined): boolean {
+  return a?.ai_permissions?.allow_late_submit === true
+}
+
+export function studentCanOpenAssignment(a: LearningAssignment): boolean {
+  if (studentAssignmentDone(a)) return false
+  if (a.status === 'draft' || a.status === 'closed' || a.status === 'archived') return false
+  if (a.submission != null) return true
+  if (!assignmentIsClosed(a)) return true
+  return assignmentAllowsLate(a)
+}
+
+export function studentCanSubmitAssignment(a: LearningAssignment | null | undefined): boolean {
+  if (!a || studentAssignmentDone(a)) return false
+  if (a.status === 'draft' || a.status === 'closed' || a.status === 'archived') return false
+  if (!assignmentIsClosed(a)) return true
+  return assignmentAllowsLate(a)
+}
+
 export function greetHourLabel(hour: number): 'morning' | 'afternoon' | 'evening' {
   if (hour < 12) return 'morning'
   if (hour < 18) return 'afternoon'

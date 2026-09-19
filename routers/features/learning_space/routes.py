@@ -45,7 +45,6 @@ from routers.features.learning_space.schemas import (
     SubmissionReviewRequest,
 )
 from services.learning_space.access import (
-    assert_assignment_visible_to_learner,
     get_class_for_staff,
     get_class_for_teacher,
     get_enabled_pilot,
@@ -53,6 +52,7 @@ from services.learning_space.access import (
     require_pilot_teacher,
     require_student,
     require_student_password_ok,
+    resolve_assignment_viewer,
 )
 from services.learning_space.admin_teachers import (
     assert_teacher_eligible_for_pilot,
@@ -141,7 +141,7 @@ async def admin_search_teachers(
         None,
         description="Filter by organization (not AdminScope organization_id)",
     ),
-    limit: int = Query(20, ge=1, le=50),
+    limit: int = Query(50, ge=1, le=200),
     _scope: AdminScope = Depends(_require_ls_view),
     db: AsyncSession = Depends(get_async_db_with_request_rls),
 ):
@@ -218,8 +218,12 @@ async def create_pilot(
         created_by=int(scope.actor.id),
     )
     db.add(pilot)
-    await db.commit()
-    await db.refresh(pilot)
+    try:
+        await db.commit()
+        await db.refresh(pilot)
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Already a pilot teacher") from exc
     return {"id": pilot.id, "teacher_user_id": pilot.teacher_user_id, "enabled": pilot.enabled}
 
 
@@ -348,21 +352,15 @@ async def admin_patch_class(
     kick_ids: list[int] = []
     if body.status == CLASS_STATUS_ARCHIVED:
         kick_ids = await classroom_student_ids(db, class_id)
-    if body.assistant_user_ids is not None:
-        try:
-            await replace_class_assistants(db, cls, body.assistant_user_ids)
-        except IntegrityError as exc:
-            await db.rollback()
-            if body.class_code is not None:
-                raise class_code_in_use_error() from exc
-            raise HTTPException(status_code=400, detail="Could not update assistants") from exc
-        await kick_classroom_student_sessions(kick_ids)
-        return {"id": cls.id, "name": cls.name, "status": cls.status, "class_code": cls.class_code}
     try:
+        if body.assistant_user_ids is not None:
+            await replace_class_assistants(db, cls, body.assistant_user_ids)
         await db.commit()
     except IntegrityError as exc:
         await db.rollback()
-        raise class_code_in_use_error() from exc
+        if body.class_code is not None:
+            raise class_code_in_use_error() from exc
+        raise HTTPException(status_code=400, detail="Could not update class") from exc
     await kick_classroom_student_sessions(kick_ids)
     return {"id": cls.id, "name": cls.name, "status": cls.status, "class_code": cls.class_code}
 
@@ -480,7 +478,7 @@ async def admin_reset_password(
 ):
     """Reset student password (shows plaintext once)."""
     student = await db.get(User, student_id)
-    if student is None or student.role != ROLE_STUDENT:
+    if student is None or student.role != ROLE_STUDENT or not student.learning_class_id:
         raise HTTPException(status_code=404, detail="Student not found")
     plain = await reset_student_password(db, student)
     return {"student_id": student.id, "name": student.name, "initial_password": plain}
@@ -496,11 +494,16 @@ async def teacher_list_classes(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """Classes owned by the teacher, plus classes they assist."""
-    owned_result = await db.execute(
-        select(LearningClass).where(LearningClass.teacher_user_id == current_user.id).order_by(LearningClass.id.desc())
-    )
-    owned = list(owned_result.scalars().all())
+    """Classes owned by an enabled pilot, plus classes they assist."""
+    owned: list[LearningClass] = []
+    is_pilot = await get_enabled_pilot(db, int(current_user.id)) is not None
+    if is_pilot:
+        owned_result = await db.execute(
+            select(LearningClass)
+            .where(LearningClass.teacher_user_id == current_user.id)
+            .order_by(LearningClass.id.desc())
+        )
+        owned = list(owned_result.scalars().all())
     assisted_ids = await class_ids_for_membership_role(db, int(current_user.id), MEMBERSHIP_ROLE_ASSISTANT)
     assisted: list[LearningClass] = []
     if assisted_ids:
@@ -508,8 +511,6 @@ async def teacher_list_classes(
             select(LearningClass).where(LearningClass.id.in_(tuple(assisted_ids))).order_by(LearningClass.id.desc())
         )
         assisted = list(assisted_result.scalars().all())
-    if not owned and not assisted:
-        await require_pilot_teacher(db, current_user)
     seen: set[int] = set()
     classes: list[LearningClass] = []
     for cls in owned + assisted:
@@ -525,7 +526,7 @@ async def teacher_list_classes(
                 "class_code": c.class_code,
                 "status": c.status,
                 "student_count": await count_class_students(db, c.id),
-                "can_publish": int(c.teacher_user_id) == int(current_user.id),
+                "can_publish": is_pilot and int(c.teacher_user_id) == int(current_user.id),
             }
             for c in classes
         ]
@@ -539,8 +540,12 @@ async def teacher_list_students(
     db: AsyncSession = Depends(get_async_db),
 ):
     """List students and enrolled members in the class."""
-    await get_class_for_staff(db, class_id, int(current_user.id), allow_archived=True)
-    return {"items": await class_roster_items(db, class_id)}
+    learning_class = await get_class_for_staff(db, class_id, int(current_user.id), allow_archived=True)
+    include_passwords = (
+        int(learning_class.teacher_user_id) == int(current_user.id)
+        and await get_enabled_pilot(db, int(current_user.id)) is not None
+    )
+    return {"items": await class_roster_items(db, class_id, include_initial_password=include_passwords)}
 
 
 @router.post("/teacher/students/{student_id}/reset-password")
@@ -732,21 +737,10 @@ async def submission_preview(
     if submission is None:
         raise HTTPException(status_code=404, detail="Submission not found")
     assignment = await get_assignment(db, submission.assignment_id)
-    if is_student(current_user):
-        require_student_password_ok(current_user)
-        if int(current_user.learning_class_id or 0) != int(assignment.class_id):
-            raise HTTPException(status_code=403, detail="Not your class")
-        if submission.status != SUBMISSION_STATUS_SUBMITTED and int(submission.student_user_id) != int(current_user.id):
+    viewer = await resolve_assignment_viewer(db, current_user, assignment)
+    if viewer == "learner" and submission.status != SUBMISSION_STATUS_SUBMITTED:
+        if int(submission.student_user_id) != int(current_user.id):
             raise HTTPException(status_code=403, detail="Not visible")
-    elif not is_superadmin(current_user):
-        try:
-            await get_class_for_staff(db, assignment.class_id, int(current_user.id), allow_archived=True)
-        except HTTPException:
-            await require_class_learner(db, current_user, int(assignment.class_id))
-            if submission.status != SUBMISSION_STATUS_SUBMITTED and int(submission.student_user_id) != int(
-                current_user.id
-            ):
-                raise HTTPException(status_code=403, detail="Not visible") from None
     return await enrich_submission_dict(
         db,
         submission,
@@ -763,15 +757,7 @@ async def assignment_template_preview(
 ):
     """Preview the teacher template diagram for requirements / attachments."""
     assignment = await get_assignment(db, assignment_id)
-    if is_student(current_user):
-        await require_class_learner(db, current_user, int(assignment.class_id))
-        assert_assignment_visible_to_learner(assignment)
-    elif not is_superadmin(current_user):
-        try:
-            await get_class_for_staff(db, assignment.class_id, int(current_user.id), allow_archived=True)
-        except HTTPException:
-            await require_class_learner(db, current_user, int(assignment.class_id))
-            assert_assignment_visible_to_learner(assignment)
+    await resolve_assignment_viewer(db, current_user, assignment)
     return await load_template_preview(assignment)
 
 
@@ -950,17 +936,18 @@ async def learning_space_context(
         cls = None
         if current_user.learning_class_id:
             cls = await db.get(LearningClass, current_user.learning_class_id)
+        class_active = cls is not None and cls.status == CLASS_STATUS_ACTIVE
         return {
             "role": "student",
-            "can_learn": True,
+            "can_learn": class_active,
             "can_review": False,
             "can_publish": False,
             "must_change_password": bool(getattr(current_user, "must_change_password", False)),
-            "class": ({"id": cls.id, "name": cls.name, "class_code": cls.class_code} if cls else None),
+            "class": ({"id": cls.id, "name": cls.name, "class_code": cls.class_code} if class_active and cls else None),
         }
     pilot = await get_enabled_pilot(db, int(current_user.id))
     can_learn = bool(learner_ids)
-    can_review = bool(pilot) or bool(assistant_ids) or is_superadmin(current_user)
+    can_review = bool(pilot) or bool(assistant_ids)
     can_publish = bool(pilot)
     if pilot:
         role = "pilot_teacher"
@@ -992,25 +979,16 @@ async def get_assignment_ai_permissions(
     """Return AI flags (and brief assignment) for canvas homework mode."""
     assignment = await get_assignment(db, assignment_id)
     payload = await enrich_assignment_dict(db, assignment)
-    if not is_superadmin(current_user):
-        staff_ok = False
-        if not is_student(current_user):
-            try:
-                await get_class_for_staff(db, assignment.class_id, int(current_user.id), allow_archived=True)
-                staff_ok = True
-            except HTTPException:
-                staff_ok = False
-        if not staff_ok:
-            await require_class_learner(db, current_user, int(assignment.class_id))
-            assert_assignment_visible_to_learner(assignment)
-            sub_result = await db.execute(
-                select(LearningSubmission).where(
-                    LearningSubmission.assignment_id == assignment_id,
-                    LearningSubmission.student_user_id == current_user.id,
-                )
+    viewer = await resolve_assignment_viewer(db, current_user, assignment)
+    if viewer == "learner":
+        sub_result = await db.execute(
+            select(LearningSubmission).where(
+                LearningSubmission.assignment_id == assignment_id,
+                LearningSubmission.student_user_id == current_user.id,
             )
-            submission = sub_result.scalar_one_or_none()
-            payload["submission"] = submission_public_dict(submission) if submission else None
+        )
+        submission = sub_result.scalar_one_or_none()
+        payload["submission"] = submission_public_dict(submission) if submission else None
     return {
         "assignment_id": assignment_id,
         "ai_permissions": merge_ai_permissions(assignment.ai_permissions),

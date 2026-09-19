@@ -223,6 +223,9 @@ run_backend() {
     tests/test_learning_space.py \
     tests/test_learning_space_images.py \
     tests/test_learning_space_rls.py \
+    tests/test_auth_login_hero.py \
+    tests/test_auth_login_video.py \
+    tests/test_cos_env_prefix.py \
     tests/test_rls_policy_column_refs.py \
     tests/test_mind_classroom_celery_log.py \
     tests/test_mind_classroom_enqueue.py \
@@ -318,7 +321,8 @@ run_frontend() {
     tests/mindMapStringChildrenAudit.spec.ts \
     tests/tsecCaptcha.spec.ts \
     tests/markdownKatexSanitize.spec.ts tests/mindmateDiagramPreviewCache.spec.ts \
-    tests/loginRestoresUiLanguage.spec.ts tests/normalizeAuthUser.spec.ts \
+    tests/loginRestoresUiLanguage.spec.ts tests/authLoginHero.spec.ts \
+    tests/normalizeAuthUser.spec.ts \
     tests/mindMapRibbonChrome.spec.ts tests/useMindMapRibbonState.spec.ts \
     tests/authBootstrapDedupe.spec.ts tests/formatGalleryLanguageMenuLabel.spec.ts \
     tests/formatSidebarDailyTokens.spec.ts \

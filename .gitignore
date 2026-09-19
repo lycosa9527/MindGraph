@@ -297,8 +297,11 @@ frontend/public/downloads/mindgraph-file-reader.zip
 frontend/public/fonts/*
 !frontend/public/fonts/README.md
 
-# Wan I2V scratch (mp4s, frames, task ids) for Course Builder roles
+# Wan I2V / T2I scratch (mp4s, frames, stills, task ids)
+.wan-work/
 scripts/training_roles/.work/
 scripts/white_cat_emoji/.work/
 scripts/siamese_cat_emoji/.work/
 scripts/cat_office_battles/.work/
+scripts/auth_login_video/.work/
+frontend/public/auth-hero/*.mp4

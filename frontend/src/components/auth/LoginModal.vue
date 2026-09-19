@@ -12,7 +12,7 @@
  * - Reference: Linear, Vercel, Stripe aesthetics
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 
 import { ArrowLeft, Eye, EyeOff, GraduationCap, Loader2, LogIn, RefreshCw, UserRound } from '@lucide/vue'
 
@@ -64,7 +64,6 @@ const {
   smsLoginForm,
   forgotForm,
   rememberAccount,
-  agreeToTerms,
   captchaImage,
   captchaLoading,
   captchaLoadFailed,
@@ -495,44 +494,7 @@ defineExpose({ openLogin, openRegister })
         </div>
 
         <div
-          v-if="authPageInline"
-          class="auth-page-teacher__prefs"
-        >
-          <label class="auth-page-remember">
-            <input
-              v-model="rememberAccount"
-              type="checkbox"
-              class="auth-page-remember__box"
-            />
-            {{ t('auth.landing.rememberAccount') }}
-          </label>
-        </div>
-
-        <label
-          v-if="authPageInline"
-          class="auth-page-teacher__agree"
-        >
-          <input
-            v-model="agreeToTerms"
-            type="checkbox"
-            class="auth-page-remember__box"
-          />
-          <span>
-            {{ t('auth.landing.agreeTermsPrefix') }}
-            <RouterLink
-              to="/privacy"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="auth-page-teacher__agree-link"
-              @click.stop
-            >
-              {{ t('auth.softwareAgreementLink') }}
-            </RouterLink>
-          </span>
-        </label>
-
-        <div
-          v-else
+          v-if="!authPageInline"
           class="flex items-center justify-between"
         >
           <label class="auth-page-remember text-stone-500">
@@ -618,6 +580,20 @@ defineExpose({ openLogin, openRegister })
           />
           <template v-else>{{ loginSubmitLabel }}</template>
         </button>
+
+        <div
+          v-if="authPageInline"
+          class="auth-page-teacher__prefs"
+        >
+          <label class="auth-page-remember">
+            <input
+              v-model="rememberAccount"
+              type="checkbox"
+              class="auth-page-remember__box"
+            />
+            {{ t('auth.landing.rememberAccount') }}
+          </label>
+        </div>
 
         <LoginAuthAltLinks
           v-if="!authPageInline"
@@ -1803,33 +1779,9 @@ defineExpose({ openLogin, openRegister })
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
+  width: 100%;
   gap: 0.85rem 1.25rem;
-}
-
-.auth-page-teacher__agree {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.45rem;
-  font-size: 0.82rem;
-  line-height: 1.45;
-  color: #64748b;
-  cursor: pointer;
-  user-select: none;
-}
-
-.auth-page-teacher__agree .auth-page-remember__box {
-  margin-top: 0.15rem;
-}
-
-.auth-page-teacher__agree-link {
-  color: #4f46e5;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.auth-page-teacher__agree-link:hover {
-  color: #4338ca;
-  text-decoration: underline;
 }
 
 .auth-page-cta,

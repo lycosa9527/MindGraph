@@ -47,7 +47,6 @@ import { getAppQueryClient } from '@/utils/appQueryClient'
 import { getSafePostAuthPath } from '@/utils/authRedirect'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import { normalizeAuthUser } from '@/utils/normalizeAuthUser'
-import { clearSavedLoginCredentials } from '@/utils/savedLoginCredentials'
 import {
   SCHOOL_EXPIRED_CODE,
   emitSchoolExpiredFromPayload,
@@ -515,7 +514,6 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem(USER_KEY)
     localStorage.removeItem(MODE_KEY)
     localStorage.removeItem('access_token')
-    clearSavedLoginCredentials()
     useMindMateStore().reset()
     useShowcaseStore().reset()
     stopSessionMonitoring()

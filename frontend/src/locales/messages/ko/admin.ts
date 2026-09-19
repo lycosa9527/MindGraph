@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': '방문 강사는 해당 학교의 교사를 동일한 아이콘 페이지로 끌어올 수 있습니다.',
   'admin.feature.vod': '온디맨드 클라우드',
   'admin.feature.vodHint': '관리 패널의 Tencent Cloud 주문형 미디어 라이브러리를 통해 학교 관리자는 비디오를 검색하고 업로드할 수 있습니다.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': '기능 플래그를 불러오지 못했습니다',
   'admin.featureSaveFailed': '설정을 저장하지 못했습니다',
   'admin.featuresIntro': '모듈 플래그를 전환합니다. 값은 .env에 기록되고 모든 API 워커에 다시 로드되어 UI와 API 검사가 재시작 없이 갱신됩니다. 지식 공간은 프로세스와 함께 시작된 Qdrant/Celery가 여전히 필요할 수 있습니다.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

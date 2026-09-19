@@ -97,6 +97,11 @@ export function useAppSidebar() {
 
   const isCollapsed = computed(() => uiStore.sidebarCollapsed)
 
+  function isLearningSpaceAdminRoute(): boolean {
+    const route = router.currentRoute.value
+    return route.path.startsWith('/admin') && route.query.tab === 'learning_space'
+  }
+
   const currentMode = computed(() => {
     const path = router.currentRoute.value.path
     if (path.startsWith('/mindmate')) return 'mindmate'
@@ -109,7 +114,11 @@ export function useAppSidebar() {
       return 'mindgraph'
     }
     if (path.startsWith('/knowledge-space')) return 'knowledge-space'
-    if (path.startsWith('/learning-space') || path.startsWith('/m/learning-space')) {
+    if (
+      path.startsWith('/learning-space') ||
+      path.startsWith('/m/learning-space') ||
+      isLearningSpaceAdminRoute()
+    ) {
       return 'learning-space'
     }
     if (path.startsWith('/chunk-test')) return 'chunk-test'
@@ -448,7 +457,7 @@ export function useAppSidebar() {
       }
       return
     }
-    if (currentMode.value === 'admin') {
+    if (router.currentRoute.value.path.startsWith('/admin')) {
       expandedPanel.value = expandedPanel.value === 'admin' ? null : 'admin'
       return
     }
@@ -692,10 +701,10 @@ export function useAppSidebar() {
   )
 
   watch(
-    () => router.currentRoute.value.path,
-    (path) => {
+    () => [router.currentRoute.value.path, router.currentRoute.value.query.tab] as const,
+    ([path, tab]) => {
       if (path.startsWith('/admin')) {
-        if (showManagementPanelSubnav.value) {
+        if (tab !== 'learning_space' && showManagementPanelSubnav.value) {
           expandedPanel.value = 'admin'
         }
       } else if (expandedPanel.value === 'admin') {
@@ -802,6 +811,14 @@ export function useAppSidebar() {
     'student' | 'pilot_teacher' | 'assistant' | 'learner' | 'superadmin' | 'none' | null
   >(null)
 
+  const isLearningSpaceProductRole = computed(() => {
+    if (authStore.user?.role === 'student') {
+      return true
+    }
+    const role = learningSpaceContextRole.value
+    return role === 'pilot_teacher' || role === 'learner' || role === 'assistant'
+  })
+
   const showLearningSpaceNav = computed(() => {
     if (!isAuthenticated.value) {
       return false
@@ -814,13 +831,7 @@ export function useAppSidebar() {
     if (!featureStudentLearningSpace.value) {
       return false
     }
-    const role = learningSpaceContextRole.value
-    return (
-      role === 'pilot_teacher' ||
-      role === 'superadmin' ||
-      role === 'learner' ||
-      role === 'assistant'
-    )
+    return isLearningSpaceProductRole.value || can('tab.learning_space.view')
   })
 
   /** Learning Space students: homepage sidebar is MindGraph + Learning Space only. */

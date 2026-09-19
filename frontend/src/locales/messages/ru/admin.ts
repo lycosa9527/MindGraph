@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'Приглашенный лектор может перетащить преподавателя школы на ту же страницу с иконками.',
   'admin.feature.vod': 'Облако по требованию',
   'admin.feature.vodHint': 'Медиатека Tencent Cloud по запросу на панели управления позволяет администраторам школы просматривать и загружать видео.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Не удалось загрузить переключатель функций.',
   'admin.featureSaveFailed': 'Невозможно сохранить настройки',
   'admin.featuresIntro': 'Здесь можно включать и выключать каждый модуль. Он будет записан в .env и загружен во все процессы API. Интерфейс и интерфейс вступят в силу без перезагрузки. Области знаний могут по-прежнему требовать полного перезапуска, если они полагаются на инициализацию Qdrant/Celery при запуске.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

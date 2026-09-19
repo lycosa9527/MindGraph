@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'Maaaring hilahin ng dumadalaw na lektor ang guro ng paaralan sa parehong pahina ng icon.',
   'admin.feature.vod': 'Cloud on demand',
   'admin.feature.vodHint': 'Ang Tencent Cloud on-demand media library sa management panel ay nagbibigay-daan sa mga administrator ng paaralan na mag-browse at mag-upload ng mga video.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Hindi ma-load ang mga feature na flag',
   'admin.featureSaveFailed': 'Hindi ma-save ang mga setting',
   'admin.featuresIntro': 'I-toggle ang mga flag ng module. Ang mga value ay isinusulat sa .env at nire-reload sa lahat ng API na manggagawa kaya ang UI at API ay nagsusuri ng update nang hindi nagre-restart. Maaaring kailanganin pa rin ng Knowledge Space ang Qdrant/Celery na sinimulan sa proseso.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

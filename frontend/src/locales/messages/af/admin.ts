@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'Die besoekende dosent kan die onderwyser van die skool na dieselfde ikoonbladsy toe trek.',
   'admin.feature.vod': 'Wolk op aanvraag',
   'admin.feature.vodHint': 'Die Tencent Cloud-mediabiblioteek op aanvraag in die bestuurspaneel laat skooladministrateurs toe om deur video\'s te blaai en op te laai.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Kon nie kenmerkvlagte laai nie',
   'admin.featureSaveFailed': 'Kon nie instellings stoor nie',
   'admin.featuresIntro': 'Skakel module-vlagte oor. Waardes word na .env geskryf en in die opererende bediener herlaai sodat die gebruikerskoppelvlak en meeste API-toetse onmiddellik opdateer. Indien \'n module nooit tydens prosesbegin gelaai is nie, kan jy dalk steeds \'n volledige herstart nodig hê om sy roetes te registreer.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

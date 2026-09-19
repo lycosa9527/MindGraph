@@ -69,8 +69,6 @@ export function useLoginModal(
 
   /** Prefill login identifier from localStorage (记住账号; on by default). */
   const rememberAccount = ref(true)
-  /** `/auth` teacher login: must accept terms before submit. */
-  const agreeToTerms = ref(true)
 
   function restoreSavedLoginFields() {
     const savedIdentifier = loadSavedLoginIdentifier()
@@ -470,11 +468,6 @@ export function useLoginModal(
 
     if (!loginForm.value.phone || !loginForm.value.password) {
       notify.warning(t('auth.modal.fillAllFields'))
-      return
-    }
-
-    if (props.authPage && !agreeToTerms.value) {
-      notify.warning(t('auth.landing.agreeTermsRequired'))
       return
     }
 
@@ -920,6 +913,7 @@ export function useLoginModal(
       const data = await response.json()
 
       if (response.ok && data.user) {
+        persistLoginIdentifier(trimmed)
         authStore.setUser(data.user)
         authStore.emitLoginSuccess()
         const userName = data.user?.name || ''
@@ -1068,7 +1062,6 @@ export function useLoginModal(
     smsLoginForm,
     forgotForm,
     rememberAccount,
-    agreeToTerms,
     captchaId,
     captchaImage,
     captchaLoading,

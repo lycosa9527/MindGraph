@@ -24,7 +24,7 @@ from services.auth.http_auth_token import (
     extract_session_token,
     try_decode_access_token_payload_from_connection,
 )
-from services.learning_space.passwords import is_learning_space_synthetic_email
+from services.learning_space.synthetic_email import is_learning_space_synthetic_email
 from services.redis.cache.redis_user_cache import user_cache
 from utils.auth import get_client_ip
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR

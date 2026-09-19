@@ -229,8 +229,13 @@ async def test_production_csp_includes_tsec_hosts_when_enabled() -> None:
             mock_config.debug = False
             with patch.object(middleware_module, "cos_showcase_enabled", return_value=False):
                 with patch.object(middleware_module, "cos_training_enabled", return_value=False):
-                    with patch("services.auth.tsec.csp.tsec_csp_enabled", return_value=True):
-                        result = await middleware_module.add_security_headers(request, _call_next)
+                    with patch.object(
+                        middleware_module,
+                        "cos_auth_login_csp_enabled",
+                        return_value=False,
+                    ):
+                        with patch("services.auth.tsec.csp.tsec_csp_enabled", return_value=True):
+                            result = await middleware_module.add_security_headers(request, _call_next)
 
     csp = result.headers["Content-Security-Policy"]
     assert TSEC_CSP_SCRIPT_SRC in csp

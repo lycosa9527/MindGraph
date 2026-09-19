@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'Il docente ospite può indirizzare l\'insegnante della scuola alla stessa pagina delle icone.',
   'admin.feature.vod': 'Nuvola su richiesta',
   'admin.feature.vodHint': 'La libreria multimediale on-demand di Tencent Cloud nel pannello di gestione consente agli amministratori scolastici di sfogliare e caricare video.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Impossibile caricare i indicatori di funzionalità',
   'admin.featureSaveFailed': 'Impossibile salvare i parametri',
   'admin.featuresIntro': 'Attiva o disattiva i moduli. I valori sono scritti in .env e ricaricati sul server in corso di esecuzione, che aggiorna l\'UI e la maggior parte dei controlli API subito. Se un modulo n\'a mai été caricato all\'avvio del processo, un riavvio completo può essere necessario per registrare il sue route.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

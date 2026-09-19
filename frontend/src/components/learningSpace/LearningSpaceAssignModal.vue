@@ -112,8 +112,12 @@ const instructionImages = computed({
 })
 const instructionImagesCtl = useLsInstructionImages(instructionImages)
 
+const publishableClasses = computed(() =>
+  props.classes.filter((c) => c.status !== 'archived' && c.can_publish !== false)
+)
+
 const selectedStudentTotal = computed(() =>
-  props.classes
+  publishableClasses.value
     .filter((c) => form.value.class_ids.includes(c.id))
     .reduce((sum, c) => sum + (c.student_count || 0), 0)
 )
@@ -148,8 +152,8 @@ const scoreDimChips = computed(() => {
 watch(visible, (open) => {
   if (!open) return
   step.value = 1
-  if (form.value.class_ids.length === 0 && props.classes.length) {
-    form.value.class_ids = [props.classes[0].id]
+  if (form.value.class_ids.length === 0 && publishableClasses.value.length) {
+    form.value.class_ids = [publishableClasses.value[0].id]
   }
   if (form.value.evaluation_dimensions.length === 0 && form.value.diagram_type) {
     applyRecommendedDims(form.value.diagram_type)
@@ -185,7 +189,7 @@ function resetForm(): void {
     instruction_images: [] as string[],
     reference_diagrams: [],
     evaluation_dimensions: [],
-    class_ids: props.classes[0] ? [props.classes[0].id] : [],
+    class_ids: publishableClasses.value[0] ? [publishableClasses.value[0].id] : [],
     ai_assist: false,
     ai_tools: emptyAiTools(),
     due_at: '',
@@ -524,7 +528,14 @@ async function submit(): Promise<void> {
       ai_permissions,
       status: 'active' as const,
     }
-    for (const classId of form.value.class_ids) {
+    const classIds = form.value.class_ids.filter((id) =>
+      publishableClasses.value.some((row) => row.id === id)
+    )
+    if (!classIds.length) {
+      notify.warning(t('learningSpace.fillClasses'))
+      return
+    }
+    for (const classId of classIds) {
       await createTeacherAssignment({
         ...payloadBase,
         class_id: classId,
@@ -922,7 +933,7 @@ function aiToolLabelKey(key: AiToolKey): string {
               </p>
               <div class="ls-modal__class-grid">
                 <button
-                  v-for="c in classes"
+                  v-for="c in publishableClasses"
                   :key="c.id"
                   type="button"
                   class="ls-modal__class"

@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'విజిటింగ్ లెక్చరర్ స్కూల్ టీచర్‌ని అదే ఐకాన్ పేజీకి లాగవచ్చు.',
   'admin.feature.vod': 'క్లౌడ్ ఆన్ డిమాండ్',
   'admin.feature.vodHint': 'మేనేజ్‌మెంట్ ప్యానెల్‌లోని టెన్సెంట్ క్లౌడ్ ఆన్-డిమాండ్ మీడియా లైబ్రరీ పాఠశాల నిర్వాహకులను వీడియోలను బ్రౌజ్ చేయడానికి మరియు అప్‌లోడ్ చేయడానికి అనుమతిస్తుంది.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'ఫీచర్ స్విచ్‌ని లోడ్ చేయడం సాధ్యపడలేదు',
   'admin.featureSaveFailed': 'సెట్టింగ్‌లను సేవ్ చేయడం సాధ్యపడలేదు',
   'admin.featuresIntro': 'ప్రతి మాడ్యూల్‌ను ఇక్కడ ఆన్ మరియు ఆఫ్ చేయండి. ఇది .envకి వ్రాయబడుతుంది మరియు అన్ని API ప్రాసెస్‌లకు హాట్-లోడ్ చేయబడుతుంది. ఇంటర్‌ఫేస్ మరియు ఇంటర్‌ఫేస్ పునఃప్రారంభించకుండానే ప్రభావం చూపుతాయి. నాలెడ్జ్ స్పేస్‌లు స్టార్టప్‌లో ప్రారంభించబడిన Qdrant/Celeryపై ఆధారపడినట్లయితే అవి పూర్తి పునఃప్రారంభం అవసరం కావచ్చు.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

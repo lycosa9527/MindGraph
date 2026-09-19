@@ -9,6 +9,7 @@ import {
   BookOpen,
   Bot,
   ChevronDown,
+  ClipboardList,
   FileText,
   Files,
   GraduationCap,
@@ -193,7 +194,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             :class="s.navItemClass('learning-space')"
             @click="s.setMode('learning-space')"
           >
-            <GraduationCap
+            <ClipboardList
               class="nav-icon"
               :size="NAV_ICON_SIZE"
             />

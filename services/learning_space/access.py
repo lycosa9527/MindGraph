@@ -7,6 +7,8 @@ Proprietary License
 
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,6 +24,8 @@ from models.domain.learning_space import (
 )
 from services.learning_space.memberships import is_class_assistant, is_class_learner
 from utils.auth.roles import is_student, is_superadmin
+
+AssignmentViewer = Literal["superadmin", "staff", "learner"]
 
 
 async def require_feature_enabled() -> None:
@@ -82,11 +86,12 @@ async def get_class_for_staff(
     allow_archived: bool = False,
     publish: bool = False,
 ) -> LearningClass:
-    """Class owner, or assistant when publish is False."""
+    """Enabled class owner, or assistant when publish is False."""
     learning_class = await db.get(LearningClass, class_id)
     if learning_class is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Class not found")
-    if int(learning_class.teacher_user_id) == int(user_id):
+    is_owner = int(learning_class.teacher_user_id) == int(user_id)
+    if is_owner and await get_enabled_pilot(db, user_id) is not None:
         if not allow_archived and learning_class.status != CLASS_STATUS_ACTIVE:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Class is archived")
         return learning_class
@@ -95,6 +100,25 @@ async def get_class_for_staff(
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Class is archived")
         return learning_class
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Class not found")
+
+
+async def resolve_assignment_viewer(
+    db: AsyncSession,
+    user: User,
+    assignment: LearningAssignment,
+) -> AssignmentViewer:
+    """Who may see this assignment: superadmin, class staff, or a class learner."""
+    if is_superadmin(user):
+        return "superadmin"
+    if not is_student(user):
+        try:
+            await get_class_for_staff(db, int(assignment.class_id), int(user.id), allow_archived=True)
+            return "staff"
+        except HTTPException:
+            pass
+    await require_class_learner(db, user, int(assignment.class_id))
+    assert_assignment_visible_to_learner(assignment)
+    return "learner"
 
 
 async def require_class_learner(db: AsyncSession, user: User, class_id: int) -> None:

@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.92] - 2026-09-20
+
+> **Login `/auth` uses a still in Vite and daily COS cinema clips on test/prod.**
+
+### Added
+
+- **登录页电影背景** — Test/prod built SPA plays one of four silent Wan 3.0 clips (`01-awaken-cosmos` … `04-ai-lab`). `GET /api/auth/login-hero/{id}.mp4` 302s to a short-lived COS URL. One clip per browser calendar day (`localStorage`).
+- **本地静帧** — Vite `npm run dev` cannot fetch COS, so `/auth` ships [`frontend/public/auth-hero/login-hero.png`](frontend/public/auth-hero/login-hero.png) (`b-warm-study`). Reduced-motion and video errors fall back to the same still.
+- **`COS_AUTH_LOGIN_*`** — Prefix follows `{env}/auth-login` on dev/test and live `auth-login/mindgraph` on production. Publish writes all three. CSP `media-src` includes the COS bucket when login-hero COS is on.
+
+### Changed
+
+- **测试/生产环境** — Keep `DEBUG=false`, `ENVIRONMENT=test|production`, and do not set `VITE_DEV_PORT`. Any of those makes `is_dev_mode()` true and skips the COS 302. See [`docs/architecture/production_security_deploy.md`](docs/architecture/production_security_deploy.md).
+- **学习空间** — Admin pilots/classes use a shared modal; teacher search limit raised; duplicate-pilot and class-update errors stay 400; remember-account survives logout; assignment viewer/access follow-ups.
+
+### Tests
+
+- [`tests/test_auth_login_hero.py`](tests/test_auth_login_hero.py), [`tests/test_auth_login_video.py`](tests/test_auth_login_video.py), [`frontend/tests/authLoginHero.spec.ts`](frontend/tests/authLoginHero.spec.ts)
+- CSP: `test_production_csp_allows_exact_cos_hosts_when_auth_login_cos_on`
+
 ## [5.180.91] - 2026-09-19
 
 > **Learning Space homework with school RLS, COS images, and production session locks.**

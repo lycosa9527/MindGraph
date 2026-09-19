@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': '出張講師は学校の先生を同じアイコンページに誘導することができます。',
   'admin.feature.vod': 'クラウドオンデマンド',
   'admin.feature.vodHint': '管理パネルの Tencent Cloud オンデマンド メディア ライブラリを使用すると、学校管理者はビデオを閲覧してアップロードできます。',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': '読み込めません機能スイッチ',
   'admin.featureSaveFailed': '保存できません設定',
   'admin.featuresIntro': '各モジュールをここで切り替えます。値は .env に書き込まれ、すべての API ワーカーにホットリロードされ、UI と API チェックは再起動なしで更新されます。ナレッジスペースは起動時に初期化した Qdrant/Celery が必要な場合、完全再起動が必要なことがあります。',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

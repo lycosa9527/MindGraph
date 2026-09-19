@@ -98,6 +98,9 @@ export default {
   'admin.feature.trainingHint': '到校講師可將該校教師拉到同一圖示頁。',
   'admin.feature.vod': '雲點播',
   'admin.feature.vodHint': '管理面板中的騰訊雲點播媒資庫，供學校管理員瀏覽和上傳視頻。',
+  'admin.feature.studentLearningSpace': '學習空間',
+  'admin.feature.studentLearningSpaceHint':
+    '班級圖示作業：試點教師、建班導入、佈置與批改。默認開啓。',
   'admin.featureLoadFailed': '無法加載功能開關',
   'admin.featureSaveFailed': '無法保存設置',
   'admin.featuresIntro':
@@ -1700,6 +1703,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     '按姓名、手机号或邮箱搜索账号（学生除外），可选学校组织筛选；设为试点后为其创建班级并导入学生。',
   'admin.learningSpace.teacherSearchPlaceholder': '姓名、手機號或郵箱',
+  'admin.learningSpace.selectTeacherPlaceholder': '請選擇教師',
   'admin.learningSpace.allOrganizations': '全部學校/組織',
   'admin.learningSpace.searchTeachers': '搜索',
   'admin.learningSpace.searchHint': '請輸入姓名/手機號/郵箱，或選擇學校組織',

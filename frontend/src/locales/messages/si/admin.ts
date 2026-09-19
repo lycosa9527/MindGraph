@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'පැමිණෙන කථිකාචාර්යවරයාට පාසලේ ගුරුවරයා එම අයිකන පිටුවට ඇද ගත හැකිය.',
   'admin.feature.vod': 'ඉල්ලුම මත වලාකුළු',
   'admin.feature.vodHint': 'කළමනාකරණ පැනලයේ ඇති Tencent Cloud on-demand මාධ්‍ය පුස්තකාලය පාසල් පරිපාලකයින්ට වීඩියෝ බ්‍රවුස් කිරීමට සහ උඩුගත කිරීමට ඉඩ සලසයි.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'විශේෂාංග කොඩි පූරණය කළ නොහැකි විය',
   'admin.featureSaveFailed': 'සැකසීම් සුරැකීමට නොහැකි විය',
   'admin.featuresIntro': 'මොඩියුල කොඩි ටොගල් කරන්න. අගයන් .env වෙත ලියා සියලුම API සේවකයන් මත නැවත පූරණය කර ඇති නිසා UI සහ API චෙක්පත් නැවත ආරම්භ කිරීමකින් තොරව යාවත්කාලීන වේ. දැනුම අවකාශයට තවමත් ක්‍රියාවලිය සමඟ ආරම්භ කරන ලද Qdrant/Celery අවශ්‍ය විය හැක.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

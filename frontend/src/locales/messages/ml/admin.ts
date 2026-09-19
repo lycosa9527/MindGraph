@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'വിസിറ്റിംഗ് ലെക്ചറർക്ക് സ്‌കൂളിലെ അധ്യാപകനെ അതേ ഐക്കൺ പേജിലേക്ക് വലിക്കാം.',
   'admin.feature.vod': 'ആവശ്യാനുസരണം ക്ലൗഡ്',
   'admin.feature.vodHint': 'മാനേജ്‌മെൻ്റ് പാനലിലെ ടെൻസെൻ്റ് ക്ലൗഡ് ഓൺ-ഡിമാൻഡ് മീഡിയ ലൈബ്രറി സ്‌കൂൾ അഡ്മിനിസ്ട്രേറ്റർമാരെ വീഡിയോകൾ ബ്രൗസ് ചെയ്യാനും അപ്‌ലോഡ് ചെയ്യാനും അനുവദിക്കുന്നു.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'ഫീച്ചർ സ്വിച്ച് ലോഡ് ചെയ്യാനാവുന്നില്ല',
   'admin.featureSaveFailed': 'ക്രമീകരണങ്ങൾ സംരക്ഷിക്കാനായില്ല',
   'admin.featuresIntro': 'ഇവിടെ ഓരോ മൊഡ്യൂളും ഓണും ഓഫും ചെയ്യുക. ഇത് .env-ലേക്ക് എഴുതുകയും എല്ലാ API പ്രോസസ്സുകളിലേക്കും ഹോട്ട്-ലോഡ് ചെയ്യുകയും ചെയ്യും. പുനരാരംഭിക്കാതെ തന്നെ ഇൻ്റർഫേസും ഇൻ്റർഫേസും പ്രാബല്യത്തിൽ വരും. സ്റ്റാർട്ടപ്പിൽ ആരംഭിക്കുന്ന Qdrant/Celery-യെ ആശ്രയിക്കുകയാണെങ്കിൽ നോളജ് സ്‌പെയ്‌സിന് ഇപ്പോഴും പൂർണ്ണമായ പുനരാരംഭം ആവശ്യമായി വന്നേക്കാം.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

@@ -130,8 +130,13 @@ async def test_production_csp_uses_nonce_when_request_state_has_nonce() -> None:
             mock_config.debug = False
             with patch.object(middleware_module, "cos_showcase_enabled", return_value=False):
                 with patch.object(middleware_module, "cos_training_enabled", return_value=False):
-                    with patch("services.auth.tsec.csp.tsec_csp_enabled", return_value=False):
-                        result = await middleware_module.add_security_headers(request, _call_next)
+                    with patch.object(
+                        middleware_module,
+                        "cos_auth_login_csp_enabled",
+                        return_value=False,
+                    ):
+                        with patch("services.auth.tsec.csp.tsec_csp_enabled", return_value=False):
+                            result = await middleware_module.add_security_headers(request, _call_next)
 
     csp = result.headers["Content-Security-Policy"]
     assert "script-src 'self' 'nonce-testnonce123'" in csp
@@ -459,6 +464,45 @@ async def test_production_csp_allows_exact_cos_hosts_when_training_cos_on() -> N
                     ):
                         with patch("services.auth.tsec.csp.tsec_csp_enabled", return_value=False):
                             result = await middleware_module.add_security_headers(request, _call_next)
+
+    csp = result.headers["Content-Security-Policy"]
+    assert f"connect-src 'self' ws: wss: blob: {cos_hosts} " in csp
+    assert f"media-src 'self' blob: {cos_hosts};" in csp
+
+
+@pytest.mark.asyncio
+async def test_production_csp_allows_exact_cos_hosts_when_auth_login_cos_on() -> None:
+    """/auth login-hero 302 needs the same bucket hosts in media-src."""
+    request = MagicMock()
+    request.url.scheme = "https"
+    request.state = SimpleNamespace(csp_nonce="testnonce123")
+    response = MagicMock()
+    response.headers = {}
+    cos_hosts = (
+        "https://mindgraph-1356113246.cos.ap-beijing.myqcloud.com "
+        "https://mindgraph-1356113246.cos.ap-beijing.tencentcos.cn"
+    )
+
+    async def _call_next(_req):
+        return response
+
+    with patch.object(middleware_module, "is_https", return_value=False):
+        with patch.object(middleware_module, "config") as mock_config:
+            mock_config.debug = False
+            with patch.object(middleware_module, "cos_showcase_enabled", return_value=False):
+                with patch.object(middleware_module, "cos_training_enabled", return_value=False):
+                    with patch.object(
+                        middleware_module,
+                        "cos_auth_login_csp_enabled",
+                        return_value=True,
+                    ):
+                        with patch.object(
+                            middleware_module,
+                            "cos_browser_csp_sources",
+                            return_value=cos_hosts,
+                        ):
+                            with patch("services.auth.tsec.csp.tsec_csp_enabled", return_value=False):
+                                result = await middleware_module.add_security_headers(request, _call_next)
 
     csp = result.headers["Content-Security-Policy"]
     assert f"connect-src 'self' ws: wss: blob: {cos_hosts} " in csp

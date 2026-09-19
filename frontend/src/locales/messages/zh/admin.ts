@@ -98,6 +98,9 @@ export default {
   'admin.feature.trainingHint': '到校讲师可将该校教师拉到同一图示页。',
   'admin.feature.vod': '云点播',
   'admin.feature.vodHint': '管理面板中的腾讯云点播媒资库，供学校管理员浏览和上传视频。',
+  'admin.feature.studentLearningSpace': '学习空间',
+  'admin.feature.studentLearningSpaceHint':
+    '班级图示作业：试点教师、建班导入、布置与批改。默认开启。',
   'admin.featureLoadFailed': '无法加载功能开关',
   'admin.featureSaveFailed': '无法保存设置',
   'admin.featuresIntro':
@@ -1698,11 +1701,12 @@ export default {
   'admin.learningSpace.yes': '是',
   'admin.learningSpace.no': '否',
   'admin.learningSpace.pilotWorkflowHint':
-    '按姓名、手机号或邮箱搜索账号（学生除外），可选学校组织筛选；设为试点后为其创建班级并导入学生。',
+    '先选择学校，再从左侧下拉选择该校教师并设为试点；也可按姓名、手机号或邮箱搜索。学生账号除外。',
   'admin.learningSpace.teacherSearchPlaceholder': '姓名、手机号或邮箱',
+  'admin.learningSpace.selectTeacherPlaceholder': '请选择教师',
   'admin.learningSpace.allOrganizations': '全部学校/组织',
   'admin.learningSpace.searchTeachers': '搜索',
-  'admin.learningSpace.searchHint': '请输入姓名/手机号/邮箱，或选择学校组织',
+  'admin.learningSpace.searchHint': '请先选择学校以列出教师，或输入姓名/手机号/邮箱搜索',
   'admin.learningSpace.searchEmpty': '未找到匹配账号（可先改选「全部学校/组织」再搜）',
   'admin.learningSpace.searchFailed': '搜索教师失败',
   'admin.learningSpace.makePilot': '设为试点',

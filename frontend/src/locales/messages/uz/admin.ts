@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'Tashrif buyurgan o\'qituvchi maktab o\'qituvchisini xuddi shu piktogramma sahifasiga jalb qilishi mumkin.',
   'admin.feature.vod': 'Talab bo\'yicha bulut',
   'admin.feature.vodHint': 'Boshqaruv panelidagi Tencent Cloud talab bo\'yicha media kutubxonasi maktab ma\'murlariga videolarni ko\'rib chiqish va yuklash imkonini beradi.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Funksiya bayraqlari yuklanmadi',
   'admin.featureSaveFailed': 'Parametrler saqlashnilmadi',
   'admin.featuresIntro': 'Modul bayraqlarini o’zgartiring. Deyerler .env-e postlir va ishlek prosese qayta yuklanmoqda; UI va chox API derhal yangilashnir. Proses bashlananda yuklashnmeyen modul uchun tam restart lazim mumkin.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

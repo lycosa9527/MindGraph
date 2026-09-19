@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'विजिटिंग लेक्चरर स्कूल के शिक्षक को उसी आइकन पेज पर खींच सकता है।',
   'admin.feature.vod': 'मांग पर बादल',
   'admin.feature.vodHint': 'प्रबंधन पैनल में Tencent क्लाउड ऑन-डिमांड मीडिया लाइब्रेरी स्कूल प्रशासकों को वीडियो ब्राउज़ करने और अपलोड करने की अनुमति देती है।',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'नहीं हो सका: load feature flags',
   'admin.featureSaveFailed': 'नहीं हो सका: save settings',
   'admin.featuresIntro': 'मॉड्यूल फ़्लैग टॉगल। .env में लिखकर सभी API workers पर reload — UI/API बिना restart अपडेट। Knowledge Space को Qdrant/Celery चाहिए हो सकता है।',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

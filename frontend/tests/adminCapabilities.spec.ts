@@ -93,6 +93,16 @@ describe('adminCapabilities', () => {
     expect(tabEditCapability('vod')).toBe('tab.vod.edit')
   })
 
+  it('learning_space admin tab is superadmin-only', () => {
+    const school = fallbackCapabilitiesForRole('school_admin')
+    const superadmin = fallbackCapabilitiesForRole('superadmin')
+    expect(superadmin).toContain('tab.learning_space.view')
+    expect(superadmin).toContain('tab.learning_space.edit')
+    expect(school).not.toContain('tab.learning_space.view')
+    expect(school).not.toContain('tab.learning_space.edit')
+    expect(tabRequiresCapabilities('learning_space')).toEqual(['tab.learning_space.view'])
+  })
+
   it('school_admin and superadmin can view the 云点播 tab', () => {
     const school = fallbackCapabilitiesForRole('school_admin')
     const superadmin = fallbackCapabilitiesForRole('superadmin')

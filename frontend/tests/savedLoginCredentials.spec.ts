@@ -38,5 +38,8 @@ describe('savedLoginCredentials', () => {
       JSON.stringify({ identifier: '13800138000', password: 'secret' })
     )
     expect(loadSavedLoginIdentifier()).toBe('13800138000')
+    expect(JSON.parse(localStorage.getItem('mg_saved_login_v1') ?? '')).toEqual({
+      identifier: '13800138000',
+    })
   })
 })

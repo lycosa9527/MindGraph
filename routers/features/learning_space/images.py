@@ -14,11 +14,9 @@ from models.domain.learning_space import LearningAssignment
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.auth.dependencies import get_current_user
 from services.learning_space.access import (
-    assert_assignment_visible_to_learner,
-    get_class_for_staff,
     get_class_for_teacher,
-    require_class_learner,
     require_pilot_teacher,
+    resolve_assignment_viewer,
 )
 from services.learning_space.assignments import get_assignment
 from services.learning_space.image_storage import (
@@ -31,7 +29,6 @@ from services.learning_space.image_storage import (
     read_image_bytes_sync,
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
-from utils.auth.roles import is_superadmin
 
 router = APIRouter()
 
@@ -43,14 +40,7 @@ async def _assert_can_view_assignment(
     current_user: User,
     assignment: LearningAssignment,
 ) -> None:
-    if is_superadmin(current_user):
-        return
-    try:
-        await get_class_for_staff(db, int(assignment.class_id), int(current_user.id), allow_archived=True)
-        return
-    except HTTPException:
-        await require_class_learner(db, current_user, int(assignment.class_id))
-        assert_assignment_visible_to_learner(assignment)
+    await resolve_assignment_viewer(db, current_user, assignment)
 
 
 @router.post("/teacher/instruction-images")

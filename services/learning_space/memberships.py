@@ -380,7 +380,7 @@ async def replace_class_assistants(db: AsyncSession, learning_class: LearningCla
         else:
             membership.role = MEMBERSHIP_ROLE_ASSISTANT
         kept.append({"id": user_id, "name": (user.name or "").strip() or (user.phone or "")})
-    await db.commit()
+    await db.flush()
     return kept
 
 
@@ -407,7 +407,12 @@ async def organization_info_map(org_ids: set[int]) -> dict[int, dict[str, str]]:
         return info
 
 
-async def class_roster_items(db: AsyncSession, class_id: int) -> list[dict]:
+async def class_roster_items(
+    db: AsyncSession,
+    class_id: int,
+    *,
+    include_initial_password: bool = True,
+) -> list[dict]:
     """Classroom students plus enrolled members (learners and assistants)."""
     classroom = await db.execute(
         select(User).where(User.learning_class_id == class_id, User.role == ROLE_STUDENT).order_by(User.id)
@@ -433,7 +438,9 @@ async def class_roster_items(db: AsyncSession, class_id: int) -> list[dict]:
                 "organization_name": "",
                 "member_kind": "classroom",
                 "membership_role": None,
-                "initial_password": initial_password_from_name(student.name or ""),
+                "initial_password": (
+                    initial_password_from_name(student.name or "") if include_initial_password else ""
+                ),
                 "must_change_password": bool(student.must_change_password),
                 "last_login": student.last_login.isoformat() if student.last_login else None,
             }

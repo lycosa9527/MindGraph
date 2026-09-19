@@ -60,13 +60,6 @@ def initial_password_from_name(name: str) -> str:
     return "".join(initials) + "123"
 
 
-def student_synthetic_email(class_id: int, user_id: int) -> str:
-    """Stable unique email satisfying users.phone_or_email check."""
-    return f"s{class_id}.{user_id}@student.learning.local"
-
-
-STUDENT_SYNTHETIC_EMAIL_SUFFIX = "@student.learning.local"
-
 _MAX_REFERENCE_DIAGRAMS = 5
 _MAX_REFERENCE_THUMBNAIL_CHARS = 80_000
 
@@ -94,13 +87,6 @@ def _reference_diagrams_from_raw(raw: dict[str, Any]) -> list[dict[str, str]]:
         title = str(item.get("title") or "").strip()[:200]
         cleaned.append({"id": diagram_id, "title": title, "thumbnail": thumbnail})
     return cleaned
-
-
-def is_learning_space_synthetic_email(email: str | None) -> bool:
-    """True for Learning Space placeholder emails (not real email-login accounts)."""
-    if not email or not isinstance(email, str):
-        return False
-    return email.strip().lower().endswith(STUDENT_SYNTHETIC_EMAIL_SUFFIX)
 
 
 def merge_ai_permissions(raw: dict[str, Any] | None) -> dict[str, Any]:

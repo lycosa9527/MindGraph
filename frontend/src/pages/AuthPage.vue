@@ -262,7 +262,7 @@ onBeforeUnmount(() => {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: #e8eef8;
+  background: #0b1220;
 }
 
 .auth-page-icp {

@@ -221,6 +221,26 @@ def student_open_diagram_payload(
     return dtype, blank_spec_for_type(assignment.title, dtype), "zh", None
 
 
+async def _submission_after_insert_race(
+    db: AsyncSession,
+    assignment_id: int,
+    student_id: int,
+    *,
+    detail: str,
+) -> LearningSubmission:
+    """Reload the winning row after a unique-constraint collision."""
+    raced = await db.execute(
+        select(LearningSubmission).where(
+            LearningSubmission.assignment_id == assignment_id,
+            LearningSubmission.student_user_id == student_id,
+        )
+    )
+    existing = raced.scalar_one_or_none()
+    if existing is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail) from None
+    return existing
+
+
 async def get_or_create_submission(
     db: AsyncSession,
     assignment: LearningAssignment,
@@ -230,10 +250,12 @@ async def get_or_create_submission(
 ) -> LearningSubmission:
     """Ensure student has a draft submission with a start diagram."""
     assert_assignment_visible_to_learner(assignment)
+    assignment_id = int(assignment.id)
+    student_id = int(student.id)
     result = await db.execute(
         select(LearningSubmission).where(
-            LearningSubmission.assignment_id == assignment.id,
-            LearningSubmission.student_user_id == student.id,
+            LearningSubmission.assignment_id == assignment_id,
+            LearningSubmission.student_user_id == student_id,
         )
     )
     submission = result.scalar_one_or_none()
@@ -288,8 +310,8 @@ async def get_or_create_submission(
         if org_id is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing organization")
         submission = LearningSubmission(
-            assignment_id=assignment.id,
-            student_user_id=int(student.id),
+            assignment_id=assignment_id,
+            student_user_id=student_id,
             organization_id=int(org_id),
             diagram_id=str(new_id),
             status=SUBMISSION_STATUS_DRAFT,
@@ -304,19 +326,12 @@ async def get_or_create_submission(
         await db.refresh(submission)
     except IntegrityError:
         await db.rollback()
-        raced = await db.execute(
-            select(LearningSubmission).where(
-                LearningSubmission.assignment_id == assignment.id,
-                LearningSubmission.student_user_id == student.id,
-            )
+        return await _submission_after_insert_race(
+            db,
+            assignment_id,
+            student_id,
+            detail="Failed to create student diagram",
         )
-        existing = raced.scalar_one_or_none()
-        if existing is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to create student diagram",
-            ) from None
-        return existing
     except DATABASE_ERRORS as exc:
         await db.rollback()
         raise HTTPException(
@@ -334,14 +349,16 @@ async def bind_draft_diagram(
 ) -> LearningSubmission:
     """Point the student's unsubmitted homework at a library diagram they own."""
     assert_assignment_visible_to_learner(assignment)
+    assignment_id = int(assignment.id)
+    student_id = int(student.id)
     diagram_id = (diagram_id or "").strip()
     if not diagram_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing diagram id")
 
     result = await db.execute(
         select(LearningSubmission).where(
-            LearningSubmission.assignment_id == assignment.id,
-            LearningSubmission.student_user_id == student.id,
+            LearningSubmission.assignment_id == assignment_id,
+            LearningSubmission.student_user_id == student_id,
         )
     )
     submission = result.scalar_one_or_none()
@@ -366,8 +383,8 @@ async def bind_draft_diagram(
         if org_id is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing organization")
         submission = LearningSubmission(
-            assignment_id=assignment.id,
-            student_user_id=int(student.id),
+            assignment_id=assignment_id,
+            student_user_id=student_id,
             organization_id=org_id,
             diagram_id=diagram_id,
             status=SUBMISSION_STATUS_DRAFT,
@@ -382,19 +399,12 @@ async def bind_draft_diagram(
         await db.refresh(submission)
     except IntegrityError:
         await db.rollback()
-        raced = await db.execute(
-            select(LearningSubmission).where(
-                LearningSubmission.assignment_id == assignment.id,
-                LearningSubmission.student_user_id == student.id,
-            )
+        submission = await _submission_after_insert_race(
+            db,
+            assignment_id,
+            student_id,
+            detail="Failed to bind draft diagram",
         )
-        existing = raced.scalar_one_or_none()
-        if existing is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to bind draft diagram",
-            ) from None
-        submission = existing
     except DATABASE_ERRORS as exc:
         await db.rollback()
         raise HTTPException(

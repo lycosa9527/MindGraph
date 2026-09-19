@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'Der Gastdozent kann den Lehrer der Schule auf die gleiche Symbolseite ziehen.',
   'admin.feature.vod': 'Cloud auf Abruf',
   'admin.feature.vodHint': 'Die On-Demand-Medienbibliothek von Tencent Cloud im Verwaltungsbereich ermöglicht Schuladministratoren das Durchsuchen und Hochladen von Videos.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Feature-Flags konnten nicht geladen werden',
   'admin.featureSaveFailed': 'Einstellungen konnten nicht gespeichert werden',
   'admin.featuresIntro': 'Module ein- oder ausschalten. Werte werden in .env geschrieben und auf allen API-Workern neu geladen, sodass UI und API-Prüfungen ohne Neustart aktualisiert werden. Wissensraum benötigt ggf. weiterhin Qdrant/Celery, die mit dem Prozess gestartet wurden.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

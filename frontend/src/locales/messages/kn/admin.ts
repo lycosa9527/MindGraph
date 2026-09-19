@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'ಸಂದರ್ಶಕ ಉಪನ್ಯಾಸಕರು ಶಾಲೆಯ ಶಿಕ್ಷಕರನ್ನು ಅದೇ ಐಕಾನ್ ಪುಟಕ್ಕೆ ಎಳೆಯಬಹುದು.',
   'admin.feature.vod': 'ಬೇಡಿಕೆಯ ಮೇಲೆ ಮೇಘ',
   'admin.feature.vodHint': 'ಮ್ಯಾನೇಜ್‌ಮೆಂಟ್ ಪ್ಯಾನೆಲ್‌ನಲ್ಲಿರುವ ಟೆನ್ಸೆಂಟ್ ಕ್ಲೌಡ್ ಆನ್-ಡಿಮಾಂಡ್ ಮೀಡಿಯಾ ಲೈಬ್ರರಿಯು ಶಾಲಾ ನಿರ್ವಾಹಕರಿಗೆ ವೀಡಿಯೊಗಳನ್ನು ಬ್ರೌಸ್ ಮಾಡಲು ಮತ್ತು ಅಪ್‌ಲೋಡ್ ಮಾಡಲು ಅನುಮತಿಸುತ್ತದೆ.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'ವೈಶಿಷ್ಟ್ಯ ಸ್ವಿಚ್ ಅನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ',
   'admin.featureSaveFailed': 'ಸೆಟ್ಟಿಂಗ್‌ಗಳನ್ನು ಉಳಿಸಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ',
   'admin.featuresIntro': 'ಪ್ರತಿ ಮಾಡ್ಯೂಲ್ ಅನ್ನು ಇಲ್ಲಿ ಆನ್ ಮತ್ತು ಆಫ್ ಮಾಡಿ. ಇದನ್ನು .env ಗೆ ಬರೆಯಲಾಗುತ್ತದೆ ಮತ್ತು ಎಲ್ಲಾ API ಪ್ರಕ್ರಿಯೆಗಳಿಗೆ ಹಾಟ್-ಲೋಡ್ ಮಾಡಲಾಗುತ್ತದೆ. ಇಂಟರ್ಫೇಸ್ ಮತ್ತು ಇಂಟರ್ಫೇಸ್ ಮರುಪ್ರಾರಂಭಿಸದೆಯೇ ಪರಿಣಾಮ ಬೀರುತ್ತದೆ. ಪ್ರಾರಂಭದಲ್ಲಿ ಪ್ರಾರಂಭಿಸಲಾದ Qdrant/Celery ಮೇಲೆ ಅವಲಂಬಿತವಾಗಿದ್ದರೆ ಜ್ಞಾನದ ಸ್ಥಳಗಳಿಗೆ ಇನ್ನೂ ಸಂಪೂರ್ಣ ಮರುಪ್ರಾರಂಭದ ಅಗತ್ಯವಿರುತ್ತದೆ.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

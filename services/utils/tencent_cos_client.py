@@ -189,6 +189,7 @@ def upload_file(
     *,
     max_retries: int = 3,
     log_prefix: str = "[COS]",
+    content_type: Optional[str] = None,
 ) -> bool:
     """Upload a local file to COS."""
     client = get_cos_client()
@@ -201,14 +202,17 @@ def upload_file(
     size_mb = local_path.stat().st_size / (1024 * 1024)
 
     def _do_upload() -> dict:
-        return client.upload_file(
-            Bucket=COS_BUCKET,
-            LocalFilePath=str(local_path),
-            Key=object_key,
-            PartSize=1,
-            MAXThread=10,
-            EnableMD5=False,
-        )
+        params: Dict[str, Any] = {
+            "Bucket": COS_BUCKET,
+            "LocalFilePath": str(local_path),
+            "Key": object_key,
+            "PartSize": 1,
+            "MAXThread": 10,
+            "EnableMD5": False,
+        }
+        if content_type:
+            params["ContentType"] = content_type
+        return client.upload_file(**params)
 
     try:
         logger.info(

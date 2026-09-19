@@ -48,7 +48,10 @@ from services.infrastructure.http.security_csp import (
 )
 from services.features.training.storage.backend import cos_training_enabled
 from services.showcase.storage import cos_showcase_enabled
-from services.utils.tencent_cos_client import cos_browser_csp_sources
+from services.utils.tencent_cos_client import (
+    cos_browser_csp_sources,
+    cos_credentials_configured,
+)
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR, resolve_authenticated_user_optional
 from utils.auth.mg_client import REQUEST_STATE_MG_CLIENT
 from utils.auth.request_helpers import (
@@ -86,9 +89,14 @@ def _is_document_upload_path(path: str) -> bool:
     return path.startswith("/api/doc-summary/packages/") or path.startswith("/api/knowledge-space/packages/")
 
 
+def cos_auth_login_csp_enabled() -> bool:
+    """True when /auth may 302 the browser to a COS login hero."""
+    return bool(config.COS_AUTH_LOGIN_ENABLED) and cos_credentials_configured()
+
+
 def _browser_cos_connect_enabled() -> bool:
-    """True when the browser may PUT/GET private COS (Showcase or training)."""
-    return cos_showcase_enabled() or cos_training_enabled()
+    """True when the browser may PUT/GET private COS (Showcase, training, login)."""
+    return cos_showcase_enabled() or cos_training_enabled() or cos_auth_login_csp_enabled()
 
 
 def max_request_body_size_for_path(path: str) -> int:
@@ -322,8 +330,9 @@ async def add_security_headers(request: Request, call_next):
       /public worker and does not need blob:).
     - ws:/wss:: Required for Kitty Agent WebSocket connections
     - data: URIs: Required for canvas-to-image conversions
-    - connect-src / media-src: when Showcase or training COS is on, allow the
-      configured bucket virtual-host endpoints for browser→COS presigned PUT / media
+    - connect-src / media-src: when Showcase, training, or /auth login-hero COS
+      is on, allow the configured bucket virtual-host endpoints for
+      browser→COS presigned PUT / media
     - DEBUG mode: Allows Swagger UI CDN (cdn.jsdelivr.net) for /docs endpoint
 
     Reviewed: 2025-10-26 - All directives verified against actual codebase

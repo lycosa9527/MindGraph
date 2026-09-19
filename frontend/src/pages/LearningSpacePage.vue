@@ -23,6 +23,7 @@ import {
   greetHourLabel,
   studentAssignmentDone,
   studentAssignmentPending,
+  studentCanOpenAssignment,
   type AssignmentFilter,
   type StudentTab,
   type TeacherTab,
@@ -141,8 +142,12 @@ const selectedClass = computed(
 )
 
 const publishableClasses = computed(() =>
-  classes.value.filter((c) => c.can_publish !== false)
+  classes.value.filter((c) => c.can_publish === true && c.status !== 'archived')
 )
+
+function canDeleteAssignment(a: LearningAssignment): boolean {
+  return canPublish.value && publishableClasses.value.some((c) => c.id === a.class_id)
+}
 
 const filteredAssignments = computed(() =>
   filterTeacherAssignments(teacherAssignments.value, assignmentFilter.value, assignmentQuery.value)
@@ -314,7 +319,11 @@ async function loadContext(): Promise<void> {
   loading.value = true
   try {
     context.value = await fetchLearningSpaceContext()
-    preferTeacherShell.value = context.value.can_review === true || context.value.role === 'pilot_teacher' || context.value.role === 'assistant' || context.value.role === 'superadmin'
+    preferTeacherShell.value =
+      context.value.can_review === true ||
+      context.value.role === 'pilot_teacher' ||
+      context.value.role === 'assistant' ||
+      context.value.role === 'superadmin'
     if (context.value.can_learn || context.value.role === 'student' || context.value.role === 'learner') {
       await loadStudentAssignmentsIfReady()
     }
@@ -324,9 +333,14 @@ async function loadContext(): Promise<void> {
       context.value.role === 'assistant' ||
       context.value.role === 'superadmin'
     ) {
-      const res = await listTeacherClasses()
-      classes.value = res.items
-      selectedClassId.value = classes.value[0]?.id ?? null
+      try {
+        const res = await listTeacherClasses()
+        classes.value = Array.isArray(res.items) ? res.items : []
+      } catch {
+        classes.value = []
+      }
+      selectedClassId.value =
+        classes.value.find((row) => row.status !== 'archived')?.id ?? classes.value[0]?.id ?? null
       await refreshAllClassAssignments()
       await loadTeacherAssignments()
     } else if (context.value.role === 'none' && authStore.user?.role === 'student') {
@@ -441,6 +455,10 @@ function openCreateAssignmentModal(): void {
     return
   }
   const owned = publishableClasses.value
+  if (!owned.length) {
+    notify.warning(t('learningSpace.noPublishableClass'))
+    return
+  }
   if (selectedClassId.value == null || !owned.some((c) => c.id === selectedClassId.value)) {
     selectedClassId.value = owned[0]?.id ?? null
   }
@@ -489,6 +507,10 @@ async function onChangePassword(): Promise<void> {
 }
 
 async function onOpenStudentAssignment(a: LearningAssignment): Promise<void> {
+  if (!studentCanOpenAssignment(a)) {
+    notify.warning(t('learningSpace.homeworkClosed'))
+    return
+  }
   try {
     const res = await openStudentAssignment(a.id)
     await router.push({
@@ -590,6 +612,9 @@ function openRequirements(a: LearningAssignment): void {
 }
 
 async function onDeleteAssignment(a: LearningAssignment): Promise<void> {
+  if (!canDeleteAssignment(a)) {
+    return
+  }
   try {
     await swissGlassConfirm(
       t('learningSpace.deleteAssignmentConfirm', { title: a.title }),
@@ -698,7 +723,11 @@ watch(
             <button
               type="button"
               class="ls-btn ls-btn--primary"
-              :disabled="changingPassword"
+              :disabled="
+                changingPassword ||
+                newPassword.length < 6 ||
+                newPassword !== confirmPassword
+              "
               @click="onChangePassword"
             >
               {{ t('learningSpace.savePassword') }}
@@ -726,6 +755,7 @@ watch(
                 v-if="canPublish"
                 type="button"
                 class="ls-btn ls-btn--primary"
+                :disabled="!publishableClasses.length"
                 @click="openCreateAssignmentModal"
               >
                 {{ t('learningSpace.createAssignment') }}
@@ -803,6 +833,7 @@ watch(
                   v-if="canPublish"
                   type="button"
                   class="ls-btn ls-btn--primary"
+                  :disabled="!publishableClasses.length"
                   @click="openCreateAssignmentModal"
                 >
                   {{ t('learningSpace.createAssignment') }}
@@ -849,6 +880,10 @@ watch(
                   >
                     {{ c.name }}
                     <span class="ls-pill__count">{{ c.student_count }}</span>
+                    <span
+                      v-if="c.status === 'archived'"
+                      class="ls-pill__count"
+                    >{{ t('learningSpace.filterClosed') }}</span>
                   </button>
                 </div>
               </div>
@@ -931,6 +966,7 @@ watch(
                         {{ t('learningSpace.viewRequirements') }}
                       </button>
                       <button
+                        v-if="canDeleteAssignment(a)"
                         type="button"
                         class="ls-btn ls-btn--danger-soft ls-btn--sm"
                         :disabled="deletingAssignmentId === a.id"
@@ -977,6 +1013,7 @@ watch(
                     {{ t('learningSpace.viewRequirements') }}
                   </button>
                   <button
+                    v-if="canDeleteAssignment(selectedAssignment)"
                     type="button"
                     class="ls-btn ls-btn--danger-soft ls-btn--sm"
                     :disabled="deletingAssignmentId === selectedAssignment.id"
@@ -1074,6 +1111,9 @@ watch(
                 <p>
                   {{ t('learningSpace.studentCount', { n: c.student_count }) }} ·
                   {{ c.class_code }}
+                  <template v-if="c.status === 'archived'">
+                    · {{ t('learningSpace.filterClosed') }}
+                  </template>
                 </p>
                 <p>
                   <span class="ls-link">{{ t('learningSpace.viewRoster') }}</span>
@@ -1284,12 +1324,20 @@ watch(
                     {{ t('learningSpace.viewRequirements') }}
                   </button>
                   <button
-                    v-if="!studentAssignmentDone(studentDetail)"
+                    v-if="studentCanOpenAssignment(studentDetail)"
                     type="button"
                     class="ls-btn ls-btn--primary ls-btn--sm"
                     @click="onOpenStudentAssignment(studentDetail)"
                   >
                     {{ t('learningSpace.doHomework') }}
+                  </button>
+                  <button
+                    v-else-if="!studentAssignmentDone(studentDetail)"
+                    type="button"
+                    class="ls-btn ls-btn--ghost ls-btn--sm"
+                    disabled
+                  >
+                    {{ t('learningSpace.homeworkClosed') }}
                   </button>
                   <button
                     v-else-if="myDetailSubmission"

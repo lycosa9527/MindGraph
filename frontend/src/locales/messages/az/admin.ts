@@ -94,6 +94,9 @@ export default {
   'admin.feature.trainingHint': 'Qonaq müəllim məktəbin müəllimini eyni ikona səhifəsinə çəkə bilər.',
   'admin.feature.vod': 'Tələb üzrə bulud',
   'admin.feature.vodHint': 'İdarəetmə panelindəki Tencent Cloud on-demand media kitabxanası məktəb administratorlarına videolara baxmaq və yükləmək imkanı verir.',
+  'admin.feature.studentLearningSpace': 'Learning Space',
+  'admin.feature.studentLearningSpaceHint':
+    'Class diagram homework: pilots, classes, assignments, and review. On by default.',
   'admin.featureLoadFailed': 'Funksiya bayraqları yüklənmədi',
   'admin.featureSaveFailed': 'Parametrlər saxlanılmadı',
   'admin.featuresIntro': 'Modul bayraqlarını dəyişin. Dəyərlər .env-ə yazılır və işlək prosesə yenidən yüklənir; UI və çox API dərhal yenilənir. Proses başlananda yüklənməyən modul üçün tam restart lazım ola bilər.',
@@ -1630,6 +1633,7 @@ export default {
   'admin.learningSpace.pilotWorkflowHint':
     'Search accounts by name, phone, or email (students excluded). Optionally filter by school, grant pilot access, then create a class and import students.',
   'admin.learningSpace.teacherSearchPlaceholder': 'Name, phone, or email',
+  'admin.learningSpace.selectTeacherPlaceholder': 'Select a teacher',
   'admin.learningSpace.allOrganizations': 'All schools / organizations',
   'admin.learningSpace.searchTeachers': 'Search',
   'admin.learningSpace.searchHint': 'Enter a name/phone/email or choose a school',

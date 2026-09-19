@@ -6,9 +6,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import { useRoute } from 'vue-router'
 
-import { School, Upload, Users } from '@lucide/vue'
-
-import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
+import AdminLearningSpaceModal from '@/components/admin/AdminLearningSpaceModal.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
@@ -524,7 +522,7 @@ defineExpose({ reload: loadAll })
 </script>
 
 <template>
-  <div class="ls-panel">
+  <div class="ls-admin-stack">
     <p
       v-if="loading"
       class="ls-muted"
@@ -532,21 +530,23 @@ defineExpose({ reload: loadAll })
       {{ t('common.loading') }}
     </p>
 
-    <section class="ls-section">
-      <h3 class="ls-h">{{ t('admin.learningSpace.createClassSection') }}</h3>
+    <section class="ls-admin-card">
+      <div class="ls-section-title">
+        <h2>{{ t('admin.learningSpace.createClassSection') }}</h2>
+      </div>
       <div
         v-if="canEdit"
-        class="ls-row"
+        class="ls-toolbar"
       >
         <input
           v-model="className"
           type="text"
-          class="ls-input"
+          class="ls-control"
           :placeholder="t('admin.learningSpace.className')"
         />
         <select
           v-model="classPilotTeacherId"
-          class="ls-input ls-select"
+          class="ls-control ls-control--select"
         >
           <option value="">
             {{ t('admin.learningSpace.selectPilotTeacher') }}
@@ -562,14 +562,15 @@ defineExpose({ reload: loadAll })
         <input
           v-model.number="classMaxStudents"
           type="number"
-          class="ls-input ls-input--narrow"
+          class="ls-control ls-control--narrow"
           min="1"
           max="200"
           :title="t('admin.learningSpace.maxStudents')"
         />
         <button
           type="button"
-          class="ls-primary"
+          class="ls-btn ls-btn--primary"
+          :disabled="!className.trim() || !classPilotTeacherId || !enabledPilots.length"
           @click="onCreateClass"
         >
           {{ t('admin.learningSpace.addClass') }}
@@ -583,12 +584,14 @@ defineExpose({ reload: loadAll })
       </p>
     </section>
 
-    <section class="ls-section">
-      <h3 class="ls-h">{{ t('admin.learningSpace.classList') }}</h3>
-      <div class="ls-row">
+    <section class="ls-admin-card">
+      <div class="ls-section-title">
+        <h2>{{ t('admin.learningSpace.classList') }}</h2>
+      </div>
+      <div class="ls-toolbar">
         <select
           v-model="filterTeacherId"
-          class="ls-input ls-select"
+          class="ls-control ls-control--select"
         >
           <option value="">
             {{ t('admin.learningSpace.filterAllTeachers') }}
@@ -603,7 +606,7 @@ defineExpose({ reload: loadAll })
         </select>
         <select
           v-model="filterStatus"
-          class="ls-input ls-select"
+          class="ls-control ls-control--select"
         >
           <option value="all">
             {{ t('admin.learningSpace.filterAllStatus') }}
@@ -622,10 +625,11 @@ defineExpose({ reload: loadAll })
       >
         {{ t('admin.learningSpace.classesEmpty') }}
       </p>
-      <table
+      <div
         v-else
-        class="ls-table"
+        class="ls-table-wrap"
       >
+        <table class="ls-table">
         <thead>
           <tr>
             <th>{{ t('admin.learningSpace.className') }}</th>
@@ -669,7 +673,7 @@ defineExpose({ reload: loadAll })
               <button
                 v-if="canEdit"
                 type="button"
-                class="ls-ghost"
+                class="ls-btn ls-btn--ghost ls-btn--sm"
                 :disabled="c.status === 'archived'"
                 @click="openAccountImport(c)"
               >
@@ -678,7 +682,7 @@ defineExpose({ reload: loadAll })
               <button
                 v-if="canEdit"
                 type="button"
-                class="ls-ghost"
+                class="ls-btn ls-btn--ghost ls-btn--sm"
                 :disabled="c.status === 'archived'"
                 @click="openImport(c)"
               >
@@ -686,7 +690,7 @@ defineExpose({ reload: loadAll })
               </button>
               <button
                 type="button"
-                class="ls-ghost"
+                class="ls-btn ls-btn--ghost ls-btn--sm"
                 @click="openDetail(c)"
               >
                 {{ t('admin.learningSpace.viewDetail') }}
@@ -694,7 +698,7 @@ defineExpose({ reload: loadAll })
               <button
                 v-if="canEdit"
                 type="button"
-                class="ls-ghost"
+                class="ls-btn ls-btn--ghost ls-btn--sm"
                 @click="openEdit(c)"
               >
                 {{ t('admin.learningSpace.edit') }}
@@ -702,7 +706,7 @@ defineExpose({ reload: loadAll })
               <button
                 v-if="canEdit"
                 type="button"
-                class="ls-ghost"
+                class="ls-btn ls-btn--ghost ls-btn--sm"
                 @click="onToggleClassLogin(c)"
               >
                 {{
@@ -714,45 +718,45 @@ defineExpose({ reload: loadAll })
             </td>
           </tr>
         </tbody>
-      </table>
+        </table>
+      </div>
     </section>
 
-    <SwissGlassCard
+    <AdminLearningSpaceModal
       v-model="showImportModal"
-      light-backdrop
-      :ribbon="t('admin.learningSpace.importStudents')"
+      wide
       :title="t('admin.learningSpace.importStudents')"
-      :line1="actionClass?.name || ''"
-      :line2="t('admin.learningSpace.importHint')"
-      :icon="Upload"
-      card-class="swiss-glass-card--wide"
+      :eyebrow="actionClass?.name || ''"
+      :hint="t('admin.learningSpace.importHint')"
       @close="closeModals"
     >
       <div
         v-if="actionClass"
-        class="ls-modal-body"
+        class="ls-form-grid"
       >
         <textarea
           v-model="importNamesText"
-          class="ls-textarea"
+          class="ls-control"
           rows="6"
           :placeholder="t('admin.learningSpace.importPlaceholder')"
           :disabled="!canEdit || actionClass.status === 'archived'"
         />
         <div
           v-if="canEdit && actionClass.status !== 'archived'"
-          class="ls-row"
+          class="ls-toolbar"
         >
           <button
             type="button"
-            class="ls-ghost"
+            class="ls-btn ls-btn--ghost"
+            :disabled="!importNamesText.trim()"
             @click="onPreviewImport"
           >
             {{ t('admin.learningSpace.preview') }}
           </button>
           <button
             type="button"
-            class="ls-primary"
+            class="ls-btn ls-btn--primary"
+            :disabled="!importNamesText.trim()"
             @click="onRunImport"
           >
             {{ t('admin.learningSpace.import') }}
@@ -784,11 +788,11 @@ defineExpose({ reload: loadAll })
           v-if="lastPasswords"
           class="ls-passwords"
         >
-          <div class="ls-row">
+          <div class="ls-toolbar">
             <h4 class="ls-subh">{{ t('admin.learningSpace.passwordsOnce') }}</h4>
             <button
               type="button"
-              class="ls-ghost"
+              class="ls-btn ls-btn--ghost ls-btn--sm"
               @click="onCopyPasswords"
             >
               {{ t('admin.learningSpace.copyPasswords') }}
@@ -797,44 +801,43 @@ defineExpose({ reload: loadAll })
           <pre>{{ lastPasswords }}</pre>
         </div>
       </div>
-    </SwissGlassCard>
+    </AdminLearningSpaceModal>
 
-    <SwissGlassCard
+    <AdminLearningSpaceModal
       v-model="showAccountImportModal"
-      light-backdrop
-      :ribbon="t('admin.learningSpace.importAccounts')"
+      wide
       :title="t('admin.learningSpace.importAccounts')"
-      :line1="actionClass?.name || ''"
-      :line2="t('admin.learningSpace.importAccountsHint')"
-      :icon="Upload"
-      card-class="swiss-glass-card--wide"
+      :eyebrow="actionClass?.name || ''"
+      :hint="t('admin.learningSpace.importAccountsHint')"
       @close="closeModals"
     >
       <div
         v-if="actionClass"
-        class="ls-modal-body"
+        class="ls-form-grid"
       >
         <textarea
           v-model="accountPhonesText"
-          class="ls-textarea"
+          class="ls-control"
           rows="6"
           :placeholder="t('admin.learningSpace.importAccountsPlaceholder')"
           :disabled="!canEdit || actionClass.status === 'archived'"
         />
         <div
           v-if="canEdit && actionClass.status !== 'archived'"
-          class="ls-row"
+          class="ls-toolbar"
         >
           <button
             type="button"
-            class="ls-ghost"
+            class="ls-btn ls-btn--ghost ls-btn--sm"
+            :disabled="!accountPhonesText.trim()"
             @click="onPreviewAccountImport"
           >
             {{ t('admin.learningSpace.preview') }}
           </button>
           <button
             type="button"
-            class="ls-primary"
+            class="ls-btn ls-btn--primary"
+            :disabled="!accountPhonesText.trim()"
             @click="onRunAccountImport"
           >
             {{ t('admin.learningSpace.import') }}
@@ -865,27 +868,26 @@ defineExpose({ reload: loadAll })
           </tbody>
         </table>
       </div>
-    </SwissGlassCard>
+    </AdminLearningSpaceModal>
 
-    <SwissGlassCard
+    <AdminLearningSpaceModal
       v-model="showDetailModal"
-      light-backdrop
-      :ribbon="t('admin.learningSpace.viewDetail')"
+      wide
       :title="t('admin.learningSpace.manageClass', { name: actionClass?.name || '' })"
-      :line1="actionClass ? `${t('admin.learningSpace.classCode')}: ${actionClass.class_code}` : ''"
-      :line2="t('admin.learningSpace.detailHint')"
-      :icon="Users"
-      card-class="swiss-glass-card--wide"
+      :eyebrow="
+        actionClass ? `${t('admin.learningSpace.classCode')}: ${actionClass.class_code}` : ''
+      "
+      :hint="t('admin.learningSpace.detailHint')"
       @close="closeModals"
     >
       <div
         v-if="actionClass"
-        class="ls-modal-body"
+        class="ls-form-grid"
       >
-        <div class="ls-row">
+        <div class="ls-toolbar">
           <button
             type="button"
-            class="ls-primary"
+            class="ls-btn ls-btn--primary"
             :disabled="!students.length"
             @click="exportStudentRoster"
           >
@@ -893,7 +895,7 @@ defineExpose({ reload: loadAll })
           </button>
           <button
             type="button"
-            class="ls-ghost"
+            class="ls-btn ls-btn--ghost ls-btn--sm"
             @click="onCopyCode(actionClass.class_code)"
           >
             {{ t('admin.learningSpace.copyCode') }}
@@ -945,7 +947,7 @@ defineExpose({ reload: loadAll })
                 <button
                   v-if="s.member_kind !== 'enrolled'"
                   type="button"
-                  class="ls-ghost"
+                  class="ls-btn ls-btn--ghost ls-btn--sm"
                   @click="onResetPassword(s.id)"
                 >
                   {{ t('admin.learningSpace.resetPassword') }}
@@ -964,11 +966,11 @@ defineExpose({ reload: loadAll })
           v-if="lastPasswords"
           class="ls-passwords"
         >
-          <div class="ls-row">
+          <div class="ls-toolbar">
             <h4 class="ls-subh">{{ t('admin.learningSpace.passwordsOnce') }}</h4>
             <button
               type="button"
-              class="ls-ghost"
+              class="ls-btn ls-btn--ghost ls-btn--sm"
               @click="onCopyPasswords"
             >
               {{ t('admin.learningSpace.copyPasswords') }}
@@ -977,37 +979,34 @@ defineExpose({ reload: loadAll })
           <pre>{{ lastPasswords }}</pre>
         </div>
       </div>
-    </SwissGlassCard>
+    </AdminLearningSpaceModal>
 
-    <SwissGlassCard
+    <AdminLearningSpaceModal
       v-model="showEditModal"
-      light-backdrop
-      :ribbon="t('admin.learningSpace.edit')"
       :title="t('admin.learningSpace.editClass', { name: actionClass?.name || '' })"
-      :line1="t('admin.learningSpace.classCodeHint')"
-      :icon="School"
-      card-class="swiss-glass-card--wide"
+      :eyebrow="t('admin.learningSpace.edit')"
+      :hint="t('admin.learningSpace.classCodeHint')"
       @close="closeModals"
     >
       <div
         v-if="actionClass && canEdit"
-        class="ls-modal-body"
+        class="ls-form-grid"
       >
-        <div class="ls-form">
-          <label class="ls-label">
+        <div class="ls-form-grid">
+          <label class="ls-field">
             {{ t('admin.learningSpace.className') }}
             <input
               v-model="editName"
               type="text"
-              class="ls-input ls-input--block"
+              class="ls-control ls-control--block"
             />
           </label>
-          <label class="ls-label">
+          <label class="ls-field">
             {{ t('admin.learningSpace.classCode') }}
             <input
               :value="editClassCode"
               type="text"
-              class="ls-input ls-input--block"
+              class="ls-control ls-control--block"
               maxlength="16"
               autocomplete="off"
               spellcheck="false"
@@ -1015,17 +1014,17 @@ defineExpose({ reload: loadAll })
               @input="onEditClassCodeInput"
             />
           </label>
-          <label class="ls-label">
+          <label class="ls-field">
             {{ t('admin.learningSpace.maxStudents') }}
             <input
               v-model.number="editMaxStudents"
               type="number"
-              class="ls-input ls-input--narrow"
+              class="ls-control ls-control--narrow"
               min="1"
               max="200"
             />
           </label>
-          <div class="ls-label">
+          <div class="ls-field">
             {{ t('admin.learningSpace.assistants') }}
             <p class="ls-muted">{{ t('admin.learningSpace.assistantsHint') }}</p>
             <ul
@@ -1039,24 +1038,25 @@ defineExpose({ reload: loadAll })
                 <span>{{ a.name }}{{ a.phone ? ` · ${a.phone}` : '' }}</span>
                 <button
                   type="button"
-                  class="ls-ghost"
+                  class="ls-btn ls-btn--ghost ls-btn--sm"
                   @click="removeAssistant(a.id)"
                 >
                   {{ t('common.delete') }}
                 </button>
               </li>
             </ul>
-            <div class="ls-row">
+            <div class="ls-toolbar">
               <input
                 v-model="assistantPhone"
                 type="text"
-                class="ls-input"
+                class="ls-control"
                 :placeholder="t('admin.learningSpace.assistantPhonePlaceholder')"
                 @keydown.enter.prevent="onAddAssistant"
               />
               <button
                 type="button"
-                class="ls-ghost"
+                class="ls-btn ls-btn--ghost ls-btn--sm"
+                :disabled="!assistantPhone.trim()"
                 @click="onAddAssistant"
               >
                 {{ t('admin.learningSpace.addAssistant') }}
@@ -1064,17 +1064,18 @@ defineExpose({ reload: loadAll })
             </div>
           </div>
         </div>
-        <div class="ls-row">
+        <div class="ls-toolbar">
           <button
             type="button"
-            class="ls-primary"
+            class="ls-btn ls-btn--primary"
+            :disabled="!editName.trim() || !CLASS_CODE_RE.test(sanitizeClassCodeInput(editClassCode))"
             @click="onSaveEdit"
           >
             {{ t('common.save') }}
           </button>
           <button
             type="button"
-            class="ls-ghost"
+            class="ls-btn ls-btn--ghost ls-btn--sm"
             @click="onArchiveToggle"
           >
             {{
@@ -1085,167 +1086,13 @@ defineExpose({ reload: loadAll })
           </button>
           <button
             type="button"
-            class="ls-ghost"
+            class="ls-btn ls-btn--ghost ls-btn--sm"
             @click="closeModals"
           >
             {{ t('common.cancel') }}
           </button>
         </div>
       </div>
-    </SwissGlassCard>
+    </AdminLearningSpaceModal>
   </div>
 </template>
-
-<style scoped>
-.ls-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 1.75rem;
-}
-.ls-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-.ls-h {
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: #1c1917;
-}
-.ls-subh {
-  margin: 0.5rem 0 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #44403c;
-}
-.ls-muted {
-  color: #78716c;
-  font-size: 0.875rem;
-  margin: 0;
-}
-.ls-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-}
-.ls-input {
-  min-width: 9rem;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #e7e5e4;
-  border-radius: 0.5rem;
-  background: #fafaf9;
-}
-.ls-input--narrow {
-  min-width: 5rem;
-  width: 5rem;
-}
-.ls-input--block {
-  width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-}
-.ls-select {
-  min-width: 12rem;
-  max-width: 20rem;
-}
-.ls-textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #e7e5e4;
-  border-radius: 0.5rem;
-  font-family: inherit;
-  background: #fafaf9;
-  box-sizing: border-box;
-}
-.ls-primary,
-.ls-ghost {
-  padding: 0.45rem 0.85rem;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  cursor: pointer;
-}
-.ls-primary {
-  background: #1c1917;
-  color: #fff;
-  border: none;
-}
-.ls-primary:disabled,
-.ls-ghost:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-.ls-ghost {
-  background: #fff;
-  border: 1px solid #d6d3d1;
-  color: #292524;
-}
-.ls-link {
-  margin-left: 0.35rem;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: #57534e;
-  font-size: 0.75rem;
-  text-decoration: underline;
-  cursor: pointer;
-}
-.ls-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-.ls-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
-}
-.ls-table th,
-.ls-table td {
-  text-align: left;
-  padding: 0.45rem 0.6rem;
-  border-bottom: 1px solid #f5f5f4;
-}
-.ls-passwords pre {
-  margin: 0;
-  padding: 0.75rem;
-  background: #fafaf9;
-  border: 1px solid #e7e5e4;
-  border-radius: 0.5rem;
-  white-space: pre-wrap;
-  font-size: 0.8rem;
-}
-.ls-modal-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-.ls-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-.ls-assistant-list {
-  margin: 0.35rem 0 0.5rem;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-.ls-assistant-list li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-.ls-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #57534e;
-}
-</style>

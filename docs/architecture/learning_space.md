@@ -188,7 +188,7 @@ RLS：按学校隔离。`rls_org_visible(organization_id)`，外加任课教师 
 
 **学员：** 作业列表、班级作品墙、打开作业、绑定草稿、提交；班级学生改密。
 
-**公共：** `GET /me/context`（`role`、`can_learn`、`can_review`、`can_publish`）；`GET /ai-permissions/{id}`。
+**公共：** `GET /me/context`（`role`、`can_learn`、`can_review`、`can_publish`）。`can_review` / `can_publish` 只看启用试点与助教身份，超管走管理后台，不因此变成教师端。`GET /ai-permissions/{id}`。
 
 学员作业接口同时接受班级学生与 `learner`。布置/删除仅任课教师。列出作业与批改允许助教。
 
