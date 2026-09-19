@@ -1719,8 +1719,6 @@ export default {
   'admin.learningSpace.enterPhones': 'Enter at least one phone number',
   'admin.learningSpace.assignmentCount': 'Assignments',
   'admin.learningSpace.submissionCount': 'Submissions',
-  'admin.learningSpace.organization': 'Organization / school',
-  'admin.learningSpace.phone': 'Phone',
   'admin.learningSpace.memberKind': 'Role in class',
   'admin.learningSpace.memberClassroom': 'Class student',
   'admin.learningSpace.memberEnrolled': 'Imported learner',

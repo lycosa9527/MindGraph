@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': 'పాల్గొనే వారందరికీ ఈ వర్క్‌షాప్ గది మూసివేయబడుతుంది మరియు అందరూ గది నుండి నిష్క్రమిస్తారు.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'క్యాంపస్‌లో',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'పాఠశాలల అంతటా',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

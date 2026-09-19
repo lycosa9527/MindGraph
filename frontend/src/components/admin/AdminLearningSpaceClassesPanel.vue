@@ -12,6 +12,7 @@ import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
+import { normalizeSchoolTier } from '@/constants/schoolTier'
 import { userRoleLabel } from '@/utils/userRoleDisplay'
 import {
   type AccountImportPreviewRow,
@@ -402,7 +403,7 @@ function memberOrgLabel(row: LearningStudentRow): string {
   const org = (row.organization_name || '').trim()
   if (org) return org
   if (row.member_kind === 'enrolled' && row.role) {
-    return userRoleLabel(t, row.role, row.school_tier)
+    return userRoleLabel(t, row.role, row.school_tier ? normalizeSchoolTier(row.school_tier) : null)
   }
   return '—'
 }

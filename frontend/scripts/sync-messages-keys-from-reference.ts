@@ -21,6 +21,7 @@ const NS_ORDER = [
   'workshop',
   'admin',
   'knowledge',
+  'learningSpace',
   'community',
   'showcase',
   'sidebar',

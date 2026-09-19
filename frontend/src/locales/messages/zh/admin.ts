@@ -1774,8 +1774,6 @@ export default {
   'admin.learningSpace.enterPhones': '请至少输入一个手机号',
   'admin.learningSpace.assignmentCount': '作业',
   'admin.learningSpace.submissionCount': '提交',
-  'admin.learningSpace.organization': '所属组织/学校',
-  'admin.learningSpace.phone': '手机号',
   'admin.learningSpace.memberKind': '身份',
   'admin.learningSpace.memberClassroom': '班级学生',
   'admin.learningSpace.memberEnrolled': '导入学员',

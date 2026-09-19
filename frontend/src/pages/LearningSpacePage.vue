@@ -233,7 +233,7 @@ const myDetailSubmission = computed(() => {
     ...sub,
     assignment_id: detail.id,
     assignment_title: detail.title,
-    student_name: authStore.user?.name || undefined,
+    student_name: authStore.user?.username || undefined,
   } as LearningSubmission
 })
 
@@ -248,7 +248,7 @@ const myPortfolio = computed(() => {
       ...a.submission!,
       assignment_id: a.id,
       assignment_title: a.title,
-      student_name: authStore.user?.name || undefined,
+      student_name: authStore.user?.username || undefined,
       diagram_thumbnail: a.submission?.diagram_thumbnail || a.template_thumbnail || null,
     }))
 })

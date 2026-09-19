@@ -19,6 +19,7 @@ const FILES = [
   'common.ts',
   'community.ts',
   'knowledge.ts',
+  'learningSpace.ts',
   'mindmate.ts',
   'maite.ts',
   'notification.ts',

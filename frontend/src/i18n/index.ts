@@ -59,7 +59,10 @@ export const i18n = createI18n({
 
 function localeHasMessages(locale: LocaleCode): boolean {
   const bag = i18n.global.getLocaleMessage(locale) as Record<string, unknown> | undefined
-  return Boolean(bag) && Object.keys(bag).length > 0
+  if (!bag) {
+    return false
+  }
+  return Object.keys(bag).length > 0
 }
 
 /**

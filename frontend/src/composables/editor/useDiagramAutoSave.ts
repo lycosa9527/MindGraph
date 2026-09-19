@@ -19,7 +19,7 @@
  */
 import { storeToRefs } from 'pinia'
 import { type ComputedRef, computed, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { type LocationQuery, useRoute, useRouter } from 'vue-router'
 
 import { eventBus } from '@/composables'
 import { SAVE } from '@/config'
@@ -365,7 +365,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
             const canvasPath = canvasEditorPathForRoute(route.path)
             const currentId = route.query.diagramId
             if (String(currentId ?? '') !== String(result.diagramId)) {
-              const nextQuery = { ...route.query, diagramId: result.diagramId }
+              const nextQuery: LocationQuery = { ...route.query, diagramId: result.diagramId }
               delete nextQuery.diagram_id
               router.replace({ path: canvasPath, query: nextQuery })
             }

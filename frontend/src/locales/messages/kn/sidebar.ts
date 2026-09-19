@@ -136,4 +136,6 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': 'ಈ ಕಾರ್ಯಾಗಾರದ ಕೊಠಡಿಯನ್ನು ಎಲ್ಲಾ ಭಾಗವಹಿಸುವವರಿಗೆ ಮುಚ್ಚಲಾಗುತ್ತದೆ ಮತ್ತು ಎಲ್ಲರೂ ಕೊಠಡಿಯಿಂದ ನಿರ್ಗಮಿಸುತ್ತಾರೆ.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'ಕ್ಯಾಂಪಸ್‌ನಲ್ಲಿ',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'ಶಾಲೆಗಳಾದ್ಯಂತ',
+  'sidebar.learningSpace': 'Learning Space',
+  'sidebar.roleStudent': 'Student',
 } as const

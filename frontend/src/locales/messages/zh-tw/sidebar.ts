@@ -101,6 +101,7 @@ export default {
   'sidebar.history.pinned': '置頂',
   'sidebar.history.untitled': '未命名',
   'sidebar.knowledgeSpace': '個人知識庫',
+  'sidebar.learningSpace': '學習空間',
   'sidebar.knowledgeSpaceHistory.capacity': '最多 {n} 個資料包',
   'sidebar.knowledgeSpaceHistory.deleted': '資料包已刪除',
   'sidebar.knowledgeSpaceHistory.empty': '暫無資料包',
@@ -127,6 +128,7 @@ export default {
   'sidebar.roleExpert': '專家',
   'sidebar.roleSchoolAdmin': '學校管理員',
   'sidebar.roleSchoolEdition': '學校版',
+  'sidebar.roleStudent': '學生',
   'sidebar.roleTrialEdition': '體驗版',
   'sidebar.roleSuperMember': '超級會員',
   'sidebar.logoSiteQrTitle': '網站二維碼',
@@ -136,6 +138,4 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': '將為所有參與者結束此研討房間，所有人將退出房間。',
   'sidebar.mindmateCollabHistory.visibilityOrg': '校內',
   'sidebar.mindmateCollabHistory.visibilityNetwork': '跨校',
-  'sidebar.learningSpace': 'Learning Space',
-  'sidebar.roleStudent': 'Student',
 } as const

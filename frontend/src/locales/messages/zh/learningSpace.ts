@@ -1,6 +1,8 @@
 /**
- * Learning Space UI copy (zh).
+ * zh UI — learningSpace
+ * SOURCE — author new keys here in Simplified Chinese first.
  */
+
 export default {
   'learningSpace.title': '学习空间',
   'learningSpace.brandTitle': '学习空间',
@@ -228,7 +230,6 @@ export default {
   'learningSpace.teacherReview': '老师评价',
   'learningSpace.waitingTeacherReview': '老师尚未评价此作业。',
   'learningSpace.noTeacherComment': '暂无评语',
-  'learningSpace.attachments': '作业附件',
   'learningSpace.templateMgHint':
     '作答图示可预览并在画布中打开；对照图示与参考图片列在下方。',
   'learningSpace.noTemplatePreview': '暂无模板预览',

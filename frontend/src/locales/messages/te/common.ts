@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'భావన పటం',
   'swissGlass.hero.focusQuestion.title': 'దృష్టి సమస్యలను',
   'swissGlass.hero.focusQuestion.line1': 'కాన్సెప్ట్ మ్యాప్ కోసం ప్రధాన ప్రశ్నను సెట్ చేయండి',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

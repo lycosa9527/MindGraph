@@ -543,4 +543,5 @@ export default {
   'swissGlass.hero.focusQuestion.ribbon': 'ಪರಿಕಲ್ಪನೆ ನಕ್ಷೆ',
   'swissGlass.hero.focusQuestion.title': 'ಗಮನ ಸಮಸ್ಯೆಗಳು',
   'swissGlass.hero.focusQuestion.line1': 'ಪರಿಕಲ್ಪನೆಯ ನಕ್ಷೆಗಾಗಿ ಪ್ರಮುಖ ಪ್ರಶ್ನೆಯನ್ನು ಹೊಂದಿಸಿ',
+  'meta.pageTitle.learningSpace': 'Learning Space',
 } as const

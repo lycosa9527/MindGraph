@@ -5,7 +5,7 @@
  * 5.180.80 wiped picker translations). Add missing keys with sync-messages; fill
  * English leftovers from zh with `i18n:gap-fill`.
  *
- * Does not modify `src/i18n/index.ts` — locale loading is lazy via `import.meta.glob`.
+ * Does not modify `src/i18n/index.ts` � locale loading is lazy via `import.meta.glob`.
  *
  * Run: node scripts/materialize-locale-bundles-from-en.ts
  */
@@ -29,6 +29,7 @@ const NS_FILES = [
   'common.ts',
   'community.ts',
   'knowledge.ts',
+  'learningSpace.ts',
   'mindmate.ts',
   'maite.ts',
   'notification.ts',
@@ -41,8 +42,8 @@ const NS_FILES = [
 
 function patchNamespaceHeader(content: string, code: string): string {
   return content.replace(
-    /^\/\*\* English UI ï¿½?(.+) \*\//,
-    `/** ${code} UI ï¿½?$1 (English copy; translate values as needed) */`
+    /^\/\*\* English UI �?(.+) \*\//,
+    `/** ${code} UI �?$1 (English copy; translate values as needed) */`
   )
 }
 
@@ -68,7 +69,7 @@ function materializeLocale(code: string): void {
   writeFileSync(
     join(ROOT, `${code}.ts`),
     `/**
- * ${code} UI messages ï¿½?re-export merged bundles.
+ * ${code} UI messages �?re-export merged bundles.
  */
 export { default } from './${code}/index.ts'
 `,

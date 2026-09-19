@@ -20,6 +20,7 @@ export const I18N_NS_FILES = [
   'training',
   'admin',
   'knowledge',
+  'learningSpace',
   'community',
   'showcase',
   'zhihui',

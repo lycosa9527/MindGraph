@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.91] - 2026-09-19
+
+> **Learning Space: classroom homework, account memberships, and assignment-gated student AI.**
+
+### Added
+
+- **学习空间** — Feature-flagged (`FEATURE_STUDENT_LEARNING_SPACE`) classroom homework: pilots, classes, assignments, submissions, and review. Teachers import existing phone accounts as learners without changing `users.role`, add review-only assistants, and can disable class-code login. Student canvas AI follows assignment permissions. Alembic `0121`–`0124` (rebased after `0120` classroom-remote visibility). Admin + student UI and [`docs/architecture/learning_space.md`](docs/architecture/learning_space.md).
+
+### Tests
+
+- [`tests/test_learning_space.py`](tests/test_learning_space.py)
+
 ## [5.180.90] - 2026-09-19
 
 > **Classroom remote open state follows the account, not just this browser.**

@@ -182,9 +182,9 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             (s.showZhihuiNav && s.showPanel('zhihui')),
         }"
       >
-        <el-tooltip
+        <I18nTooltip
           v-if="s.showLearningSpaceNav"
-          :content="s.t('sidebar.learningSpace')"
+          k="sidebar.learningSpace"
           placement="right"
           :disabled="!s.isCollapsed"
         >
@@ -200,10 +200,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
-              >{{ s.t('sidebar.learningSpace') }}</span
-            >
+              ><I18nText k="sidebar.learningSpace"
+            /></span>
           </div>
-        </el-tooltip>
+        </I18nTooltip>
         <!-- Knowledge Space -->
         <I18nTooltip
           v-if="!s.isLearningSpaceStudent && s.isAuthenticated && s.featureKnowledgeSpace && !s.hideKnowledgeSpaceNav"

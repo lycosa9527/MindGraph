@@ -1,6 +1,8 @@
 /**
- * Learning Space UI copy (en).
+ * en UI — learningSpace
+ * FILL — English of zh. Copy into other locales only for keys that do not exist yet.
  */
+
 export default {
   'learningSpace.title': 'Learning Space',
   'learningSpace.brandTitle': 'Learning Space',
@@ -239,7 +241,6 @@ export default {
   'learningSpace.teacherReview': 'Teacher feedback',
   'learningSpace.waitingTeacherReview': 'Your teacher has not reviewed this work yet.',
   'learningSpace.noTeacherComment': 'No comment yet',
-  'learningSpace.attachments': 'Attachments',
   'learningSpace.templateMgHint':
     'The working diagram can be previewed and opened on the canvas. Extra diagrams and photos are listed below.',
   'learningSpace.noTemplatePreview': 'No template preview available',
@@ -297,7 +298,6 @@ export default {
   'learningSpace.rosterColClassCode': 'Class code',
   'learningSpace.rosterColPassword': 'Password',
   'learningSpace.passwordHidden': 'Visible after reset',
-  'learningSpace.rosterHint': '{n} students',
   'learningSpace.rosterEmpty': 'Select a class to load the roster',
   'learningSpace.settingsHint': 'How Learning Space connects to the MindGraph canvas.',
   'learningSpace.editorBridgeTitle': 'Mind map editor bridge',

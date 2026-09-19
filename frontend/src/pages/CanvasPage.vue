@@ -30,7 +30,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 
 import MindMapClassroomRemote from '@/canvas-ribbon/MindMapClassroomRemote.vue'
-import LearningAssignmentCanvasBar from '@/components/learningSpace/LearningAssignmentCanvasBar.vue
+import LearningAssignmentCanvasBar from '@/components/learningSpace/LearningAssignmentCanvasBar.vue'
 import MindMapStatusBar from '@/canvas-ribbon/MindMapStatusBar.vue'
 import {
   CanvasBottomAiCluster,

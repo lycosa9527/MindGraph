@@ -151,7 +151,7 @@ export function assignmentReferenceDiagrams(
 
 export function studentHomeworkDiagramTitle(
   studentName: string | null | undefined,
-  studentId: number | null | undefined,
+  studentId: string | number | null | undefined,
   assignmentTitle: string | null | undefined
 ): string {
   const name = (studentName || '').trim() || (studentId != null ? String(studentId) : '学生')
