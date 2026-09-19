@@ -11,11 +11,17 @@ import logging
 import uuid
 from dataclasses import dataclass
 
+from fastapi import HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
 from models.domain.learning_space import LearningClass
+from services.auth.password_security import (
+    invalidate_user_cache_after_password_write,
+    revoke_refresh_tokens_and_sessions,
+)
 from services.learning_space.memberships import count_class_learners, count_classroom_students
 from services.learning_space.passwords import (
     initial_password_from_name,
@@ -137,7 +143,14 @@ async def import_students(
             }
         )
 
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Import conflict; retry",
+        ) from exc
     return ImportResult(created=created, failed=failed)
 
 
@@ -149,6 +162,8 @@ async def reset_student_password(db: AsyncSession, student: User) -> str:
     student.must_change_password = True
     await db.commit()
     await db.refresh(student)
+    await invalidate_user_cache_after_password_write(student, "Learning Space password reset")
+    await revoke_refresh_tokens_and_sessions(int(student.id), "learning_space_password_reset")
     logger.info("[LearningSpace] Password reset for student_id=%s", student.id)
     return plain
 

@@ -9,7 +9,7 @@ from utils.db.alembic_migration import load_rls_policy_builder
 
 _RLS_FUNC_ARG = re.compile(r"rls_\w+\((\w+)\)")
 _EXISTS_FK = re.compile(r"\.\w+\s*=\s*([a-z_][a-z0-9_]*)(?!\.)\b")
-_COMPARE_COL = re.compile(r"(\w+)\s*=\s*rls_")
+_COMPARE_COL = re.compile(r"(?<![.\w])(\w+)\s*=\s*rls_")
 
 
 def _table_columns(table_name: str) -> set[str]:
@@ -26,6 +26,8 @@ def _collect_policy_errors(table_name: str, expr: str, columns: set[str]) -> lis
         if column not in columns:
             errors.append(f"{table_name}: rls_*({column}) — column missing")
     for column in _EXISTS_FK.findall(expr):
+        if column.startswith("rls_"):
+            continue
         if column not in columns:
             errors.append(f"{table_name}: EXISTS join on {column} — column missing")
     for column in _COMPARE_COL.findall(expr):

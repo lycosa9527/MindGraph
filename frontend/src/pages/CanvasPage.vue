@@ -947,6 +947,7 @@ const diagramAutoSave = useDiagramAutoSave({
     const activeId = savedDiagramsStore.activeDiagramId
     if (learningAssignmentCanvas.isActive) {
       if (!learningAssignmentCanvas.draftHydrated) return null
+      if (learningAssignmentCanvas.isSubmitted) return null
       if (activeId) return activeId
       if (homeworkId) return homeworkId
       return queryId

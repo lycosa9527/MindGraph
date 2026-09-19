@@ -88,13 +88,15 @@ class AssignmentCreate(BaseModel):
     @field_validator("instruction_images")
     @classmethod
     def instruction_images_size(cls, value: list[str]) -> list[str]:
-        """Keep instruction image payloads small (data URLs or short URLs)."""
+        """Keep instruction image payloads small (COS refs, URLs, or legacy data URLs)."""
         cleaned: list[str] = []
         for raw in value:
             item = (raw or "").strip()
             if not item:
                 continue
-            if len(item) > 200_000:
+            if item.startswith("data:") and len(item) > 200_000:
+                raise ValueError("instruction image too large")
+            if not item.startswith("data:") and len(item) > 2000:
                 raise ValueError("instruction image too large")
             cleaned.append(item)
             if len(cleaned) >= 6:

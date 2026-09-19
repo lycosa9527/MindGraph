@@ -368,3 +368,31 @@ class WorkshopCosConfigMixin:
     def COS_WORKSHOP_PRESIGN_GET_TTL(self) -> int:
         """Seconds for COS→browser presigned GET URLs (short-lived)."""
         return int(self._get_cached_value("COS_WORKSHOP_PRESIGN_GET_TTL", "300"))
+
+
+class LearningSpaceCosConfigMixin:
+    """COS knobs for Learning Space instruction images (bytes only; refs stay in PG)."""
+
+    if TYPE_CHECKING:
+
+        def _get_cached_value(self, _key: str, _default: Any = None) -> Any:
+            """Type stub: method provided by BaseConfig."""
+            raise NotImplementedError
+
+    @property
+    def COS_LEARNING_SPACE_ENABLED(self) -> bool:
+        """Private-bucket assignment images. Default on; local if COS auth missing."""
+        return self._get_cached_value("COS_LEARNING_SPACE_ENABLED", "true").lower() == "true"
+
+    @property
+    def COS_LEARNING_SPACE_PREFIX(self) -> str:
+        """COS key prefix for Learning Space images. Default ``{env}/learning-space``."""
+        return cos_feature_prefix(
+            "learning-space",
+            self._get_cached_value("COS_LEARNING_SPACE_PREFIX", ""),
+        )
+
+    @property
+    def COS_LEARNING_SPACE_PRESIGN_GET_TTL(self) -> int:
+        """Seconds for COS→browser presigned GET URLs (short-lived)."""
+        return int(self._get_cached_value("COS_LEARNING_SPACE_PRESIGN_GET_TTL", "300"))

@@ -69,6 +69,7 @@ from services.diagram.source_channel import (
 )
 from services.redis.cache._redis_diagram_cache_helpers import MAX_SPEC_SIZE_KB
 from services.redis.cache.diagram_save_errors import STALE_ACCOUNT_SAVE_ERROR
+from services.learning_space.assignments import assert_homework_diagram_writable
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.auth.thinking_coin.client_event_service import load_user_org
 from services.auth.thinking_coin.event_hub import mutation_to_footer, track_client_event
@@ -495,6 +496,8 @@ async def update_diagram(
     existing = await cache.get_diagram(current_user.id, diagram_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Diagram not found")
+
+    await assert_homework_diagram_writable(db, int(current_user.id), diagram_id)
 
     if req.if_updated_at is not None and not _updated_at_matches(
         req.if_updated_at,

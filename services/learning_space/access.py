@@ -14,7 +14,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.settings import config
 from models.domain.auth import User
 from models.domain.learning_space import (
+    ASSIGNMENT_STATUS_DRAFT,
     CLASS_STATUS_ACTIVE,
+    LearningAssignment,
     LearningClass,
     LearningPilotTeacher,
 )
@@ -106,8 +108,17 @@ async def require_class_learner(db: AsyncSession, user: User, class_id: int) -> 
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Class is disabled")
         return
     if await is_class_learner(db, int(user.id), class_id):
+        learning_class = await db.get(LearningClass, class_id)
+        if learning_class is None or learning_class.status != CLASS_STATUS_ACTIVE:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Class is disabled")
         return
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your class")
+
+
+def assert_assignment_visible_to_learner(assignment: LearningAssignment) -> None:
+    """Draft homework must not be openable even when the id is guessed."""
+    if assignment.status == ASSIGNMENT_STATUS_DRAFT:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found")
 
 
 async def get_active_class_by_code(db: AsyncSession, class_code: str) -> LearningClass | None:

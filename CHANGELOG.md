@@ -7,15 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [5.180.91] - 2026-09-19
 
-> **Learning Space: classroom homework, account memberships, and assignment-gated student AI.**
+> **Learning Space homework with school RLS, COS images, and production session locks.**
 
 ### Added
 
-- **学习空间** — Feature-flagged (`FEATURE_STUDENT_LEARNING_SPACE`) classroom homework: pilots, classes, assignments, submissions, and review. Teachers import existing phone accounts as learners without changing `users.role`, add review-only assistants, and can disable class-code login. Student canvas AI follows assignment permissions. Alembic `0121`–`0124` (rebased after `0120` classroom-remote visibility). Admin + student UI and [`docs/architecture/learning_space.md`](docs/architecture/learning_space.md).
+- **学习空间** — Classroom homework (`FEATURE_STUDENT_LEARNING_SPACE`, default on): pilots, classes, assignments, submissions, and review. Teachers import existing phone accounts as learners without changing `users.role`, add review-only assistants, and can disable class-code login. Student canvas AI follows assignment permissions. Alembic `0121`–`0127`. Admin + student UI and [`docs/architecture/learning_space.md`](docs/architecture/learning_space.md).
+- **说明图 COS** — Instruction images go to Tencent COS (`COS_LEARNING_SPACE_*`); Postgres stores `lsimg:` refs. Download is access-checked and 302s to a short-lived COS URL.
+
+### Changed
+
+- **按学校 RLS** — Learning Space rows use `organization_id` plus teacher / student / membership fallbacks. Management panel sees only readable schools (no panel-legacy dump).
+- **会话与作业生命周期** — Archiving a class kicks classroom-student sessions. Password reset clears cache and sessions. Draft homework is hidden from learners. Submitted homework cannot be edited via canvas PUT or workshop start. Imported-learner AI follows the assignment gate.
 
 ### Tests
 
-- [`tests/test_learning_space.py`](tests/test_learning_space.py)
+- [`tests/test_learning_space.py`](tests/test_learning_space.py), [`tests/test_learning_space_images.py`](tests/test_learning_space_images.py), [`tests/test_learning_space_rls.py`](tests/test_learning_space_rls.py)
 
 ## [5.180.90] - 2026-09-19
 

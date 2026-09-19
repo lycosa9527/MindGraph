@@ -1,7 +1,7 @@
 /**
  * Learning Space API helpers (admin / teacher / student).
  */
-import { apiRequestJson } from '@/utils/apiClient'
+import { apiRequestJson, apiUpload } from '@/utils/apiClient'
 
 const BASE = '/api/learning-space'
 
@@ -241,6 +241,22 @@ export async function teacherResetPassword(
   studentId: number
 ): Promise<{ student_id: number; name: string; initial_password: string }> {
   return postJson(`${BASE}/teacher/students/${studentId}/reset-password`)
+}
+
+export async function uploadInstructionImage(
+  file: File,
+  classId?: number
+): Promise<{ ref: string }> {
+  const form = new FormData()
+  form.append('file', file)
+  if (classId != null) {
+    form.append('class_id', String(classId))
+  }
+  const response = await apiUpload(`${BASE}/teacher/instruction-images`, form)
+  if (!response.ok) {
+    throw new Error('upload failed')
+  }
+  return (await response.json()) as { ref: string }
 }
 
 export async function createTeacherAssignment(body: {

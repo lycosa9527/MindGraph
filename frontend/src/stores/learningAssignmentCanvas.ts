@@ -48,6 +48,7 @@ export const useLearningAssignmentCanvasStore = defineStore('learningAssignmentC
   const draftHydrated = ref(false)
 
   const isActive = computed(() => assignmentId.value != null)
+  const isSubmitted = computed(() => assignment.value?.submission?.status === 'submitted')
   const shellEpoch = ref(0)
 
   function bumpShell(): void {
@@ -134,6 +135,7 @@ export const useLearningAssignmentCanvasStore = defineStore('learningAssignmentC
     loadError,
     draftHydrated,
     isActive,
+    isSubmitted,
     shellEpoch,
     bumpShell,
     aiAssistOn,

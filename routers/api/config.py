@@ -105,7 +105,7 @@ class FeatureFlagsResponse(BaseModel):
     feature_mindmate_collab: bool
     feature_training: bool = False
     feature_vod: bool = False
-    feature_student_learning_space: bool = False
+    feature_student_learning_space: bool = True
     feature_markets: bool
     feature_mindbot: bool
     feature_wechat_login: bool = False

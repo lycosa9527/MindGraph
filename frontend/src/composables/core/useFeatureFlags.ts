@@ -53,7 +53,7 @@ export function useFeatureFlags() {
   const featureTraining = computed(() => live.value?.feature_training ?? false)
   const featureVod = computed(() => live.value?.feature_vod ?? false)
   const featureStudentLearningSpace = computed(
-    () => live.value?.feature_student_learning_space ?? false,
+    () => live.value?.feature_student_learning_space ?? true,
   )
   const featureMarkets = computed(() => live.value?.feature_markets ?? false)
   const featureMindbot = computed(() => live.value?.feature_mindbot ?? false)

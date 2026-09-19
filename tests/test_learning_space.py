@@ -16,6 +16,7 @@ from pydantic import ValidationError
 
 from models.domain.learning_space import (
     ASSIGNMENT_STATUS_ACTIVE,
+    ASSIGNMENT_STATUS_DRAFT,
     SUBMISSION_STATUS_DRAFT,
     SUBMISSION_STATUS_SUBMITTED,
     LearningAssignment,
@@ -23,6 +24,7 @@ from models.domain.learning_space import (
 )
 from routers.features.learning_space.schemas import ClassUpdate
 from services.diagram.semantic_spec_validation import validate_semantic_spec
+from services.learning_space.access import assert_assignment_visible_to_learner
 from services.learning_space.assignments import (
     assert_can_edit_submission,
     student_homework_diagram_title,
@@ -182,6 +184,36 @@ def test_assert_can_edit_past_due() -> None:
         assert_can_edit_submission(assignment, submission)
     assert exc.value.status_code == 400
     assert "Past due" in str(exc.value.detail)
+
+
+def test_draft_assignment_hidden_from_learners() -> None:
+    """Students must not open unpublished homework by guessing the id."""
+    assignment = LearningAssignment(
+        class_id=1,
+        title="t",
+        instructions="",
+        template_diagram_id="d1",
+        created_by=1,
+        organization_id=3,
+        status=ASSIGNMENT_STATUS_DRAFT,
+    )
+    with pytest.raises(HTTPException) as exc:
+        assert_assignment_visible_to_learner(assignment)
+    assert exc.value.status_code == 404
+
+
+def test_published_assignment_visible_to_learners() -> None:
+    """Active homework is visible to class learners."""
+    assignment = LearningAssignment(
+        class_id=1,
+        title="t",
+        instructions="",
+        template_diagram_id="d1",
+        created_by=1,
+        organization_id=3,
+        status=ASSIGNMENT_STATUS_ACTIVE,
+    )
+    assert_assignment_visible_to_learner(assignment)
 
 
 def test_assert_can_edit_already_submitted() -> None:

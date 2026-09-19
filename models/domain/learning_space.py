@@ -184,6 +184,12 @@ class LearningClassMembership(Base):
         nullable=False,
         index=True,
     )
+    organization_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     role: Mapped[str] = mapped_column(String(20), nullable=False, default=MEMBERSHIP_ROLE_LEARNER)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
@@ -209,6 +215,12 @@ class LearningAssignment(Base):
     due_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     ai_permissions: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     instruction_images: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    organization_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     created_by: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -256,6 +268,12 @@ class LearningSubmission(Base):
         Integer,
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
+    )
+    organization_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     diagram_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default=SUBMISSION_STATUS_DRAFT)

@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.domain.auth import Organization, User
 from models.domain.learning_space import (
     ASSIGNMENT_STATUS_DRAFT,
+    CLASS_STATUS_ACTIVE,
     MEMBERSHIP_ROLE_ASSISTANT,
     MEMBERSHIP_ROLE_LEARNER,
     SUBMISSION_STATUS_SUBMITTED,
@@ -118,12 +119,22 @@ async def class_ids_for_membership_role(db: AsyncSession, user_id: int, role: st
 
 
 async def learner_class_ids(db: AsyncSession, user: User) -> list[int]:
-    """Classes the user may complete homework in (classroom + enrolled)."""
+    """Active classes the user may complete homework in (classroom + enrolled)."""
     ids: list[int] = []
     if is_student(user) and user.learning_class_id:
         ids.append(int(user.learning_class_id))
     ids.extend(await class_ids_for_membership_role(db, int(user.id), MEMBERSHIP_ROLE_LEARNER))
-    return list(dict.fromkeys(ids))
+    unique = list(dict.fromkeys(ids))
+    if not unique:
+        return []
+    result = await db.execute(
+        select(LearningClass.id).where(
+            LearningClass.id.in_(tuple(unique)),
+            LearningClass.status == CLASS_STATUS_ACTIVE,
+        )
+    )
+    active = {int(cid) for (cid,) in result.all()}
+    return [cid for cid in unique if cid in active]
 
 
 async def class_activity_stats(db: AsyncSession, class_ids: list[int]) -> dict[int, dict[str, int]]:
@@ -315,6 +326,7 @@ async def import_existing_accounts(db: AsyncSession, learning_class: LearningCla
         membership = LearningClassMembership(
             class_id=int(learning_class.id),
             user_id=int(row.user_id),
+            organization_id=int(learning_class.organization_id),
             role=MEMBERSHIP_ROLE_LEARNER,
         )
         db.add(membership)
@@ -361,6 +373,7 @@ async def replace_class_assistants(db: AsyncSession, learning_class: LearningCla
             membership = LearningClassMembership(
                 class_id=int(learning_class.id),
                 user_id=user_id,
+                organization_id=int(learning_class.organization_id),
                 role=MEMBERSHIP_ROLE_ASSISTANT,
             )
             db.add(membership)

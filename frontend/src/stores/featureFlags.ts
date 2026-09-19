@@ -107,7 +107,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
       feature_mindmate_collab: false,
       feature_training: false,
       feature_vod: false,
-      feature_student_learning_space: false,
+      feature_student_learning_space: true,
       feature_markets: false,
       feature_mindbot: false,
       feature_mindmate_export: false,
@@ -177,7 +177,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_mindmate_collab: raw.feature_mindmate_collab ?? false,
           feature_training: raw.feature_training ?? false,
           feature_vod: raw.feature_vod ?? false,
-          feature_student_learning_space: raw.feature_student_learning_space ?? false,
+          feature_student_learning_space: raw.feature_student_learning_space ?? true,
           feature_markets: raw.feature_markets ?? false,
           feature_mindbot: raw.feature_mindbot ?? false,
           feature_mindmate_export: raw.feature_mindmate_export ?? false,
@@ -310,7 +310,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
   }
 
   function getFeatureStudentLearningSpace(): boolean {
-    return flags.value?.feature_student_learning_space ?? false
+    return flags.value?.feature_student_learning_space ?? true
   }
 
   /** True after a successful /api/config/features response (not the all-off fallback). */

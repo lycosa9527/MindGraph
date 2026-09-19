@@ -95,6 +95,10 @@ jobs:
             tests/test_mind_classroom_steps.py \
             tests/test_mind_classroom_slide_adapter.py \
             tests/test_mind_classroom_rls.py \
+            tests/test_learning_space.py \
+            tests/test_learning_space_images.py \
+            tests/test_learning_space_rls.py \
+            tests/test_rls_policy_column_refs.py \
             tests/test_mind_classroom_celery_log.py \
             tests/test_mind_classroom_enqueue.py \
             tests/test_mind_classroom_job_match.py \

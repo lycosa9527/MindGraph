@@ -7,10 +7,12 @@ Proprietary License
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
@@ -43,6 +45,7 @@ from routers.features.learning_space.schemas import (
     SubmissionReviewRequest,
 )
 from services.learning_space.access import (
+    assert_assignment_visible_to_learner,
     get_class_for_staff,
     get_class_for_teacher,
     get_enabled_pilot,
@@ -83,8 +86,18 @@ from services.learning_space.assignments import (
     submission_public_dict,
     submit_assignment,
 )
+from services.learning_space.class_codes import (
+    class_code_in_use_error,
+    create_class_with_unique_code,
+    rotate_class_code,
+)
+from services.learning_space.image_storage import (
+    delete_stored_images_sync,
+    persist_instruction_images_sync,
+    ref_for_key,
+    stored_image_keys,
+)
 from services.learning_space.passwords import (
-    generate_class_code,
     merge_ai_permissions,
 )
 from services.learning_space.students import (
@@ -106,7 +119,7 @@ from utils.auth.admin_scope import AdminScope
 from utils.auth.password import hash_password
 from utils.auth.role_constants import ROLE_STUDENT
 from utils.auth.roles import is_student, is_superadmin
-from utils.db.session_open import actor_rls_session, system_rls_session
+from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -114,14 +127,6 @@ router = APIRouter()
 
 _require_ls_view = require_panel_capability(CAP_TAB_LEARNING_SPACE_VIEW)
 _require_ls_edit = require_panel_capability(CAP_TAB_LEARNING_SPACE_EDIT)
-
-
-def _unique_class_code_sync_attempt(existing: set[str]) -> str:
-    for _ in range(20):
-        code = generate_class_code()
-        if code not in existing:
-            return code
-    return generate_class_code(8)
 
 
 # ---------------------------------------------------------------------------
@@ -239,16 +244,14 @@ async def patch_pilot(
 async def delete_pilot(
     pilot_id: int,
     _scope: AdminScope = Depends(_require_ls_edit),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
 ):
     """Remove a pilot grant so the teacher can be re-added later."""
-    # Use system RLS: request-scoped panel context can fail to see/mutate
-    # enrichment rows; capability was already checked above.
-    async with system_rls_session() as db:
-        pilot = await db.get(LearningPilotTeacher, pilot_id)
-        if pilot is None:
-            raise HTTPException(status_code=404, detail="Pilot not found")
-        await db.delete(pilot)
-        await db.commit()
+    pilot = await db.get(LearningPilotTeacher, pilot_id)
+    if pilot is None:
+        raise HTTPException(status_code=404, detail="Pilot not found")
+    await db.delete(pilot)
+    await db.commit()
     return {"ok": True, "id": pilot_id}
 
 
@@ -305,19 +308,14 @@ async def admin_create_class(
     pilot = await get_enabled_pilot(db, body.teacher_user_id)
     if pilot is None:
         raise HTTPException(status_code=400, detail="Teacher is not an enabled pilot")
-    codes = await db.execute(select(LearningClass.class_code))
-    existing = {c for (c,) in codes.all()}
-    cls = LearningClass(
+    cls = await create_class_with_unique_code(
+        db,
         name=body.name.strip(),
-        class_code=_unique_class_code_sync_attempt(existing),
         teacher_user_id=body.teacher_user_id,
-        organization_id=pilot.organization_id,
-        status=CLASS_STATUS_ACTIVE,
+        organization_id=int(pilot.organization_id),
+        class_status=CLASS_STATUS_ACTIVE,
         max_students=body.max_students,
     )
-    db.add(cls)
-    await db.commit()
-    await db.refresh(cls)
     return {
         "id": cls.id,
         "name": cls.name,
@@ -342,14 +340,6 @@ async def admin_patch_class(
     if body.max_students is not None:
         cls.max_students = body.max_students
     if body.class_code is not None:
-        clash = await db.execute(
-            select(LearningClass.id).where(
-                LearningClass.class_code == body.class_code,
-                LearningClass.id != class_id,
-            )
-        )
-        if clash.scalar_one_or_none() is not None:
-            raise HTTPException(status_code=400, detail="Class code already in use")
         cls.class_code = body.class_code
     if body.status is not None:
         if body.status not in (CLASS_STATUS_ACTIVE, CLASS_STATUS_ARCHIVED):
@@ -359,10 +349,20 @@ async def admin_patch_class(
     if body.status == CLASS_STATUS_ARCHIVED:
         kick_ids = await classroom_student_ids(db, class_id)
     if body.assistant_user_ids is not None:
-        await replace_class_assistants(db, cls, body.assistant_user_ids)
+        try:
+            await replace_class_assistants(db, cls, body.assistant_user_ids)
+        except IntegrityError as exc:
+            await db.rollback()
+            if body.class_code is not None:
+                raise class_code_in_use_error() from exc
+            raise HTTPException(status_code=400, detail="Could not update assistants") from exc
         await kick_classroom_student_sessions(kick_ids)
         return {"id": cls.id, "name": cls.name, "status": cls.status, "class_code": cls.class_code}
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise class_code_in_use_error() from exc
     await kick_classroom_student_sessions(kick_ids)
     return {"id": cls.id, "name": cls.name, "status": cls.status, "class_code": cls.class_code}
 
@@ -374,13 +374,7 @@ async def admin_rotate_code(
     db: AsyncSession = Depends(get_async_db_with_request_rls),
 ):
     """Rotate class join code."""
-    cls = await db.get(LearningClass, class_id)
-    if cls is None:
-        raise HTTPException(status_code=404, detail="Class not found")
-    codes = await db.execute(select(LearningClass.class_code))
-    existing = {c for (c,) in codes.all()}
-    cls.class_code = _unique_class_code_sync_attempt(existing)
-    await db.commit()
+    cls = await rotate_class_code(db, class_id)
     return {"id": cls.id, "class_code": cls.class_code}
 
 
@@ -573,7 +567,7 @@ async def teacher_create_assignment(
 ):
     """Create homework from a teacher-owned template diagram."""
     await require_pilot_teacher(db, current_user)
-    await get_class_for_teacher(db, body.class_id, int(current_user.id))
+    learning_class = await get_class_for_teacher(db, body.class_id, int(current_user.id))
     cache = get_diagram_cache()
     try:
         template = await cache.get_diagram(int(current_user.id), body.template_diagram_id)
@@ -584,6 +578,14 @@ async def teacher_create_assignment(
         ) from exc
     if not template:
         raise HTTPException(status_code=400, detail="Template diagram not found")
+    try:
+        stored_images = await asyncio.to_thread(
+            persist_instruction_images_sync,
+            [u.strip() for u in body.instruction_images if u and u.strip()][:6],
+            owner_id=int(current_user.id),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     assignment = LearningAssignment(
         class_id=body.class_id,
         title=body.title.strip(),
@@ -591,13 +593,23 @@ async def teacher_create_assignment(
         template_diagram_id=body.template_diagram_id,
         due_at=body.due_at,
         ai_permissions=merge_ai_permissions(body.ai_permissions),
-        instruction_images=[u.strip() for u in body.instruction_images if u and u.strip()][:6],
+        instruction_images=stored_images,
+        organization_id=int(learning_class.organization_id),
         created_by=int(current_user.id),
         status=body.status,
     )
     db.add(assignment)
-    await db.commit()
-    await db.refresh(assignment)
+    try:
+        await db.commit()
+        await db.refresh(assignment)
+    except DATABASE_ERRORS as exc:
+        await db.rollback()
+        incoming = {item.strip() for item in body.instruction_images if item and item.strip()}
+        orphans = [
+            key for key in stored_image_keys(stored_images) if ref_for_key(key) not in incoming and key not in incoming
+        ]
+        await asyncio.to_thread(delete_stored_images_sync, orphans)
+        raise HTTPException(status_code=500, detail="Failed to create assignment") from exc
     return await enrich_assignment_dict(db, assignment)
 
 
@@ -753,11 +765,13 @@ async def assignment_template_preview(
     assignment = await get_assignment(db, assignment_id)
     if is_student(current_user):
         await require_class_learner(db, current_user, int(assignment.class_id))
+        assert_assignment_visible_to_learner(assignment)
     elif not is_superadmin(current_user):
         try:
             await get_class_for_staff(db, assignment.class_id, int(current_user.id), allow_archived=True)
         except HTTPException:
             await require_class_learner(db, current_user, int(assignment.class_id))
+            assert_assignment_visible_to_learner(assignment)
     return await load_template_preview(assignment)
 
 
@@ -854,13 +868,12 @@ async def student_open_assignment(
     """Open or create the student diagram for an assignment."""
     assignment = await get_assignment(db, assignment_id)
     await require_class_learner(db, current_user, int(assignment.class_id))
-    async with actor_rls_session(current_user) as _rls_db:
-        submission = await get_or_create_submission(
-            db,
-            assignment,
-            current_user,
-            organization_id=getattr(current_user, "organization_id", None),
-        )
+    submission = await get_or_create_submission(
+        db,
+        assignment,
+        current_user,
+        organization_id=getattr(current_user, "organization_id", None),
+    )
     return {
         "assignment": assignment_public_dict(assignment),
         "submission": submission_public_dict(submission),
@@ -877,13 +890,12 @@ async def student_bind_draft_diagram(
     """Keep homework pointed at the diagram the student just saved."""
     assignment = await get_assignment(db, assignment_id)
     await require_class_learner(db, current_user, int(assignment.class_id))
-    async with actor_rls_session(current_user) as _rls_db:
-        submission = await bind_draft_diagram(
-            db,
-            assignment,
-            current_user,
-            body.diagram_id,
-        )
+    submission = await bind_draft_diagram(
+        db,
+        assignment,
+        current_user,
+        body.diagram_id,
+    )
     return submission_public_dict(submission)
 
 
@@ -990,6 +1002,7 @@ async def get_assignment_ai_permissions(
                 staff_ok = False
         if not staff_ok:
             await require_class_learner(db, current_user, int(assignment.class_id))
+            assert_assignment_visible_to_learner(assignment)
             sub_result = await db.execute(
                 select(LearningSubmission).where(
                     LearningSubmission.assignment_id == assignment_id,

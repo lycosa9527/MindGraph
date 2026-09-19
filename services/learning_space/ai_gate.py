@@ -13,6 +13,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
 from models.domain.learning_space import LearningAssignment
+from services.learning_space.access import (
+    assert_assignment_visible_to_learner,
+    require_class_learner,
+)
 from services.learning_space.passwords import ai_permission_allowed
 from utils.auth.roles import is_student
 
@@ -54,19 +58,19 @@ async def assert_student_ai_capability_for_assignment(
     capability: str,
 ) -> None:
     """Same as ``assert_student_ai_capability`` with an explicit assignment id."""
-    if not is_student(user):
-        return
     if assignment_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Assignment context required for student AI",
-        )
+        if is_student(user):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Assignment context required for student AI",
+            )
+        return
     result = await db.execute(select(LearningAssignment).where(LearningAssignment.id == assignment_id))
     assignment = result.scalar_one_or_none()
     if assignment is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found")
-    if int(assignment.class_id) != int(getattr(user, "learning_class_id", 0) or 0):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your class")
+    assert_assignment_visible_to_learner(assignment)
+    await require_class_learner(db, user, int(assignment.class_id))
     perms = assignment.ai_permissions if isinstance(assignment.ai_permissions, dict) else {}
     if not ai_permission_allowed(perms, capability):
         raise HTTPException(

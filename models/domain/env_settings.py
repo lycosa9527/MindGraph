@@ -253,7 +253,7 @@ class FeatureFlagSettings(BaseModel):
         description="Enable Tencent Cloud VOD (云点播) admin media library",
     )
     FEATURE_STUDENT_LEARNING_SPACE: bool = Field(
-        default=False,
+        default=True,
         description="Enable classroom Learning Space (student accounts / homework)",
     )
 

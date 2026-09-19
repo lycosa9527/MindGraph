@@ -11,6 +11,10 @@ import { useLanguage, useNotifications } from '@/composables'
 import type { LsReferenceDiagram } from '@/composables/learningSpace/lsHelpers'
 import { useSavedDiagramsStore } from '@/stores'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
+import {
+  LS_MAX_INSTRUCTION_IMAGES,
+  useLsInstructionImages,
+} from '@/composables/learningSpace/lsInstructionImages'
 import type { LearningClassRow } from '@/utils/learningSpaceApi'
 import { createTeacherAssignment } from '@/utils/learningSpaceApi'
 import {
@@ -18,9 +22,8 @@ import {
   inferDiagramTypeFromSpec,
 } from '@/utils/showcaseDiagramThumbnail'
 
-const MAX_INSTRUCTION_IMAGES = 6
+const MAX_INSTRUCTION_IMAGES = LS_MAX_INSTRUCTION_IMAGES
 const MAX_REFERENCE_DIAGRAMS = 5
-const MAX_IMAGE_DATA_URL = 180_000
 
 const AI_TOOL_KEYS = [
   'topic_generate',
@@ -101,6 +104,14 @@ const form = ref({
   template_role: 'reference' as 'reference' | 'scaffold',
 })
 
+const instructionImages = computed({
+  get: () => form.value.instruction_images,
+  set: (value: string[]) => {
+    form.value.instruction_images = value
+  },
+})
+const instructionImagesCtl = useLsInstructionImages(instructionImages)
+
 const selectedStudentTotal = computed(() =>
   props.classes
     .filter((c) => form.value.class_ids.includes(c.id))
@@ -162,6 +173,7 @@ function onDiagramTypeChange(): void {
 function resetForm(): void {
   step.value = 1
   customDimInput.value = ''
+  instructionImagesCtl.clearImages()
   form.value = {
     title: '',
     instructions: '',
@@ -170,7 +182,7 @@ function resetForm(): void {
     template_label: '',
     template_thumbnail: null,
     template_spec: null,
-    instruction_images: [],
+    instruction_images: [] as string[],
     reference_diagrams: [],
     evaluation_dimensions: [],
     class_ids: props.classes[0] ? [props.classes[0].id] : [],
@@ -342,76 +354,11 @@ async function onMgFileChange(ev: Event): Promise<void> {
   }
 }
 
-function readFileAsDataUrl(file: File): Promise<string | null> {
-  return new Promise((resolve) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : null)
-    reader.onerror = () => resolve(null)
-    reader.readAsDataURL(file)
-  })
-}
-
-function compressDataUrl(src: string): Promise<string | null> {
-  return new Promise((resolve) => {
-    const img = new Image()
-    img.onload = () => {
-      const maxSide = 1280
-      const scale = Math.min(1, maxSide / Math.max(img.width, img.height, 1))
-      const canvas = document.createElement('canvas')
-      canvas.width = Math.max(1, Math.round(img.width * scale))
-      canvas.height = Math.max(1, Math.round(img.height * scale))
-      const ctx = canvas.getContext('2d')
-      if (!ctx) {
-        resolve(src.length <= MAX_IMAGE_DATA_URL ? src : null)
-        return
-      }
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-      let quality = 0.82
-      let out = canvas.toDataURL('image/jpeg', quality)
-      while (out.length > MAX_IMAGE_DATA_URL && quality > 0.45) {
-        quality -= 0.12
-        out = canvas.toDataURL('image/jpeg', quality)
-      }
-      resolve(out.length > MAX_IMAGE_DATA_URL ? null : out)
-    }
-    img.onerror = () => resolve(null)
-    img.src = src
-  })
-}
-
-async function fileToInstructionImage(file: File): Promise<string | null> {
-  const raw = await readFileAsDataUrl(file)
-  if (!raw) return null
-  if (raw.length <= MAX_IMAGE_DATA_URL) return raw
-  return compressDataUrl(raw)
-}
-
 async function onImageFilesChange(ev: Event): Promise<void> {
   const input = ev.target as HTMLInputElement
-  const files = Array.from(input.files || [])
+  const incoming = Array.from(input.files || [])
   input.value = ''
-  const remaining = MAX_INSTRUCTION_IMAGES - form.value.instruction_images.length
-  if (remaining <= 0) {
-    notify.warning(t('learningSpace.attachImageMax', { n: MAX_INSTRUCTION_IMAGES }))
-    return
-  }
-  let added = 0
-  let skipped = files.length > remaining
-  let tooLarge = false
-  for (const file of files) {
-    if (added >= remaining) {
-      skipped = true
-      break
-    }
-    if (!file.type.startsWith('image/')) continue
-    const dataUrl = await fileToInstructionImage(file)
-    if (!dataUrl) {
-      tooLarge = true
-      continue
-    }
-    form.value.instruction_images.push(dataUrl)
-    added += 1
-  }
+  const { added, skipped, tooLarge } = instructionImagesCtl.addImageFiles(incoming)
   if (skipped) {
     notify.warning(t('learningSpace.attachImageMax', { n: MAX_INSTRUCTION_IMAGES }))
   } else if (tooLarge) {
@@ -421,7 +368,7 @@ async function onImageFilesChange(ev: Event): Promise<void> {
 }
 
 function removeInstructionImage(idx: number): void {
-  form.value.instruction_images.splice(idx, 1)
+  instructionImagesCtl.removeImage(idx)
 }
 
 function removeReferenceDiagram(idx: number): void {
@@ -567,12 +514,13 @@ async function submit(): Promise<void> {
     const templateDiagramId = await ensureTemplateDiagramId()
     const due = form.value.due_at ? new Date(form.value.due_at).toISOString() : null
     const ai_permissions = buildAiPermissions()
+    const instructionRefs = await instructionImagesCtl.uploadAll(form.value.class_ids[0])
     const payloadBase = {
       title: form.value.title.trim(),
       instructions: form.value.instructions.trim(),
       template_diagram_id: templateDiagramId,
       due_at: due,
-      instruction_images: form.value.instruction_images,
+      instruction_images: instructionRefs,
       ai_permissions,
       status: 'active' as const,
     }

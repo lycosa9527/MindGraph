@@ -6,7 +6,7 @@ Bucket/region: COS_BUCKET / COS_REGION. App objects use ``{env}/{module}/...``
 (see ``config.cos_env_prefix``). Optional per-module ``COS_*_PREFIX`` overrides
 and ``COS_SYNC_KEY_PREFIX`` (shared sync) stay outside that tree.
 
-Used by backup scheduler, document summary, Showcase media, and COS mirror sync.
+Used by backup scheduler, document summary, Showcase media, Learning Space images, and COS mirror sync.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved

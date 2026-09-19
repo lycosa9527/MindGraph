@@ -289,6 +289,68 @@ LIBRARY_DOC_WRITE = "rls_platform_admin_only()"
 # Group E
 PLATFORM_ADMIN = "rls_platform_admin_only()"
 
+# Learning Space — school isolation (organization_id) plus participant fallbacks
+# so imported learners/assistants whose account org differs still work.
+# Do not use rls_org_visible() here: its panel legacy branch shows every
+# uninvited org to non-expert panel users and would leak across schools.
+_LS_SELF = "(SELECT rls_current_user_id())"
+LEARNING_ORG_VISIBLE = (
+    "rls_is_system_mode() "
+    "OR (rls_is_panel_mode() AND ("
+    "rls_panel_global_read() "
+    "OR rls_org_id_in_readable_list(organization_id) "
+    "OR organization_id = rls_current_org_id()"
+    ")) "
+    "OR (NOT rls_is_panel_mode() AND rls_org_visible(organization_id))"
+)
+LEARNING_PILOT_EXPR = f"{LEARNING_ORG_VISIBLE} OR teacher_user_id = rls_current_user_id()"
+LEARNING_CLASS_EXPR = (
+    f"{LEARNING_ORG_VISIBLE} "
+    "OR teacher_user_id = rls_current_user_id() "
+    f"OR EXISTS (SELECT 1 FROM users u WHERE u.id = {_LS_SELF} "
+    "AND u.learning_class_id = learning_classes.id) "
+    f"OR EXISTS (SELECT 1 FROM learning_class_memberships m "
+    f"WHERE m.class_id = learning_classes.id AND m.user_id = {_LS_SELF})"
+)
+LEARNING_MEMBERSHIP_EXPR = f"{LEARNING_ORG_VISIBLE} OR user_id = rls_current_user_id()"
+LEARNING_ASSIGNMENT_EXPR = (
+    f"{LEARNING_ORG_VISIBLE} "
+    "OR created_by = rls_current_user_id() "
+    f"OR EXISTS (SELECT 1 FROM users u WHERE u.id = {_LS_SELF} "
+    "AND u.learning_class_id = learning_assignments.class_id) "
+    f"OR EXISTS (SELECT 1 FROM learning_class_memberships m "
+    f"WHERE m.class_id = learning_assignments.class_id AND m.user_id = {_LS_SELF})"
+)
+LEARNING_SUBMISSION_EXPR = (
+    f"{LEARNING_ORG_VISIBLE} "
+    "OR student_user_id = rls_current_user_id() "
+    f"OR EXISTS (SELECT 1 FROM learning_assignments a "
+    f"WHERE a.id = assignment_id AND a.created_by = {_LS_SELF}) "
+    f"OR EXISTS (SELECT 1 FROM learning_assignments a "
+    f"JOIN learning_class_memberships m ON m.class_id = a.class_id "
+    f"WHERE a.id = assignment_id AND m.user_id = {_LS_SELF})"
+)
+LEARNING_SPACE_POLICIES = (
+    ("learning_pilot_teachers", LEARNING_PILOT_EXPR),
+    ("learning_classes", LEARNING_CLASS_EXPR),
+    ("learning_class_memberships", LEARNING_MEMBERSHIP_EXPR),
+    ("learning_assignments", LEARNING_ASSIGNMENT_EXPR),
+    ("learning_submissions", LEARNING_SUBMISSION_EXPR),
+)
+
+
+def upgrade_learning_space_policies() -> None:
+    """Replace the 0121/0124 any-authenticated policies with school isolation."""
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    for table, expr in LEARNING_SPACE_POLICIES:
+        if not inspector.has_table(table):
+            continue
+        _enable_force(table)
+        for suffix in ("select", "write", "update", "delete", "tenant"):
+            _drop_policy(table, f"{table}_{suffix}")
+        _create_all_policy(table, f"{table}_tenant", expr)
+
 
 def upgrade_devices_policy() -> None:
     """devices use student_id, not user_id."""
@@ -492,6 +554,7 @@ def iter_all_table_policies() -> list[tuple[str, str]]:
             "created_by_user_id = rls_current_user_id() OR rls_platform_admin_only()",
         )
     )
+    rows.extend(LEARNING_SPACE_POLICIES)
     return rows
 
 
@@ -530,4 +593,5 @@ def all_rls_tables() -> list[str]:
             "mindmate_export_jobs",
         ]
     )
+    tables.extend(name for name, _expr in LEARNING_SPACE_POLICIES)
     return tables

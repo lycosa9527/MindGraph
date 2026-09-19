@@ -7,11 +7,13 @@ Proprietary License
 
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import HTTPException, status
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
@@ -23,11 +25,18 @@ from models.domain.learning_space import (
     LearningAssignment,
     LearningSubmission,
 )
+from services.learning_space.access import assert_assignment_visible_to_learner
 from services.learning_space.blank_spec import (
     TEMPLATE_ROLE_SCAFFOLD,
     blank_spec_for_type,
     normalize_ls_diagram_type,
     resolve_template_role,
+)
+from services.learning_space.image_storage import (
+    delete_stored_images_sync,
+    public_instruction_images,
+    ref_for_key,
+    stored_image_keys,
 )
 from services.learning_space.passwords import merge_ai_permissions
 from services.learning_space.students import count_class_students
@@ -72,9 +81,37 @@ async def get_assignment(db: AsyncSession, assignment_id: int) -> LearningAssign
     return assignment
 
 
+async def unreferenced_image_keys(
+    db: AsyncSession,
+    keys: list[str],
+    *,
+    except_assignment_id: int,
+) -> list[str]:
+    """Return COS/local keys that no other assignment still stores."""
+    unused: list[str] = []
+    for key in keys:
+        ref = ref_for_key(key)
+        result = await db.execute(
+            select(LearningAssignment.id)
+            .where(
+                LearningAssignment.id != except_assignment_id,
+                or_(
+                    LearningAssignment.instruction_images.contains([ref]),
+                    LearningAssignment.instruction_images.contains([key]),
+                ),
+            )
+            .limit(1)
+        )
+        if result.scalar_one_or_none() is None:
+            unused.append(key)
+    return unused
+
+
 async def delete_assignment(db: AsyncSession, assignment: LearningAssignment) -> None:
     """Delete an assignment and its submissions without relying on ORM cascade."""
     assignment_id = int(assignment.id)
+    image_keys = stored_image_keys(assignment.instruction_images)
+    unused_keys = await unreferenced_image_keys(db, image_keys, except_assignment_id=assignment_id)
     try:
         await db.execute(delete(LearningSubmission).where(LearningSubmission.assignment_id == assignment_id))
         await db.execute(delete(LearningAssignment).where(LearningAssignment.id == assignment_id))
@@ -85,6 +122,27 @@ async def delete_assignment(db: AsyncSession, assignment: LearningAssignment) ->
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Failed to delete assignment",
         ) from exc
+    await asyncio.to_thread(delete_stored_images_sync, unused_keys)
+
+
+async def assert_homework_diagram_writable(
+    db: AsyncSession,
+    user_id: int,
+    diagram_id: str,
+) -> None:
+    """Block canvas saves once the bound homework is submitted, closed, or past due."""
+    cleaned = (diagram_id or "").strip()
+    if not cleaned:
+        return
+    result = await db.execute(
+        select(LearningSubmission).where(
+            LearningSubmission.diagram_id == cleaned,
+            LearningSubmission.student_user_id == user_id,
+        )
+    )
+    for submission in result.scalars().all():
+        assignment = await get_assignment(db, int(submission.assignment_id))
+        assert_can_edit_submission(assignment, submission)
 
 
 def student_homework_diagram_title(
@@ -171,6 +229,7 @@ async def get_or_create_submission(
     organization_id: int | None,
 ) -> LearningSubmission:
     """Ensure student has a draft submission with a start diagram."""
+    assert_assignment_visible_to_learner(assignment)
     result = await db.execute(
         select(LearningSubmission).where(
             LearningSubmission.assignment_id == assignment.id,
@@ -225,9 +284,13 @@ async def get_or_create_submission(
         )
 
     if submission is None:
+        org_id = int(assignment.organization_id) if assignment.organization_id else organization_id
+        if org_id is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing organization")
         submission = LearningSubmission(
             assignment_id=assignment.id,
             student_user_id=int(student.id),
+            organization_id=int(org_id),
             diagram_id=str(new_id),
             status=SUBMISSION_STATUS_DRAFT,
         )
@@ -236,8 +299,30 @@ async def get_or_create_submission(
         submission.diagram_id = str(new_id)
         if submission.status == SUBMISSION_STATUS_RETURNED:
             submission.status = SUBMISSION_STATUS_DRAFT
-    await db.commit()
-    await db.refresh(submission)
+    try:
+        await db.commit()
+        await db.refresh(submission)
+    except IntegrityError:
+        await db.rollback()
+        raced = await db.execute(
+            select(LearningSubmission).where(
+                LearningSubmission.assignment_id == assignment.id,
+                LearningSubmission.student_user_id == student.id,
+            )
+        )
+        existing = raced.scalar_one_or_none()
+        if existing is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to create student diagram",
+            ) from None
+        return existing
+    except DATABASE_ERRORS as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create student diagram",
+        ) from exc
     return submission
 
 
@@ -248,6 +333,7 @@ async def bind_draft_diagram(
     diagram_id: str,
 ) -> LearningSubmission:
     """Point the student's unsubmitted homework at a library diagram they own."""
+    assert_assignment_visible_to_learner(assignment)
     diagram_id = (diagram_id or "").strip()
     if not diagram_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing diagram id")
@@ -276,9 +362,13 @@ async def bind_draft_diagram(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Diagram not found")
 
     if submission is None:
+        org_id = int(assignment.organization_id) if assignment.organization_id else None
+        if org_id is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing organization")
         submission = LearningSubmission(
             assignment_id=assignment.id,
             student_user_id=int(student.id),
+            organization_id=org_id,
             diagram_id=diagram_id,
             status=SUBMISSION_STATUS_DRAFT,
         )
@@ -287,8 +377,30 @@ async def bind_draft_diagram(
         submission.diagram_id = diagram_id
         if submission.status == SUBMISSION_STATUS_RETURNED:
             submission.status = SUBMISSION_STATUS_DRAFT
-    await db.commit()
-    await db.refresh(submission)
+    try:
+        await db.commit()
+        await db.refresh(submission)
+    except IntegrityError:
+        await db.rollback()
+        raced = await db.execute(
+            select(LearningSubmission).where(
+                LearningSubmission.assignment_id == assignment.id,
+                LearningSubmission.student_user_id == student.id,
+            )
+        )
+        existing = raced.scalar_one_or_none()
+        if existing is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to bind draft diagram",
+            ) from None
+        submission = existing
+    except DATABASE_ERRORS as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to bind draft diagram",
+        ) from exc
     await ensure_student_homework_diagram_title(student, assignment, diagram_id)
     return submission
 
@@ -299,6 +411,7 @@ async def submit_assignment(
     student: User,
 ) -> LearningSubmission:
     """Freeze snapshot and mark submitted."""
+    assert_assignment_visible_to_learner(assignment)
     result = await db.execute(
         select(LearningSubmission).where(
             LearningSubmission.assignment_id == assignment.id,
@@ -311,7 +424,13 @@ async def submit_assignment(
     assert_can_edit_submission(assignment, submission)
 
     cache = get_diagram_cache()
-    diagram = await cache.get_diagram(int(student.id), submission.diagram_id)
+    try:
+        diagram = await cache.get_diagram(int(student.id), submission.diagram_id)
+    except BACKGROUND_INFRA_ERRORS as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Diagram service unavailable",
+        ) from exc
     snapshot: dict[str, Any] | None = None
     if diagram:
         snapshot = {
@@ -350,15 +469,15 @@ def assignment_public_dict(
     student_count: int | None = None,
 ) -> dict[str, Any]:
     """Serialize assignment for API responses."""
-    images = assignment.instruction_images
-    if not isinstance(images, list):
-        images = []
     payload: dict[str, Any] = {
         "id": assignment.id,
         "class_id": assignment.class_id,
         "title": assignment.title,
         "instructions": assignment.instructions,
-        "instruction_images": [str(u) for u in images if isinstance(u, str) and u.strip()][:6],
+        "instruction_images": public_instruction_images(
+            assignment.instruction_images,
+            assignment_id=int(assignment.id) if assignment.id is not None else None,
+        ),
         "template_diagram_id": assignment.template_diagram_id,
         "due_at": assignment.due_at.isoformat() if assignment.due_at else None,
         "ai_permissions": merge_ai_permissions(

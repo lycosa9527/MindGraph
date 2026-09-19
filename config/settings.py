@@ -34,6 +34,7 @@ from config.dashscope_endpoint_config import DashScopeEndpointConfigMixin
 from config.features_config import FeaturesConfigMixin
 from config.knowledge_config import (
     KnowledgeConfigMixin,
+    LearningSpaceCosConfigMixin,
     TrainingCosConfigMixin,
     WorkshopCosConfigMixin,
 )
@@ -61,6 +62,7 @@ class Config(
     KnowledgeConfigMixin,
     TrainingCosConfigMixin,
     WorkshopCosConfigMixin,
+    LearningSpaceCosConfigMixin,
     VodConfigMixin,
     FeaturesConfigMixin,
 ):

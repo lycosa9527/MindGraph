@@ -22,6 +22,7 @@ from models.requests.requests_diagram import (
 from routers.auth.dependencies import get_language_dependency
 from services.auth.thinking_coin.client_event_service import load_user_org
 from services.auth.thinking_coin.event_hub import mutation_to_footer, track_client_event
+from services.learning_space.assignments import assert_homework_diagram_writable
 from services.online_collab.core.online_collab_manager import get_online_collab_manager
 from utils.auth import get_current_user
 from utils.auth.school_tier import (
@@ -85,6 +86,8 @@ async def start_workshop(
     await _require_online_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("workshop", identifier, max_requests=10, window_seconds=60)
+    async with actor_rls_session(current_user) as db:
+        await assert_homework_diagram_writable(db, int(current_user.id), diagram_id)
 
     visibility = body.visibility if body else "organization"
     duration = body.duration if body else "today"
