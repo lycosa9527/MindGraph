@@ -79,7 +79,7 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     expect(status).toContain('data-testid="mindmap-ribbon-zoom-percent"')
     expect(status).toContain('data-testid="mindmap-ribbon-fit-view"')
     expect(status).toContain('<CanvasMindMapGestureGuide')
-    expect(status).toContain('data-testid="mindmap-ribbon-hand-tool"')
+    expect(status).toContain('data-testid="mindmap-ribbon-floating-toolbar"')
     expect(status).not.toContain('mindmap-ribbon-virtual-keyboard')
     expect(status).not.toContain('toggleVirtualKeyboard')
     const keyboard = readSrc('src/components/canvas/CanvasVirtualKeyboardPanel.vue')
@@ -113,7 +113,7 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     const mmToolbar = readSrc('src/components/canvas/CanvasToolbarMindMap.vue')
     const history = readSrc('src/components/canvas/CanvasToolbarMindMapHistoryVersions.vue')
     const fileTab = mmToolbar.slice(
-      mmToolbar.indexOf("template v-if=\"ribbonTab === 'file'\""),
+      mmToolbar.indexOf('template v-if="ribbonTab === \'file\'"'),
       mmToolbar.indexOf("ribbonTab === 'teaching'")
     )
     const researchTab = mmToolbar.slice(mmToolbar.indexOf("ribbonTab === 'research'"))
@@ -184,6 +184,7 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     expect(page).not.toContain('useMindMapV3')
     expect(page).toContain('useMindMapV2Chrome')
     expect(page).toContain('<MindMapStatusBar')
+    expect(page).toContain('<MindMapClassroomRemote')
     expect(page).toContain('v-if="isMindMapRibbonFamily && showBottomBar"')
     expect(page).toContain('isMindMapRibbonFamily')
     expect(router).toContain("effectiveMode === 'legacy'")

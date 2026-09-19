@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.89] - 2026-09-19
+
+> **New-canvas classroom remote: a draggable tool strip for 110" IFP boards that cannot reach the top ribbon.**
+
+### Added
+
+- **课堂浮动工具** — New-canvas status-bar 抓手 becomes a toggle for a floating remote. Teachers drag it to where they stand. Tabs: 视图 / 编辑 / 教学 / 主题 / 绘图 / 文件. Always expanded; close on the title bar or the status-bar icon. Width follows three tab labels ([`MindMapClassroomRemote.vue`](frontend/src/canvas-ribbon/MindMapClassroomRemote.vue), [`MindMapStatusBar.vue`](frontend/src/canvas-ribbon/MindMapStatusBar.vue)).
+- **预置主题** — 主题 tab applies a center topic on tap. Teachers can edit the list. Double-bubble maps split `主题A vs 主题B` into left/right topics ([`classroomRemoteTopics.ts`](frontend/src/canvas-ribbon/classroomRemoteTopics.ts)).
+
+### Changed
+
+- **Status bar zoom** — Hand / zoom slider / fit / present stay on the bottom-right cluster. The former hand button opens the remote.
+
+### Tests
+
+- [`frontend/tests/mindMapClassroomRemote.spec.ts`](frontend/tests/mindMapClassroomRemote.spec.ts), [`frontend/tests/useClassroomRemotePosition.spec.ts`](frontend/tests/useClassroomRemotePosition.spec.ts), [`frontend/tests/classroomRemoteTopics.spec.ts`](frontend/tests/classroomRemoteTopics.spec.ts)
+- `npm run i18n:check-keys` — 5903 keys × 79 locales
+
 ## [5.180.88] - 2026-09-19
 
 > **Bilingual UI chrome: primary language for the audience, smaller second line for the presenter.**

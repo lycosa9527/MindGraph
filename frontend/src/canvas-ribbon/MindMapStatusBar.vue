@@ -4,7 +4,7 @@
  */
 import { computed } from 'vue'
 
-import { Hand, ListTree, Maximize2, MonitorPlay } from '@lucide/vue'
+import { AppWindow, ListTree, Maximize2, MonitorPlay } from '@lucide/vue'
 
 import CanvasMindMapGestureGuide from '@/components/canvas/CanvasMindMapGestureGuide.vue'
 import CanvasMindMapShortcutGuide from '@/components/canvas/CanvasMindMapShortcutGuide.vue'
@@ -12,6 +12,7 @@ import CanvasToolbarMindMapAiGenerate from '@/components/canvas/CanvasToolbarMin
 import CanvasToolbarMindMapAudiencePicker from '@/components/canvas/CanvasToolbarMindMapAudiencePicker.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
+import { useClassroomRemoteVisibility } from '@/composables/canvas/useClassroomRemotePosition'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useLLMResultsStore } from '@/stores/llmResults'
@@ -24,16 +25,16 @@ import { useMindMapRibbonActions } from './useMindMapRibbonActions'
 const props = withDefaults(
   defineProps<{
     zoom?: number | null
-    handToolActive?: boolean
   }>(),
   {
     zoom: null,
-    handToolActive: false,
   }
 )
 
 const { t } = useLanguage()
 const actions = useMindMapRibbonActions()
+const { hidden: classroomRemoteHidden, toggleHidden: toggleClassroomRemote } =
+  useClassroomRemoteVisibility()
 const { activeTool, handleToolSelect } = useMindMapSideToolbarState()
 const llmResultsStore = useLLMResultsStore()
 
@@ -104,13 +105,14 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
       <button
         type="button"
         class="mm-status__zoom-btn"
-        :class="{ 'is-active': handToolActive }"
-        :title="t('canvas.zoomControls.hand')"
-        data-testid="mindmap-ribbon-hand-tool"
-        :aria-label="t('canvas.zoomControls.hand')"
-        @click="actions.toggleHand(!handToolActive)"
+        :class="{ 'is-active': !classroomRemoteHidden }"
+        :title="t('canvas.classroomRemote.ariaLabel')"
+        data-testid="mindmap-ribbon-floating-toolbar"
+        :aria-label="t('canvas.classroomRemote.ariaLabel')"
+        :aria-pressed="!classroomRemoteHidden"
+        @click="toggleClassroomRemote"
       >
-        <Hand
+        <AppWindow
           class="h-3.5 w-3.5"
           :stroke-width="2"
         />

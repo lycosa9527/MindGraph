@@ -29,6 +29,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
 
+import MindMapClassroomRemote from '@/canvas-ribbon/MindMapClassroomRemote.vue'
 import MindMapStatusBar from '@/canvas-ribbon/MindMapStatusBar.vue'
 import {
   CanvasBottomAiCluster,
@@ -51,11 +52,11 @@ import {
   PresentationTimerOverlay,
   ZoomControls,
 } from '@/components/canvas'
+import CanvasCachedResultNotice from '@/components/canvas/CanvasCachedResultNotice.vue'
 import CanvasCollabOverlay from '@/components/canvas/CanvasCollabOverlay.vue'
 import CanvasTranslateProgressBanner from '@/components/canvas/CanvasTranslateProgressBanner.vue'
 import LearningSheetExportNudge from '@/components/canvas/LearningSheetExportNudge.vue'
 import LearningSheetFloatBar from '@/components/canvas/LearningSheetFloatBar.vue'
-import CanvasCachedResultNotice from '@/components/canvas/CanvasCachedResultNotice.vue'
 import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
 import KittyCanvasAnchor from '@/components/kitty/KittyCanvasAnchor.vue'
 import { MindmatePanel, NodePalettePanel, RootConceptModal } from '@/components/panels'
@@ -75,18 +76,19 @@ import {
   useSnapshotHistory,
 } from '@/composables'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
+import { useClassroomRemoteVisibility } from '@/composables/canvas/useClassroomRemotePosition'
 import {
   applyCanvasKittySeedFromRoute,
   canvasKittySeedQueryKeysPresent,
 } from '@/composables/canvasPage/applyCanvasKittySeedFromRoute'
 import { clearCanvasEphemeralSession } from '@/composables/canvasPage/clearCanvasEphemeralSession'
-import { leaveCanvasCollabRoom } from '@/composables/canvasPage/leaveCanvasCollabRoom'
 import {
   VALID_DIAGRAM_TYPES,
   diagramTypeMap,
   diagramTypeToChineseMap,
 } from '@/composables/canvasPage/diagramTypeMaps'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
+import { leaveCanvasCollabRoom } from '@/composables/canvasPage/leaveCanvasCollabRoom'
 import {
   clearBlankCanvasLoadDedupe,
   getDiagramDataType,
@@ -485,6 +487,7 @@ const showZoomControls = computed(() => {
 })
 
 const useMindMapV2 = useMindMapV2Chrome()
+const { hidden: classroomRemoteHidden } = useClassroomRemoteVisibility()
 
 eventBus.onWithOwner(
   'mindmap:canvas_mode_changed',
@@ -1775,10 +1778,15 @@ onUnmounted(() => {
       </Transition>
     </div>
 
+    <MindMapClassroomRemote
+      v-if="isMindMapRibbonFamily && showBottomBar && !classroomRemoteHidden"
+      :zoom="canvasZoom"
+      :hand-tool-active="handToolActive"
+    />
+
     <MindMapStatusBar
       v-if="isMindMapRibbonFamily && showBottomBar"
       :zoom="canvasZoom"
-      :hand-tool-active="handToolActive"
     />
 
     <!-- Bottom controls: shortcut guide (mind map) + floating glass toolbar card -->
