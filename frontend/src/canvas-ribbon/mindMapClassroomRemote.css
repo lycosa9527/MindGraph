@@ -143,7 +143,7 @@
   cursor: pointer;
 }
 
-.mm-remote__tab :deep(.mm-ribbon-ai-mark) {
+.mm-remote__tab .mm-ribbon-ai-mark {
   width: 18px;
   height: 12px;
 }
@@ -269,13 +269,13 @@
   text-align: center;
 }
 
-.mm-remote__label :deep(.i18n-label) {
+.mm-remote__label .i18n-label {
   align-items: center;
   text-align: center;
 }
 
-.mm-remote__label :deep(.i18n-label__primary),
-.mm-remote__label :deep(.i18n-label__secondary) {
+.mm-remote__label .i18n-label__primary,
+.mm-remote__label .i18n-label__secondary {
   text-align: center;
 }
 
