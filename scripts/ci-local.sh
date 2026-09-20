@@ -223,6 +223,8 @@ run_backend() {
     tests/test_learning_space.py \
     tests/test_learning_space_images.py \
     tests/test_learning_space_rls.py \
+    tests/auth/test_admin_scope.py \
+    tests/auth/test_admin_capabilities_frontend_sync.py \
     tests/test_auth_login_hero.py \
     tests/test_auth_login_video.py \
     tests/test_cos_env_prefix.py \

@@ -9,13 +9,13 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Uplo
 from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.learning_space import LearningAssignment
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.auth.dependencies import get_current_user
+from routers.features.learning_space.deps import get_learning_space_db
 from services.learning_space.access import (
-    get_class_for_teacher,
+    get_class_for_publisher,
     require_pilot_teacher,
     resolve_assignment_viewer,
 )
@@ -52,14 +52,14 @@ async def upload_instruction_image(
     class_id: int | None = Form(None),
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """Store an instruction image on COS (local fallback only when COS is off)."""
     await require_pilot_teacher(db, current_user)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("learning_space_images", identifier, max_requests=30, window_seconds=60)
     if class_id is not None:
-        await get_class_for_teacher(db, class_id, int(current_user.id))
+        await get_class_for_publisher(db, class_id, current_user)
     content_type = (file.content_type or "").split(";")[0].strip().lower()
     if content_type == "image/jpg":
         content_type = "image/jpeg"
@@ -96,7 +96,7 @@ async def download_instruction_image(
     assignment_id: int,
     index: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """Access-checked image: 302 to COS when possible, otherwise stream bytes."""
     if index < 0 or index > 5:

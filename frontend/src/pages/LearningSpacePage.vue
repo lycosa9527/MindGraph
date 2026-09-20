@@ -108,7 +108,7 @@ const canLearn = computed(() => {
   if (context.value?.can_learn === true || context.value?.role === 'student' || context.value?.role === 'learner') {
     return true
   }
-  if (context.value?.role === 'pilot_teacher' || context.value?.role === 'superadmin') {
+  if (context.value?.can_manage_classes === true || context.value?.role === 'pilot_teacher') {
     return false
   }
   return authStore.user?.role === 'student'
@@ -116,11 +116,12 @@ const canLearn = computed(() => {
 const canReview = computed(
   () =>
     context.value?.can_review === true ||
+    context.value?.can_manage_classes === true ||
     context.value?.role === 'pilot_teacher' ||
-    context.value?.role === 'assistant' ||
-    context.value?.role === 'superadmin'
+    context.value?.role === 'assistant'
 )
 const canPublish = computed(() => context.value?.can_publish === true)
+const canOpenClassAdmin = computed(() => context.value?.can_manage_classes === true)
 const preferTeacherShell = ref(true)
 const isStudent = computed(
   () => canLearn.value && (!canReview.value || !preferTeacherShell.value)
@@ -321,17 +322,17 @@ async function loadContext(): Promise<void> {
     context.value = await fetchLearningSpaceContext()
     preferTeacherShell.value =
       context.value.can_review === true ||
+      context.value.can_manage_classes === true ||
       context.value.role === 'pilot_teacher' ||
-      context.value.role === 'assistant' ||
-      context.value.role === 'superadmin'
+      context.value.role === 'assistant'
     if (context.value.can_learn || context.value.role === 'student' || context.value.role === 'learner') {
       await loadStudentAssignmentsIfReady()
     }
     if (
       context.value.can_review ||
+      context.value.can_manage_classes ||
       context.value.role === 'pilot_teacher' ||
-      context.value.role === 'assistant' ||
-      context.value.role === 'superadmin'
+      context.value.role === 'assistant'
     ) {
       try {
         const res = await listTeacherClasses()
@@ -449,6 +450,10 @@ async function loadClassRoster(classId: number): Promise<void> {
 watch(studentTab, () => {
   studentDetailId.value = null
 })
+
+function goCreateClass(): void {
+  void router.push({ path: '/admin', query: { tab: 'learning_space', subtab: 'classes' } })
+}
 
 function openCreateAssignmentModal(): void {
   if (!canPublish.value) {
@@ -752,13 +757,20 @@ watch(
                 </p>
               </div>
               <button
-                v-if="canPublish"
+                v-if="canPublish && publishableClasses.length"
                 type="button"
                 class="ls-btn ls-btn--primary"
-                :disabled="!publishableClasses.length"
                 @click="openCreateAssignmentModal"
               >
                 {{ t('learningSpace.createAssignment') }}
+              </button>
+              <button
+                v-else-if="canOpenClassAdmin"
+                type="button"
+                class="ls-btn ls-btn--primary"
+                @click="goCreateClass"
+              >
+                {{ t('learningSpace.createClass') }}
               </button>
             </div>
 
@@ -830,13 +842,20 @@ watch(
                   <p>{{ t('learningSpace.assignmentsPageHint') }}</p>
                 </div>
                 <button
-                  v-if="canPublish"
+                  v-if="canPublish && publishableClasses.length"
                   type="button"
                   class="ls-btn ls-btn--primary"
-                  :disabled="!publishableClasses.length"
                   @click="openCreateAssignmentModal"
                 >
                   {{ t('learningSpace.createAssignment') }}
+                </button>
+                <button
+                  v-else-if="canOpenClassAdmin"
+                  type="button"
+                  class="ls-btn ls-btn--primary"
+                  @click="goCreateClass"
+                >
+                  {{ t('learningSpace.createClass') }}
                 </button>
               </div>
 
@@ -1097,7 +1116,21 @@ watch(
                 <h1>{{ t('learningSpace.tabClasses') }}</h1>
                 <p>{{ t('learningSpace.classesPageHint') }}</p>
               </div>
+              <button
+                v-if="canOpenClassAdmin"
+                type="button"
+                class="ls-btn ls-btn--primary"
+                @click="goCreateClass"
+              >
+                {{ t('learningSpace.createClass') }}
+              </button>
             </div>
+            <p
+              v-if="!classes.length"
+              class="ls-empty"
+            >
+              {{ t('learningSpace.noClassesYet') }}
+            </p>
             <div class="ls-class-row">
               <button
                 v-for="c in classes"

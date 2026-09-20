@@ -11,6 +11,9 @@ export type LearningSpaceContextRole =
   | 'assistant'
   | 'learner'
   | 'superadmin'
+  | 'platform_bd'
+  | 'expert'
+  | 'school_admin'
   | 'none'
 
 export interface LearningSpaceContext {
@@ -18,6 +21,7 @@ export interface LearningSpaceContext {
   can_learn?: boolean
   can_review?: boolean
   can_publish?: boolean
+  can_manage_classes?: boolean
   must_change_password?: boolean
   organization_id?: number
   class?: { id: number; name: string; class_code: string } | null

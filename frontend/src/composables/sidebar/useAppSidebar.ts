@@ -808,7 +808,16 @@ export function useAppSidebar() {
   )
 
   const learningSpaceContextRole = ref<
-    'student' | 'pilot_teacher' | 'assistant' | 'learner' | 'superadmin' | 'none' | null
+    | 'student'
+    | 'pilot_teacher'
+    | 'assistant'
+    | 'learner'
+    | 'superadmin'
+    | 'platform_bd'
+    | 'expert'
+    | 'school_admin'
+    | 'none'
+    | null
   >(null)
 
   const isLearningSpaceProductRole = computed(() => {

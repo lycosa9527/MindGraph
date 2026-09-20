@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.94] - 2026-09-20
+
+> **Superadmin, teaching researcher, expert, and school admin can create Learning Space classes in their panel scope.**
+
+### Changed
+
+- **学习空间建班** — 超级管理员、教研员、专家、学校管理员获得 `tab.learning_space.view` / `.edit`。建班仍走管理面板（`POST /admin/classes`），`/learning-space` 的「创建班级」只是进该页。学校管理员仅本组织，专家仅其邀请的学校，教研员与超管为全局（与现有面板 RLS 一致）。
+- **教师端不扩权** — 布置 / 批改 / 花名册密码仍只给试点任课教师与助教，不把四类管理员伪装成教师。
+
+### Tests
+
+- [`tests/test_learning_space.py`](tests/test_learning_space.py), [`tests/auth/test_admin_scope.py`](tests/auth/test_admin_scope.py), [`frontend/tests/adminCapabilities.spec.ts`](frontend/tests/adminCapabilities.spec.ts)
+
 ## [5.180.93] - 2026-09-20
 
 > **Mobile `/auth` drops the cinema clip, pins Tencent slide verify to the login card, and skips guest `/refresh`.**

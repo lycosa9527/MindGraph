@@ -28,6 +28,7 @@ from services.diagram.semantic_spec_validation import validate_semantic_spec
 from services.learning_space.access import (
     assert_assignment_visible_to_learner,
     get_class_for_staff,
+    require_pilot_teacher,
 )
 from services.learning_space.assignments import (
     assert_can_edit_submission,
@@ -52,6 +53,7 @@ from services.learning_space.synthetic_email import (
 )
 from services.learning_space.students import preview_student_names
 from tests.typing_helpers import as_type, as_user
+from utils.auth.admin_panel_permissions import can_manage_learning_space_classes
 
 
 def test_assert_teacher_eligible_rejects_student() -> None:
@@ -96,6 +98,17 @@ def test_assert_teacher_eligible_rejects_missing_org() -> None:
     """Reject accounts that are not attached to an organization."""
     with pytest.raises(ValueError, match="no organization"):
         assert_teacher_eligible_for_pilot(as_user(SimpleNamespace(role="personal_paid", organization_id=None)), 1)
+
+
+@pytest.mark.parametrize("role", ["superadmin", "platform_bd", "expert", "school_admin"])
+def test_can_manage_learning_space_classes_for_panel_roles(role: str) -> None:
+    """The four panel roles may create Learning Space classes in admin."""
+    assert can_manage_learning_space_classes(as_user(SimpleNamespace(role=role))) is True
+
+
+def test_can_manage_learning_space_classes_rejects_teacher() -> None:
+    """Teachers create classes only after an admin enables them as a pilot."""
+    assert can_manage_learning_space_classes(as_user(SimpleNamespace(role="teacher"))) is False
 
 
 def test_initial_password_from_chinese_name() -> None:
@@ -411,6 +424,33 @@ async def test_staff_owner_with_pilot_ok(monkeypatch: pytest.MonkeyPatch) -> Non
     )
     result = await get_class_for_staff(db, 1, 9)
     assert result is learning_class
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("role", ["superadmin", "platform_bd", "expert", "school_admin"])
+async def test_staff_manager_is_not_class_staff(monkeypatch: pytest.MonkeyPatch, role: str) -> None:
+    """Panel roles create classes in admin; they are not teacher-API staff."""
+    manager = as_user(SimpleNamespace(id=2, role=role))
+    assert can_manage_learning_space_classes(manager)
+    learning_class = _staff_class()
+    db = AsyncMock()
+    db.get = AsyncMock(return_value=learning_class)
+    monkeypatch.setattr("services.learning_space.access.get_enabled_pilot", AsyncMock(return_value=None))
+    monkeypatch.setattr("services.learning_space.access.is_class_assistant", AsyncMock(return_value=False))
+    with pytest.raises(HTTPException) as exc:
+        await get_class_for_staff(db, 1, 2)
+    assert exc.value.status_code == 404
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("role", ["superadmin", "platform_bd", "expert", "school_admin"])
+async def test_require_pilot_teacher_rejects_class_managers(monkeypatch: pytest.MonkeyPatch, role: str) -> None:
+    """Panel roles cannot publish homework unless they are an enabled pilot."""
+    manager = as_user(SimpleNamespace(id=2, role=role))
+    monkeypatch.setattr("services.learning_space.access.get_enabled_pilot", AsyncMock(return_value=None))
+    with pytest.raises(HTTPException) as exc:
+        await require_pilot_teacher(AsyncMock(), manager)
+    assert exc.value.status_code == 403
 
 
 @pytest.mark.asyncio

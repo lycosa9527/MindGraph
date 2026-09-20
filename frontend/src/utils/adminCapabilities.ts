@@ -136,6 +136,8 @@ const PLATFORM_BD_CAPS: AdminCapability[] = [
   'tab.showcase.recommend',
   'tab.showcase.fields',
   'tab.showcase.dashboard',
+  'tab.learning_space.view',
+  'tab.learning_space.edit',
   'scope.global',
   'scope.invited_orgs',
 ]
@@ -146,6 +148,8 @@ const EXPERT_CAPS: AdminCapability[] = [
   'tab.organizations.view',
   'tab.invites.view',
   'tab.invites.edit',
+  'tab.learning_space.view',
+  'tab.learning_space.edit',
   'scope.invited_orgs',
 ]
 
@@ -157,6 +161,8 @@ const SCHOOL_ADMIN_CAPS: AdminCapability[] = [
   'tab.users.edit',
   'tab.vod.view',
   'tab.vod.edit',
+  'tab.learning_space.view',
+  'tab.learning_space.edit',
   'scope.org',
 ]
 

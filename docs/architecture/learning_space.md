@@ -6,7 +6,7 @@
 
 **开关：** `FEATURE_STUDENT_LEARNING_SPACE`（默认开）。管理面板 → 功能；路由前缀 `/api/learning-space`（关闭时 404）。  
 **入口：** 桌面 `/learning-space`，移动 `/m/learning-space`。  
-**管理：** 管理面板 → 学习空间（子页：试点教师 / 班级管理），权限 `tab.learning_space.view` / `.edit`。
+**管理：** 管理面板 → 学习空间（子页：试点教师 / 班级管理）。超级管理员、教研员、专家、学校管理员拥有 `tab.learning_space.view` / `.edit`，可在其面板范围内建班（学校管理员仅本组织；专家仅其邀请的学校）。
 
 ```mermaid
 flowchart TB
@@ -32,7 +32,7 @@ flowchart TB
 | 导入学员 | 「导入已有帐号」写入 membership `learner` | 原手机号 / 邮箱 | 是 | 否 | 否 |
 | 助教 | 编辑班级 → 添加助教，`assistant` | 原帐号 | 否（本班） | 是 | 否 |
 | 任课教师 | 已启用试点，且为本班 `teacher_user_id` | 原帐号 | 否（除非另班学员） | 是 | 是 |
-| 超管 | 平台帐号 | 原帐号 | — | 管理后台为主 | 后台建班 |
+| 超管 / 教研员 / 专家 / 学校管理员 | 平台或学校帐号 | 原帐号 | — | 否（除非另是本班教师/助教） | 管理面板建班（`tab.learning_space.edit`）；教师端「创建班级」只是进该页 |
 
 班级学生侧栏**只保留** MindGraph 与学习空间。开关短暂失效时，学生仍能进学习空间；其它身份需要开关打开。
 
@@ -91,7 +91,7 @@ flowchart TB
 
 - **工作台：** 待批改、未交、进行中作业等摘要；布置入口（仅任课教师）。
 - **作业：** 列表、筛选、打开提交墙、批改。
-- **班级：** 花名册、班级码（给学生登录）。
+- **班级：** 花名册、班级码（给学生登录）。超管 / 教研员 / 专家 / 学校管理员若不是本班教师，这里可以是空的；「创建班级」进入管理面板建班，不走教师布置/批改接口。
 
 ### 布置作业
 
@@ -188,7 +188,7 @@ RLS：按学校隔离。`rls_org_visible(organization_id)`，外加任课教师 
 
 **学员：** 作业列表、班级作品墙、打开作业、绑定草稿、提交；班级学生改密。
 
-**公共：** `GET /me/context`（`role`、`can_learn`、`can_review`、`can_publish`）。`can_review` / `can_publish` 只看启用试点与助教身份，超管走管理后台，不因此变成教师端。`GET /ai-permissions/{id}`。
+**公共：** `GET /me/context`（`role`、`can_learn`、`can_review`、`can_publish`、`can_manage_classes`）。教师端由试点 / 助教决定；建班只走管理后台（`tab.learning_space.edit` + 面板 RLS）。教师 API 用登录用户 RLS，不提升为 system。`GET /ai-permissions/{id}`。
 
 学员作业接口同时接受班级学生与 `learner`。布置/删除仅任课教师。列出作业与批改允许助教。
 

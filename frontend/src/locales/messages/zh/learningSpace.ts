@@ -189,6 +189,8 @@ export default {
   'learningSpace.tabDashboard': '工作台',
   'learningSpace.tabAssignments': '作业',
   'learningSpace.tabClasses': '班级',
+  'learningSpace.createClass': '创建班级',
+  'learningSpace.noClassesYet': '还没有班级。先创建班级并导入学生后，即可布置作业。',
   'learningSpace.tabSettings': '设置',
   'learningSpace.tabHome': '首页',
   'learningSpace.tabMyAssignments': '我的作业',

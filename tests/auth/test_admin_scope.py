@@ -31,6 +31,8 @@ from utils.auth.admin_panel_permissions import (
     CAP_TAB_ORGANIZATIONS_VIEW,
     CAP_TAB_SCHOOL_DASHBOARD_ACTIVITY_VIEW,
     CAP_TAB_SCHOOL_DASHBOARD_FEATURE_USAGE_VIEW,
+    CAP_TAB_LEARNING_SPACE_EDIT,
+    CAP_TAB_LEARNING_SPACE_VIEW,
     CAP_TAB_SCHOOL_DASHBOARD_VIEW,
     CAP_TAB_SETTINGS_EDIT,
     CAP_TAB_SETTINGS_VIEW,
@@ -255,6 +257,21 @@ def test_all_seven_roles_have_capability_config():
     """Test all seven roles have capability config."""
     validate_role_panel_config()
     assert len(ROLE_PANEL_CAPABILITIES) == len(ALL_USER_ROLES)
+
+
+@pytest.mark.parametrize("role", ["superadmin", "platform_bd", "expert", "school_admin"])
+def test_learning_space_managers_have_class_edit_caps(role: str) -> None:
+    """Superadmin, teaching researcher, expert, and school admin may create classes."""
+    caps = capabilities_for_role(role)
+    assert CAP_TAB_LEARNING_SPACE_VIEW in caps
+    assert CAP_TAB_LEARNING_SPACE_EDIT in caps
+
+
+def test_teacher_has_no_learning_space_admin_caps() -> None:
+    """Teachers manage classes only after becoming an enabled pilot."""
+    caps = capabilities_for_role("teacher")
+    assert CAP_TAB_LEARNING_SPACE_VIEW not in caps
+    assert CAP_TAB_LEARNING_SPACE_EDIT not in caps
 
 
 _ALL_SETTINGS_CAPABILITY_KEYS = frozenset(

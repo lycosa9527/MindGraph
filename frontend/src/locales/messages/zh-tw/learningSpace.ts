@@ -189,6 +189,8 @@ export default {
   'learningSpace.tabDashboard': '工作臺',
   'learningSpace.tabAssignments': '作業',
   'learningSpace.tabClasses': '班級',
+  'learningSpace.createClass': '創建班級',
+  'learningSpace.noClassesYet': '還沒有班級。先創建班級並導入學生後，即可佈置作業。',
   'learningSpace.tabSettings': '設置',
   'learningSpace.tabHome': '首頁',
   'learningSpace.tabMyAssignments': '我的作業',

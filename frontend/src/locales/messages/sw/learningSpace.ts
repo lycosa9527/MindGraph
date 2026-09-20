@@ -195,6 +195,9 @@ export default {
   'learningSpace.tabDashboard': 'Dashboard',
   'learningSpace.tabAssignments': 'Assignments',
   'learningSpace.tabClasses': 'Classes',
+  'learningSpace.createClass': 'Create class',
+  'learningSpace.noClassesYet':
+    'No classes yet. Create a class and import students, then you can assign homework.',
   'learningSpace.tabSettings': 'Settings',
   'learningSpace.tabHome': 'Home',
   'learningSpace.tabMyAssignments': 'My assignments',

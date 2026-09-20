@@ -169,6 +169,9 @@ _PLATFORM_BD_CAPS: frozenset[str] = frozenset(
         CAP_TAB_SHOWCASE_RECOMMEND,
         CAP_TAB_SHOWCASE_FIELDS,
         CAP_TAB_SHOWCASE_DASHBOARD,
+        # Class create/import lives on the admin tab, not teacher APIs.
+        CAP_TAB_LEARNING_SPACE_VIEW,
+        CAP_TAB_LEARNING_SPACE_EDIT,
         CAP_SCOPE_GLOBAL,
         CAP_SCOPE_INVITED_ORGS,
     }
@@ -181,19 +184,24 @@ _EXPERT_CAPS: frozenset[str] = frozenset(
         CAP_TAB_ORGANIZATIONS_VIEW,
         CAP_TAB_INVITES_VIEW,
         CAP_TAB_INVITES_EDIT,
+        # Class create/import lives on the admin tab, not teacher APIs.
+        CAP_TAB_LEARNING_SPACE_VIEW,
+        CAP_TAB_LEARNING_SPACE_EDIT,
         CAP_SCOPE_INVITED_ORGS,
     }
 )
 
 _SCHOOL_ADMIN_CAPS: frozenset[str] = frozenset(
     {
-        # School manager (学校管理员): org-scoped dashboard + member management only.
+        # School manager: org-scoped dashboard, members, VOD, and class create.
         CAP_PANEL_ACCESS,
         CAP_TAB_SCHOOL_DASHBOARD_VIEW,
         CAP_TAB_USERS_VIEW,
         CAP_TAB_USERS_EDIT,
         CAP_TAB_VOD_VIEW,
         CAP_TAB_VOD_EDIT,
+        CAP_TAB_LEARNING_SPACE_VIEW,
+        CAP_TAB_LEARNING_SPACE_EDIT,
         CAP_SCOPE_ORG,
     }
 )
@@ -228,6 +236,11 @@ def user_panel_capabilities(current_user) -> frozenset[str]:
     if _has_superadmin_panel_access(current_user):
         return ROLE_PANEL_CAPABILITIES[ROLE_SUPERADMIN]
     return capabilities_for_role(current_user.role)
+
+
+def can_manage_learning_space_classes(current_user) -> bool:
+    """True when the user may create Learning Space classes in panel scope."""
+    return CAP_TAB_LEARNING_SPACE_EDIT in user_panel_capabilities(current_user)
 
 
 def role_has_panel_access(role: str | None) -> bool:

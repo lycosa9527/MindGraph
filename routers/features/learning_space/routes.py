@@ -15,7 +15,6 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.learning_space import (
     ASSIGNMENT_STATUS_DRAFT,
@@ -44,12 +43,12 @@ from routers.features.learning_space.schemas import (
     StudentImportRequest,
     SubmissionReviewRequest,
 )
+from routers.features.learning_space.deps import get_learning_space_db
 from services.learning_space.access import (
+    get_class_for_publisher,
     get_class_for_staff,
-    get_class_for_teacher,
     get_enabled_pilot,
     require_class_learner,
-    require_pilot_teacher,
     require_student,
     require_student_password_ok,
     resolve_assignment_viewer,
@@ -114,11 +113,12 @@ from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth.admin_panel_permissions import (
     CAP_TAB_LEARNING_SPACE_EDIT,
     CAP_TAB_LEARNING_SPACE_VIEW,
+    can_manage_learning_space_classes,
 )
 from utils.auth.admin_scope import AdminScope
 from utils.auth.password import hash_password
 from utils.auth.role_constants import ROLE_STUDENT
-from utils.auth.roles import is_student, is_superadmin
+from utils.auth.roles import get_user_role, is_student
 from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
@@ -530,7 +530,7 @@ async def admin_reset_password(
 @router.get("/teacher/classes")
 async def teacher_list_classes(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """Classes owned by an enabled pilot, plus classes they assist."""
     owned: list[LearningClass] = []
@@ -575,7 +575,7 @@ async def teacher_list_classes(
 async def teacher_list_students(
     class_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """List students and enrolled members in the class."""
     learning_class = await get_class_for_staff(db, class_id, int(current_user.id), allow_archived=True)
@@ -590,14 +590,13 @@ async def teacher_list_students(
 async def teacher_reset_password(
     student_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """Teacher resets a student in their class."""
-    await require_pilot_teacher(db, current_user)
     student = await db.get(User, student_id)
     if student is None or student.role != ROLE_STUDENT or not student.learning_class_id:
         raise HTTPException(status_code=404, detail="Student not found")
-    await get_class_for_teacher(db, int(student.learning_class_id), int(current_user.id), allow_archived=True)
+    await get_class_for_publisher(db, int(student.learning_class_id), current_user, allow_archived=True)
     plain = await reset_student_password(db, student)
     return {"student_id": student.id, "name": student.name, "initial_password": plain}
 
@@ -606,11 +605,10 @@ async def teacher_reset_password(
 async def teacher_create_assignment(
     body: AssignmentCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """Create homework from a teacher-owned template diagram."""
-    await require_pilot_teacher(db, current_user)
-    learning_class = await get_class_for_teacher(db, body.class_id, int(current_user.id))
+    learning_class = await get_class_for_publisher(db, body.class_id, current_user)
     cache = get_diagram_cache()
     try:
         template = await cache.get_diagram(int(current_user.id), body.template_diagram_id)
@@ -692,12 +690,11 @@ async def teacher_create_assignment(
 async def teacher_delete_assignment(
     assignment_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """Delete a published or draft assignment (and cascaded submissions)."""
-    await require_pilot_teacher(db, current_user)
     assignment = await get_assignment(db, assignment_id)
-    await get_class_for_teacher(db, assignment.class_id, int(current_user.id), allow_archived=True)
+    await get_class_for_publisher(db, assignment.class_id, current_user, allow_archived=True)
     await delete_assignment(db, assignment)
     return {"ok": True, "id": assignment_id}
 
@@ -706,7 +703,7 @@ async def teacher_delete_assignment(
 async def teacher_list_assignments(
     class_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """List assignments for a class."""
     await get_class_for_staff(db, class_id, int(current_user.id), allow_archived=True)
@@ -723,7 +720,7 @@ async def teacher_list_assignments(
 async def teacher_list_submissions(
     assignment_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """Submission board for an assignment."""
     assignment = await get_assignment(db, assignment_id)
@@ -740,7 +737,7 @@ async def teacher_list_submissions(
 async def teacher_return_submission(
     submission_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """Return submission for revision."""
     submission = await db.get(LearningSubmission, submission_id)
@@ -757,7 +754,7 @@ async def teacher_extend_due(
     submission_id: int,
     body: ExtendDueRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """Per-student deadline extension."""
     submission = await db.get(LearningSubmission, submission_id)
@@ -792,7 +789,7 @@ async def teacher_save_review(
     submission_id: int,
     body: SubmissionReviewRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """Save rubric / comment for a student submission."""
     submission = await db.get(LearningSubmission, submission_id)
@@ -815,7 +812,7 @@ async def teacher_save_review(
 async def submission_preview(
     submission_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """Preview a submitted work (teacher of class, or classmate student)."""
     submission = await db.get(LearningSubmission, submission_id)
@@ -838,7 +835,7 @@ async def submission_preview(
 async def assignment_template_preview(
     assignment_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """Preview the teacher template diagram for requirements / attachments."""
     assignment = await get_assignment(db, assignment_id)
@@ -854,7 +851,7 @@ async def assignment_template_preview(
 @router.get("/student/assignments")
 async def student_list_assignments(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """Assignments for classroom students and enrolled learners."""
     class_ids = await learner_class_ids(db, current_user)
@@ -894,7 +891,7 @@ async def student_list_assignments(
 @router.get("/student/class-wall")
 async def student_class_wall(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """Class work wall: all submitted classmate works (with teacher reviews)."""
     class_ids = await learner_class_ids(db, current_user)
@@ -934,7 +931,7 @@ async def student_class_wall(
 async def student_open_assignment(
     assignment_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """Open or create the student diagram for an assignment."""
     assignment = await get_assignment(db, assignment_id)
@@ -956,7 +953,7 @@ async def student_bind_draft_diagram(
     assignment_id: int,
     body: DraftDiagramBindRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """Keep homework pointed at the diagram the student just saved."""
     assignment = await get_assignment(db, assignment_id)
@@ -974,7 +971,7 @@ async def student_bind_draft_diagram(
 async def student_submit_assignment(
     assignment_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """Submit homework snapshot."""
     assignment = await get_assignment(db, assignment_id)
@@ -1013,7 +1010,7 @@ async def student_change_password(
 @router.get("/me/context")
 async def learning_space_context(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """Role context for Learning Space UI."""
     learner_ids = await class_ids_for_membership_role(db, int(current_user.id), MEMBERSHIP_ROLE_LEARNER)
@@ -1032,6 +1029,7 @@ async def learning_space_context(
             "class": ({"id": cls.id, "name": cls.name, "class_code": cls.class_code} if class_active and cls else None),
         }
     pilot = await get_enabled_pilot(db, int(current_user.id))
+    can_manage = can_manage_learning_space_classes(current_user)
     can_learn = bool(learner_ids)
     can_review = bool(pilot) or bool(assistant_ids)
     can_publish = bool(pilot)
@@ -1041,8 +1039,8 @@ async def learning_space_context(
         role = "assistant"
     elif learner_ids:
         role = "learner"
-    elif is_superadmin(current_user):
-        role = "superadmin"
+    elif can_manage:
+        role = get_user_role(current_user) or "none"
     else:
         role = "none"
     payload: dict = {
@@ -1050,6 +1048,7 @@ async def learning_space_context(
         "can_learn": can_learn,
         "can_review": can_review,
         "can_publish": can_publish,
+        "can_manage_classes": can_manage,
     }
     if pilot:
         payload["organization_id"] = pilot.organization_id
@@ -1060,7 +1059,7 @@ async def learning_space_context(
 async def get_assignment_ai_permissions(
     assignment_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_learning_space_db),
 ):
     """Return AI flags (and brief assignment) for canvas homework mode."""
     assignment = await get_assignment(db, assignment_id)

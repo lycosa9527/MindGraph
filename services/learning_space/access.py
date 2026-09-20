@@ -23,9 +23,9 @@ from models.domain.learning_space import (
     LearningPilotTeacher,
 )
 from services.learning_space.memberships import is_class_assistant, is_class_learner
-from utils.auth.roles import is_student, is_superadmin
+from utils.auth.roles import is_student
 
-AssignmentViewer = Literal["superadmin", "staff", "learner"]
+AssignmentViewer = Literal["staff", "learner"]
 
 
 async def require_feature_enabled() -> None:
@@ -48,16 +48,11 @@ async def get_enabled_pilot(
     return result.scalar_one_or_none()
 
 
-async def require_pilot_teacher(db: AsyncSession, user: User) -> LearningPilotTeacher:
-    """Ensure current user is an enabled pilot teacher (superadmin may also be a pilot)."""
+async def require_pilot_teacher(db: AsyncSession, user: User) -> LearningPilotTeacher | None:
+    """Ensure the user may publish homework (enabled pilot only)."""
     pilot = await get_enabled_pilot(db, int(user.id))
     if pilot is not None:
         return pilot
-    if is_superadmin(user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Use admin Learning Space APIs for superadmin operations",
-        )
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a pilot teacher")
 
 
@@ -102,14 +97,24 @@ async def get_class_for_staff(
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Class not found")
 
 
+async def get_class_for_publisher(
+    db: AsyncSession,
+    class_id: int,
+    user: User,
+    *,
+    allow_archived: bool = False,
+) -> LearningClass:
+    """Class the user may publish or delete homework on (enabled owner pilot)."""
+    await require_pilot_teacher(db, user)
+    return await get_class_for_teacher(db, class_id, int(user.id), allow_archived=allow_archived)
+
+
 async def resolve_assignment_viewer(
     db: AsyncSession,
     user: User,
     assignment: LearningAssignment,
 ) -> AssignmentViewer:
-    """Who may see this assignment: superadmin, class staff, or a class learner."""
-    if is_superadmin(user):
-        return "superadmin"
+    """Who may see this assignment: class staff or a class learner."""
     if not is_student(user):
         try:
             await get_class_for_staff(db, int(assignment.class_id), int(user.id), allow_archived=True)
