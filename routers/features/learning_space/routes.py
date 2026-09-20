@@ -223,7 +223,19 @@ async def create_pilot(
         await db.refresh(pilot)
     except IntegrityError as exc:
         await db.rollback()
+        logger.warning(
+            "[LearningSpace] Pilot grant conflict teacher=%s actor=%s",
+            body.teacher_user_id,
+            scope.actor.id,
+        )
         raise HTTPException(status_code=400, detail="Already a pilot teacher") from exc
+    logger.info(
+        "[LearningSpace] Pilot granted id=%s teacher=%s org=%s actor=%s",
+        pilot.id,
+        pilot.teacher_user_id,
+        pilot.organization_id,
+        scope.actor.id,
+    )
     return {"id": pilot.id, "teacher_user_id": pilot.teacher_user_id, "enabled": pilot.enabled}
 
 
@@ -231,7 +243,7 @@ async def create_pilot(
 async def patch_pilot(
     pilot_id: int,
     enabled: bool,
-    _scope: AdminScope = Depends(_require_ls_edit),
+    scope: AdminScope = Depends(_require_ls_edit),
     db: AsyncSession = Depends(get_async_db_with_request_rls),
 ):
     """Enable or disable a pilot grant."""
@@ -240,6 +252,13 @@ async def patch_pilot(
         raise HTTPException(status_code=404, detail="Pilot not found")
     pilot.enabled = enabled
     await db.commit()
+    logger.info(
+        "[LearningSpace] Pilot updated id=%s teacher=%s enabled=%s actor=%s",
+        pilot.id,
+        pilot.teacher_user_id,
+        enabled,
+        scope.actor.id,
+    )
     return {"id": pilot.id, "enabled": pilot.enabled}
 
 
@@ -247,15 +266,22 @@ async def patch_pilot(
 @router.post("/admin/pilots/{pilot_id}/delete")
 async def delete_pilot(
     pilot_id: int,
-    _scope: AdminScope = Depends(_require_ls_edit),
+    scope: AdminScope = Depends(_require_ls_edit),
     db: AsyncSession = Depends(get_async_db_with_request_rls),
 ):
     """Remove a pilot grant so the teacher can be re-added later."""
     pilot = await db.get(LearningPilotTeacher, pilot_id)
     if pilot is None:
         raise HTTPException(status_code=404, detail="Pilot not found")
+    teacher_user_id = int(pilot.teacher_user_id)
     await db.delete(pilot)
     await db.commit()
+    logger.info(
+        "[LearningSpace] Pilot removed id=%s teacher=%s actor=%s",
+        pilot_id,
+        teacher_user_id,
+        scope.actor.id,
+    )
     return {"ok": True, "id": pilot_id}
 
 
@@ -332,7 +358,7 @@ async def admin_create_class(
 async def admin_patch_class(
     class_id: int,
     body: ClassUpdate,
-    _scope: AdminScope = Depends(_require_ls_edit),
+    scope: AdminScope = Depends(_require_ls_edit),
     db: AsyncSession = Depends(get_async_db_with_request_rls),
 ):
     """Update class metadata or archive."""
@@ -358,10 +384,22 @@ async def admin_patch_class(
         await db.commit()
     except IntegrityError as exc:
         await db.rollback()
+        logger.warning(
+            "[LearningSpace] Class update conflict id=%s actor=%s",
+            class_id,
+            scope.actor.id,
+        )
         if body.class_code is not None:
             raise class_code_in_use_error() from exc
         raise HTTPException(status_code=400, detail="Could not update class") from exc
     await kick_classroom_student_sessions(kick_ids)
+    logger.info(
+        "[LearningSpace] Class updated id=%s status=%s kicked=%s actor=%s",
+        cls.id,
+        cls.status,
+        len(kick_ids),
+        scope.actor.id,
+    )
     return {"id": cls.id, "name": cls.name, "status": cls.status, "class_code": cls.class_code}
 
 
@@ -577,11 +615,23 @@ async def teacher_create_assignment(
     try:
         template = await cache.get_diagram(int(current_user.id), body.template_diagram_id)
     except BACKGROUND_INFRA_ERRORS as exc:
+        logger.warning(
+            "[LearningSpace] Template load failed class=%s teacher=%s: %s",
+            body.class_id,
+            current_user.id,
+            exc,
+        )
         raise HTTPException(
             status_code=503,
             detail="Diagram service unavailable",
         ) from exc
     if not template:
+        logger.warning(
+            "[LearningSpace] Template diagram missing class=%s teacher=%s diagram=%s",
+            body.class_id,
+            current_user.id,
+            body.template_diagram_id,
+        )
         raise HTTPException(status_code=400, detail="Template diagram not found")
     try:
         stored_images = await asyncio.to_thread(
@@ -590,6 +640,12 @@ async def teacher_create_assignment(
             owner_id=int(current_user.id),
         )
     except ValueError as exc:
+        logger.warning(
+            "[LearningSpace] Instruction images persist failed class=%s teacher=%s: %s",
+            body.class_id,
+            current_user.id,
+            exc,
+        )
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     assignment = LearningAssignment(
         class_id=body.class_id,
@@ -614,7 +670,20 @@ async def teacher_create_assignment(
             key for key in stored_image_keys(stored_images) if ref_for_key(key) not in incoming and key not in incoming
         ]
         await asyncio.to_thread(delete_stored_images_sync, orphans)
+        logger.error(
+            "[LearningSpace] Create assignment failed class=%s teacher=%s: %s",
+            body.class_id,
+            current_user.id,
+            exc,
+        )
         raise HTTPException(status_code=500, detail="Failed to create assignment") from exc
+    logger.info(
+        "[LearningSpace] Assignment created id=%s class=%s teacher=%s status=%s",
+        assignment.id,
+        assignment.class_id,
+        current_user.id,
+        assignment.status,
+    )
     return await enrich_assignment_dict(db, assignment)
 
 
@@ -697,8 +766,24 @@ async def teacher_extend_due(
     assignment = await get_assignment(db, submission.assignment_id)
     await get_class_for_staff(db, assignment.class_id, int(current_user.id), allow_archived=True)
     submission.due_at_override = body.due_at
-    await db.commit()
-    await db.refresh(submission)
+    try:
+        await db.commit()
+        await db.refresh(submission)
+    except DATABASE_ERRORS as exc:
+        await db.rollback()
+        logger.error(
+            "[LearningSpace] Extend due failed submission=%s actor=%s: %s",
+            submission_id,
+            current_user.id,
+            exc,
+        )
+        raise HTTPException(status_code=500, detail="Failed to extend due date") from exc
+    logger.info(
+        "[LearningSpace] Extended due submission=%s assignment=%s actor=%s",
+        submission.id,
+        assignment.id,
+        current_user.id,
+    )
     return submission_public_dict(submission)
 
 
@@ -918,9 +1003,10 @@ async def student_change_password(
             await db.refresh(user)
         except DATABASE_ERRORS as exc:
             await db.rollback()
-            logger.error("Student password change failed for user %s: %s", current_user.id, exc)
+            logger.error("[LearningSpace] Student password change failed user=%s: %s", current_user.id, exc)
             raise HTTPException(status_code=500, detail="Failed to change password") from exc
         await invalidate_user_cache_after_password_write(user, "Learning Space student password")
+    logger.info("[LearningSpace] Student password changed user=%s", current_user.id)
     return {"ok": True}
 
 

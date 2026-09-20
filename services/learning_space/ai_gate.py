@@ -7,6 +7,8 @@ Proprietary License
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,6 +21,8 @@ from services.learning_space.access import (
 )
 from services.learning_space.passwords import ai_permission_allowed
 from utils.auth.roles import is_student
+
+logger = logging.getLogger(__name__)
 
 
 def resolve_assignment_id(request: Request) -> int | None:
@@ -60,6 +64,11 @@ async def assert_student_ai_capability_for_assignment(
     """Same as ``assert_student_ai_capability`` with an explicit assignment id."""
     if assignment_id is None:
         if is_student(user):
+            logger.warning(
+                "[LearningSpace] AI denied user=%s capability=%s reason=missing_assignment",
+                user.id,
+                capability,
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Assignment context required for student AI",
@@ -68,11 +77,33 @@ async def assert_student_ai_capability_for_assignment(
     result = await db.execute(select(LearningAssignment).where(LearningAssignment.id == assignment_id))
     assignment = result.scalar_one_or_none()
     if assignment is None:
+        logger.warning(
+            "[LearningSpace] AI denied user=%s assignment=%s capability=%s reason=not_found",
+            user.id,
+            assignment_id,
+            capability,
+        )
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found")
     assert_assignment_visible_to_learner(assignment)
-    await require_class_learner(db, user, int(assignment.class_id))
+    try:
+        await require_class_learner(db, user, int(assignment.class_id))
+    except HTTPException:
+        logger.warning(
+            "[LearningSpace] AI denied user=%s assignment=%s class=%s capability=%s reason=not_learner",
+            user.id,
+            assignment_id,
+            assignment.class_id,
+            capability,
+        )
+        raise
     perms = assignment.ai_permissions if isinstance(assignment.ai_permissions, dict) else {}
     if not ai_permission_allowed(perms, capability):
+        logger.warning(
+            "[LearningSpace] AI denied user=%s assignment=%s capability=%s reason=not_allowed",
+            user.id,
+            assignment_id,
+            capability,
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"AI capability '{capability}' not allowed for this assignment",

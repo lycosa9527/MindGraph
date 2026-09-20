@@ -286,17 +286,24 @@ async def login_student(
     client_ip = get_client_ip(http_request) if http_request else "unknown"
     ip_allowed, _ip_error = await check_ip_rate_limit(client_ip)
     if not ip_allowed:
+        logger.warning("[LearningSpace] Student login IP rate limit ip=%s", client_ip)
         error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
 
     is_allowed, _ = await check_login_rate_limit(login_key)
     if not is_allowed:
+        logger.warning("[LearningSpace] Student login rate limit ip=%s", client_ip)
         error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
 
     class_row = await db.execute(select(LearningClass).where(LearningClass.class_code == class_code))
     learning_class = class_row.scalar_one_or_none()
     if learning_class is not None and learning_class.status != CLASS_STATUS_ACTIVE:
+        logger.warning(
+            "[LearningSpace] Student login rejected class=%s reason=class_disabled ip=%s",
+            learning_class.id,
+            client_ip,
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=Messages.error("login_failed_student_class_disabled", lang),
@@ -315,6 +322,11 @@ async def login_student(
     if not cached_user:
         verify_password_timing_dummy(request.password)
         attempts_left = await get_login_attempts_remaining(login_key)
+        logger.warning(
+            "[LearningSpace] Student login failed class=%s reason=unknown_student ip=%s",
+            learning_class.id if learning_class is not None else None,
+            client_ip,
+        )
         if attempts_left > 0:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -323,13 +335,27 @@ async def login_student(
         error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
 
+    class_id = int(learning_class.id) if learning_class is not None else None
     is_locked, _ = check_account_lockout(cached_user)
     if is_locked:
+        logger.warning(
+            "[LearningSpace] Student login locked user=%s class=%s ip=%s",
+            cached_user.id,
+            class_id,
+            client_ip,
+        )
         error_msg = Messages.error("account_locked", lang, MAX_LOGIN_ATTEMPTS, LOCKOUT_DURATION_MINUTES)
         raise HTTPException(status_code=status.HTTP_423_LOCKED, detail=error_msg)
 
     captcha_valid, captcha_error = await verify_captcha_with_retry(request.captcha_id, request.captcha)
     if not captcha_valid:
+        logger.warning(
+            "[LearningSpace] Student login captcha failed user=%s class=%s ip=%s err=%s",
+            cached_user.id,
+            class_id,
+            client_ip,
+            captcha_error,
+        )
         if captcha_error == "database_locked":
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -360,6 +386,12 @@ async def login_student(
             attempts_left = MAX_LOGIN_ATTEMPTS - db_user.failed_login_attempts
         else:
             attempts_left = MAX_LOGIN_ATTEMPTS - cached_user.failed_login_attempts
+        logger.warning(
+            "[LearningSpace] Student login failed user=%s class=%s reason=wrong_password ip=%s",
+            cached_user.id,
+            class_id,
+            client_ip,
+        )
         if attempts_left > 0:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -371,6 +403,12 @@ async def login_student(
             detail=Messages.error("account_locked", lang, MAX_LOGIN_ATTEMPTS, LOCKOUT_DURATION_MINUTES),
         )
 
+    logger.info(
+        "[LearningSpace] Student login success user=%s class=%s ip=%s",
+        cached_user.id,
+        class_id,
+        client_ip,
+    )
     return await _complete_login_after_otp_verified(
         cached_user,
         http_request,

@@ -147,10 +147,17 @@ async def import_students(
         await db.commit()
     except IntegrityError as exc:
         await db.rollback()
+        logger.error("[LearningSpace] Student import conflict class=%s: %s", learning_class.id, exc)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Import conflict; retry",
         ) from exc
+    logger.info(
+        "[LearningSpace] Imported students class=%s created=%s failed=%s",
+        learning_class.id,
+        len(created),
+        len(failed),
+    )
     return ImportResult(created=created, failed=failed)
 
 
@@ -181,10 +188,16 @@ async def kick_classroom_student_sessions(student_ids: list[int]) -> None:
     try:
         manager = get_session_manager()
     except BACKGROUND_INFRA_ERRORS:
-        logger.warning("[LearningSpace] Session manager unavailable; skip student kick")
+        logger.warning(
+            "[LearningSpace] Session manager unavailable; skip student kick count=%s",
+            len(student_ids),
+        )
         return
+    kicked = 0
     for user_id in student_ids:
         try:
             await manager.invalidate_user_sessions(user_id)
+            kicked += 1
         except BACKGROUND_INFRA_ERRORS as exc:
             logger.warning("[LearningSpace] Failed to invalidate sessions for student %s: %s", user_id, exc)
+    logger.info("[LearningSpace] Kicked classroom sessions requested=%s kicked=%s", len(student_ids), kicked)

@@ -6,6 +6,8 @@ database unique constraint and a short retry loop.
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +15,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.domain.learning_space import LearningClass
 from services.learning_space.passwords import generate_class_code
 from services.utils.error_types import DATABASE_ERRORS
+
+logger = logging.getLogger(__name__)
 
 
 async def create_class_with_unique_code(
@@ -40,13 +44,30 @@ async def create_class_with_unique_code(
         try:
             await db.commit()
             await db.refresh(learning_class)
+            logger.info(
+                "[LearningSpace] Class created id=%s teacher=%s org=%s",
+                learning_class.id,
+                teacher_user_id,
+                organization_id,
+            )
             return learning_class
         except IntegrityError as exc:
             last_error = exc
             await db.rollback()
-        except DATABASE_ERRORS:
+        except DATABASE_ERRORS as exc:
             await db.rollback()
+            logger.error(
+                "[LearningSpace] Class create failed teacher=%s org=%s: %s",
+                teacher_user_id,
+                organization_id,
+                exc,
+            )
             raise
+    logger.error(
+        "[LearningSpace] Class code allocation exhausted teacher=%s org=%s",
+        teacher_user_id,
+        organization_id,
+    )
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         detail="Could not allocate class code",
@@ -65,13 +86,16 @@ async def rotate_class_code(db: AsyncSession, class_id: int) -> LearningClass:
         try:
             await db.commit()
             await db.refresh(learning_class)
+            logger.info("[LearningSpace] Class code rotated class=%s", class_id)
             return learning_class
         except IntegrityError as exc:
             last_error = exc
             await db.rollback()
-        except DATABASE_ERRORS:
+        except DATABASE_ERRORS as exc:
             await db.rollback()
+            logger.error("[LearningSpace] Class code rotate failed class=%s: %s", class_id, exc)
             raise
+    logger.error("[LearningSpace] Class code rotate exhausted class=%s", class_id)
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         detail="Could not allocate class code",

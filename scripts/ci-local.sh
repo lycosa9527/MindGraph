@@ -276,7 +276,8 @@ run_backend() {
     tests/scripts/test_white_cat_emoji.py \
     tests/scripts/test_siamese_cat_emoji.py \
     tests/scripts/test_cat_office_battles.py \
-    tests/scripts/test_cat_emoji_stills.py
+    tests/scripts/test_cat_emoji_stills.py \
+    tests/scripts/test_zhilian_junan_video.py
 }
 
 run_frontend() {

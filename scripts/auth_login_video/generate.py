@@ -5,7 +5,6 @@ Examples (from repo root, conda env python313):
 
   python -m scripts.auth_login_video.generate
   python -m scripts.auth_login_video.generate --ids 01 --models wan3.0-video-prime
-  python -m scripts.auth_login_video.generate --ship-only --ship 01-awaken-cosmos-wan3
 """
 
 from __future__ import annotations
@@ -33,9 +32,6 @@ from scripts.auth_login_video.paths import (
     BLACK_STILL,
     BLACK_STILL_SIDE,
     DESKTOP_DIR,
-    PUBLIC_AUTH_DIR,
-    SHIPPED_HERO,
-    SHIPPED_HERO_URL,
     WORK_DIR,
 )
 from scripts.auth_login_video.plates import reencode_login_clip, write_character_plate
@@ -124,34 +120,6 @@ def _clean_desktop(keep: set[str]) -> None:
         print(f"remove {path}", flush=True)
 
 
-def _ship_hero(src: Path) -> None:
-    PUBLIC_AUTH_DIR.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(src, SHIPPED_HERO)
-    print(f"ship {SHIPPED_HERO} {SHIPPED_HERO_URL} {SHIPPED_HERO.stat().st_size}", flush=True)
-
-
-def _resolve_ship_source(raw: str | None) -> Path:
-    if raw:
-        named = WORK_DIR / f"{raw}.mp4"
-        if named.is_file():
-            return named
-        if raw.endswith(".mp4"):
-            candidate = Path(raw)
-            if candidate.is_file():
-                return candidate
-        raise RuntimeError(f"ship source missing: {raw}")
-    preferred_enc = WORK_DIR / f"{clip_stem(CONCEPTS[0], WAN3_VIDEO_PRIME)}-reencode.mp4"
-    if preferred_enc.is_file():
-        return preferred_enc
-    preferred = WORK_DIR / f"{clip_stem(CONCEPTS[0], WAN3_VIDEO_PRIME)}.mp4"
-    if preferred.is_file():
-        return preferred
-    found = sorted(WORK_DIR.glob("*.mp4"))
-    if found:
-        return found[0]
-    raise RuntimeError("no generated mp4 to ship")
-
-
 def _reencode_work(stem: str, original: Path) -> Path:
     dest = WORK_DIR / f"{stem}-reencode.mp4"
     return reencode_login_clip(original, dest, WORK_DIR)
@@ -199,8 +167,6 @@ def _generate_one(
     download_mp4(video_url, mp4)
     encoded = _reencode_work(stem, mp4)
     _publish_pair(concept, mp4, encoded)
-    if stem == clip_stem(CONCEPTS[0], WAN3_VIDEO_PRIME):
-        _ship_hero(encoded)
     return encoded
 
 
@@ -225,8 +191,6 @@ def main() -> None:
     parser.add_argument("--ids", help="Comma ids such as 01 or 01,03")
     parser.add_argument("--models", help="wan3.0-video-prime,happyhorse-1.1-t2v")
     parser.add_argument("--force", action="store_true", help="Resubmit even if an MP4 exists")
-    parser.add_argument("--ship", help="Work stem or path to copy onto /auth")
-    parser.add_argument("--ship-only", action="store_true", help="Copy an existing MP4, do not generate")
     parser.add_argument(
         "--export-only",
         action="store_true",
@@ -234,10 +198,6 @@ def main() -> None:
     )
     args = parser.parse_args()
     WORK_DIR.mkdir(parents=True, exist_ok=True)
-    if args.ship_only:
-        _ship_hero(_resolve_ship_source(args.ship))
-        print("ship-done", flush=True)
-        return
     if args.export_only:
         _export_existing(_select_concepts(args.ids), _select_models(args.models))
         print("export-done", flush=True)
@@ -251,19 +211,14 @@ def main() -> None:
     media = _reference_media() if WAN3_VIDEO_PRIME in models else None
     api_key = dashscope_api_key()
     failed: list[str] = []
-    last_mp4: Path | None = None
     for concept in concepts:
         for model in models:
             stem = clip_stem(concept, model)
             try:
-                last_mp4 = _generate_one(api_key, concept, model, tasks, media, args.force)
+                _generate_one(api_key, concept, model, tasks, media, args.force)
             except (RuntimeError, TimeoutError, ValueError) as exc:
                 print(f"{stem} skip-after-error: {exc}", flush=True)
                 failed.append(stem)
-    if args.ship:
-        _ship_hero(_resolve_ship_source(args.ship))
-    elif last_mp4 is not None:
-        _ship_hero(_resolve_ship_source(None))
     if failed:
         raise RuntimeError(f"video failed: {','.join(failed)}")
     print("all-done", flush=True)

@@ -202,6 +202,7 @@ def put_image_bytes_sync(logical_key: str, data: bytes, content_type: str) -> st
             log_prefix="[LearningSpace/COS]",
         )
         if not uploaded:
+            logger.warning("[LearningSpace] COS upload failed key=%s", key)
             raise ValueError("Could not store image on COS")
         return ref_for_key(key)
     path = local_path_for_key(key)
@@ -256,24 +257,41 @@ def persist_instruction_images_sync(raw_items: list[str], *, owner_id: int) -> l
             stored.append(put_image_bytes_sync(key, payload, mime))
         if len(stored) >= 6:
             break
+    logger.info("[LearningSpace] Persisted instruction images owner=%s count=%s", owner_id, len(stored))
     return stored
 
 
 def delete_stored_images_sync(keys: list[str]) -> None:
     """Best-effort delete of COS/local objects."""
+    deleted = 0
+    failed = 0
     for key in keys:
         try:
             safe = assert_safe_logical_key(key)
         except ValueError:
+            failed += 1
             continue
         if cos_learning_space_enabled():
             delete_object(full_learning_space_cos_key(safe))
         try:
             path = local_path_for_key(safe)
         except ValueError:
+            failed += 1
             continue
-        if path.is_file():
-            path.unlink()
+        try:
+            if path.is_file():
+                path.unlink()
+            deleted += 1
+        except OSError as exc:
+            failed += 1
+            logger.warning("[LearningSpace] Failed to delete local image key=%s: %s", safe, exc)
+    if keys:
+        logger.info(
+            "[LearningSpace] Instruction image delete attempted=%s deleted=%s failed=%s",
+            len(keys),
+            deleted,
+            failed,
+        )
 
 
 def read_image_bytes_sync(logical_key: str) -> tuple[bytes, str] | None:

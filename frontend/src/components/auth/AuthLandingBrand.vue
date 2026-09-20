@@ -4,7 +4,6 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
-import authLandingPoster from '@/assets/auth/auth-landing-hero.png'
 import { useLanguage } from '@/composables'
 import {
   AUTH_LOGIN_HERO_NARROW_QUERY,
@@ -18,9 +17,10 @@ import {
 
 const { t } = useLanguage()
 const clipId = ref('')
-const heroSrc = ref('')
+const heroSrc = ref(AUTH_LOGIN_HERO_STILL_SRC)
 const heroKind = ref<AuthLoginHeroKind>('image')
 const videoFailed = ref(false)
+const videoReady = ref(false)
 const reduceMotion = ref(false)
 const narrowViewport = ref(false)
 const showVideo = computed(
@@ -50,6 +50,7 @@ function applyHeroKind(): void {
     clipId.value = pickAuthLoginHeroId()
   }
   heroSrc.value = authLoginHeroSrc(clipId.value, kind)
+  videoReady.value = false
 }
 
 onMounted(() => {
@@ -65,7 +66,12 @@ onBeforeUnmount(() => {
   narrowMq?.removeEventListener('change', applyHeroKind)
 })
 
+function onVideoReady(): void {
+  videoReady.value = true
+}
+
 function onVideoError(): void {
+  videoReady.value = false
   if (heroKind.value === 'video') {
     heroKind.value = 'image'
     heroSrc.value = AUTH_LOGIN_HERO_STILL_SRC
@@ -80,16 +86,26 @@ function onVideoError(): void {
     class="auth-landing-brand"
     aria-labelledby="auth-landing-brand-title"
   >
+    <img
+      :src="AUTH_LOGIN_HERO_STILL_SRC"
+      alt=""
+      class="auth-landing-brand__bg"
+      width="1920"
+      height="1080"
+      decoding="async"
+      fetchpriority="high"
+    >
     <video
       v-if="showVideo"
       :key="heroSrc"
-      class="auth-landing-brand__bg"
-      :poster="authLandingPoster"
+      class="auth-landing-brand__bg auth-landing-brand__video"
+      :class="{ 'auth-landing-brand__video--ready': videoReady }"
       autoplay
       muted
       loop
       playsinline
       preload="auto"
+      @canplay="onVideoReady"
       @error="onVideoError"
     >
       <source
@@ -97,16 +113,6 @@ function onVideoError(): void {
         type="video/mp4"
       >
     </video>
-    <img
-      v-else
-      :src="heroSrc || authLandingPoster"
-      alt=""
-      class="auth-landing-brand__bg"
-      width="2048"
-      height="1152"
-      decoding="async"
-      fetchpriority="high"
-    >
 
     <div
       class="auth-landing-brand__veil"
@@ -136,8 +142,8 @@ function onVideoError(): void {
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  color: rgb(248 250 252);
-  background: #0b1220;
+  color: #2e1065;
+  background: #f3eefc;
 }
 
 .auth-landing-brand__bg {
@@ -153,23 +159,32 @@ function onVideoError(): void {
   backface-visibility: hidden;
 }
 
+.auth-landing-brand__video {
+  z-index: 1;
+  opacity: 0;
+}
+
+.auth-landing-brand__video--ready {
+  opacity: 1;
+}
+
 .auth-landing-brand__veil {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 2;
   pointer-events: none;
   background: linear-gradient(
     90deg,
-    rgb(8 15 30 / 0.22) 0%,
-    transparent 40%,
-    rgb(248 250 252 / 0.10) 78%,
-    rgb(248 250 252 / 0.28) 100%
+    rgb(243 238 252 / 0.28) 0%,
+    transparent 42%,
+    rgb(243 238 252 / 0.42) 78%,
+    rgb(243 238 252 / 0.72) 100%
   );
 }
 
 .auth-landing-brand__content {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -195,8 +210,8 @@ function onVideoError(): void {
   font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 1.2;
-  color: #fff;
-  text-shadow: 0 2px 18px rgb(8 15 30 / 0.45);
+  color: #2e1065;
+  text-shadow: none;
 }
 
 .auth-landing-brand__accent {
@@ -212,8 +227,8 @@ function onVideoError(): void {
   max-width: 38em;
   font-size: 1rem;
   line-height: 1.7;
-  color: rgb(226 232 240);
-  text-shadow: 0 1px 10px rgb(8 15 30 / 0.35);
+  color: #4c1d95;
+  text-shadow: none;
 }
 
 @media (max-width: 899px) {
@@ -224,9 +239,9 @@ function onVideoError(): void {
   .auth-landing-brand__veil {
     background: linear-gradient(
       180deg,
-      rgb(8 15 30 / 0.72) 0%,
-      rgb(8 15 30 / 0.35) 38%,
-      rgb(8 15 30 / 0.12) 100%
+      rgb(243 238 252 / 0.88) 0%,
+      rgb(243 238 252 / 0.42) 38%,
+      rgb(243 238 252 / 0.08) 100%
     );
   }
 

@@ -12,7 +12,7 @@ export type AuthLoginHeroKind = 'image' | 'video'
 
 export const AUTH_LOGIN_HERO_STORAGE_KEY = 'mg.authLoginHero.v2'
 export const AUTH_LOGIN_HERO_SESSION_KEY = 'mg.authLoginHero.session.v2'
-export const AUTH_LOGIN_HERO_STILL_SRC = '/auth-hero/login-hero.png'
+export const AUTH_LOGIN_HERO_STILL_SRC = '/auth-hero/login-hero.webp'
 
 export type AuthLoginHeroPickOptions = {
   durable?: Pick<Storage, 'getItem' | 'setItem'>

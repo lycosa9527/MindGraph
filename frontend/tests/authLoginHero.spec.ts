@@ -80,7 +80,7 @@ describe('authLoginHero', () => {
   it('builds the local still and COS video paths', () => {
     expect(AUTH_LOGIN_HERO_IDS).toHaveLength(4)
     expect(authLoginHeroSrc('02-mind-leap', 'image')).toBe(AUTH_LOGIN_HERO_STILL_SRC)
-    expect(AUTH_LOGIN_HERO_STILL_SRC).toBe('/auth-hero/login-hero.png')
+    expect(AUTH_LOGIN_HERO_STILL_SRC).toBe('/auth-hero/login-hero.webp')
     expect(authLoginHeroSrc('02-mind-leap', 'video')).toBe(
       '/api/auth/login-hero/02-mind-leap.mp4'
     )

@@ -8,6 +8,7 @@ Proprietary License
 from __future__ import annotations
 
 import asyncio
+import logging
 from datetime import UTC, datetime
 from typing import Any
 
@@ -42,6 +43,8 @@ from services.learning_space.passwords import merge_ai_permissions
 from services.learning_space.students import count_class_students
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
+
+logger = logging.getLogger(__name__)
 
 
 def effective_due_at(
@@ -112,17 +115,25 @@ async def delete_assignment(db: AsyncSession, assignment: LearningAssignment) ->
     assignment_id = int(assignment.id)
     image_keys = stored_image_keys(assignment.instruction_images)
     unused_keys = await unreferenced_image_keys(db, image_keys, except_assignment_id=assignment_id)
+    class_id = int(assignment.class_id)
     try:
         await db.execute(delete(LearningSubmission).where(LearningSubmission.assignment_id == assignment_id))
         await db.execute(delete(LearningAssignment).where(LearningAssignment.id == assignment_id))
         await db.commit()
     except DATABASE_ERRORS as exc:
         await db.rollback()
+        logger.error(
+            "[LearningSpace] Delete assignment failed id=%s class=%s: %s",
+            assignment_id,
+            class_id,
+            exc,
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Failed to delete assignment",
         ) from exc
     await asyncio.to_thread(delete_stored_images_sync, unused_keys)
+    logger.info("[LearningSpace] Assignment deleted id=%s class=%s", assignment_id, class_id)
 
 
 async def assert_homework_diagram_writable(
@@ -271,6 +282,12 @@ async def get_or_create_submission(
     try:
         template = await cache.get_diagram(int(assignment.created_by), assignment.template_diagram_id)
     except BACKGROUND_INFRA_ERRORS as exc:
+        logger.warning(
+            "[LearningSpace] Diagram service unavailable opening assignment=%s student=%s: %s",
+            assignment_id,
+            student_id,
+            exc,
+        )
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Diagram service unavailable",
@@ -295,11 +312,23 @@ async def get_or_create_submission(
             organization_id=organization_id,
         )
     except BACKGROUND_INFRA_ERRORS as exc:
+        logger.warning(
+            "[LearningSpace] Diagram save unavailable assignment=%s student=%s: %s",
+            assignment_id,
+            student_id,
+            exc,
+        )
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Diagram service unavailable",
         ) from exc
     if not save_ok or not new_id:
+        logger.warning(
+            "[LearningSpace] Failed to create student diagram assignment=%s student=%s err=%s",
+            assignment_id,
+            student_id,
+            save_err,
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=save_err or "Failed to create student diagram",
@@ -326,6 +355,11 @@ async def get_or_create_submission(
         await db.refresh(submission)
     except IntegrityError:
         await db.rollback()
+        logger.warning(
+            "[LearningSpace] Open assignment raced assignment=%s student=%s",
+            assignment_id,
+            student_id,
+        )
         return await _submission_after_insert_race(
             db,
             assignment_id,
@@ -334,10 +368,24 @@ async def get_or_create_submission(
         )
     except DATABASE_ERRORS as exc:
         await db.rollback()
+        logger.error(
+            "[LearningSpace] Open assignment failed assignment=%s student=%s: %s",
+            assignment_id,
+            student_id,
+            exc,
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create student diagram",
         ) from exc
+    logger.info(
+        "[LearningSpace] Opened assignment=%s class=%s student=%s submission=%s diagram=%s",
+        assignment_id,
+        assignment.class_id,
+        student_id,
+        submission.id,
+        submission.diagram_id,
+    )
     return submission
 
 
@@ -371,11 +419,23 @@ async def bind_draft_diagram(
     try:
         owned = await cache.get_diagram(int(student.id), diagram_id)
     except BACKGROUND_INFRA_ERRORS as exc:
+        logger.warning(
+            "[LearningSpace] Diagram service unavailable binding assignment=%s student=%s: %s",
+            assignment_id,
+            student_id,
+            exc,
+        )
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Diagram service unavailable",
         ) from exc
     if not owned:
+        logger.warning(
+            "[LearningSpace] Bind draft diagram missing assignment=%s student=%s diagram=%s",
+            assignment_id,
+            student_id,
+            diagram_id,
+        )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Diagram not found")
 
     if submission is None:
@@ -399,6 +459,11 @@ async def bind_draft_diagram(
         await db.refresh(submission)
     except IntegrityError:
         await db.rollback()
+        logger.warning(
+            "[LearningSpace] Bind draft raced assignment=%s student=%s",
+            assignment_id,
+            student_id,
+        )
         submission = await _submission_after_insert_race(
             db,
             assignment_id,
@@ -407,11 +472,24 @@ async def bind_draft_diagram(
         )
     except DATABASE_ERRORS as exc:
         await db.rollback()
+        logger.error(
+            "[LearningSpace] Bind draft failed assignment=%s student=%s: %s",
+            assignment_id,
+            student_id,
+            exc,
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to bind draft diagram",
         ) from exc
     await ensure_student_homework_diagram_title(student, assignment, diagram_id)
+    logger.info(
+        "[LearningSpace] Bound draft assignment=%s student=%s submission=%s diagram=%s",
+        assignment_id,
+        student_id,
+        submission.id,
+        diagram_id,
+    )
     return submission
 
 
@@ -430,6 +508,11 @@ async def submit_assignment(
     )
     submission = result.scalar_one_or_none()
     if submission is None or not submission.diagram_id:
+        logger.warning(
+            "[LearningSpace] Submit without open draft assignment=%s student=%s",
+            assignment.id,
+            student.id,
+        )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Open assignment first")
     assert_can_edit_submission(assignment, submission)
 
@@ -437,6 +520,12 @@ async def submit_assignment(
     try:
         diagram = await cache.get_diagram(int(student.id), submission.diagram_id)
     except BACKGROUND_INFRA_ERRORS as exc:
+        logger.warning(
+            "[LearningSpace] Diagram service unavailable submitting assignment=%s student=%s: %s",
+            assignment.id,
+            student.id,
+            exc,
+        )
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Diagram service unavailable",
@@ -450,11 +539,38 @@ async def submit_assignment(
             "language": diagram.get("language", "zh"),
             "thumbnail": diagram.get("thumbnail"),
         }
+    else:
+        logger.warning(
+            "[LearningSpace] Submit without live diagram assignment=%s student=%s diagram=%s",
+            assignment.id,
+            student.id,
+            submission.diagram_id,
+        )
     submission.snapshot_spec = snapshot
     submission.status = SUBMISSION_STATUS_SUBMITTED
     submission.submitted_at = datetime.now(UTC)
-    await db.commit()
-    await db.refresh(submission)
+    try:
+        await db.commit()
+        await db.refresh(submission)
+    except DATABASE_ERRORS as exc:
+        await db.rollback()
+        logger.error(
+            "[LearningSpace] Submit failed assignment=%s student=%s: %s",
+            assignment.id,
+            student.id,
+            exc,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to submit assignment",
+        ) from exc
+    logger.info(
+        "[LearningSpace] Submitted assignment=%s class=%s student=%s submission=%s",
+        assignment.id,
+        assignment.class_id,
+        student.id,
+        submission.id,
+    )
     return submission
 
 
@@ -465,8 +581,27 @@ async def return_submission(
     """Teacher returns work for revision."""
     submission.status = SUBMISSION_STATUS_RETURNED
     submission.submitted_at = None
-    await db.commit()
-    await db.refresh(submission)
+    try:
+        await db.commit()
+        await db.refresh(submission)
+    except DATABASE_ERRORS as exc:
+        await db.rollback()
+        logger.error(
+            "[LearningSpace] Return submission failed id=%s assignment=%s: %s",
+            submission.id,
+            submission.assignment_id,
+            exc,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to return submission",
+        ) from exc
+    logger.info(
+        "[LearningSpace] Returned submission=%s assignment=%s student=%s",
+        submission.id,
+        submission.assignment_id,
+        submission.student_user_id,
+    )
     return submission
 
 
@@ -631,11 +766,21 @@ async def load_template_preview(
     try:
         template = await cache.get_diagram(int(assignment.created_by), assignment.template_diagram_id)
     except BACKGROUND_INFRA_ERRORS as exc:
+        logger.warning(
+            "[LearningSpace] Template preview unavailable assignment=%s: %s",
+            assignment.id,
+            exc,
+        )
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Diagram service unavailable",
         ) from exc
     if not template:
+        logger.warning(
+            "[LearningSpace] Template diagram missing assignment=%s template=%s",
+            assignment.id,
+            assignment.template_diagram_id,
+        )
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template diagram not found")
     spec = template.get("spec")
     thumb = template.get("thumbnail")
@@ -679,8 +824,22 @@ async def save_submission_review(
         await db.refresh(submission)
     except DATABASE_ERRORS as exc:
         await db.rollback()
+        logger.error(
+            "[LearningSpace] Review save failed submission=%s assignment=%s: %s",
+            submission.id,
+            submission.assignment_id,
+            exc,
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to save review",
         ) from exc
+    logger.info(
+        "[LearningSpace] Reviewed submission=%s assignment=%s student=%s liked=%s pinned=%s",
+        submission.id,
+        submission.assignment_id,
+        submission.student_user_id,
+        liked,
+        pinned,
+    )
     return submission

@@ -6,6 +6,7 @@ Existing accounts join a class via this table without changing ``users.role``.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 
 from sqlalchemy import func, select
@@ -28,6 +29,8 @@ from services.learning_space.passwords import initial_password_from_name
 from utils.auth.role_constants import ROLE_STUDENT
 from utils.auth.roles import is_student
 from utils.db.session_open import system_rls_session
+
+logger = logging.getLogger(__name__)
 
 
 def normalize_account_phone(raw: str) -> str:
@@ -339,6 +342,12 @@ async def import_existing_accounts(db: AsyncSession, learning_class: LearningCla
             }
         )
     await db.commit()
+    logger.info(
+        "[LearningSpace] Enrolled accounts class=%s created=%s failed=%s",
+        learning_class.id,
+        len(created),
+        len(failed),
+    )
     return {"created": created, "failed": failed}
 
 
@@ -381,6 +390,11 @@ async def replace_class_assistants(db: AsyncSession, learning_class: LearningCla
             membership.role = MEMBERSHIP_ROLE_ASSISTANT
         kept.append({"id": user_id, "name": (user.name or "").strip() or (user.phone or "")})
     await db.flush()
+    logger.info(
+        "[LearningSpace] Assistants replaced class=%s count=%s",
+        learning_class.id,
+        len(kept),
+    )
     return kept
 
 

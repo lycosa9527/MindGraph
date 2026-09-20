@@ -18,7 +18,11 @@ from scripts.auth_login_video.catalog import (
 )
 from scripts.auth_login_video.paths import BLACK_STILL
 from scripts.auth_login_video.plates import write_character_plate
-from scripts.auth_login_video.ship_stills import DEFAULT_STILL_ID
+from scripts.auth_login_video.ship_stills import (
+    DEFAULT_STILL_ID,
+    STILL_MAX_WIDTH,
+    compress_still,
+)
 from scripts.auth_login_video.stills import OPTIONS, option_prompt
 from scripts.training_roles.wan_client import (
     HAPPYHORSE_T2V,
@@ -115,11 +119,25 @@ def test_character_plate_is_dark_not_green(tmp_path) -> None:
 
 def test_still_options_leave_room_on_the_right() -> None:
     """Local still candidates are independent of the four video storyboards."""
-    assert len(OPTIONS) == 8
+    assert len(OPTIONS) == 5
     prompt = option_prompt(OPTIONS[0])
     assert "右侧" in prompt
     assert "16:9" in prompt
     assert "红白格子" in prompt
-    assert OPTIONS[0]["id"] == "a-holographic-academic"
-    assert OPTIONS[-1]["id"] == "af-holographic-swoosh"
-    assert DEFAULT_STILL_ID == "b-warm-study"
+    assert OPTIONS[0]["id"] == "l-reading-book"
+    assert OPTIONS[-1]["id"] == "p-teaching-board"
+    assert "看书" in prompt
+    assert DEFAULT_STILL_ID in {option["id"] for option in OPTIONS}
+
+
+def test_compress_still_writes_capped_webp(tmp_path) -> None:
+    """Shipped /auth poster is a 1080p-capped WebP, not the 2K source."""
+    source = tmp_path / "source.jpg"
+    pixels = bytes((index * 37) % 256 for index in range(2048 * 1152 * 3))
+    Image.frombytes("RGB", (2048, 1152), pixels).save(source, format="JPEG", quality=95)
+    dest = tmp_path / "login-hero.webp"
+    compress_still(source, dest)
+    shipped = Image.open(dest)
+    assert shipped.format == "WEBP"
+    assert shipped.size == (STILL_MAX_WIDTH, 1080)
+    assert dest.stat().st_size < source.stat().st_size
