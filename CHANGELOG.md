@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.95] - 2026-09-20
+
+> **Tencent slide verify embeds on the login card instead of a viewport-centered popup.**
+
+### Changed
+
+- **腾讯滑块验证** — Embed mode mounts a host over the login card (`data-tsec-anchor` on Swiss glass auth). Popup fallback shifts with `transform` from the viewport center (the documented hook) instead of fighting `left`/`top`. Clicking the overlay dismisses.
+
+### Tests
+
+- [`frontend/tests/positionTsecCaptcha.spec.ts`](frontend/tests/positionTsecCaptcha.spec.ts), [`frontend/tests/tsecCaptcha.spec.ts`](frontend/tests/tsecCaptcha.spec.ts)
+
 ## [5.180.94] - 2026-09-20
 
 > **Superadmin, teaching researcher, expert, and school admin can create Learning Space classes in their panel scope.**

@@ -1,12 +1,17 @@
 /**
  * Pin Tencent Captcha 2.0's popup to the login card.
  *
- * Popup mode is viewport-centered (`left/top: 50%`). On `/auth` the card sits on
- * the right (desktop) or under the hero copy (mobile), so the slider must be
- * moved onto that card. Official docs only allow restyling `.tcaptcha-transform`.
+ * Popup mode keeps `left/top: 50%`. Fighting those values loses to the SDK, so
+ * we shift with `transform` (the documented hook) from the viewport center onto
+ * the login card. Prefer embed mode; this is the popup fallback.
  */
 
 export const TSEC_CAPTCHA_POPUP_SELECTOR = '.tcaptcha-transform'
+const TSEC_CAPTCHA_IFRAME_SELECTOR = [
+  'iframe[src*="turing.captcha"]',
+  'iframe[src*="captcha.qcloud"]',
+  'iframe[id*="tcaptcha"]',
+].join(',')
 const TSEC_VIEWPORT_PAD_PX = 12
 const TSEC_DEFAULT_POPUP_PX = 360
 
@@ -14,10 +19,14 @@ export function findTsecCaptchaPopup(
   root: ParentNode = document
 ): HTMLElement | null {
   const nodes = root.querySelectorAll<HTMLElement>(TSEC_CAPTCHA_POPUP_SELECTOR)
-  if (nodes.length === 0) {
-    return null
+  if (nodes.length > 0) {
+    return nodes[nodes.length - 1]
   }
-  return nodes[nodes.length - 1]
+  const iframe = root.querySelector<HTMLIFrameElement>(TSEC_CAPTCHA_IFRAME_SELECTOR)
+  if (iframe?.parentElement instanceof HTMLElement) {
+    return iframe.parentElement
+  }
+  return null
 }
 
 export function findTsecCaptchaAnchor(
@@ -52,6 +61,18 @@ export function clampTsecCaptchaCenter(
   }
 }
 
+export function tsecCaptchaOffsetFromViewportCenter(
+  centerX: number,
+  centerY: number,
+  viewportWidth: number,
+  viewportHeight: number
+): { dx: number; dy: number } {
+  return {
+    dx: centerX - viewportWidth / 2,
+    dy: centerY - viewportHeight / 2,
+  }
+}
+
 export function positionTsecCaptchaOverAnchor(
   popup: HTMLElement,
   anchor: HTMLElement,
@@ -68,21 +89,18 @@ export function positionTsecCaptchaOverAnchor(
     viewport.innerWidth,
     viewport.innerHeight
   )
-  const left = `${center.x}px`
-  const top = `${center.y}px`
-  if (
-    popup.style.position === 'fixed' &&
-    popup.style.left === left &&
-    popup.style.top === top
-  ) {
+  const offset = tsecCaptchaOffsetFromViewportCenter(
+    center.x,
+    center.y,
+    viewport.innerWidth,
+    viewport.innerHeight
+  )
+  const transform = `translate(calc(-50% + ${offset.dx}px), calc(-50% + ${offset.dy}px))`
+  if (popup.style.transform === transform) {
     return
   }
-  popup.style.setProperty('position', 'fixed', 'important')
-  popup.style.setProperty('left', left, 'important')
-  popup.style.setProperty('top', top, 'important')
-  popup.style.setProperty('right', 'auto', 'important')
-  popup.style.setProperty('bottom', 'auto', 'important')
-  popup.style.setProperty('margin', '0', 'important')
+  popup.style.setProperty('transform', transform, 'important')
+  popup.style.setProperty('transform-origin', 'center center', 'important')
 }
 
 export function applyTsecCaptchaToLoginCard(): boolean {

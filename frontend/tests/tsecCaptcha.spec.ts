@@ -49,6 +49,7 @@ describe('showTsecCaptcha', () => {
   it('returns ticket and randstr on a real pass', async () => {
     window.TencentCaptcha = class {
       constructor(
+        _host: HTMLElement,
         _appId: string,
         callback: (result: { ret: number; ticket: string; randstr: string }) => void
       ) {
@@ -70,6 +71,7 @@ describe('showTsecCaptcha', () => {
   it('forwards sid and duration fields from the callback', async () => {
     window.TencentCaptcha = class {
       constructor(
+        _host: HTMLElement,
         _appId: string,
         callback: (result: {
           ret: number
@@ -110,23 +112,28 @@ describe('showTsecCaptcha', () => {
   it('passes aidEncrypted and cbc type into TencentCaptcha options', async () => {
     let captured:
       | {
+          type?: string
           aidEncrypted?: string
           aidEncryptedType?: string
           ready?: () => void
           showFn?: () => void
         }
       | undefined
+    let capturedHost: HTMLElement | undefined
     window.TencentCaptcha = class {
       constructor(
+        host: HTMLElement,
         _appId: string,
         callback: (result: { ret: number; ticket: string; randstr: string }) => void,
         options?: {
+          type?: string
           aidEncrypted?: string
           aidEncryptedType?: string
           ready?: () => void
           showFn?: () => void
         }
       ) {
+        capturedHost = host
         captured = options
         queueMicrotask(() => callback({ ret: 0, ticket: 'tr03ok', randstr: '@Vki' }))
       }
@@ -138,7 +145,9 @@ describe('showTsecCaptcha', () => {
     } as unknown as typeof window.TencentCaptcha
 
     await showTsecCaptcha('199999164', 'zh', aidAuth)
+    expect(capturedHost).toBeInstanceOf(HTMLElement)
     expect(captured).toMatchObject({
+      type: 'embed',
       aidEncrypted: aidAuth.aidEncrypted,
       aidEncryptedType: 'cbc',
       enableDarkMode: true,
@@ -155,7 +164,11 @@ describe('showTsecCaptcha', () => {
 
   it('treats user close as TsecCaptchaClosedError', async () => {
     window.TencentCaptcha = class {
-      constructor(_appId: string, callback: (result: { ret: number; ticket: null }) => void) {
+      constructor(
+        _host: HTMLElement,
+        _appId: string,
+        callback: (result: { ret: number; ticket: null }) => void
+      ) {
         queueMicrotask(() => callback({ ret: 2, ticket: null }))
       }
       show() {}
@@ -173,6 +186,7 @@ describe('showTsecCaptcha', () => {
   it('rejects disaster tickets even when ret is 0', async () => {
     window.TencentCaptcha = class {
       constructor(
+        _host: HTMLElement,
         _appId: string,
         callback: (result: {
           ret: number

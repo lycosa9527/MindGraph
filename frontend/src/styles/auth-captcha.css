@@ -112,3 +112,21 @@
     --captcha-input-min: 3.5rem;
   }
 }
+
+/* T-Sec embed host: sit on the login card instead of the viewport center. */
+.tsec-login-layer {
+  position: fixed;
+  z-index: 10060;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  background: rgb(255 255 255 / 0.92);
+  pointer-events: auto;
+}
+
+.tsec-login-layer__host {
+  width: 300px;
+  height: 230px;
+  flex: 0 0 auto;
+}

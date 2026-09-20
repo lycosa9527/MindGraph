@@ -105,6 +105,7 @@ function onBackdrop(): void {
       <div
         ref="cardEl"
         :class="cardClassName"
+        :data-tsec-anchor="cardClass.includes('swiss-glass-card--auth') ? '' : undefined"
         role="dialog"
         :aria-modal="teleportDisabled ? undefined : 'true'"
       >

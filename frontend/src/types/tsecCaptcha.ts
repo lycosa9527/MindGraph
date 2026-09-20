@@ -49,15 +49,24 @@ export interface TencentCaptchaOptions {
   enableDarkMode?: boolean | 'force'
   aidEncrypted?: string
   aidEncryptedType?: TsecAidEncryptedType
+  type?: 'popup' | 'embed'
   ready?: (size: TencentCaptchaReadySize) => void
   showFn?: (info: TencentCaptchaShowInfo) => void
 }
 
-export type TencentCaptchaConstructor = new (
-  appId: string,
-  callback: (result: TencentCaptchaResult) => void,
-  options?: TencentCaptchaOptions
-) => TencentCaptchaInstance
+export interface TencentCaptchaConstructor {
+  new (
+    appId: string,
+    callback: (result: TencentCaptchaResult) => void,
+    options?: TencentCaptchaOptions
+  ): TencentCaptchaInstance
+  new (
+    container: HTMLElement,
+    appId: string,
+    callback: (result: TencentCaptchaResult) => void,
+    options?: TencentCaptchaOptions
+  ): TencentCaptchaInstance
+}
 
 export interface TsecMintedCaptcha {
   captcha_id: string

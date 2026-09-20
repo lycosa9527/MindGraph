@@ -1,5 +1,11 @@
-import type { TencentCaptchaResult, TsecAidEncrypted, TsecSolvedCaptcha } from '@/types/tsecCaptcha'
+import type {
+  TencentCaptchaInstance,
+  TencentCaptchaResult,
+  TsecAidEncrypted,
+  TsecSolvedCaptcha,
+} from '@/types/tsecCaptcha'
 import { loadTjCaptcha, tsecUserLanguage } from '@/utils/tsec/loadTjCaptcha'
+import { mountTsecCaptchaOnLoginCard } from '@/utils/tsec/mountTsecCaptchaHost'
 import {
   applyTsecCaptchaToLoginCard,
   bindTsecCaptchaToLoginCard,
@@ -51,13 +57,29 @@ export async function showTsecCaptcha(
   }
   const TencentCaptcha = await loadTjCaptcha()
   return new Promise((resolve, reject) => {
-    const releasePosition = bindTsecCaptchaToLoginCard()
+    let captcha: TencentCaptchaInstance | null = null
+    let settled = false
+    let releaseHost = (): void => {}
+    const releasePopup = bindTsecCaptchaToLoginCard()
     const finish = (next: () => void): void => {
-      releasePosition()
+      if (settled) {
+        return
+      }
+      settled = true
+      if (captcha) {
+        captcha.destroy()
+      }
+      releasePopup()
+      releaseHost()
       next()
     }
+    const { host, release } = mountTsecCaptchaOnLoginCard(() => {
+      finish(() => reject(new TsecCaptchaClosedError()))
+    })
+    releaseHost = release
     try {
-      const captcha = new TencentCaptcha(
+      captcha = new TencentCaptcha(
+        host,
         appId,
         (result: TencentCaptchaResult) => {
           if (result.ret === 2) {
@@ -75,6 +97,7 @@ export async function showTsecCaptcha(
           finish(() => resolve(parseSolvedCaptcha(result)))
         },
         {
+          type: 'embed',
           userLanguage: tsecUserLanguage(uiLocale),
           enableDarkMode: true,
           aidEncrypted: aidAuth.aidEncrypted,
