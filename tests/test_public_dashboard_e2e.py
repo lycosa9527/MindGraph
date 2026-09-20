@@ -26,7 +26,7 @@ from httpx import ASGITransport
 from main import app
 from routers.auth.dependencies import get_language_dependency
 from services.redis.redis_async_client import close_async_redis
-from services.redis.redis_client import init_redis_sync, is_redis_available
+from services.redis.redis_client import RedisStartupError, init_redis_sync, is_redis_available
 from utils.auth import get_current_user
 
 
@@ -46,7 +46,11 @@ def _as_superadmin() -> None:
 @pytest.fixture(scope="module", autouse=True)
 def _init_sync_redis() -> None:
     """Initialize sync Redis used by rate limiting / activity helpers."""
-    if not init_redis_sync():
+    try:
+        connected = init_redis_sync()
+    except RedisStartupError:
+        pytest.skip("Redis init failed — dashboard APIs use Redis")
+    if not connected:
         pytest.skip("Redis init failed — dashboard APIs use Redis")
     if not is_redis_available():
         pytest.skip("Redis unavailable — dashboard APIs use Redis")

@@ -29,14 +29,28 @@ from services.diagram.generation_result_cache import (
 )
 from services.llm import llm_service
 from services.redis.redis_async_client import close_async_redis, get_async_redis
-from services.redis.redis_client import init_redis_sync, is_redis_available
+from services.redis.redis_client import RedisStartupError, init_redis_sync, is_redis_available
 from tests.smoke.mindmap_smoke_helpers import live_llm_enabled, mindmap_smoke_helpers_load_dotenv
 from utils.auth import get_current_user_or_api_key
 
 
 def _require_redis() -> None:
-    if not init_redis_sync() or not is_redis_available():
+    try:
+        connected = init_redis_sync()
+    except RedisStartupError as exc:
+        pytest.skip(f"Redis unavailable — generation cache live tests need Redis: {exc}")
+    if not connected or not is_redis_available():
         pytest.skip("Redis unavailable — generation cache live tests need Redis")
+
+
+def test_require_redis_skips_when_startup_fails() -> None:
+    """CI has no Redis; RedisStartupError must skip, not fail the suite."""
+    with patch(
+        "tests.test_generation_result_cache_live.init_redis_sync",
+        side_effect=RedisStartupError("Failed to connect to Redis"),
+    ):
+        with pytest.raises(pytest.skip.Exception, match="Redis unavailable"):
+            _require_redis()
 
 
 def _org_user(user_id: int, organization_id: int) -> SimpleNamespace:
