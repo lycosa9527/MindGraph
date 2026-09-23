@@ -33,7 +33,7 @@ Repository: https://github.com/lycosa9527/MindGraph
 Run full GitHub CI locally; do not commit or push until it passes:
 
 ```bash
-cd /mnt/d/MindGraph
+cd ~/src/MindGraph
 ./scripts/ci-local.sh
 ```
 

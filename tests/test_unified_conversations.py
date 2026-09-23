@@ -269,6 +269,65 @@ async def test_resolve_dify_user_ignores_unknown_hint_and_probes(
 
 
 @pytest.mark.asyncio
+async def test_resolve_dify_user_for_personal_account_uses_global_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Email accounts have no organization; message load must probe the global Dify server."""
+    user = SimpleNamespace(id=9, organization_id=None, name="Overseas", phone=None, email="a@b.c")
+    personal_target = SimpleNamespace(
+        organization_id=0,
+        user_id=9,
+        dify_user="mg_user_9",
+        label="Overseas",
+        channel="web",
+    )
+    global_endpoint = ExportDifyEndpoint(
+        organization_id=0,
+        source="org_server",
+        server=1,
+        mindbot_config_id=None,
+        api_key="global-key",
+        api_url="https://api.dify.ai/v1",
+    )
+
+    async def _fake_targets(_db, _user):
+        return [personal_target]
+
+    async def _fake_endpoints(_db, _target, _org_by_id):
+        return [global_endpoint]
+
+    class _Client:
+        async def get_messages(self, **_kwargs):
+            """Return an empty page so the probe treats the conversation as found."""
+            return {"data": []}
+
+    def _fake_client(_endpoint):
+        return _Client()
+
+    monkeypatch.setattr(
+        "services.dify.unified_conversations.build_user_dify_targets",
+        _fake_targets,
+    )
+    monkeypatch.setattr(
+        "services.dify.unified_conversations._endpoints_for_target",
+        _fake_endpoints,
+    )
+    monkeypatch.setattr(
+        "services.dify.unified_conversations._client_for_endpoint",
+        _fake_client,
+    )
+
+    dify_user = await resolve_dify_user_for_conversation(
+        MagicMock(),
+        as_user(user),
+        "conv-1",
+        dify_user_hint="mg_user_9",
+    )
+
+    assert dify_user == "mg_user_9"
+
+
+@pytest.mark.asyncio
 async def test_resolve_dify_user_raises_when_no_identity_matches(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

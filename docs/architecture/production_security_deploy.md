@@ -169,7 +169,7 @@ Use the CLI after Redis is reachable:
 
 ```bash
 conda activate python313
-cd /mnt/d/MindGraph
+cd ~/src/MindGraph
 python scripts/ops/rotate_jwt_secret.py
 ```
 

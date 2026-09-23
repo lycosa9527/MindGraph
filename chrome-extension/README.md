@@ -54,7 +54,7 @@ Same store zip is also served by the backend: `GET /api/downloads/mindgraph-chro
 Builds `chrome-extension/dist/mindgraph-extension.zip` with `manifest.json` at the archive root (excludes `node_modules/`, tests, dev scripts):
 
 ```bash
-cd /mnt/d/MindGraph
+cd ~/src/MindGraph
 PYTHONPATH=. python scripts/package_extension.py
 ```
 
@@ -62,7 +62,7 @@ PYTHONPATH=. python scripts/package_extension.py
 
 ```bash
 set -a && source .env && set +a
-cd /mnt/d/MindGraph
+cd ~/src/MindGraph
 PYTHONPATH=. python scripts/publish_edge_addon.py \
   --notes-file chrome-extension/scripts/edge_certification_notes.example.txt
 ```

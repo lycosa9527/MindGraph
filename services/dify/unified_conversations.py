@@ -304,24 +304,26 @@ async def _resolve_endpoint_for_conversation(
     mindbot_config_id_hint: Optional[int] = None,
 ) -> Optional[ExportDifyEndpoint]:
     org_id = int(target.organization_id)
-    if org_id <= 0:
-        return None
-    org = await _load_org(org_id)
-    if org is None:
-        return None
-    if server_hint is not None or mindbot_config_id_hint is not None:
-        endpoint = await resolve_endpoint_for_message_fetch(
-            db,
-            org,
-            channel=target.channel,
-            server=int(server_hint or 1),
-            mindbot_config_id=mindbot_config_id_hint,
-            dify_user=dify_user,
-            strict_org=False,
-        )
-        if endpoint is not None:
-            return endpoint
-    org_by_id = {org_id: org}
+    org: Optional[Organization] = None
+    if org_id > 0:
+        org = await _load_org(org_id)
+        if org is None:
+            return None
+        if server_hint is not None or mindbot_config_id_hint is not None:
+            endpoint = await resolve_endpoint_for_message_fetch(
+                db,
+                org,
+                channel=target.channel,
+                server=int(server_hint or 1),
+                mindbot_config_id=mindbot_config_id_hint,
+                dify_user=dify_user,
+                strict_org=False,
+            )
+            if endpoint is not None:
+                return endpoint
+    org_by_id: dict[int, Organization] = {}
+    if org is not None:
+        org_by_id[org_id] = org
     for endpoint in await _endpoints_for_target(db, target, org_by_id):
         try:
             client = _client_for_endpoint(endpoint)

@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.96] - 2026-09-24
+
+> **Email accounts can open saved MindMate chats on the global Dify server.**
+
+### Fixed
+
+- **海外邮箱账号打开历史对话** — 无学校的账号列出历史、发送消息时已经用 `mg_user_<id>` 打全局 MindMate。打开、重命名或删除一条已保存对话时，组织 id 为 0 会在请求发出前返回，面板显示加载失败。现在与列表走同一全局端点和同一用户 id。
+
+### Tests
+
+- [`tests/test_unified_conversations.py`](tests/test_unified_conversations.py)
+
 ## [5.180.95] - 2026-09-20
 
 > **Tencent slide verify embeds on the login card instead of a viewport-centered popup.**
