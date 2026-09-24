@@ -1,5 +1,5 @@
 OVERVIEW
-MindGraph connects Edge to our AI diagram platform. Page content is read only when the user explicitly triggers an action (generate map, extract document, MindMate page context, or Document Summary save). No background monitoring.
+MindGraph connects the browser to our AI diagram platform. Page content is read only when the user explicitly triggers an action (generate map, extract document, MindMate page context, or Document Summary save). No background monitoring.
 
 REQUIREMENTS
 - Edge 120+
@@ -24,12 +24,13 @@ PRIMARY TEST — MIND MAP PNG
 
 OPTIONAL
 - MindMate tab: chat with Include current web page on first message of new chat.
-- Download / Extract document: Chinese doc/education hosts only (SmartEdu, CNKI, Baidu Wenku); needs site logins. Skip for core review.
+- Download / Extract document: optional; requires the user to be signed in on the document site. Skip for core review.
 
 HOST PERMISSIONS
 - mg/test.mindspringedu.com: MindGraph API.
-- https://*/* and http://*/*: third-party CDN fetches only on user-initiated document extract. Page scripts use activeTab on the tab the user activated.
+- https://*/* and http://*/*: third-party CDN/document fetches only on user-initiated extract. Page scripts use activeTab on the tab the user activated.
+- file:///*: local PDF tabs the user opens.
 
 PRIVACY: https://mg.mindspringedu.com/privacy#browser-extension
 
-NOTES: Do not use localhost:9527 (HTTP dev). Auth is Bearer mgat_ + X-MG-Account; no web login cookies. Client header: edge-extension.
+NOTES: Do not use localhost:9527 (HTTP dev). Auth is Bearer mgat_ + X-MG-Account; no web login cookies. Client header: edge-extension. Single purpose: MindGraph companion for the current page (maps, chat context, document files).

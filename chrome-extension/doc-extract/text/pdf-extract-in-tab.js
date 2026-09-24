@@ -50,9 +50,9 @@
     if (!pdfjsLib || typeof pdfjsLib.getDocument !== "function") {
       throw new Error("PDFJS_NOT_LOADED");
     }
-    pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL("vendor/pdfjs/pdf.worker.min.js");
+    // Run on the main thread so we do not need a worker script URL (CWS RHC-safe).
     const data = pdfBuffer instanceof ArrayBuffer ? new Uint8Array(pdfBuffer) : pdfBuffer;
-    const loadingTask = pdfjsLib.getDocument({ data });
+    const loadingTask = pdfjsLib.getDocument({ data, disableWorker: true });
     const pdf = await loadingTask.promise;
     const limit = Math.min(pdf.numPages || 0, maxPages > 0 ? maxPages : 80);
     const parts = [];

@@ -197,6 +197,24 @@ function onVideoError(): void {
   padding: clamp(1.75rem, 4vw, 2.5rem) 1.25rem clamp(1.25rem, 3vw, 2rem);
 }
 
+.auth-landing-brand__top {
+  position: relative;
+  box-sizing: border-box;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.85rem 1.1rem 1rem;
+}
+
+.auth-landing-brand__top::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: 0.55rem;
+  background: rgb(255 255 255 / 0.28);
+  border: 1px solid rgb(255 255 255 / 0.42);
+}
+
 @media (min-width: 900px) {
   .auth-landing-brand__top {
     max-width: min(34rem, calc(100% - 26.5rem - 2rem));
@@ -254,6 +272,7 @@ function onVideoError(): void {
 
   .auth-landing-brand__top {
     max-width: none;
+    padding: 0.55rem 0.75rem 0.65rem;
   }
 
   .auth-landing-brand__headline {

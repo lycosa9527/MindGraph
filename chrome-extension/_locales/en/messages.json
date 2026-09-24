@@ -4,7 +4,7 @@
     "description": "Extension name"
   },
   "extDescription": {
-    "message": "Mind map PNG and document download for MindGraph — Chrome and Edge.",
+    "message": "Turn the current page into MindGraph mind maps, chat context, and document files via your MindGraph account.",
     "description": "Extension description for store"
   },
   "browserActionTitle": {
@@ -216,8 +216,8 @@
     "description": "MindMate canvas-only reader with no extractable text"
   },
   "mindmateNoticeWenkuPreview": {
-    "message": "Baidu Wenku: text may be limited to about $1 preview pages without VIP.",
-    "description": "MindMate wenku preview cap notice prepended to markdown"
+    "message": "This document may only expose about $1 pages in the current view.",
+    "description": "MindMate partial-document cap notice prepended to markdown"
   },
   "mindmateNoticeCanvasHost": {
     "message": "Document preview may be image-based; extracted text can be partial.",
@@ -264,7 +264,7 @@
     "description": "Download tab subtitle"
   },
   "downloadUnsupportedPage": {
-    "message": "This page is not supported for download. Open a document on SmartEdu, Baidu Wenku, 360doc, Docin, etc., then open this panel again.",
+    "message": "This page is not supported for download. Open a supported document page, then open this panel again.",
     "description": "Hint when current tab has no document extract host"
   },
   "fileCenterSectionLabel": {
@@ -456,7 +456,7 @@
     "description": "Canvas page estimate"
   },
   "docExtractScrollHint": {
-    "message": "Scroll the document preview to load pages first. On Baidu Wenku, do not click “Expand full text” — it opens the paid VIP screen.",
+    "message": "Scroll the document preview to load pages first, then extract. Prefer the content already visible in the reader.",
     "description": "Autoscroll hint when page count unknown"
   },
   "btnSyncSmartEduToken": {
@@ -492,8 +492,8 @@
     "description": "Status after extract download"
   },
   "statusWenkuPreviewLimited": {
-    "message": "Download started — no VIP found, so only the first $1 preview pages were saved (Baidu Wenku free limit is about 8).",
-    "description": "Success notice when Wenku preview is capped"
+    "message": "Download started — saved the first $1 pages currently available in the reader.",
+    "description": "Success notice when partial document is capped"
   },
   "errExtractFailed": {
     "message": "Could not download this document. Refresh the page and try again.",
@@ -532,20 +532,20 @@
     "description": "URL/host mismatch"
   },
   "errExtractWenkuNoPreview": {
-    "message": "Nothing to save yet. On Baidu Wenku, scroll the free preview (do not click Expand full text), then try again.",
-    "description": "Wenku empty canvas"
+    "message": "Nothing to save yet. Scroll the reader to load pages, then try again.",
+    "description": "Canvas reader empty capture"
   },
   "errExtractLoginRequired": {
     "message": "This site requires you to log in first. Sign in on the website, then try Extract again.",
     "description": "HTTP 401/403 on binary fetch"
   },
   "errExtractDownloadBlocked": {
-    "message": "The website refused the download. You may need to log in, pay, or use a VIP account.",
+    "message": "The website refused the download. Sign in on the site if required, then try again.",
     "description": "Binary HTTP error"
   },
   "errExtractCnkiCaptcha": {
-    "message": "CNKI is showing a captcha. Complete the puzzle in the browser tab, then try Extract again.",
-    "description": "CNKI slider captcha visible"
+    "message": "The website is showing a captcha. Complete it in the browser tab, then try Extract again.",
+    "description": "Host captcha visible"
   },
   "extractStagePreparing": {
     "message": "Getting the page ready…",

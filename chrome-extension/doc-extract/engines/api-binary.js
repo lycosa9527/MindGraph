@@ -1,5 +1,5 @@
 /**
- * api-binary engine — SmartEdu via doc-extract/smartedu/; wenku reader URL tier.
+ * api-binary engine — lesson-platform host via doc-extract/smartedu/; direct reader URL tier.
  */
 (function (global) {
   "use strict";
@@ -7,7 +7,7 @@
   const MindGraphDocExtract = global.MindGraphDocExtract || {};
 
   /**
-   * Wenku API tier (wks / BaiduWenkuSpider pattern) — best-effort direct PDF URL.
+   * Direct reader URL tier — best-effort PDF fetch before canvas fallback.
    * @param {string} pageUrl
    * @returns {string | null}
    */

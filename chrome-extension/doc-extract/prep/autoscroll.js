@@ -1,5 +1,5 @@
 /**
- * Lazy-load autoscroll — 437609 ~500 ms scroll steps until bottom.
+ * Lazy-load autoscroll — timed scroll steps until bottom.
  * Injected into the page before extract.
  */
 (function (global) {

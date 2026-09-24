@@ -1,6 +1,6 @@
 /**
- * Page-context CNKI PDF download URL resolver (detail + flowpdf reader).
- * Ported patterns from CNKI PDF RIS Helper (GreasyFork 425133) and cnki-download skill.
+ * Page-context academic PDF download URL resolver (detail + flowpdf reader).
+ * URL-resolution patterns adapted from community PDF-helper scripts.
  */
 (function (global) {
   "use strict";

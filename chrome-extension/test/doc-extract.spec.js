@@ -427,3 +427,41 @@ describe("browser pdf tab", () => {
     expect(shared.isRestrictedTabUrl("file:///C:/local/doc.pdf")).toBe(false);
   });
 });
+
+describe("jpeg-pdf assembler", () => {
+  // Minimal 1×1 JPEG (SOF0 width/height = 1).
+  const TINY_JPEG =
+    "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8U" +
+    "HRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIy" +
+    "MjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAA" +
+    "AAAAAAAAAAn/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAA" +
+    "AAAAAA/9oADAMBAAIQAxAAAAGfAP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAQUCf//EABQRAQAAAAAAAAAAAAAA" +
+    "AAAAAAD/2gAIAQMBAT8Bf//EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQIBAT8Bf//Z";
+
+  it("builds a PDF with JPEG image XObject", async () => {
+    loadModule("doc-extract/engines/jpeg-pdf.js");
+    const blob = await globalThis.MindGraphDocExtract.imagesToPdfBlob(
+      [TINY_JPEG, TINY_JPEG],
+      "test-doc",
+      { pageWidth: 100, pageHeight: 200 },
+    );
+    expect(blob.type).toBe("application/pdf");
+    const buf = new Uint8Array(await blob.arrayBuffer());
+    const head = String.fromCharCode(...buf.slice(0, 8));
+    expect(head.startsWith("%PDF-1.")).toBe(true);
+    const text = new TextDecoder("latin1").decode(buf);
+    expect(text).toContain("/Filter /DCTDecode");
+    expect(text).toContain("/Count 2");
+    expect(text).toContain("(test-doc)");
+  });
+
+  it("rejects non-JPEG data URLs", async () => {
+    loadModule("doc-extract/engines/jpeg-pdf.js");
+    await expect(
+      globalThis.MindGraphDocExtract.imagesToPdfBlob(
+        ["data:image/png;base64,aaa"],
+        "x",
+      ),
+    ).rejects.toThrow("JPEG_DATA_URL_REQUIRED");
+  });
+});

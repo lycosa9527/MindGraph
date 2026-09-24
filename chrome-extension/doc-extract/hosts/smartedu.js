@@ -1,5 +1,5 @@
 /**
- * Thin host wrapper — SmartEdu routes to doc-extract/smartedu/.
+ * Thin host wrapper — api-binary lesson host routes to doc-extract/smartedu/.
  */
 (function (global) {
   "use strict";

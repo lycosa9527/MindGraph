@@ -1,5 +1,5 @@
 /**
- * CNKI engine — PDF download (session cookies) with flowpdf canvas fallback.
+ * Academic PDF engine — session-cookie download with flowpdf canvas fallback.
  */
 (function (global) {
   "use strict";

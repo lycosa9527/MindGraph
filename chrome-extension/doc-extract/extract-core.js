@@ -100,7 +100,7 @@
           options,
         );
       } catch {
-        /* wkretype closed or doc gated — fall back to canvas preview capture */
+        /* Direct reader URL unavailable — fall back to canvas capture */
       }
     }
     if (engine === "canvas-pdf") {

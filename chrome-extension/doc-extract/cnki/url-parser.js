@@ -1,5 +1,5 @@
 /**
- * CNKI URL parsing — flowpdf reader, trial read, kcms detail pages.
+ * Academic-host URL parsing — flowpdf reader, trial read, kcms detail pages.
  */
 (function (global) {
   "use strict";

@@ -16,7 +16,7 @@
   /** @type {string} */
   const SMARTEDU_TOKEN_SYNCED_AT_KEY = "smarteduAccessTokenSyncedAt";
 
-  /** SmartEdu ND_UC_AUTH tokens typically expire within ~7 days. */
+  /** Lesson-platform ND_UC_AUTH tokens typically expire within ~7 days. */
   const SMARTEDU_TOKEN_MAX_AGE_MS = 8 * 24 * 60 * 60 * 1000;
 
   /**

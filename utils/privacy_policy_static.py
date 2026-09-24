@@ -110,13 +110,13 @@ _PLATFORM_SECTIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 _EXTENSION_SECTION: tuple[str, tuple[str, ...]] = (
-    "Appendix: MindGraph browser extension (Chrome / Edge)",
+    "Appendix: MindGraph browser extension",
     (
         "This appendix applies to the MindGraph browser extension and supplements the Privacy Policy above.",
         (
             "The extension stores locally on your device (chrome.storage.local): MindGraph server URL, "
-            "API token (mgat_…), account phone number, UI language, SmartEdu login token (synced only "
-            "when you visit SmartEdu sites while signed in), and optional MindMate session cache."
+            "API token (mgat_…), account phone number, UI language, education-platform session tokens "
+            "(synced only when you visit matching sites while signed in), and optional MindMate session cache."
         ),
         (
             "The extension reads or processes web content only when you take action: generate a mind-map "
@@ -130,19 +130,24 @@ _EXTENSION_SECTION: tuple[str, tuple[str, ...]] = (
             "login cookies."
         ),
         (
-            "The extension may fetch document assets from third-party education or CDN hosts "
-            "(e.g. SmartEdu, CNKI, Baidu Wenku) when you start an extract action. We do not sell or "
-            "share personally identifiable information with unrelated third parties."
+            "The extension may fetch document assets from third-party education or CDN hosts that you "
+            "open and are authorized to access, only when you start an extract action. We do not sell "
+            "or share personally identifiable information with unrelated third parties."
         ),
         (
             "You may revoke API tokens in the MindGraph web app (Account). Uninstalling the extension "
-            "or clearing its data removes locally stored credentials. SmartEdu tokens are cleared "
-            "automatically when they expire (e.g. HTTP 401)."
+            "or clearing its data removes locally stored credentials. Education-platform session tokens "
+            "are cleared automatically when they expire (e.g. HTTP 401)."
         ),
         (
-            "Use https://mg.mindspringedu.com in production and https://test.mindspringedu.com "
-            "for testing. The localhost dev preset uses HTTP and is intended for trusted "
-            "development machines only."
+            "Use https://mg.mindspringedu.com in production. The localhost dev preset uses HTTP and "
+            "is intended for trusted development machines only."
+        ),
+        (
+            "Use of information received through this extension adheres to the Chrome Web Store User "
+            "Data Policy, including the Limited Use requirements, and to Microsoft Edge Add-ons "
+            "personal-information rules: data is used only to provide or improve the single disclosed "
+            "purpose above, not for personalized ads, and is not sold to data brokers."
         ),
     ),
 )

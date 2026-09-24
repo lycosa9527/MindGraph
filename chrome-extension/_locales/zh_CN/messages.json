@@ -4,7 +4,7 @@
     "description": "扩展名称"
   },
   "extDescription": {
-    "message": "MindGraph 思维导图 PNG 与文档下载 — 支持 Chrome 与 Edge。",
+    "message": "通过 MindGraph 账户，将当前页面转为思维导图、对话上下文与文档文件。",
     "description": "商店描述"
   },
   "browserActionTitle": {
@@ -216,8 +216,8 @@
     "description": "MindMate 画布预览无文本"
   },
   "mindmateNoticeWenkuPreview": {
-    "message": "百度文库：非 VIP 时正文可能仅限约 $1 页预览。",
-    "description": "MindMate 文库预览上限说明"
+    "message": "当前阅读器视图可能仅显示约 $1 页正文。",
+    "description": "MindMate 部分文档上限说明"
   },
   "mindmateNoticeCanvasHost": {
     "message": "文档可能为图片预览，提取的正文可能不完整。",
@@ -264,7 +264,7 @@
     "description": "下载标签页副标题"
   },
   "downloadUnsupportedPage": {
-    "message": "当前页面不支持下载。请先打开智慧教育、百度文库、360doc、豆丁等文档页，再打开本面板。",
+    "message": "当前页面不支持下载。请先打开受支持的文档页，再打开本面板。",
     "description": "当前标签页不支持文档提取时的提示"
   },
   "fileCenterSectionLabel": {
@@ -456,7 +456,7 @@
     "description": "画布页数估计"
   },
   "docExtractScrollHint": {
-    "message": "请先滚动文档预览以加载页面。百度文库请勿点「展开全文」，会弹出 VIP 付费页。",
+    "message": "请先滚动文档预览以加载页面，再提取。优先使用阅读器中已显示的内容。",
     "description": "自动滚动提示"
   },
   "btnSyncSmartEduToken": {
@@ -492,8 +492,8 @@
     "description": "提取下载状态"
   },
   "statusWenkuPreviewLimited": {
-    "message": "已开始下载 — 未检测到 VIP，仅保存前 $1 页预览（百度文库免费约 8 页）。",
-    "description": "百度文库预览页数受限时的成功提示"
+    "message": "已开始下载 — 已保存阅读器中当前可用的前 $1 页。",
+    "description": "部分文档页数受限时的成功提示"
   },
   "errExtractFailed": {
     "message": "无法下载此文档。请刷新页面后再点「提取文档」。",
@@ -532,20 +532,20 @@
     "description": "链接不对"
   },
   "errExtractWenkuNoPreview": {
-    "message": "还没有可保存的内容。百度文库请先滚动免费预览（不要点「展开全文」），再试。",
-    "description": "文库无预览"
+    "message": "还没有可保存的内容。请先滚动阅读器加载页面，再试。",
+    "description": "阅读器无预览"
   },
   "errExtractLoginRequired": {
     "message": "需要先在网站上登录。登录后再点「提取文档」。",
     "description": "需要登录"
   },
   "errExtractDownloadBlocked": {
-    "message": "网站拒绝了下载。可能需要登录、付费或 VIP 账号。",
+    "message": "网站拒绝了下载。请先在该站点登录并确认您有权访问该内容，再试。",
     "description": "二进制下载被拒"
   },
   "errExtractCnkiCaptcha": {
-    "message": "知网正在显示验证码。请先在浏览器标签页中完成滑块验证，然后再试提取。",
-    "description": "知网验证码"
+    "message": "网站正在显示验证码。请先在浏览器标签页中完成验证，然后再试提取。",
+    "description": "验证码"
   },
   "extractStagePreparing": {
     "message": "正在准备页面…",

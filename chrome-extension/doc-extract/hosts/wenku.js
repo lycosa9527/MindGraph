@@ -1,5 +1,5 @@
 /**
- * Thin host wrapper — 437609 bdwk prep hooks for wenku.baidu.com.
+ * Thin host wrapper — canvas-pdf host prep hooks.
  */
 (function (global) {
   "use strict";

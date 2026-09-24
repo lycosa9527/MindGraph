@@ -1,5 +1,5 @@
 /**
- * Page-context SmartEdu token reader + passive sync to extension storage.
+ * Page-context lesson auth token reader + passive sync to extension storage.
  * Keep parse logic in sync with doc-extract/smartedu/token.js (parseSmartEduAuthStorageValue).
  */
 (function (global) {

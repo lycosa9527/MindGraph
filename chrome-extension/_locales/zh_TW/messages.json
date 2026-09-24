@@ -4,7 +4,7 @@
     "description": "擴充功能名稱"
   },
   "extDescription": {
-    "message": "MindGraph 心智圖 PNG 與文件下載 — 支援 Chrome 與 Edge。",
+    "message": "透過 MindGraph 帳戶，將目前頁面轉為心智圖、對話脈絡與文件檔案。",
     "description": "商店描述"
   },
   "browserActionTitle": {
@@ -216,8 +216,8 @@
     "description": "MindMate 畫布預覽無文字"
   },
   "mindmateNoticeWenkuPreview": {
-    "message": "百度文庫：非 VIP 時正文可能僅限約 $1 頁預覽。",
-    "description": "MindMate 文庫預覽上限說明"
+    "message": "目前閱讀器檢視可能僅顯示約 $1 頁正文。",
+    "description": "MindMate 部分文件上限說明"
   },
   "mindmateNoticeCanvasHost": {
     "message": "文件可能為圖片預覽，擷取的正文可能不完整。",
@@ -264,7 +264,7 @@
     "description": "下載分頁副標題"
   },
   "downloadUnsupportedPage": {
-    "message": "目前頁面不支援下載。請先開啟智慧教育、百度文庫、360doc、豆丁等文件頁，再開啟本面板。",
+    "message": "目前頁面不支援下載。請先開啟支援的文件頁，再開啟本面板。",
     "description": "目前分頁不支援文件擷取時的提示"
   },
   "fileCenterSectionLabel": {
@@ -456,7 +456,7 @@
     "description": "畫布頁數估計"
   },
   "docExtractScrollHint": {
-    "message": "擷取前請先捲動預覽區以載入免費頁面。百度文庫請勿點「展開全文」— 會跳出 VIP 付費牆。",
+    "message": "擷取前請先捲動預覽區以載入頁面。優先使用閱讀器中已顯示的內容。",
     "description": "自動捲動提示"
   },
   "btnSyncSmartEduToken": {
@@ -492,8 +492,8 @@
     "description": "擷取下載狀態"
   },
   "statusWenkuPreviewLimited": {
-    "message": "已開始下載 — 未偵測到 VIP，僅儲存前 $1 頁預覽（百度文庫免費約 8 頁）。",
-    "description": "百度文庫預覽頁數受限時的成功提示"
+    "message": "已開始下載 — 已儲存閱讀器中目前可用的前 $1 頁。",
+    "description": "部分文件頁數受限時的成功提示"
   },
   "errExtractFailed": {
     "message": "無法下載此文件。請重新整理頁面後再點「擷取文件」。",
@@ -532,20 +532,20 @@
     "description": "連結不對"
   },
   "errExtractWenkuNoPreview": {
-    "message": "還沒有可儲存的內容。百度文庫請先捲動免費預覽（不要點「展開全文」），再試。",
-    "description": "文庫無預覽"
+    "message": "還沒有可儲存的內容。請先捲動閱讀器載入頁面，再試。",
+    "description": "閱讀器無預覽"
   },
   "errExtractLoginRequired": {
     "message": "需要先在網站上登入。登入後再點「擷取文件」。",
     "description": "需要登入"
   },
   "errExtractDownloadBlocked": {
-    "message": "網站拒絕了下載。可能需要登入、付費或 VIP 帳號。",
+    "message": "網站拒絕了下載。請先在該站點登入並確認您有權存取該內容，再試。",
     "description": "二進位下載被拒"
   },
   "errExtractCnkiCaptcha": {
-    "message": "知網正在顯示驗證碼。請先在瀏覽器分頁中完成滑塊驗證，然後再試擷取。",
-    "description": "知網驗證碼"
+    "message": "網站正在顯示驗證碼。請先在瀏覽器分頁中完成驗證，然後再試擷取。",
+    "description": "驗證碼"
   },
   "extractStagePreparing": {
     "message": "正在準備頁面…",

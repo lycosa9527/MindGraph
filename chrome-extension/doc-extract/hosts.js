@@ -1,5 +1,5 @@
 /**
- * Host registry — merged 435884 + 437609 @match + SmartEdu (~25 sites).
+ * Host registry — document-extract hosts (~25 sites).
  * @fileoverview One row per host pattern → engine + prep hooks.
  */
 (function (global) {
@@ -29,19 +29,19 @@
       hosts: ["basic.smartedu.cn", "smartedu.cn"],
       engine: "api-binary",
       prep: [],
-      providerVersion: "tchMaterial-parser",
+      providerVersion: "lesson-api-1",
     },
     {
       id: "wenku",
       label: "百度文库",
       hosts: ["wenku.baidu.com"],
       engine: "canvas-pdf",
-      // No expand-all: clicking 展开全文 opens Baidu VIP paywall; capture loaded preview + scroll only.
+      // Omit expand-all prep: use scroll-loaded content only (expand controls may open subscription UI).
       prep: ["unblock-copy", "hide-chrome", "autoscroll"],
       autoscrollStepMs: 350,
       autoscrollMaxSteps: 18,
       hideSelectors: [".header-wrapper", ".toolbar-wrap", ".reader-tools"],
-      providerVersion: "437609",
+      providerVersion: "canvas-pdf-1",
     },
     {
       id: "doc88",
@@ -50,7 +50,7 @@
       engine: "canvas-pdf",
       prep: ["hide-chrome", "autoscroll"],
       hideSelectors: [".toolbar", ".doc-toolbar", ".page-banner"],
-      providerVersion: "437609",
+      providerVersion: "canvas-pdf-1",
     },
     {
       id: "docin",
@@ -59,7 +59,7 @@
       engine: "canvas-pdf",
       prep: ["hide-chrome", "expand-all", "autoscroll"],
       hideSelectors: [".toolbar", ".docin_header", ".page_bar"],
-      providerVersion: "437609",
+      providerVersion: "canvas-pdf-1",
     },
     {
       id: "taodocs",
@@ -67,7 +67,7 @@
       hosts: ["taodocs.com", "file.taodocs.com"],
       engine: "canvas-pdf",
       prep: ["autoscroll"],
-      providerVersion: "437609",
+      providerVersion: "canvas-pdf-1",
     },
     {
       id: "book118",
@@ -76,7 +76,7 @@
       engine: "canvas-pdf",
       prep: ["hide-chrome", "autoscroll"],
       hideSelectors: [".toolbar", ".header", ".doc-header"],
-      providerVersion: "437609",
+      providerVersion: "canvas-pdf-1",
     },
     {
       id: "cnki",
@@ -93,7 +93,7 @@
         ".operate-btn",
       ],
       readerMaxPages: 120,
-      providerVersion: "CNKI-PDF-RIS-Helper",
+      providerVersion: "academic-pdf-1",
     },
     {
       id: "360doc",
@@ -102,7 +102,7 @@
       engine: "dom-article",
       prep: ["unblock-copy"],
       pageSelectors: ["#articlecontent", ".article-content", "article"],
-      providerVersion: "435884",
+      providerVersion: "dom-article-1",
     },
     {
       id: "deliwenku",
@@ -111,7 +111,7 @@
       engine: "html2canvas-pdf",
       prep: ["hide-chrome", "autoscroll"],
       pageSelectors: [".page-container", ".reader-page", ".page"],
-      providerVersion: "435884",
+      providerVersion: "html2canvas-pdf-1",
     },
     {
       id: "mbalib",
@@ -120,7 +120,7 @@
       engine: "html2canvas-pdf",
       prep: ["autoscroll"],
       pageSelectors: [".doc-content", ".page"],
-      providerVersion: "435884",
+      providerVersion: "html2canvas-pdf-1",
     },
     {
       id: "iask",
@@ -129,7 +129,7 @@
       engine: "html2canvas-pdf",
       prep: ["autoscroll"],
       pageSelectors: [".doc-page", ".page"],
-      providerVersion: "435884",
+      providerVersion: "html2canvas-pdf-1",
     },
     {
       id: "dugen",
@@ -138,7 +138,7 @@
       engine: "html2canvas-pdf",
       prep: ["autoscroll"],
       pageSelectors: [".page", ".doc-page"],
-      providerVersion: "435884",
+      providerVersion: "html2canvas-pdf-1",
     },
     {
       id: "gb688",
@@ -147,7 +147,7 @@
       engine: "html2canvas-pdf",
       prep: ["autoscroll"],
       pageSelectors: [".page", ".viewer-page"],
-      providerVersion: "435884",
+      providerVersion: "html2canvas-pdf-1",
     },
     {
       id: "safewk",
@@ -156,7 +156,7 @@
       engine: "html2canvas-pdf",
       prep: ["autoscroll"],
       pageSelectors: [".page"],
-      providerVersion: "435884",
+      providerVersion: "html2canvas-pdf-1",
     },
     {
       id: "renrendoc",
@@ -165,7 +165,7 @@
       engine: "html2canvas-pdf",
       prep: ["autoscroll"],
       pageSelectors: [".page", ".reader-page"],
-      providerVersion: "435884",
+      providerVersion: "html2canvas-pdf-1",
     },
     {
       id: "yunzhan365",
@@ -174,7 +174,7 @@
       engine: "html2canvas-pdf",
       prep: ["autoscroll"],
       pageSelectors: [".page", ".page-container"],
-      providerVersion: "435884",
+      providerVersion: "html2canvas-pdf-1",
     },
     {
       id: "wenku_so",
@@ -183,7 +183,7 @@
       engine: "html2canvas-pdf",
       prep: ["autoscroll"],
       pageSelectors: [".page"],
-      providerVersion: "435884",
+      providerVersion: "html2canvas-pdf-1",
     },
     {
       id: "wenkub",
@@ -192,7 +192,7 @@
       engine: "html2canvas-pdf",
       prep: ["autoscroll"],
       pageSelectors: [".page"],
-      providerVersion: "435884",
+      providerVersion: "html2canvas-pdf-1",
     },
     {
       id: "jinchutou",
@@ -201,7 +201,7 @@
       engine: "html2canvas-pdf",
       prep: ["autoscroll"],
       pageSelectors: [".page"],
-      providerVersion: "435884",
+      providerVersion: "html2canvas-pdf-1",
     },
     {
       id: "nrsis",
@@ -210,7 +210,7 @@
       engine: "html2canvas-pdf",
       prep: ["autoscroll"],
       pageSelectors: [".page"],
-      providerVersion: "435884",
+      providerVersion: "html2canvas-pdf-1",
     },
     {
       id: "ssap",
@@ -219,7 +219,7 @@
       engine: "html2canvas-pdf",
       prep: ["autoscroll"],
       pageSelectors: [".page"],
-      providerVersion: "435884",
+      providerVersion: "html2canvas-pdf-1",
     },
     {
       id: "jg_class",
@@ -228,7 +228,7 @@
       engine: "html2canvas-pdf",
       prep: ["autoscroll"],
       pageSelectors: [".page"],
-      providerVersion: "435884",
+      providerVersion: "html2canvas-pdf-1",
     },
     {
       id: "sdlib",
@@ -237,7 +237,7 @@
       engine: "html2canvas-pdf",
       prep: ["autoscroll"],
       pageSelectors: [".page"],
-      providerVersion: "435884",
+      providerVersion: "html2canvas-pdf-1",
     },
     {
       id: "collab_docs",
@@ -246,7 +246,7 @@
       engine: "dom-article",
       prep: ["unblock-copy"],
       pageSelectors: ["article", "main", "[role='document']"],
-      providerVersion: "Lift_Copy_Restrictions",
+      providerVersion: "dom-article-1",
     },
     {
       id: "article",
@@ -262,7 +262,7 @@
       engine: "dom-article",
       prep: ["unblock-copy"],
       pageSelectors: ['[itemprop="articleBody"]', '[role="article"]', "article", "main"],
-      providerVersion: "article-extractor",
+      providerVersion: "dom-article-1",
     },
   ];
 

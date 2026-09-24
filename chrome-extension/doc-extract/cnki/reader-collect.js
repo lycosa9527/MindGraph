@@ -1,5 +1,5 @@
 /**
- * CNKI flowpdf / online reader — flip pages and collect canvas renders.
+ * Flowpdf online reader — flip pages and collect canvas renders.
  */
 (function (global) {
   "use strict";

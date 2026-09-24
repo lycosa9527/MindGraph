@@ -1,5 +1,5 @@
 /**
- * SmartEdu lesson PDFs → combined markdown for MindMate.
+ * Lesson PDFs → combined markdown for MindMate.
  * Downloads PDF blobs in memory (no disk), extracts text via pdf.js in tab.
  */
 (function (global) {

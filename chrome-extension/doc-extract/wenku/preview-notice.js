@@ -1,5 +1,5 @@
 /**
- * Baidu Wenku free-preview detection — 8-page cap + VIP paywall hints.
+ * Partial-document detection — page cap and subscription UI hints in page text.
  */
 (function (global) {
   "use strict";
@@ -21,9 +21,9 @@
       return null;
     }
     const text = bodyText || "";
-    const paywallHints =
+    const subscriptionHints =
       /VIP|开通文库|成为VIP|文库VIP|剩余\s*\d+\s*页|付费阅读|下载券|续费会员|开通会员/i.test(text);
-    if (pageCount <= WENKU_PREVIEW_PAGE_CAP && (paywallHints || pageCount === WENKU_PREVIEW_PAGE_CAP)) {
+    if (pageCount <= WENKU_PREVIEW_PAGE_CAP && (subscriptionHints || pageCount === WENKU_PREVIEW_PAGE_CAP)) {
       return {
         key: "statusWenkuPreviewLimited",
         pageCount: String(pageCount),

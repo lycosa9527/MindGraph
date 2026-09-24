@@ -1,5 +1,5 @@
 /**
- * Thin host wrapper — 437609 docin_ele hide list reference.
+ * Thin host wrapper — canvas-pdf host hide-selector reference.
  */
 (function (global) {
   "use strict";

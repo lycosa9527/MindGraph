@@ -1,5 +1,5 @@
 /**
- * Expand-all clicks — 437609 bdwk() 展开全文 / read-all pattern.
+ * Expand-all clicks — legacy read-all button pattern.
  * Injected into the page before extract.
  */
 (function (global) {

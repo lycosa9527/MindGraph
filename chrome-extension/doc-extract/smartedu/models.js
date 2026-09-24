@@ -1,6 +1,6 @@
 /**
- * SmartEdu asset model — mirrors clients/file-reader/file_reader/smartedu/models.py.
- * Keep field names in sync with the file-reader SmartEdu tab.
+ * Lesson asset model — mirrors clients/file-reader/file_reader/smartedu/models.py.
+ * Keep field names in sync with the file-reader lesson-platform tab.
  */
 (function (global) {
   "use strict";

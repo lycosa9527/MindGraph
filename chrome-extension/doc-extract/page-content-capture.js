@@ -1,6 +1,6 @@
 /**
  * Shared page text capture for MindMate, mind map generation, and File Center ingest.
- * File-first hosts (SmartEdu, CNKI, Wenku) download/extract documents; others use DOM text.
+ * File-first hosts download/extract documents; others use DOM text.
  */
 (function (global) {
   "use strict";

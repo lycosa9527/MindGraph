@@ -1,6 +1,6 @@
 /**
- * SmartEdu binary download — mirrors file_reader/smartedu/downloader.py.
- * Keep auth headers and URL suffix rules in sync with the file-reader SmartEdu tab.
+ * Lesson-platform binary download — mirrors file_reader/smartedu/downloader.py.
+ * Keep auth headers and URL suffix rules in sync with the file-reader lesson-platform tab.
  */
 (function (global) {
   "use strict";

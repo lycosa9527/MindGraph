@@ -1,7 +1,7 @@
 /**
- * SmartEdu URL parser — mirrors clients/file-reader/file_reader/smartedu/url_parser.py.
- * Keep URL templates in sync with the file-reader SmartEdu tab.
- * @fileoverview Map SmartEdu page URLs to detail JSON API templates.
+ * Lesson-platform URL parser — mirrors clients/file-reader/file_reader/smartedu/url_parser.py.
+ * Keep URL templates in sync with the file-reader lesson-platform tab.
+ * @fileoverview Map lesson activity URLs to detail JSON API templates.
  */
 (function (global) {
   "use strict";

@@ -1,5 +1,5 @@
 /**
- * Copy-guard removal — Lift_Copy_Restrictions patterns (437609 prep step).
+ * Copy-guard removal — unblock user-select before extract (prep step).
  * Injected into the page before extract.
  */
 (function (global) {

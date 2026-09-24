@@ -10,7 +10,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 EXTENSION_DIR = _PROJECT_ROOT / "chrome-extension"
 DEFAULT_OUTPUT = EXTENSION_DIR / "dist" / "mindgraph-extension.zip"
 
-_SKIP_DIR_NAMES = frozenset({"node_modules", "test", "scripts", "dist"})
+_SKIP_DIR_NAMES = frozenset({"node_modules", "test", "scripts", "dist", "store-assets"})
 _SKIP_FILE_NAMES = frozenset(
     {
         "package.json",
@@ -19,6 +19,7 @@ _SKIP_FILE_NAMES = frozenset(
         "README.md",
         "DEPLOY_VERIFICATION.md",
         "HOST_PERMISSIONS.md",
+        "REFERENCES.md",
     }
 )
 _SKIP_FILE_SUFFIXES = (".zip", ".example", ".env")
@@ -33,8 +34,6 @@ def _should_skip(relative: Path) -> bool:
     if relative.name.startswith("."):
         return True
     if relative.parts[:1] == ("icons",) and relative.name in _SKIP_ICON_NAMES:
-        return True
-    if relative.parts[:1] == ("doc-extract",) and relative.name == "REFERENCES.md":
         return True
     return relative.name.endswith(_SKIP_FILE_SUFFIXES)
 

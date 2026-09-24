@@ -3,8 +3,8 @@
   "minimum_chrome_version": "109",
   "minimum_edge_version": "120",
   "name": "MindGraph — Web to mind map",
-  "version": "0.4.22",
-  "description": "Mind map PNG and document download for MindGraph — Chrome and Edge.",
+  "version": "0.4.23",
+  "description": "Turn the current page into MindGraph mind maps, chat context, and document files via your MindGraph account.",
   "default_locale": "en",
   "permissions": ["activeTab", "scripting", "storage", "downloads", "tabs", "contextMenus", "notifications", "offscreen"],
   "host_permissions": [
@@ -51,12 +51,6 @@
       "matches": ["*://*.smartedu.cn/*", "*://smartedu.cn/*"],
       "js": ["doc-extract/smartedu/token-read-page.js"],
       "run_at": "document_idle"
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": ["vendor/pdfjs/pdf.worker.min.js"],
-      "matches": ["*://*/*"]
     }
   ]
 }

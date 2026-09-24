@@ -1,6 +1,6 @@
 # Host permissions audit
 
-Manifest `host_permissions` (v0.4.18+) are split into **explicit MindGraph servers** plus **document-extract fetch** wildcards.
+Manifest `host_permissions` are split into **explicit MindGraph servers** plus **document-extract fetch** patterns.
 
 ## MindGraph API (Settings dropdown presets)
 
@@ -15,14 +15,15 @@ Manifest `host_permissions` (v0.4.18+) are split into **explicit MindGraph serve
 
 | Pattern | Purpose |
 |---------|---------|
-| `*://*.smartedu.cn/*` | SmartEdu pages + content script |
-| `*://*.cbern.com.cn/*` | SmartEdu CDN metadata/assets |
-| `https://wkretype.bdimg.com/*` | Baidu Wenku direct PDF tier |
-| `https://*/*` | ~25 document hosts in [`doc-extract/hosts.js`](doc-extract/hosts.js) |
+| `*://*.smartedu.cn/*` | Lesson-platform pages + content script |
+| `*://*.cbern.com.cn/*` | Lesson CDN metadata/assets |
+| `https://wkretype.bdimg.com/*` | Direct PDF reader tier |
+| `https://*/*` | Document hosts listed in [`doc-extract/hosts.js`](doc-extract/hosts.js) |
 | `http://*/*` | Rare HTTP document sites |
+| `file:///*` | Local PDF tabs the user opens |
 
 Page capture (`executeScript`) uses **`activeTab`** + **`scripting`** on the tab the user activates — not gated by MindGraph host permissions.
 
 ## Why wildcards remain
 
-Doc-extract engines fetch binary assets from many third-party hosts (see [`doc-extract/REFERENCES.md`](doc-extract/REFERENCES.md)). Listing every host explicitly would be fragile; MindGraph API origins are pinned separately to limit credential exfiltration scope.
+Doc-extract engines fetch binary assets from many third-party hosts when the user starts an extract. Listing every host explicitly would be fragile; MindGraph API origins are pinned separately to limit credential exfiltration scope.

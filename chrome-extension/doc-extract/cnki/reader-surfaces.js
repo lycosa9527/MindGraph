@@ -1,5 +1,5 @@
 /**
- * Shared CNKI reader surface helpers (canvas, img, iframes).
+ * Shared flowpdf reader surface helpers (canvas, img, iframes).
  */
 (function (global) {
   "use strict";

@@ -1,5 +1,5 @@
 /**
- * CNKI flowpdf / online reader — flip pages and collect visible text layers.
+ * Flowpdf online reader — flip pages and collect visible text layers.
  */
 (function (global) {
   "use strict";

@@ -229,7 +229,7 @@ On supported Chinese education and document sites (~26 hosts — see [`doc-extra
 
 **SmartEdu:** Parses `classActivity` URLs, walks lesson `ti_items`, downloads PDFs locally. **Token is automatic** when you are logged in on any `*.smartedu.cn` tab — the extension reads `ND_UC_AUTH` from page storage (same as [tchMaterial-parser](https://github.com/happycola233/tchMaterial-parser)) and saves it to `chrome.storage.local`. A content script syncs on every SmartEdu visit; the Download tab also offers **Sync login from SmartEdu** or manual paste as fallback. Tokens expire (~7 days); log in again or tap Sync.
 
-**Bundled vendors:** [`vendor/jspdf.umd.min.js`](vendor/jspdf.umd.min.js), [`vendor/html2canvas.min.js`](vendor/html2canvas.min.js), [`vendor/jszip.min.js`](vendor/jszip.min.js) (jsPDF 2.5, html2canvas 1.4, JSZip 3.10).
+**Bundled vendors:** [`vendor/html2canvas.min.js`](vendor/html2canvas.min.js), [`vendor/jszip.min.js`](vendor/jszip.min.js), [`vendor/pdfjs/pdf.min.js`](vendor/pdfjs/pdf.min.js) (html2canvas 1.4, JSZip 3.10, pdf.js). JPEG page images are assembled into PDF by first-party [`doc-extract/engines/jpeg-pdf.js`](doc-extract/engines/jpeg-pdf.js) (no jsPDF — avoids Chrome Web Store remotely-hosted-code flags on the full jsPDF UMD).
 
 **Tests:** From repo root (requires Node.js):
 

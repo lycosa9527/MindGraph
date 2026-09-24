@@ -18,6 +18,7 @@ def test_build_privacy_policy_html_has_extension_appendix() -> None:
     assert "browser extension" in html.lower()
     assert "mgat_" in html
     assert "chrome.storage.local" in html
+    assert "Limited Use" in html
     ok, issues = is_google_crawlable_privacy_html(html)
     assert ok, issues
 

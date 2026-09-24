@@ -1,6 +1,6 @@
 /**
- * SmartEdu auth token helpers — mirrors file_reader/smartedu/token_store.py.
- * Keep X-ND-AUTH header shape in sync with the file-reader SmartEdu tab.
+ * Lesson-platform auth token helpers — mirrors file_reader/smartedu/token_store.py.
+ * Keep X-ND-AUTH header shape in sync with the file-reader lesson-platform tab.
  */
 (function (global) {
   "use strict";
@@ -12,7 +12,7 @@
   const SMARTEDU_HOST_SUFFIX = "smartedu.cn";
 
   /**
-   * Parse one ND_UC_AUTH localStorage / sessionStorage entry (tchMaterial-parser shape).
+   * Parse one ND_UC_AUTH localStorage / sessionStorage entry (nested JSON shape).
    * @param {string | null | undefined} raw
    * @returns {string | null}
    */
@@ -51,7 +51,7 @@
   }
 
   /**
-   * Injected into SmartEdu tab — reads ND_UC_AUTH storage keys.
+   * Injected into lesson-platform tab — reads ND_UC_AUTH storage keys.
    * @returns {{ accessToken: string | null, rawKey: string | null }}
    */
   function readSmartEduTokenFromPage() {
@@ -119,7 +119,7 @@
   }
 
   /**
-   * Scan the active tab first, then any open SmartEdu tab.
+   * Scan the active tab first, then any open lesson-platform tab.
    * @param {number | undefined} preferredTabId
    * @returns {Promise<string | null>}
    */
@@ -208,7 +208,7 @@
   }
 
   /**
-   * Append accessToken query suffix (smartedu-dl-go pattern).
+   * Append accessToken query suffix for CDN download URLs.
    * @param {string} url
    * @param {string | null | undefined} accessToken
    * @returns {string}

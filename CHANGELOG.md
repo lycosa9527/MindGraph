@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.97] - 2026-09-24
+
+> **Chrome extension v0.4.23 store-policy hardening: first-party JPEG PDF assembly, no jsPDF, and neutralized store copy.**
+
+### Changed
+
+- **Chrome extension v0.4.23** — JPEG page images are assembled by [`jpeg-pdf.js`](chrome-extension/doc-extract/engines/jpeg-pdf.js) instead of the jsPDF UMD. In-tab PDF text extraction runs with `disableWorker` so the pdf.js worker is not a web-accessible script. Store description, locale strings, the in-app privacy appendix, and the crawled privacy page no longer mention VIP/paywall or cross-browser wording, and state Chrome Web Store Limited Use plus Edge personal-information rules. The store zip excludes `REFERENCES.md` and `store-assets`.
+- **登录页品牌标题** — 标题和副文案后面加一块半透明白底，窄屏收紧内边距，避免字直接压在背景视频上。
+
+### Tests
+
+- [`chrome-extension/test/doc-extract.spec.js`](chrome-extension/test/doc-extract.spec.js), [`tests/test_extension_store_packaging.py`](tests/test_extension_store_packaging.py)
+
 ## [5.180.96] - 2026-09-24
 
 > **Email accounts can open saved MindMate chats on the global Dify server.**

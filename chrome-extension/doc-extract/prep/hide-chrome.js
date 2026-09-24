@@ -1,5 +1,5 @@
 /**
- * Per-host element hide lists — 437609 bdwk_ele, docin_ele, book118_ele.
+ * Per-host element hide lists for canvas-pdf readers.
  * Injected into the page before extract.
  */
 (function (global) {

@@ -24,3 +24,22 @@ def test_build_store_zip_includes_background_worker() -> None:
     data = build_store_zip_bytes()
     with zipfile.ZipFile(io.BytesIO(data)) as archive:
         assert "background.js" in archive.namelist()
+
+
+def test_build_store_zip_excludes_jspdf_and_pdf_worker() -> None:
+    """CWS RHC: do not ship jsPDF UMD or pdf.js worker (local jpeg-pdf + disableWorker)."""
+    data = build_store_zip_bytes()
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        names = set(archive.namelist())
+    assert "vendor/jspdf.umd.min.js" not in names
+    assert "vendor/pdfjs/pdf.worker.min.js" not in names
+    assert "doc-extract/engines/jpeg-pdf.js" in names
+    assert not any(n.endswith("REFERENCES.md") for n in names)
+    assert not any(n.startswith("store-assets/") for n in names)
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        background = archive.read("background.js").decode("utf-8")
+        hosts = archive.read("doc-extract/hosts.js").decode("utf-8")
+    assert "jspdf" not in background.lower()
+    assert "jpeg-pdf.js" in background
+    assert "437609" not in hosts
+    assert "GreasyFork" not in hosts

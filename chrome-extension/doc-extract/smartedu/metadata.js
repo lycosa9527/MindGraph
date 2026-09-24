@@ -1,6 +1,6 @@
 /**
- * SmartEdu metadata fetch + ti_items walk — mirrors file_reader/smartedu/metadata.py.
- * Keep ti_items walk rules in sync with the file-reader SmartEdu tab.
+ * Lesson metadata fetch + ti_items walk — mirrors file_reader/smartedu/metadata.py.
+ * Keep ti_items walk rules in sync with the file-reader lesson-platform tab.
  * @fileoverview Flatten lesson assets from detail JSON.
  */
 (function (global) {
