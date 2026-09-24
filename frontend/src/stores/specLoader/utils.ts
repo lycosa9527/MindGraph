@@ -8,15 +8,15 @@ import {
   DEFAULT_CONTEXT_RADIUS,
   DEFAULT_TOPIC_RADIUS,
 } from '@/composables/diagrams/layoutConfig'
-import type { DiagramType } from '@/types'
-import type { DiagramNode } from '@/types'
+import type { DiagramNode, DiagramType } from '@/types'
+import { nodesInLearningSheetReadingOrder } from '@/utils/learningSheetAnswerOrder'
 
+import { estimateNodeWidth, measureBranchNodeHeight } from './mindMap'
 import {
   CONTEXT_FONT_SIZE,
   computeTopicRadiusForCircleMap,
   measureTextWidth,
 } from './textMeasurement'
-import { estimateNodeWidth, measureBranchNodeHeight } from './mindMap'
 import type { SpecLoaderResult } from './types'
 
 /** Visible text for knocked-out nodes — empty; layout estimates preserve node size. */
@@ -88,9 +88,17 @@ export function applyLearningSheetHiddenNodes(
     return result
   }
 
+  const branchNumbering = spec._mindmap_branch_numbering === true
+
   if (pct <= 0) {
     const hiddenAnswersFromNodes: string[] = []
-    for (const node of result.nodes) {
+    const orderedNodes = nodesInLearningSheetReadingOrder(
+      result.nodes,
+      result.connections,
+      diagramType,
+      branchNumbering
+    )
+    for (const node of orderedNodes) {
       const nodeData = node.data as { hidden?: boolean; hiddenAnswer?: string } | undefined
       const text = String(node.text ?? '').trim()
       const isBlanked = nodeData?.hidden === true || isLearningSheetBlankDisplayText(text)
@@ -129,14 +137,12 @@ export function applyLearningSheetHiddenNodes(
   const countToHide = Math.max(1, Math.floor(shuffled.length * pct))
   const indicesToHide = new Set(shuffled.slice(0, countToHide))
 
-  const hiddenAnswers: string[] = []
   const isMindMap = diagramType === 'mindmap' || diagramType === 'mind_map'
   const nodes = result.nodes.map((node, idx) => {
     if (!indicesToHide.has(idx)) {
       return node
     }
     const originalText = String(node.text || '').trim()
-    hiddenAnswers.push(originalText)
     const nodeData = node.data as { estimatedWidth?: number; estimatedHeight?: number } | undefined
     const layoutEstimates = isMindMap
       ? {
@@ -161,6 +167,21 @@ export function applyLearningSheetHiddenNodes(
       },
     }
   })
+
+  const hiddenAnswers: string[] = []
+  const orderedNodes = nodesInLearningSheetReadingOrder(
+    nodes,
+    result.connections,
+    diagramType,
+    branchNumbering
+  )
+  for (const node of orderedNodes) {
+    const nodeData = node.data as { hidden?: boolean; hiddenAnswer?: string } | undefined
+    const answer = typeof nodeData?.hiddenAnswer === 'string' ? nodeData.hiddenAnswer.trim() : ''
+    if (answer && !hiddenAnswers.includes(answer)) {
+      hiddenAnswers.push(answer)
+    }
+  }
 
   const metadata = { ...result.metadata, hiddenAnswers, isLearningSheet: true }
   return { ...result, nodes, metadata }

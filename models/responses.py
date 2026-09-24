@@ -264,6 +264,41 @@ class DiagramFolderResponse(BaseModel):
     updated_at: datetime = Field(..., description="Last update timestamp")
 
 
+class MindmateFolderItem(BaseModel):
+    """User-owned archive folder for MindMate conversations."""
+
+    id: str = Field(..., description="Folder UUID")
+    name: str = Field(..., description="Folder display name")
+    sort_order: int = Field(0, description="User-defined ordering")
+    conversation_count: int = Field(0, description="Number of conversations in this folder")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+
+
+class MindmateFolderAssignment(BaseModel):
+    """Conversation placed in a MindMate folder."""
+
+    conversation_id: str = Field(..., description="Dify conversation id")
+    folder_id: str = Field(..., description="Folder UUID")
+
+
+class MindmateFolderListResponse(BaseModel):
+    """MindMate folders plus conversation assignments."""
+
+    folders: List[MindmateFolderItem] = Field(default_factory=list)
+    assignments: List[MindmateFolderAssignment] = Field(default_factory=list)
+
+
+class MindmateFolderResponse(BaseModel):
+    """Single MindMate archive folder."""
+
+    id: str = Field(..., description="Folder UUID")
+    name: str = Field(..., description="Folder display name")
+    sort_order: int = Field(0, description="User-defined ordering")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+
+
 class DiagramListResponse(BaseModel):
     """Response model for diagram list with pagination"""
 

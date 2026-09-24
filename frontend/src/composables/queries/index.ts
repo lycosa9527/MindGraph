@@ -4,6 +4,7 @@
 export * from './difyKeys'
 export * from './useDifyQueries'
 export * from './useDifyMutations'
+export * from './useMindmateFolderQueries'
 export * from './ragKeys'
 export * from './useRAGQueries'
 export * from './useRAGMutations'

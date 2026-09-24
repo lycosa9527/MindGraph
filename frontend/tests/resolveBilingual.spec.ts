@@ -1,8 +1,9 @@
 import { createPinia, setActivePinia } from 'pinia'
+import { computed, nextTick } from 'vue'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { loadLocaleMessages } from '@/i18n'
+import { isLocaleLoaded, loadLocaleMessages } from '@/i18n'
 import { resolveBilingual } from '@/i18n/resolveBilingual'
 import { useUIStore } from '@/stores/ui'
 
@@ -58,5 +59,19 @@ describe('resolveBilingual', () => {
     expect(copy.primary).toBeTruthy()
     expect(copy.secondary).toBeTruthy()
     expect(copy.secondary).not.toBe(copy.primary)
+  })
+
+  it('refreshes presenter copy after the lazy locale bundle arrives', async () => {
+    const uiStore = useUIStore()
+    uiStore.setLanguage('en')
+    uiStore.setPresenterUiLocale('ja')
+    expect(isLocaleLoaded('ja')).toBe(false)
+    const copy = computed(() => resolveBilingual('common.save'))
+    uiStore.setBilingualUiEnabled(true)
+    expect(copy.value.secondary).toBe('Save')
+    await loadLocaleMessages('ja')
+    await nextTick()
+    expect(copy.value.secondary).toBe('保存')
+    expect(copy.value.primary).toBe('Save')
   })
 })

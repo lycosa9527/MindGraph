@@ -12,6 +12,10 @@ import {
   isDesktopConceptMapManualViewport,
   isMindMapDiagramType,
 } from '@/utils/conceptMapDesktopViewport'
+import {
+  type DiagramExportFlowNode,
+  measureDiagramExportFlowBounds,
+} from '@/utils/diagramExportContentBounds'
 import { computePanToKeepNodeInSafeFraction } from '@/utils/mindMapEnsureNodeVisible'
 import {
   type DiagramFitChromeInsets,
@@ -24,9 +28,11 @@ type DiagramStore = ReturnType<typeof useDiagramSession>
 type PanelsStore = ReturnType<typeof usePanelsStore>
 
 type FitViewFn = ReturnType<typeof useVueFlow>['fitView']
+type FitBoundsFn = ReturnType<typeof useVueFlow>['fitBounds']
 
 export function useDiagramCanvasFit(options: {
   fitView: FitViewFn
+  fitBounds: FitBoundsFn
   getNodes: () => { length: number }
   setViewport: (
     viewport: { x: number; y: number; zoom: number },
@@ -54,7 +60,7 @@ export function useDiagramCanvasFit(options: {
   fitToFullCanvas: (animate?: boolean) => void
   fitWithPanel: (animate?: boolean) => void
   fitDiagram: (animate?: boolean) => void
-  fitForExport: () => void
+  fitForExport: () => Promise<boolean>
   fitToNodes: (
     nodeIds: string[],
     options?: { animate?: boolean; duration?: number; padding?: number }
@@ -68,6 +74,7 @@ export function useDiagramCanvasFit(options: {
 } {
   const {
     fitView,
+    fitBounds,
     getNodes,
     setViewport,
     getViewport,
@@ -208,9 +215,12 @@ export function useDiagramCanvasFit(options: {
     })
   }
 
-  function fitPaddingFromInsets(
-    insets: DiagramFitChromeInsets
-  ): { top: string; right: string; bottom: string; left: string } {
+  function fitPaddingFromInsets(insets: DiagramFitChromeInsets): {
+    top: string
+    right: string
+    bottom: string
+    left: string
+  } {
     return {
       top: formatFitPaddingPx(insets.top),
       right: formatFitPaddingPx(insets.right),
@@ -304,8 +314,18 @@ export function useDiagramCanvasFit(options: {
     }
   }
 
-  function fitForExport(): void {
-    fitView({
+  function fitForExport(): Promise<boolean> {
+    const container = canvasContainer.value
+    const bounds = container
+      ? measureDiagramExportFlowBounds(container, getNodes() as DiagramExportFlowNode[])
+      : null
+    if (bounds) {
+      return fitBounds(bounds, {
+        padding: FIT_PADDING.EXPORT,
+        duration: 0,
+      })
+    }
+    return fitView({
       padding: FIT_PADDING.EXPORT,
       duration: 0,
     } as Parameters<FitViewFn>[0])

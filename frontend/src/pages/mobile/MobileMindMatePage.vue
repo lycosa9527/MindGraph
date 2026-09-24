@@ -5,16 +5,19 @@
  * Reuses MindmatePanel internals but with a custom mobile header.
  */
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
-import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
+
+import { storeToRefs } from 'pinia'
+
+import { ElDrawer } from 'element-plus'
 
 import { Home, Menu, Plus } from '@lucide/vue'
 
 import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 import ShareExportModal from '@/components/panels/ShareExportModal.vue'
-import ConversationHistory from '@/components/panels/mindmate/ConversationHistory.vue'
 import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
 import MindmateMessages from '@/components/panels/mindmate/MindmateMessages.vue'
+import ChatHistory from '@/components/sidebar/ChatHistory.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useMindMate } from '@/composables/mindmate/useMindMate'
 import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
@@ -26,9 +29,9 @@ import {
   useTeachingDesignExportStore,
   useVoiceStore,
 } from '@/stores'
-import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
-import { copyMindmateAssistantMessage } from '@/utils/copyMindmateMessage'
 import type { MindMateMessage } from '@/stores/mindmateActiveThread'
+import { copyMindmateAssistantMessage } from '@/utils/copyMindmateMessage'
+import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 const router = useRouter()
 const { promptLanguage, t } = useLanguage()
@@ -110,8 +113,6 @@ watch(showWelcome, (welcome) => {
 const { data: conversationsData } = useConversations()
 const { data: pinnedData } = usePinnedConversations()
 
-const historyLoading = computed(() => mindMate.isLoadingConversations.value)
-
 watch(
   [conversationsData, pinnedData],
   ([convs, pinned]) => {
@@ -164,19 +165,14 @@ function startNewConversation() {
   displayTitle.value = displayName.value
 }
 
-async function loadConversationFromHistory(convId: string) {
-  await mindMate.loadConversation(convId)
-  showHistoryDrawer.value = false
-}
-
-async function deleteConversationFromHistory(convId: string) {
-  const success = await mindMate.deleteConversation(convId)
-  if (success) {
-    notify.success(t('notification.conversationDeleted'))
-  } else {
-    notify.error(t('notification.deleteFailed'))
+watch(
+  () => mindMateStore.currentConversationId,
+  (conversationId, previousId) => {
+    if (showHistoryDrawer.value && conversationId && conversationId !== previousId) {
+      showHistoryDrawer.value = false
+    }
   }
-}
+)
 
 async function sendMessage() {
   if ((!inputText.value.trim() && mindMate.pendingFiles.value.length === 0) || isLoading.value)
@@ -231,10 +227,7 @@ function previousUserPrompt(messageId: string): string | undefined {
 }
 
 function exportWordTemplate(message: MindMateMessage) {
-  void teachingDesignExport.exportAssistantMessage(
-    message,
-    previousUserPrompt(message.id)
-  )
+  void teachingDesignExport.exportAssistantMessage(message, previousUserPrompt(message.id))
 }
 
 async function handleFeedback(messageId: string, rating: FeedbackRating) {
@@ -346,14 +339,16 @@ onUnmounted(() => {
     </header>
 
     <!-- Conversation History Drawer -->
-    <ConversationHistory
-      v-model:visible="showHistoryDrawer"
-      :conversations="mindMate.conversations.value"
-      :is-loading="historyLoading"
-      :current-conversation-id="mindMateStore.currentConversationId"
-      @load="loadConversationFromHistory"
-      @delete="deleteConversationFromHistory"
-    />
+    <ElDrawer
+      v-model="showHistoryDrawer"
+      :title="t('mindmate.historyTitle')"
+      direction="ltr"
+      size="80%"
+      append-to-body
+      class="history-drawer"
+    >
+      <ChatHistory />
+    </ElDrawer>
 
     <!-- Welcome mode: single scrollable page (avatar + suggestions + input together) -->
     <div
@@ -506,11 +501,6 @@ onUnmounted(() => {
   gap: 8px !important;
 }
 
-/* History drawer: make delete button visible on mobile (no hover) */
-.mobile-mindmate :deep(.conversation-item .el-button) {
-  opacity: 0.6 !important;
-}
-
 /* Remove bottom padding on input so it touches screen edge */
 .mobile-mindmate :deep(.input-area-fullpage) {
   padding-bottom: 8px !important;
@@ -528,6 +518,31 @@ onUnmounted(() => {
 
 <style>
 /* Global styles for ElDrawer (teleported to body, can't use scoped) */
+.el-drawer.history-drawer .el-drawer__body {
+  display: flex !important;
+  flex-direction: column;
+  overflow: hidden !important;
+  padding: 0 !important;
+  background: #ffffff !important;
+}
+
+.el-drawer.history-drawer .chat-history {
+  flex: 1 1 auto;
+  min-height: 0;
+  border-top: none;
+}
+
+.el-drawer.history-drawer .folder-btn,
+.el-drawer.history-drawer .more-btn,
+.el-drawer.history-drawer .folder-actions {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.el-drawer.history-drawer .folder-count {
+  visibility: hidden;
+}
+
 @media (max-width: 640px) {
   .el-drawer.history-drawer {
     width: 80vw !important;
@@ -560,11 +575,6 @@ onUnmounted(() => {
     padding: 0 !important;
     border-radius: 8px !important;
     margin: 0 !important;
-  }
-
-  .el-drawer.history-drawer .el-drawer__body {
-    padding: 8px 12px !important;
-    background: #ffffff !important;
   }
 
   .el-overlay {

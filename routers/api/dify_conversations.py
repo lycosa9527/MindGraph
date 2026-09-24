@@ -19,6 +19,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.dify import AsyncDifyClient
@@ -27,6 +28,7 @@ from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.pinned_conversations import PinnedConversation
 from services.dify.org_mindmate_client import resolve_mindmate_dify_client_short_lived
+from services.mindmate.conversation_folders import delete_conversation_folder_assignment
 from services.dify.unified_conversations import (
     list_unified_conversations,
     resolve_client_and_dify_user,
@@ -184,6 +186,16 @@ async def delete_conversation(
         )
 
         await client.delete_conversation(conversation_id=conversation_id, user_id=dify_user_id)
+        try:
+            await delete_conversation_folder_assignment(db, current_user.id, conversation_id)
+            await db.commit()
+        except SQLAlchemyError as exc:
+            await db.rollback()
+            logger.error(
+                "Deleted conversation %s but failed to clear folder assignment: %s",
+                conversation_id,
+                exc,
+            )
 
         logger.info("Deleted conversation %s for user %s", conversation_id, current_user.id)
 

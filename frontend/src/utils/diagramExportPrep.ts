@@ -4,7 +4,6 @@
 import { nextTick } from 'vue'
 
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
-
 import { waitForNextPaint } from '@/utils/diagramHtmlToImage'
 
 export async function waitForDiagramExportFonts(promptLanguage: string): Promise<void> {
@@ -14,10 +13,22 @@ export async function waitForDiagramExportFonts(promptLanguage: string): Promise
   }
 }
 
-/** Fit diagram to export framing, then wait for layout/paint (optional fit callback). */
-export async function prepareDiagramCanvasForRasterCapture(fitForExport?: () => void): Promise<void> {
+/**
+ * Load export fonts, fit the painted diagram, then wait for layout/paint.
+ * Fonts must settle before fit: a late font swap grows nodes after the frame
+ * and the viewport clips the new size.
+ */
+export async function prepareDiagramCanvasForRasterCapture(
+  fitForExport?: () => void | Promise<unknown>,
+  options?: { promptLanguage?: string }
+): Promise<void> {
+  if (options?.promptLanguage) {
+    await waitForDiagramExportFonts(options.promptLanguage)
+    await nextTick()
+    await waitForNextPaint()
+  }
   if (fitForExport) {
-    fitForExport()
+    await fitForExport()
   }
   await nextTick()
   await waitForNextPaint()

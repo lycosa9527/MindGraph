@@ -1,6 +1,8 @@
 /**
- * Tight crop around diagram nodes/edges for raster export (PNG/PDF/thumbnails).
- * fitForExport frames content in the viewport, but html-to-image still captures the full wrapper.
+ * Frame and crop raster export (PNG/PDF/thumbnails) around painted diagram ink.
+ * Vue Flow fitView only sees node boxes. Braces, captions, and curved edges
+ * extend past those boxes, so a node-only frame clips them once zoom makes
+ * that overflow larger than the viewport padding.
  */
 
 export type DiagramExportContentBounds = {
@@ -10,14 +12,133 @@ export type DiagramExportContentBounds = {
   height: number
 }
 
-const CONTENT_SELECTORS = [
+export type DiagramExportFlowRect = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export type DiagramExportFlowNode = {
+  hidden?: boolean
+  position?: { x?: number; y?: number }
+  computedPosition?: { x?: number; y?: number }
+  dimensions?: { width?: number; height?: number }
+  measured?: { width?: number; height?: number }
+  width?: number
+  height?: number
+}
+
+/** Stroke and arrow markers are outside SVG getBBox. */
+export const DIAGRAM_EXPORT_FLOW_PAD = 12
+
+const INK_SELECTOR = [
   '.vue-flow__node',
   '.vue-flow__edge-path',
+  '.vue-flow__edge-text',
   '.vue-flow__connection-path',
+  '.brace-overlay path',
+  '.brace-overlay line',
+  '.brace-overlay polygon',
+  '.brace-overlay text',
+  '.tree-map-overlay path',
+  '.tree-map-overlay line',
+  '.tree-map-overlay polygon',
+  '.tree-map-overlay text',
+  '.bridge-overlay path',
+  '.bridge-overlay line',
+  '.bridge-overlay polygon',
+  '.bridge-overlay text',
+  '.mm-summary-overlay path',
+  '.mm-summary-overlay line',
+  '.mm-summary-overlay polygon',
+  '.mm-summary-overlay text',
+  '.mm-summary-overlay rect',
+  '.learning-sheet-overlay path',
   '.learning-sheet-overlay line',
-  '.learning-sheet-overlay rect',
+  '.learning-sheet-overlay polygon',
   '.learning-sheet-overlay text',
-] as const
+  '.learning-sheet-overlay rect',
+].join(', ')
+
+function forEachExportInkElement(container: HTMLElement, visit: (element: Element) => void): void {
+  container.querySelectorAll(INK_SELECTOR).forEach((element) => {
+    visit(element)
+  })
+}
+
+export function nodeToExportFlowRect(node: DiagramExportFlowNode): DiagramExportFlowRect | null {
+  if (node.hidden) return null
+  const x = node.computedPosition?.x ?? node.position?.x
+  const y = node.computedPosition?.y ?? node.position?.y
+  if (x === undefined || y === undefined || !Number.isFinite(x) || !Number.isFinite(y)) {
+    return null
+  }
+  const width = node.dimensions?.width ?? node.measured?.width ?? node.width ?? 0
+  const height = node.dimensions?.height ?? node.measured?.height ?? node.height ?? 0
+  if (!(width > 0) || !(height > 0)) return null
+  return { x, y, width, height }
+}
+
+export function unionFlowRects(
+  rects: readonly DiagramExportFlowRect[],
+  pad = 0
+): DiagramExportFlowRect | null {
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const rect of rects) {
+    if (!(rect.width > 0) && !(rect.height > 0)) continue
+    minX = Math.min(minX, rect.x)
+    minY = Math.min(minY, rect.y)
+    maxX = Math.max(maxX, rect.x + Math.max(0, rect.width))
+    maxY = Math.max(maxY, rect.y + Math.max(0, rect.height))
+  }
+  if (!Number.isFinite(minX) || !Number.isFinite(minY)) return null
+  return {
+    x: minX - pad,
+    y: minY - pad,
+    width: Math.max(1, maxX - minX + pad * 2),
+    height: Math.max(1, maxY - minY + pad * 2),
+  }
+}
+
+function readSvgLocalBounds(element: Element): DiagramExportFlowRect | null {
+  if (!(element instanceof SVGElement)) return null
+  const graphics = element as SVGGraphicsElement
+  if (typeof graphics.getBBox !== 'function') return null
+  let box: DOMRect
+  try {
+    box = graphics.getBBox()
+  } catch (error) {
+    if (error instanceof DOMException) return null
+    throw error
+  }
+  if (box.width <= 0 && box.height <= 0) return null
+  return { x: box.x, y: box.y, width: box.width, height: box.height }
+}
+
+/**
+ * Flow-space bounds of nodes plus overlay/edge geometry.
+ * SVG getBBox ignores the viewport transform, so path data stays in flow units.
+ */
+export function measureDiagramExportFlowBounds(
+  container: HTMLElement,
+  nodes: readonly DiagramExportFlowNode[],
+  pad = DIAGRAM_EXPORT_FLOW_PAD
+): DiagramExportFlowRect | null {
+  const rects: DiagramExportFlowRect[] = []
+  for (const node of nodes) {
+    const rect = nodeToExportFlowRect(node)
+    if (rect) rects.push(rect)
+  }
+  forEachExportInkElement(container, (element) => {
+    const rect = readSvgLocalBounds(element)
+    if (rect) rects.push(rect)
+  })
+  return unionFlowRects(rects, pad)
+}
 
 export function measureDiagramExportContentBounds(
   container: HTMLElement,
@@ -34,17 +155,15 @@ export function measureDiagramExportContentBounds(
   let maxY = -Infinity
   let found = false
 
-  for (const selector of CONTENT_SELECTORS) {
-    container.querySelectorAll(selector).forEach((element) => {
-      const rect = element.getBoundingClientRect()
-      if (rect.width <= 0 && rect.height <= 0) return
-      found = true
-      minX = Math.min(minX, rect.left)
-      minY = Math.min(minY, rect.top)
-      maxX = Math.max(maxX, rect.right)
-      maxY = Math.max(maxY, rect.bottom)
-    })
-  }
+  forEachExportInkElement(container, (element) => {
+    const rect = element.getBoundingClientRect()
+    if (rect.width <= 0 && rect.height <= 0) return
+    found = true
+    minX = Math.min(minX, rect.left)
+    minY = Math.min(minY, rect.top)
+    maxX = Math.max(maxX, rect.right)
+    maxY = Math.max(maxY, rect.bottom)
+  })
 
   if (!found || !Number.isFinite(minX) || !Number.isFinite(minY)) {
     return null
@@ -117,10 +236,5 @@ export function cropExportedDiagramCanvas(
   if (!bounds) {
     return canvas
   }
-  return cropCanvasToContentBounds(
-    canvas,
-    container.clientWidth,
-    container.clientHeight,
-    bounds
-  )
+  return cropCanvasToContentBounds(canvas, container.clientWidth, container.clientHeight, bounds)
 }

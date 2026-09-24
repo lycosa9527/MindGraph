@@ -16,6 +16,7 @@ from .auth import (
 )
 from .diagrams import Diagram
 from .diagram_folders import DiagramFolder
+from .mindmate_folders import MindmateConversationFolder, MindmateFolder
 from .knowledge_space import (
     KnowledgeSpace,
     KnowledgeDocument,
@@ -72,6 +73,8 @@ __all__ = [
     # Diagrams
     "Diagram",
     "DiagramFolder",
+    "MindmateFolder",
+    "MindmateConversationFolder",
     # Knowledge Space
     "KnowledgeSpace",
     "KnowledgeDocument",

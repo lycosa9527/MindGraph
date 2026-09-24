@@ -2,6 +2,7 @@ import { computed } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import type { NodeStyle } from '@/types'
+import { nodesInLearningSheetReadingOrder } from '@/utils/learningSheetAnswerOrder'
 import { mindMapBranchNumberMapFromData } from '@/utils/mindMapBranchNumbering'
 
 import {
@@ -232,7 +233,13 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     if (!data.value?.nodes) return
     const d = data.value as Record<string, unknown>
     const answers: string[] = []
-    for (const node of data.value.nodes) {
+    const ordered = nodesInLearningSheetReadingOrder(
+      data.value.nodes,
+      data.value.connections ?? [],
+      ctx.type.value,
+      data.value._mindmap_branch_numbering === true
+    )
+    for (const node of ordered) {
       if (!isNodeBlankedForLearningSheet(node.id)) continue
       const answer = nodeHiddenAnswer(node)
       if (answer && !answers.includes(answer)) {

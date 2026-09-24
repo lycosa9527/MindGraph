@@ -7,12 +7,9 @@ import { ANIMATION } from '@/config/uiConfig'
 import { useUIStore } from '@/stores'
 import { runWithExportVisualMode } from '@/utils/canvasExportVisualMode'
 import { runLearningSheetRasterCapture } from '@/utils/diagramExportLearningSheet'
-import {
-  prepareDiagramCanvasForRasterCapture,
-  waitForDiagramExportFonts,
-} from '@/utils/diagramExportPrep'
+import { prepareDiagramCanvasForRasterCapture } from '@/utils/diagramExportPrep'
 import { captureDiagramPngData } from '@/utils/diagramExportRasterCapture'
-import { getDiagramCanvasPdfHtmlToImageOptions, waitForNextPaint } from '@/utils/diagramHtmlToImage'
+import { getDiagramCanvasPdfHtmlToImageOptions } from '@/utils/diagramHtmlToImage'
 import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 
 type CanvasViewport = { x: number; y: number; zoom: number }
@@ -20,7 +17,7 @@ type CanvasViewport = { x: number; y: number; zoom: number }
 export interface UseDiagramCanvasExportOptions {
   vueFlowWrapper: Ref<HTMLElement | null>
   diagramStore: ReturnType<typeof useDiagramSession>
-  fitForExport?: () => void
+  fitForExport?: () => void | Promise<unknown>
   getViewport?: () => CanvasViewport
   setViewport?: (viewport: CanvasViewport, opts?: { duration?: number }) => void
 }
@@ -62,8 +59,9 @@ export function useDiagramCanvasExport(options: UseDiagramCanvasExportOptions) {
 
   async function prepareForCommunityExport(): Promise<void> {
     snapshotViewportForCommunityIfNeeded()
-    await prepareDiagramCanvasForRasterCapture(fitForExport)
-    await waitForDiagramExportFonts(uiStore.promptLanguage)
+    await prepareDiagramCanvasForRasterCapture(fitForExport, {
+      promptLanguage: uiStore.promptLanguage,
+    })
   }
 
   function restoreViewportAfterCommunityExport(): void {
@@ -83,9 +81,9 @@ export function useDiagramCanvasExport(options: UseDiagramCanvasExportOptions) {
 
     const saved = getViewport?.() ?? null
     try {
-      await prepareDiagramCanvasForRasterCapture(fitForExport)
-      await waitForDiagramExportFonts(uiStore.promptLanguage)
-      await waitForNextPaint()
+      await prepareDiagramCanvasForRasterCapture(fitForExport, {
+        promptLanguage: uiStore.promptLanguage,
+      })
       let dataUrl: string | null = null
       await runWithExportVisualMode(uiStore, container, exportOptions, async () => {
         const capture = await runLearningSheetRasterCapture(diagramStore, exportOptions, () =>

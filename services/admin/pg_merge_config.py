@@ -125,6 +125,17 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
         "pk_type": "uuid",
         "fk_remaps": {"user_id": "users"},
     },
+    "mindmate_folders": {
+        "order": 2,
+        "pk_type": "uuid",
+        "fk_remaps": {"user_id": "users"},
+    },
+    "mindmate_conversation_folders": {
+        "order": 3,
+        "pk_type": "serial",
+        "dedup_columns": ("user_id", "conversation_id"),
+        "fk_remaps": {"user_id": "users", "folder_id": "mindmate_folders"},
+    },
     "document_batches": {
         "order": 2,
         "pk_type": "serial",

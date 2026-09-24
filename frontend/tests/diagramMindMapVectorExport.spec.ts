@@ -99,8 +99,17 @@ describe('diagramMindMapVectorText', () => {
     expect(spans.some((s) => s.bold && s.text.includes('world'))).toBe(true)
     expect(plain).toContain('Hello')
     expect(plain).toContain('world')
+    expect(plain).toContain('x²')
     expect(plain).not.toContain('$')
     expect(plain).not.toContain('`')
+  })
+
+  it('keeps a unit that follows a number inside inline math', () => {
+    expect(mindMapExportPlainText('36$摄氏度$')).toBe('36摄氏度')
+    expect(mindMapExportPlainText('36 $\\mathrm{摄氏度}$')).toBe('36 摄氏度')
+    expect(mindMapExportPlainText('$36^\\circ\\mathrm{C}$')).toBe('36°C')
+    expect(mindMapExportPlainText('$36^{\\circ}\\mathrm{C}$')).toBe('36°C')
+    expect(mindMapExportPlainText('$\\operatorname{kg}$')).toBe('kg')
   })
 
   it('delegates wrapping to shared mindMapTextWrap', () => {

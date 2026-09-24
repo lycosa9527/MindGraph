@@ -205,6 +205,7 @@ const {
   onNodeDoubleClick,
   onNodeDragStop,
   fitView,
+  fitBounds,
   getNodes: getVueFlowNodes,
   setViewport,
   getViewport,
@@ -453,6 +454,7 @@ const {
   clearFitTimersOnUnmount,
 } = useDiagramCanvasFit({
   fitView,
+  fitBounds,
   getNodes: () => unref(getVueFlowNodes),
   setViewport,
   getViewport,

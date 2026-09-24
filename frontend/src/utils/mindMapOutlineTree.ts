@@ -34,29 +34,21 @@ function nodeY(nodeById: Map<string, DiagramNode>, nodeId: string): number {
   return nodeById.get(nodeId)?.position?.y ?? 0
 }
 
-function siblingsHavePositions(
-  childIds: string[],
-  nodeById: Map<string, DiagramNode>
-): boolean {
+function siblingsHavePositions(childIds: string[], nodeById: Map<string, DiagramNode>): boolean {
   return childIds.every((id) => nodeById.get(id)?.position != null)
 }
 
 /** Top→bottom on canvas (ascending Y). Stable for equal Y via connection order. */
-function sortChildIdsByCanvasY(
-  childIds: string[],
-  nodeById: Map<string, DiagramNode>
-): string[] {
+function sortChildIdsByCanvasY(childIds: string[], nodeById: Map<string, DiagramNode>): string[] {
   if (childIds.length <= 1) return childIds
   if (!siblingsHavePositions(childIds, nodeById)) {
     return sortMindMapChildIds(childIds)
   }
-  return childIds
-    .slice()
-    .sort((a, b) => {
-      const dy = nodeY(nodeById, a) - nodeY(nodeById, b)
-      if (dy !== 0) return dy
-      return childIds.indexOf(a) - childIds.indexOf(b)
-    })
+  return childIds.slice().sort((a, b) => {
+    const dy = nodeY(nodeById, a) - nodeY(nodeById, b)
+    if (dy !== 0) return dy
+    return childIds.indexOf(a) - childIds.indexOf(b)
+  })
 }
 
 function nodeX(nodeById: Map<string, DiagramNode>, nodeId: string): number | null {
@@ -75,18 +67,34 @@ function topicAndChildrenHavePositions(
   }
   return childIds.every((id) => {
     const n = nodeById.get(id)
-    return n?.position != null && typeof n.position.x === 'number' && typeof n.position.y === 'number'
+    return (
+      n?.position != null && typeof n.position.x === 'number' && typeof n.position.y === 'number'
+    )
   })
 }
 
 /**
- * Geometric clockwise: right of topic top→bottom, then left bottom→top.
- * Side is ``x >= topic.x`` → right.
+ * Left column is stored top→bottom. Clockwise numbering continues from the
+ * bottom; otherwise readers meet that column top→bottom as well.
+ */
+function orderLeftColumn(
+  ids: string[],
+  nodeById: Map<string, DiagramNode>,
+  clockwiseLeft: boolean
+): string[] {
+  const topToBottom = sortChildIdsByCanvasY(ids, nodeById)
+  return clockwiseLeft ? topToBottom.slice().reverse() : topToBottom
+}
+
+/**
+ * Geometric columns: right of topic top→bottom, then the left column.
+ * Side is ``x >= topic.x`` → right. ``clockwiseLeft`` reverses the left column.
  */
 function sortTopicLevelChildIdsBySide(
   childIds: string[],
   nodeById: Map<string, DiagramNode>,
-  topicId: string
+  topicId: string,
+  clockwiseLeft: boolean
 ): string[] {
   const tx = nodeX(nodeById, topicId)
   if (tx === null) {
@@ -101,7 +109,7 @@ function sortTopicLevelChildIdsBySide(
   }
   return [
     ...sortChildIdsByCanvasY(right, nodeById),
-    ...sortChildIdsByCanvasY(left, nodeById).slice().reverse(),
+    ...orderLeftColumn(left, nodeById, clockwiseLeft),
   ]
 }
 
@@ -143,9 +151,9 @@ function sortIdsClockwiseFromTopic(
 }
 
 /**
- * Topic children in clockwise reading order: right column top→bottom, then
- * left column bottom→top. Matches layout `mindMapBranchesClockwiseOrder` and
- * presentation deep traversal (connection order can drift under sticky Y).
+ * Topic children: right column top→bottom, then the left column.
+ * ``clockwiseLeft`` (numbering) continues the left column bottom→top.
+ * Otherwise the left column is also top→bottom.
  *
  * Prefer geometric side-of-topic when positions exist; else stamped /
  * positional location; else polar from topic (12 o'clock).
@@ -153,27 +161,31 @@ function sortIdsClockwiseFromTopic(
 function sortTopicLevelChildIds(
   childIds: string[],
   nodeById: Map<string, DiagramNode>,
-  topicId: string
+  topicId: string,
+  clockwiseLeft: boolean
 ): string[] {
   if (topicAndChildrenHavePositions(childIds, nodeById, topicId)) {
-    return sortTopicLevelChildIdsBySide(childIds, nodeById, topicId)
+    return sortTopicLevelChildIdsBySide(childIds, nodeById, topicId, clockwiseLeft)
   }
 
   const nodes = [...nodeById.values()]
-  const right = childIds.filter((id) => mindMapNodeSide(id, { node: nodeById.get(id), nodes }) === 'right')
-  const left = childIds.filter((id) => mindMapNodeSide(id, { node: nodeById.get(id), nodes }) === 'left')
-  const other = childIds.filter((id) => mindMapNodeSide(id, { node: nodeById.get(id), nodes }) == null)
+  const right = childIds.filter(
+    (id) => mindMapNodeSide(id, { node: nodeById.get(id), nodes }) === 'right'
+  )
+  const left = childIds.filter(
+    (id) => mindMapNodeSide(id, { node: nodeById.get(id), nodes }) === 'left'
+  )
+  const other = childIds.filter(
+    (id) => mindMapNodeSide(id, { node: nodeById.get(id), nodes }) == null
+  )
 
   if (right.length === 0 && left.length === 0) {
     return sortIdsClockwiseFromTopic(childIds, nodeById, topicId)
   }
 
-  // Left stack is top→bottom on canvas; reverse for clockwise continuation.
-  const leftClockwise = sortChildIdsByCanvasY(left, nodeById).slice().reverse()
-
   return [
     ...sortChildIdsByCanvasY(right, nodeById),
-    ...leftClockwise,
+    ...orderLeftColumn(left, nodeById, clockwiseLeft),
     ...sortChildIdsByCanvasY(other, nodeById),
   ]
 }
@@ -181,7 +193,8 @@ function sortTopicLevelChildIds(
 function sortOutlineChildIds(
   parentId: string,
   childIds: string[],
-  nodeById: Map<string, DiagramNode>
+  nodeById: Map<string, DiagramNode>,
+  clockwiseLeft: boolean
 ): string[] {
   if (childIds.length <= 1) return childIds
 
@@ -192,7 +205,7 @@ function sortOutlineChildIds(
     parent?.type === 'topic' ||
     parent?.type === 'center'
   if (isTopicParent) {
-    return sortTopicLevelChildIds(childIds, nodeById, parentId)
+    return sortTopicLevelChildIds(childIds, nodeById, parentId, clockwiseLeft)
   }
 
   return sortChildIdsByCanvasY(childIds, nodeById)
@@ -202,24 +215,30 @@ function buildNode(
   nodeId: string,
   nodeById: Map<string, DiagramNode>,
   childrenMap: Map<string, string[]>,
-  depth: number
+  depth: number,
+  clockwiseLeft: boolean
 ): MindMapOutlineNode | null {
   const node = nodeById.get(nodeId)
   if (!node) return null
-  const childIds = sortOutlineChildIds(nodeId, childrenMap.get(nodeId) ?? [], nodeById)
+  const childIds = sortOutlineChildIds(
+    nodeId,
+    childrenMap.get(nodeId) ?? [],
+    nodeById,
+    clockwiseLeft
+  )
   return {
     id: nodeId,
     text: getNodeText(node) || nodeId,
     depth,
     children: childIds
-      .map((childId) => buildNode(childId, nodeById, childrenMap, depth + 1))
+      .map((childId) => buildNode(childId, nodeById, childrenMap, depth + 1, clockwiseLeft))
       .filter((child): child is MindMapOutlineNode => child != null),
   }
 }
 
 /**
  * Stable sibling-order key for numbering cache.
- * Same sort as {@link buildMindMapOutlineTree}; ignores raw x/y float noise.
+ * Same clockwise sort as the default {@link buildMindMapOutlineTree}; ignores raw x/y float noise.
  */
 export function mindMapOutlineOrderFingerprint(
   nodes: DiagramNode[],
@@ -230,7 +249,7 @@ export function mindMapOutlineOrderFingerprint(
   const childrenMap = buildChildrenMap(connections)
   const parts: string[] = []
   for (const [parentId, childIds] of childrenMap) {
-    const ordered = sortOutlineChildIds(parentId, childIds, nodeById)
+    const ordered = sortOutlineChildIds(parentId, childIds, nodeById, true)
     parts.push(`${parentId}:${ordered.join(',')}`)
   }
   parts.sort()
@@ -252,18 +271,24 @@ export function flattenMindMapOutline(
   return rows
 }
 
-/** Build hierarchical outline tree from mind-map nodes and connections. */
+/**
+ * Build hierarchical outline tree from mind-map nodes and connections.
+ * ``clockwiseLeft`` defaults to true so branch numbers stay 1, 2, 3.
+ * Pass false to read both columns top→bottom.
+ */
 export function buildMindMapOutlineTree(
   nodes: DiagramNode[],
-  connections: Connection[]
+  connections: Connection[],
+  options?: { clockwiseLeft?: boolean }
 ): MindMapOutlineNode[] {
   if (!nodes.length) return []
+  const clockwiseLeft = options?.clockwiseLeft !== false
   const nodeById = new Map(nodes.map((node) => [node.id, node]))
   const childrenMap = buildChildrenMap(connections)
   const root =
     nodes.find(isMindMapRootNode) ??
     nodes.find((node) => !connections.some((conn) => conn.target === node.id))
   if (!root) return []
-  const tree = buildNode(root.id, nodeById, childrenMap, 0)
+  const tree = buildNode(root.id, nodeById, childrenMap, 0, clockwiseLeft)
   return tree ? [tree] : []
 }

@@ -6,6 +6,7 @@ Examples (from repo root, conda env mindgraph):
   python -m scripts.zhilian_junan_video.generate --agent
   python -m scripts.zhilian_junan_video.generate --travel
   python -m scripts.zhilian_junan_video.generate --intro
+  python -m scripts.zhilian_junan_video.generate --speech
   python -m scripts.zhilian_junan_video.generate --ids d01,d05
 """
 
@@ -39,9 +40,18 @@ from scripts.zhilian_junan_video.catalog import (
     select_scenes,
     uses_agent,
     uses_intro,
+    uses_speech,
     uses_travel,
 )
-from scripts.zhilian_junan_video.paths import AGENT_DIR, INTRO_DIR, TASKS_PATH, TRAVEL_DIR, WORK_DIR
+from scripts.zhilian_junan_video.paths import (
+    AGENT_DIR,
+    INTRO_DIR,
+    SPEECH_DIR,
+    TASKS_PATH,
+    TRAVEL_DIR,
+    WORK_DIR,
+)
+from scripts.zhilian_junan_video.speech import SPEECH_NEGATIVE
 from scripts.zhilian_junan_video.plates import agent_plate_paths, extract_scene_still
 
 
@@ -93,12 +103,16 @@ def _travel_media(dragon: list[dict[str, str]], scene: PromoScene) -> list[dict[
 def _scene_negative(scene: PromoScene) -> str:
     if uses_intro(scene):
         return INTRO_NEGATIVE
+    if uses_speech(scene):
+        return SPEECH_NEGATIVE
     if uses_agent(scene):
         return AGENT_NEGATIVE
     return NEGATIVE
 
 
 def _publish_folder(scene: PromoScene) -> Path:
+    if uses_speech(scene):
+        return SPEECH_DIR
     if uses_intro(scene):
         return INTRO_DIR
     if uses_travel(scene):
@@ -180,10 +194,17 @@ def main() -> None:
     parser.add_argument("--agent", action="store_true", help="Generate the yellow-dragon plates")
     parser.add_argument("--travel", action="store_true", help="Send the dragon through earlier scenes")
     parser.add_argument("--intro", action="store_true", help="20s spoken 均安起思楼 self-intro")
+    parser.add_argument("--speech", action="store_true", help="8s cinematic plates for 纯演讲稿_v2")
     parser.add_argument("--force", action="store_true", help="Resubmit even if an MP4 exists")
     args = parser.parse_args()
     WORK_DIR.mkdir(parents=True, exist_ok=True)
-    scenes = select_scenes(args.ids, agent=args.agent, travel=args.travel, intro=args.intro)
+    scenes = select_scenes(
+        args.ids,
+        agent=args.agent,
+        travel=args.travel,
+        intro=args.intro,
+        speech=args.speech,
+    )
     tasks = _load_tasks()
     api_key = dashscope_api_key()
     media = _agent_media() if any(uses_agent(scene) for scene in scenes) else None
@@ -201,7 +222,7 @@ def main() -> None:
             continue
         try:
             dest = _download_one(api_key, scene, tasks, args.force)
-            if uses_agent(scene):
+            if uses_agent(scene) or uses_speech(scene):
                 dest = _publish_desktop(dest, scene)
             print(f"ready {dest}", flush=True)
         except (RuntimeError, TimeoutError, ValueError, OSError) as exc:

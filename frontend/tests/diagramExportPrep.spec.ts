@@ -22,6 +22,23 @@ describe('diagramExportPrep', () => {
     expect(order[1]).toBe('after-fit')
   })
 
+  it('waits for an async fit to finish before resolving', async () => {
+    let settled = false
+    const pending = prepareDiagramCanvasForRasterCapture(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(() => {
+            settled = true
+            resolve(undefined)
+          }, 0)
+        })
+    )
+    await Promise.resolve()
+    expect(settled).toBe(false)
+    await pending
+    expect(settled).toBe(true)
+  })
+
   it('waitForDiagramExportFonts resolves without throwing', async () => {
     await expect(waitForDiagramExportFonts('en')).resolves.toBeUndefined()
   })

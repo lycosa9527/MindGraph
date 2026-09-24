@@ -45,6 +45,21 @@ logger = logging.getLogger(__name__)
 USER_CACHE_TTL = _keys.TTL_USER
 
 
+def user_cache_hash_needs_refresh(data: Mapping[Any, Any]) -> bool:
+    """True when a Redis user hash predates fields the deserializer would default.
+
+    Missing keys are not the same as an explicit empty value. A hash written
+    before bilingual UI prefs existed would otherwise deserialize as
+    bilingual off and overwrite the signed-in user's real setting.
+    """
+    normalized = redis_hash_to_str(data)
+    if "bilingual_ui_enabled" not in normalized:
+        return True
+    if normalize_role(normalized.get("role")) != ROLE_STUDENT:
+        return False
+    return "learning_class_id" not in normalized or "must_change_password" not in normalized
+
+
 class UserCache:
     """
     Redis-based user caching service.
@@ -55,14 +70,6 @@ class UserCache:
 
     def __init__(self):
         """Initialize UserCache instance."""
-
-    @staticmethod
-    def _student_cache_needs_refresh(data: dict[bytes | str, bytes | str]) -> bool:
-        """True when a student Redis hash predates Learning Space field serialization."""
-        normalized = redis_hash_to_str(data)
-        if normalize_role(normalized.get("role")) != ROLE_STUDENT:
-            return False
-        return "learning_class_id" not in normalized or "must_change_password" not in normalized
 
     def _serialize_user(self, user: User) -> Dict[str, str]:
         """
@@ -203,7 +210,7 @@ class UserCache:
         if not cached:
             return None
         try:
-            if self._student_cache_needs_refresh(cached):
+            if user_cache_hash_needs_refresh(cached):
                 return None
             return self._deserialize_user(cached)
         except REDIS_ERRORS:
@@ -347,7 +354,7 @@ class UserCache:
             if cached:
                 try:
                     # Legacy student hashes omitted Learning Space fields; refresh once.
-                    if self._student_cache_needs_refresh(cached):
+                    if user_cache_hash_needs_refresh(cached):
                         return await self._load_from_database(user_id=user_id)
                     user = self._deserialize_user(cached)
                     return user

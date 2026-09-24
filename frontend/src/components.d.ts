@@ -169,6 +169,7 @@ declare module 'vue' {
     ChannelSidebarItem: typeof import('./components/sidebar/ChannelSidebarItem.vue')['default']
     ChatComposeBox: typeof import('./components/workshop-chat/ChatComposeBox.vue')['default']
     ChatHistory: typeof import('./components/sidebar/ChatHistory.vue')['default']
+    ChatHistoryConversationRow: typeof import('./components/sidebar/ChatHistoryConversationRow.vue')['default']
     ChatHistoryConversationTitle: typeof import('./components/sidebar/ChatHistoryConversationTitle.vue')['default']
     ChatMessageItem: typeof import('./components/workshop-chat/ChatMessageItem.vue')['default']
     ChatMessageList: typeof import('./components/workshop-chat/ChatMessageList.vue')['default']

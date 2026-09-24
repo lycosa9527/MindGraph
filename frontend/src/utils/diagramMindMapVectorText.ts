@@ -4,17 +4,18 @@
  * Wrap column + line breaks come from ``mindMapTextWrap`` (shared with canvas hosts).
  */
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
+import { estimateTextWidthFallbackPx } from '@/stores/specLoader/textMeasurementFallback'
+import { renderMathText } from '@/utils/maite/mathText'
 import {
   MIND_MAP_TEXT_LINE_HEIGHT,
   MIND_MAP_UNDERLINE_TEXT_LINE_HEIGHT,
+  type MindMapTextWrapRole,
   measureMindMapLabelWidthPx,
   measureMindMapNumberPrefixAdvancePx,
   resolveMindMapBranchBodyMaxWidthPx,
   wrapMindMapExportLabelLines,
   wrapMindMapTextLines,
-  type MindMapTextWrapRole,
 } from '@/utils/mindMapTextWrap'
-import { estimateTextWidthFallbackPx } from '@/stores/specLoader/textMeasurementFallback'
 
 /** Noto first so svg2pdf resolves a registered CJK-capable face before Inter. */
 export const MIND_MAP_VECTOR_FONT_FAMILY = 'Noto Sans SC, Inter, sans-serif'
@@ -45,16 +46,46 @@ export function escapeXml(value: string): string {
     .replace(/'/g, '&apos;')
 }
 
+const MATH_TEXT_COMMAND = /\\(?:text|mathrm|textrm|mathbf|textit|mbox|operatorname)\{([^{}]*)\}/g
+
+/**
+ * Keep readable math instead of deleting it.
+ * Canvas paints `$摄氏度$` / `$\mathrm{摄氏度}$` via KaTeX; replacing the
+ * segment with a space left only the leading number (`36摄氏度` → `36`).
+ */
+function unwrapMathTextCommands(source: string): string {
+  let text = source
+  let previous = ''
+  while (text !== previous) {
+    previous = text
+    text = text.replace(MATH_TEXT_COMMAND, '$1')
+  }
+  return text
+}
+
+/** `^\circ` / `^\degree` become `°` before script conversion leaves a stray caret. */
+function collapseDegreeMarks(text: string): string {
+  return text.replace(/\^\{?\\(?:circ|degree)\}?/g, '°').replace(/\\(?:circ|degree)\b/g, '°')
+}
+
+function plainFromMathSource(source: string): string {
+  return renderMathText(collapseDegreeMarks(unwrapMathTextCommands(source)))
+}
+
+function replaceExportMath(raw: string): string {
+  return raw
+    .replace(/\$\$([\s\S]*?)\$\$/g, (_match, inner: string) => plainFromMathSource(inner))
+    .replace(/\\\[([\s\S]*?)\\\]/g, (_match, inner: string) => plainFromMathSource(inner))
+    .replace(/\\\(([\s\S]*?)\\\)/g, (_match, inner: string) => plainFromMathSource(inner))
+    .replace(/\$([^$\n]+)\$/g, (_match, inner: string) => plainFromMathSource(inner))
+}
+
 /**
  * Strip Markdown / KaTeX to plain text; keep simple **bold** / __bold__ as spans.
  */
 export function parseMindMapExportText(raw: string): MindMapVectorTextSpan[] {
   const withoutCode = raw.replace(/`([^`]+)`/g, '$1')
-  const withoutMath = withoutCode
-    .replace(/\$\$[\s\S]*?\$\$/g, ' ')
-    .replace(/\$[^$\n]+\$/g, ' ')
-    .replace(/\\\[[\s\S]*?\\\]/g, ' ')
-    .replace(/\\\([\s\S]*?\\\)/g, ' ')
+  const withoutMath = replaceExportMath(withoutCode)
   const withoutMdNoise = withoutMath
     .replace(/!\[[^\]]*]\([^)]*\)/g, ' ')
     .replace(/\[([^\]]+)]\([^)]*\)/g, '$1')
@@ -139,14 +170,11 @@ export function mindMapSvgTextBaselineY(options: {
   paddingY: number
   borderWidth: number
 }): number {
-  const { boxY, boxHeight, blockHeight, fontSize, lineHeight, paddingY, borderWidth } =
-    options
+  const { boxY, boxHeight, blockHeight, fontSize, lineHeight, paddingY, borderWidth } = options
   const contentTop = boxY + borderWidth + paddingY
   const contentHeight = boxHeight - borderWidth * 2 - paddingY * 2
   const lineBoxTop =
-    contentHeight > blockHeight
-      ? contentTop + (contentHeight - blockHeight) / 2
-      : contentTop
+    contentHeight > blockHeight ? contentTop + (contentHeight - blockHeight) / 2 : contentTop
   const halfLeading = Math.max(0, (lineHeight - fontSize) / 2)
   return lineBoxTop + halfLeading + fontSize * SVG_TEXT_EM_ASCENT
 }
@@ -346,8 +374,7 @@ function renderMindMapNumberedSvgText(options: {
   const fontAttrs =
     `text-anchor="start" font-family="${escapeXml(MIND_MAP_VECTOR_FONT_FAMILY)}" ` +
     `font-size="${fontSize}"${weightAttr} fill="${escapeXml(textColor)}"`
-  const prefixSvg =
-    `<text x="${groupX}" y="${prefixStartY}" ${fontAttrs}>${escapeXml(numberPrefix)}</text>`
+  const prefixSvg = `<text x="${groupX}" y="${prefixStartY}" ${fontAttrs}>${escapeXml(numberPrefix)}</text>`
   const bodyX = groupX + prefixAdvance
   const tspans = lines.map((line, index) => {
     const dyAttr = index === 0 ? '' : ` dy="${lineHeight}"`

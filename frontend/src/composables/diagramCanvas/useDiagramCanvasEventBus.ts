@@ -12,14 +12,14 @@ import type { Connection, DiagramNode, MindGraphNode } from '@/types'
 import { runWithExportVisualMode } from '@/utils/canvasExportVisualMode'
 import { isManualViewportMode } from '@/utils/conceptMapDesktopViewport'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
-import { waitForNextPaint } from '@/utils/diagramHtmlToImage'
+import { prepareDiagramCanvasForRasterCapture } from '@/utils/diagramExportPrep'
 import { mergeCanvasExportOptions } from '@/utils/mergeCanvasExportOptions'
 
 type FitApi = {
   fitToFullCanvas: (animate?: boolean) => void
   fitWithPanel: (animate?: boolean) => void
   fitDiagram: (animate?: boolean) => void
-  fitForExport: () => void
+  fitForExport: () => void | Promise<unknown>
   fitToNodes: (
     nodeIds: string[],
     options?: { animate?: boolean; duration?: number; padding?: number }
@@ -243,10 +243,10 @@ export function useDiagramCanvasEventBus(): {
 
         async function runFittedVisualExport<T>(run: () => Promise<T>): Promise<T> {
           const savedViewport = getViewport()
-          fitApi.fitForExport()
-          await nextTick()
-          await waitForNextPaint()
           try {
+            await prepareDiagramCanvasForRasterCapture(() => fitApi.fitForExport(), {
+              promptLanguage: uiStore.promptLanguage,
+            })
             return await runWithExportVisualMode(uiStore, getExportContainer(), mergedOptions, run)
           } finally {
             setViewport(savedViewport, { duration: ANIMATION.DURATION_FAST })

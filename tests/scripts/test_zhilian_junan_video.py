@@ -22,10 +22,19 @@ from scripts.zhilian_junan_video.catalog import (
     select_scenes,
     uses_agent,
     uses_intro,
+    uses_speech,
     uses_travel,
 )
 from scripts.zhilian_junan_video.intro import INTRO_SCENES, INTRO_SECONDS
-from scripts.zhilian_junan_video.paths import AGENT_DIR, INTRO_DIR, TRAVEL_DIR, WORK_DIR
+from scripts.zhilian_junan_video.paths import (
+    AGENT_DIR,
+    INTRO_DIR,
+    SPEECH_DIR,
+    SPEECH_SOURCE,
+    TRAVEL_DIR,
+    WORK_DIR,
+)
+from scripts.zhilian_junan_video.speech import SPEECH_NEGATIVE, SPEECH_SCENES, SPEECH_SECONDS
 from scripts.zhilian_junan_video.travel import TRAVEL_SCENES
 from scripts.zhilian_junan_video.plates import write_agent_plate
 
@@ -127,6 +136,55 @@ def test_intro_catalog_is_spoken_qisi_lou() -> None:
     )
     assert body["parameters"]["audio"] is True
     assert body["parameters"]["duration"] == 20
+
+
+def test_speech_catalog_is_thirteen_silent_storyboard_plates() -> None:
+    """Speech B-roll stays 8s, text-free, and maps one-to-one onto the talk."""
+    ids = [scene["id"] for scene in SPEECH_SCENES]
+    assert ids == [
+        "s01",
+        "s02",
+        "s03",
+        "s04",
+        "s05",
+        "s06",
+        "s07",
+        "s08",
+        "s09",
+        "s10",
+        "s11",
+        "s12",
+        "s13",
+    ]
+    assert [scene["id"] for scene in select_scenes(None, speech=True)] == ids
+    opening = scene_by_id("s01-nation-opening")
+    assert uses_speech(opening)
+    assert not uses_agent(opening)
+    assert opening["seconds"] == SPEECH_SECONDS
+    prompt = clip_prompt(opening)
+    assert "无文字" in prompt
+    assert "不要出现" in prompt
+    assert "校园航拍" in prompt
+    assert "红旗" not in prompt
+    assert "garbled text" in SPEECH_NEGATIVE
+    assert SPEECH_DIR.name == "AI分镜-演讲稿"
+    assert SPEECH_SOURCE.name == "纯演讲稿_v2.mp4"
+    assert SPEECH_SCENES[1]["line"].startswith("我是北京师范大学")
+    body = build_video_body(
+        WAN3_VIDEO_PRIME,
+        prompt,
+        negative=SPEECH_NEGATIVE,
+        resolution=RESOLUTION,
+        duration=SPEECH_SECONDS,
+        ratio=RATIO,
+        audio=False,
+        prompt_extend=False,
+        watermark=False,
+    )
+    assert body["model"] == WAN3_VIDEO_PRIME
+    assert "media" not in body["input"]
+    assert body["parameters"]["duration"] == SPEECH_SECONDS
+    assert body["parameters"]["audio"] is False
 
 
 def test_wan3_body_is_silent_t2v() -> None:

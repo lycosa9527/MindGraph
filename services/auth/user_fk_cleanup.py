@@ -30,6 +30,7 @@ from models.domain.library import (
     LibraryDocument,
 )
 from models.domain.mindbot_usage import MindbotUsageEvent
+from models.domain.mindmate_folders import MindmateConversationFolder, MindmateFolder
 from models.domain.pinned_conversations import PinnedConversation
 from models.domain.school_zone import (
     SharedDiagram,
@@ -230,6 +231,8 @@ async def delete_user_fk_dependent_rows(db: AsyncSession, user_id: int) -> None:
     await db.execute(delete(UpdateNotificationDismissed).where(UpdateNotificationDismissed.user_id == user_id))
     await db.execute(delete(FeatureAccessUserGrant).where(FeatureAccessUserGrant.user_id == user_id))
     await db.execute(delete(PinnedConversation).where(PinnedConversation.user_id == user_id))
+    await db.execute(delete(MindmateConversationFolder).where(MindmateConversationFolder.user_id == user_id))
+    await db.execute(delete(MindmateFolder).where(MindmateFolder.user_id == user_id))
     await db.execute(delete(UserUsageStats).where(UserUsageStats.user_id == user_id))
     await db.execute(delete(UserActivityLog).where(UserActivityLog.user_id == user_id))
     await db.execute(delete(UserUsageActivity).where(UserUsageActivity.user_id == user_id))

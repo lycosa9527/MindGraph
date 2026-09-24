@@ -319,7 +319,7 @@ export const useUIStore = defineStore('ui', () => {
       presenterUiLocale.value = defaultPresenterUiLocale(languagePolicyAllowZh.value)
     }
     if (bilingualUiEnabled.value) {
-      void loadLocaleMessages(presenterUiLocale.value)
+      void loadLocaleMessages(presenterUiLocale.value).catch(() => undefined)
     }
 
     if (isValidLanguage(storedLanguage)) {
@@ -454,7 +454,7 @@ export const useUIStore = defineStore('ui', () => {
     bilingualUiEnabled.value = value
     localStorage.setItem(BILINGUAL_UI_KEY, value ? '1' : '0')
     if (value) {
-      void loadLocaleMessages(presenterUiLocale.value)
+      void loadLocaleMessages(presenterUiLocale.value).catch(() => undefined)
     }
   }
 
@@ -466,7 +466,7 @@ export const useUIStore = defineStore('ui', () => {
     presenterUiLocale.value = coerced
     localStorage.setItem(PRESENTER_UI_LOCALE_KEY, coerced)
     if (bilingualUiEnabled.value) {
-      void loadLocaleMessages(coerced)
+      void loadLocaleMessages(coerced).catch(() => undefined)
     }
   }
 

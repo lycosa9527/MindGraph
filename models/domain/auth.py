@@ -32,6 +32,7 @@ from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
 if TYPE_CHECKING:
     from models.domain.diagram_folders import DiagramFolder
     from models.domain.diagrams import Diagram
+    from models.domain.mindmate_folders import MindmateFolder
 
 
 class Base(DeclarativeBase):
@@ -184,6 +185,13 @@ class User(Base):
     )
     diagram_folders: Mapped[list["DiagramFolder"]] = relationship(
         "DiagramFolder",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy="select",
+    )
+    mindmate_folders: Mapped[list["MindmateFolder"]] = relationship(
+        "MindmateFolder",
         back_populates="user",
         cascade="all, delete-orphan",
         passive_deletes=True,

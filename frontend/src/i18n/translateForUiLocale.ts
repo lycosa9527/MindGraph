@@ -1,4 +1,4 @@
-import { i18n, isLocaleLoaded } from '@/i18n'
+import { i18n, isLocaleLoaded, localeCatalogRevision } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
 
 type GlobalTForLocale = (
@@ -21,6 +21,8 @@ export function translateForUiLocale(
   params?: Record<string, unknown>
 ): string {
   const safeParams = params ?? {}
+  // Track lazy catalog registration so bilingual labels refresh after the chunk loads.
+  void localeCatalogRevision.value
   if (!isLocaleLoaded(locale)) {
     return String(globalTForLocale(key, safeParams, { locale: 'en' }))
   }

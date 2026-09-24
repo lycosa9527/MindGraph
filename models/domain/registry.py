@@ -30,6 +30,7 @@ from models.domain.thinking_coin import (
 )
 from models.domain.diagrams import Diagram
 from models.domain.diagram_folders import DiagramFolder
+from models.domain.mindmate_folders import MindmateConversationFolder, MindmateFolder
 from models.domain.diagram_snapshots import DiagramSnapshot
 from models.domain.knowledge_space import (
     KnowledgeSpace,
@@ -171,6 +172,8 @@ __all__ = [
     "ThinkingCoinWallet",
     "Diagram",
     "DiagramFolder",
+    "MindmateFolder",
+    "MindmateConversationFolder",
     "DiagramSnapshot",
     "KnowledgeSpace",
     "KnowledgeDocument",

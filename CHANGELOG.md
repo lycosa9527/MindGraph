@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.98] - 2026-09-24
+
+> **MindMate history folders, export frames that include overlay ink, and bilingual labels that refresh after the locale chunk loads.**
+
+### Added
+
+- **MindMate 对话文件夹** — 侧边栏和手机端历史抽屉可以新建、重命名、删除文件夹，并把对话移入或移回未分类。对话仍在 Dify；文件夹和归属存在本账号。删除文件夹不会删除对话。删除对话时一并清掉文件夹归属。
+
+### Fixed
+
+- **图示导出取景** — PNG/PDF 按节点、连线、括号、桥形、树形和摘要等已绘制墨迹取景，避免括号、题注和弧线在放大后被裁掉。思维导图矢量文字里的度数符号不再留下多余的 `^`。
+- **学习单答案顺序** — 挖空答案按阅读顺序排列，思维导图按画布位置和分支编号，不再跟着节点数组原序。
+- **双语界面** — 懒加载语言包到达后刷新已算过的文案，启动时预加载演示语言。旧的 Redis 用户缓存缺少双语字段时重新读库，避免把已开启的双语设置写回关闭。
+
+### Tests
+
+- [`tests/test_mindmate_folders_api.py`](tests/test_mindmate_folders_api.py), [`frontend/tests/useMindmateArchiveHistory.spec.ts`](frontend/tests/useMindmateArchiveHistory.spec.ts), [`frontend/tests/learningSheetAnswerOrder.spec.ts`](frontend/tests/learningSheetAnswerOrder.spec.ts), [`frontend/tests/diagramExportContentBounds.spec.ts`](frontend/tests/diagramExportContentBounds.spec.ts), [`tests/test_user_cache_hash_refresh.py`](tests/test_user_cache_hash_refresh.py)
+
 ## [5.180.97] - 2026-09-24
 
 > **Chrome extension v0.4.23 store-policy hardening: first-party JPEG PDF assembly, no jsPDF, and neutralized store copy.**

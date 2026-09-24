@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import NotRequired, TypedDict
 
 from scripts.zhilian_junan_video.intro import INTRO_NEGATIVE, INTRO_SCENES, INTRO_SHELL
+from scripts.zhilian_junan_video.speech import SPEECH_NEGATIVE, SPEECH_SCENES, SPEECH_SHELL, SpeechScene
 from scripts.zhilian_junan_video.travel import TRAVEL_SCENES, TRAVEL_SHELL, TravelScene
 
 
@@ -326,8 +327,22 @@ def _intro_plates() -> tuple[PromoScene, ...]:
     return tuple(_promo_from_travel(item) for item in INTRO_SCENES)
 
 
+def _promo_from_speech(item: SpeechScene) -> PromoScene:
+    return {
+        "id": item["id"],
+        "slug": item["slug"],
+        "name": item["name"],
+        "seconds": item["seconds"],
+        "prompt": item["prompt"],
+    }
+
+
+def _speech_plates() -> tuple[PromoScene, ...]:
+    return tuple(_promo_from_speech(item) for item in SPEECH_SCENES)
+
+
 def _all_scenes() -> tuple[PromoScene, ...]:
-    return SCENES + AGENT_SCENES + _travel_plates() + _intro_plates()
+    return SCENES + AGENT_SCENES + _travel_plates() + _intro_plates() + _speech_plates()
 
 
 def uses_travel(scene: PromoScene) -> bool:
@@ -338,6 +353,11 @@ def uses_travel(scene: PromoScene) -> bool:
 def uses_intro(scene: PromoScene) -> bool:
     """Spoken 20s self-intro plates for 均安起思楼."""
     return scene["id"].startswith("i")
+
+
+def uses_speech(scene: PromoScene) -> bool:
+    """Silent 8s cinematic plates timed to 纯演讲稿_v2.mp4."""
+    return scene["id"].startswith("s")
 
 
 def uses_agent(scene: PromoScene) -> bool:
@@ -361,10 +381,13 @@ def select_scenes(
     agent: bool = False,
     travel: bool = False,
     intro: bool = False,
+    speech: bool = False,
 ) -> list[PromoScene]:
-    """Return empty shots, dragon plates, travel plates, intros, or requested ids."""
+    """Return empty shots, dragon plates, travel plates, intros, speech, or requested ids."""
     if raw_ids:
         return [scene_by_id(item.strip()) for item in raw_ids.split(",") if item.strip()]
+    if speech:
+        return list(_speech_plates())
     if intro:
         return list(_intro_plates())
     if travel:
@@ -391,6 +414,8 @@ def clip_prompt(scene: PromoScene) -> str:
     """Scene prompt plus the matching cinematic or dragon-lock suffix."""
     if uses_intro(scene):
         return f"{INTRO_SHELL}{scene['prompt']}不要出现：{INTRO_NEGATIVE}"
+    if uses_speech(scene):
+        return f"{SPEECH_SHELL}{scene['prompt']}不要出现：{SPEECH_NEGATIVE}"
     if uses_travel(scene):
         return f"{TRAVEL_SHELL}{scene['prompt']}不要出现：{AGENT_NEGATIVE}"
     if uses_agent(scene):

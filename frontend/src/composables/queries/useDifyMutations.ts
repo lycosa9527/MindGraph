@@ -183,6 +183,7 @@ export function useDeleteConversation() {
     onSuccess: (_, { convId, difyUser, server, mindbotConfigId }) => {
       // Invalidate conversations list
       queryClient.invalidateQueries({ queryKey: difyKeys.conversations() })
+      queryClient.invalidateQueries({ queryKey: difyKeys.mindmateFolders() })
       // Remove messages cache for this conversation
       queryClient.removeQueries({
         queryKey: difyKeys.messages(convId, difyUser, server, mindbotConfigId ?? undefined),

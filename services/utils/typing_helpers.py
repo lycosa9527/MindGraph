@@ -59,7 +59,7 @@ def redis_hset_mapping(mapping: Dict[str, str]) -> Mapping[Any, Any]:
     return cast(Mapping[Any, Any], mapping)
 
 
-def redis_hash_to_str(data: dict[bytes | str, bytes | str]) -> dict[str, str]:
+def redis_hash_to_str(data: Mapping[Any, Any]) -> dict[str, str]:
     """Normalize Redis hash payloads to ``dict[str, str]``."""
     return {redis_decode_required(k): redis_decode_required(v) for k, v in data.items()}
 

@@ -1,47 +1,57 @@
 <script setup lang="ts">
 /**
- * ChatHistory - Grouped list of recent chat conversations
- * Design: Clean minimalist grouped by time periods
- * Shows a limited batch initially (default 10; higher on fullpage MindMate) with "Show more".
+ * ChatHistory - MindMate conversations grouped into archive folders
+ * and an uncategorized timeline, matching saved-diagram history.
  */
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 
-import {
-  ElDropdown,
-  ElDropdownItem,
-  ElDropdownMenu,
-  ElIcon,
-  ElMessageBox,
-  ElScrollbar,
-} from 'element-plus'
+import { ElIcon, ElMessageBox, ElScrollbar } from 'element-plus'
 
 import { Loading } from '@element-plus/icons-vue'
 
-import { Edit3, Lock, MessageCircle, MoreHorizontal, Pin, Trash2 } from '@lucide/vue'
+import {
+  ChevronDown,
+  ChevronRight,
+  Edit3,
+  Folder,
+  FolderPlus,
+  Lock,
+  MessageCircle,
+  Trash2,
+} from '@lucide/vue'
 
-import { useLanguage } from '@/composables'
+import { useLanguage, useNotifications } from '@/composables'
 import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import {
+  type MindmateFolder,
   useConversations,
+  useCreateMindmateFolder,
   useDeleteConversation,
+  useDeleteMindmateFolder,
+  useMindmateFolders,
+  useMoveMindmateConversation,
   usePinConversation,
   usePinnedConversations,
   useRenameConversation,
+  useRenameMindmateFolder,
 } from '@/composables/queries'
-import { type MindMateConversation, useAuthStore, useMindMateStore } from '@/stores'
+import {
+  MINDMATE_TIME_GROUP_KEYS,
+  useMindmateArchiveHistory,
+} from '@/composables/sidebar/useMindmateArchiveHistory'
+import { type MindMateConversation, useMindMateStore } from '@/stores'
 
-import ChatHistoryConversationTitle from './ChatHistoryConversationTitle.vue'
+import ChatHistoryConversationRow from './ChatHistoryConversationRow.vue'
 
 const MindmateCollabHistory = defineAsyncComponent(() => import('./MindmateCollabHistory.vue'))
+
+type HistoryConversation = MindMateConversation & { folder_id: string | null }
 
 const props = withDefaults(
   defineProps<{
     isBlurred?: boolean
-    /** Tighter horizontal padding for dense sidebar layouts. */
     compact?: boolean
-    /** Items shown before "Show more" (API returns up to 50). */
     initialVisibleLimit?: number
-    /** Live MindMate collab rows pinned above conversation groups. */
     showCollabSessions?: boolean
   }>(),
   {
@@ -52,33 +62,40 @@ const props = withDefaults(
 )
 
 const { t } = useLanguage()
-const _authStore = useAuthStore()
+const notify = useNotifications()
 const mindMateStore = useMindMateStore()
 
-const showAll = ref(false)
 const collabHistoryVisible = ref(false)
 
-// Vue Query queries
 const { data: conversationsData, isLoading: isLoadingConversations } = useConversations()
 const { data: pinnedData } = usePinnedConversations()
+const {
+  data: folderData,
+  isLoading: isLoadingFolders,
+  isError: foldersLoadFailed,
+} = useMindmateFolders()
 
-// Mutations
 const { mutate: deleteConv } = useDeleteConversation()
 const { mutate: renameConv } = useRenameConversation()
 const { mutate: pinConv } = usePinConversation()
+const { mutateAsync: createFolder } = useCreateMindmateFolder()
+const { mutateAsync: renameFolder } = useRenameMindmateFolder()
+const { mutateAsync: deleteFolder } = useDeleteMindmateFolder()
+const { mutateAsync: moveConversation } = useMoveMindmateConversation()
 
-// Computed - sync conversations from query data
-const conversations = computed(() => {
+const folders = computed(() => folderData.value?.folders ?? [])
+
+const conversations = computed((): HistoryConversation[] => {
   if (!conversationsData.value) return []
   const pinnedIds = pinnedData.value?.ids ?? new Set()
-
-  // Mark conversations as pinned and sort
+  const folderByConversation = new Map(
+    (folderData.value?.assignments ?? []).map((row) => [row.conversation_id, row.folder_id])
+  )
   const convs = conversationsData.value.map((conv) => ({
     ...conv,
     is_pinned: pinnedIds.has(conv.id),
+    folder_id: folderByConversation.get(conv.id) ?? null,
   }))
-
-  // Sort: pinned first, then by updated_at descending
   return convs.sort((a, b) => {
     if (a.is_pinned && !b.is_pinned) return -1
     if (!a.is_pinned && b.is_pinned) return 1
@@ -86,10 +103,9 @@ const conversations = computed(() => {
   })
 })
 
-const isLoading = computed(() => isLoadingConversations.value)
+const isLoading = computed(() => isLoadingConversations.value || isLoadingFolders.value)
 const currentConversationId = computed(() => mindMateStore.currentConversationId)
 
-// Sync conversations to store for backward compatibility
 watch(
   [conversationsData, pinnedData],
   ([convs, pinned]) => {
@@ -100,63 +116,21 @@ watch(
   { immediate: true }
 )
 
-// Group conversations by time period
-interface GroupedConversations {
-  pinned: MindMateConversation[]
-  today: MindMateConversation[]
-  yesterday: MindMateConversation[]
-  week: MindMateConversation[]
-  month: MindMateConversation[]
-}
+const {
+  showAllUncategorized,
+  groupedUncategorized,
+  hasMoreUncategorized,
+  remainingUncategorizedCount,
+  uncategorizedConversations,
+  isFolderCollapsed,
+  toggleFolderCollapsed,
+  conversationsForFolder,
+} = useMindmateArchiveHistory(conversations, () => props.initialVisibleLimit)
 
-const groupedConversations = computed((): GroupedConversations => {
-  const groups: GroupedConversations = {
-    pinned: [],
-    today: [],
-    yesterday: [],
-    week: [],
-    month: [],
-  }
+const folderCountLabel = computed(() =>
+  t('sidebar.chatHistory.folderCount', { count: folders.value.length })
+)
 
-  const now = new Date()
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-  const yesterdayStart = todayStart - 24 * 60 * 60 * 1000
-  const weekStart = todayStart - 7 * 24 * 60 * 60 * 1000
-
-  const limit = props.initialVisibleLimit
-  const items = showAll.value ? conversations.value : conversations.value.slice(0, limit)
-
-  items.forEach((conv) => {
-    // Pinned items go to pinned group regardless of time
-    if (conv.is_pinned) {
-      groups.pinned.push(conv)
-      return
-    }
-
-    const convTime = conv.updated_at * 1000
-
-    if (convTime >= todayStart) {
-      groups.today.push(conv)
-    } else if (convTime >= yesterdayStart) {
-      groups.yesterday.push(conv)
-    } else if (convTime >= weekStart) {
-      groups.week.push(conv)
-    } else {
-      // Everything older goes to Past Month
-      groups.month.push(conv)
-    }
-  })
-
-  return groups
-})
-
-const hasMore = computed(() => {
-  const limit = props.initialVisibleLimit
-  return conversations.value.length > limit && !showAll.value
-})
-const remainingCount = computed(() => conversations.value.length - props.initialVisibleLimit)
-
-// Group labels
 const groupLabels = computed(() => ({
   pinned: t('sidebar.history.pinned'),
   today: t('common.date.today'),
@@ -165,18 +139,107 @@ const groupLabels = computed(() => ({
   month: t('common.date.pastMonth'),
 }))
 
-// No need to fetch - Vue Query handles it automatically via enabled flag
-
-// Handle conversation click
 function handleConversationClick(convId: string, name: string): void {
   mindMateStore.setCurrentConversation(convId, name)
 }
 
-// Handle rename conversation
-async function handleRenameConversation(convId: string): Promise<void> {
-  const conv = conversations.value.find((c) => c.id === convId)
-  const currentName = conv?.name || ''
+async function promptFolderName(
+  titleKey: string,
+  promptKey: string,
+  initialValue = ''
+): Promise<string | null> {
+  try {
+    const result = await ElMessageBox.prompt(t(promptKey), t(titleKey), {
+      confirmButtonText: t('common.ok'),
+      cancelButtonText: t('common.cancel'),
+      inputValue: initialValue,
+      inputPattern: /\S+/,
+      inputErrorMessage: t('sidebar.diagramHistory.nameRequired'),
+    })
+    const value =
+      typeof result === 'object' && result !== null && 'value' in result
+        ? (result as { value: string }).value
+        : undefined
+    return value?.trim() || null
+  } catch {
+    return null
+  }
+}
 
+async function handleCreateFolder(): Promise<MindmateFolder | null> {
+  const name = await promptFolderName(
+    'sidebar.chatHistory.folderCreateTitle',
+    'sidebar.chatHistory.folderCreatePrompt'
+  )
+  if (!name) return null
+  try {
+    const created = await createFolder(name)
+    notify.success(t('sidebar.chatHistory.folderCreated'))
+    return created
+  } catch {
+    notify.error(t('sidebar.chatHistory.folderCreateFailed'))
+    return null
+  }
+}
+
+async function handleRenameFolder(folderId: string, currentName: string): Promise<void> {
+  const name = await promptFolderName(
+    'sidebar.chatHistory.folderRenameTitle',
+    'sidebar.chatHistory.folderRenamePrompt',
+    currentName
+  )
+  if (!name || name === currentName) return
+  try {
+    await renameFolder({ folderId, name })
+    notify.success(t('sidebar.chatHistory.folderRenamed'))
+  } catch {
+    notify.error(t('sidebar.chatHistory.folderRenameFailed'))
+  }
+}
+
+async function handleDeleteFolder(folderId: string): Promise<void> {
+  try {
+    await swissGlassConfirm(
+      t('sidebar.chatHistory.folderDeleteConfirm'),
+      t('sidebar.chatHistory.folderDeleteTitle'),
+      {
+        confirmButtonText: t('common.ok'),
+        cancelButtonText: t('common.cancel'),
+        type: 'warning',
+      }
+    )
+  } catch {
+    return
+  }
+  try {
+    await deleteFolder(folderId)
+    notify.success(t('sidebar.chatHistory.folderDeleted'))
+  } catch {
+    notify.error(t('sidebar.chatHistory.folderDeleteFailed'))
+  }
+}
+
+async function handleMoveConversation(convId: string, folderId: string | null): Promise<void> {
+  try {
+    await moveConversation({ conversationId: convId, folderId })
+    notify.success(
+      folderId ? t('sidebar.chatHistory.movedToFolder') : t('sidebar.chatHistory.removedFromFolder')
+    )
+  } catch {
+    notify.error(t('sidebar.chatHistory.moveFailed'))
+  }
+}
+
+async function handleCreateFolderAndMove(convId: string): Promise<void> {
+  const created = await handleCreateFolder()
+  if (created) {
+    await handleMoveConversation(convId, created.id)
+  }
+}
+
+async function handleRenameConversation(convId: string): Promise<void> {
+  const conv = conversations.value.find((item) => item.id === convId)
+  const currentName = conv?.name || ''
   try {
     const result = await ElMessageBox.prompt(
       t('sidebar.chatHistory.renamePrompt'),
@@ -189,15 +252,12 @@ async function handleRenameConversation(convId: string): Promise<void> {
         inputErrorMessage: t('sidebar.diagramHistory.nameRequired'),
       }
     )
-
     const value =
       typeof result === 'object' && result !== null && 'value' in result
         ? (result as { value: string }).value
         : undefined
     if (value && value.trim() !== currentName) {
-      // Update store optimistically
       mindMateStore.renameConversation(convId, value.trim())
-      // Call mutation to update server and invalidate cache
       renameConv({
         convId,
         name: value.trim(),
@@ -207,11 +267,10 @@ async function handleRenameConversation(convId: string): Promise<void> {
       })
     }
   } catch {
-    // User cancelled
+    // cancelled
   }
 }
 
-// Handle delete conversation
 async function handleDeleteConversation(convId: string): Promise<void> {
   try {
     await swissGlassConfirm(
@@ -223,10 +282,7 @@ async function handleDeleteConversation(convId: string): Promise<void> {
         type: 'warning',
       }
     )
-
-    // Update store optimistically
     mindMateStore.deleteConversation(convId)
-    // Call mutation to update server and invalidate cache
     const conv = conversations.value.find((item) => item.id === convId)
     deleteConv({
       convId,
@@ -235,18 +291,12 @@ async function handleDeleteConversation(convId: string): Promise<void> {
       mindbotConfigId: conv?.mindbot_config_id,
     })
   } catch {
-    // User cancelled
+    // cancelled
   }
 }
 
-// Handle pin/unpin conversation
-async function handlePinConversation(convId: string): Promise<void> {
+function handlePinConversation(convId: string): void {
   pinConv({ convId, ...mindMateStore.getConversationRoute(convId) })
-}
-
-// Toggle show all
-function toggleShowAll(): void {
-  showAll.value = !showAll.value
 }
 </script>
 
@@ -255,14 +305,38 @@ function toggleShowAll(): void {
     class="chat-history flex flex-1 min-h-0 flex-col border-t border-stone-200 relative overflow-hidden"
     :class="{ 'chat-history--compact': props.compact }"
   >
-    <!-- Header -->
-    <div :class="props.compact ? 'px-3 py-2.5' : 'px-4 py-3'">
-      <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
-        {{ t('sidebar.chatHistory.title') }}
+    <div
+      class="history-header"
+      :class="props.compact ? 'px-3 py-2.5' : 'px-4 py-3'"
+    >
+      <div class="min-w-0">
+        <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
+          {{ t('sidebar.chatHistory.title') }}
+        </div>
+        <div
+          v-if="!isBlurred && folders.length > 0"
+          class="text-[11px] text-stone-400 mt-0.5 truncate"
+        >
+          {{ folderCountLabel }}
+        </div>
       </div>
+      <button
+        v-if="!isBlurred"
+        class="new-folder-btn"
+        type="button"
+        :title="t('sidebar.chatHistory.folderCreateTitle')"
+        @click="handleCreateFolder"
+      >
+        <FolderPlus class="w-3.5 h-3.5 shrink-0" />
+        <span
+          v-if="!props.compact"
+          class="new-folder-btn__label"
+        >
+          {{ t('sidebar.chatHistory.folderCreateTitle') }}
+        </span>
+      </button>
     </div>
 
-    <!-- Scrollable conversation list -->
     <ElScrollbar
       :class="['flex-1 min-h-0', props.compact ? 'chat-history-scroll--compact' : 'px-4 pb-4']"
     >
@@ -273,7 +347,13 @@ function toggleShowAll(): void {
           @visible-change="collabHistoryVisible = $event"
         />
 
-        <!-- Loading State -->
+        <div
+          v-if="foldersLoadFailed"
+          class="archive-warning"
+        >
+          {{ t('sidebar.chatHistory.foldersLoadFailed') }}
+        </div>
+
         <div
           v-if="isLoading"
           class="flex items-center justify-center py-8"
@@ -283,9 +363,8 @@ function toggleShowAll(): void {
           </ElIcon>
         </div>
 
-        <!-- Empty State -->
         <div
-          v-else-if="conversations.length === 0 && !collabHistoryVisible"
+          v-else-if="conversations.length === 0 && folders.length === 0 && !collabHistoryVisible"
           class="text-center py-8"
         >
           <MessageCircle class="w-8 h-8 mx-auto mb-2 text-stone-300" />
@@ -294,283 +373,142 @@ function toggleShowAll(): void {
           </p>
         </div>
 
-        <!-- Grouped Conversation List -->
-        <template v-else>
-          <!-- Pinned -->
-          <div
-            v-if="groupedConversations.pinned.length > 0"
-            class="group-section"
+        <template v-else-if="!isLoading">
+          <section
+            v-if="folders.length > 0"
+            class="archive-section"
           >
-            <div class="group-label">{{ groupLabels.pinned }}</div>
+            <div class="section-heading">
+              {{ t('sidebar.chatHistory.foldersSection') }}
+            </div>
             <div
-              v-for="conv in groupedConversations.pinned"
-              :key="conv.id"
-              class="conversation-item"
-              :class="{ active: currentConversationId === conv.id }"
-              @click="handleConversationClick(conv.id, conv.name)"
+              v-for="folder in folders"
+              :key="folder.id"
+              class="group-section folder-section"
             >
-              <ChatHistoryConversationTitle
-                :conv="conv"
-                pinned
-              />
-              <ElDropdown
-                trigger="click"
-                class="more-dropdown"
-                @click.stop
+              <div
+                class="folder-header"
+                @click="toggleFolderCollapsed(folder.id)"
               >
-                <button
-                  class="more-btn"
+                <component
+                  :is="isFolderCollapsed(folder.id) ? ChevronRight : ChevronDown"
+                  class="w-3.5 h-3.5 shrink-0 text-stone-400"
+                />
+                <Folder class="w-3.5 h-3.5 shrink-0 text-amber-600" />
+                <span class="folder-name">{{ folder.name }}</span>
+                <span class="folder-count">{{ conversationsForFolder(folder.id).length }}</span>
+                <div
+                  class="folder-actions"
                   @click.stop
                 >
-                  <MoreHorizontal class="w-4 h-4" />
-                </button>
-                <template #dropdown>
-                  <ElDropdownMenu>
-                    <ElDropdownItem @click="handlePinConversation(conv.id)">
-                      <Pin class="w-4 h-4 mr-2 text-amber-500 rotate-45" />
-                      {{ t('sidebar.actions.unpin') }}
-                    </ElDropdownItem>
-                    <ElDropdownItem @click="handleRenameConversation(conv.id)">
-                      <Edit3 class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.rename') }}
-                    </ElDropdownItem>
-                    <ElDropdownItem
-                      divided
-                      @click="handleDeleteConversation(conv.id)"
-                    >
-                      <span class="delete-option">
-                        <Trash2 class="w-4 h-4 mr-2" />
-                        {{ t('sidebar.actions.delete') }}
-                      </span>
-                    </ElDropdownItem>
-                  </ElDropdownMenu>
-                </template>
-              </ElDropdown>
-            </div>
-          </div>
-
-          <!-- Today -->
-          <div
-            v-if="groupedConversations.today.length > 0"
-            class="group-section"
-          >
-            <div class="group-label">{{ groupLabels.today }}</div>
-            <div
-              v-for="conv in groupedConversations.today"
-              :key="conv.id"
-              class="conversation-item"
-              :class="{ active: currentConversationId === conv.id }"
-              @click="handleConversationClick(conv.id, conv.name)"
-            >
-              <ChatHistoryConversationTitle :conv="conv" />
-              <ElDropdown
-                trigger="click"
-                class="more-dropdown"
-                @click.stop
+                  <button
+                    class="folder-action-btn"
+                    type="button"
+                    :title="t('sidebar.actions.rename')"
+                    @click="handleRenameFolder(folder.id, folder.name)"
+                  >
+                    <Edit3 class="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    class="folder-action-btn folder-action-btn--danger"
+                    type="button"
+                    :title="t('sidebar.actions.delete')"
+                    @click="handleDeleteFolder(folder.id)"
+                  >
+                    <Trash2 class="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+              <div
+                v-if="!isFolderCollapsed(folder.id)"
+                class="folder-items"
               >
-                <button
-                  class="more-btn"
-                  @click.stop
+                <ChatHistoryConversationRow
+                  v-for="conv in conversationsForFolder(folder.id)"
+                  :key="conv.id"
+                  :conv="conv"
+                  :folders="folders"
+                  :is-active="currentConversationId === conv.id"
+                  :pinned="!!conv.is_pinned"
+                  @select="handleConversationClick(conv.id, conv.name)"
+                  @pin="handlePinConversation(conv.id)"
+                  @rename="handleRenameConversation(conv.id)"
+                  @delete="handleDeleteConversation(conv.id)"
+                  @move="handleMoveConversation(conv.id, $event)"
+                  @create-folder="handleCreateFolderAndMove(conv.id)"
+                />
+                <p
+                  v-if="conversationsForFolder(folder.id).length === 0"
+                  class="folder-empty"
                 >
-                  <MoreHorizontal class="w-4 h-4" />
-                </button>
-                <template #dropdown>
-                  <ElDropdownMenu>
-                    <ElDropdownItem @click="handlePinConversation(conv.id)">
-                      <Pin class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.pinToTop') }}
-                    </ElDropdownItem>
-                    <ElDropdownItem @click="handleRenameConversation(conv.id)">
-                      <Edit3 class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.rename') }}
-                    </ElDropdownItem>
-                    <ElDropdownItem
-                      divided
-                      @click="handleDeleteConversation(conv.id)"
-                    >
-                      <span class="delete-option">
-                        <Trash2 class="w-4 h-4 mr-2" />
-                        {{ t('sidebar.actions.delete') }}
-                      </span>
-                    </ElDropdownItem>
-                  </ElDropdownMenu>
-                </template>
-              </ElDropdown>
+                  {{ t('sidebar.chatHistory.folderEmpty') }}
+                </p>
+              </div>
             </div>
-          </div>
+          </section>
 
-          <!-- Yesterday -->
-          <div
-            v-if="groupedConversations.yesterday.length > 0"
-            class="group-section"
+          <section
+            v-if="uncategorizedConversations.length > 0 || folders.length > 0"
+            class="archive-section"
           >
-            <div class="group-label">{{ groupLabels.yesterday }}</div>
-            <div
-              v-for="conv in groupedConversations.yesterday"
-              :key="conv.id"
-              class="conversation-item"
-              :class="{ active: currentConversationId === conv.id }"
-              @click="handleConversationClick(conv.id, conv.name)"
+            <div class="section-heading">
+              {{ t('sidebar.chatHistory.uncategorizedSection') }}
+            </div>
+
+            <template
+              v-for="groupKey in MINDMATE_TIME_GROUP_KEYS"
+              :key="groupKey"
             >
-              <ChatHistoryConversationTitle :conv="conv" />
-              <ElDropdown
-                trigger="click"
-                class="more-dropdown"
-                @click.stop
+              <div
+                v-if="groupedUncategorized[groupKey].length > 0"
+                class="group-section"
               >
-                <button
-                  class="more-btn"
-                  @click.stop
-                >
-                  <MoreHorizontal class="w-4 h-4" />
-                </button>
-                <template #dropdown>
-                  <ElDropdownMenu>
-                    <ElDropdownItem @click="handlePinConversation(conv.id)">
-                      <Pin class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.pinToTop') }}
-                    </ElDropdownItem>
-                    <ElDropdownItem @click="handleRenameConversation(conv.id)">
-                      <Edit3 class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.rename') }}
-                    </ElDropdownItem>
-                    <ElDropdownItem
-                      divided
-                      @click="handleDeleteConversation(conv.id)"
-                    >
-                      <span class="delete-option">
-                        <Trash2 class="w-4 h-4 mr-2" />
-                        {{ t('sidebar.actions.delete') }}
-                      </span>
-                    </ElDropdownItem>
-                  </ElDropdownMenu>
-                </template>
-              </ElDropdown>
-            </div>
-          </div>
+                <div class="group-label">{{ groupLabels[groupKey] }}</div>
+                <ChatHistoryConversationRow
+                  v-for="conv in groupedUncategorized[groupKey]"
+                  :key="conv.id"
+                  :conv="conv"
+                  :folders="folders"
+                  :is-active="currentConversationId === conv.id"
+                  :pinned="!!conv.is_pinned"
+                  @select="handleConversationClick(conv.id, conv.name)"
+                  @pin="handlePinConversation(conv.id)"
+                  @rename="handleRenameConversation(conv.id)"
+                  @delete="handleDeleteConversation(conv.id)"
+                  @move="handleMoveConversation(conv.id, $event)"
+                  @create-folder="handleCreateFolderAndMove(conv.id)"
+                />
+              </div>
+            </template>
 
-          <!-- Past Week -->
-          <div
-            v-if="groupedConversations.week.length > 0"
-            class="group-section"
-          >
-            <div class="group-label">{{ groupLabels.week }}</div>
-            <div
-              v-for="conv in groupedConversations.week"
-              :key="conv.id"
-              class="conversation-item"
-              :class="{ active: currentConversationId === conv.id }"
-              @click="handleConversationClick(conv.id, conv.name)"
+            <p
+              v-if="uncategorizedConversations.length === 0"
+              class="uncategorized-empty"
             >
-              <ChatHistoryConversationTitle :conv="conv" />
-              <ElDropdown
-                trigger="click"
-                class="more-dropdown"
-                @click.stop
-              >
-                <button
-                  class="more-btn"
-                  @click.stop
-                >
-                  <MoreHorizontal class="w-4 h-4" />
-                </button>
-                <template #dropdown>
-                  <ElDropdownMenu>
-                    <ElDropdownItem @click="handlePinConversation(conv.id)">
-                      <Pin class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.pinToTop') }}
-                    </ElDropdownItem>
-                    <ElDropdownItem @click="handleRenameConversation(conv.id)">
-                      <Edit3 class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.rename') }}
-                    </ElDropdownItem>
-                    <ElDropdownItem
-                      divided
-                      @click="handleDeleteConversation(conv.id)"
-                    >
-                      <span class="delete-option">
-                        <Trash2 class="w-4 h-4 mr-2" />
-                        {{ t('sidebar.actions.delete') }}
-                      </span>
-                    </ElDropdownItem>
-                  </ElDropdownMenu>
-                </template>
-              </ElDropdown>
-            </div>
-          </div>
+              {{ t('sidebar.chatHistory.uncategorizedEmpty') }}
+            </p>
 
-          <!-- Past Month -->
-          <div
-            v-if="groupedConversations.month.length > 0"
-            class="group-section"
-          >
-            <div class="group-label">{{ groupLabels.month }}</div>
-            <div
-              v-for="conv in groupedConversations.month"
-              :key="conv.id"
-              class="conversation-item"
-              :class="{ active: currentConversationId === conv.id }"
-              @click="handleConversationClick(conv.id, conv.name)"
+            <button
+              v-if="hasMoreUncategorized"
+              class="show-more-btn"
+              type="button"
+              @click="showAllUncategorized = true"
             >
-              <ChatHistoryConversationTitle :conv="conv" />
-              <ElDropdown
-                trigger="click"
-                class="more-dropdown"
-                @click.stop
-              >
-                <button
-                  class="more-btn"
-                  @click.stop
-                >
-                  <MoreHorizontal class="w-4 h-4" />
-                </button>
-                <template #dropdown>
-                  <ElDropdownMenu>
-                    <ElDropdownItem @click="handlePinConversation(conv.id)">
-                      <Pin class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.pinToTop') }}
-                    </ElDropdownItem>
-                    <ElDropdownItem @click="handleRenameConversation(conv.id)">
-                      <Edit3 class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.rename') }}
-                    </ElDropdownItem>
-                    <ElDropdownItem
-                      divided
-                      @click="handleDeleteConversation(conv.id)"
-                    >
-                      <span class="delete-option">
-                        <Trash2 class="w-4 h-4 mr-2" />
-                        {{ t('sidebar.actions.delete') }}
-                      </span>
-                    </ElDropdownItem>
-                  </ElDropdownMenu>
-                </template>
-              </ElDropdown>
-            </div>
-          </div>
-
-          <!-- Show More button -->
-          <button
-            v-if="hasMore"
-            class="show-more-btn"
-            @click="toggleShowAll"
-          >
-            {{ t('sidebar.actions.showMore', { n: remainingCount }) }}
-          </button>
-
-          <!-- Show Less button -->
-          <button
-            v-if="showAll && conversations.length > initialVisibleLimit"
-            class="show-more-btn"
-            @click="toggleShowAll"
-          >
-            {{ t('sidebar.actions.showLess') }}
-          </button>
+              {{ t('sidebar.actions.showMore', { n: remainingUncategorizedCount }) }}
+            </button>
+            <button
+              v-if="showAllUncategorized && uncategorizedConversations.length > initialVisibleLimit"
+              class="show-more-btn"
+              type="button"
+              @click="showAllUncategorized = false"
+            >
+              {{ t('sidebar.actions.showLess') }}
+            </button>
+          </section>
         </template>
       </div>
     </ElScrollbar>
 
-    <!-- Login overlay when blurred -->
     <div
       v-if="isBlurred"
       class="absolute inset-0 flex items-center justify-center bg-stone-50/60 backdrop-blur-[2px]"
@@ -598,7 +536,13 @@ function toggleShowAll(): void {
   min-height: 0;
 }
 
-/* Compact: avoid px-4 + scrollbar gutter doubling the right gap; pad the scroll view instead. */
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .chat-history-scroll--compact :deep(.el-scrollbar__view) {
   box-sizing: border-box;
   padding-left: 12px;
@@ -615,12 +559,35 @@ function toggleShowAll(): void {
   background-color: rgb(214 211 209 / 0.9);
 }
 
-.chat-history--compact .conversation-item {
+.chat-history--compact :deep(.conversation-item) {
   padding: 6px 4px 6px 6px;
 }
 
 .chat-history--compact .group-label {
   padding-left: 0;
+}
+
+.archive-section + .archive-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed #e7e5e4;
+}
+
+.section-heading {
+  font-size: 11px;
+  font-weight: 600;
+  color: #78716c;
+  letter-spacing: 0.03em;
+  margin-bottom: 8px;
+}
+
+.archive-warning {
+  font-size: 11px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  color: #92400e;
+  background: #fffbeb;
 }
 
 .group-section {
@@ -641,86 +608,121 @@ function toggleShowAll(): void {
   padding-left: 2px;
 }
 
-.conversation-item {
+.folder-header {
+  position: relative;
   display: flex;
   align-items: center;
-  width: 100%;
+  gap: 6px;
   padding: 6px 8px;
+  padding-right: 28px;
   border-radius: 6px;
-  color: #57534e;
-  font-size: 13px;
-  text-align: left;
-  transition: background-color 0.15s ease;
   cursor: pointer;
-  border: none;
-  background: transparent;
+  color: #44403c;
+  font-size: 13px;
+  font-weight: 500;
 }
 
-.conversation-item:hover {
+.folder-header:hover {
   background-color: #f5f5f4;
 }
 
-.conversation-item.active {
-  background-color: #e7e5e4;
-  color: #1c1917;
+.folder-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.more-btn {
+.folder-count {
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
+  font-size: 11px;
+  color: #a8a29e;
+  min-width: 1rem;
+  text-align: right;
+}
+
+.folder-actions {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.folder-header:hover .folder-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.folder-header:hover .folder-count {
+  visibility: hidden;
+}
+
+.folder-action-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  opacity: 0;
-  color: #78716c;
-  transition: all 0.15s ease;
-  background: transparent;
+  width: 22px;
+  height: 22px;
   border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #78716c;
   cursor: pointer;
 }
 
-.conversation-item:hover .more-btn {
-  opacity: 1;
-}
-
-.more-btn:hover {
-  background-color: #e7e5e4;
+.folder-action-btn:hover {
+  background: #e7e5e4;
   color: #1c1917;
 }
 
-/* Dropdown menu styling */
-.more-dropdown :deep(.el-dropdown-menu) {
-  padding: 4px;
-  border-radius: 8px;
-  min-width: 140px;
-}
-
-.more-dropdown :deep(.el-dropdown-menu__item) {
-  display: flex;
-  align-items: center;
-  padding: 8px 12px;
-  font-size: 13px;
-  border-radius: 4px;
-  color: #57534e;
-}
-
-.more-dropdown :deep(.el-dropdown-menu__item:hover) {
-  background-color: #f5f5f4;
-  color: #1c1917;
-}
-
-.more-dropdown :deep(.el-dropdown-menu__item.is-divided) {
-  margin-top: 4px;
-  border-top: 1px solid #e7e5e4;
-  padding-top: 8px;
-}
-
-.delete-option {
-  display: flex;
-  align-items: center;
+.folder-action-btn--danger:hover {
+  background: #fee2e2;
   color: #dc2626;
+}
+
+.folder-items {
+  margin-left: 12px;
+  padding-left: 8px;
+  border-left: 1px solid #e7e5e4;
+}
+
+.folder-empty,
+.uncategorized-empty {
+  font-size: 11px;
+  color: #a8a29e;
+  padding: 4px 8px 8px;
+}
+
+.new-folder-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid #e7e5e4;
+  border-radius: 6px;
+  background: #fafaf9;
+  color: #78716c;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.new-folder-btn__label {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.new-folder-btn:hover {
+  border-color: #d6d3d1;
+  color: #44403c;
+  background: #f5f5f4;
 }
 
 .show-more-btn {
@@ -735,7 +737,6 @@ function toggleShowAll(): void {
   border: 1px dashed #d6d3d1;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.15s ease;
 }
 
 .show-more-btn:hover {

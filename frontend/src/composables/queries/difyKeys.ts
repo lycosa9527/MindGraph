@@ -9,6 +9,7 @@ export const difyKeys = {
   appParams: () => [...difyKeys.all, 'appParams'] as const,
   conversations: () => [...difyKeys.all, 'conversations'] as const,
   pinned: () => [...difyKeys.all, 'pinned'] as const,
+  mindmateFolders: () => [...difyKeys.all, 'mindmateFolders'] as const,
   messages: (convId: string, difyUser?: string, server?: number, mindbotConfigId?: number) =>
     [...difyKeys.all, 'messages', convId, difyUser || '', server ?? '', mindbotConfigId ?? ''] as const,
 }

@@ -11,6 +11,7 @@ import { useLanguage } from '@/composables'
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
+import { nodesInLearningSheetReadingOrder } from '@/utils/learningSheetAnswerOrder'
 
 const diagramStore = useDiagramSession()
 const { viewport: vueFlowViewport, getViewport, getNodes } = useVueFlow(diagramStore.vueFlowId)
@@ -20,7 +21,13 @@ const viewport = computed(() => vueFlowViewport.value ?? getViewport())
 
 const blankedAnswers = computed(() => {
   if (!diagramStore.isLearningSheet) return []
-  const nodes = diagramStore.data?.nodes ?? []
+  const data = diagramStore.data
+  const nodes = nodesInLearningSheetReadingOrder(
+    data?.nodes ?? [],
+    data?.connections ?? [],
+    diagramStore.type,
+    data?._mindmap_branch_numbering === true
+  )
   const answers: string[] = []
   for (const node of nodes) {
     if (!diagramStore.isNodeBlankedForLearningSheet(node.id)) continue

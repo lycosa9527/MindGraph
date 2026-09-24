@@ -1,3 +1,5 @@
+import { ref } from 'vue'
+
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/messages/en'
@@ -16,6 +18,13 @@ export const EAGER_LOCALES = ['en'] as const satisfies readonly LocaleCode[]
 
 const loadedLocales = new Set<LocaleCode>(EAGER_LOCALES)
 const inFlightLoads = new Map<LocaleCode, Promise<void>>()
+
+/**
+ * Bumped when a lazy catalog is registered. `isLocaleLoaded` is a plain Set, so
+ * Vue computeds that translate before the chunk arrives must read this ref or
+ * they keep the English fallback after the real strings land.
+ */
+export const localeCatalogRevision = ref(0)
 
 type LocaleModule = { default: Record<string, string> }
 
@@ -95,6 +104,7 @@ export async function loadLocaleMessages(locale: LocaleCode): Promise<void> {
     const mod = await loader()
     i18n.global.setLocaleMessage(locale, mod.default as Record<string, string>)
     loadedLocales.add(locale)
+    localeCatalogRevision.value += 1
     notifyLocaleLoaded()
   })()
 
