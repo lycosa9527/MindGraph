@@ -93,6 +93,9 @@ const SwissWarningModal = defineAsyncComponent(
 const SwissGlassConfirmHost = defineAsyncComponent(
   () => import('@/components/common/SwissGlassConfirmHost.vue')
 )
+const SwissGlassPromptHost = defineAsyncComponent(
+  () => import('@/components/common/SwissGlassPromptHost.vue')
+)
 const TestServerWatermark = defineAsyncComponent(
   () => import('@/components/common/TestServerWatermark.vue')
 )
@@ -447,6 +450,7 @@ onUnmounted(() => {
     <VoiceNotesFab />
     <VoiceNotesModal />
     <SwissGlassConfirmHost />
+    <SwissGlassPromptHost />
     <TrainingBanner />
     <TrainingFriendsRail />
     <TrainingLessonOverlay />

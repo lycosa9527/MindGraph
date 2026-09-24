@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'گالری پر است',
   'canvas.hero.slotFull.line1': 'لطفاً یک نماد موجود را حذف کنید و نماد فعلی را ذخیره کنید',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

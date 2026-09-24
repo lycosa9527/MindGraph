@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'แกลลอรี่เต็มแล้ว',
   'canvas.hero.slotFull.line1': 'โปรดลบไอคอนที่มีอยู่และบันทึกไอคอนปัจจุบัน',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

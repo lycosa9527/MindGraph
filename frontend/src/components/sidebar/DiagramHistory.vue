@@ -2,9 +2,9 @@
 /**
  * DiagramHistory - Saved diagrams with archive folders and uncategorized timeline
  */
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, onUnmounted, watch } from 'vue'
 
-import { ElIcon, ElMessageBox, ElScrollbar } from 'element-plus'
+import { ElIcon, ElScrollbar } from 'element-plus'
 
 import { Loading } from '@element-plus/icons-vue'
 
@@ -21,6 +21,7 @@ import {
 
 import { useLanguage, useNotifications } from '@/composables'
 import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
+import { promptArchiveFolderName } from '@/composables/sidebar/promptSwissGlassName'
 import { useDiagramArchiveHistory } from '@/composables/sidebar/useDiagramArchiveHistory'
 import { useAuthStore } from '@/stores'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -52,8 +53,11 @@ const hasSaveLimit = computed(() => savedDiagramsStore.hasSaveLimit)
 const foldersLoadFailed = computed(() => savedDiagramsStore.foldersLoadFailed)
 const fetchError = computed(() => savedDiagramsStore.error)
 
+const ownedDiagramCount = computed(
+  () => diagrams.value.filter((diagram) => diagram.share_role !== 'recipient').length
+)
 const diagramCountLabel = computed(() =>
-  formatDiagramCountLabel(savedDiagramsStore.total || diagrams.value.length, maxDiagrams.value)
+  formatDiagramCountLabel(ownedDiagramCount.value, maxDiagrams.value)
 )
 
 const folderCountLabel = computed(() =>
@@ -81,10 +85,21 @@ const groupLabels = computed(() => ({
   month: t('common.date.pastMonth'),
 }))
 
+function refreshLibraryOnFocus(): void {
+  if (document.visibilityState !== 'visible') return
+  if (!authStore.isAuthenticated || props.isBlurred) return
+  void savedDiagramsStore.fetchDiagrams(1, 50, { force: true })
+}
+
 onMounted(() => {
   if (authStore.isAuthenticated && !props.isBlurred) {
     savedDiagramsStore.fetchDiagrams()
   }
+  document.addEventListener('visibilitychange', refreshLibraryOnFocus)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', refreshLibraryOnFocus)
 })
 
 watch(
@@ -103,27 +118,18 @@ function handleDiagramClick(diagram: SavedDiagram): void {
   emit('select', diagram)
 }
 
-async function promptFolderName(
+function promptFolderName(
   titleKey: string,
   promptKey: string,
   initialValue = ''
 ): Promise<string | null> {
-  try {
-    const result = await ElMessageBox.prompt(t(promptKey), t(titleKey), {
-      confirmButtonText: t('common.ok'),
-      cancelButtonText: t('common.cancel'),
-      inputValue: initialValue,
-      inputPattern: /\S+/,
-      inputErrorMessage: t('sidebar.diagramHistory.nameRequired'),
-    })
-    const value =
-      typeof result === 'object' && result !== null && 'value' in result
-        ? (result as { value: string }).value
-        : undefined
-    return value?.trim() || null
-  } catch {
-    return null
-  }
+  return promptArchiveFolderName(
+    t,
+    titleKey,
+    promptKey,
+    'sidebar.diagramHistory.foldersSection',
+    initialValue
+  )
 }
 
 async function handleCreateFolder(): Promise<void> {

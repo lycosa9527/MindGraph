@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'Die Galerie ist voll',
   'canvas.hero.slotFull.line1': 'Bitte löschen Sie ein vorhandenes Symbol und speichern Sie das aktuelle Symbol',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

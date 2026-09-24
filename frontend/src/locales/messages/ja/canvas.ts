@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'ギャラリーがいっぱいです',
   'canvas.hero.slotFull.line1': '既存のアイコンを削除し、現在のアイコンを保存してください',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'ගැලරිය පිරී ඇත',
   'canvas.hero.slotFull.line1': 'කරුණාකර පවතින නිරූපකයක් මකා වත්මන් නිරූපකය සුරකින්න',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

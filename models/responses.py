@@ -221,6 +221,8 @@ class DiagramListItem(BaseModel):
     workshop_active: bool = Field(False, description="Whether diagram has a live collab session")
     folder_id: Optional[str] = Field(None, description="Archive folder UUID, if assigned")
     source_channel: Optional[str] = Field(None, description="Provenance channel")
+    shared: bool = Field(False, description="True when this diagram is in more than one library")
+    share_role: str = Field("owner", description="owner or recipient")
 
     model_config = ConfigDict(
         json_schema_extra={

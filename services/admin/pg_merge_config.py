@@ -226,6 +226,17 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
             "knowledge_package_id": "document_batches",
         },
     },
+    "diagram_shares": {
+        "order": 4,
+        "pk_type": "serial",
+        "dedup_columns": ("diagram_id", "grantee_user_id"),
+        "fk_remaps": {
+            "diagram_id": "diagrams",
+            "grantee_user_id": "users",
+            "shared_by_user_id": "users",
+            "folder_id": "diagram_folders",
+        },
+    },
     "token_usage": {
         "order": 3,
         "pk_type": "serial",

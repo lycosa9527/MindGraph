@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'Galerij is vol',
   'canvas.hero.slotFull.line1': 'Verwijder een bestaand pictogram en sla het huidige pictogram op',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

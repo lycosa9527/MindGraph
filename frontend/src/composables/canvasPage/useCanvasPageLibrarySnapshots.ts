@@ -1,6 +1,10 @@
-import { nextTick, type ComputedRef } from 'vue'
+import { type ComputedRef, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 
+import {
+  enterDiagramShareSession,
+  leaveDiagramShareSession,
+} from '@/composables/canvas/diagramShareSession'
 import {
   diagramSpecLikelyNeedsMarkdownPipeline,
   loadDiagramMarkdownPipeline,
@@ -18,15 +22,12 @@ import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import { useSnapshotHistory } from '@/composables/editor/useSnapshotHistory'
 import { studentHomeworkDiagramTitle } from '@/composables/learningSpace/lsHelpers'
 import { useAuthStore, useDiagramStore, useLLMResultsStore, useUIStore } from '@/stores'
-import { splitSavedLlmResultsFromSpec } from '@/stores/llmResultsPersist'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
+import { splitSavedLlmResultsFromSpec } from '@/stores/llmResultsPersist'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import { mindMapLibraryLoadOptions } from '@/utils/mindMapLibraryLoadOptions'
-import {
-  beginMindMapLoadSession,
-  markMindMapLoadStage,
-} from '@/utils/mindMapLoadDebug'
+import { beginMindMapLoadSession, markMindMapLoadStage } from '@/utils/mindMapLoadDebug'
 
 import { applyDiagramTypeForCanvasChrome, diagramTypeMap } from './diagramTypeMaps'
 import { flushCanvasBeforeLibrarySwitch } from './shouldFlushBeforeLibrarySwitch'
@@ -98,6 +99,7 @@ export function useCanvasPageLibrarySnapshots(options: {
       notify.warning(t('canvas.library.saveBeforeSwitchFailed'))
       return false
     }
+    await leaveDiagramShareSession()
     if (loadGen !== libraryLoadGeneration) {
       return false
     }
@@ -165,6 +167,8 @@ export function useCanvasPageLibrarySnapshots(options: {
       return false
     }
     snapshotHistory.setActiveVersion(null)
+    if (loadGen !== libraryLoadGeneration) return false
+    await enterDiagramShareSession(diagramId)
     return true
   }
 

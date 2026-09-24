@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'Галерея заполнена',
   'canvas.hero.slotFull.line1': 'Пожалуйста, удалите существующий значок и сохраните текущий значок.',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

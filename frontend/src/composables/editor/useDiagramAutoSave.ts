@@ -17,9 +17,10 @@
  *   const autoSave = useDiagramAutoSave({ getDiagramTitle, onSaved })
  *   // On canvas leave: flushOnLeave() → teardown() → reset Pinia → clearActiveDiagram in finally
  */
-import { storeToRefs } from 'pinia'
 import { type ComputedRef, computed, ref, watch } from 'vue'
 import { type LocationQuery, useRoute, useRouter } from 'vue-router'
+
+import { storeToRefs } from 'pinia'
 
 import { eventBus } from '@/composables'
 import { SAVE } from '@/config'
@@ -33,11 +34,8 @@ import { canvasEditorPathForRoute } from '@/utils/canvasBackNavigation'
 import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 import { mindMapLiveSpecExtrasFingerprint } from '@/utils/mindMapLiveSpecExtras'
 
-import {
-  canPerformDiagramSave,
-  shouldAutoSaveAfterLlmModelCompleted,
-} from './diagramSaveFeedback'
 import { useLanguage } from '../core/useLanguage'
+import { canPerformDiagramSave, shouldAutoSaveAfterLlmModelCompleted } from './diagramSaveFeedback'
 import { useDiagramSpecForPersist } from './useDiagramSpecForSave'
 
 type DiagramDataLike = { nodes?: unknown[]; connections?: unknown[] } | null
@@ -78,11 +76,9 @@ function learningSheetFingerprint(data: DiagramDataLike): string {
     })
     .sort()
   return JSON.stringify({
-    isLearningSheet:
-      record.isLearningSheet === true || record.is_learning_sheet === true,
+    isLearningSheet: record.isLearningSheet === true || record.is_learning_sheet === true,
     showAnswers: !(
-      record.learningSheetShowAnswers === false ||
-      record.learning_sheet_show_answers === false
+      record.learningSheetShowAnswers === false || record.learning_sheet_show_answers === false
     ),
     hiddenAnswers: Array.isArray(record.hiddenAnswers) ? [...record.hiddenAnswers].sort() : [],
     blankedNodes,
@@ -253,13 +249,13 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
 
   function buildSaveEligibility(saveOpts: SaveAttemptOptions = {}) {
     return {
-      authenticated:
-        authStore.isAuthenticated && !authStore.authVerificationBlockedByNetwork,
+      authenticated: authStore.isAuthenticated && !authStore.authVerificationBlockedByNetwork,
       llmGenerating: llmResultsStore.isGenerating,
       subgraphGenerating: isSubgraphGenerating.value,
       suppressed: isSuppressed.value,
       isCollabGuest: Boolean(options.isCollabGuest?.value),
       collabSessionActive: Boolean(options.isCollabActive?.value),
+      readOnly: Boolean(diagramStore.isReadonly),
       hasTypeAndData: Boolean(diagramStore.type && diagramStore.data),
       bypassGeneratingGuard: saveOpts.bypassGeneratingGuard === true,
       bypassSubgraphGuard: saveOpts.bypassSubgraphGuard === true,
@@ -322,8 +318,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
         language: promptLanguage.value,
         editCount: diagramStore.sessionEditCount,
         fullFingerprint: getFullFingerprint(diagramStore.data as DiagramDataLike),
-        targetDiagramId:
-          options.getTargetDiagramId?.() ?? savedDiagramsStore.activeDiagramId,
+        targetDiagramId: options.getTargetDiagramId?.() ?? savedDiagramsStore.activeDiagramId,
       },
     }
   }

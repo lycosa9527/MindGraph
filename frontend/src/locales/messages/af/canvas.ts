@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'Galery is vol',
   'canvas.hero.slotFull.line1': 'Vee asseblief \'n bestaande ikoon uit en stoor die huidige ikoon',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

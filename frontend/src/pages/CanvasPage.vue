@@ -30,7 +30,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 
 import MindMapClassroomRemote from '@/canvas-ribbon/MindMapClassroomRemote.vue'
-import LearningAssignmentCanvasBar from '@/components/learningSpace/LearningAssignmentCanvasBar.vue'
 import MindMapStatusBar from '@/canvas-ribbon/MindMapStatusBar.vue'
 import {
   CanvasBottomAiCluster,
@@ -56,10 +55,12 @@ import {
 import CanvasCachedResultNotice from '@/components/canvas/CanvasCachedResultNotice.vue'
 import CanvasCollabOverlay from '@/components/canvas/CanvasCollabOverlay.vue'
 import CanvasTranslateProgressBanner from '@/components/canvas/CanvasTranslateProgressBanner.vue'
+import DiagramShareReadonlyBar from '@/components/canvas/DiagramShareReadonlyBar.vue'
 import LearningSheetExportNudge from '@/components/canvas/LearningSheetExportNudge.vue'
 import LearningSheetFloatBar from '@/components/canvas/LearningSheetFloatBar.vue'
 import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
 import KittyCanvasAnchor from '@/components/kitty/KittyCanvasAnchor.vue'
+import LearningAssignmentCanvasBar from '@/components/learningSpace/LearningAssignmentCanvasBar.vue'
 import { MindmatePanel, NodePalettePanel, RootConceptModal } from '@/components/panels'
 import {
   eventBus,
@@ -77,6 +78,11 @@ import {
   useSnapshotHistory,
 } from '@/composables'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
+import {
+  diagramShareEditorName,
+  diagramShareRole,
+  leaveDiagramShareSession,
+} from '@/composables/canvas/diagramShareSession'
 import { useClassroomRemoteVisibility } from '@/composables/canvas/useClassroomRemotePosition'
 import {
   applyCanvasKittySeedFromRoute,
@@ -195,8 +201,8 @@ import {
 } from '@/stores'
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
-import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { useKittySessionStore } from '@/stores/kittySession'
+import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { splitSavedLlmResultsFromSpec } from '@/stores/llmResultsPersist'
 import { useOneSentenceStore } from '@/stores/oneSentence'
 import { usePresentationPointerStore } from '@/stores/presentationPointer'
@@ -294,10 +300,12 @@ const {
   isDiagramOwner,
   isCollabGuest,
   workshopRole,
-  isViewer,
+  isViewer: workshopIsViewer,
   sessionDiagramId,
   sessionDiagramTitle,
 } = useCanvasPageWorkshopCollab()
+
+const isViewer = computed(() => workshopIsViewer.value || diagramShareRole.value === 'viewer')
 
 useCanvasPageTabRecIndicator()
 
@@ -1336,7 +1344,9 @@ watch(
 onMounted(async () => {
   await ensureFontsForLanguageCode(uiStore.promptLanguage)
 
-  const routeAssignmentId = learningAssignmentCanvas.parseRouteAssignmentId(route.query.assignmentId)
+  const routeAssignmentId = learningAssignmentCanvas.parseRouteAssignmentId(
+    route.query.assignmentId
+  )
   if (routeAssignmentId != null) {
     await learningAssignmentCanvas.activate(routeAssignmentId)
   } else {
@@ -1538,6 +1548,9 @@ onUnmounted(() => {
   resetPreviousDiagramTracking()
 
   void flushPromise
+    .finally(() => {
+      void leaveDiagramShareSession()
+    })
     .then(async (result) => {
       if (!homeworkAssignmentId || !result.saved) return
       const savedId = result.diagramId || savedDiagramsStore.activeDiagramId
@@ -1582,6 +1595,10 @@ onUnmounted(() => {
         pointerOverPresentationRail,
     }"
   >
+    <DiagramShareReadonlyBar
+      v-if="diagramShareRole === 'viewer'"
+      :editor-name="diagramShareEditorName"
+    />
     <!-- Laser pointer cursor (presentation mode, laser tool) -->
     <Transition name="laser-fade">
       <div

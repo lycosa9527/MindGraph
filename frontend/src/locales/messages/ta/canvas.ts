@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'கேலரி நிரம்பியுள்ளது',
   'canvas.hero.slotFull.line1': 'ஏற்கனவே உள்ள ஐகானை நீக்கிவிட்டு, தற்போதைய ஐகானைச் சேமிக்கவும்',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

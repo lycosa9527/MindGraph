@@ -15,21 +15,23 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
+import {
+  applyThinkingCoinMutation,
+  extractThinkingCoinsFooter,
+} from '@/composables/auth/useThinkingCoinSync'
+import { diagramShareWriteHeaders } from '@/composables/canvas/diagramShareTab'
 import { notify } from '@/composables/core/notifications'
-import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
-import { getDefaultDiagramName } from '@/composables/editor/useDiagramLabels'
+import { syncFolderDiagramCounts } from '@/composables/sidebar/useDiagramArchiveHistory'
 import { SAVE } from '@/config'
-import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 import { i18n } from '@/i18n'
 import type { DiagramId, DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
 import { hasDiagramSaveLimit } from '@/utils/diagramLimit'
-
-import { syncFolderDiagramCounts } from '@/composables/sidebar/useDiagramArchiveHistory'
 import {
   getDiagramPersistBaseSpec,
   shouldStampLiveCanvasOntoLlmResult,
 } from '@/utils/diagramPersistBaseSpec'
+import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 
 import { useAuthStore } from './auth'
 import { useDiagramStore } from './diagram'
@@ -37,17 +39,13 @@ import { useLLMResultsStore } from './llmResults'
 import { attachLlmResultsWithinSizeLimit } from './llmResultsPersist'
 import { usePanelsStore } from './panels'
 import { getDefaultTemplate, loadSpecForDiagramType } from './specLoader'
+import { useUIStore } from './ui'
 
-export type GetDiagramFailureReason =
-  | 'not_found'
-  | 'forbidden'
-  | 'network'
-  | 'unauthenticated'
+export type GetDiagramFailureReason = 'not_found' | 'forbidden' | 'network' | 'unauthenticated'
 
 export type GetDiagramResult =
   | { ok: true; diagram: SavedDiagramFull }
   | { ok: false; reason: GetDiagramFailureReason; status: number | null }
-import { useUIStore } from './ui'
 
 // Security constants - must match backend limits
 const MAX_THUMBNAIL_SIZE = 150000 // Max base64 chars (~100KB decoded)
@@ -184,6 +182,8 @@ export interface SavedDiagram {
   workshop_active?: boolean
   folder_id?: string | null
   source_channel?: string | null
+  shared?: boolean
+  share_role?: 'owner' | 'recipient'
 }
 
 export interface DiagramFolder {
@@ -258,10 +258,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
    * than what is already cached (prefetch / in-flight GET races). Force writers
    * always win — used for authoritative editor opens.
    */
-  function setDiagramDetailCache(
-    diagram: SavedDiagramFull,
-    opts?: { force?: boolean }
-  ): void {
+  function setDiagramDetailCache(diagram: SavedDiagramFull, opts?: { force?: boolean }): void {
     if (!opts?.force) {
       const existing = diagramDetailCache.get(diagram.id)
       if (
@@ -278,7 +275,9 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
   const authStore = useAuthStore()
   const uiStore = useUIStore()
   const hasSaveLimit = computed(() => hasDiagramSaveLimit(maxDiagrams.value))
-  const savedDiagramCount = computed(() => total.value)
+  const savedDiagramCount = computed(
+    () => diagrams.value.filter((diagram) => diagram.share_role !== 'recipient').length
+  )
   const canSaveMore = computed(
     () => !hasSaveLimit.value || savedDiagramCount.value < maxDiagrams.value
   )
@@ -507,10 +506,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     }
   }
 
-  async function moveDiagramToFolder(
-    diagramId: string,
-    folderId: string | null
-  ): Promise<boolean> {
+  async function moveDiagramToFolder(diagramId: string, folderId: string | null): Promise<boolean> {
     if (!authStore.isAuthenticated) return false
     const entry = diagrams.value.find((d) => d.id === diagramId)
     const previousFolderId = entry?.folder_id ?? null
@@ -640,9 +636,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
 
       if (!response.ok) {
         if (response.status === 401) {
-          authStore.handleTokenExpired(
-            i18n.global.t('auth.sessionExpired') as string
-          )
+          authStore.handleTokenExpired(i18n.global.t('auth.sessionExpired') as string)
           return { ok: false, reason: 'unauthenticated', status: 401 }
         }
         if (response.status === 404) {
@@ -727,7 +721,9 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       }
 
       const saved: SavedDiagramFull = await response.json()
-      applyThinkingCoinMutation(extractThinkingCoinsFooter(saved as unknown as Record<string, unknown>))
+      applyThinkingCoinMutation(
+        extractThinkingCoinsFooter(saved as unknown as Record<string, unknown>)
+      )
 
       // Warm detail cache so canvas can open the new row without a second GET.
       setDiagramDetailCache(saved)
@@ -786,7 +782,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     try {
       const response = await authFetch(`/api/diagrams/${diagramId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...diagramShareWriteHeaders() },
         body: JSON.stringify(updates),
       })
 
@@ -798,8 +794,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
         if (response.status === 409) {
           invalidateDiagramDetail(diagramId)
           const apiDetail = await readDiagramApiErrorDetail(response)
-          const message =
-            apiDetail || 'Diagram was modified elsewhere; reload and retry.'
+          const message = apiDetail || 'Diagram was modified elsewhere; reload and retry.'
           error.value = message
           console.error('[SavedDiagrams] Update conflict:', message)
           return false
@@ -812,7 +807,9 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       }
 
       const updated: SavedDiagramFull = await response.json()
-      applyThinkingCoinMutation(extractThinkingCoinsFooter(updated as unknown as Record<string, unknown>))
+      applyThinkingCoinMutation(
+        extractThinkingCoinsFooter(updated as unknown as Record<string, unknown>)
+      )
 
       // Keep detail cache in sync so library reopen does not hydrate a stale
       // pre-edit snapshot (and then autosave it back over the good PUT).
@@ -834,6 +831,38 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       return true
     } catch (e) {
       console.error('[SavedDiagrams] Update error:', e)
+      return false
+    }
+  }
+
+  async function replaceDiagramShares(diagramId: string, userIds: number[]): Promise<boolean> {
+    if (!authStore.isAuthenticated) return false
+    try {
+      const response = await authFetch(`/api/diagrams/${diagramId}/shares`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_ids: userIds }),
+      })
+      if (!response.ok) return false
+      await fetchDiagrams(1, 50, { force: true })
+      return true
+    } catch (e) {
+      console.error('[SavedDiagrams] Share error:', e)
+      return false
+    }
+  }
+
+  async function removeSharedDiagram(diagramId: string): Promise<boolean> {
+    if (!authStore.isAuthenticated) return false
+    try {
+      const response = await authFetch(`/api/diagrams/${diagramId}/shares/me`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) return false
+      removeDiagramFromLocalList(diagramId)
+      return true
+    } catch (e) {
+      console.error('[SavedDiagrams] Remove share error:', e)
       return false
     }
   }
@@ -1006,10 +1035,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     isAutoSaving.value = true
 
     try {
-      const diagramId = resolveAutoSaveTargetDiagramId(
-        targetDiagramId,
-        activeDiagramId.value
-      )
+      const diagramId = resolveAutoSaveTargetDiagramId(targetDiagramId, activeDiagramId.value)
 
       // Case 1: Diagram is already saved - update it
       if (diagramId !== null) {
@@ -1252,6 +1278,8 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     prefetchDiagramSpecs,
     saveDiagram,
     updateDiagram,
+    replaceDiagramShares,
+    removeSharedDiagram,
     deleteDiagram,
     duplicateDiagram,
     pinDiagram,

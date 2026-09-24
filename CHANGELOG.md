@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.99] - 2026-09-25
+
+> **Share one library diagram with people in the same organization. The first person to open it edits; everyone else watches the same canvas.**
+
+### Added
+
+- **组织图库分享** — 图示三点菜单可以把同一张图发给同组织的成员。对方图库出现这张图，并带分享标记。先打开的人正常编辑；后来打开的人只读，顶部显示谁在编辑，并看到正在进行的修改。编辑者离开后，下一位已经打开的人获得编辑权。对方只能从自己的图库移除，不能删除原图。置顶和文件夹各自独立，分享不计入对方的图示数量上限。研讨进行中仍走原来的多人协作，不套这套只读排队。
+
+### Changed
+
+- **重命名对话框** — 图示、文件夹和 MindMate 对话的重命名改用玻璃对话框，不再弹出浏览器输入框。
+
+### Tests
+
+- [`tests/test_diagram_share_queue.py`](tests/test_diagram_share_queue.py), [`frontend/tests/swissGlassPrompt.spec.ts`](frontend/tests/swissGlassPrompt.spec.ts)
+
 ## [5.180.98] - 2026-09-24
 
 > **MindMate history folders, export frames that include overlay ink, and bilingual labels that refresh after the locale chunk loads.**

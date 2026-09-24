@@ -15,23 +15,16 @@ from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from services.features.org_member_models import OrgMemberRow as _OrgMemberRow
+from services.features.org_member_models import OrgMembersPage as _OrgMembersPage
 
-class OrgMemberRow(BaseModel):
+
+class OrgMemberRow(_OrgMemberRow):
     """One organization member for roster / presence / @mention."""
 
-    id: int
-    name: str
-    avatar: Optional[str] = None
-    last_seen_at: Optional[datetime] = None
 
-
-class OrgMembersPage(BaseModel):
+class OrgMembersPage(_OrgMembersPage):
     """Paginated org roster (contacts sidebar, mention search)."""
-
-    items: List[OrgMemberRow]
-    total: int
-    limit: int
-    offset: int
 
 
 class CreateChannelRequest(BaseModel):

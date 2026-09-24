@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'ഗാലറി നിറഞ്ഞിരിക്കുന്നു',
   'canvas.hero.slotFull.line1': 'നിലവിലുള്ള ഒരു ഐക്കൺ ഇല്ലാതാക്കി നിലവിലുള്ള ഐക്കൺ സംരക്ഷിക്കുക',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

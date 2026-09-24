@@ -13,6 +13,11 @@ import logging
 import os
 
 from config.settings import config
+from services.diagram_shares.fanout_listener import (
+    await_diagram_share_fanout_listener_stopped,
+    start_diagram_share_fanout_listener,
+    stop_diagram_share_fanout_listener,
+)
 from services.features.slides_remote.wake_listener import (
     await_slides_remote_wake_listener_stopped,
     start_slides_remote_wake_listener,
@@ -140,6 +145,14 @@ async def lifespan_init_redis_phase(is_main_worker: bool) -> None:
                     slides_wake_exc,
                 )
         try:
+            start_diagram_share_fanout_listener(loop)
+        except BACKGROUND_INFRA_ERRORS as share_fan_exc:
+            if is_main_worker:
+                logger.warning(
+                    "[LIFESPAN] Diagram-share Redis listener: %s",
+                    share_fan_exc,
+                )
+        try:
             start_training_remote_wake_listener(loop)
         except BACKGROUND_INFRA_ERRORS as training_wake_exc:
             if is_main_worker:
@@ -208,6 +221,12 @@ async def stop_fanout_listeners(is_main_worker: bool) -> None:
     except BACKGROUND_INFRA_ERRORS as exc:
         if is_main_worker:
             logger.warning("Failed to stop slide-remote wake listener: %s", exc)
+    try:
+        stop_diagram_share_fanout_listener()
+        await await_diagram_share_fanout_listener_stopped(timeout=5.0)
+    except BACKGROUND_INFRA_ERRORS as exc:
+        if is_main_worker:
+            logger.warning("Failed to stop diagram-share listener: %s", exc)
     try:
         stop_training_remote_wake_listener()
         await await_training_remote_wake_listener_stopped(timeout=5.0)

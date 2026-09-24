@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'ಗ್ಯಾಲರಿ ತುಂಬಿದೆ',
   'canvas.hero.slotFull.line1': 'ದಯವಿಟ್ಟು ಅಸ್ತಿತ್ವದಲ್ಲಿರುವ ಐಕಾನ್ ಅನ್ನು ಅಳಿಸಿ ಮತ್ತು ಪ್ರಸ್ತುತ ಐಕಾನ್ ಅನ್ನು ಉಳಿಸಿ',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

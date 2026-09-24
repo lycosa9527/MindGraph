@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'Galeria është plot',
   'canvas.hero.slotFull.line1': 'Ju lutemi fshini një ikonë ekzistuese dhe ruani ikonën aktuale',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

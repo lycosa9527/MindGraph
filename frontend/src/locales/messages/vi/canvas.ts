@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'Thư viện đã đầy',
   'canvas.hero.slotFull.line1': 'Vui lòng xóa biểu tượng hiện có và lưu biểu tượng hiện tại',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

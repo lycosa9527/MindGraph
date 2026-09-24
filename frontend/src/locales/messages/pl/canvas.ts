@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'Galeria jest pełna',
   'canvas.hero.slotFull.line1': 'Usuń istniejącą ikonę i zapisz bieżącą ikonę',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'Qalereya doludur',
   'canvas.hero.slotFull.line1': 'Lütfən, mövcud ikonanı silin və cari simvolu yadda saxlayın',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

@@ -5,7 +5,7 @@
  */
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 
-import { ElIcon, ElMessageBox, ElScrollbar } from 'element-plus'
+import { ElIcon, ElScrollbar } from 'element-plus'
 
 import { Loading } from '@element-plus/icons-vue'
 
@@ -35,6 +35,10 @@ import {
   useRenameConversation,
   useRenameMindmateFolder,
 } from '@/composables/queries'
+import {
+  promptArchiveFolderName,
+  promptSwissGlassName,
+} from '@/composables/sidebar/promptSwissGlassName'
 import {
   MINDMATE_TIME_GROUP_KEYS,
   useMindmateArchiveHistory,
@@ -127,6 +131,8 @@ const {
   conversationsForFolder,
 } = useMindmateArchiveHistory(conversations, () => props.initialVisibleLimit)
 
+const conversationCountLabel = computed(() => String(conversations.value.length))
+
 const folderCountLabel = computed(() =>
   t('sidebar.chatHistory.folderCount', { count: folders.value.length })
 )
@@ -143,27 +149,18 @@ function handleConversationClick(convId: string, name: string): void {
   mindMateStore.setCurrentConversation(convId, name)
 }
 
-async function promptFolderName(
+function promptFolderName(
   titleKey: string,
   promptKey: string,
   initialValue = ''
 ): Promise<string | null> {
-  try {
-    const result = await ElMessageBox.prompt(t(promptKey), t(titleKey), {
-      confirmButtonText: t('common.ok'),
-      cancelButtonText: t('common.cancel'),
-      inputValue: initialValue,
-      inputPattern: /\S+/,
-      inputErrorMessage: t('sidebar.diagramHistory.nameRequired'),
-    })
-    const value =
-      typeof result === 'object' && result !== null && 'value' in result
-        ? (result as { value: string }).value
-        : undefined
-    return value?.trim() || null
-  } catch {
-    return null
-  }
+  return promptArchiveFolderName(
+    t,
+    titleKey,
+    promptKey,
+    'sidebar.chatHistory.foldersSection',
+    initialValue
+  )
 }
 
 async function handleCreateFolder(): Promise<MindmateFolder | null> {
@@ -240,35 +237,22 @@ async function handleCreateFolderAndMove(convId: string): Promise<void> {
 async function handleRenameConversation(convId: string): Promise<void> {
   const conv = conversations.value.find((item) => item.id === convId)
   const currentName = conv?.name || ''
-  try {
-    const result = await ElMessageBox.prompt(
-      t('sidebar.chatHistory.renamePrompt'),
-      t('sidebar.chatHistory.renameTitle'),
-      {
-        confirmButtonText: t('common.ok'),
-        cancelButtonText: t('common.cancel'),
-        inputValue: currentName,
-        inputPattern: /\S+/,
-        inputErrorMessage: t('sidebar.diagramHistory.nameRequired'),
-      }
-    )
-    const value =
-      typeof result === 'object' && result !== null && 'value' in result
-        ? (result as { value: string }).value
-        : undefined
-    if (value && value.trim() !== currentName) {
-      mindMateStore.renameConversation(convId, value.trim())
-      renameConv({
-        convId,
-        name: value.trim(),
-        difyUser: conv?.dify_user,
-        server: conv?.server,
-        mindbotConfigId: conv?.mindbot_config_id,
-      })
-    }
-  } catch {
-    // cancelled
-  }
+  const name = await promptSwissGlassName(
+    t,
+    'sidebar.chatHistory.renameTitle',
+    'sidebar.chatHistory.renamePrompt',
+    'sidebar.chatHistory.title',
+    currentName
+  )
+  if (!name || name === currentName) return
+  mindMateStore.renameConversation(convId, name)
+  renameConv({
+    convId,
+    name,
+    difyUser: conv?.dify_user,
+    server: conv?.server,
+    mindbotConfigId: conv?.mindbot_config_id,
+  })
 }
 
 async function handleDeleteConversation(convId: string): Promise<void> {
@@ -305,33 +289,27 @@ function handlePinConversation(convId: string): void {
     class="chat-history flex flex-1 min-h-0 flex-col border-t border-stone-200 relative overflow-hidden"
     :class="{ 'chat-history--compact': props.compact }"
   >
-    <div
-      class="history-header"
-      :class="props.compact ? 'px-3 py-2.5' : 'px-4 py-3'"
-    >
+    <div class="history-header px-4 py-3">
       <div class="min-w-0">
         <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
           {{ t('sidebar.chatHistory.title') }}
         </div>
         <div
-          v-if="!isBlurred && folders.length > 0"
+          v-if="!isBlurred && (conversations.length > 0 || folders.length > 0)"
           class="text-[11px] text-stone-400 mt-0.5 truncate"
         >
-          {{ folderCountLabel }}
+          {{ conversationCountLabel }}
+          <span v-if="folders.length > 0"> · {{ folderCountLabel }}</span>
         </div>
       </div>
       <button
         v-if="!isBlurred"
         class="new-folder-btn"
         type="button"
-        :title="t('sidebar.chatHistory.folderCreateTitle')"
         @click="handleCreateFolder"
       >
         <FolderPlus class="w-3.5 h-3.5 shrink-0" />
-        <span
-          v-if="!props.compact"
-          class="new-folder-btn__label"
-        >
+        <span class="new-folder-btn__label">
           {{ t('sidebar.chatHistory.folderCreateTitle') }}
         </span>
       </button>
@@ -709,6 +687,7 @@ function handlePinConversation(convId: string): void {
   background: #fafaf9;
   color: #78716c;
   cursor: pointer;
+  transition: all 0.15s ease;
   flex-shrink: 0;
   white-space: nowrap;
 }

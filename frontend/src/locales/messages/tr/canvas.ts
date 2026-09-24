@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'Galeri dolu',
   'canvas.hero.slotFull.line1': 'Lütfen mevcut bir simgeyi silin ve mevcut simgeyi kaydedin',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

@@ -31,6 +31,8 @@ from . import (
     diagram_node_ops,
     diagrams,
     diagram_folders,
+    diagram_shares,
+    diagram_share_ws,
     mindmate_folders,
     dify_conversations,
     dify_files,
@@ -122,6 +124,8 @@ router.include_router(mindmate_export_dumps.router)
 router.include_router(mindmate_export_jobs.router)
 router.include_router(diagrams.router)
 router.include_router(diagram_folders.router)
+router.include_router(diagram_shares.router)
+router.include_router(diagram_share_ws.router)
 router.include_router(mindmate_folders.router)
 router.include_router(diagram_node_ops.router)
 router.include_router(workshop_ws.router)

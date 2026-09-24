@@ -70,6 +70,14 @@ from services.diagram.source_channel import (
 from services.redis.cache._redis_diagram_cache_helpers import MAX_SPEC_SIZE_KB
 from services.redis.cache.diagram_save_errors import STALE_ACCOUNT_SAVE_ERROR
 from services.learning_space.assignments import assert_homework_diagram_writable
+from services.diagram_shares.access import (
+    grantee_user_ids,
+    library_access,
+    set_share_folder,
+    set_share_pinned,
+    spec_write_owner_id,
+)
+from services.diagram_shares.lease import clear_lease
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.auth.thinking_coin.client_event_service import load_user_org
 from services.auth.thinking_coin.event_hub import mutation_to_footer, track_client_event
@@ -391,6 +399,8 @@ async def list_diagrams(
                 workshop_active=workshop_active,
                 folder_id=d.get("folder_id"),
                 source_channel=d.get("source_channel"),
+                shared=bool(d.get("shared")),
+                share_role=str(d.get("share_role") or "owner"),
             )
         )
 
@@ -422,6 +432,11 @@ async def get_diagram(
 
     cache = get_diagram_cache()
     diagram = await cache.get_diagram(current_user.id, diagram_id)
+
+    if not diagram:
+        access = await library_access(int(current_user.id), diagram_id)
+        if access.role == "recipient" and access.owner_user_id is not None:
+            diagram = await cache.get_diagram(access.owner_user_id, diagram_id)
 
     if not diagram:
         # Ownership check failed.  Allow read access when the diagram is locked
@@ -492,12 +507,22 @@ async def update_diagram(
             )
 
     cache = get_diagram_cache()
+    share_tab = (request.headers.get("x-mg-share-tab") or "").strip() or None
+    storage_user_id, write_error = await spec_write_owner_id(
+        int(current_user.id),
+        diagram_id,
+        share_tab,
+    )
+    if write_error == "viewer":
+        raise HTTPException(status_code=403, detail="Someone else is editing this diagram")
+    if storage_user_id is None:
+        raise HTTPException(status_code=404, detail="Diagram not found")
 
-    existing = await cache.get_diagram(current_user.id, diagram_id)
+    existing = await cache.get_diagram(storage_user_id, diagram_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Diagram not found")
 
-    await assert_homework_diagram_writable(db, int(current_user.id), diagram_id)
+    await assert_homework_diagram_writable(db, storage_user_id, diagram_id)
 
     if req.if_updated_at is not None and not _updated_at_matches(
         req.if_updated_at,
@@ -514,7 +539,7 @@ async def update_diagram(
     if req.spec is None:
         # Title/thumbnail-only: never rewrite spec from a possibly stale cache blob.
         success, error = await cache.update_diagram_meta_only(
-            user_id=current_user.id,
+            user_id=storage_user_id,
             diagram_id=diagram_id,
             title=title,
             thumbnail=thumbnail,
@@ -523,7 +548,7 @@ async def update_diagram(
             raise HTTPException(status_code=400, detail=error or "Failed to update diagram")
     else:
         success, _, error = await cache.save_diagram(
-            user_id=current_user.id,
+            user_id=storage_user_id,
             diagram_id=diagram_id,
             title=title,
             diagram_type=existing["diagram_type"],
@@ -536,9 +561,12 @@ async def update_diagram(
         if not success:
             raise HTTPException(status_code=400, detail=error or "Failed to update diagram")
 
-    diagram = await cache.get_diagram(current_user.id, diagram_id)
+    diagram = await cache.get_diagram(storage_user_id, diagram_id)
     if not diagram:
         raise HTTPException(status_code=500, detail="Diagram updated but failed to retrieve")
+
+    for grantee_id in await grantee_user_ids(storage_user_id, diagram_id):
+        await cache.invalidate_user_list(grantee_id)
 
     logger.info("[Diagrams] Updated diagram %s for user %s", diagram_id, current_user.id)
 
@@ -586,12 +614,20 @@ async def delete_diagram(
         )
 
     cache = get_diagram_cache()
+    access = await library_access(int(current_user.id), diagram_id)
+    grantees: list[int] = []
+    if access.role == "owner" and access.owner_user_id is not None:
+        grantees = await grantee_user_ids(access.owner_user_id, diagram_id)
     success, error = await cache.delete_diagram(current_user.id, diagram_id)
 
     if not success:
         if "not found" in (error or "").lower():
             raise HTTPException(status_code=404, detail=error)
         raise HTTPException(status_code=400, detail=error or "Failed to delete diagram")
+
+    await clear_lease(diagram_id)
+    for grantee_id in grantees:
+        await cache.invalidate_user_list(grantee_id)
 
     logger.info("[Diagrams] Deleted diagram %s for user %s", diagram_id, current_user.id)
 
@@ -675,6 +711,18 @@ async def pin_diagram(
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
 
+    access = await library_access(int(current_user.id), diagram_id)
+    if access.role == "recipient":
+        if not await set_share_pinned(int(current_user.id), diagram_id, pinned):
+            raise HTTPException(status_code=404, detail="Diagram not found")
+        await get_diagram_cache().invalidate_user_list(int(current_user.id))
+        action = "Pinned" if pinned else "Unpinned"
+        return {
+            "success": True,
+            "message": f"Diagram {action.lower()}",
+            "is_pinned": pinned,
+        }
+
     cache = get_diagram_cache()
     success, error = await cache.pin_diagram(current_user.id, diagram_id, pinned)
 
@@ -705,6 +753,16 @@ async def move_diagram_to_folder(
     """
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
+
+    access = await library_access(int(current_user.id), diagram_id)
+    if access.role == "recipient":
+        moved, move_error = await set_share_folder(int(current_user.id), diagram_id, req.folder_id)
+        if not moved:
+            if move_error == "folder":
+                raise HTTPException(status_code=400, detail="Folder not found")
+            raise HTTPException(status_code=404, detail="Diagram not found")
+        await get_diagram_cache().invalidate_user_list(int(current_user.id))
+        return {"success": True, "folder_id": req.folder_id}
 
     cache = get_diagram_cache()
     success, error = await cache.move_diagram_to_folder(

@@ -1,15 +1,31 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue'
+
+import { ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
+
 import {
-  ElDropdown,
-  ElDropdownItem,
-  ElDropdownMenu,
-} from 'element-plus'
+  Edit3,
+  FolderInput,
+  FolderMinus,
+  FolderPlus,
+  MoreHorizontal,
+  Pin,
+  Power,
+  Share2,
+  Trash2,
+  Users,
+} from '@lucide/vue'
 
-import { Edit3, FolderInput, FolderMinus, FolderPlus, MoreHorizontal, Pin, Power, Trash2, Users } from '@lucide/vue'
-
+import DiagramShareDialog from '@/components/sidebar/DiagramShareDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
-import { type DiagramFolder, type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { promptSwissGlassName } from '@/composables/sidebar/promptSwissGlassName'
+import { useAuthStore } from '@/stores'
+import {
+  type DiagramFolder,
+  type SavedDiagram,
+  useSavedDiagramsStore,
+} from '@/stores/savedDiagrams'
 
 const props = defineProps<{
   diagram: SavedDiagram
@@ -25,7 +41,11 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const notify = useNotifications()
+const authStore = useAuthStore()
 const savedDiagramsStore = useSavedDiagramsStore()
+const shareOpen = ref(false)
+const isRecipient = computed(() => props.diagram.share_role === 'recipient')
+const canShare = computed(() => Boolean(authStore.user?.schoolId) && !isRecipient.value)
 
 function getDiagramTypeLabel(type: string): string {
   const key = `sidebar.diagramType.${type}`
@@ -47,6 +67,15 @@ function handleClick(): void {
 }
 
 async function handleDelete(): Promise<void> {
+  if (isRecipient.value) {
+    const removed = await savedDiagramsStore.removeSharedDiagram(props.diagram.id)
+    if (removed) {
+      notify.success(t('sidebar.share.removed'))
+    } else {
+      notify.error(t('sidebar.share.removeFailed'))
+    }
+    return
+  }
   const success = await savedDiagramsStore.deleteDiagram(props.diagram.id)
   if (success) {
     notify.success(t('sidebar.diagramHistory.deleted'))
@@ -60,30 +89,16 @@ async function handlePin(): Promise<void> {
 }
 
 async function handleRename(): Promise<void> {
-  const { ElMessageBox } = await import('element-plus')
   const currentName = props.diagram.title || ''
-  try {
-    const result = await ElMessageBox.prompt(
-      t('sidebar.diagramHistory.renamePrompt'),
-      t('sidebar.diagramHistory.renameTitle'),
-      {
-        confirmButtonText: t('common.ok'),
-        cancelButtonText: t('common.cancel'),
-        inputValue: currentName,
-        inputPattern: /\S+/,
-        inputErrorMessage: t('sidebar.diagramHistory.nameRequired'),
-      }
-    )
-    const value =
-      typeof result === 'object' && result !== null && 'value' in result
-        ? (result as { value: string }).value
-        : undefined
-    if (value && value.trim() !== currentName) {
-      await savedDiagramsStore.updateDiagram(props.diagram.id, { title: value.trim() })
-    }
-  } catch {
-    // cancelled
-  }
+  const name = await promptSwissGlassName(
+    t,
+    'sidebar.diagramHistory.renameTitle',
+    'sidebar.diagramHistory.renamePrompt',
+    'sidebar.diagramHistory.title',
+    currentName
+  )
+  if (!name || name === currentName) return
+  await savedDiagramsStore.updateDiagram(props.diagram.id, { title: name })
 }
 
 async function handleTurnOffCollab(): Promise<void> {
@@ -135,6 +150,13 @@ async function handleCreateFolderAndMove(): Promise<void> {
           :class="{ 'rotate-45': showPinnedIcon }"
         />
         {{ diagram.title || t('mindmate.untitled') }}
+        <span
+          v-if="diagram.shared"
+          class="inline-flex items-center ml-1 text-sky-600"
+          :title="t('sidebar.share.icon')"
+        >
+          <Share2 class="w-2.5 h-2.5" />
+        </span>
         <span
           v-if="diagram.workshop_active"
           class="collab-live-badge"
@@ -194,7 +216,7 @@ async function handleCreateFolderAndMove(): Promise<void> {
     </ElDropdown>
     <button
       class="delete-btn"
-      :title="t('sidebar.actions.delete')"
+      :title="isRecipient ? t('sidebar.actions.removeFromLibrary') : t('sidebar.actions.delete')"
       @click.stop="handleDelete"
     >
       <Trash2 class="w-4 h-4" />
@@ -230,6 +252,15 @@ async function handleCreateFolderAndMove(): Promise<void> {
             </span>
           </ElDropdownItem>
           <ElDropdownItem
+            v-if="canShare"
+            @click="shareOpen = true"
+          >
+            <span class="diagram-history-more__row">
+              <Share2 class="w-4 h-4 shrink-0 text-sky-600" />
+              {{ t('sidebar.actions.share') }}
+            </span>
+          </ElDropdownItem>
+          <ElDropdownItem
             v-if="diagram.workshop_active"
             @click="handleTurnOffCollab"
           >
@@ -244,12 +275,18 @@ async function handleCreateFolderAndMove(): Promise<void> {
           >
             <span class="diagram-history-more__row diagram-history-more__row--danger">
               <Trash2 class="w-4 h-4 shrink-0" />
-              {{ t('sidebar.actions.delete') }}
+              {{
+                isRecipient ? t('sidebar.actions.removeFromLibrary') : t('sidebar.actions.delete')
+              }}
             </span>
           </ElDropdownItem>
         </ElDropdownMenu>
       </template>
     </ElDropdown>
+    <DiagramShareDialog
+      v-model="shareOpen"
+      :diagram-id="diagram.id"
+    />
   </div>
 </template>
 

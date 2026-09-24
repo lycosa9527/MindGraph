@@ -14,6 +14,7 @@ export { useNotifications } from './core/useNotifications'
 export { notify } from './core/notifications'
 export { useLanguage } from './core/useLanguage'
 export { swissGlassConfirm, swissGlassConfirmHero } from './common/useSwissGlassConfirm'
+export { swissGlassPrompt } from './common/useSwissGlassPrompt'
 export { getDiagramTypeDisplayName, getDefaultDiagramName } from './editor/useDiagramLabels'
 
 // Keyboard and input

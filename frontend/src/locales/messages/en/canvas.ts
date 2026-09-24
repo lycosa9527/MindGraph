@@ -1479,6 +1479,7 @@ export default {
   'canvasPage.collabParticipantsAria': 'Collaboration participants',
   'canvasPage.collabConnected': 'Connected',
   'canvas.topBar.viewOnly': 'View only',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
   'canvasPage.collabParticipantsMore': 'more',
   'canvas.ribbon.file': 'File',
   'canvas.ribbon.nodes': 'Nodes',

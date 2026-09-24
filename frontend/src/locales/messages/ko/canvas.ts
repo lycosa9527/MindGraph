@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': '갤러리가 가득 찼습니다.',
   'canvas.hero.slotFull.line1': '기존 아이콘을 삭제하고 현재 아이콘을 저장하세요.',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

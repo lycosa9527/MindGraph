@@ -1391,6 +1391,7 @@ export default {
   'canvasPage.collabParticipantsAria': '协同参与者',
   'canvasPage.collabConnected': '已连接',
   'canvas.topBar.viewOnly': '仅查看',
+  'canvas.share.readOnlyBar': '{name} 正在编辑，当前为只读',
   'canvasPage.collabParticipantsMore': '更多',
   'canvas.ribbon.file': '文件',
   'canvas.ribbon.nodes': '节点',

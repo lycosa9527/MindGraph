@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import count as sa_count
 
 from models.domain.auth import User
-from routers.features.workshop_chat.schemas import OrgMemberRow, OrgMembersPage
+from services.features.org_member_models import OrgMemberRow, OrgMembersPage
 
 _ORG_MEMBER_Q_MAX_LEN = 100
 _ORG_MEMBER_LIMIT_MAX = 200

@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'గ్యాలరీ నిండిపోయింది',
   'canvas.hero.slotFull.line1': 'దయచేసి ఇప్పటికే ఉన్న చిహ్నాన్ని తొలగించి, ప్రస్తుత చిహ్నాన్ని సేవ్ చేయండి',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

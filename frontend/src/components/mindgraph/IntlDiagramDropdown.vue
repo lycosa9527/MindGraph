@@ -6,17 +6,18 @@
  */
 import { computed, onMounted, watch } from 'vue'
 
-import { ElIcon, ElMessageBox } from 'element-plus'
+import { ElIcon } from 'element-plus'
 
 import { Loading } from '@element-plus/icons-vue'
 
 import { Edit3, FileImage, Pin, Trash2 } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { promptSwissGlassName } from '@/composables/sidebar/promptSwissGlassName'
+import { folderNameById } from '@/composables/sidebar/useDiagramArchiveHistory'
 import { useAuthStore } from '@/stores'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { formatDiagramCountLabel } from '@/utils/diagramLimit'
-import { folderNameById } from '@/composables/sidebar/useDiagramArchiveHistory'
 
 const emit = defineEmits<{
   (e: 'select', diagram: SavedDiagram): void
@@ -66,28 +67,15 @@ function handleClick(diagram: SavedDiagram) {
 async function handleRename(diagramId: string) {
   const diagram = diagrams.value.find((d) => d.id === diagramId)
   const currentName = diagram?.title || ''
-  try {
-    const result = await ElMessageBox.prompt(
-      t('sidebar.diagramHistory.renamePrompt'),
-      t('sidebar.diagramHistory.renameTitle'),
-      {
-        confirmButtonText: t('common.ok'),
-        cancelButtonText: t('common.cancel'),
-        inputValue: currentName,
-        inputPattern: /\S+/,
-        inputErrorMessage: t('sidebar.diagramHistory.nameRequired'),
-      }
-    )
-    const value =
-      typeof result === 'object' && result !== null && 'value' in result
-        ? (result as { value: string }).value
-        : undefined
-    if (value && value.trim() !== currentName) {
-      await store.updateDiagram(diagramId, { title: value.trim() })
-    }
-  } catch {
-    /* cancelled */
-  }
+  const name = await promptSwissGlassName(
+    t,
+    'sidebar.diagramHistory.renameTitle',
+    'sidebar.diagramHistory.renamePrompt',
+    'sidebar.diagramHistory.title',
+    currentName
+  )
+  if (!name || name === currentName) return
+  await store.updateDiagram(diagramId, { title: name })
 }
 
 async function handleDelete(diagramId: string) {

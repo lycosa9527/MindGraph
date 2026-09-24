@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'गैलरी भरी हुई है',
   'canvas.hero.slotFull.line1': 'कृपया मौजूदा आइकन हटाएं और वर्तमान आइकन सहेजें',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

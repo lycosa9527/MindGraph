@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'Галерея заповнена',
   'canvas.hero.slotFull.line1': 'Видаліть наявну піктограму та збережіть поточну',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

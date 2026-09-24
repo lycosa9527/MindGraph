@@ -49,6 +49,7 @@ from services.redis.cache._redis_diagram_cache_helpers import (
     count_diagrams_from_db,
 )
 from services.diagram.source_channel import list_items_missing_source_channel_field
+from services.diagram_shares.access import annotate_library_shares, items_missing_share_role
 from services.diagram.spec_coerce import coerce_diagram_spec
 from services.redis.cache.diagram_new_id import assign_id_for_new_diagram
 from services.redis.cache.diagram_save_errors import STALE_ACCOUNT_SAVE_ERROR, describe_diagram_db_error
@@ -621,6 +622,10 @@ class RedisDiagramCache:
                 user_id,
                 source_channel=source_channel,
             )
+            items.sort(
+                key=lambda x: (x.get("is_pinned", False), x.get("updated_at", "") or ""),
+                reverse=True,
+            )
             return self._paginate_diagram_list(items, page, page_size, diagram_cap)
 
         list_key = self._get_user_list_key(user_id)
@@ -635,7 +640,9 @@ class RedisDiagramCache:
                     if cached:
                         data = json.loads(cached)
                         cached_items = data.get("items", [])
-                        if not list_items_missing_source_channel_field(cached_items):
+                        share_ready = not items_missing_share_role(cached_items)
+                        channel_ready = not list_items_missing_source_channel_field(cached_items)
+                        if share_ready and channel_ready:
                             items = cached_items
                 except REDIS_ERRORS as e:
                     logger.warning("[DiagramCache] Redis list cache read failed: %s", e)
@@ -712,8 +719,11 @@ class RedisDiagramCache:
                             "source_channel": getattr(d, "source_channel", None),
                             "workshop_code": getattr(d, "workshop_code", None) or None,
                             "workshop_expires_at": (expires_at_val.isoformat() if expires_at_val is not None else None),
+                            "share_role": "owner",
+                            "shared": False,
                         }
                     )
+                await annotate_library_shares(db, user_id, items, source_channel)
                 return items
         except REDIS_ERRORS as e:
             logger.error("[DiagramCache] Database list load failed: %s", e)

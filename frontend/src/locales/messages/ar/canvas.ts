@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'المعرض ممتلئ',
   'canvas.hero.slotFull.line1': 'يرجى حذف أيقونة موجودة وحفظ الأيقونة الحالية',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

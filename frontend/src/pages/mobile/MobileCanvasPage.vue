@@ -33,6 +33,7 @@ import {
   ConceptMapLabelPicker,
   ConceptMapRootConceptPicker,
 } from '@/components/canvas'
+import DiagramShareReadonlyBar from '@/components/canvas/DiagramShareReadonlyBar.vue'
 import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
 import { NodePalettePanel, RootConceptModal } from '@/components/panels'
 import {
@@ -46,12 +47,18 @@ import {
   useNodeActions,
   useNotifications,
 } from '@/composables'
+import {
+  diagramShareEditorName,
+  diagramShareRole,
+  leaveDiagramShareSession,
+} from '@/composables/canvas/diagramShareSession'
+import { clearBlankCanvasLoadDedupe } from '@/composables/canvasPage/newCanvasBootstrap'
 import { useCanvasAutoSaveStatus } from '@/composables/canvasPage/useCanvasAutoSaveStatus'
 import { useCanvasPageTabRecIndicator } from '@/composables/canvasPage/useCanvasPageTabRecIndicator'
 import { useCanvasUnsavedLeaveGuard } from '@/composables/canvasPage/useCanvasUnsavedLeaveGuard'
 import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
-import { clearBlankCanvasLoadDedupe } from '@/composables/canvasPage/newCanvasBootstrap'
 import { useNewCanvasTypeQueryBootstrap } from '@/composables/canvasPage/useNewCanvasTypeQueryBootstrap'
+import { DiagramSessionKey } from '@/composables/diagram/useDiagramSession'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
@@ -59,7 +66,6 @@ import { useMobileCanvasEventHandlers } from '@/composables/mobile/useMobileCanv
 import { useMobileCanvasInlineRecBar } from '@/composables/mobile/useMobileCanvasInlineRecBar'
 import { useMobileCanvasRouteLoader } from '@/composables/mobile/useMobileCanvasRouteLoader'
 import { useMobileCanvasToolbar } from '@/composables/mobile/useMobileCanvasToolbar'
-import { DiagramSessionKey } from '@/composables/diagram/useDiagramSession'
 import { shouldBypassTrainingLeaveConfirm } from '@/composables/training/applyTrainingSnapshot'
 import { useTrainingCanvasGenerate } from '@/composables/training/useTrainingCanvasGenerate'
 import {
@@ -79,10 +85,7 @@ import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { useTrainingStore } from '@/stores/training'
 import type { DiagramType } from '@/types'
-import {
-  DEFAULT_CHART_TYPE_KEY,
-  diagramTypeFromKey,
-} from '@/utils/diagramTypeKeys'
+import { DEFAULT_CHART_TYPE_KEY, diagramTypeFromKey } from '@/utils/diagramTypeKeys'
 
 const diagramStore = useDiagramStore()
 provide(DiagramSessionKey, diagramStore as unknown as DiagramSession)
@@ -254,8 +257,7 @@ onBeforeRouteLeave((to) => {
 
 useCanvasUnsavedLeaveGuard({
   isDirty: diagramAutoSave.isDirty,
-  shouldBypassLeaveConfirm: () =>
-    shouldBypassTrainingLeaveConfirm(training.snapshot.state),
+  shouldBypassLeaveConfirm: () => shouldBypassTrainingLeaveConfirm(training.snapshot.state),
 })
 
 watch(
@@ -297,6 +299,9 @@ onUnmounted(() => {
   inlineRecCoordinator.teardown()
   mobileCanvasEvents.teardown()
   const flushPromise = diagramAutoSave.flushOnLeave()
+  void flushPromise.finally(() => {
+    void leaveDiagramShareSession()
+  })
   diagramAutoSave.teardown()
   focusReviewStore.clear()
   rootConceptReviewStore.clear()
@@ -320,6 +325,10 @@ onUnmounted(() => {
 
 <template>
   <div class="mobile-canvas flex flex-col flex-1 min-h-0 bg-gray-50 relative overflow-hidden">
+    <DiagramShareReadonlyBar
+      v-if="diagramShareRole === 'viewer'"
+      :editor-name="diagramShareEditorName"
+    />
     <!-- Top toolbar (fixed, no zoom/pan) -->
     <div
       :class="[
@@ -336,7 +345,7 @@ onUnmounted(() => {
         <button
           class="toolbar-btn"
           :class="{ 'toolbar-btn--dirty': saveStatusDirty }"
-          :disabled="isSaving"
+          :disabled="isSaving || diagramShareRole === 'viewer'"
           :aria-label="t('canvas.toolbar.save', '保存')"
           @click="handleSave"
         >

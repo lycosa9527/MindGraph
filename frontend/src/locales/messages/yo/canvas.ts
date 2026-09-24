@@ -1696,4 +1696,5 @@ export default {
   'canvas.hero.slotFull.title': 'Library is full',
   'canvas.hero.slotFull.line1': 'Delete an existing diagram to save the current one',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

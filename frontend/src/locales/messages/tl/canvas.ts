@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'Puno na ang gallery',
   'canvas.hero.slotFull.line1': 'Mangyaring tanggalin ang isang umiiral na icon at i-save ang kasalukuyang icon',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

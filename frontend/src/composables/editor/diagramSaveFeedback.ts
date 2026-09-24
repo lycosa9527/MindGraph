@@ -1,10 +1,7 @@
 import type { SaveFlushResult } from '@/composables/editor/useDiagramAutoSave'
 
 export type DiagramSaveBlockReason =
-  | 'llm_generating'
-  | 'subgraph_busy'
-  | 'collab_active'
-  | 'collab_guest'
+  'llm_generating' | 'subgraph_busy' | 'collab_active' | 'collab_guest'
 
 export interface DiagramSaveGuardState {
   llmGenerating: boolean
@@ -17,6 +14,8 @@ export interface DiagramSaveEligibility extends DiagramSaveGuardState {
   authenticated: boolean
   suppressed: boolean
   hasTypeAndData: boolean
+  /** Shared-diagram viewer: the canvas is open read-only. */
+  readOnly?: boolean
   bypassGeneratingGuard?: boolean
   /**
    * Leave / explicit flush: canvas already holds applied subgraph paste while
@@ -34,6 +33,7 @@ export function canPerformDiagramSave(state: DiagramSaveEligibility): boolean {
   if (!state.bypassSubgraphGuard && state.subgraphGenerating) return false
   if (!state.bypassSuppressGuard && state.suppressed) return false
   if (state.isCollabGuest || state.collabSessionActive) return false
+  if (state.readOnly) return false
   return true
 }
 

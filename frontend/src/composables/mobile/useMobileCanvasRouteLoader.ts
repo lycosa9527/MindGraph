@@ -5,6 +5,10 @@ import { type ComputedRef, nextTick, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { eventBus, useDiagramSpecForPersist } from '@/composables'
+import {
+  enterDiagramShareSession,
+  leaveDiagramShareSession,
+} from '@/composables/canvas/diagramShareSession'
 import { applyDiagramTypeForCanvasChrome } from '@/composables/canvasPage/diagramTypeMaps'
 import {
   getDiagramDataType,
@@ -16,11 +20,11 @@ import {
 import { flushCanvasBeforeLibrarySwitch } from '@/composables/canvasPage/shouldFlushBeforeLibrarySwitch'
 import { shouldSkipLibraryReloadDuringGeneration } from '@/composables/canvasPage/skipLibraryReloadDuringGeneration'
 import { unloadCanvasForLibrarySwitch } from '@/composables/canvasPage/unloadCanvasForLibrarySwitch'
-import type { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import {
   diagramSpecLikelyNeedsMarkdownPipeline,
   loadDiagramMarkdownPipeline,
 } from '@/composables/core/diagramMarkdownPipeline'
+import type { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import type { useInlineRecommendationsCoordinator } from '@/composables/editor/useInlineRecommendationsCoordinator'
 import { replayKittyPendingCanvasAction } from '@/composables/kitty/useKittyMobileHubActionBridge'
 import { studentHomeworkDiagramTitle } from '@/composables/learningSpace/lsHelpers'
@@ -30,10 +34,10 @@ import type { LocaleCode } from '@/i18n/locales'
 import type { useAuthStore } from '@/stores/auth'
 import type { useDiagramStore } from '@/stores/diagram'
 import type { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import type { useLLMResultsStore } from '@/stores/llmResults'
 import { splitSavedLlmResultsFromSpec } from '@/stores/llmResultsPersist'
 import type { useSavedDiagramsStore } from '@/stores/savedDiagrams'
-import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import type { useUIStore } from '@/stores/ui'
 import type { DiagramType } from '@/types'
 import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
@@ -43,10 +47,7 @@ import {
   diagramTypeKeyFromDiagramType,
 } from '@/utils/diagramTypeKeys'
 import { mindMapLibraryLoadOptions } from '@/utils/mindMapLibraryLoadOptions'
-import {
-  beginMindMapLoadSession,
-  markMindMapLoadStage,
-} from '@/utils/mindMapLoadDebug'
+import { beginMindMapLoadSession, markMindMapLoadStage } from '@/utils/mindMapLoadDebug'
 
 export interface UseMobileCanvasRouteLoaderOptions {
   diagramStore: ReturnType<typeof useDiagramStore>
@@ -138,6 +139,7 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
       notifyWarning(translate('canvas.library.saveBeforeSwitchFailed'))
       return false
     }
+    await leaveDiagramShareSession()
     if (loadGen !== libraryLoadGeneration) {
       return false
     }
@@ -193,6 +195,8 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
       })
       const key = diagramTypeKeyFromDiagramType(diagram.diagram_type)
       if (key) uiStore.setSelectedChartType(key)
+      if (loadGen !== libraryLoadGeneration) return false
+      await enterDiagramShareSession(diagramId)
       return true
     }
     notifyError(translate('canvas.library.diagramNotFound'))

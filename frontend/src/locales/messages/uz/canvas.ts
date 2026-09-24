@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'Galereya toʻlgan',
   'canvas.hero.slotFull.line1': 'Iltimos, mavjud belgini o\'chiring va joriy belgini saqlang',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const

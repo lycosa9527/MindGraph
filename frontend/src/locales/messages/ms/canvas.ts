@@ -1525,4 +1525,5 @@ export default {
   'canvas.hero.slotFull.title': 'Galeri penuh',
   'canvas.hero.slotFull.line1': 'Sila padamkan ikon sedia ada dan simpan ikon semasa',
   'canvas.hero.slotFull.line2': '',
+  'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
 } as const
