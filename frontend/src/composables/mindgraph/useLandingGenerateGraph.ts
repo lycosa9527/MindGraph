@@ -1,26 +1,33 @@
 /**
  * Landing prompt → generate_graph with SSE phase colors and status toasts.
  */
-import { ref } from 'vue'
+import { onScopeDispose, ref } from 'vue'
 
+import {
+  dismissReplacingNotification,
+  showReplacingNotification,
+} from '@/composables/core/notifications'
 import type { UseLanguageTranslate } from '@/composables/core/useLanguage'
 import type { useNotifications } from '@/composables/core/useNotifications'
 import {
   extractFailureFromPayload,
+  normalizeDiagramTypeForLabel,
   resolveDiagramTypeLabel,
   resolveLandingErrorMessage,
   shouldNotifyLandingError,
   topicPreviewFromPrompt,
-  normalizeDiagramTypeForLabel,
 } from '@/composables/mindgraph/landingGenerateGraphErrors'
 import type { ModelLoadPhase } from '@/stores/llmResults'
 import { authFetch } from '@/utils/api'
-import { noteOrgGenerationCacheResult, withOrgGenerationCacheBypass } from '@/utils/orgGenerationCache'
 import {
-  consumeGenerateGraphStream,
   type GenerateGraphCompletePayload,
   type GenerateGraphStreamPhase,
+  consumeGenerateGraphStream,
 } from '@/utils/generateGraphStream'
+import {
+  noteOrgGenerationCacheResult,
+  withOrgGenerationCacheBypass,
+} from '@/utils/orgGenerationCache'
 
 const STREAM_TO_LOAD_PHASE: Record<GenerateGraphStreamPhase, ModelLoadPhase> = {
   accepted: 'sending',
@@ -41,27 +48,15 @@ type LandingNotifyPhase = GenerateGraphStreamPhase | 'client_sent'
 
 export type LandingPhaseToastBucket = LandingPhaseToastKey | 'generating_detail' | 'silent'
 
-/** Map stream phases to toast buckets so identical messages are not shown twice. */
-export function resolveLandingPhaseToastBucket(
-  phase: LandingNotifyPhase
-): LandingPhaseToastBucket {
+/**
+ * Progress lives on the prompt ring. Only the topic toast is spoken;
+ * earlier phases would stack a second card on top of it.
+ */
+export function resolveLandingPhaseToastBucket(phase: LandingNotifyPhase): LandingPhaseToastBucket {
   if (phase === 'waiting' || phase === 'progress') {
     return 'generating_detail'
   }
-  if (phase === 'streaming') {
-    return 'silent'
-  }
-  if (phase === 'client_sent' || phase === 'accepted') {
-    return 'landing.international.phaseServerReceived'
-  }
-  const keyMap: Record<
-    Exclude<LandingNotifyPhase, 'waiting' | 'progress' | 'streaming' | 'client_sent' | 'accepted'>,
-    LandingPhaseToastKey
-  > = {
-    detecting: 'landing.international.phasePleaseWait',
-    requirements: 'landing.international.phasePleaseWait',
-  }
-  return keyMap[phase]
+  return 'silent'
 }
 
 /** Whether a toast bucket should fire given buckets already shown this generation. */
@@ -84,17 +79,30 @@ export function shouldShowLandingPhaseToast(
   return true
 }
 
+/**
+ * One landing-prompt flight for the page prompt and the quick-access remote.
+ * A surface only cancels the run it started, so unmounting the other leaves it alone.
+ */
+const loadPhase = ref<ModelLoadPhase>('idle')
+const isGenerating = ref(false)
+let shownToastBuckets = new Set<LandingPhaseToastBucket>()
+let activeAbortController: AbortController | null = null
+let activeOwner: object | null = null
+let generationId = 0
+let activeRequestBody: Record<string, unknown> | null = null
+let serverProgressTopic: string | undefined
+let serverProgressDiagramType: string | undefined
+
+export type LandingGenerationHandle = {
+  signal: AbortSignal
+  runId: number
+}
+
 export function useLandingGenerateGraph(options: {
   t: UseLanguageTranslate
   notify: ReturnType<typeof useNotifications>
 }) {
-  const loadPhase = ref<ModelLoadPhase>('idle')
-  const isGenerating = ref(false)
-  let shownToastBuckets = new Set<LandingPhaseToastBucket>()
-  let activeAbortController: AbortController | null = null
-  let activeRequestBody: Record<string, unknown> | null = null
-  let serverProgressTopic: string | undefined
-  let serverProgressDiagramType: string | undefined
+  const owner = {}
 
   function resetLoadPhase(): void {
     loadPhase.value = 'idle'
@@ -114,7 +122,7 @@ export function useLandingGenerateGraph(options: {
       notifyGeneratingDetail()
       return
     }
-    options.notify.info(String(options.t(toastBucket)), 3500)
+    showReplacingNotification(String(options.t(toastBucket)), 'info', 3500)
   }
 
   function notifyGeneratingDetail(): void {
@@ -126,13 +134,14 @@ export function useLandingGenerateGraph(options: {
       serverProgressDiagramType ?? activeRequestBody?.diagram_type,
       options.t
     )
-    options.notify.info(
+    showReplacingNotification(
       String(
         options.t('landing.international.generatingWithTopic', {
           topic,
           diagramType,
         })
       ),
+      'info',
       5000
     )
   }
@@ -143,22 +152,35 @@ export function useLandingGenerateGraph(options: {
   }
 
   function notifySuccessNavigate(): void {
-    options.notify.success(String(options.t('landing.international.phaseCompleteNavigate')), 3500)
+    showReplacingNotification(
+      String(options.t('landing.international.phaseCompleteNavigate')),
+      'success',
+      3500
+    )
   }
 
   function notifyPromptGuidance(): void {
-    options.notify.info(String(options.t('landing.international.errorValidation')), 6000)
+    showReplacingNotification(
+      String(options.t('landing.international.errorValidation')),
+      'info',
+      6000
+    )
   }
 
-  function notifyGenerationFailure(error: string, errorType?: string, showGuidance?: boolean): void {
+  function notifyGenerationFailure(
+    error: string,
+    errorType?: string,
+    showGuidance?: boolean
+  ): void {
     if (!shouldNotifyLandingError(error, errorType)) {
       return
     }
-    const message = resolveLandingErrorMessage(error, errorType, options.t)
-    options.notify.error(message, 5000)
     if (showGuidance) {
       notifyPromptGuidance()
+      return
     }
+    const message = resolveLandingErrorMessage(error, errorType, options.t)
+    showReplacingNotification(message, 'error', 5000)
   }
 
   async function readHttpError(response: Response): Promise<string> {
@@ -217,7 +239,7 @@ export function useLandingGenerateGraph(options: {
     | { ok: true; result: GenerateGraphCompletePayload; diagramType: string }
     | { ok: false; error: string; errorType?: string }
   > {
-    if (isGenerating.value) {
+    if (signal !== activeAbortController?.signal) {
       return { ok: false, error: 'Generation already in progress' }
     }
 
@@ -340,33 +362,80 @@ export function useLandingGenerateGraph(options: {
       return parsed
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        resetLoadPhase()
+        if (signal && signal === activeAbortController?.signal) {
+          resetLoadPhase()
+        }
         return { ok: false, error: 'Cancelled' }
       }
       const message = error instanceof Error ? error.message : 'Unknown error'
       return failGeneration(message, 'generation')
-    } finally {
-      isGenerating.value = false
     }
   }
 
-  function beginGeneration(): AbortController {
+  function beginGeneration(): LandingGenerationHandle {
+    generationId += 1
     activeAbortController?.abort()
     activeAbortController = new AbortController()
-    return activeAbortController
+    activeOwner = owner
+    isGenerating.value = true
+    return { signal: activeAbortController.signal, runId: generationId }
   }
 
-  function endGeneration(): void {
+  function releaseRun(handle: LandingGenerationHandle): void {
+    if (handle.runId !== generationId) {
+      return
+    }
     activeAbortController = null
-    resetLoadPhase()
+    activeOwner = null
   }
 
-  function abortGeneration(): void {
-    activeAbortController?.abort()
+  function endGeneration(handle: LandingGenerationHandle): void {
+    if (handle.runId !== generationId) {
+      return
+    }
     activeAbortController = null
+    activeOwner = null
     isGenerating.value = false
     resetLoadPhase()
   }
+
+  function abortOwned(target: object): void {
+    if (activeOwner !== target) {
+      return
+    }
+    const controller = activeAbortController
+    generationId += 1
+    activeAbortController = null
+    activeOwner = null
+    controller?.abort()
+    isGenerating.value = false
+    resetLoadPhase()
+    if (controller) {
+      dismissReplacingNotification()
+    }
+  }
+
+  function cancelInFlightGeneration(): void {
+    if (activeOwner) {
+      abortOwned(activeOwner)
+      return
+    }
+    if (!isGenerating.value) {
+      return
+    }
+    generationId += 1
+    isGenerating.value = false
+    resetLoadPhase()
+    dismissReplacingNotification()
+  }
+
+  function isCurrentRun(runId: number): boolean {
+    return runId === generationId
+  }
+
+  onScopeDispose(() => {
+    abortOwned(owner)
+  })
 
   return {
     loadPhase,
@@ -374,7 +443,10 @@ export function useLandingGenerateGraph(options: {
     generateLandingGraph,
     resetLoadPhase,
     beginGeneration,
+    releaseRun,
     endGeneration,
-    abortGeneration,
+    abortGeneration: () => abortOwned(owner),
+    cancelInFlightGeneration,
+    isCurrentRun,
   }
 }

@@ -173,4 +173,10 @@ export default {
   'sidebar.share.icon': '已分享',
   'sidebar.share.removed': '已從我的圖庫移除',
   'sidebar.share.removeFailed': '移除失敗',
+  'sidebar.quickAccessRemote': '快速訪問',
+  'sidebar.quickAccessRemote.ariaLabel': '快速訪問',
+  'sidebar.quickAccessRemote.resize': '拖動調整大小',
+  'sidebar.quickAccessRemote.tabDiagrams': '圖示',
+  'sidebar.quickAccessRemote.tabPrompts': '靈感推薦',
+  'sidebar.quickAccessRemote.editPrompt': '右鍵編輯',
 } as const

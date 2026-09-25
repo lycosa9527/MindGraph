@@ -12,6 +12,7 @@ import { ElConfigProvider } from 'element-plus/es/components/config-provider/ind
 import 'element-plus/es/components/config-provider/style/css'
 import type { Language } from 'element-plus/es/locale'
 
+import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useOAuthRouteFeedback } from '@/composables/auth/useOAuthRouteFeedback'
 import { eventBus } from '@/composables/core/useEventBus'
@@ -19,9 +20,11 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useKittyDesktopActionPoll } from '@/composables/kitty/useKittyDesktopActionPoll'
 import { useSlideRemoteDesktopPoll } from '@/composables/mindMap/useSlideRemoteDesktopPoll'
+import { quickAccessRemoteHidden } from '@/composables/sidebar/useQuickAccessRemote'
 import { useTrainingFollow } from '@/composables/training/useTrainingFollow'
 import { useTrainingSessionEngine } from '@/composables/training/useTrainingSessionEngine'
 import { privacyPageUiCode } from '@/composables/usePrivacyPageLocale'
+import { isMobileAppPath } from '@/composables/voiceNotes/mobileVoiceNotesFinish'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { syncI18nLocale } from '@/i18n'
 import { loadElementPlusLocale } from '@/i18n/elementPlusLocale'
@@ -50,6 +53,12 @@ const CanvasLiveSubtitleOverlay = defineAsyncComponent(
 )
 const VoiceNotesFab = defineAsyncComponent(
   () => import('@/components/voiceNotes/VoiceNotesFab.vue')
+)
+const QuickAccessRemote = defineAsyncComponent(
+  () => import('@/components/sidebar/QuickAccessRemote.vue')
+)
+const FloatingAccountMenu = defineAsyncComponent(
+  () => import('@/components/sidebar/FloatingAccountMenu.vue')
 )
 const VoiceNotesModal = defineAsyncComponent(
   () => import('@/components/voiceNotes/VoiceNotesModal.vue')
@@ -104,6 +113,7 @@ const route = useRoute()
 const router = useRouter()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
+const { canViewSettingsSubtab } = useAdminAccess()
 const { on: onAdminEvent } = useAdminEventBus('App')
 const { t } = useLanguage()
 
@@ -255,6 +265,38 @@ const currentLayout = computed(() => {
   return layouts[layoutName] || layouts.default
 })
 
+const showQuickAccessRemote = computed(
+  () =>
+    authStore.isAuthenticated &&
+    !quickAccessRemoteHidden.value &&
+    route.meta.layout !== 'mobile' &&
+    !isMobileAppPath(route.path) &&
+    route.path !== '/export-render' &&
+    !isMindgraphHeadlessExportSession()
+)
+
+/** Sidebar footer is on screen and can open the account menu. */
+const sidebarAccountMenuVisible = computed(
+  () =>
+    route.meta.layout === 'main' &&
+    !uiStore.sidebarCollapsed &&
+    !(isAdminPublicDashboardRoute(route) && canViewSettingsSubtab('public_dashboard'))
+)
+
+/** Account dropdown on pages that do not show the sidebar footer. */
+const showFloatingAccountMenu = computed(
+  () =>
+    authStore.isAuthenticated &&
+    !isMindgraphHeadlessExportSession() &&
+    route.path !== '/export-render' &&
+    route.path !== '/privacy' &&
+    route.meta.layout !== 'mobile' &&
+    route.meta.layout !== 'auth' &&
+    route.meta.layout !== 'default' &&
+    !isMobileAppPath(route.path) &&
+    !sidebarAccountMenuVisible.value
+)
+
 watch(
   () => uiStore.isDark,
   (isDark) => {
@@ -304,8 +346,7 @@ function handleSessionExpiredLoginSuccess() {
   if (rawRedirect) {
     const redirectPath = getSafePostAuthPath(rawRedirect, defaultHome)
     const target =
-      authStore.user?.role === 'student' &&
-      (redirectPath === '/mindmate' || redirectPath === '/')
+      authStore.user?.role === 'student' && (redirectPath === '/mindmate' || redirectPath === '/')
         ? studentHome
         : redirectPath
     router.push(target).catch(() => {
@@ -448,6 +489,8 @@ onUnmounted(() => {
     />
 
     <VoiceNotesFab />
+    <QuickAccessRemote v-if="showQuickAccessRemote" />
+    <FloatingAccountMenu v-if="showFloatingAccountMenu" />
     <VoiceNotesModal />
     <SwissGlassConfirmHost />
     <SwissGlassPromptHost />

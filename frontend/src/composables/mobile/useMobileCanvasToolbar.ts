@@ -3,11 +3,12 @@
  */
 import { ref } from 'vue'
 
+import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { eventBus } from '@/composables/core/useEventBus'
 import {
+  type DiagramSaveGuardState,
   buildDiagramSaveGuardState,
   flushDiagramSaveWithFeedback,
-  type DiagramSaveGuardState,
 } from '@/composables/editor/diagramSaveFeedback'
 import type { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import type { useAuthStore } from '@/stores/auth'
@@ -55,6 +56,7 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
   const isSaving = ref(false)
   const showNodePalette = ref(false)
   const showModelDrawer = ref(false)
+  const { activeTool, closeActiveTool, handleToolSelect } = useMindMapSideToolbarState()
 
   async function handleSave(): Promise<void> {
     if (isSaving.value) return
@@ -66,7 +68,8 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
     try {
       await flushDiagramSaveWithFeedback({
         flush: () => diagramAutoSave.flush({ bypassSuppressGuard: true }),
-        guardState: saveGuardState?.() ??
+        guardState:
+          saveGuardState?.() ??
           buildDiagramSaveGuardState({
             llmGenerating: llmResultsStore.isGenerating,
             subgraphGenerating: false,
@@ -113,14 +116,33 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
     }
   }
 
+  function closeBrainstormIfOpen(): void {
+    if (activeTool.value === 'waterfall') {
+      closeActiveTool()
+    }
+  }
+
+  function toggleAiBrainstorm(): void {
+    if (!authStore.isAuthenticated) {
+      notifyWarning(translate('notification.signInToUse'))
+      return
+    }
+    if (panelsStore.nodePalettePanel.isOpen) {
+      panelsStore.closeNodePalette()
+      showNodePalette.value = false
+    }
+    handleToolSelect('waterfall')
+  }
+
   function toggleNodePalette(): void {
     if (panelsStore.nodePalettePanel.isOpen) {
       panelsStore.closeNodePalette()
       showNodePalette.value = false
-    } else {
-      panelsStore.openNodePalette()
-      showNodePalette.value = true
+      return
     }
+    closeBrainstormIfOpen()
+    panelsStore.openNodePalette()
+    showNodePalette.value = true
   }
 
   function handleFitToScreen(): void {
@@ -138,9 +160,12 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
     handleSave,
     handleAddNode,
     handleDeleteSelected,
+    activeTool,
     handleToolbarAI,
     toggleConceptMapAiToolbar,
+    toggleAiBrainstorm,
     toggleNodePalette,
+    closeActiveTool,
     handleFitToScreen,
     handleZoomReset,
   }

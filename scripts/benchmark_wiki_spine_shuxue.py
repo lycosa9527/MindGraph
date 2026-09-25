@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import fitz
+import pymupdf
 
 from services.knowledge.wiki_spine import plan_spine_sections, resolve_query_to_wiki_slug
 
@@ -15,7 +15,7 @@ SUBJECT = "数学"
 def main() -> None:
     """Run spine binding and query-resolution benchmark on the math OCR PDF."""
     pdf_path = next(p for p in OCR_DIR.glob("*.pdf") if SUBJECT in p.name and "课程方案" not in p.name)
-    doc = fitz.open(str(pdf_path))
+    doc = pymupdf.open(str(pdf_path))
     text = "\n\n".join(str(doc.load_page(i).get_text() or "") for i in range(len(doc)))
     doc_title = pdf_path.stem.replace("_可搜索", "")
 

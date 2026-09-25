@@ -2,7 +2,7 @@
 /**
  * Send one library diagram to other people in the same organization.
  */
-import { ref, watch } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 
 import { Share2 } from '@lucide/vue'
 
@@ -35,16 +35,26 @@ const selected = ref<number[]>([])
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 let seedSelection = false
+let requestGen = 0
+
+function clearSearchTimer(): void {
+  if (searchTimer) {
+    clearTimeout(searchTimer)
+    searchTimer = null
+  }
+}
 
 async function loadCandidates(): Promise<void> {
   const shouldSeed = seedSelection
   seedSelection = false
+  const gen = ++requestGen
   loading.value = true
   try {
     const params = new URLSearchParams()
     if (query.value.trim()) params.set('q', query.value.trim())
     const suffix = params.toString() ? `?${params.toString()}` : ''
     const response = await authFetch(`/api/diagrams/${props.diagramId}/share-candidates${suffix}`)
+    if (gen !== requestGen) return
     if (!response.ok) {
       candidates.value = []
       return
@@ -55,22 +65,32 @@ async function loadCandidates(): Promise<void> {
       selected.value = data.granted_ids ?? []
     }
   } finally {
-    loading.value = false
+    if (gen === requestGen) loading.value = false
   }
 }
 
 watch(open, (visible) => {
-  if (!visible) return
+  if (!visible) {
+    clearSearchTimer()
+    requestGen += 1
+    return
+  }
   query.value = ''
   selected.value = []
   seedSelection = true
   void loadCandidates()
 })
 
+onUnmounted(() => {
+  clearSearchTimer()
+  requestGen += 1
+})
+
 watch(query, () => {
   if (!open.value) return
-  if (searchTimer) clearTimeout(searchTimer)
+  clearSearchTimer()
   searchTimer = setTimeout(() => {
+    searchTimer = null
     void loadCandidates()
   }, 300)
 })

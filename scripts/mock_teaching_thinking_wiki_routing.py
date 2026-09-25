@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 from typing import List, Tuple
 
-import fitz
+import pymupdf
 
 from services.knowledge.wiki_spine import (
     BoundSection,
@@ -35,7 +35,7 @@ MOCK_QUESTIONS = [
 def _load_pdf(name_part: str) -> Tuple[Path, str]:
     """Load OCR PDF text for a subject name fragment."""
     path = next(p for p in OCR_DIR.glob("*.pdf") if name_part in p.name and "课程方案" not in p.name)
-    doc = fitz.open(str(path))
+    doc = pymupdf.open(str(path))
     text = "\n\n".join(str(doc.load_page(i).get_text() or "") for i in range(len(doc)))
     return path, text
 
@@ -83,7 +83,7 @@ def main() -> None:
         print()
         print("#" * 72)
         print(f"DOCUMENT: {path.name}")
-        print(f"  pages={fitz.open(str(path)).page_count}  chars={len(text)}")
+        print(f"  pages={pymupdf.open(str(path)).page_count}  chars={len(text)}")
         if bound is None:
             print("  SPINE: FAILED (would fall back to old LLM wiki guess)")
             continue

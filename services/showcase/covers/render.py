@@ -6,7 +6,7 @@ import io
 import logging
 from pathlib import Path
 
-import fitz
+import pymupdf
 from PIL import Image
 
 from services.showcase.covers.office_to_pdf import convert_office_to_pdf, office_suffix_needs_pdf
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 # Keep in sync with routers.features.community.helpers.THUMBNAIL_MAX_BYTES
 THUMBNAIL_MAX_BYTES = 2 * 1024 * 1024
 _THUMB_MAX_EDGE_PX = 960
-_PDF_RENDER_MATRIX = fitz.Matrix(1.5, 1.5)
+_PDF_RENDER_MATRIX = pymupdf.Matrix(1.5, 1.5)
 _PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 
 
@@ -50,7 +50,7 @@ def shrink_png_bytes(png_bytes: bytes, max_bytes: int = THUMBNAIL_MAX_BYTES) -> 
 
 def render_pdf_first_page_png(pdf_path: Path) -> bytes:
     """Render page 0 of a PDF to PNG bytes (pre-shrink)."""
-    document = fitz.open(pdf_path)
+    document = pymupdf.open(pdf_path)
     try:
         if document.page_count < 1:
             raise ValueError("PDF has no pages")

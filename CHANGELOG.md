@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.100] - 2026-09-25
+
+> **A floating quick-access remote for blank diagrams and preset prompts, with one status toast and a progress sweep on the prompt that is running.**
+
+### Added
+
+- **Quick access remote** — Signed-in desktop pages can open a draggable, resizable panel from the account menu. The Diagrams tab opens one of the ten blank canvases. The Prompts tab runs the six landing presets, and a right-click edits a prompt on this device. The panel stays available on pages that do not show the sidebar.
+- **Mobile mind map brainstorm** — The phone canvas toolbar opens the same brainstorm sheet as the desktop mind map, and closes the node palette while that sheet is open.
+
+### Changed
+
+- **Prompt generation feedback** — Landing and quick-access generation keep a single status toast. The prompt that is working shows the traveling phase ring and a light sweep until the run finishes.
+- **Shared diagram edit slot** — The open tab holds the edit seat on a server-sent stream. A dropped connection keeps its place for a short grace period, then leaves. A stale connection cannot take the seat back from a newer page.
+- **Scanned PDF rendering** — OCR and showcase cover rendering import PyMuPDF as `pymupdf`.
+
+### Fixed
+
+- **Prompt run cleanup** — Closing the remote, signing out, or choosing another diagram cancels only the run that surface started, and does not write the canvas after that run is no longer current.
+
+### Tests
+
+- [`frontend/tests/quickAccessRemote.spec.ts`](frontend/tests/quickAccessRemote.spec.ts), [`frontend/tests/useLandingGenerateGraph.spec.ts`](frontend/tests/useLandingGenerateGraph.spec.ts), [`tests/test_diagram_share_queue.py`](tests/test_diagram_share_queue.py)
+
 ## [5.180.99] - 2026-09-25
 
 > **Share one library diagram with people in the same organization. The first person to open it edits; everyone else watches the same canvas.**

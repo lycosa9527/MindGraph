@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import fitz
+import pymupdf
 import pytest
 from PIL import Image, ImageStat
 
@@ -98,7 +98,7 @@ def test_real_fixture_cover_and_preview_pdf(source: Path, tmp_path: Path) -> Non
     assert pdf_path.is_file()
     assert pdf_path.read_bytes()[:5] == b"%PDF-"
 
-    document = fitz.open(pdf_path)
+    document = pymupdf.open(pdf_path)
     try:
         assert document.page_count >= 1
         page0 = document.load_page(0)
@@ -243,12 +243,12 @@ def test_real_office_preview_pdf_readable_by_viewer_stack(tmp_path: Path) -> Non
     assert office
     for source in office:
         pdf_path = resolve_cover_pdf_path(source, tmp_path / source.name / "lo")
-        document = fitz.open(pdf_path)
+        document = pymupdf.open(pdf_path)
         try:
             assert document.page_count >= 1
             for page_num in range(document.page_count):
                 page = document.load_page(page_num)
-                pixmap = page.get_pixmap(matrix=fitz.Matrix(1.0, 1.0), alpha=False)
+                pixmap = page.get_pixmap(matrix=pymupdf.Matrix(1.0, 1.0), alpha=False)
                 assert pixmap.width > 0 and pixmap.height > 0
                 assert len(pixmap.tobytes("png")) > 100
         finally:

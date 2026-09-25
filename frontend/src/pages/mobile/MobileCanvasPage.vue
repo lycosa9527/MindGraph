@@ -34,6 +34,8 @@ import {
   ConceptMapRootConceptPicker,
 } from '@/components/canvas'
 import DiagramShareReadonlyBar from '@/components/canvas/DiagramShareReadonlyBar.vue'
+import MindMapAiToolIcon from '@/components/canvas/MindMapAiToolIcon.vue'
+import MindMapWaterfallPanel from '@/components/canvas/MindMapWaterfallPanel.vue'
 import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
 import { NodePalettePanel, RootConceptModal } from '@/components/panels'
 import {
@@ -58,6 +60,10 @@ import { useCanvasPageTabRecIndicator } from '@/composables/canvasPage/useCanvas
 import { useCanvasUnsavedLeaveGuard } from '@/composables/canvasPage/useCanvasUnsavedLeaveGuard'
 import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
 import { useNewCanvasTypeQueryBootstrap } from '@/composables/canvasPage/useNewCanvasTypeQueryBootstrap'
+import {
+  bindMindMapExternalPanelClose,
+  resetMindMapSideToolbarState,
+} from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { DiagramSessionKey } from '@/composables/diagram/useDiagramSession'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
@@ -144,12 +150,15 @@ const {
   isSaving,
   showNodePalette,
   showModelDrawer,
+  activeTool,
   handleSave,
   handleAddNode,
   handleDeleteSelected,
   handleToolbarAI,
   toggleConceptMapAiToolbar,
+  toggleAiBrainstorm,
   toggleNodePalette,
+  closeActiveTool,
   handleFitToScreen,
   handleZoomReset,
 } = useMobileCanvasToolbar({
@@ -172,6 +181,17 @@ const {
   notifySuccess: (message) => notify.success(message),
   notifyWarning: (message) => notify.warning(message),
 })
+
+const showMobileBrainstorm = computed(() => useMindMapV2.value && activeTool.value === 'waterfall')
+
+bindMindMapExternalPanelClose(() => panelsStore.aiBrainstormPanel.isOpen, closeActiveTool)
+
+watch(
+  () => diagramStore.type,
+  () => {
+    closeActiveTool()
+  }
+)
 
 const {
   inlineRecActive,
@@ -306,6 +326,7 @@ onUnmounted(() => {
   focusReviewStore.clear()
   rootConceptReviewStore.clear()
 
+  resetMindMapSideToolbarState()
   if (!preserveDiagramForKittyHub.value) {
     clearBlankCanvasLoadDedupe()
     diagramStore.reset()
@@ -339,7 +360,11 @@ onUnmounted(() => {
       <div
         :class="[
           'flex items-stretch w-full px-1.5 py-1.5 gap-1',
-          isConceptMap ? 'mobile-toolbar-row--concept-map' : 'justify-evenly',
+          isConceptMap
+            ? 'mobile-toolbar-row--concept-map'
+            : useMindMapV2
+              ? 'mobile-toolbar-row--mind-map'
+              : 'justify-evenly',
         ]"
       >
         <button
@@ -418,6 +443,17 @@ onUnmounted(() => {
             <span class="toolbar-label">{{ t('canvas.toolbar.aiGenerate', 'AI生成') }}</span>
           </button>
           <button
+            v-if="useMindMapV2"
+            type="button"
+            class="toolbar-btn toolbar-btn--brainstorm"
+            :class="{ 'toolbar-btn--active': activeTool === 'waterfall' }"
+            :aria-label="t('canvas.mindMapSideToolbar.waterfall')"
+            @click="toggleAiBrainstorm"
+          >
+            <MindMapAiToolIcon kind="brainstorm" />
+            <span class="toolbar-label">{{ t('canvas.mindMapSideToolbar.waterfall') }}</span>
+          </button>
+          <button
             class="toolbar-btn toolbar-btn--purple"
             :class="{ 'toolbar-btn--active': showNodePalette }"
             :aria-label="t('panel.nodePalette')"
@@ -457,7 +493,17 @@ onUnmounted(() => {
         {{ t('canvas.emptyState', '选择图示类型开始创建') }}
       </div>
 
-      <div class="mobile-zoom-controls absolute bottom-3 inset-e-3 z-10 flex flex-col gap-1.5">
+      <div
+        v-if="showMobileBrainstorm"
+        class="mobile-brainstorm-sheet"
+      >
+        <MindMapWaterfallPanel @close="closeActiveTool" />
+      </div>
+
+      <div
+        class="mobile-zoom-controls absolute inset-e-3 z-40 flex flex-col gap-1.5"
+        :class="showMobileBrainstorm ? 'mobile-zoom-controls--above-sheet' : 'bottom-3'"
+      >
         <button
           type="button"
           class="mobile-zoom-btn"

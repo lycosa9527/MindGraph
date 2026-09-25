@@ -717,6 +717,7 @@ async def pin_diagram(
             raise HTTPException(status_code=404, detail="Diagram not found")
         await get_diagram_cache().invalidate_user_list(int(current_user.id))
         action = "Pinned" if pinned else "Unpinned"
+        logger.info("[Diagrams] %s diagram %s for user %s", action, diagram_id, current_user.id)
         return {
             "success": True,
             "message": f"Diagram {action.lower()}",
@@ -762,6 +763,12 @@ async def move_diagram_to_folder(
                 raise HTTPException(status_code=400, detail="Folder not found")
             raise HTTPException(status_code=404, detail="Diagram not found")
         await get_diagram_cache().invalidate_user_list(int(current_user.id))
+        logger.info(
+            "[Diagrams] Moved diagram %s to folder %s for user %s",
+            diagram_id,
+            req.folder_id,
+            current_user.id,
+        )
         return {"success": True, "folder_id": req.folder_id}
 
     cache = get_diagram_cache()

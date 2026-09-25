@@ -1,10 +1,15 @@
+import { effectScope } from 'vue'
+
 import { describe, expect, it } from 'vitest'
 
-import type { GenerateGraphStreamPhase } from '@/utils/generateGraphStream'
+import type { UseLanguageTranslate } from '@/composables/core/useLanguage'
+import type { useNotifications } from '@/composables/core/useNotifications'
 import {
   resolveLandingPhaseToastBucket,
   shouldShowLandingPhaseToast,
+  useLandingGenerateGraph,
 } from '@/composables/mindgraph/useLandingGenerateGraph'
+import type { GenerateGraphStreamPhase } from '@/utils/generateGraphStream'
 
 const FULL_SSE_PHASES: GenerateGraphStreamPhase[] = [
   'accepted',
@@ -40,16 +45,11 @@ type LandingPhaseToastBucket =
   | 'silent'
 
 describe('resolveLandingPhaseToastBucket', () => {
-  it('dedupes identical please-wait toasts across detecting and requirements', () => {
-    const pleaseWait = 'landing.international.phasePleaseWait'
-    expect(resolveLandingPhaseToastBucket('detecting')).toBe(pleaseWait)
-    expect(resolveLandingPhaseToastBucket('requirements')).toBe(pleaseWait)
-  })
-
-  it('merges client_sent and accepted into one server-received bucket', () => {
-    const serverReceived = 'landing.international.phaseServerReceived'
-    expect(resolveLandingPhaseToastBucket('client_sent')).toBe(serverReceived)
-    expect(resolveLandingPhaseToastBucket('accepted')).toBe(serverReceived)
+  it('keeps early phases silent so they do not stack with the progress toast', () => {
+    expect(resolveLandingPhaseToastBucket('client_sent')).toBe('silent')
+    expect(resolveLandingPhaseToastBucket('accepted')).toBe('silent')
+    expect(resolveLandingPhaseToastBucket('detecting')).toBe('silent')
+    expect(resolveLandingPhaseToastBucket('requirements')).toBe('silent')
   })
 
   it('uses generating_detail bucket for progress and waiting', () => {
@@ -65,9 +65,7 @@ describe('resolveLandingPhaseToastBucket', () => {
 describe('shouldShowLandingPhaseToast', () => {
   it('skips please_wait after generating_detail was shown', () => {
     const shown = new Set<LandingPhaseToastBucket>(['generating_detail'])
-    expect(
-      shouldShowLandingPhaseToast('landing.international.phasePleaseWait', shown)
-    ).toBe(false)
+    expect(shouldShowLandingPhaseToast('landing.international.phasePleaseWait', shown)).toBe(false)
   })
 
   it('skips silent buckets', () => {
@@ -76,20 +74,88 @@ describe('shouldShowLandingPhaseToast', () => {
 })
 
 describe('landing generation toast sequence', () => {
-  it('emits at most three info toasts for a full SSE run', () => {
+  it('emits one progress toast for a full SSE run', () => {
     const buckets = collectToastBuckets(['client_sent', ...FULL_SSE_PHASES])
-    expect(buckets).toEqual([
-      'landing.international.phaseServerReceived',
-      'landing.international.phasePleaseWait',
-      'generating_detail',
-    ])
+    expect(buckets).toEqual(['generating_detail'])
   })
 
-  it('emits two info toasts for legacy accepted/waiting/streaming SSE', () => {
+  it('emits one progress toast for legacy accepted/waiting/streaming SSE', () => {
     const buckets = collectToastBuckets(['client_sent', 'accepted', 'waiting', 'streaming'])
-    expect(buckets).toEqual([
-      'landing.international.phaseServerReceived',
-      'generating_detail',
-    ])
+    expect(buckets).toEqual(['generating_detail'])
+  })
+})
+
+function mountLandingGeneration() {
+  const scope = effectScope()
+  let api: ReturnType<typeof useLandingGenerateGraph> | undefined
+  scope.run(() => {
+    api = useLandingGenerateGraph({
+      t: ((key: string) => key) as UseLanguageTranslate,
+      notify: {
+        info() {
+          return undefined
+        },
+        error() {
+          return undefined
+        },
+        success() {
+          return undefined
+        },
+        warning() {
+          return undefined
+        },
+      } as unknown as ReturnType<typeof useNotifications>,
+    })
+  })
+  if (!api) {
+    scope.stop()
+    throw new Error('landing generation scope did not start')
+  }
+  const generation = api
+  return {
+    generation,
+    stop() {
+      scope.stop()
+    },
+  }
+}
+
+describe('landing generation session', () => {
+  it('does not cancel another surface when this one closes', () => {
+    const landing = mountLandingGeneration()
+    const remote = mountLandingGeneration()
+    landing.generation.beginGeneration()
+    remote.stop()
+    expect(landing.generation.isGenerating.value).toBe(true)
+    landing.stop()
+    expect(landing.generation.isGenerating.value).toBe(false)
+  })
+
+  it('ignores a stale finish after a newer run has started', () => {
+    const first = mountLandingGeneration()
+    const second = mountLandingGeneration()
+    const stale = first.generation.beginGeneration()
+    const current = second.generation.beginGeneration()
+    first.generation.endGeneration(stale)
+    expect(second.generation.isCurrentRun(current.runId)).toBe(true)
+    expect(second.generation.isGenerating.value).toBe(true)
+    second.generation.endGeneration(current)
+    expect(second.generation.isGenerating.value).toBe(false)
+    expect(second.generation.isCurrentRun(stale.runId)).toBe(false)
+    first.stop()
+    second.stop()
+  })
+
+  it('drops a finished run that has not navigated yet when the user picks another diagram', () => {
+    const remote = mountLandingGeneration()
+    const run = remote.generation.beginGeneration()
+    remote.generation.releaseRun(run)
+    expect(remote.generation.isCurrentRun(run.runId)).toBe(true)
+    remote.generation.cancelInFlightGeneration()
+    expect(remote.generation.isCurrentRun(run.runId)).toBe(false)
+    expect(remote.generation.isGenerating.value).toBe(false)
+    remote.generation.endGeneration(run)
+    expect(remote.generation.isGenerating.value).toBe(false)
+    remote.stop()
   })
 })

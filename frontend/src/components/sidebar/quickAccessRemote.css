@@ -1,0 +1,340 @@
+/* Draggable, resizable quick-access remote. Lives across desktop pages. */
+
+.qa-remote {
+  position: fixed;
+  z-index: 45;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgb(214 219 236 / 0.9);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgb(248 250 255 / 0.96) 0%, rgb(242 240 252 / 0.94) 100%);
+  box-shadow:
+    0 10px 28px rgb(80 88 140 / 0.18),
+    0 2px 6px rgb(40 44 80 / 0.08);
+  backdrop-filter: blur(18px) saturate(1.12);
+  -webkit-backdrop-filter: blur(18px) saturate(1.12);
+  color: #374151;
+  pointer-events: auto;
+  user-select: none;
+  container-type: inline-size;
+  container-name: qa-remote;
+}
+
+.qa-remote.is-dragging,
+.qa-remote.is-resizing {
+  box-shadow:
+    0 16px 36px rgb(80 88 140 / 0.24),
+    0 4px 10px rgb(40 44 80 / 0.1);
+}
+
+.dark .qa-remote {
+  border-color: rgb(70 78 112 / 0.9);
+  background: linear-gradient(180deg, rgb(36 42 72 / 0.96) 0%, rgb(32 30 58 / 0.94) 100%);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.32);
+  color: #e5e7eb;
+}
+
+.qa-remote__handle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 6px 8px 4px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.qa-remote.is-dragging .qa-remote__handle {
+  cursor: grabbing;
+}
+
+.qa-remote__grip {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.qa-remote__grip span {
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: #9ca3af;
+}
+
+.qa-remote__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dark .qa-remote__title {
+  color: #d1d5db;
+}
+
+.qa-remote__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.qa-remote__close:hover {
+  background: rgb(99 102 241 / 0.1);
+  color: #374151;
+}
+
+.dark .qa-remote__close {
+  color: #9ca3af;
+}
+
+.dark .qa-remote__close:hover {
+  background: rgb(129 140 248 / 0.16);
+  color: #f3f4f6;
+}
+
+.qa-remote__tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 0 8px 8px;
+}
+
+.qa-remote__tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 4px 7px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.1;
+  cursor: pointer;
+}
+
+.qa-remote__tab.is-active {
+  background: #fff;
+  border-color: #e5e7eb;
+  color: #1d4ed8;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+}
+
+.dark .qa-remote__tab.is-active {
+  background: rgb(55 65 110 / 0.9);
+  border-color: rgb(99 102 241 / 0.35);
+  color: #93c5fd;
+}
+
+.qa-remote__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 8px 16px;
+  overflow: auto;
+}
+
+.qa-remote__grid {
+  flex: 1 1 auto;
+  display: grid;
+  /* Compact panel: ten cards, two columns, text still visible. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(5, minmax(3.4rem, 1fr));
+  align-content: stretch;
+  gap: clamp(4px, 1.6cqw, 8px);
+  min-height: 0;
+}
+
+@container qa-remote (min-width: 26rem) {
+  .qa-remote__grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.75rem), 1fr));
+    grid-template-rows: none;
+    grid-auto-rows: minmax(4.5rem, 1fr);
+  }
+}
+
+.qa-remote__tool,
+.qa-remote__prompt {
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.72);
+  color: #374151;
+  cursor: pointer;
+  text-align: center;
+}
+
+.qa-remote__tool {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-items: center;
+  justify-items: center;
+  gap: clamp(2px, 0.8cqw, 6px);
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  padding: clamp(4px, 1.2cqw, 8px);
+  overflow: hidden;
+  font-size: clamp(10px, 3.1cqw, 13px);
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.qa-remote__icon {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Fill the card, then letterbox the viewBox so the drawing is not stretched. */
+.qa-remote .qa-remote__icon .diagram-preview,
+.qa-remote .qa-remote__icon .diagram-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+.qa-remote__label {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.qa-remote__prompt-ring {
+  display: block;
+  width: 100%;
+  margin: 0 0 6px;
+}
+
+.qa-remote__prompt {
+  display: block;
+  width: 100%;
+  margin: 0 0 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 550;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.qa-remote__prompt-ring .qa-remote__prompt {
+  margin: 0;
+}
+
+.qa-remote__prompt.is-running {
+  position: relative;
+  overflow: hidden;
+}
+
+.qa-remote__prompt.is-running::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 18%, rgb(99 102 241 / 0.28) 50%, transparent 82%);
+  transform: translateX(-120%);
+  animation: qa-prompt-travel 1.35s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes qa-prompt-travel {
+  to {
+    transform: translateX(120%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qa-remote__prompt.is-running::after {
+    animation: none;
+  }
+}
+
+.qa-remote__prompt--edit {
+  min-height: 4.5rem;
+  resize: vertical;
+  cursor: text;
+  user-select: text;
+  font: inherit;
+  font-weight: 550;
+  color: inherit;
+}
+
+.qa-remote__tool:hover,
+.qa-remote__prompt:hover:not(:disabled) {
+  background: #fff;
+  border-color: #dbeafe;
+}
+
+.qa-remote__prompt:disabled,
+.qa-remote__tool:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.dark .qa-remote__tool,
+.dark .qa-remote__prompt {
+  background: rgb(48 54 88 / 0.72);
+  color: #e5e7eb;
+}
+
+.dark .qa-remote__tool:hover,
+.dark .qa-remote__prompt:hover:not(:disabled) {
+  background: rgb(58 64 104 / 0.95);
+  border-color: rgb(99 102 241 / 0.35);
+}
+
+.qa-remote__resize {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.qa-remote__resize::before {
+  content: '';
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #9ca3af;
+  border-bottom: 2px solid #9ca3af;
+}

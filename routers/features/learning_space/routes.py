@@ -823,12 +823,21 @@ async def submission_preview(
     if viewer == "learner" and submission.status != SUBMISSION_STATUS_SUBMITTED:
         if int(submission.student_user_id) != int(current_user.id):
             raise HTTPException(status_code=403, detail="Not visible")
-    return await enrich_submission_dict(
+    payload = await enrich_submission_dict(
         db,
         submission,
         include_preview=True,
         assignment_title=assignment.title,
     )
+    logger.info(
+        "[LearningSpace] Opened shared work submission=%s assignment=%s author=%s viewer=%s role=%s",
+        submission.id,
+        assignment.id,
+        submission.student_user_id,
+        current_user.id,
+        viewer,
+    )
+    return payload
 
 
 @router.get("/assignments/{assignment_id}/template-preview")

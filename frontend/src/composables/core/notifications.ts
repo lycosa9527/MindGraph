@@ -120,6 +120,48 @@ function showNotification(
   })
 }
 
+type ReplacingNotificationHandle = { close: () => void }
+
+let replacingToken = 0
+let replacingHandle: ReplacingNotificationHandle | null = null
+
+/** One visible toast for a flow: the next call closes the previous one. */
+export function showReplacingNotification(
+  message: string | VNode,
+  type: NotificationType,
+  duration = DEFAULT_DURATION_MS
+): void {
+  const token = ++replacingToken
+  replacingHandle?.close()
+  replacingHandle = null
+  const IconComponent = iconMap[type]
+  const durationMs = duration > 0 ? duration : DEFAULT_DURATION_MS
+  void loadElNotification().then((ElNotification) => {
+    if (token !== replacingToken) {
+      return
+    }
+    replacingHandle = ElNotification({
+      message,
+      type,
+      duration: durationMs,
+      ...getDefaultElNotificationOptions(),
+      icon: h(IconComponent, { size: 20 }),
+      onClose: () => {
+        if (token === replacingToken) {
+          replacingHandle = null
+        }
+      },
+    })
+  })
+}
+
+/** Drop the in-flight status toast when the run that opened it is cancelled. */
+export function dismissReplacingNotification(): void {
+  replacingToken += 1
+  replacingHandle?.close()
+  replacingHandle = null
+}
+
 function notifyByKey(
   type: NotificationType,
   key: string,

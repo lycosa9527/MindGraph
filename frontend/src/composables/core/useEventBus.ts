@@ -145,6 +145,8 @@ export type EventTypes = {
   'snapshot:delete_requested': { versionNumber: number }
   'snapshot:current_requested': Record<string, never>
   'diagram:workshop_snapshot_applied': Record<string, never>
+  /** Shared-diagram viewer applied a remote spec. Must not dirty autosave or reset sessions. */
+  'diagram:share_snapshot_applied': Record<string, never>
   'mindmap:ai_subgraph_requested': { nodeId?: string }
   'mindmap:explain_node_requested': { nodeId?: string }
   'mindmap:outline_toggle_requested': Record<string, never>

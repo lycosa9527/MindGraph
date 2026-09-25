@@ -12,8 +12,14 @@ import asyncio
 import logging
 from typing import Any, Optional
 
-from services.diagram_shares.fanout import SHARE_FANOUT_CHANNEL, parse_share_fanout_body
-from services.diagram_shares.rooms import relay_share_spec
+from services.diagram_shares.fanout import (
+    SHARE_FANOUT_CHANNEL,
+    parse_share_fanout_message,
+    share_fanout_worker_id,
+)
+from services.diagram_shares.queue import decode_tabs
+from services.diagram_shares.rooms import close_share_room, close_share_sockets_for_user, relay_share_spec
+from services.diagram_shares.seats import push_roster
 from services.features.ws_redis_fanout_config import is_ws_fanout_enabled
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
@@ -66,12 +72,19 @@ async def _listen_loop(stop_event: asyncio.Event) -> None:
                     break
                 if message is None or message.get("type") != "message":
                     continue
-                parsed = parse_share_fanout_body(_text(message.get("data")))
+                parsed = parse_share_fanout_message(_text(message.get("data")))
                 if parsed is None:
                     continue
-                diagram_id, from_tab, body = parsed
                 try:
-                    await relay_share_spec(diagram_id, from_tab, body)
+                    if parsed["action"] == "kick":
+                        await close_share_sockets_for_user(parsed["diagram_id"], parsed["user_id"])
+                    elif parsed["action"] == "close":
+                        await close_share_room(parsed["diagram_id"])
+                    elif parsed["action"] == "roster":
+                        if parsed["worker"] != share_fanout_worker_id():
+                            push_roster(parsed["diagram_id"], decode_tabs(parsed["body"]))
+                    elif parsed["worker"] != share_fanout_worker_id():
+                        await relay_share_spec(parsed["diagram_id"], parsed["from_tab"], parsed["body"])
                 except BACKGROUND_INFRA_ERRORS as exc:
                     logger.debug("[DiagramShare] fan-out delivery failed: %s", exc)
         except asyncio.CancelledError:

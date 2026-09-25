@@ -1,27 +1,39 @@
 /**
  * FIFO edit lease for a shared library diagram.
- * Alone: normal autosave. With a later opener: relay spec snapshots.
+ * The open SSE response holds the slot and releases it when the tab disconnects.
+ * Spec snapshots still travel on the WebSocket.
+ * Remote snapshots stay quiet so they do not reset canvas sessions or get saved back.
  */
 import { ref } from 'vue'
 
 import { diagramShareTabId } from '@/composables/canvas/diagramShareTab'
+import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramStore } from '@/stores'
+import type { LoadFromSpecOptions } from '@/stores/diagram/types'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { authFetch } from '@/utils/api'
 
 export const diagramShareRole = ref<'editor' | 'viewer' | null>(null)
 export const diagramShareEditorName = ref('')
 
-const HEARTBEAT_MS = 10_000
 const SEND_MS = 400
+const QUIET_LOAD: LoadFromSpecOptions = {
+  emitLoaded: false,
+  skipFit: true,
+  preserveMindMapMeasures: true,
+}
 
 let generation = 0
+const leaseEpoch = Date.now() * 1000 + Math.floor(Math.random() * 1000)
 let activeDiagramId: string | null = null
 let viewerCount = 0
-let heartbeatTimer: ReturnType<typeof setInterval> | null = null
+let shareEvents: EventSource | null = null
 let sendTimer: ReturnType<typeof setInterval> | null = null
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 let socket: WebSocket | null = null
 let lastSent = ''
 let socketRetries = 0
+let roleApply: Promise<void> = Promise.resolve()
 
 interface LeaseResponse {
   role: 'editor' | 'viewer'
@@ -35,13 +47,22 @@ function setReadonly(readonly: boolean): void {
   diagramStore.isReadonly = readonly
 }
 
+function clearReconnect(): void {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
+}
+
 function closeSocket(): void {
+  clearReconnect()
   if (sendTimer) {
     clearInterval(sendTimer)
     sendTimer = null
   }
   if (socket) {
     socket.onmessage = null
+    socket.onopen = null
     socket.onclose = null
     socket.close()
     socket = null
@@ -50,24 +71,53 @@ function closeSocket(): void {
   socketRetries = 0
 }
 
-function stopHeartbeat(): void {
-  if (heartbeatTimer) {
-    clearInterval(heartbeatTimer)
-    heartbeatTimer = null
+function closeShareEvents(): void {
+  const source = shareEvents
+  shareEvents = null
+  if (!source) return
+  source.onmessage = null
+  source.onerror = null
+  source.close()
+}
+
+function clearShareState(): void {
+  diagramShareRole.value = null
+  diagramShareEditorName.value = ''
+  viewerCount = 0
+}
+
+function applyQuietSpec(spec: Record<string, unknown>): void {
+  const diagramStore = useDiagramStore()
+  if (!diagramStore.type) return
+  diagramStore.loadFromSpec(spec, diagramStore.type, QUIET_LOAD)
+  diagramStore.clearHistory()
+  eventBus.emit('diagram:share_snapshot_applied', {})
+}
+
+function leaveBody(): string {
+  return JSON.stringify({ tab_id: diagramShareTabId(), epoch: leaseEpoch })
+}
+
+async function postLeave(diagramId: string): Promise<void> {
+  try {
+    await authFetch(`/api/diagrams/${diagramId}/edit-lease`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: leaveBody(),
+    })
+  } catch {
+    // A dropped SSE connection leaves on its own after a short grace.
   }
 }
 
-async function postLease(
-  diagramId: string,
-  action: 'join' | 'leave'
-): Promise<LeaseResponse | null> {
-  const response = await authFetch(`/api/diagrams/${diagramId}/edit-lease`, {
+function leaveKeepalive(diagramId: string): void {
+  void fetch(`/api/diagrams/${diagramId}/edit-lease`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, tab_id: diagramShareTabId() }),
+    credentials: 'same-origin',
+    keepalive: true,
+    body: leaveBody(),
   })
-  if (!response.ok) return null
-  return (await response.json()) as LeaseResponse
 }
 
 function sendSpec(): void {
@@ -78,7 +128,11 @@ function sendSpec(): void {
   const payload = JSON.stringify({ type: 'spec', spec })
   if (payload === lastSent || payload.length > 1_400_000) return
   lastSent = payload
-  socket.send(payload)
+  try {
+    socket.send(payload)
+  } catch {
+    lastSent = ''
+  }
 }
 
 function ensureSendLoop(): void {
@@ -95,7 +149,8 @@ function ensureSendLoop(): void {
   }
 }
 
-function applyIncoming(raw: string): void {
+function applyIncoming(raw: string, diagramId: string, gen: number): void {
+  if (gen !== generation || activeDiagramId !== diagramId) return
   if (diagramShareRole.value !== 'viewer') return
   let message: { type?: string; spec?: Record<string, unknown> }
   try {
@@ -104,12 +159,10 @@ function applyIncoming(raw: string): void {
     return
   }
   if (message.type !== 'spec' || !message.spec) return
-  const diagramStore = useDiagramStore()
-  if (!diagramStore.type) return
-  diagramStore.loadFromSpec(message.spec, diagramStore.type)
+  applyQuietSpec(message.spec)
 }
 
-function openSocket(diagramId: string): void {
+function openSocket(diagramId: string, gen: number): void {
   if (
     socket &&
     (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)
@@ -117,14 +170,17 @@ function openSocket(diagramId: string): void {
     ensureSendLoop()
     return
   }
+  clearReconnect()
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   const url = `${protocol}//${window.location.host}/api/ws/diagram-share/${diagramId}?tab_id=${encodeURIComponent(diagramShareTabId())}`
   const next = new WebSocket(url)
   socket = next
   next.onmessage = (event) => {
-    if (typeof event.data === 'string') applyIncoming(event.data)
+    if (socket !== next || typeof event.data !== 'string') return
+    applyIncoming(event.data, diagramId, gen)
   }
   next.onopen = () => {
+    if (socket !== next) return
     socketRetries = 0
     ensureSendLoop()
   }
@@ -133,92 +189,164 @@ function openSocket(diagramId: string): void {
     socket = null
     const closed = event.code === 1000 || event.code === 4000 || event.code === 4001
     const denied = event.code === 4003 || event.code === 1008
-    if (closed || denied || activeDiagramId !== diagramId || socketRetries >= 5) return
+    if (denied && activeDiagramId === diagramId && generation === gen) {
+      lockAfterAccessLoss()
+      return
+    }
+    if (
+      closed ||
+      denied ||
+      activeDiagramId !== diagramId ||
+      generation !== gen ||
+      socketRetries >= 5
+    ) {
+      return
+    }
     socketRetries += 1
-    window.setTimeout(() => {
-      if (activeDiagramId === diagramId && !socket) openSocket(diagramId)
+    clearReconnect()
+    reconnectTimer = window.setTimeout(() => {
+      reconnectTimer = null
+      if (activeDiagramId === diagramId && generation === gen && !socket) {
+        openSocket(diagramId, gen)
+      }
     }, 1000)
   }
 }
 
-function applyLease(diagramId: string, data: LeaseResponse): void {
+function lockAfterAccessLoss(): void {
+  generation += 1
+  closeShareEvents()
+  closeSocket()
+  diagramShareEditorName.value = ''
+  viewerCount = 0
+  diagramShareRole.value = 'viewer'
+  setReadonly(true)
+}
+
+async function catchUpFromServer(diagramId: string, gen: number): Promise<'ok' | 'lost' | 'stale'> {
+  const result = await useSavedDiagramsStore().getDiagram(diagramId, { force: true })
+  if (gen !== generation || activeDiagramId !== diagramId) return 'stale'
+  if (!result.ok) {
+    if (
+      result.reason === 'not_found' ||
+      result.reason === 'forbidden' ||
+      result.reason === 'unauthenticated'
+    ) {
+      return 'lost'
+    }
+    return 'ok'
+  }
+  applyQuietSpec(result.diagram.spec)
+  return 'ok'
+}
+
+async function applyLease(diagramId: string, data: LeaseResponse, gen: number): Promise<void> {
+  if (gen !== generation || activeDiagramId !== diagramId) return
   if (data.skipped) {
-    diagramShareRole.value = null
-    diagramShareEditorName.value = ''
-    viewerCount = 0
+    clearShareState()
     setReadonly(false)
     closeSocket()
     return
   }
+  const wasViewer = diagramShareRole.value === 'viewer'
+  if (wasViewer && data.role === 'editor') {
+    const caughtUp = await catchUpFromServer(diagramId, gen)
+    if (caughtUp === 'stale') return
+    if (caughtUp === 'lost') {
+      lockAfterAccessLoss()
+      return
+    }
+  }
+  if (gen !== generation || activeDiagramId !== diagramId) return
   diagramShareRole.value = data.role
   diagramShareEditorName.value = data.editor_name
   viewerCount = data.viewer_count
   setReadonly(data.role === 'viewer')
   if (data.role === 'viewer' || data.viewer_count > 0) {
-    openSocket(diagramId)
+    openSocket(diagramId, gen)
   } else {
     closeSocket()
   }
   ensureSendLoop()
 }
 
-async function releaseServer(diagramId: string | null): Promise<void> {
-  stopHeartbeat()
+function enqueueRole(diagramId: string, data: LeaseResponse, gen: number): void {
+  roleApply = roleApply.then(() => applyLease(diagramId, data, gen)).catch(() => undefined)
+}
+
+function abandonLocal(): string | null {
+  const diagramId = activeDiagramId
+  generation += 1
+  activeDiagramId = null
+  closeShareEvents()
   closeSocket()
-  diagramShareRole.value = null
-  diagramShareEditorName.value = ''
-  viewerCount = 0
+  clearShareState()
   setReadonly(false)
-  if (!diagramId) return
-  try {
-    await postLease(diagramId, 'leave')
-  } catch {
-    // The lease expires if this tab never heartbeats again.
+  return diagramId
+}
+
+function openShareEvents(diagramId: string, gen: number): void {
+  closeShareEvents()
+  const params = new URLSearchParams({
+    tab_id: diagramShareTabId(),
+    epoch: String(leaseEpoch),
+  })
+  const source = new EventSource(`/api/diagrams/${diagramId}/share-events?${params.toString()}`, {
+    withCredentials: true,
+  })
+  shareEvents = source
+  source.onmessage = (event) => {
+    if (shareEvents !== source || gen !== generation || activeDiagramId !== diagramId) return
+    let message: LeaseResponse & { type?: string }
+    try {
+      message = JSON.parse(event.data) as LeaseResponse & { type?: string }
+    } catch {
+      return
+    }
+    if (message.type === 'replaced') {
+      closeShareEvents()
+      return
+    }
+    if (message.type === 'denied') {
+      closeShareEvents()
+      lockAfterAccessLoss()
+      return
+    }
+    if (message.type !== 'role') return
+    enqueueRole(diagramId, message, gen)
   }
 }
 
 export async function leaveDiagramShareSession(): Promise<void> {
-  generation += 1
-  const diagramId = activeDiagramId
-  activeDiagramId = null
-  await releaseServer(diagramId)
+  const diagramId = abandonLocal()
+  if (!diagramId) return
+  await postLeave(diagramId)
 }
 
 export async function enterDiagramShareSession(diagramId: string): Promise<void> {
   const gen = ++generation
   const previous = activeDiagramId
   activeDiagramId = diagramId
+  closeShareEvents()
+  closeSocket()
   if (previous && previous !== diagramId) {
-    await releaseServer(previous)
-  }
-  if (gen !== generation) return
-  let data: LeaseResponse | null
-  try {
-    data = await postLease(diagramId, 'join')
-  } catch {
-    data = null
-  }
-  if (gen !== generation) return
-  if (!data) {
-    diagramShareRole.value = null
+    clearShareState()
     setReadonly(false)
-    return
+    await postLeave(previous)
   }
-  applyLease(diagramId, data)
-  if (data.skipped) return
-  stopHeartbeat()
-  heartbeatTimer = setInterval(() => {
-    void (async () => {
-      if (activeDiagramId !== diagramId) return
-      const next = await postLease(diagramId, 'join')
-      if (!next || generation !== gen) return
-      applyLease(diagramId, next)
-    })()
-  }, HEARTBEAT_MS)
+  if (gen !== generation || activeDiagramId !== diagramId) return
+  openShareEvents(diagramId, gen)
 }
 
 if (typeof window !== 'undefined') {
-  window.addEventListener('pagehide', () => {
-    void leaveDiagramShareSession()
+  window.addEventListener('pagehide', (event) => {
+    if (event.persisted) return
+    const diagramId = activeDiagramId
+    abandonLocal()
+    if (diagramId) leaveKeepalive(diagramId)
+  })
+  window.addEventListener('pageshow', (event) => {
+    if (!event.persisted || !activeDiagramId) return
+    void enterDiagramShareSession(activeDiagramId)
   })
 }

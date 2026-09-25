@@ -36,10 +36,7 @@ export function collabHistoryWouldBlock(
     return false
   }
 
-  const changed = nodeIdsDiffBetweenDiagrams(
-    cur,
-    historyEntry.data as { nodes?: { id: string }[] }
-  )
+  const changed = nodeIdsDiffBetweenDiagrams(cur, historyEntry.data as { nodes?: { id: string }[] })
   const selfId = Number(options.currentUserId)
   for (const nid of changed) {
     const ed = options.activeEditors.get(nid)
@@ -85,9 +82,7 @@ function isCollabHistoryBlocked(direction: 'undo' | 'redo'): boolean {
   if (blocked) {
     notify.warning(
       i18n.global.t(
-        direction === 'undo'
-          ? 'notification.collabUndoBlocked'
-          : 'notification.collabRedoBlocked'
+        direction === 'undo' ? 'notification.collabUndoBlocked' : 'notification.collabRedoBlocked'
       ) as string
     )
   }
@@ -97,7 +92,7 @@ function isCollabHistoryBlocked(direction: 'undo' | 'redo'): boolean {
 /** Undo with workshop collab guard; returns whether undo ran. */
 export function tryCollabGuardedUndo(): boolean {
   const diagramStore = useDiagramStore()
-  if (!diagramStore.canUndo) {
+  if (diagramStore.isReadonly || !diagramStore.canUndo) {
     return false
   }
   if (isCollabHistoryBlocked('undo')) {
@@ -114,7 +109,7 @@ export function tryCollabGuardedUndo(): boolean {
 /** Redo with workshop collab guard; returns whether redo ran. */
 export function tryCollabGuardedRedo(): boolean {
   const diagramStore = useDiagramStore()
-  if (!diagramStore.canRedo) {
+  if (diagramStore.isReadonly || !diagramStore.canRedo) {
     return false
   }
   if (isCollabHistoryBlocked('redo')) {

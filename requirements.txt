@@ -79,7 +79,7 @@ anyio>=4.14.2
 # ============================================================================
 playwright>=1.62.0
 Pillow>=12.3.0  # Image I/O; qrcode generation, OCR, avatars
-PyMuPDF>=1.28.0  # PDF rendering for library cover extraction (fitz module)
+PyMuPDF>=1.28.0  # PDF rendering for library cover extraction (import pymupdf)
 qrcode[pil]>=8.2  # Bind QR generation on web (requires Pillow)
 pyzbar>=0.1.9  # Optional QR decode utilities — requires system libzbar0: apt install libzbar0
 

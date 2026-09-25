@@ -18,8 +18,16 @@ import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
 import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
+import { executeLandingPrompt } from '@/composables/mindgraph/runLandingPromptGeneration'
 import { useLandingGenerateGraph } from '@/composables/mindgraph/useLandingGenerateGraph'
-import { useAuthStore, useDiagramStore, useLLMResultsStore, useUIStore } from '@/stores'
+import {
+  LANDING_PROMPT_EXAMPLE_KEYS,
+  LANDING_PROMPT_MAX_LENGTH,
+  type LandingPromptExampleKey,
+  advancedDiagramCards,
+  eightThinkingMapCards,
+} from '@/config/landingQuickAccess'
+import { useAuthStore, useUIStore } from '@/stores'
 import { useLiveTranslationStore } from '@/stores/liveTranslation'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
@@ -30,24 +38,22 @@ import IntlDiagramDropdown from './IntlDiagramDropdown.vue'
 import MindGraphCollabPanel from './MindGraphCollabPanel.vue'
 import MindGraphLanguageSwitcher from './MindGraphLanguageSwitcher.vue'
 
-const MAX_PROMPT_LENGTH = 10000
-const LANDING_LLM_MODEL = 'qwen'
-
 const route = useRoute()
 const router = useRouter()
 const { t, promptLanguage } = useLanguage()
 const { canUseOnlineCollab } = useSchoolTierFeatures()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
-const diagramStore = useDiagramStore()
 const notify = useNotifications()
 const {
   loadPhase,
   isGenerating,
   generateLandingGraph,
   beginGeneration,
+  releaseRun,
   endGeneration,
-  abortGeneration,
+  isCurrentRun,
+  cancelInFlightGeneration,
 } = useLandingGenerateGraph({
   t,
   notify,
@@ -82,87 +88,17 @@ const TYPE_TO_ZH_NAME: Record<DiagramType, string> = {
   diagram: '图表',
 }
 
-type LandingDiagramCard = {
-  titleKey: string
-  descKey: string
-  type: DiagramType
-}
-
-/** Thinking Maps®–style eight (circle through bridge); not mind map / concept map. */
-const eightThinkingMapCards: LandingDiagramCard[] = [
-  {
-    titleKey: 'landing.diagramGrid.circle_map.title',
-    descKey: 'landing.diagramGrid.circle_map.desc',
-    type: 'circle_map',
-  },
-  {
-    titleKey: 'landing.diagramGrid.bubble_map.title',
-    descKey: 'landing.diagramGrid.bubble_map.desc',
-    type: 'bubble_map',
-  },
-  {
-    titleKey: 'landing.diagramGrid.double_bubble_map.title',
-    descKey: 'landing.diagramGrid.double_bubble_map.desc',
-    type: 'double_bubble_map',
-  },
-  {
-    titleKey: 'landing.diagramGrid.tree_map.title',
-    descKey: 'landing.diagramGrid.tree_map.desc',
-    type: 'tree_map',
-  },
-  {
-    titleKey: 'landing.diagramGrid.brace_map.title',
-    descKey: 'landing.diagramGrid.brace_map.desc',
-    type: 'brace_map',
-  },
-  {
-    titleKey: 'landing.diagramGrid.flow_map.title',
-    descKey: 'landing.diagramGrid.flow_map.desc',
-    type: 'flow_map',
-  },
-  {
-    titleKey: 'landing.diagramGrid.multi_flow_map.title',
-    descKey: 'landing.diagramGrid.multi_flow_map.desc',
-    type: 'multi_flow_map',
-  },
-  {
-    titleKey: 'landing.diagramGrid.bridge_map.title',
-    descKey: 'landing.diagramGrid.bridge_map.desc',
-    type: 'bridge_map',
-  },
-]
-
-const advancedDiagramCards: LandingDiagramCard[] = [
-  {
-    titleKey: 'landing.diagramGrid.mindmap.title',
-    descKey: 'landing.diagramGrid.mindmap.desc',
-    type: 'mindmap',
-  },
-  {
-    titleKey: 'landing.diagramGrid.concept_map.title',
-    descKey: 'landing.diagramGrid.concept_map.desc',
-    type: 'concept_map',
-  },
-]
-
 // ── Prompt generation ──
 
 const promptText = ref('')
 
-const landingExampleKeys = [
-  'landing.international.example1',
-  'landing.international.example2',
-  'landing.international.example3',
-  'landing.international.example4',
-  'landing.international.example5',
-  'landing.international.example6',
-] as const
+const landingExampleKeys = LANDING_PROMPT_EXAMPLE_KEYS
 
 const activeExampleIndex = ref(0)
 const EXAMPLE_ROTATE_MS = 5000
 let exampleRotateTimer: ReturnType<typeof setInterval> | null = null
 
-function applyLandingExample(key: (typeof landingExampleKeys)[number]): void {
+function applyLandingExample(key: LandingPromptExampleKey): void {
   promptText.value = t(key)
 }
 
@@ -184,57 +120,28 @@ function stopExampleRotation(): void {
 }
 
 async function handlePromptSubmit() {
-  const text = promptText.value.trim()
-  if (!text || isGenerating.value) return
-  if (!authStore.isAuthenticated) {
-    authStore.handleTokenExpired(undefined, undefined)
-    return
-  }
-  if (text.length > MAX_PROMPT_LENGTH) {
-    notify.error(
-      t('diagramTemplate.promptTooLong', { length: text.length, max: MAX_PROMPT_LENGTH })
-    )
-    return
-  }
-
-  const abortController = beginGeneration()
-  stopExampleRotation()
-
-  try {
-    const outcome = await generateLandingGraph(
-      {
-        prompt: text,
-        language: promptLanguage.value,
-        llm: LANDING_LLM_MODEL,
-      },
-      abortController.signal
-    )
-
-    if (!outcome.ok) {
-      return
-    }
-
-    diagramStore.clearHistory()
-    const loaded = diagramStore.loadFromSpec(
-      outcome.result.spec!,
-      outcome.diagramType as DiagramType
-    )
-    if (loaded) {
-      useLLMResultsStore().reset()
-      router.push({ path: '/canvas' })
-    } else {
-      notify.error(t('diagramTemplate.generationFailed'))
-    }
-  } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      return
-    }
-    const msg = error instanceof Error ? error.message : t('diagramTemplate.generationFailed')
-    notify.error(msg)
-  } finally {
-    endGeneration()
-    startExampleRotation()
-  }
+  await executeLandingPrompt({
+    text: promptText.value,
+    language: promptLanguage.value,
+    t,
+    notify,
+    router,
+    isAuthenticated: authStore.isAuthenticated,
+    onAuthRequired: () => {
+      authStore.handleTokenExpired(undefined, undefined)
+    },
+    canApply: () => authStore.isAuthenticated,
+    generation: {
+      isGenerating,
+      generateLandingGraph,
+      beginGeneration,
+      endGeneration,
+      releaseRun,
+      isCurrentRun,
+    },
+    onStart: stopExampleRotation,
+    onFinish: startExampleRotation,
+  })
 }
 
 function handlePromptKeydown(event: KeyboardEvent) {
@@ -266,6 +173,7 @@ function handleClickOutside(event: MouseEvent) {
 
 function handleDiagramSelect(diagram: SavedDiagram) {
   showDropdown.value = false
+  cancelInFlightGeneration()
   nextTick(() => {
     router.push({
       path: '/canvas',
@@ -277,7 +185,6 @@ function handleDiagramSelect(diagram: SavedDiagram) {
 onUnmounted(() => {
   document.removeEventListener('mousedown', handleClickOutside)
   stopExampleRotation()
-  abortGeneration()
 })
 
 // ── Card click ──
@@ -285,6 +192,7 @@ onUnmounted(() => {
 function handleCardClick(item: { type: DiagramType }, event?: MouseEvent) {
   const raw = event?.target
   if (raw instanceof Element && raw.closest('.builder-stage')) return
+  cancelInFlightGeneration()
   const zhName = TYPE_TO_ZH_NAME[item.type]
   if (zhName) uiStore.setSelectedChartType(zhName)
   router.push({ path: '/canvas', query: { type: item.type } })
@@ -423,7 +331,7 @@ onMounted(() => {
               class="intl-prompt-input"
               :placeholder="t('landing.international.promptPlaceholder')"
               :disabled="isGenerating"
-              :maxlength="MAX_PROMPT_LENGTH"
+              :maxlength="LANDING_PROMPT_MAX_LENGTH"
               @keydown="handlePromptKeydown"
               @focus="handlePromptFocus"
             />

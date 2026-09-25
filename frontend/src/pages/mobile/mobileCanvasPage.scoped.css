@@ -19,6 +19,20 @@
   border-radius: 10px;
 }
 
+/* Mind map: six equal columns, including AI头脑风暴 */
+.mobile-toolbar-row--mind-map .toolbar-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 6px 2px;
+  border-radius: 10px;
+}
+
+.mobile-toolbar-row--mind-map .toolbar-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* 启动 AI: Bot 图标 — 琥珀关 / 翠绿开（与 生成概念 的 Sparkles 区分） */
 .toolbar-btn--ai {
   color: #92400e;
@@ -134,6 +148,22 @@
   z-index: 1;
 }
 
+.toolbar-btn--brainstorm {
+  color: #0e7490;
+  background: #ecfeff;
+  border-radius: 10px;
+}
+
+.toolbar-btn--brainstorm :deep(.mm-ai-tool-icon) {
+  width: 18px;
+  height: 18px;
+}
+
+.toolbar-btn--brainstorm.toolbar-btn--active {
+  color: #ffffff;
+  background: #0e7490;
+}
+
 .toolbar-btn--purple {
   color: #ffffff;
   background: #7c3aed;
@@ -200,6 +230,33 @@
 .canvas-area {
   z-index: 1;
   touch-action: none;
+}
+
+.mobile-brainstorm-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  height: 60%;
+  display: flex;
+  pointer-events: none;
+}
+
+.mobile-brainstorm-sheet :deep(.ai-brainstorm-panel) {
+  position: relative;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  border-radius: 1rem 1rem 0 0;
+}
+
+.mobile-zoom-controls--above-sheet {
+  bottom: calc(60% + 0.75rem);
 }
 
 .canvas-touch :deep(.vue-flow__viewport) {

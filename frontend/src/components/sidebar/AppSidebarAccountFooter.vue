@@ -13,6 +13,7 @@ import {
   Flame,
   Gift,
   Languages,
+  LayoutGrid,
   Link2,
   LogIn,
   LogOut,
@@ -29,12 +30,21 @@ import SidebarQuoteMarquee from '@/components/sidebar/SidebarQuoteMarquee.vue'
 import SidebarTokenUsage from '@/components/sidebar/SidebarTokenUsage.vue'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
+import { toggleQuickAccessRemote } from '@/composables/sidebar/useQuickAccessRemote'
 import { useSidebarPhilosophyQuote } from '@/composables/sidebar/useSidebarPhilosophyQuote'
 import { useSidebarThinkingCoinTaskPromo } from '@/composables/sidebar/useSidebarThinkingCoinTaskPromo'
 import { usePwaInstall } from '@/composables/usePwaInstall'
 import { useUIStore } from '@/stores/ui'
 import { useVoiceNotesStore } from '@/stores/voiceNotes'
 import { isMindGraphLandingPath } from '@/utils/canvasBackNavigation'
+
+withDefaults(
+  defineProps<{
+    /** Avatar dropdown only — used where the sidebar itself is not on screen. */
+    menuOnly?: boolean
+  }>(),
+  { menuOnly: false }
+)
 
 const sidebarCtx = inject(appSidebarInjectionKey)
 if (!sidebarCtx) {
@@ -66,7 +76,10 @@ function handleVoiceNotes(): void {
 </script>
 
 <template>
-  <div class="sidebar-account-footer border-t border-stone-200 relative shrink-0">
+  <div
+    class="sidebar-account-footer border-t border-stone-200 relative shrink-0"
+    :class="{ 'sidebar-account-footer--compact': menuOnly }"
+  >
     <!-- Not authenticated: Show login button -->
     <template v-if="!s.isAuthenticated">
       <div :class="s.isCollapsed ? 'p-2 flex flex-col gap-2' : 'p-4 flex flex-col gap-2'">
@@ -94,7 +107,7 @@ function handleVoiceNotes(): void {
     <template v-else>
       <!-- Thinking coins widget (trial org members) -->
       <div
-        v-if="s.thinkingCoinsEligible"
+        v-if="s.thinkingCoinsEligible && !menuOnly"
         :class="s.isCollapsed ? 'px-2 pt-2' : 'px-2.5 pt-2.5 pb-2'"
       >
         <div
@@ -187,7 +200,7 @@ function handleVoiceNotes(): void {
       </div>
 
       <el-dropdown
-        v-if="!s.isCollapsed"
+        v-if="!menuOnly && !s.isCollapsed"
         trigger="click"
         placement="top-end"
         popper-class="user-dropdown-popper"
@@ -257,6 +270,10 @@ function handleVoiceNotes(): void {
             >
               <Share2 class="w-4 h-4 mr-2" />
               <I18nText k="landing.international.shareSite" />
+            </el-dropdown-item>
+            <el-dropdown-item @click="toggleQuickAccessRemote">
+              <LayoutGrid class="w-4 h-4 mr-2" />
+              <I18nText k="sidebar.quickAccessRemote" />
             </el-dropdown-item>
             <el-dropdown-item
               divided
@@ -344,6 +361,10 @@ function handleVoiceNotes(): void {
               <Share2 class="w-4 h-4 mr-2" />
               <I18nText k="landing.international.shareSite" />
             </el-dropdown-item>
+            <el-dropdown-item @click="toggleQuickAccessRemote">
+              <LayoutGrid class="w-4 h-4 mr-2" />
+              <I18nText k="sidebar.quickAccessRemote" />
+            </el-dropdown-item>
             <el-dropdown-item
               divided
               @click="s.openLanguageSettingsModal"
@@ -395,6 +416,11 @@ function handleVoiceNotes(): void {
 .sidebar-account-footer {
   flex-shrink: 0;
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.sidebar-account-footer--compact {
+  border-top-width: 0;
+  background: transparent;
 }
 
 @media (max-height: 800px) {

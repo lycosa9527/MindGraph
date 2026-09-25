@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { LogOut, ScrollText, User } from '@lucide/vue'
+import { LayoutGrid, LogOut, ScrollText, User } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
+import { toggleQuickAccessRemote } from '@/composables/sidebar/useQuickAccessRemote'
 import { useAuthStore } from '@/stores/auth'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
@@ -23,6 +24,11 @@ const displayAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avat
 function go(page: string): void {
   visible.value = false
   emit('navigate', page)
+}
+
+function openQuickAccess(): void {
+  visible.value = false
+  toggleQuickAccessRemote()
 }
 
 function handleSignOut(): void {
@@ -62,6 +68,15 @@ function handleSignOut(): void {
           <div class="ws-popover-user-phone">{{ authStore.user?.phone }}</div>
         </div>
       </div>
+
+      <button
+        type="button"
+        class="ws-popover-item"
+        @click="openQuickAccess"
+      >
+        <LayoutGrid class="ws-popover-icon" />
+        {{ t('sidebar.quickAccessRemote') }}
+      </button>
 
       <button
         type="button"

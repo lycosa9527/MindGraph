@@ -14,19 +14,19 @@ import logging
 import re
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from models.domain.auth import User
 from services.diagram_shares.access import (
     current_grantee_ids,
-    diagram_has_grants,
     leave_share,
     library_access,
     replace_share_set,
 )
-from services.diagram_shares.lease import join_lease, leave_lease
+from services.diagram_shares.lease import leave_lease
+from services.diagram_shares.presence import iter_diagram_share_events
 from services.features.org_member_roster import fetch_org_members_page
-from services.online_collab.core.online_collab_manager import get_online_collab_manager
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from utils.auth import get_current_user
 from utils.db.session_open import user_rls_session
@@ -61,20 +61,11 @@ class ReplaceSharesRequest(BaseModel):
     user_ids: list[int] = Field(default_factory=list, max_length=100)
 
 
-class EditLeaseRequest(BaseModel):
-    """Join, refresh, or leave the FIFO edit queue."""
+class LeaveEditLeaseRequest(BaseModel):
+    """Drop this page from the edit queue. The SSE stream is what joins."""
 
-    action: str = Field(..., pattern="^(join|leave)$")
     tab_id: str
-
-
-class EditLeaseResponse(BaseModel):
-    """Who may edit, and how many people are watching."""
-
-    role: str
-    editor_name: str = ""
-    viewer_count: int = 0
-    skipped: bool = False
+    epoch: int = Field(..., ge=1, le=9_007_199_254_740_991)
 
 
 def _display_name(user: User) -> str:
@@ -148,7 +139,6 @@ async def put_diagram_shares(
         raise HTTPException(status_code=400, detail="Failed to update shares")
     affected.add(int(current_user.id))
     await _invalidate_lists(affected)
-    logger.info("[DiagramShare] user=%s updated shares diagram=%s", current_user.id, diagram_id)
     return {"success": True}
 
 
@@ -169,35 +159,52 @@ async def delete_my_diagram_share(
     if access.owner_user_id is not None:
         ids.add(access.owner_user_id)
     await _invalidate_lists(ids)
+    logger.info(
+        "[DiagramShare] Share left diagram=%s user=%s owner=%s",
+        diagram_id,
+        current_user.id,
+        access.owner_user_id,
+    )
     return {"success": True}
 
 
-@router.post("/diagrams/{diagram_id}/edit-lease", response_model=EditLeaseResponse)
+@router.post("/diagrams/{diagram_id}/edit-lease")
 async def post_edit_lease(
     diagram_id: str,
-    body: EditLeaseRequest,
+    body: LeaveEditLeaseRequest,
     request: Request,
     current_user: User = Depends(get_current_user),
-) -> EditLeaseResponse:
-    """First open tab edits. Later tabs watch until they reach the front of the queue."""
+) -> dict[str, bool]:
+    """Drop this page from the edit queue. The open event stream is what joins."""
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit("diagram_shares", identifier, max_requests=120, window_seconds=60)
-    tab_id = _require_tab_id(body.tab_id)
-    access = await library_access(int(current_user.id), diagram_id)
-    if access.role == "none":
-        raise HTTPException(status_code=404, detail="Diagram not found")
-    if body.action == "leave":
-        await leave_lease(diagram_id, int(current_user.id), tab_id)
-        return EditLeaseResponse(role="editor", skipped=True)
-    active = await get_online_collab_manager().get_active_online_collab_code_for_diagram(diagram_id)
-    if active:
-        return EditLeaseResponse(role="editor", skipped=True)
-    if access.role == "owner" and not await diagram_has_grants(int(current_user.id), diagram_id):
-        return EditLeaseResponse(role="editor", skipped=True)
-    status = await join_lease(diagram_id, int(current_user.id), tab_id, _display_name(current_user))
-    return EditLeaseResponse(
-        role=str(status["role"]),
-        editor_name=str(status["editor_name"]),
-        viewer_count=status["viewer_count"],
-        skipped=False,
+    await check_endpoint_rate_limit("diagram_shares", identifier, max_requests=30, window_seconds=60)
+    await leave_lease(diagram_id, int(current_user.id), _require_tab_id(body.tab_id), body.epoch)
+    return {"success": True}
+
+
+@router.get("/diagrams/{diagram_id}/share-events")
+async def get_diagram_share_events(
+    diagram_id: str,
+    request: Request,
+    tab_id: str = Query(..., min_length=8, max_length=64),
+    epoch: int = Query(..., ge=1, le=9_007_199_254_740_991),
+    current_user: User = Depends(get_current_user),
+) -> StreamingResponse:
+    """Hold this tab's edit slot until the browser closes the response."""
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit("diagram_share_events", identifier, max_requests=60, window_seconds=60)
+    return StreamingResponse(
+        iter_diagram_share_events(
+            diagram_id,
+            int(current_user.id),
+            _require_tab_id(tab_id),
+            epoch,
+            _display_name(current_user),
+        ),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
     )

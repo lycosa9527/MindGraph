@@ -3,7 +3,7 @@
 Shared by the document processor for image-file OCR and scanned-PDF page OCR.
 Uses the configurable ``DASHSCOPE_VISION_MODEL`` (default ``qwen3.6-flash``) via
 the DashScope multimodal-generation endpoint; falls back to Tesseract when the
-provider call fails. Rasterizes scanned PDFs with PyMuPDF (fitz).
+provider call fails. Rasterizes scanned PDFs with PyMuPDF.
 
 Author: lycosa9527
 Made by: MindSpring Team
@@ -39,13 +39,13 @@ try:
 except ImportError:
     pass
 
-_fitz_mod: Any = None
-_fitz_available = False
+_pymupdf_mod: Any = None
+_pymupdf_available = False
 try:
-    import fitz as _fitz_import
+    import pymupdf as _pymupdf_import
 
-    _fitz_mod = _fitz_import
-    _fitz_available = True
+    _pymupdf_mod = _pymupdf_import
+    _pymupdf_available = True
 except ImportError:
     pass
 
@@ -193,23 +193,23 @@ def ocr_image_file(file_path: str, mime_type: str = "image/jpeg") -> str:
 def ocr_pdf_pages(file_path: str, max_pages: int, dpi: int) -> Tuple[str, List[Dict[str, Any]]]:
     """OCR a scanned PDF by rasterizing pages and reading each with the vision model.
 
-    Renders pages with PyMuPDF (fitz), then OCRs each page image via the
+    Renders pages with PyMuPDF, then OCRs each page image via the
     DashScope vision model, falling back to Tesseract per page. Returns
     ``(text, page_info)`` where ``page_info`` carries per-page char offsets
     (empty when OCR is unavailable or yields nothing).
     """
-    if not _fitz_available or _fitz_mod is None:
-        logger.warning("[DocumentOCR] PyMuPDF (fitz) unavailable; cannot OCR scanned PDF")
+    if not _pymupdf_available or _pymupdf_mod is None:
+        logger.warning("[DocumentOCR] PyMuPDF unavailable; cannot OCR scanned PDF")
         return "", []
 
     text_parts: List[str] = []
     page_info: List[Dict[str, Any]] = []
     current_pos = 0
     try:
-        with _fitz_mod.open(file_path) as doc:
+        with _pymupdf_mod.open(file_path) as doc:
             page_total = min(doc.page_count, max_pages)
             zoom = dpi / 72.0
-            matrix = _fitz_mod.Matrix(zoom, zoom)
+            matrix = _pymupdf_mod.Matrix(zoom, zoom)
             for page_index in range(page_total):
                 page = doc.load_page(page_index)
                 pixmap = page.get_pixmap(matrix=matrix)

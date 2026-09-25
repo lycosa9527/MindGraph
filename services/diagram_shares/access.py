@@ -29,10 +29,14 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class LibraryAccess:
-    """Owner, recipient, or no library access."""
+    """Owner, recipient, or no library access.
+
+    ``uncertain`` is a failed lookup. Callers must not treat that as a revoke.
+    """
 
     role: str
     owner_user_id: Optional[int]
+    uncertain: bool = False
 
 
 def items_missing_share_role(items: list[dict[str, Any]]) -> bool:
@@ -68,7 +72,7 @@ async def library_access(user_id: int, diagram_id: str) -> LibraryAccess:
             return LibraryAccess(role="recipient", owner_user_id=int(owner_id))
         except DATABASE_ERRORS as exc:
             logger.warning("[DiagramShare] access lookup failed diagram=%s: %s", diagram_id, exc)
-            return LibraryAccess(role="none", owner_user_id=None)
+            return LibraryAccess(role="none", owner_user_id=None, uncertain=True)
 
 
 async def diagram_has_grants(user_id: int, diagram_id: str) -> bool:
@@ -222,6 +226,14 @@ async def replace_share_set(
             await db.commit()
             for user_id in removed:
                 await drop_user_lease(diagram_id, user_id)
+            logger.info(
+                "[DiagramShare] Shares updated diagram=%s owner=%s added=%s removed=%s total=%s",
+                diagram_id,
+                int(owner.id),
+                len(_added),
+                len(removed),
+                len(desired),
+            )
             return True, "", current_ids | desired
         except DATABASE_ERRORS as exc:
             await db.rollback()

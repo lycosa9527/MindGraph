@@ -815,16 +815,18 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       // pre-edit snapshot (and then autosave it back over the good PUT).
       setDiagramDetailCache(updated)
 
-      // Update local list
+      // PUT returns the spec, not library metadata. Keep share role, folder,
+      // and pin so an autosave cannot turn a recipient row into an owned one.
       const index = diagrams.value.findIndex((d) => d.id === diagramId)
       if (index !== -1) {
+        const previous = diagrams.value[index]
         diagrams.value[index] = {
+          ...previous,
           id: updated.id,
           title: updated.title,
           diagram_type: updated.diagram_type,
           thumbnail: updated.thumbnail,
           updated_at: updated.updated_at,
-          is_pinned: updated.is_pinned ?? diagrams.value[index].is_pinned,
         }
       }
 

@@ -60,7 +60,12 @@ async def diagram_share_socket(websocket: WebSocket, diagram_id: str) -> None:
         await websocket.close(code=4003, reason="Diagram not shared with this user")
         return
     await websocket.accept()
-    attach_share_socket(diagram_id, tab_id, websocket)
+    replaced = attach_share_socket(diagram_id, tab_id, int(user.id), websocket)
+    if replaced is not None:
+        try:
+            await replaced.close(code=4000, reason="Replaced")
+        except (WebSocketDisconnect, RuntimeError, OSError) as exc:
+            logger.debug("[DiagramShareWS] replaced socket close failed: %s", exc)
     try:
         while True:
             raw = await websocket.receive_text()

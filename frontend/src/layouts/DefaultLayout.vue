@@ -9,6 +9,7 @@ import { ArrowDown, Moon, Sunny } from '@element-plus/icons-vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables'
+import { toggleQuickAccessRemote } from '@/composables/sidebar/useQuickAccessRemote'
 import { toolbarShortForUiCode } from '@/i18n/locales'
 import { useAuthStore, useUIStore } from '@/stores'
 
@@ -72,6 +73,9 @@ function goToAdmin(): void {
             </el-button>
             <template #dropdown>
               <el-dropdown-menu>
+                <el-dropdown-item @click="toggleQuickAccessRemote">
+                  {{ t('sidebar.quickAccessRemote') }}
+                </el-dropdown-item>
                 <el-dropdown-item @click="goToHome">
                   {{ t('editor.newDiagram') }}
                 </el-dropdown-item>

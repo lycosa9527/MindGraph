@@ -35,6 +35,7 @@ import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 import { mindMapLiveSpecExtrasFingerprint } from '@/utils/mindMapLiveSpecExtras'
 
 import { useLanguage } from '../core/useLanguage'
+import { publishCanvasSessionDirty } from './canvasSessionDirty'
 import { canPerformDiagramSave, shouldAutoSaveAfterLlmModelCompleted } from './diagramSaveFeedback'
 import { useDiagramSpecForPersist } from './useDiagramSpecForSave'
 
@@ -556,6 +557,14 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     setSuppressWindow(SAVE.SUPPRESS_AFTER_WORKSHOP_SNAPSHOT_MS)
   })
 
+  const stopShareSnapshot = eventBus.on('diagram:share_snapshot_applied', () => {
+    if (disposed) return
+    cancelDebounce()
+    isDirty.value = false
+    if (!diagramStore.data) return
+    lastSavedFullFingerprint = getFullFingerprint(diagramStore.data as DiagramDataLike)
+  })
+
   const stopOperationCompleted = eventBus.on(
     'diagram:operation_completed',
     (payload: { operation?: string }) => {
@@ -593,11 +602,17 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     stopLlmComplete()
     stopLoadedFromLibrary()
     stopWorkshopSnapshot()
+    stopShareSnapshot()
     stopOperationCompleted()
     stopPositionChanged()
     stopStyleChanged()
     stopLearningSheetChanged()
+    publishCanvasSessionDirty(false)
   }
+
+  watch(isDirty, (value) => {
+    publishCanvasSessionDirty(value)
+  })
 
   // Pages own teardown after flushOnLeave (see CanvasPage / MobileCanvasPage).
   // Auto onUnmounted would run before the page leave hook and race capture.

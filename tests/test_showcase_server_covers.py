@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import fitz
+import pymupdf
 import pytest
 from PIL import Image, ImageStat
 
@@ -55,9 +55,9 @@ def _make_png_bytes(width: int = 1280, height: int = 960) -> bytes:
 
 
 def _make_pdf(path: Path, text: str = "Showcase cover fixture") -> None:
-    document = fitz.open()
+    document = pymupdf.open()
     page = document.new_page(width=595, height=842)
-    page.draw_rect(fitz.Rect(40, 40, 555, 400), color=(0.1, 0.2, 0.5), fill=(0.2, 0.4, 0.7))
+    page.draw_rect(pymupdf.Rect(40, 40, 555, 400), color=(0.1, 0.2, 0.5), fill=(0.2, 0.4, 0.7))
     page.insert_text((72, 120), text, fontsize=28, color=(1, 1, 1))
     document.save(path)
     document.close()

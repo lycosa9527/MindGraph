@@ -173,4 +173,10 @@ export default {
   'sidebar.share.icon': 'Shared',
   'sidebar.share.removed': 'Removed from my library',
   'sidebar.share.removeFailed': 'Could not remove',
+  'sidebar.quickAccessRemote': 'Quick access',
+  'sidebar.quickAccessRemote.ariaLabel': 'Quick access',
+  'sidebar.quickAccessRemote.resize': 'Drag to resize',
+  'sidebar.quickAccessRemote.tabDiagrams': 'Diagrams',
+  'sidebar.quickAccessRemote.tabPrompts': 'Prompts',
+  'sidebar.quickAccessRemote.editPrompt': 'Right-click to edit',
 } as const
