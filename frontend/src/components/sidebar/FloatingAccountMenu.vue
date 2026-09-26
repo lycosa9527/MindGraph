@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Same account dropdown as the sidebar footer, for pages that do not show
- * that footer (canvas, collapsed sidebar, full-bleed admin views).
+ * that footer (collapsed sidebar, full-bleed admin views). Not used on canvas.
  */
 import { provide } from 'vue'
 

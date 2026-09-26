@@ -283,13 +283,14 @@ const sidebarAccountMenuVisible = computed(
     !(isAdminPublicDashboardRoute(route) && canViewSettingsSubtab('public_dashboard'))
 )
 
-/** Account dropdown on pages that do not show the sidebar footer. */
+/** Account dropdown on pages that do not show the sidebar footer. Canvas has none. */
 const showFloatingAccountMenu = computed(
   () =>
     authStore.isAuthenticated &&
     !isMindgraphHeadlessExportSession() &&
     route.path !== '/export-render' &&
     route.path !== '/privacy' &&
+    route.meta.layout !== 'canvas' &&
     route.meta.layout !== 'mobile' &&
     route.meta.layout !== 'auth' &&
     route.meta.layout !== 'default' &&
