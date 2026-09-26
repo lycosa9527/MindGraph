@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'El extracto guardado faltaba o estaba desincronizado y se ha borrado. Suba o pegue el documento de nuevo.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'El contenido no pasó la revisión de seguridad. Modifique el texto e inténtelo de nuevo.',
   'canvas.mindMapSideToolbar.learningSheet': 'Ficha de aprendizaje',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'Generación en una frase',
   'canvas.mindMapSideToolbar.mindClassroom': 'Sala de conferencias pensando',
   'canvas.mindClassroom.title': 'Sala de conferencias pensando',

@@ -936,6 +936,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Saxlanmış çıxarış yox idi və ya sinxrondan çıxmışdı və təmizləndi. Sənədi yenidən yükləyin və ya yapışdırın.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'Məzmun təhlükəsizlik yoxlamasından keçmədi. Lütfən, mətni dəyişdirin və yenidən cəhd edin.',
   'canvas.mindMapSideToolbar.learningSheet': 'Öyrənmə vərəqi',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'Bir cümlə ilə yarat',
   'canvas.mindMapSideToolbar.mindClassroom': 'Düşüncə mühazirə zalı',
   'canvas.mindClassroom.title': 'Düşüncə mühazirə zalı',

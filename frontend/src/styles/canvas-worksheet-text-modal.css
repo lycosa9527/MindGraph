@@ -487,18 +487,6 @@
   justify-content: flex-end;
   gap: 0.5rem;
 }
-
-@media (max-width: 760px) {
-  .worksheet-text-modal__layout {
-    grid-template-columns: 1fr;
-    min-height: 0;
-  }
-
-  .worksheet-text-modal__paper-stage {
-    min-height: 240px;
-    height: min(52vw, 320px);
-  }
-}
 .worksheet-text-modal.el-dialog {
   --el-color-primary: #1c1917;
   --el-color-primary-light-3: #78716c;
@@ -680,4 +668,163 @@
   border-color: #4b5563;
   color: #fafaf9;
   background: #111827;
+}
+
+@media (max-width: 760px) {
+  .el-overlay-dialog:has(.worksheet-text-modal) {
+    display: flex;
+    align-items: stretch;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .worksheet-text-modal.el-dialog {
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0 !important;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .worksheet-text-modal .el-dialog__header {
+    flex-shrink: 0;
+    padding: 0;
+  }
+
+  .worksheet-text-modal .el-dialog__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0.75rem 0.75rem 0.5rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .worksheet-text-modal .el-dialog__footer {
+    flex-shrink: 0;
+    padding: 0.75rem 0.75rem max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .worksheet-text-modal .ai-glass-hero--compact {
+    min-height: 0;
+    padding: 14px 0.75rem 12px 68px;
+  }
+
+  .worksheet-text-modal .ai-glass-hero__icon {
+    top: 12px;
+    left: 12px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .worksheet-text-modal .ai-glass-icon__plate {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+  }
+
+  .worksheet-text-modal .ai-glass-icon__glyph {
+    width: 28px;
+    height: 28px;
+  }
+
+  .worksheet-text-modal .mind-map-side-panel-close {
+    width: 44px;
+    height: 44px;
+  }
+
+  .worksheet-text-modal__layout {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    gap: 0.75rem;
+  }
+
+  .worksheet-text-modal__preview-pane {
+    min-height: 0;
+    padding: 0.65rem;
+  }
+
+  .worksheet-text-modal__paper-stage {
+    min-height: 160px;
+    height: min(42vw, 200px);
+  }
+
+  .worksheet-text-modal__controls {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .worksheet-text-modal__row,
+  .worksheet-text-modal__mode-bar-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+  }
+
+  .worksheet-text-modal__row .admin-swiss-segmented,
+  .worksheet-text-modal__mode-bar-header .admin-swiss-segmented {
+    display: flex;
+    width: 100%;
+  }
+
+  .worksheet-text-modal__row .admin-swiss-segment,
+  .worksheet-text-modal__mode-bar-header .admin-swiss-segment {
+    flex: 1 1 0;
+    min-height: 44px;
+    white-space: normal;
+  }
+
+  .worksheet-text-modal__diagram-handle {
+    width: 22px;
+    height: 22px;
+  }
+
+  .worksheet-text-modal__diagram-handle::after {
+    content: '';
+    position: absolute;
+    inset: -11px;
+  }
+
+  .worksheet-text-modal__diagram-handle--nw {
+    top: -11px;
+    left: -11px;
+  }
+
+  .worksheet-text-modal__diagram-handle--ne {
+    top: -11px;
+    right: -11px;
+  }
+
+  .worksheet-text-modal__diagram-handle--sw {
+    bottom: -11px;
+    left: -11px;
+  }
+
+  .worksheet-text-modal__diagram-handle--se {
+    right: -11px;
+    bottom: -11px;
+  }
+
+  .worksheet-text-modal__footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .worksheet-text-modal__footer > .mind-map-side-rail-btn,
+  .worksheet-text-modal__footer-actions .mind-map-side-rail-btn {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+  }
+
+  .worksheet-text-modal__footer-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .worksheet-text-modal__footer-actions .mind-map-side-rail-btn--primary {
+    grid-column: 1 / -1;
+  }
 }

@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.domain.auth import User
 from routers.api.training_asset_routes import router as training_asset_router
 from routers.api.training_course_routes import router as training_course_router
+from routers.api.training_library_routes import router as training_library_router
 from routers.api.training_play_routes import router as training_play_router
 from services.features.training.activity_store import (
     activity_summary,
@@ -75,6 +76,7 @@ router = APIRouter(prefix="/training", tags=["training"])
 router.include_router(training_course_router)
 router.include_router(training_asset_router)
 router.include_router(training_play_router)
+router.include_router(training_library_router)
 
 
 def _snapshot(session, user: User):

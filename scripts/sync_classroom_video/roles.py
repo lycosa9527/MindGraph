@@ -2,9 +2,17 @@
 
 from __future__ import annotations
 
+from operator import itemgetter
 from pathlib import Path
 from typing import TypedDict
 
+from scripts.cat_emoji.paths import (
+    BLACK_STILL_FRONT,
+    RAVEN_STILL_FRONT,
+    SCHNAUZER_STILL_FRONT,
+    SIAMESE_STILL_FRONT,
+    WHITE_STILL_FRONT,
+)
 from scripts.sync_classroom_video.paths import MASCOTS_DIR, SKIP_FOLDERS, STILL_NAME
 
 
@@ -37,41 +45,84 @@ ROLE_META: dict[str, tuple[str, str, str]] = {
     "raven-teacher-mascot": (
         "raven",
         "乌鸦",
-        "3D动画乌鸦吉祥物，直立短腿，橙色喙，深色羽毛，与猫同一画风，用翅膀做事。",
+        "3D动画乌鸦吉祥物，直立短腿，橙色喙，深色羽毛，棕色圆框眼镜，黄色领结，棕色脚，与猫同一画风，用翅膀做事。",
     ),
     "schnauzer-professor": (
         "mentor",
         "雪纳瑞导师",
-        "3D动画雪纳瑞教授吉祥物，与猫同一画风，站立授课，不要写成真人。",
+        "3D动画雪纳瑞教授吉祥物，盐胡椒灰硬毛，方口吻，浓眉胡须，深棕圆框眼镜，海军蓝整套西装、白衬衫、深红领带，短腿直立，短尾巴，与猫同一画风，站立授课，不要写成真人。",
     ),
 }
 
 
-def discover_roles(root: Path | None = None) -> list[RoleStill]:
-    """Return every folder that still has a front green-screen still."""
-    base = root if root is not None else MASCOTS_DIR
-    if not base.is_dir():
-        raise RuntimeError(f"mascots folder missing: {base}")
+REPO_FRONT_STILLS: dict[str, Path] = {
+    "black-cat-mascot": BLACK_STILL_FRONT,
+    "white-cat-mascot": WHITE_STILL_FRONT,
+    "siamese-cat-mascot": SIAMESE_STILL_FRONT,
+    "raven-teacher-mascot": RAVEN_STILL_FRONT,
+    "schnauzer-professor": SCHNAUZER_STILL_FRONT,
+}
+
+
+def _usable_still(still: Path) -> bool:
+    return still.is_file() and still.stat().st_size >= 64
+
+
+def _role_from_still(folder: str, still: Path) -> RoleStill:
+    slug, label, lock = ROLE_META.get(
+        folder,
+        (folder, folder, "3D动画吉祥物，与其他角色同一画风。"),
+    )
+    return {
+        "folder": folder,
+        "slug": slug,
+        "label": label,
+        "lock": lock,
+        "still": still,
+    }
+
+
+def _scan_mascot_dir(base: Path) -> list[RoleStill]:
     roles: list[RoleStill] = []
     for folder in sorted(path for path in base.iterdir() if path.is_dir()):
         if folder.name in SKIP_FOLDERS:
             continue
         still = folder / STILL_NAME
-        if not still.is_file() or still.stat().st_size < 64:
+        if not _usable_still(still):
             continue
-        slug, label, lock = ROLE_META.get(
-            folder.name,
-            (folder.name, folder.name, "3D动画吉祥物，与其他角色同一画风。"),
-        )
-        roles.append(
-            {
-                "folder": folder.name,
-                "slug": slug,
-                "label": label,
-                "lock": lock,
-                "still": still,
-            }
-        )
+        roles.append(_role_from_still(folder.name, still))
+    return roles
+
+
+def _fill_missing_repo_stills(roles: list[RoleStill]) -> list[RoleStill]:
+    """Keep desktop stills, and add committed fronts the desktop folder lacks."""
+    present = {role["folder"] for role in roles}
+    filled = list(roles)
+    for folder, still in REPO_FRONT_STILLS.items():
+        if folder in present or not _usable_still(still):
+            continue
+        filled.append(_role_from_still(folder, still))
+    filled.sort(key=itemgetter("folder"))
+    return filled
+
+
+def discover_roles(root: Path | None = None) -> list[RoleStill]:
+    """Return every folder that still has a front green-screen still.
+
+    Pictures/mascots wins when that folder exists. Committed stills fill gaps,
+    including the laptop raven stand-in when the desktop raven file is absent.
+    """
+    base = root if root is not None else MASCOTS_DIR
+    if not base.is_dir():
+        if root is not None:
+            raise RuntimeError(f"mascots folder missing: {base}")
+        roles = _fill_missing_repo_stills([])
+        if roles:
+            return roles
+        raise RuntimeError(f"mascots folder missing: {base}")
+    roles = _scan_mascot_dir(base)
+    if root is None:
+        roles = _fill_missing_repo_stills(roles)
     if not roles:
         raise RuntimeError(f"no green-screen stills in {base}")
     return roles

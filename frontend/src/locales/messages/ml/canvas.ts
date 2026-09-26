@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'സംരക്ഷിച്ച എക്‌സ്‌ട്രാക്‌റ്റ് നഷ്‌ടമായതോ സ്‌റ്റോറേജുമായി സമന്വയിപ്പിക്കാത്തതോ ആയതിനാൽ സ്വയമേവ ശുദ്ധീകരിക്കപ്പെട്ടു. പ്രമാണം വീണ്ടും അപ്‌ലോഡ് ചെയ്യുക അല്ലെങ്കിൽ ഒട്ടിക്കുക.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'ഉള്ളടക്കം സുരക്ഷാ അവലോകനത്തിൽ വിജയിച്ചില്ല. ദയവായി ടെക്‌സ്‌റ്റ് പരിഷ്‌കരിച്ച് വീണ്ടും ശ്രമിക്കുക.',
   'canvas.mindMapSideToolbar.learningSheet': 'പൊള്ളയായ ബ്രാക്കറ്റ് ഡയഗ്രം',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'സംഭാഷണ പരിഷ്ക്കരണം',
   'canvas.mindMapSideToolbar.mindClassroom': 'ചിന്താ പ്രഭാഷണ ഹാൾ',
   'canvas.mindClassroom.title': 'ചിന്താ പ്രഭാഷണ ഹാൾ',

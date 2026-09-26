@@ -936,6 +936,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Die gestoorde onttrekking het gefees of was uit sync en is skoongemaak. Laai asseblief weer op of plak die dokument.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'Die inhoud het nie sekuriteitsoorsig geslaag nie. Wysig asseblief die teks en probeer weer.',
   'canvas.mindMapSideToolbar.learningSheet': 'Leerblad',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'Een-sin-generering',
   'canvas.mindMapSideToolbar.mindClassroom': 'Dink lesinglokaal',
   'canvas.mindClassroom.title': 'Dink lesinglokaal',

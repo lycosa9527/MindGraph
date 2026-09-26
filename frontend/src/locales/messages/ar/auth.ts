@@ -322,7 +322,7 @@ export default {
   'auth.qrLoginInviteRequired': 'يرجى ملء رمز الدعوة للمدرسة أولاً ثم مسح الرمز ضوئيًا لتسجيل الدخول',
   'auth.qrLoginProvidersFailed': 'غير قادر على تحميل تكوين تسجيل الدخول لرمز المسح، يرجى المحاولة مرة أخرى لاحقًا.',
   'auth.qrLoginProviderDisabled': 'This sign-in method is not enabled for your school',
-  'auth.qrLoginNotLinked': 'Account not linked — sign in with password and bind under Account linking first',
+  'auth.qrLoginNotLinked': 'Please bind your account first. Sign in with your password, link WeChat under Account linking, then scan again. If you forgot the password, use Forgot password.',
   'auth.qrLoginExchangeFailed': 'فشل تسجيل الدخول لرمز المسح الضوئي، يرجى المحاولة مرة أخرى',
   'auth.qrLoginInvalidState': 'انتهت صلاحية جلسة مسح رمز الاستجابة السريعة. يرجى إغلاقه ومسح رمز الاستجابة السريعة ضوئيًا مرة أخرى.',
   'auth.qrLoginInvalidCode': 'انتهت صلاحية رمز ترخيص WeChat أو تم استخدامه. يرجى إغلاق رمز الاستجابة السريعة ومسح الرمز ضوئيًا مرة أخرى.',

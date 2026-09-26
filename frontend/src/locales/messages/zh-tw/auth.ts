@@ -391,7 +391,7 @@ export default {
   'auth.qrLoginInviteRequired': '請先填寫學校邀請碼後再使用掃碼登錄',
   'auth.qrLoginProvidersFailed': '無法加載掃碼登錄配置，請稍後重試',
   'auth.qrLoginProviderDisabled': '此掃碼登錄方式暫不可用',
-  'auth.qrLoginNotLinked': '請先綁定賬號。請用密碼登錄後，在「賬戶綁定」中綁定微信，再掃碼登錄。',
+  'auth.qrLoginNotLinked': '請先綁定賬號。請用密碼登錄後，在「賬戶綁定」中綁定微信，再掃碼登錄。如果忘記密碼，請使用「忘記密碼」。',
   'auth.qrLoginExchangeFailed': '掃碼登錄失敗，請重試',
   'auth.qrLoginInvalidState': '掃碼會話已過期，請關閉後重新掃碼',
   'auth.qrLoginInvalidCode': '微信授權碼已過期或已使用，請關閉二維碼後重新掃碼',

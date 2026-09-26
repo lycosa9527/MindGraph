@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'L’extrait salvato était manquant o désynchronisé e a été effacé. Carica o collez a nuovo il documento.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'Il contenuto non ha superato il controllo di sicurezza. Per favore modifica il testo e riprova.',
   'canvas.mindMapSideToolbar.learningSheet': 'Scheda d’apprendimento',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'Generazione en una phrase',
   'canvas.mindMapSideToolbar.mindClassroom': 'Aula magna del pensiero',
   'canvas.mindClassroom.title': 'Aula pensante',

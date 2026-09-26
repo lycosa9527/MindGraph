@@ -250,7 +250,7 @@ class FeatureFlagSettings(BaseModel):
     )
     FEATURE_VOD: bool = Field(
         default=False,
-        description="Enable Tencent Cloud VOD (云点播) admin media library",
+        description="Enable the admin online video library (在线视频库)",
     )
     FEATURE_STUDENT_LEARNING_SPACE: bool = Field(
         default=True,

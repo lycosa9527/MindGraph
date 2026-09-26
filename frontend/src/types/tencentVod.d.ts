@@ -32,6 +32,10 @@ declare module 'tcplayer.js' {
       licenseUrl: string
       licenseKey?: string
       language?: string
+      autoplay?: boolean
+      muted?: boolean
+      width?: string | number
+      height?: string | number
     }
   ): TcPlayerInstance
 

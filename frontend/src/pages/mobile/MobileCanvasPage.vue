@@ -22,7 +22,6 @@ import {
   RotateCcw,
   Save,
   Sparkles,
-  TableProperties,
   Trash2,
   X,
 } from '@lucide/vue'
@@ -37,6 +36,8 @@ import DiagramShareReadonlyBar from '@/components/canvas/DiagramShareReadonlyBar
 import MindMapAiToolIcon from '@/components/canvas/MindMapAiToolIcon.vue'
 import MindMapWaterfallPanel from '@/components/canvas/MindMapWaterfallPanel.vue'
 import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
+import MobileCanvasExportButton from '@/components/mobile/MobileCanvasExportButton.vue'
+import MobileLearningSheetButton from '@/components/mobile/MobileLearningSheetButton.vue'
 import { NodePalettePanel, RootConceptModal } from '@/components/panels'
 import {
   getDiagramOperations,
@@ -68,6 +69,7 @@ import { DiagramSessionKey } from '@/composables/diagram/useDiagramSession'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import { publishMobileCanvasHeaderSaveStatus } from '@/composables/mobile/mobileCanvasHeaderSaveStatus'
 import { useMobileCanvasEventHandlers } from '@/composables/mobile/useMobileCanvasEventHandlers'
 import { useMobileCanvasInlineRecBar } from '@/composables/mobile/useMobileCanvasInlineRecBar'
 import { useMobileCanvasRouteLoader } from '@/composables/mobile/useMobileCanvasRouteLoader'
@@ -137,15 +139,6 @@ const isConceptMap = computed(() => diagramStore.type === 'concept_map')
 const useMindMapV2 = useMindMapV2Chrome()
 const fitViewOnInit = computed(() => !isConceptMap.value && !useMindMapV2.value)
 
-const tabReady = computed(() => {
-  if (!authStore.isAuthenticated) return false
-  if (!inlineRecStore.isReady) return false
-  if (isConceptMap.value) {
-    return llmResultsStore.selectedModel != null
-  }
-  return true
-})
-
 const {
   isSaving,
   showNodePalette,
@@ -206,7 +199,6 @@ const {
   handleRecNext,
   handleRecPrev,
   handleRecDismiss,
-  handleTabMode,
 } = useMobileCanvasInlineRecBar({
   diagramStore,
   inlineRecStore,
@@ -232,6 +224,12 @@ const { autoSavedStatusText } = useCanvasAutoSaveStatus({
 const saveStatusDirty = computed(
   () => diagramAutoSave.isDirty.value && !diagramAutoSave.isSaving.value
 )
+
+publishMobileCanvasHeaderSaveStatus({
+  text: autoSavedStatusText,
+  isSaving: diagramAutoSave.isSaving,
+  isDirty: diagramAutoSave.isDirty,
+})
 
 const mobileCanvasEvents = useMobileCanvasEventHandlers({
   diagramStore,
@@ -454,6 +452,7 @@ onUnmounted(() => {
             <span class="toolbar-label">{{ t('canvas.mindMapSideToolbar.waterfall') }}</span>
           </button>
           <button
+            v-if="!useMindMapV2"
             class="toolbar-btn toolbar-btn--purple"
             :class="{ 'toolbar-btn--active': showNodePalette }"
             :aria-label="t('panel.nodePalette')"
@@ -464,13 +463,6 @@ onUnmounted(() => {
           </button>
         </template>
       </div>
-
-      <p
-        v-if="autoSavedStatusText"
-        class="mobile-save-status px-3 pb-1 text-[10px] text-gray-500 truncate"
-      >
-        {{ autoSavedStatusText }}
-      </p>
     </div>
 
     <!-- Diagram canvas with touch support (only this area is pannable/zoomable) -->
@@ -493,17 +485,7 @@ onUnmounted(() => {
         {{ t('canvas.emptyState', '选择图示类型开始创建') }}
       </div>
 
-      <div
-        v-if="showMobileBrainstorm"
-        class="mobile-brainstorm-sheet"
-      >
-        <MindMapWaterfallPanel @close="closeActiveTool" />
-      </div>
-
-      <div
-        class="mobile-zoom-controls absolute inset-e-3 z-40 flex flex-col gap-1.5"
-        :class="showMobileBrainstorm ? 'mobile-zoom-controls--above-sheet' : 'bottom-3'"
-      >
+      <div class="mobile-zoom-controls absolute inset-e-3 bottom-3 z-40 flex flex-col gap-1.5">
         <button
           type="button"
           class="mobile-zoom-btn"
@@ -548,12 +530,12 @@ onUnmounted(() => {
       />
     </div>
 
-    <!-- Bottom bar: non–concept map = AI sheet + Tab; concept map = inline rec only (no overlap) -->
+    <!-- Bottom bar: non–concept map = AI model + export; concept map = inline rec only -->
     <div
       v-if="!isConceptMap || showMobileConceptRecBottom"
       class="mobile-bottom-bar shrink-0 px-3 py-2 bg-white/90 backdrop-blur-md border-t border-gray-200 touch-none"
     >
-      <!-- Inline recommendations (full width; concept map has no second row for AI/Tab) -->
+      <!-- Inline recommendations (full width; concept map has no second row for AI/export) -->
       <div
         v-if="inlineRecActive"
         :class="[
@@ -652,35 +634,31 @@ onUnmounted(() => {
         </button>
       </div>
 
-      <!-- Other diagrams: open AI sheet + Tab (inline rec) -->
+      <!-- Other diagrams: AI model + export (same commands as desktop) -->
       <div
         v-else
         class="flex items-center justify-between"
       >
-        <button
-          class="bottom-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 active:bg-gray-200 transition-colors"
-          @click="showModelDrawer = true"
-        >
-          <Bot
-            :size="16"
-            class="text-indigo-500"
+        <div class="flex min-w-0 items-center gap-2">
+          <MobileLearningSheetButton
+            v-if="useMindMapV2"
+            :disabled="diagramShareRole === 'viewer'"
           />
-          <span class="text-xs font-medium text-gray-700">{{ t('aiModel.label', 'AI 模型') }}</span>
-        </button>
+          <button
+            class="bottom-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 active:bg-gray-200 transition-colors"
+            @click="showModelDrawer = true"
+          >
+            <Bot
+              :size="16"
+              class="text-indigo-500"
+            />
+            <span class="text-xs font-medium text-gray-700">{{
+              t('aiModel.label', 'AI 模型')
+            }}</span>
+          </button>
+        </div>
 
-        <button
-          class="bottom-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors"
-          :class="
-            tabReady
-              ? 'bg-green-50 active:bg-green-100 text-green-600'
-              : 'bg-gray-100 text-gray-400 opacity-50'
-          "
-          :disabled="!tabReady"
-          @click="handleTabMode"
-        >
-          <TableProperties :size="16" />
-          <span class="text-xs font-medium">Tab</span>
-        </button>
+        <MobileCanvasExportButton :mind-map-export="useMindMapV2" />
       </div>
     </div>
 
@@ -690,7 +668,7 @@ onUnmounted(() => {
     -->
     <Transition name="palette-slide">
       <div
-        v-if="showNodePalette && panelsStore.nodePalettePanel.isOpen"
+        v-if="!useMindMapV2 && showNodePalette && panelsStore.nodePalettePanel.isOpen"
         class="mobile-node-palette-overlay absolute inset-0 z-100 flex flex-col touch-manipulation bg-white"
         style="top: var(--mg-mobile-palette-top, 9.5rem)"
       >
@@ -704,6 +682,13 @@ onUnmounted(() => {
         />
       </div>
     </Transition>
+
+    <div
+      v-if="showMobileBrainstorm"
+      class="mobile-brainstorm-sheet"
+    >
+      <MindMapWaterfallPanel @close="closeActiveTool" />
+    </div>
 
     <!-- AI Model Bottom Sheet -->
     <Teleport to="body">

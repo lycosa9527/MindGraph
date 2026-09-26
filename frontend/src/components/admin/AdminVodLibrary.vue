@@ -4,10 +4,11 @@ import { ElTable, ElTableColumn } from 'element-plus'
 import { useLanguage } from '@/composables'
 import { formatVodDuration } from '@/composables/admin/vodMediaFormat'
 import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
-import type { VodMediaItem } from '@/utils/vodApi'
+import type { VodFolderItem, VodMediaItem } from '@/utils/vodApi'
 
 defineProps<{
   items: VodMediaItem[]
+  folders: VodFolderItem[]
   view: 'grid' | 'table'
   canEdit: boolean
 }>()
@@ -16,6 +17,7 @@ const emit = defineEmits<{
   preview: [item: VodMediaItem]
   refresh: [item: VodMediaItem]
   delete: [item: VodMediaItem]
+  move: [item: VodMediaItem, folderId: string | null]
 }>()
 
 const { t } = useLanguage()
@@ -57,6 +59,22 @@ function deleteRow(row: unknown): void {
     void confirmDelete(row)
   }
 }
+
+function onMove(item: VodMediaItem, event: Event): void {
+  const value = (event.target as HTMLSelectElement).value
+  emit('move', item, value || null)
+}
+
+function moveRow(row: unknown, event: Event): void {
+  if (isVodMediaItem(row)) {
+    onMove(row, event)
+  }
+}
+
+function folderValue(row: unknown): string {
+  if (!isVodMediaItem(row) || !row.folder_id) return ''
+  return row.folder_id
+}
 </script>
 
 <template>
@@ -95,6 +113,21 @@ function deleteRow(row: unknown): void {
           >
             {{ t('admin.vod.delete') }}
           </button>
+          <select
+            class="vod-move"
+            :aria-label="t('admin.vod.moveFolder')"
+            :value="item.folder_id || ''"
+            @change="onMove(item, $event)"
+          >
+            <option value="">{{ t('admin.vod.folderNone') }}</option>
+            <option
+              v-for="folder in folders"
+              :key="folder.id"
+              :value="folder.id"
+            >
+              {{ folder.name }}
+            </option>
+          </select>
         </div>
       </div>
     </button>
@@ -147,6 +180,22 @@ function deleteRow(row: unknown): void {
         >
           {{ t('admin.vod.delete') }}
         </button>
+        <select
+          class="vod-move"
+          :aria-label="t('admin.vod.moveFolder')"
+          :value="folderValue(row)"
+          @click.stop
+          @change="moveRow(row, $event)"
+        >
+          <option value="">{{ t('admin.vod.folderNone') }}</option>
+          <option
+            v-for="folder in folders"
+            :key="folder.id"
+            :value="folder.id"
+          >
+            {{ folder.name }}
+          </option>
+        </select>
       </template>
     </ElTableColumn>
   </ElTable>
@@ -199,5 +248,10 @@ function deleteRow(row: unknown): void {
   border: none;
   padding: 0;
   margin-right: 0.75rem;
+}
+.vod-move {
+  margin-left: auto;
+  max-width: 8rem;
+  font-size: 0.75rem;
 }
 </style>

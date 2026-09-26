@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'සුරකින ලද උධෘතය අස්ථානගත වී හෝ සමමුහුර්ත නොවී ඇති අතර එය හිස් කර ඇත. කරුණාකර ලේඛනය නැවත උඩුගත කරන්න හෝ අලවන්න.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'අන්තර්ගතය ආරක්ෂක සමාලෝචනය සමත් නොවීය. කරුණාකර පෙළ වෙනස් කර නැවත උත්සාහ කරන්න.',
   'canvas.mindMapSideToolbar.learningSheet': 'ඉගෙනුම් පත්රය',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'එක් වාක්‍යයක් ජනනය කරයි',
   'canvas.mindMapSideToolbar.mindClassroom': 'චින්තන දේශන ශාලාව',
   'canvas.mindClassroom.title': 'චින්තන දේශන ශාලාව',

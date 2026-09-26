@@ -279,7 +279,7 @@ async def update_user_admin(
             if new_email != current_email:
                 conflict = await other_user_id_with_email(new_email, user.id)
                 if conflict is not None:
-                    error_msg = Messages.error("email_already_registered", lang)
+                    error_msg = Messages.error("email_already_registered_other", lang, new_email)
                     raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
             user.email = new_email
 

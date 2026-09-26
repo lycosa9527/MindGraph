@@ -4,6 +4,7 @@ import { computed, nextTick, onUnmounted, watch } from 'vue'
 import TrainingPageLiveFrame from '@/components/training/TrainingPageLiveFrame.vue'
 import TrainingPlayControls from '@/components/training/TrainingPlayControls.vue'
 import TrainingStepMarks from '@/components/training/TrainingStepMarks.vue'
+import TrainingVodPlayer from '@/components/training/TrainingVodPlayer.vue'
 import { useLanguage } from '@/composables'
 import type { TrainingSteerMode } from '@/composables/training/applyTrainingSnapshot'
 import { applyTrainingUiTarget } from '@/composables/training/applyTrainingUiTarget'
@@ -33,6 +34,7 @@ const emit = defineEmits<{
   prev: []
   next: []
   mode: [value: TrainingSteerMode]
+  resize: [size: { width: number; height: number }]
 }>()
 
 const { t } = useLanguage()
@@ -48,11 +50,11 @@ function onKey(event: KeyboardEvent): void {
 }
 
 watch(
-  () => [props.step.modal_key, props.step.focus_key, showLive.value] as const,
-  ([modalKey, focusKey, live]) => {
+  () => [props.step.modal_key, props.step.focus_key, props.step.ui_lock, showLive.value] as const,
+  ([modalKey, focusKey, uiLock, live]) => {
     if (!live) return
     void nextTick().then(() =>
-      applyTrainingUiTarget({ modalKey, focusKey, hostModals: false })
+      applyTrainingUiTarget({ modalKey, focusKey, uiLock, hostModals: false })
     )
   },
   { immediate: true }
@@ -107,6 +109,18 @@ onUnmounted(() => {
       >
         {{ t('training.builder.previewEmpty') }}
       </p>
+      <TrainingVodPlayer
+        v-if="step.vod_media_id"
+        class="teacher-preview__vod"
+        :media-id="step.vod_media_id"
+        :autoplay="Boolean(step.vod_autoplay)"
+        :width="step.vod_width"
+        :height="step.vod_height"
+        :step-key="step.id || 'preview'"
+        :can-next="canNext"
+        @resize="emit('resize', $event)"
+        @next="emit('next')"
+      />
       <TrainingStepMarks
         :overlays="marks"
         :step="step"
@@ -179,6 +193,12 @@ onUnmounted(() => {
   margin: 0;
   color: #e7e5e4;
   font-size: 0.9rem;
+}
+.teacher-preview__vod {
+  position: absolute;
+  left: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 30;
 }
 .teacher-preview__pad {
   position: absolute;

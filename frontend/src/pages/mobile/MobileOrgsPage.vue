@@ -1,12 +1,12 @@
 <script setup lang="ts">
 /**
- * Mobile organization management — create a school and share invite code / link.
+ * Mobile organization management — create a school, then open its chart card.
  */
 import { useRouter } from 'vue-router'
 
-import { Building2, Home, Loader2, Plus } from '@lucide/vue'
+import { Building2, ChevronRight, Home, Loader2, Plus } from '@lucide/vue'
 
-import MobileOrgInviteShare from '@/components/mobile/MobileOrgInviteShare.vue'
+import AdminTrendChartModal from '@/components/admin/AdminTrendChartModal.vue'
 import { useLanguage } from '@/composables'
 import { useMobileOrgManagement } from '@/composables/mobile/useMobileOrgManagement'
 
@@ -17,10 +17,14 @@ const {
   isSubmitting,
   isLoading,
   organizations,
-  expandedId,
+  openingId,
+  diagramVisible,
+  diagramSchool,
+  schoolDialogMode,
+  diagramReadOnly,
   submitCreate,
-  toggleExpanded,
-  copyText,
+  openSchool,
+  refreshOpenedSchool,
 } = useMobileOrgManagement()
 
 function goHome() {
@@ -43,7 +47,7 @@ function goHome() {
           class="text-gray-500"
         />
       </button>
-      <h1 class="flex-1 text-center text-base font-semibold text-gray-800 truncate">
+      <h1 class="flex-1 text-center text-base font-semibold text-gray-800 truncate px-2">
         {{ t('mobile.orgsTitle') }}
       </h1>
       <div class="w-8 shrink-0" />
@@ -109,39 +113,67 @@ function goHome() {
           v-for="org in organizations"
           :key="org.id"
           type="button"
-          class="org-card w-full text-left bg-white rounded-2xl border border-gray-200 p-4 active:bg-gray-50"
-          @click="toggleExpanded(org.id)"
+          class="org-card w-full text-left bg-white rounded-2xl border border-gray-200 p-4 active:bg-gray-50 flex items-center gap-3 disabled:opacity-60"
+          :disabled="openingId != null"
+          @click="openSchool(org.id)"
         >
-          <div class="flex items-start gap-3">
-            <div
-              class="flex items-center justify-center w-10 h-10 rounded-xl bg-amber-50 text-amber-600 shrink-0"
-            >
-              <Building2 :size="20" />
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="text-sm font-semibold text-gray-900 truncate">
-                {{ org.name }}
-              </div>
-              <div class="text-xs text-gray-500 mt-0.5">
-                {{ t('mobile.orgsMemberCount', { count: org.userCount }) }}
-              </div>
-            </div>
-          </div>
-
           <div
-            v-if="expandedId === org.id && org.invitationCode"
-            class="mt-3 pt-3 border-t border-gray-100"
-            @click.stop
+            class="flex items-center justify-center w-10 h-10 rounded-xl bg-amber-50 text-amber-600 shrink-0"
           >
-            <MobileOrgInviteShare
-              :invitation-code="org.invitationCode"
-              :invite-link="org.inviteLink"
-              @copy="copyText"
-            />
+            <Building2 :size="20" />
           </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-semibold text-gray-900 truncate">
+              {{ org.name }}
+            </div>
+            <div class="text-xs text-gray-500 mt-0.5">
+              {{ t('mobile.orgsMemberCount', { count: org.userCount }) }}
+            </div>
+          </div>
+          <ChevronRight
+            :size="18"
+            class="text-gray-400 shrink-0"
+          />
         </button>
       </div>
     </div>
+
+    <AdminTrendChartModal
+      v-model:visible="diagramVisible"
+      type="org"
+      :school-dialog-mode="schoolDialogMode"
+      :org-name="diagramSchool?.name"
+      :org-id="diagramSchool?.id"
+      :org-invitation-code="diagramSchool?.invitationCode"
+      :org-display-name="diagramSchool?.display_name"
+      :org-is-active="diagramSchool?.is_active"
+      :org-user-count="diagramSchool?.user_count ?? 0"
+      :org-expires-at="diagramSchool?.expires_at"
+      :org-school-tier="diagramSchool?.school_tier"
+      :org-extra-member-seats="diagramSchool?.extra_member_seats ?? 0"
+      :org-teaching-design-template-key="diagramSchool?.teaching_design_template_key"
+      :org-custom-llm-api-type="diagramSchool?.custom_llm_api_type"
+      :org-custom-llm-base-url="diagramSchool?.custom_llm_base_url"
+      :org-custom-llm-api-key-masked="diagramSchool?.custom_llm_api_key_masked"
+      :org-custom-llm-model="diagramSchool?.custom_llm_model"
+      :org-dify-api-base-url="diagramSchool?.dify_api_base_url"
+      :org-dify-api-key-masked="diagramSchool?.dify_api_key_masked"
+      :org-dify-api-base-url2="diagramSchool?.dify_api_base_url_2"
+      :org-dify-api-key2-masked="diagramSchool?.dify_api_key_2_masked"
+      :org-dify-active-server="diagramSchool?.dify_active_server"
+      :org-dify-failover-enabled="diagramSchool?.dify_failover_enabled"
+      :org-dify-timeout-seconds="diagramSchool?.dify_timeout_seconds"
+      :org-dingtalk-ai-card-streaming-max-chars="
+        diagramSchool?.dingtalk_ai_card_streaming_max_chars
+      "
+      :org-show-chain-of-thought="diagramSchool?.show_chain_of_thought"
+      :org-mindmate-agent-name="diagramSchool?.mindmate_agent_name"
+      :org-mindmate-agent-avatar-url="diagramSchool?.mindmate_agent_avatar_url"
+      :initial-school-tab="diagramSchool?.initial_tab"
+      :initial-trend-period="diagramSchool?.initial_trend_period"
+      :read-only="diagramReadOnly"
+      @refresh="refreshOpenedSchool"
+    />
   </div>
 </template>
 

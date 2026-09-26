@@ -19,7 +19,7 @@
   border-radius: 10px;
 }
 
-/* Mind map: six equal columns, including AI头脑风暴 */
+/* Mind map: save, add, delete, AI generate, AI brainstorm */
 .mobile-toolbar-row--mind-map .toolbar-btn {
   flex: 1 1 0;
   min-width: 0;
@@ -234,13 +234,12 @@
 
 .mobile-brainstorm-sheet {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 30;
-  height: 60%;
+  inset: 0;
+  z-index: 40;
   display: flex;
-  pointer-events: none;
+  flex-direction: column;
+  background: #ffffff;
+  pointer-events: auto;
 }
 
 .mobile-brainstorm-sheet :deep(.ai-brainstorm-panel) {
@@ -249,14 +248,24 @@
   right: auto;
   bottom: auto;
   left: auto;
-  width: 100%;
-  max-width: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100% !important;
+  max-width: none !important;
   height: 100%;
-  border-radius: 1rem 1rem 0 0;
+  max-height: none;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 
-.mobile-zoom-controls--above-sheet {
-  bottom: calc(60% + 0.75rem);
+.mobile-brainstorm-sheet :deep(.ai-brainstorm-panel > footer) {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+.mobile-brainstorm-sheet :deep(.ai-brainstorm-panel > footer .mind-map-side-rail-btn) {
+  flex: 1 1 0;
+  min-height: 44px;
 }
 
 .canvas-touch :deep(.vue-flow__viewport) {

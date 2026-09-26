@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import TrainingStepMarks from '@/components/training/TrainingStepMarks.vue'
+import TrainingVodPlayer from '@/components/training/TrainingVodPlayer.vue'
 import { liveLessonCoversMedia, liveLessonStep } from '@/composables/training/applyTrainingSnapshot'
 import { visibleMarkOverlays } from '@/composables/training/trainingMarkSteps'
 import { useTrainingStore } from '@/stores/training'
@@ -19,7 +20,10 @@ const liveStep = computed(() =>
 )
 const coverMedia = computed(() => liveLessonCoversMedia(liveStep.value))
 const marks = computed(() => (liveStep.value ? visibleMarkOverlays(liveStep.value) : []))
-const visible = computed(() => Boolean(liveStep.value && (coverMedia.value || marks.value.length)))
+const hasVod = computed(() => Boolean(liveStep.value?.vod_media_id))
+const visible = computed(() =>
+  Boolean(liveStep.value && (coverMedia.value || marks.value.length || hasVod.value))
+)
 </script>
 
 <template>
@@ -42,6 +46,16 @@ const visible = computed(() => Boolean(liveStep.value && (coverMedia.value || ma
       class="lesson-overlay__media"
       :src="liveStep.asset_url"
       controls
+    />
+    <TrainingVodPlayer
+      v-if="liveStep.vod_media_id"
+      class="lesson-overlay__vod"
+      :media-id="liveStep.vod_media_id"
+      :autoplay="Boolean(liveStep.vod_autoplay)"
+      :width="liveStep.vod_width"
+      :height="liveStep.vod_height"
+      :step-key="String(training.snapshot.step_index ?? 0)"
+      :can-next="false"
     />
     <TrainingStepMarks
       :overlays="marks"
@@ -70,5 +84,12 @@ const visible = computed(() => Boolean(liveStep.value && (coverMedia.value || ma
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+.lesson-overlay__vod {
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 30;
+  pointer-events: auto;
 }
 </style>

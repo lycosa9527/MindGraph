@@ -517,7 +517,7 @@ export default {
   'swissGlass.hero.adminEvent.line1': 'Inspect a single usage or error event',
   'swissGlass.hero.adminVod.ribbon': 'Admin',
   'swissGlass.hero.adminVod.title': 'Upload video',
-  'swissGlass.hero.adminVod.line1': 'Add a VOD file to the media library',
+  'swissGlass.hero.adminVod.line1': 'Upload a video to the online library',
   'swissGlass.hero.adminSchool.ribbon': 'School',
   'swissGlass.hero.adminSchool.title': 'Create school',
   'swissGlass.hero.adminSchool.line1': 'Enter school details and generate an invite',

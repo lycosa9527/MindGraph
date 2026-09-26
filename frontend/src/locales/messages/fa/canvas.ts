@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'عصاره ذخیره شده وجود نداشت یا با فضای ذخیره سازی هماهنگ نبود و به طور خودکار پاک شد. لطفاً سند را دوباره آپلود یا جایگذاری کنید.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'محتوا مورد بازبینی امنیتی قرار نگرفت. لطفاً متن را اصلاح کنید و دوباره امتحان کنید.',
   'canvas.mindMapSideToolbar.learningSheet': 'نمودار براکت توخالی',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'اصلاح مکالمه',
   'canvas.mindMapSideToolbar.mindClassroom': 'سالن سخنرانی تفکر',
   'canvas.mindClassroom.title': 'سالن سخنرانی تفکر',

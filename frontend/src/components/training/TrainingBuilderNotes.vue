@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue'
+
 import { useLanguage } from '@/composables'
 import type { TrainingCourseStep } from '@/types/training'
 
@@ -10,6 +12,19 @@ const props = defineProps<{
 }>()
 
 const { t } = useLanguage()
+const open = ref(false)
+
+watch(
+  () => props.step.id,
+  () => {
+    open.value = Boolean((props.step.notes || '').trim())
+  },
+  { immediate: true }
+)
+
+function toggle(): void {
+  open.value = !open.value
+}
 
 function onInput(event: Event): void {
   const field = event.target
@@ -19,9 +34,22 @@ function onInput(event: Event): void {
 </script>
 
 <template>
-  <label class="builder-notes">
-    <span class="builder-notes__label">{{ t('training.builder.notes') }}</span>
+  <section class="builder-notes">
+    <button
+      type="button"
+      class="builder-notes__toggle"
+      :aria-expanded="open"
+      :aria-label="t('training.builder.notes')"
+      @click="toggle"
+    >
+      <span
+        class="builder-notes__chevron"
+        :class="{ 'is-open': open }"
+      />
+      <span>{{ t('training.builder.notes') }}</span>
+    </button>
     <textarea
+      v-show="open"
       class="builder-notes__field"
       :value="step.notes || ''"
       :maxlength="NOTES_MAX"
@@ -30,7 +58,7 @@ function onInput(event: Event): void {
       rows="4"
       @input="onInput"
     />
-  </label>
+  </section>
 </template>
 
 <style scoped>
@@ -41,12 +69,31 @@ function onInput(event: Event): void {
   gap: 0.4rem;
   border: 1px solid #e7e5e4;
   background: #fff;
-  padding: 0.7rem 0.85rem 0.8rem;
+  padding: 0.45rem 0.85rem;
 }
-.builder-notes__label {
+.builder-notes__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0.15rem 0;
   color: #1c1917;
   font-size: 0.78rem;
   font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+}
+.builder-notes__chevron {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 1.5px solid #44403c;
+  border-bottom: 1.5px solid #44403c;
+  transform: rotate(-45deg);
+}
+.builder-notes__chevron.is-open {
+  transform: rotate(45deg);
 }
 .builder-notes__field {
   width: 100%;

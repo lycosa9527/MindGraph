@@ -18,7 +18,7 @@ function canOpenVodUpload(capabilities: readonly string[]): boolean {
 }
 
 describe('admin VOD library', () => {
-  it('registers a top-level 云点播 tab', () => {
+  it('registers a top-level 在线视频库 tab', () => {
     const vod = ADMIN_PANEL_TAB_CONFIG.find((tab) => tab.name === 'vod')
     expect(vod?.labelKey).toBe('admin.vod.title')
   })

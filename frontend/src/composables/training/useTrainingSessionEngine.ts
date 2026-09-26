@@ -12,6 +12,7 @@ import {
   trainingSteerMode,
 } from '@/composables/training/applyTrainingSnapshot'
 import { applyTrainingUiTarget } from '@/composables/training/applyTrainingUiTarget'
+import { applyTrainingUiLock } from '@/composables/training/trainingUiLock'
 import { useAuthStore } from '@/stores/auth'
 import { useTrainingStore } from '@/stores/training'
 import '@/styles/training-stop-confirm.css'
@@ -59,11 +60,14 @@ export function useTrainingSessionEngine(): void {
     }
     const moved = await applyTrainingNavigate(router, route.path, snap)
     const step = snap.step
-    if (moved || step?.modal_key || step?.focus_key) {
+    if (moved || step?.modal_key || step?.focus_key || step?.ui_lock) {
       await applyTrainingUiTarget({
         modalKey: step?.modal_key,
         focusKey: step?.focus_key,
+        uiLock: step?.ui_lock,
       })
+    } else {
+      applyTrainingUiLock(null)
     }
     training.markApplied(snap.seq)
   }

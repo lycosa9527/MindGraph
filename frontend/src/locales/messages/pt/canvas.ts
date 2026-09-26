@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'A extração salva estava ausente ou fora de sincronia com o armazenamento e foi automaticamente eliminada. Faça upload novamente ou cole o documento.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'O conteúdo não passou na revisão de segurança. Modifique o texto e tente novamente.',
   'canvas.mindMapSideToolbar.learningSheet': 'Diagrama de colchete oco',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'Modificação conversacional',
   'canvas.mindMapSideToolbar.mindClassroom': 'Sala de aula pensando',
   'canvas.mindClassroom.title': 'Sala de aula pensando',

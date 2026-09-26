@@ -1,5 +1,7 @@
 /** /auth video rotation. Local Vite uses one still (no COS). */
 
+import { isTouchDeviceUserAgent } from '@/utils/isMobileClient'
+
 export const AUTH_LOGIN_HERO_IDS = [
   '01-awaken-cosmos',
   '02-mind-leap',
@@ -26,17 +28,60 @@ type HeroBagState = {
 }
 
 /** Same breakpoint as `/auth` mobile layout (`AuthPage` / `AuthLandingBrand`). */
-export const AUTH_LOGIN_HERO_NARROW_QUERY = '(max-width: 899px)'
+export const AUTH_LOGIN_HERO_NARROW_MAX_PX = 899
+export const AUTH_LOGIN_HERO_NARROW_QUERY = `(max-width: ${AUTH_LOGIN_HERO_NARROW_MAX_PX}px)`
+/**
+ * `<source media>` complement of the narrow layout.
+ * A viewport at or below 899px must not fetch the mp4.
+ */
+export const AUTH_LOGIN_HERO_WIDE_MEDIA = '(min-width: 900px)'
+/** Largest phone short side. Tablets and laptops stay above this. */
+export const AUTH_LOGIN_HERO_PHONE_SHORT_SIDE_MAX_PX = 520
 
 export function authLoginHeroKind(): AuthLoginHeroKind {
   return import.meta.env.DEV ? 'image' : 'video'
 }
 
+export function authLoginHeroViewportNarrow(width: number): boolean {
+  return width <= AUTH_LOGIN_HERO_NARROW_MAX_PX
+}
+
+/**
+ * Phone or tablet, including iOS desktop-site mode (Mac UA, phone-sized screen).
+ * Those clients cover the hero with the login card, so the COS clip is wasted.
+ */
+export function authLoginHeroHandheld(input: {
+  userAgent?: string
+  platform?: string
+  maxTouchPoints?: number
+  pointerCoarse?: boolean
+  hoverNone?: boolean
+  screenWidth?: number
+  screenHeight?: number
+} = {}): boolean {
+  if (isTouchDeviceUserAgent(input.userAgent)) {
+    return true
+  }
+  // iPhone/iPad "Request Desktop Website": Mac UA, MacIntel platform, touch points.
+  const touchPoints = input.maxTouchPoints ?? 0
+  if (input.platform === 'MacIntel' && touchPoints > 1) {
+    return true
+  }
+  const shortSide = Math.min(input.screenWidth ?? 0, input.screenHeight ?? 0)
+  return Boolean(
+    input.pointerCoarse &&
+      input.hoverNone &&
+      shortSide > 0 &&
+      shortSide <= AUTH_LOGIN_HERO_PHONE_SHORT_SIDE_MAX_PX
+  )
+}
+
 export function authLoginHeroShouldAnimate(options: {
   reduceMotion?: boolean
   narrowViewport?: boolean
+  handheld?: boolean
 } = {}): boolean {
-  if (options.reduceMotion || options.narrowViewport) {
+  if (options.reduceMotion || options.narrowViewport || options.handheld) {
     return false
   }
   return authLoginHeroKind() === 'video'

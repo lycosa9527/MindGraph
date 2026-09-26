@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Ekstrak yang disimpan hilang atau tidak sinkron dan telah dihapus. Silakan unggah atau tempel kembali dokumen tersebut.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'Konten tersebut tidak lolos tinjauan keamanan. Silakan ubah teksnya dan coba lagi.',
   'canvas.mindMapSideToolbar.learningSheet': 'Lembar pembelajaran',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'Hasilkan satu kalimat',
   'canvas.mindMapSideToolbar.mindClassroom': 'Ruang kuliah berpikir',
   'canvas.mindClassroom.title': 'Ruang kuliah berpikir',

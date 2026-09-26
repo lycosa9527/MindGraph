@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': '저장된 추출이 없거나 동기화되지 않아 지워졌습니다. 문서를 다시 업로드하거나 붙여넣으세요.',
   'canvas.mindMapDocumentSummary.contentFiltered': '콘텐츠가 보안 검토를 통과하지 못했습니다. 텍스트를 수정하고 다시 시도하십시오.',
   'canvas.mindMapSideToolbar.learningSheet': '학습지',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': '한 문장 생성',
   'canvas.mindMapSideToolbar.mindClassroom': '생각강의실',
   'canvas.mindClassroom.title': '생각강의실',

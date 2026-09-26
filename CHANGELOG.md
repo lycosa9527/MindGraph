@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.101] - 2026-09-27
+
+> **Course Builder can place online-library videos, force a tutorial, and replay it in demo mode.**
+
+### Added
+
+- **在线视频库** — The admin library is renamed from 云点播. Videos sit in one-level folders. Course Builder picks a ready video, can autoplay it muted, and stores a resizable window. Skip closes the video on that step. Next continues the tutorial.
+- **强制** — Checking it confirms in the Swiss glass dialog, then the saved course sends every signed-in user who has not finished it through the walkthrough. Finishing writes one row in `training_course_completions`. The oldest course goes first. Course Builder and admin stay reachable.
+- **演示** — The same dialog stores `always_play` on the step. The course plays again on every later visit, including after someone finishes. Turn it off and people who already finished do not see it again. Refresh the page to try it again.
+- **Locked lists** — On the MindGraph landing step, open the language list and lock that filmstrip step. Learners see the list already open. The lock is dropped if the step leaves that page.
+- **Mobile canvas** — Export and the learning sheet sit on the phone canvas. School invite copy is the same button in admin and on the phone org page.
+
+### Changed
+
+- **Login** — A phone or a narrow window keeps the login still. Duplicate-account and lockout messages point to Forgot password.
+- **Classroom stills** — Raven and schnauzer fronts in the repo fill in when the desktop mascot folder does not have them.
+
+### Fixed
+
+- **Required-course finish** — Finishing twice does not fail on the completion row. A learner play token is issued only for a ready video on a published course. Draft videos stay with authors in scope.
+
+### Tests
+
+- [`tests/test_training_vod_steps.py`](tests/test_training_vod_steps.py), [`tests/test_vod_folders.py`](tests/test_vod_folders.py), [`frontend/tests/requiredTrainingGate.spec.ts`](frontend/tests/requiredTrainingGate.spec.ts), [`frontend/tests/trainingUiLock.spec.ts`](frontend/tests/trainingUiLock.spec.ts)
+
 ## [5.180.100] - 2026-09-25
 
 > **A floating quick-access remote for blank diagrams and preset prompts, with one status toast and a progress sweep on the prompt that is running.**

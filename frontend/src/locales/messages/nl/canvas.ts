@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Het opgeslagen uittreksel ontbrak of was niet gesynchroniseerd en is gewist. Upload of plak het document opnieuw.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'De inhoud heeft de veiligheidsbeoordeling niet doorstaan. Pas de tekst aan en probeer het opnieuw.',
   'canvas.mindMapSideToolbar.learningSheet': 'Leerblad',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'Eén zin genereren',
   'canvas.mindMapSideToolbar.mindClassroom': 'Denkende collegezaal',
   'canvas.mindClassroom.title': 'Denkende collegezaal',

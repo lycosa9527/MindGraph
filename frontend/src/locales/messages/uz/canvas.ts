@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Saqlangan olib tashlashish yox idi yoki sinxrondan chixmishdi va tozalashndi. Hujjati qayta yuklashyin yoki yapishdirin.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'Kontent xavfsizlik tekshiruvidan o\'tmadi. Iltimos, matnni o‘zgartiring va qayta urinib ko‘ring.',
   'canvas.mindMapSideToolbar.learningSheet': 'Oyrenme vareqi',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'Bir cumle bilan yarat',
   'canvas.mindMapSideToolbar.mindClassroom': 'Fikrlash ma\'ruza zali',
   'canvas.mindClassroom.title': 'Fikrlash ma\'ruza zali',

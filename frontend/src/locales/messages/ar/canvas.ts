@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'كان المستخرج المحفوظ مفقودًا أو غير متزامن مع وحدة التخزين وتمت إزالته تلقائيًا. الرجاء إعادة تحميل المستند أو لصقه.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'المحتوى لم يجتاز المراجعة الأمنية. يرجى تعديل النص والمحاولة مرة أخرى.',
   'canvas.mindMapSideToolbar.learningSheet': 'مخطط قوس مجوف',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'تعديل المحادثة',
   'canvas.mindMapSideToolbar.mindClassroom': 'قاعة محاضرات التفكير',
   'canvas.mindClassroom.title': 'قاعة محاضرات التفكير',

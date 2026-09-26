@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Сохраненный фрагмент отсутствовал или не синхронизировался с хранилищем и был автоматически удален. Пожалуйста, повторно загрузите или вставьте документ.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'Содержимое не прошло проверку безопасности. Пожалуйста, измените текст и повторите попытку.',
   'canvas.mindMapSideToolbar.learningSheet': 'Схема полого кронштейна',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'Разговорная модификация',
   'canvas.mindMapSideToolbar.mindClassroom': 'Думающий лекционный зал',
   'canvas.mindClassroom.title': 'Думающий лекционный зал',

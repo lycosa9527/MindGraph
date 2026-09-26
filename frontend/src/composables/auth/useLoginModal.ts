@@ -24,6 +24,9 @@ import { SCHOOL_EXPIRED_CODE, emitSchoolExpiredFromPayload } from '@/utils/schoo
 
 export type LoginModalViewState = 'login' | 'register' | 'sms-login' | 'forgot-password'
 
+/** Long enough to read “already registered / use Forgot password”. */
+export const AUTH_HINT_TOAST_MS = 8000
+
 type LoginModalEmit = {
   (e: 'update:visible', value: boolean): void
   (e: 'success'): void
@@ -517,7 +520,7 @@ export function useLoginModal(
         loginForm.value.captcha = ''
         void refreshCaptcha({ force: true })
       } else {
-        notify.error(result.message || t('auth.loginFailed'))
+        notify.error(result.message || t('auth.loginFailed'), AUTH_HINT_TOAST_MS)
         loginForm.value.captcha = ''
         void refreshCaptcha({ force: true })
       }
@@ -636,7 +639,8 @@ export function useLoginModal(
         startEmailCountdown()
       } else {
         notify.error(
-          typeof data.detail === 'string' ? data.detail : t('auth.modal.emailSendFailed')
+          typeof data.detail === 'string' ? data.detail : t('auth.modal.emailSendFailed'),
+          AUTH_HINT_TOAST_MS
         )
         registerForm.value.captcha = ''
         void refreshCaptcha({ force: true })
@@ -700,7 +704,8 @@ export function useLoginModal(
           saveLoginIdentifier(email)
         } else {
           notify.error(
-            typeof data.detail === 'string' ? data.detail : t('auth.modal.registerFailed')
+            typeof data.detail === 'string' ? data.detail : t('auth.modal.registerFailed'),
+            AUTH_HINT_TOAST_MS
           )
           registerForm.value.captcha = ''
           void refreshCaptcha({ force: true })
@@ -754,7 +759,7 @@ export function useLoginModal(
         loginForm.value.password = registerForm.value.password
         saveLoginIdentifier(registerForm.value.phone)
       } else {
-        notify.error(data.detail || t('auth.modal.registerFailed'))
+        notify.error(data.detail || t('auth.modal.registerFailed'), AUTH_HINT_TOAST_MS)
         registerForm.value.captcha = ''
         void refreshCaptcha({ force: true })
       }
@@ -818,7 +823,8 @@ export function useLoginModal(
           startCountdown()
         } else {
           notify.error(
-            typeof data.detail === 'string' ? data.detail : t('auth.modal.emailSendFailed')
+            typeof data.detail === 'string' ? data.detail : t('auth.modal.emailSendFailed'),
+            AUTH_HINT_TOAST_MS
           )
           form.captcha = ''
           void refreshCaptcha({ force: true })
@@ -842,7 +848,7 @@ export function useLoginModal(
           smsSent.value = true
           startCountdown()
         } else {
-          notify.error(data.detail || t('auth.modal.smsSendFailed'))
+          notify.error(data.detail || t('auth.modal.smsSendFailed'), AUTH_HINT_TOAST_MS)
           form.captcha = ''
           void refreshCaptcha({ force: true })
         }
@@ -938,7 +944,8 @@ export function useLoginModal(
           parseApiErrorDetail(
             data,
             useEmailOtp ? t('auth.modal.emailLoginFailed') : t('auth.modal.smsLoginFailed')
-          )
+          ),
+          AUTH_HINT_TOAST_MS
         )
       }
     } catch (error) {

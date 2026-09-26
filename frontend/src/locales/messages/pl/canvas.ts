@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Zapisany ekstrakt był brakujący lub niesynchronizowany i został wyczyszczony. Prześlij lub wklej dokument ponownie.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'Treść nie przeszła kontroli bezpieczeństwa. Zmodyfikuj tekst i spróbuj ponownie.',
   'canvas.mindMapSideToolbar.learningSheet': 'Arkusz do nauki',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'Generuj jednym zdaniem',
   'canvas.mindMapSideToolbar.mindClassroom': 'Myśląca sala wykładowa',
   'canvas.mindClassroom.title': 'Myśląca sala wykładowa',

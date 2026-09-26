@@ -61,6 +61,7 @@ import AdminSchoolTeachersTab from './AdminSchoolTeachersTab.vue'
 import AdminSchoolTokenUsageTab from './AdminSchoolTokenUsageTab.vue'
 import AdminUserActivityTab from './AdminUserActivityTab.vue'
 import AdminUserTokenUsageTab from './AdminUserTokenUsageTab.vue'
+import SchoolInviteCopyButton from './SchoolInviteCopyButton.vue'
 
 type SchoolDialogTab =
   | 'usage'
@@ -88,6 +89,7 @@ const props = defineProps<{
   initialSchoolTab?: SchoolDialogTab
   orgName?: string
   orgId?: number
+  orgInvitationCode?: string
   orgDisplayName?: string
   orgIsActive?: boolean
   orgUserCount?: number
@@ -842,6 +844,11 @@ onBeforeUnmount(() => {
         aria-hidden="true"
       />
       <div class="mindbot-swiss-form-wrap">
+        <SchoolInviteCopyButton
+          v-if="orgInvitationCode"
+          :organization-name="orgName || ''"
+          :invitation-code="orgInvitationCode"
+        />
         <el-tabs
           v-model="schoolDialogTab"
           class="mindbot-dialog-tabs school-dialog-tabs"
@@ -1139,6 +1146,38 @@ onBeforeUnmount(() => {
 @import '@/styles/admin-mindbot-swiss-dialog-chrome.css';
 @import '@/styles/admin-school-modal-content.css';
 @import '@/styles/admin-user-trend-swiss.css';
+
+@media (max-width: 640px) {
+  .el-dialog.school-settings-dialog.mindbot-swiss-dialog {
+    width: calc(100vw - 16px) !important;
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px);
+    margin-top: calc(env(safe-area-inset-top) + 8px) !important;
+    margin-bottom: 8px !important;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .el-dialog.school-settings-dialog.mindbot-swiss-dialog .el-dialog__body {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: auto;
+  }
+
+  .el-dialog.school-settings-dialog .mindbot-dialog-tabs .el-tabs__nav-wrap {
+    overflow-x: auto;
+  }
+
+  .el-dialog.school-settings-dialog .mindbot-dialog-tabs .el-tabs__nav {
+    width: max-content;
+    min-width: 100%;
+  }
+
+  .el-dialog.school-settings-dialog .mindbot-dialog-tabs .el-tabs__item {
+    flex: 0 0 auto;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+}
 </style>
 
 <style scoped>

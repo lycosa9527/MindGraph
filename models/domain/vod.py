@@ -38,6 +38,32 @@ def generate_vod_uuid() -> str:
     return str(uuid.uuid4())
 
 
+class VodFolder(Base):
+    """One-level folder inside an org's online video library."""
+
+    __tablename__ = "vod_folders"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_vod_uuid, index=True)
+    organization_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("organizations.id"),
+        nullable=False,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(80), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+    __table_args__ = (
+        UniqueConstraint("organization_id", "name", name="uq_vod_folders_org_name"),
+        Index("ix_vod_folders_org_name", "organization_id", "name"),
+    )
+
+
 class VodMedia(Base):
     """Org-owned Tencent VOD FileId catalog entry."""
 
@@ -48,6 +74,12 @@ class VodMedia(Base):
         Integer,
         ForeignKey("organizations.id"),
         nullable=False,
+        index=True,
+    )
+    folder_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("vod_folders.id", ondelete="SET NULL"),
+        nullable=True,
         index=True,
     )
     owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)

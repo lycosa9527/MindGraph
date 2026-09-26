@@ -31,13 +31,19 @@ export function trainingStepPageKey(step: TrainingCourseStep | null | undefined)
     step.mindmap_canvas_mode || '',
     step.modal_key || '',
     step.focus_key || '',
+    step.ui_lock || '',
     step.asset_url || '',
   ].join('|')
 }
 
 export function trainingStepThumbKey(step: TrainingCourseStep | null | undefined): string {
   if (!step) return ''
-  return `${trainingStepPageKey(step)}|${JSON.stringify(step.overlays || [])}`
+  return [
+    trainingStepPageKey(step),
+    step.vod_width || '',
+    step.vod_height || '',
+    JSON.stringify(step.overlays || []),
+  ].join('|')
 }
 
 function keepCaptureNode(node: Node): boolean {

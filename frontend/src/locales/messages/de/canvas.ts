@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Gespeicherter Extrakt fehlte oder war nicht synchron und wurde gelöscht. Bitte erneut hochladen oder einfügen.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'Der Inhalt hat die Sicherheitsüberprüfung nicht bestanden. Bitte ändern Sie den Text und versuchen Sie es erneut.',
   'canvas.mindMapSideToolbar.learningSheet': 'Lernblatt',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'Ein-Satz-Generierung',
   'canvas.mindMapSideToolbar.mindClassroom': 'Denkender Hörsaal',
   'canvas.mindClassroom.title': 'Denkender Hörsaal',

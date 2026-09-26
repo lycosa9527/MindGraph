@@ -23,6 +23,7 @@ import {
   shouldSkipMobileRouteRedirect,
 } from '@/utils/mobileRouteRedirect'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
+import { requiredTrainingRedirect } from '@/utils/requiredTrainingGate'
 
 /** Localized `document.title` via `meta.pageTitle.*` keys. */
 function pageTitle(segment: string): { titleKey: string } {
@@ -135,6 +136,16 @@ const routes: RouteRecordRaw[] = [
     name: 'Canvas',
     component: () => import('@/pages/CanvasPage.vue'),
     meta: { requiresAuth: true, layout: 'canvas', ...pageTitle('canvas') },
+  },
+  {
+    path: '/training/required',
+    name: 'TrainingRequired',
+    component: () => import('@/pages/TrainingRequiredPage.vue'),
+    meta: {
+      requiresAuth: true,
+      layout: 'main',
+      ...pageTitle('training'),
+    },
   },
   {
     path: '/training',
@@ -515,6 +526,11 @@ router.beforeEach(async (to, from) => {
         return false
       }
       return { path: '/auth', query: { redirect: to.fullPath } }
+    }
+    await featureFlagsStore.fetchFlags()
+    if (featureFlagsStore.getFeatureTraining()) {
+      const required = await requiredTrainingRedirect(to.path, authStore.user?.id)
+      if (required) return required
     }
   }
 

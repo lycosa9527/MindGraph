@@ -39,6 +39,18 @@ def default_content_info(adaptive_definition: int = DEFAULT_ADAPTIVE_DEFINITION)
     }
 
 
+def original_content_info() -> dict[str, Any]:
+    """Play the uploaded source file before a transcode task exists."""
+    return {"audioVideoType": "Original"}
+
+
+def content_info_for_catalog(procedure: str, adaptive_definition: int) -> dict[str, Any]:
+    """Adaptive HLS when an upload task flow is configured; otherwise the original file."""
+    if procedure.strip():
+        return default_content_info(adaptive_definition)
+    return original_content_info()
+
+
 def build_psign_payload(
     app_id: int,
     file_id: str,

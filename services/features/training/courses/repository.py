@@ -22,10 +22,12 @@ from services.features.training.courses.constants import (
     MODAL_KEYS,
     PAGE_KEYS,
     STEP_TYPES,
+    UI_LOCK_KEYS,
     clamped_mark_step,
     normalize_mindmap_canvas_mode,
     optional_notes,
     optional_step_key,
+    optional_vod_span,
 )
 from services.features.training.storage.backend import delete_course_folder
 
@@ -118,6 +120,24 @@ def _stable_step_id(raw: dict[str, Any], taken: set[str]) -> str:
     return parsed
 
 
+def _optional_vod_media_id(raw: dict[str, Any]) -> Optional[str]:
+    value = str(raw.get("vod_media_id") or "").strip()
+    if not value:
+        return None
+    try:
+        return str(uuid.UUID(value))
+    except ValueError as exc:
+        raise ValueError("Invalid vod_media_id") from exc
+
+
+def _ui_lock_for_page(page_key: object, value: object) -> str | None:
+    """Keep a locked list only on the page that actually shows it."""
+    lock = optional_step_key(value, UI_LOCK_KEYS, "ui_lock")
+    if lock == "mindgraph-language" and page_key != "mindgraph":
+        return None
+    return lock
+
+
 def _step_payload(raw: dict[str, Any]) -> dict[str, Any]:
     page_key = raw.get("page_key")
     if isinstance(page_key, str):
@@ -133,9 +153,16 @@ def _step_payload(raw: dict[str, Any]) -> dict[str, Any]:
         "overlays": raw.get("overlays") or [],
         "page_key": page_key,
         "pull_users": bool(raw.get("pull_users")),
+        "mandatory": bool(raw.get("mandatory")),
+        "always_play": bool(raw.get("always_play")),
+        "vod_media_id": _optional_vod_media_id(raw),
+        "vod_autoplay": bool(raw.get("vod_autoplay")),
+        "vod_width": optional_vod_span(raw.get("vod_width"), "vod_width"),
+        "vod_height": optional_vod_span(raw.get("vod_height"), "vod_height"),
         "mindmap_canvas_mode": canvas_mode,
         "modal_key": optional_step_key(raw.get("modal_key"), MODAL_KEYS, "modal_key"),
         "focus_key": optional_step_key(raw.get("focus_key"), FOCUS_KEYS, "focus_key"),
+        "ui_lock": _ui_lock_for_page(page_key, raw.get("ui_lock")),
         "notes": optional_notes(raw.get("notes")),
         "mark_step": clamped_mark_step(raw.get("mark_step"), 1),
         "mark_steps": clamped_mark_step(raw.get("mark_steps"), 1),

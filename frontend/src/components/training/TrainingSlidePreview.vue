@@ -3,18 +3,28 @@ import { computed } from 'vue'
 
 import TrainingPageLiveFrame from '@/components/training/TrainingPageLiveFrame.vue'
 import TrainingStepMarks from '@/components/training/TrainingStepMarks.vue'
+import TrainingVodPlayer from '@/components/training/TrainingVodPlayer.vue'
 import { useLanguage } from '@/composables'
 import { visibleMarkOverlays } from '@/composables/training/trainingMarkSteps'
 import { hasTrainingLivePreview } from '@/config/trainingPageLive'
 import { trainingPageDef } from '@/config/trainingPages'
 import type { TrainingCourseStep } from '@/types/training'
 
-const props = defineProps<{
-  step: TrainingCourseStep
-  index: number
-  compact?: boolean
-  interactive?: boolean
-  thumb?: string | null
+const props = withDefaults(
+  defineProps<{
+    step: TrainingCourseStep
+    index: number
+    compact?: boolean
+    interactive?: boolean
+    thumb?: string | null
+    canNext?: boolean
+  }>(),
+  { canNext: true }
+)
+
+const emit = defineEmits<{
+  resize: [size: { width: number; height: number }]
+  next: []
 }>()
 
 const { t } = useLanguage()
@@ -86,6 +96,24 @@ const marks = computed(() => visibleMarkOverlays(props.step))
       :step="step"
       still-roles
     />
+    <TrainingVodPlayer
+      v-if="!compact && step.vod_media_id"
+      class="slide-preview__player"
+      :media-id="step.vod_media_id"
+      :autoplay="Boolean(step.vod_autoplay)"
+      :width="step.vod_width"
+      :height="step.vod_height"
+      :step-key="step.id || String(index)"
+      :can-next="canNext"
+      @resize="emit('resize', $event)"
+      @next="emit('next')"
+    />
+    <span
+      v-else-if="compact && step.vod_media_id"
+      class="slide-preview__vod"
+    >
+      {{ t('training.builder.vodVideo') }}
+    </span>
     <span class="slide-preview__index">{{ index + 1 }}</span>
   </div>
 </template>
@@ -156,6 +184,21 @@ const marks = computed(() => visibleMarkOverlays(props.step))
   color: #78716c;
   font-size: 0.65rem;
   font-weight: 500;
+}
+.slide-preview__player {
+  position: absolute;
+  left: 0.5rem;
+  bottom: 0.5rem;
+  z-index: 4;
+}
+.slide-preview__vod {
+  position: absolute;
+  left: 0.35rem;
+  bottom: 0.3rem;
+  z-index: 3;
+  color: #1c1917;
+  font-size: 0.6rem;
+  font-weight: 650;
 }
 .slide-preview__index {
   position: absolute;

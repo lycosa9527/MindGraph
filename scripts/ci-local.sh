@@ -270,6 +270,12 @@ run_backend() {
     tests/test_training_routes.py \
     tests/test_training_storage_keys.py \
     tests/test_training_course_routes.py \
+    tests/test_training_vod_steps.py \
+    tests/test_vod_folders.py \
+    tests/test_vod_catalog_routes.py \
+    tests/test_vod_permissions.py \
+    tests/test_tencent_vod_play_sign.py \
+    tests/scripts/test_sync_classroom_video.py \
     tests/test_training_play_advance.py \
     tests/test_training_role_assets.py \
     tests/test_training_audit_log.py \
@@ -337,9 +343,10 @@ run_frontend() {
     tests/useTrainingHeartbeat.spec.ts tests/trainingPadAnchor.spec.ts \
     tests/trainingCourses.spec.ts tests/trainingOverlayDrag.spec.ts \
     tests/presentationSpotlight.spec.ts tests/applyTrainingUiTarget.spec.ts \
+    tests/trainingUiLock.spec.ts tests/deliverExportFile.spec.ts tests/schoolDiagramCard.spec.ts \
     tests/trainingStageThumb.spec.ts tests/trainingBuilderStore.spec.ts \
     tests/trainingRoles.spec.ts tests/trainingTextBubbles.spec.ts \
-    tests/trainingPlayControls.spec.ts tests/trainingFriendLine.spec.ts \
+    tests/trainingPlayControls.spec.ts tests/requiredTrainingGate.spec.ts tests/trainingFriendLine.spec.ts \
     tests/trainingRemoteView.spec.ts tests/mobileRouterRedirects.spec.ts \
     tests/mindmateWelcomeLayout.spec.ts \
     tests/workshopTopicChevron.spec.ts \

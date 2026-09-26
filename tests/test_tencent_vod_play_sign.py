@@ -12,7 +12,9 @@ from services.features.vod.play_sign import (
     build_player_psign,
     build_psign_payload,
     compact_json_bytes,
+    content_info_for_catalog,
     default_content_info,
+    original_content_info,
     sign_psign,
 )
 
@@ -35,6 +37,13 @@ def test_default_content_info_is_raw_adaptive() -> None:
         "audioVideoType": "RawAdaptive",
         "rawAdaptiveDefinition": 10,
     }
+
+
+def test_catalog_plays_original_until_a_procedure_exists() -> None:
+    """Uploads without a task flow must play the source file."""
+    assert original_content_info() == {"audioVideoType": "Original"}
+    assert content_info_for_catalog("", 10) == {"audioVideoType": "Original"}
+    assert content_info_for_catalog("MindGraphAdaptive", 10) == default_content_info(10)
 
 
 def test_psign_payload_uses_official_required_fields() -> None:

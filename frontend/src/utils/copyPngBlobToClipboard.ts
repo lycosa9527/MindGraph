@@ -36,7 +36,7 @@ export async function copyPngBlobToClipboard(blob: Blob | Promise<Blob>): Promis
 
 export async function copyPngBlobWithFallback(
   source: Promise<Blob>,
-  download: (blob: Blob) => void
+  download: (blob: Blob) => void | Promise<void>
 ): Promise<'copied' | 'downloaded'> {
   if (canWriteImageToClipboard()) {
     try {
@@ -52,7 +52,7 @@ export async function copyPngBlobWithFallback(
       if (resolved.size === 0) {
         throw writeError
       }
-      download(resolved)
+      await download(resolved)
       return 'downloaded'
     }
   }
@@ -60,6 +60,6 @@ export async function copyPngBlobWithFallback(
   if (blob.size === 0) {
     throw new Error('Clipboard export produced empty image')
   }
-  download(blob)
+  await download(blob)
   return 'downloaded'
 }

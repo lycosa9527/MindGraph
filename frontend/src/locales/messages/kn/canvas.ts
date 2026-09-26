@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'ಉಳಿಸಿದ ಸಾರವು ಕಾಣೆಯಾಗಿದೆ ಅಥವಾ ಸಂಗ್ರಹಣೆಯೊಂದಿಗೆ ಸಿಂಕ್ ಆಗಿಲ್ಲ ಮತ್ತು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಶುದ್ಧೀಕರಿಸಲಾಗಿದೆ. ದಯವಿಟ್ಟು ಡಾಕ್ಯುಮೆಂಟ್ ಅನ್ನು ಮರು-ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ಅಂಟಿಸಿ.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'ವಿಷಯವು ಭದ್ರತಾ ವಿಮರ್ಶೆಯನ್ನು ರವಾನಿಸಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಪಠ್ಯವನ್ನು ಮಾರ್ಪಡಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
   'canvas.mindMapSideToolbar.learningSheet': 'ಟೊಳ್ಳಾದ ಬ್ರಾಕೆಟ್ ರೇಖಾಚಿತ್ರ',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'ಸಂವಾದಾತ್ಮಕ ಮಾರ್ಪಾಡು',
   'canvas.mindMapSideToolbar.mindClassroom': 'ಥಿಂಕಿಂಗ್ ಲೆಕ್ಚರ್ ಹಾಲ್',
   'canvas.mindClassroom.title': 'ಥಿಂಕಿಂಗ್ ಲೆಕ್ಚರ್ ಹಾಲ್',

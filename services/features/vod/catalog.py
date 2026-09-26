@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import time
+import uuid
 from datetime import UTC, datetime
 from typing import Any, Optional
 
@@ -19,6 +20,7 @@ from models.domain.auth import User
 from models.domain.vod import (
     VOD_STATUS_PROCESSING,
     VOD_STATUSES,
+    VodFolder,
     VodMedia,
     generate_vod_uuid,
 )
@@ -27,7 +29,7 @@ from services.features.vod.credentials import (
     TencentVodNotConfiguredError,
     load_tencent_vod_credentials,
 )
-from services.features.vod.play_sign import build_player_psign
+from services.features.vod.play_sign import build_player_psign, content_info_for_catalog
 from services.features.vod.upload_sign import (
     build_client_upload_signature,
     clamp_upload_ttl,
@@ -107,6 +109,7 @@ def serialize_media(row: VodMedia) -> dict[str, Any]:
         "owner_id": row.owner_id,
         "owner_name": _owner_name(row),
         "file_id": row.file_id,
+        "folder_id": row.folder_id,
         "title": row.title,
         "description": row.description or "",
         "status": row.status,
@@ -130,6 +133,20 @@ async def get_media(db: AsyncSession, media_id: str, org_id: Optional[int]) -> V
     return row
 
 
+def folder_list_clause(folder_id: str) -> Any:
+    """Filter clause for a folder id, or unfiled when the value is ``none``."""
+    token = folder_id.strip()
+    if not token:
+        return None
+    if token == "none":
+        return VodMedia.folder_id.is_(None)
+    try:
+        parsed = str(uuid.UUID(token))
+    except ValueError as exc:
+        raise VodCatalogError("invalid_folder", http_status=400) from exc
+    return VodMedia.folder_id == parsed
+
+
 async def list_media(
     db: AsyncSession,
     org_id: Optional[int],
@@ -137,8 +154,9 @@ async def list_media(
     status: str = "",
     offset: int = 0,
     limit: int = DEFAULT_LIST_LIMIT,
+    folder_id: str = "",
 ) -> tuple[list[VodMedia], int]:
-    """Paginated org catalog with optional title/fileId search."""
+    """Paginated org catalog with optional title/fileId and folder filters."""
     safe_limit = min(max(int(limit), 1), MAX_LIST_LIMIT)
     safe_offset = max(int(offset), 0)
     filters = []
@@ -153,6 +171,9 @@ async def list_media(
         if status_value not in VOD_STATUSES:
             raise VodCatalogError("invalid_status", http_status=400)
         filters.append(VodMedia.status == status_value)
+    folder_clause = folder_list_clause(folder_id)
+    if folder_clause is not None:
+        filters.append(folder_clause)
     count_stmt = select(func.count()).select_from(VodMedia)
     list_stmt = select(VodMedia).order_by(VodMedia.updated_at.desc())
     for clause in filters:
@@ -191,6 +212,25 @@ async def _file_id_exists(db: AsyncSession, organization_id: int, file_id: str) 
     return int(await db.scalar(stmt) or 0) > 0
 
 
+async def _folder_id_in_org(db: AsyncSession, organization_id: int, folder_id: Optional[str]) -> Optional[str]:
+    token = str(folder_id or "").strip()
+    if not token:
+        return None
+    try:
+        parsed = str(uuid.UUID(token))
+    except ValueError as exc:
+        raise VodCatalogError("invalid_folder", http_status=400) from exc
+    found = await db.scalar(
+        select(VodFolder.id).where(
+            VodFolder.id == parsed,
+            VodFolder.organization_id == organization_id,
+        )
+    )
+    if found is None:
+        raise VodCatalogError("folder_not_found", http_status=404)
+    return parsed
+
+
 async def register_media(
     db: AsyncSession,
     organization_id: int,
@@ -201,15 +241,18 @@ async def register_media(
     class_id: int = 0,
     source_context: str = "",
     refresh: bool = True,
+    folder_id: Optional[str] = None,
 ) -> VodMedia:
     """Insert a FileId after client upload; optionally pull DescribeMediaInfos."""
     normalized_file_id = _normalize_file_id(file_id)
     if await _file_id_exists(db, organization_id, normalized_file_id):
         raise VodCatalogError("file_id_exists", http_status=409)
+    assigned_folder = await _folder_id_in_org(db, organization_id, folder_id)
     row = VodMedia(
         id=generate_vod_uuid(),
         organization_id=organization_id,
         owner_id=int(owner.id),
+        folder_id=assigned_folder,
         file_id=normalized_file_id,
         title=_normalize_title(title),
         description=description.strip()[:2000],
@@ -310,6 +353,7 @@ def issue_play_token(row: VodMedia) -> dict[str, Any]:
         play_key=credentials.play_key,
         current_time=now,
         expire_time=expire_at,
+        content_info=content_info_for_catalog(credentials.procedure, credentials.adaptive_definition),
         adaptive_definition=credentials.adaptive_definition,
     )
     return {

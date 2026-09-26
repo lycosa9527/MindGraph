@@ -535,7 +535,7 @@ export default {
   'swissGlass.hero.adminEvent.line1': '查看单条用量或错误事件',
   'swissGlass.hero.adminVod.ribbon': '管理',
   'swissGlass.hero.adminVod.title': '上传视频',
-  'swissGlass.hero.adminVod.line1': '将点播文件上传到媒体库',
+  'swissGlass.hero.adminVod.line1': '将视频上传到在线视频库',
   'swissGlass.hero.adminSchool.ribbon': '学校',
   'swissGlass.hero.adminSchool.title': '创建学校',
   'swissGlass.hero.adminSchool.line1': '填写学校资料并生成邀请',

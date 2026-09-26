@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Kaydedilen çıkarım eksik veya senkron dışıydı ve temizlendi. Lütfen belgeyi tekrar yükleyin veya yapıştırın.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'İçerik güvenlik incelemesinden geçemedi. Lütfen metni değiştirin ve tekrar deneyin.',
   'canvas.mindMapSideToolbar.learningSheet': 'Öğrenme sayfası',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'Tek cümleyle oluştur',
   'canvas.mindMapSideToolbar.mindClassroom': 'Düşünme konferans salonu',
   'canvas.mindClassroom.title': 'Düşünme konferans salonu',

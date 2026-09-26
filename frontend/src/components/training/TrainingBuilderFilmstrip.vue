@@ -3,6 +3,8 @@ import { ref } from 'vue'
 
 import { ElButton } from 'element-plus'
 
+import { Lock, LockOpen } from '@lucide/vue'
+
 import TrainingSlidePreview from '@/components/training/TrainingSlidePreview.vue'
 import { useLanguage } from '@/composables'
 import type { TrainingCourseStep } from '@/types/training'
@@ -20,6 +22,8 @@ const emit = defineEmits<{
   add: []
   images: [files: File[]]
   remove: [index: number]
+  lockArm: []
+  lock: [index: number]
 }>()
 
 const { t } = useLanguage()
@@ -85,6 +89,28 @@ function onImages(event: Event): void {
           :index="index"
           :thumb="thumbs?.[index]"
           compact
+        />
+      </button>
+      <button
+        v-if="!readonly"
+        type="button"
+        class="filmstrip__lock"
+        :class="{ 'is-on': Boolean(step.ui_lock) }"
+        :aria-pressed="Boolean(step.ui_lock)"
+        :aria-label="step.ui_lock ? t('training.builder.unlock') : t('training.builder.lock')"
+        :title="step.ui_lock ? t('training.builder.unlock') : t('training.builder.lock')"
+        @pointerdown="emit('lockArm')"
+        @keydown.enter="emit('lockArm')"
+        @keydown.space="emit('lockArm')"
+        @click.stop="emit('lock', index)"
+      >
+        <Lock
+          v-if="step.ui_lock"
+          class="filmstrip__lock-icon"
+        />
+        <LockOpen
+          v-else
+          class="filmstrip__lock-icon"
         />
       </button>
       <button
@@ -163,6 +189,30 @@ function onImages(event: Event): void {
   border: 0;
   background: transparent;
   cursor: pointer;
+}
+.filmstrip__lock {
+  position: absolute;
+  top: 0.2rem;
+  left: 0.2rem;
+  z-index: 5;
+  display: flex;
+  width: 1.15rem;
+  height: 1.15rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.92);
+  color: #44403c;
+  cursor: pointer;
+}
+.filmstrip__lock.is-on {
+  background: #1c1917;
+  color: #fafaf9;
+}
+.filmstrip__lock-icon {
+  width: 0.72rem;
+  height: 0.72rem;
 }
 .filmstrip__delete {
   position: absolute;

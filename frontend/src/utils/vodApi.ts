@@ -1,7 +1,7 @@
 /**
  * Admin 云点播 catalog API (same-origin; no durable VOD hosts).
  */
-import { apiDelete, apiPost, apiRequestJson } from '@/utils/apiClient'
+import { apiDelete, apiPatch, apiPost, apiRequestJson } from '@/utils/apiClient'
 
 export type VodMediaStatus = 'pending' | 'processing' | 'ready' | 'failed'
 
@@ -11,6 +11,7 @@ export interface VodMediaItem {
   owner_id: number
   owner_name: string
   file_id: string
+  folder_id: string | null
   title: string
   description: string
   status: VodMediaStatus
@@ -19,6 +20,12 @@ export interface VodMediaItem {
   source_context: string
   created_at: string | null
   updated_at: string | null
+}
+
+export interface VodFolderItem {
+  id: string
+  organization_id: number
+  name: string
 }
 
 export interface VodMediaListResponse {
@@ -61,6 +68,7 @@ export async function listVodMedia(params: {
   q?: string
   status?: string
   organizationId?: number | null
+  folderId?: string
   offset?: number
   limit?: number
 }): Promise<VodMediaListResponse> {
@@ -68,6 +76,7 @@ export async function listVodMedia(params: {
   if (params.q) search.set('q', params.q)
   if (params.status) search.set('status', params.status)
   if (params.organizationId != null) search.set('organization_id', String(params.organizationId))
+  if (params.folderId) search.set('folder_id', params.folderId)
   if (params.offset != null) search.set('offset', String(params.offset))
   if (params.limit != null) search.set('limit', String(params.limit))
   const query = search.toString()
@@ -92,6 +101,7 @@ export async function registerVodMedia(body: {
   title: string
   description?: string
   organizationId?: number | null
+  folderId?: string | null
   sourceContext?: string
 }): Promise<VodMediaItem> {
   const response = await apiPost('/api/vod/media', {
@@ -99,6 +109,7 @@ export async function registerVodMedia(body: {
     title: body.title,
     description: body.description ?? '',
     organization_id: body.organizationId ?? null,
+    folder_id: body.folderId || null,
     source_context: body.sourceContext ?? '',
     refresh: true,
   })
@@ -152,4 +163,72 @@ export async function deleteVodMedia(
   if (!response.ok) {
     throw new Error(`vod_delete_${response.status}`)
   }
+}
+
+function withOrg(path: string, organizationId?: number | null): string {
+  if (organizationId == null) return path
+  const join = path.includes('?') ? '&' : '?'
+  return `${path}${join}organization_id=${organizationId}`
+}
+
+export async function listVodFolders(organizationId?: number | null): Promise<VodFolderItem[]> {
+  const body = await apiRequestJson<{ items: VodFolderItem[] }>(
+    withOrg('/api/vod/folders', organizationId)
+  )
+  return body.items
+}
+
+export async function createVodFolder(
+  name: string,
+  organizationId?: number | null
+): Promise<VodFolderItem> {
+  const response = await apiPost('/api/vod/folders', {
+    name,
+    organization_id: organizationId ?? null,
+  })
+  if (!response.ok) {
+    throw new Error(`vod_folder_${response.status}`)
+  }
+  return (await response.json()) as VodFolderItem
+}
+
+export async function renameVodFolder(
+  folderId: string,
+  name: string,
+  organizationId?: number | null
+): Promise<VodFolderItem> {
+  const response = await apiPatch(`/api/vod/folders/${encodeURIComponent(folderId)}`, {
+    name,
+    organization_id: organizationId ?? null,
+  })
+  if (!response.ok) {
+    throw new Error(`vod_folder_${response.status}`)
+  }
+  return (await response.json()) as VodFolderItem
+}
+
+export async function deleteVodFolder(
+  folderId: string,
+  organizationId?: number | null
+): Promise<void> {
+  const path = withOrg(`/api/vod/folders/${encodeURIComponent(folderId)}`, organizationId)
+  const response = await apiDelete(path)
+  if (!response.ok) {
+    throw new Error(`vod_folder_delete_${response.status}`)
+  }
+}
+
+export async function moveVodMedia(
+  mediaId: string,
+  folderId: string | null,
+  organizationId?: number | null
+): Promise<VodMediaItem> {
+  const response = await apiPatch(`/api/vod/media/${encodeURIComponent(mediaId)}`, {
+    folder_id: folderId,
+    organization_id: organizationId ?? null,
+  })
+  if (!response.ok) {
+    throw new Error(`vod_move_${response.status}`)
+  }
+  return (await response.json()) as VodMediaItem
 }

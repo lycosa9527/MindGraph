@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Збережений витяг відсутній або не синхронізований і було очищено. Завантажте або вставте документ знову.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'Вміст не пройшов перевірку безпеки. Змініть текст і повторіть спробу.',
   'canvas.mindMapSideToolbar.learningSheet': 'Навчальний аркуш',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'Генерація одним реченням',
   'canvas.mindMapSideToolbar.mindClassroom': 'Аудиторія мислення',
   'canvas.mindClassroom.title': 'Аудиторія мислення',

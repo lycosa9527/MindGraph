@@ -2,13 +2,14 @@
 /**
  * Quick UI + prompt language switch for MindGraph landing — enables sync and updates both.
  */
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
 
 import { Check, Languages } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
+import { registerTrainingUiLock } from '@/composables/training/trainingUiLock'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { getGalleryLanguageMenuRows } from '@/i18n/galleryLanguageMenuRows'
 import type { Language } from '@/stores/ui'
@@ -27,6 +28,41 @@ const props = withDefaults(
 
 const uiStore = useUIStore()
 const { t } = useLanguage()
+const menuOpen = ref(false)
+const rootRef = ref<HTMLElement | null>(null)
+const dropdownRef = ref<{ handleOpen?: () => void; handleClose?: () => void } | null>(null)
+let unregisterLock = (): void => undefined
+
+function onVisible(open: boolean): void {
+  menuOpen.value = open
+}
+
+function setMenuOpen(open: boolean): void {
+  if (open === menuOpen.value) return
+  const api = dropdownRef.value
+  if (open && api?.handleOpen) {
+    api.handleOpen()
+    return
+  }
+  if (!open && api?.handleClose) {
+    api.handleClose()
+    return
+  }
+  const button = rootRef.value?.querySelector('button')
+  if (button instanceof HTMLElement) button.click()
+}
+
+onMounted(() => {
+  unregisterLock = registerTrainingUiLock({
+    key: 'mindgraph-language',
+    isOpen: () => menuOpen.value,
+    setOpen: setMenuOpen,
+  })
+})
+
+onBeforeUnmount(() => {
+  unregisterLock()
+})
 
 const languageRows = computed(() =>
   getGalleryLanguageMenuRows(uiStore.language, uiStore.languagePolicyAllowZh)
@@ -45,13 +81,16 @@ function onSelect(code: string): void {
 
 <template>
   <div
+    ref="rootRef"
     class="mindgraph-lang-switcher-root"
     :class="{ 'mindgraph-lang-switcher-root--floating': props.variant === 'floating' }"
   >
     <ElDropdown
+      ref="dropdownRef"
       trigger="click"
       popper-class="mindgraph-lang-switcher-popper"
       @command="onSelect"
+      @visible-change="onVisible"
     >
       <ElButton
         :class="

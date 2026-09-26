@@ -13,6 +13,7 @@ import { uploadVodFile } from '@/composables/admin/uploadVodFile'
 const props = defineProps<{
   modelValue: boolean
   organizationId?: number | null
+  folderId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -75,6 +76,7 @@ async function submit(): Promise<void> {
       file: chosen,
       title: name,
       organizationId: props.organizationId,
+      folderId: props.folderId,
       onProgress: (progress) => {
         percent.value = Math.round(progress.percent * 100)
       },

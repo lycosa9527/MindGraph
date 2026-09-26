@@ -5,19 +5,25 @@
  */
 import { ref } from 'vue'
 
-import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
+import type { jsPDF } from 'jspdf'
+
 import { useNotifications } from '@/composables'
+import {
+  applyThinkingCoinMutation,
+  extractThinkingCoinsFooter,
+} from '@/composables/auth/useThinkingCoinSync'
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { CanvasExportOptions } from '@/config/canvasExportOptions'
-import {
-  hasActiveWorksheetHeader,
-  resolveWorksheetTopicText,
-} from '@/config/canvasWorksheetText'
-import { mergeCanvasExportOptions } from '@/utils/mergeCanvasExportOptions'
+import { hasActiveWorksheetHeader, resolveWorksheetTopicText } from '@/config/canvasWorksheetText'
 import { useDiagramStore } from '@/stores/diagram'
 import { useUIStore } from '@/stores/ui'
 import { apiRequestJson, apiUpload } from '@/utils/apiClient'
 import { copyPngBlobWithFallback } from '@/utils/copyPngBlobToClipboard'
+import {
+  type DeliverExportResult,
+  deliverExportDataUrl,
+  deliverExportFile,
+} from '@/utils/deliverExportFile'
 import { loadHtmlToImageModule } from '@/utils/diagramExportHtmlToImage'
 import {
   isLearningSheetRasterCapture,
@@ -27,16 +33,15 @@ import {
 } from '@/utils/diagramExportLearningSheet'
 import { waitForDiagramExportFonts } from '@/utils/diagramExportPrep'
 import {
+  type DiagramRasterCapture,
   canvasToPngBlob,
   captureDiagramPngData,
   captureDiagramRasterCanvas,
-  type DiagramRasterCapture,
 } from '@/utils/diagramExportRasterCapture'
 import {
   getDiagramCanvasHtmlToImageOptions,
   getDiagramCanvasPdfHtmlToImageOptions,
 } from '@/utils/diagramHtmlToImage'
-import { applyLlmExportWatermarkToCanvas } from '@/utils/llmExportWatermark'
 import {
   buildMindMapVectorSvgFromStores,
   canUseMindMapVectorExport,
@@ -46,37 +51,35 @@ import {
 } from '@/utils/diagramMindMapVectorExport'
 import type { MindMapVectorSvgResult } from '@/utils/diagramMindMapVectorSvg'
 import {
+  type PdfPageOrientation,
   addRasterImageToA4PdfPage,
   addWorksheetPageToPdf,
   compressRasterDataUrlForA4Pdf,
   isPdfExportCommand,
   resolvePdfOrientationFromExportOptions,
-  type PdfPageOrientation,
 } from '@/utils/diagramPdfExport'
-import {
-  captureWorksheetHeader,
-  type WorksheetHeaderLabels,
-} from '@/utils/diagramWorksheetHeader'
+import { type WorksheetHeaderLabels, captureWorksheetHeader } from '@/utils/diagramWorksheetHeader'
+import { applyLlmExportWatermarkToCanvas } from '@/utils/llmExportWatermark'
+import { mergeCanvasExportOptions } from '@/utils/mergeCanvasExportOptions'
 import { encodeMgFileContents } from '@/utils/mgInterchange'
 
 function sanitizeFilename(name: string): string {
   return name.replace(/[/\\?%*:|"<>]/g, '-').trim() || 'diagram'
 }
 
-function triggerDownload(dataUrl: string, filename: string): void {
-  const link = document.createElement('a')
-  link.download = filename
-  link.href = dataUrl
-  link.click()
+function exportFilename(title: string, extension: string): string {
+  const baseName = sanitizeFilename(title)
+  const timestamp = new Date().toISOString().slice(0, 10)
+  return `${baseName}_${timestamp}.${extension}`
 }
 
-function triggerDownloadBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.download = filename
-  link.href = url
-  link.click()
-  URL.revokeObjectURL(url)
+async function handOffExportFile(blob: Blob, filename: string): Promise<boolean> {
+  const result = await deliverExportFile(blob, filename)
+  return result !== 'cancelled'
+}
+
+async function handOffPdf(pdf: jsPDF, filename: string): Promise<boolean> {
+  return handOffExportFile(pdf.output('blob'), filename)
 }
 
 function logDiagramExport(format: string): void {
@@ -147,8 +150,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     const diagramOffsetX = worksheetText?.diagramOffsetX ?? 0
     const diagramOffsetY = worksheetText?.diagramOffsetY ?? 0
     const diagramScale = worksheetText?.diagramScale ?? 1
-    const hasCustomPlacement =
-      diagramOffsetX !== 0 || diagramOffsetY !== 0 || diagramScale !== 1
+    const hasCustomPlacement = diagramOffsetX !== 0 || diagramOffsetY !== 0 || diagramScale !== 1
     for (let index = 0; index < images.length; index += 1) {
       const image = images[index]
       if (index > 0) {
@@ -268,10 +270,8 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     return blob
   }
 
-  function downloadPngBlob(blob: Blob): void {
-    const baseName = sanitizeFilename(getTitle())
-    const timestamp = new Date().toISOString().slice(0, 10)
-    triggerDownloadBlob(blob, `${baseName}_${timestamp}.png`)
+  function downloadPngBlob(blob: Blob): Promise<DeliverExportResult> {
+    return deliverExportFile(blob, exportFilename(getTitle(), 'png'))
   }
 
   function notifyCanvasNotReady(error: unknown): boolean {
@@ -286,7 +286,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     isExporting.value = true
     try {
       const blob = await capturePngBlob(exportOptions)
-      downloadPngBlob(blob)
+      if ((await downloadPngBlob(blob)) === 'cancelled') return
       logDiagramExport('png')
       notify.success(t('canvas.export.pngSuccess'))
     } catch (error) {
@@ -306,15 +306,29 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     }
     isExporting.value = true
     try {
-      const outcome = await copyPngBlobWithFallback(blobSource, downloadPngBlob)
+      let sharedFile = false
+      const outcome = await copyPngBlobWithFallback(blobSource, async (blob) => {
+        const delivery = await downloadPngBlob(blob)
+        if (delivery === 'cancelled') {
+          throw new Error('export-share-cancelled')
+        }
+        sharedFile = delivery === 'shared'
+      })
       if (outcome === 'copied') {
         logDiagramExport('clipboard')
         notify.success(t('notification.copied'))
         return
       }
       logDiagramExport('png')
+      if (sharedFile) {
+        notify.success(t('canvas.export.pngSuccess'))
+        return
+      }
       notify.warning(t('canvas.export.clipboardFallback'))
     } catch (error) {
+      if (error instanceof Error && error.message === 'export-share-cancelled') {
+        return
+      }
       if (notifyCanvasNotReady(error)) {
         return
       }
@@ -338,10 +352,8 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
 
       let dataUrl: string
       if (canUseMindMapVectorExport(diagramStore)) {
-        const vectorUrl = await runLearningSheetRasterCapture(
-          diagramStore,
-          exportOptions,
-          () => exportMindMapVectorSvgDataUrl(diagramStore, uiStore)
+        const vectorUrl = await runLearningSheetRasterCapture(diagramStore, exportOptions, () =>
+          exportMindMapVectorSvgDataUrl(diagramStore, uiStore)
         )
         if (!vectorUrl) {
           throw new Error('Mind-map vector SVG export produced empty output')
@@ -355,9 +367,8 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
         )
       }
 
-      const baseName = sanitizeFilename(getTitle())
-      const timestamp = new Date().toISOString().slice(0, 10)
-      triggerDownload(dataUrl, `${baseName}_${timestamp}.svg`)
+      const filename = exportFilename(getTitle(), 'svg')
+      if ((await deliverExportDataUrl(dataUrl, filename)) === 'cancelled') return
 
       logDiagramExport('svg')
       notify.success(t('canvas.export.svgSuccess'))
@@ -405,9 +416,8 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
           headerCapture,
           exportOptions,
         })
-        const baseName = sanitizeFilename(getTitle())
-        const timestamp = new Date().toISOString().slice(0, 10)
-        pdf.save(`${baseName}_${timestamp}.pdf`)
+        const filename = exportFilename(getTitle(), 'pdf')
+        if (!(await handOffPdf(pdf, filename))) return
         logDiagramExport(format)
         notify.success(t('canvas.export.pdfSuccess'))
       } finally {
@@ -431,9 +441,8 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
 
     const headerCapture = await resolveWorksheetHeaderCapture(exportOptions)
     const pdf = await buildA4PdfFromImages(captures, orientation, headerCapture, exportOptions)
-    const baseName = sanitizeFilename(getTitle())
-    const timestamp = new Date().toISOString().slice(0, 10)
-    pdf.save(`${baseName}_${timestamp}.pdf`)
+    const filename = exportFilename(getTitle(), 'pdf')
+    if (!(await handOffPdf(pdf, filename))) return
 
     logDiagramExport(format)
     notify.success(t('canvas.export.pdfSuccess'))
@@ -472,9 +481,8 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
           headerCapture,
           exportOptions: mergedOptions,
         })
-        const baseName = sanitizeFilename(getTitle())
-        const timestamp = new Date().toISOString().slice(0, 10)
-        pdf.save(`${baseName}_${timestamp}.pdf`)
+        const filename = exportFilename(getTitle(), 'pdf')
+        if (!(await handOffPdf(pdf, filename))) return
         logDiagramExport(format)
         notify.success(t('canvas.export.pdfSuccess'))
         return
@@ -484,9 +492,8 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       const orientation = resolvePdfOrientation(format, container, mergedOptions, capture)
       const headerCapture = await resolveWorksheetHeaderCapture(mergedOptions)
       const pdf = await buildA4PdfFromImages([capture], orientation, headerCapture, mergedOptions)
-      const baseName = sanitizeFilename(getTitle())
-      const timestamp = new Date().toISOString().slice(0, 10)
-      pdf.save(`${baseName}_${timestamp}.pdf`)
+      const filename = exportFilename(getTitle(), 'pdf')
+      if (!(await handOffPdf(pdf, filename))) return
       logDiagramExport(format)
       notify.success(t('canvas.export.pdfSuccess'))
     } catch (error) {
@@ -509,9 +516,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       const json = JSON.stringify(spec)
       const bytes = await encodeMgFileContents(json)
       const blob = new Blob([new Uint8Array(bytes)], { type: 'application/octet-stream' })
-      const baseName = sanitizeFilename(getTitle())
-      const timestamp = new Date().toISOString().slice(0, 10)
-      triggerDownloadBlob(blob, `${baseName}_${timestamp}.mg`)
+      if (!(await handOffExportFile(blob, exportFilename(getTitle(), 'mg')))) return
 
       logDiagramExport('mg')
       notify.success(t('canvas.export.jsonSuccess'))
@@ -587,9 +592,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
         throw new Error(`DOCX export failed (${response.status})`)
       }
       const docxBlob = await response.blob()
-      const baseName = sanitizeFilename(title)
-      const timestamp = new Date().toISOString().slice(0, 10)
-      triggerDownloadBlob(docxBlob, `${baseName}_${timestamp}.docx`)
+      if (!(await handOffExportFile(docxBlob, exportFilename(title, 'docx')))) return
       logDiagramExport('worksheet_docx')
       notify.success(t('canvas.export.docxSuccess'))
     } catch (error) {
@@ -600,7 +603,10 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     }
   }
 
-  async function exportByFormat(format: string, exportOptions?: CanvasExportOptions): Promise<void> {
+  async function exportByFormat(
+    format: string,
+    exportOptions?: CanvasExportOptions
+  ): Promise<void> {
     if (isExporting.value) {
       return
     }

@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'சேமித்த சாறு காணவில்லை அல்லது சேமிப்பகத்துடன் ஒத்திசைக்கவில்லை மற்றும் தானாகவே சுத்தப்படுத்தப்பட்டது. ஆவணத்தை மீண்டும் பதிவேற்றவும் அல்லது ஒட்டவும்.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'உள்ளடக்கம் பாதுகாப்பு மதிப்பாய்வில் தேர்ச்சி பெறவில்லை. உரையை மாற்றி மீண்டும் முயற்சிக்கவும்.',
   'canvas.mindMapSideToolbar.learningSheet': 'துளையிடப்பட்ட அடைப்புக்குறி வரைபடம்',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'உரையாடல் மாற்றம்',
   'canvas.mindMapSideToolbar.mindClassroom': 'சிந்தனை விரிவுரை மண்டபம்',
   'canvas.mindClassroom.title': 'சிந்தனை விரிவுரை மண்டபம்',

@@ -322,7 +322,7 @@ export default {
   'auth.qrLoginInviteRequired': 'Por favor, preencha o código de convite da escola primeiro e depois digitalize o código para fazer login',
   'auth.qrLoginProvidersFailed': 'Não foi possível carregar a configuração de login do código de verificação. Tente novamente mais tarde.',
   'auth.qrLoginProviderDisabled': 'This sign-in method is not enabled for your school',
-  'auth.qrLoginNotLinked': 'Account not linked — sign in with password and bind under Account linking first',
+  'auth.qrLoginNotLinked': 'Please bind your account first. Sign in with your password, link WeChat under Account linking, then scan again. If you forgot the password, use Forgot password.',
   'auth.qrLoginExchangeFailed': 'Falha no login do código de digitalização, tente novamente',
   'auth.qrLoginInvalidState': 'A sessão de leitura do código QR expirou. Feche-o e leia o código QR novamente.',
   'auth.qrLoginInvalidCode': 'O código de autorização do WeChat expirou ou foi usado. Feche o código QR e leia-o novamente.',

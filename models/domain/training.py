@@ -100,3 +100,19 @@ class TrainingCourseAsset(Base):
     course: Mapped["TrainingCourse"] = relationship("TrainingCourse", back_populates="assets")
 
     __table_args__ = (Index("ix_training_course_assets_course_role", "course_id", "role"),)
+
+
+class TrainingCourseCompletion(Base):
+    """One finished required course for one user. Many courses, each marked once."""
+
+    __tablename__ = "training_course_completions"
+
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), primary_key=True)
+    course_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("training_courses.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    completed_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+
+    __table_args__ = (Index("ix_training_course_completions_course_id", "course_id"),)

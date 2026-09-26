@@ -70,8 +70,13 @@ from models.domain.showcase import (
     ShowcasePostLike,
 )
 from models.domain.zhihui import ZhihuiConversation, ZhihuiGeneration
-from models.domain.training import TrainingCourse, TrainingCourseAsset, TrainingCourseStep
-from models.domain.vod import VodMedia
+from models.domain.training import (
+    TrainingCourse,
+    TrainingCourseAsset,
+    TrainingCourseCompletion,
+    TrainingCourseStep,
+)
+from models.domain.vod import VodFolder, VodMedia
 from models.domain.learning_space import (
     LearningAssignment,
     LearningClass,
@@ -275,6 +280,8 @@ __all__ = [
     "TrainingCourse",
     "TrainingCourseStep",
     "TrainingCourseAsset",
+    "TrainingCourseCompletion",
+    "VodFolder",
     "VodMedia",
     "LearningPilotTeacher",
     "LearningClass",

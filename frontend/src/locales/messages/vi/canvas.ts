@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Bản trích xuất đã lưu bị thiếu hoặc không đồng bộ và đã bị xóa. Vui lòng tải lên hoặc dán lại tài liệu.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'Nội dung không vượt qua được đánh giá bảo mật. Vui lòng sửa đổi văn bản và thử lại.',
   'canvas.mindMapSideToolbar.learningSheet': 'Phiếu học tập',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'Tạo một câu',
   'canvas.mindMapSideToolbar.mindClassroom': 'Giảng đường tư duy',
   'canvas.mindClassroom.title': 'Giảng đường tư duy',

@@ -5,8 +5,9 @@ import { ElButton, ElCheckbox, ElOption, ElSelect } from 'element-plus'
 
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
 import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
-import { useLanguage } from '@/composables'
+import { swissGlassConfirm, useLanguage } from '@/composables'
 import TrainingArrowPicker from '@/components/training/TrainingArrowPicker.vue'
+import TrainingBuilderVodPicker from '@/components/training/TrainingBuilderVodPicker.vue'
 import TrainingEmojiPicker from '@/components/training/TrainingEmojiPicker.vue'
 import TrainingRolePicker from '@/components/training/TrainingRolePicker.vue'
 import TrainingMarkStepsBar from '@/components/training/TrainingMarkStepsBar.vue'
@@ -99,11 +100,57 @@ function onCanvasMode(mode: MindMapCanvasMode): void {
   props.step.mindmap_canvas_mode = mode
 }
 
+async function onMandatory(value: boolean | string | number): Promise<void> {
+  const next = Boolean(value)
+  if (!next) {
+    props.step.mandatory = false
+    return
+  }
+  if (props.step.mandatory) return
+  try {
+    await swissGlassConfirm(
+      String(t('training.builder.mandatoryConfirm')),
+      String(t('training.builder.mandatory')),
+      { type: 'warning' }
+    )
+    props.step.mandatory = true
+  } catch {
+    props.step.mandatory = false
+  }
+}
+
+async function onAlwaysPlay(value: boolean | string | number): Promise<void> {
+  const next = Boolean(value)
+  if (!next) {
+    props.step.always_play = false
+    return
+  }
+  if (props.step.always_play) return
+  try {
+    await swissGlassConfirm(
+      String(t('training.builder.alwaysPlayConfirm')),
+      String(t('training.builder.alwaysPlay')),
+      { type: 'warning' }
+    )
+    props.step.always_play = true
+  } catch {
+    props.step.always_play = false
+  }
+}
+
 function onImage(event: Event): void {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (file) emit('image', file)
   input.value = ''
+}
+
+function onVodVideo(id: string | null): void {
+  props.step.vod_media_id = id
+  if (id) return
+  props.step.vod_autoplay = false
+  props.step.vod_width = null
+  props.step.vod_height = null
 }
 
 function pickEmoji(glyph: string): void {
@@ -225,6 +272,20 @@ function clearSpotlight(): void {
         />
         <span>{{ t('training.builder.pullUsers') }}</span>
       </label>
+      <label class="builder-toolbar__pull">
+        <ElCheckbox
+          :model-value="Boolean(step.mandatory)"
+          @change="onMandatory"
+        />
+        <span :title="t('training.builder.mandatoryHint')">{{ t('training.builder.mandatory') }}</span>
+      </label>
+      <label class="builder-toolbar__pull">
+        <ElCheckbox
+          :model-value="Boolean(step.always_play)"
+          @change="onAlwaysPlay"
+        />
+        <span :title="t('training.builder.alwaysPlayHint')">{{ t('training.builder.alwaysPlay') }}</span>
+      </label>
     </div>
     <TrainingMarkStepsBar
       :step="step"
@@ -344,6 +405,11 @@ function clearSpotlight(): void {
           @change="onImage"
         >
       </label>
+      <TrainingBuilderVodPicker
+        :step="step"
+        @video="onVodVideo"
+        @autoplay="step.vod_autoplay = $event"
+      />
     </div>
   </div>
 </template>

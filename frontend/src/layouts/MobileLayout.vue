@@ -11,6 +11,7 @@ import { ArrowLeft, Home } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import { preloadMarkdownRendererForRoute } from '@/composables/core/useMarkdown'
+import { useMobileCanvasSaveStatus } from '@/composables/mobile/mobileCanvasHeaderSaveStatus'
 import { navigateBackFromCanvas } from '@/utils/canvasBackNavigation'
 
 const route = useRoute()
@@ -38,6 +39,14 @@ const hideHeader = computed(
 )
 
 const showBackButton = computed(() => route.name === 'MobileCanvas')
+const canvasSaveStatus = useMobileCanvasSaveStatus()
+
+const canvasSaveStatusToneClass = computed(() => {
+  const tone = canvasSaveStatus.value?.tone
+  if (tone === 'saving') return 'text-blue-500'
+  if (tone === 'dirty') return 'text-amber-600'
+  return 'text-gray-400'
+})
 
 function goBack() {
   navigateBackFromCanvas(router, route.path)
@@ -98,9 +107,18 @@ function goHome() {
         </button>
       </div>
 
-      <h1 class="flex-1 text-center text-base font-semibold text-gray-800 truncate">
-        {{ pageTitle }}
-      </h1>
+      <div class="flex min-w-0 flex-1 items-center justify-center gap-2">
+        <h1 class="shrink-0 text-base font-semibold text-gray-800">
+          {{ pageTitle }}
+        </h1>
+        <span
+          v-if="showBackButton && canvasSaveStatus"
+          class="mobile-header-save min-w-0 truncate text-[11px] font-medium leading-tight"
+          :class="canvasSaveStatusToneClass"
+        >
+          {{ canvasSaveStatus.text }}
+        </span>
+      </div>
 
       <div
         class="w-8 shrink-0"
@@ -121,6 +139,10 @@ function goHome() {
   user-select: none;
   z-index: 10;
   padding-top: env(safe-area-inset-top);
+}
+
+.mobile-header-save {
+  max-width: 9.5rem;
 }
 
 .mobile-layout {

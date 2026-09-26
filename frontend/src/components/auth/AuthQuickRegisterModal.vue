@@ -10,6 +10,7 @@ import { ArrowLeft, Loader2, UserPlus } from '@lucide/vue'
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
 import { useLanguage, useNotifications } from '@/composables'
+import { AUTH_HINT_TOAST_MS } from '@/composables/auth/useLoginModal'
 import { isTrainingInlineHost } from '@/composables/training/trainingInlineHost'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
@@ -126,7 +127,8 @@ async function submitQuickRegister() {
       notify.error(
         (typeof (data as { detail?: string }).detail === 'string' &&
           (data as { detail: string }).detail) ||
-          t('auth.modal.registerFailed')
+          t('auth.modal.registerFailed'),
+        AUTH_HINT_TOAST_MS
       )
     }
   } catch {

@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'సేవ్ చేయబడిన సారం లేదు లేదా నిల్వతో సమకాలీకరించబడలేదు మరియు స్వయంచాలకంగా ప్రక్షాళన చేయబడింది. దయచేసి పత్రాన్ని మళ్లీ అప్‌లోడ్ చేయండి లేదా అతికించండి.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'కంటెంట్ భద్రతా సమీక్షలో ఉత్తీర్ణత సాధించలేదు. దయచేసి వచనాన్ని సవరించి, మళ్లీ ప్రయత్నించండి.',
   'canvas.mindMapSideToolbar.learningSheet': 'హాలోడ్ బ్రాకెట్ రేఖాచిత్రం',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'సంభాషణ సవరణ',
   'canvas.mindMapSideToolbar.mindClassroom': 'థింకింగ్ లెక్చర్ హాల్',
   'canvas.mindClassroom.title': 'థింకింగ్ లెక్చర్ హాల్',

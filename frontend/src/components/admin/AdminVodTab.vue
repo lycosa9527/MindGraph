@@ -1,17 +1,22 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 
+import { ElPagination } from 'element-plus'
+
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminOrgScope } from '@/composables/admin/useAdminOrgScope'
 import {
+  type VodFolderItem,
   type VodMediaItem,
   deleteVodMedia,
   fetchVodConfig,
   listVodMedia,
+  moveVodMedia,
   refreshVodMedia,
 } from '@/utils/vodApi'
 
+import AdminVodFolderBar from './AdminVodFolderBar.vue'
 import AdminVodLibrary from './AdminVodLibrary.vue'
 import AdminVodPreviewDrawer from './AdminVodPreviewDrawer.vue'
 import AdminVodUploadDialog from './AdminVodUploadDialog.vue'
@@ -26,10 +31,15 @@ const canEdit = computed(() => can('tab.vod.edit'))
 const canPickOrg = canPickOrganization
 const orgId = selectedOrgId
 
+const PAGE_SIZE = 20
+
 const items = ref<VodMediaItem[]>([])
 const total = ref(0)
+const offset = ref(0)
 const query = ref('')
 const status = ref('')
+const folderId = ref('')
+const folders = ref<VodFolderItem[]>([])
 const view = ref<'grid' | 'table'>('grid')
 const loading = ref(false)
 const configured = ref(true)
@@ -37,7 +47,11 @@ const showUpload = ref(false)
 const preview = ref<VodMediaItem | null>(null)
 const showPreview = ref(false)
 
-async function load(): Promise<void> {
+const currentPage = computed(() => Math.floor(offset.value / PAGE_SIZE) + 1)
+let loadGen = 0
+
+async function load(allowRetry = true): Promise<void> {
+  const gen = ++loadGen
   loading.value = true
   try {
     const [cfg, list] = await Promise.all([
@@ -46,18 +60,41 @@ async function load(): Promise<void> {
         q: query.value,
         status: status.value,
         organizationId: orgId.value,
-        offset: 0,
-        limit: 40,
+        folderId: folderId.value,
+        offset: offset.value,
+        limit: PAGE_SIZE,
       }),
     ])
+    if (gen !== loadGen) {
+      return
+    }
     configured.value = cfg.configured
+    if (allowRetry && list.items.length === 0 && offset.value > 0) {
+      offset.value = 0
+      await load(false)
+      return
+    }
     items.value = list.items
     total.value = list.total
   } catch {
-    notify.error(t('admin.vod.loadFailed'))
+    if (gen === loadGen) {
+      notify.error(t('admin.vod.loadFailed'))
+    }
   } finally {
-    loading.value = false
+    if (gen === loadGen) {
+      loading.value = false
+    }
   }
+}
+
+function reloadFromStart(): void {
+  offset.value = 0
+  void load()
+}
+
+function onPageChange(page: number): void {
+  offset.value = Math.max(0, page - 1) * PAGE_SIZE
+  void load()
 }
 
 function openPreview(item: VodMediaItem): void {
@@ -77,8 +114,11 @@ async function onRefresh(item: VodMediaItem): Promise<void> {
 async function onDelete(item: VodMediaItem): Promise<void> {
   try {
     await deleteVodMedia(item.id, orgId.value)
-    items.value = items.value.filter((row) => row.id !== item.id)
-    total.value = Math.max(0, total.value - 1)
+    if (preview.value?.id === item.id) {
+      preview.value = null
+      showPreview.value = false
+    }
+    await load()
   } catch {
     notify.error(t('admin.vod.loadFailed'))
   }
@@ -89,8 +129,28 @@ function onOrgChange(event: Event): void {
   selectedOrgId.value = raw === '' ? null : Number(raw)
 }
 
+const uploadFolderId = computed(() =>
+  folderId.value && folderId.value !== 'none' ? folderId.value : null
+)
+
+async function onMove(item: VodMediaItem, nextFolderId: string | null): Promise<void> {
+  try {
+    await moveVodMedia(item.id, nextFolderId, orgId.value)
+    await load()
+  } catch {
+    notify.error(t('admin.vod.folderFailed'))
+  }
+}
+
+function onFolder(value: string): void {
+  if (value === folderId.value) return
+  folderId.value = value
+  reloadFromStart()
+}
+
 watch(selectedOrgId, () => {
-  void load()
+  folderId.value = ''
+  reloadFromStart()
 })
 
 onMounted(() => {
@@ -107,7 +167,8 @@ onMounted(() => {
         type="search"
         class="vod-search"
         :placeholder="t('admin.vod.search')"
-        @keydown.enter="load"
+        @keydown.enter="reloadFromStart"
+        @search="reloadFromStart"
       />
       <select
         v-if="canPickOrg"
@@ -127,9 +188,10 @@ onMounted(() => {
       <select
         v-model="status"
         class="vod-select"
-        @change="load"
+        @change="reloadFromStart"
       >
         <option value="">{{ t('admin.vod.statusAll') }}</option>
+        <option value="pending">{{ t('admin.vod.statusPending') }}</option>
         <option value="processing">{{ t('admin.vod.statusProcessing') }}</option>
         <option value="ready">{{ t('admin.vod.statusReady') }}</option>
         <option value="failed">{{ t('admin.vod.statusFailed') }}</option>
@@ -151,6 +213,14 @@ onMounted(() => {
         {{ t('admin.vod.upload') }}
       </button>
     </div>
+    <AdminVodFolderBar
+      v-if="configured && !(canPickOrg && orgId == null)"
+      :organization-id="orgId"
+      :can-edit="canEdit"
+      :folder-id="folderId"
+      @update:folder-id="onFolder"
+      @folders="folders = $event"
+    />
     <p
       v-if="!configured"
       class="vod-hint"
@@ -164,7 +234,13 @@ onMounted(() => {
       {{ t('admin.vod.orgFilter') }}
     </p>
     <p
-      v-else-if="!loading && items.length === 0"
+      v-else-if="loading && items.length === 0"
+      class="vod-hint"
+    >
+      {{ t('common.loading') }}
+    </p>
+    <p
+      v-else-if="items.length === 0"
       class="vod-hint"
     >
       {{ t('admin.vod.empty') }}
@@ -172,16 +248,28 @@ onMounted(() => {
     <AdminVodLibrary
       v-else
       :items="items"
+      :folders="folders"
       :view="view"
       :can-edit="canEdit"
       @preview="openPreview"
       @refresh="onRefresh"
       @delete="onDelete"
+      @move="onMove"
+    />
+    <ElPagination
+      v-if="configured && !(canPickOrg && orgId == null) && total > PAGE_SIZE"
+      class="vod-pager"
+      :current-page="currentPage"
+      :page-size="PAGE_SIZE"
+      :total="total"
+      layout="prev, pager, next"
+      @current-change="onPageChange"
     />
     <AdminVodUploadDialog
       v-model="showUpload"
       :organization-id="orgId"
-      @uploaded="load"
+      :folder-id="uploadFolderId"
+      @uploaded="reloadFromStart"
     />
     <AdminVodPreviewDrawer
       v-model="showPreview"
@@ -224,5 +312,10 @@ onMounted(() => {
 .vod-hint {
   color: #78716c;
   font-size: 0.875rem;
+}
+.vod-pager {
+  display: flex;
+  margin-top: 1rem;
+  justify-content: center;
 }
 </style>

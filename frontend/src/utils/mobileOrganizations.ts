@@ -16,6 +16,32 @@ function asRecord(item: unknown): Record<string, unknown> | null {
   return item as Record<string, unknown>
 }
 
+type InviteTranslate = (
+  key: string,
+  named: { orgName: string; siteUrl: string; code: string }
+) => string
+
+/**
+ * Clipboard text for the mobile invite button — same full share message as desktop.
+ */
+export function mobileOrgInviteClipboardText(
+  translate: InviteTranslate,
+  org: { name: string; invitationCode: string },
+  siteUrl: string,
+  fallbackOrgName: string
+): string {
+  const code = org.invitationCode.trim()
+  if (!code) {
+    return ''
+  }
+  const orgName = org.name.trim() || fallbackOrgName.trim()
+  return translate('admin.shareInviteMessage', {
+    orgName,
+    siteUrl: siteUrl.trim(),
+    code,
+  })
+}
+
 export function parseMobileOrganizations(data: unknown): MobileOrganizationRow[] {
   if (!Array.isArray(data)) {
     return []

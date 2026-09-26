@@ -16,6 +16,10 @@ import { useDiagramStore } from '@/stores'
 
 const options = defineModel<CanvasExportOptions>({ required: true })
 
+defineProps<{
+  stack?: boolean
+}>()
+
 const { t } = useLanguage()
 const diagramStore = useDiagramStore()
 
@@ -49,7 +53,10 @@ const answerOptions = computed(() => [
 </script>
 
 <template>
-  <div class="mm-export-options">
+  <div
+    class="mm-export-options"
+    :class="{ 'mm-export-options--stack': stack }"
+  >
     <div class="mm-export-options__row">
       <span class="mm-export-options__label">
         <I18nText k="canvas.exportOptions.colorLabel" />
@@ -107,5 +114,21 @@ const answerOptions = computed(() => [
 
 :global(.dark) .mm-export-options__label {
   color: #a8a29e;
+}
+
+.mm-export-options--stack .mm-export-options__row {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.mm-export-options--stack :deep(.admin-swiss-segmented) {
+  display: flex;
+  width: 100%;
+}
+
+.mm-export-options--stack :deep(.admin-swiss-segment) {
+  flex: 1 1 0;
+  min-height: 44px;
+  white-space: normal;
 }
 </style>

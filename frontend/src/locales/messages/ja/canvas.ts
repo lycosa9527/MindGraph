@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': '保存しました的提取コンテンツ缺失或与存储不同步，已自动清除。请重新アップロード或粘贴文書。',
   'canvas.mindMapDocumentSummary.contentFiltered': 'コンテンツはセキュリティ レビューに合格しませんでした。テキストを変更して再試行してください。',
   'canvas.mindMapSideToolbar.learningSheet': '学習シート',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': '会話の修正',
   'canvas.mindMapSideToolbar.mindClassroom': '考える講堂',
   'canvas.mindClassroom.title': '考える講堂',

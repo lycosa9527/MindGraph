@@ -8,9 +8,12 @@ import { useLanguage } from '@/composables'
 import {
   AUTH_LOGIN_HERO_NARROW_QUERY,
   AUTH_LOGIN_HERO_STILL_SRC,
+  AUTH_LOGIN_HERO_WIDE_MEDIA,
+  authLoginHeroHandheld,
   authLoginHeroKind,
   authLoginHeroShouldAnimate,
   authLoginHeroSrc,
+  authLoginHeroViewportNarrow,
   pickAuthLoginHeroId,
   type AuthLoginHeroKind,
 } from '@/utils/authLoginHero'
@@ -23,12 +26,14 @@ const videoFailed = ref(false)
 const videoReady = ref(false)
 const reduceMotion = ref(false)
 const narrowViewport = ref(false)
+const handheld = ref(false)
 const showVideo = computed(
   () =>
     heroKind.value === 'video' &&
     authLoginHeroShouldAnimate({
       reduceMotion: reduceMotion.value,
       narrowViewport: narrowViewport.value,
+      handheld: handheld.value,
     }) &&
     !videoFailed.value &&
     Boolean(heroSrc.value)
@@ -37,12 +42,28 @@ const showVideo = computed(
 let motionMq: MediaQueryList | null = null
 let narrowMq: MediaQueryList | null = null
 
+function readHandheld(): boolean {
+  const coarse = window.matchMedia('(pointer: coarse)').matches
+  const noHover = window.matchMedia('(hover: none)').matches
+  return authLoginHeroHandheld({
+    platform: navigator.platform,
+    maxTouchPoints: navigator.maxTouchPoints,
+    pointerCoarse: coarse,
+    hoverNone: noHover,
+    screenWidth: window.screen.width,
+    screenHeight: window.screen.height,
+  })
+}
+
 function applyHeroKind(): void {
   reduceMotion.value = Boolean(motionMq?.matches)
-  narrowViewport.value = Boolean(narrowMq?.matches)
+  narrowViewport.value =
+    authLoginHeroViewportNarrow(window.innerWidth) || Boolean(narrowMq?.matches)
+  handheld.value = readHandheld()
   const animate = authLoginHeroShouldAnimate({
     reduceMotion: reduceMotion.value,
     narrowViewport: narrowViewport.value,
+    handheld: handheld.value,
   })
   const kind: AuthLoginHeroKind = animate ? authLoginHeroKind() : 'image'
   heroKind.value = kind
@@ -111,6 +132,7 @@ function onVideoError(): void {
       <source
         :src="heroSrc"
         type="video/mp4"
+        :media="AUTH_LOGIN_HERO_WIDE_MEDIA"
       >
     </video>
 

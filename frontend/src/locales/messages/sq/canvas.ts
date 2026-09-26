@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Nxjerrja e ruajtur mungonte ose ishte jashtë sinkronizimit dhe u pastrua. Ju lutemi ngarkoni ose ngjisni dokumentin përsëri.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'Përmbajtja nuk e kaloi shqyrtimin e sigurisë. Ju lutemi modifikoni tekstin dhe provoni përsëri.',
   'canvas.mindMapSideToolbar.learningSheet': 'Fletë mësimi',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'Gjenerim me një fjali',
   'canvas.mindMapSideToolbar.mindClassroom': 'Salla e leksioneve të të menduarit',
   'canvas.mindClassroom.title': 'Salla e leksioneve të të menduarit',

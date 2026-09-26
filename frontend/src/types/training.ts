@@ -50,9 +50,16 @@ export interface TrainingCourseStep {
   overlays?: TrainingStepOverlay[]
   page_key?: string | null
   pull_users?: boolean
+  mandatory?: boolean
+  always_play?: boolean
+  vod_media_id?: string | null
+  vod_autoplay?: boolean
+  vod_width?: number | null
+  vod_height?: number | null
   mindmap_canvas_mode?: 'legacy' | 'v2' | null
   modal_key?: string | null
   focus_key?: string | null
+  ui_lock?: string | null
   notes?: string | null
   mark_step?: number
   mark_steps?: number

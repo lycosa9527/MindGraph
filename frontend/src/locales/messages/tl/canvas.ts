@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Ang naka-save na extract ay nawawala o hindi naka-sync at na-clear na. Paki-upload o i-paste muli ang dokumento.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'Ang nilalaman ay hindi pumasa sa pagsusuri sa seguridad. Mangyaring baguhin ang teksto at subukang muli.',
   'canvas.mindMapSideToolbar.learningSheet': 'Hollowed bracket diagram',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'Bumuo ng isang pangungusap',
   'canvas.mindMapSideToolbar.mindClassroom': 'Nag-iisip lecture hall',
   'canvas.mindClassroom.title': 'Nag-iisip lecture hall',

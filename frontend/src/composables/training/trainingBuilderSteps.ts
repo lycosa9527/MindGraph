@@ -77,6 +77,9 @@ export function pruneTrainingFocus(step: TrainingCourseStep): void {
   if (step.focus_key && !options.some((item) => item.key === step.focus_key)) {
     step.focus_key = null
   }
+  if (step.ui_lock === 'mindgraph-language' && step.page_key !== 'mindgraph') {
+    step.ui_lock = null
+  }
 }
 
 export function applyPageKey(step: TrainingCourseStep, key: TrainingPageKey): void {

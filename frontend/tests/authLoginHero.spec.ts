@@ -3,11 +3,15 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   AUTH_LOGIN_HERO_IDS,
   AUTH_LOGIN_HERO_NARROW_QUERY,
+  AUTH_LOGIN_HERO_PHONE_SHORT_SIDE_MAX_PX,
   AUTH_LOGIN_HERO_SESSION_KEY,
   AUTH_LOGIN_HERO_STILL_SRC,
   AUTH_LOGIN_HERO_STORAGE_KEY,
+  AUTH_LOGIN_HERO_WIDE_MEDIA,
+  authLoginHeroHandheld,
   authLoginHeroShouldAnimate,
   authLoginHeroSrc,
+  authLoginHeroViewportNarrow,
   pickAuthLoginHeroId,
   shuffleAuthLoginHeroIds,
 } from '@/utils/authLoginHero'
@@ -86,9 +90,52 @@ describe('authLoginHero', () => {
     )
   })
 
-  it('does not animate on mobile or reduced-motion viewports', () => {
+  it('does not animate on mobile, handheld, or reduced-motion viewports', () => {
     expect(AUTH_LOGIN_HERO_NARROW_QUERY).toBe('(max-width: 899px)')
+    expect(AUTH_LOGIN_HERO_WIDE_MEDIA).toBe('(min-width: 900px)')
+    expect(authLoginHeroViewportNarrow(899)).toBe(true)
+    expect(authLoginHeroViewportNarrow(900)).toBe(false)
     expect(authLoginHeroShouldAnimate({ narrowViewport: true })).toBe(false)
+    expect(authLoginHeroShouldAnimate({ handheld: true })).toBe(false)
     expect(authLoginHeroShouldAnimate({ reduceMotion: true })).toBe(false)
+  })
+
+  it('treats phones and tablets as handheld, including iOS desktop-site mode', () => {
+    expect(
+      authLoginHeroHandheld({
+        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+      })
+    ).toBe(true)
+    expect(
+      authLoginHeroHandheld({
+        userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8)',
+      })
+    ).toBe(true)
+    expect(
+      authLoginHeroHandheld({
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+        platform: 'MacIntel',
+        maxTouchPoints: 5,
+      })
+    ).toBe(true)
+    expect(
+      authLoginHeroHandheld({
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+        pointerCoarse: true,
+        hoverNone: true,
+        screenWidth: 390,
+        screenHeight: 844,
+      })
+    ).toBe(true)
+    expect(AUTH_LOGIN_HERO_PHONE_SHORT_SIDE_MAX_PX).toBe(520)
+    expect(
+      authLoginHeroHandheld({
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+        pointerCoarse: true,
+        hoverNone: true,
+        screenWidth: 1440,
+        screenHeight: 900,
+      })
+    ).toBe(false)
   })
 })

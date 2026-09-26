@@ -322,7 +322,7 @@ export default {
   'auth.qrLoginInviteRequired': 'لطفا ابتدا کد دعوت نامه مدرسه را پر کنید و سپس کد را اسکن کنید تا وارد شوید',
   'auth.qrLoginProvidersFailed': 'بارگیری پیکربندی ورود کد اسکن ممکن نیست، لطفاً بعداً دوباره امتحان کنید.',
   'auth.qrLoginProviderDisabled': 'This sign-in method is not enabled for your school',
-  'auth.qrLoginNotLinked': 'Account not linked — sign in with password and bind under Account linking first',
+  'auth.qrLoginNotLinked': 'Please bind your account first. Sign in with your password, link WeChat under Account linking, then scan again. If you forgot the password, use Forgot password.',
   'auth.qrLoginExchangeFailed': 'ورود کد اسکن انجام نشد، لطفاً دوباره امتحان کنید',
   'auth.qrLoginInvalidState': 'جلسه اسکن کد QR منقضی شده است. لطفاً آن را ببندید و دوباره کد QR را اسکن کنید.',
   'auth.qrLoginInvalidCode': 'کد مجوز WeChat منقضی شده یا استفاده شده است. لطفاً کد QR را ببندید و دوباره کد را اسکن کنید.',

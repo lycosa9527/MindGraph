@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import base64
+import json
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -149,6 +152,15 @@ def test_superadmin_may_filter_or_require_org_for_write() -> None:
     assert exc.value.http_status == 400
 
 
+def _psign_payload(token: str) -> dict[str, Any]:
+    """Decode the JWT payload segment of a player signature."""
+    payload_b64 = token.split(".")[1]
+    padding = "=" * (-len(payload_b64) % 4)
+    decoded = json.loads(base64.urlsafe_b64decode(payload_b64 + padding))
+    assert isinstance(decoded, dict)
+    return decoded
+
+
 def test_play_token_shape_has_no_secrets() -> None:
     """Play payload has TCPlayer fields and never leaks PlayKey or CAM keys."""
     row = _media_row(file_id="387700000", media_id="mid-1")
@@ -164,10 +176,38 @@ def test_play_token_shape_has_no_secrets() -> None:
     assert payload["id"] == "mid-1"
     assert isinstance(payload["psign"], str) and payload["psign"].count(".") == 2
     assert isinstance(payload["expireAt"], int)
+    content = _psign_payload(payload["psign"])["contentInfo"]
+    assert content == {"audioVideoType": "Original"}
     blob = str(payload)
     assert "PlayKey12" not in blob
     assert "skey" not in blob
     assert "myqcloud.com" not in blob
+
+
+def test_play_token_uses_adaptive_when_procedure_is_set() -> None:
+    """A configured upload task flow signs RawAdaptive instead of the original file."""
+    row = _media_row(file_id="387700000", media_id="mid-1")
+    creds = _creds()
+    adaptive = TencentVodCredentials(
+        app_id=creds.app_id,
+        secret_id=creds.secret_id,
+        secret_key=creds.secret_key,
+        play_key=creds.play_key,
+        region=creds.region,
+        license_url=creds.license_url,
+        license_key=creds.license_key,
+        procedure="MindGraphAdaptive",
+        psign_ttl=creds.psign_ttl,
+        upload_ttl=creds.upload_ttl,
+        adaptive_definition=10,
+    )
+    with patch(
+        "services.features.vod.catalog.load_tencent_vod_credentials",
+        return_value=adaptive,
+    ):
+        payload = issue_play_token(row)
+    content = _psign_payload(payload["psign"])["contentInfo"]
+    assert content == {"audioVideoType": "RawAdaptive", "rawAdaptiveDefinition": 10}
 
 
 def test_public_config_hides_secrets() -> None:

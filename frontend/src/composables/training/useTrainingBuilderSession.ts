@@ -6,10 +6,18 @@ import { applyTrainingUiTarget } from '@/composables/training/applyTrainingUiTar
 import { uploadedSlideSteps } from '@/composables/training/trainingBuilderSteps'
 import { requestTrainingModalsClose } from '@/composables/training/trainingCommands'
 import { currentMarkStep } from '@/composables/training/trainingMarkSteps'
+import {
+  applyTrainingUiLock,
+  armTrainingUiLock,
+  captureOpenTrainingUiLock,
+  releaseTrainingUiLock,
+  takeArmedTrainingUiLock,
+} from '@/composables/training/trainingUiLock'
 import { uploadTrainingFile } from '@/composables/training/uploadTrainingFile'
 import { useTrainingAuthoringBind } from '@/composables/training/useTrainingAuthoringBind'
 import { useTrainingBuilderAutosave } from '@/composables/training/useTrainingBuilderAutosave'
 import { useTrainingBuilderThumbs } from '@/composables/training/useTrainingBuilderThumbs'
+import { useTrainingStore } from '@/stores/training'
 import { useTrainingBuilderStore } from '@/stores/trainingBuilder'
 import { fetchTrainingCourse } from '@/utils/trainingApi'
 
@@ -23,6 +31,8 @@ export type TrainingBuilderSessionApi = {
   onAddText: () => void
   previewMove: (delta: number) => Promise<void>
   onTopicsDrop: (pos: { x: number; y: number }) => void
+  onLockArm: () => void
+  onLock: (index: number) => void
   syncState: ReturnType<typeof useTrainingBuilderAutosave>['syncState']
 }
 
@@ -43,6 +53,7 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
       selected: builder.selected,
       modal: builder.current?.modal_key ?? null,
       focus: builder.current?.focus_key ?? null,
+      lock: builder.current?.ui_lock ?? null,
     }),
     (next) => {
       if (!next.awake || !builder.courseId || !builder.current) return
@@ -50,6 +61,7 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
         applyTrainingUiTarget({
           modalKey: next.modal,
           focusKey: next.focus,
+          uiLock: next.lock,
           hostModals: false,
         })
       )
@@ -146,6 +158,28 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
     if (next !== builder.selected) await selectStep(next)
   }
 
+  function onLock(index: number): void {
+    const armed = takeArmedTrainingUiLock()
+    const step = builder.steps[index]
+    if (!step) return
+    if (step.ui_lock) {
+      step.ui_lock = null
+      if (index === builder.selected) applyTrainingUiLock(null)
+      return
+    }
+    if (index !== builder.selected) {
+      notify.warning(t('training.builder.lockNeedStep'))
+      return
+    }
+    const key = armed || captureOpenTrainingUiLock()
+    if (!key) {
+      notify.warning(t('training.builder.lockEmpty'))
+      return
+    }
+    step.ui_lock = key
+    applyTrainingUiLock(key)
+  }
+
   function onTopicsDrop(pos: { x: number; y: number }): void {
     if (!builder.current) return
     builder.wake()
@@ -177,6 +211,7 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
   onUnmounted(() => {
     loadGeneration += 1
     requestTrainingModalsClose()
+    if (useTrainingStore().snapshot.state !== 'live') releaseTrainingUiLock()
     builder.reset()
   })
 
@@ -190,6 +225,8 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
     onAddText,
     previewMove,
     onTopicsDrop,
+    onLockArm: armTrainingUiLock,
+    onLock,
     syncState,
   }
 }

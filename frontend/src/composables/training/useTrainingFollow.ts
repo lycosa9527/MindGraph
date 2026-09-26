@@ -26,6 +26,7 @@ import {
   trainingStepLocation,
 } from './applyTrainingSnapshot'
 import { applyTrainingUiTarget } from './applyTrainingUiTarget'
+import { applyTrainingUiLock, releaseTrainingUiLock } from './trainingUiLock'
 
 export function useTrainingFollow(): void {
   const authStore = useAuthStore()
@@ -86,6 +87,7 @@ export function useTrainingFollow(): void {
     const result = await fetchTrainingCommand(orgId, training.commandEtag)
     if (result.etag) training.setCommandEtag(result.etag)
     if (result.notModified || result.snapshot == null) return
+    const wasLive = training.snapshot.state === 'live'
     training.applySnapshot(result.snapshot)
     const applied = training.snapshot
     if (
@@ -95,6 +97,7 @@ export function useTrainingFollow(): void {
       return
     }
     if (applied.state !== 'live') {
+      if (wasLive) releaseTrainingUiLock()
       training.markApplied(applied.seq)
       return
     }
@@ -111,18 +114,21 @@ export function useTrainingFollow(): void {
     if (shouldForceNavigate(applied, training.lastAppliedSeq)) {
       const ok = await applyTrainingNavigate(router, route.path, applied)
       const step = applied.step
-      if (ok || step?.modal_key || step?.focus_key) {
+      if (ok || step?.modal_key || step?.focus_key || step?.ui_lock) {
         await applyTrainingUiTarget({
           modalKey: step?.modal_key,
           focusKey: step?.focus_key,
+          uiLock: step?.ui_lock,
         })
+      } else {
+        applyTrainingUiLock(null)
       }
       if (ok || !trainingStepLocation(route.path, applied)) {
         training.markApplied(applied.seq)
       }
     } else {
       if (applied.pull_users === false) {
-        await applyTrainingUiTarget({ modalKey: null, focusKey: null })
+        await applyTrainingUiTarget({ modalKey: null, focusKey: null, uiLock: null })
       }
       if (
         applied.state !== 'live' ||

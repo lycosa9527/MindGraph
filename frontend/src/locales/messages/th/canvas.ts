@@ -936,6 +936,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'ข้อความที่บันทึกหายหรือไม่ซิงก์และถูกล้างแล้ว กรุณาอัปโหลดหรือวางเอกสารอีกครั้ง',
   'canvas.mindMapDocumentSummary.contentFiltered': 'เนื้อหาไม่ผ่านการตรวจสอบความปลอดภัย โปรดแก้ไขข้อความแล้วลองอีกครั้ง',
   'canvas.mindMapSideToolbar.learningSheet': 'ใบเรียนรู้',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'สร้างแบบประโยคเดียว',
   'canvas.mindMapSideToolbar.mindClassroom': 'ห้องบรรยายคิด',
   'canvas.mindClassroom.title': 'ห้องบรรยายคิด',

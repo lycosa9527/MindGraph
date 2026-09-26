@@ -1020,6 +1020,8 @@ export default {
     '已保存的提取内容缺失或与存储不同步，已自动清除。请重新上传或粘贴文档。',
   'canvas.mindMapDocumentSummary.contentFiltered': '內容未通過安全審核，請修改文本後重試',
   'canvas.mindMapSideToolbar.learningSheet': '挖空支架圖',
+  'canvas.mobile.learningSheet': '學習單',
+  'canvas.mobile.learningSheetCustomDesc': '點擊節點挖空，再次點擊可恢復。',
   'canvas.mindMapSideToolbar.oneSentence': '對話式修改',
   'canvas.mindMapSideToolbar.mindClassroom': '思維講堂',
   'canvas.mindClassroom.title': '思維講堂',

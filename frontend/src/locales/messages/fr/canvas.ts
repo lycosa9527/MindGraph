@@ -936,6 +936,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'L’extrait enregistré était manquant ou désynchronisé et a été effacé. Téléversez ou collez à nouveau le document.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'Le contenu n\'a pas passé l\'examen de sécurité. Veuillez modifier le texte et réessayer.',
   'canvas.mindMapSideToolbar.learningSheet': 'Fiche d’apprentissage',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'Génération en une phrase',
   'canvas.mindMapSideToolbar.mindClassroom': 'Salle de conférence pensante',
   'canvas.mindClassroom.title': 'Salle de conférence pensante',

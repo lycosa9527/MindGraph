@@ -147,9 +147,16 @@ ERRORS = {
         "az": "Hesab {} uğursuz cəhd səbəbindən müvəqqəti olaraq kilidlənib. {} dəqiqədən sonra yenidən cəhd edin.",
     },
     "phone_already_registered": {
-        "zh": "该手机号已注册。请直接登录或使用其他手机号。",
-        "en": "This phone number is already registered. Please use login instead or try a different phone number.",
-        "az": "Bu telefon nömrəsi artıq qeydiyyatdan keçib. Giriş edin və ya başqa telefon nömrəsi istifadə edin.",
+        "zh": "该手机号已注册。请直接登录；如果忘记密码，请使用「忘记密码」重置。",
+        "zh-tw": "該手機號已註冊。請直接登錄；如果忘記密碼，請使用「忘記密碼」重置。",
+        "en": (
+            "This phone number is already registered. Please sign in. "
+            "If you forgot the password, use Forgot password to reset it."
+        ),
+        "az": (
+            "Bu telefon nömrəsi artıq qeydiyyatdan keçib. Daxil olun. "
+            "Parolu unutmusunuzsa, Parolu unutdum ilə sıfırlayın."
+        ),
     },
     "invitation_code_required": {
         "zh": "需要邀请码。请输入学校管理员提供的邀请码。",
@@ -410,9 +417,13 @@ ERRORS = {
         "az": ("Şəbəkə məkanınız daxil olduğunuz məkandan fərqləndiyi üçün sessiya sonlandırıldı. Yenidən daxil olun."),
     },
     "email_already_registered": {
-        "zh": "该邮箱已被注册，请直接登录或使用其他邮箱。",
-        "en": "This email is already registered. Please sign in or use a different email address.",
-        "az": "Bu e-poçt artıq qeydiyyatdan keçib. Daxil olun və ya başqa ünvandan istifadə edin.",
+        "zh": "该邮箱已注册。请直接登录；如果忘记密码，请使用「忘记密码」重置。",
+        "zh-tw": "該郵箱已註冊。請直接登錄；如果忘記密碼，請使用「忘記密碼」重置。",
+        "en": (
+            "This email is already registered. Please sign in. "
+            "If you forgot the password, use Forgot password to reset it."
+        ),
+        "az": ("Bu e-poçt artıq qeydiyyatdan keçib. Daxil olun. Parolu unutmusunuzsa, Parolu unutdum ilə sıfırlayın."),
     },
     "login_failed_identifier_not_found": {
         "zh": "登录失败。未找到使用该手机号或邮箱注册的账号。还有 {} 次尝试机会。",
@@ -447,9 +458,16 @@ ERRORS = {
         "az": "Xarici e-poçt qeydiyyat şərtlərini təsdiqləməlisiniz.",
     },
     "login_failed_phone_not_found": {
-        "zh": "登录失败。手机号未找到或密码不正确。还有 {} 次尝试机会。",
-        "en": "Login failed. Phone number not found or password incorrect. {} attempt(s) remaining.",
-        "az": "Giriş uğursuz oldu. Telefon nömrəsi tapılmadı və ya parol yanlışdır. {} cəhd qalıb.",
+        "zh": "登录失败。手机号或邮箱未找到，或密码不正确。还有 {} 次尝试机会。如果忘记密码，请使用「忘记密码」。",
+        "zh-tw": "登錄失敗。手機號或郵箱未找到，或密碼不正確。還有 {} 次嘗試機會。如果忘記密碼，請使用「忘記密碼」。",
+        "en": (
+            "Login failed. Phone or email was not found, or the password is incorrect. "
+            "{} attempt(s) remaining. If you forgot the password, use Forgot password."
+        ),
+        "az": (
+            "Giriş uğursuz oldu. Telefon və ya e-poçt tapılmadı, yaxud parol yanlışdır. "
+            "{} cəhd qalıb. Parolu unutmusunuzsa, Parolu unutdum istifadə edin."
+        ),
     },
     "login_failed_student_credentials": {
         "zh": "登录失败。班级码、姓名或密码不正确。还有 {} 次尝试机会。",
@@ -477,10 +495,15 @@ ERRORS = {
         ),
     },
     "account_locked": {
-        "zh": "账户因 {} 次失败登录尝试而暂时锁定。请在 {} 分钟后重试。",
-        "en": "Account temporarily locked due to {} failed login attempts. Please try again in {} minutes.",
+        "zh": "账户因 {} 次失败登录尝试而暂时锁定。请在 {} 分钟后重试。如果忘记密码，请使用「忘记密码」重置。",
+        "zh-tw": "賬戶因 {} 次失敗登錄嘗試而暫時鎖定。請在 {} 分鐘後重試。如果忘記密碼，請使用「忘記密碼」重置。",
+        "en": (
+            "Account temporarily locked due to {} failed login attempts. "
+            "Please try again in {} minutes. If you forgot the password, use Forgot password to reset it."
+        ),
         "az": (
-            "Hesab {} uğursuz giriş cəhdi səbəbindən müvəqqəti olaraq kilidlənib. {} dəqiqədən sonra yenidən cəhd edin."
+            "Hesab {} uğursuz giriş cəhdi səbəbindən müvəqqəti olaraq kilidlənib. "
+            "{} dəqiqədən sonra yenidən cəhd edin. Parolu unutmusunuzsa, Parolu unutdum ilə sıfırlayın."
         ),
     },
     "organization_locked": {

@@ -13,13 +13,17 @@ import {
 } from '@/composables/training/trainingTopicOptions'
 import type { TrainingCourseStep } from '@/types/training'
 
-const props = defineProps<{
-  step: TrainingCourseStep
-  index: number
-  thumb?: string | null
-  hibernated?: boolean
-  readonly?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    step: TrainingCourseStep
+    index: number
+    thumb?: string | null
+    hibernated?: boolean
+    readonly?: boolean
+    canNext?: boolean
+  }>(),
+  { canNext: true }
+)
 
 const stageRef = ref<HTMLElement | null>(null)
 const marks = computed(() => visibleMarkOverlays(props.step))
@@ -28,6 +32,8 @@ const topicsDragLive = useTrainingTopicsDragLive()
 const emit = defineEmits<{
   wake: []
   topics: [pos: { x: number; y: number }]
+  resize: [size: { width: number; height: number }]
+  next: []
 }>()
 
 function onStageClick(event: MouseEvent): void {
@@ -65,6 +71,9 @@ function onDrop(event: DragEvent): void {
       :index="index"
       :thumb="hibernated ? thumb : null"
       :interactive="!hibernated"
+      :can-next="canNext"
+      @resize="emit('resize', $event)"
+      @next="emit('next')"
     />
     <TrainingStepMarks
       :overlays="marks"

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from PIL import Image
 
 from scripts.sync_classroom_video.catalog import (
@@ -28,6 +29,34 @@ def _role(folder: str, slug: str, label: str, tmp_path: Path) -> RoleStill:
         "lock": f"{label}锁定",
         "still": still,
     }
+
+
+def test_discover_roles_uses_repo_raven_when_desktop_missing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Laptop fallback keeps the committed raven until the desktop still is present."""
+    monkeypatch.setattr(
+        "scripts.sync_classroom_video.roles.MASCOTS_DIR",
+        tmp_path / "missing-mascots",
+    )
+    roles = discover_roles()
+    raven = next(role for role in roles if role["folder"] == "raven-teacher-mascot")
+    assert raven["label"] == "乌鸦"
+    assert raven["still"].name == "fullbody-still-noptr-2.png"
+    assert "scripts/cat_emoji/stills/raven/" in raven["still"].as_posix()
+    assert "黄色领结" in raven["lock"]
+
+
+def test_discover_roles_keeps_desktop_raven(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A Pictures/mascots raven still wins over the committed stand-in."""
+    monkeypatch.setattr("scripts.sync_classroom_video.roles.MASCOTS_DIR", tmp_path)
+    raven_dir = tmp_path / "raven-teacher-mascot"
+    raven_dir.mkdir()
+    Image.new("RGB", (256, 256), (0, 255, 0)).save(raven_dir / "fullbody-still-noptr-2.png")
+    roles = discover_roles()
+    raven = next(role for role in roles if role["folder"] == "raven-teacher-mascot")
+    assert raven["still"] == raven_dir / "fullbody-still-noptr-2.png"
 
 
 def test_discover_roles_reads_front_stills(tmp_path: Path) -> None:

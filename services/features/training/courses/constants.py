@@ -47,6 +47,7 @@ DIAGRAM_FOCUS_TYPES = (
     "mindmap",
     "concept_map",
 )
+UI_LOCK_KEYS = frozenset({"mindgraph-language"})
 FOCUS_KEYS = frozenset(
     {f"diagram-{name}" for name in DIAGRAM_FOCUS_TYPES}
     | {
@@ -86,6 +87,33 @@ def optional_step_key(value: object, allowed: frozenset[str], label: str) -> str
     if text not in allowed:
         raise ValueError(f"Invalid {label}: {text}")
     return text
+
+
+VOD_SPAN_MIN = 20
+VOD_SPAN_MAX = 92
+
+
+def optional_vod_span(value: object, label: str) -> int | None:
+    """Keep a video window edge as a percent of the page, or empty."""
+    if value is None or value == "":
+        return None
+    if isinstance(value, bool):
+        raise ValueError(f"Invalid {label}")
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            number = int(text)
+        except ValueError as exc:
+            raise ValueError(f"Invalid {label}") from exc
+    elif isinstance(value, (int, float)):
+        number = int(value)
+    else:
+        raise ValueError(f"Invalid {label}")
+    if number < VOD_SPAN_MIN or number > VOD_SPAN_MAX:
+        raise ValueError(f"Invalid {label}")
+    return number
 
 
 def optional_notes(value: object) -> str:

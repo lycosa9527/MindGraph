@@ -24,6 +24,7 @@ export async function uploadVodFile(options: {
   file: File
   title: string
   organizationId?: number | null
+  folderId?: string | null
   onProgress?: (progress: VodUploadProgress) => void
 }): Promise<VodMediaItem> {
   const sign = await signVodUpload(options.organizationId)
@@ -48,6 +49,7 @@ export async function uploadVodFile(options: {
     fileId,
     title: options.title,
     organizationId: options.organizationId,
+    folderId: options.folderId,
     sourceContext: sign.source_context,
   })
 }

@@ -50,8 +50,17 @@ const {
   onAddText,
   previewMove,
   onTopicsDrop,
+  onLockArm,
+  onLock,
   syncState,
 } = useTrainingBuilderSession()
+
+function onVodResize(size: { width: number; height: number }): void {
+  const step = builder.current
+  if (!step) return
+  step.vod_width = size.width
+  step.vod_height = size.height
+}
 
 const syncLabel = computed(() => {
   if (syncState.value === 'saving') return t('training.builder.autosaving')
@@ -92,6 +101,8 @@ const syncLabel = computed(() => {
         @add="addSlide"
         @images="addImageSlides"
         @remove="removeStep"
+        @lock-arm="onLockArm"
+        @lock="onLock"
       />
       <section
         v-if="current"
@@ -113,8 +124,11 @@ const syncLabel = computed(() => {
           :index="selected"
           :thumb="stageThumb"
           :hibernated="hibernated"
+          :can-next="previewCanNext"
           @wake="builder.wake()"
           @topics="onTopicsDrop"
+          @resize="onVodResize"
+          @next="previewMove(1)"
         />
         <TrainingBuilderNotes :step="current" />
       </section>
@@ -127,6 +141,7 @@ const syncLabel = computed(() => {
         @close="builder.setPreviewing(false)"
         @prev="previewMove(-1)"
         @next="previewMove(1)"
+        @resize="onVodResize"
         @mode="builder.setPreviewFree($event === 'free')"
       />
     </div>

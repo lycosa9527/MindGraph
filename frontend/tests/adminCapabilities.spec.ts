@@ -104,7 +104,7 @@ describe('adminCapabilities', () => {
     expect(tabRequiresCapabilities('learning_space')).toEqual(['tab.learning_space.view'])
   })
 
-  it('school_admin and superadmin can view the 云点播 tab', () => {
+  it('school_admin and superadmin can view the 在线视频库 tab', () => {
     const school = fallbackCapabilitiesForRole('school_admin')
     const superadmin = fallbackCapabilitiesForRole('superadmin')
     expect(school).toContain('tab.vod.view')

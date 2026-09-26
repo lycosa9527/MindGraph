@@ -4,6 +4,7 @@ import {
   requestTrainingModalOpen,
   requestTrainingModalsClose,
 } from '@/composables/training/trainingCommands'
+import { applyTrainingUiLock } from '@/composables/training/trainingUiLock'
 import { trainingFocusDef, trainingFocusSelector } from '@/config/trainingUiTargets'
 import { useTrainingStore } from '@/stores/training'
 
@@ -44,6 +45,7 @@ async function waitForTrainingFocus(focusKey: string, stageOnly: boolean): Promi
 export async function applyTrainingUiTarget(options: {
   modalKey?: string | null
   focusKey?: string | null
+  uiLock?: string | null
   hostModals?: boolean
 }): Promise<void> {
   const training = useTrainingStore()
@@ -56,11 +58,14 @@ export async function applyTrainingUiTarget(options: {
       requestTrainingModalsClose()
     }
   }
-  if (!options.focusKey) return
-  await nextTick()
-  await waitForTrainingFocus(options.focusKey, !hostModals)
-  training.setUiFocus(options.focusKey)
-  const def = trainingFocusDef(options.focusKey)
-  if (!def?.activateOnApply) return
-  queryTrainingFocus(options.focusKey, !hostModals)?.click()
+  if (options.focusKey) {
+    await nextTick()
+    await waitForTrainingFocus(options.focusKey, !hostModals)
+    training.setUiFocus(options.focusKey)
+    const def = trainingFocusDef(options.focusKey)
+    if (def?.activateOnApply) {
+      queryTrainingFocus(options.focusKey, !hostModals)?.click()
+    }
+  }
+  applyTrainingUiLock(options.uiLock ?? null)
 }

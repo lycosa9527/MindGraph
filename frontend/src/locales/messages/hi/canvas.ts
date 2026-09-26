@@ -967,6 +967,8 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'saved extract was missing or out of sync and has been cleared. Please upload or paste the document again.',
   'canvas.mindMapDocumentSummary.contentFiltered': 'सामग्री सुरक्षा समीक्षा में सफल नहीं हुई. कृपया पाठ को संशोधित करें और पुनः प्रयास करें।',
   'canvas.mindMapSideToolbar.learningSheet': 'अध्ययन पत्र',
+  'canvas.mobile.learningSheet': 'Learning sheet',
+  'canvas.mobile.learningSheetCustomDesc': 'Tap a node to blank it. Tap again to restore.',
   'canvas.mindMapSideToolbar.oneSentence': 'एक वाक्य जनरेट',
   'canvas.mindMapSideToolbar.mindClassroom': 'विचार व्याख्यान कक्ष',
   'canvas.mindClassroom.title': 'विचार व्याख्यान कक्ष',

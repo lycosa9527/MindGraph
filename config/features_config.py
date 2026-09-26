@@ -233,7 +233,7 @@ class FeaturesConfigMixin:
 
     @property
     def FEATURE_VOD(self):
-        """Enable Tencent Cloud VOD (云点播) admin library.
+        """Enable the admin online video library (在线视频库).
 
         Disabled by default. Set FEATURE_VOD=True in .env to enable.
         """

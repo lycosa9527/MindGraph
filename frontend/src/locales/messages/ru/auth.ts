@@ -322,7 +322,7 @@ export default {
   'auth.qrLoginInviteRequired': 'Пожалуйста, сначала заполните код приглашения в школу, а затем отсканируйте его, чтобы войти в систему.',
   'auth.qrLoginProvidersFailed': 'Не удалось загрузить конфигурацию входа в систему с помощью скан-кода. Повторите попытку позже.',
   'auth.qrLoginProviderDisabled': 'This sign-in method is not enabled for your school',
-  'auth.qrLoginNotLinked': 'Account not linked — sign in with password and bind under Account linking first',
+  'auth.qrLoginNotLinked': 'Please bind your account first. Sign in with your password, link WeChat under Account linking, then scan again. If you forgot the password, use Forgot password.',
   'auth.qrLoginExchangeFailed': 'Не удалось войти в систему с помощью скан-кода. Повторите попытку.',
   'auth.qrLoginInvalidState': 'Срок действия сеанса сканирования QR-кода истек. Пожалуйста, закройте его и снова отсканируйте QR-код.',
   'auth.qrLoginInvalidCode': 'Срок действия кода авторизации WeChat истек или он уже использовался. Пожалуйста, закройте QR-код и отсканируйте его еще раз.',
