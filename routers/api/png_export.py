@@ -79,7 +79,7 @@ from services.infrastructure.utils.browser import BrowserUnavailableError
 from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user, get_current_user_or_api_key
-from utils.db.session_open import actor_rls_session, system_rls_session
+from utils.db.session_open import actor_rls_session, system_rls_session, user_rls_session
 from .helpers import (
     build_public_temp_image_url,
     check_endpoint_rate_limit,
@@ -652,34 +652,21 @@ async def generate_dingtalk_png(
 
         stored_diagram_id = saved_id if saved_id and saved_id != SAVE_LIMIT_REACHED else None
         preview_spec = spec if isinstance(spec, dict) and not stored_diagram_id else None
-        if current_user is not None and hasattr(current_user, "id"):
-            async with actor_rls_session(current_user) as preview_db:
-                await store_generation_preview_outcome(
-                    unique_id,
-                    reason=skip_reason,
-                    language=language,
-                    diagram_id=stored_diagram_id,
-                    diagram_type=diagram_type,
-                    title=save_title,
-                    spec=preview_spec,
-                    user_id=user_id,
-                    organization_id=organization_id,
-                    db=preview_db,
-                )
-        else:
-            async with system_rls_session() as preview_db:
-                await store_generation_preview_outcome(
-                    unique_id,
-                    reason=skip_reason,
-                    language=language,
-                    diagram_id=stored_diagram_id,
-                    diagram_type=diagram_type,
-                    title=save_title,
-                    spec=preview_spec,
-                    user_id=user_id,
-                    organization_id=organization_id,
-                    db=preview_db,
-                )
+        owner_id = int(user_id) if user_id is not None and int(user_id) > 0 else None
+        preview_session = user_rls_session(owner_id, organization_id) if owner_id is not None else system_rls_session()
+        async with preview_session as preview_db:
+            await store_generation_preview_outcome(
+                unique_id,
+                reason=skip_reason,
+                language=language,
+                diagram_id=stored_diagram_id,
+                diagram_type=diagram_type,
+                title=save_title,
+                spec=preview_spec,
+                user_id=user_id,
+                organization_id=organization_id,
+                db=preview_db,
+            )
 
         await persist_dingtalk_temp_png(filename, screenshot_bytes)
 

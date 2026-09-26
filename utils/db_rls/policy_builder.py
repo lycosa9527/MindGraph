@@ -11,6 +11,8 @@ from __future__ import annotations
 import sqlalchemy as sa
 from alembic import op
 
+from utils.db_rls.gap_policies import iter_gap_table_policies
+
 
 def _enable_force(table: str) -> None:
     op.execute(sa.text(f'ALTER TABLE "{table}" ENABLE ROW LEVEL SECURITY'))
@@ -555,6 +557,7 @@ def iter_all_table_policies() -> list[tuple[str, str]]:
         )
     )
     rows.extend(LEARNING_SPACE_POLICIES)
+    rows.extend(iter_gap_table_policies())
     return rows
 
 

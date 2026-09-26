@@ -20,6 +20,8 @@ from models.domain.community import CommunityPost, CommunityPostComment, Communi
 from models.domain.device import Device
 from models.domain.diagrams import Diagram
 from models.domain.dingtalk_staff_link import DingtalkStaffLink
+from models.domain.generation_preview_link import GenerationPreviewLink
+from models.domain.oauth_user_link import OauthUserLink
 from models.domain.feature_access_control import FeatureAccessUserGrant
 from models.domain.knowledge_space import KnowledgeSpace
 from models.domain.library import (
@@ -200,6 +202,16 @@ async def _delete_dingtalk_staff_links_for_user(db: AsyncSession, user_id: int) 
     await db.execute(delete(DingtalkStaffLink).where(DingtalkStaffLink.user_id == user_id))
 
 
+async def _delete_oauth_links_for_user(db: AsyncSession, user_id: int) -> None:
+    """Delete OAuth identity links before the user row goes away."""
+    await db.execute(delete(OauthUserLink).where(OauthUserLink.user_id == user_id))
+
+
+async def _delete_generation_preview_links_for_user(db: AsyncSession, user_id: int) -> None:
+    """Delete preview specs so SET NULL does not fail the owner policy."""
+    await db.execute(delete(GenerationPreviewLink).where(GenerationPreviewLink.user_id == user_id))
+
+
 async def _delete_thinking_coins_for_user(db: AsyncSession, user_id: int) -> None:
     """Delete thinking-coin rows under system RLS (owner-or-system policy)."""
     previous = db.info.get(_SESSION_RLS_KEY)
@@ -237,6 +249,8 @@ async def delete_user_fk_dependent_rows(db: AsyncSession, user_id: int) -> None:
     await db.execute(delete(UserActivityLog).where(UserActivityLog.user_id == user_id))
     await db.execute(delete(UserUsageActivity).where(UserUsageActivity.user_id == user_id))
     await _delete_dingtalk_staff_links_for_user(db, user_id)
+    await _delete_oauth_links_for_user(db, user_id)
+    await _delete_generation_preview_links_for_user(db, user_id)
     await db.execute(delete(Diagram).where(Diagram.user_id == user_id))
     await _delete_thinking_coins_for_user(db, user_id)
 

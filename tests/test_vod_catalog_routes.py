@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import json
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -11,8 +12,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from starlette.requests import Request
 
+from fastapi import HTTPException
+
 from models.domain.auth import User
-from models.domain.vod import VodMedia
+from models.domain.vod import VodFolder, VodMedia
+from routers.features.vod.routes import FolderBody, create_vod_folder, list_vod_folders
 from services.features.vod.catalog import (
     VodCatalogError,
     issue_play_token,
@@ -238,6 +242,72 @@ def test_serialize_media_omits_cdn_hosts() -> None:
     assert data["owner_name"] == "Ada"
     assert "cover_url" not in data
     assert "http" not in str(data)
+
+
+class _SessionBox:
+    """Async context manager around one mock session."""
+
+    def __init__(self, session: AsyncMock) -> None:
+        self.session = session
+
+    async def __aenter__(self) -> AsyncMock:
+        return self.session
+
+    async def __aexit__(self, *_args: object) -> bool:
+        return False
+
+
+@pytest.mark.asyncio
+async def test_create_folder_commits_in_system_mode() -> None:
+    """Folder insert must run as system RLS and commit, or Postgres rejects the row."""
+    now = datetime.now(UTC)
+    folder = VodFolder(
+        id="3f94bec2-becf-4707-9cdf-3aeb1b85493e",
+        organization_id=5,
+        name="小剧场",
+        created_at=now,
+        updated_at=now,
+    )
+    session = AsyncMock()
+    with (
+        patch("routers.features.vod.routes.system_rls_session", return_value=_SessionBox(session)),
+        patch("routers.features.vod.routes.create_folder", AsyncMock(return_value=folder)),
+    ):
+        payload = await create_vod_folder(FolderBody(name="小剧场"), _school_scope())
+    assert payload["name"] == "小剧场"
+    assert payload["organization_id"] == 5
+    session.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_create_folder_does_not_commit_when_name_exists() -> None:
+    """A duplicate name stays a 409 and leaves the system session uncommitted."""
+    session = AsyncMock()
+    with (
+        patch("routers.features.vod.routes.system_rls_session", return_value=_SessionBox(session)),
+        patch(
+            "routers.features.vod.routes.create_folder",
+            AsyncMock(side_effect=VodCatalogError("folder_exists", http_status=409)),
+        ),
+    ):
+        with pytest.raises(HTTPException) as caught:
+            await create_vod_folder(FolderBody(name="小剧场"), _school_scope())
+    assert caught.value.status_code == 409
+    assert caught.value.detail == "folder_exists"
+    session.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_list_folders_reads_in_system_mode_without_commit() -> None:
+    """Listing uses the same system session so RLS does not hide every folder."""
+    session = AsyncMock()
+    with (
+        patch("routers.features.vod.routes.system_rls_session", return_value=_SessionBox(session)),
+        patch("routers.features.vod.routes.list_folders", AsyncMock(return_value=[])),
+    ):
+        payload = await list_vod_folders(organization_id=None, scope=_school_scope())
+    assert payload == {"items": []}
+    session.commit.assert_not_awaited()
 
 
 def test_catalog_error_maps_to_http() -> None:

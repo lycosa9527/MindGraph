@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.102] - 2026-09-27
+
+> **Database rows that were still open to every connection now follow the same school and owner rules as the rest of the app.**
+
+### Fixed
+
+- **Row security gaps** — OAuth app secrets, OAuth and DingTalk account links, diagram preview specs, admin error logs, and the thinking-coin task list now have forced row security. A school can read its own login settings. Another school cannot. Error logs stay with the collector and global admins. Preview specs stay with the owner. Thinking-coin tasks stay readable while signed in, and only a global admin can change them.
+- **Preview save** — A DingTalk or MindMate preview is stored under the diagram owner’s database session, so the new owner rule accepts the write.
+- **Account removal** — Deleting a user also removes that user’s OAuth links and preview rows in the same transaction.
+- **OAuth settings** — Loading a school’s OAuth settings in admin uses the panel database session, the same one that saves them.
+- **Video library** — Catalog and folder requests open a system database session. Those tables only allow system mode, and the school check stays in the service before the query.
+
+### Tests
+
+- [`tests/test_rls_gap_policies.py`](tests/test_rls_gap_policies.py), [`tests/test_rls_policy_column_refs.py`](tests/test_rls_policy_column_refs.py)
+
 ## [5.180.101] - 2026-09-27
 
 > **Course Builder can place online-library videos, force a tutorial, and replay it in demo mode.**

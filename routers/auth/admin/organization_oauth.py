@@ -9,11 +9,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_async_db
 from config.settings import config
 from repositories.organization_oauth_config_repo import OrganizationOauthConfigRepository
 from routers.auth.dependencies import (
-    get_async_db_with_request_rls as _panel_mutate_db,
+    get_async_db_with_request_rls as _panel_db,
     require_global_organizations_edit,
     require_global_organizations_read,
 )
@@ -90,7 +89,7 @@ def _to_response(org_id: int, row) -> OrganizationOauthConfigResponse:
 async def get_organization_oauth_config(
     org_id: int,
     _scope: AdminScope = Depends(require_global_organizations_read),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(_panel_db),
 ):
     """Get OAuth QR login settings for a school."""
     repo = OrganizationOauthConfigRepository(db)
@@ -107,7 +106,7 @@ async def update_organization_oauth_config(
     org_id: int,
     body: OrganizationOauthConfigUpdate,
     _scope: AdminScope = Depends(require_global_organizations_edit),
-    db: AsyncSession = Depends(_panel_mutate_db),
+    db: AsyncSession = Depends(_panel_db),
 ):
     """Update OAuth QR login settings for a school."""
     if not config.FEATURE_DINGTALK_LOGIN:
