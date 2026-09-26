@@ -56,6 +56,7 @@ def debug_content_security_policy(
     frame_ancestors: str,
     cos_connect_clause: str,
     media_src: str,
+    vod_connect_clause: str = "",
 ) -> str:
     """Permissive CSP for DEBUG (Swagger CDN + OAuth QR + optional T-Sec)."""
     return (
@@ -68,7 +69,7 @@ def debug_content_security_policy(
         "img-src 'self' data: http: https: blob: https://cdn.jsdelivr.net https://fastapi.tiangolo.com; "
         f"font-src 'self' data: https://cdn.jsdelivr.net{tsec_csp_extra(TSEC_CSP_FONT_SRC)}; "
         "connect-src 'self' ws: wss: blob: https://cdn.jsdelivr.net"
-        f"{cos_connect_clause}{tsec_csp_extra(TSEC_CSP_CONNECT_SRC)}"
+        f"{cos_connect_clause}{vod_connect_clause}{tsec_csp_extra(TSEC_CSP_CONNECT_SRC)}"
         f"{oauth_qr_csp_extra(OAUTH_QR_CSP_CONNECT_SRC)}; "
         f"{media_src}"
         "frame-src 'self' blob: https://view.officeapps.live.com"
@@ -84,6 +85,7 @@ def production_content_security_policy(
     frame_ancestors: str,
     cos_connect_clause: str,
     media_src: str,
+    vod_connect_clause: str = "",
 ) -> str:
     """
     Production CSP. SPA shells set ``csp_nonce`` so script-src drops
@@ -103,7 +105,7 @@ def production_content_security_policy(
         f"style-src 'self' 'unsafe-inline'{tsec_csp_extra(TSEC_CSP_STYLE_SRC)}; "
         "img-src 'self' data: http: https: blob:; "
         f"font-src 'self' data:{tsec_csp_extra(TSEC_CSP_FONT_SRC)}; "
-        f"connect-src 'self' ws: wss: blob:{cos_connect_clause}"
+        f"connect-src 'self' ws: wss: blob:{cos_connect_clause}{vod_connect_clause}"
         f"{tsec_csp_extra(TSEC_CSP_CONNECT_SRC)}"
         f"{oauth_qr_csp_extra(OAUTH_QR_CSP_CONNECT_SRC)}; "
         f"{media_src}"

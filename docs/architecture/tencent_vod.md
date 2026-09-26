@@ -6,6 +6,8 @@ Standalone media library for school and platform admins. Videos are hosted in Te
 
 `FEATURE_VOD` (default off). Admin → Features. `/api/vod/*` returns 404 when the flag is off.
 
+When the flag is on, the document `connect-src` allows `https://vod2.qcloud.com`, backup `https://vod2.dnsv1.com`, and one-label COS wildcards for the mainland upload parks (`*.cos.ap-shanghai.myqcloud.com` and the same shape for Chongqing, Guangzhou, Beijing, Chengdu, Nanjing, plus `tencentcos.cn`). `*.myqcloud.com` does not match those hosts. The Vite `index.html` meta lists the same origins for local dev. Playback license and CDN hosts are separate.
+
 | Variable | Role |
 |----------|------|
 | `TENCENT_VOD_APP_ID` | VOD application / SubAppId |

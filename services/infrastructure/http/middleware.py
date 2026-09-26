@@ -47,6 +47,7 @@ from services.infrastructure.http.security_csp import (
     word_addin_content_security_policy,
 )
 from services.features.training.storage.backend import cos_training_enabled
+from services.features.vod.browser_csp import vod_browser_connect_sources
 from services.showcase.storage import cos_showcase_enabled
 from services.utils.tencent_cos_client import (
     cos_browser_csp_sources,
@@ -97,6 +98,16 @@ def cos_auth_login_csp_enabled() -> bool:
 def _browser_cos_connect_enabled() -> bool:
     """True when the browser may PUT/GET private COS (Showcase, training, login)."""
     return cos_showcase_enabled() or cos_training_enabled() or cos_auth_login_csp_enabled()
+
+
+def _vod_connect_clause() -> str:
+    """connect-src origins for vod-js-sdk-v6 when the online library is on."""
+    if config.FEATURE_VOD is not True:
+        return ""
+    sources = vod_browser_connect_sources()
+    if not sources:
+        return ""
+    return f" {sources}"
 
 
 def max_request_body_size_for_path(path: str) -> int:
@@ -332,7 +343,8 @@ async def add_security_headers(request: Request, call_next):
     - data: URIs: Required for canvas-to-image conversions
     - connect-src / media-src: when Showcase, training, or /auth login-hero COS
       is on, allow the configured bucket virtual-host endpoints for
-      browser→COS presigned PUT / media
+      browser→COS presigned PUT / media. When FEATURE_VOD is on, connect-src
+      also allows vod2.qcloud.com and the mainland VOD COS parks.
     - DEBUG mode: Allows Swagger UI CDN (cdn.jsdelivr.net) for /docs endpoint
 
     Reviewed: 2025-10-26 - All directives verified against actual codebase
@@ -362,16 +374,18 @@ async def add_security_headers(request: Request, call_next):
     # In DEBUG mode, allow Swagger UI CDN for /docs and /redoc endpoints
     frame_ancestors = "'self'" if same_origin_frame else "'none'"
     # Direct browser PUT to private COS (Showcase / Course Builder). Omit when
-    # COS is off so connect-src stays least-privilege. SPA serve strips Vite
-    # CSP <meta> so this header is the sole document policy.
+    # COS is off so connect-src stays least-privilege. Online-library uploads
+    # add vod2.qcloud.com and the VOD COS parks only when FEATURE_VOD is on.
+    # SPA serve strips Vite CSP <meta> so this header is the sole document policy.
     cos_connect = cos_browser_csp_sources() if _browser_cos_connect_enabled() else ""
     cos_connect_clause = f" {cos_connect}" if cos_connect else ""
+    vod_connect_clause = _vod_connect_clause()
     media_src = f"media-src 'self' blob:{cos_connect_clause}; " if cos_connect else "media-src 'self' blob:; "
     if is_word_addin:
         response.headers["Content-Security-Policy"] = word_addin_content_security_policy()
     elif config.debug:
         response.headers["Content-Security-Policy"] = debug_content_security_policy(
-            frame_ancestors, cos_connect_clause, media_src
+            frame_ancestors, cos_connect_clause, media_src, vod_connect_clause
         )
     else:
         response.headers["Content-Security-Policy"] = production_content_security_policy(
@@ -379,6 +393,7 @@ async def add_security_headers(request: Request, call_next):
             frame_ancestors,
             cos_connect_clause,
             media_src,
+            vod_connect_clause,
         )
 
     # Referrer Policy (controls info sent in Referer header)
