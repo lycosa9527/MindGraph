@@ -36,8 +36,6 @@ export function useCanvasKittyDesktopPairing(options: {
     primaryScope: userMobileKittyPrimaryScope,
   } = useKittyUserMobileActive(kittyUserMobilePollOn)
 
-  const desktopPairingScopeId = computed(() => kittyWsSessionScope.value)
-
   const showKittyDesktopIndicator = computed(() => {
     if (
       !options.kittyFeatureEnabled.value ||
@@ -46,7 +44,9 @@ export function useCanvasKittyDesktopPairing(options: {
     ) {
       return false
     }
-    return scopeMatchesKittyMobileActive(desktopPairingScopeId.value, {
+    const openScope =
+      options.currentDiagramId.value?.trim() || oneSentence.ephemeralScope
+    return scopeMatchesKittyMobileActive(openScope, {
       active: userMobileKittyActive.value,
       scopes: userMobileKittyScopes.value,
       primaryScope: userMobileKittyPrimaryScope.value,
