@@ -13,7 +13,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any, Optional
 
-from sqlalchemy import Select, func, or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
@@ -123,7 +123,7 @@ def serialize_media(row: VodMedia) -> dict[str, Any]:
 
 async def get_media(db: AsyncSession, media_id: str, org_id: Optional[int]) -> VodMedia:
     """Load one row; 404 when missing or outside org."""
-    stmt: Select[tuple[VodMedia]] = select(VodMedia).where(VodMedia.id == media_id)
+    stmt = select(VodMedia).where(VodMedia.id == media_id)
     if org_id is not None:
         stmt = stmt.where(VodMedia.organization_id == org_id)
     result = await db.execute(stmt)

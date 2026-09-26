@@ -94,13 +94,15 @@ async def pick_map_owner() -> tuple[int, Optional[int]]:
         )
         row = latest.first()
         if row is not None:
-            org = int(row[1]) if row[1] is not None else None
+            org_raw = row[1]
+            org = int(org_raw) if org_raw is not None else None
             return int(row[0]), org
         first = await db.execute(select(User.id, User.organization_id).order_by(User.id.asc()).limit(1))
         user = first.first()
         if user is None:
             raise RuntimeError("No user in Postgres to own the audit mind map")
-        org = int(user[1]) if user[1] is not None else None
+        org_raw = user[1]
+        org = int(org_raw) if org_raw is not None else None
         return int(user[0]), org
 
 

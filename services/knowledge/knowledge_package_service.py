@@ -382,6 +382,8 @@ class KnowledgePackageService:
         )
         stats: Dict[int, Dict[str, int]] = {}
         for batch_id, total, completed in result.all():
+            if batch_id is None:
+                continue
             stats[batch_id] = {"total": int(total or 0), "completed": int(completed or 0)}
         return stats
 

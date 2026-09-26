@@ -203,6 +203,8 @@ class MindbotUsageRepository:
         rows = (await self._session.execute(stmt)).all()
         out: dict[int, list[tuple[str, str | None]]] = {uid: [] for uid in uid_set}
         for uid_raw, staff_raw, nick_raw in rows:
+            if uid_raw is None:
+                continue
             uid = int(uid_raw)
             staff = (staff_raw or "").strip()[:128]
             if not staff:
