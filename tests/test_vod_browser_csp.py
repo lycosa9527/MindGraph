@@ -27,6 +27,7 @@ def test_vod_connect_sources_cover_upload_api_and_parks() -> None:
     assert "https://*.cos.ap-shanghai.myqcloud.com" in sources.split()
     assert "https://*.cos.ap-chongqing.myqcloud.com" in sources.split()
     assert "https://playvideo.vodplayvideo.net" in sources.split()
+    assert "https://datacenter.live.tlivesource.com" in sources.split()
     assert "https://*.vod2.myqcloud.com" in sources.split()
     assert "https://*.vod-qcloud.com" in sources.split()
     assert "https://tcsdk.com" == vod_browser_script_sources()

@@ -45,6 +45,7 @@ VOD_PLAY_CONNECT_ORIGINS = (
     "https://license.vodplayvideo.com",
     "https://license.vod-common.com",
     "https://get-domains.vod-backup.net",
+    "https://datacenter.live.tlivesource.com",
 )
 
 # One label each: ``{appId}.vod2.myqcloud.com`` and ``{appId}.vod-qcloud.com``.
