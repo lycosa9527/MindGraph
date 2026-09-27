@@ -413,7 +413,7 @@ export default {
   'canvas.cachedResult.notice': 'I-cache ang mga resulta at gamitin muli ang function upang makakuha ng mga bagong resulta',
   'canvas.classroomRemote.ariaLabel': 'Classroom floating tools',
   'canvas.classroomRemote.formatPainter': 'Format painter',
-  'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position',
+  'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position and size',
     'canvas.classroomRemote.tabTopics': 'Topics',
   'canvas.classroomRemote.tabView': 'View',
   'canvas.classroomRemote.topicsAdd': 'Add topic',
@@ -1528,4 +1528,5 @@ export default {
   'canvas.hero.slotFull.line1': 'Mangyaring tanggalin ang isang umiiral na icon at i-save ang kasalukuyang icon',
   'canvas.hero.slotFull.line2': '',
   'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
+  'canvas.classroomRemote.resize': 'Drag to resize',
 } as const

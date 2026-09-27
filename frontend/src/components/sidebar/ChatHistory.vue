@@ -70,6 +70,7 @@ const notify = useNotifications()
 const mindMateStore = useMindMateStore()
 
 const collabHistoryVisible = ref(false)
+const savedSeminarVisible = ref(false)
 
 const { data: conversationsData, isLoading: isLoadingConversations } = useConversations()
 const { data: pinnedData } = usePinnedConversations()
@@ -324,6 +325,10 @@ function handlePinConversation(convId: string): void {
           inline
           @visible-change="collabHistoryVisible = $event"
         />
+        <MindmateCollabLibrary
+          v-if="props.showCollabSessions"
+          @visible-change="savedSeminarVisible = $event"
+        />
 
         <div
           v-if="foldersLoadFailed"
@@ -342,7 +347,12 @@ function handlePinConversation(convId: string): void {
         </div>
 
         <div
-          v-else-if="conversations.length === 0 && folders.length === 0 && !collabHistoryVisible"
+          v-else-if="
+            conversations.length === 0 &&
+            folders.length === 0 &&
+            !collabHistoryVisible &&
+            !savedSeminarVisible
+          "
           class="text-center py-8"
         >
           <MessageCircle class="w-8 h-8 mx-auto mb-2 text-stone-300" />

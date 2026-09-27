@@ -451,11 +451,18 @@ class MindmateCollabManager:
         if redis:
             await redis.set(closing_key(code), "1", ex=MINDMATE_COLLAB_CLOSING_TTL_SEC)
 
+        ended_at = datetime.now(tz=UTC)
         async with system_rls_session() as db:
             await db.execute(
                 update(MindmateCollabSession)
                 .where(MindmateCollabSession.id == session_id)
-                .values(ended_at=datetime.now(tz=UTC)),
+                .values(
+                    ended_at=ended_at,
+                    library_saved_at=func.coalesce(
+                        MindmateCollabSession.library_saved_at,
+                        ended_at,
+                    ),
+                ),
             )
             await db.commit()
 
@@ -647,17 +654,28 @@ class MindmateCollabManager:
         if not redis:
             return
         norm = normalize_collab_code(code)
+        meta_key = session_meta_key(norm)
+        try:
+            room_alive = await redis.hexists(meta_key, "session_id")
+        except REDIS_ERRORS:
+            return
+        if not room_alive:
+            try:
+                await redis.zrem(idle_scores_key(), norm)
+            except REDIS_ERRORS:
+                pass
+            return
         now = int(time.time())
         safety_ttl_sec = MINDMATE_COLLAB_PARTICIPANTS_TTL
         try:
             pipe = redis.pipeline(transaction=False)
-            pipe.hset(session_meta_key(norm), "last_activity", str(now))
+            pipe.hset(meta_key, "last_activity", str(now))
             pipe.zadd(idle_scores_key(), {norm: now})
             await pipe.execute()
             try:
                 await redis.execute_command(
                     "EXPIRE",
-                    session_meta_key(norm),
+                    meta_key,
                     safety_ttl_sec,
                     "GT",
                 )

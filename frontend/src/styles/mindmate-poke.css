@@ -1,0 +1,31 @@
+/**
+ * Half-second screen wobble when a colleague pokes you in a MindMate seminar.
+ */
+@keyframes mindmate-poke-wobble {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  20% {
+    transform: translate3d(-7px, 1px, 0) rotate(-0.45deg);
+  }
+  40% {
+    transform: translate3d(6px, -1px, 0) rotate(0.4deg);
+  }
+  60% {
+    transform: translate3d(-4px, 0, 0) rotate(-0.25deg);
+  }
+  80% {
+    transform: translate3d(2px, 0, 0) rotate(0.12deg);
+  }
+}
+
+html.mindmate-poke-wobble body {
+  animation: mindmate-poke-wobble 0.5s ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.mindmate-poke-wobble body {
+    animation: none;
+  }
+}

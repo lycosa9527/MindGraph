@@ -25,6 +25,7 @@ import { useMindMate } from '@/composables/mindmate/useMindMate'
 import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
+import { useMindmateSavedSeminar } from '@/composables/mindmate/useMindmateSavedSeminar'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
 import { useAuthStore, useMindMateStore, useTeachingDesignExportStore } from '@/stores'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
@@ -32,6 +33,10 @@ import type { MindMateMessage } from '@/stores/mindmateActiveThread'
 import { useUIStore } from '@/stores/ui'
 import { copyMindmateAssistantMessage } from '@/utils/copyMindmateMessage'
 import { confirmMindmateCollabStop } from '@/utils/mindmateCollabConfirm'
+import {
+  notifyMindmateCollabLibraryChanged,
+  saveFinishedSeminar,
+} from '@/utils/mindmateCollabLibrarySave'
 import {
   loadLocalMindmateCollabSessions,
   normalizeMindmateCollabCode,
@@ -59,6 +64,9 @@ const MindmateCollabEmbed = defineAsyncComponent(
 )
 const MindmateCollabBreadcrumb = defineAsyncComponent(
   () => import('@/components/mindmate/MindmateCollabBreadcrumb.vue')
+)
+const MindmateCollabSavedTranscript = defineAsyncComponent(
+  () => import('@/components/mindmate/MindmateCollabSavedTranscript.vue')
 )
 
 interface MindmateCollabPanelHandle {
@@ -125,6 +133,17 @@ const collabSessionId = ref('')
 const collabOwnerId = ref<number | null>(null)
 const collabSeedMessages = ref<MindmateCollabMessage[]>([])
 const showCollabContacts = ref(false)
+const savedSeminar = useMindmateSavedSeminar()
+
+function saveEndedSeminar(sessionId: string, openAfterSave: boolean): void {
+  void saveFinishedSeminar(sessionId, { openAfterSave }).then((outcome) => {
+    if (outcome === 'saved') {
+      notify.successKey('mindmate.collabSaveLibraryDone')
+    } else if (outcome === 'failed') {
+      notify.errorKey('mindmate.collabSaveLibraryFailed')
+    }
+  })
+}
 
 function mapThreadToCollabSeed(msgs: MindMateMessage[]): MindmateCollabMessage[] {
   return msgs
@@ -225,6 +244,7 @@ function handleCollabSessionStarted(payload: {
     collabOwnerId.value = null
   }
   collabRoomTitle.value = mindMateStore.conversationTitle || null
+  savedSeminar.clear()
   setEmbeddedCollabRoomCode(payload.code)
 }
 
@@ -241,7 +261,24 @@ function exitCollabChatroomMode(options: { removeFromHistory?: boolean } = {}) {
 }
 
 function handleCollabEnded(reason: 'idle' | 'host' | 'left' = 'left') {
+  const sessionId = resolveMindmateCollabSessionId(collabSessionId.value, collabRoomCode.value)
+  const selfId = Number(authStore.user?.id)
+  const ownsRoom =
+    (collabOwnerId.value != null && collabOwnerId.value === selfId) ||
+    loadLocalMindmateCollabSessions().some(
+      (row) => row.session_id === sessionId && row.owner_user_id === selfId
+    )
   exitCollabChatroomMode({ removeFromHistory: shouldRemoveCollabFromHistory(reason) })
+  if (!ownsRoom || !sessionId) {
+    return
+  }
+  if (reason === 'host') {
+    saveEndedSeminar(sessionId, true)
+    return
+  }
+  if (reason === 'idle') {
+    notifyMindmateCollabLibraryChanged()
+  }
 }
 
 function handleCollabRoomMeta(payload: {
@@ -280,6 +317,7 @@ async function endCollabSession(): Promise<void> {
     .then((ok) => {
       if (ok) {
         notify.successKey('mindmate.collabStopped')
+        saveEndedSeminar(sessionId, true)
       } else {
         notify.errorKey('collab.endFailed')
       }
@@ -398,7 +436,9 @@ async function startNewConversation() {
     exitCollabChatroomMode({ removeFromHistory: true })
     if (sessionId) {
       void requestMindmateCollabStop(sessionId).then((ok) => {
-        if (!ok) {
+        if (ok) {
+          saveEndedSeminar(sessionId, false)
+        } else {
           notify.errorKey('collab.endFailed')
         }
       })
@@ -406,12 +446,14 @@ async function startNewConversation() {
   } else if (isCollabChatroomMode.value) {
     exitCollabChatroomMode()
   }
+  savedSeminar.clear()
   mindMate.startNewConversation()
   displayTitle.value = defaultMindMateTitle.value
 }
 
 // Load a conversation from history
 async function loadConversationFromHistory(convId: string) {
+  savedSeminar.clear()
   await mindMate.loadConversation(convId)
 }
 
@@ -668,9 +710,15 @@ function isLastAssistantMessage(messageId: string): boolean {
       @toggle-contacts="showCollabContacts = !showCollabContacts"
     />
 
+    <MindmateCollabSavedTranscript
+      v-if="savedSeminar.sessionId.value && !isCollabChatroomMode"
+      class="flex-1 min-h-0 min-w-0"
+      :session-id="savedSeminar.sessionId.value"
+    />
+
     <!-- Collab chatroom mode (chat + right member column) -->
     <MindmateCollabEmbed
-      v-if="isCollabChatroomMode && collabRoomCode"
+      v-else-if="isCollabChatroomMode && collabRoomCode"
       v-model:show-contacts="showCollabContacts"
       class="flex-1 min-h-0 min-w-0"
       :room-code="collabRoomCode"

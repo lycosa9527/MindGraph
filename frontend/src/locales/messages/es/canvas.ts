@@ -413,7 +413,7 @@ export default {
   'canvas.cachedResult.notice': 'Almacene en caché los resultados y use la función nuevamente para obtener nuevos resultados',
   'canvas.classroomRemote.ariaLabel': 'Classroom floating tools',
   'canvas.classroomRemote.formatPainter': 'Format painter',
-  'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position',
+  'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position and size',
     'canvas.classroomRemote.tabTopics': 'Topics',
   'canvas.classroomRemote.tabView': 'View',
   'canvas.classroomRemote.topicsAdd': 'Add topic',
@@ -1528,4 +1528,5 @@ export default {
   'canvas.hero.slotFull.line1': 'Elimine un ícono existente y guarde el ícono actual',
   'canvas.hero.slotFull.line2': '',
   'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
+  'canvas.classroomRemote.resize': 'Drag to resize',
 } as const

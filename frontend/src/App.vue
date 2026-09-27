@@ -20,7 +20,10 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useKittyDesktopActionPoll } from '@/composables/kitty/useKittyDesktopActionPoll'
 import { useSlideRemoteDesktopPoll } from '@/composables/mindMap/useSlideRemoteDesktopPoll'
-import { quickAccessRemoteHidden } from '@/composables/sidebar/useQuickAccessRemote'
+import {
+  quickAccessRemoteHidden,
+  useQuickAccessRemoteAccount,
+} from '@/composables/sidebar/useQuickAccessRemote'
 import { useTrainingFollow } from '@/composables/training/useTrainingFollow'
 import { useTrainingSessionEngine } from '@/composables/training/useTrainingSessionEngine'
 import { privacyPageUiCode } from '@/composables/usePrivacyPageLocale'
@@ -44,6 +47,7 @@ const notify = useNotifications()
 
 useKittyDesktopActionPoll()
 useSlideRemoteDesktopPoll()
+useQuickAccessRemoteAccount()
 useTrainingFollow()
 useTrainingSessionEngine()
 

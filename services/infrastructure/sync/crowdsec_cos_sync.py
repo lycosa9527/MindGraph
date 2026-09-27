@@ -60,15 +60,22 @@ async def _get_local_merge_meta_async() -> Optional[Dict[str, Any]]:
     return None
 
 
-async def _set_local_merge_meta_async(count: int) -> None:
+async def _set_local_merge_meta_async(
+    count: int,
+    *,
+    last_merge_unix: Optional[float] = None,
+) -> None:
     if not is_redis_available():
         return
     redis = get_async_redis()
     if not redis:
         return
-    payload = json.dumps({"last_merge_unix": time.time(), "count": count})
+    payload: Dict[str, Any] = {
+        "last_merge_unix": last_merge_unix if last_merge_unix is not None else time.time(),
+        "count": count,
+    }
     try:
-        await redis.set(KEY_CROWDSEC_META, payload)
+        await redis.set(KEY_CROWDSEC_META, json.dumps(payload))
     except OSError as exc:
         logger.debug("[CrowdSecCOS] could not write local meta: %s", exc)
 
@@ -93,6 +100,10 @@ async def publish_crowdsec_blocklist_to_cos(plaintext: str, ip_count: int) -> bo
     ok_body = tencent_cos_client.upload_bytes(body_bytes, block_key, log_prefix="[CrowdSecCOS]")
     ok_meta = tencent_cos_client.put_json(meta_key, meta)
     if ok_body and ok_meta:
+        await _set_local_merge_meta_async(
+            ip_count,
+            last_merge_unix=float(meta["last_merge_unix"]),
+        )
         logger.info("[CrowdSecCOS] Published %s IPs to COS", ip_count)
         return True
     logger.warning("[CrowdSecCOS] COS publish failed body=%s meta=%s", ok_body, ok_meta)
@@ -160,14 +171,7 @@ async def merge_crowdsec_blocklist_from_cos(*, force: bool = False) -> Dict[str,
 
     count = len(ips)
     if isinstance(cos_ts, (int, float)):
-        if is_redis_available():
-            redis = get_async_redis()
-            if redis:
-                payload = json.dumps({"last_merge_unix": float(cos_ts), "count": count})
-                try:
-                    await redis.set(KEY_CROWDSEC_META, payload)
-                except OSError as exc:
-                    logger.debug("[CrowdSecCOS] meta write failed: %s", exc)
+        await _set_local_merge_meta_async(count, last_merge_unix=float(cos_ts))
     else:
         await _set_local_merge_meta_async(count)
 
@@ -235,10 +239,10 @@ def compare_crowdsec_sync_state(
     return "consumer_behind"
 
 
-async def get_crowdsec_cos_status() -> Dict[str, Any]:
+async def get_crowdsec_cos_status(*, include_cos: bool = True) -> Dict[str, Any]:
     """Status snapshot for admin API."""
     local_meta = await _get_local_merge_meta_async()
-    cos_meta = await asyncio.to_thread(read_crowdsec_cos_meta)
+    cos_meta = await asyncio.to_thread(read_crowdsec_cos_meta) if include_cos else None
     blacklist_count = await get_blacklist_ip_count_async()
     cos_ts = cos_meta.get("last_merge_unix") if cos_meta else None
     return {

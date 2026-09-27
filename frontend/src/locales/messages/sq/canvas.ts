@@ -413,7 +413,7 @@ export default {
   'canvas.cachedResult.notice': 'Ruani rezultatet dhe përdorni sërish funksionin për të marrë rezultate të reja',
   'canvas.classroomRemote.ariaLabel': 'Classroom floating tools',
   'canvas.classroomRemote.formatPainter': 'Format painter',
-  'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position',
+  'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position and size',
     'canvas.classroomRemote.tabTopics': 'Topics',
   'canvas.classroomRemote.tabView': 'View',
   'canvas.classroomRemote.topicsAdd': 'Add topic',
@@ -1528,4 +1528,5 @@ export default {
   'canvas.hero.slotFull.line1': 'Ju lutemi fshini një ikonë ekzistuese dhe ruani ikonën aktuale',
   'canvas.hero.slotFull.line2': '',
   'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
+  'canvas.classroomRemote.resize': 'Drag to resize',
 } as const

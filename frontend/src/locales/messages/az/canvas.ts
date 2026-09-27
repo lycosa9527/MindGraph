@@ -404,7 +404,7 @@ export default {
   'canvas.cachedResult.notice': 'Nəticələri keşləyin və yeni nəticələr əldə etmək üçün funksiyadan yenidən istifadə edin',
   'canvas.classroomRemote.ariaLabel': 'Classroom floating tools',
   'canvas.classroomRemote.formatPainter': 'Format painter',
-  'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position',
+  'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position and size',
     'canvas.classroomRemote.tabTopics': 'Topics',
   'canvas.classroomRemote.tabView': 'View',
   'canvas.classroomRemote.topicsAdd': 'Add topic',
@@ -1528,4 +1528,5 @@ export default {
   'canvas.hero.slotFull.line1': 'Lütfən, mövcud ikonanı silin və cari simvolu yadda saxlayın',
   'canvas.hero.slotFull.line2': '',
   'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
+  'canvas.classroomRemote.resize': 'Drag to resize',
 } as const

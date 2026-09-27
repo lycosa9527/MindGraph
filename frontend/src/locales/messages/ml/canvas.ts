@@ -413,7 +413,7 @@ export default {
   'canvas.cachedResult.notice': 'കാഷെ ഫലങ്ങൾ, പുതിയ ഫലങ്ങൾ ലഭിക്കുന്നതിന് ഫംഗ്ഷൻ വീണ്ടും ഉപയോഗിക്കുക',
   'canvas.classroomRemote.ariaLabel': 'Classroom floating tools',
   'canvas.classroomRemote.formatPainter': 'Format painter',
-  'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position',
+  'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position and size',
     'canvas.classroomRemote.tabTopics': 'Topics',
   'canvas.classroomRemote.tabView': 'View',
   'canvas.classroomRemote.topicsAdd': 'Add topic',
@@ -1528,4 +1528,5 @@ export default {
   'canvas.hero.slotFull.line1': 'നിലവിലുള്ള ഒരു ഐക്കൺ ഇല്ലാതാക്കി നിലവിലുള്ള ഐക്കൺ സംരക്ഷിക്കുക',
   'canvas.hero.slotFull.line2': '',
   'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
+  'canvas.classroomRemote.resize': 'Drag to resize',
 } as const

@@ -19,6 +19,7 @@ from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validat
 from services.auth.quick_register_redis import WORKSHOP_MAX_USES_CAP
 from services.utils.ai_content_level import is_valid_ai_content_level
 from services.utils.education_stage import is_valid_education_stage
+from services.utils.quick_access_prompts import clean_quick_access_prompt_overrides
 from utils.prompt_output_languages import is_prompt_output_language
 from utils.ui_languages import UI_LANGUAGE_CODES
 
@@ -978,6 +979,14 @@ class DiagramPreferencesUpdate(BaseModel):
         None,
         description="True when the new-canvas classroom remote is open",
     )
+    quick_access_remote_visible: Optional[bool] = Field(
+        None,
+        description="True when the account-menu quick-access remote is open",
+    )
+    quick_access_prompt_overrides: Optional[dict[str, str]] = Field(
+        None,
+        description="Custom text for the six quick-access inspiration prompts",
+    )
 
     @field_validator("education_stage")
     @classmethod
@@ -1012,3 +1021,13 @@ class DiagramPreferencesUpdate(BaseModel):
         if stripped not in _V3_RIBBON_TABS:
             raise ValueError("v3_ribbon_tab must be file, edit, ai, teaching, or research")
         return stripped
+
+    @field_validator("quick_access_prompt_overrides")
+    @classmethod
+    def validate_quick_access_prompt_overrides(cls, value):
+        """Keep the six inspiration keys. Null clears every custom prompt."""
+        if value is None:
+            return None
+        if not isinstance(value, dict):
+            raise ValueError("quick_access_prompt_overrides must be an object")
+        return clean_quick_access_prompt_overrides(value)

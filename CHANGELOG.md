@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.105] - 2026-09-28
+
+> **Quick access remembers the panel, edited prompts, and demo diagrams on the account. A finished MindMate seminar can be saved and opened again.**
+
+### Added
+
+- **Quick access** — The home button beside the Diagrams tab returns to the gallery. An unsaved canvas still asks before leaving. Whether the panel is open, and any edited inspiration text, are stored on the account. The six default prompts already have diagrams: a click plays the three-second ring, then opens the diagram, with no model call. After an edit is finished, that card shows “Preloading diagram…”, the other prompts go grey, and the result is saved on the account. The same text opens that diagram on the next click.
+- **Classroom remote** — Drag the corner to resize. Double-click the title bar resets both position and size. Whether it is open stays on the account.
+- **MindMate seminars** — A finished seminar can be saved to the owner’s library and opened later as a read-only transcript.
+
+### Changed
+
+- **Poke** — Someone who is on the page hears a short tone, and the sidebar entry wobbles.
+- **Voice add node** — A node added by desktop voice no longer stacks on top of another when an edit box was left open.
+
+### Fixed
+
+- **Health check** — Blocklist dates are read from the cache already on this machine. A slow object store does not fail the load-balancer probe.
+
+### Tests
+
+- [`frontend/tests/quickAccessRemote.spec.ts`](frontend/tests/quickAccessRemote.spec.ts), [`frontend/tests/useClassroomRemotePosition.spec.ts`](frontend/tests/useClassroomRemotePosition.spec.ts), [`tests/test_quick_access_specs.py`](tests/test_quick_access_specs.py), [`tests/test_mindmate_collab_library_archive.py`](tests/test_mindmate_collab_library_archive.py), [`tests/services/test_blocklist_health.py`](tests/services/test_blocklist_health.py)
+
 ## [5.180.104] - 2026-09-27
 
 > **An online-library preview can ask Tencent for the video and play it.**

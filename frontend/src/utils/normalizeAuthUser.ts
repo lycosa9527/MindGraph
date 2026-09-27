@@ -3,7 +3,9 @@
  * Idempotent so login → setUser does not drop camelCase preference fields.
  */
 import { normalizeMindMapRibbonTabId } from '@/canvas-ribbon/mindMapRibbonTypes'
+import { parseQuickAccessPromptOverrides } from '@/composables/sidebar/quickAccessRemoteModel'
 import { isAiContentLevelId } from '@/config/aiContentLevels'
+import { LANDING_PROMPT_MAX_LENGTH } from '@/config/landingQuickAccess'
 import { isEducationStage } from '@/constants/educationStage'
 import { mergeSchoolTierFeatures, normalizeSchoolTier } from '@/constants/schoolTier'
 import { coerceUiLocale } from '@/i18n/locales'
@@ -191,6 +193,8 @@ export function normalizeAuthUser(source: BackendUser | User): User {
   const ribbonClassicRaw = raw.v3_ribbon_classic ?? raw.v3RibbonClassic
   const ribbonTabRaw = raw.v3_ribbon_tab ?? raw.v3RibbonTab
   const remoteVisibleRaw = raw.classroom_remote_visible ?? raw.classroomRemoteVisible
+  const quickVisibleRaw = raw.quick_access_remote_visible ?? raw.quickAccessRemoteVisible
+  const quickPromptsRaw = raw.quick_access_prompt_overrides ?? raw.quickAccessPromptOverrides
   const ribbonTab = normalizeMindMapRibbonTabId(
     typeof ribbonTabRaw === 'string' ? ribbonTabRaw : null
   )
@@ -217,6 +221,11 @@ export function normalizeAuthUser(source: BackendUser | User): User {
     v3RibbonClassic: ribbonClassicRaw === true,
     v3RibbonTab: ribbonTab,
     classroomRemoteVisible: remoteVisibleRaw !== false,
+    quickAccessRemoteVisible: quickVisibleRaw === true,
+    quickAccessPromptOverrides: parseQuickAccessPromptOverrides(
+      JSON.stringify(quickPromptsRaw ?? {}),
+      LANDING_PROMPT_MAX_LENGTH
+    ),
     allowsSimplifiedChinese: allowsZh,
     loginPasswordSet: resolveLoginPasswordSet(raw),
     mustChangePassword: resolveMustChangePassword(raw),

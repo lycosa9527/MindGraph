@@ -179,4 +179,5 @@ export default {
   'sidebar.quickAccessRemote.tabDiagrams': '图示',
   'sidebar.quickAccessRemote.tabPrompts': '灵感推荐',
   'sidebar.quickAccessRemote.editPrompt': '右键编辑',
+  'sidebar.quickAccessRemote.preloadingSpec': '正在预加载图示…',
 } as const

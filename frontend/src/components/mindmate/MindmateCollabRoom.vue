@@ -61,7 +61,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: 'ended', reason: 'idle' | 'host' | 'left'): void
   (
-    e: 'room-meta',
+    e: 'roomMeta',
     payload: {
       title: string
       visibility: string
@@ -97,6 +97,7 @@ const {
   retryConnection,
 } = useMindmateCollab(() => normalizedCode.value, {
   onSessionEnded: (reason) => {
+    roomEndNotified = true
     emit('ended', reason)
   },
   embedded: props.embedded,
@@ -126,6 +127,8 @@ const mentionCandidates = computed((): MindmateMentionCandidate[] => {
 })
 
 let joinGeneration = 0
+let roomEndNotified = false
+const stoppingRoom = ref(false)
 
 const inputText = ref('')
 const joining = ref(false)
@@ -259,7 +262,7 @@ watch(
         owner_user_id: value.ownerId,
         visibility: value.visibility,
       })
-      emit('room-meta', {
+      emit('roomMeta', {
         title: value.title,
         visibility: value.visibility,
         sessionId: value.sessionId,
@@ -283,28 +286,31 @@ watch(
 
 async function stopRoom() {
   const sessionId = room.value?.sessionId
-  if (!sessionId) {
+  if (!sessionId || stoppingRoom.value) {
     return
   }
   const confirmed = await confirmMindmateCollabStop(t)
   if (!confirmed) {
     return
   }
-  const code = normalizedCode.value
+  stoppingRoom.value = true
   disconnect()
-  teardownMindmateCollabClient(code, { removeFromHistory: true })
-  emit('ended', 'host')
-  void requestMindmateCollabStop(sessionId)
-    .then((ok) => {
-      if (ok) {
-        notify.successKey('mindmate.collabStopped')
-      } else {
-        notify.errorKey('collab.endFailed')
-      }
-    })
-    .catch(() => {
+  try {
+    const ok = await requestMindmateCollabStop(sessionId)
+    if (!ok) {
       notify.errorKey('collab.endFailed')
-    })
+      return
+    }
+    if (roomEndNotified) {
+      return
+    }
+    emit('ended', 'host')
+    notify.successKey('mindmate.collabStopped')
+  } catch {
+    notify.errorKey('collab.endFailed')
+  } finally {
+    stoppingRoom.value = false
+  }
 }
 
 function handleSend() {
@@ -429,6 +435,7 @@ watch(messages, async () => {
         v-if="isHost"
         class="mindmate-collab-room__end-btn shrink-0"
         size="small"
+        :disabled="stoppingRoom"
         @click="stopRoom"
       >
         <I18nText

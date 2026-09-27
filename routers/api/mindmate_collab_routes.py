@@ -24,6 +24,11 @@ from routers.features.workshop_chat.schemas import OrgMembersPage
 from services.auth.thinking_coin.client_event_service import load_user_org
 from services.auth.thinking_coin.event_hub import mutation_to_footer, track_client_event
 from services.features.mindmate_collab.config import MINDMATE_COLLAB_DEFAULT_DURATION
+from services.features.mindmate_collab.library_archive import (
+    list_saved_seminars,
+    load_saved_seminar,
+    save_finished_seminar_for_owner,
+)
 from services.features.mindmate_collab.manager_access import get_mindmate_collab_manager
 from services.features.mindmate_collab.poke_notify import send_mindmate_collab_poke
 from services.features.mindmate_collab.visibility import user_may_join_mindmate_collab
@@ -412,6 +417,71 @@ async def my_hosted_session(
     )
     hosted = await get_mindmate_collab_manager().get_hosted_session(current_user.id)
     return {"session": hosted}
+
+
+@router.get("/my/library")
+async def list_my_saved_seminars(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+):
+    """List finished seminars the owner saved into their MindMate library."""
+    await _require_collab_tier(current_user, lang)
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "mindmate_collab_library_list",
+        identifier,
+        max_requests=60,
+        window_seconds=60,
+    )
+    seminars = await list_saved_seminars(current_user.id)
+    return {"seminars": seminars}
+
+
+@router.get("/my/library/{session_id}")
+async def get_my_saved_seminar(
+    request: Request,
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+):
+    """Return one saved seminar and its transcript for the owner."""
+    await _require_collab_tier(current_user, lang)
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "mindmate_collab_library_read",
+        identifier,
+        max_requests=30,
+        window_seconds=60,
+    )
+    payload = await load_saved_seminar(session_id, current_user.id)
+    if payload is None:
+        raise HTTPException(status_code=404, detail="Saved seminar not found")
+    return payload
+
+
+@router.post("/{session_id}/library")
+async def save_collab_seminar_to_library(
+    request: Request,
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+):
+    """Save a finished seminar into the owner's MindMate library."""
+    await _require_collab_tier(current_user, lang)
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "mindmate_collab_library_save",
+        identifier,
+        max_requests=10,
+        window_seconds=60,
+    )
+    payload, error = await save_finished_seminar_for_owner(session_id, current_user.id)
+    if error == "still_live":
+        raise HTTPException(status_code=409, detail="Seminar is still live")
+    if payload is None:
+        raise HTTPException(status_code=404, detail="Room not found")
+    return {"success": True, "seminar": payload}
 
 
 @router.get("/{session_id}/history")

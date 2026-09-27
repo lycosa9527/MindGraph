@@ -21,6 +21,7 @@ describe('handleMindmateCollabPokeFrame', () => {
       notify as never
     )
     expect(handled).toBe(true)
+    expect(document.documentElement.classList.contains('mindmate-poke-wobble')).toBe(true)
     expect(notify.infoKey).toHaveBeenCalledWith(
       'mindmate.collabPokeToast',
       { name: '张老师', seminar: '教学设计讨论' },

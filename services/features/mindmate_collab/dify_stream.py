@@ -25,6 +25,7 @@ from services.features.mindmate_collab.manager_access import get_mindmate_collab
 from services.features.mindmate_collab.redis_keys import normalize_collab_code
 from services.features.mindmate_collab.ws_broadcast import broadcast_to_all
 from services.infrastructure.http.sse_upstream_keepalive import iter_upstream_with_keepalive
+from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,26 @@ def mindmate_collab_dify_user_id(org_id: Optional[int], session_id: str) -> str:
     """Build stable Dify user id for a shared collab conversation."""
     org_part = str(org_id) if org_id is not None else "0"
     return f"mindmate_collab_{org_part}_{session_id}"
+
+
+async def _store_partial_assistant(session_id: str, text: str) -> None:
+    """Keep an interrupted MindMate reply in the seminar transcript."""
+    cleaned = text.strip()
+    if not cleaned:
+        return
+    try:
+        await get_mindmate_collab_manager().persist_message(
+            session_id,
+            role="assistant",
+            content=cleaned,
+            sender_user_id=None,
+        )
+    except DATABASE_ERRORS as exc:
+        logger.warning(
+            "[MindmateCollabDify] partial save failed session=%s: %s",
+            session_id,
+            exc,
+        )
 
 
 async def _broadcast_aborted_end(code: str, partial: str) -> None:
@@ -103,7 +124,9 @@ async def stream_assistant_reply(
                     },
                 )
         if aborted:
-            await _broadcast_aborted_end(code, "".join(full_answer))
+            partial = "".join(full_answer)
+            await _store_partial_assistant(session_id, partial)
+            await _broadcast_aborted_end(code, partial)
             return
         final_text = "".join(full_answer)
         assistant_id: Optional[int] = None
@@ -124,7 +147,9 @@ async def stream_assistant_reply(
             },
         )
     except asyncio.CancelledError:
-        await _broadcast_aborted_end(code, "".join(full_answer))
+        partial = "".join(full_answer)
+        await _store_partial_assistant(session_id, partial)
+        await _broadcast_aborted_end(code, partial)
         raise
     except (OSError, RuntimeError, ValueError, TypeError, KeyError) as exc:
         logger.warning("[MindmateCollabDify] stream failed code=%s: %s", code, exc)

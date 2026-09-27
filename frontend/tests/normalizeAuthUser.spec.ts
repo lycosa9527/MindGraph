@@ -111,6 +111,32 @@ describe('normalizeAuthUser', () => {
     expect(normalizeAuthUser(loginPayload).classroomRemoteVisible).toBe(true)
   })
 
+  it('hydrates quick-access remote visibility from /me and defaults closed', () => {
+    expect(
+      normalizeAuthUser({ ...loginPayload, quick_access_remote_visible: true })
+        .quickAccessRemoteVisible
+    ).toBe(true)
+    expect(
+      normalizeAuthUser({ ...loginPayload, quick_access_remote_visible: false })
+        .quickAccessRemoteVisible
+    ).toBe(false)
+    expect(normalizeAuthUser(loginPayload).quickAccessRemoteVisible).toBe(false)
+  })
+
+  it('hydrates custom quick-access prompts and drops unknown keys', () => {
+    const user = normalizeAuthUser({
+      ...loginPayload,
+      quick_access_prompt_overrides: {
+        'landing.international.example1': '  custom prompt  ',
+        other: 'skip',
+      },
+    })
+    expect(user.quickAccessPromptOverrides).toEqual({
+      'landing.international.example1': 'custom prompt',
+    })
+    expect(normalizeAuthUser(loginPayload).quickAccessPromptOverrides).toEqual({})
+  })
+
   it('drops unknown ribbon tabs', () => {
     const user = normalizeAuthUser({
       ...loginPayload,

@@ -119,18 +119,31 @@ async def update_diagram_preferences(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """Persist 学段, 专业程度, V3 ribbon defaults, and/or classroom remote visibility."""
+    """Persist 学段, 专业程度, V3 ribbon defaults, and remote open state."""
     stage_set = "education_stage" in body.model_fields_set
     level_set = "ai_content_level" in body.model_fields_set
     ribbon_classic_set = "v3_ribbon_classic" in body.model_fields_set
     ribbon_tab_set = "v3_ribbon_tab" in body.model_fields_set
     remote_set = "classroom_remote_visible" in body.model_fields_set
-    if not stage_set and not level_set and not ribbon_classic_set and not ribbon_tab_set and not remote_set:
+    quick_access_set = "quick_access_remote_visible" in body.model_fields_set
+    prompt_set = "quick_access_prompt_overrides" in body.model_fields_set
+    if not any(
+        (
+            stage_set,
+            level_set,
+            ribbon_classic_set,
+            ribbon_tab_set,
+            remote_set,
+            quick_access_set,
+            prompt_set,
+        )
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=(
                 "Provide at least one of education_stage, ai_content_level, "
-                "v3_ribbon_classic, v3_ribbon_tab, classroom_remote_visible"
+                "v3_ribbon_classic, v3_ribbon_tab, classroom_remote_visible, "
+                "quick_access_remote_visible, quick_access_prompt_overrides"
             ),
         )
 
@@ -152,6 +165,10 @@ async def update_diagram_preferences(
         user.v3_ribbon_tab = body.v3_ribbon_tab
     if remote_set:
         user.classroom_remote_visible = body.classroom_remote_visible
+    if quick_access_set:
+        user.quick_access_remote_visible = body.quick_access_remote_visible
+    if prompt_set:
+        user.quick_access_prompt_overrides = body.quick_access_prompt_overrides
 
     try:
         await db.commit()
@@ -178,4 +195,6 @@ async def update_diagram_preferences(
         "v3_ribbon_classic": bool(getattr(user, "v3_ribbon_classic", False)),
         "v3_ribbon_tab": getattr(user, "v3_ribbon_tab", None),
         "classroom_remote_visible": user_preference_fields(user)["classroom_remote_visible"],
+        "quick_access_remote_visible": user_preference_fields(user)["quick_access_remote_visible"],
+        "quick_access_prompt_overrides": user_preference_fields(user)["quick_access_prompt_overrides"],
     }

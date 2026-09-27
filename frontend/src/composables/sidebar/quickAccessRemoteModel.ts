@@ -5,10 +5,13 @@ import {
   LANDING_PROMPT_EXAMPLE_KEYS,
   type LandingPromptExampleKey,
 } from '@/config/landingQuickAccess'
+import { VALID_DIAGRAM_TYPES } from '@/stores/diagram/constants'
+import type { ModelLoadPhase } from '@/stores/llmResults'
 import type { DiagramType } from '@/types'
 
 export const QUICK_ACCESS_REMOTE_STORAGE_KEY = 'mg.quick-access-remote.v1'
 export const QUICK_ACCESS_PROMPT_OVERRIDES_KEY = 'mg.quick-access-remote.prompts.v1'
+export const QUICK_ACCESS_SPEC_REPLAY_MS = 3000
 export const QUICK_ACCESS_REMOTE_TABS = ['diagrams', 'prompts'] as const
 export type QuickAccessRemoteTabId = (typeof QUICK_ACCESS_REMOTE_TABS)[number]
 
@@ -257,4 +260,141 @@ export function nextQuickAccessPromptOverrides(
   }
   next[key] = text
   return next
+}
+
+export type QuickAccessSavedSpec = {
+  text: string
+  diagramType: DiagramType
+  spec: Record<string, unknown>
+}
+
+export type QuickAccessSpecCache = Partial<Record<LandingPromptExampleKey, QuickAccessSavedSpec>>
+
+const REPLAY_PHASES = [
+  'sending',
+  'waiting',
+  'streaming',
+] as const satisfies readonly ModelLoadPhase[]
+
+/** Ring phase while a saved spec pretends to generate. */
+export function quickAccessReplayPhase(elapsedMs: number): ModelLoadPhase {
+  const slice = QUICK_ACCESS_SPEC_REPLAY_MS / REPLAY_PHASES.length
+  const index = Math.min(REPLAY_PHASES.length - 1, Math.max(0, Math.floor(elapsedMs / slice)))
+  return REPLAY_PHASES[index]
+}
+
+function isDiagramType(value: string): value is DiagramType {
+  return VALID_DIAGRAM_TYPES.includes(value as DiagramType)
+}
+
+function isSpecRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/** Last generated diagram for each inspiration box. Bad entries are dropped. */
+export function parseQuickAccessSpecCache(
+  raw: string | null | undefined,
+  maxLength: number
+): QuickAccessSpecCache {
+  if (typeof raw !== 'string' || raw.length === 0) {
+    return {}
+  }
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>
+    const cache: QuickAccessSpecCache = {}
+    for (const [key, value] of Object.entries(parsed)) {
+      if (!isPromptKey(key) || !isSpecRecord(value)) {
+        continue
+      }
+      const text = typeof value.text === 'string' ? value.text.trim().slice(0, maxLength) : ''
+      const diagramType = typeof value.diagramType === 'string' ? value.diagramType : ''
+      if (!text || !isDiagramType(diagramType) || !isSpecRecord(value.spec)) {
+        continue
+      }
+      if (Object.keys(value.spec).length === 0) {
+        continue
+      }
+      cache[key] = { text, diagramType, spec: value.spec }
+    }
+    return cache
+  } catch {
+    return {}
+  }
+}
+
+export type QuickAccessDefaultSpec = {
+  diagramType: DiagramType
+  spec: Record<string, unknown>
+}
+
+export type QuickAccessDefaultSpecCache = Partial<
+  Record<LandingPromptExampleKey, QuickAccessDefaultSpec>
+>
+
+/** Built-in diagrams for the six presets. Entries without a spec are dropped. */
+export function parseQuickAccessDefaultSpecs(raw: unknown): QuickAccessDefaultSpecCache {
+  if (!isSpecRecord(raw)) {
+    return {}
+  }
+  const cache: QuickAccessDefaultSpecCache = {}
+  for (const [key, value] of Object.entries(raw)) {
+    if (!isPromptKey(key) || !isSpecRecord(value)) {
+      continue
+    }
+    const diagramType = typeof value.diagramType === 'string' ? value.diagramType : ''
+    if (!isDiagramType(diagramType) || !isSpecRecord(value.spec)) {
+      continue
+    }
+    if (Object.keys(value.spec).length === 0) {
+      continue
+    }
+    cache[key] = { diagramType, spec: value.spec }
+  }
+  return cache
+}
+
+/**
+ * Custom spec when the edited prompt matches, otherwise the built-in diagram
+ * for the untouched preset.
+ */
+export function resolveQuickAccessSavedSpec(
+  saved: QuickAccessSpecCache,
+  defaults: QuickAccessDefaultSpecCache,
+  key: LandingPromptExampleKey,
+  text: string,
+  defaultText: string
+): QuickAccessSavedSpec | null {
+  const custom = savedSpecForPrompt(saved, key, text)
+  if (custom) {
+    return custom
+  }
+  if (text.trim() !== defaultText.trim()) {
+    return null
+  }
+  const preset = defaults[key]
+  if (!preset) {
+    return null
+  }
+  return { text: text.trim(), diagramType: preset.diagramType, spec: preset.spec }
+}
+
+/** Replay only when this box still shows the prompt that produced the spec. */
+export function savedSpecForPrompt(
+  cache: QuickAccessSpecCache,
+  key: LandingPromptExampleKey,
+  text: string
+): QuickAccessSavedSpec | null {
+  const saved = cache[key]
+  if (!saved || saved.text !== text.trim()) {
+    return null
+  }
+  return saved
+}
+
+export function nextQuickAccessSpecCache(
+  cache: QuickAccessSpecCache,
+  key: LandingPromptExampleKey,
+  saved: QuickAccessSavedSpec
+): QuickAccessSpecCache {
+  return { ...cache, [key]: saved }
 }

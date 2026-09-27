@@ -413,7 +413,7 @@ export default {
   'canvas.cachedResult.notice': 'புதிய முடிவுகளைப் பெற, கேச் முடிவுகள் மற்றும் செயல்பாட்டை மீண்டும் பயன்படுத்தவும்',
   'canvas.classroomRemote.ariaLabel': 'Classroom floating tools',
   'canvas.classroomRemote.formatPainter': 'Format painter',
-  'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position',
+  'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position and size',
     'canvas.classroomRemote.tabTopics': 'Topics',
   'canvas.classroomRemote.tabView': 'View',
   'canvas.classroomRemote.topicsAdd': 'Add topic',
@@ -1528,4 +1528,5 @@ export default {
   'canvas.hero.slotFull.line1': 'ஏற்கனவே உள்ள ஐகானை நீக்கிவிட்டு, தற்போதைய ஐகானைச் சேமிக்கவும்',
   'canvas.hero.slotFull.line2': '',
   'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
+  'canvas.classroomRemote.resize': 'Drag to resize',
 } as const

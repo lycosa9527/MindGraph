@@ -413,7 +413,7 @@ export default {
   'canvas.cachedResult.notice': 'ఫలితాలను కాష్ చేయండి మరియు కొత్త ఫలితాలను పొందడానికి ఫంక్షన్‌ను మళ్లీ ఉపయోగించండి',
   'canvas.classroomRemote.ariaLabel': 'Classroom floating tools',
   'canvas.classroomRemote.formatPainter': 'Format painter',
-  'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position',
+  'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position and size',
     'canvas.classroomRemote.tabTopics': 'Topics',
   'canvas.classroomRemote.tabView': 'View',
   'canvas.classroomRemote.topicsAdd': 'Add topic',
@@ -1528,4 +1528,5 @@ export default {
   'canvas.hero.slotFull.line1': 'దయచేసి ఇప్పటికే ఉన్న చిహ్నాన్ని తొలగించి, ప్రస్తుత చిహ్నాన్ని సేవ్ చేయండి',
   'canvas.hero.slotFull.line2': '',
   'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
+  'canvas.classroomRemote.resize': 'Drag to resize',
 } as const

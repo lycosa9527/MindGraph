@@ -16,6 +16,8 @@ def test_explicit_bilingual_off_is_fresh_for_non_students() -> None:
         "role": "teacher",
         "bilingual_ui_enabled": "0",
         "presenter_ui_locale": "",
+        "quick_access_remote_visible": "0",
+        "quick_access_prompt_overrides": "{}",
     }
     assert user_cache_hash_needs_refresh(fresh) is False
 
@@ -27,5 +29,30 @@ def test_student_hash_still_refreshes_when_learning_fields_are_missing() -> None
         "role": "student",
         "bilingual_ui_enabled": "1",
         "presenter_ui_locale": "en",
+        "quick_access_remote_visible": "0",
+        "quick_access_prompt_overrides": "{}",
     }
     assert user_cache_hash_needs_refresh(stale_student) is True
+
+
+def test_missing_quick_access_remote_refreshes_any_role() -> None:
+    """A hash from before the quick-access flag must reload instead of staying closed."""
+    stale = {
+        "id": "7",
+        "role": "teacher",
+        "bilingual_ui_enabled": "0",
+        "presenter_ui_locale": "",
+    }
+    assert user_cache_hash_needs_refresh(stale) is True
+
+
+def test_missing_quick_access_prompts_refreshes_any_role() -> None:
+    """A hash from before custom prompts must reload instead of looking empty."""
+    stale = {
+        "id": "7",
+        "role": "teacher",
+        "bilingual_ui_enabled": "0",
+        "presenter_ui_locale": "",
+        "quick_access_remote_visible": "1",
+    }
+    assert user_cache_hash_needs_refresh(stale) is True

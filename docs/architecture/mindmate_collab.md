@@ -38,6 +38,8 @@ Redis keys under `mindmate_collab:*`; fan-out room prefix `mmc:{CODE}`.
 - **Dify stream lock:** one AI response per room; concurrent `chat` → `mindmate_responding` error.
 - **Dify abort signal:** cooperative cross-worker abort via Redis `dify_abort:{CODE}`; checked each stream chunk; lock released only in stream `finally`.
 - **Message retention:** ended sessions and messages are kept indefinitely (history API gated; live rooms only while `ended_at IS NULL`).
+- **Owner library:** ending a room stamps `library_saved_at` in the same write as `ended_at` (host stop, replacement when starting another room, idle, zombie, or expiry). The sidebar reloads on that event, on room removal, and when the tab becomes visible. Reopen is read-only.
+- **Redis teardown:** `touch_activity` does not recreate a purged room hash. The idle monitor drops scores whose session hash is already gone.
 
 Operational parity with canvas collab: see [`docs/operations/online-collab-runbook.md`](../operations/online-collab-runbook.md) for Redis/registry/idle patterns (MindMate uses separate key prefix and omits diagram live-spec merge).
 

@@ -25,9 +25,11 @@ from services.features.mindmate_collab.config import (
 from services.features.mindmate_collab.manager_access import get_mindmate_collab_manager
 from services.features.mindmate_collab.redis_keys import (
     idle_scores_key,
+    normalize_collab_code,
     participants_key,
     room_idle_kick_lock_key,
     room_idle_warning_key,
+    session_meta_key,
 )
 from services.features.mindmate_collab.ws_broadcast import broadcast_to_all
 from services.infrastructure.monitoring.ws_metrics import record_ws_idle_monitor_cycle
@@ -47,16 +49,32 @@ class _IdleMonitorState:
 _idle_monitor_state = _IdleMonitorState()
 
 
+async def drop_orphan_mindmate_collab_idle_score(code: str) -> None:
+    """Remove an idle-monitor score when the live room hash is already gone."""
+    redis = get_async_redis()
+    if not redis:
+        return
+    norm = normalize_collab_code(code)
+    meta_key = session_meta_key(norm)
+    try:
+        if await redis.exists(meta_key):
+            if await redis.hexists(meta_key, "session_id"):
+                return
+            await redis.delete(meta_key)
+        await redis.zrem(idle_scores_key(), norm)
+    except REDIS_ERRORS:
+        return
+
+
 async def _evaluate_code(code: str) -> None:
     mgr = get_mindmate_collab_manager()
     redis = get_async_redis()
     if not redis:
         return
     meta = await mgr.get_session_meta(code)
-    if not meta:
-        return
-    session_id = meta.get("session_id") or ""
+    session_id = (meta.get("session_id") or "") if meta else ""
     if not session_id:
+        await drop_orphan_mindmate_collab_idle_score(code)
         return
 
     expires_raw = meta.get("expires_at")

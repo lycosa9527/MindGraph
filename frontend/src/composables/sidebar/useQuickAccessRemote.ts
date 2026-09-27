@@ -1,12 +1,14 @@
 /**
- * Device-local position, size, tab, and open state for the quick-access remote.
+ * Device-local position, size, and tab for the quick-access remote.
+ * Open state and custom inspiration prompts follow the account.
  */
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import {
   QUICK_ACCESS_DRAG_THRESHOLD_PX,
   QUICK_ACCESS_PROMPT_OVERRIDES_KEY,
   QUICK_ACCESS_REMOTE_STORAGE_KEY,
+  QUICK_ACCESS_SPEC_REPLAY_MS,
   type QuickAccessPromptOverrides,
   type QuickAccessRemoteFrame,
   type QuickAccessRemotePersisted,
@@ -17,12 +19,20 @@ import {
   nextQuickAccessPromptOverrides,
   parseQuickAccessPromptOverrides,
   parseQuickAccessRemotePersisted,
+  quickAccessReplayPhase,
   resizeQuickAccessFrame,
 } from '@/composables/sidebar/quickAccessRemoteModel'
+import { loadQuickAccessSpecs } from '@/composables/sidebar/quickAccessSpecSync'
 import {
   LANDING_PROMPT_MAX_LENGTH,
   type LandingPromptExampleKey,
 } from '@/config/landingQuickAccess'
+import { useAuthStore } from '@/stores'
+import type { ModelLoadPhase } from '@/stores/llmResults'
+import { authFetch } from '@/utils/api'
+
+const QUICK_ACCESS_PREFS_PATH = '/api/auth/diagram-preferences'
+const QUICK_ACCESS_PREFS_DEBOUNCE_MS = 400
 
 function viewportSize(): { width: number; height: number } {
   if (typeof window === 'undefined') {
@@ -86,6 +96,48 @@ function readPromptOverrides(): QuickAccessPromptOverrides {
 
 const promptOverrides = ref<QuickAccessPromptOverrides>(readPromptOverrides())
 
+function waitAbortable(ms: number, signal: AbortSignal): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (signal.aborted) {
+      resolve(false)
+      return
+    }
+    const timer = window.setTimeout(() => {
+      signal.removeEventListener('abort', onAbort)
+      resolve(true)
+    }, ms)
+    const onAbort = (): void => {
+      window.clearTimeout(timer)
+      resolve(false)
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+  })
+}
+
+/** Drive the prompt ring for three seconds. False when the run is cancelled. */
+export async function playQuickAccessSpecReplay(
+  setPhase: (phase: ModelLoadPhase) => void,
+  signal: AbortSignal
+): Promise<boolean> {
+  const started = Date.now()
+  while (Date.now() - started < QUICK_ACCESS_SPEC_REPLAY_MS) {
+    if (signal.aborted) {
+      return false
+    }
+    setPhase(quickAccessReplayPhase(Date.now() - started))
+    const remaining = QUICK_ACCESS_SPEC_REPLAY_MS - (Date.now() - started)
+    const slice = Math.min(100, remaining)
+    if (slice <= 0) {
+      break
+    }
+    const waited = await waitAbortable(slice, signal)
+    if (!waited) {
+      return false
+    }
+  }
+  return !signal.aborted
+}
+
 function persistPromptOverrides(): void {
   if (typeof localStorage === 'undefined') {
     return
@@ -95,6 +147,61 @@ function persistPromptOverrides(): void {
   } catch {
     /* quota / private mode */
   }
+}
+
+let promptPersistTimer = 0
+let promptPersistInFlight = false
+
+function patchPromptUser(overrides: QuickAccessPromptOverrides): void {
+  const authStore = useAuthStore()
+  if (!authStore.user) {
+    return
+  }
+  authStore.patchPersistedUser({ quickAccessPromptOverrides: { ...overrides } })
+}
+
+async function persistPromptsNow(): Promise<void> {
+  const authStore = useAuthStore()
+  if (!authStore.isAuthenticated) {
+    return
+  }
+  promptPersistInFlight = true
+  try {
+    const response = await authFetch(QUICK_ACCESS_PREFS_PATH, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quick_access_prompt_overrides: promptOverrides.value }),
+    })
+    if (!response.ok) {
+      return
+    }
+    const data = (await response.json().catch(() => ({}))) as {
+      quick_access_prompt_overrides?: QuickAccessPromptOverrides
+    }
+    const saved = parseQuickAccessPromptOverrides(
+      JSON.stringify(data.quick_access_prompt_overrides ?? {}),
+      LANDING_PROMPT_MAX_LENGTH
+    )
+    promptOverrides.value = saved
+    persistPromptOverrides()
+    patchPromptUser(saved)
+  } finally {
+    promptPersistInFlight = false
+  }
+}
+
+function schedulePromptPersist(): void {
+  const authStore = useAuthStore()
+  if (!authStore.isAuthenticated) {
+    return
+  }
+  if (promptPersistTimer !== 0) {
+    window.clearTimeout(promptPersistTimer)
+  }
+  promptPersistTimer = window.setTimeout(() => {
+    promptPersistTimer = 0
+    void persistPromptsNow()
+  }, QUICK_ACCESS_PREFS_DEBOUNCE_MS)
 }
 
 export function commitQuickAccessPromptEdit(
@@ -110,6 +217,8 @@ export function commitQuickAccessPromptEdit(
     LANDING_PROMPT_MAX_LENGTH
   )
   persistPromptOverrides()
+  patchPromptUser(promptOverrides.value)
+  schedulePromptPersist()
 }
 
 export { promptOverrides as quickAccessPromptOverrides }
@@ -133,14 +242,108 @@ function persist(): void {
   }
 }
 
+let visiblePersistTimer = 0
+let visiblePersistInFlight = false
+
+function patchAuthUser(visible: boolean): void {
+  const authStore = useAuthStore()
+  if (!authStore.user) {
+    return
+  }
+  authStore.patchPersistedUser({ quickAccessRemoteVisible: visible })
+}
+
+async function persistVisibleNow(): Promise<void> {
+  const authStore = useAuthStore()
+  if (!authStore.isAuthenticated) {
+    return
+  }
+  visiblePersistInFlight = true
+  const visible = !hidden.value
+  try {
+    const response = await authFetch(QUICK_ACCESS_PREFS_PATH, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quick_access_remote_visible: visible }),
+    })
+    if (!response.ok) {
+      return
+    }
+    const data = (await response.json().catch(() => ({}))) as {
+      quick_access_remote_visible?: boolean
+    }
+    const saved = data.quick_access_remote_visible === true
+    hidden.value = !saved
+    persist()
+    patchAuthUser(saved)
+  } finally {
+    visiblePersistInFlight = false
+  }
+}
+
+function scheduleVisiblePersist(): void {
+  const authStore = useAuthStore()
+  if (!authStore.isAuthenticated) {
+    return
+  }
+  if (visiblePersistTimer !== 0) {
+    window.clearTimeout(visiblePersistTimer)
+  }
+  visiblePersistTimer = window.setTimeout(() => {
+    visiblePersistTimer = 0
+    void persistVisibleNow()
+  }, QUICK_ACCESS_PREFS_DEBOUNCE_MS)
+}
+
+function publishVisible(): void {
+  persist()
+  patchAuthUser(!hidden.value)
+  scheduleVisiblePersist()
+}
+
 export function toggleQuickAccessRemote(): void {
   hidden.value = !hidden.value
-  persist()
+  publishVisible()
 }
 
 export function hideQuickAccessRemote(): void {
   hidden.value = true
-  persist()
+  publishVisible()
+}
+
+export function useQuickAccessRemoteAccount(): void {
+  const authStore = useAuthStore()
+
+  function hydrateFromUser(): void {
+    if (!authStore.user) {
+      return
+    }
+    if (!visiblePersistInFlight && visiblePersistTimer === 0) {
+      hidden.value = authStore.user.quickAccessRemoteVisible !== true
+      persist()
+    }
+    if (!promptPersistInFlight && promptPersistTimer === 0) {
+      promptOverrides.value = parseQuickAccessPromptOverrides(
+        JSON.stringify(authStore.user.quickAccessPromptOverrides ?? {}),
+        LANDING_PROMPT_MAX_LENGTH
+      )
+      persistPromptOverrides()
+    }
+    void loadQuickAccessSpecs()
+  }
+
+  hydrateFromUser()
+  watch(
+    () =>
+      [
+        authStore.user?.id,
+        authStore.user?.quickAccessRemoteVisible === true,
+        JSON.stringify(authStore.user?.quickAccessPromptOverrides ?? {}),
+      ] as const,
+    () => {
+      hydrateFromUser()
+    }
+  )
 }
 
 export function setQuickAccessRemoteTab(tab: QuickAccessRemoteTabId): void {

@@ -25,6 +25,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
@@ -159,6 +160,9 @@ class User(Base):
     v3_ribbon_classic: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     v3_ribbon_tab: Mapped[str | None] = mapped_column(String(16), nullable=True)
     classroom_remote_visible: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    quick_access_remote_visible: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    quick_access_prompt_overrides: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    quick_access_prompt_specs: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     email_login_whitelisted_from_cn: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     login_password_set: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

@@ -44,6 +44,7 @@ class MindmateCollabSession(Base):
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    library_saved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
         UniqueConstraint("code", name="uq_mindmate_collab_sessions_code"),
@@ -52,6 +53,11 @@ class MindmateCollabSession(Base):
             "organization_id",
             "visibility",
             postgresql_where=(ended_at.is_(None)),
+        ),
+        Index(
+            "ix_mindmate_collab_sessions_owner_library",
+            "owner_user_id",
+            "library_saved_at",
         ),
     )
 

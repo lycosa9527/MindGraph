@@ -26,6 +26,7 @@ from . import (
     phone,
     preferences,
     public,
+    quick_access_specs,
     quick_register,
     registration,
     registration_overseas,
@@ -79,6 +80,7 @@ router.include_router(tsec.router)
 router.include_router(password.router)
 router.include_router(session.router)
 router.include_router(preferences.router)
+router.include_router(quick_access_specs.router)
 router.include_router(avatar.router)
 router.include_router(phone.router)
 router.include_router(personal_token.router)

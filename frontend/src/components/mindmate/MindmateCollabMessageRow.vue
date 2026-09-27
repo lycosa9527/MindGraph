@@ -8,6 +8,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
 
+import ImagePreviewModal from '@/components/common/ImagePreviewModal.vue'
 import MindmateCollabAssistantToolbar from '@/components/mindmate/MindmateCollabAssistantToolbar.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import {
@@ -56,6 +57,8 @@ const route = useRoute()
 const router = useRouter()
 
 const openingCanvas = ref(false)
+const showImagePreview = ref(false)
+const previewImageUrl = ref('')
 
 const exportMessageId = computed(() => {
   if (props.message.id != null) {
@@ -90,6 +93,19 @@ const rowClass = computed(() => {
   }
   return 'mindmate-collab-room__msg-row--other'
 })
+
+function handleMarkdownClick(event: MouseEvent): void {
+  const target = event.target
+  if (!(target instanceof HTMLImageElement)) {
+    return
+  }
+  const imgSrc = target.currentSrc || target.src
+  if (!imgSrc) {
+    return
+  }
+  previewImageUrl.value = imgSrc
+  showImagePreview.value = true
+}
 
 async function handleCopy(): Promise<void> {
   try {
@@ -214,6 +230,7 @@ async function openInCanvas(): Promise<void> {
         <div
           v-if="isAssistant"
           class="mindmate-collab-room__markdown"
+          @click="handleMarkdownClick"
           v-html="renderedMarkdownHtml"
         />
         <!-- eslint-enable vue/no-v-html -->
@@ -240,6 +257,12 @@ async function openInCanvas(): Promise<void> {
       />
     </div>
   </div>
+  <ImagePreviewModal
+    v-if="isAssistant"
+    v-model:visible="showImagePreview"
+    :title="t('mindmate.imagePreview')"
+    :image-url="previewImageUrl"
+  />
 </template>
 
 <style scoped>
@@ -302,6 +325,23 @@ async function openInCanvas(): Promise<void> {
   50% {
     opacity: 0;
   }
+}
+
+.mindmate-collab-room__markdown {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.mindmate-collab-room__markdown :deep(img) {
+  display: block;
+  box-sizing: border-box;
+  width: auto;
+  height: auto;
+  max-width: min(100%, 36rem);
+  max-height: 24rem;
+  border-radius: 8px;
+  margin: 0.5rem 0;
+  cursor: zoom-in;
 }
 
 .mindmate-collab-room__markdown :deep(p) {

@@ -68,6 +68,7 @@ function makeMindMapCtx(data: DiagramData): DiagramContext {
     data: ref(data),
     selectedNodes: ref([]),
     selectedConnectionId: ref(null),
+    mindMapTopicActualWidth: ref<number | null>(null),
     mindMapNodeWidths: ref({}),
     mindMapNodeHeights: ref({}),
     mindMapRecalcTrigger: ref(0),
@@ -721,6 +722,34 @@ describe('mind map classic vs v2 separation', () => {
     )
     expect(after.rightBranches.map((b) => b.text)).toEqual(['机制', '边界', '产品线'])
     expect(after.leftBranches.map((b) => b.text)).toEqual(['争议', '反例'])
+  })
+
+  it('v2 addMindMapBranch drops leftover inline-edit widths', () => {
+    enableMindMapV2CanvasFlag()
+    const uiStore = useUIStore()
+    uiStore.mindMapCanvasMode = 'v2'
+
+    const loaded = loadMindMapSpec({
+      topic: '小任务',
+      rightBranches: [{ text: '已有分支' }],
+      leftBranches: [],
+      preserveLeftRight: true,
+    })
+    const ctx = makeMindMapCtx({
+      type: 'mindmap',
+      nodes: loaded.nodes,
+      connections: loaded.connections,
+    })
+    ctx.mindMapEditingNodeId.value = 'topic'
+    ctx.mindMapNodeWidths.value = { topic: 800 }
+    ctx.mindMapNodeHeights.value = { topic: 220 }
+    const ops = useMindMapOpsSlice(ctx)
+
+    expect(ops.addMindMapBranch('right', '照顾身体')).toBe(true)
+
+    expect(ctx.mindMapNodeWidths.value.topic).not.toBe(800)
+    expect(ctx.mindMapNodeHeights.value.topic).not.toBe(220)
+    expect(ctx.mindMapEditingNodeId.value).toBeNull()
   })
 
   it('classic topic handles evenly space per side when branch layout is unavailable', () => {

@@ -11,29 +11,30 @@ import { Loading } from '@element-plus/icons-vue'
 
 import { MoreHorizontal, Power } from '@lucide/vue'
 
-import { useLanguage, useNotifications } from '@/composables'
 import CollabLiveBadge from '@/components/social/CollabLiveBadge.vue'
+import { useLanguage, useNotifications } from '@/composables'
 import {
   embeddedCollabRoomCode,
   setEmbeddedCollabRoomCode,
 } from '@/composables/mindmate/mindmateCollabEmbeddedBridge'
 import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
+import { confirmMindmateCollabStop } from '@/utils/mindmateCollabConfirm'
+import { saveFinishedSeminar } from '@/utils/mindmateCollabLibrarySave'
 import {
+  LOCAL_MINDMATE_COLLAB_SESSIONS_KEY,
+  type LocalMindmateCollabSession,
+  MINDMATE_COLLAB_ENDED_CODES_KEY,
+  MINDMATE_COLLAB_SESSIONS_CHANGED_EVENT,
+  MINDMATE_COLLAB_SESSION_REMOVED_EVENT,
   formatMindmateCollabCode,
   loadLocalMindmateCollabSessions,
-  LOCAL_MINDMATE_COLLAB_SESSIONS_KEY,
   mergeMindmateCollabSessionLists,
-  MINDMATE_COLLAB_ENDED_CODES_KEY,
-  MINDMATE_COLLAB_SESSION_REMOVED_EVENT,
-  MINDMATE_COLLAB_SESSIONS_CHANGED_EVENT,
   normalizeMindmateCollabCode,
   persistLocalMindmateCollabSessions,
   trackLocalMindmateCollabSession,
   wasMindmateCollabCodeRecentlyEnded,
-  type LocalMindmateCollabSession,
 } from '@/utils/mindmateCollabSessions'
-import { confirmMindmateCollabStop } from '@/utils/mindmateCollabConfirm'
 import {
   removeLocalMindmateCollabSessionByCode,
   requestMindmateCollabStop,
@@ -47,11 +48,11 @@ const props = withDefaults(
   }>(),
   {
     inline: false,
-  },
+  }
 )
 
 const emit = defineEmits<{
-  (e: 'visible-change', visible: boolean): void
+  (e: 'visibleChange', visible: boolean): void
 }>()
 
 interface CollabSessionRow extends LocalMindmateCollabSession {
@@ -78,7 +79,7 @@ const activeCode = computed(() => {
 const inMindmateCollabRoute = computed(() => route.path.startsWith('/mindmate/collab'))
 
 const mergedSessions = computed(() =>
-  mergeMindmateCollabSessionLists(orgSessions.value, localSessions.value),
+  mergeMindmateCollabSessionLists(orgSessions.value, localSessions.value)
 )
 
 const isVisible = computed(() => loading.value || mergedSessions.value.length > 0)
@@ -86,9 +87,9 @@ const isVisible = computed(() => loading.value || mergedSessions.value.length > 
 watch(
   isVisible,
   (visible) => {
-    emit('visible-change', visible)
+    emit('visibleChange', visible)
   },
-  { immediate: true },
+  { immediate: true }
 )
 
 function normalizeCode(code: string): string {
@@ -122,7 +123,7 @@ async function pruneStaleLocalSessions(): Promise<void> {
     const formatted = formatCode(row.code)
     try {
       const response = await authFetch(
-        `/api/mindmate/collab/status?code=${encodeURIComponent(formatted)}`,
+        `/api/mindmate/collab/status?code=${encodeURIComponent(formatted)}`
       )
       if (!response.ok) {
         continue
@@ -207,10 +208,10 @@ function onSessionRemoved(event: Event): void {
 
 function evictRecentlyEndedRows(): void {
   orgSessions.value = orgSessions.value.filter(
-    (row) => !wasMindmateCollabCodeRecentlyEnded(row.code),
+    (row) => !wasMindmateCollabCodeRecentlyEnded(row.code)
   )
   localSessions.value = localSessions.value.filter(
-    (row) => !wasMindmateCollabCodeRecentlyEnded(row.code),
+    (row) => !wasMindmateCollabCodeRecentlyEnded(row.code)
   )
 }
 
@@ -219,8 +220,8 @@ function onStorage(event: StorageEvent): void {
     loadLocalSessions()
   }
   if (
-    event.key === LOCAL_MINDMATE_COLLAB_SESSIONS_KEY
-    || event.key === MINDMATE_COLLAB_ENDED_CODES_KEY
+    event.key === LOCAL_MINDMATE_COLLAB_SESSIONS_KEY ||
+    event.key === MINDMATE_COLLAB_ENDED_CODES_KEY
   ) {
     evictRecentlyEndedRows()
   }
@@ -265,23 +266,35 @@ async function stopSession(row: CollabSessionRow): Promise<void> {
   }
   const rowKey = normalizeCode(row.code)
   const wasActive =
-    rowKey === activeCode.value
-    || rowKey === normalizeCode(embeddedCollabRoomCode.value || '')
+    rowKey === activeCode.value || rowKey === normalizeCode(embeddedCollabRoomCode.value || '')
   evictSessionByCode(row.code)
   if (wasActive) {
     teardownMindmateCollabClient(row.code, { removeFromHistory: true })
-    if (inMindmateCollabRoute.value) {
-      void router.push('/mindmate')
-    }
   } else {
     removeLocalMindmateCollabSessionByCode(row.code)
   }
   void requestMindmateCollabStop(row.session_id).then((ok) => {
-    if (ok) {
-      notify.success(t('mindmate.collabStopped'))
-    } else {
+    if (!ok) {
       notify.error(t('collab.endFailed'))
+      if (wasActive && inMindmateCollabRoute.value) {
+        void router.push('/mindmate')
+      }
+      return
     }
+    notify.success(t('mindmate.collabStopped'))
+    void saveFinishedSeminar(row.session_id).then((outcome) => {
+      if (outcome === 'joined') {
+        return
+      }
+      if (outcome === 'saved') {
+        notify.success(t('mindmate.collabSaveLibraryDone'))
+        return
+      }
+      notify.error(t('mindmate.collabSaveLibraryFailed'))
+      if (wasActive && inMindmateCollabRoute.value) {
+        void router.push('/mindmate')
+      }
+    })
   })
 }
 

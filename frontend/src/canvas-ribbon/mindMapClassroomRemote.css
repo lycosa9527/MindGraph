@@ -6,9 +6,9 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  width: max-content;
-  max-height: min(72vh, 560px);
   overflow: hidden;
+  container-type: inline-size;
+  container-name: mm-remote;
   border: 1px solid rgb(214 219 236 / 0.9);
   border-radius: 16px;
   background: linear-gradient(180deg, rgb(248 250 255 / 0.96) 0%, rgb(242 240 252 / 0.94) 100%);
@@ -22,11 +22,15 @@
   user-select: none;
 }
 
-.mm-remote.is-dragging {
-  cursor: grabbing;
+.mm-remote.is-dragging,
+.mm-remote.is-resizing {
   box-shadow:
     0 16px 36px rgb(80 88 140 / 0.24),
     0 4px 10px rgb(40 44 80 / 0.1);
+}
+
+.mm-remote.is-dragging {
+  cursor: grabbing;
 }
 
 .dark .mm-remote {
@@ -64,12 +68,6 @@
   height: 3px;
   border-radius: 999px;
   background: #9ca3af;
-}
-
-.mm-remote__handle,
-.mm-remote__body {
-  width: 0;
-  min-width: 100%;
 }
 
 .mm-remote__title {
@@ -120,9 +118,8 @@
 
 .mm-remote__tabs {
   display: grid;
-  grid-template-columns: repeat(3, auto);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
-  width: max-content;
   padding: 0 8px 8px;
 }
 
@@ -131,6 +128,7 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
+  min-width: 0;
   min-height: 32px;
   padding: 4px 7px;
   border: 1px solid transparent;
@@ -146,6 +144,14 @@
 .mm-remote__tab .mm-ribbon-ai-mark {
   width: 18px;
   height: 12px;
+  flex-shrink: 0;
+}
+
+.mm-remote__tab-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mm-remote__tab.is-active {
@@ -163,9 +169,10 @@
 
 .mm-remote__body {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   min-height: 0;
-  padding: 0 8px 10px;
+  padding: 0 8px 16px;
   overflow: auto;
 }
 
@@ -187,8 +194,21 @@
 
 .mm-remote__grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
+  align-content: start;
+}
+
+@container mm-remote (min-width: 28rem) {
+  .mm-remote__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@container mm-remote (min-width: 40rem) {
+  .mm-remote__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .mm-remote__tool {
@@ -418,4 +438,29 @@
 
 .mm-remote-topics__reset:hover {
   color: #374151;
+}
+
+.mm-remote__resize {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.mm-remote__resize::before {
+  content: '';
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #9ca3af;
+  border-bottom: 2px solid #9ca3af;
 }

@@ -8,15 +8,20 @@ import {
   QUICK_ACCESS_DEFAULT_WIDTH_PX,
   QUICK_ACCESS_MIN_HEIGHT_PX,
   QUICK_ACCESS_MIN_WIDTH_PX,
+  QUICK_ACCESS_SPEC_REPLAY_MS,
   clampQuickAccessFrame,
   defaultQuickAccessRemoteFrame,
   nextQuickAccessPromptOverrides,
   parseQuickAccessPromptOverrides,
   parseQuickAccessRemotePersisted,
+  parseQuickAccessSpecCache,
   quickAccessReplaceNeedsConfirm,
+  quickAccessReplayPhase,
   resizeQuickAccessFrame,
   resolveQuickAccessDiagramOpen,
   resolveQuickAccessPromptText,
+  resolveQuickAccessSavedSpec,
+  savedSpecForPrompt,
 } from '@/composables/sidebar/quickAccessRemoteModel'
 import {
   LANDING_PROMPT_EXAMPLE_KEYS,
@@ -182,6 +187,69 @@ describe('quick access remote', () => {
     )
   })
 
+  it('replays a saved spec for the same prompt and ignores a changed one', () => {
+    const cache = parseQuickAccessSpecCache(
+      JSON.stringify({
+        'landing.international.example1': {
+          text: 'photosynthesis map',
+          diagramType: 'mindmap',
+          spec: { topic: 'photosynthesis' },
+        },
+        'landing.international.example2': {
+          text: '   ',
+          diagramType: 'mindmap',
+          spec: { topic: 'blank' },
+        },
+        other: { text: 'skip', diagramType: 'mindmap', spec: { topic: 'nope' } },
+      }),
+      10000
+    )
+    expect(
+      savedSpecForPrompt(cache, 'landing.international.example1', 'photosynthesis map')
+    ).toEqual({
+      text: 'photosynthesis map',
+      diagramType: 'mindmap',
+      spec: { topic: 'photosynthesis' },
+    })
+    expect(
+      savedSpecForPrompt(cache, 'landing.international.example1', 'a different prompt')
+    ).toBeNull()
+    expect(cache['landing.international.example2']).toBeUndefined()
+    const defaults = {
+      'landing.international.example1': {
+        diagramType: 'mindmap' as const,
+        spec: { topic: '光合作用' },
+      },
+    }
+    expect(
+      resolveQuickAccessSavedSpec(
+        {},
+        defaults,
+        'landing.international.example1',
+        '生成一张关于「光合作用」的思维导图',
+        '生成一张关于「光合作用」的思维导图'
+      )?.spec
+    ).toEqual({ topic: '光合作用' })
+    expect(
+      resolveQuickAccessSavedSpec(
+        {},
+        defaults,
+        'landing.international.example1',
+        '自定义主题',
+        '生成一张关于「光合作用」的思维导图'
+      )
+    ).toBeNull()
+    expect(quickAccessReplayPhase(0)).toBe('sending')
+    expect(quickAccessReplayPhase(QUICK_ACCESS_SPEC_REPLAY_MS / 3)).toBe('waiting')
+    expect(quickAccessReplayPhase((QUICK_ACCESS_SPEC_REPLAY_MS / 3) * 2)).toBe('streaming')
+    expect(readSrc('src/components/sidebar/QuickAccessRemote.vue')).toContain(
+      'playQuickAccessSpecReplay'
+    )
+    expect(readSrc('src/components/sidebar/QuickAccessRemote.vue')).toContain(
+      'rememberQuickAccessSpec'
+    )
+  })
+
   it('is opened from both account menus and mounted on the app shell', () => {
     const footer = readSrc('src/components/sidebar/AppSidebarAccountFooter.vue')
     const app = readSrc('src/App.vue')
@@ -191,6 +259,19 @@ describe('quick access remote', () => {
     expect(footer).toContain('menuOnly')
     expect(app).toContain('<QuickAccessRemote')
     expect(app).toContain('quickAccessRemoteHidden')
+    expect(app).toContain('useQuickAccessRemoteAccount')
+    expect(readSrc('src/composables/sidebar/useQuickAccessRemote.ts')).toContain(
+      'quick_access_remote_visible'
+    )
+    expect(readSrc('src/composables/sidebar/useQuickAccessRemote.ts')).toContain(
+      'quick_access_prompt_overrides'
+    )
+    expect(readSrc('src/composables/sidebar/useQuickAccessRemote.ts')).toContain(
+      'loadQuickAccessSpecs'
+    )
+    expect(remote).toContain('resolveQuickAccessSpec')
+    expect(remote).toContain('quick-access-prompt-preloading')
+    expect(remote).toContain('sidebar.quickAccessRemote.preloadingSpec')
     expect(app).toContain('showFloatingAccountMenu')
     expect(readSrc('src/components/sidebar/FloatingAccountMenu.vue')).toContain('menu-only')
     expect(readSrc('src/layouts/DefaultLayout.vue')).toContain('toggleQuickAccessRemote')
@@ -205,6 +286,9 @@ describe('quick access remote', () => {
     expect(remote).toContain('commitQuickAccessPromptEdit')
     expect(remote).toContain('LlmPhaseRing')
     expect(remote).toContain('runningPromptKey')
+    expect(remote).toContain('data-testid="quick-access-remote-home"')
+    expect(remote).toContain("router.push('/mindgraph')")
+    expect(remote).toContain('canvas.ribbon.backToGallery')
     expect(remote).toContain('cancelInFlightGeneration')
     expect(remote).toContain('clearPromptRun')
     const remoteCss = readSrc('src/components/sidebar/quickAccessRemote.css')

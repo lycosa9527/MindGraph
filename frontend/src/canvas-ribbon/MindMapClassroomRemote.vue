@@ -3,7 +3,7 @@
  * Draggable tabbed remote for the new canvas. Teachers on a 110" IFP can
  * keep common tools next to where they stand instead of reaching the ribbon.
  */
-import { type Component, computed, ref } from 'vue'
+import { type Component, computed } from 'vue'
 
 import {
   BookMarked,
@@ -95,8 +95,7 @@ const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
 const { formatBrushActive, formatBrushLocked, handleFormatBrush } = useCanvasToolbarFormatting()
 const { activeTool, handleToolSelect, openTool } = useMindMapSideToolbarState()
 const sourceLock = useDiagramSourceLock()
-const panelRef = ref<HTMLElement | null>(null)
-const position = useClassroomRemotePosition(panelRef)
+const position = useClassroomRemotePosition()
 const { setHidden: setClassroomRemoteHidden } = useClassroomRemoteVisibility()
 
 const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom * 100) : 100))
@@ -380,10 +379,14 @@ function onClose(): void {
 
 <template>
   <aside
-    ref="panelRef"
     class="mm-remote"
-    :class="{ 'is-dragging': position.dragging.value }"
-    :style="{ left: `${position.left.value}px`, top: `${position.top.value}px` }"
+    :class="{ 'is-dragging': position.dragging.value, 'is-resizing': position.resizing.value }"
+    :style="{
+      left: `${position.left.value}px`,
+      top: `${position.top.value}px`,
+      width: `${position.width.value}px`,
+      height: `${position.height.value}px`,
+    }"
     role="toolbar"
     :aria-label="t('canvas.classroomRemote.ariaLabel')"
     data-testid="mindmap-classroom-remote"
@@ -510,5 +513,16 @@ function onClose(): void {
         </button>
       </div>
     </div>
+
+    <button
+      type="button"
+      class="mm-remote__resize"
+      data-testid="mindmap-classroom-remote-resize"
+      :aria-label="t('canvas.classroomRemote.resize')"
+      @pointerdown="position.onResizePointerDown"
+      @pointermove="position.onResizePointerMove"
+      @pointerup="position.onResizePointerUp"
+      @pointercancel="position.onResizePointerUp"
+    />
   </aside>
 </template>

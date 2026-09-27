@@ -413,7 +413,7 @@ export default {
   'canvas.cachedResult.notice': 'හැඹිලිගත ප්‍රතිඵලය. නැවුම් ප්‍රතිඵලයක් සඳහා නැවත ශ්‍රිතය භාවිතා කරන්න.',
   'canvas.classroomRemote.ariaLabel': 'Classroom floating tools',
   'canvas.classroomRemote.formatPainter': 'Format painter',
-  'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position',
+  'canvas.classroomRemote.resetPosition': 'Double-click the title bar to reset position and size',
     'canvas.classroomRemote.tabTopics': 'Topics',
   'canvas.classroomRemote.tabView': 'View',
   'canvas.classroomRemote.topicsAdd': 'Add topic',
@@ -1528,4 +1528,5 @@ export default {
   'canvas.hero.slotFull.line1': 'කරුණාකර පවතින නිරූපකයක් මකා වත්මන් නිරූපකය සුරකින්න',
   'canvas.hero.slotFull.line2': '',
   'canvas.share.readOnlyBar': '{name} is editing. This canvas is read-only.',
+  'canvas.classroomRemote.resize': 'Drag to resize',
 } as const

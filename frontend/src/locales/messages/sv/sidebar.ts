@@ -178,4 +178,5 @@ export default {
   'sidebar.quickAccessRemote.tabDiagrams': 'Diagrams',
   'sidebar.quickAccessRemote.tabPrompts': 'Prompts',
   'sidebar.quickAccessRemote.editPrompt': 'Right-click to edit',
+  'sidebar.quickAccessRemote.preloadingSpec': 'Preloading diagram…',
 } as const
