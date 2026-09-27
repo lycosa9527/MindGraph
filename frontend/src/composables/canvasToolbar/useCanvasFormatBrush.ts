@@ -75,6 +75,53 @@ export function resetFormatBrushState(): void {
   syncFormatBrushCursor(false)
 }
 
+function cssEscapeNodeId(nodeId: string): string {
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+    return CSS.escape(nodeId)
+  }
+  return nodeId.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+}
+
+/** Painted box for diagrams that do not have a mind-map theme fallback. */
+function renderedStyleFallback(nodeId: string): Partial<NodeStyle> | undefined {
+  if (typeof document === 'undefined') return undefined
+  const host = document.querySelector(`.vue-flow__node[data-id="${cssEscapeNodeId(nodeId)}"]`)
+  if (!(host instanceof HTMLElement)) return undefined
+  const painted = host.querySelector(
+    '.circle-node, .bubble-node, .branch-node, .flow-node, .flow-substep-node, .brace-node, .topic-node, .concept-node, .label-node'
+  )
+  const el = painted instanceof HTMLElement ? painted : host
+  const cs = getComputedStyle(el)
+  const fontSize = Number.parseFloat(cs.fontSize)
+  const weight = Number.parseInt(cs.fontWeight, 10)
+  const align =
+    cs.textAlign === 'right' || cs.textAlign === 'end'
+      ? 'right'
+      : cs.textAlign === 'center'
+        ? 'center'
+        : 'left'
+  const line = cs.textDecorationLine || ''
+  const textDecoration =
+    line.includes('underline') && line.includes('line-through')
+      ? 'underline line-through'
+      : line.includes('line-through')
+        ? 'line-through'
+        : line.includes('underline')
+          ? 'underline'
+          : 'none'
+  return {
+    backgroundColor: cs.backgroundColor,
+    borderColor: cs.borderTopColor,
+    textColor: cs.color,
+    fontFamily: cs.fontFamily,
+    fontSize: Number.isFinite(fontSize) ? fontSize : undefined,
+    fontWeight: weight >= 600 || cs.fontWeight === 'bold' ? 'bold' : 'normal',
+    fontStyle: cs.fontStyle === 'italic' ? 'italic' : 'normal',
+    textDecoration,
+    textAlign: align,
+  }
+}
+
 function snapshotFormatBrushStyle(nodeId: string): NodeStyle | null {
   const store = useDiagramStore()
   const sourceNode = store.data?.nodes?.find((node) => node.id === nodeId)
@@ -88,7 +135,7 @@ function snapshotFormatBrushStyle(nodeId: string): NodeStyle | null {
         store.data?._mindmap_diagram_style,
         store.data?.connections
       )
-    : undefined
+    : renderedStyleFallback(nodeId)
   const copied = collectFormatBrushStyle(sourceNode.style, persisted, themeFallback)
   if (!copied.nodeShape && isMindMap) {
     copied.nodeShape = resolveMindMapNodeShape(

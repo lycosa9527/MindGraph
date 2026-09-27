@@ -6,6 +6,7 @@ import { useLanguage, useNotifications } from '@/composables'
 import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
 import { notify } from '@/composables/core/notifications'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import {
   enqueueSubgraphApply,
   withSubgraphFetchSlot,
@@ -360,6 +361,14 @@ async function runMindMapSubgraphGeneration(
     }
     endMindMapSubgraphDebugRun(false)
     return false
+  }
+
+  const lsCanvas = useLearningAssignmentCanvasStore()
+  if (!lsCanvas.can('node_subgraph')) {
+    if (!quietSuccess) {
+      subgraphNotify.warning(t('learningSpace.aiCapabilityBlocked'))
+    }
+    return failQuietGuard()
   }
 
   if (!nodeId || !isMindMapDiagramType(diagramStore.type)) {

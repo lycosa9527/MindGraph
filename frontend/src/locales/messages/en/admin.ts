@@ -1641,6 +1641,7 @@ export default {
   'admin.learningSpace.preview': 'Preview',
   'admin.learningSpace.import': 'Import',
   'admin.learningSpace.initialPassword': 'Initial password',
+  'admin.learningSpace.currentPassword': 'Current password',
   'admin.learningSpace.status': 'Status',
   'admin.learningSpace.mustChangePassword': 'Must change password',
   'admin.learningSpace.resetPassword': 'Reset password',
@@ -1681,6 +1682,7 @@ export default {
   'admin.learningSpace.subtabAria': 'Learning Space admin sections',
   'admin.learningSpace.subtabPilots': 'Pilot teachers',
   'admin.learningSpace.subtabClasses': 'Classes',
+  'admin.learningSpace.subtabStudents': 'Students',
   'admin.learningSpace.addPilotSection': 'Add pilot teacher',
   'admin.learningSpace.pilotList': 'Pilot teachers',
   'admin.learningSpace.pilotsEmpty': 'No pilots yet. Search and grant pilot access above.',
@@ -1755,4 +1757,19 @@ export default {
   'admin.learningSpace.accountImportError.already_member': 'Already a learner in this class',
   'admin.learningSpace.accountImportError.already_assistant': 'Already an assistant in this class',
   'admin.learningSpace.accountImportError.class_full': 'Class is full',
+  'admin.learningSpace.removeFromClass': 'Remove from class',
+  'admin.learningSpace.removeMemberConfirm':
+    '{name} will lose access to Learning Space after removal. Continue?',
+  'admin.learningSpace.memberRemoved': 'Removed {name}',
+  'admin.learningSpace.studentList': 'Student list',
+  'admin.learningSpace.studentsIntro':
+    'Classroom student accounts are excluded from User Management stats; manage them here across all classes.',
+  'admin.learningSpace.summaryClassroom': 'Class students',
+  'admin.learningSpace.summaryEnrolled': 'Imported learners',
+  'admin.learningSpace.summaryTotal': 'Total',
+  'admin.learningSpace.studentSearchPlaceholder': 'Name or phone',
+  'admin.learningSpace.filterAllClasses': 'All classes',
+  'admin.learningSpace.filterAllMemberKinds': 'All roles in class',
+  'admin.learningSpace.studentsGlobalEmpty':
+    'No students yet. Import students or existing accounts from Class management first.',
 } as const

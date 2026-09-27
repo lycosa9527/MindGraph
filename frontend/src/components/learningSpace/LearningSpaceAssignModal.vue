@@ -8,7 +8,10 @@ import { ArrowLeft, ArrowRight, Paperclip, Plus, X } from '@lucide/vue'
 import ShowcaseHistoryDiagramPicker from '@/components/showcase/ShowcaseHistoryDiagramPicker.vue'
 import ShowcaseInlineDiagramPreview from '@/components/showcase/ShowcaseInlineDiagramPreview.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import type { LsReferenceDiagram } from '@/composables/learningSpace/lsHelpers'
+import {
+  diagramTypeLabelKey,
+  type LsReferenceDiagram,
+} from '@/composables/learningSpace/lsHelpers'
 import { useSavedDiagramsStore } from '@/stores'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
 import {
@@ -100,6 +103,7 @@ const form = ref({
   ai_tools: Object.fromEntries(AI_TOOL_KEYS.map((k) => [k, false])) as Record<AiToolKey, boolean>,
   due_at: '',
   late_policy: 'allow' as 'allow' | 'deny',
+  allow_resubmit: true,
   teacher_provided_template: false,
   template_role: 'reference' as 'reference' | 'scaffold',
 })
@@ -138,8 +142,14 @@ const previewDiagramType = computed(() =>
     : form.value.diagram_type
 )
 
+const scoringDiagramTypeSlug = computed(() =>
+  form.value.diagram_type === 'mindmap' ? 'mind_map' : form.value.diagram_type || 'mind_map'
+)
+
+const scoringDiagramTypeLabel = computed(() => t(diagramTypeLabelKey(scoringDiagramTypeSlug.value)))
+
 const recommendedDims = computed(
-  () => DIAGRAM_SCORE_PRESETS[form.value.diagram_type] ?? DIAGRAM_SCORE_PRESETS.mind_map
+  () => DIAGRAM_SCORE_PRESETS[scoringDiagramTypeSlug.value] ?? DIAGRAM_SCORE_PRESETS.mind_map
 )
 
 /** Recommended chips plus any custom selected dims (single row). */
@@ -194,6 +204,7 @@ function resetForm(): void {
     ai_tools: emptyAiTools(),
     due_at: '',
     late_policy: 'allow',
+    allow_resubmit: true,
     teacher_provided_template: false,
     template_role: 'reference',
   }
@@ -391,6 +402,7 @@ function buildAiPermissions(): Record<string, unknown> {
     start_mode: role === 'scaffold' ? 'scaffold' : 'blank',
     evaluation_dimensions: [...form.value.evaluation_dimensions],
     allow_late_submit: form.value.late_policy === 'allow',
+    allow_resubmit: form.value.allow_resubmit,
     remind_24h: false,
     reference_diagrams: form.value.reference_diagrams.map((item) => ({
       id: item.id,
@@ -489,6 +501,21 @@ function notifyDiagramSaveFailed(): void {
   notify.error(savedDiagramsStore.error || t('learningSpace.saveFailed'))
 }
 
+function publishErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : ''
+  if (
+    message === 'NETWORK_ERROR' ||
+    message === 'Failed to fetch' ||
+    /networkerror|load failed|network request failed/i.test(message)
+  ) {
+    return t('learningSpace.publishNetworkError')
+  }
+  if (/upload failed/i.test(message)) {
+    return t('learningSpace.instructionUploadFailed')
+  }
+  return message || savedDiagramsStore.error || t('learningSpace.saveFailed')
+}
+
 async function ensureTemplateDiagramId(): Promise<string> {
   if (
     form.value.template_diagram_id &&
@@ -546,11 +573,7 @@ async function submit(): Promise<void> {
     resetForm()
     visible.value = false
   } catch (error) {
-    const message =
-      error instanceof Error && error.message
-        ? error.message
-        : savedDiagramsStore.error || t('learningSpace.saveFailed')
-    notify.error(message)
+    notify.error(publishErrorMessage(error))
   } finally {
     saving.value = false
   }
@@ -866,9 +889,7 @@ function aiToolLabelKey(key: AiToolKey): string {
               <p class="ls-modal__hint">
                 {{
                   t('learningSpace.eval.diagramPresetHint', {
-                    type: t(
-                      `learningSpace.diagramType.${form.diagram_type === 'mindmap' ? 'mind_map' : form.diagram_type}`
-                    ),
+                    type: scoringDiagramTypeLabel,
                   })
                 }}
               </p>
@@ -987,23 +1008,42 @@ function aiToolLabelKey(key: AiToolKey): string {
               />
             </label>
 
-            <div class="ls-seg">
-              <button
-                type="button"
-                class="ls-seg__btn"
-                :class="{ 'ls-seg__btn--on': form.late_policy === 'allow' }"
-                @click="form.late_policy = 'allow'"
-              >
-                {{ t('learningSpace.allowLateYes') }}
-              </button>
-              <button
-                type="button"
-                class="ls-seg__btn"
-                :class="{ 'ls-seg__btn--on': form.late_policy === 'deny' }"
-                @click="form.late_policy = 'deny'"
-              >
-                {{ t('learningSpace.allowLateNo') }}
-              </button>
+            <div class="ls-modal__block">
+              <div class="ls-modal__block-head">
+                <span>{{ t('learningSpace.latePolicy') }}</span>
+              </div>
+              <div class="ls-seg">
+                <button
+                  type="button"
+                  class="ls-seg__btn"
+                  :class="{ 'ls-seg__btn--on': form.late_policy === 'allow' }"
+                  @click="form.late_policy = 'allow'"
+                >
+                  {{ t('learningSpace.allowLateYes') }}
+                </button>
+                <button
+                  type="button"
+                  class="ls-seg__btn"
+                  :class="{ 'ls-seg__btn--on': form.late_policy === 'deny' }"
+                  @click="form.late_policy = 'deny'"
+                >
+                  {{ t('learningSpace.allowLateNo') }}
+                </button>
+              </div>
+            </div>
+
+            <div class="ls-modal__block">
+              <div class="ls-modal__block-head">
+                <span>{{ t('learningSpace.resubmitPolicy') }}</span>
+              </div>
+              <label class="ls-modal__toggle ls-modal__toggle--switch">
+                <input
+                  v-model="form.allow_resubmit"
+                  type="checkbox"
+                />
+                <span>{{ t('learningSpace.allowResubmitSwitch') }}</span>
+              </label>
+              <p class="ls-modal__hint">{{ t('learningSpace.allowResubmitHint') }}</p>
             </div>
           </section>
         </div>

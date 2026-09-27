@@ -34,10 +34,7 @@ const props = defineProps<MindGraphNodeProps>()
 
 const diagramStore = useDiagramSession()
 const isTextReadonly = computed(
-  () =>
-    (props.data.hidden === true && diagramStore.isLearningSheet) ||
-    diagramPresentationReadOnlyRef.value ||
-    toValue(diagramStore.isReadonly)
+  () => diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)
 )
 const branchNodeRef = ref<HTMLDivElement | null>(null)
 
@@ -232,7 +229,7 @@ function handleEditCancel() {
 
 function handleBranchNodeDoubleClick(): void {
   if (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)) return
-  if ((props.data.hidden === true && diagramStore.isLearningSheet) || isEditing.value) return
+  if (isEditing.value) return
   if (collabCanvas?.isNodeLockedByOther?.(props.id)) {
     notifyCollab.warning(t('collab.nodeLocked'))
     return

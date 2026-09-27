@@ -27,6 +27,7 @@ import {
   patchAdminClass,
   previewAdminAccountImport,
   previewAdminImport,
+  removeAdminClassMember,
   runAdminAccountImport,
   runAdminImport,
 } from '@/utils/learningSpaceApi'
@@ -222,6 +223,35 @@ function openEdit(row: LearningClassRow): void {
   showAccountImportModal.value = false
   showDetailModal.value = false
   showEditModal.value = true
+  void loadStudents(row.id)
+}
+
+function canRemoveMember(row: LearningStudentRow): boolean {
+  return row.member_kind === 'classroom' || row.membership_role === 'learner'
+}
+
+async function onRemoveMember(row: LearningStudentRow): Promise<void> {
+  if (actionClass.value == null) return
+  try {
+    await swissGlassConfirm(
+      t('admin.learningSpace.removeMemberConfirm', { name: row.name }),
+      t('admin.learningSpace.removeFromClass'),
+      {
+        type: 'warning',
+        confirmButtonText: t('admin.learningSpace.removeFromClass'),
+        cancelButtonText: t('common.cancel'),
+      }
+    )
+  } catch {
+    return
+  }
+  try {
+    await removeAdminClassMember(actionClass.value.id, row.id)
+    notify.success(t('admin.learningSpace.memberRemoved', { name: row.name }))
+    await Promise.all([loadStudents(actionClass.value.id), loadAll()])
+  } catch {
+    notify.error(t('admin.learningSpace.saveFailed'))
+  }
 }
 
 async function onSaveEdit(): Promise<void> {
@@ -488,7 +518,7 @@ function exportStudentRoster(): void {
     t('auth.name'),
     t('admin.learningSpace.memberKind'),
     t('admin.learningSpace.organization'),
-    t('admin.learningSpace.initialPassword'),
+    t('admin.learningSpace.currentPassword'),
   ].join(',')
   const lines = students.value.map((s) => {
     const name = `"${(s.name || '').replace(/"/g, '""')}"`
@@ -918,7 +948,7 @@ defineExpose({ reload: loadAll })
               <th>{{ t('admin.learningSpace.memberKind') }}</th>
               <th>{{ t('admin.learningSpace.organization') }}</th>
               <th>{{ t('admin.learningSpace.phone') }}</th>
-              <th>{{ t('admin.learningSpace.initialPassword') }}</th>
+              <th>{{ t('admin.learningSpace.currentPassword') }}</th>
               <th>{{ t('admin.learningSpace.mustChangePassword') }}</th>
               <th v-if="canEdit" />
             </tr>
@@ -944,14 +974,24 @@ defineExpose({ reload: loadAll })
                 }}
               </td>
               <td v-if="canEdit">
-                <button
-                  v-if="s.member_kind !== 'enrolled'"
-                  type="button"
-                  class="ls-btn ls-btn--ghost ls-btn--sm"
-                  @click="onResetPassword(s.id)"
-                >
-                  {{ t('admin.learningSpace.resetPassword') }}
-                </button>
+                <div class="ls-row-actions">
+                  <button
+                    v-if="s.member_kind !== 'enrolled'"
+                    type="button"
+                    class="ls-btn ls-btn--ghost ls-btn--sm"
+                    @click="onResetPassword(s.id)"
+                  >
+                    {{ t('admin.learningSpace.resetPassword') }}
+                  </button>
+                  <button
+                    v-if="canRemoveMember(s)"
+                    type="button"
+                    class="ls-btn ls-btn--ghost ls-btn--sm"
+                    @click="onRemoveMember(s)"
+                  >
+                    {{ t('admin.learningSpace.removeFromClass') }}
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -1062,6 +1102,53 @@ defineExpose({ reload: loadAll })
                 {{ t('admin.learningSpace.addAssistant') }}
               </button>
             </div>
+          </div>
+          <div class="ls-field">
+            <div class="ls-toolbar">
+              <h4 class="ls-subh">{{ t('admin.learningSpace.students') }}</h4>
+            </div>
+            <p
+              v-if="detailLoading"
+              class="ls-muted"
+            >
+              {{ t('common.loading') }}
+            </p>
+            <table
+              v-else-if="students.length"
+              class="ls-table ls-table--compact"
+            >
+              <thead>
+                <tr>
+                  <th>{{ t('auth.name') }}</th>
+                  <th>{{ t('admin.learningSpace.memberKind') }}</th>
+                  <th v-if="canEdit" />
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="s in students.filter((row) => canRemoveMember(row))"
+                  :key="s.id"
+                >
+                  <td>{{ s.name }}</td>
+                  <td>{{ memberKindLabel(s) }}</td>
+                  <td v-if="canEdit">
+                    <button
+                      type="button"
+                      class="ls-btn ls-btn--ghost ls-btn--sm"
+                      @click="onRemoveMember(s)"
+                    >
+                      {{ t('admin.learningSpace.removeFromClass') }}
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p
+              v-else
+              class="ls-muted"
+            >
+              {{ t('admin.learningSpace.studentsEmpty') }}
+            </p>
           </div>
         </div>
         <div class="ls-toolbar">

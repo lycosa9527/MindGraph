@@ -75,13 +75,13 @@ export function useMindMapRibbonChromeActions() {
     uiStore.toggleWireframe()
   }
 
-  function toggleLearning(): void {
+  async function toggleLearning(): Promise<void> {
     if (!diagramStore.data?.nodes?.length) {
       notify.warning(t('canvas.toolbar.createDiagramFirst'))
       return
     }
     if (diagramStore.isLearningSheet) {
-      learningSheet.exitLearningSheet()
+      await learningSheet.exitLearningSheet()
       return
     }
     if (diagramStore.hasPreservedLearningSheet()) {

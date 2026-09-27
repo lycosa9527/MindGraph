@@ -1,3 +1,4 @@
+import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import { isMindMapDiagramType } from '@/composables/mindMap/mindMapArrowNavigation'
 
 export type CanvasPageShortcutEvent =
@@ -15,33 +16,36 @@ const ENTER_ADD_NODE_TYPES = new Set([
   'diagram',
 ])
 
-/** Tab key routing when not typing in an input (matches useCanvasPageEditorShortcuts). */
+/**
+ * Tab adds a mind-map child.
+ * Thinking maps do not use Tab; Enter adds a node after the click selection.
+ */
 export function resolveTabKeyEvent(
   diagramType: string | null | undefined
 ): CanvasPageShortcutEvent | null {
-  if (!diagramType || diagramType === 'concept_map') {
+  if (!diagramType || diagramType === 'concept_map' || isThinkingMapDiagramType(diagramType)) {
     return null
   }
   if (isMindMapDiagramType(diagramType)) {
     return 'diagram:add_child_requested'
   }
-  if (diagramType === 'brace_map' || diagramType === 'flow_map') {
-    return 'diagram:add_branch_requested'
-  }
   return 'diagram:add_node_requested'
 }
 
-/** Insert key: mind-map alias of Tab (add child). Other diagram types ignore Insert. */
+/** Insert adds a mind-map child. Thinking maps do not use Insert. */
 export function resolveInsertKeyEvent(
   diagramType: string | null | undefined
 ): CanvasPageShortcutEvent | null {
-  if (!isMindMapDiagramType(diagramType)) {
-    return null
+  if (isMindMapDiagramType(diagramType)) {
+    return 'diagram:add_child_requested'
   }
-  return 'diagram:add_child_requested'
+  return null
 }
 
-/** Enter key routing when not typing in an input (matches useCanvasPageEditorShortcuts). */
+/**
+ * Enter adds a sibling on mind maps.
+ * On thinking maps it adds a node for the current selection (same path as the toolbar add).
+ */
 export function resolveEnterKeyEvent(
   diagramType: string | null | undefined
 ): CanvasPageShortcutEvent | null {
@@ -51,13 +55,7 @@ export function resolveEnterKeyEvent(
   if (isMindMapDiagramType(diagramType)) {
     return 'diagram:add_sibling_requested'
   }
-  if (diagramType === 'tree_map' || diagramType === 'multi_flow_map') {
-    return 'diagram:add_node_requested'
-  }
-  if (diagramType === 'brace_map' || diagramType === 'flow_map') {
-    return 'diagram:add_child_requested'
-  }
-  if (ENTER_ADD_NODE_TYPES.has(diagramType)) {
+  if (isThinkingMapDiagramType(diagramType) || ENTER_ADD_NODE_TYPES.has(diagramType)) {
     return 'diagram:add_node_requested'
   }
   return null

@@ -16,10 +16,14 @@ import { useNotifications } from '@/composables/core/useNotifications'
 import { FLOATING_TOOLBAR_COLORS } from '@/config/floatingToolbarColors'
 import { NODE_SHAPE_OPTIONS, type NodeShape } from '@/utils/nodeShapeStyle'
 
-const props = withDefaults(defineProps<{ compact?: boolean; disabled?: boolean }>(), {
-  compact: false,
-  disabled: false,
-})
+const props = withDefaults(
+  defineProps<{ compact?: boolean; disabled?: boolean; hideShape?: boolean }>(),
+  {
+    compact: false,
+    disabled: false,
+    hideShape: false,
+  }
+)
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -78,6 +82,7 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
       <I18nText k="canvas.ribbon.nodeStyle" />
     </span>
     <ElDropdown
+      v-if="!props.hideShape"
       trigger="click"
       placement="bottom-start"
       popper-class="node-floating-toolbar-popper"

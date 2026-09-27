@@ -238,7 +238,11 @@ def upload_bytes(
     content_type: Optional[str] = None,
 ) -> bool:
     """Upload raw bytes to COS."""
-    client = get_cos_client()
+    try:
+        client = get_cos_client()
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.error("%s Client unavailable: %s", log_prefix, exc)
+        return False
     if client is None:
         return False
 
@@ -251,7 +255,7 @@ def upload_bytes(
     try:
         _retry_cos_call("put_object", _do_put, max_retries=max_retries)
         return True
-    except BACKGROUND_INFRA_ERRORS as exc:
+    except _cos_fetch_errors() as exc:
         logger.error("%s put_object failed key=%s: %s", log_prefix, object_key, exc)
         return False
 

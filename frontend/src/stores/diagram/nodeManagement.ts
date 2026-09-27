@@ -211,7 +211,8 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
         isLearningSheetActive &&
         typeof nodeData?.hiddenAnswer === 'string' &&
         nodeData.hiddenAnswer.trim().length > 0 &&
-        (nodeData?.hidden === true || isLearningSheetBlankDisplayText(newText))
+        nodeData?.hidden === true &&
+        isLearningSheetBlankDisplayText(newText)
 
       if (!isLearningSheetBlankUpdate) {
         const nodeStyle = {

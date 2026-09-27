@@ -184,24 +184,19 @@ _EXPERT_CAPS: frozenset[str] = frozenset(
         CAP_TAB_ORGANIZATIONS_VIEW,
         CAP_TAB_INVITES_VIEW,
         CAP_TAB_INVITES_EDIT,
-        # Class create/import lives on the admin tab, not teacher APIs.
-        CAP_TAB_LEARNING_SPACE_VIEW,
-        CAP_TAB_LEARNING_SPACE_EDIT,
         CAP_SCOPE_INVITED_ORGS,
     }
 )
 
 _SCHOOL_ADMIN_CAPS: frozenset[str] = frozenset(
     {
-        # School manager: org-scoped dashboard, members, VOD, and class create.
+        # School manager: org-scoped dashboard, members, VOD.
         CAP_PANEL_ACCESS,
         CAP_TAB_SCHOOL_DASHBOARD_VIEW,
         CAP_TAB_USERS_VIEW,
         CAP_TAB_USERS_EDIT,
         CAP_TAB_VOD_VIEW,
         CAP_TAB_VOD_EDIT,
-        CAP_TAB_LEARNING_SPACE_VIEW,
-        CAP_TAB_LEARNING_SPACE_EDIT,
         CAP_SCOPE_ORG,
     }
 )

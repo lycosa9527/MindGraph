@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import type { NodeStyle } from '@/types'
+import type { Connection, DiagramNode, NodeStyle } from '@/types'
 import { nodesInLearningSheetReadingOrder } from '@/utils/learningSheetAnswerOrder'
 import { mindMapBranchNumberMapFromData } from '@/utils/mindMapBranchNumbering'
 
@@ -13,6 +13,7 @@ import {
 } from '../specLoader/mindMap'
 import { LEARNING_SHEET_BLANK_TEXT, isLearningSheetBlankDisplayText } from '../specLoader/utils'
 import { emitCtxEvent } from './events'
+import { reconcileAfterHistoryRestore } from './historyRestore'
 import type { DiagramContext } from './types'
 
 export function useLearningSheetSlice(ctx: DiagramContext) {
@@ -119,6 +120,116 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
   function nodeHiddenAnswer(node: { data?: Record<string, unknown> }): string | undefined {
     const answer = (node.data as { hiddenAnswer?: string } | undefined)?.hiddenAnswer
     return typeof answer === 'string' && answer.trim() ? answer.trim() : undefined
+  }
+
+  interface LearningSheetBaselineSnapshot {
+    nodeIds: string[]
+    textsById: Record<string, string>
+    nodes?: DiagramNode[]
+    connections?: Connection[]
+  }
+
+  function cloneDiagramNodeForBaseline(node: DiagramNode): DiagramNode {
+    const cloned = JSON.parse(JSON.stringify(node)) as DiagramNode
+    const answer = nodeHiddenAnswer(cloned)
+    const nodeData = cloned.data as Record<string, unknown> | undefined
+    if (answer) {
+      cloned.text = answer
+      if (nodeData) {
+        nodeData.label = answer
+        delete nodeData.hidden
+        delete nodeData.hiddenAnswer
+      }
+    } else if (nodeData) {
+      delete nodeData.hidden
+      delete nodeData.hiddenAnswer
+    }
+    return cloned
+  }
+
+  function readLearningSheetBaseline(
+    diagramData: Record<string, unknown>
+  ): LearningSheetBaselineSnapshot | null {
+    const raw = diagramData.learningSheetBaseline ?? diagramData.learning_sheet_baseline
+    if (!raw || typeof raw !== 'object') return null
+    const record = raw as Record<string, unknown>
+    const nodeIds = record.nodeIds ?? record.node_ids
+    const textsById = record.textsById ?? record.texts_by_id
+    if (!Array.isArray(nodeIds) || typeof textsById !== 'object' || textsById === null) {
+      return null
+    }
+    const nodesRaw = record.nodes
+    const connectionsRaw = record.connections
+    return {
+      nodeIds: nodeIds.map(String),
+      textsById: textsById as Record<string, string>,
+      nodes: Array.isArray(nodesRaw)
+        ? (JSON.parse(JSON.stringify(nodesRaw)) as DiagramNode[])
+        : undefined,
+      connections: Array.isArray(connectionsRaw)
+        ? (JSON.parse(JSON.stringify(connectionsRaw)) as Connection[])
+        : undefined,
+    }
+  }
+
+  function nodeOriginalTextForBaseline(node: {
+    id: string
+    text?: string
+    data?: Record<string, unknown>
+  }): string {
+    const answer = nodeHiddenAnswer(node)
+    if (answer) return answer
+    const nodeData = node.data as { label?: string } | undefined
+    return String(node.text ?? nodeData?.label ?? '').trim()
+  }
+
+  function captureLearningSheetBaseline(): void {
+    if (!data.value?.nodes) return
+    const d = data.value as Record<string, unknown>
+    const nodes = data.value.nodes.map(cloneDiagramNodeForBaseline)
+    const connections = JSON.parse(JSON.stringify(data.value.connections ?? [])) as Connection[]
+    const nodeIds = nodes.map((node) => node.id)
+    const textsById: Record<string, string> = {}
+    for (const node of nodes) {
+      textsById[node.id] = nodeOriginalTextForBaseline(node)
+    }
+    d.learningSheetBaseline = { nodeIds, textsById, nodes, connections }
+  }
+
+  function ensureLearningSheetBaseline(): void {
+    if (!data.value) return
+    const d = data.value as Record<string, unknown>
+    if (readLearningSheetBaseline(d)) return
+    captureLearningSheetBaseline()
+  }
+
+  function clearLearningSheetBaseline(): void {
+    if (!data.value) return
+    const d = data.value as Record<string, unknown>
+    delete d.learningSheetBaseline
+    delete d.learning_sheet_baseline
+  }
+
+  function learningSheetHasUserDiagramEdits(): boolean {
+    if (!isLearningSheet.value || !data.value?.nodes?.length) return false
+    const d = data.value as Record<string, unknown>
+    const baseline = readLearningSheetBaseline(d)
+    if (!baseline) return false
+
+    const currentIds = data.value.nodes.map((node) => node.id)
+    if (currentIds.length !== baseline.nodeIds.length) return true
+    const baselineIdSet = new Set(baseline.nodeIds)
+    for (const id of currentIds) {
+      if (!baselineIdSet.has(id)) return true
+    }
+
+    for (const node of data.value.nodes) {
+      if (isNodeBlankedForLearningSheet(node.id)) continue
+      const baselineText = baseline.textsById[node.id]
+      if (baselineText === undefined) continue
+      if (nodeOriginalTextForBaseline(node) !== baselineText) return true
+    }
+    return false
   }
 
   function isNodeBlankedForLearningSheet(nodeId: string): boolean {
@@ -255,17 +366,17 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     syncLearningSheetFlags(d, enabled)
     if (enabled) {
       reconcileHiddenAnswersFromBlankedNodes()
+      ensureLearningSheetBaseline()
     } else {
       d.hiddenAnswers = []
+      clearLearningSheetBaseline()
     }
     notifyLearningSheetChanged()
   }
 
-  function restoreFromLearningSheetMode(): void {
+  function restoreBlankedNodesFromHiddenAnswers(): void {
     const dv = data.value
-    if (!dv?.nodes || !isLearningSheet.value) return
-
-    const d = dv as Record<string, unknown>
+    if (!dv?.nodes) return
 
     dv.nodes.forEach((node, idx) => {
       const originalText = nodeHiddenAnswer(node)
@@ -291,9 +402,28 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
         updates: { text: originalText },
       })
     })
+  }
+
+  function restoreFromLearningSheetMode(): void {
+    const dv = data.value
+    if (!dv?.nodes || !isLearningSheet.value) return
+
+    const d = dv as Record<string, unknown>
+    const baseline = readLearningSheetBaseline(d)
+
+    if (baseline?.nodes?.length) {
+      dv.nodes = baseline.nodes.map(cloneDiagramNodeForBaseline)
+      dv.connections = JSON.parse(
+        JSON.stringify(baseline.connections ?? [])
+      ) as Connection[]
+      reconcileAfterHistoryRestore(ctx)
+    } else {
+      restoreBlankedNodesFromHiddenAnswers()
+    }
 
     syncLearningSheetFlags(d, false)
     d.hiddenAnswers = []
+    clearLearningSheetBaseline()
     notifyLearningSheetChanged()
   }
 
@@ -337,6 +467,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     })
 
     syncLearningSheetFlags(d, true)
+    ensureLearningSheetBaseline()
     notifyLearningSheetChanged()
   }
 
@@ -363,6 +494,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     })
 
     syncLearningSheetFlags(d, false)
+    clearLearningSheetBaseline()
     notifyLearningSheetChanged()
   }
 
@@ -440,5 +572,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     clearLearningSheetPreservation,
     hasBlankedLearningSheetNodes,
     runWithLearningSheetAnswersRevealed,
+    ensureLearningSheetBaseline,
+    learningSheetHasUserDiagramEdits,
   }
 }

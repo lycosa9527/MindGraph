@@ -258,6 +258,8 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     clearLearningSheetPreservation,
     hasBlankedLearningSheetNodes,
     runWithLearningSheetAnswersRevealed,
+    ensureLearningSheetBaseline,
+    learningSheetHasUserDiagramEdits,
   } = learningSheetSlice
   const {
     effectiveTitle,
@@ -596,6 +598,8 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     clearLearningSheetPreservation,
     hasBlankedLearningSheetNodes,
     runWithLearningSheetAnswersRevealed,
+    ensureLearningSheetBaseline,
+    learningSheetHasUserDiagramEdits,
     addNode,
     addConnection,
     updateConnectionLabel,

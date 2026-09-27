@@ -9,6 +9,7 @@ import { collabHistoryWouldBlock } from '@/composables/canvasPage/useCanvasColla
 import {
   MIND_MAP_SHORTCUT_GUIDE_ROWS,
   MIND_MAP_SHORTCUT_GUIDE_WIRED_ROW_IDS,
+  resolveDiagramShortcutGuideRows,
   resolveMindMapShortcutGuideRows,
 } from '@/config/mindMapShortcutGuide'
 
@@ -19,14 +20,13 @@ describe('canvasPageEditorShortcutRouting', () => {
       expect(resolveTabKeyEvent('mind_map')).toBe('diagram:add_child_requested')
     })
 
-    it('routes brace and flow maps Tab to add branch', () => {
-      expect(resolveTabKeyEvent('brace_map')).toBe('diagram:add_branch_requested')
-      expect(resolveTabKeyEvent('flow_map')).toBe('diagram:add_branch_requested')
-    })
-
-    it('routes other diagram types Tab to add node', () => {
-      expect(resolveTabKeyEvent('bubble_map')).toBe('diagram:add_node_requested')
-      expect(resolveTabKeyEvent('tree_map')).toBe('diagram:add_node_requested')
+    it('does not use Tab on thinking maps', () => {
+      expect(resolveTabKeyEvent('brace_map')).toBeNull()
+      expect(resolveTabKeyEvent('flow_map')).toBeNull()
+      expect(resolveTabKeyEvent('bubble_map')).toBeNull()
+      expect(resolveTabKeyEvent('circle_map')).toBeNull()
+      expect(resolveTabKeyEvent('tree_map')).toBeNull()
+      expect(resolveTabKeyEvent('multi_flow_map')).toBeNull()
     })
 
     it('returns null for concept map', () => {
@@ -40,10 +40,15 @@ describe('canvasPageEditorShortcutRouting', () => {
       expect(resolveInsertKeyEvent('mind_map')).toBe('diagram:add_child_requested')
     })
 
-    it('ignores Insert on non-mind-map diagram types', () => {
+    it('does not use Insert on thinking maps', () => {
       expect(resolveInsertKeyEvent('brace_map')).toBeNull()
       expect(resolveInsertKeyEvent('flow_map')).toBeNull()
       expect(resolveInsertKeyEvent('bubble_map')).toBeNull()
+      expect(resolveInsertKeyEvent('tree_map')).toBeNull()
+      expect(resolveInsertKeyEvent('multi_flow_map')).toBeNull()
+    })
+
+    it('ignores Insert on concept maps', () => {
       expect(resolveInsertKeyEvent('concept_map')).toBeNull()
       expect(resolveInsertKeyEvent(null)).toBeNull()
     })
@@ -55,14 +60,12 @@ describe('canvasPageEditorShortcutRouting', () => {
       expect(resolveEnterKeyEvent('mind_map')).toBe('diagram:add_sibling_requested')
     })
 
-    it('routes tree and multi-flow maps Enter to add node', () => {
+    it('routes thinking maps Enter to add node for the selection', () => {
       expect(resolveEnterKeyEvent('tree_map')).toBe('diagram:add_node_requested')
       expect(resolveEnterKeyEvent('multi_flow_map')).toBe('diagram:add_node_requested')
-    })
-
-    it('routes brace and flow maps Enter to add child', () => {
-      expect(resolveEnterKeyEvent('brace_map')).toBe('diagram:add_child_requested')
-      expect(resolveEnterKeyEvent('flow_map')).toBe('diagram:add_child_requested')
+      expect(resolveEnterKeyEvent('brace_map')).toBe('diagram:add_node_requested')
+      expect(resolveEnterKeyEvent('flow_map')).toBe('diagram:add_node_requested')
+      expect(resolveEnterKeyEvent('double_bubble_map')).toBe('diagram:add_node_requested')
     })
 
     it('returns null for concept map only', () => {
@@ -73,6 +76,32 @@ describe('canvasPageEditorShortcutRouting', () => {
       expect(resolveEnterKeyEvent('bubble_map')).toBe('diagram:add_node_requested')
       expect(resolveEnterKeyEvent('circle_map')).toBe('diagram:add_node_requested')
       expect(resolveEnterKeyEvent('bridge_map')).toBe('diagram:add_node_requested')
+    })
+  })
+})
+
+describe('thinking map shortcut guide', () => {
+  it('does not copy mind-map child, sibling, or arrow rows', () => {
+    const rows = resolveDiagramShortcutGuideRows('circle_map', false)
+    const labels = rows.map((row) => row.labelKey)
+    const enter = rows.find((row) => row.id === 'enter')
+    expect(labels).toContain('canvas.toolbar.addAssociation')
+    expect(enter).toMatchObject({ kind: 'keys', keys: ['Enter'] })
+    expect(rows.some((row) => row.kind === 'keys' && row.keys.includes('Tab'))).toBe(false)
+    expect(rows.some((row) => row.kind === 'keys' && row.keys.includes('Insert'))).toBe(false)
+    expect(labels).not.toContain('canvas.shortcutGuide.addChild')
+    expect(labels).not.toContain('canvas.shortcutGuide.addSibling')
+    expect(rows.some((row) => row.kind === 'arrows')).toBe(false)
+  })
+
+  it('lists Enter as the tree-map add shortcut', () => {
+    const rows = resolveDiagramShortcutGuideRows('tree_map', false)
+    const enter = rows.find((row) => row.id === 'enter')
+    expect(rows.find((row) => row.id === 'tab')).toBeUndefined()
+    expect(enter).toMatchObject({
+      labelKey: 'canvas.toolbar.addNode',
+      kind: 'keys',
+      keys: ['Enter'],
     })
   })
 })
@@ -145,8 +174,18 @@ describe('mindMapShortcutGuide parity', () => {
 })
 
 describe('collabHistoryWouldBlock', () => {
-  const baseData = { nodes: [{ id: 'a', text: 'A' }, { id: 'b', text: 'B' }] }
-  const prevData = { nodes: [{ id: 'a', text: 'A-old' }, { id: 'b', text: 'B' }] }
+  const baseData = {
+    nodes: [
+      { id: 'a', text: 'A' },
+      { id: 'b', text: 'B' },
+    ],
+  }
+  const prevData = {
+    nodes: [
+      { id: 'a', text: 'A-old' },
+      { id: 'b', text: 'B' },
+    ],
+  }
 
   it('returns false when not in a workshop', () => {
     expect(

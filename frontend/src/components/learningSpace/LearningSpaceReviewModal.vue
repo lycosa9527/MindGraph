@@ -7,6 +7,7 @@ import { Loader2, Maximize2, Minimize2, Pin, Star, ThumbsUp, X } from '@lucide/v
 
 import ShowcaseInlineDiagramPreview from '@/components/showcase/ShowcaseInlineDiagramPreview.vue'
 import { useLanguage, useNotifications } from '@/composables'
+import { formatLsStudentLabel } from '@/composables/learningSpace/lsHelpers'
 import { useRouter } from 'vue-router'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import {
@@ -102,19 +103,26 @@ const hasTeacherReview = computed(
 
 async function loadPreview(submissionId: number): Promise<void> {
   previewLoading.value = true
-  previewSpec.value = null
+  const embedded = props.submission
+  previewSpec.value = embedded?.preview_spec ?? null
+  previewMeta.value = {
+    title: embedded?.preview_title || embedded?.assignment_title || props.assignmentTitle,
+    diagramType: embedded?.preview_diagram_type || 'mind_map',
+  }
   try {
     const detail = await fetchSubmissionPreview(submissionId)
-    previewSpec.value = detail.preview_spec ?? null
+    previewSpec.value = detail.preview_spec ?? previewSpec.value
     previewMeta.value = {
       title: detail.preview_title || detail.assignment_title || props.assignmentTitle,
-      diagramType: detail.preview_diagram_type || 'mind_map',
+      diagramType: detail.preview_diagram_type || previewMeta.value.diagramType || 'mind_map',
     }
     if (isView.value) {
       applyDraft(draftFromSubmission(detail))
     }
   } catch {
-    previewSpec.value = null
+    if (!previewSpec.value) {
+      previewSpec.value = null
+    }
   } finally {
     previewLoading.value = false
   }
@@ -212,8 +220,8 @@ async function onSaveToLibrary(): Promise<void> {
   }
 }
 
-const studentLabel = computed(
-  () => props.submission?.student_name || String(props.submission?.student_user_id ?? '')
+const studentLabel = computed(() =>
+  props.submission ? formatLsStudentLabel(props.submission) : ''
 )
 
 const headerTitle = computed(() =>
@@ -291,6 +299,7 @@ const headerTitle = computed(() =>
             <ShowcaseInlineDiagramPreview
               v-else-if="previewSpec"
               :spec="previewSpec"
+              :diagram-type="previewMeta.diagramType"
               :thumbnail-url="submission.diagram_thumbnail"
             />
             <img
@@ -304,6 +313,24 @@ const headerTitle = computed(() =>
               class="ls-review__empty"
             >
               {{ t('learningSpace.noPreview') }}
+            </div>
+            <div
+              v-if="!previewFullscreen"
+              class="ls-review__preview-actions"
+            >
+              <button
+                type="button"
+                class="ls-btn ls-btn--primary ls-btn--sm"
+                :disabled="savingLibrary || previewLoading || !previewSpec"
+                @click="onSaveToLibrary"
+              >
+                <Loader2
+                  v-if="savingLibrary"
+                  class="animate-spin"
+                  :size="16"
+                />
+                {{ t('learningSpace.saveToLibrary') }}
+              </button>
             </div>
           </div>
 
@@ -419,26 +446,11 @@ const headerTitle = computed(() =>
         </div>
 
         <footer
-          v-if="(isView && !previewFullscreen) || (!isView && !previewFullscreen)"
+          v-if="!isView && !previewFullscreen"
           class="ls-modal__foot"
           :class="{ 'ls-modal__foot--end': true }"
         >
           <button
-            v-if="isView"
-            type="button"
-            class="ls-btn ls-btn--primary"
-            :disabled="savingLibrary || previewLoading || !previewSpec"
-            @click="onSaveToLibrary"
-          >
-            <Loader2
-              v-if="savingLibrary"
-              class="animate-spin"
-              :size="16"
-            />
-            {{ t('learningSpace.saveToLibrary') }}
-          </button>
-          <button
-            v-else
             type="button"
             class="ls-btn ls-btn--primary"
             @click="onSave"

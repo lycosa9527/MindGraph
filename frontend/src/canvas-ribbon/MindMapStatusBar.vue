@@ -6,6 +6,7 @@ import { computed } from 'vue'
 
 import { AppWindow, ListTree, Maximize2, MonitorPlay } from '@lucide/vue'
 
+import { diagramRibbonCapabilities } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import CanvasMindMapGestureGuide from '@/components/canvas/CanvasMindMapGestureGuide.vue'
 import CanvasMindMapShortcutGuide from '@/components/canvas/CanvasMindMapShortcutGuide.vue'
 import CanvasToolbarMindMapAiGenerate from '@/components/canvas/CanvasToolbarMindMapAiGenerate.vue'
@@ -15,6 +16,9 @@ import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
 import { useClassroomRemoteVisibility } from '@/composables/canvas/useClassroomRemotePosition'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { useLLMResultsStore } from '@/stores/llmResults'
 
 import CanvasDiagramTranslateLangPicker from './CanvasDiagramTranslateLangPicker.vue'
@@ -32,10 +36,14 @@ const props = withDefaults(
 )
 
 const { t } = useLanguage()
+const diagramStore = useDiagramSession()
+const mindMapV2 = useMindMapV2Chrome()
+const caps = computed(() => diagramRibbonCapabilities(diagramStore.type, mindMapV2.value))
 const actions = useMindMapRibbonActions()
 const { hidden: classroomRemoteHidden, toggleHidden: toggleClassroomRemote } =
   useClassroomRemoteVisibility()
 const { activeTool, handleToolSelect } = useMindMapSideToolbarState()
+const { showCanvasAiFeatures } = useLearningAiGate()
 const llmResultsStore = useLLMResultsStore()
 
 const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom * 100) : 100))
@@ -47,20 +55,22 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
     data-testid="mindmap-ribbon-status-bar"
   >
     <div class="mm-status__left">
-      <button
-        type="button"
-        class="mm-status__zoom-btn"
-        :class="{ 'is-active': activeTool === 'outline' }"
-        :title="t('canvas.mindMapSideToolbar.outline')"
-        @click="handleToolSelect('outline')"
-      >
-        <ListTree
-          class="inline h-3.5 w-3.5"
-          :stroke-width="2"
-        />
-        <I18nText k="canvas.mindMapSideToolbar.outline" />
-      </button>
-      <span class="mm-status__sep" />
+      <template v-if="caps.outline">
+        <button
+          type="button"
+          class="mm-status__zoom-btn"
+          :class="{ 'is-active': activeTool === 'outline' }"
+          :title="t('canvas.mindMapSideToolbar.outline')"
+          @click="handleToolSelect('outline')"
+        >
+          <ListTree
+            class="inline h-3.5 w-3.5"
+            :stroke-width="2"
+          />
+          <I18nText k="canvas.mindMapSideToolbar.outline" />
+        </button>
+        <span class="mm-status__sep" />
+      </template>
       <span>
         <I18nText
           k="canvas.ribbon.nodeCount"
@@ -69,9 +79,15 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
       </span>
       <span class="mm-status__sep" />
       <CanvasMindMapShortcutGuide variant="status" />
-      <CanvasMindMapGestureGuide variant="status" />
+      <CanvasMindMapGestureGuide
+        v-if="caps.gestureGuide"
+        variant="status"
+      />
     </div>
-    <div class="mm-status__center">
+    <div
+      v-if="showCanvasAiFeatures"
+      class="mm-status__center"
+    >
       <CanvasToolbarMindMapAudiencePicker
         anchor="bottom"
         hide-guide
@@ -101,7 +117,7 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
       <CanvasToolbarMindMapAiGenerate tooltip-placement="top" />
     </div>
     <div class="mm-status__right mm-status__zoom">
-      <CanvasDiagramTranslateLangPicker />
+      <CanvasDiagramTranslateLangPicker v-if="showCanvasAiFeatures" />
       <button
         type="button"
         class="mm-status__zoom-btn"

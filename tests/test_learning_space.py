@@ -9,18 +9,21 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
+from typing import cast
 from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
 
+from models.domain.auth import User
 from models.domain.learning_space import (
     ASSIGNMENT_STATUS_ACTIVE,
     ASSIGNMENT_STATUS_DRAFT,
     SUBMISSION_STATUS_DRAFT,
     SUBMISSION_STATUS_SUBMITTED,
     LearningAssignment,
+    LearningClass,
     LearningSubmission,
 )
 from routers.features.learning_space.schemas import ClassUpdate
@@ -34,18 +37,24 @@ from services.learning_space.assignments import (
     assert_can_edit_submission,
     student_homework_diagram_title,
     student_open_diagram_payload,
+    submission_allows_resubmit,
+    _normalize_preview_spec,
+    _resolve_submission_diagram_fields,
+    _resolve_submission_org_id,
 )
 from services.learning_space.admin_teachers import (
     assert_teacher_eligible_for_pilot,
 )
 from services.learning_space.blank_spec import blank_spec_for_type, resolve_template_role
 from services.learning_space.memberships import normalize_account_phone, parse_account_phones
+from services.learning_space.students import remove_class_member
 from services.learning_space.passwords import (
     ai_permission_allowed,
     generate_class_code,
     initial_password_from_name,
     merge_ai_permissions,
     normalize_student_name,
+    staff_visible_learning_space_password,
 )
 from services.learning_space.synthetic_email import (
     is_learning_space_synthetic_email,
@@ -100,20 +109,45 @@ def test_assert_teacher_eligible_rejects_missing_org() -> None:
         assert_teacher_eligible_for_pilot(as_user(SimpleNamespace(role="personal_paid", organization_id=None)), 1)
 
 
-@pytest.mark.parametrize("role", ["superadmin", "platform_bd", "expert", "school_admin"])
+@pytest.mark.parametrize("role", ["superadmin", "platform_bd"])
 def test_can_manage_learning_space_classes_for_panel_roles(role: str) -> None:
-    """The four panel roles may create Learning Space classes in admin."""
+    """Superadmin and platform BD (教研员) may create Learning Space classes in admin."""
     assert can_manage_learning_space_classes(as_user(SimpleNamespace(role=role))) is True
 
 
-def test_can_manage_learning_space_classes_rejects_teacher() -> None:
-    """Teachers create classes only after an admin enables them as a pilot."""
-    assert can_manage_learning_space_classes(as_user(SimpleNamespace(role="teacher"))) is False
+@pytest.mark.parametrize("role", ["expert", "school_admin", "teacher"])
+def test_can_manage_learning_space_classes_rejects_other_roles(role: str) -> None:
+    """Expert, school admin, and teacher cannot manage Learning Space classes in admin."""
+    assert can_manage_learning_space_classes(as_user(SimpleNamespace(role=role))) is False
 
 
 def test_initial_password_from_chinese_name() -> None:
     """Derive the default student password from pinyin initials."""
     assert initial_password_from_name("张三") == "zs123"
+
+
+def test_staff_visible_password_prefers_stored_value() -> None:
+    """Teachers see the stored login password after a student changes it."""
+    assert (
+        staff_visible_learning_space_password(
+            name="张三",
+            role="student",
+            learning_class_id=3,
+            must_change_password=False,
+            stored_password="mySecret9",
+        )
+        == "mySecret9"
+    )
+    assert (
+        staff_visible_learning_space_password(
+            name="张三",
+            role="student",
+            learning_class_id=3,
+            must_change_password=True,
+            stored_password=None,
+        )
+        == "zs123"
+    )
 
 
 def test_synthetic_student_email_is_not_a_real_login() -> None:
@@ -164,6 +198,7 @@ def test_merge_ai_permissions_defaults() -> None:
     assert merged["node_palette"] is True
     assert merged["topic_generate"] is False
     assert merged["generate_diagram"] is False
+    assert merged["allow_resubmit"] is True
     assert "unknown" not in merged
     typed = merge_ai_permissions({"diagram_type": "bridge_map", "has_teacher_template": False, "ai_assist": False})
     assert typed["diagram_type"] == "bridge_map"
@@ -191,6 +226,13 @@ def test_student_ai_gate_permission_matrix() -> None:
     assert ai_permission_allowed(perms, "topic_generate") is False
     assert ai_permission_allowed(perms, "generate_diagram") is False
     assert ai_permission_allowed(perms, "inline_recommend") is True
+
+
+def test_ai_assist_master_off_blocks_conversational_edit() -> None:
+    """Master ai_assist switch disables conversational edit even when granular flag set."""
+    merged = merge_ai_permissions({"ai_assist": False, "conversational_edit": True})
+    assert merged["conversational_edit"] is False
+    assert ai_permission_allowed(merged, "conversational_edit") is False
 
 
 def test_assert_can_edit_past_due() -> None:
@@ -254,7 +296,7 @@ def test_assert_can_edit_already_submitted() -> None:
         instructions="",
         template_diagram_id="d1",
         due_at=None,
-        ai_permissions={},
+        ai_permissions={"allow_resubmit": False},
         created_by=1,
         status=ASSIGNMENT_STATUS_ACTIVE,
     )
@@ -266,6 +308,27 @@ def test_assert_can_edit_already_submitted() -> None:
     with pytest.raises(HTTPException) as exc:
         assert_can_edit_submission(assignment, submission)
     assert "Already submitted" in str(exc.value.detail)
+
+
+def test_assert_can_edit_allows_resubmit_before_due() -> None:
+    """Allow edits while resubmit is enabled and the deadline has not passed."""
+    assignment = LearningAssignment(
+        class_id=1,
+        title="t",
+        instructions="",
+        template_diagram_id="d1",
+        due_at=None,
+        ai_permissions={},
+        created_by=1,
+        status=ASSIGNMENT_STATUS_ACTIVE,
+    )
+    submission = LearningSubmission(
+        assignment_id=1,
+        student_user_id=2,
+        status=SUBMISSION_STATUS_SUBMITTED,
+    )
+    assert submission_allows_resubmit(assignment, submission) is True
+    assert_can_edit_submission(assignment, submission)
 
 
 def test_merge_copies_reference_diagrams() -> None:
@@ -329,6 +392,13 @@ def test_blank_specs_are_semantically_valid() -> None:
         assert ok, f"{dtype}: {issues}"
 
 
+def test_blank_specs_ignore_assignment_title() -> None:
+    """Blank homework specs use default canvas labels, not the assignment title."""
+    spec = blank_spec_for_type("桥形图练习", "mind_map")
+    assert spec["topic"] == "中心主题"
+    assert "桥形图练习" not in str(spec)
+
+
 def test_student_open_reference_uses_blank_not_teacher_spec() -> None:
     """Open reference homework from a blank spec instead of the teacher map."""
     assignment = as_type(
@@ -351,7 +421,8 @@ def test_student_open_reference_uses_blank_not_teacher_spec() -> None:
     dtype, spec, _lang, thumb = student_open_diagram_payload(assignment, template)
     assert dtype == "bridge_map"
     assert spec != teacher_spec
-    assert spec["analogies"][0]["left"] == "…"
+    assert spec["analogies"][0]["left"] == "事物A1"
+    assert spec["relating_factor"] == "[点击设置]"
     assert thumb is None
 
 
@@ -427,9 +498,9 @@ async def test_staff_owner_with_pilot_ok(monkeypatch: pytest.MonkeyPatch) -> Non
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("role", ["superadmin", "platform_bd", "expert", "school_admin"])
+@pytest.mark.parametrize("role", ["superadmin", "platform_bd"])
 async def test_staff_manager_is_not_class_staff(monkeypatch: pytest.MonkeyPatch, role: str) -> None:
-    """Panel roles create classes in admin; they are not teacher-API staff."""
+    """Panel class managers create classes in admin; they are not teacher-API staff."""
     manager = as_user(SimpleNamespace(id=2, role=role))
     assert can_manage_learning_space_classes(manager)
     learning_class = _staff_class()
@@ -463,3 +534,138 @@ async def test_staff_assistant_ok_without_pilot(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setattr("services.learning_space.access.is_class_assistant", AsyncMock(return_value=True))
     result = await get_class_for_staff(db, 1, 8)
     assert result is learning_class
+
+
+@pytest.mark.asyncio
+async def test_remove_class_member_clears_classroom_student(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Removing a classroom student clears learning_class_id and ends sessions."""
+    learning_class = SimpleNamespace(id=3, teacher_user_id=9)
+    student = SimpleNamespace(
+        id=11,
+        role="student",
+        learning_class_id=3,
+        phone=None,
+        email="s@student.learning.local",
+    )
+    db = AsyncMock()
+    db.get = AsyncMock(return_value=student)
+    db.commit = AsyncMock()
+    db.refresh = AsyncMock()
+    monkeypatch.setattr(
+        "services.learning_space.students.user_cache.invalidate",
+        AsyncMock(return_value=True),
+    )
+    monkeypatch.setattr(
+        "services.learning_space.students.revoke_refresh_tokens_and_sessions",
+        AsyncMock(),
+    )
+    monkeypatch.setattr(
+        "services.learning_space.students.kick_classroom_student_sessions",
+        AsyncMock(),
+    )
+    result = await remove_class_member(db, cast(LearningClass, learning_class), 11)
+    assert result["member_kind"] == "classroom"
+    assert student.learning_class_id is None
+
+
+@pytest.mark.asyncio
+async def test_remove_class_member_deletes_enrolled_learner(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Removing an enrolled learner deletes the membership row."""
+    learning_class = SimpleNamespace(id=3, teacher_user_id=9)
+    learner = SimpleNamespace(id=12, role="teacher", learning_class_id=None, phone="13800000000", email="t@x.com")
+    membership = SimpleNamespace(id=99, user_id=12, class_id=3, role="learner")
+    db = AsyncMock()
+    db.get = AsyncMock(return_value=learner)
+    execute_result = AsyncMock()
+    execute_result.scalar_one_or_none = lambda: membership
+    db.execute = AsyncMock(return_value=execute_result)
+    db.delete = AsyncMock()
+    db.commit = AsyncMock()
+    db.refresh = AsyncMock()
+    monkeypatch.setattr(
+        "services.learning_space.students.user_cache.invalidate",
+        AsyncMock(return_value=True),
+    )
+    monkeypatch.setattr(
+        "services.learning_space.students.revoke_refresh_tokens_and_sessions",
+        AsyncMock(),
+    )
+    monkeypatch.setattr(
+        "services.learning_space.students.kick_classroom_student_sessions",
+        AsyncMock(),
+    )
+    result = await remove_class_member(db, cast(LearningClass, learning_class), 12)
+    assert result["member_kind"] == "enrolled"
+    db.delete.assert_called_once_with(membership)
+
+
+def test_resolve_submission_org_id_falls_back_to_submission() -> None:
+    """Student wall labels use submission org when user.organization_id is unset."""
+    student = SimpleNamespace(id=2, organization_id=None)
+    submission = LearningSubmission(
+        assignment_id=1,
+        student_user_id=2,
+        organization_id=99,
+        status=SUBMISSION_STATUS_DRAFT,
+    )
+    assert _resolve_submission_org_id(cast(User, student), submission) == 99
+
+
+def test_normalize_preview_spec_unwraps_nested_spec() -> None:
+    """Saved diagrams may store a nested spec blob like library flush snapshots."""
+    wrapped = {
+        "spec": {"topic": "中心主题", "children": []},
+        "diagram_type": "mind_map",
+    }
+    normalized = _normalize_preview_spec(wrapped)
+    assert normalized is not None
+    assert normalized.get("topic") == "中心主题"
+
+
+def test_resolve_submission_diagram_fields_prefers_live_draft_spec() -> None:
+    """Wall preview can render in-progress homework from the live diagram cache."""
+    submission = LearningSubmission(
+        assignment_id=1,
+        student_user_id=2,
+        diagram_id="diag-1",
+        status=SUBMISSION_STATUS_DRAFT,
+    )
+    diagram = {
+        "title": "我的思维导图",
+        "diagram_type": "mind_map",
+        "spec": {"nodes": [{"id": "topic", "text": "中心主题"}]},
+        "thumbnail": "data:image/png;base64,abc",
+    }
+    thumb, spec, diagram_type, title = _resolve_submission_diagram_fields(submission, diagram)
+    assert thumb == "data:image/png;base64,abc"
+    assert spec == diagram["spec"]
+    assert diagram_type == "mind_map"
+    assert title == "我的思维导图"
+
+
+def test_resolve_submission_diagram_fields_uses_snapshot_when_submitted() -> None:
+    """Submitted work keeps the frozen snapshot even if live diagram changes."""
+    submission = LearningSubmission(
+        assignment_id=1,
+        student_user_id=2,
+        diagram_id="diag-1",
+        status=SUBMISSION_STATUS_SUBMITTED,
+        snapshot_spec={
+            "title": "提交版",
+            "diagram_type": "bubble_map",
+            "spec": {"nodes": [{"id": "topic", "text": "主题"}]},
+            "thumbnail": "data:image/png;base64,snap",
+        },
+    )
+    live = {
+        "title": "草稿",
+        "diagram_type": "mind_map",
+        "spec": {"nodes": [{"id": "topic", "text": "草稿"}]},
+    }
+    thumb, spec, diagram_type, title = _resolve_submission_diagram_fields(submission, live)
+    assert thumb == "data:image/png;base64,snap"
+    snap = submission.snapshot_spec
+    assert isinstance(snap, dict)
+    assert spec == snap["spec"]
+    assert diagram_type == "bubble_map"
+    assert title == "提交版"

@@ -9,6 +9,7 @@ import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useDiagramStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
@@ -59,6 +60,7 @@ export function useCanvasDiagramTranslate() {
   const { t } = useLanguage()
   const notify = useNotifications()
   const { aiBlockedByCollab, guardCollabGuestAi } = useCollabGuestAiGate()
+  const { requireCapability } = useLearningAiGate()
 
   function warnIfUnavailable(): boolean {
     if (!authStore.isAuthenticated) {
@@ -130,6 +132,7 @@ export function useCanvasDiagramTranslate() {
     if (diagramTranslateUi.inFlight) {
       return
     }
+    if (!requireCapability('translate')) return
     const uiCode = options?.targetUiLocale ?? uiStore.language
     const targetLanguage = canvasTranslateTargetForUiLocale(uiCode)
     if (targetLanguage === 'en' && uiCode !== 'en') {

@@ -1,5 +1,6 @@
 import type { Ref } from 'vue'
 
+import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import {
   resolveEnterKeyEvent,
   resolveInsertKeyEvent,
@@ -21,6 +22,7 @@ import {
   shouldRecordManualSaveSnapshot,
 } from '@/composables/editor/diagramSaveFeedback'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
+import { useNodeActions } from '@/composables/editor/useNodeActions'
 import {
   buildMindMapNavRectsFromLayout,
   findMindMapNodeInDirection,
@@ -53,6 +55,8 @@ export function useCanvasPageEditorShortcuts(options: {
   isCollabGuest: Ref<boolean>
 }): { handleSaveKey: (options?: { recordHistory?: boolean }) => Promise<void> } {
   initInlineEditEnterGuard()
+  // Toolbar callers opt out so this page is the single listener for Enter / Tab / Delete.
+  useNodeActions()
 
   const { workshopCode, activeEditors, relationshipActiveEntry, diagramAutoSave, isCollabGuest } =
     options
@@ -128,6 +132,7 @@ export function useCanvasPageEditorShortcuts(options: {
   function handleTabKey(event: KeyboardEvent) {
     if (event.repeat) return
     if (isTypingInInput()) return
+    if (isThinkingMapDiagramType(diagramStore.type)) return
     const routed = resolveTabKeyEvent(diagramStore.type)
     if (routed) {
       eventBus.emit(routed, {})
@@ -139,6 +144,7 @@ export function useCanvasPageEditorShortcuts(options: {
   function handleInsertKey(event: KeyboardEvent) {
     if (event.repeat) return
     if (isTypingInInput()) return
+    if (isThinkingMapDiagramType(diagramStore.type)) return
     const routed = resolveInsertKeyEvent(diagramStore.type)
     if (routed) {
       eventBus.emit(routed, {})
@@ -291,7 +297,7 @@ export function useCanvasPageEditorShortcuts(options: {
       return
     }
     const result = await flushDiagramSaveWithFeedback({
-      flush: () => diagramAutoSave.flush({ bypassSuppressGuard: true }),
+      flush: () => diagramAutoSave.flush({ bypassSuppressGuard: true, forcePersist: true }),
       guardState: buildDiagramSaveGuardState({
         llmGenerating: llmResultsStore.isGenerating,
         subgraphGenerating: previewStore.isGenerating,

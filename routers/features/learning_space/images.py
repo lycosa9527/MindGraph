@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,6 +23,7 @@ from services.learning_space.assignments import get_assignment
 from services.learning_space.image_storage import (
     MAX_IMAGE_BYTES,
     build_logical_key,
+    cos_failure_allows_local_fallback,
     create_presigned_get,
     detect_image_content_type,
     logical_key_from_ref,
@@ -87,6 +88,14 @@ async def upload_instruction_image(
             exc,
         )
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.error(
+            "[LearningSpace] Instruction image store unavailable user=%s: %s",
+            current_user.id,
+            exc,
+            exc_info=True,
+        )
+        raise HTTPException(status_code=503, detail="Upload unavailable") from exc
     logger.info("[LearningSpace] Instruction image uploaded user=%s class=%s", current_user.id, class_id)
     return {"ref": ref}
 
@@ -95,6 +104,7 @@ async def upload_instruction_image(
 async def download_instruction_image(
     assignment_id: int,
     index: int,
+    proxy: bool = Query(False),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_learning_space_db),
 ):
@@ -114,20 +124,22 @@ async def download_instruction_image(
     key = logical_key_from_ref(raw)
     if key is None:
         raise HTTPException(status_code=404, detail="Image not found")
-    presigned = create_presigned_get(key)
-    if presigned:
-        return RedirectResponse(presigned, status_code=302)
     loaded = await asyncio.to_thread(read_image_bytes_sync, key)
-    if loaded is None:
-        logger.warning(
-            "[LearningSpace] Instruction image missing assignment=%s index=%s",
-            assignment_id,
-            index,
+    if loaded is not None:
+        body, content_type = loaded
+        return Response(
+            content=body,
+            media_type=content_type,
+            headers={"X-Content-Type-Options": "nosniff"},
         )
-        raise HTTPException(status_code=404, detail="Image not found")
-    body, content_type = loaded
-    return Response(
-        content=body,
-        media_type=content_type,
-        headers={"X-Content-Type-Options": "nosniff"},
+    stream_only = proxy or cos_failure_allows_local_fallback()
+    if not stream_only:
+        presigned = create_presigned_get(key)
+        if presigned:
+            return RedirectResponse(presigned, status_code=302)
+    logger.warning(
+        "[LearningSpace] Instruction image missing assignment=%s index=%s",
+        assignment_id,
+        index,
     )
+    raise HTTPException(status_code=404, detail="Image not found")

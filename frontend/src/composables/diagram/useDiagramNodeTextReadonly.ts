@@ -12,10 +12,14 @@ export function useDiagramNodeTextReadonly(
   isHidden: () => boolean
 ): ComputedRef<boolean> {
   const diagramStore = useDiagramSession()
-  return computed(
-    () =>
-      isHidden() ||
-      diagramPresentationReadOnlyRef.value ||
-      Boolean(diagramStore.isReadonly)
-  )
+  return computed(() => {
+    if (diagramPresentationReadOnlyRef.value || Boolean(diagramStore.isReadonly)) {
+      return true
+    }
+    // Learning-sheet blanks are fill-in fields; keep hidden nodes locked only outside worksheet mode.
+    if (isHidden() && !diagramStore.isLearningSheet) {
+      return true
+    }
+    return false
+  })
 }

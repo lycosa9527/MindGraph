@@ -9,7 +9,10 @@ import { ArrowLeft, FileText, Send } from '@lucide/vue'
 
 import LearningSpaceRequirementsModal from '@/components/learningSpace/LearningSpaceRequirementsModal.vue'
 import { swissGlassConfirm, useLanguage, useNotifications } from '@/composables'
-import { studentCanSubmitAssignment } from '@/composables/learningSpace/lsHelpers'
+import {
+  assignmentAllowsResubmit,
+  studentCanSubmitAssignment,
+} from '@/composables/learningSpace/lsHelpers'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { submitStudentAssignment } from '@/utils/learningSpaceApi'
 import '@/styles/learning-space.css'
@@ -24,17 +27,28 @@ const submitting = ref(false)
 
 const title = computed(() => lsCanvas.assignment?.title || t('learningSpace.title'))
 const submitted = computed(() => lsCanvas.assignment?.submission?.status === 'submitted')
+const canResubmit = computed(() => assignmentAllowsResubmit(lsCanvas.assignment))
 const canSubmit = computed(() => studentCanSubmitAssignment(lsCanvas.assignment))
+const submitDisabled = computed(
+  () => submitting.value || !canSubmit.value || (submitted.value && !canResubmit.value)
+)
+const submitLabel = computed(() => {
+  if (submitted.value && canResubmit.value) return t('learningSpace.resubmit')
+  if (submitted.value) return t('learningSpace.statusSubmitted')
+  if (canSubmit.value) return t('learningSpace.submit')
+  return t('learningSpace.homeworkClosed')
+})
 
 async function onSubmit(): Promise<void> {
   const id = lsCanvas.assignmentId
-  if (id == null || submitting.value || submitted.value || !canSubmit.value) return
+  if (id == null || submitDisabled.value) return
+  const resubmitting = submitted.value && canResubmit.value
   try {
     await swissGlassConfirm(
-      t('learningSpace.submitConfirm'),
-      t('learningSpace.submit'),
+      resubmitting ? t('learningSpace.resubmitConfirm') : t('learningSpace.submitConfirm'),
+      resubmitting ? t('learningSpace.resubmit') : t('learningSpace.submit'),
       {
-        confirmButtonText: t('learningSpace.submit'),
+        confirmButtonText: resubmitting ? t('learningSpace.resubmit') : t('learningSpace.submit'),
         cancelButtonText: t('common.cancel'),
         type: 'warning',
       }
@@ -45,7 +59,13 @@ async function onSubmit(): Promise<void> {
   submitting.value = true
   try {
     await submitStudentAssignment(id)
-    notify.success(t('learningSpace.submitSuccess'))
+    notify.success(
+      resubmitting ? t('learningSpace.resubmitSuccess') : t('learningSpace.submitSuccess')
+    )
+    if (resubmitting) {
+      await lsCanvas.activate(id)
+      return
+    }
     await router.push('/learning-space')
     if (router.currentRoute.value.path.startsWith('/learning-space')) {
       lsCanvas.clear()
@@ -91,17 +111,11 @@ function onBack(): void {
       <button
         type="button"
         class="ls-btn ls-btn--primary ls-btn--sm"
-        :disabled="submitted || submitting || !canSubmit"
+        :disabled="submitDisabled"
         @click="onSubmit"
       >
         <Send :size="14" />
-        {{
-          submitted
-            ? t('learningSpace.statusSubmitted')
-            : canSubmit
-              ? t('learningSpace.submit')
-              : t('learningSpace.homeworkClosed')
-        }}
+        {{ submitLabel }}
       </button>
     </div>
     <LearningSpaceRequirementsModal

@@ -24,7 +24,6 @@ import {
   takeBridgeMapStableId,
 } from '@/utils/bridgeMapIdentity'
 import { takeBubbleMapStableId } from '@/utils/bubbleMapIdentity'
-import { takeCircleMapStableId } from '@/utils/circleMapIdentity'
 import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
 import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
 import { takeMultiFlowMapStableId } from '@/utils/multiFlowMapIdentity'
@@ -69,6 +68,41 @@ function getDoubleBubbleGroupFromNode(
   return node ? readDoubleBubbleRole(node) : null
 }
 
+const PROTECTED_CLEAR_NODE_IDS = new Set([
+  'topic',
+  'center',
+  'boundary',
+  'left-topic',
+  'right-topic',
+  'dimension-label',
+  'outer-boundary',
+])
+
+function canClearNodeContent(node: MindGraphNode | null | undefined): boolean {
+  if (!node?.id) return false
+  if (PROTECTED_CLEAR_NODE_IDS.has(node.id)) return false
+  const nodeData = node.data
+  if (nodeData?.nodeType === 'topic' || nodeData?.nodeType === 'boundary') return false
+  const nodeType = node.type
+  if (nodeType === 'topic' || nodeType === 'center' || nodeType === 'boundary') return false
+  return true
+}
+
+function clearNodeContentById(nodeId: string): boolean {
+  if (diagramStore.isLearningSheet) {
+    return diagramStore.emptyNodeForLearningSheet(nodeId)
+  }
+  return diagramStore.emptyNode(nodeId)
+}
+
+function pushClearContentHistory(): void {
+  diagramStore.pushHistory(
+    diagramStore.isLearningSheet
+      ? t('canvas.mindMapSideToolbar.learningSheetBlankHistory')
+      : t('diagram.history.clearContent')
+  )
+}
+
 // Build menu items based on context (reactive to UI locale via uiStore.language)
 const menuItems = computed<MenuItem[]>(() => {
   void uiStore.language
@@ -96,6 +130,19 @@ const menuItems = computed<MenuItem[]>(() => {
       action: () => {
         emit('close')
         eventBus.emit('node_editor:insert_line_break', { nodeId: node.id })
+      },
+    })
+
+    items.push({
+      label: t('diagram.contextMenu.clearContent'),
+      disabled: isBoundaryNode || !canClearNodeContent(node),
+      action: () => {
+        if (!clearNodeContentById(node.id)) {
+          emit('close')
+          return
+        }
+        pushClearContentHistory()
+        emit('close')
       },
     })
 
@@ -320,22 +367,24 @@ const menuItems = computed<MenuItem[]>(() => {
         },
       })
     } else if (diagramType === 'circle_map') {
+      const clearableSelectedIds = diagramStore.selectedNodes.filter((id) => {
+        const match = diagramStore.data?.nodes.find((n) => n.id === id)
+        return match && canClearNodeContent(match as MindGraphNode)
+      })
       items.push({
-        label: t('diagram.contextMenu.addNode'),
+        label: t('diagram.contextMenu.clearContent'),
+        disabled: clearableSelectedIds.length === 0,
         action: () => {
-          if (!diagramStore.data?.nodes) {
-            notify.warning(t('diagram.contextMenu.warningCreateDiagramFirst'))
+          if (!clearableSelectedIds.length) {
+            notify.warning(t('diagram.contextMenu.warningSelectNodeToClear'))
             emit('close')
             return
           }
-          const claimed = new Set(diagramStore.data.nodes.map((n) => n.id).filter(Boolean))
-          diagramStore.addNode({
-            id: takeCircleMapStableId(claimed),
-            text: t('diagram.contextMenu.circleNewIdea'),
-            type: 'bubble',
-            position: { x: 0, y: 0 },
-          })
-          diagramStore.pushHistory(t('diagram.history.addNode'))
+          let cleared = 0
+          for (const id of clearableSelectedIds) {
+            if (clearNodeContentById(id)) cleared++
+          }
+          if (cleared > 0) pushClearContentHistory()
           emit('close')
         },
       })
@@ -451,10 +500,24 @@ const menuItems = computed<MenuItem[]>(() => {
         disabled: !group,
       })
     } else {
+      const clearableSelectedIds = diagramStore.selectedNodes.filter((id) => {
+        const match = diagramStore.data?.nodes.find((n) => n.id === id)
+        return match && canClearNodeContent(match as MindGraphNode)
+      })
       items.push({
-        label: t('diagram.contextMenu.addNode'),
+        label: t('diagram.contextMenu.clearContent'),
+        disabled: clearableSelectedIds.length === 0,
         action: () => {
-          notify.info(t('diagram.contextMenu.infoAddNodeSoon'))
+          if (!clearableSelectedIds.length) {
+            notify.warning(t('diagram.contextMenu.warningSelectNodeToClear'))
+            emit('close')
+            return
+          }
+          let cleared = 0
+          for (const id of clearableSelectedIds) {
+            if (clearNodeContentById(id)) cleared++
+          }
+          if (cleared > 0) pushClearContentHistory()
           emit('close')
         },
       })

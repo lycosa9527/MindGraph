@@ -145,4 +145,14 @@ describe('normalizeAuthUser', () => {
     expect(twice.customLlmEnabled).toBe(true)
     expect(twice.customLlmModel).toBe('校本大模型')
   })
+
+  it('maps learning class id from login payload', () => {
+    const user = normalizeAuthUser({
+      ...loginPayload,
+      role: 'student' as const,
+      learning_class_id: 12,
+    })
+    expect(user.learningClassId).toBe(12)
+    expect(user.learning_class_id).toBeUndefined()
+  })
 })

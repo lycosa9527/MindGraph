@@ -23,6 +23,8 @@ import type {
 } from '@/composables/canvasToolbar/useNodeFloatingToolbarPosition'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import {
   FLOATING_TOOLBAR_COLORS,
   FLOATING_TOOLBAR_FONT_SIZES,
@@ -47,6 +49,8 @@ const emit = defineEmits<{
 }>()
 
 const rootEl = ref<HTMLElement | null>(null)
+const diagramStore = useDiagramSession()
+const hideNodeShape = computed(() => diagramStore.type === 'circle_map')
 let sizeObserver: ResizeObserver | null = null
 
 function publishSize(el: HTMLElement | null): void {
@@ -86,6 +90,7 @@ onUnmounted(() => {
 
 const { t } = useLanguage()
 const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
+const { showCanvasAiFeatures } = useLearningAiGate()
 const guestAiDisabled = computed(() => Boolean(props.aiDisabled) || aiBlockedByCollab.value)
 
 const formatting = useCanvasToolbarFormatting({
@@ -120,7 +125,9 @@ const {
 const activeColorPanel = ref<'fill' | 'border' | 'text' | null>(null)
 const typographyOpen = ref(false)
 
-const aiSubgraphVisible = computed(() => props.showAiSubgraph !== false)
+const aiSubgraphVisible = computed(
+  () => showCanvasAiFeatures.value && props.showAiSubgraph !== false
+)
 
 function onAiSubgraphClick(): void {
   if (guestAiDisabled.value) {
@@ -220,8 +227,9 @@ function onShapePick(shape: NodeShape) {
           class="nft-divider"
         />
 
-        <!-- Shape selector -->
+        <!-- Shape selector. Circle maps only render circles. -->
         <ElDropdown
+          v-if="!hideNodeShape"
           trigger="click"
           placement="bottom-start"
           popper-class="node-floating-toolbar-popper"
@@ -349,7 +357,8 @@ function onShapePick(shape: NodeShape) {
             <span
               class="nft-text-a"
               :style="{ color: textColor }"
-            >A</span>
+              >A</span
+            >
             <ChevronDown class="nft-chevron" />
           </button>
           <div
@@ -420,10 +429,9 @@ function onShapePick(shape: NodeShape) {
             <span
               class="nft-text-a nft-text-a--bold"
               :style="{ color: textColor }"
-            >A</span>
-            <span class="nft-align-lines">
-              <span /><span /><span />
-            </span>
+              >A</span
+            >
+            <span class="nft-align-lines"> <span /><span /><span /> </span>
             <ChevronDown class="nft-chevron" />
           </button>
           <template #dropdown>
@@ -434,90 +442,92 @@ function onShapePick(shape: NodeShape) {
                   @mousedown.stop
                   @click.stop
                 >
-                <div class="nft-typography-section">
-                  <div class="nft-typography-label">{{ t('canvas.toolbar.alignLabel') }}</div>
-                  <div class="nft-format-row">
-                    <button
-                      type="button"
-                      class="nft-format-btn"
-                      :class="{ 'nft-format-btn--active': textAlign === 'left' }"
-                      @click.stop="handleTextAlign('left')"
-                    >
-                      <AlignLeft :size="14" />
-                    </button>
-                    <button
-                      type="button"
-                      class="nft-format-btn"
-                      :class="{ 'nft-format-btn--active': textAlign === 'center' }"
-                      @click.stop="handleTextAlign('center')"
-                    >
-                      <AlignCenter :size="14" />
-                    </button>
-                    <button
-                      type="button"
-                      class="nft-format-btn"
-                      :class="{ 'nft-format-btn--active': textAlign === 'right' }"
-                      @click.stop="handleTextAlign('right')"
-                    >
-                      <AlignRight :size="14" />
-                    </button>
+                  <div class="nft-typography-section">
+                    <div class="nft-typography-label">{{ t('canvas.toolbar.alignLabel') }}</div>
+                    <div class="nft-format-row">
+                      <button
+                        type="button"
+                        class="nft-format-btn"
+                        :class="{ 'nft-format-btn--active': textAlign === 'left' }"
+                        @click.stop="handleTextAlign('left')"
+                      >
+                        <AlignLeft :size="14" />
+                      </button>
+                      <button
+                        type="button"
+                        class="nft-format-btn"
+                        :class="{ 'nft-format-btn--active': textAlign === 'center' }"
+                        @click.stop="handleTextAlign('center')"
+                      >
+                        <AlignCenter :size="14" />
+                      </button>
+                      <button
+                        type="button"
+                        class="nft-format-btn"
+                        :class="{ 'nft-format-btn--active': textAlign === 'right' }"
+                        @click.stop="handleTextAlign('right')"
+                      >
+                        <AlignRight :size="14" />
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                <div class="nft-typography-section">
-                  <div class="nft-typography-label">{{ t('canvas.toolbar.formatLabel') }}</div>
-                  <div class="nft-format-row nft-format-row--4">
-                    <button
-                      type="button"
-                      class="nft-format-btn nft-format-btn--letter"
-                      :class="{ 'nft-format-btn--active': fontWeight === 'bold' }"
-                      @click.stop="handleToggleBold"
-                    >
-                      B
-                    </button>
-                    <button
-                      type="button"
-                      class="nft-format-btn nft-format-btn--letter italic"
-                      :class="{ 'nft-format-btn--active': fontStyle === 'italic' }"
-                      @click.stop="handleToggleItalic"
-                    >
-                      I
-                    </button>
-                    <button
-                      type="button"
-                      class="nft-format-btn nft-format-btn--letter underline"
-                      :class="{ 'nft-format-btn--active': textDecoration?.includes('underline') }"
-                      @click.stop="handleToggleUnderline"
-                    >
-                      U
-                    </button>
-                    <button
-                      type="button"
-                      class="nft-format-btn nft-format-btn--letter line-through"
-                      :class="{ 'nft-format-btn--active': textDecoration?.includes('line-through') }"
-                      @click.stop="handleToggleStrikethrough"
-                    >
-                      S
-                    </button>
+                  <div class="nft-typography-section">
+                    <div class="nft-typography-label">{{ t('canvas.toolbar.formatLabel') }}</div>
+                    <div class="nft-format-row nft-format-row--4">
+                      <button
+                        type="button"
+                        class="nft-format-btn nft-format-btn--letter"
+                        :class="{ 'nft-format-btn--active': fontWeight === 'bold' }"
+                        @click.stop="handleToggleBold"
+                      >
+                        B
+                      </button>
+                      <button
+                        type="button"
+                        class="nft-format-btn nft-format-btn--letter italic"
+                        :class="{ 'nft-format-btn--active': fontStyle === 'italic' }"
+                        @click.stop="handleToggleItalic"
+                      >
+                        I
+                      </button>
+                      <button
+                        type="button"
+                        class="nft-format-btn nft-format-btn--letter underline"
+                        :class="{ 'nft-format-btn--active': textDecoration?.includes('underline') }"
+                        @click.stop="handleToggleUnderline"
+                      >
+                        U
+                      </button>
+                      <button
+                        type="button"
+                        class="nft-format-btn nft-format-btn--letter line-through"
+                        :class="{
+                          'nft-format-btn--active': textDecoration?.includes('line-through'),
+                        }"
+                        @click.stop="handleToggleStrikethrough"
+                      >
+                        S
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                <div class="nft-typography-section">
-                  <div class="nft-typography-label">{{ t('canvas.toolbar.fontLabel') }}</div>
-                  <select
-                    :value="fontFamily"
-                    class="nft-font-select"
-                    @change="handleFontFamilyChange"
-                  >
-                    <option
-                      v-for="opt in fontOptions"
-                      :key="opt.value"
-                      :value="opt.value"
+                  <div class="nft-typography-section">
+                    <div class="nft-typography-label">{{ t('canvas.toolbar.fontLabel') }}</div>
+                    <select
+                      :value="fontFamily"
+                      class="nft-font-select"
+                      @change="handleFontFamilyChange"
                     >
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                </div>
+                      <option
+                        v-for="opt in fontOptions"
+                        :key="opt.value"
+                        :value="opt.value"
+                      >
+                        {{ opt.label }}
+                      </option>
+                    </select>
+                  </div>
                 </div>
               </ElDropdownItem>
             </ElDropdownMenu>
@@ -526,6 +536,7 @@ function onShapePick(shape: NodeShape) {
 
         <!-- Node explanation (Kitty) -->
         <button
+          v-if="showCanvasAiFeatures"
           type="button"
           class="nft-btn nft-btn--explain"
           :class="{ 'nft-btn--explain-blocked': aiBlockedByCollab }"
@@ -597,7 +608,8 @@ function onShapePick(shape: NodeShape) {
   filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.38));
 }
 
-.nft-btn--ai:hover:not(:disabled) :deep(.mg-subgraph-ai-mark__sparkles:not(.mg-subgraph-ai-mark__sparkles--spin)) {
+.nft-btn--ai:hover:not(:disabled)
+  :deep(.mg-subgraph-ai-mark__sparkles:not(.mg-subgraph-ai-mark__sparkles--spin)) {
   color: #7c3aed;
   transform: scale(1.08) rotate(-6deg);
   filter: drop-shadow(0 0 6px rgba(124, 58, 237, 0.55));

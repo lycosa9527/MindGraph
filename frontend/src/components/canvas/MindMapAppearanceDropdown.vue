@@ -26,7 +26,10 @@ import {
 import { MIND_MAP_RAINBOW_THEME_ID } from '@/config/mindMapVibrantThemes'
 import { useDiagramStore } from '@/stores'
 
-const props = withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
+const props = withDefaults(defineProps<{ compact?: boolean; hideDiagramStyle?: boolean }>(), {
+  compact: false,
+  hideDiagramStyle: false,
+})
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -185,7 +188,10 @@ function handlePickRainbow(): void {
               </div>
             </div>
 
-            <div class="mm-appearance-style-section">
+            <div
+              v-if="!props.hideDiagramStyle"
+              class="mm-appearance-style-section"
+            >
               <div class="mm-appearance-section-label">
                 <I18nText k="canvas.toolbar.mindMapAppearanceDiagramStyle" />
               </div>

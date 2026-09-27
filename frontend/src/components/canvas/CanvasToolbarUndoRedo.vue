@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ElButton, ElTooltip } from 'element-plus'
 
-import { RotateCcw, RotateCw } from '@lucide/vue'
+import { Redo2, Undo2 } from '@lucide/vue'
 
 defineProps<{
   canUndo: boolean
@@ -27,7 +27,7 @@ const emit = defineEmits<{
       :disabled="!canUndo"
       @click="emit('undo')"
     >
-      <RotateCw class="w-4 h-4" />
+      <Undo2 class="w-4 h-4" />
     </ElButton>
   </ElTooltip>
   <ElTooltip
@@ -40,7 +40,7 @@ const emit = defineEmits<{
       :disabled="!canRedo"
       @click="emit('redo')"
     >
-      <RotateCcw class="w-4 h-4" />
+      <Redo2 class="w-4 h-4" />
     </ElButton>
   </ElTooltip>
 </template>

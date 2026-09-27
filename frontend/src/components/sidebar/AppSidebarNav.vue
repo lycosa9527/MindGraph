@@ -603,7 +603,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           </div>
         </transition>
 
-        <!-- Single management tab (e.g. school_admin users-only) -->
+        <!-- Management panel — follows last product module in the same scroll list -->
         <el-tooltip
           v-if="!s.isLearningSpaceStudent && s.isManagementPanelUser && s.singleAdminNavTab"
           :content="s.singleAdminNavTab.label"
@@ -793,7 +793,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 </template>
 
 <style scoped>
-/* Navigation: main list scrolls; admin block stays at bottom above account footer */
+/* Navigation: product modules then management panel in one scroll list */
 .sidebar-nav-scroll {
   flex: 1;
   display: flex;

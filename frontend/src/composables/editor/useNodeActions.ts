@@ -113,6 +113,16 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       return
     }
 
+    if (diagramType === 'tree_map') {
+      handleAddTreeCategory()
+      return
+    }
+
+    if (diagramType === 'multi_flow_map') {
+      handleAddCause()
+      return
+    }
+
     if (diagramType === 'brace_map') {
       const targetIds = new Set(diagramStore.data.connections?.map((c) => c.target) ?? [])
       const rootId =
@@ -151,8 +161,13 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       return
     }
 
-    if (diagramType === 'tree_map' || diagramType === 'multi_flow_map') {
-      handleAddNode()
+    if (diagramType === 'tree_map') {
+      handleAddTreeChild()
+      return
+    }
+
+    if (diagramType === 'multi_flow_map') {
+      handleAddEffect()
       return
     }
 
@@ -373,24 +388,9 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       }
       const selectedId = diagramStore.selectedNodes[0]
       if (!selectedId || selectedId === 'tree-topic') {
-        if (diagramStore.addTreeMapCategory(t('canvas.toolbar.newBranch'))) {
-          notify.success(t('canvas.toolbar.branchAdded'))
-        }
+        handleAddTreeCategory()
       } else {
-        if (selectedId === 'dimension-label') {
-          notify.warning(t('canvas.toolbar.selectTreeBranchForChild'))
-          return
-        }
-        const catId = resolveTreeCategoryId(diagramStore.data.nodes, selectedId)
-        if (!catId) {
-          notify.warning(t('canvas.toolbar.selectTreeBranchForChild'))
-          return
-        }
-        if (diagramStore.addTreeMapChild(catId, t('canvas.toolbar.newChild'))) {
-          notify.success(t('canvas.toolbar.childAdded'))
-        } else {
-          notify.warning(t('canvas.toolbar.selectTreeBranchForChild'))
-        }
+        handleAddTreeChild()
       }
       return
     }
@@ -506,7 +506,59 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       return
     }
 
+    if (diagramType === 'concept_map') {
+      const nodes = diagramStore.data.nodes
+      const anchor = [...nodes].reverse().find((node) => node.id !== 'topic') ?? nodes[0]
+      const x = (anchor?.position?.x ?? 240) + 72
+      const y = (anchor?.position?.y ?? 180) + 36
+      diagramStore.addNode({
+        id: '',
+        text: t('diagram.defaultNewConcept'),
+        type: 'branch',
+        position: { x, y },
+      })
+      diagramStore.pushHistory(t('diagram.contextMenu.addConcept'))
+      notify.success(t('diagram.contextMenu.addConcept'))
+      return
+    }
+
     notify.info(t('canvas.toolbar.addNodeInDevelopment'))
+  }
+
+  function handleAddTreeCategory(): void {
+    if (isDiagramPresentationReadOnly(diagramStore)) return
+    if (!diagramStore.data?.nodes) {
+      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      return
+    }
+    if (diagramStore.type !== 'tree_map') return
+    if (diagramStore.addTreeMapCategory(t('canvas.toolbar.newBranch'))) {
+      notify.success(t('canvas.toolbar.branchAdded'))
+    }
+  }
+
+  function handleAddTreeChild(): void {
+    if (isDiagramPresentationReadOnly(diagramStore)) return
+    if (!diagramStore.data?.nodes) {
+      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      return
+    }
+    if (diagramStore.type !== 'tree_map') return
+    const selectedId = diagramStore.selectedNodes[0]
+    if (!selectedId || selectedId === 'dimension-label' || selectedId === 'tree-topic') {
+      notify.warning(t('canvas.toolbar.selectTreeBranchForChild'))
+      return
+    }
+    const catId = resolveTreeCategoryId(diagramStore.data.nodes, selectedId)
+    if (!catId) {
+      notify.warning(t('canvas.toolbar.selectTreeBranchForChild'))
+      return
+    }
+    if (diagramStore.addTreeMapChild(catId, t('canvas.toolbar.newChild'))) {
+      notify.success(t('canvas.toolbar.childAdded'))
+    } else {
+      notify.warning(t('canvas.toolbar.selectTreeBranchForChild'))
+    }
   }
 
   function handleAddCause(): void {
@@ -800,5 +852,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     handleAddSibling,
     handleAddCause,
     handleAddEffect,
+    handleAddTreeCategory,
+    handleAddTreeChild,
   }
 }

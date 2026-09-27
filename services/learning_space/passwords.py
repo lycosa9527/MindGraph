@@ -20,6 +20,7 @@ from models.domain.learning_space import (
     LEGACY_AI_CAPABILITY_ALIASES,
 )
 from services.learning_space.blank_spec import TEMPLATE_ROLES, resolve_template_role
+from utils.auth.role_constants import ROLE_STUDENT
 
 _CLASS_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 _NAME_CLEAN_RE = re.compile(r"\s+")
@@ -33,6 +34,37 @@ def normalize_student_name(name: str) -> str:
 def generate_class_code(length: int = 6) -> str:
     """Generate an unambiguous classroom join code."""
     return "".join(secrets.choice(_CLASS_CODE_ALPHABET) for _ in range(length))
+
+
+_LEARNING_SPACE_LOGIN_PASSWORD_MAX = 128
+
+
+def assign_learning_space_login_password(user: object, plain: str) -> None:
+    """Persist the classroom student's login password for teacher/admin roster views."""
+    cleaned = (plain or "").strip()[:_LEARNING_SPACE_LOGIN_PASSWORD_MAX]
+    setattr(user, "learning_space_login_password", cleaned or None)
+
+
+def staff_visible_learning_space_password(
+    *,
+    name: str,
+    role: str,
+    learning_class_id: int | None,
+    must_change_password: bool,
+    stored_password: str | None,
+    include: bool = True,
+) -> str:
+    """Return the login password teachers may read (classroom students only)."""
+    if not include:
+        return ""
+    if role != ROLE_STUDENT or learning_class_id is None:
+        return ""
+    stored = (stored_password or "").strip()
+    if stored:
+        return stored
+    if must_change_password:
+        return initial_password_from_name(name)
+    return ""
 
 
 def initial_password_from_name(name: str) -> str:
@@ -129,6 +161,10 @@ def merge_ai_permissions(raw: dict[str, Any] | None) -> dict[str, Any]:
         merged["evaluation_dimensions"] = cleaned_dims[:24]
     if "allow_late_submit" in raw:
         merged["allow_late_submit"] = bool(raw["allow_late_submit"])
+    if "allow_resubmit" in raw:
+        merged["allow_resubmit"] = bool(raw["allow_resubmit"])
+    else:
+        merged["allow_resubmit"] = True
     if "remind_24h" in raw:
         merged["remind_24h"] = bool(raw["remind_24h"])
     scheduled = raw.get("scheduled_publish_at")

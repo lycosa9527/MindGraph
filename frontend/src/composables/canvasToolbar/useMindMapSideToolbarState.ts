@@ -61,6 +61,7 @@ export function useMindMapSideToolbarState() {
     }
     if (toolId === 'waterfall' && !requireCapability('ai_brainstorm')) return
     if (toolId === 'document_summary' && !requireCapability('file_generate')) return
+    if (toolId === 'one_sentence' && !requireCapability('conversational_edit')) return
     const previous = activeTool.value
     if (previous === 'waterfall' && toolId !== 'waterfall' && panelsStore.aiBrainstormPanel.isOpen) {
       getAiBrainstorm().dismiss()
@@ -85,6 +86,7 @@ export function useMindMapSideToolbarState() {
   }
 
   function runOneSentenceGenerate(generationInstructions?: string): void {
+    if (!requireCapability('topic_generate')) return
     if (!guardCollabGuestAi()) {
       return
     }

@@ -1028,7 +1028,8 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     language: string = 'zh',
     thumbnail: string | null = null,
     editCount: number = 0,
-    targetDiagramId: string | null = null
+    targetDiagramId: string | null = null,
+    forcePersist: boolean = false
   ): Promise<AutoSaveResult> {
     if (!authStore.isAuthenticated) {
       return { success: false, action: 'skipped', error: 'Not authenticated' }
@@ -1059,7 +1060,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       }
 
       // Case 2: New diagram - check if it's empty/unmodified
-      if (isDiagramEmpty(spec, diagramType as DiagramType)) {
+      if (!forcePersist && isDiagramEmpty(spec, diagramType as DiagramType)) {
         // Empty diagram - skip auto-save silently
         return { success: false, action: 'skipped', error: 'Diagram is empty/unmodified' }
       }

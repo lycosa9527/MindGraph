@@ -1,8 +1,6 @@
+import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import { eventBus } from '@/composables/core/useEventBus'
-import {
-  DEFAULT_CENTER_X,
-  DEFAULT_NODE_WIDTH,
-} from '@/composables/diagrams/layoutConfig'
+import { DEFAULT_CENTER_X, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { mindMapDiagramStyleUsesLayeredBranchColors } from '@/config/mindMapDiagramStyles'
 import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
 import {
@@ -23,7 +21,6 @@ import {
   isDoubleBubbleRoleNode,
   readDoubleBubbleIndex,
 } from '@/utils/doubleBubbleMapIdentity'
-import { resolveThinkingMapAliasId } from '@/utils/thinkingMapIdentity'
 import {
   LLM_EXPORT_ATTRIBUTION_KEY,
   clearLlmExportAttribution,
@@ -32,6 +29,7 @@ import {
 import { isMindMapV2FamilyMode, resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 import { migrateMindMapIdentityIds, resolveMindMapAliasId } from '@/utils/mindMapIdentityMigrate'
 import { beginMindMapSpecLoadSession, markMindMapLoadStage } from '@/utils/mindMapLoadDebug'
+import { resolveThinkingMapAliasId } from '@/utils/thinkingMapIdentity'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import {
@@ -516,6 +514,14 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       const summaries = dataRecord._mindmap_summaries
       if (Array.isArray(summaries) && summaries.length > 0) {
         spec._mindmap_summaries = summaries
+      }
+      const adornments = dataRecord._mindmap_adornments
+      if (adornments && typeof adornments === 'object') {
+        spec._mindmap_adornments = adornments
+      }
+    } else if (isThinkingMapDiagramType(ctx.type.value)) {
+      if (ctx.data.value._mindmap_theme) {
+        spec._mindmap_theme = ctx.data.value._mindmap_theme
       }
       const adornments = dataRecord._mindmap_adornments
       if (adornments && typeof adornments === 'object') {

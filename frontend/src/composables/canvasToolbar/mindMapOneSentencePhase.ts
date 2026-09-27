@@ -42,11 +42,11 @@ export function shouldUseOneSentenceEditFlow(
   llmResultsStore: LlmResultsStore,
   phase: 'create' | 'edit'
 ): boolean {
-  if (phase === 'edit') {
-    return true
-  }
   if (!isMindMapType(diagramStore.type)) {
     return false
+  }
+  if (phase === 'edit') {
+    return true
   }
   if (!isCanvasPristineForTypeSwitch(diagramStore, savedDiagramsStore, llmResultsStore)) {
     return true

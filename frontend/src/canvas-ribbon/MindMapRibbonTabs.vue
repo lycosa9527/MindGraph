@@ -5,6 +5,7 @@ import { Folder, GraduationCap, Palette, Users } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useAuthStore } from '@/stores'
 
 import MindMapRibbonAiMark from './MindMapRibbonAiMark.vue'
@@ -30,12 +31,17 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const authStore = useAuthStore()
+const { showCanvasAiFeatures } = useLearningAiGate()
 
 const visibleTabs = computed(() => {
-  if (authStore.user?.role === 'student') {
-    return MIND_MAP_RIBBON_TABS.filter((tab) => tab !== 'research')
+  if (authStore.user?.role !== 'student') {
+    return MIND_MAP_RIBBON_TABS
   }
-  return MIND_MAP_RIBBON_TABS
+  let tabs = MIND_MAP_RIBBON_TABS.filter((tab) => tab !== 'research')
+  if (!showCanvasAiFeatures.value) {
+    tabs = tabs.filter((tab) => tab !== 'ai')
+  }
+  return tabs
 })
 
 const TAB_ICONS: Record<Exclude<MindMapRibbonTabId, 'ai'>, Component> = {
@@ -45,8 +51,15 @@ const TAB_ICONS: Record<Exclude<MindMapRibbonTabId, 'ai'>, Component> = {
   research: Users,
 }
 
+function tabLabelKey(tab: MindMapRibbonTabId): string {
+  if (tab === 'teaching' && authStore.user?.role === 'student') {
+    return 'canvas.ribbon.tabLearn'
+  }
+  return MIND_MAP_RIBBON_TAB_LABEL_KEYS[tab]
+}
+
 function tabLabel(tab: MindMapRibbonTabId): string {
-  return t(MIND_MAP_RIBBON_TAB_LABEL_KEYS[tab])
+  return t(tabLabelKey(tab))
 }
 
 function lucideTabIcon(tab: MindMapRibbonTabId): Component | undefined {
@@ -100,7 +113,7 @@ function tabTitle(tab: MindMapRibbonTabId): string {
           />
         </span>
         <span class="mm-ribbon-tabs__label">
-          <I18nText :k="MIND_MAP_RIBBON_TAB_LABEL_KEYS[tab]" />
+          <I18nText :k="tabLabelKey(tab)" />
         </span>
       </span>
     </button>

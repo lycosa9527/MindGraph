@@ -97,11 +97,6 @@ export function useAppSidebar() {
 
   const isCollapsed = computed(() => uiStore.sidebarCollapsed)
 
-  function isLearningSpaceAdminRoute(): boolean {
-    const route = router.currentRoute.value
-    return route.path.startsWith('/admin') && route.query.tab === 'learning_space'
-  }
-
   const currentMode = computed(() => {
     const path = router.currentRoute.value.path
     if (path.startsWith('/mindmate')) return 'mindmate'
@@ -116,8 +111,7 @@ export function useAppSidebar() {
     if (path.startsWith('/knowledge-space')) return 'knowledge-space'
     if (
       path.startsWith('/learning-space') ||
-      path.startsWith('/m/learning-space') ||
-      isLearningSpaceAdminRoute()
+      path.startsWith('/m/learning-space')
     ) {
       return 'learning-space'
     }
@@ -701,10 +695,10 @@ export function useAppSidebar() {
   )
 
   watch(
-    () => [router.currentRoute.value.path, router.currentRoute.value.query.tab] as const,
-    ([path, tab]) => {
+    () => router.currentRoute.value.path,
+    (path) => {
       if (path.startsWith('/admin')) {
-        if (tab !== 'learning_space' && showManagementPanelSubnav.value) {
+        if (showManagementPanelSubnav.value) {
           expandedPanel.value = 'admin'
         }
       } else if (expandedPanel.value === 'admin') {
@@ -820,9 +814,16 @@ export function useAppSidebar() {
     | null
   >(null)
 
+  const studentLearningClassId = computed(() => {
+    const user = authStore.user
+    if (!user) return null
+    const raw = user.learningClassId ?? user.learning_class_id
+    return raw == null ? null : raw
+  })
+
   const isLearningSpaceProductRole = computed(() => {
     if (authStore.user?.role === 'student') {
-      return true
+      return Boolean(studentLearningClassId.value)
     }
     const role = learningSpaceContextRole.value
     return role === 'pilot_teacher' || role === 'learner' || role === 'assistant'
@@ -832,20 +833,23 @@ export function useAppSidebar() {
     if (!isAuthenticated.value) {
       return false
     }
-    // Classroom students only exist for Learning Space — keep the nav visible even
-    // when feature flags briefly fall back to defaults (e.g. after a backend blip).
     if (authStore.user?.role === 'student') {
-      return true
+      return Boolean(studentLearningClassId.value)
     }
     if (!featureStudentLearningSpace.value) {
       return false
     }
-    return isLearningSpaceProductRole.value || can('tab.learning_space.view')
+    // Product nav only for assigned Learning Space roles (pilot / learner / assistant).
+    // Panel managers (superadmin, expert, …) use 管理面板 → 学习空间 instead.
+    return isLearningSpaceProductRole.value
   })
 
   /** Learning Space students: homepage sidebar is MindGraph + Learning Space only. */
   const isLearningSpaceStudent = computed(
-    () => isAuthenticated.value && authStore.user?.role === 'student'
+    () =>
+      isAuthenticated.value &&
+      authStore.user?.role === 'student' &&
+      Boolean(studentLearningClassId.value)
   )
 
   async function refreshLearningSpaceNav(): Promise<void> {
@@ -854,6 +858,10 @@ export function useAppSidebar() {
       return
     }
     if (authStore.user?.role === 'student') {
+      if (!studentLearningClassId.value) {
+        learningSpaceContextRole.value = null
+        return
+      }
       learningSpaceContextRole.value = 'student'
       return
     }

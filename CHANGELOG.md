@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.103] - 2026-09-27
+
+> **Eight thinking maps share the mind-map tab canvas: style strip, insert, Enter-to-add, and undo/redo icons that no longer match reset.**
+
+### Added
+
+- **八大思维图示 Tab 画布** — 圆圈图、气泡图、双气泡图、树图、括号图、流程图、复流程图、桥形图统一到思维导图 Tab 壳（文件 / 编辑 / AI / 教学）。概念图仍用经典格式条，并保留虚拟键盘。
+- **节点 / 文字样式与主题** — 八大图示使用与思维导图一致的节点样式、文字样式、主题风格（不含「导图样式」）、跟随节点浮动条；节点解释与思维讲堂同步开放。圆圈图隐藏形状选择，填充色、边框色与双击改字生效。
+- **插入** — 八大图示编辑条提供图片、图标、链接、公式；关联线与概要仍仅思维导图。图片 / 图标 / 链接按节点 id 挂接并可随图保存。
+- **挖空支架图** — 八大图示支持全挖空、随机挖空、自定义点选三种模式，逻辑与思维导图一致。
+
+### Changed
+
+- **节点操作快捷键** — 单击选中节点（浮动条跟随）；Enter 按当前选中节点增加对应节点；Tab / Insert 不再触发添加；双击或空格进入编辑。点画布空白处取消选中并收起浮动条。状态栏快捷键说明按图示类型展示。
+- **撤销 / 重做图标** — 改用弯箭头（`Undo2` / `Redo2`），与重置的圆形刷新图标区分开。
+
+### Fixed
+
+- **保存失败** — 手动保存对仅改样式、模板文案未改的图示也会落盘，并写入历史版本；避免「保存失败，请重试」。
+- **格式刷** — 八大图示点击节点即可刷上源节点样式，与思维导图一致。
+- **Enter 加节点** — 桌面画布重新挂接 `diagram:add_*` 监听，选中节点后按 Enter 可正常加节点。
+
+### Tests
+
+- [`frontend/tests/diagramRibbonCapabilities.spec.ts`](frontend/tests/diagramRibbonCapabilities.spec.ts), [`frontend/tests/canvasPageEditorShortcutRouting.spec.ts`](frontend/tests/canvasPageEditorShortcutRouting.spec.ts), [`frontend/tests/mindMapShortcutGuide.spec.ts`](frontend/tests/mindMapShortcutGuide.spec.ts)
+
 ## [5.180.102] - 2026-09-27
 
 > **Database rows that were still open to every connection now follow the same school and owner rules as the rest of the app.**
@@ -127,7 +153,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Tests
 
 - [`tests/test_unified_conversations.py`](tests/test_unified_conversations.py)
-
 ## [5.180.95] - 2026-09-20
 
 > **Tencent slide verify embeds on the login card instead of a viewport-centered popup.**

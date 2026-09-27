@@ -9,6 +9,7 @@ import { useRouter } from 'vue-router'
 import LearningSpaceAssignModal from '@/components/learningSpace/LearningSpaceAssignModal.vue'
 import LearningSpaceHeader from '@/components/learningSpace/LearningSpaceHeader.vue'
 import LearningSpaceRequirementsModal from '@/components/learningSpace/LearningSpaceRequirementsModal.vue'
+import LearningSpaceThumbCover from '@/components/learningSpace/LearningSpaceThumbCover.vue'
 import LearningSpaceReviewModal, {
   type ReviewDraft,
 } from '@/components/learningSpace/LearningSpaceReviewModal.vue'
@@ -20,10 +21,13 @@ import {
   assignmentProgress,
   filterTeacherAssignments,
   formatLsDateTime,
+  formatLsStudentLabel,
   greetHourLabel,
   studentAssignmentDone,
   studentAssignmentPending,
   studentCanOpenAssignment,
+  studentCanResubmitAssignment,
+  studentCanViewAssignmentWall,
   type AssignmentFilter,
   type StudentTab,
   type TeacherTab,
@@ -218,8 +222,10 @@ const studentUrgentCount = computed(
 )
 
 const wallSubmissions = computed(() =>
-  submissions.value.filter((s) => s.status === 'submitted')
+  submissions.value.filter((s) => Boolean(String(s.diagram_id || '').trim()))
 )
+
+const studentCanViewDetailWall = computed(() => studentCanViewAssignmentWall(studentDetail.value))
 
 const detailClassWall = computed(() => {
   const id = studentDetail.value?.id
@@ -1073,20 +1079,14 @@ watch(
                   @keydown.enter.prevent="openReview(s)"
                 >
                   <div class="ls-thumb-card__cover">
-                    <img
-                      v-if="s.diagram_thumbnail"
-                      :src="s.diagram_thumbnail"
-                      alt=""
+                    <LearningSpaceThumbCover
+                      :preview-spec="s.preview_spec"
+                      :preview-diagram-type="s.preview_diagram_type"
+                      :thumbnail-url="s.diagram_thumbnail"
                     />
-                    <div
-                      v-else
-                      class="ls-thumb-card__ph"
-                    >
-                      {{ t('learningSpace.noPreview') }}
-                    </div>
                   </div>
                   <div class="ls-thumb-card__name">
-                    {{ s.student_name || s.student_user_id }}
+                    {{ formatLsStudentLabel(s) }}
                   </div>
                   <div class="ls-thumb-card__meta">
                     {{ statusLabel(s.status) }} ·
@@ -1362,7 +1362,11 @@ watch(
                     class="ls-btn ls-btn--primary ls-btn--sm"
                     @click="onOpenStudentAssignment(studentDetail)"
                   >
-                    {{ t('learningSpace.doHomework') }}
+                    {{
+                      studentCanResubmitAssignment(studentDetail)
+                        ? t('learningSpace.editAndResubmit')
+                        : t('learningSpace.doHomework')
+                    }}
                   </button>
                   <button
                     v-else-if="!studentAssignmentDone(studentDetail)"
@@ -1373,9 +1377,17 @@ watch(
                     {{ t('learningSpace.homeworkClosed') }}
                   </button>
                   <button
-                    v-else-if="myDetailSubmission"
+                    v-if="myDetailSubmission && !studentCanResubmitAssignment(studentDetail)"
                     type="button"
                     class="ls-btn ls-btn--primary ls-btn--sm"
+                    @click="openReview(myDetailSubmission, 'view')"
+                  >
+                    {{ t('learningSpace.myWorkBtn') }}
+                  </button>
+                  <button
+                    v-else-if="myDetailSubmission && studentCanResubmitAssignment(studentDetail)"
+                    type="button"
+                    class="ls-btn ls-btn--ghost ls-btn--sm"
                     @click="openReview(myDetailSubmission, 'view')"
                   >
                     {{ t('learningSpace.myWorkBtn') }}
@@ -1390,7 +1402,7 @@ watch(
                 {{ studentDetail.instructions }}
               </p>
 
-              <section>
+              <section v-if="studentCanViewDetailWall">
                 <div class="ls-section-title">
                   <h2>{{ t('learningSpace.assignmentWall') }}</h2>
                 </div>
@@ -1414,20 +1426,14 @@ watch(
                     @keydown.enter.prevent="openReview(s, 'view')"
                   >
                     <div class="ls-thumb-card__cover">
-                      <img
-                        v-if="s.diagram_thumbnail"
-                        :src="s.diagram_thumbnail"
-                        alt=""
+                      <LearningSpaceThumbCover
+                        :preview-spec="s.preview_spec"
+                        :preview-diagram-type="s.preview_diagram_type"
+                        :thumbnail-url="s.diagram_thumbnail"
                       />
-                      <div
-                        v-else
-                        class="ls-thumb-card__ph"
-                      >
-                        {{ t('learningSpace.noPreview') }}
-                      </div>
                     </div>
                     <div class="ls-thumb-card__name">
-                      {{ s.student_name || s.student_user_id }}
+                      {{ formatLsStudentLabel(s) }}
                     </div>
                     <div class="ls-thumb-card__meta">
                       {{ formatLsDateTime(s.submitted_at) }}
@@ -1438,6 +1444,12 @@ watch(
                   </article>
                 </div>
               </section>
+              <p
+                v-else
+                class="ls-empty"
+              >
+                {{ t('learningSpace.classWallSubmitFirst') }}
+              </p>
             </template>
           </template>
 
@@ -1468,17 +1480,11 @@ watch(
                 @keydown.enter.prevent="openReview(s, 'view')"
               >
                 <div class="ls-thumb-card__cover">
-                  <img
-                    v-if="s.diagram_thumbnail"
-                    :src="s.diagram_thumbnail"
-                    alt=""
+                  <LearningSpaceThumbCover
+                    :preview-spec="s.preview_spec"
+                    :preview-diagram-type="s.preview_diagram_type"
+                    :thumbnail-url="s.diagram_thumbnail"
                   />
-                  <div
-                    v-else
-                    class="ls-thumb-card__ph"
-                  >
-                    {{ t('learningSpace.noPreview') }}
-                  </div>
                 </div>
                 <div class="ls-thumb-card__name">
                   {{ s.assignment_title || t('learningSpace.assignments') }}

@@ -8,6 +8,7 @@ const COMPANY_ZH = '北京思源智教科技有限公司'
 const COMPANY_EN = 'Beijing Siyuan Zhijiao Technology Co., Ltd.'
 
 export interface SoftwareAgreementSection {
+  id?: string
   title: string
   paragraphs: string[]
 }
@@ -25,6 +26,7 @@ export const SOFTWARE_AGREEMENT_ZH: SoftwareAgreementContent = {
   preamble: `MindGraph 是由${COMPANY_ZH}（以下简称「本公司」或「我们」）开发并运营的教育教学产品（以下简称「本平台」）。本文件同时构成《用户协议》与《隐私政策》。在您注册、登录或使用本平台任何功能前，请仔细阅读。您使用本平台，即视为您已阅读、理解并同意本文件全部内容。`,
   sections: [
     {
+      id: 'user-agreement',
       title: '一、协议接受与适用范围',
       paragraphs: [
         `本文件是您与${COMPANY_ZH}之间关于使用 MindGraph 及相关服务所订立的法律协议，并说明我们如何处理您的个人信息及其他相关数据。`,
@@ -58,6 +60,7 @@ export const SOFTWARE_AGREEMENT_ZH: SoftwareAgreementContent = {
       ],
     },
     {
+      id: 'privacy-policy',
       title: '五、我们收集的信息',
       paragraphs: [
         '为向您提供、维护和改进服务，并履行法定义务，我们可能收集以下信息：',
@@ -190,6 +193,7 @@ export const SOFTWARE_AGREEMENT_EN: SoftwareAgreementContent = {
   preamble: `MindGraph is an educational product developed and operated by ${COMPANY_EN} (${COMPANY_ZH}) ("we", "us", "the Company"). This document combines our Terms of Use and Privacy Policy. Please read it before you register, sign in, or use any feature. By using the Platform, you acknowledge that you have read, understood, and agree to this document in full.`,
   sections: [
     {
+      id: 'user-agreement',
       title: '1. Acceptance and scope',
       paragraphs: [
         `This document is a legal agreement between you and ${COMPANY_EN} (${COMPANY_ZH}) regarding your use of MindGraph and related services, and explains how we process your personal information and related data.`,
@@ -223,6 +227,7 @@ export const SOFTWARE_AGREEMENT_EN: SoftwareAgreementContent = {
       ],
     },
     {
+      id: 'privacy-policy',
       title: '5. Information we collect',
       paragraphs: [
         'To provide, maintain, and improve services and meet legal obligations, we may collect:',

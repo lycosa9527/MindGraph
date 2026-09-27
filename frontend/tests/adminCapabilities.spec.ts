@@ -93,14 +93,17 @@ describe('adminCapabilities', () => {
     expect(tabEditCapability('vod')).toBe('tab.vod.edit')
   })
 
-  it('learning_space admin tab is available to class managers', () => {
-    const managers = ['superadmin', 'platform_bd', 'expert', 'school_admin'] as const
-    for (const role of managers) {
+  it('learning_space admin tab is available to superadmin and platform BD only', () => {
+    for (const role of ['superadmin', 'platform_bd'] as const) {
       const caps = fallbackCapabilitiesForRole(role)
       expect(caps).toContain('tab.learning_space.view')
       expect(caps).toContain('tab.learning_space.edit')
     }
-    expect(fallbackCapabilitiesForRole('teacher')).not.toContain('tab.learning_space.view')
+    for (const role of ['expert', 'school_admin', 'teacher'] as const) {
+      const caps = fallbackCapabilitiesForRole(role)
+      expect(caps).not.toContain('tab.learning_space.view')
+      expect(caps).not.toContain('tab.learning_space.edit')
+    }
     expect(tabRequiresCapabilities('learning_space')).toEqual(['tab.learning_space.view'])
   })
 
