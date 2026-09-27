@@ -27,7 +27,6 @@ from services.dify.export.endpoints import (
 from services.dify.export.target_resolution import build_user_dify_targets
 from services.dify.export.transcript import ExportConversationSummary
 from services.dify.export.types import UserTarget
-from services.dify.export.usage_supplement import supplement_mindbot_summaries_from_usage
 from services.dify.org_mindmate_client import resolve_mindmate_dify_client
 from utils.db.session_open import system_rls_session
 from utils.dify_mindmate_user_id import mindmate_dify_user_id
@@ -217,8 +216,9 @@ async def list_unified_conversations(
     List conversations across web MindMate and bound MindBot Dify user keys.
 
     Fetches up to ``limit`` rows per identity and Dify endpoint, merges by
-    ``updated_at``, supplements MindBot threads from usage telemetry, and
-    returns the newest ``limit`` rows.
+    ``updated_at``, and returns the newest ``limit`` rows. Rows come only
+    from the Dify apps configured now. A retired workflow's usage records
+    are not added to this list.
     """
     targets = await build_user_dify_targets(db, user)
     if not targets:
@@ -267,15 +267,7 @@ async def list_unified_conversations(
         )
         flat.extend(endpoint_summaries)
 
-    supplemented, supplement_warnings = await supplement_mindbot_summaries_from_usage(
-        db,
-        targets,
-        flat,
-    )
-    for warning in supplement_warnings:
-        logger.info("[UnifiedConversations] %s user=%s", warning, getattr(user, "id", "?"))
-
-    ordered = sorted(supplemented, key=lambda row: row.updated_at, reverse=True)
+    ordered = sorted(flat, key=lambda row: row.updated_at, reverse=True)
     page = ordered[:page_size]
     has_more = len(ordered) > page_size
     mindbot_count = sum(1 for row in page if row.channel == "mindbot")

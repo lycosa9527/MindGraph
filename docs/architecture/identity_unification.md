@@ -26,7 +26,7 @@ OAuth QR login (WeChat/DingTalk) and **MindBot account bind** are separate flows
 
 - Web MindMate threads (`channel: web`)
 - Bound MindBot threads (`channel: mindbot`), including historical staff IDs after rebind
-- Cross-org group threads supplemented from usage telemetry when Dify list APIs omit them
+- Cross-org group threads only when the current Dify app still lists them. Export still adds usage-only threads the live inbox leaves out.
 
 Each list row carries `dify_user`, `server`, and `mindbot_config_id` for message/delete/rename routing.
 

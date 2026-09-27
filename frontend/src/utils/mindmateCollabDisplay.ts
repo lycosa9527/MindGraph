@@ -1,6 +1,7 @@
 /** Display helpers for MindMate seminar (collab) message rows. */
 
 import {
+  hasGeneratedDiagramImage,
   parseMindmateDiagramLibraryId,
   stripMindmateDiagramIdComments,
 } from '@/utils/mindmateDiagramMeta'
@@ -33,6 +34,17 @@ export function collabAssistantLibraryDiagramId(message: CollabDisplayMessage): 
     return null
   }
   return parseMindmateDiagramLibraryId(message.content)
+}
+
+/** Finished MindMate reply that includes a diagram the viewer can open on the canvas. */
+export function collabAssistantOffersCanvasEdit(message: CollabDisplayMessage): boolean {
+  if (message.role !== 'assistant' || message.streaming) {
+    return false
+  }
+  if (parseMindmateDiagramLibraryId(message.content)) {
+    return true
+  }
+  return hasGeneratedDiagramImage(message.content)
 }
 
 export function previousCollabUserPrompt(

@@ -83,7 +83,7 @@ def _mindbot_summary() -> ExportConversationSummary:
 async def test_list_unified_conversations_merges_web_and_mindbot(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Bound users see DingTalk MindBot threads alongside web MindMate history."""
+    """Bound users see current Dify MindBot threads alongside web MindMate history."""
     user = SimpleNamespace(id=7, organization_id=5, name="Alice", phone="", email="")
     web_target, mindbot_target = _web_and_mindbot_targets()
 
@@ -96,9 +96,6 @@ async def test_list_unified_conversations_merges_web_and_mindbot(
             return [_web_summary()]
         return [_mindbot_summary()]
 
-    async def _fake_supplement(_db, _targets, summaries, **_kwargs):
-        return summaries, []
-
     monkeypatch.setattr(
         "services.dify.unified_conversations.build_user_dify_targets",
         _fake_targets,
@@ -106,10 +103,6 @@ async def test_list_unified_conversations_merges_web_and_mindbot(
     monkeypatch.setattr(
         "services.dify.unified_conversations._fetch_target_summaries_page",
         _fake_fetch_page,
-    )
-    monkeypatch.setattr(
-        "services.dify.unified_conversations.supplement_mindbot_summaries_from_usage",
-        _fake_supplement,
     )
 
     rows, has_more = await list_unified_conversations(MagicMock(), as_user(user), limit=10)

@@ -499,6 +499,7 @@ watch(messages, async () => {
             :is-last-assistant="row.isLastAssistant"
             :regenerate-disabled="!canSend || joining || isStreaming"
             :feedback="feedbackByKey[row.key]"
+            :session-id="room?.sessionId || ''"
             @regenerate="handleRegenerate(row.userPrompt)"
             @share="showShareModal = true"
             @feedback="handleFeedback(row.key, $event)"

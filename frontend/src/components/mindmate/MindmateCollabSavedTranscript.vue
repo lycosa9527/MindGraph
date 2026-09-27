@@ -112,6 +112,7 @@ watch(
           :is-own="isOwnMessage(message)"
           :agent-name="agentName"
           :agent-avatar-url="agentAvatarUrl"
+          :session-id="sessionId"
         />
       </div>
     </div>

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   collabAssistantLibraryDiagramId,
+  collabAssistantOffersCanvasEdit,
   collabMessageRowKey,
   collabMessagesForShareExport,
   displayMindmateCollabContent,
@@ -48,6 +49,16 @@ describe('mindmateCollabDisplay', () => {
       collabAssistantLibraryDiagramId({ role: 'assistant', content: withId, streaming: true })
     ).toBeNull()
     expect(collabAssistantLibraryDiagramId({ role: 'user', content: withId })).toBeNull()
+  })
+
+  it('offers canvas edit for a preview image even without a library id', () => {
+    const preview = '见图\n![](https://host/temp_images/dingtalk_deadbeef_1710000000.png?sig=x)'
+    expect(collabAssistantOffersCanvasEdit({ role: 'assistant', content: preview })).toBe(true)
+    expect(
+      collabAssistantOffersCanvasEdit({ role: 'assistant', content: preview, streaming: true })
+    ).toBe(false)
+    expect(collabAssistantOffersCanvasEdit({ role: 'user', content: preview })).toBe(false)
+    expect(collabAssistantOffersCanvasEdit({ role: 'assistant', content: '普通问答' })).toBe(false)
   })
 
   it('finds the previous user prompt for an assistant row', () => {

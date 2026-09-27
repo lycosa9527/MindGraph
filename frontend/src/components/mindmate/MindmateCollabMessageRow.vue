@@ -23,11 +23,17 @@ import { useTeachingDesignExportStore } from '@/stores/teachingDesignExport'
 import { canvasEditorPathForRoute } from '@/utils/canvasBackNavigation'
 import { copyMindmateAssistantMessage } from '@/utils/copyMindmateMessage'
 import {
+  collabDiagramSaveFailureKey,
+  saveCollabDiagramToLibrary,
+} from '@/utils/mindmateCollabDiagramLibrary'
+import {
   type CollabFeedbackRating,
   collabAssistantLibraryDiagramId,
+  collabAssistantOffersCanvasEdit,
   displayMindmateCollabContent,
   shouldShowCollabWordTemplateExport,
 } from '@/utils/mindmateCollabDisplay'
+import { extractMindmatePreviewUniqueId } from '@/utils/mindmateDiagramMeta'
 import { TEACHING_INSTRUCTION_KIND } from '@/utils/mindmateTeachingDesignFlag'
 
 const props = defineProps<{
@@ -39,6 +45,7 @@ const props = defineProps<{
   isLastAssistant?: boolean
   regenerateDisabled?: boolean
   feedback?: CollabFeedbackRating
+  sessionId?: string
 }>()
 
 const emit = defineEmits<{
@@ -73,6 +80,8 @@ const exportMessageId = computed(() => {
 const showWordTemplateExport = computed(() => shouldShowCollabWordTemplateExport(props.message))
 
 const libraryDiagramId = computed(() => collabAssistantLibraryDiagramId(props.message))
+
+const showCanvasEdit = computed(() => collabAssistantOffersCanvasEdit(props.message))
 
 const displayText = computed(() =>
   displayMindmateCollabContent(props.message.content, props.message.role)
@@ -133,9 +142,22 @@ function handleExportWordTemplate(): void {
   )
 }
 
+async function resolveCanvasDiagramId(): Promise<string | null> {
+  const previewId = extractMindmatePreviewUniqueId(props.message.content)
+  const sessionId = props.sessionId?.trim() ?? ''
+  if (previewId && sessionId) {
+    const saved = await saveCollabDiagramToLibrary(sessionId, previewId)
+    if (!saved.ok) {
+      notify.errorKey(collabDiagramSaveFailureKey(saved.reason))
+      return null
+    }
+    return saved.diagramId
+  }
+  return libraryDiagramId.value
+}
+
 async function openInCanvas(): Promise<void> {
-  const diagramId = libraryDiagramId.value
-  if (!diagramId || openingCanvas.value) {
+  if (openingCanvas.value) {
     return
   }
   if (!authStore.isAuthenticated) {
@@ -144,32 +166,40 @@ async function openInCanvas(): Promise<void> {
     return
   }
 
-  const currentId = savedDiagramsStore.activeDiagramId?.trim() ?? ''
-  const decision = decideCanvasLibraryDiagramOpen(route.path, currentId, diagramId)
-  if (decision === 'noop') {
-    return
-  }
-  if (decision === 'confirm') {
-    const targetTitle =
-      savedDiagramsStore.diagrams.find((row) => row.id === diagramId)?.title?.trim() || diagramId
-    const currentTitle =
-      savedDiagramsStore.diagrams.find((row) => row.id === currentId)?.title?.trim() || currentId
-    const accepted = await confirmCanvasLibraryDiagramOpen({
-      title: t('mindmate.openCanvasSwitchTitle'),
-      message: t('mindmate.openCanvasSwitchBody', {
-        target: targetTitle,
-        current: currentTitle,
-      }),
-      confirmButtonText: t('mindmate.openCanvasSwitchOk'),
-      cancelButtonText: t('common.cancel'),
-    })
-    if (!accepted) {
-      return
-    }
-  }
-
   openingCanvas.value = true
   try {
+    const diagramId = await resolveCanvasDiagramId()
+    if (!diagramId) {
+      if (!extractMindmatePreviewUniqueId(props.message.content)) {
+        notify.errorKey('mindmate.openCanvasNoLibraryId')
+      }
+      return
+    }
+
+    const currentId = savedDiagramsStore.activeDiagramId?.trim() ?? ''
+    const decision = decideCanvasLibraryDiagramOpen(route.path, currentId, diagramId)
+    if (decision === 'noop') {
+      return
+    }
+    if (decision === 'confirm') {
+      const targetTitle =
+        savedDiagramsStore.diagrams.find((row) => row.id === diagramId)?.title?.trim() || diagramId
+      const currentTitle =
+        savedDiagramsStore.diagrams.find((row) => row.id === currentId)?.title?.trim() || currentId
+      const accepted = await confirmCanvasLibraryDiagramOpen({
+        title: t('mindmate.openCanvasSwitchTitle'),
+        message: t('mindmate.openCanvasSwitchBody', {
+          target: targetTitle,
+          current: currentTitle,
+        }),
+        confirmButtonText: t('mindmate.openCanvasSwitchOk'),
+        cancelButtonText: t('common.cancel'),
+      })
+      if (!accepted) {
+        return
+      }
+    }
+
     const canvasPath = canvasEditorPathForRoute(route.path)
     await router.push({ path: canvasPath, query: { diagramId } })
   } catch {
@@ -246,7 +276,7 @@ async function openInCanvas(): Promise<void> {
         :feedback="feedback"
         :show-word-template-export="showWordTemplateExport"
         :exporting-word="exportingMessageId === exportMessageId"
-        :show-canvas="Boolean(libraryDiagramId)"
+        :show-canvas="showCanvasEdit"
         :opening-canvas="openingCanvas"
         @copy="handleCopy"
         @regenerate="emit('regenerate')"

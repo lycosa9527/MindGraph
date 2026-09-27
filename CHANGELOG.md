@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.107] - 2026-09-28
+
+> **A diagram in a MindMate seminar can be saved to your library and opened on the canvas.**
+
+### Added
+
+- **MindMate seminars** — A diagram reply includes “在画布中编辑”. The click saves a copy in your library, then opens that copy on the canvas ready to edit. Each person in the room gets their own copy. Opening it again uses the same one.
+
+### Tests
+
+- [`tests/test_mindmate_collab_diagram_library.py`](tests/test_mindmate_collab_diagram_library.py), [`frontend/tests/mindmateCollabDisplay.spec.ts`](frontend/tests/mindmateCollabDisplay.spec.ts), [`frontend/tests/mindmateCollabDiagramLibrary.spec.ts`](frontend/tests/mindmateCollabDiagramLibrary.spec.ts)
+
+## [5.180.106] - 2026-09-28
+
+> **MindMate history lists only chats the current Dify app still has.**
+
+### Fixed
+
+- **MindMate history** — A DingTalk thread from a retired workflow no longer appears in the sidebar. The list is whatever the current Dify apps return. Export still keeps those older threads.
+
+### Tests
+
+- [`tests/test_unified_conversations.py`](tests/test_unified_conversations.py), [`tests/test_dify_export_usage_supplement.py`](tests/test_dify_export_usage_supplement.py)
+
 ## [5.180.105] - 2026-09-28
 
 > **Quick access remembers the panel, edited prompts, and demo diagrams on the account. A finished MindMate seminar can be saved and opened again.**
