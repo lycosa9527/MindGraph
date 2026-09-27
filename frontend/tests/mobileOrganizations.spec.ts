@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { mobileOrgInviteClipboardText, parseMobileOrganizations } from '@/utils/mobileOrganizations'
+import {
+  mergeCreatedMobileOrg,
+  mobileOrgInviteClipboardText,
+  parseMobileOrganizations,
+} from '@/utils/mobileOrganizations'
 
 describe('parseMobileOrganizations', () => {
   it('keeps only id, name, invite code, and member count', () => {
@@ -36,6 +40,28 @@ describe('parseMobileOrganizations', () => {
       'Organization'
     )
     expect(text).toBe('')
+  })
+
+  it('places a new school in id order and keeps its invite code', () => {
+    const rows = mergeCreatedMobileOrg(
+      [{ id: 2, name: 'Older', invitationCode: 'OLD-234', userCount: 1 }],
+      { id: 9, name: 'New School', invitationCode: ' NEW-234 ' }
+    )
+    expect(rows.map((row) => row.id)).toEqual([2, 9])
+    expect(rows[1]).toEqual({
+      id: 9,
+      name: 'New School',
+      invitationCode: 'NEW-234',
+      userCount: 0,
+    })
+  })
+
+  it('fills a blank invite code on the refetched row', () => {
+    const rows = mergeCreatedMobileOrg(
+      [{ id: 9, name: 'New School', invitationCode: '', userCount: 0 }],
+      { id: 9, name: 'New School', invitationCode: 'NEW-234' }
+    )
+    expect(rows[0]?.invitationCode).toBe('NEW-234')
   })
 
   it('drops invalid rows and non-arrays', () => {

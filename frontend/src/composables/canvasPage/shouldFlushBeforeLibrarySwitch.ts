@@ -29,6 +29,7 @@ export async function flushCanvasBeforeLibrarySwitch(options: {
   const flushResult = await options.flushOnLeave()
   if (
     !flushResult.saved &&
+    flushResult.reason !== 'skipped_empty' &&
     !(options.collabOwnsPersist && flushResult.reason === 'skipped_guards')
   ) {
     return 'failed'

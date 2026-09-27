@@ -1300,7 +1300,7 @@ export default {
   'editor.saveBlockedSubgraphPreview': '請先採納或棄用 AI 子圖預覽後再保存',
   'editor.saveBlockedCollabActive': '實時協作期間由協作會話保存更改',
   'editor.saveBlockedCollabGuest': '協作期間僅主持人可保存',
-  'editor.saveNothingToSave': '暫無可保存的內容',
+  'editor.saveNothingToSave': '圖示為空，請先修改後再保存',
   'editor.saveFailed': '保存失敗，請重試',
   'editor.exportImage': '導出圖片',
   'editor.fitToScreen': '適應屏幕',

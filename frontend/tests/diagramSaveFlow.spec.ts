@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { saveFlushReasonForSkippedAutoSave } from '@/composables/editor/diagramAutoSaveSkip'
 import {
   buildDiagramSaveGuardState,
   canPerformDiagramSave,
@@ -42,15 +43,15 @@ describe('diagram save guards and feedback', () => {
   })
 
   it('blocks save while subgraph generation is in flight', () => {
-    expect(
-      resolveDiagramSaveBlockReason({ ...openGuard, subgraphGenerating: true })
-    ).toBe('subgraph_busy')
+    expect(resolveDiagramSaveBlockReason({ ...openGuard, subgraphGenerating: true })).toBe(
+      'subgraph_busy'
+    )
   })
 
   it('blocks save during collab host session and for guests', () => {
-    expect(
-      resolveDiagramSaveBlockReason({ ...openGuard, collabSessionActive: true })
-    ).toBe('collab_active')
+    expect(resolveDiagramSaveBlockReason({ ...openGuard, collabSessionActive: true })).toBe(
+      'collab_active'
+    )
     expect(resolveDiagramSaveBlockReason({ ...openGuard, isCollabGuest: true })).toBe(
       'collab_guest'
     )
@@ -62,6 +63,15 @@ describe('diagram save guards and feedback', () => {
     expect(saveFlushFailureMessageKey({ saved: false, reason: 'skipped_guards' })).toBe(
       'editor.saveFailed'
     )
+    expect(saveFlushFailureMessageKey({ saved: false, reason: 'skipped_empty' })).toBe(
+      'editor.saveNothingToSave'
+    )
+  })
+
+  it('treats an empty new diagram as nothing to save, not a failed save', () => {
+    expect(saveFlushReasonForSkippedAutoSave('Diagram is empty/unmodified')).toBe('skipped_empty')
+    expect(saveFlushReasonForSkippedAutoSave('No available slots')).toBe('skipped_slots_full')
+    expect(saveFlushReasonForSkippedAutoSave('Not authenticated')).toBeNull()
   })
 
   it('allows autosave during LLM generation only when bypass flag is set', () => {

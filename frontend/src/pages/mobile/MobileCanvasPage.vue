@@ -634,31 +634,29 @@ onUnmounted(() => {
         </button>
       </div>
 
-      <!-- Other diagrams: AI model + export (same commands as desktop) -->
+      <!-- Other diagrams: AI model on the left; learning sheet sits left of export -->
       <div
         v-else
-        class="flex items-center justify-between"
+        class="flex items-center justify-between gap-2"
       >
-        <div class="flex min-w-0 items-center gap-2">
+        <button
+          class="bottom-btn flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 active:bg-gray-200 transition-colors"
+          @click="showModelDrawer = true"
+        >
+          <Bot
+            :size="16"
+            class="text-indigo-500"
+          />
+          <span class="text-xs font-medium text-gray-700">{{ t('aiModel.label', 'AI 模型') }}</span>
+        </button>
+
+        <div class="flex min-w-0 items-center justify-end gap-2">
           <MobileLearningSheetButton
             v-if="useMindMapV2"
             :disabled="diagramShareRole === 'viewer'"
           />
-          <button
-            class="bottom-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 active:bg-gray-200 transition-colors"
-            @click="showModelDrawer = true"
-          >
-            <Bot
-              :size="16"
-              class="text-indigo-500"
-            />
-            <span class="text-xs font-medium text-gray-700">{{
-              t('aiModel.label', 'AI 模型')
-            }}</span>
-          </button>
+          <MobileCanvasExportButton :mind-map-export="useMindMapV2" />
         </div>
-
-        <MobileCanvasExportButton :mind-map-export="useMindMapV2" />
       </div>
     </div>
 

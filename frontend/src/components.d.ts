@@ -406,6 +406,7 @@ declare module 'vue' {
     MindmateWelcome: typeof import('./components/panels/mindmate/MindmateWelcome.vue')['default']
     MobileCanvasExportButton: typeof import('./components/mobile/MobileCanvasExportButton.vue')['default']
     MobileLearningSheetButton: typeof import('./components/mobile/MobileLearningSheetButton.vue')['default']
+    MobileOrgInviteShare: typeof import('./components/mobile/MobileOrgInviteShare.vue')['default']
     MobileVoiceNotesHistory: typeof import('./components/voiceNotes/MobileVoiceNotesHistory.vue')['default']
     MobileVoiceNotesSheet: typeof import('./components/voiceNotes/MobileVoiceNotesSheet.vue')['default']
     MyFavoriteCasesModal: typeof import('./components/showcase/MyFavoriteCasesModal.vue')['default']

@@ -3,6 +3,7 @@
  * Mounts SVG in the DOM so browser webfonts (Noto / Inter) apply before capture.
  */
 import { loadHtmlToImageModule } from '@/utils/diagramExportHtmlToImage'
+import { canvasToPngBlob, rasterizeExportSvgDataUrl } from '@/utils/diagramExportRasterCapture'
 
 /** ~300 DPI relative to 96 CSS px. */
 export const MIND_MAP_VECTOR_DOCX_PIXEL_RATIO = 3.125
@@ -12,7 +13,7 @@ export async function rasterizeMindMapVectorSvg(
   options?: { pixelRatio?: number }
 ): Promise<{ blob: Blob; width: number; height: number }> {
   const pixelRatio = options?.pixelRatio ?? MIND_MAP_VECTOR_DOCX_PIXEL_RATIO
-  const { toBlob } = await loadHtmlToImageModule()
+  const { toSvg } = await loadHtmlToImageModule()
 
   const host = document.createElement('div')
   host.setAttribute('data-mindmap-vector-raster', '1')
@@ -29,20 +30,16 @@ export async function rasterizeMindMapVectorSvg(
     if (typeof document !== 'undefined' && document.fonts?.ready) {
       await document.fonts.ready
     }
-    const blob = await toBlob(svgEl as unknown as HTMLElement, {
+    const svgDataUrl = await toSvg(svgEl as unknown as HTMLElement, {
       backgroundColor: '#ffffff',
-      pixelRatio,
       cacheBust: true,
     })
-    if (!blob) {
-      throw new Error('Vector SVG rasterize produced empty PNG')
-    }
-    const widthAttr = Number(svgEl.getAttribute('width')) || svgEl.clientWidth || 1
-    const heightAttr = Number(svgEl.getAttribute('height')) || svgEl.clientHeight || 1
+    const canvas = await rasterizeExportSvgDataUrl(svgDataUrl, pixelRatio, '#ffffff')
+    const blob = await canvasToPngBlob(canvas)
     return {
       blob,
-      width: Math.max(1, Math.round(widthAttr * pixelRatio)),
-      height: Math.max(1, Math.round(heightAttr * pixelRatio)),
+      width: canvas.width,
+      height: canvas.height,
     }
   } finally {
     host.remove()

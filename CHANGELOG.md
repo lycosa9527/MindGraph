@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.108] - 2026-09-28
+
+> **On a phone, a blank diagram says so before you save, the title stays centered, and exported pictures stay sharp.**
+
+### Changed
+
+- **Mobile canvas** — Saving an empty diagram says to edit it first, instead of “保存失败，请重试”. 学习单 sits immediately left of 导出. MindGraph is centered in the header, and the save time is on the right.
+- **Export** — Clipboard, save-as-image, PDF, Word, and the worksheet header are drawn at a real pixel size, not a stretched phone snapshot. A very large Word image stays within what a phone canvas can hold. If a learning-sheet PDF fails, the answers come back on the canvas.
+- **Mobile organizations** — Tap a school to see the invite code, the link, and one button that copies the welcome message.
+- **CrowdSec** — Refresh the committed blocklist baseline.
+
+### Tests
+
+- [`frontend/tests/diagramSaveFlow.spec.ts`](frontend/tests/diagramSaveFlow.spec.ts), [`frontend/tests/shouldFlushBeforeLibrarySwitch.spec.ts`](frontend/tests/shouldFlushBeforeLibrarySwitch.spec.ts), [`frontend/tests/diagramExportRasterScale.spec.ts`](frontend/tests/diagramExportRasterScale.spec.ts), [`frontend/tests/canvasExportMenu.spec.ts`](frontend/tests/canvasExportMenu.spec.ts), [`frontend/tests/diagramMindMapVectorExport.spec.ts`](frontend/tests/diagramMindMapVectorExport.spec.ts), [`frontend/tests/mobileOrganizations.spec.ts`](frontend/tests/mobileOrganizations.spec.ts)
+
 ## [5.180.107] - 2026-09-28
 
 > **A diagram in a MindMate seminar can be saved to your library and opened on the canvas.**

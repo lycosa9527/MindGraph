@@ -21,6 +21,10 @@ import {
 } from '@/composables/auth/useThinkingCoinSync'
 import { diagramShareWriteHeaders } from '@/composables/canvas/diagramShareTab'
 import { notify } from '@/composables/core/notifications'
+import {
+  AUTO_SAVE_SKIP_EMPTY,
+  AUTO_SAVE_SKIP_NO_SLOTS,
+} from '@/composables/editor/diagramAutoSaveSkip'
 import { syncFolderDiagramCounts } from '@/composables/sidebar/useDiagramArchiveHistory'
 import { SAVE } from '@/config'
 import { i18n } from '@/i18n'
@@ -1060,14 +1064,14 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
 
       // Case 2: New diagram - check if it's empty/unmodified
       if (isDiagramEmpty(spec, diagramType as DiagramType)) {
-        // Empty diagram - skip auto-save silently
-        return { success: false, action: 'skipped', error: 'Diagram is empty/unmodified' }
+        // Explicit save surfaces this; background autosave does not toast.
+        return { success: false, action: 'skipped', error: AUTO_SAVE_SKIP_EMPTY }
       }
 
       // Case 3: New diagram - check if we have slots
       if (!canSaveMore.value) {
         // Slots full - skip auto-save silently
-        return { success: false, action: 'skipped', error: 'No available slots' }
+        return { success: false, action: 'skipped', error: AUTO_SAVE_SKIP_NO_SLOTS }
       }
 
       // Case 4: New diagram with available slots - save it

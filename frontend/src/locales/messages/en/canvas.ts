@@ -1386,7 +1386,7 @@ export default {
   'editor.saveBlockedSubgraphPreview': 'Accept or discard the AI subgraph preview before saving',
   'editor.saveBlockedCollabActive': 'Saving is handled through the live collaboration session',
   'editor.saveBlockedCollabGuest': 'Only the host can save during a collaboration session',
-  'editor.saveNothingToSave': 'Nothing to save yet',
+  'editor.saveNothingToSave': 'The diagram is empty. Make a change, then save.',
   'editor.saveFailed': 'Save failed. Please try again',
   'editor.exportImage': 'Export Image',
   'editor.fitToScreen': 'Fit to Screen',

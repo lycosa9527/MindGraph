@@ -50,14 +50,18 @@ export function getDiagramCanvasHtmlToImageOptions(
   }
 }
 
-/** PDF capture — transparent canvas, no dot grid, lower pixel ratio (see compressRasterDataUrlForA4Pdf). */
+/**
+ * PDF capture — transparent canvas, no dot grid.
+ * Same sharp ratio as PNG; ``compressRasterDataUrlForA4Pdf`` caps the embedded size.
+ * Pass ``pixelRatio: 1`` for a lightweight on-screen preview.
+ */
 export function getDiagramCanvasPdfHtmlToImageOptions(
   overrides?: DiagramCanvasCaptureOptions
 ): HtmlToImageOptions {
   const { style: styleOverride, ...restOverrides } = overrides ?? {}
   return {
     backgroundColor: undefined,
-    pixelRatio: 1,
+    pixelRatio: 2,
     style: {
       transform: 'none',
       ...styleOverride,

@@ -55,6 +55,18 @@ describe('flushCanvasBeforeLibrarySwitch', () => {
     expect(order).toEqual(['drain', 'flush'])
   })
 
+  it('lets a blank diagram switch without treating the skip as a failed save', async () => {
+    await expect(
+      flushCanvasBeforeLibrarySwitch({
+        isDirty: true,
+        isGenerating: false,
+        drainPersistQueue: async () => undefined,
+        flushOnLeave: async () => ({ saved: false, reason: 'skipped_empty' }),
+        collabOwnsPersist: false,
+      })
+    ).resolves.toBe('ok')
+  })
+
   it('fails closed when leave flush does not persist', async () => {
     await expect(
       flushCanvasBeforeLibrarySwitch({
