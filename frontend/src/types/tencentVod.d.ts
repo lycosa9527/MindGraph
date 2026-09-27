@@ -9,7 +9,11 @@ declare module 'vod-js-sdk-v6' {
   }
 
   class TcVod {
-    constructor(options: { getSignature: () => Promise<string> })
+    constructor(options: {
+      getSignature: () => Promise<string>
+      allowReport?: boolean
+      enableRaceRegion?: boolean
+    })
     upload: (options: { mediaFile: File }) => VodJsUploader
   }
 

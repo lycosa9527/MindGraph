@@ -16,8 +16,14 @@ interface VodJsClient {
   upload: (options: { mediaFile: File }) => VodJsUploader
 }
 
+interface VodJsCtorOptions {
+  getSignature: () => Promise<string>
+  allowReport?: boolean
+  enableRaceRegion?: boolean
+}
+
 interface VodJsCtor {
-  new (options: { getSignature: () => Promise<string> }): VodJsClient
+  new (options: VodJsCtorOptions): VodJsClient
 }
 
 export async function uploadVodFile(options: {
@@ -27,13 +33,22 @@ export async function uploadVodFile(options: {
   folderId?: string | null
   onProgress?: (progress: VodUploadProgress) => void
 }): Promise<VodMediaItem> {
-  const sign = await signVodUpload(options.organizationId)
-  const module = (await import(/* @vite-ignore */ 'vod-js-sdk-v6')) as {
+  // oneTimeValid signatures are single-use. The SDK calls getSignature for
+  // ApplyUploadUGC and again on retry, so each call must mint a new one.
+  // Region racing also HEADs hosts outside connect-src, so leave it off.
+  let sourceContext = ''
+  const module = (await import('vod-js-sdk-v6')) as {
     default?: VodJsCtor
   } & VodJsCtor
   const Ctor = module.default ?? module
   const client = new Ctor({
-    getSignature: async () => sign.signature,
+    allowReport: false,
+    enableRaceRegion: false,
+    getSignature: async () => {
+      const sign = await signVodUpload(options.organizationId)
+      sourceContext = sign.source_context
+      return sign.signature
+    },
   })
   const uploader = client.upload({ mediaFile: options.file })
   uploader.on('media_progress', (info) => {
@@ -50,6 +65,6 @@ export async function uploadVodFile(options: {
     title: options.title,
     organizationId: options.organizationId,
     folderId: options.folderId,
-    sourceContext: sign.source_context,
+    sourceContext,
   })
 }

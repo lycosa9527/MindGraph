@@ -84,7 +84,8 @@ async function submit(): Promise<void> {
     notify.success(t('admin.vod.uploadSuccess'))
     emit('uploaded')
     emit('update:modelValue', false)
-  } catch {
+  } catch (error) {
+    console.error('[vod] upload failed', error)
     notify.error(t('admin.vod.uploadFailed'))
   } finally {
     uploading.value = false
