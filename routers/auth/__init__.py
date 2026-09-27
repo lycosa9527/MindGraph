@@ -37,6 +37,7 @@ from .dingtalk_bind import router as dingtalk_bind_router
 from .oauth import router as oauth_router
 from . import thinking_coins
 from .admin import admin_router
+from .user_dropdown import router as user_dropdown_router
 from .dependencies import (
     get_language_dependency,
     require_admin,
@@ -85,6 +86,7 @@ router.include_router(embed.router)
 router.include_router(thinking_coins.router)
 router.include_router(dingtalk_bind_router)
 router.include_router(oauth_router)
+router.include_router(user_dropdown_router)
 router.include_router(admin_router)
 
 # Export router and utilities

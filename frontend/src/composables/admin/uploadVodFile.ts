@@ -26,6 +26,25 @@ interface VodJsCtor {
   new (options: VodJsCtorOptions): VodJsClient
 }
 
+/** Vite's CJS interop nests `exports.default` one level past the import namespace. */
+export function vodSdkConstructor(loaded: unknown): VodJsCtor {
+  let current = loaded
+  for (let depth = 0; depth < 4; depth += 1) {
+    if (typeof current === 'function') {
+      return current as VodJsCtor
+    }
+    if (!current || typeof current !== 'object' || !('default' in current)) {
+      break
+    }
+    const next = (current as { default?: unknown }).default
+    if (next === current) {
+      break
+    }
+    current = next
+  }
+  throw new Error('vod_sdk_ctor_missing')
+}
+
 export async function uploadVodFile(options: {
   file: File
   title: string
@@ -33,25 +52,28 @@ export async function uploadVodFile(options: {
   folderId?: string | null
   onProgress?: (progress: VodUploadProgress) => void
 }): Promise<VodMediaItem> {
-  // oneTimeValid signatures are single-use. The SDK calls getSignature for
-  // ApplyUploadUGC and again on retry, so each call must mint a new one.
-  // Region racing also HEADs hosts outside connect-src, so leave it off.
+  // The SDK asks for a signature on ApplyUploadUGC, again on retry, and again
+  // on CommitUploadUGC. oneTimeValid signatures cannot be reused. Tencent
+  // stores the source context from the apply call, which finishes before
+  // byte progress. Later commit signatures must not replace it.
   let sourceContext = ''
-  const module = (await import('vod-js-sdk-v6')) as {
-    default?: VodJsCtor
-  } & VodJsCtor
-  const Ctor = module.default ?? module
+  let uploadStarted = false
+  const loaded = await import('vod-js-sdk-v6')
+  const Ctor = vodSdkConstructor(loaded)
   const client = new Ctor({
     allowReport: false,
     enableRaceRegion: false,
     getSignature: async () => {
       const sign = await signVodUpload(options.organizationId)
-      sourceContext = sign.source_context
+      if (!uploadStarted) {
+        sourceContext = sign.source_context
+      }
       return sign.signature
     },
   })
   const uploader = client.upload({ mediaFile: options.file })
   uploader.on('media_progress', (info) => {
+    uploadStarted = true
     const percent = typeof info.percent === 'number' ? info.percent : 0
     options.onProgress?.({ percent })
   })

@@ -51,8 +51,8 @@ async function loadPlayer(): Promise<void> {
       return
     }
     const [TCPlayer] = await Promise.all([
-      import(/* @vite-ignore */ 'tcplayer.js').then((mod) => mod.default),
-      import(/* @vite-ignore */ 'tcplayer.js/dist/tcplayer.min.css'),
+      import('tcplayer.js').then((mod) => mod.default),
+      import('tcplayer.js/dist/tcplayer.min.css'),
     ])
     if (gen !== loadGen) {
       return

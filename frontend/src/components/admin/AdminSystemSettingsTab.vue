@@ -15,6 +15,7 @@ import AdminPublicDashboardTab from '@/components/admin/AdminPublicDashboardTab.
 import AdminRolesTab from '@/components/admin/AdminRolesTab.vue'
 import AdminTeachingDesignTemplateTab from '@/components/admin/AdminTeachingDesignTemplateTab.vue'
 import AdminThinkingCoinsTab from '@/components/admin/AdminThinkingCoinsTab.vue'
+import AdminUserDropdownTab from '@/components/admin/AdminUserDropdownTab.vue'
 import GeweLoginComponent from '@/components/admin/GeweLoginComponent.vue'
 import {
   type SettingsSubtab,
@@ -86,6 +87,7 @@ watch(
   >
     <AdminFeaturesTab v-if="activeSubtab === 'features'" />
     <AdminTeachingDesignTemplateTab v-else-if="activeSubtab === 'teaching_design'" />
+    <AdminUserDropdownTab v-else-if="activeSubtab === 'user_dropdown'" />
     <AdminRolesTab v-else-if="activeSubtab === 'roles'" />
     <AdminLibraryTab v-else-if="activeSubtab === 'library'" />
     <AdminDatabaseTab v-else-if="activeSubtab === 'database'" />

@@ -28,11 +28,14 @@ import I18nText from '@/components/common/I18nText.vue'
 import QuickRegisterModal from '@/components/mindgraph/QuickRegisterModal.vue'
 import SidebarQuoteMarquee from '@/components/sidebar/SidebarQuoteMarquee.vue'
 import SidebarTokenUsage from '@/components/sidebar/SidebarTokenUsage.vue'
+import UserDropdownCourseDialog from '@/components/sidebar/UserDropdownCourseDialog.vue'
+import UserDropdownCourseItems from '@/components/sidebar/UserDropdownCourseItems.vue'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 import { toggleQuickAccessRemote } from '@/composables/sidebar/useQuickAccessRemote'
 import { useSidebarPhilosophyQuote } from '@/composables/sidebar/useSidebarPhilosophyQuote'
 import { useSidebarThinkingCoinTaskPromo } from '@/composables/sidebar/useSidebarThinkingCoinTaskPromo'
+import { refreshUserDropdownMenu } from '@/composables/sidebar/useUserDropdownMenu'
 import { usePwaInstall } from '@/composables/usePwaInstall'
 import { useUIStore } from '@/stores/ui'
 import { useVoiceNotesStore } from '@/stores/voiceNotes'
@@ -72,6 +75,10 @@ function openPlatformQuickGuide(): void {
 
 function handleVoiceNotes(): void {
   void voiceNotesStore.enableAndOpen()
+}
+
+function onUserMenuVisible(open: boolean): void {
+  if (open) void refreshUserDropdownMenu()
 }
 </script>
 
@@ -211,6 +218,7 @@ function handleVoiceNotes(): void {
           ],
         }"
         class="user-dropdown w-full"
+        @visible-change="onUserMenuVisible"
       >
         <div
           class="user-dropdown-trigger flex items-center justify-between cursor-pointer hover:bg-[#f5f5f4] transition-colors px-4 py-3 w-full"
@@ -305,6 +313,7 @@ function handleVoiceNotes(): void {
               <BookOpen class="w-4 h-4 mr-2" />
               <I18nText k="auth.platformQuickGuide" />
             </el-dropdown-item>
+            <UserDropdownCourseItems />
             <el-dropdown-item
               divided
               class="user-dropdown-item--logout"
@@ -327,6 +336,7 @@ function handleVoiceNotes(): void {
           modifiers: [{ name: 'offset', options: { offset: [0, 8] } }],
         }"
         class="user-dropdown-collapsed"
+        @visible-change="onUserMenuVisible"
       >
         <el-badge
           :value="0"
@@ -395,6 +405,7 @@ function handleVoiceNotes(): void {
               <BookOpen class="w-4 h-4 mr-2" />
               <I18nText k="auth.platformQuickGuide" />
             </el-dropdown-item>
+            <UserDropdownCourseItems />
             <el-dropdown-item
               divided
               class="user-dropdown-item--logout"
@@ -409,6 +420,7 @@ function handleVoiceNotes(): void {
     </template>
 
     <QuickRegisterModal v-model="showShareSiteModal" />
+    <UserDropdownCourseDialog v-if="s.isAuthenticated" />
   </div>
 </template>
 

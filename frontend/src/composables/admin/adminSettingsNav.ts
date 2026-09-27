@@ -15,6 +15,7 @@ export type SettingsSubtab =
   | 'thinking_coins'
   | 'public_dashboard'
   | 'teaching_design'
+  | 'user_dropdown'
 
 export interface SettingsNavLeafItem {
   kind: 'leaf'
@@ -27,6 +28,7 @@ export type SettingsNavItem = SettingsNavLeafItem
 export const SETTINGS_NAV_ITEMS: readonly SettingsNavItem[] = [
   { kind: 'leaf', name: 'features', labelKey: 'admin.featuresTab' },
   { kind: 'leaf', name: 'teaching_design', labelKey: 'admin.teachingDesignTemplate.tab' },
+  { kind: 'leaf', name: 'user_dropdown', labelKey: 'admin.userDropdown.tab' },
   { kind: 'leaf', name: 'roles', labelKey: 'admin.roleControl' },
   { kind: 'leaf', name: 'database', labelKey: 'admin.database.tab' },
   { kind: 'leaf', name: 'cos', labelKey: 'admin.cos.tab' },

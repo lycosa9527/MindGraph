@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.103] - 2026-09-27
+
+> **An online-library video can finish uploading, and the account menu can open a course.**
+
+### Fixed
+
+- **在线视频库** — Upload loads the Tencent library and calls its constructor. Each step of the upload gets a new one-time signature. The catalog keeps the signature Tencent stored on the file. Preview and Course Builder load the player from the app bundle.
+
+### Added
+
+- **用户下拉列表** — System settings can add, rename, and remove entries on the signed-in account menu, and link each one to a saved course. Choosing the entry opens that course.
+
+### Tests
+
+- [`frontend/tests/uploadVodFile.spec.ts`](frontend/tests/uploadVodFile.spec.ts), [`tests/test_user_dropdown_routes.py`](tests/test_user_dropdown_routes.py)
+
 ## [5.180.102] - 2026-09-27
 
 > **Database rows that were still open to every connection now follow the same school and owner rules as the rest of the app.**

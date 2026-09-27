@@ -128,6 +128,14 @@ describe('adminCapabilities', () => {
     ])
   })
 
+  it('user_dropdown settings subtab is superadmin-only', () => {
+    expect(settingsSubtabRequiresCapabilities('user_dropdown')).toEqual([
+      'tab.settings.user_dropdown',
+    ])
+    expect(fallbackCapabilitiesForRole('superadmin')).toContain('tab.settings.user_dropdown')
+    expect(fallbackCapabilitiesForRole('school_admin')).not.toContain('tab.settings.user_dropdown')
+  })
+
   it('teaching_design settings subtab is superadmin-only', () => {
     expect(settingsSubtabRequiresCapabilities('teaching_design')).toEqual([
       'tab.settings.teaching_design',
