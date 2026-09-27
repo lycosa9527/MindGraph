@@ -266,6 +266,9 @@ async def register_media(
     await db.flush()
     if refresh:
         await refresh_media_metadata(db, row)
+    # selectin loads owner only during SELECT. A just-inserted row still
+    # lazy-loads it, and that sync IO raises MissingGreenlet.
+    await db.refresh(row, attribute_names=["owner"])
     return row
 
 
