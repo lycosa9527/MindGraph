@@ -28,8 +28,9 @@ def test_vod_connect_sources_cover_upload_api_and_parks() -> None:
     assert "https://*.cos.ap-chongqing.myqcloud.com" in sources.split()
     assert "https://playvideo.vodplayvideo.net" in sources.split()
     assert "https://*.vod2.myqcloud.com" in sources.split()
+    assert "https://*.vod-qcloud.com" in sources.split()
     assert "https://tcsdk.com" == vod_browser_script_sources()
-    assert "https://*.vod2.myqcloud.com" == vod_browser_media_sources()
+    assert vod_browser_media_sources() == "https://*.vod2.myqcloud.com https://*.vod-qcloud.com"
     assert "https://*.myqcloud.com" not in sources.split()
 
 
@@ -83,7 +84,7 @@ async def test_production_csp_allows_vod_upload_when_feature_on() -> None:
     assert "https://*.cos.ap-shanghai.myqcloud.com" in csp
     assert "https://playvideo.vodplayvideo.net" in csp
     assert "https://tcsdk.com" in csp
-    assert "media-src 'self' blob: https://*.vod2.myqcloud.com;" in csp
+    assert "media-src 'self' blob: https://*.vod2.myqcloud.com https://*.vod-qcloud.com;" in csp
 
 
 @pytest.mark.asyncio

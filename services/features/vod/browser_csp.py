@@ -5,8 +5,8 @@ vod-js-sdk-v6 posts to vod2.qcloud.com, then PUTs the file to
 match that host: CSP ``*`` covers a single label only.
 
 TCPlayer 5.3 then loads ``tcsdk.com`` scripts and calls getplayinfo on the
-playvideo hosts baked into the bundle. The file itself is served from
-``{appId}.vod2.myqcloud.com``.
+playvideo hosts baked into the bundle. The file itself is served from ``{appId}.vod2.myqcloud.com`` or
+``{appId}.vod-qcloud.com``.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -45,14 +45,18 @@ VOD_PLAY_CONNECT_ORIGINS = (
     "https://license.vodplayvideo.com",
     "https://license.vod-common.com",
     "https://get-domains.vod-backup.net",
+)
+
+# One label each: ``{appId}.vod2.myqcloud.com`` and ``{appId}.vod-qcloud.com``.
+VOD_PLAY_FILE_ORIGINS = (
     "https://*.vod2.myqcloud.com",
+    "https://*.vod-qcloud.com",
 )
 
 # TCPlayer loads hls/flv/crypto from this host at runtime. The package copy is not used.
 VOD_PLAYER_SCRIPT_ORIGINS = ("https://tcsdk.com",)
 
-# Default distribution domain is one label: ``{appId}.vod2.myqcloud.com``.
-VOD_PLAY_MEDIA_ORIGINS = ("https://*.vod2.myqcloud.com",)
+VOD_PLAY_MEDIA_ORIGINS = VOD_PLAY_FILE_ORIGINS
 
 
 def license_connect_origin(license_url: str) -> str:
@@ -73,6 +77,7 @@ def vod_browser_connect_sources(license_url: str = "") -> str:
         origins.append(f"https://*.cos.{region}.myqcloud.com")
         origins.append(f"https://*.cos.{region}.tencentcos.cn")
     origins.extend(VOD_PLAY_CONNECT_ORIGINS)
+    origins.extend(VOD_PLAY_FILE_ORIGINS)
     license_origin = license_connect_origin(license_url)
     if license_origin and license_origin not in origins:
         origins.append(license_origin)
@@ -85,5 +90,5 @@ def vod_browser_script_sources() -> str:
 
 
 def vod_browser_media_sources() -> str:
-    """Space-separated media-src origins for the default VOD play domain."""
+    """Space-separated media-src origins for the default VOD play domains."""
     return " ".join(VOD_PLAY_MEDIA_ORIGINS)
