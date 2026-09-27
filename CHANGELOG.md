@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.104] - 2026-09-27
+
+> **An online-library preview can ask Tencent for the video and play it.**
+
+### Fixed
+
+- **在线视频库** — Preview and Course Builder can reach the play service, load the player helper, and fetch the file from the default play domain. Saving a finished upload loads the owner in the same database session, so the library row is stored instead of ending as a server error.
+
+### Tests
+
+- [`tests/test_vod_browser_csp.py`](tests/test_vod_browser_csp.py), [`tests/test_vod_catalog_routes.py`](tests/test_vod_catalog_routes.py)
+
 ## [5.180.103] - 2026-09-27
 
 > **An online-library video can finish uploading, and the account menu can open a course.**

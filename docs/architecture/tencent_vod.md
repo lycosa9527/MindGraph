@@ -6,7 +6,7 @@ Standalone media library for school and platform admins. Videos are hosted in Te
 
 `FEATURE_VOD` (default off). Admin → Features. `/api/vod/*` returns 404 when the flag is off.
 
-When the flag is on, the document `connect-src` allows `https://vod2.qcloud.com`, backup `https://vod2.dnsv1.com`, and one-label COS wildcards for the mainland upload parks (`*.cos.ap-shanghai.myqcloud.com` and the same shape for Chongqing, Guangzhou, Beijing, Chengdu, Nanjing, plus `tencentcos.cn`). `*.myqcloud.com` does not match those hosts. The Vite `index.html` meta lists the same origins for local dev. Playback license and CDN hosts are separate.
+When the flag is on, the document policy allows the upload hosts and TCPlayer playback. `connect-src` includes `https://vod2.qcloud.com`, backup `https://vod2.dnsv1.com`, one-label COS wildcards for the mainland upload parks (`*.cos.ap-shanghai.myqcloud.com` and the same shape for Chongqing, Guangzhou, Beijing, Chengdu, Nanjing, plus `tencentcos.cn`), the playvideo/license hosts baked into TCPlayer 5.3, and `https://*.vod2.myqcloud.com`. `script-src` includes `https://tcsdk.com` (hls and crypto helpers). `media-src` includes `https://*.vod2.myqcloud.com`, which is the default play domain (`{appId}.vod2.myqcloud.com`). `*.myqcloud.com` does not match those hosts. The Vite `index.html` meta lists the same origins for local dev. A custom `TENCENT_VOD_LICENSE_URL` host is added to `connect-src` as well.
 
 | Variable | Role |
 |----------|------|
