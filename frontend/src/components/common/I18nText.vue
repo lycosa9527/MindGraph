@@ -156,7 +156,7 @@ watch(
 .i18n-label--beside {
   flex-direction: row;
   direction: ltr;
-  justify-content: space-between;
+  justify-content: center;
   align-items: baseline;
   gap: 0.65em;
   width: 100%;
