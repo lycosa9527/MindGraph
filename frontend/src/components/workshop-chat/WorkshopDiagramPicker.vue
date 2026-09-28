@@ -43,12 +43,6 @@ watch(
   }
 )
 
-function diagramTypeLabel(type: string): string {
-  const key = `sidebar.diagramType.${type}`
-  const translated = t(key)
-  return translated === key ? type : translated
-}
-
 async function pick(diagram: SavedDiagram): Promise<void> {
   if (insertingId.value) {
     return
@@ -113,12 +107,19 @@ async function pick(diagram: SavedDiagram): Promise<void> {
           @click="pick(diagram)"
         >
           <span class="ws-diagram-picker__meta">
-            <span class="ws-diagram-picker__title">{{
-              diagram.title || t('workshop.diagram')
-            }}</span>
-            <span class="ws-diagram-picker__type">{{
-              diagramTypeLabel(diagram.diagram_type)
-            }}</span>
+            <span class="ws-diagram-picker__title"
+              ><template v-if="diagram.title">{{ diagram.title }}</template
+              ><I18nText
+                v-else
+                k="workshop.diagram"
+            /></span>
+            <span class="ws-diagram-picker__type">
+              <I18nText
+                :k="`sidebar.diagramType.${diagram.diagram_type}`"
+                :fallback-text="diagram.diagram_type"
+                dense
+              />
+            </span>
           </span>
           <span
             v-if="insertingId === String(diagram.id)"

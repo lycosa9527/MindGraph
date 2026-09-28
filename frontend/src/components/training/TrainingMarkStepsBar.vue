@@ -38,6 +38,8 @@ const options = computed(() =>
   Array.from({ length: count.value }, (_, index) => ({
     value: index + 1,
     label: t('training.builder.markStep', { n: index + 1 }),
+    labelKey: 'training.builder.markStep',
+    labelParams: { n: index + 1 },
   }))
 )
 
@@ -54,7 +56,7 @@ function onRemove(): void {
 
 <template>
   <div class="builder-toolbar__row">
-    <span class="builder-toolbar__label">{{ t('training.builder.groupSteps') }}</span>
+    <span class="builder-toolbar__label"><I18nText k="training.builder.groupSteps" /></span>
     <AdminSwissSegmented
       v-model="current"
       :equal="count <= 4"

@@ -320,13 +320,13 @@ onMounted(() => {
     <el-card shadow="never">
       <template #header>
         <div class="flex items-center justify-between">
-          <span class="font-semibold">{{ t('admin.database.pgOverview') }}</span>
+          <span class="font-semibold"><I18nText k="admin.database.pgOverview" /></span>
           <el-button
             size="small"
             :loading="isLoadingStats"
             @click="loadStats"
           >
-            {{ t('admin.refresh') }}
+            <I18nText k="admin.refresh" />
           </el-button>
         </div>
       </template>
@@ -362,16 +362,19 @@ onMounted(() => {
           max-height="300"
           stripe
         >
-          <el-table-column
-            prop="name"
-            :label="t('admin.database.tableName')"
-          />
+          <el-table-column prop="name">
+            <template #header>
+              <I18nText k="admin.database.tableName" />
+            </template>
+          </el-table-column>
           <el-table-column
             prop="count"
-            :label="t('admin.database.rowCount')"
             width="140"
             align="right"
           >
+            <template #header>
+              <I18nText k="admin.database.rowCount" />
+            </template>
             <template #default="{ row }">{{ row.count.toLocaleString() }}</template>
           </el-table-column>
         </el-table>
@@ -387,14 +390,14 @@ onMounted(() => {
     <el-card shadow="never">
       <template #header>
         <div class="flex items-center justify-between">
-          <span class="font-semibold">{{ t('admin.database.pgExportImport') }}</span>
+          <span class="font-semibold"><I18nText k="admin.database.pgExportImport" /></span>
           <div class="flex gap-2">
             <el-button
               size="small"
               :loading="isScanning"
               @click="scanBackup"
             >
-              {{ t('admin.database.scanBackup') }}
+              <I18nText k="admin.database.scanBackup" />
             </el-button>
             <el-button
               size="small"
@@ -402,13 +405,13 @@ onMounted(() => {
               :loading="isExporting"
               @click="exportDump"
             >
-              {{ t('admin.database.exportNow') }}
+              <I18nText k="admin.database.exportNow" />
             </el-button>
           </div>
         </div>
       </template>
 
-      <p class="text-gray-500 text-sm mb-4">{{ t('admin.database.pgExportImportDesc') }}</p>
+      <p class="text-gray-500 text-sm mb-4"><I18nText k="admin.database.pgExportImportDesc" /></p>
 
       <template v-if="scanResult && scanResult.pg_dumps.length > 0">
         <el-table
@@ -416,28 +419,33 @@ onMounted(() => {
           size="small"
           stripe
         >
+          <el-table-column prop="name">
+            <template #header>
+              <I18nText k="admin.database.fileName" />
+            </template>
+          </el-table-column>
           <el-table-column
-            prop="name"
-            :label="t('admin.database.fileName')"
-          />
-          <el-table-column
-            :label="t('admin.database.fileSize')"
             width="120"
             align="right"
           >
+            <template #header>
+              <I18nText k="admin.database.fileSize" />
+            </template>
             <template #default="{ row }">{{ formatBytes(row.size_bytes) }}</template>
           </el-table-column>
-          <el-table-column
-            :label="t('admin.database.modified')"
-            width="180"
-          >
+          <el-table-column width="180">
+            <template #header>
+              <I18nText k="admin.database.modified" />
+            </template>
             <template #default="{ row }">{{ formatDate(row.modified_at) }}</template>
           </el-table-column>
           <el-table-column
-            :label="t('admin.actions')"
             width="240"
             align="center"
           >
+            <template #header>
+              <I18nText k="admin.actions" />
+            </template>
             <template #default="{ row }">
               <div class="flex gap-1 justify-center">
                 <el-button
@@ -446,7 +454,7 @@ onMounted(() => {
                   :loading="isAnalyzingDump && selectedDump === row.name"
                   @click="analyzeDump(row.name)"
                 >
-                  {{ t('admin.database.pgAnalyze') }}
+                  <I18nText k="admin.database.pgAnalyze" />
                 </el-button>
                 <el-button
                   size="small"
@@ -454,7 +462,7 @@ onMounted(() => {
                   :loading="isImporting"
                   @click="importDump(row.name)"
                 >
-                  {{ t('admin.database.restore') }}
+                  <I18nText k="admin.database.restore" />
                 </el-button>
               </div>
             </template>
@@ -466,12 +474,12 @@ onMounted(() => {
         v-else-if="scanResult"
         class="text-gray-400 text-sm py-4 text-center"
       >
-        {{ t('admin.database.noDumpFiles') }}
+        <I18nText k="admin.database.noDumpFiles" />
       </div>
 
       <template v-if="pgDumpAnalysis && !pgDumpMergeResult">
         <el-divider />
-        <h4 class="font-medium mb-3">{{ t('admin.database.pgAnalysisResult') }}</h4>
+        <h4 class="font-medium mb-3"><I18nText k="admin.database.pgAnalysisResult" /></h4>
 
         <div class="grid grid-cols-4 gap-3 mb-4">
           <AdminSwissKpiCard
@@ -504,7 +512,7 @@ onMounted(() => {
           v-if="pgDumpAnalysis.skipped_tables.length > 0"
           class="text-sm text-gray-500 mb-3"
         >
-          {{ t('admin.database.pgSkippedTables') }}:
+          <I18nText k="admin.database.pgSkippedTables" />:
           <span class="font-mono">{{ pgDumpAnalysis.skipped_tables.join(', ') }}</span>
         </div>
 
@@ -514,50 +522,61 @@ onMounted(() => {
           max-height="360"
           stripe
         >
-          <el-table-column
-            prop="name"
-            :label="t('admin.database.tableName')"
-          />
+          <el-table-column prop="name">
+            <template #header>
+              <I18nText k="admin.database.tableName" />
+            </template>
+          </el-table-column>
           <el-table-column
             prop="staging_rows"
-            :label="t('admin.database.pgStagingRows')"
             width="120"
             align="right"
           >
+            <template #header>
+              <I18nText k="admin.database.pgStagingRows" />
+            </template>
             <template #default="{ row }">{{ row.staging_rows.toLocaleString() }}</template>
           </el-table-column>
           <el-table-column
             prop="live_rows"
-            :label="t('admin.database.pgLiveRows')"
             width="120"
             align="right"
           >
+            <template #header>
+              <I18nText k="admin.database.pgLiveRows" />
+            </template>
             <template #default="{ row }">{{ row.live_rows.toLocaleString() }}</template>
           </el-table-column>
           <el-table-column
             prop="new_rows"
-            :label="t('admin.database.pgNewRows')"
             width="100"
             align="right"
           >
+            <template #header>
+              <I18nText k="admin.database.pgNewRows" />
+            </template>
             <template #default="{ row }">
               <span class="text-green-600 font-medium">{{ row.new_rows.toLocaleString() }}</span>
             </template>
           </el-table-column>
           <el-table-column
             prop="duplicate_rows"
-            :label="t('admin.database.pgDuplicateRows')"
             width="110"
             align="right"
           >
+            <template #header>
+              <I18nText k="admin.database.pgDuplicateRows" />
+            </template>
             <template #default="{ row }">{{ row.duplicate_rows.toLocaleString() }}</template>
           </el-table-column>
           <el-table-column
             prop="orphaned_rows"
-            :label="t('admin.database.pgOrphanedRows')"
             width="100"
             align="right"
           >
+            <template #header>
+              <I18nText k="admin.database.pgOrphanedRows" />
+            </template>
             <template #default="{ row }">
               <span :class="row.orphaned_rows ? 'text-orange-500' : ''">
                 {{ row.orphaned_rows.toLocaleString() }}
@@ -573,7 +592,7 @@ onMounted(() => {
             :disabled="isMergingDump"
             @click="cleanOrphans"
           >
-            {{ t('admin.database.pgClearOrphans') }}
+            <I18nText k="admin.database.pgClearOrphans" />
           </el-button>
           <el-button
             type="success"
@@ -581,7 +600,7 @@ onMounted(() => {
             :disabled="isCleaningOrphans"
             @click="executePgMerge"
           >
-            {{ t('admin.database.pgExecuteMerge') }}
+            <I18nText k="admin.database.pgExecuteMerge" />
           </el-button>
         </div>
       </template>
@@ -607,7 +626,7 @@ onMounted(() => {
           v-if="pgDumpMergeResult.stats_recomputed_users"
           class="text-sm text-gray-600 mb-3"
         >
-          {{ t('admin.database.pgStatsRecomputed') }}:
+          <I18nText k="admin.database.pgStatsRecomputed" />:
           {{ pgDumpMergeResult.stats_recomputed_users }}
         </p>
 
@@ -617,31 +636,38 @@ onMounted(() => {
           max-height="400"
           stripe
         >
+          <el-table-column prop="name">
+            <template #header>
+              <I18nText k="admin.database.tableName" />
+            </template>
+          </el-table-column>
           <el-table-column
-            prop="name"
-            :label="t('admin.database.tableName')"
-          />
-          <el-table-column
-            :label="t('admin.database.inserted')"
             width="120"
             align="right"
           >
+            <template #header>
+              <I18nText k="admin.database.inserted" />
+            </template>
             <template #default="{ row }">
               <span class="text-green-600 font-medium">{{ row.inserted }}</span>
             </template>
           </el-table-column>
           <el-table-column
-            :label="t('admin.database.skipped')"
             width="120"
             align="right"
           >
+            <template #header>
+              <I18nText k="admin.database.skipped" />
+            </template>
             <template #default="{ row }">{{ row.skipped }}</template>
           </el-table-column>
           <el-table-column
-            :label="t('admin.database.orphaned')"
             width="120"
             align="right"
           >
+            <template #header>
+              <I18nText k="admin.database.orphaned" />
+            </template>
             <template #default="{ row }">
               <span :class="row.orphaned ? 'text-orange-500' : ''">{{ row.orphaned ?? '-' }}</span>
             </template>
@@ -653,25 +679,25 @@ onMounted(() => {
     <el-card shadow="never">
       <template #header>
         <div class="flex items-center justify-between">
-          <span class="font-semibold">{{ t('admin.database.orphanCleanup') }}</span>
+          <span class="font-semibold"><I18nText k="admin.database.orphanCleanup" /></span>
           <el-button
             size="small"
             :loading="isDetectingOrphans"
             @click="detectOrphans"
           >
-            {{ t('admin.database.detectOrphans') }}
+            <I18nText k="admin.database.detectOrphans" />
           </el-button>
         </div>
       </template>
 
-      <p class="text-gray-500 text-sm mb-4">{{ t('admin.database.orphanCleanupDesc') }}</p>
+      <p class="text-gray-500 text-sm mb-4"><I18nText k="admin.database.orphanCleanupDesc" /></p>
 
       <template v-if="orphans !== null">
         <div
           v-if="!hasOrphans"
           class="text-green-600 text-sm py-2"
         >
-          {{ t('admin.database.noOrphansFound') }}
+          <I18nText k="admin.database.noOrphansFound" />
         </div>
 
         <template v-else>
@@ -686,7 +712,7 @@ onMounted(() => {
             </div>
           </div>
           <div class="text-sm text-gray-500 mb-3">
-            {{ t('admin.database.totalOrphans') }}:
+            <I18nText k="admin.database.totalOrphans" />:
             <strong class="text-orange-600">{{ totalOrphans }}</strong>
           </div>
           <el-button
@@ -694,7 +720,7 @@ onMounted(() => {
             :loading="isCleaningOrphans"
             @click="cleanOrphans"
           >
-            {{ t('admin.database.cleanOrphans') }}
+            <I18nText k="admin.database.cleanOrphans" />
           </el-button>
         </template>
       </template>

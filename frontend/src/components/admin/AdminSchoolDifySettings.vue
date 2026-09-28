@@ -6,6 +6,7 @@
 import { computed, ref, watch } from 'vue'
 
 import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
+import AdminMindbotSwissSegmented from '@/components/admin/swiss/AdminMindbotSwissSegmented.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { resolveSchoolMindmateAvatarUrl } from '@/composables/mindmate/useMindMateBranding'
 import {
@@ -14,7 +15,6 @@ import {
   useUpdateAdminOrganization,
   useUploadAdminOrganizationMindmateAvatar,
 } from '@/composables/queries'
-import AdminMindbotSwissSegmented from '@/components/admin/swiss/AdminMindbotSwissSegmented.vue'
 import { httpErrorDetail } from '@/utils/httpErrorDetail'
 
 const props = withDefaults(
@@ -76,8 +76,8 @@ const swissFieldLabelClass =
 const selectedServer = ref(1)
 const failoverEnabled = ref(true)
 const serverOptions = computed(() => [
-  { label: t('admin.schoolDifyServer1'), value: 1 },
-  { label: t('admin.schoolDifyServer2'), value: 2 },
+  { label: t('admin.schoolDifyServer1'), labelKey: 'admin.schoolDifyServer1', value: 1 },
+  { label: t('admin.schoolDifyServer2'), labelKey: 'admin.schoolDifyServer2', value: 2 },
 ])
 const activeKeyMasked = computed(() =>
   selectedServer.value === 2 ? props.difyApiKey2Masked : props.difyApiKeyMasked
@@ -584,14 +584,17 @@ defineExpose({
         <div
           class="mindbot-section-label mindbot-swiss-section-label text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
         >
-          {{ t('admin.schoolMindmateAgentSection') }}
+          <I18nText k="admin.schoolMindmateAgentSection" />
         </div>
         <el-form
           label-position="left"
           label-width="178px"
           class="mindbot-swiss-form"
         >
-          <el-form-item :label="t('admin.schoolMindmateAgentName')">
+          <el-form-item>
+            <template #label>
+              <I18nText k="admin.schoolMindmateAgentName" />
+            </template>
             <el-input
               v-model="agentName"
               clearable
@@ -600,7 +603,10 @@ defineExpose({
               class="mindbot-swiss-input w-full max-w-2xl"
             />
           </el-form-item>
-          <el-form-item :label="t('admin.schoolMindmateAgentAlias')">
+          <el-form-item>
+            <template #label>
+              <I18nText k="admin.schoolMindmateAgentAlias" />
+            </template>
             <el-input
               v-model="agentAlias"
               clearable
@@ -609,10 +615,13 @@ defineExpose({
               class="mindbot-swiss-input w-full max-w-2xl"
             />
             <p class="mindbot-swiss-hint text-xs mt-1.5 leading-relaxed max-w-2xl m-0">
-              {{ t('admin.schoolMindmateAgentAliasHint') }}
+              <I18nText k="admin.schoolMindmateAgentAliasHint" />
             </p>
           </el-form-item>
-          <el-form-item :label="t('admin.schoolMindmateSchoolName')">
+          <el-form-item>
+            <template #label>
+              <I18nText k="admin.schoolMindmateSchoolName" />
+            </template>
             <el-input
               v-model="schoolDisplayName"
               clearable
@@ -621,10 +630,13 @@ defineExpose({
               class="mindbot-swiss-input w-full max-w-2xl"
             />
             <p class="mindbot-swiss-hint text-xs mt-1.5 leading-relaxed max-w-2xl m-0">
-              {{ t('admin.schoolMindmateSchoolNameHint') }}
+              <I18nText k="admin.schoolMindmateSchoolNameHint" />
             </p>
           </el-form-item>
-          <el-form-item :label="t('admin.schoolMindmateAgentAvatar')">
+          <el-form-item>
+            <template #label>
+              <I18nText k="admin.schoolMindmateAgentAvatar" />
+            </template>
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center max-w-2xl">
               <img
                 :src="avatarPreviewSrc"
@@ -640,7 +652,7 @@ defineExpose({
                   :loading="avatarUploading"
                   @click="openAvatarPicker"
                 >
-                  {{ t('admin.schoolMindmateAgentAvatarUpload') }}
+                  <I18nText k="admin.schoolMindmateAgentAvatarUpload" />
                 </el-button>
                 <el-button
                   v-if="agentAvatarUrl"
@@ -649,7 +661,7 @@ defineExpose({
                   :loading="avatarUploading"
                   @click="removeAvatar"
                 >
-                  {{ t('admin.schoolMindmateAgentAvatarRemove') }}
+                  <I18nText k="admin.schoolMindmateAgentAvatarRemove" />
                 </el-button>
               </div>
             </div>
@@ -661,7 +673,7 @@ defineExpose({
               @change="onAvatarSelected"
             />
             <p class="mindbot-swiss-hint text-xs mt-1.5 leading-relaxed max-w-2xl m-0">
-              {{ t('admin.schoolMindmateAgentAvatarHint') }}
+              <I18nText k="admin.schoolMindmateAgentAvatarHint" />
             </p>
           </el-form-item>
         </el-form>
@@ -673,7 +685,7 @@ defineExpose({
         <div
           class="mindbot-section-label mindbot-swiss-section-label text-[11px] font-semibold uppercase tracking-[0.14em] mb-3 flex flex-wrap items-center justify-between gap-2"
         >
-          <span>{{ t('admin.mindbot.sectionDify') }}</span>
+          <span><I18nText k="admin.mindbot.sectionDify" /></span>
           <el-button
             v-if="hasSchoolOverride"
             type="warning"
@@ -683,13 +695,15 @@ defineExpose({
             :loading="saving"
             @click="clearSchoolDifyOverride"
           >
-            {{ t('admin.schoolDifyClearOverride') }}
+            <I18nText k="admin.schoolDifyClearOverride" />
           </el-button>
         </div>
-        <div class="school-dify-server-toolbar flex flex-col gap-3 mb-3 sm:flex-row sm:items-center sm:justify-between">
+        <div
+          class="school-dify-server-toolbar flex flex-col gap-3 mb-3 sm:flex-row sm:items-center sm:justify-between"
+        >
           <div class="flex flex-col gap-1">
             <span class="mindbot-swiss-hint text-[11px] font-semibold uppercase tracking-[0.12em]">
-              {{ t('admin.schoolDifyActiveServer') }}
+              <I18nText k="admin.schoolDifyActiveServer" />
             </span>
             <AdminMindbotSwissSegmented
               v-model="selectedServer"
@@ -700,7 +714,7 @@ defineExpose({
           </div>
           <div class="school-dify-failover-row flex items-center gap-2">
             <span class="mindbot-swiss-hint text-[11px] font-semibold uppercase tracking-[0.12em]">
-              {{ t('admin.schoolDifyFailover') }}
+              <I18nText k="admin.schoolDifyFailover" />
             </span>
             <el-switch
               v-model="failoverEnabled"
@@ -709,14 +723,14 @@ defineExpose({
           </div>
         </div>
         <p class="mindbot-swiss-hint text-xs mb-3 leading-relaxed m-0">
-          {{ t('admin.schoolDifyDualServerHint') }}
+          <I18nText k="admin.schoolDifyDualServerHint" />
         </p>
         <p
           v-if="globalDifyUnconfigured"
           class="mindbot-swiss-hint text-xs mb-3 leading-relaxed m-0 text-amber-800"
           role="status"
         >
-          {{ t('admin.schoolDifyGlobalUnconfigured') }}
+          <I18nText k="admin.schoolDifyGlobalUnconfigured" />
         </p>
         <el-form
           label-position="left"
@@ -724,7 +738,10 @@ defineExpose({
           class="mindbot-swiss-form"
           @submit.prevent="saveSettings"
         >
-          <el-form-item :label="t('admin.mindbot.difyBaseUrl')">
+          <el-form-item>
+            <template #label>
+              <I18nText k="admin.mindbot.difyBaseUrl" />
+            </template>
             <el-input
               v-model="baseUrl"
               clearable
@@ -735,10 +752,16 @@ defineExpose({
               v-if="isServerOne && !hasSchoolOverride && !baseUrl"
               class="mindbot-swiss-hint text-xs mt-1.5 leading-relaxed max-w-2xl m-0"
             >
-              {{ t('admin.schoolDifyBlankUsesGlobal', { url: globalDifyUrl || urlPlaceholder }) }}
+              <I18nText
+                k="admin.schoolDifyBlankUsesGlobal"
+                :params="{ url: globalDifyUrl || urlPlaceholder }"
+              />
             </p>
           </el-form-item>
-          <el-form-item :label="t('admin.mindbot.difyApiKey')">
+          <el-form-item>
+            <template #label>
+              <I18nText k="admin.mindbot.difyApiKey" />
+            </template>
             <div class="school-dify-api-key-block max-w-2xl">
               <template v-if="activeKeyMasked && !keyReplaceMode">
                 <div class="school-dify-api-key-input-line">
@@ -755,7 +778,7 @@ defineExpose({
                     size="small"
                     @click="keyReplaceMode = true"
                   >
-                    {{ t('admin.mindbot.replaceSecret') }}
+                    <I18nText k="admin.mindbot.replaceSecret" />
                   </el-button>
                   <el-tooltip
                     :content="difyStatusTooltip"
@@ -773,7 +796,7 @@ defineExpose({
                   </el-tooltip>
                 </div>
                 <p class="mindbot-swiss-hint text-xs mt-1.5 m-0 leading-relaxed">
-                  {{ t('admin.mindbot.difyApiKeyMaskedHint') }}
+                  <I18nText k="admin.mindbot.difyApiKeyMaskedHint" />
                 </p>
               </template>
               <template v-else>
@@ -803,21 +826,25 @@ defineExpose({
                 </div>
                 <div class="mindbot-swiss-hint text-xs mt-1.5 leading-relaxed">
                   <template v-if="activeKeyMasked">
-                    {{ t('admin.mindbot.difyApiKeyReplaceHint') }}
+                    <I18nText k="admin.mindbot.difyApiKeyReplaceHint" />
                   </template>
                   <template v-else-if="isServerOne && !hasSchoolOverride && globalDifyKeyMasked">
-                    {{
-                      t('admin.schoolDifyApiKeyBlankUsesGlobal', { masked: globalDifyKeyMasked })
-                    }}
+                    <I18nText
+                      k="admin.schoolDifyApiKeyBlankUsesGlobal"
+                      :params="{ masked: globalDifyKeyMasked }"
+                    />
                   </template>
                   <template v-else>
-                    {{ t('admin.schoolDifyApiKeyHintOptional') }}
+                    <I18nText k="admin.schoolDifyApiKeyHintOptional" />
                   </template>
                 </div>
               </template>
             </div>
           </el-form-item>
-          <el-form-item :label="t('admin.mindbot.difyTimeout')">
+          <el-form-item>
+            <template #label>
+              <I18nText k="admin.mindbot.difyTimeout" />
+            </template>
             <el-input-number
               v-model="difyTimeoutSeconds"
               :min="5"
@@ -826,7 +853,10 @@ defineExpose({
               controls-position="right"
             />
           </el-form-item>
-          <el-form-item :label="t('admin.mindbot.dingtalkAiCardStreamingMaxChars')">
+          <el-form-item>
+            <template #label>
+              <I18nText k="admin.mindbot.dingtalkAiCardStreamingMaxChars" />
+            </template>
             <el-input-number
               v-model="aiCardStreamingMaxChars"
               :min="500"
@@ -837,7 +867,9 @@ defineExpose({
             />
           </el-form-item>
           <div class="school-dify-cot-row flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-0">
-            <span :class="swissFieldLabelClass">{{ t('admin.mindbot.difyShowChainOfThought') }}</span>
+            <span :class="swissFieldLabelClass"
+              ><I18nText k="admin.mindbot.difyShowChainOfThought"
+            /></span>
             <el-switch
               v-model="showChainOfThought"
               class="mindbot-cot-switch mindbot-footer-enabled-switch shrink-0"

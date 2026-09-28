@@ -36,7 +36,7 @@ function pageLabel(row: TrainingRosterRow): string {
     :aria-label="t('training.friends')"
   >
     <header class="remote-roster__head">
-      <h2>{{ t('training.friends') }}</h2>
+      <h2><I18nText k="training.friends" /></h2>
       <p>{{ training.rosterSummary.online }}</p>
     </header>
     <ul class="remote-roster__list">
@@ -66,19 +66,19 @@ function pageLabel(row: TrainingRosterRow): string {
       class="remote-roster__more"
       @click="training.fetchRoster(true)"
     >
-      {{ t('training.loadMore') }}
+      <I18nText k="training.loadMore" />
     </button>
     <p
       v-if="training.rosterLoading && !training.rosterRows.length"
       class="remote-roster__empty"
     >
-      {{ t('training.rosterLoading') }}
+      <I18nText k="training.rosterLoading" />
     </p>
     <p
       v-else-if="!training.rosterLoading && !training.rosterRows.length"
       class="remote-roster__empty"
     >
-      {{ t('training.noTeachersOnline') }}
+      <I18nText k="training.noTeachersOnline" />
     </p>
   </section>
 </template>

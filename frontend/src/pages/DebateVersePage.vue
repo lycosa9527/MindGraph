@@ -47,7 +47,7 @@ onUnmounted(() => {
       class="h-14 px-4 flex items-center justify-between bg-white border-b border-gray-200"
     >
       <div class="flex items-center gap-3">
-        <h1 class="text-sm font-semibold text-gray-800">{{ t('debateverse.page.title') }}</h1>
+        <h1 class="text-sm font-semibold text-gray-800"><I18nText k="debateverse.page.title" /></h1>
         <span
           v-if="store.currentSession"
           class="text-gray-300"
@@ -68,7 +68,7 @@ onUnmounted(() => {
           @click="store.createSession('', store.llmAssignments)"
         >
           <ElIcon class="mr-1"><Plus /></ElIcon>
-          {{ t('debateverse.page.newDebate') }}
+          <I18nText k="debateverse.page.newDebate" />
         </ElButton>
       </div>
     </header>
@@ -93,12 +93,12 @@ onUnmounted(() => {
         class="flex items-center justify-center h-full"
       >
         <div class="text-center text-gray-500">
-          <p class="text-lg mb-2">{{ t('debateverse.page.empty') }}</p>
+          <p class="text-lg mb-2"><I18nText k="debateverse.page.empty" /></p>
           <ElButton
             type="primary"
             @click="store.createSession('', store.llmAssignments)"
           >
-            {{ t('debateverse.page.create') }}
+            <I18nText k="debateverse.page.create" />
           </ElButton>
         </div>
       </div>

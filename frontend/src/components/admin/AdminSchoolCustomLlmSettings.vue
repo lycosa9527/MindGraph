@@ -4,12 +4,12 @@
  */
 import { computed, ref, watch } from 'vue'
 
+import AdminMindbotSwissSegmented from '@/components/admin/swiss/AdminMindbotSwissSegmented.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import {
-  probeAdminOrganizationCustomLlmHealth,
   type CustomLlmApiType,
+  probeAdminOrganizationCustomLlmHealth,
 } from '@/composables/queries/adminApi'
-import AdminMindbotSwissSegmented from '@/components/admin/swiss/AdminMindbotSwissSegmented.vue'
 import { httpErrorDetail } from '@/utils/httpErrorDetail'
 
 const PLATFORM: CustomLlmApiType = 'dashscope_volcengine'
@@ -49,10 +49,26 @@ const probing = ref(false)
 const probeResult = ref<{ online: boolean; error?: string | null } | null>(null)
 
 const protocolOptions = computed(() => [
-  { label: t('admin.customLlm.typePlatform'), value: PLATFORM },
-  { label: t('admin.customLlm.typeOpenAiChat'), value: 'openai_chat' },
-  { label: t('admin.customLlm.typeOpenAiResponse'), value: 'openai_responses' },
-  { label: t('admin.customLlm.typeAnthropic'), value: 'anthropic_messages' },
+  {
+    label: t('admin.customLlm.typePlatform'),
+    labelKey: 'admin.customLlm.typePlatform',
+    value: PLATFORM,
+  },
+  {
+    label: t('admin.customLlm.typeOpenAiChat'),
+    labelKey: 'admin.customLlm.typeOpenAiChat',
+    value: 'openai_chat',
+  },
+  {
+    label: t('admin.customLlm.typeOpenAiResponse'),
+    labelKey: 'admin.customLlm.typeOpenAiResponse',
+    value: 'openai_responses',
+  },
+  {
+    label: t('admin.customLlm.typeAnthropic'),
+    labelKey: 'admin.customLlm.typeAnthropic',
+    value: 'anthropic_messages',
+  },
 ])
 
 const isCustom = computed(() => apiType.value !== PLATFORM)
@@ -74,6 +90,18 @@ function hydrateFromProps(): void {
   replaceKey.value = false
   clearKey.value = false
   probeResult.value = null
+}
+
+function beginReplaceKey(): void {
+  replaceKey.value = true
+  clearKey.value = false
+  apiKey.value = ''
+}
+
+function beginClearKey(): void {
+  clearKey.value = true
+  replaceKey.value = false
+  apiKey.value = ''
 }
 
 watch(
@@ -162,10 +190,10 @@ defineExpose({ getSavePayload })
     class="mindbot-section-card mindbot-section-card--compact mindbot-swiss-inset rounded-sm border border-[var(--mindbot-swiss-border)] bg-[var(--mindbot-swiss-inset)] p-3 sm:p-4 space-y-4"
   >
     <div class="flex flex-col gap-1 sm:flex-row sm:items-start">
-      <span :class="labelClass">{{ t('admin.customLlm.sectionTitle') }}</span>
+      <span :class="labelClass"><I18nText k="admin.customLlm.sectionTitle" /></span>
       <div class="flex-1 min-w-0 max-w-2xl space-y-2">
         <p class="mindbot-swiss-hint text-xs m-0 leading-relaxed">
-          {{ t('admin.customLlm.hint') }}
+          <I18nText k="admin.customLlm.hint" />
         </p>
         <AdminMindbotSwissSegmented
           v-model="apiType"
@@ -178,7 +206,7 @@ defineExpose({ getSavePayload })
 
     <template v-if="isCustom">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <span :class="labelClass">{{ t('admin.customLlm.baseUrl') }}</span>
+        <span :class="labelClass"><I18nText k="admin.customLlm.baseUrl" /></span>
         <el-input
           v-model="baseUrl"
           clearable
@@ -188,13 +216,16 @@ defineExpose({ getSavePayload })
         />
       </div>
       <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <span :class="labelClass">{{ t('admin.customLlm.apiKey') }}</span>
+        <span :class="labelClass"><I18nText k="admin.customLlm.apiKey" /></span>
         <div class="flex-1 min-w-0 max-w-2xl space-y-2">
           <p
             v-if="keyMasked && !replaceKey && !clearKey"
             class="mindbot-swiss-hint text-xs m-0"
           >
-            {{ t('admin.customLlm.secretSet', { masked: keyMasked }) }}
+            <I18nText
+              k="admin.customLlm.secretSet"
+              :params="{ masked: keyMasked }"
+            />
           </p>
           <el-input
             v-if="replaceKey || !keyMasked"
@@ -213,9 +244,9 @@ defineExpose({ getSavePayload })
               size="small"
               class="mindbot-pill shrink-0"
               :disabled="fieldsReadOnly"
-              @click="replaceKey = true; clearKey = false; apiKey = ''"
+              @click="beginReplaceKey"
             >
-              {{ t('admin.oauth.replaceSecret') }}
+              <I18nText k="admin.oauth.replaceSecret" />
             </el-button>
             <el-button
               v-if="keyMasked"
@@ -223,15 +254,15 @@ defineExpose({ getSavePayload })
               size="small"
               class="mindbot-pill shrink-0"
               :disabled="fieldsReadOnly"
-              @click="clearKey = true; replaceKey = false; apiKey = ''"
+              @click="beginClearKey"
             >
-              {{ t('admin.oauth.clearSecret') }}
+              <I18nText k="admin.oauth.clearSecret" />
             </el-button>
           </div>
         </div>
       </div>
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <span :class="labelClass">{{ t('admin.customLlm.modelName') }}</span>
+        <span :class="labelClass"><I18nText k="admin.customLlm.modelName" /></span>
         <el-input
           v-model="modelName"
           clearable
@@ -251,14 +282,17 @@ defineExpose({ getSavePayload })
             :disabled="fieldsReadOnly"
             @click="probeConnection"
           >
-            {{ t('admin.customLlm.probe') }}
+            <I18nText k="admin.customLlm.probe" />
           </el-button>
           <p
             v-if="probeResult"
             class="mindbot-swiss-hint text-xs m-0"
             :class="probeResult.online ? 'text-emerald-700' : 'text-amber-800'"
           >
-            {{ probeResult.online ? t('admin.customLlm.probeOk') : probeResult.error }}
+            <I18nText
+              v-if="probeResult.online"
+              k="admin.customLlm.probeOk"
+            /><template v-else>{{ probeResult.error }}</template>
           </p>
         </div>
       </div>

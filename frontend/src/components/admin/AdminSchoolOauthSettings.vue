@@ -9,9 +9,9 @@ import { Loading } from '@element-plus/icons-vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import {
+  type AdminOrganizationOauthConfig,
   fetchAdminOrganizationOauthConfig,
   updateAdminOrganizationOauthConfig,
-  type AdminOrganizationOauthConfig,
 } from '@/composables/queries/adminApi'
 import { httpErrorDetail } from '@/utils/httpErrorDetail'
 
@@ -120,8 +120,7 @@ function clearSecret(): void {
 }
 
 watch(
-  () =>
-    [props.orgId, props.active, featureDingtalkLogin.value, featureWechatLogin.value] as const,
+  () => [props.orgId, props.active, featureDingtalkLogin.value, featureWechatLogin.value] as const,
   ([orgId, active, oauthOn, wechatOn]) => {
     if (orgId && active !== false && (oauthOn || wechatOn)) {
       void loadConfig()
@@ -139,13 +138,13 @@ defineExpose({ saveConfig })
     class="mindbot-section-card mindbot-section-card--compact mindbot-swiss-inset rounded-sm border border-[var(--mindbot-swiss-border)] bg-[var(--mindbot-swiss-inset)] p-3 sm:p-4 space-y-4"
   >
     <div class="flex flex-col gap-1 sm:flex-row sm:items-start">
-      <span :class="labelClass">{{ t('admin.oauth.sectionTitle') }}</span>
+      <span :class="labelClass"><I18nText k="admin.oauth.sectionTitle" /></span>
       <div class="flex-1 min-w-0 max-w-2xl space-y-3">
         <p class="mindbot-swiss-hint text-xs m-0 leading-relaxed">
-          {{ t('admin.oauth.intro') }}
+          <I18nText k="admin.oauth.intro" />
         </p>
         <p class="mindbot-swiss-hint text-xs m-0 leading-relaxed">
-          {{ t('admin.oauth.officialDocsHint') }}
+          <I18nText k="admin.oauth.officialDocsHint" />
         </p>
       </div>
     </div>
@@ -155,18 +154,24 @@ defineExpose({ saveConfig })
       class="flex items-center gap-2 text-sm mindbot-swiss-hint py-2"
     >
       <Loading class="w-4 h-4 animate-spin" />
-      {{ t('common.loading') }}
+      <I18nText k="common.loading" />
     </div>
 
     <template v-else-if="config">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <span :class="labelClass">{{ t('admin.oauth.wechatToggle') }}</span>
+        <span :class="labelClass"><I18nText k="admin.oauth.wechatToggle" /></span>
         <div class="flex-1 min-w-0 max-w-2xl space-y-1">
           <p class="mindbot-swiss-hint text-xs m-0">
-            {{ t('admin.oauth.wechatHint') }}
+            <I18nText k="admin.oauth.wechatHint" />
           </p>
           <p class="mindbot-swiss-hint text-xs m-0">
-            {{ config.wechat_enabled ? t('admin.oauth.wechatOn') : t('admin.oauth.wechatOff') }}
+            <I18nText
+              v-if="config.wechat_enabled"
+              k="admin.oauth.wechatOn"
+            /><I18nText
+              v-else
+              k="admin.oauth.wechatOff"
+            />
           </p>
           <p class="mindbot-swiss-hint text-xs m-0 break-all">
             AppID: {{ config.wechat_app_id || '—' }}
@@ -178,7 +183,7 @@ defineExpose({ saveConfig })
         v-if="featureDingtalkLogin"
         class="flex flex-col gap-3 sm:flex-row sm:items-start"
       >
-        <span :class="labelClass">{{ t('admin.oauth.dingtalkToggle') }}</span>
+        <span :class="labelClass"><I18nText k="admin.oauth.dingtalkToggle" /></span>
         <div class="flex-1 min-w-0 max-w-2xl space-y-3">
           <el-switch
             v-model="dingtalkEnabled"
@@ -187,7 +192,7 @@ defineExpose({ saveConfig })
 
           <div class="space-y-1">
             <label class="block text-xs font-medium mindbot-swiss-hint">
-              {{ t('admin.oauth.dingtalkAppKey') }}
+              <I18nText k="admin.oauth.dingtalkAppKey" />
             </label>
             <el-input
               v-model="dingtalkAppKey"
@@ -199,7 +204,7 @@ defineExpose({ saveConfig })
 
           <div class="space-y-1">
             <label class="block text-xs font-medium mindbot-swiss-hint">
-              {{ t('admin.oauth.dingtalkCorpId') }}
+              <I18nText k="admin.oauth.dingtalkCorpId" />
             </label>
             <el-input
               v-model="dingtalkCorpId"
@@ -212,20 +217,20 @@ defineExpose({ saveConfig })
 
           <div class="space-y-1">
             <label class="block text-xs font-medium mindbot-swiss-hint">
-              {{ t('admin.oauth.dingtalkAppSecret') }}
+              <I18nText k="admin.oauth.dingtalkAppSecret" />
             </label>
             <p
               v-if="config.dingtalk_login_app_secret_set && !replaceDingtalkSecret"
               class="mindbot-swiss-hint text-xs m-0"
             >
-              {{ t('admin.oauth.secretSet') }}
+              <I18nText k="admin.oauth.secretSet" />
               <button
                 v-if="!fieldsReadOnly"
                 type="button"
                 class="text-stone-700 underline ml-2"
                 @click="startReplaceSecret"
               >
-                {{ t('admin.oauth.replaceSecret') }}
+                <I18nText k="admin.oauth.replaceSecret" />
               </button>
               <button
                 v-if="!fieldsReadOnly"
@@ -233,7 +238,7 @@ defineExpose({ saveConfig })
                 class="text-red-600 underline ml-2"
                 @click="clearSecret"
               >
-                {{ t('admin.oauth.clearSecret') }}
+                <I18nText k="admin.oauth.clearSecret" />
               </button>
             </p>
             <el-input
@@ -249,30 +254,32 @@ defineExpose({ saveConfig })
               v-if="clearDingtalkSecret"
               class="text-xs text-amber-700 m-0"
             >
-              {{ t('admin.oauth.clearSecretPending') }}
+              <I18nText k="admin.oauth.clearSecretPending" />
             </p>
           </div>
         </div>
       </div>
 
       <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <span :class="labelClass">{{ t('admin.oauth.callbackUrls') }}</span>
+        <span :class="labelClass"><I18nText k="admin.oauth.callbackUrls" /></span>
         <div class="flex-1 min-w-0 max-w-2xl space-y-1 text-xs mindbot-swiss-hint break-all">
           <p class="m-0">
-            <span class="font-medium">{{ t('admin.oauth.wechatCallback') }}:</span>
+            <span class="font-medium"><I18nText k="admin.oauth.wechatCallback" />:</span>
             {{ config.wechat_callback_url || '—' }}
           </p>
           <p class="m-0">
-            <span class="font-medium">{{ t('admin.oauth.dingtalkCallback') }}:</span>
+            <span class="font-medium"><I18nText k="admin.oauth.dingtalkCallback" />:</span>
             {{ config.dingtalk_callback_url || '—' }}
           </p>
         </div>
       </div>
 
       <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <span :class="labelClass">{{ t('admin.oauth.schoolItChecklistTitle') }}</span>
-        <p class="flex-1 min-w-0 max-w-2xl text-xs mindbot-swiss-hint m-0 whitespace-pre-line leading-relaxed">
-          {{ t('admin.oauth.schoolItChecklist') }}
+        <span :class="labelClass"><I18nText k="admin.oauth.schoolItChecklistTitle" /></span>
+        <p
+          class="flex-1 min-w-0 max-w-2xl text-xs mindbot-swiss-hint m-0 whitespace-pre-line leading-relaxed"
+        >
+          <I18nText k="admin.oauth.schoolItChecklist" />
         </p>
       </div>
     </template>

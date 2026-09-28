@@ -157,7 +157,7 @@ watch(
       v-else-if="users.length === 0"
       class="school-modal-empty"
     >
-      {{ t('admin.schoolTeachersTab.empty') }}
+      <I18nText k="admin.schoolTeachersTab.empty" />
     </div>
 
     <div
@@ -168,13 +168,13 @@ watch(
         <thead>
           <tr class="school-modal-table__head-row">
             <th class="school-modal-table__head-cell school-modal-table__head-cell--wide">
-              {{ t('admin.schoolTeachersTab.colName') }}
+              <I18nText k="admin.schoolTeachersTab.colName" />
             </th>
             <th class="school-modal-table__head-cell">
-              {{ t('admin.schoolTeachersTab.colRole') }}
+              <I18nText k="admin.schoolTeachersTab.colRole" />
             </th>
             <th class="school-modal-table__head-cell school-modal-table__head-cell--right">
-              {{ t('admin.schoolTeachersTab.colTokens') }}
+              <I18nText k="admin.schoolTeachersTab.colTokens" />
             </th>
           </tr>
         </thead>
@@ -208,9 +208,17 @@ watch(
                   rolePillForRow(row)?.borderClass,
                 ]"
               >
-                {{ rolePillForRow(row)?.label }}
+                <I18nText
+                  v-if="rolePillForRow(row)?.labelKey"
+                  :k="rolePillForRow(row)?.labelKey ?? ''"
+                  dense
+                />
               </span>
-              <span v-else class="school-modal-table__sub">—</span>
+              <span
+                v-else
+                class="school-modal-table__sub"
+                >—</span
+              >
             </td>
             <td class="school-modal-table__cell school-modal-table__cell--right">
               {{ formatNumber(tokenTotal(row)) }}

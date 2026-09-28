@@ -84,7 +84,7 @@ onUnmounted(() => {
     class="mindmate-collab-library"
   >
     <div class="mindmate-collab-library__label">
-      {{ t('mindmate.collabSavedLibraryTitle') }}
+      <I18nText k="mindmate.collabSavedLibraryTitle" />
     </div>
     <button
       v-for="seminar in seminars"
@@ -95,7 +95,11 @@ onUnmounted(() => {
       @click="openSavedMindmateSeminar(seminar.session_id)"
     >
       <span class="mindmate-collab-library__title">
-        {{ seminar.title || t('mindmate.collabSavedLibraryTitle') }}
+        <template v-if="seminar.title">{{ seminar.title }}</template
+        ><I18nText
+          v-else
+          k="mindmate.collabSavedLibraryTitle"
+        />
       </span>
     </button>
   </div>

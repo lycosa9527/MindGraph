@@ -4,10 +4,8 @@
  */
 import { reactive, watch } from 'vue'
 
-import { useLanguage } from '@/composables/core/useLanguage'
-
 import MaiteMathText from '@/components/maite/shared/MaiteMathText.vue'
-
+import { useLanguage } from '@/composables/core/useLanguage'
 import type { MaiteVariantTask } from '@/types/maite'
 
 const props = defineProps<{
@@ -53,8 +51,13 @@ function onSubmit(task: MaiteVariantTask): void {
 <template>
   <div class="maite-variant-panel">
     <div class="maite-variant-panel__actions">
-      <button type="button" class="maite-variant-panel__btn" :disabled="loading" @click="emit('generate')">
-        {{ t('maite.variant.generate') }}
+      <button
+        type="button"
+        class="maite-variant-panel__btn"
+        :disabled="loading"
+        @click="emit('generate')"
+      >
+        <I18nText k="maite.variant.generate" />
       </button>
       <button
         type="button"
@@ -62,21 +65,31 @@ function onSubmit(task: MaiteVariantTask): void {
         :disabled="loading || !canComplete"
         @click="emit('complete')"
       >
-        {{ t('maite.inquiry.complete') }}
+        <I18nText k="maite.inquiry.complete" />
       </button>
     </div>
-    <p v-if="tasks.length > 0 && !canComplete" class="maite-variant-panel__hint">
-      {{ t('maite.variant.completeHint') }}
+    <p
+      v-if="tasks.length > 0 && !canComplete"
+      class="maite-variant-panel__hint"
+    >
+      <I18nText k="maite.variant.completeHint" />
     </p>
-    <article v-for="task in tasks" :key="task.id" class="maite-variant-panel__card">
+    <article
+      v-for="task in tasks"
+      :key="task.id"
+      class="maite-variant-panel__card"
+    >
       <header>
         <span class="maite-variant-panel__type">{{ task.variant_type }}</span>
         <span class="maite-variant-panel__status">{{ task.status }}</span>
       </header>
-      <MaiteMathText :text="task.variant_text" tag="p" />
+      <MaiteMathText
+        :text="task.variant_text"
+        tag="p"
+      />
       <template v-if="task.status !== 'submitted' && drafts[task.id]">
         <label class="maite-variant-panel__label">
-          {{ t('maite.variant.answer') }}
+          <I18nText k="maite.variant.answer" />
           <textarea
             v-model="drafts[task.id].answer"
             rows="3"
@@ -85,7 +98,7 @@ function onSubmit(task: MaiteVariantTask): void {
           />
         </label>
         <label class="maite-variant-panel__label">
-          {{ t('maite.variant.strategy') }}
+          <I18nText k="maite.variant.strategy" />
           <textarea
             v-model="drafts[task.id].strategy"
             rows="2"
@@ -99,19 +112,24 @@ function onSubmit(task: MaiteVariantTask): void {
           :disabled="loading"
           @click="onSubmit(task)"
         >
-          {{ t('maite.variant.submit') }}
+          <I18nText k="maite.variant.submit" />
         </button>
       </template>
       <template v-else>
         <p class="maite-variant-panel__submitted">
-          <strong>{{ t('maite.variant.answer') }}:</strong> {{ task.student_answer }}
+          <strong><I18nText k="maite.variant.answer" />:</strong> {{ task.student_answer }}
         </p>
         <p class="maite-variant-panel__submitted">
-          <strong>{{ t('maite.variant.strategy') }}:</strong> {{ task.student_strategy }}
+          <strong><I18nText k="maite.variant.strategy" />:</strong> {{ task.student_strategy }}
         </p>
       </template>
     </article>
-    <p v-if="tasks.length === 0" class="maite-variant-panel__empty">{{ t('maite.variant.empty') }}</p>
+    <p
+      v-if="tasks.length === 0"
+      class="maite-variant-panel__empty"
+    >
+      <I18nText k="maite.variant.empty" />
+    </p>
   </div>
 </template>
 

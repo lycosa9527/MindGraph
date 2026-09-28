@@ -32,10 +32,10 @@ const open = computed({
 const posts = ref<ShowcasePost[]>([])
 const isLoading = ref(false)
 
-function caseTypeText(caseType: ShowcaseCaseType): string {
-  if (caseType === 'teaching_design') return String(t('showcase.type.teachingDesign'))
-  if (caseType === 'diagram_case') return String(t('showcase.type.diagramCase'))
-  return String(t('showcase.type.diagramTemplate'))
+function caseTypeLabelKey(caseType: ShowcaseCaseType): string {
+  if (caseType === 'teaching_design') return 'showcase.type.teachingDesign'
+  if (caseType === 'diagram_case') return 'showcase.type.diagramCase'
+  return 'showcase.type.diagramTemplate'
 }
 
 function formatDate(iso: string): string {
@@ -128,7 +128,7 @@ function openPost(post: ShowcasePost) {
               <Star class="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-500" />
             </div>
             <div class="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-gray-400">
-              <span>{{ caseTypeText(post.case_type) }}</span>
+              <span><I18nText :k="caseTypeLabelKey(post.case_type)" /></span>
               <span v-if="post.subject">{{ post.subject }}</span>
               <span>{{ formatDate(post.created_at) }}</span>
               <span class="inline-flex items-center gap-1">

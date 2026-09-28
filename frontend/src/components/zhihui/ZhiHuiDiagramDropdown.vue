@@ -35,9 +35,7 @@ const mindmaps = computed(() =>
   })
 )
 
-const selected = computed(
-  () => mindmaps.value.find((d) => d.id === props.modelValue) ?? null
-)
+const selected = computed(() => mindmaps.value.find((d) => d.id === props.modelValue) ?? null)
 
 const label = computed(() => {
   if (selected.value?.title) return selected.value.title
@@ -120,13 +118,13 @@ function pick(diagram: SavedDiagram): void {
         v-if="store.isLoading"
         class="px-3 py-2 text-xs text-stone-400"
       >
-        {{ t('common.loading') }}
+        <I18nText k="common.loading" />
       </div>
       <div
         v-else-if="mindmaps.length === 0"
         class="px-3 py-2 text-xs text-stone-400"
       >
-        {{ t('zhihui.diagram.emptyLibrary') }}
+        <I18nText k="zhihui.diagram.emptyLibrary" />
       </div>
       <button
         v-for="diagram in mindmaps"
@@ -137,7 +135,12 @@ function pick(diagram: SavedDiagram): void {
         role="option"
         @click="pick(diagram)"
       >
-        <span class="truncate">{{ diagram.title || t('sidebar.history.untitled') }}</span>
+        <span class="truncate"
+          ><template v-if="diagram.title">{{ diagram.title }}</template
+          ><I18nText
+            v-else
+            k="sidebar.history.untitled"
+        /></span>
       </button>
     </div>
   </div>

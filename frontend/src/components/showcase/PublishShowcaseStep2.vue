@@ -47,11 +47,13 @@ const { t } = useLanguage()
     <div class="mb-5">
       <div class="mb-2 flex items-center gap-2">
         <label class="text-sm font-medium text-gray-700">
-          {{
-            caseType === 'teaching_design'
-              ? t('showcase.publishModal.teachingIntroLabel')
-              : t('showcase.publishModal.introLabel')
-          }}
+          <I18nText
+            v-if="caseType === 'teaching_design'"
+            k="showcase.publishModal.teachingIntroLabel"
+          /><I18nText
+            v-else
+            k="showcase.publishModal.introLabel"
+          />
         </label>
         <LlmPhaseRing
           v-if="caseType === 'teaching_design' || isDiagramType"
@@ -76,14 +78,18 @@ const { t } = useLanguage()
             @click="emit('generateDescription')"
           >
             <Sparkles class="h-3 w-3" />
-            {{
-              isGenerating ||
-              aiGeneratePhase === 'sending' ||
-              aiGeneratePhase === 'waiting' ||
-              aiGeneratePhase === 'streaming'
-                ? t('showcase.publishModal.aiGenerateStop')
-                : t('showcase.publishModal.aiGenerate')
-            }}
+            <I18nText
+              v-if="
+                isGenerating ||
+                aiGeneratePhase === 'sending' ||
+                aiGeneratePhase === 'waiting' ||
+                aiGeneratePhase === 'streaming'
+              "
+              k="showcase.publishModal.aiGenerateStop"
+            /><I18nText
+              v-else
+              k="showcase.publishModal.aiGenerate"
+            />
           </button>
         </LlmPhaseRing>
       </div>
@@ -104,7 +110,7 @@ const { t } = useLanguage()
     <template v-if="caseType === 'teaching_design'">
       <div class="mb-5">
         <label class="mb-2 block text-sm font-medium text-gray-700">
-          {{ t('showcase.publishModal.highlightsLabel') }}
+          <I18nText k="showcase.publishModal.highlightsLabel" />
         </label>
         <textarea
           v-model="designHighlights"
@@ -118,7 +124,7 @@ const { t } = useLanguage()
 
       <div class="mb-5">
         <label class="mb-2 block text-sm font-medium text-gray-700">
-          {{ t('showcase.publishModal.reflectionLabel') }}
+          <I18nText k="showcase.publishModal.reflectionLabel" />
         </label>
         <textarea
           v-model="teachingReflection"
@@ -135,7 +141,7 @@ const { t } = useLanguage()
       class="mb-5"
     >
       <label class="mb-2 block text-sm font-medium text-gray-700">
-        {{ t('showcase.publishModal.classroomAppLabel') }}
+        <I18nText k="showcase.publishModal.classroomAppLabel" />
       </label>
       <textarea
         v-model="classroomApplication"
@@ -149,9 +155,12 @@ const { t } = useLanguage()
 
     <div class="mb-4">
       <label class="mb-2 block text-sm font-medium text-gray-700">
-        {{ t('showcase.publishModal.tagsLabel') }}
+        <I18nText k="showcase.publishModal.tagsLabel" />
         <span class="ml-1 text-xs font-normal text-gray-400">
-          {{ t('showcase.publishModal.tagCountHint', { max: tagMaxCount }) }}
+          <I18nText
+            k="showcase.publishModal.tagCountHint"
+            :params="{ max: tagMaxCount }"
+          />
         </span>
       </label>
       <div
@@ -174,7 +183,7 @@ const { t } = useLanguage()
         </span>
       </div>
       <p class="mb-2 text-xs text-gray-400">
-        {{ t('showcase.publishModal.tagRecommended') }}
+        <I18nText k="showcase.publishModal.tagRecommended" />
       </p>
       <div class="mb-3 flex flex-wrap gap-2">
         <button
@@ -213,7 +222,7 @@ const { t } = useLanguage()
           :disabled="tagsAtLimit"
           @click="emit('addTag')"
         >
-          {{ t('showcase.publishModal.tagAdd') }}
+          <I18nText k="showcase.publishModal.tagAdd" />
         </button>
       </div>
     </div>
@@ -226,7 +235,7 @@ const { t } = useLanguage()
         v-model="autoApprove"
         type="checkbox"
       />
-      {{ t('admin.showcase.proxyAutoApprove') }}
+      <I18nText k="admin.showcase.proxyAutoApprove" />
     </label>
   </div>
 </template>

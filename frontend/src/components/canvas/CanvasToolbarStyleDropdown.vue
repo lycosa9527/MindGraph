@@ -64,7 +64,7 @@ const emit = defineEmits<{
                   :class="[preset.bgClass, preset.borderClass]"
                   @click="emit('applyPreset', preset)"
                 >
-                  {{ t(preset.nameKey) }}
+                  <I18nText :k="preset.nameKey" />
                 </ElDropdownItem>
               </div>
               <div class="border-t border-gray-200 my-2" />

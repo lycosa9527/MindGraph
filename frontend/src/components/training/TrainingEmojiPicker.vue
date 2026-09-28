@@ -31,7 +31,7 @@ const page = computed(
         :aria-selected="item.id === pageId"
         @click="pageId = item.id"
       >
-        {{ t(item.labelKey) }}
+        <I18nText :k="item.labelKey" />
       </button>
     </div>
     <div

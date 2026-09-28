@@ -360,7 +360,11 @@ onUnmounted(() => {
           @click="openSession(session)"
         >
           <span class="conv-name-text">
-            {{ session.title || t('mindmate.collabPill') }}
+            <template v-if="session.title">{{ session.title }}</template
+            ><I18nText
+              v-else
+              k="mindmate.collabPill"
+            />
           </span>
           <CollabLiveBadge
             v-if="session.live"
@@ -389,7 +393,7 @@ onUnmounted(() => {
                 @click="stopSession(session)"
               >
                 <Power class="w-4 h-4 mr-2" />
-                {{ t('mindmate.collabEndSeminar') }}
+                <I18nText k="mindmate.collabEndSeminar" />
               </ElDropdownItem>
             </ElDropdownMenu>
           </template>

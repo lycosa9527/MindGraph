@@ -157,9 +157,9 @@ watch(
                 @click="onSelectCurrent"
               >
                 <span class="mm-history-versions__item-row">
-                  <span class="mm-history-versions__item-label">{{
-                    t('canvas.ribbon.historyBackToLatest')
-                  }}</span>
+                  <span class="mm-history-versions__item-label"
+                    ><I18nText k="canvas.ribbon.historyBackToLatest"
+                  /></span>
                 </span>
               </button>
               <button
@@ -176,9 +176,11 @@ watch(
               >
                 <span class="mm-history-versions__item-row">
                   <span class="mm-history-versions__item-copy">
-                    <span class="mm-history-versions__item-label">{{
-                      t('canvas.ribbon.historySnapshot', { n: row.versionNumber })
-                    }}</span>
+                    <span class="mm-history-versions__item-label"
+                      ><I18nText
+                        k="canvas.ribbon.historySnapshot"
+                        :params="{ n: row.versionNumber }"
+                    /></span>
                     <span
                       v-if="row.timeLabel"
                       class="mm-history-versions__item-time"

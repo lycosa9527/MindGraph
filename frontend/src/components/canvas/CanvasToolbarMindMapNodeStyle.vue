@@ -112,7 +112,7 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
             :class="{ 'nft-dropdown-item--active': nodeShape === shape }"
             @click="handleNodeShapePick(shape)"
           >
-            {{ t(shapeLabels[shape]) }}
+            <I18nText :k="shapeLabels[shape]" />
           </ElDropdownItem>
         </ElDropdownMenu>
       </template>

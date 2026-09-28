@@ -51,8 +51,7 @@ const OFFICE_PENDING_TIMEOUT_MS = 210_000
 const fileKind = computed<FileKind>(() => attachmentFileKind(props.attachmentUrl))
 
 const isOfficeKind = computed(
-  () =>
-    fileKind.value === 'docx' || fileKind.value === 'doc' || fileKind.value === 'pptx'
+  () => fileKind.value === 'docx' || fileKind.value === 'doc' || fileKind.value === 'pptx'
 )
 
 const absoluteAttachmentUrl = computed(() => {
@@ -101,15 +100,10 @@ const pdfSourceUrl = computed(() => {
 })
 
 /** Office + PDF always use the pdf.js reader (pending / fail / ready). */
-const showPdfReader = computed(
-  () => fileKind.value === 'pdf' || isOfficeKind.value
-)
+const showPdfReader = computed(() => fileKind.value === 'pdf' || isOfficeKind.value)
 
 const officePreviewPending = computed(
-  () =>
-    isOfficeKind.value &&
-    !absolutePreviewUrl.value &&
-    !previewConversionFailed.value
+  () => isOfficeKind.value && !absolutePreviewUrl.value && !previewConversionFailed.value
 )
 
 const watermarkText = computed(() => {
@@ -123,9 +117,7 @@ const watermarkTiles = computed(() =>
   watermarkText.value ? Array.from({ length: WATERMARK_TILE_COUNT }, (_, i) => i) : []
 )
 
-const hasAttachmentPreview = computed(
-  () => fileKind.value === 'pdf' || isOfficeKind.value
-)
+const hasAttachmentPreview = computed(() => fileKind.value === 'pdf' || isOfficeKind.value)
 
 const hasReaderContent = computed(
   () => hasAttachmentPreview.value || Boolean(props.fallbackText?.trim())
@@ -230,11 +222,7 @@ watch(
       return
     }
     officePendingTimer = setTimeout(() => {
-      if (
-        isOfficeKind.value &&
-        !absolutePreviewUrl.value &&
-        !previewConversionFailed.value
-      ) {
+      if (isOfficeKind.value && !absolutePreviewUrl.value && !previewConversionFailed.value) {
         markOfficePreviewFailed()
       }
     }, OFFICE_PENDING_TIMEOUT_MS)
@@ -410,7 +398,7 @@ onBeforeUnmount(() => {
         :title="String(t('showcase.detail.zoomReset'))"
         @click="resetZoom"
       >
-        {{ t('showcase.detail.zoomReset') }}
+        <I18nText k="showcase.detail.zoomReset" />
       </button>
       <span class="mx-1 h-4 w-px bg-gray-200" />
       <button
@@ -418,13 +406,21 @@ onBeforeUnmount(() => {
         class="doc-reader-toolbar-btn inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800"
         @click="toggleFullscreen"
       >
-        <Minimize2 v-if="isFullscreen" class="h-3.5 w-3.5" />
-        <Maximize2 v-else class="h-3.5 w-3.5" />
-        {{
-          isFullscreen
-            ? t('showcase.detail.exitFullscreen')
-            : t('showcase.detail.enterFullscreen')
-        }}
+        <Minimize2
+          v-if="isFullscreen"
+          class="h-3.5 w-3.5"
+        />
+        <Maximize2
+          v-else
+          class="h-3.5 w-3.5"
+        />
+        <I18nText
+          v-if="isFullscreen"
+          k="showcase.detail.exitFullscreen"
+        /><I18nText
+          v-else
+          k="showcase.detail.enterFullscreen"
+        />
       </button>
     </div>
 
@@ -448,11 +444,13 @@ onBeforeUnmount(() => {
           class="absolute inset-0 z-10 flex items-center justify-center bg-white/80 text-gray-500"
         >
           <Loader2 class="mr-2 h-5 w-5 animate-spin" />
-          <span class="text-sm">{{
-            officePreviewPending
-              ? t('showcase.detail.officePreviewPending')
-              : t('showcase.detail.docPreviewLoading')
-          }}</span>
+          <span class="text-sm"
+            ><I18nText
+              v-if="officePreviewPending"
+              k="showcase.detail.officePreviewPending" /><I18nText
+              v-else
+              k="showcase.detail.docPreviewLoading"
+          /></span>
         </div>
         <div
           v-if="pdfError && !officePreviewPending"
@@ -473,8 +471,16 @@ onBeforeUnmount(() => {
         class="showcase-doc-fallback showcase-watermark-host relative px-8 py-6 whitespace-pre-line"
         :style="contentZoomStyle"
       >
-        <div v-if="watermarkText" class="showcase-page-watermark" aria-hidden="true">
-          <span v-for="tile in watermarkTiles" :key="tile">{{ watermarkText }}</span>
+        <div
+          v-if="watermarkText"
+          class="showcase-page-watermark"
+          aria-hidden="true"
+        >
+          <span
+            v-for="tile in watermarkTiles"
+            :key="tile"
+            >{{ watermarkText }}</span
+          >
         </div>
         {{ fallbackText }}
       </div>
@@ -484,7 +490,7 @@ onBeforeUnmount(() => {
         class="flex min-h-[50vh] flex-col items-center justify-center px-6 pb-8 text-center text-gray-400"
       >
         <FileText class="mb-3 h-12 w-12 text-gray-300" />
-        <p class="text-sm">{{ t('showcase.detail.noDocument') }}</p>
+        <p class="text-sm"><I18nText k="showcase.detail.noDocument" /></p>
       </div>
     </div>
   </div>

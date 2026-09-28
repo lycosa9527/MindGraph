@@ -195,8 +195,8 @@ defineExpose({ scrollToBottom, scrollToMessageId })
       v-if="!loading && messages.length === 0"
       class="msg-feed__empty"
     >
-      <p>{{ t('workshop.noMessagesYet') }}</p>
-      <p class="msg-feed__empty-hint">{{ t('workshop.startConversation') }}</p>
+      <p><I18nText k="workshop.noMessagesYet" /></p>
+      <p class="msg-feed__empty-hint"><I18nText k="workshop.startConversation" /></p>
     </div>
 
     <!-- Groups -->

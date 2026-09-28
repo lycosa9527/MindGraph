@@ -188,7 +188,7 @@ onBeforeUnmount(() => {
         class="vod-player__skip"
         @click="onSkip"
       >
-        {{ t('training.vod.skip') }}
+        <I18nText k="training.vod.skip" />
       </button>
       <button
         v-if="canNext"
@@ -196,14 +196,14 @@ onBeforeUnmount(() => {
         class="vod-player__next"
         @click="emit('next')"
       >
-        {{ t('training.vod.next') }}
+        <I18nText k="training.vod.next" />
       </button>
     </div>
     <p
       v-if="loading"
       class="vod-player__hint"
     >
-      {{ t('common.loading') }}
+      <I18nText k="common.loading" />
     </p>
     <div
       ref="stageRef"

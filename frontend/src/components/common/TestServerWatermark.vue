@@ -23,7 +23,7 @@ const TILE_COUNT = 72
         :key="index"
         class="tsw-tile"
       >
-        {{ t('app.testServer.watermark') }}
+        <I18nText k="app.testServer.watermark" />
       </span>
     </div>
   </div>

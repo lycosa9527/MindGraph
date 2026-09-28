@@ -5,10 +5,7 @@
 import { computed, onMounted } from 'vue'
 
 import { useLanguage } from '@/composables'
-import {
-  hydratePersistedOAuthLoginError,
-  persistedOAuthLoginError,
-} from '@/utils/oauthLoginUi'
+import { hydratePersistedOAuthLoginError, persistedOAuthLoginError } from '@/utils/oauthLoginUi'
 
 defineProps<{
   showWechatLogin: boolean
@@ -22,9 +19,7 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 
-const showNotLinkedHint = computed(
-  () => persistedOAuthLoginError.value === 'oauth_not_linked'
-)
+const showNotLinkedHint = computed(() => persistedOAuthLoginError.value === 'oauth_not_linked')
 
 onMounted(() => {
   hydratePersistedOAuthLoginError()
@@ -41,7 +36,7 @@ const linkClass =
       :class="linkClass"
       @click="emit('forgot')"
     >
-      {{ t('auth.forgotPassword') }}
+      <I18nText k="auth.forgotPassword" />
     </button>
     <span
       class="self-stretch w-px bg-stone-300"
@@ -53,7 +48,7 @@ const linkClass =
         :class="linkClass"
         @click="emit('sms')"
       >
-        {{ t('auth.smsLogin') }}
+        <I18nText k="auth.smsLogin" />
       </button>
       <button
         v-if="showWechatLogin"
@@ -61,7 +56,7 @@ const linkClass =
         :class="linkClass"
         @click="emit('wechat')"
       >
-        {{ t('auth.wechatLogin') }}
+        <I18nText k="auth.wechatLogin" />
       </button>
     </div>
   </div>
@@ -69,6 +64,6 @@ const linkClass =
     v-if="showWechatLogin && showNotLinkedHint"
     class="mt-3 text-center text-sm text-red-600 leading-6"
   >
-    {{ t('auth.qrLoginNotLinked') }}
+    <I18nText k="auth.qrLoginNotLinked" />
   </p>
 </template>

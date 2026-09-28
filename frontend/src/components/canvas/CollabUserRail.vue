@@ -138,7 +138,7 @@ const railStyle = computed(() => {
           role="listitem"
         >
           <div class="rail-avatar rail-avatar--overflow">+{{ overflowCount }}</div>
-          <span class="rail-label">{{ t('canvasPage.collabParticipantsMore') }}</span>
+          <span class="rail-label"><I18nText k="canvasPage.collabParticipantsMore" /></span>
         </div>
       </ElTooltip>
     </div>

@@ -3,16 +3,14 @@
  * Teacher review / student view modal for a class-wall submission.
  */
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+
 import { Loader2, Maximize2, Minimize2, Pin, Star, ThumbsUp, X } from '@lucide/vue'
 
 import ShowcaseInlineDiagramPreview from '@/components/showcase/ShowcaseInlineDiagramPreview.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import { useRouter } from 'vue-router'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
-import {
-  fetchSubmissionPreview,
-  type LearningSubmission,
-} from '@/utils/learningSpaceApi'
+import { type LearningSubmission, fetchSubmissionPreview } from '@/utils/learningSpaceApi'
 
 export interface ReviewDraft {
   scores: Record<string, number>
@@ -216,8 +214,11 @@ const studentLabel = computed(
   () => props.submission?.student_name || String(props.submission?.student_user_id ?? '')
 )
 
-const headerTitle = computed(() =>
-  props.submission?.assignment_title || props.assignmentTitle || t('learningSpace.submissionsBoard')
+const headerTitle = computed(
+  () =>
+    props.submission?.assignment_title ||
+    props.assignmentTitle ||
+    t('learningSpace.submissionsBoard')
 )
 </script>
 
@@ -303,7 +304,7 @@ const headerTitle = computed(() =>
               v-else
               class="ls-review__empty"
             >
-              {{ t('learningSpace.noPreview') }}
+              <I18nText k="learningSpace.noPreview" />
             </div>
           </div>
 
@@ -312,11 +313,13 @@ const headerTitle = computed(() =>
             class="ls-review__side"
           >
             <h3 class="ls-review__side-title">
-              {{
-                isView
-                  ? t('learningSpace.teacherReview')
-                  : t('learningSpace.reviewByDimension')
-              }}
+              <I18nText
+                v-if="isView"
+                k="learningSpace.teacherReview"
+              /><I18nText
+                v-else
+                k="learningSpace.reviewByDimension"
+              />
             </h3>
 
             <template v-if="!isView || hasTeacherReview">
@@ -345,7 +348,7 @@ const headerTitle = computed(() =>
                 v-if="!isView"
                 class="ls-field"
               >
-                {{ t('learningSpace.reviewComment') }}
+                <I18nText k="learningSpace.reviewComment" />
                 <textarea
                   v-model="draft.comment"
                   rows="4"
@@ -363,7 +366,7 @@ const headerTitle = computed(() =>
                 v-else-if="isView"
                 class="ls-muted"
               >
-                {{ t('learningSpace.noTeacherComment') }}
+                <I18nText k="learningSpace.noTeacherComment" />
               </p>
 
               <div
@@ -377,7 +380,7 @@ const headerTitle = computed(() =>
                   @click="draft.liked = !draft.liked"
                 >
                   <ThumbsUp :size="14" />
-                  {{ t('learningSpace.reviewLike') }}
+                  <I18nText k="learningSpace.reviewLike" />
                 </button>
                 <button
                   type="button"
@@ -386,7 +389,7 @@ const headerTitle = computed(() =>
                   @click="draft.pinned = !draft.pinned"
                 >
                   <Pin :size="14" />
-                  {{ t('learningSpace.reviewPin') }}
+                  <I18nText k="learningSpace.reviewPin" />
                 </button>
               </div>
               <div
@@ -398,14 +401,14 @@ const headerTitle = computed(() =>
                   class="ls-chip ls-chip--on"
                 >
                   <ThumbsUp :size="14" />
-                  {{ t('learningSpace.reviewLike') }}
+                  <I18nText k="learningSpace.reviewLike" />
                 </span>
                 <span
                   v-if="draft.pinned"
                   class="ls-chip ls-chip--on"
                 >
                   <Pin :size="14" />
-                  {{ t('learningSpace.reviewPin') }}
+                  <I18nText k="learningSpace.reviewPin" />
                 </span>
               </div>
             </template>
@@ -413,7 +416,7 @@ const headerTitle = computed(() =>
               v-else
               class="ls-muted"
             >
-              {{ t('learningSpace.waitingTeacherReview') }}
+              <I18nText k="learningSpace.waitingTeacherReview" />
             </p>
           </div>
         </div>
@@ -435,7 +438,7 @@ const headerTitle = computed(() =>
               class="animate-spin"
               :size="16"
             />
-            {{ t('learningSpace.saveToLibrary') }}
+            <I18nText k="learningSpace.saveToLibrary" />
           </button>
           <button
             v-else
@@ -443,7 +446,7 @@ const headerTitle = computed(() =>
             class="ls-btn ls-btn--primary"
             @click="onSave"
           >
-            {{ t('learningSpace.reviewSubmit') }}
+            <I18nText k="learningSpace.reviewSubmit" />
           </button>
         </footer>
       </div>

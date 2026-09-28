@@ -80,7 +80,11 @@ watch(
   <div class="mindmate-saved-seminar flex flex-col flex-1 min-h-0 min-w-0 bg-white">
     <div class="px-5 pt-4 pb-2 shrink-0">
       <h2 class="text-sm font-semibold text-stone-800 truncate">
-        {{ title || t('mindmate.collabSavedLibraryTitle') }}
+        <template v-if="title">{{ title }}</template
+        ><I18nText
+          v-else
+          k="mindmate.collabSavedLibraryTitle"
+        />
       </h2>
       <p class="mt-1 text-xs text-stone-500">
         <I18nText k="mindmate.collabSavedReadOnly" />

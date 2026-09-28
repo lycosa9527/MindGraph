@@ -53,7 +53,7 @@ function pickMode(next: TrainingSteerMode): void {
       :disabled="busy || !canPrev"
       @click="emit('prev')"
     >
-      {{ t('training.prevStep') }}
+      <I18nText k="training.prevStep" />
     </button>
     <button
       type="button"
@@ -61,7 +61,7 @@ function pickMode(next: TrainingSteerMode): void {
       :disabled="busy || !canNext"
       @click="emit('next')"
     >
-      {{ t('training.nextStep') }}
+      <I18nText k="training.nextStep" />
     </button>
     <button
       type="button"
@@ -69,7 +69,7 @@ function pickMode(next: TrainingSteerMode): void {
       :disabled="busy"
       @click="emit('stop')"
     >
-      {{ t('training.stop') }}
+      <I18nText k="training.stop" />
     </button>
     <div
       v-if="showSteer"
@@ -87,7 +87,7 @@ function pickMode(next: TrainingSteerMode): void {
         :title="t('training.freeHint')"
         @click="pickMode('free')"
       >
-        {{ t('training.free') }}
+        <I18nText k="training.free" />
       </button>
       <button
         type="button"
@@ -99,7 +99,7 @@ function pickMode(next: TrainingSteerMode): void {
         :title="t('training.pullHint')"
         @click="pickMode('pull')"
       >
-        {{ t('training.pull') }}
+        <I18nText k="training.pull" />
       </button>
     </div>
   </div>

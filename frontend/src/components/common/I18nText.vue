@@ -6,23 +6,39 @@
 import { computed } from 'vue'
 
 import { resolveBilingual } from '@/i18n/resolveBilingual'
+import type { BilingualCopy } from '@/i18n/resolveBilingual'
+import { uiMessageExists } from '@/i18n/translateForUiLocale'
+import { useUIStore } from '@/stores/ui'
 
 const props = withDefaults(
   defineProps<{
     k: string
     params?: Record<string, unknown>
+    /** Message key used when `k` is missing from the catalogs (dynamic error codes). */
+    fallbackKey?: string
+    /** Raw text used when `k` is missing and there is no translated fallback. */
+    fallbackText?: string
     /** Skip the presenter line (product names, compact chrome). */
     primaryOnly?: boolean
     /** Tighter stack for pills and dropdown rows. */
     dense?: boolean
   }>(),
   {
+    fallbackKey: '',
+    fallbackText: '',
     primaryOnly: false,
     dense: false,
   }
 )
 
-const copy = computed(() => resolveBilingual(props.k, props.params))
+const copy = computed((): BilingualCopy => {
+  const locale = useUIStore().language
+  if (!uiMessageExists(props.k, locale)) {
+    if (props.fallbackKey) return resolveBilingual(props.fallbackKey, props.params)
+    if (props.fallbackText) return { primary: props.fallbackText, secondary: null }
+  }
+  return resolveBilingual(props.k, props.params)
+})
 const secondary = computed(() => (props.primaryOnly ? null : copy.value.secondary))
 </script>
 

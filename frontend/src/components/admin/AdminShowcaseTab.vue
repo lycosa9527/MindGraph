@@ -3,24 +3,23 @@
  * Showcase admin shell — sub-tab router.
  */
 import { computed, onMounted, ref, watch } from 'vue'
-
 import { useRoute, useRouter } from 'vue-router'
 
-import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
 import AdminShowcaseDashboard from '@/components/admin/AdminShowcaseDashboard.vue'
 import AdminShowcaseFields from '@/components/admin/AdminShowcaseFields.vue'
 import AdminShowcaseModeration from '@/components/admin/AdminShowcaseModeration.vue'
 import AdminShowcasePermissions from '@/components/admin/AdminShowcasePermissions.vue'
 import AdminShowcaseProxyPublish from '@/components/admin/AdminShowcaseProxyPublish.vue'
 import AdminShowcasePublished from '@/components/admin/AdminShowcasePublished.vue'
+import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
+import { useLanguage } from '@/composables'
 import {
   SHOWCASE_SUBTABS,
-  showcaseSubtabLabelKey,
-  resolveShowcaseSubtab,
   type ShowcaseSubtab,
+  resolveShowcaseSubtab,
+  showcaseSubtabLabelKey,
 } from '@/composables/admin/adminShowcaseNav'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
-import { useLanguage } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useAuthStore } from '@/stores'
@@ -69,6 +68,7 @@ const subtabOptions = computed(() =>
   visibleSubtabs.value.map((value) => ({
     value,
     label: String(t(showcaseSubtabLabelKey(value))),
+    labelKey: showcaseSubtabLabelKey(value),
     count: value === 'moderation' ? moderationPendingCount.value : undefined,
   }))
 )
@@ -109,15 +109,15 @@ watch(
       v-if="!featureShowcase"
       class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
     >
-      {{ t('admin.showcase.featureDisabled') }}
+      <I18nText k="admin.showcase.featureDisabled" />
     </p>
 
     <div>
       <h2 class="mb-1 text-base font-semibold text-gray-900">
-        {{ t('admin.showcase.title') }}
+        <I18nText k="admin.showcase.title" />
       </h2>
       <p class="text-sm text-gray-500">
-        {{ t('admin.showcase.intro') }}
+        <I18nText k="admin.showcase.intro" />
       </p>
     </div>
 

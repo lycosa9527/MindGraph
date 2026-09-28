@@ -30,12 +30,12 @@ function pick(option: TrainingTopicOption): void {
     class="topics-mark"
     :class="{ 'topics-mark--live': selectable }"
   >
-    <p class="topics-mark__title">{{ t('training.builder.topicChoices') }}</p>
+    <p class="topics-mark__title"><I18nText k="training.builder.topicChoices" /></p>
     <p
       v-if="!rows.length"
       class="topics-mark__empty"
     >
-      {{ t('training.builder.topicEmpty') }}
+      <I18nText k="training.builder.topicEmpty" />
     </p>
     <button
       v-for="option in rows"
@@ -49,16 +49,16 @@ function pick(option: TrainingTopicOption): void {
     >
       <template v-if="dual">
         <span>
-          <em>{{ t('training.builder.topicLabelA') }}</em>
+          <em><I18nText k="training.builder.topicLabelA" /></em>
           {{ option.item_a }}
         </span>
         <span>
-          <em>{{ t('training.builder.topicLabelB') }}</em>
+          <em><I18nText k="training.builder.topicLabelB" /></em>
           {{ option.item_b }}
         </span>
       </template>
       <span v-else>
-        <em>{{ t('training.builder.topicLabel') }}</em>
+        <em><I18nText k="training.builder.topicLabel" /></em>
         {{ topicOptionLabel(option, false) }}
       </span>
     </button>

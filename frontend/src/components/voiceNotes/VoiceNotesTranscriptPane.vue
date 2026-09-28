@@ -89,7 +89,7 @@ function onEdit(index: number, event: Event): void {
       v-if="voiceNotes.turns.length === 0"
       class="vn-chat__empty"
     >
-      {{ t('auth.voiceNotes.empty') }}
+      <I18nText k="auth.voiceNotes.empty" />
     </p>
     <article
       v-for="(turn, index) in voiceNotes.turns"

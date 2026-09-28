@@ -293,7 +293,7 @@ function handlePinConversation(convId: string): void {
     <div class="history-header px-4 py-3">
       <div class="min-w-0">
         <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
-          {{ t('sidebar.chatHistory.title') }}
+          <I18nText k="sidebar.chatHistory.title" />
         </div>
         <div
           v-if="!isBlurred && (conversations.length > 0 || folders.length > 0)"
@@ -311,7 +311,7 @@ function handlePinConversation(convId: string): void {
       >
         <FolderPlus class="w-3.5 h-3.5 shrink-0" />
         <span class="new-folder-btn__label">
-          {{ t('sidebar.chatHistory.folderCreateTitle') }}
+          <I18nText k="sidebar.chatHistory.folderCreateTitle" />
         </span>
       </button>
     </div>
@@ -334,7 +334,7 @@ function handlePinConversation(convId: string): void {
           v-if="foldersLoadFailed"
           class="archive-warning"
         >
-          {{ t('sidebar.chatHistory.foldersLoadFailed') }}
+          <I18nText k="sidebar.chatHistory.foldersLoadFailed" />
         </div>
 
         <div
@@ -357,7 +357,7 @@ function handlePinConversation(convId: string): void {
         >
           <MessageCircle class="w-8 h-8 mx-auto mb-2 text-stone-300" />
           <p class="text-xs text-stone-400">
-            {{ t('sidebar.chatHistory.empty') }}
+            <I18nText k="sidebar.chatHistory.empty" />
           </p>
         </div>
 
@@ -367,7 +367,7 @@ function handlePinConversation(convId: string): void {
             class="archive-section"
           >
             <div class="section-heading">
-              {{ t('sidebar.chatHistory.foldersSection') }}
+              <I18nText k="sidebar.chatHistory.foldersSection" />
             </div>
             <div
               v-for="folder in folders"
@@ -429,7 +429,7 @@ function handlePinConversation(convId: string): void {
                   v-if="conversationsForFolder(folder.id).length === 0"
                   class="folder-empty"
                 >
-                  {{ t('sidebar.chatHistory.folderEmpty') }}
+                  <I18nText k="sidebar.chatHistory.folderEmpty" />
                 </p>
               </div>
             </div>
@@ -440,7 +440,7 @@ function handlePinConversation(convId: string): void {
             class="archive-section"
           >
             <div class="section-heading">
-              {{ t('sidebar.chatHistory.uncategorizedSection') }}
+              <I18nText k="sidebar.chatHistory.uncategorizedSection" />
             </div>
 
             <template
@@ -473,7 +473,7 @@ function handlePinConversation(convId: string): void {
               v-if="uncategorizedConversations.length === 0"
               class="uncategorized-empty"
             >
-              {{ t('sidebar.chatHistory.uncategorizedEmpty') }}
+              <I18nText k="sidebar.chatHistory.uncategorizedEmpty" />
             </p>
 
             <button
@@ -482,7 +482,10 @@ function handlePinConversation(convId: string): void {
               type="button"
               @click="showAllUncategorized = true"
             >
-              {{ t('sidebar.actions.showMore', { n: remainingUncategorizedCount }) }}
+              <I18nText
+                k="sidebar.actions.showMore"
+                :params="{ n: remainingUncategorizedCount }"
+              />
             </button>
             <button
               v-if="showAllUncategorized && uncategorizedConversations.length > initialVisibleLimit"
@@ -490,7 +493,7 @@ function handlePinConversation(convId: string): void {
               type="button"
               @click="showAllUncategorized = false"
             >
-              {{ t('sidebar.actions.showLess') }}
+              <I18nText k="sidebar.actions.showLess" />
             </button>
           </section>
         </template>
@@ -508,7 +511,7 @@ function handlePinConversation(convId: string): void {
           <Lock class="w-5 h-5 text-stone-400" />
         </div>
         <p class="text-xs text-stone-500">
-          {{ t('sidebar.chatHistory.loginPrompt') }}
+          <I18nText k="sidebar.chatHistory.loginPrompt" />
         </p>
       </div>
     </div>

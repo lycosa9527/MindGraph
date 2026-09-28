@@ -6,21 +6,26 @@ import { computed, ref } from 'vue'
 
 import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
 
-import { ArrowUp, Check, ChevronDown, ImagePlus, Loader2, Maximize2, Paperclip, X } from '@lucide/vue'
+import {
+  ArrowUp,
+  Check,
+  ChevronDown,
+  ImagePlus,
+  Loader2,
+  Maximize2,
+  Paperclip,
+  X,
+} from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 
-import {
-  ZHIHUI_IMAGE_SIZES,
-  imageSizeById,
-  type ZhihuiMode,
-} from './zhihuiModes'
+import { ZHIHUI_IMAGE_SIZES, type ZhihuiMode, imageSizeById } from './zhihuiModes'
 import {
   ZHIHUI_MAX_REFERENCE_BYTES,
   ZHIHUI_MAX_REFERENCE_IMAGES,
+  type ZhihuiReferenceImage,
   isAllowedReferenceMime,
   readFileAsDataUrl,
-  type ZhihuiReferenceImage,
 } from './zhihuiReferences'
 
 /** ElDropdown command cannot be empty string — map auto size. */
@@ -147,7 +152,7 @@ function removeReference(id: string): void {
           <span class="mt-1 text-[10px]">0/1</span>
         </button>
         <p class="text-xs text-stone-400">
-          {{ t('zhihui.refUploadSoon') }}
+          <I18nText k="zhihui.refUploadSoon" />
         </p>
       </div>
     </div>
@@ -238,10 +243,14 @@ function removeReference(id: string): void {
               >
                 <span class="zhihui-size-switcher__row">
                   <span class="zhihui-size-switcher__name">
-                    {{ t(`zhihui.size.${opt.labelKey}`) }}
+                    <I18nText :k="`zhihui.size.${opt.labelKey}`" />
                   </span>
                   <span class="zhihui-size-switcher__pixels">
-                    {{ opt.pixels || t('zhihui.size.autoHint') }}
+                    <template v-if="opt.pixels">{{ opt.pixels }}</template
+                    ><I18nText
+                      v-else
+                      k="zhihui.size.autoHint"
+                    />
                   </span>
                   <Check
                     v-if="opt.id === sizeId"
@@ -265,19 +274,17 @@ function removeReference(id: string): void {
           class="rounded border-stone-300 text-amber-800 focus:ring-amber-700/30"
           :disabled="isGenerating"
         />
-        {{ t('zhihui.smartRewrite') }}
+        <I18nText k="zhihui.smartRewrite" />
       </label>
       <span
         v-else
         class="rounded-full bg-stone-200/70 px-2.5 py-1 text-[11px] font-medium text-stone-600"
       >
-        {{ t('zhihui.modeComingSoon') }}
+        <I18nText k="zhihui.modeComingSoon" />
       </span>
 
       <div class="ml-auto flex items-center gap-2 sm:gap-3">
-        <span class="zhihui-composer__char-count">
-          {{ charCount }}/{{ maxChars }}
-        </span>
+        <span class="zhihui-composer__char-count"> {{ charCount }}/{{ maxChars }} </span>
         <button
           v-if="mode === 'image'"
           type="button"

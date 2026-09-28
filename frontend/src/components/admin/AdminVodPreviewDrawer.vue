@@ -103,7 +103,7 @@ onBeforeUnmount(() => {
       v-if="loading"
       class="text-sm text-stone-500"
     >
-      {{ t('common.loading') }}
+      <I18nText k="common.loading" />
     </p>
     <video
       v-if="playerSlot"

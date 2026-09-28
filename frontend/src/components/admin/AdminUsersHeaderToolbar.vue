@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
 
-import { Search } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
 
-import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
+import { Search } from '@element-plus/icons-vue'
+
 import { useLanguage } from '@/composables'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useAdminOrganizations } from '@/composables/queries'
 import { useAdminPanelStore } from '@/stores'
-import { userRoleLabel, userRoleSelectTiers } from '@/utils/userRoleDisplay'
+import { userRoleLabel, userRoleLabelKey, userRoleSelectTiers } from '@/utils/userRoleDisplay'
 
 const { t } = useLanguage()
 const adminPanel = useAdminPanelStore()
@@ -111,10 +112,9 @@ function onRoleFilterChange(value: string): void {
       @change="onOrgFilterChange"
     >
       <el-option
-        :label="t('admin.allSchools')"
         value=""
-      >
-        <span class="admin-swiss-school-option__label">{{ t('admin.allSchools') }}</span>
+        :label="t('admin.allSchools')"
+        ><span class="admin-swiss-school-option__label"><I18nText k="admin.allSchools" /></span>
       </el-option>
       <el-option
         v-for="org in organizations"
@@ -137,9 +137,11 @@ function onRoleFilterChange(value: string): void {
       @change="onRoleFilterChange"
     >
       <el-option
-        :label="t('admin.allUserTypes')"
         value=""
-      />
+        :label="t('admin.allUserTypes')"
+      >
+        <I18nText k="admin.allUserTypes" />
+      </el-option>
       <el-option-group
         v-for="tier in roleSelectTiers"
         :key="tier.tierLabelKey"
@@ -150,7 +152,12 @@ function onRoleFilterChange(value: string): void {
           :key="role"
           :label="userRoleLabel(t, role)"
           :value="role"
-        />
+        >
+          <I18nText
+            v-if="userRoleLabelKey(role)"
+            :k="userRoleLabelKey(role) ?? ''"
+          />
+        </el-option>
       </el-option-group>
     </el-select>
     <el-button
@@ -158,7 +165,7 @@ function onRoleFilterChange(value: string): void {
       class="admin-swiss-btn"
       @click="onSearch"
     >
-      {{ t('admin.search') }}
+      <I18nText k="admin.search" />
     </el-button>
     <el-button
       v-if="usersToolbar?.hasResetFilters"
@@ -166,7 +173,7 @@ function onRoleFilterChange(value: string): void {
       class="admin-swiss-btn admin-swiss-btn--ghost"
       @click="onReset"
     >
-      {{ t('admin.reset') }}
+      <I18nText k="admin.reset" />
     </el-button>
   </div>
 </template>

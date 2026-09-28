@@ -5,9 +5,9 @@
  */
 import { computed } from 'vue'
 
-import PublicDashboardPage from '@/pages/PublicDashboardPage.vue'
-import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useLanguage } from '@/composables'
+import { useAdminAccess } from '@/composables/admin/useAdminAccess'
+import PublicDashboardPage from '@/pages/PublicDashboardPage.vue'
 
 const { t } = useLanguage()
 const { canViewSettingsSubtab } = useAdminAccess()
@@ -25,8 +25,8 @@ const canAccess = computed(() => canViewSettingsSubtab('public_dashboard'))
       :closable="false"
       show-icon
     >
-      <template #title>{{ t('admin.publicDashboard.accessDeniedTitle') }}</template>
-      {{ t('admin.publicDashboard.accessDeniedHint') }}
+      <template #title><I18nText k="admin.publicDashboard.accessDeniedTitle" /></template>
+      <I18nText k="admin.publicDashboard.accessDeniedHint" />
     </el-alert>
   </div>
   <div

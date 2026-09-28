@@ -71,10 +71,12 @@ const getVersionInfo = (dataset: Benchmark) => {
       :empty-text="t('knowledge.dataset.noData')"
     >
       <ElTableColumn
-        :label="t('knowledge.dataset.colName')"
         width="180"
         show-overflow-tooltip
       >
+        <template #header>
+          <I18nText k="knowledge.dataset.colName" />
+        </template>
         <template #default="{ row }">
           <div class="flex items-center gap-2">
             <ElIcon
@@ -89,20 +91,24 @@ const getVersionInfo = (dataset: Benchmark) => {
       </ElTableColumn>
 
       <ElTableColumn
-        :label="t('knowledge.dataset.colDescription')"
         min-width="200"
         show-overflow-tooltip
       >
+        <template #header>
+          <I18nText k="knowledge.dataset.colDescription" />
+        </template>
         <template #default="{ row }">
           <span class="text-stone-600 text-sm truncate block">{{ row.description }}</span>
         </template>
       </ElTableColumn>
 
       <ElTableColumn
-        :label="t('knowledge.dataset.colSource')"
         min-width="200"
         show-overflow-tooltip
       >
+        <template #header>
+          <I18nText k="knowledge.dataset.colSource" />
+        </template>
         <template #default="{ row }">
           <div class="flex items-center gap-2">
             <span class="text-stone-500 text-sm truncate">{{ row.source }}</span>
@@ -117,12 +123,16 @@ const getVersionInfo = (dataset: Benchmark) => {
       </ElTableColumn>
 
       <ElTableColumn
-        :label="t('knowledge.dataset.colVersion')"
         width="180"
         show-overflow-tooltip
       >
+        <template #header>
+          <I18nText k="knowledge.dataset.colVersion" />
+        </template>
         <template #default="{ row }">
-          <span class="text-stone-600 text-sm truncate">{{ getVersionInfo(row as Benchmark) }}</span>
+          <span class="text-stone-600 text-sm truncate">{{
+            getVersionInfo(row as Benchmark)
+          }}</span>
         </template>
       </ElTableColumn>
     </ElTable>

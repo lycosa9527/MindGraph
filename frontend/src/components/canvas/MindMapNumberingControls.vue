@@ -65,8 +65,16 @@ const numberingVisibility = computed<NumberingVisibility>({
 const numberingEnabled = computed(() => numberingVisibility.value === 'enable')
 
 const numberingVisibilityOptions = computed(() => [
-  { label: t('canvas.toolbar.mindMapAppearanceNumberingEnable'), value: 'enable' as const },
-  { label: t('canvas.toolbar.mindMapAppearanceNumberingHide'), value: 'hide' as const },
+  {
+    label: t('canvas.toolbar.mindMapAppearanceNumberingEnable'),
+    labelKey: 'canvas.toolbar.mindMapAppearanceNumberingEnable',
+    value: 'enable' as const,
+  },
+  {
+    label: t('canvas.toolbar.mindMapAppearanceNumberingHide'),
+    labelKey: 'canvas.toolbar.mindMapAppearanceNumberingHide',
+    value: 'hide' as const,
+  },
 ])
 
 const prefixStyle = computed<MindMapNumberingGlyphStyle>({

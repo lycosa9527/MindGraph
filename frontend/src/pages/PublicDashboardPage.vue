@@ -56,7 +56,7 @@ function backToAdmin(): void {
       @click="backToAdmin"
     >
       <el-icon :size="18"><ArrowLeft /></el-icon>
-      <span>{{ t('admin.publicDashboard.backToAdmin') }}</span>
+      <span><I18nText k="admin.publicDashboard.backToAdmin" /></span>
     </button>
     <div class="map-container">
       <div
@@ -64,8 +64,8 @@ function backToAdmin(): void {
         class="china-map"
       />
       <div class="map-title-overlay">
-        <h1>{{ t('publicDashboard.title') }}</h1>
-        <div class="map-subtitle">{{ t('publicDashboard.subtitle') }}</div>
+        <h1><I18nText k="publicDashboard.title" /></h1>
+        <div class="map-subtitle"><I18nText k="publicDashboard.subtitle" /></div>
       </div>
     </div>
 
@@ -83,36 +83,36 @@ function backToAdmin(): void {
 
     <div class="stats-overlay">
       <div class="overlay-header">
-        <h2>{{ t('publicDashboard.statsTitle') }}</h2>
+        <h2><I18nText k="publicDashboard.statsTitle" /></h2>
         <span class="pulse-indicator" />
       </div>
       <div class="stats-grid">
         <div class="stat-card">
-          <h3>{{ t('publicDashboard.connectedUsers') }}</h3>
+          <h3><I18nText k="publicDashboard.connectedUsers" /></h3>
           <div class="stat-value">{{ formatCompactNumber(stats.connected_users) }}</div>
-          <div class="stat-label">{{ t('publicDashboard.activeNow') }}</div>
+          <div class="stat-label"><I18nText k="publicDashboard.activeNow" /></div>
         </div>
         <div class="stat-card">
-          <h3>{{ t('publicDashboard.registeredUsers') }}</h3>
+          <h3><I18nText k="publicDashboard.registeredUsers" /></h3>
           <div class="stat-value">{{ formatCompactNumber(stats.registered_users) }}</div>
-          <div class="stat-label">{{ t('publicDashboard.totalUsers') }}</div>
+          <div class="stat-label"><I18nText k="publicDashboard.totalUsers" /></div>
         </div>
         <div class="stat-card">
-          <h3>{{ t('publicDashboard.tokensToday') }}</h3>
+          <h3><I18nText k="publicDashboard.tokensToday" /></h3>
           <div class="stat-value">{{ formatCompactNumber(stats.tokens_used_today) }}</div>
-          <div class="stat-label">{{ t('publicDashboard.today') }}</div>
+          <div class="stat-label"><I18nText k="publicDashboard.today" /></div>
         </div>
         <div class="stat-card">
-          <h3>{{ t('publicDashboard.totalTokens') }}</h3>
+          <h3><I18nText k="publicDashboard.totalTokens" /></h3>
           <div class="stat-value">{{ formatCompactNumber(stats.total_tokens_used) }}</div>
-          <div class="stat-label">{{ t('publicDashboard.allTime') }}</div>
+          <div class="stat-label"><I18nText k="publicDashboard.allTime" /></div>
         </div>
       </div>
     </div>
 
     <div class="activity-overlay">
       <div class="overlay-header">
-        <h2>{{ t('publicDashboard.activityTitle') }}</h2>
+        <h2><I18nText k="publicDashboard.activityTitle" /></h2>
         <div class="header-actions">
           <button
             type="button"
@@ -134,7 +134,7 @@ function backToAdmin(): void {
           v-if="activities.length === 0"
           class="activity-empty"
         >
-          {{ t('publicDashboard.noActivity') }}
+          <I18nText k="publicDashboard.noActivity" />
         </div>
         <div
           v-for="(item, index) in activities"

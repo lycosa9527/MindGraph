@@ -588,13 +588,17 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
               @change="(v: string) => onVisibilityChange(g.id, v)"
             >
               <el-option
-                :label="t('workshop.channelTypePublic')"
                 value="public"
-              />
+                :label="t('workshop.channelTypePublic')"
+              >
+                <I18nText k="workshop.channelTypePublic" />
+              </el-option>
               <el-option
-                :label="t('workshop.channelTypePrivate')"
                 value="private"
-              />
+                :label="t('workshop.channelTypePrivate')"
+              >
+                <I18nText k="workshop.channelTypePrivate" />
+              </el-option>
             </el-select>
           </div>
           <div class="tg-manage-dialog__field">

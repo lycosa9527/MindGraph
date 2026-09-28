@@ -188,7 +188,7 @@ function handleFreeInput() {
 
         <!-- Section title -->
         <div class="text-sm font-semibold text-gray-500 mb-3">
-          {{ t('landing.diagramGrid.sectionTitle') }}
+          <I18nText k="landing.diagramGrid.sectionTitle" />
         </div>
 
         <!-- Diagram type grid -->
@@ -203,10 +203,10 @@ function handleFreeInput() {
               <DiagramPreviewSvg :type="item.type" />
             </div>
             <div class="text-sm font-medium text-gray-800 leading-snug">
-              {{ t(item.titleKey) }}
+              <I18nText :k="item.titleKey" />
             </div>
             <div class="text-xs text-gray-500 leading-snug mt-0.5">
-              {{ t(item.descKey) }}
+              <I18nText :k="item.descKey" />
             </div>
           </button>
         </div>

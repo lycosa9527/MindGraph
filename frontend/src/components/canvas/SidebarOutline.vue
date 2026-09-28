@@ -365,7 +365,7 @@ function showActions(nodeId: string): boolean {
         v-else
         class="px-4 py-10 text-center text-[11px] text-gray-400"
       >
-        {{ t('canvas.mindMapSideToolbar.outlineEmpty') }}
+        <I18nText k="canvas.mindMapSideToolbar.outlineEmpty" />
       </p>
     </div>
   </aside>

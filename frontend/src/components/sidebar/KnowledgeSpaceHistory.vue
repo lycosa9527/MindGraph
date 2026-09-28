@@ -71,7 +71,7 @@ async function handleDelete(packageId: number): Promise<void> {
   >
     <div class="px-4 py-3 flex items-center justify-between">
       <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
-        {{ t('sidebar.knowledgeSpaceHistory.title') }}
+        <I18nText k="sidebar.knowledgeSpaceHistory.title" />
       </div>
       <div class="text-xs text-stone-400">
         {{ packageCountLabel }}
@@ -83,7 +83,7 @@ async function handleDelete(packageId: number): Promise<void> {
         v-if="isLoading"
         class="py-8 text-center text-xs text-stone-400"
       >
-        {{ t('common.loading') }}
+        <I18nText k="common.loading" />
       </div>
 
       <div
@@ -92,10 +92,13 @@ async function handleDelete(packageId: number): Promise<void> {
       >
         <Folder class="w-8 h-8 mx-auto mb-2 text-stone-300" />
         <p class="text-xs text-stone-400">
-          {{ t('sidebar.knowledgeSpaceHistory.empty') }}
+          <I18nText k="sidebar.knowledgeSpaceHistory.empty" />
         </p>
         <p class="text-xs text-stone-300 mt-1">
-          {{ t('sidebar.knowledgeSpaceHistory.capacity', { n: MAX_KNOWLEDGE_PACKAGES }) }}
+          <I18nText
+            k="sidebar.knowledgeSpaceHistory.capacity"
+            :params="{ n: MAX_KNOWLEDGE_PACKAGES }"
+          />
         </p>
       </div>
 
@@ -119,12 +122,13 @@ async function handleDelete(packageId: number): Promise<void> {
               {{ packageLabel(pkg) }}
             </div>
             <div class="package-meta">
-              {{
-                t('fileCenter.corpusStatus', {
+              <I18nText
+                k="fileCenter.corpusStatus"
+                :params="{
                   completed: pkg.completed_count,
                   total: pkg.document_count,
-                })
-              }}
+                }"
+              />
             </div>
           </div>
           <button

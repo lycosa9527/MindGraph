@@ -91,7 +91,7 @@ async function handleDelete(): Promise<void> {
         @click="handleMarkRead"
       >
         <BookCheck class="ws-popover-icon" />
-        {{ t('workshop.markAsRead') }}
+        <I18nText k="workshop.markAsRead" />
       </button>
 
       <button
@@ -102,9 +102,13 @@ async function handleDelete(): Promise<void> {
           :is="topic.visibility_policy === 'muted' ? Bell : BellOff"
           class="ws-popover-icon"
         />
-        {{
-          topic.visibility_policy === 'muted' ? t('workshop.unmuteTopic') : t('workshop.muteTopic')
-        }}
+        <I18nText
+          v-if="topic.visibility_policy === 'muted'"
+          k="workshop.unmuteTopic"
+        /><I18nText
+          v-else
+          k="workshop.muteTopic"
+        />
       </button>
 
       <button
@@ -112,11 +116,13 @@ async function handleDelete(): Promise<void> {
         @click="handleToggleFollow"
       >
         <Eye class="ws-popover-icon" />
-        {{
-          topic.visibility_policy === 'followed'
-            ? t('workshop.unfollowTopic')
-            : t('workshop.followTopic')
-        }}
+        <I18nText
+          v-if="topic.visibility_policy === 'followed'"
+          k="workshop.unfollowTopic"
+        /><I18nText
+          v-else
+          k="workshop.followTopic"
+        />
       </button>
 
       <template v-if="canManage">
@@ -127,7 +133,7 @@ async function handleDelete(): Promise<void> {
           @click="handleRename"
         >
           <Pencil class="ws-popover-icon" />
-          {{ t('workshop.renameTopic') }}
+          <I18nText k="workshop.renameTopic" />
         </button>
 
         <button
@@ -135,7 +141,7 @@ async function handleDelete(): Promise<void> {
           @click="handleMove"
         >
           <ArrowRightLeft class="ws-popover-icon" />
-          {{ t('workshop.moveTopic') }}
+          <I18nText k="workshop.moveTopic" />
         </button>
 
         <button
@@ -143,7 +149,7 @@ async function handleDelete(): Promise<void> {
           @click="handleDelete"
         >
           <Trash2 class="ws-popover-icon" />
-          {{ t('workshop.deleteTopic') }}
+          <I18nText k="workshop.deleteTopic" />
         </button>
       </template>
     </div>

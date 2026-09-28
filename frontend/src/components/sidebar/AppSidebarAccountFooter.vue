@@ -250,7 +250,12 @@ function onUserMenuVisible(open: boolean): void {
                     s.userRolePill.borderClass,
                   ]"
                 >
-                  {{ s.userRolePill.label }}
+                  <I18nText
+                    v-if="s.userRolePill.labelKey"
+                    :k="s.userRolePill.labelKey"
+                    dense
+                  />
+                  <template v-else>{{ s.userRolePill.label }}</template>
                 </span>
               </div>
               <SidebarQuoteMarquee

@@ -5,30 +5,31 @@
 import { computed, defineAsyncComponent, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { Plus } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
 
-import SchoolDashboardOrgPicker from '@/components/school/SchoolDashboardOrgPicker.vue'
+import { Plus } from '@element-plus/icons-vue'
+
 import AdminDataCenterTab from '@/components/admin/AdminDataCenterTab.vue'
-import AdminInviteUsersTab from '@/components/admin/AdminInviteUsersTab.vue'
-import AdminMarketsTab from '@/components/admin/AdminMarketsTab.vue'
-import AdminSchoolsTab from '@/components/admin/AdminSchoolsTab.vue'
 import AdminFeatureDevTab from '@/components/admin/AdminFeatureDevTab.vue'
-import AdminShowcaseTab from '@/components/admin/AdminShowcaseTab.vue'
-import AdminLearningSpaceTab from '@/components/admin/AdminLearningSpaceTab.vue'
-import AdminSystemSettingsTab from '@/components/admin/AdminSystemSettingsTab.vue'
 import AdminFeaturesHeaderToolbar from '@/components/admin/AdminFeaturesHeaderToolbar.vue'
+import AdminInviteUsersTab from '@/components/admin/AdminInviteUsersTab.vue'
+import AdminLearningSpaceTab from '@/components/admin/AdminLearningSpaceTab.vue'
+import AdminMarketsTab from '@/components/admin/AdminMarketsTab.vue'
 import AdminMindMateExportHeaderToolbar from '@/components/admin/AdminMindMateExportHeaderToolbar.vue'
 import AdminRolesHeaderToolbar from '@/components/admin/AdminRolesHeaderToolbar.vue'
+import AdminSchoolsTab from '@/components/admin/AdminSchoolsTab.vue'
+import AdminShowcaseTab from '@/components/admin/AdminShowcaseTab.vue'
+import AdminSystemSettingsTab from '@/components/admin/AdminSystemSettingsTab.vue'
 import AdminTeachingDesignHeaderToolbar from '@/components/admin/AdminTeachingDesignHeaderToolbar.vue'
 import AdminUsersHeaderToolbar from '@/components/admin/AdminUsersHeaderToolbar.vue'
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel.vue'
+import I18nText from '@/components/common/I18nText.vue'
+import SchoolDashboardOrgPicker from '@/components/school/SchoolDashboardOrgPicker.vue'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useAdminHeaderBreadcrumb } from '@/composables/admin/useAdminHeaderBreadcrumb'
 import { useAdminPanelTabs } from '@/composables/admin/useAdminPanelTabs'
 import { useAdminRouteSync } from '@/composables/admin/useAdminRouteSync'
-import { useLanguage } from '@/composables'
 import { useAdminPanelStore } from '@/stores'
 import { isAdminPublicDashboardRoute } from '@/utils/publicDashboardRoute'
 
@@ -36,7 +37,6 @@ import { isAdminPublicDashboardRoute } from '@/utils/publicDashboardRoute'
 const AdminVodTab = defineAsyncComponent(() => import('@/components/admin/AdminVodTab.vue'))
 
 const route = useRoute()
-const { t } = useLanguage()
 const { can, canEditTab, isTabReadOnly, loadCapabilities, isReadOnly, canViewSettingsSubtab } =
   useAdminAccess()
 const { tabs } = useAdminPanelTabs({ loadOnMount: false })
@@ -72,8 +72,7 @@ const showSchoolAddMemberButton = computed(
 )
 
 const showSchoolsCreateButton = computed(() => {
-  const onCreateTab =
-    activeTab.value === 'invites' || activeTab.value === 'organizations'
+  const onCreateTab = activeTab.value === 'invites' || activeTab.value === 'organizations'
   if (!onCreateTab) {
     return false
   }
@@ -83,13 +82,12 @@ const showSchoolsCreateButton = computed(() => {
 
 const showFeaturesApplyButton = computed(
   () =>
-    activeTab.value === 'settings' &&
-    route.query.subtab === 'features' &&
-    canEditTab('settings')
+    activeTab.value === 'settings' && route.query.subtab === 'features' && canEditTab('settings')
 )
 
 const showRolesHeaderToolbar = computed(
-  () => activeTab.value === 'settings' && route.query.subtab === 'roles' && can('tab.settings.roles')
+  () =>
+    activeTab.value === 'settings' && route.query.subtab === 'roles' && can('tab.settings.roles')
 )
 
 const showTeachingDesignHeaderToolbar = computed(
@@ -136,11 +134,11 @@ onMounted(async () => {
   >
     <div
       v-if="!isPublicDashboardFullscreen"
-      class="admin-header h-14 px-4 flex items-center justify-between gap-3 bg-white border-b border-gray-200 shrink-0"
+      class="admin-header min-h-14 px-4 py-1.5 flex items-center justify-between gap-3 bg-white border-b border-gray-200 shrink-0"
     >
       <nav
         aria-label="breadcrumb"
-        class="admin-breadcrumb flex-1 text-sm truncate min-w-0"
+        class="admin-breadcrumb flex-1 text-sm min-w-0"
       >
         <template
           v-for="(segment, index) in headerBreadcrumb"
@@ -154,20 +152,29 @@ onMounted(async () => {
             /
           </span>
           <span
+            class="admin-breadcrumb-segment"
             :class="
               index === headerBreadcrumb.length - 1
                 ? 'admin-breadcrumb-current font-semibold text-gray-900'
                 : 'admin-breadcrumb-parent text-gray-500'
             "
           >
-            {{ segment.label }}
+            <I18nText
+              v-if="segment.labelKey"
+              :k="segment.labelKey"
+              dense
+            />
+            <template v-else>{{ segment.label }}</template>
           </span>
         </template>
         <span
           v-if="showTabReadOnlyBadge"
           class="text-gray-400 font-normal ml-2"
         >
-          ({{ t('admin.readOnly') }})
+          (<I18nText
+            k="admin.readOnly"
+            dense
+          />)
         </span>
       </nav>
       <div class="admin-header-actions flex flex-1 items-center justify-end gap-3 min-w-0">
@@ -188,7 +195,10 @@ onMounted(async () => {
           @click="onHeaderAddSchoolMember"
         >
           <el-icon class="mr-1"><Plus /></el-icon>
-          {{ t('admin.schoolAddMemberButton') }}
+          <I18nText
+            k="admin.schoolAddMemberButton"
+            dense
+          />
         </el-button>
         <el-button
           v-if="showSchoolsCreateButton"
@@ -197,7 +207,10 @@ onMounted(async () => {
           @click="onHeaderCreateSchool"
         >
           <el-icon class="mr-1"><Plus /></el-icon>
-          {{ t('admin.createOrganization') }}
+          <I18nText
+            k="admin.createOrganization"
+            dense
+          />
         </el-button>
       </div>
     </div>
@@ -208,17 +221,16 @@ onMounted(async () => {
     >
       <div
         class="admin-content"
-        :class="
-          isPublicDashboardFullscreen
-            ? 'admin-content--fullscreen'
-            : 'px-6 py-6'
-        "
+        :class="isPublicDashboardFullscreen ? 'admin-content--fullscreen' : 'px-6 py-6'"
       >
         <AdminDataCenterTab
           v-if="activeTab === 'data_center'"
           :read-only="isTabReadOnly('data_center')"
         />
-        <AdminUsersPanel v-else-if="activeTab === 'users'" :read-only="isTabReadOnly('users')" />
+        <AdminUsersPanel
+          v-else-if="activeTab === 'users'"
+          :read-only="isTabReadOnly('users')"
+        />
         <AdminSchoolsTab
           v-else-if="activeTab === 'organizations'"
           :read-only="isTabReadOnly('organizations')"
@@ -278,6 +290,25 @@ onMounted(async () => {
   color: #d6d3d1;
   font-weight: 300;
   user-select: none;
+}
+
+.admin-breadcrumb-segment {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-breadcrumb-segment :deep(.i18n-label) {
+  max-width: 100%;
+}
+
+.admin-breadcrumb-segment :deep(.i18n-label__primary),
+.admin-breadcrumb-segment :deep(.i18n-label__secondary) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-new-school-btn {

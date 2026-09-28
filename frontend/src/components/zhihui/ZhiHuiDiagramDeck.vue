@@ -7,8 +7,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 
 import ZhiHuiTeacherCaption from '@/components/zhihui/ZhiHuiTeacherCaption.vue'
-import { zhihuiDiagramPhaseLabel } from '@/components/zhihui/zhihuiDiagramProgress'
-import { useLanguage } from '@/composables'
+import { zhihuiDiagramPhaseMessage } from '@/components/zhihui/zhihuiDiagramProgress'
 import type { ZhihuiGenerationItem } from '@/stores/zhihuiHistory'
 import { isZhihuiJobActive } from '@/stores/zhihuiHistory'
 
@@ -35,14 +34,10 @@ const emit = defineEmits<{
   resume: []
 }>()
 
-const { t } = useLanguage()
-
 const current = computed(() => props.slides[props.slideIndex] ?? null)
 const total = computed(() => props.slides.length)
 const active = computed(() => props.starting || isZhihuiJobActive(props.status))
-const canResume = computed(
-  () => props.status === 'failed' || props.status === 'partial'
-)
+const canResume = computed(() => props.status === 'failed' || props.status === 'partial')
 
 /** Display URL may gain a cache-buster after a failed load (COS eventual consistency). */
 const displaySrc = ref('')
@@ -51,17 +46,13 @@ const imgBroken = ref(false)
 let loadRetry = 0
 let retryTimer: ReturnType<typeof setTimeout> | null = null
 
-const phaseLabel = computed(() =>
-  zhihuiDiagramPhaseLabel(props.status, props.progress, (key, params) =>
-    params ? String(t(key, params)) : String(t(key))
-  )
-)
+const phaseMessage = computed(() => zhihuiDiagramPhaseMessage(props.status, props.progress))
 
 /** Header/body copy when there is no slide yet — never pretend a job is running when idle. */
-const emptyStateLabel = computed(() => {
-  if (phaseLabel.value) return phaseLabel.value
-  if (active.value) return String(t('zhihui.diagram.waitingSlides'))
-  return String(t('zhihui.diagram.emptyDeck'))
+const emptyMessage = computed((): { key: string; params?: Record<string, number> } => {
+  if (phaseMessage.value) return phaseMessage.value
+  if (active.value) return { key: 'zhihui.diagram.waitingSlides' }
+  return { key: 'zhihui.diagram.emptyDeck' }
 })
 
 const showBatchProgress = computed(() => {
@@ -86,15 +77,7 @@ const batchTotal = computed(() => {
   return typeof raw === 'number' && Number.isFinite(raw) && raw > 0 ? raw : null
 })
 
-const progressHint = computed(() => {
-  if (batchIndex.value === null || batchTotal.value === null) return ''
-  return String(
-    t('zhihui.diagram.batchProgress', {
-      current: batchIndex.value,
-      total: batchTotal.value,
-    })
-  )
-})
+const showProgressHint = computed(() => batchIndex.value !== null && batchTotal.value !== null)
 
 const batchPercent = computed(() => {
   if (batchIndex.value === null || batchTotal.value === null || batchTotal.value <= 0) {
@@ -103,21 +86,15 @@ const batchPercent = computed(() => {
   return Math.min(100, Math.max(0, (batchIndex.value / batchTotal.value) * 100))
 })
 
-const plannedSlideHint = computed(() => {
+const plannedSlideCounts = computed(() => {
   const p = props.progress
-  if (!p) return ''
+  if (!p) return null
   const slideCount = p.slide_count
   const planned = p.planned_slides
-  if (
-    typeof slideCount === 'number' &&
-    typeof planned === 'number' &&
-    planned > 0
-  ) {
-    return String(
-      t('zhihui.diagram.slideProgress', { current: slideCount, total: planned })
-    )
+  if (typeof slideCount === 'number' && typeof planned === 'number' && planned > 0) {
+    return { current: slideCount, total: planned }
   }
-  return ''
+  return null
 })
 
 function clearRetryTimer(): void {
@@ -143,7 +120,11 @@ watch(
       return
     }
     // Keep a working src when poll only refreshes metadata for the same slide.
-    if (displaySrc.value && displaySrc.value.split('?')[0] === url.split('?')[0] && imgLoaded.value) {
+    if (
+      displaySrc.value &&
+      displaySrc.value.split('?')[0] === url.split('?')[0] &&
+      imgLoaded.value
+    ) {
       return
     }
     resetImageState(url)
@@ -195,7 +176,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="zhihui-diagram-deck flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-stone-200 bg-white">
+  <div
+    class="zhihui-diagram-deck flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-stone-200 bg-white"
+  >
     <div class="flex items-center justify-between border-b border-stone-100 px-3 py-2">
       <button
         type="button"
@@ -210,16 +193,24 @@ onBeforeUnmount(() => {
           <template v-if="total > 0">
             {{ slideIndex + 1 }} / {{ total }}
             <span
-              v-if="plannedSlideHint && showBatchProgress"
+              v-if="plannedSlideCounts && showBatchProgress"
               class="ml-1 text-stone-400"
-            >· {{ plannedSlideHint }}</span>
+              >·
+              <I18nText
+                k="zhihui.diagram.slideProgress"
+                :params="plannedSlideCounts"
+              />
+            </span>
           </template>
           <template v-else>
-            {{ emptyStateLabel }}
+            <I18nText
+              :k="emptyMessage.key"
+              :params="emptyMessage.params"
+            />
           </template>
         </div>
         <div
-          v-if="showBatchProgress && progressHint"
+          v-if="showBatchProgress && showProgressHint"
           class="mt-1 flex flex-col items-center gap-1"
         >
           <div class="h-1 w-28 overflow-hidden rounded-full bg-stone-200">
@@ -228,7 +219,12 @@ onBeforeUnmount(() => {
               :style="{ width: `${batchPercent}%` }"
             />
           </div>
-          <span class="text-[10px] leading-none text-stone-400">{{ progressHint }}</span>
+          <span class="text-[10px] leading-none text-stone-400">
+            <I18nText
+              k="zhihui.diagram.batchProgress"
+              :params="{ current: batchIndex ?? 0, total: batchTotal ?? 0 }"
+            />
+          </span>
         </div>
       </div>
       <button
@@ -251,36 +247,47 @@ onBeforeUnmount(() => {
         :class="imgLoaded ? 'opacity-100' : 'opacity-0'"
         @load="onImgLoad"
         @error="onImgError"
-      >
+      />
       <div
         v-if="displaySrc && !imgLoaded && !imgBroken"
         class="absolute inset-0 flex items-center justify-center px-6 text-center text-xs text-stone-400"
       >
-        {{ emptyStateLabel }}
+        <I18nText
+          :k="emptyMessage.key"
+          :params="emptyMessage.params"
+        />
       </div>
       <div
         v-else-if="imgBroken"
         class="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center text-xs text-stone-400"
       >
-        <p>{{ t('zhihui.diagram.imageLoadFailed') }}</p>
+        <p><I18nText k="zhihui.diagram.imageLoadFailed" /></p>
         <button
           type="button"
           class="rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50"
           @click="resetImageState(current?.image_url || '')"
         >
-          {{ t('zhihui.diagram.retryImage') }}
+          <I18nText k="zhihui.diagram.retryImage" />
         </button>
       </div>
       <div
         v-else-if="!displaySrc"
         class="px-6 text-center text-xs text-stone-400"
       >
-        <p>{{ emptyStateLabel }}</p>
+        <p>
+          <I18nText
+            :k="emptyMessage.key"
+            :params="emptyMessage.params"
+          />
+        </p>
         <p
-          v-if="progressHint"
+          v-if="showProgressHint"
           class="mt-1"
         >
-          {{ progressHint }}
+          <I18nText
+            k="zhihui.diagram.batchProgress"
+            :params="{ current: batchIndex ?? 0, total: batchTotal ?? 0 }"
+          />
         </p>
         <p
           v-if="errorMessage"
@@ -293,7 +300,11 @@ onBeforeUnmount(() => {
         v-if="active && displaySrc && imgLoaded"
         class="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-3 py-1 text-[11px] text-amber-700 shadow"
       >
-        {{ phaseLabel }}
+        <I18nText
+          v-if="phaseMessage"
+          :k="phaseMessage.key"
+          :params="phaseMessage.params"
+        />
       </div>
     </div>
 
@@ -316,7 +327,7 @@ onBeforeUnmount(() => {
           class="shrink-0 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50"
           @click="emit('resume')"
         >
-          {{ t('zhihui.diagram.resume') }}
+          <I18nText k="zhihui.diagram.resume" />
         </button>
       </div>
       <p

@@ -6,8 +6,8 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import AdminUsersTab from '@/components/admin/AdminUsersTab.vue'
-import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useLanguage } from '@/composables'
+import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 
 const props = defineProps<{
   readOnly?: boolean
@@ -37,13 +37,13 @@ function goToSchoolDashboard(): void {
     v-else-if="showSchoolDashboardHint"
     class="text-center py-12 px-4 text-gray-600 space-y-3"
   >
-    <p>{{ t('admin.usersTabSchoolDashboardHint') }}</p>
+    <p><I18nText k="admin.usersTabSchoolDashboardHint" /></p>
     <el-button
       type="primary"
       plain
       @click="goToSchoolDashboard"
     >
-      {{ t('admin.schoolDashboard') }}
+      <I18nText k="admin.schoolDashboard" />
     </el-button>
   </div>
   <div

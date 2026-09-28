@@ -223,19 +223,25 @@ function onDialogClosed(): void {
     <template #header>
       <div class="mindbot-swiss-header mindbot-config-header">
         <span class="mindbot-swiss-header__glyph">◇</span>
-        <span class="mindbot-swiss-header__title">{{
-          mode === 'create' ? t('admin.mindbot.create') : t('admin.mindbot.edit')
-        }}</span>
+        <span class="mindbot-swiss-header__title"
+          ><I18nText
+            v-if="mode === 'create'"
+            k="admin.mindbot.create" /><I18nText
+            v-else
+            k="admin.mindbot.edit"
+        /></span>
         <span
           class="mindbot-swiss-header__divider"
           aria-hidden="true"
           >·</span
         >
-        <span class="mindbot-swiss-header__note">{{
-          t('admin.mindbot.dialogHeaderNote', {
-            name: (schoolDisplayName || '').trim() || '—',
-          })
-        }}</span>
+        <span class="mindbot-swiss-header__note"
+          ><I18nText
+            k="admin.mindbot.dialogHeaderNote"
+            :params="{
+              name: (schoolDisplayName || '').trim() || '—',
+            }"
+        /></span>
       </div>
     </template>
     <div class="mindbot-config-body">
@@ -309,9 +315,11 @@ function onDialogClosed(): void {
 
               <el-form-item
                 v-if="mode === 'create' && isAdmin"
-                :label="t('admin.mindbot.orgSelect')"
                 required
               >
+                <template #label>
+                  <I18nText k="admin.mindbot.orgSelect" />
+                </template>
                 <el-select
                   v-model="formOrgId"
                   class="mindbot-swiss-select w-full max-w-md"
@@ -347,7 +355,10 @@ function onDialogClosed(): void {
                     managerSchoolDisplayName
                   }}</span>
                 </el-form-item>
-                <el-form-item :label="t('admin.mindbot.dingtalkClientId')">
+                <el-form-item>
+                  <template #label>
+                    <I18nText k="admin.mindbot.dingtalkClientId" />
+                  </template>
                   <el-input
                     v-model="form.dingtalk_client_id"
                     clearable
@@ -359,10 +370,10 @@ function onDialogClosed(): void {
                     <I18nText k="admin.mindbot.dingtalkClientIdHint" />
                   </div>
                 </el-form-item>
-                <el-form-item
-                  :label="t('admin.mindbot.dingtalkAppSecret')"
-                  :required="mode === 'create' || dingtalkSecretReplaceMode"
-                >
+                <el-form-item :required="mode === 'create' || dingtalkSecretReplaceMode">
+                  <template #label>
+                    <I18nText k="admin.mindbot.dingtalkAppSecret" />
+                  </template>
                   <template
                     v-if="
                       mode === 'edit' &&
@@ -412,7 +423,10 @@ function onDialogClosed(): void {
                     </div>
                   </template>
                 </el-form-item>
-                <el-form-item :label="t('admin.mindbot.botLabel')">
+                <el-form-item>
+                  <template #label>
+                    <I18nText k="admin.mindbot.botLabel" />
+                  </template>
                   <el-input
                     v-model="form.bot_label"
                     clearable
@@ -421,10 +435,10 @@ function onDialogClosed(): void {
                     :placeholder="t('admin.mindbot.botLabel')"
                   />
                 </el-form-item>
-                <el-form-item
-                  :label="t('admin.mindbot.dingtalkRobotCode')"
-                  required
-                >
+                <el-form-item required>
+                  <template #label>
+                    <I18nText k="admin.mindbot.dingtalkRobotCode" />
+                  </template>
                   <el-input
                     v-model="form.dingtalk_robot_code"
                     clearable
@@ -434,7 +448,10 @@ function onDialogClosed(): void {
                     <I18nText k="admin.mindbot.dingtalkRobotCodeHint" />
                   </div>
                 </el-form-item>
-                <el-form-item :label="t('admin.mindbot.dingtalkAiCardTemplateId')">
+                <el-form-item>
+                  <template #label>
+                    <I18nText k="admin.mindbot.dingtalkAiCardTemplateId" />
+                  </template>
                   <div
                     class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 w-full max-w-2xl"
                   >
@@ -479,10 +496,10 @@ function onDialogClosed(): void {
               </div>
             </el-tab-pane>
 
-            <el-tab-pane
-              name="dify"
-              :label="t('admin.mindbot.tabDify')"
-            >
+            <el-tab-pane name="dify">
+              <template #label>
+                <I18nText k="admin.mindbot.tabDify" />
+              </template>
               <p
                 class="mindbot-config-banner rounded-sm border px-3 py-2 text-xs font-mono leading-snug m-0 mb-3"
               >
@@ -496,20 +513,20 @@ function onDialogClosed(): void {
               <div
                 class="mindbot-section-card mindbot-section-card--compact mindbot-swiss-inset rounded-sm border border-[var(--mindbot-swiss-border)] bg-[var(--mindbot-swiss-inset)]"
               >
-                <el-form-item
-                  :label="t('admin.mindbot.difyBaseUrl')"
-                  required
-                >
+                <el-form-item required>
+                  <template #label>
+                    <I18nText k="admin.mindbot.difyBaseUrl" />
+                  </template>
                   <el-input
                     v-model="form.dify_api_base_url"
                     clearable
                     class="mindbot-swiss-input w-full max-w-2xl"
                   />
                 </el-form-item>
-                <el-form-item
-                  :label="t('admin.mindbot.difyApiKey')"
-                  :required="mode === 'create' || difyApiKeyReplaceMode"
-                >
+                <el-form-item :required="mode === 'create' || difyApiKeyReplaceMode">
+                  <template #label>
+                    <I18nText k="admin.mindbot.difyApiKey" />
+                  </template>
                   <template
                     v-if="
                       mode === 'edit' &&
@@ -559,7 +576,10 @@ function onDialogClosed(): void {
                     </div>
                   </template>
                 </el-form-item>
-                <el-form-item :label="t('admin.mindbot.difyTimeout')">
+                <el-form-item>
+                  <template #label>
+                    <I18nText k="admin.mindbot.difyTimeout" />
+                  </template>
                   <el-input-number
                     v-model="form.dify_timeout_seconds"
                     :min="5"
@@ -568,7 +588,10 @@ function onDialogClosed(): void {
                     controls-position="right"
                   />
                 </el-form-item>
-                <el-form-item :label="t('admin.mindbot.dingtalkAiCardStreamingMaxChars')">
+                <el-form-item>
+                  <template #label>
+                    <I18nText k="admin.mindbot.dingtalkAiCardStreamingMaxChars" />
+                  </template>
                   <el-input-number
                     v-model="form.dingtalk_ai_card_streaming_max_chars"
                     :min="500"
@@ -578,10 +601,10 @@ function onDialogClosed(): void {
                     controls-position="right"
                   />
                 </el-form-item>
-                <el-form-item
-                  :label="t('admin.mindbot.difyShowChainOfThought')"
-                  class="mindbot-cot-form-item"
-                >
+                <el-form-item class="mindbot-cot-form-item">
+                  <template #label>
+                    <I18nText k="admin.mindbot.difyShowChainOfThought" />
+                  </template>
                   <div class="mindbot-cot-field">
                     <el-switch
                       v-model="form.show_chain_of_thought"
@@ -594,9 +617,11 @@ function onDialogClosed(): void {
 
             <el-tab-pane
               name="log"
-              :label="t('admin.mindbot.tabLog')"
               lazy
             >
+              <template #label>
+                <I18nText k="admin.mindbot.tabLog" />
+              </template>
               <AdminMindBotUsagePanel
                 :organization-id="formOrgId"
                 :can-load="canLoadUsage"
@@ -606,9 +631,11 @@ function onDialogClosed(): void {
 
             <el-tab-pane
               name="monitor"
-              :label="t('admin.mindbot.tabMonitor')"
               lazy
             >
+              <template #label>
+                <I18nText k="admin.mindbot.tabMonitor" />
+              </template>
               <AdminMindBotUsagePanel
                 :organization-id="formOrgId"
                 :can-load="canLoadUsage"

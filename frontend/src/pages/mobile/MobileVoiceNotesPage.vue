@@ -130,7 +130,7 @@ async function deleteHistoryDiagram(diagramId: string): Promise<boolean> {
           class="min-w-0 flex-1 truncate text-center text-base font-semibold text-gray-800"
           :class="{ 'sr-only': showSaveStatus }"
         >
-          {{ t('auth.voiceNotes.modalTitle') }}
+          <I18nText k="auth.voiceNotes.modalTitle" />
         </h1>
       </div>
       <span class="mobile-vn-elapsed w-12 shrink-0 text-right text-xs font-semibold text-gray-500">

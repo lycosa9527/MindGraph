@@ -19,7 +19,7 @@ const router = useRouter()
 const PLATFORM_QUICK_GUIDE_URL = 'https://365.kdocs.cn/l/caSETdpB0Akg'
 
 const navLinks = computed(() => [
-  { key: 'contact', label: t('auth.landing.navContact') },
+  { key: 'contact', label: t('auth.landing.navContact'), labelKey: 'auth.landing.navContact' },
 ])
 
 function go(to: string) {
@@ -49,10 +49,11 @@ function onNavLink(link: { key: string }) {
           <span
             class="auth-mkt-nav__logo"
             aria-hidden="true"
-          >M</span>
+            >M</span
+          >
           <span class="auth-mkt-nav__brand-text">
-            <span class="auth-mkt-nav__name">{{ t('app.brandName') }}</span>
-            <span class="auth-mkt-nav__tagline">{{ t('auth.modal.tagline') }}</span>
+            <span class="auth-mkt-nav__name"><I18nText k="app.brandName" /></span>
+            <span class="auth-mkt-nav__tagline"><I18nText k="auth.modal.tagline" /></span>
           </span>
         </button>
         <nav
@@ -66,7 +67,7 @@ function onNavLink(link: { key: string }) {
             class="auth-mkt-nav__link"
             @click="onNavLink(link)"
           >
-            {{ link.label }}
+            <I18nText :k="link.labelKey" />
           </button>
         </nav>
       </div>
@@ -77,14 +78,14 @@ function onNavLink(link: { key: string }) {
           class="auth-mkt-nav__link auth-mkt-nav__link--muted auth-mkt-nav__link--guide"
           @click="openPlatformQuickGuide"
         >
-          {{ t('auth.platformQuickGuide') }}
+          <I18nText k="auth.platformQuickGuide" />
         </button>
         <button
           type="button"
           class="auth-mkt-nav__link"
           @click="emit('login')"
         >
-          {{ t('auth.login') }}
+          <I18nText k="auth.login" />
         </button>
       </div>
     </div>

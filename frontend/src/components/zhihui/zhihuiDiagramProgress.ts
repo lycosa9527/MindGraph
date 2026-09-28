@@ -17,17 +17,22 @@ function planningStage(progress: Record<string, unknown> | null | undefined): st
   return typeof raw === 'string' ? raw.trim().toLowerCase() : ''
 }
 
+export interface ZhihuiDiagramPhaseMessage {
+  key: string
+  params?: Record<string, number>
+}
+
 /**
  * Short banner / overlay label for the deck chrome.
+ * Null when the status has no chrome copy.
  */
-export function zhihuiDiagramPhaseLabel(
+export function zhihuiDiagramPhaseMessage(
   status: string | null | undefined,
-  progress: Record<string, unknown> | null | undefined,
-  t: ZhihuiDiagramTranslate
-): string {
+  progress: Record<string, unknown> | null | undefined
+): ZhihuiDiagramPhaseMessage | null {
   const normalized = (status || '').trim()
   if (normalized === 'queued') {
-    return String(t('zhihui.diagram.phaseQueued'))
+    return { key: 'zhihui.diagram.phaseQueued' }
   }
   if (normalized === 'planning') {
     const stage = planningStage(progress)
@@ -35,40 +40,49 @@ export function zhihuiDiagramPhaseLabel(
       const index = asFiniteNumber(progress?.branch_index)
       const total = asFiniteNumber(progress?.branch_total)
       if (index !== null && total !== null && total > 0) {
-        return String(
-          t('zhihui.diagram.phasePlanningBranch', {
-            current: index,
-            total,
-          })
-        )
+        return {
+          key: 'zhihui.diagram.phasePlanningBranch',
+          params: { current: index, total },
+        }
       }
-      return String(t('zhihui.diagram.phasePlanningBranches'))
+      return { key: 'zhihui.diagram.phasePlanningBranches' }
     }
     if (stage === 'close') {
-      return String(t('zhihui.diagram.phasePlanningClose'))
+      return { key: 'zhihui.diagram.phasePlanningClose' }
     }
-    return String(t('zhihui.diagram.phasePlanning'))
+    return { key: 'zhihui.diagram.phasePlanning' }
   }
   if (normalized === 'generating') {
     const slideCount = asFiniteNumber(progress?.slide_count)
     if (slideCount === null || slideCount <= 0) {
-      return String(t('zhihui.diagram.phaseGeneratingWait'))
+      return { key: 'zhihui.diagram.phaseGeneratingWait' }
     }
-    return String(t('zhihui.diagram.phaseGenerating'))
+    return { key: 'zhihui.diagram.phaseGenerating' }
   }
   if (normalized === 'partial') {
-    return String(t('zhihui.diagram.phasePartial'))
+    return { key: 'zhihui.diagram.phasePartial' }
   }
   if (normalized === 'failed') {
-    return String(t('zhihui.diagram.phaseFailed'))
+    return { key: 'zhihui.diagram.phaseFailed' }
   }
   if (normalized === 'complete' || normalized === 'ready') {
-    return String(t('zhihui.diagram.phaseComplete'))
+    return { key: 'zhihui.diagram.phaseComplete' }
   }
   if (normalized === 'cancelled') {
-    return String(t('zhihui.diagram.phaseCancelled'))
+    return { key: 'zhihui.diagram.phaseCancelled' }
   }
-  return ''
+  return null
+}
+
+/** String form of {@link zhihuiDiagramPhaseMessage} for callers that need one line. */
+export function zhihuiDiagramPhaseLabel(
+  status: string | null | undefined,
+  progress: Record<string, unknown> | null | undefined,
+  t: ZhihuiDiagramTranslate
+): string {
+  const message = zhihuiDiagramPhaseMessage(status, progress)
+  if (!message) return ''
+  return message.params ? String(t(message.key, message.params)) : String(t(message.key))
 }
 
 export type ZhihuiDiagramToastAnnouncement = {

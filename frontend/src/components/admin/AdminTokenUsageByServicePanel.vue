@@ -4,14 +4,12 @@
  */
 import { computed, onMounted, watch } from 'vue'
 
-import AdminSwissServiceCard from '@/components/admin/swiss/AdminSwissServiceCard.vue'
-import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
-import { useLanguage, useNotifications } from '@/composables'
-import {
-  useAdminSchoolTokenStats,
-  useAdminTokenStats,
-} from '@/composables/queries'
 import { ChatDotRound, Connection, Loading, Refresh } from '@element-plus/icons-vue'
+
+import AdminSwissServiceCard from '@/components/admin/swiss/AdminSwissServiceCard.vue'
+import { useLanguage, useNotifications } from '@/composables'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
+import { useAdminSchoolTokenStats, useAdminTokenStats } from '@/composables/queries'
 
 interface TokenPeriodStats {
   input_tokens: number
@@ -61,7 +59,10 @@ const props = withDefaults(
 const emit = defineEmits<{
   serviceClick: [service: 'mindgraph' | 'mindmate']
   overallClick: []
-  periodClick: [service: 'mindgraph' | 'mindmate' | null, period: 'today' | 'week' | 'month' | 'total']
+  periodClick: [
+    service: 'mindgraph' | 'mindmate' | null,
+    period: 'today' | 'week' | 'month' | 'total',
+  ]
 }>()
 
 const { t } = useLanguage()
@@ -78,10 +79,7 @@ const platformTokenQuery = useAdminTokenStats(orgIdRef, {
 
 const schoolTokenQuery = useAdminSchoolTokenStats(orgIdRef, {
   enabled: computed(
-    () =>
-      !usesExternalStats.value &&
-      props.useSchoolStatsEndpoint &&
-      props.organizationId != null
+    () => !usesExternalStats.value && props.useSchoolStatsEndpoint && props.organizationId != null
   ),
 })
 
@@ -90,24 +88,26 @@ const activeQuery = computed(() =>
 )
 
 const isLoading = computed(() => activeQuery.value.isFetching.value)
-const tokenStats = computed(() => (activeQuery.value.data.value as TokenStatsByService | undefined) ?? null)
+const tokenStats = computed(
+  () => (activeQuery.value.data.value as TokenStatsByService | undefined) ?? null
+)
 
 const displayStats = computed(() =>
   usesExternalStats.value ? (props.stats ?? null) : tokenStats.value
 )
 
 const servicePeriods = [
-  { key: 'today' as const, label: () => t('admin.today') },
-  { key: 'week' as const, label: () => t('admin.pastWeek') },
-  { key: 'month' as const, label: () => t('admin.pastMonth') },
-  { key: 'total' as const, label: () => t('admin.allTime') },
+  { key: 'today' as const, labelKey: 'admin.today' },
+  { key: 'week' as const, labelKey: 'admin.pastWeek' },
+  { key: 'month' as const, labelKey: 'admin.pastMonth' },
+  { key: 'total' as const, labelKey: 'admin.allTime' },
 ]
 
 const overallPeriods = [
-  { key: 'today' as const, label: () => t('admin.today'), statsKey: 'today' as const },
-  { key: 'week' as const, label: () => t('admin.pastWeek'), statsKey: 'past_week' as const },
-  { key: 'month' as const, label: () => t('admin.pastMonth'), statsKey: 'past_month' as const },
-  { key: 'total' as const, label: () => t('admin.allTime'), statsKey: 'total' as const },
+  { key: 'today' as const, labelKey: 'admin.today', statsKey: 'today' as const },
+  { key: 'week' as const, labelKey: 'admin.pastWeek', statsKey: 'past_week' as const },
+  { key: 'month' as const, labelKey: 'admin.pastMonth', statsKey: 'past_month' as const },
+  { key: 'total' as const, labelKey: 'admin.allTime', statsKey: 'total' as const },
 ]
 
 function formatNumber(num: number): string {
@@ -146,7 +146,10 @@ function onOverallCardClick(): void {
   emit('overallClick')
 }
 
-function serviceStats(service: 'mindgraph' | 'mindmate', period: keyof ServiceStats): TokenPeriodStats {
+function serviceStats(
+  service: 'mindgraph' | 'mindmate',
+  period: keyof ServiceStats
+): TokenPeriodStats {
   return (
     displayStats.value?.by_service?.[service]?.[period] ?? {
       input_tokens: 0,
@@ -206,18 +209,18 @@ watch(
       >
         <Loading />
       </el-icon>
-      <p class="mt-4 text-gray-500">{{ t('admin.loadingTokenStats') }}</p>
+      <p class="mt-4 text-gray-500"><I18nText k="admin.loadingTokenStats" /></p>
     </div>
 
     <template v-else-if="!usesExternalStats && activeQuery.isError.value">
       <div class="text-center py-12 text-gray-500 dark:text-gray-400">
-        <p>{{ t('admin.tokenStatsLoadError') }}</p>
+        <p><I18nText k="admin.tokenStatsLoadError" /></p>
         <el-button
           class="mt-4"
           size="small"
           @click="loadTokenStats()"
         >
-          {{ t('common.refresh') }}
+          <I18nText k="common.refresh" />
         </el-button>
       </div>
     </template>
@@ -237,8 +240,12 @@ watch(
                 </el-icon>
               </div>
               <div>
-                <h3 class="swiss-stat-card__service-title">{{ t('admin.serviceMindGraph') }}</h3>
-                <p class="text-xs text-[var(--swiss-muted)]">{{ t('admin.diagramGeneration') }}</p>
+                <h3 class="swiss-stat-card__service-title">
+                  <I18nText k="admin.serviceMindGraph" />
+                </h3>
+                <p class="text-xs text-[var(--swiss-muted)]">
+                  <I18nText k="admin.diagramGeneration" />
+                </p>
               </div>
             </div>
           </template>
@@ -250,25 +257,25 @@ watch(
               :class="{ 'swiss-stat-card__stat-item--clickable': clickable }"
               @click="onPeriodClick('mindgraph', period.key, $event)"
             >
-              <p class="swiss-stat-card__stat-item-k">{{ period.label() }}</p>
+              <p class="swiss-stat-card__stat-item-k"><I18nText :k="period.labelKey" /></p>
               <p class="swiss-stat-card__stat-item-v">
                 {{ formatNumber(serviceStats('mindgraph', period.key).total_tokens) }}
               </p>
               <p class="swiss-stat-card__stat-item-sub">
                 {{ (serviceStats('mindgraph', period.key).request_count || 0).toLocaleString() }}
-                {{ t('admin.requests') }}
+                <I18nText k="admin.requests" />
               </p>
             </div>
           </div>
           <div class="mt-4 pt-4 border-t border-[var(--swiss-border)]">
             <div class="flex justify-between text-sm">
-              <span class="text-[var(--swiss-muted)]">{{ t('admin.inputTokens') }}</span>
+              <span class="text-[var(--swiss-muted)]"><I18nText k="admin.inputTokens" /></span>
               <span class="font-medium">
                 {{ formatNumber(serviceStats('mindgraph', 'total').input_tokens) }}
               </span>
             </div>
             <div class="flex justify-between text-sm mt-1">
-              <span class="text-[var(--swiss-muted)]">{{ t('admin.outputTokens') }}</span>
+              <span class="text-[var(--swiss-muted)]"><I18nText k="admin.outputTokens" /></span>
               <span class="font-medium">
                 {{ formatNumber(serviceStats('mindgraph', 'total').output_tokens) }}
               </span>
@@ -289,8 +296,10 @@ watch(
                 </el-icon>
               </div>
               <div>
-                <h3 class="swiss-stat-card__service-title">{{ t('admin.serviceMindMate') }}</h3>
-                <p class="text-xs text-[var(--swiss-muted)]">{{ t('admin.aiAssistant') }}</p>
+                <h3 class="swiss-stat-card__service-title">
+                  <I18nText k="admin.serviceMindMate" />
+                </h3>
+                <p class="text-xs text-[var(--swiss-muted)]"><I18nText k="admin.aiAssistant" /></p>
               </div>
             </div>
           </template>
@@ -302,25 +311,25 @@ watch(
               :class="{ 'swiss-stat-card__stat-item--clickable': clickable }"
               @click="onPeriodClick('mindmate', period.key, $event)"
             >
-              <p class="swiss-stat-card__stat-item-k">{{ period.label() }}</p>
+              <p class="swiss-stat-card__stat-item-k"><I18nText :k="period.labelKey" /></p>
               <p class="swiss-stat-card__stat-item-v">
                 {{ formatNumber(serviceStats('mindmate', period.key).total_tokens) }}
               </p>
               <p class="swiss-stat-card__stat-item-sub">
                 {{ (serviceStats('mindmate', period.key).request_count || 0).toLocaleString() }}
-                {{ t('admin.requests') }}
+                <I18nText k="admin.requests" />
               </p>
             </div>
           </div>
           <div class="mt-4 pt-4 border-t border-[var(--swiss-border)]">
             <div class="flex justify-between text-sm">
-              <span class="text-[var(--swiss-muted)]">{{ t('admin.inputTokens') }}</span>
+              <span class="text-[var(--swiss-muted)]"><I18nText k="admin.inputTokens" /></span>
               <span class="font-medium">
                 {{ formatNumber(serviceStats('mindmate', 'total').input_tokens) }}
               </span>
             </div>
             <div class="flex justify-between text-sm mt-1">
-              <span class="text-[var(--swiss-muted)]">{{ t('admin.outputTokens') }}</span>
+              <span class="text-[var(--swiss-muted)]"><I18nText k="admin.outputTokens" /></span>
               <span class="font-medium">
                 {{ formatNumber(serviceStats('mindmate', 'total').output_tokens) }}
               </span>
@@ -338,14 +347,16 @@ watch(
       >
         <template #header>
           <div class="flex items-center justify-between gap-2 w-full">
-            <span class="swiss-stat-card__service-title">{{ t('admin.overallTokenSummary') }}</span>
+            <span class="swiss-stat-card__service-title"
+              ><I18nText k="admin.overallTokenSummary"
+            /></span>
             <el-button
               text
               size="small"
               @click.stop="loadTokenStats"
             >
               <el-icon class="mr-1"><Refresh /></el-icon>
-              {{ t('common.refresh') }}
+              <I18nText k="common.refresh" />
             </el-button>
           </div>
         </template>
@@ -357,14 +368,14 @@ watch(
             :class="{ 'swiss-stat-card__stat-item--clickable': clickable }"
             @click="onPeriodClick(null, period.key, $event)"
           >
-            <p class="swiss-stat-card__stat-item-k">{{ period.label() }}</p>
+            <p class="swiss-stat-card__stat-item-k"><I18nText :k="period.labelKey" /></p>
             <p class="swiss-stat-card__stat-item-v">
               {{ formatNumber(displayStats[period.statsKey]?.total_tokens || 0) }}
             </p>
             <p class="swiss-stat-card__stat-item-sub">
-              {{ t('admin.inShort') }}:
+              <I18nText k="admin.inShort" />:
               {{ formatNumber(displayStats[period.statsKey]?.input_tokens || 0) }}
-              · {{ t('admin.outShort') }}:
+              · <I18nText k="admin.outShort" />:
               {{ formatNumber(displayStats[period.statsKey]?.output_tokens || 0) }}
             </p>
           </div>

@@ -14,7 +14,6 @@ import MaiteReportActions from '@/components/maite/shared/MaiteReportActions.vue
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useMaiteInquiry } from '@/composables/maite/useMaiteInquiry'
 import { useMaiteStore } from '@/stores/maite'
-
 import type { MaiteInquiryStage } from '@/types/maite'
 
 const { t } = useLanguage()
@@ -84,8 +83,11 @@ function onStageSelect(stage: MaiteInquiryStage): void {
       @select="onStageSelect"
     />
 
-    <section v-if="!sessionId" class="maite-inquiry-view__section">
-      <h3 class="maite-inquiry-view__heading">{{ t('maite.inquiry.startTitle') }}</h3>
+    <section
+      v-if="!sessionId"
+      class="maite-inquiry-view__section"
+    >
+      <h3 class="maite-inquiry-view__heading"><I18nText k="maite.inquiry.startTitle" /></h3>
       <MaiteProblemInput
         :model-value="store.currentProblemText"
         scene="question"
@@ -98,13 +100,22 @@ function onStageSelect(stage: MaiteInquiryStage): void {
         :disabled="loading || !store.currentProblemText.trim()"
         @click="startSession"
       >
-        {{ loading ? t('maite.inquiry.starting') : t('maite.inquiry.start') }}
+        <I18nText
+          v-if="loading"
+          k="maite.inquiry.starting"
+        /><I18nText
+          v-else
+          k="maite.inquiry.start"
+        />
       </button>
     </section>
 
     <template v-else>
-      <section v-if="activeStage === 'decompose'" class="maite-inquiry-view__section">
-        <h3 class="maite-inquiry-view__heading">{{ t('maite.inquiry.decomposeTitle') }}</h3>
+      <section
+        v-if="activeStage === 'decompose'"
+        class="maite-inquiry-view__section"
+      >
+        <h3 class="maite-inquiry-view__heading"><I18nText k="maite.inquiry.decomposeTitle" /></h3>
         <MaiteTablesEditor
           :condition-table="tables.condition_table"
           :step-table="tables.step_table"
@@ -121,12 +132,15 @@ function onStageSelect(stage: MaiteInquiryStage): void {
           :disabled="loading"
           @click="submitDecomposeTables"
         >
-          {{ t('maite.inquiry.submitDecompose') }}
+          <I18nText k="maite.inquiry.submitDecompose" />
         </button>
       </section>
 
-      <section v-else-if="activeStage === 'diagnosis'" class="maite-inquiry-view__section">
-        <h3 class="maite-inquiry-view__heading">{{ t('maite.inquiry.diagnosisTitle') }}</h3>
+      <section
+        v-else-if="activeStage === 'diagnosis'"
+        class="maite-inquiry-view__section"
+      >
+        <h3 class="maite-inquiry-view__heading"><I18nText k="maite.inquiry.diagnosisTitle" /></h3>
         <MaiteDiagnosisPanel
           v-model:student-thinking="studentThinking"
           :loading="loading"
@@ -135,8 +149,11 @@ function onStageSelect(stage: MaiteInquiryStage): void {
         />
       </section>
 
-      <section v-else-if="activeStage === 'remedy'" class="maite-inquiry-view__section">
-        <h3 class="maite-inquiry-view__heading">{{ t('maite.inquiry.remedyTitle') }}</h3>
+      <section
+        v-else-if="activeStage === 'remedy'"
+        class="maite-inquiry-view__section"
+      >
+        <h3 class="maite-inquiry-view__heading"><I18nText k="maite.inquiry.remedyTitle" /></h3>
         <MaiteRemedyPanel
           :tasks="remedyTasks"
           :loading="loading"
@@ -144,8 +161,11 @@ function onStageSelect(stage: MaiteInquiryStage): void {
         />
       </section>
 
-      <section v-else-if="activeStage === 'variant'" class="maite-inquiry-view__section">
-        <h3 class="maite-inquiry-view__heading">{{ t('maite.inquiry.variantTitle') }}</h3>
+      <section
+        v-else-if="activeStage === 'variant'"
+        class="maite-inquiry-view__section"
+      >
+        <h3 class="maite-inquiry-view__heading"><I18nText k="maite.inquiry.variantTitle" /></h3>
         <MaiteVariantPanel
           :tasks="variantTasks"
           :loading="loading"
@@ -156,15 +176,24 @@ function onStageSelect(stage: MaiteInquiryStage): void {
         />
       </section>
 
-      <section v-else class="maite-inquiry-view__section">
-        <h3 class="maite-inquiry-view__heading">{{ t('maite.inquiry.completedTitle') }}</h3>
-        <p>{{ t('maite.inquiry.completedMessage') }}</p>
+      <section
+        v-else
+        class="maite-inquiry-view__section"
+      >
+        <h3 class="maite-inquiry-view__heading"><I18nText k="maite.inquiry.completedTitle" /></h3>
+        <p><I18nText k="maite.inquiry.completedMessage" /></p>
         <MaiteReportActions :session-id="sessionId" />
       </section>
     </template>
 
-    <p v-if="errorMessage" class="maite-inquiry-view__error">
-      {{ t(`maite.errors.${errorMessage}`, errorMessage) }}
+    <p
+      v-if="errorMessage"
+      class="maite-inquiry-view__error"
+    >
+      <I18nText
+        :k="`maite.errors.${errorMessage}`"
+        :fallback-text="errorMessage"
+      />
     </p>
   </div>
 </template>

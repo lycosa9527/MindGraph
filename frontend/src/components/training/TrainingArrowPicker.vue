@@ -88,7 +88,7 @@ function width(style: TrainingArrowLine): number {
             </marker>
           </defs>
         </svg>
-        <span>{{ t(lineKeys[style]) }}</span>
+        <span><I18nText :k="lineKeys[style]" /></span>
       </button>
     </div>
     <div

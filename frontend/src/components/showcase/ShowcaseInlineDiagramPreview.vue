@@ -156,7 +156,7 @@ defineExpose({ captureThumbnail })
         class="absolute inset-0 z-10 flex items-center justify-center bg-gray-50/80 text-gray-500"
       >
         <Loader2 class="mr-2 h-5 w-5 animate-spin" />
-        <span class="text-sm">{{ t('showcase.detail.diagramPreviewLoading') }}</span>
+        <span class="text-sm"><I18nText k="showcase.detail.diagramPreviewLoading" /></span>
       </div>
       <div
         v-else-if="hasError"
@@ -168,7 +168,7 @@ defineExpose({ captureThumbnail })
           alt=""
           class="max-h-[55%] max-w-full object-contain opacity-90"
         />
-        <p class="text-sm">{{ t('showcase.detail.diagramPreviewFailed') }}</p>
+        <p class="text-sm"><I18nText k="showcase.detail.diagramPreviewFailed" /></p>
       </div>
     </div>
   </div>

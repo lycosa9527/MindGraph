@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Plus } from '@element-plus/icons-vue'
 import { ElButton, ElIcon } from 'element-plus'
+
+import { Plus } from '@element-plus/icons-vue'
 
 import { useLanguage } from '@/composables'
 
@@ -31,11 +32,12 @@ const emit = defineEmits<{
       class="training-header__crumb"
       aria-label="breadcrumb"
     >
-      <span class="training-header__crumb-root">{{ t('training.title') }}</span>
+      <span class="training-header__crumb-root"><I18nText k="training.title" /></span>
       <span
         class="training-header__crumb-sep"
         aria-hidden="true"
-      >/</span>
+        >/</span
+      >
       <span class="training-header__crumb-current">{{ current }}</span>
     </nav>
     <div
@@ -50,20 +52,21 @@ const emit = defineEmits<{
         @click="emit('create')"
       >
         <ElIcon class="training-header__icon"><Plus /></ElIcon>
-        {{ t('training.builder.new') }}
+        <I18nText k="training.builder.new" />
       </ElButton>
       <template v-if="showSave">
         <span
           v-if="syncLabel"
           class="training-header__sync"
           :class="{ 'is-error': syncError }"
-        >{{ syncLabel }}</span>
+          >{{ syncLabel }}</span
+        >
         <ElButton
           size="small"
           class="admin-swiss-btn"
           @click="emit('info')"
         >
-          {{ t('training.builder.info') }}
+          <I18nText k="training.builder.info" />
         </ElButton>
         <ElButton
           v-if="!readonly"
@@ -72,7 +75,7 @@ const emit = defineEmits<{
           :loading="busy"
           @click="emit('save')"
         >
-          {{ t('training.builder.save') }}
+          <I18nText k="training.builder.save" />
         </ElButton>
         <ElButton
           size="small"
@@ -80,7 +83,13 @@ const emit = defineEmits<{
           :class="{ 'is-previewing': previewing }"
           @click="emit('preview')"
         >
-          {{ previewing ? t('training.builder.previewExit') : t('training.builder.preview') }}
+          <I18nText
+            v-if="previewing"
+            k="training.builder.previewExit"
+          /><I18nText
+            v-else
+            k="training.builder.preview"
+          />
         </ElButton>
       </template>
     </div>

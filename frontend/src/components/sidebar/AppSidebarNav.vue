@@ -106,8 +106,31 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           </div>
         </transition>
 
+        <I18nTooltip
+          v-if="!s.isLearningSpaceStudent && s.mindMateLabelKey"
+          k="sidebar.mindMate"
+          placement="right"
+          :disabled="!s.isCollapsed"
+        >
+          <div
+            class="nav-item"
+            :class="s.navItemClass('mindmate')"
+            @click="s.setMode('mindmate')"
+          >
+            <MessageSquare
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label"
+            >
+              <I18nText k="sidebar.mindMate" />
+            </span>
+          </div>
+        </I18nTooltip>
         <el-tooltip
-          v-if="!s.isLearningSpaceStudent"
+          v-else-if="!s.isLearningSpaceStudent"
           :content="s.mindMateNavLabel"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -207,7 +230,12 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </I18nTooltip>
         <!-- Knowledge Space -->
         <I18nTooltip
-          v-if="!s.isLearningSpaceStudent && s.isAuthenticated && s.featureKnowledgeSpace && !s.hideKnowledgeSpaceNav"
+          v-if="
+            !s.isLearningSpaceStudent &&
+            s.isAuthenticated &&
+            s.featureKnowledgeSpace &&
+            !s.hideKnowledgeSpaceNav
+          "
           k="sidebar.knowledgeSpace"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -245,7 +273,12 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 
         <!-- Chunk Test -->
         <I18nTooltip
-          v-if="!s.isLearningSpaceStudent && s.isAuthenticated && s.featureRagChunkTest && !s.hideKnowledgeSpaceNav"
+          v-if="
+            !s.isLearningSpaceStudent &&
+            s.isAuthenticated &&
+            s.featureRagChunkTest &&
+            !s.hideKnowledgeSpaceNav
+          "
           k="sidebar.chunkTest"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -343,10 +376,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         <transition name="admin-slide">
           <div
             v-if="
-              !s.isLearningSpaceStudent &&
-              s.trainingExpanded &&
-              !s.isCollapsed &&
-              s.showTrainingNav
+              !s.isLearningSpaceStudent && s.trainingExpanded && !s.isCollapsed && s.showTrainingNav
             "
             class="admin-subnav"
           >
@@ -604,9 +634,9 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </transition>
 
         <!-- Single management tab (e.g. school_admin users-only) -->
-        <el-tooltip
+        <I18nTooltip
           v-if="!s.isLearningSpaceStudent && s.isManagementPanelUser && s.singleAdminNavTab"
-          :content="s.singleAdminNavTab.label"
+          :k="s.singleAdminNavTab.labelKey"
           placement="right"
           :disabled="!s.isCollapsed"
         >
@@ -623,7 +653,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
               v-if="!s.isCollapsed"
               class="nav-label"
             >
-              {{ s.singleAdminNavTab.label }}
+              <I18nText :k="s.singleAdminNavTab.labelKey" />
               <span
                 v-if="s.singleAdminNavTab.name === 'showcase' && s.showcasePendingCount > 0"
                 class="nav-item-badge"
@@ -632,7 +662,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
               </span>
             </span>
           </div>
-        </el-tooltip>
+        </I18nTooltip>
 
         <!-- Management panel (expandable sub-nav) -->
         <I18nTooltip
@@ -689,7 +719,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
                   :class="s.adminSubItemClass('data_center')"
                   @click="s.toggleDataCenterNav()"
                 >
-                  <span>{{ tab.label }}</span>
+                  <span class="admin-subitem-label"><I18nText :k="tab.labelKey" /></span>
                   <ChevronDown
                     class="admin-expand-chevron admin-expand-chevron--nested"
                     :class="{ 'admin-expand-chevron--open': s.dataCenterNavExpanded }"
@@ -707,7 +737,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
                     :class="s.dataCenterSubItemClass(view.name)"
                     @click="s.navigateDataCenterView(view.name)"
                   >
-                    {{ view.label }}
+                    <span class="admin-subitem-label"><I18nText :k="view.labelKey" /></span>
                   </button>
                 </div>
               </template>
@@ -718,7 +748,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
                   :class="s.adminSubItemClass('feature_dev')"
                   @click="s.toggleFeatureDevNav()"
                 >
-                  <span>{{ tab.label }}</span>
+                  <span class="admin-subitem-label"><I18nText :k="tab.labelKey" /></span>
                   <ChevronDown
                     class="admin-expand-chevron admin-expand-chevron--nested"
                     :class="{ 'admin-expand-chevron--open': s.featureDevNavExpanded }"
@@ -736,7 +766,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
                     :class="s.featureDevSubItemClass(item.name)"
                     @click="s.navigateFeatureDevSubtab(item.name)"
                   >
-                    {{ item.label }}
+                    <span class="admin-subitem-label"><I18nText :k="item.labelKey" /></span>
                   </button>
                 </div>
               </template>
@@ -747,7 +777,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
                   :class="s.adminSubItemClass('settings')"
                   @click="s.toggleSettingsNav()"
                 >
-                  <span>{{ tab.label }}</span>
+                  <span class="admin-subitem-label"><I18nText :k="tab.labelKey" /></span>
                   <ChevronDown
                     class="admin-expand-chevron admin-expand-chevron--nested"
                     :class="{ 'admin-expand-chevron--open': s.settingsNavExpanded }"
@@ -765,7 +795,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
                     :class="s.settingsSubItemClass(item.name)"
                     @click="s.navigateSettingsSubtab(item.name)"
                   >
-                    {{ item.label }}
+                    <span class="admin-subitem-label"><I18nText :k="item.labelKey" /></span>
                   </button>
                 </div>
               </template>
@@ -776,7 +806,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
                 :class="s.adminSubItemClass(tab.name)"
                 @click="s.navigateAdminTab(tab.name)"
               >
-                <span class="admin-subitem-label">{{ tab.label }}</span>
+                <span class="admin-subitem-label"><I18nText :k="tab.labelKey" /></span>
                 <span
                   v-if="tab.name === 'showcase' && s.showcasePendingCount > 0"
                   class="admin-subitem-badge"
@@ -1018,11 +1048,12 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
   align-items: center;
   width: 100%;
   min-height: 40px;
+  height: auto;
   text-align: left;
   border: none;
   background: transparent;
   border-radius: 8px;
-  padding: 0 16px;
+  padding: 4px 16px;
   font-size: 14px;
   font-weight: 500;
   color: #78716c;
@@ -1045,6 +1076,17 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 .admin-subitem-label {
   flex: 1;
   min-width: 0;
+}
+
+.admin-subitem-label :deep(.i18n-label) {
+  max-width: 100%;
+}
+
+.admin-subitem-label :deep(.i18n-label__primary),
+.admin-subitem-label :deep(.i18n-label__secondary) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-subitem-badge {
@@ -1128,7 +1170,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 
 .admin-slide-enter-to,
 .admin-slide-leave-from {
-  max-height: 520px;
+  max-height: 1200px;
   opacity: 1;
 }
 

@@ -176,7 +176,7 @@ onMounted(() => {
         :value="orgId ?? ''"
         @change="onOrgChange"
       >
-        <option value="">{{ t('admin.allSchools') }}</option>
+        <option value=""><I18nText k="admin.allSchools" /></option>
         <option
           v-for="org in organizations"
           :key="org.id"
@@ -190,18 +190,24 @@ onMounted(() => {
         class="vod-select"
         @change="reloadFromStart"
       >
-        <option value="">{{ t('admin.vod.statusAll') }}</option>
-        <option value="pending">{{ t('admin.vod.statusPending') }}</option>
-        <option value="processing">{{ t('admin.vod.statusProcessing') }}</option>
-        <option value="ready">{{ t('admin.vod.statusReady') }}</option>
-        <option value="failed">{{ t('admin.vod.statusFailed') }}</option>
+        <option value=""><I18nText k="admin.vod.statusAll" /></option>
+        <option value="pending"><I18nText k="admin.vod.statusPending" /></option>
+        <option value="processing"><I18nText k="admin.vod.statusProcessing" /></option>
+        <option value="ready"><I18nText k="admin.vod.statusReady" /></option>
+        <option value="failed"><I18nText k="admin.vod.statusFailed" /></option>
       </select>
       <button
         type="button"
         class="vod-ghost"
         @click="view = view === 'grid' ? 'table' : 'grid'"
       >
-        {{ view === 'grid' ? t('admin.vod.viewTable') : t('admin.vod.viewGrid') }}
+        <I18nText
+          v-if="view === 'grid'"
+          k="admin.vod.viewTable"
+        /><I18nText
+          v-else
+          k="admin.vod.viewGrid"
+        />
       </button>
       <button
         v-if="canEdit"
@@ -210,7 +216,7 @@ onMounted(() => {
         :disabled="!configured || (canPickOrg && orgId == null)"
         @click="showUpload = true"
       >
-        {{ t('admin.vod.upload') }}
+        <I18nText k="admin.vod.upload" />
       </button>
     </div>
     <AdminVodFolderBar
@@ -225,25 +231,25 @@ onMounted(() => {
       v-if="!configured"
       class="vod-hint"
     >
-      {{ t('admin.vod.notConfigured') }}
+      <I18nText k="admin.vod.notConfigured" />
     </p>
     <p
       v-else-if="canPickOrg && orgId == null"
       class="vod-hint"
     >
-      {{ t('admin.vod.orgFilter') }}
+      <I18nText k="admin.vod.orgFilter" />
     </p>
     <p
       v-else-if="loading && items.length === 0"
       class="vod-hint"
     >
-      {{ t('common.loading') }}
+      <I18nText k="common.loading" />
     </p>
     <p
       v-else-if="items.length === 0"
       class="vod-hint"
     >
-      {{ t('admin.vod.empty') }}
+      <I18nText k="admin.vod.empty" />
     </p>
     <AdminVodLibrary
       v-else

@@ -6,20 +6,20 @@ import { computed, ref, watch } from 'vue'
 
 import AdminSchoolCustomLlmSettings from '@/components/admin/AdminSchoolCustomLlmSettings.vue'
 import AdminSchoolOauthSettings from '@/components/admin/AdminSchoolOauthSettings.vue'
-import {
-  fetchTeachingDesignTemplateOptions,
-  type TeachingDesignTemplateOption,
-} from '@/composables/admin/teachingDesignTemplateApi'
 import { useLanguage } from '@/composables'
+import {
+  type TeachingDesignTemplateOption,
+  fetchTeachingDesignTemplateOptions,
+} from '@/composables/admin/teachingDesignTemplateApi'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import {
-  effectiveMemberLimit,
-  EXTRA_MEMBER_SEAT_PRESETS,
   EXTRA_MEMBER_SEATS_MAX,
-  isUnlimitedMemberLimit,
+  EXTRA_MEMBER_SEAT_PRESETS,
   SCHOOL_TIER_LIMITS,
   SCHOOL_TIER_OPTIONS,
   type SchoolTier,
+  effectiveMemberLimit,
+  isUnlimitedMemberLimit,
 } from '@/constants/schoolTier'
 
 const displayNameEdit = defineModel<string>('displayNameEdit', { required: true })
@@ -116,9 +116,7 @@ const showLiteFeaturesHint = computed(
 
 const managerLimit = computed(() => SCHOOL_TIER_LIMITS[schoolTierEdit.value].managerLimit)
 
-const managersRemaining = computed(() =>
-  Math.max(0, managerLimit.value - props.managers.length)
-)
+const managersRemaining = computed(() => Math.max(0, managerLimit.value - props.managers.length))
 
 const managerLimitHint = computed(() => {
   if (managerLimit.value <= 0) {
@@ -135,12 +133,14 @@ function tierOptionLabel(tier: SchoolTier): string {
   if (tier === 'trial') {
     return t('admin.schoolVersionTierOptionTrial', {
       label: t(tierLabelKey[tier]),
+      labelKey: tierLabelKey[tier],
       diagrams: limits.diagramsPerMember ?? 20,
       storage: limits.diagramStorageGbPerMember,
     })
   }
   return t('admin.schoolVersionTierOption', {
     label: t(tierLabelKey[tier]),
+    labelKey: tierLabelKey[tier],
     members: limits.memberLimit,
     managers: limits.managerLimit,
     storage: limits.diagramStorageGbPerMember,
@@ -228,7 +228,7 @@ defineExpose({ saveOauthSettings, getCustomLlmPayload })
       class="mindbot-section-card mindbot-section-card--compact mindbot-swiss-inset rounded-sm border border-[var(--mindbot-swiss-border)] bg-[var(--mindbot-swiss-inset)] p-3 sm:p-4 space-y-4"
     >
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <span :class="labelClass">{{ t('admin.displayNameLabel') }}</span>
+        <span :class="labelClass"><I18nText k="admin.displayNameLabel" /></span>
         <el-input
           v-model="displayNameEdit"
           :placeholder="orgName"
@@ -239,7 +239,7 @@ defineExpose({ saveOauthSettings, getCustomLlmPayload })
       </div>
 
       <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <span :class="labelClass">{{ t('admin.schoolVersionLabel') }}</span>
+        <span :class="labelClass"><I18nText k="admin.schoolVersionLabel" /></span>
         <div class="flex-1 min-w-0 max-w-2xl space-y-1.5">
           <el-select
             v-model="schoolTierEdit"
@@ -264,7 +264,7 @@ defineExpose({ saveOauthSettings, getCustomLlmPayload })
             v-if="showLiteFeaturesHint"
             class="mindbot-swiss-hint text-xs m-0 leading-relaxed text-amber-800/90"
           >
-            {{ t('admin.schoolVersionLiteFeaturesHint') }}
+            <I18nText k="admin.schoolVersionLiteFeaturesHint" />
           </p>
         </div>
       </div>
@@ -273,7 +273,7 @@ defineExpose({ saveOauthSettings, getCustomLlmPayload })
         v-if="showExtraMemberSeats"
         class="flex flex-col gap-3 sm:flex-row sm:items-start"
       >
-        <span :class="labelClass">{{ t('admin.extraMemberSeatsLabel') }}</span>
+        <span :class="labelClass"><I18nText k="admin.extraMemberSeatsLabel" /></span>
         <div class="flex-1 min-w-0 max-w-2xl space-y-2">
           <div class="flex flex-wrap gap-2">
             <el-button
@@ -286,7 +286,10 @@ defineExpose({ saveOauthSettings, getCustomLlmPayload })
               :disabled="quotaFieldsReadOnly"
               @click="selectExtraSeatPreset(preset)"
             >
-              {{ t('admin.extraMemberSeatsPreset', { count: preset }) }}
+              <I18nText
+                k="admin.extraMemberSeatsPreset"
+                :params="{ count: preset }"
+              />
             </el-button>
           </div>
           <el-input-number
@@ -302,7 +305,7 @@ defineExpose({ saveOauthSettings, getCustomLlmPayload })
       </div>
 
       <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <span :class="labelClass">{{ t('admin.teachingDesignTemplate.schoolLabel') }}</span>
+        <span :class="labelClass"><I18nText k="admin.teachingDesignTemplate.schoolLabel" /></span>
         <div class="flex-1 min-w-0 max-w-2xl space-y-1.5">
           <el-select
             v-model="teachingDesignTemplateKeyEdit"
@@ -323,13 +326,13 @@ defineExpose({ saveOauthSettings, getCustomLlmPayload })
             </el-option>
           </el-select>
           <p class="mindbot-swiss-hint text-xs m-0 leading-relaxed">
-            {{ t('admin.teachingDesignTemplate.schoolHint') }}
+            <I18nText k="admin.teachingDesignTemplate.schoolHint" />
           </p>
         </div>
       </div>
 
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <span :class="labelClass">{{ t('admin.status') }}</span>
+        <span :class="labelClass"><I18nText k="admin.status" /></span>
         <div class="flex flex-wrap items-center gap-2 flex-1 min-w-0">
           <span
             class="school-general-status-badge"
@@ -339,7 +342,13 @@ defineExpose({ saveOauthSettings, getCustomLlmPayload })
                 : 'school-general-status-badge--locked'
             "
           >
-            {{ orgActiveState ? t('admin.enabled') : t('admin.disabled') }}
+            <I18nText
+              v-if="orgActiveState"
+              k="admin.enabled"
+            /><I18nText
+              v-else
+              k="admin.disabled"
+            />
           </span>
           <el-button
             v-if="!props.readOnly"
@@ -349,13 +358,19 @@ defineExpose({ saveOauthSettings, getCustomLlmPayload })
             :class="orgActiveState ? 'mindbot-pill--lock' : 'mindbot-pill--unlock'"
             @click="emit('toggleLock')"
           >
-            {{ orgActiveState ? t('admin.lockOrganization') : t('admin.unlockOrganization') }}
+            <I18nText
+              v-if="orgActiveState"
+              k="admin.lockOrganization"
+            /><I18nText
+              v-else
+              k="admin.unlockOrganization"
+            />
           </el-button>
         </div>
       </div>
 
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <span :class="labelClass">{{ t('admin.expirationDate') }}</span>
+        <span :class="labelClass"><I18nText k="admin.expirationDate" /></span>
         <el-date-picker
           v-model="expiresAtEdit"
           type="date"
@@ -369,13 +384,13 @@ defineExpose({ saveOauthSettings, getCustomLlmPayload })
       </div>
 
       <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <span :class="labelClass">{{ t('admin.managers') }}</span>
+        <span :class="labelClass"><I18nText k="admin.managers" /></span>
         <div class="flex-1 min-w-0 max-w-2xl space-y-2">
           <div
             v-if="managersLoading"
             class="mindbot-swiss-hint text-sm"
           >
-            {{ t('admin.loading') }}
+            <I18nText k="admin.loading" />
           </div>
           <template v-else>
             <div
@@ -403,7 +418,7 @@ defineExpose({ saveOauthSettings, getCustomLlmPayload })
               v-else
               class="mindbot-swiss-hint text-xs m-0"
             >
-              {{ t('admin.noManagersFound') }}
+              <I18nText k="admin.noManagersFound" />
             </p>
             <p class="mindbot-swiss-hint text-xs m-0 leading-relaxed">
               {{ managerLimitHint }}
@@ -444,7 +459,7 @@ defineExpose({ saveOauthSettings, getCustomLlmPayload })
                 :disabled="pendingManagerIds.length === 0 || managersRemaining === 0"
                 @click="emit('addManagers')"
               >
-                {{ t('admin.addSchoolManagersButton') }}
+                <I18nText k="admin.addSchoolManagersButton" />
               </el-button>
             </div>
           </template>

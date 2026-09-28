@@ -4,6 +4,7 @@
  */
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+
 import { ExternalLink, Loader2, X } from '@lucide/vue'
 
 import ShowcaseInlineDiagramPreview from '@/components/showcase/ShowcaseInlineDiagramPreview.vue'
@@ -19,9 +20,9 @@ import {
 import { useAuthStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import {
-  fetchAssignmentTemplatePreview,
   type LearningAssignment,
   type LearningTemplatePreview,
+  fetchAssignmentTemplatePreview,
 } from '@/utils/learningSpaceApi'
 
 const AI_TOOL_KEYS = [
@@ -96,9 +97,7 @@ const hasTeacherTemplate = computed(() =>
 
 const templateRole = computed(() => assignmentTemplateRole(props.assignment))
 
-const hasInstructionImages = computed(
-  () => (props.assignment?.instruction_images ?? []).length > 0
-)
+const hasInstructionImages = computed(() => (props.assignment?.instruction_images ?? []).length > 0)
 
 const referenceDiagrams = computed(() => assignmentReferenceDiagrams(props.assignment))
 
@@ -111,9 +110,7 @@ const showStudentTemplate = computed(
 
 const showStudentMaterials = computed(
   () =>
-    hasInstructionImages.value ||
-    showStudentTemplate.value ||
-    referenceDiagrams.value.length > 0
+    hasInstructionImages.value || showStudentTemplate.value || referenceDiagrams.value.length > 0
 )
 
 function aiToolLabelKey(key: (typeof AI_TOOL_KEYS)[number]): string {
@@ -126,9 +123,7 @@ function dimLabel(dim: string): string {
 }
 
 const modalTitle = computed(() =>
-  isStudentAudience.value
-    ? t('learningSpace.studentReqTitle')
-    : t('learningSpace.viewRequirements')
+  isStudentAudience.value ? t('learningSpace.studentReqTitle') : t('learningSpace.viewRequirements')
 )
 
 const statusText = computed(() => {
@@ -156,8 +151,7 @@ async function loadTemplate(): Promise<void> {
   }
   if (
     isStudentAudience.value &&
-    (a.ai_permissions?.template_role === 'none' ||
-      a.ai_permissions?.has_teacher_template === false)
+    (a.ai_permissions?.template_role === 'none' || a.ai_permissions?.has_teacher_template === false)
   ) {
     templatePreview.value = null
   } else {
@@ -273,11 +267,11 @@ async function onOpenInCanvas(): Promise<void> {
         >
           <dl class="ls-req-dl ls-req-dl--compact">
             <div>
-              <dt>{{ t('learningSpace.diagramTypeLabel') }}</dt>
+              <dt><I18nText k="learningSpace.diagramTypeLabel" /></dt>
               <dd>{{ diagramTypeLabel }}</dd>
             </div>
             <div v-if="assignment.due_at">
-              <dt>{{ t('learningSpace.due') }}</dt>
+              <dt><I18nText k="learningSpace.due" /></dt>
               <dd>{{ formatLsDateTime(assignment.due_at) }}</dd>
             </div>
           </dl>
@@ -314,18 +308,22 @@ async function onOpenInCanvas(): Promise<void> {
             class="ls-req-section"
           >
             <h3>
-              {{
-                templateRole === 'scaffold'
-                  ? t('learningSpace.studentReqScaffold')
-                  : t('learningSpace.studentReqMaterials')
-              }}
+              <I18nText
+                v-if="templateRole === 'scaffold'"
+                k="learningSpace.studentReqScaffold"
+              /><I18nText
+                v-else
+                k="learningSpace.studentReqMaterials"
+              />
             </h3>
             <p class="ls-muted">
-              {{
-                templateRole === 'scaffold'
-                  ? t('learningSpace.studentReqScaffoldHint')
-                  : t('learningSpace.studentReqMaterialsHint')
-              }}
+              <I18nText
+                v-if="templateRole === 'scaffold'"
+                k="learningSpace.studentReqScaffoldHint"
+              /><I18nText
+                v-else
+                k="learningSpace.studentReqMaterialsHint"
+              />
             </p>
             <div
               v-if="showStudentTemplate"
@@ -346,7 +344,10 @@ async function onOpenInCanvas(): Promise<void> {
                 :thumbnail-url="templatePreview.thumbnail || assignment.template_thumbnail"
               />
               <img
-                v-else-if="hasTeacherTemplate && (templatePreview?.thumbnail || assignment.template_thumbnail)"
+                v-else-if="
+                  hasTeacherTemplate &&
+                  (templatePreview?.thumbnail || assignment.template_thumbnail)
+                "
                 :src="templatePreview?.thumbnail || assignment.template_thumbnail || ''"
                 alt=""
                 class="ls-req-img"
@@ -360,7 +361,7 @@ async function onOpenInCanvas(): Promise<void> {
                 @click="onOpenInCanvas"
               >
                 <ExternalLink :size="14" />
-                {{ t('learningSpace.studentReqOpenTemplate') }}
+                <I18nText k="learningSpace.studentReqOpenTemplate" />
               </button>
             </div>
             <div
@@ -373,7 +374,9 @@ async function onOpenInCanvas(): Promise<void> {
                 :key="item.id"
                 class="ls-req-attach"
               >
-                <p class="ls-req-attach__label">{{ t('learningSpace.extraDiagramAsReference') }}</p>
+                <p class="ls-req-attach__label">
+                  <I18nText k="learningSpace.extraDiagramAsReference" />
+                </p>
                 <ShowcaseInlineDiagramPreview
                   v-if="extraSpecs[item.id]"
                   :spec="extraSpecs[item.id]"
@@ -397,7 +400,7 @@ async function onOpenInCanvas(): Promise<void> {
                 :key="`img-${idx}`"
                 class="ls-req-attach"
               >
-                <p class="ls-req-attach__label">{{ t('learningSpace.instructionImage') }}</p>
+                <p class="ls-req-attach__label"><I18nText k="learningSpace.instructionImage" /></p>
                 <img
                   :src="src"
                   alt=""
@@ -412,47 +415,51 @@ async function onOpenInCanvas(): Promise<void> {
           class="ls-modal__body ls-req-scroll"
         >
           <section class="ls-req-section">
-            <h3>{{ t('learningSpace.reqOverview') }}</h3>
+            <h3><I18nText k="learningSpace.reqOverview" /></h3>
             <dl class="ls-req-dl">
               <div>
-                <dt>{{ t('learningSpace.class') }}</dt>
+                <dt><I18nText k="learningSpace.class" /></dt>
                 <dd>{{ className }}</dd>
               </div>
               <div>
-                <dt>{{ t('learningSpace.diagramTypeLabel') }}</dt>
+                <dt><I18nText k="learningSpace.diagramTypeLabel" /></dt>
                 <dd>{{ diagramTypeLabel }}</dd>
               </div>
               <div>
-                <dt>{{ t('learningSpace.status') }}</dt>
+                <dt><I18nText k="learningSpace.status" /></dt>
                 <dd>{{ statusText }}</dd>
               </div>
               <div>
-                <dt>{{ t('learningSpace.due') }}</dt>
+                <dt><I18nText k="learningSpace.due" /></dt>
                 <dd>{{ formatLsDateTime(assignment.due_at) }}</dd>
               </div>
               <div>
-                <dt>{{ t('learningSpace.publishedAt') }}</dt>
+                <dt><I18nText k="learningSpace.publishedAt" /></dt>
                 <dd>{{ formatLsDateTime(assignment.created_at) }}</dd>
               </div>
               <div>
-                <dt>{{ t('learningSpace.latePolicy') }}</dt>
+                <dt><I18nText k="learningSpace.latePolicy" /></dt>
                 <dd>
-                  {{
-                    perms.allow_late_submit
-                      ? t('learningSpace.allowLateYes')
-                      : t('learningSpace.allowLateNo')
-                  }}
+                  <I18nText
+                    v-if="perms.allow_late_submit"
+                    k="learningSpace.allowLateYes"
+                  /><I18nText
+                    v-else
+                    k="learningSpace.allowLateNo"
+                  />
                 </dd>
               </div>
             </dl>
           </section>
 
           <section class="ls-req-section">
-            <h3>{{ t('learningSpace.attachments') }}</h3>
-            <p class="ls-muted">{{ t('learningSpace.templateMgHint') }}</p>
+            <h3><I18nText k="learningSpace.attachments" /></h3>
+            <p class="ls-muted"><I18nText k="learningSpace.templateMgHint" /></p>
             <div class="ls-req-attach-list">
               <article class="ls-req-attach">
-                <p class="ls-req-attach__label">{{ t('learningSpace.attachWorkingDiagram') }}</p>
+                <p class="ls-req-attach__label">
+                  <I18nText k="learningSpace.attachWorkingDiagram" />
+                </p>
                 <div class="ls-req-template">
                   <div
                     v-if="templateLoading"
@@ -478,17 +485,21 @@ async function onOpenInCanvas(): Promise<void> {
                     v-else
                     class="ls-muted"
                   >
-                    {{ t('learningSpace.noTemplatePreview') }}
+                    <I18nText k="learningSpace.noTemplatePreview" />
                   </p>
                   <button
                     type="button"
                     class="ls-btn ls-btn--ghost ls-btn--sm"
                     style="margin-top: 0.65rem"
-                    :disabled="openingCanvas || templateLoading || (!templatePreview?.preview_spec && !isTeacherOwner)"
+                    :disabled="
+                      openingCanvas ||
+                      templateLoading ||
+                      (!templatePreview?.preview_spec && !isTeacherOwner)
+                    "
                     @click="onOpenInCanvas"
                   >
                     <ExternalLink :size="14" />
-                    {{ t('learningSpace.openTemplateInCanvas') }}
+                    <I18nText k="learningSpace.openTemplateInCanvas" />
                   </button>
                 </div>
               </article>
@@ -497,7 +508,9 @@ async function onOpenInCanvas(): Promise<void> {
                 :key="item.id"
                 class="ls-req-attach"
               >
-                <p class="ls-req-attach__label">{{ t('learningSpace.extraDiagramAsReference') }}</p>
+                <p class="ls-req-attach__label">
+                  <I18nText k="learningSpace.extraDiagramAsReference" />
+                </p>
                 <div class="ls-req-template">
                   <ShowcaseInlineDiagramPreview
                     v-if="extraSpecs[item.id]"
@@ -514,7 +527,11 @@ async function onOpenInCanvas(): Promise<void> {
                     v-else
                     class="ls-muted"
                   >
-                    {{ item.title || t('learningSpace.noTemplatePreview') }}
+                    <template v-if="item.title">{{ item.title }}</template
+                    ><I18nText
+                      v-else
+                      k="learningSpace.noTemplatePreview"
+                    />
                   </p>
                 </div>
               </article>
@@ -523,7 +540,7 @@ async function onOpenInCanvas(): Promise<void> {
                 :key="`img-${idx}`"
                 class="ls-req-attach"
               >
-                <p class="ls-req-attach__label">{{ t('learningSpace.instructionImage') }}</p>
+                <p class="ls-req-attach__label"><I18nText k="learningSpace.instructionImage" /></p>
                 <img
                   :src="src"
                   alt=""
@@ -534,16 +551,26 @@ async function onOpenInCanvas(): Promise<void> {
           </section>
 
           <section class="ls-req-section">
-            <h3>{{ t('learningSpace.instructions') }}</h3>
+            <h3><I18nText k="learningSpace.instructions" /></h3>
             <p class="ls-req-body">
-              {{ assignment.instructions || t('learningSpace.noInstructions') }}
+              <template v-if="assignment.instructions">{{ assignment.instructions }}</template
+              ><I18nText
+                v-else
+                k="learningSpace.noInstructions"
+              />
             </p>
           </section>
 
           <section class="ls-req-section">
-            <h3>{{ t('learningSpace.reqAi') }}</h3>
+            <h3><I18nText k="learningSpace.reqAi" /></h3>
             <p class="ls-req-body">
-              {{ perms.ai_assist ? t('learningSpace.aiAssistOn') : t('learningSpace.aiAssistOff') }}
+              <I18nText
+                v-if="perms.ai_assist"
+                k="learningSpace.aiAssistOn"
+              /><I18nText
+                v-else
+                k="learningSpace.aiAssistOff"
+              />
             </p>
             <ul
               v-if="perms.ai_assist && enabledTools.length"
@@ -560,12 +587,12 @@ async function onOpenInCanvas(): Promise<void> {
               v-else-if="perms.ai_assist"
               class="ls-muted"
             >
-              {{ t('learningSpace.aiToolsNone') }}
+              <I18nText k="learningSpace.aiToolsNone" />
             </p>
           </section>
 
           <section class="ls-req-section">
-            <h3>{{ t('learningSpace.eval.title') }}</h3>
+            <h3><I18nText k="learningSpace.eval.title" /></h3>
             <ul
               v-if="evalDims.length"
               class="ls-req-chips"
@@ -581,7 +608,7 @@ async function onOpenInCanvas(): Promise<void> {
               v-else
               class="ls-muted"
             >
-              {{ t('learningSpace.noEvalDims') }}
+              <I18nText k="learningSpace.noEvalDims" />
             </p>
           </section>
         </div>
@@ -591,7 +618,7 @@ async function onOpenInCanvas(): Promise<void> {
             class="ls-btn ls-btn--primary"
             @click="onClose"
           >
-            {{ t('common.close') }}
+            <I18nText k="common.close" />
           </button>
         </footer>
       </div>

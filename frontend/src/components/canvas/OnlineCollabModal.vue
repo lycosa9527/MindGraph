@@ -595,7 +595,13 @@ async function endCollaboration() {
             </ElPopover>
           </div>
           <p class="description">
-            {{ isNetworkMode ? t('collab.hintNetworkInactive') : t('collab.hintSchoolInactive') }}
+            <I18nText
+              v-if="isNetworkMode"
+              k="collab.hintNetworkInactive"
+            /><I18nText
+              v-else
+              k="collab.hintSchoolInactive"
+            />
           </p>
           <button
             type="button"

@@ -26,7 +26,7 @@ watch(
     class="prompter"
     :aria-label="t('training.builder.notes')"
   >
-    <p class="prompter__kicker">{{ t('training.builder.notes') }}</p>
+    <p class="prompter__kicker"><I18nText k="training.builder.notes" /></p>
     <div
       ref="scroller"
       class="prompter__scroll"
@@ -41,7 +41,7 @@ watch(
         v-else
         class="prompter__empty"
       >
-        {{ t('training.remoteNotesEmpty') }}
+        <I18nText k="training.remoteNotesEmpty" />
       </p>
     </div>
   </section>

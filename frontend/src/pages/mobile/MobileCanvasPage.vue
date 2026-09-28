@@ -373,7 +373,7 @@ onUnmounted(() => {
           @click="handleSave"
         >
           <Save :size="18" />
-          <span class="toolbar-label">{{ t('canvas.toolbar.save', '保存') }}</span>
+          <span class="toolbar-label"><I18nText k="canvas.toolbar.save" /></span>
         </button>
 
         <button
@@ -383,7 +383,7 @@ onUnmounted(() => {
           @click="handleAddNode"
         >
           <Plus :size="18" />
-          <span class="toolbar-label">{{ t('canvas.toolbar.add', '添加') }}</span>
+          <span class="toolbar-label"><I18nText k="canvas.toolbar.add" /></span>
         </button>
 
         <button
@@ -392,7 +392,7 @@ onUnmounted(() => {
           @click="handleDeleteSelected"
         >
           <Trash2 :size="18" />
-          <span class="toolbar-label">{{ t('canvas.toolbar.delete', '删除') }}</span>
+          <span class="toolbar-label"><I18nText k="canvas.toolbar.delete" /></span>
         </button>
 
         <!-- 概念图：5 等分；生成概念 = Sparkles，启动 AI = Bot -->
@@ -406,9 +406,9 @@ onUnmounted(() => {
               :size="18"
               class="ai-icon"
             />
-            <span class="toolbar-label truncate max-w-full">{{
-              t('canvas.toolbar.conceptGeneration', '生成概念')
-            }}</span>
+            <span class="toolbar-label truncate max-w-full"
+              ><I18nText k="canvas.toolbar.conceptGeneration"
+            /></span>
           </button>
           <button
             type="button"
@@ -420,9 +420,7 @@ onUnmounted(() => {
               :size="18"
               class="ai-icon"
             />
-            <span class="toolbar-label truncate max-w-full">{{
-              t('aiModel.enableAi', '启动 AI')
-            }}</span>
+            <span class="toolbar-label truncate max-w-full"><I18nText k="aiModel.enableAi" /></span>
           </button>
         </template>
         <template v-else>
@@ -438,7 +436,7 @@ onUnmounted(() => {
               :size="18"
               class="ai-icon"
             />
-            <span class="toolbar-label">{{ t('canvas.toolbar.aiGenerate', 'AI生成') }}</span>
+            <span class="toolbar-label"><I18nText k="canvas.toolbar.aiGenerate" /></span>
           </button>
           <button
             v-if="useMindMapV2"
@@ -449,7 +447,7 @@ onUnmounted(() => {
             @click="toggleAiBrainstorm"
           >
             <MindMapAiToolIcon kind="brainstorm" />
-            <span class="toolbar-label">{{ t('canvas.mindMapSideToolbar.waterfall') }}</span>
+            <span class="toolbar-label"><I18nText k="canvas.mindMapSideToolbar.waterfall" /></span>
           </button>
           <button
             v-if="!useMindMapV2"
@@ -459,7 +457,7 @@ onUnmounted(() => {
             @click="toggleNodePalette"
           >
             <LayoutGrid :size="18" />
-            <span class="toolbar-label">{{ t('panel.nodePalette') }}</span>
+            <span class="toolbar-label"><I18nText k="panel.nodePalette" /></span>
           </button>
         </template>
       </div>
@@ -482,7 +480,7 @@ onUnmounted(() => {
         v-else
         class="flex items-center justify-center h-full text-gray-400 text-sm"
       >
-        {{ t('canvas.emptyState', '选择图示类型开始创建') }}
+        <I18nText k="canvas.emptyState" />
       </div>
 
       <div class="mobile-zoom-controls absolute inset-e-3 bottom-3 z-40 flex flex-col gap-1.5">
@@ -580,9 +578,7 @@ onUnmounted(() => {
             :size="isConceptMap ? 18 : 14"
             class="animate-spin text-green-500"
           />
-          <span :class="isConceptMap ? 'text-sm' : ''">{{
-            t('inlineRec.generating', '生成推荐中...')
-          }}</span>
+          <span :class="isConceptMap ? 'text-sm' : ''"><I18nText k="inlineRec.generating" /></span>
         </div>
         <div
           v-else
@@ -647,7 +643,7 @@ onUnmounted(() => {
             :size="16"
             class="text-indigo-500"
           />
-          <span class="text-xs font-medium text-gray-700">{{ t('aiModel.label', 'AI 模型') }}</span>
+          <span class="text-xs font-medium text-gray-700"><I18nText k="aiModel.label" /></span>
         </button>
 
         <div class="flex min-w-0 items-center justify-end gap-2">

@@ -496,7 +496,13 @@ watch([() => selectedDanmakuId.value, () => pinPlacementPosition.value], () => {
           <ArrowLeft class="w-4 h-4 mg-icon-flip-rtl" />
         </ElButton>
         <h1 class="text-sm font-semibold text-stone-900 truncate">
-          {{ libraryStore.currentDocument?.title || t('library.loading') }}
+          <template v-if="libraryStore.currentDocument?.title">{{
+            libraryStore.currentDocument?.title
+          }}</template
+          ><I18nText
+            v-else
+            k="library.loading"
+          />
         </h1>
       </div>
     </div>

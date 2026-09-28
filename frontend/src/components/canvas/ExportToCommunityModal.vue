@@ -247,9 +247,11 @@ async function submit() {
           <el-option
             v-for="cat in CATEGORY_CATALOG"
             :key="cat.value"
-            :label="t(categoryLabelKey(cat.key))"
             :value="cat.value"
-          />
+            :label="t(categoryLabelKey(cat.key))"
+          >
+            <I18nText :k="categoryLabelKey(cat.key)" />
+          </el-option>
         </el-select>
       </el-form-item>
     </el-form>

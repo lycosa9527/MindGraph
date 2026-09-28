@@ -148,9 +148,21 @@ const toolbarStyle = computed(() => ({
 }))
 
 const fontOptions = computed(() => [
-  { value: DIAGRAM_NODE_FONT_STACK, label: t('canvas.floatingToolbar.fontDefault') },
-  { value: 'SimSun', label: t('canvas.floatingToolbar.fontSimSun') },
-  { value: 'KaiTi', label: t('canvas.floatingToolbar.fontKaiTi') },
+  {
+    value: DIAGRAM_NODE_FONT_STACK,
+    label: t('canvas.floatingToolbar.fontDefault'),
+    labelKey: 'canvas.floatingToolbar.fontDefault',
+  },
+  {
+    value: 'SimSun',
+    label: t('canvas.floatingToolbar.fontSimSun'),
+    labelKey: 'canvas.floatingToolbar.fontSimSun',
+  },
+  {
+    value: 'KaiTi',
+    label: t('canvas.floatingToolbar.fontKaiTi'),
+    labelKey: 'canvas.floatingToolbar.fontKaiTi',
+  },
   { value: 'Inter', label: 'Inter' },
   { value: 'Space Grotesk', label: 'Space Grotesk' },
 ])
@@ -256,7 +268,7 @@ function onShapePick(shape: NodeShape) {
                 :class="{ 'nft-dropdown-item--active': nodeShape === shape }"
                 @click="onShapePick(shape)"
               >
-                {{ t(shapeLabels[shape]) }}
+                <I18nText :k="shapeLabels[shape]" />
               </ElDropdownItem>
             </ElDropdownMenu>
           </template>
@@ -349,7 +361,8 @@ function onShapePick(shape: NodeShape) {
             <span
               class="nft-text-a"
               :style="{ color: textColor }"
-            >A</span>
+              >A</span
+            >
             <ChevronDown class="nft-chevron" />
           </button>
           <div
@@ -420,10 +433,9 @@ function onShapePick(shape: NodeShape) {
             <span
               class="nft-text-a nft-text-a--bold"
               :style="{ color: textColor }"
-            >A</span>
-            <span class="nft-align-lines">
-              <span /><span /><span />
-            </span>
+              >A</span
+            >
+            <span class="nft-align-lines"> <span /><span /><span /> </span>
             <ChevronDown class="nft-chevron" />
           </button>
           <template #dropdown>
@@ -434,90 +446,98 @@ function onShapePick(shape: NodeShape) {
                   @mousedown.stop
                   @click.stop
                 >
-                <div class="nft-typography-section">
-                  <div class="nft-typography-label">{{ t('canvas.toolbar.alignLabel') }}</div>
-                  <div class="nft-format-row">
-                    <button
-                      type="button"
-                      class="nft-format-btn"
-                      :class="{ 'nft-format-btn--active': textAlign === 'left' }"
-                      @click.stop="handleTextAlign('left')"
-                    >
-                      <AlignLeft :size="14" />
-                    </button>
-                    <button
-                      type="button"
-                      class="nft-format-btn"
-                      :class="{ 'nft-format-btn--active': textAlign === 'center' }"
-                      @click.stop="handleTextAlign('center')"
-                    >
-                      <AlignCenter :size="14" />
-                    </button>
-                    <button
-                      type="button"
-                      class="nft-format-btn"
-                      :class="{ 'nft-format-btn--active': textAlign === 'right' }"
-                      @click.stop="handleTextAlign('right')"
-                    >
-                      <AlignRight :size="14" />
-                    </button>
+                  <div class="nft-typography-section">
+                    <div class="nft-typography-label">
+                      <I18nText k="canvas.toolbar.alignLabel" />
+                    </div>
+                    <div class="nft-format-row">
+                      <button
+                        type="button"
+                        class="nft-format-btn"
+                        :class="{ 'nft-format-btn--active': textAlign === 'left' }"
+                        @click.stop="handleTextAlign('left')"
+                      >
+                        <AlignLeft :size="14" />
+                      </button>
+                      <button
+                        type="button"
+                        class="nft-format-btn"
+                        :class="{ 'nft-format-btn--active': textAlign === 'center' }"
+                        @click.stop="handleTextAlign('center')"
+                      >
+                        <AlignCenter :size="14" />
+                      </button>
+                      <button
+                        type="button"
+                        class="nft-format-btn"
+                        :class="{ 'nft-format-btn--active': textAlign === 'right' }"
+                        @click.stop="handleTextAlign('right')"
+                      >
+                        <AlignRight :size="14" />
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                <div class="nft-typography-section">
-                  <div class="nft-typography-label">{{ t('canvas.toolbar.formatLabel') }}</div>
-                  <div class="nft-format-row nft-format-row--4">
-                    <button
-                      type="button"
-                      class="nft-format-btn nft-format-btn--letter"
-                      :class="{ 'nft-format-btn--active': fontWeight === 'bold' }"
-                      @click.stop="handleToggleBold"
-                    >
-                      B
-                    </button>
-                    <button
-                      type="button"
-                      class="nft-format-btn nft-format-btn--letter italic"
-                      :class="{ 'nft-format-btn--active': fontStyle === 'italic' }"
-                      @click.stop="handleToggleItalic"
-                    >
-                      I
-                    </button>
-                    <button
-                      type="button"
-                      class="nft-format-btn nft-format-btn--letter underline"
-                      :class="{ 'nft-format-btn--active': textDecoration?.includes('underline') }"
-                      @click.stop="handleToggleUnderline"
-                    >
-                      U
-                    </button>
-                    <button
-                      type="button"
-                      class="nft-format-btn nft-format-btn--letter line-through"
-                      :class="{ 'nft-format-btn--active': textDecoration?.includes('line-through') }"
-                      @click.stop="handleToggleStrikethrough"
-                    >
-                      S
-                    </button>
+                  <div class="nft-typography-section">
+                    <div class="nft-typography-label">
+                      <I18nText k="canvas.toolbar.formatLabel" />
+                    </div>
+                    <div class="nft-format-row nft-format-row--4">
+                      <button
+                        type="button"
+                        class="nft-format-btn nft-format-btn--letter"
+                        :class="{ 'nft-format-btn--active': fontWeight === 'bold' }"
+                        @click.stop="handleToggleBold"
+                      >
+                        B
+                      </button>
+                      <button
+                        type="button"
+                        class="nft-format-btn nft-format-btn--letter italic"
+                        :class="{ 'nft-format-btn--active': fontStyle === 'italic' }"
+                        @click.stop="handleToggleItalic"
+                      >
+                        I
+                      </button>
+                      <button
+                        type="button"
+                        class="nft-format-btn nft-format-btn--letter underline"
+                        :class="{ 'nft-format-btn--active': textDecoration?.includes('underline') }"
+                        @click.stop="handleToggleUnderline"
+                      >
+                        U
+                      </button>
+                      <button
+                        type="button"
+                        class="nft-format-btn nft-format-btn--letter line-through"
+                        :class="{
+                          'nft-format-btn--active': textDecoration?.includes('line-through'),
+                        }"
+                        @click.stop="handleToggleStrikethrough"
+                      >
+                        S
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                <div class="nft-typography-section">
-                  <div class="nft-typography-label">{{ t('canvas.toolbar.fontLabel') }}</div>
-                  <select
-                    :value="fontFamily"
-                    class="nft-font-select"
-                    @change="handleFontFamilyChange"
-                  >
-                    <option
-                      v-for="opt in fontOptions"
-                      :key="opt.value"
-                      :value="opt.value"
+                  <div class="nft-typography-section">
+                    <div class="nft-typography-label">
+                      <I18nText k="canvas.toolbar.fontLabel" />
+                    </div>
+                    <select
+                      :value="fontFamily"
+                      class="nft-font-select"
+                      @change="handleFontFamilyChange"
                     >
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                </div>
+                      <option
+                        v-for="opt in fontOptions"
+                        :key="opt.value"
+                        :value="opt.value"
+                      >
+                        {{ opt.label }}
+                      </option>
+                    </select>
+                  </div>
                 </div>
               </ElDropdownItem>
             </ElDropdownMenu>
@@ -597,7 +617,8 @@ function onShapePick(shape: NodeShape) {
   filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.38));
 }
 
-.nft-btn--ai:hover:not(:disabled) :deep(.mg-subgraph-ai-mark__sparkles:not(.mg-subgraph-ai-mark__sparkles--spin)) {
+.nft-btn--ai:hover:not(:disabled)
+  :deep(.mg-subgraph-ai-mark__sparkles:not(.mg-subgraph-ai-mark__sparkles--spin)) {
   color: #7c3aed;
   transform: scale(1.08) rotate(-6deg);
   filter: drop-shadow(0 0 6px rgba(124, 58, 237, 0.55));

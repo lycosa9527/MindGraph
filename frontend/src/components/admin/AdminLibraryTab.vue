@@ -115,14 +115,11 @@ const STATUS_DOT_CLASS: Record<BookStatus, string> = {
   orphaned: 'dot-orphaned',
 }
 
-function statusLabel(book: BookEntry): string {
-  const map: Record<BookStatus, string> = {
-    registered: t('admin.library.statusRegistered'),
-    new: t('admin.library.statusNew'),
-    repair: t('admin.library.statusRepair'),
-    orphaned: t('admin.library.statusOrphaned'),
-  }
-  return map[getStatus(book)]
+const STATUS_LABEL_KEY: Record<BookStatus, string> = {
+  registered: 'admin.library.statusRegistered',
+  new: 'admin.library.statusNew',
+  repair: 'admin.library.statusRepair',
+  orphaned: 'admin.library.statusOrphaned',
 }
 
 function sortedBooks(books: BookEntry[]): BookEntry[] {
@@ -331,16 +328,16 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
     <div class="flex items-start justify-between gap-4 mb-5">
       <div>
         <h2 class="text-sm font-semibold text-stone-800 m-0 mb-0.5">
-          {{ t('admin.library.tabTitle') }}
+          <I18nText k="admin.library.tabTitle" />
         </h2>
-        <p class="text-xs text-stone-400 m-0">{{ t('admin.library.tabSubtitle') }}</p>
+        <p class="text-xs text-stone-400 m-0"><I18nText k="admin.library.tabSubtitle" /></p>
       </div>
       <div class="flex items-center gap-2 shrink-0">
         <span
           v-if="scanData"
           class="text-[11px] text-stone-400"
         >
-          {{ t('admin.library.lastScanned') }}:
+          <I18nText k="admin.library.lastScanned" />:
           {{ new Date(scanData.scanned_at + 'Z').toLocaleTimeString() }}
         </span>
         <el-button
@@ -348,7 +345,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
           :icon="isScanning ? undefined : 'Refresh'"
           @click="scan"
         >
-          {{ t('admin.library.scan') }}
+          <I18nText k="admin.library.scan" />
         </el-button>
         <el-button
           v-if="repairBooks.length > 0"
@@ -356,7 +353,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
           :loading="isRepairing"
           @click="repairPaths"
         >
-          {{ t('admin.library.repairPaths') }}
+          <I18nText k="admin.library.repairPaths" />
           <el-tag
             size="small"
             effect="dark"
@@ -371,7 +368,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
           :loading="isRegisteringAll"
           @click="registerAll"
         >
-          {{ t('admin.library.registerAll') }}
+          <I18nText k="admin.library.registerAll" />
           <el-tag
             size="small"
             effect="dark"
@@ -388,7 +385,9 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
       class="flex items-center gap-1.5 mb-4 px-3 py-2 rounded-lg bg-stone-50 border border-stone-100"
     >
       <el-icon class="text-stone-400 shrink-0"><FolderOpened /></el-icon>
-      <span class="text-[11px] text-stone-400 shrink-0">{{ t('admin.library.storageDir') }}:</span>
+      <span class="text-[11px] text-stone-400 shrink-0"
+        ><I18nText k="admin.library.storageDir" />:</span
+      >
       <span
         v-if="scanData"
         class="font-mono text-[11px] text-stone-600 truncate"
@@ -443,7 +442,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
         :size="28"
         ><Loading
       /></el-icon>
-      <p class="mt-3 text-sm">{{ t('admin.library.scanning') }}</p>
+      <p class="mt-3 text-sm"><I18nText k="admin.library.scanning" /></p>
     </div>
 
     <!-- Empty state -->
@@ -452,7 +451,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
       class="text-center py-14 text-stone-400"
     >
       <el-icon :size="36"><FolderOpened /></el-icon>
-      <p class="mt-3 text-sm font-medium">{{ t('admin.library.noFolders') }}</p>
+      <p class="mt-3 text-sm font-medium"><I18nText k="admin.library.noFolders" /></p>
       <p class="text-xs mt-1 font-mono text-stone-400">{{ scanData.storage_dir }}</p>
     </div>
 
@@ -484,16 +483,14 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
       </el-table-column>
 
       <!-- Title / folder -->
-      <el-table-column
-        :label="t('admin.library.colTitle')"
-        min-width="200"
-      >
+      <el-table-column min-width="200">
+        <template #header>
+          <I18nText k="admin.library.colTitle" />
+        </template>
         <template #default="{ row }">
           <div class="flex items-center gap-2.5">
-            <el-tooltip
-              :content="
-                row.exists_on_disk ? t('admin.library.diskPresent') : t('admin.library.diskMissing')
-              "
+            <I18nTooltip
+              :k="row.exists_on_disk ? 'admin.library.diskPresent' : 'admin.library.diskMissing'"
             >
               <el-icon
                 class="shrink-0"
@@ -501,7 +498,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
               >
                 <component :is="row.exists_on_disk ? 'FolderOpened' : 'FolderRemove'" />
               </el-icon>
-            </el-tooltip>
+            </I18nTooltip>
             <div class="min-w-0">
               <p class="text-[13px] font-medium text-stone-800 m-0 truncate">
                 {{ displayLabel(row as BookEntry) }}
@@ -519,10 +516,12 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
 
       <!-- Pages -->
       <el-table-column
-        :label="t('admin.library.colPages')"
         width="76"
         align="center"
       >
+        <template #header>
+          <I18nText k="admin.library.colPages" />
+        </template>
         <template #default="{ row }">
           <span class="text-sm tabular-nums text-stone-500">{{ row.page_count || '—' }}</span>
         </template>
@@ -530,27 +529,33 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
 
       <!-- Status -->
       <el-table-column
-        :label="t('admin.library.colStatus')"
         width="148"
         align="center"
       >
+        <template #header>
+          <I18nText k="admin.library.colStatus" />
+        </template>
         <template #default="{ row }">
           <div class="inline-flex items-center gap-1.5">
             <span
               class="status-dot"
               :class="STATUS_DOT_CLASS[getStatus(row as BookEntry)]"
             />
-            <span class="text-xs text-stone-500">{{ statusLabel(row as BookEntry) }}</span>
+            <span class="text-xs text-stone-500">
+              <I18nText :k="STATUS_LABEL_KEY[getStatus(row as BookEntry)]" />
+            </span>
           </div>
         </template>
       </el-table-column>
 
       <!-- Visibility -->
       <el-table-column
-        :label="t('admin.library.colVisible')"
         width="88"
         align="center"
       >
+        <template #header>
+          <I18nText k="admin.library.colVisible" />
+        </template>
         <template #default="{ row }">
           <el-switch
             v-if="row.in_db && row.document_id !== null"
@@ -570,10 +575,12 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
 
       <!-- Actions -->
       <el-table-column
-        :label="t('admin.library.colActions')"
         width="160"
         align="center"
       >
+        <template #header>
+          <I18nText k="admin.library.colActions" />
+        </template>
         <template #default="{ row }">
           <!-- New book: direct register button -->
           <el-button
@@ -584,7 +591,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
             :disabled="!row.exists_on_disk"
             @click="registerBook(row as BookEntry)"
           >
-            {{ t('admin.library.register') }}
+            <I18nText k="admin.library.register" />
           </el-button>
 
           <!-- Registered book: dropdown actions -->
@@ -597,7 +604,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
               size="small"
               :disabled="!row.exists_on_disk"
             >
-              {{ t('admin.library.colActions') }}
+              <I18nText k="admin.library.colActions" />
               <el-icon class="ml-1"><ArrowDown /></el-icon>
             </el-button>
             <template #dropdown>
@@ -607,14 +614,14 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
                   @click="registerBook(row as BookEntry)"
                 >
                   <el-icon><Refresh /></el-icon>
-                  {{ t('admin.library.reRegister') }}
+                  <I18nText k="admin.library.reRegister" />
                 </el-dropdown-item>
                 <el-dropdown-item
                   :disabled="!row.exists_on_disk || generatingCoverIds.has(row.document_id)"
                   @click="generateCover(row as BookEntry)"
                 >
                   <el-icon><Picture /></el-icon>
-                  {{ t('admin.library.generateCover') }}
+                  <I18nText k="admin.library.generateCover" />
                 </el-dropdown-item>
                 <el-dropdown-item
                   divided
@@ -622,7 +629,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
                   @click="openRenameDialog(row as BookEntry)"
                 >
                   <el-icon><EditPen /></el-icon>
-                  {{ t('admin.library.renamePages') }}
+                  <I18nText k="admin.library.renamePages" />
                 </el-dropdown-item>
                 <el-dropdown-item
                   divided
@@ -631,11 +638,13 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
                   @click="deleteBook(row as BookEntry, row.exists_on_disk)"
                 >
                   <el-icon><Delete /></el-icon>
-                  {{
-                    row.exists_on_disk
-                      ? t('admin.library.deleteBook')
-                      : t('admin.library.deleteRecord')
-                  }}
+                  <I18nText
+                    v-if="row.exists_on_disk"
+                    k="admin.library.deleteBook"
+                  /><I18nText
+                    v-else
+                    k="admin.library.deleteRecord"
+                  />
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -725,14 +734,16 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
             max-height="220"
             class="rename-table"
           >
-            <el-table-column
-              :label="t('admin.library.renameColFrom')"
-              prop="from"
-            />
-            <el-table-column
-              :label="t('admin.library.renameColTo')"
-              prop="to"
-            />
+            <el-table-column prop="from">
+              <template #header>
+                <I18nText k="admin.library.renameColFrom" />
+              </template>
+            </el-table-column>
+            <el-table-column prop="to">
+              <template #header>
+                <I18nText k="admin.library.renameColTo" />
+              </template>
+            </el-table-column>
           </el-table>
         </template>
       </div>

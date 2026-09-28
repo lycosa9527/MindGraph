@@ -6,16 +6,12 @@
  */
 import { computed } from 'vue'
 
+import MaiteModeNav from '@/components/maite/MaiteModeNav.vue'
 import MaiteDemoView from '@/components/maite/demo/MaiteDemoView.vue'
 import MaiteInquiryView from '@/components/maite/inquiry/MaiteInquiryView.vue'
 import MaiteLearningMapView from '@/components/maite/map/MaiteLearningMapView.vue'
-import MaiteModeNav from '@/components/maite/MaiteModeNav.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
-import {
-  useMaiteNotifications,
-  useMaiteOcrUpload,
-  useMaiteWorkspace,
-} from '@/composables/maite'
+import { useMaiteNotifications, useMaiteOcrUpload, useMaiteWorkspace } from '@/composables/maite'
 
 const { t } = useLanguage()
 const { mode } = useMaiteWorkspace()
@@ -42,14 +38,14 @@ const activeView = computed(() => {
     >
       <div class="flex items-center gap-3 min-w-0">
         <h1 class="text-sm font-semibold text-gray-800 shrink-0">
-          {{ t('maite.title') }}
+          <I18nText k="maite.title" />
         </h1>
         <span class="text-gray-300 shrink-0">|</span>
         <span
           class="text-sm text-gray-500 truncate"
           :title="t('maite.subtitle')"
         >
-          {{ t('maite.subtitle') }}
+          <I18nText k="maite.subtitle" />
         </span>
       </div>
       <MaiteModeNav class="shrink-0" />

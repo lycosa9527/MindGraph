@@ -7,14 +7,11 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { ElAvatar } from 'element-plus'
 
 import OneSentenceKittyAvatar from '@/components/canvas/OneSentenceKittyAvatar.vue'
-import { resolveMessageClarifyChoices } from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
 import { useLanguage } from '@/composables'
+import { resolveMessageClarifyChoices } from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
 import type { KittyAgentState } from '@/composables/kitty/useKittyAgent'
 import { useAuthStore } from '@/stores'
-import type {
-  OneSentenceChatMessage,
-  OneSentenceClarifyChoice,
-} from '@/stores/oneSentence'
+import type { OneSentenceChatMessage, OneSentenceClarifyChoice } from '@/stores/oneSentence'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 const props = defineProps<{
@@ -129,13 +126,13 @@ onMounted(() => {
               v-if="msg.role === 'user' && msg.status === 'queued'"
               class="mt-1 mb-0 text-[11px] opacity-80"
             >
-              {{ t('canvas.mindMapOneSentence.requestQueued') }}
+              <I18nText k="canvas.mindMapOneSentence.requestQueued" />
             </p>
             <p
               v-else-if="msg.role === 'user' && msg.status === 'failed'"
               class="mt-1 mb-0 text-[11px] text-rose-200"
             >
-              {{ t('canvas.mindMapOneSentence.requestFailed') }}
+              <I18nText k="canvas.mindMapOneSentence.requestFailed" />
             </p>
           </div>
           <div
@@ -173,7 +170,7 @@ onMounted(() => {
         <div
           class="kitty-mobile-chat__bubble kitty-mobile-chat__bubble--thinking rounded-2xl rounded-bl-md border border-slate-200/90 bg-white px-3 py-2.5 text-sm italic leading-relaxed text-slate-500 shadow-sm"
         >
-          <p class="m-0">{{ t('canvas.kittyAnchor.thinking') }}</p>
+          <p class="m-0"><I18nText k="canvas.kittyAnchor.thinking" /></p>
         </div>
       </div>
     </div>

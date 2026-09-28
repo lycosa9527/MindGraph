@@ -62,10 +62,16 @@ async function onSync() {
       :column="1"
       border
     >
-      <el-descriptions-item :label="t('admin.cos.localLastMerge')">
+      <el-descriptions-item>
+        <template #label>
+          <I18nText k="admin.cos.localLastMerge" />
+        </template>
         {{ localMeta?.last_merge_unix ?? '—' }}
       </el-descriptions-item>
-      <el-descriptions-item :label="t('admin.cos.cosLastMerge')">
+      <el-descriptions-item>
+        <template #label>
+          <I18nText k="admin.cos.cosLastMerge" />
+        </template>
         {{ data?.cos_last_merge_iso ?? '—' }}
       </el-descriptions-item>
     </el-descriptions>
@@ -75,7 +81,7 @@ async function onSync() {
         :loading="triggerSync.isPending.value"
         @click="onSync"
       >
-        {{ t('admin.cos.syncNow') }}
+        <I18nText k="admin.cos.syncNow" />
       </el-button>
     </div>
   </div>

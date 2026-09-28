@@ -423,7 +423,9 @@ watch(
             <template #content>
               <div class="mm-shortcut-tooltip__row">
                 <span><I18nText k="canvas.toolbar.undo" /></span>
-                <kbd class="mm-shortcut-tooltip__kbd">{{ t('canvas.toolbar.undoShortcut') }}</kbd>
+                <kbd class="mm-shortcut-tooltip__kbd"
+                  ><I18nText k="canvas.toolbar.undoShortcut"
+                /></kbd>
               </div>
             </template>
             <button
@@ -444,7 +446,9 @@ watch(
             <template #content>
               <div class="mm-shortcut-tooltip__row">
                 <span><I18nText k="canvas.toolbar.redo" /></span>
-                <kbd class="mm-shortcut-tooltip__kbd">{{ t('canvas.toolbar.redoShortcut') }}</kbd>
+                <kbd class="mm-shortcut-tooltip__kbd"
+                  ><I18nText k="canvas.toolbar.redoShortcut"
+                /></kbd>
               </div>
             </template>
             <button

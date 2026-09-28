@@ -43,7 +43,7 @@ function copyShare(): void {
   <div class="space-y-3">
     <div>
       <div class="text-xs text-gray-500 mb-1">
-        {{ t('mobile.orgsInviteCode') }}
+        <I18nText k="mobile.orgsInviteCode" />
       </div>
       <div class="text-sm font-semibold text-gray-900 break-all">
         {{ invitationCode }}
@@ -51,7 +51,7 @@ function copyShare(): void {
     </div>
     <div>
       <div class="text-xs text-gray-500 mb-1">
-        {{ t('mobile.orgsInviteLink') }}
+        <I18nText k="mobile.orgsInviteLink" />
       </div>
       <div class="text-sm font-semibold text-gray-900 break-all">
         {{ inviteLink }}
@@ -64,7 +64,7 @@ function copyShare(): void {
       @click="copyShare"
     >
       <Copy :size="16" />
-      {{ t('admin.copyShareMessage') }}
+      <I18nText k="admin.copyShareMessage" />
     </button>
   </div>
 </template>

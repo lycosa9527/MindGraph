@@ -2,8 +2,8 @@
 import { TrendCharts, User, UserFilled } from '@element-plus/icons-vue'
 
 import AdminSwissChartCard from '@/components/admin/swiss/AdminSwissChartCard.vue'
-import type { SchoolUserActivityTotals } from '@/composables/queries/adminSchoolUserActivityApi'
 import { useLanguage } from '@/composables'
+import type { SchoolUserActivityTotals } from '@/composables/queries/adminSchoolUserActivityApi'
 
 const props = defineProps<{
   totals: SchoolUserActivityTotals
@@ -24,7 +24,7 @@ function seriesValues(points: { value: number }[]): number[] {
 <template>
   <section class="school-activity-section">
     <h2 class="school-activity-section__title">
-      {{ t('admin.schoolActivity.sectionTotals') }}
+      <I18nText k="admin.schoolActivity.sectionTotals" />
     </h2>
     <div class="school-activity-section__grid">
       <AdminSwissChartCard

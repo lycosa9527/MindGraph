@@ -4,6 +4,7 @@
  */
 import { computed, onMounted, ref } from 'vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useWorkshopComposeDraft } from '@/composables/workshop/useWorkshopComposeDraft'
 import { useWorkshopImageLightbox } from '@/composables/workshop/useWorkshopImageLightbox'
@@ -12,7 +13,6 @@ import { resolveMessageEditKeydown } from '@/utils/workshopMessageEditKeys'
 import ImageLightbox from './ImageLightbox.vue'
 import WorkshopComposeToolbar from './WorkshopComposeToolbar.vue'
 import WorkshopDiagramPicker from './WorkshopDiagramPicker.vue'
-import I18nText from '@/components/common/I18nText.vue'
 
 const props = defineProps<{
   initialContent: string
@@ -135,7 +135,7 @@ defineExpose({ markSaveFailed })
         v-if="!content.trim()"
         class="msg-edit__preview-empty"
       >
-        {{ t('workshop.previewEmpty') }}
+        <I18nText k="workshop.previewEmpty" />
       </p>
       <div
         v-else
@@ -204,7 +204,7 @@ defineExpose({ markSaveFailed })
         v-if="saveError"
         class="msg-edit__error"
       >
-        {{ t('workshop.editMessageFailed') }}
+        <I18nText k="workshop.editMessageFailed" />
       </span>
     </div>
 

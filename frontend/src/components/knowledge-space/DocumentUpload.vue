@@ -95,7 +95,7 @@ const handleClose = () => {
         v-if="!canUpload"
         class="mb-4 p-3 bg-stone-100 rounded-lg text-sm text-stone-600"
       >
-        {{ t('knowledge.upload.maxDocs') }}
+        <I18nText k="knowledge.upload.maxDocs" />
       </div>
 
       <div
@@ -119,12 +119,12 @@ const handleClose = () => {
             </el-icon>
             <div class="text-stone-600 mb-2">
               <span class="text-stone-900 font-medium">
-                {{ t('knowledge.upload.click') }}
+                <I18nText k="knowledge.upload.click" />
               </span>
-              {{ t('knowledge.upload.drag') }}
+              <I18nText k="knowledge.upload.drag" />
             </div>
             <div class="text-xs text-stone-500">
-              {{ t('knowledge.upload.hintFormats') }}
+              <I18nText k="knowledge.upload.hintFormats" />
             </div>
           </div>
         </ElUpload>

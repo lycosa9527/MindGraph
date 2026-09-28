@@ -37,7 +37,7 @@ const visible = computed(() => {
     :class="{ 'training-notes--pad': padClear }"
     :aria-label="t('training.builder.notes')"
   >
-    <p class="training-notes__kicker">{{ t('training.builder.notes') }}</p>
+    <p class="training-notes__kicker"><I18nText k="training.builder.notes" /></p>
     <p class="training-notes__body">{{ text }}</p>
   </aside>
 </template>

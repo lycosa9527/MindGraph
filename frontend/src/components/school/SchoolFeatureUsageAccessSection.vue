@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AdminSwissModuleStatCard from '@/components/admin/swiss/AdminSwissModuleStatCard.vue'
-import type { SchoolFeatureUsageModule } from '@/composables/queries/adminSchoolFeatureUsageApi'
 import { useLanguage } from '@/composables'
+import type { SchoolFeatureUsageModule } from '@/composables/queries/adminSchoolFeatureUsageApi'
 import { moduleUsageTheme } from '@/utils/schoolFeatureUsageTheme'
 
 const props = defineProps<{
@@ -27,7 +27,7 @@ function opsLabel(value: number): string {
 <template>
   <section class="school-activity-section">
     <h2 class="school-activity-section__title">
-      {{ t('admin.schoolFeatureUsage.sectionAccess') }}
+      <I18nText k="admin.schoolFeatureUsage.sectionAccess" />
     </h2>
     <div class="school-activity-section__grid">
       <AdminSwissModuleStatCard

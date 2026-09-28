@@ -10,8 +10,8 @@ import SchoolActivityActiveSection from '@/components/school/SchoolActivityActiv
 import SchoolActivityFrequencySection from '@/components/school/SchoolActivityFrequencySection.vue'
 import SchoolActivityTotalsSection from '@/components/school/SchoolActivityTotalsSection.vue'
 import { useLanguage } from '@/composables'
-import { useAdminSchoolUserActivityQuery } from '@/composables/queries/useAdminSchoolUserActivityQuery'
 import { queryErrorMessage } from '@/composables/admin/useQueryErrorNotification'
+import { useAdminSchoolUserActivityQuery } from '@/composables/queries/useAdminSchoolUserActivityQuery'
 import { beijingCalendarYear, formatBeijingSnapshotTime } from '@/utils/schoolActivityAsOf'
 
 const props = defineProps<{
@@ -64,7 +64,7 @@ watch(
   <div class="school-activity-tab">
     <div class="school-activity-tab__toolbar">
       <label class="school-activity-tab__year">
-        <span>{{ t('admin.schoolActivity.year') }}</span>
+        <span><I18nText k="admin.schoolActivity.year" /></span>
         <el-select
           v-model="selectedYear"
           class="admin-swiss-select"

@@ -85,7 +85,7 @@ function typeColor(ct: string): string {
       v-else-if="channels.length === 0"
       class="cb__empty"
     >
-      {{ t('workshop.noChannelsAvailable') }}
+      <I18nText k="workshop.noChannelsAvailable" />
     </div>
 
     <div
@@ -104,7 +104,7 @@ function typeColor(ct: string): string {
             class="cb__section-icon"
             :class="typeColor(section.key)"
           />
-          <h2 class="cb__section-title">{{ t(section.labelKey) }}</h2>
+          <h2 class="cb__section-title"><I18nText :k="section.labelKey" /></h2>
           <span class="cb__section-count">{{ section.channels.length }}</span>
         </div>
 
@@ -152,16 +152,16 @@ function typeColor(ct: string): string {
                 <div class="cb__card-meta">
                   <span class="cb__card-meta-item">
                     <el-icon :size="12"><OfficeBuilding /></el-icon>
-                    {{ channel.member_count }} {{ t('workshop.members') }}
+                    {{ channel.member_count }} <I18nText k="workshop.members" />
                   </span>
                   <span class="cb__card-meta-item">
-                    {{ channel.topic_count }} {{ t('workshop.topicCount') }}
+                    {{ channel.topic_count }} <I18nText k="workshop.topicCount" />
                   </span>
                   <span
                     v-if="channel.is_default"
                     class="cb__card-default-badge"
                   >
-                    {{ t('workshop.defaultChannel') }}
+                    <I18nText k="workshop.defaultChannel" />
                   </span>
                 </div>
               </div>
@@ -174,7 +174,7 @@ function typeColor(ct: string): string {
                 type="primary"
                 @click.stop="emit('join', channel.id)"
               >
-                {{ t('workshop.join') }}
+                <I18nText k="workshop.join" />
               </el-button>
               <el-button
                 v-else-if="channel.channel_type !== 'announce'"
@@ -182,7 +182,7 @@ function typeColor(ct: string): string {
                 plain
                 @click.stop="emit('leave', channel.id)"
               >
-                {{ t('workshop.leave') }}
+                <I18nText k="workshop.leave" />
               </el-button>
             </div>
           </div>

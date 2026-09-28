@@ -4,7 +4,9 @@
  * Use inside `.mindbot-swiss-dialog` (styles in admin-mindbot-swiss-dialog-chrome.css).
  */
 export type MindbotSwissSegmentOption<T extends string | number = string | number> = {
-  label: string
+  label?: string
+  labelKey?: string
+  labelParams?: Record<string, unknown>
   value: T
 }
 
@@ -41,7 +43,12 @@ const model = defineModel<T>({ required: true })
       :aria-checked="model === opt.value"
       @click="model = opt.value"
     >
-      {{ opt.label }}
+      <I18nText
+        v-if="opt.labelKey"
+        :k="opt.labelKey"
+        :params="opt.labelParams"
+      />
+      <template v-else>{{ opt.label }}</template>
     </button>
   </div>
 </template>

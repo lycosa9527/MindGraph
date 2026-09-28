@@ -9,13 +9,13 @@ import {
   AUTH_LOGIN_HERO_NARROW_QUERY,
   AUTH_LOGIN_HERO_STILL_SRC,
   AUTH_LOGIN_HERO_WIDE_MEDIA,
+  type AuthLoginHeroKind,
   authLoginHeroHandheld,
   authLoginHeroKind,
   authLoginHeroShouldAnimate,
   authLoginHeroSrc,
   authLoginHeroViewportNarrow,
   pickAuthLoginHeroId,
-  type AuthLoginHeroKind,
 } from '@/utils/authLoginHero'
 
 const { t } = useLanguage()
@@ -115,7 +115,7 @@ function onVideoError(): void {
       height="1080"
       decoding="async"
       fetchpriority="high"
-    >
+    />
     <video
       v-if="showVideo"
       :key="heroSrc"
@@ -133,7 +133,7 @@ function onVideoError(): void {
         :src="heroSrc"
         type="video/mp4"
         :media="AUTH_LOGIN_HERO_WIDE_MEDIA"
-      >
+      />
     </video>
 
     <div
@@ -147,11 +147,13 @@ function onVideoError(): void {
           id="auth-landing-brand-title"
           class="auth-landing-brand__headline"
         >
-          <span>{{ t('auth.landing.headlinePrefix') }}</span>
-          <span class="auth-landing-brand__accent">{{ t('auth.landing.headlineAccent') }}</span>
+          <span><I18nText k="auth.landing.headlinePrefix" /></span>
+          <span class="auth-landing-brand__accent"
+            ><I18nText k="auth.landing.headlineAccent"
+          /></span>
         </h1>
         <p class="auth-landing-brand__subcopy">
-          {{ t('auth.landing.subcopy') }}
+          <I18nText k="auth.landing.subcopy" />
         </p>
       </div>
     </div>

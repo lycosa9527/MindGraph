@@ -55,17 +55,17 @@ function statusClass(status: ShowcasePost['status']): string {
   return 'bg-red-50 text-red-600'
 }
 
-function statusText(status: ShowcasePost['status']): string {
-  if (status === 'approved') return String(t('showcase.status.approved'))
-  if (status === 'pending') return String(t('showcase.status.pending'))
-  if (status === 'withdrawn') return String(t('showcase.status.withdrawn'))
-  return String(t('showcase.status.rejected'))
+function statusLabelKey(status: ShowcasePost['status']): string {
+  if (status === 'approved') return 'showcase.status.approved'
+  if (status === 'pending') return 'showcase.status.pending'
+  if (status === 'withdrawn') return 'showcase.status.withdrawn'
+  return 'showcase.status.rejected'
 }
 
-function caseTypeText(caseType: ShowcaseCaseType): string {
-  if (caseType === 'teaching_design') return String(t('showcase.type.teachingDesign'))
-  if (caseType === 'diagram_case') return String(t('showcase.type.diagramCase'))
-  return String(t('showcase.type.diagramTemplate'))
+function caseTypeLabelKey(caseType: ShowcaseCaseType): string {
+  if (caseType === 'teaching_design') return 'showcase.type.teachingDesign'
+  if (caseType === 'diagram_case') return 'showcase.type.diagramCase'
+  return 'showcase.type.diagramTemplate'
 }
 
 function formatDate(iso: string): string {
@@ -234,11 +234,11 @@ function resubmitPost(post: ShowcasePost) {
                   class="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium"
                   :class="statusClass(post.status)"
                 >
-                  {{ statusText(post.status) }}
+                  <I18nText :k="statusLabelKey(post.status)" />
                 </span>
               </div>
               <div class="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-gray-400">
-                <span>{{ caseTypeText(post.case_type) }}</span>
+                <span><I18nText :k="caseTypeLabelKey(post.case_type)" /></span>
                 <span v-if="post.subject">{{ post.subject }}</span>
                 <span>{{ formatDate(post.created_at) }}</span>
                 <span class="inline-flex items-center gap-1">

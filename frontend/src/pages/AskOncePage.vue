@@ -320,7 +320,7 @@ onUnmounted(() => {
     <!-- Header -->
     <header class="h-14 px-4 flex items-center justify-between bg-white border-b border-gray-200">
       <div class="flex items-center gap-3">
-        <h1 class="text-sm font-semibold text-gray-800">{{ t('askonce.title') }}</h1>
+        <h1 class="text-sm font-semibold text-gray-800"><I18nText k="askonce.title" /></h1>
         <span class="text-gray-300">|</span>
         <span
           class="text-sm text-gray-500 truncate max-w-xs"
@@ -337,7 +337,7 @@ onUnmounted(() => {
           @click="clearAll"
         >
           <ElIcon class="mr-1"><Plus /></ElIcon>
-          {{ t('askOnce.newChat') }}
+          <I18nText k="askOnce.newChat" />
         </ElButton>
       </div>
     </header>
@@ -367,12 +367,12 @@ onUnmounted(() => {
         />
         <div class="flex items-center justify-between mt-3">
           <div class="flex items-center gap-4 text-sm text-gray-500">
-            <span>{{ charCount }} {{ t('common.unit.chars') }}</span>
+            <span>{{ charCount }} <I18nText k="common.unit.chars" /></span>
             <span
               v-if="store.hasSystemPrompt"
               class="text-green-600"
             >
-              ✓ {{ t('askOnce.templateActive') }}
+              ✓ <I18nText k="askOnce.templateActive" />
             </span>
           </div>
           <div class="flex items-center gap-2">
@@ -381,7 +381,7 @@ onUnmounted(() => {
               :disabled="!authStore.isAuthenticated"
               @click="openSystemModal"
             >
-              {{ t('askOnce.templates') }}
+              <I18nText k="askOnce.templates" />
             </ElButton>
             <ElButton
               type="primary"
@@ -389,7 +389,7 @@ onUnmounted(() => {
               :disabled="!canSend || !authStore.isAuthenticated"
               @click="sendToAllModels"
             >
-              {{ t('askOnce.send') }}
+              <I18nText k="askOnce.send" />
             </ElButton>
           </div>
         </div>

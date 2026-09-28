@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, type Component } from 'vue'
+import { type Component, computed, ref } from 'vue'
 
 import { onClickOutside } from '@vueuse/core'
 
@@ -8,14 +8,17 @@ import { ChevronDown } from '@lucide/vue'
 export interface ShowcaseFilterOption {
   value: string
   label: string
+  labelKey?: string
 }
 
 const props = withDefaults(
   defineProps<{
     label?: string
+    labelKey?: string
     modelValue: string
     options: ShowcaseFilterOption[]
     allLabel?: string
+    allLabelKey?: string
     prefixIcon?: Component
     /** labeled: "学科：全部" | plain: icon + current label only */
     variant?: 'labeled' | 'plain'
@@ -28,7 +31,9 @@ const props = withDefaults(
   }>(),
   {
     variant: 'labeled',
+    labelKey: '',
     allLabel: '全部',
+    allLabelKey: '',
     includeAll: true,
     panelSize: 'md',
     block: false,
@@ -42,14 +47,21 @@ const emit = defineEmits<{
 const rootRef = ref<HTMLElement | null>(null)
 const open = ref(false)
 
+const selectedOption = computed(
+  () => props.options.find((option) => option.value === props.modelValue) ?? null
+)
+
 const displayValue = computed(() => {
   if (!props.modelValue) return props.allLabel
-  return props.options.find((o) => o.value === props.modelValue)?.label ?? props.modelValue
+  return selectedOption.value?.label ?? props.modelValue
 })
 
 const allOptions = computed(() =>
   props.includeAll
-    ? [{ value: '', label: props.allLabel }, ...props.options]
+    ? [
+        { value: '', label: props.allLabel, labelKey: props.allLabelKey || undefined },
+        ...props.options,
+      ]
     : props.options
 )
 
@@ -70,7 +82,10 @@ onClickOutside(rootRef, () => {
 </script>
 
 <template>
-  <div ref="rootRef" :class="['relative', block ? 'w-full' : '']">
+  <div
+    ref="rootRef"
+    :class="['relative', block ? 'w-full' : '']"
+  >
     <button
       type="button"
       :class="['showcase-dropdown-trigger', block ? 'w-full justify-between' : '']"
@@ -81,11 +96,46 @@ onClickOutside(rootRef, () => {
         v-if="prefixIcon"
         class="h-3.5 w-3.5 shrink-0 text-gray-500"
       />
-      <template v-if="variant === 'labeled' && label">
-        <span class="text-gray-500">{{ label }}：</span>
-        <span class="font-medium text-gray-800">{{ displayValue }}</span>
+      <template v-if="variant === 'labeled' && (labelKey || label)">
+        <span class="text-gray-500">
+          <I18nText
+            v-if="labelKey"
+            :k="labelKey"
+            dense
+          />
+          <template v-else>{{ label }}</template>
+          ：
+        </span>
+        <span class="font-medium text-gray-800">
+          <I18nText
+            v-if="!modelValue && allLabelKey"
+            :k="allLabelKey"
+            dense
+          />
+          <I18nText
+            v-else-if="selectedOption?.labelKey"
+            :k="selectedOption.labelKey"
+            dense
+          />
+          <template v-else>{{ displayValue }}</template>
+        </span>
       </template>
-      <span v-else class="font-medium text-gray-800">{{ displayValue }}</span>
+      <span
+        v-else
+        class="font-medium text-gray-800"
+      >
+        <I18nText
+          v-if="!modelValue && allLabelKey"
+          :k="allLabelKey"
+          dense
+        />
+        <I18nText
+          v-else-if="selectedOption?.labelKey"
+          :k="selectedOption.labelKey"
+          dense
+        />
+        <template v-else>{{ displayValue }}</template>
+      </span>
       <ChevronDown
         class="h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform"
         :class="open ? 'rotate-180' : ''"
@@ -105,7 +155,12 @@ onClickOutside(rootRef, () => {
           :class="isSelected(opt.value) ? 'showcase-dropdown-item--active' : ''"
           @click="select(opt.value)"
         >
-          {{ opt.label }}
+          <I18nText
+            v-if="opt.labelKey"
+            :k="opt.labelKey"
+            dense
+          />
+          <template v-else>{{ opt.label }}</template>
         </button>
       </div>
     </div>

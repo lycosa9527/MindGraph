@@ -58,6 +58,16 @@
   min-width: 0;
 }
 
+.admin-swiss-segment-label .i18n-label {
+  align-items: center;
+  max-width: 100%;
+}
+
+.admin-swiss-segment-label .i18n-label__primary,
+.admin-swiss-segment-label .i18n-label__secondary {
+  text-align: center;
+}
+
 .admin-swiss-segment-badge {
   min-width: 1.125rem;
   padding: 0 0.3rem;

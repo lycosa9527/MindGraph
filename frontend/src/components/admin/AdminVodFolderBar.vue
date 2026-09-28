@@ -149,8 +149,8 @@ watch(
       :value="folderId"
       @change="onFilter"
     >
-      <option value="">{{ t('admin.vod.folderAll') }}</option>
-      <option value="none">{{ t('admin.vod.folderNone') }}</option>
+      <option value=""><I18nText k="admin.vod.folderAll" /></option>
+      <option value="none"><I18nText k="admin.vod.folderNone" /></option>
       <option
         v-for="folder in folders"
         :key="folder.id"
@@ -174,7 +174,7 @@ watch(
         :disabled="busy || !name.trim()"
         @click="create"
       >
-        {{ t('admin.vod.folderCreate') }}
+        <I18nText k="admin.vod.folderCreate" />
       </button>
       <button
         v-if="selected"
@@ -183,7 +183,7 @@ watch(
         :disabled="busy"
         @click="rename"
       >
-        {{ t('admin.vod.folderRename') }}
+        <I18nText k="admin.vod.folderRename" />
       </button>
       <button
         v-if="selected"
@@ -192,7 +192,7 @@ watch(
         :disabled="busy"
         @click="remove"
       >
-        {{ t('admin.vod.folderDelete') }}
+        <I18nText k="admin.vod.folderDelete" />
       </button>
     </template>
   </div>

@@ -44,7 +44,7 @@ function goHome() {
         />
       </button>
       <h1 class="flex-1 text-center text-base font-semibold text-gray-800 truncate px-2">
-        {{ t('mobile.orgsTitle') }}
+        <I18nText k="mobile.orgsTitle" />
       </h1>
       <div class="w-8 shrink-0" />
     </header>
@@ -59,7 +59,7 @@ function goHome() {
             class="block text-sm font-semibold text-gray-800"
             for="mobile-org-name"
           >
-            {{ t('admin.createOrganization') }}
+            <I18nText k="admin.createOrganization" />
           </label>
           <input
             id="mobile-org-name"
@@ -83,26 +83,26 @@ function goHome() {
               v-else
               :size="16"
             />
-            {{ t('admin.createOrganization') }}
+            <I18nText k="admin.createOrganization" />
           </button>
         </form>
 
         <div class="text-sm font-semibold text-gray-500">
-          {{ t('mobile.orgsListTitle') }}
+          <I18nText k="mobile.orgsListTitle" />
         </div>
 
         <div
           v-if="isLoading && organizations.length === 0"
           class="text-sm text-gray-400 text-center py-8"
         >
-          {{ t('common.loading') }}
+          <I18nText k="common.loading" />
         </div>
 
         <div
           v-else-if="organizations.length === 0"
           class="text-sm text-gray-400 text-center py-8"
         >
-          {{ t('mobile.orgsEmpty') }}
+          <I18nText k="mobile.orgsEmpty" />
         </div>
 
         <article
@@ -127,7 +127,10 @@ function goHome() {
                 {{ org.name }}
               </div>
               <div class="text-xs text-gray-500 mt-0.5">
-                {{ t('mobile.orgsMemberCount', { count: org.userCount }) }}
+                <I18nText
+                  k="mobile.orgsMemberCount"
+                  :params="{ count: org.userCount }"
+                />
               </div>
             </div>
           </button>

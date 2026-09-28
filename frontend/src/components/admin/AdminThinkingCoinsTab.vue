@@ -56,9 +56,21 @@ const createForm = ref<CreateAdminThinkingCoinTaskBody>({
 })
 
 const panelOptions = computed(() => [
-  { label: t('thinkingCoins.admin.panelTasks'), value: 'tasks' as const },
-  { label: t('thinkingCoins.admin.panelSettings'), value: 'settings' as const },
-  { label: t('thinkingCoins.admin.panelPreview'), value: 'preview' as const },
+  {
+    label: t('thinkingCoins.admin.panelTasks'),
+    labelKey: 'thinkingCoins.admin.panelTasks',
+    value: 'tasks' as const,
+  },
+  {
+    label: t('thinkingCoins.admin.panelSettings'),
+    labelKey: 'thinkingCoins.admin.panelSettings',
+    value: 'settings' as const,
+  },
+  {
+    label: t('thinkingCoins.admin.panelPreview'),
+    labelKey: 'thinkingCoins.admin.panelPreview',
+    value: 'preview' as const,
+  },
 ])
 
 const handlerOptions = computed(() =>
@@ -192,7 +204,7 @@ onMounted(() => {
   <div class="admin-thinking-coins p-4 max-w-5xl space-y-5">
     <header class="flex flex-wrap items-center justify-between gap-3">
       <h2 class="text-lg font-semibold text-stone-900 tracking-tight">
-        {{ t('thinkingCoins.admin.tab') }}
+        <I18nText k="thinkingCoins.admin.tab" />
       </h2>
       <AdminSwissSegmented
         v-model="panel"
@@ -215,7 +227,7 @@ onMounted(() => {
       <section v-if="panel === 'tasks'">
         <div class="admin-swiss-toolbar admin-swiss-toolbar--header mb-3 flex-wrap">
           <p class="text-xs text-stone-500 flex-1 min-w-[12rem]">
-            {{ t('thinkingCoins.admin.tasksTitle') }}
+            <I18nText k="thinkingCoins.admin.tasksTitle" />
           </p>
           <button
             type="button"
@@ -223,7 +235,7 @@ onMounted(() => {
             @click="showCreateDialog = true"
           >
             <Plus class="h-3.5 w-3.5" />
-            {{ t('thinkingCoins.admin.addTask') }}
+            <I18nText k="thinkingCoins.admin.addTask" />
           </button>
         </div>
 
@@ -231,13 +243,19 @@ onMounted(() => {
           <table class="min-w-full text-sm">
             <thead class="bg-stone-50 text-stone-600 text-xs uppercase tracking-wide">
               <tr>
-                <th class="px-3 py-2.5 text-left">{{ t('thinkingCoins.admin.slug') }}</th>
-                <th class="px-3 py-2.5 text-left">{{ t('thinkingCoins.admin.tasksTitle') }}</th>
-                <th class="px-3 py-2.5 text-left">{{ t('thinkingCoins.admin.reward') }}</th>
-                <th class="px-3 py-2.5 text-left">{{ t('thinkingCoins.admin.monthlyCap') }}</th>
-                <th class="px-3 py-2.5 text-left">{{ t('thinkingCoins.admin.handler') }}</th>
-                <th class="px-3 py-2.5 text-left">{{ t('thinkingCoins.admin.sortOrder') }}</th>
-                <th class="px-3 py-2.5 text-left">{{ t('thinkingCoins.admin.active') }}</th>
+                <th class="px-3 py-2.5 text-left"><I18nText k="thinkingCoins.admin.slug" /></th>
+                <th class="px-3 py-2.5 text-left">
+                  <I18nText k="thinkingCoins.admin.tasksTitle" />
+                </th>
+                <th class="px-3 py-2.5 text-left"><I18nText k="thinkingCoins.admin.reward" /></th>
+                <th class="px-3 py-2.5 text-left">
+                  <I18nText k="thinkingCoins.admin.monthlyCap" />
+                </th>
+                <th class="px-3 py-2.5 text-left"><I18nText k="thinkingCoins.admin.handler" /></th>
+                <th class="px-3 py-2.5 text-left">
+                  <I18nText k="thinkingCoins.admin.sortOrder" />
+                </th>
+                <th class="px-3 py-2.5 text-left"><I18nText k="thinkingCoins.admin.active" /></th>
                 <th class="px-3 py-2.5" />
               </tr>
             </thead>
@@ -253,7 +271,7 @@ onMounted(() => {
                     v-if="task.is_system"
                     class="ml-1 rounded bg-stone-100 px-1 py-0.5 text-[10px] text-stone-500"
                   >
-                    {{ t('thinkingCoins.admin.systemTask') }}
+                    <I18nText k="thinkingCoins.admin.systemTask" />
                   </span>
                 </td>
                 <td class="px-3 py-2">
@@ -304,7 +322,7 @@ onMounted(() => {
                     :disabled="savingTaskId === task.id"
                     @click="saveTaskRow(task)"
                   >
-                    {{ t('thinkingCoins.admin.save') }}
+                    <I18nText k="thinkingCoins.admin.save" />
                   </button>
                   <button
                     v-if="!task.is_system"
@@ -325,13 +343,13 @@ onMounted(() => {
       <!-- Settings -->
       <section v-else-if="panel === 'settings' && settings">
         <h3 class="swiss-stat-card-group__title mb-3">
-          {{ t('thinkingCoins.admin.settingsTitle') }}
+          <I18nText k="thinkingCoins.admin.settingsTitle" />
         </h3>
         <div
           class="rounded-xl border border-stone-200 bg-white p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl"
         >
           <label class="text-sm text-stone-700">
-            {{ t('thinkingCoins.admin.signupGrant') }}
+            <I18nText k="thinkingCoins.admin.signupGrant" />
             <input
               v-model.number="settings.signup_grant"
               type="number"
@@ -340,7 +358,7 @@ onMounted(() => {
             />
           </label>
           <label class="text-sm text-stone-700">
-            {{ t('thinkingCoins.admin.dailyEarnCap') }}
+            <I18nText k="thinkingCoins.admin.dailyEarnCap" />
             <input
               v-model.number="settings.daily_earn_cap"
               type="number"
@@ -348,11 +366,11 @@ onMounted(() => {
               class="mt-1 block w-full rounded-lg border border-stone-200 px-3 py-2"
             />
             <span class="mt-1 block text-xs text-stone-500">
-              {{ t('thinkingCoins.admin.dailyEarnCapHint') }}
+              <I18nText k="thinkingCoins.admin.dailyEarnCapHint" />
             </span>
           </label>
           <label class="text-sm text-stone-700">
-            {{ t('thinkingCoins.admin.costMindmate') }}
+            <I18nText k="thinkingCoins.admin.costMindmate" />
             <input
               v-model.number="settings.cost_mindmate_turn"
               type="number"
@@ -361,7 +379,7 @@ onMounted(() => {
             />
           </label>
           <label class="text-sm text-stone-700">
-            {{ t('thinkingCoins.admin.costDiagram') }}
+            <I18nText k="thinkingCoins.admin.costDiagram" />
             <input
               v-model.number="settings.cost_diagram_gen"
               type="number"
@@ -370,7 +388,7 @@ onMounted(() => {
             />
           </label>
           <label class="text-sm text-stone-700">
-            {{ t('thinkingCoins.admin.costCanvas') }}
+            <I18nText k="thinkingCoins.admin.costCanvas" />
             <input
               v-model.number="settings.cost_canvas_assist"
               type="number"
@@ -385,14 +403,14 @@ onMounted(() => {
           :disabled="savingSettings"
           @click="saveSettings"
         >
-          {{ t('thinkingCoins.admin.save') }}
+          <I18nText k="thinkingCoins.admin.save" />
         </button>
       </section>
 
       <!-- Preview -->
       <section v-else-if="panel === 'preview'">
         <h3 class="swiss-stat-card-group__title mb-3">
-          {{ t('thinkingCoins.admin.previewTitle') }}
+          <I18nText k="thinkingCoins.admin.previewTitle" />
         </h3>
         <div class="flex flex-wrap gap-2">
           <div

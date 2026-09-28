@@ -21,13 +21,13 @@ import {
   Trash2,
 } from '@lucide/vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
 import { workshopChatHrefFromState } from '@/utils/workshopChatRoute'
-import I18nText from '@/components/common/I18nText.vue'
 
 const props = defineProps<{
   channelId: number
@@ -290,7 +290,7 @@ export default { name: 'ChannelActionsPopover' }
         @click="handleAddLessonStudy"
       >
         <FolderPlus class="ws-popover-icon" />
-        {{ t('workshop.addLessonStudy') }}
+        <I18nText k="workshop.addLessonStudy" />
       </button>
 
       <button
@@ -300,7 +300,7 @@ export default { name: 'ChannelActionsPopover' }
         @click="handleAddConversation"
       >
         <MessageSquarePlus class="ws-popover-icon" />
-        {{ t('workshop.addConversation') }}
+        <I18nText k="workshop.addConversation" />
       </button>
 
       <div
@@ -314,7 +314,7 @@ export default { name: 'ChannelActionsPopover' }
         @click="handleCopyChannelLink"
       >
         <Link2 class="ws-popover-icon" />
-        {{ t('workshop.copyLink') }}
+        <I18nText k="workshop.copyLink" />
       </button>
 
       <button
@@ -323,7 +323,7 @@ export default { name: 'ChannelActionsPopover' }
         @click="handleMarkAllRead"
       >
         <CheckCheck class="ws-popover-icon" />
-        {{ t('workshop.markAllReadChannel') }}
+        <I18nText k="workshop.markAllReadChannel" />
       </button>
 
       <template v-if="isLessonStudy && isManager && channel">
@@ -333,21 +333,27 @@ export default { name: 'ChannelActionsPopover' }
           @click="handleCycleStudyStatus"
         >
           <RefreshCw class="ws-popover-icon" />
-          {{ t('workshop.cycleStudyStatus') }}
+          <I18nText k="workshop.cycleStudyStatus" />
         </button>
         <button
           class="ws-popover-item"
           @click="handleToggleResolved"
         >
           <CircleDot class="ws-popover-icon" />
-          {{ channel.is_resolved ? t('workshop.reopenStudy') : t('workshop.markStudyResolved') }}
+          <I18nText
+            v-if="channel.is_resolved"
+            k="workshop.reopenStudy"
+          /><I18nText
+            v-else
+            k="workshop.markStudyResolved"
+          />
         </button>
         <button
           class="ws-popover-item"
           @click="openDeadlineDialog"
         >
           <CalendarClock class="ws-popover-icon" />
-          {{ t('workshop.setDeadline') }}
+          <I18nText k="workshop.setDeadline" />
         </button>
         <button
           v-if="channel.deadline"
@@ -355,7 +361,7 @@ export default { name: 'ChannelActionsPopover' }
           @click="handleClearDeadline"
         >
           <span class="ws-popover-icon ws-popover-icon--text">∅</span>
-          {{ t('workshop.clearDeadline') }}
+          <I18nText k="workshop.clearDeadline" />
         </button>
       </template>
 
@@ -370,7 +376,13 @@ export default { name: 'ChannelActionsPopover' }
           :is="channel?.is_muted ? Bell : BellOff"
           class="ws-popover-icon"
         />
-        {{ channel?.is_muted ? t('workshop.unmuteChannel') : t('workshop.muteChannel') }}
+        <I18nText
+          v-if="channel?.is_muted"
+          k="workshop.unmuteChannel"
+        /><I18nText
+          v-else
+          k="workshop.muteChannel"
+        />
       </button>
 
       <button
@@ -382,7 +394,13 @@ export default { name: 'ChannelActionsPopover' }
           :is="channel?.pin_to_top ? PinOff : Pin"
           class="ws-popover-icon"
         />
-        {{ channel?.pin_to_top ? t('workshop.unpinChannel') : t('workshop.pinChannel') }}
+        <I18nText
+          v-if="channel?.pin_to_top"
+          k="workshop.unpinChannel"
+        /><I18nText
+          v-else
+          k="workshop.pinChannel"
+        />
       </button>
 
       <button
@@ -390,7 +408,7 @@ export default { name: 'ChannelActionsPopover' }
         @click="handleOpenSettings"
       >
         <Settings class="ws-popover-icon" />
-        {{ t('workshop.channelSettings') }}
+        <I18nText k="workshop.channelSettings" />
       </button>
 
       <button
@@ -400,13 +418,16 @@ export default { name: 'ChannelActionsPopover' }
         @click="handleArchiveChannel"
       >
         <Archive class="ws-popover-icon" />
-        {{
-          isAnnounce
-            ? t('workshop.archiveAnnounceChannel')
-            : isTeachingGroup
-              ? t('workshop.archiveTeachingGroup')
-              : t('workshop.archiveLessonStudy')
-        }}
+        <I18nText
+          v-if="isAnnounce"
+          k="workshop.archiveAnnounceChannel"
+        /><template v-else
+          ><I18nText
+            v-if="isTeachingGroup"
+            k="workshop.archiveTeachingGroup" /><I18nText
+            v-else
+            k="workshop.archiveLessonStudy"
+        /></template>
       </button>
 
       <button
@@ -416,13 +437,16 @@ export default { name: 'ChannelActionsPopover' }
         @click="handleDeleteChannel"
       >
         <Trash2 class="ws-popover-icon" />
-        {{
-          isAnnounce
-            ? t('workshop.deleteAnnounceChannel')
-            : isTeachingGroup
-              ? t('workshop.deleteTeachingGroup')
-              : t('workshop.deleteLessonStudy')
-        }}
+        <I18nText
+          v-if="isAnnounce"
+          k="workshop.deleteAnnounceChannel"
+        /><template v-else
+          ><I18nText
+            v-if="isTeachingGroup"
+            k="workshop.deleteTeachingGroup" /><I18nText
+            v-else
+            k="workshop.deleteLessonStudy"
+        /></template>
       </button>
 
       <div class="ws-popover-divider" />
@@ -433,7 +457,7 @@ export default { name: 'ChannelActionsPopover' }
         @click="handleLeave"
       >
         <LogOut class="ws-popover-icon" />
-        {{ t('workshop.leave') }}
+        <I18nText k="workshop.leave" />
       </button>
     </div>
   </el-popover>

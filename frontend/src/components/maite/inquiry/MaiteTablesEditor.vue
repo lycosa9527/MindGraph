@@ -3,7 +3,6 @@
  * MaiteTablesEditor — editable three-table decompose submission.
  */
 import { useLanguage } from '@/composables/core/useLanguage'
-
 import type { MaiteTableRow } from '@/types/maite'
 
 const props = defineProps<{
@@ -58,39 +57,69 @@ function addRow(table: 'condition' | 'step' | 'model'): void {
 <template>
   <div class="maite-tables-editor">
     <section class="maite-tables-editor__section">
-      <h4>{{ t('maite.tables.condition') }}</h4>
-      <div v-for="(row, index) in conditionTable" :key="`c-${index}`" class="maite-tables-editor__row">
+      <h4><I18nText k="maite.tables.condition" /></h4>
+      <div
+        v-for="(row, index) in conditionTable"
+        :key="`c-${index}`"
+        class="maite-tables-editor__row"
+      >
         <input
           :value="String(row.content ?? '')"
           :readonly="readonly"
           @input="updateRow('condition', index, ($event.target as HTMLInputElement).value)"
         />
       </div>
-      <button v-if="!readonly" type="button" @click="addRow('condition')">{{ t('maite.tables.addRow') }}</button>
+      <button
+        v-if="!readonly"
+        type="button"
+        @click="addRow('condition')"
+      >
+        <I18nText k="maite.tables.addRow" />
+      </button>
     </section>
 
     <section class="maite-tables-editor__section">
-      <h4>{{ t('maite.tables.step') }}</h4>
-      <div v-for="(row, index) in stepTable" :key="`s-${index}`" class="maite-tables-editor__row">
+      <h4><I18nText k="maite.tables.step" /></h4>
+      <div
+        v-for="(row, index) in stepTable"
+        :key="`s-${index}`"
+        class="maite-tables-editor__row"
+      >
         <input
           :value="String(row.content ?? '')"
           :readonly="readonly"
           @input="updateRow('step', index, ($event.target as HTMLInputElement).value)"
         />
       </div>
-      <button v-if="!readonly" type="button" @click="addRow('step')">{{ t('maite.tables.addRow') }}</button>
+      <button
+        v-if="!readonly"
+        type="button"
+        @click="addRow('step')"
+      >
+        <I18nText k="maite.tables.addRow" />
+      </button>
     </section>
 
     <section class="maite-tables-editor__section">
-      <h4>{{ t('maite.tables.model') }}</h4>
-      <div v-for="(row, index) in modelTable" :key="`m-${index}`" class="maite-tables-editor__row">
+      <h4><I18nText k="maite.tables.model" /></h4>
+      <div
+        v-for="(row, index) in modelTable"
+        :key="`m-${index}`"
+        class="maite-tables-editor__row"
+      >
         <input
           :value="String(row.content ?? '')"
           :readonly="readonly"
           @input="updateRow('model', index, ($event.target as HTMLInputElement).value)"
         />
       </div>
-      <button v-if="!readonly" type="button" @click="addRow('model')">{{ t('maite.tables.addRow') }}</button>
+      <button
+        v-if="!readonly"
+        type="button"
+        @click="addRow('model')"
+      >
+        <I18nText k="maite.tables.addRow" />
+      </button>
     </section>
   </div>
 </template>

@@ -280,15 +280,15 @@ onMounted(async () => {
         v-if="groupChannels.length > 0"
         class="sidebar-lesson-due"
       >
-        <label class="sidebar-lesson-due__label">{{ t('workshop.lessonDueFilter') }}</label>
+        <label class="sidebar-lesson-due__label"><I18nText k="workshop.lessonDueFilter" /></label>
         <select
           v-model="lessonDueFilter"
           class="sidebar-lesson-due__select"
         >
-          <option value="all">{{ t('workshop.lessonDueAll') }}</option>
-          <option value="with_deadline">{{ t('workshop.lessonDueHasDeadline') }}</option>
-          <option value="overdue">{{ t('workshop.lessonDueOverdue') }}</option>
-          <option value="due7d">{{ t('workshop.lessonDueNext7d') }}</option>
+          <option value="all"><I18nText k="workshop.lessonDueAll" /></option>
+          <option value="with_deadline"><I18nText k="workshop.lessonDueHasDeadline" /></option>
+          <option value="overdue"><I18nText k="workshop.lessonDueOverdue" /></option>
+          <option value="due7d"><I18nText k="workshop.lessonDueNext7d" /></option>
         </select>
       </div>
     </div>
@@ -305,7 +305,7 @@ onMounted(async () => {
             :size="12"
             class="section-chevron"
           />
-          <span class="section-label">{{ t('workshop.views') }}</span>
+          <span class="section-label"><I18nText k="workshop.views" /></span>
         </button>
         <ul
           v-if="!viewsSectionCollapsed"
@@ -322,7 +322,7 @@ onMounted(async () => {
                 :size="16"
                 class="view-icon"
               />
-              <span class="view-label">{{ t('workshop.inbox') }}</span>
+              <span class="view-label"><I18nText k="workshop.inbox" /></span>
             </button>
           </li>
         </ul>
@@ -340,7 +340,7 @@ onMounted(async () => {
               :size="12"
               class="section-chevron"
             />
-            <span class="section-label">{{ t('workshop.channels') }}</span>
+            <span class="section-label"><I18nText k="workshop.channels" /></span>
           </button>
           <button
             class="section-action"
@@ -480,7 +480,7 @@ onMounted(async () => {
               :size="12"
               class="browse-more-icon"
             />
-            <span class="browse-more-label">{{ t('workshop.browseChannels') }}</span>
+            <span class="browse-more-label"><I18nText k="workshop.browseChannels" /></span>
           </li>
         </ul>
       </div>
@@ -497,7 +497,7 @@ onMounted(async () => {
               :size="12"
               class="section-chevron"
             />
-            <span class="section-label">{{ t('workshop.dms') }}</span>
+            <span class="section-label"><I18nText k="workshop.dms" /></span>
           </button>
           <button
             class="section-action"
@@ -553,10 +553,10 @@ onMounted(async () => {
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item @click="markDmReadSidebar(conv.partner_id)">
-                    {{ t('workshop.markAsRead') }}
+                    <I18nText k="workshop.markAsRead" />
                   </el-dropdown-item>
                   <el-dropdown-item @click="copyDmNarrowLink(conv.partner_id)">
-                    {{ t('workshop.copyLink') }}
+                    <I18nText k="workshop.copyLink" />
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -566,7 +566,7 @@ onMounted(async () => {
             v-if="filteredDMs.length === 0"
             class="dm-empty"
           >
-            {{ t('workshop.noConversationsYet') }}
+            <I18nText k="workshop.noConversationsYet" />
           </li>
         </ul>
       </div>

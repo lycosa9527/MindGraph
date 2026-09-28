@@ -89,13 +89,29 @@ const previewInstruction = computed(() => {
 })
 
 const showHideOptions = computed(() => [
-  { label: t('canvas.worksheetText.show'), value: 'show' as const },
-  { label: t('canvas.worksheetText.hide'), value: 'hide' as const },
+  {
+    label: t('canvas.worksheetText.show'),
+    labelKey: 'canvas.worksheetText.show',
+    value: 'show' as const,
+  },
+  {
+    label: t('canvas.worksheetText.hide'),
+    labelKey: 'canvas.worksheetText.hide',
+    value: 'hide' as const,
+  },
 ])
 
 const learningSheetModeOptions = computed(() => [
-  { label: t('canvas.worksheetText.learningSheetModeOff'), value: 'off' as const },
-  { label: t('canvas.worksheetText.learningSheetModeOn'), value: 'on' as const },
+  {
+    label: t('canvas.worksheetText.learningSheetModeOff'),
+    labelKey: 'canvas.worksheetText.learningSheetModeOff',
+    value: 'off' as const,
+  },
+  {
+    label: t('canvas.worksheetText.learningSheetModeOn'),
+    labelKey: 'canvas.worksheetText.learningSheetModeOn',
+    value: 'on' as const,
+  },
 ])
 
 const learningSheetModeVisibility = computed({
@@ -106,13 +122,29 @@ const learningSheetModeVisibility = computed({
 })
 
 const colorOptions = computed(() => [
-  { label: t('canvas.exportOptions.colorWireframe'), value: 'wireframe' as const },
-  { label: t('canvas.exportOptions.colorColored'), value: 'color' as const },
+  {
+    label: t('canvas.exportOptions.colorWireframe'),
+    labelKey: 'canvas.exportOptions.colorWireframe',
+    value: 'wireframe' as const,
+  },
+  {
+    label: t('canvas.exportOptions.colorColored'),
+    labelKey: 'canvas.exportOptions.colorColored',
+    value: 'color' as const,
+  },
 ])
 
 const layoutOptions = computed(() => [
-  { label: t('canvas.exportOptions.layoutLandscape'), value: 'landscape' as const },
-  { label: t('canvas.exportOptions.layoutPortrait'), value: 'portrait' as const },
+  {
+    label: t('canvas.exportOptions.layoutLandscape'),
+    labelKey: 'canvas.exportOptions.layoutLandscape',
+    value: 'landscape' as const,
+  },
+  {
+    label: t('canvas.exportOptions.layoutPortrait'),
+    labelKey: 'canvas.exportOptions.layoutPortrait',
+    value: 'portrait' as const,
+  },
 ])
 
 type WorksheetVisibility = 'show' | 'hide'

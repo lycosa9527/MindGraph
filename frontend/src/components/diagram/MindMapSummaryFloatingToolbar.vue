@@ -155,7 +155,9 @@ function toggleColor(): void {
       @click.stop
     >
       <div class="mm-summary-toolbar__row">
-        <span class="mm-summary-toolbar__label">{{ t('canvas.floatingToolbar.summaryType') }}</span>
+        <span class="mm-summary-toolbar__label"
+          ><I18nText k="canvas.floatingToolbar.summaryType"
+        /></span>
         <ElDropdown
           v-model:visible="kindOpen"
           trigger="click"
@@ -179,7 +181,7 @@ function toggleColor(): void {
                 @click="onKindPick(option)"
               >
                 <span class="mm-summary-toolbar__glyph">{{ KIND_GLYPH[option] }}</span>
-                {{ t(kindLabel[option]) }}
+                <I18nText :k="kindLabel[option]" />
               </ElDropdownItem>
             </ElDropdownMenu>
           </template>
@@ -187,7 +189,9 @@ function toggleColor(): void {
       </div>
 
       <div class="mm-summary-toolbar__row">
-        <span class="mm-summary-toolbar__label">{{ t('canvas.floatingToolbar.summaryLine') }}</span>
+        <span class="mm-summary-toolbar__label"
+          ><I18nText k="canvas.floatingToolbar.summaryLine"
+        /></span>
         <div class="mm-summary-toolbar__pair">
           <ElDropdown
             v-model:visible="lineOpen"
@@ -242,7 +246,7 @@ function toggleColor(): void {
                       :stroke-dasharray="LINE_DASH[option]"
                     />
                   </svg>
-                  {{ t(lineLabel[option]) }}
+                  <I18nText :k="lineLabel[option]" />
                 </ElDropdownItem>
               </ElDropdownMenu>
             </template>
@@ -278,7 +282,7 @@ function toggleColor(): void {
                 class="mm-summary-toolbar__native"
                 :value="strokeColor"
                 @input="onCustomColor"
-              >
+              />
             </div>
           </div>
         </div>

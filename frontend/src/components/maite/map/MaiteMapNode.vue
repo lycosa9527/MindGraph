@@ -28,12 +28,9 @@ const statusLabel = computed(() => {
 <template>
   <div
     class="maite-map-node"
-    :class="[
-      `maite-map-node--${graphType}`,
-      status ? `maite-map-node--${status}` : '',
-    ]"
+    :class="[`maite-map-node--${graphType}`, status ? `maite-map-node--${status}` : '']"
   >
-    <span class="maite-map-node__type">{{ t(`maite.map.type.${graphType}`) }}</span>
+    <span class="maite-map-node__type"><I18nText :k="`maite.map.type.${graphType}`" /></span>
     <span class="maite-map-node__name">{{ name }}</span>
     <span class="maite-map-node__status">{{ statusLabel }}</span>
   </div>

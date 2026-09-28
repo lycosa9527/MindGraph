@@ -112,7 +112,7 @@ const marks = computed(() => visibleMarkOverlays(props.step))
       v-else-if="compact && step.vod_media_id"
       class="slide-preview__vod"
     >
-      {{ t('training.builder.vodVideo') }}
+      <I18nText k="training.builder.vodVideo" />
     </span>
     <span class="slide-preview__index">{{ index + 1 }}</span>
   </div>

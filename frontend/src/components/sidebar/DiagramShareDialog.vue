@@ -136,7 +136,7 @@ async function send(): Promise<void> {
         v-if="!loading && candidates.length === 0"
         class="text-sm text-stone-500"
       >
-        {{ t('sidebar.share.empty') }}
+        <I18nText k="sidebar.share.empty" />
       </p>
       <ul class="max-h-64 overflow-y-auto flex flex-col gap-1">
         <li
@@ -162,7 +162,7 @@ async function send(): Promise<void> {
           :disabled="sending"
           @click="send"
         >
-          {{ t('sidebar.share.send') }}
+          <I18nText k="sidebar.share.send" />
         </button>
       </div>
     </template>

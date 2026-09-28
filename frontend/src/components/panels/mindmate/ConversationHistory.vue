@@ -125,7 +125,11 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
                 class="text-sm font-medium text-gray-800 dark:text-white flex items-center gap-1.5 min-w-0"
               >
                 <span class="truncate">
-                  {{ conv.name || t('mindmate.untitled') }}
+                  <template v-if="conv.name">{{ conv.name }}</template
+                  ><I18nText
+                    v-else
+                    k="mindmate.untitled"
+                  />
                 </span>
                 <MindMateDingtalkBadge v-if="isMindbotConversation(conv)" />
               </p>

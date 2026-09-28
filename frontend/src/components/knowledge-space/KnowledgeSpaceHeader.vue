@@ -31,8 +31,10 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 
-const breadcrumb = computed(() => {
-  const segments = [{ label: t('knowledge.header.title') }]
+const breadcrumb = computed((): Array<{ label: string; labelKey?: string }> => {
+  const segments: Array<{ label: string; labelKey?: string }> = [
+    { label: t('knowledge.header.title'), labelKey: 'knowledge.header.title' },
+  ]
   if (props.packageName) {
     segments.push({ label: props.packageName })
   }
@@ -68,7 +70,11 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
             index === breadcrumb.length - 1 ? 'font-semibold text-stone-900' : 'text-stone-500'
           "
         >
-          {{ segment.label }}
+          <I18nText
+            v-if="segment.labelKey"
+            :k="segment.labelKey"
+          />
+          <template v-else>{{ segment.label }}</template>
         </span>
       </template>
       <span
@@ -87,14 +93,17 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
         @click="emit('upload')"
       >
         <ElIcon class="mr-1"><Upload /></ElIcon>
-        {{ t('knowledge.header.upload') }}
+        <I18nText k="knowledge.header.upload" />
       </ElButton>
 
       <span
         v-if="selectedCount > 0"
         class="selected-badge"
       >
-        {{ t('knowledge.header.selected', { n: selectedCount }) }}
+        <I18nText
+          k="knowledge.header.selected"
+          :params="{ n: selectedCount }"
+        />
       </span>
 
       <ElButton
@@ -104,7 +113,10 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
         @click="emit('processSelected')"
       >
         <ElIcon class="mr-1"><VideoPlay /></ElIcon>
-        {{ t('knowledge.header.processSelected', { n: selectedPendingCount }) }}
+        <I18nText
+          k="knowledge.header.processSelected"
+          :params="{ n: selectedPendingCount }"
+        />
       </ElButton>
 
       <ElButton
@@ -114,7 +126,7 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
         @click="emit('startProcessing')"
       >
         <ElIcon class="mr-1"><VideoPlay /></ElIcon>
-        {{ t('knowledge.header.processAll') }}
+        <I18nText k="knowledge.header.processAll" />
       </ElButton>
 
       <I18nTooltip k="knowledge.header.retrievalTest">

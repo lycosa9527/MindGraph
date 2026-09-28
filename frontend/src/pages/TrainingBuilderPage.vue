@@ -56,13 +56,13 @@ onMounted(() => {
         v-if="loading"
         class="training-page__hint"
       >
-        {{ t('training.catalogLoading') }}
+        <I18nText k="training.catalogLoading" />
       </p>
       <p
         v-else-if="!courses.length"
         class="training-page__hint"
       >
-        {{ t('training.builder.empty') }}
+        <I18nText k="training.builder.empty" />
       </p>
       <div class="builder-grid">
         <button
@@ -77,7 +77,7 @@ onMounted(() => {
             class="builder-card__cover"
             :src="course.cover_url"
             alt=""
-          >
+          />
           <div
             v-else
             class="builder-card__cover builder-card__cover--empty"
@@ -87,7 +87,8 @@ onMounted(() => {
             <span
               v-if="course.is_system"
               class="builder-card__badge"
-            >{{ t('training.builder.systemBadge') }}</span>
+              ><I18nText k="training.builder.systemBadge"
+            /></span>
           </h3>
           <p>{{ course.description }}</p>
         </button>

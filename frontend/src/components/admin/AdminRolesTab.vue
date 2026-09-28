@@ -5,19 +5,17 @@
 import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { Loading, UserFilled } from '@element-plus/icons-vue'
 import { ElTable } from 'element-plus'
+
+import { Loading, UserFilled } from '@element-plus/icons-vue'
 
 import AdminRoleAddMemberDialog from '@/components/admin/AdminRoleAddMemberDialog.vue'
 import { useLanguage } from '@/composables'
-import { useAdminRoleControl } from '@/composables/admin/useAdminRoleControl'
+import { ROLE_CONTROL_TABS, isRoleControlTab } from '@/composables/admin/adminRoleControlNav'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
-import {
-  isRoleControlTab,
-  ROLE_CONTROL_TABS,
-} from '@/composables/admin/adminRoleControlNav'
-import type { RoleMemberRow } from '@/composables/admin/useAdminRoleControl'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
+import { useAdminRoleControl } from '@/composables/admin/useAdminRoleControl'
+import type { RoleMemberRow } from '@/composables/admin/useAdminRoleControl'
 import { useAdminPanelStore } from '@/stores'
 
 const route = useRoute()
@@ -136,7 +134,7 @@ onUnmounted(() => {
     </el-tabs>
 
     <p class="admin-roles-tab__desc">
-      {{ t(activeTabDescKey) }}
+      <I18nText :k="activeTabDescKey" />
     </p>
 
     <div
@@ -156,12 +154,12 @@ onUnmounted(() => {
       class="admin-roles-tab__empty"
     >
       <el-icon :size="32"><UserFilled /></el-icon>
-      <p class="admin-roles-tab__empty-title">{{ t('admin.noRoleMembersFound') }}</p>
+      <p class="admin-roles-tab__empty-title"><I18nText k="admin.noRoleMembersFound" /></p>
       <p
         v-if="canEdit"
         class="admin-roles-tab__empty-hint"
       >
-        {{ t('admin.noRoleMembersEmptyHint') }}
+        <I18nText k="admin.noRoleMembersEmptyHint" />
       </p>
     </div>
 
@@ -174,14 +172,19 @@ onUnmounted(() => {
     >
       <el-table-column
         prop="phone"
-        :label="t('admin.phone')"
-        width="140"
-      />
-      <el-table-column
-        prop="name"
-        :label="t('admin.name')"
         width="140"
       >
+        <template #header>
+          <I18nText k="admin.phone" />
+        </template>
+      </el-table-column>
+      <el-table-column
+        prop="name"
+        width="140"
+      >
+        <template #header>
+          <I18nText k="admin.name" />
+        </template>
         <template #default="{ row }">
           {{ row.name || row.phone || '—' }}
         </template>
@@ -189,27 +192,33 @@ onUnmounted(() => {
       <el-table-column
         v-if="showSchoolColumn"
         prop="organization_name"
-        :label="t('admin.schoolName')"
         min-width="160"
       >
+        <template #header>
+          <I18nText k="admin.schoolName" />
+        </template>
         <template #default="{ row }">
           {{ row.organization_name || row.organization_code || '—' }}
         </template>
       </el-table-column>
       <el-table-column
         v-if="showSuperadminColumns"
-        :label="t('admin.schoolUserColumnRole')"
         width="120"
       >
+        <template #header>
+          <I18nText k="admin.schoolUserColumnRole" />
+        </template>
         <template #default="{ row }">
           {{ 'role' in row ? roleLabel(row.role) : '—' }}
         </template>
       </el-table-column>
       <el-table-column
         prop="created_at"
-        :label="t('admin.registrationTime')"
         width="200"
       >
+        <template #header>
+          <I18nText k="admin.registrationTime" />
+        </template>
         <template #default="{ row }">
           {{ isEnvRow(row as RoleMemberRow) ? '—' : row.created_at || '—' }}
         </template>
@@ -217,17 +226,25 @@ onUnmounted(() => {
       <el-table-column
         v-if="showSuperadminColumns"
         prop="source"
-        :label="t('admin.source')"
         width="120"
       >
+        <template #header>
+          <I18nText k="admin.source" />
+        </template>
         <template #default="{ row }">
-          {{ isEnvRow(row as RoleMemberRow) ? t('admin.sourceEnv') : t('admin.sourceDatabase') }}
+          <I18nText
+            v-if="isEnvRow(row as RoleMemberRow)"
+            k="admin.sourceEnv"
+          /><I18nText
+            v-else
+            k="admin.sourceDatabase"
+          />
         </template>
       </el-table-column>
-      <el-table-column
-        :label="t('admin.actions')"
-        width="140"
-      >
+      <el-table-column width="140">
+        <template #header>
+          <I18nText k="admin.actions" />
+        </template>
         <template #default="{ row }">
           <el-button
             v-if="canEdit && !isEnvRow(row as RoleMemberRow)"
@@ -237,13 +254,13 @@ onUnmounted(() => {
             :loading="revokingId === row.id"
             @click="revokeMember(row as RoleMemberRow)"
           >
-            {{ t('admin.revokeRole') }}
+            <I18nText k="admin.revokeRole" />
           </el-button>
           <span
             v-else-if="isEnvRow(row as RoleMemberRow)"
             class="admin-roles-tab__env-note"
           >
-            {{ t('admin.envAdminsNote') }}
+            <I18nText k="admin.envAdminsNote" />
           </span>
           <span
             v-else

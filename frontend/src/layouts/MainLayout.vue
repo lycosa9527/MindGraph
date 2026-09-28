@@ -111,7 +111,7 @@ const overlayIcpOnLanding = computed(() => route.path.startsWith('/mindgraph'))
             <Lock class="w-5 h-5 text-stone-400" />
           </div>
           <p class="text-sm text-stone-500 dark:text-stone-400">
-            {{ t('app.guestMainLoginPrompt') }}
+            <I18nText k="app.guestMainLoginPrompt" />
           </p>
         </div>
       </div>

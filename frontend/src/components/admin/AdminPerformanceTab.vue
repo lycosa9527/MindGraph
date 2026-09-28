@@ -283,10 +283,10 @@ const progressColors = [
   >
     <div>
       <h2 class="text-lg font-semibold text-[var(--swiss-text)]">
-        {{ t('admin.performance.title') }}
+        <I18nText k="admin.performance.title" />
       </h2>
       <p class="text-sm text-[var(--swiss-muted)] mt-1">
-        {{ t('admin.performance.subtitle') }}
+        <I18nText k="admin.performance.subtitle" />
       </p>
     </div>
 
@@ -294,7 +294,10 @@ const progressColors = [
       v-if="clusterMeta"
       class="text-sm text-[var(--swiss-muted)] font-mono"
     >
-      {{ t('admin.performance.workersReportingCluster', { n: String(clusterMeta.n) }) }}
+      <I18nText
+        k="admin.performance.workersReportingCluster"
+        :params="{ n: String(clusterMeta.n) }"
+      />
     </p>
 
     <p
@@ -308,9 +311,15 @@ const progressColors = [
       v-if="appMeta"
       class="text-xs text-[var(--swiss-muted)] font-mono"
     >
-      {{ t('admin.performance.version', { version: appMeta.version }) }}
+      <I18nText
+        k="admin.performance.version"
+        :params="{ version: appMeta.version }"
+      />
       ·
-      {{ t('admin.performance.uptimeSec', { sec: appMeta.uptime }) }}
+      <I18nText
+        k="admin.performance.uptimeSec"
+        :params="{ sec: appMeta.uptime }"
+      />
     </p>
 
     <section
@@ -321,7 +330,7 @@ const progressColors = [
         id="perf-group-compute"
         class="swiss-stat-card-group__title"
       >
-        {{ t('admin.performance.groupCompute') }}
+        <I18nText k="admin.performance.groupCompute" />
       </h3>
       <div class="swiss-stat-card-grid swiss-stat-card-grid--wide">
         <AdminSwissPerfCard
@@ -346,13 +355,19 @@ const progressColors = [
             v-if="appRamCard.workerCount > 1"
             #hint
           >
-            {{ t('admin.performance.workersRssHint', { n: String(appRamCard.workerCount) }) }}
+            <I18nText
+              k="admin.performance.workersRssHint"
+              :params="{ n: String(appRamCard.workerCount) }"
+            />
           </template>
           <template
             v-else-if="appRamCard.pid != null"
             #hint
           >
-            {{ t('admin.performance.pidLabel', { pid: String(appRamCard.pid) }) }}
+            <I18nText
+              k="admin.performance.pidLabel"
+              :params="{ pid: String(appRamCard.pid) }"
+            />
           </template>
         </AdminSwissPerfCard>
 
@@ -381,11 +396,13 @@ const progressColors = [
           v-bind="pctLimitFlags(processCpuCard.ringPct)"
         >
           <template #hint>
-            {{
-              processCpuCard.workerCount > 1
-                ? processCpuCard.clusterHint
-                : t('admin.performance.hintProcessCpuSingle')
-            }}
+            <template v-if="processCpuCard.workerCount > 1">{{
+              processCpuCard.clusterHint
+            }}</template
+            ><I18nText
+              v-else
+              k="admin.performance.hintProcessCpuSingle"
+            />
           </template>
         </AdminSwissPerfCard>
       </div>
@@ -399,7 +416,7 @@ const progressColors = [
         id="perf-group-storage"
         class="swiss-stat-card-group__title"
       >
-        {{ t('admin.performance.groupStorageNet') }}
+        <I18nText k="admin.performance.groupStorageNet" />
       </h3>
       <div class="swiss-stat-card-grid swiss-stat-card-grid--wide">
         <AdminSwissPerfCard
@@ -426,16 +443,20 @@ const progressColors = [
         >
           <div class="swiss-stat-card__stat-grid">
             <div class="swiss-stat-card__stat-pill">
-              <span class="swiss-stat-card__stat-pill-k">{{ t('admin.performance.netUp') }}</span>
+              <span class="swiss-stat-card__stat-pill-k"
+                ><I18nText k="admin.performance.netUp"
+              /></span>
               <span class="swiss-stat-card__stat-pill-v">{{ netCards.up }}</span>
             </div>
             <div class="swiss-stat-card__stat-pill">
-              <span class="swiss-stat-card__stat-pill-k">{{ t('admin.performance.netDown') }}</span>
+              <span class="swiss-stat-card__stat-pill-k"
+                ><I18nText k="admin.performance.netDown"
+              /></span>
               <span class="swiss-stat-card__stat-pill-v">{{ netCards.down }}</span>
             </div>
           </div>
           <template #hint>
-            {{ t('admin.performance.hintNetwork') }}
+            <I18nText k="admin.performance.hintNetwork" />
           </template>
         </AdminSwissPerfCard>
       </div>
@@ -444,7 +465,9 @@ const progressColors = [
         v-if="diskExtraVolumes.length"
         class="mt-4"
       >
-        <div class="swiss-stat-card-group__title">{{ t('admin.performance.sectionOtherVolumes') }}</div>
+        <div class="swiss-stat-card-group__title">
+          <I18nText k="admin.performance.sectionOtherVolumes" />
+        </div>
         <el-table
           :data="diskExtraVolumes"
           size="small"
@@ -453,13 +476,16 @@ const progressColors = [
         >
           <el-table-column
             prop="mount"
-            :label="t('admin.performance.colVolumeMount')"
             min-width="120"
-          />
-          <el-table-column
-            :label="t('admin.performance.colVolumePct')"
-            width="100"
           >
+            <template #header>
+              <I18nText k="admin.performance.colVolumeMount" />
+            </template>
+          </el-table-column>
+          <el-table-column width="100">
+            <template #header>
+              <I18nText k="admin.performance.colVolumePct" />
+            </template>
             <template #default="{ row }">
               <el-progress
                 v-if="row.percent_used != null"
@@ -482,7 +508,7 @@ const progressColors = [
         id="perf-group-platform"
         class="swiss-stat-card-group__title"
       >
-        {{ t('admin.performance.groupPlatform') }}
+        <I18nText k="admin.performance.groupPlatform" />
       </h3>
       <div class="space-y-4">
         <div
@@ -499,8 +525,8 @@ const progressColors = [
           >
             <template #kpi>
               {{ redisCard.human }}
-              · {{ t('admin.performance.peakLabel') }} {{ redisCard.peak }}
-              · {{ t('admin.performance.fragLabel') }} {{ redisCard.fragText }}
+              · <I18nText k="admin.performance.peakLabel" /> {{ redisCard.peak }} ·
+              <I18nText k="admin.performance.fragLabel" /> {{ redisCard.fragText }}
             </template>
             <template
               v-if="redisDetailLine"
@@ -521,39 +547,45 @@ const progressColors = [
                 v-if="connTiles.chat != null"
                 class="swiss-stat-card__stat-pill"
               >
-                <span class="swiss-stat-card__stat-pill-k">{{ t('admin.performance.tileWsChat') }}</span>
+                <span class="swiss-stat-card__stat-pill-k"
+                  ><I18nText k="admin.performance.tileWsChat"
+                /></span>
                 <span class="swiss-stat-card__stat-pill-v">{{ connTiles.chat }}</span>
               </div>
               <div
                 v-if="connTiles.workshop != null"
                 class="swiss-stat-card__stat-pill"
               >
-                <span class="swiss-stat-card__stat-pill-k">{{
-                  t('admin.performance.tileWsWorkshop')
-                }}</span>
+                <span class="swiss-stat-card__stat-pill-k"
+                  ><I18nText k="admin.performance.tileWsWorkshop"
+                /></span>
                 <span class="swiss-stat-card__stat-pill-v">{{ connTiles.workshop }}</span>
               </div>
               <div
                 v-if="connTiles.wsRedis != null"
                 class="swiss-stat-card__stat-pill"
               >
-                <span class="swiss-stat-card__stat-pill-k">{{ t('admin.performance.tileWsRedis') }}</span>
+                <span class="swiss-stat-card__stat-pill-k"
+                  ><I18nText k="admin.performance.tileWsRedis"
+                /></span>
                 <span class="swiss-stat-card__stat-pill-v">{{ connTiles.wsRedis }}</span>
               </div>
               <div
                 v-if="connTiles.sessions != null"
                 class="swiss-stat-card__stat-pill"
               >
-                <span class="swiss-stat-card__stat-pill-k">{{ t('admin.performance.tileSessions') }}</span>
+                <span class="swiss-stat-card__stat-pill-k"
+                  ><I18nText k="admin.performance.tileSessions"
+                /></span>
                 <span class="swiss-stat-card__stat-pill-v">{{ connTiles.sessions }}</span>
               </div>
               <div
                 v-if="connTiles.unique != null"
                 class="swiss-stat-card__stat-pill"
               >
-                <span class="swiss-stat-card__stat-pill-k">{{
-                  t('admin.performance.tileUniqueUsers')
-                }}</span>
+                <span class="swiss-stat-card__stat-pill-k"
+                  ><I18nText k="admin.performance.tileUniqueUsers"
+                /></span>
                 <span class="swiss-stat-card__stat-pill-v">{{ connTiles.unique }}</span>
               </div>
             </div>
@@ -562,8 +594,9 @@ const progressColors = [
                 v-for="(line, idx) in wsExtraLines"
                 :key="idx"
                 class="block"
-              >{{ line }}</span>
-              {{ t('admin.performance.hintConnections') }}
+                >{{ line }}</span
+              >
+              <I18nText k="admin.performance.hintConnections" />
             </template>
           </AdminSwissPerfCard>
         </div>
@@ -583,14 +616,15 @@ const progressColors = [
               v-if="aiCardStreaming.concurrencyError"
               class="swiss-stat-card__sub text-[var(--swiss-stat-danger-accent,#e30613)]"
             >
-              {{
-                t('admin.performance.mindbotStreamingNowError', {
+              <I18nText
+                k="admin.performance.mindbotStreamingNowError"
+                :params="{
                   reason: aiCardStreaming.concurrencyError,
-                })
-              }}
+                }"
+              />
             </p>
             <p class="swiss-stat-card__sub">
-              {{ t('admin.performance.streamingMax24hLabel') }}
+              <I18nText k="admin.performance.streamingMax24hLabel" />
               {{ aiCardStreaming.activeMax24h != null ? aiCardStreaming.activeMax24h : '—' }}
             </p>
             <template #hint>
@@ -598,13 +632,14 @@ const progressColors = [
                 v-if="aiCardStreaming.peak24hError"
                 class="text-[var(--swiss-stat-danger-accent,#e30613)]"
               >
-                {{
-                  t('admin.performance.streamingMax24hError', {
+                <I18nText
+                  k="admin.performance.streamingMax24hError"
+                  :params="{
                     reason: aiCardStreaming.peak24hError,
-                  })
-                }}
+                  }"
+                />
               </span>
-              <span v-else>{{ t('admin.performance.hintAiCardStreaming') }}</span>
+              <span v-else><I18nText k="admin.performance.hintAiCardStreaming" /></span>
             </template>
           </AdminSwissPerfCard>
 
@@ -619,14 +654,15 @@ const progressColors = [
               v-if="mindmateStreaming.concurrencyError"
               class="swiss-stat-card__sub text-[var(--swiss-stat-danger-accent,#e30613)]"
             >
-              {{
-                t('admin.performance.mindmateStreamingNowError', {
+              <I18nText
+                k="admin.performance.mindmateStreamingNowError"
+                :params="{
                   reason: mindmateStreaming.concurrencyError,
-                })
-              }}
+                }"
+              />
             </p>
             <p class="swiss-stat-card__sub">
-              {{ t('admin.performance.streamingMax24hLabel') }}
+              <I18nText k="admin.performance.streamingMax24hLabel" />
               {{ mindmateStreaming.activeMax24h != null ? mindmateStreaming.activeMax24h : '—' }}
             </p>
             <template #hint>
@@ -634,13 +670,14 @@ const progressColors = [
                 v-if="mindmateStreaming.peak24hError"
                 class="text-[var(--swiss-stat-danger-accent,#e30613)]"
               >
-                {{
-                  t('admin.performance.streamingMax24hError', {
+                <I18nText
+                  k="admin.performance.streamingMax24hError"
+                  :params="{
                     reason: mindmateStreaming.peak24hError,
-                  })
-                }}
+                  }"
+                />
               </span>
-              <span v-else>{{ t('admin.performance.hintMindmateStreaming') }}</span>
+              <span v-else><I18nText k="admin.performance.hintMindmateStreaming" /></span>
             </template>
           </AdminSwissPerfCard>
         </div>

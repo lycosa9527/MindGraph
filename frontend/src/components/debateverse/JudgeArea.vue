@@ -73,7 +73,7 @@ function handleAdvanceStage() {
         size="small"
         @click="store.coinToss()"
       >
-        {{ t('debateverse.executeCoinToss') }}
+        <I18nText k="debateverse.executeCoinToss" />
       </ElButton>
       <ElButton
         v-else-if="store.currentStage !== 'completed'"
@@ -81,7 +81,7 @@ function handleAdvanceStage() {
         size="small"
         @click="handleAdvanceStage"
       >
-        {{ t('debateverse.advanceStage') }}
+        <I18nText k="debateverse.advanceStage" />
       </ElButton>
     </div>
   </div>

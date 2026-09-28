@@ -6,8 +6,8 @@ import { ref } from 'vue'
 
 import { ImagePlus } from '@lucide/vue'
 
-import { useLanguage } from '@/composables/core/useLanguage'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useLanguage } from '@/composables/core/useLanguage'
 
 const props = defineProps<{
   modelValue: string
@@ -69,7 +69,7 @@ function onFileSelected(event: Event): void {
           :stroke-width="1.75"
           aria-hidden="true"
         />
-        {{ t('maite.problem.ocr') }}
+        <I18nText k="maite.problem.ocr" />
       </button>
       <input
         ref="fileInput"

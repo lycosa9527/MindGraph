@@ -2,11 +2,11 @@
 import { computed } from 'vue'
 
 import AdminSwissModuleStatCard from '@/components/admin/swiss/AdminSwissModuleStatCard.vue'
+import { useLanguage } from '@/composables'
 import type {
   SchoolFeatureUsageBottleneckSlots,
   SchoolFeatureUsageModule,
 } from '@/composables/queries/adminSchoolFeatureUsageApi'
-import { useLanguage } from '@/composables'
 import { moduleUsageTheme } from '@/utils/schoolFeatureUsageTheme'
 
 const props = defineProps<{
@@ -51,21 +51,28 @@ function durationLabel(seconds: number | null): string {
 
 function processChips(row: SchoolFeatureUsageModule) {
   const chips = [
-    { label: t('admin.schoolFeatureUsage.passRate'), value: passLabel(row.pass_rate) },
+    {
+      label: t('admin.schoolFeatureUsage.passRate'),
+      labelKey: 'admin.schoolFeatureUsage.passRate',
+      value: passLabel(row.pass_rate),
+    },
   ]
   if (row.fail_rate != null) {
     chips.push({
       label: t('admin.schoolFeatureUsage.llmFailRate'),
+      labelKey: 'admin.schoolFeatureUsage.llmFailRate',
       value: failLabel(row.fail_rate),
     })
   }
   chips.push(
     {
       label: t('admin.schoolFeatureUsage.llmDuration'),
+      labelKey: 'admin.schoolFeatureUsage.llmDuration',
       value: durationLabel(row.avg_duration_seconds),
     },
     {
       label: t('admin.schoolFeatureUsage.capacity'),
+      labelKey: 'admin.schoolFeatureUsage.capacity',
       value: t(`admin.schoolFeatureUsage.capacity.${row.capacity}`),
     }
   )
@@ -104,7 +111,7 @@ const bottleneckText = computed(() => {
 <template>
   <section class="school-activity-section">
     <h2 class="school-activity-section__title">
-      {{ t('admin.schoolFeatureUsage.sectionProcess') }}
+      <I18nText k="admin.schoolFeatureUsage.sectionProcess" />
     </h2>
     <div class="school-activity-section__grid">
       <AdminSwissModuleStatCard

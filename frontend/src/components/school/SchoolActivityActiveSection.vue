@@ -2,8 +2,8 @@
 import { Calendar, DataLine } from '@element-plus/icons-vue'
 
 import AdminSwissChartCard from '@/components/admin/swiss/AdminSwissChartCard.vue'
-import type { SchoolUserActivityActive } from '@/composables/queries/adminSchoolUserActivityApi'
 import { useLanguage } from '@/composables'
+import type { SchoolUserActivityActive } from '@/composables/queries/adminSchoolUserActivityApi'
 import { beijingCalendarParts } from '@/utils/schoolActivityAsOf'
 
 const props = defineProps<{
@@ -41,7 +41,7 @@ function latestElapsedValue(points: { date: string; value: number }[]): number {
 <template>
   <section class="school-activity-section">
     <h2 class="school-activity-section__title">
-      {{ t('admin.schoolActivity.sectionActive') }}
+      <I18nText k="admin.schoolActivity.sectionActive" />
     </h2>
     <div class="school-activity-section__grid">
       <AdminSwissChartCard

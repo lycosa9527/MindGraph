@@ -109,7 +109,7 @@ function handleClose(): void {
     <template #header>
       <div class="vn-history-head">
         <h2 class="vn-history-head__title">
-          {{ t('auth.voiceNotes.historyTitle') }}
+          <I18nText k="auth.voiceNotes.historyTitle" />
         </h2>
         <button
           type="button"
@@ -128,14 +128,14 @@ function handleClose(): void {
         class="vn-history-state"
       >
         <div class="vn-history-spinner" />
-        <span>{{ t('common.loading') }}</span>
+        <span><I18nText k="common.loading" /></span>
       </div>
 
       <div
         v-else-if="voiceNoteDiagrams.length === 0"
         class="vn-history-state"
       >
-        <p>{{ t('auth.voiceNotes.historyEmpty') }}</p>
+        <p><I18nText k="auth.voiceNotes.historyEmpty" /></p>
       </div>
 
       <div
@@ -163,7 +163,7 @@ function handleClose(): void {
             :aria-label="t('common.delete')"
             @click="handleDelete(diagram.id, $event)"
           >
-            {{ t('common.delete') }}
+            <I18nText k="common.delete" />
           </button>
         </div>
       </div>

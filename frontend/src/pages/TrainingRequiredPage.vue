@@ -89,8 +89,19 @@ onMounted(async () => {
     class="required-course"
   >
     <header class="required-course__bar">
-      <h1>{{ course.title || t('training.required.title') }}</h1>
-      <p>{{ t('training.required.progress', { n: index + 1, total: steps.length }) }}</p>
+      <h1>
+        <template v-if="course.title">{{ course.title }}</template
+        ><I18nText
+          v-else
+          k="training.required.title"
+        />
+      </h1>
+      <p>
+        <I18nText
+          k="training.required.progress"
+          :params="{ n: index + 1, total: steps.length }"
+        />
+      </p>
     </header>
     <div class="required-course__stage">
       <TrainingSlidePreview
@@ -112,14 +123,14 @@ onMounted(async () => {
         :disabled="index === 0"
         @click="index -= 1"
       >
-        {{ t('training.required.prev') }}
+        <I18nText k="training.required.prev" />
       </button>
       <button
         v-if="!last"
         type="button"
         @click="index += 1"
       >
-        {{ t('training.required.next') }}
+        <I18nText k="training.required.next" />
       </button>
       <button
         v-else
@@ -127,7 +138,7 @@ onMounted(async () => {
         :disabled="finishing"
         @click="finish"
       >
-        {{ t('training.required.finish') }}
+        <I18nText k="training.required.finish" />
       </button>
     </footer>
   </section>

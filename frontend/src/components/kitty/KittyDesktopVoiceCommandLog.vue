@@ -41,7 +41,7 @@ function formatTime(at: number): string {
         <div
           class="border-b border-violet-100 px-3 py-2 text-xs font-semibold text-violet-700 dark:border-violet-500/30 dark:text-violet-300"
         >
-          {{ t('canvas.kittyVoiceCommandLogTitle') }}
+          <I18nText k="canvas.kittyVoiceCommandLogTitle" />
         </div>
         <ul class="max-h-40 overflow-hidden px-2 py-1.5">
           <li

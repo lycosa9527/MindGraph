@@ -2,8 +2,9 @@
 /**
  * Shared user-management table (global admin + school-scoped list).
  */
-import { Edit, Loading } from '@element-plus/icons-vue'
 import { computed } from 'vue'
+
+import { Edit, Loading } from '@element-plus/icons-vue'
 
 import { useLanguage } from '@/composables'
 import { formatBeijingDateTime } from '@/utils/formatBeijingDateTime'
@@ -127,22 +128,23 @@ function registrationTimeLabel(row: Record<string, unknown>): string {
   >
     <el-table-column
       prop="phone"
-      :label="t('admin.phone')"
       min-width="104"
       show-overflow-tooltip
-    />
+    >
+      <template #header>
+        <I18nText k="admin.phone" />
+      </template>
+    </el-table-column>
     <el-table-column
-      :label="t('admin.name')"
       min-width="88"
       show-overflow-tooltip
     >
+      <template #header>
+        <I18nText k="admin.name" />
+      </template>
       <template #default="{ row }">
         <span
-          :class="
-            linkNameAndTokens
-              ? 'cursor-pointer hover:text-primary-500 hover:underline'
-              : ''
-          "
+          :class="linkNameAndTokens ? 'cursor-pointer hover:text-primary-500 hover:underline' : ''"
           @click="onNameClick(row)"
         >
           {{ displayName(row) }}
@@ -152,14 +154,17 @@ function registrationTimeLabel(row: Record<string, unknown>): string {
     <el-table-column
       v-if="showSchoolColumn"
       prop="organization_name"
-      :label="t('admin.organization')"
       min-width="104"
       show-overflow-tooltip
-    />
-    <el-table-column
-      :label="t('admin.userType')"
-      min-width="96"
     >
+      <template #header>
+        <I18nText k="admin.organization" />
+      </template>
+    </el-table-column>
+    <el-table-column min-width="96">
+      <template #header>
+        <I18nText k="admin.userType" />
+      </template>
       <template #default="{ row }">
         <span
           v-if="rolePillForRow(row)"
@@ -170,16 +175,22 @@ function registrationTimeLabel(row: Record<string, unknown>): string {
             rolePillForRow(row)?.borderClass,
           ]"
         >
-          {{ rolePillForRow(row)?.label }}
+          <I18nText
+            v-if="rolePillForRow(row)?.labelKey"
+            :k="rolePillForRow(row)?.labelKey ?? ''"
+            dense
+          />
         </span>
         <span v-else>—</span>
       </template>
     </el-table-column>
     <el-table-column
-      :label="t('admin.tokensUsed')"
       min-width="80"
       align="right"
     >
+      <template #header>
+        <I18nText k="admin.tokensUsed" />
+      </template>
       <template #default="{ row }">
         <span
           :class="
@@ -194,38 +205,46 @@ function registrationTimeLabel(row: Record<string, unknown>): string {
       </template>
     </el-table-column>
     <el-table-column
-      :label="t('admin.remainingResourcePoints')"
       min-width="80"
       align="right"
     >
+      <template #header>
+        <I18nText k="admin.remainingResourcePoints" />
+      </template>
       <template #default="{ row }">
         <span class="tabular-nums">{{ diagramRemaining(row) }}</span>
       </template>
     </el-table-column>
     <el-table-column
-      :label="t('admin.paidBenefitRemaining')"
       min-width="112"
       show-overflow-tooltip
     >
+      <template #header>
+        <I18nText k="admin.paidBenefitRemaining" />
+      </template>
       <template #default="{ row }">
         {{ paidBenefitLabel(row) }}
       </template>
     </el-table-column>
     <el-table-column
-      :label="t('admin.registrationTime')"
       min-width="132"
       show-overflow-tooltip
     >
+      <template #header>
+        <I18nText k="admin.registrationTime" />
+      </template>
       <template #default="{ row }">
         <span class="tabular-nums">{{ registrationTimeLabel(row) }}</span>
       </template>
     </el-table-column>
     <el-table-column
-      :label="t('admin.actions')"
       min-width="72"
       fixed="right"
       align="center"
     >
+      <template #header>
+        <I18nText k="admin.actions" />
+      </template>
       <template #default="{ row }">
         <slot
           name="actions"
@@ -240,7 +259,7 @@ function registrationTimeLabel(row: Record<string, unknown>): string {
             @click="emit('edit', row)"
           >
             <el-icon class="mr-0.5"><Edit /></el-icon>
-            {{ t('common.edit') }}
+            <I18nText k="common.edit" />
           </el-button>
         </slot>
       </template>

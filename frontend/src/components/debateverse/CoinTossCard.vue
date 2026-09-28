@@ -226,13 +226,13 @@ onUnmounted(() => {
       <div class="flex-1">
         <!-- Stage Title -->
         <h3 class="text-sm font-semibold text-blue-900 mb-2">
-          {{ t('debateverse.coinTossStageTitle') }}
+          <I18nText k="debateverse.coinTossStageTitle" />
         </h3>
 
         <!-- Stage Rules/Description -->
         <div class="space-y-1.5 text-sm text-blue-700">
           <p>
-            {{ t('debateverse.coinTossRules') }}
+            <I18nText k="debateverse.coinTossRules" />
           </p>
 
           <!-- Current Topic -->
@@ -241,7 +241,7 @@ onUnmounted(() => {
             class="mt-2 pt-2 border-t border-blue-200"
           >
             <p class="text-blue-800 font-medium">
-              <span class="font-semibold">{{ t('debateverse.debateTopicLabel') }}</span>
+              <span class="font-semibold"><I18nText k="debateverse.debateTopicLabel" /></span>
               <span>{{ store.currentSession.session.topic }}</span>
             </p>
           </div>
@@ -255,7 +255,7 @@ onUnmounted(() => {
               v-if="isGenerating"
               class="text-blue-600 italic"
             >
-              {{ t('debateverse.generatingPositions') }}
+              <I18nText k="debateverse.generatingPositions" />
             </div>
             <div
               v-else-if="affirmativePosition || negativePosition"
@@ -265,18 +265,22 @@ onUnmounted(() => {
                 v-if="affirmativePosition"
                 class="text-blue-800"
               >
-                <span class="font-semibold">{{ t('debateverse.affirmativePositionLabel') }}</span>
+                <span class="font-semibold"
+                  ><I18nText k="debateverse.affirmativePositionLabel"
+                /></span>
                 <span class="whitespace-pre-wrap">{{ affirmativePosition }}</span>
               </div>
               <div
                 v-if="negativePosition"
                 class="text-blue-800"
               >
-                <span class="font-semibold">{{ t('debateverse.negativePositionLabel') }}</span>
+                <span class="font-semibold"
+                  ><I18nText k="debateverse.negativePositionLabel"
+                /></span>
                 <span class="whitespace-pre-wrap">{{ negativePosition }}</span>
               </div>
               <div class="text-blue-600 text-xs italic mt-2">
-                {{ t('debateverse.clickNextHint') }}
+                <I18nText k="debateverse.clickNextHint" />
               </div>
             </div>
             <div

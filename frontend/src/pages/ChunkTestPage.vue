@@ -214,7 +214,7 @@ const handleUpdateDatasets = async () => {
       <div class="mb-8">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-stone-900">
-            {{ t('chunkTest.page.benchmarkDatasets') }}
+            <I18nText k="chunkTest.page.benchmarkDatasets" />
           </h2>
           <ElButton
             size="small"
@@ -223,7 +223,7 @@ const handleUpdateDatasets = async () => {
             @click="handleUpdateDatasets"
           >
             <ElIcon class="mr-1"><RefreshRight /></ElIcon>
-            {{ t('chunkTest.page.updateDatasets') }}
+            <I18nText k="chunkTest.page.updateDatasets" />
           </ElButton>
         </div>
         <DatasetTable
@@ -235,7 +235,7 @@ const handleUpdateDatasets = async () => {
       <!-- User Documents Section -->
       <div>
         <h2 class="text-lg font-semibold text-stone-900 mb-4">
-          {{ t('chunkTest.page.myDocuments') }}
+          <I18nText k="chunkTest.page.myDocuments" />
         </h2>
         <DocumentTable
           :documents="documents"

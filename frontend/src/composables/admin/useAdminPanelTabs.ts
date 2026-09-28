@@ -7,10 +7,8 @@ import { hasVisibleFeatureDevNav } from '@/composables/admin/adminFeatureDevNav'
 import { ADMIN_PANEL_TAB_CONFIG } from '@/composables/admin/adminPanelTabs'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
-import { useLanguage } from '@/composables/core/useLanguage'
 
 export function useAdminPanelTabs(options?: { loadOnMount?: boolean }) {
-  const { t } = useLanguage()
   const {
     featureMarkets,
     featureSmartResponse,
@@ -47,7 +45,7 @@ export function useAdminPanelTabs(options?: { loadOnMount?: boolean }) {
     if (!featureDevVisible) {
       visible = visible.filter((tab) => tab.name !== 'feature_dev')
     }
-    return visible.map((tab) => ({ ...tab, label: t(tab.labelKey) }))
+    return visible
   })
 
   if (options?.loadOnMount !== false) {

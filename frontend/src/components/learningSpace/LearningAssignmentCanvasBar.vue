@@ -11,8 +11,8 @@ import LearningSpaceRequirementsModal from '@/components/learningSpace/LearningS
 import { swissGlassConfirm, useLanguage, useNotifications } from '@/composables'
 import { studentCanSubmitAssignment } from '@/composables/learningSpace/lsHelpers'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
-import { submitStudentAssignment } from '@/utils/learningSpaceApi'
 import '@/styles/learning-space.css'
+import { submitStudentAssignment } from '@/utils/learningSpaceApi'
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -30,15 +30,11 @@ async function onSubmit(): Promise<void> {
   const id = lsCanvas.assignmentId
   if (id == null || submitting.value || submitted.value || !canSubmit.value) return
   try {
-    await swissGlassConfirm(
-      t('learningSpace.submitConfirm'),
-      t('learningSpace.submit'),
-      {
-        confirmButtonText: t('learningSpace.submit'),
-        cancelButtonText: t('common.cancel'),
-        type: 'warning',
-      }
-    )
+    await swissGlassConfirm(t('learningSpace.submitConfirm'), t('learningSpace.submit'), {
+      confirmButtonText: t('learningSpace.submit'),
+      cancelButtonText: t('common.cancel'),
+      type: 'warning',
+    })
   } catch {
     return
   }
@@ -76,7 +72,7 @@ function onBack(): void {
       @click="onBack"
     >
       <ArrowLeft :size="14" />
-      {{ t('learningSpace.backToLearningSpace') }}
+      <I18nText k="learningSpace.backToLearningSpace" />
     </button>
     <div class="ls-canvas-strip__title">{{ title }}</div>
     <div class="ls-canvas-strip__actions">
@@ -86,7 +82,7 @@ function onBack(): void {
         @click="showRequirements = true"
       >
         <FileText :size="14" />
-        {{ t('learningSpace.viewRequirements') }}
+        <I18nText k="learningSpace.viewRequirements" />
       </button>
       <button
         type="button"
@@ -95,13 +91,16 @@ function onBack(): void {
         @click="onSubmit"
       >
         <Send :size="14" />
-        {{
-          submitted
-            ? t('learningSpace.statusSubmitted')
-            : canSubmit
-              ? t('learningSpace.submit')
-              : t('learningSpace.homeworkClosed')
-        }}
+        <I18nText
+          v-if="submitted"
+          k="learningSpace.statusSubmitted"
+        /><template v-else
+          ><I18nText
+            v-if="canSubmit"
+            k="learningSpace.submit" /><I18nText
+            v-else
+            k="learningSpace.homeworkClosed"
+        /></template>
       </button>
     </div>
     <LearningSpaceRequirementsModal

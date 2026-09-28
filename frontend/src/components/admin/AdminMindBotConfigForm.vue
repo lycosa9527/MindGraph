@@ -7,12 +7,12 @@ import { computed, ref, watch } from 'vue'
 import { DocumentCopy, MagicStick, Refresh } from '@element-plus/icons-vue'
 
 import AdminMindBotUsagePanel from '@/components/admin/AdminMindBotUsagePanel.vue'
-import AdminMindbotSwissSegmented from '@/components/admin/swiss/AdminMindbotSwissSegmented.vue'
 import type {
   MindbotConfigFormState,
   MindbotConfigRow,
   OrgOption,
 } from '@/components/admin/mindbotConfigTypes'
+import AdminMindbotSwissSegmented from '@/components/admin/swiss/AdminMindbotSwissSegmented.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminMindbotStreamingStatus } from '@/composables/queries'
 
@@ -93,8 +93,16 @@ const difySourceChoice = computed<DifySourceChoice>({
 })
 
 const difySourceOptions = computed(() => [
-  { label: t('admin.mindbot.difySourceSchoolDefault'), value: 'org' as const },
-  { label: t('admin.mindbot.difySourceCustom'), value: 'custom' as const },
+  {
+    label: t('admin.mindbot.difySourceSchoolDefault'),
+    labelKey: 'admin.mindbot.difySourceSchoolDefault',
+    value: 'org' as const,
+  },
+  {
+    label: t('admin.mindbot.difySourceCustom'),
+    labelKey: 'admin.mindbot.difySourceCustom',
+    value: 'custom' as const,
+  },
 ])
 
 const effectiveTab = computed({
@@ -270,10 +278,10 @@ defineExpose({
       class="mindbot-dialog-tabs"
       :class="{ 'mindbot-dialog-tabs--embedded': embeddedPane }"
     >
-      <el-tab-pane
-        name="dingtalk"
-        :label="t('admin.mindbot.tabDingtalk')"
-      >
+      <el-tab-pane name="dingtalk">
+        <template #label>
+          <I18nText k="admin.mindbot.tabDingtalk" />
+        </template>
         <div
           v-if="mode === 'edit' && editingOrgRow?.public_callback_token"
           class="mindbot-callback-card mindbot-swiss-inset mb-4 rounded-sm border border-[var(--mindbot-swiss-border)] bg-[var(--mindbot-swiss-inset)] p-3 shadow-none"
@@ -281,10 +289,10 @@ defineExpose({
           <div
             class="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--mindbot-swiss-muted)] mb-1"
           >
-            {{ t('admin.mindbot.schoolCallbackUrl') }}
+            <I18nText k="admin.mindbot.schoolCallbackUrl" />
           </div>
           <p class="mindbot-swiss-hint text-xs mb-3 leading-relaxed">
-            {{ t('admin.mindbot.schoolCallbackUrlHint') }}
+            <I18nText k="admin.mindbot.schoolCallbackUrlHint" />
           </p>
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
             <code
@@ -299,7 +307,7 @@ defineExpose({
                 class="mindbot-pill mindbot-pill--copy"
                 @click="emit('copyUrl', buildCallbackUrl(editingOrgRow.public_callback_token))"
               >
-                {{ t('admin.mindbot.copyUrl') }}
+                <I18nText k="admin.mindbot.copyUrl" />
               </el-button>
               <el-button
                 type="warning"
@@ -310,7 +318,7 @@ defineExpose({
                 class="mindbot-pill mindbot-pill--rotate"
                 @click="emit('rotateCallback')"
               >
-                {{ t('admin.mindbot.refreshCallbackUrl') }}
+                <I18nText k="admin.mindbot.refreshCallbackUrl" />
               </el-button>
             </div>
           </div>
@@ -319,14 +327,16 @@ defineExpose({
           v-else-if="mode === 'create'"
           class="mindbot-config-banner mb-4 rounded-sm border px-3 py-2.5 text-xs font-mono leading-snug text-[var(--mindbot-swiss-text)]"
         >
-          {{ t('admin.mindbot.callbackUrlAfterSave') }}
+          <I18nText k="admin.mindbot.callbackUrlAfterSave" />
         </div>
 
         <el-form-item
           v-if="mode === 'create' && isAdmin && !hideOrgSelect"
-          :label="t('admin.mindbot.orgSelect')"
           required
         >
+          <template #label>
+            <I18nText k="admin.mindbot.orgSelect" />
+          </template>
           <el-select
             v-model="formOrgId"
             class="mindbot-swiss-select w-full max-w-md"
@@ -344,7 +354,7 @@ defineExpose({
         <div
           class="mindbot-section-label mindbot-swiss-section-label text-[11px] font-semibold uppercase tracking-[0.14em] mb-1.5 mt-0.5"
         >
-          {{ t('admin.mindbot.sectionDingTalk') }}
+          <I18nText k="admin.mindbot.sectionDingTalk" />
         </div>
         <div
           class="mindbot-section-card mindbot-section-card--compact mindbot-swiss-inset rounded-sm border border-[var(--mindbot-swiss-border)] bg-[var(--mindbot-swiss-inset)] mindbot-dingtalk-fields space-y-4"
@@ -353,13 +363,15 @@ defineExpose({
             v-if="mode === 'create' && !isAdmin"
             class="flex flex-col gap-2 sm:flex-row sm:items-center"
           >
-            <span :class="dingtalkFieldLabelClass">{{ t('admin.mindbot.orgSelect') }}</span>
+            <span :class="dingtalkFieldLabelClass"><I18nText k="admin.mindbot.orgSelect" /></span>
             <span class="mindbot-swiss-inline-value text-sm font-mono flex-1 min-w-0">{{
               managerSchoolDisplayName
             }}</span>
           </div>
           <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
-            <span :class="dingtalkFieldLabelClass">{{ t('admin.mindbot.dingtalkClientId') }}</span>
+            <span :class="dingtalkFieldLabelClass"
+              ><I18nText k="admin.mindbot.dingtalkClientId"
+            /></span>
             <el-input
               v-model="form.dingtalk_client_id"
               clearable
@@ -370,11 +382,12 @@ defineExpose({
           </div>
           <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
             <span :class="dingtalkFieldLabelClass">
-              {{ t('admin.mindbot.dingtalkAppSecret') }}
+              <I18nText k="admin.mindbot.dingtalkAppSecret" />
               <span
                 v-if="mode === 'create' || dingtalkSecretReplaceMode"
                 class="text-[var(--el-color-danger)]"
-              >*</span>
+                >*</span
+              >
             </span>
             <div class="flex-1 min-w-0 w-full">
               <template
@@ -398,7 +411,7 @@ defineExpose({
                     size="small"
                     @click="emit('replaceDingtalkSecret')"
                   >
-                    {{ t('admin.mindbot.replaceSecret') }}
+                    <I18nText k="admin.mindbot.replaceSecret" />
                   </el-button>
                 </div>
               </template>
@@ -414,7 +427,7 @@ defineExpose({
             </div>
           </div>
           <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
-            <span :class="dingtalkFieldLabelClass">{{ t('admin.mindbot.botLabel') }}</span>
+            <span :class="dingtalkFieldLabelClass"><I18nText k="admin.mindbot.botLabel" /></span>
             <el-input
               v-model="form.bot_label"
               clearable
@@ -425,7 +438,7 @@ defineExpose({
           </div>
           <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
             <span :class="dingtalkFieldLabelClass">
-              {{ t('admin.mindbot.dingtalkRobotCode') }}
+              <I18nText k="admin.mindbot.dingtalkRobotCode" />
               <span class="text-[var(--el-color-danger)]">*</span>
             </span>
             <el-input
@@ -435,9 +448,9 @@ defineExpose({
             />
           </div>
           <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
-            <span :class="dingtalkFieldLabelClass">{{
-              t('admin.mindbot.dingtalkAiCardTemplateId')
-            }}</span>
+            <span :class="dingtalkFieldLabelClass"
+              ><I18nText k="admin.mindbot.dingtalkAiCardTemplateId"
+            /></span>
             <div class="flex-1 min-w-0 w-full space-y-2">
               <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                 <el-input
@@ -461,28 +474,24 @@ defineExpose({
                     @click="checkAiCardStreaming"
                   >
                     <el-icon class="mr-0.5"><MagicStick /></el-icon>
-                    {{ t('admin.mindbot.dingtalkAiCardStreamCheck') }}
+                    <I18nText k="admin.mindbot.dingtalkAiCardStreamCheck" />
                   </el-button>
                 </el-tooltip>
               </div>
               <p
                 v-if="aiCardStreamMessage"
                 class="text-xs m-0 leading-relaxed"
-                :class="
-                  aiCardStreamMessage.ok ? 'mindbot-swiss-msg--ok' : 'mindbot-swiss-msg--err'
-                "
+                :class="aiCardStreamMessage.ok ? 'mindbot-swiss-msg--ok' : 'mindbot-swiss-msg--err'"
               >
                 {{ aiCardStreamMessage.text }}
               </p>
             </div>
           </div>
           <template v-if="useOrgDifyCredentials">
-            <div
-              class="border-t border-[var(--mindbot-swiss-border)] pt-4 space-y-4"
-            >
+            <div class="border-t border-[var(--mindbot-swiss-border)] pt-4 space-y-4">
               <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <span :class="dingtalkFieldLabelClass">
-                  {{ t('admin.mindbot.sectionDifySource') }}
+                  <I18nText k="admin.mindbot.sectionDifySource" />
                 </span>
                 <div class="flex-1 min-w-0 w-full">
                   <AdminMindbotSwissSegmented
@@ -499,7 +508,7 @@ defineExpose({
               >
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
                   <span :class="dingtalkFieldLabelClass">
-                    {{ t('admin.mindbot.difyBaseUrl') }}
+                    <I18nText k="admin.mindbot.difyBaseUrl" />
                     <span class="text-[var(--el-color-danger)]">*</span>
                   </span>
                   <el-input
@@ -510,11 +519,12 @@ defineExpose({
                 </div>
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
                   <span :class="dingtalkFieldLabelClass">
-                    {{ t('admin.mindbot.difyApiKey') }}
+                    <I18nText k="admin.mindbot.difyApiKey" />
                     <span
                       v-if="mode === 'create' || difyApiKeyReplaceMode"
                       class="text-[var(--el-color-danger)]"
-                    >*</span>
+                      >*</span
+                    >
                   </span>
                   <div class="flex-1 min-w-0 w-full">
                     <template
@@ -538,7 +548,7 @@ defineExpose({
                           size="small"
                           @click="emit('replaceDifyApiKey')"
                         >
-                          {{ t('admin.mindbot.replaceSecret') }}
+                          <I18nText k="admin.mindbot.replaceSecret" />
                         </el-button>
                       </div>
                     </template>
@@ -554,7 +564,9 @@ defineExpose({
                   </div>
                 </div>
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <span :class="dingtalkFieldLabelClass">{{ t('admin.mindbot.difyTimeout') }}</span>
+                  <span :class="dingtalkFieldLabelClass"
+                    ><I18nText k="admin.mindbot.difyTimeout"
+                  /></span>
                   <el-input-number
                     v-model="form.dify_timeout_seconds"
                     :min="5"
@@ -564,9 +576,9 @@ defineExpose({
                   />
                 </div>
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <span :class="dingtalkFieldLabelClass">{{
-                    t('admin.mindbot.dingtalkAiCardStreamingMaxChars')
-                  }}</span>
+                  <span :class="dingtalkFieldLabelClass"
+                    ><I18nText k="admin.mindbot.dingtalkAiCardStreamingMaxChars"
+                  /></span>
                   <el-input-number
                     v-model="form.dingtalk_ai_card_streaming_max_chars"
                     :min="500"
@@ -576,10 +588,12 @@ defineExpose({
                     controls-position="right"
                   />
                 </div>
-                <div class="school-dify-cot-row flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-0">
-                  <span :class="dingtalkFieldLabelClass">{{
-                    t('admin.mindbot.difyShowChainOfThought')
-                  }}</span>
+                <div
+                  class="school-dify-cot-row flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-0"
+                >
+                  <span :class="dingtalkFieldLabelClass"
+                    ><I18nText k="admin.mindbot.difyShowChainOfThought"
+                  /></span>
                   <el-switch
                     v-model="form.show_chain_of_thought"
                     class="mindbot-cot-switch mindbot-footer-enabled-switch shrink-0"
@@ -594,34 +608,34 @@ defineExpose({
       <el-tab-pane
         v-if="!useOrgDifyCredentials"
         name="dify"
-        :label="t('admin.mindbot.tabDify')"
       >
+        <template #label>
+          <I18nText k="admin.mindbot.tabDify" />
+        </template>
         <div
           class="mindbot-section-label mindbot-swiss-section-label text-[11px] font-semibold uppercase tracking-[0.14em] mb-1.5 mt-0.5"
         >
-          {{ t('admin.mindbot.sectionDify') }}
+          <I18nText k="admin.mindbot.sectionDify" />
         </div>
         <div
           class="mindbot-section-card mindbot-section-card--compact mindbot-swiss-inset rounded-sm border border-[var(--mindbot-swiss-border)] bg-[var(--mindbot-swiss-inset)]"
         >
-          <el-form-item
-            :label="t('admin.mindbot.difyBaseUrl')"
-            required
-          >
+          <el-form-item required>
+            <template #label>
+              <I18nText k="admin.mindbot.difyBaseUrl" />
+            </template>
             <el-input
               v-model="form.dify_api_base_url"
               clearable
               class="mindbot-swiss-input w-full max-w-2xl"
             />
           </el-form-item>
-          <el-form-item
-            :label="t('admin.mindbot.difyApiKey')"
-            :required="mode === 'create' || difyApiKeyReplaceMode"
-          >
+          <el-form-item :required="mode === 'create' || difyApiKeyReplaceMode">
+            <template #label>
+              <I18nText k="admin.mindbot.difyApiKey" />
+            </template>
             <template
-              v-if="
-                mode === 'edit' && editingOrgRow?.dify_api_key_masked && !difyApiKeyReplaceMode
-              "
+              v-if="mode === 'edit' && editingOrgRow?.dify_api_key_masked && !difyApiKeyReplaceMode"
             >
               <div class="max-w-2xl space-y-2">
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
@@ -638,11 +652,11 @@ defineExpose({
                     size="small"
                     @click="emit('replaceDifyApiKey')"
                   >
-                    {{ t('admin.mindbot.replaceSecret') }}
+                    <I18nText k="admin.mindbot.replaceSecret" />
                   </el-button>
                 </div>
                 <p class="mindbot-swiss-hint text-xs m-0 leading-relaxed">
-                  {{ t('admin.mindbot.difyApiKeyMaskedHint') }}
+                  <I18nText k="admin.mindbot.difyApiKeyMaskedHint" />
                 </p>
               </div>
             </template>
@@ -657,15 +671,18 @@ defineExpose({
               />
               <div class="mindbot-swiss-hint text-xs mt-1.5 leading-relaxed max-w-2xl">
                 <template v-if="mode === 'create'">
-                  {{ t('admin.mindbot.difyApiKeyHint') }}
+                  <I18nText k="admin.mindbot.difyApiKeyHint" />
                 </template>
                 <template v-else>
-                  {{ t('admin.mindbot.difyApiKeyReplaceHint') }}
+                  <I18nText k="admin.mindbot.difyApiKeyReplaceHint" />
                 </template>
               </div>
             </template>
           </el-form-item>
-          <el-form-item :label="t('admin.mindbot.difyTimeout')">
+          <el-form-item>
+            <template #label>
+              <I18nText k="admin.mindbot.difyTimeout" />
+            </template>
             <el-input-number
               v-model="form.dify_timeout_seconds"
               :min="5"
@@ -674,7 +691,10 @@ defineExpose({
               controls-position="right"
             />
           </el-form-item>
-          <el-form-item :label="t('admin.mindbot.dingtalkAiCardStreamingMaxChars')">
+          <el-form-item>
+            <template #label>
+              <I18nText k="admin.mindbot.dingtalkAiCardStreamingMaxChars" />
+            </template>
             <el-input-number
               v-model="form.dingtalk_ai_card_streaming_max_chars"
               :min="500"
@@ -684,10 +704,10 @@ defineExpose({
               controls-position="right"
             />
           </el-form-item>
-          <el-form-item
-            :label="t('admin.mindbot.difyShowChainOfThought')"
-            class="mindbot-cot-form-item"
-          >
+          <el-form-item class="mindbot-cot-form-item">
+            <template #label>
+              <I18nText k="admin.mindbot.difyShowChainOfThought" />
+            </template>
             <div class="mindbot-cot-field">
               <el-switch
                 v-model="form.show_chain_of_thought"
@@ -700,9 +720,11 @@ defineExpose({
 
       <el-tab-pane
         name="log"
-        :label="t('admin.mindbot.tabLog')"
         lazy
       >
+        <template #label>
+          <I18nText k="admin.mindbot.tabLog" />
+        </template>
         <AdminMindBotUsagePanel
           :organization-id="formOrgId"
           :can-load="canLoadUsage"
@@ -712,9 +734,11 @@ defineExpose({
 
       <el-tab-pane
         name="monitor"
-        :label="t('admin.mindbot.tabMonitor')"
         lazy
       >
+        <template #label>
+          <I18nText k="admin.mindbot.tabMonitor" />
+        </template>
         <AdminMindBotUsagePanel
           :organization-id="formOrgId"
           :can-load="canLoadUsage"

@@ -136,7 +136,8 @@ function onLoginSuccess() {
   const fallback = isStudent ? '/learning-space' : '/mindmate'
   const redir = getSafePostAuthPath(route.query.redirect, fallback)
   const target =
-    isStudent && (redir === '/mindmate' || redir === '/' || redir === '/m' || redir === '/m/mindmate')
+    isStudent &&
+    (redir === '/mindmate' || redir === '/' || redir === '/m' || redir === '/m/mindmate')
       ? '/learning-space'
       : redir
   router.push(target).catch(() => {
@@ -232,14 +233,14 @@ onBeforeUnmount(() => {
             class="auth-page-card__legal"
           >
             <span>
-              {{ t('auth.landing.legalPrefix') }}
+              <I18nText k="auth.landing.legalPrefix" />
               <RouterLink
                 to="/privacy"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="auth-page-card__legal-link"
               >
-                {{ t('auth.softwareAgreementLink') }}
+                <I18nText k="auth.softwareAgreementLink" />
               </RouterLink>
             </span>
           </footer>
@@ -248,7 +249,7 @@ onBeforeUnmount(() => {
     </div>
 
     <p class="auth-page-icp">
-      {{ t('auth.landing.copyright') }}
+      <I18nText k="auth.landing.copyright" />
     </p>
   </div>
 </template>

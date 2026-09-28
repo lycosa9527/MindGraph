@@ -1,7 +1,7 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.180.110",
+  "version": "5.180.111",
   "type": "module",
   "engines": {
     "node": ">=26.0.0"
@@ -21,7 +21,7 @@
     "format:check": "prettier --check \"src/**/*.{vue,ts,js,json,css,scss}\"",
     "check": "node --max-old-space-size=4096 node_modules/vue-tsc/bin/vue-tsc.js --noEmit && npm run lint && npm run format:check",
     "check:fix": "npm run fix && npm run check",
-    "check:scripts": "node scripts/sync-version.ts && node scripts/check-i18n-keys.ts && node scripts/check-i18n-translated-banners.ts && node scripts/check-lazy-locale-loaders.ts && npm run check:sidebar-quotes && npm run check:china-geo && npm run check:pwa-workbox && npm run check:pdf-worker",
+    "check:scripts": "node scripts/sync-version.ts && node scripts/check-i18n-keys.ts && node scripts/check-i18n-translated-banners.ts && node scripts/check-lazy-locale-loaders.ts && node scripts/codemod-bilingual-template.mjs --check && npm run check:sidebar-quotes && npm run check:china-geo && npm run check:pwa-workbox && npm run check:pdf-worker",
     "check:dep0205": "node scripts/check-dep0205.mjs",
     "check:vueuse-pure": "node scripts/check-vueuse-pure-annotations.mjs",
     "postinstall": "patch-package && node scripts/ensure-cross-platform-native-deps.mjs",

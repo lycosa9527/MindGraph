@@ -109,7 +109,7 @@ async function handleDelete(diagramId: string) {
         class="dd-empty"
       >
         <FileImage class="dd-empty-icon" />
-        <span class="dd-empty-text">{{ t('sidebar.diagramHistory.empty') }}</span>
+        <span class="dd-empty-text"><I18nText k="sidebar.diagramHistory.empty" /></span>
       </div>
 
       <!-- List -->
@@ -126,7 +126,11 @@ async function handleDelete(diagramId: string) {
                 v-if="diagram.is_pinned"
                 class="dd-pin-icon"
               />
-              {{ diagram.title || t('sidebar.history.untitled') }}
+              <template v-if="diagram.title">{{ diagram.title }}</template
+              ><I18nText
+                v-else
+                k="sidebar.history.untitled"
+              />
             </span>
             <span class="dd-item-type">
               {{ typeLabel(diagram.diagram_type) }}
@@ -162,7 +166,7 @@ async function handleDelete(diagramId: string) {
     <!-- Footer — slot counter -->
     <div class="dd-footer">
       <span class="dd-footer-count">{{ diagramCountLabel }}</span>
-      <span class="dd-footer-label">{{ t('sidebar.diagramHistory.title') }}</span>
+      <span class="dd-footer-label"><I18nText k="sidebar.diagramHistory.title" /></span>
     </div>
   </div>
 </template>

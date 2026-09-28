@@ -1146,7 +1146,7 @@ function handleTopicMove(topicId: number): void {
     <!-- Top navbar -->
     <div class="ws-navbar">
       <div class="ws-navbar__left">
-        <span class="ws-navbar__title">{{ t('workshop.title') }}</span>
+        <span class="ws-navbar__title"><I18nText k="workshop.title" /></span>
       </div>
 
       <div class="ws-navbar__center">
@@ -1213,7 +1213,9 @@ function handleTopicMove(topicId: number): void {
                 class="workshop-navbar-action__icon"
                 :size="14"
               />
-              <span class="workshop-navbar-action__label">{{ t('workshop.navbarContacts') }}</span>
+              <span class="workshop-navbar-action__label"
+                ><I18nText k="workshop.navbarContacts"
+              /></span>
             </span>
           </el-button>
 
@@ -1250,15 +1252,15 @@ function handleTopicMove(topicId: number): void {
           <template v-else-if="centerView === 'empty'">
             <div class="ws-empty-state">
               <div class="ws-empty-state__icon">💬</div>
-              <p class="ws-empty-state__title">{{ t('workshop.title') }}</p>
-              <p class="ws-empty-state__hint">{{ t('workshop.selectConversation') }}</p>
+              <p class="ws-empty-state__title"><I18nText k="workshop.title" /></p>
+              <p class="ws-empty-state__hint"><I18nText k="workshop.selectConversation" /></p>
             </div>
           </template>
 
           <!-- Channel browser overlay -->
           <template v-else-if="centerView === 'browse'">
             <div class="ws-center-header">
-              <h2 class="ws-center-header__title">{{ t('workshop.browseChannels') }}</h2>
+              <h2 class="ws-center-header__title"><I18nText k="workshop.browseChannels" /></h2>
             </div>
             <ChannelBrowser
               class="flex-1 overflow-y-auto"
@@ -1279,7 +1281,7 @@ function handleTopicMove(topicId: number): void {
                   class="ws-back-to-conversations"
                   @click="store.leaveMainChannelFeed()"
                 >
-                  {{ t('workshop.backToConversations') }}
+                  <I18nText k="workshop.backToConversations" />
                 </button>
                 <span
                   class="ws-center-header__channel-icon"
@@ -1303,16 +1305,16 @@ function handleTopicMove(topicId: number): void {
                     color: channelStatusConfig[store.currentChannel.status]?.color || '#a8a29e',
                   }"
                 >
-                  {{
-                    t(
+                  <I18nText
+                    :k="
                       channelStatusConfig[store.currentChannel.status]?.labelKey ||
-                        'workshop.statusOpen'
-                    )
-                  }}
+                      'workshop.statusOpen'
+                    "
+                  />
                 </span>
                 <span class="ws-center-header__meta">
-                  {{ store.channelMembers.length }} {{ t('workshop.members') }} ·
-                  {{ t('workshop.mainChannelStream') }}
+                  {{ store.channelMembers.length }} <I18nText k="workshop.members" /> ·
+                  <I18nText k="workshop.mainChannelStream" />
                 </span>
                 <ChannelActionsPopover
                   v-if="store.currentChannelId"
@@ -1374,12 +1376,12 @@ function handleTopicMove(topicId: number): void {
                           })
                         "
                       >
-                        {{ t('workshop.copyLink') }}
+                        <I18nText k="workshop.copyLink" />
                       </el-dropdown-item>
                       <el-dropdown-item
                         @click="void store.markChannelReadAll(store.currentChannelId!)"
                       >
-                        {{ t('workshop.markAsRead') }}
+                        <I18nText k="workshop.markAsRead" />
                       </el-dropdown-item>
                     </el-dropdown-menu>
                   </template>
@@ -1425,16 +1427,16 @@ function handleTopicMove(topicId: number): void {
                     color: channelStatusConfig[store.currentChannel.status]?.color || '#a8a29e',
                   }"
                 >
-                  {{
-                    t(
+                  <I18nText
+                    :k="
                       channelStatusConfig[store.currentChannel.status]?.labelKey ||
-                        'workshop.statusOpen'
-                    )
-                  }}
+                      'workshop.statusOpen'
+                    "
+                  />
                 </span>
                 <span class="ws-center-header__meta">
-                  {{ store.channelMembers.length }} {{ t('workshop.members') }} ·
-                  {{ store.currentChannelTopics.length }} {{ t('workshop.conversations') }}
+                  {{ store.channelMembers.length }} <I18nText k="workshop.members" /> ·
+                  {{ store.currentChannelTopics.length }} <I18nText k="workshop.conversations" />
                 </span>
                 <ChannelActionsPopover
                   v-if="store.currentChannelId"
@@ -1463,20 +1465,20 @@ function handleTopicMove(topicId: number): void {
             >
               <div class="ws-channel-search__head">
                 <span class="ws-channel-search__title">
-                  {{ t('workshop.channelSearchResultsTitle') }}
+                  <I18nText k="workshop.channelSearchResultsTitle" />
                 </span>
                 <span
                   v-if="messageSearchLoading"
                   class="ws-channel-search__loading"
-                  >{{ t('common.loading') }}</span
-                >
+                  ><I18nText k="common.loading"
+                /></span>
               </div>
               <template v-if="!messageSearchLoading && channelSearchServerResults != null">
                 <p
                   v-if="channelSearchServerResults.length === 0"
                   class="ws-channel-search__empty"
                 >
-                  {{ t('workshop.channelSearchNoMatches') }}
+                  <I18nText k="workshop.channelSearchNoMatches" />
                 </p>
                 <ul
                   v-else
@@ -1516,7 +1518,7 @@ function handleTopicMove(topicId: number): void {
                   class="ws-topic-grid__main-stream"
                   @click="store.openMainChannelFeed()"
                 >
-                  {{ t('workshop.openMainChannelStream') }}
+                  <I18nText k="workshop.openMainChannelStream" />
                 </el-button>
                 <el-button
                   v-if="store.currentChannel?.channel_type !== 'announce' || isAdmin"
@@ -1525,7 +1527,7 @@ function handleTopicMove(topicId: number): void {
                   @click="showNewTopicDialog = true"
                 >
                   <el-icon class="mr-1"><CirclePlus /></el-icon>
-                  {{ t('workshop.newConversation') }}
+                  <I18nText k="workshop.newConversation" />
                 </el-button>
               </div>
               <div
@@ -1545,8 +1547,10 @@ function handleTopicMove(topicId: number): void {
                 v-else
                 class="ws-topic-grid__empty"
               >
-                <p>{{ t('workshop.noConversationsYet') }}</p>
-                <p class="ws-topic-grid__empty-hint">{{ t('workshop.startConversationHint') }}</p>
+                <p><I18nText k="workshop.noConversationsYet" /></p>
+                <p class="ws-topic-grid__empty-hint">
+                  <I18nText k="workshop.startConversationHint" />
+                </p>
               </div>
             </div>
           </template>
@@ -1599,14 +1603,14 @@ function handleTopicMove(topicId: number): void {
                           })
                         "
                       >
-                        {{ t('workshop.copyLink') }}
+                        <I18nText k="workshop.copyLink" />
                       </el-dropdown-item>
                       <el-dropdown-item
                         @click="
                           void store.markTopicRead(store.currentChannelId!, currentTopicDetail.id)
                         "
                       >
-                        {{ t('workshop.markAsRead') }}
+                        <I18nText k="workshop.markAsRead" />
                       </el-dropdown-item>
                     </el-dropdown-menu>
                   </template>
@@ -1670,7 +1674,7 @@ function handleTopicMove(topicId: number): void {
                           })
                         "
                       >
-                        {{ t('workshop.copyLink') }}
+                        <I18nText k="workshop.copyLink" />
                       </el-dropdown-item>
                     </el-dropdown-menu>
                   </template>
@@ -1726,14 +1730,20 @@ function handleTopicMove(topicId: number): void {
         label-position="top"
         class="space-y-4"
       >
-        <el-form-item :label="t('workshop.conversationTitle')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="workshop.conversationTitle" />
+          </template>
           <el-input
             v-model="newTopicTitle"
             :placeholder="t('workshop.conversationTitlePlaceholder')"
             maxlength="200"
           />
         </el-form-item>
-        <el-form-item :label="t('workshop.topicDescription')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="workshop.topicDescription" />
+          </template>
           <el-input
             v-model="newTopicDescription"
             type="textarea"

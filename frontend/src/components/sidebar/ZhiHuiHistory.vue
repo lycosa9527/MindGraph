@@ -99,10 +99,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="zhihui-history flex min-h-0 flex-1 flex-col border-t border-stone-200 relative overflow-hidden">
+  <div
+    class="zhihui-history flex min-h-0 flex-1 flex-col border-t border-stone-200 relative overflow-hidden"
+  >
     <div class="px-4 py-3">
       <div class="text-xs font-medium tracking-wider text-stone-400 uppercase">
-        {{ t('sidebar.zhihuiHistory.title') }}
+        <I18nText k="sidebar.zhihuiHistory.title" />
       </div>
     </div>
 
@@ -112,13 +114,13 @@ onMounted(() => {
           v-if="store.isLoading"
           class="py-8 text-center text-xs text-stone-400"
         >
-          {{ t('common.loading') }}
+          <I18nText k="common.loading" />
         </div>
         <div
           v-else-if="store.loadError"
           class="py-8 text-center text-xs text-stone-400"
         >
-          {{ t('zhihui.loadFailed') }}
+          <I18nText k="zhihui.loadFailed" />
         </div>
         <div
           v-else-if="items.length === 0"
@@ -126,7 +128,7 @@ onMounted(() => {
         >
           <ImageIcon class="mx-auto mb-2 h-8 w-8 text-stone-300" />
           <p class="text-xs text-stone-400">
-            {{ t('sidebar.zhihuiHistory.empty') }}
+            <I18nText k="sidebar.zhihuiHistory.empty" />
           </p>
         </div>
         <template v-else>
@@ -138,54 +140,54 @@ onMounted(() => {
               v-if="grouped[key].length > 0"
               class="group-section"
             >
-            <div class="group-label">{{ groupLabels[key] }}</div>
-            <div
-              v-for="item in grouped[key]"
-              :key="item.id"
-              class="history-item"
-              :class="{ active: currentId === item.id }"
-              @click="handleSelect(item)"
-            >
-              <span
-                class="item-title"
-                :title="itemTitle(item)"
+              <div class="group-label">{{ groupLabels[key] }}</div>
+              <div
+                v-for="item in grouped[key]"
+                :key="item.id"
+                class="history-item"
+                :class="{ active: currentId === item.id }"
+                @click="handleSelect(item)"
               >
                 <span
-                  v-if="isZhihuiJobActive(item.status)"
-                  class="status-dot"
-                  :title="String(item.status)"
-                />
-                <span
-                  v-else-if="item.status === 'failed' || item.status === 'partial'"
-                  class="status-dot status-dot--warn"
-                  :title="String(item.status)"
-                />
-                {{ itemTitle(item) }}
-              </span>
-              <ElDropdown
-                trigger="click"
-                class="more-dropdown"
-                @click.stop
-              >
-                <button
-                  type="button"
-                  class="more-btn"
+                  class="item-title"
+                  :title="itemTitle(item)"
+                >
+                  <span
+                    v-if="isZhihuiJobActive(item.status)"
+                    class="status-dot"
+                    :title="String(item.status)"
+                  />
+                  <span
+                    v-else-if="item.status === 'failed' || item.status === 'partial'"
+                    class="status-dot status-dot--warn"
+                    :title="String(item.status)"
+                  />
+                  {{ itemTitle(item) }}
+                </span>
+                <ElDropdown
+                  trigger="click"
+                  class="more-dropdown"
                   @click.stop
                 >
-                  <MoreHorizontal class="h-4 w-4" />
-                </button>
-                <template #dropdown>
-                  <ElDropdownMenu>
-                    <ElDropdownItem @click="handleDelete(item)">
-                      <span class="delete-option">
-                        <Trash2 class="mr-2 h-4 w-4" />
-                        {{ t('sidebar.actions.delete') }}
-                      </span>
-                    </ElDropdownItem>
-                  </ElDropdownMenu>
-                </template>
-              </ElDropdown>
-            </div>
+                  <button
+                    type="button"
+                    class="more-btn"
+                    @click.stop
+                  >
+                    <MoreHorizontal class="h-4 w-4" />
+                  </button>
+                  <template #dropdown>
+                    <ElDropdownMenu>
+                      <ElDropdownItem @click="handleDelete(item)">
+                        <span class="delete-option">
+                          <Trash2 class="mr-2 h-4 w-4" />
+                          <I18nText k="sidebar.actions.delete" />
+                        </span>
+                      </ElDropdownItem>
+                    </ElDropdownMenu>
+                  </template>
+                </ElDropdown>
+              </div>
             </div>
           </template>
 
@@ -195,7 +197,10 @@ onMounted(() => {
             class="show-more-btn"
             @click="showAll = true"
           >
-            {{ t('sidebar.actions.showMore', { n: remainingCount }) }}
+            <I18nText
+              k="sidebar.actions.showMore"
+              :params="{ n: remainingCount }"
+            />
           </button>
           <button
             v-if="showAll && items.length > INITIAL_LIMIT"
@@ -203,7 +208,7 @@ onMounted(() => {
             class="show-more-btn"
             @click="showAll = false"
           >
-            {{ t('sidebar.actions.showLess') }}
+            <I18nText k="sidebar.actions.showLess" />
           </button>
         </template>
       </div>

@@ -20,11 +20,14 @@ import {
 
 import { ArrowLeft, ChevronDown, Loader2, RefreshCw, Users } from '@lucide/vue'
 
-import { useLanguage, useNotifications } from '@/composables'
-import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
-import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
-import { authFetch } from '@/utils/api'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
+import { useLanguage, useNotifications } from '@/composables'
+import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
+import {
+  applyThinkingCoinMutation,
+  extractThinkingCoinsFooter,
+} from '@/composables/auth/useThinkingCoinSync'
+import { authFetch } from '@/utils/api'
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -266,10 +269,10 @@ defineExpose({ prefillAndAutoJoin })
           <template #dropdown>
             <ElDropdownMenu>
               <ElDropdownItem command="organization">
-                {{ t('mindgraphLanding.schoolCollab') }}
+                <I18nText k="mindgraphLanding.schoolCollab" />
               </ElDropdownItem>
               <ElDropdownItem command="network">
-                {{ t('mindgraphLanding.joinDiagramEdit') }}
+                <I18nText k="mindgraphLanding.joinDiagramEdit" />
               </ElDropdownItem>
             </ElDropdownMenu>
           </template>
@@ -292,7 +295,7 @@ defineExpose({ prefillAndAutoJoin })
             class="sw-panel__back-icon"
             aria-hidden="true"
           />
-          {{ t('mindgraphLanding.dialogSchoolTitle') }}
+          <I18nText k="mindgraphLanding.dialogSchoolTitle" />
         </button>
         <button
           type="button"
@@ -318,7 +321,7 @@ defineExpose({ prefillAndAutoJoin })
           class="sw-panel__loading-icon"
           aria-hidden="true"
         />
-        <span>{{ t('common.loading') }}</span>
+        <span><I18nText k="common.loading" /></span>
       </div>
 
       <!-- Empty state -->
@@ -326,7 +329,7 @@ defineExpose({ prefillAndAutoJoin })
         v-else-if="orgSessions.length === 0"
         class="sw-panel__empty"
       >
-        {{ t('mindgraphLanding.orgSessionsEmpty') }}
+        <I18nText k="mindgraphLanding.orgSessionsEmpty" />
       </p>
 
       <!-- Sessions list -->
@@ -359,7 +362,7 @@ defineExpose({ prefillAndAutoJoin })
               class="sw-session-join__spinner"
               aria-hidden="true"
             />
-            {{ t('mindgraphLanding.join') }}
+            <I18nText k="mindgraphLanding.join" />
           </button>
         </li>
       </ul>
@@ -380,10 +383,10 @@ defineExpose({ prefillAndAutoJoin })
             class="sw-panel__back-icon"
             aria-hidden="true"
           />
-          {{ t('mindgraphLanding.dialogSharedTitle') }}
+          <I18nText k="mindgraphLanding.dialogSharedTitle" />
         </button>
       </div>
-      <p class="sw-panel__hint">{{ t('mindgraphLanding.sharedCodeHint') }}</p>
+      <p class="sw-panel__hint"><I18nText k="mindgraphLanding.sharedCodeHint" /></p>
       <div class="code-input-container">
         <div class="code-input-boxes">
           <input
@@ -442,7 +445,7 @@ defineExpose({ prefillAndAutoJoin })
           class="sw-join-btn__spinner"
           aria-hidden="true"
         />
-        {{ t('mindgraphLanding.join') }}
+        <I18nText k="mindgraphLanding.join" />
       </button>
     </div>
   </ElPopover>

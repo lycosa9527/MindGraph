@@ -182,7 +182,7 @@ onUnmounted(() => {
         v-if="selectedIds.length > 0"
         class="mr-1 text-xs text-slate-500"
       >
-        {{ selectedIds.length }} {{ t('nodePalette.selected') }}
+        {{ selectedIds.length }} <I18nText k="nodePalette.selected" />
       </span>
       <button
         type="button"
@@ -249,7 +249,7 @@ onUnmounted(() => {
         class="flex flex-col items-center justify-center gap-2 py-10 text-sm text-slate-500"
       >
         <Loader2 class="h-6 w-6 animate-spin text-(--swiss-geek-cyan-ui,#0e7490)" />
-        <span>{{ t('nodePalette.generatingIdeas') }}</span>
+        <span><I18nText k="nodePalette.generatingIdeas" /></span>
       </div>
 
       <p
@@ -263,7 +263,7 @@ onUnmounted(() => {
         v-else-if="suggestions.length === 0"
         class="py-8 text-center text-xs text-slate-500"
       >
-        {{ t('canvas.mindMapWaterfall.emptyHint') }}
+        <I18nText k="canvas.mindMapWaterfall.emptyHint" />
       </div>
 
       <div
@@ -275,7 +275,10 @@ onUnmounted(() => {
           class="flex items-center gap-1.5 text-xs text-slate-500"
         >
           <Loader2 class="h-3.5 w-3.5 shrink-0 animate-spin" />
-          {{ t('nodePalette.generatingProgress', { count: suggestions.length }) }}
+          <I18nText
+            k="nodePalette.generatingProgress"
+            :params="{ count: suggestions.length }"
+          />
         </p>
         <div
           v-for="suggestion in suggestions"
@@ -325,7 +328,7 @@ onUnmounted(() => {
             class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost"
             @click="loadNextBatch"
           >
-            {{ t('nodePalette.loadMore') }}
+            <I18nText k="nodePalette.loadMore" />
           </button>
         </div>
         <div
@@ -338,9 +341,15 @@ onUnmounted(() => {
         <p
           class="mt-2 rounded-lg bg-slate-50 px-2.5 py-2 text-[11px] leading-relaxed text-slate-500"
         >
-          {{ showNextButton ? t('nodePalette.helpNext') : t('nodePalette.helpFinish') }}
+          <I18nText
+            v-if="showNextButton"
+            k="nodePalette.helpNext"
+          /><I18nText
+            v-else
+            k="nodePalette.helpFinish"
+          />
           <br />
-          {{ t('canvas.mindMapWaterfall.dragHint') }}
+          <I18nText k="canvas.mindMapWaterfall.dragHint" />
         </p>
       </div>
     </div>
@@ -353,7 +362,7 @@ onUnmounted(() => {
         class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
         @click="handleCancel"
       >
-        {{ t('nodePalette.cancel') }}
+        <I18nText k="nodePalette.cancel" />
       </button>
       <button
         type="button"
@@ -361,7 +370,13 @@ onUnmounted(() => {
         :disabled="selectedIds.length === 0"
         @click="handleFinish"
       >
-        {{ showNextButton ? t('nodePalette.next') : t('nodePalette.finish') }}
+        <I18nText
+          v-if="showNextButton"
+          k="nodePalette.next"
+        /><I18nText
+          v-else
+          k="nodePalette.finish"
+        />
       </button>
     </footer>
   </aside>

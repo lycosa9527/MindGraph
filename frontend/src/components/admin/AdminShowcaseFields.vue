@@ -44,6 +44,7 @@ const categoryOptions = computed(() =>
   FIELD_CATEGORIES.map((value) => ({
     value,
     label: String(t(`admin.showcase.fieldCategory.${value}`)),
+    labelKey: `admin.showcase.fieldCategory.${value}`,
   }))
 )
 
@@ -154,7 +155,7 @@ onMounted(() => {
     class="space-y-4"
   >
     <p class="text-sm text-gray-500">
-      {{ t('admin.showcase.fieldsIntro') }}
+      <I18nText k="admin.showcase.fieldsIntro" />
     </p>
 
     <AdminSwissSegmented
@@ -173,13 +174,13 @@ onMounted(() => {
 
     <div class="rounded-xl border border-gray-200 bg-white p-4">
       <h3 class="mb-3 text-sm font-semibold text-gray-900">
-        {{ t('admin.showcase.fieldsAdd') }}
+        <I18nText k="admin.showcase.fieldsAdd" />
       </h3>
       <div class="flex flex-wrap items-end gap-3">
         <div class="min-w-35 flex-1">
-          <label class="mb-1 block text-xs text-gray-500">{{
-            t('admin.showcase.fields.value')
-          }}</label>
+          <label class="mb-1 block text-xs text-gray-500"
+            ><I18nText k="admin.showcase.fields.value"
+          /></label>
           <input
             v-model="newValue"
             type="text"
@@ -188,9 +189,9 @@ onMounted(() => {
           />
         </div>
         <div class="min-w-35 flex-1">
-          <label class="mb-1 block text-xs text-gray-500">{{
-            t('admin.showcase.fields.label')
-          }}</label>
+          <label class="mb-1 block text-xs text-gray-500"
+            ><I18nText k="admin.showcase.fields.label"
+          /></label>
           <input
             v-model="newLabel"
             type="text"
@@ -204,14 +205,14 @@ onMounted(() => {
           :disabled="isSaving"
           @click="createOption"
         >
-          {{ t('admin.showcase.fields.add') }}
+          <I18nText k="admin.showcase.fields.add" />
         </button>
       </div>
     </div>
 
     <div class="flex items-center justify-between">
       <h3 class="text-sm font-semibold text-gray-900">
-        {{ t('admin.showcase.fieldsExisting') }}
+        <I18nText k="admin.showcase.fieldsExisting" />
         <span class="ml-1 text-xs font-normal text-gray-400">({{ filteredOptions.length }})</span>
       </h3>
     </div>
@@ -224,62 +225,81 @@ onMounted(() => {
     >
       <el-table-column
         prop="value"
-        :label="t('admin.showcase.fields.value')"
         min-width="120"
-      />
+      >
+        <template #header>
+          <I18nText k="admin.showcase.fields.value" />
+        </template>
+      </el-table-column>
       <el-table-column
         prop="label_zh"
-        :label="t('admin.showcase.fields.label')"
         min-width="120"
-      />
+      >
+        <template #header>
+          <I18nText k="admin.showcase.fields.label" />
+        </template>
+      </el-table-column>
       <el-table-column
         prop="sort_order"
-        :label="t('admin.showcase.fields.sortOrder')"
         width="90"
-      />
-      <el-table-column
-        :label="t('admin.showcase.fields.active')"
-        width="100"
       >
+        <template #header>
+          <I18nText k="admin.showcase.fields.sortOrder" />
+        </template>
+      </el-table-column>
+      <el-table-column width="100">
+        <template #header>
+          <I18nText k="admin.showcase.fields.active" />
+        </template>
         <template #default="{ row }">
           <el-tag
             :type="row.is_active ? 'success' : 'info'"
             size="small"
           >
-            {{ row.is_active ? t('admin.yes') : t('admin.no') }}
+            <I18nText
+              v-if="row.is_active"
+              k="admin.yes"
+            /><I18nText
+              v-else
+              k="admin.no"
+            />
           </el-tag>
         </template>
       </el-table-column>
       <el-table-column
-        :label="t('admin.actions')"
         width="220"
         fixed="right"
       >
+        <template #header>
+          <I18nText k="admin.actions" />
+        </template>
         <template #default="{ row }">
           <button
             type="button"
             class="mr-3 text-sm text-gray-700 hover:text-gray-900"
             @click="openEdit(row as ShowcaseFieldOptionRow)"
           >
-            {{ t('admin.edit') }}
+            <I18nText k="admin.edit" />
           </button>
           <button
             type="button"
             class="mr-3 text-sm text-gray-700 hover:text-gray-900"
             @click="toggleActive(row as ShowcaseFieldOptionRow)"
           >
-            {{
-              row.is_active
-                ? t('admin.showcase.fields.deactivate')
-                : t('admin.showcase.fields.activate')
-            }}
+            <I18nText
+              v-if="row.is_active"
+              k="admin.showcase.fields.deactivate"
+            /><I18nText
+              v-else
+              k="admin.showcase.fields.activate"
+            />
           </button>
           <button
             type="button"
             class="text-sm text-red-600 hover:text-red-700"
             @click="removeOption(row as ShowcaseFieldOptionRow)"
           >
-            {{ t('admin.delete') }}
+            <I18nText k="admin.delete" />
           </button>
         </template>
       </el-table-column>
@@ -289,7 +309,7 @@ onMounted(() => {
       v-else-if="!isLoading"
       class="rounded-xl border border-dashed border-gray-200 bg-white px-6 py-12 text-center text-sm text-gray-400"
     >
-      {{ t('admin.showcase.fields.empty') }}
+      <I18nText k="admin.showcase.fields.empty" />
     </div>
 
     <SwissGlassDialog

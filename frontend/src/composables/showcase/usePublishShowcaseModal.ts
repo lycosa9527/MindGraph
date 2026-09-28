@@ -3,40 +3,46 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { BookOpen, History, Image as ImageIcon, LayoutTemplate, Sparkles, Upload, X } from '@lucide/vue'
+import {
+  BookOpen,
+  History,
+  Image as ImageIcon,
+  LayoutTemplate,
+  Sparkles,
+  Upload,
+  X,
+} from '@lucide/vue'
 
+import { DIAGRAM_GALLERY_MAX_ITEMS } from '@/components/showcase/showcaseGallery'
 import {
-  DIAGRAM_GALLERY_MAX_ITEMS,
-} from '@/components/showcase/showcaseGallery'
-import {
-  CASE_TYPE_PUBLISH_OPTIONS,
   CASE_ATTACHMENT_MAX_BYTES,
   CASE_TEACHING_DOC_MAX_BYTES,
+  CASE_TYPE_PUBLISH_OPTIONS,
   CASE_UPLOAD_TOTAL_MAX_BYTES,
+  DIAGRAM_TYPE_OPTIONS,
   SHOWCASE_DIRECT_FILE_UPLOADS_ENABLED,
-  showcaseMaxMegabytes,
+  type ShowcaseCaseType,
+  TAG_MAX_COUNT,
+  TAG_MAX_LENGTH,
   isDiagramImageFile,
   isTeachingDocFile,
   isTemplateSourceFile,
-  DIAGRAM_TYPE_OPTIONS,
-  TAG_MAX_LENGTH,
-  TAG_MAX_COUNT,
-  type ShowcaseCaseType,
+  showcaseMaxMegabytes,
 } from '@/components/showcase/showcaseShared'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
-import { useShowcaseMeta } from '@/composables/showcase/useShowcaseMeta'
+import { loadPublishShowcaseEditPost } from '@/composables/showcase/loadPublishShowcaseEditPost'
 import { processShowcaseGalleryImagePick } from '@/composables/showcase/processShowcaseGalleryImagePick'
+import { createPublishShowcaseSubmitHandlers } from '@/composables/showcase/submitPublishShowcasePost'
+import { usePublishShowcaseAiOrchestration } from '@/composables/showcase/usePublishShowcaseAiOrchestration'
 import { usePublishShowcaseGalleryDrafts } from '@/composables/showcase/usePublishShowcaseGalleryDrafts'
-import { useSavedDiagramsStore, type SavedDiagram } from '@/stores/savedDiagrams'
+import { useShowcaseMeta } from '@/composables/showcase/useShowcaseMeta'
+import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import {
   cloneShowcaseDiagramSpec,
   decodeMgUploadSpec,
   inferDiagramTypeFromSpec,
 } from '@/utils/showcaseDiagramThumbnail'
-import { loadPublishShowcaseEditPost } from '@/composables/showcase/loadPublishShowcaseEditPost'
-import { createPublishShowcaseSubmitHandlers } from '@/composables/showcase/submitPublishShowcasePost'
-import { usePublishShowcaseAiOrchestration } from '@/composables/showcase/usePublishShowcaseAiOrchestration'
 
 export type PublishShowcaseModalProps = {
   visible: boolean
@@ -65,7 +71,7 @@ function isSessionExpiredMessage(message: string): boolean {
 
 export function usePublishShowcaseModal(
   props: PublishShowcaseModalProps,
-  emit: PublishShowcaseModalEmit,
+  emit: PublishShowcaseModalEmit
 ) {
   const { t } = useLanguage()
   const notify = useNotifications()
@@ -155,9 +161,7 @@ export function usePublishShowcaseModal(
 
   function hasTemplateStep1Source(): boolean {
     return Boolean(
-      uploadedMgSpec.value ||
-        selectedDiagram.value ||
-        isMgUploadedFile(uploadedFile.value)
+      uploadedMgSpec.value || selectedDiagram.value || isMgUploadedFile(uploadedFile.value)
     )
   }
 
@@ -204,16 +208,12 @@ export function usePublishShowcaseModal(
         t(
           isEditMode.value
             ? 'showcase.publishModal.resubmitting'
-            : 'showcase.publishModal.submitting',
-        ),
+            : 'showcase.publishModal.submitting'
+        )
       )
     }
     return String(
-      t(
-        isEditMode.value
-          ? 'showcase.publishModal.resubmit'
-          : 'showcase.publishModal.submit',
-      ),
+      t(isEditMode.value ? 'showcase.publishModal.resubmit' : 'showcase.publishModal.submit')
     )
   })
   const isDiagramType = computed(
@@ -253,14 +253,16 @@ export function usePublishShowcaseModal(
     () => Boolean(selectedDiagram.value) || galleryDiagramDrafts.value.length > 0
   )
 
-  const publishDiagramPreviewThumbnail = computed(
-    () => selectedDiagram.value?.thumbnail ?? null
-  )
+  const publishDiagramPreviewThumbnail = computed(() => selectedDiagram.value?.thumbnail ?? null)
 
   const subjectFilterOptions = computed(() => subjectOptions.value)
   const gradeFilterOptions = computed(() => gradeOptions.value)
   const diagramTypeFilterOptions = computed(() =>
-    DIAGRAM_TYPE_OPTIONS.map((d) => ({ value: d.value, label: d.label }))
+    DIAGRAM_TYPE_OPTIONS.map((d) => ({
+      value: d.value,
+      label: d.label,
+      labelKey: d.labelKey,
+    }))
   )
 
   const tagsAtLimit = computed(() => tags.value.length >= TAG_MAX_COUNT)
@@ -383,14 +385,33 @@ export function usePublishShowcaseModal(
       abortGalleryImagePick()
       resetForm()
       title.value = props.getTitle?.() || ''
-      caseType.value = props.defaultCaseType || (props.getDiagramSpec ? 'diagram_case' : 'teaching_design')
+      caseType.value =
+        props.defaultCaseType || (props.getDiagramSpec ? 'diagram_case' : 'teaching_design')
       diagramType.value = props.diagramType || 'mind_map'
       if (props.editPostId?.trim()) {
         void loadPublishShowcaseEditPost(props.editPostId.trim(), {
-          t, notify, emit, isEditLoading, title, description, tags, caseType, subject, grade,
-          diagramType, teachingReflection, designHighlights, classroomApplication,
-          editHasAttachment, editHasThumbnail, selectedDiagramSpec, uploadedFileName,
-          galleryExistingImages, galleryDiagramDrafts, clearGalleryDrafts, newGalleryId,
+          t,
+          notify,
+          emit,
+          isEditLoading,
+          title,
+          description,
+          tags,
+          caseType,
+          subject,
+          grade,
+          diagramType,
+          teachingReflection,
+          designHighlights,
+          classroomApplication,
+          editHasAttachment,
+          editHasThumbnail,
+          selectedDiagramSpec,
+          uploadedFileName,
+          galleryExistingImages,
+          galleryDiagramDrafts,
+          clearGalleryDrafts,
+          newGalleryId,
           basenameFromMediaUrl,
         })
       } else {
@@ -557,7 +578,9 @@ export function usePublishShowcaseModal(
       return
     }
     if (galleryAtLimit.value) {
-      notify.error(String(t('showcase.publishModal.galleryLimit', { max: DIAGRAM_GALLERY_MAX_ITEMS })))
+      notify.error(
+        String(t('showcase.publishModal.galleryLimit', { max: DIAGRAM_GALLERY_MAX_ITEMS }))
+      )
       return
     }
     await addGalleryDiagramDraft(
@@ -566,7 +589,7 @@ export function usePublishShowcaseModal(
       (value) => {
         diagramType.value = value
       },
-      diagramTypeFromSavedDiagram,
+      diagramTypeFromSavedDiagram
     )
   }
 
@@ -617,10 +640,7 @@ export function usePublishShowcaseModal(
     return raw === 'mindmap' ? 'mind_map' : raw
   }
 
-  function resolvePublishDiagramType(
-    rawType: string,
-    spec: Record<string, unknown>
-  ): string {
+  function resolvePublishDiagramType(rawType: string, spec: Record<string, unknown>): string {
     let type = diagramTypeFromSavedDiagram(rawType)
     if (!DIAGRAM_TYPE_OPTIONS.some((o) => o.value === type)) {
       type = inferDiagramTypeFromSpec(spec, 'mind_map')

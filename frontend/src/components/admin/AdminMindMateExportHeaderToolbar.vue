@@ -5,15 +5,26 @@
 import { computed } from 'vue'
 
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
-import { useMindMateExportPanelTab, type MindMateExportPanelTab } from '@/composables/admin/useMindMateExportPanelTab'
 import { useLanguage } from '@/composables'
+import {
+  type MindMateExportPanelTab,
+  useMindMateExportPanelTab,
+} from '@/composables/admin/useMindMateExportPanelTab'
 
 const { t } = useLanguage()
 const { panelTab } = useMindMateExportPanelTab()
 
 const tabOptions = computed(() => [
-  { label: t('admin.mindmateExport.tabExport'), value: 'export' as MindMateExportPanelTab },
-  { label: t('admin.mindmateExport.tabDumps'), value: 'dumps' as MindMateExportPanelTab },
+  {
+    label: t('admin.mindmateExport.tabExport'),
+    labelKey: 'admin.mindmateExport.tabExport',
+    value: 'export' as MindMateExportPanelTab,
+  },
+  {
+    label: t('admin.mindmateExport.tabDumps'),
+    labelKey: 'admin.mindmateExport.tabDumps',
+    value: 'dumps' as MindMateExportPanelTab,
+  },
 ])
 </script>
 

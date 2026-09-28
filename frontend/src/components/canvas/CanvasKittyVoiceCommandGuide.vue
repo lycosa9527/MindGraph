@@ -65,7 +65,7 @@ function toggleExpanded(): void {
         :size="15"
         :stroke-width="2"
       />
-      <span class="whitespace-nowrap">{{ t('canvas.voiceCommandGuide.title') }}</span>
+      <span class="whitespace-nowrap"><I18nText k="canvas.voiceCommandGuide.title" /></span>
       <ChevronUp
         class="shrink-0 text-slate-400"
         :size="14"
@@ -88,7 +88,7 @@ function toggleExpanded(): void {
               :stroke-width="2"
             />
             <span class="truncate text-xs font-bold text-slate-800 dark:text-slate-100">
-              {{ t('canvas.voiceCommandGuide.title') }}
+              <I18nText k="canvas.voiceCommandGuide.title" />
             </span>
           </div>
           <button

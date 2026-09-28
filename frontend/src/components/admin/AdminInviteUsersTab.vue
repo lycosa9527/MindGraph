@@ -7,14 +7,14 @@ import { computed, ref } from 'vue'
 import { DocumentCopy, Loading } from '@element-plus/icons-vue'
 
 import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
+import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
-import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
-import { useAdminOrganizationInvites } from '@/composables/queries'
 import {
   resolveSchoolMindmateAgentName,
   resolveSchoolMindmateAvatarUrl,
 } from '@/composables/mindmate/useMindMateBranding'
+import { useAdminOrganizationInvites } from '@/composables/queries'
 import '@/styles/admin-schools-swiss.css'
 import {
   buildPrivatizedColumnFilters,
@@ -156,9 +156,18 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
 <template>
   <div class="admin-schools-tab admin-invite-users-tab">
     <template v-if="showOrgInvites">
-      <el-card shadow="never" class="admin-schools-card">
-        <div v-if="isLoading" class="flex justify-center py-12">
-          <el-icon class="is-loading" :size="32">
+      <el-card
+        shadow="never"
+        class="admin-schools-card"
+      >
+        <div
+          v-if="isLoading"
+          class="flex justify-center py-12"
+        >
+          <el-icon
+            class="is-loading"
+            :size="32"
+          >
             <Loading />
           </el-icon>
         </div>
@@ -174,52 +183,61 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
         >
           <el-table-column
             prop="name"
-            :label="t('admin.organizationName')"
             min-width="120"
             show-overflow-tooltip
             class-name="admin-schools-col-text"
-          />
+          >
+            <template #header>
+              <I18nText k="admin.organizationName" />
+            </template>
+          </el-table-column>
           <el-table-column
             column-key="is_privatized"
-            :label="t('admin.orgPrivateDify')"
             min-width="96"
             align="center"
             :filters="privatizedColumnFilters"
             :filter-method="filterOrgByPrivatized"
             filter-placement="bottom-end"
           >
+            <template #header>
+              <I18nText k="admin.orgPrivateDify" />
+            </template>
             <template #default="{ row }">
               <span
                 class="admin-schools-private"
                 :class="
-                  isOrgPrivatized(row)
-                    ? 'admin-schools-private--yes'
-                    : 'admin-schools-private--no'
+                  isOrgPrivatized(row) ? 'admin-schools-private--yes' : 'admin-schools-private--no'
                 "
               >
-                {{
-                  isOrgPrivatized(row)
-                    ? t('admin.orgPrivateDifyYes')
-                    : t('admin.orgPrivateDifyNo')
-                }}
+                <I18nText
+                  v-if="isOrgPrivatized(row)"
+                  k="admin.orgPrivateDifyYes"
+                /><I18nText
+                  v-else
+                  k="admin.orgPrivateDifyNo"
+                />
               </span>
             </template>
           </el-table-column>
           <el-table-column
-            :label="t('admin.schoolMindmateAgentName')"
             min-width="112"
             show-overflow-tooltip
             class-name="admin-schools-col-text"
           >
+            <template #header>
+              <I18nText k="admin.schoolMindmateAgentName" />
+            </template>
             <template #default="{ row }">
               <span class="text-stone-700">{{ agentDisplayName(row) }}</span>
             </template>
           </el-table-column>
           <el-table-column
-            :label="t('admin.orgAgentAvatar')"
             min-width="64"
             align="center"
           >
+            <template #header>
+              <I18nText k="admin.orgAgentAvatar" />
+            </template>
             <template #default="{ row }">
               <img
                 :src="agentAvatarSrc(row)"
@@ -232,55 +250,73 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
             </template>
           </el-table-column>
           <el-table-column
-            :label="t('admin.tokensUsed')"
             min-width="96"
             align="right"
           >
+            <template #header>
+              <I18nText k="admin.tokensUsed" />
+            </template>
             <template #default="{ row }">
               <span class="tabular-nums text-stone-700">
-                {{ formatNumber((row.token_stats as { total_tokens?: number })?.total_tokens ?? 0) }}
+                {{
+                  formatNumber((row.token_stats as { total_tokens?: number })?.total_tokens ?? 0)
+                }}
               </span>
             </template>
           </el-table-column>
           <el-table-column
-            :label="t('admin.status')"
             min-width="80"
             align="center"
           >
+            <template #header>
+              <I18nText k="admin.status" />
+            </template>
             <template #default="{ row }">
               <span
                 class="admin-schools-status"
                 :class="row.is_active ? 'admin-schools-status--on' : 'admin-schools-status--off'"
               >
-                {{ row.is_active ? t('admin.enabled') : t('admin.disabled') }}
+                <I18nText
+                  v-if="row.is_active"
+                  k="admin.enabled"
+                /><I18nText
+                  v-else
+                  k="admin.disabled"
+                />
               </span>
             </template>
           </el-table-column>
           <el-table-column
             prop="user_count"
-            :label="t('admin.usersCount')"
             min-width="72"
             align="right"
           >
+            <template #header>
+              <I18nText k="admin.usersCount" />
+            </template>
             <template #default="{ row }">
               <span class="tabular-nums text-stone-700">{{ row.user_count ?? 0 }}</span>
             </template>
           </el-table-column>
           <el-table-column
             prop="manager_count"
-            :label="t('admin.managerCount')"
             min-width="80"
             align="right"
           >
+            <template #header>
+              <I18nText k="admin.managerCount" />
+            </template>
             <template #default="{ row }">
               <span class="tabular-nums text-stone-700">{{ row.manager_count ?? 0 }}</span>
             </template>
           </el-table-column>
           <el-table-column
-            :label="t('admin.invitationCode')"
             min-width="140"
             fixed="right"
           >
+            <template #header>
+              <I18nText k="admin.invitationCode" />
+            </template>
             <template #default="{ row }">
               <div class="flex items-center gap-2 min-w-0">
                 <span class="font-mono text-sm text-stone-800 truncate">

@@ -183,7 +183,7 @@ export default { name: 'UserCardPopover' }
             v-if="isSelf"
             class="user-card__subtitle"
           >
-            {{ t('workshop.userCardYou') }}
+            <I18nText k="workshop.userCardYou" />
           </span>
           <span class="user-card__presence-label">{{ presenceLabel }}</span>
         </div>
@@ -207,7 +207,7 @@ export default { name: 'UserCardPopover' }
             @click="handlePoke"
           >
             <Hand class="ws-popover-icon" />
-            {{ t('mindmate.collabPoke') }}
+            <I18nText k="mindmate.collabPoke" />
           </button>
         </li>
       </ul>
@@ -225,7 +225,13 @@ export default { name: 'UserCardPopover' }
               @click="handleViewProfile"
             >
               <User class="ws-popover-icon" />
-              {{ isSelf ? t('workshop.profile') : t('workshop.viewProfile') }}
+              <I18nText
+                v-if="isSelf"
+                k="workshop.profile"
+              /><I18nText
+                v-else
+                k="workshop.viewProfile"
+              />
             </button>
           </li>
 
@@ -238,7 +244,7 @@ export default { name: 'UserCardPopover' }
                 @click="handleStartDm"
               >
                 <MessageSquare class="ws-popover-icon" />
-                {{ t('workshop.sendDirectMessage') }}
+                <I18nText k="workshop.sendDirectMessage" />
               </button>
             </li>
 
@@ -253,7 +259,7 @@ export default { name: 'UserCardPopover' }
                 @click="handleInsertMention"
               >
                 <AtSign class="ws-popover-icon" />
-                {{ t('workshop.replyMentioning') }}
+                <I18nText k="workshop.replyMentioning" />
               </button>
             </li>
 
@@ -265,7 +271,7 @@ export default { name: 'UserCardPopover' }
                 @click="handleCopyMention"
               >
                 <Copy class="ws-popover-icon" />
-                {{ t('workshop.copyMentionSyntax') }}
+                <I18nText k="workshop.copyMentionSyntax" />
               </button>
             </li>
           </template>
@@ -285,7 +291,7 @@ export default { name: 'UserCardPopover' }
                 @click="handleManageUser"
               >
                 <ShieldCheck class="ws-popover-icon" />
-                {{ t('workshop.manageUser') }}
+                <I18nText k="workshop.manageUser" />
               </button>
             </li>
           </ul>

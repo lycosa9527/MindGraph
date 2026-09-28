@@ -54,7 +54,7 @@ async function copyInvite(): Promise<void> {
       @click="copyInvite"
     >
       <el-icon class="el-icon--left"><DocumentCopy /></el-icon>
-      {{ t('admin.copyShareMessage') }}
+      <I18nText k="admin.copyShareMessage" />
     </el-button>
   </div>
 </template>

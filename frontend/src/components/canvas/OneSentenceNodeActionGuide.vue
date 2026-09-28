@@ -33,7 +33,7 @@ const emit = defineEmits<{
 const { t } = useLanguage()
 const rootRef = ref<HTMLElement | null>(null)
 
-type GuideChip = { id: string; label: string; phrase: string }
+type GuideChip = { id: string; label: string; labelKey?: string; phrase: string }
 
 const rows = computed(() =>
   ONE_SENTENCE_NODE_ACTION_GUIDE_ROWS.map((row) => {
@@ -46,7 +46,9 @@ const rows = computed(() =>
       id: row.id,
       label: raw.replace(/[：:]\s*$/u, '').trim() || raw,
       example,
-      pills: chips.length ? chips : [{ id: 'example', label: example, phrase: example }],
+      pills: chips.length
+        ? chips
+        : [{ id: 'example', label: example, labelKey: row.exampleKey, phrase: example }],
     }
   })
 )
@@ -57,11 +59,13 @@ function chipsForRow(rowId: string): GuideChip[] {
       {
         id: 'by_label',
         label: String(t('canvas.mindMapOneSentence.nodeActionGuide.chip.byName')),
+        labelKey: 'canvas.mindMapOneSentence.nodeActionGuide.chip.byName',
         phrase: String(t('canvas.mindMapOneSentence.suggestion.explain_node')),
       },
       {
         id: 'this_node',
         label: String(t('canvas.mindMapOneSentence.nodeActionGuide.chip.thisNode')),
+        labelKey: 'canvas.mindMapOneSentence.nodeActionGuide.chip.thisNode',
         phrase: String(t('canvas.mindMapOneSentence.suggestion.explain_node.this')),
       },
     ]
@@ -71,6 +75,7 @@ function chipsForRow(rowId: string): GuideChip[] {
       {
         id: 'by_label',
         label: String(t('canvas.mindMapOneSentence.nodeActionGuide.chip.byName')),
+        labelKey: 'canvas.mindMapOneSentence.nodeActionGuide.chip.byName',
         phrase: String(t('canvas.mindMapOneSentence.suggestion.update_node')),
       },
       {
@@ -82,10 +87,12 @@ function chipsForRow(rowId: string): GuideChip[] {
   }
   if (rowId === 'set_content_level') {
     return AI_CONTENT_LEVEL_IDS.map((id) => {
-      const title = String(t(`canvas.toolbar.professionalContent.level.${id}.title`))
+      const titleKey = `canvas.toolbar.professionalContent.level.${id}.title`
+      const title = String(t(titleKey))
       return {
         id,
         label: title,
+        labelKey: titleKey,
         phrase: String(
           t('canvas.mindMapOneSentence.suggestion.set_content_level.phrase', { level: title })
         ),
@@ -94,10 +101,12 @@ function chipsForRow(rowId: string): GuideChip[] {
   }
   if (rowId === 'set_branch_numbering') {
     const styles = VOICE_NUMBERING_STYLE_IDS.map((id) => {
-      const title = String(t(`canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.${id}`))
+      const titleKey = `canvas.mindMapOneSentence.suggestion.set_branch_numbering.style.${id}`
+      const title = String(t(titleKey))
       return {
         id,
         label: title,
+        labelKey: titleKey,
         phrase: String(
           t('canvas.mindMapOneSentence.suggestion.set_branch_numbering.phrase', { style: title })
         ),
@@ -108,11 +117,13 @@ function chipsForRow(rowId: string): GuideChip[] {
       {
         id: 'on',
         label: String(t('canvas.toolbar.mindMapAppearanceNumberingEnable')),
+        labelKey: 'canvas.toolbar.mindMapAppearanceNumberingEnable',
         phrase: String(t('canvas.mindMapOneSentence.suggestion.set_branch_numbering.on')),
       },
       {
         id: 'off',
         label: String(t('canvas.toolbar.mindMapAppearanceNumberingHide')),
+        labelKey: 'canvas.toolbar.mindMapAppearanceNumberingHide',
         phrase: String(t('canvas.mindMapOneSentence.suggestion.set_branch_numbering_off')),
       },
     ]
@@ -141,11 +152,7 @@ function onDocumentPointerDown(event: PointerEvent): void {
   if (root.contains(target)) {
     return
   }
-  if (
-    props.excludeSelector
-    && target instanceof Element
-    && target.closest(props.excludeSelector)
-  ) {
+  if (props.excludeSelector && target instanceof Element && target.closest(props.excludeSelector)) {
     return
   }
   close()
@@ -202,7 +209,7 @@ onUnmounted(() => {
               :stroke-width="2"
             />
             <span class="truncate text-xs font-bold text-slate-800 dark:text-slate-100">
-              {{ t('canvas.mindMapOneSentence.nodeActionGuide.title') }}
+              <I18nText k="canvas.mindMapOneSentence.nodeActionGuide.title" />
             </span>
           </div>
           <button
@@ -239,7 +246,12 @@ onUnmounted(() => {
                 class="node-action-kbd"
                 @click="onSelect(pill.phrase)"
               >
-                {{ pill.label }}
+                <I18nText
+                  v-if="pill.labelKey"
+                  :k="pill.labelKey"
+                  dense
+                />
+                <template v-else>{{ pill.label }}</template>
               </button>
             </div>
           </li>

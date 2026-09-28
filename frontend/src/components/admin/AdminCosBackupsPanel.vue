@@ -55,57 +55,75 @@ async function onTriggerBackup() {
         :loading="triggerBackup.isPending.value"
         @click="onTriggerBackup"
       >
-        {{ t('admin.cos.runBackup') }}
+        <I18nText k="admin.cos.runBackup" />
       </el-button>
     </div>
-    <h4>{{ t('admin.cos.cosObjects') }}</h4>
+    <h4><I18nText k="admin.cos.cosObjects" /></h4>
     <el-table
       :data="cosBackups"
       size="small"
       stripe
     >
-      <el-table-column
-        prop="filename"
-        :label="t('admin.cos.fileName')"
-      />
+      <el-table-column prop="filename">
+        <template #header>
+          <I18nText k="admin.cos.fileName" />
+        </template>
+      </el-table-column>
       <el-table-column
         prop="size_mb"
-        :label="t('admin.cos.sizeMb')"
         width="100"
-      />
-      <el-table-column
-        prop="last_modified"
-        :label="t('admin.cos.lastModified')"
-      />
+      >
+        <template #header>
+          <I18nText k="admin.cos.sizeMb" />
+        </template>
+      </el-table-column>
+      <el-table-column prop="last_modified">
+        <template #header>
+          <I18nText k="admin.cos.lastModified" />
+        </template>
+      </el-table-column>
       <el-table-column
         prop="has_manifest"
-        :label="t('admin.cos.manifest')"
         width="90"
       >
+        <template #header>
+          <I18nText k="admin.cos.manifest" />
+        </template>
         <template #default="{ row }">
-          {{ row.has_manifest ? t('admin.cos.yes') : t('admin.cos.no') }}
+          <I18nText
+            v-if="row.has_manifest"
+            k="admin.cos.yes"
+          /><I18nText
+            v-else
+            k="admin.cos.no"
+          />
         </template>
       </el-table-column>
     </el-table>
-    <h4 class="mt-4">{{ t('admin.cos.localObjects') }}</h4>
+    <h4 class="mt-4"><I18nText k="admin.cos.localObjects" /></h4>
     <el-table
       :data="localBackups"
       size="small"
       stripe
     >
-      <el-table-column
-        prop="filename"
-        :label="t('admin.cos.fileName')"
-      />
+      <el-table-column prop="filename">
+        <template #header>
+          <I18nText k="admin.cos.fileName" />
+        </template>
+      </el-table-column>
       <el-table-column
         prop="size_mb"
-        :label="t('admin.cos.sizeMb')"
         width="100"
-      />
-      <el-table-column
-        prop="created"
-        :label="t('admin.cos.lastModified')"
-      />
+      >
+        <template #header>
+          <I18nText k="admin.cos.sizeMb" />
+        </template>
+      </el-table-column>
+      <el-table-column prop="created">
+        <template #header>
+          <I18nText k="admin.cos.lastModified" />
+        </template>
+      </el-table-column>
     </el-table>
   </div>
 </template>

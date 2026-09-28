@@ -2,11 +2,7 @@
 import { computed, ref } from 'vue'
 
 import { useLanguage } from '@/composables'
-import {
-  TRAINING_ROLES,
-  trainingRoleThumb,
-  type TrainingRoleDef,
-} from '@/config/trainingRoles'
+import { TRAINING_ROLES, type TrainingRoleDef, trainingRoleThumb } from '@/config/trainingRoles'
 
 const props = withDefaults(
   defineProps<{
@@ -21,8 +17,8 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const hoveredId = ref<string | null>(null)
-const preview = computed(
-  (): TrainingRoleDef | undefined => TRAINING_ROLES.find((role) => role.id === hoveredId.value)
+const preview = computed((): TrainingRoleDef | undefined =>
+  TRAINING_ROLES.find((role) => role.id === hoveredId.value)
 )
 
 function showPreview(id: string): void {
@@ -61,8 +57,8 @@ function hidePreview(): void {
           class="role-picker__thumb"
           :src="trainingRoleThumb(role.id)"
           :alt="t(role.labelKey)"
-        >
-        <span class="role-picker__name">{{ t(role.labelKey) }}</span>
+        />
+        <span class="role-picker__name"><I18nText :k="role.labelKey" /></span>
       </button>
     </div>
     <div
@@ -74,8 +70,8 @@ function hidePreview(): void {
           class="role-picker__anim"
           :src="trainingRoleThumb(preview.id)"
           :alt="t(preview.labelKey)"
-        >
-        <p class="role-picker__caption">{{ t(preview.labelKey) }}</p>
+        />
+        <p class="role-picker__caption"><I18nText :k="preview.labelKey" /></p>
       </div>
     </div>
   </div>

@@ -493,7 +493,7 @@ onUnmounted(() => {
                 class="qa-remote__preload"
                 data-testid="quick-access-prompt-preloading"
               >
-                {{ t('sidebar.quickAccessRemote.preloadingSpec') }}
+                <I18nText k="sidebar.quickAccessRemote.preloadingSpec" />
               </span>
             </button>
           </LlmPhaseRing>

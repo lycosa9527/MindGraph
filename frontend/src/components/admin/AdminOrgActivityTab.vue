@@ -10,15 +10,12 @@ import AdminSwissPagination from '@/components/admin/AdminSwissPagination.vue'
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useScopedAbort } from '@/composables/core/useScopedAbort'
-import {
-  fetchAdminOrgActivity,
-  type AdminOrgActivityItem,
-} from '@/composables/queries/adminApi'
+import { type AdminOrgActivityItem, fetchAdminOrgActivity } from '@/composables/queries/adminApi'
 import { useUIStore } from '@/stores/ui'
 import {
+  type ActivitySummaryLabels,
   activitySourceLabel,
   formatAdminUserActivitySummary,
-  type ActivitySummaryLabels,
 } from '@/utils/adminUserActivitySummary'
 
 const props = defineProps<{
@@ -42,11 +39,31 @@ const pageHasMore = ref<boolean[]>([])
 const loading = ref(false)
 
 const sourceFilterOptions = computed(() => [
-  { label: t('admin.orgActivityTab.filterAll'), value: 'all' as const },
-  { label: t('admin.orgActivityTab.filterMindgraph'), value: 'mindgraph' as const },
-  { label: t('admin.orgActivityTab.filterMindmate'), value: 'mindmate' as const },
-  { label: t('admin.orgActivityTab.filterDingtalk'), value: 'dingtalk' as const },
-  { label: t('admin.orgActivityTab.filterZhihui'), value: 'zhihui' as const },
+  {
+    label: t('admin.orgActivityTab.filterAll'),
+    labelKey: 'admin.orgActivityTab.filterAll',
+    value: 'all' as const,
+  },
+  {
+    label: t('admin.orgActivityTab.filterMindgraph'),
+    labelKey: 'admin.orgActivityTab.filterMindgraph',
+    value: 'mindgraph' as const,
+  },
+  {
+    label: t('admin.orgActivityTab.filterMindmate'),
+    labelKey: 'admin.orgActivityTab.filterMindmate',
+    value: 'mindmate' as const,
+  },
+  {
+    label: t('admin.orgActivityTab.filterDingtalk'),
+    labelKey: 'admin.orgActivityTab.filterDingtalk',
+    value: 'dingtalk' as const,
+  },
+  {
+    label: t('admin.orgActivityTab.filterZhihui'),
+    labelKey: 'admin.orgActivityTab.filterZhihui',
+    value: 'zhihui' as const,
+  },
 ])
 
 const summaryLabels = computed<ActivitySummaryLabels>(() => ({
@@ -210,7 +227,7 @@ watch(sourceFilter, () => {
   <div class="org-activity-tab space-y-3">
     <div class="org-activity-tab-toolbar">
       <p class="org-activity-tab-notice">
-        {{ t('admin.orgActivityTab.privacyNotice') }}
+        <I18nText k="admin.orgActivityTab.privacyNotice" />
       </p>
       <AdminSwissSegmented
         v-model="sourceFilter"
@@ -237,7 +254,7 @@ watch(sourceFilter, () => {
       v-else-if="currentItems.length === 0"
       class="school-modal-empty h-40"
     >
-      {{ t('admin.orgActivityTab.empty') }}
+      <I18nText k="admin.orgActivityTab.empty" />
     </div>
 
     <div
@@ -248,19 +265,19 @@ watch(sourceFilter, () => {
         <thead>
           <tr class="school-modal-table__head-row">
             <th class="school-modal-table__head-cell">
-              {{ t('admin.orgActivityTab.colTime') }}
+              <I18nText k="admin.orgActivityTab.colTime" />
             </th>
             <th class="school-modal-table__head-cell">
-              {{ t('admin.orgActivityTab.colUser') }}
+              <I18nText k="admin.orgActivityTab.colUser" />
             </th>
             <th class="school-modal-table__head-cell">
-              {{ t('admin.orgActivityTab.colProduct') }}
+              <I18nText k="admin.orgActivityTab.colProduct" />
             </th>
             <th class="school-modal-table__head-cell min-w-[12rem]">
-              {{ t('admin.orgActivityTab.colSummary') }}
+              <I18nText k="admin.orgActivityTab.colSummary" />
             </th>
             <th class="school-modal-table__head-cell school-modal-table__head-cell--right">
-              {{ t('admin.orgActivityTab.colTokens') }}
+              <I18nText k="admin.orgActivityTab.colTokens" />
             </th>
           </tr>
         </thead>

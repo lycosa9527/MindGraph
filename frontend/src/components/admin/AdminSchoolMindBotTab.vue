@@ -7,12 +7,12 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { Loading, Plus } from '@element-plus/icons-vue'
 
 import AdminMindBotConfigForm from '@/components/admin/AdminMindBotConfigForm.vue'
+import { useLanguage } from '@/composables'
 import {
+  MINDBOT_BOT_CAP,
   clearAdminMindBotOrgSession,
   getAdminMindBotOrgSession,
-  MINDBOT_BOT_CAP,
 } from '@/composables/admin/useAdminMindBotConfig'
-import { useLanguage } from '@/composables'
 
 const props = defineProps<{
   orgId: number
@@ -57,9 +57,7 @@ const selectedConfigId = ref<number | null>(null)
 
 const orgBotRows = computed(() => orgConfigs.value)
 const canAddBot = computed(() => orgBotRows.value.length < MINDBOT_BOT_CAP)
-const showDeleteBot = computed(
-  () => dialogMode.value === 'edit' && orgBotRows.value.length > 0
-)
+const showDeleteBot = computed(() => dialogMode.value === 'edit' && orgBotRows.value.length > 0)
 
 function resolveEditingBotRow() {
   if (editingRow.value) {
@@ -176,7 +174,7 @@ defineExpose({
     v-if="mindbotUnavailable"
     class="text-sm text-gray-600 dark:text-gray-400 py-4"
   >
-    {{ t('admin.feature.mindbotHint') }}
+    <I18nText k="admin.feature.mindbotHint" />
   </div>
   <div
     v-else-if="!sessionReady"
@@ -222,7 +220,7 @@ defineExpose({
         @click="onAddBot"
       >
         <el-icon class="mr-0.5"><Plus /></el-icon>
-        {{ t('admin.schoolModal.mindbotAddBot') }}
+        <I18nText k="admin.schoolModal.mindbotAddBot" />
       </el-button>
       <el-button
         v-if="showDeleteBot"
@@ -231,14 +229,17 @@ defineExpose({
         class="school-mindbot-toolbar-btn mindbot-pill mindbot-pill--footer-danger"
         @click="onDeleteCurrentBot"
       >
-        {{ t('admin.mindbot.delete') }}
+        <I18nText k="admin.mindbot.delete" />
       </el-button>
     </div>
     <p
       v-if="showToolbar && dialogMode === 'create'"
       class="mindbot-config-banner rounded-sm border px-3 py-2 text-xs font-mono leading-snug m-0"
     >
-      {{ t('admin.schoolModal.mindbotCreateHint', { cap: MINDBOT_BOT_CAP }) }}
+      <I18nText
+        k="admin.schoolModal.mindbotCreateHint"
+        :params="{ cap: MINDBOT_BOT_CAP }"
+      />
     </p>
     <AdminMindBotConfigForm
       v-model:form="form"

@@ -159,7 +159,11 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
                   <div class="history-item-content">
                     <p class="history-item-title">
                       <span class="history-item-title-text">
-                        {{ conv.name || t('mindmate.untitled') }}
+                        <template v-if="conv.name">{{ conv.name }}</template
+                        ><I18nText
+                          v-else
+                          k="mindmate.untitled"
+                        />
                       </span>
                       <MindMateDingtalkBadge v-if="isMindbotConversation(conv)" />
                     </p>

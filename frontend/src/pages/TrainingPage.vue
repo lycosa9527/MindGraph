@@ -99,25 +99,25 @@ onMounted(() => {
         v-if="canStart"
         class="training-page__hint"
       >
-        {{ t('training.confirmStart') }}
+        <I18nText k="training.confirmStart" />
       </p>
       <p
         v-else-if="roomArmed"
         class="training-page__hint"
       >
-        {{ t('training.moduleReady') }}
+        <I18nText k="training.moduleReady" />
       </p>
       <p
         v-else-if="training.selectedOrgId == null"
         class="training-page__hint"
       >
-        {{ t('training.builder.previewHint') }}
+        <I18nText k="training.builder.previewHint" />
       </p>
       <p
         v-if="catalogLoading"
         class="training-page__hint"
       >
-        {{ t('training.catalogLoading') }}
+        <I18nText k="training.catalogLoading" />
       </p>
       <TrainingCourseGrid
         :courses="training.courses"

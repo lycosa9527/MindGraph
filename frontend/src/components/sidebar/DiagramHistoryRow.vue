@@ -149,7 +149,11 @@ async function handleCreateFolderAndMove(): Promise<void> {
           class="w-3 h-3 inline-block mr-1 text-amber-500"
           :class="{ 'rotate-45': showPinnedIcon }"
         />
-        {{ diagram.title || t('mindmate.untitled') }}
+        <template v-if="diagram.title">{{ diagram.title }}</template
+        ><I18nText
+          v-else
+          k="mindmate.untitled"
+        />
         <span
           v-if="diagram.shared"
           class="inline-flex items-center ml-1 text-sky-600"
@@ -191,7 +195,7 @@ async function handleCreateFolderAndMove(): Promise<void> {
           >
             <span class="diagram-history-more__row">
               <FolderMinus class="w-4 h-4 shrink-0 text-stone-600" />
-              {{ t('sidebar.actions.removeFromFolder') }}
+              <I18nText k="sidebar.actions.removeFromFolder" />
             </span>
           </ElDropdownItem>
           <ElDropdownItem
@@ -208,7 +212,7 @@ async function handleCreateFolderAndMove(): Promise<void> {
           >
             <span class="diagram-history-more__row">
               <FolderPlus class="w-4 h-4 shrink-0 text-stone-600" />
-              {{ t('sidebar.diagramHistory.createFolderAndMove') }}
+              <I18nText k="sidebar.diagramHistory.createFolderAndMove" />
             </span>
           </ElDropdownItem>
         </ElDropdownMenu>
@@ -242,13 +246,19 @@ async function handleCreateFolderAndMove(): Promise<void> {
                 class="w-4 h-4 shrink-0 text-amber-500"
                 :class="{ 'rotate-45': diagram.is_pinned }"
               />
-              {{ diagram.is_pinned ? t('sidebar.actions.unpin') : t('sidebar.actions.pinToTop') }}
+              <I18nText
+                v-if="diagram.is_pinned"
+                k="sidebar.actions.unpin"
+              /><I18nText
+                v-else
+                k="sidebar.actions.pinToTop"
+              />
             </span>
           </ElDropdownItem>
           <ElDropdownItem @click="handleRename">
             <span class="diagram-history-more__row">
               <Edit3 class="w-4 h-4 shrink-0 text-stone-600" />
-              {{ t('sidebar.actions.rename') }}
+              <I18nText k="sidebar.actions.rename" />
             </span>
           </ElDropdownItem>
           <ElDropdownItem
@@ -257,7 +267,7 @@ async function handleCreateFolderAndMove(): Promise<void> {
           >
             <span class="diagram-history-more__row">
               <Share2 class="w-4 h-4 shrink-0 text-sky-600" />
-              {{ t('sidebar.actions.share') }}
+              <I18nText k="sidebar.actions.share" />
             </span>
           </ElDropdownItem>
           <ElDropdownItem
@@ -266,7 +276,7 @@ async function handleCreateFolderAndMove(): Promise<void> {
           >
             <span class="diagram-history-more__row">
               <Power class="w-4 h-4 shrink-0 text-stone-600" />
-              {{ t('sidebar.actions.turnOffOnlineCollab') }}
+              <I18nText k="sidebar.actions.turnOffOnlineCollab" />
             </span>
           </ElDropdownItem>
           <ElDropdownItem
@@ -275,9 +285,13 @@ async function handleCreateFolderAndMove(): Promise<void> {
           >
             <span class="diagram-history-more__row diagram-history-more__row--danger">
               <Trash2 class="w-4 h-4 shrink-0" />
-              {{
-                isRecipient ? t('sidebar.actions.removeFromLibrary') : t('sidebar.actions.delete')
-              }}
+              <I18nText
+                v-if="isRecipient"
+                k="sidebar.actions.removeFromLibrary"
+              /><I18nText
+                v-else
+                k="sidebar.actions.delete"
+              />
             </span>
           </ElDropdownItem>
         </ElDropdownMenu>

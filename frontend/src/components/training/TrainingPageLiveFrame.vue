@@ -40,7 +40,7 @@ const isCanvas = computed(() => props.pageKey === 'canvas')
         <component :is="livePage" />
         <template #fallback>
           <div class="live-frame__loading">
-            {{ t('common.loading') }}
+            <I18nText k="common.loading" />
           </div>
         </template>
       </Suspense>

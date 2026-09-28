@@ -194,8 +194,16 @@ const schoolDialogTab = ref<SchoolDialogTab>('usage')
 const userDialogTab = ref<UserDialogTab>('usage')
 
 const userDialogTabOptions = computed(() => [
-  { label: t('admin.userActivityTab.tabUsage'), value: 'usage' as const },
-  { label: t('admin.userActivityTab.tabLabel'), value: 'activity' as const },
+  {
+    label: t('admin.userActivityTab.tabUsage'),
+    labelKey: 'admin.userActivityTab.tabUsage',
+    value: 'usage' as const,
+  },
+  {
+    label: t('admin.userActivityTab.tabLabel'),
+    labelKey: 'admin.userActivityTab.tabLabel',
+    value: 'activity' as const,
+  },
 ])
 
 const activeMindbotPane = computed(() => mindbotEmbeddedPane(schoolDialogTab.value))
@@ -854,10 +862,10 @@ onBeforeUnmount(() => {
           v-model="schoolDialogTab"
           class="mindbot-dialog-tabs school-dialog-tabs"
         >
-          <el-tab-pane
-            name="usage"
-            :label="t('admin.schoolModal.tabUsage')"
-          >
+          <el-tab-pane name="usage">
+            <template #label>
+              <I18nText k="admin.schoolModal.tabUsage" />
+            </template>
             <AdminSchoolTokenUsageTab
               ref="tokenUsageTabRef"
               :chart-loading="chartLoading"
@@ -868,9 +876,11 @@ onBeforeUnmount(() => {
           </el-tab-pane>
           <el-tab-pane
             name="teachers"
-            :label="t('admin.schoolModal.tabTeachers')"
             lazy
           >
+            <template #label>
+              <I18nText k="admin.schoolModal.tabTeachers" />
+            </template>
             <AdminSchoolTeachersTab
               v-if="orgId"
               :org-id="orgId"
@@ -879,9 +889,11 @@ onBeforeUnmount(() => {
           </el-tab-pane>
           <el-tab-pane
             name="activity"
-            :label="t('admin.schoolModal.tabActivity')"
             lazy
           >
+            <template #label>
+              <I18nText k="admin.schoolModal.tabActivity" />
+            </template>
             <AdminOrgActivityTab
               v-if="orgId"
               :org-id="orgId"
@@ -891,9 +903,11 @@ onBeforeUnmount(() => {
           <el-tab-pane
             v-if="showSchoolSettingsTabs"
             name="dify"
-            :label="t('admin.schoolModal.tabMindmate')"
             lazy
           >
+            <template #label>
+              <I18nText k="admin.schoolModal.tabMindmate" />
+            </template>
             <AdminSchoolDifySettings
               v-if="orgId"
               ref="mindmateDifyRef"
@@ -918,9 +932,11 @@ onBeforeUnmount(() => {
           <el-tab-pane
             v-if="showMindbotSchoolTabs"
             name="mindbot_dingtalk"
-            :label="t('admin.mindbot.tabDingtalk')"
             lazy
           >
+            <template #label>
+              <I18nText k="admin.mindbot.tabDingtalk" />
+            </template>
             <AdminSchoolMindBotTab
               v-if="orgId && schoolDialogTab === 'mindbot_dingtalk'"
               :org-id="orgId"
@@ -932,9 +948,11 @@ onBeforeUnmount(() => {
           <el-tab-pane
             v-if="showMindbotSchoolTabs"
             name="mindbot_log"
-            :label="t('admin.mindbot.tabLog')"
             lazy
           >
+            <template #label>
+              <I18nText k="admin.mindbot.tabLog" />
+            </template>
             <AdminSchoolMindBotTab
               v-if="orgId && schoolDialogTab === 'mindbot_log'"
               :org-id="orgId"
@@ -945,9 +963,11 @@ onBeforeUnmount(() => {
           <el-tab-pane
             v-if="showMindbotSchoolTabs"
             name="mindbot_monitor"
-            :label="t('admin.mindbot.tabMonitor')"
             lazy
           >
+            <template #label>
+              <I18nText k="admin.mindbot.tabMonitor" />
+            </template>
             <AdminSchoolMindBotTab
               v-if="orgId && schoolDialogTab === 'mindbot_monitor'"
               :org-id="orgId"
@@ -958,9 +978,11 @@ onBeforeUnmount(() => {
           <el-tab-pane
             v-if="showSchoolSettingsTabs"
             name="general"
-            :label="t('admin.schoolModal.tabGeneral')"
             lazy
           >
+            <template #label>
+              <I18nText k="admin.schoolModal.tabGeneral" />
+            </template>
             <AdminSchoolOrgGeneralTab
               v-if="orgId"
               ref="orgGeneralTabRef"
@@ -1112,7 +1134,7 @@ onBeforeUnmount(() => {
           :aria-checked="userDialogTab === opt.value"
           @click="userDialogTab = opt.value"
         >
-          {{ opt.label }}
+          <I18nText :k="opt.labelKey" />
         </button>
       </div>
       <AdminUserTokenUsageTab

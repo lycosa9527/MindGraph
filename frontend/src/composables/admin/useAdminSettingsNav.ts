@@ -6,21 +6,13 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import {
+  type SettingsSubtab,
   defaultSettingsSubtab,
   isSettingsSubtab,
-  type SettingsSubtab,
   visibleSettingsNavItems,
 } from '@/composables/admin/adminSettingsNav'
 
-export interface SettingsNavLeafItemView {
-  kind: 'leaf'
-  name: SettingsSubtab
-  labelKey: string
-  label: string
-}
-
 export function useAdminSettingsNav(options: {
-  t: (key: string) => string
   canViewSettingsSubtab: (subtab: string) => boolean
   featureGewe: Ref<boolean>
   featureLibrary: Ref<boolean>
@@ -41,16 +33,13 @@ export function useAdminSettingsNav(options: {
     return defaultSettingsSubtab()
   })
 
-  const settingsNavItems = computed((): SettingsNavLeafItemView[] => {
-    return visibleSettingsNavItems({
+  const settingsNavItems = computed(() =>
+    visibleSettingsNavItems({
       canViewSettingsSubtab: options.canViewSettingsSubtab,
       featureGewe: options.featureGewe.value,
       featureLibrary: options.featureLibrary.value,
-    }).map((item) => ({
-      ...item,
-      label: options.t(item.labelKey),
-    }))
-  })
+    })
+  )
 
   const visibleSubtabNames = computed(() => settingsNavItems.value.map((item) => item.name))
 

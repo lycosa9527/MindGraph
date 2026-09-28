@@ -124,10 +124,10 @@ async function submit(): Promise<void> {
         label-position="top"
         class="mt-1"
       >
-        <el-form-item
-          v-if="kind === 'lesson'"
-          :label="t('workshop.selectParentGroup')"
-        >
+        <el-form-item v-if="kind === 'lesson'">
+          <template #label>
+            <I18nText k="workshop.selectParentGroup" />
+          </template>
           <el-select
             v-model="parentId"
             class="w-full"
@@ -149,7 +149,10 @@ async function submit(): Promise<void> {
           </p>
         </el-form-item>
 
-        <el-form-item :label="t('workshop.channelNameLabel')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="workshop.channelNameLabel" />
+          </template>
           <el-input
             v-model="name"
             maxlength="100"
@@ -158,7 +161,10 @@ async function submit(): Promise<void> {
           />
         </el-form-item>
 
-        <el-form-item :label="t('workshop.topicDescription')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="workshop.topicDescription" />
+          </template>
           <el-input
             v-model="description"
             type="textarea"
@@ -169,7 +175,10 @@ async function submit(): Promise<void> {
           />
         </el-form-item>
 
-        <el-form-item :label="t('workshop.channelAvatarEmoji')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="workshop.channelAvatarEmoji" />
+          </template>
           <el-input
             v-model="avatar"
             maxlength="50"

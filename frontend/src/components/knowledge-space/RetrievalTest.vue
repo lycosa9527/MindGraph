@@ -128,7 +128,10 @@ function testRetrieval() {
         label-width="120px"
         label-position="left"
       >
-        <ElFormItem :label="t('knowledge.retrieval.testQuery')">
+        <ElFormItem>
+          <template #label>
+            <I18nText k="knowledge.retrieval.testQuery" />
+          </template>
           <ElInput
             v-model="query"
             :placeholder="t('knowledge.retrieval.testQueryPlaceholder')"
@@ -136,26 +139,38 @@ function testRetrieval() {
             show-word-limit
           />
         </ElFormItem>
-        <ElFormItem :label="t('knowledge.retrieval.method')">
+        <ElFormItem>
+          <template #label>
+            <I18nText k="knowledge.retrieval.method" />
+          </template>
           <ElSelect
             v-model="method"
             style="width: 100%"
           >
             <el-option
-              :label="t('knowledge.retrieval.hybrid')"
               value="hybrid"
-            />
+              :label="t('knowledge.retrieval.hybrid')"
+            >
+              <I18nText k="knowledge.retrieval.hybrid" />
+            </el-option>
             <el-option
-              :label="t('knowledge.retrieval.semantic')"
               value="semantic"
-            />
+              :label="t('knowledge.retrieval.semantic')"
+            >
+              <I18nText k="knowledge.retrieval.semantic" />
+            </el-option>
             <el-option
-              :label="t('knowledge.retrieval.keyword')"
               value="keyword"
-            />
+              :label="t('knowledge.retrieval.keyword')"
+            >
+              <I18nText k="knowledge.retrieval.keyword" />
+            </el-option>
           </ElSelect>
         </ElFormItem>
-        <ElFormItem :label="t('knowledge.retrieval.topK')">
+        <ElFormItem>
+          <template #label>
+            <I18nText k="knowledge.retrieval.topK" />
+          </template>
           <ElSelect
             v-model="topK"
             style="width: 120px"
@@ -168,7 +183,10 @@ function testRetrieval() {
             />
           </ElSelect>
         </ElFormItem>
-        <ElFormItem :label="t('knowledge.retrieval.scoreThreshold')">
+        <ElFormItem>
+          <template #label>
+            <I18nText k="knowledge.retrieval.scoreThreshold" />
+          </template>
           <ElInput
             v-model.number="scoreThreshold"
             type="number"
@@ -186,7 +204,7 @@ function testRetrieval() {
             class="test-btn"
             @click="testRetrieval"
           >
-            {{ t('knowledge.retrieval.run') }}
+            <I18nText k="knowledge.retrieval.run" />
           </ElButton>
         </ElFormItem>
       </ElForm>
@@ -203,15 +221,15 @@ function testRetrieval() {
         >
           <template #header>
             <div class="flex justify-between items-center">
-              <span class="font-semibold">{{ t('knowledge.retrieval.results') }}</span>
+              <span class="font-semibold"><I18nText k="knowledge.retrieval.results" /></span>
               <div class="text-sm text-stone-500">
-                {{ t('knowledge.retrieval.timingTotal') }}:
-                {{ results.timing.total_ms.toFixed(0) }}ms ({{
-                  t('knowledge.retrieval.timingEmbed')
-                }}: {{ results.timing.embedding_ms.toFixed(0) }}ms,
-                {{ t('knowledge.retrieval.timingSearch') }}:
+                <I18nText k="knowledge.retrieval.timingTotal" />:
+                {{ results.timing.total_ms.toFixed(0) }}ms (<I18nText
+                  k="knowledge.retrieval.timingEmbed"
+                />: {{ results.timing.embedding_ms.toFixed(0) }}ms,
+                <I18nText k="knowledge.retrieval.timingSearch" />:
                 {{ results.timing.search_ms.toFixed(0) }}ms,
-                {{ t('knowledge.retrieval.timingRerank') }}:
+                <I18nText k="knowledge.retrieval.timingRerank" />:
                 {{ results.timing.rerank_ms.toFixed(0) }}ms)
               </div>
             </div>
@@ -222,18 +240,18 @@ function testRetrieval() {
             stripe
             class="results-table"
           >
-            <ElTableColumn
-              :label="t('knowledge.retrieval.colDocument')"
-              width="150"
-            >
+            <ElTableColumn width="150">
+              <template #header>
+                <I18nText k="knowledge.retrieval.colDocument" />
+              </template>
               <template #default="{ row }">
                 <span class="text-stone-700">{{ row.document_name }}</span>
               </template>
             </ElTableColumn>
-            <ElTableColumn
-              :label="t('knowledge.retrieval.colScore')"
-              width="100"
-            >
+            <ElTableColumn width="100">
+              <template #header>
+                <I18nText k="knowledge.retrieval.colScore" />
+              </template>
               <template #default="{ row }">
                 <span
                   :class="
@@ -248,10 +266,10 @@ function testRetrieval() {
                 </span>
               </template>
             </ElTableColumn>
-            <ElTableColumn
-              :label="t('knowledge.retrieval.colContent')"
-              show-overflow-tooltip
-            >
+            <ElTableColumn show-overflow-tooltip>
+              <template #header>
+                <I18nText k="knowledge.retrieval.colContent" />
+              </template>
               <template #default="{ row }">
                 <div class="text-stone-700">
                   {{ row.text.substring(0, 200) }}{{ row.text.length > 200 ? '...' : '' }}
@@ -262,19 +280,19 @@ function testRetrieval() {
 
           <div class="mt-4 text-sm text-stone-500 space-y-1">
             <div>
-              {{ t('knowledge.retrieval.statsTotalChunks') }}:
+              <I18nText k="knowledge.retrieval.statsTotalChunks" />:
               {{ results.stats.total_chunks_searched }}
             </div>
             <div>
-              {{ t('knowledge.retrieval.statsBeforeRerank') }}:
+              <I18nText k="knowledge.retrieval.statsBeforeRerank" />:
               {{ results.stats.chunks_before_rerank }}
             </div>
             <div>
-              {{ t('knowledge.retrieval.statsAfterRerank') }}:
+              <I18nText k="knowledge.retrieval.statsAfterRerank" />:
               {{ results.stats.chunks_after_rerank }}
             </div>
             <div>
-              {{ t('knowledge.retrieval.statsFiltered') }}:
+              <I18nText k="knowledge.retrieval.statsFiltered" />:
               {{ results.stats.chunks_filtered_by_threshold }}
             </div>
           </div>

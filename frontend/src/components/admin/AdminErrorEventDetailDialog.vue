@@ -132,10 +132,10 @@ function formatTags(tags: Record<string, unknown> | null | undefined): string {
             </template>
             <pre class="admin-error-detail-pre">{{ props.event.message }}</pre>
           </el-descriptions-item>
-          <el-descriptions-item
-            v-if="props.event.tags && Object.keys(props.event.tags).length > 0"
-            :label="t('admin.errors.tags')"
-          >
+          <el-descriptions-item v-if="props.event.tags && Object.keys(props.event.tags).length > 0">
+            <template #label>
+              <I18nText k="admin.errors.tags" />
+            </template>
             <pre class="admin-error-detail-pre">{{ formatTags(props.event.tags) }}</pre>
           </el-descriptions-item>
           <el-descriptions-item v-if="props.event.stacktrace">

@@ -405,9 +405,9 @@ onBeforeUnmount(() => {
           </ElDropdown>
 
           <div class="flex min-w-0 items-center gap-2">
-            <span class="shrink-0 text-sm font-medium text-slate-600">{{
-              t('auth.quickRegHeadcount')
-            }}</span>
+            <span class="shrink-0 text-sm font-medium text-slate-600"
+              ><I18nText k="auth.quickRegHeadcount"
+            /></span>
             <ElDropdown
               trigger="click"
               :disabled="tokenLoading"

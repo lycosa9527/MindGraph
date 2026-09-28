@@ -35,10 +35,10 @@ import { useFileCenterMutations, usePackageDetail } from '@/composables/fileCent
 import { useFileCenterActivePackage } from '@/composables/fileCenter/useFileCenterActivePackage'
 import { useChatHandoff } from '@/composables/mindMap/useChatHandoff'
 import {
+  docSummaryLiteIntent,
   isLiteSourceReadyStatus,
   resolveLiteDraftKind,
   waitForDocSummarySourceReady,
-  docSummaryLiteIntent,
 } from '@/composables/mindMap/useDocSummaryLiteSaveAndGenerate'
 import { useMindMapDocumentSummary } from '@/composables/mindMap/useMindMapDocumentSummary'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
@@ -101,11 +101,7 @@ const { pairingCode, handoffStatus, expiresInSeconds, isMinting, mintError, mint
   useChatHandoff(activePackageId)
 
 const activeTab = ref<SummaryTab>(
-  DOC_SUMMARY_LITE_UI
-    ? docSummaryLiteIntent.value === 'web'
-      ? 'web'
-      : 'file'
-    : 'document'
+  DOC_SUMMARY_LITE_UI ? (docSummaryLiteIntent.value === 'web' ? 'web' : 'file') : 'document'
 )
 const corpusExpanded = ref(true)
 const pastedText = ref('')
@@ -229,9 +225,7 @@ function formatPendingFileSize(bytes: number): string {
 }
 
 const pipelineBusy = ref(false)
-const generateBusy = computed(
-  () => pipelineBusy.value || isGenerating.value || isAdding.value
-)
+const generateBusy = computed(() => pipelineBusy.value || isGenerating.value || isAdding.value)
 
 const canGenerate = computed(() => {
   if (
@@ -780,10 +774,10 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
       class="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center"
     >
       <p class="text-sm font-medium text-slate-600">
-        {{ t('canvas.mindMapDocumentSummary.featureDisabledTitle') }}
+        <I18nText k="canvas.mindMapDocumentSummary.featureDisabledTitle" />
       </p>
       <p class="text-xs leading-relaxed text-slate-400">
-        {{ t('canvas.mindMapDocumentSummary.featureDisabledHint') }}
+        <I18nText k="canvas.mindMapDocumentSummary.featureDisabledHint" />
       </p>
     </div>
 
@@ -803,7 +797,7 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
         v-if="!activeDiagramId && !docSummaryLiteUi"
         class="border-b border-amber-100 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-800"
       >
-        {{ t('canvas.mindMapDocumentSummary.saveDiagramHint') }}
+        <I18nText k="canvas.mindMapDocumentSummary.saveDiagramHint" />
       </div>
 
       <!-- Corpus header (full RAG mode only) -->
@@ -822,7 +816,11 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
               class="truncate text-xs font-semibold text-slate-800"
               @click.stop="startEditName"
             >
-              {{ linkedPackage?.name || t('canvas.mindMapDocumentSummary.noPackageYet') }}
+              <template v-if="linkedPackage?.name">{{ linkedPackage?.name }}</template
+              ><I18nText
+                v-else
+                k="canvas.mindMapDocumentSummary.noPackageYet"
+              />
             </div>
             <input
               v-else
@@ -838,12 +836,13 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
                 class="inline-block h-1.5 w-1.5 rounded-full"
                 :class="completedCount > 0 ? 'bg-emerald-500' : 'bg-slate-300'"
               />
-              {{
-                t('canvas.mindMapDocumentSummary.corpusStatus', {
+              <I18nText
+                k="canvas.mindMapDocumentSummary.corpusStatus"
+                :params="{
                   completed: completedCount,
                   total: documents.length,
-                })
-              }}
+                }"
+              />
               <Loader2
                 v-if="isIndexing"
                 class="h-3 w-3 animate-spin text-blue-500"
@@ -866,7 +865,7 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
             v-if="documents.length === 0"
             class="px-1 py-1 text-[11px] text-slate-400"
           >
-            {{ t('canvas.mindMapDocumentSummary.noSources') }}
+            <I18nText k="canvas.mindMapDocumentSummary.noSources" />
           </p>
           <div
             v-for="doc in documents"
@@ -933,7 +932,10 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
               class="mt-0.5 truncate text-[11px] text-(--swiss-muted,#78716c)"
               :title="originalSourceLabel || undefined"
             >
-              {{ t('canvas.mindMapDocumentSummary.fromSource', { name: originalSourceLabel }) }}
+              <I18nText
+                k="canvas.mindMapDocumentSummary.fromSource"
+                :params="{ name: originalSourceLabel }"
+              />
             </p>
             <p
               v-if="isSourceProcessing"
@@ -946,13 +948,17 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
               v-else-if="isSourceReady"
               class="mt-1.5 text-[11px] text-(--swiss-geek-teal-ui,#0f766e)"
             >
-              {{ t('canvas.mindMapDocumentSummary.statusReady') }}
+              <I18nText k="canvas.mindMapDocumentSummary.statusReady" />
             </p>
             <p
               v-else-if="isSourceFailed"
               class="mt-1.5 text-[11px] text-(--swiss-geek-red-ui,#e30613)"
             >
-              {{ activeSource.error_message || t('canvas.mindMapDocumentSummary.statusFailed') }}
+              <template v-if="activeSource.error_message">{{ activeSource.error_message }}</template
+              ><I18nText
+                v-else
+                k="canvas.mindMapDocumentSummary.statusFailed"
+              />
             </p>
           </div>
           <button
@@ -993,7 +999,7 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
           :class="{ 'doc-summary-tab--active': activeTab === tab.id }"
           @click="switchTab(tab.id)"
         >
-          {{ t(tab.labelKey) }}
+          <I18nText :k="tab.labelKey" />
         </button>
       </div>
 
@@ -1067,10 +1073,10 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
                 :stroke-width="1.75"
               />
               <span class="text-sm font-medium text-(--swiss-ink,#1c1917)">
-                {{ t('canvas.mindMapDocumentSummary.uploadFileHint') }}
+                <I18nText k="canvas.mindMapDocumentSummary.uploadFileHint" />
               </span>
               <span class="mt-1 text-[11px] leading-relaxed text-(--swiss-muted,#78716c)">
-                {{ t('canvas.mindMapDocumentSummary.uploadFileSubhint') }}
+                <I18nText k="canvas.mindMapDocumentSummary.uploadFileSubhint" />
               </span>
             </button>
           </template>
@@ -1099,11 +1105,13 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
           class="flex flex-1 flex-col justify-center px-1 py-6 text-center"
         >
           <p class="text-[11px] leading-relaxed text-(--swiss-muted,#78716c)">
-            {{
-              isSourceFailed
-                ? t('canvas.mindMapDocumentSummary.deleteToRetry')
-                : t('canvas.mindMapDocumentSummary.sourceBoundHint')
-            }}
+            <I18nText
+              v-if="isSourceFailed"
+              k="canvas.mindMapDocumentSummary.deleteToRetry"
+            /><I18nText
+              v-else
+              k="canvas.mindMapDocumentSummary.sourceBoundHint"
+            />
           </p>
         </div>
 
@@ -1122,7 +1130,7 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
               :stroke-width="1.75"
             />
             <span class="text-sm font-medium text-slate-700">
-              {{ t('canvas.mindMapDocumentSummary.uploadDocHint') }}
+              <I18nText k="canvas.mindMapDocumentSummary.uploadDocHint" />
             </span>
             <span
               v-if="uploadedFileName"
@@ -1162,7 +1170,7 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
               :stroke-width="1.75"
             />
             <span class="text-sm font-medium text-slate-700">
-              {{ t('canvas.mindMapDocumentSummary.uploadImageHint') }}
+              <I18nText k="canvas.mindMapDocumentSummary.uploadImageHint" />
             </span>
           </button>
           <div
@@ -1215,26 +1223,26 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
             />
           </div>
           <p class="text-[11px] leading-relaxed text-(--swiss-muted,#78716c)">
-            {{
-              t(
+            <I18nText
+              :k="
                 docSummaryLiteUi
                   ? 'canvas.mindMapDocumentSummary.webLinkHintLite'
                   : 'canvas.mindMapDocumentSummary.webLinkHint'
-              )
-            }}
+              "
+            />
           </p>
           <p
             v-if="docSummaryLiteUi"
             class="text-[11px] leading-relaxed text-(--swiss-muted,#78716c)"
           >
-            {{ t('canvas.mindMapDocumentSummary.webChromeExtensionHint') }}
+            <I18nText k="canvas.mindMapDocumentSummary.webChromeExtensionHint" />
             <a
               v-if="canUseChromeExtension"
               :href="chromeExtensionZipUrl"
               class="ml-1 font-medium text-(--swiss-ink,#1c1917) underline decoration-(--swiss-border-strong,#d6d3d1) underline-offset-2 hover:decoration-(--swiss-ink,#1c1917)"
               download
             >
-              {{ t('canvas.mindMapDocumentSummary.webChromeExtensionLink') }}
+              <I18nText k="canvas.mindMapDocumentSummary.webChromeExtensionLink" />
             </a>
           </p>
         </div>
@@ -1245,13 +1253,13 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
           class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"
         >
           <p class="text-[11px] leading-relaxed text-slate-500">
-            {{
-              t(
+            <I18nText
+              :k="
                 docSummaryLiteUi
                   ? 'canvas.mindMapDocumentSummary.chatIntroLite'
                   : 'canvas.mindMapDocumentSummary.chatIntro'
-              )
-            }}
+              "
+            />
           </p>
           <a
             :href="fileReaderDownloadUrl"
@@ -1261,7 +1269,7 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
               class="h-4 w-4"
               :stroke-width="2"
             />
-            {{ t('canvas.mindMapDocumentSummary.downloadReader') }}
+            <I18nText k="canvas.mindMapDocumentSummary.downloadReader" />
           </a>
           <div
             class="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-center"
@@ -1271,7 +1279,7 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
               :stroke-width="1.75"
             />
             <p class="text-xs font-medium text-slate-600">
-              {{ t('canvas.mindMapDocumentSummary.pairingCode') }}
+              <I18nText k="canvas.mindMapDocumentSummary.pairingCode" />
             </p>
             <p
               v-if="pairingCode"
@@ -1289,61 +1297,64 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
               v-if="pairingCode"
               class="mt-1 text-[10px] text-slate-400"
             >
-              {{ t('canvas.mindMapDocumentSummary.pairingExpires', { minutes: pairingMinutes }) }}
+              <I18nText
+                k="canvas.mindMapDocumentSummary.pairingExpires"
+                :params="{ minutes: pairingMinutes }"
+              />
             </p>
             <p
               v-if="handoffStatus === 'waiting'"
               class="mt-2 text-[11px] text-blue-600"
             >
-              {{ t('canvas.mindMapDocumentSummary.chatWaiting') }}
+              <I18nText k="canvas.mindMapDocumentSummary.chatWaiting" />
             </p>
             <p
               v-else-if="handoffStatus === 'received'"
               class="mt-2 text-[11px] font-medium text-emerald-600 animate-pulse"
             >
-              {{
-                t(
+              <I18nText
+                :k="
                   docSummaryLiteUi
                     ? 'canvas.mindMapDocumentSummary.chatReceivedLite'
                     : 'canvas.mindMapDocumentSummary.chatReceived'
-                )
-              }}
+                "
+              />
             </p>
             <p
               v-else-if="handoffStatus === 'indexing'"
               class="mt-2 text-[11px] text-blue-600"
             >
-              {{
-                t(
+              <I18nText
+                :k="
                   docSummaryLiteUi
                     ? 'canvas.mindMapDocumentSummary.statusExtracting'
                     : 'canvas.mindMapDocumentSummary.chatIndexing'
-                )
-              }}
+                "
+              />
             </p>
             <p
               v-else-if="handoffStatus === 'done'"
               class="mt-2 text-[11px] text-emerald-600"
             >
-              {{
-                t(
+              <I18nText
+                :k="
                   docSummaryLiteUi
                     ? 'canvas.mindMapDocumentSummary.chatDoneLite'
                     : 'canvas.mindMapDocumentSummary.chatDone'
-                )
-              }}
+                "
+              />
             </p>
             <p
               v-else-if="handoffStatus === 'failed'"
               class="mt-2 text-[11px] text-rose-500"
             >
-              {{ t('canvas.mindMapDocumentSummary.chatHandoffFailed') }}
+              <I18nText k="canvas.mindMapDocumentSummary.chatHandoffFailed" />
             </p>
             <p
               v-else-if="handoffStatus === 'expired'"
               class="mt-2 text-[11px] text-rose-500"
             >
-              {{ t('canvas.mindMapDocumentSummary.chatExpired') }}
+              <I18nText k="canvas.mindMapDocumentSummary.chatExpired" />
             </p>
             <button
               v-if="!pairingCode && handoffStatus !== 'done'"
@@ -1352,7 +1363,11 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
               :disabled="isMinting || collabActive"
               @click="startChatPairing()"
             >
-              {{ isMinting ? '…' : t('canvas.mindMapDocumentSummary.startPairingCode') }}
+              <template v-if="isMinting">{{ '…' }}</template
+              ><I18nText
+                v-else
+                k="canvas.mindMapDocumentSummary.startPairingCode"
+              />
             </button>
             <button
               v-if="handoffStatus === 'expired' || handoffStatus === 'failed' || mintError"
@@ -1361,7 +1376,7 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
               :disabled="isMinting || collabActive"
               @click="startChatPairing()"
             >
-              {{ t('canvas.mindMapDocumentSummary.refreshPairingCode') }}
+              <I18nText k="canvas.mindMapDocumentSummary.refreshPairingCode" />
             </button>
           </div>
         </div>
@@ -1373,7 +1388,7 @@ const glassHeroVariant = computed<'doc' | 'web' | 'chat'>(() => {
           :disabled="!canAdd"
           @click="handleAddToCorpus"
         >
-          {{ t('canvas.mindMapDocumentSummary.addToCorpus') }}
+          <I18nText k="canvas.mindMapDocumentSummary.addToCorpus" />
         </button>
       </div>
 

@@ -5,10 +5,10 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { useAdminUsersSchoolFilterRoute } from '@/composables/admin/useAdminUsersSchoolFilterRoute'
-import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
-import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useLanguage, useNotifications } from '@/composables'
+import { useAdminAccess } from '@/composables/admin/useAdminAccess'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
+import { useAdminUsersSchoolFilterRoute } from '@/composables/admin/useAdminUsersSchoolFilterRoute'
 import { useAdminUsers } from '@/composables/queries'
 import type { AdminUsersQuery } from '@/composables/queries/adminApi'
 import { useAdminPanelStore } from '@/stores'
@@ -30,8 +30,11 @@ const props = withDefaults(
 const { can } = useAdminAccess()
 const adminPanel = useAdminPanelStore()
 const { on: onAdminEvent } = useAdminEventBus('AdminUsersTab')
-const { orgFilter, syncOrgFilterToRoute, onOrgFilterChange: applyOrgFilterChange } =
-  useAdminUsersSchoolFilterRoute()
+const {
+  orgFilter,
+  syncOrgFilterToRoute,
+  onOrgFilterChange: applyOrgFilterChange,
+} = useAdminUsersSchoolFilterRoute()
 const { t } = useLanguage()
 const notify = useNotifications()
 
@@ -88,9 +91,7 @@ const users = computed(() => (usersQuery.data.value?.users ?? []) as Record<stri
 
 const apiPagination = computed(() => usersQuery.data.value?.pagination)
 
-const showPaginationBar = computed(
-  () => !isLoading.value && usersQuery.data.value != null
-)
+const showPaginationBar = computed(() => !isLoading.value && usersQuery.data.value != null)
 
 function resetPaginationMeta(): void {
   pagination.value.total = 0
@@ -269,7 +270,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   adminPanel.clearUsersToolbar()
 })
-
 </script>
 
 <template>
@@ -279,7 +279,7 @@ onBeforeUnmount(() => {
       class="admin-users-card"
     >
       <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-        {{ t('admin.usersTokensAllTimeHint') }}
+        <I18nText k="admin.usersTokensAllTimeHint" />
       </p>
       <AdminUsersTable
         :users="users"

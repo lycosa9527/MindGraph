@@ -102,9 +102,9 @@ function setEndArrow(on: boolean): void {
       @click.stop
     >
       <div class="mm-summary-toolbar__row">
-        <span class="mm-summary-toolbar__label">{{
-          t('canvas.floatingToolbar.assocShape', '关联线形状')
-        }}</span>
+        <span class="mm-summary-toolbar__label"
+          ><I18nText k="canvas.floatingToolbar.assocShape"
+        /></span>
         <button
           type="button"
           class="mm-summary-toolbar__field"
@@ -181,7 +181,7 @@ function setEndArrow(on: boolean): void {
                       :stroke-dasharray="LINE_DASH[option]"
                     />
                   </svg>
-                  {{ t(lineLabel[option]) }}
+                  <I18nText :k="lineLabel[option]" />
                 </ElDropdownItem>
               </ElDropdownMenu>
             </template>
@@ -242,7 +242,7 @@ function setEndArrow(on: boolean): void {
                 class="mm-summary-toolbar__native"
                 :value="strokeColor"
                 @input="onCustomColor"
-              >
+              />
             </div>
           </div>
         </div>
@@ -250,9 +250,9 @@ function setEndArrow(on: boolean): void {
 
       <div class="mm-summary-toolbar__row mm-summary-toolbar__row--arrows">
         <div class="mm-summary-toolbar__arrow">
-          <span class="mm-summary-toolbar__label">{{
-            t('canvas.floatingToolbar.assocStartArrow', '起始箭头')
-          }}</span>
+          <span class="mm-summary-toolbar__label"
+            ><I18nText k="canvas.floatingToolbar.assocStartArrow"
+          /></span>
           <ElDropdown
             trigger="click"
             placement="bottom-end"
@@ -289,22 +289,22 @@ function setEndArrow(on: boolean): void {
                   :class="{ 'is-active': !arrows.start }"
                   @click="setStartArrow(false)"
                 >
-                  {{ t('canvas.floatingToolbar.assocArrowNone', '无') }}
+                  <I18nText k="canvas.floatingToolbar.assocArrowNone" />
                 </ElDropdownItem>
                 <ElDropdownItem
                   :class="{ 'is-active': arrows.start }"
                   @click="setStartArrow(true)"
                 >
-                  {{ t('canvas.floatingToolbar.assocArrow', '箭头') }}
+                  <I18nText k="canvas.floatingToolbar.assocArrow" />
                 </ElDropdownItem>
               </ElDropdownMenu>
             </template>
           </ElDropdown>
         </div>
         <div class="mm-summary-toolbar__arrow">
-          <span class="mm-summary-toolbar__label">{{
-            t('canvas.floatingToolbar.assocEndArrow', '结束箭头')
-          }}</span>
+          <span class="mm-summary-toolbar__label"
+            ><I18nText k="canvas.floatingToolbar.assocEndArrow"
+          /></span>
           <ElDropdown
             trigger="click"
             placement="bottom-end"
@@ -341,13 +341,13 @@ function setEndArrow(on: boolean): void {
                   :class="{ 'is-active': !arrows.end }"
                   @click="setEndArrow(false)"
                 >
-                  {{ t('canvas.floatingToolbar.assocArrowNone', '无') }}
+                  <I18nText k="canvas.floatingToolbar.assocArrowNone" />
                 </ElDropdownItem>
                 <ElDropdownItem
                   :class="{ 'is-active': arrows.end }"
                   @click="setEndArrow(true)"
                 >
-                  {{ t('canvas.floatingToolbar.assocArrow', '箭头') }}
+                  <I18nText k="canvas.floatingToolbar.assocArrow" />
                 </ElDropdownItem>
               </ElDropdownMenu>
             </template>

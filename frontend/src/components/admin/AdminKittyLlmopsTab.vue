@@ -85,7 +85,7 @@ async function saveDefaults(): Promise<void> {
 <template>
   <div class="kitty-llmops space-y-6">
     <el-card shadow="never">
-      <template #header>{{ t('admin.kittyDevicesTitle') }}</template>
+      <template #header><I18nText k="admin.kittyDevicesTitle" /></template>
       <el-table
         v-if="devices.length"
         :data="devices"
@@ -94,28 +94,40 @@ async function saveDefaults(): Promise<void> {
       >
         <el-table-column
           prop="user_id"
-          :label="t('admin.kittyDeviceUser')"
           width="90"
-        />
+        >
+          <template #header>
+            <I18nText k="admin.kittyDeviceUser" />
+          </template>
+        </el-table-column>
         <el-table-column
           prop="device_id"
-          :label="t('admin.kittyDeviceId')"
           min-width="140"
-        />
+        >
+          <template #header>
+            <I18nText k="admin.kittyDeviceId" />
+          </template>
+        </el-table-column>
         <el-table-column
           prop="firmware"
-          :label="t('admin.kittyDeviceFirmware')"
           width="120"
-        />
+        >
+          <template #header>
+            <I18nText k="admin.kittyDeviceFirmware" />
+          </template>
+        </el-table-column>
         <el-table-column
           prop="listen_mode"
-          :label="t('admin.kittyDeviceListenMode')"
           width="120"
-        />
-        <el-table-column
-          :label="t('admin.kittyDeviceLastSeen')"
-          width="180"
         >
+          <template #header>
+            <I18nText k="admin.kittyDeviceListenMode" />
+          </template>
+        </el-table-column>
+        <el-table-column width="180">
+          <template #header>
+            <I18nText k="admin.kittyDeviceLastSeen" />
+          </template>
           <template #default="{ row }">
             {{ formatSeen(row.last_seen) }}
           </template>
@@ -125,12 +137,12 @@ async function saveDefaults(): Promise<void> {
         v-else
         class="text-sm text-gray-500"
       >
-        {{ t('admin.kittyDevicesEmpty') }}
+        <I18nText k="admin.kittyDevicesEmpty" />
       </p>
     </el-card>
 
     <el-card shadow="never">
-      <template #header>{{ t('admin.kittySessionsTitle') }}</template>
+      <template #header><I18nText k="admin.kittySessionsTitle" /></template>
       <el-table
         v-if="sessions.length"
         :data="sessions"
@@ -139,9 +151,12 @@ async function saveDefaults(): Promise<void> {
       >
         <el-table-column
           prop="user_id"
-          :label="t('admin.kittyDeviceUser')"
           width="90"
-        />
+        >
+          <template #header>
+            <I18nText k="admin.kittyDeviceUser" />
+          </template>
+        </el-table-column>
         <el-table-column
           prop="lane"
           label="Lane"
@@ -149,14 +164,20 @@ async function saveDefaults(): Promise<void> {
         />
         <el-table-column
           prop="voice_phase"
-          :label="t('admin.kittySessionPhase')"
           width="120"
-        />
+        >
+          <template #header>
+            <I18nText k="admin.kittySessionPhase" />
+          </template>
+        </el-table-column>
         <el-table-column
           prop="listen_mode"
-          :label="t('admin.kittyDeviceListenMode')"
           width="120"
-        />
+        >
+          <template #header>
+            <I18nText k="admin.kittyDeviceListenMode" />
+          </template>
+        </el-table-column>
         <el-table-column
           prop="scope"
           label="Scope"
@@ -167,12 +188,12 @@ async function saveDefaults(): Promise<void> {
         v-else
         class="text-sm text-gray-500"
       >
-        {{ t('admin.kittySessionsEmpty') }}
+        <I18nText k="admin.kittySessionsEmpty" />
       </p>
     </el-card>
 
     <el-card shadow="never">
-      <template #header>{{ t('admin.kittyDefaultsTitle') }}</template>
+      <template #header><I18nText k="admin.kittyDefaultsTitle" /></template>
       <div class="flex flex-wrap gap-3 items-end">
         <el-input
           v-model="defaultsUserId"
@@ -201,7 +222,7 @@ async function saveDefaults(): Promise<void> {
           :loading="defaultsSaving"
           @click="saveDefaults"
         >
-          {{ t('admin.kittyDefaultsSave') }}
+          <I18nText k="admin.kittyDefaultsSave" />
         </el-button>
       </div>
     </el-card>
@@ -341,8 +362,7 @@ async function saveDefaults(): Promise<void> {
           <template #header>Flow (Mermaid source)</template>
           <pre
             class="text-xs bg-gray-900 text-green-100 p-4 rounded overflow-x-auto whitespace-pre-wrap"
-            >{{ flowText }}</pre
-          >
+            >{{ flowText }}</pre>
         </el-card>
       </template>
     </div>

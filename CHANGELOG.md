@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.111] - 2026-09-29
+
+> **Dual-language mode shows the presenter line on menus, tables, and buttons, not only on the rows that already used a message key.**
+
+### Fixed
+
+- **Bilingual chrome** — With a non-Chinese interface language and Chinese as the presenter line, admin menus, breadcrumbs, role labels, table headers, form labels, tabs, segmented controls, context menus, and showcase filters show both languages. Labels that were rendered from `t()` as plain text kept only the interface language, even though the Chinese catalog strings were still present.
+- **MindMate and brand** — The sidebar brand, edition line, and default MindMate name follow the same two-line pattern. A custom school agent name stays the saved name.
+
+### Tests
+
+- [`frontend/scripts/codemod-bilingual-template.mjs`](frontend/scripts/codemod-bilingual-template.mjs) (`--check` in `check:scripts`)
+
 ## [5.180.110] - 2026-09-29
 
 > **Wrapped labels on thinking maps and mind maps no longer leave one Chinese character on the second line.**

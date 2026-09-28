@@ -82,7 +82,7 @@ async function onInstall() {
         :loading="publish.isPending.value"
         @click="onPublish"
       >
-        {{ t('admin.cos.publishQdrant') }}
+        <I18nText k="admin.cos.publishQdrant" />
       </el-button>
       <el-button
         v-if="isConsumer"
@@ -90,7 +90,7 @@ async function onInstall() {
         :loading="install.isPending.value"
         @click="onInstall"
       >
-        {{ t('admin.cos.installQdrant') }}
+        <I18nText k="admin.cos.installQdrant" />
       </el-button>
     </div>
   </div>

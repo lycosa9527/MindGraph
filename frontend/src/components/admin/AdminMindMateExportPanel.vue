@@ -9,10 +9,14 @@
 import { computed, ref, watch } from 'vue'
 
 import AdminMindMateExportDumpsTab from '@/components/admin/AdminMindMateExportDumpsTab.vue'
-import { useMindMateExportPanelTab } from '@/composables/admin/useMindMateExportPanelTab'
 import { useLanguage, useNotifications } from '@/composables'
 import { useMindMateExportJobStream } from '@/composables/admin/useMindMateExportJobStream'
+import { useMindMateExportPanelTab } from '@/composables/admin/useMindMateExportPanelTab'
 import {
+  type MindMateExportBubble,
+  type MindMateExportConversation,
+  type MindMateExportFilters,
+  type MindMateExportJob,
   cancelMindMateExportJob,
   createMindMateExportJob,
   downloadMindMateExport,
@@ -24,10 +28,6 @@ import {
   useAdminOrganizations,
   useMindMateExportConversations,
   useMindMateExportUsers,
-  type MindMateExportBubble,
-  type MindMateExportConversation,
-  type MindMateExportFilters,
-  type MindMateExportJob,
 } from '@/composables/queries'
 
 const { t } = useLanguage()
@@ -52,23 +52,47 @@ const dateTimeDefaultRange: [Date, Date] = [
 ]
 
 const scopeOptions = computed(() => [
-  { label: t('admin.mindmateExport.scopeAll'), value: 'all' as ScopeMode },
-  { label: t('admin.mindmateExport.scopeWholeOrg'), value: 'whole' as ScopeMode },
-  { label: t('admin.mindmateExport.scopeUsers'), value: 'users' as ScopeMode },
+  {
+    label: t('admin.mindmateExport.scopeAll'),
+    labelKey: 'admin.mindmateExport.scopeAll',
+    value: 'all' as ScopeMode,
+  },
+  {
+    label: t('admin.mindmateExport.scopeWholeOrg'),
+    labelKey: 'admin.mindmateExport.scopeWholeOrg',
+    value: 'whole' as ScopeMode,
+  },
+  {
+    label: t('admin.mindmateExport.scopeUsers'),
+    labelKey: 'admin.mindmateExport.scopeUsers',
+    value: 'users' as ScopeMode,
+  },
 ])
 
 const formatOptions = computed(() => [
-  { label: t('admin.mindmateExport.formatHtml'), value: 'html' as ExportFormat },
-  { label: t('admin.mindmateExport.formatJson'), value: 'json' as ExportFormat },
-  { label: t('admin.mindmateExport.formatZip'), value: 'zip' as ExportFormat },
+  {
+    label: t('admin.mindmateExport.formatHtml'),
+    labelKey: 'admin.mindmateExport.formatHtml',
+    value: 'html' as ExportFormat,
+  },
+  {
+    label: t('admin.mindmateExport.formatJson'),
+    labelKey: 'admin.mindmateExport.formatJson',
+    value: 'json' as ExportFormat,
+  },
+  {
+    label: t('admin.mindmateExport.formatZip'),
+    labelKey: 'admin.mindmateExport.formatZip',
+    value: 'zip' as ExportFormat,
+  },
 ])
 
 const datePresetOptions = computed(() => [
-  { id: 'today' as const, label: t('admin.today') },
-  { id: 'week' as const, label: t('admin.thisWeek') },
-  { id: 'month' as const, label: t('admin.thisMonth') },
-  { id: 'year' as const, label: t('admin.thisYear') },
-  { id: 'all' as const, label: t('admin.allTime') },
+  { id: 'today' as const, label: t('admin.today'), labelKey: 'admin.today' },
+  { id: 'week' as const, label: t('admin.thisWeek'), labelKey: 'admin.thisWeek' },
+  { id: 'month' as const, label: t('admin.thisMonth'), labelKey: 'admin.thisMonth' },
+  { id: 'year' as const, label: t('admin.thisYear'), labelKey: 'admin.thisYear' },
+  { id: 'all' as const, label: t('admin.allTime'), labelKey: 'admin.allTime' },
 ])
 
 // ---------------------------------------------------------------------------
@@ -239,10 +263,9 @@ function resetListState(): void {
   }
 }
 
-const conversationsQuery = useMindMateExportConversations(
-  () => appliedFilters.value ?? {},
-  { enabled: computed(() => appliedFilters.value != null) }
-)
+const conversationsQuery = useMindMateExportConversations(() => appliedFilters.value ?? {}, {
+  enabled: computed(() => appliedFilters.value != null),
+})
 
 const conversations = computed<MindMateExportConversation[]>(() => accumulatedConversations.value)
 const hasLoadedConversations = computed(() => appliedFilters.value != null)
@@ -430,11 +453,11 @@ const showJobPanel = computed(
 const jobIsTerminal = computed(() => {
   const status = activeJob.value?.status
   return (
-    status === 'completed'
-    || status === 'completed_with_gaps'
-    || status === 'cancelled'
-    || status === 'failed'
-    || status === 'failed_verification'
+    status === 'completed' ||
+    status === 'completed_with_gaps' ||
+    status === 'cancelled' ||
+    status === 'failed' ||
+    status === 'failed_verification'
   )
 })
 
@@ -499,19 +522,15 @@ async function startExportJob(): Promise<void> {
   downloading.value = true
   try {
     const orgName =
-      appliedFilters.value.orgId != null
-        ? orgLabel(appliedFilters.value.orgId)
-        : undefined
-    const res = await createMindMateExportJob(
-      appliedFilters.value,
-      exportFormat.value,
-      orgName
-    )
+      appliedFilters.value.orgId != null ? orgLabel(appliedFilters.value.orgId) : undefined
+    const res = await createMindMateExportJob(appliedFilters.value, exportFormat.value, orgName)
     activeJobId.value = res.job.id
-    notify.success(t('admin.mindmateExport.jobProgress', {
-      percent: res.job.progress_percent,
-      stage: res.job.current_stage ?? res.job.status,
-    }))
+    notify.success(
+      t('admin.mindmateExport.jobProgress', {
+        percent: res.job.progress_percent,
+        stage: res.job.current_stage ?? res.job.status,
+      })
+    )
   } catch {
     notify.error(t('admin.mindmateExport.downloadError'))
   } finally {
@@ -616,429 +635,450 @@ async function download(): Promise<void> {
 <template>
   <div class="mindmate-export-page">
     <template v-if="panelTab === 'export'">
-    <p class="mindmate-export-privacy">
-      {{ t('admin.mindmateExport.privacyNotice') }}
-    </p>
+      <p class="mindmate-export-privacy">
+        <I18nText k="admin.mindmateExport.privacyNotice" />
+      </p>
 
-    <section class="mindmate-export-card mindmate-export-filters">
-      <div class="mindmate-export-filter-grid">
-        <div class="mindmate-export-field mindmate-export-field--org">
-          <label class="mindmate-export-label">{{ t('admin.mindmateExport.orgLabel') }}</label>
-          <el-select
-            v-model="selectedOrgId"
-            filterable
-            clearable
-            :disabled="scopeMode === 'all'"
-            :placeholder="
-              scopeMode === 'all'
-                ? t('admin.mindmateExport.orgAllSchools')
-                : t('admin.mindmateExport.orgPlaceholder')
-            "
-            class="admin-swiss-select mindmate-export-select--org"
-          >
-            <el-option
-              v-for="opt in orgOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
-            />
-          </el-select>
-        </div>
-
-        <div class="mindmate-export-field">
-          <label class="mindmate-export-label">{{ t('admin.mindmateExport.scopeLabel') }}</label>
-          <div
-            class="admin-swiss-segmented admin-swiss-segmented--block"
-            role="radiogroup"
-            :aria-label="t('admin.mindmateExport.scopeLabel')"
-          >
-            <button
-              v-for="opt in scopeOptions"
-              :key="opt.value"
-              type="button"
-              role="radio"
-              class="admin-swiss-segment"
-              :class="{ 'is-active': scopeMode === opt.value }"
-              :aria-checked="scopeMode === opt.value"
-              @click="scopeMode = opt.value"
+      <section class="mindmate-export-card mindmate-export-filters">
+        <div class="mindmate-export-filter-grid">
+          <div class="mindmate-export-field mindmate-export-field--org">
+            <label class="mindmate-export-label"
+              ><I18nText k="admin.mindmateExport.orgLabel"
+            /></label>
+            <el-select
+              v-model="selectedOrgId"
+              filterable
+              clearable
+              :disabled="scopeMode === 'all'"
+              :placeholder="
+                scopeMode === 'all'
+                  ? t('admin.mindmateExport.orgAllSchools')
+                  : t('admin.mindmateExport.orgPlaceholder')
+              "
+              class="admin-swiss-select mindmate-export-select--org"
             >
-              {{ opt.label }}
-            </button>
+              <el-option
+                v-for="opt in orgOptions"
+                :key="opt.value"
+                :label="opt.label"
+                :value="opt.value"
+              />
+            </el-select>
           </div>
-        </div>
 
-        <div
-          v-if="scopeMode === 'users'"
-          class="mindmate-export-field mindmate-export-field--users"
-        >
-          <label class="mindmate-export-label">{{ t('admin.mindmateExport.usersLabel') }}</label>
-          <el-select
-            v-model="selectedUserIds"
-            multiple
-            filterable
-            collapse-tags
-            collapse-tags-tooltip
-            :placeholder="t('admin.mindmateExport.usersPlaceholder')"
-            :loading="usersQuery.isFetching.value"
-            class="admin-swiss-select mindmate-export-select--users"
-          >
-            <el-option
-              v-for="opt in userOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
-            />
-          </el-select>
-        </div>
-
-        <div class="mindmate-export-field mindmate-export-field--dates">
-          <div class="mindmate-export-dates-toolbar">
-            <label class="mindmate-export-label">{{ t('admin.mindmateExport.dateRangeLabel') }}</label>
+          <div class="mindmate-export-field">
+            <label class="mindmate-export-label"
+              ><I18nText k="admin.mindmateExport.scopeLabel"
+            /></label>
             <div
-              class="mindmate-export-presets"
-              role="group"
-              :aria-label="t('admin.mindmateExport.dateRangeLabel')"
+              class="admin-swiss-segmented admin-swiss-segmented--block"
+              role="radiogroup"
+              :aria-label="t('admin.mindmateExport.scopeLabel')"
             >
               <button
-                v-for="preset in datePresetOptions"
-                :key="preset.id"
+                v-for="opt in scopeOptions"
+                :key="opt.value"
                 type="button"
-                class="mindmate-export-preset"
-                :class="{ 'is-active': activeDatePreset === preset.id }"
-                @click="applyDatePreset(preset.id)"
+                role="radio"
+                class="admin-swiss-segment"
+                :class="{ 'is-active': scopeMode === opt.value }"
+                :aria-checked="scopeMode === opt.value"
+                @click="scopeMode = opt.value"
               >
-                {{ preset.label }}
+                <I18nText :k="opt.labelKey" />
               </button>
             </div>
           </div>
-          <el-date-picker
-            :key="datePickerKey"
-            v-model="dateRange"
-            type="datetimerange"
-            format="YYYY-MM-DD HH:mm"
-            :default-time="dateTimeDefaultRange"
-            :start-placeholder="t('admin.mindmateExport.startDateTime')"
-            :end-placeholder="t('admin.mindmateExport.endDateTime')"
-            clearable
-            class="mindmate-export-date"
-            @change="onDateRangePickerChange"
-          />
-          <p class="mindmate-export-dates-hint">
-            {{ t('admin.mindmateExport.dateTimeHint') }}
-          </p>
-        </div>
-      </div>
 
-      <div class="mindmate-export-actions">
-        <el-button
-          type="primary"
-          class="admin-swiss-btn admin-swiss-btn--primary"
-          :loading="loadingConversations"
-          @click="loadConversations"
-        >
-          {{ t('admin.mindmateExport.loadConversations') }}
-        </el-button>
-        <div class="mindmate-export-format">
-          <span class="mindmate-export-label mindmate-export-label--inline">
-            {{ t('admin.mindmateExport.formatLabel') }}
-          </span>
           <div
-            class="admin-swiss-segmented admin-swiss-segmented--equal"
-            role="radiogroup"
-            :aria-label="t('admin.mindmateExport.formatLabel')"
+            v-if="scopeMode === 'users'"
+            class="mindmate-export-field mindmate-export-field--users"
           >
-            <button
-              v-for="opt in formatOptions"
-              :key="opt.value"
-              type="button"
-              role="radio"
-              class="admin-swiss-segment"
-              :class="{ 'is-active': exportFormat === opt.value }"
-              :aria-checked="exportFormat === opt.value"
-              @click="exportFormat = opt.value"
+            <label class="mindmate-export-label"
+              ><I18nText k="admin.mindmateExport.usersLabel"
+            /></label>
+            <el-select
+              v-model="selectedUserIds"
+              multiple
+              filterable
+              collapse-tags
+              collapse-tags-tooltip
+              :placeholder="t('admin.mindmateExport.usersPlaceholder')"
+              :loading="usersQuery.isFetching.value"
+              class="admin-swiss-select mindmate-export-select--users"
             >
-              {{ opt.label }}
-            </button>
+              <el-option
+                v-for="opt in userOptions"
+                :key="opt.value"
+                :label="opt.label"
+                :value="opt.value"
+              />
+            </el-select>
+          </div>
+
+          <div class="mindmate-export-field mindmate-export-field--dates">
+            <div class="mindmate-export-dates-toolbar">
+              <label class="mindmate-export-label"
+                ><I18nText k="admin.mindmateExport.dateRangeLabel"
+              /></label>
+              <div
+                class="mindmate-export-presets"
+                role="group"
+                :aria-label="t('admin.mindmateExport.dateRangeLabel')"
+              >
+                <button
+                  v-for="preset in datePresetOptions"
+                  :key="preset.id"
+                  type="button"
+                  class="mindmate-export-preset"
+                  :class="{ 'is-active': activeDatePreset === preset.id }"
+                  @click="applyDatePreset(preset.id)"
+                >
+                  <I18nText :k="preset.labelKey" />
+                </button>
+              </div>
+            </div>
+            <el-date-picker
+              :key="datePickerKey"
+              v-model="dateRange"
+              type="datetimerange"
+              format="YYYY-MM-DD HH:mm"
+              :default-time="dateTimeDefaultRange"
+              :start-placeholder="t('admin.mindmateExport.startDateTime')"
+              :end-placeholder="t('admin.mindmateExport.endDateTime')"
+              clearable
+              class="mindmate-export-date"
+              @change="onDateRangePickerChange"
+            />
+            <p class="mindmate-export-dates-hint">
+              <I18nText k="admin.mindmateExport.dateTimeHint" />
+            </p>
           </div>
         </div>
-        <el-button
-          class="admin-swiss-btn"
-          :loading="downloading"
-          @click="download"
-        >
-          {{ t('admin.mindmateExport.download') }}
-        </el-button>
-      </div>
-    </section>
 
-    <section
-      v-if="showJobPanel"
-      class="mindmate-export-card mindmate-export-job"
-    >
-      <div class="mindmate-export-job-header">
-        <h3
-          v-if="activeJob"
-          class="mindmate-export-subtitle"
-        >
-          {{ t('admin.mindmateExport.jobProgress', {
-            percent: activeJob.progress_percent,
-            stage: activeJob.current_stage ?? activeJob.status,
-          }) }}
-        </h3>
-        <h3
-          v-else
-          class="mindmate-export-subtitle"
-        >
-          {{ t('admin.mindmateExport.download') }}
-        </h3>
-        <span
-          v-if="displayVerificationStatus()"
-          class="mindmate-export-verify-badge"
-          :class="verificationBadgeClass(displayVerificationStatus())"
-        >
-          {{ verificationBadgeLabel(displayVerificationStatus()) }}
-        </span>
-      </div>
-      <p
-        v-if="requiresJob && activeJobId == null"
-        class="mindmate-export-requires-job"
-      >
-        {{ t('admin.mindmateExport.requiresJobNotice') }}
-      </p>
-      <el-progress
-        v-if="activeJob"
-        :percentage="activeJob.progress_percent"
-        :stroke-width="8"
-        :show-text="false"
-        class="mindmate-export-job-bar"
-      />
-      <p
-        v-if="exportDataSourceSummary"
-        class="mindmate-export-meta-line"
-      >
-        {{ t('admin.mindmateExport.dataSource', { summary: exportDataSourceSummary }) }}
-      </p>
-      <p
-        v-if="activeJob?.error_message"
-        class="mindmate-export-truncated"
-      >
-        {{ activeJob.error_message }}
-      </p>
-      <div class="mindmate-export-job-actions">
-        <el-button
-          v-if="activeJob?.status === 'running' || activeJob?.status === 'pending'"
-          class="admin-swiss-btn"
-          :loading="jobActionPending"
-          @click="pauseJob"
-        >
-          {{ t('admin.mindmateExport.jobPause') }}
-        </el-button>
-        <el-button
-          v-if="activeJob?.status === 'paused'"
-          class="admin-swiss-btn"
-          :loading="jobActionPending"
-          @click="resumeJob"
-        >
-          {{ t('admin.mindmateExport.jobResume') }}
-        </el-button>
-        <el-button
-          v-if="activeJob && !jobIsTerminal"
-          class="admin-swiss-btn"
-          :loading="jobActionPending"
-          @click="cancelJob"
-        >
-          {{ t('admin.mindmateExport.jobCancel') }}
-        </el-button>
-        <el-button
-          v-if="jobCanDownload"
-          class="admin-swiss-btn admin-swiss-btn--primary"
-          :loading="downloading"
-          @click="downloadJobArtifact"
-        >
-          {{ t('admin.mindmateExport.jobDownload') }}
-        </el-button>
-        <el-button
-          v-if="requiresJob && activeJobId == null"
-          type="primary"
-          class="admin-swiss-btn admin-swiss-btn--primary"
-          :loading="downloading"
-          @click="startExportJob"
-        >
-          {{ t('admin.mindmateExport.download') }}
-        </el-button>
-      </div>
-    </section>
-
-    <section class="mindmate-export-body">
-      <div class="mindmate-export-card mindmate-export-list">
-        <div class="mindmate-export-list-header">
-          <h3 class="mindmate-export-subtitle">
-            {{ t('admin.mindmateExport.conversationsTitle') }}
-            <span
-              v-if="conversations.length"
-              class="mindmate-export-count"
-            >
-              {{ t('admin.mindmateExport.conversationCount', { count: conversations.length }) }}
+        <div class="mindmate-export-actions">
+          <el-button
+            type="primary"
+            class="admin-swiss-btn admin-swiss-btn--primary"
+            :loading="loadingConversations"
+            @click="loadConversations"
+          >
+            <I18nText k="admin.mindmateExport.loadConversations" />
+          </el-button>
+          <div class="mindmate-export-format">
+            <span class="mindmate-export-label mindmate-export-label--inline">
+              <I18nText k="admin.mindmateExport.formatLabel" />
             </span>
-          </h3>
-          <span
-            v-if="listVerificationStatus && hasLoadedConversations"
-            class="mindmate-export-verify-badge"
-            :class="verificationBadgeClass(listVerificationStatus)"
-          >
-            {{ verificationBadgeLabel(listVerificationStatus) }}
-          </span>
-        </div>
-        <div
-          v-if="hasLoadedConversations && !loadingConversations"
-          class="mindmate-export-stats"
-        >
-          <span class="mindmate-export-stat">
-            {{ listStats.usersScanned }}/{{ listStats.usersTotal }}
-            {{ t('admin.mindmateExport.usersLabel') }}
-          </span>
-          <span class="mindmate-export-stat">
-            {{ listStats.targetsCount }} targets
-          </span>
-          <span class="mindmate-export-stat">
-            {{ listStats.conversationsTotal }}
-            {{ t('admin.mindmateExport.conversationsTitle').toLowerCase() }}
-          </span>
-          <span
-            v-if="listStats.partialFailures > 0"
-            class="mindmate-export-stat mindmate-export-stat--warn"
-          >
-            {{ listStats.partialFailures }} partial failures
-          </span>
-        </div>
-        <p
-          v-if="requiresJob && hasLoadedConversations"
-          class="mindmate-export-requires-job"
-        >
-          {{ t('admin.mindmateExport.requiresJobNotice') }}
-        </p>
-        <p
-          v-for="(warning, wIdx) in exportWarnings"
-          :key="`warn-${wIdx}`"
-          class="mindmate-export-truncated"
-        >
-          {{ warning }}
-        </p>
-        <el-empty
-          v-if="!hasLoadedConversations"
-          :description="t('admin.mindmateExport.loadPrompt')"
-        />
-        <el-empty
-          v-else-if="loadingConversations && conversations.length === 0"
-          :description="t('admin.mindmateExport.loading')"
-        />
-        <el-empty
-          v-else-if="!loadingConversations && conversations.length === 0"
-          :description="t('admin.mindmateExport.noConversations')"
-        />
-        <ul
-          v-else
-          class="mindmate-export-conv-items"
-        >
-          <li
-            v-for="conv in conversations"
-            :key="conversationKey(conv)"
-            class="mindmate-export-conv-item"
-            :class="{
-              'is-active':
-                activeConversation != null && conversationKey(activeConversation) === conversationKey(conv),
-            }"
-            @click="openTranscript(conv)"
-          >
-            <div class="mindmate-export-conv-main">
-              <span class="mindmate-export-conv-name">{{
-                conv.name || conv.conversation_id
-              }}</span>
-              <span
-                v-if="scopeMode === 'all'"
-                class="mindmate-export-conv-org"
+            <div
+              class="admin-swiss-segmented admin-swiss-segmented--equal"
+              role="radiogroup"
+              :aria-label="t('admin.mindmateExport.formatLabel')"
+            >
+              <button
+                v-for="opt in formatOptions"
+                :key="opt.value"
+                type="button"
+                role="radio"
+                class="admin-swiss-segment"
+                :class="{ 'is-active': exportFormat === opt.value }"
+                :aria-checked="exportFormat === opt.value"
+                @click="exportFormat = opt.value"
               >
-                {{ orgLabel(conv.organization_id) }}
-              </span>
-              <span class="mindmate-export-conv-user">{{ conv.user_label }}</span>
+                <I18nText :k="opt.labelKey" />
+              </button>
             </div>
-            <div class="mindmate-export-conv-meta">
-              <span
-                class="mindmate-export-channel-badge"
-                :class="conv.channel === 'mindbot' ? 'is-mindbot' : 'is-web'"
-              >
-                {{ channelLabel(conv.channel) }}
-              </span>
-              <span
-                v-if="chatScopeLabel(conv.dingtalk_chat_scope)"
-                class="mindmate-export-chat-scope-badge"
-                :class="chatScopeClass(conv.dingtalk_chat_scope)"
-              >
-                {{ chatScopeLabel(conv.dingtalk_chat_scope) }}
-              </span>
-              <span
-                class="mindmate-export-server-badge"
-                :class="conv.server === 2 ? 'is-secondary' : 'is-primary'"
-              >
-                {{ t('admin.mindmateExport.serverBadge', { server: conv.server }) }}
-              </span>
-              <span class="mindmate-export-conv-time">{{ formatTime(conv.updated_at) }}</span>
-            </div>
-          </li>
-        </ul>
-        <div
-          v-if="listHasMore && conversations.length > 0"
-          class="mindmate-export-load-more"
-        >
+          </div>
           <el-button
             class="admin-swiss-btn"
-            :loading="loadingMore"
-            @click="loadMoreConversations"
+            :loading="downloading"
+            @click="download"
           >
-            {{ t('admin.mindmateExport.loadMore') }}
+            <I18nText k="admin.mindmateExport.download" />
           </el-button>
         </div>
-      </div>
+      </section>
 
-      <div class="mindmate-export-card mindmate-export-transcript">
-        <h3 class="mindmate-export-subtitle">{{ t('admin.mindmateExport.transcriptTitle') }}</h3>
-        <div
-          v-if="loadingBubbles"
-          class="mindmate-export-loading"
-        >
-          {{ t('admin.mindmateExport.loading') }}
-        </div>
-        <el-empty
-          v-else-if="!activeConversation"
-          :description="t('admin.mindmateExport.viewTranscript')"
-        />
-        <el-empty
-          v-else-if="bubbles.length === 0"
-          :description="t('admin.mindmateExport.noMessages')"
-        />
-        <div
-          v-else
-          class="mindmate-export-bubbles"
-        >
-          <div
-            v-for="(bubble, idx) in bubbles"
-            :key="`${bubble.message_id}:${idx}`"
-            class="mindmate-export-bubble"
-            :class="bubble.role === 'user' ? 'is-user' : 'is-assistant'"
+      <section
+        v-if="showJobPanel"
+        class="mindmate-export-card mindmate-export-job"
+      >
+        <div class="mindmate-export-job-header">
+          <h3
+            v-if="activeJob"
+            class="mindmate-export-subtitle"
           >
-            <div class="mindmate-export-bubble-role">{{ bubbleRoleLabel(bubble.role) }}</div>
-            <div class="mindmate-export-bubble-text">{{ bubble.text }}</div>
-            <div
-              v-if="bubble.feedback"
-              class="mindmate-export-bubble-feedback"
+            <I18nText
+              k="admin.mindmateExport.jobProgress"
+              :params="{
+                percent: activeJob.progress_percent,
+                stage: activeJob.current_stage ?? activeJob.status,
+              }"
+            />
+          </h3>
+          <h3
+            v-else
+            class="mindmate-export-subtitle"
+          >
+            <I18nText k="admin.mindmateExport.download" />
+          </h3>
+          <span
+            v-if="displayVerificationStatus()"
+            class="mindmate-export-verify-badge"
+            :class="verificationBadgeClass(displayVerificationStatus())"
+          >
+            {{ verificationBadgeLabel(displayVerificationStatus()) }}
+          </span>
+        </div>
+        <p
+          v-if="requiresJob && activeJobId == null"
+          class="mindmate-export-requires-job"
+        >
+          <I18nText k="admin.mindmateExport.requiresJobNotice" />
+        </p>
+        <el-progress
+          v-if="activeJob"
+          :percentage="activeJob.progress_percent"
+          :stroke-width="8"
+          :show-text="false"
+          class="mindmate-export-job-bar"
+        />
+        <p
+          v-if="exportDataSourceSummary"
+          class="mindmate-export-meta-line"
+        >
+          <I18nText
+            k="admin.mindmateExport.dataSource"
+            :params="{ summary: exportDataSourceSummary }"
+          />
+        </p>
+        <p
+          v-if="activeJob?.error_message"
+          class="mindmate-export-truncated"
+        >
+          {{ activeJob.error_message }}
+        </p>
+        <div class="mindmate-export-job-actions">
+          <el-button
+            v-if="activeJob?.status === 'running' || activeJob?.status === 'pending'"
+            class="admin-swiss-btn"
+            :loading="jobActionPending"
+            @click="pauseJob"
+          >
+            <I18nText k="admin.mindmateExport.jobPause" />
+          </el-button>
+          <el-button
+            v-if="activeJob?.status === 'paused'"
+            class="admin-swiss-btn"
+            :loading="jobActionPending"
+            @click="resumeJob"
+          >
+            <I18nText k="admin.mindmateExport.jobResume" />
+          </el-button>
+          <el-button
+            v-if="activeJob && !jobIsTerminal"
+            class="admin-swiss-btn"
+            :loading="jobActionPending"
+            @click="cancelJob"
+          >
+            <I18nText k="admin.mindmateExport.jobCancel" />
+          </el-button>
+          <el-button
+            v-if="jobCanDownload"
+            class="admin-swiss-btn admin-swiss-btn--primary"
+            :loading="downloading"
+            @click="downloadJobArtifact"
+          >
+            <I18nText k="admin.mindmateExport.jobDownload" />
+          </el-button>
+          <el-button
+            v-if="requiresJob && activeJobId == null"
+            type="primary"
+            class="admin-swiss-btn admin-swiss-btn--primary"
+            :loading="downloading"
+            @click="startExportJob"
+          >
+            <I18nText k="admin.mindmateExport.download" />
+          </el-button>
+        </div>
+      </section>
+
+      <section class="mindmate-export-body">
+        <div class="mindmate-export-card mindmate-export-list">
+          <div class="mindmate-export-list-header">
+            <h3 class="mindmate-export-subtitle">
+              <I18nText k="admin.mindmateExport.conversationsTitle" />
+              <span
+                v-if="conversations.length"
+                class="mindmate-export-count"
+              >
+                <I18nText
+                  k="admin.mindmateExport.conversationCount"
+                  :params="{ count: conversations.length }"
+                />
+              </span>
+            </h3>
+            <span
+              v-if="listVerificationStatus && hasLoadedConversations"
+              class="mindmate-export-verify-badge"
+              :class="verificationBadgeClass(listVerificationStatus)"
             >
-              {{ t('admin.mindmateExport.feedbackLabel') }}: {{ bubble.feedback }}
-            </div>
-            <div class="mindmate-export-bubble-time">{{ formatTime(bubble.created_at) }}</div>
+              {{ verificationBadgeLabel(listVerificationStatus) }}
+            </span>
+          </div>
+          <div
+            v-if="hasLoadedConversations && !loadingConversations"
+            class="mindmate-export-stats"
+          >
+            <span class="mindmate-export-stat">
+              {{ listStats.usersScanned }}/{{ listStats.usersTotal }}
+              <I18nText k="admin.mindmateExport.usersLabel" />
+            </span>
+            <span class="mindmate-export-stat"> {{ listStats.targetsCount }} targets </span>
+            <span class="mindmate-export-stat">
+              {{ listStats.conversationsTotal }}
+              <I18nText k="admin.mindmateExport.conversationsTitle" />
+            </span>
+            <span
+              v-if="listStats.partialFailures > 0"
+              class="mindmate-export-stat mindmate-export-stat--warn"
+            >
+              {{ listStats.partialFailures }} partial failures
+            </span>
+          </div>
+          <p
+            v-if="requiresJob && hasLoadedConversations"
+            class="mindmate-export-requires-job"
+          >
+            <I18nText k="admin.mindmateExport.requiresJobNotice" />
+          </p>
+          <p
+            v-for="(warning, wIdx) in exportWarnings"
+            :key="`warn-${wIdx}`"
+            class="mindmate-export-truncated"
+          >
+            {{ warning }}
+          </p>
+          <el-empty
+            v-if="!hasLoadedConversations"
+            :description="t('admin.mindmateExport.loadPrompt')"
+          />
+          <el-empty
+            v-else-if="loadingConversations && conversations.length === 0"
+            :description="t('admin.mindmateExport.loading')"
+          />
+          <el-empty
+            v-else-if="!loadingConversations && conversations.length === 0"
+            :description="t('admin.mindmateExport.noConversations')"
+          />
+          <ul
+            v-else
+            class="mindmate-export-conv-items"
+          >
+            <li
+              v-for="conv in conversations"
+              :key="conversationKey(conv)"
+              class="mindmate-export-conv-item"
+              :class="{
+                'is-active':
+                  activeConversation != null &&
+                  conversationKey(activeConversation) === conversationKey(conv),
+              }"
+              @click="openTranscript(conv)"
+            >
+              <div class="mindmate-export-conv-main">
+                <span class="mindmate-export-conv-name">{{
+                  conv.name || conv.conversation_id
+                }}</span>
+                <span
+                  v-if="scopeMode === 'all'"
+                  class="mindmate-export-conv-org"
+                >
+                  {{ orgLabel(conv.organization_id) }}
+                </span>
+                <span class="mindmate-export-conv-user">{{ conv.user_label }}</span>
+              </div>
+              <div class="mindmate-export-conv-meta">
+                <span
+                  class="mindmate-export-channel-badge"
+                  :class="conv.channel === 'mindbot' ? 'is-mindbot' : 'is-web'"
+                >
+                  {{ channelLabel(conv.channel) }}
+                </span>
+                <span
+                  v-if="chatScopeLabel(conv.dingtalk_chat_scope)"
+                  class="mindmate-export-chat-scope-badge"
+                  :class="chatScopeClass(conv.dingtalk_chat_scope)"
+                >
+                  {{ chatScopeLabel(conv.dingtalk_chat_scope) }}
+                </span>
+                <span
+                  class="mindmate-export-server-badge"
+                  :class="conv.server === 2 ? 'is-secondary' : 'is-primary'"
+                >
+                  <I18nText
+                    k="admin.mindmateExport.serverBadge"
+                    :params="{ server: conv.server }"
+                  />
+                </span>
+                <span class="mindmate-export-conv-time">{{ formatTime(conv.updated_at) }}</span>
+              </div>
+            </li>
+          </ul>
+          <div
+            v-if="listHasMore && conversations.length > 0"
+            class="mindmate-export-load-more"
+          >
+            <el-button
+              class="admin-swiss-btn"
+              :loading="loadingMore"
+              @click="loadMoreConversations"
+            >
+              <I18nText k="admin.mindmateExport.loadMore" />
+            </el-button>
           </div>
         </div>
-      </div>
-    </section>
+
+        <div class="mindmate-export-card mindmate-export-transcript">
+          <h3 class="mindmate-export-subtitle">
+            <I18nText k="admin.mindmateExport.transcriptTitle" />
+          </h3>
+          <div
+            v-if="loadingBubbles"
+            class="mindmate-export-loading"
+          >
+            <I18nText k="admin.mindmateExport.loading" />
+          </div>
+          <el-empty
+            v-else-if="!activeConversation"
+            :description="t('admin.mindmateExport.viewTranscript')"
+          />
+          <el-empty
+            v-else-if="bubbles.length === 0"
+            :description="t('admin.mindmateExport.noMessages')"
+          />
+          <div
+            v-else
+            class="mindmate-export-bubbles"
+          >
+            <div
+              v-for="(bubble, idx) in bubbles"
+              :key="`${bubble.message_id}:${idx}`"
+              class="mindmate-export-bubble"
+              :class="bubble.role === 'user' ? 'is-user' : 'is-assistant'"
+            >
+              <div class="mindmate-export-bubble-role">{{ bubbleRoleLabel(bubble.role) }}</div>
+              <div class="mindmate-export-bubble-text">{{ bubble.text }}</div>
+              <div
+                v-if="bubble.feedback"
+                class="mindmate-export-bubble-feedback"
+              >
+                <I18nText k="admin.mindmateExport.feedbackLabel" />: {{ bubble.feedback }}
+              </div>
+              <div class="mindmate-export-bubble-time">{{ formatTime(bubble.created_at) }}</div>
+            </div>
+          </div>
+        </div>
+      </section>
     </template>
     <AdminMindMateExportDumpsTab v-else-if="panelTab === 'dumps'" />
   </div>

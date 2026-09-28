@@ -7,7 +7,6 @@ import { computed } from 'vue'
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useMaiteWorkspace } from '@/composables/maite/useMaiteWorkspace'
-
 import type { MaiteMode } from '@/types/maite'
 
 const { t } = useLanguage()
@@ -18,6 +17,7 @@ const modes: MaiteMode[] = ['demo', 'inquiry', 'map']
 const options = computed(() =>
   modes.map((value) => ({
     label: t(`maite.mode.${value}`),
+    labelKey: `maite.mode.${value}`,
     value,
   }))
 )

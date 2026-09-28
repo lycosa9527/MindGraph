@@ -9,15 +9,15 @@ import { storeToRefs } from 'pinia'
 
 import AdminDashboardTab from '@/components/admin/AdminDashboardTab.vue'
 import AdminOrgDataCenterPanel from '@/components/admin/AdminOrgDataCenterPanel.vue'
-import SchoolDashboardPage from '@/pages/SchoolDashboardPage.vue'
+import { useLanguage } from '@/composables'
 import {
+  type DataCenterView,
   canViewDataCenterSubView,
   defaultDataCenterView,
   isDataCenterView,
-  type DataCenterView,
 } from '@/composables/admin/adminDataCenterViews'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
-import { useLanguage } from '@/composables'
+import SchoolDashboardPage from '@/pages/SchoolDashboardPage.vue'
 import { useAdminPanelStore } from '@/stores'
 
 const props = defineProps<{
@@ -30,9 +30,7 @@ const adminPanel = useAdminPanelStore()
 const { selectedOrgId } = storeToRefs(adminPanel)
 const { can, capabilities, effectiveOrgId, isReadOnly } = useAdminAccess()
 
-const hasGlobalDataCenter = computed(
-  () => can('scope.global') && can('tab.data_center.view')
-)
+const hasGlobalDataCenter = computed(() => can('scope.global') && can('tab.data_center.view'))
 
 const dataCenterViewQuery = computed((): DataCenterView | null => {
   const raw = route.query.view
@@ -87,7 +85,6 @@ const panelReadOnly = computed(() => props.readOnly ?? isReadOnly.value)
 const dashboardSection = computed((): 'operations' | 'usage' => {
   return dataCenterView.value === 'usage' ? 'usage' : 'operations'
 })
-
 </script>
 
 <template>
@@ -110,8 +107,11 @@ const dashboardSection = computed((): 'operations' | 'usage' => {
       :section="dashboardSection"
     />
 
-    <div v-else class="text-center py-16 text-gray-500">
-      {{ t('admin.schoolDashboardNoOrg') }}
+    <div
+      v-else
+      class="text-center py-16 text-gray-500"
+    >
+      <I18nText k="admin.schoolDashboardNoOrg" />
     </div>
   </div>
 </template>

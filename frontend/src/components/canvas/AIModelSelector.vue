@@ -405,7 +405,7 @@ function getButtonStyle(modelKey: string) {
         class="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 shrink-0"
       >
         <Sparkles class="w-3.5 h-3.5 text-purple-500" />
-        <span>{{ t('aiModel.label') }}</span>
+        <span><I18nText k="aiModel.label" /></span>
       </div>
 
       <!-- Concept map: intrinsic width only (picker sits beside us in bottom bar; avoid flex-1 overlap) -->
@@ -433,7 +433,7 @@ function getButtonStyle(modelKey: string) {
             :aria-disabled="aiBlockedByCollab"
             @click="toggleConceptMapAi"
           >
-            <span class="font-semibold">{{ t('aiModel.enableAi') }}</span>
+            <span class="font-semibold"><I18nText k="aiModel.enableAi" /></span>
           </button>
         </ElTooltip>
         <div
@@ -449,9 +449,9 @@ function getButtonStyle(modelKey: string) {
               class="tab-rec-badge-wrap inline-flex"
               :class="conceptMapContentBadgeGlowClass"
             >
-              <span class="tab-rec-badge-inner relationship-ready-badge">{{
-                t('aiModel.tabContentRecBadge')
-              }}</span>
+              <span class="tab-rec-badge-inner relationship-ready-badge"
+                ><I18nText k="aiModel.tabContentRecBadge"
+              /></span>
             </span>
           </I18nTooltip>
           <I18nTooltip
@@ -463,9 +463,9 @@ function getButtonStyle(modelKey: string) {
               class="tab-rec-badge-wrap inline-flex"
               :class="conceptMapRelationshipBadgeGlowClass"
             >
-              <span class="tab-rec-badge-inner relationship-ready-badge">{{
-                t('aiModel.tabRelationshipRecBadge')
-              }}</span>
+              <span class="tab-rec-badge-inner relationship-ready-badge"
+                ><I18nText k="aiModel.tabRelationshipRecBadge"
+              /></span>
             </span>
           </I18nTooltip>
           <I18nTooltip
@@ -480,8 +480,8 @@ function getButtonStyle(modelKey: string) {
               <span
                 class="tab-rec-badge-inner relationship-ready-badge"
                 :class="{ 'concept-map-tab-badge-muted': conceptMapFocusQuestionBadgeMuted }"
-                >{{ t('aiModel.tabFocusQuestionBadge') }}</span
-              >
+                ><I18nText k="aiModel.tabFocusQuestionBadge"
+              /></span>
             </span>
           </I18nTooltip>
         </div>
@@ -538,9 +538,9 @@ function getButtonStyle(modelKey: string) {
           class="tab-rec-badge-wrap inline-flex"
           :class="tabRecBadgeGlowClass"
         >
-          <span class="tab-rec-badge-inner relationship-ready-badge">{{
-            t('aiModel.tabRecBadge')
-          }}</span>
+          <span class="tab-rec-badge-inner relationship-ready-badge"
+            ><I18nText k="aiModel.tabRecBadge"
+          /></span>
         </span>
       </I18nTooltip>
 
@@ -558,7 +558,10 @@ function getButtonStyle(modelKey: string) {
           v-else-if="llmResultsStore.hasAnyResults"
           class="text-green-600 dark:text-green-400"
         >
-          {{ t('aiModel.readyCount', { count: llmResultsStore.successCount }) }}
+          <I18nText
+            k="aiModel.readyCount"
+            :params="{ count: llmResultsStore.successCount }"
+          />
         </span>
       </div>
 

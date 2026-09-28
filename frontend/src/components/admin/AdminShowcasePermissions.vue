@@ -72,6 +72,7 @@ const permissionOptions = computed(() =>
   SHOWCASE_STAFF_PERMISSIONS.map((perm) => ({
     value: perm,
     label: String(t(showcaseStaffPermissionLabelKey(perm))),
+    labelKey: showcaseStaffPermissionLabelKey(perm),
   }))
 )
 
@@ -194,14 +195,14 @@ onMounted(() => {
   >
     <div class="flex flex-wrap items-center justify-between gap-3">
       <p class="text-sm text-gray-500">
-        {{ t('admin.showcase.permissionsIntro') }}
+        <I18nText k="admin.showcase.permissionsIntro" />
       </p>
       <button
         type="button"
         class="rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
         @click="openCreateDialog"
       >
-        {{ t('admin.showcase.permissions.add') }}
+        <I18nText k="admin.showcase.permissions.add" />
       </button>
     </div>
 
@@ -218,51 +219,53 @@ onMounted(() => {
       stripe
       style="width: 100%"
     >
-      <el-table-column
-        :label="t('admin.name')"
-        min-width="120"
-      >
+      <el-table-column min-width="120">
+        <template #header>
+          <I18nText k="admin.name" />
+        </template>
         <template #default="{ row }">
           {{ row.user_name || '—' }}
         </template>
       </el-table-column>
-      <el-table-column
-        :label="t('admin.phone')"
-        width="140"
-      >
+      <el-table-column width="140">
+        <template #header>
+          <I18nText k="admin.phone" />
+        </template>
         <template #default="{ row }">
           {{ row.user_phone || '—' }}
         </template>
       </el-table-column>
-      <el-table-column
-        :label="t('admin.organization')"
-        min-width="120"
-      >
+      <el-table-column min-width="120">
+        <template #header>
+          <I18nText k="admin.organization" />
+        </template>
         <template #default="{ row }">
           {{ row.organization || '—' }}
         </template>
       </el-table-column>
-      <el-table-column
-        :label="t('admin.showcase.permissions.colSource')"
-        width="110"
-      >
+      <el-table-column width="110">
+        <template #header>
+          <I18nText k="admin.showcase.permissions.colSource" />
+        </template>
         <template #default="{ row }">
           <el-tag
             :type="row.source === 'builtin' ? 'warning' : 'info'"
             size="small"
           >
-            {{
-              row.source === 'builtin'
-                ? t('admin.showcase.permissions.builtin')
-                : t('admin.showcase.permissions.custom')
-            }}
+            <I18nText
+              v-if="row.source === 'builtin'"
+              k="admin.showcase.permissions.builtin"
+            /><I18nText
+              v-else
+              k="admin.showcase.permissions.custom"
+            />
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column
-        :label="t('admin.showcase.permissions.colPerms')"
-        min-width="220"
-      >
+      <el-table-column min-width="220">
+        <template #header>
+          <I18nText k="admin.showcase.permissions.colPerms" />
+        </template>
         <template #default="{ row }">
           <div class="flex flex-wrap gap-1">
             <el-tag
@@ -277,10 +280,12 @@ onMounted(() => {
         </template>
       </el-table-column>
       <el-table-column
-        :label="t('admin.actions')"
         width="160"
         fixed="right"
       >
+        <template #header>
+          <I18nText k="admin.actions" />
+        </template>
         <template #default="{ row }">
           <template v-if="row.editable !== false && row.source !== 'builtin'">
             <button
@@ -288,21 +293,21 @@ onMounted(() => {
               class="mr-3 text-sm text-gray-700 hover:text-gray-900"
               @click="openEditDialog(row as ShowcaseStaffGrantRow)"
             >
-              {{ t('admin.edit') }}
+              <I18nText k="admin.edit" />
             </button>
             <button
               type="button"
               class="text-sm text-red-600 hover:text-red-700"
               @click="revokeGrant(row as ShowcaseStaffGrantRow)"
             >
-              {{ t('admin.showcase.permissions.revoke') }}
+              <I18nText k="admin.showcase.permissions.revoke" />
             </button>
           </template>
           <span
             v-else
             class="text-xs text-gray-400"
           >
-            {{ t('admin.showcase.permissions.builtinLocked') }}
+            <I18nText k="admin.showcase.permissions.builtinLocked" />
           </span>
         </template>
       </el-table-column>
@@ -312,7 +317,7 @@ onMounted(() => {
       v-else-if="!isLoading"
       class="rounded-xl border border-dashed border-gray-200 bg-white px-6 py-12 text-center text-sm text-gray-400"
     >
-      {{ t('admin.showcase.permissions.empty') }}
+      <I18nText k="admin.showcase.permissions.empty" />
     </div>
 
     <SwissGlassDialog
@@ -390,7 +395,7 @@ onMounted(() => {
                 :checked="selectedPermissions.includes(opt.value)"
                 @change="togglePermission(opt.value)"
               />
-              {{ opt.label }}
+              <I18nText :k="opt.labelKey" />
             </label>
           </div>
         </div>

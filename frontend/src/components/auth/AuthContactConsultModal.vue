@@ -7,8 +7,8 @@ import { reactive, ref, watch } from 'vue'
 import { MessageCircle } from '@lucide/vue'
 
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
-import { notify } from '@/composables/core/notifications'
 import { useLanguage } from '@/composables'
+import { notify } from '@/composables/core/notifications'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
 import {
@@ -35,8 +35,7 @@ function profilePrefill(): { name: string; phone: string; organization: string }
   const username = (user?.username || '').trim()
   const phone = (user?.phone || '').trim()
   const organization = (user?.schoolName || '').trim()
-  const looksLikePhone =
-    /^\d{7,15}$/.test(username) || (phone !== '' && username === phone)
+  const looksLikePhone = /^\d{7,15}$/.test(username) || (phone !== '' && username === phone)
   const name = looksLikePhone ? '' : username
   return {
     name: name.slice(0, SCHOOL_CONSULT_LIMITS.name),
@@ -167,7 +166,7 @@ async function submitConsultation(): Promise<void> {
         class="auth-contact-form__submit"
         :disabled="submitting"
       >
-        {{ t('thinkingCoins.school.submit') }}
+        <I18nText k="thinkingCoins.school.submit" />
       </button>
     </form>
   </SwissGlassCard>

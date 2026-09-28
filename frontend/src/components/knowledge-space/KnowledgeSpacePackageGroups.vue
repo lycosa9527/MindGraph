@@ -4,7 +4,7 @@
  */
 import { computed } from 'vue'
 
-import { BookOpen, BookMarked, Layers, Search, Sparkles, Upload } from '@lucide/vue'
+import { BookMarked, BookOpen, Layers, Search, Sparkles, Upload } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import { usePackages } from '@/composables/fileCenter/useFileCenter'
@@ -12,9 +12,7 @@ import { usePackages } from '@/composables/fileCenter/useFileCenter'
 const { t } = useLanguage()
 const packagesQuery = usePackages()
 const packages = computed(() => packagesQuery.data.value?.packages ?? [])
-const wikiCompileEnabled = computed(
-  () => packagesQuery.data.value?.wiki_compile_enabled ?? false
-)
+const wikiCompileEnabled = computed(() => packagesQuery.data.value?.wiki_compile_enabled ?? false)
 
 const ragReadyCount = computed(
   () => packages.value.filter((pkg) => pkg.rag_status === 'completed').length
@@ -115,10 +113,10 @@ const toneClasses: Record<PipelineTone, string> = {
         />
         <div>
           <h3 class="text-sm font-semibold text-slate-800">
-            {{ t('knowledge.ragGuide.title') }}
+            <I18nText k="knowledge.ragGuide.title" />
           </h3>
           <p class="mt-1 text-sm leading-relaxed text-slate-500">
-            {{ t('knowledge.ragGuide.subtitle') }}
+            <I18nText k="knowledge.ragGuide.subtitle" />
           </p>
         </div>
       </div>
@@ -126,7 +124,7 @@ const toneClasses: Record<PipelineTone, string> = {
 
     <div class="border-b border-slate-100 px-5 py-4">
       <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {{ t('knowledge.pipeline.title') }}
+        <I18nText k="knowledge.pipeline.title" />
       </h4>
       <div class="mt-3 grid gap-2 sm:grid-cols-2">
         <div
@@ -136,7 +134,7 @@ const toneClasses: Record<PipelineTone, string> = {
           :class="toneClasses[row.tone]"
         >
           <p class="text-xs font-medium">
-            {{ t(`knowledge.pipeline.${row.key}`) }}
+            <I18nText :k="`knowledge.pipeline.${row.key}`" />
           </p>
           <p class="mt-1 text-xs leading-relaxed opacity-90">
             {{ row.detail }}
@@ -164,11 +162,11 @@ const toneClasses: Record<PipelineTone, string> = {
               :stroke-width="2"
             />
             <h4 class="text-sm font-medium text-slate-800">
-              {{ t(`knowledge.ragGuide.${step.key}.title`) }}
+              <I18nText :k="`knowledge.ragGuide.${step.key}.title`" />
             </h4>
           </div>
           <p class="mt-1 text-sm leading-relaxed text-slate-500">
-            {{ t(`knowledge.ragGuide.${step.key}.body`) }}
+            <I18nText :k="`knowledge.ragGuide.${step.key}.body`" />
           </p>
         </div>
       </li>
@@ -176,7 +174,7 @@ const toneClasses: Record<PipelineTone, string> = {
 
     <div class="border-t border-slate-100 bg-slate-50/80 px-5 py-3.5">
       <p class="text-xs leading-relaxed text-slate-500">
-        {{ t('knowledge.ragGuide.footer') }}
+        <I18nText k="knowledge.ragGuide.footer" />
       </p>
     </div>
   </div>

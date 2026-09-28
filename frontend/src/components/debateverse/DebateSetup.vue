@@ -135,7 +135,10 @@ function handleKeydown(e: Event | KeyboardEvent) {
       />
       <div class="text-center mt-6">
         <p class="debate-subtitle">
-          {{ t('debateverse.setup.greeting', { username: username || '' }) }}
+          <I18nText
+            k="debateverse.setup.greeting"
+            :params="{ username: username || '' }"
+          />
         </p>
       </div>
     </div>
@@ -186,19 +189,19 @@ function handleKeydown(e: Event | KeyboardEvent) {
                   command="viewer"
                   :class="{ 'is-selected': userRole === 'viewer' }"
                 >
-                  {{ t('debateverse.setup.roleViewer') }}
+                  <I18nText k="debateverse.setup.roleViewer" />
                 </ElDropdownItem>
                 <ElDropdownItem
                   command="debater"
                   :class="{ 'is-selected': userRole === 'debater' }"
                 >
-                  {{ t('debateverse.setup.roleDebater') }}
+                  <I18nText k="debateverse.setup.roleDebater" />
                 </ElDropdownItem>
                 <ElDropdownItem
                   command="judge"
                   :class="{ 'is-selected': userRole === 'judge' }"
                 >
-                  {{ t('debateverse.setup.roleJudge') }}
+                  <I18nText k="debateverse.setup.roleJudge" />
                 </ElDropdownItem>
               </ElDropdownMenu>
             </template>

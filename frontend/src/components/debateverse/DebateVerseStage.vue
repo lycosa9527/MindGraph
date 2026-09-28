@@ -147,7 +147,7 @@ function handleAdvanceStage() {
                 'text-gray-500': index > currentStageIndex,
               }"
             >
-              {{ t(`debateverse.stage.${stage.key}`) }}
+              <I18nText :k="`debateverse.stage.${stage.key}`" />
             </span>
           </div>
         </div>
@@ -157,7 +157,7 @@ function handleAdvanceStage() {
           v-if="store.currentSpeaker"
           class="mt-3 text-center text-xs text-gray-500"
         >
-          {{ t('debateverse.speaking') }}:
+          <I18nText k="debateverse.speaking" />:
           <span class="font-medium text-gray-700 ml-1">
             {{ store.participants.find((p) => p.id === store.currentSpeaker)?.name || '' }}
           </span>
@@ -178,7 +178,7 @@ function handleAdvanceStage() {
           size="small"
           @click="handleAdvanceStage"
         >
-          {{ t('debateverse.advanceStage') }}
+          <I18nText k="debateverse.advanceStage" />
         </ElButton>
       </div>
     </div>
@@ -199,7 +199,7 @@ function handleAdvanceStage() {
         <!-- Affirmative Side -->
         <div class="flex flex-col items-center gap-4">
           <h3 class="text-sm font-semibold text-green-700">
-            {{ t('debateverse.side.affirmative') }}
+            <I18nText k="debateverse.side.affirmative" />
           </h3>
           <div class="flex flex-col gap-4 w-full">
             <DebaterAvatar
@@ -214,7 +214,7 @@ function handleAdvanceStage() {
         <!-- Judge Area (Center) -->
         <div class="flex flex-col items-center gap-4 bg-gray-100 rounded-lg p-4 mt-16">
           <h3 class="text-sm font-semibold text-gray-700">
-            {{ t('debateverse.side.judge') }}
+            <I18nText k="debateverse.side.judge" />
           </h3>
           <div class="flex flex-col gap-4 w-full">
             <DebaterAvatar
@@ -228,7 +228,7 @@ function handleAdvanceStage() {
         <!-- Negative Side -->
         <div class="flex flex-col items-center gap-4">
           <h3 class="text-sm font-semibold text-red-700">
-            {{ t('debateverse.side.negative') }}
+            <I18nText k="debateverse.side.negative" />
           </h3>
           <div class="flex flex-col gap-4 w-full">
             <DebaterAvatar

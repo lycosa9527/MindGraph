@@ -186,11 +186,13 @@ const isJudge = computed(() => participant.value?.role === 'judge' || !participa
               :is="thinkingCollapsed ? ChevronDown : ChevronUp"
               class="w-4 h-4 mr-1"
             />
-            {{
-              thinkingCollapsed
-                ? t('debateverse.message.showThinking')
-                : t('debateverse.message.hideThinking')
-            }}
+            <I18nText
+              v-if="thinkingCollapsed"
+              k="debateverse.message.showThinking"
+            /><I18nText
+              v-else
+              k="debateverse.message.hideThinking"
+            />
           </ElButton>
           <div
             v-if="!thinkingCollapsed"

@@ -62,7 +62,7 @@ function manageTeachingGroups(): void {
             class="workshop-navbar-action__icon"
             :size="14"
           />
-          <span class="workshop-navbar-action__label">{{ t('workshop.navbarOptions') }}</span>
+          <span class="workshop-navbar-action__label"><I18nText k="workshop.navbarOptions" /></span>
         </span>
       </el-button>
     </template>
@@ -78,7 +78,7 @@ function manageTeachingGroups(): void {
             class="ws-popover-item-icon"
             :size="16"
           />
-          {{ t('workshop.manageTeachingGroups') }}
+          <I18nText k="workshop.manageTeachingGroups" />
         </button>
         <div
           v-if="showChannelSettings"
@@ -96,7 +96,7 @@ function manageTeachingGroups(): void {
           class="ws-popover-item-icon"
           :size="16"
         />
-        {{ t('workshop.channelSettings') }}
+        <I18nText k="workshop.channelSettings" />
       </button>
 
       <div
@@ -113,7 +113,7 @@ function manageTeachingGroups(): void {
           class="ws-popover-item-icon"
           :size="16"
         />
-        {{ t('workshop.notifications') }}
+        <I18nText k="workshop.notifications" />
       </button>
       <button
         type="button"
@@ -124,7 +124,7 @@ function manageTeachingGroups(): void {
           class="ws-popover-item-icon"
           :size="16"
         />
-        {{ t('workshop.preferences') }}
+        <I18nText k="workshop.preferences" />
       </button>
     </div>
   </el-popover>

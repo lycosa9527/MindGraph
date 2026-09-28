@@ -95,7 +95,10 @@ onUnmounted(() => {
     <div class="flex flex-col gap-2 min-w-0 w-fit max-w-full">
       <div class="flex items-start justify-between gap-2 min-w-0">
         <p class="text-[10px] text-gray-500 dark:text-gray-400 leading-snug flex-1 min-w-0">
-          {{ t('conceptMapPicker.rootAlternativesHint', { pageSize: store.PAGE_SIZE }) }}
+          <I18nText
+            k="conceptMapPicker.rootAlternativesHint"
+            :params="{ pageSize: store.PAGE_SIZE }"
+          />
         </p>
         <div class="flex items-center gap-0.5 shrink-0 text-gray-500 dark:text-gray-400">
           <button
@@ -156,7 +159,7 @@ onUnmounted(() => {
             class="min-w-0 flex-1 text-gray-800 dark:text-gray-100 break-words"
             style="line-break: auto"
           >
-            {{ t('conceptMapPicker.currentRootConcept') }}
+            <I18nText k="conceptMapPicker.currentRootConcept" />
             <span
               v-if="currentRootText"
               class="block mt-0.5 text-gray-600 dark:text-gray-300"

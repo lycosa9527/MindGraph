@@ -32,7 +32,7 @@ const effectiveTotalPages = computed(() => Math.max(props.totalPages, 1))
         :disabled="page <= 1"
         @click="emit('previous')"
       >
-        {{ t('admin.previous') }}
+        <I18nText k="admin.previous" />
       </el-button>
       <el-button
         size="small"
@@ -40,7 +40,7 @@ const effectiveTotalPages = computed(() => Math.max(props.totalPages, 1))
         :disabled="page >= effectiveTotalPages"
         @click="emit('next')"
       >
-        {{ t('admin.next') }}
+        <I18nText k="admin.next" />
       </el-button>
     </div>
   </div>

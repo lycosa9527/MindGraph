@@ -46,7 +46,7 @@ function onInput(event: Event): void {
         class="builder-notes__chevron"
         :class="{ 'is-open': open }"
       />
-      <span>{{ t('training.builder.notes') }}</span>
+      <span><I18nText k="training.builder.notes" /></span>
     </button>
     <textarea
       v-show="open"

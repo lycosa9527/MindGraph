@@ -9,12 +9,12 @@ import { Loading } from '@element-plus/icons-vue'
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useScopedAbort } from '@/composables/core/useScopedAbort'
-import { fetchAdminUserActivity, type AdminUserActivityItem } from '@/composables/queries/adminApi'
+import { type AdminUserActivityItem, fetchAdminUserActivity } from '@/composables/queries/adminApi'
 import { useUIStore } from '@/stores/ui'
 import {
+  type ActivitySummaryLabels,
   activitySourceLabel,
   formatAdminUserActivitySummary,
-  type ActivitySummaryLabels,
 } from '@/utils/adminUserActivitySummary'
 
 const props = defineProps<{
@@ -37,11 +37,31 @@ const beforeId = ref<number | null>(null)
 const hasMore = ref(true)
 
 const sourceFilterOptions = computed(() => [
-  { label: t('admin.userActivityTab.filterAll'), value: 'all' as const },
-  { label: t('admin.userActivityTab.filterMindgraph'), value: 'mindgraph' as const },
-  { label: t('admin.userActivityTab.filterMindmate'), value: 'mindmate' as const },
-  { label: t('admin.userActivityTab.filterDingtalk'), value: 'dingtalk' as const },
-  { label: t('admin.userActivityTab.filterZhihui'), value: 'zhihui' as const },
+  {
+    label: t('admin.userActivityTab.filterAll'),
+    labelKey: 'admin.userActivityTab.filterAll',
+    value: 'all' as const,
+  },
+  {
+    label: t('admin.userActivityTab.filterMindgraph'),
+    labelKey: 'admin.userActivityTab.filterMindgraph',
+    value: 'mindgraph' as const,
+  },
+  {
+    label: t('admin.userActivityTab.filterMindmate'),
+    labelKey: 'admin.userActivityTab.filterMindmate',
+    value: 'mindmate' as const,
+  },
+  {
+    label: t('admin.userActivityTab.filterDingtalk'),
+    labelKey: 'admin.userActivityTab.filterDingtalk',
+    value: 'dingtalk' as const,
+  },
+  {
+    label: t('admin.userActivityTab.filterZhihui'),
+    labelKey: 'admin.userActivityTab.filterZhihui',
+    value: 'zhihui' as const,
+  },
 ])
 
 const summaryLabels = computed<ActivitySummaryLabels>(() => ({
@@ -151,7 +171,7 @@ watch(sourceFilter, () => {
   <div class="user-activity-tab space-y-3">
     <div class="user-activity-tab-toolbar">
       <p class="user-activity-tab-notice">
-        {{ t('admin.userActivityTab.privacyNotice') }}
+        <I18nText k="admin.userActivityTab.privacyNotice" />
       </p>
       <AdminSwissSegmented
         v-model="sourceFilter"
@@ -178,7 +198,7 @@ watch(sourceFilter, () => {
       v-else-if="items.length === 0"
       class="flex justify-center items-center h-40 text-gray-500 dark:text-gray-400 text-sm"
     >
-      {{ t('admin.userActivityTab.empty') }}
+      <I18nText k="admin.userActivityTab.empty" />
     </div>
 
     <div
@@ -187,18 +207,20 @@ watch(sourceFilter, () => {
     >
       <table class="w-full text-sm border-collapse">
         <thead>
-          <tr class="text-left text-xs text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+          <tr
+            class="text-left text-xs text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700"
+          >
             <th class="py-2 pr-3 font-medium whitespace-nowrap">
-              {{ t('admin.userActivityTab.colTime') }}
+              <I18nText k="admin.userActivityTab.colTime" />
             </th>
             <th class="py-2 pr-3 font-medium whitespace-nowrap">
-              {{ t('admin.userActivityTab.colProduct') }}
+              <I18nText k="admin.userActivityTab.colProduct" />
             </th>
             <th class="py-2 pr-3 font-medium min-w-[12rem]">
-              {{ t('admin.userActivityTab.colSummary') }}
+              <I18nText k="admin.userActivityTab.colSummary" />
             </th>
             <th class="py-2 font-medium whitespace-nowrap text-right">
-              {{ t('admin.userActivityTab.colTokens') }}
+              <I18nText k="admin.userActivityTab.colTokens" />
             </th>
           </tr>
         </thead>
@@ -238,7 +260,7 @@ watch(sourceFilter, () => {
         :loading="loadingMore"
         @click="loadPage(true)"
       >
-        {{ t('admin.userActivityTab.loadMore') }}
+        <I18nText k="admin.userActivityTab.loadMore" />
       </el-button>
     </div>
   </div>

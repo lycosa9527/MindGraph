@@ -150,7 +150,7 @@ async function preview(row: unknown): Promise<void> {
 <template>
   <div class="admin-user-dropdown-tab">
     <p class="admin-user-dropdown-intro">
-      {{ t('admin.userDropdown.intro') }}
+      <I18nText k="admin.userDropdown.intro" />
     </p>
 
     <div
@@ -168,7 +168,7 @@ async function preview(row: unknown): Promise<void> {
         :disabled="!draft.trim() || saving"
         @click="addItem"
       >
-        {{ t('admin.userDropdown.add') }}
+        <I18nText k="admin.userDropdown.add" />
       </el-button>
     </div>
 
@@ -176,19 +176,19 @@ async function preview(row: unknown): Promise<void> {
       v-if="loading"
       class="py-12 text-center text-gray-500"
     >
-      {{ t('admin.loading') }}
+      <I18nText k="admin.loading" />
     </p>
     <p
       v-else-if="loadError"
       class="py-12 text-center text-gray-500"
     >
-      {{ t('admin.userDropdown.loadFail') }}
+      <I18nText k="admin.userDropdown.loadFail" />
     </p>
     <p
       v-else-if="items.length === 0"
       class="py-12 text-center text-gray-500"
     >
-      {{ t('admin.userDropdown.empty') }}
+      <I18nText k="admin.userDropdown.empty" />
     </p>
     <ElTable
       v-else
@@ -197,10 +197,10 @@ async function preview(row: unknown): Promise<void> {
       stripe
       size="small"
     >
-      <el-table-column
-        :label="t('admin.userDropdown.colName')"
-        min-width="180"
-      >
+      <el-table-column min-width="180">
+        <template #header>
+          <I18nText k="admin.userDropdown.colName" />
+        </template>
         <template #default="{ row }">
           <el-input
             v-if="canEdit && isRow(row)"
@@ -212,10 +212,10 @@ async function preview(row: unknown): Promise<void> {
           <span v-else>{{ row.label }}</span>
         </template>
       </el-table-column>
-      <el-table-column
-        :label="t('admin.userDropdown.colCourse')"
-        min-width="220"
-      >
+      <el-table-column min-width="220">
+        <template #header>
+          <I18nText k="admin.userDropdown.colCourse" />
+        </template>
         <template #default="{ row }">
           <el-select
             :model-value="row.course_id"
@@ -236,10 +236,12 @@ async function preview(row: unknown): Promise<void> {
         </template>
       </el-table-column>
       <el-table-column
-        :label="t('admin.actions')"
         width="160"
         align="right"
       >
+        <template #header>
+          <I18nText k="admin.actions" />
+        </template>
         <template #default="{ row }">
           <el-button
             type="primary"
@@ -247,7 +249,7 @@ async function preview(row: unknown): Promise<void> {
             size="small"
             @click="preview(row)"
           >
-            {{ t('admin.userDropdown.preview') }}
+            <I18nText k="admin.userDropdown.preview" />
           </el-button>
           <el-button
             v-if="canEdit"
@@ -256,7 +258,7 @@ async function preview(row: unknown): Promise<void> {
             size="small"
             @click="remove(row)"
           >
-            {{ t('admin.userDropdown.delete') }}
+            <I18nText k="admin.userDropdown.delete" />
           </el-button>
         </template>
       </el-table-column>

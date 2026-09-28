@@ -260,7 +260,13 @@ onMounted(() => {
             <ElDropdownItem command="__toggle__">
               <span class="translate-lang-row">
                 <span class="translate-lang-label">
-                  {{ translationOn ? t('canvas.translation.stop') : t('canvas.translation.start') }}
+                  <I18nText
+                    v-if="translationOn"
+                    k="canvas.translation.stop"
+                  /><I18nText
+                    v-else
+                    k="canvas.translation.start"
+                  />
                 </span>
               </span>
             </ElDropdownItem>
@@ -304,7 +310,7 @@ onMounted(() => {
         </div>
         <div class="intl-hero-text">
           <h1 class="intl-title">MindGraph</h1>
-          <p class="intl-subtitle">{{ t('landing.international.subtitle') }}</p>
+          <p class="intl-subtitle"><I18nText k="landing.international.subtitle" /></p>
         </div>
       </div>
 
@@ -382,7 +388,7 @@ onMounted(() => {
                 :disabled="isGenerating"
                 @click="applyActiveLandingExample"
               >
-                {{ t(landingExampleKeys[activeExampleIndex]) }}
+                <I18nText :k="landingExampleKeys[activeExampleIndex]" />
               </button>
             </transition>
           </div>

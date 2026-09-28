@@ -60,17 +60,20 @@ function onNext(): void {
       v-if="loading"
       class="course-walkthrough__status"
     >
-      {{ t('admin.loading') }}
+      <I18nText k="admin.loading" />
     </p>
     <p
       v-else-if="!course || steps.length === 0"
       class="course-walkthrough__status"
     >
-      {{ t('admin.userDropdown.previewEmpty') }}
+      <I18nText k="admin.userDropdown.previewEmpty" />
     </p>
     <template v-else-if="step">
       <p class="course-walkthrough__progress">
-        {{ t('training.required.progress', { n: index + 1, total: steps.length }) }}
+        <I18nText
+          k="training.required.progress"
+          :params="{ n: index + 1, total: steps.length }"
+        />
       </p>
       <TrainingSlidePreview
         :step="step"
@@ -87,20 +90,26 @@ function onNext(): void {
     </template>
     <template #footer>
       <el-button @click="close">
-        {{ t('admin.userDropdown.previewClose') }}
+        <I18nText k="admin.userDropdown.previewClose" />
       </el-button>
       <el-button
         :disabled="!step || index === 0"
         @click="index -= 1"
       >
-        {{ t('training.required.prev') }}
+        <I18nText k="training.required.prev" />
       </el-button>
       <el-button
         type="primary"
         :disabled="!step"
         @click="onNext"
       >
-        {{ last ? t('training.required.finish') : t('training.required.next') }}
+        <I18nText
+          v-if="last"
+          k="training.required.finish"
+        /><I18nText
+          v-else
+          k="training.required.next"
+        />
       </el-button>
     </template>
   </el-dialog>

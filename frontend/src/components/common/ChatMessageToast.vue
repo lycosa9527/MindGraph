@@ -114,7 +114,7 @@ function navigate(toast: ChatToastItem): void {
               "
               @click="navigate(toast)"
             >
-              {{ t('workshop.view') }} →
+              <I18nText k="workshop.view" /> →
             </button>
           </div>
 

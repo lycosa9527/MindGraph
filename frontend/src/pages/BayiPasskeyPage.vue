@@ -56,8 +56,8 @@ function goToLogin() {
       >
         <span class="text-white font-bold text-2xl">MG</span>
       </div>
-      <h1 class="text-2xl font-bold text-white mb-2">{{ t('bayiPasskey.title') }}</h1>
-      <p class="text-white/60">{{ t('bayiPasskey.subtitle') }}</p>
+      <h1 class="text-2xl font-bold text-white mb-2"><I18nText k="bayiPasskey.title" /></h1>
+      <p class="text-white/60"><I18nText k="bayiPasskey.subtitle" /></p>
     </div>
 
     <el-form @submit.prevent="handleSubmit">
@@ -81,7 +81,7 @@ function goToLogin() {
           class="w-full"
           native-type="submit"
         >
-          {{ t('bayiPasskey.submit') }}
+          <I18nText k="bayiPasskey.submit" />
         </el-button>
       </el-form-item>
     </el-form>
@@ -92,7 +92,7 @@ function goToLogin() {
         class="text-white/60! hover:text-white!"
         @click="goToLogin"
       >
-        {{ t('bayiPasskey.back') }}
+        <I18nText k="bayiPasskey.back" />
       </el-button>
     </div>
   </div>

@@ -12,10 +12,11 @@ import { PanelLeftClose } from '@lucide/vue'
 
 import { AccountInfoModal, LoginModal, UpdateLogModal } from '@/components/auth'
 import ThinkingCoinsModal from '@/components/auth/ThinkingCoinsModal.vue'
+import I18nText from '@/components/common/I18nText.vue'
 import LanguageSettingsModal from '@/components/settings/LanguageSettingsModal.vue'
 import { useThinkingCoinInsufficientListener } from '@/composables/auth/useThinkingCoinInsufficientListener'
-import { appSidebarInjectionKey, useAppSidebar } from '@/composables/sidebar/useAppSidebar'
 import { eventBus } from '@/composables/core/useEventBus'
+import { appSidebarInjectionKey, useAppSidebar } from '@/composables/sidebar/useAppSidebar'
 import type { TrainingModalKey } from '@/config/trainingUiTargets'
 
 import AppSidebarAccountFooter from './AppSidebarAccountFooter.vue'
@@ -38,7 +39,9 @@ const {
   authStore,
   isAuthenticated,
   brandHeaderLayout,
+  brandSubtitleKind,
   orgEditionLabel,
+  orgEditionParams,
   orgEditionTooltip,
 } = sidebar
 
@@ -216,23 +219,33 @@ onBeforeUnmount(() => {
           </div>
           <span
             v-if="brandHeaderLayout === 'compact'"
-            class="brand-title font-semibold text-lg text-stone-900 tracking-tight truncate max-w-full"
+            class="brand-title font-semibold text-lg text-stone-900 tracking-tight max-w-full"
           >
-            {{ sidebar.t('sidebar.brandTitle') }}
+            <I18nText k="sidebar.brandTitle" />
           </span>
           <div
             v-else
             class="brand-text flex flex-col items-start justify-center min-w-0 flex-1 text-left leading-none gap-0"
           >
-            <span class="brand-title font-semibold text-lg text-stone-900 tracking-tight truncate max-w-full">{{
-              sidebar.t('sidebar.brandTitle')
-            }}</span>
+            <span
+              class="brand-title font-semibold text-lg text-stone-900 tracking-tight max-w-full"
+            >
+              <I18nText k="sidebar.brandTitle" />
+            </span>
             <span
               v-if="isAuthenticated && orgEditionLabel"
-              class="brand-subtitle text-xs text-stone-500 truncate max-w-full -mt-px"
+              class="brand-subtitle text-xs text-stone-500 max-w-full -mt-px"
               :title="orgEditionTooltip || undefined"
             >
-              {{ orgEditionLabel }}
+              <I18nText
+                v-if="brandSubtitleKind === 'org_edition' && orgEditionParams"
+                k="sidebar.orgEdition"
+                :params="orgEditionParams"
+              />
+              <I18nText
+                v-else
+                k="sidebar.personalEdition"
+              />
             </span>
           </div>
         </div>
@@ -300,8 +313,20 @@ onBeforeUnmount(() => {
 .brand-title,
 .brand-subtitle {
   overflow: hidden;
+  max-width: 100%;
+}
+
+.brand-title :deep(.i18n-label),
+.brand-subtitle :deep(.i18n-label) {
+  max-width: 100%;
+}
+
+.brand-title :deep(.i18n-label__primary),
+.brand-title :deep(.i18n-label__secondary),
+.brand-subtitle :deep(.i18n-label__primary),
+.brand-subtitle :deep(.i18n-label__secondary) {
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 </style>

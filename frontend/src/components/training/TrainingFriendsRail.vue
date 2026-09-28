@@ -16,10 +16,10 @@ import { useAuthStore } from '@/stores/auth'
 import { useTrainingStore } from '@/stores/training'
 import type { TrainingRosterRow } from '@/types/training'
 import {
+  TRAINING_RAIL_VISIBLE_ROWS,
   isTrainingOwnerHeartbeat,
   isTrainingRailVisible,
   shouldHideTrainingDesktopChrome,
-  TRAINING_RAIL_VISIBLE_ROWS,
 } from '@/utils/trainingClient'
 
 const { t } = useLanguage()
@@ -88,7 +88,7 @@ async function jump(row: TrainingRosterRow): Promise<void> {
     :aria-label="t('training.friends')"
   >
     <header class="training-rail__head">
-      <h2>{{ t('training.friends') }}</h2>
+      <h2><I18nText k="training.friends" /></h2>
       <p>{{ training.rosterSummary.online }}</p>
     </header>
     <ul
@@ -126,19 +126,19 @@ async function jump(row: TrainingRosterRow): Promise<void> {
       class="training-rail__more"
       @click="training.fetchRoster(true)"
     >
-      {{ t('training.loadMore') }}
+      <I18nText k="training.loadMore" />
     </button>
     <p
       v-if="training.rosterLoading && !training.rosterRows.length"
       class="training-rail__empty"
     >
-      {{ t('training.rosterLoading') }}
+      <I18nText k="training.rosterLoading" />
     </p>
     <p
       v-else-if="!training.rosterLoading && !training.rosterRows.length"
       class="training-rail__empty"
     >
-      {{ t('training.noTeachersOnline') }}
+      <I18nText k="training.noTeachersOnline" />
     </p>
   </aside>
 </template>

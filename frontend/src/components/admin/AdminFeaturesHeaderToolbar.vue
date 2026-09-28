@@ -6,8 +6,8 @@ import { computed } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
-import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useLanguage } from '@/composables'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useAdminPanelStore } from '@/stores'
 
 const { t } = useLanguage()
@@ -31,7 +31,7 @@ function onApply(): void {
     :loading="saving"
     @click="onApply"
   >
-    {{ t('admin.featuresSave') }}
+    <I18nText k="admin.featuresSave" />
   </el-button>
 </template>
 

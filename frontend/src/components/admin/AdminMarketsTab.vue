@@ -5,13 +5,13 @@
 import { computed, ref } from 'vue'
 
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
+import { useLanguage } from '@/composables'
 import {
   useAdminMarketsListings,
   useAdminMarketsOrders,
   useAdminMarketsStats,
   useAdminMarketsSubscriptions,
 } from '@/composables/queries'
-import { useLanguage } from '@/composables'
 
 const { t } = useLanguage()
 
@@ -83,7 +83,9 @@ const subscriptions = computed(() => (subscriptionsQuery.data.value ?? []) as Su
     class="admin-markets-tab space-y-6"
   >
     <div>
-      <h2 class="text-base font-semibold text-gray-900 mb-2">{{ t('admin.markets.stats') }}</h2>
+      <h2 class="text-base font-semibold text-gray-900 mb-2">
+        <I18nText k="admin.markets.stats" />
+      </h2>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <AdminSwissKpiCard
           :title="t('admin.markets.ordersTotal')"
@@ -104,10 +106,10 @@ const subscriptions = computed(() => (subscriptionsQuery.data.value ?? []) as Su
     </div>
 
     <el-tabs v-model="activeTab">
-      <el-tab-pane
-        :label="t('admin.markets.tabOrders')"
-        name="orders"
-      >
+      <el-tab-pane name="orders">
+        <template #label>
+          <I18nText k="admin.markets.tabOrders" />
+        </template>
         <el-table
           :data="orders"
           stripe
@@ -116,55 +118,82 @@ const subscriptions = computed(() => (subscriptionsQuery.data.value ?? []) as Su
         >
           <el-table-column
             prop="id"
-            :label="t('admin.markets.colOrderId')"
             width="88"
-          />
+          >
+            <template #header>
+              <I18nText k="admin.markets.colOrderId" />
+            </template>
+          </el-table-column>
           <el-table-column
             prop="user_email_or_phone"
-            :label="t('admin.markets.colUser')"
             min-width="140"
-          />
+          >
+            <template #header>
+              <I18nText k="admin.markets.colUser" />
+            </template>
+          </el-table-column>
           <el-table-column
             prop="listing_title"
-            :label="t('admin.markets.colListing')"
             min-width="160"
-          />
+          >
+            <template #header>
+              <I18nText k="admin.markets.colListing" />
+            </template>
+          </el-table-column>
           <el-table-column
             prop="amount_minor"
-            :label="t('admin.markets.colAmount')"
             width="100"
-          />
+          >
+            <template #header>
+              <I18nText k="admin.markets.colAmount" />
+            </template>
+          </el-table-column>
           <el-table-column
             prop="status"
-            :label="t('admin.markets.colStatus')"
             width="100"
-          />
+          >
+            <template #header>
+              <I18nText k="admin.markets.colStatus" />
+            </template>
+          </el-table-column>
           <el-table-column
             prop="out_trade_no"
-            :label="t('admin.markets.colOutTradeNo')"
             min-width="160"
-          />
+          >
+            <template #header>
+              <I18nText k="admin.markets.colOutTradeNo" />
+            </template>
+          </el-table-column>
           <el-table-column
             prop="alipay_trade_no"
-            :label="t('admin.markets.colTradeNo')"
             min-width="160"
-          />
+          >
+            <template #header>
+              <I18nText k="admin.markets.colTradeNo" />
+            </template>
+          </el-table-column>
           <el-table-column
             prop="created_at"
-            :label="t('admin.markets.colCreated')"
             min-width="160"
-          />
+          >
+            <template #header>
+              <I18nText k="admin.markets.colCreated" />
+            </template>
+          </el-table-column>
           <el-table-column
             prop="paid_at"
-            :label="t('admin.markets.colPaid')"
             min-width="160"
-          />
+          >
+            <template #header>
+              <I18nText k="admin.markets.colPaid" />
+            </template>
+          </el-table-column>
         </el-table>
       </el-tab-pane>
-      <el-tab-pane
-        :label="t('admin.markets.tabListings')"
-        name="listings"
-      >
+      <el-tab-pane name="listings">
+        <template #label>
+          <I18nText k="admin.markets.tabListings" />
+        </template>
         <el-table
           :data="listings"
           stripe
@@ -178,24 +207,36 @@ const subscriptions = computed(() => (subscriptionsQuery.data.value ?? []) as Su
           />
           <el-table-column
             prop="slug"
-            :label="t('admin.markets.colSlug')"
             min-width="140"
-          />
+          >
+            <template #header>
+              <I18nText k="admin.markets.colSlug" />
+            </template>
+          </el-table-column>
           <el-table-column
             prop="listing_kind"
-            :label="t('admin.markets.colKind')"
             width="120"
-          />
+          >
+            <template #header>
+              <I18nText k="admin.markets.colKind" />
+            </template>
+          </el-table-column>
           <el-table-column
             prop="title"
-            :label="t('admin.markets.colTitle')"
             min-width="200"
-          />
+          >
+            <template #header>
+              <I18nText k="admin.markets.colTitle" />
+            </template>
+          </el-table-column>
           <el-table-column
             prop="price_minor"
-            :label="t('admin.markets.colAmount')"
             width="100"
-          />
+          >
+            <template #header>
+              <I18nText k="admin.markets.colAmount" />
+            </template>
+          </el-table-column>
           <el-table-column
             prop="currency"
             label="CNY"
@@ -203,19 +244,21 @@ const subscriptions = computed(() => (subscriptionsQuery.data.value ?? []) as Su
           />
           <el-table-column
             prop="is_active"
-            :label="t('admin.markets.colActive')"
             width="88"
           >
+            <template #header>
+              <I18nText k="admin.markets.colActive" />
+            </template>
             <template #default="{ row }">
               <span>{{ row.is_active ? '✓' : '—' }}</span>
             </template>
           </el-table-column>
         </el-table>
       </el-tab-pane>
-      <el-tab-pane
-        :label="t('admin.markets.tabSubscriptions')"
-        name="subscriptions"
-      >
+      <el-tab-pane name="subscriptions">
+        <template #label>
+          <I18nText k="admin.markets.tabSubscriptions" />
+        </template>
         <el-table
           :data="subscriptions"
           stripe
@@ -229,19 +272,28 @@ const subscriptions = computed(() => (subscriptionsQuery.data.value ?? []) as Su
           />
           <el-table-column
             prop="user_email_or_phone"
-            :label="t('admin.markets.colUser')"
             min-width="140"
-          />
+          >
+            <template #header>
+              <I18nText k="admin.markets.colUser" />
+            </template>
+          </el-table-column>
           <el-table-column
             prop="listing_title"
-            :label="t('admin.markets.colListing')"
             min-width="160"
-          />
+          >
+            <template #header>
+              <I18nText k="admin.markets.colListing" />
+            </template>
+          </el-table-column>
           <el-table-column
             prop="status"
-            :label="t('admin.markets.colStatus')"
             width="100"
-          />
+          >
+            <template #header>
+              <I18nText k="admin.markets.colStatus" />
+            </template>
+          </el-table-column>
           <el-table-column
             prop="alipay_agreement_id"
             label="Agreement"

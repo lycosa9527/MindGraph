@@ -305,14 +305,14 @@ function getDisplayText(suggestion: NodeSuggestion): string {
             class="text-sm font-semibold text-gray-800 dark:text-white truncate shrink-0"
             :class="hasPaletteTabs ? 'panel-header-title--tabbed' : ''"
           >
-            {{ t('nodePalette.panelTitle') }}
+            <I18nText k="nodePalette.panelTitle" />
           </h3>
           <div class="flex items-center gap-2 shrink-0">
             <span
               v-if="selectedIds.length > 0"
               class="text-xs text-gray-500 dark:text-gray-400"
             >
-              {{ selectedIds.length }} {{ t('nodePalette.selected') }}
+              {{ selectedIds.length }} <I18nText k="nodePalette.selected" />
             </span>
             <div class="palette-header-actions flex items-center gap-0">
               <I18nTooltip
@@ -390,7 +390,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
               :disabled="isGuestCollab"
               @click="handleTabSwitch('similarities')"
             >
-              {{ t('nodePalette.similarities') }}
+              <I18nText k="nodePalette.similarities" />
             </button>
             <button
               type="button"
@@ -403,7 +403,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
               :disabled="isGuestCollab"
               @click="handleTabSwitch('differences')"
             >
-              {{ t('nodePalette.differences') }}
+              <I18nText k="nodePalette.differences" />
             </button>
           </div>
           <div
@@ -450,7 +450,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
               :disabled="isGuestCollab"
               @click="handleTabSwitch('causes')"
             >
-              {{ t('nodePalette.causes') }}
+              <I18nText k="nodePalette.causes" />
             </button>
             <button
               type="button"
@@ -463,7 +463,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
               :disabled="isGuestCollab"
               @click="handleTabSwitch('effects')"
             >
-              {{ t('nodePalette.effects') }}
+              <I18nText k="nodePalette.effects" />
             </button>
           </div>
         </div>
@@ -495,7 +495,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
       >
         <Loader2 class="w-8 h-8 animate-spin text-blue-500" />
         <p class="text-sm text-gray-500 dark:text-gray-400">
-          {{ t('nodePalette.generatingIdeas') }}
+          <I18nText k="nodePalette.generatingIdeas" />
         </p>
       </div>
 
@@ -517,7 +517,10 @@ function getDisplayText(suggestion: NodeSuggestion): string {
           class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5"
         >
           <Loader2 class="w-3.5 h-3.5 animate-spin shrink-0" />
-          {{ t('nodePalette.generatingProgress', { count: suggestions.length }) }}
+          <I18nText
+            k="nodePalette.generatingProgress"
+            :params="{ count: suggestions.length }"
+          />
         </p>
         <div class="grid grid-cols-2 gap-2">
           <div
@@ -583,7 +586,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
           size="small"
           @click="loadNextBatch"
         >
-          {{ t('nodePalette.loadMore') }}
+          <I18nText k="nodePalette.loadMore" />
         </el-button>
       </div>
       <div
@@ -599,13 +602,16 @@ function getDisplayText(suggestion: NodeSuggestion): string {
         class="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
       >
         <p class="text-xs text-gray-500 dark:text-gray-400">
-          {{
-            isDimensionsStage
-              ? t('nodePalette.helpDimension')
-              : showNextButton
-                ? t('nodePalette.helpNext')
-                : t('nodePalette.helpFinish')
-          }}
+          <I18nText
+            v-if="isDimensionsStage"
+            k="nodePalette.helpDimension"
+          /><template v-else
+            ><I18nText
+              v-if="showNextButton"
+              k="nodePalette.helpNext" /><I18nText
+              v-else
+              k="nodePalette.helpFinish"
+          /></template>
         </p>
       </div>
     </div>
@@ -617,7 +623,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
         size="default"
         @click="handleCancel"
       >
-        {{ t('nodePalette.cancel') }}
+        <I18nText k="nodePalette.cancel" />
       </el-button>
       <el-button
         type="primary"
@@ -627,7 +633,13 @@ function getDisplayText(suggestion: NodeSuggestion): string {
         "
         @click="handleFinish"
       >
-        {{ showNextButton ? t('nodePalette.next') : t('nodePalette.finish') }}
+        <I18nText
+          v-if="showNextButton"
+          k="nodePalette.next"
+        /><I18nText
+          v-else
+          k="nodePalette.finish"
+        />
       </el-button>
     </div>
   </div>

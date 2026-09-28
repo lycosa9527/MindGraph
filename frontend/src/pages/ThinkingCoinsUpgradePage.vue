@@ -23,7 +23,7 @@ onMounted(() => {
       class="thinking-coins-upgrade-header flex h-14 shrink-0 items-center border-b border-stone-200 bg-white px-4"
     >
       <h1 class="text-sm font-semibold text-stone-900">
-        {{ t('thinkingCoins.upgradePageTitle') }}
+        <I18nText k="thinkingCoins.upgradePageTitle" />
       </h1>
     </header>
 
