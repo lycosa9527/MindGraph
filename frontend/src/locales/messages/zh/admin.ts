@@ -1003,6 +1003,11 @@ export default {
   'admin.schoolMindmateAgentSection': 'MindMate 智能体',
   'admin.schoolMindmateAgentName': '智能体名称',
   'admin.schoolMindmateAgentNameHint': '侧边栏与 MindMate 中显示该名称；留空则显示 MindMate。',
+  'admin.schoolMindmateAgentAlias': '智能体别名',
+  'admin.schoolMindmateAgentAliasHint': '发给 MindMate 的小名。已私有化且留空时，使用智能体名称。',
+  'admin.schoolMindmateSchoolName': '学校名称',
+  'admin.schoolMindmateSchoolNameHint':
+    '发给 MindMate 的学校名称。留空则使用组织名称。与常规页「更改组织名字」是同一字段。',
   'admin.schoolMindmateAgentAvatar': '智能体形象',
   'admin.schoolMindmateAgentAvatarUpload': '上传形象',
   'admin.schoolMindmateAgentAvatarRemove': '移除形象',

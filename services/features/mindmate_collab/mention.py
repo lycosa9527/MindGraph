@@ -29,6 +29,16 @@ def _alias_pattern(alias: str) -> Optional[re.Pattern[str]]:
     )
 
 
+def mention_aliases_from_org(org: object) -> tuple[str, ...]:
+    """Saved agent name and alias that should match @-mentions."""
+    found: list[str] = []
+    for attr in ("mindmate_agent_name", "mindmate_agent_alias"):
+        cleaned = str(getattr(org, attr, None) or "").strip()
+        if cleaned and cleaned not in found:
+            found.append(cleaned)
+    return tuple(found)
+
+
 def message_mentions_mindmate(content: str, agent_aliases: Iterable[str] = ()) -> bool:
     """Return True when the message @-mentions MindMate or a configured agent alias."""
     text = (content or "").strip()

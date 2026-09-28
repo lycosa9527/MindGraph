@@ -257,6 +257,7 @@ const trendOrg = ref<{
   dingtalk_ai_card_streaming_max_chars?: number
   show_chain_of_thought?: boolean
   mindmate_agent_name?: string | null
+  mindmate_agent_alias?: string | null
   mindmate_agent_avatar_url?: string | null
   initial_tab?: 'usage' | 'teachers' | 'activity' | 'general'
   initial_trend_period?: 'today' | 'week' | 'month' | 'total'
@@ -322,6 +323,7 @@ function openTrendModal(
       (row.dingtalk_ai_card_streaming_max_chars as number | undefined) ?? 6500,
     show_chain_of_thought: orgShowChainOfThought(row),
     mindmate_agent_name: row.mindmate_agent_name as string | null | undefined,
+    mindmate_agent_alias: row.mindmate_agent_alias as string | null | undefined,
     mindmate_agent_avatar_url: row.mindmate_agent_avatar_url as string | null | undefined,
     initial_tab: initialTab,
     initial_trend_period: initialTrendPeriod,
@@ -365,6 +367,7 @@ function syncTrendOrgFromSchools() {
         (updated.dingtalk_ai_card_streaming_max_chars as number | undefined) ?? 6500,
       show_chain_of_thought: orgShowChainOfThought(updated),
       mindmate_agent_name: updated.mindmate_agent_name as string | null | undefined,
+      mindmate_agent_alias: updated.mindmate_agent_alias as string | null | undefined,
       mindmate_agent_avatar_url: updated.mindmate_agent_avatar_url as string | null | undefined,
       custom_llm_api_type: updated.custom_llm_api_type as string | null | undefined,
       custom_llm_base_url: updated.custom_llm_base_url as string | null | undefined,
@@ -734,6 +737,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
       :org-dingtalk-ai-card-streaming-max-chars="trendOrg?.dingtalk_ai_card_streaming_max_chars"
       :org-show-chain-of-thought="trendOrg?.show_chain_of_thought"
       :org-mindmate-agent-name="trendOrg?.mindmate_agent_name"
+      :org-mindmate-agent-alias="trendOrg?.mindmate_agent_alias"
       :org-mindmate-agent-avatar-url="trendOrg?.mindmate_agent_avatar_url"
       :initial-school-tab="trendOrg?.initial_tab"
       :initial-trend-period="trendOrg?.initial_trend_period ?? 'week'"

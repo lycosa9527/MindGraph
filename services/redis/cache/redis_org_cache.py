@@ -44,6 +44,9 @@ from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
 ORG_CACHE_TTL = _keys.TTL_ORG
+# Hashes written before this field existed must miss and reload, or @-mentions
+# keep a blank alias until the 24h TTL expires.
+_ORG_HASH_SCHEMA_FIELD = "mindmate_agent_alias"
 
 
 class OrganizationCache:
@@ -76,6 +79,7 @@ class OrganizationCache:
             "name": str(getattr(org, "name", None) or ""),
             "display_name": str(getattr(org, "display_name", None) or ""),
             "mindmate_agent_name": str(getattr(org, "mindmate_agent_name", None) or ""),
+            "mindmate_agent_alias": str(getattr(org, "mindmate_agent_alias", None) or ""),
             "mindmate_agent_avatar_url": str(getattr(org, "mindmate_agent_avatar_url", None) or ""),
             "invitation_code": str(getattr(org, "invitation_code", None) or ""),
             "created_at": created_at_val.isoformat() if created_at_val else "",
@@ -85,6 +89,10 @@ class OrganizationCache:
             "extra_member_seats": str(int(getattr(org, "extra_member_seats", 0) or 0)),
             "teaching_design_template_key": str(getattr(org, "teaching_design_template_key", None) or ""),
         }
+
+    def _hash_schema_current(self, data: Mapping[Any, Any]) -> bool:
+        """False when a cached hash predates the current org fields."""
+        return _ORG_HASH_SCHEMA_FIELD in redis_hash_to_str(data)
 
     def _deserialize_org(self, data: dict[bytes | str, bytes | str]) -> Organization:
         """
@@ -107,6 +115,8 @@ class OrganizationCache:
             setattr(org, "display_name", display_name_val)
         if hasattr(Organization, "mindmate_agent_name"):
             setattr(org, "mindmate_agent_name", normalized.get("mindmate_agent_name") or None)
+        if hasattr(Organization, "mindmate_agent_alias"):
+            setattr(org, "mindmate_agent_alias", normalized.get("mindmate_agent_alias") or None)
         if hasattr(Organization, "mindmate_agent_avatar_url"):
             setattr(org, "mindmate_agent_avatar_url", normalized.get("mindmate_agent_avatar_url") or None)
 
@@ -163,7 +173,7 @@ class OrganizationCache:
             cached = await redis.hgetall(_keys.ORG_BY_ID.format(org_id=org_id))
         except REDIS_ERRORS:
             return None
-        if not cached:
+        if not cached or not self._hash_schema_current(cached):
             return None
         try:
             return self._deserialize_org(cached)
@@ -298,6 +308,13 @@ class OrganizationCache:
         try:
             key = _keys.ORG_BY_ID.format(org_id=org_id)
             cached = await redis.hgetall(key)
+
+            if cached and not self._hash_schema_current(cached):
+                logger.debug(
+                    "[OrgCache] Stale org hash for ID %s, reloading from database",
+                    org_id,
+                )
+                return await self._load_from_database(org_id=org_id)
 
             if cached:
                 try:

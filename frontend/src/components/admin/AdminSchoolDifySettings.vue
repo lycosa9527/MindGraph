@@ -30,7 +30,9 @@ const props = withDefaults(
     dingtalkAiCardStreamingMaxChars?: number
     showChainOfThought?: boolean
     mindmateAgentName?: string | null
+    mindmateAgentAlias?: string | null
     mindmateAgentAvatarUrl?: string | null
+    orgName?: string
     swiss?: boolean
   }>(),
   {
@@ -47,7 +49,10 @@ const emit = defineEmits<{
   (e: 'saved'): void
 }>()
 
+const schoolDisplayName = defineModel<string>('schoolDisplayName', { default: '' })
+
 const MINDMATE_AGENT_NAME_MAX_LENGTH = 10
+const SCHOOL_DISPLAY_NAME_MAX_LENGTH = 200
 const MAX_AVATAR_BYTES = 1024 * 1024
 const ALLOWED_AVATAR_MIME = new Set([
   'image/png',
@@ -88,6 +93,7 @@ const difyTimeoutSeconds = ref(300)
 const aiCardStreamingMaxChars = ref(6500)
 const showChainOfThought = ref(false)
 const agentName = ref('')
+const agentAlias = ref('')
 const agentAvatarUrl = ref<string | null>(null)
 const avatarUploading = ref(false)
 const avatarInputRef = ref<HTMLInputElement | null>(null)
@@ -350,9 +356,10 @@ watch(selectedServer, () => {
 })
 
 watch(
-  () => [props.mindmateAgentName, props.mindmateAgentAvatarUrl] as const,
+  () => [props.mindmateAgentName, props.mindmateAgentAlias, props.mindmateAgentAvatarUrl] as const,
   () => {
     agentName.value = (props.mindmateAgentName ?? '').trim()
+    agentAlias.value = (props.mindmateAgentAlias ?? '').trim()
     agentAvatarUrl.value = props.mindmateAgentAvatarUrl ?? null
   },
   { immediate: true }
@@ -392,6 +399,8 @@ async function clearSchoolDifyOverride() {
       orgId: props.orgId,
       body: {
         mindmate_agent_name: agentName.value.trim() || null,
+        mindmate_agent_alias: agentAlias.value.trim() || null,
+        display_name: schoolDisplayName.value.trim() || null,
         [urlField]: null,
         [keyField]: null,
       },
@@ -429,6 +438,8 @@ async function saveSettings() {
   const { urlField, keyField } = serverFieldNames()
   const body: Record<string, string | null | number | boolean> = {
     mindmate_agent_name: agentName.value.trim() || null,
+    mindmate_agent_alias: agentAlias.value.trim() || null,
+    display_name: schoolDisplayName.value.trim() || null,
     dify_timeout_seconds: difyTimeoutSeconds.value,
     dingtalk_ai_card_streaming_max_chars: aiCardStreamingMaxChars.value,
     show_chain_of_thought: showChainOfThought.value,
@@ -588,6 +599,30 @@ defineExpose({
               show-word-limit
               class="mindbot-swiss-input w-full max-w-2xl"
             />
+          </el-form-item>
+          <el-form-item :label="t('admin.schoolMindmateAgentAlias')">
+            <el-input
+              v-model="agentAlias"
+              clearable
+              :maxlength="MINDMATE_AGENT_NAME_MAX_LENGTH"
+              show-word-limit
+              class="mindbot-swiss-input w-full max-w-2xl"
+            />
+            <p class="mindbot-swiss-hint text-xs mt-1.5 leading-relaxed max-w-2xl m-0">
+              {{ t('admin.schoolMindmateAgentAliasHint') }}
+            </p>
+          </el-form-item>
+          <el-form-item :label="t('admin.schoolMindmateSchoolName')">
+            <el-input
+              v-model="schoolDisplayName"
+              clearable
+              :maxlength="SCHOOL_DISPLAY_NAME_MAX_LENGTH"
+              :placeholder="props.orgName || ''"
+              class="mindbot-swiss-input w-full max-w-2xl"
+            />
+            <p class="mindbot-swiss-hint text-xs mt-1.5 leading-relaxed max-w-2xl m-0">
+              {{ t('admin.schoolMindmateSchoolNameHint') }}
+            </p>
           </el-form-item>
           <el-form-item :label="t('admin.schoolMindmateAgentAvatar')">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center max-w-2xl">

@@ -1,21 +1,20 @@
-# MindMate — four Dify persona inputs
+# MindMate — Dify persona inputs
 
-Implementation plan for the laptop. **Not done yet.** Conversation remap and API-key cutover stay parked.
+School persona lives on the organization row. One shared Dify chatflow receives three Start variables on every chat. Conversation remap and API-key cutover stay parked.
 
-Dify Start-node variables (already on the unified Chatflow): `mg_agent_name`, `mg_agent_alias`, `mg_school_name`, `mg_school_blurb`. MindGraph must send them on every chat from the school org row. Extra `inputs` keys are ignored by clone apps that have no Start vars.
+Dify Start-node variables sent by MindGraph: `mg_agent_name`, `mg_agent_alias`, `mg_school_name`. Do not send `mg_school_blurb`. The two school clones (`远二启慧星`, `八一思行者`) only differ by `env.name` (formal name plus 小名) and `env.school`. `env.strategictools` and `env.visualizationtools` stay on the workflow. Extra `inputs` keys are ignored by clone apps that have no Start vars.
 
 ## What we send
 
 | Dify Start variable | Source | Not privatized (trial / incomplete 私有化) | Privatized |
 |---------------------|--------|------------------------------------------|------------|
 | `mg_agent_name` | `mindmate_agent_name` | `"MindMate"` | saved name |
-| `mg_agent_alias` | new `mindmate_agent_alias` | `"MindMate"` | saved alias, else agent name |
+| `mg_agent_alias` | `mindmate_agent_alias` | `"MindMate"` | saved alias, else agent name |
 | `mg_school_name` | `display_name` or `name` | always school name | same |
-| `mg_school_blurb` | new `mindmate_school_blurb` | `""` unless set | saved blurb or `""` |
 
 Gate: existing [`organization_is_privatized`](../../utils/auth/org_privatization.py) (name + avatar + dedicated Dify key). Do not send a leftover typed name when 私有化 is incomplete.
 
-Keep existing `mg_dify_user` / `mg_conversation_id`. Overwrite reserved `mg_*` after MindBot `dify_inputs_json`.
+Keep existing `mg_dify_user` / `mg_conversation_id`. Overwrite the three persona keys after MindBot `dify_inputs_json` and after any browser `inputs`.
 
 ```mermaid
 flowchart LR
@@ -28,43 +27,34 @@ flowchart LR
 
 ## Schema + admin
 
-Alembic **`0137`** after current head [`rev_0136`](../../alembic/versions/rev_0136_user_quick_access_prompt_specs.py) (re-check head before writing the revision):
+Alembic [`rev_0137`](../../alembic/versions/rev_0137_organization_mindmate_agent_alias.py):
 
 - `organizations.mindmate_agent_alias` — `String(10)`, nullable
-- `organizations.mindmate_school_blurb` — `Text`, nullable
 
-Wire on [`Organization`](../../models/domain/auth.py). Save/list through [`organization_mindmate_branding.py`](../../routers/auth/admin/organization_mindmate_branding.py) (`apply_mindmate_branding_on_update`, `mindmate_branding_list_fields`). Extend the update gate in [`organizations.py`](../../routers/auth/admin/organizations.py) (today only name/avatar).
+Wired on [`Organization`](../../models/domain/auth.py). Save/list through [`organization_mindmate_branding.py`](../../routers/auth/admin/organization_mindmate_branding.py). The update gate in [`organizations.py`](../../routers/auth/admin/organizations.py) includes the alias.
 
-Admin: [`AdminSchoolDifySettings.vue`](../../frontend/src/components/admin/AdminSchoolDifySettings.vue) next to 智能体名称 — alias + blurb; school name stays on the General tab (`name` / `display_name`). i18n: add keys in [`zh/admin.ts`](../../frontend/src/locales/messages/zh/admin.ts) first, `en`, insert-only fill for other locales; `npm run i18n:check-banners` then `i18n:check-keys` from `frontend/`.
+组织管理 → 编辑 → MindMate鉴权 ([`AdminSchoolDifySettings.vue`](../../frontend/src/components/admin/AdminSchoolDifySettings.vue)) sets 智能体名称, 智能体别名, 学校名称 (`display_name`), and the avatar. School name is the same column as 常规 tab 「更改组织名字」. i18n keys live in [`zh/admin.ts`](../../frontend/src/locales/messages/zh/admin.ts) and [`en/admin.ts`](../../frontend/src/locales/messages/en/admin.ts); other locales were filled from English.
 
-Redis org cache ([`redis_org_cache.py`](../../services/redis/cache/redis_org_cache.py)) must serialize the new columns if injection hydrates from cache; otherwise stream paths load the org row.
+Chat paths load the organization row. The Redis org cache ([`redis_org_cache.py`](../../services/redis/cache/redis_org_cache.py)) also stores the alias so a later cache read does not drop it. A hash written before that field existed is a cache miss and is reloaded. Persona injection does not use the cache, because the hash does not include Dify credentials required by the privatization gate.
 
-## Inject helper + three paths
+## Inject helper
 
-New [`services/dify/org_dify_inputs.py`](../../services/dify/org_dify_inputs.py): `persona_inputs_for_org(org) -> dict[str, str]`.
+[`services/dify/org_dify_inputs.py`](../../services/dify/org_dify_inputs.py): `persona_inputs_for_org`, `apply_persona_inputs`, `apply_persona_inputs_for_organization_id`.
 
-Merge in:
+Merged after `mg_dify_user` / `mg_conversation_id` in:
 
-- [`routers/api/sse_streaming.py`](../../routers/api/sse_streaming.py) — load org by `current_user.organization_id`
-- [`services/mindbot/pipeline/callback.py`](../../services/mindbot/pipeline/callback.py) — load org by `cfg.organization_id`; merge after `dify_inputs_json`
-- [`services/features/mindmate_collab/dify_stream.py`](../../services/features/mindmate_collab/dify_stream.py) — load org by `org_id`; extend `inputs={...}`
+- [`routers/api/sse_streaming.py`](../../routers/api/sse_streaming.py)
+- [`services/mindbot/pipeline/callback.py`](../../services/mindbot/pipeline/callback.py)
+- [`services/features/mindmate_collab/dify_stream.py`](../../services/features/mindmate_collab/dify_stream.py)
 
-No frontend chat change. Browser must not be the source of these keys.
-
-## Tests
-
-- Helper: not privatized → both name/alias `MindMate`; privatized → saved fields; school name fallback `display_name` → `name`
-- Branding update accepts alias/blurb length rules
-- One stream/callback test that `inputs` contain the four keys
-
-Do not run `npm run build`. Scoped backend tests while iterating; `./scripts/ci-local.sh` only when preparing a commit.
+No frontend chat change. The browser is not the source of these keys.
 
 ## Checklist
 
-- [ ] Alembic 0137 + `Organization`: `mindmate_agent_alias` (≤10), `mindmate_school_blurb`
-- [ ] Save/list/i18n + AdminSchoolDifySettings alias and blurb fields
-- [ ] `org_dify_inputs` helper; inject sse_streaming, MindBot callback, collab stream
-- [ ] Unit tests for defaults (MindMate vs privatized) and inputs merge
+- [x] Alembic 0137 + `Organization.mindmate_agent_alias` (≤10). No blurb column.
+- [x] Save/list/i18n + MindMate鉴权 fields: agent name, alias, school name, avatar
+- [x] `org_dify_inputs` helper; inject sse_streaming, MindBot callback, collab stream
+- [x] Unit tests for defaults (MindMate vs privatized) and inputs merge
 
 ## Parked (not this slice)
 

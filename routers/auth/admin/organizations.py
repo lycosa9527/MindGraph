@@ -562,7 +562,7 @@ async def update_organization_admin(
     if request_updates_custom_llm_settings(request):
         apply_custom_llm_on_update(org, request, lang)
 
-    if "mindmate_agent_name" in request or "mindmate_agent_avatar_url" in request:
+    if "mindmate_agent_name" in request or "mindmate_agent_alias" in request or "mindmate_agent_avatar_url" in request:
         apply_mindmate_branding_on_update(org, request, lang)
 
     quota_fields_changed = "school_tier" in request or "extra_member_seats" in request

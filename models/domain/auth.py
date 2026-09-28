@@ -91,6 +91,7 @@ class Organization(Base):
     dingtalk_ai_card_streaming_max_chars: Mapped[int] = mapped_column(Integer, nullable=False, default=6500)
 
     mindmate_agent_name: Mapped[str | None] = mapped_column(String(MINDMATE_AGENT_NAME_MAX_LENGTH), nullable=True)
+    mindmate_agent_alias: Mapped[str | None] = mapped_column(String(MINDMATE_AGENT_NAME_MAX_LENGTH), nullable=True)
     mindmate_agent_avatar_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
     users: Mapped[list["User"]] = relationship(

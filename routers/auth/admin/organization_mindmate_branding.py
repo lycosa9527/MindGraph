@@ -55,9 +55,11 @@ def mindmate_org_avatar_public_url(org_id: int, *, animated: bool = False) -> st
 def mindmate_branding_list_fields(org: Organization) -> dict[str, Any]:
     """Serialized MindMate branding fields for admin organization list."""
     agent_name = (cast(Optional[str], getattr(org, "mindmate_agent_name", None)) or "").strip()
+    agent_alias = (cast(Optional[str], getattr(org, "mindmate_agent_alias", None)) or "").strip()
     avatar_url = (cast(Optional[str], getattr(org, "mindmate_agent_avatar_url", None)) or "").strip()
     return {
         "mindmate_agent_name": agent_name or None,
+        "mindmate_agent_alias": agent_alias or None,
         "mindmate_agent_avatar_url": avatar_url or None,
     }
 
@@ -191,7 +193,7 @@ def apply_mindmate_branding_on_update(
     request: dict,
     lang: Language,
 ) -> None:
-    """Apply MindMate agent name / avatar URL on organization update."""
+    """Apply MindMate agent name, alias, and avatar URL on organization update."""
     if "mindmate_agent_name" in request:
         raw_name = request.get("mindmate_agent_name")
         if raw_name is None:
@@ -205,6 +207,20 @@ def apply_mindmate_branding_on_update(
                     detail=error_msg,
                 )
             setattr(org, "mindmate_agent_name", stripped if stripped else None)
+
+    if "mindmate_agent_alias" in request:
+        raw_alias = request.get("mindmate_agent_alias")
+        if raw_alias is None:
+            setattr(org, "mindmate_agent_alias", None)
+        else:
+            stripped_alias = (raw_alias or "").strip()
+            if stripped_alias and len(stripped_alias) > MINDMATE_AGENT_NAME_MAX_LENGTH:
+                error_msg = Messages.error("mindmate_agent_alias_too_long", lang)
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=error_msg,
+                )
+            setattr(org, "mindmate_agent_alias", stripped_alias if stripped_alias else None)
 
     if "mindmate_agent_avatar_url" in request:
         raw_url = request.get("mindmate_agent_avatar_url")

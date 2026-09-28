@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.109] - 2026-09-28
+
+> **One MindMate workflow receives each school's agent name, short name, and school name.**
+
+### Added
+
+- **MindMate persona** — 组织管理 → 编辑 → MindMate鉴权 sets the agent name, the short name (小名), the school name, and the avatar. Web chat, MindBot, and seminars send those three values to the shared Dify chatflow. A school that is not fully privatized still sends MindMate. A seminar @-mention matches the saved name and the short name.
+
+### Tests
+
+- [`tests/test_org_dify_inputs.py`](tests/test_org_dify_inputs.py), [`tests/test_mindmate_collab_mention.py`](tests/test_mindmate_collab_mention.py), [`tests/test_mindmate_collab_dify_stream.py`](tests/test_mindmate_collab_dify_stream.py), [`tests/test_school_tier.py`](tests/test_school_tier.py)
+
 ## [5.180.108] - 2026-09-28
 
 > **On a phone, a blank diagram says so before you save, the title stays centered, and exported pictures stay sharp.**

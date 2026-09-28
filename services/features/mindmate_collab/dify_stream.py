@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Optional
+from typing import Any, Optional
 
+from services.dify.org_dify_inputs import apply_persona_inputs_for_organization_id
 from services.dify.org_mindmate_client import resolve_mindmate_dify_client_short_lived
 from services.features.mindmate_collab.dify_stream_control import (
     clear_dify_stream_abort,
@@ -88,11 +89,15 @@ async def stream_assistant_reply(
             return
 
         client = await resolve_mindmate_dify_client_short_lived(org_id, detail="AI service not configured")
+        collab_inputs: dict[str, Any] = {"mg_dify_user": dify_user}
+        if conversation_id:
+            collab_inputs["mg_conversation_id"] = conversation_id
+        await apply_persona_inputs_for_organization_id(collab_inputs, org_id)
         stream = client.stream_chat(
             message=user_message,
             user_id=dify_user,
             conversation_id=conversation_id,
-            inputs={"mg_dify_user": dify_user},
+            inputs=collab_inputs,
         )
         async for chunk in iter_upstream_with_keepalive(stream, interval_seconds=15.0):
             if await is_dify_stream_aborted(code):

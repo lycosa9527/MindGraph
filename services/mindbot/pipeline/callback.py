@@ -17,6 +17,7 @@ from typing import Any, Optional
 from clients.dify import AsyncDifyClient, DifyFile
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.diagram.generation_session_registry import register_generation_session
+from services.dify.org_dify_inputs import apply_persona_inputs_for_organization_id
 from services.mindbot.diagram.generation_session_bind import resolve_mindbot_linked_user_id
 from services.mindbot.core.conv_gate import (
     conv_gate_enabled,
@@ -556,6 +557,7 @@ async def execute_mindbot_pipeline(
     dify_inputs["mg_dify_user"] = dify_user_id
     if dify_conv:
         dify_inputs["mg_conversation_id"] = dify_conv
+    await apply_persona_inputs_for_organization_id(dify_inputs, cfg.organization_id)
 
     linked_user_id = await resolve_mindbot_linked_user_id(
         cfg.organization_id,

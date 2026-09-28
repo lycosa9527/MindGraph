@@ -111,6 +111,7 @@ const props = defineProps<{
   orgDingtalkAiCardStreamingMaxChars?: number
   orgShowChainOfThought?: boolean
   orgMindmateAgentName?: string | null
+  orgMindmateAgentAlias?: string | null
   orgMindmateAgentAvatarUrl?: string | null
   userName?: string
   userId?: number
@@ -896,6 +897,7 @@ onBeforeUnmount(() => {
             <AdminSchoolDifySettings
               v-if="orgId"
               ref="mindmateDifyRef"
+              v-model:school-display-name="displayNameEdit"
               :org-id="orgId"
               :dify-api-base-url="orgDifyApiBaseUrl"
               :dify-api-key-masked="orgDifyApiKeyMasked"
@@ -906,7 +908,9 @@ onBeforeUnmount(() => {
               :dify-timeout-seconds="orgDifyTimeoutSeconds"
               :dingtalk-ai-card-streaming-max-chars="orgDingtalkAiCardStreamingMaxChars"
               :show-chain-of-thought="orgShowChainOfThought"
+              :org-name="orgName"
               :mindmate-agent-name="orgMindmateAgentName"
+              :mindmate-agent-alias="orgMindmateAgentAlias"
               :mindmate-agent-avatar-url="orgMindmateAgentAvatarUrl"
               @saved="emit('refresh')"
             />

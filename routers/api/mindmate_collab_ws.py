@@ -20,7 +20,11 @@ from services.features.mindmate_collab.config import MINDMATE_COLLAB_MAX_CHAT_CO
 from services.features.mindmate_collab.dify_stream_control import acquire_dify_stream_lock
 from services.features.mindmate_collab.dify_stream import schedule_assistant_reply
 from services.features.mindmate_collab.manager_access import get_mindmate_collab_manager
-from services.features.mindmate_collab.mention import extract_mindmate_query, message_mentions_mindmate
+from services.features.mindmate_collab.mention import (
+    extract_mindmate_query,
+    mention_aliases_from_org,
+    message_mentions_mindmate,
+)
 from services.features.mindmate_collab.redis_keys import normalize_collab_code
 from services.features.mindmate_collab.resume_tokens import (
     join_resume_claims_match_user_room,
@@ -40,6 +44,7 @@ from services.features.mindmate_collab.ws_registry import (
     teardown_superseded_connection,
     unregister_connection,
 )
+from services.redis.cache.redis_org_cache import org_cache
 from services.redis.redis_async_client import get_async_redis
 from services.online_collab.participant.online_collab_ws_rate_limit import (
     check_canvas_collab_join_rate_limits,
@@ -257,6 +262,12 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
                 },
             )
             join_committed = True
+            mention_aliases: tuple[str, ...] = ()
+            room_org_id = getattr(session, "organization_id", None)
+            if room_org_id is not None:
+                room_org = await org_cache.get_by_id(int(room_org_id))
+                if room_org is not None:
+                    mention_aliases = mention_aliases_from_org(room_org)
 
             try:
                 while True:
@@ -311,12 +322,8 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
                         continue
 
                     to_mindmate = bool(msg.get("to_mindmate"))
-                    agent_aliases: tuple[str, ...] = ()
-                    agent_name = getattr(user, "mindmate_agent_name", None)
-                    if agent_name:
-                        agent_aliases = (str(agent_name),)
                     if not to_mindmate:
-                        to_mindmate = message_mentions_mindmate(content, agent_aliases)
+                        to_mindmate = message_mentions_mindmate(content, mention_aliases)
 
                     await mgr.refresh_participant_ttl(norm_code, int(user.id))
                     await mgr.touch_activity(norm_code)
@@ -349,7 +356,7 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
                         )
                         continue
 
-                    dify_query = extract_mindmate_query(content, agent_aliases)
+                    dify_query = extract_mindmate_query(content, mention_aliases)
                     conv_id = await mgr.resolve_dify_conversation_id(
                         norm_code,
                         fallback=session.dify_conversation_id,

@@ -1180,6 +1180,12 @@ ERRORS = {
         "en": "mindmate_agent_name must be at most 10 characters",
         "az": "mindmate_agent_name ən çoxu 10 simvol ola bilər",
     },
+    "mindmate_agent_alias_too_long": {
+        "zh": "MindMate 智能体别名不能超过 10 个字符",
+        "zh-tw": "MindMate 智能體別名不能超過 10 個字元",
+        "en": "mindmate_agent_alias must be at most 10 characters",
+        "az": "mindmate_agent_alias ən çoxu 10 simvol ola bilər",
+    },
     "mindmate_agent_avatar_url_too_long": {
         "zh": "MindMate 智能体头像 URL 不能超过 512 个字符",
         "zh-tw": "MindMate 智能體頭像 URL 不能超過 512 個字元",

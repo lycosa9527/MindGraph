@@ -9,6 +9,18 @@ import pytest
 from services.features.mindmate_collab.dify_stream import stream_assistant_reply
 
 
+async def _apply_persona(inputs: dict, _org_id: object) -> None:
+    """Stand in for the org-row loader used by the three chat paths."""
+    inputs.pop("mg_school_blurb", None)
+    inputs.update(
+        {
+            "mg_agent_name": "MindMate",
+            "mg_agent_alias": "MindMate",
+            "mg_school_name": "Demo School",
+        }
+    )
+
+
 @pytest.mark.asyncio
 async def test_ai_message_end_omits_conversation_id() -> None:
     """Client-facing end frames do not expose internal Dify conversation ids."""
@@ -23,6 +35,10 @@ async def test_ai_message_end_omits_conversation_id() -> None:
         patch(
             "services.features.mindmate_collab.dify_stream.resolve_mindmate_dify_client_short_lived",
             AsyncMock(return_value=mock_client),
+        ),
+        patch(
+            "services.features.mindmate_collab.dify_stream.apply_persona_inputs_for_organization_id",
+            AsyncMock(side_effect=_apply_persona),
         ),
         patch(
             "services.features.mindmate_collab.dify_stream.is_dify_stream_aborted",
@@ -66,9 +82,15 @@ async def test_ai_message_end_omits_conversation_id() -> None:
             org_id=1,
             user_message="Hello",
             sender_user_id=7,
-            conversation_id=None,
+            conversation_id="conv-9",
         )
 
     end_frames = [msg for msg in broadcasts if msg.get("type") == "ai_message_end"]
     assert len(end_frames) == 1
     assert "conversation_id" not in end_frames[0]
+    sent = mock_client.stream_chat.call_args.kwargs["inputs"]
+    assert sent["mg_dify_user"] == "mindmate_collab_1_sess-1"
+    assert sent["mg_conversation_id"] == "conv-9"
+    assert sent["mg_agent_name"] == "MindMate"
+    assert sent["mg_school_name"] == "Demo School"
+    assert "mg_school_blurb" not in sent

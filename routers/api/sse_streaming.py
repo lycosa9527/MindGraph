@@ -31,6 +31,7 @@ from services.auth.thinking_coin.usage_wire import (
     thinking_coins_apply_to_user,
 )
 from services.diagram.generation_session_registry import register_generation_session
+from services.dify.org_dify_inputs import apply_persona_inputs_for_organization_id
 from services.dify.org_mindmate_client import resolve_mindmate_dify_client_short_lived
 from services.infrastructure.http.error_handler import (
     ThinkingCoinInsufficientError,
@@ -143,6 +144,7 @@ async def ai_assistant_stream(
     stream_inputs["mg_dify_user"] = dify_user_id
     if req.conversation_id:
         stream_inputs["mg_conversation_id"] = req.conversation_id
+    await apply_persona_inputs_for_organization_id(stream_inputs, organization_id_for_dify)
 
     if current_user and hasattr(current_user, "id"):
         await register_generation_session(
