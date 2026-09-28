@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * UI chrome label: primary locale at regular size, optional presenter line below.
+ * UI chrome label: primary locale at regular size, optional presenter line.
  * Message keys only — never pass model output or autocomplete items.
  */
 import { computed } from 'vue'
@@ -24,6 +24,8 @@ const props = withDefaults(
     dense?: boolean
     /** Center both lines. Welcome copy and suggestion headings use this. */
     align?: 'start' | 'center'
+    /** `beside` puts the presenter language on the right of the primary language. */
+    layout?: 'stack' | 'beside'
   }>(),
   {
     fallbackKey: '',
@@ -31,6 +33,7 @@ const props = withDefaults(
     primaryOnly: false,
     dense: false,
     align: 'start',
+    layout: 'stack',
   }
 )
 
@@ -51,6 +54,7 @@ const secondary = computed(() => (props.primaryOnly ? null : copy.value.secondar
     :class="{
       'i18n-label--dense': dense,
       'i18n-label--center': align === 'center',
+      'i18n-label--beside': layout === 'beside' && secondary,
     }"
   >
     <span class="i18n-label__primary">{{ copy.primary }}</span>
@@ -101,5 +105,29 @@ const secondary = computed(() => (props.primaryOnly ? null : copy.value.secondar
   font-size: 0.65em;
   line-height: 1.1;
   margin-top: 1px;
+}
+
+.i18n-label--beside {
+  flex-direction: row;
+  direction: ltr;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.65em;
+  width: 100%;
+}
+
+.i18n-label--beside .i18n-label__primary,
+.i18n-label--beside .i18n-label__secondary {
+  width: auto;
+  min-width: 0;
+  max-width: calc(50% - 0.35em);
+}
+
+.i18n-label--beside .i18n-label__primary {
+  text-align: start;
+}
+
+.i18n-label--beside .i18n-label__secondary {
+  text-align: end;
 }
 </style>

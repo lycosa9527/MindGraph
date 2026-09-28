@@ -421,10 +421,10 @@ onMounted(() => {
               <DiagramPreviewSvg :type="item.type" />
             </div>
             <h3 class="intl-card-title">
-              <I18nText :k="item.titleKey" />
+              <I18nText :k="item.titleKey" layout="beside" />
             </h3>
             <p class="intl-card-desc">
-              <I18nText :k="item.descKey" />
+              <I18nText :k="item.descKey" layout="beside" />
             </p>
           </div>
         </div>
@@ -443,10 +443,10 @@ onMounted(() => {
               <DiagramPreviewSvg :type="item.type" />
             </div>
             <h3 class="intl-card-title">
-              <I18nText :k="item.titleKey" />
+              <I18nText :k="item.titleKey" layout="beside" />
             </h3>
             <p class="intl-card-desc">
-              <I18nText :k="item.descKey" />
+              <I18nText :k="item.descKey" layout="beside" />
             </p>
           </div>
         </div>
@@ -1068,14 +1068,18 @@ onMounted(() => {
 
 .intl-card-title :deep(.i18n-label),
 .intl-card-desc :deep(.i18n-label) {
-  align-items: center;
   width: 100%;
 }
 
-.intl-card-title :deep(.i18n-label__primary),
-.intl-card-title :deep(.i18n-label__secondary),
-.intl-card-desc :deep(.i18n-label__primary),
-.intl-card-desc :deep(.i18n-label__secondary) {
+.intl-card-title :deep(.i18n-label:not(.i18n-label--beside)),
+.intl-card-desc :deep(.i18n-label:not(.i18n-label--beside)) {
+  align-items: center;
+}
+
+.intl-card-title :deep(.i18n-label:not(.i18n-label--beside) .i18n-label__primary),
+.intl-card-title :deep(.i18n-label:not(.i18n-label--beside) .i18n-label__secondary),
+.intl-card-desc :deep(.i18n-label:not(.i18n-label--beside) .i18n-label__primary),
+.intl-card-desc :deep(.i18n-label:not(.i18n-label--beside) .i18n-label__secondary) {
   text-align: center;
 }
 
