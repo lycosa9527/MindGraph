@@ -28,7 +28,7 @@ from utils.auth.admin_scope import AdminScope
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/organizations", tags=["Admin OAuth"])
+router = APIRouter(prefix="/admin/organizations", tags=["Admin OAuth"])
 
 
 class OrganizationOauthConfigResponse(BaseModel):
