@@ -178,7 +178,7 @@ async function onSaveToLibrary(): Promise<void> {
   if (!props.submission) return
   const spec = previewSpec.value
   if (!spec) {
-    notify.error(t('learningSpace.noPreview'))
+    notify.errorKey('learningSpace.noPreview')
     return
   }
   savingLibrary.value = true
@@ -200,7 +200,7 @@ async function onSaveToLibrary(): Promise<void> {
       return
     }
     savedDiagramsStore.clearActiveDiagram()
-    notify.success(t('learningSpace.saveToLibraryOk'))
+    notify.successKey('learningSpace.saveToLibraryOk')
     visible.value = false
     await router.push({ path: '/canvas', query: { diagramId: saved.id } })
   } catch (error) {

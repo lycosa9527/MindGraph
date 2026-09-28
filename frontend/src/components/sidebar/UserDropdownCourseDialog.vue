@@ -5,14 +5,13 @@
 import { ref, watch } from 'vue'
 
 import TrainingCourseWalkthrough from '@/components/training/TrainingCourseWalkthrough.vue'
-import { useLanguage, useNotifications } from '@/composables'
+import { useNotifications } from '@/composables'
 import {
   fetchUserDropdownCourse,
   useUserDropdownMenu,
 } from '@/composables/sidebar/useUserDropdownMenu'
 import type { TrainingCourse } from '@/types/training'
 
-const { t } = useLanguage()
 const notify = useNotifications()
 const { openToken, activeItemId } = useUserDropdownMenu()
 
@@ -37,7 +36,7 @@ async function load(itemId: string): Promise<void> {
   } catch {
     if (activeItemId.value === itemId) {
       visible.value = false
-      notify.error(t('admin.userDropdown.previewLoadFail'))
+      notify.errorKey('admin.userDropdown.previewLoadFail')
     }
   } finally {
     if (activeItemId.value === itemId) loading.value = false

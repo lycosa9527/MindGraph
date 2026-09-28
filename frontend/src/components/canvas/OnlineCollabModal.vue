@@ -177,12 +177,12 @@ async function ensureDiagramSaved(): Promise<string | null> {
     return savedDiagramsStore.activeDiagramId
   }
   if (!diagramStore.type || !diagramStore.data) {
-    notify.warning(t('collab.noDiagramToSave'))
+    notify.warningKey('collab.noDiagramToSave')
     return null
   }
   const spec = getDiagramSpecForPersist()
   if (!spec) {
-    notify.warning(t('collab.invalidDiagramData'))
+    notify.warningKey('collab.invalidDiagramData')
     return null
   }
   isLoading.value = true
@@ -197,19 +197,19 @@ async function ensureDiagramSaved(): Promise<string | null> {
     if (result.success && result.diagramId) {
       savedDiagramsStore.setActiveDiagram(result.diagramId)
       resolvedDiagramId.value = result.diagramId
-      notify.success(t('collab.diagramSavedStarting'))
+      notify.successKey('collab.diagramSavedStarting')
       await new Promise((resolve) => setTimeout(resolve, 100))
       return result.diagramId
     }
     if (result.needsSlotClear) {
-      notify.warning(t('collab.galleryFull'))
+      notify.warningKey('collab.galleryFull')
       return null
     }
     notify.error(result.error || t('collab.saveFailed'))
     return null
   } catch (error) {
     console.error('Failed to save diagram:', error)
-    notify.error(t('collab.networkErrorSave'))
+    notify.errorKey('collab.networkErrorSave')
     return null
   } finally {
     isLoading.value = false
@@ -275,10 +275,10 @@ async function checkWorkshopStatusWithId(diagramId: string) {
         remainingSeconds.value = null
       }
     } else if (response.status !== 404) {
-      notify.warning(t('collab.networkError'))
+      notify.warningKey('collab.networkError')
     }
   } catch {
-    notify.warning(t('collab.networkError'))
+    notify.warningKey('collab.networkError')
   }
 }
 
@@ -318,21 +318,21 @@ async function startWorkshopWithId(diagramId: string) {
       eventBus.emit('workshop:host-started', {})
       await checkWorkshopStatusWithId(diagramId)
       if (stopped > 0) {
-        notify.info(t('collab.previousSessionsStopped', { n: stopped }))
+        notify.infoKey('collab.previousSessionsStopped', { n: stopped })
       }
       if (isNetworkMode.value) {
-        notify.success(t('collab.codeGenerated'))
+        notify.successKey('collab.codeGenerated')
       } else {
-        notify.success(t('collab.schoolStarted'))
+        notify.successKey('collab.schoolStarted')
       }
     } else {
       const error = await response.json().catch(() => ({}))
       const errorMessage = error.detail || error.message || `HTTP ${response.status}`
-      notify.error(t('collab.startFailed', { msg: String(errorMessage) }))
+      notify.errorKey('collab.startFailed', { msg: String(errorMessage) })
     }
   } catch (error) {
     console.error('Start collaboration failed:', error)
-    notify.error(t('collab.networkErrorStart'))
+    notify.errorKey('collab.networkErrorStart')
   } finally {
     isLoading.value = false
   }
@@ -373,10 +373,10 @@ async function copyCode() {
   if (!workshopCode.value) return
   try {
     await navigator.clipboard.writeText(workshopCode.value)
-    notify.success(t('collab.codeCopied'))
+    notify.successKey('collab.codeCopied')
   } catch (error) {
     console.error('Copy failed:', error)
-    notify.error(t('collab.copyFailed'))
+    notify.errorKey('collab.copyFailed')
   }
 }
 
@@ -384,10 +384,10 @@ async function copyJoinLink() {
   if (!joinLinkDisplay.value) return
   try {
     await navigator.clipboard.writeText(joinLinkDisplay.value)
-    notify.success(t('collab.linkCopied'))
+    notify.successKey('collab.linkCopied')
   } catch (error) {
     console.error('Copy failed:', error)
-    notify.error(t('collab.copyFailed'))
+    notify.errorKey('collab.copyFailed')
   }
 }
 
@@ -409,7 +409,7 @@ async function endCollaboration() {
       participantCount.value = 0
       emitClearCollabSession()
       showDialog.value = false
-      notify.success(t('collab.ended'))
+      notify.successKey('collab.ended')
     } else {
       const error = await response.json().catch(() => ({}))
       const detail = typeof error.detail === 'string' ? error.detail : ''
@@ -417,7 +417,7 @@ async function endCollaboration() {
     }
   } catch (error) {
     console.error('Stop collaboration failed:', error)
-    notify.error(t('collab.networkError'))
+    notify.errorKey('collab.networkError')
   } finally {
     isLoading.value = false
   }

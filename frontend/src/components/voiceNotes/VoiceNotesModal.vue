@@ -53,7 +53,7 @@ async function requestClose(): Promise<boolean> {
   const confirmed = await confirmHideVoiceNotesWhileRecording((key) => t(key))
   if (!confirmed) return false
   voiceNotes.closeModal()
-  notify.info(t('auth.voiceNotes.recordingContinues'))
+  notify.infoKey('auth.voiceNotes.recordingContinues')
   return true
 }
 
@@ -93,9 +93,9 @@ async function onCopy(): Promise<void> {
   if (!text) return
   try {
     await navigator.clipboard.writeText(text)
-    notify.success(t('auth.voiceNotes.copied'))
+    notify.successKey('auth.voiceNotes.copied')
   } catch {
-    notify.warning(t('auth.voiceNotes.genericError'))
+    notify.warningKey('auth.voiceNotes.genericError')
   }
 }
 </script>

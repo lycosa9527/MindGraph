@@ -174,7 +174,7 @@ export function useUploadChunkTestDocument() {
     mutationFn: (file: File) => uploadChunkTestDocumentAPI(file),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: chunkTestDocumentKeys.list() })
-      notify.success(t('knowledgeSpace.uploadSuccess'))
+      notify.successKey('knowledgeSpace.uploadSuccess')
     },
     onError: (error: Error) => {
       console.error('Upload failed:', error)
@@ -196,7 +196,7 @@ export function useDeleteChunkTestDocument() {
     mutationFn: (documentId: number) => deleteChunkTestDocumentAPI(documentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: chunkTestDocumentKeys.list() })
-      notify.success(t('knowledgeSpace.documentDeleted'))
+      notify.successKey('knowledgeSpace.documentDeleted')
     },
     onError: (error: Error) => {
       console.error('Delete failed:', error)
@@ -219,9 +219,9 @@ export function useStartProcessingChunkTestDocuments() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: chunkTestDocumentKeys.list() })
       if (data.processed_count === 0) {
-        notify.info(t('knowledgeSpace.noPendingDocs'))
+        notify.infoKey('knowledgeSpace.noPendingDocs')
       } else {
-        notify.success(t('knowledgeSpace.processingStarted', { count: data.processed_count }))
+        notify.successKey('knowledgeSpace.processingStarted', { count: data.processed_count })
       }
     },
     onError: (error: Error) => {
@@ -245,9 +245,9 @@ export function useProcessSelectedChunkTestDocuments() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: chunkTestDocumentKeys.list() })
       if (data.processed_count === 0) {
-        notify.info(t('knowledgeSpace.noPendingDocs'))
+        notify.infoKey('knowledgeSpace.noPendingDocs')
       } else {
-        notify.success(t('knowledgeSpace.processingStarted', { count: data.processed_count }))
+        notify.successKey('knowledgeSpace.processingStarted', { count: data.processed_count })
       }
     },
     onError: (error: Error) => {

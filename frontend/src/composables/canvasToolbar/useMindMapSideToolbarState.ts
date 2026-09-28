@@ -2,21 +2,16 @@ import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { getAiBrainstorm } from '@/composables/aiBrainstorm/useAiBrainstorm'
-import { eventBus } from '@/composables/core/useEventBus'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
-import { useLanguage } from '@/composables/core/useLanguage'
+import { eventBus } from '@/composables/core/useEventBus'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useMindMapAudienceGenerate } from '@/composables/mindMap/audience/useMindMapAudienceGenerate'
 import { getAiBrainstormDiagramKey } from '@/composables/nodePalette/sessionKeys'
-import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useDiagramStore, usePanelsStore, useSavedDiagramsStore } from '@/stores'
 
 export type MindMapSideToolId =
-  | 'outline'
-  | 'waterfall'
-  | 'learning_sheet'
-  | 'one_sentence'
-  | 'document_summary'
+  'outline' | 'waterfall' | 'learning_sheet' | 'one_sentence' | 'document_summary'
 
 /** Active side tool panel; null = no overlay panel. */
 const activeTool = ref<MindMapSideToolId | null>(null)
@@ -27,7 +22,6 @@ export function useMindMapSideToolbarState() {
   const panelsStore = usePanelsStore()
   const savedDiagramsStore = useSavedDiagramsStore()
   const notify = useNotifications()
-  const { t } = useLanguage()
   const { handleMindMapAiGenerate } = useMindMapAudienceGenerate()
   const { aiBlockedByCollab, guardCollabGuestAi } = useCollabGuestAiGate()
   const { requireCapability } = useLearningAiGate()
@@ -36,13 +30,13 @@ export function useMindMapSideToolbarState() {
     if (!aiBlockedByCollab.value) {
       return true
     }
-    notify.warning(t('canvas.toolbar.collabGuestFeatureBlocked'))
+    notify.warningKey('canvas.toolbar.collabGuestFeatureBlocked')
     return false
   }
 
   function requireDiagram(): boolean {
     if (!diagramStore.data?.nodes?.length) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
       return false
     }
     return true
@@ -62,7 +56,11 @@ export function useMindMapSideToolbarState() {
     if (toolId === 'waterfall' && !requireCapability('ai_brainstorm')) return
     if (toolId === 'document_summary' && !requireCapability('file_generate')) return
     const previous = activeTool.value
-    if (previous === 'waterfall' && toolId !== 'waterfall' && panelsStore.aiBrainstormPanel.isOpen) {
+    if (
+      previous === 'waterfall' &&
+      toolId !== 'waterfall' &&
+      panelsStore.aiBrainstormPanel.isOpen
+    ) {
       getAiBrainstorm().dismiss()
     }
     activeTool.value = toolId

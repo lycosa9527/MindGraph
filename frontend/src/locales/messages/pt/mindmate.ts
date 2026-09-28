@@ -144,7 +144,7 @@ export default {
   'nodePalette.refresh': 'Regenerado',
   'nodePalette.selected': 'Selecionado',
   'nodePalette.similarities': 'Semelhanças',
-  'panel.mindmate': 'IA MindMate',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': 'painel de nós',
   'panel.properties': 'propriedade',
   'panels.property.background': 'cor de fundo',

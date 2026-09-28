@@ -315,7 +315,7 @@ const collabOverlayRef = ref<InstanceType<typeof CanvasCollabOverlay> | null>(nu
 
 function handleOpenCollab(mode: 'organization' | 'network' | 'stop') {
   if (mode !== 'stop' && !canUseOnlineCollab.value) {
-    notify.warning(t('auth.schoolTierFeatureUnavailable'))
+    notify.warningKey('auth.schoolTierFeatureUnavailable')
     return
   }
   if (mode === 'stop') {
@@ -327,7 +327,7 @@ function handleOpenCollab(mode: 'organization' | 'network' | 'stop') {
 
 async function handleStartPresentationWithTier(): Promise<void> {
   if (!canUsePresentationTools.value) {
-    notify.warning(t('auth.schoolTierFeatureUnavailable'))
+    notify.warningKey('auth.schoolTierFeatureUnavailable')
     return
   }
   const opening = !presentationRailOpen.value
@@ -823,13 +823,13 @@ eventBus.onWithOwner(
   'diagram:auto_complete_requested',
   (data?: { source?: string; topic?: string; diagramType?: string; isLearningSheet?: boolean }) => {
     if (!authStore.isAuthenticated) {
-      notify.warning(t('notification.signInToUse'))
+      notify.warningKey('notification.signInToUse')
       return
     }
     if (
       isCollabGuestAiBlocked(diagramStore.collabSessionActive, diagramStore.collabIsDiagramOwner)
     ) {
-      notify.warning(t('canvas.toolbar.collabAiBlocked'))
+      notify.warningKey('canvas.toolbar.collabAiBlocked')
       return
     }
     if (isAIGenerating.value) return
@@ -856,13 +856,13 @@ eventBus.onWithOwner(
   'diagram:auto_complete_branch_requested',
   (data: { nodeId?: string; nodeLabel?: string }) => {
     if (!authStore.isAuthenticated) {
-      notify.warning(t('notification.signInToUse'))
+      notify.warningKey('notification.signInToUse')
       return
     }
     if (
       isCollabGuestAiBlocked(diagramStore.collabSessionActive, diagramStore.collabIsDiagramOwner)
     ) {
-      notify.warning(t('canvas.toolbar.collabAiBlocked'))
+      notify.warningKey('canvas.toolbar.collabAiBlocked')
       return
     }
     void handleKittyAutoCompleteBranchRequest(data, {
@@ -891,7 +891,7 @@ eventBus.onWithOwner(
     })
     if (!nid) nid = diagramStore.selectedNodes[0]
     if (!nid) {
-      notify.warning(t('canvas.toolbar.selectNodesToDelete', '请先选择一个节点'))
+      notify.warningKey('canvas.toolbar.selectNodesToDelete')
       return
     }
     const node = nodes.find((x) => x.id === nid)
@@ -899,15 +899,15 @@ eventBus.onWithOwner(
       !node ||
       !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)
     ) {
-      notify.warning(t('notification.nodeNotEligible'))
+      notify.warningKey('notification.nodeNotEligible')
       return
     }
     if (diagramStore.type === 'concept_map' && !llmResultsStore.selectedModel) {
-      notify.warning(t('notification.conceptMapTabNeedsAi'))
+      notify.warningKey('notification.conceptMapTabNeedsAi')
       return
     }
     if (!authStore.isAuthenticated) {
-      notify.warning(t('notification.signInToUse'))
+      notify.warningKey('notification.signInToUse')
       return
     }
     void startRecommendations(nid)
@@ -1364,7 +1364,7 @@ onMounted(async () => {
   // do not attempt a library load (the diagram belongs to the host, not the guest).
   if (route.query.join_workshop) {
     if (!canUseOnlineCollab.value) {
-      notify.warning(t('auth.schoolTierFeatureUnavailable'))
+      notify.warningKey('auth.schoolTierFeatureUnavailable')
       const nextQuery = { ...route.query } as Record<string, string | string[] | undefined>
       delete nextQuery.join_workshop
       router.replace({ query: nextQuery })
@@ -1420,7 +1420,7 @@ onMounted(async () => {
         sessionStorage.removeItem(IMPORT_SPEC_KEY)
         const diagramType = (spec.type as DiagramType) || null
         if (!diagramType || !VALID_DIAGRAM_TYPES.includes(diagramType)) {
-          notify.error(t('notification.importUnsupportedType'))
+          notify.errorKey('notification.importUnsupportedType')
         } else {
           const { specForLoad, saved: llmResults } = splitSavedLlmResultsFromSpec(spec)
           if (llmResults) {
@@ -1457,7 +1457,7 @@ onMounted(async () => {
                 null
               )
               if (saveResult.success) {
-                notify.success(t('notification.importSuccess'))
+                notify.successKey('notification.importSuccess')
               } else if (saveResult.needsSlotClear) {
                 eventBus.emit('canvas:show_slot_full_modal', {})
               } else if (!saveResult.success) {
@@ -1466,14 +1466,14 @@ onMounted(async () => {
             }
             return
           }
-          notify.error(t('notification.importLoadFailed'))
+          notify.errorKey('notification.importLoadFailed')
         }
       } catch (error) {
         console.error('Import load failed:', error)
-        notify.error(t('notification.importInvalidData'))
+        notify.errorKey('notification.importInvalidData')
       }
     } else {
-      notify.error(t('canvas.import.invalidFile'))
+      notify.errorKey('canvas.import.invalidFile')
       const restQuery = { ...route.query }
       delete restQuery.import
       await router.replace({ path: route.path, query: restQuery })

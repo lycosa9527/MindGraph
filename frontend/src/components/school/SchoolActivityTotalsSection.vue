@@ -2,15 +2,12 @@
 import { TrendCharts, User, UserFilled } from '@element-plus/icons-vue'
 
 import AdminSwissChartCard from '@/components/admin/swiss/AdminSwissChartCard.vue'
-import { useLanguage } from '@/composables'
 import type { SchoolUserActivityTotals } from '@/composables/queries/adminSchoolUserActivityApi'
 
 const props = defineProps<{
   totals: SchoolUserActivityTotals
   timestamp: string
 }>()
-
-const { t } = useLanguage()
 
 function seriesLabels(points: { date: string }[]): string[] {
   return points.map((point) => point.date)
@@ -28,7 +25,7 @@ function seriesValues(points: { value: number }[]): number[] {
     </h2>
     <div class="school-activity-section__grid">
       <AdminSwissChartCard
-        :title="t('admin.schoolActivity.cumulativeRegistered')"
+        title-key="admin.schoolActivity.cumulativeRegistered"
         :value="props.totals.cumulative_registered"
         :timestamp="props.timestamp"
         theme="members"
@@ -38,7 +35,7 @@ function seriesValues(points: { value: number }[]): number[] {
         :values="seriesValues(props.totals.cumulative_series)"
       />
       <AdminSwissChartCard
-        :title="t('admin.schoolActivity.yearNewUsers')"
+        title-key="admin.schoolActivity.yearNewUsers"
         :value="props.totals.year_new_users"
         :timestamp="props.timestamp"
         theme="success"
@@ -48,15 +45,15 @@ function seriesValues(points: { value: number }[]): number[] {
         :values="seriesValues(props.totals.year_new_series)"
       />
       <AdminSwissChartCard
-        :title="t('admin.schoolActivity.yearChurn')"
+        title-key="admin.schoolActivity.yearChurn"
         value="—"
         :timestamp="props.timestamp"
         theme="warn"
         empty
-        :empty-text="t('admin.schoolActivity.churnEmpty')"
+        empty-text-key="admin.schoolActivity.churnEmpty"
       />
       <AdminSwissChartCard
-        :title="t('admin.schoolActivity.enrolledToday')"
+        title-key="admin.schoolActivity.enrolledToday"
         :value="props.totals.enrolled_today"
         :timestamp="props.timestamp"
         theme="platform"

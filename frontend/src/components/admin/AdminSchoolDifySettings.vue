@@ -290,7 +290,7 @@ async function fetchDifyHealth(options?: { silent?: boolean }) {
       difyAuthVerified.value = true
       difyAuthVerifiedFingerprint.value = difyFormFingerprint()
       if (!silent) {
-        notify.success(t('admin.schoolDifyAuthTestPassed'))
+        notify.successKey('admin.schoolDifyAuthTestPassed')
       }
       return
     }
@@ -405,7 +405,7 @@ async function clearSchoolDifyOverride() {
         [keyField]: null,
       },
     })
-    notify.success(t('notification.saved'))
+    notify.successKey('notification.saved')
     emit('saved')
     void fetchDifyHealth({ silent: true })
   } catch (err) {
@@ -418,7 +418,7 @@ async function clearSchoolDifyOverride() {
 
 async function saveSettings() {
   if (!canSave.value) {
-    notify.error(t('admin.schoolDifyAuthRequiredBeforeSave'))
+    notify.errorKey('admin.schoolDifyAuthRequiredBeforeSave')
     return
   }
 
@@ -427,11 +427,11 @@ async function saveSettings() {
   const hasMasked = Boolean(activeKeyMasked.value)
 
   if (url && !key && !hasMasked) {
-    notify.error(t('admin.schoolDifyApiKeyRequired'))
+    notify.errorKey('admin.schoolDifyApiKeyRequired')
     return
   }
   if (key && !url) {
-    notify.error(t('admin.schoolDifyUrlRequired'))
+    notify.errorKey('admin.schoolDifyUrlRequired')
     return
   }
 
@@ -463,7 +463,7 @@ async function saveSettings() {
       orgId: props.orgId,
       body,
     })
-    notify.success(t('notification.saved'))
+    notify.successKey('notification.saved')
     apiKey.value = ''
     keyReplaceMode.value = false
     emit('saved')
@@ -540,7 +540,7 @@ async function onAvatarSelected(event: Event) {
       formData,
     })
     agentAvatarUrl.value = (data.mindmate_agent_avatar_url as string | null | undefined) ?? null
-    notify.success(t('admin.schoolMindmateAvatarUploaded'))
+    notify.successKey('admin.schoolMindmateAvatarUploaded')
     emit('saved')
   } catch (err) {
     const detail = err instanceof Error ? err.message : httpErrorDetail({})
@@ -558,7 +558,7 @@ async function removeAvatar() {
       body: { mindmate_agent_avatar_url: null },
     })
     agentAvatarUrl.value = null
-    notify.success(t('admin.schoolMindmateAvatarRemoved'))
+    notify.successKey('admin.schoolMindmateAvatarRemoved')
     emit('saved')
   } catch (err) {
     const detail = err instanceof Error ? err.message : httpErrorDetail({})

@@ -102,11 +102,11 @@ function getFormattedCode(): string {
 async function joinWorkshop() {
   const code = getFormattedCode()
   if (code.length !== 7) {
-    notify.warning(t('mindgraphLanding.codeIncomplete'))
+    notify.warningKey('mindgraphLanding.codeIncomplete')
     return
   }
   if (!/^[2-9A-HJ-KM-NP-Z]{3}-[2-9A-HJ-KM-NP-Z]{3}$/i.test(code)) {
-    notify.warning(t('mindgraphLanding.codeFormatInvalid'))
+    notify.warningKey('mindgraphLanding.codeFormatInvalid')
     return
   }
   isJoining.value = true
@@ -115,7 +115,7 @@ async function joinWorkshop() {
     if (response.ok) {
       const data = await response.json()
       applyThinkingCoinMutation(extractThinkingCoinsFooter(data as Record<string, unknown>))
-      notify.success(t('mindgraphLanding.joinedPresentation', { title: data.workshop.title }))
+      notify.successKey('mindgraphLanding.joinedPresentation', { title: data.workshop.title })
       const enc = encodeURIComponent(code)
       window.location.href = `/canvas?diagramId=${encodeURIComponent(data.workshop.diagram_id)}&join_workshop=${enc}`
     } else {
@@ -123,7 +123,7 @@ async function joinWorkshop() {
       notify.error(error.detail || t('mindgraphLanding.joinPresentationFailed'))
     }
   } catch {
-    notify.error(t('mindgraphLanding.networkErrorJoin'))
+    notify.errorKey('mindgraphLanding.networkErrorJoin')
   } finally {
     isJoining.value = false
   }
@@ -137,10 +137,10 @@ async function fetchOrgSessions(showLoadingSpinner = true) {
       const data = await response.json()
       orgSessions.value = data.sessions || []
     } else {
-      notify.error(t('mindgraphLanding.loadOrgSessionsFailed'))
+      notify.errorKey('mindgraphLanding.loadOrgSessionsFailed')
     }
   } catch {
-    notify.error(t('mindgraphLanding.networkError'))
+    notify.errorKey('mindgraphLanding.networkError')
   } finally {
     if (showLoadingSpinner) orgSessionsLoading.value = false
   }
@@ -171,7 +171,7 @@ async function joinOrgSession(session: { diagram_id: string }) {
       applyThinkingCoinMutation(extractThinkingCoinsFooter(data as Record<string, unknown>))
       const code = data.workshop.code as string
       const enc = encodeURIComponent(code)
-      notify.success(t('mindgraphLanding.joinedCollab', { title: data.workshop.title }))
+      notify.successKey('mindgraphLanding.joinedCollab', { title: data.workshop.title })
       collabPopoverVisible.value = false
       window.location.href = `/canvas?diagramId=${encodeURIComponent(data.workshop.diagram_id)}&join_workshop=${enc}`
     } else {
@@ -179,7 +179,7 @@ async function joinOrgSession(session: { diagram_id: string }) {
       notify.error(error.detail || t('mindgraphLanding.joinFailed'))
     }
   } catch {
-    notify.error(t('mindgraphLanding.networkError'))
+    notify.errorKey('mindgraphLanding.networkError')
   } finally {
     isJoining.value = false
   }

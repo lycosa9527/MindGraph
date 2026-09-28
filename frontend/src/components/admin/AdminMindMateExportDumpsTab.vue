@@ -99,7 +99,7 @@ async function refreshInventory(): Promise<void> {
   try {
     inventory.value = await fetchMindMateExportDumpInventory()
   } catch {
-    notify.error(t('admin.mindmateExport.dumps.loadError'))
+    notify.errorKey('admin.mindmateExport.dumps.loadError')
   } finally {
     loading.value = false
   }
@@ -111,7 +111,7 @@ async function handleUpload(options: { file: File }): Promise<void> {
     const formData = new FormData()
     formData.append('file', options.file)
     inventory.value = (await uploadMindMateExportDumpZip(formData)).inventory
-    notify.success(t('admin.mindmateExport.dumps.uploadSuccess'))
+    notify.successKey('admin.mindmateExport.dumps.uploadSuccess')
   } catch (err) {
     const message = err instanceof Error ? err.message : t('admin.mindmateExport.dumps.uploadError')
     notify.error(message)
@@ -123,7 +123,7 @@ async function handleUpload(options: { file: File }): Promise<void> {
 function beforeUpload(file: File): boolean {
   const maxBytes = inventory.value?.max_upload_bytes
   if (maxBytes != null && file.size > maxBytes) {
-    notify.error(t('admin.mindmateExport.dumps.uploadTooLarge', { limit: formatBytes(maxBytes) }))
+    notify.errorKey('admin.mindmateExport.dumps.uploadTooLarge', { limit: formatBytes(maxBytes) })
     return false
   }
   return true
@@ -135,12 +135,12 @@ async function importAllPending(): Promise<void> {
     const result = await importMindMateExportDumps()
     inventory.value = result.inventory
     if (result.errors?.length) {
-      notify.warning(t('admin.mindmateExport.dumps.importPartial'))
+      notify.warningKey('admin.mindmateExport.dumps.importPartial')
     } else {
-      notify.success(t('admin.mindmateExport.dumps.importSuccess'))
+      notify.successKey('admin.mindmateExport.dumps.importSuccess')
     }
   } catch {
-    notify.error(t('admin.mindmateExport.dumps.importError'))
+    notify.errorKey('admin.mindmateExport.dumps.importError')
   } finally {
     importing.value = false
   }
@@ -154,10 +154,10 @@ async function importOne(row: MindMateExportIncomingDumpRow): Promise<void> {
     if (result.errors?.length) {
       notify.warning(result.errors.join('; '))
     } else {
-      notify.success(t('admin.mindmateExport.dumps.importSuccess'))
+      notify.successKey('admin.mindmateExport.dumps.importSuccess')
     }
   } catch {
-    notify.error(t('admin.mindmateExport.dumps.importError'))
+    notify.errorKey('admin.mindmateExport.dumps.importError')
   } finally {
     importing.value = false
   }
@@ -167,9 +167,9 @@ async function removeIncoming(row: MindMateExportIncomingDumpRow): Promise<void>
   try {
     const result = await deleteMindMateExportDumpIncoming(row.name)
     inventory.value = result.inventory
-    notify.success(t('admin.mindmateExport.dumps.deleteSuccess'))
+    notify.successKey('admin.mindmateExport.dumps.deleteSuccess')
   } catch {
-    notify.error(t('admin.mindmateExport.dumps.deleteError'))
+    notify.errorKey('admin.mindmateExport.dumps.deleteError')
   }
 }
 
@@ -177,9 +177,9 @@ async function removeSnapshot(label: string, row: MindMateExportDumpSnapshotRow)
   try {
     const result = await deleteMindMateExportDumpSnapshot(label, row.timestamp)
     inventory.value = result.inventory
-    notify.success(t('admin.mindmateExport.dumps.deleteSuccess'))
+    notify.successKey('admin.mindmateExport.dumps.deleteSuccess')
   } catch {
-    notify.error(t('admin.mindmateExport.dumps.deleteError'))
+    notify.errorKey('admin.mindmateExport.dumps.deleteError')
   }
 }
 

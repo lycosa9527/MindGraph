@@ -202,7 +202,7 @@ async function openEventDetail(eventId: number): Promise<void> {
     detailEvent.value = await fetchAdminErrorEventDetail(eventId)
     detailVisible.value = true
   } catch {
-    notify.error(t('admin.errors.detailLoadError'))
+    notify.errorKey('admin.errors.detailLoadError')
   }
 }
 
@@ -222,7 +222,7 @@ async function toggleGroupMute(group: AdminErrorGroupItem): Promise<void> {
     void groupsQuery.refetch()
     void summaryQuery.refetch()
   } catch {
-    notify.error(t('admin.errors.muteError'))
+    notify.errorKey('admin.errors.muteError')
   } finally {
     mutingGroupId.value = null
   }
@@ -246,7 +246,7 @@ async function copyAllErrors(): Promise<void> {
     return
   }
   if (total.value === 0) {
-    notify.warning(t('admin.errors.copyAllEmpty'))
+    notify.warningKey('admin.errors.copyAllEmpty')
     return
   }
 
@@ -267,29 +267,27 @@ async function copyAllErrors(): Promise<void> {
       return
     }
     if (result.kind === 'empty') {
-      notify.warning(t('admin.errors.copyAllEmpty'))
+      notify.warningKey('admin.errors.copyAllEmpty')
       return
     }
     await copyTextToClipboard(result.text)
     if (result.truncated) {
-      notify.success(
-        t('admin.errors.copyAllSuccessTruncated', {
-          count: String(result.count),
-          limit: String(ADMIN_ERROR_COPY_PAGE_SIZE),
-          total: String(result.total),
-        })
-      )
+      notify.successKey('admin.errors.copyAllSuccessTruncated', {
+        count: String(result.count),
+        limit: String(ADMIN_ERROR_COPY_PAGE_SIZE),
+        total: String(result.total),
+      })
     } else {
-      notify.success(t('admin.errors.copyAllSuccess', { count: String(result.count) }))
+      notify.successKey('admin.errors.copyAllSuccess', { count: String(result.count) })
     }
     if (result.failedDetails > 0) {
-      notify.warning(t('admin.errors.copyAllPartial', { failed: String(result.failedDetails) }))
+      notify.warningKey('admin.errors.copyAllPartial', { failed: String(result.failedDetails) })
     }
   } catch (error) {
     if (isAbortError(error) || abortController.signal.aborted) {
       return
     }
-    notify.error(t('admin.errors.copyAllError'))
+    notify.errorKey('admin.errors.copyAllError')
   } finally {
     if (copyAbortController === abortController) {
       copyAbortController = null
@@ -332,36 +330,46 @@ function onNextPage(): void {
       </h3>
       <div class="swiss-stat-card-grid swiss-stat-card-grid--wide">
         <AdminSwissKpiCard
-          :title="t('admin.errors.events24h')"
+          title-key="admin.errors.events24h"
           :value="summary?.total_events_24h ?? '—'"
           :icon="WarningFilled"
           theme="danger"
         />
         <AdminSwissKpiCard
-          :title="t('admin.errors.events7d')"
+          title-key="admin.errors.events7d"
           :value="summary?.total_events_7d ?? '—'"
           theme="warn"
         />
         <AdminSwissKpiCard
-          :title="t('admin.errors.alertWebhook')"
-          :value="
-            summary?.alert_config?.webhook_configured
-              ? t('admin.errors.configured')
-              : t('admin.errors.notConfigured')
-          "
+          title-key="admin.errors.alertWebhook"
           :icon="Connection"
           theme="integration"
-        />
+        >
+          <template #value>
+            <I18nText
+              :k="
+                summary?.alert_config?.webhook_configured
+                  ? 'admin.errors.configured'
+                  : 'admin.errors.notConfigured'
+              "
+            />
+          </template>
+        </AdminSwissKpiCard>
         <AdminSwissKpiCard
-          :title="t('admin.errors.alertDingtalk')"
-          :value="
-            summary?.alert_config?.dingtalk_configured
-              ? t('admin.errors.configured')
-              : t('admin.errors.notConfigured')
-          "
+          title-key="admin.errors.alertDingtalk"
           :icon="Bell"
           theme="platform"
-        />
+        >
+          <template #value>
+            <I18nText
+              :k="
+                summary?.alert_config?.dingtalk_configured
+                  ? 'admin.errors.configured'
+                  : 'admin.errors.notConfigured'
+              "
+            />
+          </template>
+        </AdminSwissKpiCard>
       </div>
     </section>
 

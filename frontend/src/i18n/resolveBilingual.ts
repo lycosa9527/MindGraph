@@ -22,8 +22,9 @@ export function resolveBilingual(key: string, params?: Record<string, unknown>):
   if (presenter === primaryLocale) {
     return { primary, secondary: null }
   }
-  return {
-    primary,
-    secondary: translateForUiLocale(key, presenter, params),
+  const secondary = translateForUiLocale(key, presenter, params)
+  if (secondary === primary) {
+    return { primary, secondary: null }
   }
+  return { primary, secondary }
 }

@@ -70,17 +70,17 @@ async function handleDelete(): Promise<void> {
   if (isRecipient.value) {
     const removed = await savedDiagramsStore.removeSharedDiagram(props.diagram.id)
     if (removed) {
-      notify.success(t('sidebar.share.removed'))
+      notify.successKey('sidebar.share.removed')
     } else {
-      notify.error(t('sidebar.share.removeFailed'))
+      notify.errorKey('sidebar.share.removeFailed')
     }
     return
   }
   const success = await savedDiagramsStore.deleteDiagram(props.diagram.id)
   if (success) {
-    notify.success(t('sidebar.diagramHistory.deleted'))
+    notify.successKey('sidebar.diagramHistory.deleted')
   } else {
-    notify.error(t('sidebar.diagramHistory.deleteFailed'))
+    notify.errorKey('sidebar.diagramHistory.deleteFailed')
   }
 }
 
@@ -107,9 +107,9 @@ async function handleTurnOffCollab(): Promise<void> {
     if (props.diagram.id === savedDiagramsStore.activeDiagramId) {
       eventBus.emit('workshop:code-changed', { code: null, visibility: null })
     }
-    notify.success(t('collab.ended'))
+    notify.successKey('collab.ended')
   } else {
-    notify.error(t('collab.endFailed'))
+    notify.errorKey('collab.endFailed')
   }
 }
 

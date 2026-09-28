@@ -5,7 +5,6 @@
 import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramSpecForPersist } from '@/composables/editor/useDiagramSpecForSave'
 import { useMindMapDocumentSummary } from '@/composables/mindMap/useMindMapDocumentSummary'
@@ -18,7 +17,6 @@ import { useVoiceNotesStore } from '@/stores/voiceNotes'
 
 export function useVoiceNotesGenerate() {
   const router = useRouter()
-  const { t } = useLanguage()
   const notify = useNotifications()
   const savedDiagramsStore = useSavedDiagramsStore()
   const voiceNotes = useVoiceNotesStore()
@@ -36,14 +34,14 @@ export function useVoiceNotesGenerate() {
   async function persistGeneratedSpec(diagramId: string): Promise<boolean> {
     const spec = getDiagramSpecForPersist()
     if (!spec) {
-      notify.warning(t('editor.saveFailed'))
+      notify.warningKey('editor.saveFailed')
       return false
     }
     persisting.value = true
     try {
       const saved = await savedDiagramsStore.updateDiagram(diagramId, { spec })
       if (!saved) {
-        notify.warning(t('editor.saveFailed'))
+        notify.warningKey('editor.saveFailed')
       }
       return saved
     } finally {

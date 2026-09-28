@@ -962,7 +962,7 @@ export default {
   'admin.schoolMindmateAvatarErrorInvalid': 'Изображение не распознается. Пожалуйста, выберите действительный файл изображения.',
   'admin.schoolMindmateAvatarErrorTooSmall': 'Изображение должно быть не менее 64 пикселей по самой короткой стороне.',
   'admin.schoolMindmateAvatarErrorGifTooManyFrames': 'Анимированные GIF-файлы не могут превышать 120 кадров.',
-  'admin.schoolDifySection': 'MindMate Дайфи',
+  'admin.schoolDifySection': 'MindMate Dify',
   'admin.schoolDifyBadge': 'Диди',
   'admin.schoolDifyUrlPlaceholder': 'https://api.dify.ai/v1',
   'admin.schoolDifyGlobalUnconfigured': 'Глобальный Dify (DIFY_API_URL/DIFY_API_KEY) не настроен в .env.',

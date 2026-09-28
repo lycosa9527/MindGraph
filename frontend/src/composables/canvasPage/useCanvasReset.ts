@@ -22,7 +22,7 @@ export function useCanvasReset() {
   async function resetToDefaultTemplate(): Promise<void> {
     const diagramType = diagramStore.type as DiagramType | null
     if (!diagramType) {
-      notify.warning(t('canvas.reset.warnSelectType'))
+      notify.warningKey('canvas.reset.warnSelectType')
       return
     }
 
@@ -49,7 +49,7 @@ export function useCanvasReset() {
     await router.replace({ path: '/canvas', query: { type: diagramType } })
     diagramStore.initTitle(getDefaultDiagramName(diagramType, currentLanguage.value))
     eventBus.emit('view:fit_to_canvas_requested', { animate: true, userInitiated: true })
-    notify.success(t('notification.resetDefaultTemplate'))
+    notify.successKey('notification.resetDefaultTemplate')
   }
 
   return { resetToDefaultTemplate }

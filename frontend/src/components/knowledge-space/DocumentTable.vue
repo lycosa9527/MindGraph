@@ -179,17 +179,25 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
     />
     <ElEmpty
       v-else-if="sortedDocuments.length === 0"
-      :description="t('knowledge.doc.emptyDescription')"
       :image-size="120"
       class="flex-1 flex items-center justify-center"
-    />
+    >
+      <template #description>
+        <I18nText
+          k="knowledge.doc.emptyDescription"
+          align="center"
+        />
+      </template>
+    </ElEmpty>
     <ElTable
       v-else
       :data="sortedDocuments"
       stripe
       class="document-table-el"
-      :empty-text="t('knowledge.doc.noData')"
     >
+      <template #empty>
+        <I18nText k="knowledge.doc.noData" />
+      </template>
       <!-- Selection Column -->
       <ElTableColumn
         width="50"

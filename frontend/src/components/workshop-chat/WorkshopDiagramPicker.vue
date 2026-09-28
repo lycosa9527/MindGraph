@@ -8,6 +8,7 @@ import { LayoutGrid } from '@lucide/vue'
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { bilingualNotifyMessage } from '@/i18n/bilingualNotifyMessage'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { embedWorkshopLibraryDiagram } from '@/utils/workshopDiagramEmbed'
 
@@ -54,13 +55,13 @@ async function pick(diagram: SavedDiagram): Promise<void> {
       title: diagram.title || t('workshop.diagram'),
     })
     if (!markdown) {
-      ElMessage.error(t('workshop.diagramInsertFailed'))
+      ElMessage.error({ message: bilingualNotifyMessage('workshop.diagramInsertFailed') })
       return
     }
     emit('insert', markdown)
     emit('update:visible', false)
   } catch {
-    ElMessage.error(t('workshop.diagramInsertFailed'))
+    ElMessage.error({ message: bilingualNotifyMessage('workshop.diagramInsertFailed') })
   } finally {
     insertingId.value = null
   }

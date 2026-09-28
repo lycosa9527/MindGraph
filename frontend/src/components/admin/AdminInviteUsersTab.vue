@@ -100,7 +100,7 @@ async function loadOrganizations(): Promise<void> {
   try {
     await invitesQuery.refetch()
   } catch {
-    notify.error(t('admin.schoolsLoadError'))
+    notify.errorKey('admin.schoolsLoadError')
   }
 }
 
@@ -117,9 +117,9 @@ async function copyInvite(row: Record<string, unknown>): Promise<void> {
   })
   try {
     await navigator.clipboard.writeText(text)
-    notify.success(t('notification.copied'))
+    notify.successKey('notification.copied')
   } catch {
-    notify.error(t('notification.copyFailed'))
+    notify.errorKey('notification.copyFailed')
   }
 }
 

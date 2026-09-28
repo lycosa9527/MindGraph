@@ -2,13 +2,10 @@
 /**
  * Full-width read-only strip for someone who opened a shared diagram after the editor.
  */
-import { useLanguage } from '@/composables'
 
 defineProps<{
   editorName: string
 }>()
-
-const { t } = useLanguage()
 </script>
 
 <template>

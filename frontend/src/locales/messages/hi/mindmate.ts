@@ -144,7 +144,7 @@ export default {
   'nodePalette.refresh': 'रीफ़्रेश',
   'nodePalette.selected': 'चयनित',
   'nodePalette.similarities': 'समानताएँ',
-  'panel.mindmate': 'माइंडमेट एआई',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': 'नोड पैलेट',
   'panel.properties': 'गुण',
   'panels.property.background': 'पृष्ठभूमि',

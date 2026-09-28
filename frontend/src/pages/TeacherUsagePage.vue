@@ -23,7 +23,6 @@ const page = useTeacherUsagePage()
 provide(teacherUsageInjectionKey, page)
 
 const {
-  t,
   uiStore,
   isLoading,
   allUsersLoading,

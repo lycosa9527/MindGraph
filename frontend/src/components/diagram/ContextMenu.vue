@@ -324,7 +324,7 @@ const menuItems = computed<MenuItem[]>(() => {
         labelKey: 'diagram.contextMenu.addAttribute',
         action: () => {
           if (!diagramStore.data?.nodes) {
-            notify.warning(t('diagram.contextMenu.warningCreateDiagramFirst'))
+            notify.warningKey('diagram.contextMenu.warningCreateDiagramFirst')
             emit('close')
             return
           }
@@ -345,7 +345,7 @@ const menuItems = computed<MenuItem[]>(() => {
         labelKey: 'diagram.contextMenu.addNode',
         action: () => {
           if (!diagramStore.data?.nodes) {
-            notify.warning(t('diagram.contextMenu.warningCreateDiagramFirst'))
+            notify.warningKey('diagram.contextMenu.warningCreateDiagramFirst')
             emit('close')
             return
           }
@@ -375,7 +375,7 @@ const menuItems = computed<MenuItem[]>(() => {
         labelKey: 'diagram.contextMenu.addNode',
         action: () => {
           if (!diagramStore.data?.nodes) {
-            notify.warning(t('diagram.contextMenu.warningCreateDiagramFirst'))
+            notify.warningKey('diagram.contextMenu.warningCreateDiagramFirst')
             emit('close')
             return
           }
@@ -447,7 +447,7 @@ const menuItems = computed<MenuItem[]>(() => {
         labelKey: 'diagram.contextMenu.addNode',
         action: () => {
           if (!group) {
-            notify.warning(t('diagram.contextMenu.warningSelectSimilarityOrDiff'))
+            notify.warningKey('diagram.contextMenu.warningSelectSimilarityOrDiff')
             emit('close')
             return
           }
@@ -479,7 +479,7 @@ const menuItems = computed<MenuItem[]>(() => {
         label: t('diagram.contextMenu.addNode'),
         labelKey: 'diagram.contextMenu.addNode',
         action: () => {
-          notify.info(t('diagram.contextMenu.infoAddNodeSoon'))
+          notify.infoKey('diagram.contextMenu.infoAddNodeSoon')
           emit('close')
         },
       })

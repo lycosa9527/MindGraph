@@ -82,7 +82,7 @@ function sizeCommand(id: string): string {
 function openFilePicker(): void {
   if (props.isGenerating || !canAttachMore.value) {
     if (!canAttachMore.value && props.mode === 'image') {
-      notify.warning(String(t('zhihui.referenceLimit')))
+      notify.warningKey('zhihui.referenceLimit')
     }
     return
   }
@@ -101,18 +101,18 @@ async function onFilesSelected(event: Event): Promise<void> {
 
   const room = ZHIHUI_MAX_REFERENCE_IMAGES - references.value.length
   if (room <= 0) {
-    notify.warning(String(t('zhihui.referenceLimit')))
+    notify.warningKey('zhihui.referenceLimit')
     return
   }
 
   const next = [...references.value]
   for (const file of files.slice(0, room)) {
     if (!isAllowedReferenceMime(file.type)) {
-      notify.warning(String(t('zhihui.referenceInvalid')))
+      notify.warningKey('zhihui.referenceInvalid')
       continue
     }
     if (file.size > ZHIHUI_MAX_REFERENCE_BYTES) {
-      notify.warning(String(t('zhihui.referenceTooLarge')))
+      notify.warningKey('zhihui.referenceTooLarge')
       continue
     }
     try {
@@ -124,7 +124,7 @@ async function onFilesSelected(event: Event): Promise<void> {
         dataUrl,
       })
     } catch {
-      notify.warning(String(t('zhihui.referenceInvalid')))
+      notify.warningKey('zhihui.referenceInvalid')
     }
   }
   references.value = next

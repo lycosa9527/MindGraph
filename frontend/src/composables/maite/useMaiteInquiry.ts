@@ -3,20 +3,14 @@
  */
 import { computed, ref } from 'vue'
 
-import {
-  completeSession,
-  getSnapshot,
-  submitDecompose,
-} from '@/api/maite/inquiry'
-import { persistMaitePractice } from '@/composables/maite/useMaitePracticePersist'
 import { diagnoseAuto, diagnoseFinalize } from '@/api/maite/diagnosis'
+import { completeSession, getSnapshot, submitDecompose } from '@/api/maite/inquiry'
 import { generateRemedyTasks } from '@/api/maite/remedy'
 import { generateVariantTasks, submitVariantTask } from '@/api/maite/variants'
 import { notify } from '@/composables/core/notifications'
-import { useLanguage } from '@/composables/core/useLanguage'
 import { eventBus } from '@/composables/core/useEventBus'
+import { persistMaitePractice } from '@/composables/maite/useMaitePracticePersist'
 import { useMaiteStore } from '@/stores/maite'
-
 import type {
   MaiteInquiryStage,
   MaiteRemedyTask,
@@ -47,7 +41,6 @@ function emptyTables(): {
 
 export function useMaiteInquiry() {
   const store = useMaiteStore()
-  const { t } = useLanguage()
 
   const loading = ref(false)
   const errorMessage = ref('')
@@ -138,7 +131,7 @@ export function useMaiteInquiry() {
       store.setCurrentProblemText(problemText)
       eventBus.emit('maite:session_opened', { sessionId, mode: 'inquiry' })
       await loadSnapshot(sessionId)
-      notify.success(t('maite.toast.session_created'))
+      notify.successKey('maite.toast.session_created')
       return sessionId
     } catch (error: unknown) {
       errorMessage.value = error instanceof Error ? error.message : 'create_failed'
@@ -296,7 +289,7 @@ export function useMaiteInquiry() {
       activeStage.value = 'completed'
       eventBus.emit('maite:practice_invalidate', { reason: 'session_completed' })
       await loadSnapshot(sessionId.value)
-      notify.success(t('maite.toast.session_completed'))
+      notify.successKey('maite.toast.session_completed')
     } catch (error: unknown) {
       errorMessage.value = error instanceof Error ? error.message : 'complete_failed'
       eventBus.emit('maite:error', {

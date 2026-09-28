@@ -131,7 +131,7 @@ export default {
   'sidebar.tokenUsageToday': 'Hoje {usage}',
   'sidebar.library': 'Biblioteca',
   'sidebar.mindGraph': 'MindGraph',
-  'sidebar.mindMate': 'Mindmate',
+  'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'Agente {name}',
   'sidebar.mindbot': 'MindBot',
   'sidebar.smartResponse': 'Resposta inteligente',

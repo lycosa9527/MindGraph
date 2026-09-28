@@ -33,7 +33,7 @@ export default {
   'collab.previousSessionsStopped': 'Digər diaqramlarınızdakı {n} əvvəlki əməkdaşlıq sessiyası bitirildi.',
   'collab.saveFailed': 'Saxlama uğursuz oldu',
   'collab.scanToJoin': 'Qoşulmaq üçün skan edin',
-  'collab.schoolDescActive': 'Məktəb əməkdaşlığı aktivdir. Həmkarlar: əsas səhifədə Əməkdaşlıq → Məktəb keçidindən bu diaqramı seçin — kod lazım deyil.',
+  'collab.schoolDescActive': 'Məktəb əməkdaşlığı aktivdir. Həmkarlar: MindGraph əsas səhifədə Əməkdaşlıq → Məktəb keçidindən bu diaqramı seçin — kod lazım deyil.',
   'collab.schoolStarted': 'Məktəb əməkdaşlığı aktivdir — həmkarlar Əməkdaşlıq → Məktəb bölməsindən qoşula bilər.',
   'collab.sectionNetwork': 'Ümumi əməkdaşlıq (kod)',
   'collab.sectionSchool': 'Məktəb daxilində əməkdaşlıq',

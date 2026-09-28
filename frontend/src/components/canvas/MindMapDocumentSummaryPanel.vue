@@ -270,14 +270,14 @@ watch(
         if (next.status === 'completed') {
           const chars = activeSource.value?.extract_char_count
           if (typeof chars === 'number' && chars > DOC_SUMMARY_MAX_INPUT_CHARS) {
-            notify.error(t('canvas.mindMapDocumentSummary.extractTooLongForModel'))
+            notify.errorKey('canvas.mindMapDocumentSummary.extractTooLongForModel')
           } else {
-            notify.success(t('canvas.mindMapDocumentSummary.ingestSuccessLite'))
+            notify.successKey('canvas.mindMapDocumentSummary.ingestSuccessLite')
           }
         } else if (next.status === 'failed') {
           const err = next.error || ''
           if (err.includes('model input limit')) {
-            notify.error(t('canvas.mindMapDocumentSummary.extractTooLongForModel'))
+            notify.errorKey('canvas.mindMapDocumentSummary.extractTooLongForModel')
           } else {
             notify.error(err || t('canvas.mindMapDocumentSummary.extractFailed'))
           }
@@ -307,11 +307,11 @@ async function startChatPairing(): Promise<void> {
     }
     const code = await mintPairingCode()
     if (!code && mintError.value) {
-      notify.error(t('canvas.mindMapDocumentSummary.chatMintFailed'))
+      notify.errorKey('canvas.mindMapDocumentSummary.chatMintFailed')
     }
   } catch (error) {
     console.error('[DocumentSummary] chat pairing failed:', error)
-    notify.error(t('canvas.mindMapDocumentSummary.chatMintFailed'))
+    notify.errorKey('canvas.mindMapDocumentSummary.chatMintFailed')
   }
 }
 
@@ -407,7 +407,7 @@ async function commitName(): Promise<void> {
 
 async function handleDeleteSource(documentId: number): Promise<void> {
   if (collabActive.value) {
-    notify.warning(t('canvas.mindMapDocumentSummary.collabDisabled'))
+    notify.warningKey('canvas.mindMapDocumentSummary.collabDisabled')
     return
   }
   const id = activePackageId.value
@@ -417,7 +417,7 @@ async function handleDeleteSource(documentId: number): Promise<void> {
     watchedExtractDocId.value = null
     clearUploadedFile()
     pastedText.value = ''
-    notify.success(t('canvas.mindMapDocumentSummary.sourceDeleted'))
+    notify.successKey('canvas.mindMapDocumentSummary.sourceDeleted')
   } catch (error) {
     console.error('[DocumentSummary] delete source failed:', error)
   }
@@ -519,7 +519,7 @@ async function ingestPendingLiteDraft(): Promise<{
     if (uploaded.status === 'processing' || uploaded.status === 'pending') {
       watchedExtractDocId.value = uploaded.id
       if (!suppressExtractWatchToasts.value) {
-        notify.info(t('canvas.mindMapDocumentSummary.extractStarted'))
+        notify.infoKey('canvas.mindMapDocumentSummary.extractStarted')
       }
       return { packageId: id, ready: false, visionApplied: false }
     }
@@ -533,7 +533,7 @@ async function ingestPendingLiteDraft(): Promise<{
   if (kind === 'paste') {
     const content = pastedText.value.trim()
     if (content.length > MAX_CONTENT_LENGTH) {
-      notify.warning(t('canvas.mindMapDocumentSummary.pasteTooLong'))
+      notify.warningKey('canvas.mindMapDocumentSummary.pasteTooLong')
       throw new Error('paste_too_long')
     }
     const uploaded = await ingestText.mutateAsync({
@@ -550,7 +550,7 @@ async function ingestPendingLiteDraft(): Promise<{
 
   if (kind === 'web') {
     const url = webUrl.value.trim()
-    notify.info(t('canvas.mindMapDocumentSummary.webFetchStarted'))
+    notify.infoKey('canvas.mindMapDocumentSummary.webFetchStarted')
     const uploaded = await ingestWebUrl.mutateAsync({ packageId: id, payload: { page_url: url } })
     webUrl.value = ''
     return {
@@ -565,7 +565,7 @@ async function ingestPendingLiteDraft(): Promise<{
 
 async function handleAddToCorpus(): Promise<void> {
   if (collabActive.value) {
-    notify.warning(t('canvas.mindMapDocumentSummary.collabDisabled'))
+    notify.warningKey('canvas.mindMapDocumentSummary.collabDisabled')
     return
   }
   if (docSummaryLiteUi) return
@@ -585,11 +585,11 @@ async function handleAddToCorpus(): Promise<void> {
       } else {
         const content = pastedText.value.trim()
         if (!content) {
-          notify.warning(t('canvas.mindMapDocumentSummary.emptyDocument'))
+          notify.warningKey('canvas.mindMapDocumentSummary.emptyDocument')
           return
         }
         if (content.length > MAX_CONTENT_LENGTH) {
-          notify.warning(t('canvas.mindMapDocumentSummary.pasteTooLong'))
+          notify.warningKey('canvas.mindMapDocumentSummary.pasteTooLong')
           return
         }
         await ingestText.mutateAsync({
@@ -611,7 +611,7 @@ async function handleAddToCorpus(): Promise<void> {
     } else if (activeTab.value === 'web') {
       const url = webUrl.value.trim()
       if (!url) {
-        notify.warning(t('canvas.mindMapDocumentSummary.emptyUrl'))
+        notify.warningKey('canvas.mindMapDocumentSummary.emptyUrl')
         return
       }
       await ingestWebUrl.mutateAsync({ packageId: id, payload: { page_url: url } })
@@ -619,7 +619,7 @@ async function handleAddToCorpus(): Promise<void> {
     } else {
       return
     }
-    notify.success(t('canvas.mindMapDocumentSummary.ingestSuccess'))
+    notify.successKey('canvas.mindMapDocumentSummary.ingestSuccess')
   } catch (error) {
     console.error('[DocumentSummary] ingest failed:', error)
   } finally {
@@ -633,15 +633,15 @@ async function waitUntilLiteSourceReady(): Promise<boolean> {
     documents,
   })
   if (waitResult === 'failed') {
-    notify.error(t('canvas.mindMapDocumentSummary.extractFailed'))
+    notify.errorKey('canvas.mindMapDocumentSummary.extractFailed')
     return false
   }
   if (waitResult === 'timeout') {
-    notify.error(t('canvas.mindMapDocumentSummary.generateFailed'))
+    notify.errorKey('canvas.mindMapDocumentSummary.generateFailed')
     return false
   }
   if (sourceExceedsModelInput.value) {
-    notify.error(t('canvas.mindMapDocumentSummary.extractTooLongForModel'))
+    notify.errorKey('canvas.mindMapDocumentSummary.extractTooLongForModel')
     return false
   }
   return true
@@ -669,7 +669,7 @@ async function handleLiteSaveAndGenerate(): Promise<void> {
 
   if (!hasPendingLiteDraft.value) {
     pipelineBusy.value = false
-    notify.warning(t('canvas.mindMapDocumentSummary.generateNoCorpusLite'))
+    notify.warningKey('canvas.mindMapDocumentSummary.generateNoCorpusLite')
     return
   }
 

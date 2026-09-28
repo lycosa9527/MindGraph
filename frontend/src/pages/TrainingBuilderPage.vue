@@ -28,7 +28,7 @@ async function createCourse(): Promise<void> {
     const created = await createTrainingCourse()
     await router.push({ name: 'TrainingBuilderEditor', params: { courseId: created.id } })
   } catch {
-    notify.error(t('training.builder.createFailed'))
+    notify.errorKey('training.builder.createFailed')
   } finally {
     busy.value = false
   }

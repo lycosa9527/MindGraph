@@ -135,7 +135,7 @@ async function withdrawPost(post: ShowcasePost) {
   actingPostId.value = post.id
   try {
     await withdrawShowcasePost(post.id)
-    notify.success(t('showcase.withdrawn'))
+    notify.successKey('showcase.withdrawn')
     posts.value = posts.value.filter((p) => p.id !== post.id)
     emit('deleted', post.id)
   } catch (e) {
@@ -159,7 +159,7 @@ async function delistPost(post: ShowcasePost) {
   actingPostId.value = post.id
   try {
     const res = await delistShowcasePost(post.id)
-    notify.success(t('showcase.delisted'))
+    notify.successKey('showcase.delisted')
     const idx = posts.value.findIndex((p) => p.id === post.id)
     if (idx >= 0) posts.value[idx] = res.post
     emit('updated', res.post)

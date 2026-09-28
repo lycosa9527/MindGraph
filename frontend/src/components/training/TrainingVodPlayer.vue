@@ -143,7 +143,7 @@ async function loadPlayer(): Promise<void> {
     fitPlayer()
   } catch {
     if (gen === loadGen) {
-      notify.error(t('admin.vod.playFailed'))
+      notify.errorKey('admin.vod.playFailed')
     }
   } finally {
     if (gen === loadGen) loading.value = false

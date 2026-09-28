@@ -56,18 +56,18 @@ function closeModal() {
 async function copyShareMessage() {
   try {
     await navigator.clipboard.writeText(shareMessageText.value)
-    notify.success(t('notification.copied'))
+    notify.successKey('notification.copied')
   } catch {
-    notify.error(t('notification.copyFailed'))
+    notify.errorKey('notification.copyFailed')
   }
 }
 
 async function copyShortInvite() {
   try {
     await navigator.clipboard.writeText(shortInviteText.value)
-    notify.success(t('notification.copied'))
+    notify.successKey('notification.copied')
   } catch {
-    notify.error(t('notification.copyFailed'))
+    notify.errorKey('notification.copyFailed')
   }
 }
 </script>

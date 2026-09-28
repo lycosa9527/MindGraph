@@ -19,7 +19,7 @@ const props = defineProps<{
   loading: boolean
 }>()
 
-const { t, currentLanguage } = useLanguage()
+const { currentLanguage } = useLanguage()
 
 const sortedDatasets = computed(() => {
   return [...props.datasets].sort((a, b) => a.name.localeCompare(b.name))
@@ -59,17 +59,25 @@ const getVersionInfo = (dataset: Benchmark) => {
     />
     <ElEmpty
       v-else-if="sortedDatasets.length === 0"
-      :description="t('knowledge.dataset.empty')"
       :image-size="120"
       class="flex-1 flex items-center justify-center"
-    />
+    >
+      <template #description>
+        <I18nText
+          k="knowledge.dataset.empty"
+          align="center"
+        />
+      </template>
+    </ElEmpty>
     <ElTable
       v-else
       :data="sortedDatasets"
       stripe
       class="dataset-table-el"
-      :empty-text="t('knowledge.dataset.noData')"
     >
+      <template #empty>
+        <I18nText k="knowledge.dataset.noData" />
+      </template>
       <ElTableColumn
         width="180"
         show-overflow-tooltip

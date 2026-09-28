@@ -25,10 +25,10 @@ async function onSync() {
   })
   try {
     const result = await triggerSync.mutateAsync()
-    if (result.ok) notify.success(t('admin.cos.syncOk'))
+    if (result.ok) notify.successKey('admin.cos.syncOk')
     else notify.error(String(result.error ?? t('admin.cos.syncFailed')))
   } catch {
-    notify.error(t('admin.cos.syncFailed'))
+    notify.errorKey('admin.cos.syncFailed')
   }
 }
 </script>
@@ -46,15 +46,15 @@ async function onSync() {
     />
     <div class="admin-cos-kpi-row">
       <AdminSwissKpiCard
-        :title="t('admin.cos.blacklistIpCount')"
+        title-key="admin.cos.blacklistIpCount"
         :value="String(data?.blacklist_ip_count ?? '—')"
       />
       <AdminSwissKpiCard
-        :title="t('admin.cos.syncState')"
+        title-key="admin.cos.syncState"
         :value="String(data?.sync_state ?? '—')"
       />
       <AdminSwissKpiCard
-        :title="t('admin.cos.cosIpCount')"
+        title-key="admin.cos.cosIpCount"
         :value="String(cosMeta?.count ?? '—')"
       />
     </div>

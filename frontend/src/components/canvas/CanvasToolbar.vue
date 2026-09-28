@@ -120,7 +120,7 @@ const insertEquationEnabled = computed(() => diagramStore.selectedNodes.length >
 
 function handleOpenMathInsert(): void {
   if (diagramStore.selectedNodes.length === 0) {
-    notify.warning(t('canvas.toolbar.insertEquationSelectNode'))
+    notify.warningKey('canvas.toolbar.insertEquationSelectNode')
     return
   }
   mathInsertDialogOpen.value = true
@@ -159,7 +159,7 @@ function handleRedo() {
 
 function handleToggleOrientation() {
   diagramStore.toggleFlowMapOrientation()
-  notify.success(t('canvas.toolbar.layoutDirectionToggled'))
+  notify.successKey('canvas.toolbar.layoutDirectionToggled')
 }
 </script>
 

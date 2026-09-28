@@ -249,7 +249,7 @@ async function replaySavedSpec(key: LandingPromptExampleKey, text: string): Prom
     diagramStore.clearHistory()
     const loaded = diagramStore.loadFromSpec(saved.spec, saved.diagramType)
     if (!loaded) {
-      notify.error(t('diagramTemplate.generationFailed'))
+      notify.errorKey('diagramTemplate.generationFailed')
       return true
     }
     useLLMResultsStore().reset()

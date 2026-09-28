@@ -108,10 +108,10 @@ async function send(): Promise<void> {
   const ok = await savedDiagramsStore.replaceDiagramShares(props.diagramId, selected.value)
   sending.value = false
   if (!ok) {
-    notify.error(t('sidebar.share.failed'))
+    notify.errorKey('sidebar.share.failed')
     return
   }
-  notify.success(t('sidebar.share.sent'))
+  notify.successKey('sidebar.share.sent')
   open.value = false
 }
 </script>

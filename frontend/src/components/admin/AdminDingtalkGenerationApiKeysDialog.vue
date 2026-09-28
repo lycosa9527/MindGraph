@@ -92,7 +92,7 @@ function openCreate(): void {
 async function submitCreate(): Promise<void> {
   const name = createName.value.trim()
   if (!name) {
-    notify.error(t('admin.apiKeysNameRequired'))
+    notify.errorKey('admin.apiKeysNameRequired')
     return
   }
   createSubmitting.value = true
@@ -114,7 +114,7 @@ async function submitCreate(): Promise<void> {
     if (newKeyPlaintext.value) {
       newKeyDialogOpen.value = true
     } else {
-      notify.success(t('admin.apiKeysCreateSuccess'))
+      notify.successKey('admin.apiKeysCreateSuccess')
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : t('admin.apiKeysLoadError')
@@ -145,7 +145,7 @@ async function confirmDelete(row: AdminApiKeyRow): Promise<void> {
   try {
     await deleteApiKey.mutateAsync(row.id)
     await loadList()
-    notify.success(t('admin.apiKeysDeleteSuccess'))
+    notify.successKey('admin.apiKeysDeleteSuccess')
   } catch (err) {
     const message = err instanceof Error ? err.message : t('admin.apiKeysLoadError')
     notify.error(message)
@@ -155,9 +155,9 @@ async function confirmDelete(row: AdminApiKeyRow): Promise<void> {
 async function copyToClipboard(value: string): Promise<void> {
   try {
     await navigator.clipboard.writeText(value)
-    notify.success(t('admin.mindbot.copied'))
+    notify.successKey('admin.mindbot.copied')
   } catch {
-    notify.error(t('common.error'))
+    notify.errorKey('common.error')
   }
 }
 
@@ -245,9 +245,11 @@ function cancelCreate(): void {
           <ElTable
             :data="rows"
             class="api-keys-table w-full"
-            :empty-text="t('admin.noData')"
             stripe
           >
+            <template #empty>
+              <I18nText k="admin.noData" />
+            </template>
             <el-table-column
               prop="name"
               min-width="120"

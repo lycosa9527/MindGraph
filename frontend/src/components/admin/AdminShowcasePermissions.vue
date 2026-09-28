@@ -131,11 +131,11 @@ function togglePermission(perm: ShowcaseStaffPermission): void {
 async function saveGrant(): Promise<void> {
   const userId = editingGrant.value?.user_id ?? selectedUserId.value
   if (!userId) {
-    notify.error(String(t('admin.showcase.permissions.userRequired')))
+    notify.errorKey('admin.showcase.permissions.userRequired')
     return
   }
   if (selectedPermissions.value.length === 0) {
-    notify.error(String(t('admin.showcase.permissions.permRequired')))
+    notify.errorKey('admin.showcase.permissions.permRequired')
     return
   }
   isSaving.value = true
@@ -145,7 +145,7 @@ async function saveGrant(): Promise<void> {
       permissions: selectedPermissions.value,
       note: grantNote.value.trim() || undefined,
     })
-    notify.success(String(t('admin.showcase.permissions.saved')))
+    notify.successKey('admin.showcase.permissions.saved')
     dialogVisible.value = false
     await loadGrants()
   } catch (e) {
@@ -159,7 +159,7 @@ async function revokeGrant(row: ShowcaseStaffGrantRow): Promise<void> {
   if (row.source === 'builtin' || row.editable === false) return
   try {
     await deleteAdminShowcaseStaffGrant(row.user_id)
-    notify.success(String(t('admin.showcase.permissions.revoked')))
+    notify.successKey('admin.showcase.permissions.revoked')
     await loadGrants()
   } catch (e) {
     notify.error(e instanceof Error ? e.message : 'Failed')

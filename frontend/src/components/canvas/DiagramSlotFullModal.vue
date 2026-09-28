@@ -108,7 +108,7 @@ function closeModal(): void {
 // Handle delete and save
 async function handleDeleteAndSave(): Promise<void> {
   if (!selectedDiagramId.value) {
-    notify.warning(t('library.slotFull.selectDiagram'))
+    notify.warningKey('library.slotFull.selectDiagram')
     return
   }
 
@@ -125,7 +125,7 @@ async function handleDeleteAndSave(): Promise<void> {
     )
 
     if (result.success && result.diagramId) {
-      notify.success(t('library.slotFull.saveSuccess'))
+      notify.successKey('library.slotFull.saveSuccess')
       isVisible.value = false
       emit('success', result.diagramId)
     } else {
@@ -133,7 +133,7 @@ async function handleDeleteAndSave(): Promise<void> {
     }
   } catch (error) {
     console.error('Delete and save error:', error)
-    notify.error(t('library.slotFull.networkError'))
+    notify.errorKey('library.slotFull.networkError')
   } finally {
     isDeleting.value = false
   }

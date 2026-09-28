@@ -5,15 +5,12 @@
 import { computed, ref } from 'vue'
 
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
-import { useLanguage } from '@/composables'
 import {
   useAdminMarketsListings,
   useAdminMarketsOrders,
   useAdminMarketsStats,
   useAdminMarketsSubscriptions,
 } from '@/composables/queries'
-
-const { t } = useLanguage()
 
 const activeTab = ref<'orders' | 'listings' | 'subscriptions'>('orders')
 
@@ -88,17 +85,17 @@ const subscriptions = computed(() => (subscriptionsQuery.data.value ?? []) as Su
       </h2>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <AdminSwissKpiCard
-          :title="t('admin.markets.ordersTotal')"
+          title-key="admin.markets.ordersTotal"
           :value="stats.orders_total"
           theme="neutral"
         />
         <AdminSwissKpiCard
-          :title="t('admin.markets.ordersPaid')"
+          title-key="admin.markets.ordersPaid"
           :value="stats.orders_paid"
           theme="success"
         />
         <AdminSwissKpiCard
-          :title="t('admin.markets.ordersPending')"
+          title-key="admin.markets.ordersPending"
           :value="stats.orders_pending"
           theme="warn"
         />

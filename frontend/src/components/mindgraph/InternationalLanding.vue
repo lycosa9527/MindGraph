@@ -212,7 +212,7 @@ onMounted(() => {
   delete newQuery.join_workshop
   router.replace({ query: newQuery })
   if (!canUseOnlineCollab.value) {
-    notify.warning(t('auth.schoolTierFeatureUnavailable'))
+    notify.warningKey('auth.schoolTierFeatureUnavailable')
     return
   }
   collabPanelRef.value?.prefillAndAutoJoin(joinWorkshopCode)

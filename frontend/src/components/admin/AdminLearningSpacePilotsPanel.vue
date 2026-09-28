@@ -70,7 +70,7 @@ async function loadPilots(): Promise<void> {
     pilots.value = res.items
     emit('refreshed')
   } catch {
-    notify.error(t('admin.learningSpace.loadFailed'))
+    notify.errorKey('admin.learningSpace.loadFailed')
   } finally {
     loading.value = false
   }
@@ -81,7 +81,7 @@ async function loadTeachers(opts?: { quiet?: boolean }): Promise<void> {
   const orgId = teacherOrgFilter.value === '' ? null : Number(teacherOrgFilter.value)
   if (!q && orgId == null) {
     if (!opts?.quiet) {
-      notify.warning(t('admin.learningSpace.searchHint'))
+      notify.warningKey('admin.learningSpace.searchHint')
     }
     return
   }
@@ -102,12 +102,12 @@ async function loadTeachers(opts?: { quiet?: boolean }): Promise<void> {
       selectedTeacherId.value = ''
     }
     if (teacherHits.value.length === 0 && !opts?.quiet) {
-      notify.info(t('admin.learningSpace.searchEmpty'))
+      notify.infoKey('admin.learningSpace.searchEmpty')
     }
   } catch {
     teacherHits.value = []
     selectedTeacherId.value = ''
-    notify.error(t('admin.learningSpace.searchFailed'))
+    notify.errorKey('admin.learningSpace.searchFailed')
   } finally {
     searching.value = false
   }
@@ -119,7 +119,7 @@ async function onSearchTeachers(): Promise<void> {
 
 async function onMakeSelectedPilot(): Promise<void> {
   if (selectedTeacher.value == null) {
-    notify.warning(t('admin.learningSpace.selectTeacherPlaceholder'))
+    notify.warningKey('admin.learningSpace.selectTeacherPlaceholder')
     return
   }
   await onMakePilot(selectedTeacher.value)
@@ -127,11 +127,11 @@ async function onMakeSelectedPilot(): Promise<void> {
 
 async function onMakePilot(row: LearningTeacherSearchRow): Promise<void> {
   if (row.organization_id == null) {
-    notify.warning(t('admin.learningSpace.teacherNoOrg'))
+    notify.warningKey('admin.learningSpace.teacherNoOrg')
     return
   }
   if (row.already_pilot) {
-    notify.warning(t('admin.learningSpace.alreadyPilot'))
+    notify.warningKey('admin.learningSpace.alreadyPilot')
     return
   }
   try {
@@ -139,14 +139,14 @@ async function onMakePilot(row: LearningTeacherSearchRow): Promise<void> {
       teacher_user_id: row.id,
       organization_id: row.organization_id,
     })
-    notify.success(t('admin.learningSpace.pilotCreated'))
+    notify.successKey('admin.learningSpace.pilotCreated')
     row.already_pilot = true
     teacherHits.value = teacherHits.value.map((hit) =>
       hit.id === row.id ? { ...hit, already_pilot: true } : hit
     )
     await loadPilots()
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -161,7 +161,7 @@ async function onTogglePilot(pilot: LearningPilot): Promise<void> {
     await patchAdminPilot(pilot.id, !pilot.enabled)
     await loadPilots()
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -176,7 +176,7 @@ async function onDeletePilot(pilot: LearningPilot): Promise<void> {
   if (!ok) return
   try {
     await deleteAdminPilot(pilot.id)
-    notify.success(t('admin.learningSpace.pilotDeleted'))
+    notify.successKey('admin.learningSpace.pilotDeleted')
     teacherHits.value = teacherHits.value.map((row) =>
       row.id === pilot.teacher_user_id ? { ...row, already_pilot: false } : row
     )

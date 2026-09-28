@@ -130,9 +130,7 @@ export function useMindMapAssociationLine(options?: {
     const nodes = diagramStore.data?.nodes ?? []
     const connections = diagramStore.data?.connections ?? []
     if (!mindMapAssociationSameSide(sourceId, targetId, { nodes, connections })) {
-      notify.warning(
-        t('canvas.ribbon.assocLineSameSide', 'Relationship lines stay on the same side')
-      )
+      notify.warningKey('canvas.ribbon.assocLineSameSide')
       return false
     }
     const existing = connections.find(
@@ -150,7 +148,7 @@ export function useMindMapAssociationLine(options?: {
     const sourceNode = nodes.find((n) => n.id === sourceId)
     const targetNode = nodes.find((n) => n.id === targetId)
     if (!sourceNode || !targetNode) {
-      notify.warning(t('canvas.ribbon.selectTwoNodes'))
+      notify.warningKey('canvas.ribbon.selectTwoNodes')
       return false
     }
     diagramStore.pushHistory(t('canvas.ribbon.assocLine'))
@@ -166,7 +164,7 @@ export function useMindMapAssociationLine(options?: {
         ...computeMindMapAssociationHandles(targetNode, sourceNode, { nodes, connections }),
       })
     if (!created) {
-      notify.warning(t('canvas.ribbon.selectTwoNodes'))
+      notify.warningKey('canvas.ribbon.selectTwoNodes')
       return false
     }
     associationLinePendingEditId.value = created
@@ -178,7 +176,7 @@ export function useMindMapAssociationLine(options?: {
   function startFromSelection(): void {
     const ids = diagramStore.selectedNodes.filter((id, index, list) => list.indexOf(id) === index)
     if (ids.length === 0) {
-      notify.warning(t('canvas.toolbar.selectNodesFirst'))
+      notify.warningKey('canvas.toolbar.selectNodesFirst')
       return
     }
     resetFormatBrushState()
@@ -191,7 +189,7 @@ export function useMindMapAssociationLine(options?: {
     if (typeof document !== 'undefined') {
       document.documentElement.classList.add('mg-association-line-active')
     }
-    notify.success(t('canvas.ribbon.assocLineHint'))
+    notify.successKey('canvas.ribbon.assocLineHint')
   }
 
   if (!associationLineWatchBound) {

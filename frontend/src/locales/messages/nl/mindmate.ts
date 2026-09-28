@@ -144,7 +144,7 @@ export default {
   'nodePalette.refresh': 'Vernieuwen',
   'nodePalette.selected': 'gekozen',
   'nodePalette.similarities': 'Overeenkomsten',
-  'panel.mindmate': 'MindMate-AI',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': 'Knooppuntpalet',
   'panel.properties': 'Eigenschappen',
   'panels.property.background': 'Achtergrond',

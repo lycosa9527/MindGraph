@@ -392,7 +392,7 @@ async function loadSchools(options?: { silent?: boolean }): Promise<void> {
     await organizationsQuery.refetch()
     syncTrendOrgFromSchools()
   } catch {
-    notify.error(t('admin.schoolsLoadError'))
+    notify.errorKey('admin.schoolsLoadError')
   }
 }
 

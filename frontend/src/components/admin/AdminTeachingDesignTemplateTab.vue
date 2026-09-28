@@ -126,16 +126,16 @@ watch(catalog, (next) => {
 
 async function handleUpload(file: File): Promise<void> {
   if (!file.name.toLowerCase().endsWith('.docx')) {
-    notify.error(t('admin.teachingDesignTemplate.invalidType'))
+    notify.errorKey('admin.teachingDesignTemplate.invalidType')
     return
   }
   adminPanel.patchTeachingDesignToolbar({ uploading: true })
   try {
     await uploadTeachingDesignTemplate(file)
-    notify.success(t('admin.teachingDesignTemplate.uploadOk'))
+    notify.successKey('admin.teachingDesignTemplate.uploadOk')
     await refreshCatalog()
   } catch {
-    notify.error(t('admin.teachingDesignTemplate.uploadFail'))
+    notify.errorKey('admin.teachingDesignTemplate.uploadFail')
   } finally {
     adminPanel.patchTeachingDesignToolbar({ uploading: false })
   }
@@ -145,10 +145,10 @@ async function handleRestore(): Promise<void> {
   adminPanel.patchTeachingDesignToolbar({ restoring: true })
   try {
     await restoreTeachingDesignTemplate()
-    notify.success(t('admin.teachingDesignTemplate.restoreOk'))
+    notify.successKey('admin.teachingDesignTemplate.restoreOk')
     await refreshCatalog()
   } catch {
-    notify.error(t('admin.teachingDesignTemplate.restoreFail'))
+    notify.errorKey('admin.teachingDesignTemplate.restoreFail')
   } finally {
     adminPanel.patchTeachingDesignToolbar({ restoring: false })
   }

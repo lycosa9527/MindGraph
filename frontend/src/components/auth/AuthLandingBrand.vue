@@ -4,7 +4,6 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
-import { useLanguage } from '@/composables'
 import {
   AUTH_LOGIN_HERO_NARROW_QUERY,
   AUTH_LOGIN_HERO_STILL_SRC,
@@ -18,7 +17,6 @@ import {
   pickAuthLoginHeroId,
 } from '@/utils/authLoginHero'
 
-const { t } = useLanguage()
 const clipId = ref('')
 const heroSrc = ref(AUTH_LOGIN_HERO_STILL_SRC)
 const heroKind = ref<AuthLoginHeroKind>('image')

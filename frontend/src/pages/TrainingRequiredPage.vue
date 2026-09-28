@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import TrainingSlidePreview from '@/components/training/TrainingSlidePreview.vue'
-import { useLanguage, useNotifications } from '@/composables'
+import { useNotifications } from '@/composables'
 import { applyTrainingUiLock, releaseTrainingUiLock } from '@/composables/training/trainingUiLock'
 import type { TrainingCourse, TrainingCourseStep } from '@/types/training'
 import {
@@ -13,7 +13,6 @@ import {
 import { completeRequiredTraining, fetchRequiredTraining } from '@/utils/trainingVodApi'
 
 const router = useRouter()
-const { t } = useLanguage()
 const notify = useNotifications()
 const course = ref<TrainingCourse | null>(null)
 const index = ref(0)
@@ -64,7 +63,7 @@ async function finish(): Promise<void> {
     }
     leave()
   } catch {
-    notify.error(t('training.required.doneFailed'))
+    notify.errorKey('training.required.doneFailed')
     finishing.value = false
   }
 }

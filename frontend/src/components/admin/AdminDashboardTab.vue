@@ -545,7 +545,7 @@ function showUserTokenTrend(
   period: RankingPeriod = userRankingPeriod.value
 ): void {
   if (!Number.isFinite(userId) || userId <= 0) {
-    notify.warning(t('admin.userTrendRequiresId'))
+    notify.warningKey('admin.userTrendRequiresId')
     return
   }
   userTrendUserId.value = userId
@@ -726,7 +726,7 @@ onBeforeUnmount(() => {
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-4"
       >
         <AdminSwissKpiCard
-          :title="t('admin.totalUsers')"
+          title-key="admin.totalUsers"
           :value="stats.totalUsers"
           :icon="User"
           theme="members"
@@ -734,7 +734,7 @@ onBeforeUnmount(() => {
           @click="showTrendChart('users')"
         />
         <AdminSwissKpiCard
-          :title="t('admin.todayRegistrations')"
+          title-key="admin.todayRegistrations"
           :value="stats.recentRegistrations"
           :icon="TrendCharts"
           theme="success"
@@ -742,7 +742,7 @@ onBeforeUnmount(() => {
           @click="showTrendChart('registrations')"
         />
         <AdminSwissKpiCard
-          :title="t('admin.schools')"
+          title-key="admin.schools"
           :value="stats.totalOrganizations"
           :icon="Document"
           theme="managers"
@@ -750,13 +750,21 @@ onBeforeUnmount(() => {
           @click="showTrendChart('organizations')"
         />
         <AdminSwissKpiCard
-          :title="`${t('admin.tokens')} (${t('admin.pastWeek')})`"
           :value="formatNumber(stats.totalTokens)"
           :icon="Connection"
           theme="storage"
           clickable
           @click="showTrendChart('tokens')"
-        />
+        >
+          <template #title>
+            <span class="swiss-stat-card__title-compound">
+              <I18nText k="admin.tokens" />
+              <span class="swiss-stat-card__title-period">
+                <I18nText k="admin.pastWeek" />
+              </span>
+            </span>
+          </template>
+        </AdminSwissKpiCard>
       </div>
 
       <AdminTokenUsageByServicePanel
@@ -816,8 +824,10 @@ onBeforeUnmount(() => {
               :data="topOrgsByMindgraph"
               stripe
               size="small"
-              :empty-text="t('admin.listRangeEmpty')"
             >
+              <template #empty>
+                <I18nText k="admin.listRangeEmpty" />
+              </template>
               <el-table-column prop="name">
                 <template #header>
                   <I18nText k="admin.schoolName" />
@@ -882,8 +892,10 @@ onBeforeUnmount(() => {
               :data="topOrgsByMindmate"
               stripe
               size="small"
-              :empty-text="t('admin.listRangeEmpty')"
             >
+              <template #empty>
+                <I18nText k="admin.listRangeEmpty" />
+              </template>
               <el-table-column prop="name">
                 <template #header>
                   <I18nText k="admin.schoolName" />
@@ -950,8 +962,10 @@ onBeforeUnmount(() => {
               :data="topOrgsByTokens"
               stripe
               size="small"
-              :empty-text="t('admin.listRangeEmpty')"
             >
+              <template #empty>
+                <I18nText k="admin.listRangeEmpty" />
+              </template>
               <el-table-column prop="name">
                 <template #header>
                   <I18nText k="admin.schoolName" />
@@ -1000,8 +1014,10 @@ onBeforeUnmount(() => {
               :data="topUsersByTokens"
               stripe
               size="small"
-              :empty-text="t('admin.listRangeEmpty')"
             >
+              <template #empty>
+                <I18nText k="admin.listRangeEmpty" />
+              </template>
               <el-table-column
                 prop="name"
                 min-width="120"

@@ -18,18 +18,13 @@ import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEl
 import { eventBus } from '@/composables/core/useEventBus'
 import { canMutateDiagramSnapshots } from '@/composables/editor/diagramSnapshotVersions'
 import { SAVE } from '@/config'
-import {
-  useAuthStore,
-  useDiagramStore,
-  useInlineRecommendationsStore,
-  useLLMResultsStore,
-} from '@/stores'
+import { useAuthStore, useDiagramStore, useLLMResultsStore } from '@/stores'
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { conceptMapNodeIsAmbiguousForRec } from '@/utils/conceptMapInlineRec'
-import { getDiagramPersistBaseSpec } from '@/utils/diagramPersistBaseSpec'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
+import { getDiagramPersistBaseSpec } from '@/utils/diagramPersistBaseSpec'
 
 export function useCanvasPageMountedHandlers(options: {
   snapshotHistory: ReturnType<typeof useSnapshotHistory>
@@ -43,7 +38,6 @@ export function useCanvasPageMountedHandlers(options: {
   const savedDiagramsStore = useSavedDiagramsStore()
   const authStore = useAuthStore()
   const llmResultsStore = useLLMResultsStore()
-  const inlineRecStore = useInlineRecommendationsStore()
   const focusReviewStore = useConceptMapFocusReviewStore()
   const rootConceptReviewStore = useConceptMapRootConceptReviewStore()
   const notify = useNotifications()
@@ -70,27 +64,27 @@ export function useCanvasPageMountedHandlers(options: {
         if (!result) return
         if (result.ok) {
           if (!data.silent) {
-            notify.success(t('canvas.toolbar.snapshotTaken', { n: result.snapshot.version_number }))
+            notify.successKey('canvas.toolbar.snapshotTaken', { n: result.snapshot.version_number })
           }
           return
         }
         const { status, message } = result
         if (status === 413) {
-          notify.error(t('canvas.toolbar.snapshotTooLarge', { max: SAVE.MAX_SPEC_SIZE_KB }))
+          notify.errorKey('canvas.toolbar.snapshotTooLarge', { max: SAVE.MAX_SPEC_SIZE_KB })
           return
         }
         if (status === 429) {
-          notify.error(t('canvas.toolbar.snapshotRateLimited'))
+          notify.errorKey('canvas.toolbar.snapshotRateLimited')
           return
         }
         if (status === 404) {
-          notify.error(t('canvas.toolbar.snapshotDiagramNotFound'))
+          notify.errorKey('canvas.toolbar.snapshotDiagramNotFound')
           return
         }
         if (status === 409) {
           const hint = message.toLowerCase()
           if (hint.includes('save the diagram') || hint.includes('saved to the database')) {
-            notify.error(t('canvas.toolbar.snapshotSaveFirst'))
+            notify.errorKey('canvas.toolbar.snapshotSaveFirst')
           } else {
             notify.error(message || t('canvas.toolbar.snapshotConflict'))
           }
@@ -100,7 +94,7 @@ export function useCanvasPageMountedHandlers(options: {
           notify.error(message)
           return
         }
-        notify.error(t('canvas.toolbar.snapshotFailed'))
+        notify.errorKey('canvas.toolbar.snapshotFailed')
       },
       'CanvasPage'
     )
@@ -132,7 +126,7 @@ export function useCanvasPageMountedHandlers(options: {
               eventBus.emit('node:text_updated', { nodeId: rootTid, text: draft })
             }
             if (!authStore.isAuthenticated) {
-              notify.warning(t('notification.signInToUse'))
+              notify.warningKey('notification.signInToUse')
               return
             }
             void rootConceptReviewStore.runRootConceptManual()
@@ -142,8 +136,7 @@ export function useCanvasPageMountedHandlers(options: {
 
         const nodes = diagramStore.data?.nodes ?? []
         const node = nodes.find((n: { id?: string }) => n.id === nodeId) as
-          | { id?: string; type?: string }
-          | undefined
+          { id?: string; type?: string } | undefined
         if (
           !node ||
           !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)
@@ -151,11 +144,11 @@ export function useCanvasPageMountedHandlers(options: {
           return
         if (diagramStore.type === 'concept_map') {
           if (!llmResultsStore.selectedModel) {
-            notify.warning(t('notification.conceptMapTabNeedsAi'))
+            notify.warningKey('notification.conceptMapTabNeedsAi')
             return
           }
           if (!authStore.isAuthenticated) {
-            notify.warning(t('notification.signInToUse'))
+            notify.warningKey('notification.signInToUse')
             return
           }
           // Node is in the middle of a chain (incoming + outgoing edges): which edge

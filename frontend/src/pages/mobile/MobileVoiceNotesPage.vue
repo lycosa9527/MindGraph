@@ -76,9 +76,9 @@ async function deleteHistoryDiagram(diagramId: string): Promise<boolean> {
   }
   const success = await savedDiagramsStore.deleteDiagram(diagramId)
   if (success) {
-    notify.success(t('sidebar.diagramHistory.deleted'))
+    notify.successKey('sidebar.diagramHistory.deleted')
   } else {
-    notify.error(t('notification.deleteFailed'))
+    notify.errorKey('notification.deleteFailed')
   }
   return success
 }

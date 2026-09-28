@@ -206,15 +206,15 @@ function patchTurn(localId: string, patch: Partial<ZhihuiSessionTurn>): void {
 async function submitGenerate(): Promise<void> {
   const trimmed = prompt.value.trim()
   if (!trimmed) {
-    notify.warning(String(t('zhihui.promptRequired')))
+    notify.warningKey('zhihui.promptRequired')
     return
   }
   if (!modeAvailable.value) {
-    notify.info(String(t('zhihui.modeComingSoon')))
+    notify.infoKey('zhihui.modeComingSoon')
     return
   }
   if (mode.value !== 'image') {
-    notify.info(String(t('zhihui.modeComingSoon')))
+    notify.infoKey('zhihui.modeComingSoon')
     return
   }
   if (isGenerating.value) {
@@ -272,7 +272,7 @@ async function submitGenerate(): Promise<void> {
     if (epoch !== generateEpoch.value) {
       return
     }
-    notify.success(String(t('zhihui.generateSuccess')))
+    notify.successKey('zhihui.generateSuccess')
     const newest = historyStore.sortedItems[0]
     patchTurn(localId, {
       status: 'done',

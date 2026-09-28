@@ -144,7 +144,7 @@ export default {
   'nodePalette.refresh': 'Регенерировать',
   'nodePalette.selected': 'Выбрано',
   'nodePalette.similarities': 'Сходства',
-  'panel.mindmate': 'MindMate ИИ',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': 'панель узла',
   'panel.properties': 'свойство',
   'panels.property.background': 'цвет фона',

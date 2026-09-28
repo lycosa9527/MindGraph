@@ -82,7 +82,7 @@ function requireNodeCount(min: number, action: () => void): void {
   const ids = diagramStore.selectedNodes.filter((id, index, list) => list.indexOf(id) === index)
   if (ids.length < min) {
     closeMenu()
-    notify.warning(t('canvas.toolbar.selectNodesFirst'))
+    notify.warningKey('canvas.toolbar.selectNodesFirst')
     return
   }
   action()
@@ -97,24 +97,24 @@ function insertSummary(): void {
   closeMenu()
   const data = diagramStore.data
   if (!data?.nodes || !data.connections) {
-    notify.warning(t('canvas.toolbar.selectNodesFirst'))
+    notify.warningKey('canvas.toolbar.selectNodesFirst')
     return
   }
   const range = summaryInsertFailureReason(diagramStore.selectedNodes, data.nodes, data.connections)
   if (!range.ok) {
-    notify.warning(t('canvas.ribbon.summaryNeedSiblings'))
+    notify.warningKey('canvas.ribbon.summaryNeedSiblings')
     return
   }
   const ok = diagramStore.insertMindMapSummary(t('canvas.ribbon.summary'))
   if (!ok) {
-    notify.warning(t('canvas.ribbon.summaryNeedSiblings'))
+    notify.warningKey('canvas.ribbon.summaryNeedSiblings')
   }
 }
 
 function openIcon(): void {
   closeMenu()
   if (!selectedNodeId.value) {
-    notify.warning(t('canvas.toolbar.selectNodesFirst'))
+    notify.warningKey('canvas.toolbar.selectNodesFirst')
     return
   }
   iconOpen.value = true
@@ -123,7 +123,7 @@ function openIcon(): void {
 function openLink(): void {
   closeMenu()
   if (!selectedNodeId.value) {
-    notify.warning(t('canvas.toolbar.selectNodesFirst'))
+    notify.warningKey('canvas.toolbar.selectNodesFirst')
     return
   }
   linkOpen.value = true
@@ -132,7 +132,7 @@ function openLink(): void {
 function openImage(): void {
   closeMenu()
   if (!selectedNodeId.value) {
-    notify.warning(t('canvas.toolbar.selectNodesFirst'))
+    notify.warningKey('canvas.toolbar.selectNodesFirst')
     return
   }
   imageOpen.value = true
@@ -152,7 +152,7 @@ function onLinkConfirm(href: string, name: string): void {
   if (!selectedNodeId.value) return
   const ok = diagramStore.setMindMapNodeHref(selectedNodeId.value, href)
   if (!ok) {
-    notify.warning(t('canvas.ribbon.linkInvalid'))
+    notify.warningKey('canvas.ribbon.linkInvalid')
     return
   }
   const nextText = resolveMindMapLinkDisplayName(name, href, selectedNodeText.value)
@@ -164,13 +164,13 @@ function onLinkConfirm(href: string, name: string): void {
 function onImageConfirm(imageUrl: string): void {
   if (!selectedNodeId.value) return
   const ok = diagramStore.setMindMapNodeImage(selectedNodeId.value, imageUrl)
-  if (!ok) notify.warning(t('canvas.ribbon.imageInvalid'))
+  if (!ok) notify.warningKey('canvas.ribbon.imageInvalid')
 }
 
 function openMath(): void {
   closeMenu()
   if (diagramStore.selectedNodes.length === 0) {
-    notify.warning(t('canvas.toolbar.insertEquationSelectNode'))
+    notify.warningKey('canvas.toolbar.insertEquationSelectNode')
     return
   }
   mathOpen.value = true

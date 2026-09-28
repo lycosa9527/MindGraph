@@ -144,7 +144,7 @@ export default {
   'nodePalette.refresh': 'تجديد',
   'nodePalette.selected': 'مختارة',
   'nodePalette.similarities': 'التشابه',
-  'panel.mindmate': 'مايند ميت الذكاء الاصطناعي',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': 'لوحة العقدة',
   'panel.properties': 'ملكية',
   'panels.property.background': 'لون الخلفية',

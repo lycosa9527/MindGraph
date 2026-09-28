@@ -196,14 +196,14 @@ function formatFailureContact(item: SchoolMemberBatchFailureItem): string {
 function notifyInvalidContact(name: string, contact: string): void {
   const displayName = name.trim() || contact.trim()
   if (looksLikeEmail(contact)) {
-    notify.error(t('admin.schoolAddMemberInvalidEmailForName', { name: displayName }))
+    notify.errorKey('admin.schoolAddMemberInvalidEmailForName', { name: displayName })
     return
   }
-  notify.error(t('admin.schoolAddMemberInvalidPhoneForName', { name: displayName }))
+  notify.errorKey('admin.schoolAddMemberInvalidPhoneForName', { name: displayName })
 }
 
 function notifyInvalidRow(row: ParsedMemberInvalidRow): void {
-  notify.error(t(row.errorKey, row.errorParams ?? {}))
+  notify.errorKey(row.errorKey, row.errorParams ?? {})
 }
 
 function closeModal(): void {
@@ -234,7 +234,7 @@ async function submitSingle(): Promise<boolean> {
   const name = nameEdit.value.trim()
   const contact = contactEdit.value.trim()
   if (!isValidMemberName(name)) {
-    notify.error(t('admin.schoolAddMemberInvalidNameForName', { name: name || '—' }))
+    notify.errorKey('admin.schoolAddMemberInvalidNameForName', { name: name || '—' })
     return false
   }
   if (!isValidMemberContact(contact)) {
@@ -247,7 +247,7 @@ async function submitSingle(): Promise<boolean> {
       organizationId: props.orgId,
       body: buildMemberBody(name, contact),
     })
-    notify.success(t('admin.schoolAddMemberSuccess'))
+    notify.successKey('admin.schoolAddMemberSuccess')
     return true
   } catch (err) {
     const message = err instanceof Error ? err.message : t('admin.schoolAddMemberCreateError')
@@ -259,7 +259,7 @@ async function submitSingle(): Promise<boolean> {
 async function submitBatch(): Promise<BatchSubmitResult> {
   const parseError = batchParseErrorKey.value
   if (parseError) {
-    notify.error(t(parseError, batchParseResult.value.errorParams ?? {}))
+    notify.errorKey(parseError, batchParseResult.value.errorParams ?? {})
     return { outcome: 'error', createdCount: 0 }
   }
 
@@ -294,13 +294,13 @@ async function submitBatch(): Promise<BatchSubmitResult> {
     }
 
     if (created > 0 && skipped > 0) {
-      notify.success(t('admin.schoolAddMemberBatchSuccessWithSkipped', { created, skipped }))
+      notify.successKey('admin.schoolAddMemberBatchSuccessWithSkipped', { created, skipped })
     } else if (created > 0) {
-      notify.success(t('admin.schoolAddMemberBatchSuccess', { created }))
+      notify.successKey('admin.schoolAddMemberBatchSuccess', { created })
     } else if (skipped > 0) {
-      notify.success(t('admin.schoolAddMemberBatchAllSkipped', { skipped }))
+      notify.successKey('admin.schoolAddMemberBatchAllSkipped', { skipped })
     } else {
-      notify.success(t('admin.schoolAddMemberBatchSuccess', { created: 0 }))
+      notify.successKey('admin.schoolAddMemberBatchSuccess', { created: 0 })
     }
     return { outcome: 'success', createdCount: created }
   } catch (err) {
@@ -347,14 +347,14 @@ async function handleSubmit(): Promise<void> {
       if (invalid) {
         notifyInvalidRow(invalid)
       } else {
-        notify.error(t('admin.schoolAddMemberBatchEmpty'))
+        notify.errorKey('admin.schoolAddMemberBatchEmpty')
       }
     } else if (!canSubmitSingle.value && contactEdit.value.trim() && nameEdit.value.trim()) {
       notifyInvalidContact(nameEdit.value, contactEdit.value)
     } else if (!canSubmitSingle.value && nameEdit.value.trim()) {
-      notify.error(t('admin.schoolAddMemberInvalidNameForName', { name: nameEdit.value.trim() }))
+      notify.errorKey('admin.schoolAddMemberInvalidNameForName', { name: nameEdit.value.trim() })
     } else {
-      notify.error(t('admin.schoolAddMemberRequired'))
+      notify.errorKey('admin.schoolAddMemberRequired')
     }
   } finally {
     submitting.value = false

@@ -12,6 +12,7 @@ import { MessagesSquare } from '@lucide/vue'
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { bilingualNotifyMessage } from '@/i18n/bilingualNotifyMessage'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
 
 const props = defineProps<{
@@ -74,7 +75,7 @@ async function submit(): Promise<void> {
     return
   }
   if (kind.value === 'lesson' && parentId.value == null) {
-    ElMessage.warning(t('workshop.createChannelNeedParent'))
+    ElMessage.warning({ message: bilingualNotifyMessage('workshop.createChannelNeedParent') })
     return
   }
   saving.value = true
@@ -86,7 +87,7 @@ async function submit(): Promise<void> {
   })
   saving.value = false
   if (result.ok) {
-    ElMessage.success(t('workshop.createChannelSuccess'))
+    ElMessage.success({ message: bilingualNotifyMessage('workshop.createChannelSuccess') })
     emit('update:visible', false)
     return
   }

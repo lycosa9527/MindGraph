@@ -85,29 +85,29 @@ async function copyInvitationCode() {
   })
   try {
     await navigator.clipboard.writeText(text)
-    notify.success(t('notification.copied'))
+    notify.successKey('notification.copied')
   } catch {
-    notify.error(t('notification.copyFailed'))
+    notify.errorKey('notification.copyFailed')
   }
 }
 
 async function submitCreate() {
   const name = form.value.name.trim()
   if (!name) {
-    notify.error(t('admin.organizationNameRequired'))
+    notify.errorKey('admin.organizationNameRequired')
     return
   }
 
   const code = resolveSchoolCodeFromName(name)
   const inviteRaw = normalizeInvitationCodeInput(form.value.invitation_code)
   if (inviteRaw && !isValidInvitationCode(inviteRaw)) {
-    notify.error(t('admin.invitationCodeFormatHint'))
+    notify.errorKey('admin.invitationCodeFormatHint')
     return
   }
 
   const expiresDate = form.value.expires_at.trim()
   if (!expiresDate) {
-    notify.error(t('admin.validityPeriodRequired'))
+    notify.errorKey('admin.validityPeriodRequired')
     return
   }
 
@@ -122,7 +122,7 @@ async function submitCreate() {
       payload.invitation_code = inviteRaw.toUpperCase()
     }
     const data = (await createOrganization.mutateAsync(payload)) as { invitation_code?: string }
-    notify.success(t('notification.saved'))
+    notify.successKey('notification.saved')
     isVisible.value = false
     emit('created', { invitation_code: data.invitation_code, name })
   } catch (err) {

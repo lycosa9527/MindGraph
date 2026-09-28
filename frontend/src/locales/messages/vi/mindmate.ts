@@ -144,7 +144,7 @@ export default {
   'nodePalette.refresh': 'Làm cho khỏe lại',
   'nodePalette.selected': 'đã chọn',
   'nodePalette.similarities': 'Điểm tương đồng',
-  'panel.mindmate': 'AI của MindMate',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': 'Bảng nút',
   'panel.properties': 'Của cải',
   'panels.property.background': 'Lý lịch',

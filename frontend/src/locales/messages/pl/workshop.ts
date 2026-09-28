@@ -33,7 +33,7 @@ export default {
   'collab.previousSessionsStopped': 'Zakończono {n} poprzednich sesji współpracy na Twoich innych diagramach.',
   'collab.saveFailed': 'Nie udało się zapisać diagramu',
   'collab.scanToJoin': 'Zeskanuj, aby dołączyć',
-  'collab.schoolDescActive': 'Współpraca szkolna jest włączona. Koledzy: użyj Współpraca → Szkoła na stronie głównej i wybierz ten diagram — kod nie jest wymagany.',
+  'collab.schoolDescActive': 'Współpraca szkolna jest włączona. Koledzy: MindGraph użyj Współpraca → Szkoła na stronie głównej i wybierz ten diagram — kod nie jest wymagany.',
   'collab.schoolStarted': 'Współpraca szkolna jest włączona — koledzy mogą dołączyć przez Współpraca → Szkoła.',
   'collab.sectionNetwork': 'Współpraca współdzielona (kod)',
   'collab.sectionSchool': 'Współpraca szkolna',

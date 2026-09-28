@@ -56,10 +56,10 @@ async function handleDelete(packageId: number): Promise<void> {
     if (store.activePackageId === packageId) {
       store.selectPackage(null)
     }
-    notify.success(t('sidebar.knowledgeSpaceHistory.deleted'))
+    notify.successKey('sidebar.knowledgeSpaceHistory.deleted')
   } catch (error) {
     if (error !== 'cancel') {
-      notify.error(t('fileCenter.deleteFailed'))
+      notify.errorKey('fileCenter.deleteFailed')
     }
   }
 }

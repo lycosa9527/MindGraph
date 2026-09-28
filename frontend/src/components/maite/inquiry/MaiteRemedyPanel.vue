@@ -2,7 +2,6 @@
 /**
  * MaiteRemedyPanel — remedy task list and generate action.
  */
-import { useLanguage } from '@/composables/core/useLanguage'
 import type { MaiteRemedyTask } from '@/types/maite'
 
 defineProps<{
@@ -13,8 +12,6 @@ defineProps<{
 const emit = defineEmits<{
   generate: []
 }>()
-
-const { t } = useLanguage()
 </script>
 
 <template>

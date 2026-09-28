@@ -19,7 +19,6 @@ import {
   Workflow,
 } from '@lucide/vue'
 
-import { useLanguage } from '@/composables'
 import { useTrainingRemoteSync } from '@/composables/training/useTrainingRemoteSync'
 import { useAuthStore, useFeatureFlagsStore } from '@/stores'
 import { useTrainingStore } from '@/stores/training'
@@ -29,7 +28,6 @@ const router = useRouter()
 const authStore = useAuthStore()
 const featureFlagsStore = useFeatureFlagsStore()
 const training = useTrainingStore()
-const { t } = useLanguage()
 
 const displayName = computed(() => authStore.user?.username || '')
 

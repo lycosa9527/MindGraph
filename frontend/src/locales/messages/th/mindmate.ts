@@ -144,7 +144,7 @@ export default {
   'nodePalette.refresh': 'รีเฟรช',
   'nodePalette.selected': 'ที่เลือก',
   'nodePalette.similarities': 'ความเหมือน',
-  'panel.mindmate': 'มายด์เมท เอไอ',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': 'พาเลตโหนด',
   'panel.properties': 'คุณสมบัติ',
   'panels.property.background': 'พื้นหลัง',

@@ -11,12 +11,10 @@ import MaiteTablesEditor from '@/components/maite/inquiry/MaiteTablesEditor.vue'
 import MaiteVariantPanel from '@/components/maite/inquiry/MaiteVariantPanel.vue'
 import MaiteProblemInput from '@/components/maite/shared/MaiteProblemInput.vue'
 import MaiteReportActions from '@/components/maite/shared/MaiteReportActions.vue'
-import { useLanguage } from '@/composables/core/useLanguage'
 import { useMaiteInquiry } from '@/composables/maite/useMaiteInquiry'
 import { useMaiteStore } from '@/stores/maite'
 import type { MaiteInquiryStage } from '@/types/maite'
 
-const { t } = useLanguage()
 const store = useMaiteStore()
 
 const {

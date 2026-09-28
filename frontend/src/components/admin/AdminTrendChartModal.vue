@@ -539,11 +539,11 @@ async function addManagers() {
   const managerLimit = SCHOOL_TIER_LIMITS[schoolTierEdit.value].managerLimit
   const remaining = Math.max(0, managerLimit - managers.value.length)
   if (remaining === 0) {
-    notify.warning(t('admin.schoolManagerLimitReached', { limit: managerLimit }))
+    notify.warningKey('admin.schoolManagerLimitReached', { limit: managerLimit })
     return
   }
   if (pendingManagerIds.value.length > remaining) {
-    notify.warning(t('admin.schoolManagerLimitReached', { limit: managerLimit }))
+    notify.warningKey('admin.schoolManagerLimitReached', { limit: managerLimit })
     pendingManagerIds.value = pendingManagerIds.value.slice(0, remaining)
     return
   }
@@ -555,7 +555,7 @@ async function addManagers() {
         addManagerMutation.mutateAsync({ orgId: props.orgId as number, userId })
       )
     )
-    notify.success(t('notification.saved'))
+    notify.successKey('notification.saved')
     pendingManagerIds.value = []
     await loadManagersAndUsers()
     emit('refresh')
@@ -572,7 +572,7 @@ async function removeManager(userId: number) {
   if (props.orgId == null) return
   try {
     await removeManagerMutation.mutateAsync({ orgId: props.orgId, userId })
-    notify.success(t('notification.saved'))
+    notify.successKey('notification.saved')
     await loadManagersAndUsers()
     emit('refresh')
   } catch (err) {
@@ -588,15 +588,13 @@ async function saveGeneralSettings() {
   if (tierDowngradeBlocked.value) {
     const limits = selectedTierLimits.value
     const memberCap = effectiveMemberLimitValue.value
-    notify.warning(
-      t('admin.schoolTierDowngradeBlocked', {
-        members: props.orgUserCount ?? 0,
-        memberLimit: isUnlimitedMemberLimit(memberCap) ? t('admin.unlimited') : memberCap,
-        managers: managers.value.length,
-        managerLimit:
-          limits.managerLimit <= 0 ? t('admin.noSchoolManagersShort') : limits.managerLimit,
-      })
-    )
+    notify.warningKey('admin.schoolTierDowngradeBlocked', {
+      members: props.orgUserCount ?? 0,
+      memberLimit: isUnlimitedMemberLimit(memberCap) ? t('admin.unlimited') : memberCap,
+      managers: managers.value.length,
+      managerLimit:
+        limits.managerLimit <= 0 ? t('admin.noSchoolManagersShort') : limits.managerLimit,
+    })
     return
   }
   generalTabSaving.value = true
@@ -631,7 +629,7 @@ async function saveGeneralSettings() {
         return
       }
     }
-    notify.success(t('notification.saved'))
+    notify.successKey('notification.saved')
     emit('refresh')
     emitAdminEvent('admin:mutation_completed', {
       domain: 'organizations',
@@ -660,7 +658,7 @@ async function toggleLock() {
       body: { is_active: newActive },
     })
     orgActiveState.value = newActive
-    notify.success(t('notification.saved'))
+    notify.successKey('notification.saved')
     emit('refresh')
   } catch (err) {
     const detail = err instanceof Error ? err.message : ''
@@ -695,7 +693,7 @@ async function deleteOrganization() {
       orgId: props.orgId,
       deleteUsers: userCount > 0,
     })
-    notify.success(t('notification.saved'))
+    notify.successKey('notification.saved')
     emit('update:visible', false)
     emit('refresh')
   } catch (err) {

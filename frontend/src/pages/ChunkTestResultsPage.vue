@@ -194,7 +194,7 @@ const handleCancelTest = async () => {
     )
 
     await cancelTestMutation.mutateAsync(testId.value)
-    notify.success(t('chunkTestResults.cancelRequested'))
+    notify.successKey('chunkTestResults.cancelRequested')
   } catch (error) {
     if (error instanceof Error && error.message !== 'cancel') {
       notify.error(error.message || t('chunkTestResults.cancelFailed'))

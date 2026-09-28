@@ -60,9 +60,9 @@ async function addItem(): Promise<void> {
   try {
     applyCatalog(await createUserDropdownItem(label))
     draft.value = ''
-    notify.success(t('admin.userDropdown.addOk'))
+    notify.successKey('admin.userDropdown.addOk')
   } catch {
-    notify.error(t('admin.userDropdown.saveFail'))
+    notify.errorKey('admin.userDropdown.saveFail')
   } finally {
     saving.value = false
   }
@@ -91,7 +91,7 @@ async function rename(row: unknown, label: string | number): Promise<void> {
     delete rest[row.id]
     labelDraft.value = rest
   } catch {
-    notify.error(t('admin.userDropdown.saveFail'))
+    notify.errorKey('admin.userDropdown.saveFail')
   }
 }
 
@@ -105,7 +105,7 @@ async function linkCourse(
   try {
     applyCatalog(await patchUserDropdownItem(row.id, { course_id: next }))
   } catch {
-    notify.error(t('admin.userDropdown.saveFail'))
+    notify.errorKey('admin.userDropdown.saveFail')
   }
 }
 
@@ -123,14 +123,14 @@ async function remove(row: unknown): Promise<void> {
   try {
     applyCatalog(await deleteUserDropdownItem(row.id))
   } catch {
-    notify.error(t('admin.userDropdown.deleteFail'))
+    notify.errorKey('admin.userDropdown.deleteFail')
   }
 }
 
 async function preview(row: unknown): Promise<void> {
   if (!isRow(row)) return
   if (!row.course_id) {
-    notify.error(t('admin.userDropdown.previewNeedCourse'))
+    notify.errorKey('admin.userDropdown.previewNeedCourse')
     return
   }
   previewVisible.value = true
@@ -140,7 +140,7 @@ async function preview(row: unknown): Promise<void> {
     previewCourse.value = await fetchTrainingCourse(row.course_id)
   } catch {
     previewVisible.value = false
-    notify.error(t('admin.userDropdown.previewLoadFail'))
+    notify.errorKey('admin.userDropdown.previewLoadFail')
   } finally {
     previewLoading.value = false
   }

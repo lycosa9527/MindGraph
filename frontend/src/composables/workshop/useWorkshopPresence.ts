@@ -3,7 +3,7 @@
  */
 import { ref } from 'vue'
 
-import { useLanguage, useNotifications } from '@/composables'
+import { useNotifications } from '@/composables'
 import type { WorkshopUpdate } from '@/composables/workshop/useWorkshopTypes'
 
 import {
@@ -13,7 +13,6 @@ import {
 
 export function useWorkshopPresence() {
   const notify = useNotifications()
-  const { t } = useLanguage()
 
   let presenceJoinedBuffer: PresenceDeltaRow[] = []
   let presenceLeftBuffer: PresenceDeltaRow[] = []
@@ -25,14 +24,14 @@ export function useWorkshopPresence() {
     const leftRaw = presenceLeftBuffer.splice(0)
     const { joined, left } = netPresenceAfterCancellingPairsByUserId(joinedRaw, leftRaw)
     if (joined.length === 1) {
-      notify.info(t('workshopCanvas.userJoined', { username: joined[0].displayName }))
+      notify.infoKey('workshopCanvas.userJoined', { username: joined[0].displayName })
     } else if (joined.length > 1) {
-      notify.info(t('workshopCanvas.usersJoined', { count: joined.length }))
+      notify.infoKey('workshopCanvas.usersJoined', { count: joined.length })
     }
     if (left.length === 1) {
-      notify.info(t('workshopCanvas.userLeft', { username: left[0].displayName }))
+      notify.infoKey('workshopCanvas.userLeft', { username: left[0].displayName })
     } else if (left.length > 1) {
-      notify.info(t('workshopCanvas.usersLeft', { count: left.length }))
+      notify.infoKey('workshopCanvas.usersLeft', { count: left.length })
     }
   }
 
@@ -105,7 +104,7 @@ export function useWorkshopPresence() {
     clearRoomIdleCountdownUi()
     roomIdleDeadlineUnixInternal = deadlineUnix
     syncRoomIdleSecondsFromDeadline()
-    notify.warning(t('workshopCanvas.roomIdleWarningToast'))
+    notify.warningKey('workshopCanvas.roomIdleWarningToast')
 
     stopRoomIdleCountdownTick()
     roomIdleTickInterval = setInterval(() => syncRoomIdleSecondsFromDeadline(), 1000)

@@ -303,7 +303,7 @@ async function loadStudentAssignmentsIfReady(): Promise<void> {
       }
     }
   } catch {
-    notify.error(t('learningSpace.loadFailed'))
+    notify.errorKey('learningSpace.loadFailed')
   }
 }
 
@@ -349,7 +349,7 @@ async function loadContext(): Promise<void> {
       seedStudentContextFromAuth()
       await loadStudentAssignmentsIfReady()
     } else {
-      notify.error(t('learningSpace.loadFailed'))
+      notify.errorKey('learningSpace.loadFailed')
     }
   } finally {
     loading.value = false
@@ -379,7 +379,7 @@ async function loadTeacherAssignments(): Promise<void> {
     const res = await listTeacherAssignments(selectedClassId.value)
     teacherAssignments.value = res.items
   } catch {
-    notify.error(t('learningSpace.loadFailed'))
+    notify.errorKey('learningSpace.loadFailed')
   }
 }
 
@@ -408,7 +408,7 @@ async function loadSubmissionsAndRoster(): Promise<void> {
       }
     }
   } catch {
-    notify.error(t('learningSpace.loadFailed'))
+    notify.errorKey('learningSpace.loadFailed')
   }
 }
 
@@ -456,7 +456,7 @@ function openCreateAssignmentModal(): void {
   }
   const owned = publishableClasses.value
   if (!owned.length) {
-    notify.warning(t('learningSpace.noPublishableClass'))
+    notify.warningKey('learningSpace.noPublishableClass')
     return
   }
   if (selectedClassId.value == null || !owned.some((c) => c.id === selectedClassId.value)) {
@@ -473,11 +473,11 @@ async function onAssignmentCreated(): Promise<void> {
 
 async function onChangePassword(): Promise<void> {
   if (newPassword.value.length < 6) {
-    notify.warning(t('learningSpace.passwordMin6'))
+    notify.warningKey('learningSpace.passwordMin6')
     return
   }
   if (newPassword.value !== confirmPassword.value) {
-    notify.warning(t('auth.modal.passwordMismatch'))
+    notify.warningKey('auth.modal.passwordMismatch')
     return
   }
   changingPassword.value = true
@@ -490,7 +490,7 @@ async function onChangePassword(): Promise<void> {
     if (context.value) {
       context.value.must_change_password = false
     }
-    notify.success(t('learningSpace.savePassword'))
+    notify.successKey('learningSpace.savePassword')
   } catch (error) {
     const message = error instanceof Error ? error.message.trim() : ''
     notify.error(message || t('learningSpace.saveFailed'))
@@ -502,13 +502,13 @@ async function onChangePassword(): Promise<void> {
     const res = await listStudentAssignments()
     studentAssignments.value = res.items
   } catch {
-    notify.error(t('learningSpace.loadFailed'))
+    notify.errorKey('learningSpace.loadFailed')
   }
 }
 
 async function onOpenStudentAssignment(a: LearningAssignment): Promise<void> {
   if (!studentCanOpenAssignment(a)) {
-    notify.warning(t('learningSpace.homeworkClosed'))
+    notify.warningKey('learningSpace.homeworkClosed')
     return
   }
   try {
@@ -521,7 +521,7 @@ async function onOpenStudentAssignment(a: LearningAssignment): Promise<void> {
       },
     })
   } catch {
-    notify.error(t('learningSpace.openFailed'))
+    notify.errorKey('learningSpace.openFailed')
   }
 }
 
@@ -537,12 +537,12 @@ async function onSubmitStudent(a: LearningAssignment): Promise<void> {
   }
   try {
     await submitStudentAssignment(a.id)
-    notify.success(t('learningSpace.submitSuccess'))
+    notify.successKey('learningSpace.submitSuccess')
     const res = await listStudentAssignments()
     studentAssignments.value = res.items
     studentDetailId.value = null
   } catch {
-    notify.error(t('learningSpace.submitFailed'))
+    notify.errorKey('learningSpace.submitFailed')
   }
 }
 
@@ -575,10 +575,10 @@ async function onReviewSave(payload: { submissionId: number; draft: ReviewDraft 
     submissions.value = submissions.value.map((s) =>
       s.id === payload.submissionId ? { ...s, ...updated } : s
     )
-    notify.success(t('learningSpace.reviewSaved'))
+    notify.successKey('learningSpace.reviewSaved')
     showReview.value = false
   } catch {
-    notify.error(t('learningSpace.saveFailed'))
+    notify.errorKey('learningSpace.saveFailed')
   }
 }
 
@@ -627,7 +627,7 @@ async function onDeleteAssignment(a: LearningAssignment): Promise<void> {
   deletingAssignmentId.value = a.id
   try {
     await deleteTeacherAssignment(a.id)
-    notify.success(t('learningSpace.assignmentDeleted'))
+    notify.successKey('learningSpace.assignmentDeleted')
     if (selectedAssignmentId.value === a.id) {
       selectedAssignmentId.value = null
     }
@@ -638,7 +638,7 @@ async function onDeleteAssignment(a: LearningAssignment): Promise<void> {
     await loadTeacherAssignments()
     await refreshAllClassAssignments()
   } catch {
-    notify.error(t('learningSpace.deleteFailed'))
+    notify.errorKey('learningSpace.deleteFailed')
   } finally {
     deletingAssignmentId.value = null
   }

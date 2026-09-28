@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.112] - 2026-09-29
+
+> **Toasts and empty states follow dual-language mode, and MindMate and MindGraph stay the product names.**
+
+### Fixed
+
+- **Bilingual toasts and empty states** — Success, error, warning, info, and loading messages that come from a catalog key show the presenter line under the interface language. Knowledge-space and community empty states, and the knowledge settings notice, do the same.
+- **Product names** — MindMate and MindGraph are not translated. Sidebar, page titles, filters, and sentences that name the products keep those words. When both lines would say the same name, only one line is shown.
+
+### Tests
+
+- [`frontend/tests/resolveBilingual.spec.ts`](frontend/tests/resolveBilingual.spec.ts)
+- [`frontend/scripts/_audit_brand_locale_keys.py`](frontend/scripts/_audit_brand_locale_keys.py) (`check:scripts`)
+
 ## [5.180.111] - 2026-09-29
 
 > **Dual-language mode shows the presenter line on menus, tables, and buttons, not only on the rows that already used a message key.**

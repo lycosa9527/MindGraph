@@ -8,17 +8,20 @@
 import { type Ref, ref, watch } from 'vue'
 
 import {
-  streamShowcaseTeachingCopy,
-  teachingCopyFingerprint,
   type ShowcaseTeachingCopyFields,
   type ShowcaseTeachingCopyResult,
+  streamShowcaseTeachingCopy,
+  teachingCopyFingerprint,
 } from '@/composables/showcase/generateShowcaseTeachingCopy'
 import type { ModelLoadPhase } from '@/stores/llmResults'
 
 type NotifyLike = {
   info: (message: string) => void
+  infoKey: (key: string, params?: Record<string, unknown>) => void
   success: (message: string) => void
+  successKey: (key: string, params?: Record<string, unknown>) => void
   error: (message: string) => void
+  errorKey: (key: string, params?: Record<string, unknown>) => void
 }
 
 type TranslateFn = (key: string) => unknown
@@ -128,14 +131,13 @@ export function useShowcaseTeachingCopyAi(options: {
 
   function applyStreamFields(
     fields: ShowcaseTeachingCopyFields,
-    state: TeachingCopyStreamState,
+    state: TeachingCopyStreamState
   ): void {
     applyingAiFields = true
     try {
       if (
         fields.description !== undefined &&
-        (state.forceOverwrite ||
-          (state.emptyAtStart.description && !dirtyDescription.value))
+        (state.forceOverwrite || (state.emptyAtStart.description && !dirtyDescription.value))
       ) {
         options.description.value = fields.description
       }
@@ -203,7 +205,7 @@ export function useShowcaseTeachingCopyAi(options: {
     isGenerating.value = true
     aiGeneratePhase.value = 'sending'
     if (prefetchOptions?.notifyStart) {
-      notify.info(String(t('showcase.publishModal.aiGenerating')))
+      notify.infoKey('showcase.publishModal.aiGenerating')
     }
 
     const phaseTimer = setTimeout(() => {
@@ -262,7 +264,7 @@ export function useShowcaseTeachingCopyAi(options: {
           applyFinalResult(result, forceOverwrite)
           aiGeneratePhase.value = 'streaming'
         },
-      },
+      }
     )
       .then((result) => {
         if (teachingCopyStream?.fingerprint !== fingerprint) {
@@ -272,7 +274,7 @@ export function useShowcaseTeachingCopyAi(options: {
         teachingCopyStream.error = null
         applyFinalResult(result, forceOverwrite)
         if (state.notifySuccess) {
-          notify.success(String(t('showcase.publishModal.aiGenerateSuccess')))
+          notify.successKey('showcase.publishModal.aiGenerateSuccess')
         }
         return result
       })
@@ -311,22 +313,22 @@ export function useShowcaseTeachingCopyAi(options: {
 
   function generateDescription(): void {
     if (!title.value.trim()) {
-      notify.error(String(t('showcase.publishModal.validationTitle')))
+      notify.errorKey('showcase.publishModal.validationTitle')
       return
     }
     if (caseType.value !== 'teaching_design') {
-      notify.info(String(t('showcase.publishModal.aiGenerateTeachingOnly')))
+      notify.infoKey('showcase.publishModal.aiGenerateTeachingOnly')
       return
     }
     if (!uploadedFile.value) {
-      notify.error(String(t('showcase.publishModal.aiGenerateNeedFile')))
+      notify.errorKey('showcase.publishModal.aiGenerateNeedFile')
       return
     }
 
     // In-flight: first click aborts (keeps any partial text).
     if (isStreamInFlight()) {
       clearTeachingCopyPrefetch()
-      notify.info(String(t('showcase.publishModal.aiGenerateCancelled')))
+      notify.infoKey('showcase.publishModal.aiGenerateCancelled')
       return
     }
 

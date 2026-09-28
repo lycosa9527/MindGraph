@@ -407,7 +407,7 @@ onMounted(async () => {
 
   if (!onGuestAuthPage) {
     setTimeout(() => {
-      notify.info(t('app.aiDisclaimer'))
+      notify.infoKey('app.aiDisclaimer')
     }, 500)
   }
 

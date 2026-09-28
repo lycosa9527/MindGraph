@@ -78,7 +78,7 @@ async function load(allowRetry = true): Promise<void> {
     total.value = list.total
   } catch {
     if (gen === loadGen) {
-      notify.error(t('admin.vod.loadFailed'))
+      notify.errorKey('admin.vod.loadFailed')
     }
   } finally {
     if (gen === loadGen) {
@@ -107,7 +107,7 @@ async function onRefresh(item: VodMediaItem): Promise<void> {
     const next = await refreshVodMedia(item.id, orgId.value)
     items.value = items.value.map((row) => (row.id === next.id ? next : row))
   } catch {
-    notify.error(t('admin.vod.loadFailed'))
+    notify.errorKey('admin.vod.loadFailed')
   }
 }
 
@@ -120,7 +120,7 @@ async function onDelete(item: VodMediaItem): Promise<void> {
     }
     await load()
   } catch {
-    notify.error(t('admin.vod.loadFailed'))
+    notify.errorKey('admin.vod.loadFailed')
   }
 }
 
@@ -138,7 +138,7 @@ async function onMove(item: VodMediaItem, nextFolderId: string | null): Promise<
     await moveVodMedia(item.id, nextFolderId, orgId.value)
     await load()
   } catch {
-    notify.error(t('admin.vod.folderFailed'))
+    notify.errorKey('admin.vod.folderFailed')
   }
 }
 

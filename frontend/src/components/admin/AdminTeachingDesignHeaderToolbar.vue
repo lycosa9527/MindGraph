@@ -8,11 +8,9 @@ import { storeToRefs } from 'pinia'
 
 import { Upload } from '@element-plus/icons-vue'
 
-import { useLanguage } from '@/composables'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useAdminPanelStore } from '@/stores'
 
-const { t } = useLanguage()
 const adminPanel = useAdminPanelStore()
 const { teachingDesignToolbar } = storeToRefs(adminPanel)
 const { emit: emitAdminEvent } = useAdminEventBus('AdminTeachingDesignHeaderToolbar')

@@ -55,7 +55,7 @@ describe('mindmate welcome layout', () => {
     expect(welcomeLayoutCss).toContain('--mm-composer-max: min(48rem, 100%)')
     expect(welcomeLayoutCss).not.toMatch(/--mm-composer-max:\s*clamp\([^)]*cqi/)
     expect(welcomeLayoutCss).toContain('min-width: 0')
-    expect(welcomeLayoutCss).toContain('--mm-suggest-max-h: clamp(108px')
+    expect(welcomeLayoutCss).toContain('--mm-suggest-max-h: clamp(168px')
     expect(welcomeLayoutCss).not.toContain('--mm-suggest-max-h: 72px')
   })
 

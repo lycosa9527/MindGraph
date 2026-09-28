@@ -140,9 +140,9 @@ async function handleCreateFolder(): Promise<void> {
   if (!name) return
   const created = await savedDiagramsStore.createFolder(name)
   if (created) {
-    notify.success(t('sidebar.diagramHistory.folderCreated'))
+    notify.successKey('sidebar.diagramHistory.folderCreated')
   } else {
-    notify.error(t('sidebar.diagramHistory.folderCreateFailed'))
+    notify.errorKey('sidebar.diagramHistory.folderCreateFailed')
   }
 }
 
@@ -155,9 +155,9 @@ async function handleRenameFolder(folderId: string, currentName: string): Promis
   if (!name || name === currentName) return
   const ok = await savedDiagramsStore.renameFolder(folderId, name)
   if (ok) {
-    notify.success(t('sidebar.diagramHistory.folderRenamed'))
+    notify.successKey('sidebar.diagramHistory.folderRenamed')
   } else {
-    notify.error(t('sidebar.diagramHistory.folderRenameFailed'))
+    notify.errorKey('sidebar.diagramHistory.folderRenameFailed')
   }
 }
 
@@ -174,7 +174,7 @@ async function handleDeleteFolder(folderId: string): Promise<void> {
     )
     const ok = await savedDiagramsStore.deleteFolder(folderId)
     if (ok) {
-      notify.success(t('sidebar.diagramHistory.folderDeleted'))
+      notify.successKey('sidebar.diagramHistory.folderDeleted')
     } else {
       notify.error(savedDiagramsStore.error || t('sidebar.diagramHistory.folderDeleteFailed'))
     }
@@ -191,10 +191,10 @@ async function handleCreateFolderFromRow(): Promise<string | null> {
   if (!name) return null
   const created = await savedDiagramsStore.createFolder(name)
   if (!created) {
-    notify.error(t('sidebar.diagramHistory.folderCreateFailed'))
+    notify.errorKey('sidebar.diagramHistory.folderCreateFailed')
     return null
   }
-  notify.success(t('sidebar.diagramHistory.folderCreated'))
+  notify.successKey('sidebar.diagramHistory.folderCreated')
   return created.id
 }
 </script>

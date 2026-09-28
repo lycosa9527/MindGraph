@@ -225,7 +225,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       return await captureWorksheetHeader(topic, worksheetText, worksheetHeaderLabels())
     } catch (error) {
       console.error('[worksheetHeader] Failed to capture header for PDF:', error)
-      notify.warning(t('canvas.worksheetText.headerCaptureFailed'))
+      notify.warningKey('canvas.worksheetText.headerCaptureFailed')
       return null
     }
   }
@@ -276,7 +276,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
 
   function notifyCanvasNotReady(error: unknown): boolean {
     if (error instanceof Error && error.message === 'canvas-not-ready') {
-      notify.warning(t('canvas.export.canvasNotReady'))
+      notify.warningKey('canvas.export.canvasNotReady')
       return true
     }
     return false
@@ -288,13 +288,13 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       const blob = await capturePngBlob(exportOptions)
       if ((await downloadPngBlob(blob)) === 'cancelled') return
       logDiagramExport('png')
-      notify.success(t('canvas.export.pngSuccess'))
+      notify.successKey('canvas.export.pngSuccess')
     } catch (error) {
       if (notifyCanvasNotReady(error)) {
         return
       }
       console.error('PNG export failed:', error)
-      notify.error(t('canvas.export.pngError'))
+      notify.errorKey('canvas.export.pngError')
     } finally {
       isExporting.value = false
     }
@@ -316,15 +316,15 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       })
       if (outcome === 'copied') {
         logDiagramExport('clipboard')
-        notify.success(t('notification.copied'))
+        notify.successKey('notification.copied')
         return
       }
       logDiagramExport('png')
       if (sharedFile) {
-        notify.success(t('canvas.export.pngSuccess'))
+        notify.successKey('canvas.export.pngSuccess')
         return
       }
-      notify.warning(t('canvas.export.clipboardFallback'))
+      notify.warningKey('canvas.export.clipboardFallback')
     } catch (error) {
       if (error instanceof Error && error.message === 'export-share-cancelled') {
         return
@@ -333,7 +333,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
         return
       }
       console.error('Clipboard export failed:', error)
-      notify.error(t('notification.copyFailed'))
+      notify.errorKey('notification.copyFailed')
     } finally {
       isExporting.value = false
     }
@@ -342,7 +342,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
   async function exportAsSvg(exportOptions?: CanvasExportOptions): Promise<void> {
     const container = getContainer()
     if (!container) {
-      notify.warning(t('canvas.export.canvasNotReady'))
+      notify.warningKey('canvas.export.canvasNotReady')
       return
     }
 
@@ -371,10 +371,10 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       if ((await deliverExportDataUrl(dataUrl, filename)) === 'cancelled') return
 
       logDiagramExport('svg')
-      notify.success(t('canvas.export.svgSuccess'))
+      notify.successKey('canvas.export.svgSuccess')
     } catch (error) {
       console.error('SVG export failed:', error)
-      notify.error(t('canvas.export.svgError'))
+      notify.errorKey('canvas.export.svgError')
     } finally {
       isExporting.value = false
     }
@@ -419,7 +419,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
         const filename = exportFilename(getTitle(), 'pdf')
         if (!(await handOffPdf(pdf, filename))) return
         logDiagramExport(format)
-        notify.success(t('canvas.export.pdfSuccess'))
+        notify.successKey('canvas.export.pdfSuccess')
         return
       }
 
@@ -440,7 +440,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       if (!(await handOffPdf(pdf, filename))) return
 
       logDiagramExport(format)
-      notify.success(t('canvas.export.pdfSuccess'))
+      notify.successKey('canvas.export.pdfSuccess')
     } finally {
       diagramStore.setLearningSheetShowAnswers(savedShowAnswers)
     }
@@ -449,7 +449,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
   async function exportAsPdf(format: string, exportOptions?: CanvasExportOptions): Promise<void> {
     const container = getContainer()
     if (!container) {
-      notify.warning(t('canvas.export.canvasNotReady'))
+      notify.warningKey('canvas.export.canvasNotReady')
       return
     }
 
@@ -482,7 +482,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
         const filename = exportFilename(getTitle(), 'pdf')
         if (!(await handOffPdf(pdf, filename))) return
         logDiagramExport(format)
-        notify.success(t('canvas.export.pdfSuccess'))
+        notify.successKey('canvas.export.pdfSuccess')
         return
       }
 
@@ -493,10 +493,10 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       const filename = exportFilename(getTitle(), 'pdf')
       if (!(await handOffPdf(pdf, filename))) return
       logDiagramExport(format)
-      notify.success(t('canvas.export.pdfSuccess'))
+      notify.successKey('canvas.export.pdfSuccess')
     } catch (error) {
       console.error('PDF export failed:', error)
-      notify.error(t('canvas.export.pdfError'))
+      notify.errorKey('canvas.export.pdfError')
     } finally {
       isExporting.value = false
     }
@@ -505,7 +505,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
   async function exportAsMgFile(): Promise<void> {
     const spec = getDiagramSpec()
     if (!spec) {
-      notify.warning(t('canvas.export.noDiagramData'))
+      notify.warningKey('canvas.export.noDiagramData')
       return
     }
 
@@ -517,10 +517,10 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       if (!(await handOffExportFile(blob, exportFilename(getTitle(), 'mg')))) return
 
       logDiagramExport('mg')
-      notify.success(t('canvas.export.jsonSuccess'))
+      notify.successKey('canvas.export.jsonSuccess')
     } catch (error) {
       console.error('MG export failed:', error)
-      notify.error(t('canvas.export.jsonError'))
+      notify.errorKey('canvas.export.jsonError')
     } finally {
       isExporting.value = false
     }
@@ -529,14 +529,14 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
   async function exportAsWorksheetDocx(exportOptions?: CanvasExportOptions): Promise<void> {
     const container = getContainer()
     if (!container) {
-      notify.warning(t('canvas.export.canvasNotReady'))
+      notify.warningKey('canvas.export.canvasNotReady')
       return
     }
 
     const mergedOptions = resolveExportOptions(exportOptions)
     const worksheetText = mergedOptions.worksheetText
     if (!worksheetText) {
-      notify.warning(t('canvas.export.docxError'))
+      notify.warningKey('canvas.export.docxError')
       return
     }
 
@@ -592,10 +592,10 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       const docxBlob = await response.blob()
       if (!(await handOffExportFile(docxBlob, exportFilename(title, 'docx')))) return
       logDiagramExport('worksheet_docx')
-      notify.success(t('canvas.export.docxSuccess'))
+      notify.successKey('canvas.export.docxSuccess')
     } catch (error) {
       console.error('Worksheet DOCX export failed:', error)
-      notify.error(t('canvas.export.docxError'))
+      notify.errorKey('canvas.export.docxError')
     } finally {
       isExporting.value = false
     }
@@ -634,7 +634,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
           await exportAsPdf(format, exportOptions)
           break
         }
-        notify.warning(t('canvas.export.unknownFormat', { format }))
+        notify.warningKey('canvas.export.unknownFormat', { format })
     }
   }
 

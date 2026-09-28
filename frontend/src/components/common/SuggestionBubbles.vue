@@ -6,14 +6,34 @@
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables'
 import { useAuthStore } from '@/stores'
 
+const DEFAULT_SUGGESTION_KEYS = [
+  'mindmate.defaultSuggestion1',
+  'mindmate.defaultSuggestion2',
+  'mindmate.defaultSuggestion3',
+  'mindmate.defaultSuggestion4',
+  'mindmate.defaultSuggestion5',
+  'mindmate.defaultSuggestion6',
+  'mindmate.defaultSuggestion7',
+  'mindmate.defaultSuggestion8',
+  'mindmate.defaultSuggestion9',
+  'mindmate.defaultSuggestion10',
+  'mindmate.defaultSuggestion11',
+  'mindmate.defaultSuggestion12',
+] as const
+
 const props = withDefaults(
   defineProps<{
+    /** Catalog keys. Empty uses the MindMate starter prompts. */
+    suggestionKeys?: string[]
+    /** Raw prompt text. No presenter line — these are not message keys. */
     suggestions?: string[]
   }>(),
   {
+    suggestionKeys: () => [],
     suggestions: () => [],
   }
 )
@@ -25,24 +45,16 @@ const emit = defineEmits<{
 const { t } = useLanguage()
 const authStore = useAuthStore()
 
-// Default suggestions if none provided
-const defaultSuggestions = computed(() => [
-  t('mindmate.defaultSuggestion1'),
-  t('mindmate.defaultSuggestion2'),
-  t('mindmate.defaultSuggestion3'),
-  t('mindmate.defaultSuggestion4'),
-  t('mindmate.defaultSuggestion5'),
-  t('mindmate.defaultSuggestion6'),
-  t('mindmate.defaultSuggestion7'),
-  t('mindmate.defaultSuggestion8'),
-  t('mindmate.defaultSuggestion9'),
-  t('mindmate.defaultSuggestion10'),
-  t('mindmate.defaultSuggestion11'),
-  t('mindmate.defaultSuggestion12'),
-])
+type SuggestionBubble = { key: string; text: string } | { key: ''; text: string }
 
-const displaySuggestions = computed(() => {
-  return props.suggestions.length > 0 ? props.suggestions : defaultSuggestions.value
+const displaySuggestions = computed((): SuggestionBubble[] => {
+  if (props.suggestionKeys.length > 0) {
+    return props.suggestionKeys.map((key) => ({ key, text: t(key) }))
+  }
+  if (props.suggestions.length > 0) {
+    return props.suggestions.map((text) => ({ key: '', text }))
+  }
+  return DEFAULT_SUGGESTION_KEYS.map((key) => ({ key, text: t(key) }))
 })
 
 // Animation state
@@ -50,13 +62,13 @@ const containerRef = ref<HTMLElement | null>(null)
 const isHovering = ref(false)
 let scrollInterval: ReturnType<typeof setInterval> | null = null
 
-const handleClick = (suggestion: string) => {
+const handleClick = (suggestion: SuggestionBubble) => {
   // Check authentication before allowing click
   if (!authStore.isAuthenticated) {
     authStore.handleTokenExpired(undefined, undefined)
     return
   }
-  emit('select', suggestion)
+  emit('select', suggestion.text)
 }
 
 // Auto-scroll effect - scrolls horizontally through wrapped content
@@ -94,14 +106,17 @@ onUnmounted(() => {
   }
 })
 
-const labelText = computed(() => t('mindmate.suggestionLabel'))
-
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 </script>
 
 <template>
   <div class="suggestion-bubbles">
-    <div class="suggestion-label">{{ labelText }}</div>
+    <div class="suggestion-label">
+      <I18nText
+        k="mindmate.suggestionLabel"
+        align="center"
+      />
+    </div>
     <div
       ref="containerRef"
       class="suggestion-container"
@@ -115,7 +130,12 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
         :disabled="!isAuthenticated"
         @click="handleClick(suggestion)"
       >
-        {{ suggestion }}
+        <I18nText
+          v-if="suggestion.key"
+          :k="suggestion.key"
+          dense
+        />
+        <template v-else>{{ suggestion.text }}</template>
       </button>
     </div>
   </div>
@@ -143,7 +163,7 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
   justify-content: center;
   justify-content: safe center;
   align-content: flex-start;
-  max-height: var(--mm-suggest-max-h, 140px);
+  max-height: var(--mm-suggest-max-h, 210px);
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;

@@ -131,7 +131,7 @@ export default {
   'sidebar.tokenUsageToday': 'Vandaag {usage}',
   'sidebar.library': 'Bibliotheek',
   'sidebar.mindGraph': 'MindGraph',
-  'sidebar.mindMate': 'Mindmate',
+  'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'Agent {name}',
   'sidebar.mindbot': 'MindBot',
   'sidebar.smartResponse': 'Slimme reactie',

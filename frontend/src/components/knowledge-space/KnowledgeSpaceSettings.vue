@@ -88,13 +88,13 @@ const handleSave = async () => {
   try {
     const result = await updateMutation.mutateAsync(formData.value)
     applySettings(result.settings)
-    notify.success(t('knowledge.settings.saveSuccess'))
+    notify.successKey('knowledge.settings.saveSuccess')
     if (result.reindex_required) {
-      notify.warning(t('knowledge.settings.reindexRequired'))
+      notify.warningKey('knowledge.settings.reindexRequired')
     }
     handleClose()
   } catch {
-    notify.error(t('knowledge.settings.saveFailed'))
+    notify.errorKey('knowledge.settings.saveFailed')
   }
 }
 </script>
@@ -122,9 +122,12 @@ const handleSave = async () => {
         type="info"
         :closable="false"
         class="mb-4"
-        :title="t('knowledge.settings.helpTitle')"
-        :description="t('knowledge.settings.helpBody')"
-      />
+      >
+        <template #title>
+          <I18nText k="knowledge.settings.helpTitle" />
+        </template>
+        <I18nText k="knowledge.settings.helpBody" />
+      </ElAlert>
 
       <ElForm
         :model="formData"

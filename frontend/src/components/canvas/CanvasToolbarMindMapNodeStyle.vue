@@ -60,7 +60,7 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
   if (!props.disabled) return
   ev.preventDefault()
   ev.stopPropagation()
-  notify.warning(t('canvas.toolbar.selectNodesFirst'))
+  notify.warningKey('canvas.toolbar.selectNodesFirst')
 }
 </script>
 

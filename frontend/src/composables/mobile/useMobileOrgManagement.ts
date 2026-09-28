@@ -90,9 +90,9 @@ export function useMobileOrgManagement() {
     }
     try {
       await navigator.clipboard.writeText(value)
-      notify.success(t('notification.copied'))
+      notify.successKey('notification.copied')
     } catch {
-      notify.error(t('notification.copyFailed'))
+      notify.errorKey('notification.copyFailed')
     }
   }
 
@@ -111,7 +111,7 @@ export function useMobileOrgManagement() {
   async function submitCreate(): Promise<void> {
     const name = sanitizeOrganizationName(orgName.value)
     if (!name) {
-      notify.error(t('admin.organizationNameRequired'))
+      notify.errorKey('admin.organizationNameRequired')
       return
     }
 
@@ -124,7 +124,7 @@ export function useMobileOrgManagement() {
       })) as CreatedOrganizationPayload
       const createdId = Number(data.id)
       orgName.value = ''
-      notify.success(t('notification.saved'))
+      notify.successKey('notification.saved')
       if (!Number.isFinite(createdId) || createdId <= 0) {
         return
       }

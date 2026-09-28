@@ -120,7 +120,7 @@ const {
   editPipelineActive,
   onDebugLine: pushKittyDebugLine,
   onDesktopDiagramFollow: () => {
-    notify.info(t('mobile.kittyDesktopDiagramFollowed', 'Switched to the diagram open on desktop'))
+    notify.infoKey('mobile.kittyDesktopDiagramFollowed')
   },
 })
 
@@ -253,9 +253,7 @@ async function handleScopeSyncChoice(
   try {
     if (choice === 'follow_desktop') {
       await applyDesktopFocusLibrary(div.desktopScope)
-      notify.info(
-        t('mobile.kittyDesktopDiagramFollowed', 'Switched to the diagram open on desktop')
-      )
+      notify.infoKey('mobile.kittyDesktopDiagramFollowed')
       showScopeDivergenceBanner.value = false
       divergenceDismissedKey.value = key
       void refreshKittySessionSnapshot()
@@ -268,9 +266,9 @@ async function handleScopeSyncChoice(
         diagram_library_id: div.mobileScope,
       })
       if (ok) {
-        notify.success(t('mobile.kittyDiagramSelected', '已选择导图，电脑端将同步打开'))
+        notify.successKey('mobile.kittyDiagramSelected')
       } else {
-        notify.warning(t('mobile.kittyDesktopJumpFailed', '已切换导图，但无法通知电脑端'))
+        notify.warningKey('mobile.kittyDesktopJumpFailed')
       }
       showScopeDivergenceBanner.value = false
       divergenceDismissedKey.value = key
@@ -280,7 +278,7 @@ async function handleScopeSyncChoice(
     markUserDiagramOverride()
     showScopeDivergenceBanner.value = false
     divergenceDismissedKey.value = key
-    notify.info(t('mobile.kittyScopeKeepSplit', '保持手机与电脑各自打开不同导图'))
+    notify.infoKey('mobile.kittyScopeKeepSplit')
     void refreshKittySessionSnapshot()
   } finally {
     divergenceSyncBusy.value = false
@@ -367,16 +365,11 @@ async function connectKittyOnce(): Promise<KittyConnectAttemptResult> {
     return 'connected'
   }
   if (!authStore.isAuthenticated) {
-    notify.warning(t('notification.signInToUse'))
+    notify.warningKey('notification.signInToUse')
     return 'aborted'
   }
   if (!kittyServerEnabled.value) {
-    notify.warning(
-      t(
-        'mobile.kittyEnableServerHint',
-        '请在服务端 .env 中设置 FEATURE_KITTY_AGENT=True 并重启 API。'
-      )
-    )
+    notify.warningKey('mobile.kittyEnableServerHint')
     return 'aborted'
   }
   try {
@@ -430,7 +423,7 @@ async function ensureConnected(): Promise<boolean> {
   })
   // Auth hard-stop surfaces the session-expired modal; only toast network-style failures.
   if (!ok && authStore.isAuthenticated && !mobileKittyAuthGate.isHardStopped()) {
-    notify.warning(t('mobile.kittyConnectFailed', '连接失败，请检查网络后重试'))
+    notify.warningKey('mobile.kittyConnectFailed')
   }
   return ok
 }
@@ -456,28 +449,23 @@ async function handleMobileKittyPhotoCapture(ev: Event): Promise<void> {
     mobileKittyContextPreview.value.diagramLibraryId?.trim() ||
     (!kittyPairScopeIsEphemeral.value ? kittyPairScope.value.trim() : '')
   if (!diagramId) {
-    notify.warning(
-      t(
-        'mobile.kittyPhotoNeedsDiagram',
-        'Open or pick a saved diagram first, then take a photo to extract text.'
-      )
-    )
+    notify.warningKey('mobile.kittyPhotoNeedsDiagram')
     return
   }
 
   const validated = prepareMobileKittyPhotoCapture(file)
   if (!validated.ok) {
     if (validated.reason === 'invalid_type') {
-      notify.warning(t('mobile.kittyPhotoInvalidType', 'Please choose a JPG, PNG, or WebP photo.'))
+      notify.warningKey('mobile.kittyPhotoInvalidType')
     } else if (validated.reason === 'too_large') {
-      notify.warning(t('mobile.kittyPhotoTooLarge', 'Photo is too large. Maximum size is 10MB.'))
+      notify.warningKey('mobile.kittyPhotoTooLarge')
     }
     return
   }
 
   cameraDenied.value = false
   photoUploading.value = true
-  notify.showLoading(t('mobile.kittyPhotoProgressDetecting', 'Processing photo…'))
+  notify.showLoadingKey('mobile.kittyPhotoProgressDetecting')
   try {
     await uploadConversationImage({
       file: validated.file,
@@ -499,7 +487,7 @@ const funAsr = useKittyFunAsrMic({
       micDenied.value = true
       return
     }
-    notify.warning(t('canvas.mindMapOneSentence.kittyUnavailable'))
+    notify.warningKey('canvas.mindMapOneSentence.kittyUnavailable')
   },
 })
 
@@ -814,9 +802,7 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
     diagramLibraryId: mobileKittyContextPreview.value.diagramLibraryId ?? undefined,
   }).then((ok) => {
     if (!ok) {
-      notify.warning(
-        t('mobile.kittyDesktopExplainFailed', '无法在电脑端打开节点解释，请确认桌面已打开该导图')
-      )
+      notify.warningKey('mobile.kittyDesktopExplainFailed')
     }
   })
 }

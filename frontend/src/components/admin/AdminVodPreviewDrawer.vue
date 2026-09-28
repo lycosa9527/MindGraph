@@ -67,7 +67,7 @@ async function loadPlayer(): Promise<void> {
     })
   } catch {
     if (gen === loadGen) {
-      notify.error(t('admin.vod.playFailed'))
+      notify.errorKey('admin.vod.playFailed')
     }
   } finally {
     if (gen === loadGen) {

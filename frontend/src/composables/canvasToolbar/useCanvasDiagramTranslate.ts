@@ -62,7 +62,7 @@ export function useCanvasDiagramTranslate() {
 
   function warnIfUnavailable(): boolean {
     if (!authStore.isAuthenticated) {
-      notify.warning(t('notification.signInToUse'))
+      notify.warningKey('notification.signInToUse')
       return true
     }
     return !guardCollabGuestAi()
@@ -74,7 +74,7 @@ export function useCanvasDiagramTranslate() {
   ): Promise<boolean> {
     const diagramType = asDiagramType(diagramStore.type) ?? asDiagramType(spec.type)
     if (!diagramType) {
-      notify.warning(t('canvas.toolbar.translateLabelFailed'))
+      notify.warningKey('canvas.toolbar.translateLabelFailed')
       return false
     }
     diagramTranslateUi.setViewingTranslated(viewingTranslated)
@@ -85,7 +85,7 @@ export function useCanvasDiagramTranslate() {
     })
     if (!loaded) {
       llmResultsStore.contentChangeIsFromModelSwitch = false
-      notify.warning(t('canvas.toolbar.translateLabelFailed'))
+      notify.warningKey('canvas.toolbar.translateLabelFailed')
       diagramTranslateUi.setViewingTranslated(false)
       return false
     }
@@ -133,7 +133,7 @@ export function useCanvasDiagramTranslate() {
     const uiCode = options?.targetUiLocale ?? uiStore.language
     const targetLanguage = canvasTranslateTargetForUiLocale(uiCode)
     if (targetLanguage === 'en' && uiCode !== 'en') {
-      notify.info(t('canvas.toolbar.translateLabelFallbackEnInfo'))
+      notify.infoKey('canvas.toolbar.translateLabelFallbackEnInfo')
     }
     const deferCanvasApply = options?.deferCanvasApply === true
     const sourceSpec = options?.sourceSpec ?? null
@@ -245,7 +245,7 @@ export function useCanvasDiagramTranslate() {
           await showTranslatedSpec(translated)
           diagramTranslateUi.setPhase('ready')
         }
-        notify.success(t('canvas.toolbar.translateLabelDone'))
+        notify.successKey('canvas.toolbar.translateLabelDone')
       }
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -255,7 +255,7 @@ export function useCanvasDiagramTranslate() {
         return
       }
       console.error('Translate diagram failed:', error)
-      notify.warning(t('canvas.toolbar.translateLabelFailed'))
+      notify.warningKey('canvas.toolbar.translateLabelFailed')
       if (deferCanvasApply) {
         diagramTranslateUi.setPhase('error')
       }
@@ -274,12 +274,12 @@ export function useCanvasDiagramTranslate() {
       return
     }
     if (!diagramStore.data?.nodes?.length) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
       return
     }
     const items = collectDiagramTranslateItems(diagramStore.data)
     if (items.length === 0) {
-      notify.warning(t('canvas.toolbar.translateLabelDiagramEmpty'))
+      notify.warningKey('canvas.toolbar.translateLabelDiagramEmpty')
       return
     }
     void runDiagramTranslate(items)
@@ -287,17 +287,17 @@ export function useCanvasDiagramTranslate() {
 
   function snapshotCurrentSpec(): Record<string, unknown> | null {
     if (!diagramStore.data?.nodes?.length) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
       return null
     }
     const spec = diagramStore.getSpecForSave()
     if (!spec) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
       return null
     }
     const items = collectDiagramTranslateItems(spec)
     if (items.length === 0) {
-      notify.warning(t('canvas.toolbar.translateLabelDiagramEmpty'))
+      notify.warningKey('canvas.toolbar.translateLabelDiagramEmpty')
       return null
     }
     return cloneDiagramSpecJson(spec)
@@ -314,7 +314,7 @@ export function useCanvasDiagramTranslate() {
     }
     const items = collectDiagramTranslateItems(spec)
     if (items.length === 0) {
-      notify.warning(t('canvas.toolbar.translateLabelDiagramEmpty'))
+      notify.warningKey('canvas.toolbar.translateLabelDiagramEmpty')
       return
     }
     void runDiagramTranslate(items, {

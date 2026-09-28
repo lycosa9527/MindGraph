@@ -55,7 +55,7 @@ export function useOAuthRouteFeedback(): void {
       }
       const bindProvider = oauthBindFromRouteQuery(route.query.oauth_bind)
       if (bindProvider) {
-        notify.success(t('auth.oauthBindSuccess'))
+        notify.successKey('auth.oauthBindSuccess')
         stripOAuthQuery()
         return
       }

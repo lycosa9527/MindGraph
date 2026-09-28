@@ -86,7 +86,7 @@ async function loadUsers(): Promise<void> {
     total.value = data.pagination?.total ?? 0
     totalPages.value = data.pagination?.total_pages ?? 1
   } catch {
-    notify.error(t('admin.schoolTeachersTab.loadError'))
+    notify.errorKey('admin.schoolTeachersTab.loadError')
     users.value = []
     total.value = 0
     totalPages.value = 1
@@ -113,7 +113,7 @@ function openTeacherTrend(row: Record<string, unknown>): void {
   const rawId = row.id
   const userId = typeof rawId === 'number' ? rawId : Number(rawId)
   if (!Number.isFinite(userId) || userId <= 0) {
-    notify.warning(t('admin.userTrendRequiresId'))
+    notify.warningKey('admin.userTrendRequiresId')
     return
   }
   teacherTrendUser.value = {

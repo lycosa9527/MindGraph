@@ -8,7 +8,6 @@ import { ElButton, ElIcon } from 'element-plus'
 import { RefreshRight, Upload, VideoPlay } from '@element-plus/icons-vue'
 
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
-import { useLanguage } from '@/composables/core/useLanguage'
 
 defineProps<{
   documentCount: number
@@ -23,8 +22,6 @@ const emit = defineEmits<{
   (e: 'testAllDatasets'): void
   (e: 'processDocuments'): void
 }>()
-
-const { t } = useLanguage()
 </script>
 
 <template>

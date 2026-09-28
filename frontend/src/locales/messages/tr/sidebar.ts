@@ -131,7 +131,7 @@ export default {
   'sidebar.tokenUsageToday': 'Bugün {usage}',
   'sidebar.library': 'Kitaplık',
   'sidebar.mindGraph': 'MindGraph',
-  'sidebar.mindMate': 'Akıl Arkadaşı',
+  'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'Ajan {name}',
   'sidebar.mindbot': 'MindBot',
   'sidebar.smartResponse': 'Akıllı yanıt',

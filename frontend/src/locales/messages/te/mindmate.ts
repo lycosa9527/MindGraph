@@ -144,7 +144,7 @@ export default {
   'nodePalette.refresh': 'పునరుత్పత్తి చేయండి',
   'nodePalette.selected': 'ఎంపిక చేయబడింది',
   'nodePalette.similarities': 'సారూప్యతలు',
-  'panel.mindmate': 'మైండ్‌మేట్ AI',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': 'నోడ్ ప్యానెల్',
   'panel.properties': 'ఆస్తి',
   'panels.property.background': 'నేపథ్య రంగు',

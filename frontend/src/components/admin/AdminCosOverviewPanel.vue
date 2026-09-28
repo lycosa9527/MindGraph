@@ -39,20 +39,21 @@ function healthLabel(key: string): string {
       class="mb-4"
     />
     <div class="admin-cos-kpi-row">
+      <AdminSwissKpiCard title-key="admin.cos.connection">
+        <template #value>
+          <I18nText :k="connection.ok ? 'admin.cos.connected' : 'admin.cos.disconnected'" />
+        </template>
+      </AdminSwissKpiCard>
       <AdminSwissKpiCard
-        :title="t('admin.cos.connection')"
-        :value="connection.ok ? t('admin.cos.connected') : t('admin.cos.disconnected')"
-      />
-      <AdminSwissKpiCard
-        :title="t('admin.cos.syncRole')"
+        title-key="admin.cos.syncRole"
         :value="String(data?.sync_role ?? 'off')"
       />
       <AdminSwissKpiCard
-        :title="t('admin.cos.bucket')"
+        title-key="admin.cos.bucket"
         :value="String(config.bucket ?? '—')"
       />
       <AdminSwissKpiCard
-        :title="t('admin.cos.nextRun')"
+        title-key="admin.cos.nextRun"
         :value="String(data?.next_scheduled_run ?? '—')"
       />
     </div>

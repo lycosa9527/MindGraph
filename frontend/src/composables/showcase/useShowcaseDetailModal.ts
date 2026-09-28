@@ -373,7 +373,7 @@ export function useShowcaseDetailModal(
       } else {
         await reviewShowcasePost(postId, 'approve')
       }
-      notify.success(t('showcase.detail.approved'))
+      notify.successKey('showcase.detail.approved')
       await loadPost()
       if (post.value) emit('updated', post.value)
     } catch (e) {
@@ -393,7 +393,7 @@ export function useShowcaseDetailModal(
       } else {
         await reviewShowcasePost(postId, 'reject', rejectReason.value)
       }
-      notify.success(t('showcase.detail.rejected'))
+      notify.successKey('showcase.detail.rejected')
       showRejectInput.value = false
       await loadPost()
       if (post.value) emit('updated', post.value)
@@ -432,7 +432,7 @@ export function useShowcaseDetailModal(
     isActionBusy.value = true
     try {
       await withdrawShowcasePost(postId)
-      notify.success(t('showcase.withdrawn'))
+      notify.successKey('showcase.withdrawn')
       emit('deleted')
       emit('update:visible', false)
     } catch (e) {
@@ -453,7 +453,7 @@ export function useShowcaseDetailModal(
     isActionBusy.value = true
     try {
       const res = await delistShowcasePost(postId)
-      notify.success(t('showcase.delisted'))
+      notify.successKey('showcase.delisted')
       post.value = res.post
       emit('updated', res.post)
       emit('update:visible', false)
@@ -474,7 +474,7 @@ export function useShowcaseDetailModal(
   async function remove() {
     const postId = (props.postId ?? post.value?.id ?? '').trim()
     if (!postId) {
-      notify.error(String(t('showcase.detail.loadFailed')))
+      notify.errorKey('showcase.detail.loadFailed')
       return
     }
     if (isActionBusy.value) return
@@ -501,7 +501,7 @@ export function useShowcaseDetailModal(
       } else {
         await deleteShowcasePost(postId)
       }
-      notify.success(t('showcase.deleted'))
+      notify.successKey('showcase.deleted')
       emit('deleted')
       emit('update:visible', false)
     } catch (e) {

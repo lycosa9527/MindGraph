@@ -9,7 +9,6 @@ import { storeToRefs } from 'pinia'
 
 import AdminDashboardTab from '@/components/admin/AdminDashboardTab.vue'
 import AdminOrgDataCenterPanel from '@/components/admin/AdminOrgDataCenterPanel.vue'
-import { useLanguage } from '@/composables'
 import {
   type DataCenterView,
   canViewDataCenterSubView,
@@ -25,7 +24,6 @@ const props = defineProps<{
 }>()
 
 const route = useRoute()
-const { t } = useLanguage()
 const adminPanel = useAdminPanelStore()
 const { selectedOrgId } = storeToRefs(adminPanel)
 const { can, capabilities, effectiveOrgId, isReadOnly } = useAdminAccess()

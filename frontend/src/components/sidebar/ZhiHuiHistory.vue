@@ -87,9 +87,9 @@ async function handleDelete(item: ZhihuiConversationItem): Promise<void> {
   if (!confirmed) return
   const ok = await store.deleteItem(item.id)
   if (ok) {
-    notify.success(String(t('zhihui.deleted')))
+    notify.successKey('zhihui.deleted')
   } else {
-    notify.error(String(t('zhihui.deleteFailed')))
+    notify.errorKey('zhihui.deleteFailed')
   }
 }
 

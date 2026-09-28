@@ -201,7 +201,7 @@ async function onOpenInCanvas(): Promise<void> {
   }
 
   if (!preview.preview_spec) {
-    notify.error(t('learningSpace.noPreview'))
+    notify.errorKey('learningSpace.noPreview')
     return
   }
 
@@ -219,7 +219,7 @@ async function onOpenInCanvas(): Promise<void> {
       return
     }
     savedDiagramsStore.clearActiveDiagram()
-    notify.success(t('learningSpace.saveToLibraryOk'))
+    notify.successKey('learningSpace.saveToLibraryOk')
     visible.value = false
     await router.push({ path: '/canvas', query: { diagramId: saved.id } })
   } catch (error) {

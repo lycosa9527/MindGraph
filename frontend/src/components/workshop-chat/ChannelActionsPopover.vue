@@ -25,6 +25,7 @@ import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { bilingualNotifyMessage } from '@/i18n/bilingualNotifyMessage'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
 import { workshopChatHrefFromState } from '@/utils/workshopChatRoute'
@@ -129,7 +130,7 @@ function handleCopyChannelLink(): void {
   )
   const url = `${window.location.origin}${href}`
   void navigator.clipboard.writeText(url).then(() => {
-    ElMessage.success(t('workshop.linkCopied'))
+    ElMessage.success({ message: bilingualNotifyMessage('workshop.linkCopied') })
   })
   emit('update:visible', false)
 }
@@ -151,9 +152,9 @@ async function handleArchiveChannel(): Promise<void> {
   }
   const ok = await store.archiveChannel(props.channelId)
   if (ok) {
-    ElMessage.success(t('workshop.channelArchived'))
+    ElMessage.success({ message: bilingualNotifyMessage('workshop.channelArchived') })
   } else {
-    ElMessage.error(t('workshop.channelArchiveFailed'))
+    ElMessage.error({ message: bilingualNotifyMessage('workshop.channelArchiveFailed') })
   }
   emit('update:visible', false)
 }
@@ -175,16 +176,16 @@ async function handleDeleteChannel(): Promise<void> {
   }
   const ok = await store.deleteChannel(props.channelId)
   if (ok) {
-    ElMessage.success(t('workshop.channelDeleted'))
+    ElMessage.success({ message: bilingualNotifyMessage('workshop.channelDeleted') })
   } else {
-    ElMessage.error(t('workshop.channelDeleteFailed'))
+    ElMessage.error({ message: bilingualNotifyMessage('workshop.channelDeleteFailed') })
   }
   emit('update:visible', false)
 }
 
 async function handleMarkAllRead(): Promise<void> {
   await store.markChannelReadAll(props.channelId)
-  ElMessage.success(t('workshop.markAsRead'))
+  ElMessage.success({ message: bilingualNotifyMessage('workshop.markAsRead') })
   emit('update:visible', false)
 }
 
@@ -229,7 +230,7 @@ async function handleSaveDeadline(): Promise<void> {
     deadline: d.toISOString(),
   })
   if (ok) {
-    ElMessage.success(t('common.success'))
+    ElMessage.success({ message: bilingualNotifyMessage('common.success') })
     deadlineDialogVisible.value = false
   }
 }

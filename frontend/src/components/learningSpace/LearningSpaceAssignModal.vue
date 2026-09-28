@@ -254,11 +254,11 @@ function diagramAlreadyAttached(diagramId: string): boolean {
 
 function pushReferenceDiagram(item: LsReferenceDiagram): boolean {
   if (diagramAlreadyAttached(item.id)) {
-    notify.warning(t('learningSpace.attachDiagramExists'))
+    notify.warningKey('learningSpace.attachDiagramExists')
     return false
   }
   if (form.value.reference_diagrams.length >= MAX_REFERENCE_DIAGRAMS) {
-    notify.warning(t('learningSpace.attachRefDiagramMax', { n: MAX_REFERENCE_DIAGRAMS }))
+    notify.warningKey('learningSpace.attachRefDiagramMax', { n: MAX_REFERENCE_DIAGRAMS })
     return false
   }
   form.value.reference_diagrams.push(item)
@@ -283,7 +283,7 @@ function applyWorkingDiagram(diagram: SavedDiagram, spec: Record<string, unknown
 
 async function onPickDiagram(diagram: SavedDiagram): Promise<void> {
   if (diagramAlreadyAttached(diagram.id)) {
-    notify.warning(t('learningSpace.attachDiagramExists'))
+    notify.warningKey('learningSpace.attachDiagramExists')
     return
   }
   const asWorking = !form.value.teacher_provided_template
@@ -315,7 +315,7 @@ async function onMgFileChange(ev: Event): Promise<void> {
   try {
     const spec = await decodeMgUploadSpec(file)
     if (!spec) {
-      notify.error(t('learningSpace.mgInvalid'))
+      notify.errorKey('learningSpace.mgInvalid')
       return
     }
     const asWorking = !form.value.teacher_provided_template
@@ -351,10 +351,10 @@ async function onMgFileChange(ev: Event): Promise<void> {
       })
       if (!added) return
     }
-    notify.success(t('learningSpace.mgAttached'))
+    notify.successKey('learningSpace.mgAttached')
     await scrollAttachBlockToTop()
   } catch {
-    notify.error(t('learningSpace.mgInvalid'))
+    notify.errorKey('learningSpace.mgInvalid')
   }
 }
 
@@ -364,9 +364,9 @@ async function onImageFilesChange(ev: Event): Promise<void> {
   input.value = ''
   const { added, skipped, tooLarge } = instructionImagesCtl.addImageFiles(incoming)
   if (skipped) {
-    notify.warning(t('learningSpace.attachImageMax', { n: MAX_INSTRUCTION_IMAGES }))
+    notify.warningKey('learningSpace.attachImageMax', { n: MAX_INSTRUCTION_IMAGES })
   } else if (tooLarge) {
-    notify.warning(t('learningSpace.attachImageTooLarge'))
+    notify.warningKey('learningSpace.attachImageTooLarge')
   }
   if (added > 0) await scrollAttachBlockToTop()
 }
@@ -402,11 +402,11 @@ function buildAiPermissions(): Record<string, unknown> {
 
 function validateStep1(): boolean {
   if (!form.value.title.trim()) {
-    notify.warning(t('learningSpace.fillTitle'))
+    notify.warningKey('learningSpace.fillTitle')
     return false
   }
   if (!form.value.diagram_type) {
-    notify.warning(t('learningSpace.fillDiagramType'))
+    notify.warningKey('learningSpace.fillDiagramType')
     return false
   }
   return true
@@ -414,7 +414,7 @@ function validateStep1(): boolean {
 
 function validateStep2(): boolean {
   if (form.value.evaluation_dimensions.length === 0) {
-    notify.warning(t('learningSpace.fillScoreDims'))
+    notify.warningKey('learningSpace.fillScoreDims')
     return false
   }
   return true
@@ -422,7 +422,7 @@ function validateStep2(): boolean {
 
 function validateStep3(): boolean {
   if (form.value.class_ids.length === 0) {
-    notify.warning(t('learningSpace.fillClasses'))
+    notify.warningKey('learningSpace.fillClasses')
     return false
   }
   return true
@@ -528,7 +528,7 @@ async function submit(): Promise<void> {
       publishableClasses.value.some((row) => row.id === id)
     )
     if (!classIds.length) {
-      notify.warning(t('learningSpace.fillClasses'))
+      notify.warningKey('learningSpace.fillClasses')
       return
     }
     for (const classId of classIds) {
@@ -537,7 +537,7 @@ async function submit(): Promise<void> {
         class_id: classId,
       })
     }
-    notify.success(t('learningSpace.assignmentCreated'))
+    notify.successKey('learningSpace.assignmentCreated')
     emit('created')
     resetForm()
     visible.value = false

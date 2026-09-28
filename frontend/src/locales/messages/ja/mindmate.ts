@@ -144,7 +144,7 @@ export default {
   'nodePalette.refresh': '更新',
   'nodePalette.selected': '選択中',
   'nodePalette.similarities': '類似点',
-  'panel.mindmate': 'マインドメイトAI',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': 'ノードパレット',
   'panel.properties': 'プロパティ',
   'panels.property.background': '背景',

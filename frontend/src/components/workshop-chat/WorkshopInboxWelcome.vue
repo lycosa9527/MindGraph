@@ -7,11 +7,9 @@ import { useRouter } from 'vue-router'
 
 import { Hash, Inbox, MessageSquare } from '@lucide/vue'
 
-import { useLanguage } from '@/composables/core/useLanguage'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
 import { pushWorkshopDm } from '@/utils/workshopChatNavigate'
 
-const { t } = useLanguage()
 const store = useWorkshopChatStore()
 const router = useRouter()
 

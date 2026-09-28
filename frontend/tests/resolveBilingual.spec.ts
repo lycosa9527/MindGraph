@@ -49,6 +49,18 @@ describe('resolveBilingual', () => {
     expect(copy.secondary).toBeNull()
   })
 
+  it('hides the presenter line when both locales say the same words', async () => {
+    await loadLocaleMessages('zh')
+    await loadLocaleMessages('hi')
+    const uiStore = useUIStore()
+    uiStore.setLanguage('hi')
+    uiStore.setBilingualUiEnabled(true)
+    uiStore.setPresenterUiLocale('zh')
+    const copy = resolveBilingual('sidebar.mindMate')
+    expect(copy.primary).toBe('MindMate')
+    expect(copy.secondary).toBeNull()
+  })
+
   it('returns both lines when locales differ and bilingual mode is on', async () => {
     await loadLocaleMessages('zh')
     const uiStore = useUIStore()
@@ -68,7 +80,7 @@ describe('resolveBilingual', () => {
     expect(isLocaleLoaded('ja')).toBe(false)
     const copy = computed(() => resolveBilingual('common.save'))
     uiStore.setBilingualUiEnabled(true)
-    expect(copy.value.secondary).toBe('Save')
+    expect(copy.value.secondary).toBeNull()
     await loadLocaleMessages('ja')
     await nextTick()
     expect(copy.value.secondary).toBe('保存')

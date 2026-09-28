@@ -33,7 +33,7 @@ export default {
   'collab.previousSessionsStopped': 'Natapos ang {n} nakaraang (mga) session ng pakikipagtulungan sa iyong iba pang mga diagram.',
   'collab.saveFailed': 'Nabigong i-save ang diagram',
   'collab.scanToJoin': 'I-scan para sumali',
-  'collab.schoolDescActive': 'Naka-on ang pakikipagtulungan sa paaralan. Mga kasamahan: gamitin ang Collaborate → School sa home page at piliin ang diagram na ito — walang kinakailangang code.',
+  'collab.schoolDescActive': 'Naka-on ang pakikipagtulungan sa paaralan. Mga kasamahan: gamitin ang Collaborate → School sa MindGraph home page at piliin ang diagram na ito — walang kinakailangang code.',
   'collab.schoolStarted': 'Naka-on ang collaboration ng paaralan — maaaring sumali ang mga kasamahan mula sa Collaborate → School.',
   'collab.sectionNetwork': 'Nakabahaging pakikipagtulungan (code)',
   'collab.sectionSchool': 'Pakikipagtulungan sa paaralan',

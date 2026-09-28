@@ -132,10 +132,10 @@ async function handleDeleteBookmark(bookmark: LibraryBookmark, event: Event): Pr
   try {
     await libraryStore.deleteBookmark(bookmark.id)
     // Store automatically updates bookmarks list
-    notify.success(t('sidebar.bookmarks.deleted'))
+    notify.successKey('sidebar.bookmarks.deleted')
   } catch (error) {
     console.error('[LibraryCommentsHistory] Failed to delete bookmark:', error)
-    notify.error(t('sidebar.bookmarks.deleteFailed'))
+    notify.errorKey('sidebar.bookmarks.deleteFailed')
   }
 }
 

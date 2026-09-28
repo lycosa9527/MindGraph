@@ -33,7 +33,7 @@ export default {
   'collab.previousSessionsStopped': 'Terminate {n} sessione/i di collaborazione precedente/i su altri diagrammi.',
   'collab.saveFailed': 'Impossibile salvare il diagramma',
   'collab.scanToJoin': 'Scansiona per unirti',
-  'collab.schoolDescActive': 'Collaborazione scolastica attiva. Colleghi: usa Collabora → Scuola nella home e scegli questo diagramma — nessun codice richiesto.',
+  'collab.schoolDescActive': 'Collaborazione scolastica attiva. Colleghi: MindGraph usa Collabora → Scuola nella home e scegli questo diagramma — nessun codice richiesto.',
   'collab.schoolStarted': 'Collaborazione scolastica attiva — i colleghi possono entrare da Collabora → Scuola.',
   'collab.sectionNetwork': 'Collaborazione condivisa (codice)',
   'collab.sectionSchool': 'Collaborazione scolastica',

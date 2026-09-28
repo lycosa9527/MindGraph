@@ -142,7 +142,7 @@ export default {
   'sidebar.templateResources': 'ടെംപ്ലേറ്റ് ഉറവിടങ്ങൾ',
   'sidebar.orgEdition': '{org}എക്‌സ്‌ക്ലൂസീവ് പതിപ്പ്',
   'sidebar.personalEdition': 'വ്യക്തിഗത പതിപ്പ്',
-  'sidebar.userSubtitleDefault': 'മൈൻഡ്ഗ്രാഫ് പ്രൊഫഷണൽ പതിപ്പ്',
+  'sidebar.userSubtitleDefault': 'MindGraph മൈൻഡ്ഗ്രാഫ് പ്രൊഫഷണൽ പതിപ്പ്',
   'sidebar.account': 'അക്കൗണ്ട് ക്രമീകരണങ്ങൾ',
   'sidebar.roleSuperAdmin': 'സൂപ്പർ അഡ്മിനിസ്ട്രേറ്റർ',
   'sidebar.rolePlatformAdmin': 'ടീച്ചിംഗ് ആൻഡ് റിസർച്ച് ഫെല്ലോ',

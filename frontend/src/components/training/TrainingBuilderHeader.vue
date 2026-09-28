@@ -3,10 +3,6 @@ import { ElButton, ElIcon } from 'element-plus'
 
 import { Plus } from '@element-plus/icons-vue'
 
-import { useLanguage } from '@/composables'
-
-const { t } = useLanguage()
-
 defineProps<{
   current: string
   showSave?: boolean

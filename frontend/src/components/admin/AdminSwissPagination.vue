@@ -4,8 +4,6 @@
  */
 import { computed } from 'vue'
 
-import { useLanguage } from '@/composables'
-
 const props = defineProps<{
   pageInfo: string
   page: number
@@ -16,8 +14,6 @@ const emit = defineEmits<{
   (e: 'previous'): void
   (e: 'next'): void
 }>()
-
-const { t } = useLanguage()
 
 const effectiveTotalPages = computed(() => Math.max(props.totalPages, 1))
 </script>

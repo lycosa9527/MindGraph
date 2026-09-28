@@ -36,6 +36,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
 import { useWorkshopChatComposable } from '@/composables/workshop/useWorkshopChat'
 import { intlLocaleForUiCode } from '@/i18n'
+import { bilingualNotifyMessage, joinNotifyMessages } from '@/i18n/bilingualNotifyMessage'
 import type { LocaleCode } from '@/i18n/locales'
 import { useAuthStore } from '@/stores/auth'
 import {
@@ -221,7 +222,7 @@ function copyAbsoluteWorkshopHref(state: Parameters<typeof workshopChatHrefFromS
   const href = workshopChatHrefFromState(state)
   const url = `${window.location.origin}${href}`
   void navigator.clipboard.writeText(url).then(() => {
-    ElMessage.success(t('workshop.linkCopied'))
+    ElMessage.success({ message: bilingualNotifyMessage('workshop.linkCopied') })
   })
 }
 
@@ -243,7 +244,7 @@ const showGearChannelSettings = computed(
 function openChannelSettingsFromGear(): void {
   const id = store.currentChannelId ?? store.teachingGroupLandingId
   if (id == null) {
-    ElMessage.info(t('workshop.selectChannelForSettings'))
+    ElMessage.info({ message: bilingualNotifyMessage('workshop.selectChannelForSettings') })
     return
   }
   handleOpenChannelSettings(id)
@@ -804,14 +805,21 @@ async function showSendMentionError(res: Response): Promise<boolean> {
     }
     const d = data.detail
     if (d?.code === 'invalid_mentions') {
-      const parts: string[] = []
+      const parts: Array<ReturnType<typeof bilingualNotifyMessage>> = []
       if (d.unknown?.length) {
-        parts.push(t('workshop.mentionUnknown').replace('{0}', d.unknown.join(', ')))
+        parts.push(bilingualNotifyMessage('workshop.mentionUnknown', { 0: d.unknown.join(', ') }))
       }
       if (d.ambiguous?.length) {
-        parts.push(t('workshop.mentionAmbiguous').replace('{0}', d.ambiguous.join(', ')))
+        parts.push(
+          bilingualNotifyMessage('workshop.mentionAmbiguous', { 0: d.ambiguous.join(', ') })
+        )
       }
-      ElMessage.warning(parts.join(' · ') || t('workshop.messageSendFailed'))
+      ElMessage.warning({
+        message:
+          parts.length > 0
+            ? joinNotifyMessages(parts)
+            : bilingualNotifyMessage('workshop.messageSendFailed'),
+      })
       return true
     }
   } catch {
@@ -829,7 +837,7 @@ async function handleSendChannelMessage(content: string): Promise<void> {
   })
   if (!res.ok) {
     if (!(await showSendMentionError(res))) {
-      ElMessage.error(t('workshop.messageSendFailed'))
+      ElMessage.error({ message: bilingualNotifyMessage('workshop.messageSendFailed') })
     }
     return
   }
@@ -851,7 +859,7 @@ async function handleSendTopicMessage(content: string): Promise<void> {
   )
   if (!res.ok) {
     if (!(await showSendMentionError(res))) {
-      ElMessage.error(t('workshop.messageSendFailed'))
+      ElMessage.error({ message: bilingualNotifyMessage('workshop.messageSendFailed') })
     }
     return
   }
@@ -869,7 +877,7 @@ async function handleSendDM(content: string): Promise<void> {
   })
   if (!res.ok) {
     if (!(await showSendMentionError(res))) {
-      ElMessage.error(t('workshop.messageSendFailed'))
+      ElMessage.error({ message: bilingualNotifyMessage('workshop.messageSendFailed') })
     }
     return
   }
@@ -894,7 +902,7 @@ async function handleDeleteMessage(messageId: number): Promise<void> {
     )
     const ok = await store.deleteMessage(messageId)
     if (!ok) {
-      ElMessage.error(t('workshop.messageSendFailed'))
+      ElMessage.error({ message: bilingualNotifyMessage('workshop.messageSendFailed') })
     }
   } catch {
     /* cancelled */

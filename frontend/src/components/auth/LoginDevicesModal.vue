@@ -56,14 +56,14 @@ async function loadDevices() {
     const res = await apiGet('/api/auth/login-devices')
     if (!res.ok) {
       devices.value = []
-      notify.error(t('auth.loginDevicesLoadError'))
+      notify.errorKey('auth.loginDevicesLoadError')
       return
     }
     const data = (await res.json()) as { devices?: LoginDeviceRow[] }
     devices.value = Array.isArray(data.devices) ? data.devices : []
   } catch {
     devices.value = []
-    notify.error(t('auth.loginDevicesLoadError'))
+    notify.errorKey('auth.loginDevicesLoadError')
   } finally {
     loading.value = false
   }
@@ -91,13 +91,13 @@ async function kickDevice(row: LoginDeviceRow) {
   try {
     const res = await apiDelete(`/api/auth/login-devices/${encodeURIComponent(row.device_id)}`)
     if (!res.ok) {
-      notify.error(t('auth.loginDevicesKickError'))
+      notify.errorKey('auth.loginDevicesKickError')
       return
     }
-    notify.success(t('auth.loginDevicesKickSuccess'))
+    notify.successKey('auth.loginDevicesKickSuccess')
     devices.value = devices.value.filter((item) => item.device_id !== row.device_id)
   } catch {
-    notify.error(t('auth.loginDevicesKickError'))
+    notify.errorKey('auth.loginDevicesKickError')
   } finally {
     kickingId.value = ''
   }

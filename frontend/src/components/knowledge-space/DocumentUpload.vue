@@ -32,7 +32,7 @@ const handleFileChange = (file: UploadFile) => {
     // Validate file size (10MB)
     const maxSize = 10 * 1024 * 1024
     if (file.raw.size > maxSize) {
-      notify.error(t('knowledge.upload.fileTooLarge'))
+      notify.errorKey('knowledge.upload.fileTooLarge')
       uploadRef.value?.clearFiles()
       return false
     }
@@ -53,7 +53,7 @@ const handleFileChange = (file: UploadFile) => {
     const allowedExts = ['pdf', 'docx', 'txt', 'md', 'jpg', 'jpeg', 'png']
 
     if (!allowedTypes.includes(file.raw.type) && !allowedExts.includes(ext || '')) {
-      notify.error(t('knowledge.upload.unsupportedType'))
+      notify.errorKey('knowledge.upload.unsupportedType')
       uploadRef.value?.clearFiles()
       return false
     }

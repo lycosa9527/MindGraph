@@ -6,10 +6,8 @@
 import { onMounted } from 'vue'
 
 import ThinkingCoinsUpgradePanel from '@/components/auth/ThinkingCoinsUpgradePanel.vue'
-import { useLanguage } from '@/composables'
 import { useAuthStore } from '@/stores'
 
-const { t } = useLanguage()
 const authStore = useAuthStore()
 
 onMounted(() => {

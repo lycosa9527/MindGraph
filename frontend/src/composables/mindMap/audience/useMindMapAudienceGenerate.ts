@@ -31,7 +31,7 @@ export function useMindMapAudienceGenerate() {
     isLearningSheet?: boolean
   }): Promise<void> {
     if (!authStore.isAuthenticated) {
-      notify.warning(t('notification.signInToUse'))
+      notify.warningKey('notification.signInToUse')
       return
     }
     if (!guardCollabGuestAi()) {

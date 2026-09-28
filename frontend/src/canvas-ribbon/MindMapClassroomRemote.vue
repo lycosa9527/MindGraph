@@ -113,7 +113,7 @@ function requireSelection(run: () => void): void {
     run()
     return
   }
-  notify.warning(t('canvas.toolbar.selectNodesFirst'))
+  notify.warningKey('canvas.toolbar.selectNodesFirst')
 }
 
 function runGuestAi(run: () => void): void {

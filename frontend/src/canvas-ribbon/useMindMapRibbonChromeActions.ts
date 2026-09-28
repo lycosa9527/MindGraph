@@ -11,7 +11,6 @@ import {
 import { useCanvasDiagramTranslate } from '@/composables/canvasToolbar/useCanvasDiagramTranslate'
 import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
 import { eventBus } from '@/composables/core/useEventBus'
-import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
@@ -30,7 +29,6 @@ const RIBBON_LLM_MODELS = [
 export function useMindMapRibbonChromeActions() {
   const router = useRouter()
   const route = useRoute()
-  const { t } = useLanguage()
   const notify = useNotifications()
   const diagramStore = useDiagramSession()
   const uiStore = useUIStore()
@@ -65,7 +63,7 @@ export function useMindMapRibbonChromeActions() {
   function emptySelected(): void {
     const nodeId = selectedId.value
     if (!nodeId) {
-      notify.warning(t('canvas.toolbar.selectNodesFirst'))
+      notify.warningKey('canvas.toolbar.selectNodesFirst')
       return
     }
     diagramStore.emptyNode(nodeId)
@@ -77,7 +75,7 @@ export function useMindMapRibbonChromeActions() {
 
   function toggleLearning(): void {
     if (!diagramStore.data?.nodes?.length) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
       return
     }
     if (diagramStore.isLearningSheet) {

@@ -2,7 +2,6 @@
 /**
  * MaiteTablesEditor — editable three-table decompose submission.
  */
-import { useLanguage } from '@/composables/core/useLanguage'
 import type { MaiteTableRow } from '@/types/maite'
 
 const props = defineProps<{
@@ -17,8 +16,6 @@ const emit = defineEmits<{
   'update:stepTable': [rows: MaiteTableRow[]]
   'update:modelTable': [rows: MaiteTableRow[]]
 }>()
-
-const { t } = useLanguage()
 
 function updateRow(table: 'condition' | 'step' | 'model', index: number, value: string): void {
   if (table === 'condition') {

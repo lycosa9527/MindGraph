@@ -107,7 +107,7 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
     builder.setBusy(true)
     try {
       await uploadTrainingFile(builder.courseId, role, file)
-      notify.success(t('training.builder.coverUploaded'))
+      notify.successKey('training.builder.coverUploaded')
     } catch (error) {
       notify.error(uploadFailedMessage(error))
     } finally {
@@ -138,7 +138,7 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
       await rememberIfNeeded()
       await flush()
       builder.setInfoOpen(false)
-      notify.success(t('training.builder.saved'))
+      notify.successKey('training.builder.saved')
     } catch (error) {
       const detail = error instanceof Error ? error.message : ''
       notify.error(detail && detail !== 'save' ? detail : t('training.builder.saveFailed'))
@@ -168,12 +168,12 @@ export function useTrainingBuilderSession(): TrainingBuilderSessionApi {
       return
     }
     if (index !== builder.selected) {
-      notify.warning(t('training.builder.lockNeedStep'))
+      notify.warningKey('training.builder.lockNeedStep')
       return
     }
     const key = armed || captureOpenTrainingUiLock()
     if (!key) {
-      notify.warning(t('training.builder.lockEmpty'))
+      notify.warningKey('training.builder.lockEmpty')
       return
     }
     step.ui_lock = key

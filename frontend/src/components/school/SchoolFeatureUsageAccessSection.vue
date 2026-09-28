@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import AdminSwissModuleStatCard from '@/components/admin/swiss/AdminSwissModuleStatCard.vue'
-import { useLanguage } from '@/composables'
 import type { SchoolFeatureUsageModule } from '@/composables/queries/adminSchoolFeatureUsageApi'
 import { moduleUsageTheme } from '@/utils/schoolFeatureUsageTheme'
 
@@ -8,16 +7,6 @@ const props = defineProps<{
   modules: SchoolFeatureUsageModule[]
   timestamp: string
 }>()
-
-const { t } = useLanguage()
-
-function moduleTitle(key: string): string {
-  return t(`admin.schoolFeatureUsage.module.${key}`)
-}
-
-function moduleRemark(key: string): string {
-  return t(`admin.schoolFeatureUsage.remark.${key}`)
-}
 
 function opsLabel(value: number): string {
   return value.toFixed(1)
@@ -33,16 +22,16 @@ function opsLabel(value: number): string {
       <AdminSwissModuleStatCard
         v-for="row in props.modules"
         :key="row.key"
-        :title="moduleTitle(row.key)"
+        :title-key="`admin.schoolFeatureUsage.module.${row.key}`"
         :value="row.visits"
-        :value-label="t('admin.schoolFeatureUsage.visits')"
+        value-label-key="admin.schoolFeatureUsage.visits"
         :timestamp="props.timestamp"
         :theme="moduleUsageTheme(row.key)"
         :chips="[
-          { label: t('admin.schoolFeatureUsage.uses'), value: row.uses.toLocaleString() },
-          { label: t('admin.schoolFeatureUsage.ops'), value: opsLabel(row.ops_per_visitor) },
+          { labelKey: 'admin.schoolFeatureUsage.uses', value: row.uses.toLocaleString() },
+          { labelKey: 'admin.schoolFeatureUsage.ops', value: opsLabel(row.ops_per_visitor) },
         ]"
-        :remark="moduleRemark(row.key)"
+        :remark-key="`admin.schoolFeatureUsage.remark.${row.key}`"
         show-chart
         :labels="row.monthly_uses.map((point) => point.date)"
         :values="row.monthly_uses.map((point) => point.value)"

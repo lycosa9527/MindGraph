@@ -266,7 +266,7 @@ async function convertImagesToBase64(container: HTMLElement): Promise<void> {
 
 async function exportAsPng() {
   if (!previewRef.value || selectedMessages.value.length === 0) {
-    notify.warning(t('panels.share.selectOne'))
+    notify.warningKey('panels.share.selectOne')
     return
   }
 
@@ -296,12 +296,12 @@ async function exportAsPng() {
     link.href = dataUrl
     link.click()
 
-    notify.success(t('panels.share.exportOk'))
+    notify.successKey('panels.share.exportOk')
     void claimThinkingCoinEvent('mindmate_share')
     closeDialog()
   } catch (error) {
     console.error('Failed to export PNG:', error)
-    notify.error(t('panels.share.exportFail'))
+    notify.errorKey('panels.share.exportFail')
   } finally {
     isExporting.value = false
   }

@@ -4,10 +4,8 @@
  */
 import { storeToRefs } from 'pinia'
 
-import { useLanguage } from '@/composables/core/useLanguage'
 import { useOrgGenerationCacheNoticeStore } from '@/stores/orgGenerationCacheNotice'
 
-const { t } = useLanguage()
 const noticeStore = useOrgGenerationCacheNoticeStore()
 const { visible } = storeToRefs(noticeStore)
 </script>

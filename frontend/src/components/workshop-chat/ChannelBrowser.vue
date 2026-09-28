@@ -9,10 +9,7 @@ import { OfficeBuilding } from '@element-plus/icons-vue'
 
 import { Globe, Lock, Megaphone, Pin } from '@lucide/vue'
 
-import { useLanguage } from '@/composables/core/useLanguage'
 import type { ChatChannel } from '@/stores/workshopChat'
-
-const { t } = useLanguage()
 
 const props = defineProps<{
   channels: ChatChannel[]

@@ -144,7 +144,7 @@ export default {
   'nodePalette.refresh': 'ಪುನರುತ್ಪಾದಿಸು',
   'nodePalette.selected': 'ಆಯ್ಕೆ ಮಾಡಲಾಗಿದೆ',
   'nodePalette.similarities': 'ಹೋಲಿಕೆಗಳು',
-  'panel.mindmate': 'ಮೈಂಡ್‌ಮೇಟ್ AI',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': 'ನೋಡ್ ಫಲಕ',
   'panel.properties': 'ಆಸ್ತಿ',
   'panels.property.background': 'ಹಿನ್ನೆಲೆ ಬಣ್ಣ',

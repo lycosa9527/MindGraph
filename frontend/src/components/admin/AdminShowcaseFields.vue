@@ -73,7 +73,7 @@ async function invalidateMetaCache(): Promise<void> {
 async function createOption(): Promise<void> {
   const value = newValue.value.trim()
   if (!value) {
-    notify.error(String(t('admin.showcase.fields.valueRequired')))
+    notify.errorKey('admin.showcase.fields.valueRequired')
     return
   }
   isSaving.value = true
@@ -85,7 +85,7 @@ async function createOption(): Promise<void> {
     })
     newValue.value = ''
     newLabel.value = ''
-    notify.success(String(t('admin.showcase.fields.created')))
+    notify.successKey('admin.showcase.fields.created')
     await loadOptions()
     await invalidateMetaCache()
   } catch (e) {
@@ -112,7 +112,7 @@ async function saveEdit(): Promise<void> {
       sort_order: editSortOrder.value,
       is_active: editActive.value,
     })
-    notify.success(String(t('admin.showcase.fields.updated')))
+    notify.successKey('admin.showcase.fields.updated')
     editVisible.value = false
     await loadOptions()
     await invalidateMetaCache()
@@ -136,7 +136,7 @@ async function toggleActive(row: ShowcaseFieldOptionRow): Promise<void> {
 async function removeOption(row: ShowcaseFieldOptionRow): Promise<void> {
   try {
     await deleteAdminShowcaseFieldOption(row.id)
-    notify.success(String(t('admin.showcase.fields.deleted')))
+    notify.successKey('admin.showcase.fields.deleted')
     await loadOptions()
     await invalidateMetaCache()
   } catch (e) {

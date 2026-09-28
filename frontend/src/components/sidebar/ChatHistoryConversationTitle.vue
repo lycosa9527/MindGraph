@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Pin } from '@lucide/vue'
 
-import { useLanguage } from '@/composables'
 import type { MindMateConversation } from '@/stores'
 
 import MindMateDingtalkBadge from './MindMateDingtalkBadge.vue'
@@ -10,8 +9,6 @@ defineProps<{
   conv: MindMateConversation
   pinned?: boolean
 }>()
-
-const { t } = useLanguage()
 
 function isMindbotConversation(conv: MindMateConversation): boolean {
   if (conv.channel === 'mindbot') {

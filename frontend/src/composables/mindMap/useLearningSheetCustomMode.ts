@@ -62,7 +62,7 @@ export function handleLearningSheetPickNodeClick(nodeId: string): boolean {
   }
 
   if (isProtectedNodeId(nodeId, diagramStore)) {
-    notify.warning(t('canvas.mindMapSideToolbar.learningSheetProtectedNode'))
+    notify.warningKey('canvas.mindMapSideToolbar.learningSheetProtectedNode')
     return true
   }
 
@@ -155,7 +155,7 @@ export function useLearningSheetCustomMode() {
 
   function activatePick(): void {
     if (!diagramStore.data?.nodes?.length) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
       return
     }
     diagramStore.setLearningSheetMode(true)
@@ -166,7 +166,7 @@ export function useLearningSheetCustomMode() {
 
   function startRandomLearningSheet(): void {
     if (!diagramStore.data?.nodes?.length) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
       return
     }
     customPickActive.value = false
@@ -182,7 +182,7 @@ export function useLearningSheetCustomMode() {
       )
       diagramStore.pushHistory(t('canvas.mindMapSideToolbar.learningSheetRandomBlankHistory'))
       learningSheetFloatBarOpen.value = true
-      notify.success(t('canvas.toolbar.switchedLearningSheetMode'))
+      notify.successKey('canvas.toolbar.switchedLearningSheetMode')
       void claimThinkingCoinEvent('learning_sheet_enable')
     }
   }
@@ -193,10 +193,10 @@ export function useLearningSheetCustomMode() {
     if (diagramStore.isLearningSheet) {
       diagramStore.restoreFromLearningSheetMode()
       diagramStore.pushHistory(t('canvas.toolbar.learningSheetRestored'))
-      notify.success(t('canvas.toolbar.switchedToRegular'))
+      notify.successKey('canvas.toolbar.switchedToRegular')
     } else if (diagramStore.hasPreservedLearningSheet()) {
       diagramStore.clearLearningSheetPreservation()
-      notify.success(t('canvas.toolbar.switchedToRegular'))
+      notify.successKey('canvas.toolbar.switchedToRegular')
     }
   }
 

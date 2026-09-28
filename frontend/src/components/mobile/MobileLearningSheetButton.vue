@@ -54,7 +54,7 @@ onUnmounted(() => {
 function openChooser(): void {
   if (props.disabled) return
   if (!diagramStore.data?.nodes?.length) {
-    notify.warning(t('canvas.toolbar.createDiagramFirst'))
+    notify.warningKey('canvas.toolbar.createDiagramFirst')
     return
   }
   open.value = true

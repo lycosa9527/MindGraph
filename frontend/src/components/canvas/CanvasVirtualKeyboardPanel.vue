@@ -125,7 +125,7 @@ async function ensureEditableFieldForIme(): Promise<HTMLInputElement | HTMLTextA
   if (!nodeId) {
     if (!hintShownThisOpen) {
       hintShownThisOpen = true
-      notify.info(t('canvas.toolbar.virtualKeyboardFocusHint'))
+      notify.infoKey('canvas.toolbar.virtualKeyboardFocusHint')
     }
     return null
   }
@@ -173,7 +173,7 @@ async function beginReplaceEditOnSelectedNode(insert: string): Promise<void> {
     replaceEditInFlight = false
     if (!hintShownThisOpen) {
       hintShownThisOpen = true
-      notify.info(t('canvas.toolbar.virtualKeyboardFocusHint'))
+      notify.infoKey('canvas.toolbar.virtualKeyboardFocusHint')
     }
     return
   }
@@ -183,7 +183,7 @@ async function beginReplaceEditOnSelectedNode(insert: string): Promise<void> {
     if (!el) {
       if (!hintShownThisOpen) {
         hintShownThisOpen = true
-        notify.info(t('canvas.toolbar.virtualKeyboardFocusHint'))
+        notify.infoKey('canvas.toolbar.virtualKeyboardFocusHint')
       }
       return
     }

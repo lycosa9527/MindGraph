@@ -45,7 +45,7 @@ function openTrendModal(row: Record<string, unknown>) {
   const rawId = row.id
   const userId = typeof rawId === 'number' ? rawId : Number(rawId)
   if (!Number.isFinite(userId) || userId <= 0) {
-    notify.warning(t('admin.userTrendRequiresId'))
+    notify.warningKey('admin.userTrendRequiresId')
     return
   }
   trendUser.value = {
@@ -135,7 +135,7 @@ async function loadUsers() {
   try {
     await usersQuery.refetch()
   } catch {
-    notify.error(t('admin.usersLoadError'))
+    notify.errorKey('admin.usersLoadError')
   }
 }
 

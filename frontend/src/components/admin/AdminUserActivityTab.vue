@@ -133,7 +133,7 @@ async function loadPage(append: boolean): Promise<void> {
     if (err instanceof DOMException && err.name === 'AbortError') {
       return
     }
-    notify.error(t('admin.userActivityTab.loadError'))
+    notify.errorKey('admin.userActivityTab.loadError')
   } finally {
     loading.value = false
     loadingMore.value = false

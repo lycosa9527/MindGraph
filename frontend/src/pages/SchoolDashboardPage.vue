@@ -143,8 +143,8 @@ async function copyInvitationCode(event: MouseEvent) {
   })
   await copySchoolInvitationPayload(
     text,
-    () => notify.success(t('notification.copied')),
-    () => notify.error(t('notification.copyFailed'))
+    () => notify.successKey('notification.copied'),
+    () => notify.errorKey('notification.copyFailed')
   )
 }
 
@@ -342,15 +342,23 @@ onMounted(async () => {
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
             <AdminSwissKpiCard
-              :title="`${t('admin.tokens')} (${t('admin.pastWeek')})`"
               :value="formatNumber(stats.totalTokens)"
               :icon="Connection"
               theme="storage"
               clickable
               @click="openOrgTrend('week')"
-            />
+            >
+              <template #title>
+                <span class="swiss-stat-card__title-compound">
+                  <I18nText k="admin.tokens" />
+                  <span class="swiss-stat-card__title-period">
+                    <I18nText k="admin.pastWeek" />
+                  </span>
+                </span>
+              </template>
+            </AdminSwissKpiCard>
             <AdminSwissKpiCard
-              :title="t('admin.invitationCode')"
+              title-key="admin.invitationCode"
               :value="invitationCodeDisplay"
               :icon="Key"
               theme="managers"

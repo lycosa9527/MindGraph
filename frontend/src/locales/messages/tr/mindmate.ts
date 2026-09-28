@@ -144,7 +144,7 @@ export default {
   'nodePalette.refresh': 'Yenile',
   'nodePalette.selected': 'seçili',
   'nodePalette.similarities': 'Benzerlikler',
-  'panel.mindmate': 'MindMate YZ',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': 'Düğüm paleti',
   'panel.properties': 'Özellikler',
   'panels.property.background': 'Arka plan',

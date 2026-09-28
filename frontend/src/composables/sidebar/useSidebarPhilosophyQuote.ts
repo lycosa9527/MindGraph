@@ -67,11 +67,7 @@ export function useSidebarPhilosophyQuote() {
   }
 
   async function loadQuote(options: { forceNew: boolean }): Promise<void> {
-    if (
-      !authStore.isAuthenticated ||
-      authStore.user?.id == null ||
-      !uiStore.sidebarPoemEnabled
-    ) {
+    if (!authStore.isAuthenticated || authStore.user?.id == null || !uiStore.sidebarPoemEnabled) {
       stopQuotePlayback()
       return
     }

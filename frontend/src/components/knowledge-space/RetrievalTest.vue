@@ -101,7 +101,7 @@ watch(
 
 function testRetrieval() {
   if (!query.value.trim()) {
-    notify.warning(t('knowledge.retrieval.enterQuery'))
+    notify.warningKey('knowledge.retrieval.enterQuery')
     return
   }
 

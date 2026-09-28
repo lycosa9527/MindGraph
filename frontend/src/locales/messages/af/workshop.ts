@@ -33,7 +33,7 @@ export default {
   'collab.previousSessionsStopped': 'Jou {n} samewerkingsessies op ander ikone het geëindig.',
   'collab.saveFailed': 'Kon nie diagram stoor nie',
   'collab.scanToJoin': 'Skandeer om aan te sluit',
-  'collab.schoolDescActive': 'Skool-samewerking is aan. Kollegas: gebruik Samewerk Skool op die tuisbladsy en kies hierdie diagram geen kode benodig nie.',
+  'collab.schoolDescActive': 'Skool-samewerking is aan. Kollegas: MindGraph gebruik Samewerk Skool op die tuisbladsy en kies hierdie diagram geen kode benodig nie.',
   'collab.schoolStarted': 'Skool-samewerking is aan kollegas kan aansluit vanaf Samewerk Skool.',
   'collab.sectionNetwork': 'Gedeelde samewerking (kode)',
   'collab.sectionSchool': 'Skool-samewerking',

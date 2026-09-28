@@ -138,7 +138,7 @@ async function refreshCover(post: ShowcasePost): Promise<void> {
   try {
     const res = await refreshAdminShowcaseCover(post.id)
     patchPost(res.post)
-    notify.success(String(t('admin.showcase.refreshStatusOk')))
+    notify.successKey('admin.showcase.refreshStatusOk')
   } catch (e) {
     notify.error(e instanceof Error ? e.message : String(t('admin.showcase.refreshStatusFail')))
   } finally {
@@ -248,7 +248,7 @@ async function confirmDeletePost(post: ShowcasePost): Promise<void> {
   }
   try {
     await deleteAdminShowcasePost(post.id)
-    notify.success(String(t('showcase.deleted')))
+    notify.successKey('showcase.deleted')
     posts.value = posts.value.filter((p) => p.id !== post.id)
     total.value = Math.max(0, total.value - 1)
     eventBus.emit('admin:showcase_updated', {})

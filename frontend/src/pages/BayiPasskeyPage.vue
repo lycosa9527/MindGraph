@@ -18,7 +18,7 @@ const isLoading = ref(false)
 
 async function handleSubmit() {
   if (!passkey.value.trim()) {
-    notify.warning(t('bayiPasskey.enterCode'))
+    notify.warningKey('bayiPasskey.enterCode')
     return
   }
 
@@ -37,7 +37,7 @@ async function handleSubmit() {
     }
   } catch (error) {
     console.error('Bayi passkey login error:', error)
-    notify.error(t('bayiPasskey.networkError'))
+    notify.errorKey('bayiPasskey.networkError')
   } finally {
     isLoading.value = false
   }

@@ -81,7 +81,7 @@ function openOrgTrend(period: TokenTrendPeriod = 'week', service: TokenTrendServ
 
 function openUserTrend(userName: string, userId: number | undefined): void {
   if (userId == null || !Number.isFinite(userId) || userId <= 0) {
-    notify.warning(t('admin.userTrendRequiresId'))
+    notify.warningKey('admin.userTrendRequiresId')
     return
   }
   userTrendUserId.value = userId
@@ -99,8 +99,8 @@ async function copyInvitationCode(event: MouseEvent): Promise<void> {
   })
   await copySchoolInvitationPayload(
     text,
-    () => notify.success(t('notification.copied')),
-    () => notify.error(t('notification.copyFailed'))
+    () => notify.successKey('notification.copied'),
+    () => notify.errorKey('notification.copyFailed')
   )
 }
 </script>
@@ -175,7 +175,7 @@ async function copyInvitationCode(event: MouseEvent): Promise<void> {
       class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6"
     >
       <AdminSwissKpiCard
-        :title="t('admin.invitationCode')"
+        title-key="admin.invitationCode"
         :value="invitationCodeDisplay"
         :icon="Key"
         theme="managers"
@@ -204,13 +204,21 @@ async function copyInvitationCode(event: MouseEvent): Promise<void> {
       :class="{ 'mt-6': showOperations }"
     >
       <AdminSwissKpiCard
-        :title="`${t('admin.tokens')} (${t('admin.pastWeek')})`"
         :value="formatNumber(stats.totalTokens)"
         :icon="Connection"
         theme="storage"
         clickable
         @click="openOrgTrend('week')"
-      />
+      >
+        <template #title>
+          <span class="swiss-stat-card__title-compound">
+            <I18nText k="admin.tokens" />
+            <span class="swiss-stat-card__title-period">
+              <I18nText k="admin.pastWeek" />
+            </span>
+          </span>
+        </template>
+      </AdminSwissKpiCard>
     </div>
     <AdminTokenUsageByServicePanel
       v-if="showUsage"
@@ -240,8 +248,10 @@ async function copyInvitationCode(event: MouseEvent): Promise<void> {
         :data="topUsers"
         stripe
         size="small"
-        :empty-text="t('admin.noData')"
       >
+        <template #empty>
+          <I18nText k="admin.noData" />
+        </template>
         <el-table-column prop="name">
           <template #header>
             <I18nText k="admin.name" />

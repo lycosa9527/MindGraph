@@ -172,10 +172,10 @@ async function handleCreateFolder(): Promise<MindmateFolder | null> {
   if (!name) return null
   try {
     const created = await createFolder(name)
-    notify.success(t('sidebar.chatHistory.folderCreated'))
+    notify.successKey('sidebar.chatHistory.folderCreated')
     return created
   } catch {
-    notify.error(t('sidebar.chatHistory.folderCreateFailed'))
+    notify.errorKey('sidebar.chatHistory.folderCreateFailed')
     return null
   }
 }
@@ -189,9 +189,9 @@ async function handleRenameFolder(folderId: string, currentName: string): Promis
   if (!name || name === currentName) return
   try {
     await renameFolder({ folderId, name })
-    notify.success(t('sidebar.chatHistory.folderRenamed'))
+    notify.successKey('sidebar.chatHistory.folderRenamed')
   } catch {
-    notify.error(t('sidebar.chatHistory.folderRenameFailed'))
+    notify.errorKey('sidebar.chatHistory.folderRenameFailed')
   }
 }
 
@@ -211,9 +211,9 @@ async function handleDeleteFolder(folderId: string): Promise<void> {
   }
   try {
     await deleteFolder(folderId)
-    notify.success(t('sidebar.chatHistory.folderDeleted'))
+    notify.successKey('sidebar.chatHistory.folderDeleted')
   } catch {
-    notify.error(t('sidebar.chatHistory.folderDeleteFailed'))
+    notify.errorKey('sidebar.chatHistory.folderDeleteFailed')
   }
 }
 
@@ -224,7 +224,7 @@ async function handleMoveConversation(convId: string, folderId: string | null): 
       folderId ? t('sidebar.chatHistory.movedToFolder') : t('sidebar.chatHistory.removedFromFolder')
     )
   } catch {
-    notify.error(t('sidebar.chatHistory.moveFailed'))
+    notify.errorKey('sidebar.chatHistory.moveFailed')
   }
 }
 

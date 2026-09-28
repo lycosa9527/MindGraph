@@ -12,12 +12,13 @@ import { useWebSocket } from '@vueuse/core'
 
 import { ElMessage } from 'element-plus'
 
+import { useLanguage, useNotifications } from '@/composables'
 import {
   requestNotificationPermission,
   useChatNotifications,
 } from '@/composables/core/useChatNotifications'
-import { useLanguage, useNotifications } from '@/composables'
 import { usePresenceActivity } from '@/composables/workshop/usePresenceActivity'
+import { bilingualNotifyMessage, joinNotifyMessages } from '@/i18n/bilingualNotifyMessage'
 import { useAuthStore } from '@/stores/auth'
 import { type ChatMessage, useWorkshopChatStore } from '@/stores/workshopChat'
 import { handleMindmateCollabPokeFrame } from '@/utils/mindmateCollabPokeNotify'
@@ -230,16 +231,21 @@ function createWorkshopChatSession() {
         if (code === 'invalid_mentions') {
           const unknown = data.unknown as string[] | undefined
           const ambiguous = data.ambiguous as string[] | undefined
-          const parts: string[] = []
+          const parts: Array<ReturnType<typeof bilingualNotifyMessage>> = []
           if (unknown?.length) {
-            parts.push(t('workshop.mentionUnknown').replace('{0}', unknown.join(', ')))
+            parts.push(bilingualNotifyMessage('workshop.mentionUnknown', { 0: unknown.join(', ') }))
           }
           if (ambiguous?.length) {
-            parts.push(t('workshop.mentionAmbiguous').replace('{0}', ambiguous.join(', ')))
+            parts.push(
+              bilingualNotifyMessage('workshop.mentionAmbiguous', { 0: ambiguous.join(', ') })
+            )
           }
-          ElMessage.warning(
-            parts.join(' · ') || (data.message as string) || t('workshop.messageSendFailed')
-          )
+          ElMessage.warning({
+            message:
+              parts.length > 0
+                ? joinNotifyMessages(parts)
+                : (data.message as string) || bilingualNotifyMessage('workshop.messageSendFailed'),
+          })
         }
         break
       }
@@ -248,7 +254,9 @@ function createWorkshopChatSession() {
       case 'channel_invite': {
         void store.fetchChannels({ force: true })
         const name = typeof data.channel_name === 'string' ? data.channel_name : ''
-        ElMessage.info(t('workshop.channelInviteReceived').replace('{name}', name))
+        ElMessage.info({
+          message: bilingualNotifyMessage('workshop.channelInviteReceived', { name }),
+        })
         break
       }
       default:

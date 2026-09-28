@@ -48,7 +48,7 @@ const dropdownOpen = ref(false)
 
 function ensureDiagram(): boolean {
   if (!diagramStore.data?.nodes?.length) {
-    notify.warning(t('canvas.toolbar.createDiagramFirst'))
+    notify.warningKey('canvas.toolbar.createDiagramFirst')
     return false
   }
   return true

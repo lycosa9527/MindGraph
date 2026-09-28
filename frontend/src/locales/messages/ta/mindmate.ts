@@ -144,7 +144,7 @@ export default {
   'nodePalette.refresh': 'மீண்டும் உருவாக்கு',
   'nodePalette.selected': 'தேர்ந்தெடுக்கப்பட்டது',
   'nodePalette.similarities': 'ஒற்றுமைகள்',
-  'panel.mindmate': 'மைண்ட்மேட் ஏஐ',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': 'முனை குழு',
   'panel.properties': 'சொத்து',
   'panels.property.background': 'பின்னணி நிறம்',

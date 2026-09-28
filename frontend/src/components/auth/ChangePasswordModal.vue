@@ -78,11 +78,11 @@ async function refreshCaptcha() {
       captchaId.value = result.captcha_id
       captchaImage.value = result.captcha_image
     } else {
-      notify.error(t('auth.modal.captchaLoadFailed'))
+      notify.errorKey('auth.modal.captchaLoadFailed')
     }
   } catch (error) {
     console.error('Captcha error:', error)
-    notify.error(t('auth.modal.captchaNetworkError'))
+    notify.errorKey('auth.modal.captchaNetworkError')
   } finally {
     captchaLoading.value = false
   }
@@ -110,17 +110,17 @@ async function handleSubmit() {
     !formData.value.newPassword ||
     !formData.value.confirmPassword
   ) {
-    notify.warning(t('auth.modal.fillAllFields'))
+    notify.warningKey('auth.modal.fillAllFields')
     return
   }
 
   if (formData.value.newPassword.length < 8) {
-    notify.warning(t('auth.modal.passwordMin8'))
+    notify.warningKey('auth.modal.passwordMin8')
     return
   }
 
   if (formData.value.newPassword !== formData.value.confirmPassword) {
-    notify.warning(t('auth.modal.passwordMismatch'))
+    notify.warningKey('auth.modal.passwordMismatch')
     return
   }
 
@@ -162,7 +162,7 @@ async function handleSubmit() {
     }
   } catch (error) {
     console.error('Failed to change password:', error)
-    notify.error(t('auth.passwordChangeFailed'))
+    notify.errorKey('auth.passwordChangeFailed')
     formData.value.captcha = ''
     void refreshCaptcha()
   } finally {

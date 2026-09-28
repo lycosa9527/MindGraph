@@ -173,7 +173,7 @@ async function loadCurrentPage(forceFetch = false): Promise<void> {
     if (err instanceof DOMException && err.name === 'AbortError') {
       return
     }
-    notify.error(t('admin.orgActivityTab.loadError'))
+    notify.errorKey('admin.orgActivityTab.loadError')
   } finally {
     loading.value = false
   }

@@ -168,7 +168,7 @@ async function refreshCover(post: ShowcasePost): Promise<void> {
     if (idx >= 0) {
       posts.value[idx] = res.post
     }
-    notify.success(String(t('admin.showcase.refreshStatusOk')))
+    notify.successKey('admin.showcase.refreshStatusOk')
   } catch (e) {
     notify.error(e instanceof Error ? e.message : String(t('admin.showcase.refreshStatusFail')))
   } finally {

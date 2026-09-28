@@ -69,7 +69,7 @@ export default {
   'community.time.minutesAgo': '{n}m geleden',
   'community.title': 'Gemeenschap delen',
   'community.type.mindgraph': 'MindGraph',
-  'community.type.mindmate': 'Mindmate',
+  'community.type.mindmate': 'MindMate',
   'debateverse.advanceStage': 'Vooruitgangsfase',
   'debateverse.affirmativePositionLabel': 'Bevestigend standpunt:',
   'debateverse.avatar.viewer': 'Kijker',

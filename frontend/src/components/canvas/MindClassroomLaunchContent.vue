@@ -223,7 +223,7 @@ function handleRadioGroupKeydown<T extends string>(
 function handleStart(): void {
   if (startLocked.value) return
   if (!authStore.isAuthenticated) {
-    notify.warning(t('canvas.mindClassroom.queue.loginRequired'))
+    notify.warningKey('canvas.mindClassroom.queue.loginRequired')
     return
   }
   requestClassroomStart()
@@ -231,7 +231,7 @@ function handleStart(): void {
 
 function handleRestart(): void {
   if (!authStore.isAuthenticated) {
-    notify.warning(t('canvas.mindClassroom.queue.loginRequired'))
+    notify.warningKey('canvas.mindClassroom.queue.loginRequired')
     return
   }
   requestClassroomRestart()

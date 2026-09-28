@@ -129,7 +129,7 @@ async function confirmMoveBot(): Promise<void> {
   const row = moveSourceRow.value
   const oid = moveTargetOrgId.value
   if (row == null || oid == null) {
-    notify.error(t('admin.mindbot.moveError'))
+    notify.errorKey('admin.mindbot.moveError')
     return
   }
   moveSubmitting.value = true
@@ -138,11 +138,11 @@ async function confirmMoveBot(): Promise<void> {
       configId: row.id,
       body: { organization_id: oid },
     })
-    notify.success(t('admin.mindbot.moveSuccess'))
+    notify.successKey('admin.mindbot.moveSuccess')
     moveDialogVisible.value = false
     await loadConfigs(true)
   } catch {
-    notify.error(t('admin.mindbot.moveError'))
+    notify.errorKey('admin.mindbot.moveError')
   } finally {
     moveSubmitting.value = false
   }

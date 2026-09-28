@@ -120,7 +120,7 @@ async function saveTaskRow(task: AdminThinkingCoinTask): Promise<void> {
       is_active: task.is_active,
       action_config: task.action_config,
     })
-    notify.success(t('thinkingCoins.admin.save'))
+    notify.successKey('thinkingCoins.admin.save')
     await loadAll()
   } finally {
     savingTaskId.value = null
@@ -134,7 +134,7 @@ async function saveSettings(): Promise<void> {
   savingSettings.value = true
   try {
     settings.value = await updateAdminThinkingCoinSettings(settings.value)
-    notify.success(t('thinkingCoins.admin.save'))
+    notify.successKey('thinkingCoins.admin.save')
   } finally {
     savingSettings.value = false
   }
@@ -150,7 +150,7 @@ async function confirmDeleteTask(task: AdminThinkingCoinTask): Promise<void> {
       confirmButtonText: t('thinkingCoins.admin.deleteTask'),
     })
     await deleteAdminThinkingCoinTask(task.id)
-    notify.success(t('thinkingCoins.admin.save'))
+    notify.successKey('thinkingCoins.admin.save')
     await loadAll()
   } catch {
     /* cancelled */
@@ -189,7 +189,7 @@ async function submitCreateTask(): Promise<void> {
     body.action_config = null
   }
   await createAdminThinkingCoinTask(body)
-  notify.success(t('thinkingCoins.admin.save'))
+  notify.successKey('thinkingCoins.admin.save')
   showCreateDialog.value = false
   resetCreateForm()
   await loadAll()

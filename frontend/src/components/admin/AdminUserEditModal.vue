@@ -181,7 +181,7 @@ async function loadDetail(): Promise<void> {
     return
   }
   if (props.mode === 'school' && props.schoolOrgId == null) {
-    notify.error(t('admin.schoolUsersLoadError'))
+    notify.errorKey('admin.schoolUsersLoadError')
     onClose()
     return
   }
@@ -191,7 +191,7 @@ async function loadDetail(): Promise<void> {
     const result = await userQuery.refetch()
     const data = result.data as Record<string, unknown> | undefined
     if (!data) {
-      notify.error(t('admin.schoolUsersLoadError'))
+      notify.errorKey('admin.schoolUsersLoadError')
       onClose()
       return
     }
@@ -208,18 +208,18 @@ async function loadDetail(): Promise<void> {
 function validateBeforeSave(): boolean {
   const trimmedName = nameEdit.value.trim()
   if (trimmedName.length < 2 || /\d/.test(trimmedName)) {
-    notify.warning(t('auth.modal.fillRequired'))
+    notify.warningKey('auth.modal.fillRequired')
     return false
   }
   if (props.fullEdit) {
     const phone = phoneEdit.value.trim()
     const email = emailEdit.value.trim()
     if (!phone && !email) {
-      notify.warning(t('admin.accountPhoneOrEmailRequired'))
+      notify.warningKey('admin.accountPhoneOrEmailRequired')
       return false
     }
     if (phone && (phone.length !== 11 || !phone.startsWith('1') || !/^\d+$/.test(phone))) {
-      notify.warning(t('admin.phoneFormatHint'))
+      notify.warningKey('admin.phoneFormatHint')
       return false
     }
   }
@@ -286,7 +286,7 @@ async function deleteUser(): Promise<void> {
     return
   }
   if (props.mode === 'school' && props.schoolOrgId == null) {
-    notify.error(t('admin.schoolUsersDeleteError'))
+    notify.errorKey('admin.schoolUsersDeleteError')
     return
   }
 
@@ -300,7 +300,7 @@ async function deleteUser(): Promise<void> {
     } else {
       await deleteUserMutation.mutateAsync(props.userId)
     }
-    notify.success(t('notification.deleted'))
+    notify.successKey('notification.deleted')
     emit('deleted')
     onClose()
   } catch (err) {
@@ -346,11 +346,11 @@ async function saveUser(): Promise<void> {
     if (!ok) {
       return
     }
-    notify.success(t('notification.saved'))
+    notify.successKey('notification.saved')
     emit('saved')
     onClose()
   } catch {
-    notify.error(t('admin.schoolUsersUpdateError'))
+    notify.errorKey('admin.schoolUsersUpdateError')
   } finally {
     saving.value = false
   }

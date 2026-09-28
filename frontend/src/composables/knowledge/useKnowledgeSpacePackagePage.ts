@@ -78,7 +78,7 @@ export function useKnowledgeSpacePackagePage() {
     const packageId = activePackageId.value
     if (packageId === null || !canUpload.value) return
     await uploadFile.mutateAsync({ packageId, file })
-    notify.success(t('knowledgeSpace.uploadSuccessProcessing'))
+    notify.successKey('knowledgeSpace.uploadSuccessProcessing')
   }
 
   async function deleteDocument(documentId: number): Promise<void> {
@@ -95,10 +95,10 @@ export function useKnowledgeSpacePackagePage() {
         }
       )
       await deleteSource.mutateAsync({ packageId, documentId })
-      notify.success(t('knowledgeSpace.documentDeleted'))
+      notify.successKey('knowledgeSpace.documentDeleted')
     } catch (error) {
       if (error !== 'cancel') {
-        notify.error(t('knowledgeSpace.deleteFailed'))
+        notify.errorKey('knowledgeSpace.deleteFailed')
       }
     }
   }
@@ -109,12 +109,12 @@ export function useKnowledgeSpacePackagePage() {
     try {
       const result = await startProcessing.mutateAsync(packageId)
       if (result.processed_count === 0) {
-        notify.info(t('knowledgeSpace.noPendingDocs'))
+        notify.infoKey('knowledgeSpace.noPendingDocs')
       } else {
-        notify.success(t('knowledgeSpace.processingStarted', { count: result.processed_count }))
+        notify.successKey('knowledgeSpace.processingStarted', { count: result.processed_count })
       }
     } catch {
-      notify.error(t('knowledgeSpace.startProcessingFailed'))
+      notify.errorKey('knowledgeSpace.startProcessingFailed')
     }
   }
 

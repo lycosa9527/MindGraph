@@ -33,7 +33,7 @@ function oneDecimal(value: number): string {
     </h2>
     <div class="school-activity-section__grid">
       <AdminSwissChartCard
-        :title="t('admin.schoolActivity.loginFrequency')"
+        title-key="admin.schoolActivity.loginFrequency"
         :value="roster"
         :timestamp="props.timestamp"
         theme="members"
@@ -43,7 +43,7 @@ function oneDecimal(value: number): string {
         :values="props.frequency.login_count_buckets.map((bucket) => bucket.value)"
       />
       <AdminSwissChartCard
-        :title="t('admin.schoolActivity.highFreq')"
+        title-key="admin.schoolActivity.highFreq"
         :value="
           t('admin.schoolActivity.countWithShare', {
             count: props.frequency.high_freq_count,
@@ -58,7 +58,7 @@ function oneDecimal(value: number): string {
         :values="[props.frequency.high_freq_count, highRest]"
       />
       <AdminSwissChartCard
-        :title="t('admin.schoolActivity.lowFreq')"
+        title-key="admin.schoolActivity.lowFreq"
         :value="
           t('admin.schoolActivity.countWithShare', {
             count: props.frequency.low_freq_count,
@@ -73,7 +73,7 @@ function oneDecimal(value: number): string {
         :values="[props.frequency.low_freq_count, lowRest]"
       />
       <AdminSwissChartCard
-        :title="t('admin.schoolActivity.hourDistribution')"
+        title-key="admin.schoolActivity.hourDistribution"
         :value="props.frequency.hour_of_day.reduce((sum, point) => sum + point.value, 0)"
         :timestamp="props.timestamp"
         theme="storage"

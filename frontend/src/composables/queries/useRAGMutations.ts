@@ -106,7 +106,7 @@ export function useRetrievalTest() {
     onSuccess: () => {
       // Invalidate retrieval test history to refresh the list
       queryClient.invalidateQueries({ queryKey: ragKeys.retrievalTestHistory() })
-      notify.success(t('rag.retrievalTest.success'))
+      notify.successKey('rag.retrievalTest.success')
     },
     onError: (error: Error) => {
       console.error('Retrieval test failed:', error)

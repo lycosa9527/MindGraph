@@ -193,7 +193,7 @@ async function loadAdminOrgs() {
     const r = await authFetch('/api/auth/admin/organizations', { method: 'GET' })
     const data = (await r.json().catch(() => [])) as unknown
     if (!r.ok) {
-      notify.error(t('auth.quickRegOrgLoadError'))
+      notify.errorKey('auth.quickRegOrgLoadError')
       adminOrgs.value = []
       return
     }
@@ -207,7 +207,7 @@ async function loadAdminOrgs() {
       selectedOrgId.value = null
     }
   } catch {
-    notify.error(t('auth.quickRegOrgLoadError'))
+    notify.errorKey('auth.quickRegOrgLoadError')
   } finally {
     orgsLoading.value = false
   }
@@ -247,7 +247,7 @@ async function mintToken() {
       await loadAdminOrgs()
     }
     if (selectedOrgId.value == null) {
-      notify.error(t('auth.quickRegOrgLoadError'))
+      notify.errorKey('auth.quickRegOrgLoadError')
       return
     }
   }
@@ -279,7 +279,7 @@ async function mintToken() {
       token.value = data.token
     }
   } catch {
-    notify.error(t('auth.quickRegMintError'))
+    notify.errorKey('auth.quickRegMintError')
   } finally {
     tokenLoading.value = false
   }

@@ -120,7 +120,7 @@ export default {
   'meta.pageTitle.voiceNotes': 'Notes vocales',
   'meta.pageTitle.login': 'Connexion',
   'meta.pageTitle.main': 'Mind Platform',
-  'meta.pageTitle.mindgraph': 'Graphique mental',
+  'meta.pageTitle.mindgraph': 'MindGraph',
   'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.kitty': 'Minou',

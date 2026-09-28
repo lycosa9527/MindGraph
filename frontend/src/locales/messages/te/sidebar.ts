@@ -142,7 +142,7 @@ export default {
   'sidebar.templateResources': 'టెంప్లేట్ వనరులు',
   'sidebar.orgEdition': '{org}ప్రత్యేకమైన ఎడిషన్',
   'sidebar.personalEdition': 'వ్యక్తిగత వెర్షన్',
-  'sidebar.userSubtitleDefault': 'మైండ్‌గ్రాఫ్ ప్రొఫెషనల్ ఎడిషన్',
+  'sidebar.userSubtitleDefault': 'MindGraph మైండ్‌గ్రాఫ్ ప్రొఫెషనల్ ఎడిషన్',
   'sidebar.account': 'ఖాతా సెట్టింగ్‌లు',
   'sidebar.roleSuperAdmin': 'సూపర్ అడ్మినిస్ట్రేటర్',
   'sidebar.rolePlatformAdmin': 'టీచింగ్ అండ్ రీసెర్చ్ ఫెలో',

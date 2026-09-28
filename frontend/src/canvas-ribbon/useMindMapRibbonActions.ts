@@ -7,7 +7,6 @@ import { useCanvasReset } from '@/composables/canvasPage/useCanvasReset'
 import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { eventBus } from '@/composables/core/useEventBus'
-import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
@@ -19,7 +18,6 @@ import { useMindMapRibbonChromeActions } from './useMindMapRibbonChromeActions'
 
 export function useMindMapRibbonActions() {
   const chrome = useMindMapRibbonChromeActions()
-  const { t } = useLanguage()
   const notify = useNotifications()
   const diagramStore = useDiagramSession()
   const { resetToDefaultTemplate } = useCanvasReset()
@@ -40,7 +38,7 @@ export function useMindMapRibbonActions() {
 
   function requireSelection(): boolean {
     if (diagramStore.selectedNodes.length === 0) {
-      notify.warning(t('canvas.toolbar.selectNodesFirst'))
+      notify.warningKey('canvas.toolbar.selectNodesFirst')
       return false
     }
     return true
@@ -84,7 +82,7 @@ export function useMindMapRibbonActions() {
 
   function requestWorksheetText(preferLearningSheet = false): void {
     if (!diagramStore.data?.nodes?.length) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
       return
     }
     eventBus.emit('toolbar:worksheet_text_requested', {
@@ -114,7 +112,7 @@ export function useMindMapRibbonActions() {
 
   function setStructure(mode: 'balanced' | 'right'): void {
     if (diagramStore.setMindMapStructureMode(mode)) {
-      notify.success(t('canvas.toolbar.mindMapStructureApplied'))
+      notify.successKey('canvas.toolbar.mindMapStructureApplied')
     }
   }
 
@@ -154,7 +152,7 @@ export function useMindMapRibbonActions() {
   function requestAiSubgraph(): void {
     const nodeId = diagramStore.selectedNodes[0]
     if (!nodeId) {
-      notify.warning(t('canvas.toolbar.selectNodesFirst'))
+      notify.warningKey('canvas.toolbar.selectNodesFirst')
       return
     }
     eventBus.emit('mindmap:ai_subgraph_requested', { nodeId })
@@ -163,7 +161,7 @@ export function useMindMapRibbonActions() {
   function requestExplainNode(): void {
     const nodeId = diagramStore.selectedNodes[0]
     if (!nodeId) {
-      notify.warning(t('canvas.toolbar.selectNodesFirst'))
+      notify.warningKey('canvas.toolbar.selectNodesFirst')
       return
     }
     eventBus.emit('mindmap:explain_node_requested', { nodeId })
@@ -172,7 +170,7 @@ export function useMindMapRibbonActions() {
   function resetNodeStyles(): void {
     const nodeId = diagramStore.selectedNodes[0]
     if (!nodeId) {
-      notify.warning(t('canvas.toolbar.selectNodesFirst'))
+      notify.warningKey('canvas.toolbar.selectNodesFirst')
       return
     }
     diagramStore.clearNodeStyle(nodeId)

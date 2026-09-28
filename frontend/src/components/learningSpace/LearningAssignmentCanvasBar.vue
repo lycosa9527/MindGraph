@@ -41,13 +41,13 @@ async function onSubmit(): Promise<void> {
   submitting.value = true
   try {
     await submitStudentAssignment(id)
-    notify.success(t('learningSpace.submitSuccess'))
+    notify.successKey('learningSpace.submitSuccess')
     await router.push('/learning-space')
     if (router.currentRoute.value.path.startsWith('/learning-space')) {
       lsCanvas.clear()
     }
   } catch {
-    notify.error(t('learningSpace.submitFailed'))
+    notify.errorKey('learningSpace.submitFailed')
   } finally {
     submitting.value = false
   }

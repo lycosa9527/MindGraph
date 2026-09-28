@@ -54,7 +54,7 @@ async function load(): Promise<void> {
     folders.value = await listVodFolders(props.organizationId)
   } catch {
     folders.value = []
-    notify.error(t('admin.vod.folderFailed'))
+    notify.errorKey('admin.vod.folderFailed')
   }
   emit('folders', folders.value)
 }
@@ -72,7 +72,7 @@ async function create(): Promise<void> {
     name.value = ''
     await load()
     emit('update:folderId', created.id)
-    notify.success(t('admin.vod.folderCreated'))
+    notify.successKey('admin.vod.folderCreated')
   } catch (err) {
     notify.error(folderError(err))
   } finally {
@@ -98,7 +98,7 @@ async function rename(): Promise<void> {
   try {
     await renameVodFolder(current.id, collapsed, props.organizationId)
     await load()
-    notify.success(t('admin.vod.folderRenamed'))
+    notify.successKey('admin.vod.folderRenamed')
   } catch (err) {
     notify.error(folderError(err))
   } finally {
@@ -125,9 +125,9 @@ async function remove(): Promise<void> {
     await deleteVodFolder(id, props.organizationId)
     emit('update:folderId', '')
     await load()
-    notify.success(t('admin.vod.folderDeleted'))
+    notify.successKey('admin.vod.folderDeleted')
   } catch {
-    notify.error(t('admin.vod.folderFailed'))
+    notify.errorKey('admin.vod.folderFailed')
   } finally {
     busy.value = false
   }

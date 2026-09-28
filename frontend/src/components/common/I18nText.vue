@@ -22,12 +22,15 @@ const props = withDefaults(
     primaryOnly?: boolean
     /** Tighter stack for pills and dropdown rows. */
     dense?: boolean
+    /** Center both lines. Welcome copy and suggestion headings use this. */
+    align?: 'start' | 'center'
   }>(),
   {
     fallbackKey: '',
     fallbackText: '',
     primaryOnly: false,
     dense: false,
+    align: 'start',
   }
 )
 
@@ -45,7 +48,10 @@ const secondary = computed(() => (props.primaryOnly ? null : copy.value.secondar
 <template>
   <span
     class="i18n-label"
-    :class="{ 'i18n-label--dense': dense }"
+    :class="{
+      'i18n-label--dense': dense,
+      'i18n-label--center': align === 'center',
+    }"
   >
     <span class="i18n-label__primary">{{ copy.primary }}</span>
     <span
@@ -67,6 +73,15 @@ const secondary = computed(() => (props.primaryOnly ? null : copy.value.secondar
 
 .i18n-label--dense {
   line-height: 1.05;
+}
+
+.i18n-label--center {
+  align-items: center;
+}
+
+.i18n-label--center .i18n-label__primary,
+.i18n-label--center .i18n-label__secondary {
+  text-align: center;
 }
 
 .i18n-label__primary,

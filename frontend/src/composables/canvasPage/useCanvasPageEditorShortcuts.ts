@@ -225,7 +225,7 @@ export function useCanvasPageEditorShortcuts(options: {
     if (relationshipActiveEntry.value) return
     const selected = [...diagramStore.selectedNodes]
     if (selected.length === 0) {
-      notify.warning(t('notification.selectNodeToClear'))
+      notify.warningKey('notification.selectNodeToClear')
       return
     }
     const protectedIds = [
@@ -271,7 +271,7 @@ export function useCanvasPageEditorShortcuts(options: {
         diagramAutoSave.performSave()
       }
     } else {
-      notify.warning(t('notification.cannotClearTopicOrCenter'))
+      notify.warningKey('notification.cannotClearTopicOrCenter')
     }
   }
 
@@ -287,7 +287,7 @@ export function useCanvasPageEditorShortcuts(options: {
 
   async function handleSaveKey(options?: { recordHistory?: boolean }) {
     if (!authStore.isAuthenticated) {
-      notify.warning(t('editor.saveNeedsLogin'))
+      notify.warningKey('editor.saveNeedsLogin')
       return
     }
     const result = await flushDiagramSaveWithFeedback({

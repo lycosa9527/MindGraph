@@ -66,7 +66,7 @@ async function submit(): Promise<void> {
   const chosen = file.value
   const name = title.value.trim()
   if (!chosen || !name) {
-    notify.error(t('admin.vod.uploadFile'))
+    notify.errorKey('admin.vod.uploadFile')
     return
   }
   uploading.value = true
@@ -81,12 +81,12 @@ async function submit(): Promise<void> {
         percent.value = Math.round(progress.percent * 100)
       },
     })
-    notify.success(t('admin.vod.uploadSuccess'))
+    notify.successKey('admin.vod.uploadSuccess')
     emit('uploaded')
     emit('update:modelValue', false)
   } catch (error) {
     console.error('[vod] upload failed', error)
-    notify.error(t('admin.vod.uploadFailed'))
+    notify.errorKey('admin.vod.uploadFailed')
   } finally {
     uploading.value = false
   }

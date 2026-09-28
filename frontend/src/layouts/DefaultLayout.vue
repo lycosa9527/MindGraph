@@ -16,7 +16,7 @@ import { useAuthStore, useUIStore } from '@/stores'
 const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
-const { t, toggleLanguage } = useLanguage()
+const { toggleLanguage } = useLanguage()
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const userName = computed(() => authStore.user?.username || '')

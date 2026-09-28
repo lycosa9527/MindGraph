@@ -23,6 +23,7 @@ import {
   useScanAdminLibrary,
   useUpdateAdminLibraryDocumentVisibility,
 } from '@/composables/queries'
+import { bilingualNotifyWithSuffix } from '@/i18n/bilingualNotifyMessage'
 
 interface BookEntry {
   folder_name: string
@@ -143,7 +144,7 @@ async function registerBook(book: BookEntry) {
   registeringFolders.value.add(book.folder_name)
   try {
     await registerBookMutation.mutateAsync({ folder_path: book.folder_name })
-    notify.success(t('admin.library.registerSuccess'))
+    notify.successKey('admin.library.registerSuccess')
     await scan()
   } catch (err) {
     const detail = err instanceof Error ? err.message : ''
@@ -160,11 +161,14 @@ async function registerAll() {
   try {
     const data = await registerBooksBatchMutation.mutateAsync({ folder_paths: folders })
     notify.success(
-      `${t('admin.library.registerAllSuccess')}: ${data.successful_count} / ${data.total}`
+      bilingualNotifyWithSuffix(
+        'admin.library.registerAllSuccess',
+        `: ${data.successful_count} / ${data.total}`
+      )
     )
     await scan()
   } catch {
-    notify.error(t('admin.library.registerError'))
+    notify.errorKey('admin.library.registerError')
   } finally {
     isRegisteringAll.value = false
   }
@@ -176,10 +180,10 @@ async function repairPaths() {
     const data = await repairLibraryMutation.mutateAsync()
     const updated = Number(data.updated ?? 0)
     if (updated > 0) {
-      notify.success(t('admin.library.repairSuccess').replace('{count}', String(updated)))
+      notify.successKey('admin.library.repairSuccess', { count: updated })
       await scan()
     } else {
-      notify.success(t('admin.library.repairNothingToFix'))
+      notify.successKey('admin.library.repairNothingToFix')
     }
   } catch (err) {
     const detail = err instanceof Error ? err.message : ''
@@ -201,7 +205,7 @@ async function toggleVisibility(book: BookEntry) {
     })
     book.is_active = newValue
   } catch {
-    notify.error(t('admin.library.visibilityError'))
+    notify.errorKey('admin.library.visibilityError')
   } finally {
     togglingIds.value.delete(docId)
   }
@@ -214,7 +218,7 @@ async function generateCover(book: BookEntry) {
   try {
     await generateCoverMutation.mutateAsync(docId)
     coverTimestamps.value[docId] = Date.now()
-    notify.success(t('admin.library.generateCoverSuccess'))
+    notify.successKey('admin.library.generateCoverSuccess')
   } catch (err) {
     const detail = err instanceof Error ? err.message : ''
     notify.error(detail || t('admin.library.generateCoverError'))
@@ -291,9 +295,7 @@ async function applyRename() {
       book_name: renameDialog.bookName || renameDialog.book.folder_name,
       dry_run: false,
     })) as unknown as RenameResult
-    notify.success(
-      `${t('admin.library.renameSuccess').replace('{count}', String(data.rename_count))}`
-    )
+    notify.successKey('admin.library.renameSuccess', { count: data.rename_count })
     renameDialog.visible = false
     await registerBook(renameDialog.book)
   } catch (err) {
@@ -406,26 +408,26 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
       class="grid grid-cols-4 gap-2.5 mb-4"
     >
       <AdminSwissKpiCard
-        :title="t('admin.library.totalFolders')"
+        title-key="admin.library.totalFolders"
         :value="scanData.total"
         :icon="FolderOpened"
         theme="neutral"
         compact
       />
       <AdminSwissKpiCard
-        :title="t('admin.library.registered')"
+        title-key="admin.library.registered"
         :value="registeredCount"
         theme="success"
         compact
       />
       <AdminSwissKpiCard
-        :title="t('admin.library.visible')"
+        title-key="admin.library.visible"
         :value="activeCount"
         theme="members"
         compact
       />
       <AdminSwissKpiCard
-        :title="t('admin.library.newUnregistered')"
+        title-key="admin.library.newUnregistered"
         :value="newBooks.length"
         theme="warn"
         compact

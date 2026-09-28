@@ -16,10 +16,10 @@ import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
 import { collectMindMapExplainContext } from '@/utils/mindMapExplainContext'
 import {
-  applyExplainResearchEvent,
-  emptyExplainResearchState,
   type ExplainResearchImage,
   type ExplainResearchSource,
+  applyExplainResearchEvent,
+  emptyExplainResearchState,
 } from '@/utils/mindMapExplainResearch'
 import { consumeSseDataLines } from '@/utils/mindMateSseStream'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
@@ -260,7 +260,7 @@ export function useMindMapNodeExplain() {
     if (
       isCollabGuestAiBlocked(diagramStore.collabSessionActive, diagramStore.collabIsDiagramOwner)
     ) {
-      notify.warning(t('canvas.toolbar.collabAiBlocked'))
+      notify.warningKey('canvas.toolbar.collabAiBlocked')
       return
     }
     const label = (nodeLabel ?? resolveNodeLabel(nodeId)).trim()

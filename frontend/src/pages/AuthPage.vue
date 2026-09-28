@@ -13,7 +13,6 @@ import {
   AuthQuickRegisterModal,
   LoginModal,
 } from '@/components/auth'
-import { useLanguage } from '@/composables'
 import { useAuthStore, useUIStore } from '@/stores'
 import { getSafePostAuthPath } from '@/utils/authRedirect'
 import { clearPersistedOAuthLoginError } from '@/utils/oauthLoginUi'
@@ -29,7 +28,6 @@ const router = useRouter()
 const route = useRoute()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
-const { t } = useLanguage()
 
 const showLoginModal = ref(true)
 const showContactModal = ref(false)

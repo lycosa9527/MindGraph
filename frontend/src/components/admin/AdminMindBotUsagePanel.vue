@@ -129,7 +129,7 @@ async function loadPage(append: boolean): Promise<void> {
         dingtalk_staff_id: selectedStaffId.value ?? undefined,
       })
     } catch {
-      notify.error(t('admin.mindbot.usageLoadError'))
+      notify.errorKey('admin.mindbot.usageLoadError')
       return
     }
     if (append) {
@@ -262,7 +262,7 @@ async function loadThreadPage(append: boolean): Promise<void> {
       }
       batch = await fetchAdminMindbotUsageThreadEvents(orgId, threadParams)
     } catch {
-      notify.error(t('admin.mindbot.usageLoadError'))
+      notify.errorKey('admin.mindbot.usageLoadError')
       return
     }
     if (append) {
@@ -338,7 +338,7 @@ async function exportLogConversations(): Promise<void> {
   try {
     const rows = await fetchAllUsageEventsForExport()
     if (rows.length === 0) {
-      notify.warning(t('admin.mindbot.exportEmpty'))
+      notify.warningKey('admin.mindbot.exportEmpty')
       return
     }
     const sorted = [...rows].sort((a, b) => a.id - b.id)
@@ -367,9 +367,9 @@ async function exportLogConversations(): Promise<void> {
     anchor.click()
     document.body.removeChild(anchor)
     URL.revokeObjectURL(url)
-    notify.success(t('admin.mindbot.exportSuccess'))
+    notify.successKey('admin.mindbot.exportSuccess')
   } catch {
-    notify.error(t('admin.mindbot.exportError'))
+    notify.errorKey('admin.mindbot.exportError')
   } finally {
     exportLoading.value = false
   }

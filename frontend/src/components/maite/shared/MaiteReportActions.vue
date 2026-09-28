@@ -7,13 +7,11 @@ import { ref } from 'vue'
 import { getSessionReport } from '@/api/maite/reports'
 import { notify } from '@/composables/core/notifications'
 import { eventBus } from '@/composables/core/useEventBus'
-import { useLanguage } from '@/composables/core/useLanguage'
 
 const props = defineProps<{
   sessionId: number | null
 }>()
 
-const { t } = useLanguage()
 const loading = ref(false)
 const reportMarkdown = ref('')
 
@@ -45,7 +43,7 @@ async function copyReport(): Promise<void> {
   }
   try {
     await navigator.clipboard.writeText(reportMarkdown.value)
-    notify.success(t('notification.copied'))
+    notify.successKey('notification.copied')
   } catch {
     eventBus.emit('maite:error', {
       message: 'report_copy_failed',

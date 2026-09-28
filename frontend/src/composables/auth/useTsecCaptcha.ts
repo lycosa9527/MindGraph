@@ -2,17 +2,17 @@ import { computed } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import type { TsecAidEncrypted, TsecMintedCaptcha, TsecSolvedCaptcha } from '@/types/tsecCaptcha'
 import { apiRequest } from '@/utils/apiClient'
 import {
   TsecCaptchaClosedError,
   TsecCaptchaFailedError,
   showTsecCaptcha,
 } from '@/utils/tsec/showTsecCaptcha'
-import type { TsecAidEncrypted, TsecMintedCaptcha, TsecSolvedCaptcha } from '@/types/tsecCaptcha'
 
 export function useTsecCaptcha() {
   const featureFlagsStore = useFeatureFlagsStore()
-  const { t, currentLanguage } = useLanguage()
+  const { currentLanguage } = useLanguage()
   const notify = useNotifications()
 
   const isTsecCaptcha = computed(() => {
@@ -78,7 +78,7 @@ export function useTsecCaptcha() {
     await ensureFlags()
     const appId = featureFlagsStore.flags?.tencent_captcha_app_id || ''
     if (!appId) {
-      notify.error(t('auth.tsecUnavailable'))
+      notify.errorKey('auth.tsecUnavailable')
       return null
     }
     try {
@@ -90,7 +90,7 @@ export function useTsecCaptcha() {
         return null
       }
       console.error('T-Sec captcha error:', error)
-      notify.error(t('auth.tsecFailed'))
+      notify.errorKey('auth.tsecFailed')
       return null
     }
   }
@@ -104,11 +104,11 @@ export function useTsecCaptcha() {
       return solveTsecCaptcha()
     }
     if (!formCaptcha || formCaptcha.length !== 4) {
-      notify.warning(t('auth.modal.enter4DigitCaptcha'))
+      notify.warningKey('auth.modal.enter4DigitCaptcha')
       return null
     }
     if (!captchaId) {
-      notify.warning(t('auth.modal.waitCaptchaLoad'))
+      notify.warningKey('auth.modal.waitCaptchaLoad')
       return null
     }
     return { captcha: formCaptcha, captcha_id: captchaId }

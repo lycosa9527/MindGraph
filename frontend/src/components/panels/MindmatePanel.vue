@@ -177,10 +177,10 @@ async function attachShowcasePost(postId: string): Promise<void> {
     const file = await buildShowcaseMindMateAttachment(post)
     const uploaded = await mindMate.uploadFile(file, { allowDocuments: true })
     if (!uploaded) {
-      notify.error(String(t('showcase.detail.actionFailed')))
+      notify.errorKey('showcase.detail.actionFailed')
     }
   } catch {
-    notify.error(String(t('showcase.detail.actionFailed')))
+    notify.errorKey('showcase.detail.actionFailed')
   }
 }
 

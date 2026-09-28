@@ -70,7 +70,7 @@ async function submitConsultation(): Promise<void> {
     note: form.note,
   })
   if (!validated.ok) {
-    notify.warning(t(schoolConsultValidationMessageKey(validated.error)))
+    notify.warningKey(schoolConsultValidationMessageKey(validated.error))
     return
   }
 
@@ -87,26 +87,26 @@ async function submitConsultation(): Promise<void> {
       }),
     })
     if (response.ok) {
-      notify.success(t('thinkingCoins.school.submitSuccess'))
+      notify.successKey('thinkingCoins.school.submitSuccess')
       applyProfilePrefill()
       visible.value = false
       return
     }
     if (response.status === 422) {
-      notify.warning(t('thinkingCoins.school.validationInvalid'))
+      notify.warningKey('thinkingCoins.school.validationInvalid')
       return
     }
     if (response.status === 429) {
-      notify.error(t('thinkingCoins.school.submitRateLimit'))
+      notify.errorKey('thinkingCoins.school.submitRateLimit')
       return
     }
     if (response.status === 503) {
-      notify.error(t('thinkingCoins.school.submitNotConfigured'))
+      notify.errorKey('thinkingCoins.school.submitNotConfigured')
       return
     }
-    notify.error(t('thinkingCoins.school.submitFailed'))
+    notify.errorKey('thinkingCoins.school.submitFailed')
   } catch {
-    notify.error(t('thinkingCoins.school.submitFailed'))
+    notify.errorKey('thinkingCoins.school.submitFailed')
   } finally {
     submitting.value = false
   }

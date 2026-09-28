@@ -176,16 +176,16 @@ function notifyByKey(
 }
 
 export const notify = {
-  success(message: string, duration = DEFAULT_DURATION_MS): void {
+  success(message: string | VNode, duration = DEFAULT_DURATION_MS): void {
     showNotification(message, 'success', duration)
   },
-  error(message: string, duration = DEFAULT_DURATION_MS): void {
+  error(message: string | VNode, duration = DEFAULT_DURATION_MS): void {
     showNotification(message, 'error', duration)
   },
-  warning(message: string, duration = DEFAULT_DURATION_MS): void {
+  warning(message: string | VNode, duration = DEFAULT_DURATION_MS): void {
     showNotification(message, 'warning', duration)
   },
-  info(message: string, duration = DEFAULT_DURATION_MS): void {
+  info(message: string | VNode, duration = DEFAULT_DURATION_MS): void {
     showNotification(message, 'info', duration)
   },
   successKey(
@@ -222,7 +222,11 @@ export const notify = {
  * Sync API: returns a close handle immediately; the real ElMessage mounts once
  * the overlay chunk is loaded (close before then is a no-op).
  */
-export function showLoading(message = 'Loading...'): MessageHandler {
+export function showLoadingKey(key: string, params?: Record<string, unknown>): MessageHandler {
+  return showLoading(bilingualNotifyMessage(key, params))
+}
+
+export function showLoading(message: string | VNode = 'Loading...'): MessageHandler {
   let real: MessageHandler | null = null
   let closed = false
   void loadElMessage().then((ElMessage) => {

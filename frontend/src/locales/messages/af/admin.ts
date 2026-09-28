@@ -183,7 +183,7 @@ export default {
   'admin.kittyDefaultsUserId': 'Gebruikers-ID',
   'admin.kittyDefaultsSave': 'stoor verstek',
   'admin.kittyDefaultsSaved': 'By verstek gestoor.',
-  'admin.featuresIntroAccess': 'Organisasie- en gebruiker-toegestane lys word in die databasis gestoor en tree van krag sodra jy dit stoors. Gebruik Toestemmings om te beperk wie \'n module mag gebruik nadat dit geaktiveer is.',
+  'admin.featuresIntroAccess': "MindMate Organisasie- en gebruiker-toegestane lys word in die databasis gestoor en tree van krag sodra jy dit stoors. Gebruik Toestemmings om te beperk wie 'n module mag gebruik nadat dit geaktiveer is.",
   'admin.featurePermissionsApply': 'Stoor toestemmings',
   'admin.featurePermissionsApplied': 'Funksie-toestemmings gestoor.',
   'admin.featurePermissionsButton': 'Toestemmings',

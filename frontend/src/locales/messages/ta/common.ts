@@ -127,7 +127,7 @@ export default {
   'meta.pageTitle.kitty': 'கிட்டி',
   'meta.pageTitle.orgs': 'நிறுவன மேலாண்மை',
   'canvas.kittyMobileIndicatorHint': 'மொபைல் ஃபோனில் உள்ள கிட்டி மைக்ரோஃபோன் மற்றும் உரையாடல் மூலம் தொடங்கப்பட்டது மற்றும் தற்போதைய ஐகானுடன் தொடர்புடையது. தயவு செய்து மொபைல் போனில் பேசவும், இயக்கவும்.',
-  'canvas.kittyMobileIndicatorAria': 'நிலை: மொபைல் கிட்டி தற்போதைய மைண்ட் கிராஃப் கேன்வாஸுடன் இணைக்கப்பட்டுள்ளது, உங்கள் மொபைல் ஃபோனில் கிட்டியைப் பயன்படுத்தவும்.',
+  'canvas.kittyMobileIndicatorAria': 'நிலை: MindGraph மொபைல் கிட்டி தற்போதைய மைண்ட் கிராஃப் கேன்வாஸுடன் இணைக்கப்பட்டுள்ளது, உங்கள் மொபைல் ஃபோனில் கிட்டியைப் பயன்படுத்தவும்.',
   'canvas.kittyMobileIndicatorTitle': 'மொபைல் கிட்டி',
   'canvas.kittyMobileIndicatorListening': 'போன் கேட்கிறது',
   'canvas.kittyMobileIndicatorSpeaking': 'தொலைபேசி பதிலளிக்கிறது',

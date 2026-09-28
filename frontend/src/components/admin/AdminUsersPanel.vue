@@ -6,14 +6,12 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import AdminUsersTab from '@/components/admin/AdminUsersTab.vue'
-import { useLanguage } from '@/composables'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 
 const props = defineProps<{
   readOnly?: boolean
 }>()
 
-const { t } = useLanguage()
 const router = useRouter()
 const { can } = useAdminAccess()
 

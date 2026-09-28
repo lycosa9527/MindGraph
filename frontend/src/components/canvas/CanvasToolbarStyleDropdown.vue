@@ -6,8 +6,6 @@ import { Brush, PenLine } from '@lucide/vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { StylePresetColors } from '@/config/colorPalette'
 
-const { t } = useLanguage()
-
 withDefaults(
   defineProps<{
     compact?: boolean
@@ -26,6 +24,7 @@ withDefaults(
   { compact: false }
 )
 
+const { t } = useLanguage()
 const emit = defineEmits<{
   applyPreset: [preset: StylePresetColors]
   toggleWireframe: []

@@ -198,7 +198,7 @@ export default {
   'showcase.publishModal.keepExistingFile': 'మీరు అప్‌లోడ్ చేయకుంటే, అసలు ఫైల్‌ను ఉంచండి.',
   'showcase.detail.views': '{n} వీక్షణలు',
   'showcase.detail.recommended': 'సిఫార్సు చేయబడింది',
-  'showcase.detail.askMindmate': 'మైండ్‌మేట్‌ని అడగండి',
+  'showcase.detail.askMindmate': 'MindMate మైండ్‌మేట్‌ని అడగండి',
   'showcase.detail.docPreview': 'బోధనా రూపకల్పన పత్రాలు',
   'showcase.detail.openDocument': 'కొత్త ట్యాబ్‌లో తెరవండి',
   'showcase.detail.enterFullscreen': 'పూర్తి స్క్రీన్ చదవండి',

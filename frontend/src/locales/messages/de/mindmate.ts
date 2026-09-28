@@ -144,7 +144,7 @@ export default {
   'nodePalette.refresh': 'Aktualisieren',
   'nodePalette.selected': 'ausgewählt',
   'nodePalette.similarities': 'Gemeinsamkeiten',
-  'panel.mindmate': 'MindMate KI',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': 'Knotenpalette',
   'panel.properties': 'Eigenschaften',
   'panels.property.background': 'Hintergrund',

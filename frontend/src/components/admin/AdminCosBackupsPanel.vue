@@ -26,10 +26,10 @@ async function onTriggerBackup() {
   })
   try {
     const result = await triggerBackup.mutateAsync()
-    if (result.ok) notify.success(t('admin.cos.backupTriggered'))
-    else notify.error(t('admin.cos.backupFailed'))
+    if (result.ok) notify.successKey('admin.cos.backupTriggered')
+    else notify.errorKey('admin.cos.backupFailed')
   } catch {
-    notify.error(t('admin.cos.backupFailed'))
+    notify.errorKey('admin.cos.backupFailed')
   }
 }
 </script>
@@ -41,11 +41,11 @@ async function onTriggerBackup() {
   >
     <div class="admin-cos-kpi-row">
       <AdminSwissKpiCard
-        :title="t('admin.cos.localBackupCount')"
+        title-key="admin.cos.localBackupCount"
         :value="String(localBackups.length)"
       />
       <AdminSwissKpiCard
-        :title="t('admin.cos.cosBackupCount')"
+        title-key="admin.cos.cosBackupCount"
         :value="String(cosBackups.length)"
       />
     </div>

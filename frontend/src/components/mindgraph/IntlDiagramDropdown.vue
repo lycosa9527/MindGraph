@@ -81,10 +81,10 @@ async function handleRename(diagramId: string) {
 async function handleDelete(diagramId: string) {
   try {
     const success = await store.deleteDiagram(diagramId)
-    if (success) notify.success(t('sidebar.diagramHistory.deleted'))
-    else notify.error(t('sidebar.diagramHistory.deleteFailed'))
+    if (success) notify.successKey('sidebar.diagramHistory.deleted')
+    else notify.errorKey('sidebar.diagramHistory.deleteFailed')
   } catch {
-    notify.error(t('sidebar.diagramHistory.deleteFailed'))
+    notify.errorKey('sidebar.diagramHistory.deleteFailed')
   }
 }
 </script>

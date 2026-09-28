@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { useLanguage } from '@/composables'
 import { topicOptionLabel } from '@/composables/training/trainingTopicOptions'
 import type { TrainingTopicOption } from '@/types/training'
 
@@ -16,7 +15,6 @@ const emit = defineEmits<{
   pick: [option: TrainingTopicOption]
 }>()
 
-const { t } = useLanguage()
 const rows = computed(() => props.options || [])
 
 function pick(option: TrainingTopicOption): void {

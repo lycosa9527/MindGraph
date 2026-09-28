@@ -93,7 +93,7 @@ eventBus.on('classroom:queue_result', (result) => {
       return
     }
     if (result.reason === 'unauthenticated') {
-      notify.warning(t('canvas.mindClassroom.queue.loginRequired'))
+      notify.warningKey('canvas.mindClassroom.queue.loginRequired')
       return
     }
     notify.warning(

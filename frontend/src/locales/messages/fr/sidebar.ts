@@ -130,7 +130,7 @@ export default {
   'sidebar.languageSettings': 'Paramètres de langue',
   'sidebar.tokenUsageToday': 'Aujourd\'hui {usage}',
   'sidebar.library': 'Bibliothèque',
-  'sidebar.mindGraph': 'Graphique mental',
+  'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'Agent {name}',
   'sidebar.mindbot': 'MindBot',

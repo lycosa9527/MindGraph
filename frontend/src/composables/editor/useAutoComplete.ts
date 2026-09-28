@@ -25,16 +25,15 @@ import { computed } from 'vue'
 
 import { eventBus, useLanguage, useNotifications } from '@/composables'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
-import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 import {
   AUTO_COMPLETE_VALIDATION_I18N,
   validateAutoCompleteRules,
 } from '@/composables/editor/autoCompleteValidation'
+import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { type ModelLoadPhase, useDiagramStore, useLLMResultsStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { authFetch } from '@/utils/api'
-import { noteOrgGenerationCacheResult, withOrgGenerationCacheBypass } from '@/utils/orgGenerationCache'
 import {
   isBridgeMapPairNode,
   readBridgePairIndex,
@@ -50,6 +49,10 @@ import {
   type GenerateGraphStreamPhase,
   consumeGenerateGraphStream,
 } from '@/utils/generateGraphStream'
+import {
+  noteOrgGenerationCacheResult,
+  withOrgGenerationCacheBypass,
+} from '@/utils/orgGenerationCache'
 
 // Chinese placeholder patterns (from old JS diagram-validator.js)
 const CHINESE_PLACEHOLDERS = [
@@ -876,7 +879,7 @@ export function useAutoComplete() {
    */
   function cancelGeneration(): void {
     llmResultsStore.cancelAllRequests()
-    notify.info(t('notification.generationCancelled'))
+    notify.infoKey('notification.generationCancelled')
   }
 
   return {

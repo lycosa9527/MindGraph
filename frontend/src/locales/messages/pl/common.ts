@@ -120,7 +120,7 @@ export default {
   'meta.pageTitle.libraryViewer': 'Przeglądarka biblioteki',
   'meta.pageTitle.login': 'Logowanie',
   'meta.pageTitle.main': 'Mind Platform',
-  'meta.pageTitle.mindgraph': 'Wykres myśli',
+  'meta.pageTitle.mindgraph': 'MindGraph',
   'meta.pageTitle.voiceNotes': 'Notatki głosowe',
   'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',

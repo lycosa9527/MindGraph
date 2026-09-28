@@ -109,6 +109,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         <I18nTooltip
           v-if="!s.isLearningSpaceStudent && s.mindMateLabelKey"
           k="sidebar.mindMate"
+          primary-only
           placement="right"
           :disabled="!s.isCollapsed"
         >
@@ -125,7 +126,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
               v-if="!s.isCollapsed"
               class="nav-label"
             >
-              <I18nText k="sidebar.mindMate" />
+              <I18nText
+                k="sidebar.mindMate"
+                primary-only
+              />
             </span>
           </div>
         </I18nTooltip>

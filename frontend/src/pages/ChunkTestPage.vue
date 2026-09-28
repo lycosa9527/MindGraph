@@ -109,7 +109,7 @@ const handleTestUserDocuments = async () => {
   )
 
   if (completedDocs.length === 0) {
-    notify.warning(t('chunkTest.page.noDocsToTest'))
+    notify.warningKey('chunkTest.page.noDocsToTest')
     return
   }
 
@@ -121,7 +121,7 @@ const handleTestUserDocuments = async () => {
       : completedDocs.map((doc: ChunkTestDocument) => doc.id)
 
   if (docIdsToTest.length === 0) {
-    notify.warning(t('chunkTest.page.selectCompletedDocs'))
+    notify.warningKey('chunkTest.page.selectCompletedDocs')
     return
   }
 
@@ -138,7 +138,7 @@ const handleTestUserDocuments = async () => {
         ]
 
   try {
-    notify.info(t('chunkTest.page.startingUserDocTest'))
+    notify.infoKey('chunkTest.page.startingUserDocTest')
     const result = await testUserDocumentsMutation.mutateAsync({
       document_ids: docIdsToTest,
       queries,
@@ -147,7 +147,7 @@ const handleTestUserDocuments = async () => {
     if (result && result.test_id) {
       await router.push(`/chunk-test/results/${result.test_id}`)
     } else {
-      notify.error(t('chunkTest.page.testStartNoId'))
+      notify.errorKey('chunkTest.page.testStartNoId')
     }
   } catch (error) {
     console.error('Failed to start test:', error)
@@ -157,7 +157,7 @@ const handleTestUserDocuments = async () => {
 
 const handleTestAllDatasets = async () => {
   if (datasets.value.length === 0) {
-    notify.warning(t('chunkTest.page.noDatasets'))
+    notify.warningKey('chunkTest.page.noDatasets')
     return
   }
 
@@ -165,7 +165,7 @@ const handleTestAllDatasets = async () => {
   const dataset = datasets.value[0]
 
   try {
-    notify.info(t('chunkTest.page.startingDatasetTest', { name: dataset.name }))
+    notify.infoKey('chunkTest.page.startingDatasetTest', { name: dataset.name })
     const result = await testBenchmarkAsyncMutation.mutateAsync({
       dataset_name: dataset.name,
     })
@@ -173,7 +173,7 @@ const handleTestAllDatasets = async () => {
     if (result && result.test_id) {
       await router.push(`/chunk-test/results/${result.test_id}`)
     } else {
-      notify.error(t('chunkTest.page.testStartNoId'))
+      notify.errorKey('chunkTest.page.testStartNoId')
     }
   } catch (error) {
     console.error('Failed to start test:', error)
@@ -184,7 +184,7 @@ const handleTestAllDatasets = async () => {
 const handleUpdateDatasets = async () => {
   try {
     await updateDatasetsMutation.mutateAsync()
-    notify.success(t('chunkTest.page.datasetsUpdated'))
+    notify.successKey('chunkTest.page.datasetsUpdated')
   } catch (error) {
     notify.error(error instanceof Error ? error.message : t('chunkTest.page.datasetsUpdateFailed'))
   }

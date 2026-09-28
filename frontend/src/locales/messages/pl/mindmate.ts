@@ -144,7 +144,7 @@ export default {
   'nodePalette.refresh': 'Odśwież',
   'nodePalette.selected': 'wybrane',
   'nodePalette.similarities': 'Podobieństwa',
-  'panel.mindmate': 'Sztuczna inteligencja MindMate\'a',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': 'Paleta węzłów',
   'panel.properties': 'Właściwości',
   'panels.property.background': 'Tło',

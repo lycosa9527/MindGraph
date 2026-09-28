@@ -169,7 +169,7 @@ async function probeConnection(): Promise<void> {
     const result = await probeAdminOrganizationCustomLlmHealth(props.orgId, body)
     probeResult.value = { online: result.online === true, error: result.error ?? null }
     if (result.online) {
-      notify.success(t('admin.customLlm.probeOk'))
+      notify.successKey('admin.customLlm.probeOk')
     } else {
       notify.error(result.error || t('admin.customLlm.probeFail'))
     }

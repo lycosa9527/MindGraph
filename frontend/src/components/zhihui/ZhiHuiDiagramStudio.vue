@@ -7,15 +7,15 @@ import { computed, ref, watch } from 'vue'
 import { zhihuiDiagramStatusToast } from '@/components/zhihui/zhihuiDiagramProgress'
 import { useLanguage, useNotifications } from '@/composables'
 import {
+  type MindClassroomJobDetail,
   enqueueMindClassroomJob,
   fetchMindClassroomJobByDiagram,
   isClassroomJobActive,
   watchMindClassroomJob,
-  type MindClassroomJobDetail,
 } from '@/composables/mindMap/mindClassroomJobApi'
 import { classroomSlidesToGenerations } from '@/composables/zhihui/classroomDiagramJob'
 import { useAiContentLevelStore, useMindClassroomStore } from '@/stores'
-import { stabilizeZhihuiGenerations, type ZhihuiGenerationItem } from '@/stores/zhihuiHistory'
+import { type ZhihuiGenerationItem, stabilizeZhihuiGenerations } from '@/stores/zhihuiHistory'
 import { apiPost } from '@/utils/apiClient'
 
 import ZhiHuiDiagramCanvasPane from './ZhiHuiDiagramCanvasPane.vue'
@@ -52,14 +52,10 @@ const announceMilestones = ref(false)
 const lastAnnouncedStatus = ref<string | null>(null)
 let pollGeneration = 0
 
-const busy = computed(
-  () => starting.value || isClassroomJobActive(status.value)
-)
+const busy = computed(() => starting.value || isClassroomJobActive(status.value))
 
 /** Prefer conversation diagram on restore; fall back to header dropdown. */
-const canvasDiagramId = computed(
-  () => conversationDiagramId.value || props.diagramId
-)
+const canvasDiagramId = computed(() => conversationDiagramId.value || props.diagramId)
 
 /** First PPT is always the whole-case topic → fit full mind map. */
 const topicOverview = computed(() => slideIndex.value === 0)
@@ -85,9 +81,7 @@ function announceStatusChange(
   lastAnnouncedStatus.value = nextStatus ? String(nextStatus) : null
   if (!announcement) return
   const message =
-    announcement.useErrorMessage && detailError
-      ? detailError
-      : String(t(announcement.messageKey))
+    announcement.useErrorMessage && detailError ? detailError : String(t(announcement.messageKey))
   if (announcement.level === 'success') notify.success(message)
   else if (announcement.level === 'warning') notify.warning(message)
   else if (announcement.level === 'error') notify.error(message)
@@ -114,7 +108,11 @@ function applyJob(
   slides.value = nextSlides
   if (options.resetSlide) {
     slideIndex.value = 0
-  } else if (options.followLatest && isClassroomJobActive(detail.status) && !userPinnedSlide.value) {
+  } else if (
+    options.followLatest &&
+    isClassroomJobActive(detail.status) &&
+    !userPinnedSlide.value
+  ) {
     if (nextSlides.length > 0 && nextSlides.length !== prevLen) {
       slideIndex.value = nextSlides.length - 1
     }
@@ -153,7 +151,7 @@ async function watchJob(jobId: string): Promise<void> {
 
 async function startSlideJob(reuse: boolean): Promise<void> {
   if (!props.diagramId) {
-    notify.warning(String(t('zhihui.diagram.selectMindmapFirst')))
+    notify.warningKey('zhihui.diagram.selectMindmapFirst')
     return
   }
   if (busy.value) return
@@ -184,7 +182,7 @@ async function startSlideJob(reuse: boolean): Promise<void> {
     announceMilestones.value = true
     lastAnnouncedStatus.value = String(status.value)
     focusEpoch.value += 1
-    notify.success(String(t('zhihui.diagram.jobStarted')))
+    notify.successKey('zhihui.diagram.jobStarted')
     void watchJob(created.job_id)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(t('zhihui.generateFailed'))
@@ -200,7 +198,7 @@ async function resume(): Promise<void> {
     try {
       const res = await apiPost(`/api/zhihui/conversations/${activeJobId.value}/resume`, {})
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      notify.success(String(t('zhihui.diagram.jobStarted')))
+      notify.successKey('zhihui.diagram.jobStarted')
     } catch (err) {
       const message = err instanceof Error ? err.message : String(t('zhihui.generateFailed'))
       notify.error(message)

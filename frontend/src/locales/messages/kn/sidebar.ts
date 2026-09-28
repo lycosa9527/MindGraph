@@ -142,7 +142,7 @@ export default {
   'sidebar.templateResources': 'ಟೆಂಪ್ಲೇಟ್ ಸಂಪನ್ಮೂಲಗಳು',
   'sidebar.orgEdition': '{org}ವಿಶೇಷ ಆವೃತ್ತಿ',
   'sidebar.personalEdition': 'ವೈಯಕ್ತಿಕ ಆವೃತ್ತಿ',
-  'sidebar.userSubtitleDefault': 'ಮೈಂಡ್‌ಗ್ರಾಫ್ ವೃತ್ತಿಪರ ಆವೃತ್ತಿ',
+  'sidebar.userSubtitleDefault': 'MindGraph ಮೈಂಡ್‌ಗ್ರಾಫ್ ವೃತ್ತಿಪರ ಆವೃತ್ತಿ',
   'sidebar.account': 'ಖಾತೆ ಸೆಟ್ಟಿಂಗ್‌ಗಳು',
   'sidebar.roleSuperAdmin': 'ಸೂಪರ್ ನಿರ್ವಾಹಕ',
   'sidebar.rolePlatformAdmin': 'ಟೀಚಿಂಗ್ ಮತ್ತು ರಿಸರ್ಚ್ ಫೆಲೋ',

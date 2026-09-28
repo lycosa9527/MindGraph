@@ -2,7 +2,6 @@
 /**
  * MaiteStageRail — inquiry stage navigation (past + current only).
  */
-import { useLanguage } from '@/composables/core/useLanguage'
 import type { MaiteInquiryStage } from '@/types/maite'
 
 const props = defineProps<{
@@ -13,8 +12,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [stage: MaiteInquiryStage]
 }>()
-
-const { t } = useLanguage()
 
 const stages: MaiteInquiryStage[] = ['decompose', 'diagnosis', 'remedy', 'variant', 'completed']
 

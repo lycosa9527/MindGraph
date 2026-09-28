@@ -73,9 +73,9 @@ async function saveDefaults(): Promise<void> {
       listen_mode: defaultsListenMode.value,
       tts_enabled: defaultsTts.value,
     })
-    notify.success(t('admin.kittyDefaultsSaved'))
+    notify.successKey('admin.kittyDefaultsSaved')
   } catch {
-    notify.warning(t('admin.featureSaveFailed'))
+    notify.warningKey('admin.featureSaveFailed')
   } finally {
     defaultsSaving.value = false
   }

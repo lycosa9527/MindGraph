@@ -144,7 +144,7 @@ export default {
   'nodePalette.refresh': '새로고침',
   'nodePalette.selected': '선택됨',
   'nodePalette.similarities': '유사점',
-  'panel.mindmate': '마인드메이트 AI',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': '노드 팔레트',
   'panel.properties': '속성',
   'panels.property.background': '배경',

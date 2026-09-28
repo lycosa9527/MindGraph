@@ -67,7 +67,7 @@ async function save(): Promise<void> {
   }
   const nextName = nameEdit.value.trim()
   if (props.row.source === 'uploaded' && !nextName) {
-    notify.error(t('admin.teachingDesignTemplate.nameRequired'))
+    notify.errorKey('admin.teachingDesignTemplate.nameRequired')
     return
   }
   saving.value = true
@@ -76,11 +76,11 @@ async function save(): Promise<void> {
       name: nextName,
       ...(isDefaultEdit.value ? { is_default: true } : {}),
     })
-    notify.success(t('admin.teachingDesignTemplate.saveOk'))
+    notify.successKey('admin.teachingDesignTemplate.saveOk')
     visible.value = false
     emit('saved')
   } catch {
-    notify.error(t('admin.teachingDesignTemplate.saveFail'))
+    notify.errorKey('admin.teachingDesignTemplate.saveFail')
   } finally {
     saving.value = false
   }
@@ -94,16 +94,16 @@ async function onReplaceFile(event: Event): Promise<void> {
     return
   }
   if (!file.name.toLowerCase().endsWith('.docx')) {
-    notify.error(t('admin.teachingDesignTemplate.invalidType'))
+    notify.errorKey('admin.teachingDesignTemplate.invalidType')
     return
   }
   replacing.value = true
   try {
     await replaceTeachingDesignTemplateFile(props.row.id, file)
-    notify.success(t('admin.teachingDesignTemplate.replaceOk'))
+    notify.successKey('admin.teachingDesignTemplate.replaceOk')
     emit('saved')
   } catch {
-    notify.error(t('admin.teachingDesignTemplate.uploadFail'))
+    notify.errorKey('admin.teachingDesignTemplate.uploadFail')
   } finally {
     replacing.value = false
   }
@@ -116,7 +116,7 @@ async function onDownload(): Promise<void> {
   try {
     await downloadTeachingDesignTemplateFile(props.row.id)
   } catch {
-    notify.error(t('admin.teachingDesignTemplate.downloadFail'))
+    notify.errorKey('admin.teachingDesignTemplate.downloadFail')
   }
 }
 
@@ -140,11 +140,11 @@ async function onDelete(): Promise<void> {
   deleting.value = true
   try {
     await deleteTeachingDesignTemplate(props.row.id)
-    notify.success(t('admin.teachingDesignTemplate.deleteOk'))
+    notify.successKey('admin.teachingDesignTemplate.deleteOk')
     visible.value = false
     emit('saved')
   } catch {
-    notify.error(t('admin.teachingDesignTemplate.deleteFail'))
+    notify.errorKey('admin.teachingDesignTemplate.deleteFail')
   } finally {
     deleting.value = false
   }

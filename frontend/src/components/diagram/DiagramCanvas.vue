@@ -14,7 +14,7 @@
  * overlays (brace/tree/bridge) use SVG <text>; bidi for all-RTL strings can be weaker
  * in some browsers — if reported, consider foreignObject + HTML for those labels.
  */
-import { computed, onMounted, onUnmounted, provide, ref, toRef, unref, watch, toValue } from 'vue'
+import { computed, onMounted, onUnmounted, provide, ref, toRef, toValue, unref, watch } from 'vue'
 
 import { Background } from '@vue-flow/background'
 import { type GraphNode, SelectionMode, VueFlow, useVueFlow } from '@vue-flow/core'
@@ -27,18 +27,17 @@ import CanvasWorksheetTextModal from '@/components/canvas/CanvasWorksheetTextMod
 import MindMapNodeExplainBubble from '@/components/canvas/MindMapNodeExplainBubble.vue'
 import MindMapNodeExplainResearchPanel from '@/components/canvas/MindMapNodeExplainResearchPanel.vue'
 import { useBranchMoveDrag, useLanguage } from '@/composables'
-import type { CanvasExportColorMode, CanvasExportLayout } from '@/config/canvasExportOptions'
-import type { CanvasWorksheetTextOptions } from '@/config/canvasWorksheetText'
-import { useCanvasExportStore } from '@/stores/canvasExport'
 import {
+  type FloatingToolbarSize,
+  formatBrushActive,
   useFollowNodeStyleToolbar,
   useNodeFloatingToolbarPosition,
-  formatBrushActive,
-  type FloatingToolbarSize,
 } from '@/composables/canvasToolbar'
 import { registerDiagramLayoutRecalcSession } from '@/composables/core/diagramLayoutRecalcBootstrap'
+import { eventBus } from '@/composables/core/useEventBus'
 import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
 import { useTheme } from '@/composables/core/useTheme'
+import { diagramSessionRef, useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
   diagramCanvasGridConfig,
   diagramCanvasZoomConfig,
@@ -59,13 +58,12 @@ import {
   CONCEPT_MAP_GENERATING_KEY,
   useConceptMapRelationship,
 } from '@/composables/editor/useConceptMapRelationship'
-import { eventBus } from '@/composables/core/useEventBus'
+import { useMindMapSubgraphSuggest } from '@/composables/editor/useMindMapSubgraphSuggest'
 import {
   consumeKittyPendingDesktopExplain,
   peekKittyPendingDesktopExplain,
   shouldFlushKittyPendingDesktopExplain,
 } from '@/composables/kitty/kittyPendingCanvasAction'
-import { useMindMapSubgraphSuggest } from '@/composables/editor/useMindMapSubgraphSuggest'
 import { MIND_MAP_CANVAS_VARIANT_KEY } from '@/composables/mindMap/mindMapCanvasVariantKey'
 import {
   useLearningSheetCustomMode,
@@ -78,12 +76,14 @@ import {
   diagramPresentationReadOnlyRef,
   resolvePresentationTeleportTarget,
 } from '@/composables/presentation/presentationDiagramEdit'
+import type { CanvasExportColorMode, CanvasExportLayout } from '@/config/canvasExportOptions'
+import type { CanvasWorksheetTextOptions } from '@/config/canvasWorksheetText'
 import { LEARNING_SHEET_HAMMER_CURSOR } from '@/config/learningSheetCursor'
 import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR } from '@/config/presentationHighlighter'
 import { usePanelsStore, usePresentationPointerStore, useUIStore } from '@/stores'
-import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
-import { diagramSessionRef, useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { useCanvasExportStore } from '@/stores/canvasExport'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { MindMapCanvasMode } from '@/stores/ui'
 import type { MindGraphNode, PresentationHighlightStroke, PresentationToolId } from '@/types'
 import { isMindMapConnectorDebugEnabled } from '@/utils/mindMapConnectorDebugLevel'
@@ -133,6 +133,7 @@ interface Props {
   presentationSideToolbarVisible?: boolean
 }
 
+const { t } = useLanguage()
 const props = withDefaults(defineProps<Props>(), {
   showBackground: true,
   showMinimap: false,
@@ -193,8 +194,6 @@ provide(CONCEPT_MAP_GENERATING_KEY, generatingConnectionIds)
 const { backgroundColor } = useTheme({
   diagramType: computed(() => diagramStore.type),
 })
-
-const { t } = useLanguage()
 
 const vueFlowWrapper = ref<HTMLElement | null>(null)
 const canvasContainer = ref<HTMLElement | null>(null)
@@ -274,8 +273,7 @@ const canvasTouchGesturesActive = computed(
 )
 
 const presentationDiagramEditLocked = computed(
-  () =>
-    diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)
+  () => diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)
 )
 
 const presentationStrokeOverlayMode = computed((): 'pen' | 'highlighter' | 'eraser' => {
@@ -605,8 +603,7 @@ const { setupMobileTouchZoom, mobileTouchCleanup } = useDiagramCanvasMobileTouch
   // Phone mobile keeps 1-finger pan; e-blackboard uses 2-finger pan so 1-finger can select.
   allowSingleFingerPan: () => !props.enableTouchPanPinch,
   canPageSwipe: () => props.enableTwoFingerSlideSwipe,
-  canFitOnDoubleTap: () =>
-    diagramStore.type !== 'concept_map' && !props.enableTwoFingerSlideSwipe,
+  canFitOnDoubleTap: () => diagramStore.type !== 'concept_map' && !props.enableTwoFingerSlideSwipe,
 })
 
 function syncTouchPanPinchLayer(): void {

@@ -31,8 +31,8 @@ const shareText = computed(() =>
 async function copyInvite(): Promise<void> {
   await copySchoolInvitationPayload(
     shareText.value,
-    () => notify.success(t('notification.copied')),
-    () => notify.error(t('notification.copyFailed'))
+    () => notify.successKey('notification.copied'),
+    () => notify.errorKey('notification.copyFailed')
   )
 }
 </script>

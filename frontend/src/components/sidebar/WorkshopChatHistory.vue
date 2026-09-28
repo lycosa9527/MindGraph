@@ -17,6 +17,7 @@ import { ChevronDown, ChevronRight, Inbox, MoreVertical, Plus, Search } from '@l
 import ChannelSidebarItem from '@/components/sidebar/ChannelSidebarItem.vue'
 import ChannelActionsPopover from '@/components/workshop-chat/ChannelActionsPopover.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { bilingualNotifyMessage } from '@/i18n/bilingualNotifyMessage'
 import { type ChatChannel, type ChatTopic, useWorkshopChatStore } from '@/stores/workshopChat'
 import { topicsForChannel } from '@/utils/workshopChannelTree'
 import { pushWorkshopDm } from '@/utils/workshopChatNavigate'
@@ -165,7 +166,7 @@ function navigateToDM(partnerId: number): void {
 
 async function markDmReadSidebar(partnerId: number): Promise<void> {
   await store.markDMPartnerRead(partnerId)
-  ElMessage.success(t('workshop.markAsRead'))
+  ElMessage.success({ message: bilingualNotifyMessage('workshop.markAsRead') })
 }
 
 function copyDmNarrowLink(partnerId: number): void {
@@ -179,7 +180,7 @@ function copyDmNarrowLink(partnerId: number): void {
   })
   const url = `${window.location.origin}${href}`
   void navigator.clipboard.writeText(url).then(() => {
-    ElMessage.success(t('workshop.linkCopied'))
+    ElMessage.success({ message: bilingualNotifyMessage('workshop.linkCopied') })
   })
 }
 

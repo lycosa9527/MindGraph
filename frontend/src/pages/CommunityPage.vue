@@ -271,7 +271,7 @@ async function confirmDelete(post: CommunityPost) {
 
   try {
     await deleteCommunityPost(post.id)
-    notify.success(t('community.deleted'))
+    notify.successKey('community.deleted')
     posts.value = posts.value.filter((p) => p.id !== post.id)
     total.value = Math.max(0, total.value - 1)
   } catch (e) {
@@ -543,10 +543,16 @@ function getPlaceholderColor(id: string): string {
 
       <ElEmpty
         v-else
-        :description="t('community.emptyNoPosts')"
         :image-size="120"
         class="flex-1 flex items-center justify-center min-h-[300px]"
-      />
+      >
+        <template #description>
+          <I18nText
+            k="community.emptyNoPosts"
+            align="center"
+          />
+        </template>
+      </ElEmpty>
     </div>
 
     <!-- Edit modal -->

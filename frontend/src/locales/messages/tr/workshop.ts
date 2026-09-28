@@ -33,7 +33,7 @@ export default {
   'collab.previousSessionsStopped': 'Diğer diyagramlarınızdaki {n} önceki iş birliği oturumu sonlandırıldı.',
   'collab.saveFailed': 'Diyagram kaydedilemedi',
   'collab.scanToJoin': 'Katılmak için tarayın',
-  'collab.schoolDescActive': 'Okul iş birliği açık. Meslektaşlar: ana sayfadan İş Birliği → Okul\'u kullanın ve bu diyagramı seçin — kod gerekmez.',
+  'collab.schoolDescActive': "Okul iş birliği açık. Meslektaşlar: MindGraph ana sayfadan İş Birliği → Okul'u kullanın ve bu diyagramı seçin — kod gerekmez.",
   'collab.schoolStarted': 'Okul iş birliği açık — meslektaşlar İş Birliği → Okul üzerinden katılabilir.',
   'collab.sectionNetwork': 'Paylaşımlı iş birliği (kod)',
   'collab.sectionSchool': 'Okul iş birliği',

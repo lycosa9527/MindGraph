@@ -237,7 +237,7 @@ async function checkAiCardStreaming(): Promise<void> {
       dingtalk_code?: string
     }
     if (data.ok) {
-      notify.success(t('admin.mindbot.dingtalkAiCardStreamOk'))
+      notify.successKey('admin.mindbot.dingtalkAiCardStreamOk')
       aiCardStreamMessage.value = { ok: true, text: t('admin.mindbot.dingtalkAiCardStreamOk') }
     } else {
       const base =

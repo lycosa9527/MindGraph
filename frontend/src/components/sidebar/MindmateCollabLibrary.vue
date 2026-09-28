@@ -5,7 +5,6 @@
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { useLanguage } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
 import {
@@ -24,7 +23,6 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
-const { t } = useLanguage()
 const authStore = useAuthStore()
 const seminars = ref<SavedSeminarRow[]>([])
 

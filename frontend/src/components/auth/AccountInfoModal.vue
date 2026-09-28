@@ -155,14 +155,14 @@ async function unbindWechat() {
   try {
     const res = await apiRequest('/api/auth/oauth/links/wechat', { method: 'DELETE' })
     if (res.ok) {
-      notify.success(t('auth.unbindWechatSuccess'))
+      notify.successKey('auth.unbindWechatSuccess')
       await fetchOauthLinks()
       emit('success')
     } else {
-      notify.error(t('auth.oauthUnbindError'))
+      notify.errorKey('auth.oauthUnbindError')
     }
   } catch {
-    notify.error(t('auth.oauthUnbindError'))
+    notify.errorKey('auth.oauthUnbindError')
   }
 }
 
@@ -208,7 +208,7 @@ function handlePhoneChangeSuccess() {
 async function saveDisplayName() {
   const trimmed = nameEdit.value.trim()
   if (trimmed.length < 2 || /\d/.test(trimmed)) {
-    notify.warning(t('auth.modal.fillRequired'))
+    notify.warningKey('auth.modal.fillRequired')
     return
   }
   nameSaving.value = true
@@ -219,7 +219,7 @@ async function saveDisplayName() {
     })
     const data = (await res.json().catch(() => ({}))) as { detail?: string }
     if (res.ok) {
-      notify.success(t('auth.accountNameSaveSuccess'))
+      notify.successKey('auth.accountNameSaveSuccess')
       await authStore.checkAuth()
       emit('success')
     } else {
@@ -228,7 +228,7 @@ async function saveDisplayName() {
       )
     }
   } catch {
-    notify.error(t('auth.accountNameSaveError'))
+    notify.errorKey('auth.accountNameSaveError')
   } finally {
     nameSaving.value = false
   }

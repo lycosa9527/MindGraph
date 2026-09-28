@@ -297,11 +297,11 @@ watch(
 
 function currentFilters(): MindMateExportFilters | null {
   if (scopeMode.value !== 'all' && selectedOrgId.value == null) {
-    notify.error(t('admin.mindmateExport.selectOrgFirst'))
+    notify.errorKey('admin.mindmateExport.selectOrgFirst')
     return null
   }
   if (scopeMode.value === 'users' && selectedUserIds.value.length === 0) {
-    notify.error(t('admin.mindmateExport.selectUsersFirst'))
+    notify.errorKey('admin.mindmateExport.selectUsersFirst')
     return null
   }
   const { start, end } = rangeEpoch()
@@ -339,7 +339,7 @@ async function loadMoreConversations(): Promise<void> {
     listNextCursor.value = res.next_cursor
     listHasMore.value = res.has_more
   } catch {
-    notify.error(t('admin.mindmateExport.loadError'))
+    notify.errorKey('admin.mindmateExport.loadError')
   } finally {
     loadingMore.value = false
   }
@@ -349,7 +349,7 @@ watch(
   () => conversationsQuery.error.value,
   (err) => {
     if (err) {
-      notify.error(t('admin.mindmateExport.loadError'))
+      notify.errorKey('admin.mindmateExport.loadError')
     }
   }
 )
@@ -375,7 +375,7 @@ async function openTranscript(conversation: MindMateExportConversation): Promise
     })
     bubbles.value = res.bubbles
   } catch {
-    notify.error(t('admin.mindmateExport.loadError'))
+    notify.errorKey('admin.mindmateExport.loadError')
   } finally {
     loadingBubbles.value = false
   }
@@ -516,7 +516,7 @@ function triggerBrowserDownload(blob: Blob, filename: string): void {
 
 async function startExportJob(): Promise<void> {
   if (appliedFilters.value == null) {
-    notify.error(t('admin.mindmateExport.loadPrompt'))
+    notify.errorKey('admin.mindmateExport.loadPrompt')
     return
   }
   downloading.value = true
@@ -525,14 +525,12 @@ async function startExportJob(): Promise<void> {
       appliedFilters.value.orgId != null ? orgLabel(appliedFilters.value.orgId) : undefined
     const res = await createMindMateExportJob(appliedFilters.value, exportFormat.value, orgName)
     activeJobId.value = res.job.id
-    notify.success(
-      t('admin.mindmateExport.jobProgress', {
-        percent: res.job.progress_percent,
-        stage: res.job.current_stage ?? res.job.status,
-      })
-    )
+    notify.successKey('admin.mindmateExport.jobProgress', {
+      percent: res.job.progress_percent,
+      stage: res.job.current_stage ?? res.job.status,
+    })
   } catch {
-    notify.error(t('admin.mindmateExport.downloadError'))
+    notify.errorKey('admin.mindmateExport.downloadError')
   } finally {
     downloading.value = false
   }
@@ -546,7 +544,7 @@ async function pauseJob(): Promise<void> {
   try {
     await pauseMindMateExportJob(activeJobId.value)
   } catch {
-    notify.error(t('admin.mindmateExport.downloadError'))
+    notify.errorKey('admin.mindmateExport.downloadError')
   } finally {
     jobActionPending.value = false
   }
@@ -560,7 +558,7 @@ async function resumeJob(): Promise<void> {
   try {
     await resumeMindMateExportJob(activeJobId.value)
   } catch {
-    notify.error(t('admin.mindmateExport.downloadError'))
+    notify.errorKey('admin.mindmateExport.downloadError')
   } finally {
     jobActionPending.value = false
   }
@@ -574,7 +572,7 @@ async function cancelJob(): Promise<void> {
   try {
     await cancelMindMateExportJob(activeJobId.value)
   } catch {
-    notify.error(t('admin.mindmateExport.downloadError'))
+    notify.errorKey('admin.mindmateExport.downloadError')
   } finally {
     jobActionPending.value = false
   }
@@ -589,9 +587,9 @@ async function downloadJobArtifact(): Promise<void> {
     const { blob, filename, verification } = await downloadMindMateExportJob(activeJobId.value)
     downloadVerificationStatus.value = verification || activeJob.value?.status || null
     triggerBrowserDownload(blob, filename)
-    notify.success(t('admin.mindmateExport.downloadSuccess'))
+    notify.successKey('admin.mindmateExport.downloadSuccess')
   } catch {
-    notify.error(t('admin.mindmateExport.downloadError'))
+    notify.errorKey('admin.mindmateExport.downloadError')
   } finally {
     downloading.value = false
   }
@@ -608,7 +606,7 @@ function orgLabel(orgId: number): string {
 
 async function download(): Promise<void> {
   if (appliedFilters.value == null) {
-    notify.error(t('admin.mindmateExport.loadPrompt'))
+    notify.errorKey('admin.mindmateExport.loadPrompt')
     return
   }
   if (requiresJob.value) {
@@ -623,9 +621,9 @@ async function download(): Promise<void> {
     )
     downloadVerificationStatus.value = verification || null
     triggerBrowserDownload(blob, filename)
-    notify.success(t('admin.mindmateExport.downloadSuccess'))
+    notify.successKey('admin.mindmateExport.downloadSuccess')
   } catch {
-    notify.error(t('admin.mindmateExport.downloadError'))
+    notify.errorKey('admin.mindmateExport.downloadError')
   } finally {
     downloading.value = false
   }
@@ -958,18 +956,30 @@ async function download(): Promise<void> {
           >
             {{ warning }}
           </p>
-          <el-empty
-            v-if="!hasLoadedConversations"
-            :description="t('admin.mindmateExport.loadPrompt')"
-          />
-          <el-empty
-            v-else-if="loadingConversations && conversations.length === 0"
-            :description="t('admin.mindmateExport.loading')"
-          />
-          <el-empty
-            v-else-if="!loadingConversations && conversations.length === 0"
-            :description="t('admin.mindmateExport.noConversations')"
-          />
+          <el-empty v-if="!hasLoadedConversations">
+            <template #description>
+              <I18nText
+                k="admin.mindmateExport.loadPrompt"
+                align="center"
+              />
+            </template>
+          </el-empty>
+          <el-empty v-else-if="loadingConversations && conversations.length === 0">
+            <template #description>
+              <I18nText
+                k="admin.mindmateExport.loading"
+                align="center"
+              />
+            </template>
+          </el-empty>
+          <el-empty v-else-if="!loadingConversations && conversations.length === 0">
+            <template #description>
+              <I18nText
+                k="admin.mindmateExport.noConversations"
+                align="center"
+              />
+            </template>
+          </el-empty>
           <ul
             v-else
             class="mindmate-export-conv-items"
@@ -1048,14 +1058,22 @@ async function download(): Promise<void> {
           >
             <I18nText k="admin.mindmateExport.loading" />
           </div>
-          <el-empty
-            v-else-if="!activeConversation"
-            :description="t('admin.mindmateExport.viewTranscript')"
-          />
-          <el-empty
-            v-else-if="bubbles.length === 0"
-            :description="t('admin.mindmateExport.noMessages')"
-          />
+          <el-empty v-else-if="!activeConversation">
+            <template #description>
+              <I18nText
+                k="admin.mindmateExport.viewTranscript"
+                align="center"
+              />
+            </template>
+          </el-empty>
+          <el-empty v-else-if="bubbles.length === 0">
+            <template #description>
+              <I18nText
+                k="admin.mindmateExport.noMessages"
+                align="center"
+              />
+            </template>
+          </el-empty>
           <div
             v-else
             class="mindmate-export-bubbles"

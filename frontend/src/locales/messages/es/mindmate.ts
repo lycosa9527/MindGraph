@@ -144,7 +144,7 @@ export default {
   'nodePalette.refresh': 'Actualizar',
   'nodePalette.selected': 'seleccionados',
   'nodePalette.similarities': 'Similitudes',
-  'panel.mindmate': 'IA mentalmente mate',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': 'Paleta de nodos',
   'panel.properties': 'Propiedades',
   'panels.property.background': 'Fondo',

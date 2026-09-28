@@ -161,7 +161,7 @@ async function fetchSessions(showSpinner = true): Promise<void> {
           live: true,
         }))
     } else if (response.status !== 429) {
-      notify.error(t('mindgraphLanding.loadOrgSessionsFailed'))
+      notify.errorKey('mindgraphLanding.loadOrgSessionsFailed')
     }
     const hostedRes = await authFetch('/api/mindmate/collab/my/hosted')
     if (hostedRes.ok) {
@@ -174,7 +174,7 @@ async function fetchSessions(showSpinner = true): Promise<void> {
     }
     await pruneStaleLocalSessions()
   } catch {
-    notify.error(t('mindgraphLanding.networkError'))
+    notify.errorKey('mindgraphLanding.networkError')
   } finally {
     listFetchInFlight = false
     if (showSpinner) loading.value = false
@@ -231,7 +231,7 @@ function openSession(row: CollabSessionRow): void {
   const formatted = formatCode(row.code)
   if (wasMindmateCollabCodeRecentlyEnded(formatted)) {
     evictSessionByCode(formatted)
-    notify.info(t('mindmate.collabRoomEndedHost'))
+    notify.infoKey('mindmate.collabRoomEndedHost')
     return
   }
   if (route.path === '/mindmate') {
@@ -275,22 +275,22 @@ async function stopSession(row: CollabSessionRow): Promise<void> {
   }
   void requestMindmateCollabStop(row.session_id).then((ok) => {
     if (!ok) {
-      notify.error(t('collab.endFailed'))
+      notify.errorKey('collab.endFailed')
       if (wasActive && inMindmateCollabRoute.value) {
         void router.push('/mindmate')
       }
       return
     }
-    notify.success(t('mindmate.collabStopped'))
+    notify.successKey('mindmate.collabStopped')
     void saveFinishedSeminar(row.session_id).then((outcome) => {
       if (outcome === 'joined') {
         return
       }
       if (outcome === 'saved') {
-        notify.success(t('mindmate.collabSaveLibraryDone'))
+        notify.successKey('mindmate.collabSaveLibraryDone')
         return
       }
-      notify.error(t('mindmate.collabSaveLibraryFailed'))
+      notify.errorKey('mindmate.collabSaveLibraryFailed')
       if (wasActive && inMindmateCollabRoute.value) {
         void router.push('/mindmate')
       }

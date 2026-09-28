@@ -345,6 +345,13 @@ body {
   font-weight: 400;
 }
 
+.i18n-toast-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
 .dark-alert-notification.el-notification .el-notification__closeBtn {
   color: #a1a1aa;
   /* EP defaults to `right`; use inline-end so close mirrors in RTL (top-left stack). */

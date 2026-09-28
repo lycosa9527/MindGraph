@@ -14,6 +14,7 @@ import {
   useMergeAdminDatabaseDump,
   useScanAdminDatabase,
 } from '@/composables/queries'
+import { bilingualNotifyWithSuffix } from '@/i18n/bilingualNotifyMessage'
 
 interface BackupFile {
   name: string
@@ -142,7 +143,7 @@ async function loadStats() {
     const result = await statsQuery.refetch()
     pgStats.value = (result.data as PgStats | undefined) ?? null
   } catch {
-    notify.error(t('admin.database.statsError'))
+    notify.errorKey('admin.database.statsError')
   } finally {
     isLoadingStats.value = false
   }
@@ -156,7 +157,7 @@ async function scanBackup() {
   try {
     scanResult.value = (await scanDatabase.mutateAsync()) as unknown as ScanResult
   } catch {
-    notify.error(t('admin.database.scanError'))
+    notify.errorKey('admin.database.scanError')
   } finally {
     isScanning.value = false
   }
@@ -170,13 +171,15 @@ async function exportDump() {
       filename?: string
     }
     if (result.success) {
-      notify.success(t('admin.database.exportSuccess') + `: ${result.filename}`)
+      notify.success(
+        bilingualNotifyWithSuffix('admin.database.exportSuccess', `: ${result.filename ?? ''}`)
+      )
       scanBackup()
     } else {
-      notify.error(t('admin.database.exportError'))
+      notify.errorKey('admin.database.exportError')
     }
   } catch {
-    notify.error(t('admin.database.exportError'))
+    notify.errorKey('admin.database.exportError')
   } finally {
     isExporting.value = false
   }
@@ -199,14 +202,14 @@ async function importDump(filename: string) {
   try {
     const result = (await importDatabaseDump.mutateAsync({ filename })) as { success: boolean }
     if (result.success) {
-      notify.success(t('admin.database.importSuccess'))
+      notify.successKey('admin.database.importSuccess')
       loadStats()
     } else {
-      notify.error(t('admin.database.importError'))
+      notify.errorKey('admin.database.importError')
     }
   } catch (err: unknown) {
     console.error('[AdminDB] import error:', err)
-    notify.error(t('admin.database.importError'))
+    notify.errorKey('admin.database.importError')
   } finally {
     isImporting.value = false
   }
@@ -255,7 +258,7 @@ async function executePgMerge() {
     pgDumpMergeResult.value = (await mergeDatabaseDump.mutateAsync({
       filename,
     })) as unknown as PgDumpMergeResult
-    notify.success(t('admin.database.pgMergeSuccess'))
+    notify.successKey('admin.database.pgMergeSuccess')
     loadStats()
   } catch (err: unknown) {
     console.error('[AdminDB] PG dump merge error:', err)
@@ -272,7 +275,7 @@ async function detectOrphans() {
     const result = await orphansQuery.refetch()
     orphans.value = (result.data as Record<string, number> | undefined) ?? null
   } catch {
-    notify.error(t('admin.database.orphanDetectError'))
+    notify.errorKey('admin.database.orphanDetectError')
   } finally {
     isDetectingOrphans.value = false
   }
@@ -303,7 +306,7 @@ async function cleanOrphans() {
     detectOrphans()
     loadStats()
   } catch {
-    notify.error(t('admin.database.orphanCleanError'))
+    notify.errorKey('admin.database.orphanCleanError')
   } finally {
     isCleaningOrphans.value = false
   }
@@ -337,19 +340,19 @@ onMounted(() => {
       >
         <div class="grid grid-cols-3 gap-4">
           <AdminSwissKpiCard
-            :title="t('admin.database.tables')"
+            title-key="admin.database.tables"
             :value="pgStats.table_count"
             theme="neutral"
             compact
           />
           <AdminSwissKpiCard
-            :title="t('admin.database.columns')"
+            title-key="admin.database.columns"
             :value="pgStats.column_count"
             theme="neutral"
             compact
           />
           <AdminSwissKpiCard
-            :title="t('admin.database.totalRows')"
+            title-key="admin.database.totalRows"
             :value="pgStats.total_rows.toLocaleString()"
             theme="neutral"
             compact
@@ -483,25 +486,25 @@ onMounted(() => {
 
         <div class="grid grid-cols-4 gap-3 mb-4">
           <AdminSwissKpiCard
-            :title="t('admin.database.matchedUsers')"
+            title-key="admin.database.matchedUsers"
             :value="pgDumpAnalysis.matched_users"
             theme="members"
             compact
           />
           <AdminSwissKpiCard
-            :title="t('admin.database.newUsers')"
+            title-key="admin.database.newUsers"
             :value="pgDumpAnalysis.new_users"
             theme="success"
             compact
           />
           <AdminSwissKpiCard
-            :title="t('admin.database.matchedOrgs')"
+            title-key="admin.database.matchedOrgs"
             :value="pgDumpAnalysis.matched_orgs"
             theme="members"
             compact
           />
           <AdminSwissKpiCard
-            :title="t('admin.database.newOrgs')"
+            title-key="admin.database.newOrgs"
             :value="pgDumpAnalysis.new_orgs"
             theme="success"
             compact

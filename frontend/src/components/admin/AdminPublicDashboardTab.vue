@@ -5,11 +5,9 @@
  */
 import { computed } from 'vue'
 
-import { useLanguage } from '@/composables'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import PublicDashboardPage from '@/pages/PublicDashboardPage.vue'
 
-const { t } = useLanguage()
 const { canViewSettingsSubtab } = useAdminAccess()
 
 const canAccess = computed(() => canViewSettingsSubtab('public_dashboard'))

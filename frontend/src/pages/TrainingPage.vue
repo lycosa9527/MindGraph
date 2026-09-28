@@ -4,7 +4,7 @@ import { computed, onMounted, ref } from 'vue'
 import TrainingCourseGrid from '@/components/training/TrainingCourseGrid.vue'
 import TrainingLandingHeader from '@/components/training/TrainingLandingHeader.vue'
 import TrainingLandingPreview from '@/components/training/TrainingLandingPreview.vue'
-import { useLanguage, useNotifications } from '@/composables'
+import { useNotifications } from '@/composables'
 import { isTrainingRoomArmed } from '@/composables/training/applyTrainingSnapshot'
 import {
   requestTrainingEnd,
@@ -22,7 +22,6 @@ import { useTrainingStore } from '@/stores/training'
 import type { TrainingCourse } from '@/types/training'
 import { fetchTrainingCourse } from '@/utils/trainingApi'
 
-const { t } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
 const training = useTrainingStore()
@@ -50,13 +49,13 @@ async function applyCourse(course: TrainingCourse): Promise<void> {
     try {
       const full = await fetchTrainingCourse(course.id)
       if (!full.steps?.length) {
-        notify.warning(t('training.builder.previewEmpty'))
+        notify.warningKey('training.builder.previewEmpty')
         return
       }
       preview.value = full
       previewIndex.value = 0
     } catch {
-      notify.error(t('training.builder.previewLoadFailed'))
+      notify.errorKey('training.builder.previewLoadFailed')
     }
     return
   }

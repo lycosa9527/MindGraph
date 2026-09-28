@@ -7,8 +7,8 @@ import { ref } from 'vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { loadBlankCanvasForType } from '@/composables/canvasPage/newCanvasBootstrap'
 import { enqueueKittyDesktopAction } from '@/composables/kitty/enqueueKittyDesktopExplainNode'
-import { reportKittySessionIngress } from '@/composables/kitty/useKittySessionManager'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
+import { reportKittySessionIngress } from '@/composables/kitty/useKittySessionManager'
 import { useDiagramStore } from '@/stores/diagram'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { useUIStore } from '@/stores/ui'
@@ -42,10 +42,7 @@ export function useKittyMobileLibraryDiagramSelect(options: {
     showPicker.value = false
   }
 
-  async function enqueueOpenLibraryDiagram(
-    diagramId: string,
-    title: string
-  ): Promise<boolean> {
+  async function enqueueOpenLibraryDiagram(diagramId: string, title: string): Promise<boolean> {
     return enqueueKittyDesktopAction({
       kind: 'open_library_diagram',
       diagram_library_id: diagramId,
@@ -79,12 +76,12 @@ export function useKittyMobileLibraryDiagramSelect(options: {
 
       const ok = await enqueueOpenLibraryDiagram(diagram.id, diagram.title)
       if (ok) {
-        notify.success(t('mobile.kittyDiagramSelected', '已选择导图，电脑端将同步打开'))
+        notify.successKey('mobile.kittyDiagramSelected')
         traceKittyWorkflow('mobile', 'desktop_enqueue', 'open_library_diagram', {
           scope: diagram.id,
         })
       } else {
-        notify.warning(t('mobile.kittyDesktopJumpFailed', '已切换导图，但无法通知电脑端'))
+        notify.warningKey('mobile.kittyDesktopJumpFailed')
       }
 
       options.scheduleContextSync()
@@ -107,9 +104,7 @@ export function useKittyMobileLibraryDiagramSelect(options: {
     selecting.value = true
     try {
       if (!savedDiagramsStore.canSaveMore) {
-        notify.warning(
-          t('editor.slotsFull', '空间已满，暂无法自动保存。请删除现有图示以释放空间。')
-        )
+        notify.warningKey('editor.slotsFull')
         return
       }
 
@@ -127,12 +122,12 @@ export function useKittyMobileLibraryDiagramSelect(options: {
           setSelectedChartType: (name) => uiStore.setSelectedChartType(name),
         })
       ) {
-        notify.error(t('mobile.kittyNewMindmapCreateFailed', '新建思维导图失败，请重试'))
+        notify.errorKey('mobile.kittyNewMindmapCreateFailed')
         return
       }
       const spec = diagramStore.getSpecForSave()
       if (spec == null) {
-        notify.error(t('mobile.kittyNewMindmapCreateFailed', '新建思维导图失败，请重试'))
+        notify.errorKey('mobile.kittyNewMindmapCreateFailed')
         return
       }
 
@@ -169,16 +164,12 @@ export function useKittyMobileLibraryDiagramSelect(options: {
 
       const ok = await enqueueOpenLibraryDiagram(saved.id, saved.title || title)
       if (ok) {
-        notify.success(
-          t('mobile.kittyNewMindmapCreated', '已新建思维导图，电脑端将打开该导图')
-        )
+        notify.successKey('mobile.kittyNewMindmapCreated')
         traceKittyWorkflow('mobile', 'desktop_enqueue', 'open_library_diagram', {
           scope: saved.id,
         })
       } else {
-        notify.warning(
-          t('mobile.kittyNewMindmapDesktopFailed', '已新建导图，但无法通知电脑端打开')
-        )
+        notify.warningKey('mobile.kittyNewMindmapDesktopFailed')
       }
 
       options.scheduleContextSync()

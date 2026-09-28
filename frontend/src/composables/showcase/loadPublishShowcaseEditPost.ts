@@ -4,8 +4,8 @@
 import type { Ref } from 'vue'
 
 import {
-  parseSpecGallery,
   type ShowcaseGalleryImageItem,
+  parseSpecGallery,
 } from '@/components/showcase/showcaseGallery'
 import type { ShowcaseCaseType } from '@/components/showcase/showcaseShared'
 import type { UseLanguageTranslate } from '@/composables/core/useLanguage'
@@ -20,7 +20,9 @@ export type LoadEditPostDeps = {
   t: UseLanguageTranslate
   notify: {
     error: (message: string) => void
+    errorKey: (key: string, params?: Record<string, unknown>) => void
     warning: (message: string) => void
+    warningKey: (key: string, params?: Record<string, unknown>) => void
   }
   emit: {
     (e: 'update:visible', value: boolean): void
@@ -50,7 +52,7 @@ export type LoadEditPostDeps = {
 
 export async function loadPublishShowcaseEditPost(
   postId: string,
-  deps: LoadEditPostDeps,
+  deps: LoadEditPostDeps
 ): Promise<void> {
   const {
     t,
@@ -78,12 +80,11 @@ export async function loadPublishShowcaseEditPost(
     basenameFromMediaUrl,
   } = deps
 
-
   isEditLoading.value = true
   try {
     const loaded = await getShowcasePost(postId)
     if (!loaded.can_resubmit && !loaded.can_edit) {
-      notify.error(String(t('showcase.detail.loadFailed')))
+      notify.errorKey('showcase.detail.loadFailed')
       emit('update:visible', false)
       return
     }
@@ -145,9 +146,11 @@ export async function loadPublishShowcaseEditPost(
         } else if (spec && typeof spec === 'object') {
           const gallery = parseSpecGallery(spec)
           if (gallery.length > 0) {
-            const missingImages = gallery.filter((entry) => entry.kind === 'image' && !entry.path).length
+            const missingImages = gallery.filter(
+              (entry) => entry.kind === 'image' && !entry.path
+            ).length
             if (missingImages > 0) {
-              notify.warning(String(t('showcase.publishModal.galleryReuploadHint')))
+              notify.warningKey('showcase.publishModal.galleryReuploadHint')
             }
             for (const entry of gallery) {
               if (entry.kind === 'image' && entry.path) {

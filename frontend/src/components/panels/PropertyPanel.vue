@@ -76,7 +76,7 @@ function applyChanges() {
 
   diagramStore.pushHistory('Update node properties')
   diagramStore.updateNode(selectedNode.value.id, updates)
-  notify.success(t('notification.saved'))
+  notify.successKey('notification.saved')
 }
 
 // Delete node
@@ -85,7 +85,7 @@ function deleteNode() {
 
   diagramStore.pushHistory('Delete node')
   diagramStore.removeNode(selectedNode.value.id)
-  notify.success(t('notification.deleted'))
+  notify.successKey('notification.deleted')
 }
 
 // Font weight options

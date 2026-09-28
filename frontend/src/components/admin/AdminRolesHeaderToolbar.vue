@@ -5,11 +5,9 @@ import { storeToRefs } from 'pinia'
 
 import { Plus, Refresh } from '@element-plus/icons-vue'
 
-import { useLanguage } from '@/composables'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useAdminPanelStore } from '@/stores'
 
-const { t } = useLanguage()
 const adminPanel = useAdminPanelStore()
 const { rolesToolbar } = storeToRefs(adminPanel)
 const { emit: emitAdminEvent } = useAdminEventBus('AdminRolesHeaderToolbar')

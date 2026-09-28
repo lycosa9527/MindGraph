@@ -33,7 +33,7 @@ export default {
   'collab.previousSessionsStopped': '終了しました您在其它図上的 {n} 场协同会話。',
   'collab.saveFailed': '保存に失敗しました',
   'collab.scanToJoin': 'スキャン to join',
-  'collab.schoolDescActive': '学校 collaboration is on. Colleagues: use Collaborate → 学校 on the home page and pick this diagram — no code 必須.',
+  'collab.schoolDescActive': '学校 collaboration is on. Colleagues: use Collaborate → 学校 on the MindGraph home page and pick this diagram — no code 必須.',
   'collab.schoolStarted': '学校 collaboration is on — colleagues can join from Collaborate → 学校.',
   'collab.sectionNetwork': '合計同コラボ（招待コード）',
   'collab.sectionSchool': '校内コラボ',

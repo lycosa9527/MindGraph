@@ -380,7 +380,7 @@ async function applyPermissionDialog(): Promise<void> {
   try {
     const ok = await persistFeatureAccess()
     if (ok) {
-      notify.success(t('admin.featurePermissionsApplied'))
+      notify.successKey('admin.featurePermissionsApplied')
       closePermissionDialog()
     }
   } finally {
@@ -404,17 +404,17 @@ async function load(): Promise<void> {
       organizationsQuery.refetch(),
     ])
     if (featuresResult.error) {
-      notify.error(t('admin.featureLoadFailed'))
+      notify.errorKey('admin.featureLoadFailed')
       return
     }
     if (featuresResult.data) {
       applyFeaturesPayload(featuresResult.data as FeatureFlagsPayload)
     }
     if (orgsResult.error) {
-      notify.error(t('admin.featureLoadFailed'))
+      notify.errorKey('admin.featureLoadFailed')
     }
   } catch {
-    notify.error(t('admin.featureLoadFailed'))
+    notify.errorKey('admin.featureLoadFailed')
   }
 }
 
@@ -442,7 +442,7 @@ async function save(): Promise<void> {
     if (!accessOk) {
       return
     }
-    notify.success(t('admin.featuresSaved'))
+    notify.successKey('admin.featuresSaved')
     await load()
   } catch (err) {
     notify.error(formatHttpErrorDetail(err) || t('admin.featureSaveFailed'))

@@ -164,7 +164,7 @@ async function handleDeleteTest(testId: number): Promise<void> {
     )
 
     await deleteTestMutation.mutateAsync(testId)
-    notify.success(t('chunkTest.history.deleted'))
+    notify.successKey('chunkTest.history.deleted')
   } catch (error) {
     if (error instanceof Error && error.message !== 'cancel') {
       notify.error(error.message || t('chunkTest.history.deleteFailed'))

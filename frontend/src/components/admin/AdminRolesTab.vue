@@ -10,7 +10,6 @@ import { ElTable } from 'element-plus'
 import { Loading, UserFilled } from '@element-plus/icons-vue'
 
 import AdminRoleAddMemberDialog from '@/components/admin/AdminRoleAddMemberDialog.vue'
-import { useLanguage } from '@/composables'
 import { ROLE_CONTROL_TABS, isRoleControlTab } from '@/composables/admin/adminRoleControlNav'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
@@ -20,7 +19,6 @@ import { useAdminPanelStore } from '@/stores'
 
 const route = useRoute()
 const router = useRouter()
-const { t } = useLanguage()
 const { canEditTab } = useAdminAccess()
 const adminPanel = useAdminPanelStore()
 const { on: onAdminEvent } = useAdminEventBus('AdminRolesTab')

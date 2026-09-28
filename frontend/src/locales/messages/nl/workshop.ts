@@ -33,7 +33,7 @@ export default {
   'collab.previousSessionsStopped': '{n} eerdere samenwerkingssessie(s) voor uw andere diagrammen beëindigd.',
   'collab.saveFailed': 'Kan diagram niet opslaan',
   'collab.scanToJoin': 'Scan om mee te doen',
-  'collab.schoolDescActive': 'De samenwerking tussen scholen is ingeschakeld. Collega\'s: gebruik Samenwerken → School op de startpagina en kies dit diagram — geen code vereist.',
+  'collab.schoolDescActive': "De samenwerking tussen scholen is ingeschakeld. Collega's: MindGraph gebruik Samenwerken → School op de startpagina en kies dit diagram — geen code vereist.",
   'collab.schoolStarted': 'Samenwerking tussen scholen is ingeschakeld: collega\'s kunnen deelnemen via Collaborate → School.',
   'collab.sectionNetwork': 'Gedeelde samenwerking (code)',
   'collab.sectionSchool': 'Samenwerking tussen scholen',

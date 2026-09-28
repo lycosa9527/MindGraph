@@ -28,10 +28,10 @@ function applyTopic(topic: string): void {
     return
   }
   if (!applyClassroomRemoteTopic(diagramStore, topic)) {
-    notify.warning(t('canvas.toolbar.createDiagramFirst'))
+    notify.warningKey('canvas.toolbar.createDiagramFirst')
     return
   }
-  notify.success(t('canvas.classroomRemote.topicsApplied', { topic }))
+  notify.successKey('canvas.classroomRemote.topicsApplied', { topic })
 }
 
 function onDraftEnter(): void {

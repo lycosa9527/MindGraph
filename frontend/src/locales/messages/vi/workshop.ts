@@ -33,7 +33,7 @@ export default {
   'collab.previousSessionsStopped': 'Đã kết thúc (các) phiên cộng tác trước đó của {n} trên các sơ đồ khác của bạn.',
   'collab.saveFailed': 'Không lưu được sơ đồ',
   'collab.scanToJoin': 'Quét để tham gia',
-  'collab.schoolDescActive': 'Sự hợp tác của trường đang diễn ra. Đồng nghiệp: sử dụng Cộng tác → Trường học trên trang chủ và chọn sơ đồ này - không cần mã.',
+  'collab.schoolDescActive': 'Sự hợp tác của trường đang diễn ra. Đồng nghiệp: MindGraph sử dụng Cộng tác → Trường học trên trang chủ và chọn sơ đồ này - không cần mã.',
   'collab.schoolStarted': 'Tính năng cộng tác của trường học đang bật — đồng nghiệp có thể tham gia từ Cộng tác → Trường học.',
   'collab.sectionNetwork': 'Cộng tác chia sẻ (mã)',
   'collab.sectionSchool': 'Hợp tác trường học',

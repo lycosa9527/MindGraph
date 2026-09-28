@@ -122,7 +122,7 @@ export function useWorkshop(
       return true
     },
     onOverflow: () => {
-      notify.warning(t('workshopCanvas.outboundQueueDegraded'))
+      notify.warningKey('workshopCanvas.outboundQueueDegraded')
     },
   })
   watch(
@@ -189,7 +189,7 @@ export function useWorkshop(
         const delay = nextPendingResyncBackoffMs(pendingResyncRetryStep)
         pendingResyncTimer = setTimeout(runStep, delay)
       } else {
-        notify.warning(t('workshopCanvas.resyncWaiting'))
+        notify.warningKey('workshopCanvas.resyncWaiting')
         let steadyFires = 0
         pendingResyncInterval = setInterval(() => {
           if (!version.pendingResync.value || sock.readyState !== WebSocket.OPEN) {
@@ -268,7 +268,7 @@ export function useWorkshop(
     guestForcedExitHandled = true
     // Room-idle kicks do not show a toast in the ``kicked`` handler; mirror close ``4010``.
     if (reason === 'room_idle') {
-      notify.info(t('workshopCanvas.returnedHomeRoomIdle'))
+      notify.infoKey('workshopCanvas.returnedHomeRoomIdle')
     }
     eventBus.emit('workshop:code-changed', { code: null, visibility: null })
     void router.replace({ name: 'MindGraph' }).catch(() => {})
@@ -426,7 +426,7 @@ export function useWorkshop(
           const message = parsed
           dispatchWorkshopMessage(message, socket, messageDeps)
         } catch {
-          notify.warning(t('workshopCanvas.wsError'))
+          notify.warningKey('workshopCanvas.wsError')
         }
       }
 
@@ -436,7 +436,7 @@ export function useWorkshop(
         }
         isConnected.value = false
         errorNotified = true
-        notify.error(t('workshopCanvas.wsError'))
+        notify.errorKey('workshopCanvas.wsError')
       }
 
       socket.onclose = (event) => {
@@ -454,20 +454,20 @@ export function useWorkshop(
         if (event.code === 4001) {
           // JWT expired mid-session — cannot reconnect with the same token.
           dropWorkshopRoom()
-          notify.warning(t('workshopCanvas.sessionExpiredReconnect'))
+          notify.warningKey('workshopCanvas.sessionExpiredReconnect')
           return
         }
 
         if (event.code === 4002) {
           dropWorkshopRoom()
-          notify.info(t('workshopCanvas.returnedHomeIdle'))
+          notify.infoKey('workshopCanvas.returnedHomeIdle')
           void router.replace({ name: 'MindGraph' }).catch(() => {})
           return
         }
 
         if (event.code === 4010) {
           dropWorkshopRoom()
-          notify.info(t('workshopCanvas.returnedHomeRoomIdle'))
+          notify.infoKey('workshopCanvas.returnedHomeRoomIdle')
           void router.replace({ name: 'MindGraph' }).catch(() => {})
           return
         }
@@ -488,14 +488,14 @@ export function useWorkshop(
         }
 
         if (event.code === 4014) {
-          notify.warning(t('workshopCanvas.connectionClosedSlow'))
+          notify.warningKey('workshopCanvas.connectionClosedSlow')
           dropWorkshopRoom()
           return
         }
 
         if (!errorNotified && event.code !== 1000 && event.code !== 1001) {
           const reason = event.reason || t('workshopCanvas.connectionClosed')
-          notify.warning(t('workshopCanvas.connectionClosedReason', { reason }))
+          notify.warningKey('workshopCanvas.connectionClosedReason', { reason })
         }
 
         if (shouldScheduleReconnect(reconnectAttempts.value, event.code) && workshopCode.value) {
@@ -520,7 +520,7 @@ export function useWorkshop(
             return
           }
           if (reconnectAttempts.value >= maxReconnectAttempts) {
-            notify.error(t('workshopCanvas.reconnectFailed'))
+            notify.errorKey('workshopCanvas.reconnectFailed')
             connectionStatus.value = 'failed'
           }
           dropWorkshopRoom()
@@ -532,7 +532,7 @@ export function useWorkshop(
       if (import.meta.env.DEV) {
         console.error('[WorkshopWS] Failed to connect:', error)
       }
-      notify.error(t('workshopCanvas.connectFailed'))
+      notify.errorKey('workshopCanvas.connectFailed')
     }
   }
 

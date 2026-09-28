@@ -4,7 +4,6 @@
  */
 import { computed, onMounted } from 'vue'
 
-import { useLanguage } from '@/composables'
 import { hydratePersistedOAuthLoginError, persistedOAuthLoginError } from '@/utils/oauthLoginUi'
 
 defineProps<{
@@ -16,8 +15,6 @@ const emit = defineEmits<{
   (e: 'sms'): void
   (e: 'wechat'): void
 }>()
-
-const { t } = useLanguage()
 
 const showNotLinkedHint = computed(() => persistedOAuthLoginError.value === 'oauth_not_linked')
 

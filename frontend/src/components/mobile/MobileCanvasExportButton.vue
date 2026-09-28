@@ -78,7 +78,7 @@ function handleWorksheetText(): void {
 function handleMakeLearningSheet(): void {
   open.value = false
   if (!diagramStore.data?.nodes?.length) {
-    notify.warning(t('canvas.toolbar.createDiagramFirst'))
+    notify.warningKey('canvas.toolbar.createDiagramFirst')
     return
   }
   eventBus.emit('toolbar:worksheet_text_requested', { preferLearningSheet: true })

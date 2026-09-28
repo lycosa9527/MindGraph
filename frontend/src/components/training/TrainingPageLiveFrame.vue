@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 
 import TrainingCanvasPreview from '@/components/training/TrainingCanvasPreview.vue'
-import { useLanguage } from '@/composables'
 import { provideTrainingInlineHost } from '@/composables/training/trainingInlineHost'
 import { trainingLivePage } from '@/config/trainingPageLive'
 import type { MindMapCanvasMode } from '@/stores/ui'
@@ -16,7 +15,6 @@ const props = defineProps<{
   interactive?: boolean
 }>()
 
-const { t } = useLanguage()
 const livePage = computed(() => trainingLivePage(props.pageKey))
 const isCanvas = computed(() => props.pageKey === 'canvas')
 </script>

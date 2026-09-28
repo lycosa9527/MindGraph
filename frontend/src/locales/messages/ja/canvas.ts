@@ -1329,7 +1329,7 @@ export default {
   'canvas.ribbon.palette': 'ノードパネル',
   'canvas.ribbon.exportImage': '写真のエクスポート',
   'canvas.ribbon.saveMg': '.mg を保存',
-  'canvas.ribbon.mindMate': 'マインドメイトAI',
+  'canvas.ribbon.mindMate': 'MindMate AI',
   'canvas.ribbon.editMode': '編集モード: アクティブ',
   'canvas.ribbon.fontFamily': 'フォント',
   'canvas.ribbon.fontSize': 'フォントサイズ',

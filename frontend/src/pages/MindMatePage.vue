@@ -7,9 +7,9 @@ import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { MindmatePanel } from '@/components/panels'
-import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
-import { useLanguage, useNotifications } from '@/composables'
+import { useNotifications } from '@/composables'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
+import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
 import { useMindmateCollabNotify } from '@/composables/social/useMindmateCollabNotify'
 import { useVoiceStore } from '@/stores'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
@@ -20,7 +20,6 @@ const featureFlagsStore = useFeatureFlagsStore()
 const uiStore = useUIStore()
 const { canUseOnlineCollab } = useSchoolTierFeatures()
 const notify = useNotifications()
-const { t } = useLanguage()
 const route = useRoute()
 const router = useRouter()
 
@@ -45,7 +44,7 @@ async function consumeJoinCollabQuery(): Promise<void> {
     return
   }
   if (!canUseOnlineCollab.value) {
-    notify.warning(t('auth.schoolTierFeatureUnavailable'))
+    notify.warningKey('auth.schoolTierFeatureUnavailable')
     return
   }
   await nextTick()

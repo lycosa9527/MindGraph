@@ -183,7 +183,7 @@ export default {
   'admin.kittyDefaultsUserId': 'İstifadəçi ID',
   'admin.kittyDefaultsSave': 'default saxla',
   'admin.kittyDefaultsSaved': 'Defolt olaraq saxlanılır.',
-  'admin.featuresIntroAccess': 'Təşkilat və istifadəçi siyahıları verilənlər bazasında saxlanır; saxlanan kimi qüvvəyə minir. Modul aktiv olandan sonra «İcazələr» ilə məhdudlaşdırın.',
+  'admin.featuresIntroAccess': 'MindMate Təşkilat və istifadəçi siyahıları verilənlər bazasında saxlanır; saxlanan kimi qüvvəyə minir. Modul aktiv olandan sonra «İcazələr» ilə məhdudlaşdırın.',
   'admin.featurePermissionsApply': 'İcazələri saxla',
   'admin.featurePermissionsApplied': 'Funksiya icazələri saxlanıldı.',
   'admin.featurePermissionsButton': 'İcazələr',

@@ -13,9 +13,9 @@ import { CanvasRenderer } from 'echarts/renderers'
 import { useLanguage, useNotifications } from '@/composables'
 import { useUIStore } from '@/stores/ui'
 import {
+  type DashboardStats,
   EMPTY_DASHBOARD_STATS,
   applyDashboardStats,
-  type DashboardStats,
 } from '@/utils/publicDashboardStats'
 
 echarts.use([
@@ -55,7 +55,6 @@ const SERIES_SESSIONS = 'sessions'
 
 let chinaMapRegistered = false
 
-
 async function ensureChinaMapRegistered(): Promise<void> {
   if (chinaMapRegistered) {
     return
@@ -69,10 +68,7 @@ async function ensureChinaMapRegistered(): Promise<void> {
   chinaMapRegistered = true
 }
 
-function redirectOnAuthFailure(
-  router: ReturnType<typeof useRouter>,
-  status: number
-): void {
+function redirectOnAuthFailure(router: ReturnType<typeof useRouter>, status: number): void {
   if (status === 401) {
     const fullPath = router.currentRoute.value.fullPath
     void router.replace(`/auth?redirect=${encodeURIComponent(fullPath)}`)
@@ -473,7 +469,7 @@ export function usePublicDashboard(mapEl: { value: HTMLElement | null }) {
       await Promise.all([loadStats(), loadMapData(), loadActivityHistory()])
       connectActivityStream()
     } catch {
-      notify.error(t('publicDashboard.networkError'))
+      notify.errorKey('publicDashboard.networkError')
     } finally {
       isLoading.value = false
     }

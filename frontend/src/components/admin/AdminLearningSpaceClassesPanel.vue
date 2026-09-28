@@ -128,7 +128,7 @@ async function loadAll(): Promise<void> {
       actionClass.value = refreshed
     }
   } catch {
-    notify.error(t('admin.learningSpace.loadFailed'))
+    notify.errorKey('admin.learningSpace.loadFailed')
   } finally {
     loading.value = false
   }
@@ -140,7 +140,7 @@ async function loadStudents(classId: number): Promise<void> {
     const res = await listAdminStudents(classId)
     students.value = res.items
   } catch {
-    notify.error(t('admin.learningSpace.loadFailed'))
+    notify.errorKey('admin.learningSpace.loadFailed')
   } finally {
     detailLoading.value = false
   }
@@ -149,7 +149,7 @@ async function loadStudents(classId: number): Promise<void> {
 async function onCreateClass(): Promise<void> {
   const teacherId = Number(classPilotTeacherId.value)
   if (!className.value.trim() || !Number.isFinite(teacherId) || teacherId <= 0) {
-    notify.warning(t('admin.learningSpace.fillClassFields'))
+    notify.warningKey('admin.learningSpace.fillClassFields')
     return
   }
   try {
@@ -159,10 +159,10 @@ async function onCreateClass(): Promise<void> {
       max_students: classMaxStudents.value || 60,
     })
     className.value = ''
-    notify.success(t('admin.learningSpace.classCreated'))
+    notify.successKey('admin.learningSpace.classCreated')
     await loadAll()
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -228,12 +228,12 @@ function openEdit(row: LearningClassRow): void {
 
 async function onSaveEdit(): Promise<void> {
   if (actionClass.value == null || !editName.value.trim()) {
-    notify.warning(t('admin.learningSpace.fillClassFields'))
+    notify.warningKey('admin.learningSpace.fillClassFields')
     return
   }
   const code = sanitizeClassCodeInput(editClassCode.value)
   if (!CLASS_CODE_RE.test(code)) {
-    notify.warning(t('admin.learningSpace.classCodeInvalid'))
+    notify.warningKey('admin.learningSpace.classCodeInvalid')
     return
   }
   try {
@@ -243,12 +243,12 @@ async function onSaveEdit(): Promise<void> {
       class_code: code,
       assistant_user_ids: editAssistants.value.map((a) => a.id),
     })
-    notify.success(t('admin.learningSpace.classUpdated'))
+    notify.successKey('admin.learningSpace.classUpdated')
     showEditModal.value = false
     actionClass.value = null
     await loadAll()
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -278,7 +278,7 @@ async function onToggleClassLogin(row: LearningClassRow): Promise<void> {
     )
     await loadAll()
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -293,9 +293,9 @@ async function onArchiveToggle(): Promise<void> {
 async function onCopyCode(code: string): Promise<void> {
   try {
     await navigator.clipboard.writeText(code)
-    notify.success(t('admin.learningSpace.codeCopied'))
+    notify.successKey('admin.learningSpace.codeCopied')
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -303,14 +303,14 @@ async function onPreviewImport(): Promise<void> {
   if (actionClass.value == null) return
   const names = parseNames(importNamesText.value)
   if (names.length === 0) {
-    notify.warning(t('admin.learningSpace.enterNames'))
+    notify.warningKey('admin.learningSpace.enterNames')
     return
   }
   try {
     const res = await previewAdminImport(actionClass.value.id, names)
     importPreview.value = res.items
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -318,7 +318,7 @@ async function onRunImport(): Promise<void> {
   if (actionClass.value == null) return
   const names = parseNames(importNamesText.value)
   if (names.length === 0) {
-    notify.warning(t('admin.learningSpace.enterNames'))
+    notify.warningKey('admin.learningSpace.enterNames')
     return
   }
   try {
@@ -326,17 +326,15 @@ async function onRunImport(): Promise<void> {
     lastPasswords.value = res.created
       .map((row) => `${row.name}\t${row.initial_password}`)
       .join('\n')
-    notify.success(
-      t('admin.learningSpace.importDone', {
-        ok: res.created.length,
-        fail: res.failed.length,
-      })
-    )
+    notify.successKey('admin.learningSpace.importDone', {
+      ok: res.created.length,
+      fail: res.failed.length,
+    })
     importNamesText.value = ''
     importPreview.value = []
     await loadAll()
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -344,14 +342,14 @@ async function onPreviewAccountImport(): Promise<void> {
   if (actionClass.value == null) return
   const phones = parseNames(accountPhonesText.value)
   if (phones.length === 0) {
-    notify.warning(t('admin.learningSpace.enterPhones'))
+    notify.warningKey('admin.learningSpace.enterPhones')
     return
   }
   try {
     const res = await previewAdminAccountImport(actionClass.value.id, phones)
     accountPreview.value = res.items
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -359,24 +357,22 @@ async function onRunAccountImport(): Promise<void> {
   if (actionClass.value == null) return
   const phones = parseNames(accountPhonesText.value)
   if (phones.length === 0) {
-    notify.warning(t('admin.learningSpace.enterPhones'))
+    notify.warningKey('admin.learningSpace.enterPhones')
     return
   }
   try {
     const res = await runAdminAccountImport(actionClass.value.id, phones)
-    notify.success(
-      t('admin.learningSpace.importDone', {
-        ok: res.created.length,
-        fail: res.failed.length,
-      })
-    )
+    notify.successKey('admin.learningSpace.importDone', {
+      ok: res.created.length,
+      fail: res.failed.length,
+    })
     accountPhonesText.value = ''
     accountPreview.value = []
     showAccountImportModal.value = false
     actionClass.value = null
     await loadAll()
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -414,7 +410,7 @@ async function onAddAssistant(): Promise<void> {
   if (actionClass.value == null) return
   const phones = parseNames(assistantPhone.value)
   if (phones.length === 0) {
-    notify.warning(t('admin.learningSpace.enterPhones'))
+    notify.warningKey('admin.learningSpace.enterPhones')
     return
   }
   try {
@@ -447,7 +443,7 @@ async function onAddAssistant(): Promise<void> {
       assistantPhone.value = ''
     }
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -455,12 +451,12 @@ async function onResetPassword(studentId: number): Promise<void> {
   try {
     const res = await adminResetPassword(studentId)
     lastPasswords.value = `${res.name}\t${res.initial_password}`
-    notify.success(t('admin.learningSpace.passwordReset', { name: res.name }))
+    notify.successKey('admin.learningSpace.passwordReset', { name: res.name })
     if (actionClass.value != null) {
       await loadStudents(actionClass.value.id)
     }
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -468,9 +464,9 @@ async function onCopyPasswords(): Promise<void> {
   if (!lastPasswords.value) return
   try {
     await navigator.clipboard.writeText(lastPasswords.value)
-    notify.success(t('admin.learningSpace.passwordsCopied'))
+    notify.successKey('admin.learningSpace.passwordsCopied')
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -480,7 +476,7 @@ function studentPassword(row: LearningStudentRow): string {
 
 function exportStudentRoster(): void {
   if (actionClass.value == null || !students.value.length) {
-    notify.warning(t('admin.learningSpace.studentsEmpty'))
+    notify.warningKey('admin.learningSpace.studentsEmpty')
     return
   }
   const header = [
@@ -504,7 +500,7 @@ function exportStudentRoster(): void {
   anchor.download = `${safeName}-students.csv`
   anchor.click()
   URL.revokeObjectURL(url)
-  notify.success(t('admin.learningSpace.exportDone'))
+  notify.successKey('admin.learningSpace.exportDone')
 }
 
 watch(

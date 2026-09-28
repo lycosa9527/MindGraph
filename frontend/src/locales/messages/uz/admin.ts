@@ -183,7 +183,7 @@ export default {
   'admin.kittyDefaultsUserId': 'Foydalanuvchi IDsi',
   'admin.kittyDefaultsSave': 'standart saqlash',
   'admin.kittyDefaultsSaved': 'Sukut bo\'yicha saqlangan.',
-  'admin.featuresIntroAccess': 'Tashkilot va foydalanuvchi siyahilari ma’lumotlar bazasinda saqlashnir; saqlashnan kimi quvveye minir. Modul faol olandan sonra «Icazeler» bilan mehdudlashdirin.',
+  'admin.featuresIntroAccess': 'MindMate Tashkilot va foydalanuvchi siyahilari ma’lumotlar bazasinda saqlashnir; saqlashnan kimi quvveye minir. Modul faol olandan sonra «Icazeler» bilan mehdudlashdirin.',
   'admin.featurePermissionsApply': 'Icazeleri saqlash',
   'admin.featurePermissionsApplied': 'Funksiya icazeleri saqlandi.',
   'admin.featurePermissionsButton': 'Icazeler',

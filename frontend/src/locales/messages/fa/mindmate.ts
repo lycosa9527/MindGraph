@@ -144,7 +144,7 @@ export default {
   'nodePalette.refresh': 'بازسازی کنید',
   'nodePalette.selected': 'انتخاب شده است',
   'nodePalette.similarities': 'شباهت ها',
-  'panel.mindmate': 'هوش مصنوعی MindMate',
+  'panel.mindmate': 'MindMate AI',
   'panel.nodePalette': 'پانل گره',
   'panel.properties': 'دارایی',
   'panels.property.background': 'رنگ پس زمینه',

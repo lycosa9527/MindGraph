@@ -74,7 +74,7 @@ async function loadUsers() {
   try {
     await schoolUsersQuery.refetch()
   } catch {
-    notify.error(t('admin.schoolUsersLoadError'))
+    notify.errorKey('admin.schoolUsersLoadError')
   }
 }
 

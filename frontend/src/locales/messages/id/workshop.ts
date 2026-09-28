@@ -33,7 +33,7 @@ export default {
   'collab.previousSessionsStopped': 'Mengakhiri {n} sesi kolaborasi sebelumnya pada diagram Anda yang lain.',
   'collab.saveFailed': 'Gagal menyimpan diagram',
   'collab.scanToJoin': 'Pindai untuk bergabung',
-  'collab.schoolDescActive': 'Kolaborasi sekolah aktif. Kolega: gunakan Kolaborasi → Sekolah di halaman beranda dan pilih diagram ini — tidak diperlukan kode.',
+  'collab.schoolDescActive': 'Kolaborasi sekolah aktif. Kolega: MindGraph gunakan Kolaborasi → Sekolah di halaman beranda dan pilih diagram ini — tidak diperlukan kode.',
   'collab.schoolStarted': 'Kolaborasi sekolah aktif — kolega dapat bergabung dari Kolaborasi → Sekolah.',
   'collab.sectionNetwork': 'Kolaborasi bersama (kode)',
   'collab.sectionSchool': 'Kolaborasi sekolah',

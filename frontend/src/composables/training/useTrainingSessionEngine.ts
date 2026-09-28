@@ -76,7 +76,7 @@ export function useTrainingSessionEngine(): void {
     try {
       await work()
     } catch {
-      notify.error(t('training.steerFailed'))
+      notify.errorKey('training.steerFailed')
     }
   }
 
@@ -89,7 +89,7 @@ export function useTrainingSessionEngine(): void {
 
   async function announceRoomReady(): Promise<void> {
     await training.refreshReady()
-    notify.success(t('training.moduleReady'))
+    notify.successKey('training.moduleReady')
   }
 
   async function onStart(): Promise<void> {
@@ -103,15 +103,15 @@ export function useTrainingSessionEngine(): void {
       return
     }
     if (code === 'pick_org') {
-      notify.warning(t('training.pickOrgFirst'))
+      notify.warningKey('training.pickOrgFirst')
       return
     }
     if (code === 'instructor_busy') {
-      notify.warning(t('training.hostedElsewhere'))
+      notify.warningKey('training.hostedElsewhere')
       return
     }
     if (code === 'confirm_mismatch') {
-      notify.warning(t('training.confirmMismatch'))
+      notify.warningKey('training.confirmMismatch')
       return
     }
     if (code === 'org_busy') {
@@ -119,23 +119,23 @@ export function useTrainingSessionEngine(): void {
         await announceRoomReady()
         return
       }
-      notify.warning(t('training.takeoverHint', { name: hostName() }))
+      notify.warningKey('training.takeoverHint', { name: hostName() })
       return
     }
-    notify.error(t('training.startFailed'))
+    notify.errorKey('training.startFailed')
   }
 
   async function onPlay(courseId: string): Promise<void> {
     if (training.selectedOrgId == null) {
-      notify.warning(t('training.pickOrgFirst'))
+      notify.warningKey('training.pickOrgFirst')
       return
     }
     if (isForeignSession()) {
-      notify.warning(t('training.takeoverHint', { name: hostName() }))
+      notify.warningKey('training.takeoverHint', { name: hostName() })
       return
     }
     if (!training.isActive) {
-      notify.warning(t('training.startFirst'))
+      notify.warningKey('training.startFirst')
       return
     }
     await steerThenFollow(() => training.playCourse(courseId))
@@ -224,7 +224,7 @@ export function useTrainingSessionEngine(): void {
     'training:select_org_requested',
     (payload) => {
       void training.selectOrg(payload.orgId).then((code) => {
-        if (code === 'locked') notify.warning(t('training.hostedElsewhere'))
+        if (code === 'locked') notify.warningKey('training.hostedElsewhere')
       })
     },
     OWNER

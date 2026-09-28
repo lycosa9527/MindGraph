@@ -1,20 +1,23 @@
 /**
  * Combine teaching-design + diagram Showcase AI copy for the publish modal.
  */
-import { computed, type Ref } from 'vue'
+import { type Ref, computed } from 'vue'
 
 import {
-  useShowcaseDiagramCopyAi,
   type DiagramCopySpecSource,
+  useShowcaseDiagramCopyAi,
 } from '@/composables/showcase/useShowcaseDiagramCopyAi'
 import { useShowcaseTeachingCopyAi } from '@/composables/showcase/useShowcaseTeachingCopyAi'
-import { cloneShowcaseDiagramSpec } from '@/utils/showcaseDiagramThumbnail'
 import { fetchShowcaseAsset } from '@/utils/fetchShowcaseAsset'
+import { cloneShowcaseDiagramSpec } from '@/utils/showcaseDiagramThumbnail'
 
 type NotifyLike = {
   info: (message: string) => void
+  infoKey: (key: string, params?: Record<string, unknown>) => void
   success: (message: string) => void
+  successKey: (key: string, params?: Record<string, unknown>) => void
   error: (message: string) => void
+  errorKey: (key: string, params?: Record<string, unknown>) => void
 }
 
 type TranslateFn = (key: string) => unknown
@@ -120,7 +123,7 @@ export function usePublishShowcaseAiOrchestration(options: {
           specs: [],
           images: galleryImageDrafts.value.map((draft) => draft.file),
           existingImageKeys: galleryExistingImages.value.map(
-            (entry) => `${entry.path}:${entry.filename}`,
+            (entry) => `${entry.path}:${entry.filename}`
           ),
           diagramType: resolvedType,
         }
@@ -197,15 +200,13 @@ export function usePublishShowcaseAiOrchestration(options: {
   })
 
   const isGenerating = computed(() =>
-    caseType.value === 'teaching_design'
-      ? teachingIsGenerating.value
-      : diagramIsGenerating.value,
+    caseType.value === 'teaching_design' ? teachingIsGenerating.value : diagramIsGenerating.value
   )
 
   const aiGeneratePhase = computed(() =>
     caseType.value === 'teaching_design'
       ? teachingAiGeneratePhase.value
-      : diagramAiGeneratePhase.value,
+      : diagramAiGeneratePhase.value
   )
 
   function clearAllAiPrefetch(): void {

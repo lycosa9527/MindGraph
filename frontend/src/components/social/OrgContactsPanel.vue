@@ -140,15 +140,15 @@ async function handlePoke(targetUserId: number): Promise<void> {
     if (response.ok) {
       const data = (await response.json()) as { delivered?: boolean }
       if (data.delivered) {
-        notify.success(t('mindmate.collabPokeSent'))
+        notify.successKey('mindmate.collabPokeSent')
       } else {
-        notify.info(t('mindmate.collabPokeOffline'))
+        notify.infoKey('mindmate.collabPokeOffline')
       }
     } else {
-      notify.error(t('mindmate.collabPokeFailed'))
+      notify.errorKey('mindmate.collabPokeFailed')
     }
   } catch {
-    notify.error(t('mindmate.collabPokeFailed'))
+    notify.errorKey('mindmate.collabPokeFailed')
   } finally {
     pokingUserId.value = null
     contactPopoverUserId.value = null
@@ -323,11 +323,10 @@ async function handlePoke(targetUserId: number): Promise<void> {
       :class="isCompact ? 'px-3 py-2 bg-white border-stone-200/90' : 'px-3 py-2'"
     >
       <span :class="{ 'text-[11px] tabular-nums': isCompact }">
-        {{
-          t('workshop.contactsLoadedCount')
-            .replace('{0}', String(members.length))
-            .replace('{1}', String(membersTotal))
-        }}
+        <I18nText
+          k="workshop.contactsLoadedCount"
+          :params="{ 0: members.length, 1: membersTotal }"
+        />
       </span>
       <ElButton
         v-if="membersHasMore && !isCompact"

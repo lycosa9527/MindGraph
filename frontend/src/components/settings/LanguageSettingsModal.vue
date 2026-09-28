@@ -248,7 +248,7 @@ async function save(): Promise<void> {
     uiStore.setMindMapCanvasMode(draftMindMapCanvasMode.value)
     uiStore.setEBlackboardOptimize(draftEBlackboardOptimize.value)
     if (prevMindMapMode !== draftMindMapCanvasMode.value) {
-      notify.info(t('settings.language.mindMapCanvasRefreshHint'))
+      notify.infoKey('settings.language.mindMapCanvasRefreshHint')
     }
   }
   uiStore.setUiLanguageExplicit(true)

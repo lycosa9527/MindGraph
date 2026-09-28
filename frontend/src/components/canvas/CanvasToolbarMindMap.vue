@@ -178,7 +178,7 @@ function handleRedo() {
 function handleStructurePick(mode: 'balanced' | 'right') {
   structureDropdownOpen.value = false
   if (diagramStore.setMindMapStructureMode(mode)) {
-    notify.success(t('canvas.toolbar.mindMapStructureApplied'))
+    notify.successKey('canvas.toolbar.mindMapStructureApplied')
   }
 }
 
@@ -205,7 +205,7 @@ function requireNodeSelection(action: () => void): void {
     action()
     return
   }
-  notify.warning(t('canvas.toolbar.selectNodesFirst'))
+  notify.warningKey('canvas.toolbar.selectNodesFirst')
 }
 
 function onGuestAiToolClick(event: MouseEvent, run: () => void): void {

@@ -69,7 +69,7 @@ export default {
   'community.time.minutesAgo': '{n} minutos atrás',
   'community.title': 'Partilha da comunidade',
   'community.type.mindgraph': 'MindGraph',
-  'community.type.mindmate': 'Mindmate',
+  'community.type.mindmate': 'MindMate',
   'debateverse.advanceStage': 'Entre na próxima etapa',
   'debateverse.affirmativePositionLabel': 'Posição positiva:',
   'debateverse.avatar.viewer': 'público',

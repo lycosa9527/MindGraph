@@ -280,8 +280,7 @@ export function useKittyDesktopActionPoll(): void {
           scope,
           action,
           updates: payload.updates,
-          mutation_id:
-            typeof payload.mutation_id === 'string' ? payload.mutation_id : undefined,
+          mutation_id: typeof payload.mutation_id === 'string' ? payload.mutation_id : undefined,
           expected_effect: payload.expected_effect,
           before_fingerprint: payload.before_fingerprint,
         })
@@ -319,8 +318,7 @@ export function useKittyDesktopActionPoll(): void {
       onLlmModelUpdate: (payload) => {
         const scope = typeof payload.scope === 'string' ? payload.scope : undefined
         const raw = payload.selected_llm_model
-        const selected_llm_model =
-          raw === null || typeof raw === 'string' ? raw : undefined
+        const selected_llm_model = raw === null || typeof raw === 'string' ? raw : undefined
         traceKittyWorkflow(
           'hub',
           'sse_llm_model',
@@ -331,8 +329,7 @@ export function useKittyDesktopActionPoll(): void {
         )
         eventBus.emit('kitty:desktop_llm_model_update', {
           scope,
-          selected_llm_model:
-            selected_llm_model === undefined ? undefined : selected_llm_model,
+          selected_llm_model: selected_llm_model === undefined ? undefined : selected_llm_model,
         })
       },
       onVoiceCommand: (payload) => {
@@ -463,9 +460,7 @@ export function useKittyDesktopActionPoll(): void {
   onMounted(() => {
     document.addEventListener('visibilitychange', onVisibilityChange)
     const flagsPromise =
-      featureFlagsStore.flags != null
-        ? Promise.resolve()
-        : featureFlagsStore.fetchFlags()
+      featureFlagsStore.flags != null ? Promise.resolve() : featureFlagsStore.fetchFlags()
     void flagsPromise.finally(() => {
       syncPolling()
     })
