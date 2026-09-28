@@ -1018,6 +1018,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  min-width: 0;
   user-select: none;
   border: 2px solid transparent;
 }
@@ -1064,6 +1065,8 @@ onMounted(() => {
   color: var(--el-text-color-primary, #333);
   margin: 0 0 var(--card-title-mb);
   text-align: center;
+  width: 100%;
+  min-width: 0;
 }
 
 .intl-card-title :deep(.i18n-label),
@@ -1088,6 +1091,8 @@ onMounted(() => {
   color: var(--el-text-color-secondary, #666);
   text-align: center;
   margin: 0;
+  width: 100%;
+  min-width: 0;
 }
 
 /* Hover animation on SVG previews — staggered pulse matching old gallery */

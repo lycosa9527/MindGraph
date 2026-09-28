@@ -3,8 +3,11 @@
  * UI chrome label: primary locale at regular size, optional presenter line.
  * Message keys only — never pass model output or autocomplete items.
  */
-import { computed } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
+import { useResizeObserver } from '@vueuse/core'
+
+import { besideFitScale } from '@/i18n/besideFitScale'
 import { resolveBilingual } from '@/i18n/resolveBilingual'
 import type { BilingualCopy } from '@/i18n/resolveBilingual'
 import { uiMessageExists } from '@/i18n/translateForUiLocale'
@@ -24,7 +27,10 @@ const props = withDefaults(
     dense?: boolean
     /** Center both lines. Welcome copy and suggestion headings use this. */
     align?: 'start' | 'center'
-    /** `beside` puts the presenter language on the right of the primary language. */
+    /**
+     * `beside` keeps each language on one line: primary on the left, presenter on the right.
+     * The line shrinks together when a long language pair would overflow the card.
+     */
     layout?: 'stack' | 'beside'
   }>(),
   {
@@ -46,20 +52,60 @@ const copy = computed((): BilingualCopy => {
   return resolveBilingual(props.k, props.params)
 })
 const secondary = computed(() => (props.primaryOnly ? null : copy.value.secondary))
+
+const rootEl = ref<HTMLElement | null>(null)
+const primaryEl = ref<HTMLElement | null>(null)
+const secondaryEl = ref<HTMLElement | null>(null)
+/** 1 = the card font size. Lower only when the one-line pair is wider than the card. */
+const besideScale = ref(1)
+
+function updateBesideScale(): void {
+  const el = rootEl.value
+  const primary = primaryEl.value
+  if (!el || !primary || props.layout !== 'beside' || !secondary.value) {
+    if (besideScale.value !== 1) besideScale.value = 1
+    return
+  }
+  const available = el.clientWidth
+  const gapRaw = Number.parseFloat(getComputedStyle(el).columnGap)
+  const gap = Number.isFinite(gapRaw) ? gapRaw : 0
+  const used = primary.scrollWidth + (secondaryEl.value?.scrollWidth ?? 0) + gap
+  const next = besideFitScale(available, used, besideScale.value)
+  if (Math.abs(next - besideScale.value) >= 0.012) besideScale.value = next
+}
+
+useResizeObserver(rootEl, () => {
+  updateBesideScale()
+})
+
+watch(
+  () => [copy.value.primary, secondary.value, props.layout] as const,
+  () => {
+    besideScale.value = 1
+    void nextTick().then(updateBesideScale)
+  }
+)
 </script>
 
 <template>
   <span
+    ref="rootEl"
     class="i18n-label"
     :class="{
       'i18n-label--dense': dense,
       'i18n-label--center': align === 'center',
       'i18n-label--beside': layout === 'beside' && secondary,
     }"
+    :style="besideScale < 1 ? { fontSize: `${besideScale}em` } : undefined"
   >
-    <span class="i18n-label__primary">{{ copy.primary }}</span>
+    <span
+      ref="primaryEl"
+      class="i18n-label__primary"
+      >{{ copy.primary }}</span
+    >
     <span
       v-if="secondary"
+      ref="secondaryEl"
       class="i18n-label__secondary"
       >{{ secondary }}</span
     >
@@ -114,13 +160,15 @@ const secondary = computed(() => (props.primaryOnly ? null : copy.value.secondar
   align-items: baseline;
   gap: 0.65em;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .i18n-label--beside .i18n-label__primary,
 .i18n-label--beside .i18n-label__secondary {
   width: auto;
-  min-width: 0;
-  max-width: calc(50% - 0.35em);
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .i18n-label--beside .i18n-label__primary {
