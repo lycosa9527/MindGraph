@@ -123,7 +123,7 @@ export const FLOW_MIN_STEP_SPACING = 40
 /** BranchNode height (mind-map default min-height baseline) */
 export const BRANCH_NODE_HEIGHT = 34
 
-/** BubbleNode height */
+/** Circle / bubble context node height */
 export const BUBBLE_NODE_HEIGHT = 50
 
 /** LabelNode height */

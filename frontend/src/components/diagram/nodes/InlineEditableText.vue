@@ -1645,12 +1645,15 @@ onUnmounted(() => {
 /* Wrap mode: matches measurement element for consistent layout.
    word-break:normal keeps Latin words intact and lets CJK break between characters naturally.
    overflow-wrap:break-word only splits a word when it alone exceeds the line.
-   line-break:auto applies language-aware rules (e.g. CJK punctuation kinsoku). */
+   line-break:auto applies language-aware rules (e.g. CJK punctuation kinsoku).
+   text-wrap:balance evens short labels so the last line is not a single CJK glyph.
+   Declared after white-space so the balance style is not reset. */
 .inline-edit-display--wrap {
   white-space: pre-wrap;
   word-break: normal;
   overflow-wrap: break-word;
   line-break: auto;
+  text-wrap: balance;
 }
 
 /* Truncate mode: single line with ellipsis */
@@ -1677,6 +1680,7 @@ textarea.inline-edit-input--auto-wrap {
   word-break: normal;
   overflow-wrap: break-word;
   line-break: auto;
+  text-wrap: balance;
   overflow: hidden;
   resize: none;
   field-sizing: content;

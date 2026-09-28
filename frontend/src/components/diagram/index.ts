@@ -9,7 +9,6 @@ export { default as MindMapV2Canvas } from './MindMapV2Canvas.vue'
 
 // Node components
 export { default as TopicNode } from './nodes/TopicNode.vue'
-export { default as BubbleNode } from './nodes/BubbleNode.vue'
 export { default as BranchNode } from './nodes/BranchNode.vue'
 export { default as FlowNode } from './nodes/FlowNode.vue'
 export { default as BraceNode } from './nodes/BraceNode.vue'

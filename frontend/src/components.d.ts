@@ -126,7 +126,6 @@ declare module 'vue' {
     BranchNodeDiagram: typeof import('./components/diagram/nodes/BranchNodeDiagram.vue')['default']
     BridgeOverlay: typeof import('./components/diagram/BridgeOverlay.vue')['default']
     BrowserLocaleHintDialog: typeof import('./components/settings/BrowserLocaleHintDialog.vue')['default']
-    BubbleNode: typeof import('./components/diagram/nodes/BubbleNode.vue')['default']
     CanvasBottomAiCluster: typeof import('./components/canvas/CanvasBottomAiCluster.vue')['default']
     CanvasCachedResultNotice: typeof import('./components/canvas/CanvasCachedResultNotice.vue')['default']
     CanvasChrome: typeof import('./components/canvas/CanvasChrome.vue')['default']

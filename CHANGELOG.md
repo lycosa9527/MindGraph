@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.110] - 2026-09-29
+
+> **Wrapped labels on thinking maps and mind maps no longer leave one Chinese character on the second line.**
+
+### Fixed
+
+- **Diagram labels** — Circle, bubble, brace, flow, multi-flow, tree, bridge, and mind-map text wraps so the lines are about the same length. A label that is only a little too wide for the node splits evenly. Double-bubble capsules stay on one line, because the capsule is sized to the full label. Bubble attributes use the same circle node as the other round maps.
+
+### Tests
+
+- [`frontend/tests/mindMapTextWrap.spec.ts`](frontend/tests/mindMapTextWrap.spec.ts)
+
 ## [5.180.109] - 2026-09-28
 
 > **One MindMate workflow receives each school's agent name, short name, and school name.**
