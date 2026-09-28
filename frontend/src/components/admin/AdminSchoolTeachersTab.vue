@@ -201,7 +201,7 @@ watch(
             <td class="school-modal-table__cell whitespace-nowrap">
               <span
                 v-if="rolePillForRow(row)"
-                class="inline-flex max-w-full items-center rounded-full border px-2 py-0.5 text-xs font-medium"
+                class="role-pill max-w-full text-xs font-medium"
                 :class="[
                   rolePillForRow(row)?.bgClass,
                   rolePillForRow(row)?.textClass,
@@ -212,6 +212,7 @@ watch(
                   v-if="rolePillForRow(row)?.labelKey"
                   :k="rolePillForRow(row)?.labelKey ?? ''"
                   dense
+                  align="center"
                 />
               </span>
               <span

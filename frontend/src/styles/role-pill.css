@@ -1,0 +1,30 @@
+/* Role chips size to the bilingual label instead of a one-line box. */
+.role-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 100%;
+  height: auto;
+  padding: 3px 8px;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 9999px;
+  line-height: 1.15;
+  white-space: normal;
+}
+
+.role-pill .i18n-label {
+  width: max-content;
+  max-width: 100%;
+  align-items: center;
+}
+
+.role-pill .i18n-label__primary,
+.role-pill .i18n-label__secondary {
+  width: auto;
+  max-width: none;
+  white-space: nowrap;
+  text-align: center;
+}

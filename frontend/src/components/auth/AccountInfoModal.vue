@@ -557,6 +557,10 @@ watch(
 .account-plugin-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: max-content;
+  max-width: 100%;
+  height: auto;
   padding: 0.35rem 0.9rem;
   border-radius: 9999px;
   font-size: 0.75rem;
@@ -569,11 +573,22 @@ watch(
   line-height: 1.2;
   white-space: normal;
   text-align: start;
-  height: auto;
   transition:
     background 0.18s ease,
     border-color 0.18s ease,
     color 0.18s ease;
+}
+
+.account-plugin-pill :deep(.i18n-label) {
+  width: max-content;
+  max-width: 100%;
+  align-items: center;
+}
+
+.account-plugin-pill :deep(.i18n-label__primary),
+.account-plugin-pill :deep(.i18n-label__secondary) {
+  width: auto;
+  text-align: center;
 }
 
 .account-plugin-pill--openclaw {

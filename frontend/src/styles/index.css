@@ -10,6 +10,7 @@
 @import './mind-map-side-rail-panel.css';
 @import './auth-captcha.css';
 @import './mindmate-poke.css';
+@import './role-pill.css';
 
 @import 'tailwindcss/theme' layer(theme);
 @import 'tailwindcss/utilities' layer(utilities);
@@ -432,6 +433,73 @@ body {
   padding-inline-end: calc(
     var(--el-messagebox-padding-primary, 12px) + var(--el-message-close-size, 16px)
   );
+}
+
+/*
+ * Bilingual chrome is two lines. Buttons, tags, menus, tabs, and pills that
+ * were sized for one line grow to the label instead of clipping it.
+ */
+:is(
+  .el-button,
+  .el-tag,
+  .el-dropdown-menu__item,
+  .el-menu-item,
+  .el-sub-menu__title,
+  .el-tabs__item,
+  .el-radio,
+  .el-checkbox,
+  .el-radio-button__inner,
+  .el-segmented__item,
+  .el-select-dropdown__item
+):has(.i18n-label) {
+  height: auto !important;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+.el-button:not(.is-circle):has(.i18n-label) {
+  min-height: var(--el-button-size, 32px);
+  padding-block: 4px;
+}
+
+.el-button:has(.i18n-label) > span {
+  height: auto;
+  overflow: visible;
+  white-space: normal;
+}
+
+.el-tag:has(.i18n-label) {
+  min-height: 24px;
+  padding-block: 2px;
+}
+
+.el-menu-item:has(.i18n-label),
+.el-sub-menu__title:has(.i18n-label) {
+  min-height: var(--el-menu-item-height, 56px);
+  padding-block: 6px;
+}
+
+.el-tabs__item:has(.i18n-label) {
+  min-height: var(--el-tabs-header-height, 40px);
+}
+
+.el-tabs__header:has(.i18n-label),
+.el-tabs__nav-wrap:has(.i18n-label),
+.el-tabs__nav-scroll:has(.i18n-label),
+.el-segmented:has(.i18n-label) {
+  height: auto;
+}
+
+.el-radio:has(.i18n-label),
+.el-checkbox:has(.i18n-label) {
+  align-items: flex-start;
+  min-height: var(--el-checkbox-height, 32px);
+}
+
+button:has(.i18n-label),
+a:has(.i18n-label) {
+  height: auto;
+  white-space: normal;
 }
 
 /*

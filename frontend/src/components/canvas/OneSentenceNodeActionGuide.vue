@@ -266,7 +266,9 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: max-content;
   min-height: 1.25rem;
+  height: auto;
   max-width: 100%;
   padding: 0.125rem 0.375rem;
   border: 1px solid rgb(226 232 240);
@@ -276,11 +278,21 @@ onUnmounted(() => {
   font-family: ui-sans-serif, system-ui, sans-serif;
   font-size: 10px;
   font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.15;
+  white-space: normal;
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
+}
+
+.node-action-kbd :deep(.i18n-label) {
+  width: max-content;
+  max-width: 100%;
+  align-items: center;
+}
+
+.node-action-kbd :deep(.i18n-label__primary),
+.node-action-kbd :deep(.i18n-label__secondary) {
+  width: auto;
+  text-align: center;
 }
 
 :global(.dark) .node-action-kbd {

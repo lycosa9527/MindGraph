@@ -117,6 +117,7 @@ watch(
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
+  max-width: 100%;
   line-height: 1.15;
   text-align: start;
 }
@@ -136,7 +137,7 @@ watch(
 
 .i18n-label__primary,
 .i18n-label__secondary {
-  width: 100%;
+  max-width: 100%;
   text-align: start;
 }
 
@@ -167,6 +168,7 @@ watch(
 .i18n-label--beside .i18n-label__primary,
 .i18n-label--beside .i18n-label__secondary {
   width: auto;
+  max-width: none;
   flex: 0 0 auto;
   white-space: nowrap;
 }

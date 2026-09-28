@@ -243,7 +243,7 @@ function onUserMenuVisible(open: boolean): void {
                 </div>
                 <span
                   v-if="s.userRolePill"
-                  class="role-pill shrink-0 inline-flex items-center rounded-full border px-1.5 py-0 text-[10px] font-medium leading-4"
+                  class="role-pill shrink-0 text-[10px] font-medium"
                   :class="[
                     s.userRolePill.bgClass,
                     s.userRolePill.textClass,
@@ -254,6 +254,7 @@ function onUserMenuVisible(open: boolean): void {
                     v-if="s.userRolePill.labelKey"
                     :k="s.userRolePill.labelKey"
                     dense
+                    align="center"
                   />
                   <template v-else>{{ s.userRolePill.label }}</template>
                 </span>

@@ -180,13 +180,14 @@ async function handleLogout() {
           </div>
           <span
             v-if="userRolePill"
-            class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium"
+            class="role-pill text-xs font-medium"
             :class="[userRolePill.bgClass, userRolePill.textClass, userRolePill.borderClass]"
           >
             <I18nText
               v-if="userRolePill.labelKey"
               :k="userRolePill.labelKey"
               dense
+              align="center"
             />
             <template v-else>{{ userRolePill.label }}</template>
           </span>

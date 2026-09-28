@@ -198,6 +198,20 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
+  height: auto;
+  width: max-content;
+}
+
+.suggestion-bubble :deep(.i18n-label) {
+  width: max-content;
+  max-width: 100%;
+  align-items: center;
+}
+
+.suggestion-bubble :deep(.i18n-label__primary),
+.suggestion-bubble :deep(.i18n-label__secondary) {
+  width: auto;
+  text-align: center;
 }
 
 .suggestion-bubble:disabled {

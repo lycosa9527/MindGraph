@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.113] - 2026-09-29
+
+> **Gallery diagram cards keep both languages on one centered line, and pills and buttons grow to fit the presenter line.**
+
+### Fixed
+
+- **Gallery cards** — In dual-language mode, each diagram name and description stays on one line: the interface language on the left, the presenter language on the right, centered together. A longer pair shrinks instead of wrapping in the middle of a name. Section headings stay stacked.
+- **Pills and buttons** — The account role chip, admin and mobile role pills, account plugin chips, and suggestion chips size to both languages. Element Plus buttons, tags, menus, tabs, radios, and checkboxes that show a bilingual label grow with it instead of clipping the second line.
+
+### Tests
+
+- [`frontend/tests/besideFitScale.spec.ts`](frontend/tests/besideFitScale.spec.ts)
+
 ## [5.180.112] - 2026-09-29
 
 > **Toasts and empty states follow dual-language mode, and MindMate and MindGraph stay the product names.**
