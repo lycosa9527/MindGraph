@@ -68,6 +68,16 @@ def strip_document_csp_meta(html: str) -> str:
     return _DOCUMENT_CSP_META_RE.sub("", html, count=1)
 
 
+_HTML_OPEN_RE = re.compile(r"<html\b", re.IGNORECASE)
+
+
+def stamp_vod_csp_marker(html: str, enabled: bool) -> str:
+    """Mark the shell when this response's CSP allows TCPlayer hosts."""
+    if not enabled or "data-mg-csp-vod=" in html:
+        return html
+    return _HTML_OPEN_RE.sub('<html data-mg-csp-vod="1"', html, count=1)
+
+
 def inject_csp_nonce(html: str, nonce: str) -> str:
     """Stamp ``nonce`` onto ``<script>`` tags for the matching HTTP CSP header.
 

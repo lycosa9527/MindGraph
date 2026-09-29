@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from services.infrastructure.utils.spa_handler import (
     inject_csp_nonce,
+    stamp_vod_csp_marker,
     strip_document_csp_meta,
 )
 from services.utils import tencent_cos_client as cos_mod
@@ -57,3 +58,12 @@ def test_inject_nonce_then_strip_meta_keeps_script_nonce() -> None:
     assert 'nonce="abcNonce"' in final
     assert "Content-Security-Policy" not in final
     assert "window.__MG__=1" in final
+
+
+def test_stamp_vod_csp_marker_sets_html_attribute_once() -> None:
+    """The shell marker is present only when this response allows TCPlayer hosts."""
+    html = '<!doctype html><html lang="en"><head></head></html>'
+    marked = stamp_vod_csp_marker(html, True)
+    assert marked.startswith('<!doctype html><html data-mg-csp-vod="1" lang="en">')
+    assert stamp_vod_csp_marker(marked, True) == marked
+    assert stamp_vod_csp_marker(html, False) == html

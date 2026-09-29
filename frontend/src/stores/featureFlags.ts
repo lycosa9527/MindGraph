@@ -8,6 +8,7 @@ import { defineStore } from 'pinia'
 
 import { MINDMAP_CANVAS_MODE_KEY, useUIStore } from '@/stores/ui'
 import { apiRequest } from '@/utils/apiClient'
+import { maybeReloadForVodCsp } from '@/utils/vodCspDocument'
 
 function syncMindMapCanvasModeForFlags(data: FeatureFlagsResponse): void {
   const uiStore = useUIStore()
@@ -196,6 +197,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         flags.value = data
         lastFetchTime.value = epochAtStart === staleEpoch ? fetchedAt : 0
         syncMindMapCanvasModeForFlags(data)
+        maybeReloadForVodCsp(data.feature_vod ?? false)
         return data
       } catch (error) {
         console.error('[FeatureFlags] Fetch error:', error)

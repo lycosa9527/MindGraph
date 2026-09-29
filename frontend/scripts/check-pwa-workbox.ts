@@ -1,9 +1,10 @@
 /**
  * CI guard: PWA must not precache every lazy chunk/font (cold-load storm).
- * Shell + icons precache; /assets/* uses runtime CacheFirst after first fetch.
+ * Icons precache; the HTML shell stays on the network so the CSP nonce stays fresh.
+ * /assets/* uses runtime CacheFirst after first fetch.
  */
 import { readFileSync } from 'fs'
-import { resolve, dirname } from 'path'
+import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 
 const frontendDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -17,7 +18,7 @@ if (viteConfig.includes("'**/*.{js,css,html,ico,png,svg,woff2,woff,webmanifest}'
 }
 
 if (!viteConfig.includes('PWA_PRECACHE_GLOB_PATTERNS')) {
-  throw new Error('vite.config.ts must define PWA_PRECACHE_GLOB_PATTERNS for shell precache')
+  throw new Error('vite.config.ts must define PWA_PRECACHE_GLOB_PATTERNS for icon precache')
 }
 
 if (!viteConfig.includes('PWA_RUNTIME_CACHING')) {
@@ -32,8 +33,18 @@ if (!viteConfig.includes("'**/training/roles/**'")) {
   throw new Error('vite PWA workbox must globIgnore packed role WebPs (COS catalog)')
 }
 
-if (!viteConfig.includes("urlPattern: /^\\/assets\\//")) {
+if (!viteConfig.includes('urlPattern: /^\\/assets\\//')) {
   throw new Error('vite PWA runtimeCaching must include /assets/ CacheFirst rule')
 }
 
-console.log('PWA workbox config OK (shell precache + runtime /assets cache)')
+if (viteConfig.includes('navigateFallback:')) {
+  throw new Error(
+    'vite PWA must not set navigateFallback; a precached shell freezes the CSP nonce and VOD hosts'
+  )
+}
+
+if (/PWA_PRECACHE_GLOB_PATTERNS = \[[\s\S]*?'index\.html'/.test(viteConfig)) {
+  throw new Error('vite PWA precache must not include index.html (per-request CSP)')
+}
+
+console.log('PWA workbox config OK (icon precache + network document + runtime /assets cache)')

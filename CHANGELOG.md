@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.114] - 2026-09-29
+
+> **An online-library preview loads the player and the video, including the documented play and upload hosts.**
+
+### Fixed
+
+- **在线视频库** — Opening the library was still using a saved copy of the page. That copy kept an older security policy, so the player could not load its helper or ask Tencent for the video. Each visit now loads a fresh page. When the library is on, that page allows the player hosts. If you already have the app open from before the library was turned on, it reloads once so preview can play.
+- **在线视频库** — Upload reports and the documented play service are allowed as well: `vodreport.qcloud.com`, `playvideo.qcloud.com`, and `bkplayvideo.qcloud.com`.
+
+### Tests
+
+- [`tests/test_csp_cos_browser_hosts.py`](tests/test_csp_cos_browser_hosts.py), [`frontend/tests/vodCspDocument.spec.ts`](frontend/tests/vodCspDocument.spec.ts)
+
 ## [5.180.113] - 2026-09-29
 
 > **Gallery diagram cards keep both languages on one centered line, and pills and buttons grow to fit the presenter line.**

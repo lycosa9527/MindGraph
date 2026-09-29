@@ -17,9 +17,12 @@ from __future__ import annotations
 
 from urllib.parse import urlparse
 
+# Apply/Prepare/CommitUploadUGC: vod2.qcloud.com, backup vod2.dnsv1.com
+# (Web 上传 SDK, document 266/9239). The SDK also posts upload reports to vodreport.
 VOD_UPLOAD_API_ORIGINS = (
     "https://vod2.qcloud.com",
     "https://vod2.dnsv1.com",
+    "https://vodreport.qcloud.com",
 )
 
 # Mainland parks PrepareUploadUGC may assign. The bucket name is chosen at
@@ -34,8 +37,12 @@ VOD_UPLOAD_COS_REGIONS = (
 )
 
 
-# Hosts hardcoded in tcplayer.js 5.3.4 (play CGI, license, escape-domain lookup).
+# Play CGI from 自研播放器对接 (266/50469): playvideo.qcloud.com, backup
+# bkplayvideo.qcloud.com. TCPlayer 5.3.4 calls the vodplayvideo/vodglcdn/vod-common
+# set instead, plus license hosts, get-domains, and the stats host.
 VOD_PLAY_CONNECT_ORIGINS = (
+    "https://playvideo.qcloud.com",
+    "https://bkplayvideo.qcloud.com",
     "https://playvideo.vodplayvideo.net",
     "https://playvideo.vodglcdn.com",
     "https://playvideo.vodplayvideo.com",
@@ -48,7 +55,10 @@ VOD_PLAY_CONNECT_ORIGINS = (
     "https://datacenter.live.tlivesource.com",
 )
 
-# One label each: ``{appId}.vod2.myqcloud.com`` and ``{appId}.vod-qcloud.com``.
+# Default file host is ``{appId}.vod2.myqcloud.com`` (266/33373). The test host
+# ``{appId}-test.vod2.myqcloud.com`` is the same one label. DRM license
+# ``drm.vod2.myqcloud.com`` matches it too. ``vod-qcloud.com`` is the older
+# alternate some play URLs still use.
 VOD_PLAY_FILE_ORIGINS = (
     "https://*.vod2.myqcloud.com",
     "https://*.vod-qcloud.com",

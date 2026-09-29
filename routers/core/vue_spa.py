@@ -14,6 +14,7 @@ import os
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 
+from config.settings import config
 from services.infrastructure.utils.pwa_manifest import (
     build_pwa_manifest,
     public_site_origin_from_request,
@@ -25,6 +26,7 @@ from services.infrastructure.utils.spa_handler import (
     generate_csp_nonce,
     inject_csp_nonce,
     media_type_for_vue_dist_relpath,
+    stamp_vod_csp_marker,
     strip_document_csp_meta,
 )
 from utils.privacy_policy_static import privacy_policy_source_path
@@ -245,7 +247,7 @@ async def vue_pwa_manifest(request: Request):
 
 @router.get("/index.html", response_class=HTMLResponse)
 async def vue_index_html(request: Request):
-    """Serve SPA shell for Workbox navigateFallback and direct /index.html requests."""
+    """Serve the SPA shell for a direct /index.html request."""
     return await _serve_index(request)
 
 
@@ -338,7 +340,10 @@ async def _serve_index(request: Request) -> HTMLResponse:
     setattr(request.state, CSP_NONCE_STATE_ATTR, nonce)
     # Header is the sole document CSP (nonce + COS connect-src). Strip Vite's
     # meta tag so browsers do not intersect a second, drift-prone policy.
-    html = strip_document_csp_meta(inject_csp_nonce(index_path.read_text(encoding="utf-8"), nonce))
+    html = stamp_vod_csp_marker(
+        strip_document_csp_meta(inject_csp_nonce(index_path.read_text(encoding="utf-8"), nonce)),
+        config.FEATURE_VOD is True,
+    )
 
     response = HTMLResponse(content=html)
     apply_no_cache_headers(response)

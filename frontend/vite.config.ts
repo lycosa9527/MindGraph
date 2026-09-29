@@ -119,9 +119,13 @@ const devHmr = resolveHmrConfig(devPort, devHost)
 const devWatch = resolveWatchConfig(__dirname)
 const isPwaDev = process.env.VITE_PWA_DEV === '1'
 
-/** Precache shell + icons only; lazy chunks/fonts load on demand (runtime cache below). */
+/**
+ * Precache icons only. The HTML shell must stay on the network: FastAPI stamps a
+ * per-request CSP nonce and, when the online library is on, the TCPlayer hosts.
+ * A precached index.html freezes that header, so playback keeps the policy from
+ * the service-worker install.
+ */
 const PWA_PRECACHE_GLOB_PATTERNS = [
-  'index.html',
   '**/*.{ico,png,svg,webmanifest}',
   'favicon.svg',
   'robots.txt',
@@ -333,14 +337,7 @@ export default defineConfig({
         globPatterns: isPwaDev ? [] : PWA_PRECACHE_GLOB_PATTERNS,
         // Sidebar quote pools are fetched on demand after login (locale-specific).
         globIgnores: ['**/sidebar-quotes-*', '**/training/roles/**', '**/stats.html'],
-        navigateFallback: '/index.html',
-        navigateFallbackDenylist: [
-          /^\/api/,
-          /^\/ws/,
-          /^\/static/,
-          /^\/health/,
-          /^\/thinking_mode/,
-        ],
+        // No navigateFallback. Client routes are served by FastAPI with a fresh CSP.
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: isPwaDev ? undefined : PWA_RUNTIME_CACHING,
       },
