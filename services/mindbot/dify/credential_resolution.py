@@ -1,10 +1,10 @@
 """
 Effective Dify credentials for MindBot config rows (export and read-time resolution).
 
-Mirrors runtime callback semantics: each ``OrganizationMindbotConfig`` stores
-resolved URL/key at save time when ``use_org_dify_settings`` is true; export
-re-resolves org-linked bots from every configured org Dify server (1 and 2)
-so custom per-bot apps and dual-server history are included.
+Chat turns for org-linked bots use ``open_mindbot_dify_client``, the same live
+MindMate resolver as web (failover included). Export re-resolves those bots
+from every configured org Dify server so custom per-bot apps and dual-server
+history are included.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved

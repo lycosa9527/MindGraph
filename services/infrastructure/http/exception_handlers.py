@@ -21,6 +21,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from starlette.requests import ClientDisconnect
 from starlette.types import ExceptionHandler
+from starlette.websockets import WebSocketDisconnect
+from uvicorn.protocols.utils import ClientDisconnected
 
 from config.settings import config
 from models import get_request_language
@@ -180,7 +182,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 
     # Outer BaseHTTPMiddleware can raise ClientDisconnect before ExceptionMiddleware
     # sees it; ServerErrorMiddleware then routes here via the Exception handler.
-    if isinstance(exc, ClientDisconnect):
+    if isinstance(exc, (ClientDisconnect, WebSocketDisconnect, ClientDisconnected)):
         logger.debug("Client disconnected (request aborted): %s", request_path)
         return Response(status_code=204)
 

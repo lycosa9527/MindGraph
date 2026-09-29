@@ -123,7 +123,7 @@ def run_server() -> None:
         print("[ERROR] Uvicorn not installed. Install with: pip install uvicorn[standard]>=0.24.0")
         sys.exit(1)
 
-    # Workers spawned by Uvicorn inherit this and skip duplicate banner / early prints
+    # Workers spawned by Uvicorn inherit this and skip duplicate early prints
     os.environ[MINDGRAPH_LAUNCHER_PID_ENV] = str(os.getpid())
 
     if config is None:

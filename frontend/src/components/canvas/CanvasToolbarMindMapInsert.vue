@@ -12,6 +12,7 @@ import CanvasIconInsertDialog from '@/components/canvas/CanvasIconInsertDialog.v
 import CanvasImageInsertDialog from '@/components/canvas/CanvasImageInsertDialog.vue'
 import CanvasLinkInsertDialog from '@/components/canvas/CanvasLinkInsertDialog.vue'
 import CanvasMathInsertDialog from '@/components/canvas/CanvasMathInsertDialog.vue'
+import MmToolbarLabel from '@/components/canvas/MmToolbarLabel.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimiter'
@@ -206,7 +207,7 @@ function onMathConfirm(latex: string): void {
   <I18nTooltip
     k="canvas.ribbon.tabInsert"
     placement="bottom"
-    :disabled="!props.compact"
+    disabled
   >
     <span class="inline-flex shrink-0">
       <ElDropdown
@@ -221,12 +222,11 @@ function onMathConfirm(latex: string): void {
           :aria-label="t('canvas.ribbon.tabInsert')"
         >
           <Plus class="w-4 h-4" />
-          <span
-            v-if="!props.compact"
+          <MmToolbarLabel
             class="mm-btn__label"
-          >
-            <I18nText k="canvas.ribbon.tabInsert" />
-          </span>
+            k="canvas.ribbon.tabInsert"
+            :short="props.compact"
+          />
           <ChevronDown
             :size="12"
             class="mm-btn__chevron"

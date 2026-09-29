@@ -110,7 +110,7 @@ async def join_online_collab_impl(
                         )
 
             if not diagram_id:
-                logger.warning("[OnlineCollabMgr] Invalid workshop code: %s", code)
+                logger.debug("[OnlineCollabMgr] Invalid workshop code: %s", code)
                 return None
 
             result = await db.execute(

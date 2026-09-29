@@ -333,6 +333,7 @@ run_frontend() {
     tests/loginRestoresUiLanguage.spec.ts tests/authLoginHero.spec.ts \
     tests/normalizeAuthUser.spec.ts \
     tests/mindMapRibbonChrome.spec.ts tests/useMindMapRibbonState.spec.ts \
+    tests/toolbarLabelAbbreviation.spec.ts tests/toolbarLabelCollapse.spec.ts \
     tests/authBootstrapDedupe.spec.ts tests/formatGalleryLanguageMenuLabel.spec.ts \
     tests/formatSidebarDailyTokens.spec.ts \
     tests/voiceNotesMarkdown.spec.ts tests/voiceNotesTranscript.spec.ts \

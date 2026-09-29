@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.115] - 2026-09-29
+
+> **Crowded mind-map labels shorten to a real word, the login logo shows the site QR, and MindBot uses the same live school MindMate connection as web chat.**
+
+### Added
+
+- **Site QR on the login brand** — Holding the pointer on the marketing logo for 1.5 seconds opens the same public-site QR as the sidebar logo. Moving away closes it.
+
+### Changed
+
+- **Mind map toolbar** — When a ribbon row or the tab strip runs out of room, each command keeps a short word from its name instead of vanishing. Hover still shows the full label. Ribbon tabs shorten the same way when they would cover the filename or the collaboration controls.
+- **MindBot and school MindMate** — A bot that uses the school's MindMate settings opens the same live Dify connection as web chat: the active server, failover, and the school's timeout. The admin health check probes that connection. A bot with its own URL and key keeps those. Each turn still sends the agent name, short name, and school name.
+
+### Fixed
+
+- **Startup banner** — The version banner is written once, when launch finishes.
+- **Closed sockets** — A browser that drops a workshop, collaboration, or MindMate socket is logged as a disconnect. It is not an application error.
+- **Storage logs** — A missing object, such as an expired temp image, is a debug line. The COS SDK stays quiet unless storage debug is turned on.
+- **Collaboration traces** — Per-update merge and broadcast traces stay at debug.
+
+### Tests
+
+- [`frontend/tests/toolbarLabelAbbreviation.spec.ts`](frontend/tests/toolbarLabelAbbreviation.spec.ts), [`frontend/tests/toolbarLabelCollapse.spec.ts`](frontend/tests/toolbarLabelCollapse.spec.ts)
+- [`tests/test_mindbot_dify_runtime_client.py`](tests/test_mindbot_dify_runtime_client.py)
+
 ## [5.180.114] - 2026-09-29
 
 > **An online-library preview loads the player and the video, including the documented play and upload hosts.**

@@ -6,6 +6,7 @@ import { ElDropdown } from 'element-plus'
 import { Check, ChevronDown, Clock } from '@lucide/vue'
 
 import { useMindMapRibbonActions } from '@/canvas-ribbon/useMindMapRibbonActions'
+import MmToolbarLabel from '@/components/canvas/MmToolbarLabel.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -128,12 +129,11 @@ watch(
             data-testid="mindmap-history-versions-trigger"
           >
             <Clock class="w-4 h-4" />
-            <span
-              v-if="!props.compact"
+            <MmToolbarLabel
               class="mm-btn__label"
-            >
-              <I18nText k="canvas.ribbon.historyVersions" />
-            </span>
+              k="canvas.ribbon.historyVersions"
+              :short="props.compact"
+            />
             <ChevronDown
               :size="12"
               class="mm-btn__chevron"

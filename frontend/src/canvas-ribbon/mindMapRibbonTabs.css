@@ -179,3 +179,70 @@
   color: transparent;
   -webkit-text-fill-color: transparent;
 }
+
+/* Long translations: short tab title, full title on hover. */
+.mm-ribbon-tabs--short-labels.mm-ribbon-tabs--topbar .mm-ribbon-tabs__tab {
+  position: relative;
+  padding-inline: 10px;
+}
+
+.mm-ribbon-tabs--short-labels .mm-toolbar-label {
+  position: relative;
+}
+
+.mm-ribbon-tabs--short-labels .mm-label-full {
+  display: none;
+}
+
+.mm-ribbon-tabs--short-labels .mm-label-short {
+  display: inline;
+  background-image: none;
+  -webkit-text-fill-color: currentColor;
+  color: inherit;
+}
+
+.mm-ribbon-tabs--short-labels .mm-ribbon-tabs__tab:hover,
+.mm-ribbon-tabs--short-labels .mm-ribbon-tabs__tab:focus-visible {
+  z-index: 6;
+}
+
+.mm-ribbon-tabs--short-labels .mm-ribbon-tabs__tab:hover .mm-label-short,
+.mm-ribbon-tabs--short-labels .mm-ribbon-tabs__tab:focus-visible .mm-label-short {
+  visibility: hidden;
+}
+
+.mm-ribbon-tabs--short-labels .mm-ribbon-tabs__tab:hover .mm-label-full,
+.mm-ribbon-tabs--short-labels .mm-ribbon-tabs__tab:focus-visible .mm-label-full {
+  display: inline-flex;
+  align-items: center;
+  position: absolute;
+  z-index: 8;
+  top: 50%;
+  inset-inline-start: 0;
+  transform: translateY(-50%);
+  padding-inline-end: 8px;
+  background: #fff;
+  background-image: none;
+  color: #1f2937;
+  -webkit-text-fill-color: #1f2937;
+  font-weight: 600;
+  line-height: 1.15;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 6px 1px 10px rgb(15 23 42 / 0.12);
+}
+
+.mm-ribbon-tabs--short-labels .mm-ribbon-tabs__tab--ai:hover .mm-label-full,
+.mm-ribbon-tabs--short-labels .mm-ribbon-tabs__tab--ai:focus-visible .mm-label-full {
+  background-image: none;
+  color: #1f2937;
+  -webkit-text-fill-color: #1f2937;
+}
+
+.dark .mm-ribbon-tabs--short-labels .mm-ribbon-tabs__tab:hover .mm-label-full,
+.dark .mm-ribbon-tabs--short-labels .mm-ribbon-tabs__tab:focus-visible .mm-label-full {
+  background: #1f2937;
+  background-image: none;
+  color: #f9fafb;
+  -webkit-text-fill-color: #f9fafb;
+}

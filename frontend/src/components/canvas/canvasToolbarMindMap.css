@@ -449,3 +449,80 @@
 .mm-btn__chevron--on-dark {
   color: rgb(255 255 255 / 0.65);
 }
+
+/* Long translations: show a short abbreviation, and the full label on hover. */
+.mm-toolbar--short-labels:not(.is-overflowing) .mm-toolbar__track {
+  overflow: visible;
+}
+
+.mm-toolbar--short-labels :deep(.mm-btn),
+.mm-toolbar--short-labels :deep(.mm-follow-toggle),
+.mm-toolbar--short-labels :deep(.mm-toolbar-label),
+.mm-toolbar :deep(.mm-toolbar-label.is-short) {
+  position: relative;
+}
+
+.mm-toolbar--short-labels :deep(.mm-label-full),
+.mm-toolbar :deep(.mm-toolbar-label.is-short .mm-label-full) {
+  display: none;
+}
+
+.mm-toolbar--short-labels :deep(.mm-label-short),
+.mm-toolbar :deep(.mm-toolbar-label.is-short .mm-label-short) {
+  display: inline;
+}
+
+.mm-toolbar--short-labels :deep(.mm-btn:hover),
+.mm-toolbar--short-labels :deep(.mm-btn:focus-visible),
+.mm-toolbar--short-labels :deep(.mm-btn:focus-within),
+.mm-toolbar--short-labels :deep(.mm-follow-toggle:hover),
+.mm-toolbar--short-labels :deep(.mm-follow-toggle:focus-within) {
+  z-index: 6;
+}
+
+.mm-toolbar--short-labels :deep(.mm-btn:hover .mm-label-short),
+.mm-toolbar--short-labels :deep(.mm-btn:focus-visible .mm-label-short),
+.mm-toolbar--short-labels :deep(.mm-btn:focus-within .mm-label-short),
+.mm-toolbar--short-labels :deep(.mm-follow-toggle:hover .mm-label-short),
+.mm-toolbar--short-labels :deep(.mm-follow-toggle:focus-within .mm-label-short),
+.mm-toolbar :deep(.mm-btn:hover .is-short .mm-label-short),
+.mm-toolbar :deep(.mm-btn:focus-visible .is-short .mm-label-short),
+.mm-toolbar :deep(.mm-btn:focus-within .is-short .mm-label-short) {
+  visibility: hidden;
+}
+
+.mm-toolbar--short-labels :deep(.mm-btn:hover .mm-label-full),
+.mm-toolbar--short-labels :deep(.mm-btn:focus-visible .mm-label-full),
+.mm-toolbar--short-labels :deep(.mm-btn:focus-within .mm-label-full),
+.mm-toolbar--short-labels :deep(.mm-follow-toggle:hover .mm-label-full),
+.mm-toolbar--short-labels :deep(.mm-follow-toggle:focus-within .mm-label-full),
+.mm-toolbar :deep(.mm-btn:hover .is-short .mm-label-full),
+.mm-toolbar :deep(.mm-btn:focus-visible .is-short .mm-label-full),
+.mm-toolbar :deep(.mm-btn:focus-within .is-short .mm-label-full) {
+  display: inline-flex;
+  align-items: center;
+  position: absolute;
+  z-index: 8;
+  top: 50%;
+  inset-inline-start: 0;
+  transform: translateY(-50%);
+  padding-inline-end: 8px;
+  background: #e5e7eb;
+  color: #1f2937;
+  line-height: 1.15;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 6px 1px 10px rgb(15 23 42 / 0.1);
+}
+
+:global(.dark) .mm-toolbar--short-labels :deep(.mm-btn:hover .mm-label-full),
+:global(.dark) .mm-toolbar--short-labels :deep(.mm-btn:focus-visible .mm-label-full),
+:global(.dark) .mm-toolbar--short-labels :deep(.mm-btn:focus-within .mm-label-full),
+:global(.dark) .mm-toolbar--short-labels :deep(.mm-follow-toggle:hover .mm-label-full),
+:global(.dark) .mm-toolbar--short-labels :deep(.mm-follow-toggle:focus-within .mm-label-full),
+:global(.dark) .mm-toolbar :deep(.mm-btn:hover .is-short .mm-label-full),
+:global(.dark) .mm-toolbar :deep(.mm-btn:focus-visible .is-short .mm-label-full),
+:global(.dark) .mm-toolbar :deep(.mm-btn:focus-within .is-short .mm-label-full) {
+  background: #374151;
+  color: #f9fafb;
+}

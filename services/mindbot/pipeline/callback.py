@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import asyncio
 import functools
-import json
 import logging
 import time
 from typing import Any, Optional
@@ -17,7 +16,8 @@ from typing import Any, Optional
 from clients.dify import AsyncDifyClient, DifyFile
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.diagram.generation_session_registry import register_generation_session
-from services.dify.org_dify_inputs import apply_persona_inputs_for_organization_id
+from services.dify.org_mindmate_client import MindmateDifyNotConfiguredError
+from services.mindbot.dify.runtime_client import mindbot_dify_chat_inputs, open_mindbot_dify_client
 from services.mindbot.diagram.generation_session_bind import resolve_mindbot_linked_user_id
 from services.mindbot.core.conv_gate import (
     conv_gate_enabled,
@@ -309,26 +309,6 @@ def mindbot_accept_ack_headers(cfg: OrganizationMindbotConfig) -> dict[str, str]
     )
 
 
-def _parse_dify_inputs_from_config(
-    cfg: OrganizationMindbotConfig,
-) -> Optional[dict[str, Any]]:
-    """Parse optional JSON object of Dify app ``inputs`` from org config."""
-    raw = getattr(cfg, "dify_inputs_json", None)
-    if raw is None:
-        return None
-    if isinstance(raw, str) and not raw.strip():
-        return None
-    try:
-        parsed = json.loads(raw)
-    except json.JSONDecodeError:
-        logger.warning("[MindBot] dify_inputs_json invalid JSON; ignoring")
-        return None
-    if not isinstance(parsed, dict):
-        logger.warning("[MindBot] dify_inputs_json must be a JSON object; ignoring")
-        return None
-    return parsed
-
-
 def _dify_streaming_enabled() -> bool:
     """Dify streaming enabled."""
     return env_bool("MINDBOT_DIFY_STREAMING", True)
@@ -473,12 +453,6 @@ async def execute_mindbot_pipeline(
                 raw_sw[:120],
             )
 
-    dify = AsyncDifyClient(
-        api_key=cfg.dify_api_key.strip(),
-        api_url=cfg.dify_api_base_url.strip(),
-        timeout=max(5, min(600, cfg.dify_timeout_seconds)),
-    )
-
     usage_started = time.monotonic()
     msg_id_for_usage = msg.msg_id
     sender_nick = msg.sender_nick or ""
@@ -552,12 +526,6 @@ async def execute_mindbot_pipeline(
         await _redis_delete_async(conv_key)
 
     stale_cb = _on_stale_dify_conversation if redis_ok else None
-    parsed_inputs = _parse_dify_inputs_from_config(cfg)
-    dify_inputs: dict[str, Any] = dict(parsed_inputs) if parsed_inputs else {}
-    dify_inputs["mg_dify_user"] = dify_user_id
-    if dify_conv:
-        dify_inputs["mg_conversation_id"] = dify_conv
-    await apply_persona_inputs_for_organization_id(dify_inputs, cfg.organization_id)
 
     linked_user_id = await resolve_mindbot_linked_user_id(
         cfg.organization_id,
@@ -604,12 +572,27 @@ async def execute_mindbot_pipeline(
         hdr_for_code=_hdr,
     )
     if bind_result is not None:
+        if gate_acquired:
+            await redis_release_conv_gate_async(cfg.organization_id, conv_gate_scope)
         return bind_result
 
     cb_key = str(cfg.id)
     _streaming = _dify_streaming_enabled()
 
     try:
+        try:
+            dify = await open_mindbot_dify_client(cfg)
+        except MindmateDifyNotConfiguredError:
+            logger.warning(
+                "[MindBot] mindmate_dify_not_configured org_id=%s",
+                cfg.organization_id,
+            )
+            return 200, _hdr(MindbotErrorCode.DIFY_FAILED)
+        dify_inputs = await mindbot_dify_chat_inputs(
+            cfg,
+            dify_user_id=dify_user_id,
+            dify_conversation_id=dify_conv,
+        )
         if _streaming:
             slot_released = False
 

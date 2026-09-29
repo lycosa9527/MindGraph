@@ -9,6 +9,7 @@ import { ElDropdown, ElTooltip } from 'element-plus'
 import { ChevronDown, ListOrdered } from '@lucide/vue'
 
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
+import MmToolbarLabel from '@/components/canvas/MmToolbarLabel.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -106,6 +107,7 @@ function handleDropdownVisible(visible: boolean): void {
     v-if="isButton"
     :content="numberingLabel"
     placement="bottom"
+    :disabled="compact"
   >
     <span class="inline-flex shrink-0">
       <ElDropdown
@@ -122,12 +124,11 @@ function handleDropdownVisible(visible: boolean): void {
           :aria-label="numberingLabel"
         >
           <ListOrdered class="w-4 h-4 shrink-0" />
-          <span
-            v-if="!compact"
+          <MmToolbarLabel
             class="mm-btn__label"
-          >
-            <I18nText k="canvas.toolbar.mindMapAppearanceNumbering" />
-          </span>
+            k="canvas.toolbar.mindMapAppearanceNumbering"
+            :short="compact"
+          />
           <ChevronDown
             :size="12"
             class="mm-btn__chevron"

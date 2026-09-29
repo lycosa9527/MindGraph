@@ -51,10 +51,23 @@ import { useAuthStore, useCanvasExportStore, usePanelsStore } from '@/stores'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { navigateBackFromCanvas } from '@/utils/canvasBackNavigation'
 import { isPdfExportCommand } from '@/utils/diagramPdfExport'
+import {
+  type LabelCollapseSnapshot,
+  createLabelCollapseSnapshot,
+  nextLabelCollapse,
+} from '@/utils/toolbarLabelCollapse'
 
 const { resetToDefaultTemplate } = useCanvasReset()
 
 const topBarRootRef = ref<HTMLElement | null>(null)
+const titleRowRef = ref<HTMLElement | null>(null)
+const docClusterRef = ref<HTMLElement | null>(null)
+const globalClusterRef = ref<HTMLElement | null>(null)
+const tabsHostRef = ref<HTMLElement | null>(null)
+/** Ribbon tab titles overlap the filename or collab cluster. */
+const ribbonTabsIconLabels = ref(false)
+let ribbonTabCollapse: LabelCollapseSnapshot = createLabelCollapseSnapshot()
+const RIBBON_TAB_GAP_PX = 8
 /** Icon-only for MindMate / reset / export (first tier — wider breakpoint). */
 const compactTopBarActions = ref(false)
 /** Icon-only editing toolbar labels (second tier — narrower breakpoint). */
@@ -66,6 +79,35 @@ function updateCompactFromTopBarWidth(width: number): void {
   const w = width > 0 ? width : 0
   compactTopBarActions.value = w > 0 && w < CANVAS_TOP_BAR.COMPACT_RIGHT_ACTIONS_BREAKPOINT_PX
   compactCanvasToolbar.value = w > 0 && w < CANVAS_TOP_BAR.COMPACT_TOOLBAR_BREAKPOINT_PX
+}
+
+function ribbonTabRoomPx(): number {
+  const row = titleRowRef.value
+  if (!row || row.clientWidth <= 0) return -1
+  const style = getComputedStyle(row)
+  const padX = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0)
+  const columnGap = parseFloat(style.columnGap) || 0
+  const docWidth = docClusterRef.value?.offsetWidth ?? 0
+  const globalWidth = globalClusterRef.value?.offsetWidth ?? 0
+  const room = row.clientWidth - padX - columnGap * 2 - docWidth - globalWidth - RIBBON_TAB_GAP_PX
+  return Math.max(0, room)
+}
+
+function resetRibbonTabCollapse(): void {
+  ribbonTabCollapse = createLabelCollapseSnapshot()
+  ribbonTabsIconLabels.value = false
+}
+
+function updateRibbonTabLabels(): void {
+  const tabs = tabsHostRef.value
+  if (!isMindMapEditor.value || !tabs) return
+  const next = nextLabelCollapse(ribbonTabCollapse, ribbonTabRoomPx(), tabs.offsetWidth)
+  const changed = next.collapsed !== ribbonTabCollapse.collapsed
+  ribbonTabCollapse = next
+  ribbonTabsIconLabels.value = next.collapsed
+  if (changed && !next.collapsed) {
+    void nextTick(() => updateRibbonTabLabels())
+  }
 }
 
 const props = defineProps<{
@@ -201,13 +243,28 @@ onMounted(() => {
   const root = topBarRootRef.value
   if (root) {
     topBarResizeObserver = new ResizeObserver((entries) => {
-      const w = entries[0]?.contentRect.width ?? 0
+      const rootEntry = entries.find((entry) => entry.target === root)
+      const w = rootEntry?.contentRect.width ?? root.getBoundingClientRect().width
       updateCompactFromTopBarWidth(w)
+      updateRibbonTabLabels()
     })
     updateCompactFromTopBarWidth(root.getBoundingClientRect().width)
     topBarResizeObserver.observe(root)
+    if (titleRowRef.value) topBarResizeObserver.observe(titleRowRef.value)
+    if (docClusterRef.value) topBarResizeObserver.observe(docClusterRef.value)
+    if (globalClusterRef.value) topBarResizeObserver.observe(globalClusterRef.value)
+    void nextTick(() => updateRibbonTabLabels())
   }
 })
+
+watch(
+  () =>
+    [currentLanguage.value, classic.value, authStore.user?.role, isMindMapEditor.value] as const,
+  () => {
+    resetRibbonTabCollapse()
+    void nextTick(() => updateRibbonTabLabels())
+  }
+)
 
 // Watch for topic node text changes and auto-update title
 // Only if user hasn't manually edited the name
@@ -342,10 +399,12 @@ async function handleReset() {
     "
   >
     <div
+      ref="titleRowRef"
       class="canvas-top-bar__title-row"
       :class="{ 'canvas-top-bar__title-row--mindmap': isMindMapEditor }"
     >
       <div
+        ref="docClusterRef"
         class="flex items-center gap-1 min-w-0 z-10"
         :class="{ 'canvas-top-bar__doc': isMindMapEditor }"
         :style="isMindMapEditor ? undefined : { maxWidth: CANVAS_TOP_BAR.LEFT_CLUSTER_MAX_WIDTH }"
@@ -422,16 +481,19 @@ async function handleReset() {
       </div>
       <div
         v-if="isMindMapEditor"
+        ref="tabsHostRef"
         class="canvas-top-bar__tabs"
       >
         <MindMapRibbonTabs
           :active-tab="activeTab"
           :expanded="classic"
+          :short-labels="ribbonTabsIconLabels"
           @update:active-tab="selectTab"
         />
       </div>
       <div
         v-if="isMindMapEditor"
+        ref="globalClusterRef"
         class="canvas-top-bar__global"
       >
         <CanvasOnlineCollabMenu

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, type Component } from 'vue'
+import { type Component, computed } from 'vue'
 
 import { Folder, GraduationCap, Palette, Users } from '@lucide/vue'
 
-import I18nText from '@/components/common/I18nText.vue'
+import MmToolbarLabel from '@/components/canvas/MmToolbarLabel.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores'
 
@@ -20,8 +20,10 @@ const props = withDefaults(
   defineProps<{
     activeTab: MindMapRibbonTabId
     expanded?: boolean
+    /** Short tab titles until hover when the strip overlaps the filename or collab controls. */
+    shortLabels?: boolean
   }>(),
-  { expanded: true }
+  { expanded: true, shortLabels: false }
 )
 
 const emit = defineEmits<{
@@ -53,13 +55,14 @@ function lucideTabIcon(tab: MindMapRibbonTabId): Component | undefined {
   return tab === 'ai' ? undefined : TAB_ICONS[tab]
 }
 
-function tabTitle(tab: MindMapRibbonTabId): string {
+function tabTitle(tab: MindMapRibbonTabId): string | undefined {
   if (!props.expanded) {
     return t('canvas.ribbon.expand')
   }
   if (props.activeTab === tab) {
     return t('canvas.ribbon.collapse')
   }
+  if (props.shortLabels) return undefined
   return tabLabel(tab)
 }
 </script>
@@ -67,7 +70,10 @@ function tabTitle(tab: MindMapRibbonTabId): string {
 <template>
   <div
     class="mm-ribbon-tabs mm-ribbon-tabs--topbar"
-    :class="{ 'mm-ribbon-tabs--collapsed': !expanded }"
+    :class="{
+      'mm-ribbon-tabs--collapsed': !expanded,
+      'mm-ribbon-tabs--short-labels': shortLabels,
+    }"
     role="tablist"
     data-testid="mindmap-ribbon-tabs"
   >
@@ -99,9 +105,10 @@ function tabTitle(tab: MindMapRibbonTabId): string {
             :stroke-width="2.4"
           />
         </span>
-        <span class="mm-ribbon-tabs__label">
-          <I18nText :k="MIND_MAP_RIBBON_TAB_LABEL_KEYS[tab]" />
-        </span>
+        <MmToolbarLabel
+          class="mm-ribbon-tabs__label"
+          :k="MIND_MAP_RIBBON_TAB_LABEL_KEYS[tab]"
+        />
       </span>
     </button>
   </div>

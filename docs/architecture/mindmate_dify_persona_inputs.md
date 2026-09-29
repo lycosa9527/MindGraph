@@ -47,6 +47,8 @@ Merged after `mg_dify_user` / `mg_conversation_id` in:
 - [`services/mindbot/pipeline/callback.py`](../../services/mindbot/pipeline/callback.py)
 - [`services/features/mindmate_collab/dify_stream.py`](../../services/features/mindmate_collab/dify_stream.py)
 
+Org-linked MindBot turns open the Dify client with [`resolve_mindmate_dify_client`](../../services/dify/org_mindmate_client.py), the same live resolver as web chat (active server, failover, org timeout). A bot set to custom Dify keeps its own URL and key, and still receives the three Start variables.
+
 No frontend chat change. The browser is not the source of these keys.
 
 ## Checklist

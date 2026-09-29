@@ -49,6 +49,8 @@ from routers.auth.dependencies import (
     require_mindbot_admin_access,
 )
 from services.dify.dify_health_logging import probe_failure_reason
+from services.dify.org_mindmate_client import MindmateDifyNotConfiguredError
+from services.mindbot.dify.runtime_client import open_mindbot_dify_client
 from services.mindbot.dify.service_health import check_dify_app_api_reachable
 from services.mindbot.errors import MindbotErrorCode
 from services.mindbot.platforms.dingtalk.cards.ai_card import probe_ai_card_streaming_update_api
@@ -529,14 +531,20 @@ async def admin_org_dify_health(
     user: User = Depends(require_mindbot_admin_access),
     db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> DifyServiceStatusResponse:
-    """Probe the bot's own Dify app API (GET /parameters); does not expose secrets."""
+    """Probe the Dify app this bot will call (GET /parameters); does not expose secrets."""
     _require_mindbot_feature()
     row = await _get_config_or_404(config_id, db)
     _ensure_org_scope(user, row.organization_id)
-    online, http_status, err = await check_dify_app_api_reachable(
-        row.dify_api_base_url.strip(),
-        row.dify_api_key.strip(),
-    )
+    probe_base = row.dify_api_base_url.strip()
+    probe_key = row.dify_api_key.strip()
+    if bool(getattr(row, "use_org_dify_settings", True)):
+        try:
+            client = await open_mindbot_dify_client(row)
+        except MindmateDifyNotConfiguredError:
+            probe_base, probe_key = "", ""
+        else:
+            probe_base, probe_key = client.api_url, client.api_key
+    online, http_status, err = await check_dify_app_api_reachable(probe_base, probe_key)
     err_out = _dify_probe_error_for_user(err, is_platform_admin=True)
     status_text = "online" if online else f"offline ({probe_failure_reason(http_status, err)})"
     logger.info(

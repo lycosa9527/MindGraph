@@ -5,7 +5,9 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
+import LogoQrScanModal from '@/components/sidebar/LogoQrScanModal.vue'
 import { useLanguage } from '@/composables'
+import { useLogoSiteQrHover } from '@/composables/sidebar/useLogoSiteQrHover'
 
 const emit = defineEmits<{
   login: []
@@ -22,8 +24,24 @@ const navLinks = computed(() => [
   { key: 'contact', label: t('auth.landing.navContact'), labelKey: 'auth.landing.navContact' },
 ])
 
+const {
+  visible: showLogoQrScan,
+  onPointerEnter: onBrandPointerEnter,
+  onPointerLeave: onBrandPointerLeave,
+  close: closeLogoQrScan,
+  clearHoverCloseTimer,
+  scheduleHoverClose,
+} = useLogoSiteQrHover()
+
 function go(to: string) {
   void router.push(to).catch(() => undefined)
+}
+
+function onBrandClick(): void {
+  if (showLogoQrScan.value) {
+    return
+  }
+  go('/auth')
 }
 
 function openPlatformQuickGuide(): void {
@@ -44,7 +62,9 @@ function onNavLink(link: { key: string }) {
         <button
           type="button"
           class="auth-mkt-nav__brand"
-          @click="go('/auth')"
+          @pointerenter="onBrandPointerEnter"
+          @pointerleave="onBrandPointerLeave"
+          @click="onBrandClick"
         >
           <span
             class="auth-mkt-nav__logo"
@@ -90,6 +110,12 @@ function onNavLink(link: { key: string }) {
       </div>
     </div>
   </header>
+  <LogoQrScanModal
+    :visible="showLogoQrScan"
+    @close="closeLogoQrScan"
+    @hover-enter="clearHoverCloseTimer"
+    @hover-leave="scheduleHoverClose"
+  />
 </template>
 
 <style scoped>
