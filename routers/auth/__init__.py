@@ -18,6 +18,7 @@ from . import (
     captcha,
     email,
     embed,
+    library_demo,
     login,
     login_devices,
     login_hero,
@@ -80,6 +81,7 @@ router.include_router(tsec.router)
 router.include_router(password.router)
 router.include_router(session.router)
 router.include_router(preferences.router)
+router.include_router(library_demo.router)
 router.include_router(quick_access_specs.router)
 router.include_router(avatar.router)
 router.include_router(phone.router)

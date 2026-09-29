@@ -7,14 +7,15 @@ import { onBeforeUnmount, provide, watch } from 'vue'
 
 import { DiagramSessionKey } from '@/composables/diagram/useDiagramSession'
 import {
+  type DiagramSession,
+  type DiagramSessionMode,
   asDiagramSession,
   createDiagramSession,
   createDiagramViewBus,
-  type DiagramSession,
-  type DiagramSessionMode,
 } from '@/stores/diagram'
 import type { MindMapCanvasMode } from '@/stores/ui'
 import type { DiagramType } from '@/types'
+import { cloneShowcaseDiagramSpec } from '@/utils/showcaseDiagramThumbnail'
 
 const props = withDefaults(
   defineProps<{
@@ -55,12 +56,25 @@ const resolvedSession: DiagramSession =
 
 provide(DiagramSessionKey, resolvedSession)
 
+let loadedSignature = ''
+
 function loadSpecIfPresent(): void {
   const spec = props.spec
   const rawType = props.diagramType
   if (!ownsSession || !spec || !rawType) return
   const diagramType = (rawType === 'mind_map' ? 'mindmap' : rawType) as DiagramType
-  resolvedSession.loadFromSpec(spec, diagramType, { emitLoaded: false })
+  // Load a plain copy. The saved spec's node objects are stored on the session and
+  // then mutated by layout; a deep watch on the original re-enters until Vue aborts.
+  const snapshot = cloneShowcaseDiagramSpec(spec)
+  let signature = `${diagramType}:unserializable`
+  try {
+    signature = `${diagramType}:${JSON.stringify(snapshot)}`
+  } catch {
+    // Keep the sentinel so a spec that cannot be serialized is loaded once.
+  }
+  if (signature === loadedSignature) return
+  loadedSignature = signature
+  resolvedSession.loadFromSpec(snapshot, diagramType, { emitLoaded: false })
 }
 
 watch(

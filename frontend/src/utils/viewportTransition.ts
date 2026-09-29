@@ -9,11 +9,21 @@ export function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2
 }
 
-let activeTransitionCancel: (() => void) | null = null
+/** Editor fits stay on this lane. The library demo uses its own so the two cameras do not cancel each other. */
+export const EDITOR_VIEWPORT_LANE = 'editor'
 
-export function cancelViewportTransition(): void {
-  activeTransitionCancel?.()
-  activeTransitionCancel = null
+const laneCancel = new Map<string, () => void>()
+
+function laneKey(lane?: string): string {
+  return lane || EDITOR_VIEWPORT_LANE
+}
+
+export function cancelViewportTransition(lane?: string): void {
+  const key = laneKey(lane)
+  const cancel = laneCancel.get(key)
+  if (!cancel) return
+  laneCancel.delete(key)
+  cancel()
 }
 
 /**
@@ -24,19 +34,22 @@ export function animateViewportTransition(
   from: ViewportState,
   to: ViewportState,
   durationMs: number,
-  onFrame: (viewport: ViewportState) => void
+  onFrame: (viewport: ViewportState) => void,
+  lane?: string
 ): Promise<void> {
-  cancelViewportTransition()
+  const key = laneKey(lane)
+  cancelViewportTransition(key)
 
   return new Promise((resolve) => {
     const start = performance.now()
     let cancelled = false
 
-    activeTransitionCancel = () => {
+    const cancel = (): void => {
       cancelled = true
-      activeTransitionCancel = null
+      if (laneCancel.get(key) === cancel) laneCancel.delete(key)
       resolve()
     }
+    laneCancel.set(key, cancel)
 
     function tick(now: number): void {
       if (cancelled) return
@@ -50,7 +63,7 @@ export function animateViewportTransition(
       if (raw < 1) {
         requestAnimationFrame(tick)
       } else {
-        activeTransitionCancel = null
+        if (laneCancel.get(key) === cancel) laneCancel.delete(key)
         resolve()
       }
     }

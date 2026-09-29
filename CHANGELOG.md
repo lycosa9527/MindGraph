@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.120] - 2026-09-30
+
+> **The account menu can turn saved diagrams into a fullscreen talk, and the CrowdSec address list is refreshed.**
+
+### Added
+
+- **演示模式** — Open it from the account menu. Pick diagrams from your library, write a caption for each, and play them fullscreen. The list, the captions, and the type styles stay on your account.
+
+### Changed
+
+- **Diagram camera** — Playing that talk no longer fights the diagram's own fit.
+- **CrowdSec blocklist** — The committed baseline address list is refreshed.
+
+### Tests
+
+- [`tests/test_library_demo_document.py`](tests/test_library_demo_document.py)
+- [`frontend/tests/libraryDemoPlayback.spec.ts`](frontend/tests/libraryDemoPlayback.spec.ts), [`frontend/tests/viewportTransition.spec.ts`](frontend/tests/viewportTransition.spec.ts)
+
 ## [5.180.119] - 2026-09-30
 
 > **Bayi no longer has a passkey login or a /demo page. School users still arrive from the vendor link, and admins still sign in with a phone.**

@@ -198,6 +198,12 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
         "singleton_user": True,
         "fk_remaps": {"user_id": "users"},
     },
+    "user_library_demos": {
+        "order": 2,
+        "pk_type": "serial",
+        "singleton_user": True,
+        "fk_remaps": {"user_id": "users"},
+    },
     "dingtalk_staff_links": {
         "order": 2,
         "pk_type": "serial",

@@ -76,6 +76,7 @@ from models.domain.training import (
     TrainingCourseCompletion,
     TrainingCourseStep,
 )
+from models.domain.library_demo import UserLibraryDemo
 from models.domain.user_dropdown import UserDropdownItem
 from models.domain.vod import VodFolder, VodMedia
 from models.domain.learning_space import (
@@ -283,6 +284,7 @@ __all__ = [
     "TrainingCourseAsset",
     "TrainingCourseCompletion",
     "UserDropdownItem",
+    "UserLibraryDemo",
     "VodFolder",
     "VodMedia",
     "LearningPilotTeacher",

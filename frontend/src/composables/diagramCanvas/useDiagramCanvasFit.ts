@@ -63,7 +63,13 @@ export function useDiagramCanvasFit(options: {
   fitForExport: () => Promise<boolean>
   fitToNodes: (
     nodeIds: string[],
-    options?: { animate?: boolean; duration?: number; padding?: number }
+    options?: {
+      animate?: boolean
+      duration?: number
+      padding?: number | { top?: number; right?: number; bottom?: number; left?: number }
+      maxZoom?: number
+      transitionLane?: string
+    }
   ) => Promise<void>
   ensureNodeVisibleInSafeFraction: (
     nodeId: string,
@@ -333,39 +339,53 @@ export function useDiagramCanvasFit(options: {
 
   async function fitToNodes(
     nodeIds: string[],
-    options?: { animate?: boolean; duration?: number; padding?: number }
+    options?: {
+      animate?: boolean
+      duration?: number
+      padding?: number | { top?: number; right?: number; bottom?: number; left?: number }
+      maxZoom?: number
+      transitionLane?: string
+    }
   ): Promise<void> {
     if (!nodeIds.length || getNodes().length === 0) return
 
     const animate = options?.animate !== false
     const duration = options?.duration ?? 900
     const padding = options?.padding ?? 0.38
+    const maxZoom = options?.maxZoom ?? ZOOM.MAX
+    const lane = options?.transitionLane
 
     const fitOptions = {
       nodes: nodeIds,
       padding,
       duration: 0,
       minZoom: ZOOM.MIN,
-      maxZoom: ZOOM.MAX,
+      maxZoom,
       includeHiddenNodes: false,
     } as Parameters<FitViewFn>[0]
 
     if (!animate) {
-      cancelViewportTransition()
+      cancelViewportTransition(lane)
       void fitView({ ...fitOptions, duration: 0 })
       viewBus.emit('view:fit_completed', { mode: 'nodes', animate: false })
       return
     }
 
     const from = getViewport()
-    cancelViewportTransition()
+    cancelViewportTransition(lane)
     await fitView(fitOptions)
     const to = getViewport()
     setViewport(from, { duration: 0 })
 
-    await animateViewportTransition(from, to, duration, (vp) => {
-      setViewport(vp, { duration: 0 })
-    })
+    await animateViewportTransition(
+      from,
+      to,
+      duration,
+      (vp) => {
+        setViewport(vp, { duration: 0 })
+      },
+      lane
+    )
 
     viewBus.emit('view:fit_completed', { mode: 'nodes', animate: true })
   }

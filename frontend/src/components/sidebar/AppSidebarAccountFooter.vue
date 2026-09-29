@@ -17,6 +17,7 @@ import {
   Link2,
   LogIn,
   LogOut,
+  Presentation,
   ScrollText,
   Share2,
   Star,
@@ -25,10 +26,13 @@ import {
 } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
+import DemoModePicker from '@/components/demo/DemoModePicker.vue'
+import DemoStage from '@/components/demo/DemoStage.vue'
 import QuickRegisterModal from '@/components/mindgraph/QuickRegisterModal.vue'
 import SidebarOrgName from '@/components/sidebar/SidebarOrgName.vue'
 import UserDropdownCourseDialog from '@/components/sidebar/UserDropdownCourseDialog.vue'
 import UserDropdownCourseItems from '@/components/sidebar/UserDropdownCourseItems.vue'
+import { useLibraryDemo } from '@/composables/demo/useLibraryDemo'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 import { toggleQuickAccessRemote } from '@/composables/sidebar/useQuickAccessRemote'
@@ -55,6 +59,7 @@ const route = useRoute()
 const voiceNotesStore = useVoiceNotesStore()
 const showShareSiteModal = ref(false)
 const { triggerImport } = useDiagramImport()
+const { openPicker: openDemoMode } = useLibraryDemo()
 const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.path))
 const { showPwaInstall, handlePwaInstall } = usePwaInstall((key) => s.t(key))
 const { promoTitle, promoReward, taskPromoKey, showInviteAccent } = useSidebarThinkingCoinTaskPromo(
@@ -279,6 +284,10 @@ function onUserMenuVisible(open: boolean): void {
               <LayoutGrid class="w-4 h-4 mr-2" />
               <I18nText k="sidebar.quickAccessRemote" />
             </el-dropdown-item>
+            <el-dropdown-item @click="openDemoMode">
+              <Presentation class="w-4 h-4 mr-2" />
+              <I18nText k="sidebar.demo.menu" />
+            </el-dropdown-item>
             <el-dropdown-item
               divided
               @click="s.openLanguageSettingsModal"
@@ -371,6 +380,10 @@ function onUserMenuVisible(open: boolean): void {
               <LayoutGrid class="w-4 h-4 mr-2" />
               <I18nText k="sidebar.quickAccessRemote" />
             </el-dropdown-item>
+            <el-dropdown-item @click="openDemoMode">
+              <Presentation class="w-4 h-4 mr-2" />
+              <I18nText k="sidebar.demo.menu" />
+            </el-dropdown-item>
             <el-dropdown-item
               divided
               @click="s.openLanguageSettingsModal"
@@ -417,6 +430,8 @@ function onUserMenuVisible(open: boolean): void {
 
     <QuickRegisterModal v-model="showShareSiteModal" />
     <UserDropdownCourseDialog v-if="s.isAuthenticated" />
+    <DemoModePicker v-if="s.isAuthenticated" />
+    <DemoStage v-if="s.isAuthenticated" />
   </div>
 </template>
 
