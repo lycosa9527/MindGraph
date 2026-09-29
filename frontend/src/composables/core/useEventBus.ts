@@ -522,7 +522,11 @@ export type EventTypes = {
     nodeIds: string[]
     animate?: boolean
     duration?: number
-    padding?: number
+    padding?: number | { top?: number; right?: number; bottom?: number; left?: number }
+    /** Caps zoom-in. Omitted callers keep the editor maximum. */
+    maxZoom?: number
+    /** Keeps this camera off the editor's viewport animation. */
+    transitionLane?: string
     userInitiated?: boolean
   }
   /**
@@ -625,7 +629,7 @@ export type EventTypes = {
 
   // Auth Events
   'auth:session_expired': { message?: string }
-  /** Fired after an interactive sign-in (password, SMS, passkey, OAuth), not session restore. */
+  /** Fired after an interactive sign-in (password, SMS, OAuth), not session restore. */
   'auth:login_success': Record<string, never>
   /** School product term ended — teachers and school managers are hard-locked. */
   'auth:school_expired': { schoolName: string; expiresAt: string; message: string }

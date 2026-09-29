@@ -119,18 +119,6 @@ async def privacy_policy_static():
     return response
 
 
-@router.get("/bayi/passkey", response_class=HTMLResponse)
-async def vue_bayi_passkey(request: Request):
-    """Serve Vue SPA for Bayi passkey login route."""
-    return await _serve_index(request)
-
-
-@router.get("/demo", response_class=HTMLResponse)
-async def vue_demo_redirect():
-    """Legacy URL: send users to Bayi passkey page."""
-    return RedirectResponse(url="/bayi/passkey", status_code=301)
-
-
 @router.get("/dashboard", response_class=HTMLResponse)
 async def vue_dashboard(_request: Request):
     """Legacy URL — national data center lives in the admin panel."""
@@ -139,7 +127,7 @@ async def vue_dashboard(_request: Request):
 
 @router.get("/dashboard/login", response_class=HTMLResponse)
 async def vue_dashboard_login(_request: Request):
-    """Legacy passkey login URL — redirect to the admin national data center."""
+    """Legacy dashboard login URL — redirect to the admin national data center."""
     return RedirectResponse(url=_PUBLIC_DASHBOARD_ADMIN, status_code=301)
 
 

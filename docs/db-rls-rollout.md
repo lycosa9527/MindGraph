@@ -62,7 +62,7 @@
 | Expert invites | Invited orgs only |
 | Superadmin org stats | With `organization_id` param |
 | `GET /organizations` | Registration dropdown |
-| Dashboard passkey stats | Non-zero counts |
+| Admin national data center | Map loads for a super-admin |
 | MindBot callback URL | 200 + usage row |
 | Online collab join | Participant sees shared diagram |
 | ESP32 device register + status poll | Register succeeds; status returns watch row |

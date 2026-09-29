@@ -2,7 +2,6 @@
  * Pages Index
  */
 
-export { default as BayiPasskeyPage } from './BayiPasskeyPage.vue'
 export { default as AdminPage } from './AdminPage.vue'
 export { default as PublicDashboardPage } from './PublicDashboardPage.vue'
 export { default as NotFoundPage } from './NotFoundPage.vue'

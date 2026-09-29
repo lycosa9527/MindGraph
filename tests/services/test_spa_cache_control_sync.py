@@ -53,7 +53,6 @@ def test_vue_router_extensionless_paths_are_spa_routes(path: str) -> None:
         "/admin",
         "/login",
         "/auth",
-        "/bayi/passkey",
         "/dashboard",
         "/dashboard/login",
         "/pub-dash",

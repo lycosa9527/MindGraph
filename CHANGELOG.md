@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.119] - 2026-09-30
+
+> **Bayi no longer has a passkey login or a /demo page. School users still arrive from the vendor link, and admins still sign in with a phone.**
+
+### Removed
+
+- **Bayi passkey and /demo** — The passkey page, the `/demo` address, and the passkey login endpoint are gone. Those addresses do not sign anyone in.
+- **Startup passkey** — A Bayi server no longer needs `BAYI_PASSKEY`. Delete that name from the server environment, along with `DEMO_PASSKEY`, `ADMIN_DEMO_PASSKEY`, and `PUBLIC_DASHBOARD_PASSKEY` if they are still set.
+
+### Changed
+
+- **Bayi vendor link** — `/loginByXz` still decrypts with the key issued by 小致. That value is the one the school platform encrypts with.
+
 ## [5.180.118] - 2026-09-30
 
 > **A Bayi jump-in with the default name asks for a real name, and a reused login link is refused.**

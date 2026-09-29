@@ -607,51 +607,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function loginWithBayiPasskey(passkey: string): Promise<LoginResponse> {
-    loading.value = true
-    try {
-      const response = await fetch(`${API_BASE}/bayi/passkey`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passkey }),
-        credentials: 'same-origin',
-      })
-
-      let data: Record<string, unknown> = {}
-      try {
-        data = (await response.json()) as Record<string, unknown>
-      } catch {
-        /* non-JSON body */
-      }
-
-      const userPayload = data.user as Parameters<typeof normalizeAuthUser>[0] | undefined
-      if (response.ok && userPayload) {
-        setUser(userPayload)
-        hasVerifiedAuthThisSession.value = true
-        lastProfileRefreshTime.value = Date.now()
-        emitLoginSuccess()
-        startSessionMonitoring()
-        return { success: true, user: user.value ?? undefined }
-      }
-
-      if (emitSchoolExpiredFromPayload(data)) {
-        return {
-          success: false,
-          code: SCHOOL_EXPIRED_CODE,
-          message: parseApiErrorDetail(data, 'Login failed'),
-        }
-      }
-      return {
-        success: false,
-        message: parseApiErrorDetail(data, 'Login failed'),
-      }
-    } catch {
-      return { success: false, message: 'Network error' }
-    } finally {
-      loading.value = false
-    }
-  }
-
   async function logout(): Promise<void> {
     // Call logout endpoint - token is in httpOnly cookie
     try {
@@ -1327,7 +1282,6 @@ export const useAuthStore = defineStore('auth', () => {
     clearAuth,
     login,
     loginStudent,
-    loginWithBayiPasskey,
     logout,
     checkAuth,
     detectMode,

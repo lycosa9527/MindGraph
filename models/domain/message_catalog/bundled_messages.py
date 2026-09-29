@@ -285,9 +285,9 @@ ERRORS = {
         "az": "Bu giriş başqa cihazdan sonlandırıldı.",
     },
     "registration_not_available": {
-        "zh": "{} 模式下注册不可用。请改用密钥认证。",
-        "en": "Registration is not available in {} mode. Please use passkey authentication instead.",
-        "az": "{} rejimində qeydiyyat mövcud deyil. Bunun əvəzinə passkey autentifikasiyasından istifadə edin.",
+        "zh": "{} 模式下注册不可用。请使用已有账号登录。",
+        "en": "Registration is not available in {} mode. Sign in with an existing account.",
+        "az": "{} rejimində qeydiyyat mövcud deyil. Mövcud hesabla daxil olun.",
     },
     "registration_disabled": {
         "zh": ("注册功能已由管理员关闭。请使用已有账号登录，或联系学校管理员。"),
@@ -1002,7 +1002,6 @@ ERRORS = {
             "və ya problem davam edərsə dəstəklə əlaqə saxlayın."
         ),
     },
-    "invalid_passkey": {"zh": "无效的密钥", "en": "Invalid passkey", "az": "Etibarsız passkey"},
     "admin_access_required": {
         "zh": "需要管理员权限",
         "en": "Admin access required",

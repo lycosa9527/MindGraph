@@ -18,8 +18,8 @@ def mindmate_dify_user_id(user: User) -> str:
 
     In Bayi vendor SSO, ``users.phone`` stores the external user UUID; when it
     parses as an RFC-4122 UUID, use that canonical string (matches Dify-facing
-    identity to the school IdP). Bayi passkey uses a non-UUID phone and keeps
-    the generic ``mg_user_<pk>`` form. All other auth modes use ``mg_user_<pk>``.
+    identity to the school IdP). Phone-login accounts keep the generic
+    ``mg_user_<pk>`` form. All other auth modes use ``mg_user_<pk>``.
     """
     if AUTH_MODE == "bayi" and user.phone:
         stripped = user.phone.strip()

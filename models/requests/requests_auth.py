@@ -226,24 +226,6 @@ class StudentLoginRequest(BaseModel):
     )
 
 
-class PasskeyVerifyRequest(BaseModel):
-    """Request body for 6-digit passkey verification (Bayi passkey login, public dashboard)."""
-
-    passkey: str = Field(..., min_length=6, max_length=6, description="6-digit passkey")
-
-    @field_validator("passkey")
-    @classmethod
-    def validate_passkey(cls, value):
-        """Validate 6-digit passkey"""
-        if not value.isdigit():
-            raise ValueError("Passkey must contain only digits")
-        if len(value) != 6:
-            raise ValueError("Passkey must be exactly 6 digits")
-        return value
-
-    model_config = ConfigDict(json_schema_extra={"example": {"passkey": "888888"}})
-
-
 # ============================================================================
 # SMS VERIFICATION REQUEST MODELS
 # ============================================================================

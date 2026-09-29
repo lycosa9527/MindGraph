@@ -3,7 +3,7 @@
  * MindGraphCollabPanel — inline collaboration UI for MindGraph landing.
  *
  * Pill trigger opens an Element dropdown: 校内协同 / 加入图示編輯 (i18n).
- * Choosing an item opens a popover: org sessions list or passkey entry.
+ * Choosing an item opens a popover: org sessions list or shared join-code entry.
  *
  * Exposes ``prefillAndAutoJoin(rawCode)`` for QR-code join from URL query.
  */
@@ -368,7 +368,7 @@ defineExpose({ prefillAndAutoJoin })
       </ul>
     </div>
 
-    <!-- Panel: cross-org passkey input -->
+    <!-- Panel: cross-org join-code input -->
     <div
       v-else
       class="sw-panel sw-panel--join-code"
@@ -694,7 +694,7 @@ defineExpose({ prefillAndAutoJoin })
   flex-shrink: 0;
 }
 
-/* ── Passkey join button ──────────────────────────────────────────────── */
+/* ── Join-code button ─────────────────────────────────────────────────── */
 .sw-join-btn {
   width: 100%;
   margin-top: 16px;

@@ -265,7 +265,6 @@ async def csrf_protection(request: Request, call_next):
             "/api/auth/login",
             "/api/auth/register",
             "/api/auth/tsec/exchange",
-            "/api/auth/bayi/passkey",
             "/api/frontend_log",
             "/api/frontend_log_batch",
             "/api/gewe/webhook",
