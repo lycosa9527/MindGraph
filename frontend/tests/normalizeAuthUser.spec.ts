@@ -165,10 +165,24 @@ describe('normalizeAuthUser', () => {
         custom_llm_model: '校本大模型',
       },
     })
+    expect(user.schoolName).toBe('Demo School')
     expect(user.customLlmEnabled).toBe(true)
     expect(user.customLlmModel).toBe('校本大模型')
     const twice = normalizeAuthUser(user)
     expect(twice.customLlmEnabled).toBe(true)
     expect(twice.customLlmModel).toBe('校本大模型')
+    expect(twice.schoolName).toBe('Demo School')
+  })
+
+  it('prefers the organization display name for the sidebar chip', () => {
+    const user = normalizeAuthUser({
+      ...loginPayload,
+      organization: {
+        id: 7,
+        name: 'internal-code',
+        display_name: ' 北京市第一中学 ',
+      },
+    })
+    expect(user.schoolName).toBe('北京市第一中学')
   })
 })

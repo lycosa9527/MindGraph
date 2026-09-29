@@ -128,7 +128,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'இதுவரை தகவல் தொகுப்பு இல்லை',
   'sidebar.knowledgeSpaceHistory.title': 'தகவல் தொகுப்பு',
   'sidebar.languageSettings': 'இடைமுக UI அமைப்புகள்',
-  'sidebar.tokenUsageToday': 'இன்று {usage}',
   'sidebar.library': 'நூலகம்',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

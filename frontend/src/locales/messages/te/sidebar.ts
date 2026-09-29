@@ -128,7 +128,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'ఇంకా సమాచార ప్యాకేజీ లేదు',
   'sidebar.knowledgeSpaceHistory.title': 'సమాచార ప్యాకేజీ',
   'sidebar.languageSettings': 'ఇంటర్‌ఫేస్ UI సెట్టింగ్‌లు',
-  'sidebar.tokenUsageToday': 'ఈరోజు {usage}',
   'sidebar.library': 'లైబ్రరీ',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.116] - 2026-09-30
+
+> **The sidebar account chip always shows the school name.**
+
+### Changed
+
+- **Sidebar account chip** — The line under the user name is the school's display name, or its internal name when there is no display name. A saved poem or token choice is ignored. The poem and token options are gone from interface settings. An account with no school leaves the line blank.
+
+### Tests
+
+- [`frontend/tests/normalizeAuthUser.spec.ts`](frontend/tests/normalizeAuthUser.spec.ts)
+
 ## [5.180.115] - 2026-09-29
 
 > **Crowded mind-map labels shorten to a real word, the login logo shows the site QR, and MindBot uses the same live school MindMate connection as web chat.**

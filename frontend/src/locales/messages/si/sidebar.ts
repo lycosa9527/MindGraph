@@ -128,7 +128,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'තවම පැකේජ නැත',
   'sidebar.knowledgeSpaceHistory.title': 'පැකේජ',
   'sidebar.languageSettings': 'භාෂා සැකසුම්',
-  'sidebar.tokenUsageToday': 'අද {usage}',
   'sidebar.library': 'පුස්‍තකාලය',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

@@ -128,7 +128,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'Hali paket yo‘q',
   'sidebar.knowledgeSpaceHistory.title': 'Paketlar',
   'sidebar.languageSettings': 'Til sozlamalari',
-  'sidebar.tokenUsageToday': 'Bugun {usage}',
   'sidebar.library': 'Kutubxona',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

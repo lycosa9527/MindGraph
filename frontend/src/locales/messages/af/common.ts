@@ -315,10 +315,6 @@ export default {
   'settings.language.eBlackboardOff': 'sluiting',
   'settings.language.eBlackboardOn': 'skakel aan',
   'settings.language.eBlackboardHint': 'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
-  'settings.language.sidebarPoem': 'sidebar verse',
-  'settings.language.sidebarPoemHint': 'Na sluiting word vandag se Token-gebruik onder die gebruikernaam vertoon.',
-  'settings.language.sidebarPoemOff': 'sluiting',
-  'settings.language.sidebarPoemOn': 'skakel aan',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',

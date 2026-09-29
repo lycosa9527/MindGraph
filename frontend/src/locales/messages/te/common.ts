@@ -316,10 +316,6 @@ export default {
   'settings.language.eBlackboardOff': 'మూసివేత',
   'settings.language.eBlackboardOn': 'ఆన్ చేయండి',
   'settings.language.eBlackboardHint': 'కొత్త కాన్వాస్‌పై బ్రాంచ్ ప్లస్ సైన్ మరియు మడత నియంత్రణలను విస్తరించండి; ఎంచుకోవడానికి క్లిక్ చేయండి, సవరించడానికి డబుల్ క్లిక్ చేయండి మరియు తరగతి గది ఎలక్ట్రానిక్ వైట్‌బోర్డ్ కార్యకలాపాలను సులభతరం చేయడానికి పాన్/జూమ్ చేయడానికి రెండు వేళ్లతో లాగండి',
-  'settings.language.sidebarPoem': 'సైడ్‌బార్ పద్యాలు',
-  'settings.language.sidebarPoemHint': 'మూసివేసిన తర్వాత, నేటి టోకెన్ వినియోగం వినియోగదారు పేరు క్రింద ప్రదర్శించబడుతుంది.',
-  'settings.language.sidebarPoemOff': 'మూసివేత',
-  'settings.language.sidebarPoemOn': 'ఆన్ చేయండి',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',

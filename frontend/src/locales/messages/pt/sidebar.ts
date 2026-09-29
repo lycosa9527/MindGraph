@@ -128,7 +128,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'Ainda não há pacotes',
   'sidebar.knowledgeSpaceHistory.title': 'Pacotes',
   'sidebar.languageSettings': 'Definições de idioma',
-  'sidebar.tokenUsageToday': 'Hoje {usage}',
   'sidebar.library': 'Biblioteca',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

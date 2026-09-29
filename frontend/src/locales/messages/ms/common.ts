@@ -316,10 +316,6 @@ export default {
   'settings.language.eBlackboardOff': 'penutupan',
   'settings.language.eBlackboardOn': 'hidupkan',
   'settings.language.eBlackboardHint': 'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
-  'settings.language.sidebarPoem': 'ayat sidebar',
-  'settings.language.sidebarPoemHint': 'Selepas ditutup, penggunaan Token hari ini dipaparkan di bawah nama pengguna.',
-  'settings.language.sidebarPoemOff': 'penutupan',
-  'settings.language.sidebarPoemOn': 'hidupkan',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',

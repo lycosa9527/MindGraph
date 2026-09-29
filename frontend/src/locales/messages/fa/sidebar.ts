@@ -128,7 +128,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'هنوز بسته اطلاعاتی وجود ندارد',
   'sidebar.knowledgeSpaceHistory.title': 'بسته ها',
   'sidebar.languageSettings': 'Language Settings',
-  'sidebar.tokenUsageToday': 'امروز {usage}',
   'sidebar.library': 'کتابخانه',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

@@ -316,11 +316,6 @@ export default {
   'settings.language.eBlackboardOn': 'On',
   'settings.language.eBlackboardHint':
     'Enlarges branch + and collapse controls on the new canvas; tap to select, double-tap to edit, two-finger drag to pan/zoom — for classroom e-blackboards',
-  'settings.language.sidebarPoem': 'Sidebar poem',
-  'settings.language.sidebarPoemHint':
-    'When off, token usage for today is shown under your name',
-  'settings.language.sidebarPoemOff': 'Off',
-  'settings.language.sidebarPoemOn': 'On',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',

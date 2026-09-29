@@ -128,7 +128,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'パッケージはまだありません',
   'sidebar.knowledgeSpaceHistory.title': 'パッケージ',
   'sidebar.languageSettings': '言語設定',
-  'sidebar.tokenUsageToday': '今日 {usage}',
   'sidebar.library': 'ライブラリ',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

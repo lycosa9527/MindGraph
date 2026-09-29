@@ -315,10 +315,6 @@ export default {
   'settings.language.eBlackboardOff': 'bağlanması',
   'settings.language.eBlackboardOn': 'yandırın',
   'settings.language.eBlackboardHint': 'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
-  'settings.language.sidebarPoem': 'yan panel ayələr',
-  'settings.language.sidebarPoemHint': 'Bağlandıqdan sonra bugünkü Token istifadəsi istifadəçi adının altında göstərilir.',
-  'settings.language.sidebarPoemOff': 'bağlanması',
-  'settings.language.sidebarPoemOn': 'yandırın',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',

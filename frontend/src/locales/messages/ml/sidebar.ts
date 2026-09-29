@@ -128,7 +128,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'ഇതുവരെ വിവര പാക്കേജുകളൊന്നുമില്ല',
   'sidebar.knowledgeSpaceHistory.title': 'വിവര പാക്കേജ്',
   'sidebar.languageSettings': 'ഇൻ്റർഫേസ് യുഐ ക്രമീകരണങ്ങൾ',
-  'sidebar.tokenUsageToday': 'ഇന്ന് {usage}',
   'sidebar.library': 'ലൈബ്രറി',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

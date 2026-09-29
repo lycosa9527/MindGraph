@@ -316,10 +316,6 @@ export default {
   'settings.language.eBlackboardOff': 'மூடல்',
   'settings.language.eBlackboardOn': 'இயக்கவும்',
   'settings.language.eBlackboardHint': 'புதிய கேன்வாஸில் கிளை பிளஸ் சைன் மற்றும் மடிப்பு கட்டுப்பாடுகளை பெரிதாக்கவும்; தேர்ந்தெடுக்க கிளிக் செய்யவும், திருத்த இருமுறை கிளிக் செய்யவும், வகுப்பறை எலக்ட்ரானிக் ஒயிட்போர்டு செயல்பாடுகளை எளிதாக்க, பான்/ஜூம் செய்ய இரண்டு விரல்களால் இழுக்கவும்',
-  'settings.language.sidebarPoem': 'பக்கப்பட்டி வசனங்கள்',
-  'settings.language.sidebarPoemHint': 'மூடிய பிறகு, இன்றைய டோக்கன் பயன்பாடு பயனர் பெயருக்குக் கீழே காட்டப்படும்.',
-  'settings.language.sidebarPoemOff': 'மூடல்',
-  'settings.language.sidebarPoemOn': 'இயக்கவும்',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',

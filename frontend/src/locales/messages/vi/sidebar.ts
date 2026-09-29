@@ -128,7 +128,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'Chưa có gói',
   'sidebar.knowledgeSpaceHistory.title': 'Gói',
   'sidebar.languageSettings': 'Cài đặt ngôn ngữ',
-  'sidebar.tokenUsageToday': 'Hôm nay {usage}',
   'sidebar.library': 'Thư viện',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

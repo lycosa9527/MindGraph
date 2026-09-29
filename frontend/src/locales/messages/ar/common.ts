@@ -316,10 +316,6 @@ export default {
   'settings.language.eBlackboardOff': 'إنهاء',
   'settings.language.eBlackboardOn': 'تشغيل',
   'settings.language.eBlackboardHint': 'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
-  'settings.language.sidebarPoem': 'آيات الشريط الجانبي',
-  'settings.language.sidebarPoemHint': 'بعد الإغلاق، يتم عرض استخدام الرمز المميز اليوم أسفل اسم المستخدم.',
-  'settings.language.sidebarPoemOff': 'إنهاء',
-  'settings.language.sidebarPoemOn': 'تشغيل',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',

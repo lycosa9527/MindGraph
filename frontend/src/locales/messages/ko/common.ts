@@ -316,10 +316,6 @@ export default {
   'settings.language.eBlackboardOff': '폐쇄',
   'settings.language.eBlackboardOn': '켜다',
   'settings.language.eBlackboardHint': 'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
-  'settings.language.sidebarPoem': '사이드바 구절',
-  'settings.language.sidebarPoemHint': '종료 후 오늘의 토큰 사용량이 사용자 이름 아래에 표시됩니다.',
-  'settings.language.sidebarPoemOff': '폐쇄',
-  'settings.language.sidebarPoemOn': '켜다',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',

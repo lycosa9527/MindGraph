@@ -128,7 +128,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'Belum ada paket',
   'sidebar.knowledgeSpaceHistory.title': 'Paket',
   'sidebar.languageSettings': 'Pengaturan Bahasa',
-  'sidebar.tokenUsageToday': 'Hari ini {usage}',
   'sidebar.library': 'Perpustakaan',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

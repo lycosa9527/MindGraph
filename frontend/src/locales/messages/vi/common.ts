@@ -316,10 +316,6 @@ export default {
   'settings.language.eBlackboardOff': 'đóng cửa',
   'settings.language.eBlackboardOn': 'bật lên',
   'settings.language.eBlackboardHint': 'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
-  'settings.language.sidebarPoem': 'câu thơ bên lề',
-  'settings.language.sidebarPoemHint': 'Sau khi đóng, mức sử dụng Token của ngày hôm nay được hiển thị bên dưới tên người dùng.',
-  'settings.language.sidebarPoemOff': 'đóng cửa',
-  'settings.language.sidebarPoemOn': 'bật lên',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',

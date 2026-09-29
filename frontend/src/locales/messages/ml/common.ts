@@ -316,10 +316,6 @@ export default {
   'settings.language.eBlackboardOff': 'അടച്ചുപൂട്ടൽ',
   'settings.language.eBlackboardOn': 'ഓൺ ചെയ്യുക',
   'settings.language.eBlackboardHint': 'പുതിയ ക്യാൻവാസിൽ ബ്രാഞ്ച് പ്ലസ് ചിഹ്നവും മടക്ക നിയന്ത്രണങ്ങളും വലുതാക്കുക; ക്ലാസ്റൂം ഇലക്ട്രോണിക് വൈറ്റ്ബോർഡ് പ്രവർത്തനങ്ങൾ സുഗമമാക്കുന്നതിന് തിരഞ്ഞെടുക്കാൻ ക്ലിക്ക് ചെയ്യുക, എഡിറ്റ് ചെയ്യാൻ ഡബിൾ ക്ലിക്ക് ചെയ്യുക, പാൻ/സൂം ചെയ്യാൻ രണ്ട് വിരലുകൾ കൊണ്ട് വലിച്ചിടുക',
-  'settings.language.sidebarPoem': 'സൈഡ്‌ബാർ വാക്യങ്ങൾ',
-  'settings.language.sidebarPoemHint': 'അടച്ചതിനുശേഷം, ഇന്നത്തെ ടോക്കൺ ഉപയോഗം ഉപയോക്തൃനാമത്തിന് താഴെ പ്രദർശിപ്പിക്കും.',
-  'settings.language.sidebarPoemOff': 'അടച്ചുപൂട്ടൽ',
-  'settings.language.sidebarPoemOn': 'ഓൺ ചെയ്യുക',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',

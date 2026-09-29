@@ -316,10 +316,6 @@ export default {
   'settings.language.eBlackboardOff': 'बंद',
   'settings.language.eBlackboardOn': 'चालू करो',
   'settings.language.eBlackboardHint': 'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
-  'settings.language.sidebarPoem': 'साइडबार छंद',
-  'settings.language.sidebarPoemHint': 'बंद करने के बाद, आज का टोकन उपयोग उपयोगकर्ता नाम के नीचे प्रदर्शित होता है।',
-  'settings.language.sidebarPoemOff': 'बंद',
-  'settings.language.sidebarPoemOn': 'चालू करो',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',

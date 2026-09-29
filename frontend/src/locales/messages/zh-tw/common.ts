@@ -331,11 +331,6 @@ export default {
   'settings.language.eBlackboardOn': '開啟',
   'settings.language.eBlackboardHint':
     '在新版画布上放大分支加号与折叠控件；单击选择、双击编辑、双指拖动平移/缩放，方便课堂电子白板操作',
-  'settings.language.sidebarPoem': '側邊欄詩句',
-  'settings.language.sidebarPoemHint':
-    '关闭后，用户名下方显示今日 Token 用量',
-  'settings.language.sidebarPoemOff': '關閉',
-  'settings.language.sidebarPoemOn': '開啟',
   'settings.language.bilingualUi': '雙語界面',
   'settings.language.bilingualUiHint':
     '开启后，按钮、提示和弹窗同时显示主要语言与第二语言。自动补全与 AI 生成内容仍只用主要语言。',

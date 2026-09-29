@@ -316,10 +316,6 @@ export default {
   'settings.language.eBlackboardOff': 'වසා දැමීම',
   'settings.language.eBlackboardOn': 'ක්රියාත්මක කරන්න',
   'settings.language.eBlackboardHint': 'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
-  'settings.language.sidebarPoem': 'පැති තීරු පද',
-  'settings.language.sidebarPoemHint': 'වසා දැමීමෙන් පසු, අද ටෝකන් භාවිතය පරිශීලක නාමයට පහළින් දර්ශනය වේ.',
-  'settings.language.sidebarPoemOff': 'වසා දැමීම',
-  'settings.language.sidebarPoemOn': 'ක්රියාත්මක කරන්න',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',

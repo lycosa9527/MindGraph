@@ -30,8 +30,8 @@ import type {
   BackendUser,
   CaptchaResponse,
   LoginCredentials,
-  StudentLoginCredentials,
   LoginResponse,
+  StudentLoginCredentials,
   User,
   UserRole,
 } from '@/types'

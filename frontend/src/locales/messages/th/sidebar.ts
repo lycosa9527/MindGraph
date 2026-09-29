@@ -128,7 +128,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'ยังไม่มีแพ็กเกจ',
   'sidebar.knowledgeSpaceHistory.title': 'แพ็กเกจ',
   'sidebar.languageSettings': 'ตั้งค่าภาษา',
-  'sidebar.tokenUsageToday': 'วันนี้ {usage}',
   'sidebar.library': 'ห้องสมุด',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

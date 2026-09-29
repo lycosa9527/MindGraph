@@ -128,7 +128,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'لا توجد حزمة معلومات حتى الآن',
   'sidebar.knowledgeSpaceHistory.title': 'حزمة المعلومات',
   'sidebar.languageSettings': 'Language Settings',
-  'sidebar.tokenUsageToday': 'اليوم {usage}',
   'sidebar.library': 'مكتبة',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

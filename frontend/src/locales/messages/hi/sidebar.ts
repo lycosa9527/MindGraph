@@ -128,7 +128,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'अभी कोई पैकेज नहीं',
   'sidebar.knowledgeSpaceHistory.title': 'पैकेज',
   'sidebar.languageSettings': 'भाषा सेटिंग',
-  'sidebar.tokenUsageToday': 'आज {usage}',
   'sidebar.library': 'पुस्तकालय',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

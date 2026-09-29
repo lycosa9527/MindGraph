@@ -315,10 +315,6 @@ export default {
   'settings.language.eBlackboardOff': 'ปิด',
   'settings.language.eBlackboardOn': 'เปิดเครื่อง',
   'settings.language.eBlackboardHint': 'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
-  'settings.language.sidebarPoem': 'โองการแถบด้านข้าง',
-  'settings.language.sidebarPoemHint': 'หลังจากปิด การใช้โทเค็นของวันนี้จะแสดงอยู่ใต้ชื่อผู้ใช้',
-  'settings.language.sidebarPoemOff': 'ปิด',
-  'settings.language.sidebarPoemOn': 'เปิดเครื่อง',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',

@@ -316,10 +316,6 @@ export default {
   'settings.language.eBlackboardOff': 'mbyllje',
   'settings.language.eBlackboardOn': 'ndizni',
   'settings.language.eBlackboardHint': 'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
-  'settings.language.sidebarPoem': 'vargjet e shiritit anësor',
-  'settings.language.sidebarPoemHint': 'Pas mbylljes, përdorimi i sotëm i Tokenit shfaqet poshtë emrit të përdoruesit.',
-  'settings.language.sidebarPoemOff': 'mbyllje',
-  'settings.language.sidebarPoemOn': 'ndizni',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',

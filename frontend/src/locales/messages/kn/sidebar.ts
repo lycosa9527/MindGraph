@@ -128,7 +128,6 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'ಇನ್ನೂ ಮಾಹಿತಿ ಪ್ಯಾಕೇಜ್ ಇಲ್ಲ',
   'sidebar.knowledgeSpaceHistory.title': 'ಮಾಹಿತಿ ಪ್ಯಾಕೇಜ್',
   'sidebar.languageSettings': 'ಇಂಟರ್ಫೇಸ್ UI ಸೆಟ್ಟಿಂಗ್‌ಗಳು',
-  'sidebar.tokenUsageToday': 'ಇಂದು {usage}',
   'sidebar.library': 'ಗ್ರಂಥಾಲಯ',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

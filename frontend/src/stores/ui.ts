@@ -60,7 +60,6 @@ export const MINDMAP_CANVAS_MODE_KEY = 'mindgraph_mindmap_canvas_mode'
 export const MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY =
   'mindgraph_mindmap_canvas_v2_default_migrated'
 export const E_BLACKBOARD_OPTIMIZE_KEY = 'mindgraph_e_blackboard_optimize'
-export const SIDEBAR_POEM_ENABLED_KEY = 'mindgraph_sidebar_poem_enabled'
 
 type CanvasModeStorage = Pick<Storage, 'getItem' | 'setItem'>
 
@@ -135,8 +134,6 @@ export const useUIStore = defineStore('ui', () => {
    * `mindMapEBlackboard.ts`.
    */
   const eBlackboardOptimize = ref(false)
-  /** Sidebar poem under the user name. When off, daily token usage is shown instead. */
-  const sidebarPoemEnabled = ref(true)
   /** Dual-language UI chrome: audience locale + presenter locale. */
   const bilingualUiEnabled = ref(false)
   const presenterUiLocale = ref<Language>(defaultPresenterUiLocale(true))
@@ -310,7 +307,6 @@ export const useUIStore = defineStore('ui', () => {
     }
 
     eBlackboardOptimize.value = localStorage.getItem(E_BLACKBOARD_OPTIMIZE_KEY) === '1'
-    sidebarPoemEnabled.value = localStorage.getItem(SIDEBAR_POEM_ENABLED_KEY) !== '0'
     bilingualUiEnabled.value = localStorage.getItem(BILINGUAL_UI_KEY) === '1'
     const storedPresenter = localStorage.getItem(PRESENTER_UI_LOCALE_KEY)
     if (isValidLanguage(storedPresenter)) {
@@ -524,11 +520,6 @@ export const useUIStore = defineStore('ui', () => {
     localStorage.setItem(E_BLACKBOARD_OPTIMIZE_KEY, value ? '1' : '0')
   }
 
-  function setSidebarPoemEnabled(value: boolean): void {
-    sidebarPoemEnabled.value = value
-    localStorage.setItem(SIDEBAR_POEM_ENABLED_KEY, value ? '1' : '0')
-  }
-
   function applyUiVersionFromServerProfile(_version: string | null | undefined): void {
     setUiVersion('international')
   }
@@ -683,7 +674,9 @@ export const useUIStore = defineStore('ui', () => {
     localStorage.removeItem(MINDMAP_CANVAS_MODE_KEY)
     localStorage.removeItem(MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY)
     localStorage.removeItem(E_BLACKBOARD_OPTIMIZE_KEY)
-    localStorage.removeItem(SIDEBAR_POEM_ENABLED_KEY)
+    localStorage.removeItem('mindgraph_sidebar_poem_enabled')
+    localStorage.removeItem('mindgraph_sidebar_subtitle_mode')
+    localStorage.removeItem('mindgraph_sidebar_subtitle_org_default_migrated')
     localStorage.removeItem(BILINGUAL_UI_KEY)
     localStorage.removeItem(PRESENTER_UI_LOCALE_KEY)
     applyTheme()
@@ -704,7 +697,6 @@ export const useUIStore = defineStore('ui', () => {
     uiVersion,
     mindMapCanvasMode,
     eBlackboardOptimize,
-    sidebarPoemEnabled,
     bilingualUiEnabled,
     presenterUiLocale,
     isMobile,
@@ -736,7 +728,6 @@ export const useUIStore = defineStore('ui', () => {
     setUiVersion,
     setMindMapCanvasMode,
     setEBlackboardOptimize,
-    setSidebarPoemEnabled,
     setBilingualUiEnabled,
     setPresenterUiLocale,
     applyUiVersionFromServerProfile,

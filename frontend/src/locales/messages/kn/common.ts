@@ -316,10 +316,6 @@ export default {
   'settings.language.eBlackboardOff': 'ಮುಚ್ಚುವಿಕೆ',
   'settings.language.eBlackboardOn': 'ಆನ್ ಮಾಡಿ',
   'settings.language.eBlackboardHint': 'ಹೊಸ ಕ್ಯಾನ್ವಾಸ್‌ನಲ್ಲಿ ಶಾಖೆಯ ಜೊತೆಗೆ ಚಿಹ್ನೆ ಮತ್ತು ಪಟ್ಟು ನಿಯಂತ್ರಣಗಳನ್ನು ಹಿಗ್ಗಿಸಿ; ಆಯ್ಕೆ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ, ಎಡಿಟ್ ಮಾಡಲು ಡಬಲ್ ಕ್ಲಿಕ್ ಮಾಡಿ ಮತ್ತು ತರಗತಿಯ ಎಲೆಕ್ಟ್ರಾನಿಕ್ ವೈಟ್‌ಬೋರ್ಡ್ ಕಾರ್ಯಾಚರಣೆಗಳನ್ನು ಸುಲಭಗೊಳಿಸಲು ಪ್ಯಾನ್/ಜೂಮ್ ಮಾಡಲು ಎರಡು ಬೆರಳುಗಳಿಂದ ಎಳೆಯಿರಿ',
-  'settings.language.sidebarPoem': 'ಅಡ್ಡಪಟ್ಟಿ ಪದ್ಯಗಳು',
-  'settings.language.sidebarPoemHint': 'ಮುಚ್ಚಿದ ನಂತರ, ಇಂದಿನ ಟೋಕನ್ ಬಳಕೆಯನ್ನು ಬಳಕೆದಾರರ ಹೆಸರಿನ ಕೆಳಗೆ ಪ್ರದರ್ಶಿಸಲಾಗುತ್ತದೆ.',
-  'settings.language.sidebarPoemOff': 'ಮುಚ್ಚುವಿಕೆ',
-  'settings.language.sidebarPoemOn': 'ಆನ್ ಮಾಡಿ',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',

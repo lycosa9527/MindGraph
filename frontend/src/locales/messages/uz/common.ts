@@ -316,10 +316,6 @@ export default {
   'settings.language.eBlackboardOff': 'yopilish',
   'settings.language.eBlackboardOn': 'yoqish; ishga tushirish',
   'settings.language.eBlackboardHint': 'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
-  'settings.language.sidebarPoem': 'yon paneldagi oyatlar',
-  'settings.language.sidebarPoemHint': 'Yopilgandan so\'ng, bugungi tokendan foydalanish foydalanuvchi nomi ostida ko\'rsatiladi.',
-  'settings.language.sidebarPoemOff': 'yopilish',
-  'settings.language.sidebarPoemOn': 'yoqish; ishga tushirish',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',

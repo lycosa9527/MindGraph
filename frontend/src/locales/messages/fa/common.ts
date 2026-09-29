@@ -316,10 +316,6 @@ export default {
   'settings.language.eBlackboardOff': 'بسته شدن',
   'settings.language.eBlackboardOn': 'روشن کن',
   'settings.language.eBlackboardHint': 'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
-  'settings.language.sidebarPoem': 'آیات نوار کناری',
-  'settings.language.sidebarPoemHint': 'پس از بسته شدن، استفاده از Token امروز در زیر نام کاربری نمایش داده می شود.',
-  'settings.language.sidebarPoemOff': 'بسته شدن',
-  'settings.language.sidebarPoemOn': 'روشن کن',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',

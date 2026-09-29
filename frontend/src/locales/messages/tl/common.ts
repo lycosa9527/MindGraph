@@ -316,10 +316,6 @@ export default {
   'settings.language.eBlackboardOff': 'pagsasara',
   'settings.language.eBlackboardOn': 'i-on',
   'settings.language.eBlackboardHint': 'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
-  'settings.language.sidebarPoem': 'sidebar verses',
-  'settings.language.sidebarPoemHint': 'Pagkatapos ng pagsasara, ang paggamit ng Token ngayon ay ipinapakita sa ibaba ng user name.',
-  'settings.language.sidebarPoemOff': 'pagsasara',
-  'settings.language.sidebarPoemOn': 'i-on',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',

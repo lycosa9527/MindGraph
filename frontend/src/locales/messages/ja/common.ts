@@ -316,10 +316,6 @@ export default {
   'settings.language.eBlackboardOff': '閉鎖',
   'settings.language.eBlackboardOn': 'オンにする',
   'settings.language.eBlackboardHint': 'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
-  'settings.language.sidebarPoem': 'サイドバーの詩',
-  'settings.language.sidebarPoemHint': '終了後、ユーザー名の下に今日のトークン使用量が表示されます。',
-  'settings.language.sidebarPoemOff': '閉鎖',
-  'settings.language.sidebarPoemOn': 'オンにする',
   'settings.language.bilingualUi': 'Bilingual interface',
   'settings.language.bilingualUiHint':
     'Buttons, tooltips, and modal chrome show the interface language plus a presenter language so you can find controls in an international setting. Autocomplete and AI results stay in the interface language only.',
