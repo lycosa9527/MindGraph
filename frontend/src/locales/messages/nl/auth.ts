@@ -286,6 +286,7 @@ export default {
   'auth.accountNameSave': 'Naam opslaan',
   'auth.accountNameSaveSuccess': 'Naam bijgewerkt',
   'auth.accountNameSaveError': 'Kan niet opslaan. Probeer het opnieuw.',
+  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
   'auth.dingtalkBindSection': 'DingTalk MindBot',
   'auth.dingtalkBindButton': 'Bindende DingTalk',
   'auth.dingtalkBindLinkedButton': 'DingTalk gekoppeld',

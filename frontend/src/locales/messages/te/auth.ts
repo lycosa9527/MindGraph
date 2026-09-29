@@ -286,6 +286,7 @@ export default {
   'auth.accountNameSave': 'పేరు సేవ్',
   'auth.accountNameSaveSuccess': 'పేరు నవీకరించబడింది',
   'auth.accountNameSaveError': 'సేవ్ చేయడం విఫలమైంది, దయచేసి మళ్లీ ప్రయత్నించండి',
+  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
   'auth.dingtalkBindSection': 'డింగ్‌టాక్ మైండ్‌బాట్',
   'auth.dingtalkBindButton': 'బైండింగ్ డింగ్‌టాక్',
   'auth.dingtalkBindLinkedButton': 'DingTalk కట్టుబడి ఉంది',

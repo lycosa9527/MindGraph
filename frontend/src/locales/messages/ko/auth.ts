@@ -286,6 +286,7 @@ export default {
   'auth.accountNameSave': '이름 저장',
   'auth.accountNameSaveSuccess': '이름이 업데이트되었습니다',
   'auth.accountNameSaveError': '저장할 수 없습니다. 다시 시도하세요.',
+  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
   'auth.dingtalkBindSection': '딩톡 마인드봇',
   'auth.dingtalkBindButton': 'DingTalk 연결',
   'auth.dingtalkBindLinkedButton': 'DingTalk 연결됨',

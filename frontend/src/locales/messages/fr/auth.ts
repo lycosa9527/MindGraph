@@ -201,6 +201,7 @@ export default {
   'auth.accountNameSave': 'Enregistrer le nom',
   'auth.accountNameSaveSuccess': 'Nom mis à jour',
   'auth.accountNameSaveError': 'Impossible d’enregistrer. Veuillez réessayer.',
+  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
   'auth.dingtalkBindSection': 'MindBot DingTalk',
   'auth.dingtalkBindButton': 'Lier DingTalk',
   'auth.dingtalkBindLinkedButton': 'DingTalk lié',

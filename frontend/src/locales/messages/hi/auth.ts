@@ -286,6 +286,7 @@ export default {
   'auth.accountNameSave': 'नाम सहेजें',
   'auth.accountNameSaveSuccess': 'नाम अपडेट',
   'auth.accountNameSaveError': 'सहेज नहीं सका। पुनः प्रयास।',
+  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
   'auth.dingtalkBindSection': 'डिंगटॉक माइंडबॉट',
   'auth.dingtalkBindButton': 'DingTalk लिंक',
   'auth.dingtalkBindLinkedButton': 'DingTalk लिंक',

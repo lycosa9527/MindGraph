@@ -182,7 +182,6 @@ TTL_EMAIL = 600
 # Bayi SSO tokens  (redis_bayi_token.py)
 # ---------------------------------------------------------------------------
 BAYI_TOKEN_USED = "bayi:token:used:{sha256}"
-BAYI_TOKEN_VALID = "bayi:token:valid:{sha256}"
 TTL_BAYI_TOKEN = 300
 
 # ---------------------------------------------------------------------------

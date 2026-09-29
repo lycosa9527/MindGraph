@@ -174,6 +174,16 @@ describe('normalizeAuthUser', () => {
     expect(twice.schoolName).toBe('Demo School')
   })
 
+  it('maps the Bayi first-login name prompt flag', () => {
+    const user = normalizeAuthUser({
+      ...loginPayload,
+      name: '八一用户',
+      needs_display_name: true,
+    })
+    expect(user.needsDisplayName).toBe(true)
+    expect(user.username).toBe('八一用户')
+  })
+
   it('prefers the organization display name for the sidebar chip', () => {
     const user = normalizeAuthUser({
       ...loginPayload,

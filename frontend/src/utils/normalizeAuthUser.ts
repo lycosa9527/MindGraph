@@ -61,6 +61,13 @@ function resolveLoginPasswordSet(source: AuthUserSource): boolean {
   return true
 }
 
+function resolveNeedsDisplayName(source: AuthUserSource): boolean {
+  if (source.needs_display_name === true || source.needsDisplayName === true) {
+    return true
+  }
+  return false
+}
+
 function resolveMustChangePassword(source: AuthUserSource): boolean {
   if (source.must_change_password !== undefined) {
     return Boolean(source.must_change_password)
@@ -229,6 +236,7 @@ export function normalizeAuthUser(source: BackendUser | User): User {
     allowsSimplifiedChinese: allowsZh,
     loginPasswordSet: resolveLoginPasswordSet(raw),
     mustChangePassword: resolveMustChangePassword(raw),
+    needsDisplayName: resolveNeedsDisplayName(raw),
     learningClassId: resolveLearningClassId(raw),
     mindmateAgentName: mindmateAgentName || null,
     mindmateAgentAvatarUrl: mindmateAgentAvatarUrl || null,

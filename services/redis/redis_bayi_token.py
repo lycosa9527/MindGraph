@@ -6,13 +6,11 @@ High-performance token tracking for bayi mode authentication.
 
 Features:
 - Replay attack prevention (token can only be used once)
-- Validation result caching (skip decryption for cached tokens)
 - Rate limiting integration (prevent brute force attacks)
 - Automatic TTL-based expiration (matches token expiration: 5 minutes)
 
 Key Schema:
 - bayi:token:used:{sha256_hash} -> timestamp (TTL: 5 min)
-- bayi:token:valid:{sha256_hash} -> "1" (TTL: 5 min)
 
 Author: lycosa9527
 Made by: MindSpring Team
@@ -25,10 +23,11 @@ Proprietary License
 import hashlib
 import logging
 import time
-from typing import Optional, Tuple
+from typing import Tuple
 
 from services.redis import keys as _keys
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
+from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_async_ops import AsyncRedisOps
 from services.redis.redis_client import is_redis_available
 from services.utils.error_types import REDIS_ERRORS
@@ -84,7 +83,7 @@ class BayiTokenTracker:
             True if token was already used, False otherwise
         """
         if not self._use_redis():
-            return False
+            raise RuntimeError("Bayi token replay store unavailable")
 
         token_hash = self._hash_token(token)
         key = _keys.BAYI_TOKEN_USED.format(sha256=token_hash)
@@ -96,97 +95,32 @@ class BayiTokenTracker:
                 return True
             return False
         except REDIS_ERRORS as e:
-            logger.warning(
-                "[BayiToken] Redis error checking token usage, allowing request: %s",
-                e,
-            )
-            return False
+            logger.warning("[BayiToken] Redis error checking token usage: %s", e)
+            raise RuntimeError("Bayi token replay store unavailable") from e
 
-    async def mark_token_used(self, token: str) -> bool:
+    async def claim_token_once(self, token: str) -> bool:
         """
-        Mark token as used (prevent replay attacks).
+        Atomically mark a token used.
 
-        Args:
-            token: Encrypted token string
-
-        Returns:
-            True if marked successfully, False otherwise
+        Returns True only for the first caller. A second caller, or a Redis
+        outage, must not be treated as a fresh login.
         """
         if not self._use_redis():
-            return False
+            raise RuntimeError("Bayi token replay store unavailable")
 
         token_hash = self._hash_token(token)
         key = _keys.BAYI_TOKEN_USED.format(sha256=token_hash)
-
         try:
-            timestamp = str(int(time.time()))
-            success = await AsyncRedisOps.set_with_ttl(key, timestamp, TOKEN_TTL)
-            if success:
-                logger.debug("[BayiToken] Marked token as used (TTL: %ss)", TOKEN_TTL)
-            return success
+            redis = get_async_redis()
+            created = await redis.set(key, str(int(time.time())), ex=TOKEN_TTL, nx=True)
         except REDIS_ERRORS as e:
-            logger.warning("[BayiToken] Failed to mark token as used: %s", e)
-            return False
-
-    async def is_token_validated(self, token: str) -> Optional[bool]:
-        """
-        Check if token validation result is cached.
-
-        Args:
-            token: Encrypted token string
-
-        Returns:
-            True if cached and valid, False if cached and invalid, None if not cached
-        """
-        if not self._use_redis():
-            return None
-
-        token_hash = self._hash_token(token)
-        key = _keys.BAYI_TOKEN_VALID.format(sha256=token_hash)
-
-        try:
-            cached = await AsyncRedisOps.get(key)
-            if cached == "1":
-                logger.debug("[BayiToken] Token validation cached (valid)")
-                return True
-            if cached == "0":
-                logger.debug("[BayiToken] Token validation cached (invalid)")
-                return False
-            return None
-        except REDIS_ERRORS as e:
-            logger.warning("[BayiToken] Redis error checking validation cache: %s", e)
-            return None
-
-    async def cache_token_validation(self, token: str, valid: bool) -> bool:
-        """
-        Cache token validation result (performance optimization).
-
-        Args:
-            token: Encrypted token string
-            valid: Whether token is valid
-
-        Returns:
-            True if cached successfully, False otherwise
-        """
-        if not self._use_redis():
-            return False
-
-        token_hash = self._hash_token(token)
-        key = _keys.BAYI_TOKEN_VALID.format(sha256=token_hash)
-
-        try:
-            value = "1" if valid else "0"
-            success = await AsyncRedisOps.set_with_ttl(key, value, TOKEN_TTL)
-            if success:
-                logger.debug(
-                    "[BayiToken] Cached token validation result: %s (TTL: %ss)",
-                    valid,
-                    TOKEN_TTL,
-                )
-            return success
-        except REDIS_ERRORS as e:
-            logger.warning("[BayiToken] Failed to cache token validation: %s", e)
-            return False
+            logger.warning("[BayiToken] Failed to claim token: %s", e)
+            raise RuntimeError("Bayi token replay store unavailable") from e
+        if created:
+            logger.debug("[BayiToken] Claimed token (TTL: %ss)", TOKEN_TTL)
+            return True
+        logger.debug("[BayiToken] Token already claimed")
+        return False
 
     async def check_rate_limit(self, ip: str) -> Tuple[bool, int, str]:
         """

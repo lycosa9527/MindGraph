@@ -52,6 +52,9 @@ useTrainingFollow()
 useTrainingSessionEngine()
 
 const LoginModal = defineAsyncComponent(() => import('@/components/auth/LoginModal.vue'))
+const AccountInfoModal = defineAsyncComponent(
+  () => import('@/components/auth/AccountInfoModal.vue')
+)
 const CanvasLiveSubtitleOverlay = defineAsyncComponent(
   () => import('@/components/canvas/CanvasLiveSubtitleOverlay.vue')
 )
@@ -153,6 +156,23 @@ const translationLive = translationInterimText
 const elLocale = shallowRef<Language | undefined>(undefined)
 
 const showBrowserLocaleHint = ref(false)
+const showAccountInfo = ref(false)
+const bayiNameToastSent = ref(false)
+watch(
+  () => authStore.user?.needsDisplayName === true && !isMindgraphHeadlessExportSession(),
+  (needsName) => {
+    if (!needsName) {
+      showAccountInfo.value = false
+      return
+    }
+    showAccountInfo.value = true
+    if (!bayiNameToastSent.value) {
+      bayiNameToastSent.value = true
+      notify.warningKey('auth.bayiNamePrompt.toast')
+    }
+  },
+  { immediate: true }
+)
 /** Visibility for SwissWarningModal (@/components/common/SwissWarningModal.vue). */
 const showSwissWarning = ref(false)
 const showSchoolExpired = ref(false)
@@ -464,6 +484,11 @@ onUnmounted(() => {
     <LoginModal
       v-model:visible="authStore.showSessionExpiredModal"
       @success="handleSessionExpiredLoginSuccess"
+    />
+
+    <AccountInfoModal
+      v-if="showAccountInfo"
+      v-model:visible="showAccountInfo"
     />
 
     <BrowserLocaleHintDialog v-model="showBrowserLocaleHint" />

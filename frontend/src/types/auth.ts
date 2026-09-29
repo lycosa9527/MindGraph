@@ -109,6 +109,8 @@ export interface User {
   thinkingCoins?: ThinkingCoinsSummary
   /** Per-user daily LLM token budget from /me */
   dailyTokens?: DailyTokensSummary
+  /** Bayi SSO account still uses the shared default name */
+  needsDisplayName?: boolean
   /** School custom native LLM is active */
   customLlmEnabled?: boolean
   /** School model name shown on the canvas */
@@ -166,6 +168,7 @@ export interface BackendUser {
   allows_simplified_chinese?: boolean
   login_password_set?: boolean
   must_change_password?: boolean
+  needs_display_name?: boolean
   learning_class_id?: number | null
   thinking_coins?: {
     balance?: number

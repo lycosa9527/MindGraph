@@ -286,6 +286,7 @@ export default {
   'auth.accountNameSave': 'ذخیره نام',
   'auth.accountNameSaveSuccess': 'نام به روز شده است',
   'auth.accountNameSaveError': 'در سبد خرید ذخیره نشد ، لطفاً دوباره امتحان کنید.',
+  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
   'auth.dingtalkBindSection': 'DingTalk MindBot',
   'auth.dingtalkBindButton': 'اتصال DingTalk',
   'auth.dingtalkBindLinkedButton': 'DingTalk محدود است',

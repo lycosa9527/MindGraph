@@ -286,6 +286,7 @@ export default {
   'auth.accountNameSave': 'Зберегти ім\'я',
   'auth.accountNameSaveSuccess': 'Ім\'я оновлено',
   'auth.accountNameSaveError': 'Не вдалося зберегти. Спробуйте ще раз.',
+  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
   'auth.dingtalkBindSection': 'DingTalk MindBot',
   'auth.dingtalkBindButton': 'Прив\'язати DingTalk',
   'auth.dingtalkBindLinkedButton': 'DingTalk прив\'язано',

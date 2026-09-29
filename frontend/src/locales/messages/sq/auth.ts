@@ -286,6 +286,7 @@ export default {
   'auth.accountNameSave': 'Ruaj emrin',
   'auth.accountNameSaveSuccess': 'Emri u përditësua',
   'auth.accountNameSaveError': 'Ruajtja dështoi. Provoni përsëri.',
+  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
   'auth.dingtalkBindSection': 'DingTalk MindBot',
   'auth.dingtalkBindButton': 'Lidh DingTalk',
   'auth.dingtalkBindLinkedButton': 'DingTalk i lidhur',

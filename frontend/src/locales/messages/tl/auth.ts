@@ -286,6 +286,7 @@ export default {
   'auth.accountNameSave': 'I-save ang pangalan',
   'auth.accountNameSaveSuccess': 'Na-update ang pangalan',
   'auth.accountNameSaveError': 'Hindi ma-save. Subukan muli.',
+  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
   'auth.dingtalkBindSection': 'DingTalk MindBot',
   'auth.dingtalkBindButton': 'I-link ang DingTalk',
   'auth.dingtalkBindLinkedButton': 'Naka-link ang DingTalk',

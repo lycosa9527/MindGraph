@@ -76,6 +76,7 @@ from utils.auth import (
     verify_password,
     verify_password_timing_dummy,
 )
+from utils.auth.bayi_mode import is_bayi_sso_phone
 from utils.auth.config import BAYI_DEFAULT_ORG_CODE, BAYI_DEFAULT_ORG_ID, BAYI_PASSKEY
 from utils.auth.org_subscription import enforce_org_accessible_or_raise
 from utils.auth.role_constants import ROLE_STUDENT
@@ -90,6 +91,15 @@ from .helpers import auth_session_json_metadata, issue_new_auth_cookies, track_u
 from .session_user_payload import build_session_user_payload
 from .sms import _verify_and_consume_sms_code
 from .user_session_prefs import coerce_overseas_ui_language_prefs
+
+
+def _password_accepted(user: User, plain_password: str) -> bool:
+    """Bayi jump-in accounts sign in from the school link, not a password."""
+    if is_bayi_sso_phone(getattr(user, "phone", None)):
+        verify_password_timing_dummy(plain_password)
+        return False
+    return verify_password(plain_password, user.password_hash)
+
 
 _bg_tasks: set[asyncio.Task] = set()
 
@@ -378,7 +388,7 @@ async def login_student(
             detail=Messages.error("captcha_account_locked", lang, MAX_LOGIN_ATTEMPTS, LOCKOUT_DURATION_MINUTES),
         )
 
-    if not verify_password(request.password, cached_user.password_hash):
+    if not _password_accepted(cached_user, request.password):
         result = await db.execute(select(User).where(User.id == cached_user.id))
         db_user = result.scalar_one_or_none()
         if db_user:
@@ -539,7 +549,7 @@ async def login(
         raise HTTPException(status_code=status.HTTP_423_LOCKED, detail=lockout_msg)
 
     # Verify password
-    if not verify_password(request.password, cached_user.password_hash):
+    if not _password_accepted(cached_user, request.password):
         # Need user attached to session for modification - reload from DB
         result = await db.execute(select(User).where(User.id == cached_user.id))
         db_user = result.scalar_one_or_none()

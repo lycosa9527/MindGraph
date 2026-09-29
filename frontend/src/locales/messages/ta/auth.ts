@@ -286,6 +286,7 @@ export default {
   'auth.accountNameSave': 'பெயரை சேமிக்கவும்',
   'auth.accountNameSaveSuccess': 'பெயர் புதுப்பிக்கப்பட்டது',
   'auth.accountNameSaveError': 'சேமிக்க முடியவில்லை, மீண்டும் முயற்சிக்கவும்',
+  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
   'auth.dingtalkBindSection': 'DingTalk MindBot',
   'auth.dingtalkBindButton': 'டிங்டாக் பைண்டிங்',
   'auth.dingtalkBindLinkedButton': 'DingTalk பிணைக்கப்பட்டுள்ளது',

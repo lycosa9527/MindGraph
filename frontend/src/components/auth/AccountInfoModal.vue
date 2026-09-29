@@ -173,6 +173,12 @@ function handleOAuthBindSuccess() {
 
 const currentAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
 
+/** Bayi jump-in stores a UUID in phone. That id must stay put. */
+const isBayiSsoSubject = computed(() => {
+  const phone = (authStore.user?.phone || '').trim()
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(phone)
+})
+
 /** Quick registration: server-only password until user sets one via SMS. */
 const needsSetLoginPassword = computed(() => authStore.user?.loginPasswordSet === false)
 
@@ -220,7 +226,7 @@ async function saveDisplayName() {
     const data = (await res.json().catch(() => ({}))) as { detail?: string }
     if (res.ok) {
       notify.successKey('auth.accountNameSaveSuccess')
-      await authStore.checkAuth()
+      await authStore.refreshUserProfile({ bypassThrottle: true })
       emit('success')
     } else {
       notify.error(
@@ -241,7 +247,7 @@ watch(
       const u = (authStore.user?.username || '').trim()
       const looksLikeName =
         u.length >= 2 && u.length <= 32 && !/^\d{11}$/.test(u) && !/^\d+$/.test(u)
-      nameEdit.value = looksLikeName ? u : ''
+      nameEdit.value = authStore.user?.needsDisplayName || !looksLikeName ? '' : u
       if (wechatEnabled && authStore.user?.schoolId) {
         void fetchOauthLinks()
       }
@@ -331,6 +337,7 @@ watch(
             />
             <div class="flex shrink-0 items-center gap-2">
               <button
+                v-if="!isBayiSsoSubject"
                 type="button"
                 class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
                 @click="openChangePhoneModal"
@@ -338,7 +345,7 @@ watch(
                 <I18nText k="auth.changePhoneButton" />
               </button>
               <button
-                v-if="needsSetLoginPassword && authStore.user?.phone"
+                v-if="needsSetLoginPassword && authStore.user?.phone && !isBayiSsoSubject"
                 type="button"
                 class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
                 @click="openSetPasswordSmsModal"
@@ -346,7 +353,7 @@ watch(
                 <I18nText k="auth.setPasswordWithSms" />
               </button>
               <button
-                v-else-if="!needsSetLoginPassword"
+                v-else-if="!needsSetLoginPassword && !isBayiSsoSubject"
                 type="button"
                 class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
                 @click="openChangePasswordModal"

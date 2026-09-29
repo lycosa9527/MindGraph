@@ -286,6 +286,7 @@ export default {
   'auth.accountNameSave': 'Adi saqlash',
   'auth.accountNameSaveSuccess': 'Ad yangilashndi',
   'auth.accountNameSaveError': 'Saqlashnmadi. Qayta qayta urinib ko’ring.',
+  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
   'auth.dingtalkBindSection': 'DingTalk MindBot',
   'auth.dingtalkBindButton': 'DingTalk-u yopish',
   'auth.dingtalkBindLinkedButton': 'DingTalk yopishnib',

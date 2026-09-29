@@ -286,6 +286,7 @@ export default {
   'auth.accountNameSave': 'salvar nome',
   'auth.accountNameSaveSuccess': 'O nome foi atualizado',
   'auth.accountNameSaveError': 'Falha ao salvar, tente novamente',
+  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
   'auth.dingtalkBindSection': 'DingTalk MindBot',
   'auth.dingtalkBindButton': 'Vinculação DingTalk',
   'auth.dingtalkBindLinkedButton': 'DingTalk está vinculado',

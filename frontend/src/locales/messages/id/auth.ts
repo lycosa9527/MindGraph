@@ -286,6 +286,7 @@ export default {
   'auth.accountNameSave': 'Simpan nama',
   'auth.accountNameSaveSuccess': 'Nama diperbarui',
   'auth.accountNameSaveError': 'Tidak dapat menyimpan. Silakan coba lagi.',
+  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
   'auth.dingtalkBindSection': 'DingTalk MindBot',
   'auth.dingtalkBindButton': 'Tautkan DingTalk',
   'auth.dingtalkBindLinkedButton': 'DingTalk tertaut',

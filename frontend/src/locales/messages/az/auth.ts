@@ -201,6 +201,7 @@ export default {
   'auth.accountNameSave': 'Adı saxla',
   'auth.accountNameSaveSuccess': 'Ad yeniləndi',
   'auth.accountNameSaveError': 'Saxlanmadı. Yenidən cəhd edin.',
+  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
   'auth.dingtalkBindSection': 'DingTalk MindBot',
   'auth.dingtalkBindButton': 'DingTalk-u bağla',
   'auth.dingtalkBindLinkedButton': 'DingTalk bağlanıb',

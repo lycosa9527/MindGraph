@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
 from repositories.dingtalk_staff_link_repo import DingtalkStaffLinkRepository
 from utils.auth import AUTH_MODE
+
+logger = logging.getLogger(__name__)
 
 _MG_USER_RE = re.compile(r"^mg_user_(\d+)$")
 _MINDBOT_USER_RE = re.compile(r"^mindbot_(\d+)_(.+)$")
@@ -84,12 +87,15 @@ async def resolve_user_and_org_from_dify_key(
         except ValueError:
             uuid_text = None
         if uuid_text:
-            stmt = select(User.id, User.organization_id).where(User.phone == uuid_text).limit(1)
-            row = (await db.execute(stmt)).first()
-            if row is not None:
-                uid, org_raw = row
+            stmt = select(User.id, User.organization_id).where(func.lower(User.phone) == uuid_text).limit(2)
+            rows = (await db.execute(stmt)).all()
+            if len(rows) == 1:
+                uid, org_raw = rows[0]
                 org_id = int(org_raw) if org_raw is not None else None
                 return int(uid), org_id
+            if len(rows) > 1:
+                logger.warning("Bayi Dify user key matched more than one account")
+                return None, None
 
     org_id, staff_id = parse_mindbot_dify_key(key)
     if org_id is not None and staff_id:

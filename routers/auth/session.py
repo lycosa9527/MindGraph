@@ -37,7 +37,7 @@ from services.redis.session.redis_session_manager import (
     get_refresh_token_manager,
     get_session_manager,
 )
-from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS, REDIS_ERRORS
 from utils.auth import (
     JWT_ALGORITHM,
     compute_device_hash,
@@ -50,6 +50,7 @@ from utils.auth import (
     hash_refresh_token,
     is_https,
 )
+from utils.auth.bayi_mode import is_bayi_placeholder_display_name
 from utils.auth.mg_client import client_source_from_request
 from utils.auth.request_helpers import CSRF_COOKIE_NAME
 
@@ -352,10 +353,15 @@ async def patch_profile(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=Messages.error("user_not_found", lang),
         )
+    if is_bayi_placeholder_display_name(body.name):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=Messages.error("display_name_placeholder", lang),
+        )
     user.name = body.name
     try:
         await db.commit()
-    except REDIS_ERRORS as exc:
+    except DATABASE_ERRORS as exc:
         await db.rollback()
         logger.error("[Auth] profile patch commit failed: %s", exc, exc_info=True)
         raise HTTPException(

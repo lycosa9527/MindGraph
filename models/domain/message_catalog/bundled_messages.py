@@ -249,6 +249,16 @@ ERRORS = {
         "en": "Name must be at least 2 characters and must not contain digits.",
         "az": "Ad ən azı 2 simvoldan ibarət olmalı və rəqəm ehtiva etməməlidir.",
     },
+    "display_name_placeholder": {
+        "zh": "请填写真实姓名，不要沿用默认称呼。",
+        "en": "Enter your real name instead of the default label.",
+        "az": "Standart adın əvəzinə həqiqi adınızı yazın.",
+    },
+    "bayi_sso_phone_locked": {
+        "zh": "学校账号的用户标识不能修改。",
+        "en": "This school account id cannot be changed.",
+        "az": "Məktəb hesabının identifikatorunu dəyişmək olmaz.",
+    },
     "profile_update_failed": {
         "zh": "无法保存个人资料。",
         "en": "Could not save your profile.",

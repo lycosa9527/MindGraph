@@ -201,6 +201,7 @@ export default {
   'auth.accountNameSave': 'Stoor naam',
   'auth.accountNameSaveSuccess': 'Naam opgedateer',
   'auth.accountNameSaveError': 'Kon nie stoor nie. Probeer asseblief weer.',
+  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
   'auth.dingtalkBindSection': 'DingTalk MindBot',
   'auth.dingtalkBindButton': 'Koppel DingTalk',
   'auth.dingtalkBindLinkedButton': 'DingTalk gekoppel',

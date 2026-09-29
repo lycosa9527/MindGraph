@@ -201,6 +201,7 @@ export default {
   'auth.accountNameSave': 'บันทึกชื่อ',
   'auth.accountNameSaveSuccess': 'อัปเดตชื่อแล้ว',
   'auth.accountNameSaveError': 'บันทึกไม่ได้ กรุณาลองอีกครั้ง',
+  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
   'auth.dingtalkBindSection': 'DingTalk MindBot',
   'auth.dingtalkBindButton': 'เชื่อม DingTalk',
   'auth.dingtalkBindLinkedButton': 'เชื่อม DingTalk แล้ว',

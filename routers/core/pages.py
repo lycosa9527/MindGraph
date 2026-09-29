@@ -15,13 +15,14 @@ Proprietary License
 
 import logging
 import os
+import secrets
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Optional, cast
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from models.domain.auth import Organization, User
@@ -44,6 +45,7 @@ from utils.auth import (
     hash_password,
     validate_bayi_token_body,
 )
+from utils.auth.bayi_mode import canonical_bayi_subject
 from utils.auth.org_subscription import is_org_subscription_expired
 from utils.db.session_open import system_rls_session
 
@@ -176,34 +178,30 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
         validation_result = validate_bayi_token_body(body)
         if not validation_result:
             logger.error(
-                "Bayi token validation failed - body: %s, from field: '%s', timestamp: %s - redirecting to %s",
-                body,
+                "Bayi token validation failed - from field: '%s', timestamp: %s - redirecting to %s",
                 body.get("from"),
                 body.get("timestamp"),
                 _BAYI_SSO_FALLBACK_REDIRECT,
             )
-            # Cache invalid result (performance optimization)
-            try:
-                token_tracker = get_bayi_token_tracker()
-                await token_tracker.cache_token_validation(token, False)
-            except BACKGROUND_INFRA_ERRORS as e:
-                logger.debug("Failed to cache invalid token: %s", e)
-            # Invalid or expired token: fallback to standard auth UI
             return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
 
         logger.info("Token validation passed - proceeding with user creation/retrieval")
 
-        # Mark token as used (replay attack prevention) and cache validation result
         try:
             token_tracker = get_bayi_token_tracker()
-            await token_tracker.mark_token_used(token)
-            await token_tracker.cache_token_validation(token, True)
+            claimed = await token_tracker.claim_token_once(token)
+            if not claimed:
+                logger.warning(
+                    "Bayi token replay attack detected for IP %s - token already used",
+                    client_ip,
+                )
+                return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
             await token_tracker.clear_rate_limit(client_ip)
-        except DATABASE_ERRORS as e:
-            logger.debug("Failed to mark token as used/cache result: %s", e)
-            # Non-critical - continue with authentication
+        except BACKGROUND_INFRA_ERRORS as e:
+            logger.warning("Token claim failed (denying request): %s", e)
+            return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
 
-        user_phone = str(body["userId"]).strip()
+        user_phone = canonical_bayi_subject(body["userId"])
 
         async with system_rls_session() as db:
             org: Optional[Organization] = None
@@ -269,12 +267,38 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
 
             result = await db.execute(select(User).where(User.phone == user_phone))
             bayi_user = result.scalar_one_or_none()
+            if bayi_user is None and user_phone:
+                folded = await db.execute(select(User).where(func.lower(User.phone) == user_phone.lower()))
+                matches = list(folded.scalars().all())
+                if len(matches) == 1:
+                    bayi_user = matches[0]
+                elif len(matches) > 1:
+                    logger.error("Bayi SSO: more than one account matches userId")
+                    return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
+
+            if bayi_user is not None and (bayi_user.phone or "") != user_phone:
+                old_phone = bayi_user.phone
+                bayi_user.phone = user_phone
+                try:
+                    await db.commit()
+                    await db.refresh(bayi_user)
+                except IntegrityError:
+                    await db.rollback()
+                    logger.error("Bayi SSO: could not store the canonical userId")
+                    return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
+                try:
+                    await user_cache.invalidate(
+                        int(bayi_user.id),
+                        phone=str(old_phone) if old_phone else None,
+                    )
+                except REDIS_ERRORS as cache_err:
+                    logger.debug("Failed to drop old Bayi phone cache: %s", cache_err)
 
             if not bayi_user:
                 try:
                     bayi_user = User(
                         phone=user_phone,
-                        password_hash=hash_password("bayi-no-pwd"),
+                        password_hash=hash_password(secrets.token_urlsafe(32)),
                         name=BAYI_SSO_DEFAULT_DISPLAY_NAME,
                         organization_id=org.id,
                         created_at=datetime.now(UTC),
@@ -287,13 +311,12 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                         await user_cache.cache_user(bayi_user)
                     except REDIS_ERRORS as e:
                         logger.warning("Failed to cache bayi user: %s", e)
-                except REDIS_ERRORS as e:
+                except IntegrityError:
                     await db.rollback()
-                    logger.error("Failed to create bayi user: %s", e)
                     result = await db.execute(select(User).where(User.phone == user_phone))
                     bayi_user = result.scalar_one_or_none()
                     if not bayi_user:
-                        logger.error("Failed to create bayi user after retry: %s", e)
+                        logger.error("Bayi SSO: could not create or reuse the userId")
                         return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
                     try:
                         await user_cache.cache_user(bayi_user)
@@ -302,6 +325,9 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                             "Failed to cache user after error recovery: %s",
                             cache_err,
                         )
+                except DATABASE_ERRORS:
+                    await db.rollback()
+                    raise
 
             session_manager = get_session_manager()
             old_token_hash = await session_manager.get_session_token(bayi_user.id)

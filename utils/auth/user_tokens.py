@@ -30,6 +30,7 @@ except ImportError:
     org_cache = None
     user_cache = None
 
+from utils.auth.bayi_mode import same_account_key
 from utils.auth.connection_types import HttpOrWebSocket
 from utils.auth.mg_client import bind_mg_client_from_connection, mg_client_display_label
 from utils.auth.org_subscription import enforce_org_accessible_or_raise
@@ -160,7 +161,7 @@ async def validate_user_token(
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
-    if user.phone != account_number:
+    if not same_account_key(user.phone, account_number):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
 
     await _check_org_access_async(user)

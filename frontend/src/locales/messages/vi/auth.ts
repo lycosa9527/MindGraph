@@ -286,6 +286,7 @@ export default {
   'auth.accountNameSave': 'Lưu tên',
   'auth.accountNameSaveSuccess': 'Đã cập nhật tên',
   'auth.accountNameSaveError': 'Không lưu được. Vui lòng thử lại.',
+  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
   'auth.dingtalkBindSection': 'DingTalk MindBot',
   'auth.dingtalkBindButton': 'Liên kết DingTalk',
   'auth.dingtalkBindLinkedButton': 'Đã liên kết DingTalk',

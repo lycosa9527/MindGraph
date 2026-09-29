@@ -286,6 +286,7 @@ export default {
   'auth.accountNameSave': 'ಹೆಸರನ್ನು ಉಳಿಸಿ',
   'auth.accountNameSaveSuccess': 'ಹೆಸರನ್ನು ನವೀಕರಿಸಲಾಗಿದೆ',
   'auth.accountNameSaveError': 'ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ, ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
+  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
   'auth.dingtalkBindSection': 'ಡಿಂಗ್‌ಟಾಕ್ ಮೈಂಡ್‌ಬಾಟ್',
   'auth.dingtalkBindButton': 'ಬೈಂಡಿಂಗ್ ಡಿಂಗ್ ಟಾಕ್',
   'auth.dingtalkBindLinkedButton': 'DingTalk ಬದ್ಧವಾಗಿದೆ',

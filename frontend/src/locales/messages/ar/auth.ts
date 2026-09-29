@@ -286,6 +286,7 @@ export default {
   'auth.accountNameSave': 'حفظ الاسم',
   'auth.accountNameSaveSuccess': 'تم تحديث الاسم',
   'auth.accountNameSaveError': 'فشل الحفظ، يرجى المحاولة مرة أخرى',
+  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
   'auth.dingtalkBindSection': 'دينغ توك مايند بوت',
   'auth.dingtalkBindButton': 'ملزمة DingTalk',
   'auth.dingtalkBindLinkedButton': 'DingTalk مقيد',

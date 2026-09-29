@@ -286,6 +286,7 @@ export default {
   'auth.accountNameSave': 'Adı kaydet',
   'auth.accountNameSaveSuccess': 'Ad güncellendi',
   'auth.accountNameSaveError': 'Kaydedilemedi. Lütfen tekrar deneyin.',
+  'auth.bayiNamePrompt.toast': 'Save your real name in account info.',
   'auth.dingtalkBindSection': 'DingTalk MindBot',
   'auth.dingtalkBindButton': 'DingTalk bağla',
   'auth.dingtalkBindLinkedButton': 'DingTalk bağlı',

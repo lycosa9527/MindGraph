@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.118] - 2026-09-30
+
+> **A Bayi jump-in with the default name asks for a real name, and a reused login link is refused.**
+
+### Changed
+
+- **Bayi first visit** — When the account still uses the shared default name, account info opens and asks you to save a real name. That default name cannot be saved. Phone and password controls stay hidden, because that id is the school login, and a password login is refused.
+- **Bayi login link** — Each link works once. A second use, or a store that cannot record the first use, sends you to the normal login page. The same school user id stays one account when only the letter case differs. A new account no longer shares a fixed password.
+
+### Tests
+
+- [`tests/utils/test_bayi_display_name.py`](tests/utils/test_bayi_display_name.py)
+- [`frontend/tests/normalizeAuthUser.spec.ts`](frontend/tests/normalizeAuthUser.spec.ts)
+
 ## [5.180.117] - 2026-09-30
 
 > **The login headline is one color, and the Chinese line says 每一次.**

@@ -353,6 +353,7 @@ export default {
   'auth.accountNameSave': '保存姓名',
   'auth.accountNameSaveSuccess': '姓名已更新',
   'auth.accountNameSaveError': '保存失败，请重试',
+  'auth.bayiNamePrompt.toast': '请在账户信息中保存您的真实姓名。',
   'auth.dingtalkBindSection': '钉钉 MindBot',
   'auth.dingtalkBindButton': '绑定钉钉',
   'auth.dingtalkBindLinkedButton': '钉钉已绑定',
