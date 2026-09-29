@@ -146,9 +146,7 @@ function onVideoError(): void {
           class="auth-landing-brand__headline"
         >
           <span><I18nText k="auth.landing.headlinePrefix" /></span>
-          <span class="auth-landing-brand__accent"
-            ><I18nText k="auth.landing.headlineAccent"
-          /></span>
+          <span><I18nText k="auth.landing.headlineAccent" /></span>
         </h1>
         <p class="auth-landing-brand__subcopy">
           <I18nText k="auth.landing.subcopy" />
@@ -252,14 +250,6 @@ function onVideoError(): void {
   line-height: 1.2;
   color: #2e1065;
   text-shadow: none;
-}
-
-.auth-landing-brand__accent {
-  background: linear-gradient(90deg, #7dd3fc 0%, #c4b5fd 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font-weight: 800;
 }
 
 .auth-landing-brand__subcopy {

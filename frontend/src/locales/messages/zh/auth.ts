@@ -223,8 +223,8 @@ export default {
   'auth.modal.smsSendFailed': '短信发送失败',
   'auth.modal.smsSentSuccess': '短信验证码发送成功',
   'auth.modal.tagline': '思维教学数智化平台',
-  'auth.landing.headline': '让每一个思考清晰可见',
-  'auth.landing.headlinePrefix': '让每一个',
+  'auth.landing.headline': '让每一次思考清晰可见',
+  'auth.landing.headlinePrefix': '让每一次',
   'auth.landing.headlineAccent': '思考清晰可见',
   'auth.landing.subcopy':
     '融合多模态AI智能绘制思维图示、MindMate启发式助研，为师生打造沉浸式可视化思维教学空间。',

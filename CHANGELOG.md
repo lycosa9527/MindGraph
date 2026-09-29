@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.117] - 2026-09-30
+
+> **The login headline is one color, and the Chinese line says 每一次.**
+
+### Changed
+
+- **Login headline** — The second half of the line uses the same color as the first. Simplified and Traditional Chinese read「让每一次思考清晰可见」.
+- **CrowdSec blocklist** — The committed baseline address list is refreshed.
+
 ## [5.180.116] - 2026-09-30
 
 > **The sidebar account chip always shows the school name.**
