@@ -7,6 +7,7 @@ import { Close, Delete, DocumentCopy, Menu } from '@element-plus/icons-vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import MindmateContactsToggleButton from '@/components/mindmate/MindmateContactsToggleButton.vue'
+import MindmateSeminarFaces from '@/components/mindmate/MindmateSeminarFaces.vue'
 import MindMateDingtalkBadge from '@/components/sidebar/MindMateDingtalkBadge.vue'
 import { useLanguage } from '@/composables'
 import type { LocaleCode } from '@/i18n/locales'
@@ -101,6 +102,7 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
       </h1>
     </div>
     <div class="flex items-center gap-2 shrink-0">
+      <MindmateSeminarFaces v-if="showContactsToggle" />
       <MindmateContactsToggleButton
         v-if="showContactsToggle"
         :open="contactsOpen"

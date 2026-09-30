@@ -144,6 +144,7 @@ async def stream_assistant_reply(
         final_text = "".join(full_answer)
         assistant_id: Optional[int] = None
         assistant_prev_id: Optional[int] = None
+        created_stamp: Optional[str] = None
         if final_text.strip():
             saved = await mgr.persist_message(
                 session_id,
@@ -153,6 +154,8 @@ async def stream_assistant_reply(
             )
             assistant_id = saved.id
             assistant_prev_id = saved.prev_id
+            if isinstance(saved.created_at, str) and saved.created_at:
+                created_stamp = saved.created_at
         end_frame: dict[str, Any] = {
             "type": "ai_message_end",
             "content": final_text,
@@ -160,6 +163,8 @@ async def stream_assistant_reply(
         }
         if assistant_id is not None:
             end_frame["prev_id"] = assistant_prev_id
+            if created_stamp:
+                end_frame["created_at"] = created_stamp
         await broadcast_to_all(code, end_frame)
     except asyncio.CancelledError:
         partial = "".join(full_answer)

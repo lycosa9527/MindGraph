@@ -2,7 +2,7 @@
 /**
  * Read-only transcript of a seminar the owner saved to their MindMate library.
  */
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { ElIcon } from 'element-plus'
 
@@ -16,6 +16,11 @@ import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCo
 import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
 import { collabMessageRowKey } from '@/utils/mindmateCollabDisplay'
+import {
+  MINDMATE_COLLAB_LIBRARY_CHANGED_EVENT,
+  type MindmateCollabLibraryChangeDetail,
+} from '@/utils/mindmateCollabLibrarySave'
+import { type CollabReadCursor, applyCollabReadCursorList } from '@/utils/mindmateCollabRead'
 
 const props = defineProps<{
   sessionId: string
@@ -30,6 +35,7 @@ const loading = ref(true)
 const title = ref('')
 const truncated = ref(false)
 const messages = ref<MindmateCollabMessage[]>([])
+const readCursors = ref<CollabReadCursor[]>([])
 
 function isOwnMessage(message: MindmateCollabMessage): boolean {
   const userId = Number(authStore.user?.id)
@@ -39,6 +45,7 @@ function isOwnMessage(message: MindmateCollabMessage): boolean {
 async function loadTranscript(sessionId: string): Promise<void> {
   loading.value = true
   messages.value = []
+  readCursors.value = []
   title.value = ''
   truncated.value = false
   try {
@@ -52,10 +59,12 @@ async function loadTranscript(sessionId: string): Promise<void> {
     const data = (await response.json()) as {
       session?: { title?: string }
       messages?: MindmateCollabMessage[]
+      read_cursors?: unknown
       truncated?: boolean
     }
     title.value = data.session?.title?.trim() || t('mindmate.collabSavedLibraryTitle')
     messages.value = Array.isArray(data.messages) ? data.messages : []
+    readCursors.value = applyCollabReadCursorList([], data.read_cursors)
     truncated.value = Boolean(data.truncated)
   } catch {
     notify.errorKey('mindmate.collabSavedOpenFailed')
@@ -64,8 +73,21 @@ async function loadTranscript(sessionId: string): Promise<void> {
   }
 }
 
+function onLibraryChanged(event: Event): void {
+  const detail = (event as CustomEvent<MindmateCollabLibraryChangeDetail | undefined>).detail
+  if (!detail || detail.sessionId !== props.sessionId || !detail.title) {
+    return
+  }
+  title.value = detail.title
+}
+
 onMounted(() => {
   void loadTranscript(props.sessionId)
+  window.addEventListener(MINDMATE_COLLAB_LIBRARY_CHANGED_EVENT, onLibraryChanged)
+})
+
+onUnmounted(() => {
+  window.removeEventListener(MINDMATE_COLLAB_LIBRARY_CHANGED_EVENT, onLibraryChanged)
 })
 
 watch(
@@ -117,6 +139,7 @@ watch(
           :agent-name="agentName"
           :agent-avatar-url="agentAvatarUrl"
           :session-id="sessionId"
+          :read-cursors="readCursors"
         />
       </div>
     </div>

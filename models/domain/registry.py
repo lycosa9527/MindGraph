@@ -144,7 +144,11 @@ from models.domain.organization_oauth_config import OrganizationOauthConfig
 from models.domain.oauth_user_link import OauthUserLink
 from models.domain.generation_preview_link import GenerationPreviewLink
 from models.domain.mindmate_export_job import MindmateExportJob
-from models.domain.mindmate_collab import MindmateCollabSession, MindmateCollabMessage
+from models.domain.mindmate_collab import (
+    MindmateCollabMessage,
+    MindmateCollabReadCursor,
+    MindmateCollabSession,
+)
 from models.domain.kitty_one_sentence import KittyOneSentenceSession, KittyOneSentenceTurn
 from models.domain.maite_learning import MaiteProblem, MaiteInquirySession
 from models.domain.maite_stages import (
@@ -263,6 +267,7 @@ __all__ = [
     "MindmateExportJob",
     "MindmateCollabSession",
     "MindmateCollabMessage",
+    "MindmateCollabReadCursor",
     "KittyOneSentenceSession",
     "KittyOneSentenceTurn",
     "MaiteProblem",

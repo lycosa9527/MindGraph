@@ -158,7 +158,12 @@ async def test_handle_workshop_raw_rejects_mmc_without_origin(monkeypatch):
 
     monkeypatch.setenv("COLLAB_FANOUT_ORIGIN_SECRET", "test-origin-secret")
     monkeypatch.setattr(lst, "_FANOUT_ORIGIN_SECRET", "test-origin-secret")
-    monkeypatch.setattr(lst, "DELIVER_MINDMATE_COLLAB_FANOUT", fake_mmc_deliver)
+
+    async def fake_registered(envelope: Dict[str, Any]) -> bool:
+        await fake_mmc_deliver(envelope)
+        return True
+
+    monkeypatch.setattr(lst, "deliver_registered_collab_fanout", fake_registered)
     monkeypatch.setattr(lst, "record_ws_fanout_workshop_received", lambda: None)
 
     missing_origin = {

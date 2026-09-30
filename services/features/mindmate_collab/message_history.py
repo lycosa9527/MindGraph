@@ -60,10 +60,11 @@ def serialize_message_row(
 
 
 class PersistedCollabMessage(NamedTuple):
-    """Saved seminar line and the previous line id in the same room."""
+    """Saved seminar line, the previous line id in the same room, and its stamp."""
 
     id: int
     prev_id: Optional[int]
+    created_at: str
 
 
 async def fetch_session_message_history(
@@ -122,7 +123,11 @@ async def insert_collab_message(
     db.add(msg)
     await db.commit()
     await db.refresh(msg)
-    return PersistedCollabMessage(id=int(msg.id), prev_id=prev_id)
+    return PersistedCollabMessage(
+        id=int(msg.id),
+        prev_id=prev_id,
+        created_at=msg.created_at.isoformat(),
+    )
 
 
 def normalize_seed_messages(
@@ -198,26 +203,29 @@ def catchup_frames(
             continue
         role = row.get("role")
         prev_id = previous_by_id.get(raw_id)
+        created_at = row.get("created_at") if isinstance(row.get("created_at"), str) else None
         if role == "user":
-            frames.append(
-                {
-                    "type": "user_message",
-                    "id": raw_id,
-                    "prev_id": prev_id,
-                    "content": content,
-                    "sender_user_id": row.get("sender_user_id"),
-                    "username": row.get("username"),
-                },
-            )
+            frame: Dict[str, Any] = {
+                "type": "user_message",
+                "id": raw_id,
+                "prev_id": prev_id,
+                "content": content,
+                "sender_user_id": row.get("sender_user_id"),
+                "username": row.get("username"),
+            }
+            if created_at:
+                frame["created_at"] = created_at
+            frames.append(frame)
         elif role == "assistant":
-            frames.append(
-                {
-                    "type": "ai_message_end",
-                    "id": raw_id,
-                    "prev_id": prev_id,
-                    "content": content,
-                },
-            )
+            frame = {
+                "type": "ai_message_end",
+                "id": raw_id,
+                "prev_id": prev_id,
+                "content": content,
+            }
+            if created_at:
+                frame["created_at"] = created_at
+            frames.append(frame)
     return frames
 
 

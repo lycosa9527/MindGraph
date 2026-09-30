@@ -40,6 +40,9 @@ _RETAINED_FRAME_TYPES = frozenset(
         "room_idle_warning",
         "user_joined",
         "user_left",
+        "read_cursor",
+        "read_cursors",
+        "resync",
     },
 )
 
@@ -192,6 +195,18 @@ def enqueue_json(handle: MindmateCollabWsHandle, message: Dict[str, Any]) -> boo
     data_str = json.dumps(message, ensure_ascii=False)
     critical = message.get("type") in _RETAINED_FRAME_TYPES
     return enqueue_text(handle, data_str, critical=critical)
+
+
+def enqueue_transcript_resync() -> None:
+    """Ask sockets already in a seminar to pull lines missed while fan-out was down."""
+    frame = {"type": "resync"}
+    for bucket in list(ACTIVE_CONNECTIONS.values()):
+        for handle in list(bucket.values()):
+            if not handle.accepts_fanout:
+                continue
+            if enqueue_json(handle, frame):
+                continue
+            schedule_close_slow_consumer(handle)
 
 
 _SLOW_CONSUMER_CLOSES: set[asyncio.Task[None]] = set()

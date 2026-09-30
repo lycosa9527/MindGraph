@@ -1,5 +1,4 @@
 /** Display helpers for MindMate seminar (collab) message rows. */
-
 import {
   hasGeneratedDiagramImage,
   parseMindmateDiagramLibraryId,
@@ -14,7 +13,10 @@ export interface CollabDisplayMessage {
 }
 
 /** Assistant markdown shown in the bubble — hide reply-kind / diagram-id markers. */
-export function displayMindmateCollabContent(content: string, role: CollabDisplayMessage['role']): string {
+export function displayMindmateCollabContent(
+  content: string,
+  role: CollabDisplayMessage['role']
+): string {
   if (role !== 'assistant') {
     return content || ''
   }
@@ -71,41 +73,34 @@ export interface MindmateCollabTranscriptRow {
 }
 
 /**
- * Apply a join snapshot without erasing a live line that arrived first,
- * or an optimistic send that is not in the snapshot yet.
+ * Apply a join snapshot without erasing lines already on screen,
+ * a live line that arrived ahead of the snapshot, or an optimistic send
+ * that is not in the snapshot yet.
  */
 export function mergeMindmateCollabSnapshot<T extends MindmateCollabTranscriptRow>(
   current: readonly T[],
-  snapshot: readonly T[],
+  snapshot: readonly T[]
 ): T[] {
   const snapshotIds = new Set<number>()
-  let maxSnapshotId = 0
   const persistedUserKeys = new Set<string>()
   for (const row of snapshot) {
     if (row.id != null) {
       snapshotIds.add(row.id)
-      if (row.id > maxSnapshotId) {
-        maxSnapshotId = row.id
-      }
     }
     if (row.role === 'user') {
       persistedUserKeys.add(`${row.sender_user_id ?? ''}:${row.content}`)
     }
   }
-  const liveAhead = current.filter(
-    (item) => item.id != null && !snapshotIds.has(item.id) && item.id > maxSnapshotId,
-  )
+  const retained = current.filter((item) => item.id != null && !snapshotIds.has(item.id))
   const optimistic = current.filter((item) => {
     if (item.role !== 'user' || item.id != null || !item.clientKey) {
       return false
     }
     return !persistedUserKeys.has(`${item.sender_user_id ?? ''}:${item.content}`)
   })
-  return [
-    ...snapshot.map((row) => ({ ...row })),
-    ...liveAhead.map((row) => ({ ...row })),
-    ...optimistic.map((row) => ({ ...row })),
-  ]
+  const numbered = [...snapshot.map((row) => ({ ...row })), ...retained.map((row) => ({ ...row }))]
+  numbered.sort((left, right) => (left.id ?? 0) - (right.id ?? 0))
+  return [...numbered, ...optimistic.map((row) => ({ ...row }))]
 }
 
 /** Prefer the finished assistant text when streamed chunks are only a prefix. */
@@ -136,13 +131,13 @@ export type CollabFeedbackRating = 'like' | 'dislike' | null
 
 export function nextCollabFeedback(
   current: CollabFeedbackRating | undefined,
-  clicked: 'like' | 'dislike',
+  clicked: 'like' | 'dislike'
 ): CollabFeedbackRating {
   return current === clicked ? null : clicked
 }
 
 export function lastFinishedAssistantIndex(
-  messages: readonly Pick<CollabDisplayMessage, 'role' | 'streaming'>[],
+  messages: readonly Pick<CollabDisplayMessage, 'role' | 'streaming'>[]
 ): number {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const row = messages[index]
@@ -154,7 +149,7 @@ export function lastFinishedAssistantIndex(
 }
 
 export function collabMessagesForShareExport(
-  rows: readonly (CollabDisplayMessage & { id?: number; clientKey?: string })[],
+  rows: readonly (CollabDisplayMessage & { id?: number; clientKey?: string })[]
 ): Array<{ id: string; role: 'user' | 'assistant'; content: string; timestamp: number }> {
   return rows
     .filter((row) => !row.streaming)

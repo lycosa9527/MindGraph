@@ -11,11 +11,18 @@ export type SeminarLibrarySaveOutcome = 'saved' | 'failed' | 'joined'
 const savesInFlight = new Map<string, Promise<Exclude<SeminarLibrarySaveOutcome, 'joined'>>>()
 const savedSessionIds = new Set<string>()
 
-export function notifyMindmateCollabLibraryChanged(): void {
+export interface MindmateCollabLibraryChangeDetail {
+  sessionId?: string
+  title?: string
+}
+
+export function notifyMindmateCollabLibraryChanged(
+  detail?: MindmateCollabLibraryChangeDetail
+): void {
   if (typeof window === 'undefined') {
     return
   }
-  window.dispatchEvent(new CustomEvent(MINDMATE_COLLAB_LIBRARY_CHANGED_EVENT))
+  window.dispatchEvent(new CustomEvent(MINDMATE_COLLAB_LIBRARY_CHANGED_EVENT, { detail }))
 }
 
 /** True when the owner ended the room (not when it only went idle or a guest left). */

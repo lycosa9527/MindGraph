@@ -14,7 +14,8 @@ import {
   shouldShowCollabWordTemplateExport,
 } from '@/utils/mindmateCollabDisplay'
 
-const TEACHING = '课例正文\n<!-- mg-reply-kind:teaching_instruction -->\n[mg-reply-kind:teaching_instruction]'
+const TEACHING =
+  '课例正文\n<!-- mg-reply-kind:teaching_instruction -->\n[mg-reply-kind:teaching_instruction]'
 
 describe('mindmateCollabDisplay', () => {
   it('keeps peer text unchanged and strips MindMate reply-kind markers', () => {
@@ -24,9 +25,7 @@ describe('mindmateCollabDisplay', () => {
   })
 
   it('shows Word export only on finished teaching-instruction replies', () => {
-    expect(
-      shouldShowCollabWordTemplateExport({ role: 'assistant', content: TEACHING })
-    ).toBe(true)
+    expect(shouldShowCollabWordTemplateExport({ role: 'assistant', content: TEACHING })).toBe(true)
     expect(
       shouldShowCollabWordTemplateExport({
         role: 'assistant',
@@ -34,19 +33,17 @@ describe('mindmateCollabDisplay', () => {
         streaming: true,
       })
     ).toBe(false)
-    expect(
-      shouldShowCollabWordTemplateExport({ role: 'user', content: TEACHING })
-    ).toBe(false)
-    expect(
-      shouldShowCollabWordTemplateExport({ role: 'assistant', content: '普通问答' })
-    ).toBe(false)
+    expect(shouldShowCollabWordTemplateExport({ role: 'user', content: TEACHING })).toBe(false)
+    expect(shouldShowCollabWordTemplateExport({ role: 'assistant', content: '普通问答' })).toBe(
+      false
+    )
   })
 
   it('reads library diagram id from finished assistant markdown only', () => {
     const withId = '见图\n<!-- mg-diagram-id:aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee -->'
-    expect(
-      collabAssistantLibraryDiagramId({ role: 'assistant', content: withId })
-    ).toBe('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')
+    expect(collabAssistantLibraryDiagramId({ role: 'assistant', content: withId })).toBe(
+      'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+    )
     expect(
       collabAssistantLibraryDiagramId({ role: 'assistant', content: withId, streaming: true })
     ).toBeNull()
@@ -91,7 +88,7 @@ describe('mindmateCollabDisplay', () => {
         { role: 'user', content: '问' },
         { role: 'assistant', content: '答一' },
         { role: 'assistant', content: '答二', streaming: true },
-      ]),
+      ])
     ).toBe(1)
   })
 
@@ -106,13 +103,27 @@ describe('mindmateCollabDisplay', () => {
     expect(rows[1].id).toBe('id-2')
   })
 
+  it('keeps lines already on screen when the snapshot window moved forward', () => {
+    const merged = mergeMindmateCollabSnapshot(
+      [
+        { id: 1, role: 'user', content: 'first', sender_user_id: 2 },
+        { id: 2, role: 'user', content: 'second', sender_user_id: 2 },
+      ],
+      [
+        { id: 4, role: 'user', content: 'fourth', sender_user_id: 8 },
+        { id: 5, role: 'user', content: 'fifth', sender_user_id: 8 },
+      ]
+    )
+    expect(merged.map((row) => row.id)).toEqual([1, 2, 4, 5])
+  })
+
   it('keeps a live message that arrived before a stale snapshot', () => {
     const merged = mergeMindmateCollabSnapshot(
       [
         { id: 1, role: 'user', content: 'earlier', sender_user_id: 2 },
         { id: 4, role: 'user', content: 'just sent', sender_user_id: 8 },
       ],
-      [{ id: 1, role: 'user', content: 'earlier', sender_user_id: 2 }],
+      [{ id: 1, role: 'user', content: 'earlier', sender_user_id: 2 }]
     )
     expect(merged.map((row) => row.id)).toEqual([1, 4])
     expect(merged[1].content).toBe('just sent')
@@ -128,11 +139,9 @@ describe('mindmateCollabDisplay', () => {
           clientKey: 'local-1',
         },
       ],
-      [{ id: 9, role: 'user', content: 'hello', sender_user_id: 3 }],
+      [{ id: 9, role: 'user', content: 'hello', sender_user_id: 3 }]
     )
-    expect(merged).toEqual([
-      { id: 9, role: 'user', content: 'hello', sender_user_id: 3 },
-    ])
+    expect(merged).toEqual([{ id: 9, role: 'user', content: 'hello', sender_user_id: 3 }])
   })
 
   it('replaces a streamed prefix with the finished assistant text', () => {

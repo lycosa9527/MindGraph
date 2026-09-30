@@ -19,6 +19,7 @@ from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.messages import Language
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
+from routers.api.mindmate_collab_library_mutations import router as saved_seminar_mutation_router
 from routers.auth.dependencies import get_language_dependency
 from routers.features.workshop_chat.schemas import OrgMembersPage
 from services.auth.thinking_coin.client_event_service import load_user_org
@@ -72,6 +73,7 @@ router = APIRouter(
     tags=["mindmate-collab"],
     dependencies=[Depends(_require_mindmate_collab_access)],
 )
+router.include_router(saved_seminar_mutation_router)
 
 
 class CollabSeedMessage(BaseModel):

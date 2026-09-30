@@ -281,9 +281,22 @@ MINDMATE_COLLAB_MESSAGE_EXPR = (
     "OR rls_is_system_mode()"
     ")) AND (sender_user_id = rls_current_user_id() OR role = 'assistant' OR rls_is_system_mode())"
 )
+MINDMATE_COLLAB_READ_EXPR = (
+    "EXISTS (SELECT 1 FROM mindmate_collab_sessions s WHERE s.id = session_id AND ("
+    "s.owner_user_id = rls_current_user_id() "
+    "OR (s.visibility = 'network' AND rls_community_read_allowed()) "
+    "OR (s.organization_id IS NOT NULL AND rls_org_visible(s.organization_id)) "
+    "OR rls_platform_admin_only() "
+    "OR rls_is_system_mode()"
+    "))"
+)
+MINDMATE_COLLAB_READ_CHECK = (
+    MINDMATE_COLLAB_READ_EXPR + " AND (user_id = rls_current_user_id() OR rls_is_system_mode())"
+)
 MINDMATE_COLLAB_TABLES = [
     ("mindmate_collab_sessions", MINDMATE_COLLAB_SESSION_EXPR, MINDMATE_COLLAB_SESSION_CHECK),
     ("mindmate_collab_messages", MINDMATE_COLLAB_MESSAGE_EXPR, MINDMATE_COLLAB_MESSAGE_EXPR),
+    ("mindmate_collab_read_cursors", MINDMATE_COLLAB_READ_EXPR, MINDMATE_COLLAB_READ_CHECK),
 ]
 
 # Group C — users: id is NULL on INSERT; panel school managers set organization_id on the new row.
@@ -552,8 +565,10 @@ def iter_all_table_policies() -> list[tuple[str, str]]:
     rows.extend(SHARED_DIAGRAM_CHILD)
     rows.append((WORKSHOP_ROOT, WORKSHOP_CHANNEL_EXPR))
     rows.extend(WORKSHOP_CHILD)
-    for table, using_expr, _check in MINDMATE_COLLAB_TABLES:
+    for table, using_expr, check_expr in MINDMATE_COLLAB_TABLES:
         rows.append((table, using_expr))
+        if check_expr != using_expr:
+            rows.append((table, check_expr))
     rows.append(("users", USERS_EXPR))
     rows.append(("organizations", ORGS_EXPR))
     rows.append(("community_posts", COMMUNITY_READ))

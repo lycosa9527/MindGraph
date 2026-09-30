@@ -10,6 +10,7 @@ import { ElButton } from 'element-plus'
 import I18nText from '@/components/common/I18nText.vue'
 import MindmateCollabBreadcrumb from '@/components/mindmate/MindmateCollabBreadcrumb.vue'
 import MindmateCollabMessageRow from '@/components/mindmate/MindmateCollabMessageRow.vue'
+import MindmateSeminarFaces from '@/components/mindmate/MindmateSeminarFaces.vue'
 import ShareExportModal from '@/components/panels/ShareExportModal.vue'
 import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
 import { useLanguage, useNotifications } from '@/composables'
@@ -95,6 +96,7 @@ const {
   seedRoom,
   resetForRoomChange,
   retryConnection,
+  readCursors,
 } = useMindmateCollab(() => normalizedCode.value, {
   onSessionEnded: (reason) => {
     roomEndNotified = true
@@ -431,18 +433,21 @@ watch(messages, async () => {
           {{ headerSubtitle }}
         </p>
       </div>
-      <ElButton
-        v-if="isHost"
-        class="mindmate-collab-room__end-btn shrink-0"
-        size="small"
-        :disabled="stoppingRoom"
-        @click="stopRoom"
-      >
-        <I18nText
-          k="mindmate.collabEndSeminar"
-          dense
-        />
-      </ElButton>
+      <div class="flex items-center gap-2 shrink-0">
+        <MindmateSeminarFaces />
+        <ElButton
+          v-if="isHost"
+          class="mindmate-collab-room__end-btn shrink-0"
+          size="small"
+          :disabled="stoppingRoom"
+          @click="stopRoom"
+        >
+          <I18nText
+            k="mindmate.collabEndSeminar"
+            dense
+          />
+        </ElButton>
+      </div>
     </header>
 
     <div
@@ -500,6 +505,7 @@ watch(messages, async () => {
             :regenerate-disabled="!canSend || joining || isStreaming"
             :feedback="feedbackByKey[row.key]"
             :session-id="room?.sessionId || ''"
+            :read-cursors="readCursors"
             @regenerate="handleRegenerate(row.userPrompt)"
             @share="showShareModal = true"
             @feedback="handleFeedback(row.key, $event)"
@@ -586,8 +592,8 @@ watch(messages, async () => {
 .mindmate-collab-room__messages-inner {
   width: 100%;
   min-width: 0;
-  max-width: none;
-  margin: 0;
+  max-width: min(680px, 100%);
+  margin: 0 auto;
   padding: 1rem 1.25rem 1.5rem;
   box-sizing: border-box;
   display: flex;

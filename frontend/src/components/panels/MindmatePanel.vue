@@ -16,6 +16,7 @@ import { PanelLeftOpen } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import MindmateContactsToggleButton from '@/components/mindmate/MindmateContactsToggleButton.vue'
+import MindmateSeminarFaces from '@/components/mindmate/MindmateSeminarFaces.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import {
   embeddedCollabRoomCode,
@@ -662,6 +663,7 @@ function isLastAssistantMessage(messageId: string): boolean {
         @session-started="handleCollabSessionStarted"
       />
       <div class="mindmate-toolbar-actions flex items-center gap-1.5 shrink-0">
+        <MindmateSeminarFaces v-if="isCollabChatroomMode" />
         <MindmateContactsToggleButton
           v-if="isCollabChatroomMode"
           :open="showCollabContacts"

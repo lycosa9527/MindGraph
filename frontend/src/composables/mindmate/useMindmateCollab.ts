@@ -6,8 +6,15 @@ import { computed, onUnmounted, ref, shallowRef } from 'vue'
 import { useWebSocket } from '@vueuse/core'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { pullMindmateCollabHistory } from '@/composables/mindmate/pullMindmateCollabHistory'
+import { useMindmateCollabRead } from '@/composables/mindmate/useMindmateCollabRead'
+import {
+  addSeminarFace,
+  clearSeminarFaces,
+  dropSeminarFace,
+  replaceSeminarFaces,
+} from '@/composables/mindmate/useMindmateSeminarFaces'
 import { useAuthStore } from '@/stores/auth'
-import { authFetch } from '@/utils/api'
 import {
   mergeMindmateCollabSnapshot,
   resolveCollabAssistantEndContent,
@@ -15,10 +22,13 @@ import {
 import {
   collabChainNeedsFill,
   collabGapAfterId,
+  collabMaxSavedId,
   collabPrevId,
+  collabSnapshotBackfillAfterId,
   insertMissingCollabMessages,
   streamingCoveredBySaved,
 } from '@/utils/mindmateCollabGap'
+import { collabFrameCreatedAt } from '@/utils/mindmateCollabRead'
 import {
   MINDMATE_COLLAB_RECONNECT,
   computeMindmateCollabReconnectDelayMs,
@@ -32,6 +42,7 @@ import {
   mindmateCollabWsErrorLocaleKey,
   mindmateCollabWsErrorRollsBackSend,
 } from '@/utils/mindmateCollabWsErrors'
+import { type SeminarFace, seminarFaceFromPayload } from '@/utils/mindmateSeminarFaces'
 
 export interface MindmateCollabMessage {
   id?: number
@@ -41,6 +52,7 @@ export interface MindmateCollabMessage {
   username?: string | null
   streaming?: boolean
   clientKey?: string
+  created_at?: string
 }
 
 export interface MindmateCollabRoomInfo {
@@ -106,68 +118,43 @@ export function useMindmateCollab(
   let pendingReconnectFailedNotify = false
   let lastOptimisticSendContent: string | null = null
   let lastCloseCode = 1006
-  let gapFill: Promise<void> | null = null
+  const gapFill = { current: null as Promise<void> | null }
   let gapGeneration = 0
   let disposed = false
+  let socketSend: (data: string) => boolean = () => false
 
-  async function pullMissingMessages(prevId: number): Promise<void> {
-    const sessionId = room.value?.sessionId
+  const { readCursors, noteReadCursorFrame, noteReadCursorList, resetReadCursors } =
+    useMindmateCollabRead({
+      messages,
+      connected,
+      isDisposed: () => disposed,
+      send: (body) => socketSend(body),
+    })
+
+  async function pullMessagesAfter(startAfter: number): Promise<boolean> {
+    const sessionId = room.value?.sessionId ?? ''
     const generation = gapGeneration
-    if (!sessionId || disposed) {
+    return pullMindmateCollabHistory<MindmateCollabMessage>({
+      sessionId,
+      startAfter,
+      stillCurrent: () => Boolean(sessionId) && !disposed && generation === gapGeneration,
+      gapFill,
+      applyRows: (rows) => {
+        messages.value = insertMissingCollabMessages(messages.value, rows)
+        if (streamingAssistant && streamingCoveredBySaved(streamingAssistant.content, rows)) {
+          messages.value = messages.value.filter((row) => row !== streamingAssistant)
+          streamingAssistant = null
+          isStreaming.value = false
+        }
+      },
+    })
+  }
+
+  async function pullMissingMessages(targetId: number): Promise<void> {
+    if (!collabChainNeedsFill(messages.value, targetId)) {
       return
     }
-    if (gapFill) {
-      await gapFill
-      if (
-        disposed ||
-        generation !== gapGeneration ||
-        !collabChainNeedsFill(messages.value, prevId)
-      ) {
-        return
-      }
-    }
-    const run = (async () => {
-      let cursor = collabGapAfterId(messages.value, prevId)
-      try {
-        for (let page = 0; page < 5; page += 1) {
-          if (disposed || generation !== gapGeneration) {
-            return
-          }
-          const response = await authFetch(
-            `/api/mindmate/collab/${encodeURIComponent(sessionId)}/history?after_id=${cursor}&limit=200`
-          )
-          if (!response.ok) {
-            return
-          }
-          const data = (await response.json()) as { messages?: MindmateCollabMessage[] }
-          const rows = Array.isArray(data.messages) ? data.messages : []
-          if (rows.length === 0 || disposed || generation !== gapGeneration) {
-            return
-          }
-          messages.value = insertMissingCollabMessages(messages.value, rows)
-          if (streamingAssistant && streamingCoveredBySaved(streamingAssistant.content, rows)) {
-            messages.value = messages.value.filter((row) => row !== streamingAssistant)
-            streamingAssistant = null
-            isStreaming.value = false
-          }
-          const lastId = rows[rows.length - 1]?.id
-          if (rows.length < 200 || typeof lastId !== 'number') {
-            return
-          }
-          cursor = lastId
-        }
-      } catch {
-        return
-      }
-    })()
-    gapFill = run
-    try {
-      await run
-    } finally {
-      if (gapFill === run) {
-        gapFill = null
-      }
-    }
+    await pullMessagesAfter(collabGapAfterId(messages.value, targetId))
   }
 
   function noteMessageChain(prevId: number | null): void {
@@ -360,6 +347,8 @@ export function useMindmateCollab(
     },
   })
 
+  socketSend = (data: string) => send(data, false)
+
   function readSeedMessages(): MindmateCollabMessage[] {
     const seed = options.seedMessages?.() ?? []
     return seed.map((m) => ({ ...m }))
@@ -411,6 +400,7 @@ export function useMindmateCollab(
           next[index] = {
             ...candidate,
             id: msgId,
+            created_at: collabFrameCreatedAt(parsed.created_at) ?? candidate.created_at,
             username: username ?? candidate.username ?? null,
             clientKey: undefined,
           }
@@ -434,6 +424,7 @@ export function useMindmateCollab(
         content,
         sender_user_id: senderId,
         username,
+        created_at: collabFrameCreatedAt(parsed.created_at),
       },
     ]
   }
@@ -442,7 +433,8 @@ export function useMindmateCollab(
     endContent?: string,
     aborted?: boolean,
     messageId?: number,
-    prevId?: number | null
+    prevId?: number | null,
+    createdAt?: string
   ) {
     noteMessageChain(prevId ?? null)
     if (streamingAssistant) {
@@ -453,6 +445,9 @@ export function useMindmateCollab(
       streamingAssistant.streaming = false
       if (messageId != null) {
         streamingAssistant.id = messageId
+      }
+      if (createdAt) {
+        streamingAssistant.created_at = createdAt
       }
       if (aborted) {
         streamingAssistant.content += `\n\n_${t('mindmate.collabStreamAborted')}_`
@@ -470,6 +465,7 @@ export function useMindmateCollab(
           id: messageId,
           role: 'assistant',
           content: endContent,
+          created_at: createdAt,
         },
       ]
     }
@@ -486,9 +482,26 @@ export function useMindmateCollab(
     const type = String(parsed.type || '')
     if (type === 'snapshot') {
       const rows = (parsed.messages as MindmateCollabMessage[]) || []
+      const priorMax = collabMaxSavedId(messages.value)
       messages.value = mergeMindmateCollabSnapshot(messages.value, rows)
       streamingAssistant = null
       isStreaming.value = false
+      const backfillAfter = collabSnapshotBackfillAfterId(priorMax, rows)
+      if (backfillAfter != null) {
+        void pullMessagesAfter(backfillAfter)
+      }
+      return
+    }
+    if (type === 'read_cursors') {
+      noteReadCursorList(parsed.cursors)
+      return
+    }
+    if (type === 'read_cursor') {
+      noteReadCursorFrame(parsed)
+      return
+    }
+    if (type === 'resync') {
+      void pullMessagesAfter(collabMaxSavedId(messages.value))
       return
     }
     if (type === 'joined') {
@@ -500,6 +513,18 @@ export function useMindmateCollab(
         ownerId: Number(parsed.owner_id || 0),
       }
       resumeToken.value = String(parsed.resume_token || '') || null
+      replaceSeminarFaces(parsed.faces, currentSelfFace())
+      return
+    }
+    if (type === 'user_joined') {
+      const face = seminarFaceFromPayload(parsed)
+      if (face) {
+        addSeminarFace(face)
+      }
+      return
+    }
+    if (type === 'user_left') {
+      dropSeminarFace(Number(parsed.user_id || 0))
       return
     }
     if (type === 'user_message') {
@@ -516,7 +541,8 @@ export function useMindmateCollab(
         String(parsed.content || ''),
         Boolean(parsed.aborted),
         messageId,
-        collabPrevId(parsed.prev_id)
+        collabPrevId(parsed.prev_id),
+        collabFrameCreatedAt(parsed.created_at)
       )
       return
     }
@@ -561,6 +587,24 @@ export function useMindmateCollab(
     lastCloseCode = 1006
     connectionStatus.value = 'idle'
     clearIdleCountdown()
+    clearSeminarFaces()
+    resetReadCursors()
+  }
+
+  function currentSelfFace(): SeminarFace | null {
+    const user = authStore.user
+    if (!user) {
+      return null
+    }
+    const userId = Number(user.id)
+    if (!Number.isFinite(userId) || userId <= 0) {
+      return null
+    }
+    return {
+      userId,
+      name: user.username?.trim() || `User ${userId}`,
+      avatar: user.avatar ?? null,
+    }
   }
 
   function connect() {
@@ -584,6 +628,7 @@ export function useMindmateCollab(
     connected.value = false
     connectionStatus.value = 'idle'
     clearIdleCountdown()
+    clearSeminarFaces()
   }
 
   function sendChat(content: string, sendOptions?: { toMindmate?: boolean }) {
@@ -605,6 +650,7 @@ export function useMindmateCollab(
         sender_user_id: Number(authStore.user?.id) || null,
         username: authStore.user?.username ?? null,
         clientKey,
+        created_at: new Date().toISOString(),
       },
     ]
     send(
@@ -660,5 +706,6 @@ export function useMindmateCollab(
     seedRoom,
     resetForRoomChange,
     retryConnection,
+    readCursors,
   }
 }

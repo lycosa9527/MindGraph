@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.125] - 2026-09-30
+
+> **A saved MindMate seminar can be pinned, renamed, or deleted, and each of your lines shows who has read it.**
+
+### Added
+
+- **Saved seminars** — Pin one to the top of the library, give it a new name, or delete it.
+- **Read marks** — Your own line shows sending, sent, or read, with the time beside it. Hover the mark to see who has read it.
+- **People in the room** — The seminar header shows the faces of people who have joined.
+
+### Fixed
+
+- **Seminar history** — Joining again keeps lines already on screen and fills a hole when the new snapshot starts later. A line you just sent is not shown twice.
+- **Live delivery** — When the live stream is busy, a seminar line or a workshop event still gets through.
+
+### Tests
+
+- [`tests/test_mindmate_collab_library_archive.py`](tests/test_mindmate_collab_library_archive.py), [`tests/test_mindmate_collab_read_cursors.py`](tests/test_mindmate_collab_read_cursors.py), [`tests/test_mindmate_collab_participant_faces.py`](tests/test_mindmate_collab_participant_faces.py), [`tests/test_ws_fanout_delivery_queue.py`](tests/test_ws_fanout_delivery_queue.py)
+- [`frontend/tests/mindmateCollabRead.spec.ts`](frontend/tests/mindmateCollabRead.spec.ts), [`frontend/tests/mindmateSeminarFaces.spec.ts`](frontend/tests/mindmateSeminarFaces.spec.ts), [`frontend/tests/mindmateCollabGap.spec.ts`](frontend/tests/mindmateCollabGap.spec.ts), [`frontend/tests/mindmateCollabDisplay.spec.ts`](frontend/tests/mindmateCollabDisplay.spec.ts)
+
 ## [5.180.124] - 2026-09-30
 
 > **A MindMate seminar line reaches the other people in the room, and a teaching-design Word file still downloads when the school template or the extra fill step fails.**

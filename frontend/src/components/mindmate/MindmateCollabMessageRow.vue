@@ -10,6 +10,7 @@ import { storeToRefs } from 'pinia'
 
 import ImagePreviewModal from '@/components/common/ImagePreviewModal.vue'
 import MindmateCollabAssistantToolbar from '@/components/mindmate/MindmateCollabAssistantToolbar.vue'
+import MindmateCollabMessageStamp from '@/components/mindmate/MindmateCollabMessageStamp.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import {
   confirmCanvasLibraryDiagramOpen,
@@ -33,8 +34,10 @@ import {
   displayMindmateCollabContent,
   shouldShowCollabWordTemplateExport,
 } from '@/utils/mindmateCollabDisplay'
+import type { CollabReadCursor } from '@/utils/mindmateCollabRead'
 import { extractMindmatePreviewUniqueId } from '@/utils/mindmateDiagramMeta'
 import { TEACHING_INSTRUCTION_KIND } from '@/utils/mindmateTeachingDesignFlag'
+import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 const props = defineProps<{
   message: MindmateCollabMessage
@@ -46,6 +49,7 @@ const props = defineProps<{
   regenerateDisabled?: boolean
   feedback?: CollabFeedbackRating
   sessionId?: string
+  readCursors?: readonly CollabReadCursor[]
 }>()
 
 const emit = defineEmits<{
@@ -92,6 +96,13 @@ const { html: renderedMarkdownHtml } = useRenderedMarkdown(() => displayText.val
 })
 
 const isAssistant = computed(() => props.message.role === 'assistant')
+
+const ownAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
+
+const peerInitial = computed(() => {
+  const initial = (props.message.username || '?').trim().slice(0, 1).toUpperCase()
+  return initial || '?'
+})
 
 const rowClass = computed(() => {
   if (props.isOwn) {
@@ -215,22 +226,25 @@ async function openInCanvas(): Promise<void> {
     class="mindmate-collab-room__msg-row"
     :class="rowClass"
   >
-    <div
-      v-if="!isOwn"
-      class="w-8 h-8 rounded-full shrink-0 overflow-hidden bg-stone-100 border border-stone-200"
-    >
+    <div class="mindmate-collab-room__avatar">
       <img
         v-if="isAssistant"
         :src="agentAvatarUrl"
         :alt="agentName"
-        class="w-full h-full object-cover"
+        class="mindmate-collab-room__avatar-img"
       />
       <span
+        v-else-if="isOwn"
+        class="mindmate-collab-room__avatar-emoji mg-user-avatar-emoji"
+      >
+        {{ ownAvatar }}
+      </span>
+      <span
         v-else
-        class="flex w-full h-full items-center justify-center text-xs font-medium text-stone-600"
+        class="mindmate-collab-room__avatar-emoji"
         aria-hidden="true"
       >
-        {{ (message.username || '?').trim().slice(0, 1).toUpperCase() }}
+        {{ peerInitial }}
       </span>
     </div>
     <div class="mindmate-collab-room__msg-body">
@@ -268,6 +282,13 @@ async function openInCanvas(): Promise<void> {
           {{ message.content }}
         </template>
       </div>
+      <MindmateCollabMessageStamp
+        :message-id="message.id"
+        :created-at="message.created_at"
+        :sender-user-id="message.sender_user_id"
+        :is-own="isOwn"
+        :read-cursors="readCursors"
+      />
       <MindmateCollabAssistantToolbar
         v-if="isAssistant && !message.streaming"
         :is-last-assistant="Boolean(isLastAssistant)"
@@ -300,9 +321,39 @@ async function openInCanvas(): Promise<void> {
 
 .mindmate-collab-room__msg-row {
   display: flex;
+  align-items: flex-start;
   gap: 0.625rem;
   width: 100%;
   min-width: 0;
+}
+
+.mindmate-collab-room__avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: #f5f5f4;
+  border: 1px solid #e7e5e4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mindmate-collab-room__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mindmate-collab-room__avatar-emoji {
+  font-size: 1rem;
+  line-height: 1;
+  font-weight: 500;
+  color: #57534e;
+  user-select: none;
+  font-family:
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', emoji, sans-serif;
 }
 
 .mindmate-collab-room__msg-row--own {
@@ -325,10 +376,11 @@ async function openInCanvas(): Promise<void> {
 }
 
 .mindmate-collab-room__msg-row--assistant .mindmate-collab-room__msg-body {
-  flex: 1 1 auto;
-  width: 100%;
-  max-width: none;
-  align-items: stretch;
+  flex: 1 1 0;
+  width: auto;
+  max-width: min(100%, 36rem);
+  min-width: 0;
+  align-items: flex-start;
 }
 
 .mindmate-collab-room__bubble {
@@ -341,8 +393,8 @@ async function openInCanvas(): Promise<void> {
 .mindmate-collab-room__msg-row--assistant .mindmate-collab-room__bubble {
   display: block;
   box-sizing: border-box;
-  width: 100%;
-  max-width: none;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .mindmate-collab-room__bubble--streaming::after {
@@ -365,10 +417,12 @@ async function openInCanvas(): Promise<void> {
 .mindmate-collab-room__markdown :deep(img) {
   display: block;
   box-sizing: border-box;
-  width: auto;
+  width: 20rem;
+  max-width: 100%;
   height: auto;
-  max-width: min(100%, 36rem);
-  max-height: 24rem;
+  max-height: 14rem;
+  object-fit: contain;
+  object-position: left center;
   border-radius: 8px;
   margin: 0.5rem 0;
   cursor: zoom-in;

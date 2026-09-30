@@ -16,10 +16,12 @@ from services.features.mindmate_collab.redis_keys import fanout_room_key, normal
 from services.features.mindmate_collab.ws_registry import (
     ACTIVE_CONNECTIONS,
     enqueue_text,
+    enqueue_transcript_resync,
     force_disconnect_local_room,
     frame_must_be_delivered,
     schedule_close_slow_consumer,
 )
+from services.features.mindmate_collab_fanout_hooks import register_collab_fanout_hooks
 from services.features.workshop_ws_shutdown_constants import (
     ROOM_IDLE_SHUTDOWN_TYPE,
     SESSION_ENDED_SHUTDOWN_TYPE,
@@ -156,3 +158,6 @@ async def deliver_fanout_envelope(envelope: Dict[str, Any]) -> None:
         await _dispatch_local(code_key, data_raw, exclude_id)
     else:
         await _dispatch_local(code_key, data_raw, None)
+
+
+register_collab_fanout_hooks(deliver_fanout_envelope, enqueue_transcript_resync)

@@ -12,7 +12,7 @@ import asyncio
 import json
 import logging
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
@@ -21,12 +21,17 @@ from services.features.mindmate_collab.config import MINDMATE_COLLAB_MAX_CHAT_CO
 from services.features.mindmate_collab.dify_stream_control import acquire_dify_stream_lock
 from services.features.mindmate_collab.dify_stream import schedule_assistant_reply
 from services.features.mindmate_collab.manager_access import get_mindmate_collab_manager
-from services.features.mindmate_collab.message_history import catchup_frames, history_row_ids
 from services.features.mindmate_collab.mention import (
     extract_mindmate_query,
     mention_aliases_from_org,
     message_mentions_mindmate,
 )
+from services.features.mindmate_collab.message_history import catchup_frames, history_row_ids
+from services.features.mindmate_collab.participant_faces import (
+    load_participant_faces,
+    participant_face_payload,
+)
+from services.features.mindmate_collab.read_cursors import advance_read_cursor, list_read_cursors
 from services.features.mindmate_collab.redis_keys import normalize_collab_code
 from services.features.mindmate_collab.resume_tokens import (
     join_resume_claims_match_user_room,
@@ -59,7 +64,7 @@ from utils.auth import user_has_feature_access
 from utils.auth_ws import authenticate_websocket_user
 from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, user_has_school_tier_feature
 from utils.collab_ws_origin import close_ws_if_origin_disallowed
-from utils.db.session_open import actor_rls_session
+from utils.db.session_open import actor_rls_session, system_rls_session
 from utils.ws_context import ws_managed_session
 from utils.ws_limits import (
     DEFAULT_MAX_WS_MESSAGES_PER_SECOND,
@@ -168,7 +173,33 @@ async def _tier_allowed(user: User) -> bool:
         return await user_has_school_tier_feature(db, user, TIER_FEATURE_ONLINE_COLLAB)
 
 
+def _reader_label(user: User) -> Optional[str]:
+    """Name shown when someone hovers a read mark."""
+    username = getattr(user, "username", None) or getattr(user, "name", None)
+    if isinstance(username, str) and username.strip():
+        return username.strip()
+    return None
+
+
+async def _handle_read(code: str, session_id: str, user: User, message_id: Any) -> None:
+    """Advance this person's cursor and tell the rest of the room."""
+    if isinstance(message_id, bool) or not isinstance(message_id, int):
+        return
+    async with system_rls_session() as db:
+        payload = await advance_read_cursor(
+            db,
+            session_id,
+            int(user.id),
+            message_id,
+            _reader_label(user),
+        )
+    if payload is None:
+        return
+    await broadcast_to_others(code, int(user.id), {"type": "read_cursor", **payload})
+
+
 async def _handle_ping(handle: MindmateCollabWsHandle, code: str, user_id: int) -> None:
+    """Refresh presence. The reply does not carry chat state."""
     mgr = get_mindmate_collab_manager()
     await mgr.refresh_participant_ttl(code, user_id)
     await mgr.touch_activity(code)
@@ -298,6 +329,11 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
             history = await mgr.fetch_message_history(session.id)
             participants = await mgr.participant_count(norm_code)
             resume_token = await mint_join_resume_token_async(int(user.id), norm_code, session.id)
+            try:
+                faces = await load_participant_faces(await mgr.list_participant_user_ids(norm_code))
+            except DATABASE_ERRORS:
+                logger.warning("[MindmateCollabWS] Could not load seminar faces code=%s", norm_code)
+                faces = []
 
             joined_payload: Dict[str, Any] = {
                 "type": "joined",
@@ -308,6 +344,7 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
                 "title": session.title,
                 "visibility": session.visibility,
                 "participants": participants,
+                "faces": faces,
             }
             if resume_token:
                 joined_payload["resume_token"] = resume_token
@@ -316,15 +353,25 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
             _send_client(handle, joined_payload)
             _send_client(handle, {"type": "snapshot", "messages": history})
             handle.accepts_fanout = True
+            async with system_rls_session() as db:
+                cursors = await list_read_cursors(db, session.id)
+            _send_client(handle, {"type": "read_cursors", "cursors": cursors})
             await _enqueue_history_catchup(handle, session.id, history)
 
+            face = participant_face_payload(
+                int(user.id),
+                getattr(user, "name", None),
+                getattr(user, "avatar", None),
+            )
             await broadcast_to_others(
                 norm_code,
                 int(user.id),
                 {
                     "type": "user_joined",
-                    "user_id": int(user.id),
-                    "username": getattr(user, "username", None) or getattr(user, "name", None),
+                    "user_id": face["user_id"],
+                    "username": face["name"],
+                    "name": face["name"],
+                    "avatar": face["avatar"],
                 },
             )
             join_committed = True
@@ -365,6 +412,9 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
                     msg_type = msg.get("type")
                     if msg_type == "ping":
                         await _handle_ping(handle, norm_code, int(user.id))
+                        continue
+                    if msg_type == "read":
+                        await _handle_read(norm_code, session.id, user, msg.get("message_id"))
                         continue
                     if msg_type != "chat":
                         continue
@@ -408,6 +458,7 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
                         "type": "user_message",
                         "id": saved.id,
                         "prev_id": saved.prev_id,
+                        "created_at": saved.created_at,
                         "content": content,
                         "sender_user_id": int(user.id),
                         "username": getattr(user, "username", None) or getattr(user, "name", None),
