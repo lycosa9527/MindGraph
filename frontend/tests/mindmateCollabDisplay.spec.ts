@@ -7,8 +7,10 @@ import {
   collabMessagesForShareExport,
   displayMindmateCollabContent,
   lastFinishedAssistantIndex,
+  mergeMindmateCollabSnapshot,
   nextCollabFeedback,
   previousCollabUserPrompt,
+  resolveCollabAssistantEndContent,
   shouldShowCollabWordTemplateExport,
 } from '@/utils/mindmateCollabDisplay'
 
@@ -102,5 +104,39 @@ describe('mindmateCollabDisplay', () => {
     expect(rows).toHaveLength(2)
     expect(rows[1].content).toBe('课例正文')
     expect(rows[1].id).toBe('id-2')
+  })
+
+  it('keeps a live message that arrived before a stale snapshot', () => {
+    const merged = mergeMindmateCollabSnapshot(
+      [
+        { id: 1, role: 'user', content: 'earlier', sender_user_id: 2 },
+        { id: 4, role: 'user', content: 'just sent', sender_user_id: 8 },
+      ],
+      [{ id: 1, role: 'user', content: 'earlier', sender_user_id: 2 }],
+    )
+    expect(merged.map((row) => row.id)).toEqual([1, 4])
+    expect(merged[1].content).toBe('just sent')
+  })
+
+  it('drops an optimistic send once the snapshot contains it', () => {
+    const merged = mergeMindmateCollabSnapshot(
+      [
+        {
+          role: 'user',
+          content: 'hello',
+          sender_user_id: 3,
+          clientKey: 'local-1',
+        },
+      ],
+      [{ id: 9, role: 'user', content: 'hello', sender_user_id: 3 }],
+    )
+    expect(merged).toEqual([
+      { id: 9, role: 'user', content: 'hello', sender_user_id: 3 },
+    ])
+  })
+
+  it('replaces a streamed prefix with the finished assistant text', () => {
+    expect(resolveCollabAssistantEndContent('Hel', 'Hello')).toBe('Hello')
+    expect(resolveCollabAssistantEndContent('HelloHello', 'Hello')).toBe('HelloHello')
   })
 })

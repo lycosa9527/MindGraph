@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.124] - 2026-09-30
+
+> **A MindMate seminar line reaches the other people in the room, and a teaching-design Word file still downloads when the school template or the extra fill step fails.**
+
+### Fixed
+
+- **MindMate seminar** — A sent line is saved on the server, then delivered to everyone in the room. Joining no longer replaces that line with an older copy of the chat. If a screen skips a line, the next line loads the missing ones and puts them back in order.
+- **Teaching-design Word** — A school template that is missing or cannot be opened uses the built-in form. Characters Word cannot store are left out. If the extra fill step fails, the lesson already written is still exported.
+
+### Tests
+
+- [`tests/test_mindmate_collab_message_delivery.py`](tests/test_mindmate_collab_message_delivery.py), [`tests/test_mindmate_collab_dify_stream.py`](tests/test_mindmate_collab_dify_stream.py), [`tests/test_teaching_design_docx.py`](tests/test_teaching_design_docx.py), [`tests/test_teaching_design_llm.py`](tests/test_teaching_design_llm.py)
+- [`frontend/tests/mindmateCollabGap.spec.ts`](frontend/tests/mindmateCollabGap.spec.ts), [`frontend/tests/mindmateCollabDisplay.spec.ts`](frontend/tests/mindmateCollabDisplay.spec.ts)
+
 ## [5.180.123] - 2026-09-30
 
 > **Blanking a learning-sheet node keeps the map where it is, and turning branch numbers on measures the map once.**

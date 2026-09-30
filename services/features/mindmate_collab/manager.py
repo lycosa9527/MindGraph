@@ -19,7 +19,7 @@ from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 
 from models.domain.auth import User
-from models.domain.mindmate_collab import MindmateCollabMessage, MindmateCollabSession
+from models.domain.mindmate_collab import MindmateCollabSession
 from services.features.mindmate_collab.config import (
     MINDMATE_COLLAB_CLOSING_TTL_SEC,
     MINDMATE_COLLAB_DEFAULT_DURATION,
@@ -30,7 +30,9 @@ from services.features.mindmate_collab.config import (
 )
 from services.features.mindmate_collab.dify_stream_control import abort_dify_stream
 from services.features.mindmate_collab.message_history import (
+    PersistedCollabMessage,
     fetch_session_message_history,
+    insert_collab_message,
     normalize_seed_messages,
     persist_seed_messages,
 )
@@ -688,10 +690,20 @@ class MindmateCollabManager:
         except REDIS_ERRORS:
             pass
 
-    async def fetch_message_history(self, session_id: str, limit: int | None = None) -> List[Dict[str, Any]]:
-        """Return recent persisted chat messages for a session."""
+    async def fetch_message_history(
+        self,
+        session_id: str,
+        limit: int | None = None,
+        after_id: int | None = None,
+    ) -> List[Dict[str, Any]]:
+        """Return persisted chat messages for a session, optionally after an id."""
         async with system_rls_session() as db:
-            return await fetch_session_message_history(db, session_id, limit=limit)
+            return await fetch_session_message_history(
+                db,
+                session_id,
+                limit=limit,
+                after_id=after_id,
+            )
 
     async def persist_message(
         self,
@@ -700,20 +712,16 @@ class MindmateCollabManager:
         role: str,
         content: str,
         sender_user_id: Optional[int],
-    ) -> MindmateCollabMessage:
-        """Insert a chat message row and return the saved record."""
+    ) -> PersistedCollabMessage:
+        """Insert a chat message row and return its id plus the previous room id."""
         async with system_rls_session() as db:
-            msg = MindmateCollabMessage(
-                session_id=session_id,
+            return await insert_collab_message(
+                db,
+                session_id,
                 role=role,
                 content=content,
                 sender_user_id=sender_user_id,
-                created_at=datetime.now(tz=UTC),
             )
-            db.add(msg)
-            await db.commit()
-            await db.refresh(msg)
-            return msg
 
     async def set_dify_conversation_id(self, session_id: str, conversation_id: str) -> None:
         """Persist Dify conversation id in PostgreSQL and Redis session meta."""

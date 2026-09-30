@@ -67,6 +67,7 @@ async def test_ai_message_end_omits_conversation_id() -> None:
         mgr = MagicMock()
         saved = MagicMock()
         saved.id = 99
+        saved.prev_id = 4
         mgr.persist_message = AsyncMock(return_value=saved)
         mgr.set_dify_conversation_id = AsyncMock()
         mgr_factory.return_value = mgr
@@ -88,6 +89,8 @@ async def test_ai_message_end_omits_conversation_id() -> None:
     end_frames = [msg for msg in broadcasts if msg.get("type") == "ai_message_end"]
     assert len(end_frames) == 1
     assert "conversation_id" not in end_frames[0]
+    assert end_frames[0]["id"] == 99
+    assert end_frames[0]["prev_id"] == 4
     sent = mock_client.stream_chat.call_args.kwargs["inputs"]
     assert sent["mg_dify_user"] == "mindmate_collab_1_sess-1"
     assert sent["mg_conversation_id"] == "conv-9"

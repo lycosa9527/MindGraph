@@ -533,6 +533,7 @@ async def collab_history(
     request: Request,
     session_id: str,
     limit: int = Query(100, ge=1, le=200),
+    after_id: Optional[int] = Query(None, ge=0),
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -559,5 +560,5 @@ async def collab_history(
         )
     if not allowed and session.visibility != ONLINE_COLLAB_VISIBILITY_NETWORK:
         raise HTTPException(status_code=403, detail="Access denied")
-    messages = await mgr.fetch_message_history(session_id, limit=limit)
+    messages = await mgr.fetch_message_history(session_id, limit=limit, after_id=after_id)
     return {"messages": messages}

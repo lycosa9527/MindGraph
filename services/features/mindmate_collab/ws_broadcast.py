@@ -8,7 +8,6 @@ Proprietary License
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 from typing import Any, Dict, Optional
@@ -16,7 +15,10 @@ from typing import Any, Dict, Optional
 from services.features.mindmate_collab.redis_keys import fanout_room_key, normalize_collab_code
 from services.features.mindmate_collab.ws_registry import (
     ACTIVE_CONNECTIONS,
+    enqueue_text,
     force_disconnect_local_room,
+    frame_must_be_delivered,
+    schedule_close_slow_consumer,
 )
 from services.features.workshop_ws_shutdown_constants import (
     ROOM_IDLE_SHUTDOWN_TYPE,
@@ -55,16 +57,42 @@ async def _push_local(room_key: str, data_str: str, exclude_user_id: Optional[in
     handles = ACTIVE_CONNECTIONS.get(room_key)
     if not handles:
         return
+    critical = frame_must_be_delivered(data_str)
     for user_id, handle in list(handles.items()):
+        if not handle.accepts_fanout:
+            continue
         if exclude_user_id is not None and int(user_id) == int(exclude_user_id):
             continue
-        send_queue = handle.send_queue
         try:
-            send_queue.put_nowait(("text", data_str))
-        except asyncio.QueueFull:
-            logger.warning("[MindmateCollabWS] send queue full user=%s room=%s", user_id, room_key)
+            queued = enqueue_text(handle, data_str, critical=critical)
         except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("[MindmateCollabWS] local push failed: %s", exc)
+            continue
+        if queued or not critical:
+            continue
+        logger.warning(
+            "[MindmateCollabWS] closing slow consumer user=%s room=%s",
+            user_id,
+            room_key,
+        )
+        schedule_close_slow_consumer(handle)
+
+
+async def _publish_fanout(code: str, envelope: Dict[str, Any], data_str: str, exclude_user_id: Optional[int]) -> None:
+    """Publish across workers. Deliver locally when no subscriber received the frame."""
+    room_key = fanout_room_key(normalize_collab_code(code))
+    try:
+        receivers = await publish_workshop_fanout_async(envelope)
+    except REDIS_ERRORS as exc:
+        logger.warning("[MindmateCollabWS] fanout publish failed: %s", exc)
+        await _dispatch_local(room_key, data_str, exclude_user_id)
+        return
+    if isinstance(receivers, int) and receivers <= 0:
+        logger.warning(
+            "[MindmateCollabWS] fanout reached 0 subscribers room=%s; delivering locally",
+            room_key,
+        )
+        await _dispatch_local(room_key, data_str, exclude_user_id)
 
 
 async def _dispatch_local(room_key: str, data_str: str, exclude_user_id: Optional[int]) -> None:
@@ -98,11 +126,7 @@ async def broadcast_to_all(code: str, message: Dict[str, Any]) -> None:
     data_str = json.dumps(message, ensure_ascii=False)
     room_key = fanout_room_key(normalize_collab_code(code))
     if is_ws_fanout_enabled():
-        try:
-            await publish_workshop_fanout_async(_envelope(code, "all", data_str))
-        except REDIS_ERRORS as exc:
-            logger.warning("[MindmateCollabWS] fanout publish failed: %s", exc)
-            await _dispatch_local(room_key, data_str, None)
+        await _publish_fanout(code, _envelope(code, "all", data_str), data_str, None)
         return
     await _dispatch_local(room_key, data_str, None)
 
@@ -112,11 +136,7 @@ async def broadcast_to_others(code: str, sender_id: int, message: Dict[str, Any]
     data_str = json.dumps(message, ensure_ascii=False)
     room_key = fanout_room_key(normalize_collab_code(code))
     if is_ws_fanout_enabled():
-        try:
-            await publish_workshop_fanout_async(_envelope(code, "others", data_str, sender_id))
-        except REDIS_ERRORS as exc:
-            logger.warning("[MindmateCollabWS] fanout publish failed: %s", exc)
-            await _dispatch_local(room_key, data_str, sender_id)
+        await _publish_fanout(code, _envelope(code, "others", data_str, sender_id), data_str, sender_id)
         return
     await _dispatch_local(room_key, data_str, sender_id)
 

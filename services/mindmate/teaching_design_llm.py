@@ -7,6 +7,7 @@ import logging
 import re
 from typing import Any
 
+from services.infrastructure.http.error_handler import LLMServiceError
 from services.llm import llm_service
 from services.mindmate.teaching_design_models import (
     ActivityStage,
@@ -14,6 +15,8 @@ from services.mindmate.teaching_design_models import (
     ThinkingPointRow,
 )
 from services.utils.error_types import LLM_PIPELINE_ERRORS
+
+_LLM_FILL_ERRORS = (*LLM_PIPELINE_ERRORS, LLMServiceError)
 
 logger = logging.getLogger(__name__)
 
@@ -192,7 +195,7 @@ async def complete_teaching_design_spec(
                 len(spec.thinking_points),
                 len(spec.activities),
             )
-        except LLM_PIPELINE_ERRORS:
+        except _LLM_FILL_ERRORS:
             logger.warning(
                 "[TeachingDesignExport] llm_fill failed user=%s",
                 user_id,

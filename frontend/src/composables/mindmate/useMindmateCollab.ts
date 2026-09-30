@@ -7,6 +7,18 @@ import { useWebSocket } from '@vueuse/core'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
+import { authFetch } from '@/utils/api'
+import {
+  mergeMindmateCollabSnapshot,
+  resolveCollabAssistantEndContent,
+} from '@/utils/mindmateCollabDisplay'
+import {
+  collabChainNeedsFill,
+  collabGapAfterId,
+  collabPrevId,
+  insertMissingCollabMessages,
+  streamingCoveredBySaved,
+} from '@/utils/mindmateCollabGap'
 import {
   MINDMATE_COLLAB_RECONNECT,
   computeMindmateCollabReconnectDelayMs,
@@ -94,6 +106,76 @@ export function useMindmateCollab(
   let pendingReconnectFailedNotify = false
   let lastOptimisticSendContent: string | null = null
   let lastCloseCode = 1006
+  let gapFill: Promise<void> | null = null
+  let gapGeneration = 0
+  let disposed = false
+
+  async function pullMissingMessages(prevId: number): Promise<void> {
+    const sessionId = room.value?.sessionId
+    const generation = gapGeneration
+    if (!sessionId || disposed) {
+      return
+    }
+    if (gapFill) {
+      await gapFill
+      if (
+        disposed ||
+        generation !== gapGeneration ||
+        !collabChainNeedsFill(messages.value, prevId)
+      ) {
+        return
+      }
+    }
+    const run = (async () => {
+      let cursor = collabGapAfterId(messages.value, prevId)
+      try {
+        for (let page = 0; page < 5; page += 1) {
+          if (disposed || generation !== gapGeneration) {
+            return
+          }
+          const response = await authFetch(
+            `/api/mindmate/collab/${encodeURIComponent(sessionId)}/history?after_id=${cursor}&limit=200`
+          )
+          if (!response.ok) {
+            return
+          }
+          const data = (await response.json()) as { messages?: MindmateCollabMessage[] }
+          const rows = Array.isArray(data.messages) ? data.messages : []
+          if (rows.length === 0 || disposed || generation !== gapGeneration) {
+            return
+          }
+          messages.value = insertMissingCollabMessages(messages.value, rows)
+          if (streamingAssistant && streamingCoveredBySaved(streamingAssistant.content, rows)) {
+            messages.value = messages.value.filter((row) => row !== streamingAssistant)
+            streamingAssistant = null
+            isStreaming.value = false
+          }
+          const lastId = rows[rows.length - 1]?.id
+          if (rows.length < 200 || typeof lastId !== 'number') {
+            return
+          }
+          cursor = lastId
+        }
+      } catch {
+        return
+      }
+    })()
+    gapFill = run
+    try {
+      await run
+    } finally {
+      if (gapFill === run) {
+        gapFill = null
+      }
+    }
+  }
+
+  function noteMessageChain(prevId: number | null): void {
+    if (prevId == null || !collabChainNeedsFill(messages.value, prevId)) {
+      return
+    }
+    void pullMissingMessages(prevId)
+  }
 
   function stopIdleCountdownTick(): void {
     if (idleTickInterval) {
@@ -306,6 +388,7 @@ export function useMindmateCollab(
   }
 
   function applyUserMessageFrame(parsed: Record<string, unknown>): void {
+    noteMessageChain(collabPrevId(parsed.prev_id))
     const senderId = Number(parsed.sender_user_id || 0)
     const msgId = parsed.id as number | undefined
     const content = String(parsed.content || '')
@@ -355,11 +438,18 @@ export function useMindmateCollab(
     ]
   }
 
-  function finalizeAssistant(endContent?: string, aborted?: boolean, messageId?: number) {
+  function finalizeAssistant(
+    endContent?: string,
+    aborted?: boolean,
+    messageId?: number,
+    prevId?: number | null
+  ) {
+    noteMessageChain(prevId ?? null)
     if (streamingAssistant) {
-      if (endContent && !streamingAssistant.content) {
-        streamingAssistant.content = endContent
-      }
+      streamingAssistant.content = resolveCollabAssistantEndContent(
+        streamingAssistant.content,
+        endContent || ''
+      )
       streamingAssistant.streaming = false
       if (messageId != null) {
         streamingAssistant.id = messageId
@@ -396,7 +486,7 @@ export function useMindmateCollab(
     const type = String(parsed.type || '')
     if (type === 'snapshot') {
       const rows = (parsed.messages as MindmateCollabMessage[]) || []
-      messages.value = rows.map((message) => ({ ...message }))
+      messages.value = mergeMindmateCollabSnapshot(messages.value, rows)
       streamingAssistant = null
       isStreaming.value = false
       return
@@ -422,7 +512,12 @@ export function useMindmateCollab(
     }
     if (type === 'ai_message_end') {
       const messageId = parsed.id as number | undefined
-      finalizeAssistant(String(parsed.content || ''), Boolean(parsed.aborted), messageId)
+      finalizeAssistant(
+        String(parsed.content || ''),
+        Boolean(parsed.aborted),
+        messageId,
+        collabPrevId(parsed.prev_id)
+      )
       return
     }
     if (type === 'room_idle_warning') {
@@ -452,6 +547,7 @@ export function useMindmateCollab(
   }
 
   function resetForRoomChange(): void {
+    gapGeneration += 1
     resumeToken.value = null
     wsUrl.value = ''
     wsProtocolList.length = 0
@@ -544,6 +640,7 @@ export function useMindmateCollab(
   )
 
   onUnmounted(() => {
+    disposed = true
     disconnect()
   })
 
