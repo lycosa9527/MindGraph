@@ -157,7 +157,7 @@ describe('downward node slash', () => {
     expect(
       nodesCutByDownwardSlash(
         [
-          { x: 160, y: 100 },
+          { x: 160, y: 120 },
           { x: 160, y: 200 },
         ],
         180,

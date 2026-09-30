@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.122] - 2026-09-30
+
+> **A cut through a large node is easier to land, and a normal drag no longer measures every node.**
+
+### Changed
+
+- **Node cuts** — A slash can start about a third of the way into a large node and still count, as long as it leaves through the far side. A drag that starts in the middle still moves the node. A sideways cut on a diagram that has no siblings no longer selects that node.
+
+### Tests
+
+- [`frontend/tests/canvasTouchGestures.spec.ts`](frontend/tests/canvasTouchGestures.spec.ts)
+
 ## [5.180.121] - 2026-09-30
 
 > **A quick cut through a node deletes it, adds a sibling, or adds a child.**

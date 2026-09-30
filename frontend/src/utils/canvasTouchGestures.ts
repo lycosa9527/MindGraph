@@ -18,8 +18,10 @@ export const TOUCH_GESTURE = {
   SLASH_MAX_MS: 700,
   SLASH_MIN_SPEED: 0.35,
   SLASH_AXIS_RATIO: 1.8,
-  SLASH_EDGE_BAND_PX: 24,
-  SLASH_EDGE_BAND_RATIO: 0.3,
+  /** Minimum entry slack, then 35% of the node, never more than 40%. */
+  SLASH_EDGE_BAND_PX: 16,
+  SLASH_EDGE_BAND_RATIO: 0.35,
+  SLASH_EDGE_BAND_CAP_RATIO: 0.4,
   SLASH_HIT_PAD_PX: 10,
   /** Lock the stroke before it finishes so a cut is not also a node drag. */
   SLASH_ARM_PX: 40,
@@ -174,7 +176,9 @@ export function isDownwardSlashTravel(points: TouchPoint[], elapsedMs: number): 
 }
 
 function edgeBand(span: number): number {
-  return Math.min(TOUCH_GESTURE.SLASH_EDGE_BAND_PX, span * TOUCH_GESTURE.SLASH_EDGE_BAND_RATIO)
+  const proportional = span * TOUCH_GESTURE.SLASH_EDGE_BAND_RATIO
+  const slack = Math.max(TOUCH_GESTURE.SLASH_EDGE_BAND_PX, proportional)
+  return Math.min(span * TOUCH_GESTURE.SLASH_EDGE_BAND_CAP_RATIO, slack)
 }
 
 /** Other-axis position where the stroke crosses `at` while moving along `axis`. */
@@ -263,6 +267,7 @@ export function classifyNodeSlash(
       : delta.dx >= 0
         ? crossed.sort((a, b) => a.left - b.left)[0]
         : crossed.sort((a, b) => b.right - a.right)[0]
+  if (!first) return null
   return { action, nodeIds: [first.id] }
 }
 

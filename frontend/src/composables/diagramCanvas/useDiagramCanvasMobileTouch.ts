@@ -105,10 +105,10 @@ function isEditableTarget(target: EventTarget | null): boolean {
 
 function collectNodeScreenRects(root: HTMLElement): NodeScreenRect[] {
   const rects: NodeScreenRect[] = []
-  for (const node of root.querySelectorAll('.vue-flow__node')) {
+  for (const node of root.querySelectorAll('.vue-flow__node:not(:has(input, textarea))')) {
     if (!(node instanceof HTMLElement)) continue
     const id = node.dataset.id
-    if (!id || node.querySelector('input, textarea')) continue
+    if (!id) continue
     const rect = node.getBoundingClientRect()
     if (rect.width < 2 || rect.height < 2) continue
     rects.push({
@@ -697,7 +697,11 @@ export function useDiagramCanvasMobileTouch(options: {
     const root = canvasContainer.value
     if (!root) return () => {}
     const el = root
-    let stroke: (SlashStroke & { pointerId: number }) | null = null
+    let stroke: (SlashStroke & {
+      pointerId: number
+      rects: NodeScreenRect[] | null
+      hit: NodeSlashHit | null
+    }) | null = null
 
     function detachWindow(): void {
       window.removeEventListener('pointermove', onPointerMove, true)
@@ -715,9 +719,22 @@ export function useDiagramCanvasMobileTouch(options: {
     function onPointerMove(event: PointerEvent): void {
       if (!stroke || event.pointerId !== stroke.pointerId) return
       pushPoint(event.clientX, event.clientY, 4)
+      if (stroke.hit) {
+        event.preventDefault()
+        event.stopPropagation()
+        return
+      }
       const elapsed = Date.now() - stroke.startedAt
-      const hit = classifyNodeSlash(stroke.points, elapsed, collectNodeScreenRects(el))
+      if (elapsed > TOUCH_GESTURE.SLASH_MAX_MS) {
+        stroke = null
+        detachWindow()
+        return
+      }
+      if (!isNodeSlashTravel(stroke.points, elapsed)) return
+      if (!stroke.rects) stroke.rects = collectNodeScreenRects(el)
+      const hit = classifyNodeSlash(stroke.points, elapsed, stroke.rects)
       if (!hit) return
+      stroke.hit = hit
       event.preventDefault()
       event.stopPropagation()
       branchMove.cancelDrag()
@@ -728,9 +745,11 @@ export function useDiagramCanvasMobileTouch(options: {
       pushPoint(event.clientX, event.clientY, 1)
       const points = stroke.points
       const elapsed = Date.now() - stroke.startedAt
+      const rects = stroke.rects ?? collectNodeScreenRects(el)
+      const armed = stroke.hit
       stroke = null
       detachWindow()
-      const hit = classifyNodeSlash(points, elapsed, collectNodeScreenRects(el))
+      const hit = classifyNodeSlash(points, elapsed, rects) ?? armed
       if (!hit) return
       flashSlashTrail(el, points, SLASH_TRAIL_COLOR[hit.action])
       window.setTimeout(() => {
@@ -748,6 +767,8 @@ export function useDiagramCanvasMobileTouch(options: {
         points: [{ x: event.clientX, y: event.clientY }],
         startedAt: Date.now(),
         pointerId: event.pointerId,
+        rects: null,
+        hit: null,
       }
       window.addEventListener('pointermove', onPointerMove, true)
       window.addEventListener('pointerup', onPointerUp, true)

@@ -136,6 +136,8 @@ export function registerCanvasPageDiagramEventBus(options: {
       if (nodeIds.length === 0 || isDiagramPresentationReadOnly(diagramStore)) return
       const nodeId = nodeIds[0]
       if (!nodeId) return
+      const mindMap = diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map'
+      if (action === 'sibling' && !mindMap) return
       const ids = action === 'delete' ? nodeIds : [nodeId]
       if (!diagramStore.selectNodes(ids)) return
       if (action === 'delete') {
@@ -144,9 +146,7 @@ export function registerCanvasPageDiagramEventBus(options: {
       }
       const node = diagramStore.data?.nodes.find((item) => item.id === nodeId)
       const topic = nodeId === 'topic' || node?.type === 'topic' || node?.type === 'center'
-      const mindMap = diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map'
       if (action === 'sibling') {
-        if (!mindMap) return
         if (topic) void handleAddBranch()
         else void handleAddSibling()
         return
