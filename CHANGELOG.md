@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.127] - 2026-10-01
+
+> **Operators can dump a Dify database and move chat history onto one app, and each mascot has a voice for lip-sync.**
+
+### Added
+
+- **Dify history** — `python -m scripts.dify.db_merge` finds the compose stack, checks that Postgres is using that data directory, then dumps the database or moves chat history from other apps onto one app.
+- **Mascot voices** — Each of the five roles has a Qwen-Audio voice. Those clips can be passed to Wan 3 as reference audio so the matching mouth moves.
+- **October promo** — A seven-beat silent classroom cut with foley and one instrumental bed. Raven and schnauzer now keep both green-screen stills in the repo, at the same 1280×1920 size as the cats.
+
+### Tests
+
+- [`tests/scripts/test_dify_db_merge.py`](tests/scripts/test_dify_db_merge.py), [`tests/scripts/test_wan_tts.py`](tests/scripts/test_wan_tts.py), [`tests/scripts/test_october_update_promo.py`](tests/scripts/test_october_update_promo.py), [`tests/scripts/test_cat_emoji_stills.py`](tests/scripts/test_cat_emoji_stills.py)
+
 ## [5.180.126] - 2026-10-01
 
 > **Opening the app no longer downloads the diagram editor and the chart library.**

@@ -1,1 +1,1 @@
-"""Shared green-screen stills for black, white, Siamese, and office-battle kits."""
+"""Shared green-screen stills for the five mascot roles."""

@@ -35,7 +35,7 @@ def test_discover_roles_uses_repo_raven_when_desktop_missing(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Laptop fallback keeps the committed raven until the desktop still is present."""
+    """Missing desktop folders fall back to the committed raven still."""
     monkeypatch.setattr(
         "scripts.sync_classroom_video.roles.MASCOTS_DIR",
         tmp_path / "missing-mascots",
@@ -49,7 +49,7 @@ def test_discover_roles_uses_repo_raven_when_desktop_missing(
 
 
 def test_discover_roles_keeps_desktop_raven(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """A Pictures/mascots raven still wins over the committed stand-in."""
+    """A Pictures/mascots raven still wins over the committed copy."""
     monkeypatch.setattr("scripts.sync_classroom_video.roles.MASCOTS_DIR", tmp_path)
     raven_dir = tmp_path / "raven-teacher-mascot"
     raven_dir.mkdir()
