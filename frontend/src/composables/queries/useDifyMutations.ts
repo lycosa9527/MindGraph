@@ -5,8 +5,7 @@
  */
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
-import { useAuthStore } from '@/stores'
-
+import { useAuthStore } from '@/stores/auth'
 import { appendDifyConversationRouteQuery } from '@/utils/difyConversationRoute'
 
 import { difyKeys } from './difyKeys'
@@ -38,7 +37,11 @@ async function pinConversationAPI(
     body.mindbot_config_id = route.mindbotConfigId
   }
   const channel =
-    route?.difyUser && route.difyUser.startsWith('mindbot_') ? 'mindbot' : route?.difyUser ? 'web' : undefined
+    route?.difyUser && route.difyUser.startsWith('mindbot_')
+      ? 'mindbot'
+      : route?.difyUser
+        ? 'web'
+        : undefined
   if (channel) {
     body.channel = channel
   }

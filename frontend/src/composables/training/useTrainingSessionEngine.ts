@@ -4,9 +4,10 @@
 import { onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { useLanguage, useNotifications } from '@/composables'
 import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
 import {
   applyTrainingNavigate,
   trainingSteerMode,

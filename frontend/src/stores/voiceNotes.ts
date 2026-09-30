@@ -30,16 +30,14 @@ import {
 } from '@/config/docSummaryApi'
 import { SAVE } from '@/config/saveConfig'
 import { i18n } from '@/i18n'
-import {
-  useAuthStore,
-  useDiagramStore,
-  useKittySessionStore,
-  useLiveSubtitlesStore,
-  useSavedDiagramsStore,
-  useUIStore,
-} from '@/stores'
+import { useAuthStore } from '@/stores/auth'
+import { useDiagramStore } from '@/stores/diagram'
+import { useKittySessionStore } from '@/stores/kittySession'
+import { useLiveSubtitlesStore } from '@/stores/liveSubtitles'
 import { useLiveTranslationStore } from '@/stores/liveTranslation'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { getDefaultTemplate } from '@/stores/specLoader'
+import { useUIStore } from '@/stores/ui'
 import { apiRequestJson } from '@/utils/apiClient'
 import {
   diagramSourceLockMessage,

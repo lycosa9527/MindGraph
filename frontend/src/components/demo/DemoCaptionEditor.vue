@@ -10,7 +10,7 @@ import { Bold, Italic, List, ListOrdered, Underline } from '@lucide/vue'
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import DemoStoneSelect from '@/components/demo/DemoStoneSelect.vue'
-import { useLanguage } from '@/composables'
+import { useLanguage } from '@/composables/core/useLanguage'
 import {
   DEMO_FONT_COLORS,
   DEMO_FONT_FACES,

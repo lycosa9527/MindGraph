@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 
-import { useLanguage, useNotifications } from '@/composables'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
 import { playTrainingVod } from '@/utils/trainingVodApi'
 import { playVodMedia } from '@/utils/vodApi'
 

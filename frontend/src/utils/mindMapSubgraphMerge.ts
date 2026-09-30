@@ -1,10 +1,10 @@
+import { isPlaceholderText } from '@/composables/editor/placeholderText'
+import { isEditablePlaceholderLabel } from '@/stores/diagram/diagramDefaultLabels'
 import {
   distributeBranchesClockwise,
   findBranchByNodeId,
   nodesAndConnectionsToMindMapSpec,
 } from '@/stores/specLoader/mindMap'
-import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
-import { isEditablePlaceholderLabel } from '@/stores/diagram/diagramDefaultLabels'
 import type { Connection, DiagramNode } from '@/types'
 import { coerceMindMapBranch } from '@/utils/mindMapNodeUid'
 import {
@@ -85,7 +85,9 @@ export function normalizeGeneratedBranch(item: unknown): MindMapBranchSpec | nul
   }
 }
 
-export function extractBranchesFromGeneratedSpec(spec: Record<string, unknown>): MindMapBranchSpec[] {
+export function extractBranchesFromGeneratedSpec(
+  spec: Record<string, unknown>
+): MindMapBranchSpec[] {
   if (isMindMapSubgraphDebugEnabled()) {
     mindMapSubgraphDebug('extract', 'spec shape for extraction', {
       keys: Object.keys(spec),
@@ -163,12 +165,7 @@ export function mergeGeneratedBranchesIntoSpec(
     return spec
   }
 
-  const found = findBranchByNodeId(
-    spec.rightBranches,
-    spec.leftBranches,
-    anchorNodeId,
-    connections
-  )
+  const found = findBranchByNodeId(spec.rightBranches, spec.leftBranches, anchorNodeId, connections)
   if (!found) {
     if (isMindMapSubgraphDebugEnabled()) {
       mindMapSubgraphDebugError('mergeGeneratedBranchesIntoSpec: anchor not found', {

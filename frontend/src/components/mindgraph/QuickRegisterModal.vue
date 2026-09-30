@@ -10,10 +10,11 @@ import { ChevronDown, Loader2, Share2 } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
-import { useLanguage, useNotifications } from '@/composables'
 import { useQuickRegisterDialogClose } from '@/composables/auth/useQuickRegisterDialogClose'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
 import { usePublicSiteUrl } from '@/composables/core/usePublicSiteUrl'
-import { useAuthStore } from '@/stores'
+import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
 import { APP_REFINED_SANS_STACK } from '@/utils/diagramNodeFontStack'
 

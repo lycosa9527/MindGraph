@@ -10,8 +10,10 @@ import { ElButton } from 'element-plus'
 
 import { PanelLeftClose } from '@lucide/vue'
 
-import { AccountInfoModal, LoginModal, UpdateLogModal } from '@/components/auth'
+import AccountInfoModal from '@/components/auth/AccountInfoModal.vue'
+import LoginModal from '@/components/auth/LoginModal.vue'
 import ThinkingCoinsModal from '@/components/auth/ThinkingCoinsModal.vue'
+import UpdateLogModal from '@/components/auth/UpdateLogModal.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import LanguageSettingsModal from '@/components/settings/LanguageSettingsModal.vue'
 import { useThinkingCoinInsufficientListener } from '@/composables/auth/useThinkingCoinInsufficientListener'

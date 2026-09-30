@@ -27,7 +27,7 @@ import {
   LANDING_PROMPT_MAX_LENGTH,
   type LandingPromptExampleKey,
 } from '@/config/landingQuickAccess'
-import { useAuthStore } from '@/stores'
+import { useAuthStore } from '@/stores/auth'
 import type { ModelLoadPhase } from '@/stores/llmResults'
 import { authFetch } from '@/utils/api'
 

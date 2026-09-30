@@ -8,7 +8,7 @@ import { computed, ref, watch } from 'vue'
 import { ElDialog, ElScrollbar } from 'element-plus'
 
 import I18nText from '@/components/common/I18nText.vue'
-import { useLanguage } from '@/composables'
+import { useLanguage } from '@/composables/core/useLanguage'
 import {
   ensureMarkdownRenderer,
   markdownRendererReady,

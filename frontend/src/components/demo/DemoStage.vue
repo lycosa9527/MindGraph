@@ -3,7 +3,7 @@
  * Fullscreen library demo: gallery brand lockup, frosted diagram and caption,
  * and a thumbnail filmstrip over the login films.
  */
-import { computed, onBeforeUnmount, watch } from 'vue'
+import { computed, defineAsyncComponent, onBeforeUnmount, watch } from 'vue'
 
 import { ElAvatar } from 'element-plus'
 
@@ -13,7 +13,6 @@ import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
 import I18nText from '@/components/common/I18nText.vue'
 import DemoCaptionHtml from '@/components/demo/DemoCaptionHtml.vue'
 import DemoFilmBackdrop from '@/components/demo/DemoFilmBackdrop.vue'
-import DemoSlideCanvas from '@/components/demo/DemoSlideCanvas.vue'
 import DemoSlideStrip from '@/components/demo/DemoSlideStrip.vue'
 import {
   demoCaptionHtml,
@@ -23,6 +22,8 @@ import {
 import { useLibraryDemo } from '@/composables/demo/useLibraryDemo'
 import { getDiagramTypeDisplayName } from '@/composables/editor/useDiagramLabels'
 import { useUIStore } from '@/stores/ui'
+
+const DemoSlideCanvas = defineAsyncComponent(() => import('@/components/demo/DemoSlideCanvas.vue'))
 
 const {
   stageOpen,

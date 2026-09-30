@@ -1,7 +1,7 @@
 /**
  * Node Palette stage helpers - stage resolution and parent selection for staged diagrams
  */
-import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
+import { isPlaceholderText } from '@/composables/editor/placeholderText'
 import type { DiagramType } from '@/types'
 import { findBraceMapWholeId } from '@/utils/braceMapIdentity'
 import { isMindMapL1, mindMapNodeDepth } from '@/utils/mindMapLocation'

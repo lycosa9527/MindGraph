@@ -30,7 +30,7 @@ import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useAdminHeaderBreadcrumb } from '@/composables/admin/useAdminHeaderBreadcrumb'
 import { useAdminPanelTabs } from '@/composables/admin/useAdminPanelTabs'
 import { useAdminRouteSync } from '@/composables/admin/useAdminRouteSync'
-import { useAdminPanelStore } from '@/stores'
+import { useAdminPanelStore } from '@/stores/adminPanel'
 import { isAdminPublicDashboardRoute } from '@/utils/publicDashboardRoute'
 
 /** Lazy: VOD SDK packages may be absent locally; keep other admin tabs loadable. */

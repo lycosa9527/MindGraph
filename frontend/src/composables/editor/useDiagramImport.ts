@@ -4,10 +4,10 @@
  */
 import { useRoute, useRouter } from 'vue-router'
 
-import { useNotifications } from '@/composables'
 import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
+import { useNotifications } from '@/composables/core/useNotifications'
 import { IMPORT_SPEC_KEY } from '@/config'
-import { useDiagramStore } from '@/stores'
+import { useDiagramStore } from '@/stores/diagram'
 import type { DiagramType } from '@/types'
 import { canvasPathForImportNavigation } from '@/utils/canvasBackNavigation'
 import { CMAP_PARSE_FAILED, decodeCmapToConceptMapSpec } from '@/utils/cmapImport'

@@ -10,10 +10,11 @@ import { Loader2, UserRound } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
-import { useLanguage, useNotifications } from '@/composables'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
-import { useAuthStore } from '@/stores'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
+import { useAuthStore } from '@/stores/auth'
 import { apiRequest } from '@/utils/apiClient'
 import {
   canStartWechatBind,

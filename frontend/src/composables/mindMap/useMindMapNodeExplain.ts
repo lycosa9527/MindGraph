@@ -8,7 +8,7 @@ import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGat
 import { eventBus } from '@/composables/core/useEventBus'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
-import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
+import { isPlaceholderText } from '@/composables/editor/placeholderText'
 import { resolveCanvasAudienceLevel } from '@/composables/mindMap/audience/aiContentLevelInstructions'
 import { withMindMapAudienceContext } from '@/composables/mindMap/audience/withMindMapAudienceContext'
 import { useSavedDiagramsStore } from '@/stores'

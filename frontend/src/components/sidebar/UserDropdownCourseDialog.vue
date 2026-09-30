@@ -2,15 +2,18 @@
 /**
  * Plays the course linked from an avatar-menu function.
  */
-import { ref, watch } from 'vue'
+import { defineAsyncComponent, ref, watch } from 'vue'
 
-import TrainingCourseWalkthrough from '@/components/training/TrainingCourseWalkthrough.vue'
-import { useNotifications } from '@/composables'
+import { useNotifications } from '@/composables/core/useNotifications'
 import {
   fetchUserDropdownCourse,
   useUserDropdownMenu,
 } from '@/composables/sidebar/useUserDropdownMenu'
 import type { TrainingCourse } from '@/types/training'
+
+const TrainingCourseWalkthrough = defineAsyncComponent(
+  () => import('@/components/training/TrainingCourseWalkthrough.vue')
+)
 
 const notify = useNotifications()
 const { openToken, activeItemId } = useUserDropdownMenu()

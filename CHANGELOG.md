@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.126] - 2026-10-01
+
+> **Opening the app no longer downloads the diagram editor and the chart library.**
+
+### Fixed
+
+- **First load** — MindGraph, MindMate, and the sidebar no longer fetch the diagram canvas, teacher-usage charts, the course preview, or the fullscreen demo up front. Those load when you open them.
+
 ## [5.180.125] - 2026-09-30
 
 > **A saved MindMate seminar can be pinned, renamed, or deleted, and each of your lines shows who has read it.**

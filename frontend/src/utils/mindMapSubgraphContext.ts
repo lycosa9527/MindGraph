@@ -1,4 +1,4 @@
-import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
+import { isPlaceholderText } from '@/composables/editor/placeholderText'
 import type { Connection, DiagramNode } from '@/types'
 
 export interface MindMapSubgraphContext {
@@ -68,7 +68,9 @@ export function formatMindMapSubgraphPrompt(
     lines.push(`Parent branch: ${context.parentBranch}`)
   }
   if (context.referenceBranches.length > 0) {
-    lines.push(`Other branches in the map (reference): ${formatBranchListEn(context.referenceBranches)}`)
+    lines.push(
+      `Other branches in the map (reference): ${formatBranchListEn(context.referenceBranches)}`
+    )
   }
   if (context.existingChildren.length > 0) {
     lines.push(

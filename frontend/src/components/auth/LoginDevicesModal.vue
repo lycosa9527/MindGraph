@@ -8,7 +8,8 @@ import { Loader2, Smartphone } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
-import { useLanguage, useNotifications } from '@/composables'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
 import { apiDelete, apiGet } from '@/utils/apiClient'
 
 const props = defineProps<{

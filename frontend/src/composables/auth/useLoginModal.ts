@@ -7,12 +7,15 @@
  */
 import { computed, onBeforeUnmount, ref, toRef, watch } from 'vue'
 
-import { useLanguage, useNotifications } from '@/composables'
 import { useRegisterRegionDetection } from '@/composables/auth/useRegisterRegionDetection'
 import { useTsecCaptcha } from '@/composables/auth/useTsecCaptcha'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
-import { useAuthStore, useFeatureFlagsStore, useUIStore } from '@/stores'
+import { useAuthStore } from '@/stores/auth'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { useUIStore } from '@/stores/ui'
 import { parseApiErrorDetail } from '@/utils/apiClient'
 import { isBrowserLanguageSimplifiedChinese } from '@/utils/clientRegion'
 import {

@@ -26,7 +26,6 @@ import { ExportToCommunityModal } from '@/components/canvas'
 import CanvasWorksheetTextModal from '@/components/canvas/CanvasWorksheetTextModal.vue'
 import MindMapNodeExplainBubble from '@/components/canvas/MindMapNodeExplainBubble.vue'
 import MindMapNodeExplainResearchPanel from '@/components/canvas/MindMapNodeExplainResearchPanel.vue'
-import { useBranchMoveDrag, useLanguage } from '@/composables'
 import {
   type FloatingToolbarSize,
   formatBrushActive,
@@ -35,6 +34,7 @@ import {
 } from '@/composables/canvasToolbar'
 import { registerDiagramLayoutRecalcSession } from '@/composables/core/diagramLayoutRecalcBootstrap'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
 import { useTheme } from '@/composables/core/useTheme'
 import { diagramSessionRef, useDiagramSession } from '@/composables/diagram/useDiagramSession'
@@ -54,6 +54,7 @@ import {
   useDiagramCanvasVueFlowUi,
 } from '@/composables/diagramCanvas'
 import { useDiagramCanvasMindMapPaletteDrop } from '@/composables/diagramCanvas/useDiagramCanvasMindMapPaletteDrop'
+import { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
 import {
   CONCEPT_MAP_GENERATING_KEY,
   useConceptMapRelationship,
@@ -80,11 +81,12 @@ import type { CanvasExportColorMode, CanvasExportLayout } from '@/config/canvasE
 import type { CanvasWorksheetTextOptions } from '@/config/canvasWorksheetText'
 import { LEARNING_SHEET_HAMMER_CURSOR } from '@/config/learningSheetCursor'
 import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR } from '@/config/presentationHighlighter'
-import { usePanelsStore, usePresentationPointerStore, useUIStore } from '@/stores'
 import { useCanvasExportStore } from '@/stores/canvasExport'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
+import { usePanelsStore } from '@/stores/panels'
+import { usePresentationPointerStore } from '@/stores/presentationPointer'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
-import type { MindMapCanvasMode } from '@/stores/ui'
+import { type MindMapCanvasMode, useUIStore } from '@/stores/ui'
 import type { MindGraphNode, PresentationHighlightStroke, PresentationToolId } from '@/types'
 import { isMindMapConnectorDebugEnabled } from '@/utils/mindMapConnectorDebugLevel'
 import { isMindMapSubgraphExpandable } from '@/utils/mindMapSubgraphContext'

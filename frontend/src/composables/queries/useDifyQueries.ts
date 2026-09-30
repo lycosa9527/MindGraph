@@ -5,8 +5,7 @@
  */
 import { useQuery } from '@tanstack/vue-query'
 
-import { useAuthStore } from '@/stores'
-
+import { useAuthStore } from '@/stores/auth'
 import { difyConversationRouteQuerySuffix } from '@/utils/difyConversationRoute'
 
 import { difyKeys } from './difyKeys'
@@ -233,7 +232,12 @@ export function useConversationMessages(
       : undefined
 
   return useQuery({
-    queryKey: difyKeys.messages(convId || '', resolvedDifyUser, resolvedServer, resolvedMindbotConfigId),
+    queryKey: difyKeys.messages(
+      convId || '',
+      resolvedDifyUser,
+      resolvedServer,
+      resolvedMindbotConfigId
+    ),
     queryFn: () => {
       if (!convId) {
         throw new Error('Conversation id is required')

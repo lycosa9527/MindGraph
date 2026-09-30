@@ -5,7 +5,7 @@
 import { computed, ref, watch } from 'vue'
 
 import TrainingSlidePreview from '@/components/training/TrainingSlidePreview.vue'
-import { useLanguage } from '@/composables'
+import { useLanguage } from '@/composables/core/useLanguage'
 import type { TrainingCourse, TrainingCourseStep } from '@/types/training'
 
 const visible = defineModel<boolean>({ default: false })

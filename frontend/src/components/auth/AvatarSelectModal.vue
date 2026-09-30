@@ -9,11 +9,12 @@ import { computed, ref, watch } from 'vue'
 
 import { Smile } from '@lucide/vue'
 
-import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
-import { useLanguage, useNotifications } from '@/composables'
-import { useAuthStore } from '@/stores'
-import { DEFAULT_USER_AVATAR_EMOJI, resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 import I18nText from '@/components/common/I18nText.vue'
+import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
+import { useAuthStore } from '@/stores/auth'
+import { DEFAULT_USER_AVATAR_EMOJI, resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 const notify = useNotifications()
 const { t } = useLanguage()

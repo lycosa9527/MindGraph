@@ -6,12 +6,12 @@ import { computed } from 'vue'
 
 import { Loader2 } from '@lucide/vue'
 
-import { useLanguage } from '@/composables'
 import {
   type OAuthProvider,
   type OAuthQrMode,
   useOAuthQrLogin,
 } from '@/composables/auth/useOAuthQrLogin'
+import { useLanguage } from '@/composables/core/useLanguage'
 
 const props = defineProps<{
   inviteCode: string

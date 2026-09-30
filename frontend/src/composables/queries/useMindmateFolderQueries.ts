@@ -3,7 +3,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
-import { useAuthStore } from '@/stores'
+import { useAuthStore } from '@/stores/auth'
 
 import { difyKeys } from './difyKeys'
 

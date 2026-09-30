@@ -22,7 +22,7 @@ import {
   getPromptLanguageOptionsForPicker,
   matchedPromptLanguageForUiLocale,
 } from '@/i18n/locales'
-import { useAuthStore } from '@/stores'
+import { useAuthStore } from '@/stores/auth'
 import type { Language, MindMapCanvasMode, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
 import '@/styles/settings-language-swiss.css'

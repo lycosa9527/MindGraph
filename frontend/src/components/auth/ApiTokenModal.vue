@@ -8,10 +8,10 @@ import { ElMessage } from 'element-plus'
 
 import { Key, Loader2 } from '@lucide/vue'
 
-import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
-import { useLanguage } from '@/composables'
-import { apiDelete, apiGet, apiPost } from '@/utils/apiClient'
 import I18nText from '@/components/common/I18nText.vue'
+import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { apiDelete, apiGet, apiPost } from '@/utils/apiClient'
 
 const props = defineProps<{
   visible: boolean

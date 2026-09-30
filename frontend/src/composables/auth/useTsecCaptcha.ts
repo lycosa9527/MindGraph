@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 
-import { useLanguage, useNotifications } from '@/composables'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import type { TsecAidEncrypted, TsecMintedCaptcha, TsecSolvedCaptcha } from '@/types/tsecCaptcha'
 import { apiRequest } from '@/utils/apiClient'

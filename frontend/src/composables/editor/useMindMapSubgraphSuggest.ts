@@ -10,16 +10,16 @@ import {
   enqueueSubgraphApply,
   withSubgraphFetchSlot,
 } from '@/composables/editor/mindMapSubgraphApplyQueue'
-import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
-import {
-  cancelQuietBranchComplete,
-  endQuietBranchComplete,
-} from '@/composables/kitty/kittyQuietBranchCompleteBatch'
+import { isPlaceholderText } from '@/composables/editor/placeholderText'
 import {
   commitVerifiedLocalDiagramMutation,
   verifySubgraphChildTextsPresent,
 } from '@/composables/kitty/diagramEditApply'
 import type { DiagramHubPersistDeps } from '@/composables/kitty/diagramEditHubPersist'
+import {
+  cancelQuietBranchComplete,
+  endQuietBranchComplete,
+} from '@/composables/kitty/kittyQuietBranchCompleteBatch'
 import { i18n } from '@/i18n'
 import { useDiagramStore, useLLMResultsStore, useSavedDiagramsStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
@@ -27,25 +27,20 @@ import { useKittySessionStore } from '@/stores/kittySession'
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 import { useUIStore } from '@/stores/ui'
 import { authFetch } from '@/utils/api'
-import { noteOrgGenerationCacheResult, withOrgGenerationCacheBypass } from '@/utils/orgGenerationCache'
 import { findMindMapNodeIdByLabel } from '@/utils/findMindMapNodeIdByLabel'
-import { safeRandomUUID } from '@/utils/safeRandomUUID'
 import {
   extractFailureFromPayload,
   resolveGenerateGraphErrorMessage,
   shouldNotifyGenerateGraphError,
 } from '@/utils/generateGraphErrors'
 import {
-  extractBranchesFromGeneratedSpec,
-  toDirectChildrenOnly,
-  type MindMapBranchSpec,
-} from '@/utils/mindMapSubgraphMerge'
-import {
   collectMindMapSubgraphContext,
   isMindMapSubgraphExpandable,
 } from '@/utils/mindMapSubgraphContext'
-import { buildMindMapSubgraphGenerateBody } from '@/utils/mindMapSubgraphRequest'
 import {
+  type MindMapSubgraphExtractDebug,
+  type MindMapSubgraphRequestDebug,
+  type MindMapSubgraphResponseDebug,
   beginMindMapSubgraphDebugRun,
   debugMindMapSubgraphMergeLookup,
   endMindMapSubgraphDebugRun,
@@ -53,11 +48,19 @@ import {
   mindMapSubgraphDebugError,
   mindMapSubgraphFailureDump,
   summarizeMindMapNodesForDebug,
-  type MindMapSubgraphExtractDebug,
-  type MindMapSubgraphRequestDebug,
-  type MindMapSubgraphResponseDebug,
 } from '@/utils/mindMapSubgraphDebug'
+import {
+  type MindMapBranchSpec,
+  extractBranchesFromGeneratedSpec,
+  toDirectChildrenOnly,
+} from '@/utils/mindMapSubgraphMerge'
+import { buildMindMapSubgraphGenerateBody } from '@/utils/mindMapSubgraphRequest'
+import {
+  noteOrgGenerationCacheResult,
+  withOrgGenerationCacheBypass,
+} from '@/utils/orgGenerationCache'
 import { resolveDiagramLlmModel } from '@/utils/resolveDiagramLlmModel'
+import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 const MAX_SUBGRAPH_CHILDREN = 6
 
@@ -257,10 +260,7 @@ async function applyGeneratedSubgraphBranches(options: {
     nodesAfterCount,
     nodesAdded: nodesAfterCount - nodesBeforeCount,
     diagramAfter: diagramStore.data?.nodes
-      ? summarizeMindMapNodesForDebug(
-          diagramStore.data.nodes,
-          diagramStore.data.connections ?? []
-        )
+      ? summarizeMindMapNodesForDebug(diagramStore.data.nodes, diagramStore.data.connections ?? [])
       : null,
   })
 

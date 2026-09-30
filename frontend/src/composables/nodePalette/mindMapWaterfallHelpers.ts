@@ -1,4 +1,4 @@
-import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
+import { isPlaceholderText } from '@/composables/editor/placeholderText'
 import type { DiagramNode } from '@/types'
 import { isMindMapBranchId } from '@/utils/mindMapLocation'
 

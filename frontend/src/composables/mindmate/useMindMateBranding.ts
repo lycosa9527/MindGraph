@@ -7,8 +7,8 @@ import { computed } from 'vue'
 
 import mindmateAvatarLg from '@/assets/mindmate-avatar-lg.png'
 import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
-import { useLanguage } from '@/composables'
-import { useAuthStore } from '@/stores'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useAuthStore } from '@/stores/auth'
 
 export function resolveSchoolMindmateAgentName(raw: string | null | undefined): string | null {
   const trimmed = (raw ?? '').trim()

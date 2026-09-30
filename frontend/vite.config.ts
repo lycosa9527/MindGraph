@@ -180,6 +180,28 @@ const elementPlusResolver = ElementPlusResolver({
   importStyle: 'css',
 })
 
+/**
+ * tcplayer.js ships Tencent's js-armor loader, which resolves global names with
+ * direct `eval(symbols[i])`. Rolldown warns on that call. Indirect eval still
+ * reads globals (`Array`, `String`, `parseInt`) and does not see this function's
+ * locals, which the loader does not ask for.
+ */
+function tcplayerIndirectEvalPlugin(): Plugin {
+  const directEval = 'eval(symbols[i])'
+  const indirectEval = '(0,eval)(symbols[i])'
+  return {
+    name: 'tcplayer-indirect-eval',
+    enforce: 'pre',
+    transform(code, id) {
+      const normalizedId = id.replaceAll('\\', '/')
+      if (!normalizedId.includes('/tcplayer.js/dist/tcplayer') || !code.includes(directEval)) {
+        return null
+      }
+      return { code: code.replaceAll(directEval, indirectEval), map: null }
+    },
+  }
+}
+
 /** pdfjs-dist loads its worker via `import(this.workerSrc)`; Vite needs `@vite-ignore` on that call. */
 function pdfjsViteIgnoreDynamicImportPlugin(): Plugin {
   const workerImportPattern =
@@ -274,6 +296,7 @@ export default defineConfig({
     },
   },
   plugins: [
+    tcplayerIndirectEvalPlugin(),
     wslSafeEmptyOutDirPlugin(__dirname, buildOutDir),
     denyStaticTrainingRolesPlugin(),
     devCspConnectSrcPlugin(backendOrigin),

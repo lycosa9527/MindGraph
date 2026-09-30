@@ -16,7 +16,7 @@ import {
   LANDING_PROMPT_MAX_LENGTH,
   type LandingPromptExampleKey,
 } from '@/config/landingQuickAccess'
-import { useAuthStore } from '@/stores'
+import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
 
 const SPECS_PATH = '/api/auth/quick-access-specs'

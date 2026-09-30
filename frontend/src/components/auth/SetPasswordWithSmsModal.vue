@@ -8,9 +8,11 @@ import { KeyRound, Loader2 } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
-import { useLanguage, useNotifications } from '@/composables'
 import { useTsecCaptcha } from '@/composables/auth/useTsecCaptcha'
-import { useAuthStore, useFeatureFlagsStore } from '@/stores'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
+import { useAuthStore } from '@/stores/auth'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { apiRequest } from '@/utils/apiClient'
 
 const props = defineProps<{ visible: boolean }>()

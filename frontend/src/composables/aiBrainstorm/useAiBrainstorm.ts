@@ -13,15 +13,15 @@ import { storeToRefs } from 'pinia'
 import { applyAiBrainstormSelection } from '@/composables/aiBrainstorm/applyAiBrainstormSelection'
 import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
-import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
+import { isPlaceholderText } from '@/composables/editor/placeholderText'
 import { withMindMapAudienceContext } from '@/composables/mindMap/audience/withMindMapAudienceContext'
-import { buildDiagramData } from '@/composables/nodePalette/diagramDataBuilder'
 import {
   MINDMAP_WATERFALL_NODES_PER_LLM,
   NODE_PALETTE_NEXT,
   NODE_PALETTE_START,
   getParentIdFromStageData,
 } from '@/composables/nodePalette/constants'
+import { buildDiagramData } from '@/composables/nodePalette/diagramDataBuilder'
 import { isAbortError } from '@/composables/nodePalette/errors'
 import {
   resolveMindMapWaterfallSources,
@@ -29,16 +29,16 @@ import {
 } from '@/composables/nodePalette/mindMapWaterfallHelpers'
 import { getAiBrainstormDiagramKey } from '@/composables/nodePalette/sessionKeys'
 import {
+  type Stage2Parent,
   buildStageDataForParent,
   getDefaultStage,
   getStage2ParentsForDiagram,
-  type Stage2Parent,
   stage2StageNameForType,
 } from '@/composables/nodePalette/stageHelpers'
 import { streamNodePaletteBatch } from '@/composables/nodePalette/streamNodePaletteBatch'
 import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
-import { isLearningSheetBlankDisplayText } from '@/stores/specLoader/utils'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { isLearningSheetBlankDisplayText } from '@/stores/specLoader/utils'
 import type { NodeSuggestion } from '@/types/panels'
 
 export interface UseAiBrainstormOptions {
@@ -208,7 +208,11 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
   const currentStage = computed(() => panelsStore.aiBrainstormPanel.stage ?? '')
   const showNextButton = computed(() => currentStage.value === 'branches')
   const stage2Parents = computed(() =>
-    getStage2ParentsForDiagram('mindmap', diagramStore.data?.nodes ?? [], diagramStore.data?.connections)
+    getStage2ParentsForDiagram(
+      'mindmap',
+      diagramStore.data?.nodes ?? [],
+      diagramStore.data?.connections
+    )
   )
   const showStage2Tabs = computed(
     () => stage2Parents.value.length > 0 && currentStage.value === 'children'
@@ -392,9 +396,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
         sourceTabs: tabs,
         selected: keepSessionId ? panelsStore.aiBrainstormPanel.selected : [],
       })
-      glowIds = parents.length > 1 && !keepSessionId
-        ? parents.map((p) => p.id)
-        : [activeParent.id]
+      glowIds = parents.length > 1 && !keepSessionId ? parents.map((p) => p.id) : [activeParent.id]
       if (parents.length > 1 && !keepSessionId) {
         await startSessionsForAllParents(parents)
         return true

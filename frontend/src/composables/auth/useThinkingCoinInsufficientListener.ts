@@ -3,9 +3,9 @@
  */
 import { onBeforeUnmount, onMounted } from 'vue'
 
-import { useNotifications } from '@/composables'
-import { useLanguage } from '@/composables/core/useLanguage'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
 import { useAuthStore } from '@/stores/auth'
 
 export function useThinkingCoinInsufficientListener(

@@ -4,9 +4,10 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { useLanguage, useNotifications } from '@/composables'
 import { loadThinkingCoinsWallet } from '@/composables/auth/fetchThinkingCoinsWallet'
 import { ledgerItemLabel as resolveLedgerItemLabel } from '@/composables/auth/thinkingCoinsLedgerLabel'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
 import type {
   AdminThinkingCoinTask,
   ThinkingCoinLedgerResponse,

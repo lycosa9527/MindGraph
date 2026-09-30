@@ -8,8 +8,8 @@ import { QrCode } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
-import { useLanguage } from '@/composables'
 import type { OAuthProvider, OAuthQrMode } from '@/composables/auth/useOAuthQrLogin'
+import { useLanguage } from '@/composables/core/useLanguage'
 
 import OAuthQrLoginPanel from './OAuthQrLoginPanel.vue'
 

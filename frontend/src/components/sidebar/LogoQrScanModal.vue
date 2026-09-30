@@ -9,7 +9,7 @@ import { QrCode } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
-import { useLanguage } from '@/composables'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { usePublicSiteUrl } from '@/composables/core/usePublicSiteUrl'
 import { APP_REFINED_SANS_STACK } from '@/utils/diagramNodeFontStack'
 

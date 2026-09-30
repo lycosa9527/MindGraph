@@ -3,8 +3,9 @@
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
-import { useLanguage, useNotifications } from '@/composables'
-import { useAuthStore } from '@/stores'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
+import { useAuthStore } from '@/stores/auth'
 import apiClient from '@/utils/apiClient'
 import {
   WX_LOGIN_QR_SIZE_PX,
