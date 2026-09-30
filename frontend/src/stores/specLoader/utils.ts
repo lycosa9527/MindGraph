@@ -66,6 +66,38 @@ function seededShuffle<T>(array: T[], seed: number): T[] {
   return arr
 }
 
+/** Default share of hideable nodes knocked out by the random learning-sheet action. */
+export const LEARNING_SHEET_RANDOM_BLANK_RATIO = 0.2
+
+function learningSheetRandomSeed(nodes: DiagramNode[]): number {
+  let seed = nodes.length
+  for (const node of nodes) {
+    seed += node.id.length
+    if (node.type === 'topic' || node.type === 'center') {
+      seed += String(node.text ?? '').length
+    }
+  }
+  return seed
+}
+
+/**
+ * Pick hideable node ids for an in-place random blank.
+ * Does not rebuild layout — callers blank the live nodes and keep their boxes.
+ */
+export function pickLearningSheetRandomNodeIds(
+  nodes: DiagramNode[],
+  diagramType: DiagramType,
+  percentage: number = LEARNING_SHEET_RANDOM_BLANK_RATIO
+): string[] {
+  const pct = Math.max(0, Math.min(1, percentage))
+  if (pct <= 0 || nodes.length === 0) return []
+  const hideable = nodes.filter((node) => isHideableNode(node, diagramType))
+  if (hideable.length === 0) return []
+  const shuffled = seededShuffle(hideable, learningSheetRandomSeed(nodes))
+  const countToHide = Math.max(1, Math.floor(shuffled.length * pct))
+  return shuffled.slice(0, countToHide).map((node) => node.id)
+}
+
 /**
  * Apply learning sheet hidden nodes: randomly knock out a percentage of child nodes,
  * replace text with placeholder, collect answers. Same business logic as backend.

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.123] - 2026-09-30
+
+> **Blanking a learning-sheet node keeps the map where it is, and turning branch numbers on measures the map once.**
+
+### Changed
+
+- **Learning sheet** — Random blanks and a blank you pick yourself stay on the canvas you already have. A blanked node keeps the size it already had, and the other nodes stay put.
+- **Branch numbers** — Turning numbers on or off sizes every branch in one pass.
+
+### Tests
+
+- [`frontend/tests/learningSheetLayoutHold.spec.ts`](frontend/tests/learningSheetLayoutHold.spec.ts), [`frontend/tests/mindMapNumberingEstimate.spec.ts`](frontend/tests/mindMapNumberingEstimate.spec.ts), [`frontend/tests/learningSheetUndo.spec.ts`](frontend/tests/learningSheetUndo.spec.ts)
+
 ## [5.180.122] - 2026-09-30
 
 > **A cut through a large node is easier to land, and a normal drag no longer measures every node.**

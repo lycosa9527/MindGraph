@@ -78,22 +78,24 @@ describe('learning sheet undo/redo', () => {
     expect(reblanked?.text).toBe(LEARNING_SHEET_BLANK_TEXT)
   })
 
-  it('undoes random learning sheet blank batch', () => {
+  it('undoes random learning sheet blank batch without moving nodes', () => {
     const diagramStore = useDiagramStore()
     loadMindMapWithBranch()
 
-    const spec = diagramStore.getSpecForSave()
-    expect(spec).toBeTruthy()
+    const positionsBefore = (diagramStore.data?.nodes ?? []).map((node) => ({
+      id: node.id,
+      x: node.position?.x,
+      y: node.position?.y,
+    }))
 
-    diagramStore.loadFromSpec(
-      {
-        ...spec!,
-        is_learning_sheet: true,
-        hidden_node_percentage: 0.2,
-      },
-      diagramStore.type!
-    )
+    diagramStore.applyRandomLearningSheetBlanks(0.2)
     diagramStore.pushHistory('Random blank nodes')
+
+    for (const before of positionsBefore) {
+      const node = diagramStore.data?.nodes.find((item) => item.id === before.id)
+      expect(node?.position?.x).toBe(before.x)
+      expect(node?.position?.y).toBe(before.y)
+    }
 
     expect(diagramStore.isLearningSheet).toBe(true)
     expect(diagramStore.hasBlankedLearningSheetNodes()).toBe(true)

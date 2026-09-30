@@ -1,17 +1,14 @@
 import { computed } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import type { NodeStyle } from '@/types'
 import { nodesInLearningSheetReadingOrder } from '@/utils/learningSheetAnswerOrder'
-import { mindMapBranchNumberMapFromData } from '@/utils/mindMapBranchNumbering'
 
 import {
-  estimateNodeWidth as estimateMindMapBranchWidth,
-  estimateNumberedBranchWidth,
-  measureBranchNodeHeight as measureMindMapBranchHeight,
-  measureNumberedBranchHeight,
-} from '../specLoader/mindMap'
-import { LEARNING_SHEET_BLANK_TEXT, isLearningSheetBlankDisplayText } from '../specLoader/utils'
+  LEARNING_SHEET_BLANK_TEXT,
+  LEARNING_SHEET_RANDOM_BLANK_RATIO,
+  isLearningSheetBlankDisplayText,
+  pickLearningSheetRandomNodeIds,
+} from '../specLoader/utils'
 import { emitCtxEvent } from './events'
 import type { DiagramContext } from './types'
 
@@ -22,52 +19,26 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     return ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map'
   }
 
-  /** Layout size from answer text; keeps pre-blank estimates when already set. */
-  function mindMapLayoutEstimates(
-    existingData: Record<string, unknown> | undefined,
-    layoutText: string,
-    nodeId?: string,
-    nodeStyle?: NodeStyle
-  ): Record<string, unknown> | undefined {
-    if (!isMindMap()) return existingData
-    const existing = existingData as
-      { estimatedWidth?: number; estimatedHeight?: number } | undefined
-    const numberMap = mindMapBranchNumberMapFromData(data.value)
-    const prefix = nodeId ? (numberMap.get(nodeId) ?? '') : ''
-    const fromText = {
-      estimatedWidth: nodeId
-        ? estimateNumberedBranchWidth(layoutText, prefix, nodeId, nodeStyle)
-        : estimateMindMapBranchWidth(layoutText, nodeId, nodeStyle),
-      estimatedHeight: nodeId
-        ? measureNumberedBranchHeight(layoutText, prefix, nodeId, nodeStyle)
-        : measureMindMapBranchHeight(layoutText, nodeId, nodeStyle),
-    }
-    return {
-      ...existingData,
-      estimatedWidth:
-        typeof existing?.estimatedWidth === 'number' && existing.estimatedWidth > 0
-          ? Math.max(existing.estimatedWidth, fromText.estimatedWidth)
-          : fromText.estimatedWidth,
-      estimatedHeight:
-        typeof existing?.estimatedHeight === 'number' && existing.estimatedHeight > 0
-          ? Math.max(existing.estimatedHeight, fromText.estimatedHeight)
-          : fromText.estimatedHeight,
-    }
-  }
-
-  function preserveMindMapBlankedLayoutSize(
+  /**
+   * Size the layout is already using. Measured box wins over a text estimate.
+   * Does not remeasure or restack — blanking must not move siblings.
+   */
+  function mindMapBoxAlreadyUsed(
     nodeId: string,
-    layoutWidth: number,
-    layoutHeight: number
-  ): void {
-    if (!isMindMap()) return
-    const prevW = ctx.mindMapNodeWidths.value[nodeId]
-    const prevH = ctx.mindMapNodeHeights.value[nodeId]
-    const width = Math.max(prevW ?? 0, layoutWidth)
-    const height = Math.max(prevH ?? 0, layoutHeight)
-    if (width > 0) ctx.mindMapNodeWidths.value[nodeId] = width
-    if (height > 0) ctx.mindMapNodeHeights.value[nodeId] = height
-    ctx.scheduleMindMapRecalc()
+    nodeData: Record<string, unknown> | undefined
+  ): { estimatedWidth: number; estimatedHeight: number } | undefined {
+    if (!isMindMap()) return undefined
+    const measuredW = ctx.mindMapNodeWidths.value[nodeId]
+    const measuredH = ctx.mindMapNodeHeights.value[nodeId]
+    const existing = nodeData as { estimatedWidth?: number; estimatedHeight?: number } | undefined
+    const width =
+      typeof measuredW === 'number' && measuredW > 0 ? measuredW : existing?.estimatedWidth
+    const height =
+      typeof measuredH === 'number' && measuredH > 0 ? measuredH : existing?.estimatedHeight
+    if (typeof width !== 'number' || width <= 0 || typeof height !== 'number' || height <= 0) {
+      return undefined
+    }
+    return { estimatedWidth: width, estimatedHeight: height }
   }
 
   const isLearningSheet = computed(() => {
@@ -142,21 +113,14 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     const originalText = nodeHiddenAnswer(node)
     if (!originalText) return false
 
-    delete ctx.mindMapNodeWidths.value[nodeId]
-    delete ctx.mindMapNodeHeights.value[nodeId]
-
     data.value.nodes[nodeIndex] = {
       ...node,
       text: originalText,
       data: {
-        ...mindMapLayoutEstimates(
-          node.data as Record<string, unknown>,
-          originalText,
-          nodeId,
-          node.style
-        ),
+        ...(node.data as Record<string, unknown>),
         hidden: false,
         hiddenAnswer: originalText,
+        label: originalText,
       },
     }
 
@@ -183,30 +147,17 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
       return false
     }
 
-    const layoutData = mindMapLayoutEstimates(
-      node.data as Record<string, unknown>,
-      originalText,
-      nodeId,
-      node.style
-    ) as { estimatedWidth?: number; estimatedHeight?: number }
-
+    const nodeRecord = node.data as Record<string, unknown> | undefined
     data.value.nodes[nodeIndex] = {
       ...node,
       text: LEARNING_SHEET_BLANK_TEXT,
       data: {
-        ...layoutData,
+        ...nodeRecord,
+        ...mindMapBoxAlreadyUsed(nodeId, nodeRecord),
         hidden: true,
         hiddenAnswer: originalText,
         label: LEARNING_SHEET_BLANK_TEXT,
       },
-    }
-
-    if (layoutData.estimatedWidth && layoutData.estimatedHeight) {
-      preserveMindMapBlankedLayoutSize(
-        nodeId,
-        layoutData.estimatedWidth,
-        layoutData.estimatedHeight
-      )
     }
 
     reconcileHiddenAnswersFromBlankedNodes()
@@ -274,18 +225,12 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
         ...node,
         text: originalText,
         data: {
-          ...mindMapLayoutEstimates(
-            node.data as Record<string, unknown>,
-            originalText,
-            node.id,
-            node.style
-          ),
+          ...(node.data as Record<string, unknown>),
           hidden: false,
           hiddenAnswer: originalText,
+          label: originalText,
         },
       }
-      delete ctx.mindMapNodeWidths.value[node.id]
-      delete ctx.mindMapNodeHeights.value[node.id]
       emitCtxEvent(ctx, 'diagram:node_updated', {
         nodeId: node.id,
         updates: { text: originalText },
@@ -306,29 +251,17 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     dv.nodes.forEach((node, idx) => {
       const originalText = nodeHiddenAnswer(node)
       if (!originalText) return
-      const layoutData = mindMapLayoutEstimates(
-        node.data as Record<string, unknown>,
-        originalText,
-        node.id,
-        node.style
-      ) as { estimatedWidth?: number; estimatedHeight?: number }
-
+      const nodeRecord = node.data as Record<string, unknown> | undefined
       dv.nodes[idx] = {
         ...node,
         text: LEARNING_SHEET_BLANK_TEXT,
         data: {
-          ...layoutData,
+          ...nodeRecord,
+          ...mindMapBoxAlreadyUsed(node.id, nodeRecord),
           hidden: true,
           hiddenAnswer: originalText,
           label: LEARNING_SHEET_BLANK_TEXT,
         },
-      }
-      if (layoutData.estimatedWidth && layoutData.estimatedHeight) {
-        preserveMindMapBlankedLayoutSize(
-          node.id,
-          layoutData.estimatedWidth,
-          layoutData.estimatedHeight
-        )
       }
       emitCtxEvent(ctx, 'diagram:node_updated', {
         nodeId: node.id,
@@ -364,6 +297,25 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
 
     syncLearningSheetFlags(d, false)
     notifyLearningSheetChanged()
+  }
+
+  /**
+   * Knock out a share of hideable nodes on the live canvas.
+   * Keeps current positions and measured boxes — does not reload the spec.
+   */
+  function applyRandomLearningSheetBlanks(
+    percentage: number = LEARNING_SHEET_RANDOM_BLANK_RATIO
+  ): number {
+    const nodes = data.value?.nodes
+    const diagramType = ctx.type.value
+    if (!nodes?.length || !diagramType) return 0
+    const ids = pickLearningSheetRandomNodeIds(nodes, diagramType, percentage)
+    setLearningSheetMode(true)
+    let count = 0
+    for (const nodeId of ids) {
+      if (emptyNodeForLearningSheet(nodeId)) count += 1
+    }
+    return count
   }
 
   function hasBlankedLearningSheetNodes(): boolean {
@@ -436,6 +388,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     reconcileHiddenAnswersFromBlankedNodes,
     restoreFromLearningSheetMode,
     applyLearningSheetView,
+    applyRandomLearningSheetBlanks,
     hasPreservedLearningSheet,
     clearLearningSheetPreservation,
     hasBlankedLearningSheetNodes,

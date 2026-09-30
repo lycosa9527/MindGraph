@@ -170,21 +170,11 @@ export function useLearningSheetCustomMode() {
       return
     }
     customPickActive.value = false
-    const spec = diagramStore.getSpecForSave()
-    if (spec && diagramStore.type) {
-      diagramStore.loadFromSpec(
-        {
-          ...spec,
-          is_learning_sheet: true,
-          hidden_node_percentage: 0.2,
-        },
-        diagramStore.type
-      )
-      diagramStore.pushHistory(t('canvas.mindMapSideToolbar.learningSheetRandomBlankHistory'))
-      learningSheetFloatBarOpen.value = true
-      notify.successKey('canvas.toolbar.switchedLearningSheetMode')
-      void claimThinkingCoinEvent('learning_sheet_enable')
-    }
+    diagramStore.applyRandomLearningSheetBlanks()
+    diagramStore.pushHistory(t('canvas.mindMapSideToolbar.learningSheetRandomBlankHistory'))
+    learningSheetFloatBarOpen.value = true
+    notify.successKey('canvas.toolbar.switchedLearningSheetMode')
+    void claimThinkingCoinEvent('learning_sheet_enable')
   }
 
   function exitLearningSheet(): void {

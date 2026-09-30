@@ -18,6 +18,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
+import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import {
   buildEducationStageInstructions,
@@ -64,6 +65,7 @@ export function useCanvasToolbarApps() {
   const { isGenerating: isAIGenerating, autoComplete, validateForAutoComplete } = useAutoComplete()
   const { aiBlockedByCollab, guardCollabGuestAi } = useCollabGuestAiGate()
   const { requireCapability } = useLearningAiGate()
+  const { startRandomLearningSheet } = useLearningSheetCustomMode()
 
   const isConceptMap = computed(() => diagramStore.type === 'concept_map')
   const useMindMapV2 = useMindMapV2Chrome()
@@ -258,19 +260,7 @@ export function useCanvasToolbarApps() {
         notify.successKey('canvas.toolbar.learningSheetRestored')
         void claimThinkingCoinEvent('learning_sheet_enable')
       } else {
-        const spec = diagramStore.getSpecForSave()
-        if (spec && diagramStore.type) {
-          diagramStore.loadFromSpec(
-            {
-              ...spec,
-              is_learning_sheet: true,
-              hidden_node_percentage: 0.2,
-            },
-            diagramStore.type
-          )
-          notify.successKey('canvas.toolbar.switchedLearningSheetMode')
-          void claimThinkingCoinEvent('learning_sheet_enable')
-        }
+        startRandomLearningSheet()
       }
       return
     }
