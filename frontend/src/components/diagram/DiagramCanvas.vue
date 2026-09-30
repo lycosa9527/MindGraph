@@ -595,7 +595,7 @@ const {
 
 const { mountSubscriptions, clearDoubleBubbleTimer } = useDiagramCanvasEventBus()
 
-const { setupMobileTouchZoom, mobileTouchCleanup } = useDiagramCanvasMobileTouch({
+const { setupMobileTouchZoom, mobileTouchCleanup, setupMouseSlash } = useDiagramCanvasMobileTouch({
   canvasContainer,
   getViewport,
   setViewport,
@@ -604,7 +604,13 @@ const { setupMobileTouchZoom, mobileTouchCleanup } = useDiagramCanvasMobileTouch
   allowSingleFingerPan: () => !props.enableTouchPanPinch,
   canPageSwipe: () => props.enableTwoFingerSlideSwipe,
   canFitOnDoubleTap: () => diagramStore.type !== 'concept_map' && !props.enableTwoFingerSlideSwipe,
+  allowMouseSlash: () =>
+    !props.handToolActive &&
+    !props.presentationHandPanMode &&
+    !presentationStrokeToolActive.value &&
+    !(Array.isArray(props.panOnDragButtons) && props.panOnDragButtons.includes(0)),
 })
+let cleanupMouseSlash: (() => void) | null = null
 
 function syncTouchPanPinchLayer(): void {
   mobileTouchCleanup.value?.()
@@ -696,6 +702,7 @@ onMounted(() => {
     regenerateForNodeIfNeeded,
   })
   syncTouchPanPinchLayer()
+  cleanupMouseSlash = setupMouseSlash()
 })
 
 watch(
@@ -717,6 +724,8 @@ onUnmounted(() => {
   clearDoubleBubbleTimer()
   mobileTouchCleanup.value?.()
   mobileTouchCleanup.value = null
+  cleanupMouseSlash?.()
+  cleanupMouseSlash = null
 })
 
 defineExpose({

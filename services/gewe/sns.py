@@ -10,12 +10,13 @@ All Rights Reserved
 Proprietary License
 """
 
+from abc import ABC
 from typing import Any, Dict, List, Optional
 
 from services.gewe.protocols import GeweServiceBase
 
 
-class SNSServiceMixin(GeweServiceBase):
+class SNSServiceMixin(GeweServiceBase, ABC):
     """Mixin for SNS/moments-related service methods"""
 
     async def like_sns(self, app_id: str, sns_id: int, oper_type: int, wxid: str) -> Dict[str, Any]:

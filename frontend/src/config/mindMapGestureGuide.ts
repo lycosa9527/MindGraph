@@ -1,4 +1,4 @@
-/** Mind-map / canvas multi-touch guide rows (display-only). */
+/** Mind-map canvas gesture guide rows. */
 
 export type MindMapGestureGuideRow = {
   id: string
@@ -16,6 +16,21 @@ export const MIND_MAP_GESTURE_GUIDE_ROWS: MindMapGestureGuideRow[] = [
     id: 'dragNode',
     labelKey: 'canvas.gestureGuide.dragNode',
     hintKey: 'canvas.gestureGuide.dragNodeHint',
+  },
+  {
+    id: 'slashSibling',
+    labelKey: 'canvas.gestureGuide.slashSibling',
+    hintKey: 'canvas.gestureGuide.slashSiblingHint',
+  },
+  {
+    id: 'slashChild',
+    labelKey: 'canvas.gestureGuide.slashChild',
+    hintKey: 'canvas.gestureGuide.slashChildHint',
+  },
+  {
+    id: 'slashDelete',
+    labelKey: 'canvas.gestureGuide.slashDelete',
+    hintKey: 'canvas.gestureGuide.slashDeleteHint',
   },
   {
     id: 'pinch',

@@ -23,7 +23,13 @@ if TYPE_CHECKING:
 
 
 class GeweServiceBase(ABC):
-    """Abstract base class defining methods that mixins expect"""
+    """Methods each Gewe mixin expects the concrete service to provide.
+
+    Mixins subclass this class and must also list ``ABC`` as a direct base.
+    Pylint only treats a class as abstract when ``abc.ABC`` appears in that
+    class's own bases, so an intermediate mixin would otherwise be reported
+    for these methods. ``GeweService`` implements them.
+    """
 
     _gewe_client: Optional[AsyncGeweClient]
     _dify_client: Optional[AsyncDifyClient]

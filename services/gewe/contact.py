@@ -11,6 +11,7 @@ Proprietary License
 """
 
 import logging
+from abc import ABC
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from services.gewe.protocols import GeweServiceBase
@@ -22,7 +23,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ContactServiceMixin(GeweServiceBase):
+class ContactServiceMixin(GeweServiceBase, ABC):
     """Mixin for contact-related service methods"""
 
     _contact_db: "GeweContactDB"

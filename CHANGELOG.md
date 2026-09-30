@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.121] - 2026-09-30
+
+> **A quick cut through a node deletes it, adds a sibling, or adds a child.**
+
+### Added
+
+- **Node cuts** — One finger or the left mouse button. Slash down through a node to delete it. Slash left or right to add a sibling on the same level. Slash up to add a child. On the center topic, a sideways or upward cut adds a main branch. The gesture guide lists the three cuts. A slow drag still moves a node.
+
+### Tests
+
+- [`frontend/tests/canvasTouchGestures.spec.ts`](frontend/tests/canvasTouchGestures.spec.ts), [`frontend/tests/mindMapGestureGuide.spec.ts`](frontend/tests/mindMapGestureGuide.spec.ts)
+
 ## [5.180.120] - 2026-09-30
 
 > **The account menu can turn saved diagrams into a fullscreen talk, and the CrowdSec address list is refreshed.**

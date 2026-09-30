@@ -10,12 +10,13 @@ All Rights Reserved
 Proprietary License
 """
 
+from abc import ABC
 from typing import Any, Dict, Optional
 
 from services.gewe.protocols import GeweServiceBase
 
 
-class VideoChannelServiceMixin(GeweServiceBase):
+class VideoChannelServiceMixin(GeweServiceBase, ABC):
     """Mixin for video channel-related service methods"""
 
     async def follow_video_channel(self, app_id: str, finder_username: str) -> Dict[str, Any]:

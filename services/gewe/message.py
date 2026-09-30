@@ -13,6 +13,7 @@ Proprietary License
 import logging
 import re
 import xml.etree.ElementTree as ET
+from abc import ABC
 from typing import Any, Dict, List, Optional, Tuple
 
 from services.gewe.protocols import GeweServiceBase
@@ -21,7 +22,7 @@ from services.utils.error_types import DATABASE_ERRORS
 logger = logging.getLogger(__name__)
 
 
-class MessageServiceMixin(GeweServiceBase):
+class MessageServiceMixin(GeweServiceBase, ABC):
     """Mixin for message-related service methods"""
 
     async def send_text_message(

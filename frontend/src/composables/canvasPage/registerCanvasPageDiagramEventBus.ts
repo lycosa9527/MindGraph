@@ -1,8 +1,10 @@
 import type { Ref } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { useNodeActions } from '@/composables/editor/useNodeActions'
 import { restoreLearningSheetUiFromDiagram } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useDiagramStore, usePanelsStore } from '@/stores'
+import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
@@ -17,6 +19,9 @@ export function registerCanvasPageDiagramEventBus(options: {
   const { canvasZoom } = options
   const diagramStore = useDiagramStore()
   const panelsStore = usePanelsStore()
+  const { handleDeleteNode, handleAddChild, handleAddSibling, handleAddBranch } = useNodeActions({
+    registerEventBusListeners: false,
+  })
   const focusReviewStore = useConceptMapFocusReviewStore()
   const rootConceptReviewStore = useConceptMapRootConceptReviewStore()
 
@@ -122,6 +127,32 @@ export function registerCanvasPageDiagramEventBus(options: {
     'diagram:style_changed',
     () => {
       diagramStore.sessionEditCount += 1
+    },
+    'CanvasPage'
+  )
+  eventBus.onWithOwner(
+    'diagram:node_slash_requested',
+    ({ action, nodeIds }) => {
+      if (nodeIds.length === 0 || isDiagramPresentationReadOnly(diagramStore)) return
+      const nodeId = nodeIds[0]
+      if (!nodeId) return
+      const ids = action === 'delete' ? nodeIds : [nodeId]
+      if (!diagramStore.selectNodes(ids)) return
+      if (action === 'delete') {
+        void handleDeleteNode()
+        return
+      }
+      const node = diagramStore.data?.nodes.find((item) => item.id === nodeId)
+      const topic = nodeId === 'topic' || node?.type === 'topic' || node?.type === 'center'
+      const mindMap = diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map'
+      if (action === 'sibling') {
+        if (!mindMap) return
+        if (topic) void handleAddBranch()
+        else void handleAddSibling()
+        return
+      }
+      if (mindMap && topic) void handleAddBranch()
+      else void handleAddChild()
     },
     'CanvasPage'
   )

@@ -9,11 +9,17 @@ import {
 import type { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
 import { ZOOM } from '@/config/uiConfig'
 import {
+  classifyNodeSlash,
   classifySwipe,
   isDoubleTap,
+  isNodeSlashTravel,
   isStationaryMultiTap,
   lockTwoFingerMove,
   TOUCH_GESTURE,
+  type NodeScreenRect,
+  type NodeSlashAction,
+  type NodeSlashHit,
+  type TouchPoint,
   type TwoFingerLock,
 } from '@/utils/canvasTouchGestures'
 
@@ -91,6 +97,65 @@ function maxCentroidMove(
   return Math.hypot(x / touches.length - start.x, y / touches.length - start.y)
 }
 
+type SlashStroke = { points: TouchPoint[]; startedAt: number }
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && Boolean(target.closest('input, textarea, select'))
+}
+
+function collectNodeScreenRects(root: HTMLElement): NodeScreenRect[] {
+  const rects: NodeScreenRect[] = []
+  for (const node of root.querySelectorAll('.vue-flow__node')) {
+    if (!(node instanceof HTMLElement)) continue
+    const id = node.dataset.id
+    if (!id || node.querySelector('input, textarea')) continue
+    const rect = node.getBoundingClientRect()
+    if (rect.width < 2 || rect.height < 2) continue
+    rects.push({
+      id,
+      left: rect.left,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+    })
+  }
+  return rects
+}
+
+const SLASH_TRAIL_COLOR: Record<NodeSlashAction, string> = {
+  delete: '#fb7185',
+  sibling: '#14b8a6',
+  child: '#22c55e',
+}
+
+function flashSlashTrail(host: HTMLElement, points: TouchPoint[], color: string): void {
+  if (points.length < 2) return
+  const bounds = host.getBoundingClientRect()
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  svg.setAttribute('width', String(bounds.width))
+  svg.setAttribute('height', String(bounds.height))
+  svg.style.position = 'absolute'
+  svg.style.inset = '0'
+  svg.style.width = '100%'
+  svg.style.height = '100%'
+  svg.style.pointerEvents = 'none'
+  svg.style.zIndex = '40'
+  const start = points[0]
+  const end = points[points.length - 1]
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line')
+  line.setAttribute('x1', String(start.x - bounds.left))
+  line.setAttribute('y1', String(start.y - bounds.top))
+  line.setAttribute('x2', String(end.x - bounds.left))
+  line.setAttribute('y2', String(end.y - bounds.top))
+  line.setAttribute('stroke', color)
+  line.setAttribute('stroke-width', '4')
+  line.setAttribute('stroke-linecap', 'round')
+  svg.appendChild(line)
+  host.appendChild(svg)
+  const fade = line.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 280, easing: 'ease-out' })
+  fade.onfinish = () => svg.remove()
+}
+
 function dispatchContextMenu(touch: Touch, target: EventTarget | null): void {
   if (!(target instanceof Element)) {
     return
@@ -120,9 +185,12 @@ export function useDiagramCanvasMobileTouch(options: {
   canPageSwipe?: () => boolean
   /** Concept-map pane double-tap adds a node; skip fit-view there. */
   canFitOnDoubleTap?: () => boolean
+  /** Left-button slash. Off while the primary button pans (hand tool, phone). */
+  allowMouseSlash?: () => boolean
 }): {
   setupMobileTouchZoom: () => void
   mobileTouchCleanup: Ref<(() => void) | null>
+  setupMouseSlash: () => () => void
 } {
   const {
     canvasContainer,
@@ -132,6 +200,7 @@ export function useDiagramCanvasMobileTouch(options: {
     allowSingleFingerPan,
     canPageSwipe,
     canFitOnDoubleTap,
+    allowMouseSlash,
   } = options
   const mobileTouchCleanup = ref<(() => void) | null>(null)
 
@@ -165,6 +234,19 @@ export function useDiagramCanvasMobileTouch(options: {
 
     let multiStart: { x: number; y: number; at: number; count: number } | null = null
     let multiLast: { x: number; y: number } | null = null
+    let slashStroke: SlashStroke | null = null
+
+    function slashGesturesEnabled(): boolean {
+      return !allowSingleFingerPan()
+    }
+
+    function appendSlashPoint(x: number, y: number, minGap: number): void {
+      if (!slashStroke) return
+      const points = slashStroke.points
+      const last = points[points.length - 1]
+      if (last && Math.hypot(x - last.x, y - last.y) < minGap) return
+      points.push({ x, y })
+    }
 
     function isOnNode(target: EventTarget | null): boolean {
       if (!(target instanceof HTMLElement)) return false
@@ -215,6 +297,7 @@ export function useDiagramCanvasMobileTouch(options: {
 
     function beginTwoFinger(t0: Touch, t1: Touch): void {
       singleFingerPaneSession = null
+      slashStroke = null
       isPanning = false
       clearLongPress()
       isPinching = true
@@ -232,6 +315,7 @@ export function useDiagramCanvasMobileTouch(options: {
 
     function beginMultiFinger(touches: TouchList): void {
       singleFingerPaneSession = null
+      slashStroke = null
       isPanning = false
       isPinching = false
       clearLongPress()
@@ -285,6 +369,28 @@ export function useDiagramCanvasMobileTouch(options: {
       singleFingerPaneSession = null
       multiStart = null
       multiLast = null
+      slashStroke = null
+    }
+
+    /** Commit a node cut. Down deletes, up adds a child, sideways adds a sibling. */
+    function takeNodeSlash(changed: TouchList): NodeSlashHit | null {
+      const stroke = slashStroke
+      slashStroke = null
+      if (!stroke || !slashGesturesEnabled()) return null
+      const lifted = changed[0]
+      if (lifted) {
+        const last = stroke.points[stroke.points.length - 1]
+        if (!last || Math.hypot(lifted.clientX - last.x, lifted.clientY - last.y) >= 1) {
+          stroke.points.push({ x: lifted.clientX, y: lifted.clientY })
+        }
+      }
+      const hit = classifyNodeSlash(
+        stroke.points,
+        Date.now() - stroke.startedAt,
+        collectNodeScreenRects(el)
+      )
+      if (hit) flashSlashTrail(el, stroke.points, SLASH_TRAIL_COLOR[hit.action])
+      return hit
     }
 
     function finishSingleFingerTap(touch: Touch | undefined): void {
@@ -395,6 +501,21 @@ export function useDiagramCanvasMobileTouch(options: {
         return
       }
 
+      if (
+        e.touches.length === 1 &&
+        slashGesturesEnabled() &&
+        !isEditableTarget(e.target) &&
+        !branchMove.state.value.active
+      ) {
+        const touch = e.touches[0]
+        slashStroke = {
+          points: [{ x: touch.clientX, y: touch.clientY }],
+          startedAt: Date.now(),
+        }
+      } else {
+        slashStroke = null
+      }
+
       if (e.touches.length === 1 && !isOnNode(e.target)) {
         if (branchMove.state.value.active) {
           branchMove.cancelDrag()
@@ -482,6 +603,20 @@ export function useDiagramCanvasMobileTouch(options: {
           clearLongPress()
         }
       }
+
+      if (slashStroke && !isPanning && !isPinching && !multiStart && e.touches.length === 1) {
+        const touch = e.touches[0]
+        appendSlashPoint(touch.clientX, touch.clientY, 4)
+        if (isNodeSlashTravel(slashStroke.points, Date.now() - slashStroke.startedAt)) {
+          e.preventDefault()
+          e.stopPropagation()
+          branchMove.cancelDrag()
+          if (singleFingerPaneSession) {
+            singleFingerPaneSession.hasMoved = true
+            clearLongPress()
+          }
+        }
+      }
     }
 
     function onTouchEnd(e: TouchEvent): void {
@@ -524,6 +659,17 @@ export function useDiagramCanvasMobileTouch(options: {
         return
       }
 
+      if (e.touches.length === 0 && slashStroke) {
+        const hit = takeNodeSlash(e.changedTouches)
+        if (hit) {
+          eventBus.emit('diagram:node_slash_requested', hit)
+          e.preventDefault()
+          e.stopPropagation()
+          resetAllGestureState()
+          return
+        }
+      }
+
       const lifted = e.changedTouches[0]
       finishSingleFingerTap(lifted)
     }
@@ -534,7 +680,7 @@ export function useDiagramCanvasMobileTouch(options: {
 
     el.addEventListener('touchstart', onTouchStart, { capture: true, passive: true })
     el.addEventListener('touchmove', onTouchMove, { capture: true, passive: false })
-    el.addEventListener('touchend', onTouchEnd, { capture: true, passive: true })
+    el.addEventListener('touchend', onTouchEnd, { capture: true, passive: false })
     el.addEventListener('touchcancel', onTouchCancel, { capture: true, passive: true })
 
     mobileTouchCleanup.value = () => {
@@ -546,8 +692,79 @@ export function useDiagramCanvasMobileTouch(options: {
     }
   }
 
+  /** Same top-to-bottom cut as the finger slash, with the left mouse button. */
+  function setupMouseSlash(): () => void {
+    const root = canvasContainer.value
+    if (!root) return () => {}
+    const el = root
+    let stroke: (SlashStroke & { pointerId: number }) | null = null
+
+    function detachWindow(): void {
+      window.removeEventListener('pointermove', onPointerMove, true)
+      window.removeEventListener('pointerup', onPointerUp, true)
+      window.removeEventListener('pointercancel', onPointerUp, true)
+    }
+
+    function pushPoint(x: number, y: number, minGap: number): void {
+      if (!stroke) return
+      const last = stroke.points[stroke.points.length - 1]
+      if (last && Math.hypot(x - last.x, y - last.y) < minGap) return
+      stroke.points.push({ x, y })
+    }
+
+    function onPointerMove(event: PointerEvent): void {
+      if (!stroke || event.pointerId !== stroke.pointerId) return
+      pushPoint(event.clientX, event.clientY, 4)
+      const elapsed = Date.now() - stroke.startedAt
+      const hit = classifyNodeSlash(stroke.points, elapsed, collectNodeScreenRects(el))
+      if (!hit) return
+      event.preventDefault()
+      event.stopPropagation()
+      branchMove.cancelDrag()
+    }
+
+    function onPointerUp(event: PointerEvent): void {
+      if (!stroke || event.pointerId !== stroke.pointerId) return
+      pushPoint(event.clientX, event.clientY, 1)
+      const points = stroke.points
+      const elapsed = Date.now() - stroke.startedAt
+      stroke = null
+      detachWindow()
+      const hit = classifyNodeSlash(points, elapsed, collectNodeScreenRects(el))
+      if (!hit) return
+      flashSlashTrail(el, points, SLASH_TRAIL_COLOR[hit.action])
+      window.setTimeout(() => {
+        eventBus.emit('diagram:node_slash_requested', hit)
+      }, 0)
+    }
+
+    function onPointerDown(event: PointerEvent): void {
+      if (event.pointerType !== 'mouse' || event.button !== 0) return
+      if (allowMouseSlash && !allowMouseSlash()) return
+      if (conceptMapLinkChaseActive.value) return
+      if (isEditableTarget(event.target) || branchMove.state.value.active) return
+      detachWindow()
+      stroke = {
+        points: [{ x: event.clientX, y: event.clientY }],
+        startedAt: Date.now(),
+        pointerId: event.pointerId,
+      }
+      window.addEventListener('pointermove', onPointerMove, true)
+      window.addEventListener('pointerup', onPointerUp, true)
+      window.addEventListener('pointercancel', onPointerUp, true)
+    }
+
+    el.addEventListener('pointerdown', onPointerDown)
+    return () => {
+      stroke = null
+      detachWindow()
+      el.removeEventListener('pointerdown', onPointerDown)
+    }
+  }
+
   return {
     setupMobileTouchZoom,
     mobileTouchCleanup,
+    setupMouseSlash,
   }
 }

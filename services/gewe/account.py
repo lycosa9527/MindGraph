@@ -11,6 +11,7 @@ Proprietary License
 """
 
 import logging
+from abc import ABC
 from typing import Any, Dict, Optional
 
 from services.gewe.protocols import GeweServiceBase
@@ -18,7 +19,7 @@ from services.gewe.protocols import GeweServiceBase
 logger = logging.getLogger(__name__)
 
 
-class AccountServiceMixin(GeweServiceBase):
+class AccountServiceMixin(GeweServiceBase, ABC):
     """Mixin for account-related service methods"""
 
     async def get_login_qr_code(

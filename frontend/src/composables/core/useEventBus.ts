@@ -81,6 +81,11 @@ export type EventTypes = {
     diagramType?: string
   }
   'diagram:delete_selected_requested': Record<string, never>
+  /** One-finger or left-button cut through a node. */
+  'diagram:node_slash_requested': {
+    action: 'delete' | 'sibling' | 'child'
+    nodeIds: string[]
+  }
   'diagram:collab_delete_blocked': Record<string, never>
   'diagram:collab_lock_blocked': Record<string, never>
   'diagram:add_node_requested': Record<string, never>
