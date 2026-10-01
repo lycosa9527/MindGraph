@@ -20,7 +20,7 @@ import {
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
 import { consumeMindMapPostEditSiblingAnchor } from '@/composables/mindMap/mindMapCanvasEnterGuard'
-import { braceMapRootId, isBraceMapSubpartNode } from '@/stores/diagram/braceMapParentResolve'
+import { braceMapRootId } from '@/stores/diagram/braceMapParentResolve'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { MindMapCanvasMode } from '@/stores/ui'
 import type { DiagramNode } from '@/types'
@@ -356,12 +356,10 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       const selectedId = diagramStore.selectedNodes[0]
       const connections = diagramStore.data.connections ?? []
       const rootId = braceMapRootId(diagramStore.data.nodes, connections)
-      if (!selectedId || selectedId === 'dimension-label') {
+      if (!selectedId || selectedId === 'dimension-label' || selectedId === rootId) {
         handleAddBranch()
-      } else if (rootId && isBraceMapSubpartNode(selectedId, connections, rootId)) {
-        handleAddChild()
       } else {
-        handleAddBranch()
+        handleAddChild()
       }
       return
     }

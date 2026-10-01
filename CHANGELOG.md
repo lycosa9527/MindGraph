@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.130] - 2026-10-01
+
+> **The eight thinking maps use the mind-map tab canvas. Enter adds the node for the selection, and a style-only save still lands.**
+
+### Added
+
+- **八大思维图示 Tab 画布** — Circle, bubble, double-bubble, tree, brace, flow, multi-flow, and bridge maps use the mind-map tab shell (file, edit, AI, teaching). Concept map keeps the classic format bar and the virtual keyboard.
+- **节点样式** — Those eight maps share node style, text style, theme without diagram-style presets, the follow-node toolbar, explain, and mind classroom. Circle maps hide the shape picker. Image, icon, link, and equation insert stay; association lines and summaries stay on mind maps.
+
+### Changed
+
+- **Enter** — Click a node, then Enter adds the matching node. Tab and Insert do not add a node on the eight maps. A selected brace part gets a subpart.
+- **撤销 / 重做** — Undo and redo use curved arrows so they no longer match reset.
+
+### Fixed
+
+- **保存** — A manual save persists a diagram whose text still matches the template, including a style-only edit, and records a history version.
+- **格式刷** — Painting a thinking-map node copies its stored style, or the visible fill, border, and text when those colors are opaque. A transparent background is left alone.
+- **划线手势** — A finger or left-drag cut adds and deletes on all eight thinking maps. Down deletes. Up adds the child, or the map's node when it has no children. Left or right adds a sibling. Circle, bubble, bridge, double-bubble, and multi-flow add their node in either direction.
+
+### Tests
+
+- [`frontend/tests/diagramRibbonCapabilities.spec.ts`](frontend/tests/diagramRibbonCapabilities.spec.ts), [`frontend/tests/canvasPageEditorShortcutRouting.spec.ts`](frontend/tests/canvasPageEditorShortcutRouting.spec.ts), [`frontend/tests/thinkingMapNodeSlash.spec.ts`](frontend/tests/thinkingMapNodeSlash.spec.ts)
+
 ## [5.180.129] - 2026-10-01
 
 > **You can leave a seminar and open another MindMate conversation.**

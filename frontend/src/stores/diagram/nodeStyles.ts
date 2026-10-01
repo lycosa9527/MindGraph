@@ -241,23 +241,28 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
     const connections = data.value?.connections
     if (!nodes?.length) return
 
+    const isMindMap = ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map'
     if (data.value) {
-      data.value._mindmap_diagram_style = options.diagramStyleId
       data.value._mindmap_theme = options.themeId
+      if (isMindMap) {
+        data.value._mindmap_diagram_style = options.diagramStyleId
+      }
     }
 
-    if (isRainbowMindMapTheme(options.themeId)) {
+    if (isMindMap && isRainbowMindMapTheme(options.themeId)) {
       applyRainbowMindMapColors(nodes, connections ?? [])
     } else {
       const theme = getMindMapThemeById(options.themeId)
       applyStylePreset(theme, {
-        mindMapThemeId: options.themeId,
-        diagramStyleId: options.diagramStyleId,
+        mindMapThemeId: isMindMap ? options.themeId : undefined,
+        diagramStyleId: isMindMap ? options.diagramStyleId : undefined,
         skipHistory: true,
       })
     }
 
-    applyMindMapDiagramStyleShapes(options.diagramStyleId)
+    if (isMindMap) {
+      applyMindMapDiagramStyleShapes(options.diagramStyleId)
+    }
     ctx.pushHistory('Apply mind map appearance')
     emitCtxEvent(ctx, 'diagram:style_changed', {
       preset: true,

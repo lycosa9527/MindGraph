@@ -22,15 +22,17 @@ import {
   Mic,
   MonitorPlay,
   Paintbrush,
+  Redo2,
   RotateCcw,
-  RotateCw,
   Save,
   School,
   Sparkles,
   Trash2,
+  Undo2,
   Upload,
 } from '@lucide/vue'
 
+import { diagramRibbonCapabilities } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import type { MindMapRibbonTabId } from '@/canvas-ribbon/mindMapRibbonTypes'
 import { useMindMapRibbonActions } from '@/canvas-ribbon/useMindMapRibbonActions'
 import CanvasToolbarMindMapFormat from '@/components/canvas/CanvasToolbarMindMapFormat.vue'
@@ -61,10 +63,12 @@ import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
 import { useDiagramSourceLock } from '@/composables/mindMap/useDiagramSourceLock'
 import { docSummaryLiteIntent } from '@/composables/mindMap/useDocSummaryLiteSaveAndGenerate'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import {
   CANVAS_CLIPBOARD_EXPORT_MENU_ITEM,
   CANVAS_COMMUNITY_EXPORT_MENU_ITEM,
   CANVAS_MINDMAP_EXPORT_MENU_ITEMS,
+  CANVAS_STANDARD_EXPORT_MENU_ITEMS,
   CANVAS_WORKSHEET_TEXT_MENU_ITEM,
   CANVAS_ZHIHUI_DIAGRAM_MENU_ITEM,
 } from '@/config/canvasExportMenu'
@@ -123,6 +127,12 @@ const showCommunityExport = computed(() => featureCommunity.value && authStore.i
 
 /** Hidden for now with the ZhiHui sidebar entry; flip when 图示生图 ships. */
 const showZhihuiDiagramExport = computed(() => false)
+
+const mindMapV2 = useMindMapV2Chrome()
+const caps = computed(() => diagramRibbonCapabilities(diagramStore.type, mindMapV2.value))
+const exportMenuItems = computed(() =>
+  caps.value.standardExport ? CANVAS_STANDARD_EXPORT_MENU_ITEMS : CANVAS_MINDMAP_EXPORT_MENU_ITEMS
+)
 
 const { handleAddChild, handleAddSibling, handleDeleteNode, handleAddBranch } = useNodeActions({
   registerEventBusListeners: false,
@@ -396,6 +406,7 @@ watch(
       <template v-if="ribbonTab === 'edit'">
         <!-- Structure mode -->
         <I18nTooltip
+          v-if="caps.mindMapV2"
           :k="
             structureMode === 'right'
               ? 'canvas.toolbar.mindMapStructureRight'
@@ -456,7 +467,10 @@ watch(
             </ElDropdown>
           </span>
         </I18nTooltip>
-        <span class="mm-sep" />
+        <span
+          v-if="caps.mindMapV2"
+          class="mm-sep"
+        />
 
         <!-- Undo / Redo -->
         <div
@@ -484,7 +498,7 @@ watch(
               :aria-label="t('canvas.toolbar.undo')"
               @click="handleUndo"
             >
-              <RotateCcw class="mm-history-btn__icon" />
+              <Undo2 class="mm-history-btn__icon" />
             </button>
           </ElTooltip>
           <ElTooltip
@@ -507,7 +521,7 @@ watch(
               :aria-label="t('canvas.toolbar.redo')"
               @click="handleRedo"
             >
-              <RotateCw class="mm-history-btn__icon" />
+              <Redo2 class="mm-history-btn__icon" />
             </button>
           </ElTooltip>
         </div>
@@ -515,6 +529,7 @@ watch(
         <span class="mm-sep" />
         <div class="mm-btn-group">
           <I18nTooltip
+            v-if="caps.mindMapTree"
             k="canvas.toolbar.addChildNode"
             placement="bottom"
           >
@@ -530,6 +545,7 @@ watch(
             </button>
           </I18nTooltip>
           <I18nTooltip
+            v-if="caps.mindMapTree"
             k="canvas.toolbar.addSiblingNode"
             placement="bottom"
           >
@@ -609,9 +625,16 @@ watch(
           :disabled="!ribbon.hasSelection"
         />
         <span class="mm-sep" />
-        <MindMapAppearanceDropdown compact />
-        <span class="mm-sep" />
+        <MindMapAppearanceDropdown
+          compact
+          :hide-diagram-style="caps.thinkingMapChrome"
+        />
+        <span
+          v-if="caps.mindMapV2"
+          class="mm-sep"
+        />
         <MindMapNumberingControls
+          v-if="caps.mindMapV2"
           variant="button"
           compact
         />
@@ -619,7 +642,7 @@ watch(
 
       <template v-if="ribbonTab === 'edit'">
         <span class="mm-sep" />
-        <CanvasToolbarMindMapInsert />
+        <CanvasToolbarMindMapInsert :hide-structure-inserts="!caps.mindMapV2" />
         <span class="mm-sep" />
         <I18nTooltip
           k="canvas.toolbar.nodeStyleFollowHint"
@@ -737,7 +760,7 @@ watch(
                           <I18nText :k="CANVAS_WORKSHEET_TEXT_MENU_ITEM.labelKey" />
                         </button>
                         <button
-                          v-for="item in CANVAS_MINDMAP_EXPORT_MENU_ITEMS"
+                          v-for="item in exportMenuItems"
                           :key="item.command"
                           type="button"
                           class="mm-list-item"
@@ -948,6 +971,7 @@ watch(
             </button>
           </I18nTooltip>
           <ElTooltip
+            v-if="caps.docGenerate"
             placement="bottom"
             :disabled="shortLabels && !docGenerateLocked && !aiBlockedByCollab"
           >
@@ -987,6 +1011,7 @@ watch(
             </span>
           </ElTooltip>
           <ElTooltip
+            v-if="caps.docGenerate"
             placement="bottom"
             :disabled="shortLabels && !webGenerateLocked && !aiBlockedByCollab"
           >
@@ -1022,6 +1047,7 @@ watch(
             </span>
           </ElTooltip>
           <ElTooltip
+            v-if="caps.docGenerate"
             placement="bottom"
             :disabled="shortLabels && !voiceSummaryLocked && !aiBlockedByCollab"
           >
@@ -1119,6 +1145,7 @@ watch(
             </button>
           </I18nTooltip>
           <I18nTooltip
+            v-if="caps.subgraph"
             :k="
               aiBlockedByCollab
                 ? 'canvas.toolbar.collabAiBlocked'

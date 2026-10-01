@@ -30,7 +30,10 @@ import {
 } from '@/utils/mindMapAdornments'
 import { mindMapAssociationSameSide } from '@/utils/mindMapAssociationLine'
 
-const props = withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
+const props = withDefaults(defineProps<{ compact?: boolean; hideStructureInserts?: boolean }>(), {
+  compact: false,
+  hideStructureInserts: false,
+})
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -235,6 +238,7 @@ function onMathConfirm(latex: string): void {
         <template #dropdown>
           <div class="mm-panel mm-panel--list mm-panel--insert">
             <button
+              v-if="!props.hideStructureInserts"
               type="button"
               class="mm-list-item"
               :class="{ 'is-dimmed': !canInsertAssociation }"
@@ -245,6 +249,7 @@ function onMathConfirm(latex: string): void {
               <span><I18nText k="canvas.ribbon.assocLine" /></span>
             </button>
             <button
+              v-if="!props.hideStructureInserts"
               type="button"
               class="mm-list-item"
               :class="{ 'is-dimmed': !hasNodeSelection }"

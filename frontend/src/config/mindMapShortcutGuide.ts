@@ -1,3 +1,8 @@
+import {
+  isMindMapDiagramType,
+  isThinkingMapDiagramType,
+} from '@/canvas-ribbon/diagramRibbonCapabilities'
+
 /** Mind-map v2 shortcut guide rows (display-only reference panel). */
 
 export type MindMapShortcutGuideRow =
@@ -92,16 +97,55 @@ export const MIND_MAP_SHORTCUT_GUIDE_WIRED_ROW_IDS = [
 
 const LEARNING_SHEET_SHORTCUT_ROW_ID = 'learningSheetAnswers'
 
-/** Pin learning-sheet shortcut at top while mode is active (visible without scrolling). */
-export function resolveMindMapShortcutGuideRows(isLearningSheet: boolean): MindMapShortcutGuideRow[] {
-  const learningRow = MIND_MAP_SHORTCUT_GUIDE_ROWS.find(
-    (row) => row.id === LEARNING_SHEET_SHORTCUT_ROW_ID
-  )
-  const otherRows = MIND_MAP_SHORTCUT_GUIDE_ROWS.filter(
-    (row) => row.id !== LEARNING_SHEET_SHORTCUT_ROW_ID
-  )
-  if (!isLearningSheet || !learningRow) {
-    return MIND_MAP_SHORTCUT_GUIDE_ROWS
-  }
+const MIND_MAP_ONLY_SHORTCUT_ROW_IDS = new Set(['tab', 'enter', 'arrows'])
+
+function pinLearningSheetShortcutRow(
+  rows: MindMapShortcutGuideRow[],
+  isLearningSheet: boolean
+): MindMapShortcutGuideRow[] {
+  const learningRow = rows.find((row) => row.id === LEARNING_SHEET_SHORTCUT_ROW_ID)
+  const otherRows = rows.filter((row) => row.id !== LEARNING_SHEET_SHORTCUT_ROW_ID)
+  if (!isLearningSheet || !learningRow) return rows
   return [learningRow, ...otherRows]
+}
+
+function keysRow(id: string, labelKey: string, keys: string[]): MindMapShortcutGuideRow {
+  return { id, labelKey, kind: 'keys', keys }
+}
+
+/** Enter adds a node for the clicked selection. Tab and Insert are not shortcuts. */
+function thinkingMapInsertRows(diagramType: string | null | undefined): MindMapShortcutGuideRow[] {
+  if (diagramType === 'bridge_map') {
+    return [keysRow('enter', 'canvas.toolbar.addAnalogyPair', ['Enter'])]
+  }
+  if (isThinkingMapDiagramType(diagramType)) {
+    return [keysRow('enter', 'canvas.toolbar.addNode', ['Enter'])]
+  }
+  return []
+}
+
+/** Pin learning-sheet shortcut at top while mode is active (visible without scrolling). */
+export function resolveMindMapShortcutGuideRows(
+  isLearningSheet: boolean
+): MindMapShortcutGuideRow[] {
+  return pinLearningSheetShortcutRow(MIND_MAP_SHORTCUT_GUIDE_ROWS, isLearningSheet)
+}
+
+/**
+ * Shortcut card for the open diagram.
+ * Mind maps keep child / sibling / arrow navigation.
+ * Thinking maps list Enter to add a node, and keep Space / double-click to edit.
+ */
+export function resolveDiagramShortcutGuideRows(
+  diagramType: string | null | undefined,
+  isLearningSheet: boolean
+): MindMapShortcutGuideRow[] {
+  if (isMindMapDiagramType(diagramType)) {
+    return resolveMindMapShortcutGuideRows(isLearningSheet)
+  }
+  const shared = MIND_MAP_SHORTCUT_GUIDE_ROWS.filter(
+    (row) => !MIND_MAP_ONLY_SHORTCUT_ROW_IDS.has(row.id)
+  )
+  const inserts = thinkingMapInsertRows(diagramType)
+  return pinLearningSheetShortcutRow([...inserts, ...shared], isLearningSheet)
 }

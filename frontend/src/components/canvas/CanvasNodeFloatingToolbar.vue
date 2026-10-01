@@ -23,6 +23,7 @@ import type {
 } from '@/composables/canvasToolbar/useNodeFloatingToolbarPosition'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
   FLOATING_TOOLBAR_COLORS,
   FLOATING_TOOLBAR_FONT_SIZES,
@@ -47,6 +48,8 @@ const emit = defineEmits<{
 }>()
 
 const rootEl = ref<HTMLElement | null>(null)
+const diagramStore = useDiagramSession()
+const hideNodeShape = computed(() => diagramStore.type === 'circle_map')
 let sizeObserver: ResizeObserver | null = null
 
 function publishSize(el: HTMLElement | null): void {
@@ -232,8 +235,9 @@ function onShapePick(shape: NodeShape) {
           class="nft-divider"
         />
 
-        <!-- Shape selector -->
+        <!-- Shape selector. Circle maps only render circles. -->
         <ElDropdown
+          v-if="!hideNodeShape"
           trigger="click"
           placement="bottom-start"
           popper-class="node-floating-toolbar-popper"

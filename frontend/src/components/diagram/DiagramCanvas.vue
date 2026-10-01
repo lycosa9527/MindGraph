@@ -22,6 +22,7 @@ import { MiniMap } from '@vue-flow/minimap'
 
 import { storeToRefs } from 'pinia'
 
+import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import { ExportToCommunityModal } from '@/components/canvas'
 import CanvasWorksheetTextModal from '@/components/canvas/CanvasWorksheetTextModal.vue'
 import MindMapNodeExplainBubble from '@/components/canvas/MindMapNodeExplainBubble.vue'
@@ -368,7 +369,7 @@ watch(
 const { followEnabled: followNodeStyleToolbar } = useFollowNodeStyleToolbar()
 
 const floatingToolbarNodeIds = computed(() => {
-  if (!useMindMapV2.value) return []
+  if (!useMindMapV2.value && !isThinkingMapDiagramType(diagramStore.type)) return []
   return diagramStore.selectedNodes.filter((id) => !isMindMapSummaryNodeId(id))
 })
 

@@ -6,8 +6,10 @@ import type {
   NodeSelectionChange,
 } from '@vue-flow/core'
 
+import { applyFormatBrushToNode } from '@/composables/canvasToolbar/useCanvasFormatBrush'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { handleLearningSheetPickNodeClick } from '@/composables/mindMap/useLearningSheetCustomMode'
 import type { MindGraphNode } from '@/types'
 
 const FIT_TRIGGERING_CHANGE_TYPES = ['position', 'dimensions', 'remove', 'add'] as const
@@ -122,6 +124,8 @@ export function useDiagramCanvasVueFlowHandlers(
 
   onNodeClick(({ node }) => {
     const mindNode = node as unknown as MindGraphNode
+    if (applyFormatBrushToNode(mindNode.id)) return
+    if (handleLearningSheetPickNodeClick(mindNode.id)) return
     eventBus.emit('canvas:node_clicked', { nodeId: mindNode.id })
     emit('nodeClick', mindNode)
   })

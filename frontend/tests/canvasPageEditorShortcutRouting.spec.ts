@@ -24,14 +24,14 @@ const ALL_DIAGRAM_TYPES: DiagramType[] = [
 ]
 
 const TAB_EXPECTED: Record<DiagramType, ReturnType<typeof resolveTabKeyEvent>> = {
-  circle_map: 'diagram:add_node_requested',
-  bubble_map: 'diagram:add_node_requested',
-  double_bubble_map: 'diagram:add_node_requested',
-  tree_map: 'diagram:add_node_requested',
-  brace_map: 'diagram:add_branch_requested',
-  flow_map: 'diagram:add_branch_requested',
-  multi_flow_map: 'diagram:add_node_requested',
-  bridge_map: 'diagram:add_node_requested',
+  circle_map: null,
+  bubble_map: null,
+  double_bubble_map: null,
+  tree_map: null,
+  brace_map: null,
+  flow_map: null,
+  multi_flow_map: null,
+  bridge_map: null,
   concept_map: null,
   mindmap: 'diagram:add_child_requested',
   mind_map: 'diagram:add_child_requested',
@@ -58,8 +58,8 @@ const ENTER_EXPECTED: Record<DiagramType, ReturnType<typeof resolveEnterKeyEvent
   bubble_map: 'diagram:add_node_requested',
   double_bubble_map: 'diagram:add_node_requested',
   tree_map: 'diagram:add_node_requested',
-  brace_map: 'diagram:add_child_requested',
-  flow_map: 'diagram:add_child_requested',
+  brace_map: 'diagram:add_node_requested',
+  flow_map: 'diagram:add_node_requested',
   multi_flow_map: 'diagram:add_node_requested',
   bridge_map: 'diagram:add_node_requested',
   concept_map: null,
@@ -93,9 +93,12 @@ describe('canvasPageEditorShortcutRouting — all diagram types', () => {
 
 /** Global shortcuts — same handler on CanvasPage for every diagram type (except where noted). */
 describe('canvas global shortcuts (type-agnostic on CanvasPage)', () => {
-  it('documents concept_map as the only type with Tab/Enter/= add blocked', () => {
+  it('keeps concept map and thinking maps off Tab, and concept map off Enter', () => {
     expect(resolveTabKeyEvent('concept_map')).toBeNull()
     expect(resolveEnterKeyEvent('concept_map')).toBeNull()
+    expect(resolveTabKeyEvent('circle_map')).toBeNull()
+    expect(resolveInsertKeyEvent('circle_map')).toBeNull()
+    expect(resolveEnterKeyEvent('brace_map')).toBe('diagram:add_node_requested')
   })
 
   it('covers every DiagramType in Tab, Enter, and Insert matrices', () => {

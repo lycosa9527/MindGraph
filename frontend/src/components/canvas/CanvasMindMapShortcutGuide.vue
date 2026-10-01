@@ -13,7 +13,7 @@ import {
   openCanvasGuide,
   toggleCanvasGuide,
 } from '@/composables/canvas/canvasGuideExclusive'
-import { resolveMindMapShortcutGuideRows } from '@/config/mindMapShortcutGuide'
+import { resolveDiagramShortcutGuideRows } from '@/config/mindMapShortcutGuide'
 import { useDiagramStore } from '@/stores'
 
 const STORAGE_KEY = 'mindgraph.mindmap.shortcutGuide.expanded'
@@ -35,7 +35,9 @@ const expanded = computed(() =>
   isStatus.value ? activeCanvasGuideId.value === 'shortcut' : expandedLocal.value
 )
 
-const rows = computed(() => resolveMindMapShortcutGuideRows(diagramStore.isLearningSheet))
+const rows = computed(() =>
+  resolveDiagramShortcutGuideRows(diagramStore.type, diagramStore.isLearningSheet)
+)
 
 function persistExpanded(next: boolean): void {
   try {

@@ -193,6 +193,8 @@ type SaveAttemptOptions = {
   bypassGeneratingGuard?: boolean
   bypassSubgraphGuard?: boolean
   bypassSuppressGuard?: boolean
+  /** Manual save: persist a new diagram even when node text still matches the template. */
+  forcePersist?: boolean
 }
 
 type CapturedSave = {
@@ -204,6 +206,7 @@ type CapturedSave = {
   fullFingerprint: string
   /** Library row id at capture time (survive clearActiveDiagram during leave). */
   targetDiagramId: string | null
+  forcePersist: boolean
 }
 
 export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
@@ -321,6 +324,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
         editCount: diagramStore.sessionEditCount,
         fullFingerprint: getFullFingerprint(diagramStore.data as DiagramDataLike),
         targetDiagramId: options.getTargetDiagramId?.() ?? savedDiagramsStore.activeDiagramId,
+        forcePersist: saveOpts.forcePersist === true,
       },
     }
   }
@@ -335,7 +339,8 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
         captured.language,
         null,
         captured.editCount,
-        captured.targetDiagramId
+        captured.targetDiagramId,
+        captured.forcePersist
       )
 
       if (result.success) {

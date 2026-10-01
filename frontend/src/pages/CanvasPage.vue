@@ -31,6 +31,7 @@ import { storeToRefs } from 'pinia'
 
 import MindMapClassroomRemote from '@/canvas-ribbon/MindMapClassroomRemote.vue'
 import MindMapStatusBar from '@/canvas-ribbon/MindMapStatusBar.vue'
+import { diagramRibbonCapabilities } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import {
   CanvasBottomAiCluster,
   CanvasChrome,
@@ -519,11 +520,12 @@ const fitViewOnInit = computed(() => {
 })
 
 const featureKnowledgeSpaceFlag = computed(() => featureFlagsStore.getFeatureKnowledgeSpace())
-const isMindMapRibbonFamily = computed(() => useMindMapV2.value)
+const ribbonCaps = computed(() => diagramRibbonCapabilities(diagramStore.type, useMindMapV2.value))
+const isMindMapRibbonFamily = computed(
+  () => useMindMapV2.value || ribbonCaps.value.thinkingMapChrome
+)
 const fileCenterEnabled = computed(() =>
-  DOC_SUMMARY_LITE_UI
-    ? isMindMapRibbonFamily.value
-    : featureKnowledgeSpaceFlag.value && isMindMapRibbonFamily.value
+  DOC_SUMMARY_LITE_UI ? useMindMapV2.value : featureKnowledgeSpaceFlag.value && useMindMapV2.value
 )
 const fileCenterActivePackage = createFileCenterActivePackage(fileCenterEnabled)
 provide(FILE_CENTER_ACTIVE_PACKAGE_KEY, fileCenterActivePackage)
@@ -667,9 +669,19 @@ const enableDesktopTouchPanPinch = computed(() =>
   )
 )
 
+function sideToolAllowed(tool: string | null): boolean {
+  if (!tool) return false
+  if (useMindMapV2.value) return true
+  if (tool === 'learning_sheet') return ribbonCaps.value.learningSheetPanel
+  if (tool === 'waterfall') return ribbonCaps.value.waterfall
+  if (tool === 'one_sentence') return ribbonCaps.value.oneSentence
+  return false
+}
+
 const showMindMapSidePanel = computed(
   () =>
     isMindMapRibbonFamily.value &&
+    sideToolAllowed(activeTool.value) &&
     !presentationRailOpen.value &&
     !mindClassroomSlideDeck.value &&
     Boolean(diagramStore.data) &&
@@ -691,7 +703,16 @@ const showCanvasChrome = computed(
 const { activeTool, closeActiveTool } = useMindMapSideToolbarState()
 
 watch(
-  () => useMindMapV2.value && panelsStore.aiBrainstormPanel.isOpen,
+  () => diagramStore.type,
+  () => {
+    if (activeTool.value && !sideToolAllowed(activeTool.value)) {
+      closeActiveTool()
+    }
+  }
+)
+
+watch(
+  () => ribbonCaps.value.waterfall && panelsStore.aiBrainstormPanel.isOpen,
   (shouldShowWaterfallPanel) => {
     if (shouldShowWaterfallPanel && activeTool.value !== 'waterfall') {
       activeTool.value = 'waterfall'

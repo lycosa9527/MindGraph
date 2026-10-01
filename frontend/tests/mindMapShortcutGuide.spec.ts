@@ -9,6 +9,7 @@ import { collabHistoryWouldBlock } from '@/composables/canvasPage/useCanvasColla
 import {
   MIND_MAP_SHORTCUT_GUIDE_ROWS,
   MIND_MAP_SHORTCUT_GUIDE_WIRED_ROW_IDS,
+  resolveDiagramShortcutGuideRows,
   resolveMindMapShortcutGuideRows,
 } from '@/config/mindMapShortcutGuide'
 
@@ -19,14 +20,15 @@ describe('canvasPageEditorShortcutRouting', () => {
       expect(resolveTabKeyEvent('mind_map')).toBe('diagram:add_child_requested')
     })
 
-    it('routes brace and flow maps Tab to add branch', () => {
-      expect(resolveTabKeyEvent('brace_map')).toBe('diagram:add_branch_requested')
-      expect(resolveTabKeyEvent('flow_map')).toBe('diagram:add_branch_requested')
+    it('does not add a node when Tab is pressed on a thinking map', () => {
+      expect(resolveTabKeyEvent('brace_map')).toBeNull()
+      expect(resolveTabKeyEvent('flow_map')).toBeNull()
+      expect(resolveTabKeyEvent('bubble_map')).toBeNull()
+      expect(resolveTabKeyEvent('tree_map')).toBeNull()
     })
 
-    it('routes other diagram types Tab to add node', () => {
-      expect(resolveTabKeyEvent('bubble_map')).toBe('diagram:add_node_requested')
-      expect(resolveTabKeyEvent('tree_map')).toBe('diagram:add_node_requested')
+    it('routes the generic diagram type Tab to add node', () => {
+      expect(resolveTabKeyEvent('diagram')).toBe('diagram:add_node_requested')
     })
 
     it('returns null for concept map', () => {
@@ -60,9 +62,9 @@ describe('canvasPageEditorShortcutRouting', () => {
       expect(resolveEnterKeyEvent('multi_flow_map')).toBe('diagram:add_node_requested')
     })
 
-    it('routes brace and flow maps Enter to add child', () => {
-      expect(resolveEnterKeyEvent('brace_map')).toBe('diagram:add_child_requested')
-      expect(resolveEnterKeyEvent('flow_map')).toBe('diagram:add_child_requested')
+    it('routes brace and flow maps Enter to add node', () => {
+      expect(resolveEnterKeyEvent('brace_map')).toBe('diagram:add_node_requested')
+      expect(resolveEnterKeyEvent('flow_map')).toBe('diagram:add_node_requested')
     })
 
     it('returns null for concept map only', () => {
@@ -135,6 +137,14 @@ describe('mindMapShortcutGuide parity', () => {
     }
   })
 
+  it('lists Enter and hides Tab on a thinking map', () => {
+    const rows = resolveDiagramShortcutGuideRows('circle_map', false)
+    expect(rows.some((row) => row.id === 'tab')).toBe(false)
+    expect(rows[0]?.id).toBe('enter')
+    const bridge = resolveDiagramShortcutGuideRows('bridge_map', false)
+    expect(bridge[0]?.id).toBe('enter')
+  })
+
   it('pins learning sheet answers shortcut at top while learning sheet mode is active', () => {
     const pinned = resolveMindMapShortcutGuideRows(true)
     expect(pinned[0]?.id).toBe('learningSheetAnswers')
@@ -145,8 +155,18 @@ describe('mindMapShortcutGuide parity', () => {
 })
 
 describe('collabHistoryWouldBlock', () => {
-  const baseData = { nodes: [{ id: 'a', text: 'A' }, { id: 'b', text: 'B' }] }
-  const prevData = { nodes: [{ id: 'a', text: 'A-old' }, { id: 'b', text: 'B' }] }
+  const baseData = {
+    nodes: [
+      { id: 'a', text: 'A' },
+      { id: 'b', text: 'B' },
+    ],
+  }
+  const prevData = {
+    nodes: [
+      { id: 'a', text: 'A-old' },
+      { id: 'b', text: 'B' },
+    ],
+  }
 
   it('returns false when not in a workshop', () => {
     expect(

@@ -21,6 +21,7 @@ import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { isLearningSheetCustomPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { TOPIC_FONT_SIZE } from '@/stores/specLoader/textMeasurement'
 import {
@@ -251,7 +252,15 @@ const nodeStyle = computed(() => {
       defaultStyle.value.textColor ||
       (isTopicNode.value ? '#ffffff' : '#333333'),
     fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
-    fontSize: `${props.data.style?.fontSize ?? ((diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map' || diagramStore.type === 'double_bubble_map') && isTopicNode.value ? TOPIC_FONT_SIZE : (defaultStyle.value.fontSize ?? (isTopicNode.value ? 20 : 14)))}px`,
+    fontSize: cssFontSize(
+      props.data.style?.fontSize,
+      (diagramStore.type === 'circle_map' ||
+        diagramStore.type === 'bubble_map' ||
+        diagramStore.type === 'double_bubble_map') &&
+        isTopicNode.value
+        ? TOPIC_FONT_SIZE
+        : (defaultStyle.value.fontSize ?? (isTopicNode.value ? 20 : 14))
+    ),
     fontWeight:
       props.data.style?.fontWeight ||
       defaultStyle.value.fontWeight ||
@@ -277,6 +286,31 @@ function handleTextSave(newText: string) {
 
 function handleEditCancel() {
   isEditing.value = false
+}
+
+function cssFontSize(value: unknown, fallbackPx: number): string {
+  if (typeof value === 'number' && Number.isFinite(value)) return `${value}px`
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed) return `${fallbackPx}px`
+    return /[a-z%]$/i.test(trimmed) ? trimmed : `${trimmed}px`
+  }
+  return `${fallbackPx}px`
+}
+
+const circleTextAlign = computed<'left' | 'center' | 'right'>(() => {
+  const align = props.data.style?.textAlign
+  if (align === 'left' || align === 'right' || align === 'center') return align
+  return 'center'
+})
+
+function handleCircleDoubleClick(event: MouseEvent): void {
+  if (diagramStore.type !== 'circle_map') return
+  if (isLearningSheetCustomPickActive()) return
+  if (isTextReadonly.value || isEditing.value) return
+  event.preventDefault()
+  event.stopPropagation()
+  isEditing.value = true
 }
 
 const branchMove = inject<{
@@ -348,6 +382,7 @@ function handleBranchMovePointerUp(): void {
       isDoubleBubbleMap ? 'circle-node--with-handles' : '',
     ]"
     :style="nodeStyle"
+    @dblclick="handleCircleDoubleClick"
     @mousedown.capture="handleBranchMovePointerDown"
     @mouseup.capture="handleBranchMovePointerUp"
     @touchstart.passive.capture="handleBranchMoveTouchStart"
@@ -378,7 +413,7 @@ function handleBranchMovePointerUp(): void {
         :is-editing="isEditing"
         :readonly="isTextReadonly"
         :max-width="`${textMaxWidth}px`"
-        text-align="center"
+        :text-align="circleTextAlign"
         :text-decoration="data.style?.textDecoration || 'none'"
         :text-class="isTopicNode ? 'py-2' : 'px-2 py-1'"
         :full-width="isTopicNode && !isCircularTopic"

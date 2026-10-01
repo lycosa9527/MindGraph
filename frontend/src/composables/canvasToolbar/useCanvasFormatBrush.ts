@@ -5,6 +5,7 @@
  */
 import { ref } from 'vue'
 
+import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import {
   FORMAT_BRUSH_DOUBLE_CLICK_MS,
   collectFormatBrushStyle,
@@ -75,6 +76,40 @@ export function resetFormatBrushState(): void {
   syncFormatBrushCursor(false)
 }
 
+function opaqueCssColor(value: string): string | undefined {
+  const trimmed = value.trim()
+  if (!trimmed || trimmed.toLowerCase() === 'transparent') return undefined
+  const match = trimmed.match(
+    /^rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*(?:,\s*([\d.]+)\s*)?\)$/i
+  )
+  if (match?.[1] !== undefined && Number(match[1]) === 0) return undefined
+  return trimmed
+}
+
+/** Visible fill, border, and text only. Skips a transparent background and inherited fonts. */
+function renderedColorFallback(nodeId: string): Partial<NodeStyle> | undefined {
+  if (typeof document === 'undefined') return undefined
+  const escaped =
+    typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+      ? CSS.escape(nodeId)
+      : nodeId.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+  const host = document.querySelector(`.vue-flow__node[data-id="${escaped}"]`)
+  if (!(host instanceof HTMLElement)) return undefined
+  const painted = host.querySelector(
+    '.circle-node, .bubble-node, .branch-node, .flow-node, .flow-substep-node, .brace-node, .topic-node'
+  )
+  const el = painted instanceof HTMLElement ? painted : host
+  const cs = getComputedStyle(el)
+  const backgroundColor = opaqueCssColor(cs.backgroundColor)
+  const borderColor = opaqueCssColor(cs.borderTopColor)
+  const textColor = opaqueCssColor(cs.color)
+  const fallback: Partial<NodeStyle> = {}
+  if (backgroundColor) fallback.backgroundColor = backgroundColor
+  if (borderColor) fallback.borderColor = borderColor
+  if (textColor) fallback.textColor = textColor
+  return Object.keys(fallback).length > 0 ? fallback : undefined
+}
+
 function snapshotFormatBrushStyle(nodeId: string): NodeStyle | null {
   const store = useDiagramStore()
   const sourceNode = store.data?.nodes?.find((node) => node.id === nodeId)
@@ -88,7 +123,9 @@ function snapshotFormatBrushStyle(nodeId: string): NodeStyle | null {
         store.data?._mindmap_diagram_style,
         store.data?.connections
       )
-    : undefined
+    : isThinkingMapDiagramType(store.type)
+      ? renderedColorFallback(nodeId)
+      : undefined
   const copied = collectFormatBrushStyle(sourceNode.style, persisted, themeFallback)
   if (!copied.nodeShape && isMindMap) {
     copied.nodeShape = resolveMindMapNodeShape(
