@@ -122,6 +122,9 @@ export function readDiagramCenterTopic(diagramStore: DiagramPiniaStore): string 
     const right = nodes.find((node) => node.id === 'right-topic')?.text ?? ''
     return formatClassroomRemoteVsTopic(left, right)
   }
+  if (diagramStore.type === 'bridge_map') {
+    return (nodes.find((node) => node.id === 'dimension-label')?.text ?? '').trim()
+  }
   const hit =
     nodes.find((node) => node.id === 'topic') ??
     nodes.find((node) => node.type === 'topic' || node.type === 'center')

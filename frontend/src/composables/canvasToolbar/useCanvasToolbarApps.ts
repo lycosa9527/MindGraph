@@ -20,6 +20,7 @@ import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import { openConceptMapNodePalette } from '@/composables/nodePalette/openConceptMapNodePalette'
 import {
   buildEducationStageInstructions,
   isEducationStage,
@@ -154,6 +155,10 @@ export function useCanvasToolbarApps() {
     topicOverride?: string
     isLearningSheet?: boolean
   }) {
+    if (diagramStore.type === 'concept_map') {
+      openConceptMapNodePalette()
+      return
+    }
     if (!authStore.isAuthenticated) {
       notify.warningKey('notification.signInToUse')
       return
@@ -191,29 +196,7 @@ export function useCanvasToolbarApps() {
   }
 
   function handleConceptGeneration() {
-    if (!guardCollabGuestAi()) {
-      return
-    }
-    if (!diagramStore.data?.nodes?.length) {
-      notify.warningKey('canvas.toolbar.createDiagramFirst')
-      return
-    }
-    const options: Record<string, unknown> = {}
-    if (isConceptMap.value) {
-      options.useConceptListHeader = true
-    }
-    if (isConceptMap.value && diagramStore.selectedNodes.length === 1) {
-      const nodeId = diagramStore.selectedNodes[0]
-      const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
-      const topicNode = diagramStore.data?.nodes?.find(
-        (n) => n.type === 'topic' || n.type === 'center' || n.id === 'root'
-      )
-      if (node && node.id !== topicNode?.id && node.text?.trim()) {
-        options.conceptMapNodeId = node.id
-        options.conceptMapNodeText = (node.text ?? '').trim()
-      }
-    }
-    eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'toolbar', options })
+    openConceptMapNodePalette()
   }
 
   function handleMoreAppItem(app: MoreAppItem) {

@@ -77,4 +77,20 @@ describe('classroom remote topics', () => {
     expect(nodes[1].text).toBe('动物细胞')
     expect(readDiagramCenterTopic(store as never)).toBe('植物细胞 vs 动物细胞')
   })
+
+  it('reads and writes the bridge relating factor', () => {
+    const nodes = [{ id: 'dimension-label', type: 'label', text: '像' }]
+    const store = {
+      type: 'bridge_map',
+      data: { nodes },
+      updateNode: (nodeId: string, updates: { text?: string }) => {
+        const item = nodes.find((node) => node.id === nodeId)
+        if (!item || typeof updates.text !== 'string') return false
+        item.text = updates.text
+        return true
+      },
+    }
+    expect(applyClassroomRemoteTopic(store as never, '功能像')).toBe(true)
+    expect(readDiagramCenterTopic(store as never)).toBe('功能像')
+  })
 })

@@ -6,29 +6,8 @@ import { ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
-import { MINDMAP_CANVAS_MODE_KEY, useUIStore } from '@/stores/ui'
 import { apiRequest } from '@/utils/apiClient'
 import { maybeReloadForVodCsp } from '@/utils/vodCspDocument'
-
-function syncMindMapCanvasModeForFlags(data: FeatureFlagsResponse): void {
-  const uiStore = useUIStore()
-  if (!data.feature_mindmap_v2_canvas) {
-    // Runtime-only Classic: do not persist, or re-enabling the flag would stick
-    // everyone on Classic after the v2-default migration.
-    if (uiStore.mindMapCanvasMode === 'v2') {
-      uiStore.setMindMapCanvasMode('legacy', { persist: false })
-    }
-    return
-  }
-  const stored = localStorage.getItem(MINDMAP_CANVAS_MODE_KEY)
-  // Explicit Classic (after v2-default migration) stays Classic; leftover V3
-  // chrome prefs become New canvas.
-  if (stored === 'legacy') {
-    uiStore.setMindMapCanvasMode('legacy')
-    return
-  }
-  uiStore.setMindMapCanvasMode('v2')
-}
 
 export interface FeatureOrgAccessEntry {
   restrict: boolean
@@ -48,7 +27,6 @@ interface FeatureFlagsResponse {
   feature_askonce: boolean
   feature_debateverse: boolean
   feature_knowledge_space: boolean
-  feature_mindmap_v2_canvas: boolean
   feature_mind_classroom_slide_deck?: boolean
   feature_library: boolean
   feature_gewe: boolean
@@ -98,7 +76,6 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
       feature_askonce: false,
       feature_debateverse: false,
       feature_knowledge_space: false,
-      feature_mindmap_v2_canvas: true,
       feature_mind_classroom_slide_deck: false,
       feature_library: false,
       feature_gewe: false,
@@ -138,7 +115,6 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
   async function fetchFlags(): Promise<FeatureFlagsResponse> {
     if (isFlagsCacheFresh()) {
       const cached = flags.value as FeatureFlagsResponse
-      syncMindMapCanvasModeForFlags(cached)
       return cached
     }
 
@@ -167,7 +143,6 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           const defaultFlags = defaultFeatureFlags()
           flags.value = defaultFlags
           lastFetchTime.value = 0
-          syncMindMapCanvasModeForFlags(defaultFlags)
           return defaultFlags
         }
 
@@ -191,12 +166,10 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_thinking_coins: raw.feature_thinking_coins ?? false,
           captcha_provider: raw.captcha_provider === 'tsec' ? 'tsec' : 'legacy',
           tencent_captcha_app_id: raw.tencent_captcha_app_id ?? '',
-          feature_mindmap_v2_canvas: raw.feature_mindmap_v2_canvas ?? true,
           feature_mind_classroom_slide_deck: raw.feature_mind_classroom_slide_deck ?? false,
         }
         flags.value = data
         lastFetchTime.value = epochAtStart === staleEpoch ? fetchedAt : 0
-        syncMindMapCanvasModeForFlags(data)
         maybeReloadForVodCsp(data.feature_vod ?? false)
         return data
       } catch (error) {
@@ -207,7 +180,6 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         }
         const defaultFlags = defaultFeatureFlags()
         flags.value = defaultFlags
-        syncMindMapCanvasModeForFlags(defaultFlags)
         return defaultFlags
       } finally {
         isLoading.value = false
@@ -268,11 +240,6 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
 
   function getFeatureKnowledgeSpace(): boolean {
     return flags.value?.feature_knowledge_space ?? false
-  }
-
-  function getFeatureMindmapV2Canvas(): boolean {
-    // Product default is v2-on; avoid classic flash before the first /api/config/features fetch.
-    return flags.value?.feature_mindmap_v2_canvas ?? true
   }
 
   function getFeatureMindClassroomSlideDeck(): boolean {
@@ -372,7 +339,6 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     getFeatureAskOnce,
     getFeatureDebateverse,
     getFeatureKnowledgeSpace,
-    getFeatureMindmapV2Canvas,
     getFeatureMindClassroomSlideDeck,
     getFeatureLibrary,
     getFeatureGewe,

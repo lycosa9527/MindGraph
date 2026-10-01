@@ -4,14 +4,12 @@ import { computed } from 'vue'
 import TrainingCanvasPreview from '@/components/training/TrainingCanvasPreview.vue'
 import { provideTrainingInlineHost } from '@/composables/training/trainingInlineHost'
 import { trainingLivePage } from '@/config/trainingPageLive'
-import type { MindMapCanvasMode } from '@/stores/ui'
 
 provideTrainingInlineHost()
 
 const props = defineProps<{
   pageKey?: string | null
   diagramType?: string | null
-  canvasMode?: MindMapCanvasMode | null
   interactive?: boolean
 }>()
 
@@ -27,7 +25,6 @@ const isCanvas = computed(() => props.pageKey === 'canvas')
     <TrainingCanvasPreview
       v-if="isCanvas"
       :diagram-type="diagramType"
-      :canvas-mode="canvasMode"
       :interactive="interactive"
     />
     <div

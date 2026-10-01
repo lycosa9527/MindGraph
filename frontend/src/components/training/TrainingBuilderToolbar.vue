@@ -20,24 +20,13 @@ import {
 } from '@/composables/training/trainingOverlayDrag'
 import type { TrainingArrowColor, TrainingArrowLine } from '@/config/trainingMarkPalettes'
 import { TRAINING_PAGES, type TrainingPageKey } from '@/config/trainingPages'
-import type { MindMapCanvasMode } from '@/stores/ui'
 import type { TrainingCourseStep, TrainingSpotlightShape } from '@/types/training'
-import {
-  readEffectiveMindMapCanvasMode,
-  resolveSessionMindMapCanvasMode,
-} from '@/utils/mindMapCanvasMode'
 
 const BUILDER_DIAGRAM_TYPES = VALID_DIAGRAM_TYPES.filter((type) => type !== 'mind_map')
 
 const props = defineProps<{
   step: TrainingCourseStep
 }>()
-
-function mindmapMode(step: TrainingCourseStep): MindMapCanvasMode {
-  return resolveSessionMindMapCanvasMode(
-    step.mindmap_canvas_mode ?? readEffectiveMindMapCanvasMode()
-  )
-}
 
 const emit = defineEmits<{
   page: [key: TrainingPageKey]
@@ -77,22 +66,6 @@ const spotShapeOptions = computed(() => [
 ])
 
 const isCanvas = computed(() => props.step.page_key === 'canvas' || props.step.type === 'canvas')
-const canvasMode = computed({
-  get: () => mindmapMode(props.step),
-  set: (mode: MindMapCanvasMode) => onCanvasMode(mode),
-})
-const canvasModeOptions = computed(() => [
-  {
-    value: 'legacy' as const,
-    label: t('settings.language.mindMapCanvasV1'),
-    labelKey: 'settings.language.mindMapCanvasV1',
-  },
-  {
-    value: 'v2' as const,
-    label: t('settings.language.mindMapCanvasV2'),
-    labelKey: 'settings.language.mindMapCanvasV2',
-  },
-])
 
 function addTextBubble(): void {
   emit('awake')
@@ -107,11 +80,6 @@ function onPage(value: string): void {
 function onDiagram(value: string): void {
   emit('awake')
   props.step.diagram_type = value === 'mind_map' ? 'mindmap' : value
-}
-
-function onCanvasMode(mode: MindMapCanvasMode): void {
-  emit('awake')
-  props.step.mindmap_canvas_mode = mode
 }
 
 async function onMandatory(value: boolean | string | number): Promise<void> {
@@ -277,12 +245,6 @@ function clearSpotlight(): void {
             <I18nText :k="`sidebar.diagramType.${type}`" />
           </ElOption>
         </ElSelect>
-        <AdminSwissSegmented
-          v-model="canvasMode"
-          equal
-          :options="canvasModeOptions"
-          :ariaLabel="t('training.builder.groupCanvas')"
-        />
         <TrainingTopicOptionsPanel :step="step" />
       </template>
       <label class="builder-toolbar__pull">

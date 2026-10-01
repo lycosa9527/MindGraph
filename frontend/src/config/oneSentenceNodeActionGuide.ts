@@ -68,3 +68,17 @@ export const ONE_SENTENCE_NODE_ACTION_GUIDE_ROWS: OneSentenceNodeActionGuideRow[
     exampleKey: 'canvas.mindMapOneSentence.suggestion.set_branch_numbering',
   },
 ]
+
+const MIND_MAP_ONLY_ONE_SENTENCE_ACTIONS = new Set(['auto_complete_branch', 'set_branch_numbering'])
+
+/** Branch fill and numbering exist on mind maps. Other diagrams keep the shared edits. */
+export function oneSentenceGuideRowsForDiagram(
+  diagramType: string | null | undefined
+): readonly OneSentenceNodeActionGuideRow[] {
+  if (diagramType === 'mindmap' || diagramType === 'mind_map') {
+    return ONE_SENTENCE_NODE_ACTION_GUIDE_ROWS
+  }
+  return ONE_SENTENCE_NODE_ACTION_GUIDE_ROWS.filter(
+    (row) => !MIND_MAP_ONLY_ONE_SENTENCE_ACTIONS.has(row.id)
+  )
+}

@@ -44,7 +44,6 @@ function enableMindMapV2CanvasFlag(): void {
     feature_askonce: true,
     feature_debateverse: false,
     feature_knowledge_space: false,
-    feature_mindmap_v2_canvas: true,
     feature_library: false,
     feature_gewe: false,
     feature_smart_response: false,
@@ -451,22 +450,22 @@ describe('mind map classic vs v2 separation', () => {
     expect(data._mindmap_diagram_style).toBe('bubble')
   })
 
-  it('legacy loadMindMapSpec uses indexed topic handles and column layout', () => {
-    const uiStore = useUIStore()
-    uiStore.mindMapCanvasMode = 'legacy'
-
-    const result = loadMindMapSpec({
-      topic: 'Topic',
-      rightBranches: [
-        {
-          text: 'A',
-          children: [{ text: 'A1' }, { text: 'A2' }],
-        },
-        { text: 'B' },
-      ],
-      leftBranches: [],
-      preserveLeftRight: true,
-    })
+  it('archived layout key uses indexed topic handles and column layout', () => {
+    const result = loadMindMapSpec(
+      {
+        topic: 'Topic',
+        rightBranches: [
+          {
+            text: 'A',
+            children: [{ text: 'A1' }, { text: 'A2' }],
+          },
+          { text: 'B' },
+        ],
+        leftBranches: [],
+        preserveLeftRight: true,
+      },
+      { canvasMode: 'legacy' }
+    )
 
     const topicEdge = result.connections.find((c) => c.source === 'topic')
     expect(topicEdge?.sourceHandle).toMatch(/^mindmap-right-\d+$/)
@@ -485,16 +484,16 @@ describe('mind map classic vs v2 separation', () => {
     expect(LEGACY_MINDMAP_BRANCH_COLORS.length).toBe(20)
   })
 
-  it('legacy loadMindMapSpec does not emit v2 trunk handles', () => {
-    const uiStore = useUIStore()
-    uiStore.mindMapCanvasMode = 'legacy'
-
-    const result = loadMindMapSpec({
-      topic: 'Topic',
-      rightBranches: [{ text: 'Only' }],
-      leftBranches: [],
-      preserveLeftRight: true,
-    })
+  it('archived layout key does not emit v2 trunk handles', () => {
+    const result = loadMindMapSpec(
+      {
+        topic: 'Topic',
+        rightBranches: [{ text: 'Only' }],
+        leftBranches: [],
+        preserveLeftRight: true,
+      },
+      { canvasMode: 'legacy' }
+    )
 
     const trunkHandles = result.connections
       .filter((c) => c.source === 'topic')
@@ -503,16 +502,16 @@ describe('mind map classic vs v2 separation', () => {
     expect(trunkHandles).not.toContain('mindmap-left')
   })
 
-  it('legacy loadMindMapSpec assigns sequential right handles when side is uneven', () => {
-    const uiStore = useUIStore()
-    uiStore.mindMapCanvasMode = 'legacy'
-
-    const result = loadMindMapSpec({
-      topic: 'Topic',
-      rightBranches: [{ text: 'R1' }, { text: 'R2' }, { text: 'R3' }, { text: 'R4' }],
-      leftBranches: [{ text: 'L1' }],
-      preserveLeftRight: true,
-    })
+  it('archived layout key assigns sequential right handles when side is uneven', () => {
+    const result = loadMindMapSpec(
+      {
+        topic: 'Topic',
+        rightBranches: [{ text: 'R1' }, { text: 'R2' }, { text: 'R3' }, { text: 'R4' }],
+        leftBranches: [{ text: 'L1' }],
+        preserveLeftRight: true,
+      },
+      { canvasMode: 'legacy' }
+    )
 
     const rightHandles = result.connections
       .filter(
@@ -576,7 +575,7 @@ describe('mind map classic vs v2 separation', () => {
     ).toBe('left')
   })
 
-  it('legacy addMindMapBranch seeds two default children', () => {
+  it('a leftover classic session adds a branch without classic children', () => {
     const uiStore = useUIStore()
     uiStore.mindMapCanvasMode = 'legacy'
 
@@ -599,10 +598,10 @@ describe('mind map classic vs v2 separation', () => {
       ctx.data.value?.nodes
         ?.filter((n) => n.type === 'branch' && n.text !== 'NewBranch')
         .map((n) => n.text) ?? []
-    expect(childTexts).toEqual(['Child 1', 'Child 2'])
+    expect(childTexts).toEqual([])
   })
 
-  it('legacy addMindMapSibling seeds two default children for top-level branches', () => {
+  it('a leftover classic session adds a sibling without classic children', () => {
     const uiStore = useUIStore()
     uiStore.mindMapCanvasMode = 'legacy'
 
@@ -629,7 +628,7 @@ describe('mind map classic vs v2 separation', () => {
     expect(newBranchNode).toBeDefined()
     const childEdges =
       ctx.data.value?.connections?.filter((c) => c.source === newBranchNode?.id) ?? []
-    expect(childEdges).toHaveLength(2)
+    expect(childEdges).toHaveLength(0)
   })
 
   it('legacy addMindMapBranch with explicit side stays on that side', () => {

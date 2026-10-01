@@ -2,31 +2,24 @@
  * Mobile canvas EventBus handlers (palette, Tab, Kitty, auto-complete).
  */
 import { eventBus } from '@/composables/core/useEventBus'
-import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
-import { handleKittyAddNodeWithRecommendationsRequest } from '@/composables/kitty/kittyAddNodeWithRecommendations'
 import { handleKittyAutoCompleteBranchRequest } from '@/composables/kitty/handleKittyAutoCompleteBranchRequest'
-import { resolveKittyChildNodeId } from '@/composables/kitty/kittyDiagramChildren'
-import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
+import { handleKittyAddNodeWithRecommendationsRequest } from '@/composables/kitty/kittyAddNodeWithRecommendations'
 import type { useAuthStore } from '@/stores/auth'
-import type { useDiagramStore } from '@/stores/diagram'
-import type { useInlineRecommendationsStore } from '@/stores/inlineRecommendations'
-import type { useLLMResultsStore } from '@/stores/llmResults'
 import type { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import type { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
+import type { useDiagramStore } from '@/stores/diagram'
+import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 
 const OWNER = 'MobileCanvasPage'
 
 export interface UseMobileCanvasEventHandlersOptions {
   diagramStore: ReturnType<typeof useDiagramStore>
   authStore: ReturnType<typeof useAuthStore>
-  inlineRecStore: ReturnType<typeof useInlineRecommendationsStore>
-  llmResultsStore: ReturnType<typeof useLLMResultsStore>
   focusReviewStore: ReturnType<typeof useConceptMapFocusReviewStore>
   rootConceptReviewStore: ReturnType<typeof useConceptMapRootConceptReviewStore>
   isConceptMap: { value: boolean }
   isAIGenerating: { value: boolean }
   startNodePaletteSession: (opts: { keepSessionId?: boolean; mode?: string }) => void
-  startRecommendations: (nodeId: string) => Promise<{ success: boolean; error?: string }>
   handleAIGenerate: (options?: {
     generationInstructions?: string
     topicOverride?: string
@@ -37,20 +30,17 @@ export interface UseMobileCanvasEventHandlersOptions {
   notifyWarning: (message: string) => void
 }
 
-export function useMobileCanvasEventHandlers(
-  options: UseMobileCanvasEventHandlersOptions
-): { teardown: () => void } {
+export function useMobileCanvasEventHandlers(options: UseMobileCanvasEventHandlersOptions): {
+  teardown: () => void
+} {
   const {
     diagramStore,
     authStore,
-    inlineRecStore,
-    llmResultsStore,
     focusReviewStore,
     rootConceptReviewStore,
     isConceptMap,
     isAIGenerating,
     startNodePaletteSession,
-    startRecommendations,
     handleAIGenerate,
     handleConceptGeneration,
     translate,
@@ -95,36 +85,20 @@ export function useMobileCanvasEventHandlers(
             return
           }
           void rootConceptReviewStore.runRootConceptManual()
-          return
         }
       }
-
-      const nodes = diagramStore.data?.nodes ?? []
-      const node = nodes.find((n) => n.id === nodeId) as
-        | { id?: string; type?: string; data?: { nodeType?: string } }
-        | undefined
-      if (
-        !node ||
-        !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)
-      ) {
-        return
-      }
-      if (diagramStore.type === 'concept_map' && !llmResultsStore.selectedModel) {
-        notifyWarning(translate('notification.conceptMapTabNeedsAi'))
-        return
-      }
-      if (!authStore.isAuthenticated) {
-        notifyWarning(translate('notification.signInToUse'))
-        return
-      }
-      void startRecommendations(nodeId)
     },
     OWNER
   )
 
   eventBus.onWithOwner(
     'diagram:auto_complete_requested',
-    (data?: { source?: string; topic?: string; diagramType?: string; isLearningSheet?: boolean }) => {
+    (data?: {
+      source?: string
+      topic?: string
+      diagramType?: string
+      isLearningSheet?: boolean
+    }) => {
       if (!authStore.isAuthenticated) {
         notifyWarning(translate('notification.signInToUse'))
         return
@@ -164,49 +138,11 @@ export function useMobileCanvasEventHandlers(
   )
 
   eventBus.onWithOwner(
-    'kitty:inline_recommendations_requested',
-    (data: { nodeId?: string; nodeIndex?: number }) => {
-      const nodes = diagramStore.data?.nodes ?? []
-      let nid = resolveKittyChildNodeId(diagramStore.type, nodes, {
-        nodeId: data.nodeId,
-        nodeIndex: data.nodeIndex,
-      })
-      if (!nid) nid = diagramStore.selectedNodes[0]
-      if (!nid) {
-        notifyWarning(translate('canvas.toolbar.selectNodesToDelete', '请先选择一个节点'))
-        return
-      }
-      const node = nodes.find((x) => x.id === nid)
-      if (
-        !node ||
-        !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)
-      ) {
-        notifyWarning(translate('notification.nodeNotEligible'))
-        return
-      }
-      if (diagramStore.type === 'concept_map' && !llmResultsStore.selectedModel) {
-        notifyWarning(translate('notification.conceptMapTabNeedsAi'))
-        return
-      }
-      if (!authStore.isAuthenticated) {
-        notifyWarning(translate('notification.signInToUse'))
-        return
-      }
-      void startRecommendations(nid)
-    },
-    OWNER
-  )
-
-  eventBus.onWithOwner(
     'kitty:add_node_with_recommendations_requested',
     (data: { text?: string }) => {
       void handleKittyAddNodeWithRecommendationsRequest({
         text: data.text,
         diagramStore,
-        startRecommendations,
-        inlineRecReady: inlineRecStore.isReady,
-        isAuthenticated: authStore.isAuthenticated,
-        conceptMapAiEnabled: Boolean(llmResultsStore.selectedModel),
         translate,
         notifyWarning,
       })

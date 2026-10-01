@@ -70,7 +70,7 @@ describe('virtual keyboard chrome vs inline edit', () => {
   it('does not mount the panel on new-canvas chrome', () => {
     const toolbar = readSrc('src/components/canvas/CanvasToolbar.vue')
     const status = readSrc('src/canvas-ribbon/MindMapStatusBar.vue')
-    expect(toolbar).toContain('v-if="!useMindMapV2"')
+    expect(toolbar).toContain('v-if="!showMindMapRibbonTools || isConceptMap"')
     expect(toolbar).toContain('CanvasVirtualKeyboardPanel')
     expect(status).not.toContain('toggleVirtualKeyboard')
     expect(status).not.toContain('data-virtual-keyboard-chrome')

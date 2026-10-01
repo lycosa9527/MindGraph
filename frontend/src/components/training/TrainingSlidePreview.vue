@@ -75,7 +75,6 @@ const marks = computed(() => visibleMarkOverlays(props.step))
       v-else-if="showLive"
       :page-key="step.page_key"
       :diagram-type="step.diagram_type"
-      :canvas-mode="step.mindmap_canvas_mode"
       :interactive="interactive"
     />
     <div

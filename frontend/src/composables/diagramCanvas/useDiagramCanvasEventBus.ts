@@ -12,6 +12,8 @@ import type { Connection, DiagramNode, MindGraphNode } from '@/types'
 import { runWithExportVisualMode } from '@/utils/canvasExportVisualMode'
 import { isManualViewportMode } from '@/utils/conceptMapDesktopViewport'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
+import type { DiagramExportFlowNode } from '@/utils/diagramExportContentBounds'
+import { withDiagramExportContentFrame } from '@/utils/diagramExportContentFrame'
 import { prepareDiagramCanvasForRasterCapture } from '@/utils/diagramExportPrep'
 import { mergeCanvasExportOptions } from '@/utils/mergeCanvasExportOptions'
 
@@ -46,6 +48,7 @@ export interface DiagramCanvasEventBusContext {
     viewport: { x: number; y: number; zoom: number },
     opts?: { duration?: number }
   ) => void
+  setMinZoom?: (zoom: number) => void
   zoomIn: () => void
   zoomOut: () => void
   fitApi: FitApi
@@ -98,6 +101,7 @@ export function useDiagramCanvasEventBus(): {
       getNodes,
       getViewport,
       setViewport,
+      setMinZoom,
       zoomIn,
       zoomOut,
       fitApi,
@@ -251,13 +255,37 @@ export function useDiagramCanvasEventBus(): {
 
         async function runFittedVisualExport<T>(run: () => Promise<T>): Promise<T> {
           const savedViewport = getViewport()
+          const conceptMap = diagramStore.type === 'concept_map'
           try {
+            if (conceptMap) {
+              // Fit-to-window paints concept-map text at a tiny zoom, then the PNG
+              // upscales that bitmap. Frame the capture at the map's own size.
+              await prepareDiagramCanvasForRasterCapture(undefined, {
+                promptLanguage: uiStore.promptLanguage,
+              })
+              const container = getExportContainer()
+              if (!container) {
+                return await runWithExportVisualMode(uiStore, container, mergedOptions, run)
+              }
+              return await withDiagramExportContentFrame(
+                {
+                  container,
+                  nodes: getNodes() as unknown as DiagramExportFlowNode[],
+                  setViewport,
+                  setMinZoom,
+                  savedViewport,
+                },
+                () => runWithExportVisualMode(uiStore, container, mergedOptions, run)
+              )
+            }
             await prepareDiagramCanvasForRasterCapture(() => fitApi.fitForExport(), {
               promptLanguage: uiStore.promptLanguage,
             })
             return await runWithExportVisualMode(uiStore, getExportContainer(), mergedOptions, run)
           } finally {
-            setViewport(savedViewport, { duration: ANIMATION.DURATION_FAST })
+            if (!conceptMap) {
+              setViewport(savedViewport, { duration: ANIMATION.DURATION_FAST })
+            }
           }
         }
 

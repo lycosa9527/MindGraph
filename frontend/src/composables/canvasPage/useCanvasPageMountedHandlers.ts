@@ -4,7 +4,7 @@
  * Registers the three large ``eventBus.onWithOwner`` blocks that belong to
  * CanvasPage's ``onMounted`` lifecycle:
  *   - snapshot:requested  → snapshot capture flow (guests skipped during collab)
- *   - node_editor:tab_pressed → Tab inline rec + concept-map focus/root flows (host + guest)
+ *   - node_editor:tab_pressed → concept-map focus and root-concept review
  *   - nodePalette:opened  → node palette session start
  *
  * All listeners are registered under the ``'CanvasPage'`` owner so they are
@@ -14,30 +14,26 @@
 import { type ComputedRef, nextTick, onMounted } from 'vue'
 
 import { useLanguage, useNotifications, useSnapshotHistory } from '@/composables'
-import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { eventBus } from '@/composables/core/useEventBus'
 import { canMutateDiagramSnapshots } from '@/composables/editor/diagramSnapshotVersions'
 import { SAVE } from '@/config'
-import { useAuthStore, useDiagramStore, useLLMResultsStore } from '@/stores'
+import { useAuthStore, useDiagramStore } from '@/stores'
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
-import { conceptMapNodeIsAmbiguousForRec } from '@/utils/conceptMapInlineRec'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 import { getDiagramPersistBaseSpec } from '@/utils/diagramPersistBaseSpec'
 
 export function useCanvasPageMountedHandlers(options: {
   snapshotHistory: ReturnType<typeof useSnapshotHistory>
-  startRecommendations: (nodeId: string) => void
   startNodePaletteSession: (opts: { keepSessionId: boolean }) => void
   isDiagramOwner?: ComputedRef<boolean>
 }) {
-  const { snapshotHistory, startRecommendations, startNodePaletteSession, isDiagramOwner } = options
+  const { snapshotHistory, startNodePaletteSession, isDiagramOwner } = options
 
   const diagramStore = useDiagramStore()
   const savedDiagramsStore = useSavedDiagramsStore()
   const authStore = useAuthStore()
-  const llmResultsStore = useLLMResultsStore()
   const focusReviewStore = useConceptMapFocusReviewStore()
   const rootConceptReviewStore = useConceptMapRootConceptReviewStore()
   const notify = useNotifications()
@@ -130,33 +126,8 @@ export function useCanvasPageMountedHandlers(options: {
               return
             }
             void rootConceptReviewStore.runRootConceptManual()
-            return
           }
         }
-
-        const nodes = diagramStore.data?.nodes ?? []
-        const node = nodes.find((n: { id?: string }) => n.id === nodeId) as
-          { id?: string; type?: string } | undefined
-        if (
-          !node ||
-          !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)
-        )
-          return
-        if (diagramStore.type === 'concept_map') {
-          if (!llmResultsStore.selectedModel) {
-            notify.warningKey('notification.conceptMapTabNeedsAi')
-            return
-          }
-          if (!authStore.isAuthenticated) {
-            notify.warningKey('notification.signInToUse')
-            return
-          }
-          // Node is in the middle of a chain (incoming + outgoing edges): which edge
-          // to label is ambiguous, so skip Tab inline rec for relationship labels.
-          const connections = diagramStore.data?.connections ?? []
-          if (conceptMapNodeIsAmbiguousForRec(nodeId, connections)) return
-        }
-        void startRecommendations(nodeId)
       },
       'CanvasPage'
     )

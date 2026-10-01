@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DiagramSessionKey } from '@/composables/diagram/useDiagramSession'
 import { useMindMapCanvasVisuals } from '@/composables/mindMap/useMindMapCanvasVisuals'
-import { useFeatureFlagsStore, useUIStore } from '@/stores'
+import { useUIStore } from '@/stores'
 import {
   asDiagramSession,
   createDiagramSession,
@@ -62,13 +62,11 @@ describe('useMindMapCanvasVisuals (Showcase session)', () => {
   beforeEach(() => {
     stubMatchMedia()
     setActivePinia(createPinia())
-    vi.spyOn(useFeatureFlagsStore(), 'getFeatureMindmapV2Canvas').mockReturnValue(true)
   })
 
   it('returns v2 for preview mindmap while editor store is a non-mindmap type', async () => {
     const pinia = createPinia()
     setActivePinia(pinia)
-    vi.spyOn(useFeatureFlagsStore(), 'getFeatureMindmapV2Canvas').mockReturnValue(true)
     useUIStore().setMindMapCanvasMode('v2', { persist: false })
 
     const editor = useDiagramStore()
@@ -98,12 +96,12 @@ describe('useMindMapCanvasVisuals (Showcase session)', () => {
   it('Classic UI preference does not force Showcase preview off New canvas', async () => {
     const pinia = createPinia()
     setActivePinia(pinia)
-    vi.spyOn(useFeatureFlagsStore(), 'getFeatureMindmapV2Canvas').mockReturnValue(true)
     useUIStore().setMindMapCanvasMode('legacy', { persist: false })
+    expect(useUIStore().mindMapCanvasMode).toBe('v2')
 
     const editor = useDiagramStore()
     editor.reconcileMindMapCanvasMode('v2', 'legacy')
-    expect(editor.mindMapCanvasMode).toBe('legacy')
+    expect(editor.mindMapCanvasMode).toBe('v2')
 
     const preview = asDiagramSession(
       createDiagramSession({
@@ -118,8 +116,8 @@ describe('useMindMapCanvasVisuals (Showcase session)', () => {
     expect(preview.loadDefaultTemplate('mindmap')).toBe(true)
 
     const captured = await captureVisuals(pinia, preview)
-    expect(useUIStore().mindMapCanvasMode).toBe('legacy')
-    expect(editor.mindMapCanvasMode).toBe('legacy')
+    expect(useUIStore().mindMapCanvasMode).toBe('v2')
+    expect(editor.mindMapCanvasMode).toBe('v2')
     expect(captured).toBe(true)
 
     preview.dispose()
@@ -128,7 +126,6 @@ describe('useMindMapCanvasVisuals (Showcase session)', () => {
   it('session hydrate uses session canvas mode, not UI store', () => {
     const pinia = createPinia()
     setActivePinia(pinia)
-    vi.spyOn(useFeatureFlagsStore(), 'getFeatureMindmapV2Canvas').mockReturnValue(true)
     useUIStore().setMindMapCanvasMode('legacy', { persist: false })
 
     const preview = asDiagramSession(
@@ -157,15 +154,12 @@ describe('useMindMapCanvasVisuals (Showcase session)', () => {
     // Initial loader must also use session mode (v2 nodes get shape styles).
     const topic = preview.data?.nodes?.find((n) => n.id === 'topic')
     expect(topic?.style?.nodeShape).toBeTruthy()
-    expect(useUIStore().mindMapCanvasMode).toBe('legacy')
+    expect(useUIStore().mindMapCanvasMode).toBe('v2')
 
     preview.dispose()
   })
 
-  it('readShowcaseMindMapCanvasMode follows the v2 feature flag', () => {
-    vi.spyOn(useFeatureFlagsStore(), 'getFeatureMindmapV2Canvas').mockReturnValue(true)
+  it('readShowcaseMindMapCanvasMode stays on the new canvas', () => {
     expect(readShowcaseMindMapCanvasMode()).toBe('v2')
-    vi.spyOn(useFeatureFlagsStore(), 'getFeatureMindmapV2Canvas').mockReturnValue(false)
-    expect(readShowcaseMindMapCanvasMode()).toBe('legacy')
   })
 })

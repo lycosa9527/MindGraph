@@ -95,7 +95,6 @@ class FeatureFlagsResponse(BaseModel):
     feature_askonce: bool
     feature_debateverse: bool
     feature_knowledge_space: bool
-    feature_mindmap_v2_canvas: bool
     feature_mind_classroom_slide_deck: bool = False
     feature_library: bool
     feature_gewe: bool
@@ -164,7 +163,6 @@ async def get_feature_flags(
         feature_askonce=config.FEATURE_ASKONCE,
         feature_debateverse=config.FEATURE_DEBATEVERSE,
         feature_knowledge_space=config.FEATURE_KNOWLEDGE_SPACE,
-        feature_mindmap_v2_canvas=config.FEATURE_MINDMAP_V2_CANVAS,
         feature_mind_classroom_slide_deck=config.FEATURE_MIND_CLASSROOM_SLIDE_DECK,
         feature_library=config.FEATURE_LIBRARY,
         feature_gewe=config.FEATURE_GEWE,

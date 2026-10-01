@@ -21,7 +21,6 @@ import {
 
 const props = defineProps<{
   diagramType?: string | null
-  canvasMode?: MindMapCanvasMode | null
   interactive?: boolean
 }>()
 
@@ -37,7 +36,7 @@ const spec = computed(() =>
 )
 
 const sessionMode = computed<MindMapCanvasMode>(() =>
-  resolveSessionMindMapCanvasMode(props.canvasMode || readEffectiveMindMapCanvasMode())
+  resolveSessionMindMapCanvasMode(readEffectiveMindMapCanvasMode())
 )
 const sessionKey = computed(
   () =>

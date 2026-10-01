@@ -35,6 +35,10 @@ from services.infrastructure.http.llm_http_errors import (
     is_llm_content_filter_detail,
     raise_http_for_llm_error,
 )
+from services.diagram.content_diagram_generate import (
+    generate_non_mindmap_from_content,
+    resolve_content_diagram_slug,
+)
 from services.features.voice_notes_markdown import strip_voice_notes_markdown_meta
 from services.knowledge.document_processor import DocumentProcessor
 from services.knowledge.doc_summary_ingest import DocSummaryIngestService
@@ -149,8 +153,10 @@ async def _generate_mindmap_from_resolved_content(
     require_chrome_tier: bool,
     source_kind: str = "web",
     generation_instructions: Optional[str] = None,
+    diagram_type: Optional[str] = None,
+    topic_hint: Optional[str] = None,
 ) -> dict:
-    """Shared mind map generation from resolved extracted text."""
+    """Shared generation from resolved extracted text for the requested diagram type."""
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(rate_limit_key, identifier, max_requests=100, window_seconds=60)
 
@@ -172,24 +178,42 @@ async def _generate_mindmap_from_resolved_content(
     )
 
     http_request_id = _sanitize_correlation_header(request.headers.get("X-Request-Id"))
-
-    agent = WebContentMindMapAgent(model="qwen")
-    kind = source_kind if source_kind in ("web", "document") else "web"
     try:
-        result = await agent.generate_from_page_content(
-            page_content=strip_voice_notes_markdown_meta(page_content).strip(),
-            language=language,
-            content_format=content_format,
-            page_title=page_title,
-            page_url=page_url,
-            user_id=user_id,
-            organization_id=organization_id,
-            request_type="diagram_generation",
-            endpoint_path=endpoint_path,
-            http_request_id=http_request_id,
-            source_kind=kind,
-            generation_instructions=generation_instructions,
-        )
+        content_slug = resolve_content_diagram_slug(diagram_type)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Unsupported diagram type") from exc
+
+    kind = source_kind if source_kind in ("web", "document") else "web"
+    cleaned = strip_voice_notes_markdown_meta(page_content).strip()
+    try:
+        if content_slug == "mindmap":
+            agent = WebContentMindMapAgent(model="qwen")
+            result = await agent.generate_from_page_content(
+                page_content=cleaned,
+                language=language,
+                content_format=content_format,
+                page_title=page_title,
+                page_url=page_url,
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type="diagram_generation",
+                endpoint_path=endpoint_path,
+                http_request_id=http_request_id,
+                source_kind=kind,
+                generation_instructions=generation_instructions,
+            )
+        else:
+            result = await generate_non_mindmap_from_content(
+                diagram_type=content_slug,
+                page_content=cleaned,
+                language=language,
+                page_title=page_title,
+                topic_hint=topic_hint,
+                user_id=user_id,
+                organization_id=organization_id,
+                endpoint_path=endpoint_path,
+                generation_instructions=generation_instructions,
+            )
     except LLMServiceError as exc:
         if isinstance(exc, LLMContentFilterError):
             logger.warning(
@@ -221,13 +245,16 @@ async def _generate_mindmap_from_resolved_content(
             module="canvas",
             redis_activity_type="diagram_generation",
             request=request,
-            details={"endpoint": endpoint_path, "diagram_type": "mind_map"},
+            details={
+                "endpoint": endpoint_path,
+                "diagram_type": "mind_map" if content_slug == "mindmap" else content_slug,
+            },
             detail=f"package_mindmap {title_preview or '-'}",
             usage_source="mindgraph",
             usage_action="diagram_generate",
             title=title_preview,
             prompt_preview=title_preview or endpoint_path,
-            diagram_type="mind_map",
+            diagram_type="mind_map" if content_slug == "mindmap" else content_slug,
         )
 
     return result
@@ -378,6 +405,7 @@ async def generate_from_web_content(
         endpoint_path="/api/generate_from_web_content",
         rate_limit_key="generate_from_web_content",
         require_chrome_tier=True,
+        diagram_type=req.diagram_type,
     )
 
 
@@ -402,6 +430,7 @@ async def canvas_generate_mindmap_from_document(
         endpoint_path="/api/canvas/generate_mindmap_from_document",
         rate_limit_key="canvas_generate_mindmap_from_document",
         require_chrome_tier=False,
+        diagram_type=req.diagram_type,
     )
 
 
@@ -410,10 +439,11 @@ async def canvas_generate_mindmap_from_document_file(
     request: Request,
     file: UploadFile = File(...),
     language: str = Form("zh"),
+    diagram_type: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """Canvas document summary panel — extract PDF/DOCX text then generate mind map."""
+    """Canvas document summary panel — extract PDF/DOCX text then generate the open diagram type."""
     await assert_student_ai_capability(db, current_user, request, "file_generate")
     raw = await file.read()
     if not raw:
@@ -453,6 +483,7 @@ async def canvas_generate_mindmap_from_document_file(
             rate_limit_key="canvas_generate_mindmap_from_document_file",
             require_chrome_tier=False,
             source_kind="document",
+            diagram_type=diagram_type,
         )
     finally:
         if temp_path and temp_path.exists():
@@ -467,6 +498,7 @@ async def canvas_generate_mindmap_from_image(
     diagram_id: Optional[str] = Form(None),
     apply_to_library: bool = Form(False),
     generation_instructions: Optional[str] = Form(None),
+    diagram_type: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
@@ -583,6 +615,7 @@ async def canvas_generate_mindmap_from_image(
             require_chrome_tier=False,
             source_kind="document",
             generation_instructions=generation_instructions,
+            diagram_type=diagram_type,
         )
         if isinstance(generated, dict):
             generated["is_mindmap"] = False
@@ -707,6 +740,8 @@ async def canvas_generate_mindmap_from_package(
             require_chrome_tier=False,
             source_kind="document",
             generation_instructions=req.generation_instructions,
+            diagram_type=req.diagram_type,
+            topic_hint=req.topic_hint,
         )
 
     try:
@@ -750,6 +785,8 @@ async def canvas_generate_mindmap_from_package(
         require_chrome_tier=False,
         source_kind="document",
         generation_instructions=req.generation_instructions,
+        diagram_type=req.diagram_type,
+        topic_hint=req.topic_hint,
     )
 
 

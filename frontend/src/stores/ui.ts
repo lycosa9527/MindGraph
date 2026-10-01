@@ -33,12 +33,9 @@ export type AppMode = 'mindmate' | 'mindgraph' | 'template' | 'course' | 'commun
 export type UiVersion = 'chinese' | 'international'
 export type MindMapCanvasMode = 'legacy' | 'v2'
 
-/** Accept leftover stored `v3` (removed chrome mode) as New canvas. */
+/** Leftover stored classic (`legacy`) and `v3` open on the new canvas. */
 export function parseMindMapCanvasMode(value: string | null | undefined): MindMapCanvasMode | null {
-  if (value === 'legacy' || value === 'v2') {
-    return value
-  }
-  if (value === 'v3') {
+  if (value === 'v2' || value === 'legacy' || value === 'v3') {
     return 'v2'
   }
   return null
@@ -53,28 +50,31 @@ const BROWSER_LOCALE_HINT_KEY = 'mindgraph_browser_locale_hint_dismissed'
 const UI_VERSION_KEY = 'mindgraph_ui_version'
 export const MINDMAP_CANVAS_MODE_KEY = 'mindgraph_mindmap_canvas_mode'
 /**
- * One-time stamp: browsers that still had Classic stored (pre–v2-default era, or
- * early defaults) are moved onto New canvas. After this runs, Classic is honored
- * only when the user explicitly selects it in Language settings.
+ * First v2-default stamp. Left in place so older browsers still record that pass.
+ * It no longer preserves an explicit Classic choice.
  */
 export const MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY =
   'mindgraph_mindmap_canvas_v2_default_migrated'
+/**
+ * Classic canvas is archived. This stamp forces every browser onto New canvas,
+ * including one that opted into Classic after the first v2-default migration.
+ */
+export const MINDMAP_CANVAS_LEGACY_ARCHIVED_KEY = 'mindgraph_mindmap_canvas_legacy_archived'
 export const E_BLACKBOARD_OPTIMIZE_KEY = 'mindgraph_e_blackboard_optimize'
 
 type CanvasModeStorage = Pick<Storage, 'getItem' | 'setItem'>
 
 /**
- * Force New (v2) canvas once per browser so Classic is opt-in, not sticky from
- * older defaults. Idempotent via {@link MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY}.
+ * Force New (v2) canvas for every browser. Classic stored after the first
+ * v2-default pass is overwritten. Idempotent via
+ * {@link MINDMAP_CANVAS_LEGACY_ARCHIVED_KEY}.
  */
 export function ensureMindMapCanvasV2DefaultMigration(
   storage: CanvasModeStorage = localStorage
 ): void {
-  if (storage.getItem(MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY) === '1') {
-    return
-  }
   storage.setItem(MINDMAP_CANVAS_MODE_KEY, 'v2')
   storage.setItem(MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY, '1')
+  storage.setItem(MINDMAP_CANVAS_LEGACY_ARCHIVED_KEY, '1')
 }
 
 function detectDefaultUiVersion(): UiVersion {
@@ -291,19 +291,10 @@ export const useUIStore = defineStore('ui', () => {
       localStorage.setItem(UI_VERSION_KEY, 'international')
     }
 
-    // Move every browser onto New canvas once; Classic only after an explicit choice.
     ensureMindMapCanvasV2DefaultMigration()
-    const storedMindMapCanvasMode = localStorage.getItem(MINDMAP_CANVAS_MODE_KEY)
-    // Restore post-migration choice; otherwise default to new (v2) layout.
-    // Flag sync may force Classic in-memory only when FEATURE_MINDMAP_V2_CANVAS is off.
-    const parsedMindMapCanvasMode = parseMindMapCanvasMode(storedMindMapCanvasMode)
-    if (parsedMindMapCanvasMode) {
-      mindMapCanvasMode.value = parsedMindMapCanvasMode
-      if (storedMindMapCanvasMode === 'v3') {
-        localStorage.setItem(MINDMAP_CANVAS_MODE_KEY, parsedMindMapCanvasMode)
-      }
-    } else {
-      mindMapCanvasMode.value = 'v2'
+    mindMapCanvasMode.value = 'v2'
+    if (localStorage.getItem(MINDMAP_CANVAS_MODE_KEY) !== 'v2') {
+      localStorage.setItem(MINDMAP_CANVAS_MODE_KEY, 'v2')
     }
 
     eBlackboardOptimize.value = localStorage.getItem(E_BLACKBOARD_OPTIMIZE_KEY) === '1'
@@ -673,6 +664,7 @@ export const useUIStore = defineStore('ui', () => {
     localStorage.removeItem(UI_VERSION_KEY)
     localStorage.removeItem(MINDMAP_CANVAS_MODE_KEY)
     localStorage.removeItem(MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY)
+    localStorage.removeItem(MINDMAP_CANVAS_LEGACY_ARCHIVED_KEY)
     localStorage.removeItem(E_BLACKBOARD_OPTIMIZE_KEY)
     localStorage.removeItem('mindgraph_sidebar_poem_enabled')
     localStorage.removeItem('mindgraph_sidebar_subtitle_mode')

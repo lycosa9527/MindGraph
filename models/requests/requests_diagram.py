@@ -355,6 +355,11 @@ class WebContentGenerateRequest(BaseModel):
         "zh",
         description="Language code for prompts and output (prompt output registry)",
     )
+    diagram_type: Optional[str] = Field(
+        default=None,
+        max_length=40,
+        description="Open canvas type. Omitted requests still generate a mind map.",
+    )
 
     @field_validator("language")
     @classmethod
@@ -400,6 +405,11 @@ class CanvasDocumentMindmapRequest(BaseModel):
         default="zh",
         description="Language code for prompts and output (prompt output registry)",
     )
+    diagram_type: Optional[str] = Field(
+        default=None,
+        max_length=40,
+        description="Open canvas type. Omitted requests still generate a mind map.",
+    )
 
     @field_validator("language")
     @classmethod
@@ -428,6 +438,11 @@ class GenerateMindmapFromPackageRequest(BaseModel):
         default=None,
         max_length=5000,
         description="Optional mind-map audience / content-expertise instructions",
+    )
+    diagram_type: Optional[str] = Field(
+        default=None,
+        max_length=40,
+        description="Open canvas type. Omitted requests still generate a mind map.",
     )
 
     @field_validator("language")

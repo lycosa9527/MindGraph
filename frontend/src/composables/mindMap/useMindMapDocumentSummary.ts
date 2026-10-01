@@ -21,9 +21,13 @@ import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useDiagramStore, useLLMResultsStore, useSavedDiagramsStore } from '@/stores'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
+import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
 import { apiRequestJson, apiUpload } from '@/utils/apiClient'
-import { mergeMindMapPresentationExtrasIntoSpec } from '@/utils/mindMapLiveSpecExtras'
+import {
+  isMindMapDiagramType,
+  mergeMindMapPresentationExtrasIntoSpec,
+} from '@/utils/mindMapLiveSpecExtras'
 
 const PACKAGES_BASE = DOC_SUMMARY_PACKAGES_BASE
 
@@ -86,9 +90,44 @@ const EXTRACT_STAGE_I18N: Record<string, string> = {
   extracted: 'canvas.mindMapDocumentSummary.statusReady',
 }
 
+const GENERATED_SPEC_TYPES = new Set<string>([
+  'circle_map',
+  'bubble_map',
+  'double_bubble_map',
+  'tree_map',
+  'brace_map',
+  'flow_map',
+  'multi_flow_map',
+  'bridge_map',
+  'concept_map',
+  'mindmap',
+  'mind_map',
+])
+
+function diagramTypeForGeneratedSpec(
+  raw: string | undefined,
+  fallback: string | null | undefined
+): DiagramType {
+  const slug = raw === 'mind_map' ? 'mindmap' : raw
+  if (slug && GENERATED_SPEC_TYPES.has(slug)) {
+    return (slug === 'mind_map' ? 'mindmap' : slug) as DiagramType
+  }
+  const current = fallback === 'mind_map' ? 'mindmap' : fallback
+  if (current && GENERATED_SPEC_TYPES.has(current)) {
+    return current as DiagramType
+  }
+  return 'mindmap'
+}
+
+function openCanvasDiagramType(type: string | null | undefined): string | undefined {
+  if (!type || type === 'diagram') return undefined
+  return type === 'mind_map' ? 'mindmap' : type
+}
+
 type WebContentResult = {
   success?: boolean
   spec?: Record<string, unknown>
+  diagram_type?: string
   error?: string
   detail?: string | { code?: string; error_type?: string; message?: string; max_chars?: number }
   is_mindmap?: boolean
@@ -174,11 +213,14 @@ export function useMindMapDocumentSummary() {
     }
 
     await ensureFontsForLanguageCode(promptLanguage.value)
-    const specToLoad = mergeMindMapPresentationExtrasIntoSpec(
-      result.spec,
-      diagramStore.data as Record<string, unknown> | null
-    )
-    const loaded = diagramStore.loadFromSpec(specToLoad, 'mindmap')
+    const loadType = diagramTypeForGeneratedSpec(result.diagram_type, diagramStore.type)
+    const specToLoad = isMindMapDiagramType(loadType)
+      ? mergeMindMapPresentationExtrasIntoSpec(
+          result.spec,
+          diagramStore.data as Record<string, unknown> | null
+        )
+      : result.spec
+    const loaded = diagramStore.loadFromSpec(specToLoad, loadType)
     if (!loaded) {
       notify.errorKey('canvas.mindMapDocumentSummary.loadFailed')
       return false
@@ -204,6 +246,10 @@ export function useMindMapDocumentSummary() {
       const formData = new FormData()
       formData.append('file', uploadFile)
       formData.append('language', promptLanguage.value)
+      const imageDiagramType = openCanvasDiagramType(diagramStore.type)
+      if (imageDiagramType) {
+        formData.append('diagram_type', imageDiagramType)
+      }
       appendMindMapAudienceFormField(formData, promptLanguage.value)
       const diagramId = savedDiagramsStore.activeDiagramId
       if (diagramId) {
@@ -292,6 +338,7 @@ export function useMindMapDocumentSummary() {
               diagram_id: diagramId,
               topic_hint: options.topicHint,
               language: promptLanguage.value,
+              diagram_type: openCanvasDiagramType(diagramStore.type),
             },
             promptLanguage.value
           )

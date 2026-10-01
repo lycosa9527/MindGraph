@@ -3,28 +3,14 @@
  * MobileCanvasPage — Simplified mobile diagram editor.
  * Vue Flow with touch support, minimal top toolbar, AI model selector at bottom.
  * Reuses DiagramCanvas + stores from desktop, but strips collaboration, presentation,
- * and other desktop-only features. Concept map: 启用 AI in top bar; bottom shows inline
- * rec only while active (tap canvas to dismiss, same as desktop coordinator).
+ * and other desktop-only features. Concept map: 启用 AI in the top bar.
  */
 import { computed, onUnmounted, provide, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
 
-import {
-  Bot,
-  ChevronLeft,
-  ChevronRight,
-  LayoutGrid,
-  Loader2,
-  Maximize2,
-  Plus,
-  RotateCcw,
-  Save,
-  Sparkles,
-  Trash2,
-  X,
-} from '@lucide/vue'
+import { Bot, LayoutGrid, Maximize2, Plus, RotateCcw, Save, Sparkles, Trash2 } from '@lucide/vue'
 
 import {
   AIModelSelector,
@@ -44,7 +30,6 @@ import {
   getNodePalette,
   getPanelCoordinator,
   useCanvasToolbarApps,
-  useInlineRecommendations,
   useInlineRecommendationsCoordinator,
   useLanguage,
   useNodeActions,
@@ -57,9 +42,7 @@ import {
 } from '@/composables/canvas/diagramShareSession'
 import { clearBlankCanvasLoadDedupe } from '@/composables/canvasPage/newCanvasBootstrap'
 import { useCanvasAutoSaveStatus } from '@/composables/canvasPage/useCanvasAutoSaveStatus'
-import { useCanvasPageTabRecIndicator } from '@/composables/canvasPage/useCanvasPageTabRecIndicator'
 import { useCanvasUnsavedLeaveGuard } from '@/composables/canvasPage/useCanvasUnsavedLeaveGuard'
-import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
 import { useNewCanvasTypeQueryBootstrap } from '@/composables/canvasPage/useNewCanvasTypeQueryBootstrap'
 import {
   bindMindMapExternalPanelClose,
@@ -71,7 +54,6 @@ import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSele
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { publishMobileCanvasHeaderSaveStatus } from '@/composables/mobile/mobileCanvasHeaderSaveStatus'
 import { useMobileCanvasEventHandlers } from '@/composables/mobile/useMobileCanvasEventHandlers'
-import { useMobileCanvasInlineRecBar } from '@/composables/mobile/useMobileCanvasInlineRecBar'
 import { useMobileCanvasRouteLoader } from '@/composables/mobile/useMobileCanvasRouteLoader'
 import { useMobileCanvasToolbar } from '@/composables/mobile/useMobileCanvasToolbar'
 import { shouldBypassTrainingLeaveConfirm } from '@/composables/training/applyTrainingSnapshot'
@@ -82,7 +64,6 @@ import {
   useConceptMapRelationshipStore,
   useDiagramStore,
   useFeatureFlagsStore,
-  useInlineRecommendationsStore,
   useLLMResultsStore,
   usePanelsStore,
   useUIStore,
@@ -106,7 +87,6 @@ const llmResultsStore = useLLMResultsStore()
 const panelsStore = usePanelsStore()
 getDiagramOperations()
 
-const inlineRecStore = useInlineRecommendationsStore()
 const focusReviewStore = useConceptMapFocusReviewStore()
 const rootConceptReviewStore = useConceptMapRootConceptReviewStore()
 const relationshipStore = useConceptMapRelationshipStore()
@@ -125,12 +105,8 @@ useTrainingCanvasGenerate(handleAIGenerate)
 const diagramAutoSave = useDiagramAutoSave()
 const previewStore = useMindMapSubgraphPreviewStore()
 const inlineRecCoordinator = useInlineRecommendationsCoordinator()
-useCanvasPageTabRecIndicator()
 useNodeActions()
-const { startRecommendations, selectOptionByGlobalIndex, fetchNextBatch } =
-  useInlineRecommendations()
 
-useConceptMapRelationshipTabFromSelection({ startRecommendations })
 useKittyVoiceSelectionBus('MobileCanvasPage')
 
 const chartType = computed(() => uiStore.selectedChartType)
@@ -186,34 +162,6 @@ watch(
   }
 )
 
-const {
-  inlineRecActive,
-  inlineRecGenerating,
-  showMobileConceptRecBottom,
-  mobileRecOptions,
-  mobileRecPage,
-  mobileRecPerPage,
-  mobileCanPrev,
-  mobileRecFetching,
-  handleRecSelect,
-  handleRecNext,
-  handleRecPrev,
-  handleRecDismiss,
-} = useMobileCanvasInlineRecBar({
-  diagramStore,
-  inlineRecStore,
-  authStore,
-  llmResultsStore,
-  focusReviewStore,
-  rootConceptReviewStore,
-  isConceptMap,
-  startRecommendations,
-  selectOptionByGlobalIndex,
-  fetchNextBatch,
-  translate: t,
-  notifyWarning: (message) => notify.warning(message),
-})
-
 const { autoSavedStatusText } = useCanvasAutoSaveStatus({
   diagramAutoSave,
   isAuthenticated: computed(() => authStore.isAuthenticated),
@@ -234,14 +182,11 @@ publishMobileCanvasHeaderSaveStatus({
 const mobileCanvasEvents = useMobileCanvasEventHandlers({
   diagramStore,
   authStore,
-  inlineRecStore,
-  llmResultsStore,
   focusReviewStore,
   rootConceptReviewStore,
   isConceptMap,
   isAIGenerating,
   startNodePaletteSession,
-  startRecommendations,
   handleAIGenerate,
   handleConceptGeneration,
   translate: t,
@@ -507,7 +452,6 @@ onUnmounted(() => {
     <div
       v-if="
         isConceptMap &&
-        !inlineRecActive &&
         (relationshipActiveEntry ||
           rootConceptReviewStore.showPicker ||
           focusReviewStore.showPicker)
@@ -528,113 +472,10 @@ onUnmounted(() => {
       />
     </div>
 
-    <!-- Bottom bar: non–concept map = AI model + export; concept map = inline rec only -->
     <div
-      v-if="!isConceptMap || showMobileConceptRecBottom"
       class="mobile-bottom-bar shrink-0 px-3 py-2 bg-white/90 backdrop-blur-md border-t border-gray-200 touch-none"
     >
-      <!-- Inline recommendations (full width; concept map has no second row for AI/export) -->
-      <div
-        v-if="inlineRecActive"
-        :class="[
-          'flex items-center w-full min-w-0',
-          isConceptMap ? 'gap-2 min-h-12 mobile-inline-rec--concept' : 'gap-1.5 min-h-9',
-        ]"
-      >
-        <button
-          :class="[
-            'shrink-0 rounded-xl bg-red-50 active:bg-red-100 text-red-500 transition-colors',
-            isConceptMap ? 'p-2.5 min-w-11 min-h-11 flex items-center justify-center' : 'p-1.5',
-          ]"
-          @click="handleRecDismiss"
-        >
-          <X :size="isConceptMap ? 20 : 14" />
-        </button>
-
-        <button
-          :class="[
-            'shrink-0 rounded-xl transition-colors',
-            isConceptMap
-              ? 'p-3 min-w-12 min-h-12 flex items-center justify-center'
-              : 'p-2 min-w-10 min-h-10 flex items-center justify-center',
-            mobileCanPrev
-              ? 'bg-gray-100 active:bg-gray-200 text-gray-600'
-              : 'bg-gray-50 text-gray-300',
-          ]"
-          :disabled="!mobileCanPrev"
-          @click="handleRecPrev"
-        >
-          <ChevronLeft
-            :size="isConceptMap ? 28 : 18"
-            class="mg-icon-flip-rtl"
-          />
-        </button>
-
-        <div
-          v-if="inlineRecGenerating && mobileRecOptions.length === 0"
-          class="flex-1 flex items-center justify-center gap-2 text-xs text-gray-500"
-        >
-          <Loader2
-            :size="isConceptMap ? 18 : 14"
-            class="animate-spin text-green-500"
-          />
-          <span :class="isConceptMap ? 'text-sm' : ''"><I18nText k="inlineRec.generating" /></span>
-        </div>
-        <div
-          v-else
-          class="rec-scroll-area flex-1 overflow-x-auto min-w-0"
-        >
-          <div :class="['flex items-stretch', isConceptMap ? 'gap-2' : 'gap-1.5']">
-            <button
-              v-for="(opt, idx) in mobileRecOptions"
-              :key="`${inlineRecStore.activeNodeId}-${mobileRecPage}-${idx}`"
-              :class="[
-                'rec-chip shrink-0 rounded-xl bg-green-50 active:bg-green-100 text-green-700 font-medium transition-colors border border-green-200 whitespace-nowrap',
-                isConceptMap
-                  ? 'rec-chip--concept px-3 py-2.5 text-sm min-h-11 flex items-center'
-                  : 'px-2.5 py-1.5 text-xs',
-              ]"
-              @click="handleRecSelect(idx)"
-            >
-              <span :class="['text-green-500 font-bold mr-1', isConceptMap ? 'text-sm' : '']">
-                {{ mobileRecPage * mobileRecPerPage + idx + 1 }}
-              </span>
-              {{ opt }}
-            </button>
-          </div>
-        </div>
-
-        <button
-          :class="[
-            'shrink-0 rounded-xl transition-colors',
-            isConceptMap
-              ? 'p-3 min-w-12 min-h-12 flex items-center justify-center'
-              : 'p-2 min-w-10 min-h-10 flex items-center justify-center',
-            mobileRecFetching
-              ? 'bg-gray-50 text-gray-300'
-              : 'bg-gray-100 active:bg-gray-200 text-gray-600',
-          ]"
-          :disabled="mobileRecFetching"
-          @click="handleRecNext"
-        >
-          <Loader2
-            v-if="mobileRecFetching"
-            :size="isConceptMap ? 20 : 16"
-            class="animate-spin"
-          />
-          <ChevronRight
-            v-else
-            :size="isConceptMap ? 28 : 18"
-            class="mg-icon-flip-rtl"
-          />
-        </button>
-      </div>
-
-      <!-- Other diagrams: AI model on the left; learning sheet sits left of export -->
-      <div
-        v-else
-        class="flex items-center justify-between gap-2"
-      >
+      <div class="flex items-center justify-between gap-2">
         <button
           class="bottom-btn flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 active:bg-gray-200 transition-colors"
           @click="showModelDrawer = true"

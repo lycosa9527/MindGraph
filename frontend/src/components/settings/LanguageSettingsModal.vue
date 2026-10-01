@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /**
- * UI settings: interface / prompt language, mind-map canvas mode, e-blackboard chrome.
+ * UI settings: interface / prompt language and e-blackboard chrome.
+ * The new canvas is the only canvas; classic is archived and not offered here.
  * Shell: light Swiss stone (user settings).
  */
 import { computed, ref, watch } from 'vue'
@@ -12,9 +13,7 @@ import { Settings } from '@lucide/vue'
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import BilingualUiSettingsSection from '@/components/settings/BilingualUiSettingsSection.vue'
-import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
-import { useNotifications } from '@/composables/core/useNotifications'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import {
   getInterfaceLanguagePickerLocaleCount,
@@ -23,7 +22,7 @@ import {
   matchedPromptLanguageForUiLocale,
 } from '@/i18n/locales'
 import { useAuthStore } from '@/stores/auth'
-import type { Language, MindMapCanvasMode, PromptLanguage } from '@/stores/ui'
+import type { Language, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
 import '@/styles/settings-language-swiss.css'
 import { MULTISCRIPT_SANS_STACK } from '@/utils/diagramNodeFontStack'
@@ -33,12 +32,9 @@ const visible = defineModel<boolean>({ required: true })
 const uiStore = useUIStore()
 const authStore = useAuthStore()
 const { t } = useLanguage()
-const notify = useNotifications()
-const { featureMindmapV2Canvas } = useFeatureFlags()
 
 const draftUi = ref<Language>(uiStore.language)
 const draftPrompt = ref<PromptLanguage>(uiStore.promptLanguage)
-const draftMindMapCanvasMode = ref<MindMapCanvasMode>(uiStore.mindMapCanvasMode)
 const draftEBlackboardOptimize = ref(uiStore.eBlackboardOptimize)
 const draftBilingualUiEnabled = ref(uiStore.bilingualUiEnabled)
 const draftPresenterUiLocale = ref<Language>(uiStore.presenterUiLocale)
@@ -133,7 +129,6 @@ watch(visible, (v) => {
     }
     draftUi.value = ui
     draftPrompt.value = pr
-    draftMindMapCanvasMode.value = uiStore.mindMapCanvasMode
     draftEBlackboardOptimize.value = uiStore.eBlackboardOptimize
     draftBilingualUiEnabled.value = uiStore.bilingualUiEnabled
     draftPresenterUiLocale.value =
@@ -240,14 +235,7 @@ async function save(): Promise<void> {
   if (!matchPromptToInterface.value) {
     uiStore.setPromptLanguage(promptForPersist)
   }
-  if (featureMindmapV2Canvas.value) {
-    const prevMindMapMode = uiStore.mindMapCanvasMode
-    uiStore.setMindMapCanvasMode(draftMindMapCanvasMode.value)
-    uiStore.setEBlackboardOptimize(draftEBlackboardOptimize.value)
-    if (prevMindMapMode !== draftMindMapCanvasMode.value) {
-      notify.infoKey('settings.language.mindMapCanvasRefreshHint')
-    }
-  }
+  uiStore.setEBlackboardOptimize(draftEBlackboardOptimize.value)
   uiStore.setUiLanguageExplicit(true)
   visible.value = false
 }
@@ -361,49 +349,8 @@ function onClose(): void {
         </el-select>
       </section>
 
-      <section v-if="featureMindmapV2Canvas">
+      <section>
         <div class="language-settings-swiss__kicker">
-          <span><I18nText k="settings.language.mindMapCanvas" /></span>
-        </div>
-        <!--
-          Swiss equal-split segmented control (Classic / New).
-          Use plain <button role="radio"> — NOT ElRadioGroup/ElRadioButton (shows circles).
-          Styles: settings-language-swiss.css → .language-settings-canvas-segmented / -segment
-          Active segment: .is-active on the selected button; v-model via click + :class binding.
-        -->
-        <div
-          class="language-settings-canvas-segmented"
-          role="radiogroup"
-          :aria-label="t('settings.language.mindMapCanvas')"
-        >
-          <button
-            type="button"
-            role="radio"
-            class="language-settings-canvas-segment"
-            data-training-target="mindmap-v1"
-            :class="{ 'is-active': draftMindMapCanvasMode === 'legacy' }"
-            :aria-checked="draftMindMapCanvasMode === 'legacy'"
-            @click="draftMindMapCanvasMode = 'legacy'"
-          >
-            <I18nText k="settings.language.mindMapCanvasV1" />
-          </button>
-          <button
-            type="button"
-            role="radio"
-            class="language-settings-canvas-segment"
-            data-training-target="mindmap-v2"
-            :class="{ 'is-active': draftMindMapCanvasMode === 'v2' }"
-            :aria-checked="draftMindMapCanvasMode === 'v2'"
-            @click="draftMindMapCanvasMode = 'v2'"
-          >
-            <I18nText k="settings.language.mindMapCanvasV2" />
-          </button>
-        </div>
-        <p class="language-settings-swiss__hint">
-          <I18nText k="settings.language.mindMapCanvasRefreshHint" />
-        </p>
-
-        <div class="language-settings-swiss__kicker language-settings-swiss__kicker--spaced">
           <span><I18nText k="settings.language.eBlackboardOptimize" /></span>
         </div>
         <div

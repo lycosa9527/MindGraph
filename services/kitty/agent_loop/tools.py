@@ -109,8 +109,6 @@ IDENTITY_REQUIRED_ACTIONS = frozenset(
 _OMNI_UI_NAMES = frozenset(
     {
         "select_node",
-        "start_inline_recommendations",
-        "add_node_with_recommendations",
         "explain_node",
         "ask_mindmate",
         "open_panel",

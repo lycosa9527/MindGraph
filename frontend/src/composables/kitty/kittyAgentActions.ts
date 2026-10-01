@@ -2,8 +2,8 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { applyKittySelectionTarget } from '@/composables/kitty/kittySelectionApply'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { isAiContentLevelId } from '@/config/aiContentLevels'
-import { useAiContentLevelStore } from '@/stores/aiContentLevel'
 import { useDiagramStore } from '@/stores'
+import { useAiContentLevelStore } from '@/stores/aiContentLevel'
 import { isMindMapNumberingGlyphStyle } from '@/utils/mindMapBranchNumbering'
 
 export function executeKittyAgentAction(action: string, params: Record<string, unknown>): void {
@@ -55,6 +55,9 @@ export function executeKittyAgentAction(action: string, params: Record<string, u
 
     case 'set_branch_numbering': {
       const store = useDiagramStore()
+      if (store.type && store.type !== 'mindmap' && store.type !== 'mind_map') {
+        break
+      }
       if (params.enabled === false) {
         store.setMindMapBranchNumbering(false)
         break
@@ -87,10 +90,6 @@ export function executeKittyAgentAction(action: string, params: Record<string, u
     }
 
     case 'start_inline_recommendations':
-      eventBus.emit('kitty:inline_recommendations_requested', {
-        nodeId: params.node_id as string | undefined,
-        nodeIndex: typeof params.node_index === 'number' ? params.node_index : undefined,
-      })
       break
 
     case 'add_node_with_recommendations':

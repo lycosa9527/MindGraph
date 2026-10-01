@@ -135,10 +135,6 @@ diagram; there is no auto_complete_branch tool on this path.
 - delete_node — remove a node (node_identifier: index label like 第一个 / node text / id)
 - select_node — highlight a node on canvas
 - auto_complete — AI fill the whole diagram (needs a valid center/topic first)
-- start_inline_recommendations — Tab-style inline suggestions for ONE node
-  (联想/推荐/建议/suggestions for this node; omit node_identifier if a node is already selected)
-- add_node_with_recommendations — add ONE node, then open inline suggestions to pick a label
-  (e.g. 「增加一个节点并给出一些建议」; optional text placeholder; user chooses from suggestions)
 - explain_node — open MindMate to explain a node concept (解释/讲解 + node reference)
 - ask_mindmate — send a free-form question to MindMate panel (message required)
 - open_panel / close_panel — mindmate or node_palette
@@ -153,8 +149,6 @@ Examples:
 - 「把第一个改成 发动机」→ update_node(node_identifier="第一个", new_text="发动机")
 - 「把2.1改成绿茶」→ update_node(node_identifier="2.1", new_text="绿茶")
 - 「自动补全」→ auto_complete()
-- 「给这个节点一些建议」→ start_inline_recommendations()
-- 「增加一个节点并给出一些建议」→ add_node_with_recommendations()
 - 「解释一下第一个节点」→ explain_node(node_identifier="第一个")
 - 「帮我问一下 MindMate 什么是光合作用」→ ask_mindmate(message="什么是光合作用")
 """

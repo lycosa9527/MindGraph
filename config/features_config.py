@@ -56,15 +56,6 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_KNOWLEDGE_SPACE", "False").lower() == "true"
 
     @property
-    def FEATURE_MINDMAP_V2_CANVAS(self):
-        """Expose Classic/New mind map canvas choice in Language settings.
-
-        Enabled by default: new (v2) canvas is the default; classic remains selectable.
-        Set FEATURE_MINDMAP_V2_CANVAS=False in .env to force classic-only (hide the control).
-        """
-        return self._get_cached_value("FEATURE_MINDMAP_V2_CANVAS", "True").lower() == "true"
-
-    @property
     def FEATURE_MIND_CLASSROOM_SLIDE_DECK(self):
         """Enable 思维讲堂「幻灯片讲解」presentation mode.
 

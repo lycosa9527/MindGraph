@@ -74,6 +74,8 @@ import {
 import { useMindMapCanvasVisuals } from '@/composables/mindMap/useMindMapCanvasVisuals'
 import { useMindMapConnectorDebugLog } from '@/composables/mindMap/useMindMapConnectorDebugLog'
 import { useMindMapMultiLinePaste } from '@/composables/mindMap/useMindMapMultiLinePaste'
+import { openConceptMapNodePalette } from '@/composables/nodePalette/openConceptMapNodePalette'
+import { openThinkingMapAiExpand } from '@/composables/nodePalette/openThinkingMapAiExpand'
 import {
   diagramPresentationReadOnlyRef,
   resolvePresentationTeleportTarget,
@@ -211,6 +213,7 @@ const {
   getNodes: getVueFlowNodes,
   setViewport,
   getViewport,
+  setMinZoom,
   zoomIn,
   zoomOut,
   screenToFlowCoordinate,
@@ -369,7 +372,13 @@ watch(
 const { followEnabled: followNodeStyleToolbar } = useFollowNodeStyleToolbar()
 
 const floatingToolbarNodeIds = computed(() => {
-  if (!useMindMapV2.value && !isThinkingMapDiagramType(diagramStore.type)) return []
+  if (
+    !useMindMapV2.value &&
+    !isThinkingMapDiagramType(diagramStore.type) &&
+    diagramStore.type !== 'concept_map'
+  ) {
+    return []
+  }
   return diagramStore.selectedNodes.filter((id) => !isMindMapSummaryNodeId(id))
 })
 
@@ -379,9 +388,15 @@ const floatingToolbarEnabled = computed(
 
 const floatingToolbarAnchorId = computed(() => floatingToolbarNodeIds.value[0] ?? null)
 
-const floatingToolbarShowAiSubgraph = computed(() =>
-  isMindMapSubgraphExpandable(floatingToolbarAnchorId.value)
-)
+const floatingToolbarShowAiSubgraph = computed(() => {
+  if (isThinkingMapDiagramType(diagramStore.type) || diagramStore.type === 'concept_map') {
+    return floatingToolbarAnchorId.value != null
+  }
+  return (
+    (diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map') &&
+    isMindMapSubgraphExpandable(floatingToolbarAnchorId.value)
+  )
+})
 
 const floatingToolbarSize = ref<FloatingToolbarSize | null>(null)
 
@@ -437,8 +452,20 @@ const {
 
 const { isGenerating: subgraphGenerating, generateSubgraph } = useMindMapSubgraphSuggest()
 
+function runAiSubgraph(nodeId: string | null): void {
+  if (diagramStore.type === 'concept_map') {
+    if (nodeId) openConceptMapNodePalette()
+    return
+  }
+  if (isThinkingMapDiagramType(diagramStore.type)) {
+    if (nodeId) openThinkingMapAiExpand(nodeId)
+    return
+  }
+  void generateSubgraph(nodeId)
+}
+
 async function handleAiSubgraphGenerate() {
-  await generateSubgraph(floatingToolbarAnchorId.value)
+  runAiSubgraph(floatingToolbarAnchorId.value)
 }
 
 const {
@@ -659,7 +686,7 @@ onMounted(() => {
   eventBus.onWithOwner(
     'mindmap:ai_subgraph_requested',
     ({ nodeId }) => {
-      void generateSubgraph(nodeId ?? floatingToolbarAnchorId.value)
+      runAiSubgraph(nodeId ?? floatingToolbarAnchorId.value)
     },
     'DiagramCanvas'
   )
@@ -684,6 +711,7 @@ onMounted(() => {
     getNodes: () => unref(getVueFlowNodes) as unknown as MindGraphNode[],
     getViewport,
     setViewport,
+    setMinZoom,
     zoomIn,
     zoomOut,
     fitApi: {

@@ -27,7 +27,7 @@ import { ChatDotRound, Download } from '@element-plus/icons-vue'
 import { ArrowLeft, FileImage, FileJson, FileText, ImageDown, RotateCcw, Share2 } from '@lucide/vue'
 
 import MindMapRibbonTabs from '@/canvas-ribbon/MindMapRibbonTabs.vue'
-import { diagramRibbonCapabilities } from '@/canvas-ribbon/diagramRibbonCapabilities'
+import { isDiagramRibbonFamily } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import { MIND_MAP_RIBBON_TOOLS_ID } from '@/canvas-ribbon/mindMapRibbonTypes'
 import { useMindMapRibbonState } from '@/canvas-ribbon/useMindMapRibbonState'
 import CanvasOnlineCollabMenu from '@/components/canvas/CanvasOnlineCollabMenu.vue'
@@ -179,10 +179,8 @@ const diagramTypeForName = computed(
 )
 
 const mindMapV2 = useMindMapV2Chrome()
-const isMindMapEditor = computed(
-  () =>
-    mindMapV2.value ||
-    diagramRibbonCapabilities(diagramTypeForName.value, mindMapV2.value).thinkingMapChrome
+const isMindMapEditor = computed(() =>
+  isDiagramRibbonFamily(diagramTypeForName.value, mindMapV2.value)
 )
 const { activeTab, classic, selectTab } = useMindMapRibbonState()
 

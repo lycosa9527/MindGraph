@@ -40,7 +40,6 @@ export function useFeatureFlags() {
   const featureAskOnce = computed(() => live.value?.feature_askonce ?? false)
   const featureDebateverse = computed(() => live.value?.feature_debateverse ?? false)
   const featureKnowledgeSpace = computed(() => live.value?.feature_knowledge_space ?? false)
-  const featureMindmapV2Canvas = computed(() => live.value?.feature_mindmap_v2_canvas ?? true)
   const featureMindClassroomSlideDeck = computed(
     () => live.value?.feature_mind_classroom_slide_deck ?? false
   )
@@ -79,7 +78,6 @@ export function useFeatureFlags() {
     featureAskOnce,
     featureDebateverse,
     featureKnowledgeSpace,
-    featureMindmapV2Canvas,
     featureMindClassroomSlideDeck,
     featureLibrary,
     featureGewe,

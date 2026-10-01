@@ -19,19 +19,12 @@ import { Sparkles, X } from '@lucide/vue'
 
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables'
-import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useOrgCustomLlm } from '@/composables/llm/useOrgCustomLlm'
 import { LLM_MODEL_COLORS } from '@/config/llmModelColors'
-import {
-  useConceptMapFocusReviewStore,
-  useDiagramStore,
-  useInlineRecommendationsStore,
-  useLLMResultsStore,
-} from '@/stores'
-import { conceptMapUsesRelationshipInlineRec } from '@/utils/conceptMapInlineRec'
+import { useConceptMapFocusReviewStore, useDiagramStore, useLLMResultsStore } from '@/stores'
 
 const props = withDefaults(
   defineProps<{
@@ -58,12 +51,8 @@ const { switchToModel, cancelGeneration } = useAutoComplete()
 const { aiBlockedByCollab, guardCollabGuestAi } = useCollabGuestAiGate()
 const diagramStore = useDiagramStore()
 const llmResultsStore = useLLMResultsStore()
-const inlineRecStore = useInlineRecommendationsStore()
 const focusReviewStore = useConceptMapFocusReviewStore()
 const isConceptMap = computed(() => diagramStore.type === 'concept_map')
-const isMindMap = computed(
-  () => diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map'
-)
 
 const FOCUS_TOPIC_NODE_ID = 'topic'
 
@@ -101,78 +90,6 @@ onUnmounted(() => {
   stopTrackConceptMapEditor?.()
 })
 
-/**
- * Concept map badges (shown only when each applies — never all three forced at once).
- * Tab内容推荐 / Tab关系推荐: AI on + topic ready (`inlineRec.isReady`).
- * Tab焦点问题: select or edit topic `topic` (no AI toggle); SSE from focus review store.
- */
-const conceptMapAiTabBadgesAllowed = computed(
-  () =>
-    isConceptMap.value &&
-    !props.conceptMapTopToolbar &&
-    !props.hideTabFocusBadge &&
-    llmResultsStore.selectedModel != null &&
-    inlineRecStore.isReady
-)
-
-function conceptMapNodeEligible(nodeId: string): boolean {
-  const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
-  if (!node) return false
-  return Boolean(
-    isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)
-  )
-}
-
-const conceptMapTabContentHighlightIdle = computed(() => {
-  if (diagramStore.type !== 'concept_map') return false
-  const nid = conceptMapEditingNodeId.value
-  if (!nid || !conceptMapNodeEligible(nid)) return false
-  return !conceptMapUsesRelationshipInlineRec(nid, diagramStore.data?.connections)
-})
-
-const conceptMapTabRelationshipHighlightIdle = computed(() => {
-  if (diagramStore.type !== 'concept_map') return false
-  const conns = diagramStore.data?.connections
-  const editId = conceptMapEditingNodeId.value
-  if (editId && conceptMapNodeEligible(editId)) {
-    return conceptMapUsesRelationshipInlineRec(editId, conns)
-  }
-  const selected = diagramStore.selectedNodes
-  if (!selected?.length || selected.length !== 1) return false
-  const sid = selected[0]
-  if (!conceptMapNodeEligible(sid)) return false
-  return conceptMapUsesRelationshipInlineRec(sid, conns)
-})
-
-const conceptMapInlineRecContentStreamingPhase = computed(() => {
-  const phase = inlineRecStore.streamPhase
-  if (phase === 'idle') return false
-  const activeId = inlineRecStore.activeNodeId
-  if (!activeId) return false
-  return !conceptMapUsesRelationshipInlineRec(activeId, diagramStore.data?.connections ?? [])
-})
-
-const conceptMapInlineRecRelationshipStreamingPhase = computed(() => {
-  const phase = inlineRecStore.streamPhase
-  if (phase === 'idle') return false
-  const activeId = inlineRecStore.activeNodeId
-  if (!activeId) return false
-  return conceptMapUsesRelationshipInlineRec(activeId, diagramStore.data?.connections ?? [])
-})
-
-const showConceptMapContentTabBadge = computed(() => {
-  if (!conceptMapAiTabBadgesAllowed.value) return false
-  return conceptMapTabContentHighlightIdle.value || conceptMapInlineRecContentStreamingPhase.value
-})
-
-const showConceptMapRelationshipTabBadge = computed(() => {
-  if (!conceptMapAiTabBadgesAllowed.value) return false
-  return (
-    conceptMapTabRelationshipHighlightIdle.value ||
-    conceptMapInlineRecRelationshipStreamingPhase.value
-  )
-})
-
 /** Select or edit topic node (`topic`) — focus-question Tab (sign-in + valid length enforced at run). */
 const conceptMapFocusTopicBadgeBaseAllowed = computed(
   () => isConceptMap.value && !props.conceptMapTopToolbar && !props.hideTabFocusBadge
@@ -200,53 +117,6 @@ const conceptMapFocusQuestionBadgeGlowClass = computed(() => {
 const conceptMapFocusQuestionBadgeMuted = computed(() => {
   if (!showConceptMapFocusQuestionTabBadge.value) return false
   return conceptMapFocusQuestionBadgeGlowClass.value === ''
-})
-
-const showConceptMapTabBadgeRow = computed(
-  () =>
-    showConceptMapContentTabBadge.value ||
-    showConceptMapRelationshipTabBadge.value ||
-    showConceptMapFocusQuestionTabBadge.value
-)
-
-const conceptMapContentBadgeGlowClass = computed(() => {
-  if (!showConceptMapContentTabBadge.value) return ''
-  const phase = inlineRecStore.streamPhase
-  if (conceptMapInlineRecContentStreamingPhase.value) {
-    return phase === 'streaming'
-      ? 'tab-rec-badge-wrap--streaming'
-      : 'tab-rec-badge-wrap--requesting'
-  }
-  return conceptMapTabContentHighlightIdle.value ? 'tab-rec-badge-wrap--idle' : ''
-})
-
-const conceptMapRelationshipBadgeGlowClass = computed(() => {
-  if (!showConceptMapRelationshipTabBadge.value) return ''
-  const phase = inlineRecStore.streamPhase
-  if (conceptMapInlineRecRelationshipStreamingPhase.value) {
-    return phase === 'streaming'
-      ? 'tab-rec-badge-wrap--streaming'
-      : 'tab-rec-badge-wrap--requesting'
-  }
-  return conceptMapTabRelationshipHighlightIdle.value ? 'tab-rec-badge-wrap--idle' : ''
-})
-
-/** Show "Tab推荐" indicator when topic fixed—inline rec ready (not mind map / concept map). */
-const showInlineRecReady = computed(
-  () => !isConceptMap.value && !isMindMap.value && inlineRecStore.isReady
-)
-
-/**
- * Tab rec badge ring matches inline SSE store (`streamPhase`):
- * requesting = blue traveling ring, streaming = green traveling ring,
- * idle = solid green ring (ready / stream finished / no request in flight).
- */
-const tabRecBadgeGlowClass = computed(() => {
-  if (!showInlineRecReady.value) return ''
-  const phase = inlineRecStore.streamPhase
-  if (phase === 'streaming') return 'tab-rec-badge-wrap--streaming'
-  if (phase === 'requesting') return 'tab-rec-badge-wrap--requesting'
-  return 'tab-rec-badge-wrap--idle'
 })
 
 function modelLabel(modelKey: string): string {
@@ -437,37 +307,9 @@ function getButtonStyle(modelKey: string) {
           </button>
         </ElTooltip>
         <div
-          v-if="showConceptMapTabBadgeRow"
+          v-if="showConceptMapFocusQuestionTabBadge"
           class="flex items-center gap-1 shrink-0"
         >
-          <I18nTooltip
-            v-if="showConceptMapContentTabBadge"
-            k="aiModel.conceptMapConceptTabTooltip"
-            placement="top"
-          >
-            <span
-              class="tab-rec-badge-wrap inline-flex"
-              :class="conceptMapContentBadgeGlowClass"
-            >
-              <span class="tab-rec-badge-inner relationship-ready-badge"
-                ><I18nText k="aiModel.tabContentRecBadge"
-              /></span>
-            </span>
-          </I18nTooltip>
-          <I18nTooltip
-            v-if="showConceptMapRelationshipTabBadge"
-            k="aiModel.conceptMapRelationshipTabTooltip"
-            placement="top"
-          >
-            <span
-              class="tab-rec-badge-wrap inline-flex"
-              :class="conceptMapRelationshipBadgeGlowClass"
-            >
-              <span class="tab-rec-badge-inner relationship-ready-badge"
-                ><I18nText k="aiModel.tabRelationshipRecBadge"
-              /></span>
-            </span>
-          </I18nTooltip>
           <I18nTooltip
             v-if="showConceptMapFocusQuestionTabBadge"
             k="aiModel.conceptMapFocusQuestionTabTooltip"
@@ -527,22 +369,6 @@ function getButtonStyle(modelKey: string) {
           </span>
         </ElTooltip>
       </div>
-
-      <!-- Inline rec ready indicator (thinking maps: edit node, press Tab for AI recommendations) -->
-      <I18nTooltip
-        v-if="showInlineRecReady"
-        k="aiModel.inlineRecTooltip"
-        placement="top"
-      >
-        <span
-          class="tab-rec-badge-wrap inline-flex"
-          :class="tabRecBadgeGlowClass"
-        >
-          <span class="tab-rec-badge-inner relationship-ready-badge"
-            ><I18nText k="aiModel.tabRecBadge"
-          /></span>
-        </span>
-      </I18nTooltip>
 
       <!-- Ready count indicator (hidden for concept map — no multi-model autocomplete) -->
       <div

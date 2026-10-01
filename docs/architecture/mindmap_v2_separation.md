@@ -1,13 +1,11 @@
 # Mind map canvas — classic vs v2 separation
 
-New (v2) mind map canvas is the **default** (`mindMapCanvasMode: v2`) when
-`FEATURE_MINDMAP_V2_CANVAS=True` (on by default). A one-time browser migration
-(`mindgraph_mindmap_canvas_v2_default_migrated`) moves sticky Classic preferences
-onto New; Classic remains opt-in via Language settings. V2 chrome includes the
-ribbon + status bar, **Document Summary** (文档总结), orthogonal edges, and
-subtree layout.
-Set `FEATURE_MINDMAP_V2_CANVAS=False` to force classic-only at runtime (does not
-overwrite the saved New-canvas preference).
+New (v2) mind map canvas is the only product canvas (`mindMapCanvasMode: v2`).
+There is no feature flag and no settings choice. A browser migration
+(`mindgraph_mindmap_canvas_legacy_archived`) moves every stored Classic preference
+onto New, including an explicit Classic choice left by the earlier
+`mindgraph_mindmap_canvas_v2_default_migrated` stamp. The classic engine stays in
+the tree for tests that pass a session mode of `legacy`.
 
 ## Canvas component split (lazy-loaded shells)
 
@@ -44,7 +42,7 @@ Variant files hardcode styling (no runtime legacy/v2 branches). `useMindMapCanva
 
 - `useMindMapV2Chrome()` — New-canvas UI chrome (ribbon + status bar)
 - `readMindMapV2VisualDesignActive()` — layout, geometry, themes, stroke sync in stores/spec loader
-- `effectiveMindMapCanvasMode(mode, flag)` — leftover stored `v3` becomes `v2`; flag off forces classic
+- `effectiveMindMapCanvasMode(mode)` — leftover stored `v3` becomes `v2`
 
 ## Layout split (baseline c2611060e for classic)
 
@@ -150,7 +148,7 @@ The New-canvas ribbon and status bar still live under
 |---------|--------|
 | Ribbon tabs + status | [`frontend/src/canvas-ribbon/`](../../frontend/src/canvas-ribbon/) |
 | Diagram | `MindMapV2Canvas` via `MindMapCanvasRouter` |
-| Settings | Language settings **Classic / New** (`FEATURE_MINDMAP_V2_CANVAS`) |
+| Settings | New canvas only; no canvas choice |
 | Leftover `v3` | `parseMindMapCanvasMode` / training `normalize_mindmap_canvas_mode` → `v2` |
 | Showcase / export-render | Stay on **v2** |
 | Chrome gate | `useMindMapV2Chrome()`; layout/theme use `isSessionMindMapV2VisualDesignActive` |

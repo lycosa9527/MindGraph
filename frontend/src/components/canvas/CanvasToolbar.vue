@@ -8,7 +8,7 @@ import { ElButton } from 'element-plus'
 
 import { ArrowDownUp, Brush, Upload } from '@lucide/vue'
 
-import { diagramRibbonCapabilities } from '@/canvas-ribbon/diagramRibbonCapabilities'
+import { isDiagramRibbonFamily } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import type { MindMapRibbonTabId } from '@/canvas-ribbon/mindMapRibbonTypes'
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
@@ -114,10 +114,8 @@ const isMultiFlowMap = computed(() => diagramStore.type === 'multi_flow_map')
 const isBridgeMap = computed(() => diagramStore.type === 'bridge_map')
 const isFlowMap = computed(() => diagramStore.type === 'flow_map')
 const useMindMapV2 = useMindMapV2Chrome()
-const showMindMapRibbonTools = computed(
-  () =>
-    useMindMapV2.value ||
-    diagramRibbonCapabilities(diagramStore.type, useMindMapV2.value).thinkingMapChrome
+const showMindMapRibbonTools = computed(() =>
+  isDiagramRibbonFamily(diagramStore.type, useMindMapV2.value)
 )
 
 const mathInsertDialogOpen = ref(false)
@@ -374,7 +372,7 @@ function handleToggleOrientation() {
     />
 
     <CanvasVirtualKeyboardPanel
-      v-if="!showMindMapRibbonTools"
+      v-if="!showMindMapRibbonTools || isConceptMap"
       v-model="virtualKeyboardOpen"
     />
   </div>

@@ -44,9 +44,4 @@ export const KITTY_VOICE_COMMAND_GUIDE_ROWS: KittyVoiceCommandGuideRow[] = [
     action: 'explain_node',
     exampleKey: 'canvas.voiceCommandGuide.example.explain_node',
   },
-  {
-    id: 'start_inline_recommendations',
-    action: 'start_inline_recommendations',
-    exampleKey: 'canvas.voiceCommandGuide.example.start_inline_recommendations',
-  },
 ]

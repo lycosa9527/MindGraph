@@ -441,8 +441,9 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     previousMode: MindMapCanvasMode,
     newMode: MindMapCanvasMode
   ): boolean {
-    mindMapCanvasMode.value = newMode
-    return reconcileMindMapCanvasModeSwitch(ctx, previousMode, newMode)
+    const resolved = parseMindMapCanvasMode(newMode) ?? 'v2'
+    mindMapCanvasMode.value = resolved
+    return reconcileMindMapCanvasModeSwitch(ctx, previousMode, resolved)
   }
 
   function setSessionId(id: string): boolean {

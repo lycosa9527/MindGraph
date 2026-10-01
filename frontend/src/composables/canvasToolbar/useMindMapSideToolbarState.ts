@@ -1,12 +1,14 @@
 import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import { getAiBrainstorm } from '@/composables/aiBrainstorm/useAiBrainstorm'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useMindMapAudienceGenerate } from '@/composables/mindMap/audience/useMindMapAudienceGenerate'
+import { openConceptMapNodePalette } from '@/composables/nodePalette/openConceptMapNodePalette'
 import { getAiBrainstormDiagramKey } from '@/composables/nodePalette/sessionKeys'
 import { useDiagramStore, usePanelsStore, useSavedDiagramsStore } from '@/stores'
 
@@ -42,7 +44,29 @@ export function useMindMapSideToolbarState() {
     return true
   }
 
+  function openThinkingMapNodePalette(): void {
+    if (!requireDiagram()) return
+    if (!guardCollabGuestAi()) return
+    if (!requireCapability('ai_brainstorm')) return
+    if (panelsStore.nodePalettePanel.isOpen) {
+      panelsStore.closeNodePalette()
+      return
+    }
+    eventBus.emit('panel:open_requested', {
+      panel: 'nodePalette',
+      source: 'thinking-map-ribbon',
+    })
+  }
+
   function openTool(toolId: MindMapSideToolId): void {
+    if (toolId === 'waterfall' && diagramStore.type === 'concept_map') {
+      openConceptMapNodePalette({ toggle: true })
+      return
+    }
+    if (toolId === 'waterfall' && isThinkingMapDiagramType(diagramStore.type)) {
+      openThinkingMapNodePalette()
+      return
+    }
     if (!requireDiagram()) return
     if (toolId === 'learning_sheet' && !guardCollabGuestFeature()) {
       return

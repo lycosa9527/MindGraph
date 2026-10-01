@@ -27,7 +27,6 @@ import logging
 import os
 from typing import Any, Dict, List
 
-from config.settings import config
 from services.infrastructure.utils.browser import BrowserContextManager
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
@@ -111,20 +110,10 @@ def _log_debug_info(
             logger.error("[VueFlowScreenshot]   %s", err)
 
 
-def _showcase_mindmap_canvas_mode() -> str:
-    """
-    Match frontend readShowcaseMindMapCanvasMode(): New canvas when the v2 feature
-    flag is on; Classic when off. Headless export skips /api/config/features.
-    """
-    return "v2" if config.FEATURE_MINDMAP_V2_CANVAS else "legacy"
-
-
 async def _inject_spec_and_navigate(page, base_url: str, spec_json: str):
     """Inject spec via init script and navigate directly to /export-render."""
     escaped_spec = json.dumps(spec_json)
-    canvas_mode = _showcase_mindmap_canvas_mode()
-    # Stamp migration so ensureMindMapCanvasV2DefaultMigration does not overwrite
-    # a flag-off Classic mode with New canvas.
+    canvas_mode = "v2"
     await page.add_init_script(
         f"sessionStorage.setItem('{HEADLESS_EXPORT_SESSION_KEY}', '1');"
         f"sessionStorage.setItem('{EXPORT_SPEC_SESSION_KEY}', {escaped_spec});"

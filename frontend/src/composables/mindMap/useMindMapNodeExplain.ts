@@ -14,7 +14,7 @@ import { withMindMapAudienceContext } from '@/composables/mindMap/audience/withM
 import { useSavedDiagramsStore } from '@/stores'
 import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
-import { collectMindMapExplainContext } from '@/utils/mindMapExplainContext'
+import { collectMindMapExplainContext, findExplainCenterNode } from '@/utils/mindMapExplainContext'
 import {
   type ExplainResearchImage,
   type ExplainResearchSource,
@@ -83,9 +83,9 @@ export function useMindMapNodeExplain() {
   function buildExplainPayload(nodeId: string, nodeLabel: string, explainSessionId: string) {
     const nodes = diagramStore.data?.nodes ?? []
     const connections = diagramStore.data?.connections ?? []
-    const ctx = collectMindMapExplainContext(nodes, connections, nodeId)
-    const topicNode = nodes.find((n) => n.id === 'topic')
-    const fallbackTopic = (topicNode?.text ?? diagramStore.effectiveTitle ?? '').trim()
+    const ctx = collectMindMapExplainContext(nodes, connections, nodeId, diagramStore.type)
+    const center = findExplainCenterNode(nodes, diagramStore.type)
+    const fallbackTopic = (center?.text ?? diagramStore.effectiveTitle ?? '').trim()
 
     return withMindMapAudienceContext(
       {

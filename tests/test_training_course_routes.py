@@ -387,7 +387,7 @@ def test_optional_step_key_allowlist() -> None:
         optional_notes("x" * 4001)
     assert normalize_mindmap_canvas_mode(None) is None
     assert normalize_mindmap_canvas_mode("v3") == "v2"
-    assert normalize_mindmap_canvas_mode("legacy") == "legacy"
+    assert normalize_mindmap_canvas_mode("legacy") == "v2"
     with pytest.raises(ValueError, match="mindmap_canvas_mode"):
         normalize_mindmap_canvas_mode("v4")
 

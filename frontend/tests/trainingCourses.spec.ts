@@ -143,10 +143,9 @@ describe('training course playback', () => {
   it('keeps a closed catalog of landing cards and language-settings buttons', () => {
     const cards = trainingFocusOptions('mindgraph', null)
     expect(cards.some((item) => item.key === 'diagram-double_bubble_map')).toBe(true)
-    expect(trainingFocusOptions('mindgraph', 'language-settings').map((item) => item.key)).toEqual([
-      'mindmap-v1',
-      'mindmap-v2',
-    ])
+    expect(trainingFocusOptions('mindgraph', 'language-settings').map((item) => item.key)).toEqual(
+      []
+    )
     expect(trainingFocusOptions('auth', null).map((item) => item.key)).toEqual([
       'auth-login',
       'auth-register',

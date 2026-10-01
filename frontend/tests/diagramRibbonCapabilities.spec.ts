@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { diagramRibbonCapabilities } from '@/canvas-ribbon/diagramRibbonCapabilities'
+import {
+  diagramRibbonCapabilities,
+  isDiagramRibbonFamily,
+} from '@/canvas-ribbon/diagramRibbonCapabilities'
 
 describe('diagramRibbonCapabilities', () => {
   it('keeps v2-only tools on the mind map', () => {
@@ -27,7 +30,7 @@ describe('diagramRibbonCapabilities', () => {
     expect(caps.learningSheetToggle).toBe(true)
   })
 
-  it('hides mind-map tools on thinking maps and keeps type slots', () => {
+  it('keeps thinking-map AI tools and type slots', () => {
     const circle = diagramRibbonCapabilities('circle_map', false)
     expect(circle.mindMapTree).toBe(false)
     expect(circle.mindMapV2).toBe(false)
@@ -38,7 +41,8 @@ describe('diagramRibbonCapabilities', () => {
     expect(circle.mindClassroom).toBe(true)
     expect(circle.learningSheetPanel).toBe(true)
     expect(circle.learningSheetToggle).toBe(false)
-    expect(circle.docGenerate).toBe(false)
+    expect(circle.docGenerate).toBe(true)
+    expect(circle.subgraph).toBe(true)
     expect(circle.standardExport).toBe(true)
 
     const flow = diagramRibbonCapabilities('flow_map', false)
@@ -47,14 +51,18 @@ describe('diagramRibbonCapabilities', () => {
     const concept = diagramRibbonCapabilities('concept_map', false)
     expect(concept.conceptMap).toBe(true)
     expect(concept.thinkingMapChrome).toBe(false)
-    expect(concept.mindMapFormat).toBe(false)
-    expect(concept.explain).toBe(false)
-    expect(concept.mindClassroom).toBe(false)
-    expect(concept.learningSheetPanel).toBe(false)
-    expect(concept.learningSheetToggle).toBe(true)
+    expect(concept.mindMapFormat).toBe(true)
+    expect(concept.explain).toBe(true)
+    expect(concept.mindClassroom).toBe(true)
+    expect(concept.learningSheetPanel).toBe(true)
+    expect(concept.learningSheetToggle).toBe(false)
     expect(concept.conceptGenerate).toBe(true)
-    expect(concept.waterfall).toBe(false)
+    expect(concept.docGenerate).toBe(false)
+    expect(concept.subgraph).toBe(true)
+    expect(concept.waterfall).toBe(true)
     expect(concept.oneSentence).toBe(true)
     expect(concept.topicGenerate).toBe(true)
+    expect(isDiagramRibbonFamily('concept_map', false)).toBe(true)
+    expect(isDiagramRibbonFamily('unknown', false)).toBe(false)
   })
 })

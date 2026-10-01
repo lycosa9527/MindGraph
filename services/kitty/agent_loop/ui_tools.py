@@ -86,36 +86,6 @@ def build_ui_diagram_tools() -> List[Dict[str, Any]]:
             [],
         ),
         fn(
-            "start_inline_recommendations",
-            (
-                "Show Tab-style inline AI suggestions for one node. Use when the user asks for "
-                "ideas, suggestions, or recommendations for a node (联想, 推荐, 建议). "
-                "Omit node_identifier when they mean the currently selected node."
-            ),
-            {
-                "node_identifier": {
-                    "type": "string",
-                    "description": "Node text, spoken index (第一个), or id; omit for selection",
-                },
-            },
-            [],
-        ),
-        fn(
-            "add_node_with_recommendations",
-            (
-                "Add ONE new node on the canvas, then show inline AI suggestions so the user can "
-                "pick the best label (e.g. 增加一个节点并给出一些建议, add a node with suggestions). "
-                "Optional text seeds the placeholder; omit text to use a blank/new-node placeholder."
-            ),
-            {
-                "text": {
-                    "type": "string",
-                    "description": "Optional placeholder label for the new node",
-                },
-            },
-            [],
-        ),
-        fn(
             "explain_node",
             (
                 "Explain a diagram node's concept via MindMate (解释/讲解). "
@@ -257,20 +227,6 @@ def ui_tool_call_to_command(name: str, arguments_json: str) -> Dict[str, Any]:
             cmd["topic"] = topic.strip()
         if args.get("is_learning_sheet") is True:
             cmd["is_learning_sheet"] = True
-        return cmd
-
-    if name == "start_inline_recommendations":
-        ident = args.get("node_identifier") or args.get("target")
-        cmd = {"action": "start_inline_recommendations", "confidence": 0.95}
-        if isinstance(ident, str) and ident.strip():
-            cmd["node_identifier"] = ident.strip()
-        return cmd
-
-    if name == "add_node_with_recommendations":
-        text = args.get("text") or args.get("target")
-        cmd = {"action": "add_node_with_recommendations", "confidence": 0.95}
-        if isinstance(text, str) and text.strip():
-            cmd["target"] = text.strip()
         return cmd
 
     if name == "explain_node":

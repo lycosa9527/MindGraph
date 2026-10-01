@@ -46,18 +46,7 @@ export const TRAINING_MODALS: TrainingModalDef[] = [
     key: 'language-settings',
     labelKey: 'sidebar.languageSettings',
     pages: LANDING_PAGES,
-    focuses: [
-      {
-        key: 'mindmap-v1',
-        labelKey: 'settings.language.mindMapCanvasV1',
-        selector: '[data-training-target="mindmap-v1"]',
-      },
-      {
-        key: 'mindmap-v2',
-        labelKey: 'settings.language.mindMapCanvasV2',
-        selector: '[data-training-target="mindmap-v2"]',
-      },
-    ],
+    focuses: [],
   },
   {
     key: 'thinking-coins',

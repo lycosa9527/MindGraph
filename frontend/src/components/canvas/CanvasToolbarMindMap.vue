@@ -10,11 +10,13 @@ import { storeToRefs } from 'pinia'
 import { ElDropdown, ElTooltip } from 'element-plus'
 
 import {
+  ArrowDownUp,
   Bot,
   ChevronDown,
   Download,
   FileText,
   GitBranch,
+  Keyboard,
   LayoutGrid,
   Lightbulb,
   Link2,
@@ -22,6 +24,7 @@ import {
   Mic,
   MonitorPlay,
   Paintbrush,
+  Plus,
   Redo2,
   RotateCcw,
   Save,
@@ -32,6 +35,10 @@ import {
   Upload,
 } from '@lucide/vue'
 
+import {
+  type DiagramInsertAction,
+  diagramInsertActions,
+} from '@/canvas-ribbon/diagramInsertActions'
 import { diagramRibbonCapabilities } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import type { MindMapRibbonTabId } from '@/canvas-ribbon/mindMapRibbonTypes'
 import { useMindMapRibbonActions } from '@/canvas-ribbon/useMindMapRibbonActions'
@@ -54,6 +61,7 @@ import {
 } from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
 import { useCanvasReset } from '@/composables/canvasPage/useCanvasReset'
 import { useCanvasToolbarFormatting, useFollowNodeStyleToolbar } from '@/composables/canvasToolbar'
+import { toggleCanvasVirtualKeyboard } from '@/composables/canvasToolbar/useCanvasVirtualKeyboardOpen'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
@@ -64,6 +72,7 @@ import { useNodeActions } from '@/composables/editor/useNodeActions'
 import { useDiagramSourceLock } from '@/composables/mindMap/useDiagramSourceLock'
 import { docSummaryLiteIntent } from '@/composables/mindMap/useDocSummaryLiteSaveAndGenerate'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import { openConceptMapNodePalette } from '@/composables/nodePalette/openConceptMapNodePalette'
 import {
   CANVAS_CLIPBOARD_EXPORT_MENU_ITEM,
   CANVAS_COMMUNITY_EXPORT_MENU_ITEM,
@@ -130,11 +139,12 @@ const showZhihuiDiagramExport = computed(() => false)
 
 const mindMapV2 = useMindMapV2Chrome()
 const caps = computed(() => diagramRibbonCapabilities(diagramStore.type, mindMapV2.value))
+const insertActions = computed(() => diagramInsertActions(diagramStore.type))
 const exportMenuItems = computed(() =>
   caps.value.standardExport ? CANVAS_STANDARD_EXPORT_MENU_ITEMS : CANVAS_MINDMAP_EXPORT_MENU_ITEMS
 )
 
-const { handleAddChild, handleAddSibling, handleDeleteNode, handleAddBranch } = useNodeActions({
+const { handleDeleteNode } = useNodeActions({
   registerEventBusListeners: false,
 })
 
@@ -290,13 +300,12 @@ function onRestoreLearningSheet(): void {
   ribbon.learningSheet.exitLearningSheet()
 }
 
-function handleAddChildClick() {
-  const selectedId = diagramStore.selectedNodes[0]
-  if (!selectedId || selectedId === 'topic') {
-    handleAddBranch()
+function onInsertAction(action: DiagramInsertAction): void {
+  if (action.needsSelection && !ribbon.hasSelection) {
+    notify.warningKey('canvas.toolbar.selectNodesFirst')
     return
   }
-  handleAddChild()
+  ribbon.runDiagramInsert(action.id)
 }
 
 async function handleReset() {
@@ -529,35 +538,41 @@ watch(
         <span class="mm-sep" />
         <div class="mm-btn-group">
           <I18nTooltip
-            v-if="caps.mindMapTree"
-            k="canvas.toolbar.addChildNode"
+            v-for="action in insertActions"
+            :key="action.id"
+            :k="action.labelKey"
             placement="bottom"
           >
             <button
               type="button"
               class="mm-btn mm-btn--icon"
-              :class="{ 'is-dimmed': !ribbon.hasSelection }"
-              :aria-disabled="!ribbon.hasSelection"
-              :aria-label="t('canvas.toolbar.addChildNode')"
-              @click="requireNodeSelection(handleAddChildClick)"
+              :class="{ 'is-dimmed': action.needsSelection && !ribbon.hasSelection }"
+              :aria-disabled="action.needsSelection && !ribbon.hasSelection"
+              :aria-label="t(action.labelKey)"
+              @click="onInsertAction(action)"
             >
-              <MindMapInsertNodeIcon kind="child" />
+              <MindMapInsertNodeIcon
+                v-if="action.insertKind"
+                :kind="action.insertKind"
+              />
+              <Plus
+                v-else
+                class="w-4 h-4"
+              />
             </button>
           </I18nTooltip>
           <I18nTooltip
-            v-if="caps.mindMapTree"
-            k="canvas.toolbar.addSiblingNode"
+            v-if="caps.flowOrientation"
+            k="canvas.toolbar.toggleDirection"
             placement="bottom"
           >
             <button
               type="button"
               class="mm-btn mm-btn--icon"
-              :class="{ 'is-dimmed': !ribbon.hasSelection }"
-              :aria-disabled="!ribbon.hasSelection"
-              :aria-label="t('canvas.toolbar.addSiblingNode')"
-              @click="requireNodeSelection(handleAddSibling)"
+              :aria-label="t('canvas.toolbar.directionLabel')"
+              @click="ribbon.toggleFlowOrientation()"
             >
-              <MindMapInsertNodeIcon kind="sibling" />
+              <ArrowDownUp class="w-4 h-4" />
             </button>
           </I18nTooltip>
           <I18nTooltip
@@ -627,7 +642,7 @@ watch(
         <span class="mm-sep" />
         <MindMapAppearanceDropdown
           compact
-          :hide-diagram-style="caps.thinkingMapChrome"
+          :hide-diagram-style="caps.thinkingMapChrome || caps.conceptMap"
         />
         <span
           v-if="caps.mindMapV2"
@@ -707,6 +722,25 @@ watch(
               <MmToolbarLabel
                 class="mm-btn__label"
                 k="canvas.toolbar.import"
+              />
+            </button>
+          </I18nTooltip>
+          <I18nTooltip
+            v-if="caps.conceptMap"
+            k="canvas.toolbar.moreAppVirtualKeyboard"
+            placement="bottom"
+            :disabled="shortLabels || !props.compact"
+          >
+            <button
+              type="button"
+              class="mm-btn"
+              :aria-label="t('canvas.toolbar.moreAppVirtualKeyboard')"
+              @click="toggleCanvasVirtualKeyboard"
+            >
+              <Keyboard class="w-4 h-4" />
+              <MmToolbarLabel
+                class="mm-btn__label"
+                k="canvas.toolbar.moreAppVirtualKeyboard"
               />
             </button>
           </I18nTooltip>
@@ -944,7 +978,11 @@ watch(
         <div class="mm-btn-group">
           <I18nTooltip
             :k="
-              aiBlockedByCollab ? 'canvas.toolbar.collabAiBlocked' : 'canvas.ribbon.topicGenerate'
+              aiBlockedByCollab
+                ? 'canvas.toolbar.collabAiBlocked'
+                : caps.conceptMap
+                  ? 'canvas.toolbar.conceptGeneration'
+                  : 'canvas.ribbon.topicGenerate'
             "
             placement="bottom"
             :disabled="shortLabels && !aiBlockedByCollab"
@@ -959,14 +997,26 @@ watch(
               :aria-label="
                 aiBlockedByCollab
                   ? t('canvas.toolbar.collabAiBlocked')
-                  : t('canvas.ribbon.topicGenerate')
+                  : t(
+                      caps.conceptMap
+                        ? 'canvas.toolbar.conceptGeneration'
+                        : 'canvas.ribbon.topicGenerate'
+                    )
               "
-              @click="onGuestAiToolClick($event, () => ribbon.handleAIGenerate())"
+              @click="
+                onGuestAiToolClick($event, () =>
+                  caps.conceptMap ? openConceptMapNodePalette() : ribbon.handleAIGenerate()
+                )
+              "
             >
               <Sparkles class="w-4 h-4" />
               <MmToolbarLabel
                 class="mm-btn__label"
-                k="canvas.ribbon.topicGenerate"
+                :k="
+                  caps.conceptMap
+                    ? 'canvas.toolbar.conceptGeneration'
+                    : 'canvas.ribbon.topicGenerate'
+                "
               />
             </button>
           </I18nTooltip>
@@ -1095,7 +1145,10 @@ watch(
               type="button"
               class="mm-btn"
               :class="{
-                'is-active': activeTool === 'waterfall',
+                'is-active':
+                  caps.thinkingMapChrome || caps.conceptMap
+                    ? ribbon.isNodePaletteOpen
+                    : activeTool === 'waterfall',
                 'is-dimmed': aiBlockedByCollab,
               }"
               :aria-label="

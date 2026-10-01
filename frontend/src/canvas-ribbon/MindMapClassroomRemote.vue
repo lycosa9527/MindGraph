@@ -6,6 +6,7 @@
 import { type Component, computed } from 'vue'
 
 import {
+  ArrowDownUp,
   BookMarked,
   Bot,
   Download,
@@ -36,6 +37,8 @@ import {
 
 import MindMapClassroomRemoteTopics from '@/canvas-ribbon/MindMapClassroomRemoteTopics.vue'
 import MindMapRibbonAiMark from '@/canvas-ribbon/MindMapRibbonAiMark.vue'
+import { diagramInsertActions } from '@/canvas-ribbon/diagramInsertActions'
+import { diagramRibbonCapabilities } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import {
   CLASSROOM_REMOTE_TABS,
   CLASSROOM_REMOTE_TAB_LABEL_KEYS,
@@ -54,8 +57,10 @@ import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useDiagramSourceLock } from '@/composables/mindMap/useDiagramSourceLock'
 import { docSummaryLiteIntent } from '@/composables/mindMap/useDocSummaryLiteSaveAndGenerate'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import { useMindClassroomStore } from '@/stores'
 
@@ -86,6 +91,10 @@ const props = withDefaults(
     handToolActive: false,
   }
 )
+
+const diagramStore = useDiagramSession()
+const mindMapV2 = useMindMapV2Chrome()
+const caps = computed(() => diagramRibbonCapabilities(diagramStore.type, mindMapV2.value))
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -200,20 +209,24 @@ const editTools = computed<RemoteTool[]>(() => [
     disabled: !ribbon.canRedo,
     run: () => ribbon.redo(),
   },
-  {
-    id: 'child',
-    labelKey: 'canvas.toolbar.addChildNode',
-    insertKind: 'child',
-    dimmed: !ribbon.hasSelection,
-    run: () => ribbon.handleAddChildClick(),
-  },
-  {
-    id: 'sibling',
-    labelKey: 'canvas.toolbar.addSiblingNode',
-    insertKind: 'sibling',
-    dimmed: !ribbon.hasSelection,
-    run: () => requireSelection(() => ribbon.handleAddSibling()),
-  },
+  ...diagramInsertActions(diagramStore.type).map((action) => ({
+    id: action.id,
+    labelKey: action.labelKey,
+    insertKind: action.insertKind,
+    icon: action.insertKind ? undefined : Plus,
+    dimmed: action.needsSelection && !ribbon.hasSelection,
+    run: () => ribbon.runDiagramInsert(action.id),
+  })),
+  ...(caps.value.flowOrientation
+    ? [
+        {
+          id: 'direction',
+          labelKey: 'canvas.toolbar.directionLabel',
+          icon: ArrowDownUp,
+          run: () => ribbon.toggleFlowOrientation(),
+        },
+      ]
+    : []),
   {
     id: 'delete',
     labelKey: 'canvas.toolbar.deleteNode',
@@ -235,42 +248,63 @@ const editTools = computed<RemoteTool[]>(() => [
 const aiTools = computed<RemoteTool[]>(() => [
   {
     id: 'topic',
-    labelKey: 'canvas.ribbon.topicGenerate',
+    labelKey: caps.value.conceptMap
+      ? 'canvas.toolbar.conceptGeneration'
+      : 'canvas.ribbon.topicGenerate',
     icon: Sparkles,
     dimmed: aiBlockedByCollab.value,
     run: () => runGuestAi(() => ribbon.handleAIGenerate()),
   },
-  {
-    id: 'doc',
-    labelKey: 'canvas.ribbon.docGenerate',
-    icon: FileText,
-    dimmed: aiBlockedByCollab.value || sourceLock.isLocked('doc'),
-    active: activeTool.value === 'document_summary',
-    run: openDocGenerate,
-  },
-  {
-    id: 'waterfall',
-    labelKey: 'canvas.mindMapSideToolbar.waterfall',
-    icon: LayoutGrid,
-    dimmed: aiBlockedByCollab.value,
-    active: activeTool.value === 'waterfall',
-    run: () => runGuestAi(() => handleToolSelect('waterfall')),
-  },
-  {
-    id: 'one-sentence',
-    labelKey: 'canvas.mindMapSideToolbar.oneSentence',
-    icon: MessageSquare,
-    dimmed: aiBlockedByCollab.value,
-    active: activeTool.value === 'one_sentence',
-    run: () => runGuestAi(() => ribbon.openSideTool('one_sentence')),
-  },
-  {
-    id: 'subgraph',
-    labelKey: 'canvas.floatingToolbar.aiSubgraph',
-    icon: GitBranch,
-    dimmed: aiBlockedByCollab.value || !ribbon.hasSelection,
-    run: () => runGuestAi(() => requireSelection(() => ribbon.requestAiSubgraph())),
-  },
+  ...(caps.value.docGenerate
+    ? [
+        {
+          id: 'doc',
+          labelKey: 'canvas.ribbon.docGenerate',
+          icon: FileText,
+          dimmed: aiBlockedByCollab.value || sourceLock.isLocked('doc'),
+          active: activeTool.value === 'document_summary',
+          run: openDocGenerate,
+        },
+      ]
+    : []),
+  ...(caps.value.waterfall
+    ? [
+        {
+          id: 'waterfall',
+          labelKey: 'canvas.mindMapSideToolbar.waterfall',
+          icon: LayoutGrid,
+          dimmed: aiBlockedByCollab.value,
+          active:
+            caps.value.thinkingMapChrome || caps.value.conceptMap
+              ? ribbon.isNodePaletteOpen
+              : activeTool.value === 'waterfall',
+          run: () => runGuestAi(() => handleToolSelect('waterfall')),
+        },
+      ]
+    : []),
+  ...(caps.value.oneSentence
+    ? [
+        {
+          id: 'one-sentence',
+          labelKey: 'canvas.mindMapSideToolbar.oneSentence',
+          icon: MessageSquare,
+          dimmed: aiBlockedByCollab.value,
+          active: activeTool.value === 'one_sentence',
+          run: () => runGuestAi(() => ribbon.openSideTool('one_sentence')),
+        },
+      ]
+    : []),
+  ...(caps.value.subgraph
+    ? [
+        {
+          id: 'subgraph',
+          labelKey: 'canvas.floatingToolbar.aiSubgraph',
+          icon: GitBranch,
+          dimmed: aiBlockedByCollab.value || !ribbon.hasSelection,
+          run: () => runGuestAi(() => requireSelection(() => ribbon.requestAiSubgraph())),
+        },
+      ]
+    : []),
 ])
 
 const teachingTools = computed<RemoteTool[]>(() => [

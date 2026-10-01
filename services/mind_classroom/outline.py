@@ -291,7 +291,7 @@ def extract_mindmap_outline(
     if isinstance(working.get("nodes"), list):
         if is_thinking_map_diagram_type(slug):
             migrate_thinking_map_diagram_payload(working, slug)
-        else:
+        elif slug != "concept_map":
             migrate_mindmap_diagram_payload(working)
 
     topic = _clean_text(working.get("topic") or working.get("title") or working.get("centralTopic"))
@@ -309,7 +309,7 @@ def extract_mindmap_outline(
 
     if not topic:
         topic = _clean_text(fallback_title) or "未命名主题"
-    if not branches and is_thinking_map_diagram_type(slug):
+    if not branches and (is_thinking_map_diagram_type(slug) or slug == "concept_map"):
         reserved = {
             topic_node_id_for(slug),
             "topic",

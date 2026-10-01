@@ -31,7 +31,10 @@ import { storeToRefs } from 'pinia'
 
 import MindMapClassroomRemote from '@/canvas-ribbon/MindMapClassroomRemote.vue'
 import MindMapStatusBar from '@/canvas-ribbon/MindMapStatusBar.vue'
-import { diagramRibbonCapabilities } from '@/canvas-ribbon/diagramRibbonCapabilities'
+import {
+  diagramRibbonCapabilities,
+  isDiagramRibbonFamily,
+} from '@/canvas-ribbon/diagramRibbonCapabilities'
 import {
   CanvasBottomAiCluster,
   CanvasChrome,
@@ -42,7 +45,6 @@ import {
   ConceptMapFocusReviewPicker,
   ConceptMapLabelPicker,
   ConceptMapRootConceptPicker,
-  InlineRecommendationsPicker,
   MindClassroomLectureOverlay,
   MindClassroomMascot,
   MindClassroomSlidePane,
@@ -71,7 +73,6 @@ import {
   useCanvasKittyDesktopPairing,
   useDiagramSpecForPersist,
   useEventBus,
-  useInlineRecommendations,
   useInlineRecommendationsCoordinator,
   useKittyDesktopRemoteSync,
   useLanguage,
@@ -95,7 +96,6 @@ import {
   diagramTypeMap,
   diagramTypeToChineseMap,
 } from '@/composables/canvasPage/diagramTypeMaps'
-import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { leaveCanvasCollabRoom } from '@/composables/canvasPage/leaveCanvasCollabRoom'
 import {
   clearBlankCanvasLoadDedupe,
@@ -113,9 +113,7 @@ import { useCanvasPageEditorShortcuts } from '@/composables/canvasPage/useCanvas
 import { useCanvasPageLibrarySnapshots } from '@/composables/canvasPage/useCanvasPageLibrarySnapshots'
 import { useCanvasPageMountedHandlers } from '@/composables/canvasPage/useCanvasPageMountedHandlers'
 import { useCanvasPagePresentation } from '@/composables/canvasPage/useCanvasPagePresentation'
-import { useCanvasPageTabRecIndicator } from '@/composables/canvasPage/useCanvasPageTabRecIndicator'
 import { useCanvasPageWorkshopCollab } from '@/composables/canvasPage/useCanvasPageWorkshopCollab'
-import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
 import { useNewCanvasTypeQueryBootstrap } from '@/composables/canvasPage/useNewCanvasTypeQueryBootstrap'
 import {
   ensureCanvasVirtualKeyboardUiVersionSync,
@@ -143,7 +141,6 @@ import { buildKittyDiagramContext } from '@/composables/kitty/buildKittyDiagramC
 import { handleKittyAutoCompleteBranchRequest } from '@/composables/kitty/handleKittyAutoCompleteBranchRequest'
 import { handleKittyAddNodeWithRecommendationsRequest } from '@/composables/kitty/kittyAddNodeWithRecommendations'
 import { KITTY_CANVAS_OWNER_KEY } from '@/composables/kitty/kittyCanvasOwnerKey'
-import { resolveKittyChildNodeId } from '@/composables/kitty/kittyDiagramChildren'
 import { registerKittyDiagramMutationBus } from '@/composables/kitty/registerKittyDiagramMutationBus'
 import { useKittyCanvasOwnerAgent } from '@/composables/kitty/useKittyCanvasOwnerAgent'
 import { useKittyDesktopLiveSpecPublish } from '@/composables/kitty/useKittyDesktopLiveSpecPublish'
@@ -194,7 +191,6 @@ import {
   useConceptMapRelationshipStore,
   useDiagramStore,
   useFeatureFlagsStore,
-  useInlineRecommendationsStore,
   useLLMResultsStore,
   useMindClassroomStore,
   usePanelsStore,
@@ -307,8 +303,6 @@ const {
 } = useCanvasPageWorkshopCollab()
 
 const isViewer = computed(() => workshopIsViewer.value || diagramShareRole.value === 'viewer')
-
-useCanvasPageTabRecIndicator()
 
 const currentDiagramId = computed(() => savedDiagramsStore.activeDiagramId ?? null)
 
@@ -479,10 +473,7 @@ const { startSession: startNodePaletteSession } = getNodePalette({
 const { activeEntry: relationshipActiveEntry } = storeToRefs(relationshipStore)
 const focusReviewStore = useConceptMapFocusReviewStore()
 const rootConceptReviewStore = useConceptMapRootConceptReviewStore()
-const inlineRecStore = useInlineRecommendationsStore()
-const { activeNodeId: inlineRecActiveNodeId } = storeToRefs(inlineRecStore)
-
-// Hide zoom/pan when concept map label picker or inline recommendations picker is showing
+// Hide zoom/pan when a concept-map picker is showing
 const showZoomControls = computed(() => {
   if (isMindMapPresentationMode.value) return false
   const rel = diagramStore.type === 'concept_map' && relationshipActiveEntry.value
@@ -495,7 +486,7 @@ const showZoomControls = computed(() => {
     focusReviewStore.showPicker &&
     !relationshipActiveEntry.value &&
     !rootPick
-  return !(rel || rootPick || focusPick || inlineRecActiveNodeId.value)
+  return !(rel || rootPick || focusPick)
 })
 
 const useMindMapV2 = useMindMapV2Chrome()
@@ -521,8 +512,8 @@ const fitViewOnInit = computed(() => {
 
 const featureKnowledgeSpaceFlag = computed(() => featureFlagsStore.getFeatureKnowledgeSpace())
 const ribbonCaps = computed(() => diagramRibbonCapabilities(diagramStore.type, useMindMapV2.value))
-const isMindMapRibbonFamily = computed(
-  () => useMindMapV2.value || ribbonCaps.value.thinkingMapChrome
+const isMindMapRibbonFamily = computed(() =>
+  isDiagramRibbonFamily(diagramStore.type, useMindMapV2.value)
 )
 const fileCenterEnabled = computed(() =>
   DOC_SUMMARY_LITE_UI ? useMindMapV2.value : featureKnowledgeSpaceFlag.value && useMindMapV2.value
@@ -654,6 +645,15 @@ const showBottomBar = computed(
   () => !isMindMapPresentationMode.value && !mindClassroomLecturing.value
 )
 
+const showConceptMapRibbonPickers = computed(() => {
+  if (!isMindMapRibbonFamily.value || diagramStore.type !== 'concept_map') return false
+  return Boolean(
+    relationshipActiveEntry.value ||
+    rootConceptReviewStore.showPicker ||
+    focusReviewStore.showPicker
+  )
+})
+
 const showMindMapShortcutGuide = computed(
   () =>
     useMindMapV2.value &&
@@ -726,6 +726,9 @@ watch(
   () => diagramStore.type,
   () => {
     closeActiveTool()
+    if (panelsStore.nodePalettePanel.isOpen) {
+      panelsStore.closeNodePalette()
+    }
   }
 )
 
@@ -739,7 +742,6 @@ const mindMatePanelRight = computed(() => {
 })
 
 const inlineRecCoordinator = useInlineRecommendationsCoordinator()
-const { startRecommendations } = useInlineRecommendations()
 
 const { showKittyDesktopIndicator } = useCanvasKittyDesktopPairing({
   currentDiagramId,
@@ -828,11 +830,8 @@ useKittyDesktopRemoteSync({
   },
 })
 
-useConceptMapRelationshipTabFromSelection({ startRecommendations })
-
 useCanvasPageMountedHandlers({
   snapshotHistory,
-  startRecommendations,
   startNodePaletteSession,
   isDiagramOwner,
 })
@@ -903,49 +902,11 @@ eventBus.onWithOwner(
 )
 
 eventBus.onWithOwner(
-  'kitty:inline_recommendations_requested',
-  (data: { nodeId?: string; nodeIndex?: number }) => {
-    const nodes = diagramStore.data?.nodes ?? []
-    let nid = resolveKittyChildNodeId(diagramStore.type, nodes, {
-      nodeId: data.nodeId,
-      nodeIndex: data.nodeIndex,
-    })
-    if (!nid) nid = diagramStore.selectedNodes[0]
-    if (!nid) {
-      notify.warningKey('canvas.toolbar.selectNodesToDelete')
-      return
-    }
-    const node = nodes.find((x) => x.id === nid)
-    if (
-      !node ||
-      !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)
-    ) {
-      notify.warningKey('notification.nodeNotEligible')
-      return
-    }
-    if (diagramStore.type === 'concept_map' && !llmResultsStore.selectedModel) {
-      notify.warningKey('notification.conceptMapTabNeedsAi')
-      return
-    }
-    if (!authStore.isAuthenticated) {
-      notify.warningKey('notification.signInToUse')
-      return
-    }
-    void startRecommendations(nid)
-  },
-  'CanvasPage'
-)
-
-eventBus.onWithOwner(
   'kitty:add_node_with_recommendations_requested',
   (data: { text?: string }) => {
     void handleKittyAddNodeWithRecommendationsRequest({
       text: data.text,
       diagramStore,
-      startRecommendations,
-      inlineRecReady: inlineRecStore.isReady,
-      isAuthenticated: authStore.isAuthenticated,
-      conceptMapAiEnabled: Boolean(llmResultsStore.selectedModel),
       translate: t,
       notifyWarning: (message: string) => notify.warning(message),
     })
@@ -954,8 +915,7 @@ eventBus.onWithOwner(
 )
 
 function handleNodeDoubleClick(_node: { id?: string; type?: string }): void {
-  // Double-click only enters edit mode. Inline recommendations are triggered by Tab
-  // when user is editing a node (see node_editor:tab_pressed listener).
+  // Double-click only enters edit mode.
 }
 
 // Auto-save: event-driven, config-based (useDiagramAutoSave)
@@ -1879,6 +1839,29 @@ onUnmounted(() => {
       </Transition>
     </div>
 
+    <div
+      v-if="showConceptMapRibbonPickers"
+      class="absolute bottom-14 left-0 right-0 z-30 flex justify-center px-2 pointer-events-none"
+    >
+      <div
+        class="pointer-events-auto flex items-center rounded-xl shadow-lg p-1.5 border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md max-w-[95vw] min-w-0"
+      >
+        <ConceptMapLabelPicker
+          v-if="diagramStore.type === 'concept_map' && relationshipActiveEntry"
+        />
+        <ConceptMapRootConceptPicker
+          v-else-if="
+            diagramStore.type === 'concept_map' &&
+            rootConceptReviewStore.showPicker &&
+            !relationshipActiveEntry
+          "
+        />
+        <ConceptMapFocusReviewPicker
+          v-else-if="diagramStore.type === 'concept_map' && focusReviewStore.showPicker"
+        />
+      </div>
+    </div>
+
     <MindMapClassroomRemote
       v-if="isMindMapRibbonFamily && showBottomBar && !classroomRemoteHidden"
       :zoom="canvasZoom"
@@ -1929,10 +1912,6 @@ onUnmounted(() => {
           <ConceptMapFocusReviewPicker
             v-else-if="diagramStore.type === 'concept_map' && focusReviewStore.showPicker"
             class="label-picker-wrap order-3 shrink-0 w-fit max-w-[min(95vw,640px)] min-w-0"
-          />
-          <InlineRecommendationsPicker
-            v-else-if="inlineRecActiveNodeId"
-            class="label-picker-wrap order-3 flex-1 min-w-0"
           />
           <div
             v-if="showZoomControls"

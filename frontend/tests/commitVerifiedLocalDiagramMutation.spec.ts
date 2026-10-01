@@ -41,7 +41,6 @@ function enableMindMapV2CanvasFlag(): void {
     feature_askonce: true,
     feature_debateverse: false,
     feature_knowledge_space: false,
-    feature_mindmap_v2_canvas: true,
     feature_library: false,
     feature_gewe: false,
     feature_smart_response: false,

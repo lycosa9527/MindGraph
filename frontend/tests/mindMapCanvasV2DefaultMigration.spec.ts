@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  MINDMAP_CANVAS_LEGACY_ARCHIVED_KEY,
   MINDMAP_CANVAS_MODE_KEY,
   MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY,
   ensureMindMapCanvasV2DefaultMigration,
@@ -40,13 +41,24 @@ describe('ensureMindMapCanvasV2DefaultMigration', () => {
     expect(storage.getItem(MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY)).toBe('1')
   })
 
-  it('is a no-op after migration when user later chooses Classic', () => {
+  it('overwrites Classic kept after the first v2-default migration', () => {
     const storage = memoryStorage({
       [MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY]: '1',
       [MINDMAP_CANVAS_MODE_KEY]: 'legacy',
     })
     ensureMindMapCanvasV2DefaultMigration(storage)
-    expect(storage.getItem(MINDMAP_CANVAS_MODE_KEY)).toBe('legacy')
+    expect(storage.getItem(MINDMAP_CANVAS_MODE_KEY)).toBe('v2')
+    expect(storage.getItem(MINDMAP_CANVAS_LEGACY_ARCHIVED_KEY)).toBe('1')
+  })
+
+  it('rewrites leftover classic even after the archive stamp', () => {
+    const storage = memoryStorage({
+      [MINDMAP_CANVAS_LEGACY_ARCHIVED_KEY]: '1',
+      [MINDMAP_CANVAS_MODE_KEY]: 'legacy',
+    })
+    ensureMindMapCanvasV2DefaultMigration(storage)
+    expect(storage.getItem(MINDMAP_CANVAS_MODE_KEY)).toBe('v2')
+    expect(storage.getItem(MINDMAP_CANVAS_LEGACY_ARCHIVED_KEY)).toBe('1')
   })
 
   it('stamps migration when no prior canvas mode exists', () => {
@@ -86,26 +98,27 @@ describe('setMindMapCanvasMode persist flag', () => {
     vi.restoreAllMocks()
   })
 
-  it('does not overwrite saved New canvas when Classic is runtime-only', () => {
+  it('stays on New canvas when Classic is requested at runtime', () => {
     const uiStore = useUIStore()
     expect(uiStore.mindMapCanvasMode).toBe('v2')
     uiStore.setMindMapCanvasMode('legacy', { persist: false })
-    expect(uiStore.mindMapCanvasMode).toBe('legacy')
+    expect(uiStore.mindMapCanvasMode).toBe('v2')
     expect(storage.getItem(MINDMAP_CANVAS_MODE_KEY)).toBe('v2')
   })
 
-  it('persists Classic when the user explicitly opts in', () => {
+  it('does not persist Classic when it is requested', () => {
     const uiStore = useUIStore()
     uiStore.setMindMapCanvasMode('legacy')
-    expect(uiStore.mindMapCanvasMode).toBe('legacy')
-    expect(storage.getItem(MINDMAP_CANVAS_MODE_KEY)).toBe('legacy')
+    expect(uiStore.mindMapCanvasMode).toBe('v2')
+    expect(storage.getItem(MINDMAP_CANVAS_MODE_KEY)).toBe('v2')
   })
 
-  it('persists Classic opt-in even when memory was already runtime Classic', () => {
+  it('stays on New canvas when Classic is requested twice', () => {
     const uiStore = useUIStore()
     uiStore.setMindMapCanvasMode('legacy', { persist: false })
     expect(storage.getItem(MINDMAP_CANVAS_MODE_KEY)).toBe('v2')
     uiStore.setMindMapCanvasMode('legacy')
-    expect(storage.getItem(MINDMAP_CANVAS_MODE_KEY)).toBe('legacy')
+    expect(uiStore.mindMapCanvasMode).toBe('v2')
+    expect(storage.getItem(MINDMAP_CANVAS_MODE_KEY)).toBe('v2')
   })
 })

@@ -23,7 +23,6 @@ function enableMindMapV2Canvas(): void {
     feature_askonce: true,
     feature_debateverse: false,
     feature_knowledge_space: false,
-    feature_mindmap_v2_canvas: true,
     feature_library: false,
     feature_gewe: false,
     feature_smart_response: false,
@@ -113,12 +112,12 @@ describe('mindmap v2 drop preview shapes', () => {
     expect(getDropTargetShapeClass(node)).toBe('is-underline')
   })
 
-  it('keeps legacy pill radius when canvas mode is classic', () => {
+  it('keeps the new-canvas radius when a leftover classic mode is set', () => {
     useUIStore().mindMapCanvasMode = 'legacy'
     useDiagramStore().mindMapCanvasMode = 'legacy'
     const node = branchNode('branch-r-1-0')
-    expect(getDropPreviewBorderRadius(node)).toBe('9999px')
-    expect(getDropTargetShapeClass(node)).toBe('is-pill')
+    expect(getDropPreviewBorderRadius(node)).toBe('4.5px')
+    expect(getDropTargetShapeClass(node)).toBe('')
   })
 
   it('wraps a node-body drop in a dashed box, including v2 underline children', () => {

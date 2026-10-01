@@ -51,7 +51,13 @@ describe('mind map classroom remote', () => {
 
   it('keeps usual classroom tools on the remote tabs', () => {
     const remote = readSrc('src/canvas-ribbon/MindMapClassroomRemote.vue')
-    expect(remote).toContain('canvas.toolbar.addChildNode')
+    expect(remote).toContain('diagramInsertActions')
+    expect(readSrc('src/canvas-ribbon/diagramInsertActions.ts')).toContain(
+      'canvas.toolbar.addChildNode'
+    )
+    expect(readSrc('src/canvas-ribbon/diagramInsertActions.ts')).toContain(
+      'canvas.toolbar.addCause'
+    )
     expect(remote).toContain('<MindMapClassroomRemoteTopics')
     expect(remote).toContain('canvas.ribbon.topicGenerate')
     expect(readSrc('src/canvas-ribbon/MindMapClassroomRemoteTopics.vue')).toContain(

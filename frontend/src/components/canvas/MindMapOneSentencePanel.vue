@@ -16,10 +16,10 @@ import { useLanguage } from '@/composables'
 import { resolveMessageClarifyChoices } from '@/composables/canvasToolbar/oneSentenceClarifyChoices'
 import { useMindMapOneSentenceChat } from '@/composables/canvasToolbar/useMindMapOneSentenceChat'
 import {
-  ONE_SENTENCE_NODE_ACTION_SUGGESTION_KEYS,
   ONE_SENTENCE_SUGGESTION_ROTATE_MS,
+  oneSentenceSuggestionKeysForDiagram,
 } from '@/config/oneSentenceNodeActionSuggestions'
-import { useAuthStore } from '@/stores'
+import { useAuthStore, useDiagramStore } from '@/stores'
 import type { OneSentenceChatMessage, OneSentenceClarifyChoice } from '@/stores/oneSentence'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
@@ -29,6 +29,7 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const authStore = useAuthStore()
+const diagramStore = useDiagramStore()
 
 const {
   draft,
@@ -57,7 +58,7 @@ const inputDisabled = computed(() => isInputBlocked.value)
 
 const sendDisabled = computed(() => inputDisabled.value || !draft.value.trim())
 
-const suggestionKeys = ONE_SENTENCE_NODE_ACTION_SUGGESTION_KEYS
+const suggestionKeys = computed(() => oneSentenceSuggestionKeysForDiagram(diagramStore.type))
 const activeSuggestionIndex = ref(0)
 const nodeActionGuideOpen = ref(false)
 let suggestionRotateTimer: ReturnType<typeof setInterval> | null = null
@@ -71,7 +72,7 @@ const showFallbackThinking = computed(
 )
 
 const activeSuggestionKey = computed(
-  () => suggestionKeys[activeSuggestionIndex.value] ?? suggestionKeys[0]
+  () => suggestionKeys.value[activeSuggestionIndex.value] ?? suggestionKeys.value[0]
 )
 
 function startSuggestionRotation(): void {
@@ -79,7 +80,9 @@ function startSuggestionRotation(): void {
     return
   }
   suggestionRotateTimer = setInterval(() => {
-    activeSuggestionIndex.value = (activeSuggestionIndex.value + 1) % suggestionKeys.length
+    const count = suggestionKeys.value.length
+    if (count === 0) return
+    activeSuggestionIndex.value = (activeSuggestionIndex.value + 1) % count
   }, ONE_SENTENCE_SUGGESTION_ROTATE_MS)
 }
 

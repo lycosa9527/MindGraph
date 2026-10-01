@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.132] - 2026-10-01
+
+> **Concept maps use the tab canvas. Tab no longer opens inline suggestions.**
+
+### Changed
+
+- **概念图** — Concept maps use the file, edit, AI, and teaching tabs. Concept generation, waterfall, and subgraph open the concept palette, and a selected concept opens that concept. Explain, the learning sheet, and Mind Classroom follow the map. The virtual keyboard stays on the file tab. Classroom outlines teach from the concept nodes. Document, web, and voice generation stay on mind maps and thinking maps.
+- **Tab** — Tab no longer opens inline suggestions. The suggestion row, the Tab badge, and the Kitty command for it are gone. On a concept map, Tab on the topic still reviews the focus question, and Tab on the root concept still reviews that concept. Relationship labels still generate when a concept's text changes.
+
+### Tests
+
+- [`frontend/tests/diagramRibbonCapabilities.spec.ts`](frontend/tests/diagramRibbonCapabilities.spec.ts), [`frontend/tests/diagramInsertActions.spec.ts`](frontend/tests/diagramInsertActions.spec.ts), [`tests/test_mind_classroom_concept_outline.py`](tests/test_mind_classroom_concept_outline.py)
+
+## [5.180.131] - 2026-10-01
+
+> **The new canvas is the only canvas. Settings no longer offers classic.**
+
+### Changed
+
+- **画布** — Every browser opens the new canvas, including one that had chosen classic. The V1 / V2 control is gone from settings and from course setup. Saved classic course steps open on the new canvas. `FEATURE_MINDMAP_V2_CANVAS` is gone, so nothing can switch the product back to classic.
+
+### Tests
+
+- [`frontend/tests/mindMapCanvasV2DefaultMigration.spec.ts`](frontend/tests/mindMapCanvasV2DefaultMigration.spec.ts), [`frontend/tests/trainingCourses.spec.ts`](frontend/tests/trainingCourses.spec.ts), [`tests/test_training_course_routes.py`](tests/test_training_course_routes.py)
+
 ## [5.180.130] - 2026-10-01
 
 > **The eight thinking maps use the mind-map tab canvas. Enter adds the node for the selection, and a style-only save still lands.**

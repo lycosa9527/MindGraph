@@ -233,13 +233,6 @@ class FeatureFlagSettings(BaseModel):
         default=False,
         description="Enable the MindMate 记录导出 admin subtab (view/export Dify conversation history)",
     )
-    FEATURE_MINDMAP_V2_CANVAS: bool = Field(
-        default=True,
-        description=(
-            "Show Classic/New mind map canvas control in Language settings; "
-            "new (v2) canvas is the default when True; classic remains available"
-        ),
-    )
     FEATURE_MIND_CLASSROOM_SLIDE_DECK: bool = Field(
         default=False,
         description="Enable 思维讲堂 slide-lecture (幻灯片讲解) presentation mode",

@@ -1,10 +1,9 @@
-import { computed, ref, watch, type Ref } from 'vue'
+import { type Ref, computed, ref, watch } from 'vue'
 
-import {
-  useNodeExplainBubblePosition,
-  type ExplainBubbleSize,
-} from '@/composables/canvasToolbar'
+import { type ExplainBubbleSize, useNodeExplainBubblePosition } from '@/composables/canvasToolbar'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useMindMapNodeExplain } from '@/composables/mindMap/useMindMapNodeExplain'
+import { findExplainCenterNode } from '@/utils/mindMapExplainContext'
 import { resolveExplainResearchSide } from '@/utils/mindMapExplainResearch'
 
 type PositionedNode = {
@@ -30,13 +29,14 @@ export function useDiagramCanvasNodeExplain(options: {
     openExplain: openNodeExplain,
     close: closeNodeExplain,
   } = useMindMapNodeExplain()
+  const diagramStore = useDiagramSession()
 
   const explainBubbleNodeId = computed(() => nodeExplainTarget.value?.nodeId ?? null)
   const nodeExplainResearchSide = computed(() => {
     const nodeId = explainBubbleNodeId.value
     if (!nodeId) return resolveExplainResearchSide(undefined, undefined)
     const node = options.nodes.value.find((item) => item.id === nodeId)
-    const topic = options.nodes.value.find((item) => item.id === 'topic')
+    const topic = findExplainCenterNode(options.nodes.value, diagramStore.type)
     return resolveExplainResearchSide(node?.position?.x, topic?.position?.x)
   })
   const explainBubbleSize = ref<ExplainBubbleSize | null>(null)

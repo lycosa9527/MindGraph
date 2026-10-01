@@ -10,9 +10,10 @@ import { useLanguage } from '@/composables'
 import { formatKittyVoiceCommandLabel } from '@/composables/kitty/kittyVoiceCommandLabels'
 import { AI_CONTENT_LEVEL_IDS } from '@/config/aiContentLevels'
 import {
-  ONE_SENTENCE_NODE_ACTION_GUIDE_ROWS,
   VOICE_NUMBERING_STYLE_IDS,
+  oneSentenceGuideRowsForDiagram,
 } from '@/config/oneSentenceNodeActionGuide'
+import { useDiagramStore } from '@/stores'
 
 const props = withDefaults(
   defineProps<{
@@ -31,12 +32,13 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
+const diagramStore = useDiagramStore()
 const rootRef = ref<HTMLElement | null>(null)
 
 type GuideChip = { id: string; label: string; labelKey?: string; phrase: string }
 
 const rows = computed(() =>
-  ONE_SENTENCE_NODE_ACTION_GUIDE_ROWS.map((row) => {
+  oneSentenceGuideRowsForDiagram(diagramStore.type).map((row) => {
     const raw = formatKittyVoiceCommandLabel(row.action, undefined, (key, params) =>
       t(key, params ?? {})
     )

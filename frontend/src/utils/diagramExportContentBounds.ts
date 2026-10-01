@@ -37,6 +37,7 @@ const INK_SELECTOR = [
   '.vue-flow__edge-path',
   '.vue-flow__edge-text',
   '.vue-flow__connection-path',
+  '.edge-label',
   '.brace-overlay path',
   '.brace-overlay line',
   '.brace-overlay polygon',

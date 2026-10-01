@@ -51,6 +51,7 @@ UI_LOCK_KEYS = frozenset({"mindgraph-language"})
 FOCUS_KEYS = frozenset(
     {f"diagram-{name}" for name in DIAGRAM_FOCUS_TYPES}
     | {
+        # Archived settings buttons. Older courses may still name them.
         "mindmap-v1",
         "mindmap-v2",
         "mindmap-v3",
@@ -60,17 +61,17 @@ FOCUS_KEYS = frozenset(
         "canvas-delete",
     }
 )
-MINDMAP_CANVAS_MODES = frozenset({"legacy", "v2"})
+MINDMAP_CANVAS_MODES = frozenset({"v2"})
 
 
 def normalize_mindmap_canvas_mode(value: object) -> str | None:
-    """Accept leftover stored ``v3`` as New canvas; reject unknown ids."""
+    """Map leftover ``v3`` and archived classic (``legacy``) onto New canvas."""
     if value is None:
         return None
     text = str(value).strip()
     if not text:
         return None
-    if text == "v3":
+    if text in {"v3", "legacy"}:
         return "v2"
     if text not in MINDMAP_CANVAS_MODES:
         raise ValueError(f"Invalid mindmap_canvas_mode: {text}")

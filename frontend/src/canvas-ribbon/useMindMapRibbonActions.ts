@@ -14,6 +14,7 @@ import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningShe
 import { CANVAS_MINDMAP_EXPORT_MENU_ITEMS } from '@/config/canvasExportMenu'
 import { useCanvasExportStore } from '@/stores'
 
+import type { DiagramInsertActionId } from './diagramInsertActions'
 import { useMindMapRibbonChromeActions } from './useMindMapRibbonChromeActions'
 
 export function useMindMapRibbonActions() {
@@ -21,7 +22,15 @@ export function useMindMapRibbonActions() {
   const notify = useNotifications()
   const diagramStore = useDiagramSession()
   const { resetToDefaultTemplate } = useCanvasReset()
-  const { handleAddChild, handleAddSibling, handleAddBranch, handleDeleteNode } = useNodeActions({
+  const {
+    handleAddChild,
+    handleAddSibling,
+    handleAddBranch,
+    handleAddNode,
+    handleAddCause,
+    handleAddEffect,
+    handleDeleteNode,
+  } = useNodeActions({
     registerEventBusListeners: false,
   })
   const { handleAIGenerate } = useCanvasToolbarApps()
@@ -42,6 +51,31 @@ export function useMindMapRibbonActions() {
       return false
     }
     return true
+  }
+
+  function runDiagramInsert(id: DiagramInsertActionId): void {
+    if (id === 'child') {
+      handleAddChildClick()
+      return
+    }
+    if (id === 'sibling') {
+      handleAddSibling()
+      return
+    }
+    if (id === 'cause') {
+      handleAddCause()
+      return
+    }
+    if (id === 'effect') {
+      handleAddEffect()
+      return
+    }
+    handleAddNode()
+  }
+
+  function toggleFlowOrientation(): void {
+    diagramStore.toggleFlowMapOrientation()
+    notify.successKey('canvas.toolbar.layoutDirectionToggled')
   }
 
   function handleAddChildClick(): void {
@@ -182,6 +216,8 @@ export function useMindMapRibbonActions() {
     handleAddChildClick,
     handleAddSibling,
     handleDeleteNode,
+    runDiagramInsert,
+    toggleFlowOrientation,
     canPaste,
     copySelected,
     cutSelected,

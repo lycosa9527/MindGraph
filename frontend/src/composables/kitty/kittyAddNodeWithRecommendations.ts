@@ -1,8 +1,6 @@
 /**
- * Kitty voice: add one canvas node, then open inline recommendations on it.
+ * Kitty voice: add one canvas node.
  */
-import { nextTick } from 'vue'
-
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import {
   BRANCH_NODE_HEIGHT,
@@ -283,17 +281,13 @@ export function addKittyNodeForInlineRec(
 export interface KittyAddNodeWithRecHandlerOptions {
   text?: string
   diagramStore: DiagramPiniaStore
-  startRecommendations: (nodeId: string) => Promise<{ success: boolean; error?: string }>
-  inlineRecReady: boolean
-  isAuthenticated: boolean
-  conceptMapAiEnabled: boolean
   translate: TranslateFn
   notifyWarning: (message: string) => void
 }
 
-export async function handleKittyAddNodeWithRecommendationsRequest(
+export function handleKittyAddNodeWithRecommendationsRequest(
   options: KittyAddNodeWithRecHandlerOptions
-): Promise<void> {
+): void {
   const nodeId = addKittyNodeForInlineRec(options.diagramStore, options.translate, options.text)
   if (!nodeId) {
     options.notifyWarning(
@@ -303,29 +297,4 @@ export async function handleKittyAddNodeWithRecommendationsRequest(
   }
 
   options.diagramStore.selectNodes([nodeId])
-  await nextTick()
-
-  const nodes = options.diagramStore.data?.nodes ?? []
-  const node = nodes.find((row) => row.id === nodeId)
-  if (
-    !node ||
-    !isNodeEligibleForInlineRec(
-      options.diagramStore.type,
-      node,
-      options.diagramStore.data?.connections
-    )
-  ) {
-    options.notifyWarning(options.translate('notification.nodeNotEligible'))
-    return
-  }
-  if (options.diagramStore.type === 'concept_map' && !options.conceptMapAiEnabled) {
-    options.notifyWarning(options.translate('notification.conceptMapTabNeedsAi'))
-    return
-  }
-  if (!options.isAuthenticated) {
-    options.notifyWarning(options.translate('notification.signInToUse', 'Please sign in'))
-    return
-  }
-
-  await options.startRecommendations(nodeId)
 }
