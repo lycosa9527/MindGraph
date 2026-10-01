@@ -48,6 +48,17 @@ export function collabCursorBehind(
   return collabChainNeedsFill(messages, latestId)
 }
 
+/** True when the room has saved lines newer than anything on this screen. */
+export function collabTranscriptBehind(
+  messages: readonly { id?: number }[],
+  latestId: number | null
+): boolean {
+  if (latestId == null || latestId <= 0) {
+    return false
+  }
+  return latestId > collabMaxSavedId(messages)
+}
+
 /**
  * When a reconnect snapshot starts after lines this screen already had,
  * return that cursor so the hole in between can be loaded.

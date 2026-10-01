@@ -536,10 +536,11 @@ async def collab_history(
     session_id: str,
     limit: int = Query(100, ge=1, le=200),
     after_id: Optional[int] = Query(None, ge=0),
+    before_id: Optional[int] = Query(None, ge=0),
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ):
-    """Paginated message history for reconnecting or auditing a room."""
+    """One page of seminar history. ``after_id`` is newer; ``before_id`` is older."""
     await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
@@ -548,6 +549,8 @@ async def collab_history(
         max_requests=30,
         window_seconds=60,
     )
+    if after_id is not None and before_id is not None:
+        raise HTTPException(status_code=400, detail="Choose after_id or before_id")
     mgr = get_mindmate_collab_manager()
     session = await mgr.load_session_by_id_any(session_id)
     if not session:
@@ -562,5 +565,10 @@ async def collab_history(
         )
     if not allowed and session.visibility != ONLINE_COLLAB_VISIBILITY_NETWORK:
         raise HTTPException(status_code=403, detail="Access denied")
-    messages = await mgr.fetch_message_history(session_id, limit=limit, after_id=after_id)
-    return {"messages": messages}
+    page = await mgr.fetch_message_page(
+        session_id,
+        limit=limit,
+        after_id=after_id,
+        before_id=before_id,
+    )
+    return {"messages": page.messages, "has_more": page.has_more}

@@ -27,7 +27,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: 'ended', reason: 'idle' | 'host' | 'left'): void
   (
-    e: 'room-meta',
+    e: 'roomMeta',
     payload: {
       title: string
       visibility: string
@@ -70,7 +70,7 @@ function onRoomMeta(payload: {
 }) {
   sessionId.value = payload.sessionId
   roomVisibility.value = payload.visibility
-  emit('room-meta', {
+  emit('roomMeta', {
     title: payload.title,
     visibility: payload.visibility,
     sessionId: payload.sessionId,
@@ -99,6 +99,7 @@ function toggleContacts(): void {
         />
       </div>
       <MindmateCollabRoom
+        :key="roomCode"
         :embedded="embedded"
         :room-code="roomCode"
         :seed-messages="seedMessages"

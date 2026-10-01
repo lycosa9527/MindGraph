@@ -20,8 +20,10 @@ import MindmateSeminarFaces from '@/components/mindmate/MindmateSeminarFaces.vue
 import { useLanguage, useNotifications } from '@/composables'
 import {
   embeddedCollabRoomCode,
+  hydrateEmbeddedCollabRoomCode,
   setEmbeddedCollabRoomCode,
 } from '@/composables/mindmate/mindmateCollabEmbeddedBridge'
+import { dropLiveCollabRoom } from '@/composables/mindmate/mindmateCollabLiveSession'
 import { useMindMate } from '@/composables/mindmate/useMindMate'
 import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
@@ -309,6 +311,7 @@ async function endCollabSession(): Promise<void> {
     return
   }
   const sessionId = resolveMindmateCollabSessionId(collabSessionId.value, collabRoomCode.value)
+  dropLiveCollabRoom(collabRoomCode.value || '')
   exitCollabChatroomMode({ removeFromHistory: true })
   if (!sessionId) {
     notify.successKey('mindmate.collabStopped')
@@ -347,28 +350,36 @@ watch(showWelcome, (welcome) => {
   }
 })
 
-watch(embeddedCollabRoomCode, (code) => {
-  if (!isFullpageMode.value) {
-    return
-  }
-  if (code && code !== collabRoomCode.value) {
-    if (wasMindmateCollabCodeRecentlyEnded(code)) {
+if (isFullpageMode.value) {
+  hydrateEmbeddedCollabRoomCode()
+}
+
+watch(
+  embeddedCollabRoomCode,
+  (code) => {
+    if (!isFullpageMode.value) {
       return
     }
-    collabRoomCode.value = code
-    const localRow = loadLocalMindmateCollabSessions().find(
-      (row) => normalizeMindmateCollabCode(row.code) === normalizeMindmateCollabCode(code)
-    )
-    if (localRow?.visibility === 'network' || localRow?.visibility === 'organization') {
-      collabVisibility.value = localRow.visibility
+    if (code && code !== collabRoomCode.value) {
+      if (wasMindmateCollabCodeRecentlyEnded(code)) {
+        return
+      }
+      collabRoomCode.value = code
+      const localRow = loadLocalMindmateCollabSessions().find(
+        (row) => normalizeMindmateCollabCode(row.code) === normalizeMindmateCollabCode(code)
+      )
+      if (localRow?.visibility === 'network' || localRow?.visibility === 'organization') {
+        collabVisibility.value = localRow.visibility
+      }
+      if (localRow?.title) {
+        collabRoomTitle.value = localRow.title
+      }
+    } else if (!code && collabRoomCode.value) {
+      exitCollabChatroomMode()
     }
-    if (localRow?.title) {
-      collabRoomTitle.value = localRow.title
-    }
-  } else if (!code && collabRoomCode.value) {
-    exitCollabChatroomMode()
-  }
-})
+  },
+  { immediate: true }
+)
 
 // In panel mode (canvas mini-mindmate): fetch conversations from Dify and sync to store
 // ChatHistory sidebar is not mounted on canvas, so we must fetch here
@@ -434,6 +445,7 @@ async function startNewConversation() {
       return
     }
     const sessionId = resolveMindmateCollabSessionId(collabSessionId.value, collabRoomCode.value)
+    dropLiveCollabRoom(collabRoomCode.value || '')
     exitCollabChatroomMode({ removeFromHistory: true })
     if (sessionId) {
       void requestMindmateCollabStop(sessionId).then((ok) => {

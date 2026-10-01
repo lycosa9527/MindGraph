@@ -15,12 +15,15 @@ import ShareExportModal from '@/components/panels/ShareExportModal.vue'
 import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { ensureMarkdownRenderer } from '@/composables/core/lazyMarkdown'
+import { rememberJoinedCollabRoom } from '@/composables/mindmate/mindmateCollabEmbeddedBridge'
+import {
+  dropLiveCollabRoom,
+  mindmateCollabLiveCovers,
+  useLiveMindmateCollab,
+} from '@/composables/mindmate/mindmateCollabLiveSession'
 import type { MindMateMessage } from '@/composables/mindmate/useMindMate'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
-import {
-  type MindmateCollabMessage,
-  useMindmateCollab,
-} from '@/composables/mindmate/useMindmateCollab'
+import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
 import { createMindmateCollabOrgBackend } from '@/composables/social/createMindmateCollabOrgBackend'
 import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
@@ -82,6 +85,7 @@ const normalizedCode = computed(() => formatMindmateCollabCode(props.roomCode))
 
 const {
   messages,
+  hasOlder,
   room,
   connected,
   connectionStatus,
@@ -91,18 +95,16 @@ const {
   canSend,
   canRetryConnection,
   connect,
-  disconnect,
   sendChat,
   seedRoom,
-  resetForRoomChange,
+  loadOlderMessages,
   retryConnection,
   readCursors,
-} = useMindmateCollab(() => normalizedCode.value, {
+} = useLiveMindmateCollab(normalizedCode.value, {
   onSessionEnded: (reason) => {
     roomEndNotified = true
     emit('ended', reason)
   },
-  embedded: props.embedded,
   seedMessages: () => props.seedMessages ?? [],
 })
 
@@ -134,6 +136,7 @@ const stoppingRoom = ref(false)
 
 const inputText = ref('')
 const joining = ref(false)
+const followTranscript = ref(true)
 type CollabRecipientMode = 'mindmate' | 'all'
 const recipientMode = ref<CollabRecipientMode>('all')
 const showShareModal = ref(false)
@@ -167,6 +170,8 @@ async function parseJoinErrorDetail(response: Response): Promise<string> {
   }
 }
 
+let viewActive = true
+
 const headerSubtitle = computed(() => {
   if (room.value?.visibility === 'network') {
     return ''
@@ -180,11 +185,20 @@ async function joinRoomAndConnect(): Promise<void> {
     return
   }
   if (wasMindmateCollabCodeRecentlyEnded(code)) {
-    emit('ended', 'host')
+    dropLiveCollabRoom(code)
+    if (viewActive) {
+      emit('ended', 'host')
+    }
+    return
+  }
+  if (mindmateCollabLiveCovers(code)) {
+    rememberJoinedCollabRoom(code)
     return
   }
   const generation = ++joinGeneration
-  joining.value = true
+  if (viewActive) {
+    joining.value = true
+  }
   try {
     const response = await authFetch(`/api/mindmate/collab/join?code=${encodeURIComponent(code)}`, {
       method: 'POST',
@@ -196,15 +210,21 @@ async function joinRoomAndConnect(): Promise<void> {
       const hostJustEnded = wasMindmateCollabCodeRecentlyEnded(code)
       if (response.status === 404 || hostJustEnded) {
         markMindmateCollabCodeEnded(code)
+        dropLiveCollabRoom(code)
         teardownMindmateCollabClient(code, { removeFromHistory: true })
-        emit('ended', 'host')
-        if (!hostJustEnded) {
-          notify.error(await parseJoinErrorDetail(response))
+        if (viewActive) {
+          emit('ended', 'host')
+          if (!hostJustEnded) {
+            notify.error(await parseJoinErrorDetail(response))
+          }
         }
         return
       }
-      notify.error(await parseJoinErrorDetail(response))
-      emit('ended', 'left')
+      dropLiveCollabRoom(code)
+      if (viewActive) {
+        notify.error(await parseJoinErrorDetail(response))
+        emit('ended', 'left')
+      }
       return
     }
     const data = (await response.json()) as Record<string, unknown>
@@ -228,29 +248,29 @@ async function joinRoomAndConnect(): Promise<void> {
       ownerId: Number(data.owner_user_id || 0),
     })
     connect()
+    rememberJoinedCollabRoom(code)
   } catch {
-    notify.errorKey('mindgraphLanding.networkErrorJoin')
-    emit('ended', 'left')
+    dropLiveCollabRoom(code)
+    if (viewActive) {
+      notify.errorKey('mindgraphLanding.networkErrorJoin')
+      emit('ended', 'left')
+    }
   } finally {
-    joining.value = false
+    if (viewActive) {
+      joining.value = false
+    }
   }
 }
 
 onUnmounted(() => {
-  joinGeneration += 1
+  viewActive = false
 })
 
 onMounted(() => {
   void ensureMarkdownRenderer()
+  followTranscript.value = true
   void joinRoomAndConnect()
-})
-
-watch(normalizedCode, (code, prev) => {
-  if (code && code !== prev) {
-    disconnect()
-    resetForRoomChange()
-    void joinRoomAndConnect()
-  }
+  void scrollTranscriptToBottom()
 })
 
 watch(
@@ -296,13 +316,14 @@ async function stopRoom() {
     return
   }
   stoppingRoom.value = true
-  disconnect()
+  const code = normalizedCode.value
   try {
     const ok = await requestMindmateCollabStop(sessionId)
     if (!ok) {
       notify.errorKey('collab.endFailed')
       return
     }
+    dropLiveCollabRoom(code)
     if (roomEndNotified) {
       return
     }
@@ -320,6 +341,7 @@ function handleSend() {
   if (!trimmed || !canSend.value || joining.value) {
     return
   }
+  followTranscript.value = true
   const toMindmate =
     recipientMode.value === 'mindmate' ||
     contentMentionsMindmate(trimmed, [mindmateAgentName.value])
@@ -385,6 +407,7 @@ const transcript = computed(() =>
 )
 
 const messagesScrollEl = ref<HTMLElement | null>(null)
+let programmaticScroll = false
 
 function isMessagesNearBottom(): boolean {
   const el = messagesScrollEl.value
@@ -399,15 +422,64 @@ function scrollMessagesToBottom(): void {
   if (!el) {
     return
   }
+  programmaticScroll = true
   el.scrollTop = el.scrollHeight
 }
 
-watch(messages, async () => {
-  const stickToBottom = isMessagesNearBottom()
+function releaseProgrammaticScroll(): void {
+  requestAnimationFrame(() => {
+    programmaticScroll = false
+  })
+}
+
+async function scrollTranscriptToBottom(): Promise<void> {
   await nextTick()
-  if (stickToBottom) {
+  scrollMessagesToBottom()
+  requestAnimationFrame(() => {
     scrollMessagesToBottom()
+    releaseProgrammaticScroll()
+  })
+}
+
+function onMessagesScroll(): void {
+  if (programmaticScroll) {
+    return
   }
+  followTranscript.value = isMessagesNearBottom()
+  const el = messagesScrollEl.value
+  if (!el || el.scrollTop >= 80 || el.scrollHeight <= el.clientHeight) {
+    return
+  }
+  if (!hasOlder.value) {
+    return
+  }
+  void loadOlderKeepingPlace()
+}
+
+async function loadOlderKeepingPlace(): Promise<void> {
+  const el = messagesScrollEl.value
+  if (!el) {
+    return
+  }
+  const beforeHeight = el.scrollHeight
+  const beforeTop = el.scrollTop
+  followTranscript.value = false
+  await loadOlderMessages()
+  await nextTick()
+  const grown = el.scrollHeight - beforeHeight
+  if (grown <= 0) {
+    return
+  }
+  programmaticScroll = true
+  el.scrollTop = beforeTop + grown
+  releaseProgrammaticScroll()
+}
+
+watch(messages, () => {
+  if (!followTranscript.value) {
+    return
+  }
+  void scrollTranscriptToBottom()
 })
 </script>
 
@@ -484,6 +556,7 @@ watch(messages, async () => {
       <div
         ref="messagesScrollEl"
         class="mindmate-collab-room__messages-scroll"
+        @scroll="onMessagesScroll"
       >
         <div class="mindmate-collab-room__messages-inner">
           <div

@@ -31,3 +31,7 @@ export function dropSeminarFace(userId: number): void {
 export function clearSeminarFaces(): void {
   faces.value = []
 }
+
+export function showSeminarFaces(next: SeminarFace[]): void {
+  faces.value = next
+}

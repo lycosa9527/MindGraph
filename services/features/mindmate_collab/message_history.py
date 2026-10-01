@@ -67,14 +67,42 @@ class PersistedCollabMessage(NamedTuple):
     created_at: str
 
 
-async def fetch_session_message_history(
+class CollabHistoryPage(NamedTuple):
+    """One page of seminar history, plus whether another page exists in that direction."""
+
+    messages: List[Dict[str, Any]]
+    has_more: bool
+
+
+def page_history_probe(
+    rows: Sequence[Any],
+    cap: int,
+    *,
+    newest_first: bool,
+) -> Tuple[List[Any], bool]:
+    """Keep ``cap`` rows from a probe that may include one extra row."""
+    has_more = len(rows) > cap
+    kept = list(rows[:cap])
+    if newest_first:
+        kept.reverse()
+    return kept, has_more
+
+
+async def fetch_session_message_page(
     db: AsyncSession,
     session_id: str,
     limit: int | None = None,
     after_id: int | None = None,
-) -> List[Dict[str, Any]]:
-    """Return chat rows oldest-first. ``after_id`` keeps only newer rows."""
+    before_id: int | None = None,
+) -> CollabHistoryPage:
+    """
+    Return one page of chat rows, oldest-first.
+
+    No cursor returns the newest page. ``after_id`` returns newer rows.
+    ``before_id`` returns older rows. ``has_more`` is the next page in that direction.
+    """
     cap = limit or MINDMATE_COLLAB_SNAPSHOT_MESSAGE_LIMIT
+    newest_first = after_id is None
     stmt = (
         select(MindmateCollabMessage, User.name, User.phone, User.email)
         .join(User, User.id == MindmateCollabMessage.sender_user_id, isouter=True)
@@ -82,15 +110,35 @@ async def fetch_session_message_history(
     )
     if after_id is not None:
         stmt = stmt.where(MindmateCollabMessage.id > after_id).order_by(MindmateCollabMessage.id.asc())
+    elif before_id is not None:
+        stmt = stmt.where(MindmateCollabMessage.id < before_id).order_by(MindmateCollabMessage.id.desc())
     else:
         stmt = stmt.order_by(MindmateCollabMessage.id.desc())
-    result = await db.execute(stmt.limit(cap))
-    fetched = list(result.all())
-    rows = fetched if after_id is not None else list(reversed(fetched))
-    return [
+    result = await db.execute(stmt.limit(cap + 1))
+    fetched, has_more = page_history_probe(list(result.all()), cap, newest_first=newest_first)
+    messages = [
         serialize_message_row(message, owner_name, owner_phone, owner_email)
-        for message, owner_name, owner_phone, owner_email in rows
+        for message, owner_name, owner_phone, owner_email in fetched
     ]
+    return CollabHistoryPage(messages, has_more)
+
+
+async def fetch_session_message_history(
+    db: AsyncSession,
+    session_id: str,
+    limit: int | None = None,
+    after_id: int | None = None,
+    before_id: int | None = None,
+) -> List[Dict[str, Any]]:
+    """Return chat rows oldest-first. ``after_id`` keeps only newer rows."""
+    page = await fetch_session_message_page(
+        db,
+        session_id,
+        limit=limit,
+        after_id=after_id,
+        before_id=before_id,
+    )
+    return page.messages
 
 
 async def insert_collab_message(

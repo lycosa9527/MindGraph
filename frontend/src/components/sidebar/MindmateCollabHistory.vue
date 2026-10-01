@@ -17,6 +17,7 @@ import {
   embeddedCollabRoomCode,
   setEmbeddedCollabRoomCode,
 } from '@/composables/mindmate/mindmateCollabEmbeddedBridge'
+import { dropLiveCollabRoom } from '@/composables/mindmate/mindmateCollabLiveSession'
 import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
 import { confirmMindmateCollabStop } from '@/utils/mindmateCollabConfirm'
@@ -268,6 +269,7 @@ async function stopSession(row: CollabSessionRow): Promise<void> {
   const wasActive =
     rowKey === activeCode.value || rowKey === normalizeCode(embeddedCollabRoomCode.value || '')
   evictSessionByCode(row.code)
+  dropLiveCollabRoom(row.code)
   if (wasActive) {
     teardownMindmateCollabClient(row.code, { removeFromHistory: true })
   } else {

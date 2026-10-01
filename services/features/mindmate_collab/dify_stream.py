@@ -37,7 +37,11 @@ def mindmate_collab_dify_user_id(org_id: Optional[int], session_id: str) -> str:
     return f"mindmate_collab_{org_part}_{session_id}"
 
 
-async def _store_partial_assistant(session_id: str, text: str) -> tuple[Optional[int], Optional[int]]:
+async def _store_partial_assistant(
+    session_id: str,
+    text: str,
+    room_code: str,
+) -> tuple[Optional[int], Optional[int]]:
     """Keep an interrupted MindMate reply. Returns ``(id, prev_id)`` when saved."""
     cleaned = text.strip()
     if not cleaned:
@@ -48,6 +52,7 @@ async def _store_partial_assistant(session_id: str, text: str) -> tuple[Optional
             role="assistant",
             content=cleaned,
             sender_user_id=None,
+            room_code=room_code,
         )
     except DATABASE_ERRORS as exc:
         logger.warning(
@@ -138,7 +143,7 @@ async def stream_assistant_reply(
                 )
         if aborted:
             partial = "".join(full_answer)
-            message_id, prev_id = await _store_partial_assistant(session_id, partial)
+            message_id, prev_id = await _store_partial_assistant(session_id, partial, code)
             await _broadcast_aborted_end(code, partial, message_id, prev_id)
             return
         final_text = "".join(full_answer)
@@ -151,6 +156,7 @@ async def stream_assistant_reply(
                 role="assistant",
                 content=final_text,
                 sender_user_id=None,
+                room_code=code,
             )
             assistant_id = saved.id
             assistant_prev_id = saved.prev_id
@@ -168,7 +174,7 @@ async def stream_assistant_reply(
         await broadcast_to_all(code, end_frame)
     except asyncio.CancelledError:
         partial = "".join(full_answer)
-        message_id, prev_id = await _store_partial_assistant(session_id, partial)
+        message_id, prev_id = await _store_partial_assistant(session_id, partial, code)
         await _broadcast_aborted_end(code, partial, message_id, prev_id)
         raise
     except (OSError, RuntimeError, ValueError, TypeError, KeyError) as exc:

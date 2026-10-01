@@ -29,9 +29,11 @@ from services.features.mindmate_collab.config import (
     MINDMATE_COLLAB_SESSION_TTL,
 )
 from services.features.mindmate_collab.dify_stream_control import abort_dify_stream
+from services.features.mindmate_collab.message_cursor import remember_latest_collab_message_id
 from services.features.mindmate_collab.message_history import (
+    CollabHistoryPage,
     PersistedCollabMessage,
-    fetch_session_message_history,
+    fetch_session_message_page,
     insert_collab_message,
     normalize_seed_messages,
     persist_seed_messages,
@@ -690,20 +692,38 @@ class MindmateCollabManager:
         except REDIS_ERRORS:
             pass
 
+    async def fetch_message_page(
+        self,
+        session_id: str,
+        limit: int | None = None,
+        after_id: int | None = None,
+        before_id: int | None = None,
+    ) -> CollabHistoryPage:
+        """Return one history page and whether another page exists in that direction."""
+        async with system_rls_session() as db:
+            return await fetch_session_message_page(
+                db,
+                session_id,
+                limit=limit,
+                after_id=after_id,
+                before_id=before_id,
+            )
+
     async def fetch_message_history(
         self,
         session_id: str,
         limit: int | None = None,
         after_id: int | None = None,
+        before_id: int | None = None,
     ) -> List[Dict[str, Any]]:
         """Return persisted chat messages for a session, optionally after an id."""
-        async with system_rls_session() as db:
-            return await fetch_session_message_history(
-                db,
-                session_id,
-                limit=limit,
-                after_id=after_id,
-            )
+        page = await self.fetch_message_page(
+            session_id,
+            limit=limit,
+            after_id=after_id,
+            before_id=before_id,
+        )
+        return page.messages
 
     async def persist_message(
         self,
@@ -712,16 +732,20 @@ class MindmateCollabManager:
         role: str,
         content: str,
         sender_user_id: Optional[int],
+        room_code: Optional[str] = None,
     ) -> PersistedCollabMessage:
         """Insert a chat message row and return its id plus the previous room id."""
         async with system_rls_session() as db:
-            return await insert_collab_message(
+            saved = await insert_collab_message(
                 db,
                 session_id,
                 role=role,
                 content=content,
                 sender_user_id=sender_user_id,
             )
+        if room_code:
+            await remember_latest_collab_message_id(room_code, saved.id)
+        return saved
 
     async def set_dify_conversation_id(self, session_id: str, conversation_id: str) -> None:
         """Persist Dify conversation id in PostgreSQL and Redis session meta."""

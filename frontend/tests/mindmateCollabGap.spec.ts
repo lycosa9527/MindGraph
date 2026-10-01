@@ -7,6 +7,7 @@ import {
   collabMaxSavedId,
   collabPrevId,
   collabSnapshotBackfillAfterId,
+  collabTranscriptBehind,
   insertMissingCollabMessages,
   streamingCoveredBySaved,
 } from '@/utils/mindmateCollabGap'
@@ -59,6 +60,9 @@ describe('mindmateCollabGap', () => {
     expect(collabMaxSavedId(current)).toBe(9)
     expect(collabCursorBehind(current, 9)).toBe(false)
     expect(collabCursorBehind(current, 12)).toBe(true)
+    expect(collabTranscriptBehind(current, 9)).toBe(false)
+    expect(collabTranscriptBehind(current, 12)).toBe(true)
+    expect(collabTranscriptBehind(current, null)).toBe(false)
     expect(collabSnapshotBackfillAfterId(9, [{ id: 20 }, { id: 21 }])).toBe(9)
     expect(collabSnapshotBackfillAfterId(21, [{ id: 20 }])).toBeNull()
     expect(collabSnapshotBackfillAfterId(0, [{ id: 20 }])).toBeNull()

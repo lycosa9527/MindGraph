@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.128] - 2026-10-01
+
+> **A seminar stays connected until its owner ends it, and opening it again loads the transcript.**
+
+### Fixed
+
+- **Seminar chat** — Joining another seminar, or leaving MindMate, keeps the other seminars connected. Each socket stays up until that room's owner ends it, the room goes idle, or you sign out. A quiet socket checks that it is still alive and fills any line it missed. New lines follow the bottom of the transcript. Closing the browser ends the socket; opening the seminar again loads the newest messages, and scrolling up loads the older ones.
+
+### Tests
+
+- [`frontend/tests/useMindmateCollab.spec.ts`](frontend/tests/useMindmateCollab.spec.ts), [`frontend/tests/mindmateCollabGap.spec.ts`](frontend/tests/mindmateCollabGap.spec.ts), [`frontend/tests/mindmateCollabHeartbeat.spec.ts`](frontend/tests/mindmateCollabHeartbeat.spec.ts), [`tests/test_mindmate_collab_message_history.py`](tests/test_mindmate_collab_message_history.py), [`tests/test_mindmate_collab_message_delivery.py`](tests/test_mindmate_collab_message_delivery.py)
+
 ## [5.180.127] - 2026-10-01
 
 > **Operators can dump a Dify database and move chat history onto one app, and each mascot has a voice for lip-sync.**

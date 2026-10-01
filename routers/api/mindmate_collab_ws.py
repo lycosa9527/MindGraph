@@ -26,6 +26,7 @@ from services.features.mindmate_collab.mention import (
     mention_aliases_from_org,
     message_mentions_mindmate,
 )
+from services.features.mindmate_collab.message_cursor import read_latest_collab_message_id
 from services.features.mindmate_collab.message_history import catchup_frames, history_row_ids
 from services.features.mindmate_collab.participant_faces import (
     load_participant_faces,
@@ -206,6 +207,22 @@ async def _handle_ping(handle: MindmateCollabWsHandle, code: str, user_id: int) 
     _send_client(handle, {"type": "pong"})
 
 
+async def _handle_socket_ping(handle: MindmateCollabWsHandle, code: str, user_id: int) -> None:
+    """
+    Prove the socket is alive and report the newest saved line.
+
+    This does not count as seminar activity, so an empty room can still idle out.
+    A missed pong is ignored here; the client reopens and loads history.
+    """
+    mgr = get_mindmate_collab_manager()
+    await mgr.refresh_participant_ttl(code, user_id)
+    latest = await read_latest_collab_message_id(code)
+    payload: Dict[str, Any] = {"type": "socket_pong"}
+    if latest is not None:
+        payload["latest_id"] = latest
+    enqueue_json(handle, payload)
+
+
 @router.websocket("/ws/mindmate-collab/{code}")
 async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
     """MindMate shared chatroom WebSocket — join, chat, Dify stream fan-out."""
@@ -326,7 +343,8 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
 
             participant_added = True
 
-            history = await mgr.fetch_message_history(session.id)
+            history_page = await mgr.fetch_message_page(session.id)
+            history = history_page.messages
             participants = await mgr.participant_count(norm_code)
             resume_token = await mint_join_resume_token_async(int(user.id), norm_code, session.id)
             try:
@@ -351,7 +369,14 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
             # Queue the baseline before fan-out is accepted, so a live
             # user_message cannot land ahead of an older snapshot.
             _send_client(handle, joined_payload)
-            _send_client(handle, {"type": "snapshot", "messages": history})
+            _send_client(
+                handle,
+                {
+                    "type": "snapshot",
+                    "messages": history,
+                    "has_older": history_page.has_more,
+                },
+            )
             handle.accepts_fanout = True
             async with system_rls_session() as db:
                 cursors = await list_read_cursors(db, session.id)
@@ -413,6 +438,9 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
                     if msg_type == "ping":
                         await _handle_ping(handle, norm_code, int(user.id))
                         continue
+                    if msg_type == "socket_ping":
+                        await _handle_socket_ping(handle, norm_code, int(user.id))
+                        continue
                     if msg_type == "read":
                         await _handle_read(norm_code, session.id, user, msg.get("message_id"))
                         continue
@@ -453,6 +481,7 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
                         role="user",
                         content=content,
                         sender_user_id=int(user.id),
+                        room_code=norm_code,
                     )
                     user_frame = {
                         "type": "user_message",

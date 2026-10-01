@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from services.features.mindmate_collab.message_cursor import parse_latest_message_id
 from services.features.mindmate_collab.message_history import catchup_frames, history_row_ids
 from services.features.mindmate_collab.ws_broadcast import _push_local, broadcast_to_all
 from services.features.mindmate_collab.ws_registry import (
@@ -15,6 +16,16 @@ from services.features.mindmate_collab.ws_registry import (
     MindmateCollabWsHandle,
     enqueue_json,
 )
+
+
+def test_parse_latest_message_id_ignores_junk() -> None:
+    """The keepalive cursor is a positive line id or nothing."""
+    assert parse_latest_message_id(None) is None
+    assert parse_latest_message_id(True) is None
+    assert parse_latest_message_id(b"0") is None
+    assert parse_latest_message_id("12") == 12
+    assert parse_latest_message_id(b"12") == 12
+    assert parse_latest_message_id("nope") is None
 
 
 def test_catchup_frames_skip_snapshot_rows() -> None:

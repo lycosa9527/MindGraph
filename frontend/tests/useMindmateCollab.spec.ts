@@ -1,14 +1,24 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { setEmbeddedCollabRoomCode, embeddedCollabRoomCode } from '@/composables/mindmate/mindmateCollabEmbeddedBridge'
+import {
+  MINDMATE_COLLAB_ACTIVE_ROOM_KEY,
+  MINDMATE_COLLAB_JOINED_ROOMS_KEY,
+  embeddedCollabRoomCode,
+  forgetJoinedCollabRoom,
+  hydrateEmbeddedCollabRoomCode,
+  loadJoinedCollabRooms,
+  rememberJoinedCollabRoom,
+  setEmbeddedCollabRoomCode,
+} from '@/composables/mindmate/mindmateCollabEmbeddedBridge'
+import { collabSocketCoversCode } from '@/composables/mindmate/mindmateCollabLiveSession'
 import { useMindmateCollabPresenceBridge } from '@/composables/mindmate/mindmateCollabPresenceBridge'
 import {
-  formatMindmateCollabCode,
-  loadLocalMindmateCollabSessions,
   LOCAL_MINDMATE_COLLAB_SESSIONS_KEY,
-  markMindmateCollabCodeEnded,
   MINDMATE_COLLAB_ENDED_CODES_KEY,
   MINDMATE_COLLAB_SESSION_REMOVED_EVENT,
+  formatMindmateCollabCode,
+  loadLocalMindmateCollabSessions,
+  markMindmateCollabCodeEnded,
   normalizeMindmateCollabCode,
   persistLocalMindmateCollabSessions,
   shouldReconnectMindmateCollab,
@@ -22,6 +32,21 @@ import {
   shouldRemoveCollabFromHistory,
   teardownMindmateCollabClient,
 } from '@/utils/mindmateCollabTeardown'
+
+describe('collabSocketCoversCode', () => {
+  it('keeps the open seminar socket when the chat view comes back', () => {
+    expect(collabSocketCoversCode('JWM-HEA', 'connected', 'jwmhea')).toBe(true)
+    expect(collabSocketCoversCode('JWM-HEA', 'reconnecting', 'JWM-HEA')).toBe(true)
+    expect(collabSocketCoversCode('JWM-HEA', 'connecting', 'JWM-HEA')).toBe(true)
+  })
+
+  it('does not reuse a socket that the owner already closed', () => {
+    expect(collabSocketCoversCode('JWM-HEA', 'idle', 'JWM-HEA')).toBe(false)
+    expect(collabSocketCoversCode('JWM-HEA', 'failed', 'JWM-HEA')).toBe(false)
+    expect(collabSocketCoversCode('JWM-HEA', 'connected', 'AAA-BBB')).toBe(false)
+    expect(collabSocketCoversCode(null, 'connected', 'JWM-HEA')).toBe(false)
+  })
+})
 
 describe('shouldReconnectMindmateCollab', () => {
   it('does not reconnect after idle shutdown 4010', () => {
@@ -166,6 +191,8 @@ describe('recently ended collab codes', () => {
   beforeEach(() => {
     localStorage.removeItem(LOCAL_MINDMATE_COLLAB_SESSIONS_KEY)
     localStorage.removeItem(MINDMATE_COLLAB_ENDED_CODES_KEY)
+    sessionStorage.removeItem(MINDMATE_COLLAB_ACTIVE_ROOM_KEY)
+    sessionStorage.removeItem(MINDMATE_COLLAB_JOINED_ROOMS_KEY)
     embeddedCollabRoomCode.value = null
   })
 
@@ -212,23 +239,81 @@ describe('recently ended collab codes', () => {
     expect(embeddedCollabRoomCode.value).toBeNull()
     setEmbeddedCollabRoomCode(null)
     expect(embeddedCollabRoomCode.value).toBeNull()
+    expect(sessionStorage.getItem(MINDMATE_COLLAB_ACTIVE_ROOM_KEY)).toBeNull()
+  })
+
+  it('remembers the open seminar so a reload can rejoin the live socket', () => {
+    setEmbeddedCollabRoomCode('jwmhea')
+    expect(embeddedCollabRoomCode.value).toBe('JWM-HEA')
+    expect(sessionStorage.getItem(MINDMATE_COLLAB_ACTIVE_ROOM_KEY)).toBe('JWM-HEA')
+    embeddedCollabRoomCode.value = null
+    hydrateEmbeddedCollabRoomCode()
+    expect(embeddedCollabRoomCode.value).toBe('JWM-HEA')
+  })
+
+  it('does not restore a seminar this tab just ended', () => {
+    setEmbeddedCollabRoomCode('JWM-HEA')
+    markMindmateCollabCodeEnded('JWM-HEA')
+    embeddedCollabRoomCode.value = null
+    hydrateEmbeddedCollabRoomCode()
+    expect(embeddedCollabRoomCode.value).toBeNull()
+    expect(sessionStorage.getItem(MINDMATE_COLLAB_ACTIVE_ROOM_KEY)).toBeNull()
   })
 
   it('persists ended codes so another tab can see them', () => {
     markMindmateCollabCodeEnded('8KZ-BAW')
-    const stored = JSON.parse(localStorage.getItem(MINDMATE_COLLAB_ENDED_CODES_KEY) || '{}') as Record<
-      string,
-      number
-    >
+    const stored = JSON.parse(
+      localStorage.getItem(MINDMATE_COLLAB_ENDED_CODES_KEY) || '{}'
+    ) as Record<string, number>
     expect(typeof stored['8KZBAW']).toBe('number')
   })
 
   it('hydrates ended codes from localStorage', () => {
-    localStorage.setItem(
-      MINDMATE_COLLAB_ENDED_CODES_KEY,
-      JSON.stringify({ QWERT1: Date.now() }),
-    )
+    localStorage.setItem(MINDMATE_COLLAB_ENDED_CODES_KEY, JSON.stringify({ QWERT1: Date.now() }))
     expect(wasMindmateCollabCodeRecentlyEnded('QWE-RT1')).toBe(true)
+  })
+
+  it('remembers every seminar this tab joined', () => {
+    rememberJoinedCollabRoom('mmm111')
+    rememberJoinedCollabRoom('NNN-222')
+    rememberJoinedCollabRoom('mmm-111')
+    expect(loadJoinedCollabRooms()).toEqual(['NNN-222', 'MMM-111'])
+    forgetJoinedCollabRoom('nnn222')
+    expect(loadJoinedCollabRooms()).toEqual(['MMM-111'])
+  })
+
+  it('does not remember a seminar this tab just ended', () => {
+    markMindmateCollabCodeEnded('MMM-111')
+    rememberJoinedCollabRoom('MMM-111')
+    expect(loadJoinedCollabRooms()).toEqual([])
+  })
+
+  it('ending one seminar leaves the other seminar selected', () => {
+    setEmbeddedCollabRoomCode('PPP-333')
+    rememberJoinedCollabRoom('PPP-333')
+    rememberJoinedCollabRoom('QQQ-444')
+    teardownMindmateCollabClient('QQQ-444', { removeFromHistory: true })
+    expect(embeddedCollabRoomCode.value).toBe('PPP-333')
+    expect(loadJoinedCollabRooms()).toEqual(['PPP-333'])
+    expect(sessionStorage.getItem(MINDMATE_COLLAB_ACTIVE_ROOM_KEY)).toBe('PPP-333')
+  })
+
+  it('ending the visible seminar clears only that selection', () => {
+    setEmbeddedCollabRoomCode('RRR-555')
+    rememberJoinedCollabRoom('RRR-555')
+    rememberJoinedCollabRoom('SSS-666')
+    teardownMindmateCollabClient('rrr-555', { removeFromHistory: true })
+    expect(embeddedCollabRoomCode.value).toBeNull()
+    expect(loadJoinedCollabRooms()).toEqual(['SSS-666'])
+  })
+
+  it('leaving the seminar view keeps its socket remembered', () => {
+    setEmbeddedCollabRoomCode('TTT-777')
+    rememberJoinedCollabRoom('TTT-777')
+    rememberJoinedCollabRoom('UUU-888')
+    teardownMindmateCollabClient('TTT-777')
+    expect(embeddedCollabRoomCode.value).toBeNull()
+    expect(loadJoinedCollabRooms()).toEqual(['TTT-777', 'UUU-888'])
   })
 
   it('teardown does not wipe org presence', () => {

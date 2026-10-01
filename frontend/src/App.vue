@@ -20,6 +20,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useKittyDesktopActionPoll } from '@/composables/kitty/useKittyDesktopActionPoll'
 import { useSlideRemoteDesktopPoll } from '@/composables/mindMap/useSlideRemoteDesktopPoll'
+import { installMindmateCollabLiveSession } from '@/composables/mindmate/mindmateCollabLiveSession'
 import {
   quickAccessRemoteHidden,
   useQuickAccessRemoteAccount,
@@ -402,6 +403,7 @@ onMounted(async () => {
   if (!isGuestAuthPath(route.path)) {
     await authStore.checkAuth().catch(() => false)
   }
+  installMindmateCollabLiveSession()
 
   // Re-align vue-i18n with Pinia after auth (profile may no-op setLanguage when
   // the code is unchanged, leaving a prior HMR desync unrepaired).

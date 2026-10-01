@@ -7,8 +7,23 @@ from datetime import UTC, datetime
 from models.domain.mindmate_collab import MindmateCollabMessage
 from services.features.mindmate_collab.message_history import (
     normalize_seed_messages,
+    page_history_probe,
     serialize_message_row,
 )
+
+
+def test_page_history_probe_keeps_the_newest_window_and_flags_older() -> None:
+    """A newest-first probe of cap+1 becomes the latest page, oldest-first."""
+    kept, has_more = page_history_probe([5, 4, 3, 2, 1], 4, newest_first=True)
+    assert kept == [2, 3, 4, 5]
+    assert has_more is True
+
+
+def test_page_history_probe_reports_a_short_older_page() -> None:
+    """An older page shorter than the cap has no further page."""
+    kept, has_more = page_history_probe([1], 4, newest_first=True)
+    assert kept == [1]
+    assert has_more is False
 
 
 def test_normalize_seed_messages_clamps_user_sender_to_host() -> None:

@@ -1,7 +1,7 @@
 /**
  * Tracks who has read the seminar and tells the server when this screen has caught up.
  */
-import { type Ref, onMounted, onUnmounted, ref, watch } from 'vue'
+import { type Ref, onScopeDispose, ref, watch } from 'vue'
 
 import { collabMaxSavedId } from '@/utils/mindmateCollabGap'
 import {
@@ -73,11 +73,8 @@ export function useMindmateCollabRead(options: {
     queueReadReceipt()
   })
 
-  onMounted(() => {
-    document.addEventListener('visibilitychange', onVisibility)
-  })
-
-  onUnmounted(() => {
+  document.addEventListener('visibilitychange', onVisibility)
+  onScopeDispose(() => {
     document.removeEventListener('visibilitychange', onVisibility)
     readQueued = false
   })
