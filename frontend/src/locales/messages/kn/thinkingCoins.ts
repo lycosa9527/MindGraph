@@ -76,7 +76,7 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.admin.signupGrant': 'ಹೊಸ ಬಳಕೆದಾರರಿಗೆ ಉಚಿತ',
   'thinkingCoins.admin.dailyEarnCap': 'ದೈನಂದಿನ ಸ್ವಾಧೀನ ಮಿತಿ',
   'thinkingCoins.admin.dailyEarnCapHint': '0 ಎಂದರೆ ಯಾವುದೇ ಮಿತಿಯಿಲ್ಲ; ಡೀಫಾಲ್ಟ್ 135 ಎಲ್ಲಾ ದೈನಂದಿನ ಕಾರ್ಯಗಳ ಮೊತ್ತಕ್ಕೆ ಅನುರೂಪವಾಗಿದೆ',
-  'thinkingCoins.admin.costMindmate': 'ಮೈಂಡ್‌ಮೇಟ್ ಏಕ ಬಳಕೆ',
+  'thinkingCoins.admin.costMindmate': 'MindMate ಮೈಂಡ್‌ಮೇಟ್ ಏಕ ಬಳಕೆ',
   'thinkingCoins.admin.costDiagram': 'ನಕ್ಷೆ ಉತ್ಪಾದನೆಯ ಬಳಕೆ',
   'thinkingCoins.admin.costCanvas': 'ಕ್ಯಾನ್ವಾಸ್ ಸಹಾಯಕ ಬಳಕೆ',
   'thinkingCoins.admin.panelTasks': 'ಕಾರ್ಯ',

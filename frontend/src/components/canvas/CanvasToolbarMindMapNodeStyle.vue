@@ -16,14 +16,10 @@ import { useNotifications } from '@/composables/core/useNotifications'
 import { FLOATING_TOOLBAR_COLORS } from '@/config/floatingToolbarColors'
 import { NODE_SHAPE_OPTIONS, type NodeShape } from '@/utils/nodeShapeStyle'
 
-const props = withDefaults(
-  defineProps<{ compact?: boolean; disabled?: boolean; hideShape?: boolean }>(),
-  {
-    compact: false,
-    disabled: false,
-    hideShape: false,
-  }
-)
+const props = withDefaults(defineProps<{ compact?: boolean; disabled?: boolean }>(), {
+  compact: false,
+  disabled: false,
+})
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -64,7 +60,7 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
   if (!props.disabled) return
   ev.preventDefault()
   ev.stopPropagation()
-  notify.warning(t('canvas.toolbar.selectNodesFirst'))
+  notify.warningKey('canvas.toolbar.selectNodesFirst')
 }
 </script>
 
@@ -82,7 +78,6 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
       <I18nText k="canvas.ribbon.nodeStyle" />
     </span>
     <ElDropdown
-      v-if="!props.hideShape"
       trigger="click"
       placement="bottom-start"
       popper-class="node-floating-toolbar-popper"
@@ -117,7 +112,7 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
             :class="{ 'nft-dropdown-item--active': nodeShape === shape }"
             @click="handleNodeShapePick(shape)"
           >
-            {{ t(shapeLabels[shape]) }}
+            <I18nText :k="shapeLabels[shape]" />
           </ElDropdownItem>
         </ElDropdownMenu>
       </template>

@@ -19,7 +19,7 @@ from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 
 from models.domain.auth import User
-from models.domain.mindmate_collab import MindmateCollabMessage, MindmateCollabSession
+from models.domain.mindmate_collab import MindmateCollabSession
 from services.features.mindmate_collab.config import (
     MINDMATE_COLLAB_CLOSING_TTL_SEC,
     MINDMATE_COLLAB_DEFAULT_DURATION,
@@ -29,8 +29,12 @@ from services.features.mindmate_collab.config import (
     MINDMATE_COLLAB_SESSION_TTL,
 )
 from services.features.mindmate_collab.dify_stream_control import abort_dify_stream
+from services.features.mindmate_collab.message_cursor import remember_latest_collab_message_id
 from services.features.mindmate_collab.message_history import (
-    fetch_session_message_history,
+    CollabHistoryPage,
+    PersistedCollabMessage,
+    fetch_session_message_page,
+    insert_collab_message,
     normalize_seed_messages,
     persist_seed_messages,
 )
@@ -451,11 +455,18 @@ class MindmateCollabManager:
         if redis:
             await redis.set(closing_key(code), "1", ex=MINDMATE_COLLAB_CLOSING_TTL_SEC)
 
+        ended_at = datetime.now(tz=UTC)
         async with system_rls_session() as db:
             await db.execute(
                 update(MindmateCollabSession)
                 .where(MindmateCollabSession.id == session_id)
-                .values(ended_at=datetime.now(tz=UTC)),
+                .values(
+                    ended_at=ended_at,
+                    library_saved_at=func.coalesce(
+                        MindmateCollabSession.library_saved_at,
+                        ended_at,
+                    ),
+                ),
             )
             await db.commit()
 
@@ -647,17 +658,28 @@ class MindmateCollabManager:
         if not redis:
             return
         norm = normalize_collab_code(code)
+        meta_key = session_meta_key(norm)
+        try:
+            room_alive = await redis.hexists(meta_key, "session_id")
+        except REDIS_ERRORS:
+            return
+        if not room_alive:
+            try:
+                await redis.zrem(idle_scores_key(), norm)
+            except REDIS_ERRORS:
+                pass
+            return
         now = int(time.time())
         safety_ttl_sec = MINDMATE_COLLAB_PARTICIPANTS_TTL
         try:
             pipe = redis.pipeline(transaction=False)
-            pipe.hset(session_meta_key(norm), "last_activity", str(now))
+            pipe.hset(meta_key, "last_activity", str(now))
             pipe.zadd(idle_scores_key(), {norm: now})
             await pipe.execute()
             try:
                 await redis.execute_command(
                     "EXPIRE",
-                    session_meta_key(norm),
+                    meta_key,
                     safety_ttl_sec,
                     "GT",
                 )
@@ -670,10 +692,38 @@ class MindmateCollabManager:
         except REDIS_ERRORS:
             pass
 
-    async def fetch_message_history(self, session_id: str, limit: int | None = None) -> List[Dict[str, Any]]:
-        """Return recent persisted chat messages for a session."""
+    async def fetch_message_page(
+        self,
+        session_id: str,
+        limit: int | None = None,
+        after_id: int | None = None,
+        before_id: int | None = None,
+    ) -> CollabHistoryPage:
+        """Return one history page and whether another page exists in that direction."""
         async with system_rls_session() as db:
-            return await fetch_session_message_history(db, session_id, limit=limit)
+            return await fetch_session_message_page(
+                db,
+                session_id,
+                limit=limit,
+                after_id=after_id,
+                before_id=before_id,
+            )
+
+    async def fetch_message_history(
+        self,
+        session_id: str,
+        limit: int | None = None,
+        after_id: int | None = None,
+        before_id: int | None = None,
+    ) -> List[Dict[str, Any]]:
+        """Return persisted chat messages for a session, optionally after an id."""
+        page = await self.fetch_message_page(
+            session_id,
+            limit=limit,
+            after_id=after_id,
+            before_id=before_id,
+        )
+        return page.messages
 
     async def persist_message(
         self,
@@ -682,20 +732,20 @@ class MindmateCollabManager:
         role: str,
         content: str,
         sender_user_id: Optional[int],
-    ) -> MindmateCollabMessage:
-        """Insert a chat message row and return the saved record."""
+        room_code: Optional[str] = None,
+    ) -> PersistedCollabMessage:
+        """Insert a chat message row and return its id plus the previous room id."""
         async with system_rls_session() as db:
-            msg = MindmateCollabMessage(
-                session_id=session_id,
+            saved = await insert_collab_message(
+                db,
+                session_id,
                 role=role,
                 content=content,
                 sender_user_id=sender_user_id,
-                created_at=datetime.now(tz=UTC),
             )
-            db.add(msg)
-            await db.commit()
-            await db.refresh(msg)
-            return msg
+        if room_code:
+            await remember_latest_collab_message_id(room_code, saved.id)
+        return saved
 
     async def set_dify_conversation_id(self, session_id: str, conversation_id: str) -> None:
         """Persist Dify conversation id in PostgreSQL and Redis session meta."""

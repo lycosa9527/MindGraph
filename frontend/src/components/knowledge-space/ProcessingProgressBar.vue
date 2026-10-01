@@ -222,7 +222,7 @@ const getProgressColor = (progress: string | null | undefined): string => {
         class="method-progress-grid mt-3"
       >
         <div class="text-xs font-medium text-stone-700 mb-2">
-          {{ t('knowledge.processing.methodProgress') }}
+          <I18nText k="knowledge.processing.methodProgress" />
         </div>
         <ElTable
           :data="
@@ -233,20 +233,24 @@ const getProgressColor = (progress: string | null | undefined): string => {
           class="method-table"
         >
           <ElTableColumn
-            :label="t('knowledge.processing.colMethod')"
             prop="method"
             width="100"
           >
+            <template #header>
+              <I18nText k="knowledge.processing.colMethod" />
+            </template>
             <template #default="{ row }">
               <span class="text-xs font-medium">{{ getMethodDisplayName(row.method) }}</span>
             </template>
           </ElTableColumn>
           <ElTableColumn
-            :label="t('knowledge.processing.colChunk')"
             prop="chunk"
             width="80"
             align="center"
           >
+            <template #header>
+              <I18nText k="knowledge.processing.colChunk" />
+            </template>
             <template #default="{ row }">
               <ElIcon
                 :class="row.chunk === 'processing' ? 'animate-spin' : ''"
@@ -257,11 +261,13 @@ const getProgressColor = (progress: string | null | undefined): string => {
             </template>
           </ElTableColumn>
           <ElTableColumn
-            :label="t('knowledge.processing.colEmbed')"
             prop="embed"
             width="80"
             align="center"
           >
+            <template #header>
+              <I18nText k="knowledge.processing.colEmbed" />
+            </template>
             <template #default="{ row }">
               <ElIcon
                 :class="row.embed === 'processing' ? 'animate-spin' : ''"
@@ -272,11 +278,13 @@ const getProgressColor = (progress: string | null | undefined): string => {
             </template>
           </ElTableColumn>
           <ElTableColumn
-            :label="t('knowledge.processing.colIndex')"
             prop="index"
             width="80"
             align="center"
           >
+            <template #header>
+              <I18nText k="knowledge.processing.colIndex" />
+            </template>
             <template #default="{ row }">
               <ElIcon
                 :class="row.index === 'processing' ? 'animate-spin' : ''"

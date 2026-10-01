@@ -94,8 +94,13 @@ async def signal_dify_stream_abort(code: str) -> None:
             pass
     norm = normalize_collab_code(code)
     task = _active_tasks.get(norm)
-    if task is not None and not task.done():
-        task.cancel()
+    if task is None or task.done() or task is asyncio.current_task():
+        return
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        return
 
 
 async def clear_dify_stream_abort(code: str) -> None:

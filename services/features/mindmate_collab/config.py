@@ -25,6 +25,8 @@ from services.features.mindmate_collab.redis_keys import (
 MINDMATE_COLLAB_CODE_RE = ONLINE_COLLAB_CODE_RE
 MINDMATE_COLLAB_DEFAULT_DURATION = DURATION_10H
 MINDMATE_COLLAB_SNAPSHOT_MESSAGE_LIMIT = 100
+MINDMATE_COLLAB_LIBRARY_LIST_LIMIT = 50
+MINDMATE_COLLAB_LIBRARY_MESSAGE_LIMIT = 2000
 
 
 def _parse_int_env(name: str, default: int, minimum: int, maximum: int) -> int:

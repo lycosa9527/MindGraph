@@ -5,7 +5,11 @@
  * Reference: LanguageSettingsModal canvas mode toggle (classic / new).
  */
 export type AdminSwissSegmentOption<T extends string | number = string | number> = {
-  label: string
+  /** Pre-translated text. Used when there is no message key. */
+  label?: string
+  /** Message key. Bilingual chrome when dual-language mode is on. */
+  labelKey?: string
+  labelParams?: Record<string, unknown>
   value: T
   /** Optional count badge (e.g. moderation queue totals). */
   count?: number
@@ -70,7 +74,14 @@ function onSegmentClick(value: T): void {
       :disabled="disabled"
       @click="onSegmentClick(opt.value)"
     >
-      <span class="admin-swiss-segment-label">{{ opt.label }}</span>
+      <span class="admin-swiss-segment-label">
+        <I18nText
+          v-if="opt.labelKey"
+          :k="opt.labelKey"
+          :params="opt.labelParams"
+        />
+        <template v-else>{{ opt.label }}</template>
+      </span>
       <span
         v-if="opt.count != null && opt.count > 0"
         class="admin-swiss-segment-badge"

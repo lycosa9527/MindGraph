@@ -2,8 +2,9 @@
  * Shared mind-map label wrap contract (canvas hosts + vector PDF/DOCX export).
  *
  * Canvas SoT: InlineEditableText ``max-width`` + CSS
- * ``pre-wrap / word-break:normal / overflow-wrap:break-word / line-height:1.4``.
- * Export must use the same column width and the same break rules.
+ * ``pre-wrap / word-break:normal / overflow-wrap:break-word / line-height:1.4``
+ * and ``text-wrap: balance``. Export uses the same column and the same
+ * balance: the narrowest width that keeps the greedy line count.
  */
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
@@ -301,7 +302,37 @@ function wrapParagraph(
 }
 
 /**
- * Word-aware wrap approximating canvas CSS ``pre-wrap`` + ``word-break:normal``.
+ * Match canvas ``text-wrap: balance``: narrowest column that does not add a line.
+ * Greedy wrap at the full column leaves one CJK glyph on the last line when the
+ * text is only slightly wider than the column; balancing pulls that glyph up.
+ */
+function balanceParagraphLines(
+  paragraph: string,
+  maxWidth: number,
+  measure: (text: string) => number
+): string[] {
+  const greedy = wrapParagraph(paragraph, maxWidth, measure)
+  if (greedy.length < 2) return greedy
+  let low = 8
+  let high = Math.floor(maxWidth)
+  let best = high
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2)
+    const candidate = wrapParagraph(paragraph, mid, measure)
+    if (candidate.length > greedy.length) {
+      low = mid + 1
+    } else {
+      best = mid
+      high = mid - 1
+    }
+  }
+  const balanced = wrapParagraph(paragraph, best, measure)
+  return balanced.length === greedy.length ? balanced : greedy
+}
+
+/**
+ * Word-aware wrap approximating canvas CSS ``pre-wrap`` + ``word-break:normal``
+ * + ``text-wrap: balance``.
  */
 export function wrapMindMapTextLines(
   plain: string,
@@ -318,7 +349,7 @@ export function wrapMindMapTextLines(
   const paragraphs = plain.replace(/\r\n/g, '\n').split('\n')
   const lines: string[] = []
   for (const paragraph of paragraphs) {
-    lines.push(...wrapParagraph(paragraph, width, measure))
+    lines.push(...balanceParagraphLines(paragraph, width, measure))
   }
   return lines.length > 0 ? lines : ['']
 }

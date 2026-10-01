@@ -1,7 +1,7 @@
 /**
  * Node Palette placeholder helpers - detect and collect placeholder nodes for replacement
  */
-import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
+import { isPlaceholderText } from '@/composables/editor/placeholderText'
 import { isLearningSheetBlankDisplayText } from '@/stores/specLoader/utils'
 import type { DiagramType } from '@/types'
 import {

@@ -60,7 +60,10 @@ const diagramStore = useDiagramSession()
 const mindMapPendingEditNodeId = diagramSessionRef(diagramStore, 'mindMapPendingEditNodeId')
 const mindMapEditingNodeId = diagramSessionRef(diagramStore, 'mindMapEditingNodeId')
 const isTextReadonly = computed(
-  () => diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)
+  () =>
+    (props.data.hidden === true && diagramStore.isLearningSheet) ||
+    diagramPresentationReadOnlyRef.value ||
+    toValue(diagramStore.isReadonly)
 )
 const branchNodeRef = ref<HTMLDivElement | null>(null)
 const exportOutlineActive = useMindMapExportOutlineWireframeActive()
@@ -107,6 +110,10 @@ const mindMapThemeColors = computed(() => {
 
 const contentJustifyClass = computed(() =>
   isUnderlineShape.value ? 'justify-start' : 'justify-center'
+)
+
+const isBlankedForSheet = computed(
+  () => diagramStore.isLearningSheet && diagramStore.isNodeBlankedForLearningSheet(props.id)
 )
 
 const underlineTextStyle = computed((): CSSProperties => {
@@ -163,8 +170,6 @@ const nodeStyle = computed((): CSSProperties => {
   const padX = mindMapHorizontalPadding(shape)
   const accentBarWidth = style.accentBarWidth ?? 0
   const accentBarColor = style.accentBarColor
-  const isBlankedForSheet =
-    diagramStore.isLearningSheet && diagramStore.isNodeBlankedForLearningSheet(props.id)
   const layoutWidth = props.data?.estimatedWidth as number | undefined
   const layoutHeight = props.data?.estimatedHeight as number | undefined
 
@@ -185,13 +190,14 @@ const nodeStyle = computed((): CSSProperties => {
     result.paddingLeft = `${padX + accentBarWidth + 4}px`
   }
 
-  if (isBlankedForSheet && layoutWidth && layoutWidth > 0) {
-    const widthPx = Math.max(layoutWidth, MIND_MAP_GEOMETRY.minWidth)
-    result.width = `${widthPx}px`
-    result.minWidth = `${widthPx}px`
+  if (isBlankedForSheet.value && layoutWidth && layoutWidth > 0) {
+    result.boxSizing = 'border-box'
+    result.width = `${layoutWidth}px`
+    result.minWidth = `${layoutWidth}px`
   }
-  if (isBlankedForSheet && layoutHeight && layoutHeight > 0) {
-    result.minHeight = `${Math.max(layoutHeight, MIND_MAP_GEOMETRY.minHeight)}px`
+  if (isBlankedForSheet.value && layoutHeight && layoutHeight > 0) {
+    result.height = `${layoutHeight}px`
+    result.minHeight = `${layoutHeight}px`
   }
 
   return finalizeMindMapExportNodeStyle(result)
@@ -387,7 +393,7 @@ function handleEditCancel() {
 function handleBranchNodeDoubleClick(): void {
   if (isLearningSheetCustomPickActive()) return
   if (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)) return
-  if (isEditing.value) return
+  if ((props.data.hidden === true && diagramStore.isLearningSheet) || isEditing.value) return
   if (collabCanvas?.isNodeLockedByOther?.(props.id)) {
     notifyCollab.warning(t('collab.nodeLocked'))
     return
@@ -408,7 +414,6 @@ function handleBranchNodeClick(event: MouseEvent): void {
     event.stopPropagation()
     event.preventDefault()
     handleLearningSheetPickNodeClick(props.id)
-    return
   }
 }
 </script>

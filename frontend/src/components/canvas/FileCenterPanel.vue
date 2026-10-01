@@ -203,7 +203,7 @@ function chunkingLabel(doc: KnowledgeDocument): string {
       class="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 px-3 py-3"
     >
       <h3 class="truncate text-sm font-semibold text-slate-800">
-        {{ t('canvas.mindMapSideToolbar.documentSummary') }}
+        <I18nText k="canvas.mindMapSideToolbar.documentSummary" />
       </h3>
       <button
         type="button"
@@ -224,10 +224,10 @@ function chunkingLabel(doc: KnowledgeDocument): string {
       class="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center"
     >
       <p class="text-sm font-medium text-slate-600">
-        {{ t('fileCenter.featureDisabledTitle') }}
+        <I18nText k="fileCenter.featureDisabledTitle" />
       </p>
       <p class="text-xs leading-relaxed text-slate-400">
-        {{ t('fileCenter.featureDisabledHint') }}
+        <I18nText k="fileCenter.featureDisabledHint" />
       </p>
     </div>
 
@@ -237,10 +237,10 @@ function chunkingLabel(doc: KnowledgeDocument): string {
       class="flex min-h-0 flex-1 flex-col gap-3 px-4 py-5"
     >
       <p class="text-xs leading-relaxed text-slate-500">
-        {{ t('fileCenter.intro') }}
+        <I18nText k="fileCenter.intro" />
       </p>
       <label class="text-xs font-semibold text-slate-700">
-        {{ t('fileCenter.packageNameLabel') }}
+        <I18nText k="fileCenter.packageNameLabel" />
       </label>
       <input
         v-model="newPackageName"
@@ -258,7 +258,7 @@ function chunkingLabel(doc: KnowledgeDocument): string {
           class="h-4 w-4"
           :stroke-width="2"
         />
-        {{ t('fileCenter.createPackage') }}
+        <I18nText k="fileCenter.createPackage" />
       </button>
     </div>
 
@@ -271,7 +271,7 @@ function chunkingLabel(doc: KnowledgeDocument): string {
         v-if="!diagramSaved"
         class="border-b border-amber-100 bg-amber-50 px-4 py-2.5 text-[11px] leading-relaxed text-amber-800"
       >
-        {{ t('fileCenter.saveDiagramForRag') }}
+        <I18nText k="fileCenter.saveDiagramForRag" />
       </div>
       <!-- Package name + corpus status -->
       <div class="border-b border-slate-100 px-4 py-3">
@@ -313,9 +313,10 @@ function chunkingLabel(doc: KnowledgeDocument): string {
             :class="ragActive ? 'bg-emerald-500' : 'bg-slate-300'"
           />
           <span class="text-slate-500">
-            {{
-              t('fileCenter.corpusStatus', { completed: completedCount, total: documents.length })
-            }}
+            <I18nText
+              k="fileCenter.corpusStatus"
+              :params="{ completed: completedCount, total: documents.length }"
+            />
           </span>
           <Loader2
             v-if="isIndexing"
@@ -331,7 +332,7 @@ function chunkingLabel(doc: KnowledgeDocument): string {
           v-if="documents.length === 0"
           class="px-1 py-2 text-xs text-slate-400"
         >
-          {{ t('fileCenter.noSources') }}
+          <I18nText k="fileCenter.noSources" />
         </p>
         <div
           v-for="doc in documents"
@@ -390,7 +391,7 @@ function chunkingLabel(doc: KnowledgeDocument): string {
             :class="{ 'file-center-tab--active': activeTab === 'file' }"
             @click="activeTab = 'file'"
           >
-            {{ t('fileCenter.tabFile') }}
+            <I18nText k="fileCenter.tabFile" />
           </button>
           <button
             type="button"
@@ -398,7 +399,7 @@ function chunkingLabel(doc: KnowledgeDocument): string {
             :class="{ 'file-center-tab--active': activeTab === 'paste' }"
             @click="activeTab = 'paste'"
           >
-            {{ t('fileCenter.tabPaste') }}
+            <I18nText k="fileCenter.tabPaste" />
           </button>
           <button
             type="button"
@@ -406,7 +407,7 @@ function chunkingLabel(doc: KnowledgeDocument): string {
             :class="{ 'file-center-tab--active': activeTab === 'web' }"
             @click="activeTab = 'web'"
           >
-            {{ t('fileCenter.tabWeb') }}
+            <I18nText k="fileCenter.tabWeb" />
           </button>
         </div>
 
@@ -422,7 +423,7 @@ function chunkingLabel(doc: KnowledgeDocument): string {
               :stroke-width="1.75"
             />
             <span class="text-xs font-medium text-slate-600">
-              {{ t('fileCenter.uploadHint') }}
+              <I18nText k="fileCenter.uploadHint" />
             </span>
           </button>
           <input
@@ -460,7 +461,7 @@ function chunkingLabel(doc: KnowledgeDocument): string {
               class="h-4 w-4"
               :stroke-width="2"
             />
-            {{ t('fileCenter.addSource') }}
+            <I18nText k="fileCenter.addSource" />
           </button>
         </div>
 
@@ -496,7 +497,7 @@ function chunkingLabel(doc: KnowledgeDocument): string {
               class="h-4 w-4"
               :stroke-width="2"
             />
-            {{ t('fileCenter.addSource') }}
+            <I18nText k="fileCenter.addSource" />
           </button>
         </div>
       </div>

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  CLASSROOM_REMOTE_DEFAULT_HEIGHT_PX,
+  CLASSROOM_REMOTE_DEFAULT_WIDTH_PX,
+  CLASSROOM_REMOTE_MIN_HEIGHT_PX,
+  CLASSROOM_REMOTE_MIN_WIDTH_PX,
   CLASSROOM_REMOTE_TABS,
   DEFAULT_CLASSROOM_REMOTE_TAB,
 } from '@/canvas-ribbon/mindMapClassroomRemoteTypes'
@@ -8,6 +12,7 @@ import {
   clampClassroomRemotePosition,
   defaultClassroomRemotePosition,
   parseClassroomRemotePersisted,
+  resizeClassroomRemoteFrame,
 } from '@/composables/canvas/useClassroomRemotePosition'
 
 describe('classroom remote position', () => {
@@ -38,6 +43,8 @@ describe('classroom remote position', () => {
     ).toEqual({
       left: 80,
       top: 120,
+      width: CLASSROOM_REMOTE_DEFAULT_WIDTH_PX,
+      height: CLASSROOM_REMOTE_DEFAULT_HEIGHT_PX,
       hidden: false,
       tab: 'teaching',
     })
@@ -46,19 +53,41 @@ describe('classroom remote position', () => {
     ).toEqual({
       left: 80,
       top: 120,
+      width: CLASSROOM_REMOTE_DEFAULT_WIDTH_PX,
+      height: CLASSROOM_REMOTE_DEFAULT_HEIGHT_PX,
       hidden: false,
       tab: DEFAULT_CLASSROOM_REMOTE_TAB,
     })
     expect(
       parseClassroomRemotePersisted(
-        JSON.stringify({ left: 80, top: 120, hidden: true, tab: 'view' })
+        JSON.stringify({ left: 80, top: 120, width: 360, height: 480, hidden: true, tab: 'view' })
       )
     ).toEqual({
       left: 80,
       top: 120,
+      width: 360,
+      height: 480,
       hidden: true,
       tab: 'view',
     })
     expect([...CLASSROOM_REMOTE_TABS]).toEqual(['view', 'edit', 'teaching', 'topics', 'ai', 'file'])
+  })
+
+  it('clamps a resize to the minimum and the viewport', () => {
+    const grown = resizeClassroomRemoteFrame(40, 40, 20, 20, 1280, 800)
+    expect(grown).toEqual({
+      width: CLASSROOM_REMOTE_MIN_WIDTH_PX,
+      height: CLASSROOM_REMOTE_MIN_HEIGHT_PX,
+    })
+    const capped = resizeClassroomRemoteFrame(
+      1000,
+      40,
+      900,
+      CLASSROOM_REMOTE_DEFAULT_HEIGHT_PX,
+      1280,
+      800
+    )
+    expect(capped.width).toBe(1280 - 1000 - 16)
+    expect(capped.height).toBe(CLASSROOM_REMOTE_DEFAULT_HEIGHT_PX)
   })
 })

@@ -163,19 +163,27 @@ export function sortShowcaseFieldValues<T extends string>(
   })
 }
 
-export const DIAGRAM_TYPE_OPTIONS = [
-  { value: 'circle_map', label: '圆圈图' },
-  { value: 'bubble_map', label: '气泡图' },
-  { value: 'double_bubble_map', label: '双气泡图' },
-  { value: 'brace_map', label: '括号图' },
-  { value: 'tree_map', label: '树形图' },
-  { value: 'flow_map', label: '流程图' },
-  { value: 'multi_flow_map', label: '复流程图' },
-  { value: 'bridge_map', label: '桥形图' },
-  { value: 'mind_map', label: '思维导图' },
-  { value: 'concept_map', label: '概念图' },
+export const DIAGRAM_TYPE_OPTIONS: Array<{
+  value: string
+  label: string
+  labelKey?: string
+}> = [
+  { value: 'circle_map', label: '圆圈图', labelKey: 'sidebar.diagramType.circle_map' },
+  { value: 'bubble_map', label: '气泡图', labelKey: 'sidebar.diagramType.bubble_map' },
+  {
+    value: 'double_bubble_map',
+    label: '双气泡图',
+    labelKey: 'sidebar.diagramType.double_bubble_map',
+  },
+  { value: 'brace_map', label: '括号图', labelKey: 'sidebar.diagramType.brace_map' },
+  { value: 'tree_map', label: '树形图', labelKey: 'sidebar.diagramType.tree_map' },
+  { value: 'flow_map', label: '流程图', labelKey: 'sidebar.diagramType.flow_map' },
+  { value: 'multi_flow_map', label: '复流程图', labelKey: 'sidebar.diagramType.multi_flow_map' },
+  { value: 'bridge_map', label: '桥形图', labelKey: 'sidebar.diagramType.bridge_map' },
+  { value: 'mind_map', label: '思维导图', labelKey: 'sidebar.diagramType.mind_map' },
+  { value: 'concept_map', label: '概念图', labelKey: 'sidebar.diagramType.concept_map' },
   { value: 'combined', label: '组合应用' },
-] as const
+]
 
 export const CASE_TYPE_PUBLISH_OPTIONS = [
   {
@@ -255,7 +263,7 @@ function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
  */
 export async function shrinkPngBlobToMaxBytes(
   blob: Blob,
-  maxBytes: number = CASE_THUMBNAIL_MAX_BYTES,
+  maxBytes: number = CASE_THUMBNAIL_MAX_BYTES
 ): Promise<Blob | null> {
   if (!blob || blob.size <= 0) return null
   if (blob.size <= maxBytes) return blob

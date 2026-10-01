@@ -320,13 +320,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
       }
 
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      let wsUrl = `${protocol}//${window.location.host}/ws/kitty/${diagSessionId}`
-      if (typeof sessionStorage !== 'undefined') {
-        const assignmentId = sessionStorage.getItem('mg_learning_assignment_id')
-        if (assignmentId) {
-          wsUrl += `?assignment_id=${encodeURIComponent(assignmentId)}`
-        }
-      }
+      const wsUrl = `${protocol}//${window.location.host}/ws/kitty/${diagSessionId}`
       const socket = new WebSocket(wsUrl)
       ws.value = socket
       activeConnectAttempt = { socket, scope: diagSessionId, settleReject }

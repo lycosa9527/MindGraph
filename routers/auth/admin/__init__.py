@@ -33,6 +33,7 @@ from . import (
     teacher_usage,
     teaching_design_template,
     thinking_coins,
+    user_dropdown,
     user_activity,
     users,
 )
@@ -59,6 +60,7 @@ admin_router.include_router(api_keys.router)
 admin_router.include_router(teacher_usage.router)
 admin_router.include_router(thinking_coins.router)
 admin_router.include_router(teaching_design_template.router)
+admin_router.include_router(user_dropdown.router)
 admin_router.include_router(user_activity.router)
 admin_router.include_router(feature_org_access.router)
 admin_router.include_router(geolite.router)

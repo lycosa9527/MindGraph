@@ -32,10 +32,26 @@ const crowdsecQuery = useAdminCosCrowdsecStatus({
 const qdrantQuery = useAdminCosQdrantStatus({ enabled: computed(() => section.value === 'qdrant') })
 
 const sectionOptions = computed(() => [
-  { label: t('admin.cos.sectionOverview'), value: 'overview' as const },
-  { label: t('admin.cos.sectionBackups'), value: 'backups' as const },
-  { label: t('admin.cos.sectionCrowdsec'), value: 'crowdsec' as const },
-  { label: t('admin.cos.sectionQdrant'), value: 'qdrant' as const },
+  {
+    label: t('admin.cos.sectionOverview'),
+    labelKey: 'admin.cos.sectionOverview',
+    value: 'overview' as const,
+  },
+  {
+    label: t('admin.cos.sectionBackups'),
+    labelKey: 'admin.cos.sectionBackups',
+    value: 'backups' as const,
+  },
+  {
+    label: t('admin.cos.sectionCrowdsec'),
+    labelKey: 'admin.cos.sectionCrowdsec',
+    value: 'crowdsec' as const,
+  },
+  {
+    label: t('admin.cos.sectionQdrant'),
+    labelKey: 'admin.cos.sectionQdrant',
+    value: 'qdrant' as const,
+  },
 ])
 
 watch(section, (value) => {
@@ -61,7 +77,11 @@ async function refreshAll() {
         :aria-label="t('admin.cos.tab')"
         block
       />
-      <el-button size="small" @click="refreshAll">{{ t('admin.cos.refresh') }}</el-button>
+      <el-button
+        size="small"
+        @click="refreshAll"
+        ><I18nText k="admin.cos.refresh"
+      /></el-button>
     </div>
 
     <AdminCosOverviewPanel

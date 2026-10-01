@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Full-screen blurred overlay showing the public site URL as a QR code.
- * Opened when the sidebar logo is hovered for 1.5s (pointer devices).
+ * Opened when the sidebar or login brand logo is hovered for 1.5s (pointer devices).
  */
 import { computed } from 'vue'
 
@@ -9,7 +9,7 @@ import { QrCode } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
-import { useLanguage } from '@/composables'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { usePublicSiteUrl } from '@/composables/core/usePublicSiteUrl'
 import { APP_REFINED_SANS_STACK } from '@/utils/diagramNodeFontStack'
 

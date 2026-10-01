@@ -22,11 +22,11 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 
-function statusLabel(status: string): string {
-  if (status === 'ready') return String(t('admin.vod.statusReady'))
-  if (status === 'failed') return String(t('admin.vod.statusFailed'))
-  if (status === 'pending') return String(t('admin.vod.statusPending'))
-  return String(t('admin.vod.statusProcessing'))
+function statusLabelKey(status: string): string {
+  if (status === 'ready') return 'admin.vod.statusReady'
+  if (status === 'failed') return 'admin.vod.statusFailed'
+  if (status === 'pending') return 'admin.vod.statusPending'
+  return 'admin.vod.statusProcessing'
 }
 
 function isVodMediaItem(row: unknown): row is VodMediaItem {
@@ -93,7 +93,7 @@ function folderValue(row: unknown): string {
       <div class="vod-card-body">
         <div class="vod-card-title">{{ item.title }}</div>
         <div class="vod-card-meta">
-          {{ statusLabel(item.status) }}
+          <I18nText :k="statusLabelKey(item.status)" />
           <span v-if="item.owner_name"> · {{ item.owner_name }}</span>
         </div>
         <div
@@ -105,13 +105,13 @@ function folderValue(row: unknown): string {
             type="button"
             @click="emit('refresh', item)"
           >
-            {{ t('admin.vod.refresh') }}
+            <I18nText k="admin.vod.refresh" />
           </button>
           <button
             type="button"
             @click="confirmDelete(item)"
           >
-            {{ t('admin.vod.delete') }}
+            <I18nText k="admin.vod.delete" />
           </button>
           <select
             class="vod-move"
@@ -119,7 +119,7 @@ function folderValue(row: unknown): string {
             :value="item.folder_id || ''"
             @change="onMove(item, $event)"
           >
-            <option value="">{{ t('admin.vod.folderNone') }}</option>
+            <option value=""><I18nText k="admin.vod.folderNone" /></option>
             <option
               v-for="folder in folders"
               :key="folder.id"
@@ -139,46 +139,56 @@ function folderValue(row: unknown): string {
     @row-click="(row: VodMediaItem) => emit('preview', row)"
   >
     <ElTableColumn
-      :label="t('admin.vod.titleColumn')"
       prop="title"
       min-width="180"
-    />
-    <ElTableColumn
-      :label="t('admin.vod.status')"
-      min-width="110"
     >
-      <template #default="{ row }">{{ statusLabel(row.status) }}</template>
+      <template #header>
+        <I18nText k="admin.vod.titleColumn" />
+      </template>
     </ElTableColumn>
-    <ElTableColumn
-      :label="t('admin.vod.duration')"
-      min-width="90"
-    >
+    <ElTableColumn min-width="110">
+      <template #header>
+        <I18nText k="admin.vod.status" />
+      </template>
+      <template #default="{ row }">
+        <I18nText :k="statusLabelKey(row.status)" />
+      </template>
+    </ElTableColumn>
+    <ElTableColumn min-width="90">
+      <template #header>
+        <I18nText k="admin.vod.duration" />
+      </template>
       <template #default="{ row }">{{ formatVodDuration(row.duration_ms) }}</template>
     </ElTableColumn>
     <ElTableColumn
-      :label="t('admin.vod.owner')"
       prop="owner_name"
       min-width="120"
-    />
+    >
+      <template #header>
+        <I18nText k="admin.vod.owner" />
+      </template>
+    </ElTableColumn>
     <ElTableColumn
       v-if="canEdit"
-      :label="t('admin.vod.refresh')"
       width="160"
     >
+      <template #header>
+        <I18nText k="admin.vod.refresh" />
+      </template>
       <template #default="{ row }">
         <button
           type="button"
           class="vod-link"
           @click.stop="refreshRow(row)"
         >
-          {{ t('admin.vod.refresh') }}
+          <I18nText k="admin.vod.refresh" />
         </button>
         <button
           type="button"
           class="vod-link"
           @click.stop="deleteRow(row)"
         >
-          {{ t('admin.vod.delete') }}
+          <I18nText k="admin.vod.delete" />
         </button>
         <select
           class="vod-move"
@@ -187,7 +197,7 @@ function folderValue(row: unknown): string {
           @click.stop
           @change="moveRow(row, $event)"
         >
-          <option value="">{{ t('admin.vod.folderNone') }}</option>
+          <option value=""><I18nText k="admin.vod.folderNone" /></option>
           <option
             v-for="folder in folders"
             :key="folder.id"

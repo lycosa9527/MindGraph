@@ -285,7 +285,10 @@ run_backend() {
     tests/scripts/test_siamese_cat_emoji.py \
     tests/scripts/test_cat_office_battles.py \
     tests/scripts/test_cat_emoji_stills.py \
-    tests/scripts/test_zhilian_junan_video.py
+    tests/scripts/test_zhilian_junan_video.py \
+    tests/scripts/test_dify_db_merge.py \
+    tests/scripts/test_wan_tts.py \
+    tests/scripts/test_october_update_promo.py
 }
 
 run_frontend() {
@@ -333,8 +336,8 @@ run_frontend() {
     tests/loginRestoresUiLanguage.spec.ts tests/authLoginHero.spec.ts \
     tests/normalizeAuthUser.spec.ts \
     tests/mindMapRibbonChrome.spec.ts tests/useMindMapRibbonState.spec.ts \
-    tests/authBootstrapDedupe.spec.ts tests/formatGalleryLanguageMenuLabel.spec.ts \
-    tests/formatSidebarDailyTokens.spec.ts \
+    tests/toolbarLabelAbbreviation.spec.ts tests/toolbarLabelCollapse.spec.ts \
+    tests/authBootstrapDedupe.spec.ts     tests/formatGalleryLanguageMenuLabel.spec.ts \
     tests/voiceNotesMarkdown.spec.ts tests/voiceNotesTranscript.spec.ts \
     tests/voiceNotesSaveStatus.spec.ts tests/mobileVoiceNotesFinish.spec.ts \
     tests/hasPersistedAuthUser.spec.ts \

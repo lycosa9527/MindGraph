@@ -25,10 +25,10 @@ async function onSync() {
   })
   try {
     const result = await triggerSync.mutateAsync()
-    if (result.ok) notify.success(t('admin.cos.syncOk'))
+    if (result.ok) notify.successKey('admin.cos.syncOk')
     else notify.error(String(result.error ?? t('admin.cos.syncFailed')))
   } catch {
-    notify.error(t('admin.cos.syncFailed'))
+    notify.errorKey('admin.cos.syncFailed')
   }
 }
 </script>
@@ -46,15 +46,15 @@ async function onSync() {
     />
     <div class="admin-cos-kpi-row">
       <AdminSwissKpiCard
-        :title="t('admin.cos.blacklistIpCount')"
+        title-key="admin.cos.blacklistIpCount"
         :value="String(data?.blacklist_ip_count ?? '—')"
       />
       <AdminSwissKpiCard
-        :title="t('admin.cos.syncState')"
+        title-key="admin.cos.syncState"
         :value="String(data?.sync_state ?? '—')"
       />
       <AdminSwissKpiCard
-        :title="t('admin.cos.cosIpCount')"
+        title-key="admin.cos.cosIpCount"
         :value="String(cosMeta?.count ?? '—')"
       />
     </div>
@@ -62,10 +62,16 @@ async function onSync() {
       :column="1"
       border
     >
-      <el-descriptions-item :label="t('admin.cos.localLastMerge')">
+      <el-descriptions-item>
+        <template #label>
+          <I18nText k="admin.cos.localLastMerge" />
+        </template>
         {{ localMeta?.last_merge_unix ?? '—' }}
       </el-descriptions-item>
-      <el-descriptions-item :label="t('admin.cos.cosLastMerge')">
+      <el-descriptions-item>
+        <template #label>
+          <I18nText k="admin.cos.cosLastMerge" />
+        </template>
         {{ data?.cos_last_merge_iso ?? '—' }}
       </el-descriptions-item>
     </el-descriptions>
@@ -75,7 +81,7 @@ async function onSync() {
         :loading="triggerSync.isPending.value"
         @click="onSync"
       >
-        {{ t('admin.cos.syncNow') }}
+        <I18nText k="admin.cos.syncNow" />
       </el-button>
     </div>
   </div>

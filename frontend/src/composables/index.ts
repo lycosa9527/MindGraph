@@ -17,9 +17,8 @@ export { swissGlassConfirm, swissGlassConfirmHero } from './common/useSwissGlass
 export { swissGlassPrompt } from './common/useSwissGlassPrompt'
 export { getDiagramTypeDisplayName, getDefaultDiagramName } from './editor/useDiagramLabels'
 
-// Keyboard and input
-export { useKeyboard, useEditorShortcuts, useVueFlowKeyboard } from './core/useKeyboard'
-export type { KeyboardShortcut, UseVueFlowKeyboardOptions } from './core/useKeyboard'
+// Keyboard helpers that do not import Vue Flow. Vue Flow shortcuts stay on
+// `@/composables/core/useKeyboard` so this barrel does not pull the editor runtime.
 export { useEditorKeyboard, createDefaultEditorHandlers } from './core/useEditorKeyboard'
 
 // Canvas and interaction (diagram editor)
@@ -52,10 +51,8 @@ export { usePanelCoordination, getPanelCoordinator } from './editor/usePanelCoor
 export { getNodePalette } from './nodePalette/useNodePalette'
 export { getAiBrainstorm } from './aiBrainstorm/useAiBrainstorm'
 export { useDragConstraints } from './editor/useDragConstraints'
-export { useBranchMoveDrag } from './editor/useBranchMoveDrag'
 export { useNodeActions } from './editor/useNodeActions'
 export type { UseNodeActionsOptions } from './editor/useNodeActions'
-export type { BranchMoveState, DropTarget } from './editor/useBranchMoveDrag'
 export { useTheme } from './core/useTheme'
 export { useVersionCheck } from './core/useVersionCheck'
 export type { VersionCheckOptions } from './core/useVersionCheck'
@@ -70,7 +67,8 @@ export type { UseDiagramExportOptions } from './editor/useDiagramExport'
 export { useNodeDimensions } from './editor/useNodeDimensions'
 export { useInlineEdit } from './editor/useInlineEdit'
 export type { InlineEditOptions } from './editor/useInlineEdit'
-export { useAutoComplete, isPlaceholderText } from './editor/useAutoComplete'
+export { useAutoComplete } from './editor/useAutoComplete'
+export { isPlaceholderText } from './editor/placeholderText'
 export {
   useConceptMapRelationship,
   CONCEPT_MAP_GENERATING_KEY,
@@ -87,14 +85,6 @@ export type {
   SnapshotDeleteResult,
 } from './editor/useSnapshotHistory'
 
-// VueFlow + VueUse integration
-export { useCanvasState } from './editor/useCanvasState'
-export type { UseCanvasStateOptions, CanvasState } from './editor/useCanvasState'
-export { useDiagramPersistence } from './editor/useDiagramPersistence'
-export type {
-  UseDiagramPersistenceOptions,
-  DiagramPersistenceState,
-} from './editor/useDiagramPersistence'
 export { useAsyncFetch, useAuthFetch, useAsyncAction, useAsyncPost } from './core/useAsyncApi'
 export type { AsyncFetchOptions, AsyncActionOptions } from './core/useAsyncApi'
 
@@ -113,8 +103,3 @@ export {
   useAppSidebar,
   type AppSidebarContext,
 } from './sidebar/useAppSidebar'
-export {
-  teacherUsageInjectionKey,
-  useTeacherUsagePage,
-  type TeacherUsagePageContext,
-} from './teacherUsage/useTeacherUsagePage'

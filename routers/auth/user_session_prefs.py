@@ -3,6 +3,7 @@
 from typing import Any
 
 from models.domain.auth import User
+from services.utils.quick_access_prompts import clean_quick_access_prompt_overrides
 
 
 def _bool_pref(user: User, name: str, default: bool) -> bool:
@@ -28,6 +29,10 @@ def user_preference_fields(user: User) -> dict[str, Any]:
         "v3_ribbon_classic": bool(getattr(user, "v3_ribbon_classic", False)),
         "v3_ribbon_tab": getattr(user, "v3_ribbon_tab", None),
         "classroom_remote_visible": _bool_pref(user, "classroom_remote_visible", True),
+        "quick_access_remote_visible": _bool_pref(user, "quick_access_remote_visible", False),
+        "quick_access_prompt_overrides": clean_quick_access_prompt_overrides(
+            getattr(user, "quick_access_prompt_overrides", None)
+        ),
     }
 
 

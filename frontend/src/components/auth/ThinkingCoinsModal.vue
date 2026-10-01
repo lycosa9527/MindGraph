@@ -24,11 +24,11 @@ import {
 
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
-import { useLanguage } from '@/composables'
 import { SHOW_PERSONAL_SUBSCRIPTION_TAB } from '@/composables/auth/thinkingCoinsUpgradeUi'
 import { patchEarnTasksFromMutation } from '@/composables/auth/useThinkingCoinSync'
 import { formatThinkingCoinBalance, useThinkingCoins } from '@/composables/auth/useThinkingCoins'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useLanguage } from '@/composables/core/useLanguage'
 import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
 
 const PERSONAL_TIERS = ['trial', 'monthly', 'sub', 'annual'] as const

@@ -134,6 +134,16 @@ def get_cos_client() -> Optional[Any]:
     return _COS_CLIENT_HOLDER.client
 
 
+_MISSING_OBJECT_CODES = frozenset({"NoSuchKey", "NoSuchResource"})
+
+
+def _is_missing_cos_object(exc: Exception) -> bool:
+    """True when COS reports the object is gone (expired temp image, deleted key)."""
+    if CosServiceError is None or not isinstance(exc, CosServiceError):
+        return False
+    return cos_exc_call(exc, "get_error_code", "") in _MISSING_OBJECT_CODES
+
+
 def _is_retryable_cos_error(exc: Exception) -> bool:
     if CosClientError is None or CosServiceError is None:
         return False
@@ -238,11 +248,7 @@ def upload_bytes(
     content_type: Optional[str] = None,
 ) -> bool:
     """Upload raw bytes to COS."""
-    try:
-        client = get_cos_client()
-    except BACKGROUND_INFRA_ERRORS as exc:
-        logger.error("%s Client unavailable: %s", log_prefix, exc)
-        return False
+    client = get_cos_client()
     if client is None:
         return False
 
@@ -255,7 +261,7 @@ def upload_bytes(
     try:
         _retry_cos_call("put_object", _do_put, max_retries=max_retries)
         return True
-    except _cos_fetch_errors() as exc:
+    except BACKGROUND_INFRA_ERRORS as exc:
         logger.error("%s put_object failed key=%s: %s", log_prefix, object_key, exc)
         return False
 
@@ -289,6 +295,9 @@ def download_file(
         _retry_cos_call("download", _do_download, max_retries=max_retries)
         return True
     except _cos_fetch_errors() as exc:
+        if _is_missing_cos_object(exc):
+            logger.debug("%s object missing key=%s", log_prefix, object_key)
+            return False
         logger.error("%s Download failed key=%s: %s", log_prefix, object_key, exc)
         return False
 
@@ -324,10 +333,9 @@ def get_object_bytes(
             return data
         except fetch_errors as exc:
             last_error = exc
-            if CosServiceError is not None and isinstance(exc, CosServiceError):
-                if cos_exc_call(exc, "get_error_code", "") == "NoSuchKey":
-                    logger.debug("%s object missing key=%s", log_prefix, object_key)
-                    return None
+            if _is_missing_cos_object(exc):
+                logger.debug("%s object missing key=%s", log_prefix, object_key)
+                return None
             if not _is_retryable_cos_error(exc) or attempt + 1 >= max_retries:
                 break
             delay = min(5.0 * (2**attempt), 30.0)
@@ -362,10 +370,9 @@ def open_object_stream(
             return None
         return stream
     except _cos_fetch_errors() as exc:
-        if CosServiceError is not None and isinstance(exc, CosServiceError):
-            if cos_exc_call(exc, "get_error_code", "") == "NoSuchKey":
-                logger.debug("%s object missing key=%s", log_prefix, object_key)
-                return None
+        if _is_missing_cos_object(exc):
+            logger.debug("%s object missing key=%s", log_prefix, object_key)
+            return None
         logger.debug("%s open_object_stream failed key=%s: %s", log_prefix, object_key, exc)
         return None
 
@@ -377,10 +384,7 @@ def head_object(object_key: str) -> Optional[Dict[str, Any]]:
         return None
     try:
         return client.head_object(Bucket=COS_BUCKET, Key=object_key)
-    except _cos_fetch_errors() as exc:
-        if CosServiceError is not None and isinstance(exc, CosServiceError):
-            if cos_exc_call(exc, "get_error_code", "") == "NoSuchKey":
-                return None
+    except _cos_fetch_errors():
         return None
 
 

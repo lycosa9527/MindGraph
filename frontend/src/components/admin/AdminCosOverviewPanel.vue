@@ -27,7 +27,10 @@ function healthLabel(key: string): string {
 </script>
 
 <template>
-  <div v-loading="loading" class="admin-cos-overview">
+  <div
+    v-loading="loading"
+    class="admin-cos-overview"
+  >
     <el-alert
       v-if="error"
       type="error"
@@ -36,43 +39,72 @@ function healthLabel(key: string): string {
       class="mb-4"
     />
     <div class="admin-cos-kpi-row">
+      <AdminSwissKpiCard title-key="admin.cos.connection">
+        <template #value>
+          <I18nText :k="connection.ok ? 'admin.cos.connected' : 'admin.cos.disconnected'" />
+        </template>
+      </AdminSwissKpiCard>
       <AdminSwissKpiCard
-        :title="t('admin.cos.connection')"
-        :value="connection.ok ? t('admin.cos.connected') : t('admin.cos.disconnected')"
-      />
-      <AdminSwissKpiCard
-        :title="t('admin.cos.syncRole')"
+        title-key="admin.cos.syncRole"
         :value="String(data?.sync_role ?? 'off')"
       />
       <AdminSwissKpiCard
-        :title="t('admin.cos.bucket')"
+        title-key="admin.cos.bucket"
         :value="String(config.bucket ?? '—')"
       />
       <AdminSwissKpiCard
-        :title="t('admin.cos.nextRun')"
+        title-key="admin.cos.nextRun"
         :value="String(data?.next_scheduled_run ?? '—')"
       />
     </div>
-    <el-descriptions :column="2" border class="mt-4">
-      <el-descriptions-item :label="t('admin.cos.region')">
+    <el-descriptions
+      :column="2"
+      border
+      class="mt-4"
+    >
+      <el-descriptions-item>
+        <template #label>
+          <I18nText k="admin.cos.region" />
+        </template>
         {{ config.region }}
       </el-descriptions-item>
-      <el-descriptions-item :label="t('admin.cos.keyPrefix')">
+      <el-descriptions-item>
+        <template #label>
+          <I18nText k="admin.cos.keyPrefix" />
+        </template>
         {{ config.key_prefix }}
       </el-descriptions-item>
-      <el-descriptions-item :label="t('admin.cos.backupEnabled')">
-        {{ config.backup_enabled ? t('admin.cos.yes') : t('admin.cos.no') }}
+      <el-descriptions-item>
+        <template #label>
+          <I18nText k="admin.cos.backupEnabled" />
+        </template>
+        <I18nText
+          v-if="config.backup_enabled"
+          k="admin.cos.yes"
+        /><I18nText
+          v-else
+          k="admin.cos.no"
+        />
       </el-descriptions-item>
-      <el-descriptions-item :label="t('admin.cos.syncEnabled')">
-        {{ config.sync_enabled ? t('admin.cos.yes') : t('admin.cos.no') }}
+      <el-descriptions-item>
+        <template #label>
+          <I18nText k="admin.cos.syncEnabled" />
+        </template>
+        <I18nText
+          v-if="config.sync_enabled"
+          k="admin.cos.yes"
+        /><I18nText
+          v-else
+          k="admin.cos.no"
+        />
       </el-descriptions-item>
     </el-descriptions>
-    <h4 class="admin-cos-subtitle">{{ t('admin.cos.artifactHealth') }}</h4>
+    <h4 class="admin-cos-subtitle"><I18nText k="admin.cos.artifactHealth" /></h4>
     <ul class="admin-cos-health-list">
-      <li>{{ t('admin.cos.sectionBackups') }}: {{ healthLabel('database_backups') }}</li>
-      <li>{{ t('admin.cos.sectionCrowdsec') }}: {{ healthLabel('crowdsec') }}</li>
-      <li>{{ t('admin.cos.sectionQdrant') }}: {{ healthLabel('qdrant') }}</li>
-      <li>{{ t('admin.cos.sectionPlaywright') }}: {{ healthLabel('playwright') }}</li>
+      <li><I18nText k="admin.cos.sectionBackups" />: {{ healthLabel('database_backups') }}</li>
+      <li><I18nText k="admin.cos.sectionCrowdsec" />: {{ healthLabel('crowdsec') }}</li>
+      <li><I18nText k="admin.cos.sectionQdrant" />: {{ healthLabel('qdrant') }}</li>
+      <li><I18nText k="admin.cos.sectionPlaywright" />: {{ healthLabel('playwright') }}</li>
     </ul>
   </div>
 </template>

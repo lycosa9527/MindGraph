@@ -78,6 +78,22 @@ _close_ws_if_vpn_cn_geo = maybe_close_websocket_for_vpn_cn_geo
 
 logger = logging.getLogger(__name__)
 
+# Starlette raises these when receive/send runs after the socket is already gone.
+_CLOSED_SOCKET_MARKERS = (
+    'Need to call "accept" first.',
+    "once a disconnect message has been received.",
+    "once a close message has been sent.",
+)
+
+
+def _closed_socket_runtime_error(exc: BaseException) -> bool:
+    """True when Starlette is reporting a socket that is already closed."""
+    if not isinstance(exc, RuntimeError):
+        return False
+    text = str(exc)
+    return any(marker in text for marker in _CLOSED_SOCKET_MARKERS)
+
+
 _COLLAB_WS_GENERIC_ERROR = "Collaboration session encountered an error. Please reconnect if the problem persists."
 
 router = APIRouter()
@@ -332,19 +348,26 @@ async def canvas_collab_websocket(
                     code,
                 )
             except BACKGROUND_INFRA_ERRORS as exc:
-                logger.error(
-                    "[WorkshopWS] Error in workshop WebSocket: %s",
-                    exc,
-                    exc_info=True,
-                )
-                try:
-                    await enqueue(
-                        handle,
-                        {"type": "error", "message": _COLLAB_WS_GENERIC_ERROR},
-                        "error",
+                if _closed_socket_runtime_error(exc):
+                    logger.info(
+                        "[WorkshopWS] User %s disconnected from workshop %s",
+                        user.id,
+                        code,
                     )
-                except BACKGROUND_INFRA_ERRORS as send_exc:
-                    logger.debug("Failed to send WebSocket error message: %s", send_exc)
+                else:
+                    logger.error(
+                        "[WorkshopWS] Error in workshop WebSocket: %s",
+                        exc,
+                        exc_info=True,
+                    )
+                    try:
+                        await enqueue(
+                            handle,
+                            {"type": "error", "message": _COLLAB_WS_GENERIC_ERROR},
+                            "error",
+                        )
+                    except BACKGROUND_INFRA_ERRORS as send_exc:
+                        logger.debug("Failed to send WebSocket error message: %s", send_exc)
             finally:
                 if handle.role == "viewer":
                     record_ws_viewer_connection_delta(-1)

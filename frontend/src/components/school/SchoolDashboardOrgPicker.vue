@@ -4,8 +4,8 @@
  */
 import { computed, onMounted } from 'vue'
 
-import { useAdminOrgScope } from '@/composables/admin/useAdminOrgScope'
 import { useLanguage } from '@/composables'
+import { useAdminOrgScope } from '@/composables/admin/useAdminOrgScope'
 
 const SELECT_FONT = '500 13px ui-sans-serif, system-ui, sans-serif'
 const SELECT_MIN_WIDTH_PX = 72
@@ -51,10 +51,7 @@ const selectDisplayText = computed(() => {
 
 const selectWidthStyle = computed(() => {
   const content = measureTextWidthPx(selectDisplayText.value) + SELECT_HORIZONTAL_PAD_PX
-  const clamped = Math.min(
-    SELECT_MAX_WIDTH_PX,
-    Math.max(SELECT_MIN_WIDTH_PX, content)
-  )
+  const clamped = Math.min(SELECT_MAX_WIDTH_PX, Math.max(SELECT_MIN_WIDTH_PX, content))
   return { width: `${clamped}px` }
 })
 
@@ -79,7 +76,7 @@ onMounted(() => {
       v-else
       class="text-stone-500 text-xs font-medium uppercase tracking-wide whitespace-nowrap"
     >
-      {{ t('admin.viewSchool') }}
+      <I18nText k="admin.viewSchool" />
     </span>
     <el-select
       v-model="selectedOrgId"

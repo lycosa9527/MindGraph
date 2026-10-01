@@ -10,7 +10,7 @@ import { GraduationCap } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
-import { useAiContentLevelStore } from '@/stores'
+import { useAiContentLevelStore } from '@/stores/aiContentLevel'
 
 withDefaults(
   defineProps<{

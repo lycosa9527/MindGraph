@@ -18,6 +18,7 @@ from . import (
     captcha,
     email,
     embed,
+    library_demo,
     login,
     login_devices,
     login_hero,
@@ -26,6 +27,7 @@ from . import (
     phone,
     preferences,
     public,
+    quick_access_specs,
     quick_register,
     registration,
     registration_overseas,
@@ -37,6 +39,7 @@ from .dingtalk_bind import router as dingtalk_bind_router
 from .oauth import router as oauth_router
 from . import thinking_coins
 from .admin import admin_router
+from .user_dropdown import router as user_dropdown_router
 from .dependencies import (
     get_language_dependency,
     require_admin,
@@ -78,6 +81,8 @@ router.include_router(tsec.router)
 router.include_router(password.router)
 router.include_router(session.router)
 router.include_router(preferences.router)
+router.include_router(library_demo.router)
+router.include_router(quick_access_specs.router)
 router.include_router(avatar.router)
 router.include_router(phone.router)
 router.include_router(personal_token.router)
@@ -85,6 +90,7 @@ router.include_router(embed.router)
 router.include_router(thinking_coins.router)
 router.include_router(dingtalk_bind_router)
 router.include_router(oauth_router)
+router.include_router(user_dropdown_router)
 router.include_router(admin_router)
 
 # Export router and utilities

@@ -22,7 +22,11 @@ import { useUIStore } from '@/stores/ui'
 const { t } = useLanguage()
 const uiStore = useUIStore()
 const translateUi = useDiagramTranslateUiStore()
-const { pendingTargetLanguage, hasPendingTranslate, phase: translatePhase } = storeToRefs(translateUi)
+const {
+  pendingTargetLanguage,
+  hasPendingTranslate,
+  phase: translatePhase,
+} = storeToRefs(translateUi)
 const { armAndStartTranslate, aiBlockedByCollab } = useCanvasDiagramTranslate()
 const { notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
 
@@ -52,7 +56,7 @@ const triggerCode = computed(() => pendingTargetLanguage.value ?? '')
     :aria-disabled="true"
     @click="notifyCollabGuestAiBlocked"
   >
-    {{ t('canvas.toolbar.moreAppTranslateLabel') }}
+    <I18nText k="canvas.toolbar.moreAppTranslateLabel" />
     <Languages
       class="h-3.5 w-3.5"
       :stroke-width="2"
@@ -78,7 +82,7 @@ const triggerCode = computed(() => pendingTargetLanguage.value ?? '')
         :title="t('canvas.toolbar.translateLabelTargetLanguage')"
         :aria-label="t('canvas.toolbar.translateLabelTargetLanguage')"
       >
-        {{ t('canvas.toolbar.moreAppTranslateLabel') }}
+        <I18nText k="canvas.toolbar.moreAppTranslateLabel" />
         <Languages
           class="h-3.5 w-3.5"
           :stroke-width="2"

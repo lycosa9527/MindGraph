@@ -10,12 +10,13 @@ All Rights Reserved
 Proprietary License
 """
 
+from abc import ABC
 from typing import Any, Dict, Optional
 
 from services.gewe.protocols import GeweServiceBase
 
 
-class CollectionServiceMixin(GeweServiceBase):
+class CollectionServiceMixin(GeweServiceBase, ABC):
     """Mixin for collection/favorites-related service methods"""
 
     async def sync_collection(self, app_id: str, sync_key: Optional[str] = None) -> Dict[str, Any]:

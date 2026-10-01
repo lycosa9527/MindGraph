@@ -1,11 +1,13 @@
 /**
  * useNotifications — unified ElNotification helpers (RTL-aware placement)
  */
-import { h, ref } from 'vue'
+import { type VNode, h, ref } from 'vue'
 
 import type { MessageHandler } from 'element-plus'
 
 import { AlertTriangle } from '@lucide/vue'
+
+import { bilingualNotifyMessage } from '@/i18n/bilingualNotifyMessage'
 
 import {
   getDefaultElNotificationOptions,
@@ -52,12 +54,16 @@ export function useNotifications() {
     })
   }
 
-  function showLoading(message = 'Loading...'): MessageHandler {
+  function showLoading(message: string | VNode = 'Loading...'): MessageHandler {
     if (loading.value) {
       loading.value.close()
     }
     loading.value = showLoadingImpl(message)
     return loading.value
+  }
+
+  function showLoadingKey(key: string, params?: Record<string, unknown>): MessageHandler {
+    return showLoading(bilingualNotifyMessage(key, params))
   }
 
   function hideLoading(): void {
@@ -102,6 +108,7 @@ export function useNotifications() {
     showMessage,
     showNotification,
     showLoading,
+    showLoadingKey,
     hideLoading,
     confirm,
   }

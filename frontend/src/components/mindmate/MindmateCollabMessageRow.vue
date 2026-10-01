@@ -8,7 +8,9 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
 
+import ImagePreviewModal from '@/components/common/ImagePreviewModal.vue'
 import MindmateCollabAssistantToolbar from '@/components/mindmate/MindmateCollabAssistantToolbar.vue'
+import MindmateCollabMessageStamp from '@/components/mindmate/MindmateCollabMessageStamp.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import {
   confirmCanvasLibraryDiagramOpen,
@@ -22,12 +24,20 @@ import { useTeachingDesignExportStore } from '@/stores/teachingDesignExport'
 import { canvasEditorPathForRoute } from '@/utils/canvasBackNavigation'
 import { copyMindmateAssistantMessage } from '@/utils/copyMindmateMessage'
 import {
+  collabDiagramSaveFailureKey,
+  saveCollabDiagramToLibrary,
+} from '@/utils/mindmateCollabDiagramLibrary'
+import {
   type CollabFeedbackRating,
   collabAssistantLibraryDiagramId,
+  collabAssistantOffersCanvasEdit,
   displayMindmateCollabContent,
   shouldShowCollabWordTemplateExport,
 } from '@/utils/mindmateCollabDisplay'
+import type { CollabReadCursor } from '@/utils/mindmateCollabRead'
+import { extractMindmatePreviewUniqueId } from '@/utils/mindmateDiagramMeta'
 import { TEACHING_INSTRUCTION_KIND } from '@/utils/mindmateTeachingDesignFlag'
+import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
 const props = defineProps<{
   message: MindmateCollabMessage
@@ -38,6 +48,8 @@ const props = defineProps<{
   isLastAssistant?: boolean
   regenerateDisabled?: boolean
   feedback?: CollabFeedbackRating
+  sessionId?: string
+  readCursors?: readonly CollabReadCursor[]
 }>()
 
 const emit = defineEmits<{
@@ -56,6 +68,8 @@ const route = useRoute()
 const router = useRouter()
 
 const openingCanvas = ref(false)
+const showImagePreview = ref(false)
+const previewImageUrl = ref('')
 
 const exportMessageId = computed(() => {
   if (props.message.id != null) {
@@ -71,6 +85,8 @@ const showWordTemplateExport = computed(() => shouldShowCollabWordTemplateExport
 
 const libraryDiagramId = computed(() => collabAssistantLibraryDiagramId(props.message))
 
+const showCanvasEdit = computed(() => collabAssistantOffersCanvasEdit(props.message))
+
 const displayText = computed(() =>
   displayMindmateCollabContent(props.message.content, props.message.role)
 )
@@ -81,6 +97,13 @@ const { html: renderedMarkdownHtml } = useRenderedMarkdown(() => displayText.val
 
 const isAssistant = computed(() => props.message.role === 'assistant')
 
+const ownAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
+
+const peerInitial = computed(() => {
+  const initial = (props.message.username || '?').trim().slice(0, 1).toUpperCase()
+  return initial || '?'
+})
+
 const rowClass = computed(() => {
   if (props.isOwn) {
     return 'mindmate-collab-room__msg-row--own'
@@ -90,6 +113,19 @@ const rowClass = computed(() => {
   }
   return 'mindmate-collab-room__msg-row--other'
 })
+
+function handleMarkdownClick(event: MouseEvent): void {
+  const target = event.target
+  if (!(target instanceof HTMLImageElement)) {
+    return
+  }
+  const imgSrc = target.currentSrc || target.src
+  if (!imgSrc) {
+    return
+  }
+  previewImageUrl.value = imgSrc
+  showImagePreview.value = true
+}
 
 async function handleCopy(): Promise<void> {
   try {
@@ -117,9 +153,22 @@ function handleExportWordTemplate(): void {
   )
 }
 
+async function resolveCanvasDiagramId(): Promise<string | null> {
+  const previewId = extractMindmatePreviewUniqueId(props.message.content)
+  const sessionId = props.sessionId?.trim() ?? ''
+  if (previewId && sessionId) {
+    const saved = await saveCollabDiagramToLibrary(sessionId, previewId)
+    if (!saved.ok) {
+      notify.errorKey(collabDiagramSaveFailureKey(saved.reason))
+      return null
+    }
+    return saved.diagramId
+  }
+  return libraryDiagramId.value
+}
+
 async function openInCanvas(): Promise<void> {
-  const diagramId = libraryDiagramId.value
-  if (!diagramId || openingCanvas.value) {
+  if (openingCanvas.value) {
     return
   }
   if (!authStore.isAuthenticated) {
@@ -128,32 +177,40 @@ async function openInCanvas(): Promise<void> {
     return
   }
 
-  const currentId = savedDiagramsStore.activeDiagramId?.trim() ?? ''
-  const decision = decideCanvasLibraryDiagramOpen(route.path, currentId, diagramId)
-  if (decision === 'noop') {
-    return
-  }
-  if (decision === 'confirm') {
-    const targetTitle =
-      savedDiagramsStore.diagrams.find((row) => row.id === diagramId)?.title?.trim() || diagramId
-    const currentTitle =
-      savedDiagramsStore.diagrams.find((row) => row.id === currentId)?.title?.trim() || currentId
-    const accepted = await confirmCanvasLibraryDiagramOpen({
-      title: t('mindmate.openCanvasSwitchTitle'),
-      message: t('mindmate.openCanvasSwitchBody', {
-        target: targetTitle,
-        current: currentTitle,
-      }),
-      confirmButtonText: t('mindmate.openCanvasSwitchOk'),
-      cancelButtonText: t('common.cancel'),
-    })
-    if (!accepted) {
-      return
-    }
-  }
-
   openingCanvas.value = true
   try {
+    const diagramId = await resolveCanvasDiagramId()
+    if (!diagramId) {
+      if (!extractMindmatePreviewUniqueId(props.message.content)) {
+        notify.errorKey('mindmate.openCanvasNoLibraryId')
+      }
+      return
+    }
+
+    const currentId = savedDiagramsStore.activeDiagramId?.trim() ?? ''
+    const decision = decideCanvasLibraryDiagramOpen(route.path, currentId, diagramId)
+    if (decision === 'noop') {
+      return
+    }
+    if (decision === 'confirm') {
+      const targetTitle =
+        savedDiagramsStore.diagrams.find((row) => row.id === diagramId)?.title?.trim() || diagramId
+      const currentTitle =
+        savedDiagramsStore.diagrams.find((row) => row.id === currentId)?.title?.trim() || currentId
+      const accepted = await confirmCanvasLibraryDiagramOpen({
+        title: t('mindmate.openCanvasSwitchTitle'),
+        message: t('mindmate.openCanvasSwitchBody', {
+          target: targetTitle,
+          current: currentTitle,
+        }),
+        confirmButtonText: t('mindmate.openCanvasSwitchOk'),
+        cancelButtonText: t('common.cancel'),
+      })
+      if (!accepted) {
+        return
+      }
+    }
+
     const canvasPath = canvasEditorPathForRoute(route.path)
     await router.push({ path: canvasPath, query: { diagramId } })
   } catch {
@@ -169,22 +226,25 @@ async function openInCanvas(): Promise<void> {
     class="mindmate-collab-room__msg-row"
     :class="rowClass"
   >
-    <div
-      v-if="!isOwn"
-      class="w-8 h-8 rounded-full shrink-0 overflow-hidden bg-stone-100 border border-stone-200"
-    >
+    <div class="mindmate-collab-room__avatar">
       <img
         v-if="isAssistant"
         :src="agentAvatarUrl"
         :alt="agentName"
-        class="w-full h-full object-cover"
+        class="mindmate-collab-room__avatar-img"
       />
       <span
+        v-else-if="isOwn"
+        class="mindmate-collab-room__avatar-emoji mg-user-avatar-emoji"
+      >
+        {{ ownAvatar }}
+      </span>
+      <span
         v-else
-        class="flex w-full h-full items-center justify-center text-xs font-medium text-stone-600"
+        class="mindmate-collab-room__avatar-emoji"
         aria-hidden="true"
       >
-        {{ (message.username || '?').trim().slice(0, 1).toUpperCase() }}
+        {{ peerInitial }}
       </span>
     </div>
     <div class="mindmate-collab-room__msg-body">
@@ -214,6 +274,7 @@ async function openInCanvas(): Promise<void> {
         <div
           v-if="isAssistant"
           class="mindmate-collab-room__markdown"
+          @click="handleMarkdownClick"
           v-html="renderedMarkdownHtml"
         />
         <!-- eslint-enable vue/no-v-html -->
@@ -221,6 +282,13 @@ async function openInCanvas(): Promise<void> {
           {{ message.content }}
         </template>
       </div>
+      <MindmateCollabMessageStamp
+        :message-id="message.id"
+        :created-at="message.created_at"
+        :sender-user-id="message.sender_user_id"
+        :is-own="isOwn"
+        :read-cursors="readCursors"
+      />
       <MindmateCollabAssistantToolbar
         v-if="isAssistant && !message.streaming"
         :is-last-assistant="Boolean(isLastAssistant)"
@@ -229,7 +297,7 @@ async function openInCanvas(): Promise<void> {
         :feedback="feedback"
         :show-word-template-export="showWordTemplateExport"
         :exporting-word="exportingMessageId === exportMessageId"
-        :show-canvas="Boolean(libraryDiagramId)"
+        :show-canvas="showCanvasEdit"
         :opening-canvas="openingCanvas"
         @copy="handleCopy"
         @regenerate="emit('regenerate')"
@@ -240,6 +308,12 @@ async function openInCanvas(): Promise<void> {
       />
     </div>
   </div>
+  <ImagePreviewModal
+    v-if="isAssistant"
+    v-model:visible="showImagePreview"
+    :title="t('mindmate.imagePreview')"
+    :image-url="previewImageUrl"
+  />
 </template>
 
 <style scoped>
@@ -247,9 +321,39 @@ async function openInCanvas(): Promise<void> {
 
 .mindmate-collab-room__msg-row {
   display: flex;
+  align-items: flex-start;
   gap: 0.625rem;
   width: 100%;
   min-width: 0;
+}
+
+.mindmate-collab-room__avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: #f5f5f4;
+  border: 1px solid #e7e5e4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mindmate-collab-room__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mindmate-collab-room__avatar-emoji {
+  font-size: 1rem;
+  line-height: 1;
+  font-weight: 500;
+  color: #57534e;
+  user-select: none;
+  font-family:
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', emoji, sans-serif;
 }
 
 .mindmate-collab-room__msg-row--own {
@@ -272,10 +376,11 @@ async function openInCanvas(): Promise<void> {
 }
 
 .mindmate-collab-room__msg-row--assistant .mindmate-collab-room__msg-body {
-  flex: 1 1 auto;
-  width: 100%;
-  max-width: none;
-  align-items: stretch;
+  flex: 1 1 0;
+  width: auto;
+  max-width: min(100%, 36rem);
+  min-width: 0;
+  align-items: flex-start;
 }
 
 .mindmate-collab-room__bubble {
@@ -288,8 +393,8 @@ async function openInCanvas(): Promise<void> {
 .mindmate-collab-room__msg-row--assistant .mindmate-collab-room__bubble {
   display: block;
   box-sizing: border-box;
-  width: 100%;
-  max-width: none;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .mindmate-collab-room__bubble--streaming::after {
@@ -302,6 +407,25 @@ async function openInCanvas(): Promise<void> {
   50% {
     opacity: 0;
   }
+}
+
+.mindmate-collab-room__markdown {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.mindmate-collab-room__markdown :deep(img) {
+  display: block;
+  box-sizing: border-box;
+  width: 20rem;
+  max-width: 100%;
+  height: auto;
+  max-height: 14rem;
+  object-fit: contain;
+  object-position: left center;
+  border-radius: 8px;
+  margin: 0.5rem 0;
+  cursor: zoom-in;
 }
 
 .mindmate-collab-room__markdown :deep(p) {

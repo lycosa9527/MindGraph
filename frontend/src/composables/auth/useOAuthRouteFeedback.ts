@@ -6,7 +6,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
-import { useAuthStore } from '@/stores'
+import { useAuthStore } from '@/stores/auth'
 import {
   clearPersistedOAuthLoginError,
   isOAuthRedirectError,
@@ -55,7 +55,7 @@ export function useOAuthRouteFeedback(): void {
       }
       const bindProvider = oauthBindFromRouteQuery(route.query.oauth_bind)
       if (bindProvider) {
-        notify.success(t('auth.oauthBindSuccess'))
+        notify.successKey('auth.oauthBindSuccess')
         stripOAuthQuery()
         return
       }

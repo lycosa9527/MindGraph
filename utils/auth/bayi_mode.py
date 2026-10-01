@@ -17,6 +17,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import unquote
+from uuid import UUID
 
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
@@ -32,7 +33,7 @@ try:
 except ImportError:
     pass
 
-from .config import BAYI_CLOCK_SKEW_TOLERANCE
+from .config import AUTH_MODE, BAYI_CLOCK_SKEW_TOLERANCE, BAYI_SSO_DEFAULT_DISPLAY_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -273,3 +274,52 @@ def validate_bayi_token_body(body: dict) -> bool:
     except BACKGROUND_INFRA_ERRORS as e:
         logger.error("Bayi token timestamp validation error: %s", e)
         return False
+
+
+def canonical_bayi_subject(raw: object) -> str:
+    """Store a UUID userId in one lowercase form. Other ids stay trimmed text."""
+    text = str(raw).strip() if raw is not None else ""
+    try:
+        return str(UUID(text))
+    except (ValueError, AttributeError, TypeError):
+        return text
+
+
+def same_account_key(left: str | None, right: str | None) -> bool:
+    """True when two stored ids are the same userId, including UUID letter case."""
+    first = (left or "").strip()
+    second = (right or "").strip()
+    if not first or not second:
+        return False
+    if first == second:
+        return True
+    return canonical_bayi_subject(first) == canonical_bayi_subject(second)
+
+
+def is_bayi_sso_phone(phone: str | None) -> bool:
+    """True when this phone column holds a Bayi jump-in userId, not a mobile number."""
+    if AUTH_MODE != "bayi":
+        return False
+    text = (phone or "").strip()
+    if not text:
+        return False
+    try:
+        UUID(text)
+    except ValueError:
+        return False
+    return True
+
+
+def is_bayi_placeholder_display_name(name: str | None) -> bool:
+    """True when Bayi mode still has the shared default name instead of a real one."""
+    if AUTH_MODE != "bayi":
+        return False
+    return (name or "").strip() == BAYI_SSO_DEFAULT_DISPLAY_NAME
+
+
+def user_needs_display_name(name: str | None) -> bool:
+    """Bayi SSO accounts with no real name should be asked before they join lists."""
+    if AUTH_MODE != "bayi":
+        return False
+    stripped = (name or "").strip()
+    return not stripped or stripped == BAYI_SSO_DEFAULT_DISPLAY_NAME

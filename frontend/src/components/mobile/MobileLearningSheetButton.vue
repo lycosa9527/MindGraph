@@ -54,7 +54,7 @@ onUnmounted(() => {
 function openChooser(): void {
   if (props.disabled) return
   if (!diagramStore.data?.nodes?.length) {
-    notify.warning(t('canvas.toolbar.createDiagramFirst'))
+    notify.warningKey('canvas.toolbar.createDiagramFirst')
     return
   }
   open.value = true
@@ -104,7 +104,7 @@ function handleRestore(): void {
     @click="openChooser"
   >
     <MindMapLearningSheetIcon kind="blanks" />
-    <span class="text-xs font-medium">{{ t('canvas.mobile.learningSheet') }}</span>
+    <span class="text-xs font-medium"><I18nText k="canvas.mobile.learningSheet" /></span>
   </button>
 
   <Teleport to="body">
@@ -114,18 +114,23 @@ function handleRestore(): void {
       role="status"
     >
       <p class="mobile-ls-session__title">
-        {{
-          isPickActive
-            ? t('canvas.mindMapSideToolbar.learningSheetPickTitle')
-            : t('canvas.mindMapSideToolbar.learningSheetRandomTitle')
-        }}
+        <I18nText
+          v-if="isPickActive"
+          k="canvas.mindMapSideToolbar.learningSheetPickTitle"
+        /><I18nText
+          v-else
+          k="canvas.mindMapSideToolbar.learningSheetRandomTitle"
+        />
       </p>
       <p class="mobile-ls-session__hint">
-        {{
-          isPickActive
-            ? t('canvas.mindMapSideToolbar.learningSheetPickActiveInPanel')
-            : t('canvas.mindMapSideToolbar.learningSheetActiveStatus', { count: blankCount })
-        }}
+        <I18nText
+          v-if="isPickActive"
+          k="canvas.mindMapSideToolbar.learningSheetPickActiveInPanel"
+        /><I18nText
+          v-else
+          k="canvas.mindMapSideToolbar.learningSheetActiveStatus"
+          :params="{ count: blankCount }"
+        />
       </p>
       <div class="mobile-ls-session__actions">
         <label
@@ -137,21 +142,21 @@ function handleRestore(): void {
             :checked="!diagramStore.learningSheetShowAnswers"
             @change="onHideAnswersChange"
           />
-          <span>{{ t('canvas.mindMapSideToolbar.learningSheetHideAnswers') }}</span>
+          <span><I18nText k="canvas.mindMapSideToolbar.learningSheetHideAnswers" /></span>
         </label>
         <button
           type="button"
           class="mobile-ls-session__btn"
           @click="dismissFloatBar"
         >
-          {{ t('canvas.mindMapSideToolbar.learningSheetPickDone') }}
+          <I18nText k="canvas.mindMapSideToolbar.learningSheetPickDone" />
         </button>
         <button
           type="button"
           class="mobile-ls-session__btn mobile-ls-session__btn--quiet"
           @click="handleRestore"
         >
-          {{ t('canvas.mindMapSideToolbar.restoreFullDiagram') }}
+          <I18nText k="canvas.mindMapSideToolbar.restoreFullDiagram" />
         </button>
       </div>
     </div>
@@ -169,10 +174,10 @@ function handleRestore(): void {
         >
           <div class="model-sheet-handle" />
           <div class="px-4 pt-3 pb-1 text-sm font-semibold text-gray-800">
-            {{ t('canvas.mobile.learningSheet') }}
+            <I18nText k="canvas.mobile.learningSheet" />
           </div>
           <p class="px-4 pb-2 text-xs leading-relaxed text-gray-500">
-            {{ t('canvas.mindMapSideToolbar.learningSheetIntro') }}
+            <I18nText k="canvas.mindMapSideToolbar.learningSheetIntro" />
           </p>
           <div class="flex flex-col gap-2 px-3 pb-3">
             <button
@@ -188,10 +193,10 @@ function handleRestore(): void {
               </span>
               <span class="min-w-0 flex-1 text-start">
                 <span class="block text-sm font-semibold text-gray-900">
-                  {{ t('canvas.mindMapSideToolbar.learningSheetRandomTitle') }}
+                  <I18nText k="canvas.mindMapSideToolbar.learningSheetRandomTitle" />
                 </span>
                 <span class="mt-0.5 block text-xs leading-snug text-gray-500">
-                  {{ t('canvas.mindMapSideToolbar.learningSheetRandomDesc') }}
+                  <I18nText k="canvas.mindMapSideToolbar.learningSheetRandomDesc" />
                 </span>
               </span>
             </button>
@@ -210,20 +215,20 @@ function handleRestore(): void {
               </span>
               <span class="min-w-0 flex-1 text-start">
                 <span class="block text-sm font-semibold text-gray-900">
-                  {{ t('canvas.mindMapSideToolbar.learningSheetCustomTitle') }}
+                  <I18nText k="canvas.mindMapSideToolbar.learningSheetCustomTitle" />
                 </span>
                 <span class="mt-0.5 block text-xs leading-snug text-gray-500">
-                  {{ t('canvas.mobile.learningSheetCustomDesc') }}
+                  <I18nText k="canvas.mobile.learningSheetCustomDesc" />
                 </span>
               </span>
             </button>
             <label class="mobile-ls-keep">
               <span class="min-w-0 flex-1">
                 <span class="block text-sm font-medium text-gray-800">
-                  {{ t('canvas.mindMapSideToolbar.learningSheetKeepAnswers') }}
+                  <I18nText k="canvas.mindMapSideToolbar.learningSheetKeepAnswers" />
                 </span>
                 <span class="mt-0.5 block text-xs leading-snug text-gray-500">
-                  {{ t('canvas.mindMapSideToolbar.learningSheetKeepAnswersHint') }}
+                  <I18nText k="canvas.mindMapSideToolbar.learningSheetKeepAnswersHint" />
                 </span>
               </span>
               <input
@@ -239,7 +244,7 @@ function handleRestore(): void {
               class="mobile-ls-restore"
               @click="handleRestore"
             >
-              {{ t('canvas.mindMapSideToolbar.restoreFullDiagram') }}
+              <I18nText k="canvas.mindMapSideToolbar.restoreFullDiagram" />
             </button>
           </div>
         </div>

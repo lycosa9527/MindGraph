@@ -83,7 +83,7 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
     Supports three authentication modes:
     1. standard: Regular JWT authentication (phone/password login)
     2. enterprise: Skip JWT validation (for VPN/SSO deployments)
-    3. bayi: Regular JWT authentication (vendor SSO and/or 6-digit passkey)
+    3. bayi: Regular JWT authentication (vendor SSO /loginByXz, or phone login on /auth)
 
     IMPORTANT: Bayi mode still requires valid JWT tokens for API access.
     Only enterprise mode bypasses authentication entirely.

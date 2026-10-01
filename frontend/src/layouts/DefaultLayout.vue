@@ -16,7 +16,7 @@ import { useAuthStore, useUIStore } from '@/stores'
 const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
-const { t, toggleLanguage } = useLanguage()
+const { toggleLanguage } = useLanguage()
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const userName = computed(() => authStore.user?.username || '')
@@ -74,10 +74,10 @@ function goToAdmin(): void {
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item @click="toggleQuickAccessRemote">
-                  {{ t('sidebar.quickAccessRemote') }}
+                  <I18nText k="sidebar.quickAccessRemote" />
                 </el-dropdown-item>
                 <el-dropdown-item @click="goToHome">
-                  {{ t('editor.newDiagram') }}
+                  <I18nText k="editor.newDiagram" />
                 </el-dropdown-item>
                 <el-dropdown-item
                   v-if="authStore.isManagementPanelUser"
@@ -89,7 +89,7 @@ function goToAdmin(): void {
                   divided
                   @click="handleLogout"
                 >
-                  {{ t('auth.logout') }}
+                  <I18nText k="auth.logout" />
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>

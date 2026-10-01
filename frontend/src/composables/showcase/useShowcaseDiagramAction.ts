@@ -1,12 +1,11 @@
-import { computed, ref, type Ref } from 'vue'
-
+import { type Ref, computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { firstGalleryDiagramSpec } from '@/components/showcase/showcaseGallery'
 import {
+  type ShowcaseDiagramAction,
   isRenderableShowcaseSpec,
   resolveDiagramAction,
-  type ShowcaseDiagramAction,
 } from '@/components/showcase/showcaseShared'
 import { useLanguage, useNotifications } from '@/composables'
 import { diagramTypeToChineseMap } from '@/composables/canvasPage/diagramTypeMaps'
@@ -20,7 +19,10 @@ import {
   resolveShowcaseDiagramType,
 } from '@/utils/showcaseDiagramThumbnail'
 
-async function fetchShowcaseSpec(post: ShowcasePost, spec?: unknown): Promise<Record<string, unknown> | null> {
+async function fetchShowcaseSpec(
+  post: ShowcasePost,
+  spec?: unknown
+): Promise<Record<string, unknown> | null> {
   if (isRenderableShowcaseSpec(spec)) {
     return cloneShowcaseDiagramSpec(spec)
   }
@@ -105,7 +107,7 @@ export function useShowcaseDiagramAction() {
     options?: { closeModal?: () => void }
   ): Promise<void> {
     if (!authStore.isAuthenticated) {
-      notify.warning(String(t('community.post.loginFirst')))
+      notify.warningKey('community.post.loginFirst')
       return
     }
 
@@ -122,12 +124,18 @@ export function useShowcaseDiagramAction() {
     try {
       const specObj = await fetchShowcaseSpec(post, spec)
       if (!specObj) {
-        notify.error(String(t('community.post.diagramLoadFailed')))
+        notify.errorKey('community.post.diagramLoadFailed')
         return
       }
 
       const diagramType = resolveShowcaseDiagramType(specObj, post.diagram_type || 'mind_map')
-      const saved = await savedDiagramsStore.saveDiagram(post.title, diagramType, specObj, 'zh', null)
+      const saved = await savedDiagramsStore.saveDiagram(
+        post.title,
+        diagramType,
+        specObj,
+        'zh',
+        null
+      )
       if (!saved) {
         notify.error(savedDiagramsStore.error || String(t('community.post.importFail')))
         return
@@ -135,7 +143,7 @@ export function useShowcaseDiagramAction() {
 
       // Clear sticky active id so CanvasPage always loads the freshly saved diagram.
       savedDiagramsStore.clearActiveDiagram()
-      notify.success(String(t('community.post.importOk')))
+      notify.successKey('community.post.importOk')
       options?.closeModal?.()
       await router.push({ path: '/canvas', query: { diagramId: saved.id } })
     } catch (e) {
@@ -154,10 +162,7 @@ export function useShowcaseDiagramAction() {
 }
 
 /** Reactive action label for a loaded post + optional spec. */
-export function useShowcaseActionLabel(
-  post: Ref<ShowcasePost | null>,
-  spec?: Ref<unknown>
-) {
+export function useShowcaseActionLabel(post: Ref<ShowcasePost | null>, spec?: Ref<unknown>) {
   const { actionLabel, resolveActionForPost } = useShowcaseDiagramAction()
   return computed(() => {
     const p = post.value

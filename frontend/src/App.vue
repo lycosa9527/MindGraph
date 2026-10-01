@@ -20,7 +20,11 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useKittyDesktopActionPoll } from '@/composables/kitty/useKittyDesktopActionPoll'
 import { useSlideRemoteDesktopPoll } from '@/composables/mindMap/useSlideRemoteDesktopPoll'
-import { quickAccessRemoteHidden } from '@/composables/sidebar/useQuickAccessRemote'
+import { installMindmateCollabLiveSession } from '@/composables/mindmate/mindmateCollabLiveSession'
+import {
+  quickAccessRemoteHidden,
+  useQuickAccessRemoteAccount,
+} from '@/composables/sidebar/useQuickAccessRemote'
 import { useTrainingFollow } from '@/composables/training/useTrainingFollow'
 import { useTrainingSessionEngine } from '@/composables/training/useTrainingSessionEngine'
 import { privacyPageUiCode } from '@/composables/usePrivacyPageLocale'
@@ -44,11 +48,13 @@ const notify = useNotifications()
 
 useKittyDesktopActionPoll()
 useSlideRemoteDesktopPoll()
+useQuickAccessRemoteAccount()
 useTrainingFollow()
 useTrainingSessionEngine()
 
-const SessionExpiredAuthCard = defineAsyncComponent(
-  () => import('@/components/auth/SessionExpiredAuthCard.vue')
+const LoginModal = defineAsyncComponent(() => import('@/components/auth/LoginModal.vue'))
+const AccountInfoModal = defineAsyncComponent(
+  () => import('@/components/auth/AccountInfoModal.vue')
 )
 const CanvasLiveSubtitleOverlay = defineAsyncComponent(
   () => import('@/components/canvas/CanvasLiveSubtitleOverlay.vue')
@@ -151,6 +157,23 @@ const translationLive = translationInterimText
 const elLocale = shallowRef<Language | undefined>(undefined)
 
 const showBrowserLocaleHint = ref(false)
+const showAccountInfo = ref(false)
+const bayiNameToastSent = ref(false)
+watch(
+  () => authStore.user?.needsDisplayName === true && !isMindgraphHeadlessExportSession(),
+  (needsName) => {
+    if (!needsName) {
+      showAccountInfo.value = false
+      return
+    }
+    showAccountInfo.value = true
+    if (!bayiNameToastSent.value) {
+      bayiNameToastSent.value = true
+      notify.warningKey('auth.bayiNamePrompt.toast')
+    }
+  },
+  { immediate: true }
+)
 /** Visibility for SwissWarningModal (@/components/common/SwissWarningModal.vue). */
 const showSwissWarning = ref(false)
 const showSchoolExpired = ref(false)
@@ -380,6 +403,7 @@ onMounted(async () => {
   if (!isGuestAuthPath(route.path)) {
     await authStore.checkAuth().catch(() => false)
   }
+  installMindmateCollabLiveSession()
 
   // Re-align vue-i18n with Pinia after auth (profile may no-op setLanguage when
   // the code is unchanged, leaving a prior HMR desync unrepaired).
@@ -405,7 +429,7 @@ onMounted(async () => {
 
   if (!onGuestAuthPage) {
     setTimeout(() => {
-      notify.info(t('app.aiDisclaimer'))
+      notify.infoKey('app.aiDisclaimer')
     }, 500)
   }
 
@@ -459,9 +483,14 @@ onUnmounted(() => {
     <ChatMessageToast />
     <WorkshopChatWsHost />
 
-    <SessionExpiredAuthCard
-      :visible="authStore.showSessionExpiredModal"
+    <LoginModal
+      v-model:visible="authStore.showSessionExpiredModal"
       @success="handleSessionExpiredLoginSuccess"
+    />
+
+    <AccountInfoModal
+      v-if="showAccountInfo"
+      v-model:visible="showAccountInfo"
     />
 
     <BrowserLocaleHintDialog v-model="showBrowserLocaleHint" />

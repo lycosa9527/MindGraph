@@ -1,6 +1,5 @@
 import type { Ref } from 'vue'
 
-import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import {
   resolveEnterKeyEvent,
   resolveInsertKeyEvent,
@@ -22,7 +21,6 @@ import {
   shouldRecordManualSaveSnapshot,
 } from '@/composables/editor/diagramSaveFeedback'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
-import { useNodeActions } from '@/composables/editor/useNodeActions'
 import {
   buildMindMapNavRectsFromLayout,
   findMindMapNodeInDirection,
@@ -55,8 +53,6 @@ export function useCanvasPageEditorShortcuts(options: {
   isCollabGuest: Ref<boolean>
 }): { handleSaveKey: (options?: { recordHistory?: boolean }) => Promise<void> } {
   initInlineEditEnterGuard()
-  // Toolbar callers opt out so this page is the single listener for Enter / Tab / Delete.
-  useNodeActions()
 
   const { workshopCode, activeEditors, relationshipActiveEntry, diagramAutoSave, isCollabGuest } =
     options
@@ -132,7 +128,6 @@ export function useCanvasPageEditorShortcuts(options: {
   function handleTabKey(event: KeyboardEvent) {
     if (event.repeat) return
     if (isTypingInInput()) return
-    if (isThinkingMapDiagramType(diagramStore.type)) return
     const routed = resolveTabKeyEvent(diagramStore.type)
     if (routed) {
       eventBus.emit(routed, {})
@@ -144,7 +139,6 @@ export function useCanvasPageEditorShortcuts(options: {
   function handleInsertKey(event: KeyboardEvent) {
     if (event.repeat) return
     if (isTypingInInput()) return
-    if (isThinkingMapDiagramType(diagramStore.type)) return
     const routed = resolveInsertKeyEvent(diagramStore.type)
     if (routed) {
       eventBus.emit(routed, {})
@@ -231,7 +225,7 @@ export function useCanvasPageEditorShortcuts(options: {
     if (relationshipActiveEntry.value) return
     const selected = [...diagramStore.selectedNodes]
     if (selected.length === 0) {
-      notify.warning(t('notification.selectNodeToClear'))
+      notify.warningKey('notification.selectNodeToClear')
       return
     }
     const protectedIds = [
@@ -277,7 +271,7 @@ export function useCanvasPageEditorShortcuts(options: {
         diagramAutoSave.performSave()
       }
     } else {
-      notify.warning(t('notification.cannotClearTopicOrCenter'))
+      notify.warningKey('notification.cannotClearTopicOrCenter')
     }
   }
 
@@ -293,7 +287,7 @@ export function useCanvasPageEditorShortcuts(options: {
 
   async function handleSaveKey(options?: { recordHistory?: boolean }) {
     if (!authStore.isAuthenticated) {
-      notify.warning(t('editor.saveNeedsLogin'))
+      notify.warningKey('editor.saveNeedsLogin')
       return
     }
     const result = await flushDiagramSaveWithFeedback({

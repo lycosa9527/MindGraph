@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { Plus, Refresh } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
 
+import { Plus, Refresh } from '@element-plus/icons-vue'
+
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
-import { useLanguage } from '@/composables'
 import { useAdminPanelStore } from '@/stores'
 
-const { t } = useLanguage()
 const adminPanel = useAdminPanelStore()
 const { rolesToolbar } = storeToRefs(adminPanel)
 const { emit: emitAdminEvent } = useAdminEventBus('AdminRolesHeaderToolbar')
@@ -37,7 +36,7 @@ function onAdd(): void {
       @click="onRefresh"
     >
       <el-icon class="mr-1"><Refresh /></el-icon>
-      {{ t('admin.refresh') }}
+      <I18nText k="admin.refresh" />
     </el-button>
     <el-button
       v-if="canEdit"
@@ -47,7 +46,7 @@ function onAdd(): void {
       @click="onAdd"
     >
       <el-icon class="mr-1"><Plus /></el-icon>
-      {{ t('admin.addRoleMember') }}
+      <I18nText k="admin.addRoleMember" />
     </el-button>
   </div>
 </template>

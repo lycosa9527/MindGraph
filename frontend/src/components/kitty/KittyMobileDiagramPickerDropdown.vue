@@ -6,7 +6,7 @@ import { computed, ref, watch } from 'vue'
 
 import { ElPopover } from 'element-plus'
 
-import { Check, Loader2, Plus, Pin, Search } from '@lucide/vue'
+import { Check, Loader2, Pin, Plus, Search } from '@lucide/vue'
 
 import KittyMobileDiagramContextCard from '@/components/kitty/KittyMobileDiagramContextCard.vue'
 import { useLanguage } from '@/composables'
@@ -116,7 +116,7 @@ function handleCreateNew(): void {
     >
       <div class="kitty-diagram-picker-panel__header">
         <span class="kitty-diagram-picker-panel__label">
-          {{ t('mobile.kittyDiagramPickerTitle', '选择导图') }}
+          <I18nText k="mobile.kittyDiagramPickerTitle" />
         </span>
       </div>
 
@@ -131,7 +131,7 @@ function handleCreateNew(): void {
           class="kitty-diagram-picker-create__icon"
           aria-hidden="true"
         />
-        <span>{{ t('mobile.kittyCreateNewMindmap', '新建思维导图') }}</span>
+        <span><I18nText k="mobile.kittyCreateNewMindmap" /></span>
       </button>
 
       <div
@@ -161,21 +161,21 @@ function handleCreateNew(): void {
           :size="18"
           class="animate-spin text-stone-400"
         />
-        <span>{{ t('mobile.kittyDiagramPickerLoading', '加载中…') }}</span>
+        <span><I18nText k="mobile.kittyDiagramPickerLoading" /></span>
       </div>
 
       <div
         v-else-if="diagrams.length === 0"
         class="kitty-diagram-picker-panel__state"
       >
-        {{ t('mobile.kittyDiagramPickerEmpty', '暂无已保存的导图') }}
+        <I18nText k="mobile.kittyDiagramPickerEmpty" />
       </div>
 
       <div
         v-else-if="filteredDiagrams.length === 0"
         class="kitty-diagram-picker-panel__state"
       >
-        {{ t('mobile.kittyDiagramPickerNoMatch', '没有匹配的导图') }}
+        <I18nText k="mobile.kittyDiagramPickerNoMatch" />
       </div>
 
       <ul

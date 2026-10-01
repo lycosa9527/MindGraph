@@ -7,9 +7,8 @@ import { useLanguage } from '@/composables'
 import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useNotifications } from '@/composables/core/useNotifications'
-import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
-import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
+import { isPlaceholderText } from '@/composables/editor/placeholderText'
 import { resolveCanvasAudienceLevel } from '@/composables/mindMap/audience/aiContentLevelInstructions'
 import { withMindMapAudienceContext } from '@/composables/mindMap/audience/withMindMapAudienceContext'
 import { useSavedDiagramsStore } from '@/stores'
@@ -17,10 +16,10 @@ import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
 import { collectMindMapExplainContext } from '@/utils/mindMapExplainContext'
 import {
-  applyExplainResearchEvent,
-  emptyExplainResearchState,
   type ExplainResearchImage,
   type ExplainResearchSource,
+  applyExplainResearchEvent,
+  emptyExplainResearchState,
 } from '@/utils/mindMapExplainResearch'
 import { consumeSseDataLines } from '@/utils/mindMateSseStream'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
@@ -60,7 +59,6 @@ function formatHttpErrorDetail(detail: unknown, fallback: string): string {
 export function useMindMapNodeExplain() {
   const { promptLanguage, t } = useLanguage()
   const notify = useNotifications()
-  const { requireCapability } = useLearningAiGate()
   const diagramStore = useDiagramSession()
   const savedDiagramsStore = useSavedDiagramsStore()
 
@@ -259,11 +257,10 @@ export function useMindMapNodeExplain() {
   }
 
   function openExplain(nodeId: string, nodeLabel?: string): void {
-    if (!requireCapability('node_explain')) return
     if (
       isCollabGuestAiBlocked(diagramStore.collabSessionActive, diagramStore.collabIsDiagramOwner)
     ) {
-      notify.warning(t('canvas.toolbar.collabAiBlocked'))
+      notify.warningKey('canvas.toolbar.collabAiBlocked')
       return
     }
     const label = (nodeLabel ?? resolveNodeLabel(nodeId)).trim()

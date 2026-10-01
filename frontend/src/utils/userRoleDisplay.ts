@@ -1,8 +1,8 @@
 /**
  * User role display helpers — canonical slugs, legacy mapping, sidebar pill styles.
  */
-import type { SchoolTier, UserRole } from '@/types'
 import { normalizeSchoolTier } from '@/constants/schoolTier'
+import type { SchoolTier, UserRole } from '@/types'
 
 export const USER_ROLES = [
   'superadmin',
@@ -15,14 +15,22 @@ export const USER_ROLES = [
   'personal_paid',
 ] as const satisfies readonly UserRole[]
 
-export const PLATFORM_USER_ROLES = ['superadmin', 'platform_bd', 'expert'] as const satisfies readonly UserRole[]
+export const PLATFORM_USER_ROLES = [
+  'superadmin',
+  'platform_bd',
+  'expert',
+] as const satisfies readonly UserRole[]
 
 export const B2B_USER_ROLES = ['school_admin', 'teacher'] as const satisfies readonly UserRole[]
 
-export const C2C_USER_ROLES = ['personal_trial', 'personal_paid'] as const satisfies readonly UserRole[]
+export const C2C_USER_ROLES = [
+  'personal_trial',
+  'personal_paid',
+] as const satisfies readonly UserRole[]
 
 export interface UserRolePillView {
   label: string
+  labelKey: string
   bgClass: string
   textClass: string
   borderClass: string
@@ -103,9 +111,7 @@ export function normalizeUserRole(role: string | undefined | null): UserRole {
 }
 
 /** Read effective school tier from an admin/school user list row. */
-export function schoolTierFromUserRow(
-  row: Record<string, unknown>
-): SchoolTier | null | undefined {
+export function schoolTierFromUserRow(row: Record<string, unknown>): SchoolTier | null | undefined {
   const raw = row.school_tier
   if (typeof raw !== 'string' || !raw.trim()) {
     return undefined
@@ -151,10 +157,18 @@ export function userRolePillView(
   }
   return {
     label: translate(style.labelKey),
+    labelKey: style.labelKey,
     bgClass: style.bgClass,
     textClass: style.textClass,
     borderClass: style.borderClass,
   }
+}
+
+export function userRoleLabelKey(
+  role: string | null | undefined,
+  schoolTier?: SchoolTier | null
+): string | null {
+  return getRolePillStyle(role, schoolTier)?.labelKey ?? null
 }
 
 /** Options for role el-select (seven canonical roles). */

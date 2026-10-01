@@ -125,7 +125,7 @@ async function ensureEditableFieldForIme(): Promise<HTMLInputElement | HTMLTextA
   if (!nodeId) {
     if (!hintShownThisOpen) {
       hintShownThisOpen = true
-      notify.info(t('canvas.toolbar.virtualKeyboardFocusHint'))
+      notify.infoKey('canvas.toolbar.virtualKeyboardFocusHint')
     }
     return null
   }
@@ -173,7 +173,7 @@ async function beginReplaceEditOnSelectedNode(insert: string): Promise<void> {
     replaceEditInFlight = false
     if (!hintShownThisOpen) {
       hintShownThisOpen = true
-      notify.info(t('canvas.toolbar.virtualKeyboardFocusHint'))
+      notify.infoKey('canvas.toolbar.virtualKeyboardFocusHint')
     }
     return
   }
@@ -183,7 +183,7 @@ async function beginReplaceEditOnSelectedNode(insert: string): Promise<void> {
     if (!el) {
       if (!hintShownThisOpen) {
         hintShownThisOpen = true
-        notify.info(t('canvas.toolbar.virtualKeyboardFocusHint'))
+        notify.infoKey('canvas.toolbar.virtualKeyboardFocusHint')
       }
       return
     }
@@ -330,9 +330,9 @@ function closePanel(): void {
         <div
           class="flex items-center justify-between gap-2 border-b border-gray-200 px-2 py-1.5 dark:border-gray-600"
         >
-          <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{
-            t('canvas.toolbar.moreAppVirtualKeyboard')
-          }}</span>
+          <span class="text-xs font-medium text-gray-600 dark:text-gray-300"
+            ><I18nText k="canvas.toolbar.moreAppVirtualKeyboard"
+          /></span>
           <div class="flex items-center gap-1">
             <button
               type="button"
@@ -346,7 +346,7 @@ function closePanel(): void {
               @mousedown.prevent
               @click="toggleSystemIme"
             >
-              {{ t('canvas.toolbar.virtualKeyboardIme') }}
+              <I18nText k="canvas.toolbar.virtualKeyboardIme" />
             </button>
             <button
               type="button"
@@ -363,7 +363,7 @@ function closePanel(): void {
           v-if="imeMode"
           class="virtual-keyboard-ime-hint px-3 py-2 text-xs text-gray-500 dark:text-gray-400"
         >
-          {{ t('canvas.toolbar.virtualKeyboardImeHint') }}
+          <I18nText k="canvas.toolbar.virtualKeyboardImeHint" />
         </p>
         <div
           v-show="!imeMode"

@@ -61,7 +61,7 @@ async function executeCoinToss() {
   <div class="flex items-center justify-center h-full">
     <div class="text-center">
       <h2 class="text-2xl font-semibold text-gray-900 mb-8">
-        {{ t('debateverse.coinTossOrder') }}
+        <I18nText k="debateverse.coinTossOrder" />
       </h2>
 
       <!-- Coin Animation -->
@@ -94,7 +94,7 @@ async function executeCoinToss() {
         :loading="isFlipping"
         @click="executeCoinToss"
       >
-        {{ t('debateverse.executeCoinToss') }}
+        <I18nText k="debateverse.executeCoinToss" />
       </ElButton>
       <ElButton
         v-else
@@ -102,7 +102,7 @@ async function executeCoinToss() {
         size="large"
         @click="store.advanceStage('opening')"
       >
-        {{ t('debateverse.startDebate') }}
+        <I18nText k="debateverse.startDebate" />
       </ElButton>
     </div>
   </div>

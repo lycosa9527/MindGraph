@@ -6,12 +6,10 @@ import { computed } from 'vue'
 
 import { ElButton } from 'element-plus'
 
-import { useLanguage } from '@/composables/core/useLanguage'
 import { useDebateVerseStore } from '@/stores/debateverse'
 
 import DebaterAvatar from './DebaterAvatar.vue'
 
-const { t } = useLanguage()
 const store = useDebateVerseStore()
 
 // ============================================================================
@@ -73,7 +71,7 @@ function handleAdvanceStage() {
         size="small"
         @click="store.coinToss()"
       >
-        {{ t('debateverse.executeCoinToss') }}
+        <I18nText k="debateverse.executeCoinToss" />
       </ElButton>
       <ElButton
         v-else-if="store.currentStage !== 'completed'"
@@ -81,7 +79,7 @@ function handleAdvanceStage() {
         size="small"
         @click="handleAdvanceStage"
       >
-        {{ t('debateverse.advanceStage') }}
+        <I18nText k="debateverse.advanceStage" />
       </ElButton>
     </div>
   </div>

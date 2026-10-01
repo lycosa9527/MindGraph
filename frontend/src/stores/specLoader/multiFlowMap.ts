@@ -72,12 +72,15 @@ export function estimateMultiFlowTopicWidth(
   const fontWeight = style?.fontWeight
   const fontFamily = style?.fontFamily ?? DIAGRAM_NODE_FONT_STACK
   const isBold = fontWeight === undefined || fontWeight === 'bold' || fontWeight === 700
-  const nowrapInner = measureLabelInnerWidth(text, fs, isBold ? 'bold' : 'normal', fontFamily, true)
-  const innerForLayout = Math.min(nowrapInner, MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH)
-  return Math.max(
-    MULTI_FLOW_MAP_TOPIC_WIDTH,
-    Math.ceil(innerForLayout + MULTI_FLOW_TOPIC_PADDING_X)
+  const nowrapInner = measureLabelInnerWidth(
+    text,
+    fs,
+    isBold ? 'bold' : 'normal',
+    fontFamily,
+    true
   )
+  const innerForLayout = Math.min(nowrapInner, MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH)
+  return Math.max(MULTI_FLOW_MAP_TOPIC_WIDTH, Math.ceil(innerForLayout + MULTI_FLOW_TOPIC_PADDING_X))
 }
 
 /**
@@ -143,7 +146,8 @@ export function recalculateMultiFlowMapLayout(
     return pinia ?? DEFAULT_NODE_HEIGHT
   }
 
-  const actualTopicWidth = topicNodeWidth ?? estimateMultiFlowTopicWidth(event, eventNode?.style)
+  const actualTopicWidth =
+    topicNodeWidth ?? estimateMultiFlowTopicWidth(event, eventNode?.style)
 
   // Calculate uniform width for visual balance using text measurement.
   // Pinia DOM widths are NOT used for width because font-loading timing can
@@ -212,8 +216,8 @@ export function recalculateMultiFlowMapLayout(
       ...(node.style || {}),
       width: uniformColumnWidth,
       minWidth: uniformColumnWidth,
-      backgroundColor: node.style?.backgroundColor || color.fill,
-      borderColor: node.style?.borderColor || color.border,
+      backgroundColor: color.fill,
+      borderColor: color.border,
     }
     result.push({
       ...node,
@@ -239,8 +243,8 @@ export function recalculateMultiFlowMapLayout(
       ...(node.style || {}),
       width: uniformColumnWidth,
       minWidth: uniformColumnWidth,
-      backgroundColor: node.style?.backgroundColor || color.fill,
-      borderColor: node.style?.borderColor || color.border,
+      backgroundColor: color.fill,
+      borderColor: color.border,
     }
     result.push({
       ...node,

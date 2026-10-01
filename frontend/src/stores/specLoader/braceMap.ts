@@ -86,12 +86,12 @@ function estimateBraceNodeWidth(text: string, depth: number, typo?: BraceTypogra
     textWidth = measureTextWidth(trimmed || ' ', fontSize, { fontWeight, fontFamily })
   }
 
-  // Approximate CSS text-wrap: balance — when text wraps, lines are
-  // roughly equal width, so the rendered width is narrower than max-width.
+  // Match BraceNode: when text wraps, the pill uses ceil(width / lines) + 5,
+  // clamped to the cap. text-wrap: balance breaks inside that width.
   let effectiveTextWidth = textWidth
   if (textWidth > maxTextW) {
     const numLines = Math.ceil(textWidth / maxTextW)
-    effectiveTextWidth = Math.ceil(textWidth / numLines)
+    effectiveTextWidth = Math.min(Math.ceil(textWidth / numLines) + 5, maxTextW)
   }
 
   const width = Math.ceil(effectiveTextWidth + paddingX)
@@ -545,11 +545,7 @@ export function recalculateBraceMapLayout(
       if (groupIndex !== undefined) {
         const color = getMindmapBranchColor(groupIndex)
         node.data = { ...node.data, groupIndex }
-        node.style = {
-          ...node.style,
-          backgroundColor: node.style?.backgroundColor || color.fill,
-          borderColor: node.style?.borderColor || color.border,
-        }
+        node.style = { ...node.style, backgroundColor: color.fill, borderColor: color.border }
       }
     }
   }

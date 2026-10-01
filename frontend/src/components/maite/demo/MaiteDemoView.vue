@@ -49,7 +49,7 @@ function onProblemUpdate(value: string): void {
 <template>
   <div class="maite-demo-view">
     <section class="maite-demo-view__section">
-      <h3 class="maite-demo-view__heading">{{ t('maite.demo.problemTitle') }}</h3>
+      <h3 class="maite-demo-view__heading"><I18nText k="maite.demo.problemTitle" /></h3>
       <MaiteProblemInput
         :model-value="store.currentProblemText"
         scene="demo"
@@ -63,7 +63,7 @@ function onProblemUpdate(value: string): void {
           :disabled="!canDecompose"
           @click="() => runDecompose()"
         >
-          {{ t('maite.demo.decompose') }}
+          <I18nText k="maite.demo.decompose" />
         </button>
       </div>
       <MaiteStreamStatus
@@ -72,18 +72,30 @@ function onProblemUpdate(value: string): void {
         :preview="streamPreview"
         @stop="stopStreaming"
       />
-      <p v-if="errorMessage" class="maite-demo-view__error">
-        {{ t(`maite.errors.${errorMessage}`, t('maite.errors.generic')) }}
+      <p
+        v-if="errorMessage"
+        class="maite-demo-view__error"
+      >
+        <I18nText
+          :k="`maite.errors.${errorMessage}`"
+          fallback-key="maite.errors.generic"
+        />
       </p>
     </section>
 
-    <section v-if="decomposition" class="maite-demo-view__section">
-      <h3 class="maite-demo-view__heading">{{ t('maite.demo.tablesTitle') }}</h3>
+    <section
+      v-if="decomposition"
+      class="maite-demo-view__section"
+    >
+      <h3 class="maite-demo-view__heading"><I18nText k="maite.demo.tablesTitle" /></h3>
       <MaiteDecomposeTables :tables="decomposition" />
     </section>
 
-    <section v-if="messages.length > 0" class="maite-demo-view__section">
-      <h3 class="maite-demo-view__heading">{{ t('maite.demo.chatTitle') }}</h3>
+    <section
+      v-if="messages.length > 0"
+      class="maite-demo-view__section"
+    >
+      <h3 class="maite-demo-view__heading"><I18nText k="maite.demo.chatTitle" /></h3>
       <MaiteMentorChat :messages="messages" />
       <textarea
         v-model="replyDraft"
@@ -99,7 +111,7 @@ function onProblemUpdate(value: string): void {
           :disabled="!canFollowUp"
           @click="runFollowUp"
         >
-          {{ t('maite.demo.followUp') }}
+          <I18nText k="maite.demo.followUp" />
         </button>
       </div>
     </section>

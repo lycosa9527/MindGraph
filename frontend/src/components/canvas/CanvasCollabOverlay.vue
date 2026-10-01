@@ -94,19 +94,31 @@ const idleSecondsShown = computed(() => {
  */
 const statusChip = computed<{
   label: string
+  labelKey?: string
   tone: 'ok' | 'warn' | 'err'
   countdown: number | null
 }>(() => {
   const countdown = idleSecondsShown.value
   if (isConnectionFailed.value) {
-    return { label: t('canvasPage.collabConnectionFailed'), tone: 'err', countdown }
+    return {
+      label: t('canvasPage.collabConnectionFailed'),
+      labelKey: 'canvasPage.collabConnectionFailed',
+      tone: 'err',
+      countdown,
+    }
   }
   if (isReconnecting.value) {
-    return { label: t('canvasPage.collabReconnecting'), tone: 'warn', countdown }
+    return {
+      label: t('canvasPage.collabReconnecting'),
+      labelKey: 'canvasPage.collabReconnecting',
+      tone: 'warn',
+      countdown,
+    }
   }
   if (isConnected.value) {
     return {
       label: t('canvasPage.collabConnected'),
+      labelKey: 'canvasPage.collabConnected',
       tone: 'ok',
       countdown,
     }
@@ -259,7 +271,11 @@ defineExpose({ openCollab, stopNow })
               'text-red-300': statusChip.tone === 'err',
             }"
           >
-            {{ statusChip.label }}
+            <I18nText
+              v-if="statusChip.labelKey"
+              :k="statusChip.labelKey"
+              dense
+            />
           </span>
           <span
             v-if="statusChip.countdown !== null"
@@ -273,7 +289,7 @@ defineExpose({ openCollab, stopNow })
             class="pointer-events-auto underline ml-1"
             @click="emit('retryConnection')"
           >
-            {{ t('canvasPage.collabRetryConnection') }}
+            <I18nText k="canvasPage.collabRetryConnection" />
           </button>
         </span>
       </template>
@@ -282,7 +298,10 @@ defineExpose({ openCollab, stopNow })
       v-if="idleSecondsShown !== null"
       class="px-3 py-1 text-center text-xs font-medium text-amber-100 bg-amber-950/90"
     >
-      {{ t('canvasPage.collabRoomIdleEnding', { seconds: idleSecondsShown }) }}
+      <I18nText
+        k="canvasPage.collabRoomIdleEnding"
+        :params="{ seconds: idleSecondsShown }"
+      />
     </div>
   </div>
 
@@ -292,19 +311,19 @@ defineExpose({ openCollab, stopNow })
     class="w-full shrink-0 flex items-center justify-center gap-2 px-3 py-1 text-xs text-amber-100 bg-amber-800/90 pointer-events-none"
     role="status"
   >
-    <span>{{ t('canvasPage.collabReconnecting') }}</span>
+    <span><I18nText k="canvasPage.collabReconnecting" /></span>
   </div>
   <div
     v-else-if="!props.workshopCode && isConnectionFailed"
     class="w-full shrink-0 flex items-center justify-center gap-2 px-3 py-1 text-xs text-red-100 bg-red-900/90"
     role="alert"
   >
-    <span>{{ t('canvasPage.collabConnectionFailed') }}</span>
+    <span><I18nText k="canvasPage.collabConnectionFailed" /></span>
     <button
       class="pointer-events-auto underline ml-1"
       @click="emit('retryConnection')"
     >
-      {{ t('canvasPage.collabRetryConnection') }}
+      <I18nText k="canvasPage.collabRetryConnection" />
     </button>
   </div>
 </template>

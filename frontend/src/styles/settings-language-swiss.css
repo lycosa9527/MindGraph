@@ -157,7 +157,7 @@
 /*
  * Swiss 50/50 split segmented control (reference pattern).
  *
- * One full-width rectangle, two equal halves, vertical divider, no radio circles/icons.
+ * One full-width rectangle, equal segments, vertical dividers, no radio circles/icons.
  * Reuse for any binary setting in light-stone modals (e.g. classic vs new canvas).
  *
  * Markup (LanguageSettingsModal.vue):
@@ -203,7 +203,7 @@
     color 0.15s ease;
 }
 
-.language-settings-canvas-segment:first-child {
+.language-settings-canvas-segment:not(:last-child) {
   border-right: 1px solid var(--lang-settings-border-strong);
 }
 

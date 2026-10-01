@@ -1,15 +1,20 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  classifyNodeSlash,
   classifySwipe,
   isDoubleTap,
+  isDownwardSlashTravel,
+  isNodeSlashTravel,
   isPinchScale,
   isStationaryMultiTap,
   lockTwoFingerMove,
+  nodesCutByDownwardSlash,
   shouldEnableDesktopTouchPanPinch,
   touchCentroid,
   touchDistance,
   TOUCH_GESTURE,
+  type NodeScreenRect,
 } from '@/utils/canvasTouchGestures'
 
 describe('canvasTouchGestures', () => {
@@ -98,5 +103,117 @@ describe('canvasTouchGestures', () => {
     expect(shouldEnableDesktopTouchPanPinch(true, 0)).toBe(true)
     expect(shouldEnableDesktopTouchPanPinch(false, 2)).toBe(true)
     expect(shouldEnableDesktopTouchPanPinch(false, 1)).toBe(false)
+  })
+})
+
+describe('downward node slash', () => {
+  const node: NodeScreenRect = { id: 'branch-1', left: 100, top: 80, right: 220, bottom: 140 }
+  const cut = [
+    { x: 160, y: 40 },
+    { x: 158, y: 110 },
+    { x: 162, y: 190 },
+  ]
+
+  it('deletes a node a fast downward stroke cuts through', () => {
+    expect(isDownwardSlashTravel(cut, 180)).toBe(true)
+    expect(nodesCutByDownwardSlash(cut, 180, [node])).toEqual(['branch-1'])
+  })
+
+  it('cuts every node the stroke fully crosses, topmost first', () => {
+    const lower: NodeScreenRect = { id: 'branch-2', left: 90, top: 200, right: 230, bottom: 260 }
+    const through = [
+      { x: 160, y: 20 },
+      { x: 160, y: 300 },
+    ]
+    expect(nodesCutByDownwardSlash(through, 280, [lower, node])).toEqual(['branch-1', 'branch-2'])
+  })
+
+  it('ignores a slow drag, an upward stroke, a sideways swipe, and a miss', () => {
+    expect(nodesCutByDownwardSlash(cut, 900, [node])).toEqual([])
+    expect(nodesCutByDownwardSlash([...cut].reverse(), 180, [node])).toEqual([])
+    expect(
+      nodesCutByDownwardSlash(
+        [
+          { x: 40, y: 100 },
+          { x: 280, y: 110 },
+        ],
+        180,
+        [node]
+      )
+    ).toEqual([])
+    expect(
+      nodesCutByDownwardSlash(
+        [
+          { x: 40, y: 20 },
+          { x: 42, y: 200 },
+        ],
+        180,
+        [node]
+      )
+    ).toEqual([])
+  })
+
+  it('ignores a stroke that starts inside the node or stops before the bottom', () => {
+    expect(
+      nodesCutByDownwardSlash(
+        [
+          { x: 160, y: 120 },
+          { x: 160, y: 200 },
+        ],
+        180,
+        [node]
+      )
+    ).toEqual([])
+    expect(
+      nodesCutByDownwardSlash(
+        [
+          { x: 160, y: 40 },
+          { x: 160, y: 110 },
+        ],
+        160,
+        [node]
+      )
+    ).toEqual([])
+    expect(nodesCutByDownwardSlash(cut, 0, [node])).toEqual([])
+    expect(isDownwardSlashTravel([{ x: 0, y: 0 }], 100)).toBe(false)
+  })
+
+  it('keeps the slash faster than a tap', () => {
+    expect(TOUCH_GESTURE.SLASH_MIN_PX).toBeGreaterThan(TOUCH_GESTURE.TAP_MAX_MOVE_PX)
+    expect(TOUCH_GESTURE.SLASH_MIN_SPEED).toBeGreaterThan(0)
+  })
+})
+
+describe('node slash actions', () => {
+  const node: NodeScreenRect = { id: 'branch-1', left: 100, top: 80, right: 220, bottom: 140 }
+
+  it('treats a sideways cut either way as one sibling', () => {
+    const right = [
+      { x: 40, y: 110 },
+      { x: 280, y: 108 },
+    ]
+    const left = [...right].reverse()
+    expect(classifyNodeSlash(right, 180, [node])).toEqual({ action: 'sibling', nodeIds: ['branch-1'] })
+    expect(classifyNodeSlash(left, 180, [node])).toEqual({ action: 'sibling', nodeIds: ['branch-1'] })
+    expect(isNodeSlashTravel(right, 180)).toBe(true)
+    expect(nodesCutByDownwardSlash(right, 180, [node])).toEqual([])
+  })
+
+  it('treats an upward cut as a child on the first node', () => {
+    const lower: NodeScreenRect = { id: 'branch-2', left: 90, top: 200, right: 230, bottom: 260 }
+    const up = [
+      { x: 160, y: 300 },
+      { x: 160, y: 20 },
+    ]
+    expect(classifyNodeSlash(up, 220, [node, lower])).toEqual({ action: 'child', nodeIds: ['branch-2'] })
+    expect(isDownwardSlashTravel(up, 220)).toBe(false)
+  })
+
+  it('keeps a downward cut as delete', () => {
+    const down = [
+      { x: 160, y: 40 },
+      { x: 160, y: 190 },
+    ]
+    expect(classifyNodeSlash(down, 180, [node])).toEqual({ action: 'delete', nodeIds: ['branch-1'] })
   })
 })

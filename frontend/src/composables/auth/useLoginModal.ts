@@ -7,12 +7,15 @@
  */
 import { computed, onBeforeUnmount, ref, toRef, watch } from 'vue'
 
-import { useLanguage, useNotifications } from '@/composables'
 import { useRegisterRegionDetection } from '@/composables/auth/useRegisterRegionDetection'
-import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import { useTsecCaptcha } from '@/composables/auth/useTsecCaptcha'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
-import { useAuthStore, useFeatureFlagsStore, useUIStore } from '@/stores'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
+import { translateForUiLocale } from '@/i18n/translateForUiLocale'
+import { useAuthStore } from '@/stores/auth'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { useUIStore } from '@/stores/ui'
 import { parseApiErrorDetail } from '@/utils/apiClient'
 import { isBrowserLanguageSimplifiedChinese } from '@/utils/clientRegion'
 import {
@@ -391,7 +394,7 @@ export function useLoginModal(
         }
         if (generation === captchaRefreshGeneration && !captchaImage.value) {
           captchaLoadFailed.value = true
-          notify.error(t('auth.modal.captchaLoadFailed'))
+          notify.errorKey('auth.modal.captchaLoadFailed')
         }
       } finally {
         if (generation === captchaRefreshGeneration) {
@@ -470,7 +473,7 @@ export function useLoginModal(
     }
 
     if (!loginForm.value.phone || !loginForm.value.password) {
-      notify.warning(t('auth.modal.fillAllFields'))
+      notify.warningKey('auth.modal.fillAllFields')
       return
     }
 
@@ -526,7 +529,7 @@ export function useLoginModal(
       }
     } catch (error) {
       console.error('Login error:', error)
-      notify.error(t('auth.modal.networkLoginError'))
+      notify.errorKey('auth.modal.networkLoginError')
       loginForm.value.captcha = ''
       void refreshCaptcha({ force: true })
     } finally {
@@ -538,7 +541,7 @@ export function useLoginModal(
     const classCode = studentLoginForm.value.classCode.trim().toUpperCase()
     const name = studentLoginForm.value.name.trim()
     if (!classCode || !name || !studentLoginForm.value.password) {
-      notify.warning(t('auth.modal.fillAllFields'))
+      notify.warningKey('auth.modal.fillAllFields')
       return
     }
 
@@ -578,7 +581,7 @@ export function useLoginModal(
       }
     } catch (error) {
       console.error('Student login error:', error)
-      notify.error(t('auth.modal.networkLoginError'))
+      notify.errorKey('auth.modal.networkLoginError')
       studentLoginForm.value.captcha = ''
       void refreshCaptcha({ force: true })
     } finally {
@@ -635,7 +638,7 @@ export function useLoginModal(
       })
       const data = await response.json().catch(() => ({}))
       if (response.ok) {
-        notify.success(t('auth.modal.emailCodeSent'))
+        notify.successKey('auth.modal.emailCodeSent')
         startEmailCountdown()
       } else {
         notify.error(
@@ -646,7 +649,7 @@ export function useLoginModal(
         void refreshCaptcha({ force: true })
       }
     } catch {
-      notify.error(t('auth.modal.networkRegisterError'))
+      notify.errorKey('auth.modal.networkRegisterError')
       registerForm.value.captcha = ''
       void refreshCaptcha({ force: true })
     } finally {
@@ -656,23 +659,23 @@ export function useLoginModal(
 
   async function handleRegister() {
     if (registerForm.value.password.length < 8) {
-      notify.warning(t('auth.modal.passwordMin8'))
+      notify.warningKey('auth.modal.passwordMin8')
       return
     }
 
     if (registerRegionLoading.value || registerRegion.value === null) {
-      notify.warning(t('auth.modal.waitRegionDetection'))
+      notify.warningKey('auth.modal.waitRegionDetection')
       return
     }
 
     if (showOverseasEmailFlow.value) {
       const email = registerForm.value.registrationEmail.trim()
       if (!email || !registerForm.value.emailCode || registerForm.value.emailCode.length !== 6) {
-        notify.warning(t('auth.modal.fillRequired'))
+        notify.warningKey('auth.modal.fillRequired')
         return
       }
       if (!registerForm.value.outsideMainlandAcknowledged) {
-        notify.warning(t('auth.modal.acknowledgeOverseasRequired'))
+        notify.warningKey('auth.modal.acknowledgeOverseasRequired')
         return
       }
 
@@ -697,7 +700,7 @@ export function useLoginModal(
         })
         const data = await response.json().catch(() => ({}))
         if (response.ok) {
-          notify.success(t('auth.modal.registerSuccess'))
+          notify.successKey('auth.modal.registerSuccess')
           switchLoginRegisterTab('login')
           loginForm.value.phone = email
           loginForm.value.password = registerForm.value.password
@@ -711,7 +714,7 @@ export function useLoginModal(
           void refreshCaptcha({ force: true })
         }
       } catch {
-        notify.error(t('auth.modal.networkRegisterError'))
+        notify.errorKey('auth.modal.networkRegisterError')
         registerForm.value.captcha = ''
         void refreshCaptcha({ force: true })
       } finally {
@@ -726,7 +729,7 @@ export function useLoginModal(
       !registerForm.value.name ||
       !registerForm.value.invitationCode
     ) {
-      notify.warning(t('auth.modal.fillRequired'))
+      notify.warningKey('auth.modal.fillRequired')
       return
     }
 
@@ -753,7 +756,7 @@ export function useLoginModal(
       const data = await response.json()
 
       if (response.ok) {
-        notify.success(t('auth.modal.registerSuccess'))
+        notify.successKey('auth.modal.registerSuccess')
         switchLoginRegisterTab('login')
         loginForm.value.phone = registerForm.value.phone
         loginForm.value.password = registerForm.value.password
@@ -765,7 +768,7 @@ export function useLoginModal(
       }
     } catch (error) {
       console.error('Register error:', error)
-      notify.error(t('auth.modal.networkRegisterError'))
+      notify.errorKey('auth.modal.networkRegisterError')
       registerForm.value.captcha = ''
       void refreshCaptcha({ force: true })
     } finally {
@@ -777,7 +780,7 @@ export function useLoginModal(
     const form = type === 'login' ? smsLoginForm.value : forgotForm.value
 
     if (!form.phone || !form.phone.trim()) {
-      notify.warning(t('auth.modal.enterPhoneOrEmail'))
+      notify.warningKey('auth.modal.enterPhoneOrEmail')
       return
     }
 
@@ -786,14 +789,14 @@ export function useLoginModal(
 
     if (useEmail) {
       if (!SIMPLE_EMAIL_RE.test(trimmed)) {
-        notify.warning(t('auth.modal.emailInvalid'))
+        notify.warningKey('auth.modal.emailInvalid')
         return
       }
     } else if (type === 'login' && trimmed.length !== 11) {
-      notify.warning(t('auth.modal.phone11Digits'))
+      notify.warningKey('auth.modal.phone11Digits')
       return
     } else if (type === 'reset' && trimmed.length !== 11) {
-      notify.warning(t('auth.modal.phone11Digits'))
+      notify.warningKey('auth.modal.phone11Digits')
       return
     }
 
@@ -818,7 +821,7 @@ export function useLoginModal(
         })
         const data = await response.json().catch(() => ({}))
         if (response.ok) {
-          notify.success(t('auth.modal.emailCodeSent'))
+          notify.successKey('auth.modal.emailCodeSent')
           smsSent.value = true
           startCountdown()
         } else {
@@ -844,7 +847,7 @@ export function useLoginModal(
         const data = await response.json()
 
         if (response.ok) {
-          notify.success(t('auth.modal.smsSentSuccess'))
+          notify.successKey('auth.modal.smsSentSuccess')
           smsSent.value = true
           startCountdown()
         } else {
@@ -969,12 +972,12 @@ export function useLoginModal(
     }
 
     if (!forgotForm.value.newPassword || forgotForm.value.newPassword.length < 8) {
-      notify.warning(t('auth.modal.passwordMin8'))
+      notify.warningKey('auth.modal.passwordMin8')
       return
     }
 
     if (forgotForm.value.newPassword !== forgotForm.value.confirmPassword) {
-      notify.warning(t('auth.modal.passwordMismatch'))
+      notify.warningKey('auth.modal.passwordMismatch')
       return
     }
 
@@ -1007,7 +1010,7 @@ export function useLoginModal(
       const data = await response.json()
 
       if (response.ok) {
-        notify.success(t('auth.modal.resetSuccess'))
+        notify.successKey('auth.modal.resetSuccess')
         saveLoginIdentifier(trimmed)
         backToLogin()
         loginForm.value.phone = trimmed
@@ -1017,7 +1020,7 @@ export function useLoginModal(
       }
     } catch (error) {
       console.error('Reset password error:', error)
-      notify.error(t('auth.modal.networkResetError'))
+      notify.errorKey('auth.modal.networkResetError')
     } finally {
       isLoading.value = false
     }

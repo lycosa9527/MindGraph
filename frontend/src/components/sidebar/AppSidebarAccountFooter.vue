@@ -17,6 +17,7 @@ import {
   Link2,
   LogIn,
   LogOut,
+  Presentation,
   ScrollText,
   Share2,
   Star,
@@ -25,16 +26,19 @@ import {
 } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
+import DemoModePicker from '@/components/demo/DemoModePicker.vue'
+import DemoStage from '@/components/demo/DemoStage.vue'
 import QuickRegisterModal from '@/components/mindgraph/QuickRegisterModal.vue'
-import SidebarQuoteMarquee from '@/components/sidebar/SidebarQuoteMarquee.vue'
-import SidebarTokenUsage from '@/components/sidebar/SidebarTokenUsage.vue'
+import SidebarOrgName from '@/components/sidebar/SidebarOrgName.vue'
+import UserDropdownCourseDialog from '@/components/sidebar/UserDropdownCourseDialog.vue'
+import UserDropdownCourseItems from '@/components/sidebar/UserDropdownCourseItems.vue'
+import { useLibraryDemo } from '@/composables/demo/useLibraryDemo'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 import { toggleQuickAccessRemote } from '@/composables/sidebar/useQuickAccessRemote'
-import { useSidebarPhilosophyQuote } from '@/composables/sidebar/useSidebarPhilosophyQuote'
 import { useSidebarThinkingCoinTaskPromo } from '@/composables/sidebar/useSidebarThinkingCoinTaskPromo'
+import { refreshUserDropdownMenu } from '@/composables/sidebar/useUserDropdownMenu'
 import { usePwaInstall } from '@/composables/usePwaInstall'
-import { useUIStore } from '@/stores/ui'
 import { useVoiceNotesStore } from '@/stores/voiceNotes'
 import { isMindGraphLandingPath } from '@/utils/canvasBackNavigation'
 
@@ -55,10 +59,9 @@ const route = useRoute()
 const voiceNotesStore = useVoiceNotesStore()
 const showShareSiteModal = ref(false)
 const { triggerImport } = useDiagramImport()
+const { openPicker: openDemoMode } = useLibraryDemo()
 const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.path))
 const { showPwaInstall, handlePwaInstall } = usePwaInstall((key) => s.t(key))
-const uiStore = useUIStore()
-const { quote } = useSidebarPhilosophyQuote()
 const { promoTitle, promoReward, taskPromoKey, showInviteAccent } = useSidebarThinkingCoinTaskPromo(
   sidebarCtx.thinkingCoinEarnTasks,
   () => s.t('thinkingCoins.invitePromo')
@@ -72,6 +75,10 @@ function openPlatformQuickGuide(): void {
 
 function handleVoiceNotes(): void {
   void voiceNotesStore.enableAndOpen()
+}
+
+function onUserMenuVisible(open: boolean): void {
+  if (open) void refreshUserDropdownMenu()
 }
 </script>
 
@@ -211,6 +218,7 @@ function handleVoiceNotes(): void {
           ],
         }"
         class="user-dropdown w-full"
+        @visible-change="onUserMenuVisible"
       >
         <div
           class="user-dropdown-trigger flex items-center justify-between cursor-pointer hover:bg-[#f5f5f4] transition-colors px-4 py-3 w-full"
@@ -235,22 +243,23 @@ function handleVoiceNotes(): void {
                 </div>
                 <span
                   v-if="s.userRolePill"
-                  class="role-pill shrink-0 inline-flex items-center rounded-full border px-1.5 py-0 text-[10px] font-medium leading-4"
+                  class="role-pill shrink-0 text-[10px] font-medium"
                   :class="[
                     s.userRolePill.bgClass,
                     s.userRolePill.textClass,
                     s.userRolePill.borderClass,
                   ]"
                 >
-                  {{ s.userRolePill.label }}
+                  <I18nText
+                    v-if="s.userRolePill.labelKey"
+                    :k="s.userRolePill.labelKey"
+                    dense
+                    align="center"
+                  />
+                  <template v-else>{{ s.userRolePill.label }}</template>
                 </span>
               </div>
-              <SidebarQuoteMarquee
-                v-if="uiStore.sidebarPoemEnabled && quote"
-                :text="quote.text"
-                :author="quote.author"
-              />
-              <SidebarTokenUsage v-else-if="!uiStore.sidebarPoemEnabled" />
+              <SidebarOrgName />
             </div>
           </div>
           <ChevronDown class="w-4 h-4 text-stone-400 shrink-0 ml-2" />
@@ -274,6 +283,10 @@ function handleVoiceNotes(): void {
             <el-dropdown-item @click="toggleQuickAccessRemote">
               <LayoutGrid class="w-4 h-4 mr-2" />
               <I18nText k="sidebar.quickAccessRemote" />
+            </el-dropdown-item>
+            <el-dropdown-item @click="openDemoMode">
+              <Presentation class="w-4 h-4 mr-2" />
+              <I18nText k="sidebar.demo.menu" />
             </el-dropdown-item>
             <el-dropdown-item
               divided
@@ -305,6 +318,7 @@ function handleVoiceNotes(): void {
               <BookOpen class="w-4 h-4 mr-2" />
               <I18nText k="auth.platformQuickGuide" />
             </el-dropdown-item>
+            <UserDropdownCourseItems />
             <el-dropdown-item
               divided
               class="user-dropdown-item--logout"
@@ -327,6 +341,7 @@ function handleVoiceNotes(): void {
           modifiers: [{ name: 'offset', options: { offset: [0, 8] } }],
         }"
         class="user-dropdown-collapsed"
+        @visible-change="onUserMenuVisible"
       >
         <el-badge
           :value="0"
@@ -365,6 +380,10 @@ function handleVoiceNotes(): void {
               <LayoutGrid class="w-4 h-4 mr-2" />
               <I18nText k="sidebar.quickAccessRemote" />
             </el-dropdown-item>
+            <el-dropdown-item @click="openDemoMode">
+              <Presentation class="w-4 h-4 mr-2" />
+              <I18nText k="sidebar.demo.menu" />
+            </el-dropdown-item>
             <el-dropdown-item
               divided
               @click="s.openLanguageSettingsModal"
@@ -395,6 +414,7 @@ function handleVoiceNotes(): void {
               <BookOpen class="w-4 h-4 mr-2" />
               <I18nText k="auth.platformQuickGuide" />
             </el-dropdown-item>
+            <UserDropdownCourseItems />
             <el-dropdown-item
               divided
               class="user-dropdown-item--logout"
@@ -409,6 +429,9 @@ function handleVoiceNotes(): void {
     </template>
 
     <QuickRegisterModal v-model="showShareSiteModal" />
+    <UserDropdownCourseDialog v-if="s.isAuthenticated" />
+    <DemoModePicker v-if="s.isAuthenticated" />
+    <DemoStage v-if="s.isAuthenticated" />
   </div>
 </template>
 

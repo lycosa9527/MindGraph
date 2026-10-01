@@ -14,6 +14,7 @@ import { ElDrawer } from 'element-plus'
 import { Home, Menu, Plus } from '@lucide/vue'
 
 import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
+import I18nText from '@/components/common/I18nText.vue'
 import ShareExportModal from '@/components/panels/ShareExportModal.vue'
 import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
 import MindmateMessages from '@/components/panels/mindmate/MindmateMessages.vue'
@@ -84,12 +85,10 @@ const showWelcome = computed(
   () => !mindMate.hasMessages.value && !mindMate.isLoading.value && !mindMate.isStreaming.value
 )
 
-const welcomeMessage = computed(() =>
-  t('mindmate.welcome', {
-    username: authStore.user?.username || '',
-    agentName: displayName.value,
-  })
-)
+const welcomeMessageParams = computed(() => ({
+  username: authStore.user?.username || '',
+  agentName: displayName.value,
+}))
 
 function syncHeaderTitleFromBranding() {
   if (isTypingTitle.value) {
@@ -206,9 +205,9 @@ async function copyMessage(content: string) {
       content,
       typeof window !== 'undefined' ? window.location.host : undefined
     )
-    notify.success(t('notification.copied'))
+    notify.successKey('notification.copied')
   } catch {
-    notify.error(t('notification.copyFailed'))
+    notify.errorKey('notification.copyFailed')
   }
 }
 
@@ -366,7 +365,11 @@ onUnmounted(() => {
         <div class="text-center mt-4">
           <div class="text-lg font-medium text-gray-800">{{ displayName }}</div>
           <div class="text-sm text-gray-500 mt-1">
-            {{ welcomeMessage }}
+            <I18nText
+              k="mindmate.welcome"
+              :params="welcomeMessageParams"
+              align="center"
+            />
           </div>
         </div>
       </div>

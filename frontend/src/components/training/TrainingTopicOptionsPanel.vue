@@ -5,13 +5,13 @@ import { ElButton } from 'element-plus'
 
 import { useLanguage } from '@/composables'
 import {
+  TRAINING_TOPICS_DRAG,
+  TRAINING_TOPIC_OPTION_MAX,
   draftsFromStep,
   normalizeTopicOptions,
+  setTrainingTopicsDragLive,
   stepUsesDualTopics,
   topicOptionDraft,
-  setTrainingTopicsDragLive,
-  TRAINING_TOPIC_OPTION_MAX,
-  TRAINING_TOPICS_DRAG,
 } from '@/composables/training/trainingTopicOptions'
 import type { TrainingCourseStep, TrainingTopicOption } from '@/types/training'
 
@@ -89,18 +89,25 @@ watch(dual, () => {
       @dragend="onDragEnd"
       @click="beginEdit"
     >
-      {{ t('training.builder.topicChoices') }}
+      <I18nText k="training.builder.topicChoices" />
       <span
         v-if="count"
         class="topic-panel__count"
-      >{{ count }}</span>
+        >{{ count }}</span
+      >
     </ElButton>
     <div
       v-if="open"
       class="topic-panel__sheet"
     >
       <p class="topic-panel__hint">
-        {{ dual ? t('training.builder.topicDualHint') : t('training.builder.topicSingleHint') }}
+        <I18nText
+          v-if="dual"
+          k="training.builder.topicDualHint"
+        /><I18nText
+          v-else
+          k="training.builder.topicSingleHint"
+        />
       </p>
       <div
         v-for="(row, index) in drafts"
@@ -112,25 +119,25 @@ watch(dual, () => {
             v-model="row.item_a"
             class="topic-panel__field"
             :placeholder="t('training.itemA')"
-          >
+          />
           <input
             v-model="row.item_b"
             class="topic-panel__field"
             :placeholder="t('training.itemB')"
-          >
+          />
         </template>
         <input
           v-else
           v-model="row.prompt"
           class="topic-panel__field"
           :placeholder="t('training.builder.topicSingle')"
-        >
+        />
         <button
           type="button"
           class="topic-panel__remove"
           @click="removeRow(index)"
         >
-          {{ t('training.builder.topicRemove') }}
+          <I18nText k="training.builder.topicRemove" />
         </button>
       </div>
       <div class="topic-panel__actions">
@@ -140,14 +147,14 @@ watch(dual, () => {
           :disabled="drafts.length >= TRAINING_TOPIC_OPTION_MAX"
           @click="addRow"
         >
-          {{ t('training.addOption') }}
+          <I18nText k="training.addOption" />
         </ElButton>
         <ElButton
           size="small"
           class="admin-swiss-btn admin-swiss-btn--primary"
           @click="apply"
         >
-          {{ t('training.builder.save') }}
+          <I18nText k="training.builder.save" />
         </ElButton>
       </div>
     </div>

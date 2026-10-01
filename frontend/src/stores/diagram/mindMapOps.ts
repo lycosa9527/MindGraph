@@ -4,6 +4,7 @@ import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
 import { inferMindMapThemeIdFromNodes, resolveActiveMindMapThemeId } from '@/config/mindMapThemes'
 import { i18n } from '@/i18n'
 import type { Connection, DiagramNode, NodeStyle } from '@/types'
+import { voidMindMapAssociationsAcrossSides } from '@/utils/mindMapAssociationLine'
 import { isMindMapBranchNumberingEnabled } from '@/utils/mindMapBranchNumbering'
 import {
   isSessionMindMapV2VisualDesignActive,
@@ -11,7 +12,6 @@ import {
   resolveSessionMindMapCanvasMode,
 } from '@/utils/mindMapCanvasMode'
 import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
-import { voidMindMapAssociationsAcrossSides } from '@/utils/mindMapAssociationLine'
 import {
   buildMindMapTreeChildrenMap,
   isMindMapAssociationConnection,
@@ -63,10 +63,7 @@ import {
   rebalanceMindMapBranchesAfterL1Delete,
 } from '../specLoader'
 import type { SpecLoaderResult } from '../specLoader/types'
-import {
-  collabForeignLockBlocksAnyId,
-  emitCollabDeleteBlocked,
-} from './collabHelpers'
+import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { emitCtxEvent, getMindMapCurveExtents } from './events'
 import { remapAdornmentsAfterTreeReload } from './mindMapAdornmentOps'
 import {
@@ -564,7 +561,8 @@ function selectAndEditByPathKey(
   nodes: DiagramNode[],
   connections: Connection[],
   pathKey: string | null,
-  scheduleRecalc = true
+  scheduleRecalc = true,
+  openInlineEdit = true
 ): void {
   if (!pathKey) return
   const nodeId = findNodeIdByPathKey(nodes, connections, pathKey)
@@ -577,7 +575,14 @@ function selectAndEditByPathKey(
     }
     ctx.scheduleMindMapRecalc()
   }
-  requestMindMapNodeInlineEdit(ctx, nodeId)
+  if (openInlineEdit) {
+    requestMindMapNodeInlineEdit(ctx, nodeId)
+  }
+}
+
+type MindMapAddNodeOptions = {
+  /** Default true. Kitty/voice remote add should select only — not open the input. */
+  openInlineEdit?: boolean
 }
 
 type CommitMindMapReloadOptions = {
@@ -588,6 +593,7 @@ type CommitMindMapReloadOptions = {
    * matches post-recalc (no off-then-correct flash).
    */
   syncV2LayoutBeforeShow?: boolean
+  openInlineEdit?: boolean
 }
 
 /** Re-arm sticky Y after commitMindMapReload cleared it (two frames). */
@@ -620,7 +626,8 @@ function commitMindMapReloadWithSelect(
     result.nodes,
     result.connections,
     selectPathKey,
-    !options?.skipMindMapRecalc
+    !options?.skipMindMapRecalc,
+    options?.openInlineEdit !== false
   )
   return true
 }
@@ -635,6 +642,29 @@ function commitMindMapReload(
   // Full tree rebuild owns Y again — drop in-place Enter preserve.
   ctx.mindMapPreserveIncomingY.value = false
   ctx.mindMapPreserveIncomingYNodeId.value = null
+
+  // Same as loadFromSpec: drop leftover input session so first paint measures
+  // labels. Desktop voice often leaves edit open; Kitty add then stacks nodes.
+  const leftoverEditId = ctx.mindMapEditingNodeId.value
+  const leftoverPendingId = ctx.mindMapPendingEditNodeId.value
+  const leftoverMeasureIds = [leftoverEditId, leftoverPendingId].filter(
+    (id): id is string => typeof id === 'string' && id.length > 0
+  )
+  cancelMindMapPendingInlineEdit(ctx, 'tree-reload')
+  clearMindMapEditingNodeId(ctx)
+  if (leftoverMeasureIds.length > 0) {
+    const nextWidths = { ...ctx.mindMapNodeWidths.value }
+    const nextHeights = { ...ctx.mindMapNodeHeights.value }
+    for (const id of leftoverMeasureIds) {
+      delete nextWidths[id]
+      delete nextHeights[id]
+    }
+    ctx.mindMapNodeWidths.value = nextWidths
+    ctx.mindMapNodeHeights.value = nextHeights
+    if (leftoverMeasureIds.includes('topic')) {
+      ctx.mindMapTopicActualWidth.value = null
+    }
+  }
 
   const v2Visuals = ctxV2Visuals(ctx)
   const skipRecalc = options?.skipMindMapRecalc === true
@@ -676,7 +706,6 @@ function commitMindMapReload(
   )
 
   const previousSelected = [...ctx.selectedNodes.value]
-  const previousPendingEdit = ctx.mindMapPendingEditNodeId.value
   const previewStore = useMindMapSubgraphPreviewStore()
 
   ctx.data.value.nodes = result.nodes
@@ -759,15 +788,6 @@ function commitMindMapReload(
     ctx.data.value.nodes,
     ctx.data.value.connections ?? []
   )
-  if (previousPendingEdit) {
-    ctx.mindMapPendingEditNodeId.value = remapMindMapNodeIdAfterReload(
-      previousPendingEdit,
-      oldNodes,
-      oldConnections,
-      ctx.data.value.nodes,
-      ctx.data.value.connections ?? []
-    )
-  }
   previewStore.remapGeneratingNodeIds((oldId) =>
     remapMindMapNodeIdAfterReload(
       oldId,
@@ -792,18 +812,20 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
   function addMindMapBranch(
     side?: 'left' | 'right' | null,
     text = defaultNewNodeText(),
-    childText = defaultNewChildText()
+    childText = defaultNewChildText(),
+    options?: MindMapAddNodeOptions
   ): boolean {
     if (isDiagramPresentationReadOnly(ctx)) return false
     if (side === 'left' || side === 'right') {
-      return addMindMapBranchOnSide(side, text)
+      return addMindMapBranchOnSide(side, text, options)
     }
-    return addMindMapBranchClockwise(text, childText)
+    return addMindMapBranchClockwise(text, childText, options)
   }
 
   function addMindMapBranchClockwise(
     text = defaultNewNodeText(),
-    childText = defaultNewChildText()
+    childText = defaultNewChildText(),
+    options?: MindMapAddNodeOptions
   ): boolean {
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
@@ -822,10 +844,14 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       rightBranches,
       preserveLeftRight: true,
     })
-    return commitMindMapReloadWithSelect(ctx, result, pathKey, 'Add branch')
+    return commitMindMapReloadWithSelect(ctx, result, pathKey, 'Add branch', options)
   }
 
-  function addMindMapBranchOnSide(side: 'left' | 'right', text = defaultNewNodeText()): boolean {
+  function addMindMapBranchOnSide(
+    side: 'left' | 'right',
+    text = defaultNewNodeText(),
+    options?: MindMapAddNodeOptions
+  ): boolean {
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
 
@@ -846,10 +872,14 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       rightBranches: spec.rightBranches,
       preserveLeftRight: true,
     })
-    return commitMindMapReloadWithSelect(ctx, result, pathKey, 'Add branch')
+    return commitMindMapReloadWithSelect(ctx, result, pathKey, 'Add branch', options)
   }
 
-  function addMindMapChild(parentNodeId: string, text = defaultNewNodeText()): boolean {
+  function addMindMapChild(
+    parentNodeId: string,
+    text = defaultNewNodeText(),
+    options?: MindMapAddNodeOptions
+  ): boolean {
     if (isDiagramPresentationReadOnly(ctx)) return false
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
@@ -877,7 +907,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       rightBranches: spec.rightBranches,
       preserveLeftRight: true,
     })
-    const ok = commitMindMapReloadWithSelect(ctx, result, pathKey, 'Add child')
+    const ok = commitMindMapReloadWithSelect(ctx, result, pathKey, 'Add child', options)
     if (ok && pathKey) {
       const newChildId = findNodeIdByPathKey(result.nodes, result.connections, pathKey)
       if (newChildId) {
@@ -1206,7 +1236,8 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
   function commitMindMapSiblingInPlace(
     inserted: NonNullable<ReturnType<typeof insertMindMapSiblingInPlace>>,
-    historyLabel: string
+    historyLabel: string,
+    options?: MindMapAddNodeOptions
   ): boolean {
     if (!data.value?.nodes || !data.value?.connections) return false
 
@@ -1247,7 +1278,9 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       ctx.writeBackMindMapV2LayoutFromComputed()
     }
     ctx.scheduleMindMapRecalc()
-    requestMindMapNodeInlineEdit(ctx, inserted.newNodeId)
+    if (options?.openInlineEdit !== false) {
+      requestMindMapNodeInlineEdit(ctx, inserted.newNodeId)
+    }
     return true
   }
 
@@ -1259,7 +1292,12 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     nodeId: string,
     text = defaultNewNodeText(),
     position: 'above' | 'below' = 'below',
-    at?: { insertIndex?: number; afterNodeId?: string; parentId?: string }
+    at?: {
+      insertIndex?: number
+      afterNodeId?: string
+      parentId?: string
+      openInlineEdit?: boolean
+    }
   ): boolean {
     recordMindMapSiblingInsertAttempt({
       nodeId,
@@ -1334,7 +1372,8 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       if (!inserted) return false
       const ok = commitMindMapSiblingInPlace(
         inserted,
-        position === 'above' ? 'Add sibling above' : 'Add sibling'
+        position === 'above' ? 'Add sibling above' : 'Add sibling',
+        { openInlineEdit: at?.openInlineEdit }
       )
       if (ok) {
         recordMindMapSiblingInsertSuccess({
@@ -1425,7 +1464,10 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       { ...result, nodes },
       pathKey,
       position === 'above' ? 'Add sibling above' : 'Add sibling',
-      usedIncrementalL1Layout ? { skipMindMapRecalc: true } : undefined
+      {
+        skipMindMapRecalc: usedIncrementalL1Layout,
+        openInlineEdit: at?.openInlineEdit,
+      }
     )
     if (committed && newSiblingUid) {
       const liveNodes = data.value?.nodes ?? nodes

@@ -4,10 +4,10 @@
  */
 import { useRoute, useRouter } from 'vue-router'
 
-import { useLanguage, useNotifications } from '@/composables'
 import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
+import { useNotifications } from '@/composables/core/useNotifications'
 import { IMPORT_SPEC_KEY } from '@/config'
-import { useDiagramStore } from '@/stores'
+import { useDiagramStore } from '@/stores/diagram'
 import type { DiagramType } from '@/types'
 import { canvasPathForImportNavigation } from '@/utils/canvasBackNavigation'
 import { CMAP_PARSE_FAILED, decodeCmapToConceptMapSpec } from '@/utils/cmapImport'
@@ -67,7 +67,6 @@ function isValidImportedDiagramSpec(obj: unknown): obj is Record<string, unknown
 export function useDiagramImport() {
   const route = useRoute()
   const router = useRouter()
-  const { t } = useLanguage()
   const notify = useNotifications()
   const diagramStore = useDiagramStore()
 
@@ -81,15 +80,15 @@ export function useDiagramImport() {
     const allowedMg = allowedExtensions.includes('mg')
     const allowedCmap = allowedExtensions.includes('cmap')
     if (isCmap && !allowedCmap) {
-      notify.error(t('canvas.import.invalidFile'))
+      notify.errorKey('canvas.import.invalidFile')
       return null
     }
     if (isMg && !allowedMg) {
-      notify.error(t('canvas.import.invalidFile'))
+      notify.errorKey('canvas.import.invalidFile')
       return null
     }
     if (!isMg && !isCmap) {
-      notify.error(t('canvas.import.invalidFile'))
+      notify.errorKey('canvas.import.invalidFile')
       return null
     }
     try {
@@ -97,14 +96,14 @@ export function useDiagramImport() {
       if (isCmap) {
         const spec = decodeCmapToConceptMapSpec(buffer)
         if (!isValidImportedDiagramSpec(spec)) {
-          notify.error(t('canvas.import.invalidFile'))
+          notify.errorKey('canvas.import.invalidFile')
           return null
         }
         const cmapHintsRaw = spec._import_hints
         if (Array.isArray(cmapHintsRaw)) {
           cmapHintsRaw.forEach((hintKey) => {
             if (typeof hintKey === 'string') {
-              notify.info(t(hintKey))
+              notify.infoKey(hintKey)
             }
           })
         }
@@ -113,7 +112,7 @@ export function useDiagramImport() {
       const text = await decodeMgFileToJsonText(buffer)
       const parsed = JSON.parse(text) as unknown
       if (!isValidImportedDiagramSpec(parsed)) {
-        notify.error(t('canvas.import.invalidFile'))
+        notify.errorKey('canvas.import.invalidFile')
         return null
       }
       return parsed as Record<string, unknown>
@@ -121,11 +120,11 @@ export function useDiagramImport() {
       console.error('Import failed:', error)
       if (error instanceof Error) {
         if (error.message === MG_FILE_NOT_ENCRYPTED || error.message === CMAP_PARSE_FAILED) {
-          notify.error(t('canvas.import.invalidFile'))
+          notify.errorKey('canvas.import.invalidFile')
           return null
         }
       }
-      notify.error(t('canvas.import.parseError'))
+      notify.errorKey('canvas.import.parseError')
       return null
     }
   }
@@ -144,9 +143,9 @@ export function useDiagramImport() {
       if (!spec) return
       const diagramType = spec.type as DiagramType
       if (diagramStore.loadFromSpec(spec, diagramType)) {
-        notify.success(t('canvas.toolbar.importSuccess'))
+        notify.successKey('canvas.toolbar.importSuccess')
       } else {
-        notify.error(t('canvas.import.parseError'))
+        notify.errorKey('canvas.import.parseError')
       }
     }
     input.click()
@@ -173,7 +172,7 @@ export function useDiagramImport() {
         })
       } catch (error) {
         console.error('Import failed:', error)
-        notify.error(t('canvas.import.parseError'))
+        notify.errorKey('canvas.import.parseError')
       }
     }
     input.click()

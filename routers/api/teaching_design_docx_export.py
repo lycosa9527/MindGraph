@@ -20,8 +20,9 @@ from services.mindmate.teaching_design_flag import (
 from services.mindmate.teaching_design_llm import complete_teaching_design_spec
 from services.mindmate.teaching_design_models import TeachingDesignSpec
 from services.mindmate.teaching_design_parse import parse_teaching_design_markdown
+from services.mindmate.teaching_design_template_store import DOCX_READ_ERRORS
 from services.redis.cache.redis_org_cache import org_cache
-from services.utils.error_types import DATABASE_ERRORS, FILE_IO_ERRORS, REDIS_ERRORS
+from services.utils.error_types import DATABASE_ERRORS, REDIS_ERRORS
 from utils.auth import get_current_user
 
 _ORG_LOOKUP_ERRORS = (*REDIS_ERRORS, *DATABASE_ERRORS)
@@ -175,7 +176,7 @@ async def export_teaching_design_docx(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="teaching_design_template_missing",
         ) from exc
-    except FILE_IO_ERRORS as exc:
+    except DOCX_READ_ERRORS as exc:
         logger.exception(
             "[TeachingDesignExport] build_failed user=%s",
             user_id,

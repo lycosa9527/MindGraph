@@ -10,16 +10,20 @@ import { ElButton } from 'element-plus'
 import I18nText from '@/components/common/I18nText.vue'
 import MindmateCollabBreadcrumb from '@/components/mindmate/MindmateCollabBreadcrumb.vue'
 import MindmateCollabMessageRow from '@/components/mindmate/MindmateCollabMessageRow.vue'
+import MindmateSeminarFaces from '@/components/mindmate/MindmateSeminarFaces.vue'
 import ShareExportModal from '@/components/panels/ShareExportModal.vue'
 import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { ensureMarkdownRenderer } from '@/composables/core/lazyMarkdown'
+import { rememberJoinedCollabRoom } from '@/composables/mindmate/mindmateCollabEmbeddedBridge'
+import {
+  dropLiveCollabRoom,
+  mindmateCollabLiveCovers,
+  useLiveMindmateCollab,
+} from '@/composables/mindmate/mindmateCollabLiveSession'
 import type { MindMateMessage } from '@/composables/mindmate/useMindMate'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
-import {
-  type MindmateCollabMessage,
-  useMindmateCollab,
-} from '@/composables/mindmate/useMindmateCollab'
+import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
 import { createMindmateCollabOrgBackend } from '@/composables/social/createMindmateCollabOrgBackend'
 import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
@@ -61,7 +65,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: 'ended', reason: 'idle' | 'host' | 'left'): void
   (
-    e: 'room-meta',
+    e: 'roomMeta',
     payload: {
       title: string
       visibility: string
@@ -81,6 +85,7 @@ const normalizedCode = computed(() => formatMindmateCollabCode(props.roomCode))
 
 const {
   messages,
+  hasOlder,
   room,
   connected,
   connectionStatus,
@@ -90,16 +95,16 @@ const {
   canSend,
   canRetryConnection,
   connect,
-  disconnect,
   sendChat,
   seedRoom,
-  resetForRoomChange,
+  loadOlderMessages,
   retryConnection,
-} = useMindmateCollab(() => normalizedCode.value, {
+  readCursors,
+} = useLiveMindmateCollab(normalizedCode.value, {
   onSessionEnded: (reason) => {
+    roomEndNotified = true
     emit('ended', reason)
   },
-  embedded: props.embedded,
   seedMessages: () => props.seedMessages ?? [],
 })
 
@@ -126,9 +131,12 @@ const mentionCandidates = computed((): MindmateMentionCandidate[] => {
 })
 
 let joinGeneration = 0
+let roomEndNotified = false
+const stoppingRoom = ref(false)
 
 const inputText = ref('')
 const joining = ref(false)
+const followTranscript = ref(true)
 type CollabRecipientMode = 'mindmate' | 'all'
 const recipientMode = ref<CollabRecipientMode>('all')
 const showShareModal = ref(false)
@@ -162,6 +170,8 @@ async function parseJoinErrorDetail(response: Response): Promise<string> {
   }
 }
 
+let viewActive = true
+
 const headerSubtitle = computed(() => {
   if (room.value?.visibility === 'network') {
     return ''
@@ -175,11 +185,20 @@ async function joinRoomAndConnect(): Promise<void> {
     return
   }
   if (wasMindmateCollabCodeRecentlyEnded(code)) {
-    emit('ended', 'host')
+    dropLiveCollabRoom(code)
+    if (viewActive) {
+      emit('ended', 'host')
+    }
+    return
+  }
+  if (mindmateCollabLiveCovers(code)) {
+    rememberJoinedCollabRoom(code)
     return
   }
   const generation = ++joinGeneration
-  joining.value = true
+  if (viewActive) {
+    joining.value = true
+  }
   try {
     const response = await authFetch(`/api/mindmate/collab/join?code=${encodeURIComponent(code)}`, {
       method: 'POST',
@@ -191,15 +210,21 @@ async function joinRoomAndConnect(): Promise<void> {
       const hostJustEnded = wasMindmateCollabCodeRecentlyEnded(code)
       if (response.status === 404 || hostJustEnded) {
         markMindmateCollabCodeEnded(code)
+        dropLiveCollabRoom(code)
         teardownMindmateCollabClient(code, { removeFromHistory: true })
-        emit('ended', 'host')
-        if (!hostJustEnded) {
-          notify.error(await parseJoinErrorDetail(response))
+        if (viewActive) {
+          emit('ended', 'host')
+          if (!hostJustEnded) {
+            notify.error(await parseJoinErrorDetail(response))
+          }
         }
         return
       }
-      notify.error(await parseJoinErrorDetail(response))
-      emit('ended', 'left')
+      dropLiveCollabRoom(code)
+      if (viewActive) {
+        notify.error(await parseJoinErrorDetail(response))
+        emit('ended', 'left')
+      }
       return
     }
     const data = (await response.json()) as Record<string, unknown>
@@ -223,29 +248,29 @@ async function joinRoomAndConnect(): Promise<void> {
       ownerId: Number(data.owner_user_id || 0),
     })
     connect()
+    rememberJoinedCollabRoom(code)
   } catch {
-    notify.errorKey('mindgraphLanding.networkErrorJoin')
-    emit('ended', 'left')
+    dropLiveCollabRoom(code)
+    if (viewActive) {
+      notify.errorKey('mindgraphLanding.networkErrorJoin')
+      emit('ended', 'left')
+    }
   } finally {
-    joining.value = false
+    if (viewActive) {
+      joining.value = false
+    }
   }
 }
 
 onUnmounted(() => {
-  joinGeneration += 1
+  viewActive = false
 })
 
 onMounted(() => {
   void ensureMarkdownRenderer()
+  followTranscript.value = true
   void joinRoomAndConnect()
-})
-
-watch(normalizedCode, (code, prev) => {
-  if (code && code !== prev) {
-    disconnect()
-    resetForRoomChange()
-    void joinRoomAndConnect()
-  }
+  void scrollTranscriptToBottom()
 })
 
 watch(
@@ -259,7 +284,7 @@ watch(
         owner_user_id: value.ownerId,
         visibility: value.visibility,
       })
-      emit('room-meta', {
+      emit('roomMeta', {
         title: value.title,
         visibility: value.visibility,
         sessionId: value.sessionId,
@@ -283,28 +308,32 @@ watch(
 
 async function stopRoom() {
   const sessionId = room.value?.sessionId
-  if (!sessionId) {
+  if (!sessionId || stoppingRoom.value) {
     return
   }
   const confirmed = await confirmMindmateCollabStop(t)
   if (!confirmed) {
     return
   }
+  stoppingRoom.value = true
   const code = normalizedCode.value
-  disconnect()
-  teardownMindmateCollabClient(code, { removeFromHistory: true })
-  emit('ended', 'host')
-  void requestMindmateCollabStop(sessionId)
-    .then((ok) => {
-      if (ok) {
-        notify.successKey('mindmate.collabStopped')
-      } else {
-        notify.errorKey('collab.endFailed')
-      }
-    })
-    .catch(() => {
+  try {
+    const ok = await requestMindmateCollabStop(sessionId)
+    if (!ok) {
       notify.errorKey('collab.endFailed')
-    })
+      return
+    }
+    dropLiveCollabRoom(code)
+    if (roomEndNotified) {
+      return
+    }
+    emit('ended', 'host')
+    notify.successKey('mindmate.collabStopped')
+  } catch {
+    notify.errorKey('collab.endFailed')
+  } finally {
+    stoppingRoom.value = false
+  }
 }
 
 function handleSend() {
@@ -312,6 +341,7 @@ function handleSend() {
   if (!trimmed || !canSend.value || joining.value) {
     return
   }
+  followTranscript.value = true
   const toMindmate =
     recipientMode.value === 'mindmate' ||
     contentMentionsMindmate(trimmed, [mindmateAgentName.value])
@@ -377,6 +407,7 @@ const transcript = computed(() =>
 )
 
 const messagesScrollEl = ref<HTMLElement | null>(null)
+let programmaticScroll = false
 
 function isMessagesNearBottom(): boolean {
   const el = messagesScrollEl.value
@@ -391,15 +422,64 @@ function scrollMessagesToBottom(): void {
   if (!el) {
     return
   }
+  programmaticScroll = true
   el.scrollTop = el.scrollHeight
 }
 
-watch(messages, async () => {
-  const stickToBottom = isMessagesNearBottom()
+function releaseProgrammaticScroll(): void {
+  requestAnimationFrame(() => {
+    programmaticScroll = false
+  })
+}
+
+async function scrollTranscriptToBottom(): Promise<void> {
   await nextTick()
-  if (stickToBottom) {
+  scrollMessagesToBottom()
+  requestAnimationFrame(() => {
     scrollMessagesToBottom()
+    releaseProgrammaticScroll()
+  })
+}
+
+function onMessagesScroll(): void {
+  if (programmaticScroll) {
+    return
   }
+  followTranscript.value = isMessagesNearBottom()
+  const el = messagesScrollEl.value
+  if (!el || el.scrollTop >= 80 || el.scrollHeight <= el.clientHeight) {
+    return
+  }
+  if (!hasOlder.value) {
+    return
+  }
+  void loadOlderKeepingPlace()
+}
+
+async function loadOlderKeepingPlace(): Promise<void> {
+  const el = messagesScrollEl.value
+  if (!el) {
+    return
+  }
+  const beforeHeight = el.scrollHeight
+  const beforeTop = el.scrollTop
+  followTranscript.value = false
+  await loadOlderMessages()
+  await nextTick()
+  const grown = el.scrollHeight - beforeHeight
+  if (grown <= 0) {
+    return
+  }
+  programmaticScroll = true
+  el.scrollTop = beforeTop + grown
+  releaseProgrammaticScroll()
+}
+
+watch(messages, () => {
+  if (!followTranscript.value) {
+    return
+  }
+  void scrollTranscriptToBottom()
 })
 </script>
 
@@ -425,17 +505,21 @@ watch(messages, async () => {
           {{ headerSubtitle }}
         </p>
       </div>
-      <ElButton
-        v-if="isHost"
-        class="mindmate-collab-room__end-btn shrink-0"
-        size="small"
-        @click="stopRoom"
-      >
-        <I18nText
-          k="mindmate.collabEndSeminar"
-          dense
-        />
-      </ElButton>
+      <div class="flex items-center gap-2 shrink-0">
+        <MindmateSeminarFaces />
+        <ElButton
+          v-if="isHost"
+          class="mindmate-collab-room__end-btn shrink-0"
+          size="small"
+          :disabled="stoppingRoom"
+          @click="stopRoom"
+        >
+          <I18nText
+            k="mindmate.collabEndSeminar"
+            dense
+          />
+        </ElButton>
+      </div>
     </header>
 
     <div
@@ -472,6 +556,7 @@ watch(messages, async () => {
       <div
         ref="messagesScrollEl"
         class="mindmate-collab-room__messages-scroll"
+        @scroll="onMessagesScroll"
       >
         <div class="mindmate-collab-room__messages-inner">
           <div
@@ -492,6 +577,8 @@ watch(messages, async () => {
             :is-last-assistant="row.isLastAssistant"
             :regenerate-disabled="!canSend || joining || isStreaming"
             :feedback="feedbackByKey[row.key]"
+            :session-id="room?.sessionId || ''"
+            :read-cursors="readCursors"
             @regenerate="handleRegenerate(row.userPrompt)"
             @share="showShareModal = true"
             @feedback="handleFeedback(row.key, $event)"
@@ -578,8 +665,8 @@ watch(messages, async () => {
 .mindmate-collab-room__messages-inner {
   width: 100%;
   min-width: 0;
-  max-width: none;
-  margin: 0;
+  max-width: min(680px, 100%);
+  margin: 0 auto;
   padding: 1rem 1.25rem 1.5rem;
   box-sizing: border-box;
   display: flex;

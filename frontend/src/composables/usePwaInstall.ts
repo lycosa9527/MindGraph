@@ -3,7 +3,7 @@
  */
 import { computed } from 'vue'
 
-import { useNotifications } from '@/composables'
+import { useNotifications } from '@/composables/core/useNotifications'
 import {
   canShowPwaInstallUi,
   getPwaInstallFeedback,

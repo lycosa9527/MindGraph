@@ -40,8 +40,12 @@ describe('mind map classroom remote', () => {
     expect(readSrc('src/composables/canvas/useClassroomRemotePosition.ts')).toContain(
       'classroom_remote_visible'
     )
+    expect(remote).toContain('data-testid="mindmap-classroom-remote-resize"')
+    expect(readSrc('src/composables/canvas/useClassroomRemotePosition.ts')).toContain(
+      'onResizePointerDown'
+    )
     expect(readSrc('src/canvas-ribbon/mindMapClassroomRemote.css')).toContain(
-      'grid-template-columns: repeat(3, auto)'
+      'grid-template-columns: repeat(3, minmax(0, 1fr))'
     )
   })
 

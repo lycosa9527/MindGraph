@@ -320,6 +320,7 @@ const open = computed({
                     block
                     variant="plain"
                     :options="subjectFilterOptions"
+                    all-label-key="showcase.publishModal.selectSubject"
                     :all-label="t('showcase.publishModal.selectSubject')"
                     :include-all="false"
                   />
@@ -334,6 +335,7 @@ const open = computed({
                     block
                     variant="plain"
                     :options="gradeFilterOptions"
+                    all-label-key="showcase.publishModal.selectGrade"
                     :all-label="t('showcase.publishModal.selectGrade')"
                     :include-all="false"
                   />
@@ -354,6 +356,7 @@ const open = computed({
                     block
                     variant="plain"
                     :options="diagramTypeFilterOptions"
+                    all-label-key="showcase.publishModal.selectDiagramType"
                     :all-label="t('showcase.publishModal.selectDiagramType')"
                     :include-all="false"
                   />

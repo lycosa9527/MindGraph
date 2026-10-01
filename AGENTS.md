@@ -74,17 +74,20 @@ Default port: **9527**. Alembic migrations run on startup. For Redis/PostgreSQL/
 
 ## Domain notes
 
-### Sidebar quotes
+### Sidebar account chip
 
-Ship as committed assets (no network at build/dev):
+The line under the user name is the organization display name, or the internal name when there is no display name. An account with no organization leaves the line blank. Poem text and daily token usage are not shown, and there is no setting to switch them back.
+
+### Sidebar quote assets
+
+Quote JSON still ships as committed assets (no network at build/dev). The account chip does not render it.
 
 - `frontend/src/assets/sidebar-quotes-zh.json`, `sidebar-quotes-en.json`
 - `frontend/scripts/vendor/sidebar-quotes/` (wisdom-quotes snapshots + `extracted/echoes-*.json`)
 - `npm run check:sidebar-quotes` verifies they exist (`prebuild` + CI `check:scripts`)
 - Refresh wisdom-quotes: `npm run import:sidebar-quotes -- --refresh`
 - Re-extract echoes (rare): `--refresh-echoes` then `--extract-echoes` (normal import uses frozen `extracted/` JSON only)
-- Quote rotation (UI): new quote on login, full page refresh, UI locale change, and every 5 minutes while authenticated; same quote during SPA navigation within that window; timer uses `shownAt` in `sessionStorage` and pauses when the tab is hidden
-- Lazy load (runtime): authenticated sidebar only; locale bucket (`zh` vs `en`) resolved via dynamic `import('…json?url')` + `fetch()` in `sidebarQuotePicker.ts` — JSON ships as static assets, not megabyte JS chunks; PWA workbox `globIgnores` excludes `sidebar-quotes-*` from precache
+- PWA workbox `globIgnores` excludes `sidebar-quotes-*` from precache
 
 Extra frontend vitest (not in default CI job): `tests/import-sidebar-quotes.spec.ts`, `tests/useSidebarPhilosophyQuote.spec.ts`, `tests/loadSidebarQuotePool.spec.ts`.
 

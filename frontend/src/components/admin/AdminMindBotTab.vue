@@ -129,7 +129,7 @@ async function confirmMoveBot(): Promise<void> {
   const row = moveSourceRow.value
   const oid = moveTargetOrgId.value
   if (row == null || oid == null) {
-    notify.error(t('admin.mindbot.moveError'))
+    notify.errorKey('admin.mindbot.moveError')
     return
   }
   moveSubmitting.value = true
@@ -138,11 +138,11 @@ async function confirmMoveBot(): Promise<void> {
       configId: row.id,
       body: { organization_id: oid },
     })
-    notify.success(t('admin.mindbot.moveSuccess'))
+    notify.successKey('admin.mindbot.moveSuccess')
     moveDialogVisible.value = false
     await loadConfigs(true)
   } catch {
-    notify.error(t('admin.mindbot.moveError'))
+    notify.errorKey('admin.mindbot.moveError')
   } finally {
     moveSubmitting.value = false
   }
@@ -250,7 +250,7 @@ defineExpose({
     v-if="!featureMindbot"
     class="text-sm text-gray-600 dark:text-gray-400"
   >
-    {{ t('admin.feature.mindbotHint') }}
+    <I18nText k="admin.feature.mindbotHint" />
   </div>
   <div
     v-else
@@ -265,10 +265,10 @@ defineExpose({
         <template #header>
           <div class="min-w-0 space-y-1">
             <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
-              {{ t('admin.mindbot.title') }}
+              <I18nText k="admin.mindbot.title" />
             </span>
             <p class="text-xs leading-relaxed text-gray-500 dark:text-gray-400 font-normal">
-              {{ t('admin.mindbot.introHttpOnly') }}
+              <I18nText k="admin.mindbot.introHttpOnly" />
             </p>
           </div>
         </template>
@@ -278,7 +278,7 @@ defineExpose({
           class="rounded-md border border-dashed border-gray-200 dark:border-gray-600 py-14 px-4 text-center"
         >
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            {{ t('admin.mindbot.emptyState') }}
+            <I18nText k="admin.mindbot.emptyState" />
           </p>
         </div>
         <ElTable
@@ -290,9 +290,11 @@ defineExpose({
         >
           <el-table-column
             prop="organization_id"
-            :label="t('admin.mindbot.colOrg')"
             min-width="140"
           >
+            <template #header>
+              <I18nText k="admin.mindbot.colOrg" />
+            </template>
             <template #default="{ row }">
               <span class="text-gray-900 dark:text-gray-100">{{
                 orgNameById(row.organization_id)
@@ -301,18 +303,22 @@ defineExpose({
           </el-table-column>
           <el-table-column
             prop="bot_label"
-            :label="t('admin.mindbot.colBotLabel')"
             min-width="120"
           >
+            <template #header>
+              <I18nText k="admin.mindbot.colBotLabel" />
+            </template>
             <template #default="{ row }">
               <span class="text-gray-700 dark:text-gray-300">{{ row.bot_label || '—' }}</span>
             </template>
           </el-table-column>
           <el-table-column
             prop="dingtalk_robot_code"
-            :label="t('admin.mindbot.colRobot')"
             min-width="130"
           >
+            <template #header>
+              <I18nText k="admin.mindbot.colRobot" />
+            </template>
             <template #default="{ row }">
               <code class="text-xs font-mono text-gray-800 dark:text-gray-200">{{
                 maskSensitiveDisplay(row.dingtalk_robot_code)
@@ -321,24 +327,34 @@ defineExpose({
           </el-table-column>
           <el-table-column
             prop="is_enabled"
-            :label="t('admin.mindbot.colEnabled')"
             width="100"
           >
+            <template #header>
+              <I18nText k="admin.mindbot.colEnabled" />
+            </template>
             <template #default="{ row }">
               <el-tag
                 :type="row.is_enabled ? 'success' : 'info'"
                 size="small"
                 effect="plain"
               >
-                {{ row.is_enabled ? t('admin.enabled') : t('admin.disabled') }}
+                <I18nText
+                  v-if="row.is_enabled"
+                  k="admin.enabled"
+                /><I18nText
+                  v-else
+                  k="admin.disabled"
+                />
               </el-tag>
             </template>
           </el-table-column>
           <el-table-column
-            :label="t('admin.library.colActions')"
             width="300"
             fixed="right"
           >
+            <template #header>
+              <I18nText k="admin.library.colActions" />
+            </template>
             <template #default="{ row }">
               <div class="flex flex-wrap items-center gap-2">
                 <el-button
@@ -348,7 +364,7 @@ defineExpose({
                   class="mindbot-pill mindbot-pill--table-edit"
                   @click="openEdit(row as MindbotConfigRow)"
                 >
-                  {{ t('admin.mindbot.edit') }}
+                  <I18nText k="admin.mindbot.edit" />
                 </el-button>
                 <I18nTooltip
                   :disabled="canMoveBot(row as MindbotConfigRow)"
@@ -364,7 +380,7 @@ defineExpose({
                       :disabled="!canMoveBot(row as MindbotConfigRow)"
                       @click="openMoveDialog(row as MindbotConfigRow)"
                     >
-                      {{ t('admin.mindbot.move') }}
+                      <I18nText k="admin.mindbot.move" />
                     </el-button>
                   </span>
                 </I18nTooltip>
@@ -375,7 +391,7 @@ defineExpose({
                   class="mindbot-pill mindbot-pill--table-delete"
                   @click="removeRow(row as MindbotConfigRow)"
                 >
-                  {{ t('admin.mindbot.delete') }}
+                  <I18nText k="admin.mindbot.delete" />
                 </el-button>
               </div>
             </template>
@@ -392,10 +408,10 @@ defineExpose({
         <template #header>
           <div class="min-w-0 space-y-1">
             <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
-              {{ t('admin.mindbot.title') }}
+              <I18nText k="admin.mindbot.title" />
             </span>
             <p class="text-xs leading-relaxed text-gray-500 dark:text-gray-400 font-normal">
-              {{ t('admin.mindbot.managerReadOnlyIntro') }}
+              <I18nText k="admin.mindbot.managerReadOnlyIntro" />
             </p>
           </div>
         </template>
@@ -412,7 +428,7 @@ defineExpose({
             class="rounded-md border border-dashed border-gray-200 dark:border-gray-600 py-14 px-4 text-center"
           >
             <p class="text-sm text-gray-500 dark:text-gray-400">
-              {{ t('admin.mindbot.managerNoConfig') }}
+              <I18nText k="admin.mindbot.managerNoConfig" />
             </p>
           </div>
           <ElTable
@@ -424,28 +440,32 @@ defineExpose({
           >
             <el-table-column
               prop="bot_label"
-              :label="t('admin.mindbot.colBotLabel')"
               min-width="120"
             >
+              <template #header>
+                <I18nText k="admin.mindbot.colBotLabel" />
+              </template>
               <template #default="{ row }">
                 <span class="text-gray-700 dark:text-gray-300">{{ row.bot_label || '—' }}</span>
               </template>
             </el-table-column>
             <el-table-column
               prop="dingtalk_robot_code"
-              :label="t('admin.mindbot.colRobot')"
               min-width="130"
             >
+              <template #header>
+                <I18nText k="admin.mindbot.colRobot" />
+              </template>
               <template #default="{ row }">
                 <code class="text-xs font-mono text-gray-800 dark:text-gray-200">{{
                   maskSensitiveDisplay(row.dingtalk_robot_code)
                 }}</code>
               </template>
             </el-table-column>
-            <el-table-column
-              :label="t('admin.mindbot.schoolCallbackUrl')"
-              min-width="260"
-            >
+            <el-table-column min-width="260">
+              <template #header>
+                <I18nText k="admin.mindbot.schoolCallbackUrl" />
+              </template>
               <template #default="{ row }">
                 <div class="flex items-center gap-2 min-w-0">
                   <code class="text-xs font-mono text-gray-600 dark:text-gray-400 truncate">
@@ -457,23 +477,31 @@ defineExpose({
                     class="mindbot-pill shrink-0"
                     @click="copyUrl(buildCallbackUrlByToken(row.public_callback_token))"
                   >
-                    {{ t('admin.mindbot.copyUrl') }}
+                    <I18nText k="admin.mindbot.copyUrl" />
                   </el-button>
                 </div>
               </template>
             </el-table-column>
             <el-table-column
               prop="is_enabled"
-              :label="t('admin.mindbot.colEnabled')"
               width="100"
             >
+              <template #header>
+                <I18nText k="admin.mindbot.colEnabled" />
+              </template>
               <template #default="{ row }">
                 <el-tag
                   :type="row.is_enabled ? 'success' : 'info'"
                   size="small"
                   effect="plain"
                 >
-                  {{ row.is_enabled ? t('admin.enabled') : t('admin.disabled') }}
+                  <I18nText
+                    v-if="row.is_enabled"
+                    k="admin.enabled"
+                  /><I18nText
+                    v-else
+                    k="admin.disabled"
+                  />
                 </el-tag>
               </template>
             </el-table-column>

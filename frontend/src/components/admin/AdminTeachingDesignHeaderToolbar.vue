@@ -4,15 +4,13 @@
  */
 import { computed } from 'vue'
 
-import { Upload } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
 
-import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
-import { useLanguage } from '@/composables'
+import { Upload } from '@element-plus/icons-vue'
 
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useAdminPanelStore } from '@/stores'
 
-const { t } = useLanguage()
 const adminPanel = useAdminPanelStore()
 const { teachingDesignToolbar } = storeToRefs(adminPanel)
 const { emit: emitAdminEvent } = useAdminEventBus('AdminTeachingDesignHeaderToolbar')
@@ -50,7 +48,7 @@ function onRestore(): void {
       :disabled="uploading"
       @click="onRestore"
     >
-      {{ t('admin.teachingDesignTemplate.restore') }}
+      <I18nText k="admin.teachingDesignTemplate.restore" />
     </el-button>
     <el-button
       v-if="canEdit"
@@ -62,7 +60,7 @@ function onRestore(): void {
       @click="onUpload"
     >
       <el-icon class="mr-1"><Upload /></el-icon>
-      {{ t('admin.teachingDesignTemplate.upload') }}
+      <I18nText k="admin.teachingDesignTemplate.upload" />
     </el-button>
   </div>
 </template>

@@ -51,8 +51,8 @@ async function loadPlayer(): Promise<void> {
       return
     }
     const [TCPlayer] = await Promise.all([
-      import(/* @vite-ignore */ 'tcplayer.js').then((mod) => mod.default),
-      import(/* @vite-ignore */ 'tcplayer.js/dist/tcplayer.min.css'),
+      import('tcplayer.js').then((mod) => mod.default),
+      import('tcplayer.js/dist/tcplayer.min.css'),
     ])
     if (gen !== loadGen) {
       return
@@ -67,7 +67,7 @@ async function loadPlayer(): Promise<void> {
     })
   } catch {
     if (gen === loadGen) {
-      notify.error(t('admin.vod.playFailed'))
+      notify.errorKey('admin.vod.playFailed')
     }
   } finally {
     if (gen === loadGen) {
@@ -103,7 +103,7 @@ onBeforeUnmount(() => {
       v-if="loading"
       class="text-sm text-stone-500"
     >
-      {{ t('common.loading') }}
+      <I18nText k="common.loading" />
     </p>
     <video
       v-if="playerSlot"

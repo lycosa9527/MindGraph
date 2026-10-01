@@ -52,7 +52,6 @@ from utils.auth.api_key_usage_stats import (
     count_successful_endpoint_calls,
 )
 from utils.auth.school_tier import school_dashboard_quotas_payload
-from utils.auth.role_constants import ROLE_STUDENT
 
 from ..dependencies import (
     get_language_dependency,
@@ -132,7 +131,7 @@ async def get_stats_admin(
     _lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """Get system statistics (ADMIN ONLY)"""
-    total_users = (await db.execute(select(_sql_count(User.id)).where(User.role != ROLE_STUDENT))).scalar_one()
+    total_users = (await db.execute(select(_sql_count(User.id)))).scalar_one()
     total_orgs = (await db.execute(select(_sql_count(Organization.id)))).scalar_one()
 
     # Use Beijing time for "today" calculations
@@ -144,12 +143,7 @@ async def get_stats_admin(
     week_ago = (beijing_today_start - timedelta(days=7)).astimezone(timezone.utc).replace(tzinfo=None)
     month_ago = (beijing_today_start - timedelta(days=30)).astimezone(timezone.utc).replace(tzinfo=None)
     recent_registrations = (
-        await db.execute(
-            select(_sql_count(User.id)).where(
-                User.created_at >= today_start,
-                User.role != ROLE_STUDENT,
-            )
-        )
+        await db.execute(select(_sql_count(User.id)).where(User.created_at >= today_start))
     ).scalar_one()
 
     # Token usage stats (this week) - PER USER and PER ORGANIZATION tracking!
@@ -260,19 +254,13 @@ async def get_school_stats(
     week_ago = (beijing_today_start - timedelta(days=7)).astimezone(timezone.utc).replace(tzinfo=None)
 
     total_users = (
-        await db.execute(
-            select(_sql_count(User.id)).where(
-                User.organization_id == effective_org_id,
-                User.role != ROLE_STUDENT,
-            )
-        )
+        await db.execute(select(_sql_count(User.id)).where(User.organization_id == effective_org_id))
     ).scalar_one()
     recent_registrations = (
         await db.execute(
             select(_sql_count(User.id)).where(
                 User.organization_id == effective_org_id,
                 User.created_at >= today_start,
-                User.role != ROLE_STUDENT,
             )
         )
     ).scalar_one()

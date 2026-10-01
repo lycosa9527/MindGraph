@@ -4,9 +4,10 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { useLanguage, useNotifications } from '@/composables'
 import { loadThinkingCoinsWallet } from '@/composables/auth/fetchThinkingCoinsWallet'
 import { ledgerItemLabel as resolveLedgerItemLabel } from '@/composables/auth/thinkingCoinsLedgerLabel'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
 import type {
   AdminThinkingCoinTask,
   ThinkingCoinLedgerResponse,
@@ -38,7 +39,11 @@ export function useThinkingCoins() {
     }
   }
 
-  async function fetchLedger(page = 1, limit = 20, append = false): Promise<ThinkingCoinLedgerResponse> {
+  async function fetchLedger(
+    page = 1,
+    limit = 20,
+    append = false
+  ): Promise<ThinkingCoinLedgerResponse> {
     const data = await apiRequestJson<ThinkingCoinLedgerResponse>(
       `/api/auth/thinking-coins/ledger?page=${page}&limit=${limit}`,
       { method: 'GET' }
@@ -85,7 +90,7 @@ export function useThinkingCoins() {
           method: 'POST',
         }
       )
-      notify.success(t('thinkingCoins.checkInSuccess'))
+      notify.successKey('thinkingCoins.checkInSuccess')
       await fetchWallet()
     }
   }

@@ -4,13 +4,11 @@
  */
 import { ref } from 'vue'
 
-import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useVoiceNotesGenerate } from '@/composables/voiceNotes/useVoiceNotesGenerate'
 import { useAuthStore } from '@/stores'
 
 export function useMobileVoiceNotesSession() {
-  const { t } = useLanguage()
   const notify = useNotifications()
   const authStore = useAuthStore()
   const generate = useVoiceNotesGenerate()
@@ -19,7 +17,7 @@ export function useMobileVoiceNotesSession() {
 
   async function enterPage(): Promise<void> {
     if (!authStore.isAuthenticated) {
-      notify.warning(t('auth.voiceNotes.loginRequired'))
+      notify.warningKey('auth.voiceNotes.loginRequired')
       return
     }
     pageOpen.value = true

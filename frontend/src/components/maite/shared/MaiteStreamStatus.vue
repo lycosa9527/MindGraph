@@ -44,13 +44,25 @@ const previewText = computed(() => {
 </script>
 
 <template>
-  <div v-if="streaming" class="maite-stream-status">
+  <div
+    v-if="streaming"
+    class="maite-stream-status"
+  >
     <span class="maite-stream-status__dot" />
     <span class="maite-stream-status__label">{{ label }}</span>
-    <button type="button" class="maite-stream-status__stop" @click="emit('stop')">
-      {{ t('maite.stream.stop') }}
+    <button
+      type="button"
+      class="maite-stream-status__stop"
+      @click="emit('stop')"
+    >
+      <I18nText k="maite.stream.stop" />
     </button>
-    <p v-if="previewText" class="maite-stream-status__preview">{{ previewText }}</p>
+    <p
+      v-if="previewText"
+      class="maite-stream-status__preview"
+    >
+      {{ previewText }}
+    </p>
   </div>
 </template>
 

@@ -36,6 +36,7 @@ import { mindMapLiveSpecExtrasFingerprint } from '@/utils/mindMapLiveSpecExtras'
 
 import { useLanguage } from '../core/useLanguage'
 import { publishCanvasSessionDirty } from './canvasSessionDirty'
+import { saveFlushReasonForSkippedAutoSave } from './diagramAutoSaveSkip'
 import { canPerformDiagramSave, shouldAutoSaveAfterLlmModelCompleted } from './diagramSaveFeedback'
 import { useDiagramSpecForPersist } from './useDiagramSpecForSave'
 
@@ -375,11 +376,11 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
         return { saved: true, reason: 'success', diagramId: result.diagramId }
       }
 
-      if (result.action === 'skipped' && result.error === 'No available slots') {
-        return { saved: false, reason: 'skipped_slots_full' }
-      }
-      if (result.action === 'skipped' && result.error === 'Diagram is empty/unmodified') {
-        return { saved: false, reason: 'skipped_empty' }
+      if (result.action === 'skipped') {
+        const skipReason = saveFlushReasonForSkippedAutoSave(result.error)
+        if (skipReason) {
+          return { saved: false, reason: skipReason }
+        }
       }
       if (!authStore.isAuthenticated) {
         cancelDebounce()

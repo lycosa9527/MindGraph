@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 
-import { useLanguage, useNotifications } from '@/composables'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
 import { playTrainingVod } from '@/utils/trainingVodApi'
 import { playVodMedia } from '@/utils/vodApi'
 
@@ -123,8 +124,8 @@ async function loadPlayer(): Promise<void> {
     await nextTick()
     if (gen !== loadGen) return
     const [TCPlayer] = await Promise.all([
-      import(/* @vite-ignore */ 'tcplayer.js').then((mod) => mod.default),
-      import(/* @vite-ignore */ 'tcplayer.js/dist/tcplayer.min.css'),
+      import('tcplayer.js').then((mod) => mod.default),
+      import('tcplayer.js/dist/tcplayer.min.css'),
     ])
     if (gen !== loadGen) return
     player = TCPlayer(playerId, {
@@ -143,7 +144,7 @@ async function loadPlayer(): Promise<void> {
     fitPlayer()
   } catch {
     if (gen === loadGen) {
-      notify.error(t('admin.vod.playFailed'))
+      notify.errorKey('admin.vod.playFailed')
     }
   } finally {
     if (gen === loadGen) loading.value = false
@@ -188,7 +189,7 @@ onBeforeUnmount(() => {
         class="vod-player__skip"
         @click="onSkip"
       >
-        {{ t('training.vod.skip') }}
+        <I18nText k="training.vod.skip" />
       </button>
       <button
         v-if="canNext"
@@ -196,14 +197,14 @@ onBeforeUnmount(() => {
         class="vod-player__next"
         @click="emit('next')"
       >
-        {{ t('training.vod.next') }}
+        <I18nText k="training.vod.next" />
       </button>
     </div>
     <p
       v-if="loading"
       class="vod-player__hint"
     >
-      {{ t('common.loading') }}
+      <I18nText k="common.loading" />
     </p>
     <div
       ref="stageRef"

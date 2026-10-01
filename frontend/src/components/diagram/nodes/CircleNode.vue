@@ -53,6 +53,13 @@ const contextBorderPx = 2
  */
 const CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH = 200
 
+/**
+ * Context labels use `px-2` on a border-box display, so that padding sits inside max-width.
+ * Layout treats CONTEXT_MAX_TEXT_WIDTH as the text column; add the padding back here or a
+ * string that still fits the column wraps and leaves one CJK glyph on the next line.
+ */
+const CONTEXT_LABEL_PADDING_X = 16
+
 /** Pinia layout sizes from `.diagram-node-md` (post–KaTeX) instead of the fixed-size root circle. */
 const useIntrinsicMdMeasure =
   props.data.diagramType === 'circle_map' ||
@@ -211,7 +218,7 @@ const textMaxWidth = computed(() => {
   if (isCapsuleNode.value) {
     return capsuleWidth.value - 2 * contextBorderPx
   }
-  return CONTEXT_MAX_TEXT_WIDTH
+  return CONTEXT_MAX_TEXT_WIDTH + CONTEXT_LABEL_PADDING_X
 })
 
 // Circle Map colors matching old JS bubble-map-renderer.js THEME
@@ -399,10 +406,7 @@ function handleBranchMovePointerUp(): void {
         :position="Position.Bottom"
       />
     </template>
-    <div
-      class="circle-node__text-wrapper"
-      :class="{ 'circle-node__text-wrapper--nowrap': diagramStore.type === 'double_bubble_map' }"
-    >
+    <div class="circle-node__text-wrapper">
       <InlineEditableText
         :text="data.label || ''"
         :node-id="id"
@@ -414,8 +418,8 @@ function handleBranchMovePointerUp(): void {
         :text-class="isTopicNode ? 'py-2' : 'px-2 py-1'"
         :full-width="isTopicNode && !isCircularTopic"
         :center-block-in-circle="isCircularTopic"
-        :no-wrap="!!data.style?.noWrap"
-        auto-wrap
+        :no-wrap="isDoubleBubbleMap || !!data.style?.noWrap"
+        :auto-wrap="!isDoubleBubbleMap"
         :truncate="false"
         render-markdown
         @save="handleTextSave"
@@ -445,10 +449,6 @@ function handleBranchMovePointerUp(): void {
   justify-content: center;
   align-items: center;
   min-width: 0;
-}
-
-.circle-node__text-wrapper--nowrap {
-  white-space: nowrap;
 }
 
 .context-circle:hover {

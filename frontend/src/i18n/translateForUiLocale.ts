@@ -32,3 +32,15 @@ export function translateForUiLocale(
   }
   return String(globalTForLocale(key, safeParams, { locale: 'en' }))
 }
+
+/** True when the key exists in the locale catalog, or in English while that locale is still loading. */
+export function uiMessageExists(key: string, locale: LocaleCode): boolean {
+  void localeCatalogRevision.value
+  const locales: LocaleCode[] = locale === 'en' ? ['en'] : [locale, 'en']
+  for (const code of locales) {
+    if (!isLocaleLoaded(code)) continue
+    const bundle = i18n.global.getLocaleMessage(code) as Record<string, unknown>
+    if (bundle && Object.prototype.hasOwnProperty.call(bundle, key)) return true
+  }
+  return false
+}

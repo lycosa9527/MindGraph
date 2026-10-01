@@ -8,15 +8,15 @@ import { useQueryClient } from '@tanstack/vue-query'
 
 import AdminTeachingDesignTemplateEditDialog from '@/components/admin/AdminTeachingDesignTemplateEditDialog.vue'
 import AdminTeachingDesignTemplatePreviewDialog from '@/components/admin/AdminTeachingDesignTemplatePreviewDialog.vue'
-import { useAdminAccess } from '@/composables/admin/useAdminAccess'
-import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
+import { useLanguage, useNotifications } from '@/composables'
 import {
+  type TeachingDesignTemplateRow,
   restoreTeachingDesignTemplate,
   uploadTeachingDesignTemplate,
   useAdminTeachingDesignTemplate,
-  type TeachingDesignTemplateRow,
 } from '@/composables/admin/teachingDesignTemplateApi'
-import { useLanguage, useNotifications } from '@/composables'
+import { useAdminAccess } from '@/composables/admin/useAdminAccess'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { adminKeys } from '@/composables/queries/adminKeys'
 import { useAdminPanelStore } from '@/stores'
 
@@ -34,9 +34,7 @@ const editingRow = ref<TeachingDesignTemplateRow | null>(null)
 const previewVisible = ref(false)
 const previewRow = ref<TeachingDesignTemplateRow | null>(null)
 
-const canEdit = computed(
-  () => can('tab.settings.teaching_design') && !isTabReadOnly('settings')
-)
+const canEdit = computed(() => can('tab.settings.teaching_design') && !isTabReadOnly('settings'))
 const catalog = computed(() => templateQuery.data.value)
 const templates = computed(() => catalog.value?.templates ?? [])
 const loading = computed(() => templateQuery.isFetching.value)
@@ -128,16 +126,16 @@ watch(catalog, (next) => {
 
 async function handleUpload(file: File): Promise<void> {
   if (!file.name.toLowerCase().endsWith('.docx')) {
-    notify.error(t('admin.teachingDesignTemplate.invalidType'))
+    notify.errorKey('admin.teachingDesignTemplate.invalidType')
     return
   }
   adminPanel.patchTeachingDesignToolbar({ uploading: true })
   try {
     await uploadTeachingDesignTemplate(file)
-    notify.success(t('admin.teachingDesignTemplate.uploadOk'))
+    notify.successKey('admin.teachingDesignTemplate.uploadOk')
     await refreshCatalog()
   } catch {
-    notify.error(t('admin.teachingDesignTemplate.uploadFail'))
+    notify.errorKey('admin.teachingDesignTemplate.uploadFail')
   } finally {
     adminPanel.patchTeachingDesignToolbar({ uploading: false })
   }
@@ -147,10 +145,10 @@ async function handleRestore(): Promise<void> {
   adminPanel.patchTeachingDesignToolbar({ restoring: true })
   try {
     await restoreTeachingDesignTemplate()
-    notify.success(t('admin.teachingDesignTemplate.restoreOk'))
+    notify.successKey('admin.teachingDesignTemplate.restoreOk')
     await refreshCatalog()
   } catch {
-    notify.error(t('admin.teachingDesignTemplate.restoreFail'))
+    notify.errorKey('admin.teachingDesignTemplate.restoreFail')
   } finally {
     adminPanel.patchTeachingDesignToolbar({ restoring: false })
   }
@@ -209,13 +207,13 @@ onUnmounted(() => {
       v-if="loading && templates.length === 0"
       class="py-12 text-center text-gray-500"
     >
-      {{ t('admin.loading') }}
+      <I18nText k="admin.loading" />
     </p>
     <p
       v-else-if="loadError"
       class="py-12 text-center text-gray-500"
     >
-      {{ t('admin.teachingDesignTemplate.loadFail') }}
+      <I18nText k="admin.teachingDesignTemplate.loadFail" />
     </p>
     <ElTable
       v-else
@@ -226,13 +224,16 @@ onUnmounted(() => {
     >
       <el-table-column
         prop="index"
-        :label="t('admin.teachingDesignTemplate.colIndex')"
         width="72"
-      />
-      <el-table-column
-        :label="t('admin.teachingDesignTemplate.colName')"
-        min-width="200"
       >
+        <template #header>
+          <I18nText k="admin.teachingDesignTemplate.colIndex" />
+        </template>
+      </el-table-column>
+      <el-table-column min-width="200">
+        <template #header>
+          <I18nText k="admin.teachingDesignTemplate.colName" />
+        </template>
         <template #default="{ row }">
           <button
             type="button"
@@ -245,31 +246,33 @@ onUnmounted(() => {
             v-if="row.is_default"
             class="admin-teaching-design-default"
           >
-            {{ t('admin.teachingDesignTemplate.defaultBadge') }}
+            <I18nText k="admin.teachingDesignTemplate.defaultBadge" />
           </span>
         </template>
       </el-table-column>
-      <el-table-column
-        :label="t('admin.teachingDesignTemplate.colSource')"
-        width="100"
-      >
+      <el-table-column width="100">
+        <template #header>
+          <I18nText k="admin.teachingDesignTemplate.colSource" />
+        </template>
         <template #default="{ row }">
           {{ sourceLabel(row.source) }}
         </template>
       </el-table-column>
-      <el-table-column
-        :label="t('admin.teachingDesignTemplate.colUpdated')"
-        width="200"
-      >
+      <el-table-column width="200">
+        <template #header>
+          <I18nText k="admin.teachingDesignTemplate.colUpdated" />
+        </template>
         <template #default="{ row }">
           {{ formatTime(row.updated_at) }}
         </template>
       </el-table-column>
       <el-table-column
-        :label="t('admin.actions')"
         width="100"
         align="right"
       >
+        <template #header>
+          <I18nText k="admin.actions" />
+        </template>
         <template #default="{ row }">
           <el-button
             type="primary"
@@ -277,7 +280,7 @@ onUnmounted(() => {
             size="small"
             @click="openEdit(row)"
           >
-            {{ t('common.edit') }}
+            <I18nText k="common.edit" />
           </el-button>
         </template>
       </el-table-column>

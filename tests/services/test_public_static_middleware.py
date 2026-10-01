@@ -10,6 +10,7 @@ from fastapi import FastAPI, HTTPException
 from starlette.requests import ClientDisconnect
 from starlette.responses import PlainTextResponse, Response
 from starlette.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
 
 from services.infrastructure.http.exception_handlers import general_exception_handler
 from services.infrastructure.http.middleware import (
@@ -194,6 +195,18 @@ async def test_general_exception_handler_treats_client_disconnect_as_204() -> No
     request.state = SimpleNamespace(request_id=None)
 
     response = await general_exception_handler(request, ClientDisconnect())
+
+    assert response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_general_exception_handler_treats_websocket_disconnect_as_204() -> None:
+    """A client that drops a socket is not an application fault."""
+    request = MagicMock()
+    request.url = SimpleNamespace(path="/ws/kitty/abc")
+    request.state = SimpleNamespace(request_id=None)
+
+    response = await general_exception_handler(request, WebSocketDisconnect())
 
     assert response.status_code == 204
 

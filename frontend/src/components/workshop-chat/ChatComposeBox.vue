@@ -3,10 +3,10 @@ import { computed, nextTick, ref, watch } from 'vue'
 
 import { ChevronRight, X } from '@lucide/vue'
 
-import { TRAINING_ROLES } from '@/config/trainingRoles'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useRenderedMarkdown } from '@/composables/core/useRenderedMarkdown'
 import { useWorkshopImageLightbox } from '@/composables/workshop/useWorkshopImageLightbox'
+import { TRAINING_ROLES } from '@/config/trainingRoles'
 import { type OrgMember, useWorkshopChatStore } from '@/stores/workshopChat'
 import { apiUpload } from '@/utils/apiClient'
 import { stripMindmateDiagramIdComments } from '@/utils/mindmateDiagramMeta'
@@ -381,7 +381,7 @@ async function handleFileChange(event: Event): Promise<void> {
     class="compose compose--readonly"
   >
     <div class="compose__read-only">
-      {{ t('workshop.announceReadOnlyHint') }}
+      <I18nText k="workshop.announceReadOnlyHint" />
     </div>
   </div>
   <div
@@ -408,14 +408,14 @@ async function handleFileChange(event: Event): Promise<void> {
             class="compose__new-conv-btn"
             @click="emit('newConversation')"
           >
-            {{ t('workshop.startNewConversation') }}
+            <I18nText k="workshop.startNewConversation" />
           </button>
         </div>
         <button
           class="compose__new-dm-btn"
           @click="emit('newDM')"
         >
-          {{ t('workshop.newDirectMessage') }}
+          <I18nText k="workshop.newDirectMessage" />
         </button>
       </div>
 
@@ -426,7 +426,9 @@ async function handleFileChange(event: Event): Promise<void> {
         <div class="compose__recipient">
           <div class="compose__recipient-info">
             <template v-if="mode === 'dm'">
-              <span class="compose__recipient-dm-label">{{ t('workshop.directMessage') }}:</span>
+              <span class="compose__recipient-dm-label"
+                ><I18nText k="workshop.directMessage" />:</span
+              >
               <span class="compose__recipient-dm-name">{{ dmPartnerName }}</span>
             </template>
             <template v-else>
@@ -442,7 +444,11 @@ async function handleFileChange(event: Event): Promise<void> {
                 class="compose__recipient-sep"
               />
               <span class="compose__recipient-topic">
-                {{ topicName || t('workshop.generalChat') }}
+                <template v-if="topicName">{{ topicName }}</template
+                ><I18nText
+                  v-else
+                  k="workshop.generalChat"
+                />
               </span>
             </template>
           </div>
@@ -479,7 +485,7 @@ async function handleFileChange(event: Event): Promise<void> {
             v-if="!content.trim()"
             class="compose__preview-empty"
           >
-            {{ t('workshop.previewEmpty') }}
+            <I18nText k="workshop.previewEmpty" />
           </p>
           <div
             v-else

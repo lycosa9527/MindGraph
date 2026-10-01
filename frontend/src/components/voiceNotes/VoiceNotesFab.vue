@@ -310,7 +310,13 @@ onUnmounted(() => {
         :disabled="!actions.canStart && !actions.canResume"
         @click="actions.canResume ? onResume() : onStart()"
       >
-        {{ actions.canResume ? t('auth.voiceNotes.resume') : t('auth.voiceNotes.start') }}
+        <I18nText
+          v-if="actions.canResume"
+          k="auth.voiceNotes.resume"
+        /><I18nText
+          v-else
+          k="auth.voiceNotes.start"
+        />
       </button>
       <button
         type="button"
@@ -319,7 +325,7 @@ onUnmounted(() => {
         :disabled="!actions.canPause"
         @click="onPause"
       >
-        {{ t('auth.voiceNotes.pause') }}
+        <I18nText k="auth.voiceNotes.pause" />
       </button>
       <button
         type="button"
@@ -328,7 +334,7 @@ onUnmounted(() => {
         :disabled="!actions.canStop"
         @click="onStop"
       >
-        {{ t('auth.voiceNotes.stop') }}
+        <I18nText k="auth.voiceNotes.stop" />
       </button>
       <button
         type="button"
@@ -336,7 +342,7 @@ onUnmounted(() => {
         role="menuitem"
         @click="onViewTranscript"
       >
-        {{ t('auth.voiceNotes.viewTranscript') }}
+        <I18nText k="auth.voiceNotes.viewTranscript" />
       </button>
       <button
         type="button"
@@ -345,7 +351,7 @@ onUnmounted(() => {
         :disabled="!actions.canGenerate"
         @click="onGenerate"
       >
-        {{ t('auth.voiceNotes.retryGenerate') }}
+        <I18nText k="auth.voiceNotes.retryGenerate" />
       </button>
       <button
         type="button"
@@ -353,7 +359,7 @@ onUnmounted(() => {
         role="menuitem"
         @click="onExit"
       >
-        {{ t('auth.voiceNotes.exit') }}
+        <I18nText k="auth.voiceNotes.exit" />
       </button>
     </div>
   </Teleport>

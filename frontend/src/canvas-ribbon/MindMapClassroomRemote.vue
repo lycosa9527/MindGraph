@@ -3,7 +3,7 @@
  * Draggable tabbed remote for the new canvas. Teachers on a 110" IFP can
  * keep common tools next to where they stand instead of reaching the ribbon.
  */
-import { type Component, computed, ref, watch } from 'vue'
+import { type Component, computed } from 'vue'
 
 import {
   BookMarked,
@@ -24,20 +24,18 @@ import {
   Paintbrush,
   Palette,
   Plus,
-  Redo2,
   RotateCcw,
+  RotateCw,
   Save,
   School,
   Sparkles,
   Trash2,
-  Undo2,
   Upload,
   X,
 } from '@lucide/vue'
 
 import MindMapClassroomRemoteTopics from '@/canvas-ribbon/MindMapClassroomRemoteTopics.vue'
 import MindMapRibbonAiMark from '@/canvas-ribbon/MindMapRibbonAiMark.vue'
-import { diagramRibbonCapabilities } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import {
   CLASSROOM_REMOTE_TABS,
   CLASSROOM_REMOTE_TAB_LABEL_KEYS,
@@ -50,18 +48,14 @@ import {
   useClassroomRemotePosition,
   useClassroomRemoteVisibility,
 } from '@/composables/canvas/useClassroomRemotePosition'
-import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
 import { useCanvasToolbarFormatting } from '@/composables/canvasToolbar/useCanvasToolbarFormatting'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
-import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useDiagramSourceLock } from '@/composables/mindMap/useDiagramSourceLock'
 import { docSummaryLiteIntent } from '@/composables/mindMap/useDocSummaryLiteSaveAndGenerate'
-import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import { useMindClassroomStore } from '@/stores'
 
@@ -101,23 +95,8 @@ const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
 const { formatBrushActive, formatBrushLocked, handleFormatBrush } = useCanvasToolbarFormatting()
 const { activeTool, handleToolSelect, openTool } = useMindMapSideToolbarState()
 const sourceLock = useDiagramSourceLock()
-const diagramStore = useDiagramSession()
-const { triggerImportInPlace, triggerConceptMapImportInPlace } = useDiagramImport()
-const mindMapV2 = useMindMapV2Chrome()
-const caps = computed(() => diagramRibbonCapabilities(diagramStore.type, mindMapV2.value))
-const { toggleLearningSheet } = useCanvasToolbarApps()
-const visibleRemoteTabs = computed(() =>
-  CLASSROOM_REMOTE_TABS.filter((tab) => tab !== 'topics' || caps.value.outline)
-)
-const panelRef = ref<HTMLElement | null>(null)
-const position = useClassroomRemotePosition(panelRef)
+const position = useClassroomRemotePosition()
 const { setHidden: setClassroomRemoteHidden } = useClassroomRemoteVisibility()
-
-watch(visibleRemoteTabs, (tabs) => {
-  if (!tabs.includes(position.activeTab.value)) {
-    position.setActiveTab('view')
-  }
-})
 
 const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom * 100) : 100))
 
@@ -134,7 +113,7 @@ function requireSelection(run: () => void): void {
     run()
     return
   }
-  notify.warning(t('canvas.toolbar.selectNodesFirst'))
+  notify.warningKey('canvas.toolbar.selectNodesFirst')
 }
 
 function runGuestAi(run: () => void): void {
@@ -206,159 +185,133 @@ const viewTools = computed<RemoteTool[]>(() => [
   },
 ])
 
-const editTools = computed<RemoteTool[]>(() => {
-  const tools: RemoteTool[] = [
-    {
-      id: 'undo',
-      labelKey: 'canvas.toolbar.undo',
-      icon: Undo2,
-      disabled: !ribbon.canUndo,
-      run: () => ribbon.undo(),
-    },
-    {
-      id: 'redo',
-      labelKey: 'canvas.toolbar.redo',
-      icon: Redo2,
-      disabled: !ribbon.canRedo,
-      run: () => ribbon.redo(),
-    },
-    {
-      id: 'child',
-      labelKey: 'canvas.toolbar.addChildNode',
-      insertKind: 'child',
-      dimmed: !ribbon.hasSelection,
-      run: () => ribbon.handleAddChildClick(),
-    },
-    {
-      id: 'sibling',
-      labelKey: 'canvas.toolbar.addSiblingNode',
-      insertKind: 'sibling',
-      dimmed: !ribbon.hasSelection,
-      run: () => requireSelection(() => ribbon.handleAddSibling()),
-    },
-    {
-      id: 'delete',
-      labelKey: 'canvas.toolbar.deleteNode',
-      icon: Trash2,
-      dimmed: !ribbon.hasSelection,
-      danger: true,
-      run: () => requireSelection(() => ribbon.handleDeleteNode()),
-    },
-    {
-      id: 'painter',
-      labelKey: 'canvas.classroomRemote.formatPainter',
-      icon: Paintbrush,
-      active: formatBrushActive.value,
-      dimmed: !ribbon.hasSelection && !formatBrushActive.value,
-      run: onFormatPainter,
-    },
-  ]
-  return tools.filter((tool) => {
-    if (tool.id === 'child' || tool.id === 'sibling') return caps.value.mindMapTree
-    return true
-  })
-})
+const editTools = computed<RemoteTool[]>(() => [
+  {
+    id: 'undo',
+    labelKey: 'canvas.toolbar.undo',
+    icon: RotateCcw,
+    disabled: !ribbon.canUndo,
+    run: () => ribbon.undo(),
+  },
+  {
+    id: 'redo',
+    labelKey: 'canvas.toolbar.redo',
+    icon: RotateCw,
+    disabled: !ribbon.canRedo,
+    run: () => ribbon.redo(),
+  },
+  {
+    id: 'child',
+    labelKey: 'canvas.toolbar.addChildNode',
+    insertKind: 'child',
+    dimmed: !ribbon.hasSelection,
+    run: () => ribbon.handleAddChildClick(),
+  },
+  {
+    id: 'sibling',
+    labelKey: 'canvas.toolbar.addSiblingNode',
+    insertKind: 'sibling',
+    dimmed: !ribbon.hasSelection,
+    run: () => requireSelection(() => ribbon.handleAddSibling()),
+  },
+  {
+    id: 'delete',
+    labelKey: 'canvas.toolbar.deleteNode',
+    icon: Trash2,
+    dimmed: !ribbon.hasSelection,
+    danger: true,
+    run: () => requireSelection(() => ribbon.handleDeleteNode()),
+  },
+  {
+    id: 'painter',
+    labelKey: 'canvas.classroomRemote.formatPainter',
+    icon: Paintbrush,
+    active: formatBrushActive.value,
+    dimmed: !ribbon.hasSelection && !formatBrushActive.value,
+    run: onFormatPainter,
+  },
+])
 
-const aiTools = computed<RemoteTool[]>(() => {
-  const tools: RemoteTool[] = [
-    {
-      id: 'topic',
-      labelKey: 'canvas.ribbon.topicGenerate',
-      icon: Sparkles,
-      dimmed: aiBlockedByCollab.value,
-      run: () => runGuestAi(() => ribbon.handleAIGenerate()),
-    },
-    {
-      id: 'doc',
-      labelKey: 'canvas.ribbon.docGenerate',
-      icon: FileText,
-      dimmed: aiBlockedByCollab.value || sourceLock.isLocked('doc'),
-      active: activeTool.value === 'document_summary',
-      run: openDocGenerate,
-    },
-    {
-      id: 'waterfall',
-      labelKey: 'canvas.mindMapSideToolbar.waterfall',
-      icon: LayoutGrid,
-      dimmed: aiBlockedByCollab.value,
-      active: activeTool.value === 'waterfall',
-      run: () => runGuestAi(() => handleToolSelect('waterfall')),
-    },
-    {
-      id: 'one-sentence',
-      labelKey: 'canvas.mindMapSideToolbar.oneSentence',
-      icon: MessageSquare,
-      dimmed: aiBlockedByCollab.value,
-      active: activeTool.value === 'one_sentence',
-      run: () => runGuestAi(() => ribbon.openSideTool('one_sentence')),
-    },
-    {
-      id: 'subgraph',
-      labelKey: 'canvas.floatingToolbar.aiSubgraph',
-      icon: GitBranch,
-      dimmed: aiBlockedByCollab.value || !ribbon.hasSelection,
-      run: () => runGuestAi(() => requireSelection(() => ribbon.requestAiSubgraph())),
-    },
-  ]
-  return tools.filter((tool) => {
-    if (tool.id === 'doc') return caps.value.docGenerate
-    if (tool.id === 'waterfall') return caps.value.waterfall
-    if (tool.id === 'subgraph') return caps.value.subgraph
-    return true
-  })
-})
+const aiTools = computed<RemoteTool[]>(() => [
+  {
+    id: 'topic',
+    labelKey: 'canvas.ribbon.topicGenerate',
+    icon: Sparkles,
+    dimmed: aiBlockedByCollab.value,
+    run: () => runGuestAi(() => ribbon.handleAIGenerate()),
+  },
+  {
+    id: 'doc',
+    labelKey: 'canvas.ribbon.docGenerate',
+    icon: FileText,
+    dimmed: aiBlockedByCollab.value || sourceLock.isLocked('doc'),
+    active: activeTool.value === 'document_summary',
+    run: openDocGenerate,
+  },
+  {
+    id: 'waterfall',
+    labelKey: 'canvas.mindMapSideToolbar.waterfall',
+    icon: LayoutGrid,
+    dimmed: aiBlockedByCollab.value,
+    active: activeTool.value === 'waterfall',
+    run: () => runGuestAi(() => handleToolSelect('waterfall')),
+  },
+  {
+    id: 'one-sentence',
+    labelKey: 'canvas.mindMapSideToolbar.oneSentence',
+    icon: MessageSquare,
+    dimmed: aiBlockedByCollab.value,
+    active: activeTool.value === 'one_sentence',
+    run: () => runGuestAi(() => ribbon.openSideTool('one_sentence')),
+  },
+  {
+    id: 'subgraph',
+    labelKey: 'canvas.floatingToolbar.aiSubgraph',
+    icon: GitBranch,
+    dimmed: aiBlockedByCollab.value || !ribbon.hasSelection,
+    run: () => runGuestAi(() => requireSelection(() => ribbon.requestAiSubgraph())),
+  },
+])
 
-const teachingTools = computed<RemoteTool[]>(() => {
-  const tools: RemoteTool[] = [
-    {
-      id: 'learning-sheet',
-      labelKey: 'canvas.mindMapSideToolbar.learningSheet',
-      icon: GraduationCap,
-      dimmed: aiBlockedByCollab.value,
-      active:
-        activeTool.value === 'learning_sheet' ||
-        ribbon.learningSheet.isPickActive ||
-        ribbon.learningSheet.isLearningSheetActive,
-      run: () => {
-        if (caps.value.learningSheetPanel) {
-          ribbon.openSideTool('learning_sheet')
-          return
-        }
-        toggleLearningSheet()
-      },
-    },
-    {
-      id: 'worksheet',
-      labelKey: 'canvas.ribbon.makeLearningSheet',
-      icon: FileText,
-      run: () => ribbon.requestWorksheetText(true),
-    },
-    {
-      id: 'explain',
-      labelKey: 'canvas.floatingToolbar.explain',
-      icon: Lightbulb,
-      dimmed: aiBlockedByCollab.value || !ribbon.hasSelection,
-      run: () => runGuestAi(() => requireSelection(() => ribbon.requestExplainNode())),
-    },
-    {
-      id: 'classroom',
-      labelKey: 'canvas.mindMapSideToolbar.mindClassroom',
-      icon: School,
-      run: () => classroomStore.openModal(),
-    },
-    {
-      id: 'mindmate',
-      labelKey: 'canvas.ribbon.mindMate',
-      icon: Bot,
-      active: ribbon.isMindmateOpen,
-      run: () => ribbon.toggleMindmate(),
-    },
-  ]
-  return tools.filter((tool) => {
-    if (tool.id === 'explain' || tool.id === 'classroom') return caps.value.explain
-    return true
-  })
-})
+const teachingTools = computed<RemoteTool[]>(() => [
+  {
+    id: 'learning-sheet',
+    labelKey: 'canvas.mindMapSideToolbar.learningSheet',
+    icon: GraduationCap,
+    dimmed: aiBlockedByCollab.value,
+    active:
+      activeTool.value === 'learning_sheet' ||
+      ribbon.learningSheet.isPickActive ||
+      ribbon.learningSheet.isLearningSheetActive,
+    run: () => ribbon.openSideTool('learning_sheet'),
+  },
+  {
+    id: 'worksheet',
+    labelKey: 'canvas.ribbon.makeLearningSheet',
+    icon: FileText,
+    run: () => ribbon.requestWorksheetText(true),
+  },
+  {
+    id: 'explain',
+    labelKey: 'canvas.floatingToolbar.explain',
+    icon: Lightbulb,
+    dimmed: aiBlockedByCollab.value || !ribbon.hasSelection,
+    run: () => runGuestAi(() => requireSelection(() => ribbon.requestExplainNode())),
+  },
+  {
+    id: 'classroom',
+    labelKey: 'canvas.mindMapSideToolbar.mindClassroom',
+    icon: School,
+    run: () => classroomStore.openModal(),
+  },
+  {
+    id: 'mindmate',
+    labelKey: 'canvas.ribbon.mindMate',
+    icon: Bot,
+    active: ribbon.isMindmateOpen,
+    run: () => ribbon.toggleMindmate(),
+  },
+])
 
 const fileTools = computed<RemoteTool[]>(() => [
   {
@@ -371,13 +324,7 @@ const fileTools = computed<RemoteTool[]>(() => [
     id: 'import',
     labelKey: 'canvas.toolbar.import',
     icon: Upload,
-    run: () => {
-      if (diagramStore.type === 'concept_map') {
-        triggerConceptMapImportInPlace()
-        return
-      }
-      triggerImportInPlace()
-    },
+    run: () => ribbon.importMg(),
   },
   {
     id: 'export',
@@ -432,10 +379,14 @@ function onClose(): void {
 
 <template>
   <aside
-    ref="panelRef"
     class="mm-remote"
-    :class="{ 'is-dragging': position.dragging.value }"
-    :style="{ left: `${position.left.value}px`, top: `${position.top.value}px` }"
+    :class="{ 'is-dragging': position.dragging.value, 'is-resizing': position.resizing.value }"
+    :style="{
+      left: `${position.left.value}px`,
+      top: `${position.top.value}px`,
+      width: `${position.width.value}px`,
+      height: `${position.height.value}px`,
+    }"
     role="toolbar"
     :aria-label="t('canvas.classroomRemote.ariaLabel')"
     data-testid="mindmap-classroom-remote"
@@ -484,7 +435,7 @@ function onClose(): void {
       role="tablist"
     >
       <button
-        v-for="tab in visibleRemoteTabs"
+        v-for="tab in CLASSROOM_REMOTE_TABS"
         :key="tab"
         type="button"
         class="mm-remote__tab"
@@ -512,7 +463,7 @@ function onClose(): void {
     </div>
 
     <div class="mm-remote__body">
-      <MindMapClassroomRemoteTopics v-if="position.activeTab.value === 'topics' && caps.outline" />
+      <MindMapClassroomRemoteTopics v-if="position.activeTab.value === 'topics'" />
       <div
         v-if="position.activeTab.value === 'view'"
         class="mm-remote__zoom"
@@ -562,5 +513,16 @@ function onClose(): void {
         </button>
       </div>
     </div>
+
+    <button
+      type="button"
+      class="mm-remote__resize"
+      data-testid="mindmap-classroom-remote-resize"
+      :aria-label="t('canvas.classroomRemote.resize')"
+      @pointerdown="position.onResizePointerDown"
+      @pointermove="position.onResizePointerMove"
+      @pointerup="position.onResizePointerUp"
+      @pointercancel="position.onResizePointerUp"
+    />
   </aside>
 </template>

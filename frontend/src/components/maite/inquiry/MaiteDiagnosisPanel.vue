@@ -26,10 +26,24 @@ const { t } = useLanguage()
       :placeholder="t('maite.diagnosis.thinkingPlaceholder')"
       rows="4"
     />
-    <button type="button" class="maite-diagnosis-panel__btn" :disabled="loading" @click="emit('runAuto')">
-      {{ loading ? t('maite.diagnosis.running') : t('maite.diagnosis.runAuto') }}
+    <button
+      type="button"
+      class="maite-diagnosis-panel__btn"
+      :disabled="loading"
+      @click="emit('runAuto')"
+    >
+      <I18nText
+        v-if="loading"
+        k="maite.diagnosis.running"
+      /><I18nText
+        v-else
+        k="maite.diagnosis.runAuto"
+      />
     </button>
-    <pre v-if="result" class="maite-diagnosis-panel__result">{{ JSON.stringify(result, null, 2) }}</pre>
+    <pre
+      v-if="result"
+      class="maite-diagnosis-panel__result"
+      >{{ JSON.stringify(result, null, 2) }}</pre>
   </div>
 </template>
 

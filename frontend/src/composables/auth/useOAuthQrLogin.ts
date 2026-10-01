@@ -3,17 +3,18 @@
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
-import { useLanguage, useNotifications } from '@/composables'
-import { useAuthStore } from '@/stores'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
+import { useAuthStore } from '@/stores/auth'
+import apiClient from '@/utils/apiClient'
 import {
+  WX_LOGIN_QR_SIZE_PX,
+  WX_LOGIN_SELF_REDIRECT,
   isOAuthRedirectError,
   notifyOAuthError,
   sizeWechatLoginIframe,
   wechatLoginStyleHref,
-  WX_LOGIN_QR_SIZE_PX,
-  WX_LOGIN_SELF_REDIRECT,
 } from '@/utils/oauthLoginUi'
-import apiClient from '@/utils/apiClient'
 
 export type OAuthProvider = 'wechat' | 'dingtalk'
 export type OAuthQrMode = 'login' | 'bind'
@@ -119,9 +120,7 @@ export function useOAuthQrLogin(options: {
         }
         return
       }
-      const qs = invite.value
-        ? `?invite=${encodeURIComponent(invite.value)}`
-        : ''
+      const qs = invite.value ? `?invite=${encodeURIComponent(invite.value)}` : ''
       const res = await apiClient.get(`/api/auth/oauth/providers${qs}`)
       if (!res.ok) {
         providerError.value = 'providers_failed'
@@ -144,18 +143,20 @@ export function useOAuthQrLogin(options: {
     if (!isBindMode.value) {
       authStore.emitLoginSuccess()
     }
-    notify.success(
-      isBindMode.value ? t('auth.oauthBindSuccess') : t('auth.qrLoginSuccess')
-    )
+    notify.success(isBindMode.value ? t('auth.oauthBindSuccess') : t('auth.qrLoginSuccess'))
     options.onSuccess?.()
   }
 
-  async function startWechatWidget(state: string, appId: string, redirectUri: string): Promise<void> {
+  async function startWechatWidget(
+    state: string,
+    appId: string,
+    redirectUri: string
+  ): Promise<void> {
     await loadScript(WX_SCRIPT, 'mg-wx-login-js')
     await nextTick()
     const el = document.getElementById(wechatContainerId)
     if (!el || !window.WxLogin) {
-      notify.error(t('auth.qrLoginStartFailed'))
+      notify.errorKey('auth.qrLoginStartFailed')
       return
     }
     el.innerHTML = ''
@@ -184,7 +185,7 @@ export function useOAuthQrLogin(options: {
     await nextTick()
     const el = document.getElementById(dingtalkContainerId)
     if (!el || !window.DTFrameLogin) {
-      notify.error(t('auth.qrLoginStartFailed'))
+      notify.errorKey('auth.qrLoginStartFailed')
       return
     }
     el.innerHTML = ''
@@ -202,7 +203,7 @@ export function useOAuthQrLogin(options: {
         const authCode = loginResult.authCode
         const st = loginResult.state || state
         if (!authCode) {
-          notify.error(t('auth.qrLoginExchangeFailed'))
+          notify.errorKey('auth.qrLoginExchangeFailed')
           return
         }
         const path = isBindMode.value
@@ -221,7 +222,7 @@ export function useOAuthQrLogin(options: {
           }
           notifySuccess()
         } catch {
-          notify.error(t('auth.qrLoginExchangeFailed'))
+          notify.errorKey('auth.qrLoginExchangeFailed')
         }
       },
       (errorMsg) => {
@@ -251,7 +252,7 @@ export function useOAuthQrLogin(options: {
         if (detail && isOAuthRedirectError(detail)) {
           notifyOAuthError(detail, notify, t)
         } else {
-          notify.error(t('auth.qrLoginStartFailed'))
+          notify.errorKey('auth.qrLoginStartFailed')
         }
         return
       }
@@ -263,7 +264,7 @@ export function useOAuthQrLogin(options: {
       try {
         await startWechatWidget(data.state, data.appId, data.redirectUri)
       } catch {
-        notify.error(t('auth.qrLoginStartFailed'))
+        notify.errorKey('auth.qrLoginStartFailed')
       }
     }
     if (prov === 'dingtalk' && providers.value.dingtalk_enabled) {
@@ -277,7 +278,7 @@ export function useOAuthQrLogin(options: {
         if (detail && isOAuthRedirectError(detail)) {
           notifyOAuthError(detail, notify, t)
         } else {
-          notify.error(t('auth.qrLoginStartFailed'))
+          notify.errorKey('auth.qrLoginStartFailed')
         }
         return
       }
@@ -295,7 +296,7 @@ export function useOAuthQrLogin(options: {
           data.scope || 'openid'
         )
       } catch {
-        notify.error(t('auth.qrLoginStartFailed'))
+        notify.errorKey('auth.qrLoginStartFailed')
       }
     }
   }

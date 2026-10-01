@@ -33,7 +33,7 @@ function pageTitle(segment: string): { titleKey: string } {
 /**
  * Route auth (see `beforeEach`):
  * - `requiresAuth`: guests are sent to `/auth?redirect=…`; expired sessions use the login modal.
- * - `guestOnly`: `/auth`, `/bayi/passkey` — signed-in users are sent to MindMate landing.
+ * - `guestOnly`: `/auth` — signed-in users are sent to MindMate landing.
  * - Public main-layout: `/mindmate`, `/template`, `/course`, `/askonce`, `/debateverse`, `/library`, …
  */
 
@@ -222,16 +222,6 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/privacy/extension',
     redirect: { path: '/privacy', hash: '#browser-extension' },
-  },
-  {
-    path: '/demo',
-    redirect: '/bayi/passkey',
-  },
-  {
-    path: '/bayi/passkey',
-    name: 'BayiPasskeyLogin',
-    component: () => import('@/pages/BayiPasskeyPage.vue'),
-    meta: { layout: 'auth', guestOnly: true, ...pageTitle('bayiPasskeyLogin') },
   },
   {
     path: '/template',
@@ -687,7 +677,7 @@ router.beforeEach(async (to, from) => {
       return { name: 'MindMate' }
     }
   }
-  // Guest-only routes (/auth, /bayi/passkey; /login redirects to /auth): confirm session, then app home
+  // Guest-only routes (/auth; /login redirects to /auth): confirm session, then app home
   if (to.meta.guestOnly) {
     const isAuthenticated = await authStore.checkAuth()
     if (isAuthenticated) {

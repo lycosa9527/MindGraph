@@ -54,7 +54,7 @@ async function load(): Promise<void> {
     folders.value = await listVodFolders(props.organizationId)
   } catch {
     folders.value = []
-    notify.error(t('admin.vod.folderFailed'))
+    notify.errorKey('admin.vod.folderFailed')
   }
   emit('folders', folders.value)
 }
@@ -72,7 +72,7 @@ async function create(): Promise<void> {
     name.value = ''
     await load()
     emit('update:folderId', created.id)
-    notify.success(t('admin.vod.folderCreated'))
+    notify.successKey('admin.vod.folderCreated')
   } catch (err) {
     notify.error(folderError(err))
   } finally {
@@ -98,7 +98,7 @@ async function rename(): Promise<void> {
   try {
     await renameVodFolder(current.id, collapsed, props.organizationId)
     await load()
-    notify.success(t('admin.vod.folderRenamed'))
+    notify.successKey('admin.vod.folderRenamed')
   } catch (err) {
     notify.error(folderError(err))
   } finally {
@@ -125,9 +125,9 @@ async function remove(): Promise<void> {
     await deleteVodFolder(id, props.organizationId)
     emit('update:folderId', '')
     await load()
-    notify.success(t('admin.vod.folderDeleted'))
+    notify.successKey('admin.vod.folderDeleted')
   } catch {
-    notify.error(t('admin.vod.folderFailed'))
+    notify.errorKey('admin.vod.folderFailed')
   } finally {
     busy.value = false
   }
@@ -149,8 +149,8 @@ watch(
       :value="folderId"
       @change="onFilter"
     >
-      <option value="">{{ t('admin.vod.folderAll') }}</option>
-      <option value="none">{{ t('admin.vod.folderNone') }}</option>
+      <option value=""><I18nText k="admin.vod.folderAll" /></option>
+      <option value="none"><I18nText k="admin.vod.folderNone" /></option>
       <option
         v-for="folder in folders"
         :key="folder.id"
@@ -174,7 +174,7 @@ watch(
         :disabled="busy || !name.trim()"
         @click="create"
       >
-        {{ t('admin.vod.folderCreate') }}
+        <I18nText k="admin.vod.folderCreate" />
       </button>
       <button
         v-if="selected"
@@ -183,7 +183,7 @@ watch(
         :disabled="busy"
         @click="rename"
       >
-        {{ t('admin.vod.folderRename') }}
+        <I18nText k="admin.vod.folderRename" />
       </button>
       <button
         v-if="selected"
@@ -192,7 +192,7 @@ watch(
         :disabled="busy"
         @click="remove"
       >
-        {{ t('admin.vod.folderDelete') }}
+        <I18nText k="admin.vod.folderDelete" />
       </button>
     </template>
   </div>

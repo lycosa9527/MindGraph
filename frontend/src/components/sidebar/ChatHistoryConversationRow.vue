@@ -68,7 +68,7 @@ const { t } = useLanguage()
           >
             <span class="chat-history-menu-row">
               <FolderMinus class="w-4 h-4 shrink-0" />
-              {{ t('sidebar.actions.removeFromFolder') }}
+              <I18nText k="sidebar.actions.removeFromFolder" />
             </span>
           </ElDropdownItem>
           <ElDropdownItem
@@ -85,7 +85,7 @@ const { t } = useLanguage()
           >
             <span class="chat-history-menu-row">
               <FolderPlus class="w-4 h-4 shrink-0" />
-              {{ t('sidebar.chatHistory.createFolderAndMove') }}
+              <I18nText k="sidebar.chatHistory.createFolderAndMove" />
             </span>
           </ElDropdownItem>
         </ElDropdownMenu>
@@ -109,11 +109,17 @@ const { t } = useLanguage()
               class="w-4 h-4 mr-2"
               :class="pinned ? 'text-amber-500 rotate-45' : ''"
             />
-            {{ pinned ? t('sidebar.actions.unpin') : t('sidebar.actions.pinToTop') }}
+            <I18nText
+              v-if="pinned"
+              k="sidebar.actions.unpin"
+            /><I18nText
+              v-else
+              k="sidebar.actions.pinToTop"
+            />
           </ElDropdownItem>
           <ElDropdownItem @click="emit('rename')">
             <Edit3 class="w-4 h-4 mr-2" />
-            {{ t('sidebar.actions.rename') }}
+            <I18nText k="sidebar.actions.rename" />
           </ElDropdownItem>
           <ElDropdownItem
             divided
@@ -121,7 +127,7 @@ const { t } = useLanguage()
           >
             <span class="delete-option">
               <Trash2 class="w-4 h-4 mr-2" />
-              {{ t('sidebar.actions.delete') }}
+              <I18nText k="sidebar.actions.delete" />
             </span>
           </ElDropdownItem>
         </ElDropdownMenu>

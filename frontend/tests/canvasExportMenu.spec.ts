@@ -29,11 +29,12 @@ describe('canvasExportMenu', () => {
   })
 
   it('covers all raster export commands used by useDiagramExport', () => {
-    const rasterInMenu = CANVAS_STANDARD_EXPORT_MENU_ITEMS
-      .map((item) => item.command)
-      .filter((command): command is 'png' | 'svg' | 'pdf_landscape' | 'pdf_portrait' =>
-        CANVAS_RASTER_EXPORT_COMMANDS.includes(command as 'png' | 'svg' | 'pdf_landscape' | 'pdf_portrait')
-      )
+    const rasterInMenu = CANVAS_STANDARD_EXPORT_MENU_ITEMS.map((item) => item.command).filter(
+      (command): command is 'png' | 'svg' | 'pdf_landscape' | 'pdf_portrait' =>
+        CANVAS_RASTER_EXPORT_COMMANDS.includes(
+          command as 'png' | 'svg' | 'pdf_landscape' | 'pdf_portrait'
+        )
+    )
     expect(rasterInMenu).toEqual([...CANVAS_RASTER_EXPORT_COMMANDS])
   })
 
@@ -96,21 +97,17 @@ describe('diagramPdfExport', () => {
   })
 
   it('prefers explicit pdf command over stored export layout', () => {
-    expect(
-      resolvePdfOrientationFromExportOptions('pdf_portrait', 1200, 800, 'landscape')
-    ).toBe('portrait')
-    expect(
-      resolvePdfOrientationFromExportOptions('pdf_landscape', 800, 1200, 'portrait')
-    ).toBe('landscape')
+    expect(resolvePdfOrientationFromExportOptions('pdf_portrait', 1200, 800, 'landscape')).toBe(
+      'portrait'
+    )
+    expect(resolvePdfOrientationFromExportOptions('pdf_landscape', 800, 1200, 'portrait')).toBe(
+      'landscape'
+    )
   })
 
   it('uses stored layout when command is plain pdf', () => {
-    expect(
-      resolvePdfOrientationFromExportOptions('pdf', 1200, 800, 'portrait')
-    ).toBe('portrait')
-    expect(
-      resolvePdfOrientationFromExportOptions('pdf', 800, 1200, 'landscape')
-    ).toBe('landscape')
+    expect(resolvePdfOrientationFromExportOptions('pdf', 1200, 800, 'portrait')).toBe('portrait')
+    expect(resolvePdfOrientationFromExportOptions('pdf', 800, 1200, 'landscape')).toBe('landscape')
   })
 
   it('falls back to command when export layout is omitted', () => {
@@ -148,8 +145,8 @@ describe('diagramHtmlToImage', () => {
   it('uses transparent background and skips dot grid for pdf capture', async () => {
     const { getDiagramCanvasPdfHtmlToImageOptions } = await import('@/utils/diagramHtmlToImage')
     const opts = getDiagramCanvasPdfHtmlToImageOptions()
-    expect(opts.backgroundColor).toBeNull()
-    expect(opts.pixelRatio).toBe(1)
+    expect(opts.backgroundColor).toBeUndefined()
+    expect(opts.pixelRatio).toBe(2)
     const bg = document.createElement('div')
     bg.className = 'vue-flow__background'
     expect(opts.filter?.(bg)).toBe(false)

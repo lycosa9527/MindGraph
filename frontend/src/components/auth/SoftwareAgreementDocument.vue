@@ -18,7 +18,6 @@ defineProps<{
 
     <section
       v-for="(section, idx) in agreement.sections"
-      :id="section.id"
       :key="`main-${idx}`"
       class="sa-section"
     >
@@ -64,10 +63,6 @@ defineProps<{
   font-size: 0.9375rem;
   line-height: 1.65;
   color: rgb(68 64 60);
-}
-
-.sa-section {
-  scroll-margin-top: 5rem;
 }
 
 .sa-section + .sa-section {

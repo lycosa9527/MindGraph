@@ -141,7 +141,12 @@ function handleNext() {
             @click="handleNext"
           >
             <ArrowRight :size="18" />
-            <span class="ml-1">{{ nextButtonText || t('debateverse.next.label') }}</span>
+            <span class="ml-1"
+              ><template v-if="nextButtonText">{{ nextButtonText }}</template
+              ><I18nText
+                v-else
+                k="debateverse.next.label"
+            /></span>
           </ElButton>
         </div>
       </div>

@@ -18,7 +18,7 @@ import {
   VideoPlay,
 } from '@element-plus/icons-vue'
 
-import { LayoutGrid, MessageSquare, Settings, Watch, GraduationCap } from '@lucide/vue'
+import { GraduationCap, LayoutGrid, MessageSquare, Settings, Watch } from '@lucide/vue'
 
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -198,7 +198,12 @@ function goTo(route: string) {
             class="w-6 h-6"
           />
         </div>
-        <span class="intl-module-label">{{ m.key === 'gewe' ? 'Gewe' : t(m.labelKey) }}</span>
+        <span class="intl-module-label"
+          ><template v-if="m.key === 'gewe'">{{ 'Gewe' }}</template
+          ><I18nText
+            v-else
+            :k="m.labelKey"
+        /></span>
       </div>
     </div>
   </el-popover>

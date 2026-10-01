@@ -25,6 +25,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
@@ -90,6 +91,7 @@ class Organization(Base):
     dingtalk_ai_card_streaming_max_chars: Mapped[int] = mapped_column(Integer, nullable=False, default=6500)
 
     mindmate_agent_name: Mapped[str | None] = mapped_column(String(MINDMATE_AGENT_NAME_MAX_LENGTH), nullable=True)
+    mindmate_agent_alias: Mapped[str | None] = mapped_column(String(MINDMATE_AGENT_NAME_MAX_LENGTH), nullable=True)
     mindmate_agent_avatar_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
     users: Mapped[list["User"]] = relationship(
@@ -159,6 +161,9 @@ class User(Base):
     v3_ribbon_classic: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     v3_ribbon_tab: Mapped[str | None] = mapped_column(String(16), nullable=True)
     classroom_remote_visible: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    quick_access_remote_visible: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    quick_access_prompt_overrides: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    quick_access_prompt_specs: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     email_login_whitelisted_from_cn: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     login_password_set: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
@@ -169,7 +174,6 @@ class User(Base):
         index=True,
     )
     must_change_password: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    learning_space_login_password: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
     organization: Mapped["Organization | None"] = relationship(
         "Organization",

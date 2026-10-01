@@ -2,7 +2,6 @@
  * Mind-map AI generate — 专业程度 instructions, not classic 学段.
  */
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
-import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
@@ -25,7 +24,6 @@ export function useMindMapAudienceGenerate() {
   const notify = useNotifications()
   const { isGenerating: isAIGenerating, autoComplete, validateForAutoComplete } = useAutoComplete()
   const { guardCollabGuestAi } = useCollabGuestAiGate()
-  const { requireCapability } = useLearningAiGate()
 
   async function handleMindMapAiGenerate(options?: {
     generationInstructions?: string
@@ -33,10 +31,9 @@ export function useMindMapAudienceGenerate() {
     isLearningSheet?: boolean
   }): Promise<void> {
     if (!authStore.isAuthenticated) {
-      notify.warning(t('notification.signInToUse'))
+      notify.warningKey('notification.signInToUse')
       return
     }
-    if (!requireCapability('topic_generate')) return
     if (!guardCollabGuestAi()) {
       return
     }

@@ -298,7 +298,7 @@ async function consumeSuggestionsStream(
   }
   const reader = response.body?.getReader()
   if (!reader) {
-    notify.error(t('focusQuestion.cannotReadStream'))
+    notify.errorKey('focusQuestion.cannotReadStream')
     suggestionsStreamEnded.value = true
     return
   }
@@ -384,7 +384,7 @@ async function runValidation() {
       return
     }
     console.error(e)
-    notify.error(t('focusQuestion.networkError'))
+    notify.errorKey('focusQuestion.networkError')
   } finally {
     validating.value = false
   }
@@ -407,7 +407,7 @@ async function loadMoreSuggestions() {
   } catch (e) {
     if (!(e instanceof Error && e.name === 'AbortError')) {
       console.error(e)
-      notify.error(t('focusQuestion.loadMoreFailed'))
+      notify.errorKey('focusQuestion.loadMoreFailed')
     }
   } finally {
     loadingMoreSuggestions.value = false

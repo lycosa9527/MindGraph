@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import TrainingPlayControls from '@/components/training/TrainingPlayControls.vue'
 import TrainingRemotePrompter from '@/components/training/TrainingRemotePrompter.vue'
 import TrainingRemoteRoster from '@/components/training/TrainingRemoteRoster.vue'
 import { useLanguage } from '@/composables'
 import {
-  trainingSteerMode,
   type TrainingSteerMode,
+  trainingSteerMode,
 } from '@/composables/training/applyTrainingSnapshot'
 import {
   requestTrainingEnd,
@@ -23,7 +24,6 @@ import { useTrainingRemoteChrome } from '@/composables/training/useTrainingRemot
 import { useTrainingRemoteSync } from '@/composables/training/useTrainingRemoteSync'
 import { useAuthStore } from '@/stores/auth'
 import { useTrainingStore } from '@/stores/training'
-import I18nText from '@/components/common/I18nText.vue'
 
 const { t } = useLanguage()
 const authStore = useAuthStore()
@@ -68,7 +68,7 @@ function confirmStop(): void {
       v-if="phase === 'live' && isPortrait"
       class="remote__rotate"
     >
-      <p>{{ t('training.remoteRotate') }}</p>
+      <p><I18nText k="training.remoteRotate" /></p>
     </div>
     <div
       v-else-if="phase === 'live'"
@@ -101,12 +101,15 @@ function confirmStop(): void {
       v-else
       class="remote__wait"
     >
-      <h1>{{ t('training.title') }}</h1>
+      <h1><I18nText k="training.title" /></h1>
       <p v-if="phase === 'foreign'">
-        {{ t('training.remoteForeign', { name: hostName }) }}
+        <I18nText
+          k="training.remoteForeign"
+          :params="{ name: hostName }"
+        />
       </p>
       <p v-else>
-        {{ t('training.remoteWaiting') }}
+        <I18nText k="training.remoteWaiting" />
       </p>
     </div>
     <div
@@ -117,8 +120,8 @@ function confirmStop(): void {
       :aria-label="t('training.stop')"
     >
       <div class="remote__confirm-card">
-        <h2>{{ t('training.stop') }}</h2>
-        <p>{{ t('training.confirmStop') }}</p>
+        <h2><I18nText k="training.stop" /></h2>
+        <p><I18nText k="training.confirmStop" /></p>
         <div class="remote__confirm-actions">
           <button
             type="button"
@@ -132,7 +135,7 @@ function confirmStop(): void {
             class="remote__confirm-btn remote__confirm-btn--go"
             @click="confirmStop"
           >
-            {{ t('training.stop') }}
+            <I18nText k="training.stop" />
           </button>
         </div>
       </div>

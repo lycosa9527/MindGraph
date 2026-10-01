@@ -8,6 +8,9 @@ describe('mindMapGestureGuide', () => {
     expect(ids).toEqual([
       'tap',
       'dragNode',
+      'slashSibling',
+      'slashChild',
+      'slashDelete',
       'pinch',
       'pan',
       'editNode',

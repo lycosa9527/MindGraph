@@ -249,6 +249,16 @@ ERRORS = {
         "en": "Name must be at least 2 characters and must not contain digits.",
         "az": "Ad ən azı 2 simvoldan ibarət olmalı və rəqəm ehtiva etməməlidir.",
     },
+    "display_name_placeholder": {
+        "zh": "请填写真实姓名，不要沿用默认称呼。",
+        "en": "Enter your real name instead of the default label.",
+        "az": "Standart adın əvəzinə həqiqi adınızı yazın.",
+    },
+    "bayi_sso_phone_locked": {
+        "zh": "学校账号的用户标识不能修改。",
+        "en": "This school account id cannot be changed.",
+        "az": "Məktəb hesabının identifikatorunu dəyişmək olmaz.",
+    },
     "profile_update_failed": {
         "zh": "无法保存个人资料。",
         "en": "Could not save your profile.",
@@ -275,9 +285,9 @@ ERRORS = {
         "az": "Bu giriş başqa cihazdan sonlandırıldı.",
     },
     "registration_not_available": {
-        "zh": "{} 模式下注册不可用。请改用密钥认证。",
-        "en": "Registration is not available in {} mode. Please use passkey authentication instead.",
-        "az": "{} rejimində qeydiyyat mövcud deyil. Bunun əvəzinə passkey autentifikasiyasından istifadə edin.",
+        "zh": "{} 模式下注册不可用。请使用已有账号登录。",
+        "en": "Registration is not available in {} mode. Sign in with an existing account.",
+        "az": "{} rejimində qeydiyyat mövcud deyil. Mövcud hesabla daxil olun.",
     },
     "registration_disabled": {
         "zh": ("注册功能已由管理员关闭。请使用已有账号登录，或联系学校管理员。"),
@@ -992,7 +1002,6 @@ ERRORS = {
             "və ya problem davam edərsə dəstəklə əlaqə saxlayın."
         ),
     },
-    "invalid_passkey": {"zh": "无效的密钥", "en": "Invalid passkey", "az": "Etibarsız passkey"},
     "admin_access_required": {
         "zh": "需要管理员权限",
         "en": "Admin access required",
@@ -1179,6 +1188,12 @@ ERRORS = {
         "zh-tw": "MindMate 智能體名稱不能超過 10 個字元",
         "en": "mindmate_agent_name must be at most 10 characters",
         "az": "mindmate_agent_name ən çoxu 10 simvol ola bilər",
+    },
+    "mindmate_agent_alias_too_long": {
+        "zh": "MindMate 智能体别名不能超过 10 个字符",
+        "zh-tw": "MindMate 智能體別名不能超過 10 個字元",
+        "en": "mindmate_agent_alias must be at most 10 characters",
+        "az": "mindmate_agent_alias ən çoxu 10 simvol ola bilər",
     },
     "mindmate_agent_avatar_url_too_long": {
         "zh": "MindMate 智能体头像 URL 不能超过 512 个字符",

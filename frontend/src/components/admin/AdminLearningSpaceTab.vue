@@ -3,19 +3,17 @@
  * Learning Space admin shell — pilots / classes, student-space chrome.
  */
 import { computed, watch } from 'vue'
-
 import { useRoute, useRouter } from 'vue-router'
 
 import AdminLearningSpaceClassesPanel from '@/components/admin/AdminLearningSpaceClassesPanel.vue'
 import AdminLearningSpacePilotsPanel from '@/components/admin/AdminLearningSpacePilotsPanel.vue'
-import AdminLearningSpaceStudentsPanel from '@/components/admin/AdminLearningSpaceStudentsPanel.vue'
+import { useLanguage } from '@/composables'
 import {
   LEARNING_SPACE_SUBTABS,
+  type LearningSpaceSubtab,
   learningSpaceSubtabLabelKey,
   resolveLearningSpaceSubtab,
-  type LearningSpaceSubtab,
 } from '@/composables/admin/adminLearningSpaceNav'
-import { useLanguage } from '@/composables'
 import '@/styles/learning-space.css'
 
 const { t } = useLanguage()
@@ -55,8 +53,8 @@ watch(
       <div class="ls-app__inner">
         <header class="ls-page-head">
           <div>
-            <h1>{{ t('admin.tabs.learningSpace') }}</h1>
-            <p>{{ t('admin.learningSpace.intro') }}</p>
+            <h1><I18nText k="admin.tabs.learningSpace" /></h1>
+            <p><I18nText k="admin.learningSpace.intro" /></p>
           </div>
         </header>
 
@@ -72,13 +70,14 @@ watch(
             :class="{ 'ls-app__tab--active': activeSubtab === subtab }"
             @click="setSubtab(subtab)"
           >
-            <span class="ls-app__tab-text">{{ t(learningSpaceSubtabLabelKey(subtab)) }}</span>
+            <span class="ls-app__tab-text"
+              ><I18nText :k="learningSpaceSubtabLabelKey(subtab)"
+            /></span>
           </button>
         </nav>
 
         <AdminLearningSpacePilotsPanel v-if="activeSubtab === 'pilots'" />
-        <AdminLearningSpaceClassesPanel v-else-if="activeSubtab === 'classes'" />
-        <AdminLearningSpaceStudentsPanel v-else />
+        <AdminLearningSpaceClassesPanel v-else />
       </div>
     </div>
   </div>

@@ -60,6 +60,41 @@ def test_build_docx_fills_title_header_and_sections() -> None:
     assert "出示种子萌发视频" in activity.cell(3, 0).text
 
 
+def test_short_template_and_control_chars_still_export(tmp_path, monkeypatch) -> None:
+    """A smaller school form and XML control characters still produce a DOCX."""
+    document = Document()
+    document.add_paragraph("【摘要】")
+    document.add_paragraph("占位")
+    document.add_table(rows=1, cols=1)
+    path = tmp_path / "short.docx"
+    document.save(path)
+    monkeypatch.setattr(
+        "services.mindmate.teaching_design_docx.resolve_template_path",
+        lambda _key: path,
+    )
+    spec = TeachingDesignSpec(summary="你好\x00世界", grade="七年级", subject="生物")
+    payload = build_teaching_design_docx(spec)
+    opened = Document(io.BytesIO(payload))
+    text = "\n".join(item.text for item in opened.paragraphs)
+    assert "你好世界" in text
+    assert "\x00" not in text
+
+
+def test_unreadable_school_template_uses_bundled_form(tmp_path, monkeypatch) -> None:
+    """A corrupt pinned file falls back to the built-in BNU form."""
+    bad = tmp_path / "bad.docx"
+    bad.write_bytes(b"PK\x03\x04not-a-docx")
+    monkeypatch.setattr(
+        "services.mindmate.teaching_design_docx.resolve_template_path",
+        lambda _key: bad,
+    )
+    payload = build_teaching_design_docx(TeachingDesignSpec(summary="摘要正文", title="《呼吸作用》教学设计"))
+    opened = Document(io.BytesIO(payload))
+    text = "\n".join(item.text for item in opened.paragraphs)
+    assert "摘要正文" in text
+    assert "《呼吸作用》教学设计" in text
+
+
 def test_content_disposition_allows_chinese_filename() -> None:
     """Content-Disposition stays latin-1 safe and keeps UTF-8 filename*."""
     header = _content_disposition("呼吸作用.docx")

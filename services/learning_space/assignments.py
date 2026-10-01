@@ -18,7 +18,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
-from models.domain.diagrams import Diagram
 from models.domain.learning_space import (
     ASSIGNMENT_STATUS_ACTIVE,
     SUBMISSION_STATUS_DRAFT,
@@ -28,7 +27,6 @@ from models.domain.learning_space import (
     LearningSubmission,
 )
 from services.learning_space.access import assert_assignment_visible_to_learner
-from services.learning_space.memberships import organization_info_map
 from services.learning_space.blank_spec import (
     TEMPLATE_ROLE_SCAFFOLD,
     blank_spec_for_type,
@@ -43,10 +41,8 @@ from services.learning_space.image_storage import (
 )
 from services.learning_space.passwords import merge_ai_permissions
 from services.learning_space.students import count_class_students
-from services.diagram.spec_coerce import coerce_diagram_spec
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
-from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -61,35 +57,6 @@ def effective_due_at(
     return assignment.due_at
 
 
-def submission_allows_resubmit(
-    assignment: LearningAssignment,
-    submission: LearningSubmission | None,
-) -> bool:
-    """True when a submitted work may be edited and submitted again."""
-    if submission is None or submission.status != SUBMISSION_STATUS_SUBMITTED:
-        return False
-    if assignment.status != ASSIGNMENT_STATUS_ACTIVE:
-        return False
-    perms = merge_ai_permissions(assignment.ai_permissions if isinstance(assignment.ai_permissions, dict) else None)
-    if not bool(perms.get("allow_resubmit", True)):
-        return False
-    due = effective_due_at(assignment, submission)
-    if due is not None:
-        due_aware = due if due.tzinfo else due.replace(tzinfo=UTC)
-        if datetime.now(UTC) > due_aware:
-            return bool(perms.get("allow_late_submit"))
-    return True
-
-
-def _clear_submission_review(submission: LearningSubmission) -> None:
-    """Drop teacher review so resubmitted work returns to pending."""
-    submission.review_scores = None
-    submission.review_comment = None
-    submission.review_liked = False
-    submission.review_pinned = False
-    submission.reviewed_at = None
-
-
 def assert_can_edit_submission(
     assignment: LearningAssignment,
     submission: LearningSubmission | None,
@@ -98,16 +65,12 @@ def assert_can_edit_submission(
     if assignment.status != ASSIGNMENT_STATUS_ACTIVE:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Assignment closed")
     if submission is not None and submission.status == SUBMISSION_STATUS_SUBMITTED:
-        if submission_allows_resubmit(assignment, submission):
-            return
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Already submitted")
     due = effective_due_at(assignment, submission)
     if due is not None:
         due_aware = due if due.tzinfo else due.replace(tzinfo=UTC)
         if datetime.now(UTC) > due_aware:
-            perms = merge_ai_permissions(
-                assignment.ai_permissions if isinstance(assignment.ai_permissions, dict) else None
-            )
+            perms = assignment.ai_permissions if isinstance(assignment.ai_permissions, dict) else {}
             if not bool(perms.get("allow_late_submit")):
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Past due")
 
@@ -583,9 +546,6 @@ async def submit_assignment(
             student.id,
             submission.diagram_id,
         )
-    resubmitting = submission.status == SUBMISSION_STATUS_SUBMITTED
-    if resubmitting:
-        _clear_submission_review(submission)
     submission.snapshot_spec = snapshot
     submission.status = SUBMISSION_STATUS_SUBMITTED
     submission.submitted_at = datetime.now(UTC)
@@ -683,140 +643,13 @@ def assignment_public_dict(
     return payload
 
 
-def _normalize_preview_spec(spec: Any) -> dict[str, Any] | None:
-    """Unwrap saved diagram JSON to the semantic spec Showcase preview expects."""
-    if not isinstance(spec, dict):
-        return None
-    candidate: dict[str, Any] = spec
-    nested = spec.get("spec")
-    if isinstance(nested, dict) and (
-        nested.get("type") or nested.get("topic") or nested.get("data") or nested.get("nodes") or nested.get("children")
-    ):
-        candidate = nested
-    if (
-        candidate.get("type")
-        or candidate.get("topic")
-        or candidate.get("data")
-        or candidate.get("nodes")
-        or candidate.get("children")
-        or candidate.get("context")
-        or candidate.get("attributes")
-        or candidate.get("whole")
-        or candidate.get("event")
-    ):
-        return candidate
-    return None
-
-
-def _resolve_submission_org_id(
-    student: User | None,
-    submission: LearningSubmission,
-) -> int | None:
-    """Prefer user org; fall back to submission row org (always set for homework)."""
-    if student is not None:
-        user_org = getattr(student, "organization_id", None)
-        if user_org is not None:
-            return int(user_org)
-    sub_org = getattr(submission, "organization_id", None)
-    if sub_org is not None:
-        return int(sub_org)
-    return None
-
-
-async def _load_submission_diagram(
-    submission: LearningSubmission,
-    _student: User | None,
-) -> dict[str, Any] | None:
-    """Load a student's homework diagram for staff/class-wall preview."""
-    diagram_id = str(submission.diagram_id or "").strip()
-    if not diagram_id:
-        return None
-    student_id = int(submission.student_user_id)
-    cache = get_diagram_cache()
-    try:
-        cached = await cache.get_diagram(student_id, diagram_id)
-    except BACKGROUND_INFRA_ERRORS:
-        cached = None
-    if isinstance(cached, dict):
-        spec = _normalize_preview_spec(cached.get("spec"))
-        if spec is not None:
-            return cached
-
-    try:
-        async with system_rls_session() as sys_db:
-            result = await sys_db.execute(
-                select(Diagram).where(
-                    Diagram.id == diagram_id,
-                    Diagram.user_id == student_id,
-                    Diagram.is_deleted.is_(False),
-                )
-            )
-            row = result.scalar_one_or_none()
-            if row is None:
-                return None
-            spec = _normalize_preview_spec(coerce_diagram_spec(getattr(row, "spec", None)))
-            if spec is None:
-                return None
-            return {
-                "title": getattr(row, "title", "") or "",
-                "diagram_type": getattr(row, "diagram_type", "") or "mind_map",
-                "spec": spec,
-                "language": getattr(row, "language", "zh") or "zh",
-                "thumbnail": getattr(row, "thumbnail", None),
-            }
-    except DATABASE_ERRORS as exc:
-        logger.warning(
-            "[LearningSpace] System diagram load failed submission=%s diagram=%s: %s",
-            submission.id,
-            diagram_id,
-            exc,
-        )
-        return None
-
-
-def _resolve_submission_diagram_fields(
-    submission: LearningSubmission,
-    diagram: dict[str, Any] | None,
-) -> tuple[str | None, dict[str, Any] | None, str, str]:
-    """Thumbnail plus preview spec/type/title from snapshot or live diagram."""
-    diagram_thumbnail: str | None = None
-    preview_spec: dict[str, Any] | None = None
-    preview_diagram_type = "mind_map"
-    preview_title = ""
-
-    snap = submission.snapshot_spec if isinstance(submission.snapshot_spec, dict) else None
-    if diagram:
-        thumb = diagram.get("thumbnail")
-        if isinstance(thumb, str) and thumb.strip():
-            diagram_thumbnail = thumb
-    if not diagram_thumbnail and snap:
-        snap_thumb = snap.get("thumbnail")
-        if isinstance(snap_thumb, str) and snap_thumb.strip():
-            diagram_thumbnail = snap_thumb
-
-    if snap:
-        preview_spec = _normalize_preview_spec(snap.get("spec"))
-        preview_diagram_type = str(snap.get("diagram_type") or preview_diagram_type)
-        preview_title = str(snap.get("title") or preview_title)
-    elif diagram:
-        preview_spec = _normalize_preview_spec(diagram.get("spec"))
-        preview_diagram_type = str(diagram.get("diagram_type") or preview_diagram_type)
-        preview_title = str(diagram.get("title") or preview_title)
-
-    return diagram_thumbnail, preview_spec, preview_diagram_type, preview_title
-
-
 def submission_public_dict(
     submission: LearningSubmission,
     *,
     student_name: str | None = None,
-    organization_name: str | None = None,
     diagram_thumbnail: str | None = None,
     include_preview: bool = False,
     assignment_title: str | None = None,
-    preview_spec: dict[str, Any] | None = None,
-    preview_diagram_type: str | None = None,
-    preview_title: str | None = None,
 ) -> dict[str, Any]:
     """Serialize submission for API responses."""
     payload: dict[str, Any] = {
@@ -840,16 +673,16 @@ def submission_public_dict(
     payload["review_comment"] = comment if isinstance(comment, str) else None
     if student_name is not None:
         payload["student_name"] = student_name
-    if organization_name is not None:
-        payload["organization_name"] = organization_name
     if diagram_thumbnail is not None:
         payload["diagram_thumbnail"] = diagram_thumbnail
     if assignment_title is not None:
         payload["assignment_title"] = assignment_title
     if include_preview:
+        snap = submission.snapshot_spec if isinstance(submission.snapshot_spec, dict) else None
+        preview_spec = snap.get("spec") if snap else None
         payload["preview_spec"] = preview_spec if isinstance(preview_spec, dict) else None
-        payload["preview_diagram_type"] = str(preview_diagram_type or "mind_map")
-        payload["preview_title"] = str(preview_title or "")
+        payload["preview_diagram_type"] = str(snap.get("diagram_type") or "mind_map") if snap else "mind_map"
+        payload["preview_title"] = str(snap.get("title") or "") if snap else ""
     return payload
 
 
@@ -860,33 +693,31 @@ async def enrich_submission_dict(
     include_preview: bool = False,
     assignment_title: str | None = None,
 ) -> dict[str, Any]:
-    """Submission payload with student name, org label, thumbnail, optional preview spec."""
+    """Submission payload with student name and diagram thumbnail."""
     student = await db.get(User, int(submission.student_user_id))
     student_name = (student.name or "").strip() if student is not None else ""
-    organization_name = ""
-    org_id = _resolve_submission_org_id(student, submission)
-    if org_id is not None:
-        org_info = await organization_info_map({org_id})
-        organization_name = str(org_info.get(org_id, {}).get("organization_name") or "")
-
-    diagram: dict[str, Any] | None = None
+    diagram_thumbnail: str | None = None
     if submission.diagram_id:
-        diagram = await _load_submission_diagram(submission, student)
-
-    diagram_thumbnail, preview_spec, preview_diagram_type, preview_title = _resolve_submission_diagram_fields(
-        submission,
-        diagram,
-    )
+        cache = get_diagram_cache()
+        try:
+            diagram = await cache.get_diagram(int(submission.student_user_id), str(submission.diagram_id))
+            if diagram:
+                thumb = diagram.get("thumbnail")
+                if isinstance(thumb, str) and thumb.strip():
+                    diagram_thumbnail = thumb
+        except BACKGROUND_INFRA_ERRORS:
+            diagram_thumbnail = None
+    if not diagram_thumbnail and isinstance(submission.snapshot_spec, dict):
+        # Snapshot may carry thumbnail if older clients stored it; prefer live above.
+        snap_thumb = submission.snapshot_spec.get("thumbnail")
+        if isinstance(snap_thumb, str) and snap_thumb.strip():
+            diagram_thumbnail = snap_thumb
     return submission_public_dict(
         submission,
         student_name=student_name or f"#{submission.student_user_id}",
-        organization_name=organization_name or None,
         diagram_thumbnail=diagram_thumbnail,
         include_preview=include_preview,
         assignment_title=assignment_title,
-        preview_spec=preview_spec if include_preview else None,
-        preview_diagram_type=preview_diagram_type if include_preview else None,
-        preview_title=preview_title if include_preview else None,
     )
 
 

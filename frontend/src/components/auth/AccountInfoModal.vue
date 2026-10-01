@@ -10,10 +10,11 @@ import { Loader2, UserRound } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
-import { useLanguage, useNotifications } from '@/composables'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
-import { useAuthStore } from '@/stores'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
+import { useAuthStore } from '@/stores/auth'
 import { apiRequest } from '@/utils/apiClient'
 import {
   canStartWechatBind,
@@ -155,14 +156,14 @@ async function unbindWechat() {
   try {
     const res = await apiRequest('/api/auth/oauth/links/wechat', { method: 'DELETE' })
     if (res.ok) {
-      notify.success(t('auth.unbindWechatSuccess'))
+      notify.successKey('auth.unbindWechatSuccess')
       await fetchOauthLinks()
       emit('success')
     } else {
-      notify.error(t('auth.oauthUnbindError'))
+      notify.errorKey('auth.oauthUnbindError')
     }
   } catch {
-    notify.error(t('auth.oauthUnbindError'))
+    notify.errorKey('auth.oauthUnbindError')
   }
 }
 
@@ -172,6 +173,12 @@ function handleOAuthBindSuccess() {
 }
 
 const currentAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
+
+/** Bayi jump-in stores a UUID in phone. That id must stay put. */
+const isBayiSsoSubject = computed(() => {
+  const phone = (authStore.user?.phone || '').trim()
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(phone)
+})
 
 /** Quick registration: server-only password until user sets one via SMS. */
 const needsSetLoginPassword = computed(() => authStore.user?.loginPasswordSet === false)
@@ -208,7 +215,7 @@ function handlePhoneChangeSuccess() {
 async function saveDisplayName() {
   const trimmed = nameEdit.value.trim()
   if (trimmed.length < 2 || /\d/.test(trimmed)) {
-    notify.warning(t('auth.modal.fillRequired'))
+    notify.warningKey('auth.modal.fillRequired')
     return
   }
   nameSaving.value = true
@@ -219,8 +226,8 @@ async function saveDisplayName() {
     })
     const data = (await res.json().catch(() => ({}))) as { detail?: string }
     if (res.ok) {
-      notify.success(t('auth.accountNameSaveSuccess'))
-      await authStore.checkAuth()
+      notify.successKey('auth.accountNameSaveSuccess')
+      await authStore.refreshUserProfile({ bypassThrottle: true })
       emit('success')
     } else {
       notify.error(
@@ -228,7 +235,7 @@ async function saveDisplayName() {
       )
     }
   } catch {
-    notify.error(t('auth.accountNameSaveError'))
+    notify.errorKey('auth.accountNameSaveError')
   } finally {
     nameSaving.value = false
   }
@@ -241,7 +248,7 @@ watch(
       const u = (authStore.user?.username || '').trim()
       const looksLikeName =
         u.length >= 2 && u.length <= 32 && !/^\d{11}$/.test(u) && !/^\d+$/.test(u)
-      nameEdit.value = looksLikeName ? u : ''
+      nameEdit.value = authStore.user?.needsDisplayName || !looksLikeName ? '' : u
       if (wechatEnabled && authStore.user?.schoolId) {
         void fetchOauthLinks()
       }
@@ -331,6 +338,7 @@ watch(
             />
             <div class="flex shrink-0 items-center gap-2">
               <button
+                v-if="!isBayiSsoSubject"
                 type="button"
                 class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
                 @click="openChangePhoneModal"
@@ -338,7 +346,7 @@ watch(
                 <I18nText k="auth.changePhoneButton" />
               </button>
               <button
-                v-if="needsSetLoginPassword && authStore.user?.phone"
+                v-if="needsSetLoginPassword && authStore.user?.phone && !isBayiSsoSubject"
                 type="button"
                 class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
                 @click="openSetPasswordSmsModal"
@@ -346,7 +354,7 @@ watch(
                 <I18nText k="auth.setPasswordWithSms" />
               </button>
               <button
-                v-else-if="!needsSetLoginPassword"
+                v-else-if="!needsSetLoginPassword && !isBayiSsoSubject"
                 type="button"
                 class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary"
                 @click="openChangePasswordModal"
@@ -557,6 +565,10 @@ watch(
 .account-plugin-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: max-content;
+  max-width: 100%;
+  height: auto;
   padding: 0.35rem 0.9rem;
   border-radius: 9999px;
   font-size: 0.75rem;
@@ -569,11 +581,22 @@ watch(
   line-height: 1.2;
   white-space: normal;
   text-align: start;
-  height: auto;
   transition:
     background 0.18s ease,
     border-color 0.18s ease,
     color 0.18s ease;
+}
+
+.account-plugin-pill :deep(.i18n-label) {
+  width: max-content;
+  max-width: 100%;
+  align-items: center;
+}
+
+.account-plugin-pill :deep(.i18n-label__primary),
+.account-plugin-pill :deep(.i18n-label__secondary) {
+  width: auto;
+  text-align: center;
 }
 
 .account-plugin-pill--openclaw {

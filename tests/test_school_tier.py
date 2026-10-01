@@ -58,6 +58,7 @@ class _FakeOrg:
         self.name = ""
         self.invitation_code = ""
         self.is_active = True
+        self.mindmate_agent_alias = None
 
 
 def _org(school_tier=None, extra_member_seats=0, **attrs: object) -> Organization:
@@ -406,15 +407,23 @@ def test_redis_org_cache_roundtrips_extra_member_seats():
         name="Demo School",
         invitation_code="INVITE",
         is_active=True,
+        mindmate_agent_alias="小思",
     )
 
     payload = serialize_org(org)
     assert payload["extra_member_seats"] == "25"
     assert payload["teaching_design_template_key"] == ""
+    assert payload["mindmate_agent_alias"] == "小思"
+    hash_schema_current = getattr(cache, "_hash_schema_current")
+    assert hash_schema_current(payload) is True
 
     restored = deserialize_org(cast(dict[bytes | str, bytes | str], payload))
     assert restored.extra_member_seats == 25
     assert restored.teaching_design_template_key is None
+    assert restored.mindmate_agent_alias == "小思"
+
+    legacy_alias = {key: value for key, value in payload.items() if key != "mindmate_agent_alias"}
+    assert hash_schema_current(legacy_alias) is False
 
     payload["teaching_design_template_key"] = "bundled"
     pinned = deserialize_org(cast(dict[bytes | str, bytes | str], payload))

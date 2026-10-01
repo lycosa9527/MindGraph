@@ -4,7 +4,7 @@ import { nextTick, onMounted, ref, watch } from 'vue'
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Minus, Plus } from '@lucide/vue'
 
 import TrainingTextColorField from '@/components/training/TrainingTextColorField.vue'
-import { useLanguage } from '@/composables'
+import { useLanguage } from '@/composables/core/useLanguage'
 import {
   TRAINING_TEXT_SIZE_STEP,
   textBubbleAlign,

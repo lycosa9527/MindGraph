@@ -119,7 +119,7 @@ function toggleShowAll(): void {
     <!-- Header -->
     <div class="px-4 py-3">
       <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
-        {{ t('sidebar.askOnceHistory.title') }}
+        <I18nText k="sidebar.askOnceHistory.title" />
       </div>
     </div>
 
@@ -133,7 +133,7 @@ function toggleShowAll(): void {
         >
           <MessageCircle class="w-8 h-8 mx-auto mb-2 text-stone-300" />
           <p class="text-xs text-stone-400">
-            {{ t('sidebar.askOnceHistory.empty') }}
+            <I18nText k="sidebar.askOnceHistory.empty" />
           </p>
         </div>
 
@@ -153,7 +153,11 @@ function toggleShowAll(): void {
               @click="handleConversationClick(conv.id)"
             >
               <span class="conv-name">
-                {{ conv.name || t('sidebar.history.untitled') }}
+                <template v-if="conv.name">{{ conv.name }}</template
+                ><I18nText
+                  v-else
+                  k="sidebar.history.untitled"
+                />
               </span>
               <ElDropdown
                 trigger="click"
@@ -170,7 +174,7 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handleRenameConversation(conv.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.rename') }}
+                      <I18nText k="sidebar.actions.rename" />
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -178,7 +182,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ t('sidebar.actions.delete') }}
+                        <I18nText k="sidebar.actions.delete" />
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -201,7 +205,11 @@ function toggleShowAll(): void {
               @click="handleConversationClick(conv.id)"
             >
               <span class="conv-name">
-                {{ conv.name || t('sidebar.history.untitled') }}
+                <template v-if="conv.name">{{ conv.name }}</template
+                ><I18nText
+                  v-else
+                  k="sidebar.history.untitled"
+                />
               </span>
               <ElDropdown
                 trigger="click"
@@ -218,7 +226,7 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handleRenameConversation(conv.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.rename') }}
+                      <I18nText k="sidebar.actions.rename" />
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -226,7 +234,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ t('sidebar.actions.delete') }}
+                        <I18nText k="sidebar.actions.delete" />
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -249,7 +257,11 @@ function toggleShowAll(): void {
               @click="handleConversationClick(conv.id)"
             >
               <span class="conv-name">
-                {{ conv.name || t('sidebar.history.untitled') }}
+                <template v-if="conv.name">{{ conv.name }}</template
+                ><I18nText
+                  v-else
+                  k="sidebar.history.untitled"
+                />
               </span>
               <ElDropdown
                 trigger="click"
@@ -266,7 +278,7 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handleRenameConversation(conv.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.rename') }}
+                      <I18nText k="sidebar.actions.rename" />
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -274,7 +286,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ t('sidebar.actions.delete') }}
+                        <I18nText k="sidebar.actions.delete" />
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -297,7 +309,11 @@ function toggleShowAll(): void {
               @click="handleConversationClick(conv.id)"
             >
               <span class="conv-name">
-                {{ conv.name || t('sidebar.history.untitled') }}
+                <template v-if="conv.name">{{ conv.name }}</template
+                ><I18nText
+                  v-else
+                  k="sidebar.history.untitled"
+                />
               </span>
               <ElDropdown
                 trigger="click"
@@ -314,7 +330,7 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handleRenameConversation(conv.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ t('sidebar.actions.rename') }}
+                      <I18nText k="sidebar.actions.rename" />
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -322,7 +338,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ t('sidebar.actions.delete') }}
+                        <I18nText k="sidebar.actions.delete" />
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -337,7 +353,10 @@ function toggleShowAll(): void {
             class="show-more-btn"
             @click="toggleShowAll"
           >
-            {{ t('sidebar.actions.showMore', { n: remainingCount }) }}
+            <I18nText
+              k="sidebar.actions.showMore"
+              :params="{ n: remainingCount }"
+            />
           </button>
 
           <!-- Show Less button -->
@@ -346,7 +365,7 @@ function toggleShowAll(): void {
             class="show-more-btn"
             @click="toggleShowAll"
           >
-            {{ t('sidebar.actions.showLess') }}
+            <I18nText k="sidebar.actions.showLess" />
           </button>
         </template>
       </div>
@@ -364,7 +383,7 @@ function toggleShowAll(): void {
           <Lock class="w-5 h-5 text-stone-400" />
         </div>
         <p class="text-xs text-stone-500">
-          {{ t('sidebar.chatHistory.loginPrompt') }}
+          <I18nText k="sidebar.chatHistory.loginPrompt" />
         </p>
       </div>
     </div>

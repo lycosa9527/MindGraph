@@ -6,44 +6,47 @@ import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import {
-  loadThinkingCoinsWallet,
-  thinkingCoinsWalletScopeKey as resolveThinkingCoinsWalletScopeKey,
-} from '@/composables/auth/fetchThinkingCoinsWallet'
-import { formatThinkingCoinBalance } from '@/composables/auth/useThinkingCoins'
-import { patchEarnTasksFromMutation } from '@/composables/auth/useThinkingCoinSync'
-import { eventBus } from '@/composables/core/useEventBus'
-import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
-import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
-import { useLanguage } from '@/composables/core/useLanguage'
-import { useAdminPanelTabs } from '@/composables/admin/useAdminPanelTabs'
-import { HIDE_KNOWLEDGE_SPACE_NAV } from '@/config/docSummaryLite'
-import {
-  canViewDataCenterSubView,
   DATA_CENTER_VIEWS,
+  type DataCenterView,
+  canViewDataCenterSubView,
   defaultDataCenterView,
   isDataCenterView,
   visibleDataCenterViews,
-  type DataCenterView,
 } from '@/composables/admin/adminDataCenterViews'
-import { useAdminAccess } from '@/composables/admin/useAdminAccess'
-import { useAdminFeatureDevNav } from '@/composables/admin/useAdminFeatureDevNav'
 import { defaultFeatureDevSubtab } from '@/composables/admin/adminFeatureDevNav'
 import { defaultShowcaseSubtab } from '@/composables/admin/adminShowcaseNav'
+import { useAdminAccess } from '@/composables/admin/useAdminAccess'
+import { useAdminFeatureDevNav } from '@/composables/admin/useAdminFeatureDevNav'
+import { useAdminPanelTabs } from '@/composables/admin/useAdminPanelTabs'
 import { useAdminSettingsNav } from '@/composables/admin/useAdminSettingsNav'
+import {
+  loadThinkingCoinsWallet,
+  thinkingCoinsWalletScopeKey as resolveThinkingCoinsWalletScopeKey,
+} from '@/composables/auth/fetchThinkingCoinsWallet'
+import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
+import { patchEarnTasksFromMutation } from '@/composables/auth/useThinkingCoinSync'
+import { formatThinkingCoinBalance } from '@/composables/auth/useThinkingCoins'
+import { eventBus } from '@/composables/core/useEventBus'
+import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
-import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
+import { HIDE_KNOWLEDGE_SPACE_NAV } from '@/config/docSummaryLite'
+import { isPaidSchoolTier } from '@/constants/schoolTier'
 import { useAskOnceStore } from '@/stores/askonce'
+import { useAuthStore } from '@/stores/auth'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
-import { useZhihuiHistoryStore } from '@/stores/zhihuiHistory'
+import { useMindMateStore } from '@/stores/mindmate'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
+import { useUIStore } from '@/stores/ui'
+import { useZhihuiHistoryStore } from '@/stores/zhihuiHistory'
 import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
 import { getShowcasePendingCount } from '@/utils/apiClient'
+import { focusPersonalMindmateThread } from '@/utils/mindmateCollabLibrarySave'
 import { userCanAccessMindbotAdmin } from '@/utils/mindbotAccess'
 import { shouldExpandWorkshopOnNavClick } from '@/utils/sidebarWorkshopPanel'
-import { getRolePillStyle } from '@/utils/userRoleDisplay'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
+import { getRolePillStyle } from '@/utils/userRoleDisplay'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
-import { isPaidSchoolTier } from '@/constants/schoolTier'
 
 /** Hide ZhiHui sidebar entry until the studio is ready to ship. `/zhihui` stays reachable. */
 const HIDE_ZHIHUI_NAV = true
@@ -66,7 +69,9 @@ export function useAppSidebar() {
   const authStore = useAuthStore()
   const mindMateStore = useMindMateStore()
   const askOnceStore = useAskOnceStore()
-  const { displayName: mindMateNavLabel } = useMindMateBranding()
+  const { displayName: mindMateNavLabel, hasCustomAgentName: hasCustomMindMateName } =
+    useMindMateBranding()
+  const mindMateLabelKey = computed(() => (hasCustomMindMateName.value ? '' : 'sidebar.mindMate'))
   const { canUseOnlineCollab } = useSchoolTierFeatures()
   const {
     featureRagChunkTest,
@@ -97,6 +102,11 @@ export function useAppSidebar() {
 
   const isCollapsed = computed(() => uiStore.sidebarCollapsed)
 
+  function isLearningSpaceAdminRoute(): boolean {
+    const route = router.currentRoute.value
+    return route.path.startsWith('/admin') && route.query.tab === 'learning_space'
+  }
+
   const currentMode = computed(() => {
     const path = router.currentRoute.value.path
     if (path.startsWith('/mindmate')) return 'mindmate'
@@ -111,7 +121,8 @@ export function useAppSidebar() {
     if (path.startsWith('/knowledge-space')) return 'knowledge-space'
     if (
       path.startsWith('/learning-space') ||
-      path.startsWith('/m/learning-space')
+      path.startsWith('/m/learning-space') ||
+      isLearningSpaceAdminRoute()
     ) {
       return 'learning-space'
     }
@@ -150,7 +161,7 @@ export function useAppSidebar() {
   const isAdmin = computed(() => authStore.isAdmin)
   const canAccessZhihui = computed(() => authStore.canAccessZhihui)
   const showZhihuiNav = computed(
-    () => featureZhihui.value && canAccessZhihui.value && !HIDE_ZHIHUI_NAV,
+    () => featureZhihui.value && canAccessZhihui.value && !HIDE_ZHIHUI_NAV
   )
   const isManagementPanelUser = computed(() => authStore.isManagementPanelUser)
   const { tabs: adminNavTabs, loadCapabilities: loadAdminNavCapabilities } = useAdminPanelTabs({
@@ -196,10 +207,7 @@ export function useAppSidebar() {
 
   const dataCenterNavViews = computed(() => {
     const allowed = new Set(visibleDataCenterViews(capabilities.value))
-    return DATA_CENTER_VIEWS.filter((view) => allowed.has(view.name)).map((view) => ({
-      ...view,
-      label: t(view.labelKey),
-    }))
+    return DATA_CENTER_VIEWS.filter((view) => allowed.has(view.name))
   })
 
   const currentDataCenterView = computed((): DataCenterView | null => {
@@ -261,6 +269,7 @@ export function useAppSidebar() {
     }
     return {
       label: t(style.labelKey),
+      labelKey: style.labelKey,
       bgClass: style.bgClass,
       textClass: style.textClass,
       borderClass: style.borderClass,
@@ -297,6 +306,16 @@ export function useAppSidebar() {
       return t('sidebar.personalEdition')
     }
     return ''
+  })
+  const orgEditionParams = computed((): Record<string, unknown> | null => {
+    if (brandSubtitleKind.value !== 'org_edition') {
+      return null
+    }
+    const schoolName = authStore.user?.schoolName?.trim()
+    if (!schoolName) {
+      return null
+    }
+    return { org: truncateGraphemes(schoolName, ORG_EDITION_MAX_ORG_NAME_LENGTH) }
   })
   const orgEditionTooltip = computed(() => {
     if (brandSubtitleKind.value !== 'org_edition') {
@@ -354,7 +373,7 @@ export function useAppSidebar() {
     template: '/template',
     course: '/course',
     community: '/community',
-    'showcase': '/showcase',
+    showcase: '/showcase',
     zhihui: '/zhihui',
     library: '/library',
     admin: '/admin',
@@ -363,7 +382,6 @@ export function useAppSidebar() {
   }
 
   const settingsNav = useAdminSettingsNav({
-    t,
     canViewSettingsSubtab,
     featureGewe,
     featureLibrary,
@@ -371,7 +389,6 @@ export function useAppSidebar() {
   })
 
   const featureDevNav = useAdminFeatureDevNav({
-    t,
     canViewSettingsSubtab,
     featureSmartResponse,
     featureTeacherUsage,
@@ -468,8 +485,7 @@ export function useAppSidebar() {
 
   function dataCenterSubItemClass(view: DataCenterView) {
     return {
-      'is-active':
-        currentAdminTab.value === 'data_center' && currentDataCenterView.value === view,
+      'is-active': currentAdminTab.value === 'data_center' && currentDataCenterView.value === view,
     }
   }
 
@@ -598,6 +614,7 @@ export function useAppSidebar() {
   }
 
   function startNewChat() {
+    focusPersonalMindmateThread()
     mindMateStore.startNewConversation()
     if (currentMode.value !== 'mindmate') {
       router.push('/mindmate')
@@ -631,8 +648,7 @@ export function useAppSidebar() {
 
   function trainingSubItemClass(name: 'courses' | 'builder') {
     const path = router.currentRoute.value.path
-    const active =
-      name === 'builder' ? path.startsWith('/training/builder') : path === '/training'
+    const active = name === 'builder' ? path.startsWith('/training/builder') : path === '/training'
     return { 'is-active': active }
   }
 
@@ -665,13 +681,8 @@ export function useAppSidebar() {
     [currentMode, isAuthenticated],
     ([mode, authenticated], previous) => {
       const justLoggedIn = Boolean(authenticated && previous && !previous[1])
-      const autoOpenMindHistory =
-        (mode === 'mindmate' || mode === 'mindgraph') && !authenticated
-      if (
-        autoOpenMindHistory ||
-        mode === 'maite' ||
-        (mode === 'zhihui' && showZhihuiNav.value)
-      ) {
+      const autoOpenMindHistory = (mode === 'mindmate' || mode === 'mindgraph') && !authenticated
+      if (autoOpenMindHistory || mode === 'maite' || (mode === 'zhihui' && showZhihuiNav.value)) {
         expandedPanel.value = mode
         return
       }
@@ -695,10 +706,10 @@ export function useAppSidebar() {
   )
 
   watch(
-    () => router.currentRoute.value.path,
-    (path) => {
+    () => [router.currentRoute.value.path, router.currentRoute.value.query.tab] as const,
+    ([path, tab]) => {
       if (path.startsWith('/admin')) {
-        if (showManagementPanelSubnav.value) {
+        if (tab !== 'learning_space' && showManagementPanelSubnav.value) {
           expandedPanel.value = 'admin'
         }
       } else if (expandedPanel.value === 'admin') {
@@ -745,10 +756,7 @@ export function useAppSidebar() {
   )
 
   const thinkingCoinsWalletScopeKey = computed(() =>
-    resolveThinkingCoinsWalletScopeKey(
-      thinkingCoinsEligible.value,
-      authStore.user?.id,
-    )
+    resolveThinkingCoinsWalletScopeKey(thinkingCoinsEligible.value, authStore.user?.id)
   )
 
   watch(
@@ -795,7 +803,7 @@ export function useAppSidebar() {
   )
 
   const showMindmateCollabSessions = computed(
-    () => featureMindmateCollab.value && canUseOnlineCollab.value,
+    () => featureMindmateCollab.value && canUseOnlineCollab.value
   )
   const showTrainingNav = computed(
     () => featureTraining.value && authStore.isPlatformLevel && isAuthenticated.value
@@ -814,16 +822,9 @@ export function useAppSidebar() {
     | null
   >(null)
 
-  const studentLearningClassId = computed(() => {
-    const user = authStore.user
-    if (!user) return null
-    const raw = user.learningClassId ?? user.learning_class_id
-    return raw == null ? null : raw
-  })
-
   const isLearningSpaceProductRole = computed(() => {
     if (authStore.user?.role === 'student') {
-      return Boolean(studentLearningClassId.value)
+      return true
     }
     const role = learningSpaceContextRole.value
     return role === 'pilot_teacher' || role === 'learner' || role === 'assistant'
@@ -833,23 +834,20 @@ export function useAppSidebar() {
     if (!isAuthenticated.value) {
       return false
     }
+    // Classroom students only exist for Learning Space — keep the nav visible even
+    // when feature flags briefly fall back to defaults (e.g. after a backend blip).
     if (authStore.user?.role === 'student') {
-      return Boolean(studentLearningClassId.value)
+      return true
     }
     if (!featureStudentLearningSpace.value) {
       return false
     }
-    // Product nav only for assigned Learning Space roles (pilot / learner / assistant).
-    // Panel managers (superadmin, expert, …) use 管理面板 → 学习空间 instead.
-    return isLearningSpaceProductRole.value
+    return isLearningSpaceProductRole.value || can('tab.learning_space.view')
   })
 
   /** Learning Space students: homepage sidebar is MindGraph + Learning Space only. */
   const isLearningSpaceStudent = computed(
-    () =>
-      isAuthenticated.value &&
-      authStore.user?.role === 'student' &&
-      Boolean(studentLearningClassId.value)
+    () => isAuthenticated.value && authStore.user?.role === 'student'
   )
 
   async function refreshLearningSpaceNav(): Promise<void> {
@@ -858,10 +856,6 @@ export function useAppSidebar() {
       return
     }
     if (authStore.user?.role === 'student') {
-      if (!studentLearningClassId.value) {
-        learningSpaceContextRole.value = null
-        return
-      }
       learningSpaceContextRole.value = 'student'
       return
     }
@@ -953,10 +947,13 @@ export function useAppSidebar() {
     canAccessWorkshopChat,
     canAccessMindbot,
     mindMateNavLabel,
+    mindMateLabelKey,
     userName,
     userRolePill,
     brandHeaderLayout,
+    brandSubtitleKind,
     orgEditionLabel,
+    orgEditionParams,
     orgEditionTooltip,
     userAvatar,
     showLoginModal,

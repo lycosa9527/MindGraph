@@ -1858,23 +1858,6 @@
   min-height: 320px;
   background: #f3f4f6;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.ls-review__preview-actions {
-  display: flex;
-  justify-content: center;
-  padding: 0.65rem 0.75rem;
-  border-top: 1px solid #e8eaef;
-  background: #fafbfc;
-  flex-shrink: 0;
-}
-
-.ls-review__preview-actions .ls-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
 }
 
 .ls-review__fs-btn {
@@ -2000,18 +1983,7 @@
   background: #f8fafc;
 }
 
-.ls-thumb-card__cover-inner {
-  width: 100%;
-  height: 100%;
-}
-
-.ls-thumb-card__cover-inner .showcase-inline-diagram-preview {
-  height: 100%;
-  min-height: 100%;
-}
-
-.ls-thumb-card__cover img,
-.ls-thumb-card__cover-inner > img {
+.ls-thumb-card__cover img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -2024,70 +1996,6 @@
   border: 1px solid #e7e5e4;
   background: #fafaf9;
   padding: 0.75rem;
-}
-
-.ls-req-template__frame {
-  position: relative;
-  height: 280px;
-  min-height: 280px;
-  overflow: hidden;
-  border-radius: 0.65rem;
-  border: 1px solid var(--ls-border, #e8eaef);
-  background: #fff;
-}
-
-.ls-req-template__frame .showcase-inline-diagram-preview {
-  height: 100%;
-  min-height: 280px;
-}
-
-.ls-req-template__frame--fs {
-  height: min(72vh, 640px);
-  min-height: min(72vh, 640px);
-}
-
-.ls-req-template__frame--fs .showcase-inline-diagram-preview {
-  min-height: min(72vh, 640px);
-}
-
-.ls-req-img-btn {
-  display: block;
-  width: 100%;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: zoom-in;
-  border-radius: 0.75rem;
-}
-
-.ls-req-img-btn:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
-}
-
-.ls-req-lightbox {
-  position: fixed;
-  inset: 0;
-  z-index: 12000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-  background: rgb(15 23 42 / 0.72);
-}
-
-.ls-req-lightbox img {
-  max-width: min(96vw, 1200px);
-  max-height: 92vh;
-  object-fit: contain;
-  border-radius: 0.5rem;
-  background: #fff;
-}
-
-.ls-req-lightbox__close {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
 }
 
 .ls-req-attach-list {

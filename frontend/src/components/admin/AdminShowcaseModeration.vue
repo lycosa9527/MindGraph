@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 import { ElTable } from 'element-plus'
-
-import { useRoute, useRouter } from 'vue-router'
 
 import { RefreshCw, Search } from '@lucide/vue'
 
@@ -11,11 +10,12 @@ import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vu
 import ShowcaseDetailModal from '@/components/showcase/ShowcaseDetailModal.vue'
 import ShowcaseFilterDropdown from '@/components/showcase/ShowcaseFilterDropdown.vue'
 import { type ShowcaseCaseType } from '@/components/showcase/showcaseShared'
+import { useLanguage, useNotifications } from '@/composables'
 import {
   SHOWCASE_QUEUES,
-  showcaseQueueLabelKey,
-  resolveShowcaseQueue,
   type ShowcaseQueue,
+  resolveShowcaseQueue,
+  showcaseQueueLabelKey,
 } from '@/composables/admin/adminShowcaseNav'
 import {
   resolveShowcaseMediaStatus,
@@ -25,9 +25,8 @@ import {
   showcaseMediaStatusChipClass,
   showcaseMediaStatusLabelKey,
 } from '@/composables/admin/showcaseMediaStatus'
-import { useLanguage, useNotifications } from '@/composables'
-import { useShowcaseMeta } from '@/composables/showcase/useShowcaseMeta'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useShowcaseMeta } from '@/composables/showcase/useShowcaseMeta'
 import {
   type ShowcasePost,
   getShowcasePendingCount,
@@ -103,6 +102,7 @@ const queueOptions = computed(() =>
   SHOWCASE_QUEUES.map((value) => ({
     value,
     label: String(t(showcaseQueueLabelKey(value))),
+    labelKey: showcaseQueueLabelKey(value),
     count: value === 'pending' ? queuePendingCount.value : queueRejectedCount.value,
   }))
 )
@@ -111,6 +111,7 @@ const sortOptions = computed(() =>
   ADMIN_SORT_OPTIONS.map((opt) => ({
     value: opt.value,
     label: String(t(opt.labelKey)),
+    labelKey: opt.labelKey,
   }))
 )
 
@@ -118,6 +119,7 @@ const caseTypeFilterOptions = computed(() =>
   CASE_TYPE_FILTER_OPTIONS.map((opt) => ({
     value: opt.value,
     label: String(t(opt.labelKey)),
+    labelKey: opt.labelKey,
   }))
 )
 
@@ -125,6 +127,7 @@ const publishSourceFilterOptions = computed(() =>
   PUBLISH_SOURCE_OPTIONS.map((opt) => ({
     value: opt.value,
     label: String(t(opt.labelKey)),
+    labelKey: opt.labelKey,
   }))
 )
 
@@ -132,14 +135,10 @@ const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize))
 
 const showReviewColumns = computed(() => activeQueue.value !== 'pending')
 
-function caseTypeLabel(caseType: ShowcaseCaseType): string {
-  if (caseType === 'teaching_design') return String(t('showcase.type.teachingDesign'))
-  if (caseType === 'diagram_case') return String(t('showcase.type.diagramCase'))
-  return String(t('showcase.type.diagramTemplate'))
-}
-
-function mediaStatusLabel(post: ShowcasePost): string {
-  return String(t(showcaseMediaStatusLabelKey(resolveShowcaseMediaStatus(post))))
+function caseTypeLabelKey(caseType: ShowcaseCaseType): string {
+  if (caseType === 'teaching_design') return 'showcase.type.teachingDesign'
+  if (caseType === 'diagram_case') return 'showcase.type.diagramCase'
+  return 'showcase.type.diagramTemplate'
 }
 
 function mediaStatusChipClass(post: ShowcasePost): string {
@@ -169,7 +168,7 @@ async function refreshCover(post: ShowcasePost): Promise<void> {
     if (idx >= 0) {
       posts.value[idx] = res.post
     }
-    notify.success(String(t('admin.showcase.refreshStatusOk')))
+    notify.successKey('admin.showcase.refreshStatusOk')
   } catch (e) {
     notify.error(e instanceof Error ? e.message : String(t('admin.showcase.refreshStatusFail')))
   } finally {
@@ -298,7 +297,9 @@ onMounted(() => {
         @update:model-value="setQueue"
       />
       <div class="relative min-w-55 flex-1 sm:max-w-xs">
-        <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <Search
+          class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+        />
         <input
           v-model="searchQuery"
           type="search"
@@ -310,47 +311,59 @@ onMounted(() => {
 
     <div class="grid grid-cols-2 gap-3 lg:grid-cols-5">
       <div>
-        <label class="mb-1 block text-xs text-gray-500">{{ t('admin.showcase.colSubject') }}</label>
+        <label class="mb-1 block text-xs text-gray-500"
+          ><I18nText k="admin.showcase.colSubject"
+        /></label>
         <ShowcaseFilterDropdown
           v-model="filterSubject"
           block
           variant="plain"
           :options="subjectOptions"
+          all-label-key="showcase.filter.all"
           :all-label="t('showcase.filter.all')"
         />
       </div>
       <div>
-        <label class="mb-1 block text-xs text-gray-500">{{ t('showcase.grade') }}</label>
+        <label class="mb-1 block text-xs text-gray-500"><I18nText k="showcase.grade" /></label>
         <ShowcaseFilterDropdown
           v-model="filterGrade"
           block
           variant="plain"
           :options="gradeOptions"
+          all-label-key="showcase.filter.all"
           :all-label="t('showcase.filter.all')"
         />
       </div>
       <div>
-        <label class="mb-1 block text-xs text-gray-500">{{ t('admin.showcase.colType') }}</label>
+        <label class="mb-1 block text-xs text-gray-500"
+          ><I18nText k="admin.showcase.colType"
+        /></label>
         <ShowcaseFilterDropdown
           v-model="filterCaseType"
           block
           variant="plain"
           :options="caseTypeFilterOptions"
+          all-label-key="showcase.filter.all"
           :all-label="t('showcase.filter.all')"
         />
       </div>
       <div>
-        <label class="mb-1 block text-xs text-gray-500">{{ t('admin.showcase.colPublishSource') }}</label>
+        <label class="mb-1 block text-xs text-gray-500"
+          ><I18nText k="admin.showcase.colPublishSource"
+        /></label>
         <ShowcaseFilterDropdown
           v-model="filterPublishSource"
           block
           variant="plain"
           :options="publishSourceFilterOptions"
+          all-label-key="showcase.filter.all"
           :all-label="t('showcase.filter.all')"
         />
       </div>
       <div>
-        <label class="mb-1 block text-xs text-gray-500">{{ t('admin.showcase.sortLabel') }}</label>
+        <label class="mb-1 block text-xs text-gray-500"
+          ><I18nText k="admin.showcase.sortLabel"
+        /></label>
         <ShowcaseFilterDropdown
           v-model="activeSort"
           block
@@ -376,10 +389,10 @@ onMounted(() => {
       max-height="520"
       @row-click="(row: ShowcasePost) => openPost(row)"
     >
-      <el-table-column
-        :label="t('admin.showcase.colTitle')"
-        min-width="200"
-      >
+      <el-table-column min-width="200">
+        <template #header>
+          <I18nText k="admin.showcase.colTitle" />
+        </template>
         <template #default="{ row }">
           <div class="flex items-center gap-3">
             <div
@@ -398,16 +411,16 @@ onMounted(() => {
                 v-if="row.publish_source === 'proxy'"
                 class="ml-1 text-xs text-amber-600"
               >
-                {{ t('admin.showcase.proxyBadge') }}
+                <I18nText k="admin.showcase.proxyBadge" />
               </span>
             </div>
           </div>
         </template>
       </el-table-column>
-      <el-table-column
-        :label="t('admin.showcase.colAuthor')"
-        min-width="120"
-      >
+      <el-table-column min-width="120">
+        <template #header>
+          <I18nText k="admin.showcase.colAuthor" />
+        </template>
         <template #default="{ row }">
           <div class="text-sm text-gray-900">{{ row.author.name }}</div>
           <div
@@ -420,76 +433,92 @@ onMounted(() => {
       </el-table-column>
       <el-table-column
         prop="subject"
-        :label="t('admin.showcase.colSubject')"
         width="100"
-      />
-      <el-table-column
-        prop="grade"
-        :label="t('showcase.grade')"
-        width="90"
-      />
-      <el-table-column
-        :label="t('admin.showcase.colType')"
-        width="120"
       >
-        <template #default="{ row }">
-          {{ caseTypeLabel(row.case_type) }}
+        <template #header>
+          <I18nText k="admin.showcase.colSubject" />
         </template>
       </el-table-column>
       <el-table-column
-        :label="t('admin.showcase.colMediaStatus')"
-        min-width="140"
+        prop="grade"
+        width="90"
       >
+        <template #header>
+          <I18nText k="showcase.grade" />
+        </template>
+      </el-table-column>
+      <el-table-column width="120">
+        <template #header>
+          <I18nText k="admin.showcase.colType" />
+        </template>
+        <template #default="{ row }">
+          <I18nText :k="caseTypeLabelKey(row.case_type)" />
+        </template>
+      </el-table-column>
+      <el-table-column min-width="140">
+        <template #header>
+          <I18nText k="admin.showcase.colMediaStatus" />
+        </template>
         <template #default="{ row }">
           <span
             class="inline-flex max-w-full items-center rounded-md px-2 py-0.5 text-xs font-medium"
             :class="mediaStatusChipClass(row as ShowcasePost)"
             :title="mediaStatusTitle(row as ShowcasePost) || undefined"
           >
-            {{ mediaStatusLabel(row as ShowcasePost) }}
+            <I18nText
+              :k="showcaseMediaStatusLabelKey(resolveShowcaseMediaStatus(row as ShowcasePost))"
+            />
           </span>
         </template>
       </el-table-column>
-      <el-table-column
-        :label="t('admin.showcase.colSubmitted')"
-        min-width="150"
-      >
+      <el-table-column min-width="150">
+        <template #header>
+          <I18nText k="admin.showcase.colSubmitted" />
+        </template>
         <template #default="{ row }">
           {{ formatDate(row.created_at) }}
         </template>
       </el-table-column>
       <el-table-column
         v-if="showReviewColumns"
-        :label="t('admin.showcase.colReviewer')"
         min-width="120"
       >
+        <template #header>
+          <I18nText k="admin.showcase.colReviewer" />
+        </template>
         <template #default="{ row }">
           {{ row.reviewer?.name || '—' }}
         </template>
       </el-table-column>
       <el-table-column
         v-if="showReviewColumns"
-        :label="t('admin.showcase.colReviewedAt')"
         min-width="150"
       >
+        <template #header>
+          <I18nText k="admin.showcase.colReviewedAt" />
+        </template>
         <template #default="{ row }">
           {{ formatDate(row.reviewed_at) }}
         </template>
       </el-table-column>
       <el-table-column
         v-if="activeQueue === 'rejected'"
-        :label="t('admin.showcase.colRejectionReason')"
         min-width="180"
       >
+        <template #header>
+          <I18nText k="admin.showcase.colRejectionReason" />
+        </template>
         <template #default="{ row }">
           {{ row.rejection_reason || '—' }}
         </template>
       </el-table-column>
       <el-table-column
-        :label="t('admin.actions')"
         width="140"
         fixed="right"
       >
+        <template #header>
+          <I18nText k="admin.actions" />
+        </template>
         <template #default="{ row }">
           <div class="flex items-center gap-2">
             <button
@@ -497,7 +526,7 @@ onMounted(() => {
               class="text-sm font-medium text-gray-700"
               @click.stop="openPost(row as ShowcasePost)"
             >
-              {{ t('admin.showcase.review') }}
+              <I18nText k="admin.showcase.review" />
             </button>
             <button
               v-if="canRefreshCover(row as ShowcasePost)"
@@ -521,14 +550,17 @@ onMounted(() => {
       v-else-if="!isLoading"
       class="rounded-xl border border-dashed border-gray-200 bg-white px-6 py-12 text-center text-sm text-gray-400"
     >
-      {{ t('admin.showcase.empty') }}
+      <I18nText k="admin.showcase.empty" />
     </div>
 
     <div
       v-if="total > pageSize"
       class="flex items-center justify-between text-sm text-gray-600"
     >
-      <span>{{ t('admin.showcase.stats.page') }} {{ page }} / {{ totalPages }} · {{ total }}</span>
+      <span
+        ><I18nText k="admin.showcase.stats.page" /> {{ page }} / {{ totalPages }} ·
+        {{ total }}</span
+      >
       <div class="flex gap-2">
         <button
           type="button"
@@ -536,7 +568,7 @@ onMounted(() => {
           :disabled="page <= 1"
           @click="goPrevPage"
         >
-          {{ t('admin.showcase.prevPage') }}
+          <I18nText k="admin.showcase.prevPage" />
         </button>
         <button
           type="button"
@@ -544,7 +576,7 @@ onMounted(() => {
           :disabled="page >= totalPages"
           @click="goNextPage"
         >
-          {{ t('admin.showcase.nextPage') }}
+          <I18nText k="admin.showcase.nextPage" />
         </button>
       </div>
     </div>

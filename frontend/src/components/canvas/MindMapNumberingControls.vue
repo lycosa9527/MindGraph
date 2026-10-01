@@ -9,6 +9,7 @@ import { ElDropdown, ElTooltip } from 'element-plus'
 import { ChevronDown, ListOrdered } from '@lucide/vue'
 
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
+import MmToolbarLabel from '@/components/canvas/MmToolbarLabel.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -48,7 +49,7 @@ const dropdownOpen = ref(false)
 
 function ensureDiagram(): boolean {
   if (!diagramStore.data?.nodes?.length) {
-    notify.warning(t('canvas.toolbar.createDiagramFirst'))
+    notify.warningKey('canvas.toolbar.createDiagramFirst')
     return false
   }
   return true
@@ -65,8 +66,16 @@ const numberingVisibility = computed<NumberingVisibility>({
 const numberingEnabled = computed(() => numberingVisibility.value === 'enable')
 
 const numberingVisibilityOptions = computed(() => [
-  { label: t('canvas.toolbar.mindMapAppearanceNumberingEnable'), value: 'enable' as const },
-  { label: t('canvas.toolbar.mindMapAppearanceNumberingHide'), value: 'hide' as const },
+  {
+    label: t('canvas.toolbar.mindMapAppearanceNumberingEnable'),
+    labelKey: 'canvas.toolbar.mindMapAppearanceNumberingEnable',
+    value: 'enable' as const,
+  },
+  {
+    label: t('canvas.toolbar.mindMapAppearanceNumberingHide'),
+    labelKey: 'canvas.toolbar.mindMapAppearanceNumberingHide',
+    value: 'hide' as const,
+  },
 ])
 
 const prefixStyle = computed<MindMapNumberingGlyphStyle>({
@@ -98,6 +107,7 @@ function handleDropdownVisible(visible: boolean): void {
     v-if="isButton"
     :content="numberingLabel"
     placement="bottom"
+    :disabled="compact"
   >
     <span class="inline-flex shrink-0">
       <ElDropdown
@@ -114,12 +124,11 @@ function handleDropdownVisible(visible: boolean): void {
           :aria-label="numberingLabel"
         >
           <ListOrdered class="w-4 h-4 shrink-0" />
-          <span
-            v-if="!compact"
+          <MmToolbarLabel
             class="mm-btn__label"
-          >
-            <I18nText k="canvas.toolbar.mindMapAppearanceNumbering" />
-          </span>
+            k="canvas.toolbar.mindMapAppearanceNumbering"
+            :short="compact"
+          />
           <ChevronDown
             :size="12"
             class="mm-btn__chevron"

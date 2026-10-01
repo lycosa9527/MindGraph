@@ -92,7 +92,7 @@ function openCreate(): void {
 async function submitCreate(): Promise<void> {
   const name = createName.value.trim()
   if (!name) {
-    notify.error(t('admin.apiKeysNameRequired'))
+    notify.errorKey('admin.apiKeysNameRequired')
     return
   }
   createSubmitting.value = true
@@ -114,7 +114,7 @@ async function submitCreate(): Promise<void> {
     if (newKeyPlaintext.value) {
       newKeyDialogOpen.value = true
     } else {
-      notify.success(t('admin.apiKeysCreateSuccess'))
+      notify.successKey('admin.apiKeysCreateSuccess')
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : t('admin.apiKeysLoadError')
@@ -145,7 +145,7 @@ async function confirmDelete(row: AdminApiKeyRow): Promise<void> {
   try {
     await deleteApiKey.mutateAsync(row.id)
     await loadList()
-    notify.success(t('admin.apiKeysDeleteSuccess'))
+    notify.successKey('admin.apiKeysDeleteSuccess')
   } catch (err) {
     const message = err instanceof Error ? err.message : t('admin.apiKeysLoadError')
     notify.error(message)
@@ -155,9 +155,9 @@ async function confirmDelete(row: AdminApiKeyRow): Promise<void> {
 async function copyToClipboard(value: string): Promise<void> {
   try {
     await navigator.clipboard.writeText(value)
-    notify.success(t('admin.mindbot.copied'))
+    notify.successKey('admin.mindbot.copied')
   } catch {
-    notify.error(t('common.error'))
+    notify.errorKey('common.error')
   }
 }
 
@@ -245,19 +245,24 @@ function cancelCreate(): void {
           <ElTable
             :data="rows"
             class="api-keys-table w-full"
-            :empty-text="t('admin.noData')"
             stripe
           >
+            <template #empty>
+              <I18nText k="admin.noData" />
+            </template>
             <el-table-column
               prop="name"
-              :label="t('admin.name')"
               min-width="120"
               show-overflow-tooltip
-            />
-            <el-table-column
-              :label="t('admin.apiKey')"
-              min-width="200"
             >
+              <template #header>
+                <I18nText k="admin.name" />
+              </template>
+            </el-table-column>
+            <el-table-column min-width="200">
+              <template #header>
+                <I18nText k="admin.apiKey" />
+              </template>
               <template #default="{ row }">
                 <div class="api-keys-key-cell flex items-start gap-1 flex-wrap">
                   <code class="api-keys-mono min-w-0 flex-1">{{ formatKeyPreview(row.key) }}</code>
@@ -273,19 +278,23 @@ function cancelCreate(): void {
               </template>
             </el-table-column>
             <el-table-column
-              :label="t('admin.apiKeysTableStats')"
               width="115"
               align="right"
             >
+              <template #header>
+                <I18nText k="admin.apiKeysTableStats" />
+              </template>
               <template #default="{ row }">
                 {{ formatNumber(row.token_stats?.total_tokens ?? 0) }}
               </template>
             </el-table-column>
             <el-table-column
-              :label="t('admin.apiKeysDiagramRequestCount')"
               width="88"
               align="right"
             >
+              <template #header>
+                <I18nText k="admin.apiKeysDiagramRequestCount" />
+              </template>
               <template #default="{ row }">
                 {{
                   (row.diagram_request_count ?? row.dingtalk_request_count ?? 0).toLocaleString()
@@ -293,19 +302,23 @@ function cancelCreate(): void {
               </template>
             </el-table-column>
             <el-table-column
-              :label="t('admin.apiKeysImageRequestCount')"
               width="88"
               align="right"
             >
+              <template #header>
+                <I18nText k="admin.apiKeysImageRequestCount" />
+              </template>
               <template #default="{ row }">
                 {{ (row.image_request_count ?? 0).toLocaleString() }}
               </template>
             </el-table-column>
             <el-table-column
-              :label="t('admin.apiKeysRequestCount')"
               width="100"
               align="right"
             >
+              <template #header>
+                <I18nText k="admin.apiKeysRequestCount" />
+              </template>
               <template #default="{ row }">
                 {{
                   (
@@ -317,23 +330,29 @@ function cancelCreate(): void {
               </template>
             </el-table-column>
             <el-table-column
-              :label="t('admin.apiKeysTableQuota')"
               width="95"
               align="right"
             >
+              <template #header>
+                <I18nText k="admin.apiKeysTableQuota" />
+              </template>
               <template #default="{ row }">
-                {{
-                  row.quota_limit != null
-                    ? (row.quota_limit as number).toLocaleString()
-                    : t('admin.apiKeysUnlimited')
-                }}
+                <template v-if="row.quota_limit != null">{{
+                  (row.quota_limit as number).toLocaleString()
+                }}</template
+                ><I18nText
+                  v-else
+                  k="admin.apiKeysUnlimited"
+                />
               </template>
             </el-table-column>
             <el-table-column
-              :label="t('admin.apiKeysStatus')"
               width="100"
               align="center"
             >
+              <template #header>
+                <I18nText k="admin.apiKeysStatus" />
+              </template>
               <template #default="{ row }">
                 <el-tag
                   :type="row.is_active ? 'success' : 'info'"
@@ -341,16 +360,24 @@ function cancelCreate(): void {
                   class="api-keys-tag"
                   effect="dark"
                 >
-                  {{ row.is_active ? t('admin.enabled') : t('admin.disabled') }}
+                  <I18nText
+                    v-if="row.is_active"
+                    k="admin.enabled"
+                  /><I18nText
+                    v-else
+                    k="admin.disabled"
+                  />
                 </el-tag>
               </template>
             </el-table-column>
             <el-table-column
               fixed="right"
-              :label="t('admin.actions')"
               width="100"
               align="right"
             >
+              <template #header>
+                <I18nText k="admin.actions" />
+              </template>
               <template #default="{ row }">
                 <div class="api-keys-row-actions">
                   <el-button
@@ -397,30 +424,39 @@ function cancelCreate(): void {
             class="api-keys-nested-form"
             @submit.prevent="submitCreate"
           >
-            <el-form-item
-              :label="t('admin.name')"
-              required
-            >
+            <el-form-item required>
+              <template #label>
+                <I18nText k="admin.name" />
+              </template>
               <el-input
                 v-model="createName"
                 clearable
               />
             </el-form-item>
-            <el-form-item :label="t('admin.description')">
+            <el-form-item>
+              <template #label>
+                <I18nText k="admin.description" />
+              </template>
               <el-input
                 v-model="createDescription"
                 type="textarea"
                 :rows="2"
               />
             </el-form-item>
-            <el-form-item :label="t('admin.apiKeysTableQuota')">
+            <el-form-item>
+              <template #label>
+                <I18nText k="admin.apiKeysTableQuota" />
+              </template>
               <el-input
                 v-model="createQuota"
                 :placeholder="t('admin.apiKeysQuotaPlaceholder')"
                 clearable
               />
             </el-form-item>
-            <el-form-item :label="t('admin.apiKeysExpiresDays')">
+            <el-form-item>
+              <template #label>
+                <I18nText k="admin.apiKeysExpiresDays" />
+              </template>
               <el-input
                 v-model="createExpiresDays"
                 :placeholder="t('admin.apiKeysExpiresDaysHint')"

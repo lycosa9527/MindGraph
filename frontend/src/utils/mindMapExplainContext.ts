@@ -1,4 +1,4 @@
-import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
+import { isPlaceholderText } from '@/composables/editor/placeholderText'
 import type { Connection, DiagramNode } from '@/types'
 
 export interface MindMapExplainContext {
@@ -70,9 +70,7 @@ export function collectMindMapExplainContext(
   if (!selectedNode) return null
 
   const topic =
-    selectedNodeId === 'topic'
-      ? selectedNode
-      : usableLabel(nodeMap.get('topic')?.text ?? '')
+    selectedNodeId === 'topic' ? selectedNode : usableLabel(nodeMap.get('topic')?.text ?? '')
 
   const topLevelBranches = labelsForIds(childIds('topic', connections), nodeMap).slice(
     0,

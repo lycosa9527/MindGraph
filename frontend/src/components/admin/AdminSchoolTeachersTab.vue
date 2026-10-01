@@ -86,7 +86,7 @@ async function loadUsers(): Promise<void> {
     total.value = data.pagination?.total ?? 0
     totalPages.value = data.pagination?.total_pages ?? 1
   } catch {
-    notify.error(t('admin.schoolTeachersTab.loadError'))
+    notify.errorKey('admin.schoolTeachersTab.loadError')
     users.value = []
     total.value = 0
     totalPages.value = 1
@@ -113,7 +113,7 @@ function openTeacherTrend(row: Record<string, unknown>): void {
   const rawId = row.id
   const userId = typeof rawId === 'number' ? rawId : Number(rawId)
   if (!Number.isFinite(userId) || userId <= 0) {
-    notify.warning(t('admin.userTrendRequiresId'))
+    notify.warningKey('admin.userTrendRequiresId')
     return
   }
   teacherTrendUser.value = {
@@ -157,7 +157,7 @@ watch(
       v-else-if="users.length === 0"
       class="school-modal-empty"
     >
-      {{ t('admin.schoolTeachersTab.empty') }}
+      <I18nText k="admin.schoolTeachersTab.empty" />
     </div>
 
     <div
@@ -168,13 +168,13 @@ watch(
         <thead>
           <tr class="school-modal-table__head-row">
             <th class="school-modal-table__head-cell school-modal-table__head-cell--wide">
-              {{ t('admin.schoolTeachersTab.colName') }}
+              <I18nText k="admin.schoolTeachersTab.colName" />
             </th>
             <th class="school-modal-table__head-cell">
-              {{ t('admin.schoolTeachersTab.colRole') }}
+              <I18nText k="admin.schoolTeachersTab.colRole" />
             </th>
             <th class="school-modal-table__head-cell school-modal-table__head-cell--right">
-              {{ t('admin.schoolTeachersTab.colTokens') }}
+              <I18nText k="admin.schoolTeachersTab.colTokens" />
             </th>
           </tr>
         </thead>
@@ -201,16 +201,25 @@ watch(
             <td class="school-modal-table__cell whitespace-nowrap">
               <span
                 v-if="rolePillForRow(row)"
-                class="inline-flex max-w-full items-center rounded-full border px-2 py-0.5 text-xs font-medium"
+                class="role-pill max-w-full text-xs font-medium"
                 :class="[
                   rolePillForRow(row)?.bgClass,
                   rolePillForRow(row)?.textClass,
                   rolePillForRow(row)?.borderClass,
                 ]"
               >
-                {{ rolePillForRow(row)?.label }}
+                <I18nText
+                  v-if="rolePillForRow(row)?.labelKey"
+                  :k="rolePillForRow(row)?.labelKey ?? ''"
+                  dense
+                  align="center"
+                />
               </span>
-              <span v-else class="school-modal-table__sub">—</span>
+              <span
+                v-else
+                class="school-modal-table__sub"
+                >—</span
+              >
             </td>
             <td class="school-modal-table__cell school-modal-table__cell--right">
               {{ formatNumber(tokenTotal(row)) }}

@@ -17,7 +17,6 @@ import { useClassroomRemoteVisibility } from '@/composables/canvas/useClassroomR
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
-import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { useLLMResultsStore } from '@/stores/llmResults'
 
@@ -43,7 +42,6 @@ const actions = useMindMapRibbonActions()
 const { hidden: classroomRemoteHidden, toggleHidden: toggleClassroomRemote } =
   useClassroomRemoteVisibility()
 const { activeTool, handleToolSelect } = useMindMapSideToolbarState()
-const { showCanvasAiFeatures } = useLearningAiGate()
 const llmResultsStore = useLLMResultsStore()
 
 const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom * 100) : 100))
@@ -55,22 +53,24 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
     data-testid="mindmap-ribbon-status-bar"
   >
     <div class="mm-status__left">
-      <template v-if="caps.outline">
-        <button
-          type="button"
-          class="mm-status__zoom-btn"
-          :class="{ 'is-active': activeTool === 'outline' }"
-          :title="t('canvas.mindMapSideToolbar.outline')"
-          @click="handleToolSelect('outline')"
-        >
-          <ListTree
-            class="inline h-3.5 w-3.5"
-            :stroke-width="2"
-          />
-          <I18nText k="canvas.mindMapSideToolbar.outline" />
-        </button>
-        <span class="mm-status__sep" />
-      </template>
+      <button
+        v-if="caps.outline"
+        type="button"
+        class="mm-status__zoom-btn"
+        :class="{ 'is-active': activeTool === 'outline' }"
+        :title="t('canvas.mindMapSideToolbar.outline')"
+        @click="handleToolSelect('outline')"
+      >
+        <ListTree
+          class="inline h-3.5 w-3.5"
+          :stroke-width="2"
+        />
+        <I18nText k="canvas.mindMapSideToolbar.outline" />
+      </button>
+      <span
+        v-if="caps.outline"
+        class="mm-status__sep"
+      />
       <span>
         <I18nText
           k="canvas.ribbon.nodeCount"
@@ -84,10 +84,7 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
         variant="status"
       />
     </div>
-    <div
-      v-if="showCanvasAiFeatures"
-      class="mm-status__center"
-    >
+    <div class="mm-status__center">
       <CanvasToolbarMindMapAudiencePicker
         anchor="bottom"
         hide-guide
@@ -117,7 +114,7 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
       <CanvasToolbarMindMapAiGenerate tooltip-placement="top" />
     </div>
     <div class="mm-status__right mm-status__zoom">
-      <CanvasDiagramTranslateLangPicker v-if="showCanvasAiFeatures" />
+      <CanvasDiagramTranslateLangPicker />
       <button
         type="button"
         class="mm-status__zoom-btn"

@@ -427,7 +427,7 @@ async def flush_live_spec_to_db_in_session(
             )
             return False
         if not key_alive:
-            logger.warning(
+            logger.debug(
                 "[LiveSpec] flush: no Redis live_spec key code=%s diagram=%s; skipping persist",
                 code,
                 diagram_id,

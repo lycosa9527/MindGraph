@@ -11,11 +11,23 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { ElButton, ElInput, ElTooltip } from 'element-plus'
+import { storeToRefs } from 'pinia'
 
-import { ArrowLeft } from '@lucide/vue'
+import {
+  ElButton,
+  ElDropdown,
+  ElDropdownItem,
+  ElDropdownMenu,
+  ElInput,
+  ElTooltip,
+} from 'element-plus'
+
+import { ChatDotRound, Download } from '@element-plus/icons-vue'
+
+import { ArrowLeft, FileImage, FileJson, FileText, ImageDown, RotateCcw, Share2 } from '@lucide/vue'
 
 import MindMapRibbonTabs from '@/canvas-ribbon/MindMapRibbonTabs.vue'
+import { diagramRibbonCapabilities } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import { MIND_MAP_RIBBON_TOOLS_ID } from '@/canvas-ribbon/mindMapRibbonTypes'
 import { useMindMapRibbonState } from '@/canvas-ribbon/useMindMapRibbonState'
 import CanvasOnlineCollabMenu from '@/components/canvas/CanvasOnlineCollabMenu.vue'
@@ -23,18 +35,42 @@ import CanvasToolbar from '@/components/canvas/CanvasToolbar.vue'
 import DiagramSlotFullModal from '@/components/canvas/DiagramSlotFullModal.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
+import { useFeatureFlags } from '@/composables'
 import { eventBus, getDefaultDiagramName, useDiagramSpecForSave } from '@/composables'
 import type { SnapshotMetadata } from '@/composables'
 import { useLanguage } from '@/composables'
+import { useCanvasReset } from '@/composables/canvasPage/useCanvasReset'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { studentHomeworkDiagramTitle } from '@/composables/learningSpace/lsHelpers'
-import { useCanvasRibbonChrome } from '@/composables/mindMap/useCanvasRibbonChrome'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import {
+  CANVAS_COMMUNITY_EXPORT_MENU_ITEM,
+  CANVAS_STANDARD_EXPORT_MENU_ITEMS,
+} from '@/config/canvasExportMenu'
 import { CANVAS_TOP_BAR } from '@/config/uiConfig'
-import { useAuthStore } from '@/stores'
+import { useAuthStore, useCanvasExportStore, usePanelsStore } from '@/stores'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { navigateBackFromCanvas } from '@/utils/canvasBackNavigation'
+import { isPdfExportCommand } from '@/utils/diagramPdfExport'
+import {
+  type LabelCollapseSnapshot,
+  createLabelCollapseSnapshot,
+  nextLabelCollapse,
+} from '@/utils/toolbarLabelCollapse'
+
+const { resetToDefaultTemplate } = useCanvasReset()
 
 const topBarRootRef = ref<HTMLElement | null>(null)
+const titleRowRef = ref<HTMLElement | null>(null)
+const docClusterRef = ref<HTMLElement | null>(null)
+const globalClusterRef = ref<HTMLElement | null>(null)
+const tabsHostRef = ref<HTMLElement | null>(null)
+/** Ribbon tab titles overlap the filename or collab cluster. */
+const ribbonTabsIconLabels = ref(false)
+let ribbonTabCollapse: LabelCollapseSnapshot = createLabelCollapseSnapshot()
+const RIBBON_TAB_GAP_PX = 8
+/** Icon-only for MindMate / reset / export (first tier — wider breakpoint). */
+const compactTopBarActions = ref(false)
 /** Icon-only editing toolbar labels (second tier — narrower breakpoint). */
 const compactCanvasToolbar = ref(false)
 
@@ -42,7 +78,37 @@ let topBarResizeObserver: ResizeObserver | null = null
 
 function updateCompactFromTopBarWidth(width: number): void {
   const w = width > 0 ? width : 0
+  compactTopBarActions.value = w > 0 && w < CANVAS_TOP_BAR.COMPACT_RIGHT_ACTIONS_BREAKPOINT_PX
   compactCanvasToolbar.value = w > 0 && w < CANVAS_TOP_BAR.COMPACT_TOOLBAR_BREAKPOINT_PX
+}
+
+function ribbonTabRoomPx(): number {
+  const row = titleRowRef.value
+  if (!row || row.clientWidth <= 0) return -1
+  const style = getComputedStyle(row)
+  const padX = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0)
+  const columnGap = parseFloat(style.columnGap) || 0
+  const docWidth = docClusterRef.value?.offsetWidth ?? 0
+  const globalWidth = globalClusterRef.value?.offsetWidth ?? 0
+  const room = row.clientWidth - padX - columnGap * 2 - docWidth - globalWidth - RIBBON_TAB_GAP_PX
+  return Math.max(0, room)
+}
+
+function resetRibbonTabCollapse(): void {
+  ribbonTabCollapse = createLabelCollapseSnapshot()
+  ribbonTabsIconLabels.value = false
+}
+
+function updateRibbonTabLabels(): void {
+  const tabs = tabsHostRef.value
+  if (!isMindMapEditor.value || !tabs) return
+  const next = nextLabelCollapse(ribbonTabCollapse, ribbonTabRoomPx(), tabs.offsetWidth)
+  const changed = next.collapsed !== ribbonTabCollapse.collapsed
+  ribbonTabCollapse = next
+  ribbonTabsIconLabels.value = next.collapsed
+  if (changed && !next.collapsed) {
+    void nextTick(() => updateRibbonTabLabels())
+  }
 }
 
 const props = defineProps<{
@@ -73,14 +139,29 @@ const emit = defineEmits<{
   snapshotDelete: [versionNumber: number]
 }>()
 
+function onSnapshotBadgeClick(event: MouseEvent, versionNumber: number): void {
+  if (props.isCollabGuest || props.recallingSnapshotVersion != null) {
+    return
+  }
+  event.stopPropagation()
+  if (event.ctrlKey || event.metaKey) {
+    emit('snapshotDelete', versionNumber)
+    return
+  }
+  emit('snapshotRecall', versionNumber)
+}
+
 const route = useRoute()
 const router = useRouter()
 const { promptLanguage, t, currentLanguage } = useLanguage()
 const diagramStore = useDiagramSession()
 
 const authStore = useAuthStore()
+const panelsStore = usePanelsStore()
 const lsCanvas = useLearningAssignmentCanvasStore()
 const isHomeworkCanvas = computed(() => lsCanvas.isActive)
+
+const { featureCommunity } = useFeatureFlags()
 
 /** Native tooltip: status text + action hint (replaces duplicate :title bindings) */
 const autoSaveHoverTitle = computed(() => {
@@ -97,7 +178,12 @@ const diagramTypeForName = computed(
   () => (diagramStore.type as string) || (route.query.type as string) || null
 )
 
-const ribbonChrome = useCanvasRibbonChrome()
+const mindMapV2 = useMindMapV2Chrome()
+const isMindMapEditor = computed(
+  () =>
+    mindMapV2.value ||
+    diagramRibbonCapabilities(diagramTypeForName.value, mindMapV2.value).thinkingMapChrome
+)
 const { activeTab, classic, selectTab } = useMindMapRibbonState()
 
 /**
@@ -163,13 +249,28 @@ onMounted(() => {
   const root = topBarRootRef.value
   if (root) {
     topBarResizeObserver = new ResizeObserver((entries) => {
-      const w = entries[0]?.contentRect.width ?? 0
+      const rootEntry = entries.find((entry) => entry.target === root)
+      const w = rootEntry?.contentRect.width ?? root.getBoundingClientRect().width
       updateCompactFromTopBarWidth(w)
+      updateRibbonTabLabels()
     })
     updateCompactFromTopBarWidth(root.getBoundingClientRect().width)
     topBarResizeObserver.observe(root)
+    if (titleRowRef.value) topBarResizeObserver.observe(titleRowRef.value)
+    if (docClusterRef.value) topBarResizeObserver.observe(docClusterRef.value)
+    if (globalClusterRef.value) topBarResizeObserver.observe(globalClusterRef.value)
+    void nextTick(() => updateRibbonTabLabels())
   }
 })
+
+watch(
+  () =>
+    [currentLanguage.value, classic.value, authStore.user?.role, isMindMapEditor.value] as const,
+  () => {
+    resetRibbonTabCollapse()
+    void nextTick(() => updateRibbonTabLabels())
+  }
+)
 
 // Watch for topic node text changes and auto-update title
 // Only if user hasn't manually edited the name
@@ -262,6 +363,31 @@ function handleSlotModalSuccess(_diagramId: string): void {
 function handleSlotModalCancel(): void {
   showSlotFullModal.value = false
 }
+
+const canvasExportStore = useCanvasExportStore()
+const { mergedExportOptions } = storeToRefs(canvasExportStore)
+
+// Export menu actions - emit event for DiagramCanvas to handle
+function handleExportCommand(command: string) {
+  eventBus.emit('toolbar:export_requested', {
+    format: command,
+    options: { ...mergedExportOptions.value },
+  })
+}
+
+function handleOpenMindmate() {
+  panelsStore.openMindmate()
+}
+
+/**
+ * Reset canvas to default template: clears diagram, node palette, and saved state.
+ * Nothing is persisted. Shows confirmation modal first.
+ */
+async function handleReset() {
+  if (props.previewLock) return
+  await resetToDefaultTemplate()
+  showSlotFullModal.value = false
+}
 </script>
 
 <template>
@@ -269,7 +395,7 @@ function handleSlotModalCancel(): void {
     ref="topBarRootRef"
     class="canvas-top-bar relative w-full min-h-12 shrink-0"
     :class="
-      ribbonChrome
+      isMindMapEditor
         ? {
             'canvas-top-bar--mindmap': true,
             'canvas-top-bar--collapsed': !classic,
@@ -279,13 +405,15 @@ function handleSlotModalCancel(): void {
     "
   >
     <div
+      ref="titleRowRef"
       class="canvas-top-bar__title-row"
-      :class="{ 'canvas-top-bar__title-row--mindmap': ribbonChrome }"
+      :class="{ 'canvas-top-bar__title-row--mindmap': isMindMapEditor }"
     >
       <div
+        ref="docClusterRef"
         class="flex items-center gap-1 min-w-0 z-10"
-        :class="{ 'canvas-top-bar__doc': ribbonChrome }"
-        :style="ribbonChrome ? undefined : { maxWidth: CANVAS_TOP_BAR.LEFT_CLUSTER_MAX_WIDTH }"
+        :class="{ 'canvas-top-bar__doc': isMindMapEditor }"
+        :style="isMindMapEditor ? undefined : { maxWidth: CANVAS_TOP_BAR.LEFT_CLUSTER_MAX_WIDTH }"
       >
         <I18nTooltip
           :k="isHomeworkCanvas ? 'learningSpace.backToLearningSpace' : 'canvas.topBar.back'"
@@ -322,7 +450,7 @@ function handleSlotModalCancel(): void {
             <span
               class="file-name-label text-xs font-medium cursor-pointer transition-colors px-1.5 sm:px-2 py-1 rounded truncate"
               :class="
-                ribbonChrome
+                isMindMapEditor
                   ? 'text-gray-800 hover:text-blue-600 hover:bg-white/70'
                   : 'text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700'
               "
@@ -340,14 +468,14 @@ function handleSlotModalCancel(): void {
             :title="autoSaveHoverTitle"
             :class="[
               props.isSaving
-                ? ribbonChrome
+                ? isMindMapEditor
                   ? 'text-blue-500'
                   : 'text-blue-500 dark:text-blue-400'
                 : props.isDirty
-                  ? ribbonChrome
+                  ? isMindMapEditor
                     ? 'text-amber-500'
                     : 'text-amber-500 dark:text-amber-400'
-                  : ribbonChrome
+                  : isMindMapEditor
                     ? 'text-gray-500 hover:text-gray-700'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
             ]"
@@ -358,17 +486,20 @@ function handleSlotModalCancel(): void {
         </div>
       </div>
       <div
-        v-if="ribbonChrome"
+        v-if="isMindMapEditor"
+        ref="tabsHostRef"
         class="canvas-top-bar__tabs"
       >
         <MindMapRibbonTabs
           :active-tab="activeTab"
           :expanded="classic"
+          :short-labels="ribbonTabsIconLabels"
           @update:active-tab="selectTab"
         />
       </div>
       <div
-        v-if="ribbonChrome"
+        v-if="isMindMapEditor"
+        ref="globalClusterRef"
         class="canvas-top-bar__global"
       >
         <CanvasOnlineCollabMenu
@@ -381,13 +512,13 @@ function handleSlotModalCancel(): void {
 
     <!-- Col 2: editing toolbar (hidden for viewers) -->
     <div
-      :id="ribbonChrome ? MIND_MAP_RIBBON_TOOLS_ID : undefined"
+      :id="isMindMapEditor ? MIND_MAP_RIBBON_TOOLS_ID : undefined"
       class="min-w-0 flex justify-center items-center self-center overflow-x-auto px-0.5 z-5"
       :class="{
-        'canvas-top-bar__tools-row': ribbonChrome,
-        'canvas-top-bar__tools-row--collapsed': ribbonChrome && !classic,
+        'canvas-top-bar__tools-row': isMindMapEditor,
+        'canvas-top-bar__tools-row--collapsed': isMindMapEditor && !classic,
       }"
-      :aria-hidden="ribbonChrome && !classic"
+      :aria-hidden="isMindMapEditor && !classic"
     >
       <span
         v-if="props.isViewer"
@@ -399,8 +530,185 @@ function handleSlotModalCancel(): void {
         v-else
         embedded
         :compact-toolbar="compactCanvasToolbar"
-        :ribbon-tab="ribbonChrome ? activeTab : undefined"
+        :ribbon-tab="isMindMapEditor ? activeTab : undefined"
       />
+    </div>
+
+    <!-- Col 3: snapshots + workshop participants + actions -->
+    <div
+      v-if="!isMindMapEditor"
+      class="flex w-full min-w-0 items-center justify-end gap-1.5 sm:gap-2 md:gap-3 z-10 flex-wrap sm:flex-nowrap"
+    >
+      <div
+        v-if="props.snapshots?.length && !props.isViewer && !props.isCollabGuest"
+        class="flex items-center gap-1.5 shrink-0"
+      >
+        <ElTooltip
+          v-for="snap in props.snapshots"
+          :key="snap.version_number"
+          trigger="hover"
+          :content="
+            snap.version_number === props.recallingSnapshotVersion
+              ? t('canvas.topBar.snapshotRecallingTooltip', { n: snap.version_number })
+              : t('canvas.topBar.snapshotBadgeTooltip', { n: snap.version_number })
+          "
+          placement="bottom"
+        >
+          <span
+            class="snapshot-version-badge inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0 transition-colors select-none"
+            :class="[
+              props.isCollabGuest ? 'cursor-default opacity-50' : 'cursor-pointer',
+              snap.version_number === props.recallingSnapshotVersion
+                ? 'snapshot-version-badge--loading'
+                : props.recallingSnapshotVersion != null
+                  ? 'opacity-50 pointer-events-none'
+                  : '',
+              snap.version_number === props.activeSnapshotVersion &&
+              snap.version_number !== props.recallingSnapshotVersion
+                ? 'bg-blue-500 text-white ring-2 ring-blue-300 ring-offset-1'
+                : snap.version_number !== props.recallingSnapshotVersion
+                  ? 'bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-800/50'
+                  : 'bg-blue-500 text-white',
+            ]"
+            :aria-busy="snap.version_number === props.recallingSnapshotVersion"
+            role="button"
+            tabindex="0"
+            @click.stop="onSnapshotBadgeClick($event, snap.version_number)"
+            @keydown.enter.stop="
+              onSnapshotBadgeClick($event as unknown as MouseEvent, snap.version_number)
+            "
+            @keydown.space.prevent.stop="
+              onSnapshotBadgeClick($event as unknown as MouseEvent, snap.version_number)
+            "
+          >
+            {{ snap.version_number }}
+          </span>
+        </ElTooltip>
+      </div>
+
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <I18nTooltip
+          v-if="isMindMapEditor && !props.isViewer"
+          k="canvas.topBar.resetTemplate"
+          placement="bottom"
+          :disabled="!compactTopBarActions"
+        >
+          <button
+            type="button"
+            class="mm-btn"
+            :class="{ 'mm-btn--icon': compactTopBarActions }"
+            :aria-label="t('canvas.topBar.resetCanvas')"
+            @click="handleReset"
+          >
+            <RotateCcw class="w-4 h-4" />
+            <span
+              v-if="!compactTopBarActions"
+              class="mm-btn__label"
+            >
+              <I18nText k="canvas.topBar.resetCanvas" />
+            </span>
+          </button>
+        </I18nTooltip>
+
+        <I18nTooltip
+          v-if="!isMindMapEditor"
+          k="canvas.topBar.teachingDesign"
+          placement="bottom"
+          :disabled="!compactTopBarActions"
+        >
+          <ElButton
+            class="mindmate-button"
+            size="small"
+            :icon="ChatDotRound"
+            :aria-label="t('canvas.topBar.teachingDesign')"
+            @click="handleOpenMindmate"
+          >
+            <span v-if="!compactTopBarActions">
+              <I18nText k="canvas.topBar.teachingDesign" />
+            </span>
+          </ElButton>
+        </I18nTooltip>
+
+        <I18nTooltip
+          v-if="!isMindMapEditor"
+          k="canvas.topBar.resetTemplate"
+          placement="bottom"
+          :disabled="!compactTopBarActions"
+        >
+          <ElButton
+            class="reset-button"
+            size="small"
+            :icon="RotateCcw"
+            :aria-label="t('canvas.topBar.reset')"
+            @click="handleReset"
+          >
+            <span v-if="!compactTopBarActions">
+              <I18nText k="canvas.topBar.reset" />
+            </span>
+          </ElButton>
+        </I18nTooltip>
+
+        <I18nTooltip
+          v-if="!isMindMapEditor"
+          k="canvas.topBar.export"
+          placement="bottom"
+          :disabled="!compactTopBarActions"
+        >
+          <span class="inline-flex">
+            <ElDropdown
+              trigger="click"
+              @command="handleExportCommand"
+            >
+              <ElButton
+                class="export-button"
+                size="small"
+                :icon="Download"
+                :aria-label="t('canvas.topBar.export')"
+              >
+                <span v-if="!compactTopBarActions">
+                  <I18nText k="canvas.topBar.export" />
+                </span>
+              </ElButton>
+              <template #dropdown>
+                <ElDropdownMenu>
+                  <ElDropdownItem
+                    v-for="item in CANVAS_STANDARD_EXPORT_MENU_ITEMS"
+                    :key="item.command"
+                    :command="item.command"
+                    :divided="item.divided"
+                  >
+                    <ImageDown
+                      v-if="item.command === 'png'"
+                      class="w-4 h-4 mr-2 text-emerald-500"
+                    />
+                    <FileImage
+                      v-else-if="item.command === 'svg'"
+                      class="w-4 h-4 mr-2 text-violet-500"
+                    />
+                    <FileText
+                      v-else-if="isPdfExportCommand(item.command)"
+                      class="w-4 h-4 mr-2 text-red-500"
+                    />
+                    <FileJson
+                      v-else-if="item.command === 'mg'"
+                      class="w-4 h-4 mr-2 text-amber-500"
+                    />
+                    <I18nText :k="item.labelKey" />
+                  </ElDropdownItem>
+                  <ElDropdownItem
+                    v-if="featureCommunity && authStore.isAuthenticated"
+                    :divided="CANVAS_COMMUNITY_EXPORT_MENU_ITEM.divided"
+                    :command="CANVAS_COMMUNITY_EXPORT_MENU_ITEM.command"
+                  >
+                    <Share2 class="w-4 h-4 mr-2 text-rose-500" />
+                    <I18nText :k="CANVAS_COMMUNITY_EXPORT_MENU_ITEM.labelKey" />
+                  </ElDropdownItem>
+                </ElDropdownMenu>
+              </template>
+            </ElDropdown>
+          </span>
+        </I18nTooltip>
+      </div>
     </div>
 
     <DiagramSlotFullModal

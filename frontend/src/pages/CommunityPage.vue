@@ -271,7 +271,7 @@ async function confirmDelete(post: CommunityPost) {
 
   try {
     await deleteCommunityPost(post.id)
-    notify.success(t('community.deleted'))
+    notify.successKey('community.deleted')
     posts.value = posts.value.filter((p) => p.id !== post.id)
     total.value = Math.max(0, total.value - 1)
   } catch (e) {
@@ -300,7 +300,7 @@ function getPlaceholderColor(id: string): string {
     <!-- Header -->
     <div class="community-header px-6 py-5 bg-white border-b border-stone-200">
       <div class="flex items-center justify-between mb-4">
-        <h1 class="text-xl font-semibold text-stone-900">{{ t('community.title') }}</h1>
+        <h1 class="text-xl font-semibold text-stone-900"><I18nText k="community.title" /></h1>
         <div class="flex items-center gap-3">
           <div class="relative">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
@@ -318,7 +318,7 @@ function getPlaceholderColor(id: string): string {
             class="my-posts-btn"
             @click="setType('我的')"
           >
-            {{ t('community.myPosts') }}
+            <I18nText k="community.myPosts" />
           </ElButton>
         </div>
       </div>
@@ -326,9 +326,9 @@ function getPlaceholderColor(id: string): string {
       <!-- Filter rows -->
       <div class="space-y-3">
         <div class="flex items-center gap-3">
-          <span class="text-sm font-medium text-stone-600 w-12 flex-shrink-0">{{
-            t('community.filterType')
-          }}</span>
+          <span class="text-sm font-medium text-stone-600 w-12 flex-shrink-0"
+            ><I18nText k="community.filterType"
+          /></span>
           <div class="flex flex-wrap gap-2">
             <button
               v-for="type in typeOptions"
@@ -347,9 +347,9 @@ function getPlaceholderColor(id: string): string {
         </div>
 
         <div class="flex items-center gap-3">
-          <span class="text-sm font-medium text-stone-600 w-12 flex-shrink-0">{{
-            t('community.filterCategory')
-          }}</span>
+          <span class="text-sm font-medium text-stone-600 w-12 flex-shrink-0"
+            ><I18nText k="community.filterCategory"
+          /></span>
           <div class="flex flex-wrap gap-2">
             <button
               v-for="cat in categoryOptions"
@@ -368,9 +368,9 @@ function getPlaceholderColor(id: string): string {
         </div>
 
         <div class="flex items-center gap-3">
-          <span class="text-sm font-medium text-stone-600 w-12 flex-shrink-0">{{
-            t('community.filterSort')
-          }}</span>
+          <span class="text-sm font-medium text-stone-600 w-12 flex-shrink-0"
+            ><I18nText k="community.filterSort"
+          /></span>
           <div class="flex flex-wrap gap-2">
             <button
               v-for="sort in sortOptions"
@@ -518,7 +518,7 @@ function getPlaceholderColor(id: string): string {
                   @click.stop="openEdit(post)"
                 >
                   <Pencil class="w-4 h-4" />
-                  {{ t('common.edit') }}
+                  <I18nText k="common.edit" />
                 </button>
                 <button
                   v-if="canEditPost(post)"
@@ -526,7 +526,7 @@ function getPlaceholderColor(id: string): string {
                   @click.stop="confirmDelete(post)"
                 >
                   <Trash2 class="w-4 h-4" />
-                  {{ t('common.delete') }}
+                  <I18nText k="common.delete" />
                 </button>
               </div>
             </div>
@@ -537,16 +537,22 @@ function getPlaceholderColor(id: string): string {
           v-if="isLoadingMore"
           class="col-span-full flex justify-center py-6 text-stone-400 text-sm"
         >
-          {{ t('community.loadingMore') }}
+          <I18nText k="community.loadingMore" />
         </div>
       </div>
 
       <ElEmpty
         v-else
-        :description="t('community.emptyNoPosts')"
         :image-size="120"
         class="flex-1 flex items-center justify-center min-h-[300px]"
-      />
+      >
+        <template #description>
+          <I18nText
+            k="community.emptyNoPosts"
+            align="center"
+          />
+        </template>
+      </ElEmpty>
     </div>
 
     <!-- Edit modal -->

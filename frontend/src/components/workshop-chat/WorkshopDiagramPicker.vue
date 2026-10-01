@@ -8,6 +8,7 @@ import { LayoutGrid } from '@lucide/vue'
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { bilingualNotifyMessage } from '@/i18n/bilingualNotifyMessage'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { embedWorkshopLibraryDiagram } from '@/utils/workshopDiagramEmbed'
 
@@ -43,12 +44,6 @@ watch(
   }
 )
 
-function diagramTypeLabel(type: string): string {
-  const key = `sidebar.diagramType.${type}`
-  const translated = t(key)
-  return translated === key ? type : translated
-}
-
 async function pick(diagram: SavedDiagram): Promise<void> {
   if (insertingId.value) {
     return
@@ -60,13 +55,13 @@ async function pick(diagram: SavedDiagram): Promise<void> {
       title: diagram.title || t('workshop.diagram'),
     })
     if (!markdown) {
-      ElMessage.error(t('workshop.diagramInsertFailed'))
+      ElMessage.error({ message: bilingualNotifyMessage('workshop.diagramInsertFailed') })
       return
     }
     emit('insert', markdown)
     emit('update:visible', false)
   } catch {
-    ElMessage.error(t('workshop.diagramInsertFailed'))
+    ElMessage.error({ message: bilingualNotifyMessage('workshop.diagramInsertFailed') })
   } finally {
     insertingId.value = null
   }
@@ -113,12 +108,19 @@ async function pick(diagram: SavedDiagram): Promise<void> {
           @click="pick(diagram)"
         >
           <span class="ws-diagram-picker__meta">
-            <span class="ws-diagram-picker__title">{{
-              diagram.title || t('workshop.diagram')
-            }}</span>
-            <span class="ws-diagram-picker__type">{{
-              diagramTypeLabel(diagram.diagram_type)
-            }}</span>
+            <span class="ws-diagram-picker__title"
+              ><template v-if="diagram.title">{{ diagram.title }}</template
+              ><I18nText
+                v-else
+                k="workshop.diagram"
+            /></span>
+            <span class="ws-diagram-picker__type">
+              <I18nText
+                :k="`sidebar.diagramType.${diagram.diagram_type}`"
+                :fallback-text="diagram.diagram_type"
+                dense
+              />
+            </span>
           </span>
           <span
             v-if="insertingId === String(diagram.id)"

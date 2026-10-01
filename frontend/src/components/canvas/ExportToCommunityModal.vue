@@ -111,7 +111,7 @@ function close() {
 async function generateThumbnail(): Promise<Blob | null> {
   const container = props.getContainer()
   if (!container) {
-    notify.warning(t('community.shareModal.cannotPreview'))
+    notify.warningKey('community.shareModal.cannotPreview')
     return null
   }
   try {
@@ -125,14 +125,14 @@ async function generateThumbnail(): Promise<Blob | null> {
     return blob
   } catch (e) {
     console.error('[ExportToCommunity] Thumbnail generation failed:', e)
-    notify.error(t('community.shareModal.previewFailed'))
+    notify.errorKey('community.shareModal.previewFailed')
     return null
   }
 }
 
 async function submit() {
   if (!title.value.trim()) {
-    notify.warning(t('community.shareModal.enterTitle'))
+    notify.warningKey('community.shareModal.enterTitle')
     return
   }
 
@@ -146,7 +146,7 @@ async function submit() {
   }
 
   if (!spec) {
-    notify.warning(t('community.shareModal.noDiagramData'))
+    notify.warningKey('community.shareModal.noDiagramData')
     return
   }
 
@@ -162,7 +162,7 @@ async function submit() {
         spec,
         thumbnail: thumbnail || undefined,
       })
-      notify.success(t('community.shareModal.updated'))
+      notify.successKey('community.shareModal.updated')
       emit('success', result.post)
       close()
     } else {
@@ -177,7 +177,7 @@ async function submit() {
         spec,
         thumbnail,
       })
-      notify.success(t('community.shareModal.published'))
+      notify.successKey('community.shareModal.published')
       emit('success', result.post)
       close()
       router.push('/community')
@@ -247,9 +247,11 @@ async function submit() {
           <el-option
             v-for="cat in CATEGORY_CATALOG"
             :key="cat.value"
-            :label="t(categoryLabelKey(cat.key))"
             :value="cat.value"
-          />
+            :label="t(categoryLabelKey(cat.key))"
+          >
+            <I18nText :k="categoryLabelKey(cat.key)" />
+          </el-option>
         </el-select>
       </el-form-item>
     </el-form>

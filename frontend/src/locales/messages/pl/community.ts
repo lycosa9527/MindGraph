@@ -68,7 +68,7 @@ export default {
   'community.time.hoursAgo': '{n}h temu',
   'community.time.minutesAgo': '{n}min temu',
   'community.title': 'Udostępnianie społeczności',
-  'community.type.mindgraph': 'Wykres myśli',
+  'community.type.mindgraph': 'MindGraph',
   'community.type.mindmate': 'MindMate',
   'debateverse.advanceStage': 'Przejdź do kolejnego etapu',
   'debateverse.affirmativePositionLabel': 'Strona twierdząca: ',

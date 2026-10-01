@@ -10,6 +10,8 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, Optional
 
+from starlette.websockets import WebSocketDisconnect
+
 from services.agent_hub.scope_lifecycle import (
     configure_kitty_control_state,
     configure_kitty_scope_cleanup,
@@ -219,7 +221,7 @@ async def cleanup_voice_by_diagram_session(diagram_session_id: str) -> bool:
                 else:
                     # Fallback: try to close anyway (for non-FastAPI WebSocket implementations)
                     await ws.close(code=1001, reason="Diagram session ended")
-            except (RuntimeError, ConnectionError, AttributeError) as e:
+            except (WebSocketDisconnect, RuntimeError, ConnectionError, AttributeError) as e:
                 logger.debug("Error closing WebSocket (may already be closed): %s", e)
             finally:
                 # CRITICAL: Always remove from list, even if close failed

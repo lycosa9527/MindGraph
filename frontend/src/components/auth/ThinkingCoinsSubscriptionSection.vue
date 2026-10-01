@@ -27,8 +27,16 @@ const subscriptionTab = ref<SubscriptionPlanTab>(
 const rootRef = ref<HTMLElement | null>(null)
 
 const subscriptionTabOptions = computed(() => [
-  { label: t('thinkingCoins.personalTab'), value: 'personal' as const },
-  { label: t('thinkingCoins.schoolTab'), value: 'school' as const },
+  {
+    label: t('thinkingCoins.personalTab'),
+    labelKey: 'thinkingCoins.personalTab',
+    value: 'personal' as const,
+  },
+  {
+    label: t('thinkingCoins.schoolTab'),
+    labelKey: 'thinkingCoins.schoolTab',
+    value: 'school' as const,
+  },
 ])
 
 function tierLabel(tier: PersonalPlanTier): string {
@@ -81,7 +89,7 @@ defineExpose({ focusSchoolTab })
   >
     <div class="tc-subscription-header flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
       <h2 class="text-base font-semibold text-stone-900 sm:text-lg">
-        {{ t('thinkingCoins.subscriptionRef') }}
+        <I18nText k="thinkingCoins.subscriptionRef" />
       </h2>
 
       <AdminSwissSegmented
@@ -109,7 +117,7 @@ defineExpose({ focusSchoolTab })
           v-if="tier === 'sub'"
           class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-amber-400 px-3 py-0.5 text-xs font-semibold text-white"
         >
-          {{ t('thinkingCoins.plan.popular') }}
+          <I18nText k="thinkingCoins.plan.popular" />
         </span>
 
         <div class="mb-3 flex items-center gap-2">
@@ -148,7 +156,7 @@ defineExpose({ focusSchoolTab })
             :key="badgeKey"
             class="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-800"
           >
-            {{ t(badgeKey) }}
+            <I18nText :k="badgeKey" />
           </span>
         </div>
 
@@ -159,7 +167,7 @@ defineExpose({ focusSchoolTab })
             class="flex gap-2"
           >
             <span class="text-stone-400">·</span>
-            <span>{{ t(featureKey) }}</span>
+            <span><I18nText :k="featureKey" /></span>
           </li>
         </ul>
 
@@ -173,11 +181,13 @@ defineExpose({ focusSchoolTab })
           "
           :disabled="true"
         >
-          {{
-            tier === 'trial'
-              ? t('thinkingCoins.plan.currentPlan')
-              : t('thinkingCoins.plan.subscribeNow')
-          }}
+          <I18nText
+            v-if="tier === 'trial'"
+            k="thinkingCoins.plan.currentPlan"
+          /><I18nText
+            v-else
+            k="thinkingCoins.plan.subscribeNow"
+          />
         </button>
       </div>
     </div>

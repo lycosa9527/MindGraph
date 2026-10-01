@@ -4,17 +4,15 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { LocationQuery, RouteLocationNormalizedLoaded } from 'vue-router'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import {
   AuthContactConsultModal,
   AuthLandingBrand,
-  AuthLegalFooter,
   AuthMarketingNav,
   AuthQuickRegisterModal,
   LoginModal,
 } from '@/components/auth'
-import { useLanguage } from '@/composables'
 import { useAuthStore, useUIStore } from '@/stores'
 import { getSafePostAuthPath } from '@/utils/authRedirect'
 import { clearPersistedOAuthLoginError } from '@/utils/oauthLoginUi'
@@ -25,13 +23,11 @@ import {
   readStoredQuickRegToken,
   writeStoredQuickRegToken,
 } from '@/utils/quickRegToken'
-import '@/styles/authPageCard.css'
 
 const router = useRouter()
 const route = useRoute()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
-const { t } = useLanguage()
 
 const showLoginModal = ref(true)
 const showContactModal = ref(false)
@@ -138,7 +134,8 @@ function onLoginSuccess() {
   const fallback = isStudent ? '/learning-space' : '/mindmate'
   const redir = getSafePostAuthPath(route.query.redirect, fallback)
   const target =
-    isStudent && (redir === '/mindmate' || redir === '/' || redir === '/m' || redir === '/m/mindmate')
+    isStudent &&
+    (redir === '/mindmate' || redir === '/' || redir === '/m' || redir === '/m/mindmate')
       ? '/learning-space'
       : redir
   router.push(target).catch(() => {
@@ -227,14 +224,30 @@ onBeforeUnmount(() => {
               @success="onLoginSuccess"
               @contact="onNavContact"
             />
-            <AuthLegalFooter />
           </div>
+
+          <footer
+            v-if="useQuickRegPanel"
+            class="auth-page-card__legal"
+          >
+            <span>
+              <I18nText k="auth.landing.legalPrefix" />
+              <RouterLink
+                to="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="auth-page-card__legal-link"
+              >
+                <I18nText k="auth.softwareAgreementLink" />
+              </RouterLink>
+            </span>
+          </footer>
         </section>
       </div>
     </div>
 
     <p class="auth-page-icp">
-      {{ t('auth.landing.copyright') }}
+      <I18nText k="auth.landing.copyright" />
     </p>
   </div>
 </template>
@@ -291,11 +304,65 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 
+.auth-page-card {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 26.5rem);
+  max-height: min(calc(100dvh - 5.5rem), 52rem);
+  background: #fff;
+  border: 1px solid rgb(237 233 254);
+  border-radius: 1.35rem;
+  box-shadow:
+    0 24px 60px rgb(79 70 229 / 0.12),
+    0 4px 16px rgb(15 23 42 / 0.06);
+  overflow: auto;
+}
+
+.auth-page-card__form {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: auto;
+  overflow: visible;
+  padding: 1.15rem 1.35rem 0.5rem;
+}
+
+.auth-page-card__legal {
+  flex-shrink: 0;
+  padding: 0.65rem 1.25rem 1.1rem;
+  font-size: 0.75rem;
+  line-height: 1.55;
+  color: rgb(148 163 184);
+  text-align: center;
+}
+
+.auth-page-card__legal-link {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: rgb(79 70 229);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  display: inline;
+}
+
+.auth-page-card__legal-link:hover {
+  color: rgb(67 56 202);
+}
+
 @media (max-width: 899px) {
   .auth-page-stage__content {
     justify-content: center;
     align-items: flex-start;
     padding-top: 4.75rem;
+  }
+
+  .auth-page-card {
+    width: min(100%, 24rem);
+    max-height: none;
   }
 }
 </style>

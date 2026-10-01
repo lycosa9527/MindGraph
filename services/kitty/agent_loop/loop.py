@@ -19,7 +19,6 @@ from services.infrastructure.http.error_handler import (
 )
 from services.kitty.ack.ack_emit import emit_user_ack
 from services.kitty.ack.ack_library import render_not_understood_ack
-from services.learning_space.ai_gate import kitty_student_ai_denied_message
 from services.kitty.agent_loop.compound import (
     run_compound_plan,
     take_placeholder_rename_plan,
@@ -387,11 +386,6 @@ async def run_typed_agent_loop(
     text = command_text.strip()
     if not text:
         return _finish(voice_session_id, RouteOutcome.FAILED, reason="empty")
-
-    denied = await kitty_student_ai_denied_message(voice_session_id, session_context)
-    if denied:
-        await emit_user_ack(websocket, voice_session_id, denied)
-        return _finish(voice_session_id, RouteOutcome.FAILED, reason="learning_space_ai_denied")
 
     pending_branch = await try_consume_pending_branch_autocomplete(
         websocket,

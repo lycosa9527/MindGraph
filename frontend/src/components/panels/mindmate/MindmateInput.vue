@@ -148,7 +148,7 @@ function handleFileSelect(event: Event) {
   const allowedFiles = selected.filter((file) => isMindmateComposerUploadableFile(file))
 
   if (allowedFiles.length < selected.length) {
-    notify.error(String(t('mindmate.input.unsupportedFile')))
+    notify.errorKey('mindmate.input.unsupportedFile')
   }
 
   if (allowedFiles.length === 0) {

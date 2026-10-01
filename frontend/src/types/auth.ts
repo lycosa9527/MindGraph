@@ -83,6 +83,10 @@ export interface User {
   v3RibbonTab?: string | null
   /** New-canvas classroom remote is open; unset defaults to visible */
   classroomRemoteVisible?: boolean
+  /** Account-menu quick-access remote is open; unset defaults to closed */
+  quickAccessRemoteVisible?: boolean
+  /** Custom text for the six quick-access inspiration prompts */
+  quickAccessPromptOverrides?: Record<string, string>
   /** False for overseas email accounts: Simplified Chinese (`zh`) UI is not available */
   allowsSimplifiedChinese?: boolean
   /** False for quick-registration users until they set a known password (SMS) */
@@ -105,6 +109,8 @@ export interface User {
   thinkingCoins?: ThinkingCoinsSummary
   /** Per-user daily LLM token budget from /me */
   dailyTokens?: DailyTokensSummary
+  /** Bayi SSO account still uses the shared default name */
+  needsDisplayName?: boolean
   /** School custom native LLM is active */
   customLlmEnabled?: boolean
   /** School model name shown on the canvas */
@@ -155,9 +161,14 @@ export interface BackendUser {
   v3_ribbon_tab?: string | null
   classroom_remote_visible?: boolean | null
   classroomRemoteVisible?: boolean | null
+  quick_access_remote_visible?: boolean | null
+  quickAccessRemoteVisible?: boolean | null
+  quick_access_prompt_overrides?: Record<string, string> | null
+  quickAccessPromptOverrides?: Record<string, string> | null
   allows_simplified_chinese?: boolean
   login_password_set?: boolean
   must_change_password?: boolean
+  needs_display_name?: boolean
   learning_class_id?: number | null
   thinking_coins?: {
     balance?: number

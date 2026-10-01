@@ -132,10 +132,10 @@ async function handleDeleteBookmark(bookmark: LibraryBookmark, event: Event): Pr
   try {
     await libraryStore.deleteBookmark(bookmark.id)
     // Store automatically updates bookmarks list
-    notify.success(t('sidebar.bookmarks.deleted'))
+    notify.successKey('sidebar.bookmarks.deleted')
   } catch (error) {
     console.error('[LibraryCommentsHistory] Failed to delete bookmark:', error)
-    notify.error(t('sidebar.bookmarks.deleteFailed'))
+    notify.errorKey('sidebar.bookmarks.deleteFailed')
   }
 }
 
@@ -152,7 +152,7 @@ function toggleShowAll(): void {
     <!-- Header -->
     <div class="px-4 py-3">
       <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
-        {{ t('sidebar.bookmarks.title') }}
+        <I18nText k="sidebar.bookmarks.title" />
       </div>
     </div>
 
@@ -165,7 +165,7 @@ function toggleShowAll(): void {
           class="text-center py-8"
         >
           <div class="text-xs text-stone-400">
-            {{ t('common.loading') }}
+            <I18nText k="common.loading" />
           </div>
         </div>
 
@@ -176,7 +176,7 @@ function toggleShowAll(): void {
         >
           <Bookmark class="w-8 h-8 mx-auto mb-2 text-stone-300" />
           <p class="text-xs text-stone-400">
-            {{ t('sidebar.bookmarks.empty') }}
+            <I18nText k="sidebar.bookmarks.empty" />
           </p>
         </div>
 
@@ -198,12 +198,19 @@ function toggleShowAll(): void {
                 @click="handleBookmarkClick(bookmark)"
               >
                 <div class="comment-text">
-                  {{ bookmark.document?.title || t('sidebar.bookmarks.unknownDoc') }}
+                  <template v-if="bookmark.document?.title">{{ bookmark.document?.title }}</template
+                  ><I18nText
+                    v-else
+                    k="sidebar.bookmarks.unknownDoc"
+                  />
                 </div>
                 <div class="comment-meta">
                   <FileText class="w-3 h-3" />
                   <span class="text-xs text-stone-400">
-                    {{ t('sidebar.bookmarks.pageN', { n: bookmark.page_number }) }}
+                    <I18nText
+                      k="sidebar.bookmarks.pageN"
+                      :params="{ n: bookmark.page_number }"
+                    />
                   </span>
                 </div>
               </div>
@@ -233,12 +240,19 @@ function toggleShowAll(): void {
                 @click="handleBookmarkClick(bookmark)"
               >
                 <div class="comment-text">
-                  {{ bookmark.document?.title || t('sidebar.bookmarks.unknownDoc') }}
+                  <template v-if="bookmark.document?.title">{{ bookmark.document?.title }}</template
+                  ><I18nText
+                    v-else
+                    k="sidebar.bookmarks.unknownDoc"
+                  />
                 </div>
                 <div class="comment-meta">
                   <FileText class="w-3 h-3" />
                   <span class="text-xs text-stone-400">
-                    {{ t('sidebar.bookmarks.pageN', { n: bookmark.page_number }) }}
+                    <I18nText
+                      k="sidebar.bookmarks.pageN"
+                      :params="{ n: bookmark.page_number }"
+                    />
                   </span>
                 </div>
               </div>
@@ -268,12 +282,19 @@ function toggleShowAll(): void {
                 @click="handleBookmarkClick(bookmark)"
               >
                 <div class="comment-text">
-                  {{ bookmark.document?.title || t('sidebar.bookmarks.unknownDoc') }}
+                  <template v-if="bookmark.document?.title">{{ bookmark.document?.title }}</template
+                  ><I18nText
+                    v-else
+                    k="sidebar.bookmarks.unknownDoc"
+                  />
                 </div>
                 <div class="comment-meta">
                   <FileText class="w-3 h-3" />
                   <span class="text-xs text-stone-400">
-                    {{ t('sidebar.bookmarks.pageN', { n: bookmark.page_number }) }}
+                    <I18nText
+                      k="sidebar.bookmarks.pageN"
+                      :params="{ n: bookmark.page_number }"
+                    />
                   </span>
                 </div>
               </div>
@@ -303,12 +324,19 @@ function toggleShowAll(): void {
                 @click="handleBookmarkClick(bookmark)"
               >
                 <div class="comment-text">
-                  {{ bookmark.document?.title || t('sidebar.bookmarks.unknownDoc') }}
+                  <template v-if="bookmark.document?.title">{{ bookmark.document?.title }}</template
+                  ><I18nText
+                    v-else
+                    k="sidebar.bookmarks.unknownDoc"
+                  />
                 </div>
                 <div class="comment-meta">
                   <FileText class="w-3 h-3" />
                   <span class="text-xs text-stone-400">
-                    {{ t('sidebar.bookmarks.pageN', { n: bookmark.page_number }) }}
+                    <I18nText
+                      k="sidebar.bookmarks.pageN"
+                      :params="{ n: bookmark.page_number }"
+                    />
                   </span>
                 </div>
               </div>
@@ -328,7 +356,10 @@ function toggleShowAll(): void {
             class="show-more-btn"
             @click="toggleShowAll"
           >
-            {{ t('sidebar.actions.showMore', { n: remainingCount }) }}
+            <I18nText
+              k="sidebar.actions.showMore"
+              :params="{ n: remainingCount }"
+            />
           </button>
 
           <!-- Show Less button -->
@@ -337,7 +368,7 @@ function toggleShowAll(): void {
             class="show-more-btn"
             @click="toggleShowAll"
           >
-            {{ t('sidebar.actions.showLess') }}
+            <I18nText k="sidebar.actions.showLess" />
           </button>
         </template>
       </div>
@@ -355,7 +386,7 @@ function toggleShowAll(): void {
           <Bookmark class="w-5 h-5 text-stone-400" />
         </div>
         <p class="text-xs text-stone-500">
-          {{ t('sidebar.bookmarks.loginPrompt') }}
+          <I18nText k="sidebar.bookmarks.loginPrompt" />
         </p>
       </div>
     </div>

@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { useLanguage } from '@/composables'
 import { TRAINING_EMOJI_PAGES } from '@/config/trainingMarkPalettes'
 
 const emit = defineEmits<{
   pick: [glyph: string]
 }>()
 
-const { t } = useLanguage()
 const pageId = ref(TRAINING_EMOJI_PAGES[0]?.id || 'common')
 const page = computed(
   () => TRAINING_EMOJI_PAGES.find((item) => item.id === pageId.value) || TRAINING_EMOJI_PAGES[0]
@@ -31,7 +29,7 @@ const page = computed(
         :aria-selected="item.id === pageId"
         @click="pageId = item.id"
       >
-        {{ t(item.labelKey) }}
+        <I18nText :k="item.labelKey" />
       </button>
     </div>
     <div

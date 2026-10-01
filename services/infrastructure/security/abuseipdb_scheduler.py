@@ -172,16 +172,9 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
 
     if not await acquire_abuseipdb_scheduler_lock():
         logger.debug("[AbuseIPDB] Another worker holds the scheduler lock; monitoring")
-        follower_round = 0
         while True:
             try:
                 await asyncio.sleep(300)
-                follower_round += 1
-                if follower_round % 12 == 0:
-                    logger.info(
-                        "[AbuseIPDB] Still waiting for blacklist scheduler lock (%s min)",
-                        follower_round * 5,
-                    )
                 if await acquire_abuseipdb_scheduler_lock():
                     logger.info("[AbuseIPDB] Scheduler lock acquired on retry")
                     break

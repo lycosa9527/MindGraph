@@ -41,9 +41,7 @@ const sessionProviderRef = ref<{ session: DiagramSession } | null>(null)
 let focusTimer: ReturnType<typeof setTimeout> | null = null
 let focusRetryTimer: ReturnType<typeof setTimeout> | null = null
 
-const vueFlowId = computed(
-  () => `zhihui-diagram-${props.diagramId || 'none'}`
-)
+const vueFlowId = computed(() => `zhihui-diagram-${props.diagramId || 'none'}`)
 
 type FocusSession = DiagramSession & {
   selectNodes?: (nodeIds: string | string[]) => boolean
@@ -254,13 +252,13 @@ onBeforeUnmount(() => {
       v-if="!diagramId"
       class="flex flex-1 items-center justify-center px-4 text-center text-xs text-stone-400"
     >
-      {{ t('zhihui.diagram.selectMindmapHint') }}
+      <I18nText k="zhihui.diagram.selectMindmapHint" />
     </div>
     <div
       v-else-if="loading"
       class="flex flex-1 items-center justify-center text-xs text-stone-400"
     >
-      {{ t('common.loading') }}
+      <I18nText k="common.loading" />
     </div>
     <div
       v-else-if="error"

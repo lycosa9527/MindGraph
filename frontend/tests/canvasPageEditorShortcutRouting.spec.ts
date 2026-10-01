@@ -93,9 +93,12 @@ describe('canvasPageEditorShortcutRouting — all diagram types', () => {
 
 /** Global shortcuts — same handler on CanvasPage for every diagram type (except where noted). */
 describe('canvas global shortcuts (type-agnostic on CanvasPage)', () => {
-  it('documents concept_map as the only type with Tab/Enter/= add blocked', () => {
+  it('keeps concept map and thinking maps off Tab, and concept map off Enter', () => {
     expect(resolveTabKeyEvent('concept_map')).toBeNull()
     expect(resolveEnterKeyEvent('concept_map')).toBeNull()
+    expect(resolveTabKeyEvent('circle_map')).toBeNull()
+    expect(resolveInsertKeyEvent('circle_map')).toBeNull()
+    expect(resolveEnterKeyEvent('brace_map')).toBe('diagram:add_node_requested')
   })
 
   it('covers every DiagramType in Tab, Enter, and Insert matrices', () => {

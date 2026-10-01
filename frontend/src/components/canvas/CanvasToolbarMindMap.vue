@@ -15,7 +15,6 @@ import {
   Download,
   FileText,
   GitBranch,
-  Layers,
   LayoutGrid,
   Lightbulb,
   Link2,
@@ -36,17 +35,16 @@ import {
 import { diagramRibbonCapabilities } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import type { MindMapRibbonTabId } from '@/canvas-ribbon/mindMapRibbonTypes'
 import { useMindMapRibbonActions } from '@/canvas-ribbon/useMindMapRibbonActions'
-import CanvasToolbarDiagramMutations from '@/components/canvas/CanvasToolbarDiagramMutations.vue'
 import CanvasToolbarMindMapFormat from '@/components/canvas/CanvasToolbarMindMapFormat.vue'
 import CanvasToolbarMindMapHistoryVersions from '@/components/canvas/CanvasToolbarMindMapHistoryVersions.vue'
 import CanvasToolbarMindMapInsert from '@/components/canvas/CanvasToolbarMindMapInsert.vue'
 import CanvasToolbarMindMapNodeStyle from '@/components/canvas/CanvasToolbarMindMapNodeStyle.vue'
-import CanvasToolbarSharedFormat from '@/components/canvas/CanvasToolbarSharedFormat.vue'
 import MindMapAppearanceDropdown from '@/components/canvas/MindMapAppearanceDropdown.vue'
 import MindMapExportOptionsPanel from '@/components/canvas/MindMapExportOptionsPanel.vue'
 import MindMapInsertNodeIcon from '@/components/canvas/MindMapInsertNodeIcon.vue'
 import MindMapLearningSheetIcon from '@/components/canvas/MindMapLearningSheetIcon.vue'
 import MindMapNumberingControls from '@/components/canvas/MindMapNumberingControls.vue'
+import MmToolbarLabel from '@/components/canvas/MmToolbarLabel.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useFeatureFlags } from '@/composables'
@@ -56,7 +54,6 @@ import {
 } from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
 import { useCanvasReset } from '@/composables/canvasPage/useCanvasReset'
 import { useCanvasToolbarFormatting, useFollowNodeStyleToolbar } from '@/composables/canvasToolbar'
-import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
@@ -64,7 +61,6 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
-import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useDiagramSourceLock } from '@/composables/mindMap/useDiagramSourceLock'
 import { docSummaryLiteIntent } from '@/composables/mindMap/useDocSummaryLiteSaveAndGenerate'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
@@ -84,6 +80,11 @@ import {
   useMindClassroomStore,
   useVoiceNotesStore,
 } from '@/stores'
+import {
+  type LabelCollapseSnapshot,
+  createLabelCollapseSnapshot,
+  nextLabelCollapse,
+} from '@/utils/toolbarLabelCollapse'
 
 import MindMapStructureIcon from './MindMapStructureIcon.vue'
 
@@ -92,26 +93,19 @@ const props = withDefaults(defineProps<{ compact?: boolean; ribbonTab?: MindMapR
   ribbonTab: 'edit',
 })
 
-const { t } = useLanguage()
+const { t, currentLanguage } = useLanguage()
 const notify = useNotifications()
 const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
 const diagramStore = useDiagramStore()
 const authStore = useAuthStore()
 const { featureCommunity } = useFeatureFlags()
-const { triggerImportInPlace, triggerConceptMapImportInPlace } = useDiagramImport()
-const mindMapV2 = useMindMapV2Chrome()
-const caps = computed(() => diagramRibbonCapabilities(diagramStore.type, mindMapV2.value))
-const { handleConceptGeneration, toggleLearningSheet } = useCanvasToolbarApps()
-const exportMenuItems = computed(() =>
-  caps.value.standardExport ? CANVAS_STANDARD_EXPORT_MENU_ITEMS : CANVAS_MINDMAP_EXPORT_MENU_ITEMS
-)
+const { triggerImportInPlace } = useDiagramImport()
 const { resetToDefaultTemplate } = useCanvasReset()
 const ribbon = useMindMapRibbonActions()
 const classroomStore = useMindClassroomStore()
 const voiceNotesStore = useVoiceNotesStore()
 const route = useRoute()
 const { activeTool, handleToolSelect, openTool } = useMindMapSideToolbarState()
-const { showCanvasAiFeatures, lsCanvas } = useLearningAiGate()
 const sourceLock = useDiagramSourceLock()
 const docGenerateLocked = computed(() => sourceLock.isLocked('doc'))
 const webGenerateLocked = computed(() => sourceLock.isLocked('web'))
@@ -131,14 +125,14 @@ const voiceSummaryTooltip = computed(() => {
 
 const showCommunityExport = computed(() => featureCommunity.value && authStore.isAuthenticated)
 
-const showLearningSheetRestore = computed(
-  () =>
-    ribbon.learningSheet.isLearningSheetActive &&
-    !(authStore.user?.role === 'student' && lsCanvas.isActive)
-)
-
 /** Hidden for now with the ZhiHui sidebar entry; flip when 图示生图 ships. */
 const showZhihuiDiagramExport = computed(() => false)
+
+const mindMapV2 = useMindMapV2Chrome()
+const caps = computed(() => diagramRibbonCapabilities(diagramStore.type, mindMapV2.value))
+const exportMenuItems = computed(() =>
+  caps.value.standardExport ? CANVAS_STANDARD_EXPORT_MENU_ITEMS : CANVAS_MINDMAP_EXPORT_MENU_ITEMS
+)
 
 const { handleAddChild, handleAddSibling, handleDeleteNode, handleAddBranch } = useNodeActions({
   registerEventBusListeners: false,
@@ -156,10 +150,13 @@ const trackRef = ref<HTMLElement | null>(null)
 const canScrollLeft = ref(false)
 const canScrollRight = ref(false)
 const trackOverflowing = computed(() => canScrollLeft.value || canScrollRight.value)
+/** Abbreviated labels when translated button text is wider than the track. */
+const labelsCollapsed = ref(false)
+const shortLabels = computed(() => props.compact || labelsCollapsed.value)
+let labelCollapse: LabelCollapseSnapshot = createLabelCollapseSnapshot()
 let trackResizeObserver: ResizeObserver | null = null
 
-function updateTrackOverflow(): void {
-  const el = trackRef.value
+function updateScrollAffordances(el: HTMLElement | null): void {
   if (!el) {
     canScrollLeft.value = false
     canScrollRight.value = false
@@ -168,6 +165,36 @@ function updateTrackOverflow(): void {
   const maxScroll = el.scrollWidth - el.clientWidth
   canScrollLeft.value = el.scrollLeft > 1
   canScrollRight.value = maxScroll - el.scrollLeft > 1
+}
+
+function resetLabelCollapse(): void {
+  labelCollapse = createLabelCollapseSnapshot()
+  labelsCollapsed.value = false
+}
+
+function updateTrackOverflow(): void {
+  const el = trackRef.value
+  if (!el) {
+    updateScrollAffordances(null)
+    return
+  }
+  const next = nextLabelCollapse(labelCollapse, el.clientWidth, el.scrollWidth)
+  const changed = next.collapsed !== labelCollapse.collapsed
+  labelCollapse = next
+  labelsCollapsed.value = next.collapsed
+  if (!changed) {
+    updateScrollAffordances(el)
+    return
+  }
+  void nextTick(() => {
+    const node = trackRef.value
+    if (!node) return
+    if (!labelCollapse.collapsed) {
+      updateTrackOverflow()
+      return
+    }
+    updateScrollAffordances(node)
+  })
 }
 
 function scrollTrack(direction: -1 | 1): void {
@@ -200,24 +227,8 @@ function handleRedo() {
 function handleStructurePick(mode: 'balanced' | 'right') {
   structureDropdownOpen.value = false
   if (diagramStore.setMindMapStructureMode(mode)) {
-    notify.success(t('canvas.toolbar.mindMapStructureApplied'))
+    notify.successKey('canvas.toolbar.mindMapStructureApplied')
   }
-}
-
-function handleImportClick(): void {
-  if (diagramStore.type === 'concept_map') {
-    triggerConceptMapImportInPlace()
-    return
-  }
-  triggerImportInPlace()
-}
-
-function onLearningSheetClick(): void {
-  if (caps.value.learningSheetPanel) {
-    ribbon.openSideTool('learning_sheet')
-    return
-  }
-  toggleLearningSheet()
 }
 
 function handleExportCommand(format: string) {
@@ -243,7 +254,7 @@ function requireNodeSelection(action: () => void): void {
     action()
     return
   }
-  notify.warning(t('canvas.toolbar.selectNodesFirst'))
+  notify.warningKey('canvas.toolbar.selectNodesFirst')
 }
 
 function onGuestAiToolClick(event: MouseEvent, run: () => void): void {
@@ -275,8 +286,8 @@ function onFollowChange(value: string | number | boolean): void {
   setFollowEnabled(Boolean(value))
 }
 
-async function onRestoreLearningSheet(): Promise<void> {
-  await ribbon.learningSheet.exitLearningSheet()
+function onRestoreLearningSheet(): void {
+  ribbon.learningSheet.exitLearningSheet()
 }
 
 function handleAddChildClick() {
@@ -346,8 +357,15 @@ onUnmounted(() => {
 })
 
 watch(
-  () => props.ribbonTab,
+  () =>
+    [
+      props.ribbonTab,
+      props.compact,
+      currentLanguage.value,
+      ribbon.learningSheet.isLearningSheetActive,
+    ] as const,
   async () => {
+    resetLabelCollapse()
     await nextTick()
     trackRef.value?.scrollTo({ left: 0 })
     updateTrackOverflow()
@@ -358,7 +376,10 @@ watch(
 <template>
   <div
     class="mm-toolbar"
-    :class="{ 'is-overflowing': trackOverflowing }"
+    :class="{
+      'is-overflowing': trackOverflowing,
+      'mm-toolbar--short-labels': shortLabels,
+    }"
   >
     <button
       v-show="trackOverflowing"
@@ -383,71 +404,73 @@ watch(
       @scroll.passive="updateTrackOverflow"
     >
       <template v-if="ribbonTab === 'edit'">
-        <template v-if="caps.mindMapV2">
-          <!-- Structure mode -->
-          <I18nTooltip
-            :k="
-              structureMode === 'right'
-                ? 'canvas.toolbar.mindMapStructureRight'
-                : 'canvas.toolbar.mindMapStructureBalanced'
-            "
-            placement="bottom"
-          >
-            <span class="inline-flex shrink-0">
-              <ElDropdown
-                v-model:visible="structureDropdownOpen"
-                trigger="hover"
-                :show-timeout="150"
-                :hide-timeout="200"
-                placement="bottom-start"
-                popper-class="mm-toolbar-popper mm-toolbar-popper--structure"
+        <!-- Structure mode -->
+        <I18nTooltip
+          v-if="caps.mindMapV2"
+          :k="
+            structureMode === 'right'
+              ? 'canvas.toolbar.mindMapStructureRight'
+              : 'canvas.toolbar.mindMapStructureBalanced'
+          "
+          placement="bottom"
+        >
+          <span class="inline-flex shrink-0">
+            <ElDropdown
+              v-model:visible="structureDropdownOpen"
+              trigger="hover"
+              :show-timeout="150"
+              :hide-timeout="200"
+              placement="bottom-start"
+              popper-class="mm-toolbar-popper mm-toolbar-popper--structure"
+            >
+              <button
+                type="button"
+                class="mm-btn mm-btn--structure"
+                :aria-label="structureLabel"
               >
-                <button
-                  type="button"
-                  class="mm-btn mm-btn--structure"
-                  :aria-label="structureLabel"
-                >
-                  <MindMapStructureIcon
-                    class="mm-btn__structure-preview"
-                    :mode="structureMode"
-                  />
-                  <ChevronDown
-                    :size="12"
-                    class="mm-btn__chevron"
-                  />
-                </button>
-                <template #dropdown>
-                  <div class="mm-panel mm-panel--structure">
-                    <button
-                      type="button"
-                      class="mm-structure-card"
-                      :class="{ 'is-active': structureMode === 'balanced' }"
-                      @click="handleStructurePick('balanced')"
-                    >
-                      <MindMapStructureIcon mode="balanced" />
-                      <span class="mm-structure-card__label">
-                        <I18nText k="canvas.toolbar.mindMapStructureBalanced" />
-                      </span>
-                    </button>
-                    <div class="mm-panel__divider-v" />
-                    <button
-                      type="button"
-                      class="mm-structure-card"
-                      :class="{ 'is-active': structureMode === 'right' }"
-                      @click="handleStructurePick('right')"
-                    >
-                      <MindMapStructureIcon mode="right" />
-                      <span class="mm-structure-card__label">
-                        <I18nText k="canvas.toolbar.mindMapStructureRight" />
-                      </span>
-                    </button>
-                  </div>
-                </template>
-              </ElDropdown>
-            </span>
-          </I18nTooltip>
-          <span class="mm-sep" />
-        </template>
+                <MindMapStructureIcon
+                  class="mm-btn__structure-preview"
+                  :mode="structureMode"
+                />
+                <ChevronDown
+                  :size="12"
+                  class="mm-btn__chevron"
+                />
+              </button>
+              <template #dropdown>
+                <div class="mm-panel mm-panel--structure">
+                  <button
+                    type="button"
+                    class="mm-structure-card"
+                    :class="{ 'is-active': structureMode === 'balanced' }"
+                    @click="handleStructurePick('balanced')"
+                  >
+                    <MindMapStructureIcon mode="balanced" />
+                    <span class="mm-structure-card__label">
+                      <I18nText k="canvas.toolbar.mindMapStructureBalanced" />
+                    </span>
+                  </button>
+                  <div class="mm-panel__divider-v" />
+                  <button
+                    type="button"
+                    class="mm-structure-card"
+                    :class="{ 'is-active': structureMode === 'right' }"
+                    @click="handleStructurePick('right')"
+                  >
+                    <MindMapStructureIcon mode="right" />
+                    <span class="mm-structure-card__label">
+                      <I18nText k="canvas.toolbar.mindMapStructureRight" />
+                    </span>
+                  </button>
+                </div>
+              </template>
+            </ElDropdown>
+          </span>
+        </I18nTooltip>
+        <span
+          v-if="caps.mindMapV2"
+          class="mm-sep"
+        />
 
         <!-- Undo / Redo -->
         <div
@@ -463,7 +486,9 @@ watch(
             <template #content>
               <div class="mm-shortcut-tooltip__row">
                 <span><I18nText k="canvas.toolbar.undo" /></span>
-                <kbd class="mm-shortcut-tooltip__kbd">{{ t('canvas.toolbar.undoShortcut') }}</kbd>
+                <kbd class="mm-shortcut-tooltip__kbd"
+                  ><I18nText k="canvas.toolbar.undoShortcut"
+                /></kbd>
               </div>
             </template>
             <button
@@ -484,7 +509,9 @@ watch(
             <template #content>
               <div class="mm-shortcut-tooltip__row">
                 <span><I18nText k="canvas.toolbar.redo" /></span>
-                <kbd class="mm-shortcut-tooltip__kbd">{{ t('canvas.toolbar.redoShortcut') }}</kbd>
+                <kbd class="mm-shortcut-tooltip__kbd"
+                  ><I18nText k="canvas.toolbar.redoShortcut"
+                /></kbd>
               </div>
             </template>
             <button
@@ -501,39 +528,38 @@ watch(
 
         <span class="mm-sep" />
         <div class="mm-btn-group">
-          <template v-if="caps.mindMapTree">
-            <I18nTooltip
-              k="canvas.toolbar.addChildNode"
-              placement="bottom"
+          <I18nTooltip
+            v-if="caps.mindMapTree"
+            k="canvas.toolbar.addChildNode"
+            placement="bottom"
+          >
+            <button
+              type="button"
+              class="mm-btn mm-btn--icon"
+              :class="{ 'is-dimmed': !ribbon.hasSelection }"
+              :aria-disabled="!ribbon.hasSelection"
+              :aria-label="t('canvas.toolbar.addChildNode')"
+              @click="requireNodeSelection(handleAddChildClick)"
             >
-              <button
-                type="button"
-                class="mm-btn mm-btn--icon"
-                :class="{ 'is-dimmed': !ribbon.hasSelection }"
-                :aria-disabled="!ribbon.hasSelection"
-                :aria-label="t('canvas.toolbar.addChildNode')"
-                @click="requireNodeSelection(handleAddChildClick)"
-              >
-                <MindMapInsertNodeIcon kind="child" />
-              </button>
-            </I18nTooltip>
-            <I18nTooltip
-              k="canvas.toolbar.addSiblingNode"
-              placement="bottom"
+              <MindMapInsertNodeIcon kind="child" />
+            </button>
+          </I18nTooltip>
+          <I18nTooltip
+            v-if="caps.mindMapTree"
+            k="canvas.toolbar.addSiblingNode"
+            placement="bottom"
+          >
+            <button
+              type="button"
+              class="mm-btn mm-btn--icon"
+              :class="{ 'is-dimmed': !ribbon.hasSelection }"
+              :aria-disabled="!ribbon.hasSelection"
+              :aria-label="t('canvas.toolbar.addSiblingNode')"
+              @click="requireNodeSelection(handleAddSibling)"
             >
-              <button
-                type="button"
-                class="mm-btn mm-btn--icon"
-                :class="{ 'is-dimmed': !ribbon.hasSelection }"
-                :aria-disabled="!ribbon.hasSelection"
-                :aria-label="t('canvas.toolbar.addSiblingNode')"
-                @click="requireNodeSelection(handleAddSibling)"
-              >
-                <MindMapInsertNodeIcon kind="sibling" />
-              </button>
-            </I18nTooltip>
-          </template>
-          <CanvasToolbarDiagramMutations v-else />
+              <MindMapInsertNodeIcon kind="sibling" />
+            </button>
+          </I18nTooltip>
           <I18nTooltip
             k="canvas.toolbar.deleteNode"
             placement="bottom"
@@ -587,39 +613,34 @@ watch(
             <Paintbrush class="w-4 h-4" />
           </button>
         </I18nTooltip>
-        <template v-if="caps.mindMapFormat">
-          <span class="mm-sep" />
-          <CanvasToolbarMindMapNodeStyle
-            compact
-            :disabled="!ribbon.hasSelection"
-            :hide-shape="diagramStore.type === 'circle_map'"
-          />
-          <span class="mm-sep" />
-          <CanvasToolbarMindMapFormat
-            hide-painter
-            compact
-            :disabled="!ribbon.hasSelection"
-          />
-          <span class="mm-sep" />
-          <MindMapAppearanceDropdown
-            compact
-            :hide-diagram-style="caps.thinkingMapChrome"
-          />
-          <template v-if="caps.mindMapV2">
-            <span class="mm-sep" />
-            <MindMapNumberingControls
-              variant="button"
-              compact
-            />
-          </template>
-        </template>
-        <template v-else>
-          <span class="mm-sep" />
-          <CanvasToolbarSharedFormat :compact="props.compact" />
-        </template>
+        <span class="mm-sep" />
+        <CanvasToolbarMindMapNodeStyle
+          compact
+          :disabled="!ribbon.hasSelection"
+        />
+        <span class="mm-sep" />
+        <CanvasToolbarMindMapFormat
+          hide-painter
+          compact
+          :disabled="!ribbon.hasSelection"
+        />
+        <span class="mm-sep" />
+        <MindMapAppearanceDropdown
+          compact
+          :hide-diagram-style="caps.thinkingMapChrome"
+        />
+        <span
+          v-if="caps.mindMapV2"
+          class="mm-sep"
+        />
+        <MindMapNumberingControls
+          v-if="caps.mindMapV2"
+          variant="button"
+          compact
+        />
       </template>
 
-      <template v-if="ribbonTab === 'edit' && caps.mindMapFormat">
+      <template v-if="ribbonTab === 'edit'">
         <span class="mm-sep" />
         <CanvasToolbarMindMapInsert :hide-structure-inserts="!caps.mindMapV2" />
         <span class="mm-sep" />
@@ -632,9 +653,10 @@ watch(
               class="mm-follow-toggle"
               data-testid="mindmap-node-style-follow"
             >
-              <span class="mm-follow-toggle__label"
-                ><I18nText k="canvas.toolbar.nodeStyleFollow"
-              /></span>
+              <MmToolbarLabel
+                class="mm-follow-toggle__label"
+                k="canvas.toolbar.nodeStyleFollow"
+              />
               <el-switch
                 :model-value="followEnabled"
                 size="small"
@@ -659,11 +681,10 @@ watch(
               @click="ribbon.requestSave"
             >
               <Save class="w-4 h-4" />
-              <span
-                v-if="!props.compact"
+              <MmToolbarLabel
                 class="mm-btn__label"
-                ><I18nText k="common.save"
-              /></span>
+                k="common.save"
+              />
             </button>
           </I18nTooltip>
           <CanvasToolbarMindMapHistoryVersions :compact="props.compact" />
@@ -674,21 +695,19 @@ watch(
           <I18nTooltip
             k="canvas.toolbar.import"
             placement="bottom"
-            :disabled="!props.compact"
+            :disabled="shortLabels || !props.compact"
           >
             <button
               type="button"
               class="mm-btn"
-              :class="{ 'mm-btn--icon': props.compact }"
               :aria-label="t('canvas.toolbar.import')"
-              @click="handleImportClick"
+              @click="() => triggerImportInPlace()"
             >
               <Upload class="w-4 h-4" />
-              <span
-                v-if="!props.compact"
+              <MmToolbarLabel
                 class="mm-btn__label"
-                ><I18nText k="canvas.toolbar.import"
-              /></span>
+                k="canvas.toolbar.import"
+              />
             </button>
           </I18nTooltip>
 
@@ -696,7 +715,7 @@ watch(
             <I18nTooltip
               k="canvas.toolbar.export"
               placement="bottom"
-              :disabled="!props.compact"
+              :disabled="shortLabels || !props.compact"
             >
               <span class="inline-flex">
                 <ElDropdown
@@ -708,29 +727,23 @@ watch(
                   <button
                     type="button"
                     class="mm-btn mm-btn--export"
-                    :class="{ 'mm-btn--icon': props.compact }"
                     data-learning-sheet-export-anchor
                     data-canvas-export-anchor
                     :aria-label="t('canvas.toolbar.export')"
                   >
                     <Download class="w-4 h-4" />
-                    <span
-                      v-if="!props.compact"
+                    <MmToolbarLabel
                       class="mm-btn__label"
-                      ><I18nText k="canvas.toolbar.export"
-                    /></span>
+                      k="canvas.toolbar.export"
+                    />
                     <ChevronDown
-                      v-if="!props.compact"
                       :size="12"
                       class="mm-btn__chevron"
                     />
                   </button>
                   <template #dropdown>
                     <div class="mm-panel mm-panel--export">
-                      <MindMapExportOptionsPanel
-                        v-if="caps.mindMapV2"
-                        v-model="exportOptions"
-                      />
+                      <MindMapExportOptionsPanel v-model="exportOptions" />
                       <div class="mm-panel mm-panel--list mm-panel--export-formats">
                         <button
                           type="button"
@@ -797,17 +810,16 @@ watch(
                 : 'canvas.mindMapSideToolbar.learningSheet'
             "
             placement="bottom"
+            :disabled="shortLabels && !aiBlockedByCollab"
           >
             <button
               type="button"
               class="mm-btn mm-ls-entry"
               :class="{
-                'mm-btn--icon': props.compact && !ribbon.learningSheet.isLearningSheetActive,
                 'is-active':
                   activeTool === 'learning_sheet' ||
                   ribbon.learningSheet.isPickActive ||
-                  ribbon.learningSheet.isLearningSheetActive ||
-                  diagramStore.isLearningSheet,
+                  ribbon.learningSheet.isLearningSheetActive,
                 'is-expanded': ribbon.learningSheet.isLearningSheetActive,
                 'is-dimmed': aiBlockedByCollab,
               }"
@@ -817,16 +829,15 @@ watch(
                   ? t('canvas.toolbar.collabGuestFeatureBlocked')
                   : t('canvas.mindMapSideToolbar.learningSheet')
               "
-              @click="onLearningSheetClick"
+              @click="ribbon.openSideTool('learning_sheet')"
             >
               <MindMapLearningSheetIcon kind="blanks" />
-              <span
-                v-if="!props.compact"
+              <MmToolbarLabel
                 class="mm-btn__label"
-                ><I18nText k="canvas.mindMapSideToolbar.learningSheet"
-              /></span>
+                k="canvas.mindMapSideToolbar.learningSheet"
+              />
               <span
-                v-if="showLearningSheetRestore"
+                v-if="ribbon.learningSheet.isLearningSheetActive"
                 class="mm-ls-restore"
                 role="button"
                 tabindex="0"
@@ -842,51 +853,48 @@ watch(
           <I18nTooltip
             k="canvas.ribbon.makeLearningSheet"
             placement="bottom"
+            :disabled="shortLabels"
           >
             <button
               type="button"
               class="mm-btn"
-              :class="{ 'mm-btn--icon': props.compact }"
               :aria-label="t('canvas.ribbon.makeLearningSheet')"
               data-learning-sheet-nudge-anchor
               @click="() => ribbon.requestWorksheetText(true)"
             >
               <MindMapLearningSheetIcon kind="worksheet" />
-              <span
-                v-if="!props.compact"
+              <MmToolbarLabel
                 class="mm-btn__label"
-                ><I18nText k="canvas.ribbon.makeLearningSheet"
-              /></span>
+                k="canvas.ribbon.makeLearningSheet"
+              />
             </button>
           </I18nTooltip>
           <I18nTooltip
             k="canvas.zoomControls.presentationMode"
             placement="bottom"
+            :disabled="shortLabels"
           >
             <button
               type="button"
               class="mm-btn"
-              :class="{ 'mm-btn--icon': props.compact }"
               :aria-label="t('canvas.zoomControls.presentationMode')"
               @click="ribbon.startPresentation"
             >
               <MonitorPlay class="w-4 h-4" />
-              <span
-                v-if="!props.compact"
+              <MmToolbarLabel
                 class="mm-btn__label"
-                ><I18nText k="canvas.zoomControls.presentationMode"
-              /></span>
+                k="canvas.zoomControls.presentationMode"
+              />
             </button>
           </I18nTooltip>
           <I18nTooltip
-            v-if="caps.explain"
             :k="
               aiBlockedByCollab
                 ? 'canvas.toolbar.collabAiBlocked'
                 : 'canvas.floatingToolbar.explain'
             "
             placement="bottom"
-            :disabled="!props.compact && !aiBlockedByCollab"
+            :disabled="!aiBlockedByCollab && (shortLabels || !props.compact)"
           >
             <button
               type="button"
@@ -905,45 +913,46 @@ watch(
               "
             >
               <Lightbulb class="w-4 h-4" />
-              <span class="mm-btn__label"><I18nText k="canvas.floatingToolbar.explain" /></span>
+              <MmToolbarLabel
+                class="mm-btn__label"
+                k="canvas.floatingToolbar.explain"
+              />
             </button>
           </I18nTooltip>
           <I18nTooltip
-            v-if="caps.mindClassroom"
             k="canvas.mindMapSideToolbar.mindClassroom"
             placement="bottom"
+            :disabled="shortLabels"
           >
             <button
               type="button"
               class="mm-btn"
-              :class="{ 'mm-btn--icon': props.compact }"
               :aria-label="t('canvas.mindMapSideToolbar.mindClassroom')"
               @click="openClassroom"
             >
               <School class="w-4 h-4" />
-              <span
-                v-if="!props.compact"
+              <MmToolbarLabel
                 class="mm-btn__label"
-                ><I18nText k="canvas.mindMapSideToolbar.mindClassroom"
-              /></span>
+                k="canvas.mindMapSideToolbar.mindClassroom"
+              />
             </button>
           </I18nTooltip>
         </div>
       </template>
 
-      <template v-if="ribbonTab === 'ai' && showCanvasAiFeatures">
+      <template v-if="ribbonTab === 'ai'">
         <div class="mm-btn-group">
           <I18nTooltip
             :k="
               aiBlockedByCollab ? 'canvas.toolbar.collabAiBlocked' : 'canvas.ribbon.topicGenerate'
             "
             placement="bottom"
+            :disabled="shortLabels && !aiBlockedByCollab"
           >
             <button
               type="button"
               class="mm-btn"
               :class="{
-                'mm-btn--icon': props.compact,
                 'is-dimmed': aiBlockedByCollab,
               }"
               :aria-disabled="aiBlockedByCollab"
@@ -955,167 +964,137 @@ watch(
               @click="onGuestAiToolClick($event, () => ribbon.handleAIGenerate())"
             >
               <Sparkles class="w-4 h-4" />
-              <span
-                v-if="!props.compact"
+              <MmToolbarLabel
                 class="mm-btn__label"
-                ><I18nText k="canvas.ribbon.topicGenerate"
-              /></span>
+                k="canvas.ribbon.topicGenerate"
+              />
             </button>
           </I18nTooltip>
-          <I18nTooltip
-            v-if="caps.conceptGenerate"
-            :k="
-              aiBlockedByCollab
-                ? 'canvas.toolbar.collabAiBlocked'
-                : 'canvas.toolbar.conceptGeneration'
-            "
+          <ElTooltip
+            v-if="caps.docGenerate"
             placement="bottom"
+            :disabled="shortLabels && !docGenerateLocked && !aiBlockedByCollab"
           >
-            <button
-              type="button"
-              class="mm-btn"
-              :class="{
-                'mm-btn--icon': props.compact,
-                'is-dimmed': aiBlockedByCollab,
-              }"
-              :aria-disabled="aiBlockedByCollab"
-              :aria-label="
-                aiBlockedByCollab
-                  ? t('canvas.toolbar.collabAiBlocked')
-                  : t('canvas.toolbar.conceptGeneration')
-              "
-              @click="onGuestAiToolClick($event, () => handleConceptGeneration())"
+            <template #content>
+              <I18nText
+                v-if="!docGenerateLocked && !aiBlockedByCollab"
+                k="canvas.ribbon.docGenerate"
+              />
+              <I18nText
+                v-else-if="aiBlockedByCollab"
+                k="canvas.toolbar.collabAiBlocked"
+              />
+              <span v-else>{{ sourceLock.lockMessage }}</span>
+            </template>
+            <span
+              class="inline-flex shrink-0"
+              @click="openDocGenerate('file')"
             >
-              <Layers class="w-4 h-4" />
-              <span
-                v-if="!props.compact"
-                class="mm-btn__label"
-                ><I18nText k="canvas.toolbar.conceptGeneration"
-              /></span>
-            </button>
-          </I18nTooltip>
-          <template v-if="caps.docGenerate">
-            <ElTooltip placement="bottom">
-              <template #content>
-                <I18nText
-                  v-if="!docGenerateLocked && !aiBlockedByCollab"
+              <button
+                type="button"
+                class="mm-btn"
+                :class="{
+                  'is-active': activeTool === 'document_summary',
+                  'is-dimmed': aiBlockedByCollab,
+                }"
+                :disabled="docGenerateLocked"
+                :aria-disabled="aiBlockedByCollab || docGenerateLocked"
+                :aria-label="docGenerateTooltip"
+                @click.stop="openDocGenerate('file')"
+              >
+                <FileText class="w-4 h-4" />
+                <MmToolbarLabel
+                  class="mm-btn__label"
                   k="canvas.ribbon.docGenerate"
                 />
-                <I18nText
-                  v-else-if="aiBlockedByCollab"
-                  k="canvas.toolbar.collabAiBlocked"
-                />
-                <span v-else>{{ sourceLock.lockMessage }}</span>
-              </template>
-              <span
-                class="inline-flex shrink-0"
-                @click="openDocGenerate('file')"
+              </button>
+            </span>
+          </ElTooltip>
+          <ElTooltip
+            v-if="caps.docGenerate"
+            placement="bottom"
+            :disabled="shortLabels && !webGenerateLocked && !aiBlockedByCollab"
+          >
+            <template #content>
+              <I18nText
+                v-if="!webGenerateLocked && !aiBlockedByCollab"
+                k="canvas.ribbon.webGenerate"
+              />
+              <I18nText
+                v-else-if="aiBlockedByCollab"
+                k="canvas.toolbar.collabAiBlocked"
+              />
+              <span v-else>{{ sourceLock.lockMessage }}</span>
+            </template>
+            <span
+              class="inline-flex shrink-0"
+              @click="openDocGenerate('web')"
+            >
+              <button
+                type="button"
+                class="mm-btn"
+                :disabled="webGenerateLocked"
+                :aria-disabled="aiBlockedByCollab || webGenerateLocked"
+                :aria-label="webGenerateTooltip"
+                @click.stop="openDocGenerate('web')"
               >
-                <button
-                  type="button"
-                  class="mm-btn"
-                  :class="{
-                    'mm-btn--icon': props.compact,
-                    'is-active': activeTool === 'document_summary',
-                    'is-dimmed': aiBlockedByCollab,
-                  }"
-                  :disabled="docGenerateLocked"
-                  :aria-disabled="aiBlockedByCollab || docGenerateLocked"
-                  :aria-label="docGenerateTooltip"
-                  @click.stop="openDocGenerate('file')"
-                >
-                  <FileText class="w-4 h-4" />
-                  <span
-                    v-if="!props.compact"
-                    class="mm-btn__label"
-                    ><I18nText k="canvas.ribbon.docGenerate"
-                  /></span>
-                </button>
-              </span>
-            </ElTooltip>
-            <ElTooltip placement="bottom">
-              <template #content>
-                <I18nText
-                  v-if="!webGenerateLocked && !aiBlockedByCollab"
+                <Link2 class="w-4 h-4" />
+                <MmToolbarLabel
+                  class="mm-btn__label"
                   k="canvas.ribbon.webGenerate"
                 />
-                <I18nText
-                  v-else-if="aiBlockedByCollab"
-                  k="canvas.toolbar.collabAiBlocked"
-                />
-                <span v-else>{{ sourceLock.lockMessage }}</span>
-              </template>
-              <span
-                class="inline-flex shrink-0"
-                @click="openDocGenerate('web')"
+              </button>
+            </span>
+          </ElTooltip>
+          <ElTooltip
+            v-if="caps.docGenerate"
+            placement="bottom"
+            :disabled="shortLabels && !voiceSummaryLocked && !aiBlockedByCollab"
+          >
+            <template #content>
+              <I18nText
+                v-if="!voiceSummaryLocked && !aiBlockedByCollab"
+                k="canvas.ribbon.voiceSummary"
+              />
+              <I18nText
+                v-else-if="aiBlockedByCollab"
+                k="canvas.toolbar.collabAiBlocked"
+              />
+              <span v-else>{{ sourceLock.lockMessage }}</span>
+            </template>
+            <span
+              class="inline-flex shrink-0"
+              @click="openVoiceSummary"
+            >
+              <button
+                type="button"
+                class="mm-btn"
+                :disabled="voiceSummaryLocked"
+                :aria-disabled="aiBlockedByCollab || voiceSummaryLocked"
+                :aria-label="voiceSummaryTooltip"
+                @click.stop="openVoiceSummary"
               >
-                <button
-                  type="button"
-                  class="mm-btn"
-                  :class="{ 'mm-btn--icon': props.compact, 'is-dimmed': aiBlockedByCollab }"
-                  :disabled="webGenerateLocked"
-                  :aria-disabled="aiBlockedByCollab || webGenerateLocked"
-                  :aria-label="webGenerateTooltip"
-                  @click.stop="openDocGenerate('web')"
-                >
-                  <Link2 class="w-4 h-4" />
-                  <span
-                    v-if="!props.compact"
-                    class="mm-btn__label"
-                    ><I18nText k="canvas.ribbon.webGenerate"
-                  /></span>
-                </button>
-              </span>
-            </ElTooltip>
-            <ElTooltip placement="bottom">
-              <template #content>
-                <I18nText
-                  v-if="!voiceSummaryLocked && !aiBlockedByCollab"
+                <Mic class="w-4 h-4" />
+                <MmToolbarLabel
+                  class="mm-btn__label"
                   k="canvas.ribbon.voiceSummary"
                 />
-                <I18nText
-                  v-else-if="aiBlockedByCollab"
-                  k="canvas.toolbar.collabAiBlocked"
-                />
-                <span v-else>{{ sourceLock.lockMessage }}</span>
-              </template>
-              <span
-                class="inline-flex shrink-0"
-                @click="openVoiceSummary"
-              >
-                <button
-                  type="button"
-                  class="mm-btn"
-                  :class="{ 'mm-btn--icon': props.compact, 'is-dimmed': aiBlockedByCollab }"
-                  :disabled="voiceSummaryLocked"
-                  :aria-disabled="aiBlockedByCollab || voiceSummaryLocked"
-                  :aria-label="voiceSummaryTooltip"
-                  @click.stop="openVoiceSummary"
-                >
-                  <Mic class="w-4 h-4" />
-                  <span
-                    v-if="!props.compact"
-                    class="mm-btn__label"
-                    ><I18nText k="canvas.ribbon.voiceSummary"
-                  /></span>
-                </button>
-              </span>
-            </ElTooltip>
-          </template>
+              </button>
+            </span>
+          </ElTooltip>
           <I18nTooltip
-            v-if="caps.waterfall"
             :k="
               aiBlockedByCollab
                 ? 'canvas.toolbar.collabAiBlocked'
                 : 'canvas.mindMapSideToolbar.waterfall'
             "
             placement="bottom"
+            :disabled="shortLabels && !aiBlockedByCollab"
           >
             <button
               type="button"
               class="mm-btn"
               :class="{
-                'mm-btn--icon': props.compact,
                 'is-active': activeTool === 'waterfall',
                 'is-dimmed': aiBlockedByCollab,
               }"
@@ -1128,11 +1107,10 @@ watch(
               @click="onGuestAiToolClick($event, () => handleToolSelect('waterfall'))"
             >
               <LayoutGrid class="w-4 h-4" />
-              <span
-                v-if="!props.compact"
+              <MmToolbarLabel
                 class="mm-btn__label"
-                ><I18nText k="canvas.mindMapSideToolbar.waterfall"
-              /></span>
+                k="canvas.mindMapSideToolbar.waterfall"
+              />
             </button>
           </I18nTooltip>
           <I18nTooltip
@@ -1142,12 +1120,12 @@ watch(
                 : 'canvas.mindMapSideToolbar.oneSentence'
             "
             placement="bottom"
+            :disabled="shortLabels && !aiBlockedByCollab"
           >
             <button
               type="button"
               class="mm-btn"
               :class="{
-                'mm-btn--icon': props.compact,
                 'is-active': activeTool === 'one_sentence',
                 'is-dimmed': aiBlockedByCollab,
               }"
@@ -1160,11 +1138,10 @@ watch(
               @click="onGuestAiToolClick($event, () => ribbon.openSideTool('one_sentence'))"
             >
               <MessageSquare class="w-4 h-4" />
-              <span
-                v-if="!props.compact"
+              <MmToolbarLabel
                 class="mm-btn__label"
-                ><I18nText k="canvas.mindMapSideToolbar.oneSentence"
-              /></span>
+                k="canvas.mindMapSideToolbar.oneSentence"
+              />
             </button>
           </I18nTooltip>
           <I18nTooltip
@@ -1175,12 +1152,12 @@ watch(
                 : 'canvas.floatingToolbar.aiSubgraph'
             "
             placement="bottom"
+            :disabled="shortLabels && !aiBlockedByCollab"
           >
             <button
               type="button"
               class="mm-btn"
               :class="{
-                'mm-btn--icon': props.compact,
                 'is-dimmed': aiBlockedByCollab || !ribbon.hasSelection,
               }"
               :aria-disabled="aiBlockedByCollab || !ribbon.hasSelection"
@@ -1196,11 +1173,10 @@ watch(
               "
             >
               <GitBranch class="w-4 h-4" />
-              <span
-                v-if="!props.compact"
+              <MmToolbarLabel
                 class="mm-btn__label"
-                ><I18nText k="canvas.floatingToolbar.aiSubgraph"
-              /></span>
+                k="canvas.floatingToolbar.aiSubgraph"
+              />
             </button>
           </I18nTooltip>
         </div>
@@ -1211,23 +1187,22 @@ watch(
           <I18nTooltip
             k="canvas.ribbon.mindMate"
             placement="bottom"
+            :disabled="shortLabels"
           >
             <button
               type="button"
               class="mm-btn"
               :class="{
-                'mm-btn--icon': props.compact,
                 'is-active': ribbon.isMindmateOpen,
               }"
               :aria-label="t('canvas.ribbon.mindMate')"
               @click="ribbon.toggleMindmate"
             >
               <Bot class="w-4 h-4" />
-              <span
-                v-if="!props.compact"
+              <MmToolbarLabel
                 class="mm-btn__label"
-                ><I18nText k="canvas.ribbon.mindMate"
-              /></span>
+                k="canvas.ribbon.mindMate"
+              />
             </button>
           </I18nTooltip>
         </div>

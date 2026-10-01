@@ -93,8 +93,8 @@ const nodeStyle = computed(() => {
   }
 })
 
-// Compute the optimal container width so the pill matches balanced text.
-// JS only determines the container size; CSS text-wrap: balance handles line breaking.
+// Pill width only. Line breaks are text-wrap: balance on the label
+// (.inline-edit-display--wrap), which keeps a short last CJK line from happening.
 const braceNodeMaxWidth = computed(() => {
   const label = ((props.data.label as string) || '').trim()
   if (!label) return `${BRACE_NODE_MAX_TEXT_WIDTH}px`

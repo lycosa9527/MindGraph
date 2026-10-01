@@ -262,11 +262,13 @@ function formatTokens(tokens: number): string {
         >
           <span>💭</span>
           <span class="flex-1">
-            {{
-              response.status === 'streaming' && !hasContent
-                ? t('askOnce.panel.thinking')
-                : t('askOnce.panel.thoughtProcess')
-            }}
+            <I18nText
+              v-if="response.status === 'streaming' && !hasContent"
+              k="askOnce.panel.thinking"
+            /><I18nText
+              v-else
+              k="askOnce.panel.thoughtProcess"
+            />
           </span>
           <component
             :is="thinkingCollapsed ? ChevronDown : ChevronUp"
@@ -310,7 +312,11 @@ function formatTokens(tokens: number): string {
           v-else-if="response.status === 'error'"
           class="p-3 bg-red-50 text-red-600 rounded-lg"
         >
-          {{ response.error || t('askOnce.panel.errorGeneric') }}
+          <template v-if="response.error">{{ response.error }}</template
+          ><I18nText
+            v-else
+            k="askOnce.panel.errorGeneric"
+          />
         </div>
 
         <!-- Placeholder -->
@@ -318,7 +324,7 @@ function formatTokens(tokens: number): string {
           v-else-if="!hasContent && response.status === 'idle'"
           class="text-gray-400 italic"
         >
-          {{ t('askOnce.panel.responsePlaceholder') }}
+          <I18nText k="askOnce.panel.responsePlaceholder" />
         </div>
 
         <!-- Content: renderRichMarkdownHtml (KaTeX + hljs + DOMPurify) -->
@@ -361,7 +367,7 @@ function formatTokens(tokens: number): string {
         @click="stopStream"
       >
         <Square class="w-4 h-4 mr-1" />
-        {{ t('askOnce.panel.stop') }}
+        <I18nText k="askOnce.panel.stop" />
       </ElButton>
       <span v-else />
 

@@ -6,12 +6,12 @@ import { computed } from 'vue'
 
 import { Loader2 } from '@lucide/vue'
 
-import { useLanguage } from '@/composables'
 import {
-  useOAuthQrLogin,
   type OAuthProvider,
   type OAuthQrMode,
+  useOAuthQrLogin,
 } from '@/composables/auth/useOAuthQrLogin'
+import { useLanguage } from '@/composables/core/useLanguage'
 
 const props = defineProps<{
   inviteCode: string
@@ -25,18 +25,13 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 
-const {
-  providers,
-  loadingProviders,
-  providerError,
-  wechatContainerId,
-  dingtalkContainerId,
-} = useOAuthQrLogin({
-  inviteCode: () => props.inviteCode,
-  mode: () => props.mode,
-  activeProvider: () => props.provider,
-  onSuccess: () => emit('success'),
-})
+const { providers, loadingProviders, providerError, wechatContainerId, dingtalkContainerId } =
+  useOAuthQrLogin({
+    inviteCode: () => props.inviteCode,
+    mode: () => props.mode,
+    activeProvider: () => props.provider,
+    onSuccess: () => emit('success'),
+  })
 
 const showWechat = computed(
   () => props.provider === 'wechat' && (providers.value?.wechat_enabled ?? false)
@@ -47,9 +42,7 @@ const showDingtalk = computed(
 
 const footerHint = computed(() => {
   if (props.provider === 'wechat') {
-    return props.mode === 'bind'
-      ? t('auth.wechatBindScanHint')
-      : t('auth.wechatLoginScanHint')
+    return props.mode === 'bind' ? t('auth.wechatBindScanHint') : t('auth.wechatLoginScanHint')
   }
   return props.mode === 'bind' ? t('auth.accountBindingsHint') : t('auth.qrLoginNotLinked')
 })
@@ -61,7 +54,7 @@ const footerHint = computed(() => {
       v-if="mode === 'login' && !inviteCode.trim() && provider === 'dingtalk'"
       class="text-sm text-stone-500 text-center py-4"
     >
-      {{ t('auth.qrLoginInviteRequired') }}
+      <I18nText k="auth.qrLoginInviteRequired" />
     </div>
     <div
       v-else-if="loadingProviders"
@@ -73,11 +66,13 @@ const footerHint = computed(() => {
       v-else-if="providerError"
       class="text-sm text-red-600 text-center py-4"
     >
-      {{
-        providerError === 'invite_required'
-          ? t('auth.qrLoginInviteRequired')
-          : t('auth.qrLoginProvidersFailed')
-      }}
+      <I18nText
+        v-if="providerError === 'invite_required'"
+        k="auth.qrLoginInviteRequired"
+      /><I18nText
+        v-else
+        k="auth.qrLoginProvidersFailed"
+      />
     </div>
     <div
       v-else-if="showWechat"
@@ -101,14 +96,12 @@ const footerHint = computed(() => {
       v-else
       class="text-sm text-stone-500 text-center py-4"
     >
-      {{ t('auth.qrLoginProviderDisabled') }}
+      <I18nText k="auth.qrLoginProviderDisabled" />
     </div>
     <p
       v-if="showWechat || showDingtalk"
       class="text-center mt-3 px-2 leading-6"
-      :class="
-        provider === 'wechat' ? 'text-sm text-stone-600' : 'text-xs text-stone-400'
-      "
+      :class="provider === 'wechat' ? 'text-sm text-stone-600' : 'text-xs text-stone-400'"
     >
       {{ footerHint }}
     </p>

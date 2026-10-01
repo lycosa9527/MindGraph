@@ -57,7 +57,7 @@ def wrap_browser_launch_error(exc: BaseException) -> BaseException:
     if isinstance(exc, BrowserUnavailableError):
         return exc
     message = str(exc)
-    if isinstance(exc, PlaywrightError) or is_browser_unavailable_message(message):
+    if is_browser_unavailable_message(message):
         return BrowserUnavailableError(
             "Playwright Chromium is not installed or cannot be launched. Run: python -m playwright install chromium"
         )
@@ -428,13 +428,19 @@ async def log_browser_diagnostics():
                     if is_main_process:
                         logger.info("[Browser] Chromium launch probe: OK")
                 except (PlaywrightError, OSError, RuntimeError) as launch_exc:
-                    wrapped = wrap_browser_launch_error(launch_exc)
-                    if is_main_process:
-                        logger.error("[Browser] Chromium launch probe FAILED: %s", wrapped)
+                    if not is_main_process:
+                        logger.debug("[Browser] Chromium launch probe FAILED: %s", launch_exc)
+                    elif is_browser_unavailable_message(str(launch_exc)):
+                        logger.error(
+                            "[Browser] Chromium launch probe FAILED: %s",
+                            wrap_browser_launch_error(launch_exc),
+                        )
                         logger.error(
                             "[Browser] PNG/DingTalk generation will return 503 until fixed. "
                             "Run: python -m playwright install chromium"
                         )
+                    else:
+                        logger.error("[Browser] Chromium launch probe FAILED: %s", launch_exc)
             finally:
                 await playwright_instance.stop()
         except BACKGROUND_INFRA_ERRORS as e:

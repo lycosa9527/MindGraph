@@ -1,12 +1,16 @@
 /**
  * Client-side MindMate collab session teardown (live UI state + optional history removal).
  */
-import { setEmbeddedCollabRoomCode } from '@/composables/mindmate/mindmateCollabEmbeddedBridge'
+import {
+  embeddedCollabRoomCode,
+  forgetJoinedCollabRoom,
+  setEmbeddedCollabRoomCode,
+} from '@/composables/mindmate/mindmateCollabEmbeddedBridge'
 import { authFetch } from '@/utils/api'
 import {
+  MINDMATE_COLLAB_SESSION_REMOVED_EVENT,
   loadLocalMindmateCollabSessions,
   markMindmateCollabCodeEnded,
-  MINDMATE_COLLAB_SESSION_REMOVED_EVENT,
   normalizeMindmateCollabCode,
   persistLocalMindmateCollabSessions,
 } from '@/utils/mindmateCollabSessions'
@@ -23,19 +27,19 @@ export function removeLocalMindmateCollabSessionByCode(code: string | null | und
   const key = normalizeMindmateCollabCode(code)
   markMindmateCollabCodeEnded(key)
   const next = loadLocalMindmateCollabSessions().filter(
-    (row) => normalizeMindmateCollabCode(row.code) !== key,
+    (row) => normalizeMindmateCollabCode(row.code) !== key
   )
   persistLocalMindmateCollabSessions(next)
   if (typeof window !== 'undefined') {
     window.dispatchEvent(
-      new CustomEvent(MINDMATE_COLLAB_SESSION_REMOVED_EVENT, { detail: { code: key } }),
+      new CustomEvent(MINDMATE_COLLAB_SESSION_REMOVED_EVENT, { detail: { code: key } })
     )
   }
 }
 
 export function resolveMindmateCollabSessionId(
   sessionId: string | null | undefined,
-  code: string | null | undefined,
+  code: string | null | undefined
 ): string | null {
   if (sessionId) {
     return sessionId
@@ -45,25 +49,34 @@ export function resolveMindmateCollabSessionId(
   }
   const key = normalizeMindmateCollabCode(code)
   const row = loadLocalMindmateCollabSessions().find(
-    (item) => normalizeMindmateCollabCode(item.code) === key,
+    (item) => normalizeMindmateCollabCode(item.code) === key
   )
   return row?.session_id ?? null
 }
 
 /** Release the embedded room pointer without dropping sidebar rejoin history. */
-export function releaseMindmateCollabClientState(): void {
+export function releaseMindmateCollabClientState(code?: string | null): void {
+  const current = embeddedCollabRoomCode.value
+  if (
+    code &&
+    current &&
+    normalizeMindmateCollabCode(current) !== normalizeMindmateCollabCode(code)
+  ) {
+    return
+  }
   setEmbeddedCollabRoomCode(null)
 }
 
 /** Tear down live client state; optionally drop sidebar history when the room is finished. */
 export function teardownMindmateCollabClient(
   code: string | null | undefined,
-  options: MindmateCollabTeardownOptions = {},
+  options: MindmateCollabTeardownOptions = {}
 ): void {
-  if (options.removeFromHistory) {
+  if (options.removeFromHistory && code) {
     removeLocalMindmateCollabSessionByCode(code)
+    forgetJoinedCollabRoom(code)
   }
-  releaseMindmateCollabClientState()
+  releaseMindmateCollabClientState(code)
 }
 
 export function mindmateCollabStopSucceeded(status: number): boolean {

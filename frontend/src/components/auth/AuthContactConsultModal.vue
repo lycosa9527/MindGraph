@@ -7,8 +7,8 @@ import { reactive, ref, watch } from 'vue'
 import { MessageCircle } from '@lucide/vue'
 
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
-import { notify } from '@/composables/core/notifications'
 import { useLanguage } from '@/composables'
+import { notify } from '@/composables/core/notifications'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
 import {
@@ -35,8 +35,7 @@ function profilePrefill(): { name: string; phone: string; organization: string }
   const username = (user?.username || '').trim()
   const phone = (user?.phone || '').trim()
   const organization = (user?.schoolName || '').trim()
-  const looksLikePhone =
-    /^\d{7,15}$/.test(username) || (phone !== '' && username === phone)
+  const looksLikePhone = /^\d{7,15}$/.test(username) || (phone !== '' && username === phone)
   const name = looksLikePhone ? '' : username
   return {
     name: name.slice(0, SCHOOL_CONSULT_LIMITS.name),
@@ -71,7 +70,7 @@ async function submitConsultation(): Promise<void> {
     note: form.note,
   })
   if (!validated.ok) {
-    notify.warning(t(schoolConsultValidationMessageKey(validated.error)))
+    notify.warningKey(schoolConsultValidationMessageKey(validated.error))
     return
   }
 
@@ -88,26 +87,26 @@ async function submitConsultation(): Promise<void> {
       }),
     })
     if (response.ok) {
-      notify.success(t('thinkingCoins.school.submitSuccess'))
+      notify.successKey('thinkingCoins.school.submitSuccess')
       applyProfilePrefill()
       visible.value = false
       return
     }
     if (response.status === 422) {
-      notify.warning(t('thinkingCoins.school.validationInvalid'))
+      notify.warningKey('thinkingCoins.school.validationInvalid')
       return
     }
     if (response.status === 429) {
-      notify.error(t('thinkingCoins.school.submitRateLimit'))
+      notify.errorKey('thinkingCoins.school.submitRateLimit')
       return
     }
     if (response.status === 503) {
-      notify.error(t('thinkingCoins.school.submitNotConfigured'))
+      notify.errorKey('thinkingCoins.school.submitNotConfigured')
       return
     }
-    notify.error(t('thinkingCoins.school.submitFailed'))
+    notify.errorKey('thinkingCoins.school.submitFailed')
   } catch {
-    notify.error(t('thinkingCoins.school.submitFailed'))
+    notify.errorKey('thinkingCoins.school.submitFailed')
   } finally {
     submitting.value = false
   }
@@ -167,7 +166,7 @@ async function submitConsultation(): Promise<void> {
         class="auth-contact-form__submit"
         :disabled="submitting"
       >
-        {{ t('thinkingCoins.school.submit') }}
+        <I18nText k="thinkingCoins.school.submit" />
       </button>
     </form>
   </SwissGlassCard>

@@ -104,6 +104,10 @@ export function useLandingGenerateGraph(options: {
 }) {
   const owner = {}
 
+  function setLoadPhase(phase: ModelLoadPhase): void {
+    loadPhase.value = phase
+  }
+
   function resetLoadPhase(): void {
     loadPhase.value = 'idle'
     shownToastBuckets = new Set()
@@ -439,6 +443,7 @@ export function useLandingGenerateGraph(options: {
 
   return {
     loadPhase,
+    setLoadPhase,
     isGenerating,
     generateLandingGraph,
     resetLoadPhase,

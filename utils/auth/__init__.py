@@ -46,7 +46,6 @@ from .config import (
     BAYI_DECRYPTION_KEY,
     BAYI_DEFAULT_ORG_CODE,
     BAYI_DEFAULT_ORG_ID,
-    BAYI_PASSKEY,
     BAYI_SSO_DEFAULT_DISPLAY_NAME,
     BCRYPT_ROUNDS,
     CAPTCHA_SESSION_COOKIE_NAME,
@@ -73,11 +72,6 @@ from .invitations import load_invitation_codes, validate_invitation_code
 
 # JWT Secret exports
 from .jwt_secret import get_jwt_secret, warmup_jwt_secret_async
-
-# Passkey helpers (Bayi 6-digit login)
-from .passkey_utils import (
-    verify_bayi_passkey,
-)
 
 # Password exports
 from .password import hash_password, verify_password, verify_password_timing_dummy
@@ -147,7 +141,6 @@ __all__ = [
     "EMAIL_LOGIN_CN_BLOCK_ENABLED",
     "ENTERPRISE_DEFAULT_ORG_CODE",
     "ENTERPRISE_DEFAULT_USER_PHONE",
-    "BAYI_PASSKEY",
     "BAYI_DECRYPTION_KEY",
     "BAYI_DEFAULT_ORG_CODE",
     "BAYI_DEFAULT_ORG_ID",
@@ -191,8 +184,6 @@ __all__ = [
     "validate_user_token",
     # Enterprise mode
     "get_enterprise_user",
-    # Passkey auth
-    "verify_bayi_passkey",
     # Bayi mode
     "decrypt_bayi_token",
     "validate_bayi_token_body",

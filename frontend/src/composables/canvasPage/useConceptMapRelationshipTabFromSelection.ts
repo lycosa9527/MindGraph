@@ -5,13 +5,8 @@
 import { onMounted, onUnmounted } from 'vue'
 
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
-import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
-import {
-  useAuthStore,
-  useDiagramStore,
-  useLLMResultsStore,
-} from '@/stores'
+import { useAuthStore, useDiagramStore, useLLMResultsStore } from '@/stores'
 import {
   conceptMapNodeIsAmbiguousForRec,
   conceptMapUsesRelationshipInlineRec,
@@ -40,7 +35,6 @@ export function useConceptMapRelationshipTabFromSelection(options: {
   const llmResultsStore = useLLMResultsStore()
   const authStore = useAuthStore()
   const notify = useNotifications()
-  const { t } = useLanguage()
 
   function onKeyDownCapture(e: KeyboardEvent): void {
     if (e.key !== 'Tab') return
@@ -69,14 +63,14 @@ export function useConceptMapRelationshipTabFromSelection(options: {
       return
 
     if (!llmResultsStore.selectedModel) {
-      notify.warning(t('notification.conceptMapTabNeedsAi'))
+      notify.warningKey('notification.conceptMapTabNeedsAi')
       e.preventDefault()
       e.stopPropagation()
       return
     }
 
     if (!authStore.isAuthenticated) {
-      notify.warning(t('notification.signInToUse'))
+      notify.warningKey('notification.signInToUse')
       e.preventDefault()
       e.stopPropagation()
       return

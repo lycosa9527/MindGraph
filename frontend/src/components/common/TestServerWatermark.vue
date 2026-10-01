@@ -4,9 +4,6 @@
  * Companion to SwissWarningModal (@/components/common/SwissWarningModal.vue).
  * Stays under dialogs/modals (z-index) and never captures pointer events.
  */
-import { useLanguage } from '@/composables/core/useLanguage'
-
-const { t } = useLanguage()
 
 /** Enough tiles to cover large viewports after 45° rotation. */
 const TILE_COUNT = 72
@@ -23,7 +20,7 @@ const TILE_COUNT = 72
         :key="index"
         class="tsw-tile"
       >
-        {{ t('app.testServer.watermark') }}
+        <I18nText k="app.testServer.watermark" />
       </span>
     </div>
   </div>

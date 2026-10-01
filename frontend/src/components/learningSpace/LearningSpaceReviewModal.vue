@@ -3,17 +3,14 @@
  * Teacher review / student view modal for a class-wall submission.
  */
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+
 import { Loader2, Maximize2, Minimize2, Pin, Star, ThumbsUp, X } from '@lucide/vue'
 
 import ShowcaseInlineDiagramPreview from '@/components/showcase/ShowcaseInlineDiagramPreview.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import { formatLsStudentLabel } from '@/composables/learningSpace/lsHelpers'
-import { useRouter } from 'vue-router'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
-import {
-  fetchSubmissionPreview,
-  type LearningSubmission,
-} from '@/utils/learningSpaceApi'
+import { type LearningSubmission, fetchSubmissionPreview } from '@/utils/learningSpaceApi'
 
 export interface ReviewDraft {
   scores: Record<string, number>
@@ -103,26 +100,19 @@ const hasTeacherReview = computed(
 
 async function loadPreview(submissionId: number): Promise<void> {
   previewLoading.value = true
-  const embedded = props.submission
-  previewSpec.value = embedded?.preview_spec ?? null
-  previewMeta.value = {
-    title: embedded?.preview_title || embedded?.assignment_title || props.assignmentTitle,
-    diagramType: embedded?.preview_diagram_type || 'mind_map',
-  }
+  previewSpec.value = null
   try {
     const detail = await fetchSubmissionPreview(submissionId)
-    previewSpec.value = detail.preview_spec ?? previewSpec.value
+    previewSpec.value = detail.preview_spec ?? null
     previewMeta.value = {
       title: detail.preview_title || detail.assignment_title || props.assignmentTitle,
-      diagramType: detail.preview_diagram_type || previewMeta.value.diagramType || 'mind_map',
+      diagramType: detail.preview_diagram_type || 'mind_map',
     }
     if (isView.value) {
       applyDraft(draftFromSubmission(detail))
     }
   } catch {
-    if (!previewSpec.value) {
-      previewSpec.value = null
-    }
+    previewSpec.value = null
   } finally {
     previewLoading.value = false
   }
@@ -188,7 +178,7 @@ async function onSaveToLibrary(): Promise<void> {
   if (!props.submission) return
   const spec = previewSpec.value
   if (!spec) {
-    notify.error(t('learningSpace.noPreview'))
+    notify.errorKey('learningSpace.noPreview')
     return
   }
   savingLibrary.value = true
@@ -210,7 +200,7 @@ async function onSaveToLibrary(): Promise<void> {
       return
     }
     savedDiagramsStore.clearActiveDiagram()
-    notify.success(t('learningSpace.saveToLibraryOk'))
+    notify.successKey('learningSpace.saveToLibraryOk')
     visible.value = false
     await router.push({ path: '/canvas', query: { diagramId: saved.id } })
   } catch (error) {
@@ -220,12 +210,15 @@ async function onSaveToLibrary(): Promise<void> {
   }
 }
 
-const studentLabel = computed(() =>
-  props.submission ? formatLsStudentLabel(props.submission) : ''
+const studentLabel = computed(
+  () => props.submission?.student_name || String(props.submission?.student_user_id ?? '')
 )
 
-const headerTitle = computed(() =>
-  props.submission?.assignment_title || props.assignmentTitle || t('learningSpace.submissionsBoard')
+const headerTitle = computed(
+  () =>
+    props.submission?.assignment_title ||
+    props.assignmentTitle ||
+    t('learningSpace.submissionsBoard')
 )
 </script>
 
@@ -299,7 +292,6 @@ const headerTitle = computed(() =>
             <ShowcaseInlineDiagramPreview
               v-else-if="previewSpec"
               :spec="previewSpec"
-              :diagram-type="previewMeta.diagramType"
               :thumbnail-url="submission.diagram_thumbnail"
             />
             <img
@@ -312,25 +304,7 @@ const headerTitle = computed(() =>
               v-else
               class="ls-review__empty"
             >
-              {{ t('learningSpace.noPreview') }}
-            </div>
-            <div
-              v-if="!previewFullscreen"
-              class="ls-review__preview-actions"
-            >
-              <button
-                type="button"
-                class="ls-btn ls-btn--primary ls-btn--sm"
-                :disabled="savingLibrary || previewLoading || !previewSpec"
-                @click="onSaveToLibrary"
-              >
-                <Loader2
-                  v-if="savingLibrary"
-                  class="animate-spin"
-                  :size="16"
-                />
-                {{ t('learningSpace.saveToLibrary') }}
-              </button>
+              <I18nText k="learningSpace.noPreview" />
             </div>
           </div>
 
@@ -339,11 +313,13 @@ const headerTitle = computed(() =>
             class="ls-review__side"
           >
             <h3 class="ls-review__side-title">
-              {{
-                isView
-                  ? t('learningSpace.teacherReview')
-                  : t('learningSpace.reviewByDimension')
-              }}
+              <I18nText
+                v-if="isView"
+                k="learningSpace.teacherReview"
+              /><I18nText
+                v-else
+                k="learningSpace.reviewByDimension"
+              />
             </h3>
 
             <template v-if="!isView || hasTeacherReview">
@@ -372,7 +348,7 @@ const headerTitle = computed(() =>
                 v-if="!isView"
                 class="ls-field"
               >
-                {{ t('learningSpace.reviewComment') }}
+                <I18nText k="learningSpace.reviewComment" />
                 <textarea
                   v-model="draft.comment"
                   rows="4"
@@ -390,7 +366,7 @@ const headerTitle = computed(() =>
                 v-else-if="isView"
                 class="ls-muted"
               >
-                {{ t('learningSpace.noTeacherComment') }}
+                <I18nText k="learningSpace.noTeacherComment" />
               </p>
 
               <div
@@ -404,7 +380,7 @@ const headerTitle = computed(() =>
                   @click="draft.liked = !draft.liked"
                 >
                   <ThumbsUp :size="14" />
-                  {{ t('learningSpace.reviewLike') }}
+                  <I18nText k="learningSpace.reviewLike" />
                 </button>
                 <button
                   type="button"
@@ -413,7 +389,7 @@ const headerTitle = computed(() =>
                   @click="draft.pinned = !draft.pinned"
                 >
                   <Pin :size="14" />
-                  {{ t('learningSpace.reviewPin') }}
+                  <I18nText k="learningSpace.reviewPin" />
                 </button>
               </div>
               <div
@@ -425,14 +401,14 @@ const headerTitle = computed(() =>
                   class="ls-chip ls-chip--on"
                 >
                   <ThumbsUp :size="14" />
-                  {{ t('learningSpace.reviewLike') }}
+                  <I18nText k="learningSpace.reviewLike" />
                 </span>
                 <span
                   v-if="draft.pinned"
                   class="ls-chip ls-chip--on"
                 >
                   <Pin :size="14" />
-                  {{ t('learningSpace.reviewPin') }}
+                  <I18nText k="learningSpace.reviewPin" />
                 </span>
               </div>
             </template>
@@ -440,22 +416,37 @@ const headerTitle = computed(() =>
               v-else
               class="ls-muted"
             >
-              {{ t('learningSpace.waitingTeacherReview') }}
+              <I18nText k="learningSpace.waitingTeacherReview" />
             </p>
           </div>
         </div>
 
         <footer
-          v-if="!isView && !previewFullscreen"
+          v-if="(isView && !previewFullscreen) || (!isView && !previewFullscreen)"
           class="ls-modal__foot"
           :class="{ 'ls-modal__foot--end': true }"
         >
           <button
+            v-if="isView"
+            type="button"
+            class="ls-btn ls-btn--primary"
+            :disabled="savingLibrary || previewLoading || !previewSpec"
+            @click="onSaveToLibrary"
+          >
+            <Loader2
+              v-if="savingLibrary"
+              class="animate-spin"
+              :size="16"
+            />
+            <I18nText k="learningSpace.saveToLibrary" />
+          </button>
+          <button
+            v-else
             type="button"
             class="ls-btn ls-btn--primary"
             @click="onSave"
           >
-            {{ t('learningSpace.reviewSubmit') }}
+            <I18nText k="learningSpace.reviewSubmit" />
           </button>
         </footer>
       </div>

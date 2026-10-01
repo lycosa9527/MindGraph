@@ -88,13 +88,13 @@ const handleSave = async () => {
   try {
     const result = await updateMutation.mutateAsync(formData.value)
     applySettings(result.settings)
-    notify.success(t('knowledge.settings.saveSuccess'))
+    notify.successKey('knowledge.settings.saveSuccess')
     if (result.reindex_required) {
-      notify.warning(t('knowledge.settings.reindexRequired'))
+      notify.warningKey('knowledge.settings.reindexRequired')
     }
     handleClose()
   } catch {
-    notify.error(t('knowledge.settings.saveFailed'))
+    notify.errorKey('knowledge.settings.saveFailed')
   }
 }
 </script>
@@ -111,7 +111,7 @@ const handleSave = async () => {
       v-if="loading"
       class="p-4 text-sm text-stone-500"
     >
-      {{ t('common.loading') }}
+      <I18nText k="common.loading" />
     </div>
 
     <div
@@ -122,9 +122,12 @@ const handleSave = async () => {
         type="info"
         :closable="false"
         class="mb-4"
-        :title="t('knowledge.settings.helpTitle')"
-        :description="t('knowledge.settings.helpBody')"
-      />
+      >
+        <template #title>
+          <I18nText k="knowledge.settings.helpTitle" />
+        </template>
+        <I18nText k="knowledge.settings.helpBody" />
+      </ElAlert>
 
       <ElForm
         :model="formData"
@@ -133,31 +136,43 @@ const handleSave = async () => {
       >
         <ElDivider content-position="left">
           <span class="text-sm font-semibold text-stone-700">
-            {{ t('knowledge.settings.retrievalSection') }}
+            <I18nText k="knowledge.settings.retrievalSection" />
           </span>
         </ElDivider>
 
-        <ElFormItem :label="t('knowledge.settings.defaultMethod')">
+        <ElFormItem>
+          <template #label>
+            <I18nText k="knowledge.settings.defaultMethod" />
+          </template>
           <ElSelect
             v-model="formData.default_method"
             style="width: 100%"
           >
             <el-option
-              :label="t('knowledge.retrieval.hybrid')"
               value="hybrid"
-            />
+              :label="t('knowledge.retrieval.hybrid')"
+            >
+              <I18nText k="knowledge.retrieval.hybrid" />
+            </el-option>
             <el-option
-              :label="t('knowledge.retrieval.semantic')"
               value="semantic"
-            />
+              :label="t('knowledge.retrieval.semantic')"
+            >
+              <I18nText k="knowledge.retrieval.semantic" />
+            </el-option>
             <el-option
-              :label="t('knowledge.retrieval.keyword')"
               value="keyword"
-            />
+              :label="t('knowledge.retrieval.keyword')"
+            >
+              <I18nText k="knowledge.retrieval.keyword" />
+            </el-option>
           </ElSelect>
         </ElFormItem>
 
-        <ElFormItem :label="t('knowledge.settings.defaultTopK')">
+        <ElFormItem>
+          <template #label>
+            <I18nText k="knowledge.settings.defaultTopK" />
+          </template>
           <ElSelect
             v-model="formData.top_k"
             style="width: 100%"
@@ -171,7 +186,10 @@ const handleSave = async () => {
           </ElSelect>
         </ElFormItem>
 
-        <ElFormItem :label="t('knowledge.settings.defaultThreshold')">
+        <ElFormItem>
+          <template #label>
+            <I18nText k="knowledge.settings.defaultThreshold" />
+          </template>
           <ElInput
             v-model.number="formData.score_threshold"
             type="number"
@@ -184,11 +202,14 @@ const handleSave = async () => {
 
         <ElDivider content-position="left">
           <span class="text-sm font-semibold text-stone-700">
-            {{ t('knowledge.settings.chunkSection') }}
+            <I18nText k="knowledge.settings.chunkSection" />
           </span>
         </ElDivider>
 
-        <ElFormItem :label="t('knowledge.settings.chunkSize')">
+        <ElFormItem>
+          <template #label>
+            <I18nText k="knowledge.settings.chunkSize" />
+          </template>
           <div
             class="flex items-center gap-2"
             style="width: 100%"
@@ -202,12 +223,15 @@ const handleSave = async () => {
               style="flex: 1"
             />
             <span class="text-xs text-stone-500 whitespace-nowrap">
-              {{ t('knowledge.settings.tokens') }}
+              <I18nText k="knowledge.settings.tokens" />
             </span>
           </div>
         </ElFormItem>
 
-        <ElFormItem :label="t('knowledge.settings.chunkOverlap')">
+        <ElFormItem>
+          <template #label>
+            <I18nText k="knowledge.settings.chunkOverlap" />
+          </template>
           <div
             class="flex items-center gap-2"
             style="width: 100%"
@@ -221,14 +245,14 @@ const handleSave = async () => {
               style="flex: 1"
             />
             <span class="text-xs text-stone-500 whitespace-nowrap">
-              {{ t('knowledge.settings.tokens') }}
+              <I18nText k="knowledge.settings.tokens" />
             </span>
           </div>
         </ElFormItem>
 
         <ElDivider content-position="left">
           <span class="text-sm font-semibold text-stone-700">
-            {{ t('knowledge.settings.serverSection') }}
+            <I18nText k="knowledge.settings.serverSection" />
           </span>
         </ElDivider>
 
@@ -237,30 +261,32 @@ const handleSave = async () => {
           class="space-y-2 text-sm text-stone-600"
         >
           <div class="flex items-center justify-between gap-2">
-            <span>{{ t('knowledge.settings.rerankingMode') }}</span>
+            <span><I18nText k="knowledge.settings.rerankingMode" /></span>
             <ElTag size="small">{{ serverInfo.reranking_mode }}</ElTag>
           </div>
           <div class="flex items-center justify-between gap-2">
-            <span>{{ t('knowledge.settings.hybridWeights') }}</span>
+            <span><I18nText k="knowledge.settings.hybridWeights" /></span>
             <ElTag size="small">
               {{ serverInfo.vector_weight }} / {{ serverInfo.keyword_weight }}
             </ElTag>
           </div>
           <div class="flex items-center justify-between gap-2">
-            <span>{{ t('knowledge.settings.chunkingEngine') }}</span>
+            <span><I18nText k="knowledge.settings.chunkingEngine" /></span>
             <ElTag size="small">{{ serverInfo.chunking_engine }}</ElTag>
           </div>
           <div class="flex items-center justify-between gap-2">
-            <span>{{ t('knowledge.settings.wikiCompile') }}</span>
+            <span><I18nText k="knowledge.settings.wikiCompile" /></span>
             <ElTag
               size="small"
               :type="serverInfo.wiki_compile_enabled ? 'success' : 'info'"
             >
-              {{
-                serverInfo.wiki_compile_enabled
-                  ? t('knowledge.settings.wikiEnabled')
-                  : t('knowledge.settings.wikiDisabled')
-              }}
+              <I18nText
+                v-if="serverInfo.wiki_compile_enabled"
+                k="knowledge.settings.wikiEnabled"
+              /><I18nText
+                v-else
+                k="knowledge.settings.wikiDisabled"
+              />
             </ElTag>
           </div>
         </div>

@@ -71,7 +71,7 @@ onMounted(async () => {
     v-if="enabled"
     class="vod-picker"
   >
-    <span class="vod-picker__label">{{ t('training.builder.vodLibrary') }}</span>
+    <span class="vod-picker__label"><I18nText k="training.builder.vodLibrary" /></span>
     <ElSelect
       v-model="folderId"
       class="admin-swiss-select vod-picker__select"
@@ -81,11 +81,15 @@ onMounted(async () => {
       <ElOption
         value=""
         :label="t('admin.vod.folderAll')"
-      />
+      >
+        <I18nText k="admin.vod.folderAll" />
+      </ElOption>
       <ElOption
         value="none"
         :label="t('admin.vod.folderNone')"
-      />
+      >
+        <I18nText k="admin.vod.folderNone" />
+      </ElOption>
       <ElOption
         v-for="folder in folders"
         :key="folder.id"
@@ -103,7 +107,9 @@ onMounted(async () => {
       <ElOption
         value=""
         :label="t('training.builder.vodNone')"
-      />
+      >
+        <I18nText k="training.builder.vodNone" />
+      </ElOption>
       <ElOption
         v-for="item in visibleItems"
         :key="item.id"
@@ -117,13 +123,13 @@ onMounted(async () => {
         :disabled="!step.vod_media_id"
         @change="(value: boolean | string | number) => emit('autoplay', Boolean(value))"
       />
-      <span>{{ t('training.builder.vodAutoplay') }}</span>
+      <span><I18nText k="training.builder.vodAutoplay" /></span>
     </label>
     <span
       v-if="loaded && visibleItems.length === 0"
       class="vod-picker__empty"
     >
-      {{ t('training.builder.vodEmpty') }}
+      <I18nText k="training.builder.vodEmpty" />
     </span>
   </div>
 </template>

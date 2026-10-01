@@ -8,19 +8,22 @@
 import { type Ref, ref, watch } from 'vue'
 
 import {
+  type ShowcaseDiagramCopyFields,
+  type ShowcaseDiagramCopyResult,
   diagramCopyFingerprint,
   diagramCopyImagesFingerprint,
   streamShowcaseDiagramCopy,
   streamShowcaseDiagramCopyFromImages,
-  type ShowcaseDiagramCopyFields,
-  type ShowcaseDiagramCopyResult,
 } from '@/composables/showcase/generateShowcaseDiagramCopy'
 import type { ModelLoadPhase } from '@/stores/llmResults'
 
 type NotifyLike = {
   info: (message: string) => void
+  infoKey: (key: string, params?: Record<string, unknown>) => void
   success: (message: string) => void
+  successKey: (key: string, params?: Record<string, unknown>) => void
   error: (message: string) => void
+  errorKey: (key: string, params?: Record<string, unknown>) => void
 }
 
 type TranslateFn = (key: string) => unknown
@@ -148,14 +151,13 @@ export function useShowcaseDiagramCopyAi(options: {
 
   function applyStreamFields(
     fields: ShowcaseDiagramCopyFields,
-    state: DiagramCopyStreamState,
+    state: DiagramCopyStreamState
   ): void {
     applyingAiFields = true
     try {
       if (
         fields.description !== undefined &&
-        (state.forceOverwrite ||
-          (state.emptyAtStart.description && !dirtyDescription.value))
+        (state.forceOverwrite || (state.emptyAtStart.description && !dirtyDescription.value))
       ) {
         options.description.value = fields.description
       }
@@ -218,7 +220,7 @@ export function useShowcaseDiagramCopyAi(options: {
     state: DiagramCopyStreamState,
     fingerprint: string,
     forceOverwrite: boolean,
-    streamPromise: Promise<ShowcaseDiagramCopyResult>,
+    streamPromise: Promise<ShowcaseDiagramCopyResult>
   ): void {
     state.promise = streamPromise
       .then((result) => {
@@ -229,7 +231,7 @@ export function useShowcaseDiagramCopyAi(options: {
         diagramCopyStream.error = null
         applyFinalResult(result, forceOverwrite)
         if (state.notifySuccess) {
-          notify.success(String(t('showcase.publishModal.aiGenerateDiagramSuccess')))
+          notify.successKey('showcase.publishModal.aiGenerateDiagramSuccess')
         }
         return result
       })
@@ -266,14 +268,14 @@ export function useShowcaseDiagramCopyAi(options: {
 
   function startStreamState(
     fingerprint: string,
-    prefetchOptions: PrefetchOptions | undefined,
+    prefetchOptions: PrefetchOptions | undefined
   ): DiagramCopyStreamState {
     clearDiagramCopyPrefetch()
     const abort = new AbortController()
     isGenerating.value = true
     aiGeneratePhase.value = 'sending'
     if (prefetchOptions?.notifyStart) {
-      notify.info(String(t('showcase.publishModal.aiGenerating')))
+      notify.infoKey('showcase.publishModal.aiGenerating')
     }
 
     const phaseTimer = setTimeout(() => {
@@ -330,7 +332,7 @@ export function useShowcaseDiagramCopyAi(options: {
 
   function beginSpecsStream(
     source: DiagramCopySpecSource,
-    prefetchOptions?: PrefetchOptions,
+    prefetchOptions?: PrefetchOptions
   ): void {
     const fingerprint = diagramCopyFingerprint({
       specs: source.specs,
@@ -364,15 +366,15 @@ export function useShowcaseDiagramCopyAi(options: {
           diagramType: source.diagramType,
           signal: state.abort.signal,
         },
-        streamHandlers(fingerprint, state),
-      ),
+        streamHandlers(fingerprint, state)
+      )
     )
   }
 
   function beginImagesStream(
     images: File[],
     diagramTypeValue: string,
-    prefetchOptions?: PrefetchOptions,
+    prefetchOptions?: PrefetchOptions
   ): void {
     const fingerprint = diagramCopyImagesFingerprint({
       images,
@@ -406,8 +408,8 @@ export function useShowcaseDiagramCopyAi(options: {
           diagramType: diagramTypeValue,
           signal: state.abort.signal,
         },
-        streamHandlers(fingerprint, state),
-      ),
+        streamHandlers(fingerprint, state)
+      )
     )
   }
 
@@ -430,12 +432,10 @@ export function useShowcaseDiagramCopyAi(options: {
     }
 
     void (async () => {
-      const images =
-        (await options.resolveImageFiles?.()) ??
-        draftImages
+      const images = (await options.resolveImageFiles?.()) ?? draftImages
       if (images.length < 1) {
         if (prefetchOptions?.notifyError !== false) {
-          notify.error(String(t('showcase.publishModal.aiGenerateNeedDiagram')))
+          notify.errorKey('showcase.publishModal.aiGenerateNeedDiagram')
         }
         return
       }
@@ -445,27 +445,27 @@ export function useShowcaseDiagramCopyAi(options: {
 
   function generateDiagramCopy(): void {
     if (!title.value.trim()) {
-      notify.error(String(t('showcase.publishModal.validationTitle')))
+      notify.errorKey('showcase.publishModal.validationTitle')
       return
     }
     if (!isDiagramCaseType()) {
-      notify.info(String(t('showcase.publishModal.aiGenerateTeachingOnly')))
+      notify.infoKey('showcase.publishModal.aiGenerateTeachingOnly')
       return
     }
     const source = options.resolveSpecSource()
     const hasSpecs = Boolean(source && source.specs.length > 0)
     const hasImageSource = Boolean(
       (source?.images && source.images.length > 0) ||
-        (source?.existingImageKeys && source.existingImageKeys.length > 0),
+      (source?.existingImageKeys && source.existingImageKeys.length > 0)
     )
     if (!hasSpecs && !hasImageSource) {
-      notify.error(String(t('showcase.publishModal.aiGenerateNeedDiagram')))
+      notify.errorKey('showcase.publishModal.aiGenerateNeedDiagram')
       return
     }
 
     if (isStreamInFlight()) {
       clearDiagramCopyPrefetch()
-      notify.info(String(t('showcase.publishModal.aiGenerateCancelled')))
+      notify.infoKey('showcase.publishModal.aiGenerateCancelled')
       return
     }
 

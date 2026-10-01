@@ -4,6 +4,7 @@ import {
   MIND_MAP_BRANCH_MAX_TEXT_WIDTH,
   MIND_MAP_TOPIC_MAX_TEXT_WIDTH,
   estimateMindMapNumberedContentWidthPx,
+  measureMindMapLabelWidthPx,
   measureMindMapNumberPrefixAdvancePx,
   resolveMindMapBranchBodyMaxWidthPx,
   resolveMindMapBranchTextMaxWidthPx,
@@ -83,6 +84,16 @@ describe('mindMapTextWrap', () => {
     ])
     const lines = wrapMindMapTextLines('abcdefghijabcdefghij', 36, { fontSize: 14 })
     expect(lines.length).toBeGreaterThan(1)
+  })
+
+  it('balances a CJK label so the last line is not one character', () => {
+    const text = '思维导图自动换行测试'
+    const fontSize = 16
+    const headWidth = measureMindMapLabelWidthPx(text.slice(0, -1), fontSize)
+    const lines = wrapMindMapTextLines(text, headWidth, { fontSize })
+    expect(lines.length).toBe(2)
+    expect([...lines[lines.length - 1]].length).toBeGreaterThan(1)
+    expect(lines.join('')).toBe(text)
   })
 
   it('prefers word boundaries for Latin text', () => {

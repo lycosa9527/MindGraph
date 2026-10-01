@@ -4,22 +4,27 @@
  */
 import { computed, ref, toRef } from 'vue'
 
+import {
+  Connection,
+  DocumentCopy,
+  FolderOpened,
+  Key,
+  Loading,
+  Stamp,
+  User,
+} from '@element-plus/icons-vue'
+
 import AdminOrgTokenTrendDialog from '@/components/admin/AdminOrgTokenTrendDialog.vue'
-import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
 import AdminTokenUsageByServicePanel from '@/components/admin/AdminTokenUsageByServicePanel.vue'
 import AdminTrendChartModal from '@/components/admin/AdminTrendChartModal.vue'
+import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
 import SchoolDashboardQuotaCard from '@/components/school/SchoolDashboardQuotaCard.vue'
-import { Connection, DocumentCopy, FolderOpened, Key, Loading, Stamp, User } from '@element-plus/icons-vue'
-
-import type {
-  TokenTrendPeriod,
-  TokenTrendService,
-} from '@/composables/admin/useOrgTokenTrendModal'
-import { copySchoolInvitationPayload } from '@/utils/admin/copySchoolInvitationCode'
+import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
+import type { TokenTrendPeriod, TokenTrendService } from '@/composables/admin/useOrgTokenTrendModal'
 import { useSchoolDashboardStats } from '@/composables/admin/useSchoolDashboardStats'
 import { useSchoolDashboardQuotas } from '@/composables/school/useSchoolDashboardQuotas'
-import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 import { isManagerAssignmentUnavailable, isUnlimitedMemberLimit } from '@/constants/schoolTier'
+import { copySchoolInvitationPayload } from '@/utils/admin/copySchoolInvitationCode'
 
 const props = withDefaults(
   defineProps<{
@@ -30,9 +35,7 @@ const props = withDefaults(
   { section: 'all' }
 )
 
-const showOperations = computed(
-  () => props.section === 'all' || props.section === 'operations'
-)
+const showOperations = computed(() => props.section === 'all' || props.section === 'operations')
 const showUsage = computed(() => props.section === 'all' || props.section === 'usage')
 
 const { t } = useLanguage()
@@ -66,10 +69,7 @@ function formatNumber(num: number): string {
   return num.toLocaleString()
 }
 
-function openOrgTrend(
-  period: TokenTrendPeriod = 'week',
-  service: TokenTrendService = null
-): void {
+function openOrgTrend(period: TokenTrendPeriod = 'week', service: TokenTrendService = null): void {
   orgTrendDialogRef.value?.openTrend({
     orgId: props.orgId,
     orgName: stats.value.organization?.name ?? '',
@@ -81,7 +81,7 @@ function openOrgTrend(
 
 function openUserTrend(userName: string, userId: number | undefined): void {
   if (userId == null || !Number.isFinite(userId) || userId <= 0) {
-    notify.warning(t('admin.userTrendRequiresId'))
+    notify.warningKey('admin.userTrendRequiresId')
     return
   }
   userTrendUserId.value = userId
@@ -93,25 +93,34 @@ async function copyInvitationCode(event: MouseEvent): Promise<void> {
   event.stopPropagation()
   const text = t('admin.schoolInviteCopyPayload', {
     orgName:
-      (stats.value.organization?.name || '').trim() ||
-      (t('admin.organizationName') as string),
+      (stats.value.organization?.name || '').trim() || (t('admin.organizationName') as string),
     siteUrl: publicSiteUrl.value,
     code: (stats.value.organization?.invitation_code || '').trim(),
   })
   await copySchoolInvitationPayload(
     text,
-    () => notify.success(t('notification.copied')),
-    () => notify.error(t('notification.copyFailed'))
+    () => notify.successKey('notification.copied'),
+    () => notify.errorKey('notification.copyFailed')
   )
 }
 </script>
 
 <template>
-  <div v-if="isLoading" class="flex justify-center py-20">
-    <el-icon class="is-loading" :size="32"><Loading /></el-icon>
+  <div
+    v-if="isLoading"
+    class="flex justify-center py-20"
+  >
+    <el-icon
+      class="is-loading"
+      :size="32"
+      ><Loading
+    /></el-icon>
   </div>
   <template v-else>
-    <p v-if="stats.organization.name" class="text-sm text-gray-500 mb-4">
+    <p
+      v-if="stats.organization.name"
+      class="text-sm text-gray-500 mb-4"
+    >
       {{ stats.organization.name }}
     </p>
     <div
@@ -166,12 +175,15 @@ async function copyInvitationCode(event: MouseEvent): Promise<void> {
       class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6"
     >
       <AdminSwissKpiCard
-        :title="t('admin.invitationCode')"
+        title-key="admin.invitationCode"
         :value="invitationCodeDisplay"
         :icon="Key"
         theme="managers"
       >
-        <template v-if="!readOnly" #footer>
+        <template
+          v-if="!readOnly"
+          #footer
+        >
           <el-button
             type="primary"
             size="small"
@@ -181,7 +193,7 @@ async function copyInvitationCode(event: MouseEvent): Promise<void> {
             @click="copyInvitationCode"
           >
             <el-icon class="el-icon--left"><DocumentCopy /></el-icon>
-            {{ t('admin.copyShareMessage') }}
+            <I18nText k="admin.copyShareMessage" />
           </el-button>
         </template>
       </AdminSwissKpiCard>
@@ -192,13 +204,21 @@ async function copyInvitationCode(event: MouseEvent): Promise<void> {
       :class="{ 'mt-6': showOperations }"
     >
       <AdminSwissKpiCard
-        :title="`${t('admin.tokens')} (${t('admin.pastWeek')})`"
         :value="formatNumber(stats.totalTokens)"
         :icon="Connection"
         theme="storage"
         clickable
         @click="openOrgTrend('week')"
-      />
+      >
+        <template #title>
+          <span class="swiss-stat-card__title-compound">
+            <I18nText k="admin.tokens" />
+            <span class="swiss-stat-card__title-period">
+              <I18nText k="admin.pastWeek" />
+            </span>
+          </span>
+        </template>
+      </AdminSwissKpiCard>
     </div>
     <AdminTokenUsageByServicePanel
       v-if="showUsage"
@@ -218,9 +238,9 @@ async function copyInvitationCode(event: MouseEvent): Promise<void> {
     >
       <template #header>
         <div>
-          <span class="font-medium">{{ t('admin.topUsersByTokens') }}</span>
+          <span class="font-medium"><I18nText k="admin.topUsersByTokens" /></span>
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 mb-0">
-            {{ t('admin.rankingBeijingTodayHint') }}
+            <I18nText k="admin.rankingBeijingTodayHint" />
           </p>
         </div>
       </template>
@@ -228,9 +248,14 @@ async function copyInvitationCode(event: MouseEvent): Promise<void> {
         :data="topUsers"
         stripe
         size="small"
-        :empty-text="t('admin.noData')"
       >
-        <el-table-column prop="name" :label="t('admin.name')">
+        <template #empty>
+          <I18nText k="admin.noData" />
+        </template>
+        <el-table-column prop="name">
+          <template #header>
+            <I18nText k="admin.name" />
+          </template>
           <template #default="{ row }">
             <span
               class="cursor-pointer hover:text-primary-500 hover:underline"
@@ -240,8 +265,21 @@ async function copyInvitationCode(event: MouseEvent): Promise<void> {
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="phone" :label="t('admin.phone')" width="140" />
-        <el-table-column prop="total_tokens" :label="t('admin.tokensUsed')" width="120">
+        <el-table-column
+          prop="phone"
+          width="140"
+        >
+          <template #header>
+            <I18nText k="admin.phone" />
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="total_tokens"
+          width="120"
+        >
+          <template #header>
+            <I18nText k="admin.tokensUsed" />
+          </template>
           <template #default="{ row }">
             <span
               class="cursor-pointer hover:text-primary-500"

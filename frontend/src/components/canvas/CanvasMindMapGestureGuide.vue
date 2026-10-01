@@ -100,7 +100,7 @@ function toggleExpanded(): void {
         :size="15"
         :stroke-width="2"
       />
-      <span class="whitespace-nowrap">{{ t('canvas.gestureGuide.title') }}</span>
+      <span class="whitespace-nowrap"><I18nText k="canvas.gestureGuide.title" /></span>
       <ChevronUp
         class="shrink-0 text-slate-400"
         :size="14"
@@ -124,7 +124,7 @@ function toggleExpanded(): void {
               :stroke-width="2"
             />
             <span class="truncate text-xs font-bold text-slate-800 dark:text-slate-100">
-              {{ t('canvas.gestureGuide.title') }}
+              <I18nText k="canvas.gestureGuide.title" />
             </span>
           </div>
           <button
@@ -147,12 +147,12 @@ function toggleExpanded(): void {
             class="flex items-center justify-between gap-2 rounded-md border border-slate-100 bg-slate-50/80 px-2 py-1.5 dark:border-slate-700/80 dark:bg-slate-800/60"
           >
             <span class="text-xs text-slate-700 dark:text-slate-200">
-              {{ t(row.labelKey) }}
+              <I18nText :k="row.labelKey" />
             </span>
             <span
               class="max-w-[52%] shrink-0 text-right text-[10px] leading-tight text-slate-500 dark:text-slate-400"
             >
-              {{ t(row.hintKey) }}
+              <I18nText :k="row.hintKey" />
             </span>
           </li>
         </ul>

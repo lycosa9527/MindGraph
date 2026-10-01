@@ -9,13 +9,10 @@ import { ArrowLeft, FileText, Send } from '@lucide/vue'
 
 import LearningSpaceRequirementsModal from '@/components/learningSpace/LearningSpaceRequirementsModal.vue'
 import { swissGlassConfirm, useLanguage, useNotifications } from '@/composables'
-import {
-  assignmentAllowsResubmit,
-  studentCanSubmitAssignment,
-} from '@/composables/learningSpace/lsHelpers'
+import { studentCanSubmitAssignment } from '@/composables/learningSpace/lsHelpers'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
-import { submitStudentAssignment } from '@/utils/learningSpaceApi'
 import '@/styles/learning-space.css'
+import { submitStudentAssignment } from '@/utils/learningSpaceApi'
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -27,51 +24,30 @@ const submitting = ref(false)
 
 const title = computed(() => lsCanvas.assignment?.title || t('learningSpace.title'))
 const submitted = computed(() => lsCanvas.assignment?.submission?.status === 'submitted')
-const canResubmit = computed(() => assignmentAllowsResubmit(lsCanvas.assignment))
 const canSubmit = computed(() => studentCanSubmitAssignment(lsCanvas.assignment))
-const submitDisabled = computed(
-  () => submitting.value || !canSubmit.value || (submitted.value && !canResubmit.value)
-)
-const submitLabel = computed(() => {
-  if (submitted.value && canResubmit.value) return t('learningSpace.resubmit')
-  if (submitted.value) return t('learningSpace.statusSubmitted')
-  if (canSubmit.value) return t('learningSpace.submit')
-  return t('learningSpace.homeworkClosed')
-})
 
 async function onSubmit(): Promise<void> {
   const id = lsCanvas.assignmentId
-  if (id == null || submitDisabled.value) return
-  const resubmitting = submitted.value && canResubmit.value
+  if (id == null || submitting.value || submitted.value || !canSubmit.value) return
   try {
-    await swissGlassConfirm(
-      resubmitting ? t('learningSpace.resubmitConfirm') : t('learningSpace.submitConfirm'),
-      resubmitting ? t('learningSpace.resubmit') : t('learningSpace.submit'),
-      {
-        confirmButtonText: resubmitting ? t('learningSpace.resubmit') : t('learningSpace.submit'),
-        cancelButtonText: t('common.cancel'),
-        type: 'warning',
-      }
-    )
+    await swissGlassConfirm(t('learningSpace.submitConfirm'), t('learningSpace.submit'), {
+      confirmButtonText: t('learningSpace.submit'),
+      cancelButtonText: t('common.cancel'),
+      type: 'warning',
+    })
   } catch {
     return
   }
   submitting.value = true
   try {
     await submitStudentAssignment(id)
-    notify.success(
-      resubmitting ? t('learningSpace.resubmitSuccess') : t('learningSpace.submitSuccess')
-    )
-    if (resubmitting) {
-      await lsCanvas.activate(id)
-      return
-    }
+    notify.successKey('learningSpace.submitSuccess')
     await router.push('/learning-space')
     if (router.currentRoute.value.path.startsWith('/learning-space')) {
       lsCanvas.clear()
     }
   } catch {
-    notify.error(t('learningSpace.submitFailed'))
+    notify.errorKey('learningSpace.submitFailed')
   } finally {
     submitting.value = false
   }
@@ -96,7 +72,7 @@ function onBack(): void {
       @click="onBack"
     >
       <ArrowLeft :size="14" />
-      {{ t('learningSpace.backToLearningSpace') }}
+      <I18nText k="learningSpace.backToLearningSpace" />
     </button>
     <div class="ls-canvas-strip__title">{{ title }}</div>
     <div class="ls-canvas-strip__actions">
@@ -106,16 +82,25 @@ function onBack(): void {
         @click="showRequirements = true"
       >
         <FileText :size="14" />
-        {{ t('learningSpace.viewRequirements') }}
+        <I18nText k="learningSpace.viewRequirements" />
       </button>
       <button
         type="button"
         class="ls-btn ls-btn--primary ls-btn--sm"
-        :disabled="submitDisabled"
+        :disabled="submitted || submitting || !canSubmit"
         @click="onSubmit"
       >
         <Send :size="14" />
-        {{ submitLabel }}
+        <I18nText
+          v-if="submitted"
+          k="learningSpace.statusSubmitted"
+        /><template v-else
+          ><I18nText
+            v-if="canSubmit"
+            k="learningSpace.submit" /><I18nText
+            v-else
+            k="learningSpace.homeworkClosed"
+        /></template>
       </button>
     </div>
     <LearningSpaceRequirementsModal

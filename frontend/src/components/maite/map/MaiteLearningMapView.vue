@@ -5,11 +5,10 @@
 import { computed, onMounted } from 'vue'
 
 import MaiteMapNode from '@/components/maite/map/MaiteMapNode.vue'
-import { MAITE_MAP_CURRICULUM } from '@/data/maite/mapCurriculum'
+import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useMaiteMap } from '@/composables/maite/useMaiteMap'
-import { eventBus } from '@/composables/core/useEventBus'
-
+import { MAITE_MAP_CURRICULUM } from '@/data/maite/mapCurriculum'
 import type { MaiteGraphNode } from '@/types/maite'
 
 const { t } = useLanguage()
@@ -38,13 +37,27 @@ function resolveStatus(nodeKey: string): string | undefined {
 <template>
   <div class="maite-learning-map-view">
     <header class="maite-learning-map-view__header">
-      <h3>{{ t('maite.map.title') }}</h3>
-      <button type="button" :disabled="loading" @click="refreshGraph">
-        {{ loading ? t('maite.map.refreshing') : t('maite.map.refresh') }}
+      <h3><I18nText k="maite.map.title" /></h3>
+      <button
+        type="button"
+        :disabled="loading"
+        @click="refreshGraph"
+      >
+        <I18nText
+          v-if="loading"
+          k="maite.map.refreshing"
+        /><I18nText
+          v-else
+          k="maite.map.refresh"
+        />
       </button>
     </header>
 
-    <section v-for="module in MAITE_MAP_CURRICULUM" :key="module.id" class="maite-learning-map-view__module">
+    <section
+      v-for="module in MAITE_MAP_CURRICULUM"
+      :key="module.id"
+      class="maite-learning-map-view__module"
+    >
       <header>
         <h4>{{ module.title }}</h4>
         <span>{{ module.gradeBand }}</span>

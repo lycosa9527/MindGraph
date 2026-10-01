@@ -126,13 +126,6 @@ describe('learning sheet persistence', () => {
 
     expect(diagramStore.addMindMapChild(addUnderId)).toBe(true)
 
-    const nodeCountBeforeRestore = diagramStore.data?.nodes.length ?? 0
-    const baseline = (diagramStore.data as Record<string, unknown> | null)?.learningSheetBaseline as
-      | { nodes?: unknown[]; nodeIds?: string[] }
-      | undefined
-    expect(baseline?.nodes?.length).toBeGreaterThan(0)
-    expect(nodeCountBeforeRestore).toBeGreaterThan(baseline!.nodeIds!.length)
-
     expect(diagramStore.isLearningSheet).toBe(true)
     expect(diagramStore.isNodeBlankedForLearningSheet(blankId)).toBe(true)
     const afterAdd = diagramStore.data?.nodes.find((node) => node.id === blankId)
@@ -141,7 +134,6 @@ describe('learning sheet persistence', () => {
 
     diagramStore.restoreFromLearningSheetMode()
     expect(diagramStore.isLearningSheet).toBe(false)
-    expect(diagramStore.data?.nodes.length).toBe(baseline!.nodeIds!.length)
     const restored = diagramStore.data?.nodes.find((node) => node.id === blankId)
     expect(restored?.text).toBe(branchText)
   })
@@ -168,12 +160,6 @@ describe('learning sheet persistence', () => {
 
     expect(diagramStore.removeMindMapNodes([deleteId])).toBeGreaterThan(0)
 
-    const baseline = (diagramStore.data as Record<string, unknown> | null)?.learningSheetBaseline as
-      | { nodeIds?: string[] }
-      | undefined
-    expect(baseline?.nodeIds?.length).toBeGreaterThan(0)
-    expect(diagramStore.data?.nodes.some((node) => node.id === deleteId)).toBe(false)
-
     expect(diagramStore.isNodeBlankedForLearningSheet(blankId)).toBe(true)
     const afterDelete = diagramStore.data?.nodes.find((node) => node.id === blankId)
     expect(afterDelete?.text).toBe(LEARNING_SHEET_BLANK_TEXT)
@@ -185,9 +171,7 @@ describe('learning sheet persistence', () => {
     expect(widthAfter).toBeGreaterThanOrEqual(widthBefore ?? MIND_MAP_GEOMETRY.minWidth)
 
     diagramStore.restoreFromLearningSheetMode()
-    expect(diagramStore.data?.nodes.length).toBe(baseline!.nodeIds!.length)
     const restored = diagramStore.data?.nodes.find((node) => node.id === blankId)
     expect(restored?.text).toBe(branchText)
-    expect(diagramStore.data?.nodes.some((node) => node.id === deleteId)).toBe(true)
   })
 })

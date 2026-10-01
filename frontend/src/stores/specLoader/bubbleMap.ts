@@ -14,6 +14,7 @@ import {
 import { bubbleMapChildrenRadius, polarToPosition } from '@/composables/diagrams/useRadialLayout'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
+import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import {
   BUBBLE_MAP_UID_DATA_KEY,
   BUBBLE_TOPIC_NODE_ID,
@@ -22,7 +23,6 @@ import {
   stampBubbleAttributeData,
   takeBubbleMapStableId,
 } from '@/utils/bubbleMapIdentity'
-import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
 import {
   CONTEXT_FONT_SIZE,
@@ -159,8 +159,8 @@ export function recalculateBubbleMapLayout(
         size: uniformRadius * 2,
         fontSize: node.style?.fontSize ?? CONTEXT_FONT_SIZE,
         noWrap: true,
-        backgroundColor: node.style?.backgroundColor || color.fill,
-        borderColor: node.style?.borderColor || color.border,
+        backgroundColor: color.fill,
+        borderColor: color.border,
       },
     })
   })

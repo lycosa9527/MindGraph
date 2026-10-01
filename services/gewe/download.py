@@ -10,12 +10,13 @@ All Rights Reserved
 Proprietary License
 """
 
+from abc import ABC
 from typing import Any, Dict
 
 from services.gewe.protocols import GeweServiceBase
 
 
-class DownloadServiceMixin(GeweServiceBase):
+class DownloadServiceMixin(GeweServiceBase, ABC):
     """Mixin for download-related service methods"""
 
     async def download_file(self, app_id: str, xml: str) -> Dict[str, Any]:

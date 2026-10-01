@@ -1,5 +1,7 @@
-import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
-import { isMindMapDiagramType } from '@/composables/mindMap/mindMapArrowNavigation'
+import {
+  isMindMapDiagramType,
+  isThinkingMapDiagramType,
+} from '@/canvas-ribbon/diagramRibbonCapabilities'
 
 /** Mind-map v2 shortcut guide rows (display-only reference panel). */
 
@@ -95,13 +97,6 @@ export const MIND_MAP_SHORTCUT_GUIDE_WIRED_ROW_IDS = [
 
 const LEARNING_SHEET_SHORTCUT_ROW_ID = 'learningSheetAnswers'
 
-/** Pin learning-sheet shortcut at top while mode is active (visible without scrolling). */
-export function resolveMindMapShortcutGuideRows(
-  isLearningSheet: boolean
-): MindMapShortcutGuideRow[] {
-  return pinLearningSheetShortcutRow(MIND_MAP_SHORTCUT_GUIDE_ROWS, isLearningSheet)
-}
-
 const MIND_MAP_ONLY_SHORTCUT_ROW_IDS = new Set(['tab', 'enter', 'arrows'])
 
 function pinLearningSheetShortcutRow(
@@ -120,22 +115,20 @@ function keysRow(id: string, labelKey: string, keys: string[]): MindMapShortcutG
 
 /** Enter adds a node for the clicked selection. Tab and Insert are not shortcuts. */
 function thinkingMapInsertRows(diagramType: string | null | undefined): MindMapShortcutGuideRow[] {
-  switch (diagramType) {
-    case 'circle_map':
-      return [keysRow('enter', 'canvas.toolbar.addAssociation', ['Enter'])]
-    case 'bubble_map':
-      return [keysRow('enter', 'canvas.toolbar.addAttribute', ['Enter'])]
-    case 'bridge_map':
-      return [keysRow('enter', 'canvas.toolbar.addAnalogyPair', ['Enter'])]
-    case 'double_bubble_map':
-    case 'tree_map':
-    case 'brace_map':
-    case 'flow_map':
-    case 'multi_flow_map':
-      return [keysRow('enter', 'canvas.toolbar.addNode', ['Enter'])]
-    default:
-      return []
+  if (diagramType === 'bridge_map') {
+    return [keysRow('enter', 'canvas.toolbar.addAnalogyPair', ['Enter'])]
   }
+  if (isThinkingMapDiagramType(diagramType)) {
+    return [keysRow('enter', 'canvas.toolbar.addNode', ['Enter'])]
+  }
+  return []
+}
+
+/** Pin learning-sheet shortcut at top while mode is active (visible without scrolling). */
+export function resolveMindMapShortcutGuideRows(
+  isLearningSheet: boolean
+): MindMapShortcutGuideRow[] {
+  return pinLearningSheetShortcutRow(MIND_MAP_SHORTCUT_GUIDE_ROWS, isLearningSheet)
 }
 
 /**
@@ -153,6 +146,6 @@ export function resolveDiagramShortcutGuideRows(
   const shared = MIND_MAP_SHORTCUT_GUIDE_ROWS.filter(
     (row) => !MIND_MAP_ONLY_SHORTCUT_ROW_IDS.has(row.id)
   )
-  const inserts = isThinkingMapDiagramType(diagramType) ? thinkingMapInsertRows(diagramType) : []
+  const inserts = thinkingMapInsertRows(diagramType)
   return pinLearningSheetShortcutRow([...inserts, ...shared], isLearningSheet)
 }

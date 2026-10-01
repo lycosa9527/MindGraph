@@ -9,14 +9,14 @@ import { Edit, Loading } from '@element-plus/icons-vue'
 
 import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 import { useLanguage, useNotifications } from '@/composables'
+import { useAdminAccess } from '@/composables/admin/useAdminAccess'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import {
   resolveSchoolMindmateAgentName,
   resolveSchoolMindmateAvatarUrl,
 } from '@/composables/mindmate/useMindMateBranding'
-import '@/styles/admin-schools-swiss.css'
-import { useAdminAccess } from '@/composables/admin/useAdminAccess'
-import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useAdminOrganizations } from '@/composables/queries'
+import '@/styles/admin-schools-swiss.css'
 import { formatBeijingDate } from '@/utils/formatBeijingDateTime'
 import { isOrgPrivatized } from '@/utils/orgPrivatization'
 
@@ -87,9 +87,17 @@ const columnSortOrders = [
 ] as const
 
 const privatizedFilterOptions = computed(() => [
-  { value: '' as const, label: t('common.all') as string },
-  { value: 'yes' as const, label: t('admin.orgPrivateDifyYes') as string },
-  { value: 'no' as const, label: t('admin.orgPrivateDifyNo') as string },
+  { value: '' as const, label: t('common.all') as string, labelKey: 'common.all' },
+  {
+    value: 'yes' as const,
+    label: t('admin.orgPrivateDifyYes') as string,
+    labelKey: 'admin.orgPrivateDifyYes',
+  },
+  {
+    value: 'no' as const,
+    label: t('admin.orgPrivateDifyNo') as string,
+    labelKey: 'admin.orgPrivateDifyNo',
+  },
 ])
 
 function tokenTotal(row: Record<string, unknown>): number {
@@ -257,6 +265,7 @@ const trendOrg = ref<{
   dingtalk_ai_card_streaming_max_chars?: number
   show_chain_of_thought?: boolean
   mindmate_agent_name?: string | null
+  mindmate_agent_alias?: string | null
   mindmate_agent_avatar_url?: string | null
   initial_tab?: 'usage' | 'teachers' | 'activity' | 'general'
   initial_trend_period?: 'today' | 'week' | 'month' | 'total'
@@ -286,8 +295,8 @@ function onAgentAvatarError(event: Event) {
 function orgShowChainOfThought(row: Record<string, unknown>): boolean {
   return Boolean(
     row.show_chain_of_thought_oto ||
-      row.show_chain_of_thought_internal_group ||
-      row.show_chain_of_thought_cross_org_group
+    row.show_chain_of_thought_internal_group ||
+    row.show_chain_of_thought_cross_org_group
   )
 }
 
@@ -322,6 +331,7 @@ function openTrendModal(
       (row.dingtalk_ai_card_streaming_max_chars as number | undefined) ?? 6500,
     show_chain_of_thought: orgShowChainOfThought(row),
     mindmate_agent_name: row.mindmate_agent_name as string | null | undefined,
+    mindmate_agent_alias: row.mindmate_agent_alias as string | null | undefined,
     mindmate_agent_avatar_url: row.mindmate_agent_avatar_url as string | null | undefined,
     initial_tab: initialTab,
     initial_trend_period: initialTrendPeriod,
@@ -365,6 +375,7 @@ function syncTrendOrgFromSchools() {
         (updated.dingtalk_ai_card_streaming_max_chars as number | undefined) ?? 6500,
       show_chain_of_thought: orgShowChainOfThought(updated),
       mindmate_agent_name: updated.mindmate_agent_name as string | null | undefined,
+      mindmate_agent_alias: updated.mindmate_agent_alias as string | null | undefined,
       mindmate_agent_avatar_url: updated.mindmate_agent_avatar_url as string | null | undefined,
       custom_llm_api_type: updated.custom_llm_api_type as string | null | undefined,
       custom_llm_base_url: updated.custom_llm_base_url as string | null | undefined,
@@ -381,7 +392,7 @@ async function loadSchools(options?: { silent?: boolean }): Promise<void> {
     await organizationsQuery.refetch()
     syncTrendOrgFromSchools()
   } catch {
-    notify.error(t('admin.schoolsLoadError'))
+    notify.errorKey('admin.schoolsLoadError')
   }
 }
 
@@ -446,11 +457,13 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
       >
         <el-table-column
           prop="name"
-          :label="t('admin.organizationName')"
           min-width="120"
           show-overflow-tooltip
           class-name="admin-schools-col-text"
         >
+          <template #header>
+            <I18nText k="admin.organizationName" />
+          </template>
           <template #default="{ row }">
             <button
               type="button"
@@ -478,7 +491,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
                 class="admin-schools-col-header-trigger"
                 :class="{ 'admin-schools-col-header-trigger--active': privatizedFilter !== '' }"
               >
-                {{ t('admin.orgPrivateDify') }}
+                <I18nText k="admin.orgPrivateDify" />
               </button>
               <template #dropdown>
                 <el-dropdown-menu>
@@ -488,7 +501,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
                     :command="opt.value"
                     :class="{ 'is-selected': privatizedFilter === opt.value }"
                   >
-                    {{ opt.label }}
+                    <I18nText :k="opt.labelKey" />
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -498,38 +511,42 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
             <span
               class="admin-schools-private"
               :class="
-                isOrgPrivatized(row)
-                  ? 'admin-schools-private--yes'
-                  : 'admin-schools-private--no'
+                isOrgPrivatized(row) ? 'admin-schools-private--yes' : 'admin-schools-private--no'
               "
             >
-              {{
-                isOrgPrivatized(row)
-                  ? t('admin.orgPrivateDifyYes')
-                  : t('admin.orgPrivateDifyNo')
-              }}
+              <I18nText
+                v-if="isOrgPrivatized(row)"
+                k="admin.orgPrivateDifyYes"
+              /><I18nText
+                v-else
+                k="admin.orgPrivateDifyNo"
+              />
             </span>
           </template>
         </el-table-column>
         <el-table-column
           prop="mindmate_agent_name"
-          :label="t('admin.schoolMindmateAgentName')"
           min-width="112"
           align="center"
           header-align="center"
           show-overflow-tooltip
           class-name="admin-schools-col-text"
         >
+          <template #header>
+            <I18nText k="admin.schoolMindmateAgentName" />
+          </template>
           <template #default="{ row }">
             <span class="text-stone-700">{{ agentDisplayName(row) }}</span>
           </template>
         </el-table-column>
         <el-table-column
-          :label="t('admin.orgAgentAvatar')"
           min-width="64"
           align="center"
           header-align="center"
         >
+          <template #header>
+            <I18nText k="admin.orgAgentAvatar" />
+          </template>
           <template #default="{ row }">
             <img
               :src="agentAvatarSrc(row)"
@@ -554,7 +571,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
               :aria-sort="tokenSortAriaSort"
               @click="cycleTokenSort"
             >
-              <span>{{ t('admin.tokensUsedAllTime') }}</span>
+              <span><I18nText k="admin.tokensUsedAllTime" /></span>
               <span
                 v-if="tokenSortOrder !== 'none'"
                 class="admin-schools-sort-header__dir"
@@ -575,17 +592,25 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
           </template>
         </el-table-column>
         <el-table-column
-          :label="t('admin.status')"
           min-width="80"
           align="center"
           header-align="center"
         >
+          <template #header>
+            <I18nText k="admin.status" />
+          </template>
           <template #default="{ row }">
             <span
               class="admin-schools-status"
               :class="row.is_active ? 'admin-schools-status--on' : 'admin-schools-status--off'"
             >
-              {{ row.is_active ? t('admin.enabled') : t('admin.disabled') }}
+              <I18nText
+                v-if="row.is_active"
+                k="admin.enabled"
+              /><I18nText
+                v-else
+                k="admin.disabled"
+              />
             </span>
           </template>
         </el-table-column>
@@ -604,7 +629,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
               :aria-sort="expiresAtSortAriaSort"
               @click="cycleExpiresAtSort"
             >
-              <span>{{ t('admin.expirationDate') }}</span>
+              <span><I18nText k="admin.expirationDate" /></span>
               <span
                 v-if="expiresAtSortOrder !== 'none'"
                 class="admin-schools-sort-header__dir"
@@ -640,7 +665,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
               :aria-sort="userCountSortAriaSort"
               @click="cycleUserCountSort"
             >
-              <span>{{ t('admin.usersCount') }}</span>
+              <span><I18nText k="admin.usersCount" /></span>
               <span
                 v-if="userCountSortOrder !== 'none'"
                 class="admin-schools-sort-header__dir"
@@ -669,7 +694,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
               :aria-sort="managerCountSortAriaSort"
               @click="cycleManagerCountSort"
             >
-              <span>{{ t('admin.managerCount') }}</span>
+              <span><I18nText k="admin.managerCount" /></span>
               <span
                 v-if="managerCountSortOrder !== 'none'"
                 class="admin-schools-sort-header__dir"
@@ -684,12 +709,14 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
           </template>
         </el-table-column>
         <el-table-column
-          :label="t('admin.actions')"
           min-width="96"
           fixed="right"
           align="center"
           header-align="center"
         >
+          <template #header>
+            <I18nText k="admin.actions" />
+          </template>
           <template #default="{ row }">
             <el-button
               v-if="canEditOrganizations"
@@ -700,7 +727,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
               @click="openTrendModal(row, 'general')"
             >
               <el-icon class="mr-0.5"><Edit /></el-icon>
-              {{ t('common.edit') }}
+              <I18nText k="common.edit" />
             </el-button>
           </template>
         </el-table-column>
@@ -734,6 +761,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
       :org-dingtalk-ai-card-streaming-max-chars="trendOrg?.dingtalk_ai_card_streaming_max_chars"
       :org-show-chain-of-thought="trendOrg?.show_chain_of_thought"
       :org-mindmate-agent-name="trendOrg?.mindmate_agent_name"
+      :org-mindmate-agent-alias="trendOrg?.mindmate_agent_alias"
       :org-mindmate-agent-avatar-url="trendOrg?.mindmate_agent_avatar_url"
       :initial-school-tab="trendOrg?.initial_tab"
       :initial-trend-period="trendOrg?.initial_trend_period ?? 'week'"

@@ -34,7 +34,6 @@ from .requests_auth import (
     VerifySMSCodeRequest,
     SendChangePhoneSMSRequest,
     ChangePhoneRequest,
-    PasskeyVerifyRequest,
 )
 from .requests_knowledge_space import (
     ProcessSelectedRequest,
@@ -82,7 +81,6 @@ __all__ = [
     "VerifySMSCodeRequest",
     "SendChangePhoneSMSRequest",
     "ChangePhoneRequest",
-    "PasskeyVerifyRequest",
     # Knowledge Space Requests
     "ProcessSelectedRequest",
     "PackageCreateRequest",

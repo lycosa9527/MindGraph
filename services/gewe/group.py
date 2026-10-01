@@ -11,6 +11,7 @@ Proprietary License
 """
 
 import logging
+from abc import ABC
 from typing import Any, Dict, List, Optional
 
 from services.gewe.protocols import GeweServiceBase
@@ -19,7 +20,7 @@ from services.utils.error_types import DATABASE_ERRORS
 logger = logging.getLogger(__name__)
 
 
-class GroupServiceMixin(GeweServiceBase):
+class GroupServiceMixin(GeweServiceBase, ABC):
     """Mixin for group-related service methods"""
 
     async def create_chatroom(self, app_id: str, wxids: list) -> Dict[str, Any]:

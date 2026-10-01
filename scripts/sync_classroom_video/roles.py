@@ -109,8 +109,8 @@ def _fill_missing_repo_stills(roles: list[RoleStill]) -> list[RoleStill]:
 def discover_roles(root: Path | None = None) -> list[RoleStill]:
     """Return every folder that still has a front green-screen still.
 
-    Pictures/mascots wins when that folder exists. Committed stills fill gaps,
-    including the laptop raven stand-in when the desktop raven file is absent.
+    Pictures/mascots wins when that folder exists. Committed stills under
+    scripts/cat_emoji/stills/ fill any role the desktop folder is missing.
     """
     base = root if root is not None else MASCOTS_DIR
     if not base.is_dir():

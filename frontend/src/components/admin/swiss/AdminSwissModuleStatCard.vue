@@ -4,37 +4,50 @@
  */
 import { computed, ref } from 'vue'
 
-import type { AdminSwissStatTheme } from '@/constants/adminSwissStatTheme'
+import I18nText from '@/components/common/I18nText.vue'
 import { useSwissStatCardClasses } from '@/composables/admin/useSwissStatCardClasses'
 import { useSchoolActivityChart } from '@/composables/school/useSchoolActivityChart'
+import type { AdminSwissStatTheme } from '@/constants/adminSwissStatTheme'
 
 export interface ModuleStatChip {
-  label: string
+  label?: string
+  labelKey?: string
   value: string
+  valueKey?: string
+  valueParams?: Record<string, unknown>
 }
 
 const props = withDefaults(
   defineProps<{
-    title: string
+    title?: string
+    titleKey?: string
     value: string | number
     valueLabel?: string
+    valueLabelKey?: string
     timestamp: string
     chips?: ModuleStatChip[]
     remark?: string
+    remarkKey?: string
     theme?: AdminSwissStatTheme
     empty?: boolean
     emptyText?: string
+    emptyTextKey?: string
     showChart?: boolean
     labels?: string[]
     values?: number[]
   }>(),
   {
+    title: '',
+    titleKey: '',
     valueLabel: '',
+    valueLabelKey: '',
     chips: () => [],
     remark: '',
+    remarkKey: '',
     theme: 'members',
     empty: false,
     emptyText: '',
+    emptyTextKey: '',
     showChart: false,
     labels: () => [],
     values: () => [],
@@ -75,14 +88,22 @@ useSchoolActivityChart(canvasRef, chartSpec)
   >
     <div class="swiss-stat-card__header">
       <h3 class="swiss-stat-card__title">
-        {{ title }}
+        <I18nText
+          v-if="titleKey"
+          :k="titleKey"
+        />
+        <template v-else>{{ title }}</template>
       </h3>
     </div>
     <p
-      v-if="valueLabel"
+      v-if="valueLabelKey || valueLabel"
       class="module-stat-card__value-label"
     >
-      {{ valueLabel }}
+      <I18nText
+        v-if="valueLabelKey"
+        :k="valueLabelKey"
+      />
+      <template v-else>{{ valueLabel }}</template>
     </p>
     <p class="swiss-stat-card__value">
       {{ displayValue }}
@@ -93,24 +114,47 @@ useSchoolActivityChart(canvasRef, chartSpec)
     >
       <li
         v-for="chip in chips"
-        :key="chip.label"
+        :key="chip.labelKey || chip.label"
         class="module-stat-card__chip"
       >
-        <span class="module-stat-card__chip-label">{{ chip.label }}</span>
-        <span class="module-stat-card__chip-value">{{ chip.value }}</span>
+        <span class="module-stat-card__chip-label">
+          <I18nText
+            v-if="chip.labelKey"
+            :k="chip.labelKey"
+            dense
+          />
+          <template v-else>{{ chip.label }}</template>
+        </span>
+        <span class="module-stat-card__chip-value">
+          <I18nText
+            v-if="chip.valueKey"
+            :k="chip.valueKey"
+            :params="chip.valueParams"
+            dense
+          />
+          <template v-else>{{ chip.value }}</template>
+        </span>
       </li>
     </ul>
     <p
-      v-if="remark"
+      v-if="remarkKey || remark"
       class="swiss-stat-card__sub"
     >
-      {{ remark }}
+      <I18nText
+        v-if="remarkKey"
+        :k="remarkKey"
+      />
+      <template v-else>{{ remark }}</template>
     </p>
     <div
       v-if="empty"
       class="module-stat-card__empty"
     >
-      {{ emptyText }}
+      <I18nText
+        v-if="emptyTextKey"
+        :k="emptyTextKey"
+      />
+      <template v-else>{{ emptyText }}</template>
     </div>
     <div
       v-else-if="showChart"

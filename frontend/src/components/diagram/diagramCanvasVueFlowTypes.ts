@@ -14,7 +14,6 @@ import TreeEdge from './edges/TreeEdge.vue'
 import BoundaryNode from './nodes/BoundaryNode.vue'
 import BraceNode from './nodes/BraceNode.vue'
 import BranchNode from './nodes/BranchNode.vue'
-import BubbleNode from './nodes/BubbleNode.vue'
 import CircleNode from './nodes/CircleNode.vue'
 import ConceptNode from './nodes/ConceptNode.vue'
 import FlowNode from './nodes/FlowNode.vue'
@@ -24,7 +23,8 @@ import TopicNode from './nodes/TopicNode.vue'
 
 export const diagramCanvasNodeTypes = {
   topic: markRaw(TopicNode),
-  bubble: markRaw(BubbleNode),
+  // Spec type bubble is converted to circle. This alias covers a node that still has type bubble.
+  bubble: markRaw(CircleNode),
   branch: markRaw(BranchNode),
   flow: markRaw(FlowNode),
   flowSubstep: markRaw(FlowSubstepNode),

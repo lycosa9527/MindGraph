@@ -339,13 +339,15 @@ export function applyVoiceDiagramAddNodes(
         typeof p.insert_index === 'number' && p.insert_index >= 0 ? p.insert_index : undefined
       const sideRaw = typeof p.side === 'string' ? p.side.trim().toLowerCase() : ''
       const explicitSide = sideRaw === 'left' || sideRaw === 'right' ? sideRaw : null
+      const voiceAdd = { openInlineEdit: false }
       if (afterNodeId && text) {
-        if (store.addMindMapSibling(afterNodeId, text, 'below')) count++
+        if (store.addMindMapSibling(afterNodeId, text, 'below', voiceAdd)) count++
       } else if (parentId !== '' && insertIndex !== undefined && text) {
         if (
           store.addMindMapSibling(parentId, text, 'below', {
             parentId,
             insertIndex,
+            ...voiceAdd,
           })
         ) {
           count++
@@ -353,11 +355,11 @@ export function applyVoiceDiagramAddNodes(
       } else if (branchIdx !== undefined && childIdx !== undefined && text) {
         const parents = topLevelMindmapBranchIds(store.data.nodes, store.data.connections ?? [])
         const parentFromIndex = parents[branchIdx]
-        if (parentFromIndex && store.addMindMapChild(parentFromIndex, text)) count++
+        if (parentFromIndex && store.addMindMapChild(parentFromIndex, text, voiceAdd)) count++
       } else if (parentId !== '' && text) {
-        if (store.addMindMapChild(parentId, text)) count++
+        if (store.addMindMapChild(parentId, text, voiceAdd)) count++
       } else if (text) {
-        if (store.addMindMapBranch(explicitSide, text)) count++
+        if (store.addMindMapBranch(explicitSide, text, undefined, voiceAdd)) count++
       }
       continue
     }

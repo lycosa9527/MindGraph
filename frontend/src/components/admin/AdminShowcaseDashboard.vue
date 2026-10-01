@@ -4,10 +4,10 @@ import { computed, onMounted, ref } from 'vue'
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
 import { useLanguage } from '@/composables'
 import {
+  type ShowcaseStatsOverview,
   getAdminShowcaseStats,
   getShowcasePendingCount,
   getShowcasePosts,
-  type ShowcaseStatsOverview,
 } from '@/utils/apiClient'
 
 const { t } = useLanguage()
@@ -73,9 +73,24 @@ async function loadStats(): Promise<void> {
 const caseTypeBreakdown = computed(() => {
   const map = stats.value?.by_case_type ?? {}
   return [
-    { key: 'teaching_design', label: t('showcase.type.teachingDesign'), value: map.teaching_design ?? 0 },
-    { key: 'diagram_case', label: t('showcase.type.diagramCase'), value: map.diagram_case ?? 0 },
-    { key: 'diagram_template', label: t('showcase.type.diagramTemplate'), value: map.diagram_template ?? 0 },
+    {
+      key: 'teaching_design',
+      label: t('showcase.type.teachingDesign'),
+      labelKey: 'showcase.type.teachingDesign',
+      value: map.teaching_design ?? 0,
+    },
+    {
+      key: 'diagram_case',
+      label: t('showcase.type.diagramCase'),
+      labelKey: 'showcase.type.diagramCase',
+      value: map.diagram_case ?? 0,
+    },
+    {
+      key: 'diagram_template',
+      label: t('showcase.type.diagramTemplate'),
+      labelKey: 'showcase.type.diagramTemplate',
+      value: map.diagram_template ?? 0,
+    },
   ]
 })
 
@@ -99,33 +114,35 @@ onMounted(() => {
         class="ml-2 font-medium underline"
         @click="loadStats"
       >
-        {{ t('admin.showcase.statsRetry') }}
+        <I18nText k="admin.showcase.statsRetry" />
       </button>
     </p>
 
     <template v-if="stats">
       <div>
         <h3 class="mb-3 text-sm font-semibold text-gray-900">
-          {{ t('admin.showcase.stats.sectionOverview') }}
+          <I18nText k="admin.showcase.stats.sectionOverview" />
         </h3>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <AdminSwissKpiCard
-            :title="t('admin.showcase.stats.totalPosts')"
-            :value="stats.total_posts ?? stats.pending + stats.approved_total + stats.rejected_total"
+            title-key="admin.showcase.stats.totalPosts"
+            :value="
+              stats.total_posts ?? stats.pending + stats.approved_total + stats.rejected_total
+            "
             theme="neutral"
           />
           <AdminSwissKpiCard
-            :title="t('admin.showcase.stats.pending')"
+            title-key="admin.showcase.stats.pending"
             :value="stats.pending"
             theme="warn"
           />
           <AdminSwissKpiCard
-            :title="t('admin.showcase.stats.approvedTotal')"
+            title-key="admin.showcase.stats.approvedTotal"
             :value="stats.approved_total"
             theme="success"
           />
           <AdminSwissKpiCard
-            :title="t('admin.showcase.stats.rejectedTotal')"
+            title-key="admin.showcase.stats.rejectedTotal"
             :value="stats.rejected_total"
             theme="warn"
           />
@@ -134,26 +151,26 @@ onMounted(() => {
 
       <div>
         <h3 class="mb-3 text-sm font-semibold text-gray-900">
-          {{ t('admin.showcase.stats.sectionRecent') }}
+          <I18nText k="admin.showcase.stats.sectionRecent" />
         </h3>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <AdminSwissKpiCard
-            :title="t('admin.showcase.stats.createdRecent')"
+            title-key="admin.showcase.stats.createdRecent"
             :value="stats.created_recent"
             theme="neutral"
           />
           <AdminSwissKpiCard
-            :title="t('admin.showcase.stats.approvedRecent')"
+            title-key="admin.showcase.stats.approvedRecent"
             :value="stats.approved_recent ?? 0"
             theme="success"
           />
           <AdminSwissKpiCard
-            :title="t('admin.showcase.stats.rejectedRecent')"
+            title-key="admin.showcase.stats.rejectedRecent"
             :value="stats.rejected_recent ?? 0"
             theme="warn"
           />
           <AdminSwissKpiCard
-            :title="t('admin.showcase.stats.rejectionRate')"
+            title-key="admin.showcase.stats.rejectionRate"
             :value="`${Math.round(stats.rejection_rate_recent * 100)}%`"
             theme="warn"
           />
@@ -162,31 +179,31 @@ onMounted(() => {
 
       <div>
         <h3 class="mb-3 text-sm font-semibold text-gray-900">
-          {{ t('admin.showcase.stats.sectionPublish') }}
+          <I18nText k="admin.showcase.stats.sectionPublish" />
         </h3>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <AdminSwissKpiCard
-            :title="t('admin.showcase.stats.selfTotal')"
+            title-key="admin.showcase.stats.selfTotal"
             :value="stats.self_total ?? 0"
             theme="neutral"
           />
           <AdminSwissKpiCard
-            :title="t('admin.showcase.stats.proxyTotal')"
+            title-key="admin.showcase.stats.proxyTotal"
             :value="stats.proxy_total"
             theme="neutral"
           />
           <AdminSwissKpiCard
-            :title="t('admin.showcase.stats.expertTotal')"
+            title-key="admin.showcase.stats.expertTotal"
             :value="stats.expert_recommended_total"
             theme="neutral"
           />
           <AdminSwissKpiCard
-            :title="t('admin.showcase.stats.totalViews')"
+            title-key="admin.showcase.stats.totalViews"
             :value="stats.total_views ?? 0"
             theme="neutral"
           />
           <AdminSwissKpiCard
-            :title="t('admin.showcase.stats.totalLikes')"
+            title-key="admin.showcase.stats.totalLikes"
             :value="stats.total_likes ?? 0"
             theme="neutral"
           />
@@ -195,13 +212,13 @@ onMounted(() => {
 
       <div>
         <h3 class="mb-3 text-sm font-semibold text-gray-900">
-          {{ t('admin.showcase.stats.sectionCaseType') }}
+          <I18nText k="admin.showcase.stats.sectionCaseType" />
         </h3>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <AdminSwissKpiCard
             v-for="item in caseTypeBreakdown"
             :key="item.key"
-            :title="String(item.label)"
+            :title-key="item.labelKey"
             :value="item.value"
             theme="neutral"
             compact

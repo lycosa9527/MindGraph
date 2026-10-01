@@ -134,7 +134,7 @@ export function useUploadDocument() {
     onSuccess: (_data) => {
       // Invalidate to refetch with real data
       queryClient.invalidateQueries({ queryKey: knowledgeSpaceKeys.documents() })
-      notify.success(t('knowledgeSpace.uploadSuccessProcessing'))
+      notify.successKey('knowledgeSpace.uploadSuccessProcessing')
     },
     onError: (error: Error, _file, context) => {
       // Rollback optimistic update
@@ -183,7 +183,7 @@ export function useDeleteDocument() {
     onSuccess: () => {
       // Invalidate to ensure consistency
       queryClient.invalidateQueries({ queryKey: knowledgeSpaceKeys.documents() })
-      notify.success(t('knowledgeSpace.documentDeleted'))
+      notify.successKey('knowledgeSpace.documentDeleted')
     },
     onError: (error: Error, _documentId, context) => {
       // Rollback optimistic update
@@ -211,9 +211,9 @@ export function useStartProcessing() {
       // Invalidate documents to refresh status
       queryClient.invalidateQueries({ queryKey: knowledgeSpaceKeys.documents() })
       if (data.processed_count === 0) {
-        notify.info(t('knowledgeSpace.noPendingDocs'))
+        notify.infoKey('knowledgeSpace.noPendingDocs')
       } else {
-        notify.success(t('knowledgeSpace.processingStarted', { count: data.processed_count }))
+        notify.successKey('knowledgeSpace.processingStarted', { count: data.processed_count })
       }
     },
     onError: (error: Error) => {
@@ -238,9 +238,9 @@ export function useProcessSelected() {
       // Invalidate documents to refresh status
       queryClient.invalidateQueries({ queryKey: knowledgeSpaceKeys.documents() })
       if (data.processed_count === 0) {
-        notify.info(t('knowledgeSpace.noPendingDocs'))
+        notify.infoKey('knowledgeSpace.noPendingDocs')
       } else {
-        notify.success(t('knowledgeSpace.processingStarted', { count: data.processed_count }))
+        notify.successKey('knowledgeSpace.processingStarted', { count: data.processed_count })
       }
     },
     onError: (error: Error) => {

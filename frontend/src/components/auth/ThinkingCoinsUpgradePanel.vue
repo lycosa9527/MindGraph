@@ -9,15 +9,15 @@ import { Check, ChevronDown, ChevronRight, Gift } from '@lucide/vue'
 
 import ThinkingCoinsSubscriptionSection from '@/components/auth/ThinkingCoinsSubscriptionSection.vue'
 import { useLanguage } from '@/composables'
-import { eventBus } from '@/composables/core/useEventBus'
-import { formatThinkingCoinBalance, useThinkingCoins } from '@/composables/auth/useThinkingCoins'
 import {
+  type UpgradePageTaskCard,
   buildUpgradePageTaskCards,
   taskIcon,
   taskIsActionable,
   taskTheme,
-  type UpgradePageTaskCard,
 } from '@/composables/auth/thinkingCoinsUpgradeUi'
+import { formatThinkingCoinBalance, useThinkingCoins } from '@/composables/auth/useThinkingCoins'
+import { eventBus } from '@/composables/core/useEventBus'
 import { useAuthStore } from '@/stores'
 import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
 
@@ -46,13 +46,10 @@ const subscriptionSectionRef = ref<InstanceType<typeof ThinkingCoinsSubscription
 const LEDGER_PAGE_SIZE = 20
 
 const balanceText = computed(() =>
-  formatThinkingCoinBalance(
-    wallet.value?.balance ?? authStore.user?.thinkingCoins?.balance ?? 0
-  )
+  formatThinkingCoinBalance(wallet.value?.balance ?? authStore.user?.thinkingCoins?.balance ?? 0)
 )
 const isWalletEligible = computed(
-  () =>
-    wallet.value?.eligible === true || authStore.user?.thinkingCoins?.eligible === true
+  () => wallet.value?.eligible === true || authStore.user?.thinkingCoins?.eligible === true
 )
 const earnTasks = computed(() => wallet.value?.earn_tasks ?? [])
 
@@ -60,9 +57,7 @@ const COLLAPSED_TASK_PREVIEW_COUNT = 3
 
 const taskCards = computed(() => buildUpgradePageTaskCards(earnTasks.value))
 
-const previewTaskCards = computed(() =>
-  taskCards.value.slice(0, COLLAPSED_TASK_PREVIEW_COUNT)
-)
+const previewTaskCards = computed(() => taskCards.value.slice(0, COLLAPSED_TASK_PREVIEW_COUNT))
 
 function previewCardTitle(card: UpgradePageTaskCard): string {
   if (card.kind === 'task') {
@@ -170,10 +165,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="tc-upgrade-panel mx-auto w-full max-w-6xl space-y-5 px-4 pb-6 pt-3 sm:px-6 sm:pb-8 sm:pt-4">
+  <div
+    class="tc-upgrade-panel mx-auto w-full max-w-6xl space-y-5 px-4 pb-6 pt-3 sm:px-6 sm:pb-8 sm:pt-4"
+  >
     <section class="tc-upgrade-card">
       <h2 class="text-base font-semibold text-stone-900 sm:text-lg">
-        {{ t('thinkingCoins.title') }}
+        <I18nText k="thinkingCoins.title" />
       </h2>
 
       <div
@@ -189,7 +186,7 @@ onMounted(() => {
             {{ balanceText }}
           </span>
           <span class="text-base font-medium text-stone-500">
-            {{ t('thinkingCoins.balanceUnit') }}
+            <I18nText k="thinkingCoins.balanceUnit" />
           </span>
         </div>
 
@@ -203,13 +200,13 @@ onMounted(() => {
               :is="tasksOpen ? ChevronDown : ChevronRight"
               class="h-4 w-4 text-stone-400"
             />
-            {{ t('thinkingCoins.earnMore') }}
+            <I18nText k="thinkingCoins.earnMore" />
           </span>
           <span
             v-if="!tasksOpen && taskCards.length > COLLAPSED_TASK_PREVIEW_COUNT"
             class="text-xs text-stone-400"
           >
-            {{ t('thinkingCoins.tasksExpandHint') }}
+            <I18nText k="thinkingCoins.tasksExpandHint" />
           </span>
         </button>
 
@@ -234,7 +231,9 @@ onMounted(() => {
                 class="h-3.5 w-3.5"
               />
             </div>
-            <div class="min-w-0 flex-1 truncate text-[11px] font-medium leading-tight text-stone-700">
+            <div
+              class="min-w-0 flex-1 truncate text-[11px] font-medium leading-tight text-stone-700"
+            >
               {{ previewCardTitle(card) }}
             </div>
             <Check
@@ -286,7 +285,7 @@ onMounted(() => {
                   :class="taskTheme(card.themeIndex).reward"
                 >
                   +{{ card.task.reward_amount }}
-                  {{ t('thinkingCoins.balanceUnit') }}
+                  <I18nText k="thinkingCoins.balanceUnit" />
                 </div>
                 <div
                   v-if="taskStatusHint(card.task)"
@@ -314,14 +313,14 @@ onMounted(() => {
               </div>
               <div class="min-w-0 flex-1">
                 <div class="text-xs font-medium text-stone-500">
-                  {{ t(card.titleKey) }}
+                  <I18nText :k="card.titleKey" />
                 </div>
                 <div
                   class="mt-0.5 text-sm font-bold tabular-nums"
                   :class="taskTheme(card.themeIndex).reward"
                 >
                   +{{ card.rewardAmount }}
-                  {{ t('thinkingCoins.balanceUnit') }}
+                  <I18nText k="thinkingCoins.balanceUnit" />
                 </div>
               </div>
             </div>
@@ -338,13 +337,13 @@ onMounted(() => {
               :is="ledgerOpen ? ChevronDown : ChevronRight"
               class="h-4 w-4 text-stone-400"
             />
-            {{ t('thinkingCoins.ledgerTitle') }}
+            <I18nText k="thinkingCoins.ledgerTitle" />
           </span>
           <span
             v-if="!ledgerOpen"
             class="text-xs text-rose-500"
           >
-            {{ t('thinkingCoins.ledgerExpandHint') }}
+            <I18nText k="thinkingCoins.ledgerExpandHint" />
           </span>
         </button>
 
@@ -356,7 +355,7 @@ onMounted(() => {
             v-if="!ledger?.items.length"
             class="py-10 text-center text-sm text-stone-400"
           >
-            {{ t('thinkingCoins.ledgerEmpty') }}
+            <I18nText k="thinkingCoins.ledgerEmpty" />
           </div>
           <ul
             v-else
@@ -383,7 +382,13 @@ onMounted(() => {
             :disabled="ledgerLoading"
             @click="loadMoreLedger"
           >
-            {{ ledgerLoading ? t('thinkingCoins.ledgerLoading') : t('thinkingCoins.ledgerLoadMore') }}
+            <I18nText
+              v-if="ledgerLoading"
+              k="thinkingCoins.ledgerLoading"
+            /><I18nText
+              v-else
+              k="thinkingCoins.ledgerLoadMore"
+            />
           </button>
         </div>
       </template>

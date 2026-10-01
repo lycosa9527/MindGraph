@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
-import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
 import type { ChatMessage } from '@/stores/workshopChat'
@@ -41,7 +40,6 @@ const emit = defineEmits<{
   scrolledToLatest: [messageId: number]
 }>()
 
-const { t } = useLanguage()
 const authStore = useAuthStore()
 const store = useWorkshopChatStore()
 
@@ -195,8 +193,8 @@ defineExpose({ scrollToBottom, scrollToMessageId })
       v-if="!loading && messages.length === 0"
       class="msg-feed__empty"
     >
-      <p>{{ t('workshop.noMessagesYet') }}</p>
-      <p class="msg-feed__empty-hint">{{ t('workshop.startConversation') }}</p>
+      <p><I18nText k="workshop.noMessagesYet" /></p>
+      <p class="msg-feed__empty-hint"><I18nText k="workshop.startConversation" /></p>
     </div>
 
     <!-- Groups -->

@@ -18,6 +18,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
+import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import {
   buildEducationStageInstructions,
@@ -63,7 +64,8 @@ export function useCanvasToolbarApps() {
   const notify = useNotifications()
   const { isGenerating: isAIGenerating, autoComplete, validateForAutoComplete } = useAutoComplete()
   const { aiBlockedByCollab, guardCollabGuestAi } = useCollabGuestAiGate()
-  const { requireCapability, showCanvasAiFeatures } = useLearningAiGate()
+  const { requireCapability } = useLearningAiGate()
+  const { startRandomLearningSheet } = useLearningSheetCustomMode()
 
   const isConceptMap = computed(() => diagramStore.type === 'concept_map')
   const useMindMapV2 = useMindMapV2Chrome()
@@ -133,14 +135,6 @@ export function useCanvasToolbarApps() {
     if (useMindMapV2.value) {
       list = list.filter((a) => a.appKey !== 'translate_diagram' && a.appKey !== 'virtual_keyboard')
     }
-    if (!showCanvasAiFeatures.value) {
-      list = list.filter(
-        (a) =>
-          a.appKey !== 'waterfall' &&
-          a.appKey !== 'translate_diagram' &&
-          a.appKey !== 'learning_sheet'
-      )
-    }
     if (!aiBlockedByCollab.value) {
       return list
     }
@@ -161,7 +155,7 @@ export function useCanvasToolbarApps() {
     isLearningSheet?: boolean
   }) {
     if (!authStore.isAuthenticated) {
-      notify.warning(t('notification.signInToUse'))
+      notify.warningKey('notification.signInToUse')
       return
     }
     if (!requireCapability('topic_generate')) return
@@ -197,12 +191,11 @@ export function useCanvasToolbarApps() {
   }
 
   function handleConceptGeneration() {
-    if (!requireCapability('ai_brainstorm')) return
     if (!guardCollabGuestAi()) {
       return
     }
     if (!diagramStore.data?.nodes?.length) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
       return
     }
     const options: Record<string, unknown> = {}
@@ -223,42 +216,9 @@ export function useCanvasToolbarApps() {
     eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'toolbar', options })
   }
 
-  function toggleLearningSheet(): void {
-    if (aiBlockedByCollab.value) {
-      notify.warning(t('canvas.toolbar.collabGuestFeatureBlocked'))
-      return
-    }
-    if (!diagramStore.data?.nodes?.length) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
-      return
-    }
-    if (diagramStore.isLearningSheet) {
-      diagramStore.restoreFromLearningSheetMode()
-      notify.success(t('canvas.toolbar.switchedToRegular'))
-    } else if (diagramStore.hasPreservedLearningSheet()) {
-      diagramStore.applyLearningSheetView()
-      notify.success(t('canvas.toolbar.learningSheetRestored'))
-      void claimThinkingCoinEvent('learning_sheet_enable')
-    } else {
-      const spec = diagramStore.getSpecForSave()
-      if (spec && diagramStore.type) {
-        diagramStore.loadFromSpec(
-          {
-            ...spec,
-            is_learning_sheet: true,
-            hidden_node_percentage: 0.2,
-          },
-          diagramStore.type
-        )
-        notify.success(t('canvas.toolbar.switchedLearningSheetMode'))
-        void claimThinkingCoinEvent('learning_sheet_enable')
-      }
-    }
-  }
-
   function handleMoreAppItem(app: MoreAppItem) {
     if (app.handlerKey === 'concept_map_modes') {
-      notify.info(t('canvas.toolbar.conceptMapModesDev'))
+      notify.infoKey('canvas.toolbar.conceptMapModesDev')
       return
     }
     void handleMoreApp(app)
@@ -269,19 +229,18 @@ export function useCanvasToolbarApps() {
       return
     }
     if (app.guestBlock === 'feature') {
-      notify.warning(t('canvas.toolbar.collabGuestFeatureBlocked'))
+      notify.warningKey('canvas.toolbar.collabGuestFeatureBlocked')
       return
     }
     if (app.appKey === 'waterfall') {
-      if (!requireCapability('ai_brainstorm')) return
       if (!guardCollabGuestAi()) {
         return
       }
       if (!diagramStore.data?.nodes?.length) {
-        notify.warning(t('canvas.toolbar.createDiagramFirst'))
+        notify.warningKey('canvas.toolbar.createDiagramFirst')
         return
       }
-      if (useMindMapV2.value || diagramStore.type !== 'concept_map') {
+      if (useMindMapV2.value) {
         useMindMapSideToolbarState().openTool('waterfall')
       } else {
         eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'toolbar' })
@@ -289,16 +248,29 @@ export function useCanvasToolbarApps() {
       return
     }
     if (app.appKey === 'learning_sheet') {
-      toggleLearningSheet()
+      if (!diagramStore.data?.nodes?.length) {
+        notify.warningKey('canvas.toolbar.createDiagramFirst')
+        return
+      }
+      if (diagramStore.isLearningSheet) {
+        diagramStore.restoreFromLearningSheetMode()
+        notify.successKey('canvas.toolbar.switchedToRegular')
+      } else if (diagramStore.hasPreservedLearningSheet()) {
+        diagramStore.applyLearningSheetView()
+        notify.successKey('canvas.toolbar.learningSheetRestored')
+        void claimThinkingCoinEvent('learning_sheet_enable')
+      } else {
+        startRandomLearningSheet()
+      }
       return
     }
     if (app.appKey === 'snapshot') {
       if (!diagramStore.data?.nodes?.length) {
-        notify.warning(t('canvas.toolbar.createDiagramFirst'))
+        notify.warningKey('canvas.toolbar.createDiagramFirst')
         return
       }
       if (!savedDiagramsStore.activeDiagramId) {
-        notify.warning(t('canvas.toolbar.snapshotSaveFirst'))
+        notify.warningKey('canvas.toolbar.snapshotSaveFirst')
         return
       }
       eventBus.emit('snapshot:requested', {})
@@ -309,11 +281,10 @@ export function useCanvasToolbarApps() {
       return
     }
     if (app.appKey === 'translate_diagram') {
-      if (!requireCapability('translate')) return
       runFromCurrentDiagram()
       return
     }
-    notify.info(t('canvas.toolbar.featureInDevelopment', { name: app.name }))
+    notify.infoKey('canvas.toolbar.featureInDevelopment', { name: app.name })
   }
 
   return {
@@ -325,6 +296,5 @@ export function useCanvasToolbarApps() {
     handleAIGenerate,
     handleConceptGeneration,
     handleMoreAppItem,
-    toggleLearningSheet,
   }
 }

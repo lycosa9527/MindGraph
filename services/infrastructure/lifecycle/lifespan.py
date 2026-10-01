@@ -48,7 +48,10 @@ from services.infrastructure.lifecycle.lifespan_shutdown import (
     run_lifespan_shutdown,
 )
 from services.mcp.session_lifespan import mindgraph_mcp_session_run
-from services.infrastructure.lifecycle.startup import _handle_shutdown_signal
+from services.infrastructure.lifecycle.startup import (
+    _handle_shutdown_signal,
+    mindgraph_startup_banner_lines,
+)
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService, admin_sms_alerts_enabled
 from services.infrastructure.monitoring.health_monitor import get_health_monitor
 from services.infrastructure.monitoring.perf_sample_log import (
@@ -577,10 +580,13 @@ async def lifespan(fastapi_app: FastAPI):
         # This ensures completion messages appear after all startup logging
         await asyncio.sleep(0.3)
 
-    # One cluster-wide completion line (Redis SET NX). Fail-open logs per worker.
+    # One cluster-wide banner and completion line (Redis SET NX). Fail-open logs per worker.
     startup_duration = time.time() - startup_start
     logger.debug("[LIFESPAN] Startup complete, yielding to application...")
     if await try_claim_launch_complete_log():
+        # Do not delete. The MindGraph ASCII banner belongs in the launch log.
+        for line in mindgraph_startup_banner_lines():
+            logger.info("%s", line)
         logger.info(
             "APPLICATION LAUNCH COMPLETE startup=%.2fs",
             startup_duration,

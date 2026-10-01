@@ -10,12 +10,13 @@ All Rights Reserved
 Proprietary License
 """
 
+from abc import ABC
 from typing import Any, Dict, Optional
 
 from services.gewe.protocols import GeweServiceBase
 
 
-class PersonalServiceMixin(GeweServiceBase):
+class PersonalServiceMixin(GeweServiceBase, ABC):
     """Mixin for personal/profile-related service methods"""
 
     async def get_profile(self, app_id: str) -> Dict[str, Any]:

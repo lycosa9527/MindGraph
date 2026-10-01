@@ -34,6 +34,7 @@ export async function executeLandingPrompt(options: {
   canApply?: () => boolean
   onStart?: () => void
   onFinish?: () => void
+  onApplied?: (applied: { diagramType: DiagramType; spec: Record<string, unknown> }) => void
 }): Promise<boolean> {
   const text = options.text.trim()
   if (!text || options.generation.isGenerating.value) {
@@ -82,6 +83,10 @@ export async function executeLandingPrompt(options: {
       return false
     }
     useLLMResultsStore().reset()
+    options.onApplied?.({
+      diagramType: outcome.diagramType as DiagramType,
+      spec,
+    })
     if (!options.generation.isCurrentRun(run.runId)) {
       return false
     }

@@ -4,10 +4,8 @@
  */
 import { storeToRefs } from 'pinia'
 
-import { useLanguage } from '@/composables/core/useLanguage'
 import { useOrgGenerationCacheNoticeStore } from '@/stores/orgGenerationCacheNotice'
 
-const { t } = useLanguage()
 const noticeStore = useOrgGenerationCacheNoticeStore()
 const { visible } = storeToRefs(noticeStore)
 </script>
@@ -18,6 +16,6 @@ const { visible } = storeToRefs(noticeStore)
     class="canvas-cached-result-notice pointer-events-none absolute bottom-3 right-3 z-10 max-w-[14rem] text-right text-[11px] leading-snug text-gray-400 dark:text-gray-500"
     role="status"
   >
-    {{ t('canvas.cachedResult.notice') }}
+    <I18nText k="canvas.cachedResult.notice" />
   </p>
 </template>

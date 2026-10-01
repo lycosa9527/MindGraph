@@ -55,7 +55,7 @@ function handleSignOut(): void {
             class="workshop-navbar-action__icon"
             :size="14"
           />
-          <span class="workshop-navbar-action__label">{{ t('workshop.navbarMe') }}</span>
+          <span class="workshop-navbar-action__label"><I18nText k="workshop.navbarMe" /></span>
         </span>
       </el-button>
     </template>
@@ -75,7 +75,7 @@ function handleSignOut(): void {
         @click="openQuickAccess"
       >
         <LayoutGrid class="ws-popover-icon" />
-        {{ t('sidebar.quickAccessRemote') }}
+        <I18nText k="sidebar.quickAccessRemote" />
       </button>
 
       <button
@@ -84,7 +84,7 @@ function handleSignOut(): void {
         @click="go('profile')"
       >
         <User class="ws-popover-icon" />
-        {{ t('workshop.profile') }}
+        <I18nText k="workshop.profile" />
       </button>
 
       <button
@@ -93,7 +93,7 @@ function handleSignOut(): void {
         @click="go('update-log')"
       >
         <ScrollText class="ws-popover-icon" />
-        {{ t('auth.updateLog') }}
+        <I18nText k="auth.updateLog" />
       </button>
 
       <div class="ws-popover-divider" />
@@ -104,7 +104,7 @@ function handleSignOut(): void {
         @click="handleSignOut"
       >
         <LogOut class="ws-popover-icon" />
-        {{ t('workshop.signOut') }}
+        <I18nText k="workshop.signOut" />
       </button>
     </div>
   </el-popover>

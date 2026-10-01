@@ -6,16 +6,16 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { storeToRefs } from 'pinia'
+
 import { ElScrollbar } from 'element-plus'
 
 import { BookOpen } from '@lucide/vue'
-import { storeToRefs } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useMaitePracticeHistory } from '@/composables/maite/useMaitePracticeHistory'
 import { useMaiteStore } from '@/stores/maite'
-
 import type { MaitePracticeItem } from '@/types/maite'
 
 defineProps<{
@@ -59,9 +59,7 @@ const groupedPractice = computed((): GroupedPractice => {
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
   const yesterdayStart = todayStart - 24 * 60 * 60 * 1000
   const weekStart = todayStart - 7 * 24 * 60 * 60 * 1000
-  const items = showAll.value
-    ? sortedPractice.value
-    : sortedPractice.value.slice(0, INITIAL_LIMIT)
+  const items = showAll.value ? sortedPractice.value : sortedPractice.value.slice(0, INITIAL_LIMIT)
 
   for (const item of items) {
     const time = itemTime(item)
@@ -78,9 +76,7 @@ const groupedPractice = computed((): GroupedPractice => {
   return groups
 })
 
-const hasMore = computed(
-  () => sortedPractice.value.length > INITIAL_LIMIT && !showAll.value
-)
+const hasMore = computed(() => sortedPractice.value.length > INITIAL_LIMIT && !showAll.value)
 const remainingCount = computed(() => sortedPractice.value.length - INITIAL_LIMIT)
 
 const groupLabels = computed(() => ({
@@ -117,10 +113,12 @@ function stageLabel(stage: string): string {
 </script>
 
 <template>
-  <div class="maite-practice-history flex flex-col border-t border-stone-200 relative overflow-hidden">
+  <div
+    class="maite-practice-history flex flex-col border-t border-stone-200 relative overflow-hidden"
+  >
     <div class="px-4 py-3">
       <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
-        {{ t('maite.practice.title') }}
+        <I18nText k="maite.practice.title" />
       </div>
     </div>
 
@@ -130,7 +128,7 @@ function stageLabel(stage: string): string {
           v-if="loading && recentPractice.length === 0"
           class="text-center py-8"
         >
-          <p class="text-xs text-stone-400">{{ t('maite.practice.loading') }}</p>
+          <p class="text-xs text-stone-400"><I18nText k="maite.practice.loading" /></p>
         </div>
 
         <div
@@ -138,12 +136,12 @@ function stageLabel(stage: string): string {
           class="text-center py-8"
         >
           <BookOpen class="w-8 h-8 mx-auto mb-2 text-stone-300" />
-          <p class="text-xs text-stone-400">{{ t('maite.practice.empty') }}</p>
+          <p class="text-xs text-stone-400"><I18nText k="maite.practice.empty" /></p>
         </div>
 
         <template v-else>
           <div
-            v-for="groupKey in (['today', 'yesterday', 'week', 'month'] as const)"
+            v-for="groupKey in ['today', 'yesterday', 'week', 'month'] as const"
             :key="groupKey"
           >
             <div
@@ -160,7 +158,12 @@ function stageLabel(stage: string): string {
                 @click="openSession(item)"
               >
                 <span class="practice-name">
-                  {{ item.title || t('maite.practice.untitled', { id: item.id }) }}
+                  <template v-if="item.title">{{ item.title }}</template
+                  ><I18nText
+                    v-else
+                    k="maite.practice.untitled"
+                    :params="{ id: item.id }"
+                  />
                 </span>
                 <span class="practice-stage">{{ stageLabel(item.current_stage) }}</span>
               </button>
@@ -173,7 +176,10 @@ function stageLabel(stage: string): string {
             class="show-more-btn"
             @click="toggleShowAll"
           >
-            {{ t('sidebar.actions.showMore', { n: remainingCount }) }}
+            <I18nText
+              k="sidebar.actions.showMore"
+              :params="{ n: remainingCount }"
+            />
           </button>
         </template>
       </div>

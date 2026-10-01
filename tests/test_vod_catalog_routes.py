@@ -22,6 +22,7 @@ from services.features.vod.catalog import (
     issue_play_token,
     optional_list_org_filter,
     public_player_config,
+    register_media,
     resolve_catalog_org_id,
     serialize_media,
 )
@@ -233,6 +234,31 @@ def test_public_config_hides_secrets() -> None:
     ):
         empty = public_player_config()
     assert empty["configured"] is False
+
+
+@pytest.mark.asyncio
+async def test_register_media_loads_owner_before_serialize() -> None:
+    """A new row must load owner asynchronously or serialize raises MissingGreenlet."""
+    owner = User(id=3, name="王寸尺", password_hash="x", phone="13800000000")
+    session = AsyncMock()
+    session.add = MagicMock()
+    session.scalar = AsyncMock(return_value=0)
+
+    async def _refresh(row: VodMedia, attribute_names: list[str] | None = None) -> None:
+        assert attribute_names == ["owner"]
+        row.owner = owner
+
+    session.refresh = AsyncMock(side_effect=_refresh)
+    row = await register_media(
+        session,
+        organization_id=1,
+        owner=owner,
+        file_id="5001834821670263841",
+        title="clip",
+        refresh=False,
+    )
+    assert serialize_media(row)["owner_name"] == "王寸尺"
+    session.refresh.assert_awaited_once()
 
 
 def test_serialize_media_omits_cdn_hosts() -> None:

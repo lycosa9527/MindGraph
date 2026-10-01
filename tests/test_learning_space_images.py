@@ -22,10 +22,8 @@ from services.learning_space.image_storage import (
     persist_instruction_images_sync,
     public_instruction_images,
     put_image_bytes_sync,
-    read_image_bytes_sync,
     stored_image_keys,
 )
-from services.utils.tencent_cos_client import upload_bytes
 
 _PNG_1X1 = (
     b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
@@ -59,7 +57,7 @@ def test_public_src_is_access_checked_proxy() -> None:
     """API responses expose a stable download hop, not a presigned COS URL."""
     refs = [f"{IMAGE_REF_PREFIX}7/2026/09/abc.jpg", "https://example.test/a.png"]
     out = public_instruction_images(refs, assignment_id=42)
-    assert out[0] == "/api/learning-space/instruction-images/42/0?proxy=1"
+    assert out[0] == "/api/learning-space/instruction-images/42/0"
     assert out[1] == "https://example.test/a.png"
 
 
@@ -76,7 +74,7 @@ def test_assignment_public_dict_resolves_refs() -> None:
     )
     assignment.id = 88
     payload = assignment_public_dict(assignment)
-    assert payload["instruction_images"] == ["/api/learning-space/instruction-images/88/0?proxy=1"]
+    assert payload["instruction_images"] == ["/api/learning-space/instruction-images/88/0"]
 
 
 def test_schema_rejects_oversized_http_ref() -> None:
@@ -140,13 +138,7 @@ def test_persist_data_url_uses_cos(monkeypatch: pytest.MonkeyPatch) -> None:
         lambda: True,
     )
     monkeypatch.setattr("services.learning_space.image_storage.upload_bytes", _put)
-    monkeypatch.setenv("ENVIRONMENT", "production")
-    monkeypatch.setenv("DEBUG", "false")
-    config.refresh_env_cache()
-    try:
-        stored = persist_instruction_images_sync([_PNG_DATA_URL], owner_id=4)
-    finally:
-        config.refresh_env_cache()
+    stored = persist_instruction_images_sync([_PNG_DATA_URL], owner_id=4)
     assert len(stored) == 1
     assert stored[0].startswith(IMAGE_REF_PREFIX)
     assert uploaded
@@ -174,30 +166,6 @@ def test_local_put_and_delete(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     assert not (tmp_path / "4/2026/09/aa.jpg").exists()
 
 
-def test_read_prefers_local_in_dev_when_cos_enabled(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Dev-local bytes must be readable even when COS credentials are configured."""
-    monkeypatch.setattr(
-        "services.learning_space.image_storage.cos_learning_space_enabled",
-        lambda: True,
-    )
-    monkeypatch.setattr("services.learning_space.image_storage.local_root", lambda: tmp_path)
-    monkeypatch.setenv("DEBUG", "true")
-    config.refresh_env_cache()
-    try:
-        ref = put_image_bytes_sync("4/2026/09/aa.jpg", _PNG_1X1, "image/jpeg")
-        payload = read_image_bytes_sync(stored_image_keys([ref])[0])
-    finally:
-        monkeypatch.delenv("DEBUG", raising=False)
-        config.refresh_env_cache()
-    assert payload is not None
-    body, content_type = payload
-    assert body == _PNG_1X1
-    assert content_type == "image/jpeg"
-
-
 def test_learning_space_prefix_follows_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     """Unset COS_LEARNING_SPACE_PREFIX follows ENVIRONMENT like workshop."""
     monkeypatch.delenv("COS_LEARNING_SPACE_PREFIX", raising=False)
@@ -223,55 +191,5 @@ def test_cos_put_failure_raises(monkeypatch: pytest.MonkeyPatch) -> None:
         lambda: True,
     )
     monkeypatch.setattr("services.learning_space.image_storage.upload_bytes", lambda *_a, **_k: False)
-    monkeypatch.setenv("ENVIRONMENT", "production")
-    monkeypatch.setenv("DEBUG", "false")
-    config.refresh_env_cache()
-    try:
-        with pytest.raises(ValueError, match="COS"):
-            put_image_bytes_sync("4/2026/09/aa.jpg", _PNG_1X1, "image/jpeg")
-    finally:
-        config.refresh_env_cache()
-
-
-def test_dev_prefers_local_when_cos_enabled(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Debug/test hosts store locally even when COS credentials are configured."""
-    calls: list[int] = []
-
-    def _upload(*_args: object, **_kwargs: object) -> bool:
-        calls.append(1)
-        return True
-
-    monkeypatch.setattr(
-        "services.learning_space.image_storage.cos_learning_space_enabled",
-        lambda: True,
-    )
-    monkeypatch.setattr("services.learning_space.image_storage.upload_bytes", _upload)
-    monkeypatch.setattr("services.learning_space.image_storage.local_root", lambda: tmp_path)
-    monkeypatch.setenv("DEBUG", "true")
-    config.refresh_env_cache()
-    try:
-        ref = put_image_bytes_sync("4/2026/09/aa.jpg", _PNG_1X1, "image/jpeg")
-    finally:
-        monkeypatch.delenv("DEBUG", raising=False)
-        config.refresh_env_cache()
-    assert not calls
-    assert ref == f"{IMAGE_REF_PREFIX}4/2026/09/aa.jpg"
-    assert (tmp_path / "4/2026/09/aa.jpg").is_file()
-
-
-def test_upload_bytes_cos_service_error_returns_false(monkeypatch: pytest.MonkeyPatch) -> None:
-    """SDK bucket errors become False so callers can fall back locally in dev."""
-    cos_errors = pytest.importorskip("qcloud_cos.cos_exception")
-
-    def _retry_raises(*_args: object, **_kwargs: object) -> None:
-        raise cos_errors.CosServiceError("PUT", "NoSuchBucket", 404)
-
-    def _fake_cos_client() -> object:
-        return object()
-
-    monkeypatch.setattr("services.utils.tencent_cos_client.get_cos_client", _fake_cos_client)
-    monkeypatch.setattr("services.utils.tencent_cos_client._retry_cos_call", _retry_raises)
-    assert upload_bytes(_PNG_1X1, "dev/learning-space/4/2026/09/aa.jpg") is False
+    with pytest.raises(ValueError, match="COS"):
+        put_image_bytes_sync("4/2026/09/aa.jpg", _PNG_1X1, "image/jpeg")

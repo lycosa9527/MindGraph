@@ -140,9 +140,9 @@ async function handleCreateFolder(): Promise<void> {
   if (!name) return
   const created = await savedDiagramsStore.createFolder(name)
   if (created) {
-    notify.success(t('sidebar.diagramHistory.folderCreated'))
+    notify.successKey('sidebar.diagramHistory.folderCreated')
   } else {
-    notify.error(t('sidebar.diagramHistory.folderCreateFailed'))
+    notify.errorKey('sidebar.diagramHistory.folderCreateFailed')
   }
 }
 
@@ -155,9 +155,9 @@ async function handleRenameFolder(folderId: string, currentName: string): Promis
   if (!name || name === currentName) return
   const ok = await savedDiagramsStore.renameFolder(folderId, name)
   if (ok) {
-    notify.success(t('sidebar.diagramHistory.folderRenamed'))
+    notify.successKey('sidebar.diagramHistory.folderRenamed')
   } else {
-    notify.error(t('sidebar.diagramHistory.folderRenameFailed'))
+    notify.errorKey('sidebar.diagramHistory.folderRenameFailed')
   }
 }
 
@@ -174,7 +174,7 @@ async function handleDeleteFolder(folderId: string): Promise<void> {
     )
     const ok = await savedDiagramsStore.deleteFolder(folderId)
     if (ok) {
-      notify.success(t('sidebar.diagramHistory.folderDeleted'))
+      notify.successKey('sidebar.diagramHistory.folderDeleted')
     } else {
       notify.error(savedDiagramsStore.error || t('sidebar.diagramHistory.folderDeleteFailed'))
     }
@@ -191,10 +191,10 @@ async function handleCreateFolderFromRow(): Promise<string | null> {
   if (!name) return null
   const created = await savedDiagramsStore.createFolder(name)
   if (!created) {
-    notify.error(t('sidebar.diagramHistory.folderCreateFailed'))
+    notify.errorKey('sidebar.diagramHistory.folderCreateFailed')
     return null
   }
-  notify.success(t('sidebar.diagramHistory.folderCreated'))
+  notify.successKey('sidebar.diagramHistory.folderCreated')
   return created.id
 }
 </script>
@@ -206,7 +206,7 @@ async function handleCreateFolderFromRow(): Promise<string | null> {
     <div class="px-4 py-3 flex items-center justify-between gap-2">
       <div class="min-w-0">
         <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
-          {{ t('sidebar.diagramHistory.title') }}
+          <I18nText k="sidebar.diagramHistory.title" />
         </div>
         <div
           v-if="!isBlurred && (diagrams.length > 0 || folders.length > 0)"
@@ -224,7 +224,7 @@ async function handleCreateFolderFromRow(): Promise<string | null> {
       >
         <FolderPlus class="w-3.5 h-3.5 shrink-0" />
         <span class="new-folder-btn__label">
-          {{ t('sidebar.diagramHistory.folderCreateTitle') }}
+          <I18nText k="sidebar.diagramHistory.folderCreateTitle" />
         </span>
       </button>
     </div>
@@ -235,13 +235,13 @@ async function handleCreateFolderFromRow(): Promise<string | null> {
           v-if="fetchError"
           class="archive-error"
         >
-          {{ t('sidebar.diagramHistory.loadFailed') }}
+          <I18nText k="sidebar.diagramHistory.loadFailed" />
         </div>
         <div
           v-if="foldersLoadFailed"
           class="archive-warning"
         >
-          {{ t('sidebar.diagramHistory.foldersLoadFailed') }}
+          <I18nText k="sidebar.diagramHistory.foldersLoadFailed" />
         </div>
 
         <div
@@ -259,13 +259,16 @@ async function handleCreateFolderFromRow(): Promise<string | null> {
         >
           <FileImage class="w-8 h-8 mx-auto mb-2 text-stone-300" />
           <p class="text-xs text-stone-400">
-            {{ t('sidebar.diagramHistory.empty') }}
+            <I18nText k="sidebar.diagramHistory.empty" />
           </p>
           <p
             v-if="hasSaveLimit"
             class="text-xs text-stone-300 mt-1"
           >
-            {{ t('sidebar.diagramHistory.capacity', { n: maxDiagrams }) }}
+            <I18nText
+              k="sidebar.diagramHistory.capacity"
+              :params="{ n: maxDiagrams }"
+            />
           </p>
         </div>
 
@@ -275,7 +278,7 @@ async function handleCreateFolderFromRow(): Promise<string | null> {
             class="archive-section"
           >
             <div class="section-heading">
-              {{ t('sidebar.diagramHistory.foldersSection') }}
+              <I18nText k="sidebar.diagramHistory.foldersSection" />
             </div>
             <div
               v-for="folder in folders"
@@ -331,7 +334,7 @@ async function handleCreateFolderFromRow(): Promise<string | null> {
                   v-if="diagramsForFolder(folder.id).length === 0"
                   class="folder-empty"
                 >
-                  {{ t('sidebar.diagramHistory.folderEmpty') }}
+                  <I18nText k="sidebar.diagramHistory.folderEmpty" />
                 </p>
               </div>
             </div>
@@ -342,7 +345,7 @@ async function handleCreateFolderFromRow(): Promise<string | null> {
             class="archive-section"
           >
             <div class="section-heading">
-              {{ t('sidebar.diagramHistory.uncategorizedSection') }}
+              <I18nText k="sidebar.diagramHistory.uncategorizedSection" />
             </div>
 
             <div
@@ -430,7 +433,7 @@ async function handleCreateFolderFromRow(): Promise<string | null> {
               v-if="uncategorizedDiagrams.length === 0"
               class="uncategorized-empty"
             >
-              {{ t('sidebar.diagramHistory.uncategorizedEmpty') }}
+              <I18nText k="sidebar.diagramHistory.uncategorizedEmpty" />
             </p>
 
             <button
@@ -438,7 +441,10 @@ async function handleCreateFolderFromRow(): Promise<string | null> {
               class="show-more-btn"
               @click="showAllUncategorized = true"
             >
-              {{ t('sidebar.actions.showMore', { n: remainingUncategorizedCount }) }}
+              <I18nText
+                k="sidebar.actions.showMore"
+                :params="{ n: remainingUncategorizedCount }"
+              />
             </button>
 
             <button
@@ -446,7 +452,7 @@ async function handleCreateFolderFromRow(): Promise<string | null> {
               class="show-more-btn"
               @click="showAllUncategorized = false"
             >
-              {{ t('sidebar.actions.showLess') }}
+              <I18nText k="sidebar.actions.showLess" />
             </button>
           </section>
         </template>
@@ -464,7 +470,7 @@ async function handleCreateFolderFromRow(): Promise<string | null> {
           <Lock class="w-5 h-5 text-stone-400" />
         </div>
         <p class="text-xs text-stone-500">
-          {{ t('sidebar.diagramHistory.loginPrompt') }}
+          <I18nText k="sidebar.diagramHistory.loginPrompt" />
         </p>
       </div>
     </div>

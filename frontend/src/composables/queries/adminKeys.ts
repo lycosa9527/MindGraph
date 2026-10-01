@@ -137,6 +137,7 @@ export const adminKeys = {
   },
 
   teachingDesignTemplate: () => [...adminKeys.all, 'teaching-design-template'] as const,
+  userDropdown: () => [...adminKeys.all, 'user-dropdown'] as const,
 
   mindmateExport: {
     all: () => [...adminKeys.all, 'mindmate-export'] as const,

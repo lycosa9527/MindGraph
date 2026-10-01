@@ -6,7 +6,6 @@ import { computed } from 'vue'
 
 import MaiteMathText from '@/components/maite/shared/MaiteMathText.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
-
 import type { MaiteDecomposeTables } from '@/types/maite'
 
 const props = defineProps<{
@@ -33,17 +32,30 @@ function rowText(row: Record<string, string>): string {
 </script>
 
 <template>
-  <div v-if="tables" class="maite-decompose-tables">
-    <section v-for="section in sections" :key="section.key" class="maite-decompose-tables__section">
+  <div
+    v-if="tables"
+    class="maite-decompose-tables"
+  >
+    <section
+      v-for="section in sections"
+      :key="section.key"
+      class="maite-decompose-tables__section"
+    >
       <h4 class="maite-decompose-tables__title">{{ section.title }}</h4>
       <ul class="maite-decompose-tables__list">
-        <li v-for="(row, index) in section.rows" :key="`${section.key}-${index}`">
+        <li
+          v-for="(row, index) in section.rows"
+          :key="`${section.key}-${index}`"
+        >
           <MaiteMathText :text="rowText(row as Record<string, string>)" />
         </li>
       </ul>
     </section>
-    <p v-if="tables.next_question" class="maite-decompose-tables__question">
-      <strong>{{ t('maite.demo.nextQuestion') }}:</strong>
+    <p
+      v-if="tables.next_question"
+      class="maite-decompose-tables__question"
+    >
+      <strong><I18nText k="maite.demo.nextQuestion" />:</strong>
       <MaiteMathText :text="tables.next_question" />
     </p>
   </div>

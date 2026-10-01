@@ -50,7 +50,7 @@ async def get_env_settings(scope: AdminScope = Depends(require_tab_settings_edit
         - schema: Metadata for each setting (type, category, description, validation)
 
     Security:
-        - Masks API keys, secrets, passkeys (shows last 4 chars only)
+        - Masks API keys and secrets (shows last 4 chars only)
         - Hides DATABASE_URL completely
         - JWT_SECRET_KEY is auto-managed via Redis (not in .env)
     """
@@ -76,7 +76,7 @@ async def get_env_settings(scope: AdminScope = Depends(require_tab_settings_edit
                 masked_settings[key] = "***HIDDEN***"
                 continue
 
-            # Mask API keys, secrets, passwords, passkeys
+            # Mask API keys, secrets, and passwords. PASSKEY matches leftover env names.
             if any(sensitive in key for sensitive in ["API_KEY", "SECRET", "PASSWORD", "PASSKEY"]):
                 if len(value) > 4:
                     masked_settings[key] = f"***...{value[-4:]}"

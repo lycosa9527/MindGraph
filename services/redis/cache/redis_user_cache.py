@@ -24,6 +24,7 @@ All Rights Reserved
 Proprietary License
 """
 
+import json
 import logging
 from collections.abc import Mapping
 from datetime import UTC, datetime
@@ -37,6 +38,7 @@ from services.redis import keys as _keys
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
 from services.utils.error_types import REDIS_ERRORS
+from services.utils.quick_access_prompts import clean_quick_access_prompt_overrides
 from services.utils.typing_helpers import redis_hash_to_str
 from utils.auth.role_constants import ROLE_STUDENT, normalize_role
 from utils.db.session_open import system_rls_session, user_rls_session
@@ -54,6 +56,10 @@ def user_cache_hash_needs_refresh(data: Mapping[Any, Any]) -> bool:
     """
     normalized = redis_hash_to_str(data)
     if "bilingual_ui_enabled" not in normalized:
+        return True
+    if "quick_access_remote_visible" not in normalized:
+        return True
+    if "quick_access_prompt_overrides" not in normalized:
         return True
     if normalize_role(normalized.get("role")) != ROLE_STUDENT:
         return False
@@ -112,6 +118,12 @@ class UserCache:
             "v3_ribbon_classic": "1" if getattr(user, "v3_ribbon_classic", False) else "0",
             "v3_ribbon_tab": getattr(user, "v3_ribbon_tab", None) or "",
             "classroom_remote_visible": ("0" if getattr(user, "classroom_remote_visible", None) is False else "1"),
+            "quick_access_remote_visible": ("1" if getattr(user, "quick_access_remote_visible", None) is True else "0"),
+            "quick_access_prompt_overrides": json.dumps(
+                clean_quick_access_prompt_overrides(getattr(user, "quick_access_prompt_overrides", None)),
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
         }
 
     def _deserialize_user(self, data: dict[bytes | str, bytes | str]) -> User:
@@ -195,6 +207,16 @@ class UserCache:
         user.v3_ribbon_tab = normalized.get("v3_ribbon_tab") or None
         remote_visible = normalized.get("classroom_remote_visible", "1")
         user.classroom_remote_visible = remote_visible not in ("0", "false", "False")
+        quick_visible = normalized.get("quick_access_remote_visible", "0")
+        user.quick_access_remote_visible = quick_visible in ("1", "true", "True")
+        prompt_raw = normalized.get("quick_access_prompt_overrides", "")
+        parsed_prompts: object = None
+        if prompt_raw:
+            try:
+                parsed_prompts = json.loads(prompt_raw)
+            except json.JSONDecodeError:
+                parsed_prompts = None
+        user.quick_access_prompt_overrides = clean_quick_access_prompt_overrides(parsed_prompts) or None
 
         return user
 

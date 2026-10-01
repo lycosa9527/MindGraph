@@ -15,10 +15,10 @@ import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 
 import { type EventTypes, eventBus } from '@/composables/core/useEventBus'
-import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
+import { isPlaceholderText } from '@/composables/editor/placeholderText'
 import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
-import { isLearningSheetBlankDisplayText } from '@/stores/specLoader/utils'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { isLearningSheetBlankDisplayText } from '@/stores/specLoader/utils'
 import type { DiagramType } from '@/types'
 import type { NodeSuggestion } from '@/types/panels'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
@@ -616,9 +616,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     const nodes = diagramStore.data?.nodes ?? []
     const connections = diagramStore.data?.connections
     const dataDimension = (diagramStore.data as Record<string, unknown>)?.dimension as
-      | string
-      | null
-      | undefined
+      string | null | undefined
     const stage =
       panelsStore.nodePalettePanel.stage ??
       getDefaultStage(diagramType.value, nodes, connections, dataDimension)
@@ -769,9 +767,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
       const nodes = diagramStore.data?.nodes ?? []
       const connections = diagramStore.data?.connections
       const dataDimension = (diagramStore.data as Record<string, unknown>)?.dimension as
-        | string
-        | null
-        | undefined
+        string | null | undefined
       const stage =
         panelsStore.nodePalettePanel.stage ??
         (isStaged ? getDefaultStage(dt, nodes, connections, dataDimension) : undefined)
@@ -969,9 +965,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     const nodes = diagramStore.data?.nodes ?? []
     const connections = diagramStore.data?.connections
     const dataDimension = (diagramStore.data as Record<string, unknown>)?.dimension as
-      | string
-      | null
-      | undefined
+      string | null | undefined
     return getDefaultStage(dt, nodes, connections, dataDimension)
   })
 

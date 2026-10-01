@@ -208,7 +208,7 @@ export function useAdminRoleControl() {
           break
       }
     } catch {
-      notify.error(t('admin.roleMembersLoadFailed'))
+      notify.errorKey('admin.roleMembersLoadFailed')
     }
   }
 
@@ -254,7 +254,7 @@ export function useAdminRoleControl() {
       })
     } catch {
       addSearchResults.value = []
-      notify.error(t('admin.userSearchFailed'))
+      notify.errorKey('admin.userSearchFailed')
     } finally {
       addSearchLoading.value = false
       addSearchHasRun.value = true
@@ -288,12 +288,12 @@ export function useAdminRoleControl() {
   async function grantSchoolManager(user: CandidateUser): Promise<boolean> {
     const orgId = user.organization_id
     if (orgId == null) {
-      notify.error(t('admin.schoolManagerGrantRequiresOrg'))
+      notify.errorKey('admin.schoolManagerGrantRequiresOrg')
       return false
     }
     try {
       await addManagerMutation.mutateAsync({ orgId, userId: user.id })
-      notify.success(t('admin.roleAssignSuccess'))
+      notify.successKey('admin.roleAssignSuccess')
       return true
     } catch (err) {
       const message =
@@ -306,7 +306,7 @@ export function useAdminRoleControl() {
   async function removeSchoolManager(userId: number, orgId: number): Promise<boolean> {
     try {
       await removeManagerMutation.mutateAsync({ orgId, userId })
-      notify.success(t('admin.managerRoleRemoved'))
+      notify.successKey('admin.managerRoleRemoved')
       return true
     } catch (err) {
       const message =
@@ -319,7 +319,7 @@ export function useAdminRoleControl() {
   async function updateUserRole(userId: number, role: UserRole): Promise<boolean> {
     try {
       await updateRoleMutation.mutateAsync({ userId, role })
-      notify.success(t('admin.roleAssignSuccess'))
+      notify.successKey('admin.roleAssignSuccess')
       return true
     } catch (err) {
       const message = err instanceof Error ? err.message : t('admin.roleAssignFailed')
@@ -381,7 +381,7 @@ export function useAdminRoleControl() {
         await loadActiveTab()
       }
     } catch {
-      notify.error(t('admin.roleAssignFailed'))
+      notify.errorKey('admin.roleAssignFailed')
     } finally {
       revokingId.value = null
     }

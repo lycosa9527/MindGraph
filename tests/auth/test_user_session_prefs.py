@@ -27,6 +27,11 @@ def test_user_preference_fields_include_ui_version_and_languages() -> None:
     user.v3_ribbon_classic = True
     user.v3_ribbon_tab = "design"
     user.classroom_remote_visible = False
+    user.quick_access_remote_visible = True
+    user.quick_access_prompt_overrides = {
+        "landing.international.example1": "  photosynthesis map  ",
+        "other": "skip",
+    }
     payload = user_preference_fields(user)
     assert payload["ui_language"] == "zh"
     assert payload["prompt_language"] == "zh"
@@ -40,6 +45,10 @@ def test_user_preference_fields_include_ui_version_and_languages() -> None:
     assert payload["v3_ribbon_classic"] is True
     assert payload["v3_ribbon_tab"] == "design"
     assert payload["classroom_remote_visible"] is False
+    assert payload["quick_access_remote_visible"] is True
+    assert payload["quick_access_prompt_overrides"] == {
+        "landing.international.example1": "photosynthesis map",
+    }
 
 
 def test_user_preference_fields_defaults_when_unset() -> None:
@@ -58,6 +67,8 @@ def test_user_preference_fields_defaults_when_unset() -> None:
     assert payload["v3_ribbon_classic"] is False
     assert payload["v3_ribbon_tab"] is None
     assert payload["classroom_remote_visible"] is True
+    assert payload["quick_access_remote_visible"] is False
+    assert not payload["quick_access_prompt_overrides"]
 
 
 def test_language_preference_patch_fields_are_the_settings_subset() -> None:
@@ -129,6 +140,30 @@ def test_diagram_preferences_accepts_classroom_remote_visible() -> None:
     """Classroom remote open state can PATCH without 学段."""
     body = DiagramPreferencesUpdate.model_validate({"classroom_remote_visible": False})
     assert body.classroom_remote_visible is False
+    assert "education_stage" not in body.model_fields_set
+
+
+def test_diagram_preferences_accepts_quick_access_remote_visible() -> None:
+    """Quick-access remote open state can PATCH without 学段."""
+    body = DiagramPreferencesUpdate.model_validate({"quick_access_remote_visible": True})
+    assert body.quick_access_remote_visible is True
+    assert "education_stage" not in body.model_fields_set
+
+
+def test_diagram_preferences_keeps_custom_quick_access_prompts() -> None:
+    """Custom inspiration text is stored; blanks and unknown keys are dropped."""
+    body = DiagramPreferencesUpdate.model_validate(
+        {
+            "quick_access_prompt_overrides": {
+                "landing.international.example2": "  custom prompt  ",
+                "landing.international.example3": "   ",
+                "not-a-prompt": "skip",
+            }
+        }
+    )
+    assert body.quick_access_prompt_overrides == {
+        "landing.international.example2": "custom prompt",
+    }
     assert "education_stage" not in body.model_fields_set
 
 

@@ -187,7 +187,7 @@ export function useAdminMindBotConfig(options?: {
         featureDisabled.value = result.featureDisabled
         configsHydrated = true
       } catch {
-        notify.error(t('admin.mindbot.loadError'))
+        notify.errorKey('admin.mindbot.loadError')
         configs.value = []
         featureDisabled.value = false
       } finally {
@@ -278,13 +278,13 @@ export function useAdminMindBotConfig(options?: {
   async function createConfig(): Promise<boolean> {
     const payload = buildSavePayload(true)
     if (payload == null) {
-      notify.error(t('admin.mindbot.saveError'))
+      notify.errorKey('admin.mindbot.saveError')
       return false
     }
     saving.value = true
     try {
       const saved = await createConfigMutation.mutateAsync(payload)
-      notify.success(t('admin.mindbot.saved'))
+      notify.successKey('admin.mindbot.saved')
       await loadConfigs(true)
       const row = configs.value.find((item) => item.id === saved.id) ?? saved
       fillForm(row)
@@ -302,18 +302,18 @@ export function useAdminMindBotConfig(options?: {
   async function updateConfig(): Promise<boolean> {
     const configId = editingConfigId.value
     if (configId == null) {
-      notify.error(t('admin.mindbot.saveError'))
+      notify.errorKey('admin.mindbot.saveError')
       return false
     }
     const payload = buildSavePayload(false)
     if (payload == null) {
-      notify.error(t('admin.mindbot.saveError'))
+      notify.errorKey('admin.mindbot.saveError')
       return false
     }
     saving.value = true
     try {
       const saved = await updateConfigMutation.mutateAsync({ configId, body: payload })
-      notify.success(t('admin.mindbot.saved'))
+      notify.successKey('admin.mindbot.saved')
       await loadConfigs(true)
       const row = configs.value.find((item) => item.id === saved.id) ?? saved
       fillForm(row)
@@ -359,9 +359,9 @@ export function useAdminMindBotConfig(options?: {
         configs.value[idx] = row as unknown as MindbotConfigRow
       }
       fillForm(row as unknown as MindbotConfigRow)
-      notify.success(t('admin.mindbot.callbackRotated'))
+      notify.successKey('admin.mindbot.callbackRotated')
     } catch {
-      notify.error(t('admin.mindbot.loadError'))
+      notify.errorKey('admin.mindbot.loadError')
     } finally {
       rotating.value = false
     }
@@ -381,7 +381,7 @@ export function useAdminMindBotConfig(options?: {
     }
     try {
       await deleteConfigMutation.mutateAsync(row.id)
-      notify.success(t('admin.mindbot.deleted'))
+      notify.successKey('admin.mindbot.deleted')
       await loadConfigs(true)
       return true
     } catch (err) {
@@ -394,9 +394,9 @@ export function useAdminMindBotConfig(options?: {
   async function copyUrl(text: string): Promise<void> {
     try {
       await navigator.clipboard.writeText(text)
-      notify.success(t('admin.mindbot.copied'))
+      notify.successKey('admin.mindbot.copied')
     } catch {
-      notify.error(t('admin.mindbot.saveError'))
+      notify.errorKey('admin.mindbot.saveError')
     }
   }
 

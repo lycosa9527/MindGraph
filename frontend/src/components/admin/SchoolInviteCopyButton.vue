@@ -31,8 +31,8 @@ const shareText = computed(() =>
 async function copyInvite(): Promise<void> {
   await copySchoolInvitationPayload(
     shareText.value,
-    () => notify.success(t('notification.copied')),
-    () => notify.error(t('notification.copyFailed'))
+    () => notify.successKey('notification.copied'),
+    () => notify.errorKey('notification.copyFailed')
   )
 }
 </script>
@@ -54,7 +54,7 @@ async function copyInvite(): Promise<void> {
       @click="copyInvite"
     >
       <el-icon class="el-icon--left"><DocumentCopy /></el-icon>
-      {{ t('admin.copyShareMessage') }}
+      <I18nText k="admin.copyShareMessage" />
     </el-button>
   </div>
 </template>

@@ -9,8 +9,9 @@ Proprietary License
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from fastapi import WebSocket
 from fastapi.websockets import WebSocketState
@@ -20,8 +21,30 @@ from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
+# Reconnectable close when this socket can no longer be given room frames.
+DELIVERY_FAILURE_CLOSE_CODE = 1011
+
 # room_key -> user_id -> handle
 ACTIVE_CONNECTIONS: Dict[str, Dict[int, "MindmateCollabWsHandle"]] = {}
+
+# Frames a peer must not lose. Stream chunks may be dropped; the end frame has the full text.
+_RETAINED_FRAME_TYPES = frozenset(
+    {
+        "user_message",
+        "ai_message_end",
+        "joined",
+        "snapshot",
+        "error",
+        "pong",
+        "session_closing",
+        "room_idle_warning",
+        "user_joined",
+        "user_left",
+        "read_cursor",
+        "read_cursors",
+        "resync",
+    },
+)
 
 
 class MindmateCollabWsHandle:
@@ -29,9 +52,11 @@ class MindmateCollabWsHandle:
 
     def __init__(self, websocket: WebSocket) -> None:
         self.websocket = websocket
-        self.send_queue: asyncio.Queue = asyncio.Queue(maxsize=256)
+        self.send_queue: asyncio.Queue[tuple[str, str]] = asyncio.Queue(maxsize=256)
         self.qsize_high_water = 0
         self.writer_task: Optional[asyncio.Task] = None
+        # False only during join, until the snapshot is queued ahead of fan-out.
+        self.accepts_fanout = True
 
 
 def room_key_for_code(code: str) -> str:
@@ -94,6 +119,111 @@ def local_participant_count(code: str) -> int:
     """Count in-process sockets for a room (dev/single-node diagnostics)."""
     key = room_key_for_code(code)
     return len(ACTIVE_CONNECTIONS.get(key, {}))
+
+
+def frame_must_be_delivered(data_str: str) -> bool:
+    """True when dropping this outbound frame would hide a chat line."""
+    try:
+        payload = json.loads(data_str)
+    except json.JSONDecodeError:
+        return False
+    if not isinstance(payload, dict):
+        return False
+    return payload.get("type") in _RETAINED_FRAME_TYPES
+
+
+def _is_stream_chunk(item: tuple[str, str]) -> bool:
+    if item[0] != "text":
+        return False
+    try:
+        payload = json.loads(item[1])
+    except json.JSONDecodeError:
+        return False
+    return isinstance(payload, dict) and payload.get("type") == "ai_message_chunk"
+
+
+def _drop_one_stream_chunk(handle: MindmateCollabWsHandle) -> bool:
+    """Free one queue slot by discarding an AI stream chunk. Returns False if none exist."""
+    kept: list[tuple[str, str]] = []
+    dropped = False
+    while True:
+        try:
+            item = handle.send_queue.get_nowait()
+        except asyncio.QueueEmpty:
+            break
+        if not dropped and _is_stream_chunk(item):
+            dropped = True
+            continue
+        kept.append(item)
+    for item in kept:
+        try:
+            handle.send_queue.put_nowait(item)
+        except asyncio.QueueFull:
+            logger.warning("[MindmateCollabWS] outbound queue overflow while compacting")
+            break
+    return dropped
+
+
+def enqueue_text(handle: MindmateCollabWsHandle, data_str: str, *, critical: bool) -> bool:
+    """
+    Queue one outbound frame.
+
+    A full queue drops an AI chunk to keep chat lines. Returns False when a
+    critical frame still cannot be queued.
+    """
+    item = ("text", data_str)
+    try:
+        handle.send_queue.put_nowait(item)
+    except asyncio.QueueFull:
+        if not critical or not _drop_one_stream_chunk(handle):
+            logger.warning(
+                "[MindmateCollabWS] outbound queue full critical=%s",
+                critical,
+            )
+            return False
+        try:
+            handle.send_queue.put_nowait(item)
+        except asyncio.QueueFull:
+            logger.warning("[MindmateCollabWS] outbound queue full after compacting")
+            return False
+    handle.qsize_high_water = max(handle.qsize_high_water, handle.send_queue.qsize())
+    return True
+
+
+def enqueue_json(handle: MindmateCollabWsHandle, message: Dict[str, Any]) -> bool:
+    """Serialize and queue one server frame. Retained frame types are not dropped for chunks."""
+    data_str = json.dumps(message, ensure_ascii=False)
+    critical = message.get("type") in _RETAINED_FRAME_TYPES
+    return enqueue_text(handle, data_str, critical=critical)
+
+
+def enqueue_transcript_resync() -> None:
+    """Ask sockets already in a seminar to pull lines missed while fan-out was down."""
+    frame = {"type": "resync"}
+    for bucket in list(ACTIVE_CONNECTIONS.values()):
+        for handle in list(bucket.values()):
+            if not handle.accepts_fanout:
+                continue
+            if enqueue_json(handle, frame):
+                continue
+            schedule_close_slow_consumer(handle)
+
+
+_SLOW_CONSUMER_CLOSES: set[asyncio.Task[None]] = set()
+
+
+def schedule_close_slow_consumer(handle: MindmateCollabWsHandle) -> None:
+    """Close a socket that cannot accept another chat frame so the client reloads history."""
+    task = asyncio.create_task(
+        _close_handle(
+            handle,
+            DELIVERY_FAILURE_CLOSE_CODE,
+            "outbound queue full",
+        ),
+        name="mindmate-collab-slow-consumer",
+    )
+    _SLOW_CONSUMER_CLOSES.add(task)
+    task.add_done_callback(_SLOW_CONSUMER_CLOSES.discard)
 
 
 async def shutdown_connection_handle(handle: MindmateCollabWsHandle) -> None:

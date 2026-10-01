@@ -42,13 +42,29 @@ const answerMode = computed({
 })
 
 const colorOptions = computed(() => [
-  { label: t('canvas.exportOptions.colorColored'), value: 'color' as const },
-  { label: t('canvas.exportOptions.colorWireframe'), value: 'wireframe' as const },
+  {
+    label: t('canvas.exportOptions.colorColored'),
+    labelKey: 'canvas.exportOptions.colorColored',
+    value: 'color' as const,
+  },
+  {
+    label: t('canvas.exportOptions.colorWireframe'),
+    labelKey: 'canvas.exportOptions.colorWireframe',
+    value: 'wireframe' as const,
+  },
 ])
 
 const answerOptions = computed(() => [
-  { label: t('canvas.exportOptions.answerInclude'), value: 'include' as const },
-  { label: t('canvas.exportOptions.answerExclude'), value: 'exclude' as const },
+  {
+    label: t('canvas.exportOptions.answerInclude'),
+    labelKey: 'canvas.exportOptions.answerInclude',
+    value: 'include' as const,
+  },
+  {
+    label: t('canvas.exportOptions.answerExclude'),
+    labelKey: 'canvas.exportOptions.answerExclude',
+    value: 'exclude' as const,
+  },
 ])
 </script>
 

@@ -9,10 +9,9 @@ import { Search } from '@element-plus/icons-vue'
 import AdminSwissPagination from '@/components/admin/AdminSwissPagination.vue'
 import AdminUserEditModal from '@/components/admin/AdminUserEditModal.vue'
 import AdminUsersTable from '@/components/admin/AdminUsersTable.vue'
-
-import { useAdminUsersSchoolFilterRoute } from '@/composables/admin/useAdminUsersSchoolFilterRoute'
-import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useLanguage, useNotifications } from '@/composables'
+import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
+import { useAdminUsersSchoolFilterRoute } from '@/composables/admin/useAdminUsersSchoolFilterRoute'
 import { useAdminSchoolUsers } from '@/composables/queries'
 import { useAdminPanelStore, useAuthStore } from '@/stores'
 
@@ -55,7 +54,9 @@ const editModalVisible = ref(false)
 const editUserId = ref<number | null>(null)
 
 const isLoading = computed(() => schoolUsersQuery.isFetching.value)
-const users = computed(() => (schoolUsersQuery.data.value?.users ?? []) as Record<string, unknown>[])
+const users = computed(
+  () => (schoolUsersQuery.data.value?.users ?? []) as Record<string, unknown>[]
+)
 
 watch(
   () => schoolUsersQuery.data.value?.pagination,
@@ -73,7 +74,7 @@ async function loadUsers() {
   try {
     await schoolUsersQuery.refetch()
   } catch {
-    notify.error(t('admin.schoolUsersLoadError'))
+    notify.errorKey('admin.schoolUsersLoadError')
   }
 }
 
@@ -104,9 +105,7 @@ function goToNextUserPage() {
   }
 }
 
-const showPaginationBar = computed(
-  () => !isLoading.value && schoolUsersQuery.data.value != null
-)
+const showPaginationBar = computed(() => !isLoading.value && schoolUsersQuery.data.value != null)
 
 const pageInfo = computed(() => {
   const p = pagination.value
@@ -207,7 +206,7 @@ watch(
         #header
       >
         <div class="flex items-center justify-between flex-wrap gap-4">
-          <span class="font-medium">{{ t('admin.schoolUsersTitle') }}</span>
+          <span class="font-medium"><I18nText k="admin.schoolUsersTitle" /></span>
           <div class="admin-swiss-toolbar">
             <el-input
               v-model="searchQuery"
@@ -226,7 +225,7 @@ watch(
               class="admin-swiss-btn"
               @click="doSearch"
             >
-              {{ t('admin.search') }}
+              <I18nText k="admin.search" />
             </el-button>
           </div>
         </div>

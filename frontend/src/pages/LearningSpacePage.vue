@@ -6,35 +6,34 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { AlertTriangle, ArrowLeft, ClipboardList, Clock3, FileText, Users } from '@lucide/vue'
+
 import LearningSpaceAssignModal from '@/components/learningSpace/LearningSpaceAssignModal.vue'
 import LearningSpaceHeader from '@/components/learningSpace/LearningSpaceHeader.vue'
 import LearningSpaceRequirementsModal from '@/components/learningSpace/LearningSpaceRequirementsModal.vue'
-import LearningSpaceThumbCover from '@/components/learningSpace/LearningSpaceThumbCover.vue'
 import LearningSpaceReviewModal, {
   type ReviewDraft,
 } from '@/components/learningSpace/LearningSpaceReviewModal.vue'
 import LearningSpaceSubmissionStatusModal from '@/components/learningSpace/LearningSpaceSubmissionStatusModal.vue'
 import { swissGlassConfirm, useLanguage, useNotifications } from '@/composables'
 import {
+  type AssignmentFilter,
+  type StudentTab,
+  type TeacherTab,
   assignmentDiagramType,
   assignmentIsClosed,
   assignmentProgress,
   filterTeacherAssignments,
   formatLsDateTime,
-  formatLsStudentLabel,
   greetHourLabel,
   studentAssignmentDone,
   studentAssignmentPending,
   studentCanOpenAssignment,
-  studentCanResubmitAssignment,
-  studentCanViewAssignmentWall,
-  type AssignmentFilter,
-  type StudentTab,
-  type TeacherTab,
 } from '@/composables/learningSpace/lsHelpers'
 import { useAuthStore } from '@/stores'
 import { AUTH_USER_STORAGE_KEY } from '@/stores/auth'
 import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
+import '@/styles/learning-space.css'
 import {
   type LearningAssignment,
   type LearningClassRow,
@@ -54,15 +53,6 @@ import {
   studentChangePassword,
   submitStudentAssignment,
 } from '@/utils/learningSpaceApi'
-import {
-  AlertTriangle,
-  ArrowLeft,
-  ClipboardList,
-  Clock3,
-  FileText,
-  Users,
-} from '@lucide/vue'
-import '@/styles/learning-space.css'
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -103,13 +93,15 @@ const confirmPassword = ref('')
 const changingPassword = ref(false)
 
 const mustChangePassword = computed(
-  () =>
-    context.value?.must_change_password === true ||
-    authStore.user?.mustChangePassword === true
+  () => context.value?.must_change_password === true || authStore.user?.mustChangePassword === true
 )
 
 const canLearn = computed(() => {
-  if (context.value?.can_learn === true || context.value?.role === 'student' || context.value?.role === 'learner') {
+  if (
+    context.value?.can_learn === true ||
+    context.value?.role === 'student' ||
+    context.value?.role === 'learner'
+  ) {
     return true
   }
   if (context.value?.can_manage_classes === true || context.value?.role === 'pilot_teacher') {
@@ -127,15 +119,9 @@ const canReview = computed(
 const canPublish = computed(() => context.value?.can_publish === true)
 const canOpenClassAdmin = computed(() => context.value?.can_manage_classes === true)
 const preferTeacherShell = ref(true)
-const isStudent = computed(
-  () => canLearn.value && (!canReview.value || !preferTeacherShell.value)
-)
-const isPilot = computed(
-  () => canReview.value && (!canLearn.value || preferTeacherShell.value)
-)
-const showLsHeader = computed(
-  () => isStudent.value || isPilot.value || loading.value
-)
+const isStudent = computed(() => canLearn.value && (!canReview.value || !preferTeacherShell.value))
+const isPilot = computed(() => canReview.value && (!canLearn.value || preferTeacherShell.value))
+const showLsHeader = computed(() => isStudent.value || isPilot.value || loading.value)
 const showShellSwitch = computed(() => canLearn.value && canReview.value)
 
 const userName = computed(
@@ -221,11 +207,7 @@ const studentUrgentCount = computed(
     ).length
 )
 
-const wallSubmissions = computed(() =>
-  submissions.value.filter((s) => Boolean(String(s.diagram_id || '').trim()))
-)
-
-const studentCanViewDetailWall = computed(() => studentCanViewAssignmentWall(studentDetail.value))
+const wallSubmissions = computed(() => submissions.value.filter((s) => s.status === 'submitted'))
 
 const detailClassWall = computed(() => {
   const id = studentDetail.value?.id
@@ -255,7 +237,10 @@ const myPortfolio = computed(() => {
   const fromWall = classWall.value.filter((s) => Number(s.student_user_id) === Number(uid))
   if (fromWall.length) return fromWall
   return studentAssignments.value
-    .filter((a) => a.submission && (a.submission.status === 'submitted' || a.submission.status === 'returned'))
+    .filter(
+      (a) =>
+        a.submission && (a.submission.status === 'submitted' || a.submission.status === 'returned')
+    )
     .map((a) => ({
       ...a.submission!,
       assignment_id: a.id,
@@ -318,7 +303,7 @@ async function loadStudentAssignmentsIfReady(): Promise<void> {
       }
     }
   } catch {
-    notify.error(t('learningSpace.loadFailed'))
+    notify.errorKey('learningSpace.loadFailed')
   }
 }
 
@@ -331,7 +316,11 @@ async function loadContext(): Promise<void> {
       context.value.can_manage_classes === true ||
       context.value.role === 'pilot_teacher' ||
       context.value.role === 'assistant'
-    if (context.value.can_learn || context.value.role === 'student' || context.value.role === 'learner') {
+    if (
+      context.value.can_learn ||
+      context.value.role === 'student' ||
+      context.value.role === 'learner'
+    ) {
       await loadStudentAssignmentsIfReady()
     }
     if (
@@ -360,7 +349,7 @@ async function loadContext(): Promise<void> {
       seedStudentContextFromAuth()
       await loadStudentAssignmentsIfReady()
     } else {
-      notify.error(t('learningSpace.loadFailed'))
+      notify.errorKey('learningSpace.loadFailed')
     }
   } finally {
     loading.value = false
@@ -390,7 +379,7 @@ async function loadTeacherAssignments(): Promise<void> {
     const res = await listTeacherAssignments(selectedClassId.value)
     teacherAssignments.value = res.items
   } catch {
-    notify.error(t('learningSpace.loadFailed'))
+    notify.errorKey('learningSpace.loadFailed')
   }
 }
 
@@ -419,7 +408,7 @@ async function loadSubmissionsAndRoster(): Promise<void> {
       }
     }
   } catch {
-    notify.error(t('learningSpace.loadFailed'))
+    notify.errorKey('learningSpace.loadFailed')
   }
 }
 
@@ -467,7 +456,7 @@ function openCreateAssignmentModal(): void {
   }
   const owned = publishableClasses.value
   if (!owned.length) {
-    notify.warning(t('learningSpace.noPublishableClass'))
+    notify.warningKey('learningSpace.noPublishableClass')
     return
   }
   if (selectedClassId.value == null || !owned.some((c) => c.id === selectedClassId.value)) {
@@ -484,11 +473,11 @@ async function onAssignmentCreated(): Promise<void> {
 
 async function onChangePassword(): Promise<void> {
   if (newPassword.value.length < 6) {
-    notify.warning(t('learningSpace.passwordMin6'))
+    notify.warningKey('learningSpace.passwordMin6')
     return
   }
   if (newPassword.value !== confirmPassword.value) {
-    notify.warning(t('auth.modal.passwordMismatch'))
+    notify.warningKey('auth.modal.passwordMismatch')
     return
   }
   changingPassword.value = true
@@ -501,7 +490,7 @@ async function onChangePassword(): Promise<void> {
     if (context.value) {
       context.value.must_change_password = false
     }
-    notify.success(t('learningSpace.savePassword'))
+    notify.successKey('learningSpace.savePassword')
   } catch (error) {
     const message = error instanceof Error ? error.message.trim() : ''
     notify.error(message || t('learningSpace.saveFailed'))
@@ -513,13 +502,13 @@ async function onChangePassword(): Promise<void> {
     const res = await listStudentAssignments()
     studentAssignments.value = res.items
   } catch {
-    notify.error(t('learningSpace.loadFailed'))
+    notify.errorKey('learningSpace.loadFailed')
   }
 }
 
 async function onOpenStudentAssignment(a: LearningAssignment): Promise<void> {
   if (!studentCanOpenAssignment(a)) {
-    notify.warning(t('learningSpace.homeworkClosed'))
+    notify.warningKey('learningSpace.homeworkClosed')
     return
   }
   try {
@@ -532,32 +521,28 @@ async function onOpenStudentAssignment(a: LearningAssignment): Promise<void> {
       },
     })
   } catch {
-    notify.error(t('learningSpace.openFailed'))
+    notify.errorKey('learningSpace.openFailed')
   }
 }
 
 async function onSubmitStudent(a: LearningAssignment): Promise<void> {
   try {
-    await swissGlassConfirm(
-      t('learningSpace.submitConfirm'),
-      t('learningSpace.submit'),
-      {
-        confirmButtonText: t('learningSpace.submit'),
-        cancelButtonText: t('common.cancel'),
-        type: 'warning',
-      }
-    )
+    await swissGlassConfirm(t('learningSpace.submitConfirm'), t('learningSpace.submit'), {
+      confirmButtonText: t('learningSpace.submit'),
+      cancelButtonText: t('common.cancel'),
+      type: 'warning',
+    })
   } catch {
     return
   }
   try {
     await submitStudentAssignment(a.id)
-    notify.success(t('learningSpace.submitSuccess'))
+    notify.successKey('learningSpace.submitSuccess')
     const res = await listStudentAssignments()
     studentAssignments.value = res.items
     studentDetailId.value = null
   } catch {
-    notify.error(t('learningSpace.submitFailed'))
+    notify.errorKey('learningSpace.submitFailed')
   }
 }
 
@@ -590,10 +575,10 @@ async function onReviewSave(payload: { submissionId: number; draft: ReviewDraft 
     submissions.value = submissions.value.map((s) =>
       s.id === payload.submissionId ? { ...s, ...updated } : s
     )
-    notify.success(t('learningSpace.reviewSaved'))
+    notify.successKey('learningSpace.reviewSaved')
     showReview.value = false
   } catch {
-    notify.error(t('learningSpace.saveFailed'))
+    notify.errorKey('learningSpace.saveFailed')
   }
 }
 
@@ -642,7 +627,7 @@ async function onDeleteAssignment(a: LearningAssignment): Promise<void> {
   deletingAssignmentId.value = a.id
   try {
     await deleteTeacherAssignment(a.id)
-    notify.success(t('learningSpace.assignmentDeleted'))
+    notify.successKey('learningSpace.assignmentDeleted')
     if (selectedAssignmentId.value === a.id) {
       selectedAssignmentId.value = null
     }
@@ -653,7 +638,7 @@ async function onDeleteAssignment(a: LearningAssignment): Promise<void> {
     await loadTeacherAssignments()
     await refreshAllClassAssignments()
   } catch {
-    notify.error(t('learningSpace.deleteFailed'))
+    notify.errorKey('learningSpace.deleteFailed')
   } finally {
     deletingAssignmentId.value = null
   }
@@ -704,7 +689,7 @@ watch(
           v-if="loading"
           class="ls-muted"
         >
-          {{ t('common.loading') }}
+          <I18nText k="common.loading" />
         </p>
 
         <!-- Password gate -->
@@ -712,11 +697,14 @@ watch(
           v-else-if="isStudent && mustChangePassword"
           class="ls-gate"
         >
-          <h2>{{ t('learningSpace.changePasswordTitle') }}</h2>
-          <p class="ls-muted">{{ t('learningSpace.changePasswordHint') }}</p>
-          <div class="ls-form-grid" style="margin-top: 1rem">
+          <h2><I18nText k="learningSpace.changePasswordTitle" /></h2>
+          <p class="ls-muted"><I18nText k="learningSpace.changePasswordHint" /></p>
+          <div
+            class="ls-form-grid"
+            style="margin-top: 1rem"
+          >
             <label class="ls-field">
-              {{ t('auth.modal.newPassword') }}
+              <I18nText k="auth.modal.newPassword" />
               <input
                 v-model="newPassword"
                 type="password"
@@ -724,7 +712,7 @@ watch(
               />
             </label>
             <label class="ls-field">
-              {{ t('auth.modal.confirmPassword') }}
+              <I18nText k="auth.modal.confirmPassword" />
               <input
                 v-model="confirmPassword"
                 type="password"
@@ -735,13 +723,11 @@ watch(
               type="button"
               class="ls-btn ls-btn--primary"
               :disabled="
-                changingPassword ||
-                newPassword.length < 6 ||
-                newPassword !== confirmPassword
+                changingPassword || newPassword.length < 6 || newPassword !== confirmPassword
               "
               @click="onChangePassword"
             >
-              {{ t('learningSpace.savePassword') }}
+              <I18nText k="learningSpace.savePassword" />
             </button>
           </div>
         </section>
@@ -752,14 +738,20 @@ watch(
           <template v-if="teacherTab === 'dashboard' && selectedAssignmentId == null">
             <div class="ls-page-head">
               <div>
-                <h1>{{ t(greetKey, { name: userName }) }}</h1>
+                <h1>
+                  <I18nText
+                    :k="greetKey"
+                    :params="{ name: userName }"
+                  />
+                </h1>
                 <p>
-                  {{
-                    t('learningSpace.dashboardHint', {
+                  <I18nText
+                    k="learningSpace.dashboardHint"
+                    :params="{
                       pending: teacherMetrics.pending,
                       unsubmitted: teacherMetrics.unsubmitted,
-                    })
-                  }}
+                    }"
+                  />
                 </p>
               </div>
               <button
@@ -768,7 +760,7 @@ watch(
                 class="ls-btn ls-btn--primary"
                 @click="openCreateAssignmentModal"
               >
-                {{ t('learningSpace.createAssignment') }}
+                <I18nText k="learningSpace.createAssignment" />
               </button>
               <button
                 v-else-if="canOpenClassAdmin"
@@ -776,7 +768,7 @@ watch(
                 class="ls-btn ls-btn--primary"
                 @click="goCreateClass"
               >
-                {{ t('learningSpace.createClass') }}
+                <I18nText k="learningSpace.createClass" />
               </button>
             </div>
 
@@ -790,9 +782,9 @@ watch(
                   class="ls-metric__icon"
                   :size="20"
                 />
-                <div class="ls-metric__label">{{ t('learningSpace.metricPending') }}</div>
+                <div class="ls-metric__label"><I18nText k="learningSpace.metricPending" /></div>
                 <div class="ls-metric__value">{{ teacherMetrics.pending }}</div>
-                <div class="ls-metric__hint">{{ t('learningSpace.metricPendingHint') }}</div>
+                <div class="ls-metric__hint"><I18nText k="learningSpace.metricPendingHint" /></div>
               </button>
               <button
                 type="button"
@@ -804,11 +796,13 @@ watch(
                   :size="20"
                 />
                 <div class="ls-metric__label">
-                  {{ t('learningSpace.metricUnsubmitted') }}
-                  <span class="ls-tag-focus">{{ t('learningSpace.focusTag') }}</span>
+                  <I18nText k="learningSpace.metricUnsubmitted" />
+                  <span class="ls-tag-focus"><I18nText k="learningSpace.focusTag" /></span>
                 </div>
                 <div class="ls-metric__value">{{ teacherMetrics.unsubmitted }}</div>
-                <div class="ls-metric__hint">{{ t('learningSpace.metricUnsubmittedHint') }}</div>
+                <div class="ls-metric__hint">
+                  <I18nText k="learningSpace.metricUnsubmittedHint" />
+                </div>
               </button>
               <button
                 type="button"
@@ -819,9 +813,9 @@ watch(
                   class="ls-metric__icon"
                   :size="20"
                 />
-                <div class="ls-metric__label">{{ t('learningSpace.metricActive') }}</div>
+                <div class="ls-metric__label"><I18nText k="learningSpace.metricActive" /></div>
                 <div class="ls-metric__value">{{ teacherMetrics.active }}</div>
-                <div class="ls-metric__hint">{{ t('learningSpace.metricActiveHint') }}</div>
+                <div class="ls-metric__hint"><I18nText k="learningSpace.metricActiveHint" /></div>
               </button>
               <button
                 type="button"
@@ -832,9 +826,9 @@ watch(
                   class="ls-metric__icon"
                   :size="20"
                 />
-                <div class="ls-metric__label">{{ t('learningSpace.metricClasses') }}</div>
+                <div class="ls-metric__label"><I18nText k="learningSpace.metricClasses" /></div>
                 <div class="ls-metric__value">{{ teacherMetrics.classCount }}</div>
-                <div class="ls-metric__hint">{{ t('learningSpace.metricClassesHint') }}</div>
+                <div class="ls-metric__hint"><I18nText k="learningSpace.metricClassesHint" /></div>
               </button>
             </div>
           </template>
@@ -844,8 +838,8 @@ watch(
             <template v-if="selectedAssignmentId == null">
               <div class="ls-page-head">
                 <div>
-                  <h1>{{ t('learningSpace.tabAssignments') }}</h1>
-                  <p>{{ t('learningSpace.assignmentsPageHint') }}</p>
+                  <h1><I18nText k="learningSpace.tabAssignments" /></h1>
+                  <p><I18nText k="learningSpace.assignmentsPageHint" /></p>
                 </div>
                 <button
                   v-if="canPublish && publishableClasses.length"
@@ -853,7 +847,7 @@ watch(
                   class="ls-btn ls-btn--primary"
                   @click="openCreateAssignmentModal"
                 >
-                  {{ t('learningSpace.createAssignment') }}
+                  <I18nText k="learningSpace.createAssignment" />
                 </button>
                 <button
                   v-else-if="canOpenClassAdmin"
@@ -861,27 +855,25 @@ watch(
                   class="ls-btn ls-btn--primary"
                   @click="goCreateClass"
                 >
-                  {{ t('learningSpace.createClass') }}
+                  <I18nText k="learningSpace.createClass" />
                 </button>
               </div>
 
               <div class="ls-filters">
                 <div class="ls-pills">
                   <button
-                    v-for="f in (
-                      [
-                        ['all', 'learningSpace.filterAll'],
-                        ['active', 'learningSpace.filterActive'],
-                        ['pending', 'learningSpace.filterPending'],
-                      ] as const
-                    )"
+                    v-for="f in [
+                      ['all', 'learningSpace.filterAll'],
+                      ['active', 'learningSpace.filterActive'],
+                      ['pending', 'learningSpace.filterPending'],
+                    ] as const"
                     :key="f[0]"
                     type="button"
                     class="ls-pill"
                     :class="{ 'ls-pill--active': assignmentFilter === f[0] }"
                     @click="assignmentFilter = f[0]"
                   >
-                    {{ t(f[1]) }}
+                    <I18nText :k="f[1]" />
                   </button>
                 </div>
                 <input
@@ -893,7 +885,7 @@ watch(
               </div>
 
               <div class="ls-class-filter">
-                <span class="ls-class-filter__label">{{ t('learningSpace.class') }}</span>
+                <span class="ls-class-filter__label"><I18nText k="learningSpace.class" /></span>
                 <div class="ls-pills">
                   <button
                     v-for="c in classes"
@@ -908,7 +900,8 @@ watch(
                     <span
                       v-if="c.status === 'archived'"
                       class="ls-pill__count"
-                    >{{ t('learningSpace.filterClosed') }}</span>
+                      ><I18nText k="learningSpace.filterClosed"
+                    /></span>
                   </button>
                 </div>
               </div>
@@ -917,7 +910,7 @@ watch(
                 v-if="!filteredAssignments.length"
                 class="ls-empty"
               >
-                {{ t('learningSpace.noAssignments') }}
+                <I18nText k="learningSpace.noAssignments" />
               </p>
               <div
                 v-else
@@ -932,8 +925,9 @@ watch(
                     <div>
                       <h3 class="ls-asg-card__title">{{ a.title }}</h3>
                       <p class="ls-asg-card__meta">
-                        {{ classNameForAssignment(a) }} ·
-                        {{ t('learningSpace.due') }}：{{ formatLsDateTime(a.due_at) }}
+                        {{ classNameForAssignment(a) }} · <I18nText k="learningSpace.due" />：{{
+                          formatLsDateTime(a.due_at)
+                        }}
                       </p>
                     </div>
                     <span
@@ -946,12 +940,13 @@ watch(
                   <div class="ls-progress">
                     <div class="ls-progress__row">
                       <span>
-                        {{
-                          t('learningSpace.submittedProgress', {
+                        <I18nText
+                          k="learningSpace.submittedProgress"
+                          :params="{
                             done: progressFor(a).submitted,
                             total: progressFor(a).total,
-                          })
-                        }}
+                          }"
+                        />
                       </span>
                       <span>{{ progressFor(a).percent }}%</span>
                     </div>
@@ -964,23 +959,29 @@ watch(
                   </div>
                   <div class="ls-asg-card__stats">
                     <span class="ls-stat-warn">
-                      {{
-                        t('learningSpace.unsubmittedCount', {
+                      <I18nText
+                        k="learningSpace.unsubmittedCount"
+                        :params="{
                           n: progressFor(a).unsubmitted,
-                        })
-                      }}
+                        }"
+                      />
                     </span>
                     <span>
-                      {{
-                        t('learningSpace.pendingReviewCount', {
+                      <I18nText
+                        k="learningSpace.pendingReviewCount"
+                        :params="{
                           n: a.submitted_count ?? 0,
-                        })
-                      }}
+                        }"
+                      />
                     </span>
                   </div>
                   <div class="ls-asg-card__foot">
                     <div class="ls-asg-card__dates">
-                      {{ a.instructions || t('learningSpace.noInstructions') }}
+                      <template v-if="a.instructions">{{ a.instructions }}</template
+                      ><I18nText
+                        v-else
+                        k="learningSpace.noInstructions"
+                      />
                     </div>
                     <div class="ls-asg-card__actions">
                       <button
@@ -988,7 +989,7 @@ watch(
                         class="ls-btn ls-btn--ghost ls-btn--sm"
                         @click="openRequirements(a)"
                       >
-                        {{ t('learningSpace.viewRequirements') }}
+                        <I18nText k="learningSpace.viewRequirements" />
                       </button>
                       <button
                         v-if="canDeleteAssignment(a)"
@@ -997,14 +998,14 @@ watch(
                         :disabled="deletingAssignmentId === a.id"
                         @click="onDeleteAssignment(a)"
                       >
-                        {{ t('learningSpace.deleteAssignment') }}
+                        <I18nText k="learningSpace.deleteAssignment" />
                       </button>
                       <button
                         type="button"
                         class="ls-btn ls-btn--primary ls-btn--sm"
                         @click="selectedAssignmentId = a.id"
                       >
-                        {{ t('learningSpace.detailAndGrade') }}
+                        <I18nText k="learningSpace.detailAndGrade" />
                       </button>
                     </div>
                   </div>
@@ -1019,14 +1020,16 @@ watch(
                 @click="selectedAssignmentId = null"
               >
                 <ArrowLeft :size="15" />
-                {{ t('learningSpace.backToList') }}
+                <I18nText k="learningSpace.backToList" />
               </button>
               <div class="ls-page-head">
                 <div>
                   <h1>{{ selectedAssignment.title }}</h1>
                   <p>
                     {{ classNameForAssignment(selectedAssignment) }} ·
-                    {{ t('learningSpace.due') }}：{{ formatLsDateTime(selectedAssignment.due_at) }}
+                    <I18nText k="learningSpace.due" />：{{
+                      formatLsDateTime(selectedAssignment.due_at)
+                    }}
                   </p>
                 </div>
                 <div class="ls-page-head__actions">
@@ -1035,7 +1038,7 @@ watch(
                     class="ls-btn ls-btn--ghost ls-btn--sm"
                     @click="openRequirements(selectedAssignment)"
                   >
-                    {{ t('learningSpace.viewRequirements') }}
+                    <I18nText k="learningSpace.viewRequirements" />
                   </button>
                   <button
                     v-if="canDeleteAssignment(selectedAssignment)"
@@ -1044,26 +1047,26 @@ watch(
                     :disabled="deletingAssignmentId === selectedAssignment.id"
                     @click="onDeleteAssignment(selectedAssignment)"
                   >
-                    {{ t('learningSpace.deleteAssignment') }}
+                    <I18nText k="learningSpace.deleteAssignment" />
                   </button>
                   <button
                     type="button"
                     class="ls-btn ls-btn--primary ls-btn--sm"
                     @click="showSubmissionStatus = true"
                   >
-                    {{ t('learningSpace.submissionStatus') }}
+                    <I18nText k="learningSpace.submissionStatus" />
                   </button>
                 </div>
               </div>
 
               <div class="ls-section-title">
-                <h2>{{ t('learningSpace.submissionsBoard') }}</h2>
+                <h2><I18nText k="learningSpace.submissionsBoard" /></h2>
               </div>
               <p
                 v-if="!wallSubmissions.length"
                 class="ls-empty"
               >
-                {{ t('learningSpace.noSubmissions') }}
+                <I18nText k="learningSpace.noSubmissions" />
               </p>
               <div
                 v-else
@@ -1079,14 +1082,20 @@ watch(
                   @keydown.enter.prevent="openReview(s)"
                 >
                   <div class="ls-thumb-card__cover">
-                    <LearningSpaceThumbCover
-                      :preview-spec="s.preview_spec"
-                      :preview-diagram-type="s.preview_diagram_type"
-                      :thumbnail-url="s.diagram_thumbnail"
+                    <img
+                      v-if="s.diagram_thumbnail"
+                      :src="s.diagram_thumbnail"
+                      alt=""
                     />
+                    <div
+                      v-else
+                      class="ls-thumb-card__ph"
+                    >
+                      <I18nText k="learningSpace.noPreview" />
+                    </div>
                   </div>
                   <div class="ls-thumb-card__name">
-                    {{ formatLsStudentLabel(s) }}
+                    {{ s.student_name || s.student_user_id }}
                   </div>
                   <div class="ls-thumb-card__meta">
                     {{ statusLabel(s.status) }} ·
@@ -1098,11 +1107,13 @@ watch(
                     :class="isSubmissionReviewed(s.id) ? 'ls-btn--ghost' : 'ls-btn--primary'"
                     @click.stop="openReview(s)"
                   >
-                    {{
-                      isSubmissionReviewed(s.id)
-                        ? t('learningSpace.reviewed')
-                        : t('learningSpace.goReview')
-                    }}
+                    <I18nText
+                      v-if="isSubmissionReviewed(s.id)"
+                      k="learningSpace.reviewed"
+                    /><I18nText
+                      v-else
+                      k="learningSpace.goReview"
+                    />
                   </button>
                 </article>
               </div>
@@ -1113,8 +1124,8 @@ watch(
           <template v-else-if="teacherTab === 'classes'">
             <div class="ls-page-head">
               <div>
-                <h1>{{ t('learningSpace.tabClasses') }}</h1>
-                <p>{{ t('learningSpace.classesPageHint') }}</p>
+                <h1><I18nText k="learningSpace.tabClasses" /></h1>
+                <p><I18nText k="learningSpace.classesPageHint" /></p>
               </div>
               <button
                 v-if="canOpenClassAdmin"
@@ -1122,14 +1133,14 @@ watch(
                 class="ls-btn ls-btn--primary"
                 @click="goCreateClass"
               >
-                {{ t('learningSpace.createClass') }}
+                <I18nText k="learningSpace.createClass" />
               </button>
             </div>
             <p
               v-if="!classes.length"
               class="ls-empty"
             >
-              {{ t('learningSpace.noClassesYet') }}
+              <I18nText k="learningSpace.noClassesYet" />
             </p>
             <div class="ls-class-row">
               <button
@@ -1142,14 +1153,18 @@ watch(
               >
                 <h3>{{ c.name }}</h3>
                 <p>
-                  {{ t('learningSpace.studentCount', { n: c.student_count }) }} ·
+                  <I18nText
+                    k="learningSpace.studentCount"
+                    :params="{ n: c.student_count }"
+                  />
+                  ·
                   {{ c.class_code }}
                   <template v-if="c.status === 'archived'">
-                    · {{ t('learningSpace.filterClosed') }}
+                    · <I18nText k="learningSpace.filterClosed" />
                   </template>
                 </p>
                 <p>
-                  <span class="ls-link">{{ t('learningSpace.viewRoster') }}</span>
+                  <span class="ls-link"><I18nText k="learningSpace.viewRoster" /></span>
                 </p>
               </button>
             </div>
@@ -1158,13 +1173,16 @@ watch(
               class="ls-roster"
             >
               <h2 style="margin: 0; font-size: 1.05rem; font-weight: 720">
-                {{ selectedClass.name }} — {{ t('learningSpace.rosterTitle') }}
+                {{ selectedClass.name }} — <I18nText k="learningSpace.rosterTitle" />
               </h2>
               <p class="ls-muted">
-                {{ t('learningSpace.rosterLoginHint', { n: classStudents.length || selectedClass.student_count }) }}
+                <I18nText
+                  k="learningSpace.rosterLoginHint"
+                  :params="{ n: classStudents.length || selectedClass.student_count }"
+                />
               </p>
               <p class="ls-muted ls-roster__login-how">
-                {{ t('learningSpace.rosterLoginHow') }}
+                <I18nText k="learningSpace.rosterLoginHow" />
               </p>
               <div
                 v-if="classStudents.length"
@@ -1173,9 +1191,9 @@ watch(
                 <table class="ls-roster-table">
                   <thead>
                     <tr>
-                      <th>{{ t('learningSpace.rosterColName') }}</th>
-                      <th>{{ t('learningSpace.rosterColClassCode') }}</th>
-                      <th>{{ t('learningSpace.rosterColPassword') }}</th>
+                      <th><I18nText k="learningSpace.rosterColName" /></th>
+                      <th><I18nText k="learningSpace.rosterColClassCode" /></th>
+                      <th><I18nText k="learningSpace.rosterColPassword" /></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1189,7 +1207,11 @@ watch(
                       </td>
                       <td>
                         <code class="ls-roster-code">
-                          {{ s.initial_password || t('learningSpace.passwordHidden') }}
+                          <template v-if="s.initial_password">{{ s.initial_password }}</template
+                          ><I18nText
+                            v-else
+                            k="learningSpace.passwordHidden"
+                          />
                         </code>
                       </td>
                     </tr>
@@ -1200,7 +1222,7 @@ watch(
                 v-else
                 class="ls-empty"
               >
-                {{ t('learningSpace.rosterEmpty') }}
+                <I18nText k="learningSpace.rosterEmpty" />
               </p>
             </section>
           </template>
@@ -1211,7 +1233,12 @@ watch(
           <template v-if="studentTab === 'home' && !studentDetail">
             <div class="ls-page-head">
               <div>
-                <h1>{{ t(greetKey, { name: userName }) }}</h1>
+                <h1>
+                  <I18nText
+                    :k="greetKey"
+                    :params="{ name: userName }"
+                  />
+                </h1>
                 <p v-if="context?.class">
                   {{ context.class.name }} · {{ context.class.class_code }}
                 </p>
@@ -1227,7 +1254,7 @@ watch(
                   class="ls-metric__icon"
                   :size="20"
                 />
-                <div class="ls-metric__label">{{ t('learningSpace.metricTodo') }}</div>
+                <div class="ls-metric__label"><I18nText k="learningSpace.metricTodo" /></div>
                 <div class="ls-metric__value">{{ studentTodoCount }}</div>
               </button>
               <button
@@ -1239,7 +1266,7 @@ watch(
                   class="ls-metric__icon"
                   :size="20"
                 />
-                <div class="ls-metric__label">{{ t('learningSpace.metricSubmitted') }}</div>
+                <div class="ls-metric__label"><I18nText k="learningSpace.metricSubmitted" /></div>
                 <div class="ls-metric__value">{{ studentSubmittedCount }}</div>
               </button>
               <button
@@ -1251,7 +1278,7 @@ watch(
                   class="ls-metric__icon"
                   :size="20"
                 />
-                <div class="ls-metric__label">{{ t('learningSpace.metricWorks') }}</div>
+                <div class="ls-metric__label"><I18nText k="learningSpace.metricWorks" /></div>
                 <div class="ls-metric__value">{{ myPortfolio.length }}</div>
               </button>
               <button
@@ -1263,7 +1290,7 @@ watch(
                   class="ls-metric__icon"
                   :size="20"
                 />
-                <div class="ls-metric__label">{{ t('learningSpace.metricUrgent') }}</div>
+                <div class="ls-metric__label"><I18nText k="learningSpace.metricUrgent" /></div>
                 <div class="ls-metric__value">{{ studentUrgentCount }}</div>
               </button>
             </div>
@@ -1273,15 +1300,15 @@ watch(
             <template v-if="!studentDetail">
               <div class="ls-page-head">
                 <div>
-                  <h1>{{ t('learningSpace.tabClassAssignments') }}</h1>
-                  <p>{{ t('learningSpace.classAssignmentsHint') }}</p>
+                  <h1><I18nText k="learningSpace.tabClassAssignments" /></h1>
+                  <p><I18nText k="learningSpace.classAssignmentsHint" /></p>
                 </div>
               </div>
               <p
                 v-if="!studentAssignments.length"
                 class="ls-empty"
               >
-                {{ t('learningSpace.noAssignments') }}
+                <I18nText k="learningSpace.noAssignments" />
               </p>
               <div
                 v-else
@@ -1312,7 +1339,7 @@ watch(
                     </span>
                   </div>
                   <p class="ls-asg-card__meta">
-                    {{ t('learningSpace.due') }}：{{ formatLsDateTime(a.due_at) }}
+                    <I18nText k="learningSpace.due" />：{{ formatLsDateTime(a.due_at) }}
                   </p>
                   <div class="ls-asg-card__actions">
                     <button
@@ -1320,7 +1347,7 @@ watch(
                       class="ls-btn ls-btn--primary ls-btn--sm"
                       @click.stop="studentDetailId = a.id"
                     >
-                      {{ t('learningSpace.viewAssignment') }}
+                      <I18nText k="learningSpace.viewAssignment" />
                     </button>
                   </div>
                 </article>
@@ -1333,18 +1360,19 @@ watch(
                 @click="studentDetailId = null"
               >
                 <ArrowLeft :size="15" />
-                {{ t('learningSpace.backToList') }}
+                <I18nText k="learningSpace.backToList" />
               </button>
               <div class="ls-page-head">
                 <div>
                   <h1>{{ studentDetail.title }}</h1>
                   <p class="ls-detail-meta">
-                    {{ t('learningSpace.diagramTypeLabel') }}
-                    {{
-                      t(`learningSpace.diagramType.${assignmentDiagramType(studentDetail)}`)
-                    }}
+                    <I18nText k="learningSpace.diagramTypeLabel" />
+                    <I18nText
+                      :k="`learningSpace.diagramType.${assignmentDiagramType(studentDetail)}`"
+                    />
                     <template v-if="studentDetail.due_at">
-                      · {{ t('learningSpace.due') }} {{ formatLsDateTime(studentDetail.due_at) }}
+                      · <I18nText k="learningSpace.due" />
+                      {{ formatLsDateTime(studentDetail.due_at) }}
                     </template>
                   </p>
                 </div>
@@ -1354,7 +1382,7 @@ watch(
                     class="ls-btn ls-btn--ghost ls-btn--sm"
                     @click="openRequirements(studentDetail)"
                   >
-                    {{ t('learningSpace.viewRequirements') }}
+                    <I18nText k="learningSpace.viewRequirements" />
                   </button>
                   <button
                     v-if="studentCanOpenAssignment(studentDetail)"
@@ -1362,11 +1390,7 @@ watch(
                     class="ls-btn ls-btn--primary ls-btn--sm"
                     @click="onOpenStudentAssignment(studentDetail)"
                   >
-                    {{
-                      studentCanResubmitAssignment(studentDetail)
-                        ? t('learningSpace.editAndResubmit')
-                        : t('learningSpace.doHomework')
-                    }}
+                    <I18nText k="learningSpace.doHomework" />
                   </button>
                   <button
                     v-else-if="!studentAssignmentDone(studentDetail)"
@@ -1374,23 +1398,15 @@ watch(
                     class="ls-btn ls-btn--ghost ls-btn--sm"
                     disabled
                   >
-                    {{ t('learningSpace.homeworkClosed') }}
+                    <I18nText k="learningSpace.homeworkClosed" />
                   </button>
                   <button
-                    v-if="myDetailSubmission && !studentCanResubmitAssignment(studentDetail)"
+                    v-else-if="myDetailSubmission"
                     type="button"
                     class="ls-btn ls-btn--primary ls-btn--sm"
                     @click="openReview(myDetailSubmission, 'view')"
                   >
-                    {{ t('learningSpace.myWorkBtn') }}
-                  </button>
-                  <button
-                    v-else-if="myDetailSubmission && studentCanResubmitAssignment(studentDetail)"
-                    type="button"
-                    class="ls-btn ls-btn--ghost ls-btn--sm"
-                    @click="openReview(myDetailSubmission, 'view')"
-                  >
-                    {{ t('learningSpace.myWorkBtn') }}
+                    <I18nText k="learningSpace.myWorkBtn" />
                   </button>
                 </div>
               </div>
@@ -1402,15 +1418,15 @@ watch(
                 {{ studentDetail.instructions }}
               </p>
 
-              <section v-if="studentCanViewDetailWall">
+              <section>
                 <div class="ls-section-title">
-                  <h2>{{ t('learningSpace.assignmentWall') }}</h2>
+                  <h2><I18nText k="learningSpace.assignmentWall" /></h2>
                 </div>
                 <p
                   v-if="!detailClassWall.length"
                   class="ls-empty"
                 >
-                  {{ t('learningSpace.noClassWallYet') }}
+                  <I18nText k="learningSpace.noClassWallYet" />
                 </p>
                 <div
                   v-else
@@ -1426,45 +1442,45 @@ watch(
                     @keydown.enter.prevent="openReview(s, 'view')"
                   >
                     <div class="ls-thumb-card__cover">
-                      <LearningSpaceThumbCover
-                        :preview-spec="s.preview_spec"
-                        :preview-diagram-type="s.preview_diagram_type"
-                        :thumbnail-url="s.diagram_thumbnail"
+                      <img
+                        v-if="s.diagram_thumbnail"
+                        :src="s.diagram_thumbnail"
+                        alt=""
                       />
+                      <div
+                        v-else
+                        class="ls-thumb-card__ph"
+                      >
+                        <I18nText k="learningSpace.noPreview" />
+                      </div>
                     </div>
                     <div class="ls-thumb-card__name">
-                      {{ formatLsStudentLabel(s) }}
+                      {{ s.student_name || s.student_user_id }}
                     </div>
                     <div class="ls-thumb-card__meta">
                       {{ formatLsDateTime(s.submitted_at) }}
                       <template v-if="s.reviewed_at || s.review_comment || s.review_scores">
-                        · {{ t('learningSpace.reviewed') }}
+                        · <I18nText k="learningSpace.reviewed" />
                       </template>
                     </div>
                   </article>
                 </div>
               </section>
-              <p
-                v-else
-                class="ls-empty"
-              >
-                {{ t('learningSpace.classWallSubmitFirst') }}
-              </p>
             </template>
           </template>
 
           <template v-else-if="studentTab === 'works'">
             <div class="ls-page-head">
               <div>
-                <h1>{{ t('learningSpace.tabMyPortfolio') }}</h1>
-                <p>{{ t('learningSpace.myPortfolioHint') }}</p>
+                <h1><I18nText k="learningSpace.tabMyPortfolio" /></h1>
+                <p><I18nText k="learningSpace.myPortfolioHint" /></p>
               </div>
             </div>
             <p
               v-if="!myPortfolio.length"
               class="ls-empty"
             >
-              {{ t('learningSpace.noWorks') }}
+              <I18nText k="learningSpace.noWorks" />
             </p>
             <div
               v-else
@@ -1480,19 +1496,29 @@ watch(
                 @keydown.enter.prevent="openReview(s, 'view')"
               >
                 <div class="ls-thumb-card__cover">
-                  <LearningSpaceThumbCover
-                    :preview-spec="s.preview_spec"
-                    :preview-diagram-type="s.preview_diagram_type"
-                    :thumbnail-url="s.diagram_thumbnail"
+                  <img
+                    v-if="s.diagram_thumbnail"
+                    :src="s.diagram_thumbnail"
+                    alt=""
                   />
+                  <div
+                    v-else
+                    class="ls-thumb-card__ph"
+                  >
+                    <I18nText k="learningSpace.noPreview" />
+                  </div>
                 </div>
                 <div class="ls-thumb-card__name">
-                  {{ s.assignment_title || t('learningSpace.assignments') }}
+                  <template v-if="s.assignment_title">{{ s.assignment_title }}</template
+                  ><I18nText
+                    v-else
+                    k="learningSpace.assignments"
+                  />
                 </div>
                 <div class="ls-thumb-card__meta">
                   {{ statusLabel(s.status) }}
                   <template v-if="s.reviewed_at || s.review_comment || s.review_scores">
-                    · {{ t('learningSpace.reviewed') }}
+                    · <I18nText k="learningSpace.reviewed" />
                   </template>
                 </div>
               </article>
@@ -1504,7 +1530,7 @@ watch(
           v-else-if="!loading"
           class="ls-empty"
         >
-          {{ t('learningSpace.noAccess') }}
+          <I18nText k="learningSpace.noAccess" />
         </section>
       </div>
     </div>
@@ -1537,7 +1563,7 @@ watch(
           : reviewSubmission?.assignment_title || ''
       "
       :initial-draft="
-        reviewSubmission ? reviewsBySubmissionId[reviewSubmission.id] ?? null : null
+        reviewSubmission ? (reviewsBySubmissionId[reviewSubmission.id] ?? null) : null
       "
       @save="onReviewSave"
     />

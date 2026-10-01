@@ -7,7 +7,6 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { Volume2, VolumeX } from '@lucide/vue'
 
 import KittyBlackCatMascot from '@/components/kitty/KittyBlackCatMascot.vue'
-
 import { useLanguage } from '@/composables'
 import type { KittyAgentState } from '@/composables/kitty/useKittyAgent'
 import { apiPost } from '@/utils/apiClient'
@@ -164,9 +163,7 @@ onBeforeUnmount(() => {
         type="button"
         class="zhihui-teacher-caption__kitty"
         :aria-label="
-          speaking || loading
-            ? t('zhihui.diagram.ttsStop')
-            : t('zhihui.diagram.ttsPlay')
+          speaking || loading ? t('zhihui.diagram.ttsStop') : t('zhihui.diagram.ttsPlay')
         "
         @click="onKittyClick"
       >
@@ -178,7 +175,7 @@ onBeforeUnmount(() => {
           class="zhihui-teacher-caption__text"
           :title="teacherScript || captionText"
         >
-          <span class="sr-only">{{ t('zhihui.diagram.teacherScript') }}：</span>
+          <span class="sr-only"><I18nText k="zhihui.diagram.teacherScript" />：</span>
           {{ captionText }}
         </p>
         <button

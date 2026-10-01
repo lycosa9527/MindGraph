@@ -39,9 +39,7 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const isMedia = computed(() => isTrainingMediaStep(props.step))
-const showLive = computed(
-  () => !isMedia.value && hasTrainingLivePreview(props.step.page_key)
-)
+const showLive = computed(() => !isMedia.value && hasTrainingLivePreview(props.step.page_key))
 const topics = computed(() => props.step.topic_options || [])
 const marks = computed(() => visibleMarkOverlays(props.step))
 
@@ -72,7 +70,7 @@ onUnmounted(() => {
     role="dialog"
     :aria-label="t('training.builder.preview')"
   >
-    <p class="teacher-preview__kicker">{{ t('training.builder.previewHint') }}</p>
+    <p class="teacher-preview__kicker"><I18nText k="training.builder.previewHint" /></p>
     <div
       v-if="topics.length"
       class="teacher-preview__chips"
@@ -81,7 +79,8 @@ onUnmounted(() => {
         v-for="option in topics"
         :key="option.id"
         class="teacher-preview__chip"
-      >{{ option.label }}</span>
+        >{{ option.label }}</span
+      >
     </div>
     <div class="teacher-preview__stage">
       <img
@@ -89,7 +88,7 @@ onUnmounted(() => {
         class="teacher-preview__media"
         :src="step.asset_url"
         alt=""
-      >
+      />
       <video
         v-else-if="isMedia && step.type === 'video' && step.asset_url"
         class="teacher-preview__media"
@@ -107,7 +106,7 @@ onUnmounted(() => {
         v-else
         class="teacher-preview__empty"
       >
-        {{ t('training.builder.previewEmpty') }}
+        <I18nText k="training.builder.previewEmpty" />
       </p>
       <TrainingVodPlayer
         v-if="step.vod_media_id"

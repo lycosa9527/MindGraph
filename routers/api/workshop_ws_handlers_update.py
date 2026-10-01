@@ -167,7 +167,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
     """Process an `update` message from a collaborator."""
     verr = _diagram_update_validation_error(ctx.diagram_id, message)
     if verr:
-        logger.info(
+        logger.debug(
             "[CollabDebug] update validation rejected user=%s diagram=%s code=%s reason=%s",
             ctx.user.id,
             ctx.diagram_id,
@@ -221,7 +221,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
     is_granular_early = (
         nodes is not None or connections is not None or bool(deleted_node_ids) or bool(deleted_connection_ids)
     )
-    logger.info(
+    logger.debug(
         "[CollabDebug] handle_update user=%s diagram=%s code=%s"
         " is_granular=%s nodes=%d conns=%d del_nodes=%d del_conns=%d",
         ctx.user.id,
@@ -364,7 +364,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
             bool(filtered_nodes) or bool(filtered_connections) or bool(deleted_node_ids) or bool(deleted_connection_ids)
         )
         if not has_payload:
-            logger.info(
+            logger.debug(
                 "[CollabDebug] update_rejected (all ops locked) user=%s code=%s"
                 " in_nodes=%s out_nodes=%s in_conns=%s out_conns=%s"
                 " in_del_nodes=%s out_del_nodes=%s in_del_conns=%s out_del_conns=%s",
@@ -428,7 +428,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                 editors_redis,
             )
             if locked_by_others:
-                logger.info(
+                logger.debug(
                     "[CollabDebug] full spec rejected due to foreign locks user=%s code=%s locked_node_count=%d",
                     ctx.user.id,
                     ctx.code,
@@ -726,7 +726,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
     await topk_record_room_activity(ctx.code)
     await topk_record_user_activity(int(ctx.user.id))
 
-    logger.info(
+    logger.debug(
         "[CollabDebug] merge_ok user=%s diagram=%s code=%s version=%s seq=%s"
         " broadcast_nodes=%d broadcast_conns=%d broadcast_del_nodes=%d broadcast_del_conns=%d",
         ctx.user.id,

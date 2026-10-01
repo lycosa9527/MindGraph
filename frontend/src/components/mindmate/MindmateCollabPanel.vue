@@ -20,6 +20,7 @@ import {
 } from '@/composables/auth/useThinkingCoinSync'
 import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
 import { authFetch } from '@/utils/api'
+import { notifyMindmateCollabLibraryChanged } from '@/utils/mindmateCollabLibrarySave'
 import {
   formatMindmateCollabCode,
   trackLocalMindmateCollabSession,
@@ -42,7 +43,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (
-    e: 'session-started',
+    e: 'sessionStarted',
     payload: {
       code: string
       visibility?: 'organization' | 'network'
@@ -135,7 +136,7 @@ function navigateToRoom(
         expires_at: (sessionMeta.expires_at as string | null) ?? null,
       })
     }
-    emit('session-started', {
+    emit('sessionStarted', {
       code: formatted,
       visibility: (sessionMeta?.visibility as 'organization' | 'network') || 'organization',
       ownerUserId: Number(sessionMeta?.owner_user_id || 0) || undefined,
@@ -187,6 +188,7 @@ async function startSeminar(visibility: 'organization' | 'network') {
       const data = (await response.json()) as Record<string, unknown>
       applyThinkingCoinMutation(extractThinkingCoinsFooter(data))
       notify.successKey('mindmate.collabStarted')
+      notifyMindmateCollabLibraryChanged()
       navigateToRoom(String(data.code || ''), data, { seedThread: true })
     } else {
       const err = await response.json().catch(() => ({}))
@@ -277,7 +279,7 @@ function closeCollabPopover() {
 function prefillAndAutoJoin(rawCode: string) {
   const chars = sanitizeChar(rawCode).slice(0, 6)
   if (props.inConversation && props.embedInPanel && chars.length === 6) {
-    emit('session-started', { code: formatMindmateCollabCode(chars) })
+    emit('sessionStarted', { code: formatMindmateCollabCode(chars) })
     return
   }
   chars.split('').forEach((ch, index) => {

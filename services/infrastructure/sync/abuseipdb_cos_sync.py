@@ -79,7 +79,7 @@ async def _set_local_abuseipdb_meta_async(
     redis = get_async_redis()
     if not redis:
         return
-    payload = {
+    payload: Dict[str, Any] = {
         "count": count,
         "confidenceMinimum": get_blacklist_confidence_minimum(),
         "limit": get_blacklist_limit(),
@@ -118,6 +118,11 @@ async def publish_abuseipdb_blocklist_to_cos(plaintext: str, ip_count: int) -> b
     )
     ok_meta = tencent_cos_client.put_json(meta_key, meta)
     if ok_body and ok_meta:
+        await _set_local_abuseipdb_meta_async(
+            ip_count,
+            last_merge_unix=float(meta["last_merge_unix"]),
+            source="api",
+        )
         logger.info("[AbuseIPDBCOS] Published %s IPs to COS", ip_count)
         return True
     logger.warning("[AbuseIPDBCOS] COS publish failed body=%s meta=%s", ok_body, ok_meta)
@@ -247,10 +252,10 @@ async def sync_blacklist_for_role(
     return result
 
 
-async def get_abuseipdb_cos_status() -> Dict[str, Any]:
+async def get_abuseipdb_cos_status(*, include_cos: bool = True) -> Dict[str, Any]:
     """Status snapshot for admin API."""
     local_meta = await _get_local_abuseipdb_meta_async()
-    cos_meta = await asyncio.to_thread(read_abuseipdb_cos_meta)
+    cos_meta = await asyncio.to_thread(read_abuseipdb_cos_meta) if include_cos else None
     cos_ts = cos_meta.get("last_merge_unix") if cos_meta else None
     return {
         "local_meta": local_meta,

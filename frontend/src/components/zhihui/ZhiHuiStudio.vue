@@ -7,10 +7,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Check, ChevronDown } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
-import {
-  type ZhihuiConversationItem,
-  useZhihuiHistoryStore,
-} from '@/stores/zhihuiHistory'
+import { type ZhihuiConversationItem, useZhihuiHistoryStore } from '@/stores/zhihuiHistory'
 import { apiPost } from '@/utils/apiClient'
 
 import ZhiHuiComposer from './ZhiHuiComposer.vue'
@@ -19,8 +16,8 @@ import ZhiHuiMessages, { type ZhihuiSessionTurn } from './ZhiHuiMessages.vue'
 import {
   DEFAULT_IMAGE_SIZE_ID,
   ZHIHUI_MODELS,
-  defaultModelId,
   type ZhihuiMode,
+  defaultModelId,
 } from './zhihuiModes'
 import type { ZhihuiReferenceImage } from './zhihuiReferences'
 
@@ -209,15 +206,15 @@ function patchTurn(localId: string, patch: Partial<ZhihuiSessionTurn>): void {
 async function submitGenerate(): Promise<void> {
   const trimmed = prompt.value.trim()
   if (!trimmed) {
-    notify.warning(String(t('zhihui.promptRequired')))
+    notify.warningKey('zhihui.promptRequired')
     return
   }
   if (!modeAvailable.value) {
-    notify.info(String(t('zhihui.modeComingSoon')))
+    notify.infoKey('zhihui.modeComingSoon')
     return
   }
   if (mode.value !== 'image') {
-    notify.info(String(t('zhihui.modeComingSoon')))
+    notify.infoKey('zhihui.modeComingSoon')
     return
   }
   if (isGenerating.value) {
@@ -247,7 +244,8 @@ async function submitGenerate(): Promise<void> {
   generateEpoch.value = epoch
 
   try {
-    const lang = currentLanguage.value === 'zh' || currentLanguage.value.startsWith('zh') ? 'zh' : 'en'
+    const lang =
+      currentLanguage.value === 'zh' || currentLanguage.value.startsWith('zh') ? 'zh' : 'en'
     const payload: Record<string, string | boolean | string[]> = {
       prompt: trimmed,
       language: lang,
@@ -274,7 +272,7 @@ async function submitGenerate(): Promise<void> {
     if (epoch !== generateEpoch.value) {
       return
     }
-    notify.success(String(t('zhihui.generateSuccess')))
+    notify.successKey('zhihui.generateSuccess')
     const newest = historyStore.sortedItems[0]
     patchTurn(localId, {
       status: 'done',
@@ -360,7 +358,7 @@ async function submitGenerate(): Promise<void> {
                   v-if="!opt.available"
                   class="zhihui-model-switcher__soon"
                 >
-                  {{ t('zhihui.soon') }}
+                  <I18nText k="zhihui.soon" />
                 </span>
                 <Check
                   v-else-if="opt.id === modelId"
@@ -371,7 +369,7 @@ async function submitGenerate(): Promise<void> {
             </button>
           </div>
         </span>
-        <span>{{ t('zhihui.welcomeSuffix') }}</span>
+        <span><I18nText k="zhihui.welcomeSuffix" /></span>
       </h2>
       <p class="zhihui-studio__welcome-hint">
         {{ composerHint }}

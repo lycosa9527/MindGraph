@@ -64,14 +64,14 @@ const canStart = computed(() => topic.value.trim().length > 0 && !isCreating.val
 
 const username = computed(() => authStore.user?.username || '')
 
-const roleLabel = computed(() => {
-  if (userRole.value === 'viewer') return t('debateverse.roleLabel.viewer')
-  if (userRole.value === 'debater') return t('debateverse.roleLabel.debater')
-  return t('debateverse.roleLabel.judgeRole')
+const roleKey = computed(() => {
+  if (userRole.value === 'viewer') return 'debateverse.roleLabel.viewer'
+  if (userRole.value === 'debater') return 'debateverse.roleLabel.debater'
+  return 'debateverse.roleLabel.judgeRole'
 })
 
-const debateSuggestions = computed(() =>
-  Array.from({ length: 8 }, (_, i) => t(`debateverse.setup.suggestion${i + 1}`))
+const debateSuggestionKeys = computed(() =>
+  Array.from({ length: 8 }, (_, i) => `debateverse.setup.suggestion${i + 1}`)
 )
 
 // ============================================================================
@@ -135,7 +135,10 @@ function handleKeydown(e: Event | KeyboardEvent) {
       />
       <div class="text-center mt-6">
         <p class="debate-subtitle">
-          {{ t('debateverse.setup.greeting', { username: username || '' }) }}
+          <I18nText
+            k="debateverse.setup.greeting"
+            :params="{ username: username || '' }"
+          />
         </p>
       </div>
     </div>
@@ -143,7 +146,7 @@ function handleKeydown(e: Event | KeyboardEvent) {
     <!-- Suggestion Bubbles -->
     <div class="debate-suggestions">
       <SuggestionBubbles
-        :suggestions="debateSuggestions"
+        :suggestion-keys="debateSuggestionKeys"
         @select="handleSuggestionSelect"
       />
     </div>
@@ -177,7 +180,11 @@ function handleKeydown(e: Event | KeyboardEvent) {
               class="role-select-btn"
               :disabled="isCreating"
             >
-              {{ roleLabel }}
+              <I18nText
+                :k="roleKey"
+                dense
+                align="center"
+              />
               <ElIcon class="ml-1"><ArrowDown /></ElIcon>
             </ElButton>
             <template #dropdown>
@@ -186,19 +193,19 @@ function handleKeydown(e: Event | KeyboardEvent) {
                   command="viewer"
                   :class="{ 'is-selected': userRole === 'viewer' }"
                 >
-                  {{ t('debateverse.setup.roleViewer') }}
+                  <I18nText k="debateverse.setup.roleViewer" />
                 </ElDropdownItem>
                 <ElDropdownItem
                   command="debater"
                   :class="{ 'is-selected': userRole === 'debater' }"
                 >
-                  {{ t('debateverse.setup.roleDebater') }}
+                  <I18nText k="debateverse.setup.roleDebater" />
                 </ElDropdownItem>
                 <ElDropdownItem
                   command="judge"
                   :class="{ 'is-selected': userRole === 'judge' }"
                 >
-                  {{ t('debateverse.setup.roleJudge') }}
+                  <I18nText k="debateverse.setup.roleJudge" />
                 </ElDropdownItem>
               </ElDropdownMenu>
             </template>
@@ -320,8 +327,9 @@ function handleKeydown(e: Event | KeyboardEvent) {
 }
 
 .role-select-btn {
-  height: 40px;
-  padding: 0 16px;
+  height: auto;
+  min-height: 40px;
+  padding: 6px 16px;
   border: 1px solid #e5e7eb;
   background: #fff;
   color: #374151;

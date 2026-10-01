@@ -83,10 +83,10 @@ const imageTotal = computed(() => {
 })
 
 const overallPeriods = [
-  { key: 'today' as const, label: () => t('admin.today'), statsKey: 'today' as const },
-  { key: 'week' as const, label: () => t('admin.pastWeek'), statsKey: 'past_week' as const },
-  { key: 'month' as const, label: () => t('admin.pastMonth'), statsKey: 'past_month' as const },
-  { key: 'total' as const, label: () => t('admin.allTime'), statsKey: 'total' as const },
+  { key: 'today' as const, labelKey: 'admin.today', statsKey: 'today' as const },
+  { key: 'week' as const, labelKey: 'admin.pastWeek', statsKey: 'past_week' as const },
+  { key: 'month' as const, labelKey: 'admin.pastMonth', statsKey: 'past_month' as const },
+  { key: 'total' as const, labelKey: 'admin.allTime', statsKey: 'total' as const },
 ]
 
 function formatNumber(num: number): string {
@@ -160,14 +160,16 @@ function onDingtalkCardKeydown(e: KeyboardEvent): void {
           class="flex items-center justify-between w-full"
           @click.stop
         >
-          <span class="swiss-stat-card__service-title">{{ t('admin.overallTokenSummary') }}</span>
+          <span class="swiss-stat-card__service-title"
+            ><I18nText k="admin.overallTokenSummary"
+          /></span>
           <el-button
             text
             size="small"
             @click="onRefresh"
           >
             <el-icon class="mr-1"><Refresh /></el-icon>
-            {{ t('common.refresh') }}
+            <I18nText k="common.refresh" />
           </el-button>
         </div>
       </template>
@@ -179,14 +181,14 @@ function onDingtalkCardKeydown(e: KeyboardEvent): void {
           :class="{ 'swiss-stat-card__stat-item--clickable': clickable }"
           @click="onPeriodClick(period.key, $event)"
         >
-          <p class="swiss-stat-card__stat-item-k">{{ period.label() }}</p>
+          <p class="swiss-stat-card__stat-item-k"><I18nText :k="period.labelKey" /></p>
           <p class="swiss-stat-card__stat-item-v">
             {{ formatNumber(tokenStats[period.statsKey]?.total_tokens || 0) }}
           </p>
           <p class="swiss-stat-card__stat-item-sub">
-            {{ t('admin.inShort') }}:
+            <I18nText k="admin.inShort" />:
             {{ formatNumber(tokenStats[period.statsKey]?.input_tokens || 0) }}
-            · {{ t('admin.outShort') }}:
+            · <I18nText k="admin.outShort" />:
             {{ formatNumber(tokenStats[period.statsKey]?.output_tokens || 0) }}
           </p>
         </div>
@@ -211,39 +213,45 @@ function onDingtalkCardKeydown(e: KeyboardEvent): void {
             </el-icon>
           </div>
           <p class="swiss-stat-card__service-title">
-            {{ t('admin.dingtalkGenerationCard') }}
+            <I18nText k="admin.dingtalkGenerationCard" />
           </p>
         </div>
       </template>
       <div class="dingtalk-generation-body external-api-body">
         <div class="external-api-split">
           <div class="external-api-split__item">
-            <p class="external-api-split__label">{{ t('admin.externalApiDiagramLabel') }}</p>
+            <p class="external-api-split__label"><I18nText k="admin.externalApiDiagramLabel" /></p>
             <p
               class="text-lg font-semibold tabular-nums sm:text-xl"
               style="color: var(--stat-accent)"
             >
               <template v-if="diagramTotal !== null">
-                {{ t('admin.dingtalkCardTotalUses', { count: diagramTotal }) }}
+                <I18nText
+                  k="admin.dingtalkCardTotalUses"
+                  :params="{ count: diagramTotal }"
+                />
               </template>
               <template v-else>—</template>
             </p>
           </div>
           <div class="external-api-split__item">
-            <p class="external-api-split__label">{{ t('admin.externalApiImageLabel') }}</p>
+            <p class="external-api-split__label"><I18nText k="admin.externalApiImageLabel" /></p>
             <p
               class="text-lg font-semibold tabular-nums sm:text-xl"
               style="color: var(--stat-accent)"
             >
               <template v-if="imageTotal !== null">
-                {{ t('admin.dingtalkCardTotalUses', { count: imageTotal }) }}
+                <I18nText
+                  k="admin.dingtalkCardTotalUses"
+                  :params="{ count: imageTotal }"
+                />
               </template>
               <template v-else>—</template>
             </p>
           </div>
         </div>
         <p class="text-center text-xs leading-snug text-[var(--swiss-muted)]">
-          {{ t('admin.dingtalkCardClickToEditApiKeys') }}
+          <I18nText k="admin.dingtalkCardClickToEditApiKeys" />
         </p>
       </div>
     </AdminSwissServiceCard>

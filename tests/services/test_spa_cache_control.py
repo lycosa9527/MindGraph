@@ -34,7 +34,6 @@ vue_spa_module = importlib.import_module("routers.core.vue_spa")
         "/login",
         "/admin",
         "/admin/settings",
-        "/bayi/passkey",
         "/dashboard",
         "/dashboard/login",
         "/library",

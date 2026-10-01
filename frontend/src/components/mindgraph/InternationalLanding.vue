@@ -212,7 +212,7 @@ onMounted(() => {
   delete newQuery.join_workshop
   router.replace({ query: newQuery })
   if (!canUseOnlineCollab.value) {
-    notify.warning(t('auth.schoolTierFeatureUnavailable'))
+    notify.warningKey('auth.schoolTierFeatureUnavailable')
     return
   }
   collabPanelRef.value?.prefillAndAutoJoin(joinWorkshopCode)
@@ -260,7 +260,13 @@ onMounted(() => {
             <ElDropdownItem command="__toggle__">
               <span class="translate-lang-row">
                 <span class="translate-lang-label">
-                  {{ translationOn ? t('canvas.translation.stop') : t('canvas.translation.start') }}
+                  <I18nText
+                    v-if="translationOn"
+                    k="canvas.translation.stop"
+                  /><I18nText
+                    v-else
+                    k="canvas.translation.start"
+                  />
                 </span>
               </span>
             </ElDropdownItem>
@@ -304,7 +310,7 @@ onMounted(() => {
         </div>
         <div class="intl-hero-text">
           <h1 class="intl-title">MindGraph</h1>
-          <p class="intl-subtitle">{{ t('landing.international.subtitle') }}</p>
+          <p class="intl-subtitle"><I18nText k="landing.international.subtitle" /></p>
         </div>
       </div>
 
@@ -382,7 +388,7 @@ onMounted(() => {
                 :disabled="isGenerating"
                 @click="applyActiveLandingExample"
               >
-                {{ t(landingExampleKeys[activeExampleIndex]) }}
+                <I18nText :k="landingExampleKeys[activeExampleIndex]" />
               </button>
             </transition>
           </div>
@@ -415,10 +421,10 @@ onMounted(() => {
               <DiagramPreviewSvg :type="item.type" />
             </div>
             <h3 class="intl-card-title">
-              <I18nText :k="item.titleKey" />
+              <I18nText :k="item.titleKey" layout="beside" />
             </h3>
             <p class="intl-card-desc">
-              <I18nText :k="item.descKey" />
+              <I18nText :k="item.descKey" layout="beside" />
             </p>
           </div>
         </div>
@@ -437,10 +443,10 @@ onMounted(() => {
               <DiagramPreviewSvg :type="item.type" />
             </div>
             <h3 class="intl-card-title">
-              <I18nText :k="item.titleKey" />
+              <I18nText :k="item.titleKey" layout="beside" />
             </h3>
             <p class="intl-card-desc">
-              <I18nText :k="item.descKey" />
+              <I18nText :k="item.descKey" layout="beside" />
             </p>
           </div>
         </div>
@@ -1012,6 +1018,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  min-width: 0;
   user-select: none;
   border: 2px solid transparent;
 }
@@ -1058,18 +1065,24 @@ onMounted(() => {
   color: var(--el-text-color-primary, #333);
   margin: 0 0 var(--card-title-mb);
   text-align: center;
+  width: 100%;
+  min-width: 0;
 }
 
 .intl-card-title :deep(.i18n-label),
 .intl-card-desc :deep(.i18n-label) {
-  align-items: center;
   width: 100%;
 }
 
-.intl-card-title :deep(.i18n-label__primary),
-.intl-card-title :deep(.i18n-label__secondary),
-.intl-card-desc :deep(.i18n-label__primary),
-.intl-card-desc :deep(.i18n-label__secondary) {
+.intl-card-title :deep(.i18n-label:not(.i18n-label--beside)),
+.intl-card-desc :deep(.i18n-label:not(.i18n-label--beside)) {
+  align-items: center;
+}
+
+.intl-card-title :deep(.i18n-label:not(.i18n-label--beside) .i18n-label__primary),
+.intl-card-title :deep(.i18n-label:not(.i18n-label--beside) .i18n-label__secondary),
+.intl-card-desc :deep(.i18n-label:not(.i18n-label--beside) .i18n-label__primary),
+.intl-card-desc :deep(.i18n-label:not(.i18n-label--beside) .i18n-label__secondary) {
   text-align: center;
 }
 
@@ -1078,6 +1091,8 @@ onMounted(() => {
   color: var(--el-text-color-secondary, #666);
   text-align: center;
   margin: 0;
+  width: 100%;
+  min-width: 0;
 }
 
 /* Hover animation on SVG previews — staggered pulse matching old gallery */

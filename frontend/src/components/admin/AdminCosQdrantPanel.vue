@@ -27,10 +27,10 @@ async function onPublish() {
   })
   try {
     const result = await publish.mutateAsync()
-    if (result.ok) notify.success(t('admin.cos.publishOk'))
+    if (result.ok) notify.successKey('admin.cos.publishOk')
     else notify.error(String(result.error ?? t('admin.cos.publishFailed')))
   } catch {
-    notify.error(t('admin.cos.publishFailed'))
+    notify.errorKey('admin.cos.publishFailed')
   }
 }
 
@@ -41,13 +41,13 @@ async function onInstall() {
   try {
     const result = await install.mutateAsync()
     if (result.needs_root) {
-      notify.warning(t('admin.cos.installNeedsRoot'))
+      notify.warningKey('admin.cos.installNeedsRoot')
       return
     }
-    if (result.ok) notify.success(t('admin.cos.installOk'))
+    if (result.ok) notify.successKey('admin.cos.installOk')
     else notify.error(String(result.error ?? t('admin.cos.installFailed')))
   } catch {
-    notify.error(t('admin.cos.installFailed'))
+    notify.errorKey('admin.cos.installFailed')
   }
 }
 </script>
@@ -59,19 +59,19 @@ async function onInstall() {
   >
     <div class="admin-cos-kpi-row">
       <AdminSwissKpiCard
-        :title="t('admin.cos.targetVersion')"
+        title-key="admin.cos.targetVersion"
         :value="String(data?.target_version ?? '—')"
       />
       <AdminSwissKpiCard
-        :title="t('admin.cos.installedVersion')"
+        title-key="admin.cos.installedVersion"
         :value="String(data?.installed_version ?? '—')"
       />
       <AdminSwissKpiCard
-        :title="t('admin.cos.cosVersion')"
+        title-key="admin.cos.cosVersion"
         :value="String(cosMeta?.version ?? '—')"
       />
       <AdminSwissKpiCard
-        :title="t('admin.cos.status')"
+        title-key="admin.cos.status"
         :value="String(data?.status ?? '—')"
       />
     </div>
@@ -82,7 +82,7 @@ async function onInstall() {
         :loading="publish.isPending.value"
         @click="onPublish"
       >
-        {{ t('admin.cos.publishQdrant') }}
+        <I18nText k="admin.cos.publishQdrant" />
       </el-button>
       <el-button
         v-if="isConsumer"
@@ -90,7 +90,7 @@ async function onInstall() {
         :loading="install.isPending.value"
         @click="onInstall"
       >
-        {{ t('admin.cos.installQdrant') }}
+        <I18nText k="admin.cos.installQdrant" />
       </el-button>
     </div>
   </div>

@@ -84,7 +84,7 @@ const chunks = computed(() => chunksData.value?.chunks || [])
 
 const handleEvaluate = async () => {
   if (!query.value.trim()) {
-    notify.warning(t('knowledge.manualEval.notify.enterQuery'))
+    notify.warningKey('knowledge.manualEval.notify.enterQuery')
     return
   }
 
@@ -101,7 +101,7 @@ const handleEvaluate = async () => {
     })
 
     evaluationResults.value = result
-    notify.success(t('knowledge.manualEval.notify.completed'))
+    notify.successKey('knowledge.manualEval.notify.completed')
   } catch (error) {
     notify.error(error instanceof Error ? error.message : t('knowledge.manualEval.notify.failed'))
   }

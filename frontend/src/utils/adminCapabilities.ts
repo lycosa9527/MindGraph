@@ -43,6 +43,7 @@ export type AdminCapability =
   | 'tab.settings.thinking_coins'
   | 'tab.settings.public_dashboard'
   | 'tab.settings.teaching_design'
+  | 'tab.settings.user_dropdown'
   | 'tab.settings.gewe'
   | 'tab.settings.kitty_llmops'
   | 'tab.settings.mindbot'
@@ -102,6 +103,7 @@ const SUPERADMIN_CAPS: AdminCapability[] = [
   'tab.settings.thinking_coins',
   'tab.settings.public_dashboard',
   'tab.settings.teaching_design',
+  'tab.settings.user_dropdown',
   'tab.settings.gewe',
   'tab.settings.kitty_llmops',
   'tab.settings.mindbot',
@@ -148,6 +150,8 @@ const EXPERT_CAPS: AdminCapability[] = [
   'tab.organizations.view',
   'tab.invites.view',
   'tab.invites.edit',
+  'tab.learning_space.view',
+  'tab.learning_space.edit',
   'scope.invited_orgs',
 ]
 
@@ -159,6 +163,8 @@ const SCHOOL_ADMIN_CAPS: AdminCapability[] = [
   'tab.users.edit',
   'tab.vod.view',
   'tab.vod.edit',
+  'tab.learning_space.view',
+  'tab.learning_space.edit',
   'scope.org',
 ]
 
@@ -298,6 +304,7 @@ export function settingsSubtabRequiresCapabilities(subtab: string): AdminCapabil
     thinking_coins: ['tab.settings.thinking_coins'],
     public_dashboard: ['tab.settings.public_dashboard'],
     teaching_design: ['tab.settings.teaching_design'],
+    user_dropdown: ['tab.settings.user_dropdown'],
     gewe: ['tab.settings.gewe'],
     kitty_llmops: ['tab.settings.kitty_llmops'],
     mindbot: ['tab.settings.mindbot'],

@@ -6,12 +6,11 @@ import { computed, onScopeDispose, ref, watch } from 'vue'
 import { getSnapshot, submitDecompose } from '@/api/maite/inquiry'
 import { decompose as decomposeRequest, followUp as followUpRequest } from '@/api/maite/mentor'
 import { notify } from '@/composables/core/notifications'
+import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useMaiteMentorStream } from '@/composables/maite/useMaiteMentorStream'
 import { persistMaitePractice } from '@/composables/maite/useMaitePracticePersist'
-import { eventBus } from '@/composables/core/useEventBus'
 import { useMaiteStore } from '@/stores/maite'
-
 import type { MaiteChatMessage, MaiteDecomposeTables, MaiteMode } from '@/types/maite'
 
 function createMessage(role: MaiteChatMessage['role'], content: string): MaiteChatMessage {
@@ -43,7 +42,9 @@ function normalizeTableRows(rows: unknown[]): Record<string, string>[] {
 function normalizeDecompose(payload: unknown): MaiteDecomposeTables {
   const data = (payload ?? {}) as Record<string, unknown>
   return {
-    condition_table: normalizeTableRows(Array.isArray(data.condition_table) ? data.condition_table : []),
+    condition_table: normalizeTableRows(
+      Array.isArray(data.condition_table) ? data.condition_table : []
+    ),
     step_table: normalizeTableRows(Array.isArray(data.step_table) ? data.step_table : []),
     model_table: normalizeTableRows(Array.isArray(data.model_table) ? data.model_table : []),
     next_question: typeof data.next_question === 'string' ? data.next_question : '',
@@ -66,15 +67,10 @@ export function useMaiteDemo() {
 
   const isBusy = computed(() => mentorStream.isStreaming.value || fallbackBusy.value)
 
-  const canDecompose = computed(
-    () => store.currentProblemText.trim().length > 0 && !isBusy.value
-  )
+  const canDecompose = computed(() => store.currentProblemText.trim().length > 0 && !isBusy.value)
 
   const canFollowUp = computed(
-    () =>
-      replyDraft.value.trim().length > 0 &&
-      decomposition.value !== null &&
-      !isBusy.value
+    () => replyDraft.value.trim().length > 0 && decomposition.value !== null && !isBusy.value
   )
 
   watch(
@@ -123,7 +119,7 @@ export function useMaiteDemo() {
         return null
       }
       practiceSessionId.value = session.id
-      notify.success(t('maite.toast.practice_saved'))
+      notify.successKey('maite.toast.practice_saved')
       return session.id
     } catch (error: unknown) {
       eventBus.emit('maite:error', {
@@ -198,13 +194,13 @@ export function useMaiteDemo() {
     messages.value = [createMessage('user', question)]
     upsertLiveAssistant(t('maite.stream.working'))
 
-    notify.info(t('maite.toast.decompose_started'))
+    notify.infoKey('maite.toast.decompose_started')
     await ensurePracticeSession(question, options.imageUrl)
 
     let result = await mentorStream.runDecomposeStream(question)
     if (!result) {
       // Stream hung/empty: fall back to non-streaming decompose.
-      notify.warning(t('maite.toast.decompose_fallback'))
+      notify.warningKey('maite.toast.decompose_fallback')
       fallbackBusy.value = true
       upsertLiveAssistant(t('maite.stream.working'))
       try {
@@ -227,16 +223,14 @@ export function useMaiteDemo() {
 
     const assistantText = [
       tables.opening_guidance,
-      tables.next_question
-        ? `${t('maite.demo.guidingQuestionPrefix')}${tables.next_question}`
-        : '',
+      tables.next_question ? `${t('maite.demo.guidingQuestionPrefix')}${tables.next_question}` : '',
     ]
       .filter(Boolean)
       .join('\n\n')
 
     upsertLiveAssistant(assistantText || t('maite.demo.decomposeComplete'))
     liveAssistantId.value = null
-    notify.success(t('maite.toast.decompose_complete'))
+    notify.successKey('maite.toast.decompose_complete')
   }
 
   async function runFollowUp(): Promise<void> {
@@ -267,7 +261,7 @@ export function useMaiteDemo() {
     })
 
     if (!result) {
-      notify.warning(t('maite.toast.decompose_fallback'))
+      notify.warningKey('maite.toast.decompose_fallback')
       fallbackBusy.value = true
       try {
         result = await followUpRequest({
@@ -290,9 +284,7 @@ export function useMaiteDemo() {
 
     const assistantText = [
       result.reply,
-      result.guiding_question
-        ? `${t('maite.demo.followUpPrefix')}${result.guiding_question}`
-        : '',
+      result.guiding_question ? `${t('maite.demo.followUpPrefix')}${result.guiding_question}` : '',
     ]
       .filter(Boolean)
       .join('\n\n')

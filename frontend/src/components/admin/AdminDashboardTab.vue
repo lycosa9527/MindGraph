@@ -169,10 +169,10 @@ const schoolRankingPeriod = ref<RankingPeriod>('today')
 const userRankingPeriod = ref<RankingPeriod>('today')
 
 const rankingPeriodOptions = computed(() => [
-  { label: t('admin.today'), value: 'today' as const },
-  { label: t('admin.thisWeek'), value: 'week' as const },
-  { label: t('admin.thisMonth'), value: 'month' as const },
-  { label: t('admin.allTime'), value: 'total' as const },
+  { label: t('admin.today'), labelKey: 'admin.today', value: 'today' as const },
+  { label: t('admin.thisWeek'), labelKey: 'admin.thisWeek', value: 'week' as const },
+  { label: t('admin.thisMonth'), labelKey: 'admin.thisMonth', value: 'month' as const },
+  { label: t('admin.allTime'), labelKey: 'admin.allTime', value: 'total' as const },
 ])
 
 const topOrgsByTokens = computed(() =>
@@ -545,7 +545,7 @@ function showUserTokenTrend(
   period: RankingPeriod = userRankingPeriod.value
 ): void {
   if (!Number.isFinite(userId) || userId <= 0) {
-    notify.warning(t('admin.userTrendRequiresId'))
+    notify.warningKey('admin.userTrendRequiresId')
     return
   }
   userTrendUserId.value = userId
@@ -726,7 +726,7 @@ onBeforeUnmount(() => {
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-4"
       >
         <AdminSwissKpiCard
-          :title="t('admin.totalUsers')"
+          title-key="admin.totalUsers"
           :value="stats.totalUsers"
           :icon="User"
           theme="members"
@@ -734,7 +734,7 @@ onBeforeUnmount(() => {
           @click="showTrendChart('users')"
         />
         <AdminSwissKpiCard
-          :title="t('admin.todayRegistrations')"
+          title-key="admin.todayRegistrations"
           :value="stats.recentRegistrations"
           :icon="TrendCharts"
           theme="success"
@@ -742,7 +742,7 @@ onBeforeUnmount(() => {
           @click="showTrendChart('registrations')"
         />
         <AdminSwissKpiCard
-          :title="t('admin.schools')"
+          title-key="admin.schools"
           :value="stats.totalOrganizations"
           :icon="Document"
           theme="managers"
@@ -750,13 +750,21 @@ onBeforeUnmount(() => {
           @click="showTrendChart('organizations')"
         />
         <AdminSwissKpiCard
-          :title="`${t('admin.tokens')} (${t('admin.pastWeek')})`"
           :value="formatNumber(stats.totalTokens)"
           :icon="Connection"
           theme="storage"
           clickable
           @click="showTrendChart('tokens')"
-        />
+        >
+          <template #title>
+            <span class="swiss-stat-card__title-compound">
+              <I18nText k="admin.tokens" />
+              <span class="swiss-stat-card__title-period">
+                <I18nText k="admin.pastWeek" />
+              </span>
+            </span>
+          </template>
+        </AdminSwissKpiCard>
       </div>
 
       <AdminTokenUsageByServicePanel
@@ -791,7 +799,7 @@ onBeforeUnmount(() => {
             type="primary"
             @click="loadStats"
           >
-            {{ t('common.refresh') }}
+            <I18nText k="common.refresh" />
           </el-button>
         </div>
         <div
@@ -801,9 +809,9 @@ onBeforeUnmount(() => {
           <AdminSwissServiceCard theme="mindgraph">
             <template #header>
               <div class="flex flex-wrap items-center justify-between gap-2 w-full">
-                <span class="swiss-stat-card__service-title">{{
-                  t('admin.topSchoolsByMindGraphTokens')
-                }}</span>
+                <span class="swiss-stat-card__service-title"
+                  ><I18nText k="admin.topSchoolsByMindGraphTokens"
+                /></span>
                 <AdminSwissSegmented
                   v-model="schoolRankingPeriod"
                   fit
@@ -816,12 +824,14 @@ onBeforeUnmount(() => {
               :data="topOrgsByMindgraph"
               stripe
               size="small"
-              :empty-text="t('admin.listRangeEmpty')"
             >
-              <el-table-column
-                prop="name"
-                :label="t('admin.schoolName')"
-              >
+              <template #empty>
+                <I18nText k="admin.listRangeEmpty" />
+              </template>
+              <el-table-column prop="name">
+                <template #header>
+                  <I18nText k="admin.schoolName" />
+                </template>
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500 hover:underline"
@@ -840,9 +850,11 @@ onBeforeUnmount(() => {
               </el-table-column>
               <el-table-column
                 prop="tokens"
-                :label="t('admin.tokens')"
                 width="140"
               >
+                <template #header>
+                  <I18nText k="admin.tokens" />
+                </template>
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500"
@@ -865,9 +877,9 @@ onBeforeUnmount(() => {
           <AdminSwissServiceCard theme="mindmate">
             <template #header>
               <div class="flex flex-wrap items-center justify-between gap-2 w-full">
-                <span class="swiss-stat-card__service-title">{{
-                  t('admin.topSchoolsByMindMateTokens')
-                }}</span>
+                <span class="swiss-stat-card__service-title"
+                  ><I18nText k="admin.topSchoolsByMindMateTokens"
+                /></span>
                 <AdminSwissSegmented
                   v-model="schoolRankingPeriod"
                   fit
@@ -880,12 +892,14 @@ onBeforeUnmount(() => {
               :data="topOrgsByMindmate"
               stripe
               size="small"
-              :empty-text="t('admin.listRangeEmpty')"
             >
-              <el-table-column
-                prop="name"
-                :label="t('admin.schoolName')"
-              >
+              <template #empty>
+                <I18nText k="admin.listRangeEmpty" />
+              </template>
+              <el-table-column prop="name">
+                <template #header>
+                  <I18nText k="admin.schoolName" />
+                </template>
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500 hover:underline"
@@ -904,9 +918,11 @@ onBeforeUnmount(() => {
               </el-table-column>
               <el-table-column
                 prop="tokens"
-                :label="t('admin.tokens')"
                 width="140"
               >
+                <template #header>
+                  <I18nText k="admin.tokens" />
+                </template>
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500"
@@ -933,7 +949,7 @@ onBeforeUnmount(() => {
           <el-card shadow="hover">
             <template #header>
               <div class="flex flex-wrap items-center justify-between gap-2 w-full">
-                <span class="font-medium">{{ t('admin.topSchoolsByTokens') }}</span>
+                <span class="font-medium"><I18nText k="admin.topSchoolsByTokens" /></span>
                 <AdminSwissSegmented
                   v-model="schoolRankingPeriod"
                   fit
@@ -946,12 +962,14 @@ onBeforeUnmount(() => {
               :data="topOrgsByTokens"
               stripe
               size="small"
-              :empty-text="t('admin.listRangeEmpty')"
             >
-              <el-table-column
-                prop="name"
-                :label="t('admin.schoolName')"
-              >
+              <template #empty>
+                <I18nText k="admin.listRangeEmpty" />
+              </template>
+              <el-table-column prop="name">
+                <template #header>
+                  <I18nText k="admin.schoolName" />
+                </template>
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500 hover:underline"
@@ -963,9 +981,11 @@ onBeforeUnmount(() => {
               </el-table-column>
               <el-table-column
                 prop="tokens"
-                :label="t('admin.tokens')"
                 width="140"
               >
+                <template #header>
+                  <I18nText k="admin.tokens" />
+                </template>
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500"
@@ -981,7 +1001,7 @@ onBeforeUnmount(() => {
           <el-card shadow="hover">
             <template #header>
               <div class="flex flex-wrap items-center justify-between gap-2 w-full">
-                <span class="font-medium">{{ t('admin.topUsersByTokens') }}</span>
+                <span class="font-medium"><I18nText k="admin.topUsersByTokens" /></span>
                 <AdminSwissSegmented
                   v-model="userRankingPeriod"
                   fit
@@ -994,13 +1014,17 @@ onBeforeUnmount(() => {
               :data="topUsersByTokens"
               stripe
               size="small"
-              :empty-text="t('admin.listRangeEmpty')"
             >
+              <template #empty>
+                <I18nText k="admin.listRangeEmpty" />
+              </template>
               <el-table-column
                 prop="name"
-                :label="t('admin.users')"
                 min-width="120"
               >
+                <template #header>
+                  <I18nText k="admin.users" />
+                </template>
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500 hover:underline"
@@ -1012,24 +1036,31 @@ onBeforeUnmount(() => {
               </el-table-column>
               <el-table-column
                 prop="organization_name"
-                :label="t('admin.schoolName')"
                 min-width="100"
                 show-overflow-tooltip
               >
+                <template #header>
+                  <I18nText k="admin.schoolName" />
+                </template>
                 <template #default="{ row }">
                   {{ row.organization_name || '—' }}
                 </template>
               </el-table-column>
               <el-table-column
                 prop="phone"
-                :label="t('admin.phone')"
-                width="120"
-              />
-              <el-table-column
-                prop="total_tokens"
-                :label="t('admin.tokens')"
                 width="120"
               >
+                <template #header>
+                  <I18nText k="admin.phone" />
+                </template>
+              </el-table-column>
+              <el-table-column
+                prop="total_tokens"
+                width="120"
+              >
+                <template #header>
+                  <I18nText k="admin.tokens" />
+                </template>
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500"

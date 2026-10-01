@@ -20,7 +20,7 @@ const hint = computed(() => String(t('admin.showcase.proxyIntro')))
       class="rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
       @click="showModal = true"
     >
-      {{ t('admin.showcase.openProxyForm') }}
+      <I18nText k="admin.showcase.openProxyForm" />
     </button>
     <PublishShowcaseModal
       v-model:visible="showModal"

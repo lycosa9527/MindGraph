@@ -2,16 +2,20 @@ import { describe, expect, it } from 'vitest'
 
 import {
   collabAssistantLibraryDiagramId,
+  collabAssistantOffersCanvasEdit,
   collabMessageRowKey,
   collabMessagesForShareExport,
   displayMindmateCollabContent,
   lastFinishedAssistantIndex,
+  mergeMindmateCollabSnapshot,
   nextCollabFeedback,
   previousCollabUserPrompt,
+  resolveCollabAssistantEndContent,
   shouldShowCollabWordTemplateExport,
 } from '@/utils/mindmateCollabDisplay'
 
-const TEACHING = '课例正文\n<!-- mg-reply-kind:teaching_instruction -->\n[mg-reply-kind:teaching_instruction]'
+const TEACHING =
+  '课例正文\n<!-- mg-reply-kind:teaching_instruction -->\n[mg-reply-kind:teaching_instruction]'
 
 describe('mindmateCollabDisplay', () => {
   it('keeps peer text unchanged and strips MindMate reply-kind markers', () => {
@@ -21,9 +25,7 @@ describe('mindmateCollabDisplay', () => {
   })
 
   it('shows Word export only on finished teaching-instruction replies', () => {
-    expect(
-      shouldShowCollabWordTemplateExport({ role: 'assistant', content: TEACHING })
-    ).toBe(true)
+    expect(shouldShowCollabWordTemplateExport({ role: 'assistant', content: TEACHING })).toBe(true)
     expect(
       shouldShowCollabWordTemplateExport({
         role: 'assistant',
@@ -31,23 +33,31 @@ describe('mindmateCollabDisplay', () => {
         streaming: true,
       })
     ).toBe(false)
-    expect(
-      shouldShowCollabWordTemplateExport({ role: 'user', content: TEACHING })
-    ).toBe(false)
-    expect(
-      shouldShowCollabWordTemplateExport({ role: 'assistant', content: '普通问答' })
-    ).toBe(false)
+    expect(shouldShowCollabWordTemplateExport({ role: 'user', content: TEACHING })).toBe(false)
+    expect(shouldShowCollabWordTemplateExport({ role: 'assistant', content: '普通问答' })).toBe(
+      false
+    )
   })
 
   it('reads library diagram id from finished assistant markdown only', () => {
     const withId = '见图\n<!-- mg-diagram-id:aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee -->'
-    expect(
-      collabAssistantLibraryDiagramId({ role: 'assistant', content: withId })
-    ).toBe('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')
+    expect(collabAssistantLibraryDiagramId({ role: 'assistant', content: withId })).toBe(
+      'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+    )
     expect(
       collabAssistantLibraryDiagramId({ role: 'assistant', content: withId, streaming: true })
     ).toBeNull()
     expect(collabAssistantLibraryDiagramId({ role: 'user', content: withId })).toBeNull()
+  })
+
+  it('offers canvas edit for a preview image even without a library id', () => {
+    const preview = '见图\n![](https://host/temp_images/dingtalk_deadbeef_1710000000.png?sig=x)'
+    expect(collabAssistantOffersCanvasEdit({ role: 'assistant', content: preview })).toBe(true)
+    expect(
+      collabAssistantOffersCanvasEdit({ role: 'assistant', content: preview, streaming: true })
+    ).toBe(false)
+    expect(collabAssistantOffersCanvasEdit({ role: 'user', content: preview })).toBe(false)
+    expect(collabAssistantOffersCanvasEdit({ role: 'assistant', content: '普通问答' })).toBe(false)
   })
 
   it('finds the previous user prompt for an assistant row', () => {
@@ -78,7 +88,7 @@ describe('mindmateCollabDisplay', () => {
         { role: 'user', content: '问' },
         { role: 'assistant', content: '答一' },
         { role: 'assistant', content: '答二', streaming: true },
-      ]),
+      ])
     ).toBe(1)
   })
 
@@ -91,5 +101,51 @@ describe('mindmateCollabDisplay', () => {
     expect(rows).toHaveLength(2)
     expect(rows[1].content).toBe('课例正文')
     expect(rows[1].id).toBe('id-2')
+  })
+
+  it('keeps lines already on screen when the snapshot window moved forward', () => {
+    const merged = mergeMindmateCollabSnapshot(
+      [
+        { id: 1, role: 'user', content: 'first', sender_user_id: 2 },
+        { id: 2, role: 'user', content: 'second', sender_user_id: 2 },
+      ],
+      [
+        { id: 4, role: 'user', content: 'fourth', sender_user_id: 8 },
+        { id: 5, role: 'user', content: 'fifth', sender_user_id: 8 },
+      ]
+    )
+    expect(merged.map((row) => row.id)).toEqual([1, 2, 4, 5])
+  })
+
+  it('keeps a live message that arrived before a stale snapshot', () => {
+    const merged = mergeMindmateCollabSnapshot(
+      [
+        { id: 1, role: 'user', content: 'earlier', sender_user_id: 2 },
+        { id: 4, role: 'user', content: 'just sent', sender_user_id: 8 },
+      ],
+      [{ id: 1, role: 'user', content: 'earlier', sender_user_id: 2 }]
+    )
+    expect(merged.map((row) => row.id)).toEqual([1, 4])
+    expect(merged[1].content).toBe('just sent')
+  })
+
+  it('drops an optimistic send once the snapshot contains it', () => {
+    const merged = mergeMindmateCollabSnapshot(
+      [
+        {
+          role: 'user',
+          content: 'hello',
+          sender_user_id: 3,
+          clientKey: 'local-1',
+        },
+      ],
+      [{ id: 9, role: 'user', content: 'hello', sender_user_id: 3 }]
+    )
+    expect(merged).toEqual([{ id: 9, role: 'user', content: 'hello', sender_user_id: 3 }])
+  })
+
+  it('replaces a streamed prefix with the finished assistant text', () => {
+    expect(resolveCollabAssistantEndContent('Hel', 'Hello')).toBe('Hello')
+    expect(resolveCollabAssistantEndContent('HelloHello', 'Hello')).toBe('HelloHello')
   })
 })

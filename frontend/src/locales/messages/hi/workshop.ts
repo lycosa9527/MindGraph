@@ -33,7 +33,7 @@ export default {
   'collab.previousSessionsStopped': 'आपके अन्य आरेखों पर {n} पिछले सहयोग सत्र समाप्त।',
   'collab.saveFailed': 'आरेख सहेजना विफल',
   'collab.scanToJoin': 'शामिल होने स्कैन',
-  'collab.schoolDescActive': 'स्कूल सहयोग चालू। सहकर्मी: होम पेज सहयोग → स्कूल, यह आरेख चुनें — कोड नहीं।',
+  'collab.schoolDescActive': 'स्कूल सहयोग चालू। सहकर्मी: MindGraph होम पेज सहयोग → स्कूल, यह आरेख चुनें — कोड नहीं।',
   'collab.schoolStarted': 'स्कूल सहयोग चालू — सहकर्मी सहयोग → स्कूल से शामिल।',
   'collab.sectionNetwork': 'साझा सहयोग (कोड)',
   'collab.sectionSchool': 'स्कूल सहयोग',

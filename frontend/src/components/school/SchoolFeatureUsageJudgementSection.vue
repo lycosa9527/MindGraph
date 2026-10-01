@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { SchoolFeatureUsageJudgement } from '@/composables/queries/adminSchoolFeatureUsageApi'
 import { useLanguage } from '@/composables'
+import type { SchoolFeatureUsageJudgement } from '@/composables/queries/adminSchoolFeatureUsageApi'
 
 const props = defineProps<{
   judgement: SchoolFeatureUsageJudgement
@@ -44,13 +44,13 @@ const conclusionText = computed(() => {
 <template>
   <section class="school-activity-section">
     <h2 class="school-activity-section__title">
-      {{ t('admin.schoolFeatureUsage.sectionJudge') }}
+      <I18nText k="admin.schoolFeatureUsage.sectionJudge" />
     </h2>
     <ol class="school-feature-usage-judge">
       <li>
-        <h3>{{ t('admin.schoolFeatureUsage.top5Title') }}</h3>
+        <h3><I18nText k="admin.schoolFeatureUsage.top5Title" /></h3>
         <p v-if="props.judgement.top5.length === 0">
-          {{ t('admin.schoolFeatureUsage.top5Empty') }}
+          <I18nText k="admin.schoolFeatureUsage.top5Empty" />
         </p>
         <ol
           v-else
@@ -60,29 +60,32 @@ const conclusionText = computed(() => {
             v-for="(row, index) in props.judgement.top5"
             :key="row.key"
           >
-            {{ index + 1 }}. {{ moduleTitle(row.key) }}
-            — {{ t('admin.schoolFeatureUsage.usageRate') }} {{ rateLabel(row.usage_rate) }}
+            {{ index + 1 }}. {{ moduleTitle(row.key) }} —
+            <I18nText k="admin.schoolFeatureUsage.usageRate" /> {{ rateLabel(row.usage_rate) }}
           </li>
         </ol>
         <p class="school-feature-usage-hint">
-          {{ t('admin.schoolFeatureUsage.usageRateHint') }}
+          <I18nText k="admin.schoolFeatureUsage.usageRateHint" />
         </p>
       </li>
       <li>
-        <h3>{{ t('admin.schoolFeatureUsage.highTitle') }}</h3>
+        <h3><I18nText k="admin.schoolFeatureUsage.highTitle" /></h3>
         <p>{{ joinNames(props.judgement.high) }}</p>
       </li>
       <li>
-        <h3>{{ t('admin.schoolFeatureUsage.lowIdleTitle') }}</h3>
+        <h3><I18nText k="admin.schoolFeatureUsage.lowIdleTitle" /></h3>
         <p>
-          {{ t('admin.schoolFeatureUsage.lowIdleBody', {
-            low: joinNames(props.judgement.low),
-            idle: joinNames(props.judgement.idle),
-          }) }}
+          <I18nText
+            k="admin.schoolFeatureUsage.lowIdleBody"
+            :params="{
+              low: joinNames(props.judgement.low),
+              idle: joinNames(props.judgement.idle),
+            }"
+          />
         </p>
       </li>
       <li>
-        <h3>{{ t('admin.schoolFeatureUsage.conclusionTitle') }}</h3>
+        <h3><I18nText k="admin.schoolFeatureUsage.conclusionTitle" /></h3>
         <p>{{ conclusionText }}</p>
       </li>
     </ol>

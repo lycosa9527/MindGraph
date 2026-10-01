@@ -2,7 +2,7 @@
  * Drag + persist the new-canvas classroom remote. Position is device-local
  * (110" IFP teachers move it to where they stand).
  */
-import { type Ref, onMounted, onUnmounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import {
   CLASSROOM_REMOTE_DEFAULT_HEIGHT_PX,
@@ -10,8 +10,11 @@ import {
   CLASSROOM_REMOTE_DRAG_THRESHOLD_PX,
   CLASSROOM_REMOTE_EDGE_GAP_PX,
   CLASSROOM_REMOTE_MARGIN_PX,
+  CLASSROOM_REMOTE_MIN_HEIGHT_PX,
+  CLASSROOM_REMOTE_MIN_WIDTH_PX,
   CLASSROOM_REMOTE_STATUS_GAP_PX,
   CLASSROOM_REMOTE_STORAGE_KEY,
+  type ClassroomRemoteFrame,
   type ClassroomRemotePersisted,
   type ClassroomRemoteTabId,
   DEFAULT_CLASSROOM_REMOTE_TAB,
@@ -38,6 +41,66 @@ export function clampClassroomRemotePosition(
     left: Math.min(maxLeft, Math.max(margin, left)),
     top: Math.min(maxTop, Math.max(margin, top)),
   }
+}
+
+/** Minimum that still fits the tabs, capped when the viewport is smaller. */
+export function classroomRemoteMinSize(
+  viewportW: number,
+  viewportH: number
+): { width: number; height: number } {
+  const maxWidth = Math.max(1, viewportW - CLASSROOM_REMOTE_EDGE_GAP_PX * 2)
+  const maxHeight = Math.max(1, viewportH - CLASSROOM_REMOTE_EDGE_GAP_PX * 2)
+  return {
+    width: Math.min(CLASSROOM_REMOTE_MIN_WIDTH_PX, maxWidth),
+    height: Math.min(CLASSROOM_REMOTE_MIN_HEIGHT_PX, maxHeight),
+  }
+}
+
+/**
+ * Resize from a fixed top-left. Width and height stay inside the viewport
+ * edge gap and do not drop below the minimum unless the viewport is smaller.
+ */
+export function resizeClassroomRemoteFrame(
+  left: number,
+  top: number,
+  width: number,
+  height: number,
+  viewportW: number,
+  viewportH: number
+): { width: number; height: number } {
+  const min = classroomRemoteMinSize(viewportW, viewportH)
+  const roomW = Math.max(1, viewportW - left - CLASSROOM_REMOTE_EDGE_GAP_PX)
+  const roomH = Math.max(1, viewportH - top - CLASSROOM_REMOTE_EDGE_GAP_PX)
+  const minW = Math.min(min.width, roomW)
+  const minH = Math.min(min.height, roomH)
+  return {
+    width: Math.min(roomW, Math.max(minW, width)),
+    height: Math.min(roomH, Math.max(minH, height)),
+  }
+}
+
+/** Keep the panel on screen. May shift the origin when the viewport shrinks. */
+export function clampClassroomRemoteFrame(
+  frame: ClassroomRemoteFrame,
+  viewportW: number,
+  viewportH: number
+): ClassroomRemoteFrame {
+  const min = classroomRemoteMinSize(viewportW, viewportH)
+  let width = Math.max(min.width, frame.width)
+  let height = Math.max(min.height, frame.height)
+  const maxWidth = Math.max(min.width, viewportW - CLASSROOM_REMOTE_EDGE_GAP_PX * 2)
+  const maxHeight = Math.max(min.height, viewportH - CLASSROOM_REMOTE_EDGE_GAP_PX * 2)
+  width = Math.min(width, maxWidth)
+  height = Math.min(height, maxHeight)
+  const pos = clampClassroomRemotePosition(
+    frame.left,
+    frame.top,
+    width,
+    height,
+    viewportW,
+    viewportH
+  )
+  return { left: pos.left, top: pos.top, width, height }
 }
 
 export function defaultClassroomRemotePosition(
@@ -71,9 +134,19 @@ export function parseClassroomRemotePersisted(
       return null
     }
     const tab = isClassroomRemoteTabId(parsed.tab) ? parsed.tab : DEFAULT_CLASSROOM_REMOTE_TAB
+    const width =
+      typeof parsed.width === 'number' && Number.isFinite(parsed.width) && parsed.width > 0
+        ? parsed.width
+        : CLASSROOM_REMOTE_DEFAULT_WIDTH_PX
+    const height =
+      typeof parsed.height === 'number' && Number.isFinite(parsed.height) && parsed.height > 0
+        ? parsed.height
+        : CLASSROOM_REMOTE_DEFAULT_HEIGHT_PX
     return {
       left: parsed.left,
       top: parsed.top,
+      width,
+      height,
       hidden: parsed.hidden === true,
       tab,
     }
@@ -131,6 +204,8 @@ function persistHiddenLocal(): void {
   writeStoredRemote({
     left: fallback.left,
     top: fallback.top,
+    width: CLASSROOM_REMOTE_DEFAULT_WIDTH_PX,
+    height: CLASSROOM_REMOTE_DEFAULT_HEIGHT_PX,
     hidden: sharedHidden.value,
     tab: DEFAULT_CLASSROOM_REMOTE_TAB,
   })
@@ -219,7 +294,7 @@ export function useClassroomRemoteVisibility() {
   return { hidden: sharedHidden, setHidden, toggleHidden }
 }
 
-export function useClassroomRemotePosition(panelRef: Ref<HTMLElement | null>) {
+export function useClassroomRemotePosition() {
   const stored = readStoredRemote()
   const fallback = defaultClassroomRemotePosition(
     CLASSROOM_REMOTE_DEFAULT_WIDTH_PX,
@@ -229,57 +304,68 @@ export function useClassroomRemotePosition(panelRef: Ref<HTMLElement | null>) {
   )
   const left = ref(stored?.left ?? fallback.left)
   const top = ref(stored?.top ?? fallback.top)
+  const width = ref(stored?.width ?? CLASSROOM_REMOTE_DEFAULT_WIDTH_PX)
+  const height = ref(stored?.height ?? CLASSROOM_REMOTE_DEFAULT_HEIGHT_PX)
   const activeTab = ref<ClassroomRemoteTabId>(stored?.tab ?? DEFAULT_CLASSROOM_REMOTE_TAB)
   const dragging = ref(false)
+  const resizing = ref(false)
 
   let pointerId: number | null = null
+  let resizePointerId: number | null = null
   let startClientX = 0
   let startClientY = 0
   let startLeft = 0
   let startTop = 0
+  let startWidth = 0
+  let startHeight = 0
   let moved = false
 
-  function panelSize(): { width: number; height: number } {
-    const el = panelRef.value
-    if (!el) {
-      return {
-        width: CLASSROOM_REMOTE_DEFAULT_WIDTH_PX,
-        height: CLASSROOM_REMOTE_DEFAULT_HEIGHT_PX,
-      }
-    }
-    return { width: el.offsetWidth, height: el.offsetHeight }
+  function applyFrame(frame: ClassroomRemoteFrame): void {
+    left.value = frame.left
+    top.value = frame.top
+    width.value = frame.width
+    height.value = frame.height
   }
 
   function persist(): void {
     writeStoredRemote({
       left: left.value,
       top: top.value,
+      width: width.value,
+      height: height.value,
       hidden: sharedHidden.value,
       tab: activeTab.value,
     })
   }
 
   function clampToViewport(): void {
-    const size = panelSize()
     const view = viewportSize()
-    const next = clampClassroomRemotePosition(
-      left.value,
-      top.value,
-      size.width,
-      size.height,
-      view.width,
-      view.height
+    applyFrame(
+      clampClassroomRemoteFrame(
+        {
+          left: left.value,
+          top: top.value,
+          width: width.value,
+          height: height.value,
+        },
+        view.width,
+        view.height
+      )
     )
-    left.value = next.left
-    top.value = next.top
   }
 
   function resetToDefault(): void {
-    const size = panelSize()
     const view = viewportSize()
+    const size = resizeClassroomRemoteFrame(
+      0,
+      0,
+      CLASSROOM_REMOTE_DEFAULT_WIDTH_PX,
+      CLASSROOM_REMOTE_DEFAULT_HEIGHT_PX,
+      view.width,
+      view.height
+    )
     const next = defaultClassroomRemotePosition(size.width, size.height, view.width, view.height)
-    left.value = next.left
-    top.value = next.top
+    applyFrame({ ...next, width: size.width, height: size.height })
     persist()
   }
 
@@ -325,13 +411,12 @@ export function useClassroomRemotePosition(panelRef: Ref<HTMLElement | null>) {
       return
     }
     moved = true
-    const size = panelSize()
     const view = viewportSize()
     const next = clampClassroomRemotePosition(
       startLeft + dx,
       startTop + dy,
-      size.width,
-      size.height,
+      width.value,
+      height.value,
       view.width,
       view.height
     )
@@ -354,6 +439,56 @@ export function useClassroomRemotePosition(panelRef: Ref<HTMLElement | null>) {
     }
   }
 
+  function onResizePointerDown(event: PointerEvent): void {
+    if (event.button !== 0 && event.pointerType === 'mouse') {
+      return
+    }
+    const handle = event.currentTarget
+    if (!(handle instanceof HTMLElement)) {
+      return
+    }
+    resizePointerId = event.pointerId
+    startClientX = event.clientX
+    startClientY = event.clientY
+    startWidth = width.value
+    startHeight = height.value
+    resizing.value = true
+    handle.setPointerCapture(event.pointerId)
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
+  function onResizePointerMove(event: PointerEvent): void {
+    if (resizePointerId !== event.pointerId) {
+      return
+    }
+    const view = viewportSize()
+    const next = resizeClassroomRemoteFrame(
+      left.value,
+      top.value,
+      startWidth + (event.clientX - startClientX),
+      startHeight + (event.clientY - startClientY),
+      view.width,
+      view.height
+    )
+    width.value = next.width
+    height.value = next.height
+  }
+
+  function onResizePointerUp(event: PointerEvent): void {
+    if (resizePointerId !== event.pointerId) {
+      return
+    }
+    const handle = event.currentTarget
+    if (handle instanceof HTMLElement && handle.hasPointerCapture(event.pointerId)) {
+      handle.releasePointerCapture(event.pointerId)
+    }
+    resizePointerId = null
+    resizing.value = false
+    clampToViewport()
+    persist()
+  }
+
   function onWindowResize(): void {
     clampToViewport()
     persist()
@@ -374,18 +509,31 @@ export function useClassroomRemotePosition(panelRef: Ref<HTMLElement | null>) {
 
   onUnmounted(() => {
     window.removeEventListener('resize', onWindowResize)
+    if (dragging.value || resizing.value) {
+      dragging.value = false
+      resizing.value = false
+      pointerId = null
+      resizePointerId = null
+      persist()
+    }
   })
 
   return {
     left,
     top,
+    width,
+    height,
     activeTab,
     dragging,
+    resizing,
     setActiveTab,
     clampToViewport,
     resetToDefault,
     onHandlePointerDown,
     onHandlePointerMove,
     onHandlePointerUp,
+    onResizePointerDown,
+    onResizePointerMove,
+    onResizePointerUp,
   }
 }

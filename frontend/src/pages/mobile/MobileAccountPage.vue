@@ -21,9 +21,9 @@ import {
 } from '@lucide/vue'
 
 import { ChangePasswordModal, ChangePhoneModal } from '@/components/auth'
-import QuickRegisterModal from '@/components/mindgraph/QuickRegisterModal.vue'
 import AvatarSelectModal from '@/components/auth/AvatarSelectModal.vue'
 import SetPasswordWithSmsModal from '@/components/auth/SetPasswordWithSmsModal.vue'
+import QuickRegisterModal from '@/components/mindgraph/QuickRegisterModal.vue'
 import { useLanguage } from '@/composables'
 import { usePwaInstall } from '@/composables/usePwaInstall'
 import {
@@ -35,8 +35,8 @@ import { useAuthStore } from '@/stores'
 import type { Language, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
 import { persistLanguagePreferencesIfAuthenticated } from '@/utils/persistLanguagePreferences'
-import { getRolePillStyle } from '@/utils/userRoleDisplay'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
+import { getRolePillStyle } from '@/utils/userRoleDisplay'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -58,6 +58,7 @@ const userRolePill = computed(() => {
   }
   return {
     label: t(style.labelKey),
+    labelKey: style.labelKey,
     bgClass: style.bgClass,
     textClass: style.textClass,
     borderClass: style.borderClass,
@@ -179,10 +180,16 @@ async function handleLogout() {
           </div>
           <span
             v-if="userRolePill"
-            class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium"
+            class="role-pill text-xs font-medium"
             :class="[userRolePill.bgClass, userRolePill.textClass, userRolePill.borderClass]"
           >
-            {{ userRolePill.label }}
+            <I18nText
+              v-if="userRolePill.labelKey"
+              :k="userRolePill.labelKey"
+              dense
+              align="center"
+            />
+            <template v-else>{{ userRolePill.label }}</template>
           </span>
         </div>
         <div
@@ -206,7 +213,7 @@ async function handleLogout() {
           />
           <div class="flex-1 min-w-0">
             <div class="text-sm font-medium text-gray-900">
-              {{ t('sidebar.changePhone', '修改手机号') }}
+              <I18nText k="sidebar.changePhone" />
             </div>
             <div class="text-xs text-gray-400 mt-0.5">{{ maskedPhone }}</div>
           </div>
@@ -229,7 +236,7 @@ async function handleLogout() {
           />
           <div class="flex-1 min-w-0">
             <div class="text-sm font-medium text-gray-900">
-              {{ t('landing.international.shareSite') }}
+              <I18nText k="landing.international.shareSite" />
             </div>
           </div>
           <ChevronRight
@@ -254,7 +261,7 @@ async function handleLogout() {
           />
           <div class="flex-1 min-w-0">
             <div class="text-sm font-medium text-gray-900">
-              {{ t('auth.setPasswordWithSms', 'Set login password') }}
+              <I18nText k="auth.setPasswordWithSms" />
             </div>
           </div>
           <ChevronRight
@@ -273,7 +280,7 @@ async function handleLogout() {
           />
           <div class="flex-1 min-w-0">
             <div class="text-sm font-medium text-gray-900">
-              {{ t('sidebar.changePassword', '修改密码') }}
+              <I18nText k="sidebar.changePassword" />
             </div>
           </div>
           <ChevronRight
@@ -295,7 +302,7 @@ async function handleLogout() {
           />
           <div class="flex-1 min-w-0">
             <div class="text-sm font-medium text-gray-900">
-              {{ t('sidebar.changeAvatar', '修改头像') }}
+              <I18nText k="sidebar.changeAvatar" />
             </div>
           </div>
           <ChevronRight
@@ -317,7 +324,7 @@ async function handleLogout() {
           />
           <div class="flex-1 min-w-0">
             <div class="text-sm font-medium text-gray-900">
-              {{ t('mobile.uiLanguage', '界面语言') }}
+              <I18nText k="mobile.uiLanguage" />
             </div>
             <div class="text-xs text-gray-400 mt-0.5">{{ currentUiLabel }}</div>
           </div>
@@ -363,7 +370,7 @@ async function handleLogout() {
           />
           <div class="flex-1 min-w-0">
             <div class="text-sm font-medium text-gray-900">
-              {{ t('settings.language.prompt') }}
+              <I18nText k="settings.language.prompt" />
             </div>
             <div class="text-xs text-gray-400 mt-0.5">{{ currentPromptLabel }}</div>
           </div>
@@ -442,10 +449,10 @@ async function handleLogout() {
         </div>
         <div class="flex-1 min-w-0">
           <div class="text-base font-semibold text-gray-900">
-            {{ t('auth.downloadDesktopShortcut') }}
+            <I18nText k="auth.downloadDesktopShortcut" />
           </div>
           <div class="text-sm text-gray-500 mt-0.5">
-            {{ t('mobile.desktopShortcutDesc') }}
+            <I18nText k="mobile.desktopShortcutDesc" />
           </div>
         </div>
         <ChevronRight
@@ -460,7 +467,7 @@ async function handleLogout() {
         @click="handleLogout"
       >
         <LogOut :size="18" />
-        {{ t('sidebar.logout', '退出登录') }}
+        <I18nText k="sidebar.logout" />
       </button>
     </div>
 

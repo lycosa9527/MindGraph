@@ -111,6 +111,7 @@ const props = defineProps<{
   orgDingtalkAiCardStreamingMaxChars?: number
   orgShowChainOfThought?: boolean
   orgMindmateAgentName?: string | null
+  orgMindmateAgentAlias?: string | null
   orgMindmateAgentAvatarUrl?: string | null
   userName?: string
   userId?: number
@@ -193,8 +194,16 @@ const schoolDialogTab = ref<SchoolDialogTab>('usage')
 const userDialogTab = ref<UserDialogTab>('usage')
 
 const userDialogTabOptions = computed(() => [
-  { label: t('admin.userActivityTab.tabUsage'), value: 'usage' as const },
-  { label: t('admin.userActivityTab.tabLabel'), value: 'activity' as const },
+  {
+    label: t('admin.userActivityTab.tabUsage'),
+    labelKey: 'admin.userActivityTab.tabUsage',
+    value: 'usage' as const,
+  },
+  {
+    label: t('admin.userActivityTab.tabLabel'),
+    labelKey: 'admin.userActivityTab.tabLabel',
+    value: 'activity' as const,
+  },
 ])
 
 const activeMindbotPane = computed(() => mindbotEmbeddedPane(schoolDialogTab.value))
@@ -530,11 +539,11 @@ async function addManagers() {
   const managerLimit = SCHOOL_TIER_LIMITS[schoolTierEdit.value].managerLimit
   const remaining = Math.max(0, managerLimit - managers.value.length)
   if (remaining === 0) {
-    notify.warning(t('admin.schoolManagerLimitReached', { limit: managerLimit }))
+    notify.warningKey('admin.schoolManagerLimitReached', { limit: managerLimit })
     return
   }
   if (pendingManagerIds.value.length > remaining) {
-    notify.warning(t('admin.schoolManagerLimitReached', { limit: managerLimit }))
+    notify.warningKey('admin.schoolManagerLimitReached', { limit: managerLimit })
     pendingManagerIds.value = pendingManagerIds.value.slice(0, remaining)
     return
   }
@@ -546,7 +555,7 @@ async function addManagers() {
         addManagerMutation.mutateAsync({ orgId: props.orgId as number, userId })
       )
     )
-    notify.success(t('notification.saved'))
+    notify.successKey('notification.saved')
     pendingManagerIds.value = []
     await loadManagersAndUsers()
     emit('refresh')
@@ -563,7 +572,7 @@ async function removeManager(userId: number) {
   if (props.orgId == null) return
   try {
     await removeManagerMutation.mutateAsync({ orgId: props.orgId, userId })
-    notify.success(t('notification.saved'))
+    notify.successKey('notification.saved')
     await loadManagersAndUsers()
     emit('refresh')
   } catch (err) {
@@ -579,15 +588,13 @@ async function saveGeneralSettings() {
   if (tierDowngradeBlocked.value) {
     const limits = selectedTierLimits.value
     const memberCap = effectiveMemberLimitValue.value
-    notify.warning(
-      t('admin.schoolTierDowngradeBlocked', {
-        members: props.orgUserCount ?? 0,
-        memberLimit: isUnlimitedMemberLimit(memberCap) ? t('admin.unlimited') : memberCap,
-        managers: managers.value.length,
-        managerLimit:
-          limits.managerLimit <= 0 ? t('admin.noSchoolManagersShort') : limits.managerLimit,
-      })
-    )
+    notify.warningKey('admin.schoolTierDowngradeBlocked', {
+      members: props.orgUserCount ?? 0,
+      memberLimit: isUnlimitedMemberLimit(memberCap) ? t('admin.unlimited') : memberCap,
+      managers: managers.value.length,
+      managerLimit:
+        limits.managerLimit <= 0 ? t('admin.noSchoolManagersShort') : limits.managerLimit,
+    })
     return
   }
   generalTabSaving.value = true
@@ -622,7 +629,7 @@ async function saveGeneralSettings() {
         return
       }
     }
-    notify.success(t('notification.saved'))
+    notify.successKey('notification.saved')
     emit('refresh')
     emitAdminEvent('admin:mutation_completed', {
       domain: 'organizations',
@@ -651,7 +658,7 @@ async function toggleLock() {
       body: { is_active: newActive },
     })
     orgActiveState.value = newActive
-    notify.success(t('notification.saved'))
+    notify.successKey('notification.saved')
     emit('refresh')
   } catch (err) {
     const detail = err instanceof Error ? err.message : ''
@@ -686,7 +693,7 @@ async function deleteOrganization() {
       orgId: props.orgId,
       deleteUsers: userCount > 0,
     })
-    notify.success(t('notification.saved'))
+    notify.successKey('notification.saved')
     emit('update:visible', false)
     emit('refresh')
   } catch (err) {
@@ -853,10 +860,10 @@ onBeforeUnmount(() => {
           v-model="schoolDialogTab"
           class="mindbot-dialog-tabs school-dialog-tabs"
         >
-          <el-tab-pane
-            name="usage"
-            :label="t('admin.schoolModal.tabUsage')"
-          >
+          <el-tab-pane name="usage">
+            <template #label>
+              <I18nText k="admin.schoolModal.tabUsage" />
+            </template>
             <AdminSchoolTokenUsageTab
               ref="tokenUsageTabRef"
               :chart-loading="chartLoading"
@@ -867,9 +874,11 @@ onBeforeUnmount(() => {
           </el-tab-pane>
           <el-tab-pane
             name="teachers"
-            :label="t('admin.schoolModal.tabTeachers')"
             lazy
           >
+            <template #label>
+              <I18nText k="admin.schoolModal.tabTeachers" />
+            </template>
             <AdminSchoolTeachersTab
               v-if="orgId"
               :org-id="orgId"
@@ -878,9 +887,11 @@ onBeforeUnmount(() => {
           </el-tab-pane>
           <el-tab-pane
             name="activity"
-            :label="t('admin.schoolModal.tabActivity')"
             lazy
           >
+            <template #label>
+              <I18nText k="admin.schoolModal.tabActivity" />
+            </template>
             <AdminOrgActivityTab
               v-if="orgId"
               :org-id="orgId"
@@ -890,12 +901,15 @@ onBeforeUnmount(() => {
           <el-tab-pane
             v-if="showSchoolSettingsTabs"
             name="dify"
-            :label="t('admin.schoolModal.tabMindmate')"
             lazy
           >
+            <template #label>
+              <I18nText k="admin.schoolModal.tabMindmate" />
+            </template>
             <AdminSchoolDifySettings
               v-if="orgId"
               ref="mindmateDifyRef"
+              v-model:school-display-name="displayNameEdit"
               :org-id="orgId"
               :dify-api-base-url="orgDifyApiBaseUrl"
               :dify-api-key-masked="orgDifyApiKeyMasked"
@@ -906,7 +920,9 @@ onBeforeUnmount(() => {
               :dify-timeout-seconds="orgDifyTimeoutSeconds"
               :dingtalk-ai-card-streaming-max-chars="orgDingtalkAiCardStreamingMaxChars"
               :show-chain-of-thought="orgShowChainOfThought"
+              :org-name="orgName"
               :mindmate-agent-name="orgMindmateAgentName"
+              :mindmate-agent-alias="orgMindmateAgentAlias"
               :mindmate-agent-avatar-url="orgMindmateAgentAvatarUrl"
               @saved="emit('refresh')"
             />
@@ -914,9 +930,11 @@ onBeforeUnmount(() => {
           <el-tab-pane
             v-if="showMindbotSchoolTabs"
             name="mindbot_dingtalk"
-            :label="t('admin.mindbot.tabDingtalk')"
             lazy
           >
+            <template #label>
+              <I18nText k="admin.mindbot.tabDingtalk" />
+            </template>
             <AdminSchoolMindBotTab
               v-if="orgId && schoolDialogTab === 'mindbot_dingtalk'"
               :org-id="orgId"
@@ -928,9 +946,11 @@ onBeforeUnmount(() => {
           <el-tab-pane
             v-if="showMindbotSchoolTabs"
             name="mindbot_log"
-            :label="t('admin.mindbot.tabLog')"
             lazy
           >
+            <template #label>
+              <I18nText k="admin.mindbot.tabLog" />
+            </template>
             <AdminSchoolMindBotTab
               v-if="orgId && schoolDialogTab === 'mindbot_log'"
               :org-id="orgId"
@@ -941,9 +961,11 @@ onBeforeUnmount(() => {
           <el-tab-pane
             v-if="showMindbotSchoolTabs"
             name="mindbot_monitor"
-            :label="t('admin.mindbot.tabMonitor')"
             lazy
           >
+            <template #label>
+              <I18nText k="admin.mindbot.tabMonitor" />
+            </template>
             <AdminSchoolMindBotTab
               v-if="orgId && schoolDialogTab === 'mindbot_monitor'"
               :org-id="orgId"
@@ -954,9 +976,11 @@ onBeforeUnmount(() => {
           <el-tab-pane
             v-if="showSchoolSettingsTabs"
             name="general"
-            :label="t('admin.schoolModal.tabGeneral')"
             lazy
           >
+            <template #label>
+              <I18nText k="admin.schoolModal.tabGeneral" />
+            </template>
             <AdminSchoolOrgGeneralTab
               v-if="orgId"
               ref="orgGeneralTabRef"
@@ -1108,7 +1132,7 @@ onBeforeUnmount(() => {
           :aria-checked="userDialogTab === opt.value"
           @click="userDialogTab = opt.value"
         >
-          {{ opt.label }}
+          <I18nText :k="opt.labelKey" />
         </button>
       </div>
       <AdminUserTokenUsageTab

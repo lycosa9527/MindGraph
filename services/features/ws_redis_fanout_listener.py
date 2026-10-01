@@ -31,7 +31,10 @@ from typing import Any, Final, Optional, Tuple
 
 from redis.exceptions import RedisError
 
-from config.settings import config
+from services.features.mindmate_collab_fanout_hooks import (
+    deliver_registered_collab_fanout,
+    notify_collab_fanout_subscribed,
+)
 from services.features.workshop_chat_ws_manager import chat_ws_manager
 from services.features.workshop_ws_fanout_delivery import (
     deliver_local_workshop_broadcast,
@@ -53,12 +56,6 @@ from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
-
-DELIVER_MINDMATE_COLLAB_FANOUT = None
-if config.FEATURE_MINDMATE_COLLAB:
-    from services.features.mindmate_collab.ws_broadcast import (
-        deliver_fanout_envelope as DELIVER_MINDMATE_COLLAB_FANOUT,
-    )
 
 _RECONNECT_DELAY = 2.0
 _KIND_CHAT: Final[str] = "chat"
@@ -90,6 +87,92 @@ class _FanoutListenerState:
 
 
 _state = _FanoutListenerState()
+_CRITICAL_DELIVERIES: set[asyncio.Task[None]] = set()
+# Saved lines, plus the frames that end the seminar. A full queue must not swallow them.
+_MUST_DELIVER_TYPES = frozenset(
+    {
+        "user_message",
+        "ai_message_end",
+        "session_closing",
+        "session_ended_shutdown",
+        "room_idle_shutdown",
+    },
+)
+
+
+def _note_fanout_drop(kind: str) -> None:
+    """Count a frame that could not be queued."""
+    try:
+        record_ws_fanout_delivery_queue_drop()
+    except BACKGROUND_INFRA_ERRORS:
+        pass
+    logger.warning("[WSFanout] delivery queue full; dropping %s frame", kind)
+
+
+def _put_fanout(
+    delivery_queue: "asyncio.Queue[Tuple[str, str]]",
+    kind: str,
+    payload: str,
+) -> bool:
+    """Queue one fan-out payload. Returns False when the queue is full."""
+    try:
+        delivery_queue.put_nowait((kind, payload))
+    except asyncio.QueueFull:
+        return False
+    return True
+
+
+def _workshop_inner_type(payload: str) -> str:
+    """Inner MindMate frame type, or empty when this is not that envelope."""
+    try:
+        envelope = json.loads(payload)
+    except json.JSONDecodeError:
+        return ""
+    if not isinstance(envelope, dict):
+        return ""
+    data = envelope.get("d")
+    if not isinstance(data, str):
+        return ""
+    try:
+        frame = json.loads(data)
+    except json.JSONDecodeError:
+        return ""
+    if not isinstance(frame, dict):
+        return ""
+    frame_type = frame.get("type")
+    return frame_type if isinstance(frame_type, str) else ""
+
+
+def _discard_one_stream_chunk(delivery_queue: "asyncio.Queue[Tuple[str, str]]") -> bool:
+    """Free one slot by dropping a queued AI stream chunk."""
+    kept: list[Tuple[str, str]] = []
+    dropped = False
+    while True:
+        try:
+            item = delivery_queue.get_nowait()
+        except asyncio.QueueEmpty:
+            break
+        if not dropped and item[0] == _KIND_WS and _workshop_inner_type(item[1]) == "ai_message_chunk":
+            dropped = True
+            continue
+        kept.append(item)
+    for item in kept:
+        try:
+            delivery_queue.put_nowait(item)
+        except asyncio.QueueFull:
+            logger.warning("[WSFanout] delivery queue overflow while compacting")
+            break
+    return dropped
+
+
+def _schedule_critical_workshop_delivery(payload: str) -> None:
+    """Deliver a frame immediately when the shared queue cannot take it."""
+    task = asyncio.create_task(
+        _handle_workshop_raw(payload),
+        name="ws-fanout-critical",
+    )
+    _CRITICAL_DELIVERIES.add(task)
+    task.add_done_callback(_CRITICAL_DELIVERIES.discard)
 
 
 def _enqueue_fanout_payload(
@@ -97,15 +180,24 @@ def _enqueue_fanout_payload(
     kind: str,
     payload: str,
 ) -> None:
-    """Enqueue fanout payload."""
-    try:
-        delivery_queue.put_nowait((kind, payload))
-    except asyncio.QueueFull:
-        try:
-            record_ws_fanout_delivery_queue_drop()
-        except BACKGROUND_INFRA_ERRORS:
-            pass
-        logger.warning("[WSFanout] delivery queue full; dropping %s frame", kind)
+    """Enqueue fanout payload. Saved lines and seminar-end frames are not dropped."""
+    if _put_fanout(delivery_queue, kind, payload):
+        return
+    inner = _workshop_inner_type(payload) if kind == _KIND_WS else ""
+    if inner == "ai_message_chunk":
+        _note_fanout_drop(kind)
+        return
+    if _discard_one_stream_chunk(delivery_queue) and _put_fanout(delivery_queue, kind, payload):
+        return
+    if inner in _MUST_DELIVER_TYPES:
+        _schedule_critical_workshop_delivery(payload)
+        return
+    _note_fanout_drop(kind)
+
+
+def _on_fanout_subscribed() -> None:
+    """After pub/sub is live, ask open seminars to pull lines missed while it was down."""
+    notify_collab_fanout_subscribed()
 
 
 async def _fanout_delivery_worker(
@@ -227,10 +319,10 @@ async def _handle_workshop_raw(payload: str) -> None:
     exclude = ex if isinstance(ex, int) else None
 
     if isinstance(code, str) and code.startswith("mmc:"):
-        if DELIVER_MINDMATE_COLLAB_FANOUT is None:
+        handed_off = await deliver_registered_collab_fanout(env)
+        if not handed_off:
             return
         record_ws_fanout_workshop_received()
-        await DELIVER_MINDMATE_COLLAB_FANOUT(env)
         return
 
     record_ws_fanout_workshop_received()
@@ -358,6 +450,7 @@ async def _listener_loop_async(stop_event: asyncio.Event) -> None:
                 CHAT_FANOUT_CHANNEL,
                 WORKSHOP_FANOUT_CHANNEL,
             )
+            _on_fanout_subscribed()
             listen_task = asyncio.create_task(
                 _pubsub_listen_loop(pubsub, stop_event, delivery_queue),
                 name="ws-fanout-pubsub",

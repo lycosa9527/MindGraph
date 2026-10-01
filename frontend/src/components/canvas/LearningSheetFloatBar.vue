@@ -47,7 +47,7 @@ function onClose(): void {
     dismissFloatBar()
     return
   }
-  void exitLearningSheet()
+  exitLearningSheet()
 }
 
 onMounted(() => {

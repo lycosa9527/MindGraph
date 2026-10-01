@@ -116,11 +116,6 @@ REGISTRATION_ENABLED = _parse_bool_env("REGISTRATION_ENABLED", True)
 ENTERPRISE_DEFAULT_ORG_CODE = os.getenv("ENTERPRISE_DEFAULT_ORG_CODE", "DEMO-001").strip()
 ENTERPRISE_DEFAULT_USER_PHONE = os.getenv("ENTERPRISE_DEFAULT_USER_PHONE", "enterprise@system.com").strip()
 
-# Bayi 6-digit passkey (AUTH_MODE=bayi only; separate from vendor SSO /loginByXz).
-# Elevated access: include the Bayi login identity (default bayi@system.com) in ADMIN_PHONES.
-BAYI_PASSKEY = os.getenv("BAYI_PASSKEY", "").strip()
-
-
 # ============================================================================
 # Bayi Mode Configuration
 # ============================================================================

@@ -13,6 +13,7 @@ import {
 
 import { formatThinkingCoinBalance } from '@/composables/auth/useThinkingCoins'
 import { useLanguage } from '@/composables/core/useLanguage'
+import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
 
 import {
   SIDEBAR_TASK_PROMO_ROTATE_MS,
@@ -23,7 +24,6 @@ import {
   resolveSidebarPromoSlide,
   shouldPickFreshThinkingCoinPromoIndex,
 } from './sidebarThinkingCoinTaskPromo'
-import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
 
 export function useSidebarThinkingCoinTaskPromo(
   tasksSource: MaybeRefOrGetter<ThinkingCoinEarnTask[]>,
@@ -36,13 +36,9 @@ export function useSidebarThinkingCoinTaskPromo(
 
   const promoSlides = computed(() => buildSidebarPromoSlides(toValue(tasksSource)))
 
-  const promoSlideSignature = computed(() =>
-    promoSlides.value.map((slide) => slide.key).join('|')
-  )
+  const promoSlideSignature = computed(() => promoSlides.value.map((slide) => slide.key).join('|'))
 
-  const currentSlide = computed(() =>
-    resolveSidebarPromoSlide(promoSlides.value, taskIndex.value)
-  )
+  const currentSlide = computed(() => resolveSidebarPromoSlide(promoSlides.value, taskIndex.value))
 
   const promoTitle = computed(() => {
     const slide = currentSlide.value

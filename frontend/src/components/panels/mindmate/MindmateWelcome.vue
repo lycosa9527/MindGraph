@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { useLanguage } from '@/composables'
+import I18nText from '@/components/common/I18nText.vue'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useAuthStore } from '@/stores/auth'
 
@@ -16,16 +16,16 @@ const props = withDefaults(
   }
 )
 
-const { t } = useLanguage()
 const authStore = useAuthStore()
 const isFullpageMode = computed(() => props.mode === 'fullpage')
 const { displayName } = useMindMateBranding('md')
 const welcomeBrandingSize = computed(() => (isFullpageMode.value ? 'lg' : 'md') as 'md' | 'lg')
 const welcomeAvatarSize = computed(() => (isFullpageMode.value ? 128 : 64))
 const username = computed(() => authStore.user?.username || '')
-const welcomeMessage = computed(() =>
-  t('mindmate.welcome', { username: username.value, agentName: displayName.value })
-)
+const welcomeParams = computed(() => ({
+  username: username.value,
+  agentName: displayName.value,
+}))
 </script>
 
 <template>
@@ -41,7 +41,11 @@ const welcomeMessage = computed(() =>
     <div class="welcome-copy text-center">
       <div class="welcome-title font-medium text-gray-800 mb-2">{{ displayName }}</div>
       <div class="welcome-subtitle text-gray-600">
-        {{ welcomeMessage }}
+        <I18nText
+          k="mindmate.welcome"
+          :params="welcomeParams"
+          align="center"
+        />
       </div>
     </div>
   </div>
@@ -62,7 +66,11 @@ const welcomeMessage = computed(() =>
         {{ displayName }}
       </p>
       <p class="text-sm text-gray-600 dark:text-gray-300">
-        {{ welcomeMessage }}
+        <I18nText
+          k="mindmate.welcome"
+          :params="welcomeParams"
+          align="center"
+        />
       </p>
     </div>
   </div>

@@ -29,7 +29,9 @@ from models.domain.auth import User
 from models.responses import DatabaseHealthResponse
 from services.infrastructure.lifecycle.app_runtime import get_uptime_seconds
 from services.infrastructure.monitoring.health_checks import (
+    blocklist_versions_for_health,
     check_application_health,
+    check_blocklists_health,
     check_processes_health,
 )
 from services.infrastructure.monitoring.health_checks.processes import (
@@ -301,8 +303,32 @@ async def _check_llm_health() -> Dict[str, Any]:
 
 @router.get("/health")
 async def health_check():
-    """Basic health check endpoint"""
-    return {"status": "ok", "version": config.version}
+    """Basic health check endpoint.
+
+    ``blocklists`` reports when the AbuseIPDB and CrowdSec databases on this
+    server were built. The date comes from Redis and does not wait on COS.
+    ``newest`` compares that date with the last published snapshot when one
+    is already cached. A stale database does not change ``status``.
+    """
+    try:
+        blocklists = await blocklist_versions_for_health()
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.warning("Blocklist versions omitted from /health: %s", exc)
+        blocklists = {
+            "abuseipdb": {
+                "version": None,
+                "count": None,
+                "cos_version": None,
+                "newest": None,
+            },
+            "crowdsec": {
+                "version": None,
+                "count": None,
+                "cos_version": None,
+                "newest": None,
+            },
+        }
+    return {"status": "ok", "version": config.version, "blocklists": blocklists}
 
 
 @router.get("/health/ready")
@@ -524,6 +550,7 @@ async def comprehensive_health_check(
     - Redis connection
     - Database integrity
     - Process monitoring (Qdrant, Celery, Redis)
+    - AbuseIPDB and CrowdSec blocklist dates (informational; a stale copy stays healthy)
     - LLM services (optional, disabled by default to avoid API costs)
 
     Args:
@@ -557,6 +584,7 @@ async def comprehensive_health_check(
         _check_redis_health(),
         _check_database_health(),
         _check_processes_health(),
+        check_blocklists_health(),
     ]
 
     if include_llm:
@@ -566,7 +594,7 @@ async def comprehensive_health_check(
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     # Process results
-    check_names = ["application", "redis", "database", "processes"]
+    check_names = ["application", "redis", "database", "processes", "blocklists"]
     if include_llm:
         check_names.append("llm_services")
 

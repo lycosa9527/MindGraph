@@ -4,24 +4,24 @@ import { computed, ref } from 'vue'
 import { ElButton, ElCheckbox, ElOption, ElSelect } from 'element-plus'
 
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
-import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
-import { swissGlassConfirm, useLanguage } from '@/composables'
 import TrainingArrowPicker from '@/components/training/TrainingArrowPicker.vue'
 import TrainingBuilderVodPicker from '@/components/training/TrainingBuilderVodPicker.vue'
 import TrainingEmojiPicker from '@/components/training/TrainingEmojiPicker.vue'
-import TrainingRolePicker from '@/components/training/TrainingRolePicker.vue'
 import TrainingMarkStepsBar from '@/components/training/TrainingMarkStepsBar.vue'
+import TrainingRolePicker from '@/components/training/TrainingRolePicker.vue'
 import TrainingTopicOptionsPanel from '@/components/training/TrainingTopicOptionsPanel.vue'
-import { TRAINING_PAGES, type TrainingPageKey } from '@/config/trainingPages'
-import type { TrainingArrowColor, TrainingArrowLine } from '@/config/trainingMarkPalettes'
+import { swissGlassConfirm, useLanguage } from '@/composables'
+import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
 import { stepSpotlight } from '@/composables/training/trainingBuilderSteps'
 import {
   clampSpotlightScale,
   spotlightRadius,
   spotlightShape,
 } from '@/composables/training/trainingOverlayDrag'
-import type { TrainingCourseStep, TrainingSpotlightShape } from '@/types/training'
+import type { TrainingArrowColor, TrainingArrowLine } from '@/config/trainingMarkPalettes'
+import { TRAINING_PAGES, type TrainingPageKey } from '@/config/trainingPages'
 import type { MindMapCanvasMode } from '@/stores/ui'
+import type { TrainingCourseStep, TrainingSpotlightShape } from '@/types/training'
 import {
   readEffectiveMindMapCanvasMode,
   resolveSessionMindMapCanvasMode,
@@ -64,20 +64,34 @@ const spotShape = computed({
   },
 })
 const spotShapeOptions = computed(() => [
-  { value: 'circle' as const, label: t('training.builder.spotlightCircle') },
-  { value: 'rect' as const, label: t('training.builder.spotlightRect') },
+  {
+    value: 'circle' as const,
+    label: t('training.builder.spotlightCircle'),
+    labelKey: 'training.builder.spotlightCircle',
+  },
+  {
+    value: 'rect' as const,
+    label: t('training.builder.spotlightRect'),
+    labelKey: 'training.builder.spotlightRect',
+  },
 ])
 
-const isCanvas = computed(
-  () => props.step.page_key === 'canvas' || props.step.type === 'canvas'
-)
+const isCanvas = computed(() => props.step.page_key === 'canvas' || props.step.type === 'canvas')
 const canvasMode = computed({
   get: () => mindmapMode(props.step),
   set: (mode: MindMapCanvasMode) => onCanvasMode(mode),
 })
 const canvasModeOptions = computed(() => [
-  { value: 'legacy' as const, label: t('settings.language.mindMapCanvasV1') },
-  { value: 'v2' as const, label: t('settings.language.mindMapCanvasV2') },
+  {
+    value: 'legacy' as const,
+    label: t('settings.language.mindMapCanvasV1'),
+    labelKey: 'settings.language.mindMapCanvasV1',
+  },
+  {
+    value: 'v2' as const,
+    label: t('settings.language.mindMapCanvasV2'),
+    labelKey: 'settings.language.mindMapCanvasV2',
+  },
 ])
 
 function addTextBubble(): void {
@@ -227,7 +241,7 @@ function clearSpotlight(): void {
 <template>
   <div class="builder-toolbar">
     <div class="builder-toolbar__row">
-      <span class="builder-toolbar__label">{{ t('training.builder.groupFollow') }}</span>
+      <span class="builder-toolbar__label"><I18nText k="training.builder.groupFollow" /></span>
       <ElSelect
         class="admin-swiss-select builder-toolbar__page"
         :model-value="step.page_key || 'mindgraph'"
@@ -239,23 +253,29 @@ function clearSpotlight(): void {
         <ElOption
           v-for="page in TRAINING_PAGES"
           :key="page.key"
-          :label="t(page.labelKey)"
           :value="page.key"
-        />
+          :label="t(page.labelKey)"
+        >
+          <I18nText :k="page.labelKey" />
+        </ElOption>
       </ElSelect>
       <template v-if="isCanvas">
         <ElSelect
           class="admin-swiss-select builder-toolbar__page"
-          :model-value="step.diagram_type === 'mind_map' ? 'mindmap' : step.diagram_type || 'double_bubble_map'"
+          :model-value="
+            step.diagram_type === 'mind_map' ? 'mindmap' : step.diagram_type || 'double_bubble_map'
+          "
           size="small"
           @change="onDiagram"
         >
           <ElOption
             v-for="type in BUILDER_DIAGRAM_TYPES"
             :key="type"
-            :label="t(`sidebar.diagramType.${type}`)"
             :value="type"
-          />
+            :label="t(`sidebar.diagramType.${type}`)"
+          >
+            <I18nText :k="`sidebar.diagramType.${type}`" />
+          </ElOption>
         </ElSelect>
         <AdminSwissSegmented
           v-model="canvasMode"
@@ -268,23 +288,31 @@ function clearSpotlight(): void {
       <label class="builder-toolbar__pull">
         <ElCheckbox
           :model-value="Boolean(step.pull_users)"
-          @change="(value: boolean | string | number) => { step.pull_users = Boolean(value) }"
+          @change="
+            (value: boolean | string | number) => {
+              step.pull_users = Boolean(value)
+            }
+          "
         />
-        <span>{{ t('training.builder.pullUsers') }}</span>
+        <span><I18nText k="training.builder.pullUsers" /></span>
       </label>
       <label class="builder-toolbar__pull">
         <ElCheckbox
           :model-value="Boolean(step.mandatory)"
           @change="onMandatory"
         />
-        <span :title="t('training.builder.mandatoryHint')">{{ t('training.builder.mandatory') }}</span>
+        <span :title="t('training.builder.mandatoryHint')"
+          ><I18nText k="training.builder.mandatory"
+        /></span>
       </label>
       <label class="builder-toolbar__pull">
         <ElCheckbox
           :model-value="Boolean(step.always_play)"
           @change="onAlwaysPlay"
         />
-        <span :title="t('training.builder.alwaysPlayHint')">{{ t('training.builder.alwaysPlay') }}</span>
+        <span :title="t('training.builder.alwaysPlayHint')"
+          ><I18nText k="training.builder.alwaysPlay"
+        /></span>
       </label>
     </div>
     <TrainingMarkStepsBar
@@ -292,13 +320,13 @@ function clearSpotlight(): void {
       @awake="emit('awake')"
     />
     <div class="builder-toolbar__row">
-      <span class="builder-toolbar__label">{{ t('training.builder.groupMarks') }}</span>
+      <span class="builder-toolbar__label"><I18nText k="training.builder.groupMarks" /></span>
       <ElButton
         size="small"
         class="admin-swiss-btn"
         @click="addTextBubble"
       >
-        {{ t('training.builder.toolText') }}
+        <I18nText k="training.builder.toolText" />
       </ElButton>
       <div
         class="builder-toolbar__menu"
@@ -309,7 +337,7 @@ function clearSpotlight(): void {
           class="admin-swiss-btn"
           @click="toggleArrow"
         >
-          {{ t('training.builder.overlayArrow') }}
+          <I18nText k="training.builder.overlayArrow" />
         </ElButton>
         <div
           v-if="arrowOpen"
@@ -327,7 +355,7 @@ function clearSpotlight(): void {
           class="admin-swiss-btn"
           @click="toggleEmoji"
         >
-          {{ t('training.builder.toolEmoji') }}
+          <I18nText k="training.builder.toolEmoji" />
         </ElButton>
         <div
           v-if="emojiOpen"
@@ -346,7 +374,7 @@ function clearSpotlight(): void {
           :class="{ 'is-on': Boolean(spotlight) }"
           @click="toggleSpotlight"
         >
-          {{ t('training.builder.toolSpotlight') }}
+          <I18nText k="training.builder.toolSpotlight" />
         </ElButton>
         <div
           v-if="spotOpen && spotlight"
@@ -359,7 +387,7 @@ function clearSpotlight(): void {
             :ariaLabel="t('training.builder.spotlightShape')"
           />
           <label class="builder-toolbar__slider">
-            <span>{{ t('training.builder.spotlightRadius') }}</span>
+            <span><I18nText k="training.builder.spotlightRadius" /></span>
             <input
               type="range"
               min="0.5"
@@ -367,14 +395,14 @@ function clearSpotlight(): void {
               step="0.1"
               :value="spotlightRadius(spotlight)"
               @input="onSpotRadius($event)"
-            >
+            />
           </label>
           <button
             type="button"
             class="builder-toolbar__clear"
             @click="clearSpotlight"
           >
-            {{ t('training.builder.spotlightClear') }}
+            <I18nText k="training.builder.spotlightClear" />
           </button>
         </div>
       </div>
@@ -388,7 +416,7 @@ function clearSpotlight(): void {
           :class="{ 'is-on': roleOpen }"
           @click="toggleRoles"
         >
-          {{ t('training.builder.toolRoles') }}
+          <I18nText k="training.builder.toolRoles" />
         </ElButton>
         <div
           v-if="roleOpen"
@@ -398,12 +426,12 @@ function clearSpotlight(): void {
         </div>
       </div>
       <label class="builder-toolbar__upload">
-        {{ t('training.builder.toolImage') }}
+        <I18nText k="training.builder.toolImage" />
         <input
           type="file"
           accept="image/png,image/jpeg,image/webp"
           @change="onImage"
-        >
+        />
       </label>
       <TrainingBuilderVodPicker
         :step="step"

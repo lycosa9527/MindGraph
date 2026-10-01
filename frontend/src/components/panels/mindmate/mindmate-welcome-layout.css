@@ -17,7 +17,7 @@
   --mm-gap-suggest: clamp(6px, 1.8vh, 20px);
   --mm-title: clamp(1.125rem, 2.4vh, 1.5rem);
   --mm-subtitle: clamp(0.875rem, 2vh, 1.125rem);
-  --mm-suggest-max-h: clamp(108px, 16vh, 140px);
+  --mm-suggest-max-h: clamp(168px, 26vh, 220px);
   /* Fill the stage up to 48rem. A 40% container token was too narrow on tablets. */
   --mm-composer-max: min(48rem, 100%);
   --mm-gutter: clamp(12px, 3vw, 24px);
@@ -34,7 +34,7 @@
     --mm-gap-suggest: clamp(6px, 1.8dvh, 20px);
     --mm-title: clamp(1.125rem, 2.4dvh, 1.5rem);
     --mm-subtitle: clamp(0.875rem, 2dvh, 1.125rem);
-    --mm-suggest-max-h: clamp(108px, 16dvh, 140px);
+    --mm-suggest-max-h: clamp(168px, 26dvh, 220px);
   }
 }
 
@@ -120,6 +120,6 @@
 @media (max-height: 700px) {
   .mindmate-stage--welcome {
     --mm-avatar: 64px;
-    --mm-suggest-max-h: 108px;
+    --mm-suggest-max-h: 168px;
   }
 }

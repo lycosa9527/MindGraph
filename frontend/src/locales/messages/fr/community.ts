@@ -68,7 +68,7 @@ export default {
   'community.time.hoursAgo': 'Il y a {n} heures',
   'community.time.minutesAgo': 'Il y a {n} minutes',
   'community.title': 'Partage communautaire',
-  'community.type.mindgraph': 'Graphique mental',
+  'community.type.mindgraph': 'MindGraph',
   'community.type.mindmate': 'MindMate',
   'debateverse.advanceStage': 'Phase avancée',
   'debateverse.affirmativePositionLabel': 'Position affirmative : ',

@@ -8,7 +8,7 @@ Use this when rolling hardened MindGraph to **mg.mindspringedu.com** (or any TLS
 
 | Variable | When required |
 |----------|----------------|
-| `BAYI_PASSKEY`, `BAYI_DECRYPTION_KEY` | `AUTH_MODE=bayi` |
+| `BAYI_DECRYPTION_KEY` | `AUTH_MODE=bayi`. Must be the value issued by 小致 for `/loginByXz` (do not generate a replacement). `BAYI_PASSKEY` is removed; delete it from `.env`. |
 | `DEVICE_REGISTRATION_SECRET` | `FEATURE_SMART_RESPONSE=True` |
 | `GEWE_WEBHOOK_SECRET` | `FEATURE_GEWE=True` |
 | `FEATURE_WECHAT_LOGIN` | `True` on production only (WeChat Open Platform: one callback domain). Defaults off. |
@@ -19,7 +19,7 @@ Use this when rolling hardened MindGraph to **mg.mindspringedu.com** (or any TLS
 | `ALIPAY_APP_ID` + `ALIPAY_NOTIFY_BASE_URL` + certs in `data/alipay-certs/` | Required when `FEATURE_MARKETS=True`. Certificate-mode upload folder (gitignored); override with `ALIPAY_CERT_DIR`. Notify URL: `{ALIPAY_NOTIFY_BASE_URL}/api/markets/payments/alipay/notify`. Product is 电脑网站支付 (`alipay.trade.page.pay`). |
 | `ENTERPRISE_MODE_PUBLIC_ACK=I_UNDERSTAND_PUBLIC_EXPOSURE_RISK` | `AUTH_MODE=enterprise` |
 
-Generate strong random passkeys; do **not** copy `CHANGE-ME-before-production` from `env.example`.
+Do **not** copy `CHANGE-ME-before-production` from `env.example`.
 
 ## Pre-deploy: COS prefixes (do not migrate yet)
 

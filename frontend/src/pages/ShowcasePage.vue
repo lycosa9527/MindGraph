@@ -21,17 +21,18 @@ import {
 } from '@lucide/vue'
 
 import {
-  ShowcaseDetailModal,
-  ShowcaseFilterDropdown,
   MyFavoriteCasesModal,
   MyPublishedCasesModal,
   PublishShowcaseModal,
+  ShowcaseDetailModal,
+  ShowcaseFilterDropdown,
 } from '@/components/showcase'
 import {
+  type ShowcaseCaseType,
   caseTypeEmoji,
   caseTypeTheme,
+  DIAGRAM_TYPE_OPTIONS as diagramTypeOptions,
   isMostlyBlankImageBlob,
-  type ShowcaseCaseType,
 } from '@/components/showcase/showcaseShared'
 import { useLanguage } from '@/composables'
 import { showcaseCoverMediaPending } from '@/composables/admin/showcaseMediaStatus'
@@ -40,11 +41,7 @@ import { useShowcaseMeta } from '@/composables/showcase/useShowcaseMeta'
 import { useAuthStore } from '@/stores'
 import { useShowcaseStore } from '@/stores/showcase'
 import { useUIStore } from '@/stores/ui'
-import {
-  type ShowcasePost,
-  getShowcasePost,
-  getShowcasePosts,
-} from '@/utils/apiClient'
+import { type ShowcasePost, getShowcasePost, getShowcasePosts } from '@/utils/apiClient'
 
 const { t } = useLanguage()
 const authStore = useAuthStore()
@@ -58,20 +55,6 @@ const typeTabs = [
   { key: 'diagram_case', labelKey: 'showcase.type.diagramCase', api: 'diagram_case' },
   { key: 'diagram_template', labelKey: 'showcase.type.diagramTemplate', api: 'diagram_template' },
 ] as const
-
-const diagramTypeOptions = [
-  { value: 'circle_map', label: '圆圈图' },
-  { value: 'bubble_map', label: '气泡图' },
-  { value: 'double_bubble_map', label: '双气泡图' },
-  { value: 'brace_map', label: '括号图' },
-  { value: 'tree_map', label: '树形图' },
-  { value: 'flow_map', label: '流程图' },
-  { value: 'multi_flow_map', label: '复流程图' },
-  { value: 'bridge_map', label: '桥形图' },
-  { value: 'mind_map', label: '思维导图' },
-  { value: 'concept_map', label: '概念图' },
-  { value: 'combined', label: '组合应用' },
-]
 
 const sortOptions = [
   { value: 'default', labelKey: 'showcase.sort.default' },
@@ -163,7 +146,11 @@ function onThumbError(post: ShowcasePost): void {
 const showDiagramTypeFilter = computed(() => activeType.value !== 'teaching_design')
 
 const sortFilterOptions = computed(() =>
-  sortOptions.map((s) => ({ value: s.value, label: String(t(s.labelKey)) }))
+  sortOptions.map((s) => ({
+    value: s.value,
+    label: String(t(s.labelKey)),
+    labelKey: s.labelKey,
+  }))
 )
 
 const subjectFilterOptions = computed(() => subjectOptions.value)
@@ -200,7 +187,10 @@ async function fetchPosts(append = false) {
       expertRecommended: expertOnly.value,
       subject: activeSubject.value || undefined,
       grade: activeGrade.value || undefined,
-      diagramType: showDiagramTypeFilter.value && activeDiagramType.value ? activeDiagramType.value : undefined,
+      diagramType:
+        showDiagramTypeFilter.value && activeDiagramType.value
+          ? activeDiagramType.value
+          : undefined,
       sort: activeSort.value,
       search: searchQuery.value.trim() || undefined,
     })
@@ -296,42 +286,41 @@ const offPostUpdated = eventBus.on('showcase:post_updated', () => {
 const offAdminShowcase = eventBus.on('admin:showcase_updated', () => {
   void reload()
 })
-const offCoverReady = eventBus.on('showcase:cover_ready', ({ postId, thumbnailUrl, previewUrl }) => {
-  const idx = posts.value.findIndex((p) => p.id === postId)
-  if (idx < 0) return
-  if (thumbnailUrl || previewUrl) {
-    posts.value[idx] = {
-      ...posts.value[idx],
-      ...(thumbnailUrl ? { thumbnail_url: thumbnailUrl } : {}),
-      ...(previewUrl ? { preview_url: previewUrl } : {}),
-    }
-    if (thumbnailUrl) {
-      blankThumbIds.value = new Set(
-        [...blankThumbIds.value].filter((id) => id !== postId),
-      )
-    }
-    return
-  }
-  void getShowcasePost(postId)
-    .then((fresh) => {
-      const i = posts.value.findIndex((p) => p.id === postId)
-      if (i >= 0 && (fresh.thumbnail_url || fresh.preview_url)) {
-        posts.value[i] = {
-          ...posts.value[i],
-          thumbnail_url: fresh.thumbnail_url ?? posts.value[i].thumbnail_url,
-          preview_url: fresh.preview_url ?? posts.value[i].preview_url,
-        }
-        if (fresh.thumbnail_url) {
-          blankThumbIds.value = new Set(
-            [...blankThumbIds.value].filter((id) => id !== postId),
-          )
-        }
+const offCoverReady = eventBus.on(
+  'showcase:cover_ready',
+  ({ postId, thumbnailUrl, previewUrl }) => {
+    const idx = posts.value.findIndex((p) => p.id === postId)
+    if (idx < 0) return
+    if (thumbnailUrl || previewUrl) {
+      posts.value[idx] = {
+        ...posts.value[idx],
+        ...(thumbnailUrl ? { thumbnail_url: thumbnailUrl } : {}),
+        ...(previewUrl ? { preview_url: previewUrl } : {}),
       }
-    })
-    .catch(() => {
-      void reload()
-    })
-})
+      if (thumbnailUrl) {
+        blankThumbIds.value = new Set([...blankThumbIds.value].filter((id) => id !== postId))
+      }
+      return
+    }
+    void getShowcasePost(postId)
+      .then((fresh) => {
+        const i = posts.value.findIndex((p) => p.id === postId)
+        if (i >= 0 && (fresh.thumbnail_url || fresh.preview_url)) {
+          posts.value[i] = {
+            ...posts.value[i],
+            thumbnail_url: fresh.thumbnail_url ?? posts.value[i].thumbnail_url,
+            preview_url: fresh.preview_url ?? posts.value[i].preview_url,
+          }
+          if (fresh.thumbnail_url) {
+            blankThumbIds.value = new Set([...blankThumbIds.value].filter((id) => id !== postId))
+          }
+        }
+      })
+      .catch(() => {
+        void reload()
+      })
+  }
+)
 
 onMounted(() => {
   void fetchPosts()
@@ -345,9 +334,8 @@ onUnmounted(() => {
   showcaseStore.clearAllCoverPending()
 })
 
-watch(
-  [activeType, expertOnly, activeSubject, activeGrade, activeDiagramType, activeSort],
-  () => reload()
+watch([activeType, expertOnly, activeSubject, activeGrade, activeDiagramType, activeSort], () =>
+  reload()
 )
 
 watch(activeType, (type) => {
@@ -363,280 +351,326 @@ watch(searchQuery, () => {
 
 <template>
   <div class="showcase-page flex flex-1 flex-col min-h-0 overflow-hidden bg-gray-50/50">
-    <div ref="scrollContainerRef" class="showcase-scroll flex-1 min-h-0 overflow-y-auto overscroll-y-contain">
+    <div
+      ref="scrollContainerRef"
+      class="showcase-scroll flex-1 min-h-0 overflow-y-auto overscroll-y-contain"
+    >
       <div class="mx-auto w-[90%] px-4 py-3 pb-6 sm:px-5">
-      <!-- Header -->
-      <div class="mb-3 flex items-center justify-between gap-4">
-        <div class="flex min-w-0 items-start gap-2">
-          <button
-            v-if="uiStore.sidebarCollapsed"
-            type="button"
-            class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gray-100 bg-white text-gray-600 transition-colors hover:bg-gray-50"
-            :title="t('sidebar.expandSidebar')"
-            :aria-label="t('sidebar.expandSidebar')"
-            @click="uiStore.toggleSidebar()"
-          >
-            <PanelLeftOpen class="h-[18px] w-[18px]" />
-          </button>
-          <div class="min-w-0">
-            <h1 class="text-xl font-bold text-gray-900">{{ t('showcase.title') }}</h1>
-            <p class="mt-0.5 truncate text-xs text-gray-500">{{ t('showcase.subtitle') }}</p>
-          </div>
-        </div>
-        <div class="flex shrink-0 items-center gap-2">
-          <button
-            v-if="authStore.isAuthenticated"
-            type="button"
-            class="flex h-9 items-center gap-1.5 rounded-xl border border-gray-100 bg-white px-4 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-            @click="showMyFavoritesModal = true"
-          >
-            <Star class="h-4 w-4" />
-            {{ t('showcase.myFavorites') }}
-          </button>
-          <button
-            v-if="authStore.isAuthenticated"
-            type="button"
-            class="flex h-9 items-center gap-1.5 rounded-xl border border-gray-100 bg-white px-4 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-            @click="showMyCasesModal = true"
-          >
-            <FileText class="h-4 w-4" />
-            {{ t('showcase.myCases') }}
-          </button>
-          <button
-            type="button"
-            class="flex h-9 items-center gap-1.5 rounded-xl bg-gray-900 px-4 text-sm font-medium text-white transition-colors hover:bg-gray-800"
-            @click="openPublishModal"
-          >
-            <Plus class="h-4 w-4" />
-            {{ t('showcase.publish') }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Filters -->
-      <div class="mb-3 space-y-2">
-        <div class="flex flex-wrap items-center gap-2">
-          <div class="showcase-type-switch flex h-9 items-center gap-0.5 rounded-xl border border-gray-100 bg-white p-0.5 shadow-sm">
+        <!-- Header -->
+        <div class="mb-3 flex items-center justify-between gap-4">
+          <div class="flex min-w-0 items-start gap-2">
             <button
-              v-for="tab in typeTabs"
-              :key="tab.key"
+              v-if="uiStore.sidebarCollapsed"
               type="button"
-              :class="[
-                'showcase-type-tab flex h-8 items-center gap-1 rounded-lg px-3 text-sm border-0 outline-none transition-all duration-200',
-                activeType === tab.key
-                  ? 'showcase-type-tab--active bg-gray-900 font-medium text-white shadow-none'
-                  : 'showcase-type-tab--idle bg-transparent text-gray-600 shadow-none hover:bg-gray-100',
-              ]"
-              @click="activeType = tab.key"
+              class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gray-100 bg-white text-gray-600 transition-colors hover:bg-gray-50"
+              :title="t('sidebar.expandSidebar')"
+              :aria-label="t('sidebar.expandSidebar')"
+              @click="uiStore.toggleSidebar()"
             >
-              <component
-                :is="typeTabIcon(tab.key)"
-                v-if="typeTabIcon(tab.key)"
-                class="h-3.5 w-3.5 shrink-0"
-              />
-              {{ t(tab.labelKey) }}
+              <PanelLeftOpen class="h-[18px] w-[18px]" />
+            </button>
+            <div class="min-w-0">
+              <h1 class="text-xl font-bold text-gray-900"><I18nText k="showcase.title" /></h1>
+              <p class="mt-0.5 truncate text-xs text-gray-500">
+                <I18nText k="showcase.subtitle" />
+              </p>
+            </div>
+          </div>
+          <div class="flex shrink-0 items-center gap-2">
+            <button
+              v-if="authStore.isAuthenticated"
+              type="button"
+              class="flex h-9 items-center gap-1.5 rounded-xl border border-gray-100 bg-white px-4 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+              @click="showMyFavoritesModal = true"
+            >
+              <Star class="h-4 w-4" />
+              <I18nText k="showcase.myFavorites" />
+            </button>
+            <button
+              v-if="authStore.isAuthenticated"
+              type="button"
+              class="flex h-9 items-center gap-1.5 rounded-xl border border-gray-100 bg-white px-4 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+              @click="showMyCasesModal = true"
+            >
+              <FileText class="h-4 w-4" />
+              <I18nText k="showcase.myCases" />
+            </button>
+            <button
+              type="button"
+              class="flex h-9 items-center gap-1.5 rounded-xl bg-gray-900 px-4 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+              @click="openPublishModal"
+            >
+              <Plus class="h-4 w-4" />
+              <I18nText k="showcase.publish" />
             </button>
           </div>
-
-          <button
-            type="button"
-            :class="[
-              'flex h-9 items-center gap-1.5 rounded-xl px-3 text-sm',
-              expertOnly
-                ? 'border border-amber-100 bg-amber-50 text-amber-700 shadow-sm'
-                : 'border border-gray-100 bg-white text-gray-600 shadow-sm hover:bg-gray-50',
-            ]"
-            @click="expertOnly = !expertOnly"
-          >
-            <Award class="h-3.5 w-3.5 shrink-0" />
-            {{ t('showcase.expertRecommend') }}
-          </button>
-
-          <ShowcaseFilterDropdown
-            v-model="activeSubject"
-            :label="String(t('showcase.subject'))"
-            :options="subjectFilterOptions"
-            :all-label="filterAllLabel()"
-          />
-
-          <ShowcaseFilterDropdown
-            v-model="activeGrade"
-            :label="String(t('showcase.grade'))"
-            :options="gradeFilterOptions"
-            :all-label="filterAllLabel()"
-          />
-
-          <ShowcaseFilterDropdown
-            v-if="showDiagramTypeFilter"
-            v-model="activeDiagramType"
-            :label="String(t('showcase.diagramType'))"
-            :options="diagramTypeOptions"
-            :all-label="filterAllLabel()"
-          />
         </div>
 
-        <div class="flex items-center gap-2">
-          <ShowcaseFilterDropdown
-            v-model="activeSort"
-            variant="plain"
-            panel-size="sm"
-            :prefix-icon="ArrowUpDown"
-            :options="sortFilterOptions"
-            :include-all="false"
-          />
-
-          <div class="relative min-w-40 flex-1">
-            <Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
-            <input
-              v-model="searchQuery"
-              type="text"
-              :placeholder="t('showcase.searchPlaceholder')"
-              class="h-9 w-full rounded-full border border-gray-100 bg-white pl-9 pr-3 text-sm shadow-sm outline-none transition-all focus:border-gray-200 focus:ring-2 focus:ring-gray-200/40"
-            />
-          </div>
-        </div>
-      </div>
-
-      <p v-if="!isLoading && !loadError" class="mb-4 text-xs text-gray-400">
-        {{ t('showcase.caseCount', { n: total }) }}
-      </p>
-
-      <!-- Grid -->
-      <ElSkeleton v-if="isLoading" :rows="6" animated />
-      <p v-else-if="loadError" class="text-sm text-red-500">{{ loadError }}</p>
-      <div
-        v-else-if="posts.length === 0"
-        class="flex flex-col items-center justify-center py-20"
-      >
-        <Search class="mb-3 h-10 w-10 text-gray-300" />
-        <p class="text-sm text-gray-400">{{ t('showcase.empty') }}</p>
-      </div>
-      <div v-else class="showcase-grid">
-        <article
-          v-for="post in posts"
-          :key="post.id"
-          role="button"
-          tabindex="0"
-          class="showcase-card group flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
-          @click="openDetail(post)"
-          @keydown="openDetailFromKeyboard(post, $event)"
-        >
-          <!-- Cover (full card width) -->
-          <div
-            :class="[
-              'showcase-card-cover relative aspect-5/3 w-full shrink-0 overflow-hidden',
-              showPostThumbnail(post)
-                ? 'bg-gray-100'
-                : ['bg-linear-to-br', caseTypeTheme(post.case_type).coverFallback],
-            ]"
-          >
-            <img
-              v-if="showPostThumbnail(post)"
-              :src="post.thumbnail_url!"
-              :alt="post.title"
-              loading="lazy"
-              class="absolute inset-0 block h-full w-full min-w-full object-cover object-center"
-              @load="onThumbLoad(post, $event)"
-              @error="onThumbError(post)"
-            />
+        <!-- Filters -->
+        <div class="mb-3 space-y-2">
+          <div class="flex flex-wrap items-center gap-2">
             <div
-              v-else-if="isCoverPending(post)"
-              class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gray-50/90"
+              class="showcase-type-switch flex h-9 items-center gap-0.5 rounded-xl border border-gray-100 bg-white p-0.5 shadow-sm"
             >
-              <span
-                class="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"
-                aria-hidden="true"
-              />
-              <span class="px-3 text-center text-[11px] text-gray-500">
-                {{ t('showcase.publishModal.coverGenerating') }}
-              </span>
+              <button
+                v-for="tab in typeTabs"
+                :key="tab.key"
+                type="button"
+                :class="[
+                  'showcase-type-tab flex h-8 items-center gap-1 rounded-lg px-3 text-sm border-0 outline-none transition-all duration-200',
+                  activeType === tab.key
+                    ? 'showcase-type-tab--active bg-gray-900 font-medium text-white shadow-none'
+                    : 'showcase-type-tab--idle bg-transparent text-gray-600 shadow-none hover:bg-gray-100',
+                ]"
+                @click="activeType = tab.key"
+              >
+                <component
+                  :is="typeTabIcon(tab.key)"
+                  v-if="typeTabIcon(tab.key)"
+                  class="h-3.5 w-3.5 shrink-0"
+                />
+                <I18nText :k="tab.labelKey" />
+              </button>
             </div>
-            <div
-              v-if="showPostThumbnail(post)"
-              class="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-black/45 to-transparent"
+
+            <button
+              type="button"
+              :class="[
+                'flex h-9 items-center gap-1.5 rounded-xl px-3 text-sm',
+                expertOnly
+                  ? 'border border-amber-100 bg-amber-50 text-amber-700 shadow-sm'
+                  : 'border border-gray-100 bg-white text-gray-600 shadow-sm hover:bg-gray-50',
+              ]"
+              @click="expertOnly = !expertOnly"
+            >
+              <Award class="h-3.5 w-3.5 shrink-0" />
+              <I18nText k="showcase.expertRecommend" />
+            </button>
+
+            <ShowcaseFilterDropdown
+              v-model="activeSubject"
+              label-key="showcase.subject"
+              :label="String(t('showcase.subject'))"
+              :options="subjectFilterOptions"
+              all-label-key="showcase.filter.all"
+              :all-label="filterAllLabel()"
             />
-            <div class="absolute inset-x-0 top-0 z-10 flex flex-wrap items-center gap-1 p-2">
-              <span
-                v-if="post.is_expert_recommended"
-                class="flex items-center gap-0.5 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm"
-              >
-                <Award class="h-2.5 w-2.5" />
-                {{ t('showcase.expertBadge') }}
-              </span>
-              <span
-                :class="[
-                  'rounded-full px-2 py-0.5 text-[10px] font-semibold shadow-sm',
-                  caseTypeTheme(post.case_type).caseTypeTagClass,
-                ]"
-              >
-                {{ caseTypeEmoji(post.case_type) }}{{ caseTypeLabel(post.case_type) }}
-              </span>
-              <span
-                v-if="post.subject"
-                :class="[
-                  'rounded-full px-2 py-0.5 text-[10px] font-semibold shadow-sm',
-                  caseTypeTheme(post.case_type).subjectTagClass,
-                ]"
-              >
-                {{ post.subject }}
-              </span>
-            </div>
-            <div class="absolute bottom-2 right-2 z-10 flex items-center gap-0.5 text-white">
-              <Eye class="h-3 w-3" />
-              <span class="text-[10px] font-medium">{{ post.views_count }}</span>
-            </div>
+
+            <ShowcaseFilterDropdown
+              v-model="activeGrade"
+              label-key="showcase.grade"
+              :label="String(t('showcase.grade'))"
+              :options="gradeFilterOptions"
+              all-label-key="showcase.filter.all"
+              :all-label="filterAllLabel()"
+            />
+
+            <ShowcaseFilterDropdown
+              v-if="showDiagramTypeFilter"
+              v-model="activeDiagramType"
+              label-key="showcase.diagramType"
+              :label="String(t('showcase.diagramType'))"
+              :options="diagramTypeOptions"
+              all-label-key="showcase.filter.all"
+              :all-label="filterAllLabel()"
+            />
           </div>
 
-          <!-- Content -->
-          <div class="flex flex-1 flex-col p-2">
-            <h3 class="mb-0.5 line-clamp-1 text-[13px] font-semibold leading-tight text-gray-900 group-hover:text-gray-700">
-              {{ post.title }}
-            </h3>
-            <p class="mb-1.5 line-clamp-1 text-[11px] leading-tight text-gray-500">
-              {{ post.description }}
-            </p>
-            <div v-if="displayTags(post.tags).length > 0" class="mb-1.5 flex flex-wrap gap-1">
-              <span
-                v-for="tag in displayTags(post.tags).slice(0, 2)"
-                :key="tag"
-                class="rounded bg-gray-100 px-1.5 py-px text-[10px] leading-none text-gray-500"
-              >
-                {{ tag }}
-              </span>
+          <div class="flex items-center gap-2">
+            <ShowcaseFilterDropdown
+              v-model="activeSort"
+              variant="plain"
+              panel-size="sm"
+              :prefix-icon="ArrowUpDown"
+              :options="sortFilterOptions"
+              :include-all="false"
+            />
+
+            <div class="relative min-w-40 flex-1">
+              <Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+              <input
+                v-model="searchQuery"
+                type="text"
+                :placeholder="t('showcase.searchPlaceholder')"
+                class="h-9 w-full rounded-full border border-gray-100 bg-white pl-9 pr-3 text-sm shadow-sm outline-none transition-all focus:border-gray-200 focus:ring-2 focus:ring-gray-200/40"
+              />
             </div>
-            <div class="mt-auto border-t border-gray-100 pt-1.5">
-              <div class="flex items-center justify-between gap-1.5">
-                <div class="flex min-w-0 flex-1 items-center gap-1">
-                  <div class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gray-100 text-[9px] leading-none">
-                    {{ post.author.avatar ?? '👤' }}
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <div class="truncate text-[11px] font-medium leading-[1.15] text-gray-700">
-                      {{ post.author.name }}
-                    </div>
-                    <div
-                      v-if="post.author.organization"
-                      class="truncate text-[10px] leading-[1.15] text-gray-400"
-                    >
-                      {{ post.author.organization }}
-                    </div>
-                  </div>
-                </div>
+          </div>
+        </div>
+
+        <p
+          v-if="!isLoading && !loadError"
+          class="mb-4 text-xs text-gray-400"
+        >
+          <I18nText
+            k="showcase.caseCount"
+            :params="{ n: total }"
+          />
+        </p>
+
+        <!-- Grid -->
+        <ElSkeleton
+          v-if="isLoading"
+          :rows="6"
+          animated
+        />
+        <p
+          v-else-if="loadError"
+          class="text-sm text-red-500"
+        >
+          {{ loadError }}
+        </p>
+        <div
+          v-else-if="posts.length === 0"
+          class="flex flex-col items-center justify-center py-20"
+        >
+          <Search class="mb-3 h-10 w-10 text-gray-300" />
+          <p class="text-sm text-gray-400"><I18nText k="showcase.empty" /></p>
+        </div>
+        <div
+          v-else
+          class="showcase-grid"
+        >
+          <article
+            v-for="post in posts"
+            :key="post.id"
+            role="button"
+            tabindex="0"
+            class="showcase-card group flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+            @click="openDetail(post)"
+            @keydown="openDetailFromKeyboard(post, $event)"
+          >
+            <!-- Cover (full card width) -->
+            <div
+              :class="[
+                'showcase-card-cover relative aspect-5/3 w-full shrink-0 overflow-hidden',
+                showPostThumbnail(post)
+                  ? 'bg-gray-100'
+                  : ['bg-linear-to-br', caseTypeTheme(post.case_type).coverFallback],
+              ]"
+            >
+              <img
+                v-if="showPostThumbnail(post)"
+                :src="post.thumbnail_url!"
+                :alt="post.title"
+                loading="lazy"
+                class="absolute inset-0 block h-full w-full min-w-full object-cover object-center"
+                @load="onThumbLoad(post, $event)"
+                @error="onThumbError(post)"
+              />
+              <div
+                v-else-if="isCoverPending(post)"
+                class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gray-50/90"
+              >
                 <span
-                  :class="[
-                    'inline-flex shrink-0 items-center gap-0.5 text-[10px] leading-none',
-                    post.is_liked ? 'text-red-500' : 'text-gray-400',
-                  ]"
-                >
-                  <Heart class="h-3 w-3" :class="post.is_liked ? 'fill-current' : ''" />
-                  {{ post.likes_count }}
+                  class="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"
+                  aria-hidden="true"
+                />
+                <span class="px-3 text-center text-[11px] text-gray-500">
+                  <I18nText k="showcase.publishModal.coverGenerating" />
                 </span>
               </div>
+              <div
+                v-if="showPostThumbnail(post)"
+                class="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-black/45 to-transparent"
+              />
+              <div class="absolute inset-x-0 top-0 z-10 flex flex-wrap items-center gap-1 p-2">
+                <span
+                  v-if="post.is_expert_recommended"
+                  class="flex items-center gap-0.5 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm"
+                >
+                  <Award class="h-2.5 w-2.5" />
+                  <I18nText k="showcase.expertBadge" />
+                </span>
+                <span
+                  :class="[
+                    'rounded-full px-2 py-0.5 text-[10px] font-semibold shadow-sm',
+                    caseTypeTheme(post.case_type).caseTypeTagClass,
+                  ]"
+                >
+                  {{ caseTypeEmoji(post.case_type) }}{{ caseTypeLabel(post.case_type) }}
+                </span>
+                <span
+                  v-if="post.subject"
+                  :class="[
+                    'rounded-full px-2 py-0.5 text-[10px] font-semibold shadow-sm',
+                    caseTypeTheme(post.case_type).subjectTagClass,
+                  ]"
+                >
+                  {{ post.subject }}
+                </span>
+              </div>
+              <div class="absolute bottom-2 right-2 z-10 flex items-center gap-0.5 text-white">
+                <Eye class="h-3 w-3" />
+                <span class="text-[10px] font-medium">{{ post.views_count }}</span>
+              </div>
             </div>
-          </div>
-        </article>
-      </div>
-      <p v-if="isLoadingMore" class="py-4 text-center text-sm text-gray-400">…</p>
+
+            <!-- Content -->
+            <div class="flex flex-1 flex-col p-2">
+              <h3
+                class="mb-0.5 line-clamp-1 text-[13px] font-semibold leading-tight text-gray-900 group-hover:text-gray-700"
+              >
+                {{ post.title }}
+              </h3>
+              <p class="mb-1.5 line-clamp-1 text-[11px] leading-tight text-gray-500">
+                {{ post.description }}
+              </p>
+              <div
+                v-if="displayTags(post.tags).length > 0"
+                class="mb-1.5 flex flex-wrap gap-1"
+              >
+                <span
+                  v-for="tag in displayTags(post.tags).slice(0, 2)"
+                  :key="tag"
+                  class="rounded bg-gray-100 px-1.5 py-px text-[10px] leading-none text-gray-500"
+                >
+                  {{ tag }}
+                </span>
+              </div>
+              <div class="mt-auto border-t border-gray-100 pt-1.5">
+                <div class="flex items-center justify-between gap-1.5">
+                  <div class="flex min-w-0 flex-1 items-center gap-1">
+                    <div
+                      class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gray-100 text-[9px] leading-none"
+                    >
+                      {{ post.author.avatar ?? '👤' }}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <div class="truncate text-[11px] font-medium leading-[1.15] text-gray-700">
+                        {{ post.author.name }}
+                      </div>
+                      <div
+                        v-if="post.author.organization"
+                        class="truncate text-[10px] leading-[1.15] text-gray-400"
+                      >
+                        {{ post.author.organization }}
+                      </div>
+                    </div>
+                  </div>
+                  <span
+                    :class="[
+                      'inline-flex shrink-0 items-center gap-0.5 text-[10px] leading-none',
+                      post.is_liked ? 'text-red-500' : 'text-gray-400',
+                    ]"
+                  >
+                    <Heart
+                      class="h-3 w-3"
+                      :class="post.is_liked ? 'fill-current' : ''"
+                    />
+                    {{ post.likes_count }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+        <p
+          v-if="isLoadingMore"
+          class="py-4 text-center text-sm text-gray-400"
+        >
+          …
+        </p>
       </div>
     </div>
 

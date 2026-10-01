@@ -43,7 +43,7 @@ onMounted(() => {
       <div class="flex min-w-0 items-center gap-2">
         <Mic class="h-4 w-4 shrink-0 text-stone-700" />
         <h1 class="truncate text-sm font-semibold text-stone-800">
-          {{ t('auth.voiceNotes.modalTitle') }}
+          <I18nText k="auth.voiceNotes.modalTitle" />
         </h1>
         <button
           v-if="saveKind === 'saved' || saveKind === 'unsaved' || saveKind === 'saving'"
@@ -65,13 +65,13 @@ onMounted(() => {
 
     <div class="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
       <p class="max-w-md text-sm text-stone-600">
-        {{ t('auth.voiceNotes.empty') }}
+        <I18nText k="auth.voiceNotes.empty" />
       </p>
       <p
         v-if="!authStore.isAuthenticated"
         class="text-sm text-amber-700"
       >
-        {{ t('auth.voiceNotes.loginRequired') }}
+        <I18nText k="auth.voiceNotes.loginRequired" />
       </p>
       <button
         v-else
@@ -79,7 +79,7 @@ onMounted(() => {
         class="rounded-xl bg-stone-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-stone-800"
         @click="voiceNotes.openModal()"
       >
-        {{ t('auth.voiceNotes.viewTranscript') }}
+        <I18nText k="auth.voiceNotes.viewTranscript" />
       </button>
     </div>
   </div>

@@ -9,6 +9,7 @@ import { ElDropdown } from 'element-plus'
 import { Check, ChevronDown, Palette } from '@lucide/vue'
 
 import MindMapDiagramStylePreview from '@/components/canvas/MindMapDiagramStylePreview.vue'
+import MmToolbarLabel from '@/components/canvas/MmToolbarLabel.vue'
 import I18nText from '@/components/common/I18nText.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -72,7 +73,7 @@ const activeTheme = computed(
 
 function ensureDiagram(): boolean {
   if (!diagramStore.data?.nodes?.length) {
-    notify.warning(t('canvas.toolbar.createDiagramFirst'))
+    notify.warningKey('canvas.toolbar.createDiagramFirst')
     return false
   }
   return true
@@ -102,6 +103,7 @@ function handlePickRainbow(): void {
   <I18nTooltip
     k="canvas.toolbar.mindMapAppearanceLabel"
     placement="bottom"
+    :disabled="props.compact"
   >
     <span class="inline-flex shrink-0">
       <ElDropdown
@@ -124,12 +126,11 @@ function handlePickRainbow(): void {
             :style="isRainbowActive ? undefined : { backgroundColor: activeTheme.topicBorderColor }"
             aria-hidden="true"
           />
-          <span
-            v-if="!props.compact"
+          <MmToolbarLabel
             class="mm-btn__label"
-          >
-            <I18nText k="canvas.ribbon.themeStyle" />
-          </span>
+            k="canvas.ribbon.themeStyle"
+            :short="props.compact"
+          />
           <ChevronDown
             :size="12"
             class="mm-btn__chevron"

@@ -3,7 +3,7 @@
  * MindGraphCollabPanel — inline collaboration UI for MindGraph landing.
  *
  * Pill trigger opens an Element dropdown: 校内协同 / 加入图示編輯 (i18n).
- * Choosing an item opens a popover: org sessions list or passkey entry.
+ * Choosing an item opens a popover: org sessions list or shared join-code entry.
  *
  * Exposes ``prefillAndAutoJoin(rawCode)`` for QR-code join from URL query.
  */
@@ -20,11 +20,14 @@ import {
 
 import { ArrowLeft, ChevronDown, Loader2, RefreshCw, Users } from '@lucide/vue'
 
-import { useLanguage, useNotifications } from '@/composables'
-import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
-import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
-import { authFetch } from '@/utils/api'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
+import { useLanguage, useNotifications } from '@/composables'
+import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
+import {
+  applyThinkingCoinMutation,
+  extractThinkingCoinsFooter,
+} from '@/composables/auth/useThinkingCoinSync'
+import { authFetch } from '@/utils/api'
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -99,11 +102,11 @@ function getFormattedCode(): string {
 async function joinWorkshop() {
   const code = getFormattedCode()
   if (code.length !== 7) {
-    notify.warning(t('mindgraphLanding.codeIncomplete'))
+    notify.warningKey('mindgraphLanding.codeIncomplete')
     return
   }
   if (!/^[2-9A-HJ-KM-NP-Z]{3}-[2-9A-HJ-KM-NP-Z]{3}$/i.test(code)) {
-    notify.warning(t('mindgraphLanding.codeFormatInvalid'))
+    notify.warningKey('mindgraphLanding.codeFormatInvalid')
     return
   }
   isJoining.value = true
@@ -112,7 +115,7 @@ async function joinWorkshop() {
     if (response.ok) {
       const data = await response.json()
       applyThinkingCoinMutation(extractThinkingCoinsFooter(data as Record<string, unknown>))
-      notify.success(t('mindgraphLanding.joinedPresentation', { title: data.workshop.title }))
+      notify.successKey('mindgraphLanding.joinedPresentation', { title: data.workshop.title })
       const enc = encodeURIComponent(code)
       window.location.href = `/canvas?diagramId=${encodeURIComponent(data.workshop.diagram_id)}&join_workshop=${enc}`
     } else {
@@ -120,7 +123,7 @@ async function joinWorkshop() {
       notify.error(error.detail || t('mindgraphLanding.joinPresentationFailed'))
     }
   } catch {
-    notify.error(t('mindgraphLanding.networkErrorJoin'))
+    notify.errorKey('mindgraphLanding.networkErrorJoin')
   } finally {
     isJoining.value = false
   }
@@ -134,10 +137,10 @@ async function fetchOrgSessions(showLoadingSpinner = true) {
       const data = await response.json()
       orgSessions.value = data.sessions || []
     } else {
-      notify.error(t('mindgraphLanding.loadOrgSessionsFailed'))
+      notify.errorKey('mindgraphLanding.loadOrgSessionsFailed')
     }
   } catch {
-    notify.error(t('mindgraphLanding.networkError'))
+    notify.errorKey('mindgraphLanding.networkError')
   } finally {
     if (showLoadingSpinner) orgSessionsLoading.value = false
   }
@@ -168,7 +171,7 @@ async function joinOrgSession(session: { diagram_id: string }) {
       applyThinkingCoinMutation(extractThinkingCoinsFooter(data as Record<string, unknown>))
       const code = data.workshop.code as string
       const enc = encodeURIComponent(code)
-      notify.success(t('mindgraphLanding.joinedCollab', { title: data.workshop.title }))
+      notify.successKey('mindgraphLanding.joinedCollab', { title: data.workshop.title })
       collabPopoverVisible.value = false
       window.location.href = `/canvas?diagramId=${encodeURIComponent(data.workshop.diagram_id)}&join_workshop=${enc}`
     } else {
@@ -176,7 +179,7 @@ async function joinOrgSession(session: { diagram_id: string }) {
       notify.error(error.detail || t('mindgraphLanding.joinFailed'))
     }
   } catch {
-    notify.error(t('mindgraphLanding.networkError'))
+    notify.errorKey('mindgraphLanding.networkError')
   } finally {
     isJoining.value = false
   }
@@ -266,10 +269,10 @@ defineExpose({ prefillAndAutoJoin })
           <template #dropdown>
             <ElDropdownMenu>
               <ElDropdownItem command="organization">
-                {{ t('mindgraphLanding.schoolCollab') }}
+                <I18nText k="mindgraphLanding.schoolCollab" />
               </ElDropdownItem>
               <ElDropdownItem command="network">
-                {{ t('mindgraphLanding.joinDiagramEdit') }}
+                <I18nText k="mindgraphLanding.joinDiagramEdit" />
               </ElDropdownItem>
             </ElDropdownMenu>
           </template>
@@ -292,7 +295,7 @@ defineExpose({ prefillAndAutoJoin })
             class="sw-panel__back-icon"
             aria-hidden="true"
           />
-          {{ t('mindgraphLanding.dialogSchoolTitle') }}
+          <I18nText k="mindgraphLanding.dialogSchoolTitle" />
         </button>
         <button
           type="button"
@@ -318,7 +321,7 @@ defineExpose({ prefillAndAutoJoin })
           class="sw-panel__loading-icon"
           aria-hidden="true"
         />
-        <span>{{ t('common.loading') }}</span>
+        <span><I18nText k="common.loading" /></span>
       </div>
 
       <!-- Empty state -->
@@ -326,7 +329,7 @@ defineExpose({ prefillAndAutoJoin })
         v-else-if="orgSessions.length === 0"
         class="sw-panel__empty"
       >
-        {{ t('mindgraphLanding.orgSessionsEmpty') }}
+        <I18nText k="mindgraphLanding.orgSessionsEmpty" />
       </p>
 
       <!-- Sessions list -->
@@ -359,13 +362,13 @@ defineExpose({ prefillAndAutoJoin })
               class="sw-session-join__spinner"
               aria-hidden="true"
             />
-            {{ t('mindgraphLanding.join') }}
+            <I18nText k="mindgraphLanding.join" />
           </button>
         </li>
       </ul>
     </div>
 
-    <!-- Panel: cross-org passkey input -->
+    <!-- Panel: cross-org join-code input -->
     <div
       v-else
       class="sw-panel sw-panel--join-code"
@@ -380,10 +383,10 @@ defineExpose({ prefillAndAutoJoin })
             class="sw-panel__back-icon"
             aria-hidden="true"
           />
-          {{ t('mindgraphLanding.dialogSharedTitle') }}
+          <I18nText k="mindgraphLanding.dialogSharedTitle" />
         </button>
       </div>
-      <p class="sw-panel__hint">{{ t('mindgraphLanding.sharedCodeHint') }}</p>
+      <p class="sw-panel__hint"><I18nText k="mindgraphLanding.sharedCodeHint" /></p>
       <div class="code-input-container">
         <div class="code-input-boxes">
           <input
@@ -442,7 +445,7 @@ defineExpose({ prefillAndAutoJoin })
           class="sw-join-btn__spinner"
           aria-hidden="true"
         />
-        {{ t('mindgraphLanding.join') }}
+        <I18nText k="mindgraphLanding.join" />
       </button>
     </div>
   </ElPopover>
@@ -691,7 +694,7 @@ defineExpose({ prefillAndAutoJoin })
   flex-shrink: 0;
 }
 
-/* ── Passkey join button ──────────────────────────────────────────────── */
+/* ── Join-code button ─────────────────────────────────────────────────── */
 .sw-join-btn {
   width: 100%;
   margin-top: 16px;

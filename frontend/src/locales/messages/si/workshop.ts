@@ -33,7 +33,7 @@ export default {
   'collab.previousSessionsStopped': 'ඔබගේ අනෙකුත් රූප සටහන් වල {n} පෙර සහයෝගිතා සැසිය(ය) අවසන් විය.',
   'collab.saveFailed': 'රූප සටහන සුරැකීමට අසමත් විය',
   'collab.scanToJoin': 'සම්බන්ධ වීමට ස්කෑන් කරන්න',
-  'collab.schoolDescActive': 'පාසල් සහයෝගීතාවය ක්‍රියාත්මකයි. සගයන්: මුල් පිටුවේ Collaborate → School භාවිතා කර මෙම රූප සටහන තෝරන්න - කේතයක් අවශ්‍ය නොවේ.',
+  'collab.schoolDescActive': 'පාසල් සහයෝගීතාවය ක්‍රියාත්මකයි. සගයන්: MindGraph මුල් පිටුවේ Collaborate → School භාවිතා කර මෙම රූප සටහන තෝරන්න - කේතයක් අවශ්‍ය නොවේ.',
   'collab.schoolStarted': 'පාසල් සහයෝගීතාවය ක්‍රියාත්මකයි - සහයෝගිතා → පාසලෙන් සගයන්ට සම්බන්ධ විය හැක.',
   'collab.sectionNetwork': 'හවුල් සහයෝගීතාව (කේතය)',
   'collab.sectionSchool': 'පාසල් සහයෝගීතාව',

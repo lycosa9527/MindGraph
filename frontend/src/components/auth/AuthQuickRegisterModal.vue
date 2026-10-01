@@ -81,16 +81,16 @@ onMounted(async () => {
 async function submitQuickRegister() {
   const phoneDigits = phone.value.replace(/\D/g, '')
   if (phoneDigits.length !== 11) {
-    notify.warning(t('auth.modal.phone11Digits'))
+    notify.warningKey('auth.modal.phone11Digits')
     return
   }
   const roomTrimmed = roomCode.value.trim()
   if (roomTrimmed.length !== 6 || !/^\d{6}$/.test(roomTrimmed)) {
-    notify.warning(t('auth.quickRegRoomCodeEnter6'))
+    notify.warningKey('auth.quickRegRoomCodeEnter6')
     return
   }
   if (!props.quickRegToken) {
-    notify.error(t('auth.modal.fillRequired'))
+    notify.errorKey('auth.modal.fillRequired')
     return
   }
 
@@ -118,10 +118,10 @@ async function submitQuickRegister() {
         }
       }
       if (sessionOk) {
-        notify.success(t('auth.quickRegRegisterSuccess'))
+        notify.successKey('auth.quickRegRegisterSuccess')
         emit('success')
       } else {
-        notify.warning(t('auth.quickRegSessionUnsure'))
+        notify.warningKey('auth.quickRegSessionUnsure')
       }
     } else {
       notify.error(
@@ -132,7 +132,7 @@ async function submitQuickRegister() {
       )
     }
   } catch {
-    notify.error(t('auth.modal.networkRegisterError'))
+    notify.errorKey('auth.modal.networkRegisterError')
   } finally {
     submitting.value = false
   }

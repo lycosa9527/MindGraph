@@ -269,7 +269,7 @@ export function useInlineRecommendations() {
   const diagramStore = useDiagramStore()
   const store = useInlineRecommendationsStore()
   const savedDiagramsStore = useSavedDiagramsStore()
-  const { t, promptLanguage } = useLanguage()
+  const { promptLanguage } = useLanguage()
   const notify = useNotifications()
 
   function isGeneratingFor(nodeId: string): boolean {
@@ -397,12 +397,12 @@ export function useInlineRecommendations() {
     if (
       isCollabGuestAiBlocked(diagramStore.collabSessionActive, diagramStore.collabIsDiagramOwner)
     ) {
-      notify.warning(t('canvas.toolbar.collabAiBlocked'))
+      notify.warningKey('canvas.toolbar.collabAiBlocked')
       return { success: false, error: 'Collab guest AI blocked' }
     }
 
     if (!store.isReady) {
-      notify.warning(t('autoComplete.enterTopicFirst'))
+      notify.warningKey('autoComplete.enterTopicFirst')
       return { success: false, error: 'Not ready' }
     }
 
@@ -464,7 +464,7 @@ export function useInlineRecommendations() {
       store.setOptions(nodeId, [...labels], labels.length > 1)
     }
     const onError = (msg: string) => {
-      notify.error(t('notification.recommendationFailed', { msg }))
+      notify.errorKey('notification.recommendationFailed', { msg })
     }
 
     try {
@@ -485,7 +485,7 @@ export function useInlineRecommendations() {
       if (count > 0) {
         return { success: true }
       }
-      notify.warning(t('notification.inlineRecEmpty'))
+      notify.warningKey('notification.inlineRecEmpty')
       return { success: false, error: 'No recommendations generated' }
     } catch (error) {
       const isAbort = error instanceof Error && error.name === 'AbortError'
@@ -493,7 +493,7 @@ export function useInlineRecommendations() {
         return { success: false, error: 'Aborted' }
       }
       const errMsg = error instanceof Error ? error.message : 'Unknown error'
-      notify.error(t('notification.recommendationFailed', { msg: errMsg }))
+      notify.errorKey('notification.recommendationFailed', { msg: errMsg })
       return { success: false, error: errMsg }
     } finally {
       store.setStreamAbortController(null)

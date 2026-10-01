@@ -2,21 +2,20 @@
  * Handle Kitty ``auto_complete_branch`` → mind-map subgraph expand (branch glow)
  * via the verified local commit path (paste → verify → Hub persist).
  */
+import { notify } from '@/composables/core/notifications'
 import { eventBus } from '@/composables/core/useEventBus'
 import {
-  generateMindMapSubgraphForNode,
   type MindMapSubgraphPersistOptions,
+  generateMindMapSubgraphForNode,
 } from '@/composables/editor/useMindMapSubgraphSuggest'
-import { notify } from '@/composables/core/notifications'
 import type { DiagramHubPersistDeps } from '@/composables/kitty/diagramEditHubPersist'
 import {
   beginQuietBranchComplete,
   endQuietBranchComplete,
 } from '@/composables/kitty/kittyQuietBranchCompleteBatch'
-import { i18n } from '@/i18n'
 import { useDiagramStore } from '@/stores'
-import { findMindMapNodeIdByLabel } from '@/utils/findMindMapNodeIdByLabel'
 import { isMindMapDiagramType } from '@/utils/conceptMapDesktopViewport'
+import { findMindMapNodeIdByLabel } from '@/utils/findMindMapNodeIdByLabel'
 
 export type KittyAutoCompletePersistHooks = {
   ensureConnected: () => Promise<boolean>
@@ -70,10 +69,9 @@ export async function handleKittyAutoCompleteBranchRequest(
   persistHooks?: KittyAutoCompletePersistHooks
 ): Promise<boolean> {
   const diagramStore = useDiagramStore()
-  const t = i18n.global.t.bind(i18n.global) as (key: string) => string
 
   if (!isMindMapDiagramType(diagramStore.type)) {
-    notify.warning(t('canvas.mindMapOneSentence.kittyEditBranchCompleteFailed'))
+    notify.warningKey('canvas.mindMapOneSentence.kittyEditBranchCompleteFailed')
     eventBus.emit('kitty:auto_complete_observe', {
       status: 'failed',
       action: 'auto_complete_branch',

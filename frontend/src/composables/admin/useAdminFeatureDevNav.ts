@@ -6,21 +6,13 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import {
+  type FeatureDevSubtab,
   defaultFeatureDevSubtab,
   resolveFeatureDevSubtab,
-  type FeatureDevSubtab,
   visibleFeatureDevNavItems,
 } from '@/composables/admin/adminFeatureDevNav'
 
-export interface FeatureDevNavLeafItemView {
-  kind: 'leaf'
-  name: FeatureDevSubtab
-  labelKey: string
-  label: string
-}
-
 export function useAdminFeatureDevNav(options: {
-  t: (key: string) => string
   canViewSettingsSubtab: (subtab: string) => boolean
   featureSmartResponse: Ref<boolean>
   featureTeacherUsage: Ref<boolean>
@@ -47,12 +39,7 @@ export function useAdminFeatureDevNav(options: {
     return resolveFeatureDevSubtab(route.query.subtab as string, visibilityOptions.value)
   })
 
-  const featureDevNavItems = computed((): FeatureDevNavLeafItemView[] => {
-    return visibleFeatureDevNavItems(visibilityOptions.value).map((item) => ({
-      ...item,
-      label: options.t(item.labelKey),
-    }))
-  })
+  const featureDevNavItems = computed(() => visibleFeatureDevNavItems(visibilityOptions.value))
 
   const visibleSubtabNames = computed(() => featureDevNavItems.value.map((item) => item.name))
 

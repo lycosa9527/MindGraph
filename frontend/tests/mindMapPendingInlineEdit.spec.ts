@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { applyVoiceDiagramAddNodes } from '@/composables/editor/diagramVoiceMutations'
 import { useDiagramStore } from '@/stores/diagram'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
@@ -245,5 +246,54 @@ describe('mind map pending post-add inline edit', () => {
     expect(diagramStore.selectedNodes[0]).toBe(createdId)
 
     cleanup()
+  })
+
+  it('voice/Kitty add branch selects the node without opening the inline input', () => {
+    enableMindMapV2Canvas()
+    const diagramStore = useDiagramStore()
+    diagramStore.loadDefaultTemplate('mindmap')
+    const topic = diagramStore.data?.nodes.find((node) => node.id === 'topic')
+    if (topic) {
+      diagramStore.setMindMapEditingNodeId(topic.id)
+    }
+
+    expect(
+      diagramStore.addMindMapBranch('right', '照顾身体', undefined, { openInlineEdit: false })
+    ).toBe(true)
+
+    const created = diagramStore.data?.nodes.find((node) => node.text === '照顾身体')
+    expect(created).toBeTruthy()
+    expect(diagramStore.selectedNodes[0]).toBe(created?.id)
+    expect(diagramStore.mindMapPendingEditNodeId).toBeNull()
+    expect(diagramStore.mindMapEditingNodeId).toBeNull()
+  })
+
+  it('tree reload clears a leftover desktop edit session before first paint', () => {
+    enableMindMapV2Canvas()
+    const diagramStore = useDiagramStore()
+    diagramStore.loadDefaultTemplate('mindmap')
+    diagramStore.setMindMapEditingNodeId('topic')
+    expect(diagramStore.mindMapEditingNodeId).toBe('topic')
+
+    expect(diagramStore.addMindMapBranch('right', '新分支')).toBe(true)
+
+    expect(diagramStore.mindMapEditingNodeId).toBeNull()
+    const created = diagramStore.data?.nodes.find((node) => node.text === '新分支')
+    expect(diagramStore.mindMapPendingEditNodeId).toBe(created?.id)
+  })
+
+  it('applyVoiceDiagramAddNodes does not arm inline edit after a leftover desktop edit', () => {
+    enableMindMapV2Canvas()
+    const diagramStore = useDiagramStore()
+    diagramStore.loadDefaultTemplate('mindmap')
+    diagramStore.setMindMapEditingNodeId('topic')
+
+    expect(applyVoiceDiagramAddNodes(diagramStore, [{ text: '照顾身体', side: 'right' }])).toBe(1)
+
+    const created = diagramStore.data?.nodes.find((node) => node.text === '照顾身体')
+    expect(created).toBeTruthy()
+    expect(diagramStore.selectedNodes[0]).toBe(created?.id)
+    expect(diagramStore.mindMapPendingEditNodeId).toBeNull()
+    expect(diagramStore.mindMapEditingNodeId).toBeNull()
   })
 })

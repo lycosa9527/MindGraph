@@ -1,7 +1,7 @@
 /**
  * Node Palette diagram data builder - builds diagram_data for API from current diagram
  */
-import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
+import { isPlaceholderText } from '@/composables/editor/placeholderText'
 import { stripConceptMapFocusQuestionPrefix } from '@/stores/diagram/diagramDefaultLabels'
 import { isLearningSheetBlankDisplayText } from '@/stores/specLoader/utils'
 import type { Connection, DiagramType } from '@/types'

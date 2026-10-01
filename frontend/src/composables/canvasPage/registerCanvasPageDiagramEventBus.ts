@@ -1,10 +1,18 @@
 import type { Ref } from 'vue'
 
+import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
+import {
+  type ThinkingMapSlashCommand,
+  readThinkingMapSlashRole,
+  resolveThinkingMapNodeSlash,
+} from '@/composables/canvasPage/thinkingMapNodeSlash'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useNodeActions } from '@/composables/editor/useNodeActions'
 import { restoreLearningSheetUiFromDiagram } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useDiagramStore, usePanelsStore } from '@/stores'
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
+import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 
 /**
@@ -17,6 +25,10 @@ export function registerCanvasPageDiagramEventBus(options: {
   const { canvasZoom } = options
   const diagramStore = useDiagramStore()
   const panelsStore = usePanelsStore()
+  const { handleDeleteNode, handleAddNode, handleAddChild, handleAddSibling, handleAddBranch } =
+    useNodeActions({
+      registerEventBusListeners: false,
+    })
   const focusReviewStore = useConceptMapFocusReviewStore()
   const rootConceptReviewStore = useConceptMapRootConceptReviewStore()
 
@@ -122,6 +134,67 @@ export function registerCanvasPageDiagramEventBus(options: {
     'diagram:style_changed',
     () => {
       diagramStore.sessionEditCount += 1
+    },
+    'CanvasPage'
+  )
+  function runThinkingMapSlash(command: ThinkingMapSlashCommand, nodeIds: string[]): void {
+    if (command === 'add_tree_category') {
+      diagramStore.clearSelection()
+      void handleAddNode()
+      return
+    }
+    if (!diagramStore.selectNodes(nodeIds)) return
+    if (command === 'delete') {
+      void handleDeleteNode()
+      return
+    }
+    if (command === 'add_child') {
+      void handleAddChild()
+      return
+    }
+    if (command === 'add_branch') {
+      void handleAddBranch()
+      return
+    }
+    void handleAddNode()
+  }
+
+  eventBus.onWithOwner(
+    'diagram:node_slash_requested',
+    ({ action, nodeIds }) => {
+      if (nodeIds.length === 0 || isDiagramPresentationReadOnly(diagramStore)) return
+      const nodeId = nodeIds[0]
+      if (!nodeId) return
+      if (isThinkingMapDiagramType(diagramStore.type)) {
+        const role = readThinkingMapSlashRole(
+          diagramStore.type,
+          nodeId,
+          diagramStore.data?.nodes ?? [],
+          diagramStore.data?.connections ?? []
+        )
+        const command = resolveThinkingMapNodeSlash(diagramStore.type, action, role)
+        if (!command) return
+        const ids = action === 'delete' ? nodeIds : [nodeId]
+        runThinkingMapSlash(command, ids)
+        return
+      }
+      const mindMap = diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map'
+      if (action === 'sibling' && !mindMap) return
+      const ids = action === 'delete' ? nodeIds : [nodeId]
+      if (!diagramStore.selectNodes(ids)) return
+      if (action === 'delete') {
+        void handleDeleteNode()
+        return
+      }
+      const node = diagramStore.data?.nodes.find((item) => item.id === nodeId)
+      const topic = nodeId === 'topic' || node?.type === 'topic' || node?.type === 'center'
+      if (action === 'sibling') {
+        if (topic) void handleAddBranch()
+        else void handleAddSibling()
+        return
+      }
+      if (mindMap && topic) void handleAddBranch()
+      else void handleAddChild()
     },
     'CanvasPage'
   )

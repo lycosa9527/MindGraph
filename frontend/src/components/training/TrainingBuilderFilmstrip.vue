@@ -53,7 +53,7 @@ function onImages(event: Event): void {
         class="admin-swiss-btn filmstrip__add"
         @click="emit('add')"
       >
-        {{ t('training.builder.addSlide') }}
+        <I18nText k="training.builder.addSlide" />
       </ElButton>
       <ElButton
         size="small"
@@ -61,7 +61,7 @@ function onImages(event: Event): void {
         :disabled="busy"
         @click="pickImages"
       >
-        {{ t('training.builder.addImage') }}
+        <I18nText k="training.builder.addImage" />
       </ElButton>
     </div>
     <input
@@ -72,7 +72,7 @@ function onImages(event: Event): void {
       multiple
       :aria-label="t('training.builder.addImage')"
       @change="onImages"
-    >
+    />
     <div
       v-for="(step, index) in steps"
       :key="`${step.type}-${index}`"

@@ -217,7 +217,7 @@ function formatModifiedAt(iso: string): string {
       >
         <header class="ls-modal__head">
           <div class="ls-modal__head-text">
-            <h2 class="ls-modal__title">{{ t('learningSpace.pickDiagram') }}</h2>
+            <h2 class="ls-modal__title"><I18nText k="learningSpace.pickDiagram" /></h2>
           </div>
           <button
             type="button"
@@ -247,7 +247,7 @@ function formatModifiedAt(iso: string): string {
             v-else-if="filteredDiagrams.length === 0"
             class="ls-empty"
           >
-            {{ t('showcase.publishModal.historyEmpty') }}
+            <I18nText k="showcase.publishModal.historyEmpty" />
           </p>
           <div
             v-else
@@ -270,7 +270,7 @@ function formatModifiedAt(iso: string): string {
                   v-else
                   class="ls-pick-card__ph"
                 >
-                  {{ t('learningSpace.noPreview') }}
+                  <I18nText k="learningSpace.noPreview" />
                 </span>
               </div>
               <div class="ls-pick-card__meta">
@@ -292,7 +292,7 @@ function formatModifiedAt(iso: string): string {
             class="ls-btn ls-btn--primary"
             @click="close"
           >
-            {{ t('showcase.publishModal.galleryPickerDone') }}
+            <I18nText k="showcase.publishModal.galleryPickerDone" />
           </button>
         </footer>
       </div>

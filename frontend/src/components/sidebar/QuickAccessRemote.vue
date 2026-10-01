@@ -6,7 +6,7 @@
 import { type ComponentPublicInstance, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { LayoutGrid, Lightbulb, X } from '@lucide/vue'
+import { Home, LayoutGrid, Lightbulb, X } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import DiagramPreviewSvg from '@/components/mindgraph/DiagramPreviewSvg.vue'
@@ -22,14 +22,18 @@ import { useCanvasSessionDirty } from '@/composables/editor/canvasSessionDirty'
 import { executeLandingPrompt } from '@/composables/mindgraph/runLandingPromptGeneration'
 import { useLandingGenerateGraph } from '@/composables/mindgraph/useLandingGenerateGraph'
 import {
-  QUICK_ACCESS_REMOTE_TABS,
   quickAccessReplaceNeedsConfirm,
   resolveQuickAccessDiagramOpen,
   resolveQuickAccessPromptText,
 } from '@/composables/sidebar/quickAccessRemoteModel'
 import {
+  rememberQuickAccessSpec,
+  resolveQuickAccessSpec,
+} from '@/composables/sidebar/quickAccessSpecSync'
+import {
   commitQuickAccessPromptEdit,
   hideQuickAccessRemote,
+  playQuickAccessSpecReplay,
   quickAccessPromptBusy,
   quickAccessPromptOverrides,
   setQuickAccessRemoteTab,
@@ -41,7 +45,13 @@ import {
   type LandingPromptExampleKey,
   quickAccessDiagramCards,
 } from '@/config/landingQuickAccess'
-import { useAuthStore, useDiagramStore, useSavedDiagramsStore, useUIStore } from '@/stores'
+import {
+  useAuthStore,
+  useDiagramStore,
+  useLLMResultsStore,
+  useSavedDiagramsStore,
+  useUIStore,
+} from '@/stores'
 import type { DiagramType } from '@/types'
 
 import './quickAccessRemote.css'
@@ -59,13 +69,25 @@ const generation = useLandingGenerateGraph({ t, notify })
 const chrome = useQuickAccessRemoteChrome()
 const editingKey = ref<LandingPromptExampleKey | null>(null)
 const editDraft = ref('')
+const promptEditor = ref<HTMLTextAreaElement | null>(null)
 const runningPromptKey = ref<LandingPromptExampleKey | null>(null)
+const preloadingPromptKey = ref<LandingPromptExampleKey | null>(null)
+let editBlurReadyAt = 0
 let promptRun = 0
 
 function clearPromptRun(): void {
   promptRun += 1
   quickAccessPromptBusy.value = false
   runningPromptKey.value = null
+  preloadingPromptKey.value = null
+}
+
+function promptIsLocked(key: LandingPromptExampleKey): boolean {
+  const preloading = preloadingPromptKey.value
+  if (preloading != null) {
+    return preloading !== key
+  }
+  return quickAccessPromptBusy.value || generation.isGenerating.value
 }
 
 const TAB_LABELS = {
@@ -85,6 +107,15 @@ function reloadBlankCanvas(diagramType: DiagramType): void {
     setSelectedChartType: (name) => uiStore.setSelectedChartType(name),
     hasDiagramData: Boolean(diagramStore.data),
   })
+}
+
+async function goGallery(): Promise<void> {
+  generation.cancelInFlightGeneration()
+  clearPromptRun()
+  if (route.path === '/mindgraph') {
+    return
+  }
+  await router.push('/mindgraph').catch(() => undefined)
 }
 
 async function openDiagram(diagramType: DiagramType): Promise<void> {
@@ -122,31 +153,114 @@ function promptLabel(key: LandingPromptExampleKey): string {
 
 function beginPromptEdit(key: LandingPromptExampleKey, event: MouseEvent): void {
   event.preventDefault()
-  if (quickAccessPromptBusy.value || generation.isGenerating.value) {
+  if (quickAccessPromptBusy.value || generation.isGenerating.value || preloadingPromptKey.value) {
     return
   }
+  editBlurReadyAt = Date.now() + 400
   editingKey.value = key
   editDraft.value = promptLabel(key)
 }
 
 function focusPromptEditor(el: Element | ComponentPublicInstance | null): void {
   if (!(el instanceof HTMLTextAreaElement)) {
+    promptEditor.value = null
     return
   }
+  promptEditor.value = el
   el.focus()
   el.select()
+}
+
+function keepPromptEditorOpen(key: LandingPromptExampleKey): void {
+  const editor = promptEditor.value
+  if (editor == null || editingKey.value !== key) {
+    return
+  }
+  editor.focus()
+}
+
+function startPromptPreload(key: LandingPromptExampleKey): void {
+  preloadingPromptKey.value = key
+  void runPreset(key).finally(() => {
+    if (preloadingPromptKey.value === key) {
+      preloadingPromptKey.value = null
+    }
+  })
 }
 
 function finishPromptEdit(key: LandingPromptExampleKey): void {
   if (editingKey.value !== key) {
     return
   }
-  commitQuickAccessPromptEdit(key, editDraft.value, t(key))
+  if (Date.now() < editBlurReadyAt) {
+    keepPromptEditorOpen(key)
+    return
+  }
+  const fallback = t(key)
+  const draft = editDraft.value
+  commitQuickAccessPromptEdit(key, draft, fallback)
   editingKey.value = null
+  promptEditor.value = null
+  const text = promptLabel(key)
+  if (text === fallback || resolveQuickAccessSpec(key, text, fallback)) {
+    return
+  }
+  startPromptPreload(key)
+}
+
+function onPromptEditKeydown(key: LandingPromptExampleKey, event: KeyboardEvent): void {
+  if (event.isComposing) {
+    return
+  }
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    cancelPromptEdit()
+    return
+  }
+  if (event.key !== 'Enter' || event.shiftKey) {
+    return
+  }
+  event.preventDefault()
+  editBlurReadyAt = 0
+  finishPromptEdit(key)
 }
 
 function cancelPromptEdit(): void {
   editingKey.value = null
+  promptEditor.value = null
+}
+
+async function replaySavedSpec(key: LandingPromptExampleKey, text: string): Promise<boolean> {
+  const saved = resolveQuickAccessSpec(key, text, t(key))
+  if (!saved) {
+    return false
+  }
+  const run = generation.beginGeneration()
+  try {
+    const played = await playQuickAccessSpecReplay(
+      (phase) => generation.setLoadPhase(phase),
+      run.signal
+    )
+    if (!played || !generation.isCurrentRun(run.runId) || !authStore.isAuthenticated) {
+      return true
+    }
+    generation.releaseRun(run)
+    const diagramStore = useDiagramStore()
+    diagramStore.clearHistory()
+    const loaded = diagramStore.loadFromSpec(saved.spec, saved.diagramType)
+    if (!loaded) {
+      notify.errorKey('diagramTemplate.generationFailed')
+      return true
+    }
+    useLLMResultsStore().reset()
+    if (!generation.isCurrentRun(run.runId)) {
+      return true
+    }
+    await router.push({ path: '/canvas' }).catch(() => undefined)
+    return true
+  } finally {
+    generation.endGeneration(run)
+  }
 }
 
 async function runPreset(key: LandingPromptExampleKey): Promise<void> {
@@ -156,9 +270,13 @@ async function runPreset(key: LandingPromptExampleKey): Promise<void> {
   const runId = ++promptRun
   runningPromptKey.value = key
   quickAccessPromptBusy.value = true
+  const text = promptLabel(key)
   try {
+    if (await replaySavedSpec(key, text)) {
+      return
+    }
     await executeLandingPrompt({
-      text: promptLabel(key),
+      text,
       language: promptLanguage.value,
       t,
       notify,
@@ -169,6 +287,11 @@ async function runPreset(key: LandingPromptExampleKey): Promise<void> {
         authStore.handleTokenExpired(undefined, undefined)
       },
       generation,
+      onApplied: (applied) => {
+        if (text !== t(key)) {
+          void rememberQuickAccessSpec(key, { text, ...applied })
+        }
+      },
     })
   } finally {
     if (promptRun === runId) {
@@ -236,29 +359,57 @@ onUnmounted(() => {
       class="qa-remote__tabs"
       role="tablist"
     >
+      <div
+        class="qa-remote__tab-group"
+        :class="{ 'is-active': chrome.activeTab.value === 'diagrams' }"
+      >
+        <button
+          type="button"
+          class="qa-remote__tab"
+          role="tab"
+          :aria-selected="chrome.activeTab.value === 'diagrams'"
+          data-testid="quick-access-remote-tab-diagrams"
+          @click="setQuickAccessRemoteTab('diagrams')"
+        >
+          <LayoutGrid
+            class="mr-1 h-3.5 w-3.5"
+            :stroke-width="2.2"
+          />
+          <I18nText
+            :k="TAB_LABELS.diagrams"
+            dense
+          />
+        </button>
+        <button
+          v-show="chrome.activeTab.value === 'diagrams'"
+          type="button"
+          class="qa-remote__home"
+          data-testid="quick-access-remote-home"
+          :title="t('canvas.ribbon.backToGallery')"
+          :aria-label="t('canvas.ribbon.backToGallery')"
+          @click="goGallery"
+        >
+          <Home
+            class="h-3.5 w-3.5"
+            :stroke-width="2.2"
+          />
+        </button>
+      </div>
       <button
-        v-for="tab in QUICK_ACCESS_REMOTE_TABS"
-        :key="tab"
         type="button"
         class="qa-remote__tab"
         role="tab"
-        :class="{ 'is-active': chrome.activeTab.value === tab }"
-        :aria-selected="chrome.activeTab.value === tab"
-        :data-testid="`quick-access-remote-tab-${tab}`"
-        @click="setQuickAccessRemoteTab(tab)"
+        :class="{ 'is-active': chrome.activeTab.value === 'prompts' }"
+        :aria-selected="chrome.activeTab.value === 'prompts'"
+        data-testid="quick-access-remote-tab-prompts"
+        @click="setQuickAccessRemoteTab('prompts')"
       >
-        <LayoutGrid
-          v-if="tab === 'diagrams'"
-          class="mr-1 h-3.5 w-3.5"
-          :stroke-width="2.2"
-        />
         <Lightbulb
-          v-else
           class="mr-1 h-3.5 w-3.5"
           :stroke-width="2.2"
         />
         <I18nText
-          :k="TAB_LABELS[tab]"
+          :k="TAB_LABELS.prompts"
           dense
         />
       </button>
@@ -309,12 +460,13 @@ onUnmounted(() => {
             :aria-label="t('sidebar.quickAccessRemote.editPrompt')"
             :data-testid="`quick-access-prompt-edit-${key}`"
             @blur="finishPromptEdit(key)"
-            @keydown.esc.prevent="cancelPromptEdit"
+            @keydown="onPromptEditKeydown(key, $event)"
             @contextmenu.prevent
           />
           <LlmPhaseRing
             v-else
             class="qa-remote__prompt-ring"
+            :class="{ 'is-locked': promptIsLocked(key) }"
             :phase="generation.loadPhase.value"
             :active="runningPromptKey === key"
             border-radius="10px"
@@ -324,14 +476,25 @@ onUnmounted(() => {
             <button
               type="button"
               class="qa-remote__prompt"
-              :class="{ 'is-running': runningPromptKey === key }"
-              :disabled="quickAccessPromptBusy || generation.isGenerating.value"
+              :class="{
+                'is-running': runningPromptKey === key,
+                'is-preloading': preloadingPromptKey === key,
+              }"
+              :disabled="promptIsLocked(key) || preloadingPromptKey === key"
+              :aria-busy="preloadingPromptKey === key"
               :title="t('sidebar.quickAccessRemote.editPrompt')"
               :data-testid="`quick-access-prompt-${key}`"
               @click="runPreset(key)"
               @contextmenu="beginPromptEdit(key, $event)"
             >
-              {{ promptLabel(key) }}
+              <span class="qa-remote__prompt-text">{{ promptLabel(key) }}</span>
+              <span
+                v-if="preloadingPromptKey === key"
+                class="qa-remote__preload"
+                data-testid="quick-access-prompt-preloading"
+              >
+                <I18nText k="sidebar.quickAccessRemote.preloadingSpec" />
+              </span>
             </button>
           </LlmPhaseRing>
         </template>

@@ -12,8 +12,6 @@ import {
   bindStudentDraftDiagram,
   fetchAssignmentAiPermissions,
 } from '@/utils/learningSpaceApi'
-import { assignmentAllowsResubmit } from '@/composables/learningSpace/lsHelpers'
-import { useAuthStore } from '@/stores/auth'
 
 export const MG_LEARNING_ASSIGNMENT_STORAGE_KEY = 'mg_learning_assignment_id'
 
@@ -51,9 +49,6 @@ export const useLearningAssignmentCanvasStore = defineStore('learningAssignmentC
 
   const isActive = computed(() => assignmentId.value != null)
   const isSubmitted = computed(() => assignment.value?.submission?.status === 'submitted')
-  const isHomeworkLocked = computed(
-    () => isSubmitted.value && !assignmentAllowsResubmit(assignment.value)
-  )
   const shellEpoch = ref(0)
 
   function bumpShell(): void {
@@ -63,10 +58,6 @@ export const useLearningAssignmentCanvasStore = defineStore('learningAssignmentC
   const aiAssistOn = computed(() => Boolean(permissions.value?.ai_assist))
 
   function can(capability: LearningAiCapability): boolean {
-    const authStore = useAuthStore()
-    if (authStore.user?.role === 'student' && !isActive.value) {
-      return false
-    }
     if (!isActive.value) return true
     const perms = permissions.value
     if (!perms) return false
@@ -145,7 +136,6 @@ export const useLearningAssignmentCanvasStore = defineStore('learningAssignmentC
     draftHydrated,
     isActive,
     isSubmitted,
-    isHomeworkLocked,
     shellEpoch,
     bumpShell,
     aiAssistOn,

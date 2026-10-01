@@ -26,10 +26,10 @@ def test_standard_mode_uses_mg_user_pk(monkeypatch: pytest.MonkeyPatch) -> None:
     assert mod.mindmate_dify_user_id(user) == "mg_user_7"
 
 
-def test_bayi_passkey_phone_non_uuid(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test bayi passkey phone non uuid."""
+def test_bayi_phone_login_uses_mg_user_pk(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Phone login on /auth is not a vendor UUID, so Dify keeps mg_user_<pk>."""
     monkeypatch.setattr(mod, "AUTH_MODE", "bayi")
-    user = _user("bayi@system.com", pk=1)
+    user = _user("13800138000", pk=1)
     assert mod.mindmate_dify_user_id(user) == "mg_user_1"
 
 

@@ -5,7 +5,6 @@ Login Endpoints
 User login endpoints:
 - /login - Password-based login with captcha
 - /login_sms - SMS-based login
-- /bayi/passkey - Bayi 6-digit passkey login (AUTH_MODE=bayi only)
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -14,7 +13,6 @@ Proprietary License
 
 import asyncio
 import logging
-from datetime import UTC, datetime
 from types import CoroutineType
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -30,7 +28,6 @@ from models.requests.requests_auth import (
     LoginRequest,
     LoginWithEmailRequest,
     LoginWithSMSRequest,
-    PasskeyVerifyRequest,
     StudentLoginRequest,
 )
 from services.auth.geo_cn_mainland_cookie import json_forbidden_cn_geo
@@ -44,7 +41,6 @@ from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
 from services.redis.rate_limiting.redis_rate_limiter import (
-    RedisRateLimiter,
     check_ip_rate_limit,
     check_login_rate_limit,
     clear_ip_attempts,
@@ -68,15 +64,12 @@ from utils.auth import (
     create_access_token,
     create_refresh_token,
     get_client_ip,
-    get_user_role,
-    hash_password,
     increment_failed_attempts,
     reset_failed_attempts,
-    verify_bayi_passkey,
     verify_password,
     verify_password_timing_dummy,
 )
-from utils.auth.config import BAYI_DEFAULT_ORG_CODE, BAYI_DEFAULT_ORG_ID, BAYI_PASSKEY
+from utils.auth.bayi_mode import is_bayi_sso_phone
 from utils.auth.org_subscription import enforce_org_accessible_or_raise
 from utils.auth.role_constants import ROLE_STUDENT
 from utils.db.rls_request import bind_system_bootstrap_rls_dependency
@@ -90,6 +83,15 @@ from .helpers import auth_session_json_metadata, issue_new_auth_cookies, track_u
 from .session_user_payload import build_session_user_payload
 from .sms import _verify_and_consume_sms_code
 from .user_session_prefs import coerce_overseas_ui_language_prefs
+
+
+def _password_accepted(user: User, plain_password: str) -> bool:
+    """Bayi jump-in accounts sign in from the school link, not a password."""
+    if is_bayi_sso_phone(getattr(user, "phone", None)):
+        verify_password_timing_dummy(plain_password)
+        return False
+    return verify_password(plain_password, user.password_hash)
+
 
 _bg_tasks: set[asyncio.Task] = set()
 
@@ -378,7 +380,7 @@ async def login_student(
             detail=Messages.error("captcha_account_locked", lang, MAX_LOGIN_ATTEMPTS, LOCKOUT_DURATION_MINUTES),
         )
 
-    if not verify_password(request.password, cached_user.password_hash):
+    if not _password_accepted(cached_user, request.password):
         result = await db.execute(select(User).where(User.id == cached_user.id))
         db_user = result.scalar_one_or_none()
         if db_user:
@@ -539,7 +541,7 @@ async def login(
         raise HTTPException(status_code=status.HTTP_423_LOCKED, detail=lockout_msg)
 
     # Verify password
-    if not verify_password(request.password, cached_user.password_hash):
+    if not _password_accepted(cached_user, request.password):
         # Need user attached to session for modification - reload from DB
         result = await db.execute(select(User).where(User.id == cached_user.id))
         db_user = result.scalar_one_or_none()
@@ -797,203 +799,3 @@ async def login_with_email(
         "email_otp",
         lang,
     )
-
-
-@router.post("/bayi/passkey")
-async def verify_bayi_passkey_login(
-    passkey_request: PasskeyVerifyRequest,
-    request: Request,
-    response: Response,
-    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
-    db: AsyncSession = Depends(get_async_db),
-    lang: Language = Depends(get_language_dependency),
-):
-    """
-    Verify Bayi 6-digit passkey and return JWT cookies (AUTH_MODE=bayi only).
-
-    Separate from vendor SSO ``/loginByXz``. Ensures ``bayi@system.com`` exists when first used.
-    Grant admin via ``ADMIN_PHONES`` (include ``bayi@system.com`` for passkey admins).
-    """
-    if AUTH_MODE != "bayi":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                "Bayi passkey login is disabled: set AUTH_MODE=bayi to use this endpoint. "
-                f"(current mode is {AUTH_MODE!r})"
-            ),
-        )
-
-    client_ip = get_client_ip(request)
-    rate_limiter = RedisRateLimiter()
-    is_allowed, attempt_count, error_msg = await rate_limiter.check_and_record(
-        category="bayi_passkey",
-        identifier=client_ip,
-        max_attempts=5,
-        window_seconds=15 * 60,
-    )
-    if not is_allowed:
-        logger.warning(
-            "Bayi passkey rate limit exceeded for IP %s (%s attempts)",
-            client_ip,
-            attempt_count,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=error_msg or Messages.error("too_many_login_attempts", lang, 15),
-        )
-
-    received_length = len(passkey_request.passkey) if passkey_request.passkey else 0
-    expected_length = len(BAYI_PASSKEY)
-    logger.info(
-        "Bayi passkey attempt - Received: %s chars (reference length=%s)",
-        received_length,
-        expected_length,
-    )
-
-    if not verify_bayi_passkey(passkey_request.passkey):
-        logger.warning(
-            "Bayi passkey verification failed — check .env whitespace for BAYI_PASSKEY",
-        )
-        error_msg = Messages.error("invalid_passkey", lang)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_msg)
-
-    user_phone = "bayi@system.com"
-    user_name = "Bayi User"
-
-    existing_row = await db.execute(select(User).where(User.phone == user_phone))
-    auth_user = existing_row.scalar_one_or_none()
-
-    if not auth_user:
-        org = None
-        if BAYI_DEFAULT_ORG_ID is not None:
-            result = await db.execute(select(Organization).where(Organization.id == BAYI_DEFAULT_ORG_ID))
-            org = result.scalar_one_or_none()
-            if not org:
-                logger.error(
-                    "Bayi passkey signup: organization id %s (BAYI_DEFAULT_ORG_ID) not found",
-                    BAYI_DEFAULT_ORG_ID,
-                )
-                error_msg = Messages.error("no_organizations_available", lang)
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg)
-        else:
-            result = await db.execute(select(Organization).where(Organization.code == BAYI_DEFAULT_ORG_CODE))
-            org = result.scalar_one_or_none()
-            if not org:
-                org = Organization(
-                    code=BAYI_DEFAULT_ORG_CODE,
-                    name="Bayi School",
-                    invitation_code="BAYI2024",
-                    created_at=datetime.now(UTC),
-                )
-                db.add(org)
-                try:
-                    await db.commit()
-                    await db.refresh(org)
-                except DATABASE_ERRORS:
-                    await db.rollback()
-                    raise
-                logger.info("Created bayi organization: %s", BAYI_DEFAULT_ORG_CODE)
-                try:
-                    await org_cache.cache_org(org)
-                except DATABASE_ERRORS as cache_org_err:
-                    logger.warning("Failed to cache bayi org: %s", cache_org_err)
-
-        try:
-            auth_user = User(
-                phone=user_phone,
-                password_hash=hash_password("passkey-no-pwd"),
-                name=user_name,
-                organization_id=org.id,
-                created_at=datetime.now(UTC),
-            )
-            db.add(auth_user)
-            try:
-                await db.commit()
-                await db.refresh(auth_user)
-            except REDIS_ERRORS:
-                await db.rollback()
-                raise
-            logger.info("Created Bayi passkey user: %s", user_phone)
-
-            try:
-                await user_cache.cache_user(auth_user)
-                if org:
-                    await org_cache.cache_org(org)
-            except REDIS_ERRORS as cache_err:
-                logger.warning("Failed to cache Bayi passkey user/org: %s", cache_err)
-        except REDIS_ERRORS as exc:
-            await db.rollback()
-            logger.error("Failed to create Bayi passkey user: %s", exc)
-
-            retry_row = await db.execute(select(User).where(User.phone == user_phone))
-            auth_user = retry_row.scalar_one_or_none()
-            if not auth_user:
-                error_msg = Messages.error("user_creation_failed", "en", str(exc))
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=error_msg,
-                ) from exc
-
-    # Session management: Allow multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS)
-    session_manager = get_session_manager()
-    client_ip = get_client_ip(request)
-
-    # Generate JWT access token
-    token = create_access_token(auth_user)
-
-    # Generate refresh token
-    refresh_token_value, refresh_token_hash = create_refresh_token(auth_user.id)
-
-    # Compute device hash for session and token binding
-    device_hash = assign_device_id(request)
-
-    # DEBUG: Log device fingerprint at login time
-    user_agent = request.headers.get("User-Agent", "")
-    accept_language = request.headers.get("Accept-Language", "")
-    sec_ch_platform = request.headers.get("Sec-CH-UA-Platform", "")
-    sec_ch_mobile = request.headers.get("Sec-CH-UA-Mobile", "")
-    logger.info(
-        "[TokenAudit] Login device fingerprint: user=%s, device_hash=%s, UA=%s..., lang=%s, platform=%s, mobile=%s",
-        auth_user.id,
-        device_hash,
-        user_agent[:50],
-        accept_language[:20],
-        sec_ch_platform,
-        sec_ch_mobile,
-    )
-
-    # Store access token session in Redis (automatically limits concurrent sessions)
-    await session_manager.store_session(auth_user.id, token, device_hash=device_hash)
-
-    # Store refresh token with device binding
-    refresh_manager = get_refresh_token_manager()
-    await refresh_manager.store_refresh_token(
-        user_id=auth_user.id,
-        token_hash=refresh_token_hash,
-        ip_address=client_ip,
-        user_agent=user_agent,
-        device_hash=device_hash,
-    )
-
-    # Set cookies (both access and refresh tokens)
-    await issue_new_auth_cookies(response, token, refresh_token_value, request, device_hash=device_hash)
-
-    await record_vpn_login_geo(auth_user.id, request)
-
-    effective_role = get_user_role(auth_user)
-    logger.info(
-        "[TokenAudit] Login success: user=%s, mode=%s, effective_role=%s, ip=%s, device=%s",
-        auth_user.id,
-        AUTH_MODE,
-        effective_role,
-        client_ip,
-        device_hash,
-    )
-
-    # Preload diagram list for instant library access (fire-and-forget)
-    _preload_user_diagrams(auth_user.id)
-
-    return {
-        **auth_session_json_metadata(),
-        "user": await build_session_user_payload(db, auth_user, None),
-    }

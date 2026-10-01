@@ -4,11 +4,11 @@
 import { watch } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { useLanguage } from '@/composables/core/useLanguage'
 import {
   cancelMindClassroomJob,
   isClassroomJobActive,
 } from '@/composables/mindMap/mindClassroomJobApi'
-import { useLanguage } from '@/composables/core/useLanguage'
 import { useAiContentLevelStore, useMindClassroomStore } from '@/stores'
 
 export function bindClassroomPrepToSettings(): void {

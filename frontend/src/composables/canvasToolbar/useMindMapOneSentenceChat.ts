@@ -39,7 +39,6 @@ import {
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { useEventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
-import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useKittyAsrSession } from '@/composables/kitty/asr/useKittyAsrSession'
 import { mergeKittyConversationTurn } from '@/composables/kitty/applyKittyConversationTurn'
 import { buildKittyDiagramContext } from '@/composables/kitty/buildKittyDiagramContext'
@@ -101,7 +100,6 @@ export function useMindMapOneSentenceChat() {
   const { isAIGenerating, handleMindMapAiGenerate } = useMindMapAudienceGenerate()
   const { aiBlockedByCollab, notifyCollabGuestAiBlocked, guardCollabGuestAi } =
     useCollabGuestAiGate()
-  const { requireCapability } = useLearningAiGate()
   const bus = useEventBus(PANEL_OWNER)
 
   const {
@@ -553,10 +551,6 @@ export function useMindMapOneSentenceChat() {
       phase.value
     )
     if (useEditFlow) {
-      if (!requireCapability('conversational_edit')) {
-        oneSentence.setDraft(text)
-        return
-      }
       oneSentence.setPhase('edit')
       const req = oneSentence.registerUserRequest(
         text,
@@ -574,10 +568,6 @@ export function useMindMapOneSentenceChat() {
     }
 
     recordingCreatePhase = true
-    if (!requireCapability('topic_generate')) {
-      oneSentence.setDraft(text)
-      return
-    }
     // Stay in create until first generate result (phase 3).
     const req = oneSentence.registerUserRequest(text, 'inflight', options?.requestId)
     await persistCreateTurn('user', text, 'ui_create', req.requestId)

@@ -194,7 +194,7 @@ const handleCancelTest = async () => {
     )
 
     await cancelTestMutation.mutateAsync(testId.value)
-    notify.success(t('chunkTestResults.cancelRequested'))
+    notify.successKey('chunkTestResults.cancelRequested')
   } catch (error) {
     if (error instanceof Error && error.message !== 'cancel') {
       notify.error(error.message || t('chunkTestResults.cancelFailed'))
@@ -211,7 +211,7 @@ const handleCancelTest = async () => {
     >
       <div class="flex items-center gap-3">
         <h1 class="text-lg font-semibold text-stone-900">
-          {{ t('chunkTestResults.pageTitle') }}
+          <I18nText k="chunkTestResults.pageTitle" />
         </h1>
         <span class="text-sm text-stone-500">#{{ testId }}</span>
       </div>
@@ -223,13 +223,13 @@ const handleCancelTest = async () => {
           :loading="cancelTestMutation.isPending.value"
           @click="handleCancelTest"
         >
-          {{ t('chunkTestResults.cancelTest') }}
+          <I18nText k="chunkTestResults.cancelTest" />
         </ElButton>
         <ElButton
           size="small"
           @click="handleBack"
         >
-          {{ t('chunkTestResults.back') }}
+          <I18nText k="chunkTestResults.back" />
         </ElButton>
       </div>
     </div>
@@ -247,7 +247,7 @@ const handleCancelTest = async () => {
               <Loading />
             </ElIcon>
             <h2 class="text-lg font-semibold text-stone-900">
-              {{ t('chunkTestResults.testingInProgress') }}
+              <I18nText k="chunkTestResults.testingInProgress" />
             </h2>
           </div>
 
@@ -257,7 +257,7 @@ const handleCancelTest = async () => {
             class="mb-4"
           >
             <div class="text-sm text-stone-600 mb-2">
-              {{ t('chunkTestResults.currentMethod') }}
+              <I18nText k="chunkTestResults.currentMethod" />
             </div>
             <ElTag
               type="primary"
@@ -273,7 +273,7 @@ const handleCancelTest = async () => {
             class="mb-4"
           >
             <div class="text-sm text-stone-600 mb-2">
-              {{ t('chunkTestResults.currentStage') }}
+              <I18nText k="chunkTestResults.currentStage" />
             </div>
             <ElTag
               type="info"
@@ -287,7 +287,7 @@ const handleCancelTest = async () => {
           <div class="mb-4">
             <div class="flex items-center justify-between mb-2">
               <span class="text-sm text-stone-600">
-                {{ t('chunkTestResults.overallProgress') }}
+                <I18nText k="chunkTestResults.overallProgress" />
               </span>
               <span class="text-sm font-medium text-stone-900"> {{ progressPercent }}% </span>
             </div>
@@ -303,7 +303,7 @@ const handleCancelTest = async () => {
           <!-- Completed Methods -->
           <div>
             <div class="text-sm text-stone-600 mb-2">
-              {{ t('chunkTestResults.completedMethods') }}
+              <I18nText k="chunkTestResults.completedMethods" />
             </div>
             <div class="flex items-center gap-2 flex-wrap">
               <template
@@ -359,11 +359,11 @@ const handleCancelTest = async () => {
               <CircleClose />
             </ElIcon>
             <h2 class="text-lg font-semibold text-red-900">
-              {{ t('chunkTestResults.testFailed') }}
+              <I18nText k="chunkTestResults.testFailed" />
             </h2>
           </div>
           <p class="text-stone-700">
-            {{ t('chunkTestResults.testFailedHint') }}
+            <I18nText k="chunkTestResults.testFailedHint" />
           </p>
         </div>
       </div>
@@ -372,7 +372,7 @@ const handleCancelTest = async () => {
       <div v-if="isCompleted && metricsTableData.length > 0">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-stone-900">
-            {{ t('chunkTestResults.evaluationMetrics') }}
+            <I18nText k="chunkTestResults.evaluationMetrics" />
           </h2>
         </div>
 
@@ -384,15 +384,20 @@ const handleCancelTest = async () => {
           >
             <ElTableColumn
               prop="method"
-              :label="t('chunkTestResults.method')"
               width="120"
               fixed="left"
-            />
+            >
+              <template #header>
+                <I18nText k="chunkTestResults.method" />
+              </template>
+            </ElTableColumn>
             <ElTableColumn
-              :label="t('chunkTestResults.actions')"
               width="240"
               fixed="right"
             >
+              <template #header>
+                <I18nText k="chunkTestResults.actions" />
+              </template>
               <template #default="{ row }">
                 <div class="flex items-center gap-2">
                   <ElButton
@@ -402,7 +407,7 @@ const handleCancelTest = async () => {
                     @click="handleViewChunks(getMethodKeyFromLabel(row.method))"
                   >
                     <ElIcon class="mr-1"><View /></ElIcon>
-                    {{ t('chunkTestResults.viewChunks') }}
+                    <I18nText k="chunkTestResults.viewChunks" />
                   </ElButton>
                   <ElButton
                     size="small"
@@ -411,27 +416,33 @@ const handleCancelTest = async () => {
                     @click="handleManualEvaluation(getMethodKeyFromLabel(row.method))"
                   >
                     <ElIcon class="mr-1"><Sparkles /></ElIcon>
-                    {{ t('chunkTestResults.evaluate') }}
+                    <I18nText k="chunkTestResults.evaluate" />
                   </ElButton>
                 </div>
               </template>
             </ElTableColumn>
 
             <!-- Standard IR Metrics -->
-            <ElTableColumn
-              :label="t('chunkTestResults.standardIrMetrics')"
-              align="center"
-            >
+            <ElTableColumn align="center">
+              <template #header>
+                <I18nText k="chunkTestResults.standardIrMetrics" />
+              </template>
               <ElTableColumn
                 prop="precision"
-                :label="t('chunkTestResults.precision')"
                 width="100"
-              />
+              >
+                <template #header>
+                  <I18nText k="chunkTestResults.precision" />
+                </template>
+              </ElTableColumn>
               <ElTableColumn
                 prop="recall"
-                :label="t('chunkTestResults.recall')"
                 width="100"
-              />
+              >
+                <template #header>
+                  <I18nText k="chunkTestResults.recall" />
+                </template>
+              </ElTableColumn>
               <ElTableColumn
                 prop="mrr"
                 label="MRR"
@@ -455,64 +466,88 @@ const handleCancelTest = async () => {
             </ElTableColumn>
 
             <!-- Chunk Quality -->
-            <ElTableColumn
-              :label="t('chunkTestResults.chunkQuality')"
-              align="center"
-            >
+            <ElTableColumn align="center">
+              <template #header>
+                <I18nText k="chunkTestResults.chunkQuality" />
+              </template>
               <ElTableColumn
                 prop="coverage_score"
-                :label="t('chunkTestResults.coverage')"
                 width="120"
-              />
+              >
+                <template #header>
+                  <I18nText k="chunkTestResults.coverage" />
+                </template>
+              </ElTableColumn>
               <ElTableColumn
                 prop="semantic_coherence"
-                :label="t('chunkTestResults.coherence')"
                 width="140"
-              />
+              >
+                <template #header>
+                  <I18nText k="chunkTestResults.coherence" />
+                </template>
+              </ElTableColumn>
             </ElTableColumn>
 
             <!-- Answer Quality -->
-            <ElTableColumn
-              :label="t('chunkTestResults.answerQuality')"
-              align="center"
-            >
+            <ElTableColumn align="center">
+              <template #header>
+                <I18nText k="chunkTestResults.answerQuality" />
+              </template>
               <ElTableColumn
                 prop="answer_coverage"
-                :label="t('chunkTestResults.answerCoverage')"
                 width="140"
-              />
+              >
+                <template #header>
+                  <I18nText k="chunkTestResults.answerCoverage" />
+                </template>
+              </ElTableColumn>
               <ElTableColumn
                 prop="answer_completeness"
-                :label="t('chunkTestResults.completeness')"
                 width="140"
-              />
+              >
+                <template #header>
+                  <I18nText k="chunkTestResults.completeness" />
+                </template>
+              </ElTableColumn>
               <ElTableColumn
                 prop="context_recall"
-                :label="t('chunkTestResults.contextRecall')"
                 width="140"
-              />
+              >
+                <template #header>
+                  <I18nText k="chunkTestResults.contextRecall" />
+                </template>
+              </ElTableColumn>
             </ElTableColumn>
 
             <!-- Diversity & Efficiency -->
-            <ElTableColumn
-              :label="t('chunkTestResults.diversityEfficiency')"
-              align="center"
-            >
+            <ElTableColumn align="center">
+              <template #header>
+                <I18nText k="chunkTestResults.diversityEfficiency" />
+              </template>
               <ElTableColumn
                 prop="storage_efficiency"
-                :label="t('chunkTestResults.storageEff')"
                 width="130"
-              />
+              >
+                <template #header>
+                  <I18nText k="chunkTestResults.storageEff" />
+                </template>
+              </ElTableColumn>
               <ElTableColumn
                 prop="semantic_diversity"
-                :label="t('chunkTestResults.diversity')"
                 width="130"
-              />
+              >
+                <template #header>
+                  <I18nText k="chunkTestResults.diversity" />
+                </template>
+              </ElTableColumn>
               <ElTableColumn
                 prop="avg_latency_ms"
-                :label="t('chunkTestResults.avgLatency')"
                 width="130"
-              />
+              >
+                <template #header>
+                  <I18nText k="chunkTestResults.avgLatency" />
+                </template>
+              </ElTableColumn>
             </ElTableColumn>
           </ElTable>
         </div>
@@ -525,17 +560,18 @@ const handleCancelTest = async () => {
       >
         <div class="mb-4 flex items-center justify-between">
           <h2 class="text-lg font-semibold text-stone-900">
-            {{
-              t('chunkTestResults.viewChunksHeading', {
+            <I18nText
+              k="chunkTestResults.viewChunksHeading"
+              :params="{
                 method: methodLabels[selectedMethod] || selectedMethod,
-              })
-            }}
+              }"
+            />
           </h2>
           <ElButton
             size="small"
             @click="handleCloseChunks"
           >
-            {{ t('chunkTestResults.close') }}
+            <I18nText k="chunkTestResults.close" />
           </ElButton>
         </div>
         <div
@@ -546,7 +582,7 @@ const handleCancelTest = async () => {
             <Loading />
           </ElIcon>
           <p class="text-stone-600">
-            {{ t('chunkTestResults.generatingChunks') }}
+            <I18nText k="chunkTestResults.generatingChunks" />
           </p>
         </div>
         <div
@@ -554,7 +590,10 @@ const handleCancelTest = async () => {
           class="chunks-container"
         >
           <div class="mb-4 text-sm text-stone-600">
-            {{ t('chunkTestResults.totalChunks', { n: chunksData.chunks.length }) }}
+            <I18nText
+              k="chunkTestResults.totalChunks"
+              :params="{ n: chunksData.chunks.length }"
+            />
           </div>
           <div class="space-y-4">
             <ElCard
@@ -566,18 +605,22 @@ const handleCancelTest = async () => {
               <template #header>
                 <div class="flex items-center justify-between">
                   <span class="font-medium text-stone-900">
-                    {{ t('chunkTestResults.chunkLabel', { n: chunk.chunk_index + 1 }) }}
+                    <I18nText
+                      k="chunkTestResults.chunkLabel"
+                      :params="{ n: chunk.chunk_index + 1 }"
+                    />
                   </span>
                   <span
                     v-if="chunk.start_char !== undefined && chunk.end_char !== undefined"
                     class="text-xs text-stone-500"
                   >
-                    {{
-                      t('chunkTestResults.positionRange', {
+                    <I18nText
+                      k="chunkTestResults.positionRange"
+                      :params="{
                         start: chunk.start_char,
                         end: chunk.end_char,
-                      })
-                    }}
+                      }"
+                    />
                   </span>
                 </div>
               </template>
@@ -605,7 +648,7 @@ const handleCancelTest = async () => {
           v-else-if="chunksData && chunksData.chunks.length === 0"
           class="text-center py-8 text-stone-500"
         >
-          {{ t('chunkTestResults.noChunks') }}
+          <I18nText k="chunkTestResults.noChunks" />
         </div>
       </div>
 
@@ -618,7 +661,7 @@ const handleCancelTest = async () => {
           <Loading />
         </ElIcon>
         <p class="text-stone-600">
-          {{ t('chunkTestResults.loading') }}
+          <I18nText k="chunkTestResults.loading" />
         </p>
       </div>
     </div>

@@ -19,7 +19,6 @@ import {
   Workflow,
 } from '@lucide/vue'
 
-import { useLanguage } from '@/composables'
 import { useTrainingRemoteSync } from '@/composables/training/useTrainingRemoteSync'
 import { useAuthStore, useFeatureFlagsStore } from '@/stores'
 import { useTrainingStore } from '@/stores/training'
@@ -29,7 +28,6 @@ const router = useRouter()
 const authStore = useAuthStore()
 const featureFlagsStore = useFeatureFlagsStore()
 const training = useTrainingStore()
-const { t } = useLanguage()
 
 const displayName = computed(() => authStore.user?.username || '')
 
@@ -108,10 +106,10 @@ function goToLearningSpace() {
           M
         </div>
         <h2 class="text-lg font-bold text-gray-900">
-          {{ t('app.brandName') }}
+          <I18nText k="app.brandName" />
         </h2>
         <p class="text-xs text-gray-500 mt-1 px-1">
-          {{ t('mindmate.welcomeSubtitle', 'AI虚拟教研助手平台，随时随地激发思维') }}
+          <I18nText k="mindmate.welcomeSubtitle" />
         </p>
       </div>
 
@@ -128,7 +126,7 @@ function goToLearningSpace() {
         <div class="flex-1 min-w-0">
           <div class="text-base font-semibold text-gray-900">MindGraph</div>
           <div class="text-sm text-gray-500 mt-0.5">
-            {{ t('mobile.mindgraphDesc', '思维图示智能体') }}
+            <I18nText k="mobile.mindgraphDesc" />
           </div>
         </div>
         <ChevronRight
@@ -149,10 +147,10 @@ function goToLearningSpace() {
         </div>
         <div class="flex-1 min-w-0">
           <div class="text-base font-semibold text-gray-900">
-            {{ t('sidebar.learningSpace') }}
+            <I18nText k="sidebar.learningSpace" />
           </div>
           <div class="text-sm text-gray-500 mt-0.5">
-            {{ t('learningSpace.mobileCardHint') }}
+            <I18nText k="learningSpace.mobileCardHint" />
           </div>
         </div>
         <ChevronRight
@@ -175,7 +173,7 @@ function goToLearningSpace() {
         <div class="flex-1 min-w-0">
           <div class="text-base font-semibold text-gray-900">MindMate</div>
           <div class="text-sm text-gray-500 mt-0.5">
-            {{ t('mobile.mindmateDesc', '思维教研智能体') }}
+            <I18nText k="mobile.mindmateDesc" />
           </div>
         </div>
         <ChevronRight
@@ -198,10 +196,10 @@ function goToLearningSpace() {
         </div>
         <div class="flex-1 min-w-0">
           <div class="text-base font-semibold text-gray-900">
-            {{ t('mobile.kittyCardTitle', 'Kitty') }}
+            <I18nText k="mobile.kittyCardTitle" />
           </div>
           <div class="text-sm text-gray-500 mt-0.5">
-            {{ t('mobile.kittyCardDesc', '思维教学语音智能体') }}
+            <I18nText k="mobile.kittyCardDesc" />
           </div>
         </div>
         <ChevronRight
@@ -222,14 +220,15 @@ function goToLearningSpace() {
         </div>
         <div class="flex-1 min-w-0">
           <div class="text-base font-semibold text-gray-900">
-            {{ t('training.title') }}
+            <I18nText k="training.title" />
             <span
               v-if="trainingLive"
               class="training-live"
-            >{{ t('training.remoteLive') }}</span>
+              ><I18nText k="training.remoteLive"
+            /></span>
           </div>
           <div class="text-sm text-gray-500 mt-0.5">
-            {{ t('training.remoteCardHint') }}
+            <I18nText k="training.remoteCardHint" />
           </div>
         </div>
         <ChevronRight
@@ -250,10 +249,10 @@ function goToLearningSpace() {
         </div>
         <div class="flex-1 min-w-0">
           <div class="text-base font-semibold text-gray-900">
-            {{ t('landing.diagramGrid.voice_notes.title') }}
+            <I18nText k="landing.diagramGrid.voice_notes.title" />
           </div>
           <div class="text-sm text-gray-500 mt-0.5">
-            {{ t('landing.diagramGrid.voice_notes.desc') }}
+            <I18nText k="landing.diagramGrid.voice_notes.desc" />
           </div>
         </div>
         <ChevronRight
@@ -275,10 +274,10 @@ function goToLearningSpace() {
         </div>
         <div class="flex-1 min-w-0">
           <div class="text-base font-semibold text-gray-900">
-            {{ t('mobile.orgsCardTitle') }}
+            <I18nText k="mobile.orgsCardTitle" />
           </div>
           <div class="text-sm text-gray-500 mt-0.5">
-            {{ t('mobile.orgsCardDesc') }}
+            <I18nText k="mobile.orgsCardDesc" />
           </div>
         </div>
         <ChevronRight
@@ -302,7 +301,7 @@ function goToLearningSpace() {
             {{ displayName }}
           </div>
           <div class="text-sm text-gray-500 mt-0.5 truncate">
-            {{ t('mobile.accountDesc', '账号设置') }}
+            <I18nText k="mobile.accountDesc" />
           </div>
         </div>
         <ChevronRight

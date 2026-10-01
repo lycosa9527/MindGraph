@@ -120,7 +120,7 @@ export function diagramNodeToVueFlowNode(
     topic: isConceptMap ? 'concept' : useCircleForTopic ? 'circle' : 'topic',
     center: isConceptMap ? 'concept' : useCircleForTopic ? 'circle' : 'topic',
     child: 'branch',
-    bubble: isCircleMap || isBubbleMap || isDoubleBubbleMap ? 'circle' : 'bubble', // bubble_map and double_bubble_map use CircleNode
+    bubble: 'circle',
     branch: isConceptMap ? 'concept' : 'branch', // concept_map uses ConceptNode for concept nodes
     left: 'branch',
     right: 'branch',

@@ -3,15 +3,13 @@
  * Learning Space admin — class management sub-page.
  */
 import { computed, onMounted, ref, watch } from 'vue'
-
 import { useRoute } from 'vue-router'
 
 import AdminLearningSpaceModal from '@/components/admin/AdminLearningSpaceModal.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { normalizeSchoolTier } from '@/constants/schoolTier'
-import { userRoleLabel } from '@/utils/userRoleDisplay'
 import {
   type AccountImportPreviewRow,
   type ImportPreviewRow,
@@ -27,10 +25,10 @@ import {
   patchAdminClass,
   previewAdminAccountImport,
   previewAdminImport,
-  removeAdminClassMember,
   runAdminAccountImport,
   runAdminImport,
 } from '@/utils/learningSpaceApi'
+import { userRoleLabel } from '@/utils/userRoleDisplay'
 
 const CLASS_CODE_RE = /^[A-Za-z0-9]{4,16}$/
 
@@ -98,7 +96,10 @@ function pilotLabel(pilot: LearningPilot): string {
 }
 
 function sanitizeClassCodeInput(raw: string): string {
-  return raw.replace(/[^A-Za-z0-9]/g, '').slice(0, 16).toUpperCase()
+  return raw
+    .replace(/[^A-Za-z0-9]/g, '')
+    .slice(0, 16)
+    .toUpperCase()
 }
 
 function onEditClassCodeInput(event: Event): void {
@@ -127,7 +128,7 @@ async function loadAll(): Promise<void> {
       actionClass.value = refreshed
     }
   } catch {
-    notify.error(t('admin.learningSpace.loadFailed'))
+    notify.errorKey('admin.learningSpace.loadFailed')
   } finally {
     loading.value = false
   }
@@ -139,7 +140,7 @@ async function loadStudents(classId: number): Promise<void> {
     const res = await listAdminStudents(classId)
     students.value = res.items
   } catch {
-    notify.error(t('admin.learningSpace.loadFailed'))
+    notify.errorKey('admin.learningSpace.loadFailed')
   } finally {
     detailLoading.value = false
   }
@@ -148,7 +149,7 @@ async function loadStudents(classId: number): Promise<void> {
 async function onCreateClass(): Promise<void> {
   const teacherId = Number(classPilotTeacherId.value)
   if (!className.value.trim() || !Number.isFinite(teacherId) || teacherId <= 0) {
-    notify.warning(t('admin.learningSpace.fillClassFields'))
+    notify.warningKey('admin.learningSpace.fillClassFields')
     return
   }
   try {
@@ -158,10 +159,10 @@ async function onCreateClass(): Promise<void> {
       max_students: classMaxStudents.value || 60,
     })
     className.value = ''
-    notify.success(t('admin.learningSpace.classCreated'))
+    notify.successKey('admin.learningSpace.classCreated')
     await loadAll()
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -223,45 +224,16 @@ function openEdit(row: LearningClassRow): void {
   showAccountImportModal.value = false
   showDetailModal.value = false
   showEditModal.value = true
-  void loadStudents(row.id)
-}
-
-function canRemoveMember(row: LearningStudentRow): boolean {
-  return row.member_kind === 'classroom' || row.membership_role === 'learner'
-}
-
-async function onRemoveMember(row: LearningStudentRow): Promise<void> {
-  if (actionClass.value == null) return
-  try {
-    await swissGlassConfirm(
-      t('admin.learningSpace.removeMemberConfirm', { name: row.name }),
-      t('admin.learningSpace.removeFromClass'),
-      {
-        type: 'warning',
-        confirmButtonText: t('admin.learningSpace.removeFromClass'),
-        cancelButtonText: t('common.cancel'),
-      }
-    )
-  } catch {
-    return
-  }
-  try {
-    await removeAdminClassMember(actionClass.value.id, row.id)
-    notify.success(t('admin.learningSpace.memberRemoved', { name: row.name }))
-    await Promise.all([loadStudents(actionClass.value.id), loadAll()])
-  } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
-  }
 }
 
 async function onSaveEdit(): Promise<void> {
   if (actionClass.value == null || !editName.value.trim()) {
-    notify.warning(t('admin.learningSpace.fillClassFields'))
+    notify.warningKey('admin.learningSpace.fillClassFields')
     return
   }
   const code = sanitizeClassCodeInput(editClassCode.value)
   if (!CLASS_CODE_RE.test(code)) {
-    notify.warning(t('admin.learningSpace.classCodeInvalid'))
+    notify.warningKey('admin.learningSpace.classCodeInvalid')
     return
   }
   try {
@@ -271,12 +243,12 @@ async function onSaveEdit(): Promise<void> {
       class_code: code,
       assistant_user_ids: editAssistants.value.map((a) => a.id),
     })
-    notify.success(t('admin.learningSpace.classUpdated'))
+    notify.successKey('admin.learningSpace.classUpdated')
     showEditModal.value = false
     actionClass.value = null
     await loadAll()
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -287,9 +259,7 @@ async function onToggleClassLogin(row: LearningClassRow): Promise<void> {
       disabling
         ? t('admin.learningSpace.disableClassConfirm', { name: row.name })
         : t('admin.learningSpace.enableClassConfirm', { name: row.name }),
-      disabling
-        ? t('admin.learningSpace.disableClass')
-        : t('admin.learningSpace.enableClass'),
+      disabling ? t('admin.learningSpace.disableClass') : t('admin.learningSpace.enableClass'),
       {
         type: disabling ? 'warning' : 'info',
         confirmButtonText: disabling
@@ -308,7 +278,7 @@ async function onToggleClassLogin(row: LearningClassRow): Promise<void> {
     )
     await loadAll()
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -323,9 +293,9 @@ async function onArchiveToggle(): Promise<void> {
 async function onCopyCode(code: string): Promise<void> {
   try {
     await navigator.clipboard.writeText(code)
-    notify.success(t('admin.learningSpace.codeCopied'))
+    notify.successKey('admin.learningSpace.codeCopied')
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -333,14 +303,14 @@ async function onPreviewImport(): Promise<void> {
   if (actionClass.value == null) return
   const names = parseNames(importNamesText.value)
   if (names.length === 0) {
-    notify.warning(t('admin.learningSpace.enterNames'))
+    notify.warningKey('admin.learningSpace.enterNames')
     return
   }
   try {
     const res = await previewAdminImport(actionClass.value.id, names)
     importPreview.value = res.items
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -348,7 +318,7 @@ async function onRunImport(): Promise<void> {
   if (actionClass.value == null) return
   const names = parseNames(importNamesText.value)
   if (names.length === 0) {
-    notify.warning(t('admin.learningSpace.enterNames'))
+    notify.warningKey('admin.learningSpace.enterNames')
     return
   }
   try {
@@ -356,17 +326,15 @@ async function onRunImport(): Promise<void> {
     lastPasswords.value = res.created
       .map((row) => `${row.name}\t${row.initial_password}`)
       .join('\n')
-    notify.success(
-      t('admin.learningSpace.importDone', {
-        ok: res.created.length,
-        fail: res.failed.length,
-      })
-    )
+    notify.successKey('admin.learningSpace.importDone', {
+      ok: res.created.length,
+      fail: res.failed.length,
+    })
     importNamesText.value = ''
     importPreview.value = []
     await loadAll()
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -374,14 +342,14 @@ async function onPreviewAccountImport(): Promise<void> {
   if (actionClass.value == null) return
   const phones = parseNames(accountPhonesText.value)
   if (phones.length === 0) {
-    notify.warning(t('admin.learningSpace.enterPhones'))
+    notify.warningKey('admin.learningSpace.enterPhones')
     return
   }
   try {
     const res = await previewAdminAccountImport(actionClass.value.id, phones)
     accountPreview.value = res.items
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -389,24 +357,22 @@ async function onRunAccountImport(): Promise<void> {
   if (actionClass.value == null) return
   const phones = parseNames(accountPhonesText.value)
   if (phones.length === 0) {
-    notify.warning(t('admin.learningSpace.enterPhones'))
+    notify.warningKey('admin.learningSpace.enterPhones')
     return
   }
   try {
     const res = await runAdminAccountImport(actionClass.value.id, phones)
-    notify.success(
-      t('admin.learningSpace.importDone', {
-        ok: res.created.length,
-        fail: res.failed.length,
-      })
-    )
+    notify.successKey('admin.learningSpace.importDone', {
+      ok: res.created.length,
+      fail: res.failed.length,
+    })
     accountPhonesText.value = ''
     accountPreview.value = []
     showAccountImportModal.value = false
     actionClass.value = null
     await loadAll()
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -444,7 +410,7 @@ async function onAddAssistant(): Promise<void> {
   if (actionClass.value == null) return
   const phones = parseNames(assistantPhone.value)
   if (phones.length === 0) {
-    notify.warning(t('admin.learningSpace.enterPhones'))
+    notify.warningKey('admin.learningSpace.enterPhones')
     return
   }
   try {
@@ -477,7 +443,7 @@ async function onAddAssistant(): Promise<void> {
       assistantPhone.value = ''
     }
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -485,12 +451,12 @@ async function onResetPassword(studentId: number): Promise<void> {
   try {
     const res = await adminResetPassword(studentId)
     lastPasswords.value = `${res.name}\t${res.initial_password}`
-    notify.success(t('admin.learningSpace.passwordReset', { name: res.name }))
+    notify.successKey('admin.learningSpace.passwordReset', { name: res.name })
     if (actionClass.value != null) {
       await loadStudents(actionClass.value.id)
     }
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -498,9 +464,9 @@ async function onCopyPasswords(): Promise<void> {
   if (!lastPasswords.value) return
   try {
     await navigator.clipboard.writeText(lastPasswords.value)
-    notify.success(t('admin.learningSpace.passwordsCopied'))
+    notify.successKey('admin.learningSpace.passwordsCopied')
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -510,7 +476,7 @@ function studentPassword(row: LearningStudentRow): string {
 
 function exportStudentRoster(): void {
   if (actionClass.value == null || !students.value.length) {
-    notify.warning(t('admin.learningSpace.studentsEmpty'))
+    notify.warningKey('admin.learningSpace.studentsEmpty')
     return
   }
   const header = [
@@ -518,7 +484,7 @@ function exportStudentRoster(): void {
     t('auth.name'),
     t('admin.learningSpace.memberKind'),
     t('admin.learningSpace.organization'),
-    t('admin.learningSpace.currentPassword'),
+    t('admin.learningSpace.initialPassword'),
   ].join(',')
   const lines = students.value.map((s) => {
     const name = `"${(s.name || '').replace(/"/g, '""')}"`
@@ -534,7 +500,7 @@ function exportStudentRoster(): void {
   anchor.download = `${safeName}-students.csv`
   anchor.click()
   URL.revokeObjectURL(url)
-  notify.success(t('admin.learningSpace.exportDone'))
+  notify.successKey('admin.learningSpace.exportDone')
 }
 
 watch(
@@ -557,12 +523,12 @@ defineExpose({ reload: loadAll })
       v-if="loading"
       class="ls-muted"
     >
-      {{ t('common.loading') }}
+      <I18nText k="common.loading" />
     </p>
 
     <section class="ls-admin-card">
       <div class="ls-section-title">
-        <h2>{{ t('admin.learningSpace.createClassSection') }}</h2>
+        <h2><I18nText k="admin.learningSpace.createClassSection" /></h2>
       </div>
       <div
         v-if="canEdit"
@@ -579,7 +545,7 @@ defineExpose({ reload: loadAll })
           class="ls-control ls-control--select"
         >
           <option value="">
-            {{ t('admin.learningSpace.selectPilotTeacher') }}
+            <I18nText k="admin.learningSpace.selectPilotTeacher" />
           </option>
           <option
             v-for="p in enabledPilots"
@@ -603,20 +569,20 @@ defineExpose({ reload: loadAll })
           :disabled="!className.trim() || !classPilotTeacherId || !enabledPilots.length"
           @click="onCreateClass"
         >
-          {{ t('admin.learningSpace.addClass') }}
+          <I18nText k="admin.learningSpace.addClass" />
         </button>
       </div>
       <p
         v-if="canEdit && !enabledPilots.length"
         class="ls-muted"
       >
-        {{ t('admin.learningSpace.needEnabledPilot') }}
+        <I18nText k="admin.learningSpace.needEnabledPilot" />
       </p>
     </section>
 
     <section class="ls-admin-card">
       <div class="ls-section-title">
-        <h2>{{ t('admin.learningSpace.classList') }}</h2>
+        <h2><I18nText k="admin.learningSpace.classList" /></h2>
       </div>
       <div class="ls-toolbar">
         <select
@@ -624,7 +590,7 @@ defineExpose({ reload: loadAll })
           class="ls-control ls-control--select"
         >
           <option value="">
-            {{ t('admin.learningSpace.filterAllTeachers') }}
+            <I18nText k="admin.learningSpace.filterAllTeachers" />
           </option>
           <option
             v-for="p in pilots"
@@ -639,13 +605,13 @@ defineExpose({ reload: loadAll })
           class="ls-control ls-control--select"
         >
           <option value="all">
-            {{ t('admin.learningSpace.filterAllStatus') }}
+            <I18nText k="admin.learningSpace.filterAllStatus" />
           </option>
           <option value="active">
-            {{ t('admin.learningSpace.statusActive') }}
+            <I18nText k="admin.learningSpace.statusActive" />
           </option>
           <option value="archived">
-            {{ t('admin.learningSpace.statusDisabled') }}
+            <I18nText k="admin.learningSpace.statusDisabled" />
           </option>
         </select>
       </div>
@@ -653,101 +619,105 @@ defineExpose({ reload: loadAll })
         v-if="!filteredClasses.length && !loading"
         class="ls-muted"
       >
-        {{ t('admin.learningSpace.classesEmpty') }}
+        <I18nText k="admin.learningSpace.classesEmpty" />
       </p>
       <div
         v-else
         class="ls-table-wrap"
       >
         <table class="ls-table">
-        <thead>
-          <tr>
-            <th>{{ t('admin.learningSpace.className') }}</th>
-            <th>{{ t('admin.learningSpace.classCode') }}</th>
-            <th>{{ t('admin.learningSpace.teacher') }}</th>
-            <th>{{ t('admin.learningSpace.students') }}</th>
-            <th>{{ t('admin.learningSpace.assignmentCount') }}</th>
-            <th>{{ t('admin.learningSpace.submissionCount') }}</th>
-            <th>{{ t('admin.learningSpace.status') }}</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="c in filteredClasses"
-            :key="c.id"
-          >
-            <td>{{ c.name }}</td>
-            <td>
-              <code>{{ c.class_code }}</code>
-              <button
-                type="button"
-                class="ls-link"
-                @click="onCopyCode(c.class_code)"
-              >
-                {{ t('admin.learningSpace.copy') }}
-              </button>
-            </td>
-            <td>{{ c.teacher_name || '—' }}</td>
-            <td>{{ c.student_count }}</td>
-            <td>{{ c.assignment_count ?? 0 }}</td>
-            <td>{{ c.submission_count ?? 0 }}</td>
-            <td>
-              {{
-                c.status === 'archived'
-                  ? t('admin.learningSpace.statusDisabled')
-                  : t('admin.learningSpace.statusActive')
-              }}
-            </td>
-            <td class="ls-actions">
-              <button
-                v-if="canEdit"
-                type="button"
-                class="ls-btn ls-btn--ghost ls-btn--sm"
-                :disabled="c.status === 'archived'"
-                @click="openAccountImport(c)"
-              >
-                {{ t('admin.learningSpace.importAccounts') }}
-              </button>
-              <button
-                v-if="canEdit"
-                type="button"
-                class="ls-btn ls-btn--ghost ls-btn--sm"
-                :disabled="c.status === 'archived'"
-                @click="openImport(c)"
-              >
-                {{ t('admin.learningSpace.importStudents') }}
-              </button>
-              <button
-                type="button"
-                class="ls-btn ls-btn--ghost ls-btn--sm"
-                @click="openDetail(c)"
-              >
-                {{ t('admin.learningSpace.viewDetail') }}
-              </button>
-              <button
-                v-if="canEdit"
-                type="button"
-                class="ls-btn ls-btn--ghost ls-btn--sm"
-                @click="openEdit(c)"
-              >
-                {{ t('admin.learningSpace.edit') }}
-              </button>
-              <button
-                v-if="canEdit"
-                type="button"
-                class="ls-btn ls-btn--ghost ls-btn--sm"
-                @click="onToggleClassLogin(c)"
-              >
-                {{
-                  c.status === 'archived'
-                    ? t('admin.learningSpace.enableClass')
-                    : t('admin.learningSpace.disableClass')
-                }}
-              </button>
-            </td>
-          </tr>
-        </tbody>
+          <thead>
+            <tr>
+              <th><I18nText k="admin.learningSpace.className" /></th>
+              <th><I18nText k="admin.learningSpace.classCode" /></th>
+              <th><I18nText k="admin.learningSpace.teacher" /></th>
+              <th><I18nText k="admin.learningSpace.students" /></th>
+              <th><I18nText k="admin.learningSpace.assignmentCount" /></th>
+              <th><I18nText k="admin.learningSpace.submissionCount" /></th>
+              <th><I18nText k="admin.learningSpace.status" /></th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="c in filteredClasses"
+              :key="c.id"
+            >
+              <td>{{ c.name }}</td>
+              <td>
+                <code>{{ c.class_code }}</code>
+                <button
+                  type="button"
+                  class="ls-link"
+                  @click="onCopyCode(c.class_code)"
+                >
+                  <I18nText k="admin.learningSpace.copy" />
+                </button>
+              </td>
+              <td>{{ c.teacher_name || '—' }}</td>
+              <td>{{ c.student_count }}</td>
+              <td>{{ c.assignment_count ?? 0 }}</td>
+              <td>{{ c.submission_count ?? 0 }}</td>
+              <td>
+                <I18nText
+                  v-if="c.status === 'archived'"
+                  k="admin.learningSpace.statusDisabled"
+                /><I18nText
+                  v-else
+                  k="admin.learningSpace.statusActive"
+                />
+              </td>
+              <td class="ls-actions">
+                <button
+                  v-if="canEdit"
+                  type="button"
+                  class="ls-btn ls-btn--ghost ls-btn--sm"
+                  :disabled="c.status === 'archived'"
+                  @click="openAccountImport(c)"
+                >
+                  <I18nText k="admin.learningSpace.importAccounts" />
+                </button>
+                <button
+                  v-if="canEdit"
+                  type="button"
+                  class="ls-btn ls-btn--ghost ls-btn--sm"
+                  :disabled="c.status === 'archived'"
+                  @click="openImport(c)"
+                >
+                  <I18nText k="admin.learningSpace.importStudents" />
+                </button>
+                <button
+                  type="button"
+                  class="ls-btn ls-btn--ghost ls-btn--sm"
+                  @click="openDetail(c)"
+                >
+                  <I18nText k="admin.learningSpace.viewDetail" />
+                </button>
+                <button
+                  v-if="canEdit"
+                  type="button"
+                  class="ls-btn ls-btn--ghost ls-btn--sm"
+                  @click="openEdit(c)"
+                >
+                  <I18nText k="admin.learningSpace.edit" />
+                </button>
+                <button
+                  v-if="canEdit"
+                  type="button"
+                  class="ls-btn ls-btn--ghost ls-btn--sm"
+                  @click="onToggleClassLogin(c)"
+                >
+                  <I18nText
+                    v-if="c.status === 'archived'"
+                    k="admin.learningSpace.enableClass"
+                  /><I18nText
+                    v-else
+                    k="admin.learningSpace.disableClass"
+                  />
+                </button>
+              </td>
+            </tr>
+          </tbody>
         </table>
       </div>
     </section>
@@ -781,7 +751,7 @@ defineExpose({ reload: loadAll })
             :disabled="!importNamesText.trim()"
             @click="onPreviewImport"
           >
-            {{ t('admin.learningSpace.preview') }}
+            <I18nText k="admin.learningSpace.preview" />
           </button>
           <button
             type="button"
@@ -789,7 +759,7 @@ defineExpose({ reload: loadAll })
             :disabled="!importNamesText.trim()"
             @click="onRunImport"
           >
-            {{ t('admin.learningSpace.import') }}
+            <I18nText k="admin.learningSpace.import" />
           </button>
         </div>
         <table
@@ -798,9 +768,9 @@ defineExpose({ reload: loadAll })
         >
           <thead>
             <tr>
-              <th>{{ t('auth.name') }}</th>
-              <th>{{ t('admin.learningSpace.initialPassword') }}</th>
-              <th>{{ t('admin.learningSpace.status') }}</th>
+              <th><I18nText k="auth.name" /></th>
+              <th><I18nText k="admin.learningSpace.initialPassword" /></th>
+              <th><I18nText k="admin.learningSpace.status" /></th>
             </tr>
           </thead>
           <tbody>
@@ -819,13 +789,13 @@ defineExpose({ reload: loadAll })
           class="ls-passwords"
         >
           <div class="ls-toolbar">
-            <h4 class="ls-subh">{{ t('admin.learningSpace.passwordsOnce') }}</h4>
+            <h4 class="ls-subh"><I18nText k="admin.learningSpace.passwordsOnce" /></h4>
             <button
               type="button"
               class="ls-btn ls-btn--ghost ls-btn--sm"
               @click="onCopyPasswords"
             >
-              {{ t('admin.learningSpace.copyPasswords') }}
+              <I18nText k="admin.learningSpace.copyPasswords" />
             </button>
           </div>
           <pre>{{ lastPasswords }}</pre>
@@ -862,7 +832,7 @@ defineExpose({ reload: loadAll })
             :disabled="!accountPhonesText.trim()"
             @click="onPreviewAccountImport"
           >
-            {{ t('admin.learningSpace.preview') }}
+            <I18nText k="admin.learningSpace.preview" />
           </button>
           <button
             type="button"
@@ -870,7 +840,7 @@ defineExpose({ reload: loadAll })
             :disabled="!accountPhonesText.trim()"
             @click="onRunAccountImport"
           >
-            {{ t('admin.learningSpace.import') }}
+            <I18nText k="admin.learningSpace.import" />
           </button>
         </div>
         <table
@@ -879,10 +849,10 @@ defineExpose({ reload: loadAll })
         >
           <thead>
             <tr>
-              <th>{{ t('admin.learningSpace.phone') }}</th>
-              <th>{{ t('auth.name') }}</th>
-              <th>{{ t('admin.learningSpace.organization') }}</th>
-              <th>{{ t('admin.learningSpace.status') }}</th>
+              <th><I18nText k="admin.learningSpace.phone" /></th>
+              <th><I18nText k="auth.name" /></th>
+              <th><I18nText k="admin.learningSpace.organization" /></th>
+              <th><I18nText k="admin.learningSpace.status" /></th>
             </tr>
           </thead>
           <tbody>
@@ -921,21 +891,21 @@ defineExpose({ reload: loadAll })
             :disabled="!students.length"
             @click="exportStudentRoster"
           >
-            {{ t('admin.learningSpace.exportRoster') }}
+            <I18nText k="admin.learningSpace.exportRoster" />
           </button>
           <button
             type="button"
             class="ls-btn ls-btn--ghost ls-btn--sm"
             @click="onCopyCode(actionClass.class_code)"
           >
-            {{ t('admin.learningSpace.copyCode') }}
+            <I18nText k="admin.learningSpace.copyCode" />
           </button>
         </div>
         <p
           v-if="detailLoading"
           class="ls-muted"
         >
-          {{ t('common.loading') }}
+          <I18nText k="common.loading" />
         </p>
         <table
           v-else
@@ -944,12 +914,12 @@ defineExpose({ reload: loadAll })
           <thead>
             <tr>
               <th>ID</th>
-              <th>{{ t('auth.name') }}</th>
-              <th>{{ t('admin.learningSpace.memberKind') }}</th>
-              <th>{{ t('admin.learningSpace.organization') }}</th>
-              <th>{{ t('admin.learningSpace.phone') }}</th>
-              <th>{{ t('admin.learningSpace.currentPassword') }}</th>
-              <th>{{ t('admin.learningSpace.mustChangePassword') }}</th>
+              <th><I18nText k="auth.name" /></th>
+              <th><I18nText k="admin.learningSpace.memberKind" /></th>
+              <th><I18nText k="admin.learningSpace.organization" /></th>
+              <th><I18nText k="admin.learningSpace.phone" /></th>
+              <th><I18nText k="admin.learningSpace.initialPassword" /></th>
+              <th><I18nText k="admin.learningSpace.mustChangePassword" /></th>
               <th v-if="canEdit" />
             </tr>
           </thead>
@@ -967,31 +937,23 @@ defineExpose({ reload: loadAll })
                 <code>{{ studentPassword(s) || '—' }}</code>
               </td>
               <td>
-                {{
-                  s.must_change_password
-                    ? t('admin.learningSpace.yes')
-                    : t('admin.learningSpace.no')
-                }}
+                <I18nText
+                  v-if="s.must_change_password"
+                  k="admin.learningSpace.yes"
+                /><I18nText
+                  v-else
+                  k="admin.learningSpace.no"
+                />
               </td>
               <td v-if="canEdit">
-                <div class="ls-row-actions">
-                  <button
-                    v-if="s.member_kind !== 'enrolled'"
-                    type="button"
-                    class="ls-btn ls-btn--ghost ls-btn--sm"
-                    @click="onResetPassword(s.id)"
-                  >
-                    {{ t('admin.learningSpace.resetPassword') }}
-                  </button>
-                  <button
-                    v-if="canRemoveMember(s)"
-                    type="button"
-                    class="ls-btn ls-btn--ghost ls-btn--sm"
-                    @click="onRemoveMember(s)"
-                  >
-                    {{ t('admin.learningSpace.removeFromClass') }}
-                  </button>
-                </div>
+                <button
+                  v-if="s.member_kind !== 'enrolled'"
+                  type="button"
+                  class="ls-btn ls-btn--ghost ls-btn--sm"
+                  @click="onResetPassword(s.id)"
+                >
+                  <I18nText k="admin.learningSpace.resetPassword" />
+                </button>
               </td>
             </tr>
           </tbody>
@@ -1000,20 +962,20 @@ defineExpose({ reload: loadAll })
           v-if="!detailLoading && !students.length"
           class="ls-muted"
         >
-          {{ t('admin.learningSpace.studentsEmpty') }}
+          <I18nText k="admin.learningSpace.studentsEmpty" />
         </p>
         <div
           v-if="lastPasswords"
           class="ls-passwords"
         >
           <div class="ls-toolbar">
-            <h4 class="ls-subh">{{ t('admin.learningSpace.passwordsOnce') }}</h4>
+            <h4 class="ls-subh"><I18nText k="admin.learningSpace.passwordsOnce" /></h4>
             <button
               type="button"
               class="ls-btn ls-btn--ghost ls-btn--sm"
               @click="onCopyPasswords"
             >
-              {{ t('admin.learningSpace.copyPasswords') }}
+              <I18nText k="admin.learningSpace.copyPasswords" />
             </button>
           </div>
           <pre>{{ lastPasswords }}</pre>
@@ -1034,7 +996,7 @@ defineExpose({ reload: loadAll })
       >
         <div class="ls-form-grid">
           <label class="ls-field">
-            {{ t('admin.learningSpace.className') }}
+            <I18nText k="admin.learningSpace.className" />
             <input
               v-model="editName"
               type="text"
@@ -1042,7 +1004,7 @@ defineExpose({ reload: loadAll })
             />
           </label>
           <label class="ls-field">
-            {{ t('admin.learningSpace.classCode') }}
+            <I18nText k="admin.learningSpace.classCode" />
             <input
               :value="editClassCode"
               type="text"
@@ -1055,7 +1017,7 @@ defineExpose({ reload: loadAll })
             />
           </label>
           <label class="ls-field">
-            {{ t('admin.learningSpace.maxStudents') }}
+            <I18nText k="admin.learningSpace.maxStudents" />
             <input
               v-model.number="editMaxStudents"
               type="number"
@@ -1065,8 +1027,8 @@ defineExpose({ reload: loadAll })
             />
           </label>
           <div class="ls-field">
-            {{ t('admin.learningSpace.assistants') }}
-            <p class="ls-muted">{{ t('admin.learningSpace.assistantsHint') }}</p>
+            <I18nText k="admin.learningSpace.assistants" />
+            <p class="ls-muted"><I18nText k="admin.learningSpace.assistantsHint" /></p>
             <ul
               v-if="editAssistants.length"
               class="ls-assistant-list"
@@ -1081,7 +1043,7 @@ defineExpose({ reload: loadAll })
                   class="ls-btn ls-btn--ghost ls-btn--sm"
                   @click="removeAssistant(a.id)"
                 >
-                  {{ t('common.delete') }}
+                  <I18nText k="common.delete" />
                 </button>
               </li>
             </ul>
@@ -1099,84 +1061,41 @@ defineExpose({ reload: loadAll })
                 :disabled="!assistantPhone.trim()"
                 @click="onAddAssistant"
               >
-                {{ t('admin.learningSpace.addAssistant') }}
+                <I18nText k="admin.learningSpace.addAssistant" />
               </button>
             </div>
-          </div>
-          <div class="ls-field">
-            <div class="ls-toolbar">
-              <h4 class="ls-subh">{{ t('admin.learningSpace.students') }}</h4>
-            </div>
-            <p
-              v-if="detailLoading"
-              class="ls-muted"
-            >
-              {{ t('common.loading') }}
-            </p>
-            <table
-              v-else-if="students.length"
-              class="ls-table ls-table--compact"
-            >
-              <thead>
-                <tr>
-                  <th>{{ t('auth.name') }}</th>
-                  <th>{{ t('admin.learningSpace.memberKind') }}</th>
-                  <th v-if="canEdit" />
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="s in students.filter((row) => canRemoveMember(row))"
-                  :key="s.id"
-                >
-                  <td>{{ s.name }}</td>
-                  <td>{{ memberKindLabel(s) }}</td>
-                  <td v-if="canEdit">
-                    <button
-                      type="button"
-                      class="ls-btn ls-btn--ghost ls-btn--sm"
-                      @click="onRemoveMember(s)"
-                    >
-                      {{ t('admin.learningSpace.removeFromClass') }}
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <p
-              v-else
-              class="ls-muted"
-            >
-              {{ t('admin.learningSpace.studentsEmpty') }}
-            </p>
           </div>
         </div>
         <div class="ls-toolbar">
           <button
             type="button"
             class="ls-btn ls-btn--primary"
-            :disabled="!editName.trim() || !CLASS_CODE_RE.test(sanitizeClassCodeInput(editClassCode))"
+            :disabled="
+              !editName.trim() || !CLASS_CODE_RE.test(sanitizeClassCodeInput(editClassCode))
+            "
             @click="onSaveEdit"
           >
-            {{ t('common.save') }}
+            <I18nText k="common.save" />
           </button>
           <button
             type="button"
             class="ls-btn ls-btn--ghost ls-btn--sm"
             @click="onArchiveToggle"
           >
-            {{
-              actionClass.status === 'archived'
-                ? t('admin.learningSpace.enableClass')
-                : t('admin.learningSpace.disableClass')
-            }}
+            <I18nText
+              v-if="actionClass.status === 'archived'"
+              k="admin.learningSpace.enableClass"
+            /><I18nText
+              v-else
+              k="admin.learningSpace.disableClass"
+            />
           </button>
           <button
             type="button"
             class="ls-btn ls-btn--ghost ls-btn--sm"
             @click="closeModals"
           >
-            {{ t('common.cancel') }}
+            <I18nText k="common.cancel" />
           </button>
         </div>
       </div>

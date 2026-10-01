@@ -23,7 +23,6 @@ const page = useTeacherUsagePage()
 provide(teacherUsageInjectionKey, page)
 
 const {
-  t,
   uiStore,
   isLoading,
   allUsersLoading,
@@ -63,14 +62,14 @@ const {
       class="teacher-usage-header h-14 px-4 flex items-center justify-between bg-white border-b border-stone-200"
     >
       <h1 class="text-sm font-semibold text-stone-900">
-        {{ t('teacher.analytics.title') }}
+        <I18nText k="teacher.analytics.title" />
       </h1>
       <el-button
         size="small"
         :loading="isLoading || allUsersLoading"
         @click="activeTab === 'overview' ? loadTeacherUsage() : loadAllUsers(usersPage)"
       >
-        {{ t('common.refresh') }}
+        <I18nText k="common.refresh" />
       </el-button>
     </div>
 
@@ -80,10 +79,10 @@ const {
         v-model="activeTab"
         class="teacher-usage-tabs"
       >
-        <el-tab-pane
-          :label="t('teacher.analytics.overview')"
-          name="overview"
-        >
+        <el-tab-pane name="overview">
+          <template #label>
+            <I18nText k="teacher.analytics.overview" />
+          </template>
           <div
             v-if="isLoading"
             class="flex items-center justify-center py-20"
@@ -106,7 +105,7 @@ const {
                 @click="openTeachersModal('total')"
               >
                 <p class="text-xs text-gray-500 mb-1">
-                  {{ t('teacher.analytics.totalTeachers') }}
+                  <I18nText k="teacher.analytics.totalTeachers" />
                 </p>
                 <p class="text-2xl font-bold text-gray-800 dark:text-white">
                   {{ formatUserNumber(stats.totalTeachers, uiStore.language) }}
@@ -118,7 +117,7 @@ const {
                 @click="openTeachersModal('unused')"
               >
                 <p class="text-xs text-gray-500 mb-1">
-                  {{ t('teacher.analytics.modalTitle.unused') }}
+                  <I18nText k="teacher.analytics.modalTitle.unused" />
                 </p>
                 <p class="text-2xl font-bold text-gray-500 dark:text-gray-400">
                   {{ stats.unused }}
@@ -130,7 +129,7 @@ const {
                 @click="openTeachersModal('continuous')"
               >
                 <p class="text-xs text-gray-500 mb-1">
-                  {{ t('teacher.analytics.modalTitle.continuous') }}
+                  <I18nText k="teacher.analytics.modalTitle.continuous" />
                 </p>
                 <p class="text-2xl font-bold text-green-600 dark:text-green-400">
                   {{ stats.continuous }}
@@ -142,7 +141,7 @@ const {
                 @click="openTeachersModal('rejection')"
               >
                 <p class="text-xs text-gray-500 mb-1">
-                  {{ t('teacher.analytics.modalTitle.rejection') }}
+                  <I18nText k="teacher.analytics.modalTitle.rejection" />
                 </p>
                 <p class="text-2xl font-bold text-orange-600 dark:text-orange-400">
                   {{ stats.rejection }}
@@ -154,7 +153,7 @@ const {
                 @click="openTeachersModal('stopped')"
               >
                 <p class="text-xs text-gray-500 mb-1">
-                  {{ t('teacher.analytics.modalTitle.stopped') }}
+                  <I18nText k="teacher.analytics.modalTitle.stopped" />
                 </p>
                 <p class="text-2xl font-bold text-red-600 dark:text-red-400">
                   {{ stats.stopped }}
@@ -166,7 +165,7 @@ const {
                 @click="openTeachersModal('intermittent')"
               >
                 <p class="text-xs text-gray-500 mb-1">
-                  {{ t('teacher.analytics.modalTitle.intermittent') }}
+                  <I18nText k="teacher.analytics.modalTitle.intermittent" />
                 </p>
                 <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">
                   {{ stats.intermittent }}
@@ -178,7 +177,7 @@ const {
               <el-card shadow="hover">
                 <template #header>
                   <span class="font-medium">
-                    {{ t('teacher.analytics.groupDistribution') }}
+                    <I18nText k="teacher.analytics.groupDistribution" />
                   </span>
                 </template>
                 <div
@@ -189,7 +188,7 @@ const {
               <el-card shadow="hover">
                 <template #header>
                   <span class="font-medium">
-                    {{ t('teacher.analytics.tokenByGroup') }}
+                    <I18nText k="teacher.analytics.tokenByGroup" />
                   </span>
                 </template>
                 <div
@@ -211,16 +210,16 @@ const {
                 <div class="flex items-center justify-between">
                   <div>
                     <span class="font-semibold text-stone-900">
-                      {{ t('teacher.analytics.group.total.name') }}
+                      <I18nText k="teacher.analytics.group.total.name" />
                     </span>
                     <div class="text-xs text-stone-500 mt-0.5">
-                      {{ t('teacher.analytics.group.total.description') }}
+                      <I18nText k="teacher.analytics.group.total.description" />
                     </div>
                   </div>
                   <div class="flex items-center gap-2">
                     <el-tag size="small">
                       {{ groupStats.total?.count ?? 0 }}
-                      {{ t('teacher.analytics.teachersUnit') }}
+                      <I18nText k="teacher.analytics.teachersUnit" />
                     </el-tag>
                     <el-icon
                       :size="18"
@@ -245,37 +244,52 @@ const {
                       >
                         <el-table-column
                           prop="username"
-                          :label="t('teacher.analytics.colTeacher')"
                           width="140"
-                        />
+                        >
+                          <template #header>
+                            <I18nText k="teacher.analytics.colTeacher" />
+                          </template>
+                        </el-table-column>
                         <el-table-column
                           prop="diagrams"
-                          :label="t('teacher.analytics.colAutocompleteCount')"
                           width="80"
-                        />
+                        >
+                          <template #header>
+                            <I18nText k="teacher.analytics.colAutocompleteCount" />
+                          </template>
+                        </el-table-column>
                         <el-table-column
                           prop="conceptGen"
-                          :label="t('teacher.analytics.colConceptGen')"
                           width="80"
-                        />
+                        >
+                          <template #header>
+                            <I18nText k="teacher.analytics.colConceptGen" />
+                          </template>
+                        </el-table-column>
                         <el-table-column
                           prop="relationshipLabels"
-                          :label="t('teacher.analytics.colRelLabels')"
                           width="80"
-                        />
+                        >
+                          <template #header>
+                            <I18nText k="teacher.analytics.colRelLabels" />
+                          </template>
+                        </el-table-column>
                         <el-table-column
                           prop="tokens"
-                          :label="t('teacher.analytics.colTokens')"
                           width="100"
                         >
+                          <template #header>
+                            <I18nText k="teacher.analytics.colTokens" />
+                          </template>
                           <template #default="{ row }">
                             {{ formatNumber(row.tokens) }}
                           </template>
                         </el-table-column>
-                        <el-table-column
-                          prop="lastActive"
-                          :label="t('teacher.analytics.colLastActive')"
-                        />
+                        <el-table-column prop="lastActive">
+                          <template #header>
+                            <I18nText k="teacher.analytics.colLastActive" />
+                          </template>
+                        </el-table-column>
                       </el-table>
                     </div>
                     <div>
@@ -313,7 +327,7 @@ const {
                   <div class="flex items-center gap-2">
                     <el-tag size="small">
                       {{ groupStats[group.id]?.count ?? 0 }}
-                      {{ t('teacher.analytics.teachersUnit') }}
+                      <I18nText k="teacher.analytics.teachersUnit" />
                     </el-tag>
                     <el-icon
                       :size="18"
@@ -338,37 +352,52 @@ const {
                       >
                         <el-table-column
                           prop="username"
-                          :label="t('teacher.analytics.colTeacher')"
                           width="140"
-                        />
+                        >
+                          <template #header>
+                            <I18nText k="teacher.analytics.colTeacher" />
+                          </template>
+                        </el-table-column>
                         <el-table-column
                           prop="diagrams"
-                          :label="t('teacher.analytics.colAutocompleteCount')"
                           width="80"
-                        />
+                        >
+                          <template #header>
+                            <I18nText k="teacher.analytics.colAutocompleteCount" />
+                          </template>
+                        </el-table-column>
                         <el-table-column
                           prop="conceptGen"
-                          :label="t('teacher.analytics.colConceptGen')"
                           width="80"
-                        />
+                        >
+                          <template #header>
+                            <I18nText k="teacher.analytics.colConceptGen" />
+                          </template>
+                        </el-table-column>
                         <el-table-column
                           prop="relationshipLabels"
-                          :label="t('teacher.analytics.colRelLabels')"
                           width="80"
-                        />
+                        >
+                          <template #header>
+                            <I18nText k="teacher.analytics.colRelLabels" />
+                          </template>
+                        </el-table-column>
                         <el-table-column
                           prop="tokens"
-                          :label="t('teacher.analytics.colTokens')"
                           width="100"
                         >
+                          <template #header>
+                            <I18nText k="teacher.analytics.colTokens" />
+                          </template>
                           <template #default="{ row }">
                             {{ formatNumber(row.tokens) }}
                           </template>
                         </el-table-column>
-                        <el-table-column
-                          prop="lastActive"
-                          :label="t('teacher.analytics.colLastActive')"
-                        />
+                        <el-table-column prop="lastActive">
+                          <template #header>
+                            <I18nText k="teacher.analytics.colLastActive" />
+                          </template>
+                        </el-table-column>
                       </el-table>
                     </div>
                     <div>
@@ -390,7 +419,7 @@ const {
                 class="sub-groups-box rounded-lg border-2 border-stone-300 bg-stone-100/50 p-4 dark:border-stone-600 dark:bg-stone-800/30"
               >
                 <div class="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-4">
-                  {{ t('teacher.analytics.nonContinuous') }}
+                  <I18nText k="teacher.analytics.nonContinuous" />
                 </div>
                 <div class="space-y-4">
                   <el-card
@@ -413,7 +442,7 @@ const {
                       <div class="flex items-center gap-2">
                         <el-tag size="small">
                           {{ groupStats[group.id]?.count ?? 0 }}
-                          {{ t('teacher.analytics.teachersUnit') }}
+                          <I18nText k="teacher.analytics.teachersUnit" />
                         </el-tag>
                         <el-icon
                           :size="18"
@@ -438,37 +467,52 @@ const {
                           >
                             <el-table-column
                               prop="username"
-                              :label="t('teacher.analytics.colTeacher')"
                               width="140"
-                            />
+                            >
+                              <template #header>
+                                <I18nText k="teacher.analytics.colTeacher" />
+                              </template>
+                            </el-table-column>
                             <el-table-column
                               prop="diagrams"
-                              :label="t('teacher.analytics.colAutocompleteCount')"
                               width="80"
-                            />
+                            >
+                              <template #header>
+                                <I18nText k="teacher.analytics.colAutocompleteCount" />
+                              </template>
+                            </el-table-column>
                             <el-table-column
                               prop="conceptGen"
-                              :label="t('teacher.analytics.colConceptGen')"
                               width="80"
-                            />
+                            >
+                              <template #header>
+                                <I18nText k="teacher.analytics.colConceptGen" />
+                              </template>
+                            </el-table-column>
                             <el-table-column
                               prop="relationshipLabels"
-                              :label="t('teacher.analytics.colRelLabels')"
                               width="80"
-                            />
+                            >
+                              <template #header>
+                                <I18nText k="teacher.analytics.colRelLabels" />
+                              </template>
+                            </el-table-column>
                             <el-table-column
                               prop="tokens"
-                              :label="t('teacher.analytics.colTokens')"
                               width="100"
                             >
+                              <template #header>
+                                <I18nText k="teacher.analytics.colTokens" />
+                              </template>
                               <template #default="{ row }">
                                 {{ formatNumber(row.tokens) }}
                               </template>
                             </el-table-column>
-                            <el-table-column
-                              prop="lastActive"
-                              :label="t('teacher.analytics.colLastActive')"
-                            />
+                            <el-table-column prop="lastActive">
+                              <template #header>
+                                <I18nText k="teacher.analytics.colLastActive" />
+                              </template>
+                            </el-table-column>
                           </el-table>
                         </div>
                         <div>
@@ -490,10 +534,10 @@ const {
           </div>
         </el-tab-pane>
 
-        <el-tab-pane
-          :label="t('teacher.analytics.teachersTab')"
-          name="teachers"
-        >
+        <el-tab-pane name="teachers">
+          <template #label>
+            <I18nText k="teacher.analytics.teachersTab" />
+          </template>
           <div
             v-if="allUsersLoading"
             class="flex items-center justify-center py-20"
@@ -517,37 +561,52 @@ const {
             >
               <el-table-column
                 prop="username"
-                :label="t('teacher.analytics.colTeacher')"
                 width="180"
-              />
+              >
+                <template #header>
+                  <I18nText k="teacher.analytics.colTeacher" />
+                </template>
+              </el-table-column>
               <el-table-column
                 prop="diagrams"
-                :label="t('teacher.analytics.colAutocomplete')"
                 width="100"
-              />
+              >
+                <template #header>
+                  <I18nText k="teacher.analytics.colAutocomplete" />
+                </template>
+              </el-table-column>
               <el-table-column
                 prop="conceptGen"
-                :label="t('teacher.analytics.colConceptGen')"
                 width="100"
-              />
+              >
+                <template #header>
+                  <I18nText k="teacher.analytics.colConceptGen" />
+                </template>
+              </el-table-column>
               <el-table-column
                 prop="relationshipLabels"
-                :label="t('teacher.analytics.colRelLabels')"
                 width="100"
-              />
+              >
+                <template #header>
+                  <I18nText k="teacher.analytics.colRelLabels" />
+                </template>
+              </el-table-column>
               <el-table-column
                 prop="tokens"
-                :label="t('teacher.analytics.colTokens')"
                 width="120"
               >
+                <template #header>
+                  <I18nText k="teacher.analytics.colTokens" />
+                </template>
                 <template #default="{ row }">
                   {{ formatNumber(row.tokens) }}
                 </template>
               </el-table-column>
-              <el-table-column
-                prop="lastActive"
-                :label="t('teacher.analytics.colLastActive')"
-              />
+              <el-table-column prop="lastActive">
+                <template #header>
+                  <I18nText k="teacher.analytics.colLastActive" />
+                </template>
+              </el-table-column>
             </el-table>
             <div class="mt-4 flex justify-end">
               <el-pagination

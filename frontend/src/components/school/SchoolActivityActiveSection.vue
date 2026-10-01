@@ -3,15 +3,12 @@ import { Calendar, DataLine } from '@element-plus/icons-vue'
 
 import AdminSwissChartCard from '@/components/admin/swiss/AdminSwissChartCard.vue'
 import type { SchoolUserActivityActive } from '@/composables/queries/adminSchoolUserActivityApi'
-import { useLanguage } from '@/composables'
 import { beijingCalendarParts } from '@/utils/schoolActivityAsOf'
 
 const props = defineProps<{
   activity: SchoolUserActivityActive
   timestamp: string
 }>()
-
-const { t } = useLanguage()
 
 function seriesLabels(points: { date: string }[]): string[] {
   return points.map((point) => point.date)
@@ -41,11 +38,11 @@ function latestElapsedValue(points: { date: string; value: number }[]): number {
 <template>
   <section class="school-activity-section">
     <h2 class="school-activity-section__title">
-      {{ t('admin.schoolActivity.sectionActive') }}
+      <I18nText k="admin.schoolActivity.sectionActive" />
     </h2>
     <div class="school-activity-section__grid">
       <AdminSwissChartCard
-        :title="t('admin.schoolActivity.monthlyActive')"
+        title-key="admin.schoolActivity.monthlyActive"
         :value="latestElapsedValue(props.activity.monthly_active)"
         :timestamp="props.timestamp"
         theme="members"
@@ -55,7 +52,7 @@ function latestElapsedValue(points: { date: string; value: number }[]): number {
         :values="seriesValues(props.activity.monthly_active)"
       />
       <AdminSwissChartCard
-        :title="t('admin.schoolActivity.quarterlyActive')"
+        title-key="admin.schoolActivity.quarterlyActive"
         :value="latestElapsedValue(props.activity.quarterly_active)"
         :timestamp="props.timestamp"
         theme="managers"
@@ -65,7 +62,7 @@ function latestElapsedValue(points: { date: string; value: number }[]): number {
         :values="seriesValues(props.activity.quarterly_active)"
       />
       <AdminSwissChartCard
-        :title="t('admin.schoolActivity.avgDailyActive')"
+        title-key="admin.schoolActivity.avgDailyActive"
         :value="oneDecimal(props.activity.avg_daily_active)"
         :timestamp="props.timestamp"
         theme="success"
@@ -75,7 +72,7 @@ function latestElapsedValue(points: { date: string; value: number }[]): number {
         :values="seriesValues(props.activity.daily_active)"
       />
       <AdminSwissChartCard
-        :title="t('admin.schoolActivity.avgMonthlyActive')"
+        title-key="admin.schoolActivity.avgMonthlyActive"
         :value="oneDecimal(props.activity.avg_monthly_active)"
         :timestamp="props.timestamp"
         theme="storage"

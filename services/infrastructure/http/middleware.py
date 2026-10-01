@@ -47,7 +47,11 @@ from services.infrastructure.http.security_csp import (
     word_addin_content_security_policy,
 )
 from services.features.training.storage.backend import cos_training_enabled
-from services.features.vod.browser_csp import vod_browser_connect_sources
+from services.features.vod.browser_csp import (
+    vod_browser_connect_sources,
+    vod_browser_media_sources,
+    vod_browser_script_sources,
+)
 from services.showcase.storage import cos_showcase_enabled
 from services.utils.tencent_cos_client import (
     cos_browser_csp_sources,
@@ -100,11 +104,37 @@ def _browser_cos_connect_enabled() -> bool:
     return cos_showcase_enabled() or cos_training_enabled() or cos_auth_login_csp_enabled()
 
 
+def _vod_feature_on() -> bool:
+    """True only for a real on flag. A MagicMock config must not widen CSP."""
+    return config.FEATURE_VOD is True
+
+
 def _vod_connect_clause() -> str:
-    """connect-src origins for vod-js-sdk-v6 when the online library is on."""
-    if config.FEATURE_VOD is not True:
+    """connect-src origins for upload and TCPlayer when the online library is on."""
+    if not _vod_feature_on():
         return ""
-    sources = vod_browser_connect_sources()
+    license_url = str(getattr(config, "TENCENT_VOD_LICENSE_URL", "") or "")
+    sources = vod_browser_connect_sources(license_url)
+    if not sources:
+        return ""
+    return f" {sources}"
+
+
+def _vod_script_clause() -> str:
+    """script-src origin TCPlayer uses to load hls and crypto helpers."""
+    if not _vod_feature_on():
+        return ""
+    sources = vod_browser_script_sources()
+    if not sources:
+        return ""
+    return f" {sources}"
+
+
+def _vod_media_clause() -> str:
+    """media-src origin for the default VOD play domain."""
+    if not _vod_feature_on():
+        return ""
+    sources = vod_browser_media_sources()
     if not sources:
         return ""
     return f" {sources}"
@@ -235,7 +265,6 @@ async def csrf_protection(request: Request, call_next):
             "/api/auth/login",
             "/api/auth/register",
             "/api/auth/tsec/exchange",
-            "/api/auth/bayi/passkey",
             "/api/frontend_log",
             "/api/frontend_log_batch",
             "/api/gewe/webhook",
@@ -344,7 +373,8 @@ async def add_security_headers(request: Request, call_next):
     - connect-src / media-src: when Showcase, training, or /auth login-hero COS
       is on, allow the configured bucket virtual-host endpoints for
       browser→COS presigned PUT / media. When FEATURE_VOD is on, connect-src
-      also allows vod2.qcloud.com and the mainland VOD COS parks.
+      allows upload and TCPlayer play hosts, script-src allows tcsdk.com, and
+      media-src allows the default vod2 play domain.
     - DEBUG mode: Allows Swagger UI CDN (cdn.jsdelivr.net) for /docs endpoint
 
     Reviewed: 2025-10-26 - All directives verified against actual codebase
@@ -375,17 +405,23 @@ async def add_security_headers(request: Request, call_next):
     frame_ancestors = "'self'" if same_origin_frame else "'none'"
     # Direct browser PUT to private COS (Showcase / Course Builder). Omit when
     # COS is off so connect-src stays least-privilege. Online-library uploads
-    # add vod2.qcloud.com and the VOD COS parks only when FEATURE_VOD is on.
+    # add VOD upload, play, and tcsdk.com hosts only when FEATURE_VOD is on.
     # SPA serve strips Vite CSP <meta> so this header is the sole document policy.
     cos_connect = cos_browser_csp_sources() if _browser_cos_connect_enabled() else ""
     cos_connect_clause = f" {cos_connect}" if cos_connect else ""
     vod_connect_clause = _vod_connect_clause()
-    media_src = f"media-src 'self' blob:{cos_connect_clause}; " if cos_connect else "media-src 'self' blob:; "
+    vod_script_clause = _vod_script_clause()
+    vod_media_clause = _vod_media_clause()
+    media_src = f"media-src 'self' blob:{cos_connect_clause}{vod_media_clause}; "
     if is_word_addin:
         response.headers["Content-Security-Policy"] = word_addin_content_security_policy()
     elif config.debug:
         response.headers["Content-Security-Policy"] = debug_content_security_policy(
-            frame_ancestors, cos_connect_clause, media_src, vod_connect_clause
+            frame_ancestors,
+            cos_connect_clause,
+            media_src,
+            vod_connect_clause,
+            vod_script_clause,
         )
     else:
         response.headers["Content-Security-Policy"] = production_content_security_policy(
@@ -394,6 +430,7 @@ async def add_security_headers(request: Request, call_next):
             cos_connect_clause,
             media_src,
             vod_connect_clause,
+            vod_script_clause,
         )
 
     # Referrer Policy (controls info sent in Referer header)

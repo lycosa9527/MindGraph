@@ -63,22 +63,29 @@ function onStartStop(): void {
       class="training-header__crumb"
       aria-label="breadcrumb"
     >
-      <span class="training-header__crumb-root">{{ t('training.title') }}</span>
+      <span class="training-header__crumb-root"><I18nText k="training.title" /></span>
       <span
         class="training-header__crumb-sep"
         aria-hidden="true"
       >
         /
       </span>
-      <span class="training-header__crumb-current">{{ t('training.courses') }}</span>
+      <span class="training-header__crumb-current"><I18nText k="training.courses" /></span>
     </nav>
     <div class="training-header__actions">
       <p
         v-if="ready"
         class="training-header__ready"
       >
-        {{ t('training.teacherTotal', { n: ready.teacher_total }) }} ·
-        {{ t('training.onlineNow', { n: ready.online_now }) }}
+        <I18nText
+          k="training.teacherTotal"
+          :params="{ n: ready.teacher_total }"
+        />
+        ·
+        <I18nText
+          k="training.onlineNow"
+          :params="{ n: ready.online_now }"
+        />
       </p>
       <ElSelect
         class="admin-swiss-select admin-swiss-select--school"
@@ -110,7 +117,13 @@ function onStartStop(): void {
         :disabled="busy || startMode === 'idle'"
         @click="onStartStop"
       >
-        {{ startMode === 'stop' ? t('training.stop') : t('training.start') }}
+        <I18nText
+          v-if="startMode === 'stop'"
+          k="training.stop"
+        /><I18nText
+          v-else
+          k="training.start"
+        />
       </ElButton>
       <ElButton
         v-if="isForeign"
@@ -120,7 +133,7 @@ function onStartStop(): void {
         :disabled="busy"
         @click="emit('takeover')"
       >
-        {{ t('training.takeover') }}
+        <I18nText k="training.takeover" />
       </ElButton>
       <ElButton
         v-if="canControl && isLive"
@@ -130,7 +143,7 @@ function onStartStop(): void {
         :disabled="busy"
         @click="emit('pause')"
       >
-        {{ t('training.pause') }}
+        <I18nText k="training.pause" />
       </ElButton>
       <ElButton
         v-if="canControl && isPaused"
@@ -140,7 +153,7 @@ function onStartStop(): void {
         :disabled="busy"
         @click="emit('resume')"
       >
-        {{ t('training.resume') }}
+        <I18nText k="training.resume" />
       </ElButton>
     </div>
   </header>

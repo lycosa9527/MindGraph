@@ -139,7 +139,7 @@ function handleLoginSuccess() {
   <div class="library-page flex-1 flex flex-col bg-stone-50 overflow-hidden">
     <!-- Header -->
     <div class="library-header h-14 px-4 flex items-center bg-white border-b border-stone-200">
-      <h1 class="text-sm font-semibold text-stone-900">{{ t('sidebar.library') }}</h1>
+      <h1 class="text-sm font-semibold text-stone-900"><I18nText k="sidebar.library" /></h1>
     </div>
 
     <!-- Content -->
@@ -151,7 +151,7 @@ function handleLoginSuccess() {
         v-if="libraryStore.documentsLoading"
         class="flex items-center justify-center h-full"
       >
-        <div class="text-stone-400">{{ t('library.loading') }}</div>
+        <div class="text-stone-400"><I18nText k="library.loading" /></div>
       </div>
 
       <div
@@ -159,7 +159,7 @@ function handleLoginSuccess() {
         class="flex flex-col items-center justify-center h-full text-stone-400"
       >
         <BookOpen class="w-16 h-16 mb-4 opacity-30" />
-        <p class="text-lg font-medium mb-1">{{ t('library.loadFailed') }}</p>
+        <p class="text-lg font-medium mb-1"><I18nText k="library.loadFailed" /></p>
         <p class="text-sm">{{ libraryStore.documentsError.message }}</p>
       </div>
 
@@ -171,7 +171,7 @@ function handleLoginSuccess() {
         <!-- 精品案例集 Group -->
         <div v-if="premiumBooks.length > 0">
           <h2 class="text-lg font-semibold text-stone-900 mb-3">
-            {{ t('library.premiumCollection') }}
+            <I18nText k="library.premiumCollection" />
           </h2>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div
@@ -211,7 +211,7 @@ function handleLoginSuccess() {
 
         <!-- 其他 Group -->
         <div v-if="otherBooks.length > 0">
-          <h2 class="text-lg font-semibold text-stone-900 mb-3">{{ t('library.other') }}</h2>
+          <h2 class="text-lg font-semibold text-stone-900 mb-3"><I18nText k="library.other" /></h2>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div
               v-for="document in otherBooks"
@@ -255,8 +255,8 @@ function handleLoginSuccess() {
         class="flex flex-col items-center justify-center h-full text-stone-400"
       >
         <BookOpen class="w-16 h-16 mb-4 opacity-30" />
-        <p class="text-lg font-medium mb-1">{{ t('library.emptyTitle') }}</p>
-        <p class="text-sm">{{ t('library.emptySubtitle') }}</p>
+        <p class="text-lg font-medium mb-1"><I18nText k="library.emptyTitle" /></p>
+        <p class="text-sm"><I18nText k="library.emptySubtitle" /></p>
       </div>
     </div>
 

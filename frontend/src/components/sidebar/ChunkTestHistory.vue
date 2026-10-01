@@ -107,10 +107,26 @@ const groupLabels = computed(() => ({
 // Status labels and colors
 type TagType = 'success' | 'warning' | 'info' | 'primary' | 'danger'
 const statusConfig = computed(() => ({
-  pending: { label: t('chunkTest.history.statusPending'), color: 'info' as TagType },
-  processing: { label: t('chunkTest.history.statusProcessing'), color: 'primary' as TagType },
-  completed: { label: t('chunkTest.history.statusCompleted'), color: 'success' as TagType },
-  failed: { label: t('chunkTest.history.statusFailed'), color: 'danger' as TagType },
+  pending: {
+    label: t('chunkTest.history.statusPending'),
+    labelKey: 'chunkTest.history.statusPending',
+    color: 'info' as TagType,
+  },
+  processing: {
+    label: t('chunkTest.history.statusProcessing'),
+    labelKey: 'chunkTest.history.statusProcessing',
+    color: 'primary' as TagType,
+  },
+  completed: {
+    label: t('chunkTest.history.statusCompleted'),
+    labelKey: 'chunkTest.history.statusCompleted',
+    color: 'success' as TagType,
+  },
+  failed: {
+    label: t('chunkTest.history.statusFailed'),
+    labelKey: 'chunkTest.history.statusFailed',
+    color: 'danger' as TagType,
+  },
 }))
 
 // Get tag type for status
@@ -148,7 +164,7 @@ async function handleDeleteTest(testId: number): Promise<void> {
     )
 
     await deleteTestMutation.mutateAsync(testId)
-    notify.success(t('chunkTest.history.deleted'))
+    notify.successKey('chunkTest.history.deleted')
   } catch (error) {
     if (error instanceof Error && error.message !== 'cancel') {
       notify.error(error.message || t('chunkTest.history.deleteFailed'))
@@ -168,7 +184,7 @@ function toggleShowAll(): void {
     <!-- Header -->
     <div class="px-4 py-3">
       <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
-        {{ t('chunkTest.history.testHistory') }}
+        <I18nText k="chunkTest.history.testHistory" />
       </div>
     </div>
 
@@ -192,7 +208,7 @@ function toggleShowAll(): void {
         >
           <TestTube class="w-8 h-8 mx-auto mb-2 text-stone-300" />
           <p class="text-xs text-stone-400">
-            {{ t('chunkTest.history.empty') }}
+            <I18nText k="chunkTest.history.empty" />
           </p>
         </div>
 
@@ -246,7 +262,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ t('common.delete') }}
+                        <I18nText k="common.delete" />
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -303,7 +319,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ t('common.delete') }}
+                        <I18nText k="common.delete" />
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -360,7 +376,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ t('common.delete') }}
+                        <I18nText k="common.delete" />
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -417,7 +433,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ t('common.delete') }}
+                        <I18nText k="common.delete" />
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -432,7 +448,10 @@ function toggleShowAll(): void {
             class="show-more-btn"
             @click="toggleShowAll"
           >
-            {{ t('chunkTest.history.showMore', { n: remainingCount }) }}
+            <I18nText
+              k="chunkTest.history.showMore"
+              :params="{ n: remainingCount }"
+            />
           </button>
 
           <!-- Show Less button -->
@@ -441,7 +460,7 @@ function toggleShowAll(): void {
             class="show-more-btn"
             @click="toggleShowAll"
           >
-            {{ t('chunkTest.history.showLess') }}
+            <I18nText k="chunkTest.history.showLess" />
           </button>
         </template>
       </div>
@@ -459,7 +478,7 @@ function toggleShowAll(): void {
           <Lock class="w-5 h-5 text-stone-400" />
         </div>
         <p class="text-xs text-stone-500">
-          {{ t('chunkTest.history.loginToView') }}
+          <I18nText k="chunkTest.history.loginToView" />
         </p>
       </div>
     </div>

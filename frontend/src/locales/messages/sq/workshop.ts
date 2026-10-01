@@ -33,7 +33,7 @@ export default {
   'collab.previousSessionsStopped': 'U përfunduan {n} seanca bashkëpunimi të mëparshme në diagramet tuaja të tjera.',
   'collab.saveFailed': 'Nuk u ruajt diagrami',
   'collab.scanToJoin': 'Skanoni për t\'u bashkuar',
-  'collab.schoolDescActive': 'Bashkëpunimi shkollor është aktiv. Kolegët: përdorni Bashkëpunimi → Shkolla në faqen kryesore dhe zgjidhni këtë diagram — nuk kërkohet kod.',
+  'collab.schoolDescActive': 'Bashkëpunimi shkollor është aktiv. Kolegët: MindGraph përdorni Bashkëpunimi → Shkolla në faqen kryesore dhe zgjidhni këtë diagram — nuk kërkohet kod.',
   'collab.schoolStarted': 'Bashkëpunimi shkollor është aktiv — kolegët mund të bashkohen nga Bashkëpunimi → Shkolla.',
   'collab.sectionNetwork': 'Bashkëpunim i përbashkët (kod)',
   'collab.sectionSchool': 'Bashkëpunim shkollor',

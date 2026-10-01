@@ -111,6 +111,32 @@ describe('normalizeAuthUser', () => {
     expect(normalizeAuthUser(loginPayload).classroomRemoteVisible).toBe(true)
   })
 
+  it('hydrates quick-access remote visibility from /me and defaults closed', () => {
+    expect(
+      normalizeAuthUser({ ...loginPayload, quick_access_remote_visible: true })
+        .quickAccessRemoteVisible
+    ).toBe(true)
+    expect(
+      normalizeAuthUser({ ...loginPayload, quick_access_remote_visible: false })
+        .quickAccessRemoteVisible
+    ).toBe(false)
+    expect(normalizeAuthUser(loginPayload).quickAccessRemoteVisible).toBe(false)
+  })
+
+  it('hydrates custom quick-access prompts and drops unknown keys', () => {
+    const user = normalizeAuthUser({
+      ...loginPayload,
+      quick_access_prompt_overrides: {
+        'landing.international.example1': '  custom prompt  ',
+        other: 'skip',
+      },
+    })
+    expect(user.quickAccessPromptOverrides).toEqual({
+      'landing.international.example1': 'custom prompt',
+    })
+    expect(normalizeAuthUser(loginPayload).quickAccessPromptOverrides).toEqual({})
+  })
+
   it('drops unknown ribbon tabs', () => {
     const user = normalizeAuthUser({
       ...loginPayload,
@@ -139,20 +165,34 @@ describe('normalizeAuthUser', () => {
         custom_llm_model: '校本大模型',
       },
     })
+    expect(user.schoolName).toBe('Demo School')
     expect(user.customLlmEnabled).toBe(true)
     expect(user.customLlmModel).toBe('校本大模型')
     const twice = normalizeAuthUser(user)
     expect(twice.customLlmEnabled).toBe(true)
     expect(twice.customLlmModel).toBe('校本大模型')
+    expect(twice.schoolName).toBe('Demo School')
   })
 
-  it('maps learning class id from login payload', () => {
+  it('maps the Bayi first-login name prompt flag', () => {
     const user = normalizeAuthUser({
       ...loginPayload,
-      role: 'student' as const,
-      learning_class_id: 12,
+      name: '八一用户',
+      needs_display_name: true,
     })
-    expect(user.learningClassId).toBe(12)
-    expect(user.learning_class_id).toBeUndefined()
+    expect(user.needsDisplayName).toBe(true)
+    expect(user.username).toBe('八一用户')
+  })
+
+  it('prefers the organization display name for the sidebar chip', () => {
+    const user = normalizeAuthUser({
+      ...loginPayload,
+      organization: {
+        id: 7,
+        name: 'internal-code',
+        display_name: ' 北京市第一中学 ',
+      },
+    })
+    expect(user.schoolName).toBe('北京市第一中学')
   })
 })

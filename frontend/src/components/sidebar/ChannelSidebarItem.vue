@@ -204,8 +204,8 @@ const lessonDeadlineShortLabel = computed(() => {
         @click.stop="emit('navigateToAllTopics', channel.id)"
       >
         <span class="show-all-label">
-          {{ t('workshop.showAllTopics') }}
-          ({{ remainingCount }} {{ t('workshop.more') }})
+          <I18nText k="workshop.showAllTopics" />
+          ({{ remainingCount }} <I18nText k="workshop.more" />)
         </span>
       </li>
     </ul>
@@ -216,7 +216,7 @@ const lessonDeadlineShortLabel = computed(() => {
       class="topic-list"
     >
       <li class="topic-row topic-row--empty">
-        <span class="topic-empty-text">{{ t('workshop.noTopicsYet') }}</span>
+        <span class="topic-empty-text"><I18nText k="workshop.noTopicsYet" /></span>
       </li>
     </ul>
   </li>

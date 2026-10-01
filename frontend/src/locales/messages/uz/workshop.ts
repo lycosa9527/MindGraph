@@ -33,7 +33,7 @@ export default {
   'collab.previousSessionsStopped': 'Diger diagrammalarinizdaki {n} oldingi hamkorlik sessiyasi tugatishildi.',
   'collab.saveFailed': 'Saqlashma muvaffaqiyatsiz bo’ldi',
   'collab.scanToJoin': 'Ulanishq uchun skanerlang',
-  'collab.schoolDescActive': 'Maktab hamkorlikni faol. Hemkarlar: esas sahifade Hamkorlik → Maktab o’tingidinden bu diagrammani tanlang — kod lazim emas.',
+  'collab.schoolDescActive': 'Maktab hamkorlikni faol. Hemkarlar: MindGraph esas sahifade Hamkorlik → Maktab o’tingidinden bu diagrammani tanlang — kod lazim emas.',
   'collab.schoolStarted': 'Maktab hamkorlikni faol — hemkarlar Hamkorlik → Maktab bolmesinden ulanisha biler.',
   'collab.sectionNetwork': 'Umumi hamkorlik (kod)',
   'collab.sectionSchool': 'Maktab daxilinde hamkorlik',

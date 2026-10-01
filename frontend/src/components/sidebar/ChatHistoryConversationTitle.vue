@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Pin } from '@lucide/vue'
 
-import { useLanguage } from '@/composables'
 import type { MindMateConversation } from '@/stores'
 
 import MindMateDingtalkBadge from './MindMateDingtalkBadge.vue'
@@ -10,8 +9,6 @@ defineProps<{
   conv: MindMateConversation
   pinned?: boolean
 }>()
-
-const { t } = useLanguage()
 
 function isMindbotConversation(conv: MindMateConversation): boolean {
   if (conv.channel === 'mindbot') {
@@ -28,7 +25,11 @@ function isMindbotConversation(conv: MindMateConversation): boolean {
       class="w-3 h-3 inline-block mr-1 text-amber-500 shrink-0"
     />
     <span class="conv-name-text">
-      {{ conv.name || t('sidebar.history.untitled') }}
+      <template v-if="conv.name">{{ conv.name }}</template
+      ><I18nText
+        v-else
+        k="sidebar.history.untitled"
+      />
     </span>
     <MindMateDingtalkBadge v-if="isMindbotConversation(conv)" />
   </span>

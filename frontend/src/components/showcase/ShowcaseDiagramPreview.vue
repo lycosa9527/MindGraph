@@ -14,10 +14,14 @@ import {
 
 import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
 import DiagramSessionProvider from '@/components/diagram/DiagramSessionProvider.vue'
-import { resolveCarouselSlides, type ShowcaseCarouselSlide } from '@/components/showcase/showcaseGallery'
+import {
+  type ShowcaseCarouselSlide,
+  resolveCarouselSlides,
+} from '@/components/showcase/showcaseGallery'
 import { useLanguage } from '@/composables'
 import { ANIMATION } from '@/config/uiConfig'
 import type { DiagramSession } from '@/stores/diagram'
+import { resolveDevStaticUrl } from '@/utils/devStaticUrl'
 import { fetchShowcaseAsset } from '@/utils/fetchShowcaseAsset'
 import { decodeMgFileToJsonText } from '@/utils/mgInterchange'
 import { readShowcaseMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
@@ -25,7 +29,6 @@ import {
   cloneShowcaseDiagramSpec,
   resolveShowcaseDiagramType,
 } from '@/utils/showcaseDiagramThumbnail'
-import { resolveDevStaticUrl } from '@/utils/devStaticUrl'
 
 const showcaseMindMapCanvasMode = readShowcaseMindMapCanvasMode()
 
@@ -100,11 +103,11 @@ async function prefetchSlideImage(index: number, url: string): Promise<void> {
     const response = await fetchShowcaseAsset(resolved)
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const blob = await response.blob()
-    const mime = blob.type.startsWith('image/')
-      ? blob.type
-      : guessImageMimeFromUrl(resolved)
+    const mime = blob.type.startsWith('image/') ? blob.type : guessImageMimeFromUrl(resolved)
     if (!mime) throw new Error('not image')
-    const imageBlob = blob.type.startsWith('image/') ? blob : new Blob([await blob.arrayBuffer()], { type: mime })
+    const imageBlob = blob.type.startsWith('image/')
+      ? blob
+      : new Blob([await blob.arrayBuffer()], { type: mime })
     slideBlobUrls.value = { ...slideBlobUrls.value, [index]: URL.createObjectURL(imageBlob) }
   } catch {
     const next = new Set(failedImageSlideIndexes.value)
@@ -136,7 +139,9 @@ const hasCarousel = computed(() => carouselSlides.value.length > 1)
 const isAllImageCarousel = computed(
   () =>
     hasCarousel.value &&
-    carouselSlides.value.every((slide) => slide.kind === 'image' && !('missing' in slide && slide.missing))
+    carouselSlides.value.every(
+      (slide) => slide.kind === 'image' && !('missing' in slide && slide.missing)
+    )
 )
 
 const activeSlide = computed(() => carouselSlides.value[activeGalleryIndex.value] ?? null)
@@ -160,9 +165,7 @@ const isActiveImageSlide = computed(() =>
 
 const isActiveDiagramSlide = computed(
   () =>
-    hasCarousel.value &&
-    activeSlide.value?.kind === 'diagram' &&
-    previewMode.value === 'diagram'
+    hasCarousel.value && activeSlide.value?.kind === 'diagram' && previewMode.value === 'diagram'
 )
 
 const carouselCounter = computed(() => {
@@ -205,7 +208,8 @@ const contentZoomStyle = computed(() => ({
 
 const imagePreviewUrl = computed(() => {
   const slide = carouselSlides.value[0]
-  if (slide?.kind === 'image' && slide.url && !('missing' in slide && slide.missing)) return slide.url
+  if (slide?.kind === 'image' && slide.url && !('missing' in slide && slide.missing))
+    return slide.url
   const src = resolveDevStaticUrl(props.sourceFileUrl) ?? ''
   if (/\.(png|jpe?g|webp|gif)(\?|$)/i.test(src)) return src
   return props.thumbnailUrl ?? null
@@ -281,7 +285,9 @@ async function fetchDiagramSpecFromUrls(): Promise<Record<string, unknown> | nul
   return null
 }
 
-async function resolveDiagramSpecForSlide(slide: ShowcaseCarouselSlide | null): Promise<Record<string, unknown> | null> {
+async function resolveDiagramSpecForSlide(
+  slide: ShowcaseCarouselSlide | null
+): Promise<Record<string, unknown> | null> {
   if (slide?.kind === 'diagram' && slide.spec && isRenderableSpec(slide.spec)) {
     return slide.spec
   }
@@ -351,7 +357,10 @@ function syncCarouselIndex(): void {
   if (!el || carouselSlides.value.length < 2) return
   const width = el.clientWidth
   if (width < 1) return
-  const index = Math.max(0, Math.min(carouselSlides.value.length - 1, Math.round(el.scrollLeft / width)))
+  const index = Math.max(
+    0,
+    Math.min(carouselSlides.value.length - 1, Math.round(el.scrollLeft / width))
+  )
   if (index !== activeGalleryIndex.value) {
     activeGalleryIndex.value = index
   }
@@ -467,7 +476,14 @@ function blockReaderKeydown(event: KeyboardEvent) {
   if (previewMode.value === 'diagram') return
   const normalized = key.toLowerCase()
   const mod = event.ctrlKey || event.metaKey
-  if (mod && (normalized === 'c' || normalized === 'a' || normalized === 'x' || normalized === 's' || normalized === 'p')) {
+  if (
+    mod &&
+    (normalized === 'c' ||
+      normalized === 'a' ||
+      normalized === 'x' ||
+      normalized === 's' ||
+      normalized === 'p')
+  ) {
     event.preventDefault()
   }
 }
@@ -479,7 +495,9 @@ const singlePreviewSourceKey = computed(() =>
     props.specJsonUrl ?? '',
     props.diagramType ?? '',
     isRenderableSpec(props.spec) ? 'spec' : '',
-    carouselSlides.value.map((slide) => (slide.kind === 'image' ? slide.url : slide.title)).join('|'),
+    carouselSlides.value
+      .map((slide) => (slide.kind === 'image' ? slide.url : slide.title))
+      .join('|'),
   ].join('\u0001')
 )
 
@@ -604,7 +622,9 @@ onBeforeUnmount(() => {
         >
           <ZoomOut class="h-3.5 w-3.5" />
         </button>
-        <span class="min-w-11 text-center text-xs tabular-nums text-gray-500">{{ zoomPercent }}</span>
+        <span class="min-w-11 text-center text-xs tabular-nums text-gray-500">{{
+          zoomPercent
+        }}</span>
         <button
           type="button"
           class="diagram-reader-toolbar-btn inline-flex items-center justify-center rounded-lg p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-800 disabled:opacity-40"
@@ -619,7 +639,7 @@ onBeforeUnmount(() => {
           class="diagram-reader-toolbar-btn rounded-lg px-2 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800"
           @click="resetZoom"
         >
-          {{ t('showcase.detail.zoomReset') }}
+          <I18nText k="showcase.detail.zoomReset" />
         </button>
         <span class="mx-1 h-4 w-px bg-gray-200" />
       </template>
@@ -632,7 +652,9 @@ onBeforeUnmount(() => {
         >
           <ZoomOut class="h-3.5 w-3.5" />
         </button>
-        <span class="min-w-11 text-center text-xs tabular-nums text-gray-500">{{ zoomPercent }}</span>
+        <span class="min-w-11 text-center text-xs tabular-nums text-gray-500">{{
+          zoomPercent
+        }}</span>
         <button
           type="button"
           class="diagram-reader-toolbar-btn inline-flex items-center justify-center rounded-lg p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-800"
@@ -646,7 +668,7 @@ onBeforeUnmount(() => {
           class="diagram-reader-toolbar-btn rounded-lg px-2 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800"
           @click="diagramResetZoom"
         >
-          {{ t('showcase.detail.zoomReset') }}
+          <I18nText k="showcase.detail.zoomReset" />
         </button>
         <span class="mx-1 h-4 w-px bg-gray-200" />
       </template>
@@ -655,21 +677,27 @@ onBeforeUnmount(() => {
         class="diagram-reader-toolbar-btn inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800"
         @click="toggleFullscreen"
       >
-        <Minimize2 v-if="isFullscreen" class="h-3.5 w-3.5" />
-        <Maximize2 v-else class="h-3.5 w-3.5" />
-        {{
-          isFullscreen
-            ? t('showcase.detail.exitFullscreen')
-            : t('showcase.detail.enterFullscreen')
-        }}
+        <Minimize2
+          v-if="isFullscreen"
+          class="h-3.5 w-3.5"
+        />
+        <Maximize2
+          v-else
+          class="h-3.5 w-3.5"
+        />
+        <I18nText
+          v-if="isFullscreen"
+          k="showcase.detail.exitFullscreen"
+        /><I18nText
+          v-else
+          k="showcase.detail.enterFullscreen"
+        />
       </button>
     </div>
 
     <div
       class="relative min-h-0 flex-1 bg-white"
-      :class="
-        hasCarousel || previewMode === 'image' ? 'overflow-hidden' : 'overflow-hidden'
-      "
+      :class="hasCarousel || previewMode === 'image' ? 'overflow-hidden' : 'overflow-hidden'"
       @keydown.capture="blockReaderKeydown"
     >
       <!-- Xiaohongshu-style multi-image carousel -->
@@ -727,7 +755,11 @@ onBeforeUnmount(() => {
                   class="showcase-page-watermark"
                   aria-hidden="true"
                 >
-                  <span v-for="tile in watermarkTiles" :key="tile">{{ watermarkText }}</span>
+                  <span
+                    v-for="tile in watermarkTiles"
+                    :key="tile"
+                    >{{ watermarkText }}</span
+                  >
                 </div>
                 <img
                   :src="resolvedImageSrc(index, slide.url)"
@@ -740,7 +772,11 @@ onBeforeUnmount(() => {
               </div>
             </template>
 
-            <template v-else-if="(slide.kind === 'image' && slide.missing) || isFailedImageSlide(slide, index)">
+            <template
+              v-else-if="
+                (slide.kind === 'image' && slide.missing) || isFailedImageSlide(slide, index)
+              "
+            >
               <div
                 class="flex h-full min-h-[40vh] flex-col items-center justify-center gap-2 px-6 text-center text-gray-400"
               >
@@ -748,7 +784,7 @@ onBeforeUnmount(() => {
                 <p class="text-sm font-medium text-gray-600">
                   {{ missingImageSlideLabel(slide) }}
                 </p>
-                <p class="text-xs">{{ t('showcase.detail.galleryImageMissing') }}</p>
+                <p class="text-xs"><I18nText k="showcase.detail.galleryImageMissing" /></p>
               </div>
             </template>
 
@@ -792,7 +828,7 @@ onBeforeUnmount(() => {
                 class="flex h-full min-h-[40vh] items-center justify-center text-gray-500"
               >
                 <Loader2 class="mr-2 h-5 w-5 animate-spin" />
-                <span class="text-sm">{{ t('showcase.detail.diagramPreviewLoading') }}</span>
+                <span class="text-sm"><I18nText k="showcase.detail.diagramPreviewLoading" /></span>
               </div>
               <div
                 v-else
@@ -802,7 +838,7 @@ onBeforeUnmount(() => {
                 <p class="text-sm font-medium text-gray-600">
                   {{ diagramSlideLabel(slide) }}
                 </p>
-                <p class="text-xs">{{ t('showcase.detail.gallerySwipeHint') }}</p>
+                <p class="text-xs"><I18nText k="showcase.detail.gallerySwipeHint" /></p>
               </div>
             </template>
           </div>
@@ -828,16 +864,23 @@ onBeforeUnmount(() => {
           class="flex h-full min-h-[40vh] items-center justify-center text-gray-500"
         >
           <Loader2 class="mr-2 h-5 w-5 animate-spin" />
-          <span class="text-sm">{{ t('showcase.detail.diagramPreviewLoading') }}</span>
+          <span class="text-sm"><I18nText k="showcase.detail.diagramPreviewLoading" /></span>
         </div>
 
-        <div v-else-if="previewMode === 'diagram'" class="relative h-full min-h-[50vh]">
+        <div
+          v-else-if="previewMode === 'diagram'"
+          class="relative h-full min-h-[50vh]"
+        >
           <div
             v-if="watermarkText"
             class="showcase-diagram-watermark pointer-events-none absolute inset-0 z-20 grid grid-cols-3 gap-10 overflow-hidden p-6"
             aria-hidden="true"
           >
-            <span v-for="tile in watermarkTiles" :key="tile" class="showcase-diagram-watermark-tile">
+            <span
+              v-for="tile in watermarkTiles"
+              :key="tile"
+              class="showcase-diagram-watermark-tile"
+            >
               {{ watermarkText }}
             </span>
           </div>
@@ -874,7 +917,11 @@ onBeforeUnmount(() => {
             class="showcase-page-watermark"
             aria-hidden="true"
           >
-            <span v-for="tile in watermarkTiles" :key="tile">{{ watermarkText }}</span>
+            <span
+              v-for="tile in watermarkTiles"
+              :key="tile"
+              >{{ watermarkText }}</span
+            >
           </div>
           <img
             :src="imagePreviewUrl ? resolvedImageSrc(0, imagePreviewUrl) : ''"
@@ -897,7 +944,7 @@ onBeforeUnmount(() => {
           class="flex min-h-[50vh] flex-col items-center justify-center px-6 text-center text-gray-400"
         >
           <ImageIcon class="mb-3 h-12 w-12 text-gray-300" />
-          <p class="text-sm">{{ t('showcase.detail.noDiagramPreview') }}</p>
+          <p class="text-sm"><I18nText k="showcase.detail.noDiagramPreview" /></p>
         </div>
       </template>
     </div>

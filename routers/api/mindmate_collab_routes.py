@@ -19,11 +19,25 @@ from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.messages import Language
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
+from routers.api.mindmate_collab_library_mutations import router as saved_seminar_mutation_router
 from routers.auth.dependencies import get_language_dependency
 from routers.features.workshop_chat.schemas import OrgMembersPage
 from services.auth.thinking_coin.client_event_service import load_user_org
 from services.auth.thinking_coin.event_hub import mutation_to_footer, track_client_event
 from services.features.mindmate_collab.config import MINDMATE_COLLAB_DEFAULT_DURATION
+from services.features.mindmate_collab.diagram_library import (
+    COPY_FAILED,
+    COPY_FORBIDDEN,
+    COPY_LIMIT,
+    COPY_NOT_FOUND,
+    COPY_NO_SPEC,
+    save_collab_diagram_for_user,
+)
+from services.features.mindmate_collab.library_archive import (
+    list_saved_seminars,
+    load_saved_seminar,
+    save_finished_seminar_for_owner,
+)
 from services.features.mindmate_collab.manager_access import get_mindmate_collab_manager
 from services.features.mindmate_collab.poke_notify import send_mindmate_collab_poke
 from services.features.mindmate_collab.visibility import user_may_join_mindmate_collab
@@ -59,6 +73,7 @@ router = APIRouter(
     tags=["mindmate-collab"],
     dependencies=[Depends(_require_mindmate_collab_access)],
 )
+router.include_router(saved_seminar_mutation_router)
 
 
 class CollabSeedMessage(BaseModel):
@@ -94,6 +109,12 @@ class PokeCollabRequest(BaseModel):
 
     session_id: str
     target_user_id: int
+
+
+class SaveCollabDiagramRequest(BaseModel):
+    """Body for POST /mindmate/collab/{session_id}/diagram-library."""
+
+    preview_id: str = Field(min_length=8, max_length=8)
 
 
 async def _require_collab_tier(user: User, lang: Language) -> None:
@@ -414,15 +435,112 @@ async def my_hosted_session(
     return {"session": hosted}
 
 
+@router.get("/my/library")
+async def list_my_saved_seminars(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+):
+    """List finished seminars the owner saved into their MindMate library."""
+    await _require_collab_tier(current_user, lang)
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "mindmate_collab_library_list",
+        identifier,
+        max_requests=60,
+        window_seconds=60,
+    )
+    seminars = await list_saved_seminars(current_user.id)
+    return {"seminars": seminars}
+
+
+@router.get("/my/library/{session_id}")
+async def get_my_saved_seminar(
+    request: Request,
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+):
+    """Return one saved seminar and its transcript for the owner."""
+    await _require_collab_tier(current_user, lang)
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "mindmate_collab_library_read",
+        identifier,
+        max_requests=30,
+        window_seconds=60,
+    )
+    payload = await load_saved_seminar(session_id, current_user.id)
+    if payload is None:
+        raise HTTPException(status_code=404, detail="Saved seminar not found")
+    return payload
+
+
+@router.post("/{session_id}/library")
+async def save_collab_seminar_to_library(
+    request: Request,
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+):
+    """Save a finished seminar into the owner's MindMate library."""
+    await _require_collab_tier(current_user, lang)
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "mindmate_collab_library_save",
+        identifier,
+        max_requests=10,
+        window_seconds=60,
+    )
+    payload, error = await save_finished_seminar_for_owner(session_id, current_user.id)
+    if error == "still_live":
+        raise HTTPException(status_code=409, detail="Seminar is still live")
+    if payload is None:
+        raise HTTPException(status_code=404, detail="Room not found")
+    return {"success": True, "seminar": payload}
+
+
+@router.post("/{session_id}/diagram-library")
+async def save_collab_diagram_to_library(
+    request: Request,
+    session_id: str,
+    body: SaveCollabDiagramRequest,
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+):
+    """Save a seminar diagram preview into the caller's library, then return its id."""
+    await _require_collab_tier(current_user, lang)
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "mindmate_collab_diagram_library",
+        identifier,
+        max_requests=20,
+        window_seconds=60,
+    )
+    diagram_id, error = await save_collab_diagram_for_user(session_id, body.preview_id, current_user)
+    if error == COPY_FORBIDDEN:
+        raise HTTPException(status_code=403, detail=COPY_FORBIDDEN)
+    if error == COPY_LIMIT:
+        raise HTTPException(status_code=409, detail=COPY_LIMIT)
+    if error == COPY_NO_SPEC:
+        raise HTTPException(status_code=409, detail=COPY_NO_SPEC)
+    if error in (COPY_NOT_FOUND, COPY_FAILED) or not diagram_id:
+        status = 404 if error == COPY_NOT_FOUND else 500
+        raise HTTPException(status_code=status, detail=error or COPY_FAILED)
+    return {"diagram_id": diagram_id}
+
+
 @router.get("/{session_id}/history")
 async def collab_history(
     request: Request,
     session_id: str,
     limit: int = Query(100, ge=1, le=200),
+    after_id: Optional[int] = Query(None, ge=0),
+    before_id: Optional[int] = Query(None, ge=0),
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ):
-    """Paginated message history for reconnecting or auditing a room."""
+    """One page of seminar history. ``after_id`` is newer; ``before_id`` is older."""
     await _require_collab_tier(current_user, lang)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit(
@@ -431,6 +549,8 @@ async def collab_history(
         max_requests=30,
         window_seconds=60,
     )
+    if after_id is not None and before_id is not None:
+        raise HTTPException(status_code=400, detail="Choose after_id or before_id")
     mgr = get_mindmate_collab_manager()
     session = await mgr.load_session_by_id_any(session_id)
     if not session:
@@ -445,5 +565,10 @@ async def collab_history(
         )
     if not allowed and session.visibility != ONLINE_COLLAB_VISIBILITY_NETWORK:
         raise HTTPException(status_code=403, detail="Access denied")
-    messages = await mgr.fetch_message_history(session_id, limit=limit)
-    return {"messages": messages}
+    page = await mgr.fetch_message_page(
+        session_id,
+        limit=limit,
+        after_id=after_id,
+        before_id=before_id,
+    )
+    return {"messages": page.messages, "has_more": page.has_more}

@@ -10,9 +10,11 @@ import { Eye, EyeOff, KeyRound, Loader2, RefreshCw } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
-import { useLanguage, useNotifications } from '@/composables'
 import { useTsecCaptcha } from '@/composables/auth/useTsecCaptcha'
-import { useAuthStore, useFeatureFlagsStore } from '@/stores'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
+import { useAuthStore } from '@/stores/auth'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
 
 const props = defineProps<{
   visible: boolean
@@ -78,11 +80,11 @@ async function refreshCaptcha() {
       captchaId.value = result.captcha_id
       captchaImage.value = result.captcha_image
     } else {
-      notify.error(t('auth.modal.captchaLoadFailed'))
+      notify.errorKey('auth.modal.captchaLoadFailed')
     }
   } catch (error) {
     console.error('Captcha error:', error)
-    notify.error(t('auth.modal.captchaNetworkError'))
+    notify.errorKey('auth.modal.captchaNetworkError')
   } finally {
     captchaLoading.value = false
   }
@@ -110,17 +112,17 @@ async function handleSubmit() {
     !formData.value.newPassword ||
     !formData.value.confirmPassword
   ) {
-    notify.warning(t('auth.modal.fillAllFields'))
+    notify.warningKey('auth.modal.fillAllFields')
     return
   }
 
   if (formData.value.newPassword.length < 8) {
-    notify.warning(t('auth.modal.passwordMin8'))
+    notify.warningKey('auth.modal.passwordMin8')
     return
   }
 
   if (formData.value.newPassword !== formData.value.confirmPassword) {
-    notify.warning(t('auth.modal.passwordMismatch'))
+    notify.warningKey('auth.modal.passwordMismatch')
     return
   }
 
@@ -162,7 +164,7 @@ async function handleSubmit() {
     }
   } catch (error) {
     console.error('Failed to change password:', error)
-    notify.error(t('auth.passwordChangeFailed'))
+    notify.errorKey('auth.passwordChangeFailed')
     formData.value.captcha = ''
     void refreshCaptcha()
   } finally {

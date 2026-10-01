@@ -4,14 +4,14 @@
  */
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ExternalLink, Loader2, Maximize2, X } from '@lucide/vue'
+
+import { ExternalLink, Loader2, X } from '@lucide/vue'
 
 import ShowcaseInlineDiagramPreview from '@/components/showcase/ShowcaseInlineDiagramPreview.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import {
+  assignmentDiagramType,
   assignmentHasTeacherTemplate,
-  diagramTypeLabelKey,
-  assignmentHasWorkingDiagram,
   assignmentIsClosed,
   assignmentReferenceDiagrams,
   assignmentTemplateRole,
@@ -20,11 +20,10 @@ import {
 import { useAuthStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import {
-  fetchAssignmentTemplatePreview,
   type LearningAssignment,
   type LearningTemplatePreview,
+  fetchAssignmentTemplatePreview,
 } from '@/utils/learningSpaceApi'
-import { apiGet } from '@/utils/apiClient'
 
 const AI_TOOL_KEYS = [
   'topic_generate',
@@ -67,12 +66,6 @@ const savedDiagramsStore = useSavedDiagramsStore()
 const templatePreview = ref<LearningTemplatePreview | null>(null)
 const templateLoading = ref(false)
 const openingCanvas = ref(false)
-const lightboxSrc = ref<string | null>(null)
-const diagramLightbox = ref<{
-  spec: Record<string, unknown> | null
-  thumbnail: string | null
-} | null>(null)
-const instructionPreviewUrls = ref<Record<number, string>>({})
 
 const isStudentAudience = computed(() => props.audience === 'student')
 
@@ -94,11 +87,9 @@ const isTeacherOwner = computed(() => {
   return Number(a.created_by) === Number(authStore.user.id)
 })
 
-const diagramTypeLabel = computed(() =>
-  t(diagramTypeLabelKey(props.assignment?.ai_permissions?.diagram_type))
-)
+const diagramTypeSlug = computed(() => assignmentDiagramType(props.assignment))
 
-const hasWorkingDiagram = computed(() => assignmentHasWorkingDiagram(props.assignment))
+const diagramTypeLabel = computed(() => t(`learningSpace.diagramType.${diagramTypeSlug.value}`))
 
 const hasTeacherTemplate = computed(() =>
   assignmentHasTeacherTemplate(props.assignment, templatePreview.value?.preview_spec)
@@ -106,85 +97,24 @@ const hasTeacherTemplate = computed(() =>
 
 const templateRole = computed(() => assignmentTemplateRole(props.assignment))
 
-const workingPreviewSpec = computed(
-  () => templatePreview.value?.preview_spec ?? null
-)
+const hasInstructionImages = computed(() => (props.assignment?.instruction_images ?? []).length > 0)
 
-const workingPreviewThumbnail = computed(() => {
-  const a = props.assignment
-  return templatePreview.value?.thumbnail || a?.template_thumbnail || null
-})
+const referenceDiagrams = computed(() => assignmentReferenceDiagrams(props.assignment))
 
 const showStudentTemplate = computed(
-  () => hasWorkingDiagram.value && (hasTeacherTemplate.value || templateLoading.value)
+  () =>
+    hasTeacherTemplate.value ||
+    (templateLoading.value &&
+      (templateRole.value === 'reference' || templateRole.value === 'scaffold'))
 )
 
 const showStudentMaterials = computed(
   () =>
-    hasInstructionImages.value ||
-    showStudentTemplate.value ||
-    referenceDiagrams.value.length > 0
-)
-
-const hasInstructionImages = computed(
-  () => (props.assignment?.instruction_images ?? []).length > 0
-)
-
-const referenceDiagrams = computed(() => assignmentReferenceDiagrams(props.assignment))
-
-const showTeacherAttachments = computed(
-  () => hasWorkingDiagram.value || referenceDiagrams.value.length > 0 || hasInstructionImages.value
+    hasInstructionImages.value || showStudentTemplate.value || referenceDiagrams.value.length > 0
 )
 
 function aiToolLabelKey(key: (typeof AI_TOOL_KEYS)[number]): string {
   return `learningSpace.aiTool.${key}`
-}
-
-function instructionImageApiPath(index: number): string {
-  const assignmentId = props.assignment?.id
-  if (assignmentId == null || index < 0) return ''
-  return `/api/learning-space/instruction-images/${assignmentId}/${index}?proxy=1`
-}
-
-function revokeInstructionPreviews(): void {
-  for (const url of Object.values(instructionPreviewUrls.value)) {
-    URL.revokeObjectURL(url)
-  }
-  instructionPreviewUrls.value = {}
-}
-
-async function loadInstructionPreviews(): Promise<void> {
-  revokeInstructionPreviews()
-  const items = props.assignment?.instruction_images ?? []
-  if (!props.assignment?.id || !items.length) return
-  await Promise.all(
-    items.map(async (_src, idx) => {
-      const path = instructionImageApiPath(idx)
-      if (!path) return
-      try {
-        const response = await apiGet(path)
-        if (!response.ok) return
-        const blob = await response.blob()
-        if (!blob.size) return
-        instructionPreviewUrls.value = {
-          ...instructionPreviewUrls.value,
-          [idx]: URL.createObjectURL(blob),
-        }
-      } catch {
-        /* credentialed fetch failed — img fallback uses instructionImageApiPath */
-      }
-    })
-  )
-}
-
-function instructionDisplaySrc(idx: number): string {
-  return instructionPreviewUrls.value[idx] ?? instructionImageApiPath(idx)
-}
-
-function openInstructionLightbox(idx: number): void {
-  const src = instructionDisplaySrc(idx)
-  if (!src.trim()) return
-  lightboxSrc.value = src
 }
 
 function dimLabel(dim: string): string {
@@ -193,9 +123,7 @@ function dimLabel(dim: string): string {
 }
 
 const modalTitle = computed(() =>
-  isStudentAudience.value
-    ? t('learningSpace.studentReqTitle')
-    : t('learningSpace.viewRequirements')
+  isStudentAudience.value ? t('learningSpace.studentReqTitle') : t('learningSpace.viewRequirements')
 )
 
 const statusText = computed(() => {
@@ -217,11 +145,16 @@ const extraSpecs = ref<Record<string, Record<string, unknown>>>({})
 async function loadTemplate(): Promise<void> {
   const a = props.assignment
   extraSpecs.value = {}
-  templatePreview.value = null
   if (!a) {
+    templatePreview.value = null
     return
   }
-  if (hasWorkingDiagram.value) {
+  if (
+    isStudentAudience.value &&
+    (a.ai_permissions?.template_role === 'none' || a.ai_permissions?.has_teacher_template === false)
+  ) {
+    templatePreview.value = null
+  } else {
     templateLoading.value = true
     try {
       templatePreview.value = await fetchAssignmentTemplatePreview(a.id)
@@ -243,48 +176,16 @@ async function loadTemplate(): Promise<void> {
 }
 
 watch(
-  () =>
-    [
-      visible.value,
-      props.assignment?.id,
-      (props.assignment?.instruction_images ?? []).length,
-    ] as const,
+  () => [visible.value, props.assignment?.id] as const,
   ([open]) => {
     if (open && props.assignment) {
       void loadTemplate()
-      void loadInstructionPreviews()
-    } else if (!open) {
-      revokeInstructionPreviews()
     }
   }
 )
 
 function onClose(): void {
   visible.value = false
-  lightboxSrc.value = null
-  diagramLightbox.value = null
-  revokeInstructionPreviews()
-}
-
-function openImageLightbox(src: string): void {
-  if (!src.trim()) return
-  lightboxSrc.value = src
-}
-
-function closeImageLightbox(): void {
-  lightboxSrc.value = null
-}
-
-function openDiagramLightbox(
-  spec: Record<string, unknown> | null,
-  thumbnail: string | null | undefined
-): void {
-  if (!spec && !thumbnail) return
-  diagramLightbox.value = { spec, thumbnail: thumbnail || null }
-}
-
-function closeDiagramLightbox(): void {
-  diagramLightbox.value = null
 }
 
 async function onOpenInCanvas(): Promise<void> {
@@ -300,7 +201,7 @@ async function onOpenInCanvas(): Promise<void> {
   }
 
   if (!preview.preview_spec) {
-    notify.error(t('learningSpace.noPreview'))
+    notify.errorKey('learningSpace.noPreview')
     return
   }
 
@@ -318,7 +219,7 @@ async function onOpenInCanvas(): Promise<void> {
       return
     }
     savedDiagramsStore.clearActiveDiagram()
-    notify.success(t('learningSpace.saveToLibraryOk'))
+    notify.successKey('learningSpace.saveToLibraryOk')
     visible.value = false
     await router.push({ path: '/canvas', query: { diagramId: saved.id } })
   } catch (error) {
@@ -366,22 +267,12 @@ async function onOpenInCanvas(): Promise<void> {
         >
           <dl class="ls-req-dl ls-req-dl--compact">
             <div>
-              <dt>{{ t('learningSpace.diagramTypeLabel') }}</dt>
+              <dt><I18nText k="learningSpace.diagramTypeLabel" /></dt>
               <dd>{{ diagramTypeLabel }}</dd>
             </div>
             <div v-if="assignment.due_at">
-              <dt>{{ t('learningSpace.due') }}</dt>
+              <dt><I18nText k="learningSpace.due" /></dt>
               <dd>{{ formatLsDateTime(assignment.due_at) }}</dd>
-            </div>
-            <div>
-              <dt>{{ t('learningSpace.studentReqResubmit') }}</dt>
-              <dd>
-                {{
-                  perms.allow_resubmit !== false
-                    ? t('learningSpace.studentReqResubmitYes')
-                    : t('learningSpace.studentReqResubmitNo')
-                }}
-              </dd>
             </div>
           </dl>
           <p
@@ -417,18 +308,22 @@ async function onOpenInCanvas(): Promise<void> {
             class="ls-req-section"
           >
             <h3>
-              {{
-                templateRole === 'scaffold'
-                  ? t('learningSpace.studentReqScaffold')
-                  : t('learningSpace.studentReqMaterials')
-              }}
+              <I18nText
+                v-if="templateRole === 'scaffold'"
+                k="learningSpace.studentReqScaffold"
+              /><I18nText
+                v-else
+                k="learningSpace.studentReqMaterials"
+              />
             </h3>
             <p class="ls-muted">
-              {{
-                templateRole === 'scaffold'
-                  ? t('learningSpace.studentReqScaffoldHint')
-                  : t('learningSpace.studentReqMaterialsHint')
-              }}
+              <I18nText
+                v-if="templateRole === 'scaffold'"
+                k="learningSpace.studentReqScaffoldHint"
+              /><I18nText
+                v-else
+                k="learningSpace.studentReqMaterialsHint"
+              />
             </p>
             <div
               v-if="showStudentTemplate"
@@ -436,53 +331,37 @@ async function onOpenInCanvas(): Promise<void> {
             >
               <div
                 v-if="templateLoading"
-                class="ls-req-template__frame ls-req-template__loading"
+                class="ls-req-template__loading"
               >
                 <Loader2
                   class="animate-spin"
                   :size="20"
                 />
               </div>
-              <div
-                v-else-if="workingPreviewSpec && hasTeacherTemplate"
-                class="ls-req-template__frame"
-              >
-                <button
-                  type="button"
-                  class="ls-review__fs-btn"
-                  :title="t('learningSpace.previewFullscreen')"
-                  :aria-label="t('learningSpace.previewFullscreen')"
-                  @click="openDiagramLightbox(workingPreviewSpec, workingPreviewThumbnail)"
-                >
-                  <Maximize2 :size="16" />
-                </button>
-                <ShowcaseInlineDiagramPreview
-                  :spec="workingPreviewSpec"
-                  :thumbnail-url="workingPreviewThumbnail"
-                />
-              </div>
-              <button
-                v-else-if="hasTeacherTemplate && workingPreviewThumbnail"
-                type="button"
-                class="ls-req-img-btn"
-                @click="openImageLightbox(workingPreviewThumbnail)"
-              >
-                <img
-                  :src="workingPreviewThumbnail"
-                  alt=""
-                  class="ls-req-img"
-                />
-              </button>
+              <ShowcaseInlineDiagramPreview
+                v-else-if="templatePreview?.preview_spec && hasTeacherTemplate"
+                :spec="templatePreview.preview_spec"
+                :thumbnail-url="templatePreview.thumbnail || assignment.template_thumbnail"
+              />
+              <img
+                v-else-if="
+                  hasTeacherTemplate &&
+                  (templatePreview?.thumbnail || assignment.template_thumbnail)
+                "
+                :src="templatePreview?.thumbnail || assignment.template_thumbnail || ''"
+                alt=""
+                class="ls-req-img"
+              />
               <button
                 v-if="hasTeacherTemplate"
                 type="button"
                 class="ls-btn ls-btn--ghost ls-btn--sm"
                 style="margin-top: 0.65rem"
-                :disabled="openingCanvas || templateLoading || !workingPreviewSpec"
+                :disabled="openingCanvas || templateLoading || !templatePreview?.preview_spec"
                 @click="onOpenInCanvas"
               >
                 <ExternalLink :size="14" />
-                {{ t('learningSpace.studentReqOpenTemplate') }}
+                <I18nText k="learningSpace.studentReqOpenTemplate" />
               </button>
             </div>
             <div
@@ -495,37 +374,20 @@ async function onOpenInCanvas(): Promise<void> {
                 :key="item.id"
                 class="ls-req-attach"
               >
-                <p class="ls-req-attach__label">{{ t('learningSpace.extraDiagramAsReference') }}</p>
-                <div
+                <p class="ls-req-attach__label">
+                  <I18nText k="learningSpace.extraDiagramAsReference" />
+                </p>
+                <ShowcaseInlineDiagramPreview
                   v-if="extraSpecs[item.id]"
-                  class="ls-req-template__frame"
-                >
-                  <button
-                    type="button"
-                    class="ls-review__fs-btn"
-                    :title="t('learningSpace.previewFullscreen')"
-                    :aria-label="t('learningSpace.previewFullscreen')"
-                    @click="openDiagramLightbox(extraSpecs[item.id], item.thumbnail)"
-                  >
-                    <Maximize2 :size="16" />
-                  </button>
-                  <ShowcaseInlineDiagramPreview
-                    :spec="extraSpecs[item.id]"
-                    :thumbnail-url="item.thumbnail"
-                  />
-                </div>
-                <button
+                  :spec="extraSpecs[item.id]"
+                  :thumbnail-url="item.thumbnail"
+                />
+                <img
                   v-else-if="item.thumbnail"
-                  type="button"
-                  class="ls-req-img-btn"
-                  @click="openImageLightbox(item.thumbnail)"
-                >
-                  <img
-                    :src="item.thumbnail"
-                    alt=""
-                    class="ls-req-img"
-                  />
-                </button>
+                  :src="item.thumbnail"
+                  alt=""
+                  class="ls-req-img"
+                />
                 <p
                   v-else
                   class="ls-muted"
@@ -538,18 +400,12 @@ async function onOpenInCanvas(): Promise<void> {
                 :key="`img-${idx}`"
                 class="ls-req-attach"
               >
-                <p class="ls-req-attach__label">{{ t('learningSpace.instructionImage') }}</p>
-                <button
-                  type="button"
-                  class="ls-req-img-btn"
-                  @click="openInstructionLightbox(idx)"
-                >
-                  <img
-                    :src="instructionDisplaySrc(idx)"
-                    alt=""
-                    class="ls-req-img ls-req-img--photo"
-                  />
-                </button>
+                <p class="ls-req-attach__label"><I18nText k="learningSpace.instructionImage" /></p>
+                <img
+                  :src="src"
+                  alt=""
+                  class="ls-req-img ls-req-img--photo"
+                />
               </article>
             </div>
           </section>
@@ -559,118 +415,91 @@ async function onOpenInCanvas(): Promise<void> {
           class="ls-modal__body ls-req-scroll"
         >
           <section class="ls-req-section">
-            <h3>{{ t('learningSpace.reqOverview') }}</h3>
+            <h3><I18nText k="learningSpace.reqOverview" /></h3>
             <dl class="ls-req-dl">
               <div>
-                <dt>{{ t('learningSpace.class') }}</dt>
+                <dt><I18nText k="learningSpace.class" /></dt>
                 <dd>{{ className }}</dd>
               </div>
               <div>
-                <dt>{{ t('learningSpace.diagramTypeLabel') }}</dt>
+                <dt><I18nText k="learningSpace.diagramTypeLabel" /></dt>
                 <dd>{{ diagramTypeLabel }}</dd>
               </div>
               <div>
-                <dt>{{ t('learningSpace.status') }}</dt>
+                <dt><I18nText k="learningSpace.status" /></dt>
                 <dd>{{ statusText }}</dd>
               </div>
               <div>
-                <dt>{{ t('learningSpace.due') }}</dt>
+                <dt><I18nText k="learningSpace.due" /></dt>
                 <dd>{{ formatLsDateTime(assignment.due_at) }}</dd>
               </div>
               <div>
-                <dt>{{ t('learningSpace.publishedAt') }}</dt>
+                <dt><I18nText k="learningSpace.publishedAt" /></dt>
                 <dd>{{ formatLsDateTime(assignment.created_at) }}</dd>
               </div>
               <div>
-                <dt>{{ t('learningSpace.latePolicy') }}</dt>
+                <dt><I18nText k="learningSpace.latePolicy" /></dt>
                 <dd>
-                  {{
-                    perms.allow_late_submit
-                      ? t('learningSpace.allowLateYes')
-                      : t('learningSpace.allowLateNo')
-                  }}
-                </dd>
-              </div>
-              <div>
-                <dt>{{ t('learningSpace.resubmitPolicy') }}</dt>
-                <dd>
-                  {{
-                    perms.allow_resubmit !== false
-                      ? t('learningSpace.allowResubmitYes')
-                      : t('learningSpace.allowResubmitNo')
-                  }}
+                  <I18nText
+                    v-if="perms.allow_late_submit"
+                    k="learningSpace.allowLateYes"
+                  /><I18nText
+                    v-else
+                    k="learningSpace.allowLateNo"
+                  />
                 </dd>
               </div>
             </dl>
           </section>
 
-          <section
-            v-if="showTeacherAttachments"
-            class="ls-req-section"
-          >
-            <h3>{{ t('learningSpace.attachments') }}</h3>
-            <p class="ls-muted">{{ t('learningSpace.templateMgHint') }}</p>
+          <section class="ls-req-section">
+            <h3><I18nText k="learningSpace.attachments" /></h3>
+            <p class="ls-muted"><I18nText k="learningSpace.templateMgHint" /></p>
             <div class="ls-req-attach-list">
-              <article
-                v-if="hasWorkingDiagram"
-                class="ls-req-attach"
-              >
-                <p class="ls-req-attach__label">{{ t('learningSpace.attachWorkingDiagram') }}</p>
+              <article class="ls-req-attach">
+                <p class="ls-req-attach__label">
+                  <I18nText k="learningSpace.attachWorkingDiagram" />
+                </p>
                 <div class="ls-req-template">
                   <div
                     v-if="templateLoading"
-                    class="ls-req-template__frame ls-req-template__loading"
+                    class="ls-req-template__loading"
                   >
                     <Loader2
                       class="animate-spin"
                       :size="20"
                     />
                   </div>
-                  <div
-                    v-else-if="workingPreviewSpec"
-                    class="ls-req-template__frame"
-                  >
-                    <button
-                      type="button"
-                      class="ls-review__fs-btn"
-                      :title="t('learningSpace.previewFullscreen')"
-                      :aria-label="t('learningSpace.previewFullscreen')"
-                      @click="openDiagramLightbox(workingPreviewSpec, workingPreviewThumbnail)"
-                    >
-                      <Maximize2 :size="16" />
-                    </button>
-                    <ShowcaseInlineDiagramPreview
-                      :spec="workingPreviewSpec"
-                      :thumbnail-url="workingPreviewThumbnail"
-                    />
-                  </div>
-                  <button
-                    v-else-if="workingPreviewThumbnail"
-                    type="button"
-                    class="ls-req-img-btn"
-                    @click="openImageLightbox(workingPreviewThumbnail)"
-                  >
-                    <img
-                      :src="workingPreviewThumbnail"
-                      alt=""
-                      class="ls-req-img"
-                    />
-                  </button>
+                  <ShowcaseInlineDiagramPreview
+                    v-else-if="templatePreview?.preview_spec"
+                    :spec="templatePreview.preview_spec"
+                    :thumbnail-url="templatePreview.thumbnail || assignment.template_thumbnail"
+                  />
+                  <img
+                    v-else-if="templatePreview?.thumbnail || assignment.template_thumbnail"
+                    :src="templatePreview?.thumbnail || assignment.template_thumbnail || ''"
+                    alt=""
+                    class="ls-req-img"
+                  />
                   <p
                     v-else
                     class="ls-muted"
                   >
-                    {{ t('learningSpace.noTemplatePreview') }}
+                    <I18nText k="learningSpace.noTemplatePreview" />
                   </p>
                   <button
                     type="button"
                     class="ls-btn ls-btn--ghost ls-btn--sm"
                     style="margin-top: 0.65rem"
-                    :disabled="openingCanvas || templateLoading || (!workingPreviewSpec && !isTeacherOwner)"
+                    :disabled="
+                      openingCanvas ||
+                      templateLoading ||
+                      (!templatePreview?.preview_spec && !isTeacherOwner)
+                    "
                     @click="onOpenInCanvas"
                   >
                     <ExternalLink :size="14" />
-                    {{ t('learningSpace.openTemplateInCanvas') }}
+                    <I18nText k="learningSpace.openTemplateInCanvas" />
                   </button>
                 </div>
               </article>
@@ -679,76 +508,69 @@ async function onOpenInCanvas(): Promise<void> {
                 :key="item.id"
                 class="ls-req-attach"
               >
-                <p class="ls-req-attach__label">{{ t('learningSpace.extraDiagramAsReference') }}</p>
-                <div
-                  v-if="extraSpecs[item.id]"
-                  class="ls-req-template__frame"
-                >
-                  <button
-                    type="button"
-                    class="ls-review__fs-btn"
-                    :title="t('learningSpace.previewFullscreen')"
-                    :aria-label="t('learningSpace.previewFullscreen')"
-                    @click="openDiagramLightbox(extraSpecs[item.id], item.thumbnail)"
-                  >
-                    <Maximize2 :size="16" />
-                  </button>
+                <p class="ls-req-attach__label">
+                  <I18nText k="learningSpace.extraDiagramAsReference" />
+                </p>
+                <div class="ls-req-template">
                   <ShowcaseInlineDiagramPreview
+                    v-if="extraSpecs[item.id]"
                     :spec="extraSpecs[item.id]"
                     :thumbnail-url="item.thumbnail"
                   />
-                </div>
-                <button
-                  v-else-if="item.thumbnail"
-                  type="button"
-                  class="ls-req-img-btn"
-                  @click="openImageLightbox(item.thumbnail)"
-                >
                   <img
+                    v-else-if="item.thumbnail"
                     :src="item.thumbnail"
                     alt=""
                     class="ls-req-img"
                   />
-                </button>
-                <p
-                  v-else
-                  class="ls-muted"
-                >
-                  {{ item.title || t('learningSpace.noTemplatePreview') }}
-                </p>
+                  <p
+                    v-else
+                    class="ls-muted"
+                  >
+                    <template v-if="item.title">{{ item.title }}</template
+                    ><I18nText
+                      v-else
+                      k="learningSpace.noTemplatePreview"
+                    />
+                  </p>
+                </div>
               </article>
               <article
                 v-for="(src, idx) in assignment.instruction_images || []"
                 :key="`img-${idx}`"
                 class="ls-req-attach"
               >
-                <p class="ls-req-attach__label">{{ t('learningSpace.instructionImage') }}</p>
-                <button
-                  type="button"
-                  class="ls-req-img-btn"
-                  @click="openInstructionLightbox(idx)"
-                >
-                  <img
-                    :src="instructionDisplaySrc(idx)"
-                    alt=""
-                    class="ls-req-img ls-req-img--photo"
-                  />
-                </button>
+                <p class="ls-req-attach__label"><I18nText k="learningSpace.instructionImage" /></p>
+                <img
+                  :src="src"
+                  alt=""
+                  class="ls-req-img ls-req-img--photo"
+                />
               </article>
             </div>
           </section>
 
           <section class="ls-req-section">
-            <h3>{{ t('learningSpace.instructions') }}</h3>
+            <h3><I18nText k="learningSpace.instructions" /></h3>
             <p class="ls-req-body">
-              {{ assignment.instructions || t('learningSpace.noInstructions') }}
+              <template v-if="assignment.instructions">{{ assignment.instructions }}</template
+              ><I18nText
+                v-else
+                k="learningSpace.noInstructions"
+              />
             </p>
           </section>
 
           <section class="ls-req-section">
-            <h3>{{ t('learningSpace.reqAi') }}</h3>
+            <h3><I18nText k="learningSpace.reqAi" /></h3>
             <p class="ls-req-body">
-              {{ perms.ai_assist ? t('learningSpace.aiAssistOn') : t('learningSpace.aiAssistOff') }}
+              <I18nText
+                v-if="perms.ai_assist"
+                k="learningSpace.aiAssistOn"
+              /><I18nText
+                v-else
+                k="learningSpace.aiAssistOff"
+              />
             </p>
             <ul
               v-if="perms.ai_assist && enabledTools.length"
@@ -765,12 +587,12 @@ async function onOpenInCanvas(): Promise<void> {
               v-else-if="perms.ai_assist"
               class="ls-muted"
             >
-              {{ t('learningSpace.aiToolsNone') }}
+              <I18nText k="learningSpace.aiToolsNone" />
             </p>
           </section>
 
           <section class="ls-req-section">
-            <h3>{{ t('learningSpace.eval.title') }}</h3>
+            <h3><I18nText k="learningSpace.eval.title" /></h3>
             <ul
               v-if="evalDims.length"
               class="ls-req-chips"
@@ -786,7 +608,7 @@ async function onOpenInCanvas(): Promise<void> {
               v-else
               class="ls-muted"
             >
-              {{ t('learningSpace.noEvalDims') }}
+              <I18nText k="learningSpace.noEvalDims" />
             </p>
           </section>
         </div>
@@ -796,66 +618,9 @@ async function onOpenInCanvas(): Promise<void> {
             class="ls-btn ls-btn--primary"
             @click="onClose"
           >
-            {{ t('common.close') }}
+            <I18nText k="common.close" />
           </button>
         </footer>
-      </div>
-    </div>
-  </Teleport>
-  <Teleport to="body">
-    <div
-      v-if="lightboxSrc"
-      class="ls-req-lightbox"
-      role="dialog"
-      aria-modal="true"
-      @click.self="closeImageLightbox"
-    >
-      <button
-        type="button"
-        class="ls-btn ls-btn--ghost ls-req-lightbox__close"
-        :aria-label="t('common.close')"
-        @click="closeImageLightbox"
-      >
-        <X :size="18" />
-      </button>
-      <img
-        :src="lightboxSrc"
-        alt=""
-      />
-    </div>
-  </Teleport>
-  <Teleport to="body">
-    <div
-      v-if="diagramLightbox"
-      class="ls-req-lightbox"
-      role="dialog"
-      aria-modal="true"
-      @click.self="closeDiagramLightbox"
-    >
-      <button
-        type="button"
-        class="ls-btn ls-btn--ghost ls-req-lightbox__close"
-        :aria-label="t('common.close')"
-        @click="closeDiagramLightbox"
-      >
-        <X :size="18" />
-      </button>
-      <div
-        class="ls-req-template__frame ls-req-template__frame--fs"
-        style="width: min(96vw, 1200px)"
-        @click.stop
-      >
-        <ShowcaseInlineDiagramPreview
-          v-if="diagramLightbox.spec"
-          :spec="diagramLightbox.spec"
-          :thumbnail-url="diagramLightbox.thumbnail"
-        />
-        <img
-          v-else-if="diagramLightbox.thumbnail"
-          :src="diagramLightbox.thumbnail"
-          alt=""
-          class="ls-req-img"
-        />
       </div>
     </div>
   </Teleport>

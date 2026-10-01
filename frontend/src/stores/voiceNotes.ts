@@ -30,16 +30,14 @@ import {
 } from '@/config/docSummaryApi'
 import { SAVE } from '@/config/saveConfig'
 import { i18n } from '@/i18n'
-import {
-  useAuthStore,
-  useDiagramStore,
-  useKittySessionStore,
-  useLiveSubtitlesStore,
-  useSavedDiagramsStore,
-  useUIStore,
-} from '@/stores'
+import { useAuthStore } from '@/stores/auth'
+import { useDiagramStore } from '@/stores/diagram'
+import { useKittySessionStore } from '@/stores/kittySession'
+import { useLiveSubtitlesStore } from '@/stores/liveSubtitles'
 import { useLiveTranslationStore } from '@/stores/liveTranslation'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { getDefaultTemplate } from '@/stores/specLoader'
+import { useUIStore } from '@/stores/ui'
 import { apiRequestJson } from '@/utils/apiClient'
 import {
   diagramSourceLockMessage,
@@ -270,7 +268,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
 
     maxDurationTimer = window.setTimeout(
       () => {
-        notify.warning(t('auth.voiceNotes.maxDuration'))
+        notify.warningKey('auth.voiceNotes.maxDuration')
         void stopRecording('max_duration')
       },
       remainingVoiceNotesDurationMs(elapsedMs.value, MAX_SESSION_MS)
@@ -279,7 +277,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     silenceCheckTimer = window.setInterval(() => {
       if (!recording.value || paused.value || stopping.value) return
       if (Date.now() - lastSpeechAt >= SILENCE_AUTO_STOP_MS) {
-        notify.warning(t('auth.voiceNotes.silenceAutoStop'))
+        notify.warningKey('auth.voiceNotes.silenceAutoStop')
         void stopRecording('silence')
       }
     }, SILENCE_CHECK_MS)
@@ -303,7 +301,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     startedTimeoutTimer = window.setTimeout(() => {
       if (sessionStamp !== currentSessionStamp) return
       if (sessionReady.value) return
-      notify.warning(t('auth.voiceNotes.startedTimeout'))
+      notify.warningKey('auth.voiceNotes.startedTimeout')
       void abortSession('started_timeout')
     }, STARTED_TIMEOUT_MS)
   }
@@ -416,7 +414,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
         hasActiveCapture: hasActiveCapture.value,
       })
     ) {
-      notify.warning(t('auth.voiceNotes.sessionBusy'))
+      notify.warningKey('auth.voiceNotes.sessionBusy')
       return false
     }
     try {
@@ -454,7 +452,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
           String(uiStore.promptLanguage || uiStore.language || 'zh').split('-')[0] || 'zh'
         const template = getDefaultTemplate('mindmap', uiStore.language)
         if (!template) {
-          notify.warning(t('auth.voiceNotes.bootstrapFailed'))
+          notify.warningKey('auth.voiceNotes.bootstrapFailed')
           return false
         }
         const title = formatVoiceNoteTitle()
@@ -468,7 +466,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
           'voice_notes'
         )
         if (!saved?.id) {
-          notify.warning(t('auth.voiceNotes.saveFailed'))
+          notify.warningKey('auth.voiceNotes.saveFailed')
           return false
         }
         const pkgId = await ensureDocSummaryPackage(saved.id, title)
@@ -501,7 +499,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
 
   async function openSavedConversation(savedId: string, title: string): Promise<boolean> {
     if (hasActiveCapture.value || connecting.value || stopping.value || ingesting.value) {
-      notify.warning(t('auth.voiceNotes.sessionBusy'))
+      notify.warningKey('auth.voiceNotes.sessionBusy')
       return false
     }
     if (transcriptDirty.value) await ingestTranscript()
@@ -585,7 +583,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     if (!track) return
     const onEnded = () => {
       if (!recording.value && !paused.value) return
-      notify.warning(t('auth.voiceNotes.micLost'))
+      notify.warningKey('auth.voiceNotes.micLost')
       void stopRecording('mic_lost')
     }
     track.addEventListener('ended', onEnded)
@@ -720,7 +718,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
         return
       }
       if (code === 'connection_limit') {
-        notify.warning(t('auth.voiceNotes.sessionBusy'))
+        notify.warningKey('auth.voiceNotes.sessionBusy')
         void abortSession('ws_error')
         return
       }
@@ -825,7 +823,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
 
   async function enableAndOpen(): Promise<void> {
     if (!authStore.isAuthenticated) {
-      notify.warning(t('auth.voiceNotes.loginRequired'))
+      notify.warningKey('auth.voiceNotes.loginRequired')
       return
     }
     enabled.value = true
@@ -847,7 +845,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
         targetId = await persistUnsavedCanvasDiagram()
       }
       if (!targetId) {
-        notify.warning(t('auth.voiceNotes.noCurrentDiagram'))
+        notify.warningKey('auth.voiceNotes.noCurrentDiagram')
         return
       }
       const bound = await bindToDiagram(targetId, titleForDiagram(targetId))
@@ -887,15 +885,15 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
       await flushTranscriptIfEdited()
     }
     if (transcriptDirty.value) {
-      notify.warning(t('auth.voiceNotes.ingestFailed'))
+      notify.warningKey('auth.voiceNotes.ingestFailed')
       return
     }
     if (!navigator.mediaDevices?.getUserMedia) {
-      notify.warning(t('auth.voiceNotes.micUnavailable'))
+      notify.warningKey('auth.voiceNotes.micUnavailable')
       return
     }
     if (micConflictActive()) {
-      notify.warning(t('auth.voiceNotes.micConflict'))
+      notify.warningKey('auth.voiceNotes.micConflict')
       return
     }
     if (await rejectIfForeignDiagramSource()) {
@@ -926,14 +924,14 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
           })
         )
       } catch {
-        notify.warning(t('auth.voiceNotes.wsError'))
+        notify.warningKey('auth.voiceNotes.wsError')
         void abortSession('ws_error')
         return
       }
 
       startSessionWatchers()
       void startMicrophoneAndAttach(sessionStamp).catch(() => {
-        notify.warning(t('auth.voiceNotes.micFailed'))
+        notify.warningKey('auth.voiceNotes.micFailed')
         void abortSession('mic_lost')
       })
     }
@@ -957,17 +955,17 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
         return
       }
       if (event.code === 4001) {
-        notify.warning(t('auth.voiceNotes.authFailed'))
+        notify.warningKey('auth.voiceNotes.authFailed')
         void stopRecording('auth')
         return
       }
       if (connecting.value || !sessionReady.value) {
-        notify.warning(t('auth.voiceNotes.wsError'))
+        notify.warningKey('auth.voiceNotes.wsError')
         void abortSession('ws_error')
         return
       }
       if (recording.value || paused.value) {
-        notify.warning(t('auth.voiceNotes.wsClosed'))
+        notify.warningKey('auth.voiceNotes.wsClosed')
         void stopRecording('ws_closed')
         return
       }
@@ -1083,7 +1081,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
           transcript: transcriptText.value,
         })
       ) {
-        notify.warning(t('auth.voiceNotes.emptyTranscript'))
+        notify.warningKey('auth.voiceNotes.emptyTranscript')
       }
     } finally {
       stopping.value = false

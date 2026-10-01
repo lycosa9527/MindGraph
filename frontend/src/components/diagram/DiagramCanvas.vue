@@ -23,11 +23,10 @@ import { MiniMap } from '@vue-flow/minimap'
 import { storeToRefs } from 'pinia'
 
 import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
-import { CanvasNodeFloatingToolbar, ExportToCommunityModal } from '@/components/canvas'
+import { ExportToCommunityModal } from '@/components/canvas'
 import CanvasWorksheetTextModal from '@/components/canvas/CanvasWorksheetTextModal.vue'
 import MindMapNodeExplainBubble from '@/components/canvas/MindMapNodeExplainBubble.vue'
 import MindMapNodeExplainResearchPanel from '@/components/canvas/MindMapNodeExplainResearchPanel.vue'
-import { useBranchMoveDrag, useLanguage } from '@/composables'
 import {
   type FloatingToolbarSize,
   formatBrushActive,
@@ -36,6 +35,7 @@ import {
 } from '@/composables/canvasToolbar'
 import { registerDiagramLayoutRecalcSession } from '@/composables/core/diagramLayoutRecalcBootstrap'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
 import { useTheme } from '@/composables/core/useTheme'
 import { diagramSessionRef, useDiagramSession } from '@/composables/diagram/useDiagramSession'
@@ -55,6 +55,7 @@ import {
   useDiagramCanvasVueFlowUi,
 } from '@/composables/diagramCanvas'
 import { useDiagramCanvasMindMapPaletteDrop } from '@/composables/diagramCanvas/useDiagramCanvasMindMapPaletteDrop'
+import { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
 import {
   CONCEPT_MAP_GENERATING_KEY,
   useConceptMapRelationship,
@@ -81,13 +82,13 @@ import type { CanvasExportColorMode, CanvasExportLayout } from '@/config/canvasE
 import type { CanvasWorksheetTextOptions } from '@/config/canvasWorksheetText'
 import { LEARNING_SHEET_HAMMER_CURSOR } from '@/config/learningSheetCursor'
 import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR } from '@/config/presentationHighlighter'
-import { usePanelsStore, usePresentationPointerStore, useUIStore } from '@/stores'
 import { useCanvasExportStore } from '@/stores/canvasExport'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
+import { usePanelsStore } from '@/stores/panels'
+import { usePresentationPointerStore } from '@/stores/presentationPointer'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
-import type { MindMapCanvasMode } from '@/stores/ui'
+import { type MindMapCanvasMode, useUIStore } from '@/stores/ui'
 import type { MindGraphNode, PresentationHighlightStroke, PresentationToolId } from '@/types'
-import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import { isMindMapConnectorDebugEnabled } from '@/utils/mindMapConnectorDebugLevel'
 import { isMindMapSubgraphExpandable } from '@/utils/mindMapSubgraphContext'
 import { isMindMapSummaryNodeId } from '@/utils/mindMapSummary'
@@ -135,6 +136,7 @@ interface Props {
   presentationSideToolbarVisible?: boolean
 }
 
+const { t } = useLanguage()
 const props = withDefaults(defineProps<Props>(), {
   showBackground: true,
   showMinimap: false,
@@ -195,8 +197,6 @@ provide(CONCEPT_MAP_GENERATING_KEY, generatingConnectionIds)
 const { backgroundColor } = useTheme({
   diagramType: computed(() => diagramStore.type),
 })
-
-const { t } = useLanguage()
 
 const vueFlowWrapper = ref<HTMLElement | null>(null)
 const canvasContainer = ref<HTMLElement | null>(null)
@@ -367,11 +367,9 @@ watch(
 )
 
 const { followEnabled: followNodeStyleToolbar } = useFollowNodeStyleToolbar()
-const thinkingMapChrome = computed(() => isThinkingMapDiagramType(diagramStore.type))
-const headlessExport = isMindgraphHeadlessExportSession()
 
 const floatingToolbarNodeIds = computed(() => {
-  if (!useMindMapV2.value && !thinkingMapChrome.value) return []
+  if (!useMindMapV2.value && !isThinkingMapDiagramType(diagramStore.type)) return []
   return diagramStore.selectedNodes.filter((id) => !isMindMapSummaryNodeId(id))
 })
 
@@ -569,32 +567,6 @@ function handleCanvasDrop(event: DragEvent): void {
 }
 
 const suppressPaneClearUntil = ref(0)
-const thinkingMapPointerDown = ref<{ x: number; y: number } | null>(null)
-
-function rememberThinkingMapPointer(event: PointerEvent): void {
-  if (!thinkingMapChrome.value) return
-  thinkingMapPointerDown.value = { x: event.clientX, y: event.clientY }
-}
-
-function dismissThinkingMapFloatingToolbar(event: PointerEvent): void {
-  const start = thinkingMapPointerDown.value
-  thinkingMapPointerDown.value = null
-  if (!thinkingMapChrome.value || !start) return
-  if (Date.now() < suppressPaneClearUntil.value) return
-  if (Math.abs(event.clientX - start.x) > 4 || Math.abs(event.clientY - start.y) > 4) return
-  const target = event.target
-  if (!(target instanceof Element)) return
-  if (
-    target.closest(
-      '.vue-flow__node, .node-floating-toolbar, .node-floating-toolbar-popper, .context-menu, .ne-bubble, .vue-flow__minimap, .el-popper'
-    )
-  ) {
-    return
-  }
-  if (!target.closest('.vue-flow')) return
-  if (diagramStore.selectedNodes.length === 0) return
-  diagramStore.clearSelection()
-}
 
 function markSelectionDragEnded() {
   suppressPaneClearUntil.value = Date.now() + 150
@@ -626,7 +598,7 @@ const {
 
 const { mountSubscriptions, clearDoubleBubbleTimer } = useDiagramCanvasEventBus()
 
-const { setupMobileTouchZoom, mobileTouchCleanup } = useDiagramCanvasMobileTouch({
+const { setupMobileTouchZoom, mobileTouchCleanup, setupMouseSlash } = useDiagramCanvasMobileTouch({
   canvasContainer,
   getViewport,
   setViewport,
@@ -635,7 +607,13 @@ const { setupMobileTouchZoom, mobileTouchCleanup } = useDiagramCanvasMobileTouch
   allowSingleFingerPan: () => !props.enableTouchPanPinch,
   canPageSwipe: () => props.enableTwoFingerSlideSwipe,
   canFitOnDoubleTap: () => diagramStore.type !== 'concept_map' && !props.enableTwoFingerSlideSwipe,
+  allowMouseSlash: () =>
+    !props.handToolActive &&
+    !props.presentationHandPanMode &&
+    !presentationStrokeToolActive.value &&
+    !(Array.isArray(props.panOnDragButtons) && props.panOnDragButtons.includes(0)),
 })
+let cleanupMouseSlash: (() => void) | null = null
 
 function syncTouchPanPinchLayer(): void {
   mobileTouchCleanup.value?.()
@@ -727,6 +705,7 @@ onMounted(() => {
     regenerateForNodeIfNeeded,
   })
   syncTouchPanPinchLayer()
+  cleanupMouseSlash = setupMouseSlash()
 })
 
 watch(
@@ -748,6 +727,8 @@ onUnmounted(() => {
   clearDoubleBubbleTimer()
   mobileTouchCleanup.value?.()
   mobileTouchCleanup.value = null
+  cleanupMouseSlash?.()
+  cleanupMouseSlash = null
 })
 
 defineExpose({
@@ -773,8 +754,6 @@ defineExpose({
     }"
     @contextmenu.capture="handleContextMenuEvent"
     @paste.capture="onCanvasPaste"
-    @pointerdown="rememberThinkingMapPointer"
-    @pointerup="dismissThinkingMapFloatingToolbar"
   >
     <div
       ref="vueFlowWrapper"
@@ -873,22 +852,6 @@ defineExpose({
       :on-ai-subgraph-generate="handleAiSubgraphGenerate"
       :on-explain-node="handleFloatingToolbarExplainNode"
       :on-floating-toolbar-size-change="handleFloatingToolbarSizeChange"
-    />
-
-    <CanvasNodeFloatingToolbar
-      v-if="
-        thinkingMapChrome &&
-        !useMindMapV2 &&
-        floatingToolbarEnabled &&
-        !headlessExport &&
-        !presentationDiagramEditLocked &&
-        !nodeExplainVisible
-      "
-      :position="floatingToolbarPosition"
-      :node-id="floatingToolbarAnchorId"
-      :show-ai-subgraph="false"
-      @explain-node="handleFloatingToolbarExplainNode"
-      @size-change="handleFloatingToolbarSizeChange"
     />
 
     <ContextMenu

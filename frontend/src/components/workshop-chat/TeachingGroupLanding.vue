@@ -112,7 +112,7 @@ function lessonDeadlineLine(ch: ChatChannel): string | null {
         {{ group.description }}
       </p>
       <p class="tg-landing__hint">
-        {{ t('workshop.teachingGroupLandingHint') }}
+        <I18nText k="workshop.teachingGroupLandingHint" />
       </p>
     </header>
 
@@ -120,7 +120,7 @@ function lessonDeadlineLine(ch: ChatChannel): string | null {
       v-if="lessonStudies.length === 0"
       class="tg-landing__empty"
     >
-      {{ t('workshop.teachingGroupNoLessons') }}
+      <I18nText k="workshop.teachingGroupNoLessons" />
     </div>
 
     <section
@@ -175,7 +175,7 @@ function lessonDeadlineLine(ch: ChatChannel): string | null {
       </p>
 
       <p class="tg-landing__no-topics">
-        {{ lesson.topic_count }} {{ t('workshop.conversations') }}
+        {{ lesson.topic_count }} <I18nText k="workshop.conversations" />
       </p>
     </section>
   </div>

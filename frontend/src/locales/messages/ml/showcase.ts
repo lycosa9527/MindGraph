@@ -198,7 +198,7 @@ export default {
   'showcase.publishModal.keepExistingFile': 'നിങ്ങൾ അപ്‌ലോഡ് ചെയ്യുന്നില്ലെങ്കിൽ, യഥാർത്ഥ ഫയൽ സൂക്ഷിക്കുക.',
   'showcase.detail.views': '{n} കാഴ്‌ചകൾ',
   'showcase.detail.recommended': 'ശുപാർശ ചെയ്തത്',
-  'showcase.detail.askMindmate': 'മൈൻഡ്‌മേറ്റ് ചോദിക്കൂ',
+  'showcase.detail.askMindmate': 'MindMate മൈൻഡ്‌മേറ്റ് ചോദിക്കൂ',
   'showcase.detail.docPreview': 'പ്രബോധന ഡിസൈൻ രേഖകൾ',
   'showcase.detail.openDocument': 'പുതിയ ടാബിൽ തുറക്കുക',
   'showcase.detail.enterFullscreen': 'പൂർണ്ണ സ്ക്രീനിൽ വായിക്കുക',

@@ -1,8 +1,17 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Connection } from '@/types'
+import { mindMapVectorEdgeStrokeColor } from '@/utils/diagramMindMapVectorEdges'
 import { buildMindMapVectorSnapshot } from '@/utils/diagramMindMapVectorModel'
 import { renderMindMapVectorNode } from '@/utils/diagramMindMapVectorNodes'
+import { buildA4PdfFromMindMapVectors } from '@/utils/diagramMindMapVectorPdf'
+import {
+  __clearMindMapVectorPdfFontCacheForTests,
+  __setMindMapVectorPdfFontCacheForTests,
+  registerMindMapVectorPdfFonts,
+} from '@/utils/diagramMindMapVectorPdfFonts'
+import { rasterizeMindMapVectorSvg } from '@/utils/diagramMindMapVectorRaster'
+import { buildMindMapVectorSvg, computeMindMapVectorBounds } from '@/utils/diagramMindMapVectorSvg'
 import {
   escapeXml,
   mindMapExportPlainText,
@@ -10,22 +19,15 @@ import {
   parseMindMapExportText,
   wrapMindMapExportLines,
 } from '@/utils/diagramMindMapVectorText'
-import {
-  buildMindMapVectorSvg,
-  computeMindMapVectorBounds,
-} from '@/utils/diagramMindMapVectorSvg'
-import { mindMapVectorEdgeStrokeColor } from '@/utils/diagramMindMapVectorEdges'
-import {
-  __clearMindMapVectorPdfFontCacheForTests,
-  __setMindMapVectorPdfFontCacheForTests,
-  registerMindMapVectorPdfFonts,
-} from '@/utils/diagramMindMapVectorPdfFonts'
-import { buildA4PdfFromMindMapVectors } from '@/utils/diagramMindMapVectorPdf'
-import { rasterizeMindMapVectorSvg } from '@/utils/diagramMindMapVectorRaster'
 
 vi.mock('@/utils/diagramExportHtmlToImage', () => ({
   loadHtmlToImageModule: async () => ({
-    toBlob: async () => new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' }),
+    toSvg: async (node: HTMLElement) => {
+      const width = node.getAttribute('width') || '100'
+      const height = node.getAttribute('height') || '80'
+      const markup = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"></svg>`
+      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(markup)}`
+    },
   }),
 }))
 
@@ -234,22 +236,39 @@ describe('diagramMindMapVectorPdfFonts', () => {
     }
     await registerMindMapVectorPdfFonts(doc)
     expect(doc.addFileToVFS).toHaveBeenCalled()
-    expect(doc.addFont).toHaveBeenCalledWith(
-      'NotoSansSC-Regular.ttf',
-      'Noto Sans SC',
-      'normal'
-    )
+    expect(doc.addFont).toHaveBeenCalledWith('NotoSansSC-Regular.ttf', 'Noto Sans SC', 'normal')
   })
 
   it('rejects empty PDF page lists', async () => {
-    await expect(buildA4PdfFromMindMapVectors([], 'landscape')).rejects.toThrow(
-      /at least one page/
-    )
+    await expect(buildA4PdfFromMindMapVectors([], 'landscape')).rejects.toThrow(/at least one page/)
   })
 })
 
 describe('diagramMindMapVectorRaster', () => {
   it('rasterizes SVG to a non-empty PNG blob', async () => {
+    vi.stubGlobal(
+      'Image',
+      class {
+        onload: (() => void) | null = null
+        onerror: (() => void) | null = null
+        set src(_value: string) {
+          this.onload?.()
+        }
+      }
+    )
+    const toBlob = vi
+      .spyOn(HTMLCanvasElement.prototype, 'toBlob')
+      .mockImplementation((callback) => {
+        callback?.(new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' }))
+      })
+    const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      fillStyle: '',
+      fillRect: () => undefined,
+      imageSmoothingEnabled: true,
+      imageSmoothingQuality: 'high',
+      drawImage: () => undefined,
+    } as unknown as CanvasRenderingContext2D)
+
     const snapshot = tinyMindMapSnapshot()
     expect(snapshot).not.toBeNull()
     if (!snapshot) return
@@ -258,5 +277,9 @@ describe('diagramMindMapVectorRaster', () => {
     expect(result.blob.size).toBeGreaterThan(0)
     expect(result.width).toBeGreaterThan(0)
     expect(result.height).toBeGreaterThan(0)
+
+    toBlob.mockRestore()
+    getContext.mockRestore()
+    vi.unstubAllGlobals()
   })
 })

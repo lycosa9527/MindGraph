@@ -6,8 +6,6 @@ import { Brush, PenLine } from '@lucide/vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { StylePresetColors } from '@/config/colorPalette'
 
-const { t } = useLanguage()
-
 withDefaults(
   defineProps<{
     compact?: boolean
@@ -26,6 +24,7 @@ withDefaults(
   { compact: false }
 )
 
+const { t } = useLanguage()
 const emit = defineEmits<{
   applyPreset: [preset: StylePresetColors]
   toggleWireframe: []
@@ -64,7 +63,7 @@ const emit = defineEmits<{
                   :class="[preset.bgClass, preset.borderClass]"
                   @click="emit('applyPreset', preset)"
                 >
-                  {{ t(preset.nameKey) }}
+                  <I18nText :k="preset.nameKey" />
                 </ElDropdownItem>
               </div>
               <div class="border-t border-gray-200 my-2" />

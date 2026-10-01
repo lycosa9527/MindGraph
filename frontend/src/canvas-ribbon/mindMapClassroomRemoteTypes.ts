@@ -25,13 +25,20 @@ export const CLASSROOM_REMOTE_STORAGE_KEY = 'mg.classroom-remote.v1'
 export const CLASSROOM_REMOTE_MARGIN_PX = 8
 export const CLASSROOM_REMOTE_EDGE_GAP_PX = 16
 export const CLASSROOM_REMOTE_STATUS_GAP_PX = 56
-export const CLASSROOM_REMOTE_DEFAULT_WIDTH_PX = 188
+export const CLASSROOM_REMOTE_DEFAULT_WIDTH_PX = 300
 export const CLASSROOM_REMOTE_DEFAULT_HEIGHT_PX = 420
+export const CLASSROOM_REMOTE_MIN_WIDTH_PX = 220
+export const CLASSROOM_REMOTE_MIN_HEIGHT_PX = 240
 export const CLASSROOM_REMOTE_DRAG_THRESHOLD_PX = 4
 
-export type ClassroomRemotePersisted = {
+export type ClassroomRemoteFrame = {
   left: number
   top: number
+  width: number
+  height: number
+}
+
+export type ClassroomRemotePersisted = ClassroomRemoteFrame & {
   hidden: boolean
   tab: ClassroomRemoteTabId
 }

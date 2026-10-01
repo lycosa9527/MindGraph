@@ -93,17 +93,14 @@ describe('adminCapabilities', () => {
     expect(tabEditCapability('vod')).toBe('tab.vod.edit')
   })
 
-  it('learning_space admin tab is available to superadmin and platform BD only', () => {
-    for (const role of ['superadmin', 'platform_bd'] as const) {
+  it('learning_space admin tab is available to class managers', () => {
+    const managers = ['superadmin', 'platform_bd', 'expert', 'school_admin'] as const
+    for (const role of managers) {
       const caps = fallbackCapabilitiesForRole(role)
       expect(caps).toContain('tab.learning_space.view')
       expect(caps).toContain('tab.learning_space.edit')
     }
-    for (const role of ['expert', 'school_admin', 'teacher'] as const) {
-      const caps = fallbackCapabilitiesForRole(role)
-      expect(caps).not.toContain('tab.learning_space.view')
-      expect(caps).not.toContain('tab.learning_space.edit')
-    }
+    expect(fallbackCapabilitiesForRole('teacher')).not.toContain('tab.learning_space.view')
     expect(tabRequiresCapabilities('learning_space')).toEqual(['tab.learning_space.view'])
   })
 
@@ -129,6 +126,14 @@ describe('adminCapabilities', () => {
     expect(settingsSubtabRequiresCapabilities('thinking_coins')).toEqual([
       'tab.settings.thinking_coins',
     ])
+  })
+
+  it('user_dropdown settings subtab is superadmin-only', () => {
+    expect(settingsSubtabRequiresCapabilities('user_dropdown')).toEqual([
+      'tab.settings.user_dropdown',
+    ])
+    expect(fallbackCapabilitiesForRole('superadmin')).toContain('tab.settings.user_dropdown')
+    expect(fallbackCapabilitiesForRole('school_admin')).not.toContain('tab.settings.user_dropdown')
   })
 
   it('teaching_design settings subtab is superadmin-only', () => {

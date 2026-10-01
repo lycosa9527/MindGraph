@@ -178,13 +178,13 @@ async function toggleLike() {
 async function importToLibrary() {
   const p = post.value
   if (!p || !authStore.isAuthenticated) {
-    notify.warning(t('community.post.loginFirst'))
+    notify.warningKey('community.post.loginFirst')
     return
   }
   const fullPost = p as CommunityPost & { spec?: unknown }
   const spec = fullPost.spec as Record<string, unknown> | undefined
   if (!spec || typeof spec !== 'object') {
-    notify.error(t('community.post.diagramLoadFailed'))
+    notify.errorKey('community.post.diagramLoadFailed')
     return
   }
   isImporting.value = true
@@ -192,11 +192,11 @@ async function importToLibrary() {
     const saved = await savedDiagramsStore.saveDiagram(p.title, p.diagram_type, spec, 'zh', null)
     if (saved) {
       savedDiagramsStore.setActiveDiagram(saved.id)
-      notify.success(t('community.post.importOk'))
+      notify.successKey('community.post.importOk')
     } else if (savedDiagramsStore.error) {
       notify.error(savedDiagramsStore.error)
     } else {
-      notify.error(t('community.post.importFull'))
+      notify.errorKey('community.post.importFull')
     }
   } catch (e) {
     notify.error(e instanceof Error ? e.message : t('community.post.importFail'))
@@ -250,7 +250,7 @@ async function deleteComment(comment: CommunityPostComment) {
     if (post.value) {
       post.value.comments_count = totalComments.value
     }
-    notify.success(t('community.post.commentDeleted'))
+    notify.successKey('community.post.commentDeleted')
   } catch (e) {
     notify.error(e instanceof Error ? e.message : 'Failed to delete comment')
   } finally {

@@ -173,6 +173,29 @@
   color: var(--swiss-muted);
 }
 
+.swiss-stat-card__title .i18n-label__secondary {
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 500;
+}
+
+.swiss-stat-card__title-compound {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  column-gap: 0.35rem;
+}
+
+.swiss-stat-card__title-period .i18n-label__primary::before,
+.swiss-stat-card__title-period .i18n-label__secondary::before {
+  content: "(";
+}
+
+.swiss-stat-card__title-period .i18n-label__primary::after,
+.swiss-stat-card__title-period .i18n-label__secondary::after {
+  content: ")";
+}
+
 .swiss-stat-card--compact .swiss-stat-card__title {
   font-size: 0.625rem;
   letter-spacing: 0.08em;

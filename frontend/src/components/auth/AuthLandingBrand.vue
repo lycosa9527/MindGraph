@@ -4,21 +4,19 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
-import { useLanguage } from '@/composables'
 import {
   AUTH_LOGIN_HERO_NARROW_QUERY,
   AUTH_LOGIN_HERO_STILL_SRC,
   AUTH_LOGIN_HERO_WIDE_MEDIA,
+  type AuthLoginHeroKind,
   authLoginHeroHandheld,
   authLoginHeroKind,
   authLoginHeroShouldAnimate,
   authLoginHeroSrc,
   authLoginHeroViewportNarrow,
   pickAuthLoginHeroId,
-  type AuthLoginHeroKind,
 } from '@/utils/authLoginHero'
 
-const { t } = useLanguage()
 const clipId = ref('')
 const heroSrc = ref(AUTH_LOGIN_HERO_STILL_SRC)
 const heroKind = ref<AuthLoginHeroKind>('image')
@@ -115,7 +113,7 @@ function onVideoError(): void {
       height="1080"
       decoding="async"
       fetchpriority="high"
-    >
+    />
     <video
       v-if="showVideo"
       :key="heroSrc"
@@ -133,7 +131,7 @@ function onVideoError(): void {
         :src="heroSrc"
         type="video/mp4"
         :media="AUTH_LOGIN_HERO_WIDE_MEDIA"
-      >
+      />
     </video>
 
     <div
@@ -147,11 +145,11 @@ function onVideoError(): void {
           id="auth-landing-brand-title"
           class="auth-landing-brand__headline"
         >
-          <span>{{ t('auth.landing.headlinePrefix') }}</span>
-          <span class="auth-landing-brand__accent">{{ t('auth.landing.headlineAccent') }}</span>
+          <span><I18nText k="auth.landing.headlinePrefix" /></span>
+          <span><I18nText k="auth.landing.headlineAccent" /></span>
         </h1>
         <p class="auth-landing-brand__subcopy">
-          {{ t('auth.landing.subcopy') }}
+          <I18nText k="auth.landing.subcopy" />
         </p>
       </div>
     </div>
@@ -252,14 +250,6 @@ function onVideoError(): void {
   line-height: 1.2;
   color: #2e1065;
   text-shadow: none;
-}
-
-.auth-landing-brand__accent {
-  background: linear-gradient(90deg, #7dd3fc 0%, #c4b5fd 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font-weight: 800;
 }
 
 .auth-landing-brand__subcopy {

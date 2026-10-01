@@ -6,28 +6,27 @@ import { type Ref } from 'vue'
 
 import {
   DIAGRAM_GALLERY_MAX_ITEMS,
-  buildGallerySpecPayload,
   type ShowcaseGalleryItem,
+  buildGallerySpecPayload,
 } from '@/components/showcase/showcaseGallery'
 import {
-  acceptThumbnailBlob,
   CASE_ATTACHMENT_MAX_BYTES,
   CASE_THUMBNAIL_MAX_BYTES,
   CASE_UPLOAD_TOTAL_MAX_BYTES,
   CASE_VIDEO_MAX_BYTES,
+  type ShowcaseCaseType,
   TAG_MAX_COUNT,
   TAG_MAX_LENGTH,
-  type ShowcaseCaseType,
+  acceptThumbnailBlob,
 } from '@/components/showcase/showcaseShared'
-import type { AdminCapability } from '@/utils/adminCapabilities'
 import type { UseLanguageTranslate } from '@/composables/core/useLanguage'
-import {
-  uploadShowcaseFile,
-  type ShowcaseUploadRole,
-} from '@/composables/showcase/uploadShowcaseFile'
 import { mapShowcaseSubmitError } from '@/composables/showcase/mapShowcaseSubmitError'
 import { ensureGalleryImagesPersisted } from '@/composables/showcase/publishShowcaseGalleryUpload'
 import { resolvePublishThumbnail } from '@/composables/showcase/publishShowcaseThumbnails'
+import {
+  type ShowcaseUploadRole,
+  uploadShowcaseFile,
+} from '@/composables/showcase/uploadShowcaseFile'
 import type {
   GalleryDiagramDraft,
   GalleryExistingImage,
@@ -35,6 +34,7 @@ import type {
 } from '@/composables/showcase/usePublishShowcaseGalleryDrafts'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
 import { useShowcaseStore } from '@/stores/showcase'
+import type { AdminCapability } from '@/utils/adminCapabilities'
 import {
   createShowcasePost,
   deleteAdminShowcasePost,
@@ -63,10 +63,15 @@ export type PublishSubmitDeps = {
   t: UseLanguageTranslate
   notify: {
     error: (message: string, duration?: number) => void
+    errorKey: (key: string, params?: Record<string, unknown> | number, duration?: number) => void
     success: (message: string, duration?: number) => void
+    successKey: (key: string, params?: Record<string, unknown> | number, duration?: number) => void
     warning: (message: string, duration?: number) => void
+    warningKey: (key: string, params?: Record<string, unknown> | number, duration?: number) => void
     info: (message: string, duration?: number) => void
+    infoKey: (key: string, params?: Record<string, unknown> | number, duration?: number) => void
     showLoading: (message?: string) => void
+    showLoadingKey: (key: string, params?: Record<string, unknown>) => void
     hideLoading: () => void
   }
   can: (cap: AdminCapability) => boolean
@@ -186,9 +191,9 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
 
   const showcaseStore = useShowcaseStore()
 
-  function setSubmitProgress(message: string): void {
-    submitPhaseLabel.value = message
-    notify.showLoading(message)
+  function setSubmitProgress(key: string, params?: Record<string, unknown>): void {
+    submitPhaseLabel.value = String(t(key, params ?? {}))
+    notify.showLoadingKey(key, params)
   }
 
   function clearSubmitProgress(): void {
@@ -284,7 +289,7 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
   async function uploadPendingMedia(
     postId: string,
     pending: Array<{ role: ShowcaseUploadRole; file: File; filename?: string }>,
-    signal: AbortSignal,
+    signal: AbortSignal
   ): Promise<{ coverUploadFailed: boolean }> {
     const required = pending.filter((item) => !isThumbnailUploadRole(item.role))
     const covers = pending.filter((item) => isThumbnailUploadRole(item.role))
@@ -295,15 +300,11 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
     for (const item of required) {
       throwIfSubmitAborted(signal)
       uploaded += 1
-      setSubmitProgress(
-        String(
-          t('showcase.publishModal.uploadingFile', {
-            name: displayNameForUpload(item),
-            current: uploaded,
-            total: Math.max(total, 1),
-          }),
-        ),
-      )
+      setSubmitProgress('showcase.publishModal.uploadingFile', {
+        name: displayNameForUpload(item),
+        current: uploaded,
+        total: Math.max(total, 1),
+      })
       await uploadShowcaseFile({
         postId,
         role: item.role,
@@ -326,15 +327,11 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
     for (const item of covers) {
       throwIfSubmitAborted(signal)
       uploaded += 1
-      setSubmitProgress(
-        String(
-          t('showcase.publishModal.uploadingFile', {
-            name: displayNameForUpload(item),
-            current: uploaded,
-            total: Math.max(total, 1),
-          }),
-        ),
-      )
+      setSubmitProgress('showcase.publishModal.uploadingFile', {
+        name: displayNameForUpload(item),
+        current: uploaded,
+        total: Math.max(total, 1),
+      })
       try {
         await uploadShowcaseFile({
           postId,
@@ -363,7 +360,7 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
   async function rollbackCreatedPost(
     postId: string,
     proxyMode: boolean,
-    reason: string,
+    reason: string
   ): Promise<void> {
     try {
       // Pending author posts use withdraw (hard-delete + asset cleanup)
@@ -385,27 +382,27 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
     createFn: () => Promise<{ post: { id: string } }>,
     pending: Array<{ role: ShowcaseUploadRole; file: File; filename?: string }>,
     signal: AbortSignal,
-    options: { proxyMode?: boolean; approveAfterUpload?: boolean } = {},
+    options: { proxyMode?: boolean; approveAfterUpload?: boolean } = {}
   ): Promise<{ postId: string; coverUploadFailed: boolean }> {
     const proxyMode = options.proxyMode === true
     const approveAfterUpload = options.approveAfterUpload === true
-    setSubmitProgress(String(t('showcase.publishModal.creatingCase')))
+    setSubmitProgress('showcase.publishModal.creatingCase')
     const result = await createFn()
     throwIfSubmitAborted(signal)
     const postId = result.post.id
     if (pending.length === 0) {
-      setSubmitProgress(String(t('showcase.publishModal.finishing')))
+      setSubmitProgress('showcase.publishModal.finishing')
       return { postId, coverUploadFailed: false }
     }
     try {
       const { coverUploadFailed } = await uploadPendingMedia(postId, pending, signal)
       throwIfSubmitAborted(signal)
       if (approveAfterUpload) {
-        setSubmitProgress(String(t('showcase.publishModal.finishing')))
+        setSubmitProgress('showcase.publishModal.finishing')
         await reviewAdminShowcasePost(postId, 'approve')
         throwIfSubmitAborted(signal)
       }
-      setSubmitProgress(String(t('showcase.publishModal.finishing')))
+      setSubmitProgress('showcase.publishModal.finishing')
       return { postId, coverUploadFailed }
     } catch (uploadError) {
       const aborted = isAbortError(uploadError) || signal.aborted
@@ -474,7 +471,7 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
 
       if (caseType.value === 'teaching_design') {
         if (!uploadedFile.value && !(isEditMode.value && editHasAttachment.value)) {
-          notify.error(String(t('showcase.publishModal.validationFile')))
+          notify.errorKey('showcase.publishModal.validationFile')
           return
         }
         if (uploadedFile.value) {
@@ -485,11 +482,19 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
           })
         }
       } else {
-        if (caseType.value === 'diagram_template' && selectedDiagram.value && !selectedDiagramSpec.value) {
+        if (
+          caseType.value === 'diagram_template' &&
+          selectedDiagram.value &&
+          !selectedDiagramSpec.value
+        ) {
           const specReady = await ensureSelectedDiagramSpec()
           if (!specReady) return
         }
-        if (caseType.value === 'diagram_template' && isMgUploadedFile(uploadedFile.value) && !uploadedMgSpec.value) {
+        if (
+          caseType.value === 'diagram_template' &&
+          isMgUploadedFile(uploadedFile.value) &&
+          !uploadedMgSpec.value
+        ) {
           const mgReady = await ensureMgUploadSpecReady()
           if (!mgReady) return
         }
@@ -508,7 +513,7 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
         if (usesGalleryPublish) {
           for (const draft of galleryDiagramDrafts.value) {
             if (!(await loadGalleryDiagramSpec(draft))) {
-              notify.error(String(t('showcase.publishModal.validationFile')))
+              notify.errorKey('showcase.publishModal.validationFile')
               return
             }
           }
@@ -524,9 +529,9 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
             galleryDiagramDrafts.value.length +
             (includeTemplateMg ? 1 : 0)
           if (projectedCount > DIAGRAM_GALLERY_MAX_ITEMS) {
-            notify.error(
-              String(t('showcase.publishModal.galleryLimit', { max: DIAGRAM_GALLERY_MAX_ITEMS })),
-            )
+            notify.errorKey('showcase.publishModal.galleryLimit', {
+              max: DIAGRAM_GALLERY_MAX_ITEMS,
+            })
             return
           }
 
@@ -574,7 +579,7 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
             })
           }
           if (galleryItems.length < 1) {
-            notify.error(String(t('showcase.publishModal.validationFile')))
+            notify.errorKey('showcase.publishModal.validationFile')
             return
           }
           const specObj: Record<string, unknown> = {
@@ -626,10 +631,10 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
               })
             }
           } else if (caseType.value === 'diagram_template') {
-            notify.error(String(t('showcase.publishModal.validationFile')))
+            notify.errorKey('showcase.publishModal.validationFile')
             return
           } else if (uploadedFile.value?.name.toLowerCase().endsWith('.mg')) {
-            notify.error(String(t('showcase.publishModal.invalidMgFile')))
+            notify.errorKey('showcase.publishModal.invalidMgFile')
             return
           } else {
             specObj = { type: caseType.value, source: 'image_upload' }
@@ -639,7 +644,7 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
             if (isEditMode.value && selectedDiagramSpec.value) {
               specObj = cloneShowcaseDiagramSpec(selectedDiagramSpec.value)
             } else {
-              notify.error(String(t('community.shareModal.noDiagramData')))
+              notify.errorKey('community.shareModal.noDiagramData')
               return
             }
           }
@@ -671,8 +676,7 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
       let coverUploadFailed = false
       let savedPostId = props.editPostId?.trim() ?? ''
       const teachingDesignAttachmentUploaded =
-        caseType.value === 'teaching_design' &&
-        pendingUploads.some((u) => u.role === 'attachment')
+        caseType.value === 'teaching_design' && pendingUploads.some((u) => u.role === 'attachment')
       if (props.proxyMode) {
         const canAutoApprove = autoApprove.value && can('tab.showcase.edit')
         const approveAfterUpload = canAutoApprove && pendingUploads.length > 0
@@ -683,16 +687,16 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
           () => proxyCreateShowcasePost(formData),
           pendingUploads,
           signal,
-          { proxyMode: true, approveAfterUpload },
+          { proxyMode: true, approveAfterUpload }
         )
         savedPostId = created.postId
         coverUploadFailed = created.coverUploadFailed
         throwIfSubmitAborted(signal)
         clearSubmitProgress()
-        notify.success(String(t('admin.showcase.proxySuccess')), 3000)
+        notify.successKey('admin.showcase.proxySuccess', 3000)
         showcaseStore.emitAdminUpdated()
       } else if (isEditMode.value && savedPostId) {
-        setSubmitProgress(String(t('showcase.publishModal.submitting')))
+        setSubmitProgress('showcase.publishModal.submitting')
         await updateShowcasePost(savedPostId, formData)
         throwIfSubmitAborted(signal)
         if (pendingUploads.length > 0) {
@@ -700,32 +704,32 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
           coverUploadFailed = uploaded.coverUploadFailed
         }
         throwIfSubmitAborted(signal)
-        setSubmitProgress(String(t('showcase.publishModal.finishing')))
+        setSubmitProgress('showcase.publishModal.finishing')
         clearSubmitProgress()
-        notify.success(String(t('showcase.resubmitted')), 3000)
+        notify.successKey('showcase.resubmitted', 3000)
         showcaseStore.emitPostUpdated(savedPostId)
         showcaseStore.emitFeedInvalidate('resubmit')
       } else {
         const created = await createThenUpload(
           () => createShowcasePost(formData),
           pendingUploads,
-          signal,
+          signal
         )
         savedPostId = created.postId
         coverUploadFailed = created.coverUploadFailed
         throwIfSubmitAborted(signal)
         clearSubmitProgress()
-        notify.success(String(t('showcase.publishModal.success')), 3000)
+        notify.successKey('showcase.publishModal.success', 3000)
         showcaseStore.emitFeedInvalidate('publish')
       }
       throwIfSubmitAborted(signal)
       if (teachingDesignAttachmentUploaded && savedPostId) {
         showcaseStore.markCoverPending(savedPostId, { notifyAuthorOnFail: true })
-        notify.info(String(t('showcase.publishModal.coverGenerating')), 5000)
+        notify.infoKey('showcase.publishModal.coverGenerating', 5000)
       } else if (coverUploadFailed) {
-        notify.warning(String(t('showcase.publishModal.coverUploadSkipped')), 8000)
+        notify.warningKey('showcase.publishModal.coverUploadSkipped', 8000)
       } else if (coverSkipKey) {
-        notify.warning(String(t(coverSkipKey)), 8000)
+        notify.warningKey(coverSkipKey, 8000)
       }
       // Detach before close so watch(visible) does not abort a finished submit.
       releasePublishSubmit()

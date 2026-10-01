@@ -42,7 +42,7 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
   if (!props.disabled) return
   ev.preventDefault()
   ev.stopPropagation()
-  notify.warning(t('canvas.toolbar.selectNodesFirst'))
+  notify.warningKey('canvas.toolbar.selectNodesFirst')
 }
 </script>
 
@@ -90,12 +90,12 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
       @change="handleFontFamilyChange"
     >
       <option :value="DIAGRAM_NODE_FONT_STACK">
-        {{ t('canvas.floatingToolbar.fontDefault') }}
+        <I18nText k="canvas.floatingToolbar.fontDefault" />
       </option>
       <option value="Inter">Inter</option>
       <option value="Microsoft YaHei">微软雅黑</option>
       <option value="Arial">Arial</option>
-      <option value="SimSun">{{ t('canvas.floatingToolbar.fontSimSun') }}</option>
+      <option value="SimSun"><I18nText k="canvas.floatingToolbar.fontSimSun" /></option>
     </select>
     <input
       class="mm-input-size"

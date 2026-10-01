@@ -3,27 +3,22 @@
  * Teacher 「布置作业」 — 3-step modal (content → scoring → publish).
  */
 import { computed, nextTick, ref, watch } from 'vue'
+
 import { ArrowLeft, ArrowRight, Paperclip, Plus, X } from '@lucide/vue'
 
 import ShowcaseHistoryDiagramPicker from '@/components/showcase/ShowcaseHistoryDiagramPicker.vue'
 import ShowcaseInlineDiagramPreview from '@/components/showcase/ShowcaseInlineDiagramPreview.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import {
-  diagramTypeLabelKey,
-  type LsReferenceDiagram,
-} from '@/composables/learningSpace/lsHelpers'
-import { useSavedDiagramsStore } from '@/stores'
-import type { SavedDiagram } from '@/stores/savedDiagrams'
+import type { LsReferenceDiagram } from '@/composables/learningSpace/lsHelpers'
 import {
   LS_MAX_INSTRUCTION_IMAGES,
   useLsInstructionImages,
 } from '@/composables/learningSpace/lsInstructionImages'
+import { useSavedDiagramsStore } from '@/stores'
+import type { SavedDiagram } from '@/stores/savedDiagrams'
 import type { LearningClassRow } from '@/utils/learningSpaceApi'
 import { createTeacherAssignment } from '@/utils/learningSpaceApi'
-import {
-  decodeMgUploadSpec,
-  inferDiagramTypeFromSpec,
-} from '@/utils/showcaseDiagramThumbnail'
+import { decodeMgUploadSpec, inferDiagramTypeFromSpec } from '@/utils/showcaseDiagramThumbnail'
 
 const MAX_INSTRUCTION_IMAGES = LS_MAX_INSTRUCTION_IMAGES
 const MAX_REFERENCE_DIAGRAMS = 5
@@ -103,7 +98,6 @@ const form = ref({
   ai_tools: Object.fromEntries(AI_TOOL_KEYS.map((k) => [k, false])) as Record<AiToolKey, boolean>,
   due_at: '',
   late_policy: 'allow' as 'allow' | 'deny',
-  allow_resubmit: true,
   teacher_provided_template: false,
   template_role: 'reference' as 'reference' | 'scaffold',
 })
@@ -142,14 +136,8 @@ const previewDiagramType = computed(() =>
     : form.value.diagram_type
 )
 
-const scoringDiagramTypeSlug = computed(() =>
-  form.value.diagram_type === 'mindmap' ? 'mind_map' : form.value.diagram_type || 'mind_map'
-)
-
-const scoringDiagramTypeLabel = computed(() => t(diagramTypeLabelKey(scoringDiagramTypeSlug.value)))
-
 const recommendedDims = computed(
-  () => DIAGRAM_SCORE_PRESETS[scoringDiagramTypeSlug.value] ?? DIAGRAM_SCORE_PRESETS.mind_map
+  () => DIAGRAM_SCORE_PRESETS[form.value.diagram_type] ?? DIAGRAM_SCORE_PRESETS.mind_map
 )
 
 /** Recommended chips plus any custom selected dims (single row). */
@@ -204,7 +192,6 @@ function resetForm(): void {
     ai_tools: emptyAiTools(),
     due_at: '',
     late_policy: 'allow',
-    allow_resubmit: true,
     teacher_provided_template: false,
     template_role: 'reference',
   }
@@ -267,11 +254,11 @@ function diagramAlreadyAttached(diagramId: string): boolean {
 
 function pushReferenceDiagram(item: LsReferenceDiagram): boolean {
   if (diagramAlreadyAttached(item.id)) {
-    notify.warning(t('learningSpace.attachDiagramExists'))
+    notify.warningKey('learningSpace.attachDiagramExists')
     return false
   }
   if (form.value.reference_diagrams.length >= MAX_REFERENCE_DIAGRAMS) {
-    notify.warning(t('learningSpace.attachRefDiagramMax', { n: MAX_REFERENCE_DIAGRAMS }))
+    notify.warningKey('learningSpace.attachRefDiagramMax', { n: MAX_REFERENCE_DIAGRAMS })
     return false
   }
   form.value.reference_diagrams.push(item)
@@ -296,7 +283,7 @@ function applyWorkingDiagram(diagram: SavedDiagram, spec: Record<string, unknown
 
 async function onPickDiagram(diagram: SavedDiagram): Promise<void> {
   if (diagramAlreadyAttached(diagram.id)) {
-    notify.warning(t('learningSpace.attachDiagramExists'))
+    notify.warningKey('learningSpace.attachDiagramExists')
     return
   }
   const asWorking = !form.value.teacher_provided_template
@@ -305,11 +292,13 @@ async function onPickDiagram(diagram: SavedDiagram): Promise<void> {
     form.value.template_diagram_id = diagram.id
     form.value.template_label = diagram.title || diagram.id
     form.value.template_thumbnail = diagram.thumbnail
-  } else if (!pushReferenceDiagram({
-    id: diagram.id,
-    title: diagram.title || diagram.id,
-    thumbnail: diagram.thumbnail,
-  })) {
+  } else if (
+    !pushReferenceDiagram({
+      id: diagram.id,
+      title: diagram.title || diagram.id,
+      thumbnail: diagram.thumbnail,
+    })
+  ) {
     return
   }
   await savedDiagramsStore.prefetchDiagramSpecs([diagram.id])
@@ -326,7 +315,7 @@ async function onMgFileChange(ev: Event): Promise<void> {
   try {
     const spec = await decodeMgUploadSpec(file)
     if (!spec) {
-      notify.error(t('learningSpace.mgInvalid'))
+      notify.errorKey('learningSpace.mgInvalid')
       return
     }
     const asWorking = !form.value.teacher_provided_template
@@ -362,10 +351,10 @@ async function onMgFileChange(ev: Event): Promise<void> {
       })
       if (!added) return
     }
-    notify.success(t('learningSpace.mgAttached'))
+    notify.successKey('learningSpace.mgAttached')
     await scrollAttachBlockToTop()
   } catch {
-    notify.error(t('learningSpace.mgInvalid'))
+    notify.errorKey('learningSpace.mgInvalid')
   }
 }
 
@@ -375,9 +364,9 @@ async function onImageFilesChange(ev: Event): Promise<void> {
   input.value = ''
   const { added, skipped, tooLarge } = instructionImagesCtl.addImageFiles(incoming)
   if (skipped) {
-    notify.warning(t('learningSpace.attachImageMax', { n: MAX_INSTRUCTION_IMAGES }))
+    notify.warningKey('learningSpace.attachImageMax', { n: MAX_INSTRUCTION_IMAGES })
   } else if (tooLarge) {
-    notify.warning(t('learningSpace.attachImageTooLarge'))
+    notify.warningKey('learningSpace.attachImageTooLarge')
   }
   if (added > 0) await scrollAttachBlockToTop()
 }
@@ -402,24 +391,22 @@ function buildAiPermissions(): Record<string, unknown> {
     start_mode: role === 'scaffold' ? 'scaffold' : 'blank',
     evaluation_dimensions: [...form.value.evaluation_dimensions],
     allow_late_submit: form.value.late_policy === 'allow',
-    allow_resubmit: form.value.allow_resubmit,
     remind_24h: false,
     reference_diagrams: form.value.reference_diagrams.map((item) => ({
       id: item.id,
       title: item.title,
-      thumbnail:
-        item.thumbnail && item.thumbnail.length <= 80_000 ? item.thumbnail : '',
+      thumbnail: item.thumbnail && item.thumbnail.length <= 80_000 ? item.thumbnail : '',
     })),
   }
 }
 
 function validateStep1(): boolean {
   if (!form.value.title.trim()) {
-    notify.warning(t('learningSpace.fillTitle'))
+    notify.warningKey('learningSpace.fillTitle')
     return false
   }
   if (!form.value.diagram_type) {
-    notify.warning(t('learningSpace.fillDiagramType'))
+    notify.warningKey('learningSpace.fillDiagramType')
     return false
   }
   return true
@@ -427,7 +414,7 @@ function validateStep1(): boolean {
 
 function validateStep2(): boolean {
   if (form.value.evaluation_dimensions.length === 0) {
-    notify.warning(t('learningSpace.fillScoreDims'))
+    notify.warningKey('learningSpace.fillScoreDims')
     return false
   }
   return true
@@ -435,7 +422,7 @@ function validateStep2(): boolean {
 
 function validateStep3(): boolean {
   if (form.value.class_ids.length === 0) {
-    notify.warning(t('learningSpace.fillClasses'))
+    notify.warningKey('learningSpace.fillClasses')
     return false
   }
   return true
@@ -501,26 +488,8 @@ function notifyDiagramSaveFailed(): void {
   notify.error(savedDiagramsStore.error || t('learningSpace.saveFailed'))
 }
 
-function publishErrorMessage(error: unknown): string {
-  const message = error instanceof Error ? error.message : ''
-  if (
-    message === 'NETWORK_ERROR' ||
-    message === 'Failed to fetch' ||
-    /networkerror|load failed|network request failed/i.test(message)
-  ) {
-    return t('learningSpace.publishNetworkError')
-  }
-  if (/upload failed/i.test(message)) {
-    return t('learningSpace.instructionUploadFailed')
-  }
-  return message || savedDiagramsStore.error || t('learningSpace.saveFailed')
-}
-
 async function ensureTemplateDiagramId(): Promise<string> {
-  if (
-    form.value.template_diagram_id &&
-    !form.value.template_diagram_id.startsWith('local-')
-  ) {
+  if (form.value.template_diagram_id && !form.value.template_diagram_id.startsWith('local-')) {
     return form.value.template_diagram_id
   }
   const title = form.value.title.trim() || t('learningSpace.templateFromMg')
@@ -559,7 +528,7 @@ async function submit(): Promise<void> {
       publishableClasses.value.some((row) => row.id === id)
     )
     if (!classIds.length) {
-      notify.warning(t('learningSpace.fillClasses'))
+      notify.warningKey('learningSpace.fillClasses')
       return
     }
     for (const classId of classIds) {
@@ -568,12 +537,16 @@ async function submit(): Promise<void> {
         class_id: classId,
       })
     }
-    notify.success(t('learningSpace.assignmentCreated'))
+    notify.successKey('learningSpace.assignmentCreated')
     emit('created')
     resetForm()
     visible.value = false
   } catch (error) {
-    notify.error(publishErrorMessage(error))
+    const message =
+      error instanceof Error && error.message
+        ? error.message
+        : savedDiagramsStore.error || t('learningSpace.saveFailed')
+    notify.error(message)
   } finally {
     saving.value = false
   }
@@ -607,8 +580,8 @@ function aiToolLabelKey(key: AiToolKey): string {
       >
         <header class="ls-modal__head">
           <div class="ls-modal__head-text">
-            <p class="ls-modal__eyebrow">{{ t('learningSpace.brandTitle') }}</p>
-            <h2 class="ls-modal__title">{{ t('learningSpace.createAssignment') }}</h2>
+            <p class="ls-modal__eyebrow"><I18nText k="learningSpace.brandTitle" /></p>
+            <h2 class="ls-modal__title"><I18nText k="learningSpace.createAssignment" /></h2>
           </div>
           <button
             type="button"
@@ -630,7 +603,9 @@ function aiToolLabelKey(key: AiToolKey): string {
             :class="{ 'ls-modal__step--on': step === 1, 'ls-modal__step--done': step > 1 }"
           >
             <span class="ls-modal__step-num">1</span>
-            <span class="ls-modal__step-label">{{ t('learningSpace.assign.stepContent') }}</span>
+            <span class="ls-modal__step-label"
+              ><I18nText k="learningSpace.assign.stepContent"
+            /></span>
           </div>
           <div class="ls-modal__step-line" />
           <div
@@ -638,7 +613,9 @@ function aiToolLabelKey(key: AiToolKey): string {
             :class="{ 'ls-modal__step--on': step === 2, 'ls-modal__step--done': step > 2 }"
           >
             <span class="ls-modal__step-num">2</span>
-            <span class="ls-modal__step-label">{{ t('learningSpace.assign.stepScore') }}</span>
+            <span class="ls-modal__step-label"
+              ><I18nText k="learningSpace.assign.stepScore"
+            /></span>
           </div>
           <div class="ls-modal__step-line" />
           <div
@@ -646,7 +623,9 @@ function aiToolLabelKey(key: AiToolKey): string {
             :class="{ 'ls-modal__step--on': step === 3 }"
           >
             <span class="ls-modal__step-num">3</span>
-            <span class="ls-modal__step-label">{{ t('learningSpace.assign.stepPublish') }}</span>
+            <span class="ls-modal__step-label"
+              ><I18nText k="learningSpace.assign.stepPublish"
+            /></span>
           </div>
         </div>
 
@@ -659,7 +638,7 @@ function aiToolLabelKey(key: AiToolKey): string {
             class="ls-modal__pane"
           >
             <label class="ls-field">
-              {{ t('learningSpace.assignmentTitle') }}
+              <I18nText k="learningSpace.assignmentTitle" />
               <input
                 v-model="form.title"
                 type="text"
@@ -669,7 +648,7 @@ function aiToolLabelKey(key: AiToolKey): string {
             </label>
 
             <label class="ls-field">
-              {{ t('learningSpace.diagramTypeLabel') }}
+              <I18nText k="learningSpace.diagramTypeLabel" />
               <select
                 v-model="form.diagram_type"
                 :class="{ 'ls-field__placeholder': !form.diagram_type }"
@@ -679,20 +658,20 @@ function aiToolLabelKey(key: AiToolKey): string {
                   value=""
                   disabled
                 >
-                  {{ t('learningSpace.fillDiagramType') }}
+                  <I18nText k="learningSpace.fillDiagramType" />
                 </option>
                 <option
                   v-for="opt in DIAGRAM_TYPE_OPTIONS"
                   :key="opt.value"
                   :value="opt.value"
                 >
-                  {{ t(opt.labelKey) }}
+                  <I18nText :k="opt.labelKey" />
                 </option>
               </select>
             </label>
 
             <label class="ls-field">
-              {{ t('learningSpace.instructions') }}
+              <I18nText k="learningSpace.instructions" />
               <textarea
                 v-model="form.instructions"
                 rows="4"
@@ -706,20 +685,20 @@ function aiToolLabelKey(key: AiToolKey): string {
             >
               <div class="ls-modal__block-head">
                 <Paperclip :size="15" />
-                <span>{{ t('learningSpace.attachments') }}</span>
-                <span class="ls-modal__optional">{{ t('learningSpace.optional') }}</span>
+                <span><I18nText k="learningSpace.attachments" /></span>
+                <span class="ls-modal__optional"><I18nText k="learningSpace.optional" /></span>
               </div>
-              <p class="ls-modal__hint">{{ t('learningSpace.attachmentsScaffoldHint') }}</p>
+              <p class="ls-modal__hint"><I18nText k="learningSpace.attachmentsScaffoldHint" /></p>
               <div class="ls-modal__attach-actions">
                 <button
                   type="button"
                   class="ls-btn ls-btn--ghost ls-btn--sm"
                   @click="showDiagramPicker = true"
                 >
-                  {{ t('learningSpace.pickDiagram') }}
+                  <I18nText k="learningSpace.pickDiagram" />
                 </button>
                 <label class="ls-btn ls-btn--ghost ls-btn--sm">
-                  {{ t('learningSpace.attachMg') }}
+                  <I18nText k="learningSpace.attachMg" />
                   <input
                     type="file"
                     accept=".mg,application/octet-stream"
@@ -731,7 +710,7 @@ function aiToolLabelKey(key: AiToolKey): string {
                   class="ls-btn ls-btn--ghost ls-btn--sm"
                   :class="{ 'ls-btn--disabled': imagesAtCap }"
                 >
-                  {{ t('learningSpace.uploadImages') }}
+                  <I18nText k="learningSpace.uploadImages" />
                   <input
                     type="file"
                     accept="image/*"
@@ -748,20 +727,25 @@ function aiToolLabelKey(key: AiToolKey): string {
                 class="ls-modal__preview"
               >
                 <div class="ls-modal__preview-head">
-                  <span>{{ form.template_label || t('learningSpace.attachWorkingDiagram') }}</span>
+                  <span
+                    ><template v-if="form.template_label">{{ form.template_label }}</template
+                    ><I18nText
+                      v-else
+                      k="learningSpace.attachWorkingDiagram"
+                  /></span>
                   <button
                     type="button"
                     class="ls-modal__thumb-rm"
                     @click="clearDiagramAttachment"
                   >
-                    {{ t('common.delete') }}
+                    <I18nText k="common.delete" />
                   </button>
                 </div>
                 <fieldset
                   v-if="form.teacher_provided_template"
                   class="ls-role-fieldset ls-role-fieldset--on-preview"
                 >
-                  <legend>{{ t('learningSpace.diagramUseLabel') }}</legend>
+                  <legend><I18nText k="learningSpace.diagramUseLabel" /></legend>
                   <div class="ls-role-grid">
                     <label
                       class="ls-role-card"
@@ -773,8 +757,8 @@ function aiToolLabelKey(key: AiToolKey): string {
                         value="reference"
                       />
                       <span class="ls-role-card__body">
-                        <strong>{{ t('learningSpace.diagramUseReference') }}</strong>
-                        <em>{{ t('learningSpace.diagramUseReferenceHint') }}</em>
+                        <strong><I18nText k="learningSpace.diagramUseReference" /></strong>
+                        <em><I18nText k="learningSpace.diagramUseReferenceHint" /></em>
                       </span>
                     </label>
                     <label
@@ -788,12 +772,12 @@ function aiToolLabelKey(key: AiToolKey): string {
                       />
                       <span class="ls-role-card__body">
                         <span class="ls-role-card__title">
-                          <strong>{{ t('learningSpace.diagramUseScaffold') }}</strong>
-                          <span class="ls-role-card__badge">{{
-                            t('learningSpace.diagramUseScaffoldRecommend')
-                          }}</span>
+                          <strong><I18nText k="learningSpace.diagramUseScaffold" /></strong>
+                          <span class="ls-role-card__badge"
+                            ><I18nText k="learningSpace.diagramUseScaffoldRecommend"
+                          /></span>
                         </span>
-                        <em>{{ t('learningSpace.diagramUseScaffoldHint') }}</em>
+                        <em><I18nText k="learningSpace.diagramUseScaffoldHint" /></em>
                       </span>
                     </label>
                   </div>
@@ -819,13 +803,15 @@ function aiToolLabelKey(key: AiToolKey): string {
                 class="ls-modal__refs"
               >
                 <div class="ls-modal__block-head">
-                  <span>{{ t('learningSpace.attachReferenceMaterials') }}</span>
-                  <span class="ls-modal__optional">{{
-                    t('learningSpace.attachImageQuota', {
-                      used: form.instruction_images.length,
-                      n: MAX_INSTRUCTION_IMAGES,
-                    })
-                  }}</span>
+                  <span><I18nText k="learningSpace.attachReferenceMaterials" /></span>
+                  <span class="ls-modal__optional"
+                    ><I18nText
+                      k="learningSpace.attachImageQuota"
+                      :params="{
+                        used: form.instruction_images.length,
+                        n: MAX_INSTRUCTION_IMAGES,
+                      }"
+                  /></span>
                 </div>
                 <div class="ls-modal__thumbs">
                   <div
@@ -842,17 +828,21 @@ function aiToolLabelKey(key: AiToolKey): string {
                       v-else
                       class="ls-modal__thumb-ph"
                     >
-                      {{ t('learningSpace.extraDiagramAsReference') }}
+                      <I18nText k="learningSpace.extraDiagramAsReference" />
                     </div>
                     <p class="ls-modal__thumb-cap">
-                      {{ item.title || t('learningSpace.extraDiagramAsReference') }}
+                      <template v-if="item.title">{{ item.title }}</template
+                      ><I18nText
+                        v-else
+                        k="learningSpace.extraDiagramAsReference"
+                      />
                     </p>
                     <button
                       type="button"
                       class="ls-modal__thumb-rm"
                       @click="removeReferenceDiagram(idx)"
                     >
-                      {{ t('common.delete') }}
+                      <I18nText k="common.delete" />
                     </button>
                   </div>
                   <div
@@ -864,13 +854,15 @@ function aiToolLabelKey(key: AiToolKey): string {
                       :src="src"
                       alt=""
                     />
-                    <p class="ls-modal__thumb-cap">{{ t('learningSpace.instructionImage') }}</p>
+                    <p class="ls-modal__thumb-cap">
+                      <I18nText k="learningSpace.instructionImage" />
+                    </p>
                     <button
                       type="button"
                       class="ls-modal__thumb-rm"
                       @click="removeInstructionImage(idx)"
                     >
-                      {{ t('common.delete') }}
+                      <I18nText k="common.delete" />
                     </button>
                   </div>
                 </div>
@@ -884,14 +876,17 @@ function aiToolLabelKey(key: AiToolKey): string {
           >
             <div class="ls-modal__block">
               <div class="ls-modal__block-head">
-                <span>{{ t('learningSpace.assign.stepScore') }}</span>
+                <span><I18nText k="learningSpace.assign.stepScore" /></span>
               </div>
               <p class="ls-modal__hint">
-                {{
-                  t('learningSpace.eval.diagramPresetHint', {
-                    type: scoringDiagramTypeLabel,
-                  })
-                }}
+                <I18nText
+                  k="learningSpace.eval.diagramPresetHint"
+                  :params="{
+                    type: t(
+                      `learningSpace.diagramType.${form.diagram_type === 'mindmap' ? 'mind_map' : form.diagram_type}`
+                    ),
+                  }"
+                />
               </p>
               <div class="ls-chip-grid">
                 <button
@@ -901,11 +896,12 @@ function aiToolLabelKey(key: AiToolKey): string {
                   class="ls-chip"
                   :class="{ 'ls-chip--on': form.evaluation_dimensions.includes(dim) }"
                   @click="
-                    form.evaluation_dimensions.includes(dim) ? removeDim(dim) : form.evaluation_dimensions.push(dim)
+                    form.evaluation_dimensions.includes(dim)
+                      ? removeDim(dim)
+                      : form.evaluation_dimensions.push(dim)
                   "
                 >
-                  {{ dim
-                  }}{{ form.evaluation_dimensions.includes(dim) ? ' ×' : '' }}
+                  {{ dim }}{{ form.evaluation_dimensions.includes(dim) ? ' ×' : '' }}
                 </button>
               </div>
               <div class="ls-modal__custom-dim">
@@ -922,7 +918,7 @@ function aiToolLabelKey(key: AiToolKey): string {
                   @click="addCustomDim"
                 >
                   <Plus :size="14" />
-                  {{ t('learningSpace.eval.addCustom') }}
+                  <I18nText k="learningSpace.eval.addCustom" />
                 </button>
               </div>
               <button
@@ -931,7 +927,7 @@ function aiToolLabelKey(key: AiToolKey): string {
                 style="margin-top: 0.65rem"
                 @click="applyRecommendedDims(form.diagram_type)"
               >
-                {{ t('learningSpace.eval.resetRecommended') }}
+                <I18nText k="learningSpace.eval.resetRecommended" />
               </button>
             </div>
           </section>
@@ -942,15 +938,16 @@ function aiToolLabelKey(key: AiToolKey): string {
           >
             <div class="ls-modal__block">
               <div class="ls-modal__block-head">
-                <span>{{ t('learningSpace.assign.sectionClasses') }}</span>
+                <span><I18nText k="learningSpace.assign.sectionClasses" /></span>
               </div>
               <p class="ls-modal__summary">
-                {{
-                  t('learningSpace.assign.selectedSummary', {
+                <I18nText
+                  k="learningSpace.assign.selectedSummary"
+                  :params="{
                     classes: form.class_ids.length,
                     students: selectedStudentTotal,
-                  })
-                }}
+                  }"
+                />
               </p>
               <div class="ls-modal__class-grid">
                 <button
@@ -961,11 +958,17 @@ function aiToolLabelKey(key: AiToolKey): string {
                   :class="{ 'ls-modal__class--on': form.class_ids.includes(c.id) }"
                   @click="toggleClass(c.id)"
                 >
-                  <span class="ls-modal__class-check" aria-hidden="true" />
+                  <span
+                    class="ls-modal__class-check"
+                    aria-hidden="true"
+                  />
                   <span class="ls-modal__class-meta">
                     <span class="ls-modal__class-name">{{ c.name }}</span>
                     <span class="ls-modal__class-count">
-                      {{ t('learningSpace.studentCount', { n: c.student_count }) }}
+                      <I18nText
+                        k="learningSpace.studentCount"
+                        :params="{ n: c.student_count }"
+                      />
                     </span>
                   </span>
                 </button>
@@ -974,17 +977,17 @@ function aiToolLabelKey(key: AiToolKey): string {
 
             <div class="ls-modal__block">
               <div class="ls-modal__block-head">
-                <span>{{ t('learningSpace.aiLimits') }}</span>
+                <span><I18nText k="learningSpace.aiLimits" /></span>
               </div>
               <label class="ls-modal__toggle ls-modal__toggle--switch">
                 <input
                   v-model="form.ai_assist"
                   type="checkbox"
                 />
-                <span>{{ t('learningSpace.aiAssistSwitch') }}</span>
+                <span><I18nText k="learningSpace.aiAssistSwitch" /></span>
               </label>
               <template v-if="form.ai_assist">
-                <p class="ls-modal__hint">{{ t('learningSpace.aiLimitsHint') }}</p>
+                <p class="ls-modal__hint"><I18nText k="learningSpace.aiLimitsHint" /></p>
                 <div class="ls-chip-grid">
                   <button
                     v-for="key in AI_TOOL_KEYS"
@@ -994,56 +997,37 @@ function aiToolLabelKey(key: AiToolKey): string {
                     :class="{ 'ls-chip--on': form.ai_tools[key] }"
                     @click="form.ai_tools[key] = !form.ai_tools[key]"
                   >
-                    {{ t(aiToolLabelKey(key)) }}
+                    <I18nText :k="aiToolLabelKey(key)" />
                   </button>
                 </div>
               </template>
             </div>
 
             <label class="ls-field">
-              {{ t('learningSpace.due') }}
+              <I18nText k="learningSpace.due" />
               <input
                 v-model="form.due_at"
                 type="datetime-local"
               />
             </label>
 
-            <div class="ls-modal__block">
-              <div class="ls-modal__block-head">
-                <span>{{ t('learningSpace.latePolicy') }}</span>
-              </div>
-              <div class="ls-seg">
-                <button
-                  type="button"
-                  class="ls-seg__btn"
-                  :class="{ 'ls-seg__btn--on': form.late_policy === 'allow' }"
-                  @click="form.late_policy = 'allow'"
-                >
-                  {{ t('learningSpace.allowLateYes') }}
-                </button>
-                <button
-                  type="button"
-                  class="ls-seg__btn"
-                  :class="{ 'ls-seg__btn--on': form.late_policy === 'deny' }"
-                  @click="form.late_policy = 'deny'"
-                >
-                  {{ t('learningSpace.allowLateNo') }}
-                </button>
-              </div>
-            </div>
-
-            <div class="ls-modal__block">
-              <div class="ls-modal__block-head">
-                <span>{{ t('learningSpace.resubmitPolicy') }}</span>
-              </div>
-              <label class="ls-modal__toggle ls-modal__toggle--switch">
-                <input
-                  v-model="form.allow_resubmit"
-                  type="checkbox"
-                />
-                <span>{{ t('learningSpace.allowResubmitSwitch') }}</span>
-              </label>
-              <p class="ls-modal__hint">{{ t('learningSpace.allowResubmitHint') }}</p>
+            <div class="ls-seg">
+              <button
+                type="button"
+                class="ls-seg__btn"
+                :class="{ 'ls-seg__btn--on': form.late_policy === 'allow' }"
+                @click="form.late_policy = 'allow'"
+              >
+                <I18nText k="learningSpace.allowLateYes" />
+              </button>
+              <button
+                type="button"
+                class="ls-seg__btn"
+                :class="{ 'ls-seg__btn--on': form.late_policy === 'deny' }"
+                @click="form.late_policy = 'deny'"
+              >
+                <I18nText k="learningSpace.allowLateNo" />
+              </button>
             </div>
           </section>
         </div>
@@ -1056,14 +1040,14 @@ function aiToolLabelKey(key: AiToolKey): string {
               :disabled="saving"
               @click="onClose"
             >
-              {{ t('common.cancel') }}
+              <I18nText k="common.cancel" />
             </button>
             <button
               type="button"
               class="ls-btn ls-btn--primary"
               @click="goNext"
             >
-              {{ t('learningSpace.assign.next') }}
+              <I18nText k="learningSpace.assign.next" />
               <ArrowRight :size="16" />
             </button>
           </template>
@@ -1075,14 +1059,14 @@ function aiToolLabelKey(key: AiToolKey): string {
               @click="goBack"
             >
               <ArrowLeft :size="16" />
-              {{ t('learningSpace.assign.prev') }}
+              <I18nText k="learningSpace.assign.prev" />
             </button>
             <button
               type="button"
               class="ls-btn ls-btn--primary"
               @click="goNext"
             >
-              {{ t('learningSpace.assign.next') }}
+              <I18nText k="learningSpace.assign.next" />
               <ArrowRight :size="16" />
             </button>
           </template>
@@ -1094,7 +1078,7 @@ function aiToolLabelKey(key: AiToolKey): string {
               @click="goBack"
             >
               <ArrowLeft :size="16" />
-              {{ t('learningSpace.assign.prev') }}
+              <I18nText k="learningSpace.assign.prev" />
             </button>
             <button
               type="button"
@@ -1102,7 +1086,7 @@ function aiToolLabelKey(key: AiToolKey): string {
               :disabled="saving"
               @click="submit"
             >
-              {{ t('learningSpace.publishAssignment') }}
+              <I18nText k="learningSpace.publishAssignment" />
             </button>
           </template>
         </footer>

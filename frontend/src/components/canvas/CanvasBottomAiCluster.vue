@@ -9,9 +9,9 @@ import { useMediaQuery } from '@vueuse/core'
 import AIModelSelector from '@/components/canvas/AIModelSelector.vue'
 import CanvasToolbarMindMapAiGenerate from '@/components/canvas/CanvasToolbarMindMapAiGenerate.vue'
 import CanvasToolbarMindMapAudiencePicker from '@/components/canvas/CanvasToolbarMindMapAudiencePicker.vue'
-import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 
 const props = withDefaults(
   defineProps<{
@@ -28,12 +28,12 @@ const emit = defineEmits<{
   modelChange: [model: string]
 }>()
 
-const { can } = useLearningAiGate()
+const lsCanvas = useLearningAssignmentCanvasStore()
 const useMindMapV2 = useMindMapV2Chrome()
 const { handleAIGenerate, isConceptMap } = useCanvasToolbarApps()
 const compactBottomAi = useMediaQuery('(max-width: 767px)')
 
-const showGenerate = computed(() => !isConceptMap.value && can('topic_generate'))
+const showGenerate = computed(() => !isConceptMap.value && lsCanvas.can('topic_generate'))
 const showAudiencePicker = computed(() => useMindMapV2.value)
 </script>
 

@@ -4,10 +4,10 @@
  */
 import { computed, ref, watch } from 'vue'
 
+import I18nText from '@/components/common/I18nText.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useDiagramStore } from '@/stores'
 import type { DiagramNode } from '@/types'
-import I18nText from '@/components/common/I18nText.vue'
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -76,7 +76,7 @@ function applyChanges() {
 
   diagramStore.pushHistory('Update node properties')
   diagramStore.updateNode(selectedNode.value.id, updates)
-  notify.success(t('notification.saved'))
+  notify.successKey('notification.saved')
 }
 
 // Delete node
@@ -85,13 +85,21 @@ function deleteNode() {
 
   diagramStore.pushHistory('Delete node')
   diagramStore.removeNode(selectedNode.value.id)
-  notify.success(t('notification.deleted'))
+  notify.successKey('notification.deleted')
 }
 
 // Font weight options
 const fontWeightOptions = computed(() => [
-  { label: t('panels.property.fontNormal'), value: 'normal' as const },
-  { label: t('panels.property.fontBold'), value: 'bold' as const },
+  {
+    label: t('panels.property.fontNormal'),
+    labelKey: 'panels.property.fontNormal',
+    value: 'normal' as const,
+  },
+  {
+    label: t('panels.property.fontBold'),
+    labelKey: 'panels.property.fontBold',
+    value: 'bold' as const,
+  },
 ])
 </script>
 
@@ -104,7 +112,7 @@ const fontWeightOptions = computed(() => [
       class="panel-header h-12 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700"
     >
       <h3 class="font-medium text-gray-800 dark:text-white">
-        {{ t('panel.properties') }}
+        <I18nText k="panel.properties" />
       </h3>
       <el-button
         text
@@ -128,10 +136,13 @@ const fontWeightOptions = computed(() => [
           ><InfoFilled
         /></el-icon>
         <p>
-          {{ t('panels.property.multiSelectLine', { n: diagramStore.selectedNodes.length }) }}
+          <I18nText
+            k="panels.property.multiSelectLine"
+            :params="{ n: diagramStore.selectedNodes.length }"
+          />
         </p>
         <p class="text-sm mt-1">
-          {{ t('panels.property.selectSingle') }}
+          <I18nText k="panels.property.selectSingle" />
         </p>
       </div>
 
@@ -142,7 +153,10 @@ const fontWeightOptions = computed(() => [
         size="small"
       >
         <!-- Text -->
-        <el-form-item :label="t('panels.property.text')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="panels.property.text" />
+          </template>
           <el-input
             v-model="formData.text"
             type="textarea"
@@ -152,7 +166,10 @@ const fontWeightOptions = computed(() => [
         </el-form-item>
 
         <!-- Font Size -->
-        <el-form-item :label="t('panels.property.fontSize')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="panels.property.fontSize" />
+          </template>
           <el-slider
             v-model="formData.fontSize"
             :min="10"
@@ -164,33 +181,52 @@ const fontWeightOptions = computed(() => [
         </el-form-item>
 
         <!-- Font Weight -->
-        <el-form-item :label="t('panels.property.fontWeight')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="panels.property.fontWeight" />
+          </template>
           <el-radio-group v-model="formData.fontWeight">
             <el-radio-button
               v-for="opt in fontWeightOptions"
               :key="opt.value"
               :value="opt.value"
             >
-              {{ opt.label }}
+              <I18nText
+                v-if="opt.labelKey"
+                :k="opt.labelKey"
+              />
+              <template v-else>{{ opt.label }}</template>
             </el-radio-button>
           </el-radio-group>
         </el-form-item>
 
         <!-- Colors -->
         <div class="grid grid-cols-3 gap-3">
-          <el-form-item :label="t('panels.property.background')">
+          <el-form-item>
+            <template #label>
+              <I18nText k="panels.property.background" />
+            </template>
             <el-color-picker v-model="formData.backgroundColor" />
           </el-form-item>
-          <el-form-item :label="t('panels.property.border')">
+          <el-form-item>
+            <template #label>
+              <I18nText k="panels.property.border" />
+            </template>
             <el-color-picker v-model="formData.borderColor" />
           </el-form-item>
-          <el-form-item :label="t('panels.property.textColor')">
+          <el-form-item>
+            <template #label>
+              <I18nText k="panels.property.textColor" />
+            </template>
             <el-color-picker v-model="formData.textColor" />
           </el-form-item>
         </div>
 
         <!-- Border Width -->
-        <el-form-item :label="t('panels.property.borderWidth')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="panels.property.borderWidth" />
+          </template>
           <el-slider
             v-model="formData.borderWidth"
             :min="0"
@@ -202,7 +238,10 @@ const fontWeightOptions = computed(() => [
         </el-form-item>
 
         <!-- Border Radius -->
-        <el-form-item :label="t('panels.property.borderRadius')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="panels.property.borderRadius" />
+          </template>
           <el-slider
             v-model="formData.borderRadius"
             :min="0"
@@ -241,7 +280,7 @@ const fontWeightOptions = computed(() => [
           class="mb-2"
           ><Select
         /></el-icon>
-        <p>{{ t('panels.property.selectNode') }}</p>
+        <p><I18nText k="panels.property.selectNode" /></p>
       </div>
     </div>
   </div>

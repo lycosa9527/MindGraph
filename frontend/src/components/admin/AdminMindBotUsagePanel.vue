@@ -129,7 +129,7 @@ async function loadPage(append: boolean): Promise<void> {
         dingtalk_staff_id: selectedStaffId.value ?? undefined,
       })
     } catch {
-      notify.error(t('admin.mindbot.usageLoadError'))
+      notify.errorKey('admin.mindbot.usageLoadError')
       return
     }
     if (append) {
@@ -262,7 +262,7 @@ async function loadThreadPage(append: boolean): Promise<void> {
       }
       batch = await fetchAdminMindbotUsageThreadEvents(orgId, threadParams)
     } catch {
-      notify.error(t('admin.mindbot.usageLoadError'))
+      notify.errorKey('admin.mindbot.usageLoadError')
       return
     }
     if (append) {
@@ -338,7 +338,7 @@ async function exportLogConversations(): Promise<void> {
   try {
     const rows = await fetchAllUsageEventsForExport()
     if (rows.length === 0) {
-      notify.warning(t('admin.mindbot.exportEmpty'))
+      notify.warningKey('admin.mindbot.exportEmpty')
       return
     }
     const sorted = [...rows].sort((a, b) => a.id - b.id)
@@ -367,9 +367,9 @@ async function exportLogConversations(): Promise<void> {
     anchor.click()
     document.body.removeChild(anchor)
     URL.revokeObjectURL(url)
-    notify.success(t('admin.mindbot.exportSuccess'))
+    notify.successKey('admin.mindbot.exportSuccess')
   } catch {
-    notify.error(t('admin.mindbot.exportError'))
+    notify.errorKey('admin.mindbot.exportError')
   } finally {
     exportLoading.value = false
   }
@@ -401,7 +401,7 @@ function onMonitorRowClick(row: ThreadGroup): void {
       v-if="!canLoad"
       class="text-sm text-gray-600 dark:text-gray-400"
     >
-      {{ t('admin.mindbot.usageNeedSave') }}
+      <I18nText k="admin.mindbot.usageNeedSave" />
     </p>
     <div
       v-else
@@ -412,19 +412,19 @@ function onMonitorRowClick(row: ThreadGroup): void {
         v-if="mode === 'log'"
         class="text-xs text-gray-500 dark:text-gray-400"
       >
-        {{ t('admin.mindbot.logTabHint') }}
+        <I18nText k="admin.mindbot.logTabHint" />
       </p>
       <p
         v-else
         class="text-xs text-gray-500 dark:text-gray-400"
       >
-        {{ t('admin.mindbot.monitorTabHint') }}
+        <I18nText k="admin.mindbot.monitorTabHint" />
       </p>
 
       <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:flex-wrap">
-        <span class="text-xs text-gray-500 dark:text-gray-400 shrink-0">{{
-          t('admin.mindbot.monitorFilterStaff')
-        }}</span>
+        <span class="text-xs text-gray-500 dark:text-gray-400 shrink-0"
+          ><I18nText k="admin.mindbot.monitorFilterStaff"
+        /></span>
         <el-select
           v-model="selectedStaffId"
           class="w-full sm:max-w-md"
@@ -446,7 +446,7 @@ function onMonitorRowClick(row: ThreadGroup): void {
           :loading="exportLoading"
           @click="exportLogConversations"
         >
-          {{ t('admin.mindbot.exportConversations') }}
+          <I18nText k="admin.mindbot.exportConversations" />
         </el-button>
       </div>
 
@@ -486,50 +486,53 @@ function onMonitorRowClick(row: ThreadGroup): void {
         row-class-name="mindbot-monitor-row"
         @row-click="onMonitorRowClick"
       >
-        <el-table-column
-          :label="t('admin.mindbot.colTime')"
-          min-width="150"
-        >
+        <el-table-column min-width="150">
+          <template #header>
+            <I18nText k="admin.mindbot.colTime" />
+          </template>
           <template #default="{ row }">
             {{ formatTime(row.lastEvent.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column
-          :label="t('admin.mindbot.colStaff')"
-          min-width="120"
-        >
+        <el-table-column min-width="120">
+          <template #header>
+            <I18nText k="admin.mindbot.colStaff" />
+          </template>
           <template #default="{ row }">
             <span class="text-xs">{{ row.sender_nick || row.dingtalk_staff_id }}</span>
           </template>
         </el-table-column>
-        <el-table-column
-          :label="t('admin.mindbot.colConvThread')"
-          min-width="140"
-        >
+        <el-table-column min-width="140">
+          <template #header>
+            <I18nText k="admin.mindbot.colConvThread" />
+          </template>
           <template #default="{ row }">
             <span class="text-xs font-mono">{{ convShort(row.lastEvent) }}</span>
           </template>
         </el-table-column>
-        <el-table-column
-          :label="t('admin.mindbot.colTurnsLoaded')"
-          width="88"
-        >
+        <el-table-column width="88">
+          <template #header>
+            <I18nText k="admin.mindbot.colTurnsLoaded" />
+          </template>
           <template #default="{ row }">
             {{ row.turnsInBatch }}
           </template>
         </el-table-column>
         <el-table-column
           prop="lastEvent.error_code"
-          :label="t('admin.mindbot.colError')"
           width="120"
-        />
+        >
+          <template #header>
+            <I18nText k="admin.mindbot.colError" />
+          </template>
+        </el-table-column>
       </el-table>
 
       <p
         v-else-if="!loading"
         class="text-sm text-gray-500 dark:text-gray-400 py-4 text-center"
       >
-        {{ t('admin.mindbot.usageEmpty') }}
+        <I18nText k="admin.mindbot.usageEmpty" />
       </p>
 
       <div
@@ -541,7 +544,7 @@ function onMonitorRowClick(row: ThreadGroup): void {
           :loading="loadingMore"
           @click="onLoadMore"
         >
-          {{ t('admin.mindbot.loadMore') }}
+          <I18nText k="admin.mindbot.loadMore" />
         </el-button>
       </div>
     </div>
@@ -566,7 +569,7 @@ function onMonitorRowClick(row: ThreadGroup): void {
         class="mindbot-thread-drawer__inner flex min-h-0 flex-col gap-3"
       >
         <p class="m-0 shrink-0 text-xs text-gray-500 dark:text-gray-400">
-          {{ t('admin.mindbot.conversationDrawerHint') }}
+          <I18nText k="admin.mindbot.conversationDrawerHint" />
         </p>
         <div
           v-if="threadEvents.length > 0"
@@ -581,34 +584,41 @@ function onMonitorRowClick(row: ThreadGroup): void {
             row-class-name="mindbot-thread-row"
             @row-click="(row: MindbotUsageEventRow) => openEventDetail(row)"
           >
-            <el-table-column
-              :label="t('admin.mindbot.colTime')"
-              min-width="148"
-            >
+            <el-table-column min-width="148">
+              <template #header>
+                <I18nText k="admin.mindbot.colTime" />
+              </template>
               <template #default="{ row }">
                 <span class="whitespace-nowrap text-xs">{{ formatTime(row.created_at) }}</span>
               </template>
             </el-table-column>
             <el-table-column
               prop="error_code"
-              :label="t('admin.mindbot.colError')"
               min-width="112"
               show-overflow-tooltip
-            />
+            >
+              <template #header>
+                <I18nText k="admin.mindbot.colError" />
+              </template>
+            </el-table-column>
             <el-table-column
-              :label="t('admin.mindbot.colDuration')"
               width="88"
               align="right"
             >
+              <template #header>
+                <I18nText k="admin.mindbot.colDuration" />
+              </template>
               <template #default="{ row }">
                 {{ formatDur(row.duration_seconds) }}
               </template>
             </el-table-column>
             <el-table-column
-              :label="t('admin.mindbot.colTurn')"
               width="72"
               align="center"
             >
+              <template #header>
+                <I18nText k="admin.mindbot.colTurn" />
+              </template>
               <template #default="{ row }">
                 {{ row.conversation_user_turn ?? '—' }}
               </template>
@@ -619,7 +629,7 @@ function onMonitorRowClick(row: ThreadGroup): void {
           v-else-if="!threadLoading"
           class="m-0 shrink-0 text-sm text-gray-500 dark:text-gray-400"
         >
-          {{ t('admin.mindbot.threadEmpty') }}
+          <I18nText k="admin.mindbot.threadEmpty" />
         </p>
         <div
           v-if="threadEvents.length > 0 && threadHasMore"
@@ -630,7 +640,7 @@ function onMonitorRowClick(row: ThreadGroup): void {
             :loading="threadLoadingMore"
             @click="onThreadLoadMore"
           >
-            {{ t('admin.mindbot.threadLoadMore') }}
+            <I18nText k="admin.mindbot.threadLoadMore" />
           </el-button>
         </div>
       </div>

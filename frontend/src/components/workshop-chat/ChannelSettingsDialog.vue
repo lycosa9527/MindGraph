@@ -198,7 +198,9 @@ async function savePermissions(): Promise<void> {
               :key="opt.value"
               :value="opt.value"
               :label="t(opt.label)"
-            />
+            >
+              <I18nText :k="opt.label" />
+            </el-option>
           </el-select>
         </div>
 
@@ -216,7 +218,9 @@ async function savePermissions(): Promise<void> {
               :key="opt.value"
               :value="opt.value"
               :label="t(opt.label)"
-            />
+            >
+              <I18nText :k="opt.label" />
+            </el-option>
           </el-select>
         </div>
 

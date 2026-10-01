@@ -80,7 +80,12 @@ const showPopover = ref(false)
     </div>
 
     <div class="topic-card__creator">
-      {{ t('workshop.by') }} {{ topic.creator_name || t('workshop.unknown') }}
+      <I18nText k="workshop.by" />
+      <template v-if="topic.creator_name">{{ topic.creator_name }}</template
+      ><I18nText
+        v-else
+        k="workshop.unknown"
+      />
     </div>
   </div>
 </template>

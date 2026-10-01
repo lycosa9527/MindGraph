@@ -1,5 +1,6 @@
-import { loadHtmlToImageModule } from '@/utils/diagramExportHtmlToImage'
 import { cropExportedDiagramCanvas } from '@/utils/diagramExportContentBounds'
+import { loadHtmlToImageModule } from '@/utils/diagramExportHtmlToImage'
+import { scaleExportSvgDataUrl } from '@/utils/diagramExportRasterScale'
 import type { HtmlToImageOptions } from '@/utils/diagramHtmlToImage'
 import { loadImageElement } from '@/utils/diagramPdfExport'
 
@@ -10,12 +11,41 @@ export type DiagramRasterCapture = {
   image: HTMLImageElement
 }
 
+export async function rasterizeExportSvgDataUrl(
+  svgDataUrl: string,
+  requestedPixelRatio: number,
+  backgroundColor?: string
+): Promise<HTMLCanvasElement> {
+  const scaled = scaleExportSvgDataUrl(svgDataUrl, requestedPixelRatio)
+  const image = await loadImageElement(scaled.dataUrl)
+  const canvas = document.createElement('canvas')
+  canvas.width = scaled.width
+  canvas.height = scaled.height
+  const context = canvas.getContext('2d')
+  if (!context) {
+    throw new Error('Canvas 2D context unavailable for export')
+  }
+  if (backgroundColor) {
+    context.fillStyle = backgroundColor
+    context.fillRect(0, 0, canvas.width, canvas.height)
+  }
+  context.imageSmoothingEnabled = true
+  context.imageSmoothingQuality = 'high'
+  context.drawImage(image, 0, 0, scaled.width, scaled.height)
+  return canvas
+}
+
 export async function captureDiagramRasterCanvas(
   container: HTMLElement,
   options: HtmlToImageOptions
 ): Promise<HTMLCanvasElement> {
-  const { toCanvas } = await loadHtmlToImageModule()
-  const canvas = await toCanvas(container, options)
+  const { toSvg } = await loadHtmlToImageModule()
+  const svgDataUrl = await toSvg(container, options)
+  const canvas = await rasterizeExportSvgDataUrl(
+    svgDataUrl,
+    options.pixelRatio ?? 2,
+    options.backgroundColor
+  )
   return cropExportedDiagramCanvas(container, canvas)
 }
 

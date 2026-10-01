@@ -6,14 +6,12 @@ import { ref } from 'vue'
 
 import { getSessionReport } from '@/api/maite/reports'
 import { notify } from '@/composables/core/notifications'
-import { useLanguage } from '@/composables/core/useLanguage'
 import { eventBus } from '@/composables/core/useEventBus'
 
 const props = defineProps<{
   sessionId: number | null
 }>()
 
-const { t } = useLanguage()
 const loading = ref(false)
 const reportMarkdown = ref('')
 
@@ -45,7 +43,7 @@ async function copyReport(): Promise<void> {
   }
   try {
     await navigator.clipboard.writeText(reportMarkdown.value)
-    notify.success(t('notification.copied'))
+    notify.successKey('notification.copied')
   } catch {
     eventBus.emit('maite:error', {
       message: 'report_copy_failed',
@@ -56,9 +54,23 @@ async function copyReport(): Promise<void> {
 </script>
 
 <template>
-  <div v-if="sessionId" class="maite-report-actions">
-    <button type="button" class="maite-report-actions__btn" :disabled="loading" @click="loadReport">
-      {{ loading ? t('maite.report.loading') : t('maite.report.view') }}
+  <div
+    v-if="sessionId"
+    class="maite-report-actions"
+  >
+    <button
+      type="button"
+      class="maite-report-actions__btn"
+      :disabled="loading"
+      @click="loadReport"
+    >
+      <I18nText
+        v-if="loading"
+        k="maite.report.loading"
+      /><I18nText
+        v-else
+        k="maite.report.view"
+      />
     </button>
     <button
       type="button"
@@ -66,9 +78,12 @@ async function copyReport(): Promise<void> {
       :disabled="loading"
       @click="copyReport"
     >
-      {{ t('maite.report.copy') }}
+      <I18nText k="maite.report.copy" />
     </button>
-    <pre v-if="reportMarkdown" class="maite-report-actions__preview">{{ reportMarkdown }}</pre>
+    <pre
+      v-if="reportMarkdown"
+      class="maite-report-actions__preview"
+      >{{ reportMarkdown }}</pre>
   </div>
 </template>
 

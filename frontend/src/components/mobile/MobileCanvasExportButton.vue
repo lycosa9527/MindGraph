@@ -78,7 +78,7 @@ function handleWorksheetText(): void {
 function handleMakeLearningSheet(): void {
   open.value = false
   if (!diagramStore.data?.nodes?.length) {
-    notify.warning(t('canvas.toolbar.createDiagramFirst'))
+    notify.warningKey('canvas.toolbar.createDiagramFirst')
     return
   }
   eventBus.emit('toolbar:worksheet_text_requested', { preferLearningSheet: true })
@@ -96,7 +96,7 @@ function handleMakeLearningSheet(): void {
       :size="16"
       class="text-gray-700"
     />
-    <span class="text-xs font-medium text-gray-700">{{ t('canvas.toolbar.export') }}</span>
+    <span class="text-xs font-medium text-gray-700"><I18nText k="canvas.toolbar.export" /></span>
   </button>
 
   <Teleport to="body">
@@ -113,7 +113,7 @@ function handleMakeLearningSheet(): void {
         >
           <div class="model-sheet-handle" />
           <div class="px-4 pt-3 pb-1 text-sm font-semibold text-gray-800">
-            {{ t('canvas.toolbar.export') }}
+            <I18nText k="canvas.toolbar.export" />
           </div>
 
           <MindMapExportOptionsPanel
@@ -133,7 +133,7 @@ function handleMakeLearningSheet(): void {
                 :size="18"
                 class="shrink-0 text-gray-500"
               />
-              <span>{{ t(CANVAS_CLIPBOARD_EXPORT_MENU_ITEM.labelKey) }}</span>
+              <span><I18nText :k="CANVAS_CLIPBOARD_EXPORT_MENU_ITEM.labelKey" /></span>
             </button>
             <button
               v-if="mindMapExport"
@@ -142,7 +142,7 @@ function handleMakeLearningSheet(): void {
               @click="handleMakeLearningSheet"
             >
               <MindMapLearningSheetIcon kind="worksheet" />
-              <span>{{ t('canvas.ribbon.makeLearningSheet') }}</span>
+              <span><I18nText k="canvas.ribbon.makeLearningSheet" /></span>
             </button>
             <button
               v-if="mindMapExport"
@@ -154,7 +154,7 @@ function handleMakeLearningSheet(): void {
                 :size="18"
                 class="shrink-0 text-gray-500"
               />
-              <span>{{ t(CANVAS_WORKSHEET_TEXT_MENU_ITEM.labelKey) }}</span>
+              <span><I18nText :k="CANVAS_WORKSHEET_TEXT_MENU_ITEM.labelKey" /></span>
             </button>
             <button
               v-for="item in formatItems"
@@ -169,7 +169,7 @@ function handleMakeLearningSheet(): void {
                 :size="18"
                 class="shrink-0 text-gray-500"
               />
-              <span>{{ t(item.labelKey) }}</span>
+              <span><I18nText :k="item.labelKey" /></span>
             </button>
             <button
               v-if="showCommunityExport"
@@ -181,7 +181,7 @@ function handleMakeLearningSheet(): void {
                 :size="18"
                 class="shrink-0 text-rose-500"
               />
-              <span>{{ t(CANVAS_COMMUNITY_EXPORT_MENU_ITEM.labelKey) }}</span>
+              <span><I18nText :k="CANVAS_COMMUNITY_EXPORT_MENU_ITEM.labelKey" /></span>
             </button>
           </div>
         </div>

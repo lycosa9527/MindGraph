@@ -33,7 +33,7 @@ export default {
   'collab.previousSessionsStopped': '다른 다이어그램의 이전 협업 세션 {n}개를 종료했습니다.',
   'collab.saveFailed': '다이어그램 저장에 실패했습니다',
   'collab.scanToJoin': '스캔하여 참여',
-  'collab.schoolDescActive': '학교 협업이 켜져 있습니다. 동료: 홈에서 협업 → 학교를 열고 이 다이어그램을 선택 — 코드 불필요.',
+  'collab.schoolDescActive': '학교 협업이 켜져 있습니다. 동료: MindGraph 홈에서 협업 → 학교를 열고 이 다이어그램을 선택 — 코드 불필요.',
   'collab.schoolStarted': '학교 협업이 켜졌습니다 — 동료는 협업 → 학교에서 참여할 수 있습니다.',
   'collab.sectionNetwork': '공유 협업(코드)',
   'collab.sectionSchool': '학교 협업',

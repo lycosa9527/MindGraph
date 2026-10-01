@@ -188,7 +188,7 @@ function canReset(speakerId: number): boolean {
       :disabled="voiceNotes.ingesting"
       @click="toggleOpen"
     >
-      {{ t('auth.voiceNotes.separateTalkers') }}
+      <I18nText k="auth.voiceNotes.separateTalkers" />
     </button>
     <Teleport to="body">
       <div
@@ -262,7 +262,10 @@ function canReset(speakerId: number): boolean {
           role="menuitem"
           @click="confirmOpenMerge(targetId)"
         >
-          {{ t('auth.voiceNotes.mergeTalkerInto', { name: displayName(targetId) }) }}
+          <I18nText
+            k="auth.voiceNotes.mergeTalkerInto"
+            :params="{ name: displayName(targetId) }"
+          />
         </button>
       </div>
     </Teleport>

@@ -15,11 +15,7 @@ import KittyIpodClickWheel from '@/components/kitty/KittyIpodClickWheel.vue'
 import KittyMobileChatTranscript from '@/components/kitty/KittyMobileChatTranscript.vue'
 import KittyMobileDiagramPickerDropdown from '@/components/kitty/KittyMobileDiagramPickerDropdown.vue'
 import KittyMobileLlmModelRow from '@/components/kitty/KittyMobileLlmModelRow.vue'
-import {
-  useKittyAgent,
-  useLanguage,
-  useNotifications,
-} from '@/composables'
+import { useKittyAgent, useLanguage, useNotifications } from '@/composables'
 import { applyKittyRemoteLlmModel } from '@/composables/kitty/applyKittyRemoteLlmModel'
 import {
   enqueueKittyDesktopAction,
@@ -124,7 +120,7 @@ const {
   editPipelineActive,
   onDebugLine: pushKittyDebugLine,
   onDesktopDiagramFollow: () => {
-    notify.info(t('mobile.kittyDesktopDiagramFollowed', 'Switched to the diagram open on desktop'))
+    notify.infoKey('mobile.kittyDesktopDiagramFollowed')
   },
 })
 
@@ -257,7 +253,7 @@ async function handleScopeSyncChoice(
   try {
     if (choice === 'follow_desktop') {
       await applyDesktopFocusLibrary(div.desktopScope)
-      notify.info(t('mobile.kittyDesktopDiagramFollowed', 'Switched to the diagram open on desktop'))
+      notify.infoKey('mobile.kittyDesktopDiagramFollowed')
       showScopeDivergenceBanner.value = false
       divergenceDismissedKey.value = key
       void refreshKittySessionSnapshot()
@@ -270,9 +266,9 @@ async function handleScopeSyncChoice(
         diagram_library_id: div.mobileScope,
       })
       if (ok) {
-        notify.success(t('mobile.kittyDiagramSelected', '已选择导图，电脑端将同步打开'))
+        notify.successKey('mobile.kittyDiagramSelected')
       } else {
-        notify.warning(t('mobile.kittyDesktopJumpFailed', '已切换导图，但无法通知电脑端'))
+        notify.warningKey('mobile.kittyDesktopJumpFailed')
       }
       showScopeDivergenceBanner.value = false
       divergenceDismissedKey.value = key
@@ -282,9 +278,7 @@ async function handleScopeSyncChoice(
     markUserDiagramOverride()
     showScopeDivergenceBanner.value = false
     divergenceDismissedKey.value = key
-    notify.info(
-      t('mobile.kittyScopeKeepSplit', '保持手机与电脑各自打开不同导图')
-    )
+    notify.infoKey('mobile.kittyScopeKeepSplit')
     void refreshKittySessionSnapshot()
   } finally {
     divergenceSyncBusy.value = false
@@ -371,16 +365,11 @@ async function connectKittyOnce(): Promise<KittyConnectAttemptResult> {
     return 'connected'
   }
   if (!authStore.isAuthenticated) {
-    notify.warning(t('notification.signInToUse'))
+    notify.warningKey('notification.signInToUse')
     return 'aborted'
   }
   if (!kittyServerEnabled.value) {
-    notify.warning(
-      t(
-        'mobile.kittyEnableServerHint',
-        '请在服务端 .env 中设置 FEATURE_KITTY_AGENT=True 并重启 API。'
-      )
-    )
+    notify.warningKey('mobile.kittyEnableServerHint')
     return 'aborted'
   }
   try {
@@ -392,9 +381,7 @@ async function connectKittyOnce(): Promise<KittyConnectAttemptResult> {
     kitty.reconcileLiveState()
     if (
       !isKittyLiveForScope(scope) &&
-      (!kitty.isConnected.value ||
-        !kitty.isActive.value ||
-        kitty.diagramSessionId.value !== scope)
+      (!kitty.isConnected.value || !kitty.isActive.value || kitty.diagramSessionId.value !== scope)
     ) {
       // useKittyAgent serializes concurrent starts. Do not cache this page-level
       // request: a scope change must join the prior start and then connect the
@@ -428,17 +415,15 @@ async function ensureConnected(): Promise<boolean> {
     canAttemptAuthRefresh: mobileKittyAuthGate.canAttemptAuthRefresh,
     markAuthRefreshConsumed: mobileKittyAuthGate.markAuthRefreshConsumed,
     onSessionExpired: () => {
-      authStore.handleTokenExpired(
-        'Your session has expired. Please log in again.',
-        undefined,
-        { skipRecovery: true }
-      )
+      authStore.handleTokenExpired('Your session has expired. Please log in again.', undefined, {
+        skipRecovery: true,
+      })
     },
     connectOnce: connectKittyOnce,
   })
   // Auth hard-stop surfaces the session-expired modal; only toast network-style failures.
   if (!ok && authStore.isAuthenticated && !mobileKittyAuthGate.isHardStopped()) {
-    notify.warning(t('mobile.kittyConnectFailed', '连接失败，请检查网络后重试'))
+    notify.warningKey('mobile.kittyConnectFailed')
   }
   return ok
 }
@@ -464,28 +449,23 @@ async function handleMobileKittyPhotoCapture(ev: Event): Promise<void> {
     mobileKittyContextPreview.value.diagramLibraryId?.trim() ||
     (!kittyPairScopeIsEphemeral.value ? kittyPairScope.value.trim() : '')
   if (!diagramId) {
-    notify.warning(
-      t(
-        'mobile.kittyPhotoNeedsDiagram',
-        'Open or pick a saved diagram first, then take a photo to extract text.'
-      )
-    )
+    notify.warningKey('mobile.kittyPhotoNeedsDiagram')
     return
   }
 
   const validated = prepareMobileKittyPhotoCapture(file)
   if (!validated.ok) {
     if (validated.reason === 'invalid_type') {
-      notify.warning(t('mobile.kittyPhotoInvalidType', 'Please choose a JPG, PNG, or WebP photo.'))
+      notify.warningKey('mobile.kittyPhotoInvalidType')
     } else if (validated.reason === 'too_large') {
-      notify.warning(t('mobile.kittyPhotoTooLarge', 'Photo is too large. Maximum size is 10MB.'))
+      notify.warningKey('mobile.kittyPhotoTooLarge')
     }
     return
   }
 
   cameraDenied.value = false
   photoUploading.value = true
-  notify.showLoading(t('mobile.kittyPhotoProgressDetecting', 'Processing photo…'))
+  notify.showLoadingKey('mobile.kittyPhotoProgressDetecting')
   try {
     await uploadConversationImage({
       file: validated.file,
@@ -507,24 +487,19 @@ const funAsr = useKittyFunAsrMic({
       micDenied.value = true
       return
     }
-    notify.warning(t('canvas.mindMapOneSentence.kittyUnavailable'))
+    notify.warningKey('canvas.mindMapOneSentence.kittyUnavailable')
   },
 })
 
 const kittyVoiceInputActive = computed(() => funAsr.listening.value)
 
-const {
-  listenMode,
-  asrCommitMode,
-  micInsecure,
-  toggleListenMode,
-  onAutoMicTap,
-} = useMobileKittyListenMode({
-  kitty,
-  funAsr,
-  micDenied,
-  kittyServerEnabled,
-})
+const { listenMode, asrCommitMode, micInsecure, toggleListenMode, onAutoMicTap } =
+  useMobileKittyListenMode({
+    kitty,
+    funAsr,
+    micDenied,
+    kittyServerEnabled,
+  })
 
 const chatPhase = computed(() => resolveMobileOneSentencePhase())
 
@@ -617,9 +592,7 @@ const micButtonDisabled = computed(
   () => !kittyServerEnabled.value || micDenied.value || micInsecure.value
 )
 
-const micHoldActive = computed(
-  () => kittyVoiceInputActive.value || pttPointerActive.value
-)
+const micHoldActive = computed(() => kittyVoiceInputActive.value || pttPointerActive.value)
 
 const micButtonAria = computed(() =>
   resolveKittyMicButtonAria(
@@ -829,9 +802,7 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
     diagramLibraryId: mobileKittyContextPreview.value.diagramLibraryId ?? undefined,
   }).then((ok) => {
     if (!ok) {
-      notify.warning(
-        t('mobile.kittyDesktopExplainFailed', '无法在电脑端打开节点解释，请确认桌面已打开该导图')
-      )
+      notify.warningKey('mobile.kittyDesktopExplainFailed')
     }
   })
 }
@@ -857,21 +828,25 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
       </button>
       <div class="flex-1 min-w-0 text-center">
         <div class="text-base font-semibold text-gray-900 truncate">
-          {{ t('mobile.kittyTitle', 'Kitty 智能体') }}
+          <I18nText k="mobile.kittyTitle" />
         </div>
         <div
           v-if="connected"
           class="text-[10px] text-emerald-600 font-medium"
         >
-          {{
-            kittyVoiceState === 'listening'
-              ? t('mobile.kittyListening', '正在聆听')
-              : kittyVoiceState === 'speaking'
-                ? t('mobile.kittySpeaking', '正在回复')
-                : kittyVoiceState === 'thinking'
-                  ? t('mobile.kittyThinking', '正在思考')
-                  : t('mobile.kittyLive', '实时对话')
-          }}
+          <I18nText
+            v-if="kittyVoiceState === 'listening'"
+            k="mobile.kittyListening"
+          /><template v-else
+            ><I18nText
+              v-if="kittyVoiceState === 'speaking'"
+              k="mobile.kittySpeaking" /><template v-else
+              ><I18nText
+                v-if="kittyVoiceState === 'thinking'"
+                k="mobile.kittyThinking" /><I18nText
+                v-else
+                k="mobile.kittyLive" /></template
+          ></template>
         </div>
       </div>
       <div
@@ -891,11 +866,13 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
           :title="t('mobile.kittyListenAutoHint', '半双工：仅在聆听时开麦')"
           @click="toggleListenMode"
         >
-          {{
-            listenMode === 'auto'
-              ? t('mobile.kittyListenAuto', '自动听')
-              : t('mobile.kittyListenManual', '按住说')
-          }}
+          <I18nText
+            v-if="listenMode === 'auto'"
+            k="mobile.kittyListenAuto"
+          /><I18nText
+            v-else
+            k="mobile.kittyListenManual"
+          />
         </button>
         <button
           type="button"
@@ -912,7 +889,7 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
           class="text-xs text-gray-500 px-2 py-1 rounded-lg active:bg-gray-100 shrink-0"
           @click="handleDisconnect"
         >
-          {{ t('mobile.kittyEnd', '结束') }}
+          <I18nText k="mobile.kittyEnd" />
         </button>
       </div>
       <div
@@ -926,12 +903,7 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
       class="shrink-0 mx-3 mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 leading-relaxed"
       role="status"
     >
-      {{
-        t(
-          'mobile.kittyServerDisabledBanner',
-          '当前环境未开启 Kitty 语音后端，拍照与语音不可用。开发者请在 server .env 中启用 FEATURE_KITTY_AGENT 并重启。'
-        )
-      }}
+      <I18nText k="mobile.kittyServerDisabledBanner" />
     </div>
 
     <div
@@ -939,12 +911,7 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
       class="shrink-0 mx-3 mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950 leading-relaxed"
       role="status"
     >
-      {{
-        t(
-          'mobile.kittyNeedsDesktopOwner',
-          'Open this diagram on desktop MindGraph to apply edits. Phone Kitty can still chat until the canvas is connected.'
-        )
-      }}
+      <I18nText k="mobile.kittyNeedsDesktopOwner" />
     </div>
 
     <div
@@ -953,12 +920,7 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
       role="status"
     >
       <p class="mb-2">
-        {{
-          t(
-            'mobile.kittyScopeDivergence',
-            '电脑端打开了另一张导图。请选择如何同步：'
-          )
-        }}
+        <I18nText k="mobile.kittyScopeDivergence" />
       </p>
       <div class="flex flex-wrap gap-2">
         <button
@@ -967,7 +929,7 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
           :disabled="divergenceSyncBusy"
           @click="handleScopeSyncChoice('follow_desktop')"
         >
-          {{ t('mobile.kittyScopeFollowDesktop', '跟随电脑导图') }}
+          <I18nText k="mobile.kittyScopeFollowDesktop" />
         </button>
         <button
           type="button"
@@ -975,7 +937,7 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
           :disabled="divergenceSyncBusy"
           @click="handleScopeSyncChoice('open_on_desktop')"
         >
-          {{ t('mobile.kittyScopeOpenOnDesktop', '在电脑打开手机导图') }}
+          <I18nText k="mobile.kittyScopeOpenOnDesktop" />
         </button>
         <button
           type="button"
@@ -983,7 +945,7 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
           :disabled="divergenceSyncBusy"
           @click="handleScopeSyncChoice('keep_split')"
         >
-          {{ t('mobile.kittyScopeKeepSplitAction', '暂不同步') }}
+          <I18nText k="mobile.kittyScopeKeepSplitAction" />
         </button>
       </div>
     </div>
@@ -1038,7 +1000,7 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
               :size="18"
               class="animate-spin"
             />
-            {{ t('mobile.kittyConnecting', '正在连接…') }}
+            <I18nText k="mobile.kittyConnecting" />
           </div>
         </div>
 
@@ -1089,7 +1051,7 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
           :disabled="!draft.trim()"
           @click="handleSendDraft"
         >
-          {{ t('mobile.kittySend', '发送') }}
+          <I18nText k="mobile.kittySend" />
         </button>
       </div>
 
@@ -1126,7 +1088,10 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
             v-if="photoUploading"
             class="kitty-side-control__icon animate-spin"
           />
-          <Camera v-else class="kitty-side-control__icon" />
+          <Camera
+            v-else
+            class="kitty-side-control__icon"
+          />
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
@@ -1209,14 +1174,11 @@ function handleChipNodeTap(node: { id: string; text: string }): void {
         v-if="micDenied || cameraDenied || micInsecure"
         class="text-center text-xs text-amber-600 pb-2 px-4"
       >
-        <span v-if="micInsecure">{{
-          t('mobile.kittyMicInsecure', '当前页面不是安全连接（HTTPS），麦克风已关闭。请改用键盘输入。')
-        }}</span>
-        <span v-else-if="micDenied">{{ t('mobile.kittyMicDenied', '麦克风不可用') }}</span>
-        <span v-if="cameraDenied">{{ t('mobile.kittyCameraDenied', '相机或图片不可用') }}</span>
+        <span v-if="micInsecure"><I18nText k="mobile.kittyMicInsecure" /></span>
+        <span v-else-if="micDenied"><I18nText k="mobile.kittyMicDenied" /></span>
+        <span v-if="cameraDenied"><I18nText k="mobile.kittyCameraDenied" /></span>
       </p>
     </div>
-
   </div>
 </template>
 

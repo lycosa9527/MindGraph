@@ -24,7 +24,6 @@ import type {
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
-import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import {
   FLOATING_TOOLBAR_COLORS,
   FLOATING_TOOLBAR_FONT_SIZES,
@@ -90,7 +89,6 @@ onUnmounted(() => {
 
 const { t } = useLanguage()
 const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
-const { showCanvasAiFeatures } = useLearningAiGate()
 const guestAiDisabled = computed(() => Boolean(props.aiDisabled) || aiBlockedByCollab.value)
 
 const formatting = useCanvasToolbarFormatting({
@@ -125,9 +123,7 @@ const {
 const activeColorPanel = ref<'fill' | 'border' | 'text' | null>(null)
 const typographyOpen = ref(false)
 
-const aiSubgraphVisible = computed(
-  () => showCanvasAiFeatures.value && props.showAiSubgraph !== false
-)
+const aiSubgraphVisible = computed(() => props.showAiSubgraph !== false)
 
 function onAiSubgraphClick(): void {
   if (guestAiDisabled.value) {
@@ -155,9 +151,21 @@ const toolbarStyle = computed(() => ({
 }))
 
 const fontOptions = computed(() => [
-  { value: DIAGRAM_NODE_FONT_STACK, label: t('canvas.floatingToolbar.fontDefault') },
-  { value: 'SimSun', label: t('canvas.floatingToolbar.fontSimSun') },
-  { value: 'KaiTi', label: t('canvas.floatingToolbar.fontKaiTi') },
+  {
+    value: DIAGRAM_NODE_FONT_STACK,
+    label: t('canvas.floatingToolbar.fontDefault'),
+    labelKey: 'canvas.floatingToolbar.fontDefault',
+  },
+  {
+    value: 'SimSun',
+    label: t('canvas.floatingToolbar.fontSimSun'),
+    labelKey: 'canvas.floatingToolbar.fontSimSun',
+  },
+  {
+    value: 'KaiTi',
+    label: t('canvas.floatingToolbar.fontKaiTi'),
+    labelKey: 'canvas.floatingToolbar.fontKaiTi',
+  },
   { value: 'Inter', label: 'Inter' },
   { value: 'Space Grotesk', label: 'Space Grotesk' },
 ])
@@ -264,7 +272,7 @@ function onShapePick(shape: NodeShape) {
                 :class="{ 'nft-dropdown-item--active': nodeShape === shape }"
                 @click="onShapePick(shape)"
               >
-                {{ t(shapeLabels[shape]) }}
+                <I18nText :k="shapeLabels[shape]" />
               </ElDropdownItem>
             </ElDropdownMenu>
           </template>
@@ -443,7 +451,9 @@ function onShapePick(shape: NodeShape) {
                   @click.stop
                 >
                   <div class="nft-typography-section">
-                    <div class="nft-typography-label">{{ t('canvas.toolbar.alignLabel') }}</div>
+                    <div class="nft-typography-label">
+                      <I18nText k="canvas.toolbar.alignLabel" />
+                    </div>
                     <div class="nft-format-row">
                       <button
                         type="button"
@@ -473,7 +483,9 @@ function onShapePick(shape: NodeShape) {
                   </div>
 
                   <div class="nft-typography-section">
-                    <div class="nft-typography-label">{{ t('canvas.toolbar.formatLabel') }}</div>
+                    <div class="nft-typography-label">
+                      <I18nText k="canvas.toolbar.formatLabel" />
+                    </div>
                     <div class="nft-format-row nft-format-row--4">
                       <button
                         type="button"
@@ -513,7 +525,9 @@ function onShapePick(shape: NodeShape) {
                   </div>
 
                   <div class="nft-typography-section">
-                    <div class="nft-typography-label">{{ t('canvas.toolbar.fontLabel') }}</div>
+                    <div class="nft-typography-label">
+                      <I18nText k="canvas.toolbar.fontLabel" />
+                    </div>
                     <select
                       :value="fontFamily"
                       class="nft-font-select"
@@ -536,7 +550,6 @@ function onShapePick(shape: NodeShape) {
 
         <!-- Node explanation (Kitty) -->
         <button
-          v-if="showCanvasAiFeatures"
           type="button"
           class="nft-btn nft-btn--explain"
           :class="{ 'nft-btn--explain-blocked': aiBlockedByCollab }"

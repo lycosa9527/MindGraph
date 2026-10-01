@@ -227,8 +227,8 @@ async function saveInlineEdit(content: string): Promise<void> {
         <span
           v-if="isEdited"
           class="msg-edited"
-          >{{ t('workshop.edited') }}</span
-        >
+          ><I18nText k="workshop.edited"
+        /></span>
         <span
           v-if="isStarred"
           class="msg-star"
@@ -264,14 +264,20 @@ async function saveInlineEdit(content: string): Promise<void> {
             class="msg-condense-toggle"
             @click="handleToggleCondense"
           >
-            {{ isCondensed ? t('workshop.showMore') : t('workshop.showLess') }}
+            <I18nText
+              v-if="isCondensed"
+              k="workshop.showMore"
+            /><I18nText
+              v-else
+              k="workshop.showLess"
+            />
           </button>
         </div>
         <div
           v-else
           class="msg-deleted"
         >
-          {{ t('workshop.messageDeleted') }}
+          <I18nText k="workshop.messageDeleted" />
         </div>
 
         <!-- Attachments -->

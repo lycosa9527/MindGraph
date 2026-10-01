@@ -5,31 +5,404 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.180.103] - 2026-09-27
+## [5.180.130] - 2026-10-01
 
-> **Eight thinking maps share the mind-map tab canvas: style strip, insert, Enter-to-add, and undo/redo icons that no longer match reset.**
+> **The eight thinking maps use the mind-map tab canvas. Enter adds the node for the selection, and a style-only save still lands.**
 
 ### Added
 
-- **八大思维图示 Tab 画布** — 圆圈图、气泡图、双气泡图、树图、括号图、流程图、复流程图、桥形图统一到思维导图 Tab 壳（文件 / 编辑 / AI / 教学）。概念图仍用经典格式条，并保留虚拟键盘。
-- **节点 / 文字样式与主题** — 八大图示使用与思维导图一致的节点样式、文字样式、主题风格（不含「导图样式」）、跟随节点浮动条；节点解释与思维讲堂同步开放。圆圈图隐藏形状选择，填充色、边框色与双击改字生效。
-- **插入** — 八大图示编辑条提供图片、图标、链接、公式；关联线与概要仍仅思维导图。图片 / 图标 / 链接按节点 id 挂接并可随图保存。
-- **挖空支架图** — 八大图示支持全挖空、随机挖空、自定义点选三种模式，逻辑与思维导图一致。
+- **八大思维图示 Tab 画布** — Circle, bubble, double-bubble, tree, brace, flow, multi-flow, and bridge maps use the mind-map tab shell (file, edit, AI, teaching). Concept map keeps the classic format bar and the virtual keyboard.
+- **节点样式** — Those eight maps share node style, text style, theme without diagram-style presets, the follow-node toolbar, explain, and mind classroom. Circle maps hide the shape picker. Image, icon, link, and equation insert stay; association lines and summaries stay on mind maps.
 
 ### Changed
 
-- **节点操作快捷键** — 单击选中节点（浮动条跟随）；Enter 按当前选中节点增加对应节点；Tab / Insert 不再触发添加；双击或空格进入编辑。点画布空白处取消选中并收起浮动条。状态栏快捷键说明按图示类型展示。
-- **撤销 / 重做图标** — 改用弯箭头（`Undo2` / `Redo2`），与重置的圆形刷新图标区分开。
+- **Enter** — Click a node, then Enter adds the matching node. Tab and Insert do not add a node on the eight maps. A selected brace part gets a subpart.
+- **撤销 / 重做** — Undo and redo use curved arrows so they no longer match reset.
 
 ### Fixed
 
-- **保存失败** — 手动保存对仅改样式、模板文案未改的图示也会落盘，并写入历史版本；避免「保存失败，请重试」。
-- **格式刷** — 八大图示点击节点即可刷上源节点样式，与思维导图一致。
-- **Enter 加节点** — 桌面画布重新挂接 `diagram:add_*` 监听，选中节点后按 Enter 可正常加节点。
+- **保存** — A manual save persists a diagram whose text still matches the template, including a style-only edit, and records a history version.
+- **格式刷** — Painting a thinking-map node copies its stored style, or the visible fill, border, and text when those colors are opaque. A transparent background is left alone.
+- **划线手势** — A finger or left-drag cut adds and deletes on all eight thinking maps. Down deletes. Up adds the child, or the map's node when it has no children. Left or right adds a sibling. Circle, bubble, bridge, double-bubble, and multi-flow add their node in either direction.
 
 ### Tests
 
-- [`frontend/tests/diagramRibbonCapabilities.spec.ts`](frontend/tests/diagramRibbonCapabilities.spec.ts), [`frontend/tests/canvasPageEditorShortcutRouting.spec.ts`](frontend/tests/canvasPageEditorShortcutRouting.spec.ts), [`frontend/tests/mindMapShortcutGuide.spec.ts`](frontend/tests/mindMapShortcutGuide.spec.ts)
+- [`frontend/tests/diagramRibbonCapabilities.spec.ts`](frontend/tests/diagramRibbonCapabilities.spec.ts), [`frontend/tests/canvasPageEditorShortcutRouting.spec.ts`](frontend/tests/canvasPageEditorShortcutRouting.spec.ts), [`frontend/tests/thinkingMapNodeSlash.spec.ts`](frontend/tests/thinkingMapNodeSlash.spec.ts)
+
+## [5.180.129] - 2026-10-01
+
+> **You can leave a seminar and open another MindMate conversation.**
+
+### Fixed
+
+- **MindMate conversations** — A saved seminar, a live seminar, or the seminar page no longer keeps the next conversation from opening. Choosing another conversation, or starting a new chat, closes that view and shows the conversation. A live seminar stays in the sidebar so you can rejoin it.
+
+### Tests
+
+- [`frontend/tests/mindmateCollabLibrarySave.spec.ts`](frontend/tests/mindmateCollabLibrarySave.spec.ts)
+
+## [5.180.128] - 2026-10-01
+
+> **A seminar stays connected until its owner ends it, and opening it again loads the transcript.**
+
+### Fixed
+
+- **Seminar chat** — Joining another seminar, or leaving MindMate, keeps the other seminars connected. Each socket stays up until that room's owner ends it, the room goes idle, or you sign out. A quiet socket checks that it is still alive and fills any line it missed. New lines follow the bottom of the transcript. Closing the browser ends the socket; opening the seminar again loads the newest messages, and scrolling up loads the older ones.
+
+### Tests
+
+- [`frontend/tests/useMindmateCollab.spec.ts`](frontend/tests/useMindmateCollab.spec.ts), [`frontend/tests/mindmateCollabGap.spec.ts`](frontend/tests/mindmateCollabGap.spec.ts), [`frontend/tests/mindmateCollabHeartbeat.spec.ts`](frontend/tests/mindmateCollabHeartbeat.spec.ts), [`tests/test_mindmate_collab_message_history.py`](tests/test_mindmate_collab_message_history.py), [`tests/test_mindmate_collab_message_delivery.py`](tests/test_mindmate_collab_message_delivery.py)
+
+## [5.180.127] - 2026-10-01
+
+> **Operators can dump a Dify database and move chat history onto one app, and each mascot has a voice for lip-sync.**
+
+### Added
+
+- **Dify history** — `python -m scripts.dify.db_merge` finds the compose stack, checks that Postgres is using that data directory, then dumps the database or moves chat history from other apps onto one app.
+- **Mascot voices** — Each of the five roles has a Qwen-Audio voice. Those clips can be passed to Wan 3 as reference audio so the matching mouth moves.
+- **October promo** — A seven-beat silent classroom cut with foley and one instrumental bed. Raven and schnauzer now keep both green-screen stills in the repo, at the same 1280×1920 size as the cats.
+
+### Tests
+
+- [`tests/scripts/test_dify_db_merge.py`](tests/scripts/test_dify_db_merge.py), [`tests/scripts/test_wan_tts.py`](tests/scripts/test_wan_tts.py), [`tests/scripts/test_october_update_promo.py`](tests/scripts/test_october_update_promo.py), [`tests/scripts/test_cat_emoji_stills.py`](tests/scripts/test_cat_emoji_stills.py)
+
+## [5.180.126] - 2026-10-01
+
+> **Opening the app no longer downloads the diagram editor and the chart library.**
+
+### Fixed
+
+- **First load** — MindGraph, MindMate, and the sidebar no longer fetch the diagram canvas, teacher-usage charts, the course preview, or the fullscreen demo up front. Those load when you open them.
+
+## [5.180.125] - 2026-09-30
+
+> **A saved MindMate seminar can be pinned, renamed, or deleted, and each of your lines shows who has read it.**
+
+### Added
+
+- **Saved seminars** — Pin one to the top of the library, give it a new name, or delete it.
+- **Read marks** — Your own line shows sending, sent, or read, with the time beside it. Hover the mark to see who has read it.
+- **People in the room** — The seminar header shows the faces of people who have joined.
+
+### Fixed
+
+- **Seminar history** — Joining again keeps lines already on screen and fills a hole when the new snapshot starts later. A line you just sent is not shown twice.
+- **Live delivery** — When the live stream is busy, a seminar line or a workshop event still gets through.
+
+### Tests
+
+- [`tests/test_mindmate_collab_library_archive.py`](tests/test_mindmate_collab_library_archive.py), [`tests/test_mindmate_collab_read_cursors.py`](tests/test_mindmate_collab_read_cursors.py), [`tests/test_mindmate_collab_participant_faces.py`](tests/test_mindmate_collab_participant_faces.py), [`tests/test_ws_fanout_delivery_queue.py`](tests/test_ws_fanout_delivery_queue.py)
+- [`frontend/tests/mindmateCollabRead.spec.ts`](frontend/tests/mindmateCollabRead.spec.ts), [`frontend/tests/mindmateSeminarFaces.spec.ts`](frontend/tests/mindmateSeminarFaces.spec.ts), [`frontend/tests/mindmateCollabGap.spec.ts`](frontend/tests/mindmateCollabGap.spec.ts), [`frontend/tests/mindmateCollabDisplay.spec.ts`](frontend/tests/mindmateCollabDisplay.spec.ts)
+
+## [5.180.124] - 2026-09-30
+
+> **A MindMate seminar line reaches the other people in the room, and a teaching-design Word file still downloads when the school template or the extra fill step fails.**
+
+### Fixed
+
+- **MindMate seminar** — A sent line is saved on the server, then delivered to everyone in the room. Joining no longer replaces that line with an older copy of the chat. If a screen skips a line, the next line loads the missing ones and puts them back in order.
+- **Teaching-design Word** — A school template that is missing or cannot be opened uses the built-in form. Characters Word cannot store are left out. If the extra fill step fails, the lesson already written is still exported.
+
+### Tests
+
+- [`tests/test_mindmate_collab_message_delivery.py`](tests/test_mindmate_collab_message_delivery.py), [`tests/test_mindmate_collab_dify_stream.py`](tests/test_mindmate_collab_dify_stream.py), [`tests/test_teaching_design_docx.py`](tests/test_teaching_design_docx.py), [`tests/test_teaching_design_llm.py`](tests/test_teaching_design_llm.py)
+- [`frontend/tests/mindmateCollabGap.spec.ts`](frontend/tests/mindmateCollabGap.spec.ts), [`frontend/tests/mindmateCollabDisplay.spec.ts`](frontend/tests/mindmateCollabDisplay.spec.ts)
+
+## [5.180.123] - 2026-09-30
+
+> **Blanking a learning-sheet node keeps the map where it is, and turning branch numbers on measures the map once.**
+
+### Changed
+
+- **Learning sheet** — Random blanks and a blank you pick yourself stay on the canvas you already have. A blanked node keeps the size it already had, and the other nodes stay put.
+- **Branch numbers** — Turning numbers on or off sizes every branch in one pass.
+
+### Tests
+
+- [`frontend/tests/learningSheetLayoutHold.spec.ts`](frontend/tests/learningSheetLayoutHold.spec.ts), [`frontend/tests/mindMapNumberingEstimate.spec.ts`](frontend/tests/mindMapNumberingEstimate.spec.ts), [`frontend/tests/learningSheetUndo.spec.ts`](frontend/tests/learningSheetUndo.spec.ts)
+
+## [5.180.122] - 2026-09-30
+
+> **A cut through a large node is easier to land, and a normal drag no longer measures every node.**
+
+### Changed
+
+- **Node cuts** — A slash can start about a third of the way into a large node and still count, as long as it leaves through the far side. A drag that starts in the middle still moves the node. A sideways cut on a diagram that has no siblings no longer selects that node.
+
+### Tests
+
+- [`frontend/tests/canvasTouchGestures.spec.ts`](frontend/tests/canvasTouchGestures.spec.ts)
+
+## [5.180.121] - 2026-09-30
+
+> **A quick cut through a node deletes it, adds a sibling, or adds a child.**
+
+### Added
+
+- **Node cuts** — One finger or the left mouse button. Slash down through a node to delete it. Slash left or right to add a sibling on the same level. Slash up to add a child. On the center topic, a sideways or upward cut adds a main branch. The gesture guide lists the three cuts. A slow drag still moves a node.
+
+### Tests
+
+- [`frontend/tests/canvasTouchGestures.spec.ts`](frontend/tests/canvasTouchGestures.spec.ts), [`frontend/tests/mindMapGestureGuide.spec.ts`](frontend/tests/mindMapGestureGuide.spec.ts)
+
+## [5.180.120] - 2026-09-30
+
+> **The account menu can turn saved diagrams into a fullscreen talk, and the CrowdSec address list is refreshed.**
+
+### Added
+
+- **演示模式** — Open it from the account menu. Pick diagrams from your library, write a caption for each, and play them fullscreen. The list, the captions, and the type styles stay on your account.
+
+### Changed
+
+- **Diagram camera** — Playing that talk no longer fights the diagram's own fit.
+- **CrowdSec blocklist** — The committed baseline address list is refreshed.
+
+### Tests
+
+- [`tests/test_library_demo_document.py`](tests/test_library_demo_document.py)
+- [`frontend/tests/libraryDemoPlayback.spec.ts`](frontend/tests/libraryDemoPlayback.spec.ts), [`frontend/tests/viewportTransition.spec.ts`](frontend/tests/viewportTransition.spec.ts)
+
+## [5.180.119] - 2026-09-30
+
+> **Bayi no longer has a passkey login or a /demo page. School users still arrive from the vendor link, and admins still sign in with a phone.**
+
+### Removed
+
+- **Bayi passkey and /demo** — The passkey page, the `/demo` address, and the passkey login endpoint are gone. Those addresses do not sign anyone in.
+- **Startup passkey** — A Bayi server no longer needs `BAYI_PASSKEY`. Delete that name from the server environment, along with `DEMO_PASSKEY`, `ADMIN_DEMO_PASSKEY`, and `PUBLIC_DASHBOARD_PASSKEY` if they are still set.
+
+### Changed
+
+- **Bayi vendor link** — `/loginByXz` still decrypts with the key issued by 小致. That value is the one the school platform encrypts with.
+
+## [5.180.118] - 2026-09-30
+
+> **A Bayi jump-in with the default name asks for a real name, and a reused login link is refused.**
+
+### Changed
+
+- **Bayi first visit** — When the account still uses the shared default name, account info opens and asks you to save a real name. That default name cannot be saved. Phone and password controls stay hidden, because that id is the school login, and a password login is refused.
+- **Bayi login link** — Each link works once. A second use, or a store that cannot record the first use, sends you to the normal login page. The same school user id stays one account when only the letter case differs. A new account no longer shares a fixed password.
+
+### Tests
+
+- [`tests/utils/test_bayi_display_name.py`](tests/utils/test_bayi_display_name.py)
+- [`frontend/tests/normalizeAuthUser.spec.ts`](frontend/tests/normalizeAuthUser.spec.ts)
+
+## [5.180.117] - 2026-09-30
+
+> **The login headline is one color, and the Chinese line says 每一次.**
+
+### Changed
+
+- **Login headline** — The second half of the line uses the same color as the first. Simplified and Traditional Chinese read「让每一次思考清晰可见」.
+- **CrowdSec blocklist** — The committed baseline address list is refreshed.
+
+## [5.180.116] - 2026-09-30
+
+> **The sidebar account chip always shows the school name.**
+
+### Changed
+
+- **Sidebar account chip** — The line under the user name is the school's display name, or its internal name when there is no display name. A saved poem or token choice is ignored. The poem and token options are gone from interface settings. An account with no school leaves the line blank.
+
+### Tests
+
+- [`frontend/tests/normalizeAuthUser.spec.ts`](frontend/tests/normalizeAuthUser.spec.ts)
+
+## [5.180.115] - 2026-09-29
+
+> **Crowded mind-map labels shorten to a real word, the login logo shows the site QR, and MindBot uses the same live school MindMate connection as web chat.**
+
+### Added
+
+- **Site QR on the login brand** — Holding the pointer on the marketing logo for 1.5 seconds opens the same public-site QR as the sidebar logo. Moving away closes it.
+
+### Changed
+
+- **Mind map toolbar** — When a ribbon row or the tab strip runs out of room, each command keeps a short word from its name instead of vanishing. Hover still shows the full label. Ribbon tabs shorten the same way when they would cover the filename or the collaboration controls.
+- **MindBot and school MindMate** — A bot that uses the school's MindMate settings opens the same live Dify connection as web chat: the active server, failover, and the school's timeout. The admin health check probes that connection. A bot with its own URL and key keeps those. Each turn still sends the agent name, short name, and school name.
+
+### Fixed
+
+- **Startup banner** — The version banner is written once, when launch finishes.
+- **Closed sockets** — A browser that drops a workshop, collaboration, or MindMate socket is logged as a disconnect. It is not an application error.
+- **Storage logs** — A missing object, such as an expired temp image, is a debug line. The COS SDK stays quiet unless storage debug is turned on.
+- **Collaboration traces** — Per-update merge and broadcast traces stay at debug.
+
+### Tests
+
+- [`frontend/tests/toolbarLabelAbbreviation.spec.ts`](frontend/tests/toolbarLabelAbbreviation.spec.ts), [`frontend/tests/toolbarLabelCollapse.spec.ts`](frontend/tests/toolbarLabelCollapse.spec.ts)
+- [`tests/test_mindbot_dify_runtime_client.py`](tests/test_mindbot_dify_runtime_client.py)
+
+## [5.180.114] - 2026-09-29
+
+> **An online-library preview loads the player and the video, including the documented play and upload hosts.**
+
+### Fixed
+
+- **在线视频库** — Opening the library was still using a saved copy of the page. That copy kept an older security policy, so the player could not load its helper or ask Tencent for the video. Each visit now loads a fresh page. When the library is on, that page allows the player hosts. If you already have the app open from before the library was turned on, it reloads once so preview can play.
+- **在线视频库** — Upload reports and the documented play service are allowed as well: `vodreport.qcloud.com`, `playvideo.qcloud.com`, and `bkplayvideo.qcloud.com`.
+
+### Tests
+
+- [`tests/test_csp_cos_browser_hosts.py`](tests/test_csp_cos_browser_hosts.py), [`frontend/tests/vodCspDocument.spec.ts`](frontend/tests/vodCspDocument.spec.ts)
+
+## [5.180.113] - 2026-09-29
+
+> **Gallery diagram cards keep both languages on one centered line, and pills and buttons grow to fit the presenter line.**
+
+### Fixed
+
+- **Gallery cards** — In dual-language mode, each diagram name and description stays on one line: the interface language on the left, the presenter language on the right, centered together. A longer pair shrinks instead of wrapping in the middle of a name. Section headings stay stacked.
+- **Pills and buttons** — The account role chip, admin and mobile role pills, account plugin chips, and suggestion chips size to both languages. Element Plus buttons, tags, menus, tabs, radios, and checkboxes that show a bilingual label grow with it instead of clipping the second line.
+
+### Tests
+
+- [`frontend/tests/besideFitScale.spec.ts`](frontend/tests/besideFitScale.spec.ts)
+
+## [5.180.112] - 2026-09-29
+
+> **Toasts and empty states follow dual-language mode, and MindMate and MindGraph stay the product names.**
+
+### Fixed
+
+- **Bilingual toasts and empty states** — Success, error, warning, info, and loading messages that come from a catalog key show the presenter line under the interface language. Knowledge-space and community empty states, and the knowledge settings notice, do the same.
+- **Product names** — MindMate and MindGraph are not translated. Sidebar, page titles, filters, and sentences that name the products keep those words. When both lines would say the same name, only one line is shown.
+
+### Tests
+
+- [`frontend/tests/resolveBilingual.spec.ts`](frontend/tests/resolveBilingual.spec.ts)
+- [`frontend/scripts/_audit_brand_locale_keys.py`](frontend/scripts/_audit_brand_locale_keys.py) (`check:scripts`)
+
+## [5.180.111] - 2026-09-29
+
+> **Dual-language mode shows the presenter line on menus, tables, and buttons, not only on the rows that already used a message key.**
+
+### Fixed
+
+- **Bilingual chrome** — With a non-Chinese interface language and Chinese as the presenter line, admin menus, breadcrumbs, role labels, table headers, form labels, tabs, segmented controls, context menus, and showcase filters show both languages. Labels that were rendered from `t()` as plain text kept only the interface language, even though the Chinese catalog strings were still present.
+- **MindMate and brand** — The sidebar brand, edition line, and default MindMate name follow the same two-line pattern. A custom school agent name stays the saved name.
+
+### Tests
+
+- [`frontend/scripts/codemod-bilingual-template.mjs`](frontend/scripts/codemod-bilingual-template.mjs) (`--check` in `check:scripts`)
+
+## [5.180.110] - 2026-09-29
+
+> **Wrapped labels on thinking maps and mind maps no longer leave one Chinese character on the second line.**
+
+### Fixed
+
+- **Diagram labels** — Circle, bubble, brace, flow, multi-flow, tree, bridge, and mind-map text wraps so the lines are about the same length. A label that is only a little too wide for the node splits evenly. Double-bubble capsules stay on one line, because the capsule is sized to the full label. Bubble attributes use the same circle node as the other round maps.
+
+### Tests
+
+- [`frontend/tests/mindMapTextWrap.spec.ts`](frontend/tests/mindMapTextWrap.spec.ts)
+
+## [5.180.109] - 2026-09-28
+
+> **One MindMate workflow receives each school's agent name, short name, and school name.**
+
+### Added
+
+- **MindMate persona** — 组织管理 → 编辑 → MindMate鉴权 sets the agent name, the short name (小名), the school name, and the avatar. Web chat, MindBot, and seminars send those three values to the shared Dify chatflow. A school that is not fully privatized still sends MindMate. A seminar @-mention matches the saved name and the short name.
+
+### Tests
+
+- [`tests/test_org_dify_inputs.py`](tests/test_org_dify_inputs.py), [`tests/test_mindmate_collab_mention.py`](tests/test_mindmate_collab_mention.py), [`tests/test_mindmate_collab_dify_stream.py`](tests/test_mindmate_collab_dify_stream.py), [`tests/test_school_tier.py`](tests/test_school_tier.py)
+
+## [5.180.108] - 2026-09-28
+
+> **On a phone, a blank diagram says so before you save, the title stays centered, and exported pictures stay sharp.**
+
+### Changed
+
+- **Mobile canvas** — Saving an empty diagram says to edit it first, instead of “保存失败，请重试”. 学习单 sits immediately left of 导出. MindGraph is centered in the header, and the save time is on the right.
+- **Export** — Clipboard, save-as-image, PDF, Word, and the worksheet header are drawn at a real pixel size, not a stretched phone snapshot. A very large Word image stays within what a phone canvas can hold. If a learning-sheet PDF fails, the answers come back on the canvas.
+- **Mobile organizations** — Tap a school to see the invite code, the link, and one button that copies the welcome message.
+- **CrowdSec** — Refresh the committed blocklist baseline.
+
+### Tests
+
+- [`frontend/tests/diagramSaveFlow.spec.ts`](frontend/tests/diagramSaveFlow.spec.ts), [`frontend/tests/shouldFlushBeforeLibrarySwitch.spec.ts`](frontend/tests/shouldFlushBeforeLibrarySwitch.spec.ts), [`frontend/tests/diagramExportRasterScale.spec.ts`](frontend/tests/diagramExportRasterScale.spec.ts), [`frontend/tests/canvasExportMenu.spec.ts`](frontend/tests/canvasExportMenu.spec.ts), [`frontend/tests/diagramMindMapVectorExport.spec.ts`](frontend/tests/diagramMindMapVectorExport.spec.ts), [`frontend/tests/mobileOrganizations.spec.ts`](frontend/tests/mobileOrganizations.spec.ts)
+
+## [5.180.107] - 2026-09-28
+
+> **A diagram in a MindMate seminar can be saved to your library and opened on the canvas.**
+
+### Added
+
+- **MindMate seminars** — A diagram reply includes “在画布中编辑”. The click saves a copy in your library, then opens that copy on the canvas ready to edit. Each person in the room gets their own copy. Opening it again uses the same one.
+
+### Tests
+
+- [`tests/test_mindmate_collab_diagram_library.py`](tests/test_mindmate_collab_diagram_library.py), [`frontend/tests/mindmateCollabDisplay.spec.ts`](frontend/tests/mindmateCollabDisplay.spec.ts), [`frontend/tests/mindmateCollabDiagramLibrary.spec.ts`](frontend/tests/mindmateCollabDiagramLibrary.spec.ts)
+
+## [5.180.106] - 2026-09-28
+
+> **MindMate history lists only chats the current Dify app still has.**
+
+### Fixed
+
+- **MindMate history** — A DingTalk thread from a retired workflow no longer appears in the sidebar. The list is whatever the current Dify apps return. Export still keeps those older threads.
+
+### Tests
+
+- [`tests/test_unified_conversations.py`](tests/test_unified_conversations.py), [`tests/test_dify_export_usage_supplement.py`](tests/test_dify_export_usage_supplement.py)
+
+## [5.180.105] - 2026-09-28
+
+> **Quick access remembers the panel, edited prompts, and demo diagrams on the account. A finished MindMate seminar can be saved and opened again.**
+
+### Added
+
+- **Quick access** — The home button beside the Diagrams tab returns to the gallery. An unsaved canvas still asks before leaving. Whether the panel is open, and any edited inspiration text, are stored on the account. The six default prompts already have diagrams: a click plays the three-second ring, then opens the diagram, with no model call. After an edit is finished, that card shows “Preloading diagram…”, the other prompts go grey, and the result is saved on the account. The same text opens that diagram on the next click.
+- **Classroom remote** — Drag the corner to resize. Double-click the title bar resets both position and size. Whether it is open stays on the account.
+- **MindMate seminars** — A finished seminar can be saved to the owner’s library and opened later as a read-only transcript.
+
+### Changed
+
+- **Poke** — Someone who is on the page hears a short tone, and the sidebar entry wobbles.
+- **Voice add node** — A node added by desktop voice no longer stacks on top of another when an edit box was left open.
+
+### Fixed
+
+- **Health check** — Blocklist dates are read from the cache already on this machine. A slow object store does not fail the load-balancer probe.
+
+### Tests
+
+- [`frontend/tests/quickAccessRemote.spec.ts`](frontend/tests/quickAccessRemote.spec.ts), [`frontend/tests/useClassroomRemotePosition.spec.ts`](frontend/tests/useClassroomRemotePosition.spec.ts), [`tests/test_quick_access_specs.py`](tests/test_quick_access_specs.py), [`tests/test_mindmate_collab_library_archive.py`](tests/test_mindmate_collab_library_archive.py), [`tests/services/test_blocklist_health.py`](tests/services/test_blocklist_health.py)
+
+## [5.180.104] - 2026-09-27
+
+> **An online-library preview can ask Tencent for the video and play it.**
+
+### Fixed
+
+- **在线视频库** — Preview and Course Builder can reach the play service, load the player helper, and fetch the file from the default play domain. Saving a finished upload loads the owner in the same database session, so the library row is stored instead of ending as a server error.
+
+### Tests
+
+- [`tests/test_vod_browser_csp.py`](tests/test_vod_browser_csp.py), [`tests/test_vod_catalog_routes.py`](tests/test_vod_catalog_routes.py)
+
+## [5.180.103] - 2026-09-27
+
+> **An online-library video can finish uploading, and the account menu can open a course.**
+
+### Fixed
+
+- **在线视频库** — Upload loads the Tencent library and calls its constructor. Each step of the upload gets a new one-time signature. The catalog keeps the signature Tencent stored on the file. Preview and Course Builder load the player from the app bundle.
+
+### Added
+
+- **用户下拉列表** — System settings can add, rename, and remove entries on the signed-in account menu, and link each one to a saved course. Choosing the entry opens that course.
+
+### Tests
+
+- [`frontend/tests/uploadVodFile.spec.ts`](frontend/tests/uploadVodFile.spec.ts), [`tests/test_user_dropdown_routes.py`](tests/test_user_dropdown_routes.py)
 
 ## [5.180.102] - 2026-09-27
 
@@ -153,6 +526,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Tests
 
 - [`tests/test_unified_conversations.py`](tests/test_unified_conversations.py)
+
 ## [5.180.95] - 2026-09-20
 
 > **Tencent slide verify embeds on the login card instead of a viewport-centered popup.**

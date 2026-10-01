@@ -4,9 +4,9 @@
  */
 import { ref } from 'vue'
 
-import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
 import { Loading } from '@element-plus/icons-vue'
 
+import AdminSwissPeriodCard from '@/components/admin/swiss/AdminSwissPeriodCard.vue'
 import { useLanguage } from '@/composables'
 
 defineProps<{
@@ -45,45 +45,45 @@ defineExpose({ chartRef })
         v-if="!chartHasData"
         class="flex justify-center items-center h-56 text-gray-500 dark:text-gray-400"
       >
-        {{ t('admin.trendChartNoData') }}
+        <I18nText k="admin.trendChartNoData" />
       </div>
       <template v-else>
-      <div class="relative h-56 min-h-[220px] w-full min-w-0">
-        <canvas
-          ref="chartRef"
-          class="block w-full h-full"
-        />
-      </div>
-      <div class="grid grid-cols-1 min-[400px]:grid-cols-2 lg:grid-cols-4 gap-3">
-        <AdminSwissPeriodCard
-          :label="t('admin.today')"
-          :value="periodCards.today"
-          :active="period === 'today'"
-          theme="storage"
-          @click="emit('switchPeriod', 'today')"
-        />
-        <AdminSwissPeriodCard
-          :label="t('admin.pastWeek')"
-          :value="periodCards.week"
-          :active="period === 'week'"
-          theme="storage"
-          @click="emit('switchPeriod', 'week')"
-        />
-        <AdminSwissPeriodCard
-          :label="t('admin.pastMonth')"
-          :value="periodCards.month"
-          :active="period === 'month'"
-          theme="storage"
-          @click="emit('switchPeriod', 'month')"
-        />
-        <AdminSwissPeriodCard
-          :label="t('admin.allTime')"
-          :value="periodCards.total"
-          :active="period === 'total'"
-          theme="storage"
-          @click="emit('switchPeriod', 'total')"
-        />
-      </div>
+        <div class="relative h-56 min-h-[220px] w-full min-w-0">
+          <canvas
+            ref="chartRef"
+            class="block w-full h-full"
+          />
+        </div>
+        <div class="grid grid-cols-1 min-[400px]:grid-cols-2 lg:grid-cols-4 gap-3">
+          <AdminSwissPeriodCard
+            :label="t('admin.today')"
+            :value="periodCards.today"
+            :active="period === 'today'"
+            theme="storage"
+            @click="emit('switchPeriod', 'today')"
+          />
+          <AdminSwissPeriodCard
+            :label="t('admin.pastWeek')"
+            :value="periodCards.week"
+            :active="period === 'week'"
+            theme="storage"
+            @click="emit('switchPeriod', 'week')"
+          />
+          <AdminSwissPeriodCard
+            :label="t('admin.pastMonth')"
+            :value="periodCards.month"
+            :active="period === 'month'"
+            theme="storage"
+            @click="emit('switchPeriod', 'month')"
+          />
+          <AdminSwissPeriodCard
+            :label="t('admin.allTime')"
+            :value="periodCards.total"
+            :active="period === 'total'"
+            theme="storage"
+            @click="emit('switchPeriod', 'total')"
+          />
+        </div>
       </template>
     </template>
   </div>

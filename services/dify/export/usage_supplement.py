@@ -163,6 +163,9 @@ async def supplement_mindbot_summaries_from_usage(
     """
     Merge usage-telemetry MindBot threads missing from Dify list collection.
 
+    Export uses this so a retired workflow still appears in the archive.
+    The live history list does not call it.
+
     Returns updated summaries (deduped, newest ``updated_at`` first) and
     optional warning strings.
     """

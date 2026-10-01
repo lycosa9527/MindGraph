@@ -127,7 +127,7 @@ function onGenerate(): void {
                 :stroke-width="2.2"
               />
             </span>
-            <span class="vn-dock__side-label">{{ t('auth.voiceNotes.pause') }}</span>
+            <span class="vn-dock__side-label"><I18nText k="auth.voiceNotes.pause" /></span>
           </button>
 
           <div class="vn-dock__main-wrap">
@@ -178,7 +178,7 @@ function onGenerate(): void {
                 fill="currentColor"
               />
             </span>
-            <span class="vn-dock__side-label">{{ t('auth.voiceNotes.stop') }}</span>
+            <span class="vn-dock__side-label"><I18nText k="auth.voiceNotes.stop" /></span>
           </button>
         </div>
         <div class="vn-dock__wing vn-dock__wing--end">
@@ -188,7 +188,7 @@ function onGenerate(): void {
             :disabled="!actions.canGenerate"
             @click="onGenerate"
           >
-            {{ t('auth.voiceNotes.retryGenerate') }}
+            <I18nText k="auth.voiceNotes.retryGenerate" />
           </button>
         </div>
       </div>

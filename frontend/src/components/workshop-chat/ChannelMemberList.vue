@@ -198,7 +198,7 @@ function handleManageUser(userId: number): void {
             :class="{ 'buddy-section__toggle--open': !isSectionCollapsed('conversation') }"
           />
           <span class="buddy-section__heading">
-            {{ t('workshop.thisConversation') }}
+            <I18nText k="workshop.thisConversation" />
           </span>
           <span class="buddy-section__count"> ({{ conversationParticipants.length }}) </span>
         </button>
@@ -231,7 +231,7 @@ function handleManageUser(userId: number): void {
                     v-if="member.isCurrentUser"
                     class="buddy-you"
                   >
-                    {{ t('workshop.you') }}
+                    <I18nText k="workshop.you" />
                   </span>
                 </span>
               </div>
@@ -255,7 +255,13 @@ function handleManageUser(userId: number): void {
             :class="{ 'buddy-section__toggle--open': !isSectionCollapsed('channel') }"
           />
           <span class="buddy-section__heading">
-            {{ hasConversation ? t('workshop.thisChannel') : t('workshop.members') }}
+            <I18nText
+              v-if="hasConversation"
+              k="workshop.thisChannel"
+            /><I18nText
+              v-else
+              k="workshop.members"
+            />
           </span>
           <span class="buddy-section__count"> ({{ channelMembers.length }}) </span>
         </button>
@@ -288,7 +294,7 @@ function handleManageUser(userId: number): void {
                     v-if="member.isCurrentUser"
                     class="buddy-you"
                   >
-                    {{ t('workshop.you') }}
+                    <I18nText k="workshop.you" />
                   </span>
                 </span>
               </div>
@@ -312,7 +318,7 @@ function handleManageUser(userId: number): void {
             :class="{ 'buddy-section__toggle--open': !isSectionCollapsed('others') }"
           />
           <span class="buddy-section__heading">
-            {{ t('workshop.others') }}
+            <I18nText k="workshop.others" />
           </span>
           <span class="buddy-section__count"> ({{ otherUsers.length }}) </span>
         </button>
@@ -345,7 +351,7 @@ function handleManageUser(userId: number): void {
                     v-if="member.isCurrentUser"
                     class="buddy-you"
                   >
-                    {{ t('workshop.you') }}
+                    <I18nText k="workshop.you" />
                   </span>
                 </span>
               </div>
@@ -359,7 +365,13 @@ function handleManageUser(userId: number): void {
         v-if="allBuddies.length === 0 && otherUsers.length === 0"
         class="buddy-empty"
       >
-        {{ searchQuery ? t('workshop.noMembersFound') : t('workshop.noMembers') }}
+        <I18nText
+          v-if="searchQuery"
+          k="workshop.noMembersFound"
+        /><I18nText
+          v-else
+          k="workshop.noMembers"
+        />
       </div>
 
       <!-- View all members -->
@@ -368,7 +380,7 @@ function handleManageUser(userId: number): void {
         class="buddy-view-all"
       >
         <a class="buddy-view-all__link">
-          {{ t('workshop.viewAllMembers') }}
+          <I18nText k="workshop.viewAllMembers" />
         </a>
       </div>
     </div>

@@ -13,13 +13,13 @@ import { ref } from 'vue'
 import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
-import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
+import { isPlaceholderText } from '@/composables/editor/placeholderText'
 import { registerLocaleLabelCacheInvalidator } from '@/i18n/localeLabelCache'
 import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import { useDiagramStore } from '@/stores/diagram'
-import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { getAllTopicRootRelationshipLabels } from '@/stores/diagram/diagramDefaultLabels'
 import { useLLMResultsStore } from '@/stores/llmResults'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { authFetch } from '@/utils/api'
 import { isTopicToRootConceptConnection } from '@/utils/conceptMapTopicRootEdge'
 
@@ -173,7 +173,7 @@ export function useConceptMapRelationship() {
     if (
       isCollabGuestAiBlocked(diagramStore.collabSessionActive, diagramStore.collabIsDiagramOwner)
     ) {
-      notify.warning(t('canvas.toolbar.collabAiBlocked'))
+      notify.warningKey('canvas.toolbar.collabAiBlocked')
       return { success: false, error: 'collab_guest' }
     }
     if (generatingConnectionIds.value.has(connectionId)) {
@@ -259,7 +259,7 @@ export function useConceptMapRelationship() {
     if (
       isCollabGuestAiBlocked(diagramStore.collabSessionActive, diagramStore.collabIsDiagramOwner)
     ) {
-      notify.warning(t('canvas.toolbar.collabAiBlocked'))
+      notify.warningKey('canvas.toolbar.collabAiBlocked')
       return false
     }
     if (loadingMoreConnectionIds.value.has(connectionId)) return false

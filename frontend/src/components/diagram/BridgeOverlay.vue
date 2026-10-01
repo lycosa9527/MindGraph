@@ -11,8 +11,8 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useVueFlow } from '@vue-flow/core'
 
 import { useLanguage } from '@/composables/core/useLanguage'
-import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { findBridgePairSide } from '@/utils/bridgeMapIdentity'
 
 // Diagram store for diagram type and spec metadata
@@ -583,7 +583,7 @@ onUnmounted(() => {
           text-anchor="middle"
           dominant-baseline="middle"
         >
-          {{ t('diagram.bridgeMap.alternativesEmpty') }}
+          <I18nText k="diagram.bridgeMap.alternativesEmpty" />
         </text>
       </g>
 

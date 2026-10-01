@@ -139,7 +139,14 @@ watch(
       v-else-if="chunks.length === 0"
       class="py-8"
     >
-      <ElEmpty :description="t('knowledge.chunkPreview.empty')" />
+      <ElEmpty>
+        <template #description>
+          <I18nText
+            k="knowledge.chunkPreview.empty"
+            align="center"
+          />
+        </template>
+      </ElEmpty>
     </div>
 
     <div

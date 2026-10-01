@@ -22,7 +22,13 @@ type FitApi = {
   fitForExport: () => void | Promise<unknown>
   fitToNodes: (
     nodeIds: string[],
-    options?: { animate?: boolean; duration?: number; padding?: number }
+    options?: {
+      animate?: boolean
+      duration?: number
+      padding?: number | { top?: number; right?: number; bottom?: number; left?: number }
+      maxZoom?: number
+      transitionLane?: string
+    }
   ) => Promise<void>
   ensureNodeVisibleInSafeFraction: (
     nodeId: string,
@@ -159,6 +165,8 @@ export function useDiagramCanvasEventBus(): {
           animate: data.animate !== false,
           duration: data.duration,
           padding: data.padding,
+          maxZoom: data.maxZoom,
+          transitionLane: data.transitionLane,
         })
       })
     )

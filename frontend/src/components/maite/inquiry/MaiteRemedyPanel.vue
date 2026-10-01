@@ -2,8 +2,6 @@
 /**
  * MaiteRemedyPanel — remedy task list and generate action.
  */
-import { useLanguage } from '@/composables/core/useLanguage'
-
 import type { MaiteRemedyTask } from '@/types/maite'
 
 defineProps<{
@@ -14,22 +12,42 @@ defineProps<{
 const emit = defineEmits<{
   generate: []
 }>()
-
-const { t } = useLanguage()
 </script>
 
 <template>
   <div class="maite-remedy-panel">
-    <button type="button" class="maite-remedy-panel__btn" :disabled="loading" @click="emit('generate')">
-      {{ loading ? t('maite.remedy.generating') : t('maite.remedy.generate') }}
+    <button
+      type="button"
+      class="maite-remedy-panel__btn"
+      :disabled="loading"
+      @click="emit('generate')"
+    >
+      <I18nText
+        v-if="loading"
+        k="maite.remedy.generating"
+      /><I18nText
+        v-else
+        k="maite.remedy.generate"
+      />
     </button>
-    <ul v-if="tasks.length > 0" class="maite-remedy-panel__list">
-      <li v-for="task in tasks" :key="task.id">
+    <ul
+      v-if="tasks.length > 0"
+      class="maite-remedy-panel__list"
+    >
+      <li
+        v-for="task in tasks"
+        :key="task.id"
+      >
         <strong>{{ task.block_name }}</strong>
         <span class="maite-remedy-panel__status">{{ task.status }}</span>
       </li>
     </ul>
-    <p v-else class="maite-remedy-panel__empty">{{ t('maite.remedy.empty') }}</p>
+    <p
+      v-else
+      class="maite-remedy-panel__empty"
+    >
+      <I18nText k="maite.remedy.empty" />
+    </p>
   </div>
 </template>
 

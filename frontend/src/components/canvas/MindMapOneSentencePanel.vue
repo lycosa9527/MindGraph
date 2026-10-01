@@ -233,13 +233,13 @@ onUnmounted(() => {
               v-if="msg.role === 'user' && msg.status === 'queued'"
               class="one-sentence-chat-status"
             >
-              {{ t('canvas.mindMapOneSentence.requestQueued') }}
+              <I18nText k="canvas.mindMapOneSentence.requestQueued" />
             </p>
             <p
               v-else-if="msg.role === 'user' && msg.status === 'failed'"
               class="one-sentence-chat-status one-sentence-chat-status--failed"
             >
-              {{ t('canvas.mindMapOneSentence.requestFailed') }}
+              <I18nText k="canvas.mindMapOneSentence.requestFailed" />
             </p>
             <div
               v-if="messageChoices(msg).length"
@@ -275,7 +275,7 @@ onUnmounted(() => {
           <div
             class="one-sentence-chat-bubble one-sentence-chat-bubble--kitty one-sentence-chat-bubble--thinking"
           >
-            <p class="one-sentence-chat-text">{{ t('canvas.kittyAnchor.thinking') }}</p>
+            <p class="one-sentence-chat-text"><I18nText k="canvas.kittyAnchor.thinking" /></p>
           </div>
         </div>
       </div>
@@ -287,19 +287,14 @@ onUnmounted(() => {
         class="one-sentence-scope-divergence mb-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-[11px] leading-snug text-sky-950"
         role="status"
       >
-        {{
-          t(
-            'canvas.mindMapOneSentence.scopeDivergenceHint',
-            'Phone Kitty is on a different diagram. Sync from the phone, or open that diagram here.'
-          )
-        }}
+        <I18nText k="canvas.mindMapOneSentence.scopeDivergenceHint" />
       </p>
       <p
         v-if="mobileKittyOwnsEditInput"
         class="one-sentence-mobile-lock mb-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-[11px] leading-snug text-violet-900"
         role="status"
       >
-        {{ t('canvas.mindMapOneSentence.mobileKittyOwnsInput') }}
+        <I18nText k="canvas.mindMapOneSentence.mobileKittyOwnsInput" />
       </p>
       <div class="one-sentence-input-stack">
         <OneSentenceNodeActionGuide
@@ -340,7 +335,7 @@ onUnmounted(() => {
                 :disabled="inputDisabled"
                 @click="applyActiveSuggestion"
               >
-                {{ t(activeSuggestionKey) }}
+                <I18nText :k="activeSuggestionKey" />
               </button>
             </Transition>
           </div>

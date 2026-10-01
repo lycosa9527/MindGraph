@@ -8,14 +8,14 @@ import { ElTable } from 'element-plus'
 
 import { useLanguage, useNotifications } from '@/composables'
 import {
+  type MindMateExportDumpInventory,
+  type MindMateExportDumpSnapshotRow,
+  type MindMateExportIncomingDumpRow,
   deleteMindMateExportDumpIncoming,
   deleteMindMateExportDumpSnapshot,
   fetchMindMateExportDumpInventory,
   importMindMateExportDumps,
   uploadMindMateExportDumpZip,
-  type MindMateExportDumpInventory,
-  type MindMateExportDumpSnapshotRow,
-  type MindMateExportIncomingDumpRow,
 } from '@/composables/queries'
 
 const { t } = useLanguage()
@@ -99,7 +99,7 @@ async function refreshInventory(): Promise<void> {
   try {
     inventory.value = await fetchMindMateExportDumpInventory()
   } catch {
-    notify.error(t('admin.mindmateExport.dumps.loadError'))
+    notify.errorKey('admin.mindmateExport.dumps.loadError')
   } finally {
     loading.value = false
   }
@@ -111,7 +111,7 @@ async function handleUpload(options: { file: File }): Promise<void> {
     const formData = new FormData()
     formData.append('file', options.file)
     inventory.value = (await uploadMindMateExportDumpZip(formData)).inventory
-    notify.success(t('admin.mindmateExport.dumps.uploadSuccess'))
+    notify.successKey('admin.mindmateExport.dumps.uploadSuccess')
   } catch (err) {
     const message = err instanceof Error ? err.message : t('admin.mindmateExport.dumps.uploadError')
     notify.error(message)
@@ -123,9 +123,7 @@ async function handleUpload(options: { file: File }): Promise<void> {
 function beforeUpload(file: File): boolean {
   const maxBytes = inventory.value?.max_upload_bytes
   if (maxBytes != null && file.size > maxBytes) {
-    notify.error(
-      t('admin.mindmateExport.dumps.uploadTooLarge', { limit: formatBytes(maxBytes) })
-    )
+    notify.errorKey('admin.mindmateExport.dumps.uploadTooLarge', { limit: formatBytes(maxBytes) })
     return false
   }
   return true
@@ -137,12 +135,12 @@ async function importAllPending(): Promise<void> {
     const result = await importMindMateExportDumps()
     inventory.value = result.inventory
     if (result.errors?.length) {
-      notify.warning(t('admin.mindmateExport.dumps.importPartial'))
+      notify.warningKey('admin.mindmateExport.dumps.importPartial')
     } else {
-      notify.success(t('admin.mindmateExport.dumps.importSuccess'))
+      notify.successKey('admin.mindmateExport.dumps.importSuccess')
     }
   } catch {
-    notify.error(t('admin.mindmateExport.dumps.importError'))
+    notify.errorKey('admin.mindmateExport.dumps.importError')
   } finally {
     importing.value = false
   }
@@ -156,10 +154,10 @@ async function importOne(row: MindMateExportIncomingDumpRow): Promise<void> {
     if (result.errors?.length) {
       notify.warning(result.errors.join('; '))
     } else {
-      notify.success(t('admin.mindmateExport.dumps.importSuccess'))
+      notify.successKey('admin.mindmateExport.dumps.importSuccess')
     }
   } catch {
-    notify.error(t('admin.mindmateExport.dumps.importError'))
+    notify.errorKey('admin.mindmateExport.dumps.importError')
   } finally {
     importing.value = false
   }
@@ -169,9 +167,9 @@ async function removeIncoming(row: MindMateExportIncomingDumpRow): Promise<void>
   try {
     const result = await deleteMindMateExportDumpIncoming(row.name)
     inventory.value = result.inventory
-    notify.success(t('admin.mindmateExport.dumps.deleteSuccess'))
+    notify.successKey('admin.mindmateExport.dumps.deleteSuccess')
   } catch {
-    notify.error(t('admin.mindmateExport.dumps.deleteError'))
+    notify.errorKey('admin.mindmateExport.dumps.deleteError')
   }
 }
 
@@ -179,9 +177,9 @@ async function removeSnapshot(label: string, row: MindMateExportDumpSnapshotRow)
   try {
     const result = await deleteMindMateExportDumpSnapshot(label, row.timestamp)
     inventory.value = result.inventory
-    notify.success(t('admin.mindmateExport.dumps.deleteSuccess'))
+    notify.successKey('admin.mindmateExport.dumps.deleteSuccess')
   } catch {
-    notify.error(t('admin.mindmateExport.dumps.deleteError'))
+    notify.errorKey('admin.mindmateExport.dumps.deleteError')
   }
 }
 
@@ -196,16 +194,22 @@ onMounted(() => {
     class="mindmate-export-dumps"
   >
     <p class="mindmate-export-dumps-intro">
-      {{ t('admin.mindmateExport.dumps.intro') }}
+      <I18nText k="admin.mindmateExport.dumps.intro" />
     </p>
     <p
       v-if="dataSourceLine"
       class="mindmate-export-meta-line"
     >
-      {{ t('admin.mindmateExport.dataSource', { summary: dataSourceLine }) }}
+      <I18nText
+        k="admin.mindmateExport.dataSource"
+        :params="{ summary: dataSourceLine }"
+      />
     </p>
     <p class="mindmate-export-dumps-root">
-      {{ t('admin.mindmateExport.dumps.rootPath', { path: inventory?.dump_root ?? '…' }) }}
+      <I18nText
+        k="admin.mindmateExport.dumps.rootPath"
+        :params="{ path: inventory?.dump_root ?? '…' }"
+      />
     </p>
 
     <section
@@ -214,32 +218,32 @@ onMounted(() => {
       class="mindmate-export-card mindmate-export-dumps-library"
     >
       <h3 class="mindmate-export-subtitle">
-        {{ t(block.titleKey) }}
+        <I18nText :k="block.titleKey" />
       </h3>
       <p
         v-if="!block.library"
         class="mindmate-export-dumps-empty"
       >
-        {{ t('admin.mindmateExport.dumps.libraryEmpty') }}
+        <I18nText k="admin.mindmateExport.dumps.libraryEmpty" />
       </p>
       <dl
         v-else
         class="mindmate-export-library-stats"
       >
         <div>
-          <dt>{{ t('admin.mindmateExport.dumps.libraryMergedSnapshots') }}</dt>
+          <dt><I18nText k="admin.mindmateExport.dumps.libraryMergedSnapshots" /></dt>
           <dd>{{ block.library.merged_snapshot_count }}</dd>
         </div>
         <div>
-          <dt>{{ t('admin.mindmateExport.dumps.colMessages') }}</dt>
+          <dt><I18nText k="admin.mindmateExport.dumps.colMessages" /></dt>
           <dd>{{ block.library.message_rows }}</dd>
         </div>
         <div>
-          <dt>{{ t('admin.mindmateExport.dumps.libraryConversations') }}</dt>
+          <dt><I18nText k="admin.mindmateExport.dumps.libraryConversations" /></dt>
           <dd>{{ block.library.conversation_rows }}</dd>
         </div>
         <div>
-          <dt>{{ t('admin.mindmateExport.dumps.libraryLastMerged') }}</dt>
+          <dt><I18nText k="admin.mindmateExport.dumps.libraryLastMerged" /></dt>
           <dd>{{ block.library.last_merged_at ?? '—' }}</dd>
         </div>
       </dl>
@@ -247,13 +251,13 @@ onMounted(() => {
         v-if="block.library"
         class="mindmate-export-dumps-library-note"
       >
-        {{ t('admin.mindmateExport.dumps.librarySearchNote') }}
+        <I18nText k="admin.mindmateExport.dumps.librarySearchNote" />
       </p>
     </section>
 
     <section class="mindmate-export-card mindmate-export-dumps-upload">
       <h3 class="mindmate-export-subtitle">
-        {{ t('admin.mindmateExport.dumps.uploadTitle') }}
+        <I18nText k="admin.mindmateExport.dumps.uploadTitle" />
       </h3>
       <el-upload
         drag
@@ -265,9 +269,9 @@ onMounted(() => {
         :http-request="handleUpload"
       >
         <div class="mindmate-export-dumps-drop">
-          <p>{{ t('admin.mindmateExport.dumps.uploadHint') }}</p>
+          <p><I18nText k="admin.mindmateExport.dumps.uploadHint" /></p>
           <p class="mindmate-export-dumps-drop-sub">
-            {{ t('admin.mindmateExport.dumps.uploadFormats') }}
+            <I18nText k="admin.mindmateExport.dumps.uploadFormats" />
           </p>
         </div>
       </el-upload>
@@ -276,7 +280,7 @@ onMounted(() => {
     <section class="mindmate-export-card">
       <div class="mindmate-export-dumps-section-head">
         <h3 class="mindmate-export-subtitle">
-          {{ t('admin.mindmateExport.dumps.incomingTitle') }}
+          <I18nText k="admin.mindmateExport.dumps.incomingTitle" />
         </h3>
         <div class="mindmate-export-dumps-actions">
           <el-button
@@ -284,7 +288,7 @@ onMounted(() => {
             :loading="loading"
             @click="refreshInventory"
           >
-            {{ t('admin.mindmateExport.dumps.refresh') }}
+            <I18nText k="admin.mindmateExport.dumps.refresh" />
           </el-button>
           <el-button
             type="primary"
@@ -293,7 +297,7 @@ onMounted(() => {
             :loading="importing"
             @click="importAllPending"
           >
-            {{ t('admin.mindmateExport.dumps.importAll') }}
+            <I18nText k="admin.mindmateExport.dumps.importAll" />
           </el-button>
         </div>
       </div>
@@ -301,7 +305,7 @@ onMounted(() => {
         v-if="incomingRows.length === 0"
         class="mindmate-export-dumps-empty"
       >
-        {{ t('admin.mindmateExport.dumps.incomingEmpty') }}
+        <I18nText k="admin.mindmateExport.dumps.incomingEmpty" />
       </p>
       <ElTable
         v-else
@@ -311,30 +315,35 @@ onMounted(() => {
       >
         <el-table-column
           prop="name"
-          :label="t('admin.mindmateExport.dumps.colFile')"
           min-width="200"
-        />
-        <el-table-column
-          :label="t('admin.mindmateExport.dumps.colServer')"
-          width="120"
         >
+          <template #header>
+            <I18nText k="admin.mindmateExport.dumps.colFile" />
+          </template>
+        </el-table-column>
+        <el-table-column width="120">
+          <template #header>
+            <I18nText k="admin.mindmateExport.dumps.colServer" />
+          </template>
           <template #default="{ row }">
             {{ serverLabelText(row.server_label) }}
           </template>
         </el-table-column>
-        <el-table-column
-          :label="t('admin.mindmateExport.dumps.colSize')"
-          width="100"
-        >
+        <el-table-column width="100">
+          <template #header>
+            <I18nText k="admin.mindmateExport.dumps.colSize" />
+          </template>
           <template #default="{ row }">
             {{ formatBytes(row.bytes) }}
           </template>
         </el-table-column>
         <el-table-column
-          :label="t('admin.mindmateExport.dumps.colActions')"
           width="180"
           fixed="right"
         >
+          <template #header>
+            <I18nText k="admin.mindmateExport.dumps.colActions" />
+          </template>
           <template #default="{ row }">
             <el-button
               link
@@ -342,14 +351,14 @@ onMounted(() => {
               :disabled="importing || !!row.peek_error"
               @click="importOne(row as MindMateExportIncomingDumpRow)"
             >
-              {{ t('admin.mindmateExport.dumps.importOne') }}
+              <I18nText k="admin.mindmateExport.dumps.importOne" />
             </el-button>
             <el-button
               link
               type="danger"
               @click="removeIncoming(row as MindMateExportIncomingDumpRow)"
             >
-              {{ t('admin.mindmateExport.dumps.delete') }}
+              <I18nText k="admin.mindmateExport.dumps.delete" />
             </el-button>
           </template>
         </el-table-column>
@@ -359,19 +368,23 @@ onMounted(() => {
     <section
       v-for="block in [
         { label: 'dify', rows: difySnapshots, titleKey: 'admin.mindmateExport.dumps.archiveDify' },
-        { label: 'neodify', rows: neodifySnapshots, titleKey: 'admin.mindmateExport.dumps.archiveNeodify' },
+        {
+          label: 'neodify',
+          rows: neodifySnapshots,
+          titleKey: 'admin.mindmateExport.dumps.archiveNeodify',
+        },
       ]"
       :key="block.label"
       class="mindmate-export-card"
     >
       <h3 class="mindmate-export-subtitle">
-        {{ t(block.titleKey) }}
+        <I18nText :k="block.titleKey" />
       </h3>
       <p
         v-if="block.rows.length === 0"
         class="mindmate-export-dumps-empty"
       >
-        {{ t('admin.mindmateExport.dumps.snapshotsEmpty') }}
+        <I18nText k="admin.mindmateExport.dumps.snapshotsEmpty" />
       </p>
       <ElTable
         v-else
@@ -381,13 +394,16 @@ onMounted(() => {
       >
         <el-table-column
           prop="timestamp"
-          :label="t('admin.mindmateExport.dumps.colSnapshot')"
           min-width="180"
-        />
-        <el-table-column
-          :label="t('admin.mindmateExport.dumps.colStatus')"
-          width="120"
         >
+          <template #header>
+            <I18nText k="admin.mindmateExport.dumps.colSnapshot" />
+          </template>
+        </el-table-column>
+        <el-table-column width="120">
+          <template #header>
+            <I18nText k="admin.mindmateExport.dumps.colStatus" />
+          </template>
           <template #default="{ row }">
             <el-tag
               :type="statusTagType(row as MindMateExportDumpSnapshotRow)"
@@ -399,21 +415,26 @@ onMounted(() => {
         </el-table-column>
         <el-table-column
           prop="message_rows"
-          :label="t('admin.mindmateExport.dumps.colMessages')"
           width="100"
-        />
+        >
+          <template #header>
+            <I18nText k="admin.mindmateExport.dumps.colMessages" />
+          </template>
+        </el-table-column>
         <el-table-column
-          :label="t('admin.mindmateExport.dumps.colActions')"
           width="100"
           fixed="right"
         >
+          <template #header>
+            <I18nText k="admin.mindmateExport.dumps.colActions" />
+          </template>
           <template #default="{ row }">
             <el-button
               link
               type="danger"
               @click="removeSnapshot(block.label, row as MindMateExportDumpSnapshotRow)"
             >
-              {{ t('admin.mindmateExport.dumps.delete') }}
+              <I18nText k="admin.mindmateExport.dumps.delete" />
             </el-button>
           </template>
         </el-table-column>

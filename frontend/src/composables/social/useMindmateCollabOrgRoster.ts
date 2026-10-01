@@ -1,8 +1,8 @@
 /**
  * MindMate collab org roster facade — collab API + notify WS presence bridge.
  */
+import { useNotifications } from '@/composables'
 import { useMindmateCollabPresenceBridge } from '@/composables/mindmate/mindmateCollabPresenceBridge'
-import { useLanguage, useNotifications } from '@/composables'
 import { createMindmateCollabOrgBackend } from '@/composables/social/createMindmateCollabOrgBackend'
 import type { OrgContactSectionsOptions } from '@/composables/social/types'
 import { useOrgContactSections } from '@/composables/social/useOrgContactSections'
@@ -11,13 +11,12 @@ import { useOrgRoster } from '@/composables/social/useOrgRoster'
 
 export function useMindmateCollabOrgRoster(options: OrgContactSectionsOptions = {}) {
   const notify = useNotifications()
-  const { t } = useLanguage()
   const backend = createMindmateCollabOrgBackend(
     options.collabRoomCode ?? (() => ''),
     options.collabVisibility ?? (() => 'organization'),
     (messageKey) => {
-      notify.warning(t(messageKey))
-    },
+      notify.warningKey(messageKey)
+    }
   )
   const roster = useOrgRoster(backend)
   const { onlineUserIds } = useMindmateCollabPresenceBridge()

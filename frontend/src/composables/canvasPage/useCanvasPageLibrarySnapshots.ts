@@ -96,7 +96,7 @@ export function useCanvasPageLibrarySnapshots(options: {
       collabOwnsPersist: diagramStore.collabSessionActive,
     })
     if (flushBeforeSwitch === 'failed') {
-      notify.warning(t('canvas.library.saveBeforeSwitchFailed'))
+      notify.warningKey('canvas.library.saveBeforeSwitchFailed')
       return false
     }
     await leaveDiagramShareSession()
@@ -119,7 +119,7 @@ export function useCanvasPageLibrarySnapshots(options: {
     }
     markMindMapLoadStage('library:fetch:done', { ok: result.ok })
     if (!result.ok) {
-      notify.error(t('canvas.library.diagramNotFound'))
+      notify.errorKey('canvas.library.diagramNotFound')
       const nextQuery = { ...router.currentRoute.value.query }
       delete nextQuery.diagramId
       delete nextQuery.diagram_id
@@ -163,7 +163,7 @@ export function useCanvasPageLibrarySnapshots(options: {
           diagram.diagram_type
       )
     } else {
-      notify.error(t('canvas.library.diagramNotFound'))
+      notify.errorKey('canvas.library.diagramNotFound')
       return false
     }
     snapshotHistory.setActiveVersion(null)
@@ -201,7 +201,7 @@ export function useCanvasPageLibrarySnapshots(options: {
     if (canProceedAfterVersionJumpPersist(result, diagramStore.collabSessionActive)) {
       return true
     }
-    notify.warning(t('canvas.library.saveBeforeSwitchFailed'))
+    notify.warningKey('canvas.library.saveBeforeSwitchFailed')
     return false
   }
 
@@ -238,11 +238,11 @@ export function useCanvasPageLibrarySnapshots(options: {
     const diagramId = savedDiagramsStore.activeDiagramId
     const diagramType = resolveDiagramTypeForRecall()
     if (!diagramId) {
-      notify.warning(t('canvas.topBar.snapshotRecallNoDiagram'))
+      notify.warningKey('canvas.topBar.snapshotRecallNoDiagram')
       return
     }
     if (!diagramType) {
-      notify.warning(t('canvas.topBar.snapshotRecallNoType'))
+      notify.warningKey('canvas.topBar.snapshotRecallNoType')
       return
     }
 
@@ -273,7 +273,7 @@ export function useCanvasPageLibrarySnapshots(options: {
         if (flushedUnsaved) {
           snapshotHistory.setActiveVersion(null)
         }
-        notify.error(t('canvas.topBar.snapshotRecallFailed'))
+        notify.errorKey('canvas.topBar.snapshotRecallFailed')
         return
       }
       snapshotHistory.setActiveVersion(versionNumber)
@@ -288,7 +288,7 @@ export function useCanvasPageLibrarySnapshots(options: {
   ): Promise<boolean> {
     const result = await savedDiagramsStore.getDiagram(diagramId, { force: true })
     if (!result.ok) {
-      notify.error(t('canvas.topBar.snapshotRecallFailed'))
+      notify.errorKey('canvas.topBar.snapshotRecallFailed')
       return false
     }
     const spec = result.diagram.spec as SavedDiagramSpec
@@ -318,11 +318,11 @@ export function useCanvasPageLibrarySnapshots(options: {
     const diagramId = savedDiagramsStore.activeDiagramId
     const diagramType = resolveDiagramTypeForRecall()
     if (!diagramId) {
-      notify.warning(t('canvas.topBar.snapshotRecallNoDiagram'))
+      notify.warningKey('canvas.topBar.snapshotRecallNoDiagram')
       return
     }
     if (!diagramType) {
-      notify.warning(t('canvas.topBar.snapshotRecallNoType'))
+      notify.warningKey('canvas.topBar.snapshotRecallNoType')
       return
     }
 
@@ -352,7 +352,7 @@ export function useCanvasPageLibrarySnapshots(options: {
 
     const deleteResult = await snapshotHistory.deleteSnapshot(diagramId, versionNumber)
     if (deleteResult.ok) {
-      notify.success(t('canvas.topBar.snapshotDeleted', { n: versionNumber }))
+      notify.successKey('canvas.topBar.snapshotDeleted', { n: versionNumber })
     } else {
       notify.error(deleteResult.message || t('canvas.topBar.snapshotDeleteFailed'))
     }

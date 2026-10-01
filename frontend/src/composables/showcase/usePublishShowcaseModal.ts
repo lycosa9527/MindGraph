@@ -3,40 +3,46 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { BookOpen, History, Image as ImageIcon, LayoutTemplate, Sparkles, Upload, X } from '@lucide/vue'
+import {
+  BookOpen,
+  History,
+  Image as ImageIcon,
+  LayoutTemplate,
+  Sparkles,
+  Upload,
+  X,
+} from '@lucide/vue'
 
+import { DIAGRAM_GALLERY_MAX_ITEMS } from '@/components/showcase/showcaseGallery'
 import {
-  DIAGRAM_GALLERY_MAX_ITEMS,
-} from '@/components/showcase/showcaseGallery'
-import {
-  CASE_TYPE_PUBLISH_OPTIONS,
   CASE_ATTACHMENT_MAX_BYTES,
   CASE_TEACHING_DOC_MAX_BYTES,
+  CASE_TYPE_PUBLISH_OPTIONS,
   CASE_UPLOAD_TOTAL_MAX_BYTES,
+  DIAGRAM_TYPE_OPTIONS,
   SHOWCASE_DIRECT_FILE_UPLOADS_ENABLED,
-  showcaseMaxMegabytes,
+  type ShowcaseCaseType,
+  TAG_MAX_COUNT,
+  TAG_MAX_LENGTH,
   isDiagramImageFile,
   isTeachingDocFile,
   isTemplateSourceFile,
-  DIAGRAM_TYPE_OPTIONS,
-  TAG_MAX_LENGTH,
-  TAG_MAX_COUNT,
-  type ShowcaseCaseType,
+  showcaseMaxMegabytes,
 } from '@/components/showcase/showcaseShared'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
-import { useShowcaseMeta } from '@/composables/showcase/useShowcaseMeta'
+import { loadPublishShowcaseEditPost } from '@/composables/showcase/loadPublishShowcaseEditPost'
 import { processShowcaseGalleryImagePick } from '@/composables/showcase/processShowcaseGalleryImagePick'
+import { createPublishShowcaseSubmitHandlers } from '@/composables/showcase/submitPublishShowcasePost'
+import { usePublishShowcaseAiOrchestration } from '@/composables/showcase/usePublishShowcaseAiOrchestration'
 import { usePublishShowcaseGalleryDrafts } from '@/composables/showcase/usePublishShowcaseGalleryDrafts'
-import { useSavedDiagramsStore, type SavedDiagram } from '@/stores/savedDiagrams'
+import { useShowcaseMeta } from '@/composables/showcase/useShowcaseMeta'
+import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import {
   cloneShowcaseDiagramSpec,
   decodeMgUploadSpec,
   inferDiagramTypeFromSpec,
 } from '@/utils/showcaseDiagramThumbnail'
-import { loadPublishShowcaseEditPost } from '@/composables/showcase/loadPublishShowcaseEditPost'
-import { createPublishShowcaseSubmitHandlers } from '@/composables/showcase/submitPublishShowcasePost'
-import { usePublishShowcaseAiOrchestration } from '@/composables/showcase/usePublishShowcaseAiOrchestration'
 
 export type PublishShowcaseModalProps = {
   visible: boolean
@@ -65,7 +71,7 @@ function isSessionExpiredMessage(message: string): boolean {
 
 export function usePublishShowcaseModal(
   props: PublishShowcaseModalProps,
-  emit: PublishShowcaseModalEmit,
+  emit: PublishShowcaseModalEmit
 ) {
   const { t } = useLanguage()
   const notify = useNotifications()
@@ -155,9 +161,7 @@ export function usePublishShowcaseModal(
 
   function hasTemplateStep1Source(): boolean {
     return Boolean(
-      uploadedMgSpec.value ||
-        selectedDiagram.value ||
-        isMgUploadedFile(uploadedFile.value)
+      uploadedMgSpec.value || selectedDiagram.value || isMgUploadedFile(uploadedFile.value)
     )
   }
 
@@ -178,7 +182,7 @@ export function usePublishShowcaseModal(
     try {
       const spec = await decodeMgUploadSpec(file!)
       if (!spec) {
-        notify.error(String(t('showcase.publishModal.invalidMgFile')))
+        notify.errorKey('showcase.publishModal.invalidMgFile')
         uploadedFile.value = null
         uploadedFileName.value = ''
         return false
@@ -204,16 +208,12 @@ export function usePublishShowcaseModal(
         t(
           isEditMode.value
             ? 'showcase.publishModal.resubmitting'
-            : 'showcase.publishModal.submitting',
-        ),
+            : 'showcase.publishModal.submitting'
+        )
       )
     }
     return String(
-      t(
-        isEditMode.value
-          ? 'showcase.publishModal.resubmit'
-          : 'showcase.publishModal.submit',
-      ),
+      t(isEditMode.value ? 'showcase.publishModal.resubmit' : 'showcase.publishModal.submit')
     )
   })
   const isDiagramType = computed(
@@ -253,14 +253,16 @@ export function usePublishShowcaseModal(
     () => Boolean(selectedDiagram.value) || galleryDiagramDrafts.value.length > 0
   )
 
-  const publishDiagramPreviewThumbnail = computed(
-    () => selectedDiagram.value?.thumbnail ?? null
-  )
+  const publishDiagramPreviewThumbnail = computed(() => selectedDiagram.value?.thumbnail ?? null)
 
   const subjectFilterOptions = computed(() => subjectOptions.value)
   const gradeFilterOptions = computed(() => gradeOptions.value)
   const diagramTypeFilterOptions = computed(() =>
-    DIAGRAM_TYPE_OPTIONS.map((d) => ({ value: d.value, label: d.label }))
+    DIAGRAM_TYPE_OPTIONS.map((d) => ({
+      value: d.value,
+      label: d.label,
+      labelKey: d.labelKey,
+    }))
   )
 
   const tagsAtLimit = computed(() => tags.value.length >= TAG_MAX_COUNT)
@@ -383,14 +385,33 @@ export function usePublishShowcaseModal(
       abortGalleryImagePick()
       resetForm()
       title.value = props.getTitle?.() || ''
-      caseType.value = props.defaultCaseType || (props.getDiagramSpec ? 'diagram_case' : 'teaching_design')
+      caseType.value =
+        props.defaultCaseType || (props.getDiagramSpec ? 'diagram_case' : 'teaching_design')
       diagramType.value = props.diagramType || 'mind_map'
       if (props.editPostId?.trim()) {
         void loadPublishShowcaseEditPost(props.editPostId.trim(), {
-          t, notify, emit, isEditLoading, title, description, tags, caseType, subject, grade,
-          diagramType, teachingReflection, designHighlights, classroomApplication,
-          editHasAttachment, editHasThumbnail, selectedDiagramSpec, uploadedFileName,
-          galleryExistingImages, galleryDiagramDrafts, clearGalleryDrafts, newGalleryId,
+          t,
+          notify,
+          emit,
+          isEditLoading,
+          title,
+          description,
+          tags,
+          caseType,
+          subject,
+          grade,
+          diagramType,
+          teachingReflection,
+          designHighlights,
+          classroomApplication,
+          editHasAttachment,
+          editHasThumbnail,
+          selectedDiagramSpec,
+          uploadedFileName,
+          galleryExistingImages,
+          galleryDiagramDrafts,
+          clearGalleryDrafts,
+          newGalleryId,
           basenameFromMediaUrl,
         })
       } else {
@@ -425,7 +446,7 @@ export function usePublishShowcaseModal(
     const value = tagDraft.value.trim()
     if (!value) return
     if (tags.value.length >= TAG_MAX_COUNT) {
-      notify.warning(String(t('showcase.publishModal.tagMaxCount', { max: TAG_MAX_COUNT })))
+      notify.warningKey('showcase.publishModal.tagMaxCount', { max: TAG_MAX_COUNT })
       return
     }
     if (!tags.value.includes(value)) {
@@ -477,13 +498,9 @@ export function usePublishShowcaseModal(
   function validateTeachingDocSize(file: File): boolean {
     if (caseType.value !== 'teaching_design') return true
     if (file.size <= CASE_TEACHING_DOC_MAX_BYTES) return true
-    notify.error(
-      String(
-        t('showcase.publishModal.teachingDocTooLarge', {
-          maxMb: showcaseMaxMegabytes(CASE_TEACHING_DOC_MAX_BYTES),
-        })
-      )
-    )
+    notify.errorKey('showcase.publishModal.teachingDocTooLarge', {
+      maxMb: showcaseMaxMegabytes(CASE_TEACHING_DOC_MAX_BYTES),
+    })
     return false
   }
 
@@ -492,7 +509,7 @@ export function usePublishShowcaseModal(
     const files = input.files ? Array.from(input.files) : []
     input.value = ''
     if (!SHOWCASE_DIRECT_FILE_UPLOADS_ENABLED) {
-      notify.info(String(t('showcase.publishModal.directUploadDisabled')))
+      notify.infoKey('showcase.publishModal.directUploadDisabled')
       return
     }
     if (!files.length) return
@@ -520,27 +537,23 @@ export function usePublishShowcaseModal(
             return
           }
           if (pickEvent.reason === 'gallery_limit') {
-            notify.error(
-              String(t('showcase.publishModal.galleryLimit', { max: DIAGRAM_GALLERY_MAX_ITEMS }))
-            )
+            notify.errorKey('showcase.publishModal.galleryLimit', {
+              max: DIAGRAM_GALLERY_MAX_ITEMS,
+            })
             return
           }
           if (pickEvent.reason === 'invalid_type') {
-            notify.error(String(t('showcase.publishModal.invalidFileType')))
+            notify.errorKey('showcase.publishModal.invalidFileType')
             return
           }
           if (pickEvent.reason === 'too_large') {
-            notify.error(
-              String(
-                t('showcase.publishModal.fileTooLarge', {
-                  name: pickEvent.source.name,
-                  maxMb: showcaseMaxMegabytes(CASE_ATTACHMENT_MAX_BYTES),
-                })
-              )
-            )
+            notify.errorKey('showcase.publishModal.fileTooLarge', {
+              name: pickEvent.source.name,
+              maxMb: showcaseMaxMegabytes(CASE_ATTACHMENT_MAX_BYTES),
+            })
             return
           }
-          notify.error(String(t('showcase.publishModal.uploadTotalTooLarge')))
+          notify.errorKey('showcase.publishModal.uploadTotalTooLarge')
         },
       })
     } finally {
@@ -553,11 +566,11 @@ export function usePublishShowcaseModal(
 
   async function addGalleryDiagram(diagram: SavedDiagram): Promise<void> {
     if (galleryDiagramDrafts.value.some((entry) => entry.diagram.id === diagram.id)) {
-      notify.error(String(t('showcase.publishModal.galleryDuplicateDiagram')))
+      notify.errorKey('showcase.publishModal.galleryDuplicateDiagram')
       return
     }
     if (galleryAtLimit.value) {
-      notify.error(String(t('showcase.publishModal.galleryLimit', { max: DIAGRAM_GALLERY_MAX_ITEMS })))
+      notify.errorKey('showcase.publishModal.galleryLimit', { max: DIAGRAM_GALLERY_MAX_ITEMS })
       return
     }
     await addGalleryDiagramDraft(
@@ -566,7 +579,7 @@ export function usePublishShowcaseModal(
       (value) => {
         diagramType.value = value
       },
-      diagramTypeFromSavedDiagram,
+      diagramTypeFromSavedDiagram
     )
   }
 
@@ -575,12 +588,12 @@ export function usePublishShowcaseModal(
     const file = input.files?.[0]
     input.value = ''
     if (!SHOWCASE_DIRECT_FILE_UPLOADS_ENABLED) {
-      notify.info(String(t('showcase.publishModal.directUploadDisabled')))
+      notify.infoKey('showcase.publishModal.directUploadDisabled')
       return
     }
     if (!file) return
     if (!validateFile(file)) {
-      notify.error(String(t('showcase.publishModal.invalidFileType')))
+      notify.errorKey('showcase.publishModal.invalidFileType')
       return
     }
     if (!validateTeachingDocSize(file)) return
@@ -617,10 +630,7 @@ export function usePublishShowcaseModal(
     return raw === 'mindmap' ? 'mind_map' : raw
   }
 
-  function resolvePublishDiagramType(
-    rawType: string,
-    spec: Record<string, unknown>
-  ): string {
+  function resolvePublishDiagramType(rawType: string, spec: Record<string, unknown>): string {
     let type = diagramTypeFromSavedDiagram(rawType)
     if (!DIAGRAM_TYPE_OPTIONS.some((o) => o.value === type)) {
       type = inferDiagramTypeFromSpec(spec, 'mind_map')
@@ -657,10 +667,10 @@ export function usePublishShowcaseModal(
       if (result.ok && applyHistoryDiagramSpec(result.diagram.spec, selectedDiagram.value)) {
         return true
       }
-      notify.error(String(t('showcase.publishModal.validationFile')))
+      notify.errorKey('showcase.publishModal.validationFile')
       return false
     } catch {
-      notify.error(String(t('showcase.publishModal.networkError')))
+      notify.errorKey('showcase.publishModal.networkError')
       return false
     } finally {
       isHistorySpecLoading.value = false
@@ -689,13 +699,13 @@ export function usePublishShowcaseModal(
       const result = await savedDiagramsStore.getDiagram(diagram.id)
       if (result.ok) {
         if (!applyHistoryDiagramSpec(result.diagram.spec, diagram)) {
-          notify.error(String(t('showcase.publishModal.validationFile')))
+          notify.errorKey('showcase.publishModal.validationFile')
         }
       } else {
-        notify.error(String(t('showcase.publishModal.validationFile')))
+        notify.errorKey('showcase.publishModal.validationFile')
       }
     } catch {
-      notify.error(String(t('showcase.publishModal.networkError')))
+      notify.errorKey('showcase.publishModal.networkError')
     } finally {
       isHistorySpecLoading.value = false
     }
@@ -703,23 +713,23 @@ export function usePublishShowcaseModal(
 
   async function goNext() {
     if (props.proxyMode && !attributionName.value.trim()) {
-      notify.error(String(t('admin.showcase.proxyAttributionRequired')))
+      notify.errorKey('admin.showcase.proxyAttributionRequired')
       return
     }
     if (!title.value.trim()) {
-      notify.error(String(t('showcase.publishModal.validationTitle')))
+      notify.errorKey('showcase.publishModal.validationTitle')
       return
     }
     if (!subject.value) {
-      notify.error(String(t('showcase.publishModal.validationSubject')))
+      notify.errorKey('showcase.publishModal.validationSubject')
       return
     }
     if (!grade.value) {
-      notify.error(String(t('showcase.publishModal.validationGrade')))
+      notify.errorKey('showcase.publishModal.validationGrade')
       return
     }
     if (isDiagramType.value && !diagramType.value) {
-      notify.error(String(t('showcase.publishModal.validationDiagramType')))
+      notify.errorKey('showcase.publishModal.validationDiagramType')
       return
     }
     if (
@@ -728,7 +738,7 @@ export function usePublishShowcaseModal(
       !uploadedFile.value &&
       !(isEditMode.value && editHasAttachment.value)
     ) {
-      notify.error(String(t('showcase.publishModal.validationFile')))
+      notify.errorKey('showcase.publishModal.validationFile')
       return
     }
     isStep1Advancing.value = true
@@ -737,11 +747,11 @@ export function usePublishShowcaseModal(
         const needsLegacyTemplateSource =
           caseType.value === 'diagram_template' && galleryTotalCount.value < 1
         if (galleryTotalCount.value < 1 && !hasTemplateStep1Source()) {
-          notify.error(String(t('showcase.publishModal.validationFile')))
+          notify.errorKey('showcase.publishModal.validationFile')
           return
         }
         if (caseType.value === 'diagram_case' && galleryTotalCount.value < 1) {
-          notify.error(String(t('showcase.publishModal.validationFile')))
+          notify.errorKey('showcase.publishModal.validationFile')
           return
         }
         if (isMgUploadedFile(uploadedFile.value) && !uploadedMgSpec.value) {
@@ -751,7 +761,7 @@ export function usePublishShowcaseModal(
         if (galleryDiagramDrafts.value.some((draft) => !draft.spec)) {
           for (const draft of galleryDiagramDrafts.value) {
             if (!draft.spec && !(await loadGalleryDiagramSpec(draft))) {
-              notify.error(String(t('showcase.publishModal.validationFile')))
+              notify.errorKey('showcase.publishModal.validationFile')
               return
             }
           }

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { uploadVodFile } from '@/composables/admin/uploadVodFile'
+import { uploadVodFile, vodSdkConstructor } from '@/composables/admin/uploadVodFile'
 
 const signVodUpload = vi.hoisted(() => vi.fn())
 const registerVodMedia = vi.hoisted(() => vi.fn())
@@ -11,6 +11,7 @@ const sdk = vi.hoisted(() => {
     enableRaceRegion?: boolean
   }> = []
   const seen: string[] = []
+  const progressHandlers: Array<(info: { percent?: number }) => void> = []
 
   class TcVod {
     constructor(options: {
@@ -23,10 +24,17 @@ const sdk = vi.hoisted(() => {
 
     upload() {
       return {
-        on() {},
+        on(event: string, handler: (info: { percent?: number }) => void) {
+          if (event === 'media_progress') {
+            progressHandlers.push(handler)
+          }
+        },
         async done() {
           const options = constructed[constructed.length - 1]
           seen.push(await options.getSignature())
+          for (const handler of progressHandlers) {
+            handler({ percent: 0.4 })
+          }
           seen.push(await options.getSignature())
           return { fileId: 'file-1' }
         },
@@ -34,7 +42,7 @@ const sdk = vi.hoisted(() => {
     }
   }
 
-  return { constructed, seen, TcVod }
+  return { constructed, seen, progressHandlers, TcVod }
 })
 
 vi.mock('@/utils/vodApi', () => ({
@@ -46,12 +54,24 @@ vi.mock('vod-js-sdk-v6', () => ({
   default: sdk.TcVod,
 }))
 
+describe('vodSdkConstructor', () => {
+  class TcVod {}
+
+  it('unwraps the production CJS interop nest to the constructor', () => {
+    const nested = { default: { __esModule: true, default: TcVod } }
+    expect(vodSdkConstructor(nested)).toBe(TcVod)
+    expect(vodSdkConstructor({ default: TcVod })).toBe(TcVod)
+    expect(vodSdkConstructor(TcVod)).toBe(TcVod)
+  })
+})
+
 describe('uploadVodFile', () => {
   beforeEach(() => {
     signVodUpload.mockReset()
     registerVodMedia.mockReset()
     sdk.constructed.length = 0
     sdk.seen.length = 0
+    sdk.progressHandlers.length = 0
   })
 
   it('mints a fresh one-time signature for each SDK getSignature call', async () => {
@@ -77,7 +97,7 @@ describe('uploadVodFile', () => {
       title: 'Clip',
       organizationId: 7,
       folderId: 'folder-1',
-      sourceContext: 'ctx-b',
+      sourceContext: 'ctx-a',
     })
   })
 })

@@ -32,6 +32,7 @@ from services.redis.cache.redis_user_cache import user_cache
 from services.redis.rate_limiting.redis_rate_limiter import get_rate_limiter
 from services.redis.redis_sms_storage import get_sms_storage
 from utils.auth import get_current_user
+from utils.auth.bayi_mode import is_bayi_sso_phone
 
 from .captcha import verify_captcha_with_retry
 from .dependencies import get_language_dependency
@@ -40,6 +41,15 @@ from .helpers import commit_user_with_retry
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _reject_bayi_sso_phone_change(user: User, lang: Language) -> None:
+    """The phone column is the Bayi userId. Replacing it would split the account."""
+    if is_bayi_sso_phone(user.phone):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=Messages.error("bayi_sso_phone_locked", lang),
+        )
 
 
 @router.post("/phone/send-code")
@@ -63,6 +73,7 @@ async def send_change_phone_code(
     - 60 seconds cooldown between requests for same phone/purpose
     - Maximum 5 codes per hour per phone number
     """
+    _reject_bayi_sso_phone_change(current_user, lang)
     new_phone = request.new_phone
 
     # Check if new phone is same as current phone
@@ -191,6 +202,7 @@ async def change_phone(
     Requires authentication and valid SMS verification code.
     Updates the user's phone number in the database.
     """
+    _reject_bayi_sso_phone_change(current_user, lang)
     new_phone = request.new_phone
     sms_code = request.sms_code
 

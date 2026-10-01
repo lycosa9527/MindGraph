@@ -125,7 +125,7 @@ async def _fanout_local_participants(
 
 async def broadcast_to_others(code: str, sender_id: int, message: Dict[str, Any]) -> bool:
     """Broadcast message to all participants except sender. Returns True on success."""
-    logger.info(
+    logger.debug(
         "[CollabDebug] broadcast_to_others mode=%s code=%s sender=%s msg_type=%s seq=%s version=%s ws_msg_id=%s",
         "fanout" if is_ws_fanout_enabled() else "local",
         code,
@@ -168,7 +168,7 @@ async def broadcast_to_others(code: str, sender_id: int, message: Dict[str, Any]
 
 async def broadcast_to_all(code: str, message: Dict[str, Any]) -> None:
     """Broadcast message to all participants."""
-    logger.info(
+    logger.debug(
         "[CollabDebug] broadcast_to_all mode=%s code=%s msg_type=%s seq=%s version=%s",
         "fanout" if is_ws_fanout_enabled() else "local",
         code,

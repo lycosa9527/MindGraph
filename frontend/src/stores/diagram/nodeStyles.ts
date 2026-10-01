@@ -38,6 +38,7 @@ import {
   measureNumberedBranchUnderlineHeight,
 } from '../specLoader/mindMap'
 import { learningSheetLayoutText } from '../specLoader/mindMapLearningSheet'
+import { estimateMindMapBranchSizes } from '../specLoader/mindMapNumberingEstimate'
 import { emitCtxEvent } from './events'
 import { snapshotMindMapCanvasBucket } from './mindMapCanvasModeSwitch'
 import type { DiagramContext } from './types'
@@ -275,33 +276,30 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
     invalidateMindMapBranchNumberMapCache()
     ctx.beginMindMapNumberingLayoutHold()
     const numberMap = mindMapBranchNumberMapFromData(data.value)
+    const sizes = estimateMindMapBranchSizes(nodes, numberMap)
     const nextWidths = { ...ctx.mindMapNodeWidths.value }
     const nextHeights = { ...ctx.mindMapNodeHeights.value }
-    nodes.forEach((node, nodeIndex) => {
-      if (node.id === 'topic' || node.type === 'topic' || node.type === 'center') return
-      const rawText = learningSheetLayoutText(node)
-      const prefix = numberMap.get(node.id) ?? ''
-      const mergedStyle = node.style
-      const newShape = resolveNodeShape(mergedStyle, true)
-      const freshWidth = estimateNumberedBranchWidth(rawText, prefix, node.id, mergedStyle)
-      const freshHeight =
-        newShape === 'underline'
-          ? measureNumberedBranchUnderlineHeight(rawText, prefix, node.id, mergedStyle)
-          : measureNumberedBranchHeight(rawText, prefix, node.id, mergedStyle)
-      nodes[nodeIndex] = {
-        ...node,
-        data: {
-          ...node.data,
-          estimatedWidth: freshWidth,
-          estimatedHeight: freshHeight,
-        },
+    const nextDimensions = { ...ctx.nodeDimensions.value }
+    let dimensionsChanged = false
+    for (const node of nodes) {
+      const size = sizes.get(node.id)
+      if (!size) continue
+      const nodeData = node.data ?? {}
+      if (node.data == null) node.data = nodeData
+      nodeData.estimatedWidth = size.width
+      nodeData.estimatedHeight = size.height
+      nextWidths[node.id] = size.width
+      nextHeights[node.id] = size.height
+      if (node.id in nextDimensions) {
+        delete nextDimensions[node.id]
+        dimensionsChanged = true
       }
-      nextWidths[node.id] = freshWidth
-      nextHeights[node.id] = freshHeight
-      delete ctx.nodeDimensions.value[node.id]
-    })
+    }
     ctx.mindMapNodeWidths.value = nextWidths
     ctx.mindMapNodeHeights.value = nextHeights
+    if (dimensionsChanged) {
+      ctx.nodeDimensions.value = nextDimensions
+    }
     if (!options?.preserveIncomingY) {
       ctx.mindMapPreserveIncomingY.value = false
       ctx.mindMapPreserveIncomingYNodeId.value = null

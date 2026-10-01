@@ -33,7 +33,7 @@ export default {
   'collab.previousSessionsStopped': 'Ended {n} previous collaboration session(s) on your other diagrams.',
   'collab.saveFailed': 'Failed to save diagram',
   'collab.scanToJoin': 'Scan to join',
-  'collab.schoolDescActive': 'School collaboration is on. Colleagues: use Collaborate → School on the home page and pick this diagram — no code required.',
+  'collab.schoolDescActive': 'School collaboration is on. Colleagues: use Collaborate → School on the MindGraph home page and pick this diagram — no code required.',
   'collab.schoolStarted': 'School collaboration is on — colleagues can join from Collaborate → School.',
   'collab.sectionNetwork': 'Shared collaboration (code)',
   'collab.sectionSchool': 'School collaboration',

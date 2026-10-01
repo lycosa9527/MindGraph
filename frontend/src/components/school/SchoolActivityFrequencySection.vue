@@ -4,8 +4,8 @@ import { computed } from 'vue'
 import { Clock, Histogram, User } from '@element-plus/icons-vue'
 
 import AdminSwissChartCard from '@/components/admin/swiss/AdminSwissChartCard.vue'
-import type { SchoolUserActivityFrequency } from '@/composables/queries/adminSchoolUserActivityApi'
 import { useLanguage } from '@/composables'
+import type { SchoolUserActivityFrequency } from '@/composables/queries/adminSchoolUserActivityApi'
 
 const props = defineProps<{
   frequency: SchoolUserActivityFrequency
@@ -29,11 +29,11 @@ function oneDecimal(value: number): string {
 <template>
   <section class="school-activity-section">
     <h2 class="school-activity-section__title">
-      {{ t('admin.schoolActivity.sectionFrequency') }}
+      <I18nText k="admin.schoolActivity.sectionFrequency" />
     </h2>
     <div class="school-activity-section__grid">
       <AdminSwissChartCard
-        :title="t('admin.schoolActivity.loginFrequency')"
+        title-key="admin.schoolActivity.loginFrequency"
         :value="roster"
         :timestamp="props.timestamp"
         theme="members"
@@ -43,39 +43,37 @@ function oneDecimal(value: number): string {
         :values="props.frequency.login_count_buckets.map((bucket) => bucket.value)"
       />
       <AdminSwissChartCard
-        :title="t('admin.schoolActivity.highFreq')"
-        :value="t('admin.schoolActivity.countWithShare', {
-          count: props.frequency.high_freq_count,
-          share: oneDecimal(props.frequency.high_freq_share),
-        })"
+        title-key="admin.schoolActivity.highFreq"
+        :value="
+          t('admin.schoolActivity.countWithShare', {
+            count: props.frequency.high_freq_count,
+            share: oneDecimal(props.frequency.high_freq_share),
+          })
+        "
         :timestamp="props.timestamp"
         theme="success"
         :icon="User"
         chart-kind="bar"
-        :labels="[
-          t('admin.schoolActivity.highFreq'),
-          t('admin.schoolActivity.otherUsers'),
-        ]"
+        :labels="[t('admin.schoolActivity.highFreq'), t('admin.schoolActivity.otherUsers')]"
         :values="[props.frequency.high_freq_count, highRest]"
       />
       <AdminSwissChartCard
-        :title="t('admin.schoolActivity.lowFreq')"
-        :value="t('admin.schoolActivity.countWithShare', {
-          count: props.frequency.low_freq_count,
-          share: oneDecimal(props.frequency.low_freq_share),
-        })"
+        title-key="admin.schoolActivity.lowFreq"
+        :value="
+          t('admin.schoolActivity.countWithShare', {
+            count: props.frequency.low_freq_count,
+            share: oneDecimal(props.frequency.low_freq_share),
+          })
+        "
         :timestamp="props.timestamp"
         theme="warn"
         :icon="User"
         chart-kind="bar"
-        :labels="[
-          t('admin.schoolActivity.lowFreq'),
-          t('admin.schoolActivity.otherUsers'),
-        ]"
+        :labels="[t('admin.schoolActivity.lowFreq'), t('admin.schoolActivity.otherUsers')]"
         :values="[props.frequency.low_freq_count, lowRest]"
       />
       <AdminSwissChartCard
-        :title="t('admin.schoolActivity.hourDistribution')"
+        title-key="admin.schoolActivity.hourDistribution"
         :value="props.frequency.hour_of_day.reduce((sum, point) => sum + point.value, 0)"
         :timestamp="props.timestamp"
         theme="storage"

@@ -7,7 +7,7 @@ Proprietary License
 
 from typing import Any, Dict, List, Optional
 
-from fastapi import WebSocket
+from fastapi import WebSocket, WebSocketDisconnect
 
 from models.domain.messages import Language
 
@@ -199,6 +199,9 @@ async def safe_websocket_send(websocket: WebSocket, message: Dict[str, Any]) -> 
                 return False
         await websocket.send_json(message)
         return True
+    except WebSocketDisconnect:
+        logger.debug("WebSocket closed, cannot send message")
+        return False
     except (RuntimeError, ConnectionError, AttributeError) as e:
         # Handle various WebSocket closed errors
         if "close" in str(e).lower() or "closed" in str(e).lower():

@@ -6,8 +6,8 @@ import { onMounted, reactive, ref, watch } from 'vue'
 
 import { Building2, Headphones, Server, Settings, UserRound } from '@lucide/vue'
 
-import { notify } from '@/composables/core/notifications'
 import { useLanguage } from '@/composables'
+import { notify } from '@/composables/core/notifications'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
 import {
@@ -57,8 +57,7 @@ function profilePrefill(): { name: string; phone: string; organization: string }
   const phone = (user?.phone || '').trim()
   const organization = (user?.schoolName || '').trim()
   // Skip name when username is just a phone (common for SMS-only accounts).
-  const looksLikePhone =
-    /^\d{7,15}$/.test(username) || (phone !== '' && username === phone)
+  const looksLikePhone = /^\d{7,15}$/.test(username) || (phone !== '' && username === phone)
   const name = looksLikePhone ? '' : username
   return {
     name: name.slice(0, SCHOOL_CONSULT_LIMITS.name),
@@ -92,12 +91,7 @@ onMounted(() => {
 
 // Fill blanks if /me arrives after mount; never overwrite user edits.
 watch(
-  () =>
-    [
-      authStore.user?.username,
-      authStore.user?.phone,
-      authStore.user?.schoolName,
-    ] as const,
+  () => [authStore.user?.username, authStore.user?.phone, authStore.user?.schoolName] as const,
   () => {
     applyProfilePrefill({ onlyEmpty: true })
   }
@@ -115,7 +109,7 @@ async function submitConsultation(): Promise<void> {
     note: form.note,
   })
   if (!validated.ok) {
-    notify.warning(t(schoolConsultValidationMessageKey(validated.error)))
+    notify.warningKey(schoolConsultValidationMessageKey(validated.error))
     return
   }
 
@@ -132,25 +126,25 @@ async function submitConsultation(): Promise<void> {
       }),
     })
     if (response.ok) {
-      notify.success(t('thinkingCoins.school.submitSuccess'))
+      notify.successKey('thinkingCoins.school.submitSuccess')
       resetForm()
       return
     }
     if (response.status === 422) {
-      notify.warning(t('thinkingCoins.school.validationInvalid'))
+      notify.warningKey('thinkingCoins.school.validationInvalid')
       return
     }
     if (response.status === 429) {
-      notify.error(t('thinkingCoins.school.submitRateLimit'))
+      notify.errorKey('thinkingCoins.school.submitRateLimit')
       return
     }
     if (response.status === 503) {
-      notify.error(t('thinkingCoins.school.submitNotConfigured'))
+      notify.errorKey('thinkingCoins.school.submitNotConfigured')
       return
     }
-    notify.error(t('thinkingCoins.school.submitFailed'))
+    notify.errorKey('thinkingCoins.school.submitFailed')
   } catch {
-    notify.error(t('thinkingCoins.school.submitFailed'))
+    notify.errorKey('thinkingCoins.school.submitFailed')
   } finally {
     submitting.value = false
   }
@@ -167,10 +161,10 @@ async function submitConsultation(): Promise<void> {
       </div>
       <div class="min-w-0">
         <h3 class="text-base font-semibold text-stone-900">
-          {{ t('thinkingCoins.school.headline') }}
+          <I18nText k="thinkingCoins.school.headline" />
         </h3>
         <p class="mt-1.5 text-sm leading-relaxed text-stone-500">
-          {{ t('thinkingCoins.school.description') }}
+          <I18nText k="thinkingCoins.school.description" />
         </p>
       </div>
     </div>
@@ -188,10 +182,10 @@ async function submitConsultation(): Promise<void> {
           />
           <div class="min-w-0">
             <div class="text-sm font-semibold text-stone-800">
-              {{ t(feature.titleKey) }}
+              <I18nText :k="feature.titleKey" />
             </div>
             <div class="mt-0.5 text-xs text-stone-500">
-              {{ t(feature.descKey) }}
+              <I18nText :k="feature.descKey" />
             </div>
           </div>
         </div>
@@ -203,7 +197,7 @@ async function submitConsultation(): Promise<void> {
       @submit.prevent="submitConsultation"
     >
       <h4 class="text-sm font-semibold text-stone-800">
-        {{ t('thinkingCoins.school.consultTitle') }}
+        <I18nText k="thinkingCoins.school.consultTitle" />
       </h4>
 
       <div class="mt-4 space-y-3">
@@ -215,7 +209,7 @@ async function submitConsultation(): Promise<void> {
           :maxlength="SCHOOL_CONSULT_LIMITS.name"
           class="tc-school-input"
           :placeholder="t('thinkingCoins.school.fieldName')"
-        >
+        />
         <input
           v-model="form.phone"
           type="tel"
@@ -225,7 +219,7 @@ async function submitConsultation(): Promise<void> {
           :maxlength="SCHOOL_CONSULT_LIMITS.phone"
           class="tc-school-input"
           :placeholder="t('thinkingCoins.school.fieldPhone')"
-        >
+        />
         <input
           v-model="form.organization"
           type="text"
@@ -234,7 +228,7 @@ async function submitConsultation(): Promise<void> {
           :maxlength="SCHOOL_CONSULT_LIMITS.organization"
           class="tc-school-input"
           :placeholder="t('thinkingCoins.school.fieldOrg')"
-        >
+        />
         <textarea
           v-model="form.note"
           rows="3"
@@ -249,7 +243,7 @@ async function submitConsultation(): Promise<void> {
         class="tc-school-submit mt-4"
         :disabled="submitting"
       >
-        {{ t('thinkingCoins.school.submit') }}
+        <I18nText k="thinkingCoins.school.submit" />
       </button>
     </form>
   </div>

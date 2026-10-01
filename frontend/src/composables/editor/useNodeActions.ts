@@ -20,7 +20,7 @@ import {
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
 import { consumeMindMapPostEditSiblingAnchor } from '@/composables/mindMap/mindMapCanvasEnterGuard'
-import { braceMapRootId, isBraceMapSubpartNode } from '@/stores/diagram/braceMapParentResolve'
+import { braceMapRootId } from '@/stores/diagram/braceMapParentResolve'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { MindMapCanvasMode } from '@/stores/ui'
 import type { DiagramNode } from '@/types'
@@ -95,7 +95,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     if (isDiagramPresentationReadOnly(diagramStore)) return
     const diagramType = diagramStore.type
     if (!diagramStore.data?.nodes) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
       return
     }
 
@@ -108,18 +108,8 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       ]
       if (diagramStore.addFlowMapStep(t('canvas.toolbar.newStep'), subs)) {
         diagramStore.pushHistory(t('canvas.toolbar.addStepHistory'))
-        notify.success(t('canvas.toolbar.stepAdded'))
+        notify.successKey('canvas.toolbar.stepAdded')
       }
-      return
-    }
-
-    if (diagramType === 'tree_map') {
-      handleAddTreeCategory()
-      return
-    }
-
-    if (diagramType === 'multi_flow_map') {
-      handleAddCause()
       return
     }
 
@@ -134,7 +124,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
         t('canvas.toolbar.subpartLabel2'),
       ]
       if (diagramStore.addBraceMapPart(rootId, t('canvas.toolbar.newPart'), subparts)) {
-        notify.success(t('canvas.toolbar.partAdded'))
+        notify.successKey('canvas.toolbar.partAdded')
       }
       return
     }
@@ -149,7 +139,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       ) &&
       shouldToastMindMapNodeAdd(diagramStore.mindMapCanvasMode)
     ) {
-      notify.success(t('canvas.toolbar.branchAdded'))
+      notify.successKey('canvas.toolbar.branchAdded')
     }
   }
 
@@ -157,17 +147,12 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     if (isDiagramPresentationReadOnly(diagramStore)) return
     const diagramType = diagramStore.type
     if (!diagramStore.data?.nodes) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
       return
     }
 
-    if (diagramType === 'tree_map') {
-      handleAddTreeChild()
-      return
-    }
-
-    if (diagramType === 'multi_flow_map') {
-      handleAddEffect()
+    if (diagramType === 'tree_map' || diagramType === 'multi_flow_map') {
+      handleAddNode()
       return
     }
 
@@ -182,7 +167,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
         : undefined
 
       if (!stepNode?.text) {
-        notify.warning(t('canvas.toolbar.selectStepForSubstep'))
+        notify.warningKey('canvas.toolbar.selectStepForSubstep')
         return
       }
       const addStepIndex = readFlowStepIndex(stepNode)
@@ -195,7 +180,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
         )
       ) {
         diagramStore.pushHistory(t('canvas.toolbar.addSubstepHistory'))
-        notify.success(t('canvas.toolbar.substepAdded'))
+        notify.successKey('canvas.toolbar.substepAdded')
       }
       return
     }
@@ -203,7 +188,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     if (diagramType === 'brace_map') {
       const selectedId = diagramStore.selectedNodes[0]
       if (!selectedId) {
-        notify.warning(t('canvas.toolbar.selectPartForSubpart'))
+        notify.warningKey('canvas.toolbar.selectPartForSubpart')
         return
       }
       const targetIds = new Set(diagramStore.data.connections?.map((c) => c.target) ?? [])
@@ -211,11 +196,11 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
         diagramStore.data.nodes.find((n) => n.type === 'topic')?.id ??
         diagramStore.data.nodes.find((n) => !targetIds.has(n.id))?.id
       if (selectedId === rootId || selectedId === 'dimension-label') {
-        notify.warning(t('canvas.toolbar.selectPartThenEnter'))
+        notify.warningKey('canvas.toolbar.selectPartThenEnter')
         return
       }
       if (diagramStore.addBraceMapPart(selectedId, t('canvas.toolbar.newSubpart'))) {
-        notify.success(t('canvas.toolbar.subpartAdded'))
+        notify.successKey('canvas.toolbar.subpartAdded')
       }
       return
     }
@@ -229,10 +214,10 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     }
     if (diagramStore.addMindMapChild(selectedId, t('canvas.toolbar.newChild'))) {
       if (shouldToastMindMapNodeAdd(diagramStore.mindMapCanvasMode)) {
-        notify.success(t('canvas.toolbar.childAdded'))
+        notify.successKey('canvas.toolbar.childAdded')
       }
     } else {
-      notify.warning(t('canvas.toolbar.cannotAddChild'))
+      notify.warningKey('canvas.toolbar.cannotAddChild')
     }
   }
 
@@ -241,7 +226,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     const diagramType = diagramStore.type
     if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return
     if (!diagramStore.data?.nodes) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
       return
     }
 
@@ -262,12 +247,12 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
           selectedNodes: diagramStore.selectedNodes.slice(),
         })
       }
-      notify.warning(t('canvas.toolbar.selectBranchForSibling'))
+      notify.warningKey('canvas.toolbar.selectBranchForSibling')
       return
     }
     if (diagramStore.addMindMapSibling(anchorId, t('canvas.toolbar.newBranch'))) {
       if (shouldToastMindMapNodeAdd(diagramStore.mindMapCanvasMode)) {
-        notify.success(t('canvas.toolbar.siblingAdded'))
+        notify.successKey('canvas.toolbar.siblingAdded')
       }
     } else {
       if (isMindMapSiblingDebugEnabled()) {
@@ -276,7 +261,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
           getLastMindMapSiblingInsertFailure()
         )
       }
-      notify.warning(t('canvas.toolbar.cannotAddSibling'))
+      notify.warningKey('canvas.toolbar.cannotAddSibling')
     }
   }
 
@@ -286,7 +271,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     if (isDiagramPresentationReadOnly(diagramStore)) return
     const diagramType = diagramStore.type
     if (!diagramStore.data?.nodes) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
       return
     }
 
@@ -299,7 +284,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
         position: { x: 0, y: 0 },
       })
       diagramStore.pushHistory(t('canvas.toolbar.addAttributeHistory'))
-      notify.success(t('canvas.toolbar.attributeAdded'))
+      notify.successKey('canvas.toolbar.attributeAdded')
       return
     }
 
@@ -312,7 +297,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
         position: { x: 0, y: 0 },
       })
       diagramStore.pushHistory(t('canvas.toolbar.addNodeHistory'))
-      notify.success(t('canvas.toolbar.nodeAddedCircle'))
+      notify.successKey('canvas.toolbar.nodeAddedCircle')
       return
     }
 
@@ -353,7 +338,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
         data: { pairIndex: newPairIndex, position: 'right', diagramType: 'bridge_map' },
       })
       diagramStore.pushHistory(t('canvas.toolbar.addAnalogyPairHistory'))
-      notify.success(t('canvas.toolbar.analogyPairAdded'))
+      notify.successKey('canvas.toolbar.analogyPairAdded')
       return
     }
 
@@ -371,26 +356,39 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       const selectedId = diagramStore.selectedNodes[0]
       const connections = diagramStore.data.connections ?? []
       const rootId = braceMapRootId(diagramStore.data.nodes, connections)
-      if (!selectedId || selectedId === 'dimension-label') {
+      if (!selectedId || selectedId === 'dimension-label' || selectedId === rootId) {
         handleAddBranch()
-      } else if (rootId && isBraceMapSubpartNode(selectedId, connections, rootId)) {
-        handleAddChild()
       } else {
-        handleAddBranch()
+        handleAddChild()
       }
       return
     }
 
     if (diagramType === 'tree_map') {
       if (!opts.includeTreeMapPrimaryAdd) {
-        notify.info(t('canvas.toolbar.addNodeInDevelopment'))
+        notify.infoKey('canvas.toolbar.addNodeInDevelopment')
         return
       }
       const selectedId = diagramStore.selectedNodes[0]
       if (!selectedId || selectedId === 'tree-topic') {
-        handleAddTreeCategory()
+        if (diagramStore.addTreeMapCategory(t('canvas.toolbar.newBranch'))) {
+          notify.successKey('canvas.toolbar.branchAdded')
+        }
       } else {
-        handleAddTreeChild()
+        if (selectedId === 'dimension-label') {
+          notify.warningKey('canvas.toolbar.selectTreeBranchForChild')
+          return
+        }
+        const catId = resolveTreeCategoryId(diagramStore.data.nodes, selectedId)
+        if (!catId) {
+          notify.warningKey('canvas.toolbar.selectTreeBranchForChild')
+          return
+        }
+        if (diagramStore.addTreeMapChild(catId, t('canvas.toolbar.newChild'))) {
+          notify.successKey('canvas.toolbar.childAdded')
+        } else {
+          notify.warningKey('canvas.toolbar.selectTreeBranchForChild')
+        }
       }
       return
     }
@@ -414,7 +412,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
           )
         ) {
           diagramStore.pushHistory(t('canvas.toolbar.addSubstepHistory'))
-          notify.success(t('canvas.toolbar.substepAdded'))
+          notify.successKey('canvas.toolbar.substepAdded')
         }
       } else {
         // Step selected or nothing selected → add a step
@@ -426,7 +424,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
         ]
         if (diagramStore.addFlowMapStep(t('canvas.toolbar.newStep'), subs)) {
           diagramStore.pushHistory(t('canvas.toolbar.addStepHistory'))
-          notify.success(t('canvas.toolbar.stepAdded'))
+          notify.successKey('canvas.toolbar.stepAdded')
         }
       }
       return
@@ -439,7 +437,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
         : undefined
       const group = getDoubleBubbleGroup(selectedNode)
       if (!group) {
-        notify.warning(t('canvas.toolbar.selectSimilarityOrDifferenceFirst'))
+        notify.warningKey('canvas.toolbar.selectSimilarityOrDifferenceFirst')
         return
       }
       const spec = diagramStore.getDoubleBubbleSpecFromData()
@@ -470,7 +468,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
 
     if (diagramType === 'multi_flow_map') {
       if (!opts.includeMultiFlowPrimaryAdd) {
-        notify.info(t('canvas.toolbar.addNodeInDevelopment'))
+        notify.infoKey('canvas.toolbar.addNodeInDevelopment')
         return
       }
       const selectedId = diagramStore.selectedNodes[0]
@@ -481,7 +479,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       const isCause = selectedRole === 'cause'
       const isEffect = selectedRole === 'effect'
       if (!selectedId || selectedId === 'event' || (!isCause && !isEffect)) {
-        notify.warning(t('canvas.toolbar.selectCauseOrEffectForAdd'))
+        notify.warningKey('canvas.toolbar.selectCauseOrEffectForAdd')
         return
       }
       const category = isCause ? 'causes' : 'effects'
@@ -506,64 +504,12 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       return
     }
 
-    if (diagramType === 'concept_map') {
-      const nodes = diagramStore.data.nodes
-      const anchor = [...nodes].reverse().find((node) => node.id !== 'topic') ?? nodes[0]
-      const x = (anchor?.position?.x ?? 240) + 72
-      const y = (anchor?.position?.y ?? 180) + 36
-      diagramStore.addNode({
-        id: '',
-        text: t('diagram.defaultNewConcept'),
-        type: 'branch',
-        position: { x, y },
-      })
-      diagramStore.pushHistory(t('diagram.contextMenu.addConcept'))
-      notify.success(t('diagram.contextMenu.addConcept'))
-      return
-    }
-
-    notify.info(t('canvas.toolbar.addNodeInDevelopment'))
-  }
-
-  function handleAddTreeCategory(): void {
-    if (isDiagramPresentationReadOnly(diagramStore)) return
-    if (!diagramStore.data?.nodes) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
-      return
-    }
-    if (diagramStore.type !== 'tree_map') return
-    if (diagramStore.addTreeMapCategory(t('canvas.toolbar.newBranch'))) {
-      notify.success(t('canvas.toolbar.branchAdded'))
-    }
-  }
-
-  function handleAddTreeChild(): void {
-    if (isDiagramPresentationReadOnly(diagramStore)) return
-    if (!diagramStore.data?.nodes) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
-      return
-    }
-    if (diagramStore.type !== 'tree_map') return
-    const selectedId = diagramStore.selectedNodes[0]
-    if (!selectedId || selectedId === 'dimension-label' || selectedId === 'tree-topic') {
-      notify.warning(t('canvas.toolbar.selectTreeBranchForChild'))
-      return
-    }
-    const catId = resolveTreeCategoryId(diagramStore.data.nodes, selectedId)
-    if (!catId) {
-      notify.warning(t('canvas.toolbar.selectTreeBranchForChild'))
-      return
-    }
-    if (diagramStore.addTreeMapChild(catId, t('canvas.toolbar.newChild'))) {
-      notify.success(t('canvas.toolbar.childAdded'))
-    } else {
-      notify.warning(t('canvas.toolbar.selectTreeBranchForChild'))
-    }
+    notify.infoKey('canvas.toolbar.addNodeInDevelopment')
   }
 
   function handleAddCause(): void {
     if (!diagramStore.data?.nodes) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
       return
     }
     if (diagramStore.type !== 'multi_flow_map') return
@@ -576,12 +522,12 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       category: 'causes',
     } as DiagramNode & { category?: string })
     diagramStore.pushHistory(t('canvas.toolbar.addCauseHistory'))
-    notify.success(t('canvas.toolbar.causeAdded'))
+    notify.successKey('canvas.toolbar.causeAdded')
   }
 
   function handleAddEffect(): void {
     if (!diagramStore.data?.nodes) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
       return
     }
     if (diagramStore.type !== 'multi_flow_map') return
@@ -594,7 +540,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       category: 'effects',
     } as DiagramNode & { category?: string })
     diagramStore.pushHistory(t('canvas.toolbar.addEffectHistory'))
-    notify.success(t('canvas.toolbar.effectAdded'))
+    notify.successKey('canvas.toolbar.effectAdded')
   }
 
   // ---- Bridge-map reposition helper ----
@@ -653,13 +599,13 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     if (isDiagramPresentationReadOnly(diagramStore)) return
     const diagramType = diagramStore.type
     if (!diagramStore.data?.nodes) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
       return
     }
 
     const selectedNodesArray = [...diagramStore.selectedNodes]
     if (selectedNodesArray.length === 0) {
-      notify.warning(t('canvas.toolbar.selectNodesToDelete'))
+      notify.warningKey('canvas.toolbar.selectNodesToDelete')
       return
     }
 
@@ -668,9 +614,9 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       if (deleted > 0) {
         diagramStore.clearSelection()
         diagramStore.pushHistory(t('canvas.toolbar.deleteAttributeHistory'))
-        notify.success(t('canvas.toolbar.deletedAttributes', { count: deleted }))
+        notify.successKey('canvas.toolbar.deletedAttributes', { count: deleted })
       } else {
-        notify.warning(t('canvas.toolbar.cannotDeleteTopic'))
+        notify.warningKey('canvas.toolbar.cannotDeleteTopic')
       }
       return
     }
@@ -684,9 +630,9 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       if (deleted > 0) {
         diagramStore.clearSelection()
         diagramStore.pushHistory(t('canvas.toolbar.deleteNodesHistory'))
-        notify.success(t('canvas.toolbar.deletedNodes', { count: deleted }))
+        notify.successKey('canvas.toolbar.deletedNodes', { count: deleted })
       } else {
-        notify.warning(t('canvas.toolbar.cannotDeleteTopic'))
+        notify.warningKey('canvas.toolbar.cannotDeleteTopic')
       }
       return
     }
@@ -696,9 +642,9 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       if (deleted > 0) {
         diagramStore.clearSelection()
         diagramStore.pushHistory(t('canvas.toolbar.deleteNodesHistory'))
-        notify.success(t('canvas.toolbar.deletedNodes', { count: deleted }))
+        notify.successKey('canvas.toolbar.deletedNodes', { count: deleted })
       } else {
-        notify.warning(t('canvas.toolbar.cannotDeleteTopic'))
+        notify.warningKey('canvas.toolbar.cannotDeleteTopic')
       }
       return
     }
@@ -712,9 +658,9 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       if (deleted > 0) {
         diagramStore.clearSelection()
         diagramStore.pushHistory(t('canvas.toolbar.deleteNodesHistory'))
-        notify.success(t('canvas.toolbar.deletedNodes', { count: deleted }))
+        notify.successKey('canvas.toolbar.deletedNodes', { count: deleted })
       } else {
-        notify.warning(t('canvas.toolbar.cannotDeleteEvent'))
+        notify.warningKey('canvas.toolbar.cannotDeleteEvent')
       }
       return
     }
@@ -724,9 +670,9 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       if (deleted > 0) {
         diagramStore.clearSelection()
         diagramStore.pushHistory(t('canvas.toolbar.deleteNodesHistory'))
-        notify.success(t('canvas.toolbar.deletedNodes', { count: deleted }))
+        notify.successKey('canvas.toolbar.deletedNodes', { count: deleted })
       } else {
-        notify.warning(t('canvas.toolbar.cannotDeleteTopic'))
+        notify.warningKey('canvas.toolbar.cannotDeleteTopic')
       }
       return
     }
@@ -737,14 +683,14 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
         return Boolean(node && getDoubleBubbleGroup(node))
       })
       if (toDelete.length === 0) {
-        notify.warning(t('canvas.toolbar.selectSimilarityOrDifferenceDelete'))
+        notify.warningKey('canvas.toolbar.selectSimilarityOrDifferenceDelete')
         return
       }
       const deleted = diagramStore.removeDoubleBubbleMapNodes(toDelete)
       if (deleted > 0) {
         diagramStore.clearSelection()
         diagramStore.pushHistory(t('canvas.toolbar.deleteNodesHistory'))
-        notify.success(t('canvas.toolbar.deletedNodes', { count: deleted }))
+        notify.successKey('canvas.toolbar.deletedNodes', { count: deleted })
       }
       return
     }
@@ -755,16 +701,16 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
         return Boolean(node && (isTreeMapCategoryNode(node) || isTreeMapLeafNode(node)))
       })
       if (toDelete.length === 0) {
-        notify.warning(t('canvas.toolbar.selectCategoryOrLeafDelete'))
+        notify.warningKey('canvas.toolbar.selectCategoryOrLeafDelete')
         return
       }
       const deleted = diagramStore.removeTreeMapNodes(toDelete)
       if (deleted > 0) {
         diagramStore.clearSelection()
         diagramStore.pushHistory(t('canvas.toolbar.deleteNodesHistory'))
-        notify.success(t('canvas.toolbar.deletedNodes', { count: deleted }))
+        notify.successKey('canvas.toolbar.deletedNodes', { count: deleted })
       } else {
-        notify.warning(t('canvas.toolbar.cannotDeleteTopicGeneric'))
+        notify.warningKey('canvas.toolbar.cannotDeleteTopicGeneric')
       }
       return
     }
@@ -789,9 +735,9 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
         repositionBridgeMapPairs()
         diagramStore.clearSelection()
         diagramStore.pushHistory(t('canvas.toolbar.deleteAnalogyPairHistory'))
-        notify.success(t('canvas.toolbar.deletedAnalogyPairs', { count: pairIndicesToDelete.size }))
+        notify.successKey('canvas.toolbar.deletedAnalogyPairs', { count: pairIndicesToDelete.size })
       } else {
-        notify.warning(t('canvas.toolbar.cannotDeleteDimension'))
+        notify.warningKey('canvas.toolbar.cannotDeleteDimension')
       }
       return
     }
@@ -804,9 +750,9 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       if (deleted > 0) {
         diagramStore.clearSelection()
         diagramStore.pushHistory(t('canvas.toolbar.deleteNodesHistory'))
-        notify.success(t('canvas.toolbar.deletedNodes', { count: deleted }))
+        notify.successKey('canvas.toolbar.deletedNodes', { count: deleted })
       } else {
-        notify.warning(t('canvas.toolbar.cannotDeleteSelected'))
+        notify.warningKey('canvas.toolbar.cannotDeleteSelected')
       }
       return
     }
@@ -818,9 +764,9 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     if (deleted > 0) {
       diagramStore.clearSelection()
       diagramStore.pushHistory(t('canvas.toolbar.deleteNodesHistory'))
-      notify.success(t('canvas.toolbar.deletedNodes', { count: deleted }))
+      notify.successKey('canvas.toolbar.deletedNodes', { count: deleted })
     } else {
-      notify.warning(t('canvas.toolbar.cannotDeleteSelected'))
+      notify.warningKey('canvas.toolbar.cannotDeleteSelected')
     }
   }
 
@@ -852,7 +798,5 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
     handleAddSibling,
     handleAddCause,
     handleAddEffect,
-    handleAddTreeCategory,
-    handleAddTreeChild,
   }
 }

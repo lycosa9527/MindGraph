@@ -19,7 +19,7 @@ const props = defineProps<{
   loading: boolean
 }>()
 
-const { t, currentLanguage } = useLanguage()
+const { currentLanguage } = useLanguage()
 
 const sortedDatasets = computed(() => {
   return [...props.datasets].sort((a, b) => a.name.localeCompare(b.name))
@@ -59,22 +59,32 @@ const getVersionInfo = (dataset: Benchmark) => {
     />
     <ElEmpty
       v-else-if="sortedDatasets.length === 0"
-      :description="t('knowledge.dataset.empty')"
       :image-size="120"
       class="flex-1 flex items-center justify-center"
-    />
+    >
+      <template #description>
+        <I18nText
+          k="knowledge.dataset.empty"
+          align="center"
+        />
+      </template>
+    </ElEmpty>
     <ElTable
       v-else
       :data="sortedDatasets"
       stripe
       class="dataset-table-el"
-      :empty-text="t('knowledge.dataset.noData')"
     >
+      <template #empty>
+        <I18nText k="knowledge.dataset.noData" />
+      </template>
       <ElTableColumn
-        :label="t('knowledge.dataset.colName')"
         width="180"
         show-overflow-tooltip
       >
+        <template #header>
+          <I18nText k="knowledge.dataset.colName" />
+        </template>
         <template #default="{ row }">
           <div class="flex items-center gap-2">
             <ElIcon
@@ -89,20 +99,24 @@ const getVersionInfo = (dataset: Benchmark) => {
       </ElTableColumn>
 
       <ElTableColumn
-        :label="t('knowledge.dataset.colDescription')"
         min-width="200"
         show-overflow-tooltip
       >
+        <template #header>
+          <I18nText k="knowledge.dataset.colDescription" />
+        </template>
         <template #default="{ row }">
           <span class="text-stone-600 text-sm truncate block">{{ row.description }}</span>
         </template>
       </ElTableColumn>
 
       <ElTableColumn
-        :label="t('knowledge.dataset.colSource')"
         min-width="200"
         show-overflow-tooltip
       >
+        <template #header>
+          <I18nText k="knowledge.dataset.colSource" />
+        </template>
         <template #default="{ row }">
           <div class="flex items-center gap-2">
             <span class="text-stone-500 text-sm truncate">{{ row.source }}</span>
@@ -117,12 +131,16 @@ const getVersionInfo = (dataset: Benchmark) => {
       </ElTableColumn>
 
       <ElTableColumn
-        :label="t('knowledge.dataset.colVersion')"
         width="180"
         show-overflow-tooltip
       >
+        <template #header>
+          <I18nText k="knowledge.dataset.colVersion" />
+        </template>
         <template #default="{ row }">
-          <span class="text-stone-600 text-sm truncate">{{ getVersionInfo(row as Benchmark) }}</span>
+          <span class="text-stone-600 text-sm truncate">{{
+            getVersionInfo(row as Benchmark)
+          }}</span>
         </template>
       </ElTableColumn>
     </ElTable>

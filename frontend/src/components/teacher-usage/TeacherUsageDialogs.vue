@@ -90,7 +90,10 @@ watch(showUserChartModal, (isOpen) => {
         label-position="top"
         class="grid grid-cols-2 md:grid-cols-4 gap-3"
       >
-        <el-form-item :label="t('teacher.analytics.form.activeWeeks')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="teacher.analytics.form.activeWeeks" />
+          </template>
           <el-input-number
             v-model="configForm.continuous.active_weeks_min"
             :min="1"
@@ -98,7 +101,10 @@ watch(showUserChartModal, (isOpen) => {
             size="small"
           />
         </el-form-item>
-        <el-form-item :label="t('teacher.analytics.form.activeWeeksFirst4')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="teacher.analytics.form.activeWeeksFirst4" />
+          </template>
           <el-input-number
             v-model="configForm.continuous.active_weeks_first4_min"
             :min="0"
@@ -106,7 +112,10 @@ watch(showUserChartModal, (isOpen) => {
             size="small"
           />
         </el-form-item>
-        <el-form-item :label="t('teacher.analytics.form.activeWeeksLast4')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="teacher.analytics.form.activeWeeksLast4" />
+          </template>
           <el-input-number
             v-model="configForm.continuous.active_weeks_last4_min"
             :min="0"
@@ -114,7 +123,10 @@ watch(showUserChartModal, (isOpen) => {
             size="small"
           />
         </el-form-item>
-        <el-form-item :label="t('teacher.analytics.form.maxZeroGapMax')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="teacher.analytics.form.maxZeroGapMax" />
+          </template>
           <el-input-number
             v-model="configForm.continuous.max_zero_gap_days_max"
             :min="1"
@@ -129,7 +141,10 @@ watch(showUserChartModal, (isOpen) => {
         label-position="top"
         class="grid grid-cols-2 md:grid-cols-4 gap-3"
       >
-        <el-form-item :label="t('teacher.analytics.form.activeDaysMax')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="teacher.analytics.form.activeDaysMax" />
+          </template>
           <el-input-number
             v-model="configForm.rejection.active_days_max"
             :min="0"
@@ -137,7 +152,10 @@ watch(showUserChartModal, (isOpen) => {
             size="small"
           />
         </el-form-item>
-        <el-form-item :label="t('teacher.analytics.form.activeDaysFirst10')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="teacher.analytics.form.activeDaysFirst10" />
+          </template>
           <el-input-number
             v-model="configForm.rejection.active_days_first10_min"
             :min="0"
@@ -145,7 +163,10 @@ watch(showUserChartModal, (isOpen) => {
             size="small"
           />
         </el-form-item>
-        <el-form-item :label="t('teacher.analytics.form.activeDaysLast25')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="teacher.analytics.form.activeDaysLast25" />
+          </template>
           <el-input-number
             v-model="configForm.rejection.active_days_last25_max"
             :min="0"
@@ -153,7 +174,10 @@ watch(showUserChartModal, (isOpen) => {
             size="small"
           />
         </el-form-item>
-        <el-form-item :label="t('teacher.analytics.form.maxZeroGapMinRej')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="teacher.analytics.form.maxZeroGapMinRej" />
+          </template>
           <el-input-number
             v-model="configForm.rejection.max_zero_gap_days_min"
             :min="1"
@@ -168,7 +192,10 @@ watch(showUserChartModal, (isOpen) => {
         label-position="top"
         class="grid grid-cols-2 md:grid-cols-3 gap-3"
       >
-        <el-form-item :label="t('teacher.analytics.form.activeDaysFirst25')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="teacher.analytics.form.activeDaysFirst25" />
+          </template>
           <el-input-number
             v-model="configForm.stopped.active_days_first25_min"
             :min="0"
@@ -176,7 +203,10 @@ watch(showUserChartModal, (isOpen) => {
             size="small"
           />
         </el-form-item>
-        <el-form-item :label="t('teacher.analytics.form.activeDaysLast14')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="teacher.analytics.form.activeDaysLast14" />
+          </template>
           <el-input-number
             v-model="configForm.stopped.active_days_last14_max"
             :min="0"
@@ -184,7 +214,10 @@ watch(showUserChartModal, (isOpen) => {
             size="small"
           />
         </el-form-item>
-        <el-form-item :label="t('teacher.analytics.form.maxZeroGapMinStop')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="teacher.analytics.form.maxZeroGapMinStop" />
+          </template>
           <el-input-number
             v-model="configForm.stopped.max_zero_gap_days_min"
             :min="1"
@@ -199,7 +232,10 @@ watch(showUserChartModal, (isOpen) => {
         label-position="top"
         class="grid grid-cols-2 gap-3"
       >
-        <el-form-item :label="t('teacher.analytics.form.nBursts')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="teacher.analytics.form.nBursts" />
+          </template>
           <el-input-number
             v-model="configForm.intermittent.n_bursts_min"
             :min="1"
@@ -207,7 +243,10 @@ watch(showUserChartModal, (isOpen) => {
             size="small"
           />
         </el-form-item>
-        <el-form-item :label="t('teacher.analytics.form.internalMaxGap')">
+        <el-form-item>
+          <template #label>
+            <I18nText k="teacher.analytics.form.internalMaxGap" />
+          </template>
           <el-input-number
             v-model="configForm.intermittent.internal_max_zero_gap_days_min"
             :min="1"
@@ -256,37 +295,52 @@ watch(showUserChartModal, (isOpen) => {
     >
       <el-table-column
         prop="username"
-        :label="t('teacher.analytics.colTeacher')"
         width="160"
-      />
+      >
+        <template #header>
+          <I18nText k="teacher.analytics.colTeacher" />
+        </template>
+      </el-table-column>
       <el-table-column
         prop="diagrams"
-        :label="t('teacher.analytics.colAutocompleteCount')"
         width="90"
-      />
+      >
+        <template #header>
+          <I18nText k="teacher.analytics.colAutocompleteCount" />
+        </template>
+      </el-table-column>
       <el-table-column
         prop="conceptGen"
-        :label="t('teacher.analytics.colConceptGen')"
         width="90"
-      />
+      >
+        <template #header>
+          <I18nText k="teacher.analytics.colConceptGen" />
+        </template>
+      </el-table-column>
       <el-table-column
         prop="relationshipLabels"
-        :label="t('teacher.analytics.colRelLabels')"
         width="90"
-      />
+      >
+        <template #header>
+          <I18nText k="teacher.analytics.colRelLabels" />
+        </template>
+      </el-table-column>
       <el-table-column
         prop="tokens"
-        :label="t('teacher.analytics.colTokens')"
         width="100"
       >
+        <template #header>
+          <I18nText k="teacher.analytics.colTokens" />
+        </template>
         <template #default="{ row }">
           {{ formatNumber(row.tokens) }}
         </template>
       </el-table-column>
-      <el-table-column
-        prop="lastActive"
-        :label="t('teacher.analytics.colLastActive')"
-      />
+      <el-table-column prop="lastActive">
+        <template #header>
+          <I18nText k="teacher.analytics.colLastActive" />
+        </template>
+      </el-table-column>
     </el-table>
     <template #footer>
       <div class="swiss-glass-footer">

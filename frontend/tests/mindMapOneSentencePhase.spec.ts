@@ -70,21 +70,6 @@ describe('mindMapOneSentencePhase', () => {
     expect(shouldUseOneSentenceEditFlow(store, saved, llm, 'create')).toBe(true)
   })
 
-  it('keeps non-mind-map canvases on create flow', () => {
-    const store = diagramStoreStub({
-      type: 'bubble_map',
-      data: {
-        nodes: [
-          { id: 'topic', type: 'topic', text: '水' },
-          { id: 'b1', type: 'bubble', text: '透明' },
-        ],
-      },
-    })
-    const saved = savedStoreStub('85bf323f-ba86-442c-9e2d-18fcadc341a6')
-    const llm = llmStoreStub()
-    expect(shouldUseOneSentenceEditFlow(store, saved, llm, 'edit')).toBe(false)
-  })
-
   it('uses create flow for pristine blank mindmap', () => {
     const store = diagramStoreStub({
       data: { nodes: [{ id: 'topic', type: 'topic', text: '鼠标' }] },

@@ -33,7 +33,7 @@ export default {
   'collab.previousSessionsStopped': 'Vos {n} sessions de collaboration sur d\'autres icônes sont terminées.',
   'collab.saveFailed': 'Échec de l’enregistrement du diagramme',
   'collab.scanToJoin': 'Scanner pour rejoindre',
-  'collab.schoolDescActive': 'La collaboration scolaire est activée. Collègues : utilisez Collaborer École sur la page d’accueil et sélectionnez ce diagramme aucun code requis.',
+  'collab.schoolDescActive': 'La collaboration scolaire est activée. Collègues : MindGraph utilisez Collaborer École sur la page d’accueil et sélectionnez ce diagramme aucun code requis.',
   'collab.schoolStarted': 'La collaboration scolaire est activée les collègues peuvent y accéder via Collaborer École.',
   'collab.sectionNetwork': 'Collaboration partagée (code)',
   'collab.sectionSchool': 'Collaboration scolaire',

@@ -2,20 +2,23 @@
 /**
  * 新功能开发 — experimental feature tools.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import AdminKittyLlmopsTab from '@/components/admin/AdminKittyLlmopsTab.vue'
 import AdminMindMateExportPanel from '@/components/admin/AdminMindMateExportPanel.vue'
 import SmartResponsePanel from '@/components/admin/SmartResponsePanel.vue'
-import TeacherUsagePanel from '@/components/admin/TeacherUsagePanel.vue'
 import {
-  resolveFeatureDevSubtab,
   type FeatureDevSubtab,
+  resolveFeatureDevSubtab,
   visibleFeatureDevSubtabs,
 } from '@/composables/admin/adminFeatureDevNav'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
+
+const TeacherUsagePanel = defineAsyncComponent(
+  () => import('@/components/admin/TeacherUsagePanel.vue')
+)
 
 const route = useRoute()
 const router = useRouter()

@@ -17,30 +17,25 @@ import {
 } from '@element-plus/icons-vue'
 
 import AdminOrgTokenTrendDialog from '@/components/admin/AdminOrgTokenTrendDialog.vue'
+import AdminTokenUsageByServicePanel from '@/components/admin/AdminTokenUsageByServicePanel.vue'
 import AdminTrendChartModal from '@/components/admin/AdminTrendChartModal.vue'
-import SchoolDashboardOrgPicker from '@/components/school/SchoolDashboardOrgPicker.vue'
-import SchoolDashboardQuotaCard from '@/components/school/SchoolDashboardQuotaCard.vue'
+import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
+import SchoolAddMemberDialog from '@/components/school/SchoolAddMemberDialog.vue'
 import SchoolDashboardActivityTab from '@/components/school/SchoolDashboardActivityTab.vue'
 import SchoolDashboardFeatureUsageTab from '@/components/school/SchoolDashboardFeatureUsageTab.vue'
+import SchoolDashboardOrgPicker from '@/components/school/SchoolDashboardOrgPicker.vue'
+import SchoolDashboardQuotaCard from '@/components/school/SchoolDashboardQuotaCard.vue'
 import SchoolDashboardUsersTab from '@/components/school/SchoolDashboardUsersTab.vue'
-import SchoolAddMemberDialog from '@/components/school/SchoolAddMemberDialog.vue'
-import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
-import AdminTokenUsageByServicePanel from '@/components/admin/AdminTokenUsageByServicePanel.vue'
+import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
-import type {
-  TokenTrendPeriod,
-  TokenTrendService,
-} from '@/composables/admin/useOrgTokenTrendModal'
-import { copySchoolInvitationPayload } from '@/utils/admin/copySchoolInvitationCode'
-import { useSchoolDashboardStats } from '@/composables/admin/useSchoolDashboardStats'
 import { useAdminOrgScope } from '@/composables/admin/useAdminOrgScope'
-import {
-  useSchoolDashboardQuotas,
-} from '@/composables/school/useSchoolDashboardQuotas'
-import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
-import { useAuthStore } from '@/stores'
+import type { TokenTrendPeriod, TokenTrendService } from '@/composables/admin/useOrgTokenTrendModal'
+import { useSchoolDashboardStats } from '@/composables/admin/useSchoolDashboardStats'
+import { useSchoolDashboardQuotas } from '@/composables/school/useSchoolDashboardQuotas'
 import { isManagerAssignmentUnavailable, isUnlimitedMemberLimit } from '@/constants/schoolTier'
+import { useAuthStore } from '@/stores'
+import { copySchoolInvitationPayload } from '@/utils/admin/copySchoolInvitationCode'
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -55,8 +50,13 @@ const props = withDefaults(
 
 const authStore = useAuthStore()
 const { loadCapabilities, can, isReadOnly } = useAdminAccess()
-const { effectiveOrgId, refetchOrganizations, syncSelectedOrgFromUser, showPicker, effectiveOrgName } =
-  useAdminOrgScope()
+const {
+  effectiveOrgId,
+  refetchOrganizations,
+  syncSelectedOrgFromUser,
+  showPicker,
+  effectiveOrgName,
+} = useAdminOrgScope()
 const { on: onAdminEvent, emit: emitAdminEvent } = useAdminEventBus('SchoolDashboardPage')
 
 const orgTrendDialogRef = ref<InstanceType<typeof AdminOrgTokenTrendDialog> | null>(null)
@@ -84,7 +84,12 @@ function onMemberCreated(): void {
 }
 
 const addMemberSchoolName = computed(() =>
-  (stats.value.organization?.name || effectiveOrgName.value || authStore.user?.schoolName || '').trim()
+  (
+    stats.value.organization?.name ||
+    effectiveOrgName.value ||
+    authStore.user?.schoolName ||
+    ''
+  ).trim()
 )
 const {
   storageUsedGb,
@@ -100,10 +105,7 @@ const canViewActivityTab = computed(() => can('tab.school_dashboard.activity.vie
 const canViewFeatureUsageTab = computed(() => can('tab.school_dashboard.feature_usage.view'))
 const activeTab = ref<'overview' | 'tokens' | 'users' | 'activity' | 'feature_usage'>('overview')
 
-function openOrgTrend(
-  period: TokenTrendPeriod = 'week',
-  service: TokenTrendService = null
-): void {
+function openOrgTrend(period: TokenTrendPeriod = 'week', service: TokenTrendService = null): void {
   const orgId = effectiveOrgId.value
   if (orgId == null) {
     return
@@ -141,17 +143,13 @@ async function copyInvitationCode(event: MouseEvent) {
   })
   await copySchoolInvitationPayload(
     text,
-    () => notify.success(t('notification.copied')),
-    () => notify.error(t('notification.copyFailed'))
+    () => notify.successKey('notification.copied'),
+    () => notify.errorKey('notification.copyFailed')
   )
 }
 
 onAdminEvent('admin:toolbar_action', (payload) => {
-  if (
-    payload.action === 'open_add_school_member' &&
-    props.embedded &&
-    showAddMemberButton.value
-  ) {
+  if (payload.action === 'open_add_school_member' && props.embedded && showAddMemberButton.value) {
     addMemberVisible.value = true
   }
 })
@@ -206,7 +204,7 @@ onMounted(async () => {
       class="school-header h-14 px-4 flex items-center justify-between gap-3 bg-white border-b border-stone-200 shrink-0"
     >
       <h1 class="text-sm font-semibold text-stone-900 truncate min-w-0">
-        {{ t('admin.schoolDashboard') }}
+        <I18nText k="admin.schoolDashboard" />
       </h1>
       <div class="flex items-center gap-2 shrink-0">
         <el-button
@@ -217,7 +215,7 @@ onMounted(async () => {
           @click="addMemberVisible = true"
         >
           <el-icon class="el-icon--left"><Plus /></el-icon>
-          {{ t('admin.schoolAddMemberButton') }}
+          <I18nText k="admin.schoolAddMemberButton" />
         </el-button>
         <SchoolDashboardOrgPicker
           v-if="showPicker"
@@ -228,13 +226,15 @@ onMounted(async () => {
 
     <div
       class="school-body min-w-0"
-      :class="embedded ? 'school-body--embedded' : 'school-body--standalone flex-1 overflow-y-auto p-6'"
+      :class="
+        embedded ? 'school-body--embedded' : 'school-body--standalone flex-1 overflow-y-auto p-6'
+      "
     >
       <div
         v-if="effectiveOrgId == null && !isLoading"
         class="text-center py-20 text-gray-500"
       >
-        <p>{{ t('admin.schoolDashboardNoOrg') }}</p>
+        <p><I18nText k="admin.schoolDashboardNoOrg" /></p>
       </div>
 
       <template v-else-if="effectiveOrgId != null">
@@ -242,28 +242,37 @@ onMounted(async () => {
           v-model="activeTab"
           class="school-tabs admin-swiss-tabs"
         >
-          <el-tab-pane
-            :label="t('admin.dashboard')"
-            name="overview"
-          />
-          <el-tab-pane
-            :label="t('admin.tokens')"
-            name="tokens"
-          />
-          <el-tab-pane
-            :label="t('admin.schoolUsersTab')"
-            name="users"
-          />
+          <el-tab-pane name="overview">
+            <template #label>
+              <I18nText k="admin.dashboard" />
+            </template>
+          </el-tab-pane>
+          <el-tab-pane name="tokens">
+            <template #label>
+              <I18nText k="admin.tokens" />
+            </template>
+          </el-tab-pane>
+          <el-tab-pane name="users">
+            <template #label>
+              <I18nText k="admin.schoolUsersTab" />
+            </template>
+          </el-tab-pane>
           <el-tab-pane
             v-if="canViewActivityTab"
-            :label="t('admin.schoolActivity.tab')"
             name="activity"
-          />
+          >
+            <template #label>
+              <I18nText k="admin.schoolActivity.tab" />
+            </template>
+          </el-tab-pane>
           <el-tab-pane
             v-if="canViewFeatureUsageTab"
-            :label="t('admin.schoolFeatureUsage.tab')"
             name="feature_usage"
-          />
+          >
+            <template #label>
+              <I18nText k="admin.schoolFeatureUsage.tab" />
+            </template>
+          </el-tab-pane>
         </el-tabs>
 
         <div
@@ -333,15 +342,23 @@ onMounted(async () => {
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
             <AdminSwissKpiCard
-              :title="`${t('admin.tokens')} (${t('admin.pastWeek')})`"
               :value="formatNumber(stats.totalTokens)"
               :icon="Connection"
               theme="storage"
               clickable
               @click="openOrgTrend('week')"
-            />
+            >
+              <template #title>
+                <span class="swiss-stat-card__title-compound">
+                  <I18nText k="admin.tokens" />
+                  <span class="swiss-stat-card__title-period">
+                    <I18nText k="admin.pastWeek" />
+                  </span>
+                </span>
+              </template>
+            </AdminSwissKpiCard>
             <AdminSwissKpiCard
-              :title="t('admin.invitationCode')"
+              title-key="admin.invitationCode"
               :value="invitationCodeDisplay"
               :icon="Key"
               theme="managers"
@@ -358,7 +375,7 @@ onMounted(async () => {
                   <el-icon class="el-icon--left">
                     <DocumentCopy />
                   </el-icon>
-                  {{ t('admin.copyShareMessage') }}
+                  <I18nText k="admin.copyShareMessage" />
                 </el-button>
               </template>
             </AdminSwissKpiCard>
@@ -371,17 +388,17 @@ onMounted(async () => {
           >
             <template #header>
               <div class="flex flex-wrap items-start justify-between gap-2 w-full">
-                <span class="font-medium">{{ t('admin.topUsersByTokens') }}</span>
+                <span class="font-medium"><I18nText k="admin.topUsersByTokens" /></span>
                 <el-button
                   text
                   size="small"
                   @click="loadStats"
                 >
-                  {{ t('common.refresh') }}
+                  <I18nText k="common.refresh" />
                 </el-button>
               </div>
               <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 mb-0">
-                {{ t('admin.rankingBeijingTodayHint') }}
+                <I18nText k="admin.rankingBeijingTodayHint" />
               </p>
             </template>
             <el-table
@@ -389,10 +406,10 @@ onMounted(async () => {
               stripe
               size="small"
             >
-              <el-table-column
-                prop="name"
-                :label="t('admin.name')"
-              >
+              <el-table-column prop="name">
+                <template #header>
+                  <I18nText k="admin.name" />
+                </template>
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500 hover:underline"
@@ -404,14 +421,19 @@ onMounted(async () => {
               </el-table-column>
               <el-table-column
                 prop="phone"
-                :label="t('admin.phone')"
                 width="140"
-              />
+              >
+                <template #header>
+                  <I18nText k="admin.phone" />
+                </template>
+              </el-table-column>
               <el-table-column
                 prop="total_tokens"
-                :label="t('admin.tokensUsed')"
                 width="120"
               >
+                <template #header>
+                  <I18nText k="admin.tokensUsed" />
+                </template>
                 <template #default="{ row }">
                   <span
                     class="cursor-pointer hover:text-primary-500"
@@ -429,10 +451,10 @@ onMounted(async () => {
         <template v-else-if="activeTab === 'tokens'">
           <div class="mt-4 mb-6">
             <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">
-              {{ t('admin.tokenUsageByService') }} - {{ stats.organization?.name }}
+              <I18nText k="admin.tokenUsageByService" /> - {{ stats.organization?.name }}
             </h2>
             <p class="text-sm text-gray-500">
-              {{ t('admin.tokenUsageCompare') }}
+              <I18nText k="admin.tokenUsageCompare" />
             </p>
           </div>
           <AdminTokenUsageByServicePanel
@@ -511,7 +533,6 @@ onMounted(async () => {
   --el-button-hover-bg-color: #292524;
   --el-button-hover-border-color: #292524;
 }
-
 </style>
 
 <style scoped src="@/styles/admin-swiss-controls.css"></style>

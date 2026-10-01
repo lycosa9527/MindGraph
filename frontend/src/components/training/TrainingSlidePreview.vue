@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import TrainingPageLiveFrame from '@/components/training/TrainingPageLiveFrame.vue'
 import TrainingStepMarks from '@/components/training/TrainingStepMarks.vue'
 import TrainingVodPlayer from '@/components/training/TrainingVodPlayer.vue'
-import { useLanguage } from '@/composables'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { visibleMarkOverlays } from '@/composables/training/trainingMarkSteps'
 import { hasTrainingLivePreview } from '@/config/trainingPageLive'
 import { trainingPageDef } from '@/config/trainingPages'
@@ -112,7 +112,7 @@ const marks = computed(() => visibleMarkOverlays(props.step))
       v-else-if="compact && step.vod_media_id"
       class="slide-preview__vod"
     >
-      {{ t('training.builder.vodVideo') }}
+      <I18nText k="training.builder.vodVideo" />
     </span>
     <span class="slide-preview__index">{{ index + 1 }}</span>
   </div>

@@ -44,6 +44,7 @@ import {
   useMindmateArchiveHistory,
 } from '@/composables/sidebar/useMindmateArchiveHistory'
 import { type MindMateConversation, useMindMateStore } from '@/stores'
+import { focusPersonalMindmateThread } from '@/utils/mindmateCollabLibrarySave'
 
 import ChatHistoryConversationRow from './ChatHistoryConversationRow.vue'
 
@@ -70,6 +71,7 @@ const notify = useNotifications()
 const mindMateStore = useMindMateStore()
 
 const collabHistoryVisible = ref(false)
+const savedSeminarVisible = ref(false)
 
 const { data: conversationsData, isLoading: isLoadingConversations } = useConversations()
 const { data: pinnedData } = usePinnedConversations()
@@ -146,6 +148,7 @@ const groupLabels = computed(() => ({
 }))
 
 function handleConversationClick(convId: string, name: string): void {
+  focusPersonalMindmateThread()
   mindMateStore.setCurrentConversation(convId, name)
 }
 
@@ -171,10 +174,10 @@ async function handleCreateFolder(): Promise<MindmateFolder | null> {
   if (!name) return null
   try {
     const created = await createFolder(name)
-    notify.success(t('sidebar.chatHistory.folderCreated'))
+    notify.successKey('sidebar.chatHistory.folderCreated')
     return created
   } catch {
-    notify.error(t('sidebar.chatHistory.folderCreateFailed'))
+    notify.errorKey('sidebar.chatHistory.folderCreateFailed')
     return null
   }
 }
@@ -188,9 +191,9 @@ async function handleRenameFolder(folderId: string, currentName: string): Promis
   if (!name || name === currentName) return
   try {
     await renameFolder({ folderId, name })
-    notify.success(t('sidebar.chatHistory.folderRenamed'))
+    notify.successKey('sidebar.chatHistory.folderRenamed')
   } catch {
-    notify.error(t('sidebar.chatHistory.folderRenameFailed'))
+    notify.errorKey('sidebar.chatHistory.folderRenameFailed')
   }
 }
 
@@ -210,9 +213,9 @@ async function handleDeleteFolder(folderId: string): Promise<void> {
   }
   try {
     await deleteFolder(folderId)
-    notify.success(t('sidebar.chatHistory.folderDeleted'))
+    notify.successKey('sidebar.chatHistory.folderDeleted')
   } catch {
-    notify.error(t('sidebar.chatHistory.folderDeleteFailed'))
+    notify.errorKey('sidebar.chatHistory.folderDeleteFailed')
   }
 }
 
@@ -223,7 +226,7 @@ async function handleMoveConversation(convId: string, folderId: string | null): 
       folderId ? t('sidebar.chatHistory.movedToFolder') : t('sidebar.chatHistory.removedFromFolder')
     )
   } catch {
-    notify.error(t('sidebar.chatHistory.moveFailed'))
+    notify.errorKey('sidebar.chatHistory.moveFailed')
   }
 }
 
@@ -292,7 +295,7 @@ function handlePinConversation(convId: string): void {
     <div class="history-header px-4 py-3">
       <div class="min-w-0">
         <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
-          {{ t('sidebar.chatHistory.title') }}
+          <I18nText k="sidebar.chatHistory.title" />
         </div>
         <div
           v-if="!isBlurred && (conversations.length > 0 || folders.length > 0)"
@@ -310,7 +313,7 @@ function handlePinConversation(convId: string): void {
       >
         <FolderPlus class="w-3.5 h-3.5 shrink-0" />
         <span class="new-folder-btn__label">
-          {{ t('sidebar.chatHistory.folderCreateTitle') }}
+          <I18nText k="sidebar.chatHistory.folderCreateTitle" />
         </span>
       </button>
     </div>
@@ -324,12 +327,16 @@ function handlePinConversation(convId: string): void {
           inline
           @visible-change="collabHistoryVisible = $event"
         />
+        <MindmateCollabLibrary
+          v-if="props.showCollabSessions"
+          @visible-change="savedSeminarVisible = $event"
+        />
 
         <div
           v-if="foldersLoadFailed"
           class="archive-warning"
         >
-          {{ t('sidebar.chatHistory.foldersLoadFailed') }}
+          <I18nText k="sidebar.chatHistory.foldersLoadFailed" />
         </div>
 
         <div
@@ -342,12 +349,17 @@ function handlePinConversation(convId: string): void {
         </div>
 
         <div
-          v-else-if="conversations.length === 0 && folders.length === 0 && !collabHistoryVisible"
+          v-else-if="
+            conversations.length === 0 &&
+            folders.length === 0 &&
+            !collabHistoryVisible &&
+            !savedSeminarVisible
+          "
           class="text-center py-8"
         >
           <MessageCircle class="w-8 h-8 mx-auto mb-2 text-stone-300" />
           <p class="text-xs text-stone-400">
-            {{ t('sidebar.chatHistory.empty') }}
+            <I18nText k="sidebar.chatHistory.empty" />
           </p>
         </div>
 
@@ -357,7 +369,7 @@ function handlePinConversation(convId: string): void {
             class="archive-section"
           >
             <div class="section-heading">
-              {{ t('sidebar.chatHistory.foldersSection') }}
+              <I18nText k="sidebar.chatHistory.foldersSection" />
             </div>
             <div
               v-for="folder in folders"
@@ -419,7 +431,7 @@ function handlePinConversation(convId: string): void {
                   v-if="conversationsForFolder(folder.id).length === 0"
                   class="folder-empty"
                 >
-                  {{ t('sidebar.chatHistory.folderEmpty') }}
+                  <I18nText k="sidebar.chatHistory.folderEmpty" />
                 </p>
               </div>
             </div>
@@ -430,7 +442,7 @@ function handlePinConversation(convId: string): void {
             class="archive-section"
           >
             <div class="section-heading">
-              {{ t('sidebar.chatHistory.uncategorizedSection') }}
+              <I18nText k="sidebar.chatHistory.uncategorizedSection" />
             </div>
 
             <template
@@ -463,7 +475,7 @@ function handlePinConversation(convId: string): void {
               v-if="uncategorizedConversations.length === 0"
               class="uncategorized-empty"
             >
-              {{ t('sidebar.chatHistory.uncategorizedEmpty') }}
+              <I18nText k="sidebar.chatHistory.uncategorizedEmpty" />
             </p>
 
             <button
@@ -472,7 +484,10 @@ function handlePinConversation(convId: string): void {
               type="button"
               @click="showAllUncategorized = true"
             >
-              {{ t('sidebar.actions.showMore', { n: remainingUncategorizedCount }) }}
+              <I18nText
+                k="sidebar.actions.showMore"
+                :params="{ n: remainingUncategorizedCount }"
+              />
             </button>
             <button
               v-if="showAllUncategorized && uncategorizedConversations.length > initialVisibleLimit"
@@ -480,7 +495,7 @@ function handlePinConversation(convId: string): void {
               type="button"
               @click="showAllUncategorized = false"
             >
-              {{ t('sidebar.actions.showLess') }}
+              <I18nText k="sidebar.actions.showLess" />
             </button>
           </section>
         </template>
@@ -498,7 +513,7 @@ function handlePinConversation(convId: string): void {
           <Lock class="w-5 h-5 text-stone-400" />
         </div>
         <p class="text-xs text-stone-500">
-          {{ t('sidebar.chatHistory.loginPrompt') }}
+          <I18nText k="sidebar.chatHistory.loginPrompt" />
         </p>
       </div>
     </div>

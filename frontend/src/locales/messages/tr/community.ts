@@ -69,7 +69,7 @@ export default {
   'community.time.minutesAgo': '{n}d önce',
   'community.title': 'Topluluk paylaşımı',
   'community.type.mindgraph': 'MindGraph',
-  'community.type.mindmate': 'Akıl Arkadaşı',
+  'community.type.mindmate': 'MindMate',
   'debateverse.advanceStage': 'Aşamayı ilerlet',
   'debateverse.affirmativePositionLabel': 'Olumlu taraf: ',
   'debateverse.avatar.viewer': 'İzleyici',

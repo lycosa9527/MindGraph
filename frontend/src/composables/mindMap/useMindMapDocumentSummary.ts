@@ -4,16 +4,12 @@ import { useQueryClient } from '@tanstack/vue-query'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
-import {
-  type PackageDetailResponse,
-  fileCenterKeys,
-} from '@/composables/fileCenter/useFileCenter'
+import { type PackageDetailResponse, fileCenterKeys } from '@/composables/fileCenter/useFileCenter'
 import { resizeImageFileForVisionUpload } from '@/composables/media/resizeImageFileForVisionUpload'
 import {
   appendMindMapAudienceFormField,
   withMindMapAudienceContext,
 } from '@/composables/mindMap/audience/withMindMapAudienceContext'
-import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import {
   DOC_SUMMARY_CONTENT_TOO_LONG_CODE,
   DOC_SUMMARY_MAX_INPUT_CHARS,
@@ -22,6 +18,7 @@ import {
   DOC_SUMMARY_STORAGE_CONFLICT_CODE,
 } from '@/config/docSummaryApi'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
+import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useDiagramStore, useLLMResultsStore, useSavedDiagramsStore } from '@/stores'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
 import { authFetch } from '@/utils/api'
@@ -105,7 +102,9 @@ function isContentTooLongDetail(detail: WebContentResult['detail']): boolean {
     return detail.code === DOC_SUMMARY_CONTENT_TOO_LONG_CODE
   }
   if (typeof detail === 'string') {
-    return detail.includes('model input limit') || detail.includes(DOC_SUMMARY_CONTENT_TOO_LONG_CODE)
+    return (
+      detail.includes('model input limit') || detail.includes(DOC_SUMMARY_CONTENT_TOO_LONG_CODE)
+    )
   }
   return false
 }
@@ -166,8 +165,11 @@ export function useMindMapDocumentSummary() {
     options?: { successKey?: string }
   ): Promise<boolean> {
     if (!result.success || !result.spec) {
-      const message = result.error || result.detail || t('canvas.mindMapDocumentSummary.generateFailed')
-      notify.error(typeof message === 'string' ? message : t('canvas.mindMapDocumentSummary.generateFailed'))
+      const message =
+        result.error || result.detail || t('canvas.mindMapDocumentSummary.generateFailed')
+      notify.error(
+        typeof message === 'string' ? message : t('canvas.mindMapDocumentSummary.generateFailed')
+      )
       return false
     }
 
@@ -178,14 +180,12 @@ export function useMindMapDocumentSummary() {
     )
     const loaded = diagramStore.loadFromSpec(specToLoad, 'mindmap')
     if (!loaded) {
-      notify.error(t('canvas.mindMapDocumentSummary.loadFailed'))
+      notify.errorKey('canvas.mindMapDocumentSummary.loadFailed')
       return false
     }
 
     llmResultsStore.reset()
-    notify.success(
-      t(options?.successKey || 'canvas.mindMapDocumentSummary.generateSuccess')
-    )
+    notify.successKey(options?.successKey || 'canvas.mindMapDocumentSummary.generateSuccess')
     return true
   }
 
@@ -198,9 +198,7 @@ export function useMindMapDocumentSummary() {
     isMindmap: boolean
   }> {
     isGenerating.value = true
-    notify.showLoading(
-      t('canvas.mindMapDocumentSummary.visionProgressDetecting', 'Detecting hand-drawn mind map…')
-    )
+    notify.showLoadingKey('canvas.mindMapDocumentSummary.visionProgressDetecting')
     try {
       const uploadFile = await resizeImageFileForVisionUpload(file)
       const formData = new FormData()
@@ -216,14 +214,14 @@ export function useMindMapDocumentSummary() {
       const result = (await response.json().catch(() => ({}))) as WebContentResult
       if (!response.ok) {
         if (isContentFilterDetail(result.detail)) {
-          notify.warning(t('canvas.mindMapDocumentSummary.contentFiltered'))
+          notify.warningKey('canvas.mindMapDocumentSummary.contentFiltered')
           return { applied: false, isMindmap: false }
         }
         const detailMessage =
-          typeof result.detail === 'string'
-            ? result.detail
-            : result.detail?.message
-        notify.error(detailMessage || result.error || t('canvas.mindMapDocumentSummary.generateFailed'))
+          typeof result.detail === 'string' ? result.detail : result.detail?.message
+        notify.error(
+          detailMessage || result.error || t('canvas.mindMapDocumentSummary.generateFailed')
+        )
         return { applied: false, isMindmap: false }
       }
 
@@ -237,7 +235,7 @@ export function useMindMapDocumentSummary() {
       return { applied: false, isMindmap: false }
     } catch (error) {
       console.error('[DocumentSummary] vision rebuild from image failed:', error)
-      notify.error(t('canvas.mindMapDocumentSummary.generateFailed'))
+      notify.errorKey('canvas.mindMapDocumentSummary.generateFailed')
       return { applied: false, isMindmap: false }
     } finally {
       notify.hideLoading()
@@ -261,12 +259,10 @@ export function useMindMapDocumentSummary() {
     const packageId = options.packageId ?? undefined
     const diagramId = options.diagramId ?? savedDiagramsStore.activeDiagramId ?? undefined
     if (!packageId && !diagramId) {
-      notify.warning(
-        t(
-          DOC_SUMMARY_LITE_UI
-            ? 'canvas.mindMapDocumentSummary.generateNoCorpusLite'
-            : 'canvas.mindMapDocumentSummary.generateNoCorpus'
-        )
+      notify.warningKey(
+        DOC_SUMMARY_LITE_UI
+          ? 'canvas.mindMapDocumentSummary.generateNoCorpusLite'
+          : 'canvas.mindMapDocumentSummary.generateNoCorpus'
       )
       return false
     }
@@ -278,12 +274,10 @@ export function useMindMapDocumentSummary() {
         const ready = await ensurePackageReady(packageId)
         isIndexingCorpus.value = false
         if (!ready) {
-          notify.error(
-            t(
-              DOC_SUMMARY_LITE_UI
-                ? 'canvas.mindMapDocumentSummary.generateNoCorpusLite'
-                : 'canvas.mindMapDocumentSummary.generateNoCorpus'
-            )
+          notify.errorKey(
+            DOC_SUMMARY_LITE_UI
+              ? 'canvas.mindMapDocumentSummary.generateNoCorpusLite'
+              : 'canvas.mindMapDocumentSummary.generateNoCorpus'
           )
           return false
         }
@@ -307,11 +301,11 @@ export function useMindMapDocumentSummary() {
       const result = (await response.json().catch(() => ({}))) as WebContentResult
       if (!response.ok) {
         if (isContentTooLongDetail(result.detail) || response.status === 413) {
-          notify.error(t('canvas.mindMapDocumentSummary.contentTooLongForModel'))
+          notify.errorKey('canvas.mindMapDocumentSummary.contentTooLongForModel')
           return false
         }
         if (isStorageConflictDetail(result.detail) || response.status === 409) {
-          notify.error(t('canvas.mindMapDocumentSummary.storageConflictCleared'))
+          notify.errorKey('canvas.mindMapDocumentSummary.storageConflictCleared')
           if (packageId) {
             void queryClient.invalidateQueries({ queryKey: fileCenterKeys.package(packageId) })
           }
@@ -319,21 +313,21 @@ export function useMindMapDocumentSummary() {
           return false
         }
         if (isContentFilterDetail(result.detail)) {
-          notify.warning(t('canvas.mindMapDocumentSummary.contentFiltered'))
+          notify.warningKey('canvas.mindMapDocumentSummary.contentFiltered')
           return false
         }
         const detailMessage =
-          typeof result.detail === 'string'
-            ? result.detail
-            : result.detail?.message
-        notify.error(detailMessage || result.error || t('canvas.mindMapDocumentSummary.generateFailed'))
+          typeof result.detail === 'string' ? result.detail : result.detail?.message
+        notify.error(
+          detailMessage || result.error || t('canvas.mindMapDocumentSummary.generateFailed')
+        )
         return false
       }
 
       return await applyMindMapResult(result)
     } catch (error) {
       console.error('[DocumentSummary] generate from package failed:', error)
-      notify.error(t('canvas.mindMapDocumentSummary.generateFailed'))
+      notify.errorKey('canvas.mindMapDocumentSummary.generateFailed')
       return false
     } finally {
       isIndexingCorpus.value = false
@@ -344,17 +338,15 @@ export function useMindMapDocumentSummary() {
   function validateUploadFile(file: File): boolean {
     const ext = file.name.includes('.') ? `.${file.name.split('.').pop()?.toLowerCase()}` : ''
     if (!ALLOWED_UPLOAD_EXTENSIONS.has(ext)) {
-      notify.warning(
-        t(
-          DOC_SUMMARY_LITE_UI
-            ? 'canvas.mindMapDocumentSummary.invalidFileType'
-            : 'canvas.mindMapDocumentSummary.invalidDocType'
-        )
+      notify.warningKey(
+        DOC_SUMMARY_LITE_UI
+          ? 'canvas.mindMapDocumentSummary.invalidFileType'
+          : 'canvas.mindMapDocumentSummary.invalidDocType'
       )
       return false
     }
     if (file.size > MAX_UPLOAD_BYTES) {
-      notify.warning(t('canvas.mindMapDocumentSummary.docTooLarge'))
+      notify.warningKey('canvas.mindMapDocumentSummary.docTooLarge')
       return false
     }
     return true

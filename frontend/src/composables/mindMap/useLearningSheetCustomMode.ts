@@ -1,6 +1,5 @@
 import { computed, onMounted, onUnmounted, ref, toValue } from 'vue'
 
-import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { notify } from '@/composables/core/notifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { i18n } from '@/i18n'
@@ -63,7 +62,7 @@ export function handleLearningSheetPickNodeClick(nodeId: string): boolean {
   }
 
   if (isProtectedNodeId(nodeId, diagramStore)) {
-    notify.warning(t('canvas.mindMapSideToolbar.learningSheetProtectedNode'))
+    notify.warningKey('canvas.mindMapSideToolbar.learningSheetProtectedNode')
     return true
   }
 
@@ -108,7 +107,6 @@ export function restoreLearningSheetUiFromDiagram(): void {
     resetLearningSheetCustomModeUi()
     return
   }
-  diagramStore.ensureLearningSheetBaseline()
   learningSheetFloatBarOpen.value = true
   learningSheetPickActive.value = false
 }
@@ -157,7 +155,7 @@ export function useLearningSheetCustomMode() {
 
   function activatePick(): void {
     if (!diagramStore.data?.nodes?.length) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
       return
     }
     diagramStore.setLearningSheetMode(true)
@@ -166,69 +164,29 @@ export function useLearningSheetCustomMode() {
     void claimThinkingCoinEvent('learning_sheet_enable')
   }
 
-  function applyLearningSheetBlankPercentage(percentage: number, historyKey: string): void {
+  function startRandomLearningSheet(): void {
     if (!diagramStore.data?.nodes?.length) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
       return
     }
     customPickActive.value = false
-    const spec = diagramStore.getSpecForSave()
-    if (spec && diagramStore.type) {
-      diagramStore.ensureLearningSheetBaseline()
-      diagramStore.loadFromSpec(
-        {
-          ...spec,
-          is_learning_sheet: true,
-          hidden_node_percentage: percentage,
-        },
-        diagramStore.type
-      )
-      diagramStore.pushHistory(t(historyKey))
-      learningSheetFloatBarOpen.value = true
-      notify.success(t('canvas.toolbar.switchedLearningSheetMode'))
-      void claimThinkingCoinEvent('learning_sheet_enable')
-    }
+    diagramStore.applyRandomLearningSheetBlanks()
+    diagramStore.pushHistory(t('canvas.mindMapSideToolbar.learningSheetRandomBlankHistory'))
+    learningSheetFloatBarOpen.value = true
+    notify.successKey('canvas.toolbar.switchedLearningSheetMode')
+    void claimThinkingCoinEvent('learning_sheet_enable')
   }
 
-  function startRandomLearningSheet(): void {
-    applyLearningSheetBlankPercentage(
-      0.2,
-      'canvas.mindMapSideToolbar.learningSheetRandomBlankHistory'
-    )
-  }
-
-  function startFullBlankLearningSheet(): void {
-    applyLearningSheetBlankPercentage(
-      1,
-      'canvas.mindMapSideToolbar.learningSheetFullBlankHistory'
-    )
-  }
-
-  async function exitLearningSheet(): Promise<void> {
-    if (diagramStore.isLearningSheet && diagramStore.learningSheetHasUserDiagramEdits()) {
-      try {
-        await swissGlassConfirm(
-          t('canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody'),
-          t('canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle'),
-          {
-            confirmButtonText: t('canvas.mindMapSideToolbar.restoreFullDiagram'),
-            type: 'warning',
-          }
-        )
-      } catch {
-        return
-      }
-    }
-
+  function exitLearningSheet(): void {
     dismissFloatBar()
     learningSheetFloatBarBeforePresentation.value = false
     if (diagramStore.isLearningSheet) {
       diagramStore.restoreFromLearningSheetMode()
       diagramStore.pushHistory(t('canvas.toolbar.learningSheetRestored'))
-      notify.success(t('canvas.toolbar.switchedToRegular'))
+      notify.successKey('canvas.toolbar.switchedToRegular')
     } else if (diagramStore.hasPreservedLearningSheet()) {
       diagramStore.clearLearningSheetPreservation()
-      notify.success(t('canvas.toolbar.switchedToRegular'))
+      notify.successKey('canvas.toolbar.switchedToRegular')
     }
   }
 
@@ -241,7 +199,6 @@ export function useLearningSheetCustomMode() {
     dismissFloatBar,
     deactivatePick: dismissFloatBar,
     startRandomLearningSheet,
-    startFullBlankLearningSheet,
     exitLearningSheet,
   }
 }

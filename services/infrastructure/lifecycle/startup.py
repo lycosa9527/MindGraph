@@ -19,15 +19,11 @@ import logging
 import os
 import signal
 import sys
-import uuid
 from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
 
-# Redis is REQUIRED - import will fail if module doesn't exist
-# This is intentional: application cannot start without Redis
-from services.redis.redis_client import get_redis, is_redis_available
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.env_utils import ensure_utf8_env_file
 from utils.tiktoken_cache import ensure_tiktoken_cache
@@ -44,31 +40,13 @@ try:
 except ImportError:
     pass
 
-# ============================================================================
-# DISTRIBUTED LOCK FOR BANNER PRINTING
-# ============================================================================
-#
-# Problem: Multiple Uvicorn workers all call setup_early_configuration() during startup,
-# causing the banner to print multiple times when UVICORN_WORKER_ID is not set correctly.
-#
-# Solution: Redis-based distributed lock ensures only ONE worker prints the banner.
-# Uses SETNX (SET if Not eXists) with TTL for crash safety.
-#
-# Key: banner:print:lock
-# Value: {worker_pid}:{uuid} (unique identifier per worker)
-# TTL: 10 seconds (enough for banner printing, auto-release if worker crashes)
-# ============================================================================
-
-BANNER_LOCK_KEY = "banner:print:lock"
-BANNER_LOCK_TTL = 10  # 10 seconds - enough for banner printing
-
 # Set by server_launcher.run_server() before Uvicorn spawns workers; inherited by child
-# processes so we skip duplicate ASCII banner and [Startup] prints on re-import of main.
+# processes so we skip duplicate [Startup] prints on re-import of main.
 MINDGRAPH_LAUNCHER_PID_ENV = "MINDGRAPH_LAUNCHER_PID"
 
 
 class _UvicornProcessHints:
-    """Detect Uvicorn/launcher child-process context for banner and startup logs."""
+    """Detect Uvicorn/launcher child-process context for startup logs."""
 
     @staticmethod
     def is_launched_child() -> bool:
@@ -77,87 +55,6 @@ class _UvicornProcessHints:
         if not raw:
             return False
         return str(os.getpid()) != raw
-
-
-class _BannerLockIdManager:
-    """Manages the worker lock ID for banner printing."""
-
-    _lock_id = None
-
-    @classmethod
-    def get_lock_id(cls) -> str:
-        """Get or generate the lock ID for this worker."""
-        if cls._lock_id is None:
-            cls._lock_id = f"{os.getpid()}:{uuid.uuid4().hex[:8]}"
-        return cls._lock_id
-
-
-def _acquire_banner_lock() -> bool:
-    """
-    Attempt to acquire the banner printing lock.
-
-    Uses Redis SETNX for atomic lock acquisition.
-    Only ONE worker across all processes can hold this lock.
-
-    Returns:
-        True if lock acquired (this worker should print banner)
-        False if lock held by another worker
-    """
-    try:
-        # Redis might not be initialized yet during early startup
-        # If not available, fall back to single worker mode
-        if not is_redis_available():
-            return True
-
-        redis = get_redis()
-        if not redis:
-            return True  # Fallback to single worker mode
-
-        # Generate unique ID for this worker
-        worker_lock_id = _BannerLockIdManager.get_lock_id()
-
-        # Attempt atomic lock acquisition: SETNX with TTL
-        # Returns True only if key did not exist (lock acquired)
-        acquired = redis.set(
-            BANNER_LOCK_KEY,
-            worker_lock_id,
-            nx=True,  # Only set if not exists
-            ex=BANNER_LOCK_TTL,  # TTL in seconds
-        )
-
-        return bool(acquired)
-
-    except BACKGROUND_INFRA_ERRORS:
-        # If Redis is not available or not initialized yet, assume single worker mode
-        return True
-
-
-def _release_banner_lock() -> None:
-    """Release the banner lock if held by this worker."""
-    try:
-        # Redis might not be initialized yet during early startup
-        if not is_redis_available():
-            return
-
-        redis = get_redis()
-        if not redis:
-            return
-
-        worker_lock_id = _BannerLockIdManager.get_lock_id()
-
-        # Lua script: Only delete if lock value matches our lock_id
-        # This ensures we only release our own lock
-        lua_script = """
-        if redis.call("GET", KEYS[1]) == ARGV[1] then
-            return redis.call("DEL", KEYS[1])
-        else
-            return 0
-        end
-        """
-
-        redis.eval(lua_script, 1, BANNER_LOCK_KEY, worker_lock_id)
-    except BACKGROUND_INFRA_ERRORS as exc:
-        logger.debug("Banner lock release failed: %s", exc)
 
 
 class _ShutdownEventManager:
@@ -249,96 +146,31 @@ def _is_uvicorn_reloader_process() -> bool:
     return False
 
 
-class _BannerManager:
-    """Manages banner printing state without using global variables"""
-
-    _banner_printed = False
-
-    @classmethod
-    def _should_print_banner(cls) -> bool:
-        """
-        Determine if we should print the banner.
-
-        Banner should only print:
-        - In the main process (not workers, not reloader)
-        - Once per process (using class variable)
-        - Only one worker across all processes (using Redis lock)
-
-        Uses Redis distributed lock to ensure only ONE worker prints the banner
-        across all workers in multi-worker setups. Falls back to class variable
-        if Redis is unavailable.
-        """
-        # Already printed in this process
-        if cls._banner_printed:
-            return False
-
-        # Uvicorn subprocess imports main again; skip duplicate banner (parent already printed)
-        if _UvicornProcessHints.is_launched_child():
-            return False
-
-        # Skip if we're in Uvicorn reloader process (reloader doesn't serve requests)
-        if _is_uvicorn_reloader_process():
-            return False
-
-        # Try to acquire Redis lock - only one worker should print banner
-        # This handles cases where UVICORN_WORKER_ID is not set correctly
-        if not _acquire_banner_lock():
-            # Another worker is printing banner, skip
-            return False
-
-        # Skip if we're a Uvicorn worker (workers have UVICORN_WORKER_ID set)
-        # Only print in the main process that spawns workers
-        # Note: This check is secondary to Redis lock - Redis lock handles coordination
-        worker_id = os.getenv("UVICORN_WORKER_ID")
-        if worker_id is not None:
-            # We're a worker process - release lock and don't print banner
-            # The main process (which spawned us) already printed it
-            _release_banner_lock()
-            return False
-
-        return True
-
-    @classmethod
-    def print_startup_banner(cls) -> None:
-        """
-        Print the MindGraph startup banner.
-        Only prints once across all workers (using Redis lock) and once per process.
-        """
-        if not cls._should_print_banner():
-            return
-
-        try:
-            # Read version from VERSION file directly to avoid importing config
-            try:
-                version_file = Path(__file__).parent.parent.parent.parent / "VERSION"
-                version = version_file.read_text().strip()
-            except BACKGROUND_INFRA_ERRORS:
-                version = "0.0.0"
-
-            # Print banner using direct print() to bypass logging system
-            print()
-            print("    ███╗   ███╗██╗███╗   ██╗██████╗  ██████╗ ██████╗  █████╗ ██████╗ ██╗  ██╗")
-            print("    ████╗ ████║██║████╗  ██║██╔══██╗██╔════╝ ██╔══██╗██╔══██╗██╔══██╗██║  ██║")
-            print("    ██╔████╔██║██║██╔██╗ ██║██║  ██║██║  ███╗██████╔╝███████║██████╔╝███████║")
-            print("    ██║╚██╔╝██║██║██║╚██╗██║██║  ██║██║   ██║██╔══██╗██╔══██║██╔═══╝ ██╔══██║")
-            print("    ██║ ╚═╝ ██║██║██║ ╚████║██████╔╝╚██████╔╝██║  ██║██║  ██║██║     ██║  ██║")
-            print("    ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝")
-            print("=" * 80)
-            print("    AI-Powered Visual Thinking Tools for K12 Education")
-            print(f"    Version {version} | 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)")
-            print("=" * 80)
-            print()
-
-            # Mark banner as printed in this process
-            cls._banner_printed = True
-        finally:
-            # Always release the lock when done
-            _release_banner_lock()
+# Do not delete this MindGraph ASCII banner. It must show at application launch.
+_MINDGRAPH_ASCII_BANNER = (
+    "    ███╗   ███╗██╗███╗   ██╗██████╗  ██████╗ ██████╗  █████╗ ██████╗ ██╗  ██╗",
+    "    ████╗ ████║██║████╗  ██║██╔══██╗██╔════╝ ██╔══██╗██╔══██╗██╔══██╗██║  ██║",
+    "    ██╔████╔██║██║██╔██╗ ██║██║  ██║██║  ███╗██████╔╝███████║██████╔╝███████║",
+    "    ██║╚██╔╝██║██║██║╚██╗██║██║  ██║██║   ██║██╔══██╗██╔══██║██╔═══╝ ██╔══██║",
+    "    ██║ ╚═╝ ██║██║██║ ╚████║██████╔╝╚██████╔╝██║  ██║██║  ██║██║     ██║  ██║",
+    "    ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝",
+)
 
 
-def _print_startup_banner() -> None:
-    """Print the MindGraph startup banner"""
-    _BannerManager.print_startup_banner()
+def mindgraph_startup_banner_lines() -> tuple[str, ...]:
+    """Launch banner lines, including the version. Do not remove."""
+    try:
+        version_file = Path(__file__).resolve().parents[3] / "VERSION"
+        version = version_file.read_text(encoding="utf-8").strip()
+    except BACKGROUND_INFRA_ERRORS:
+        version = "0.0.0"
+    return (
+        *_MINDGRAPH_ASCII_BANNER,
+        "=" * 80,
+        "    AI-Powered Visual Thinking Tools for K12 Education",
+        f"    Version {version} | 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)",
+        "=" * 80,
+    )
 
 
 def setup_early_configuration():
@@ -346,7 +178,6 @@ def setup_early_configuration():
     Perform early configuration setup that must happen before other initialization.
 
     This includes:
-    - Banner display
     - Windows event loop policy setup (required for Playwright)
     - Environment file UTF-8 encoding check and loading
     - Signal handler registration
@@ -358,8 +189,8 @@ def setup_early_configuration():
     is_reloader = _is_uvicorn_reloader_process()
     should_log_startup = not is_reloader and worker_id is None and not _UvicornProcessHints.is_launched_child()
 
-    # Print banner (handles its own worker detection)
-    _print_startup_banner()
+    # Do not print the ASCII banner here. Lifespan logs it once when launch completes.
+    # A second print from this process would show two banners at startup.
 
     # Windows event loop: psycopg async requires SelectorEventLoop; Proactor is only
     # needed for Playwright subprocesses (set WINDOWS_PROACTOR_EVENT_LOOP=1 if PNG export fails).

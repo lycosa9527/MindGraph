@@ -17,7 +17,6 @@ from services.redis.session.redis_session_manager import RedisSessionManager
 from utils.auth.config import JWT_ALGORITHM
 from utils.auth import request_helpers
 from utils.auth.connection_types import HttpOrWebSocket
-from utils.auth.passkey_utils import verify_bayi_passkey
 from utils.auth.tokens import decode_access_token
 
 
@@ -212,25 +211,20 @@ async def test_production_csp_falls_back_to_unsafe_inline_without_nonce() -> Non
     assert "nonce-" not in csp
 
 
-def test_production_guard_rejects_weak_bayi_passkey() -> None:
-    """Startup guard must reject weak Bayi passkeys in non-debug deployments."""
+def test_production_guard_accepts_vendor_bayi_decryption_key() -> None:
+    """Startup must accept the decryption key issued by 小致."""
     guard = production_secrets_guard_module
     with patch.object(guard, "_require_non_debug", return_value=True):
         with patch.object(guard, "_guard_database_url", return_value=None):
             with patch.object(guard, "_guard_redis_url", return_value=None):
                 with patch.object(guard, "AUTH_MODE", "bayi"):
-                    with patch.object(guard, "BAYI_PASSKEY", "123456"):
-                        with patch.object(guard, "BAYI_DECRYPTION_KEY", "strong-bayi-key-value"):
-                            with patch.dict("os.environ", {"CAPTCHA_PROVIDER": "legacy"}, clear=False):
-                                with pytest.raises(RuntimeError, match="BAYI_PASSKEY"):
-                                    guard.enforce_production_security_guards()
-
-
-def test_verify_bayi_passkey_rejects_when_unset() -> None:
-    """Empty configured Bayi passkey must not accept a submitted passkey."""
-    with patch("utils.auth.passkey_utils.config.BAYI_PASSKEY", ""):
-        assert verify_bayi_passkey("") is False
-        assert verify_bayi_passkey("123456") is False
+                    with patch.object(
+                        guard,
+                        "BAYI_DECRYPTION_KEY",
+                        "v8IT7XujLPsM7FYuDPRhPtZk",
+                    ):
+                        with patch.dict("os.environ", {"CAPTCHA_PROVIDER": "legacy"}, clear=False):
+                            guard.enforce_production_security_guards()
 
 
 def test_production_guard_allows_default_db_password() -> None:

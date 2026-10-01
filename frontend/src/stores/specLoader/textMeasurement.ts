@@ -15,6 +15,12 @@ import {
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
 import {
+  cachedPlainTextBox,
+  cachedPlainTextWidth,
+  plainTextBoxKey,
+  plainTextNowrapKey,
+} from './plainTextMeasureBatch'
+import {
   estimateTextWidthFallbackPx,
   prefersNoWrapWidthFitForCircleMap,
 } from './textMeasurementFallback'
@@ -190,12 +196,18 @@ export function measureTextWidth(
 ): number {
   if (typeof document === 'undefined') return 0
   const t = (text || '').trim() || ' '
-  const el = getMeasureEl(options?.fontFamily)
+  const fontWeight = options?.fontWeight ?? 'normal'
+  const fontFamily = options?.fontFamily ?? MEASURE_FONT_FAMILY
+  const key = plainTextNowrapKey(t, fontSize, fontWeight, fontFamily)
+  const cached = cachedPlainTextWidth(key)
+  if (cached !== undefined) return cached
+  const el = getMeasureEl(fontFamily)
   el.style.width = 'max-content'
   el.style.whiteSpace = 'nowrap'
   el.style.padding = '0'
+  el.style.maxWidth = 'none'
   el.style.fontSize = `${fontSize}px`
-  el.style.fontWeight = options?.fontWeight ?? 'normal'
+  el.style.fontWeight = fontWeight
   el.textContent = t
   return el.offsetWidth
 }
@@ -372,9 +384,22 @@ export function measureTextDimensions(
   const t = (text || '').trim() || ' '
   const paddingX = options?.paddingX ?? 16
   const paddingY = options?.paddingY ?? 8
-  const el = getMeasureEl(options?.fontFamily)
+  const fontWeight = options?.fontWeight ?? 'normal'
+  const fontFamily = options?.fontFamily ?? MEASURE_FONT_FAMILY
+  const boxKey = plainTextBoxKey(
+    t,
+    fontSize,
+    fontWeight,
+    fontFamily,
+    options?.maxWidth,
+    paddingX,
+    paddingY
+  )
+  const cachedBox = cachedPlainTextBox(boxKey)
+  if (cachedBox) return cachedBox
+  const el = getMeasureEl(fontFamily)
   el.style.fontSize = `${fontSize}px`
-  el.style.fontWeight = options?.fontWeight ?? 'normal'
+  el.style.fontWeight = fontWeight
   el.style.padding = `${paddingY}px ${paddingX}px`
   el.style.lineHeight = '1.4'
   if (options?.maxWidth != null) {
@@ -385,11 +410,10 @@ export function measureTextDimensions(
   } else {
     el.style.width = 'max-content'
     el.style.whiteSpace = 'nowrap'
+    el.style.maxWidth = 'none'
   }
   el.textContent = t
-  const width = el.offsetWidth
-  const height = el.offsetHeight
-  return { width, height }
+  return { width: el.offsetWidth, height: el.offsetHeight }
 }
 
 function measureTextWidthNoWrap(

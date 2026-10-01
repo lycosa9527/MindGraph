@@ -8,9 +8,11 @@ import { KeyRound, Loader2 } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
-import { useLanguage, useNotifications } from '@/composables'
 import { useTsecCaptcha } from '@/composables/auth/useTsecCaptcha'
-import { useAuthStore, useFeatureFlagsStore } from '@/stores'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
+import { useAuthStore } from '@/stores/auth'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { apiRequest } from '@/utils/apiClient'
 
 const props = defineProps<{ visible: boolean }>()
@@ -78,10 +80,10 @@ async function loadCaptcha() {
       captchaId.value = res.captcha_id
       captchaImage.value = res.captcha_image
     } else {
-      notify.error(t('auth.modal.captchaLoadFailed'))
+      notify.errorKey('auth.modal.captchaLoadFailed')
     }
   } catch {
-    notify.error(t('auth.modal.captchaNetworkError'))
+    notify.errorKey('auth.modal.captchaNetworkError')
   } finally {
     captchaLoading.value = false
   }
@@ -89,7 +91,7 @@ async function loadCaptcha() {
 
 async function sendResetSms() {
   if (!boundPhone.value || boundPhone.value.length !== 11) {
-    notify.warning(t('auth.modal.phone11Digits'))
+    notify.warningKey('auth.modal.phone11Digits')
     return
   }
   if (smsCountdown.value > 0) {
@@ -114,7 +116,7 @@ async function sendResetSms() {
     })
     const data = await response.json().catch(() => ({}))
     if (response.ok) {
-      notify.success(t('auth.modal.smsSentSuccess'))
+      notify.successKey('auth.modal.smsSentSuccess')
       startCountdown()
     } else {
       notify.error(
@@ -124,7 +126,7 @@ async function sendResetSms() {
       void loadCaptcha()
     }
   } catch {
-    notify.error(t('auth.modal.networkSmsError'))
+    notify.errorKey('auth.modal.networkSmsError')
     captcha.value = ''
     void loadCaptcha()
   } finally {
@@ -134,15 +136,15 @@ async function sendResetSms() {
 
 async function submit() {
   if (newPassword.value.length < 8) {
-    notify.warning(t('auth.modal.passwordMin8'))
+    notify.warningKey('auth.modal.passwordMin8')
     return
   }
   if (newPassword.value !== confirmPassword.value) {
-    notify.warning(t('auth.modal.passwordMismatch'))
+    notify.warningKey('auth.modal.passwordMismatch')
     return
   }
   if (!smsCode.value || smsCode.value.length !== 6) {
-    notify.warning(t('auth.modal.enter6DigitSms'))
+    notify.warningKey('auth.modal.enter6DigitSms')
     return
   }
 
@@ -176,7 +178,7 @@ async function submit() {
       )
     }
   } catch {
-    notify.error(t('auth.passwordChangeFailed'))
+    notify.errorKey('auth.passwordChangeFailed')
   } finally {
     submitting.value = false
   }

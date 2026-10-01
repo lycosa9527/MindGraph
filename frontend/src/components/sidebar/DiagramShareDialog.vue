@@ -108,10 +108,10 @@ async function send(): Promise<void> {
   const ok = await savedDiagramsStore.replaceDiagramShares(props.diagramId, selected.value)
   sending.value = false
   if (!ok) {
-    notify.error(t('sidebar.share.failed'))
+    notify.errorKey('sidebar.share.failed')
     return
   }
-  notify.success(t('sidebar.share.sent'))
+  notify.successKey('sidebar.share.sent')
   open.value = false
 }
 </script>
@@ -136,7 +136,7 @@ async function send(): Promise<void> {
         v-if="!loading && candidates.length === 0"
         class="text-sm text-stone-500"
       >
-        {{ t('sidebar.share.empty') }}
+        <I18nText k="sidebar.share.empty" />
       </p>
       <ul class="max-h-64 overflow-y-auto flex flex-col gap-1">
         <li
@@ -162,7 +162,7 @@ async function send(): Promise<void> {
           :disabled="sending"
           @click="send"
         >
-          {{ t('sidebar.share.send') }}
+          <I18nText k="sidebar.share.send" />
         </button>
       </div>
     </template>

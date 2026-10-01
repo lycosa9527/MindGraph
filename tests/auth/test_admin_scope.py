@@ -19,6 +19,7 @@ from utils.auth.admin_panel_permissions import (
     CAP_SETTINGS_ERRORS,
     CAP_SETTINGS_PUBLIC_DASHBOARD,
     CAP_SETTINGS_TEACHING_DESIGN,
+    CAP_SETTINGS_USER_DROPDOWN,
     CAP_SETTINGS_ROLES,
     CAP_SETTINGS_SMART_RESPONSE,
     CAP_SETTINGS_TEACHER_USAGE,
@@ -259,18 +260,17 @@ def test_all_seven_roles_have_capability_config():
     assert len(ROLE_PANEL_CAPABILITIES) == len(ALL_USER_ROLES)
 
 
-@pytest.mark.parametrize("role", ["superadmin", "platform_bd"])
+@pytest.mark.parametrize("role", ["superadmin", "platform_bd", "expert", "school_admin"])
 def test_learning_space_managers_have_class_edit_caps(role: str) -> None:
-    """Only superadmin and platform BD (教研员) may manage Learning Space in the panel."""
+    """Superadmin, teaching researcher, expert, and school admin may create classes."""
     caps = capabilities_for_role(role)
     assert CAP_TAB_LEARNING_SPACE_VIEW in caps
     assert CAP_TAB_LEARNING_SPACE_EDIT in caps
 
 
-@pytest.mark.parametrize("role", ["expert", "school_admin", "teacher"])
-def test_non_learning_space_panel_roles_lack_class_caps(role: str) -> None:
-    """Expert, school admin, and teachers use product roles or other panel tabs only."""
-    caps = capabilities_for_role(role)
+def test_teacher_has_no_learning_space_admin_caps() -> None:
+    """Teachers manage classes only after becoming an enabled pilot."""
+    caps = capabilities_for_role("teacher")
     assert CAP_TAB_LEARNING_SPACE_VIEW not in caps
     assert CAP_TAB_LEARNING_SPACE_EDIT not in caps
 
@@ -290,6 +290,7 @@ _ALL_SETTINGS_CAPABILITY_KEYS = frozenset(
         CAP_SETTINGS_THINKING_COINS,
         CAP_SETTINGS_PUBLIC_DASHBOARD,
         CAP_SETTINGS_TEACHING_DESIGN,
+        CAP_SETTINGS_USER_DROPDOWN,
         CAP_SETTINGS_GEWE,
         CAP_SETTINGS_KITTY_LLMOPS,
         CAP_SETTINGS_MINDBOT,

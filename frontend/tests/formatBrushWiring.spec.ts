@@ -18,11 +18,12 @@ describe('format painter wiring', () => {
     expect(toolbar).toContain("'is-locked': formatBrushLocked")
   })
 
-  it('double-click locks on the format strip', () => {
+  it('double-click locks on the format strip and classic toolbar', () => {
     const format = readSrc('src/components/canvas/CanvasToolbarMindMapFormat.vue')
-    const toolbar = readSrc('src/components/canvas/CanvasToolbarMindMap.vue')
+    const classic = readSrc('src/components/canvas/CanvasToolbar.vue')
     expect(format).toContain('@dblclick.prevent="handleFormatBrush({ lock: true })"')
-    expect(toolbar).toContain('@dblclick.prevent="onFormatPainterDblClick"')
+    expect(classic).toContain('@dblclick.prevent="handleFormatBrush({ lock: true })"')
+    expect(classic).toContain("import { ArrowDownUp, Brush, Upload } from '@lucide/vue'")
   })
 
   it('cancels on canvas pane click and shows a copy cursor while active', () => {

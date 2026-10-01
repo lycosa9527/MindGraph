@@ -331,9 +331,8 @@ class AuthSettings(BaseModel):
     ADMIN_PHONES: str = Field(
         default="",
         description=(
-            "Comma-separated identifiers matched against users.phone: real phones, "
-            "pseudo logins (e.g. bayi@system.com for Bayi passkey), or SSO user UUID strings "
-            "(UUID compare is case-insensitive)."
+            "Comma-separated identifiers matched against users.phone: real phones "
+            "or SSO user UUID strings (UUID compare is case-insensitive)."
         ),
     )
     ADMIN_USER_IDS: str = Field(
@@ -347,12 +346,6 @@ class AuthSettings(BaseModel):
     ENTERPRISE_DEFAULT_USER_PHONE: Optional[str] = Field(
         default="enterprise@system.com",
         description="Default user identity for enterprise mode (no JWT; network perimeter must enforce access)",
-    )
-    BAYI_PASSKEY: Optional[str] = Field(
-        default="",
-        min_length=6,
-        max_length=6,
-        description="Bayi mode 6-digit passkey (AUTH_MODE=bayi); required in production.",
     )
     BAYI_DECRYPTION_KEY: Optional[str] = Field(
         default="",
@@ -388,7 +381,7 @@ class AuthSettings(BaseModel):
             "When false, all self-service signup is disabled (/register, /register_sms, "
             "/register-overseas, quick-registration mint & signup, SMS/email "
             "purpose=register including standalone /sms/verify and /email/verify). "
-            "Users must use existing SSO, passkeys, or admin-created accounts."
+            "Users must use existing SSO, phone login, or admin-created accounts."
         ),
     )
 
@@ -411,14 +404,6 @@ class AuthSettings(BaseModel):
             if parsed <= 0:
                 raise ValueError("ADMIN_USER_IDS entries must be positive integers")
         return raw
-
-    @field_validator("BAYI_PASSKEY")
-    @classmethod
-    def validate_bayi_passkey(cls, value):
-        """Validate passkey is 6 digits"""
-        if value and (not str(value).isdigit() or len(str(value)) != 6):
-            raise ValueError("Passkey must be exactly 6 digits")
-        return value
 
     @field_validator("BAYI_DEFAULT_ORG_ID", mode="before")
     @classmethod

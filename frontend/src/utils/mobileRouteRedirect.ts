@@ -14,7 +14,6 @@ const MOBILE_REDIRECT_SKIP_PREFIXES = [
   '/login',
   '/auth',
   '/privacy',
-  '/bayi/passkey',
   '/export-render',
   '/dashboard',
   '/admin',

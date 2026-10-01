@@ -179,17 +179,25 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
     />
     <ElEmpty
       v-else-if="sortedDocuments.length === 0"
-      :description="t('knowledge.doc.emptyDescription')"
       :image-size="120"
       class="flex-1 flex items-center justify-center"
-    />
+    >
+      <template #description>
+        <I18nText
+          k="knowledge.doc.emptyDescription"
+          align="center"
+        />
+      </template>
+    </ElEmpty>
     <ElTable
       v-else
       :data="sortedDocuments"
       stripe
       class="document-table-el"
-      :empty-text="t('knowledge.doc.noData')"
     >
+      <template #empty>
+        <I18nText k="knowledge.doc.noData" />
+      </template>
       <!-- Selection Column -->
       <ElTableColumn
         width="50"
@@ -210,10 +218,10 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
         </template>
       </ElTableColumn>
 
-      <ElTableColumn
-        :label="t('knowledge.doc.colName')"
-        min-width="250"
-      >
+      <ElTableColumn min-width="250">
+        <template #header>
+          <I18nText k="knowledge.doc.colName" />
+        </template>
         <template #default="{ row }">
           <div class="flex flex-col gap-1">
             <div class="flex items-center gap-3">
@@ -238,9 +246,9 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
                   <Close />
                 </ElIcon>
                 <div class="flex-1">
-                  <span class="text-red-600 text-xs font-medium">{{
-                    t('knowledge.doc.errorPrefix')
-                  }}</span>
+                  <span class="text-red-600 text-xs font-medium"
+                    ><I18nText k="knowledge.doc.errorPrefix"
+                  /></span>
                   <span class="text-red-600 text-xs">{{ row.error_message }}</span>
                 </div>
               </div>
@@ -250,10 +258,12 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
       </ElTableColumn>
 
       <ElTableColumn
-        :label="t('knowledge.doc.colType')"
         width="90"
         align="center"
       >
+        <template #header>
+          <I18nText k="knowledge.doc.colType" />
+        </template>
         <template #default="{ row }">
           <ElTag
             size="small"
@@ -266,20 +276,24 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
       </ElTableColumn>
 
       <ElTableColumn
-        :label="t('knowledge.doc.colSize')"
         width="90"
         align="right"
       >
+        <template #header>
+          <I18nText k="knowledge.doc.colSize" />
+        </template>
         <template #default="{ row }">
           <span class="text-stone-600 text-sm">{{ formatFileSize(row.file_size) }}</span>
         </template>
       </ElTableColumn>
 
       <ElTableColumn
-        :label="t('knowledge.doc.colStatus')"
         width="168"
         align="center"
       >
+        <template #header>
+          <I18nText k="knowledge.doc.colStatus" />
+        </template>
         <template #default="{ row }">
           <div class="pipeline-status-badges">
             <ElTag
@@ -288,8 +302,12 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
               :type="ragBadgeView(resolveRagStatus(row as KnowledgeDocument)).type"
               class="pipeline-badge"
             >
-              {{ t('knowledge.pipelineBadge.rag.label') }} ·
-              {{ pipelineBadgeLabel(ragBadgeView(resolveRagStatus(row as KnowledgeDocument)).labelKey) }}
+              <I18nText k="knowledge.pipelineBadge.rag.label" /> ·
+              {{
+                pipelineBadgeLabel(
+                  ragBadgeView(resolveRagStatus(row as KnowledgeDocument)).labelKey
+                )
+              }}
             </ElTag>
             <ElTag
               size="small"
@@ -297,18 +315,24 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
               :type="wikiBadgeView(resolveWikiStatus(row as KnowledgeDocument)).type"
               class="pipeline-badge"
             >
-              {{ t('knowledge.pipelineBadge.wiki.label') }} ·
-              {{ pipelineBadgeLabel(wikiBadgeView(resolveWikiStatus(row as KnowledgeDocument)).labelKey) }}
+              <I18nText k="knowledge.pipelineBadge.wiki.label" /> ·
+              {{
+                pipelineBadgeLabel(
+                  wikiBadgeView(resolveWikiStatus(row as KnowledgeDocument)).labelKey
+                )
+              }}
             </ElTag>
           </div>
         </template>
       </ElTableColumn>
 
       <ElTableColumn
-        :label="t('knowledge.doc.colChunks')"
         width="90"
         align="center"
       >
+        <template #header>
+          <I18nText k="knowledge.doc.colChunks" />
+        </template>
         <template #default="{ row }">
           <span
             v-if="row.status === 'completed'"
@@ -326,11 +350,13 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
 
       <ElTableColumn
         v-if="showDataset"
-        :label="t('knowledge.doc.colDataset')"
         width="120"
         align="center"
         :class-name="greyOutDataset ? 'dataset-column-greyed' : ''"
       >
+        <template #header>
+          <I18nText k="knowledge.doc.colDataset" />
+        </template>
         <template #default="{ row }">
           <span
             class="text-sm"
@@ -341,21 +367,23 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
         </template>
       </ElTableColumn>
 
-      <ElTableColumn
-        :label="t('knowledge.doc.colUploaded')"
-        width="140"
-      >
+      <ElTableColumn width="140">
+        <template #header>
+          <I18nText k="knowledge.doc.colUploaded" />
+        </template>
         <template #default="{ row }">
           <span class="text-stone-600 text-sm">{{ formatDate(row.created_at) }}</span>
         </template>
       </ElTableColumn>
 
       <ElTableColumn
-        :label="t('knowledge.doc.colActions')"
         width="140"
         fixed="right"
         align="center"
       >
+        <template #header>
+          <I18nText k="knowledge.doc.colActions" />
+        </template>
         <template #default="{ row }">
           <div class="flex items-center gap-1 justify-center">
             <ElButton

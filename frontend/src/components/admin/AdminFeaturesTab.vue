@@ -380,7 +380,7 @@ async function applyPermissionDialog(): Promise<void> {
   try {
     const ok = await persistFeatureAccess()
     if (ok) {
-      notify.success(t('admin.featurePermissionsApplied'))
+      notify.successKey('admin.featurePermissionsApplied')
       closePermissionDialog()
     }
   } finally {
@@ -404,17 +404,17 @@ async function load(): Promise<void> {
       organizationsQuery.refetch(),
     ])
     if (featuresResult.error) {
-      notify.error(t('admin.featureLoadFailed'))
+      notify.errorKey('admin.featureLoadFailed')
       return
     }
     if (featuresResult.data) {
       applyFeaturesPayload(featuresResult.data as FeatureFlagsPayload)
     }
     if (orgsResult.error) {
-      notify.error(t('admin.featureLoadFailed'))
+      notify.errorKey('admin.featureLoadFailed')
     }
   } catch {
-    notify.error(t('admin.featureLoadFailed'))
+    notify.errorKey('admin.featureLoadFailed')
   }
 }
 
@@ -442,7 +442,7 @@ async function save(): Promise<void> {
     if (!accessOk) {
       return
     }
-    notify.success(t('admin.featuresSaved'))
+    notify.successKey('admin.featuresSaved')
     await load()
   } catch (err) {
     notify.error(formatHttpErrorDetail(err) || t('admin.featureSaveFailed'))
@@ -483,7 +483,7 @@ onUnmounted(() => {
       v-if="loading"
       class="py-12 text-center text-gray-500"
     >
-      {{ t('common.loading') }}
+      <I18nText k="common.loading" />
     </div>
 
     <div
@@ -491,10 +491,10 @@ onUnmounted(() => {
       class="space-y-4"
     >
       <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-        {{ t('admin.featuresIntro') }}
+        <I18nText k="admin.featuresIntro" />
       </p>
       <p class="text-xs text-gray-500 dark:text-gray-500 mb-4">
-        {{ t('admin.featuresIntroAccess') }}
+        <I18nText k="admin.featuresIntroAccess" />
       </p>
       <div
         v-for="row in ROWS"
@@ -505,18 +505,18 @@ onUnmounted(() => {
           <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-2">
               <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                {{ t(row.labelKey) }}
+                <I18nText :k="row.labelKey" />
               </span>
               <el-tag
                 v-if="supportsOrgAccess(row.apiKey) && isRestricted(row.apiKey)"
                 size="small"
                 type="warning"
               >
-                {{ t('admin.featurePermissionsRestrictedBadge') }}
+                <I18nText k="admin.featurePermissionsRestrictedBadge" />
               </el-tag>
             </div>
             <div class="text-xs text-gray-500 mt-0.5">
-              {{ t(row.hintKey) }}
+              <I18nText :k="row.hintKey" />
             </div>
           </div>
           <div class="flex flex-row items-center gap-2 shrink-0">
@@ -527,7 +527,7 @@ onUnmounted(() => {
               :disabled="saving"
               @click="openPermissionDialog(row.apiKey)"
             >
-              {{ t('admin.featurePermissionsButton') }}
+              <I18nText k="admin.featurePermissionsButton" />
             </el-button>
             <el-switch
               v-model="draft[row.apiKey]"

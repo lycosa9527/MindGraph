@@ -32,14 +32,14 @@ export function resolveTabKeyEvent(
   return 'diagram:add_node_requested'
 }
 
-/** Insert adds a mind-map child. Thinking maps do not use Insert. */
+/** Insert key: mind-map alias of Tab (add child). Other diagram types ignore Insert. */
 export function resolveInsertKeyEvent(
   diagramType: string | null | undefined
 ): CanvasPageShortcutEvent | null {
-  if (isMindMapDiagramType(diagramType)) {
-    return 'diagram:add_child_requested'
+  if (!isMindMapDiagramType(diagramType)) {
+    return null
   }
-  return null
+  return 'diagram:add_child_requested'
 }
 
 /**

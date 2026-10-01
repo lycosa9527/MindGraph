@@ -10,12 +10,13 @@ All Rights Reserved
 Proprietary License
 """
 
+from abc import ABC
 from typing import Any, Dict, List
 
 from services.gewe.protocols import GeweServiceBase
 
 
-class TagServiceMixin(GeweServiceBase):
+class TagServiceMixin(GeweServiceBase, ABC):
     """Mixin for tag-related service methods"""
 
     async def add_tag(self, app_id: str, label_name: str) -> Dict[str, Any]:

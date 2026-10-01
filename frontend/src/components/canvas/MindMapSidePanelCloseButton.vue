@@ -3,7 +3,7 @@ import { ElButton } from 'element-plus'
 
 import { Close } from '@element-plus/icons-vue'
 
-import { useLanguage } from '@/composables'
+import { useLanguage } from '@/composables/core/useLanguage'
 
 const emit = defineEmits<{ close: [] }>()
 

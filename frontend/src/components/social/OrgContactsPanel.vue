@@ -78,7 +78,7 @@ const pokingUserId = ref<number | null>(null)
 const isCompact = computed(() => props.variant === 'compact')
 const collabContext = computed(() => props.source === 'mindmate-collab')
 const isPublicCollabSeminar = computed(
-  () => collabContext.value && props.collabVisibility === 'network',
+  () => collabContext.value && props.collabVisibility === 'network'
 )
 
 const displaySections = contactSections
@@ -115,7 +115,7 @@ watch(
   () => [props.sessionId, props.collabRoomCode, props.collabVisibility] as const,
   () => {
     void refreshContacts()
-  },
+  }
 )
 
 function handleStartDm(partnerId: number): void {
@@ -140,15 +140,15 @@ async function handlePoke(targetUserId: number): Promise<void> {
     if (response.ok) {
       const data = (await response.json()) as { delivered?: boolean }
       if (data.delivered) {
-        notify.success(t('mindmate.collabPokeSent'))
+        notify.successKey('mindmate.collabPokeSent')
       } else {
-        notify.info(t('mindmate.collabPokeOffline'))
+        notify.infoKey('mindmate.collabPokeOffline')
       }
     } else {
-      notify.error(t('mindmate.collabPokeFailed'))
+      notify.errorKey('mindmate.collabPokeFailed')
     }
   } catch {
-    notify.error(t('mindmate.collabPokeFailed'))
+    notify.errorKey('mindmate.collabPokeFailed')
   } finally {
     pokingUserId.value = null
     contactPopoverUserId.value = null
@@ -170,10 +170,10 @@ async function handlePoke(targetUserId: number): Promise<void> {
         class="flex items-center justify-between mb-2"
       >
         <span class="text-xs font-medium text-stone-500 uppercase tracking-wide">
-          {{ t('workshop.contacts') }}
+          <I18nText k="workshop.contacts" />
         </span>
         <span class="text-xs text-stone-400">
-          {{ presence.contactsOnlineCount }} {{ t('workshop.online') }}
+          {{ presence.contactsOnlineCount }} <I18nText k="workshop.online" />
         </span>
       </div>
 
@@ -181,7 +181,7 @@ async function handlePoke(targetUserId: number): Promise<void> {
         v-if="isCompact && isPublicCollabSeminar"
         class="mb-2 text-[11px] font-medium text-stone-500"
       >
-        {{ t('mindmate.collabSessionMembersTitle') }}
+        <I18nText k="mindmate.collabSessionMembersTitle" />
       </div>
       <div
         v-if="isCompact"
@@ -218,7 +218,7 @@ async function handlePoke(targetUserId: number): Promise<void> {
         v-if="loading && members.length === 0"
         class="px-3 py-8 text-center text-xs text-stone-400"
       >
-        {{ t('common.loading') }}
+        <I18nText k="common.loading" />
       </div>
 
       <template v-else>
@@ -230,7 +230,7 @@ async function handlePoke(targetUserId: number): Promise<void> {
             v-if="section.labelKey && !isCompact"
             class="text-[10px] font-medium text-stone-400 uppercase tracking-wide px-1 py-2"
           >
-            {{ t(section.labelKey) }}
+            <I18nText :k="section.labelKey" />
           </div>
           <ul
             class="org-contacts-panel__list"
@@ -291,8 +291,8 @@ async function handlePoke(targetUserId: number): Promise<void> {
                       }}<span
                         v-if="presence.isContactSelf(member.id)"
                         class="text-stone-400 text-xs ml-1"
-                        >{{ t('workshop.you') }}</span
-                      >
+                        ><I18nText k="workshop.you"
+                      /></span>
                     </div>
                     <div
                       v-if="!effectiveZulipPresence && section.key === 'recently_online'"
@@ -312,7 +312,7 @@ async function handlePoke(targetUserId: number): Promise<void> {
           class="text-xs text-stone-400 text-center py-6"
           :class="{ 'py-10 leading-relaxed': isCompact }"
         >
-          {{ t('workshop.noMembersFound') }}
+          <I18nText k="workshop.noMembersFound" />
         </div>
       </template>
     </div>
@@ -323,11 +323,10 @@ async function handlePoke(targetUserId: number): Promise<void> {
       :class="isCompact ? 'px-3 py-2 bg-white border-stone-200/90' : 'px-3 py-2'"
     >
       <span :class="{ 'text-[11px] tabular-nums': isCompact }">
-        {{
-          t('workshop.contactsLoadedCount')
-            .replace('{0}', String(members.length))
-            .replace('{1}', String(membersTotal))
-        }}
+        <I18nText
+          k="workshop.contactsLoadedCount"
+          :params="{ 0: members.length, 1: membersTotal }"
+        />
       </span>
       <ElButton
         v-if="membersHasMore && !isCompact"
@@ -337,7 +336,7 @@ async function handlePoke(targetUserId: number): Promise<void> {
         :loading="loadingMore"
         @click="loadMoreContacts"
       >
-        {{ t('workshop.loadMore') }}
+        <I18nText k="workshop.loadMore" />
       </ElButton>
       <button
         v-else-if="membersHasMore && isCompact"
@@ -346,7 +345,7 @@ async function handlePoke(targetUserId: number): Promise<void> {
         :disabled="loadingMore"
         @click="loadMoreContacts"
       >
-        {{ t('workshop.loadMore') }}
+        <I18nText k="workshop.loadMore" />
       </button>
     </div>
   </div>

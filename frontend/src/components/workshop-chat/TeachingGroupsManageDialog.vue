@@ -25,6 +25,7 @@ import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassDialog from '@/components/common/SwissGlassDialog.vue'
 import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { bilingualNotifyMessage } from '@/i18n/bilingualNotifyMessage'
 import { useAuthStore } from '@/stores/auth'
 import {
   type ChannelMember,
@@ -142,9 +143,9 @@ async function confirmArchive(group: ChatChannel): Promise<void> {
   }
   const ok = await store.archiveChannel(group.id)
   if (ok) {
-    ElMessage.success(t('workshop.channelArchived'))
+    ElMessage.success({ message: bilingualNotifyMessage('workshop.channelArchived') })
   } else {
-    ElMessage.error(t('workshop.channelArchiveFailed'))
+    ElMessage.error({ message: bilingualNotifyMessage('workshop.channelArchiveFailed') })
   }
 }
 
@@ -164,9 +165,9 @@ async function confirmDelete(group: ChatChannel): Promise<void> {
   }
   const ok = await store.deleteChannel(group.id)
   if (ok) {
-    ElMessage.success(t('workshop.channelDeleted'))
+    ElMessage.success({ message: bilingualNotifyMessage('workshop.channelDeleted') })
   } else {
-    ElMessage.error(t('workshop.channelDeleteFailed'))
+    ElMessage.error({ message: bilingualNotifyMessage('workshop.channelDeleteFailed') })
   }
 }
 
@@ -187,7 +188,7 @@ function cancelAddGroup(): void {
 async function submitNewGroup(): Promise<void> {
   const name = newGroupName.value.trim()
   if (!name) {
-    ElMessage.warning(t('workshop.teachingGroupNameRequired'))
+    ElMessage.warning({ message: bilingualNotifyMessage('workshop.teachingGroupNameRequired') })
     return
   }
   savingNewGroup.value = true
@@ -198,7 +199,7 @@ async function submitNewGroup(): Promise<void> {
       parent_id: null,
     })
     if (result.ok) {
-      ElMessage.success(t('workshop.createChannelSuccess'))
+      ElMessage.success({ message: bilingualNotifyMessage('workshop.createChannelSuccess') })
       cancelAddGroup()
       return
     }
@@ -230,16 +231,16 @@ async function onVisibilityChange(channelId: number, value: string): Promise<voi
     channel_type: value,
   })
   if (ok) {
-    ElMessage.success(t('common.success'))
+    ElMessage.success({ message: bilingualNotifyMessage('common.success') })
   } else {
-    ElMessage.error(t('common.error'))
+    ElMessage.error({ message: bilingualNotifyMessage('common.error') })
   }
 }
 
 async function saveNameAndDescription(channelId: number): Promise<void> {
   const name = nameDrafts[channelId]?.trim()
   if (!name) {
-    ElMessage.warning(t('workshop.teachingGroupNameRequired'))
+    ElMessage.warning({ message: bilingualNotifyMessage('workshop.teachingGroupNameRequired') })
     return
   }
   const desc = descDrafts[channelId]?.trim() ?? ''
@@ -248,10 +249,10 @@ async function saveNameAndDescription(channelId: number): Promise<void> {
     description: desc || null,
   })
   if (ok) {
-    ElMessage.success(t('common.success'))
+    ElMessage.success({ message: bilingualNotifyMessage('common.success') })
     editingGroupId.value = null
   } else {
-    ElMessage.error(t('common.error'))
+    ElMessage.error({ message: bilingualNotifyMessage('common.error') })
   }
 }
 
@@ -298,26 +299,26 @@ function inviteOptions(channelId: number): OrgMember[] {
 async function submitInvite(channelId: number): Promise<void> {
   const uid = inviteUserId[channelId]
   if (uid == null) {
-    ElMessage.warning(t('workshop.pickColleagueToInvite'))
+    ElMessage.warning({ message: bilingualNotifyMessage('workshop.pickColleagueToInvite') })
     return
   }
   const ok = await store.inviteChannelMember(channelId, uid)
   if (ok) {
-    ElMessage.success(t('workshop.inviteSuccess'))
+    ElMessage.success({ message: bilingualNotifyMessage('workshop.inviteSuccess') })
     delete membersCache[channelId]
     inviteUserId[channelId] = undefined
     await ensureMembersLoaded(channelId)
   } else {
-    ElMessage.error(t('workshop.inviteFailed'))
+    ElMessage.error({ message: bilingualNotifyMessage('workshop.inviteFailed') })
   }
 }
 
 async function duplicateGroup(group: ChatChannel): Promise<void> {
   const ok = await store.duplicateTeachingGroup(group.id)
   if (ok) {
-    ElMessage.success(t('workshop.duplicateSuccess'))
+    ElMessage.success({ message: bilingualNotifyMessage('workshop.duplicateSuccess') })
   } else {
-    ElMessage.error(t('workshop.duplicateFailed'))
+    ElMessage.error({ message: bilingualNotifyMessage('workshop.duplicateFailed') })
   }
 }
 
@@ -334,9 +335,9 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
   next[j] = tmp
   const ok = await store.reorderTeachingGroups(next)
   if (ok) {
-    ElMessage.success(t('common.success'))
+    ElMessage.success({ message: bilingualNotifyMessage('common.success') })
   } else {
-    ElMessage.error(t('common.error'))
+    ElMessage.error({ message: bilingualNotifyMessage('common.error') })
   }
 }
 </script>
@@ -588,13 +589,17 @@ async function moveGroup(groupId: number, delta: number): Promise<void> {
               @change="(v: string) => onVisibilityChange(g.id, v)"
             >
               <el-option
-                :label="t('workshop.channelTypePublic')"
                 value="public"
-              />
+                :label="t('workshop.channelTypePublic')"
+              >
+                <I18nText k="workshop.channelTypePublic" />
+              </el-option>
               <el-option
-                :label="t('workshop.channelTypePrivate')"
                 value="private"
-              />
+                :label="t('workshop.channelTypePrivate')"
+              >
+                <I18nText k="workshop.channelTypePrivate" />
+              </el-option>
             </el-select>
           </div>
           <div class="tg-manage-dialog__field">

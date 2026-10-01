@@ -251,25 +251,21 @@ async function handleProContentPick(id: AiContentLevelId): Promise<void> {
   }
 
   if (generatedAt && generatedAt !== id) {
-    notify.info(
-      t('canvas.toolbar.professionalContent.notify.afterGenerated', {
-        current: proContentLevelTitle(generatedAt),
-        next: proContentLevelTitle(id),
-      })
-    )
+    notify.infoKey('canvas.toolbar.professionalContent.notify.afterGenerated', {
+      current: proContentLevelTitle(generatedAt),
+      next: proContentLevelTitle(id),
+    })
     return
   }
 
   if (id === DEFAULT_AI_CONTENT_LEVEL) {
-    notify.info(t('canvas.toolbar.professionalContent.notify.preferenceGeneral'))
+    notify.infoKey('canvas.toolbar.professionalContent.notify.preferenceGeneral')
     return
   }
 
-  notify.info(
-    t('canvas.toolbar.professionalContent.notify.preference', {
-      level: proContentLevelTitle(id),
-    })
-  )
+  notify.infoKey('canvas.toolbar.professionalContent.notify.preference', {
+    level: proContentLevelTitle(id),
+  })
 }
 
 function handleProContentKeydown(event: KeyboardEvent, id: AiContentLevelId): void {

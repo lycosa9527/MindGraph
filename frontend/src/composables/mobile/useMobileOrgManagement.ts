@@ -1,57 +1,62 @@
 /**
- * Mobile organization management — list schools and open a school's chart card.
+ * Mobile organization management — list schools and show each invite in place.
  */
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
-import { useQueryClient } from '@tanstack/vue-query'
-
-import { useLanguage, useNotifications } from '@/composables'
-import { useAdminAccess } from '@/composables/admin/useAdminAccess'
-import {
-  ADMIN_STALE_MS,
-  adminKeys,
-  fetchAdminOrganizations,
-  useCreateAdminOrganization,
-  useMobileOrganizations,
-} from '@/composables/queries'
+import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
+import { useCreateAdminOrganization, useMobileOrganizations } from '@/composables/queries'
 import { useAuthStore } from '@/stores'
-import { type SchoolDiagramCard, schoolDiagramCardFromRow } from '@/utils/admin/schoolDiagramCard'
 import { canSeeMobileOrgManagement } from '@/utils/adminCapabilities'
 import {
+  buildOrganizationInviteLink,
   defaultOrganizationExpiresAtDate,
   sanitizeOrganizationName,
   uniqueSchoolCodeFromName,
 } from '@/utils/invitationCode'
-import type { MobileOrganizationRow } from '@/utils/mobileOrganizations'
+import { type MobileOrganizationRow, mergeCreatedMobileOrg } from '@/utils/mobileOrganizations'
 
 export interface MobileOrgRow {
   id: number
   name: string
   invitationCode: string
+  inviteLink: string
   userCount: number
 }
 
 interface CreatedOrganizationPayload {
   id?: number
-  name?: string
   invitation_code?: string
 }
 
-function toOrgRow(row: MobileOrganizationRow): MobileOrgRow {
+interface CreatedOrgDraft {
+  id: number
+  name: string
+  invitationCode: string
+}
+
+function toOrgRow(row: MobileOrganizationRow, siteUrl: string): MobileOrgRow {
+  const invitationCode = String(row.invitation_code ?? '').trim()
   return {
     id: Number(row.id),
     name: String(row.name ?? ''),
-    invitationCode: String(row.invitation_code ?? '').trim(),
+    invitationCode,
+    inviteLink: buildOrganizationInviteLink(siteUrl, invitationCode),
     userCount: Number(row.user_count ?? 0),
+  }
+}
+
+function withInviteLink(row: Omit<MobileOrgRow, 'inviteLink'>, siteUrl: string): MobileOrgRow {
+  return {
+    ...row,
+    inviteLink: buildOrganizationInviteLink(siteUrl, row.invitationCode),
   }
 }
 
 export function useMobileOrgManagement() {
   const { t } = useLanguage()
   const notify = useNotifications()
-  const queryClient = useQueryClient()
+  const { publicSiteUrl } = usePublicSiteUrl()
   const authStore = useAuthStore()
-  const { can } = useAdminAccess()
   const createOrganization = useCreateAdminOrganization()
 
   const canManage = computed(() =>
@@ -64,150 +69,89 @@ export function useMobileOrgManagement() {
 
   const orgName = ref('')
   const isSubmitting = ref(false)
-  const openingId = ref<number | null>(null)
-  const diagramVisible = ref(false)
-  const diagramSchool = ref<SchoolDiagramCard | null>(null)
-  const diagramDetailReady = ref(false)
+  const expandedId = ref<number | null>(null)
+  const createdDraft = ref<CreatedOrgDraft | null>(null)
 
   const organizations = computed((): MobileOrgRow[] => {
     const rows = orgsQuery.data.value
-    if (!Array.isArray(rows)) {
-      return []
-    }
-    return rows.map((row) => toOrgRow(row)).sort((left, right) => right.id - left.id)
+    const listed = Array.isArray(rows) ? rows.map((row) => toOrgRow(row, publicSiteUrl.value)) : []
+    const siteUrl = publicSiteUrl.value
+    return mergeCreatedMobileOrg(listed, createdDraft.value).map((row) =>
+      withInviteLink(row, siteUrl)
+    )
   })
-
-  const canEditSchool = computed(() => can('tab.organizations.edit'))
-
-  const schoolDialogMode = computed((): 'manage' | 'insights' => {
-    if (!diagramDetailReady.value) {
-      return 'insights'
-    }
-    return can('scope.invited_orgs') && !can('scope.global') ? 'insights' : 'manage'
-  })
-
-  const diagramReadOnly = computed(() => !diagramDetailReady.value || !canEditSchool.value)
 
   const isLoading = computed(() => orgsQuery.isFetching.value && organizations.value.length === 0)
 
-  function invitationCodeFor(orgId: number, explicitCode = ''): string {
-    const provided = explicitCode.trim()
-    if (provided) {
-      return provided
+  async function copyText(text: string): Promise<void> {
+    const value = text.trim()
+    if (!value) {
+      return
     }
-    return organizations.value.find((org) => org.id === orgId)?.invitationCode ?? ''
+    try {
+      await navigator.clipboard.writeText(value)
+      notify.successKey('notification.copied')
+    } catch {
+      notify.errorKey('notification.copyFailed')
+    }
   }
 
-  async function loadAdminOrganizations(): Promise<Record<string, unknown>[]> {
-    const data = await queryClient.fetchQuery({
-      queryKey: adminKeys.organizations(),
-      queryFn: fetchAdminOrganizations,
-      staleTime: ADMIN_STALE_MS.organizations,
+  function toggleExpanded(orgId: number): void {
+    expandedId.value = expandedId.value === orgId ? null : orgId
+  }
+
+  async function scrollOrgIntoView(orgId: number): Promise<void> {
+    await nextTick()
+    document.getElementById(`mobile-org-${orgId}`)?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
     })
-    if (!Array.isArray(data)) {
-      return []
-    }
-    return data.map((item) => item as unknown as Record<string, unknown>)
-  }
-
-  async function openSchool(orgId: number, invitationCode = '', force = false): Promise<void> {
-    if (!force && openingId.value != null) {
-      return
-    }
-    openingId.value = orgId
-    try {
-      const rows = await loadAdminOrganizations()
-      const listed = rows.find((item) => Number(item.id) === orgId)
-      const mobile = organizations.value.find((org) => org.id === orgId)
-      const row = listed ?? {
-        id: orgId,
-        name: mobile?.name ?? '',
-        user_count: mobile?.userCount ?? 0,
-      }
-      diagramDetailReady.value = listed != null
-      diagramSchool.value = schoolDiagramCardFromRow(row, {
-        invitationCode: invitationCodeFor(orgId, invitationCode),
-        initialTab: 'usage',
-      })
-      diagramVisible.value = true
-    } catch {
-      notify.error(t('admin.schoolsLoadError'))
-    } finally {
-      openingId.value = null
-    }
-  }
-
-  async function refreshOpenedSchool(): Promise<void> {
-    await orgsQuery.refetch()
-    await queryClient.invalidateQueries({ queryKey: adminKeys.organizations() })
-    const current = diagramSchool.value
-    if (current?.id == null) {
-      return
-    }
-    try {
-      const rows = await loadAdminOrganizations()
-      const listed = rows.find((item) => Number(item.id) === current.id)
-      if (!listed) {
-        return
-      }
-      diagramDetailReady.value = true
-      diagramSchool.value = schoolDiagramCardFromRow(listed, {
-        invitationCode: current.invitationCode,
-        initialTab: current.initial_tab,
-        initialTrendPeriod: current.initial_trend_period,
-      })
-    } catch {
-      notify.error(t('admin.schoolsLoadError'))
-    }
   }
 
   async function submitCreate(): Promise<void> {
     const name = sanitizeOrganizationName(orgName.value)
     if (!name) {
-      notify.error(t('admin.organizationNameRequired'))
+      notify.errorKey('admin.organizationNameRequired')
       return
     }
 
     isSubmitting.value = true
-    let createdId: number | undefined
-    let invitationCode: string | undefined
     try {
       const data = (await createOrganization.mutateAsync({
         name,
         code: uniqueSchoolCodeFromName(name),
         expires_at: `${defaultOrganizationExpiresAtDate()}T23:59:59+08:00`,
       })) as CreatedOrganizationPayload
-      createdId = Number(data.id)
-      invitationCode = String(data.invitation_code ?? '')
+      const createdId = Number(data.id)
       orgName.value = ''
-      notify.success(t('notification.saved'))
+      notify.successKey('notification.saved')
+      if (!Number.isFinite(createdId) || createdId <= 0) {
+        return
+      }
+      createdDraft.value = {
+        id: createdId,
+        name,
+        invitationCode: String(data.invitation_code ?? '').trim(),
+      }
+      expandedId.value = createdId
+      await orgsQuery.refetch().catch(() => undefined)
+      await scrollOrgIntoView(createdId)
     } catch (err) {
       const message = err instanceof Error ? err.message : t('admin.organizationCreateFailed')
       notify.error(message)
-      return
     } finally {
       isSubmitting.value = false
     }
-
-    if (createdId == null || !Number.isFinite(createdId) || createdId <= 0) {
-      return
-    }
-    await orgsQuery.refetch().catch(() => undefined)
-    await openSchool(createdId, invitationCode ?? '', true)
   }
 
   return {
     orgName,
     isSubmitting,
     isLoading,
-    openingId,
     organizations,
-    diagramVisible,
-    diagramSchool,
-    schoolDialogMode,
-    diagramReadOnly,
+    expandedId,
     submitCreate,
-    openSchool,
-    refreshOpenedSchool,
+    toggleExpanded,
+    copyText,
   }
 }

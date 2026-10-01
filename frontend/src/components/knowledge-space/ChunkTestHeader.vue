@@ -8,7 +8,6 @@ import { ElButton, ElIcon } from 'element-plus'
 import { RefreshRight, Upload, VideoPlay } from '@element-plus/icons-vue'
 
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
-import { useLanguage } from '@/composables/core/useLanguage'
 
 defineProps<{
   documentCount: number
@@ -23,8 +22,6 @@ const emit = defineEmits<{
   (e: 'testAllDatasets'): void
   (e: 'processDocuments'): void
 }>()
-
-const { t } = useLanguage()
 </script>
 
 <template>
@@ -33,7 +30,7 @@ const { t } = useLanguage()
   >
     <div class="flex items-center gap-3 min-w-0 flex-1">
       <h1 class="text-lg font-semibold text-stone-900">
-        {{ t('knowledge.chunkHeader.title') }}
+        <I18nText k="knowledge.chunkHeader.title" />
       </h1>
       <span class="text-sm text-stone-500"> ({{ documentCount }}/5) </span>
     </div>
@@ -51,7 +48,7 @@ const { t } = useLanguage()
           @click="emit('processDocuments')"
         >
           <ElIcon class="mr-1"><RefreshRight /></ElIcon>
-          {{ t('knowledge.chunkHeader.processDocs') }}
+          <I18nText k="knowledge.chunkHeader.processDocs" />
         </ElButton>
       </I18nTooltip>
       <!-- Test Upload Documents Button -->
@@ -67,7 +64,7 @@ const { t } = useLanguage()
           @click="emit('testUserDocuments')"
         >
           <ElIcon class="mr-1"><VideoPlay /></ElIcon>
-          {{ t('knowledge.chunkHeader.testUpload') }}
+          <I18nText k="knowledge.chunkHeader.testUpload" />
         </ElButton>
       </I18nTooltip>
       <!-- Test All Datasets Button -->
@@ -77,7 +74,7 @@ const { t } = useLanguage()
         @click="emit('testAllDatasets')"
       >
         <ElIcon class="mr-1"><VideoPlay /></ElIcon>
-        {{ t('knowledge.chunkHeader.testAllDatasets') }}
+        <I18nText k="knowledge.chunkHeader.testAllDatasets" />
       </ElButton>
       <!-- Upload Documents Button -->
       <ElButton
@@ -87,7 +84,7 @@ const { t } = useLanguage()
         @click="emit('upload')"
       >
         <ElIcon class="mr-1"><Upload /></ElIcon>
-        {{ t('knowledge.header.upload') }}
+        <I18nText k="knowledge.header.upload" />
       </ElButton>
     </div>
   </div>

@@ -5,7 +5,7 @@ Uses httpx ASGITransport on a single asyncio event loop so the shared
 redis.asyncio client stays bound to one loop.
 
 Requires Redis. Authenticated calls use FastAPI dependency overrides for a
-platform super-admin (no passkey).
+platform super-admin.
 """
 
 from __future__ import annotations

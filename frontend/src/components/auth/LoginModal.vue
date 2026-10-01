@@ -14,7 +14,16 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { ArrowLeft, Eye, EyeOff, GraduationCap, Loader2, LogIn, RefreshCw, UserRound } from '@lucide/vue'
+import {
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  GraduationCap,
+  Loader2,
+  LogIn,
+  RefreshCw,
+  UserRound,
+} from '@lucide/vue'
 
 import LoginAuthAltLinks from '@/components/auth/LoginAuthAltLinks.vue'
 import OAuthQrLoginModal from '@/components/auth/OAuthQrLoginModal.vue'
@@ -279,7 +288,7 @@ defineExpose({ openLogin, openRegister })
             class="auth-tab-switch__icon"
             aria-hidden="true"
           />
-          {{ t('auth.landing.teacherLoginTab') }}
+          <I18nText k="auth.landing.teacherLoginTab" />
         </button>
         <button
           type="button"
@@ -293,7 +302,7 @@ defineExpose({ openLogin, openRegister })
             class="auth-tab-switch__icon"
             aria-hidden="true"
           />
-          {{ t('auth.landing.studentLoginTab') }}
+          <I18nText k="auth.landing.studentLoginTab" />
         </button>
       </div>
 
@@ -312,7 +321,7 @@ defineExpose({ openLogin, openRegister })
           :class="{ 'auth-tab-switch__btn--active': loginAudience === 'teacher' }"
           @click="switchLoginAudience('teacher')"
         >
-          {{ t('auth.loginAudienceTeacher') }}
+          <I18nText k="auth.loginAudienceTeacher" />
         </button>
         <button
           type="button"
@@ -322,7 +331,7 @@ defineExpose({ openLogin, openRegister })
           :class="{ 'auth-tab-switch__btn--active': loginAudience === 'student' }"
           @click="switchLoginAudience('student')"
         >
-          {{ t('auth.loginAudienceStudent') }}
+          <I18nText k="auth.loginAudienceStudent" />
         </button>
       </div>
 
@@ -414,7 +423,7 @@ defineExpose({ openLogin, openRegister })
             v-else-if="authPageInline && currentView === 'register'"
             class="page-header-title"
           >
-            {{ t('auth.register') }}
+            <I18nText k="auth.register" />
           </span>
         </div>
       </div>
@@ -503,7 +512,7 @@ defineExpose({ openLogin, openRegister })
               type="checkbox"
               class="auth-page-remember__box"
             />
-            {{ t('auth.landing.rememberAccount') }}
+            <I18nText k="auth.landing.rememberAccount" />
           </label>
         </div>
 
@@ -548,11 +557,13 @@ defineExpose({ openLogin, openRegister })
               <template v-else>
                 <RefreshCw class="w-4 h-4 text-stone-400" />
                 <span class="captcha-placeholder__hint">
-                  {{
-                    captchaLoadFailed
-                      ? t('auth.modal.captchaLoadFailed')
-                      : t('auth.clickToRefresh')
-                  }}
+                  <I18nText
+                    v-if="captchaLoadFailed"
+                    k="auth.modal.captchaLoadFailed"
+                  /><I18nText
+                    v-else
+                    k="auth.clickToRefresh"
+                  />
                 </span>
               </template>
             </div>
@@ -591,7 +602,7 @@ defineExpose({ openLogin, openRegister })
               type="checkbox"
               class="auth-page-remember__box"
             />
-            {{ t('auth.landing.rememberAccount') }}
+            <I18nText k="auth.landing.rememberAccount" />
           </label>
         </div>
 
@@ -611,43 +622,46 @@ defineExpose({ openLogin, openRegister })
             class="auth-page-teacher__footer-link"
             @click="showForgotPassword"
           >
-            {{ t('auth.forgotPassword') }}
+            <I18nText k="auth.forgotPassword" />
           </button>
           <span
             class="auth-page-teacher__footer-sep"
             aria-hidden="true"
-          >|</span>
+            >|</span
+          >
           <button
             type="button"
             class="auth-page-teacher__footer-link"
             @click="showSmsLogin"
           >
-            {{ t('auth.smsLogin') }}
+            <I18nText k="auth.smsLogin" />
           </button>
           <template v-if="shouldShowWechatLoginLink(featureWechatLogin)">
             <span
               class="auth-page-teacher__footer-sep"
               aria-hidden="true"
-            >|</span>
+              >|</span
+            >
             <button
               type="button"
               class="auth-page-teacher__footer-link"
               @click="openWechatQrLogin"
             >
-              {{ t('auth.wechatLogin') }}
+              <I18nText k="auth.wechatLogin" />
             </button>
           </template>
           <template v-if="registrationEnabledUi">
             <span
               class="auth-page-teacher__footer-sep"
               aria-hidden="true"
-            >|</span>
+              >|</span
+            >
             <button
               type="button"
               class="auth-page-teacher__footer-link auth-page-teacher__footer-link--accent"
               @click="switchLoginRegisterTab('register')"
             >
-              {{ t('auth.landing.registerNow') }}
+              <I18nText k="auth.landing.registerNow" />
             </button>
           </template>
         </div>
@@ -664,15 +678,17 @@ defineExpose({ openLogin, openRegister })
           v-if="authPageInline"
           class="auth-page-student__beta"
         >
-          <span class="auth-page-student__beta-badge">{{ t('auth.landing.studentBetaBadge') }}</span>
+          <span class="auth-page-student__beta-badge"
+            ><I18nText k="auth.landing.studentBetaBadge"
+          /></span>
           <span class="auth-page-student__beta-text">
-            {{ t('auth.landing.studentBetaHintBefore') }}
+            <I18nText k="auth.landing.studentBetaHintBefore" />
             <button
               type="button"
               class="auth-page-student__beta-link"
               @click="emit('contact')"
             >
-              {{ t('auth.landing.navContact') }}
+              <I18nText k="auth.landing.navContact" />
             </button>
           </span>
         </div>
@@ -683,7 +699,7 @@ defineExpose({ openLogin, openRegister })
             :class="authPageInline ? 'auth-page-teacher__label' : 'text-stone-500'"
             for="student-class-code"
           >
-            {{ t('auth.studentClassCode') }}
+            <I18nText k="auth.studentClassCode" />
           </label>
           <input
             id="student-class-code"
@@ -708,7 +724,7 @@ defineExpose({ openLogin, openRegister })
             :class="authPageInline ? 'auth-page-teacher__label' : 'text-stone-500'"
             for="student-name"
           >
-            {{ t('auth.name') }}
+            <I18nText k="auth.name" />
           </label>
           <input
             id="student-name"
@@ -733,7 +749,7 @@ defineExpose({ openLogin, openRegister })
             :class="authPageInline ? 'auth-page-teacher__label' : 'text-stone-500'"
             for="student-password"
           >
-            {{ t('auth.password') }}
+            <I18nText k="auth.password" />
           </label>
           <div class="relative">
             <input
@@ -773,7 +789,7 @@ defineExpose({ openLogin, openRegister })
             class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
             for="student-captcha"
           >
-            {{ t('auth.captcha') }}
+            <I18nText k="auth.captcha" />
           </label>
           <div class="captcha-row">
             <input
@@ -784,7 +800,11 @@ defineExpose({ openLogin, openRegister })
               :placeholder="t('auth.modal.captchaPlaceholderShort')"
               maxlength="4"
               class="captcha-row__input px-4 py-3 border-0 rounded-lg text-stone-900 placeholder-stone-400 transition-all"
-              :class="authPageInline ? 'auth-page-teacher__input' : 'bg-stone-50 focus:ring-2 focus:ring-stone-900 focus:bg-white'"
+              :class="
+                authPageInline
+                  ? 'auth-page-teacher__input'
+                  : 'bg-stone-50 focus:ring-2 focus:ring-stone-900 focus:bg-white'
+              "
             />
             <img
               v-if="captchaImage"
@@ -809,11 +829,13 @@ defineExpose({ openLogin, openRegister })
               <template v-else>
                 <RefreshCw class="w-4 h-4 text-stone-400" />
                 <span class="captcha-placeholder__hint">
-                  {{
-                    captchaLoadFailed
-                      ? t('auth.modal.captchaLoadFailed')
-                      : t('auth.clickToRefresh')
-                  }}
+                  <I18nText
+                    v-if="captchaLoadFailed"
+                    k="auth.modal.captchaLoadFailed"
+                  /><I18nText
+                    v-else
+                    k="auth.clickToRefresh"
+                  />
                 </span>
               </template>
             </div>
@@ -834,13 +856,15 @@ defineExpose({ openLogin, openRegister })
             v-if="isLoading"
             class="w-4 h-4 animate-spin"
           />
-          {{
-            isLoading
-              ? t('auth.modal.loggingIn')
-              : authPageInline
-                ? t('auth.login')
-                : loginSubmitLabel
-          }}
+          <I18nText
+            v-if="isLoading"
+            k="auth.modal.loggingIn"
+          /><template v-else
+            ><I18nText
+              v-if="authPageInline"
+              k="auth.login"
+            /><template v-else>{{ loginSubmitLabel }}</template></template
+          >
         </button>
       </form>
 
@@ -884,7 +908,7 @@ defineExpose({ openLogin, openRegister })
             :class="{ 'auth-tab-switch__btn--active': registerPath === 'phone' }"
             @click="setRegisterPath('phone')"
           >
-            {{ t('auth.modal.hybridRegisterPhoneTab') }}
+            <I18nText k="auth.modal.hybridRegisterPhoneTab" />
           </button>
         </div>
         <div
@@ -1071,11 +1095,13 @@ defineExpose({ openLogin, openRegister })
               <template v-else>
                 <RefreshCw class="w-4 h-4 text-stone-400" />
                 <span class="captcha-placeholder__hint">
-                  {{
-                    captchaLoadFailed
-                      ? t('auth.modal.captchaLoadFailed')
-                      : t('auth.clickToRefresh')
-                  }}
+                  <I18nText
+                    v-if="captchaLoadFailed"
+                    k="auth.modal.captchaLoadFailed"
+                  /><I18nText
+                    v-else
+                    k="auth.clickToRefresh"
+                  />
                 </span>
               </template>
             </div>
@@ -1229,11 +1255,13 @@ defineExpose({ openLogin, openRegister })
               <template v-else>
                 <RefreshCw class="w-4 h-4 text-stone-400" />
                 <span class="captcha-placeholder__hint">
-                  {{
-                    captchaLoadFailed
-                      ? t('auth.modal.captchaLoadFailed')
-                      : t('auth.clickToRefresh')
-                  }}
+                  <I18nText
+                    v-if="captchaLoadFailed"
+                    k="auth.modal.captchaLoadFailed"
+                  /><I18nText
+                    v-else
+                    k="auth.clickToRefresh"
+                  />
                 </span>
               </template>
             </div>
@@ -1409,11 +1437,13 @@ defineExpose({ openLogin, openRegister })
               <template v-else>
                 <RefreshCw class="w-4 h-4 text-stone-400" />
                 <span class="captcha-placeholder__hint">
-                  {{
-                    captchaLoadFailed
-                      ? t('auth.modal.captchaLoadFailed')
-                      : t('auth.clickToRefresh')
-                  }}
+                  <I18nText
+                    v-if="captchaLoadFailed"
+                    k="auth.modal.captchaLoadFailed"
+                  /><I18nText
+                    v-else
+                    k="auth.clickToRefresh"
+                  />
                 </span>
               </template>
             </div>
@@ -1642,8 +1672,7 @@ defineExpose({ openLogin, openRegister })
   padding: 0.28rem;
   border: 0;
   border-radius: 1rem;
-  background:
-    linear-gradient(180deg, rgb(248 250 252 / 0.95), rgb(241 245 249 / 0.9));
+  background: linear-gradient(180deg, rgb(248 250 252 / 0.95), rgb(241 245 249 / 0.9));
   box-shadow: inset 0 1px 1px rgb(255 255 255 / 0.7);
 }
 
@@ -1733,7 +1762,8 @@ defineExpose({ openLogin, openRegister })
   font-weight: 600;
 }
 
-.auth-page-teacher :is(input[type='text'], input[type='email'], input[type='tel'], input[type='password']) {
+.auth-page-teacher
+  :is(input[type='text'], input[type='email'], input[type='tel'], input[type='password']) {
   border-radius: 0.85rem !important;
   background: #eef2ff !important;
   box-shadow: none;

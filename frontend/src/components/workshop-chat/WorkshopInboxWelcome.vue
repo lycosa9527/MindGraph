@@ -7,11 +7,9 @@ import { useRouter } from 'vue-router'
 
 import { Hash, Inbox, MessageSquare } from '@lucide/vue'
 
-import { useLanguage } from '@/composables/core/useLanguage'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
 import { pushWorkshopDm } from '@/utils/workshopChatNavigate'
 
-const { t } = useLanguage()
 const store = useWorkshopChatStore()
 const router = useRouter()
 
@@ -44,9 +42,9 @@ function openRecentDm(partnerId: number): void {
 <template>
   <div class="wi-welcome">
     <header class="wi-welcome__hero">
-      <h1 class="wi-welcome__title">{{ t('workshop.welcomeTitle') }}</h1>
-      <p class="wi-welcome__subtitle">{{ t('workshop.welcomeSubtitle') }}</p>
-      <p class="wi-welcome__intro">{{ t('workshop.welcomeIntro') }}</p>
+      <h1 class="wi-welcome__title"><I18nText k="workshop.welcomeTitle" /></h1>
+      <p class="wi-welcome__subtitle"><I18nText k="workshop.welcomeSubtitle" /></p>
+      <p class="wi-welcome__intro"><I18nText k="workshop.welcomeIntro" /></p>
     </header>
 
     <section
@@ -61,7 +59,7 @@ function openRecentDm(partnerId: number): void {
           :size="18"
           class="wi-welcome__section-icon"
         />
-        {{ t('workshop.inboxSummaryTitle') }}
+        <I18nText k="workshop.inboxSummaryTitle" />
       </h2>
       <div class="wi-welcome__stats">
         <div class="wi-welcome__stat">
@@ -69,7 +67,7 @@ function openRecentDm(partnerId: number): void {
             :size="16"
             class="wi-welcome__stat-icon"
           />
-          <span class="wi-welcome__stat-label">{{ t('workshop.inboxUnreadChannels') }}</span>
+          <span class="wi-welcome__stat-label"><I18nText k="workshop.inboxUnreadChannels" /></span>
           <span class="wi-welcome__stat-value">{{ unreadChannels }}</span>
         </div>
         <div class="wi-welcome__stat">
@@ -77,11 +75,11 @@ function openRecentDm(partnerId: number): void {
             :size="16"
             class="wi-welcome__stat-icon"
           />
-          <span class="wi-welcome__stat-label">{{ t('workshop.inboxUnreadDms') }}</span>
+          <span class="wi-welcome__stat-label"><I18nText k="workshop.inboxUnreadDms" /></span>
           <span class="wi-welcome__stat-value">{{ unreadDms }}</span>
         </div>
       </div>
-      <p class="wi-welcome__hint">{{ t('workshop.inboxHintPickChannel') }}</p>
+      <p class="wi-welcome__hint"><I18nText k="workshop.inboxHintPickChannel" /></p>
     </section>
 
     <section
@@ -93,7 +91,7 @@ function openRecentDm(partnerId: number): void {
         id="wi-recent-heading"
         class="wi-welcome__section-title"
       >
-        {{ t('workshop.recentDmActivity') }}
+        <I18nText k="workshop.recentDmActivity" />
       </h2>
       <ul class="wi-welcome__recent-list">
         <li
@@ -125,25 +123,25 @@ function openRecentDm(partnerId: number): void {
         id="wi-how-heading"
         class="wi-welcome__section-title"
       >
-        {{ t('workshop.welcomeHowTitle') }}
+        <I18nText k="workshop.welcomeHowTitle" />
       </h2>
 
       <div class="wi-welcome__cards">
         <article class="wi-card">
-          <h3 class="wi-card__title">{{ t('workshop.welcomeChannelsTitle') }}</h3>
-          <p class="wi-card__body">{{ t('workshop.welcomeChannelsBody') }}</p>
+          <h3 class="wi-card__title"><I18nText k="workshop.welcomeChannelsTitle" /></h3>
+          <p class="wi-card__body"><I18nText k="workshop.welcomeChannelsBody" /></p>
         </article>
         <article class="wi-card">
-          <h3 class="wi-card__title">{{ t('workshop.welcomeLessonStudyTitle') }}</h3>
-          <p class="wi-card__body">{{ t('workshop.welcomeLessonStudyBody') }}</p>
+          <h3 class="wi-card__title"><I18nText k="workshop.welcomeLessonStudyTitle" /></h3>
+          <p class="wi-card__body"><I18nText k="workshop.welcomeLessonStudyBody" /></p>
         </article>
         <article class="wi-card">
-          <h3 class="wi-card__title">{{ t('workshop.welcomeConversationsTitle') }}</h3>
-          <p class="wi-card__body">{{ t('workshop.welcomeConversationsBody') }}</p>
+          <h3 class="wi-card__title"><I18nText k="workshop.welcomeConversationsTitle" /></h3>
+          <p class="wi-card__body"><I18nText k="workshop.welcomeConversationsBody" /></p>
         </article>
         <article class="wi-card">
-          <h3 class="wi-card__title">{{ t('workshop.welcomeMessagesTitle') }}</h3>
-          <p class="wi-card__body">{{ t('workshop.welcomeMessagesBody') }}</p>
+          <h3 class="wi-card__title"><I18nText k="workshop.welcomeMessagesTitle" /></h3>
+          <p class="wi-card__body"><I18nText k="workshop.welcomeMessagesBody" /></p>
         </article>
       </div>
 
@@ -152,60 +150,78 @@ function openRecentDm(partnerId: number): void {
         aria-label="Workshop structure example"
       >
         <figcaption class="wi-example__caption">
-          {{ t('workshop.welcomeExampleCaption') }}
+          <I18nText k="workshop.welcomeExampleCaption" />
         </figcaption>
         <div class="wi-example__body">
-          <div class="wi-example__org">{{ t('workshop.welcomeExampleOrg') }}</div>
+          <div class="wi-example__org"><I18nText k="workshop.welcomeExampleOrg" /></div>
 
           <div class="wi-example__groups">
             <div class="wi-example__group">
-              <div class="wi-example__group-title">{{ t('workshop.welcomeExampleGroupMath') }}</div>
+              <div class="wi-example__group-title">
+                <I18nText k="workshop.welcomeExampleGroupMath" />
+              </div>
 
               <div class="wi-example__ls">
-                <div class="wi-example__ls-title">{{ t('workshop.welcomeExampleLSMath1') }}</div>
-                <div class="wi-example__conv-head">{{ t('workshop.welcomeExampleConvLabel') }}</div>
+                <div class="wi-example__ls-title">
+                  <I18nText k="workshop.welcomeExampleLSMath1" />
+                </div>
+                <div class="wi-example__conv-head">
+                  <I18nText k="workshop.welcomeExampleConvLabel" />
+                </div>
                 <ul class="wi-example__conv-list">
-                  <li>{{ t('workshop.welcomeExampleLSMath1C1') }}</li>
-                  <li>{{ t('workshop.welcomeExampleLSMath1C2') }}</li>
-                  <li>{{ t('workshop.welcomeExampleLSMath1C3') }}</li>
+                  <li><I18nText k="workshop.welcomeExampleLSMath1C1" /></li>
+                  <li><I18nText k="workshop.welcomeExampleLSMath1C2" /></li>
+                  <li><I18nText k="workshop.welcomeExampleLSMath1C3" /></li>
                 </ul>
               </div>
 
               <div class="wi-example__ls">
-                <div class="wi-example__ls-title">{{ t('workshop.welcomeExampleLSMath2') }}</div>
-                <div class="wi-example__conv-head">{{ t('workshop.welcomeExampleConvLabel') }}</div>
+                <div class="wi-example__ls-title">
+                  <I18nText k="workshop.welcomeExampleLSMath2" />
+                </div>
+                <div class="wi-example__conv-head">
+                  <I18nText k="workshop.welcomeExampleConvLabel" />
+                </div>
                 <ul class="wi-example__conv-list">
-                  <li>{{ t('workshop.welcomeExampleLSMath2C1') }}</li>
+                  <li><I18nText k="workshop.welcomeExampleLSMath2C1" /></li>
                 </ul>
               </div>
             </div>
 
             <div class="wi-example__group">
               <div class="wi-example__group-title">
-                {{ t('workshop.welcomeExampleGroupEnglish') }}
+                <I18nText k="workshop.welcomeExampleGroupEnglish" />
               </div>
 
               <div class="wi-example__ls">
-                <div class="wi-example__ls-title">{{ t('workshop.welcomeExampleLSEng1') }}</div>
-                <div class="wi-example__conv-head">{{ t('workshop.welcomeExampleConvLabel') }}</div>
+                <div class="wi-example__ls-title">
+                  <I18nText k="workshop.welcomeExampleLSEng1" />
+                </div>
+                <div class="wi-example__conv-head">
+                  <I18nText k="workshop.welcomeExampleConvLabel" />
+                </div>
                 <ul class="wi-example__conv-list">
-                  <li>{{ t('workshop.welcomeExampleLSEng1C1') }}</li>
-                  <li>{{ t('workshop.welcomeExampleLSEng1C2') }}</li>
-                  <li>{{ t('workshop.welcomeExampleLSEng1C3') }}</li>
+                  <li><I18nText k="workshop.welcomeExampleLSEng1C1" /></li>
+                  <li><I18nText k="workshop.welcomeExampleLSEng1C2" /></li>
+                  <li><I18nText k="workshop.welcomeExampleLSEng1C3" /></li>
                 </ul>
               </div>
 
               <div class="wi-example__ls">
-                <div class="wi-example__ls-title">{{ t('workshop.welcomeExampleLSEng2') }}</div>
-                <div class="wi-example__conv-head">{{ t('workshop.welcomeExampleConvLabel') }}</div>
+                <div class="wi-example__ls-title">
+                  <I18nText k="workshop.welcomeExampleLSEng2" />
+                </div>
+                <div class="wi-example__conv-head">
+                  <I18nText k="workshop.welcomeExampleConvLabel" />
+                </div>
                 <ul class="wi-example__conv-list">
-                  <li>{{ t('workshop.welcomeExampleLSEng2C1') }}</li>
+                  <li><I18nText k="workshop.welcomeExampleLSEng2C1" /></li>
                 </ul>
               </div>
             </div>
           </div>
 
-          <p class="wi-example__msg-foot">{{ t('workshop.welcomeExampleMsgLabel') }}</p>
+          <p class="wi-example__msg-foot"><I18nText k="workshop.welcomeExampleMsgLabel" /></p>
         </div>
       </figure>
     </section>

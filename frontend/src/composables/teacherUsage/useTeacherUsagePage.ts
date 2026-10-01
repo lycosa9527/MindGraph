@@ -19,6 +19,14 @@ import { CanvasRenderer } from 'echarts/renderers'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import {
+  useAdminTeacherUsage,
+  useAdminTeacherUsageConfig,
+  useAdminTeacherUsageUserDetail,
+  useAdminTeacherUsageUsers,
+  useRecomputeAdminTeacherUsage,
+  useUpdateAdminTeacherUsageConfig,
+} from '@/composables/queries'
+import {
   GROUPS,
   type GroupStats,
   SUB_GROUPS,
@@ -28,14 +36,6 @@ import {
   type UserDetailData,
 } from '@/composables/teacherUsage/teacherUsageTypes'
 import { useUIStore } from '@/stores/ui'
-import {
-  useAdminTeacherUsage,
-  useAdminTeacherUsageConfig,
-  useAdminTeacherUsageUserDetail,
-  useAdminTeacherUsageUsers,
-  useRecomputeAdminTeacherUsage,
-  useUpdateAdminTeacherUsageConfig,
-} from '@/composables/queries'
 import { formatUserNumber } from '@/utils/intlDisplay'
 
 echarts.use([
@@ -196,7 +196,7 @@ export function useTeacherUsagePage() {
       }
     } catch (error) {
       console.error('Failed to load user detail:', error)
-      notify.error(t('teacher.analytics.notify.loadFailed'))
+      notify.errorKey('teacher.analytics.notify.loadFailed')
     } finally {
       userChartLoading.value = false
     }
@@ -272,11 +272,11 @@ export function useTeacherUsagePage() {
         usersTotal.value = data.total ?? 0
         usersPage.value = data.page ?? page
       } else {
-        notify.error(t('teacher.analytics.notify.loadUsersFailed'))
+        notify.errorKey('teacher.analytics.notify.loadUsersFailed')
       }
     } catch (error) {
       console.error('Failed to load users:', error)
-      notify.error(t('teacher.analytics.notify.loadUsersFailed'))
+      notify.errorKey('teacher.analytics.notify.loadUsersFailed')
     } finally {
       allUsersLoading.value = false
     }
@@ -334,11 +334,11 @@ export function useTeacherUsagePage() {
     isSavingConfig.value = true
     try {
       await updateConfigMutation.mutateAsync(configForm.value)
-      notify.success(t('teacher.analytics.notify.configSaved'))
+      notify.successKey('teacher.analytics.notify.configSaved')
       await loadTeacherUsage()
     } catch (error) {
       console.error('Failed to save config:', error)
-      notify.error(t('teacher.analytics.notify.saveFailed'))
+      notify.errorKey('teacher.analytics.notify.saveFailed')
     } finally {
       isSavingConfig.value = false
     }
@@ -348,13 +348,11 @@ export function useTeacherUsagePage() {
     isRecomputing.value = true
     try {
       const data = await recomputeMutation.mutateAsync(configForm.value)
-      notify.success(
-        t('teacher.analytics.notify.savedRecomputed', { n: data.recomputed ?? 0 })
-      )
+      notify.successKey('teacher.analytics.notify.savedRecomputed', { n: data.recomputed ?? 0 })
       await loadTeacherUsage()
     } catch (error) {
       console.error('Failed to recompute:', error)
-      notify.error(t('teacher.analytics.notify.recomputeFailed'))
+      notify.errorKey('teacher.analytics.notify.recomputeFailed')
     } finally {
       isRecomputing.value = false
     }
@@ -436,13 +434,13 @@ export function useTeacherUsagePage() {
       const result = await overviewQuery.refetch()
       const data = result.data as Record<string, unknown> | undefined
       if (!data) {
-        notify.error(t('teacher.analytics.notify.loadDataFailed'))
+        notify.errorKey('teacher.analytics.notify.loadDataFailed')
         return
       }
       applyOverviewData(data)
     } catch (error) {
       console.error('Failed to load teacher usage:', error)
-      notify.error(t('teacher.analytics.notify.networkError'))
+      notify.errorKey('teacher.analytics.notify.networkError')
     } finally {
       isLoading.value = false
     }

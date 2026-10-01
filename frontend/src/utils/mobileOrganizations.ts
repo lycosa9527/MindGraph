@@ -42,6 +42,44 @@ export function mobileOrgInviteClipboardText(
   })
 }
 
+export interface MobileOrgListEntry {
+  id: number
+  name: string
+  invitationCode: string
+  userCount: number
+}
+
+/**
+ * Keep a just-created school in the list, including its invite code, until the refetch has it.
+ */
+export function mergeCreatedMobileOrg(
+  rows: MobileOrgListEntry[],
+  created: { id: number; name: string; invitationCode: string } | null
+): MobileOrgListEntry[] {
+  if (created == null || !Number.isFinite(created.id) || created.id <= 0) {
+    return rows
+  }
+  const code = created.invitationCode.trim()
+  const name = created.name.trim()
+  const index = rows.findIndex((row) => row.id === created.id)
+  if (index < 0) {
+    const next = [{ id: created.id, name, invitationCode: code, userCount: 0 }, ...rows]
+    next.sort((left, right) => left.id - right.id)
+    return next
+  }
+  const current = rows[index]
+  if (current.invitationCode.trim() || !code) {
+    return rows
+  }
+  const next = rows.slice()
+  next[index] = {
+    ...current,
+    name: current.name.trim() || name,
+    invitationCode: code,
+  }
+  return next
+}
+
 export function parseMobileOrganizations(data: unknown): MobileOrganizationRow[] {
   if (!Array.isArray(data)) {
     return []

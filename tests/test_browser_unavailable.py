@@ -1,5 +1,7 @@
 """Unit tests for Playwright browser unavailable mapping."""
 
+from playwright.async_api import Error as PlaywrightError
+
 from services.infrastructure.utils.browser import (
     BrowserUnavailableError,
     is_browser_unavailable_message,
@@ -26,4 +28,10 @@ def test_wrap_browser_launch_error_maps_playwright_style_message():
 def test_wrap_browser_launch_error_passes_through_other_errors():
     """Non-browser errors stay unchanged."""
     exc = ValueError("unrelated")
+    assert wrap_browser_launch_error(exc) is exc
+
+
+def test_wrap_browser_launch_error_keeps_other_playwright_failures():
+    """A launch crash is not a missing Chromium install."""
+    exc = PlaywrightError("BrowserType.launch: Target page, context or browser has been closed")
     assert wrap_browser_launch_error(exc) is exc

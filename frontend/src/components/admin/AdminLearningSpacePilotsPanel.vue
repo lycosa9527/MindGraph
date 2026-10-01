@@ -3,7 +3,6 @@
  * Learning Space admin — pilot teachers sub-page.
  */
 import { computed, onMounted, ref, watch } from 'vue'
-
 import { useRouter } from 'vue-router'
 
 import { useLanguage, useNotifications } from '@/composables'
@@ -71,7 +70,7 @@ async function loadPilots(): Promise<void> {
     pilots.value = res.items
     emit('refreshed')
   } catch {
-    notify.error(t('admin.learningSpace.loadFailed'))
+    notify.errorKey('admin.learningSpace.loadFailed')
   } finally {
     loading.value = false
   }
@@ -82,7 +81,7 @@ async function loadTeachers(opts?: { quiet?: boolean }): Promise<void> {
   const orgId = teacherOrgFilter.value === '' ? null : Number(teacherOrgFilter.value)
   if (!q && orgId == null) {
     if (!opts?.quiet) {
-      notify.warning(t('admin.learningSpace.searchHint'))
+      notify.warningKey('admin.learningSpace.searchHint')
     }
     return
   }
@@ -103,12 +102,12 @@ async function loadTeachers(opts?: { quiet?: boolean }): Promise<void> {
       selectedTeacherId.value = ''
     }
     if (teacherHits.value.length === 0 && !opts?.quiet) {
-      notify.info(t('admin.learningSpace.searchEmpty'))
+      notify.infoKey('admin.learningSpace.searchEmpty')
     }
   } catch {
     teacherHits.value = []
     selectedTeacherId.value = ''
-    notify.error(t('admin.learningSpace.searchFailed'))
+    notify.errorKey('admin.learningSpace.searchFailed')
   } finally {
     searching.value = false
   }
@@ -120,7 +119,7 @@ async function onSearchTeachers(): Promise<void> {
 
 async function onMakeSelectedPilot(): Promise<void> {
   if (selectedTeacher.value == null) {
-    notify.warning(t('admin.learningSpace.selectTeacherPlaceholder'))
+    notify.warningKey('admin.learningSpace.selectTeacherPlaceholder')
     return
   }
   await onMakePilot(selectedTeacher.value)
@@ -128,11 +127,11 @@ async function onMakeSelectedPilot(): Promise<void> {
 
 async function onMakePilot(row: LearningTeacherSearchRow): Promise<void> {
   if (row.organization_id == null) {
-    notify.warning(t('admin.learningSpace.teacherNoOrg'))
+    notify.warningKey('admin.learningSpace.teacherNoOrg')
     return
   }
   if (row.already_pilot) {
-    notify.warning(t('admin.learningSpace.alreadyPilot'))
+    notify.warningKey('admin.learningSpace.alreadyPilot')
     return
   }
   try {
@@ -140,14 +139,14 @@ async function onMakePilot(row: LearningTeacherSearchRow): Promise<void> {
       teacher_user_id: row.id,
       organization_id: row.organization_id,
     })
-    notify.success(t('admin.learningSpace.pilotCreated'))
+    notify.successKey('admin.learningSpace.pilotCreated')
     row.already_pilot = true
     teacherHits.value = teacherHits.value.map((hit) =>
       hit.id === row.id ? { ...hit, already_pilot: true } : hit
     )
     await loadPilots()
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -162,7 +161,7 @@ async function onTogglePilot(pilot: LearningPilot): Promise<void> {
     await patchAdminPilot(pilot.id, !pilot.enabled)
     await loadPilots()
   } catch {
-    notify.error(t('admin.learningSpace.saveFailed'))
+    notify.errorKey('admin.learningSpace.saveFailed')
   }
 }
 
@@ -177,7 +176,7 @@ async function onDeletePilot(pilot: LearningPilot): Promise<void> {
   if (!ok) return
   try {
     await deleteAdminPilot(pilot.id)
-    notify.success(t('admin.learningSpace.pilotDeleted'))
+    notify.successKey('admin.learningSpace.pilotDeleted')
     teacherHits.value = teacherHits.value.map((row) =>
       row.id === pilot.teacher_user_id ? { ...row, already_pilot: false } : row
     )
@@ -222,14 +221,14 @@ defineExpose({ reload: loadPilots })
       v-if="loading"
       class="ls-muted"
     >
-      {{ t('common.loading') }}
+      <I18nText k="common.loading" />
     </p>
 
     <section class="ls-admin-card">
       <div class="ls-section-title">
-        <h2>{{ t('admin.learningSpace.addPilotSection') }}</h2>
+        <h2><I18nText k="admin.learningSpace.addPilotSection" /></h2>
       </div>
-      <p class="ls-muted">{{ t('admin.learningSpace.pilotWorkflowHint') }}</p>
+      <p class="ls-muted"><I18nText k="admin.learningSpace.pilotWorkflowHint" /></p>
       <div
         v-if="canEdit()"
         class="ls-toolbar"
@@ -241,11 +240,13 @@ defineExpose({ reload: loadPilots })
           :disabled="searching || teacherHits.length === 0"
         >
           <option value="">
-            {{
-              searching
-                ? t('common.loading')
-                : t('admin.learningSpace.selectTeacherPlaceholder')
-            }}
+            <I18nText
+              v-if="searching"
+              k="common.loading"
+            /><I18nText
+              v-else
+              k="admin.learningSpace.selectTeacherPlaceholder"
+            />
           </option>
           <option
             v-for="row in teacherHits"
@@ -269,7 +270,7 @@ defineExpose({ reload: loadPilots })
           class="ls-control ls-control--select"
         >
           <option value="">
-            {{ t('admin.learningSpace.allOrganizations') }}
+            <I18nText k="admin.learningSpace.allOrganizations" />
           </option>
           <option
             v-for="org in organizations"
@@ -286,7 +287,7 @@ defineExpose({ reload: loadPilots })
           :disabled="searching || selectedTeacher == null || selectedTeacher.already_pilot"
           @click="onMakeSelectedPilot"
         >
-          {{ t('admin.learningSpace.makePilot') }}
+          <I18nText k="admin.learningSpace.makePilot" />
         </button>
         <button
           v-else
@@ -295,7 +296,13 @@ defineExpose({ reload: loadPilots })
           :disabled="searching"
           @click="onSearchTeachers"
         >
-          {{ searching ? t('common.loading') : t('admin.learningSpace.searchTeachers') }}
+          <I18nText
+            v-if="searching"
+            k="common.loading"
+          /><I18nText
+            v-else
+            k="admin.learningSpace.searchTeachers"
+          />
         </button>
       </div>
       <div
@@ -305,9 +312,9 @@ defineExpose({ reload: loadPilots })
         <table class="ls-table">
           <thead>
             <tr>
-              <th>{{ t('auth.name') }}</th>
-              <th>{{ t('admin.learningSpace.phone') }}</th>
-              <th>{{ t('admin.learningSpace.organization') }}</th>
+              <th><I18nText k="auth.name" /></th>
+              <th><I18nText k="admin.learningSpace.phone" /></th>
+              <th><I18nText k="admin.learningSpace.organization" /></th>
               <th v-if="canEdit()" />
             </tr>
           </thead>
@@ -326,11 +333,13 @@ defineExpose({ reload: loadPilots })
                   :disabled="row.already_pilot || row.organization_id == null"
                   @click="onMakePilot(row)"
                 >
-                  {{
-                    row.already_pilot
-                      ? t('admin.learningSpace.alreadyPilot')
-                      : t('admin.learningSpace.makePilot')
-                  }}
+                  <I18nText
+                    v-if="row.already_pilot"
+                    k="admin.learningSpace.alreadyPilot"
+                  /><I18nText
+                    v-else
+                    k="admin.learningSpace.makePilot"
+                  />
                 </button>
               </td>
             </tr>
@@ -341,13 +350,13 @@ defineExpose({ reload: loadPilots })
 
     <section class="ls-admin-card">
       <div class="ls-section-title">
-        <h2>{{ t('admin.learningSpace.pilotList') }}</h2>
+        <h2><I18nText k="admin.learningSpace.pilotList" /></h2>
       </div>
       <p
         v-if="!pilots.length && !loading"
         class="ls-muted"
       >
-        {{ t('admin.learningSpace.pilotsEmpty') }}
+        <I18nText k="admin.learningSpace.pilotsEmpty" />
       </p>
       <div
         v-else
@@ -356,10 +365,10 @@ defineExpose({ reload: loadPilots })
         <table class="ls-table">
           <thead>
             <tr>
-              <th>{{ t('auth.name') }}</th>
-              <th>{{ t('admin.learningSpace.organization') }}</th>
-              <th>{{ t('admin.learningSpace.enabled') }}</th>
-              <th>{{ t('admin.learningSpace.classCount') }}</th>
+              <th><I18nText k="auth.name" /></th>
+              <th><I18nText k="admin.learningSpace.organization" /></th>
+              <th><I18nText k="admin.learningSpace.enabled" /></th>
+              <th><I18nText k="admin.learningSpace.classCount" /></th>
               <th v-if="canEdit()" />
             </tr>
           </thead>
@@ -370,7 +379,15 @@ defineExpose({ reload: loadPilots })
             >
               <td>{{ p.teacher_name || '—' }}</td>
               <td>{{ p.organization_name || '—' }}</td>
-              <td>{{ p.enabled ? t('admin.learningSpace.yes') : t('admin.learningSpace.no') }}</td>
+              <td>
+                <I18nText
+                  v-if="p.enabled"
+                  k="admin.learningSpace.yes"
+                /><I18nText
+                  v-else
+                  k="admin.learningSpace.no"
+                />
+              </td>
               <td>{{ p.class_count ?? 0 }}</td>
               <td
                 v-if="canEdit()"
@@ -382,21 +399,27 @@ defineExpose({ reload: loadPilots })
                   :disabled="!p.enabled"
                   @click="goAddClass(p)"
                 >
-                  {{ t('admin.learningSpace.addClass') }}
+                  <I18nText k="admin.learningSpace.addClass" />
                 </button>
                 <button
                   type="button"
                   class="ls-btn ls-btn--ghost ls-btn--sm"
                   @click="onTogglePilot(p)"
                 >
-                  {{ p.enabled ? t('admin.learningSpace.disable') : t('admin.learningSpace.enable') }}
+                  <I18nText
+                    v-if="p.enabled"
+                    k="admin.learningSpace.disable"
+                  /><I18nText
+                    v-else
+                    k="admin.learningSpace.enable"
+                  />
                 </button>
                 <button
                   type="button"
                   class="ls-btn ls-btn--danger-soft ls-btn--sm"
                   @click="onDeletePilot(p)"
                 >
-                  {{ t('admin.learningSpace.delete') }}
+                  <I18nText k="admin.learningSpace.delete" />
                 </button>
               </td>
             </tr>

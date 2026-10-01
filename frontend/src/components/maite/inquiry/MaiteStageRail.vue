@@ -2,8 +2,6 @@
 /**
  * MaiteStageRail — inquiry stage navigation (past + current only).
  */
-import { useLanguage } from '@/composables/core/useLanguage'
-
 import type { MaiteInquiryStage } from '@/types/maite'
 
 const props = defineProps<{
@@ -14,8 +12,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [stage: MaiteInquiryStage]
 }>()
-
-const { t } = useLanguage()
 
 const stages: MaiteInquiryStage[] = ['decompose', 'diagnosis', 'remedy', 'variant', 'completed']
 
@@ -52,7 +48,7 @@ function onSelect(stage: MaiteInquiryStage): void {
       :disabled="isLocked(stage)"
       @click="onSelect(stage)"
     >
-      <span class="maite-stage-rail__label">{{ t(`maite.stage.${stage}`) }}</span>
+      <span class="maite-stage-rail__label"><I18nText :k="`maite.stage.${stage}`" /></span>
     </button>
   </nav>
 </template>

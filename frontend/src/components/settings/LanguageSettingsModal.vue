@@ -22,7 +22,7 @@ import {
   getPromptLanguageOptionsForPicker,
   matchedPromptLanguageForUiLocale,
 } from '@/i18n/locales'
-import { useAuthStore } from '@/stores'
+import { useAuthStore } from '@/stores/auth'
 import type { Language, MindMapCanvasMode, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
 import '@/styles/settings-language-swiss.css'
@@ -40,7 +40,6 @@ const draftUi = ref<Language>(uiStore.language)
 const draftPrompt = ref<PromptLanguage>(uiStore.promptLanguage)
 const draftMindMapCanvasMode = ref<MindMapCanvasMode>(uiStore.mindMapCanvasMode)
 const draftEBlackboardOptimize = ref(uiStore.eBlackboardOptimize)
-const draftSidebarPoemEnabled = ref(uiStore.sidebarPoemEnabled)
 const draftBilingualUiEnabled = ref(uiStore.bilingualUiEnabled)
 const draftPresenterUiLocale = ref<Language>(uiStore.presenterUiLocale)
 const matchPromptToInterface = ref(uiStore.matchPromptToUi)
@@ -136,7 +135,6 @@ watch(visible, (v) => {
     draftPrompt.value = pr
     draftMindMapCanvasMode.value = uiStore.mindMapCanvasMode
     draftEBlackboardOptimize.value = uiStore.eBlackboardOptimize
-    draftSidebarPoemEnabled.value = uiStore.sidebarPoemEnabled
     draftBilingualUiEnabled.value = uiStore.bilingualUiEnabled
     draftPresenterUiLocale.value =
       !allowSimplifiedChinesePicker.value && uiStore.presenterUiLocale === 'zh'
@@ -235,7 +233,6 @@ async function save(): Promise<void> {
       return
     }
   }
-  uiStore.setSidebarPoemEnabled(draftSidebarPoemEnabled.value)
   uiStore.setBilingualUiEnabled(draftBilingualUiEnabled.value)
   uiStore.setPresenterUiLocale(draftPresenterUiLocale.value)
   uiStore.setMatchPromptToUi(matchPromptToInterface.value)
@@ -248,7 +245,7 @@ async function save(): Promise<void> {
     uiStore.setMindMapCanvasMode(draftMindMapCanvasMode.value)
     uiStore.setEBlackboardOptimize(draftEBlackboardOptimize.value)
     if (prevMindMapMode !== draftMindMapCanvasMode.value) {
-      notify.info(t('settings.language.mindMapCanvasRefreshHint'))
+      notify.infoKey('settings.language.mindMapCanvasRefreshHint')
     }
   }
   uiStore.setUiLanguageExplicit(true)
@@ -437,41 +434,6 @@ function onClose(): void {
         </div>
         <p class="language-settings-swiss__hint">
           <I18nText k="settings.language.eBlackboardHint" />
-        </p>
-      </section>
-
-      <section>
-        <div class="language-settings-swiss__kicker">
-          <span><I18nText k="settings.language.sidebarPoem" /></span>
-        </div>
-        <div
-          class="language-settings-canvas-segmented"
-          role="radiogroup"
-          :aria-label="t('settings.language.sidebarPoem')"
-        >
-          <button
-            type="button"
-            role="radio"
-            class="language-settings-canvas-segment"
-            :class="{ 'is-active': !draftSidebarPoemEnabled }"
-            :aria-checked="!draftSidebarPoemEnabled"
-            @click="draftSidebarPoemEnabled = false"
-          >
-            <I18nText k="settings.language.sidebarPoemOff" />
-          </button>
-          <button
-            type="button"
-            role="radio"
-            class="language-settings-canvas-segment"
-            :class="{ 'is-active': draftSidebarPoemEnabled }"
-            :aria-checked="draftSidebarPoemEnabled"
-            @click="draftSidebarPoemEnabled = true"
-          >
-            <I18nText k="settings.language.sidebarPoemOn" />
-          </button>
-        </div>
-        <p class="language-settings-swiss__hint">
-          <I18nText k="settings.language.sidebarPoemHint" />
         </p>
       </section>
     </div>

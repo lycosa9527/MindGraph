@@ -4,18 +4,22 @@
  * Each module can expand its history panel below; only one panel open at a time.
  * Workshop mode hides admin items and fills remaining space.
  */
-import { onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
+import { onBeforeUnmount, provide, watch } from 'vue'
 
 import { ElButton } from 'element-plus'
 
 import { PanelLeftClose } from '@lucide/vue'
 
-import { AccountInfoModal, LoginModal, UpdateLogModal } from '@/components/auth'
+import AccountInfoModal from '@/components/auth/AccountInfoModal.vue'
+import LoginModal from '@/components/auth/LoginModal.vue'
 import ThinkingCoinsModal from '@/components/auth/ThinkingCoinsModal.vue'
+import UpdateLogModal from '@/components/auth/UpdateLogModal.vue'
+import I18nText from '@/components/common/I18nText.vue'
 import LanguageSettingsModal from '@/components/settings/LanguageSettingsModal.vue'
 import { useThinkingCoinInsufficientListener } from '@/composables/auth/useThinkingCoinInsufficientListener'
-import { appSidebarInjectionKey, useAppSidebar } from '@/composables/sidebar/useAppSidebar'
 import { eventBus } from '@/composables/core/useEventBus'
+import { appSidebarInjectionKey, useAppSidebar } from '@/composables/sidebar/useAppSidebar'
+import { useLogoSiteQrHover } from '@/composables/sidebar/useLogoSiteQrHover'
 import type { TrainingModalKey } from '@/config/trainingUiTargets'
 
 import AppSidebarAccountFooter from './AppSidebarAccountFooter.vue'
@@ -38,7 +42,9 @@ const {
   authStore,
   isAuthenticated,
   brandHeaderLayout,
+  brandSubtitleKind,
   orgEditionLabel,
+  orgEditionParams,
   orgEditionTooltip,
 } = sidebar
 
@@ -98,63 +104,14 @@ eventBus.onWithOwner(
   TRAINING_MODAL_OWNER
 )
 
-const showLogoQrScan = ref(false)
-const prefersHover = ref(false)
-let hoverOpenTimer: ReturnType<typeof setTimeout> | null = null
-let hoverCloseTimer: ReturnType<typeof setTimeout> | null = null
-
-const HOVER_OPEN_DELAY_MS = 1500
-const HOVER_CLOSE_DELAY_MS = 250
-
-function clearHoverOpenTimer(): void {
-  if (hoverOpenTimer !== null) {
-    clearTimeout(hoverOpenTimer)
-    hoverOpenTimer = null
-  }
-}
-
-function clearHoverCloseTimer(): void {
-  if (hoverCloseTimer !== null) {
-    clearTimeout(hoverCloseTimer)
-    hoverCloseTimer = null
-  }
-}
-
-function scheduleHoverClose(): void {
-  if (!prefersHover.value) {
-    return
-  }
-  clearHoverCloseTimer()
-  hoverCloseTimer = setTimeout(() => {
-    showLogoQrScan.value = false
-    hoverCloseTimer = null
-  }, HOVER_CLOSE_DELAY_MS)
-}
-
-function onLogoPointerEnter(): void {
-  if (!prefersHover.value || isCollapsed.value) {
-    return
-  }
-  clearHoverCloseTimer()
-  clearHoverOpenTimer()
-  hoverOpenTimer = setTimeout(() => {
-    showLogoQrScan.value = true
-    hoverOpenTimer = null
-  }, HOVER_OPEN_DELAY_MS)
-}
-
-function onLogoPointerLeave(): void {
-  clearHoverOpenTimer()
-  if (showLogoQrScan.value) {
-    scheduleHoverClose()
-  }
-}
-
-function closeLogoQrScan(): void {
-  clearHoverOpenTimer()
-  clearHoverCloseTimer()
-  showLogoQrScan.value = false
-}
+const {
+  visible: showLogoQrScan,
+  onPointerEnter: onLogoPointerEnter,
+  onPointerLeave: onLogoPointerLeave,
+  close: closeLogoQrScan,
+  clearHoverCloseTimer,
+  scheduleHoverClose,
+} = useLogoSiteQrHover(() => !isCollapsed.value)
 
 function onLogoClick(): void {
   if (showLogoQrScan.value) {
@@ -163,10 +120,6 @@ function onLogoClick(): void {
   sidebar.handleLogoClick()
 }
 
-onMounted(() => {
-  prefersHover.value = window.matchMedia('(hover: hover) and (pointer: fine)').matches
-})
-
 watch(isCollapsed, (collapsed) => {
   if (collapsed) {
     closeLogoQrScan()
@@ -174,8 +127,6 @@ watch(isCollapsed, (collapsed) => {
 })
 
 onBeforeUnmount(() => {
-  clearHoverOpenTimer()
-  clearHoverCloseTimer()
   eventBus.removeAllListenersForOwner(TRAINING_MODAL_OWNER)
 })
 </script>
@@ -216,23 +167,33 @@ onBeforeUnmount(() => {
           </div>
           <span
             v-if="brandHeaderLayout === 'compact'"
-            class="brand-title font-semibold text-lg text-stone-900 tracking-tight truncate max-w-full"
+            class="brand-title font-semibold text-lg text-stone-900 tracking-tight max-w-full"
           >
-            {{ sidebar.t('sidebar.brandTitle') }}
+            <I18nText k="sidebar.brandTitle" />
           </span>
           <div
             v-else
             class="brand-text flex flex-col items-start justify-center min-w-0 flex-1 text-left leading-none gap-0"
           >
-            <span class="brand-title font-semibold text-lg text-stone-900 tracking-tight truncate max-w-full">{{
-              sidebar.t('sidebar.brandTitle')
-            }}</span>
+            <span
+              class="brand-title font-semibold text-lg text-stone-900 tracking-tight max-w-full"
+            >
+              <I18nText k="sidebar.brandTitle" />
+            </span>
             <span
               v-if="isAuthenticated && orgEditionLabel"
-              class="brand-subtitle text-xs text-stone-500 truncate max-w-full -mt-px"
+              class="brand-subtitle text-xs text-stone-500 max-w-full -mt-px"
               :title="orgEditionTooltip || undefined"
             >
-              {{ orgEditionLabel }}
+              <I18nText
+                v-if="brandSubtitleKind === 'org_edition' && orgEditionParams"
+                k="sidebar.orgEdition"
+                :params="orgEditionParams"
+              />
+              <I18nText
+                v-else
+                k="sidebar.personalEdition"
+              />
             </span>
           </div>
         </div>
@@ -300,8 +261,20 @@ onBeforeUnmount(() => {
 .brand-title,
 .brand-subtitle {
   overflow: hidden;
+  max-width: 100%;
+}
+
+.brand-title :deep(.i18n-label),
+.brand-subtitle :deep(.i18n-label) {
+  max-width: 100%;
+}
+
+.brand-title :deep(.i18n-label__primary),
+.brand-title :deep(.i18n-label__secondary),
+.brand-subtitle :deep(.i18n-label__primary),
+.brand-subtitle :deep(.i18n-label__secondary) {
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 </style>

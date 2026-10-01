@@ -12,7 +12,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, false
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.domain.auth import Base
@@ -44,6 +44,8 @@ class MindmateCollabSession(Base):
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    library_saved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    library_pinned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false())
 
     __table_args__ = (
         UniqueConstraint("code", name="uq_mindmate_collab_sessions_code"),
@@ -52,6 +54,11 @@ class MindmateCollabSession(Base):
             "organization_id",
             "visibility",
             postgresql_where=(ended_at.is_(None)),
+        ),
+        Index(
+            "ix_mindmate_collab_sessions_owner_library",
+            "owner_user_id",
+            "library_saved_at",
         ),
     )
 
@@ -78,3 +85,22 @@ class MindmateCollabMessage(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (Index("ix_mindmate_collab_messages_session_created", "session_id", "created_at"),)
+
+
+class MindmateCollabReadCursor(Base):
+    """How far one person has read in a seminar. The id is a high-water mark."""
+
+    __tablename__ = "mindmate_collab_read_cursors"
+
+    session_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("mindmate_collab_sessions.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    last_read_message_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    read_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

@@ -192,7 +192,7 @@ async function fetchRoomCode(generation: number) {
         token.value = ''
         pairCode.value = ''
         pairCodeDisplay.value = ''
-        notify.warning(t(expiredKey.value))
+        notify.warningKey(expiredKey.value)
       }
       return
     }
@@ -274,7 +274,7 @@ async function pollStatus() {
         linked,
         token: pairTokenTail(token.value),
       })
-      notify.success(t(successKey.value))
+      notify.successKey(successKey.value)
       void queryClient.invalidateQueries({ queryKey: difyKeys.conversations() })
       emit('completed')
       stopTimers()
@@ -342,15 +342,15 @@ async function mintSession() {
         reason: code ?? `http_${res.status}`,
       })
       if (code === 'DINGTALK_BIND_NO_ORG') {
-        notify.error(t('auth.dingtalkBindNoOrg'))
+        notify.errorKey('auth.dingtalkBindNoOrg')
       } else if (code === 'DINGTALK_BIND_NO_MINDBOT') {
-        notify.error(t('auth.dingtalkBindNoMindbot'))
+        notify.errorKey('auth.dingtalkBindNoMindbot')
       } else if (code === 'DINGTALK_BIND_NOT_LINKED') {
-        notify.error(t('auth.dingtalkUnbindNotLinked'))
+        notify.errorKey('auth.dingtalkUnbindNotLinked')
       } else if (code === 'DINGTALK_BIND_RATE_LIMIT') {
-        notify.warning(t('auth.dingtalkBindPollRateLimited'))
+        notify.warningKey('auth.dingtalkBindPollRateLimited')
       } else {
-        notify.error(t('auth.dingtalkBindMintError'))
+        notify.errorKey('auth.dingtalkBindMintError')
       }
       return
     }
@@ -360,7 +360,7 @@ async function mintSession() {
         generation,
         reason: 'missing_token',
       })
-      notify.error(t('auth.dingtalkBindMintError'))
+      notify.errorKey('auth.dingtalkBindMintError')
       return
     }
     token.value = data.token
@@ -381,7 +381,7 @@ async function mintSession() {
         generation,
         reason: 'network_error',
       })
-      notify.error(t('auth.dingtalkBindMintError'))
+      notify.errorKey('auth.dingtalkBindMintError')
     }
   } finally {
     if (generation === sessionGeneration.value) {

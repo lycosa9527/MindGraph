@@ -111,7 +111,7 @@ function toggleExpanded(): void {
         :size="15"
         :stroke-width="2"
       />
-      <span class="whitespace-nowrap">{{ t('canvas.shortcutGuide.title') }}</span>
+      <span class="whitespace-nowrap"><I18nText k="canvas.shortcutGuide.title" /></span>
       <ChevronUp
         class="shrink-0 text-slate-400"
         :size="14"
@@ -136,7 +136,7 @@ function toggleExpanded(): void {
               :stroke-width="2"
             />
             <span class="truncate text-xs font-bold text-slate-800 dark:text-slate-100">
-              {{ t('canvas.shortcutGuide.title') }}
+              <I18nText k="canvas.shortcutGuide.title" />
             </span>
           </div>
           <button
@@ -164,7 +164,7 @@ function toggleExpanded(): void {
             "
           >
             <span class="text-xs text-slate-700 dark:text-slate-200">
-              {{ t(row.labelKey) }}
+              <I18nText :k="row.labelKey" />
             </span>
 
             <div
@@ -185,9 +185,9 @@ function toggleExpanded(): void {
               class="flex shrink-0 items-center gap-1"
             >
               <kbd class="shortcut-kbd">Space</kbd>
-              <span class="text-[10px] text-slate-400">{{
-                t('canvas.shortcutGuide.doubleClick')
-              }}</span>
+              <span class="text-[10px] text-slate-400"
+                ><I18nText k="canvas.shortcutGuide.doubleClick"
+              /></span>
             </div>
 
             <kbd
@@ -214,7 +214,7 @@ function toggleExpanded(): void {
                 :stroke-width="2"
               />
               <span class="text-[10px] leading-tight text-slate-500 dark:text-slate-400">
-                {{ t(row.hintKey) }}
+                <I18nText :k="row.hintKey" />
               </span>
             </div>
           </li>

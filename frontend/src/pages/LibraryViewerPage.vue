@@ -121,7 +121,7 @@ async function handleToggleBookmark() {
       await libraryStore.deleteBookmark(bookmarkId.value)
       isBookmarked.value = false
       bookmarkId.value = null
-      notify.success(t('libraryViewer.bookmarkRemoved'))
+      notify.successKey('libraryViewer.bookmarkRemoved')
     } else {
       // Create bookmark
       const data = {
@@ -130,7 +130,7 @@ async function handleToggleBookmark() {
       const bookmark = await libraryStore.createBookmark(documentId.value, data)
       isBookmarked.value = true
       bookmarkId.value = bookmark.id
-      notify.success(t('libraryViewer.bookmarkAdded'))
+      notify.successKey('libraryViewer.bookmarkAdded')
     }
   } catch (error) {
     if (import.meta.env.DEV) {
@@ -139,7 +139,7 @@ async function handleToggleBookmark() {
     if (error instanceof Error) {
       notify.error(error.message || t('libraryViewer.operationFailed'))
     } else {
-      notify.error(t('libraryViewer.operationFailed'))
+      notify.errorKey('libraryViewer.operationFailed')
     }
   }
 }
@@ -496,7 +496,13 @@ watch([() => selectedDanmakuId.value, () => pinPlacementPosition.value], () => {
           <ArrowLeft class="w-4 h-4 mg-icon-flip-rtl" />
         </ElButton>
         <h1 class="text-sm font-semibold text-stone-900 truncate">
-          {{ libraryStore.currentDocument?.title || t('library.loading') }}
+          <template v-if="libraryStore.currentDocument?.title">{{
+            libraryStore.currentDocument?.title
+          }}</template
+          ><I18nText
+            v-else
+            k="library.loading"
+          />
         </h1>
       </div>
     </div>

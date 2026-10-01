@@ -26,11 +26,9 @@ export function setMindMapNodeAdornment(
 ): boolean {
   if (isDiagramPresentationReadOnly(ctx)) return false
   const data = ctx.data.value
-  if (!data) return false
-  const isMindMap = ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map'
-  if (isMindMap && !data.connections) return false
+  if (!data?.connections) return false
   if (isMindMapSummaryNodeId(nodeId)) return false
-  const path = isMindMap ? mindMapAdornmentPathKey(nodeId, data.connections ?? []) : nodeId
+  const path = mindMapAdornmentPathKey(nodeId, data.connections)
   if (!path) return false
 
   const all = readMindMapAdornments(data)
@@ -39,7 +37,7 @@ export function setMindMapNodeAdornment(
   if (merged) all[path] = merged
   else delete all[path]
   writeMindMapAdornments(data, all)
-  if (isMindMap) ctx.scheduleMindMapRecalc()
+  ctx.scheduleMindMapRecalc()
   return true
 }
 

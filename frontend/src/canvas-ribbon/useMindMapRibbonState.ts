@@ -7,7 +7,6 @@
 import { onUnmounted, ref, watch } from 'vue'
 
 import { useAuthStore } from '@/stores'
-import { useLearningAssignmentCanvasStore } from '@/stores/learningAssignmentCanvas'
 import { authFetch } from '@/utils/api'
 
 import {
@@ -48,17 +47,7 @@ export function useMindMapRibbonState() {
   )
 
   function studentSafeRibbonTab(tab: MindMapRibbonTabId): MindMapRibbonTabId {
-    if (authStore.user?.role !== 'student') {
-      return tab
-    }
-    if (tab === 'research') {
-      return DEFAULT_MIND_MAP_RIBBON_TAB
-    }
-    const ls = useLearningAssignmentCanvasStore()
-    if (!ls.isActive && tab === 'ai') {
-      return DEFAULT_MIND_MAP_RIBBON_TAB
-    }
-    if (ls.isActive && !ls.aiAssistOn && tab === 'ai') {
+    if (authStore.user?.role === 'student' && tab === 'research') {
       return DEFAULT_MIND_MAP_RIBBON_TAB
     }
     return tab

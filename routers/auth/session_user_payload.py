@@ -12,6 +12,7 @@ from services.llm.org_custom_config import session_custom_llm_fields_for_org_id
 from services.redis.cache.redis_org_cache import org_cache
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_user_role
+from utils.auth.bayi_mode import user_needs_display_name
 from utils.auth.thinking_coin_config import feature_thinking_coins_enabled
 from utils.auth.user_daily_token_quota import current_user_daily_token_payload
 from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
@@ -72,6 +73,7 @@ async def build_session_user_payload(
         "phone": user.phone,
         "email": getattr(user, "email", None),
         "name": user.name,
+        "needs_display_name": user_needs_display_name(user.name),
         "avatar": user.avatar or DEFAULT_USER_AVATAR_EMOJI,
         "role": get_user_role(user),
         "login_password_set": getattr(user, "login_password_set", True),

@@ -122,8 +122,8 @@ export function recalculateCircleMapLayout(
         ...(node.style || {}),
         size: uniformContextDiameter,
         fontSize: node.style?.fontSize ?? CONTEXT_FONT_SIZE,
-        backgroundColor: node.style?.backgroundColor || color.fill,
-        borderColor: node.style?.borderColor || color.border,
+        backgroundColor: color.fill,
+        borderColor: color.border,
       }
       result.push({
         ...node,

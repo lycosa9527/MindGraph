@@ -13,7 +13,7 @@ import {
   streamFocusSuggestions,
   validateFocusQuestionParallel,
 } from '@/composables/editor/conceptMapFocusQuestionApi'
-import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
+import { isPlaceholderText } from '@/composables/editor/placeholderText'
 import { i18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useDiagramStore } from '@/stores/diagram'

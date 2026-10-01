@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 /**
  * MindMapLegacyBranchNode — classic mind map branch node (pill, per-branch palette).
  */
@@ -11,6 +10,7 @@ import { Handle, Position } from '@vue-flow/core'
 import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import {
   handleLearningSheetPickNodeClick,
@@ -22,7 +22,6 @@ import {
 } from '@/composables/mindMap/useMindMapExportOutlineWireframe'
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
-import { useDiagramStore } from '@/stores/diagram'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -37,7 +36,10 @@ const props = defineProps<MindGraphNodeProps>()
 
 const diagramStore = useDiagramSession()
 const isTextReadonly = computed(
-  () => diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)
+  () =>
+    (props.data.hidden === true && diagramStore.isLearningSheet) ||
+    diagramPresentationReadOnlyRef.value ||
+    toValue(diagramStore.isReadonly)
 )
 const branchNodeRef = ref<HTMLDivElement | null>(null)
 const exportOutlineActive = useMindMapExportOutlineWireframeActive()
@@ -87,6 +89,21 @@ const nodeStyle = computed((): CSSProperties => {
     fontStyle: style.fontStyle || 'normal',
     textDecoration: style.textDecoration || 'none',
     borderRadius: '9999px',
+  }
+  const isBlankedForSheet =
+    diagramStore.isLearningSheet && diagramStore.isNodeBlankedForLearningSheet(props.id)
+  if (isBlankedForSheet) {
+    const layoutWidth = props.data?.estimatedWidth as number | undefined
+    const layoutHeight = props.data?.estimatedHeight as number | undefined
+    if (layoutWidth && layoutWidth > 0) {
+      legacy.boxSizing = 'border-box'
+      legacy.width = `${layoutWidth}px`
+      legacy.minWidth = `${layoutWidth}px`
+    }
+    if (layoutHeight && layoutHeight > 0) {
+      legacy.height = `${layoutHeight}px`
+      legacy.minHeight = `${layoutHeight}px`
+    }
   }
   return finalizeMindMapExportNodeStyle(legacy)
 })
@@ -173,8 +190,8 @@ function handleEditCancel() {
 
 function handleBranchNodeDoubleClick(): void {
   if (isLearningSheetCustomPickActive()) return
-  if ((diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly))) return
-  if (isEditing.value) return
+  if (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)) return
+  if ((props.data.hidden === true && diagramStore.isLearningSheet) || isEditing.value) return
   if (collabCanvas?.isNodeLockedByOther?.(props.id)) {
     notifyCollab.warning(t('collab.nodeLocked'))
     return
@@ -189,7 +206,6 @@ function handleBranchNodeClick(event: MouseEvent): void {
     event.stopPropagation()
     event.preventDefault()
     handleLearningSheetPickNodeClick(props.id)
-    return
   }
 }
 </script>

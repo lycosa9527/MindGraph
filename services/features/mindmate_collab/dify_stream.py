@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Optional
+from typing import Any, Optional
 
+from services.dify.org_dify_inputs import apply_persona_inputs_for_organization_id
 from services.dify.org_mindmate_client import resolve_mindmate_dify_client_short_lived
 from services.features.mindmate_collab.dify_stream_control import (
     clear_dify_stream_abort,
@@ -25,6 +26,7 @@ from services.features.mindmate_collab.manager_access import get_mindmate_collab
 from services.features.mindmate_collab.redis_keys import normalize_collab_code
 from services.features.mindmate_collab.ws_broadcast import broadcast_to_all
 from services.infrastructure.http.sse_upstream_keepalive import iter_upstream_with_keepalive
+from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -35,15 +37,48 @@ def mindmate_collab_dify_user_id(org_id: Optional[int], session_id: str) -> str:
     return f"mindmate_collab_{org_part}_{session_id}"
 
 
-async def _broadcast_aborted_end(code: str, partial: str) -> None:
-    await broadcast_to_all(
-        code,
-        {
-            "type": "ai_message_end",
-            "content": partial,
-            "aborted": True,
-        },
-    )
+async def _store_partial_assistant(
+    session_id: str,
+    text: str,
+    room_code: str,
+) -> tuple[Optional[int], Optional[int]]:
+    """Keep an interrupted MindMate reply. Returns ``(id, prev_id)`` when saved."""
+    cleaned = text.strip()
+    if not cleaned:
+        return None, None
+    try:
+        saved = await get_mindmate_collab_manager().persist_message(
+            session_id,
+            role="assistant",
+            content=cleaned,
+            sender_user_id=None,
+            room_code=room_code,
+        )
+    except DATABASE_ERRORS as exc:
+        logger.warning(
+            "[MindmateCollabDify] partial save failed session=%s: %s",
+            session_id,
+            exc,
+        )
+        return None, None
+    return saved.id, saved.prev_id
+
+
+async def _broadcast_aborted_end(
+    code: str,
+    partial: str,
+    message_id: Optional[int],
+    prev_id: Optional[int],
+) -> None:
+    frame: dict[str, Any] = {
+        "type": "ai_message_end",
+        "content": partial,
+        "aborted": True,
+    }
+    if message_id is not None:
+        frame["id"] = message_id
+        frame["prev_id"] = prev_id
+    await broadcast_to_all(code, frame)
 
 
 async def stream_assistant_reply(
@@ -67,11 +102,15 @@ async def stream_assistant_reply(
             return
 
         client = await resolve_mindmate_dify_client_short_lived(org_id, detail="AI service not configured")
+        collab_inputs: dict[str, Any] = {"mg_dify_user": dify_user}
+        if conversation_id:
+            collab_inputs["mg_conversation_id"] = conversation_id
+        await apply_persona_inputs_for_organization_id(collab_inputs, org_id)
         stream = client.stream_chat(
             message=user_message,
             user_id=dify_user,
             conversation_id=conversation_id,
-            inputs={"mg_dify_user": dify_user},
+            inputs=collab_inputs,
         )
         async for chunk in iter_upstream_with_keepalive(stream, interval_seconds=15.0):
             if await is_dify_stream_aborted(code):
@@ -103,28 +142,40 @@ async def stream_assistant_reply(
                     },
                 )
         if aborted:
-            await _broadcast_aborted_end(code, "".join(full_answer))
+            partial = "".join(full_answer)
+            message_id, prev_id = await _store_partial_assistant(session_id, partial, code)
+            await _broadcast_aborted_end(code, partial, message_id, prev_id)
             return
         final_text = "".join(full_answer)
         assistant_id: Optional[int] = None
+        assistant_prev_id: Optional[int] = None
+        created_stamp: Optional[str] = None
         if final_text.strip():
             saved = await mgr.persist_message(
                 session_id,
                 role="assistant",
                 content=final_text,
                 sender_user_id=None,
+                room_code=code,
             )
             assistant_id = saved.id
-        await broadcast_to_all(
-            code,
-            {
-                "type": "ai_message_end",
-                "content": final_text,
-                "id": assistant_id,
-            },
-        )
+            assistant_prev_id = saved.prev_id
+            if isinstance(saved.created_at, str) and saved.created_at:
+                created_stamp = saved.created_at
+        end_frame: dict[str, Any] = {
+            "type": "ai_message_end",
+            "content": final_text,
+            "id": assistant_id,
+        }
+        if assistant_id is not None:
+            end_frame["prev_id"] = assistant_prev_id
+            if created_stamp:
+                end_frame["created_at"] = created_stamp
+        await broadcast_to_all(code, end_frame)
     except asyncio.CancelledError:
-        await _broadcast_aborted_end(code, "".join(full_answer))
+        partial = "".join(full_answer)
+        message_id, prev_id = await _store_partial_assistant(session_id, partial, code)
+        await _broadcast_aborted_end(code, partial, message_id, prev_id)
         raise
     except (OSError, RuntimeError, ValueError, TypeError, KeyError) as exc:
         logger.warning("[MindmateCollabDify] stream failed code=%s: %s", code, exc)

@@ -21,7 +21,12 @@ import {
 } from '@/composables/queries'
 import { normalizeSchoolTier } from '@/constants/schoolTier'
 import type { UserRole } from '@/types'
-import { normalizeUserRole, userRoleLabel, userRoleSelectTiers } from '@/utils/userRoleDisplay'
+import {
+  normalizeUserRole,
+  userRoleLabel,
+  userRoleLabelKey,
+  userRoleSelectTiers,
+} from '@/utils/userRoleDisplay'
 
 const MINDBOT_ROLE_SELECT_POPPER = 'mindbot-swiss-select-popper mindbot-swiss-select-popper--role'
 const MINDBOT_SELECT_POPPER_WIDE = 'mindbot-swiss-select-popper mindbot-swiss-select-popper--wide'
@@ -119,11 +124,17 @@ const organizationReadonly = computed(() => {
 
 const roleSelectTiers = computed(() => userRoleSelectTiers())
 
-function roleLabel(role: UserRole): string {
+function roleSchoolTier() {
   const rawTier = detail.value?.school_tier
-  const schoolTier =
-    typeof rawTier === 'string' && rawTier.trim() ? normalizeSchoolTier(rawTier) : null
-  return userRoleLabel(t, role, schoolTier)
+  return typeof rawTier === 'string' && rawTier.trim() ? normalizeSchoolTier(rawTier) : null
+}
+
+function roleLabel(role: UserRole): string {
+  return userRoleLabel(t, role, roleSchoolTier())
+}
+
+function roleKey(role: UserRole): string {
+  return userRoleLabelKey(role, roleSchoolTier()) ?? ''
 }
 
 const deleteTargetName = computed(() => {
@@ -170,7 +181,7 @@ async function loadDetail(): Promise<void> {
     return
   }
   if (props.mode === 'school' && props.schoolOrgId == null) {
-    notify.error(t('admin.schoolUsersLoadError'))
+    notify.errorKey('admin.schoolUsersLoadError')
     onClose()
     return
   }
@@ -180,7 +191,7 @@ async function loadDetail(): Promise<void> {
     const result = await userQuery.refetch()
     const data = result.data as Record<string, unknown> | undefined
     if (!data) {
-      notify.error(t('admin.schoolUsersLoadError'))
+      notify.errorKey('admin.schoolUsersLoadError')
       onClose()
       return
     }
@@ -197,18 +208,18 @@ async function loadDetail(): Promise<void> {
 function validateBeforeSave(): boolean {
   const trimmedName = nameEdit.value.trim()
   if (trimmedName.length < 2 || /\d/.test(trimmedName)) {
-    notify.warning(t('auth.modal.fillRequired'))
+    notify.warningKey('auth.modal.fillRequired')
     return false
   }
   if (props.fullEdit) {
     const phone = phoneEdit.value.trim()
     const email = emailEdit.value.trim()
     if (!phone && !email) {
-      notify.warning(t('admin.accountPhoneOrEmailRequired'))
+      notify.warningKey('admin.accountPhoneOrEmailRequired')
       return false
     }
     if (phone && (phone.length !== 11 || !phone.startsWith('1') || !/^\d+$/.test(phone))) {
-      notify.warning(t('admin.phoneFormatHint'))
+      notify.warningKey('admin.phoneFormatHint')
       return false
     }
   }
@@ -275,7 +286,7 @@ async function deleteUser(): Promise<void> {
     return
   }
   if (props.mode === 'school' && props.schoolOrgId == null) {
-    notify.error(t('admin.schoolUsersDeleteError'))
+    notify.errorKey('admin.schoolUsersDeleteError')
     return
   }
 
@@ -289,7 +300,7 @@ async function deleteUser(): Promise<void> {
     } else {
       await deleteUserMutation.mutateAsync(props.userId)
     }
-    notify.success(t('notification.deleted'))
+    notify.successKey('notification.deleted')
     emit('deleted')
     onClose()
   } catch (err) {
@@ -335,11 +346,11 @@ async function saveUser(): Promise<void> {
     if (!ok) {
       return
     }
-    notify.success(t('notification.saved'))
+    notify.successKey('notification.saved')
     emit('saved')
     onClose()
   } catch {
-    notify.error(t('admin.schoolUsersUpdateError'))
+    notify.errorKey('admin.schoolUsersUpdateError')
   } finally {
     saving.value = false
   }
@@ -399,10 +410,10 @@ watch(visible, (open) => {
           label-width="148px"
           class="mindbot-settings-form mindbot-swiss-form mindbot-compact space-y-0"
         >
-          <el-form-item
-            v-if="fullEdit || mode === 'school'"
-            :label="t('admin.phone')"
-          >
+          <el-form-item v-if="fullEdit || mode === 'school'">
+            <template #label>
+              <I18nText k="admin.phone" />
+            </template>
             <el-input
               v-model="phoneEdit"
               class="mindbot-swiss-input w-full max-w-md"
@@ -413,10 +424,10 @@ watch(visible, (open) => {
             />
           </el-form-item>
 
-          <el-form-item
-            v-if="fullEdit"
-            :label="t('admin.email')"
-          >
+          <el-form-item v-if="fullEdit">
+            <template #label>
+              <I18nText k="admin.email" />
+            </template>
             <el-input
               v-model="emailEdit"
               class="mindbot-swiss-input w-full max-w-md"
@@ -426,7 +437,10 @@ watch(visible, (open) => {
             />
           </el-form-item>
 
-          <el-form-item :label="t('admin.name')">
+          <el-form-item>
+            <template #label>
+              <I18nText k="admin.name" />
+            </template>
             <el-input
               v-model="nameEdit"
               class="mindbot-swiss-input w-full max-w-md"
@@ -434,10 +448,10 @@ watch(visible, (open) => {
             />
           </el-form-item>
 
-          <el-form-item
-            v-if="fullEdit"
-            :label="t('admin.userType')"
-          >
+          <el-form-item v-if="fullEdit">
+            <template #label>
+              <I18nText k="admin.userType" />
+            </template>
             <el-select
               v-model="roleEdit"
               class="mindbot-swiss-select mindbot-swiss-select--role w-full max-w-[11rem]"
@@ -455,12 +469,20 @@ watch(visible, (open) => {
                   :key="role"
                   :label="roleLabel(role)"
                   :value="role"
-                />
+                >
+                  <I18nText
+                    v-if="roleKey(role)"
+                    :k="roleKey(role)"
+                  />
+                </el-option>
               </el-option-group>
             </el-select>
           </el-form-item>
 
-          <el-form-item :label="t('admin.organization')">
+          <el-form-item>
+            <template #label>
+              <I18nText k="admin.organization" />
+            </template>
             <el-select
               v-if="fullEdit"
               v-model="organizationId"
@@ -488,7 +510,10 @@ watch(visible, (open) => {
             />
           </el-form-item>
 
-          <el-form-item :label="t('admin.remainingResourcePoints')">
+          <el-form-item>
+            <template #label>
+              <I18nText k="admin.remainingResourcePoints" />
+            </template>
             <el-input
               class="mindbot-swiss-input w-full max-w-md tabular-nums"
               :model-value="diagramRemainingDisplay"

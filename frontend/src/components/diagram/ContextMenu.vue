@@ -7,7 +7,7 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
-import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
   BRANCH_NODE_HEIGHT,
   DEFAULT_CENTER_Y,
@@ -15,8 +15,8 @@ import {
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
 import { useUIStore } from '@/stores'
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { isProtectedClipboardNode } from '@/stores/diagram/hierarchicalClipboardExtract'
+import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { DiagramNode, MindGraphNode } from '@/types'
 import {
   isBridgeMapPairNode,
@@ -24,12 +24,15 @@ import {
   takeBridgeMapStableId,
 } from '@/utils/bridgeMapIdentity'
 import { takeBubbleMapStableId } from '@/utils/bubbleMapIdentity'
+import { takeCircleMapStableId } from '@/utils/circleMapIdentity'
 import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
 import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
 import { takeMultiFlowMapStableId } from '@/utils/multiFlowMapIdentity'
 
 interface MenuItem {
   label?: string
+  labelKey?: string
+  labelParams?: Record<string, unknown>
   icon?: string
   action?: () => void
   disabled?: boolean
@@ -68,41 +71,6 @@ function getDoubleBubbleGroupFromNode(
   return node ? readDoubleBubbleRole(node) : null
 }
 
-const PROTECTED_CLEAR_NODE_IDS = new Set([
-  'topic',
-  'center',
-  'boundary',
-  'left-topic',
-  'right-topic',
-  'dimension-label',
-  'outer-boundary',
-])
-
-function canClearNodeContent(node: MindGraphNode | null | undefined): boolean {
-  if (!node?.id) return false
-  if (PROTECTED_CLEAR_NODE_IDS.has(node.id)) return false
-  const nodeData = node.data
-  if (nodeData?.nodeType === 'topic' || nodeData?.nodeType === 'boundary') return false
-  const nodeType = node.type
-  if (nodeType === 'topic' || nodeType === 'center' || nodeType === 'boundary') return false
-  return true
-}
-
-function clearNodeContentById(nodeId: string): boolean {
-  if (diagramStore.isLearningSheet) {
-    return diagramStore.emptyNodeForLearningSheet(nodeId)
-  }
-  return diagramStore.emptyNode(nodeId)
-}
-
-function pushClearContentHistory(): void {
-  diagramStore.pushHistory(
-    diagramStore.isLearningSheet
-      ? t('canvas.mindMapSideToolbar.learningSheetBlankHistory')
-      : t('diagram.history.clearContent')
-  )
-}
-
 // Build menu items based on context (reactive to UI locale via uiStore.language)
 const menuItems = computed<MenuItem[]>(() => {
   void uiStore.language
@@ -118,6 +86,7 @@ const menuItems = computed<MenuItem[]>(() => {
 
     items.push({
       label: t('diagram.contextMenu.edit'),
+      labelKey: 'diagram.contextMenu.edit',
       action: () => {
         emit('close')
         eventBus.emit('node:edit_requested', { nodeId: node.id })
@@ -126,6 +95,7 @@ const menuItems = computed<MenuItem[]>(() => {
 
     items.push({
       label: t('diagram.contextMenu.lineBreak'),
+      labelKey: 'diagram.contextMenu.lineBreak',
       disabled: isBoundaryNode,
       action: () => {
         emit('close')
@@ -133,23 +103,11 @@ const menuItems = computed<MenuItem[]>(() => {
       },
     })
 
-    items.push({
-      label: t('diagram.contextMenu.clearContent'),
-      disabled: isBoundaryNode || !canClearNodeContent(node),
-      action: () => {
-        if (!clearNodeContentById(node.id)) {
-          emit('close')
-          return
-        }
-        pushClearContentHistory()
-        emit('close')
-      },
-    })
-
     items.push({ divider: true })
 
     items.push({
       label: t('diagram.contextMenu.delete'),
+      labelKey: 'diagram.contextMenu.delete',
       action: () => {
         const diagramType = diagramStore.type
         let deleted: boolean
@@ -178,8 +136,11 @@ const menuItems = computed<MenuItem[]>(() => {
       if (isMultiFlowCauseNode(node)) {
         items.push({
           label: t('diagram.contextMenu.addCause'),
+          labelKey: 'diagram.contextMenu.addCause',
           action: () => {
-            const claimed = new Set((diagramStore.data?.nodes ?? []).map((n) => n.id).filter(Boolean))
+            const claimed = new Set(
+              (diagramStore.data?.nodes ?? []).map((n) => n.id).filter(Boolean)
+            )
             diagramStore.addNode({
               id: takeMultiFlowMapStableId(claimed),
               text: t('diagram.flow.newCause'),
@@ -194,8 +155,11 @@ const menuItems = computed<MenuItem[]>(() => {
       } else if (isMultiFlowEffectNode(node)) {
         items.push({
           label: t('diagram.contextMenu.addEffect'),
+          labelKey: 'diagram.contextMenu.addEffect',
           action: () => {
-            const claimed = new Set((diagramStore.data?.nodes ?? []).map((n) => n.id).filter(Boolean))
+            const claimed = new Set(
+              (diagramStore.data?.nodes ?? []).map((n) => n.id).filter(Boolean)
+            )
             diagramStore.addNode({
               id: takeMultiFlowMapStableId(claimed),
               text: t('diagram.flow.newEffect'),
@@ -230,6 +194,7 @@ const menuItems = computed<MenuItem[]>(() => {
           const pairText = group === 'similarity' ? undefined : newRightText
           items.push({
             label: t('diagram.contextMenu.addToGroup'),
+            labelKey: 'diagram.contextMenu.addToGroup',
             action: () => {
               if (diagramStore.addDoubleBubbleMapNode(group, text, pairText)) {
                 diagramStore.pushHistory(t('diagram.history.addNode'))
@@ -246,6 +211,7 @@ const menuItems = computed<MenuItem[]>(() => {
       if (node.id !== 'topic') {
         items.push({
           label: t('diagram.contextMenu.addChild'),
+          labelKey: 'diagram.contextMenu.addChild',
           action: () => {
             if (diagramStore.addMindMapChild(node.id, t('diagram.newChild'))) {
               diagramStore.pushHistory(t('diagram.history.addChild'))
@@ -256,6 +222,7 @@ const menuItems = computed<MenuItem[]>(() => {
       }
       items.push({
         label: t('diagram.contextMenu.addBranch'),
+        labelKey: 'diagram.contextMenu.addBranch',
         action: () => {
           const childText = t('diagram.newChild')
           if (diagramStore.addMindMapBranch(undefined, t('diagram.newBranch'), childText)) {
@@ -269,6 +236,7 @@ const menuItems = computed<MenuItem[]>(() => {
 
     items.push({
       label: t('diagram.contextMenu.copy'),
+      labelKey: 'diagram.contextMenu.copy',
       action: () => {
         const nodeId = props.node?.id
         if (nodeId) {
@@ -284,6 +252,7 @@ const menuItems = computed<MenuItem[]>(() => {
 
     items.push({
       label: t('diagram.contextMenu.cut'),
+      labelKey: 'diagram.contextMenu.cut',
       action: () => {
         const nodeId = props.node?.id
         if (nodeId) {
@@ -302,6 +271,7 @@ const menuItems = computed<MenuItem[]>(() => {
 
     items.push({
       label: t('diagram.contextMenu.paste'),
+      labelKey: 'diagram.contextMenu.paste',
       action: () => {
         emit('paste', {
           x: props.x,
@@ -317,6 +287,7 @@ const menuItems = computed<MenuItem[]>(() => {
     if (diagramType === 'multi_flow_map') {
       items.push({
         label: t('diagram.contextMenu.addCause'),
+        labelKey: 'diagram.contextMenu.addCause',
         action: () => {
           const claimed = new Set((diagramStore.data?.nodes ?? []).map((n) => n.id).filter(Boolean))
           diagramStore.addNode({
@@ -333,6 +304,7 @@ const menuItems = computed<MenuItem[]>(() => {
 
       items.push({
         label: t('diagram.contextMenu.addEffect'),
+        labelKey: 'diagram.contextMenu.addEffect',
         action: () => {
           const claimed = new Set((diagramStore.data?.nodes ?? []).map((n) => n.id).filter(Boolean))
           diagramStore.addNode({
@@ -349,9 +321,10 @@ const menuItems = computed<MenuItem[]>(() => {
     } else if (diagramType === 'bubble_map') {
       items.push({
         label: t('diagram.contextMenu.addAttribute'),
+        labelKey: 'diagram.contextMenu.addAttribute',
         action: () => {
           if (!diagramStore.data?.nodes) {
-            notify.warning(t('diagram.contextMenu.warningCreateDiagramFirst'))
+            notify.warningKey('diagram.contextMenu.warningCreateDiagramFirst')
             emit('close')
             return
           }
@@ -367,30 +340,30 @@ const menuItems = computed<MenuItem[]>(() => {
         },
       })
     } else if (diagramType === 'circle_map') {
-      const clearableSelectedIds = diagramStore.selectedNodes.filter((id) => {
-        const match = diagramStore.data?.nodes.find((n) => n.id === id)
-        return match && canClearNodeContent(match as MindGraphNode)
-      })
       items.push({
-        label: t('diagram.contextMenu.clearContent'),
-        disabled: clearableSelectedIds.length === 0,
+        label: t('diagram.contextMenu.addNode'),
+        labelKey: 'diagram.contextMenu.addNode',
         action: () => {
-          if (!clearableSelectedIds.length) {
-            notify.warning(t('diagram.contextMenu.warningSelectNodeToClear'))
+          if (!diagramStore.data?.nodes) {
+            notify.warningKey('diagram.contextMenu.warningCreateDiagramFirst')
             emit('close')
             return
           }
-          let cleared = 0
-          for (const id of clearableSelectedIds) {
-            if (clearNodeContentById(id)) cleared++
-          }
-          if (cleared > 0) pushClearContentHistory()
+          const claimed = new Set(diagramStore.data.nodes.map((n) => n.id).filter(Boolean))
+          diagramStore.addNode({
+            id: takeCircleMapStableId(claimed),
+            text: t('diagram.contextMenu.circleNewIdea'),
+            type: 'bubble',
+            position: { x: 0, y: 0 },
+          })
+          diagramStore.pushHistory(t('diagram.history.addNode'))
           emit('close')
         },
       })
     } else if (diagramType === 'concept_map') {
       items.push({
         label: t('diagram.contextMenu.addConcept'),
+        labelKey: 'diagram.contextMenu.addConcept',
         action: () => {
           emit('addConcept', { x: props.x, y: props.y })
           emit('close')
@@ -399,9 +372,10 @@ const menuItems = computed<MenuItem[]>(() => {
     } else if (diagramType === 'bridge_map') {
       items.push({
         label: t('diagram.contextMenu.addNode'),
+        labelKey: 'diagram.contextMenu.addNode',
         action: () => {
           if (!diagramStore.data?.nodes) {
-            notify.warning(t('diagram.contextMenu.warningCreateDiagramFirst'))
+            notify.warningKey('diagram.contextMenu.warningCreateDiagramFirst')
             emit('close')
             return
           }
@@ -470,9 +444,10 @@ const menuItems = computed<MenuItem[]>(() => {
       const group = getDoubleBubbleGroupFromNode(selectedNode)
       items.push({
         label: t('diagram.contextMenu.addNode'),
+        labelKey: 'diagram.contextMenu.addNode',
         action: () => {
           if (!group) {
-            notify.warning(t('diagram.contextMenu.warningSelectSimilarityOrDiff'))
+            notify.warningKey('diagram.contextMenu.warningSelectSimilarityOrDiff')
             emit('close')
             return
           }
@@ -500,24 +475,11 @@ const menuItems = computed<MenuItem[]>(() => {
         disabled: !group,
       })
     } else {
-      const clearableSelectedIds = diagramStore.selectedNodes.filter((id) => {
-        const match = diagramStore.data?.nodes.find((n) => n.id === id)
-        return match && canClearNodeContent(match as MindGraphNode)
-      })
       items.push({
-        label: t('diagram.contextMenu.clearContent'),
-        disabled: clearableSelectedIds.length === 0,
+        label: t('diagram.contextMenu.addNode'),
+        labelKey: 'diagram.contextMenu.addNode',
         action: () => {
-          if (!clearableSelectedIds.length) {
-            notify.warning(t('diagram.contextMenu.warningSelectNodeToClear'))
-            emit('close')
-            return
-          }
-          let cleared = 0
-          for (const id of clearableSelectedIds) {
-            if (clearNodeContentById(id)) cleared++
-          }
-          if (cleared > 0) pushClearContentHistory()
+          notify.infoKey('diagram.contextMenu.infoAddNodeSoon')
           emit('close')
         },
       })
@@ -527,6 +489,7 @@ const menuItems = computed<MenuItem[]>(() => {
 
     items.push({
       label: t('diagram.contextMenu.paste'),
+      labelKey: 'diagram.contextMenu.paste',
       action: () => {
         emit('paste', { x: props.x, y: props.y })
         emit('close')
@@ -671,7 +634,12 @@ function handleItemClick(item: MenuItem) {
                 'is-section-title': item.sectionHeader,
               }"
             >
-              {{ item.label }}
+              <I18nText
+                v-if="item.labelKey"
+                :k="item.labelKey"
+                :params="item.labelParams"
+              />
+              <template v-else>{{ item.label }}</template>
             </span>
           </template>
         </div>

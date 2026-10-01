@@ -150,11 +150,11 @@ export function useCanvasToolbarFormatting(options?: {
 
   function handleApplyStylePreset(preset: StylePresetColors) {
     if (!diagramStore.data?.nodes?.length) {
-      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
       return
     }
     diagramStore.applyStylePreset(preset)
-    notify.success(t('canvas.toolbar.styleApplied'))
+    notify.successKey('canvas.toolbar.styleApplied')
   }
 
   function applyNodeShapeToSelected(
@@ -172,7 +172,7 @@ export function useCanvasToolbarFormatting(options?: {
         })
       }
     })
-    if (!options?.silent && notifyOnApply) notify.success(t('canvas.toolbar.applied'))
+    if (!options?.silent && notifyOnApply) notify.successKey('canvas.toolbar.applied')
   }
 
   function applyTextStyleToSelected(
@@ -189,7 +189,7 @@ export function useCanvasToolbarFormatting(options?: {
   ) {
     const ids = getTargetNodeIds()
     if (!ids.length) {
-      if (!options?.silent) notify.warning(t('canvas.toolbar.selectNodesFirst'))
+      if (!options?.silent) notify.warningKey('canvas.toolbar.selectNodesFirst')
       return
     }
     diagramStore.pushHistory(t('canvas.toolbar.updateTextStyle'))
@@ -200,13 +200,13 @@ export function useCanvasToolbarFormatting(options?: {
         diagramStore.updateNode(nodeId, { style: mergedStyle })
       }
     })
-    if (!options?.silent && notifyOnApply) notify.success(t('canvas.toolbar.applied'))
+    if (!options?.silent && notifyOnApply) notify.successKey('canvas.toolbar.applied')
   }
 
   function applyBackgroundToSelected(color?: string, options?: { silent?: boolean }) {
     const ids = getTargetNodeIds()
     if (!ids.length) {
-      if (!options?.silent) notify.warning(t('canvas.toolbar.selectNodesFirst'))
+      if (!options?.silent) notify.warningKey('canvas.toolbar.selectNodesFirst')
       return
     }
     const baseColor = color ?? backgroundColor.value
@@ -220,7 +220,7 @@ export function useCanvasToolbarFormatting(options?: {
         diagramStore.updateNode(nodeId, { style: mergedStyle })
       }
     })
-    if (!options?.silent && notifyOnApply) notify.success(t('canvas.toolbar.applied'))
+    if (!options?.silent && notifyOnApply) notify.successKey('canvas.toolbar.applied')
   }
 
   function applyBorderToSelected(
@@ -233,7 +233,7 @@ export function useCanvasToolbarFormatting(options?: {
   ) {
     const ids = getTargetNodeIds()
     if (!ids.length) {
-      if (!options?.silent) notify.warning(t('canvas.toolbar.selectNodesFirst'))
+      if (!options?.silent) notify.warningKey('canvas.toolbar.selectNodesFirst')
       return
     }
     if (updates.borderColor !== undefined) borderColor.value = updates.borderColor
@@ -257,7 +257,7 @@ export function useCanvasToolbarFormatting(options?: {
     ) {
       syncMindMapConnectionStrokeColors(diagramStore.data.connections, updates.borderColor)
     }
-    if (!options?.silent && notifyOnApply) notify.success(t('canvas.toolbar.applied'))
+    if (!options?.silent && notifyOnApply) notify.successKey('canvas.toolbar.applied')
   }
 
   function handleToggleBold() {

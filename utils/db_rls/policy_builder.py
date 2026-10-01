@@ -14,16 +14,32 @@ from alembic import op
 from utils.db_rls.gap_policies import iter_gap_table_policies
 
 
+def _public_table_exists(table: str) -> bool:
+    """True when this database already has ``table``.
+
+    Revisions 0044–0046 apply the live policy catalog. Tables added in later
+    revisions are missing on upgraded databases; those revisions install RLS
+    themselves after CREATE TABLE.
+    """
+    return bool(sa.inspect(op.get_bind()).has_table(table))
+
+
 def _enable_force(table: str) -> None:
+    if not _public_table_exists(table):
+        return
     op.execute(sa.text(f'ALTER TABLE "{table}" ENABLE ROW LEVEL SECURITY'))
     op.execute(sa.text(f'ALTER TABLE "{table}" FORCE ROW LEVEL SECURITY'))
 
 
 def _drop_policy(table: str, name: str) -> None:
+    if not _public_table_exists(table):
+        return
     op.execute(sa.text(f'DROP POLICY IF EXISTS "{name}" ON "{table}"'))
 
 
 def _create_all_policy(table: str, name: str, using_expr: str, check_expr: str | None = None) -> None:
+    if not _public_table_exists(table):
+        return
     check_sql = check_expr if check_expr is not None else using_expr
     _drop_policy(table, name)
     op.execute(sa.text(f'CREATE POLICY "{name}" ON "{table}" FOR ALL USING ({using_expr}) WITH CHECK ({check_sql})'))
@@ -265,9 +281,22 @@ MINDMATE_COLLAB_MESSAGE_EXPR = (
     "OR rls_is_system_mode()"
     ")) AND (sender_user_id = rls_current_user_id() OR role = 'assistant' OR rls_is_system_mode())"
 )
+MINDMATE_COLLAB_READ_EXPR = (
+    "EXISTS (SELECT 1 FROM mindmate_collab_sessions s WHERE s.id = session_id AND ("
+    "s.owner_user_id = rls_current_user_id() "
+    "OR (s.visibility = 'network' AND rls_community_read_allowed()) "
+    "OR (s.organization_id IS NOT NULL AND rls_org_visible(s.organization_id)) "
+    "OR rls_platform_admin_only() "
+    "OR rls_is_system_mode()"
+    "))"
+)
+MINDMATE_COLLAB_READ_CHECK = (
+    MINDMATE_COLLAB_READ_EXPR + " AND (user_id = rls_current_user_id() OR rls_is_system_mode())"
+)
 MINDMATE_COLLAB_TABLES = [
     ("mindmate_collab_sessions", MINDMATE_COLLAB_SESSION_EXPR, MINDMATE_COLLAB_SESSION_CHECK),
     ("mindmate_collab_messages", MINDMATE_COLLAB_MESSAGE_EXPR, MINDMATE_COLLAB_MESSAGE_EXPR),
+    ("mindmate_collab_read_cursors", MINDMATE_COLLAB_READ_EXPR, MINDMATE_COLLAB_READ_CHECK),
 ]
 
 # Group C — users: id is NULL on INSERT; panel school managers set organization_id on the new row.
@@ -368,7 +397,13 @@ def upgrade_gewe_policies() -> None:
 
 
 def upgrade_group_a() -> None:
-    """Enable RLS on user-owned, device, Gewe, and child-resource tables."""
+    """Enable RLS on user-owned, device, Gewe, and child-resource tables.
+
+    Revision 0044 calls this against the live catalog. Tables added later
+    (``user_usage_activities``, kitty sessions and turns) are absent on
+    upgraded databases and are skipped; revisions 0061, 0079, and 0081
+    install their policies after CREATE TABLE.
+    """
     for table in USER_OWNED_TABLES:
         _enable_force(table)
         _create_all_policy(table, f"{table}_tenant", USER_OWNED_EXPR)
@@ -393,7 +428,11 @@ def upgrade_mindmate_collab_policies() -> None:
 
 
 def upgrade_group_b() -> None:
-    """Enable RLS on organization, shared-diagram, and workshop tables."""
+    """Enable RLS on organization, shared-diagram, and workshop tables.
+
+    Revision 0045 calls this against the live catalog and skips relations
+    that do not exist yet.
+    """
     for table in ORG_TABLES:
         _enable_force(table)
         _create_all_policy(table, f"{table}_tenant", _org_table_expr(table))
@@ -408,7 +447,11 @@ def upgrade_group_b() -> None:
 
 
 def upgrade_group_cde() -> None:
-    """Enable RLS on users, organizations, community, library, and admin tables."""
+    """Enable RLS on users, organizations, community, library, and admin tables.
+
+    Revision 0046 calls this against the live catalog and skips relations
+    that do not exist yet.
+    """
     _enable_force("users")
     _create_all_policy("users", "users_tenant", USERS_EXPR)
     _enable_force("organizations")
@@ -420,6 +463,8 @@ def upgrade_group_cde() -> None:
         ("community_post_comments", COMMUNITY_READ, COMMUNITY_WRITE),
     ]
     for table, read_expr, write_expr in community_tables:
+        if not _public_table_exists(table):
+            continue
         _enable_force(table)
         op.execute(sa.text(f'CREATE POLICY "{table}_select" ON "{table}" FOR SELECT USING ({read_expr})'))
         op.execute(sa.text(f'CREATE POLICY "{table}_write" ON "{table}" FOR INSERT WITH CHECK ({write_expr})'))
@@ -437,6 +482,8 @@ def upgrade_group_cde() -> None:
         ("library_danmaku_replies", LIBRARY_DOC_READ, "user_id = rls_current_user_id()"),
     ]
     for table, read_expr, write_expr in library_tables:
+        if not _public_table_exists(table):
+            continue
         _enable_force(table)
         op.execute(sa.text(f'CREATE POLICY "{table}_select" ON "{table}" FOR SELECT USING ({read_expr})'))
         op.execute(
@@ -469,6 +516,8 @@ def upgrade_group_cde() -> None:
 def downgrade_policies_for_tables(tables: list[str]) -> None:
     """Drop every public-schema policy on ``tables`` (RLS downgrade helper)."""
     for table in tables:
+        if not _public_table_exists(table):
+            continue
         op.execute(
             sa.text(
                 f"""
@@ -516,8 +565,10 @@ def iter_all_table_policies() -> list[tuple[str, str]]:
     rows.extend(SHARED_DIAGRAM_CHILD)
     rows.append((WORKSHOP_ROOT, WORKSHOP_CHANNEL_EXPR))
     rows.extend(WORKSHOP_CHILD)
-    for table, using_expr, _check in MINDMATE_COLLAB_TABLES:
+    for table, using_expr, check_expr in MINDMATE_COLLAB_TABLES:
         rows.append((table, using_expr))
+        if check_expr != using_expr:
+            rows.append((table, check_expr))
     rows.append(("users", USERS_EXPR))
     rows.append(("organizations", ORGS_EXPR))
     rows.append(("community_posts", COMMUNITY_READ))

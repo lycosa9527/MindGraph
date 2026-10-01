@@ -89,23 +89,36 @@ def _envelope_with_workshop_msg_id(envelope: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
+def _receiver_count(raw: Any) -> int:
+    """Normalize a PUBLISH/SPUBLISH reply to a subscriber count."""
+    if isinstance(raw, bool) or raw is None:
+        return 0
+    if isinstance(raw, int):
+        return raw
+    if isinstance(raw, (bytes, bytearray)):
+        try:
+            return int(raw)
+        except ValueError:
+            return 0
+    return 0
+
+
 async def _publish_with_channel_transport(
     client: Any,
     channel: str,
     body: str,
-) -> None:
-    """Deliver ``body`` via SPUBLISH or PUBLISH (no PG NOTIFY fallback)."""
+) -> Any:
+    """Deliver ``body`` via SPUBLISH or PUBLISH. Returns the Redis receiver count."""
     if use_sharded_pubsub() and is_sharded_pubsub_active():
         try:
-            await client.execute_command("SPUBLISH", channel, body)
-            return
+            return await client.execute_command("SPUBLISH", channel, body)
         except RedisError as exc:
             logger.debug(
                 "[WSFanout] SPUBLISH failed channel=%s (%s) — falling back to PUBLISH",
                 channel,
                 exc,
             )
-    await client.publish(channel, body)
+    return await client.publish(channel, body)
 
 
 async def _audit_xadd(client: Any, body: str) -> None:
@@ -156,27 +169,34 @@ async def publish_chat_fanout_async(envelope: Dict[str, Any]) -> None:
         raise
 
 
-async def publish_workshop_fanout_async(envelope: Dict[str, Any]) -> None:
-    """Publish a workshop fan-out envelope via pub/sub (no PG NOTIFY fallback)."""
+async def publish_workshop_fanout_async(envelope: Dict[str, Any]) -> int:
+    """
+    Publish a workshop fan-out envelope via pub/sub (no PG NOTIFY fallback).
+
+    Returns how many pub/sub clients received the message. Zero means the
+    frame was not delivered and the caller should hand it to local sockets.
+    """
     if not is_ws_fanout_enabled():
-        return
+        return 0
     out = _envelope_with_workshop_msg_id(stamp_workshop_fanout_origin(dict(envelope)))
     try:
         body = json.dumps(out, ensure_ascii=False)
     except (TypeError, ValueError):
         logger.warning("[WSFanout] Workshop publish skipped: invalid envelope")
-        return
+        return 0
     client = get_async_redis()
     if not client:
         logger.warning("[WSFanout] publish_workshop_fanout_async: no Redis client — message dropped")
-        return
+        return 0
     try:
         record_ws_fanout_workshop_published()
     except BACKGROUND_INFRA_ERRORS as exc:
         logger.debug("[WSFanout] workshop publish metric failed: %s", exc)
 
     try:
-        await _publish_with_channel_transport(client, WORKSHOP_FANOUT_CHANNEL, body)
+        receivers = _receiver_count(
+            await _publish_with_channel_transport(client, WORKSHOP_FANOUT_CHANNEL, body),
+        )
         try:
             record_ws_fanout_publish_success()
         except BACKGROUND_INFRA_ERRORS:
@@ -209,3 +229,4 @@ async def publish_workshop_fanout_async(envelope: Dict[str, Any]) -> None:
             _audit_xadd(client, body),
             name="ws-fanout-audit-xadd",
         )
+    return receivers

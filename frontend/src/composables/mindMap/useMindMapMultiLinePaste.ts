@@ -1,7 +1,6 @@
 import { onMounted, onUnmounted, ref, toValue } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { parseMultiLinePasteText } from '@/utils/mindMapPasteLines'
@@ -12,7 +11,6 @@ export function useMindMapMultiLinePaste(options?: {
 }) {
   const diagramStore = useDiagramSession()
   const notify = useNotifications()
-  const { t } = useLanguage()
 
   const activeEditorNodeId = ref<string | null>(null)
 
@@ -41,9 +39,9 @@ export function useMindMapMultiLinePaste(options?: {
     event.preventDefault()
     event.stopPropagation()
 
-    notify.success(t('canvas.mindMapPaste.inserted', { count: inserted }))
+    notify.successKey('canvas.mindMapPaste.inserted', { count: inserted })
     if (truncated) {
-      notify.info(t('canvas.mindMapPaste.truncated'))
+      notify.infoKey('canvas.mindMapPaste.truncated')
     }
     return true
   }

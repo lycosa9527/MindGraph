@@ -2,13 +2,16 @@
  * Classroom worksheet header — HTML build + raster capture for PDF export.
  */
 import {
-  hasActiveWorksheetHeader,
   type CanvasWorksheetTextOptions,
+  hasActiveWorksheetHeader,
 } from '@/config/canvasWorksheetText'
 import { loadHtmlToImageModule } from '@/utils/diagramExportHtmlToImage'
-import type { DiagramRasterCapture } from '@/utils/diagramExportRasterCapture'
-import { loadImageElement } from '@/utils/diagramPdfExport'
+import {
+  type DiagramRasterCapture,
+  rasterizeExportSvgDataUrl,
+} from '@/utils/diagramExportRasterCapture'
 import type { HtmlToImageOptions } from '@/utils/diagramHtmlToImage'
+import { loadImageElement } from '@/utils/diagramPdfExport'
 
 export interface WorksheetHeaderLabels {
   name: string
@@ -137,8 +140,14 @@ export async function captureWorksheetHeader(
   try {
     // Force layout before rasterizing.
     void element.offsetWidth
-    const { toCanvas } = await loadHtmlToImageModule()
-    const canvas = await toCanvas(element, worksheetHeaderCaptureOptions())
+    const captureOptions = worksheetHeaderCaptureOptions()
+    const { toSvg } = await loadHtmlToImageModule()
+    const svgDataUrl = await toSvg(element, captureOptions)
+    const canvas = await rasterizeExportSvgDataUrl(
+      svgDataUrl,
+      captureOptions.pixelRatio ?? 2,
+      '#ffffff'
+    )
     if (canvas.width <= 0 || canvas.height <= 0) {
       console.error('[worksheetHeader] Capture produced empty canvas', {
         width: canvas.width,

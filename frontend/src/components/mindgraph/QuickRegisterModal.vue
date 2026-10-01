@@ -10,10 +10,11 @@ import { ChevronDown, Loader2, Share2 } from '@lucide/vue'
 
 import I18nText from '@/components/common/I18nText.vue'
 import SwissGlassCard from '@/components/common/SwissGlassCard.vue'
-import { useLanguage, useNotifications } from '@/composables'
 import { useQuickRegisterDialogClose } from '@/composables/auth/useQuickRegisterDialogClose'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
 import { usePublicSiteUrl } from '@/composables/core/usePublicSiteUrl'
-import { useAuthStore } from '@/stores'
+import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
 import { APP_REFINED_SANS_STACK } from '@/utils/diagramNodeFontStack'
 
@@ -193,7 +194,7 @@ async function loadAdminOrgs() {
     const r = await authFetch('/api/auth/admin/organizations', { method: 'GET' })
     const data = (await r.json().catch(() => [])) as unknown
     if (!r.ok) {
-      notify.error(t('auth.quickRegOrgLoadError'))
+      notify.errorKey('auth.quickRegOrgLoadError')
       adminOrgs.value = []
       return
     }
@@ -207,7 +208,7 @@ async function loadAdminOrgs() {
       selectedOrgId.value = null
     }
   } catch {
-    notify.error(t('auth.quickRegOrgLoadError'))
+    notify.errorKey('auth.quickRegOrgLoadError')
   } finally {
     orgsLoading.value = false
   }
@@ -247,7 +248,7 @@ async function mintToken() {
       await loadAdminOrgs()
     }
     if (selectedOrgId.value == null) {
-      notify.error(t('auth.quickRegOrgLoadError'))
+      notify.errorKey('auth.quickRegOrgLoadError')
       return
     }
   }
@@ -279,7 +280,7 @@ async function mintToken() {
       token.value = data.token
     }
   } catch {
-    notify.error(t('auth.quickRegMintError'))
+    notify.errorKey('auth.quickRegMintError')
   } finally {
     tokenLoading.value = false
   }
@@ -405,9 +406,9 @@ onBeforeUnmount(() => {
           </ElDropdown>
 
           <div class="flex min-w-0 items-center gap-2">
-            <span class="shrink-0 text-sm font-medium text-slate-600">{{
-              t('auth.quickRegHeadcount')
-            }}</span>
+            <span class="shrink-0 text-sm font-medium text-slate-600"
+              ><I18nText k="auth.quickRegHeadcount"
+            /></span>
             <ElDropdown
               trigger="click"
               :disabled="tokenLoading"

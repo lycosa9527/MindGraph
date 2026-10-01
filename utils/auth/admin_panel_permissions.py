@@ -89,6 +89,7 @@ CAP_SETTINGS_ERRORS: Final[str] = "tab.settings.errors"
 CAP_SETTINGS_THINKING_COINS: Final[str] = "tab.settings.thinking_coins"
 CAP_SETTINGS_PUBLIC_DASHBOARD: Final[str] = "tab.settings.public_dashboard"
 CAP_SETTINGS_TEACHING_DESIGN: Final[str] = "tab.settings.teaching_design"
+CAP_SETTINGS_USER_DROPDOWN: Final[str] = "tab.settings.user_dropdown"
 
 CAP_SCOPE_GLOBAL: Final[str] = "scope.global"
 CAP_SCOPE_ORG: Final[str] = "scope.org"
@@ -115,6 +116,7 @@ _ALL_SETTINGS_CAPS: frozenset[str] = frozenset(
         CAP_SETTINGS_THINKING_COINS,
         CAP_SETTINGS_PUBLIC_DASHBOARD,
         CAP_SETTINGS_TEACHING_DESIGN,
+        CAP_SETTINGS_USER_DROPDOWN,
     }
 )
 
@@ -184,19 +186,24 @@ _EXPERT_CAPS: frozenset[str] = frozenset(
         CAP_TAB_ORGANIZATIONS_VIEW,
         CAP_TAB_INVITES_VIEW,
         CAP_TAB_INVITES_EDIT,
+        # Class create/import lives on the admin tab, not teacher APIs.
+        CAP_TAB_LEARNING_SPACE_VIEW,
+        CAP_TAB_LEARNING_SPACE_EDIT,
         CAP_SCOPE_INVITED_ORGS,
     }
 )
 
 _SCHOOL_ADMIN_CAPS: frozenset[str] = frozenset(
     {
-        # School manager: org-scoped dashboard, members, VOD.
+        # School manager: org-scoped dashboard, members, VOD, and class create.
         CAP_PANEL_ACCESS,
         CAP_TAB_SCHOOL_DASHBOARD_VIEW,
         CAP_TAB_USERS_VIEW,
         CAP_TAB_USERS_EDIT,
         CAP_TAB_VOD_VIEW,
         CAP_TAB_VOD_EDIT,
+        CAP_TAB_LEARNING_SPACE_VIEW,
+        CAP_TAB_LEARNING_SPACE_EDIT,
         CAP_SCOPE_ORG,
     }
 )

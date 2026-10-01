@@ -12,8 +12,8 @@ const vuePath = join(
 describe('admin database merge actions', () => {
   it('places clear-orphans immediately before merge into live DB', () => {
     const src = readFileSync(vuePath, 'utf8')
-    const clearAt = src.indexOf("t('admin.database.pgClearOrphans')")
-    const mergeAt = src.indexOf("t('admin.database.pgExecuteMerge')")
+    const clearAt = src.indexOf('k="admin.database.pgClearOrphans"')
+    const mergeAt = src.indexOf('k="admin.database.pgExecuteMerge"')
     expect(clearAt).toBeGreaterThan(-1)
     expect(mergeAt).toBeGreaterThan(clearAt)
   })

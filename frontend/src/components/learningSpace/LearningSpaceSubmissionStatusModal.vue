@@ -3,6 +3,7 @@
  * Assignment submission roster modal — green submitted / red pending chips.
  */
 import { computed } from 'vue'
+
 import { X } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
@@ -57,7 +58,7 @@ function onClose(): void {
         <header class="ls-modal__head">
           <div class="ls-modal__head-text">
             <p class="ls-modal__eyebrow">{{ className }}</p>
-            <h2 class="ls-modal__title">{{ t('learningSpace.submissionStatus') }}</h2>
+            <h2 class="ls-modal__title"><I18nText k="learningSpace.submissionStatus" /></h2>
           </div>
           <button
             type="button"
@@ -73,7 +74,10 @@ function onClose(): void {
           <div class="ls-status-card">
             <div class="ls-status-card__head">
               <h3>
-                {{ t('learningSpace.unsubmittedZone', { n: pendingCount }) }}
+                <I18nText
+                  k="learningSpace.unsubmittedZone"
+                  :params="{ n: pendingCount }"
+                />
               </h3>
             </div>
             <div class="ls-status-chips">
@@ -91,13 +95,16 @@ function onClose(): void {
                 v-if="pendingCount > 0"
                 class="ls-status-chips__more"
               >
-                {{ t('learningSpace.statusTotalEtc', { n: pendingCount }) }}
+                <I18nText
+                  k="learningSpace.statusTotalEtc"
+                  :params="{ n: pendingCount }"
+                />
               </span>
               <p
                 v-else
                 class="ls-muted"
               >
-                {{ t('learningSpace.allSubmitted') }}
+                <I18nText k="learningSpace.allSubmitted" />
               </p>
             </div>
           </div>
@@ -105,7 +112,10 @@ function onClose(): void {
           <div class="ls-status-card">
             <div class="ls-status-card__head">
               <h3>
-                {{ t('learningSpace.submittedZone', { n: submittedCount }) }}
+                <I18nText
+                  k="learningSpace.submittedZone"
+                  :params="{ n: submittedCount }"
+                />
               </h3>
             </div>
             <div class="ls-status-chips">
@@ -123,7 +133,7 @@ function onClose(): void {
                 v-if="!submittedCount"
                 class="ls-muted"
               >
-                {{ t('learningSpace.noSubmissionsYet') }}
+                <I18nText k="learningSpace.noSubmissionsYet" />
               </p>
             </div>
           </div>
@@ -135,7 +145,7 @@ function onClose(): void {
             class="ls-btn ls-btn--ghost"
             @click="onClose"
           >
-            {{ t('common.close') }}
+            <I18nText k="common.close" />
           </button>
         </footer>
       </div>

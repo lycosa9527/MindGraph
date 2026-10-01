@@ -10,38 +10,36 @@ import {
   defaultDataCenterView,
   isDataCenterView,
 } from '@/composables/admin/adminDataCenterViews'
-import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import {
   defaultFeatureDevSubtab,
-  resolveFeatureDevSubtab,
   featureDevSubtabLabelKey,
+  resolveFeatureDevSubtab,
 } from '@/composables/admin/adminFeatureDevNav'
 import {
   defaultSettingsSubtab,
   isSettingsSubtab,
   settingsSubtabLabelKey,
 } from '@/composables/admin/adminSettingsNav'
-import {
-  showcaseSubtabLabelKey,
-  resolveShowcaseSubtab,
-} from '@/composables/admin/adminShowcaseNav'
-import { useLanguage } from '@/composables'
+import { resolveShowcaseSubtab, showcaseSubtabLabelKey } from '@/composables/admin/adminShowcaseNav'
+import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useAdminOrganizations } from '@/composables/queries'
 import { useAdminPanelStore, useAuthStore } from '@/stores'
-import { userRoleLabel } from '@/utils/userRoleDisplay'
+import { getRolePillStyle } from '@/utils/userRoleDisplay'
 
 export interface AdminHeaderBreadcrumbSegment {
-  label: string
+  /** Static chrome. Render with bilingual labels. */
+  labelKey?: string
+  /** Dynamic text (organization name, unknown role). Primary locale only. */
+  label?: string
 }
 
 export function useAdminHeaderBreadcrumb(options: {
   activeTab: Ref<string>
   route: RouteLocationNormalizedLoaded
-  tabs: ComputedRef<ReadonlyArray<{ name: string; label: string }>>
+  tabs: ComputedRef<ReadonlyArray<{ name: string; labelKey: string }>>
   hasGlobalScope: Ref<boolean> | ComputedRef<boolean>
 }) {
-  const { t } = useLanguage()
   const authStore = useAuthStore()
   const adminPanel = useAdminPanelStore()
   const { featureSmartResponse, featureTeacherUsage, featureKittyAgent, featureMindmateExport } =
@@ -93,14 +91,14 @@ export function useAdminHeaderBreadcrumb(options: {
 
   return computed((): AdminHeaderBreadcrumbSegment[] => {
     const tab = options.tabs.value.find((item) => item.name === options.activeTab.value)
-    const tabLabel = tab?.label ?? t('admin.title')
+    const tabSegment: AdminHeaderBreadcrumbSegment = { labelKey: tab?.labelKey ?? 'admin.title' }
 
     if (options.activeTab.value === 'users') {
       const schoolName = usersTabOrgName.value
       if (schoolName) {
-        return [{ label: tabLabel }, { label: schoolName }]
+        return [tabSegment, { label: schoolName }]
       }
-      return [{ label: tabLabel }]
+      return [tabSegment]
     }
 
     if (options.activeTab.value === 'data_center') {
@@ -110,9 +108,8 @@ export function useAdminHeaderBreadcrumb(options: {
           ? raw
           : defaultDataCenterView(options.hasGlobalScope.value)
       const view = DATA_CENTER_VIEWS.find((item) => item.name === viewKey)
-      const childLabel = view ? t(view.labelKey) : null
-      if (childLabel) {
-        return [{ label: tabLabel }, { label: childLabel }]
+      if (view) {
+        return [tabSegment, { labelKey: view.labelKey }]
       }
     }
 
@@ -128,9 +125,8 @@ export function useAdminHeaderBreadcrumb(options: {
         resolveFeatureDevSubtab(options.route.query.subtab as string, featureDevVisibility) ??
         defaultFeatureDevSubtab(featureDevVisibility)
       const subtabLabelKey = subtabName ? featureDevSubtabLabelKey(subtabName) : null
-      const subtabLabel = subtabLabelKey ? t(subtabLabelKey) : null
-      if (subtabLabel) {
-        return [{ label: tabLabel }, { label: subtabLabel }]
+      if (subtabLabelKey) {
+        return [tabSegment, { labelKey: subtabLabelKey }]
       }
     }
 
@@ -139,25 +135,26 @@ export function useAdminHeaderBreadcrumb(options: {
       const subtabName =
         typeof raw === 'string' && isSettingsSubtab(raw) ? raw : defaultSettingsSubtab()
       const subtabLabelKey = settingsSubtabLabelKey(subtabName)
-      const subtabLabel = subtabLabelKey ? t(subtabLabelKey) : null
-      if (subtabLabel) {
+      if (subtabLabelKey) {
         if (subtabName === 'roles') {
           const activeRole = adminPanel.rolesToolbar?.activeRoleTab
-          const roleLabel = activeRole ? userRoleLabel(t, activeRole) : null
-          if (roleLabel) {
-            return [{ label: tabLabel }, { label: subtabLabel }, { label: roleLabel }]
+          const roleStyle = activeRole ? getRolePillStyle(activeRole) : null
+          if (roleStyle) {
+            return [tabSegment, { labelKey: subtabLabelKey }, { labelKey: roleStyle.labelKey }]
+          }
+          if (activeRole) {
+            return [tabSegment, { labelKey: subtabLabelKey }, { label: activeRole }]
           }
         }
-        return [{ label: tabLabel }, { label: subtabLabel }]
+        return [tabSegment, { labelKey: subtabLabelKey }]
       }
     }
 
     if (options.activeTab.value === 'showcase') {
       const subtabName = resolveShowcaseSubtab(options.route.query.subtab)
-      const subtabLabel = t(showcaseSubtabLabelKey(subtabName))
-      return [{ label: tabLabel }, { label: subtabLabel }]
+      return [tabSegment, { labelKey: showcaseSubtabLabelKey(subtabName) }]
     }
 
-    return [{ label: tabLabel }]
+    return [tabSegment]
   })
 }

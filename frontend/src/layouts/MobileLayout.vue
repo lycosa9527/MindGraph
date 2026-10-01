@@ -80,9 +80,9 @@ function goHome() {
     <!-- Top header (hidden on landing page and MindMate — those pages own their headers) -->
     <header
       v-if="!hideHeader"
-      class="mobile-header flex items-center h-12 px-3 bg-white border-b border-gray-200 shrink-0"
+      class="mobile-header grid h-12 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center px-3 bg-white border-b border-gray-200 shrink-0"
     >
-      <div class="flex items-center gap-1 shrink-0">
+      <div class="flex items-center gap-1 justify-self-start">
         <button
           v-if="showBackButton"
           class="flex items-center justify-center w-8 h-8 rounded-lg active:bg-gray-100 transition-colors"
@@ -107,23 +107,19 @@ function goHome() {
         </button>
       </div>
 
-      <div class="flex min-w-0 flex-1 items-center justify-center gap-2">
-        <h1 class="shrink-0 text-base font-semibold text-gray-800">
-          {{ pageTitle }}
-        </h1>
+      <h1 class="px-2 text-center text-base font-semibold text-gray-800 whitespace-nowrap">
+        {{ pageTitle }}
+      </h1>
+
+      <div class="flex min-w-0 justify-end">
         <span
           v-if="showBackButton && canvasSaveStatus"
-          class="mobile-header-save min-w-0 truncate text-[11px] font-medium leading-tight"
+          class="min-w-0 truncate text-right text-[11px] font-medium leading-tight"
           :class="canvasSaveStatusToneClass"
         >
           {{ canvasSaveStatus.text }}
         </span>
       </div>
-
-      <div
-        class="w-8 shrink-0"
-        :class="{ 'w-16!': showBackButton }"
-      />
     </header>
 
     <!-- Page content -->
@@ -139,10 +135,6 @@ function goHome() {
   user-select: none;
   z-index: 10;
   padding-top: env(safe-area-inset-top);
-}
-
-.mobile-header-save {
-  max-width: 9.5rem;
 }
 
 .mobile-layout {

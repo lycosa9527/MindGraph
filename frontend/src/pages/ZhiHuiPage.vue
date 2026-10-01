@@ -12,17 +12,14 @@ import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vu
 import ZhiHuiDiagramDropdown from '@/components/zhihui/ZhiHuiDiagramDropdown.vue'
 import ZhiHuiDiagramStudio from '@/components/zhihui/ZhiHuiDiagramStudio.vue'
 import ZhiHuiStudio from '@/components/zhihui/ZhiHuiStudio.vue'
-import {
-  ZHIHUI_MODE_ORDER,
-  type ZhihuiMode,
-} from '@/components/zhihui/zhihuiModes'
+import { ZHIHUI_MODE_ORDER, type ZhihuiMode } from '@/components/zhihui/zhihuiModes'
 import { useLanguage } from '@/composables'
 import {
-  parseZhihuiDiagramHandoffQuery,
   ZHIHUI_DIAGRAM_HANDOFF_QUERY_KEYS,
+  parseZhihuiDiagramHandoffQuery,
 } from '@/composables/zhihui/zhihuiDiagramHandoffQuery'
-import { isZhihuiJobActive, useZhihuiHistoryStore } from '@/stores/zhihuiHistory'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { isZhihuiJobActive, useZhihuiHistoryStore } from '@/stores/zhihuiHistory'
 
 const { t } = useLanguage()
 const route = useRoute()
@@ -46,30 +43,28 @@ const syncingFromConversation = ref(false)
  * While a canvas deep-link is being applied, skip the currentId watcher so it
  * does not race (and clear syncingFromConversation mid-handoff).
  */
-const handoffFromRoutePending = ref((() => {
-  const handoff = parseZhihuiDiagramHandoffQuery(
-    route.query as Record<string, unknown>
-  )
-  return Boolean(handoff.mode || handoff.diagramId || handoff.conversationId)
-})())
+const handoffFromRoutePending = ref(
+  (() => {
+    const handoff = parseZhihuiDiagramHandoffQuery(route.query as Record<string, unknown>)
+    return Boolean(handoff.mode || handoff.diagramId || handoff.conversationId)
+  })()
+)
 
 const modeOptions = computed(() =>
   ZHIHUI_MODE_ORDER.map((value) => ({
     value,
     label: String(t(`zhihui.mode.${value}`)),
+    labelKey: `zhihui.mode.${value}`,
   }))
 )
 
-const canGenerateDiagram = computed(
-  () => Boolean(diagramId.value) && !diagramBusy.value
-)
+const canGenerateDiagram = computed(() => Boolean(diagramId.value) && !diagramBusy.value)
 
 /** True when the open conversation already has slides for the selected map. */
 const isDiagramRegenerate = computed(() => {
   if (!diagramId.value) return false
   const detail = historyStore.currentDetail
-  const sameDiagram =
-    detail?.mode === 'diagram' && detail.diagram_id === diagramId.value
+  const sameDiagram = detail?.mode === 'diagram' && detail.diagram_id === diagramId.value
   if (!sameDiagram) return false
   if ((detail.generations?.length ?? 0) > 0) return true
   const exposed = diagramStudioRef.value?.hasSlides
@@ -81,9 +76,7 @@ const isDiagramRegenerate = computed(() => {
 })
 
 const diagramGenerateLabel = computed(() =>
-  isDiagramRegenerate.value
-    ? String(t('zhihui.diagram.regenerate'))
-    : String(t('zhihui.generate'))
+  isDiagramRegenerate.value ? String(t('zhihui.diagram.regenerate')) : String(t('zhihui.generate'))
 )
 
 /** Title fallback when the conversation diagram is not in the library list yet. */
@@ -92,8 +85,7 @@ const diagramFallbackLabel = computed(() => {
   if (handoff) return handoff
   const id = historyStore.currentId
   if (!id) return null
-  const detail =
-    historyStore.currentDetail?.id === id ? historyStore.currentDetail : null
+  const detail = historyStore.currentDetail?.id === id ? historyStore.currentDetail : null
   const listItem = historyStore.items.find((row) => row.id === id)
   const title = detail?.diagram_title || listItem?.diagram_title || detail?.title || ''
   return title.trim() || null
@@ -132,9 +124,7 @@ function stripHandoffQuery(): void {
  * Prefer ``conversationId`` (resume existing deck); else blank create + diagramId.
  */
 async function applyDiagramHandoffFromRoute(): Promise<boolean> {
-  const handoff = parseZhihuiDiagramHandoffQuery(
-    route.query as Record<string, unknown>
-  )
+  const handoff = parseZhihuiDiagramHandoffQuery(route.query as Record<string, unknown>)
   if (!handoff.mode && !handoff.diagramId && !handoff.conversationId) {
     handoffFromRoutePending.value = false
     return false
@@ -151,13 +141,10 @@ async function applyDiagramHandoffFromRoute(): Promise<boolean> {
         historyStore.selectItem(handoff.conversationId)
         mode.value = 'diagram'
         diagramStudioMountKey.value += 1
-        const detail = await historyStore
-          .loadConversation(handoff.conversationId)
-          .catch(() => null)
+        const detail = await historyStore.loadConversation(handoff.conversationId).catch(() => null)
         if (detail?.mode === 'diagram') {
           diagramId.value = detail.diagram_id ?? handoff.diagramId
-          handoffDiagramTitle.value =
-            (detail.diagram_title || '').trim() || handoff.diagramTitle
+          handoffDiagramTitle.value = (detail.diagram_title || '').trim() || handoff.diagramTitle
           if (isZhihuiJobActive(detail.status)) {
             historyStore.startPolling(handoff.conversationId)
           } else {
@@ -196,15 +183,8 @@ onMounted(() => {
     await historyStore.fetchHistory()
     // Handoff ran before history was warm; if we only got diagramId, try to
     // upgrade to an existing conversation now that the list (or API) is available.
-    if (
-      applied &&
-      !historyStore.currentId &&
-      diagramId.value &&
-      mode.value === 'diagram'
-    ) {
-      const existing = await historyStore.findLatestConversationForDiagram(
-        diagramId.value
-      )
+    if (applied && !historyStore.currentId && diagramId.value && mode.value === 'diagram') {
+      const existing = await historyStore.findLatestConversationForDiagram(diagramId.value)
       if (existing?.id) {
         syncingFromConversation.value = true
         try {
@@ -345,7 +325,7 @@ async function onGenerateDiagram(): Promise<void> {
     <header class="zhihui-page__header">
       <div class="flex min-w-0 flex-1 items-center gap-3">
         <h1 class="shrink-0 text-sm font-semibold text-stone-800">
-          {{ t('zhihui.title') }}
+          <I18nText k="zhihui.title" />
         </h1>
         <ZhiHuiDiagramDropdown
           v-if="mode === 'diagram'"

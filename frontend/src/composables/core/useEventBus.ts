@@ -81,6 +81,11 @@ export type EventTypes = {
     diagramType?: string
   }
   'diagram:delete_selected_requested': Record<string, never>
+  /** One-finger or left-button cut through a node. */
+  'diagram:node_slash_requested': {
+    action: 'delete' | 'sibling' | 'child'
+    nodeIds: string[]
+  }
   'diagram:collab_delete_blocked': Record<string, never>
   'diagram:collab_lock_blocked': Record<string, never>
   'diagram:add_node_requested': Record<string, never>
@@ -522,7 +527,11 @@ export type EventTypes = {
     nodeIds: string[]
     animate?: boolean
     duration?: number
-    padding?: number
+    padding?: number | { top?: number; right?: number; bottom?: number; left?: number }
+    /** Caps zoom-in. Omitted callers keep the editor maximum. */
+    maxZoom?: number
+    /** Keeps this camera off the editor's viewport animation. */
+    transitionLane?: string
     userInitiated?: boolean
   }
   /**
@@ -625,7 +634,7 @@ export type EventTypes = {
 
   // Auth Events
   'auth:session_expired': { message?: string }
-  /** Fired after an interactive sign-in (password, SMS, passkey, OAuth), not session restore. */
+  /** Fired after an interactive sign-in (password, SMS, OAuth), not session restore. */
   'auth:login_success': Record<string, never>
   /** School product term ended — teachers and school managers are hard-locked. */
   'auth:school_expired': { schoolName: string; expiresAt: string; message: string }

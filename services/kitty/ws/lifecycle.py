@@ -59,10 +59,6 @@ from services.kitty.ws.inbound import (
     build_kitty_inbound_context,
     dispatch_kitty_ws_inbound_message,
 )
-from services.learning_space.ai_gate import (
-    resolve_assignment_id_from_websocket,
-    store_learning_assignment_on_voice_session,
-)
 from utils.auth import user_has_feature_access
 from utils.auth_ws import authenticate_websocket_user
 from utils.ws_limits import (
@@ -342,9 +338,6 @@ async def start_kitty_session(
         diagram_type=start_diagram_type,
         active_panel=start_active_panel,
     )
-
-    assignment_id = resolve_assignment_id_from_websocket(websocket)
-    store_learning_assignment_on_voice_session(voice_session_id, assignment_id)
 
     voice_sessions[voice_session_id]["context"] = copy.deepcopy(merged_ctx)
     voice_sessions[voice_session_id]["_kitty_client_lane"] = start_client_lane

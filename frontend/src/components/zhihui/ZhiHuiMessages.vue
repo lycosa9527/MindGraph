@@ -87,7 +87,11 @@ watch(
             v-else-if="turn.status === 'error'"
             class="zhihui-messages__bubble zhihui-messages__bubble--assistant zhihui-messages__bubble--error"
           >
-            {{ turn.error || t('zhihui.generateFailed') }}
+            <template v-if="turn.error">{{ turn.error }}</template
+            ><I18nText
+              v-else
+              k="zhihui.generateFailed"
+            />
           </div>
 
           <div

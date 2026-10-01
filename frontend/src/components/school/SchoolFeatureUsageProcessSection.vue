@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import AdminSwissModuleStatCard from '@/components/admin/swiss/AdminSwissModuleStatCard.vue'
+import AdminSwissModuleStatCard, {
+  type ModuleStatChip,
+} from '@/components/admin/swiss/AdminSwissModuleStatCard.vue'
+import { useLanguage } from '@/composables'
 import type {
   SchoolFeatureUsageBottleneckSlots,
   SchoolFeatureUsageModule,
 } from '@/composables/queries/adminSchoolFeatureUsageApi'
-import { useLanguage } from '@/composables'
 import { moduleUsageTheme } from '@/utils/schoolFeatureUsageTheme'
 
 const props = defineProps<{
@@ -39,34 +41,48 @@ function failLabel(value: number | null): string {
   return `${value.toFixed(1)}%`
 }
 
-function durationLabel(seconds: number | null): string {
-  if (seconds == null) {
-    return '—'
-  }
+function durationChip(seconds: number | null): {
+  value: string
+  valueKey?: string
+  valueParams?: Record<string, unknown>
+} {
+  if (seconds == null) return { value: '—' }
   if (seconds >= 60) {
-    return t('admin.schoolFeatureUsage.durationMin', { value: (seconds / 60).toFixed(1) })
+    return {
+      value: '',
+      valueKey: 'admin.schoolFeatureUsage.durationMin',
+      valueParams: { value: (seconds / 60).toFixed(1) },
+    }
   }
-  return t('admin.schoolFeatureUsage.durationSec', { value: seconds.toFixed(1) })
+  return {
+    value: '',
+    valueKey: 'admin.schoolFeatureUsage.durationSec',
+    valueParams: { value: seconds.toFixed(1) },
+  }
 }
 
-function processChips(row: SchoolFeatureUsageModule) {
-  const chips = [
-    { label: t('admin.schoolFeatureUsage.passRate'), value: passLabel(row.pass_rate) },
+function processChips(row: SchoolFeatureUsageModule): ModuleStatChip[] {
+  const chips: ModuleStatChip[] = [
+    {
+      labelKey: 'admin.schoolFeatureUsage.passRate',
+      value: passLabel(row.pass_rate),
+    },
   ]
   if (row.fail_rate != null) {
     chips.push({
-      label: t('admin.schoolFeatureUsage.llmFailRate'),
+      labelKey: 'admin.schoolFeatureUsage.llmFailRate',
       value: failLabel(row.fail_rate),
     })
   }
   chips.push(
     {
-      label: t('admin.schoolFeatureUsage.llmDuration'),
-      value: durationLabel(row.avg_duration_seconds),
+      labelKey: 'admin.schoolFeatureUsage.llmDuration',
+      ...durationChip(row.avg_duration_seconds),
     },
     {
-      label: t('admin.schoolFeatureUsage.capacity'),
-      value: t(`admin.schoolFeatureUsage.capacity.${row.capacity}`),
+      labelKey: 'admin.schoolFeatureUsage.capacity',
+      value: '',
+      valueKey: `admin.schoolFeatureUsage.capacity.${row.capacity}`,
     }
   )
   return chips
@@ -104,20 +120,20 @@ const bottleneckText = computed(() => {
 <template>
   <section class="school-activity-section">
     <h2 class="school-activity-section__title">
-      {{ t('admin.schoolFeatureUsage.sectionProcess') }}
+      <I18nText k="admin.schoolFeatureUsage.sectionProcess" />
     </h2>
     <div class="school-activity-section__grid">
       <AdminSwissModuleStatCard
         v-for="row in props.modules"
         :key="row.key"
-        :title="moduleTitle(row.key)"
+        :title-key="`admin.schoolFeatureUsage.module.${row.key}`"
         :value="row.completed"
-        :value-label="t('admin.schoolFeatureUsage.completed')"
+        value-label-key="admin.schoolFeatureUsage.completed"
         :timestamp="props.timestamp"
         :theme="moduleUsageTheme(row.key)"
         :chips="processChips(row)"
         :empty="row.avg_duration_seconds == null"
-        :empty-text="t('admin.schoolFeatureUsage.durationEmpty')"
+        empty-text-key="admin.schoolFeatureUsage.durationEmpty"
       />
     </div>
     <p class="school-feature-usage-brief">
