@@ -3,7 +3,7 @@
  * Owner's saved MindMate seminars, listed above personal chat history.
  */
 import { onMounted, onUnmounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 
 import { ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
 
@@ -17,6 +17,7 @@ import { authFetch } from '@/utils/api'
 import {
   MINDMATE_COLLAB_LIBRARY_CHANGED_EVENT,
   notifyMindmateCollabLibraryChanged,
+  leaveSavedMindmateSeminar,
   openSavedMindmateSeminar,
 } from '@/utils/mindmateCollabLibrarySave'
 import { MINDMATE_COLLAB_SESSION_REMOVED_EVENT } from '@/utils/mindmateCollabSessions'
@@ -32,7 +33,6 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
-const router = useRouter()
 const { t } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
@@ -78,9 +78,7 @@ function leaveOpenSeminar(sessionId: string): void {
   if (!isActive(sessionId)) {
     return
   }
-  const nextQuery = { ...route.query }
-  delete nextQuery.saved_seminar
-  void router.replace({ query: nextQuery })
+  leaveSavedMindmateSeminar()
 }
 
 async function patchSeminar(

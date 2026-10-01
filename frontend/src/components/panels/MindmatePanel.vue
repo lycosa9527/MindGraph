@@ -357,25 +357,27 @@ if (isFullpageMode.value) {
 watch(
   embeddedCollabRoomCode,
   (code) => {
-    if (!isFullpageMode.value) {
+    if (!code) {
+      if (collabRoomCode.value) {
+        exitCollabChatroomMode()
+      }
       return
     }
-    if (code && code !== collabRoomCode.value) {
-      if (wasMindmateCollabCodeRecentlyEnded(code)) {
-        return
-      }
-      collabRoomCode.value = code
-      const localRow = loadLocalMindmateCollabSessions().find(
-        (row) => normalizeMindmateCollabCode(row.code) === normalizeMindmateCollabCode(code)
-      )
-      if (localRow?.visibility === 'network' || localRow?.visibility === 'organization') {
-        collabVisibility.value = localRow.visibility
-      }
-      if (localRow?.title) {
-        collabRoomTitle.value = localRow.title
-      }
-    } else if (!code && collabRoomCode.value) {
-      exitCollabChatroomMode()
+    if (!isFullpageMode.value || code === collabRoomCode.value) {
+      return
+    }
+    if (wasMindmateCollabCodeRecentlyEnded(code)) {
+      return
+    }
+    collabRoomCode.value = code
+    const localRow = loadLocalMindmateCollabSessions().find(
+      (row) => normalizeMindmateCollabCode(row.code) === normalizeMindmateCollabCode(code)
+    )
+    if (localRow?.visibility === 'network' || localRow?.visibility === 'organization') {
+      collabVisibility.value = localRow.visibility
+    }
+    if (localRow?.title) {
+      collabRoomTitle.value = localRow.title
     }
   },
   { immediate: true }
@@ -466,6 +468,9 @@ async function startNewConversation() {
 
 // Load a conversation from history
 async function loadConversationFromHistory(convId: string) {
+  if (isCollabChatroomMode.value) {
+    exitCollabChatroomMode()
+  }
   savedSeminar.clear()
   await mindMate.loadConversation(convId)
 }

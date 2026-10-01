@@ -3,6 +3,7 @@
  */
 import router from '@/router'
 import { authFetch } from '@/utils/api'
+import { releaseMindmateCollabClientState } from '@/utils/mindmateCollabTeardown'
 
 export const MINDMATE_COLLAB_LIBRARY_CHANGED_EVENT = 'mindmate-collab-library-changed'
 
@@ -33,12 +34,52 @@ export function shouldAutoSaveSeminarOnOwnerEnd(
   return isOwner && reason === 'host'
 }
 
+export function isStandaloneMindmateCollabPath(path: string): boolean {
+  return path === '/mindmate/collab' || path.startsWith('/mindmate/collab/')
+}
+
 export function openSavedMindmateSeminar(sessionId: string): void {
   const id = sessionId.trim()
   if (!id) {
     return
   }
+  releaseMindmateCollabClientState()
   void router.push({ path: '/mindmate', query: { saved_seminar: id } })
+}
+
+/** Drop `saved_seminar` so a personal thread can replace the read-only transcript. */
+export function withoutSavedSeminarQuery<T extends Record<string, unknown>>(
+  query: T
+): T | null {
+  if (typeof query.saved_seminar !== 'string') {
+    return null
+  }
+  const nextQuery = { ...query }
+  delete nextQuery.saved_seminar
+  return nextQuery
+}
+
+/** Leave a saved seminar opened from the sidebar library. */
+export function leaveSavedMindmateSeminar(): void {
+  const nextQuery = withoutSavedSeminarQuery(router.currentRoute.value.query)
+  if (!nextQuery) {
+    return
+  }
+  void router.replace({ query: nextQuery })
+}
+
+/**
+ * Show a personal MindMate thread.
+ * Drops the saved-seminar transcript and the embedded live room view.
+ * A live room stays in the sidebar so it can be rejoined.
+ */
+export function focusPersonalMindmateThread(): void {
+  releaseMindmateCollabClientState()
+  if (isStandaloneMindmateCollabPath(router.currentRoute.value.path)) {
+    void router.push('/mindmate')
+    return
+  }
+  leaveSavedMindmateSeminar()
 }
 
 async function requestSaveFinishedSeminar(sessionId: string): Promise<boolean> {

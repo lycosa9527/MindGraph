@@ -21,7 +21,10 @@ import { dropLiveCollabRoom } from '@/composables/mindmate/mindmateCollabLiveSes
 import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
 import { confirmMindmateCollabStop } from '@/utils/mindmateCollabConfirm'
-import { saveFinishedSeminar } from '@/utils/mindmateCollabLibrarySave'
+import {
+  leaveSavedMindmateSeminar,
+  saveFinishedSeminar,
+} from '@/utils/mindmateCollabLibrarySave'
 import {
   LOCAL_MINDMATE_COLLAB_SESSIONS_KEY,
   type LocalMindmateCollabSession,
@@ -236,6 +239,7 @@ function openSession(row: CollabSessionRow): void {
     return
   }
   if (route.path === '/mindmate') {
+    leaveSavedMindmateSeminar()
     setEmbeddedCollabRoomCode(formatted)
     return
   }

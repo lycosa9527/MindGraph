@@ -44,6 +44,7 @@ import {
   useMindmateArchiveHistory,
 } from '@/composables/sidebar/useMindmateArchiveHistory'
 import { type MindMateConversation, useMindMateStore } from '@/stores'
+import { focusPersonalMindmateThread } from '@/utils/mindmateCollabLibrarySave'
 
 import ChatHistoryConversationRow from './ChatHistoryConversationRow.vue'
 
@@ -147,6 +148,7 @@ const groupLabels = computed(() => ({
 }))
 
 function handleConversationClick(convId: string, name: string): void {
+  focusPersonalMindmateThread()
   mindMateStore.setCurrentConversation(convId, name)
 }
 

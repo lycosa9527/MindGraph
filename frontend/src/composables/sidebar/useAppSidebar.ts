@@ -41,6 +41,7 @@ import { useUIStore } from '@/stores/ui'
 import { useZhihuiHistoryStore } from '@/stores/zhihuiHistory'
 import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
 import { getShowcasePendingCount } from '@/utils/apiClient'
+import { focusPersonalMindmateThread } from '@/utils/mindmateCollabLibrarySave'
 import { userCanAccessMindbotAdmin } from '@/utils/mindbotAccess'
 import { shouldExpandWorkshopOnNavClick } from '@/utils/sidebarWorkshopPanel'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
@@ -613,6 +614,7 @@ export function useAppSidebar() {
   }
 
   function startNewChat() {
+    focusPersonalMindmateThread()
     mindMateStore.startNewConversation()
     if (currentMode.value !== 'mindmate') {
       router.push('/mindmate')
