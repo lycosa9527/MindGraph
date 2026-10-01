@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'Schakel het leerblad in',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Verlaat het leerblad',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Herstel het volledige diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'Kies hoe u een leerblad maakt om te oefenen en te beoordelen.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Willekeurige spaties',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'Maakt willekeurig ongeveer 20% van de knooppunten leeg; antwoorden verschijnen onder het diagram.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} knooppunt(en) blanco gemaakt · Esc om te negeren',

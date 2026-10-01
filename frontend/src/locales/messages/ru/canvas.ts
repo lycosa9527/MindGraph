@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'Откройте схему полого кронштейна',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Выйдите из диаграммы полых кронштейнов',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Восстановить полный образ',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'Выберите метод создания полой схемы строительных лесов, подходящий для практики в классе и для повторения.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Случайно оставлено пустым',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'Система автоматически случайным образом удаляет около 20% узлов, а справочный ответ отображается под диаграммой.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} узлов пусты · Esc, чтобы закрыть',

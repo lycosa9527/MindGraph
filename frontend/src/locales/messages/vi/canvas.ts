@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'Bật bảng học tập',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Thoát khỏi bảng học tập',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Khôi phục toàn bộ sơ đồ',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'Chọn cách tạo phiếu học tập để thực hành và ôn tập.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Khoảng trống ngẫu nhiên',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'Khoảng trống ngẫu nhiên khoảng 20% ​​số nút; câu trả lời xuất hiện bên dưới sơ đồ.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} nút bị bỏ trống · Esc loại bỏ',

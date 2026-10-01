@@ -1195,8 +1195,15 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': '開啟挖空支架圖',
   'canvas.mindMapSideToolbar.exitLearningSheet': '退出挖空支架圖',
   'canvas.mindMapSideToolbar.restoreFullDiagram': '還原為完整圖示',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': '還原圖示',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    '目前圖示已增刪節點或修改了未挖空內容，還原後將覆蓋現在的圖，是否繼續？',
   'canvas.mindMapSideToolbar.learningSheetIntro':
     '选择一种方式创建挖空支架图，适合课堂练习与复习。',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': '全部留空',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    '除中心主題外，其餘節點全部挖空，參考答案顯示在圖示下方。',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': '全部挖空節點',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': '隨機留空',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc':
     '系统自动随机挖空约 20% 的节点，参考答案显示在图示下方。',

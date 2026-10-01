@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'Włącz arkusz do nauki',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Wyjdź z arkusza do nauki',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Przywróć pełny diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'Wybierz sposób tworzenia arkusza do ćwiczeń i powtórek.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Losowe puste pola',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'Losowo czyści ok. 20% węzłów; odpowiedzi pojawiają się pod diagramem.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} węzłów wyczyszczonych · Esc, aby zamknąć',

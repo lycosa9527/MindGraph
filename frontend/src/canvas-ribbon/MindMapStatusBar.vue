@@ -16,6 +16,7 @@ import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
 import { useClassroomRemoteVisibility } from '@/composables/canvas/useClassroomRemotePosition'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { useLLMResultsStore } from '@/stores/llmResults'
@@ -35,6 +36,7 @@ const props = withDefaults(
 )
 
 const { t } = useLanguage()
+const { showCanvasAiFeatures } = useLearningAiGate()
 const diagramStore = useDiagramSession()
 const mindMapV2 = useMindMapV2Chrome()
 const caps = computed(() => diagramRibbonCapabilities(diagramStore.type, mindMapV2.value))
@@ -84,7 +86,10 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
         variant="status"
       />
     </div>
-    <div class="mm-status__center">
+    <div
+      v-if="showCanvasAiFeatures"
+      class="mm-status__center"
+    >
       <CanvasToolbarMindMapAudiencePicker
         anchor="bottom"
         hide-guide
@@ -114,7 +119,7 @@ const zoomPercent = computed(() => (props.zoom != null ? Math.round(props.zoom *
       <CanvasToolbarMindMapAiGenerate tooltip-placement="top" />
     </div>
     <div class="mm-status__right mm-status__zoom">
-      <CanvasDiagramTranslateLangPicker />
+      <CanvasDiagramTranslateLangPicker v-if="showCanvasAiFeatures" />
       <button
         type="button"
         class="mm-status__zoom-btn"

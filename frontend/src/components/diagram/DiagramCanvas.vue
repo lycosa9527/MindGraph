@@ -23,7 +23,7 @@ import { MiniMap } from '@vue-flow/minimap'
 import { storeToRefs } from 'pinia'
 
 import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
-import { ExportToCommunityModal } from '@/components/canvas'
+import { CanvasNodeFloatingToolbar, ExportToCommunityModal } from '@/components/canvas'
 import CanvasWorksheetTextModal from '@/components/canvas/CanvasWorksheetTextModal.vue'
 import MindMapNodeExplainBubble from '@/components/canvas/MindMapNodeExplainBubble.vue'
 import MindMapNodeExplainResearchPanel from '@/components/canvas/MindMapNodeExplainResearchPanel.vue'
@@ -53,6 +53,7 @@ import {
   useDiagramCanvasNodesEdges,
   useDiagramCanvasVueFlowHandlers,
   useDiagramCanvasVueFlowUi,
+  useDiagramFollowNodeDismiss,
 } from '@/composables/diagramCanvas'
 import { useDiagramCanvasMindMapPaletteDrop } from '@/composables/diagramCanvas/useDiagramCanvasMindMapPaletteDrop'
 import { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
@@ -91,6 +92,7 @@ import { usePresentationPointerStore } from '@/stores/presentationPointer'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { type MindMapCanvasMode, useUIStore } from '@/stores/ui'
 import type { MindGraphNode, PresentationHighlightStroke, PresentationToolId } from '@/types'
+import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import { isMindMapConnectorDebugEnabled } from '@/utils/mindMapConnectorDebugLevel'
 import { isMindMapSubgraphExpandable } from '@/utils/mindMapSubgraphContext'
 import { isMindMapSummaryNodeId } from '@/utils/mindMapSummary'
@@ -594,6 +596,22 @@ function handleCanvasDrop(event: DragEvent): void {
 }
 
 const suppressPaneClearUntil = ref(0)
+const headlessExport = isMindgraphHeadlessExportSession()
+
+function followNodePaneDismissEnabled(): boolean {
+  return (
+    !useMindMapV2.value &&
+    (isThinkingMapDiagramType(diagramStore.type) || diagramStore.type === 'concept_map')
+  )
+}
+
+const { onPointerDown: rememberFollowNodePointer, onPointerUp: dismissFollowNodeSelection } =
+  useDiagramFollowNodeDismiss({
+    enabled: followNodePaneDismissEnabled,
+    suppressUntil: suppressPaneClearUntil,
+    selectedCount: () => diagramStore.selectedNodes.length,
+    clearSelection: () => diagramStore.clearSelection(),
+  })
 
 function markSelectionDragEnded() {
   suppressPaneClearUntil.value = Date.now() + 150
@@ -780,6 +798,8 @@ defineExpose({
       'diagram-canvas--format-brush': formatBrushActive,
       'diagram-canvas--bulk-load': mindMapBulkLoading,
     }"
+    @pointerdown="rememberFollowNodePointer"
+    @pointerup="dismissFollowNodeSelection"
     @contextmenu.capture="handleContextMenuEvent"
     @paste.capture="onCanvasPaste"
   >
@@ -880,6 +900,23 @@ defineExpose({
       :on-ai-subgraph-generate="handleAiSubgraphGenerate"
       :on-explain-node="handleFloatingToolbarExplainNode"
       :on-floating-toolbar-size-change="handleFloatingToolbarSizeChange"
+    />
+
+    <CanvasNodeFloatingToolbar
+      v-if="
+        !useMindMapV2 &&
+        floatingToolbarEnabled &&
+        !headlessExport &&
+        !presentationDiagramEditLocked &&
+        !nodeExplainVisible
+      "
+      :position="floatingToolbarPosition"
+      :node-id="floatingToolbarAnchorId"
+      :ai-generating="subgraphGenerating"
+      :show-ai-subgraph="floatingToolbarShowAiSubgraph"
+      @ai-subgraph-generate="handleAiSubgraphGenerate"
+      @explain-node="handleFloatingToolbarExplainNode"
+      @size-change="handleFloatingToolbarSizeChange"
     />
 
     <ContextMenu

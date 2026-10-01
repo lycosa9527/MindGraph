@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'افتح مخطط القوس المجوف',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'اخرج من مخطط القوس المجوف',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'استعادة الصورة الكاملة',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'اختر طريقة لإنشاء مخطط سقالات مجوف، مناسب للتمرين والمراجعة في الفصل الدراسي.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'تركت فارغة بشكل عشوائي',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'يقوم النظام تلقائيًا بتفريغ حوالي 20% من العقد بشكل عشوائي، ويتم عرض الإجابة المرجعية أسفل الرسم التخطيطي.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': 'تم إفراغ العقد {count} · Esc للإغلاق',

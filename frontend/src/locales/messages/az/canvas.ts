@@ -1087,7 +1087,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'Öyrənmə vərəqini aktiv et',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Öyrənmə vərəqindən çıx',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Tam diaqramı bərpa et',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'Məşq və təkrar üçün öyrənmə vərəqini necə yaratmağı seçin.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Təsadüfi boşluqlar',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'Düyünlərin təxminən 20%-ni təsadüfi boşaldır; cavablar diaqramın altında görünür.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} düyün boşaldılıb · bağlamaq üçün Esc',

@@ -20,6 +20,7 @@ from services.kitty.infra.desktop.kitty_voice_phase_fanout import (
 )
 from services.kitty.session.memory import get_session_memory
 from services.kitty.session.runtime_state import voice_sessions
+from services.learning_space.ai_gate import kitty_student_ai_denied_message
 from services.llm import llm_service
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.prompt_locale import output_language_instruction
@@ -62,6 +63,11 @@ async def reply_text_only_conversational(
     text = str(user_text or "").strip()
     if not text:
         return False
+
+    denied = await kitty_student_ai_denied_message(voice_session_id, session_context)
+    if denied:
+        await emit_user_ack(websocket, voice_session_id, denied)
+        return True
 
     lang = resolve_voice_interaction_language(session_context)
     lang_code = "en" if lang == "en" else "zh"

@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'வெற்று அடைப்புக்குறி வரைபடத்தைத் திறக்கவும்',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'துளையிடப்பட்ட அடைப்புக்குறி வரைபடத்திலிருந்து வெளியேறவும்',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'முழு படத்திற்கு மீட்டமைக்கவும்',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'வகுப்பறை பயிற்சி மற்றும் மதிப்பாய்வுக்கு ஏற்ற, குழிவான சாரக்கட்டு வரைபடத்தை உருவாக்குவதற்கான முறையைத் தேர்வு செய்யவும்.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'தோராயமாக காலியாக விடப்பட்டது',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'கணினி தானாகவே சுமார் 20% முனைகளை தோராயமாக வெளியேற்றுகிறது, மேலும் குறிப்பு பதில் வரைபடத்தின் கீழே காட்டப்படும்.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} முனைகள் காலியாகிவிட்டன · மூட Esc',

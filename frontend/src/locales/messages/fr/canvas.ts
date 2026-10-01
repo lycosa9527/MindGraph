@@ -1087,7 +1087,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'Activer la fiche d’apprentissage',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Quitter la fiche d’apprentissage',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Restaurer le diagramme complet',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'Choisissez comment créer une fiche d’apprentissage pour s’entraîner et réviser.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Blancs aléatoires',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'Met en blanc environ 20 % des nœuds ; les réponses apparaissent sous le diagramme.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} nœud(s) en blanc · Échap pour fermer',

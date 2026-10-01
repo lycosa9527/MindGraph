@@ -80,6 +80,7 @@ import {
   useSnapshotHistory,
 } from '@/composables'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
+import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import {
   diagramShareEditorName,
   diagramShareRole,
@@ -742,6 +743,7 @@ const mindMatePanelRight = computed(() => {
 })
 
 const inlineRecCoordinator = useInlineRecommendationsCoordinator()
+const { showCanvasAiFeatures } = useLearningAiGate()
 
 const { showKittyDesktopIndicator } = useCanvasKittyDesktopPairing({
   currentDiagramId,
@@ -771,6 +773,10 @@ const { showKittyDesktopIndicator } = useCanvasKittyDesktopPairing({
   },
 })
 
+const showKittyOnCanvas = computed(
+  () => showKittyDesktopIndicator.value && showCanvasAiFeatures.value
+)
+
 /** Library id when saved; else shared ephemeral / mobile open_canvas session scope. */
 const kittyOwnerScope = computed(() => {
   const lib = currentDiagramId.value?.trim()
@@ -782,22 +788,22 @@ const kittyOwnerScope = computed(() => {
 })
 
 const { phase: kittyVoicePhase } = useKittyDesktopVoicePhase({
-  enabled: showKittyDesktopIndicator,
+  enabled: showKittyOnCanvas,
   scopeId: kittyOwnerScope,
 })
 
 useKittyDesktopLlmModelPublish({
-  enabled: showKittyDesktopIndicator,
+  enabled: showKittyOnCanvas,
   scopeId: kittyOwnerScope,
 })
 
 useKittyDesktopSelectionPublish({
-  enabled: showKittyDesktopIndicator,
+  enabled: showKittyOnCanvas,
   scopeId: kittyOwnerScope,
 })
 
 useKittyDesktopLiveSpecPublish({
-  enabled: showKittyDesktopIndicator,
+  enabled: showKittyOnCanvas,
   scopeId: kittyOwnerScope,
 })
 
@@ -807,6 +813,7 @@ const kittyRemoteSyncEnabled = computed(
     authStore.isAuthenticated &&
     !isViewer.value &&
     !isCollabGuest.value &&
+    showCanvasAiFeatures.value &&
     kittyOwnerScope.value != null &&
     kittyOwnerScope.value !== ''
 )
@@ -1730,7 +1737,7 @@ onUnmounted(() => {
 
     <KittyCanvasAnchor
       v-if="!mindClassroomSlideDeck"
-      :visible="showKittyDesktopIndicator"
+      :visible="showKittyOnCanvas"
       :state="kittyVoicePhase"
       variant="fab"
       :interactive="false"
@@ -1881,7 +1888,7 @@ onUnmounted(() => {
       <div
         class="bottom-bar-cluster pointer-events-auto flex items-end gap-2 sm:gap-3 max-w-[95vw] min-w-0"
       >
-        <CanvasKittyVoiceCommandGuide v-if="showKittyDesktopIndicator" />
+        <CanvasKittyVoiceCommandGuide v-if="showKittyOnCanvas" />
         <CanvasMindMapShortcutGuide v-else-if="showMindMapShortcutGuide" />
         <CanvasMindMapGestureGuide v-if="showMindMapShortcutGuide || showKittyDesktopIndicator" />
         <div
@@ -1889,6 +1896,7 @@ onUnmounted(() => {
         >
           <!-- shrink-0: AI block + focus picker width follows content (no flex-1 stretch) -->
           <div
+            v-if="showCanvasAiFeatures"
             class="ai-selector-wrap flex shrink-0 justify-center md:justify-center min-w-0 order-2 md:order-1"
           >
             <CanvasBottomAiCluster

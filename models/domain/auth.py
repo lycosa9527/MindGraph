@@ -174,6 +174,7 @@ class User(Base):
         index=True,
     )
     must_change_password: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    learning_space_login_password: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
     organization: Mapped["Organization | None"] = relationship(
         "Organization",

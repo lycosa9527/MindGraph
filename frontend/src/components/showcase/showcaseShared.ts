@@ -1,4 +1,5 @@
 /** Shared Showcase UI helpers (cover colors, labels). */
+import { dataUrlToBlob } from '@/utils/deliverExportFile'
 
 export const COVER_COLORS = [
   'from-rose-400 to-orange-300',
@@ -362,28 +363,9 @@ export async function dataUrlToPngBlob(dataUrl: string): Promise<Blob | null> {
   if (!trimmed) return null
 
   if (trimmed.startsWith('data:')) {
-    const match = trimmed.match(/^data:([^;,]+)?(?:;[^,]*)?,(.+)$/)
-    if (match?.[2]) {
-      try {
-        const payload = match[2]
-        const binary =
-          match[0].includes(';base64') || !payload.includes(',')
-            ? atob(payload)
-            : decodeURIComponent(payload)
-        const bytes = new Uint8Array(binary.length)
-        for (let i = 0; i < binary.length; i += 1) {
-          bytes[i] = binary.charCodeAt(i)
-        }
-        const mime = match[1]?.trim() || 'image/png'
-        return new Blob([bytes], { type: mime })
-      } catch {
-        // fall through to fetch
-      }
-    }
     try {
-      const res = await fetch(trimmed)
-      const blob = await res.blob()
-      if (blob.size > 0) return blob
+      const blob = dataUrlToBlob(trimmed)
+      return blob.size > 0 ? blob : null
     } catch {
       return null
     }

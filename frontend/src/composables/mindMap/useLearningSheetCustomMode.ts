@@ -1,5 +1,7 @@
 import { computed, onMounted, onUnmounted, ref, toValue } from 'vue'
 
+import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
+import { swissGlassConfirm } from '@/composables/common/useSwissGlassConfirm'
 import { notify } from '@/composables/core/notifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { i18n } from '@/i18n'
@@ -107,6 +109,7 @@ export function restoreLearningSheetUiFromDiagram(): void {
     resetLearningSheetCustomModeUi()
     return
   }
+  diagramStore.ensureLearningSheetBaseline()
   learningSheetFloatBarOpen.value = true
   learningSheetPickActive.value = false
 }
@@ -177,7 +180,39 @@ export function useLearningSheetCustomMode() {
     void claimThinkingCoinEvent('learning_sheet_enable')
   }
 
-  function exitLearningSheet(): void {
+  function startFullBlankLearningSheet(): void {
+    if (!diagramStore.data?.nodes?.length) {
+      notify.warningKey('canvas.toolbar.createDiagramFirst')
+      return
+    }
+    customPickActive.value = false
+    diagramStore.applyRandomLearningSheetBlanks(1)
+    diagramStore.pushHistory(t('canvas.mindMapSideToolbar.learningSheetFullBlankHistory'))
+    learningSheetFloatBarOpen.value = true
+    notify.successKey('canvas.toolbar.switchedLearningSheetMode')
+    void claimThinkingCoinEvent('learning_sheet_enable')
+  }
+
+  async function exitLearningSheet(): Promise<void> {
+    if (
+      isThinkingMapDiagramType(diagramStore.type) &&
+      diagramStore.isLearningSheet &&
+      diagramStore.learningSheetHasUserDiagramEdits()
+    ) {
+      try {
+        await swissGlassConfirm(
+          t('canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody'),
+          t('canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle'),
+          {
+            confirmButtonText: t('canvas.mindMapSideToolbar.restoreFullDiagram'),
+            type: 'warning',
+          }
+        )
+      } catch {
+        return
+      }
+    }
+
     dismissFloatBar()
     learningSheetFloatBarBeforePresentation.value = false
     if (diagramStore.isLearningSheet) {
@@ -199,6 +234,7 @@ export function useLearningSheetCustomMode() {
     dismissFloatBar,
     deactivatePick: dismissFloatBar,
     startRandomLearningSheet,
+    startFullBlankLearningSheet,
     exitLearningSheet,
   }
 }

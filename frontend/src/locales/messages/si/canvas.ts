@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'ඉගෙනුම් පත්‍රිකාව සබල කරන්න',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'ඉගෙනුම් පත්‍රිකාවෙන් පිටවන්න',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'සම්පූර්ණ රූප සටහන ප්‍රතිසාධනය කරන්න',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'පුහුණුවීම් සහ සමාලෝචනය සඳහා ඉගෙනුම් පත්‍රිකාවක් සාදන ආකාරය තෝරන්න.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'අහඹු හිස් තැන්',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'නෝඩ් වලින් 20% ක් පමණ අහඹු ලෙස හිස් කරයි; පිළිතුරු රූප සටහනට පහළින් දිස්වේ.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} නෝඩ(ය) හිස් කර ඇත · Esc ඉවත් කිරීමට',

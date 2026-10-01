@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.133] - 2026-10-02
+
+> **Learning Space keeps the missing classroom edits, and thinking maps keep node style on the tab canvas.**
+
+### Added
+
+- **学习空间密码** — A classroom student's login password is stored for the class roster. Teachers and Learning Space admins can read it and reset it. Existing classroom students are backfilled from the name-based initial password.
+- **学生管理** — Learning Space admin has a student list across classes, with search, class and role filters, remove-from-class, and password reset. Classroom student accounts stay out of User Management counts and the default user list.
+- **重新提交** — An assignment can allow another submit before the deadline. Resubmitting replaces the canvas and clears the teacher's scores and comment. The class work wall stays hidden until that student has submitted, and it shows only that assignment.
+- **协议链接** — Sign-in and the session-expired card link to the terms and the privacy policy.
+
+### Changed
+
+- **学生 AI** — A student on a free canvas edits by hand. AI, Kitty, and the AI tab appear on homework only when the teacher turned AI on.
+- **思维图示** — Clicking empty canvas closes the follow-node toolbar. Node fill and border survive a layout recalc. Adornments stay attached to the node. A full-blank learning sheet blanks every hideable node, and leaving it can restore the thinking map when the student changed the diagram.
+- **学习空间侧栏** — Only a classroom student, or a pilot, learner, or assistant, sees the Learning Space product. Panel managers open it from the admin panel.
+
+### Fixed
+
+- **说明图片** — A COS upload that cannot start reports a failure instead of crashing, and a development host can keep the image on local disk.
+- **导出** — SVG, PNG, and PDF export no longer fetch a `data:` URL, so production CSP can deliver the file.
+- **研习社** — Opening chat no longer closes a socket that is still connecting.
+
+### Tests
+
+- [`tests/test_learning_space.py`](tests/test_learning_space.py), [`tests/test_learning_space_images.py`](tests/test_learning_space_images.py), [`frontend/tests/learningAiGate.spec.ts`](frontend/tests/learningAiGate.spec.ts), [`frontend/tests/lsHelpersWall.spec.ts`](frontend/tests/lsHelpersWall.spec.ts), [`frontend/tests/deliverExportFile.spec.ts`](frontend/tests/deliverExportFile.spec.ts)
+
 ## [5.180.132] - 2026-10-01
 
 > **Concept maps use the tab canvas. Tab no longer opens inline suggestions.**

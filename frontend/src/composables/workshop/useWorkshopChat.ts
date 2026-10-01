@@ -42,6 +42,8 @@ function createWorkshopChatSession() {
   const notifications = useChatNotifications()
   const wsUrl = ref('')
   let hasOpenedOnce = false
+  /** Set when disconnect runs during CONNECTING so we close only after open. */
+  let dropWhenOpen = false
 
   const { send, close, open, status } = useWebSocket(wsUrl, {
     immediate: false,
@@ -59,6 +61,11 @@ function createWorkshopChatSession() {
       pongTimeout: 10000,
     },
     onConnected() {
+      if (dropWhenOpen) {
+        dropWhenOpen = false
+        close()
+        return
+      }
       sendSubscribePresence()
       const channelIds = store.joinedChannels.map((c) => c.id)
       if (channelIds.length > 0) {
@@ -116,11 +123,23 @@ function createWorkshopChatSession() {
 
   function connect(): void {
     if (!authStore.isAuthenticated) return
-    wsUrl.value = buildWsUrl()
+    dropWhenOpen = false
+    const nextUrl = buildWsUrl()
+    // open() always close()s first. Repeating that while the handshake is in
+    // flight logs "WebSocket is closed before the connection is established".
+    if (wsUrl.value === nextUrl && (status.value === 'OPEN' || status.value === 'CONNECTING')) {
+      return
+    }
+    wsUrl.value = nextUrl
     open()
   }
 
   function disconnect(): void {
+    if (status.value === 'CONNECTING') {
+      dropWhenOpen = true
+      return
+    }
+    dropWhenOpen = false
     close()
   }
 
@@ -361,13 +380,21 @@ function createWorkshopChatSession() {
   }
 }
 
-export function useWorkshopChatComposable() {
-  if (!workshopChatSession) {
-    workshopChatSession = createWorkshopChatSession()
+function getWorkshopChatSession(): WorkshopChatSession {
+  const existing = workshopChatSession
+  if (existing) {
+    return existing
   }
+  const created = createWorkshopChatSession()
+  workshopChatSession = created
+  return created
+}
+
+export function useWorkshopChatComposable() {
+  const session = getWorkshopChatSession()
   onMounted(() => {
     requestNotificationPermission()
-    registerWorkshopChatWsDisconnect(workshopChatSession!.disconnect)
+    registerWorkshopChatWsDisconnect(session.disconnect)
   })
-  return workshopChatSession
+  return session
 }

@@ -6,6 +6,7 @@
  */
 import { onUnmounted, ref, watch } from 'vue'
 
+import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useAuthStore } from '@/stores'
 import { authFetch } from '@/utils/api'
 
@@ -20,6 +21,7 @@ const PERSIST_DEBOUNCE_MS = 400
 
 export function useMindMapRibbonState() {
   const authStore = useAuthStore()
+  const { showCanvasAiFeatures } = useLearningAiGate()
   const classic = ref(false)
   const activeTab = ref<MindMapRibbonTabId>(DEFAULT_MIND_MAP_RIBBON_TAB)
   let persistTimer = 0
@@ -50,8 +52,17 @@ export function useMindMapRibbonState() {
     if (authStore.user?.role === 'student' && tab === 'research') {
       return DEFAULT_MIND_MAP_RIBBON_TAB
     }
+    if (!showCanvasAiFeatures.value && tab === 'ai') {
+      return DEFAULT_MIND_MAP_RIBBON_TAB
+    }
     return tab
   }
+
+  watch(showCanvasAiFeatures, (on) => {
+    if (!on && activeTab.value === 'ai') {
+      activeTab.value = DEFAULT_MIND_MAP_RIBBON_TAB
+    }
+  })
 
   function tabToPersist(): MindMapRibbonTabId {
     if (activeTab.value !== 'file') return activeTab.value

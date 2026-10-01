@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'Lernblatt aktivieren',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Lernblatt beenden',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Vollständiges Diagramm wiederherstellen',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'Wählen Sie, wie ein Lernblatt für Übung und Wiederholung erstellt wird.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Zufällige Lücken',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'Blendet etwa 20 % der Knoten aus; Antworten erscheinen unter dem Diagramm.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} Knoten ausgeblendet · Esc zum Schließen',

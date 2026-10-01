@@ -2,7 +2,7 @@
  * Diagram session factory — assembles modular slices for one diagram instance.
  * The Pinia `diagram` store wraps an edit session; Showcase creates a readonly session.
  */
-import { computed, reactive, ref, type UnwrapNestedRefs } from 'vue'
+import { type UnwrapNestedRefs, computed, reactive, ref } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import type {
@@ -18,7 +18,7 @@ import {
 } from '@/utils/mindMapCanvasMode'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
-import { parseMindMapCanvasMode, type MindMapCanvasMode } from '../ui'
+import { type MindMapCanvasMode, parseMindMapCanvasMode } from '../ui'
 import { useBraceMapOpsSlice } from './braceMapOps'
 import { useBubbleMapOpsSlice } from './bubbleMapOps'
 import { useConnectionManagementSlice } from './connectionManagement'
@@ -26,8 +26,8 @@ import { VALID_DIAGRAM_TYPES } from './constants'
 import { useCopyPasteSlice } from './copyPaste'
 import { useCustomPositionsSlice } from './customPositions'
 import {
-  EDITOR_DIAGRAM_VUE_FLOW_ID,
   type DiagramViewBus,
+  EDITOR_DIAGRAM_VUE_FLOW_ID,
   adaptGlobalEventBusAsViewBus,
   createDiagramViewBus,
 } from './diagramViewBus'
@@ -259,6 +259,8 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     clearLearningSheetPreservation,
     hasBlankedLearningSheetNodes,
     runWithLearningSheetAnswersRevealed,
+    ensureLearningSheetBaseline,
+    learningSheetHasUserDiagramEdits,
   } = learningSheetSlice
   const {
     effectiveTitle,
@@ -599,6 +601,8 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     clearLearningSheetPreservation,
     hasBlankedLearningSheetNodes,
     runWithLearningSheetAnswersRevealed,
+    ensureLearningSheetBaseline,
+    learningSheetHasUserDiagramEdits,
     addNode,
     addConnection,
     updateConnectionLabel,

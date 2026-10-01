@@ -5,6 +5,7 @@ import { Folder, GraduationCap, Palette, Users } from '@lucide/vue'
 
 import MmToolbarLabel from '@/components/canvas/MmToolbarLabel.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useAuthStore } from '@/stores'
 
 import MindMapRibbonAiMark from './MindMapRibbonAiMark.vue'
@@ -32,12 +33,14 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const authStore = useAuthStore()
+const { showCanvasAiFeatures } = useLearningAiGate()
 
 const visibleTabs = computed(() => {
-  if (authStore.user?.role === 'student') {
-    return MIND_MAP_RIBBON_TABS.filter((tab) => tab !== 'research')
-  }
-  return MIND_MAP_RIBBON_TABS
+  return MIND_MAP_RIBBON_TABS.filter((tab) => {
+    if (authStore.user?.role === 'student' && tab === 'research') return false
+    if (!showCanvasAiFeatures.value && tab === 'ai') return false
+    return true
+  })
 })
 
 const TAB_ICONS: Record<Exclude<MindMapRibbonTabId, 'ai'>, Component> = {

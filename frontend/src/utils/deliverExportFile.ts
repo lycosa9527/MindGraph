@@ -67,11 +67,34 @@ export async function deliverExportFile(
   return 'downloaded'
 }
 
+const DATA_URL_MIME = /^data:([^;,]+)/i
+
+/**
+ * Decode a data URL locally.
+ * fetch() of data: is a connect-src request, and production CSP does not allow data: there.
+ */
+export function dataUrlToBlob(dataUrl: string): Blob {
+  const comma = dataUrl.indexOf(',')
+  if (!dataUrl.startsWith('data:') || comma < 0) {
+    throw new Error('invalid data url')
+  }
+  const header = dataUrl.slice(0, comma)
+  const payload = dataUrl.slice(comma + 1)
+  const mime = DATA_URL_MIME.exec(header)?.[1]?.trim() || 'application/octet-stream'
+  if (/;base64/i.test(header)) {
+    const binary = atob(payload)
+    const bytes = new Uint8Array(binary.length)
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index)
+    }
+    return new Blob([bytes], { type: mime })
+  }
+  return new Blob([decodeURIComponent(payload)], { type: mime })
+}
+
 export async function deliverExportDataUrl(
   dataUrl: string,
   filename: string
 ): Promise<DeliverExportResult> {
-  const response = await fetch(dataUrl)
-  const blob = await response.blob()
-  return deliverExportFile(blob, filename)
+  return deliverExportFile(dataUrlToBlob(dataUrl), filename)
 }

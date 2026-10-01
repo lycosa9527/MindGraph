@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'ಟೊಳ್ಳಾದ ಬ್ರಾಕೆಟ್ ರೇಖಾಚಿತ್ರವನ್ನು ತೆರೆಯಿರಿ',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'ಟೊಳ್ಳಾದ ಬ್ರಾಕೆಟ್ ರೇಖಾಚಿತ್ರದಿಂದ ನಿರ್ಗಮಿಸಿ',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'ಪೂರ್ಣ ಚಿತ್ರಕ್ಕೆ ಮರುಸ್ಥಾಪಿಸಿ',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'ಟೊಳ್ಳಾದ ಸ್ಕ್ಯಾಫೋಲ್ಡಿಂಗ್ ರೇಖಾಚಿತ್ರವನ್ನು ರಚಿಸಲು ವಿಧಾನವನ್ನು ಆರಿಸಿ, ತರಗತಿಯ ಅಭ್ಯಾಸ ಮತ್ತು ವಿಮರ್ಶೆಗೆ ಸೂಕ್ತವಾಗಿದೆ.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'ಯಾದೃಚ್ಛಿಕವಾಗಿ ಖಾಲಿ ಬಿಡಲಾಗಿದೆ',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'ಸಿಸ್ಟಮ್ ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಸುಮಾರು 20% ನೋಡ್‌ಗಳನ್ನು ಯಾದೃಚ್ಛಿಕವಾಗಿ ಟೊಳ್ಳಾಗುತ್ತದೆ, ಮತ್ತು ಉಲ್ಲೇಖ ಉತ್ತರವನ್ನು ರೇಖಾಚಿತ್ರದ ಕೆಳಗೆ ಪ್ರದರ್ಶಿಸಲಾಗುತ್ತದೆ.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} ನೋಡ್‌ಗಳನ್ನು ಟೊಳ್ಳು ಮಾಡಲಾಗಿದೆ · ಮುಚ್ಚಲು Esc',

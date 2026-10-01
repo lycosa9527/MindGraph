@@ -195,4 +195,14 @@ describe('normalizeAuthUser', () => {
     })
     expect(user.schoolName).toBe('北京市第一中学')
   })
+
+  it('maps learning class id from login payload', () => {
+    const user = normalizeAuthUser({
+      ...loginPayload,
+      role: 'student' as const,
+      learning_class_id: 12,
+    })
+    expect(user.learningClassId).toBe(12)
+    expect(user.learning_class_id).toBeUndefined()
+  })
 })

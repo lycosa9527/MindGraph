@@ -8,9 +8,10 @@ from __future__ import annotations
 import base64
 import binascii
 import logging
+import os
 import re
-from datetime import UTC, datetime
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Optional
 from uuid import uuid4
@@ -46,6 +47,14 @@ def cos_learning_space_enabled() -> bool:
     if not config.COS_LEARNING_SPACE_ENABLED:
         return False
     return cos_credentials_configured()
+
+
+def cos_failure_allows_local_fallback() -> bool:
+    """Non-production dev hosts may store instruction images locally when COS fails."""
+    if config.debug:
+        return True
+    env = os.getenv("ENVIRONMENT", "production").strip().lower()
+    return env in {"development", "dev", "test", "staging"}
 
 
 def storage_backend() -> str:
@@ -134,7 +143,7 @@ def public_image_src(stored: str, *, assignment_id: int | None, index: int) -> s
         return item
     if assignment_id is None:
         return item
-    return f"/api/learning-space/instruction-images/{int(assignment_id)}/{int(index)}"
+    return f"/api/learning-space/instruction-images/{int(assignment_id)}/{int(index)}?proxy=1"
 
 
 def public_instruction_images(stored: Sequence[object] | None, *, assignment_id: int | None) -> list[str]:
@@ -182,6 +191,18 @@ def detect_image_content_type(data: bytes) -> str | None:
     return None
 
 
+def _write_local_image_bytes(key: str, data: bytes) -> str:
+    """Persist bytes under the local fallback tree."""
+    path = local_path_for_key(key)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+    except OSError as exc:
+        logger.error("[LearningSpace] Local image write failed key=%s: %s", key, exc)
+        raise ValueError("Could not store image locally") from exc
+    return ref_for_key(key)
+
+
 def put_image_bytes_sync(logical_key: str, data: bytes, content_type: str) -> str:
     """Write bytes to COS or local disk. Returns the persistable ref."""
     key = assert_safe_logical_key(logical_key)
@@ -194,7 +215,7 @@ def put_image_bytes_sync(logical_key: str, data: bytes, content_type: str) -> st
     if declared == "image/jpg":
         declared = "image/jpeg"
     content_type = detected if declared != detected else declared
-    if storage_backend() == STORAGE_COS:
+    if storage_backend() == STORAGE_COS and not cos_failure_allows_local_fallback():
         uploaded = upload_bytes(
             data,
             full_learning_space_cos_key(key),
@@ -205,10 +226,9 @@ def put_image_bytes_sync(logical_key: str, data: bytes, content_type: str) -> st
             logger.warning("[LearningSpace] COS upload failed key=%s", key)
             raise ValueError("Could not store image on COS")
         return ref_for_key(key)
-    path = local_path_for_key(key)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(data)
-    return ref_for_key(key)
+    if storage_backend() == STORAGE_COS and cos_failure_allows_local_fallback():
+        logger.info("[LearningSpace] Dev host: storing instruction image locally key=%s", key)
+    return _write_local_image_bytes(key, data)
 
 
 def decode_data_url(data_url: str) -> tuple[bytes, str] | None:
@@ -294,6 +314,25 @@ def delete_stored_images_sync(keys: list[str]) -> None:
         )
 
 
+def _read_local_image_bytes(key: str) -> tuple[bytes, str] | None:
+    """Load bytes from the local fallback tree when present."""
+    suffix = Path(key).suffix.lower()
+    content_type = "image/jpeg"
+    if suffix == ".png":
+        content_type = "image/png"
+    elif suffix == ".webp":
+        content_type = "image/webp"
+    elif suffix == ".gif":
+        content_type = "image/gif"
+    try:
+        path = local_path_for_key(key)
+    except ValueError:
+        return None
+    if not path.is_file():
+        return None
+    return path.read_bytes(), content_type
+
+
 def read_image_bytes_sync(logical_key: str) -> tuple[bytes, str] | None:
     """Load image bytes for the download hop (COS or local)."""
     key = assert_safe_logical_key(logical_key)
@@ -305,17 +344,15 @@ def read_image_bytes_sync(logical_key: str) -> tuple[bytes, str] | None:
         content_type = "image/webp"
     elif suffix == ".gif":
         content_type = "image/gif"
+    if cos_failure_allows_local_fallback():
+        local_payload = _read_local_image_bytes(key)
+        if local_payload is not None:
+            return local_payload
     if cos_learning_space_enabled():
         payload = get_object_bytes(full_learning_space_cos_key(key), log_prefix="[LearningSpace/COS]")
         if payload:
             return payload, content_type
-    try:
-        path = local_path_for_key(key)
-    except ValueError:
-        return None
-    if not path.is_file():
-        return None
-    return path.read_bytes(), content_type
+    return _read_local_image_bytes(key)
 
 
 def create_presigned_get(logical_key: str) -> Optional[str]:

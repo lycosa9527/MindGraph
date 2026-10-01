@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': '학습지 사용',
   'canvas.mindMapSideToolbar.exitLearningSheet': '학습지 종료',
   'canvas.mindMapSideToolbar.restoreFullDiagram': '전체 다이어그램 복원',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': '연습과 복습용 학습지를 만드는 방법을 선택하세요.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': '무작위 빈칸',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': '노드의 약 20%를 무작위로 비웁니다. 답은 다이어그램 아래에 표시됩니다.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count}개 노드 비움 · Esc로 닫기',

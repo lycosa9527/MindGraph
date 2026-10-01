@@ -25,11 +25,20 @@ import {
 
 const API_BASE = '/api'
 
-/** Dev: bypass Vite proxy for multipart uploads (large showcase publishes). */
+const SHOWCASE_DEV_DIRECT_UPLOAD_PREFIXES = [
+  '/api/showcase/',
+  '/api/auth/admin/showcase/',
+] as const
+
+/** Dev: bypass Vite proxy only for large showcase multipart publishes. */
+function shouldBypassViteProxyInDev(path: string): boolean {
+  return SHOWCASE_DEV_DIRECT_UPLOAD_PREFIXES.some((prefix) => path.startsWith(prefix))
+}
+
 function resolveUploadFetchTarget(endpoint: string): { url: string; credentials: RequestCredentials } {
   const path = endpoint.startsWith('/') ? endpoint : `${API_BASE}/${endpoint}`
   const devOrigin = typeof __DEV_API_ORIGIN__ === 'string' ? __DEV_API_ORIGIN__.trim() : ''
-  if (import.meta.env.PROD || !devOrigin) {
+  if (import.meta.env.PROD || !devOrigin || !shouldBypassViteProxyInDev(path)) {
     return { url: path, credentials: 'same-origin' }
   }
   return { url: `${devOrigin}${path}`, credentials: 'include' }

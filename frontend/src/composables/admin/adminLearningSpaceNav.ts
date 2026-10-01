@@ -1,7 +1,7 @@
 /**
  * Learning Space admin sub-tab navigation.
  */
-export const LEARNING_SPACE_SUBTABS = ['pilots', 'classes'] as const
+export const LEARNING_SPACE_SUBTABS = ['pilots', 'classes', 'students'] as const
 
 export type LearningSpaceSubtab = (typeof LEARNING_SPACE_SUBTABS)[number]
 
@@ -16,6 +16,9 @@ export function resolveLearningSpaceSubtab(value: unknown): LearningSpaceSubtab 
 export function learningSpaceSubtabLabelKey(subtab: LearningSpaceSubtab): string {
   if (subtab === 'classes') {
     return 'admin.learningSpace.subtabClasses'
+  }
+  if (subtab === 'students') {
+    return 'admin.learningSpace.subtabStudents'
   }
   return 'admin.learningSpace.subtabPilots'
 }

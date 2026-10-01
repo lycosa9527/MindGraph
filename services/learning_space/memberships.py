@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-from sqlalchemy import func, select
+from sqlalchemy import String, func, literal, select, union_all
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import Organization, User
@@ -24,8 +24,8 @@ from models.domain.learning_space import (
     LearningClassMembership,
     LearningSubmission,
 )
-from services.learning_space.admin_teachers import organization_display_map
-from services.learning_space.passwords import initial_password_from_name
+from services.learning_space.admin_teachers import organization_display_map, user_display_map
+from services.learning_space.passwords import staff_visible_learning_space_password
 from utils.auth.role_constants import ROLE_STUDENT
 from utils.auth.roles import is_student
 from utils.db.session_open import system_rls_session
@@ -421,13 +421,191 @@ async def organization_info_map(org_ids: set[int]) -> dict[int, dict[str, str]]:
         return info
 
 
+def _admin_student_list_selects():
+    """Shared columns for classroom students and enrolled learners."""
+    classroom = (
+        select(
+            User.id.label("user_id"),
+            User.name.label("name"),
+            User.phone.label("phone"),
+            User.role.label("role"),
+            User.must_change_password.label("must_change_password"),
+            User.last_login.label("last_login"),
+            User.learning_space_login_password.label("learning_space_login_password"),
+            literal("classroom").label("member_kind"),
+            literal(None, type_=String).label("membership_role"),
+            LearningClass.id.label("class_id"),
+            LearningClass.name.label("class_name"),
+            LearningClass.class_code.label("class_code"),
+            LearningClass.status.label("class_status"),
+            LearningClass.teacher_user_id.label("teacher_user_id"),
+            LearningClass.organization_id.label("organization_id"),
+        )
+        .join(LearningClass, User.learning_class_id == LearningClass.id)
+        .where(User.role == ROLE_STUDENT, User.learning_class_id.isnot(None))
+    )
+    enrolled = (
+        select(
+            User.id.label("user_id"),
+            User.name.label("name"),
+            User.phone.label("phone"),
+            User.role.label("role"),
+            User.must_change_password.label("must_change_password"),
+            User.last_login.label("last_login"),
+            literal(None, type_=String).label("learning_space_login_password"),
+            literal("enrolled").label("member_kind"),
+            LearningClassMembership.role.label("membership_role"),
+            LearningClass.id.label("class_id"),
+            LearningClass.name.label("class_name"),
+            LearningClass.class_code.label("class_code"),
+            LearningClass.status.label("class_status"),
+            LearningClass.teacher_user_id.label("teacher_user_id"),
+            LearningClass.organization_id.label("organization_id"),
+        )
+        .select_from(LearningClassMembership)
+        .join(User, User.id == LearningClassMembership.user_id)
+        .join(LearningClass, LearningClass.id == LearningClassMembership.class_id)
+        .where(LearningClassMembership.role == MEMBERSHIP_ROLE_LEARNER)
+    )
+    return classroom, enrolled
+
+
+async def list_admin_students_global(
+    _db: AsyncSession,
+    *,
+    class_id: int | None = None,
+    member_kind: str | None = None,
+    search: str = "",
+    page: int = 1,
+    page_size: int = 50,
+) -> dict:
+    """Paginated cross-class student roster for admin panel."""
+    del _db  # Admin roster spans users + memberships; use system RLS like org lookups.
+    async with system_rls_session() as admin_db:
+        return await _list_admin_students_global_body(
+            admin_db,
+            class_id=class_id,
+            member_kind=member_kind,
+            search=search,
+            page=page,
+            page_size=page_size,
+        )
+
+
+async def _list_admin_students_global_body(
+    db: AsyncSession,
+    *,
+    class_id: int | None = None,
+    member_kind: str | None = None,
+    search: str = "",
+    page: int = 1,
+    page_size: int = 50,
+) -> dict:
+    """Implementation for ``list_admin_students_global`` (system RLS session)."""
+    classroom, enrolled = _admin_student_list_selects()
+    if class_id is not None:
+        classroom = classroom.where(LearningClass.id == class_id)
+        enrolled = enrolled.where(LearningClass.id == class_id)
+    if member_kind == "classroom":
+        combined = classroom.subquery()
+    elif member_kind == "enrolled":
+        combined = enrolled.subquery()
+    else:
+        combined = union_all(classroom, enrolled).subquery()
+
+    filters = []
+    if search.strip():
+        term = f"%{search.strip()}%"
+        filters.append((combined.c.name.like(term)) | (combined.c.phone.like(term)))
+
+    count_stmt = select(func.count()).select_from(combined)
+    if filters:
+        count_stmt = count_stmt.where(*filters)
+    total = int((await db.execute(count_stmt)).scalar_one() or 0)
+
+    classroom_count_stmt = select(func.count()).select_from(classroom.subquery())
+    enrolled_count_stmt = select(func.count()).select_from(enrolled.subquery())
+    classroom_total = int((await db.execute(classroom_count_stmt)).scalar_one() or 0)
+    enrolled_total = int((await db.execute(enrolled_count_stmt)).scalar_one() or 0)
+
+    list_stmt = select(combined)
+    if filters:
+        list_stmt = list_stmt.where(*filters)
+    skip = max(page - 1, 0) * page_size
+    list_stmt = list_stmt.order_by(combined.c.user_id.desc()).offset(skip).limit(page_size)
+    rows = list((await db.execute(list_stmt)).all())
+
+    org_ids = {int(row.organization_id) for row in rows if row.organization_id is not None}
+    teacher_ids = {int(row.teacher_user_id) for row in rows if row.teacher_user_id is not None}
+    org_names = await organization_display_map(org_ids)
+    teacher_names = await user_display_map(teacher_ids)
+
+    items: list[dict] = []
+    for row in rows:
+        org_id = int(row.organization_id) if row.organization_id is not None else None
+        teacher_id = int(row.teacher_user_id) if row.teacher_user_id is not None else None
+        items.append(
+            {
+                "id": int(row.user_id),
+                "name": (row.name or "").strip() or (row.phone or ""),
+                "phone": row.phone,
+                "role": row.role,
+                "member_kind": row.member_kind,
+                "membership_role": row.membership_role,
+                "must_change_password": bool(row.must_change_password),
+                "last_login": row.last_login.isoformat() if row.last_login else None,
+                "class_id": int(row.class_id),
+                "class_name": row.class_name or "",
+                "class_code": row.class_code or "",
+                "class_status": row.class_status or "",
+                "teacher_user_id": teacher_id,
+                "teacher_name": teacher_names.get(teacher_id, "") if teacher_id is not None else "",
+                "organization_id": org_id,
+                "organization_name": org_names.get(org_id, "") if org_id is not None else "",
+                "initial_password": staff_visible_learning_space_password(
+                    name=(row.name or "").strip() or (row.phone or ""),
+                    role=str(row.role or ""),
+                    learning_class_id=int(row.class_id) if row.member_kind == "classroom" else None,
+                    must_change_password=bool(row.must_change_password),
+                    stored_password=getattr(row, "learning_space_login_password", None),
+                    include=row.member_kind == "classroom",
+                ),
+            }
+        )
+
+    total_pages = (total + page_size - 1) // page_size if page_size else 0
+    return {
+        "items": items,
+        "pagination": {
+            "page": page,
+            "page_size": page_size,
+            "total": total,
+            "total_pages": total_pages,
+        },
+        "summary": {
+            "classroom_count": classroom_total,
+            "enrolled_count": enrolled_total,
+            "total": classroom_total + enrolled_total,
+        },
+    }
+
+
 async def class_roster_items(
     db: AsyncSession,
     class_id: int,
     *,
     include_initial_password: bool = True,
+    admin_bypass_rls: bool = False,
 ) -> list[dict]:
     """Classroom students plus enrolled members (learners and assistants)."""
+    if admin_bypass_rls:
+        async with system_rls_session() as admin_db:
+            return await class_roster_items(
+                admin_db,
+                class_id,
+                include_initial_password=include_initial_password,
+                admin_bypass_rls=False,
+            )
     classroom = await db.execute(
         select(User).where(User.learning_class_id == class_id, User.role == ROLE_STUDENT).order_by(User.id)
     )
@@ -452,8 +630,13 @@ async def class_roster_items(
                 "organization_name": "",
                 "member_kind": "classroom",
                 "membership_role": None,
-                "initial_password": (
-                    initial_password_from_name(student.name or "") if include_initial_password else ""
+                "initial_password": staff_visible_learning_space_password(
+                    name=student.name or "",
+                    role=student.role,
+                    learning_class_id=int(student.learning_class_id) if student.learning_class_id else None,
+                    must_change_password=bool(student.must_change_password),
+                    stored_password=getattr(student, "learning_space_login_password", None),
+                    include=include_initial_password,
                 ),
                 "must_change_password": bool(student.must_change_password),
                 "last_login": student.last_login.isoformat() if student.last_login else None,

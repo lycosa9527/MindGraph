@@ -4,7 +4,7 @@
  */
 import { computed, watch } from 'vue'
 
-import { Hammer, Shuffle } from '@lucide/vue'
+import { Hammer, LayoutList, Shuffle } from '@lucide/vue'
 
 import AiGenerateGlassHero from '@/components/canvas/AiGenerateGlassHero.vue'
 import I18nText from '@/components/common/I18nText.vue'
@@ -29,7 +29,8 @@ const emit = defineEmits<{
 const { t } = useLanguage()
 const diagramStore = useDiagramStore()
 
-const { isPickActive, activatePick, startRandomLearningSheet } = useLearningSheetCustomMode()
+const { isPickActive, activatePick, startRandomLearningSheet, startFullBlankLearningSheet } =
+  useLearningSheetCustomMode()
 
 const panelTitle = computed(() => {
   switch (props.tool) {
@@ -62,6 +63,13 @@ watch(
   },
   { immediate: true }
 )
+
+function handleFullBlankLearningSheet(): void {
+  const keepAnswers = diagramStore.learningSheetShowAnswers
+  startFullBlankLearningSheet()
+  diagramStore.setLearningSheetShowAnswers(keepAnswers)
+  handleClose()
+}
 
 function handleRandomLearningSheet(): void {
   const keepAnswers = diagramStore.learningSheetShowAnswers
@@ -131,6 +139,27 @@ function onKeepAnswersChange(value: string | number | boolean): void {
 
         <div class="flex min-h-0 flex-1 flex-col overflow-y-auto">
           <div class="flex flex-col gap-3 px-4 py-5">
+            <button
+              type="button"
+              class="learning-sheet-mode-card group"
+              @click="handleFullBlankLearningSheet"
+            >
+              <span class="learning-sheet-mode-card__icon learning-sheet-mode-card__icon--violet">
+                <LayoutList
+                  class="h-4 w-4"
+                  :stroke-width="2"
+                />
+              </span>
+              <span class="min-w-0 flex-1 text-left">
+                <span class="block text-sm font-semibold text-slate-800">
+                  <I18nText k="canvas.mindMapSideToolbar.learningSheetFullBlankTitle" />
+                </span>
+                <span class="mt-0.5 block text-[11px] leading-snug text-slate-500">
+                  <I18nText k="canvas.mindMapSideToolbar.learningSheetFullBlankDesc" />
+                </span>
+              </span>
+            </button>
+
             <button
               type="button"
               class="learning-sheet-mode-card group"
@@ -227,6 +256,16 @@ function onKeepAnswersChange(value: string | number | boolean): void {
   border-radius: 8px;
   border: 1px solid var(--swiss-border, #e7e5e4);
   background: var(--swiss-inset, #fafaf9);
+}
+
+.learning-sheet-mode-card__icon--violet {
+  color: var(--swiss-geek-violet-ui, #6d28d9);
+  background: var(--swiss-geek-violet-soft, #f5f3ff);
+  border-color: color-mix(
+    in srgb,
+    var(--swiss-geek-violet-ui, #6d28d9) 22%,
+    var(--swiss-border, #e7e5e4)
+  );
 }
 
 .learning-sheet-mode-card__icon--amber {

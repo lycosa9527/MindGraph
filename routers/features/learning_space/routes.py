@@ -44,6 +44,7 @@ from routers.features.learning_space.schemas import (
     SubmissionReviewRequest,
 )
 from routers.features.learning_space.deps import get_learning_space_db
+from services.auth.password_security import invalidate_user_cache_after_password_write
 from services.learning_space.access import (
     get_class_for_publisher,
     get_class_for_staff,
@@ -68,6 +69,7 @@ from services.learning_space.memberships import (
     class_roster_items,
     import_existing_accounts,
     learner_class_ids,
+    list_admin_students_global,
     preview_existing_accounts,
     replace_class_assistants,
 )
@@ -97,17 +99,19 @@ from services.learning_space.image_storage import (
     stored_image_keys,
 )
 from services.learning_space.passwords import (
+    assign_learning_space_login_password,
     merge_ai_permissions,
 )
 from services.learning_space.students import (
     classroom_student_ids,
     count_class_students,
+    count_class_students_admin,
     import_students,
     kick_classroom_student_sessions,
     preview_student_names,
+    remove_class_member,
     reset_student_password,
 )
-from services.auth.password_security import invalidate_user_cache_after_password_write
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth.admin_panel_permissions import (
@@ -319,7 +323,7 @@ async def admin_list_classes(
                 "organization_name": org_names.get(int(cls.organization_id), ""),
                 "status": cls.status,
                 "max_students": cls.max_students,
-                "student_count": await count_class_students(db, cls.id),
+                "student_count": await count_class_students_admin(int(cls.id)),
                 "assignment_count": activity["assignment_count"],
                 "submission_count": activity["submission_count"],
                 "assistants": assistants.get(int(cls.id), []),
@@ -505,7 +509,55 @@ async def admin_list_students(
     cls = await db.get(LearningClass, class_id)
     if cls is None:
         raise HTTPException(status_code=404, detail="Class not found")
-    return {"items": await class_roster_items(db, class_id)}
+    return {"items": await class_roster_items(db, class_id, admin_bypass_rls=True)}
+
+
+@router.get("/admin/students")
+async def admin_list_all_students(
+    class_id: int | None = Query(None),
+    member_kind: str | None = Query(None, pattern="^(classroom|enrolled)$"),
+    search: str = Query("", max_length=100),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+    _scope: AdminScope = Depends(_require_ls_view),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
+):
+    """Cross-class student roster for Learning Space admin."""
+    return await list_admin_students_global(
+        db,
+        class_id=class_id,
+        member_kind=member_kind,
+        search=search,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.post("/admin/classes/{class_id}/members/{user_id}/remove")
+async def admin_remove_class_member(
+    class_id: int,
+    user_id: int,
+    scope: AdminScope = Depends(_require_ls_edit),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
+):
+    """Remove a classroom student or enrolled learner from a class."""
+    cls = await db.get(LearningClass, class_id)
+    if cls is None:
+        raise HTTPException(status_code=404, detail="Class not found")
+    try:
+        result = await remove_class_member(db, cls, user_id)
+    except ValueError as exc:
+        detail = str(exc)
+        if detail == "user_not_found":
+            raise HTTPException(status_code=404, detail="User not found") from exc
+        raise HTTPException(status_code=404, detail="Member not found in class") from exc
+    logger.info(
+        "[LearningSpace] Admin removed member class=%s user=%s actor=%s",
+        class_id,
+        user_id,
+        scope.actor.id,
+    )
+    return result
 
 
 @router.post("/admin/students/{student_id}/reset-password")
@@ -578,12 +630,8 @@ async def teacher_list_students(
     db: AsyncSession = Depends(get_learning_space_db),
 ):
     """List students and enrolled members in the class."""
-    learning_class = await get_class_for_staff(db, class_id, int(current_user.id), allow_archived=True)
-    include_passwords = (
-        int(learning_class.teacher_user_id) == int(current_user.id)
-        and await get_enabled_pilot(db, int(current_user.id)) is not None
-    )
-    return {"items": await class_roster_items(db, class_id, include_initial_password=include_passwords)}
+    await get_class_for_staff(db, class_id, int(current_user.id), allow_archived=True)
+    return {"items": await class_roster_items(db, class_id, include_initial_password=True)}
 
 
 @router.post("/teacher/students/{student_id}/reset-password")
@@ -729,7 +777,7 @@ async def teacher_list_submissions(
     subs = list(result.scalars().all())
     items = []
     for submission in subs:
-        items.append(await enrich_submission_dict(db, submission))
+        items.append(await enrich_submission_dict(db, submission, include_preview=True))
     return {"items": items}
 
 
@@ -910,12 +958,22 @@ async def student_class_wall(
         raise HTTPException(status_code=403, detail="Students only")
     if not class_ids:
         return {"items": []}
+    viewer_submitted = await db.execute(
+        select(LearningSubmission.assignment_id).where(
+            LearningSubmission.student_user_id == current_user.id,
+            LearningSubmission.status == SUBMISSION_STATUS_SUBMITTED,
+        )
+    )
+    allowed_assignment_ids = {int(row[0]) for row in viewer_submitted.all()}
+    if not allowed_assignment_ids:
+        return {"items": []}
     result = await db.execute(
         select(LearningSubmission, LearningAssignment)
         .join(LearningAssignment, LearningAssignment.id == LearningSubmission.assignment_id)
         .where(
             LearningAssignment.class_id.in_(tuple(class_ids)),
             LearningSubmission.status == SUBMISSION_STATUS_SUBMITTED,
+            LearningSubmission.assignment_id.in_(tuple(allowed_assignment_ids)),
         )
         .order_by(
             LearningSubmission.review_pinned.desc(),
@@ -929,7 +987,7 @@ async def student_class_wall(
             await enrich_submission_dict(
                 db,
                 submission,
-                include_preview=False,
+                include_preview=True,
                 assignment_title=assignment.title,
             )
         )
@@ -1002,6 +1060,7 @@ async def student_change_password(
             raise HTTPException(status_code=404, detail="User not found")
         user.password_hash = hash_password(body.new_password)
         user.must_change_password = False
+        assign_learning_space_login_password(user, body.new_password)
         user.failed_login_attempts = 0
         user.locked_until = None
         try:

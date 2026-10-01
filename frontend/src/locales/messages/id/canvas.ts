@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'Aktifkan lembar pembelajaran',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Keluar dari lembar pembelajaran',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Kembalikan diagram penuh',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'Pilih cara membuat lembar pembelajaran untuk latihan dan ulasan.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Kosong acak',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'Secara acak mengosongkan sekitar 20% node; jawabannya muncul di bawah diagram.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} node dikosongkan · Esc untuk diberhentikan',

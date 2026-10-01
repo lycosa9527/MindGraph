@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'نمودار براکت توخالی را باز کنید',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'از نمودار براکت توخالی خارج شوید',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'بازگردانی به تصویر کامل',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'روشی را برای ایجاد نمودار داربست توخالی، مناسب برای تمرین و مرور کلاس انتخاب کنید.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'به طور تصادفی خالی گذاشته شد',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'سیستم به طور خودکار حدود 20 درصد از گره ها را به طور تصادفی خالی می کند و پاسخ مرجع در زیر نمودار نمایش داده می شود.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': 'گره های {count} توخالی شده اند · Esc برای بسته شدن',

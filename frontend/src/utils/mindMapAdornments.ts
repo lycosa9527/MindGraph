@@ -69,10 +69,10 @@ export function readNodeAdornment(
   nodeId: string,
   connections: readonly Connection[] | undefined
 ): MindMapNodeAdornment | null {
-  const path = mindMapAdornmentPathKey(nodeId, connections ?? [])
-  if (!path) return null
   const all = readMindMapAdornments(data)
-  return all[path] ?? null
+  const path = mindMapAdornmentPathKey(nodeId, connections ?? [])
+  if (path && all[path]) return all[path]
+  return all[nodeId] ?? null
 }
 
 export type MindMapAdornmentPart = 'all' | 'image' | 'inline'

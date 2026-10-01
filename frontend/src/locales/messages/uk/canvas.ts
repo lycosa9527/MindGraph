@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'Увімкнути навчальний аркуш',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Вийти з навчального аркуша',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Відновити повну діаграму',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'Оберіть спосіб створення навчального аркуша для практики та повторення.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Випадкові пропуски',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'Випадково приховує близько 20% вузлів; відповіді з\'являються під діаграмою.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} вузл(ів) приховано · Esc, щоб закрити',

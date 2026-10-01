@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'I-enable ang learning sheet',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Lumabas sa learning sheet',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Ibalik ang buong diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'Piliin kung paano gumawa ng learning sheet para sa pagsasanay at pagsusuri.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Random na mga blangko',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'Random na blangko ang tungkol sa 20% ng mga node; ang mga sagot ay makikita sa ibaba ng diagram.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} (mga) node na blangko · Esc para i-dismiss',

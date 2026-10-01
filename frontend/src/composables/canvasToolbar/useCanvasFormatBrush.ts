@@ -96,18 +96,42 @@ function renderedColorFallback(nodeId: string): Partial<NodeStyle> | undefined {
   const host = document.querySelector(`.vue-flow__node[data-id="${escaped}"]`)
   if (!(host instanceof HTMLElement)) return undefined
   const painted = host.querySelector(
-    '.circle-node, .bubble-node, .branch-node, .flow-node, .flow-substep-node, .brace-node, .topic-node'
+    '.circle-node, .bubble-node, .branch-node, .flow-node, .flow-substep-node, .brace-node, .topic-node, .concept-node, .label-node'
   )
   const el = painted instanceof HTMLElement ? painted : host
   const cs = getComputedStyle(el)
   const backgroundColor = opaqueCssColor(cs.backgroundColor)
   const borderColor = opaqueCssColor(cs.borderTopColor)
   const textColor = opaqueCssColor(cs.color)
-  const fallback: Partial<NodeStyle> = {}
+  const fontSize = Number.parseFloat(cs.fontSize)
+  const weight = Number.parseInt(cs.fontWeight, 10)
+  const align =
+    cs.textAlign === 'right' || cs.textAlign === 'end'
+      ? 'right'
+      : cs.textAlign === 'center'
+        ? 'center'
+        : 'left'
+  const line = cs.textDecorationLine || ''
+  const textDecoration =
+    line.includes('underline') && line.includes('line-through')
+      ? 'underline line-through'
+      : line.includes('line-through')
+        ? 'line-through'
+        : line.includes('underline')
+          ? 'underline'
+          : 'none'
+  const fallback: Partial<NodeStyle> = {
+    fontFamily: cs.fontFamily,
+    fontSize: Number.isFinite(fontSize) ? fontSize : undefined,
+    fontWeight: weight >= 600 || cs.fontWeight === 'bold' ? 'bold' : 'normal',
+    fontStyle: cs.fontStyle === 'italic' ? 'italic' : 'normal',
+    textDecoration,
+    textAlign: align,
+  }
   if (backgroundColor) fallback.backgroundColor = backgroundColor
   if (borderColor) fallback.borderColor = borderColor
   if (textColor) fallback.textColor = textColor
-  return Object.keys(fallback).length > 0 ? fallback : undefined
+  return fallback
 }
 
 function snapshotFormatBrushStyle(nodeId: string): NodeStyle | null {

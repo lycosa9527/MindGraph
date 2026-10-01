@@ -5,18 +5,14 @@ import type { CanvasExportOptions } from '@/config/canvasExportOptions'
 import type { useDiagramStore } from '@/stores/diagram'
 import type { useUIStore } from '@/stores/ui'
 import {
+  type MindMapVectorSnapshot,
   buildMindMapVectorSnapshot,
   isMindMapVectorExportType,
-  type MindMapVectorSnapshot,
 } from '@/utils/diagramMindMapVectorModel'
 import { rasterizeMindMapVectorSvg } from '@/utils/diagramMindMapVectorRaster'
-import {
-  buildMindMapVectorSvg,
-  mindMapVectorSvgToDataUrl,
-  type MindMapVectorSvgResult,
-} from '@/utils/diagramMindMapVectorSvg'
-import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
+import { type MindMapVectorSvgResult, buildMindMapVectorSvg } from '@/utils/diagramMindMapVectorSvg'
 import type { PdfPageOrientation } from '@/utils/diagramPdfExport'
+import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 
 type DiagramStore = ReturnType<typeof useDiagramStore>
 type UiStore = ReturnType<typeof useUIStore>
@@ -55,15 +51,6 @@ export function buildMindMapVectorSvgFromStores(
   const snapshot = snapshotMindMapVectorFromStores(diagramStore, uiStore)
   if (!snapshot) return null
   return buildMindMapVectorSvg(snapshot)
-}
-
-export async function exportMindMapVectorSvgDataUrl(
-  diagramStore: DiagramStore,
-  uiStore: UiStore
-): Promise<string | null> {
-  const result = buildMindMapVectorSvgFromStores(diagramStore, uiStore)
-  if (!result) return null
-  return mindMapVectorSvgToDataUrl(result.svg)
 }
 
 export async function exportMindMapVectorDocxPng(

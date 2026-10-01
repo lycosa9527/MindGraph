@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'Öğrenme sayfasını etkinleştir',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Öğrenme sayfasından çık',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Tam diyagramı geri yükle',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'Alıştırma ve tekrar için öğrenme sayfasını nasıl oluşturacağınızı seçin.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Rastgele boşluklar',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'Düğümlerin yaklaşık %20\'sini rastgele boşaltır; yanıtlar diyagramın altında görünür.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} düğüm boşaltıldı · Kapatmak için Esc',

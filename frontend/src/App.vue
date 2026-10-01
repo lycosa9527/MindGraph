@@ -52,9 +52,11 @@ useQuickAccessRemoteAccount()
 useTrainingFollow()
 useTrainingSessionEngine()
 
-const LoginModal = defineAsyncComponent(() => import('@/components/auth/LoginModal.vue'))
 const AccountInfoModal = defineAsyncComponent(
   () => import('@/components/auth/AccountInfoModal.vue')
+)
+const SessionExpiredAuthCard = defineAsyncComponent(
+  () => import('@/components/auth/SessionExpiredAuthCard.vue')
 )
 const CanvasLiveSubtitleOverlay = defineAsyncComponent(
   () => import('@/components/canvas/CanvasLiveSubtitleOverlay.vue')
@@ -483,8 +485,8 @@ onUnmounted(() => {
     <ChatMessageToast />
     <WorkshopChatWsHost />
 
-    <LoginModal
-      v-model:visible="authStore.showSessionExpiredModal"
+    <SessionExpiredAuthCard
+      :visible="authStore.showSessionExpiredModal"
       @success="handleSessionExpiredLoginSuccess"
     />
 

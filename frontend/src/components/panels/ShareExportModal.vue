@@ -23,6 +23,7 @@ import type { MindMateMessage } from '@/composables/mindmate/useMindMate'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useAuthStore } from '@/stores'
 import { claimThinkingCoinEvent } from '@/utils/claimThinkingCoinEvent'
+import { dataUrlToBlob, deliverExportFile } from '@/utils/deliverExportFile'
 import {
   parseMindmateDiagramLibraryId,
   rewriteMindmateTempImageUrls,
@@ -288,13 +289,14 @@ async function exportAsPng() {
       },
     })
 
-    // Create download link
-    const link = document.createElement('a')
     const timestamp = new Date().toISOString().slice(0, 10)
-    const filename = `${props.conversationTitle || 'MindMate'}_${timestamp}.png`
-    link.download = filename.replace(/[/\\?%*:|"<>]/g, '-')
-    link.href = dataUrl
-    link.click()
+    const filename = `${props.conversationTitle || 'MindMate'}_${timestamp}.png`.replace(
+      /[/\\?%*:|"<>]/g,
+      '-'
+    )
+    if ((await deliverExportFile(dataUrlToBlob(dataUrl), filename)) === 'cancelled') {
+      return
+    }
 
     notify.successKey('panels.share.exportOk')
     void claimThinkingCoinEvent('mindmate_share')

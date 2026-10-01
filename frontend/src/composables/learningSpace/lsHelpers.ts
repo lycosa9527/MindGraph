@@ -83,7 +83,20 @@ export function assignmentAllowsLate(a: LearningAssignment | null | undefined): 
   return a?.ai_permissions?.allow_late_submit === true
 }
 
+export function assignmentAllowsResubmit(a: LearningAssignment | null | undefined): boolean {
+  if (!a?.submission || a.submission.status !== 'submitted') return false
+  if (a.status === 'draft' || a.status === 'closed' || a.status === 'archived') return false
+  if (a.ai_permissions?.allow_resubmit === false) return false
+  if (!assignmentIsClosed(a)) return true
+  return assignmentAllowsLate(a)
+}
+
+export function studentCanResubmitAssignment(a: LearningAssignment | null | undefined): boolean {
+  return assignmentAllowsResubmit(a)
+}
+
 export function studentCanOpenAssignment(a: LearningAssignment): boolean {
+  if (studentCanResubmitAssignment(a)) return true
   if (studentAssignmentDone(a)) return false
   if (a.status === 'draft' || a.status === 'closed' || a.status === 'archived') return false
   if (a.submission != null) return true
@@ -92,6 +105,7 @@ export function studentCanOpenAssignment(a: LearningAssignment): boolean {
 }
 
 export function studentCanSubmitAssignment(a: LearningAssignment | null | undefined): boolean {
+  if (studentCanResubmitAssignment(a)) return true
   if (!a || studentAssignmentDone(a)) return false
   if (a.status === 'draft' || a.status === 'closed' || a.status === 'archived') return false
   if (!assignmentIsClosed(a)) return true
@@ -104,10 +118,20 @@ export function greetHourLabel(hour: number): 'morning' | 'afternoon' | 'evening
   return 'evening'
 }
 
+export function normalizeDiagramTypeSlug(raw: string | null | undefined): string {
+  const item = (raw ?? '').trim()
+  if (!item || item === 'mindmap') return 'mind_map'
+  return item
+}
+
+export function diagramTypeLabelKey(raw: string | null | undefined): string {
+  return `learningSpace.diagramType.${normalizeDiagramTypeSlug(raw)}`
+}
+
 export function assignmentDiagramType(a: LearningAssignment | null | undefined): string {
   const raw = a?.ai_permissions?.diagram_type
-  if (typeof raw !== 'string' || !raw.trim()) return 'mind_map'
-  return raw.trim() === 'mindmap' ? 'mind_map' : raw.trim()
+  if (typeof raw !== 'string') return 'mind_map'
+  return normalizeDiagramTypeSlug(raw)
 }
 
 /** Auto-created publish scaffold uses a '…' placeholder, not a teacher upload. */
@@ -116,6 +140,16 @@ export function looksLikeAutoScaffoldSpec(
 ): boolean {
   if (!spec) return true
   return JSON.stringify(spec).includes('…')
+}
+
+export function assignmentHasWorkingDiagram(
+  a: LearningAssignment | null | undefined
+): boolean {
+  const perms = a?.ai_permissions
+  if (!perms) return false
+  if (perms.has_teacher_template === true) return true
+  const role = perms.template_role
+  return role === 'reference' || role === 'scaffold'
 }
 
 export function assignmentHasTeacherTemplate(
@@ -187,4 +221,18 @@ export function unsubmittedFromRoster(
     submissions.filter((s) => s.status === 'submitted').map((s) => s.student_user_id)
   )
   return studentIds.filter((id) => !submitted.has(id))
+}
+
+export function formatLsStudentLabel(
+  sub: Pick<LearningSubmission, 'student_name' | 'student_user_id' | 'organization_name'>
+): string {
+  const name = (sub.student_name || String(sub.student_user_id)).trim()
+  const org = (sub.organization_name || '').trim()
+  return org ? `${name} · ${org}` : name
+}
+
+/** Class work wall is visible only after the student has submitted this assignment. */
+export function studentCanViewAssignmentWall(a: LearningAssignment | null | undefined): boolean {
+  if (!a) return false
+  return studentAssignmentDone(a)
 }

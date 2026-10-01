@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'Oyrenme vareqini faol et',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Oyrenme vareqinden chix',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Tam diagrammani berpa et',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'Meshq va qayta uchun oyrenme vareqini nece yaratmagi tanlang.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Tesadufi bo’shluqlar',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'Tugunlerin texminen 20%-ni tesadufi bo’shaldir; javoblar diagrammanin altinda gorunur.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} tugun bo’shaldilib · yopishmaq uchun Esc',

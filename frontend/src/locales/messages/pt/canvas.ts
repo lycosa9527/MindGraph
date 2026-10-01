@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'Abra o diagrama de colchetes ocos',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Saia do diagrama de colchetes ocos',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Restaurar para imagem completa',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'Escolha um método para criar um diagrama de andaime oco, adequado para prática e revisão em sala de aula.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Aleatoriamente deixado em branco',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'O sistema esvazia automaticamente cerca de 20% dos nós aleatoriamente e a resposta de referência é exibida abaixo do diagrama.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} nós foram esvaziados · Esc para fechar',

@@ -545,7 +545,11 @@ export function recalculateBraceMapLayout(
       if (groupIndex !== undefined) {
         const color = getMindmapBranchColor(groupIndex)
         node.data = { ...node.data, groupIndex }
-        node.style = { ...node.style, backgroundColor: color.fill, borderColor: color.border }
+        node.style = {
+          ...node.style,
+          backgroundColor: node.style?.backgroundColor || color.fill,
+          borderColor: node.style?.borderColor || color.border,
+        }
       }
     }
   }

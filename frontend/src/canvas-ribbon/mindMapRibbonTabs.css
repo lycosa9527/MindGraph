@@ -44,13 +44,6 @@
   font-weight: 600;
   line-height: 1;
   background: transparent;
-  transition:
-    height 0.18s ease,
-    margin 0.18s ease,
-    padding 0.18s ease,
-    color 0.18s ease,
-    background 0.18s ease,
-    border-radius 0.18s ease;
 }
 
 .mm-ribbon-tabs__inner {
@@ -58,11 +51,6 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: transform 0.18s ease;
-}
-
-.mm-ribbon-tabs--topbar .mm-ribbon-tabs__tab.is-active .mm-ribbon-tabs__inner {
-  transform: translateY(-2px);
 }
 
 .mm-ribbon-tabs--topbar .mm-ribbon-tabs__tab:hover:not(.is-active) {
@@ -104,10 +92,6 @@
   padding: 4px 14px;
   background: rgb(255 255 255 / 0.88);
   border-radius: 8px;
-}
-
-.mm-ribbon-tabs--topbar.mm-ribbon-tabs--collapsed .mm-ribbon-tabs__tab.is-active .mm-ribbon-tabs__inner {
-  transform: none;
 }
 
 .dark .mm-ribbon-tabs--topbar .mm-ribbon-tabs__tab {

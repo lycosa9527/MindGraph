@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'ఖాళీ బ్రాకెట్ రేఖాచిత్రాన్ని తెరవండి',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'ఖాళీ చేయబడిన బ్రాకెట్ రేఖాచిత్రం నుండి నిష్క్రమించండి',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'పూర్తి చిత్రానికి పునరుద్ధరించండి',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'క్లాస్‌రూమ్ ప్రాక్టీస్ మరియు రివ్యూ కోసం సరిపోయే హాలో-అవుట్ పరంజా రేఖాచిత్రాన్ని రూపొందించడానికి ఒక పద్ధతిని ఎంచుకోండి.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'యాదృచ్ఛికంగా ఖాళీగా ఉంచబడింది',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'సిస్టమ్ యాదృచ్ఛికంగా దాదాపు 20% నోడ్‌లను స్వయంచాలకంగా ఖాళీ చేస్తుంది మరియు సూచన సమాధానం రేఖాచిత్రం క్రింద ప్రదర్శించబడుతుంది.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} నోడ్‌లు ఖాళీ చేయబడ్డాయి · మూసివేయడానికి Esc',

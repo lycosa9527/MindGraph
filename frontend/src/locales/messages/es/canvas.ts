@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'Activar ficha de aprendizaje',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Salir de ficha de aprendizaje',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Restaurar diagrama completo',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'Elija cómo crear una ficha de aprendizaje para practicar y repasar.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Espacios en blanco aleatorios',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'Deja en blanco aleatoriamente aprox. el 20 % de los nodos; las respuestas aparecen debajo del diagrama.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} nodo(s) en blanco · Esc para cerrar',

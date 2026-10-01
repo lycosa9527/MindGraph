@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'सक्षम learning sheet',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'अध्ययन पत्र से बाहर',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'पूर्ण आरेख पुनर्स्थापित',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'चुनें how to create a learning sheet for practice and review.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'यादृच्छिक रिक्त',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': '~20% नोड रिक्त; उत्तर आरेख के नीचे।',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} नोड रिक्त · Esc बंद',

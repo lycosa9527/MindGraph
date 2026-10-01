@@ -1087,7 +1087,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'เปิดใบเรียนรู้',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'ออกจากใบเรียนรู้',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'คืนไดอะแกรมเต็ม',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'เลือกวิธีสร้างใบเรียนรู้สำหรับฝึกและทบทวน',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'ช่องว่างสุ่ม',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'เว้นว่างโหนดประมาณ 20% แบบสุ่ม คำตอบแสดงใต้ไดอะแกรม',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': 'เว้นว่าง {count} โหนด · Esc เพื่อปิด',

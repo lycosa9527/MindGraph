@@ -21,6 +21,7 @@ import { apiRequestJson, apiUpload } from '@/utils/apiClient'
 import { copyPngBlobWithFallback } from '@/utils/copyPngBlobToClipboard'
 import {
   type DeliverExportResult,
+  dataUrlToBlob,
   deliverExportDataUrl,
   deliverExportFile,
 } from '@/utils/deliverExportFile'
@@ -47,7 +48,6 @@ import {
   canUseMindMapVectorExport,
   exportMindMapVectorDocxPng,
   exportMindMapVectorPdfDocument,
-  exportMindMapVectorSvgDataUrl,
 } from '@/utils/diagramMindMapVectorExport'
 import type { MindMapVectorSvgResult } from '@/utils/diagramMindMapVectorSvg'
 import {
@@ -350,25 +350,28 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     try {
       await waitForExportFonts()
 
-      let dataUrl: string
+      const filename = exportFilename(getTitle(), 'svg')
+      let delivered: DeliverExportResult
       if (canUseMindMapVectorExport(diagramStore)) {
-        const vectorUrl = await runLearningSheetRasterCapture(diagramStore, exportOptions, () =>
-          exportMindMapVectorSvgDataUrl(diagramStore, uiStore)
+        // Write the markup itself. A data: URL would have to be fetched to become
+        // a file, and production connect-src does not allow data:.
+        const vector = await runLearningSheetRasterCapture(diagramStore, exportOptions, () =>
+          captureMindMapVectorSvg()
         )
-        if (!vectorUrl) {
-          throw new Error('Mind-map vector SVG export produced empty output')
-        }
-        dataUrl = vectorUrl
+        delivered = await deliverExportFile(
+          new Blob([vector.svg], { type: 'image/svg+xml' }),
+          filename
+        )
       } else {
         const { toSvg } = await loadHtmlToImageModule()
         const captureOptions = getDiagramCanvasHtmlToImageOptions()
-        dataUrl = await runLearningSheetRasterCapture(diagramStore, exportOptions, () =>
+        const dataUrl = await runLearningSheetRasterCapture(diagramStore, exportOptions, () =>
           toSvg(container, captureOptions)
         )
+        delivered = await deliverExportDataUrl(dataUrl, filename)
       }
 
-      const filename = exportFilename(getTitle(), 'svg')
-      if ((await deliverExportDataUrl(dataUrl, filename)) === 'cancelled') return
+      if (delivered === 'cancelled') return
 
       logDiagramExport('svg')
       notify.successKey('canvas.export.svgSuccess')
@@ -554,8 +557,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
         diagramBlob = raster.blob
       } else {
         const capture = await captureContainerForPdf(container, mergedOptions)
-        const imageResponse = await fetch(capture.dataUrl)
-        diagramBlob = await imageResponse.blob()
+        diagramBlob = dataUrlToBlob(capture.dataUrl)
       }
       const title = getTitle()
       const formData = new FormData()

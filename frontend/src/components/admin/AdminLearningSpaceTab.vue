@@ -7,6 +7,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import AdminLearningSpaceClassesPanel from '@/components/admin/AdminLearningSpaceClassesPanel.vue'
 import AdminLearningSpacePilotsPanel from '@/components/admin/AdminLearningSpacePilotsPanel.vue'
+import AdminLearningSpaceStudentsPanel from '@/components/admin/AdminLearningSpaceStudentsPanel.vue'
 import { useLanguage } from '@/composables'
 import {
   LEARNING_SPACE_SUBTABS,
@@ -77,7 +78,8 @@ watch(
         </nav>
 
         <AdminLearningSpacePilotsPanel v-if="activeSubtab === 'pilots'" />
-        <AdminLearningSpaceClassesPanel v-else />
+        <AdminLearningSpaceClassesPanel v-else-if="activeSubtab === 'classes'" />
+        <AdminLearningSpaceStudentsPanel v-else />
       </div>
     </div>
   </div>

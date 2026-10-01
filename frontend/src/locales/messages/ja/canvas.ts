@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': '中空括弧の図を開く',
   'canvas.mindMapSideToolbar.exitLearningSheet': '中抜き括弧図を終了します',
   'canvas.mindMapSideToolbar.restoreFullDiagram': '復元 full diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'Choose how to create a learning sheet for practice and review。',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'ランダムに空白のままにする',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': '系统自动随机挖空约 20% 的ノード，参考答案表示在図下方。',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '已挖空 {count} 個ノード · Esc 折りたたむ',

@@ -1,7 +1,7 @@
 /**
  * Learning Space API helpers (admin / teacher / student).
  */
-import { apiRequestJson, apiUpload } from '@/utils/apiClient'
+import { apiRequestJson, apiUpload, parseApiErrorDetail } from '@/utils/apiClient'
 
 const BASE = '/api/learning-space'
 
@@ -45,6 +45,7 @@ export interface LearningAiPermissions {
   doc_summary?: boolean
   evaluation_dimensions?: string[]
   allow_late_submit?: boolean
+  allow_resubmit?: boolean
   remind_24h?: boolean
   diagram_type?: string
   has_teacher_template?: boolean
@@ -80,6 +81,7 @@ export interface LearningSubmission {
   assignment_title?: string
   diagram_id: string
   diagram_thumbnail?: string | null
+  organization_name?: string | null
   status: string
   submitted_at: string | null
   due_at_override: string | null
@@ -167,6 +169,28 @@ export interface LearningStudentRow {
   initial_password?: string
   must_change_password: boolean
   last_login?: string | null
+  class_id?: number
+  class_name?: string
+  class_code?: string
+  class_status?: string
+  teacher_user_id?: number
+  teacher_name?: string
+  organization_id?: number | null
+}
+
+export interface AdminStudentListResponse {
+  items: LearningStudentRow[]
+  pagination: {
+    page: number
+    page_size: number
+    total: number
+    total_pages: number
+  }
+  summary: {
+    classroom_count: number
+    enrolled_count: number
+    total: number
+  }
 }
 
 export interface ImportPreviewRow {
@@ -258,7 +282,8 @@ export async function uploadInstructionImage(
   }
   const response = await apiUpload(`${BASE}/teacher/instruction-images`, form)
   if (!response.ok) {
-    throw new Error('upload failed')
+    const payload = await response.json().catch(() => null)
+    throw new Error(parseApiErrorDetail(payload, 'upload failed'))
   }
   return (await response.json()) as { ref: string }
 }
@@ -444,6 +469,40 @@ export async function listAdminStudents(
   classId: number
 ): Promise<{ items: LearningStudentRow[] }> {
   return apiRequestJson(`${BASE}/admin/classes/${classId}/students`)
+}
+
+export async function listAdminStudentsGlobal(params?: {
+  class_id?: number
+  member_kind?: 'classroom' | 'enrolled'
+  search?: string
+  page?: number
+  page_size?: number
+}): Promise<AdminStudentListResponse> {
+  const search = new URLSearchParams()
+  if (params?.class_id != null && Number.isFinite(params.class_id)) {
+    search.set('class_id', String(params.class_id))
+  }
+  if (params?.member_kind) {
+    search.set('member_kind', params.member_kind)
+  }
+  if (params?.search?.trim()) {
+    search.set('search', params.search.trim())
+  }
+  if (params?.page != null) {
+    search.set('page', String(params.page))
+  }
+  if (params?.page_size != null) {
+    search.set('page_size', String(params.page_size))
+  }
+  const qs = search.toString()
+  return apiRequestJson(`${BASE}/admin/students${qs ? `?${qs}` : ''}`)
+}
+
+export async function removeAdminClassMember(
+  classId: number,
+  userId: number
+): Promise<{ user_id: number; member_kind: string }> {
+  return postJson(`${BASE}/admin/classes/${classId}/members/${userId}/remove`)
 }
 
 export async function adminResetPassword(

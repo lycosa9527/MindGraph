@@ -1118,7 +1118,14 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'പൊള്ളയായ ബ്രാക്കറ്റ് ഡയഗ്രം തുറക്കുക',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'പൊള്ളയായ ബ്രാക്കറ്റ് ഡയഗ്രാമിൽ നിന്ന് പുറത്തുകടക്കുക',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'പൂർണ്ണ ചിത്രത്തിലേക്ക് പുനഃസ്ഥാപിക്കുക',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'ക്ലാസ്റൂം പരിശീലനത്തിനും അവലോകനത്തിനും അനുയോജ്യമായ പൊള്ളയായ സ്കാർഫോൾഡിംഗ് ഡയഗ്രം സൃഷ്ടിക്കുന്നതിനുള്ള ഒരു രീതി തിരഞ്ഞെടുക്കുക.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'ക്രമരഹിതമായി ശൂന്യമാക്കി',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'സിസ്റ്റം യാന്ത്രികമായി ഏകദേശം 20% നോഡുകളെ ക്രമരഹിതമായി പൊള്ളയാക്കുന്നു, കൂടാതെ റഫറൻസ് ഉത്തരം ഡയഗ്രാമിന് താഴെ പ്രദർശിപ്പിക്കും.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} നോഡുകൾ പൊള്ളയായിരിക്കുന്നു · അടയ്ക്കാൻ Esc',

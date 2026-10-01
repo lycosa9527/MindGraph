@@ -64,6 +64,7 @@ import { useCanvasToolbarFormatting, useFollowNodeStyleToolbar } from '@/composa
 import { toggleCanvasVirtualKeyboard } from '@/composables/canvasToolbar/useCanvasVirtualKeyboardOpen'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
+import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -105,6 +106,7 @@ const props = withDefaults(defineProps<{ compact?: boolean; ribbonTab?: MindMapR
 const { t, currentLanguage } = useLanguage()
 const notify = useNotifications()
 const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
+const { showCanvasAiFeatures } = useLearningAiGate()
 const diagramStore = useDiagramStore()
 const authStore = useAuthStore()
 const { featureCommunity } = useFeatureFlags()
@@ -974,7 +976,7 @@ watch(
         </div>
       </template>
 
-      <template v-if="ribbonTab === 'ai'">
+      <template v-if="ribbonTab === 'ai' && showCanvasAiFeatures">
         <div class="mm-btn-group">
           <I18nTooltip
             :k="

@@ -8,17 +8,19 @@
  * - Enter to save / confirm edit (does not add nodes)
  * - Escape to cancel
  * - Tab (mind map): save then add child (edit opens on the new node)
+ * - Tab (thinking maps): no insert
  * - Tab (concept map): emits node_editor:tab_pressed (draftText); optional syncBaselineOnTab
  * - Click outside to save
  * - Seamless transition between display and edit modes
  */
 import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
-
+import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import { useLanguage, useNotifications } from '@/composables'
 import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimiter'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramNodeMarkdownDisplay } from '@/composables/diagram/useDiagramNodeMarkdownDisplay'
+import { diagramSessionRef, useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { isMindMapDiagramType } from '@/composables/mindMap/mindMapArrowNavigation'
 import {
   armInlineEditEnterGuard,
@@ -26,7 +28,6 @@ import {
   setMindMapPostEditSiblingAnchor,
 } from '@/composables/mindMap/mindMapCanvasEnterGuard'
 import { isLearningSheetCustomPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
-import { diagramSessionRef, useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
   isNodeDisplayPlaceholderLabel,
   shouldReplaceLabelWithMathInsert,
@@ -41,6 +42,8 @@ import {
   isVirtualKeyboardChromeEvent,
   isVirtualKeyboardPanelOpen,
 } from '@/utils/virtualKeyboardChrome'
+
+import MindMapNodeAdornments from './mindMap/MindMapNodeAdornments.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -154,6 +157,9 @@ const fieldAriaLabel = computed(() => resolvedPlaceholder.value)
 
 // Local editing state
 const localIsEditing = ref(false)
+const showThinkingMapAdornments = computed(
+  () => isThinkingMapDiagramType(diagramStore.type) && !localIsEditing.value
+)
 /** Wall clock when this editor last entered edit mode (blur-save grace). */
 let mindMapEditOpenedAtMs = 0
 const MIND_MAP_BLUR_SAVE_GRACE_MS = 400
@@ -740,8 +746,7 @@ function releaseMindMapPendingEditIfMine(): void {
 function isMindMapStickyEditOwner(): boolean {
   if (!isMindMapInlineEditContext()) return false
   return (
-    mindMapPendingEditNodeId.value === props.nodeId ||
-    mindMapEditingNodeId.value === props.nodeId
+    mindMapPendingEditNodeId.value === props.nodeId || mindMapEditingNodeId.value === props.nodeId
   )
 }
 
@@ -891,6 +896,9 @@ function handleKeydown(event: KeyboardEvent): void {
   } else if (event.key === 'Tab') {
     event.preventDefault()
     event.stopPropagation()
+    if (isThinkingMapDiagramType(diagramStore.type)) {
+      return
+    }
     if (isMindMapInlineEditContext()) {
       saveEdit('tab-commit')
       nextTick(() => {
@@ -1295,6 +1303,10 @@ onUnmounted(() => {
     @touchend.passive="handleTouchEnd"
     @mousedown="handleMouseDown"
   >
+    <MindMapNodeAdornments
+      v-if="showThinkingMapAdornments"
+      :node-id="nodeId"
+    />
     <!-- Hidden span for measuring text width (autoWrap uses measureSample for live IME draft) -->
     <span
       v-if="localIsEditing"

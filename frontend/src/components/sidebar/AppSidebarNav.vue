@@ -827,7 +827,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 </template>
 
 <style scoped>
-/* Navigation: main list scrolls; admin block stays at bottom above account footer */
+/* Navigation: product modules then management panel in one scroll list */
 .sidebar-nav-scroll {
   flex: 1;
   display: flex;

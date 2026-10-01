@@ -48,7 +48,9 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     const status = readSrc('src/canvas-ribbon/MindMapStatusBar.vue')
     const picker = readSrc('src/canvas-ribbon/CanvasDiagramTranslateLangPicker.vue')
     const chrome = readSrc('src/canvas-ribbon/mindMapStatusBar.css')
-    expect(status).toContain('<CanvasDiagramTranslateLangPicker')
+    expect(status).toContain('showCanvasAiFeatures')
+    expect(status).toContain('v-if="showCanvasAiFeatures"')
+    expect(status).toContain('<CanvasDiagramTranslateLangPicker v-if="showCanvasAiFeatures"')
     expect(status).not.toContain('mindmap-ribbon-translate-confirm')
     expect(status).not.toContain('mm-llm-translate-btn')
     expect(picker).toContain('<LlmPhaseRing')
@@ -67,7 +69,8 @@ describe('mind map ribbon chrome (V2 title row + status bar)', () => {
     expect(toolbarApps).toContain("appKey !== 'virtual_keyboard'")
     expect(toolbarApps).toContain("guestBlock: 'ai'")
     expect(toolbarApps).toContain("guestBlock: 'feature'")
-    expect(toolbarApps).not.toContain("a.appKey !== 'learning_sheet'")
+    expect(toolbarApps).toContain('showCanvasAiFeatures')
+    expect(toolbarApps).toContain("a.appKey !== 'learning_sheet'")
   })
 
   it('puts zoom on the status bar', () => {

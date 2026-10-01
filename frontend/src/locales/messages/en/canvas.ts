@@ -1276,8 +1276,15 @@ export default {
   'canvas.mindMapSideToolbar.enterLearningSheet': 'Enable learning sheet',
   'canvas.mindMapSideToolbar.exitLearningSheet': 'Exit learning sheet',
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Restore full diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmTitle': 'Restore diagram',
+  'canvas.mindMapSideToolbar.restoreFullDiagramConfirmBody':
+    'You added or removed nodes or edited non-blanked content. Restoring will overwrite the current diagram. Continue?',
   'canvas.mindMapSideToolbar.learningSheetIntro':
     'Choose how to create a learning sheet for practice and review.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankTitle': 'Blank all branches',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankDesc':
+    'Blank every node except the center topic; reference answers appear below the diagram.',
+  'canvas.mindMapSideToolbar.learningSheetFullBlankHistory': 'Blank all nodes',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Random blanks',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc':
     'Randomly blanks about 20% of nodes; answers appear below the diagram.',

@@ -65,7 +65,7 @@ export function useCanvasToolbarApps() {
   const notify = useNotifications()
   const { isGenerating: isAIGenerating, autoComplete, validateForAutoComplete } = useAutoComplete()
   const { aiBlockedByCollab, guardCollabGuestAi } = useCollabGuestAiGate()
-  const { requireCapability } = useLearningAiGate()
+  const { requireCapability, showCanvasAiFeatures } = useLearningAiGate()
   const { startRandomLearningSheet } = useLearningSheetCustomMode()
 
   const isConceptMap = computed(() => diagramStore.type === 'concept_map')
@@ -135,6 +135,14 @@ export function useCanvasToolbarApps() {
     }
     if (useMindMapV2.value) {
       list = list.filter((a) => a.appKey !== 'translate_diagram' && a.appKey !== 'virtual_keyboard')
+    }
+    if (!showCanvasAiFeatures.value) {
+      list = list.filter(
+        (a) =>
+          a.appKey !== 'waterfall' &&
+          a.appKey !== 'translate_diagram' &&
+          a.appKey !== 'learning_sheet'
+      )
     }
     if (!aiBlockedByCollab.value) {
       return list

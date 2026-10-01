@@ -23,6 +23,7 @@ import type {
 } from '@/composables/canvasToolbar/useNodeFloatingToolbarPosition'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
   FLOATING_TOOLBAR_COLORS,
@@ -88,6 +89,7 @@ onUnmounted(() => {
 })
 
 const { t } = useLanguage()
+const { showCanvasAiFeatures } = useLearningAiGate()
 const { aiBlockedByCollab, notifyCollabGuestAiBlocked } = useCollabGuestAiGate()
 const guestAiDisabled = computed(() => Boolean(props.aiDisabled) || aiBlockedByCollab.value)
 
@@ -123,7 +125,9 @@ const {
 const activeColorPanel = ref<'fill' | 'border' | 'text' | null>(null)
 const typographyOpen = ref(false)
 
-const aiSubgraphVisible = computed(() => props.showAiSubgraph !== false)
+const aiSubgraphVisible = computed(
+  () => showCanvasAiFeatures.value && props.showAiSubgraph !== false
+)
 
 function onAiSubgraphClick(): void {
   if (guestAiDisabled.value) {
@@ -550,6 +554,7 @@ function onShapePick(shape: NodeShape) {
 
         <!-- Node explanation (Kitty) -->
         <button
+          v-if="showCanvasAiFeatures"
           type="button"
           class="nft-btn nft-btn--explain"
           :class="{ 'nft-btn--explain-blocked': aiBlockedByCollab }"
