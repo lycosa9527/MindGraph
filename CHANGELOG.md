@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.135] - 2026-10-03
+
+> **The same browser stays signed in, and a kicked device cannot refresh itself back in.**
+
+### Fixed
+
+- **同一浏览器** — Closing the browser no longer asks for another login while this device's refresh cookie is still valid. Signing in again here replaces this device instead of taking a second seat.
+- **设备上限** — Five devices can stay signed in. The next login keeps itself and signs out the oldest device. That device cannot use refresh to return. Signing in again on that browser is allowed.
+- **强制下线** — A password change, classroom archive, VPN geo check, or SSO replacement also revokes refresh tokens, so those browsers cannot come back through refresh.
+
+### Changed
+
+- **登录** — SMS, email-code, and OAuth start the same session as a password login. A kick opens the login dialog on the current page.
+
+### Tests
+
+- [`tests/test_device_limit_kickoff.py`](tests/test_device_limit_kickoff.py), [`frontend/tests/sessionRefresh.spec.ts`](frontend/tests/sessionRefresh.spec.ts), [`frontend/tests/authBootstrapDedupe.spec.ts`](frontend/tests/authBootstrapDedupe.spec.ts), [`frontend/tests/hasPersistedAuthUser.spec.ts`](frontend/tests/hasPersistedAuthUser.spec.ts)
+
 ## [5.180.134] - 2026-10-02
 
 > **Thinking maps use node shapes, and the outline and gesture guide open on those maps.**

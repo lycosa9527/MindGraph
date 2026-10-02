@@ -18,7 +18,7 @@ import asyncio
 import logging
 import random
 from datetime import UTC, datetime, timedelta, timezone
-from typing import Awaitable, Callable, Optional
+from typing import Optional
 
 from fastapi import HTTPException, Request, Response, status
 from sqlalchemy import inspect as sa_inspect
@@ -35,13 +35,11 @@ from services.monitoring.city_flag_tracker import record_mappable_location_flag
 from services.monitoring.module_activity import track_module_activity
 from services.redis.rate_limiting.redis_rate_limiter import clear_token_refresh_attempts
 from services.redis.redis_activity_tracker import get_activity_tracker
-from services.redis.session.redis_session_manager import get_session_manager
 from services.teacher_usage_stats import compute_and_upsert_user_usage_stats_async
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import (
     ACCESS_TOKEN_EXPIRY_MINUTES,
     REFRESH_TOKEN_EXPIRY_DAYS,
-    assign_device_id,
     create_access_token,
     get_client_ip,
     is_https,
@@ -371,53 +369,6 @@ async def commit_user_with_retry(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         detail="Failed to create user account",
     )
-
-
-# ============================================================================
-# SESSION MANAGEMENT HELPERS
-# ============================================================================
-
-
-async def create_user_session(
-    user: User,
-    http_request: Request,
-    cache_user_func: Optional[Callable[[], Awaitable[None]]] = None,
-) -> tuple[str, str]:
-    """
-    Create a new user session and generate a new token.
-
-    Supports multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS).
-
-    Args:
-        user: User object
-        http_request: FastAPI Request object
-        cache_user_func: Optional async function to cache user (for registration)
-
-    Returns:
-        Tuple of (token, client_ip)
-    """
-    session_manager = get_session_manager()
-    client_ip = get_client_ip(http_request) if http_request else "unknown"
-
-    # Generate JWT token
-    token = create_access_token(user)
-
-    # Compute device hash for session tracking
-    device_hash = assign_device_id(http_request) if http_request else ""
-
-    # Store new session in Redis (automatically limits concurrent sessions)
-    await session_manager.store_session(user.id, token, device_hash=device_hash)
-
-    await record_vpn_login_geo(user.id, http_request)
-
-    # If cache_user_func is provided (for registration), execute it in parallel
-    if cache_user_func:
-        await asyncio.gather(
-            cache_user_func(),
-            return_exceptions=True,  # Don't fail if cache fails
-        )
-
-    return token, client_ip
 
 
 async def issue_access_token_with_vpn_geo(user: User, http_request: Request) -> str:

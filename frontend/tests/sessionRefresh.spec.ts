@@ -82,10 +82,24 @@ describe('sessionRefresh stampede coordinator', () => {
       ensureFreshSessionAfterAuthFailure,
       getSessionRefreshEpoch,
     } = await loadSessionRefresh()
+    const hintStore = new Map<string, string>([['mg_auth_session', '1']])
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => hintStore.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        hintStore.set(key, value)
+      },
+      removeItem: (key: string) => {
+        hintStore.delete(key)
+      },
+      clear: () => hintStore.clear(),
+      key: () => null,
+      length: 1,
+    })
     const epochAtStart = getSessionRefreshEpoch()
     const ok = await ensureFreshSessionAfterAuthFailure(epochAtStart)
     expect(ok).toBe(false)
     expect(getSessionRefreshEpoch()).toBe(epochAtStart)
+    expect(hintStore.has('mg_auth_session')).toBe(false)
   })
 
   it('ensureFreshSessionAfterAuthFailure skips HTTP within success grace', async () => {

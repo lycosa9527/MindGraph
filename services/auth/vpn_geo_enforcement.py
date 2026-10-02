@@ -27,7 +27,7 @@ from services.auth.http_auth_token import (
 from services.redis import keys as redis_keys
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
-from services.redis.session.redis_session_manager import get_refresh_token_manager, get_session_manager
+from services.redis.session.redis_session_manager import get_session_manager
 from utils.auth import get_client_ip
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR
 from utils.auth.config import (
@@ -200,18 +200,17 @@ async def maybe_enforce_vpn_cn_geo_for_user(
     await redis.setex(last_ip_key, ttl, client_ip)
 
     if should_kick_vpn_transition(login_cc, current_cc):
-        await get_session_manager().invalidate_user_sessions(user_id, ip_address=client_ip)
-        revoked = await get_refresh_token_manager().revoke_all_refresh_tokens(
+        await get_session_manager().invalidate_user_sessions(
             user_id,
+            ip_address=client_ip,
             reason="vpn_cn_geo",
         )
         logger.info(
-            "[VPNGeo] Kick user_id=%s ip=%s login_cc=%s current_cc=%s refresh_revoked=%s",
+            "[VPNGeo] Kick user_id=%s ip=%s login_cc=%s current_cc=%s",
             user_id,
             client_ip,
             login_cc,
             current_cc,
-            revoked,
         )
         lang = get_request_language(
             connection.headers.get("X-Language"),

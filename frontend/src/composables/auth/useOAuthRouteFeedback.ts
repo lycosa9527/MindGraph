@@ -61,7 +61,12 @@ export function useOAuthRouteFeedback(): void {
       }
       if (oauthLoginFromRouteQuery(route.query.oauth_login)) {
         clearPersistedOAuthLoginError()
-        useAuthStore().emitLoginSuccess()
+        const authStore = useAuthStore()
+        void (async () => {
+          if (await authStore.checkAuth(true)) {
+            authStore.emitLoginSuccess()
+          }
+        })()
         stripOAuthQuery()
       }
     },

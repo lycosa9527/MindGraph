@@ -12,8 +12,9 @@ Features:
 - Validate session tokens on each request
 
 Key Schema:
-- session:user:set:{user_id} -> SET of token_hashes (TTL: JWT_EXPIRY_HOURS)
-- session_invalidated:{user_id}:{old_token_hash} -> notification JSON (TTL: JWT_EXPIRY_HOURS)
+- session:user:set:{user_id} -> SET of "timestamp:device_hash:token_hash"
+- session_invalidated:{user_id}:{token_hash} -> kick notice (access-token TTL)
+- session:evicted_device:{user_id}:{device_hash} -> fence (refresh-token TTL)
 
 Author: lycosa9527
 Made by: MindSpring Team
@@ -301,6 +302,7 @@ class RedisSessionManager:
                         invalidation_notice_key_prefix(user_id),
                         notice_json,
                         admit_evicted,
+                        str(REFRESH_TOKEN_TTL_SECONDS),
                     )
                 except REDIS_ERRORS as lua_exc:
                     logger.error(
@@ -659,21 +661,27 @@ class RedisSessionManager:
         old_token_hash: Optional[str] = None,
         ip_address: Optional[str] = None,
         allow_multiple: bool = False,
+        reason: str = "security",
     ) -> bool:
         """
-        Invalidate all sessions for user (called on new login).
+        Drop every access session and refresh token for this user.
+
+        Used by password changes, classroom archive, VPN geo, and SSO
+        replacement. Each device is fenced first so an in-flight /refresh
+        cannot mint a new session after the access set is deleted.
+        A later login on one browser clears only that browser's fence.
 
         Args:
             user_id: User ID
-            old_token_hash: Hash of old token (if exists) for notification
-            ip_address: IP address of new login (for notification)
-            allow_multiple: If True, skip invalidating prior sessions (rare kiosk-style setups)
+            old_token_hash: Legacy single-session token hash for the notice
+            ip_address: IP recorded on the kick notice
+            allow_multiple: If True, skip invalidating prior sessions
+            reason: Audit and session-status reason (not the device-cap FIFO)
 
         Returns:
             True if invalidated successfully, False otherwise
         """
         if allow_multiple:
-            # For shared accounts, don't invalidate old sessions
             logger.debug(
                 "[Session] Multiple sessions allowed for user %s, skipping invalidation",
                 user_id,
@@ -692,47 +700,51 @@ class RedisSessionManager:
             if not redis:
                 return False
 
-            # Check multiple sessions mode first
             session_set_key = _get_session_set_key(user_id)
             if await redis.exists(session_set_key):
-                # Multiple sessions mode: Get all tokens and create notifications
                 all_sessions = await redis.smembers(session_set_key)
+                fenced_devices: set[str] = set()
                 for session_entry in all_sessions:
-                    # Extract token hash from timestamp:device_hash:token_hash format
-                    _, _, actual_token_hash = self._parse_session_entry(session_entry)
-                    await self.notify_invalidation(user_id, actual_token_hash, ip_address=ip_address)
-                # Delete the entire set
+                    _, device_hash, actual_token_hash = self._parse_session_entry(session_entry)
+                    if actual_token_hash:
+                        await self.notify_invalidation(
+                            user_id,
+                            actual_token_hash,
+                            ip_address=ip_address,
+                            reason=reason,
+                        )
+                    if device_hash and device_hash not in fenced_devices:
+                        fenced_devices.add(device_hash)
+                        await self.mark_device_evicted(user_id, device_hash, reason=reason)
                 await redis.delete(session_set_key)
                 logger.info(
                     "[Session] Invalidated %s sessions for user %s (multiple sessions mode)",
                     len(all_sessions),
                     user_id,
                 )
-                return True
-
-            # Single session mode
-            session_key = _get_session_key(user_id)
-            old_hash = await AsyncRedisOps.get(session_key)
-
-            if old_hash:
-                # Create invalidation notification for old session
-                if old_token_hash is None:
-                    old_token_hash = old_hash
-
-                if old_token_hash:
-                    await self.notify_invalidation(user_id, old_token_hash, ip_address=ip_address)
-
-                # Delete old session
-                await AsyncRedisOps.delete(session_key)
-                old_hash_preview = old_hash[:16]
-                logger.info(
-                    "[Session] Invalidated session for user %s (old token hash: %s...)",
-                    user_id,
-                    old_hash_preview,
-                )
             else:
-                logger.debug("[Session] No existing session to invalidate for user %s", user_id)
+                session_key = _get_session_key(user_id)
+                old_hash = await AsyncRedisOps.get(session_key)
+                if old_hash:
+                    if old_token_hash is None:
+                        old_token_hash = old_hash
+                    if old_token_hash:
+                        await self.notify_invalidation(
+                            user_id,
+                            old_token_hash,
+                            ip_address=ip_address,
+                            reason=reason,
+                        )
+                    await AsyncRedisOps.delete(session_key)
+                    logger.info(
+                        "[Session] Invalidated session for user %s (old token hash: %s...)",
+                        user_id,
+                        old_hash[:16],
+                    )
+                else:
+                    logger.debug("[Session] No existing session to invalidate for user %s", user_id)
 
+            await get_refresh_token_manager().revoke_all_refresh_tokens(user_id, reason=reason)
             return True
         except REDIS_ERRORS as e:
             logger.error(
@@ -824,14 +836,18 @@ class RedisSessionManager:
         device_hash: str,
         reason: str = FIFO_KICK_REASON,
     ) -> bool:
-        """Fence a device so /refresh cannot rotate back in after a kick."""
+        """Fence a device so /refresh cannot rotate back in after a kick.
+
+        The fence lasts for the refresh-token lifetime. An access-session TTL
+        would expire first and let a still-valid refresh token back in.
+        """
         if not device_hash or not self._use_redis():
             return False
         try:
             return await AsyncRedisOps.set_with_ttl(
                 self._evicted_device_key(user_id, device_hash),
                 reason,
-                SESSION_TTL_SECONDS,
+                REFRESH_TOKEN_TTL_SECONDS,
             )
         except REDIS_ERRORS as fence_error:
             logger.error(
@@ -1490,7 +1506,8 @@ class RefreshTokenManager:
             if token_count <= MAX_CONCURRENT_SESSIONS:
                 return 0
 
-            # Get all token hashes and their creation times
+            # Surplus refresh tokens are orphans. The device that loses its
+            # slot is chosen by the access-session FIFO in store_session.
             token_hashes = await redis.smembers(user_tokens_key)
             tokens_with_time = []
             protected = redis_decode_required(protect_token_hash) if protect_token_hash else ""
@@ -1504,10 +1521,8 @@ class RefreshTokenManager:
                         created_at = token_data.get("created_at", "")
                         tokens_with_time.append((token_hash, created_at))
                     except json.JSONDecodeError:
-                        # Invalid JSON, mark for removal
                         tokens_with_time.append((token_hash, ""))
                 else:
-                    # Token expired but still in set, mark for cleanup
                     await redis.srem(user_tokens_key, token_hash)
 
             decoded_tokens = [

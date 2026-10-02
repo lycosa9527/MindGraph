@@ -14,12 +14,14 @@ vi.mock('@/stores/ui', () => ({
 describe('hasPersistedAuthUser', () => {
   beforeEach(() => {
     sessionStorage.clear()
+    localStorage.clear()
     useAuthStore.mockReset()
     useAuthStore.mockReturnValue({ user: null })
   })
 
   afterEach(() => {
     sessionStorage.clear()
+    localStorage.clear()
   })
 
   async function loadHelper() {
@@ -40,6 +42,12 @@ describe('hasPersistedAuthUser', () => {
 
   it('is true when sessionStorage still has auth_user', async () => {
     sessionStorage.setItem('auth_user', JSON.stringify({ id: 3 }))
+    const hasPersistedAuthUser = await loadHelper()
+    expect(hasPersistedAuthUser()).toBe(true)
+  })
+
+  it('is true when only the browser-restart session hint remains', async () => {
+    localStorage.setItem('mg_auth_session', '1')
     const hasPersistedAuthUser = await loadHelper()
     expect(hasPersistedAuthUser()).toBe(true)
   })

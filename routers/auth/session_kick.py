@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 KICK_DETAIL_MAX_DEVICES = "Session ended: maximum device limit exceeded"
 KICK_DETAIL_DEVICE = "Session ended: signed out from another device"
+KICK_DETAIL_ENDED = "Session ended. Please sign in again."
 MANUAL_KICK_REASON = "device_kick"
 
 
@@ -28,7 +29,9 @@ def kick_http_detail(reason: str) -> str:
     """User-facing 401 / session-status copy for a kick reason."""
     if reason == MANUAL_KICK_REASON:
         return KICK_DETAIL_DEVICE
-    return KICK_DETAIL_MAX_DEVICES
+    if reason == FIFO_KICK_REASON:
+        return KICK_DETAIL_MAX_DEVICES
+    return KICK_DETAIL_ENDED
 
 
 def access_token_hash(access_token: str) -> str:

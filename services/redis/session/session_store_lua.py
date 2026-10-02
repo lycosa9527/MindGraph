@@ -26,6 +26,7 @@ FIFO_KICK_REASON = "max_devices_exceeded"
 # ARGV[7]  kick-notice key prefix     "session_invalidated:{user_id}:"
 # ARGV[8]  kick-notice JSON
 # ARGV[9]  admit evicted device ("1" login, "0" refresh)
+# ARGV[10] eviction-fence TTL (refresh lifetime; access TTL is ARGV[2])
 # Returns  evicted session entries, or {DEVICE_KICKED_SENTINEL}
 STORE_SESSION_LUA = """
 local key           = KEYS[1]
@@ -38,7 +39,11 @@ local evict_prefix  = ARGV[6]
 local notice_prefix = ARGV[7]
 local notice_json   = ARGV[8]
 local admit         = ARGV[9]
+local fence_ttl     = tonumber(ARGV[10])
 local kick_reason   = 'max_devices_exceeded'
+if (not fence_ttl) or fence_ttl < 1 then
+    fence_ttl = ttl
+end
 
 -- 1. Remove expired (stale) sessions.
 local all = redis.call('SMEMBERS', key)
@@ -122,7 +127,7 @@ if count > max_s then
                     local edev = string.sub(rest, 1, c2 - 1)
                     local ehash = string.sub(rest, c2 + 1)
                     if edev ~= '' and evict_prefix ~= '' then
-                        redis.call('SET', evict_prefix .. edev, kick_reason, 'EX', ttl)
+                        redis.call('SET', evict_prefix .. edev, kick_reason, 'EX', fence_ttl)
                     end
                     if ehash ~= '' and notice_prefix ~= '' and notice_json ~= '' then
                         redis.call('SET', notice_prefix .. ehash, notice_json, 'EX', ttl)

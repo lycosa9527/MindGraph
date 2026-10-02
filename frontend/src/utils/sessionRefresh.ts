@@ -13,6 +13,7 @@
  * Kitty / desktop_focus must also await idle so a WebSocket handshake or PUT
  * does not leave with a cookie that Redis just deleted mid-rotation.
  */
+import { clearAuthSessionHint } from '@/utils/authSessionHint'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
 const API_BASE = '/api'
@@ -114,6 +115,9 @@ export async function refreshSessionAccessToken(): Promise<boolean> {
       }
       if (response.status === 429) {
         lastRefreshFailure = 'rate_limit'
+      } else if (response.status === 401) {
+        lastRefreshFailure = 'auth'
+        clearAuthSessionHint()
       } else {
         lastRefreshFailure = 'auth'
       }

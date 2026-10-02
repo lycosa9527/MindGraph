@@ -47,7 +47,7 @@ async def revoke_refresh_tokens_and_sessions(user_id: int, refresh_reason: str) 
             exc,
         )
     try:
-        await get_session_manager().invalidate_user_sessions(user_id)
+        await get_session_manager().invalidate_user_sessions(user_id, reason=refresh_reason)
     except REDIS_ERRORS as exc:
         logger.warning(
             "[Auth] Failed to invalidate sessions after password write (user=%s): %s",

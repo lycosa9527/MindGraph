@@ -14,6 +14,7 @@
  */
 import type { LocaleCode } from '@/i18n/locales'
 import { AUTH_USER_STORAGE_KEY, useAuthStore } from '@/stores/auth'
+import { hasAuthSessionHint } from '@/utils/authSessionHint'
 import { useUIStore } from '@/stores/ui'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import { emitSchoolExpiredFromPayload } from '@/utils/schoolExpiredLockout'
@@ -50,16 +51,24 @@ function isSessionTokenRefreshEndpoint(endpointOrUrl: string): boolean {
   return path === '/api/auth/refresh' || path.endsWith('/api/auth/refresh')
 }
 
-/** Guest 401s must not call /refresh (no cookie) and burn the IP rate limit. */
+/**
+ * Guest 401s must not call /refresh (no cookie) and burn the IP rate limit.
+ * A localStorage hint covers the browser-restart case: sessionStorage is
+ * empty, the access cookie may have expired, and the refresh cookie is still
+ * valid for this device.
+ */
 export function hasPersistedAuthUser(): boolean {
   if (useAuthStore().user) {
     return true
   }
   try {
-    return Boolean(sessionStorage.getItem(AUTH_USER_STORAGE_KEY))
+    if (sessionStorage.getItem(AUTH_USER_STORAGE_KEY)) {
+      return true
+    }
   } catch {
-    return false
+    return hasAuthSessionHint()
   }
+  return hasAuthSessionHint()
 }
 
 /** Current UI language for API `X-Language` (backend maps to zh / en / az for Messages). */

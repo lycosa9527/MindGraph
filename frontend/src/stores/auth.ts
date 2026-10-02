@@ -43,6 +43,7 @@ import {
 } from '@/utils/adminCapabilities'
 import { registerAiContentLevelAuthBridge } from '@/utils/aiContentLevelAuthBridge'
 import { hasPersistedAuthUser, parseApiErrorDetail } from '@/utils/apiClient'
+import { clearAuthSessionHint, markAuthSessionHint } from '@/utils/authSessionHint'
 import { getAppQueryClient } from '@/utils/appQueryClient'
 import { getSafePostAuthPath } from '@/utils/authRedirect'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
@@ -86,16 +87,12 @@ export const useAuthStore = defineStore('auth', () => {
 
   // State
   const user = ref<User | null>(null)
-  // Token is no longer stored in JavaScript - it's in httpOnly cookies
-  // This ref is kept for backward compatibility but should not be relied upon
-  const token = ref<string | null>(null)
   const mode = ref<AuthMode>('standard')
   /** From GET /api/auth/mode; signup UI gated when false. Defaults true until the server responds. */
   const registrationEnabled = ref(true)
   const loading = ref(false)
   const sessionMonitorInterval = ref<number | null>(null)
   const showSessionExpiredModal = ref(false)
-  const sessionExpiredMessage = ref('')
   const pendingRedirect = ref<string | null>(null) // Store intended route after session expired login
   const isCheckingAuth = ref(false) // Prevent duplicate concurrent checkAuth calls
   const lastSessionCheckTime = ref<number>(0) // Track last session status check to prevent rapid-fire calls
@@ -212,17 +209,11 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     if (user.value) {
+      markAuthSessionHint()
       useUIStore().setLanguagePolicyAllowZh(user.value.allowsSimplifiedChinese !== false)
     } else {
       useUIStore().setLanguagePolicyAllowZh(true)
     }
-  }
-
-  function setToken(newToken: string): void {
-    // Token is stored in httpOnly cookie by backend, not in JavaScript
-    // This is kept for backward compatibility during transition
-    token.value = newToken
-    // Do NOT store in localStorage - security risk
   }
 
   function patchThinkingCoinsSummary(summary: { balance: number; eligible: boolean }): void {
@@ -318,6 +309,14 @@ export const useAuthStore = defineStore('auth', () => {
     eventBus.emit('auth:login_success', {})
   }
 
+  function finishBrowserLogin(newUser: User | BackendUser): void {
+    setUser(newUser)
+    hasVerifiedAuthThisSession.value = true
+    lastProfileRefreshTime.value = Date.now()
+    emitLoginSuccess()
+    startSessionMonitoring()
+  }
+
   function setUser(newUser: User | BackendUser): void {
     authVerificationBlockedByNetwork.value = false
     // Normalize backend user format to frontend format
@@ -328,6 +327,7 @@ export const useAuthStore = defineStore('auth', () => {
     maybeNotifySubscriptionExpired(normalizedUser)
     // Store in sessionStorage (cleared on browser close, not a security risk like localStorage)
     sessionStorage.setItem(USER_KEY, JSON.stringify(normalizedUser))
+    markAuthSessionHint()
 
     // Invalidate Dify queries to trigger refetch after login
     const queryClient = getQueryClient()
@@ -493,7 +493,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
     resetWorkshopChatOnAuthClear(workshopUserId)
     user.value = null
-    token.value = null
     mode.value = 'standard'
     hasVerifiedAuthThisSession.value = false // Reset verification flag
     languagePrefsSeededForUserId.value = null
@@ -514,6 +513,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem(USER_KEY)
     localStorage.removeItem(MODE_KEY)
     localStorage.removeItem('access_token')
+    clearAuthSessionHint()
     useMindMateStore().reset()
     useShowcaseStore().reset()
     stopSessionMonitoring()
@@ -543,11 +543,7 @@ export const useAuthStore = defineStore('auth', () => {
       const data = await response.json()
 
       if (response.ok && data.user) {
-        setUser(data.user)
-        hasVerifiedAuthThisSession.value = true // Login is verification
-        lastProfileRefreshTime.value = Date.now()
-        emitLoginSuccess()
-        startSessionMonitoring()
+        finishBrowserLogin(data.user)
         return { success: true, user: user.value ?? undefined }
       }
 
@@ -588,11 +584,7 @@ export const useAuthStore = defineStore('auth', () => {
       const data = await response.json()
 
       if (response.ok && data.user) {
-        setUser(data.user)
-        hasVerifiedAuthThisSession.value = true
-        lastProfileRefreshTime.value = Date.now()
-        emitLoginSuccess()
-        startSessionMonitoring()
+        finishBrowserLogin(data.user)
         return { success: true, user: user.value ?? undefined }
       }
 
@@ -737,14 +729,15 @@ export const useAuthStore = defineStore('auth', () => {
     // If user exists but not verified yet, we need to verify (token might be expired)
     // This handles the case where sessionStorage has stale user data but token is invalid
 
-    // Prevent duplicate concurrent calls
+    // Prevent duplicate concurrent calls. A forced check (OAuth return) retries
+    // when the in-flight attempt did not verify the cookie session.
     if (isCheckingAuth.value) {
-      // Wait for the current check to complete
       while (isCheckingAuth.value) {
         await new Promise((resolve) => setTimeout(resolve, 50))
       }
-      // Return cached result (user is set if auth succeeded)
-      return !!user.value
+      if (!forceRefresh || (user.value && hasVerifiedAuthThisSession.value)) {
+        return !!user.value
+      }
     }
 
     isCheckingAuth.value = true
@@ -927,33 +920,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function refreshToken(): Promise<boolean> {
-    // First try to refresh the access token using the refresh token
-    const refreshResult = await refreshAccessToken()
-    if (!refreshResult.success) {
-      return false
-    }
-
-    // Then fetch fresh user data
-    try {
-      const response = await fetch(`${API_BASE}/me`, {
-        method: 'GET',
-        credentials: 'same-origin',
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.user || data.id) {
-          setUser(data.user || data)
-        }
-        return true
-      }
-      return false
-    } catch {
-      return false
-    }
-  }
-
   async function fetchCaptcha(): Promise<CaptchaResponse | null> {
     const controller = new AbortController()
     const timer = window.setTimeout(() => controller.abort(), 10000)
@@ -1109,9 +1075,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function handleSessionInvalidation(message?: string): void {
-    stopSessionMonitoring()
-    alert(message || getTranslatedMessage('notification.sessionInvalidated'))
-    logout()
+    // Refresh runs once so a fenced device drops its cookies, then the login
+    // modal opens on this page. A later login on this browser clears the fence.
+    handleTokenExpired(message || getTranslatedMessage('notification.sessionInvalidated'))
   }
 
   /**
@@ -1146,14 +1112,14 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Clear auth state without redirect (unlike logout)
       user.value = null
-      token.value = null
+      hasVerifiedAuthThisSession.value = false
       languagePrefsSeededForUserId.value = null
       languagePrefsSeedInFlight = false
       authVerificationBlockedByNetwork.value = false
       sessionStorage.removeItem(USER_KEY)
-      // Clear any legacy localStorage
       localStorage.removeItem('access_token')
       localStorage.removeItem('auth_user')
+      clearAuthSessionHint()
 
       // Clear Vue Query cache
       const queryClient = getQueryClient()
@@ -1186,7 +1152,6 @@ export const useAuthStore = defineStore('auth', () => {
    */
   function closeSessionExpiredModal(): void {
     showSessionExpiredModal.value = false
-    sessionExpiredMessage.value = ''
   }
 
   /**
@@ -1242,12 +1207,10 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     // State
     user,
-    token,
     mode,
     registrationEnabled,
     loading,
     showSessionExpiredModal,
-    sessionExpiredMessage,
     pendingRedirect,
     authVerificationBlockedByNetwork,
     adminCapabilitiesPayload,
@@ -1275,8 +1238,8 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Actions
     initFromStorage,
-    setToken,
     setUser,
+    finishBrowserLogin,
     emitLoginSuccess,
     setMode,
     clearAuth,
@@ -1285,7 +1248,6 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     checkAuth,
     detectMode,
-    refreshToken,
     refreshUserProfile,
     loadAdminCapabilities,
     patchSchoolDisplayName,

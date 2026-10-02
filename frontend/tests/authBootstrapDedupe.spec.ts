@@ -8,6 +8,8 @@ vi.mock('@/utils/sessionRefresh', () => ({
   ensureFreshSessionAfterAuthFailure: vi.fn(async () => false),
 }))
 
+import { ensureFreshSessionAfterAuthFailure } from '@/utils/sessionRefresh'
+
 import { useAuthStore } from '@/stores/auth'
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -225,5 +227,39 @@ describe('auth bootstrap dedupe', () => {
     expect(fetchMock.mock.calls.some((call) => String(call[0]).includes('/refresh'))).toBe(
       false
     )
+  })
+
+  it('refreshes /me after restart when only the session hint remains', async () => {
+    localStorage.setItem('mg_auth_session', '1')
+    vi.mocked(ensureFreshSessionAfterAuthFailure).mockResolvedValueOnce(true)
+    let meCalls = 0
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/auth/me')) {
+        meCalls += 1
+        if (meCalls === 1) {
+          return jsonResponse({}, 401)
+        }
+        return jsonResponse({ user: meUser })
+      }
+      if (url.includes('/api/auth/admin/capabilities')) {
+        return jsonResponse(capsBody)
+      }
+      if (url.includes('/api/auth/session-status')) {
+        return jsonResponse({ status: 'active' })
+      }
+      if (url.includes('/api/auth/language-preferences')) {
+        return jsonResponse({ ok: true })
+      }
+      return jsonResponse({})
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const authStore = useAuthStore()
+    expect(await authStore.checkAuth()).toBe(true)
+    expect(meCalls).toBe(2)
+    expect(String(authStore.user?.id)).toBe('1')
+    expect(localStorage.getItem('mg_auth_session')).toBe('1')
+    authStore.stopSessionMonitoring()
   })
 })

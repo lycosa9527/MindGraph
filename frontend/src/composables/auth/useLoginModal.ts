@@ -905,6 +905,7 @@ export function useLoginModal(
         ? await fetch('/api/auth/email/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
             body: JSON.stringify({
               email: trimmed,
               email_code: smsLoginForm.value.smsCode,
@@ -913,6 +914,7 @@ export function useLoginModal(
         : await fetch('/api/auth/sms/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
             body: JSON.stringify({
               phone: smsLoginForm.value.phone,
               sms_code: smsLoginForm.value.smsCode,
@@ -923,8 +925,7 @@ export function useLoginModal(
 
       if (response.ok && data.user) {
         persistLoginIdentifier(trimmed)
-        authStore.setUser(data.user)
-        authStore.emitLoginSuccess()
+        authStore.finishBrowserLogin(data.user)
         const userName = data.user?.name || ''
         notify.success(
           userName

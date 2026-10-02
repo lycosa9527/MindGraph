@@ -209,6 +209,39 @@ async def test_store_session_single_eval_string_is_one_entry() -> None:
 
 
 @pytest.mark.asyncio
+async def test_invalidate_user_sessions_revokes_refresh_and_fences_devices() -> None:
+    """A full sign-out must drop refresh tokens and fence every device."""
+    mgr = RedisSessionManager()
+    mock_redis = AsyncMock()
+    mock_redis.exists = AsyncMock(return_value=True)
+    mock_redis.smembers = AsyncMock(return_value=["1000.0:devicea:hasha", "2000.0:deviceb:hashb"])
+    mock_redis.delete = AsyncMock(return_value=1)
+    refresh = AsyncMock()
+    refresh.revoke_all_refresh_tokens = AsyncMock(return_value=2)
+
+    with patch.object(mgr, "_use_redis", return_value=True):
+        with patch(
+            "services.redis.session.redis_session_manager.get_async_redis",
+            return_value=mock_redis,
+        ):
+            with patch(
+                "services.redis.session.redis_session_manager.get_refresh_token_manager",
+                return_value=refresh,
+            ):
+                with patch.object(mgr, "notify_invalidation", new_callable=AsyncMock):
+                    with patch.object(mgr, "mark_device_evicted", new_callable=AsyncMock) as fence:
+                        ok = await mgr.invalidate_user_sessions(4, ip_address="1.2.3.4", reason="security")
+
+    assert ok is True
+    mock_redis.delete.assert_awaited()
+    assert fence.await_args_list == [
+        call(4, "devicea", reason="security"),
+        call(4, "deviceb", reason="security"),
+    ]
+    refresh.revoke_all_refresh_tokens.assert_awaited_once_with(4, reason="security")
+
+
+@pytest.mark.asyncio
 async def test_manual_device_kick_writes_fence() -> None:
     """Account-UI kick must fence the device so /refresh cannot rotate back in."""
     mgr = RedisSessionManager()
