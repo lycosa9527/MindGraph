@@ -18,6 +18,8 @@ import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNode
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
+import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import type { MindGraphNodeProps } from '@/types'
@@ -26,6 +28,12 @@ import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { isFlowMapStepNode } from '@/utils/flowMapIdentity'
 import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
 import { paintNodeShape } from '@/utils/nodeShapeStyle'
+import {
+  THINKING_MAP_LEAF_TEXT,
+  thinkingMapBorderWidth,
+  thinkingMapBoxPadding,
+  thinkingMapDisplayedFontSize,
+} from '@/utils/thinkingMapChrome'
 import { thinkingMapDisplayedNodeColors } from '@/utils/thinkingMapNodePaint'
 
 import InlineEditableText from './InlineEditableText.vue'
@@ -74,7 +82,8 @@ const themeNodePaint = computed(() => {
     props.data.diagramType,
     diagramStore.data?._mindmap_theme,
     node,
-    props.data.style
+    props.data.style,
+    diagramStore.data?.connections
   )
 })
 
@@ -85,8 +94,12 @@ const nodeStyle = computed(() => {
     props.data.style?.borderColor ||
     color?.border ||
     defaultStyle.value.borderColor ||
-    '#409eff'
-  const borderWidth = props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2
+    MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
+  const borderWidth = thinkingMapBorderWidth(
+    themeNodePaint.value?.borderWidth,
+    props.data.style?.borderWidth,
+    defaultStyle.value.borderWidth ?? MIND_MAP_GEOMETRY.borderWidth
+  )
   const borderStyle = props.data.style?.borderStyle || 'solid'
   const backgroundColor =
     themeNodePaint.value?.backgroundColor ||
@@ -101,9 +114,11 @@ const nodeStyle = computed(() => {
       themeNodePaint.value?.textColor ||
       props.data.style?.textColor ||
       defaultStyle.value.textColor ||
-      '#303133',
+      THINKING_MAP_LEAF_TEXT,
     fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
-    fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 13}px`,
+    fontSize: `${thinkingMapDisplayedFontSize(props.data.style?.fontSize, themeNodePaint.value?.fontSize ?? defaultStyle.value.fontSize ?? MIND_MAP_GEOMETRY.branchFontSize)}px`,
+    padding: thinkingMapBoxPadding(true),
+    boxShadow: MIND_MAP_GEOMETRY.branchShadow,
     fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
     fontStyle: props.data.style?.fontStyle || 'normal',
     textDecoration: props.data.style?.textDecoration || 'none',
@@ -115,10 +130,12 @@ const nodeStyle = computed(() => {
     baseStyle,
     props.data.style?.nodeShape,
     borderColor,
-    isPillShape.value ? '9999px' : `${props.data.style?.borderRadius || 6}px`
+    isPillShape.value ? '9999px' : `${props.data.style?.borderRadius || 4.5}px`
   )
   if (props.data.style?.nodeShape === 'underline') {
     shapedStyle.minHeight = 0
+    shapedStyle.boxShadow = 'none'
+    shapedStyle.padding = '0'
   }
 
   // Add dynamic width when editing (multi-flow map only; flow_map uses fixed pill size)
@@ -145,7 +162,8 @@ const nodeStyle = computed(() => {
       ...shapedStyle,
       width: 'max-content',
       minWidth: '120px',
-      minHeight: props.data.style?.nodeShape === 'underline' ? 0 : '48px',
+      minHeight:
+        props.data.style?.nodeShape === 'underline' ? 0 : `${MIND_MAP_GEOMETRY.minHeight}px`,
       maxWidth: '300px',
     }
   }
@@ -169,7 +187,7 @@ const shapeLineColor = computed(() => {
     props.data.style?.borderColor ||
     color?.border ||
     defaultStyle.value.borderColor ||
-    '#409eff'
+    MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
   )
 })
 
@@ -182,7 +200,8 @@ const flowMaxWidth = computed(() => {
   const cap = MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH
   if (!label) return `${cap}px`
 
-  const fontSize = parseFloat(nodeStyle.value.fontSize as string) || 13
+  const fontSize =
+    parseFloat(nodeStyle.value.fontSize as string) || MIND_MAP_GEOMETRY.branchFontSize
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
   const textWidth = measureTextWidth(label, fontSize, { fontWeight })
 

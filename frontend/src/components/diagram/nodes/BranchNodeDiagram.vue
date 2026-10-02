@@ -13,6 +13,8 @@ import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
+import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
+import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import { computeScriptAwareMaxWidth } from '@/stores/specLoader/textMeasurementFallback'
@@ -21,6 +23,13 @@ import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { isBridgeMapPairNode } from '@/utils/bridgeMapIdentity'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { applyNodeShapeToStyle, resolveNodeShape } from '@/utils/nodeShapeStyle'
+import {
+  THINKING_MAP_LEAF_TEXT,
+  thinkingMapBorderWidth,
+  thinkingMapBoxPadding,
+  thinkingMapDisplayedFontSize,
+} from '@/utils/thinkingMapChrome'
+import { thinkingMapSolidThemeStroke } from '@/utils/thinkingMapConnectionStroke'
 import { thinkingMapDisplayedNodeColors } from '@/utils/thinkingMapNodePaint'
 import {
   isTreeMapCategoryNode,
@@ -90,7 +99,8 @@ const themeNodePaint = computed(() => {
     props.data.diagramType,
     diagramStore.data?._mindmap_theme,
     node,
-    resolvedStyle.value
+    resolvedStyle.value,
+    diagramStore.data?.connections
   )
 })
 
@@ -101,7 +111,7 @@ const shapeLineColor = computed(() => {
     style.borderColor ||
     (isTreeMap.value && treeMapGroupColors.value ? treeMapGroupColors.value.border : undefined) ||
     defaultStyle.value.borderColor ||
-    '#4e79a7'
+    MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
   )
 })
 
@@ -126,7 +136,7 @@ const nodeStyle = computed((): CSSProperties => {
       (isTreeMap.value && treeMapGroupColors.value
         ? treeMapGroupColors.value.fill
         : defaultStyle.value.backgroundColor) ||
-      '#e3f2fd'
+      '#FFFFFF'
     : 'transparent'
   const borderColor = shouldHaveBorder
     ? themeNodePaint.value?.borderColor ||
@@ -134,11 +144,15 @@ const nodeStyle = computed((): CSSProperties => {
       (isTreeMap.value && treeMapGroupColors.value
         ? treeMapGroupColors.value.border
         : defaultStyle.value.borderColor) ||
-      '#4e79a7'
+      MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
     : 'transparent'
 
   const borderWidth = shouldHaveBorder
-    ? (style.borderWidth ?? defaultStyle.value.borderWidth ?? 2)
+    ? thinkingMapBorderWidth(
+        themeNodePaint.value?.borderWidth,
+        style.borderWidth,
+        defaultStyle.value.borderWidth ?? MIND_MAP_GEOMETRY.borderWidth
+      )
     : 0
   const borderStyle = shouldHaveBorder ? style.borderStyle || 'solid' : 'solid'
 
@@ -153,20 +167,29 @@ const nodeStyle = computed((): CSSProperties => {
       themeNodePaint.value?.textColor ||
       style.textColor ||
       defaultStyle.value.textColor ||
-      '#333333',
+      THINKING_MAP_LEAF_TEXT,
     fontFamily: style.fontFamily || DIAGRAM_NODE_FONT_STACK,
-    fontSize: `${style.fontSize || defaultStyle.value.fontSize || 16}px`,
+    fontSize: `${thinkingMapDisplayedFontSize(style.fontSize, themeNodePaint.value?.fontSize ?? defaultStyle.value.fontSize ?? MIND_MAP_GEOMETRY.branchFontSize)}px`,
     fontWeight: style.fontWeight || defaultStyle.value.fontWeight || 'normal',
     fontStyle: style.fontStyle || 'normal',
     textDecoration: style.textDecoration || 'none',
-    boxShadow: shouldHaveShadow ? undefined : 'none',
+    padding: shouldHaveBackground ? thinkingMapBoxPadding(false) : '0',
+    boxShadow: shouldHaveShadow ? MIND_MAP_GEOMETRY.branchShadow : 'none',
   }
 
   const shape = nodeShape.value
-  const result: CSSProperties = { ...applyNodeShapeToStyle(base, shape, borderColor, false) }
-
-  if (shape === 'rounded' && !style.nodeShape) {
-    result.borderRadius = `${style.borderRadius || 8}px`
+  const result: CSSProperties = { ...applyNodeShapeToStyle(base, shape, borderColor, true) }
+  const solidTheme = Boolean(thinkingMapSolidThemeStroke(diagramStore.data?._mindmap_theme))
+  const accentWidth = solidTheme
+    ? 0
+    : (themeNodePaint.value?.accentBarWidth ?? style.accentBarWidth ?? 0)
+  const accentColor = solidTheme
+    ? undefined
+    : (themeNodePaint.value?.accentBarColor ?? style.accentBarColor)
+  if (accentWidth > 0 && accentColor && shape !== 'underline') {
+    result.boxShadow = `${MIND_MAP_GEOMETRY.branchShadow}, inset ${accentWidth}px 0 0 0 ${accentColor}`
+    const pad = MIND_MAP_GEOMETRY.paddingX + accentWidth + 4
+    result.paddingLeft = `${pad}px`
   }
 
   if (isTreeMap.value && props.data.style?.width != null) {
@@ -179,6 +202,7 @@ const nodeStyle = computed((): CSSProperties => {
     result.minHeight = '0'
     result.paddingTop = '0'
     result.paddingBottom = '2px'
+    result.boxShadow = 'none'
   }
 
   return result

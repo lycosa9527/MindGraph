@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FLOATING_TOOLBAR_COLORS } from '@/config/floatingToolbarColors'
+import { FLOATING_TOOLBAR_MORANDI_COLORS } from '@/config/floatingToolbarColors'
 
 defineProps<{
   label: string
@@ -49,7 +49,7 @@ function onCustom(event: Event): void {
     >
       <div class="text-color__grid">
         <button
-          v-for="color in FLOATING_TOOLBAR_COLORS"
+          v-for="color in FLOATING_TOOLBAR_MORANDI_COLORS"
           :key="`${kind}-${color}`"
           type="button"
           class="text-color__swatch"

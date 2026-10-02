@@ -15,6 +15,7 @@ import { EdgeLabelRenderer, type EdgeProps, useVueFlow } from '@vue-flow/core'
 
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphEdgeData } from '@/types'
+import { diagramEdgeStrokeStyle } from '@/utils/thinkingMapChrome'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
 const diagramStore = useDiagramSession()
@@ -63,8 +64,13 @@ const path = computed(() => {
 })
 
 const edgeStyle = computed(() => ({
-  stroke: props.data?.style?.strokeColor || '#bbb', // Gray color from old JS
-  strokeWidth: props.data?.style?.strokeWidth || 2,
+  ...diagramEdgeStrokeStyle(
+    props.data?.diagramType,
+    props.data?.style?.strokeColor,
+    props.data?.style?.strokeWidth,
+    '#bbb',
+    2
+  ),
   strokeDasharray: props.data?.style?.strokeDasharray || 'none',
   strokeLinecap: 'butt' as const,
   strokeLinejoin: 'miter' as const,

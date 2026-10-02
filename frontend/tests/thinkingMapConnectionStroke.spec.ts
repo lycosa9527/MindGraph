@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { getMindMapThemeById } from '@/config/mindMapThemes'
+import {
+  MIND_MAP_RAINBOW_FAMILIES,
+  MIND_MAP_RAINBOW_TOPIC_COLORS,
+} from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import {
   resolveThinkingMapConnectorStroke,
@@ -8,13 +12,16 @@ import {
 } from '@/utils/thinkingMapConnectionStroke'
 
 describe('thinking map connection stroke', () => {
-  it('keeps the per-branch palette on the default rainbow theme', () => {
+  it('maps a Material border onto the rainbow family line', () => {
     const palette = getMindmapBranchColor(2).border
+    const familyLine = MIND_MAP_RAINBOW_FAMILIES[2].line
     expect(thinkingMapSolidThemeStroke(undefined)).toBeNull()
     expect(thinkingMapSolidThemeStroke(null)).toBeNull()
     expect(thinkingMapSolidThemeStroke('rainbow')).toBeNull()
-    expect(resolveThinkingMapConnectorStroke('rainbow', palette, '#666')).toBe(palette)
-    expect(resolveThinkingMapConnectorStroke(undefined, undefined, '#666')).toBe('#666')
+    expect(resolveThinkingMapConnectorStroke('rainbow', palette, '#666')).toBe(familyLine)
+    expect(resolveThinkingMapConnectorStroke(undefined, undefined, '#666')).toBe(
+      MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
+    )
   })
 
   it('paints every connector with the solid theme accent', () => {

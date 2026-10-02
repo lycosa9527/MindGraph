@@ -16,9 +16,9 @@ import MindMapAssociationEdgeChrome from '@/components/diagram/edges/MindMapAsso
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useTheme } from '@/composables/core/useTheme'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { getPositionsFromAngle } from '@/composables/diagramCanvas/conceptMapLinkPreviewGeometry'
 import { CONCEPT_MAP_GENERATING_KEY } from '@/composables/editor/useConceptMapRelationship'
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
   associationCurveOffsetForEdge,
   associationLineHoverId,
@@ -32,6 +32,7 @@ import { isTopicToRootConceptConnection } from '@/utils/conceptMapTopicRootEdge'
 import { focusHtmlControl } from '@/utils/focusHtmlControl'
 import { mindMapAssociationCurveFromEnds } from '@/utils/mindMapAssociationLine'
 import { isMindMapBranchId, mindMapNodeSide } from '@/utils/mindMapLocation'
+import { diagramEdgeStrokeStyle } from '@/utils/thinkingMapChrome'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
 
@@ -284,8 +285,10 @@ const path = computed(() => {
       nodes.find((node) => node.id === props.source),
       nodes.find((node) => node.id === props.target),
       {
-        sourceHeight: heights[props.source] ?? dims[props.source]?.height ?? flowHeight(props.source),
-        targetHeight: heights[props.target] ?? dims[props.target]?.height ?? flowHeight(props.target),
+        sourceHeight:
+          heights[props.source] ?? dims[props.source]?.height ?? flowHeight(props.source),
+        targetHeight:
+          heights[props.target] ?? dims[props.target]?.height ?? flowHeight(props.target),
         diagramStyleId: diagramStore.data?._mindmap_diagram_style,
         curveOffset: associationCurveOffsetForEdge(
           props.id,
@@ -358,8 +361,13 @@ const isMindMapEdge = computed(() => {
 })
 
 const edgeStyle = computed(() => ({
-  stroke: props.data?.style?.strokeColor || '#94a3b8',
-  strokeWidth: props.data?.style?.strokeWidth || 2,
+  ...diagramEdgeStrokeStyle(
+    props.data?.diagramType,
+    props.data?.style?.strokeColor,
+    props.data?.style?.strokeWidth,
+    '#94a3b8',
+    2
+  ),
   strokeDasharray: props.data?.style?.strokeDasharray || 'none',
   ...(isMindMapEdge.value ? { strokeLinecap: 'round' as const } : {}),
 }))

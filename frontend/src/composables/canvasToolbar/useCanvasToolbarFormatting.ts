@@ -1,5 +1,6 @@
 import { type Ref, ref, watch } from 'vue'
 
+import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import {
   formatBrushActive,
   formatBrushLocked,
@@ -17,6 +18,12 @@ import { type BorderStyleType, getBorderStyleProps } from '@/utils/borderStyleUt
 import { colorToHex, hexToRgba, parseAlphaFromColor } from '@/utils/colorFormat'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { type NodeShape, defaultDisplayedNodeShape } from '@/utils/nodeShapeStyle'
+import {
+  thinkingMapColorsAreDefault,
+  thinkingMapDisplayedFontSize,
+  thinkingMapRoleChrome,
+} from '@/utils/thinkingMapChrome'
+import { thinkingMapDisplayedNodeColors } from '@/utils/thinkingMapNodePaint'
 
 export {
   formatBrushActive,
@@ -272,6 +279,18 @@ export function useCanvasToolbarFormatting(options?: {
     ) {
       syncMindMapConnectionStrokeColors(diagramStore.data.connections, updates.borderColor)
     }
+    if (
+      updates.borderColor &&
+      isThinkingMapDiagramType(diagramType) &&
+      diagramStore.data?.connections
+    ) {
+      const picked = updates.borderColor
+      const touched = new Set(ids)
+      for (const connection of diagramStore.data.connections) {
+        if (!touched.has(connection.source) && !touched.has(connection.target)) continue
+        connection.style = { ...(connection.style || {}), strokeColor: picked }
+      }
+    }
     if (!options?.silent && notifyOnApply) notify.successKey('canvas.toolbar.applied')
   }
 
@@ -382,6 +401,29 @@ export function useCanvasToolbarFormatting(options?: {
           }
         }
         nodeShape.value = toolbarDisplayedNodeShape(node, s)
+        if (isThinkingMapDiagramType(diagramStore.type)) {
+          const chrome = thinkingMapRoleChrome(
+            diagramStore.type,
+            node,
+            diagramStore.data?.connections
+          )
+          const paint = thinkingMapDisplayedNodeColors(
+            diagramStore.type,
+            diagramStore.data?._mindmap_theme,
+            node,
+            s,
+            diagramStore.data?.connections
+          )
+          if (chrome) {
+            fontSize.value = thinkingMapDisplayedFontSize(s.fontSize, chrome.fontSize)
+          }
+          const showRolePaint = Boolean(paint && chrome && thinkingMapColorsAreDefault(s, chrome))
+          if (showRolePaint && paint) {
+            backgroundColor.value = colorToHex(paint.backgroundColor)
+            textColor.value = paint.textColor
+            borderColor.value = paint.borderColor
+          }
+        }
       }
     },
     { deep: true }

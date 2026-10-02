@@ -15,7 +15,7 @@ import {
   MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH,
   MULTI_FLOW_TOPIC_PADDING_X,
 } from '@/composables/diagrams/layoutConfig'
-import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 import type { Connection, DiagramNode } from '@/types'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import {
@@ -37,9 +37,9 @@ import { estimateTextWidthFallbackPx } from './textMeasurementFallback'
 import type { SpecLoaderResult } from './types'
 
 /** FlowNode font size (matches FlowNode.vue defaultStyle) */
-const FLOW_NODE_FONT_SIZE = 13
+const FLOW_NODE_FONT_SIZE = 16
 /** FlowNode horizontal padding: px-5 = 20px each side */
-const FLOW_NODE_PADDING_X = 40
+const FLOW_NODE_PADDING_X = 36
 
 function measureLabelInnerWidth(
   text: string,
@@ -207,7 +207,7 @@ export function recalculateMultiFlowMapLayout(
 
   // Causes — keep ids; restamp column index for color / stack order.
   causeNodes.forEach((node, index) => {
-    const color = getMindmapBranchColor(index)
+    const color = thinkingMapStampedBranchColor(index)
     const causeStyle = {
       ...(node.style || {}),
       width: uniformColumnWidth,
@@ -234,7 +234,7 @@ export function recalculateMultiFlowMapLayout(
 
   // Effects — keep ids; restamp column index for color / stack order.
   effectNodes.forEach((node, index) => {
-    const color = getMindmapBranchColor(index)
+    const color = thinkingMapStampedBranchColor(index)
     const effectStyle = {
       ...(node.style || {}),
       width: uniformColumnWidth,
@@ -298,7 +298,7 @@ export function loadMultiFlowMapSpec(spec: Record<string, unknown>): SpecLoaderR
   // Causes
   const causeStartY = centerY - ((causes.length - 1) * verticalSpacing) / 2
   causes.forEach((cause, index) => {
-    const color = getMindmapBranchColor(index)
+    const color = thinkingMapStampedBranchColor(index)
     const causeId = takeMultiFlowMapStableId(claimedIds)
     nodes.push({
       id: causeId,
@@ -327,7 +327,7 @@ export function loadMultiFlowMapSpec(spec: Record<string, unknown>): SpecLoaderR
   // Effects
   const effectStartY = centerY - ((effects.length - 1) * verticalSpacing) / 2
   effects.forEach((effect, index) => {
-    const color = getMindmapBranchColor(index)
+    const color = thinkingMapStampedBranchColor(index)
     const effectId = takeMultiFlowMapStableId(claimedIds)
     nodes.push({
       id: effectId,

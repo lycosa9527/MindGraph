@@ -54,8 +54,8 @@ export const MULTI_FLOW_MAP_TOPIC_WIDTH = 90
 /** Event-pill font size (matches TopicNodeDiagram defaultStyle fallback). */
 export const MULTI_FLOW_TOPIC_FONT_SIZE = 18
 
-/** Event-pill horizontal padding: px-6 = 24px each side. */
-export const MULTI_FLOW_TOPIC_PADDING_X = 48
+/** Event-pill horizontal padding: 18px each side. */
+export const MULTI_FLOW_TOPIC_PADDING_X = 36
 
 /**
  * Max inner label width for the multi-flow event pill.

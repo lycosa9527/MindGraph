@@ -37,6 +37,7 @@ import {
   mindMapUnderlineContentPadding,
 } from '@/config/mindMapGeometry'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
+import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { useLLMResultsStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
@@ -112,7 +113,10 @@ const underlineLineStyle = computed((): CSSProperties => {
   const style = resolvedStyle.value
   const theme = defaultMindMapTheme.value
   const lineColor =
-    style.borderColor || defaultStyle.value.borderColor || theme?.topicBorderColor || '#0d47a1'
+    style.borderColor ||
+    defaultStyle.value.borderColor ||
+    theme?.topicBorderColor ||
+    MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
   const { textGap } = mindMapUnderlineContentPadding()
   const base = {
     backgroundColor: lineColor,
@@ -153,7 +157,10 @@ const nodeStyle = computed(() => {
   const theme = defaultMindMapTheme.value
   const shape = topicNodeShape.value
   const borderColor =
-    style.borderColor || defaultStyle.value.borderColor || theme?.topicBorderColor || '#0d47a1'
+    style.borderColor ||
+    defaultStyle.value.borderColor ||
+    theme?.topicBorderColor ||
+    MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
   const borderWidth =
     style.borderWidth ?? defaultStyle.value.borderWidth ?? MIND_MAP_GEOMETRY.borderWidth
   const borderStyle = style.borderStyle || 'solid'
@@ -161,7 +168,7 @@ const nodeStyle = computed(() => {
     style.backgroundColor ||
     defaultStyle.value.backgroundColor ||
     theme?.topicBackgroundColor ||
-    '#1976d2'
+    MIND_MAP_RAINBOW_TOPIC_COLORS.topicBackgroundColor
 
   const baseStyle = {
     backgroundColor,
@@ -194,7 +201,7 @@ const nodeStyle = computed(() => {
           padding: `${MIND_MAP_GEOMETRY.paddingY}px ${mindMapHorizontalPadding(shape)}px`,
           minWidth: `${MIND_MAP_GEOMETRY.minWidth}px`,
           minHeight: `${MIND_MAP_GEOMETRY.minHeight}px`,
-          boxShadow: '0 1px 4px rgba(15, 23, 42, 0.12)',
+          boxShadow: MIND_MAP_GEOMETRY.topicShadow,
         }),
     width: 'fit-content',
     maxWidth: '400px',

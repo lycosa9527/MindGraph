@@ -8,7 +8,7 @@ import {
   mindMapDiagramStyleUsesLayeredBranchColors,
   mindMapNodeShapeFromPreset,
 } from '@/config/mindMapDiagramStyles'
-import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
+import { MIND_MAP_GEOMETRY, syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
 import { type MindMapThemeId, getMindMapThemeById } from '@/config/mindMapThemes'
 import {
   applyRainbowMindMapColors,
@@ -204,6 +204,13 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
           ? (centerTopic?.topicBorderColor ?? preset.topicBorderColor)
           : (branchColors?.borderColor ?? preset.borderColor),
       }
+      if (isThinkingMapDiagramType(ctx.type.value)) {
+        delete mergedStyle.accentBarColor
+        delete mergedStyle.accentBarWidth
+        if (!mergedStyle.borderWidth) {
+          mergedStyle.borderWidth = MIND_MAP_GEOMETRY.borderWidth
+        }
+      }
       const nodeIndex = nodes.findIndex((n) => n.id === node.id)
       if (nodeIndex !== -1) {
         const current = nodes[nodeIndex]
@@ -253,7 +260,7 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
     }
 
     if (thinkingMap && isRainbowMindMapTheme(options.themeId)) {
-      restoreThinkingMapDefaultNodeColors(ctx.type.value, nodes)
+      restoreThinkingMapDefaultNodeColors(ctx.type.value, nodes, connections)
     } else if (isMindMap && isRainbowMindMapTheme(options.themeId)) {
       applyRainbowMindMapColors(nodes, connections ?? [])
     } else {

@@ -15,6 +15,7 @@ import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphEdgeData } from '@/types'
 import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
 import { type NodeShape, shapeRayHitDistance } from '@/utils/nodeShapeStyle'
+import { diagramEdgeStrokeStyle } from '@/utils/thinkingMapChrome'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
 
@@ -103,10 +104,15 @@ const path = computed(() => {
   return { edgePath, labelX, labelY }
 })
 
-const edgeStyle = computed(() => ({
-  stroke: props.data?.style?.strokeColor || '#888888',
-  strokeWidth: props.data?.style?.strokeWidth || 2,
-}))
+const edgeStyle = computed(() =>
+  diagramEdgeStrokeStyle(
+    props.data?.diagramType,
+    props.data?.style?.strokeColor,
+    props.data?.style?.strokeWidth,
+    '#888888',
+    2
+  )
+)
 </script>
 
 <template>

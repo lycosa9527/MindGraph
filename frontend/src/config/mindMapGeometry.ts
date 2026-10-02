@@ -38,6 +38,10 @@ export const MIND_MAP_GEOMETRY = {
   paddingY: 9,
   edgeStrokeWidth: 2,
   edgeStrokeOpacity: 0.7,
+  /** Topic elevation shared with thinking-map centers. */
+  topicShadow: '0 1px 4px rgba(15, 23, 42, 0.12)',
+  /** Group-node elevation shared with thinking-map branches. */
+  branchShadow: '0 1px 3px rgba(15, 23, 42, 0.06)',
 } as const
 
 /** Depth from stamped data, connections, or leftover positional id. */

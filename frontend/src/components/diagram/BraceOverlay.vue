@@ -20,7 +20,9 @@ import { useVueFlow } from '@vue-flow/core'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
-import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
+import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
+import { thinkingMapFamilyLine } from '@/utils/thinkingMapChrome'
 import { resolveThinkingMapConnectorStroke } from '@/utils/thinkingMapConnectionStroke'
 
 // Diagram store for diagram type
@@ -227,7 +229,7 @@ const braceElements = computed(() => {
     const isRootGroup = group.parentId === rootId
     const parentNode = nodes.find((n) => n.id === group.parentId)
     const groupIndex = isRootGroup ? 0 : ((parentNode?.data?.groupIndex as number | undefined) ?? 0)
-    const palette = getMindmapBranchColor(groupIndex).border
+    const palette = thinkingMapFamilyLine(groupIndex)
     return {
       groupId: group.parentId,
       bracePath,
@@ -244,8 +246,8 @@ const braceElements = computed(() => {
 const { t } = useLanguage()
 const SEPARATOR_OFFSET_Y = 15
 const ALTERNATIVE_DIMENSIONS_OFFSET_Y = 15
-const ALTERNATIVE_LABEL_FONT_SIZE = 13
-const ALTERNATIVE_CHIP_COLOR = '#1976d2'
+const ALTERNATIVE_LABEL_FONT_SIZE = 14
+const ALTERNATIVE_CHIP_COLOR = MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
 
 const alternativeDimensions = computed(() => {
   if (!isBraceMap.value) return []
@@ -318,6 +320,7 @@ const braceMapAlternativePosition = computed(() => {
           :d="element.bracePath"
           :stroke="element.strokeColor"
           :stroke-width="BRACE_STROKE_WIDTH"
+          :stroke-opacity="MIND_MAP_GEOMETRY.edgeStrokeOpacity"
           fill="none"
           stroke-linecap="round"
           stroke-linejoin="miter"

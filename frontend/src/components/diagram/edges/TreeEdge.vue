@@ -11,6 +11,7 @@ import { type EdgeProps, getStraightPath, useVueFlow } from '@vue-flow/core'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphEdgeData } from '@/types'
 import { nodeSpansCrossingVertical, verticalSegmentsOutsideSpans } from '@/utils/flowVerticalLine'
+import { diagramEdgeStrokeStyle } from '@/utils/thinkingMapChrome'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
 const diagramStore = useDiagramSession()
@@ -52,8 +53,13 @@ function nodeIsUnderline(nodeId: string): boolean {
 }
 
 const edgeStyle = computed(() => ({
-  stroke: props.data?.style?.strokeColor || '#ccc', // Light gray for tree connectors
-  strokeWidth: props.data?.style?.strokeWidth || 2,
+  ...diagramEdgeStrokeStyle(
+    props.data?.diagramType,
+    props.data?.style?.strokeColor,
+    props.data?.style?.strokeWidth,
+    '#ccc',
+    2
+  ),
   strokeDasharray: props.data?.style?.strokeDasharray || 'none',
   // A round cap on an underline is not covered by a fill, so the end draws as a thicker knob.
   strokeLinecap: (nodeIsUnderline(props.source) || nodeIsUnderline(props.target)

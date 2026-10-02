@@ -1,75 +1,32 @@
 /**
  * Thinking-map node groups follow the active color theme.
- * A solid theme paints every group with that theme. The default rainbow theme
- * restores the per-group palette. A hand-painted color that is neither the
- * palette nor empty is left in place.
+ * A solid theme paints every group with that theme. Rainbow uses the
+ * mind-map family tokens. A hand-painted color is left in place.
  */
 import { getMindMapThemeById, resolveMindMapThemeId } from '@/config/mindMapThemes'
-import { getMindmapBranchColor } from '@/config/mindmapColors'
-import type { DiagramNode, NodeStyle } from '@/types'
-import { isBraceMapPartNode, readBraceGroupIndex } from '@/utils/braceMapIdentity'
-import { isBubbleMapAttributeNode, readBubbleGroupIndex } from '@/utils/bubbleMapIdentity'
-import { isCircleMapContextNode, readCircleContextIndex } from '@/utils/circleMapIdentity'
-import { readDoubleBubbleIndex, readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
-import { isFlowMapStepNode, isFlowMapSubstepNode, readFlowStepIndex } from '@/utils/flowMapIdentity'
+import type { Connection, DiagramNode, NodeStyle } from '@/types'
 import {
-  isMultiFlowCauseNode,
-  isMultiFlowEffectNode,
-  readMultiFlowIndex,
-} from '@/utils/multiFlowMapIdentity'
+  type ThinkingMapChrome,
+  thinkingMapColorsAreDefault,
+  thinkingMapDisplayedFontSize,
+  thinkingMapPaletteIndex,
+  thinkingMapRoleChrome,
+} from '@/utils/thinkingMapChrome'
 import { thinkingMapSolidThemeStroke } from '@/utils/thinkingMapConnectionStroke'
-import { readTreeCategoryIndex } from '@/utils/treeMapIdentity'
+
+export { thinkingMapPaletteIndex } from '@/utils/thinkingMapChrome'
 
 export interface ThinkingMapNodePaint {
   backgroundColor: string
   textColor: string
   borderColor: string
+  borderWidth?: number
+  fontSize?: number
+  accentBarColor?: string
+  accentBarWidth?: number
 }
 
 type PaintNode = Pick<DiagramNode, 'id' | 'type' | 'data' | 'style'>
-
-function nonnegative(index: number): number | null {
-  return index >= 0 ? index : null
-}
-
-/** Group slot whose default fill comes from the shared branch palette. */
-export function thinkingMapPaletteIndex(
-  diagramType: string | null | undefined,
-  node: PaintNode
-): number | null {
-  if (
-    !diagramType ||
-    node.type === 'topic' ||
-    node.type === 'center' ||
-    node.type === 'boundary' ||
-    node.type === 'label'
-  ) {
-    return null
-  }
-  switch (diagramType) {
-    case 'bubble_map':
-      return isBubbleMapAttributeNode(node) ? nonnegative(readBubbleGroupIndex(node)) : null
-    case 'circle_map':
-      return isCircleMapContextNode(node) ? nonnegative(readCircleContextIndex(node)) : null
-    case 'double_bubble_map': {
-      const role = readDoubleBubbleRole(node)
-      if (role !== 'leftDiff' && role !== 'rightDiff') return null
-      return nonnegative(readDoubleBubbleIndex(node))
-    }
-    case 'tree_map':
-      return nonnegative(readTreeCategoryIndex(node))
-    case 'flow_map':
-      if (!isFlowMapStepNode(node) && !isFlowMapSubstepNode(node)) return null
-      return nonnegative(readFlowStepIndex(node))
-    case 'multi_flow_map':
-      if (!isMultiFlowCauseNode(node) && !isMultiFlowEffectNode(node)) return null
-      return nonnegative(readMultiFlowIndex(node))
-    case 'brace_map':
-      return isBraceMapPartNode(node) ? nonnegative(readBraceGroupIndex(node)) : null
-    default:
-      return null
-  }
-}
 
 function solidThemeNodePaint(
   themeId: string | null | undefined,
@@ -95,27 +52,45 @@ function isTopicNode(node: PaintNode): boolean {
   return node.type === 'topic' || node.type === 'center'
 }
 
+function paintFromChrome(chrome: ThinkingMapChrome): ThinkingMapNodePaint {
+  return {
+    backgroundColor: chrome.backgroundColor,
+    textColor: chrome.textColor,
+    borderColor: chrome.borderColor,
+    borderWidth: chrome.borderWidth,
+    fontSize: chrome.fontSize,
+    accentBarColor: chrome.accentBarColor,
+    accentBarWidth: chrome.accentBarWidth,
+  }
+}
+
 /**
  * Theme paint that should win over the stored palette. Null keeps the caller's
- * own color chain (rainbow palette, topic default, or a hand-painted color).
+ * own color chain (a hand-painted color).
  */
 export function thinkingMapDisplayedNodeColors(
   diagramType: string | null | undefined,
   themeId: string | null | undefined,
   node: PaintNode,
-  style: NodeStyle | undefined = node.style
+  style: NodeStyle | undefined = node.style,
+  connections?: Connection[] | null
 ): ThinkingMapNodePaint | null {
   const themePaint = solidThemeNodePaint(themeId, isTopicNode(node))
-  if (!themePaint) return null
-  const backgroundColor = style?.backgroundColor
-  const borderColor = style?.borderColor
-  const textColor = style?.textColor
-  if (!backgroundColor && !borderColor && !textColor) return themePaint
-  const index = thinkingMapPaletteIndex(diagramType, node)
-  if (index == null || textColor) return null
-  const palette = getMindmapBranchColor(index)
-  if (backgroundColor === palette.fill && borderColor === palette.border) return themePaint
-  return null
+  if (themePaint) {
+    const backgroundColor = style?.backgroundColor
+    const borderColor = style?.borderColor
+    const textColor = style?.textColor
+    if (!backgroundColor && !borderColor && !textColor) return themePaint
+    const index = thinkingMapPaletteIndex(diagramType, node)
+    if (index == null || textColor) return null
+    const chrome = thinkingMapRoleChrome(diagramType, node, connections)
+    if (chrome && thinkingMapColorsAreDefault(style, chrome)) return themePaint
+    return null
+  }
+  const chrome = thinkingMapRoleChrome(diagramType, node, connections)
+  if (!chrome) return null
+  if (!thinkingMapColorsAreDefault(style, chrome)) return null
+  return paintFromChrome(chrome)
 }
 
 function stripThemeColors(style: NodeStyle | undefined): NodeStyle | undefined {
@@ -124,26 +99,44 @@ function stripThemeColors(style: NodeStyle | undefined): NodeStyle | undefined {
   delete next.backgroundColor
   delete next.textColor
   delete next.borderColor
+  delete next.accentBarColor
+  delete next.accentBarWidth
   return next
 }
 
-/** Put thinking-map nodes back on the default palette after a solid theme. */
+function withRoleFont(style: NodeStyle | undefined, roleSize: number): NodeStyle | undefined {
+  if (!style) return { fontSize: roleSize }
+  return {
+    ...style,
+    fontSize: thinkingMapDisplayedFontSize(style.fontSize, roleSize),
+  }
+}
+
+/** Put thinking-map nodes back on rainbow chrome after a solid theme. */
 export function restoreThinkingMapDefaultNodeColors(
   diagramType: string | null | undefined,
-  nodes: DiagramNode[]
+  nodes: DiagramNode[],
+  connections?: Connection[] | null
 ): void {
   for (const node of nodes) {
     if (node.type === 'boundary') continue
-    const index = thinkingMapPaletteIndex(diagramType, node)
-    if (index == null) {
-      node.style = stripThemeColors(node.style)
+    const chrome = thinkingMapRoleChrome(diagramType, node, connections)
+    if (!chrome || chrome.clearStoredColors) {
+      const roleSize = chrome?.fontSize
+      const stripped = stripThemeColors(node.style)
+      node.style = roleSize == null ? stripped : withRoleFont(stripped, roleSize)
       continue
     }
-    const palette = getMindmapBranchColor(index)
     node.style = {
       ...stripThemeColors(node.style),
-      backgroundColor: palette.fill,
-      borderColor: palette.border,
+      backgroundColor: chrome.backgroundColor,
+      textColor: chrome.textColor,
+      borderColor: chrome.borderColor,
+      borderWidth: chrome.borderWidth,
+      fontSize: thinkingMapDisplayedFontSize(node.style?.fontSize, chrome.fontSize),
+      ...(chrome.accentBarColor
+        ? { accentBarColor: chrome.accentBarColor, accentBarWidth: chrome.accentBarWidth }
+        : {}),
     }
   }
 }

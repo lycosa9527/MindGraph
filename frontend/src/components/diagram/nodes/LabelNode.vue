@@ -11,10 +11,11 @@ import { useVueFlow } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { translateDimension, useLanguage } from '@/composables/core/useLanguage'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { BRANCH_NODE_HEIGHT } from '@/composables/diagrams/layoutConfig'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { useUIStore } from '@/stores'
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphNodeProps } from '@/types'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
@@ -221,7 +222,7 @@ const nodeStyle = computed((): CSSProperties => {
   const isBridgeDimension = props.data.diagramType === 'bridge_map' && props.data.isDimensionLabel
 
   return {
-    color: isPlaceholder.value ? '#1976d2' : isBridgeDimension ? '#1976d2' : '#1976d2',
+    color: MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor,
     opacity: isPlaceholder.value ? 0.4 : isBridgeDimension ? 1 : 0.8,
     fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
     fontSize: `${props.data.style?.fontSize || (isBridgeDimension ? 14 : 14)}px`,
@@ -229,18 +230,11 @@ const nodeStyle = computed((): CSSProperties => {
     fontWeight: props.data.style?.fontWeight || (isBridgeDimension ? 'bold' : 'normal'),
     textDecoration: props.data.style?.textDecoration || 'none',
     textAlign: (isBridgeDimension ? 'right' : 'center') as
-      | 'left'
-      | 'right'
-      | 'center'
-      | 'justify'
-      | 'start'
-      | 'end',
+      'left' | 'right' | 'center' | 'justify' | 'start' | 'end',
     padding: isBridgeDimension ? '4px 8px' : '4px 8px',
     whiteSpace: isBridgeDimension ? 'normal' : 'nowrap', // Allow natural wrapping for bridge maps
     overflowWrap: (isBridgeDimension ? 'break-word' : 'normal') as
-      | 'normal'
-      | 'break-word'
-      | 'anywhere',
+      'normal' | 'break-word' | 'anywhere',
   }
 })
 

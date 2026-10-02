@@ -23,6 +23,8 @@ import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNode
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { isLearningSheetCustomPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
+import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
+import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { TOPIC_FONT_SIZE } from '@/stores/specLoader/textMeasurement'
 import {
@@ -37,6 +39,11 @@ import { isCircleMapContextNode } from '@/utils/circleMapIdentity'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
 import { CIRCLE_MAP_OVAL_WIDTH_RATIO, applyNodeShapeToStyle } from '@/utils/nodeShapeStyle'
+import {
+  THINKING_MAP_LEAF_TEXT,
+  thinkingMapBorderWidth,
+  thinkingMapDisplayedFontSize,
+} from '@/utils/thinkingMapChrome'
 import { thinkingMapDisplayedNodeColors } from '@/utils/thinkingMapNodePaint'
 
 import InlineEditableText from './InlineEditableText.vue'
@@ -46,8 +53,8 @@ const props = defineProps<MindGraphNodeProps>()
 const diagramStore = useDiagramSession()
 const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
 
-const topicBorderPx = 3
-const contextBorderPx = 2
+const topicBorderPx = MIND_MAP_GEOMETRY.borderWidth
+const contextBorderPx = MIND_MAP_GEOMETRY.borderWidth
 
 /**
  * Fixed wrap threshold for circle_map topic text. Using `circleSize - borders` would
@@ -257,9 +264,6 @@ const textMaxWidth = computed(() => {
   return CONTEXT_MAX_TEXT_WIDTH + CONTEXT_LABEL_PADDING_X
 })
 
-// Circle Map colors matching old JS bubble-map-renderer.js THEME
-// Topic: fill #1976d2 (blue), text #fff, stroke #0d47a1, strokeWidth 3
-// Context: per-group colors from mindmap palette (bubble_map, circle_map)
 const themeNodePaint = computed(() => {
   const node = props.data.originalNode
   if (!node) return null
@@ -267,7 +271,8 @@ const themeNodePaint = computed(() => {
     props.data.diagramType,
     diagramStore.data?._mindmap_theme,
     node,
-    props.data.style
+    props.data.style,
+    diagramStore.data?.connections
   )
 })
 
@@ -278,7 +283,7 @@ const shapeLineColor = computed(() => {
     props.data.style?.borderColor ||
     color?.border ||
     defaultStyle.value.borderColor ||
-    (isTopicNode.value ? '#0d47a1' : '#1976d2')
+    MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
   )
 })
 
@@ -305,16 +310,19 @@ const nodeStyle = computed(() => {
     props.data.style?.borderColor ||
     color?.border ||
     defaultStyle.value.borderColor ||
-    (isTopicNode.value ? '#0d47a1' : '#1976d2')
-  const borderWidth =
-    props.data.style?.borderWidth || defaultStyle.value.borderWidth || (isTopicNode.value ? 3 : 2)
+    MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
+  const borderWidth = thinkingMapBorderWidth(
+    themeNodePaint.value?.borderWidth,
+    props.data.style?.borderWidth,
+    defaultStyle.value.borderWidth ?? MIND_MAP_GEOMETRY.borderWidth
+  )
   const borderStyle = props.data.style?.borderStyle || 'solid'
   const backgroundColor =
     themeNodePaint.value?.backgroundColor ||
     props.data.style?.backgroundColor ||
     color?.fill ||
     defaultStyle.value.backgroundColor ||
-    (isTopicNode.value ? '#1976d2' : '#e3f2fd')
+    (isTopicNode.value ? MIND_MAP_RAINBOW_TOPIC_COLORS.topicBackgroundColor : '#FFFFFF')
 
   const explicitShape = props.data.style?.nodeShape
   const isUnderline = explicitShape === 'underline'
@@ -340,16 +348,16 @@ const nodeStyle = computed(() => {
       themeNodePaint.value?.textColor ||
       props.data.style?.textColor ||
       defaultStyle.value.textColor ||
-      (isTopicNode.value ? '#ffffff' : '#333333'),
+      (isTopicNode.value ? '#ffffff' : THINKING_MAP_LEAF_TEXT),
     fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
     fontSize: cssFontSize(
-      props.data.style?.fontSize,
-      (diagramStore.type === 'circle_map' ||
-        diagramStore.type === 'bubble_map' ||
-        diagramStore.type === 'double_bubble_map') &&
+      thinkingMapDisplayedFontSize(
+        props.data.style?.fontSize,
         isTopicNode.value
-        ? TOPIC_FONT_SIZE
-        : (defaultStyle.value.fontSize ?? (isTopicNode.value ? 20 : 14))
+          ? MIND_MAP_GEOMETRY.topicFontSize
+          : (defaultStyle.value.fontSize ?? MIND_MAP_GEOMETRY.branchFontSize)
+      ),
+      isTopicNode.value ? TOPIC_FONT_SIZE : MIND_MAP_GEOMETRY.branchFontSize
     ),
     fontWeight:
       props.data.style?.fontWeight ||
@@ -360,8 +368,13 @@ const nodeStyle = computed(() => {
     ...getBorderStyleProps(borderColor, borderWidth, borderStyle, {
       backgroundColor,
     }),
+    boxShadow: isUnderline
+      ? 'none'
+      : isTopicNode.value
+        ? MIND_MAP_GEOMETRY.topicShadow
+        : MIND_MAP_GEOMETRY.branchShadow,
   }
-  if (explicitShape) return applyNodeShapeToStyle(box, explicitShape, borderColor, false)
+  if (explicitShape) return applyNodeShapeToStyle(box, explicitShape, borderColor, true)
   if (isCapsuleNode.value) return { ...box, borderRadius: '9999px' }
   return box
 })

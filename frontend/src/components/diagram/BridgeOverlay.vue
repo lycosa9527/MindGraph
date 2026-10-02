@@ -13,7 +13,10 @@ import { useVueFlow } from '@vue-flow/core'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
+import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
+import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { findBridgePairSide } from '@/utils/bridgeMapIdentity'
+import { THINKING_MAP_LEAF_TEXT } from '@/utils/thinkingMapChrome'
 import { resolveThinkingMapConnectorStroke } from '@/utils/thinkingMapConnectionStroke'
 
 // Diagram store for diagram type and spec metadata
@@ -48,7 +51,7 @@ interface NodeWithDimensions {
 }
 
 // Bridge styling. Default grey; a solid color theme repaints the bridge and triangles.
-const BRIDGE_DEFAULT_LINE = '#666'
+const BRIDGE_DEFAULT_LINE = MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
 const BRIDGE_LINE_WIDTH = 2
 const bridgeStructureColor = computed(() =>
   resolveThinkingMapConnectorStroke(
@@ -59,17 +62,17 @@ const bridgeStructureColor = computed(() =>
 )
 const TRIANGLE_HEIGHT = 8 // Height of triangle separator (vertical distance from base to tip)
 const TRIANGLE_BASE_WIDTH = 12 // Width of triangle base (bottom edge)
-const AS_LABEL_COLOR = '#606266' // Grey for "as" labels
-const AS_LABEL_FONT_SIZE = 12
+const AS_LABEL_COLOR = THINKING_MAP_LEAF_TEXT
+const AS_LABEL_FONT_SIZE = 14
 const AS_LABEL_OFFSET_Y = 15 // Distance below triangle
-const SEPARATOR_COLOR = '#1976d2' // Same blue as alternative dimensions text
+const SEPARATOR_COLOR = MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
 const SEPARATOR_OPACITY = 0.4
 const SEPARATOR_OFFSET_Y = 15 // Distance below lowest node
 const SEPARATOR_DASHARRAY = '4,4' // Dashed line pattern
 const ALTERNATIVE_DIMENSIONS_OFFSET_Y = 15 // Distance below separator line
-const ALTERNATIVE_LABEL_FONT_SIZE = 13
+const ALTERNATIVE_LABEL_FONT_SIZE = 14
 const ALTERNATIVE_CHIP_FONT_SIZE = 12
-const ALTERNATIVE_CHIP_COLOR = '#1976d2' // Dark blue
+const ALTERNATIVE_CHIP_COLOR = MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
 const ALTERNATIVE_CHIP_OPACITY = 0.8
 const DELETE_BUTTON_SIZE = 24 // Size of delete button
 const DELETE_BUTTON_OFFSET_X = 6 // Horizontal offset from right edge
@@ -507,6 +510,7 @@ onUnmounted(() => {
         :y2="horizontalBridgeLine.y2"
         :stroke="bridgeStructureColor"
         :stroke-width="BRIDGE_LINE_WIDTH"
+        :stroke-opacity="MIND_MAP_GEOMETRY.edgeStrokeOpacity"
         stroke-linecap="round"
       />
 
@@ -518,6 +522,8 @@ onUnmounted(() => {
         :fill="bridgeStructureColor"
         :stroke="bridgeStructureColor"
         stroke-width="1"
+        :fill-opacity="MIND_MAP_GEOMETRY.edgeStrokeOpacity"
+        :stroke-opacity="MIND_MAP_GEOMETRY.edgeStrokeOpacity"
       />
 
       <!-- "as" labels below each triangle -->

@@ -6,6 +6,7 @@ import {
   splitMixedArrowHandleGroups,
 } from '@/composables/diagrams/conceptMapHandles'
 import { resolveLegacyMindMapConnectionStrokeColor } from '@/config/mindMapGeometry'
+import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import type { Connection, MindGraphEdge, MindGraphEdgeType, MindGraphNode } from '@/types'
 import {
   connectionToVueFlowEdge,
@@ -24,7 +25,7 @@ import { isMindMapAssociationConnection, mindMapNodeSide } from '@/utils/mindMap
 import { buildMindMapOrthogonalSiblingMap } from '@/utils/mindMapOrthogonalSiblings'
 import { filterTreeMindMapNodes } from '@/utils/mindMapSummary'
 import { CIRCLE_MAP_OVAL_WIDTH_RATIO } from '@/utils/nodeShapeStyle'
-import { thinkingMapSolidThemeStroke } from '@/utils/thinkingMapConnectionStroke'
+import { resolveThinkingMapConnectorStroke } from '@/utils/thinkingMapConnectionStroke'
 
 import {
   recalculateBraceMapLayout,
@@ -391,9 +392,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     const isV2MindMap =
       (diagramType === 'mindmap' || diagramType === 'mind_map') &&
       effectiveMindMapMode.value === 'v2'
-    const thinkingMapStroke = isThinkingMapDiagramType(diagramType)
-      ? thinkingMapSolidThemeStroke(diagramData._mindmap_theme)
-      : null
+    const thinkingMap = isThinkingMapDiagramType(diagramType)
 
     const edges = connections
       .filter(
@@ -421,12 +420,16 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
               ),
             },
           }
-        } else if (thinkingMapStroke) {
+        } else if (thinkingMap) {
           effectiveConn = {
             ...effectiveConn,
             style: {
               ...(effectiveConn.style || {}),
-              strokeColor: thinkingMapStroke,
+              strokeColor: resolveThinkingMapConnectorStroke(
+                diagramData._mindmap_theme,
+                effectiveConn.style?.strokeColor,
+                MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
+              ),
             },
           }
         }

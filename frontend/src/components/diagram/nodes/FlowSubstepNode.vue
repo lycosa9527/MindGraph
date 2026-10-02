@@ -13,6 +13,8 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
+import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import type { MindGraphNodeProps } from '@/types'
@@ -20,6 +22,12 @@ import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { isFlowMapSubstepNode } from '@/utils/flowMapIdentity'
 import { paintNodeShape } from '@/utils/nodeShapeStyle'
+import {
+  THINKING_MAP_LEAF_TEXT,
+  thinkingMapBorderWidth,
+  thinkingMapBoxPadding,
+  thinkingMapDisplayedFontSize,
+} from '@/utils/thinkingMapChrome'
 import { thinkingMapDisplayedNodeColors } from '@/utils/thinkingMapNodePaint'
 
 import InlineEditableText from './InlineEditableText.vue'
@@ -45,26 +53,36 @@ const themeNodePaint = computed(() => {
     props.data.diagramType,
     diagramStore.data?._mindmap_theme,
     node,
-    props.data.style
+    props.data.style,
+    diagramStore.data?.connections
   )
 })
 
 const nodeStyle = computed(() => {
   const color = groupColor.value
   const borderColor =
-    themeNodePaint.value?.borderColor || props.data.style?.borderColor || color?.border || '#1976d2'
-  const borderWidth = props.data.style?.borderWidth || 1
+    themeNodePaint.value?.borderColor ||
+    props.data.style?.borderColor ||
+    color?.border ||
+    MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
+  const borderWidth = thinkingMapBorderWidth(
+    themeNodePaint.value?.borderWidth,
+    props.data.style?.borderWidth,
+    MIND_MAP_GEOMETRY.borderWidth
+  )
   const borderStyle = props.data.style?.borderStyle || 'solid'
   const backgroundColor =
     themeNodePaint.value?.backgroundColor ||
     props.data.style?.backgroundColor ||
     color?.fill ||
-    '#e3f2fd'
+    '#FFFFFF'
   const baseStyle = {
     backgroundColor,
-    color: themeNodePaint.value?.textColor || props.data.style?.textColor || '#333333',
+    color: themeNodePaint.value?.textColor || props.data.style?.textColor || THINKING_MAP_LEAF_TEXT,
     fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
-    fontSize: `${props.data.style?.fontSize || 12}px`,
+    fontSize: `${thinkingMapDisplayedFontSize(props.data.style?.fontSize, themeNodePaint.value?.fontSize ?? MIND_MAP_GEOMETRY.fontSize)}px`,
+    padding: thinkingMapBoxPadding(true),
+    boxShadow: MIND_MAP_GEOMETRY.branchShadow,
     fontWeight: props.data.style?.fontWeight || 'normal',
     fontStyle: props.data.style?.fontStyle || 'normal',
     textDecoration: props.data.style?.textDecoration || 'none',
@@ -76,17 +94,20 @@ const nodeStyle = computed(() => {
     baseStyle,
     props.data.style?.nodeShape,
     borderColor,
-    isFlowMap.value ? '9999px' : `${props.data.style?.borderRadius || 4}px`
+    isFlowMap.value ? '9999px' : `${props.data.style?.borderRadius || 4.5}px`
   )
   if (props.data.style?.nodeShape === 'underline') {
     shapedStyle.minHeight = 0
+    shapedStyle.boxShadow = 'none'
+    shapedStyle.padding = '0'
   }
   if (isFlowMap.value) {
     return {
       ...shapedStyle,
       width: 'max-content',
       minWidth: '120px',
-      minHeight: props.data.style?.nodeShape === 'underline' ? 0 : '48px',
+      minHeight:
+        props.data.style?.nodeShape === 'underline' ? 0 : `${MIND_MAP_GEOMETRY.minHeight}px`,
       maxWidth: '230px',
     }
   }
@@ -102,7 +123,7 @@ const substepMaxWidth = computed(() => {
   const label = ((props.data.label as string) || '').trim()
   if (!label) return `${SUBSTEP_MAX_TEXT_WIDTH}px`
 
-  const fontSize = parseFloat(nodeStyle.value.fontSize as string) || 12
+  const fontSize = parseFloat(nodeStyle.value.fontSize as string) || MIND_MAP_GEOMETRY.fontSize
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
   const textWidth = measureTextWidth(label, fontSize, { fontWeight })
 
@@ -185,7 +206,10 @@ function handleBranchMovePointerUp(): void {
     <NodeShapeUnderline
       v-if="data.style?.nodeShape === 'underline'"
       :color="
-        themeNodePaint?.borderColor || data.style?.borderColor || groupColor?.border || '#1976d2'
+        themeNodePaint?.borderColor ||
+        data.style?.borderColor ||
+        groupColor?.border ||
+        MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
       "
     />
     <InlineEditableText

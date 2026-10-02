@@ -10,7 +10,7 @@ import {
   DEFAULT_PADDING,
   DOUBLE_BUBBLE_MAX_CAPSULE_HEIGHT,
 } from '@/composables/diagrams/layoutConfig'
-import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 import type { Connection, DiagramNode } from '@/types'
 import {
   DOUBLE_BUBBLE_LEFT_TOPIC_ID,
@@ -286,7 +286,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
 
   leftDifferences.forEach((diff, index) => {
     const cy = diffStartY + index * layout.diffVerticalSpacing
-    const pairColor = getMindmapBranchColor(index)
+    const pairColor = thinkingMapStampedBranchColor(index)
     const leftId = takeDoubleBubbleMapStableId(claimedIds, diff.id)
     nodes.push({
       id: leftId,
@@ -323,7 +323,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
 
   rightDifferences.forEach((diff, index) => {
     const cy = diffStartY + index * layout.diffVerticalSpacing
-    const pairColor = getMindmapBranchColor(index)
+    const pairColor = thinkingMapStampedBranchColor(index)
     const rightId = takeDoubleBubbleMapStableId(claimedIds, diff.id)
     nodes.push({
       id: rightId,

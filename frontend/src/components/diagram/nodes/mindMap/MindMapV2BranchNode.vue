@@ -139,12 +139,12 @@ const nodeStyle = computed((): CSSProperties => {
     style.backgroundColor ||
     mindMapThemeColors.value.fill ||
     defaultStyle.value.backgroundColor ||
-    '#e3f2fd'
+    '#FFFFFF'
   const borderColor =
     style.borderColor ||
     mindMapThemeColors.value.border ||
     defaultStyle.value.borderColor ||
-    '#4e79a7'
+    MIND_MAP_GEOMETRY.defaultBorderColor
   const borderWidth =
     style.borderWidth ?? MIND_MAP_GEOMETRY.borderWidth ?? defaultStyle.value.borderWidth ?? 2
   const borderStyle = style.borderStyle || 'solid'
@@ -161,7 +161,7 @@ const nodeStyle = computed((): CSSProperties => {
     fontWeight: style.fontWeight || defaultStyle.value.fontWeight || 'normal',
     fontStyle: style.fontStyle || 'normal',
     textDecoration: style.textDecoration || 'none',
-    boxShadow: '0 1px 3px rgba(15, 23, 42, 0.06)',
+    boxShadow: MIND_MAP_GEOMETRY.branchShadow,
   }
 
   const shape = nodeShape.value

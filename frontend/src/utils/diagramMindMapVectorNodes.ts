@@ -94,7 +94,7 @@ export function renderMindMapVectorNode(
     options.diagramStyleId
   )
   const colors = resolveColors(node, options.outlineWireframe, options.diagramStyleId)
-  const radius = node.style.borderRadius ?? 10
+  const radius = node.style.borderRadius ?? 4.5
   const chunks: string[] = []
 
   if (shape !== 'underline') {

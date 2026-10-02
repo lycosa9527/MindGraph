@@ -28,8 +28,8 @@ const BALANCE_PADDING = 5
 /** Matches tree_map theme topic font (getNodeStyle topic fallback 18) */
 export const TREE_MAP_TOPIC_FONT_SIZE = 18
 /** Matches TopicNode px-6 / py-4 */
-export const TREE_MAP_TOPIC_PADDING_X = 24
-export const TREE_MAP_TOPIC_PADDING_Y = 16
+export const TREE_MAP_TOPIC_PADDING_X = 18
+export const TREE_MAP_TOPIC_PADDING_Y = 9
 /** Matches theme topicStrokeWidth */
 export const TREE_MAP_TOPIC_BORDER_WIDTH = 3
 

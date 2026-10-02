@@ -6,6 +6,8 @@
 import { computed } from 'vue'
 
 import { useTheme } from '@/composables/core/useTheme'
+import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
+import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import type { MindGraphNodeProps } from '@/types'
 
 const props = defineProps<MindGraphNodeProps>()
@@ -22,23 +24,24 @@ const defaultStyle = computed(() => getNodeStyle('boundary'))
 const width = computed(() => {
   const directStyle = props.data.style as { width?: number; height?: number } | undefined
   const originalStyle = props.data.originalNode?.style as
-    | { width?: number; height?: number }
-    | undefined
+    { width?: number; height?: number } | undefined
   return directStyle?.width || originalStyle?.width || 400
 })
 
 const height = computed(() => {
   const directStyle = props.data.style as { width?: number; height?: number } | undefined
   const originalStyle = props.data.originalNode?.style as
-    | { width?: number; height?: number }
-    | undefined
+    { width?: number; height?: number } | undefined
   return directStyle?.height || originalStyle?.height || 400
 })
 
 // Outer circle colors matching old JS bubble-map-renderer.js THEME
 // outerCircleStroke: #666666, outerCircleStrokeWidth: 2
 const strokeColor = computed(
-  () => props.data.style?.borderColor || defaultStyle.value.borderColor || '#666666'
+  () =>
+    props.data.style?.borderColor ||
+    defaultStyle.value.borderColor ||
+    MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
 )
 
 const strokeWidth = computed(
@@ -61,6 +64,7 @@ const strokeWidth = computed(
         fill="none"
         :stroke="strokeColor"
         :stroke-width="strokeWidth"
+        :stroke-opacity="MIND_MAP_GEOMETRY.edgeStrokeOpacity"
       />
     </svg>
   </div>

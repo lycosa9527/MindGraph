@@ -14,12 +14,19 @@ import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
+import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { paintNodeShape } from '@/utils/nodeShapeStyle'
+import {
+  thinkingMapBorderWidth,
+  thinkingMapBoxPadding,
+  thinkingMapDisplayedFontSize,
+} from '@/utils/thinkingMapChrome'
 import { thinkingMapDisplayedNodeColors } from '@/utils/thinkingMapNodePaint'
 
 import InlineEditableText from './InlineEditableText.vue'
@@ -66,7 +73,8 @@ const themeNodePaint = computed(() => {
     props.data.diagramType,
     diagramStore.data?._mindmap_theme,
     node,
-    props.data.style
+    props.data.style,
+    diagramStore.data?.connections
   )
 })
 
@@ -77,18 +85,19 @@ const nodeStyle = computed(() => {
     props.data.style?.borderColor ||
     color?.border ||
     defaultStyle.value.borderColor ||
-    (isWholeNode.value ? '#0d47a1' : '#1976d2')
-  const borderWidth =
-    props.data.style?.borderWidth ||
-    defaultStyle.value.borderWidth ||
-    (isWholeNode.value ? 3 : isSubpart.value ? 1 : 2)
+    MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
+  const borderWidth = thinkingMapBorderWidth(
+    themeNodePaint.value?.borderWidth,
+    props.data.style?.borderWidth,
+    defaultStyle.value.borderWidth ?? MIND_MAP_GEOMETRY.borderWidth
+  )
   const borderStyle = props.data.style?.borderStyle || 'solid'
   const backgroundColor =
     themeNodePaint.value?.backgroundColor ||
     props.data.style?.backgroundColor ||
     color?.fill ||
     defaultStyle.value.backgroundColor ||
-    (isWholeNode.value ? '#1976d2' : '#e3f2fd')
+    (isWholeNode.value ? MIND_MAP_RAINBOW_TOPIC_COLORS.topicBackgroundColor : '#FFFFFF')
 
   const base = {
     backgroundColor,
@@ -98,7 +107,9 @@ const nodeStyle = computed(() => {
       defaultStyle.value.textColor ||
       (isWholeNode.value ? '#ffffff' : '#333333'),
     fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
-    fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || (isWholeNode.value ? 18 : isSubpart.value ? 12 : 16)}px`,
+    fontSize: `${thinkingMapDisplayedFontSize(props.data.style?.fontSize, themeNodePaint.value?.fontSize ?? defaultStyle.value.fontSize ?? (isWholeNode.value ? MIND_MAP_GEOMETRY.topicFontSize : isSubpart.value ? MIND_MAP_GEOMETRY.fontSize : MIND_MAP_GEOMETRY.branchFontSize))}px`,
+    padding: thinkingMapBoxPadding(true),
+    boxShadow: isWholeNode.value ? MIND_MAP_GEOMETRY.topicShadow : MIND_MAP_GEOMETRY.branchShadow,
     fontWeight: isWholeNode.value
       ? 'bold'
       : props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
@@ -113,10 +124,10 @@ const nodeStyle = computed(() => {
     base,
     props.data.style?.nodeShape,
     borderColor,
-    usePillShape.value ? '9999px' : `${props.data.style?.borderRadius || 6}px`
+    usePillShape.value ? '9999px' : `${props.data.style?.borderRadius || 4.5}px`
   )
   if (props.data.style?.nodeShape === 'underline') {
-    return { ...painted, minHeight: 0 }
+    return { ...painted, minHeight: 0, boxShadow: 'none', padding: '0' }
   }
   return painted
 })
@@ -213,7 +224,7 @@ function handleBranchMovePointerUp(): void {
         data.style?.borderColor ||
         groupColor?.border ||
         defaultStyle.borderColor ||
-        '#1976d2'
+        MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
       "
     />
     <InlineEditableText

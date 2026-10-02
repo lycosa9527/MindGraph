@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.137] - 2026-10-03
+
+> **Thinking maps use the same rainbow chrome as mind map v2.**
+
+### Changed
+
+- **配色** — Topic, groups, leaves, braces, bridges, and connectors use the mind-map rainbow families, fonts, border width, and line opacity. A solid theme still paints the whole map. A hand-painted color stays.
+- **工具栏** — Node swatches match those families. Font size and border color read back the role on screen. Changing a border recolors that node's connectors.
+- **主题切换** — A solid theme clears a rainbow leaf bar and restores the border. Rainbow keeps a hand-painted leaf bar.
+
+### Added
+
+- **旧外观** — [`docs/architecture/diagram_chrome_legacy_spec.md`](docs/architecture/diagram_chrome_legacy_spec.md) records the previous Material look so it can be restored.
+
+### Tests
+
+- [`frontend/tests/thinkingMapNodePaint.spec.ts`](frontend/tests/thinkingMapNodePaint.spec.ts), [`frontend/tests/thinkingMapConnectionStroke.spec.ts`](frontend/tests/thinkingMapConnectionStroke.spec.ts), [`frontend/tests/thinkingMapNodeShape.spec.ts`](frontend/tests/thinkingMapNodeShape.spec.ts), [`frontend/tests/thinkingMapsAutocompleteLayout.spec.ts`](frontend/tests/thinkingMapsAutocompleteLayout.spec.ts), [`frontend/tests/braceMapLayout.spec.ts`](frontend/tests/braceMapLayout.spec.ts), [`frontend/tests/flowMapSubsteps.spec.ts`](frontend/tests/flowMapSubsteps.spec.ts), [`frontend/tests/diagramMindMapVectorExport.spec.ts`](frontend/tests/diagramMindMapVectorExport.spec.ts)
+
+## [5.180.137] - 2026-10-03
+
+> **Thinking maps use the same rainbow chrome as mind map v2.**
+
+### Changed
+
+- **配色** — Topic, groups, leaves, braces, bridges, and connectors use the mind-map rainbow families, fonts, border width, and line opacity. A solid theme still paints the whole map. A hand-painted color stays.
+- **工具栏** — Node swatches match those families. Font size and border color read back the role on screen. Changing a border recolors that node's connectors.
+- **主题切换** — A solid theme clears a rainbow leaf bar and restores the border. Rainbow keeps a hand-painted leaf bar.
+
+### Added
+
+- **旧外观** — [`docs/architecture/diagram_chrome_legacy_spec.md`](docs/architecture/diagram_chrome_legacy_spec.md) records the previous Material look so it can be restored.
+
+### Tests
+
+- [`frontend/tests/thinkingMapNodePaint.spec.ts`](frontend/tests/thinkingMapNodePaint.spec.ts), [`frontend/tests/thinkingMapConnectionStroke.spec.ts`](frontend/tests/thinkingMapConnectionStroke.spec.ts), [`frontend/tests/thinkingMapNodeShape.spec.ts`](frontend/tests/thinkingMapNodeShape.spec.ts), [`frontend/tests/thinkingMapsAutocompleteLayout.spec.ts`](frontend/tests/thinkingMapsAutocompleteLayout.spec.ts), [`frontend/tests/braceMapLayout.spec.ts`](frontend/tests/braceMapLayout.spec.ts), [`frontend/tests/flowMapSubsteps.spec.ts`](frontend/tests/flowMapSubsteps.spec.ts), [`frontend/tests/diagramMindMapVectorExport.spec.ts`](frontend/tests/diagramMindMapVectorExport.spec.ts)
+
 ## [5.180.136] - 2026-10-03
 
 > **Thinking maps follow the color theme, and a lecture names each map's own nodes.**

@@ -6,7 +6,7 @@
  * Uses mindmap branch color palette for each context (like double bubble map).
  */
 import { DEFAULT_CONTEXT_RADIUS } from '@/composables/diagrams/layoutConfig'
-import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 import type { Connection, DiagramNode } from '@/types'
 import {
   CIRCLE_BOUNDARY_NODE_ID,
@@ -205,7 +205,7 @@ export function recalculateCircleMapLayout(
       const y = Math.round(
         layout.centerY + layout.childrenRadius * Math.sin(angleRad) - contextHalfY
       )
-      const color = getMindmapBranchColor(index)
+      const color = thinkingMapStampedBranchColor(index)
       const { size: _contextSize, ...contextRest } = node.style || {}
       const contextStyle = contextPacked
         ? {
@@ -295,7 +295,7 @@ export function loadCircleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
       const y = Math.round(
         layout.centerY + layout.childrenRadius * Math.sin(angleRad) - contextRadius
       )
-      const color = getMindmapBranchColor(index)
+      const color = thinkingMapStampedBranchColor(index)
       const contextId = takeCircleMapStableId(claimedIds)
 
       nodes.push({

@@ -12,7 +12,7 @@ import {
   DEFAULT_TOPIC_RADIUS,
 } from '@/composables/diagrams/layoutConfig'
 import { bubbleMapChildrenRadius, polarToPosition } from '@/composables/diagrams/useRadialLayout'
-import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 import type { Connection, DiagramNode } from '@/types'
 import {
   BUBBLE_MAP_UID_DATA_KEY,
@@ -231,7 +231,7 @@ export function recalculateBubbleMapLayout(
       bubbleHalfY
     )
     const pos = { x: Math.round(x), y: Math.round(y) }
-    const color = getMindmapBranchColor(index)
+    const color = thinkingMapStampedBranchColor(index)
     const { size: _bubbleSize, ...bubbleRest } = node.style ?? {}
     result.push({
       ...node,
@@ -313,7 +313,7 @@ export function loadBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
         uniformRadius,
         uniformRadius
       )
-      const color = getMindmapBranchColor(index)
+      const color = thinkingMapStampedBranchColor(index)
       const bubbleId = takeBubbleMapStableId(claimedIds)
       nodes.push({
         id: bubbleId,

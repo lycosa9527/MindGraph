@@ -17,7 +17,6 @@ import {
   DEFAULT_PADDING,
   NODE_MIN_DIMENSIONS,
 } from '@/composables/diagrams/layoutConfig'
-import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
 import {
   BRACE_MAP_UID_DATA_KEY,
@@ -25,6 +24,7 @@ import {
   isLeftoverBraceMapId,
   takeBraceMapStableId,
 } from '@/utils/braceMapIdentity'
+import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 
 import {
   diagramLabelLikelyNeedsRenderedMeasure,
@@ -41,9 +41,9 @@ interface BraceNode {
 
 const BRACE_TOPIC_FONT_SIZE = 18
 const BRACE_PART_FONT_SIZE = 16
-const BRACE_SUBPART_FONT_SIZE = 12
-const BRACE_TOPIC_PADDING_X = 48 + 6 // px-6 (24*2) + border (3*2)
-const BRACE_PILL_PADDING_X = 40 + 4 // px-5 (20*2) + border (2*2)
+const BRACE_SUBPART_FONT_SIZE = 14
+const BRACE_TOPIC_PADDING_X = 36 + 3 // 18px each side + 1.5px border
+const BRACE_PILL_PADDING_X = 36 + 3 // 18px each side + 1.5px border
 const BRACE_MAX_NODE_WIDTH = 400
 const BRACE_NODE_BASE_MAX_TEXT_WIDTH = 350
 const BRACE_TOPIC_BASE_MAX_TEXT_WIDTH = 300
@@ -117,7 +117,7 @@ function estimateBraceNodeHeight(text: string, depth: number, typo?: BraceTypogr
   const fontFamily = typo?.fontFamily
   const maxTextWidth =
     depth === 0 ? BRACE_TOPIC_BASE_MAX_TEXT_WIDTH : BRACE_NODE_BASE_MAX_TEXT_WIDTH
-  const paddingY = depth === 0 ? 32 : 16
+  const paddingY = 18
 
   if (diagramLabelLikelyNeedsRenderedMeasure(trimmed)) {
     const contentH = measureRenderedDiagramLabelHeight(trimmed, fontSize, maxTextWidth, {
@@ -455,7 +455,7 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
         },
       }
       if (groupIndex !== undefined) {
-        const color = getMindmapBranchColor(groupIndex)
+        const color = thinkingMapStampedBranchColor(groupIndex)
         node.data = { ...node.data, groupIndex }
         node.style = { backgroundColor: color.fill, borderColor: color.border }
       }
@@ -572,7 +572,7 @@ export function recalculateBraceMapLayout(
       node.position = pos
       const groupIndex = groupIndexMap.get(fn.id)
       if (groupIndex !== undefined) {
-        const color = getMindmapBranchColor(groupIndex)
+        const color = thinkingMapStampedBranchColor(groupIndex)
         node.data = { ...node.data, groupIndex }
         node.style = {
           ...node.style,

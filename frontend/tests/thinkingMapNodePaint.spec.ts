@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { getMindMapThemeById } from '@/config/mindMapThemes'
+import { MIND_MAP_RAINBOW_FAMILIES } from '@/config/mindMapVibrantThemes'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { DiagramNode } from '@/types'
+import { thinkingMapBorderWidth } from '@/utils/thinkingMapChrome'
 import {
   restoreThinkingMapDefaultNodeColors,
   thinkingMapDisplayedNodeColors,
@@ -27,7 +29,12 @@ describe('thinking map node paint', () => {
       textColor: theme.textColor,
       borderColor: theme.borderColor,
     })
-    expect(thinkingMapDisplayedNodeColors('bubble_map', 'rainbow', grouped)).toBeNull()
+    const family = MIND_MAP_RAINBOW_FAMILIES[1]
+    expect(thinkingMapDisplayedNodeColors('bubble_map', 'rainbow', grouped)).toMatchObject({
+      backgroundColor: family.fill,
+      textColor: family.text,
+      borderColor: family.line,
+    })
     const painted = node({
       ...grouped,
       style: { backgroundColor: '#ff00aa', borderColor: '#ff00aa', textColor: '#111111' },
@@ -36,7 +43,6 @@ describe('thinking map node paint', () => {
   })
 
   it('restores per-group colors on the default theme and clears the topic', () => {
-    const palette = getMindmapBranchColor(0)
     const nodes = [
       node({
         id: 'topic',
@@ -70,14 +76,22 @@ describe('thinking map node paint', () => {
     restoreThinkingMapDefaultNodeColors('bubble_map', nodes.slice(0, 2))
     expect(nodes[0].style?.backgroundColor).toBeUndefined()
     expect(nodes[0].style?.fontSize).toBe(18)
-    expect(nodes[1].style?.backgroundColor).toBe(palette.fill)
-    expect(nodes[1].style?.borderColor).toBe(palette.border)
+    const restored = MIND_MAP_RAINBOW_FAMILIES[0]
+    expect(nodes[1].style?.backgroundColor).toBe(restored.fill)
+    expect(nodes[1].style?.borderColor).toBe(restored.line)
     expect(nodes[1].style?.fontSize).toBe(14)
 
     restoreThinkingMapDefaultNodeColors('double_bubble_map', nodes.slice(2))
-    expect(nodes[2].style?.backgroundColor).toBeUndefined()
-    const diffPalette = getMindmapBranchColor(2)
-    expect(nodes[3].style?.backgroundColor).toBe(diffPalette.fill)
-    expect(nodes[3].style?.borderColor).toBe(diffPalette.border)
+    expect(nodes[2].style?.backgroundColor).toBe('#FFFFFF')
+    expect(nodes[2].style?.borderColor).toBe('#3B5BDB')
+    const diffFamily = MIND_MAP_RAINBOW_FAMILIES[2]
+    expect(nodes[3].style?.backgroundColor).toBe(diffFamily.fill)
+    expect(nodes[3].style?.borderColor).toBe(diffFamily.line)
+  })
+
+  it('keeps a painted zero border and ignores a leftover stored zero', () => {
+    expect(thinkingMapBorderWidth(0, 1.5, 1.5)).toBe(0)
+    expect(thinkingMapBorderWidth(undefined, 0, 1.5)).toBe(1.5)
+    expect(thinkingMapBorderWidth(undefined, 2, 1.5)).toBe(2)
   })
 })

@@ -14,7 +14,6 @@ import {
   FLOW_SUBSTEP_SPACING,
   FLOW_TOPIC_TO_STEP_GAP,
 } from '@/composables/diagrams/layoutConfig'
-import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
 import {
   FLOW_MAP_UID_DATA_KEY,
@@ -23,6 +22,7 @@ import {
   stampFlowMapSubstepData,
   takeFlowMapStableId,
 } from '@/utils/flowMapIdentity'
+import { thinkingMapFamilyLine } from '@/utils/thinkingMapChrome'
 
 import {
   type FlowSubstepEntry,
@@ -34,12 +34,12 @@ import {
 import { measureTextWidth } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 
-const FLOW_SUBSTEP_FONT_SIZE = 12
-const FLOW_STEP_FONT_SIZE = 13
-const FLOW_NODE_PADDING_X = 40
+const FLOW_SUBSTEP_FONT_SIZE = 14
+const FLOW_STEP_FONT_SIZE = 16
+const FLOW_NODE_PADDING_X = 36
 /** Topic node: px-6 = 24px each side; fontWeight bold for accurate measurement */
 const FLOW_TOPIC_FONT_SIZE = 18
-const FLOW_TOPIC_PADDING_X = 48
+const FLOW_TOPIC_PADDING_X = 36
 const FLOW_MAX_TEXT_WIDTH = 250
 const FLOW_TOPIC_MAX_TEXT_WIDTH = 300
 const FLOW_SUBSTEP_MAX_TEXT_WIDTH = 180
@@ -524,7 +524,7 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
       }
 
       // Main flow: straight vertical line (topic -> step1 -> step2 -> step3)
-      const stepColor = getMindmapBranchColor(groupIndex).border
+      const stepColor = thinkingMapFamilyLine(groupIndex)
       if (groupIndex === 0) {
         connections.push({
           id: `edge-${FLOW_TOPIC_NODE_ID}-${group.stepId}`,
@@ -658,7 +658,7 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
         },
       })
 
-      const stepColor = getMindmapBranchColor(stepIndex).border
+      const stepColor = thinkingMapFamilyLine(stepIndex)
       if (stepIndex === 0) {
         connections.push({
           id: `edge-${FLOW_TOPIC_NODE_ID}-${group.stepId}`,

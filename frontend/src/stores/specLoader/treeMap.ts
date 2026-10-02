@@ -18,9 +18,9 @@ import {
   TREE_MAP_LEAF_SPACING,
   TREE_MAP_TOPIC_TO_CATEGORY_GAP,
 } from '@/composables/diagrams/layoutConfig'
-import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { measureTextDimensions } from '@/stores/specLoader/textMeasurement'
 import type { Connection, DiagramNode } from '@/types'
+import { thinkingMapStampedBranchColor } from '@/utils/thinkingMapChrome'
 import {
   TREE_MAP_UID_DATA_KEY,
   TREE_TOPIC_NODE_ID,
@@ -37,16 +37,18 @@ import {
 import { measureTreeMapTopicDimensions, treeMapTopicPositionFromLayout } from './treeMapTopicLayout'
 import type { SpecLoaderResult } from './types'
 
-/** Font size for branch nodes (matches theme default) */
+/** Font size for category nodes (L1). */
 const TREE_MAP_BRANCH_FONT_SIZE = 16
-/** Horizontal padding inside node (px-4 = 16px each side) */
-const TREE_MAP_NODE_PADDING_X = 32
-/** Vertical padding inside node (py-2 = 8px each side) */
-const TREE_MAP_NODE_PADDING_Y = 8
-/** Border width for category nodes (theme branchStrokeWidth) - add to measured width for layout */
+/** Font size for leaf nodes (L2). */
+const TREE_MAP_LEAF_FONT_SIZE = 14
+/** Horizontal padding inside node (12px each side). */
+const TREE_MAP_NODE_PADDING_X = 24
+/** Vertical padding inside node (9px each side). */
+const TREE_MAP_NODE_PADDING_Y = 9
+/** Border width for category nodes — add to measured width for layout. */
 const TREE_MAP_CATEGORY_BORDER = 1.5
-/** Border width for leaf nodes (theme leafStrokeWidth) - add to measured width for layout */
-const TREE_MAP_LEAF_BORDER = 1
+/** Leaf nodes use a left bar instead of a stroke. */
+const TREE_MAP_LEAF_BORDER = 0
 
 interface TreeNode {
   id?: string
@@ -121,7 +123,7 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
       const leafHeights: number[] = []
       let maxW = catWidth
       leaves.forEach((leaf) => {
-        const leafDims = measureTextDimensions(leaf.text, TREE_MAP_BRANCH_FONT_SIZE, {
+        const leafDims = measureTextDimensions(leaf.text, TREE_MAP_LEAF_FONT_SIZE, {
           paddingX: TREE_MAP_NODE_PADDING_X / 2,
           paddingY: TREE_MAP_NODE_PADDING_Y,
         })
@@ -154,7 +156,7 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
       const dims = groupDimsList[catIndex]
       const groupCenterX = columnLeft + dims.maxWidth / 2
       const categoryX = groupCenterX - dims.categoryWidth / 2
-      const groupColor = getMindmapBranchColor(catIndex)
+      const groupColor = thinkingMapStampedBranchColor(catIndex)
 
       nodes.push({
         id: categoryId,
@@ -340,7 +342,7 @@ export function recalculateTreeMapLayout(
       const leafText = leaf.text ?? ''
       const leafBox = resolveTreeMapBox(leafId, nodeDimensions, () => {
         const fs =
-          typeof leaf.style?.fontSize === 'number' ? leaf.style.fontSize : TREE_MAP_BRANCH_FONT_SIZE
+          typeof leaf.style?.fontSize === 'number' ? leaf.style.fontSize : TREE_MAP_LEAF_FONT_SIZE
         const fw = (leaf.style?.fontWeight as string | undefined) ?? 'normal'
         const leafDims = measureTextDimensions(leafText, fs, {
           paddingX: TREE_MAP_NODE_PADDING_X / 2,

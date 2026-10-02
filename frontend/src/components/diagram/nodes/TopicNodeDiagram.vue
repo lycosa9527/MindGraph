@@ -15,11 +15,18 @@ import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { MULTI_FLOW_TOPIC_LABEL_MAX_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
+import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
+import { MIND_MAP_RAINBOW_TOPIC_COLORS } from '@/config/mindMapVibrantThemes'
 import { useLLMResultsStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { type NodeShape, applyNodeShapeToStyle, resolveNodeShape } from '@/utils/nodeShapeStyle'
+import {
+  thinkingMapBorderWidth,
+  thinkingMapBoxPadding,
+  thinkingMapDisplayedFontSize,
+} from '@/utils/thinkingMapChrome'
 import { thinkingMapDisplayedNodeColors } from '@/utils/thinkingMapNodePaint'
 
 import InlineEditableText from './InlineEditableText.vue'
@@ -126,7 +133,8 @@ const themeNodePaint = computed(() => {
     props.data.diagramType,
     diagramStore.data?._mindmap_theme,
     node,
-    resolvedStyle.value
+    resolvedStyle.value,
+    diagramStore.data?.connections
   )
 })
 
@@ -136,14 +144,18 @@ const nodeStyle = computed(() => {
     themeNodePaint.value?.borderColor ||
     style.borderColor ||
     defaultStyle.value.borderColor ||
-    '#0d47a1'
-  const borderWidth = style.borderWidth ?? defaultStyle.value.borderWidth ?? 3
+    MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
+  const borderWidth = thinkingMapBorderWidth(
+    themeNodePaint.value?.borderWidth,
+    style.borderWidth,
+    defaultStyle.value.borderWidth ?? MIND_MAP_GEOMETRY.borderWidth
+  )
   const borderStyle = style.borderStyle || 'solid'
   const backgroundColor =
     themeNodePaint.value?.backgroundColor ||
     style.backgroundColor ||
     defaultStyle.value.backgroundColor ||
-    '#1976d2'
+    MIND_MAP_RAINBOW_TOPIC_COLORS.topicBackgroundColor
 
   const baseStyle = {
     backgroundColor,
@@ -153,10 +165,12 @@ const nodeStyle = computed(() => {
       defaultStyle.value.textColor ||
       '#ffffff',
     fontFamily: style.fontFamily || DIAGRAM_NODE_FONT_STACK,
-    fontSize: `${style.fontSize || defaultStyle.value.fontSize || 18}px`,
+    fontSize: `${thinkingMapDisplayedFontSize(style.fontSize, defaultStyle.value.fontSize || MIND_MAP_GEOMETRY.topicFontSize)}px`,
     fontWeight: style.fontWeight || defaultStyle.value.fontWeight || 'bold',
     fontStyle: style.fontStyle || 'normal',
     textDecoration: style.textDecoration || 'none',
+    padding: thinkingMapBoxPadding(true),
+    boxShadow: MIND_MAP_GEOMETRY.topicShadow,
     ...getBorderStyleProps(borderColor, borderWidth, borderStyle, {
       backgroundColor,
     }),
@@ -164,17 +178,19 @@ const nodeStyle = computed(() => {
 
   const shape = topicNodeShape.value
   const shapedStyle = style.nodeShape
-    ? applyNodeShapeToStyle(baseStyle, shape, borderColor, false)
+    ? applyNodeShapeToStyle(baseStyle, shape, borderColor, true)
     : {
         ...baseStyle,
         borderRadius: isPillShape.value
           ? '9999px'
           : isRoundedRectangle.value
-            ? `${style.borderRadius || 8}px`
+            ? `${style.borderRadius || 4.5}px`
             : `${style.borderRadius || 50}%`,
       }
   if (style.nodeShape === 'underline' && !isTreeMap.value) {
     shapedStyle.minHeight = 0
+    shapedStyle.boxShadow = 'none'
+    shapedStyle.padding = '0'
   }
 
   if (isMultiFlowMap.value && dynamicWidth.value !== null) {
@@ -199,7 +215,8 @@ const nodeStyle = computed(() => {
       ...shapedStyle,
       width: 'max-content',
       minWidth: '120px',
-      minHeight: props.data.style?.nodeShape === 'underline' ? 0 : '48px',
+      minHeight:
+        props.data.style?.nodeShape === 'underline' ? 0 : `${MIND_MAP_GEOMETRY.minHeight}px`,
       maxWidth: '400px',
     }
   }
@@ -363,7 +380,7 @@ function handleWidthChange(width: number) {
           themeNodePaint?.borderColor ||
           resolvedStyle.borderColor ||
           defaultStyle.borderColor ||
-          '#0d47a1'
+          MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor
         "
       />
       <InlineEditableText

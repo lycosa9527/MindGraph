@@ -29,15 +29,15 @@ export { diagramLabelLikelyNeedsRenderedMeasure }
 
 const MEASURE_FONT_FAMILY = DIAGRAM_NODE_FONT_STACK
 const MIN_FONT_SIZE = 6
-const TOPIC_DEFAULT_FONT_SIZE = 20
-const CONTEXT_DEFAULT_FONT_SIZE = 14
+const TOPIC_DEFAULT_FONT_SIZE = 18
+const CONTEXT_DEFAULT_FONT_SIZE = 16
 const FONT_SIZE_STEP = 0.5
 const MAX_WIDTH_OFFSET = 16
-const BORDER_TOPIC = 3
-const BORDER_CONTEXT = 2
+const BORDER_TOPIC = 1.5
+const BORDER_CONTEXT = 1.5
 
-/** Fixed font size for circle map context nodes (never change; grow circle instead). */
-export const CONTEXT_FONT_SIZE = 14
+/** Fixed font size for circle map context nodes (L1). Grow the circle instead of shrinking type. */
+export const CONTEXT_FONT_SIZE = 16
 /** Fixed font size for circle map topic node (never change; grow circle instead). */
 export const TOPIC_FONT_SIZE = 18
 

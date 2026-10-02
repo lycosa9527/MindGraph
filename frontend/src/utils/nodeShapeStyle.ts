@@ -165,7 +165,7 @@ export function paintNodeShape(
   fallbackRadius: string
 ): CSSProperties {
   if (!shape) return { ...base, borderRadius: fallbackRadius }
-  return applyNodeShapeToStyle(base, shape, borderColor, false)
+  return applyNodeShapeToStyle(base, shape, borderColor, true)
 }
 
 /** Place vue-flow handles on the underline midline (horizontal branch join). */
