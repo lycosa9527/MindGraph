@@ -25,6 +25,7 @@ class ResponsesRequest:
     enable_thinking: bool = True
     max_output_tokens: int = 4096
     temperature: Optional[float] = None
+    reasoning_effort: Optional[str] = None
     extra: Dict[str, Any] = field(default_factory=dict)
 
     def canonical_tools(self) -> List[str]:

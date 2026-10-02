@@ -1,7 +1,8 @@
 """
-Mind map node explain — a 250–400 character gloss for one selected node.
+Mind map node explain — about 200 words for one selected node.
 
-Meaning facet writes after web search; images run on a parallel Responses call.
+Meaning facet writes after one web search, with a short reasoning trace.
+Images run on a parallel Responses call with thinking off.
 Conflict and questions stay on chat completions.
 """
 
@@ -11,8 +12,10 @@ from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from agents.mind_maps.node_explain_prompts import (
     RESEARCH_IMAGE_MAX_OUTPUT_TOKENS,
+    RESEARCH_IMAGE_REASONING_EFFORT,
     RESEARCH_IMAGE_TOOLS,
     RESEARCH_MAX_OUTPUT_TOKENS,
+    RESEARCH_REASONING_EFFORT,
     RESEARCH_TOOLS,
     build_facet_prompt,
     build_research_image_prompt,
@@ -61,6 +64,7 @@ class MindMapNodeExplainGenerator:
         ancestor_path: Optional[List[str]] = None,
         sibling_branches: Optional[List[str]] = None,
         child_branches: Optional[List[str]] = None,
+        node_role: str = "",
         language: str = "en",
         facet: str = "meaning",
         audience_level: Optional[str] = None,
@@ -92,6 +96,7 @@ class MindMapNodeExplainGenerator:
                 ancestor_path=ancestors,
                 sibling_branches=siblings,
                 child_branches=children,
+                node_role=node_role,
                 language=language,
                 audience_level=audience_level,
                 user_id=user_id,
@@ -115,6 +120,7 @@ class MindMapNodeExplainGenerator:
             language=language,
             audience_level=audience_level,
             generation_instructions=generation_instructions,
+            node_role=node_role,
         )
         async for event in self._stream_chat_tokens(
             prompt=prompt,
@@ -138,6 +144,7 @@ class MindMapNodeExplainGenerator:
         ancestor_path: List[str],
         sibling_branches: List[str],
         child_branches: List[str],
+        node_role: str,
         language: str,
         audience_level: Optional[str],
         user_id: Optional[int],
@@ -157,6 +164,7 @@ class MindMapNodeExplainGenerator:
             language=language,
             audience_level=audience_level,
             generation_instructions=generation_instructions,
+            node_role=node_role,
         )
         image_prompt = build_research_image_prompt(
             node_label=node_label,
@@ -167,6 +175,7 @@ class MindMapNodeExplainGenerator:
             prompt=prompt,
             tools=list(RESEARCH_TOOLS),
             enable_thinking=True,
+            reasoning_effort=RESEARCH_REASONING_EFFORT,
             max_output_tokens=RESEARCH_MAX_OUTPUT_TOKENS,
             temperature=0.6,
             user_id=user_id,
@@ -179,7 +188,8 @@ class MindMapNodeExplainGenerator:
         image_stream = self.responses_service.stream(
             prompt=image_prompt,
             tools=list(RESEARCH_IMAGE_TOOLS),
-            enable_thinking=True,
+            enable_thinking=False,
+            reasoning_effort=RESEARCH_IMAGE_REASONING_EFFORT,
             max_output_tokens=RESEARCH_IMAGE_MAX_OUTPUT_TOKENS,
             temperature=0.6,
             user_id=user_id,

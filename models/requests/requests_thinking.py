@@ -463,6 +463,11 @@ class MindMapNodeExplainRequest(BaseModel):
         max_length=24,
         description="Child labels under the selected node",
     )
+    node_role: str = Field(
+        "",
+        max_length=40,
+        description="Thinking-map role of the selected node (attribute, cause, step, …)",
+    )
     language: str = Field(
         "en",
         description="Prompt / generation language code (see prompt output registry)",

@@ -110,6 +110,7 @@ class LLMResponsesService:
         model: Optional[str] = None,
         provider: str = DEFAULT_PROVIDER,
         enable_thinking: bool = True,
+        reasoning_effort: Optional[str] = None,
         max_output_tokens: int = DEFAULT_MAX_OUTPUT_TOKENS,
         temperature: Optional[float] = None,
         user_id: Optional[int] = None,
@@ -138,6 +139,7 @@ class LLMResponsesService:
             enable_thinking=enable_thinking,
             max_output_tokens=max_output_tokens,
             temperature=temperature,
+            reasoning_effort=reasoning_effort,
         )
         org_config = await load_org_custom_llm_config(organization_id)
         metrics_provider = org_config.api_type if org_config is not None else "dashscope"

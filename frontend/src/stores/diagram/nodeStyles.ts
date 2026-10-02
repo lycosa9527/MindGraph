@@ -1,5 +1,6 @@
 import { nextTick } from 'vue'
 
+import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import { pickFormatBrushStyle } from '@/composables/canvasToolbar/formatBrushStyle'
 import type { MindMapDiagramStyleId } from '@/config/mindMapDiagramStyles'
 import {
@@ -29,6 +30,7 @@ import {
 } from '@/utils/mindMapBranchNumbering'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { resolveNodeShape } from '@/utils/nodeShapeStyle'
+import { restoreThinkingMapDefaultNodeColors } from '@/utils/thinkingMapNodePaint'
 
 import {
   estimateNumberedBranchWidth,
@@ -242,6 +244,7 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
     if (!nodes?.length) return
 
     const isMindMap = ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map'
+    const thinkingMap = isThinkingMapDiagramType(ctx.type.value)
     if (data.value) {
       data.value._mindmap_theme = options.themeId
       if (isMindMap) {
@@ -249,7 +252,9 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
       }
     }
 
-    if (isMindMap && isRainbowMindMapTheme(options.themeId)) {
+    if (thinkingMap && isRainbowMindMapTheme(options.themeId)) {
+      restoreThinkingMapDefaultNodeColors(ctx.type.value, nodes)
+    } else if (isMindMap && isRainbowMindMapTheme(options.themeId)) {
       applyRainbowMindMapColors(nodes, connections ?? [])
     } else {
       const theme = getMindMapThemeById(options.themeId)

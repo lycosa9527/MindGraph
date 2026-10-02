@@ -22,7 +22,11 @@ import { MiniMap } from '@vue-flow/minimap'
 
 import { storeToRefs } from 'pinia'
 
-import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
+import {
+  diagramRibbonCapabilities,
+  isThinkingMapDiagramType,
+} from '@/canvas-ribbon/diagramRibbonCapabilities'
+import { showsNodeFloatingAiSubgraph } from '@/canvas-ribbon/nodeFloatingAiSubgraph'
 import { CanvasNodeFloatingToolbar, ExportToCommunityModal } from '@/components/canvas'
 import CanvasWorksheetTextModal from '@/components/canvas/CanvasWorksheetTextModal.vue'
 import MindMapNodeExplainBubble from '@/components/canvas/MindMapNodeExplainBubble.vue'
@@ -94,7 +98,6 @@ import { type MindMapCanvasMode, useUIStore } from '@/stores/ui'
 import type { MindGraphNode, PresentationHighlightStroke, PresentationToolId } from '@/types'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import { isMindMapConnectorDebugEnabled } from '@/utils/mindMapConnectorDebugLevel'
-import { isMindMapSubgraphExpandable } from '@/utils/mindMapSubgraphContext'
 import { isMindMapSummaryNodeId } from '@/utils/mindMapSummary'
 
 import BraceOverlay from './BraceOverlay.vue'
@@ -390,15 +393,9 @@ const floatingToolbarEnabled = computed(
 
 const floatingToolbarAnchorId = computed(() => floatingToolbarNodeIds.value[0] ?? null)
 
-const floatingToolbarShowAiSubgraph = computed(() => {
-  if (isThinkingMapDiagramType(diagramStore.type) || diagramStore.type === 'concept_map') {
-    return floatingToolbarAnchorId.value != null
-  }
-  return (
-    (diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map') &&
-    isMindMapSubgraphExpandable(floatingToolbarAnchorId.value)
-  )
-})
+const floatingToolbarShowAiSubgraph = computed(() =>
+  showsNodeFloatingAiSubgraph(diagramStore.type, useMindMapV2.value, floatingToolbarAnchorId.value)
+)
 
 const floatingToolbarSize = ref<FloatingToolbarSize | null>(null)
 
@@ -455,6 +452,7 @@ const {
 const { isGenerating: subgraphGenerating, generateSubgraph } = useMindMapSubgraphSuggest()
 
 function runAiSubgraph(nodeId: string | null): void {
+  if (!diagramRibbonCapabilities(diagramStore.type, useMindMapV2.value).subgraph) return
   if (diagramStore.type === 'concept_map') {
     if (nodeId) openConceptMapNodePalette()
     return

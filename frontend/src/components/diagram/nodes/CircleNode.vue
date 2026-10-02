@@ -37,6 +37,7 @@ import { isCircleMapContextNode } from '@/utils/circleMapIdentity'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
 import { CIRCLE_MAP_OVAL_WIDTH_RATIO, applyNodeShapeToStyle } from '@/utils/nodeShapeStyle'
+import { thinkingMapDisplayedNodeColors } from '@/utils/thinkingMapNodePaint'
 
 import InlineEditableText from './InlineEditableText.vue'
 import NodeShapeUnderline from './NodeShapeUnderline.vue'
@@ -259,9 +260,21 @@ const textMaxWidth = computed(() => {
 // Circle Map colors matching old JS bubble-map-renderer.js THEME
 // Topic: fill #1976d2 (blue), text #fff, stroke #0d47a1, strokeWidth 3
 // Context: per-group colors from mindmap palette (bubble_map, circle_map)
+const themeNodePaint = computed(() => {
+  const node = props.data.originalNode
+  if (!node) return null
+  return thinkingMapDisplayedNodeColors(
+    props.data.diagramType,
+    diagramStore.data?._mindmap_theme,
+    node,
+    props.data.style
+  )
+})
+
 const shapeLineColor = computed(() => {
   const color = groupColor.value
   return (
+    themeNodePaint.value?.borderColor ||
     props.data.style?.borderColor ||
     color?.border ||
     defaultStyle.value.borderColor ||
@@ -288,6 +301,7 @@ const nodeStyle = computed(() => {
   const height = isCapsuleNode.value ? capsuleHeight.value : circleSize.value
   const color = groupColor.value
   const borderColor =
+    themeNodePaint.value?.borderColor ||
     props.data.style?.borderColor ||
     color?.border ||
     defaultStyle.value.borderColor ||
@@ -296,6 +310,7 @@ const nodeStyle = computed(() => {
     props.data.style?.borderWidth || defaultStyle.value.borderWidth || (isTopicNode.value ? 3 : 2)
   const borderStyle = props.data.style?.borderStyle || 'solid'
   const backgroundColor =
+    themeNodePaint.value?.backgroundColor ||
     props.data.style?.backgroundColor ||
     color?.fill ||
     defaultStyle.value.backgroundColor ||
@@ -322,6 +337,7 @@ const nodeStyle = computed(() => {
       : {}),
     backgroundColor,
     color:
+      themeNodePaint.value?.textColor ||
       props.data.style?.textColor ||
       defaultStyle.value.textColor ||
       (isTopicNode.value ? '#ffffff' : '#333333'),

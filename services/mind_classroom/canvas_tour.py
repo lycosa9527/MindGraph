@@ -30,6 +30,7 @@ from services.mind_classroom.prompts.canvas_tour_prompts import (
     build_canvas_tour_system_message,
     build_canvas_tour_user_message,
 )
+from services.mind_classroom.prompts.diagram_prompts import with_diagram_type
 from services.mind_classroom.steps import MAX_STEPS_DEFAULT, normalize_steps
 from services.mind_classroom.transcript_persist import attach_transcript_md
 from services.mind_classroom.token_usage import track_classroom_usage
@@ -300,6 +301,7 @@ async def generate_tour_steps(
     spec: Optional[dict[str, Any]] = None,
 ) -> tuple[list[dict[str, Any]], Optional[dict[str, Any]]]:
     """One LLM call, or one parallel call per L1 family (main_branch or each_node)."""
+    settings = with_diagram_type(settings, spec)
     families = split_each_node_families(tour_nodes)
     if len(families) <= 1:
         label = family_branch_label(families[0]) if families else ""

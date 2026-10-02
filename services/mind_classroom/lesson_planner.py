@@ -534,6 +534,8 @@ async def plan_lesson_from_outline(
     model = planner_model_id()
     max_tokens = planner_max_tokens()
     title = diagram_title or outline.topic
+    settings = dict(settings or {})
+    settings.setdefault("diagram_type", outline.diagram_type)
     outline_payload = outline.to_planner_payload()
     branch_total = len(outline.branches)
     usage_total: Optional[dict[str, Any]] = None

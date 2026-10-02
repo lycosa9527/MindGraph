@@ -26,6 +26,7 @@ import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { isFlowMapStepNode } from '@/utils/flowMapIdentity'
 import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
 import { paintNodeShape } from '@/utils/nodeShapeStyle'
+import { thinkingMapDisplayedNodeColors } from '@/utils/thinkingMapNodePaint'
 
 import InlineEditableText from './InlineEditableText.vue'
 import NodeShapeUnderline from './NodeShapeUnderline.vue'
@@ -66,13 +67,29 @@ const groupColor = computed(() => {
     : null
 })
 
+const themeNodePaint = computed(() => {
+  const node = props.data.originalNode
+  if (!node) return null
+  return thinkingMapDisplayedNodeColors(
+    props.data.diagramType,
+    diagramStore.data?._mindmap_theme,
+    node,
+    props.data.style
+  )
+})
+
 const nodeStyle = computed(() => {
   const color = groupColor.value
   const borderColor =
-    props.data.style?.borderColor || color?.border || defaultStyle.value.borderColor || '#409eff'
+    themeNodePaint.value?.borderColor ||
+    props.data.style?.borderColor ||
+    color?.border ||
+    defaultStyle.value.borderColor ||
+    '#409eff'
   const borderWidth = props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2
   const borderStyle = props.data.style?.borderStyle || 'solid'
   const backgroundColor =
+    themeNodePaint.value?.backgroundColor ||
     props.data.style?.backgroundColor ||
     color?.fill ||
     defaultStyle.value.backgroundColor ||
@@ -80,7 +97,11 @@ const nodeStyle = computed(() => {
 
   const baseStyle = {
     backgroundColor,
-    color: props.data.style?.textColor || defaultStyle.value.textColor || '#303133',
+    color:
+      themeNodePaint.value?.textColor ||
+      props.data.style?.textColor ||
+      defaultStyle.value.textColor ||
+      '#303133',
     fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
     fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 13}px`,
     fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
@@ -144,7 +165,11 @@ const underlineBottomHandleStyle = computed(() => {
 const shapeLineColor = computed(() => {
   const color = groupColor.value
   return (
-    props.data.style?.borderColor || color?.border || defaultStyle.value.borderColor || '#409eff'
+    themeNodePaint.value?.borderColor ||
+    props.data.style?.borderColor ||
+    color?.border ||
+    defaultStyle.value.borderColor ||
+    '#409eff'
   )
 })
 

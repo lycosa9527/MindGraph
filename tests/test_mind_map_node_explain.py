@@ -75,8 +75,8 @@ def test_general_meaning_prompt_is_neutral() -> None:
     assert "【专业程度】" in prompt
     assert "专业程度：通用" in prompt
     assert "不要故意小学化" in prompt
-    assert "不少于 250 字" in prompt
-    assert "250–400 字" in prompt
+    assert "约 200 字" in prompt
+    assert "不要超过 220 字" in prompt
     assert "40–60" not in prompt
     assert "一两句" not in prompt
     assert "短释义" not in prompt
@@ -95,8 +95,8 @@ def test_primary_meaning_prompt_uses_kid_voice() -> None:
     assert "日常口语" in prompt
     assert "小朋友" in prompt
     assert "苹果是长在树上的红色水果" in prompt
-    assert "不少于 250 字" in prompt
-    assert "250–400 字" in prompt
+    assert "约 200 字" in prompt
+    assert "不要超过 220 字" in prompt
     assert "专业程度：小学" in prompt
     assert "禁止术语" in prompt
 
@@ -132,7 +132,7 @@ def test_english_primary_meaning_prompt_keeps_apple_example() -> None:
         audience_level="primary",
     )
     assert "Apple" in prompt
-    assert "160–260 words" in prompt
+    assert "About 200 words" in prompt
     assert "red fruit that grows on trees" in prompt
     assert "Expertise: primary school" in prompt
 
@@ -231,6 +231,78 @@ def test_explain_request_unknown_audience_falls_back_to_general() -> None:
     assert req.audience_level == "general"
 
 
+def test_bubble_prompt_uses_attribute_role() -> None:
+    """A bubble-map node is an attribute, not a mind-map branch."""
+    prompt = build_facet_prompt(
+        facet="meaning",
+        node_label="脆甜",
+        topic="苹果",
+        diagram_type="bubble_map",
+        top_level_branches=["红色", "脆甜"],
+        ancestor_path=[],
+        sibling_branches=["红色"],
+        child_branches=[],
+        language="zh",
+        node_role="attribute",
+    )
+    assert "被描述的事物：苹果" in prompt
+    assert "属性：红色、脆甜" in prompt
+    assert "脆甜（属性）" in prompt
+    assert "不要叫成分支" in prompt
+    assert "主要分支" not in prompt
+    assert "该节点下的子节点" not in prompt
+
+
+def test_multi_flow_prompt_separates_cause_and_effect() -> None:
+    """Causes and effects keep their own headings."""
+    prompt = build_research_meaning_prompt(
+        node_label="堵车",
+        topic="迟到",
+        diagram_type="multi_flow_map",
+        top_level_branches=["堵车"],
+        ancestor_path=[],
+        sibling_branches=[],
+        child_branches=["批评"],
+        language="zh",
+        node_role="cause",
+    )
+    assert "事件：迟到" in prompt
+    assert "原因：堵车" in prompt
+    assert "结果：批评" in prompt
+    assert "堵车（原因）" in prompt
+    assert "主要分支" not in prompt
+
+
+def test_each_diagram_prompt_uses_its_own_roles() -> None:
+    """Headings follow the diagram, and mind-map words stay off thinking maps."""
+    cases = [
+        ("circle_map", "context", "中心词", "周围联想", "主要分支"),
+        ("bubble_map", "attribute", "被描述的事物", "属性", "主要分支"),
+        ("tree_map", "item", "被分类的主题", "上层类别", "主要分支"),
+        ("brace_map", "part", "整体", "子部分", "主要分支"),
+        ("flow_map", "substep", "过程", "所属步骤", "主要分支"),
+        ("bridge_map", "analogy_left", "关系因子", "这一对的另一项", "主要分支"),
+        ("concept_map", "concept", "焦点概念", "相关关系", "主要分支"),
+    ]
+    for diagram_type, role, topic_heading, detail_heading, banned in cases:
+        prompt = build_facet_prompt(
+            facet="meaning",
+            node_label="节点",
+            topic="主题",
+            diagram_type=diagram_type,
+            top_level_branches=["甲"],
+            ancestor_path=["上层"],
+            sibling_branches=["乙"],
+            child_branches=["丙"],
+            language="zh",
+            node_role=role,
+        )
+        assert topic_heading in prompt, diagram_type
+        assert detail_heading in prompt, diagram_type
+        assert banned not in prompt, diagram_type
+        assert "读图：" in prompt, diagram_type
+
+
 def test_research_meaning_prompt_writes_from_search() -> None:
     """Meaning research writes from search; page fetch is not advertised."""
     prompt = build_research_meaning_prompt(language="zh", **_PROMPT_KWARGS)
@@ -238,9 +310,10 @@ def test_research_meaning_prompt_writes_from_search() -> None:
     assert "web_search" in prompt
     assert "web_search_image" not in prompt
     assert "web_extractor" not in prompt
+    assert "只调用一次 web_search" in prompt
     assert "搜索一返回就根据标题和摘要写释义" in prompt
-    assert "不少于 250 字" in prompt
-    assert "250–400 字" in prompt
+    assert "约 200 字" in prompt
+    assert "不要超过 220 字" in prompt
     assert "40–60" not in prompt
     assert "一两句" not in prompt
     assert "短释义" not in prompt

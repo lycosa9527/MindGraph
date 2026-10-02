@@ -46,6 +46,8 @@ def _build_payload(request: ResponsesRequest) -> Dict[str, Any]:
     }
     if request.temperature is not None:
         payload["temperature"] = request.temperature
+    if request.reasoning_effort:
+        payload["reasoning"] = {"effort": request.reasoning_effort}
     if request.extra:
         payload.update(request.extra)
     return payload

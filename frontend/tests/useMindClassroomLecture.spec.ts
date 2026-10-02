@@ -121,7 +121,7 @@ describe('useMindClassroomLecture lifecycle', () => {
     const classroom = useMindClassroomStore(pinia)
     classroom.beginSession(steps, 'canvas_tour')
     lecture?.goToStep(0)
-    await vi.advanceTimersByTimeAsync(960)
+    await vi.advanceTimersByTimeAsync(1160)
     expect(classroom.stepIndex).toBe(0)
 
     await vi.advanceTimersByTimeAsync(30_000)
@@ -169,7 +169,7 @@ describe('useMindClassroomLecture lifecycle', () => {
     classroom.beginSession(steps, 'canvas_tour')
     const emitSpy = vi.spyOn(eventBus, 'emit')
     lecture?.goToStep(0)
-    await vi.advanceTimersByTimeAsync(960)
+    await vi.advanceTimersByTimeAsync(1160)
 
     const narrate = emitSpy.mock.calls.find(([name]) => name === 'kitty:lecture_narrate_requested')
     expect(narrate?.[1]).toMatchObject({
@@ -195,10 +195,10 @@ describe('useMindClassroomLecture lifecycle', () => {
     classroom.beginSession(steps, 'canvas_tour')
     const emitSpy = vi.spyOn(eventBus, 'emit')
     lecture?.goToStep(0, { interruptVoice: false })
-    await vi.advanceTimersByTimeAsync(960)
+    await vi.advanceTimersByTimeAsync(1160)
     eventBus.emit('kitty:lecture_tts_done', { stepId: 'first' })
     await nextTick()
-    await vi.advanceTimersByTimeAsync(960)
+    await vi.advanceTimersByTimeAsync(1160)
 
     expect(classroom.stepIndex).toBe(1)
     expect(emitSpy.mock.calls.some(([name]) => name === 'kitty:lecture_interrupt_requested')).toBe(
@@ -232,11 +232,11 @@ describe('useMindClassroomLecture lifecycle', () => {
     const classroom = useMindClassroomStore(pinia)
     classroom.beginSession(steps, 'canvas_tour')
     lecture?.goToStep(0, { interruptVoice: false })
-    await vi.advanceTimersByTimeAsync(960)
+    await vi.advanceTimersByTimeAsync(1160)
     const emitSpy = vi.spyOn(eventBus, 'emit')
     lecture?.nextStep()
     expect(emitSpy).toHaveBeenCalledWith('kitty:lecture_interrupt_requested', {})
-    await vi.advanceTimersByTimeAsync(960)
+    await vi.advanceTimersByTimeAsync(1160)
     const narrate = emitSpy.mock.calls.find(([name]) => name === 'kitty:lecture_narrate_requested')
     expect(narrate?.[1]).toMatchObject({
       text: 'Second caption',

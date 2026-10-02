@@ -10,6 +10,13 @@ from __future__ import annotations
 
 from typing import Dict, List, Literal, Optional
 
+from agents.mind_maps.node_explain_diagram import (
+    context_labels,
+    diagram_reading_line,
+    explain_diagram_key,
+    path_line,
+    selected_label,
+)
 from prompts.ai_content_level import append_audience_instructions
 from services.mind_classroom.prompts.audience_prompts import (
     audience_brief,
@@ -37,32 +44,36 @@ RESEARCH_IMAGE_MAX_OUTPUT_TOKENS = 1024
 RESEARCH_IMAGE_MAX = 24
 RESEARCH_TOOLS = ("web_search",)
 RESEARCH_IMAGE_TOOLS = ("web_search_image",)
+# qwen3.8-flash defaults to reasoning.effort=xhigh. low keeps a short trace; none skips it.
+RESEARCH_REASONING_EFFORT = "low"
+RESEARCH_IMAGE_REASONING_EFFORT = "none"
 
 _RESEARCH_BLOCKS: Dict[PromptShell, str] = {
     "zh": (
         "【联网研究】\n"
-        "必须调用 web_search。"
+        "只调用一次 web_search。"
         "搜索一返回就根据标题和摘要写释义，不要打开网页，不要再搜一轮。"
-        "正文不少于 250 字，目标 250–400 字。"
+        "正文约 200 字，不要超过 220 字。"
         "句末用 [1][2] 标注依据，编号与搜索结果顺序一致（第一条为 [1]）。"
         "不要在释义里列出网址或标题。标注不算扩写。"
         "最终回复只写这段释义加标注，不要写检索过程，不要列提纲。"
     ),
     "en": (
         "【Web research】\n"
-        "You must run web_search. "
+        "Call web_search exactly once. "
         "Write the gloss from search titles and snippets as soon as search returns — "
         "do not open pages or start another search. "
-        "Write at least 160 words, target 160–260 words. "
+        "Write about 200 words, and do not exceed 220. "
         "Cite sources as [1][2] in search order (first result is [1]). "
         "Do not list URLs or titles in the gloss. Marks are not extra prose. "
         "The final reply is that paragraph plus citations only — no search diary."
     ),
     "az": (
         "【Veb tədqiqat】\n"
-        "Alət: web_search. "
+        "web_search yalnız bir dəfə. "
         "Axtarış gələndən dərhal başlıq və qısa mətndən izah yazın. "
-        "Ən azı 160 söz, hədəf 160–260 söz. "
+        "İkinci axtarış olmasın. "
+        "Təxminən 200 söz, 220-dən çox olmasın. "
         "Mənbələri [1][2] ilə işarələyin. Səhifə açmayın. Hesabat olmasın."
     ),
 }
@@ -143,103 +154,106 @@ _MEANING_TASKS: Dict[PromptShell, Dict[str, str]] = {
     "zh": {
         "general": (
             "用一段完整说明把这个节点在中心主题里是什么、指什么讲清楚。"
-            "正文不少于 250 字，目标 250–400 字。不要讲层级位置，不要寒暄，不要写认知冲突，不要列问题，不要分点。"
+            "正文约 200 字，不要超过 220 字。不要讲层级位置，不要寒暄，不要写认知冲突，不要列问题，不要分点。"
             "不要故意小学化，也不要专家腔。"
         ),
         "primary": (
             "用一段日常口语说明这个节点是什么，像给小朋友解释「苹果」："
             "苹果是长在树上的红色水果。"
-            "站在中心主题的视角，只说它是什么、指什么；正文不少于 250 字，目标 250–400 字。"
+            "站在中心主题的视角，只说它是什么、指什么；正文约 200 字，不要超过 220 字。"
             "不要讲层级位置，不要寒暄，不要写认知冲突，不要列问题，不要分点。"
         ),
         "junior": (
             "用一段适合初中生的话说明这个节点是什么。可用一个学科词，首次用生活说法带过。"
-            "正文不少于 250 字，目标 250–400 字。不要讲层级位置，不要寒暄，不要写认知冲突，不要列问题，不要分点。"
+            "正文约 200 字，不要超过 220 字。不要讲层级位置，不要寒暄，不要写认知冲突，不要列问题，不要分点。"
         ),
         "senior": (
             "用一段规范学科用语说明这个节点在主题中的含义与关系。少科普铺垫。"
-            "正文不少于 250 字，目标 250–400 字。不要讲层级位置，不要寒暄，不要写认知冲突，不要列问题，不要分点。"
+            "正文约 200 字，不要超过 220 字。不要讲层级位置，不要寒暄，不要写认知冲突，不要列问题，不要分点。"
         ),
         "university": (
             "用一段学科术语说明这个节点的机制或理论位置，不必解释入门词。"
-            "正文不少于 250 字，目标 250–400 字。不要中小学教案口吻，不要讲层级位置，不要寒暄，不要列问题。"
+            "正文约 200 字，不要超过 220 字。不要中小学教案口吻，不要讲层级位置，不要寒暄，不要列问题。"
         ),
         "adult": (
             "用一段专业、面向做事的话说明这个节点是什么、在实务上意味着什么。"
-            "正文不少于 250 字，目标 250–400 字。少课堂口吻。不要讲层级位置，不要寒暄，不要列问题。"
+            "正文约 200 字，不要超过 220 字。少课堂口吻。不要讲层级位置，不要寒暄，不要列问题。"
         ),
         "expert": (
             "用一段领域术语给出同行级、可审阅的释义：机制、边界或争议即可。"
-            "禁止科普开场与类比故事。正文不少于 250 字，目标 250–400 字，密、准。"
+            "禁止科普开场与类比故事。正文约 200 字，不要超过 220 字，密、准。"
             "不要讲层级位置，不要寒暄，不要列问题。"
         ),
     },
     "en": {
         "general": (
             "In one paragraph, say what this node is in the central topic. "
-            "At least 160 words, target 160–260. "
+            "About 200 words, and do not exceed 220. "
             "No hierarchy lecture, no opener, no cognitive conflict, no questions, no lists. "
             "Neither a child's gloss nor an expert-peer note."
         ),
         "primary": (
             "In one everyday paragraph, say what this node is — like explaining apple: "
             "a red fruit that grows on trees. From the central topic's perspective, only what it is "
-            "and what it means here. At least 160 words, target 160–260. "
+            "and what it means here. About 200 words, and do not exceed 220. "
             "No hierarchy lecture, no soft opener, no cognitive conflict, no questions, no lists."
         ),
         "junior": (
             "In one middle-school paragraph, say what this node is. "
-            "One subject word is fine if you gloss it. At least 160 words, target 160–260. "
+            "One subject word is fine if you gloss it. About 200 words, and do not exceed 220. "
             "No hierarchy lecture, no opener, no cognitive conflict, no questions, no lists."
         ),
         "senior": (
             "In one high-school paragraph, name what this node is and how it relates to the topic. "
-            "Subject terms are fine; skip popular-science padding. At least 160 words, target 160–260. "
+            "Subject terms are fine; skip popular-science padding. About 200 words, and do not exceed 220. "
             "No hierarchy lecture, no opener, no questions, no lists."
         ),
         "university": (
             "In one disciplinary paragraph, place this node in its mechanism or theoretical frame. "
-            "Do not define introductory words. At least 160 words, target 160–260. "
+            "Do not define introductory words. About 200 words, and do not exceed 220. "
             "No K–12 lesson tone, no opener, no lists."
         ),
         "adult": (
             "In one professional paragraph, say what this node is and what it means in practice. "
-            "Little classroom tone. At least 160 words, target 160–260. "
+            "Little classroom tone. About 200 words, and do not exceed 220. "
             "No hierarchy lecture, no opener, no lists."
         ),
         "expert": (
             "In one dense peer paragraph, give an audit-ready gloss: mechanism, bound, or disagreement. "
             "Domain terminology. No popular-science opening or analogy story. "
-            "At least 160 words, target 160–260. "
+            "About 200 words, and do not exceed 220. "
             "No hierarchy lecture, no opener, no questions, no lists."
         ),
     },
     "az": {
         "general": (
             "Qısa bir abzasla bu düyünün mərkəz mövzuda nə olduğunu deyin. "
-            "Təxminən 160–260 söz. İerarxiya, salam, konflikt, sual və siyahı olmasın."
+            "Təxminən 200 söz, 220-dən çox olmasın. İerarxiya, salam, konflikt, sual və siyahı olmasın."
         ),
         "primary": (
             "Qısa gündəlik abzasla bu düyünün nə olduğunu deyin — alma kimi: "
-            "ağacda bitən qırmızı meyvə. Təxminən 160–260 söz. "
+            "ağacda bitən qırmızı meyvə. Təxminən 200 söz, 220-dən çox olmasın. "
             "İerarxiya, giriş salamı, koqnitiv konflikt, sual və siyahı olmasın."
         ),
         "junior": (
             "Orta məktəb səviyyəsində qısa abzasla bu düyünün nə olduğunu deyin. "
-            "Təxminən 160–260 söz. İerarxiya, salam, sual və siyahı olmasın."
+            "Təxminən 200 söz, 220-dən çox olmasın. İerarxiya, salam, sual və siyahı olmasın."
         ),
         "senior": (
             "Lisey səviyyəsində bu düyünün mövzu ilə əlaqəsini deyin. "
-            "Təxminən 160–260 söz. Populyar-elm dolğusu olmasın."
+            "Təxminən 200 söz, 220-dən çox olmasın. Populyar-elm dolğusu olmasın."
         ),
         "university": (
             "Akademik abzasla bu düyünün mexanizm və ya nəzəri yerini deyin. "
-            "Təxminən 160–260 söz. Məktəb dərs tonu olmasın."
+            "Təxminən 200 söz, 220-dən çox olmasın. Məktəb dərs tonu olmasın."
         ),
-        "adult": ("Peşəkar, işə yönəlmiş qısa abzasla bu düyünün praktik mənasını deyin. Təxminən 160–260 söz."),
+        "adult": (
+            "Peşəkar, işə yönəlmiş qısa abzasla bu düyünün praktik mənasını deyin. "
+            "Təxminən 200 söz, 220-dən çox olmasın."
+        ),
         "expert": (
             "Həmkar üçün sıx, dəqiq, yoxlanıla bilən izah: mexanizm, sərhəd və ya mübahisə. "
-            "Populyar-elm açılışı olmasın. Təxminən 160–260 söz."
+            "Populyar-elm açılışı olmasın. Təxminən 200 söz, 220-dən çox olmasın."
         ),
     },
 }
@@ -305,7 +319,7 @@ def style_band_for_level(level: str) -> StyleBand:
 
 
 def max_tokens_for_audience(level: str) -> int:
-    """Token budget so a 250–400 character gloss is not cut off."""
+    """Token budget so a ~200 word gloss is not cut off."""
     return _MAX_TOKENS_BY_LEVEL[normalize_audience_level(level)]
 
 
@@ -323,15 +337,21 @@ def _join_labels(labels: List[str], shell: PromptShell) -> str:
     return separator.join(cleaned[:_MAX_BRANCHES])
 
 
-def _path_line(path: List[str], shell: PromptShell) -> str:
-    if not path:
+def _path_line(path: List[str], shell: PromptShell, diagram_type: str) -> str:
+    key = explain_diagram_key(diagram_type)
+    if key == "mindmap":
+        if not path:
+            return ""
+        joined = " → ".join(path)
+        if shell == "zh":
+            return f"节点层级路径：主题 → {joined}\n"
+        if shell == "az":
+            return f"Düyün yolu: mövzu → {joined}\n"
+        return f"Node path: topic → {joined}\n"
+    labels = context_labels(diagram_type, shell)
+    if labels.hide_path:
         return ""
-    joined = " → ".join(path)
-    if shell == "zh":
-        return f"节点层级路径：主题 → {joined}\n"
-    if shell == "az":
-        return f"Düyün yolu: mövzu → {joined}\n"
-    return f"Node path: topic → {joined}\n"
+    return path_line(path, shell, labels.path)
 
 
 def normalize_facet(facet: str) -> ExplainFacet:
@@ -354,59 +374,72 @@ def _diagram_context_fields(
     sibling_branches: List[str],
     child_branches: List[str],
     language: str,
+    node_role: str = "",
 ) -> Dict[str, str]:
     shell = prompt_shell_key(language)
     topic_text = topic.strip() or _UNTITLED_LABELS[shell]
     return {
+        "diagram_type": diagram_type,
         "diagram_label": _diagram_type_label(diagram_type, shell),
         "topic": topic_text,
         "node_label": node_label.strip(),
+        "node_role": node_role,
         "branches_text": _join_labels(top_level_branches, shell),
         "siblings_text": _join_labels(sibling_branches, shell),
         "children_text": _join_labels(child_branches, shell),
-        "path_line": _path_line(ancestor_path, shell),
+        "path_line": _path_line(ancestor_path, shell, diagram_type),
     }
 
 
-def _build_context_block(fields: Dict[str, str], shell: PromptShell) -> str:
+def _context_heading(shell: PromptShell) -> tuple[str, str, str]:
     if shell == "zh":
-        return (
-            "【图示情境】\n"
-            f"- 图示类型：{fields['diagram_label']}\n"
-            f"- 中心主题：{fields['topic']}\n"
-            f"- 主要分支：{fields['branches_text']}\n"
-            f"- 学习者选中的节点：{fields['node_label']}\n"
-            f"{fields['path_line']}"
-            f"- 同层相关节点：{fields['siblings_text']}\n"
-            f"- 该节点下的子节点：{fields['children_text']}\n"
-        )
+        return "【图示情境】", "图示类型", "学习者选中的节点"
     if shell == "az":
-        return (
-            "【Diaqram konteksti】\n"
-            f"- Diaqram növü: {fields['diagram_label']}\n"
-            f"- Mərkəz mövzu: {fields['topic']}\n"
-            f"- Əsas budaqlar: {fields['branches_text']}\n"
-            f"- Seçilmiş düyün: {fields['node_label']}\n"
-            f"{fields['path_line']}"
-            f"- Eyni səviyyəli düyünlər: {fields['siblings_text']}\n"
-            f"- Alt düyünlər: {fields['children_text']}\n"
-        )
-    return (
-        "【Diagram context】\n"
-        f"- Diagram type: {fields['diagram_label']}\n"
-        f"- Central topic: {fields['topic']}\n"
-        f"- Main branches: {fields['branches_text']}\n"
-        f"- Selected node: {fields['node_label']}\n"
-        f"{fields['path_line']}"
-        f"- Sibling / related nodes: {fields['siblings_text']}\n"
-        f"- Child nodes: {fields['children_text']}\n"
+        return "【Diaqram konteksti】", "Diaqram növü", "Seçilmiş düyün"
+    return "【Diagram context】", "Diagram type", "Selected node"
+
+
+def _field_line(shell: PromptShell, label: str, value: str) -> str:
+    if shell == "zh":
+        return f"- {label}：{value}"
+    return f"- {label}: {value}"
+
+
+def _build_context_block(fields: Dict[str, str], shell: PromptShell) -> str:
+    labels = context_labels(fields["diagram_type"], shell)
+    heading, type_label, selected_name = _context_heading(shell)
+    selected = selected_label(
+        fields["node_label"],
+        fields["node_role"],
+        shell,
+        fields["diagram_type"],
     )
+    lines = [
+        heading,
+        _field_line(shell, type_label, fields["diagram_label"]),
+        _field_line(shell, labels.topic, fields["topic"]),
+        _field_line(shell, labels.branches, fields["branches_text"]),
+        _field_line(shell, selected_name, selected),
+    ]
+    if fields["path_line"]:
+        lines.append(fields["path_line"].rstrip("\n"))
+    empty_sibling = fields["siblings_text"] in {"（无）", "(none)", "(yoxdur)"}
+    show_siblings = explain_diagram_key(fields["diagram_type"]) == "mindmap" or not empty_sibling
+    if show_siblings:
+        lines.append(_field_line(shell, labels.siblings, fields["siblings_text"]))
+    if not labels.hide_children:
+        lines.append(_field_line(shell, labels.children, fields["children_text"]))
+    reading = diagram_reading_line(fields["diagram_type"], shell)
+    if reading:
+        read_label = {"zh": "读图", "az": "Oxu"}.get(shell, "How to read")
+        lines.append(_field_line(shell, read_label, reading))
+    return "\n".join(lines) + "\n"
 
 
 _MEANING_LENGTH_GUARD: Dict[PromptShell, str] = {
-    "zh": "正文不少于 250 字，目标 250–400 字。",
-    "en": "Write at least 160 words, target 160–260 words.",
-    "az": "Ən azı 160 söz, hədəf 160–260 söz.",
+    "zh": "正文约 200 字，不要超过 220 字。",
+    "en": "Write about 200 words, and do not exceed 220.",
+    "az": "Təxminən 200 söz, 220-dən çox olmasın.",
 }
 
 
@@ -438,6 +471,7 @@ def build_facet_prompt(
     language: str,
     audience_level: Optional[str] = None,
     generation_instructions: Optional[str] = None,
+    node_role: str = "",
 ) -> str:
     """Build a single-facet prompt whose meaning task follows 专业程度."""
     fields = _diagram_context_fields(
@@ -449,6 +483,7 @@ def build_facet_prompt(
         sibling_branches=sibling_branches,
         child_branches=child_branches,
         language=language,
+        node_role=node_role,
     )
     shell = prompt_shell_key(language)
     level = normalize_audience_level(audience_level)
@@ -483,6 +518,7 @@ def build_research_meaning_prompt(
     language: str,
     audience_level: Optional[str] = None,
     generation_instructions: Optional[str] = None,
+    node_role: str = "",
 ) -> str:
     """Meaning prompt plus search-then-write research instructions."""
     base = build_facet_prompt(
@@ -497,6 +533,7 @@ def build_research_meaning_prompt(
         language=language,
         audience_level=audience_level,
         generation_instructions=generation_instructions,
+        node_role=node_role,
     )
     shell = prompt_shell_key(language)
     return f"{base}\n\n{_RESEARCH_BLOCKS[shell]}"

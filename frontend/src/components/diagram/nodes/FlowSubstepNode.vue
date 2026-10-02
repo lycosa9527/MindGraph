@@ -11,6 +11,7 @@ import { Handle, Position } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
@@ -19,11 +20,13 @@ import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { isFlowMapSubstepNode } from '@/utils/flowMapIdentity'
 import { paintNodeShape } from '@/utils/nodeShapeStyle'
+import { thinkingMapDisplayedNodeColors } from '@/utils/thinkingMapNodePaint'
 
 import InlineEditableText from './InlineEditableText.vue'
 import NodeShapeUnderline from './NodeShapeUnderline.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+const diagramStore = useDiagramSession()
 const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
 
 const flowSubstepNodeRef = ref<HTMLElement | null>(null)
@@ -35,15 +38,31 @@ const groupColor = computed(() => {
   return idx !== undefined && isFlowMap.value ? getMindmapBranchColor(idx) : null
 })
 
+const themeNodePaint = computed(() => {
+  const node = props.data.originalNode
+  if (!node) return null
+  return thinkingMapDisplayedNodeColors(
+    props.data.diagramType,
+    diagramStore.data?._mindmap_theme,
+    node,
+    props.data.style
+  )
+})
+
 const nodeStyle = computed(() => {
   const color = groupColor.value
-  const borderColor = props.data.style?.borderColor || color?.border || '#1976d2'
+  const borderColor =
+    themeNodePaint.value?.borderColor || props.data.style?.borderColor || color?.border || '#1976d2'
   const borderWidth = props.data.style?.borderWidth || 1
   const borderStyle = props.data.style?.borderStyle || 'solid'
-  const backgroundColor = props.data.style?.backgroundColor || color?.fill || '#e3f2fd'
+  const backgroundColor =
+    themeNodePaint.value?.backgroundColor ||
+    props.data.style?.backgroundColor ||
+    color?.fill ||
+    '#e3f2fd'
   const baseStyle = {
     backgroundColor,
-    color: props.data.style?.textColor || '#333333',
+    color: themeNodePaint.value?.textColor || props.data.style?.textColor || '#333333',
     fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
     fontSize: `${props.data.style?.fontSize || 12}px`,
     fontWeight: props.data.style?.fontWeight || 'normal',
@@ -165,7 +184,9 @@ function handleBranchMovePointerUp(): void {
   >
     <NodeShapeUnderline
       v-if="data.style?.nodeShape === 'underline'"
-      :color="data.style?.borderColor || groupColor?.border || '#1976d2'"
+      :color="
+        themeNodePaint?.borderColor || data.style?.borderColor || groupColor?.border || '#1976d2'
+      "
     />
     <InlineEditableText
       :text="data.label || ''"

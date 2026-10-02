@@ -160,15 +160,24 @@ function refreshBraceFlatNodesFromDiagram(
   }
 }
 
-function flattenTree(
+/**
+ * `mint` — spec load. `takeBraceMapStableId` keeps a live UUID and mints
+ * when the slot id is a leftover alias (`brace-part-0`, `brace-1-0`, …).
+ * `live` — layout. The canvas id is already the dual-id result. Minting
+ * again writes coordinates onto an id the canvas does not have.
+ */
+type BraceFlattenMode = 'mint' | 'live'
+
+function resolveBraceFlattenId(
   node: BraceNode,
   depth: number,
-  parentId: string | null,
-  nodes: FlatNode[],
-  edges: { source: string; target: string }[],
-  counter: { value: number },
-  claimedIds: Set<string>
+  claimedIds: Set<string>,
+  mode: BraceFlattenMode
 ): string {
+  if (mode === 'live' && node.id) {
+    claimedIds.add(node.id)
+    return node.id
+  }
   const preferred =
     depth === 0
       ? BRACE_WHOLE_NODE_ID
@@ -180,6 +189,20 @@ function flattenTree(
       ? BRACE_WHOLE_NODE_ID
       : takeBraceMapStableId(claimedIds, preferred)
   claimedIds.add(nodeId)
+  return nodeId
+}
+
+function flattenTree(
+  node: BraceNode,
+  depth: number,
+  parentId: string | null,
+  nodes: FlatNode[],
+  edges: { source: string; target: string }[],
+  counter: { value: number },
+  claimedIds: Set<string>,
+  mode: BraceFlattenMode = 'mint'
+): string {
+  const nodeId = resolveBraceFlattenId(node, depth, claimedIds, mode)
   const nodeWidth = estimateBraceNodeWidth(node.text, depth)
   const nodeHeight = estimateBraceNodeHeight(node.text, depth)
 
@@ -191,7 +214,7 @@ function flattenTree(
 
   if (node.parts && node.parts.length > 0) {
     node.parts.forEach((part) => {
-      flattenTree(part, depth + 1, nodeId, nodes, edges, counter, claimedIds)
+      flattenTree(part, depth + 1, nodeId, nodes, edges, counter, claimedIds, mode)
     })
   }
 
@@ -279,11 +302,10 @@ function computeColumnLayout(
         if (i > 0) y += BRACE_MAP_NODE_SPACING
         y = assignSubtreeY(kids[i], y)
       }
-      const childTop = newY.get(kids[0]) ?? startY
-      const lastKid = kids[kids.length - 1]
-      const lastKidH = getH(lastKid)
-      const childBottom = (newY.get(lastKid) ?? startY) + lastKidH
-      const childCenter = (childTop + childBottom) / 2
+      // Center on the subtree block. Child node boxes sit in the middle of
+      // their own subparts, so using those boxes drops the parent when the
+      // last branch is taller than the first.
+      const childCenter = (startY + y) / 2
       newY.set(nodeId, childCenter - h / 2)
       return y
     }
@@ -520,11 +542,18 @@ export function recalculateBraceMapLayout(
   const wholeNode = buildTree(rootId)
   const flatNodes: FlatNode[] = []
   const edges: { source: string; target: string }[] = []
-  const claimedIds = new Set<string>([BRACE_WHOLE_NODE_ID, 'dimension-label'])
-  for (const treeNode of treeNodes) {
-    if (treeNode.id) claimedIds.add(treeNode.id)
-  }
-  flattenTree(wholeNode, 0, null, flatNodes, edges, { value: 0 }, claimedIds)
+  // Reserved ids only. Do not pre-claim live UUIDs: takeBraceMapStableId
+  // treats a claimed id as taken and mints a replacement.
+  flattenTree(
+    wholeNode,
+    0,
+    null,
+    flatNodes,
+    edges,
+    { value: 0 },
+    new Set<string>([BRACE_WHOLE_NODE_ID, 'dimension-label']),
+    'live'
+  )
 
   const diagramById = new Map<string, DiagramNode>()
   for (const n of treeNodes) {

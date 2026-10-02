@@ -12,7 +12,7 @@ def split_each_node_families(tour_nodes: list[dict[str, Any]]) -> list[list[dict
     for node in tour_nodes:
         if not isinstance(node, dict):
             continue
-        if node.get("kind") == "topic":
+        if node.get("kind") == "topic" or node.get("walk") == "opening":
             continue
         if node.get("stop") == "trunk":
             if current:

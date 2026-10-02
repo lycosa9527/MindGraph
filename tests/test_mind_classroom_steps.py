@@ -72,6 +72,67 @@ def test_normalize_steps_frames_overview_on_main_branches() -> None:
     assert steps[1]["focus_node_ids"] == ["topic", "b1", "b2"]
 
 
+def test_circle_branch_steps_play_clockwise_from_the_top() -> None:
+    """A shuffled circle script still plays top, then clockwise. Closing stays last."""
+    spec = {
+        "type": "circle_map",
+        "nodes": [
+            {"id": "topic", "type": "center", "text": "水", "position": {"x": 0, "y": 0}},
+            {"id": "bottom", "type": "bubble", "text": "下", "position": {"x": 0, "y": 80}},
+            {"id": "top", "type": "bubble", "text": "上", "position": {"x": 0, "y": -80}},
+        ],
+        "connections": [],
+    }
+    raw = [
+        {"kind": "overview", "title": "全貌", "caption": "先看全貌", "focus_node_ids": ["topic"]},
+        {
+            "kind": "branch",
+            "title": "下",
+            "caption": "下面",
+            "focus_node_ids": ["bottom"],
+            "branch_node_id": "bottom",
+        },
+        {
+            "kind": "branch",
+            "title": "上",
+            "caption": "上面",
+            "focus_node_ids": ["top"],
+            "branch_node_id": "top",
+        },
+        {"kind": "closing", "title": "收", "caption": "收束", "focus_node_ids": ["topic"]},
+    ]
+    steps = normalize_steps(raw, spec=spec)
+    assert [step["kind"] for step in steps] == ["overview", "branch", "branch", "closing"]
+    assert [step["branch_node_id"] for step in steps] == [None, "top", "bottom", None]
+
+
+def test_whole_map_focus_uses_each_diagrams_nodes() -> None:
+    """Opening frames the diagram's own nodes, not only outgoing children of one topic."""
+    circle = {
+        "type": "circle_map",
+        "nodes": [
+            {"id": "topic", "type": "center", "text": "水"},
+            {"id": "outer-boundary", "type": "boundary", "text": ""},
+            {"id": "ctx-1", "type": "bubble", "text": "蒸发"},
+        ],
+        "connections": [],
+    }
+    assert resolve_whole_map_focus_node_ids(circle) == ["topic", "ctx-1"]
+    multi = {
+        "type": "multi_flow_map",
+        "nodes": [
+            {"id": "event", "type": "topic", "text": "迟到"},
+            {"id": "cause-1", "type": "flow", "text": "堵车", "data": {"multiFlowRole": "cause"}},
+            {"id": "effect-1", "type": "flow", "text": "错过课", "data": {"multiFlowRole": "effect"}},
+        ],
+        "connections": [
+            {"source": "cause-1", "target": "event"},
+            {"source": "event", "target": "effect-1"},
+        ],
+    }
+    assert resolve_whole_map_focus_node_ids(multi) == ["event", "cause-1", "effect-1"]
+
+
 def test_whole_map_focus_skips_association_edges() -> None:
     """Association overlays are not first-level lecture branches."""
     spec = {
@@ -97,6 +158,38 @@ def test_parse_canvas_tour_json_strips_fence() -> None:
     assert steps[0]["caption"] == "Welcome"
 
 
+def test_dimension_only_branch_step_is_dropped() -> None:
+    """The dimension is named in the overview, so it does not get its own camera beat."""
+    spec = {
+        "type": "tree_map",
+        "nodes": [
+            {"id": "tree-topic", "type": "topic", "text": "动物"},
+            {"id": "dimension-label", "type": "label", "text": "食性"},
+            {"id": "cat-1", "type": "branch", "text": "肉食"},
+        ],
+        "connections": [{"source": "tree-topic", "target": "cat-1"}],
+    }
+    raw = [
+        {"kind": "overview", "title": "开", "caption": "开场", "focus_node_ids": ["tree-topic"]},
+        {
+            "kind": "branch",
+            "title": "维度",
+            "caption": "食性",
+            "focus_node_ids": ["dimension-label"],
+            "branch_node_id": "dimension-label",
+        },
+        {
+            "kind": "branch",
+            "title": "肉食",
+            "caption": "这一类",
+            "focus_node_ids": ["cat-1"],
+            "branch_node_id": "cat-1",
+        },
+    ]
+    steps = normalize_steps(raw, spec=spec)
+    assert [step["title"] for step in steps] == ["开", "肉食"]
+
+
 def test_split_each_node_families_groups_leaves_under_trunk() -> None:
     """Deep walk is chunked as one trunk plus its leaves."""
     nodes = [
@@ -112,6 +205,14 @@ def test_split_each_node_families_groups_leaves_under_trunk() -> None:
         ["b1", "b1c1", "b1c2"],
         ["b2", "b2c1"],
     ]
+    with_opening = [
+        {"id": "topic", "kind": "topic"},
+        {"id": "dim", "kind": "branch", "stop": "leaf", "walk": "opening"},
+        {"id": "cat", "kind": "branch", "stop": "trunk"},
+        {"id": "item", "kind": "branch", "stop": "leaf"},
+    ]
+    opening_families = split_each_node_families(with_opening)
+    assert [[node["id"] for node in family] for family in opening_families] == [["cat", "item"]]
     merged = merge_usage({"prompt_tokens": 2, "total_tokens": 5}, {"prompt_tokens": 3, "total_tokens": 4})
     assert merged == {"prompt_tokens": 5, "total_tokens": 9}
 

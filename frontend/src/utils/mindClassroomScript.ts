@@ -108,6 +108,9 @@ function expandWholeMapMainBranchFocus(
   getDescendantIds: (rootNodeId: string) => Set<string>,
   getChildIds?: (rootNodeId: string) => Iterable<string>
 ): string[] {
+  const listed = uniqueNodeIds(step.focusNodeIds)
+  // Server already named the whole diagram (circle ring, both comparison sides, causes).
+  if (listed.length > 1) return listed
   const topicId = lectureTopicNodeId(step)
   if (!topicId) return [...step.focusNodeIds]
   if (getChildIds) {
@@ -159,6 +162,219 @@ export function expandLectureFocusNodeIds(
   return expanded.size > 0 ? [...expanded] : [...step.focusNodeIds]
 }
 
+function isMindMapDiagram(diagramType: string | null | undefined): boolean {
+  if (!diagramType) return true
+  const slug = diagramType.trim().toLowerCase().replace(/-/g, '_')
+  return slug === 'mindmap' || slug === 'mind_map'
+}
+
+function isLectureAnchor(node: DiagramNode): boolean {
+  if (node.type === 'boundary') return false
+  if (node.type === 'label') return Boolean(node.text?.trim())
+  if (node.type === 'center' || node.type === 'topic' || node.type === 'whole' || node.type === 'event') {
+    return true
+  }
+  return (
+    node.id === 'topic' ||
+    node.id === 'left-topic' ||
+    node.id === 'right-topic' ||
+    node.id === 'event' ||
+    node.id === 'flow-topic' ||
+    node.id === 'tree-topic' ||
+    node.id === 'brace-whole'
+  )
+}
+
+function contentNodeIds(nodes: readonly DiagramNode[]): string[] {
+  return nodes
+    .filter((node) => node.type !== 'boundary' && (Boolean(node.text?.trim()) || isLectureAnchor(node)))
+    .map((node) => node.id)
+}
+
+function bridgeMateId(node: DiagramNode, nodes: readonly DiagramNode[]): string | undefined {
+  const index = node.data?.pairIndex
+  const side = node.data?.position
+  if (typeof index !== 'number' || (side !== 'left' && side !== 'right')) return undefined
+  const other = side === 'left' ? 'right' : 'left'
+  return nodes.find((candidate) => candidate.data?.pairIndex === index && candidate.data?.position === other)?.id
+}
+
+function neighborIds(focusIds: readonly string[], connections: readonly Connection[]): string[] {
+  const focus = new Set(focusIds)
+  const extra: string[] = []
+  for (const connection of connections) {
+    if (focus.has(connection.source) && !focus.has(connection.target)) extra.push(connection.target)
+    if (focus.has(connection.target) && !focus.has(connection.source)) extra.push(connection.source)
+  }
+  return extra
+}
+
+function diagramSlug(diagramType: string | null | undefined): string {
+  return (diagramType ?? '').trim().toLowerCase().replace(/-/g, '_')
+}
+
+function isDiagramRoot(node: DiagramNode | undefined): boolean {
+  if (!node) return false
+  if (node.type === 'center' || node.type === 'topic' || node.type === 'whole' || node.type === 'event') {
+    return true
+  }
+  return node.id === 'topic' || node.id === 'tree-topic' || node.id === 'brace-whole' || node.id === 'flow-topic'
+}
+
+function lectureSeedId(
+  ids: readonly string[],
+  nodes: readonly DiagramNode[],
+  branchNodeId?: string
+): string | undefined {
+  const byId = new Map(nodes.map((node) => [node.id, node]))
+  if (branchNodeId && !isDiagramRoot(byId.get(branchNodeId))) return branchNodeId
+  return ids.find((id) => !isDiagramRoot(byId.get(id)))
+}
+
+function childMap(connections: readonly Connection[]): Map<string, string[]> {
+  const map = new Map<string, string[]>()
+  for (const connection of connections) {
+    const list = map.get(connection.source) ?? []
+    list.push(connection.target)
+    map.set(connection.source, list)
+  }
+  return map
+}
+
+function parentMap(connections: readonly Connection[]): Map<string, string> {
+  const map = new Map<string, string>()
+  for (const connection of connections) {
+    if (!map.has(connection.target)) map.set(connection.target, connection.source)
+  }
+  return map
+}
+
+function groupRootId(
+  nodeId: string,
+  nodesById: Map<string, DiagramNode>,
+  parents: Map<string, string>
+): string {
+  let current = nodeId
+  const seen = new Set<string>()
+  while (current && !seen.has(current)) {
+    seen.add(current)
+    const parentId = parents.get(current)
+    if (!parentId || isDiagramRoot(nodesById.get(parentId))) return current
+    current = parentId
+  }
+  return nodeId
+}
+
+function descendantIdsFrom(rootId: string, children: Map<string, string[]>): string[] {
+  const out: string[] = []
+  const seen = new Set<string>()
+  const stack = [rootId]
+  while (stack.length > 0) {
+    const id = stack.pop()
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    out.push(id)
+    const kids = children.get(id) ?? []
+    for (let index = kids.length - 1; index >= 0; index -= 1) {
+      const kid = kids[index]
+      if (kid) stack.push(kid)
+    }
+  }
+  return out
+}
+
+function radialCenterIds(nodes: readonly DiagramNode[]): string[] {
+  return nodes
+    .filter((node) => node.type === 'center' || node.type === 'topic' || node.id === 'topic')
+    .map((node) => node.id)
+}
+
+function columnFrameIds(nodes: readonly DiagramNode[], seed: string): string[] {
+  const roleOf = (node: DiagramNode): string => {
+    const value = node.data?.doubleBubbleRole
+    return typeof value === 'string' ? value : ''
+  }
+  const seedNode = nodes.find((node) => node.id === seed)
+  const role = seedNode ? roleOf(seedNode) : ''
+  if (role === 'similarity') {
+    const middle = nodes.filter((node) => roleOf(node) === 'similarity').map((node) => node.id)
+    return middle.length > 0 ? middle : [seed]
+  }
+  const right = role === 'rightDiff' || seed === 'right-topic'
+  const topicId = right ? 'right-topic' : 'left-topic'
+  const diffRole = right ? 'rightDiff' : 'leftDiff'
+  const ids = [
+    topicId,
+    ...nodes.filter((node) => roleOf(node) === diffRole).map((node) => node.id),
+  ]
+  return uniqueNodeIds(ids.filter((id) => nodes.some((node) => node.id === id)))
+}
+
+function bridgeFrameIds(seed: string, nodes: readonly DiagramNode[]): string[] {
+  const node = nodes.find((item) => item.id === seed)
+  const mate = node ? bridgeMateId(node, nodes) : undefined
+  const factors = nodes
+    .filter((item) => item.type === 'label' && Boolean(item.text?.trim()))
+    .map((item) => item.id)
+  return uniqueNodeIds([seed, ...(mate ? [mate] : []), ...factors])
+}
+
+function groupFrameIds(
+  seed: string,
+  diagram: { connections: readonly Connection[]; nodes: readonly DiagramNode[] }
+): string[] {
+  const nodesById = new Map(diagram.nodes.map((node) => [node.id, node]))
+  const root = groupRootId(seed, nodesById, parentMap(diagram.connections))
+  const members = descendantIdsFrom(root, childMap(diagram.connections)).filter((id) => {
+    const node = nodesById.get(id)
+    return Boolean(node) && node?.type !== 'label' && node?.type !== 'boundary'
+  })
+  return members.length > 0 ? members : [seed]
+}
+
+/**
+ * After the overview, each step settles on the next reading group.
+ * A ring orbits the center. A tree, brace, or flow step is one column.
+ */
+function frameDiagramSpecialty(
+  ids: string[],
+  stepKind: MindClassroomLectureStep['kind'],
+  diagram: {
+    connections: readonly Connection[]
+    nodes: readonly DiagramNode[]
+    diagramType?: string | null
+  },
+  branchNodeId?: string
+): string[] {
+  if (isMindMapDiagram(diagram.diagramType)) return ids
+  if (stepKind === 'overview' || stepKind === 'closing') {
+    return ids.length > 1 ? ids : contentNodeIds(diagram.nodes)
+  }
+  const seed = lectureSeedId(ids, diagram.nodes, branchNodeId)
+  if (!seed) return ids
+  const seedNode = diagram.nodes.find((node) => node.id === seed)
+  if (seedNode?.type === 'label') return contentNodeIds(diagram.nodes)
+  const slug = diagramSlug(diagram.diagramType)
+  if (slug === 'circle_map' || slug === 'bubble_map') {
+    return uniqueNodeIds([seed, ...radialCenterIds(diagram.nodes)])
+  }
+  if (slug === 'tree_map' || slug === 'brace_map' || slug === 'flow_map') {
+    return groupFrameIds(seed, diagram)
+  }
+  if (slug === 'double_bubble_map') return columnFrameIds(diagram.nodes, seed)
+  if (slug === 'multi_flow_map') {
+    const events = diagram.nodes
+      .filter((node) => node.type === 'event' || node.id === 'event')
+      .map((node) => node.id)
+    return uniqueNodeIds([seed, ...events])
+  }
+  if (slug === 'bridge_map') return bridgeFrameIds(seed, diagram.nodes)
+  if (slug === 'concept_map') {
+    return uniqueNodeIds([seed, ...neighborIds([seed], diagram.connections)])
+  }
+  return ids
+}
+
 /** Fit ids for a live canvas lecture step (resolves topic when the job omitted it). */
 export function lectureStepFitNodeIds(
   step: Pick<MindClassroomLectureStep, 'kind' | 'focusNodeIds' | 'branchNodeId'>,
@@ -168,6 +384,7 @@ export function lectureStepFitNodeIds(
   diagram: {
     connections: readonly Connection[]
     nodes: readonly DiagramNode[]
+    diagramType?: string | null
   }
 ): string[] {
   const childrenMap = buildMindMapTreeChildrenMap(diagram.connections)
@@ -175,7 +392,7 @@ export function lectureStepFitNodeIds(
     step.kind === 'overview' || step.kind === 'closing'
       ? lectureTopicNodeId(step, diagram.nodes)
       : undefined
-  return expandLectureFocusNodeIds(
+  const framed = expandLectureFocusNodeIds(
     {
       kind: step.kind,
       focusNodeIds: step.focusNodeIds.length ? step.focusNodeIds : topicId ? [topicId] : [],
@@ -186,6 +403,7 @@ export function lectureStepFitNodeIds(
     presentation,
     (rootId) => childrenMap.get(rootId) ?? []
   )
+  return frameDiagramSpecialty(framed, step.kind, diagram, step.branchNodeId)
 }
 
 function childBulletList(slide: MindMapSlide, nodeById: Map<string, DiagramNode>): string[] {

@@ -13,6 +13,7 @@ from services.mind_classroom.prompts.audience_prompts import (
     audience_label,
     normalize_audience_level,
 )
+from services.mind_classroom.prompts.diagram_prompts import diagram_pref_fields
 from services.mind_classroom.prompts.tone_prompts import normalize_tone, tone_brief, tone_label
 from services.mind_classroom.prompts.tour_scope_prompts import (
     normalize_tour_scope,
@@ -31,7 +32,7 @@ _LABELS = {
 _BRIEFS_ZH = {
     "first_look": (
         "熟悉程度：初识（第一次看这张图）。"
-        "假设听者还不认识主干：先命名主题与一级分支，再按 tour_scope_brief 带路。"
+        "假设听者还不认识这张图：先按 diagram_brief 点名中心和主节点，再按 tour_scope_brief 带路。"
         "每步只引入一个新概念；术语先用一句话解释。"
         "禁止「你已经知道」「如前所述」。"
         "不要写成给别人上课的教案；句数、问句和提纲形式听 tone_brief。"
@@ -42,23 +43,23 @@ _BRIEFS_ZH = {
         "假设听者认识主干：少做入门介绍，多用回忆、对照、易混点。"
         "可用「合上图能否说出…」这类轻回忆；不要从零定义每个词。"
         "不要写成给别人上课的教案；句数与口吻听 tone_brief。"
-        "收束：合上书复述主干；卡壳再回到那一支。"
+        "收束：合上书复述本图的主节点；卡壳再回到那一个节点。"
     ),
     "teach": (
         "熟悉程度：备课讲授（听者要拿这份讲稿去教别人）。"
         "讲稿是教师可照读的课堂旁白，并点出怎么教：开场钩子、可提问处、板书强调点。"
-        "面向 audience 控制难度；可用「你可以问学生…」「这一支适合板书…」。"
+        "面向 audience 控制难度；可用「你可以问学生…」「这一处适合板书…」。节点叫法听 diagram_brief。"
         "不要写成自学笔记；不要假设学生已经会。"
         "句数与口吻听 tone_brief。"
-        "收束：给出可照用的开场—展开—收束顺序，并建议把一支拆成课堂提问。"
+        "收束：给出可照用的开场—展开—收束顺序，并建议把一个主节点拆成课堂提问。"
     ),
 }
 
 _BRIEFS_EN = {
     "first_look": (
         "Familiarity: first look (first time with this map). "
-        "Assume the listener does not know the trunk: name the topic and first-level "
-        "branches, then walk per tour_scope_brief. One new idea per step; gloss terms "
+        "Assume the listener does not know this diagram: name the center and main nodes "
+        "as diagram_brief calls them, then walk per tour_scope_brief. One new idea per step; gloss terms "
         "in one clause. Do not say “as you already know”. "
         "Do not write a lesson plan for teaching others. "
         "Sentence count, questions, and outline form follow tone_brief. "
@@ -71,7 +72,7 @@ _BRIEFS_EN = {
         "Light prompts like “can you name this with the map closed?” are good. Do not redefine every term. "
         "Do not write a lesson plan for teaching others. "
         "Length and voice follow tone_brief. "
-        "Close by asking them to retell the trunk; return to the branch that sticks."
+        "Close by asking them to retell this diagram’s main nodes; return to the node that sticks."
     ),
     "teach": (
         "Familiarity: prep to teach (the listener will teach this map to others). "
@@ -79,7 +80,8 @@ _BRIEFS_EN = {
         "Match difficulty to audience. Phrases like “you can ask students…” are welcome. "
         "Do not write a self-study note; do not assume students already know it. "
         "Length and voice follow tone_brief. "
-        "Close with a reusable open–develop–close order and suggest turning one branch into a class question."
+        "Close with a reusable open–develop–close order and suggest turning one main node into a class question. "
+        "Node names follow diagram_brief."
     ),
 }
 
@@ -114,6 +116,7 @@ def classroom_pref_fields(settings: dict[str, Any] | None) -> dict[str, Any]:
     scope = normalize_tour_scope(raw.get("tour_scope"))
     title = str(raw.get("audience_title") or "").strip() or audience_label(audience, language)
     return {
+        **diagram_pref_fields(raw),
         "mastery": mastery,
         "mastery_label": mastery_label(mastery, language),
         "mastery_brief": mastery_brief(mastery, language),
@@ -125,7 +128,7 @@ def classroom_pref_fields(settings: dict[str, Any] | None) -> dict[str, Any]:
         "audience_brief": audience_brief(audience, language),
         "tour_scope": scope,
         "tour_scope_label": tour_scope_label(scope, language),
-        "tour_scope_brief": tour_scope_brief(scope, language),
+        "tour_scope_brief": tour_scope_brief(scope, language, raw.get("diagram_type")),
     }
 
 
@@ -141,6 +144,7 @@ def build_axis_contract_block(
     if zh_lang:
         lines = ["# 本场选择（必须全部遵守）", ""]
         sections = [
+            (f"## 图示 · {prefs['diagram_label']}", prefs["diagram_brief"]),
             (f"## 专业程度 · {prefs['audience_title']}", prefs["audience_brief"]),
             (f"## 熟悉程度 · {prefs['mastery_label']}", prefs["mastery_brief"]),
             (f"## 讲解语气 · {prefs['tone_label']}", prefs["tone_brief"]),
@@ -154,19 +158,25 @@ def build_axis_contract_block(
             lines.extend([heading, body, ""])
         if include_tour_scope:
             lines.append(
-                "分工：audience_brief 管用词与深度；mastery_brief 管听者立场；"
-                "tour_scope_brief 管哪些节点成步；tone_brief 管怎么说（句数、问句、提纲或叙事）。"
-            )
-            lines.append("冲突时：走图听 tour_scope，口吻听 tone，用词听 audience，立场听 mastery。")
-        else:
-            lines.append(
-                "分工：audience_brief 管用词与深度；mastery_brief 管听者立场；"
+                "分工：diagram_brief 管图示思维焦点和节点叫法；audience_brief 管用词与深度；"
+                "mastery_brief 管听者立场；tour_scope_brief 管哪些节点成步；"
                 "tone_brief 管怎么说（句数、问句、提纲或叙事）。"
             )
-            lines.append("冲突时：口吻听 tone，用词听 audience，立场听 mastery。")
+            lines.append(
+                "冲突时：节点叫法听 diagram_brief 和 nodes[].role，走图听 tour_scope，"
+                "口吻听 tone，用词听 audience，立场听 mastery。"
+                "不要把本图示的节点改叫成另一种图示的分支或下属。"
+            )
+        else:
+            lines.append(
+                "分工：diagram_brief 管图示思维焦点和节点叫法；audience_brief 管用词与深度；"
+                "mastery_brief 管听者立场；tone_brief 管怎么说（句数、问句、提纲或叙事）。"
+            )
+            lines.append("冲突时：节点叫法听 diagram_brief，口吻听 tone，用词听 audience，立场听 mastery。")
         return "\n".join(lines).rstrip()
     lines = ["# This session (follow every block)", ""]
     sections = [
+        (f"## Diagram · {prefs['diagram_label']}", prefs["diagram_brief"]),
         (f"## Expertise · {prefs['audience_title']}", prefs["audience_brief"]),
         (f"## Familiarity · {prefs['mastery_label']}", prefs["mastery_brief"]),
         (f"## Tone · {prefs['tone_label']}", prefs["tone_brief"]),
@@ -180,18 +190,25 @@ def build_axis_contract_block(
         lines.extend([heading, body, ""])
     if include_tour_scope:
         lines.append(
-            "Split: audience_brief = wording and depth; mastery_brief = listener stance; "
+            "Split: diagram_brief = thinking focus and node names; "
+            "audience_brief = wording and depth; mastery_brief = listener stance; "
             "tour_scope_brief = which nodes become steps; tone_brief = how it is spoken."
         )
         lines.append(
-            "On conflict: walk follows tour_scope, voice follows tone, "
-            "wording follows audience, stance follows mastery."
+            "On conflict: node names follow diagram_brief and nodes[].role, "
+            "the walk follows tour_scope, voice follows tone, wording follows audience, "
+            "stance follows mastery. Do not rename this diagram’s nodes as another diagram’s branches."
         )
     else:
         lines.append(
-            "Split: audience_brief = wording and depth; mastery_brief = listener stance; tone_brief = how it is spoken."
+            "Split: diagram_brief = thinking focus and node names; "
+            "audience_brief = wording and depth; mastery_brief = listener stance; "
+            "tone_brief = how it is spoken."
         )
-        lines.append("On conflict: voice follows tone, wording follows audience, stance follows mastery.")
+        lines.append(
+            "On conflict: node names follow diagram_brief, voice follows tone, "
+            "wording follows audience, stance follows mastery."
+        )
     return "\n".join(lines).rstrip()
 
 

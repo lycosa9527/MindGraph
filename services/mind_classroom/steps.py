@@ -7,6 +7,7 @@ from typing import Any, Optional
 from services.diagram.mindmap_identity import remap_id_list, remap_optional_id
 from services.diagram.thinking_map_identity import diagram_spec_identity_aliases
 from services.mind_classroom.focus import resolve_whole_map_focus_node_ids
+from services.mind_classroom.node_roles import drop_opening_only_steps, order_lecture_steps
 
 MAX_STEPS_DEFAULT = 40
 _KINDS = frozenset({"overview", "branch", "closing"})
@@ -93,7 +94,7 @@ def normalize_steps(
         for step in out:
             if step["kind"] in {"overview", "closing"}:
                 step["focus_node_ids"] = list(whole_map)
-    return out
+    return drop_opening_only_steps(spec, order_lecture_steps(spec, out))
 
 
 def filter_live_focus(steps: list[dict[str, Any]], live_ids: set[str]) -> list[dict[str, Any]]:

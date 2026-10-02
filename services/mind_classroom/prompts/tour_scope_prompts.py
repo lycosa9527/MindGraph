@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from services.mind_classroom.prompts.lesson_writers import lesson_scope_brief
+
 TOUR_SCOPE_IDS = frozenset({"main_branch", "each_node"})
 
 _LABELS = {
@@ -69,9 +71,18 @@ def tour_scope_label(scope: str, language: str) -> str:
     return _LABELS[normalize_tour_scope(scope)][lang]
 
 
-def tour_scope_brief(scope: str, language: str) -> str:
-    """Instruction block for which nodes become lecture steps."""
+def tour_scope_brief(scope: str, language: str, diagram_type: Any = None) -> str:
+    """Instruction block for which nodes become lecture steps.
+
+    Mind maps keep the shared branch/leaf brief. Other diagrams use their own writer.
+    """
     key = normalize_tour_scope(scope)
+    slug = str(diagram_type or "").strip()
+    if slug and slug not in {"mind_map", "mindmap"}:
+        body = lesson_scope_brief(slug, key, language)
+        if str(language or "zh").startswith("zh"):
+            return f"巡讲粒度：{body}"
+        return f"Tour scope: {body}"
     if str(language or "zh").startswith("zh"):
         return _BRIEFS_ZH[key]
     return _BRIEFS_EN[key]

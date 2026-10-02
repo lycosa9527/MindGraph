@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from services.mind_classroom.node_roles import overview_focus_node_ids
 from services.mind_classroom.outline import MindMapOutline
 
 
@@ -112,6 +113,9 @@ def resolve_whole_map_focus_node_ids(spec: dict[str, Any]) -> list[str]:
     Jobs often persist only the topic id; the camera should still show the
     whole-map trunk, not a tight zoom on the center node.
     """
+    framed = overview_focus_node_ids(spec)
+    if framed:
+        return framed
     topic_id = _topic_node_id(spec)
     branch_ids = _first_level_branch_ids(spec, topic_id)
     if topic_id:

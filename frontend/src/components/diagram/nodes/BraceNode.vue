@@ -12,6 +12,7 @@ import { Handle, Position } from '@vue-flow/core'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
@@ -19,11 +20,13 @@ import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { paintNodeShape } from '@/utils/nodeShapeStyle'
+import { thinkingMapDisplayedNodeColors } from '@/utils/thinkingMapNodePaint'
 
 import InlineEditableText from './InlineEditableText.vue'
 import NodeShapeUnderline from './NodeShapeUnderline.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+const diagramStore = useDiagramSession()
 const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
 
 const braceNodeRef = ref<HTMLElement | null>(null)
@@ -56,9 +59,21 @@ const defaultStyle = computed(() => {
 // Pill shape for part/subpart nodes to match topic (brace map uses pill for topic)
 const usePillShape = computed(() => !isWholeNode.value)
 
+const themeNodePaint = computed(() => {
+  const node = props.data.originalNode
+  if (!node) return null
+  return thinkingMapDisplayedNodeColors(
+    props.data.diagramType,
+    diagramStore.data?._mindmap_theme,
+    node,
+    props.data.style
+  )
+})
+
 const nodeStyle = computed(() => {
   const color = groupColor.value
   const borderColor =
+    themeNodePaint.value?.borderColor ||
     props.data.style?.borderColor ||
     color?.border ||
     defaultStyle.value.borderColor ||
@@ -69,6 +84,7 @@ const nodeStyle = computed(() => {
     (isWholeNode.value ? 3 : isSubpart.value ? 1 : 2)
   const borderStyle = props.data.style?.borderStyle || 'solid'
   const backgroundColor =
+    themeNodePaint.value?.backgroundColor ||
     props.data.style?.backgroundColor ||
     color?.fill ||
     defaultStyle.value.backgroundColor ||
@@ -77,6 +93,7 @@ const nodeStyle = computed(() => {
   const base = {
     backgroundColor,
     color:
+      themeNodePaint.value?.textColor ||
       props.data.style?.textColor ||
       defaultStyle.value.textColor ||
       (isWholeNode.value ? '#ffffff' : '#333333'),
@@ -192,7 +209,11 @@ function handleBranchMovePointerUp(): void {
     <NodeShapeUnderline
       v-if="data.style?.nodeShape === 'underline'"
       :color="
-        data.style?.borderColor || groupColor?.border || defaultStyle.borderColor || '#1976d2'
+        themeNodePaint?.borderColor ||
+        data.style?.borderColor ||
+        groupColor?.border ||
+        defaultStyle.borderColor ||
+        '#1976d2'
       "
     />
     <InlineEditableText

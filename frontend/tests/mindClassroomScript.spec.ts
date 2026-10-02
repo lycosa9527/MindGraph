@@ -172,6 +172,68 @@ describe('buildMindClassroomLectureSteps', () => {
     ).toEqual([])
   })
 
+  it('frames a circle map on the ring, and a step keeps the center', () => {
+    const circleNodes: DiagramNode[] = [
+      { id: 'topic', text: '水', type: 'center', position: { x: 0, y: 0 } },
+      { id: 'outer-boundary', text: '', type: 'boundary', position: { x: 0, y: 0 } },
+      { id: 'ctx-1', text: '蒸发', type: 'bubble', position: { x: 80, y: 0 } },
+      { id: 'ctx-2', text: '降雨', type: 'bubble', position: { x: -80, y: 0 } },
+    ]
+    const diagram = { connections: [] as Connection[], nodes: circleNodes, diagramType: 'circle_map' }
+    expect(
+      lectureStepFitNodeIds(
+        { kind: 'overview', focusNodeIds: ['topic'] },
+        'main_branch',
+        () => new Set(['topic']),
+        'canvas_tour',
+        diagram
+      )
+    ).toEqual(['topic', 'ctx-1', 'ctx-2'])
+    expect(
+      lectureStepFitNodeIds(
+        { kind: 'branch', focusNodeIds: ['ctx-1'], branchNodeId: 'ctx-1' },
+        'main_branch',
+        () => new Set(['ctx-1']),
+        'canvas_tour',
+        diagram
+      )
+    ).toEqual(['ctx-1', 'topic'])
+  })
+
+  it('frames a tree step on that category group', () => {
+    const treeNodes: DiagramNode[] = [
+      { id: 'tree-topic', text: '动物', type: 'topic', position: { x: 0, y: 0 } },
+      { id: 'dimension-label', text: '食性', type: 'label', position: { x: 0, y: 40 } },
+      { id: 'cat-1', text: '肉食', type: 'branch', position: { x: -80, y: 80 } },
+      { id: 'item-1', text: '虎', type: 'branch', position: { x: -80, y: 140 } },
+      { id: 'cat-2', text: '草食', type: 'branch', position: { x: 200, y: 80 } },
+    ]
+    const treeConnections: Connection[] = [
+      { id: 'e1', source: 'tree-topic', target: 'cat-1' },
+      { id: 'e2', source: 'cat-1', target: 'item-1' },
+      { id: 'e3', source: 'tree-topic', target: 'cat-2' },
+    ]
+    const diagram = { connections: treeConnections, nodes: treeNodes, diagramType: 'tree_map' }
+    expect(
+      lectureStepFitNodeIds(
+        { kind: 'branch', focusNodeIds: ['item-1'], branchNodeId: 'item-1' },
+        'each_node',
+        () => new Set(['item-1']),
+        'canvas_tour',
+        diagram
+      )
+    ).toEqual(['cat-1', 'item-1'])
+    expect(
+      lectureStepFitNodeIds(
+        { kind: 'branch', focusNodeIds: ['cat-2'], branchNodeId: 'cat-2' },
+        'main_branch',
+        () => new Set(['cat-2']),
+        'canvas_tour',
+        diagram
+      )
+    ).toEqual(['cat-2'])
+  })
+
   it('uses deep traversal and single-node focus for each-node tours', () => {
     const steps = buildMindClassroomLectureSteps(
       nodes,

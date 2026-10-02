@@ -14,6 +14,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { findBridgePairSide } from '@/utils/bridgeMapIdentity'
+import { resolveThinkingMapConnectorStroke } from '@/utils/thinkingMapConnectionStroke'
 
 // Diagram store for diagram type and spec metadata
 const diagramStore = useDiagramSession()
@@ -46,10 +47,16 @@ interface NodeWithDimensions {
   dimensions?: { width?: number; height?: number }
 }
 
-// Bridge styling
-const BRIDGE_LINE_COLOR = '#666' // Darker grey for horizontal bridge line (matching old JS)
+// Bridge styling. Default grey; a solid color theme repaints the bridge and triangles.
+const BRIDGE_DEFAULT_LINE = '#666'
 const BRIDGE_LINE_WIDTH = 2
-const TRIANGLE_COLOR = '#666' // Darker grey for triangle separators (matching old JS)
+const bridgeStructureColor = computed(() =>
+  resolveThinkingMapConnectorStroke(
+    diagramStore.data?._mindmap_theme,
+    BRIDGE_DEFAULT_LINE,
+    BRIDGE_DEFAULT_LINE
+  )
+)
 const TRIANGLE_HEIGHT = 8 // Height of triangle separator (vertical distance from base to tip)
 const TRIANGLE_BASE_WIDTH = 12 // Width of triangle base (bottom edge)
 const AS_LABEL_COLOR = '#606266' // Grey for "as" labels
@@ -498,7 +505,7 @@ onUnmounted(() => {
         :y1="horizontalBridgeLine.y1"
         :x2="horizontalBridgeLine.x2"
         :y2="horizontalBridgeLine.y2"
-        :stroke="BRIDGE_LINE_COLOR"
+        :stroke="bridgeStructureColor"
         :stroke-width="BRIDGE_LINE_WIDTH"
         stroke-linecap="round"
       />
@@ -508,8 +515,8 @@ onUnmounted(() => {
         v-for="triangle in triangleSeparators"
         :key="`triangle-${triangle.pairIndex}`"
         :points="`${triangle.x - TRIANGLE_BASE_WIDTH / 2},${triangle.y} ${triangle.x + TRIANGLE_BASE_WIDTH / 2},${triangle.y} ${triangle.x},${triangle.y - TRIANGLE_HEIGHT}`"
-        :fill="TRIANGLE_COLOR"
-        :stroke="TRIANGLE_COLOR"
+        :fill="bridgeStructureColor"
+        :stroke="bridgeStructureColor"
         stroke-width="1"
       />
 

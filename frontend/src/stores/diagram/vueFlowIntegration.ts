@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 
+import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import {
   augmentConnectionWithOptimalHandles,
   splitMixedArrowHandleGroups,
@@ -23,6 +24,7 @@ import { isMindMapAssociationConnection, mindMapNodeSide } from '@/utils/mindMap
 import { buildMindMapOrthogonalSiblingMap } from '@/utils/mindMapOrthogonalSiblings'
 import { filterTreeMindMapNodes } from '@/utils/mindMapSummary'
 import { CIRCLE_MAP_OVAL_WIDTH_RATIO } from '@/utils/nodeShapeStyle'
+import { thinkingMapSolidThemeStroke } from '@/utils/thinkingMapConnectionStroke'
 
 import {
   recalculateBraceMapLayout,
@@ -389,6 +391,9 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     const isV2MindMap =
       (diagramType === 'mindmap' || diagramType === 'mind_map') &&
       effectiveMindMapMode.value === 'v2'
+    const thinkingMapStroke = isThinkingMapDiagramType(diagramType)
+      ? thinkingMapSolidThemeStroke(diagramData._mindmap_theme)
+      : null
 
     const edges = connections
       .filter(
@@ -414,6 +419,14 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
                 nodes,
                 connections
               ),
+            },
+          }
+        } else if (thinkingMapStroke) {
+          effectiveConn = {
+            ...effectiveConn,
+            style: {
+              ...(effectiveConn.style || {}),
+              strokeColor: thinkingMapStroke,
             },
           }
         }

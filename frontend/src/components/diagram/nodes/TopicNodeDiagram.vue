@@ -20,6 +20,7 @@ import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { type NodeShape, applyNodeShapeToStyle, resolveNodeShape } from '@/utils/nodeShapeStyle'
+import { thinkingMapDisplayedNodeColors } from '@/utils/thinkingMapNodePaint'
 
 import InlineEditableText from './InlineEditableText.vue'
 import NodeShapeUnderline from './NodeShapeUnderline.vue'
@@ -118,16 +119,39 @@ const rightHandlePositions = computed(() => {
   return positions
 })
 
+const themeNodePaint = computed(() => {
+  const node = props.data.originalNode
+  if (!node) return null
+  return thinkingMapDisplayedNodeColors(
+    props.data.diagramType,
+    diagramStore.data?._mindmap_theme,
+    node,
+    resolvedStyle.value
+  )
+})
+
 const nodeStyle = computed(() => {
   const style = resolvedStyle.value
-  const borderColor = style.borderColor || defaultStyle.value.borderColor || '#0d47a1'
+  const borderColor =
+    themeNodePaint.value?.borderColor ||
+    style.borderColor ||
+    defaultStyle.value.borderColor ||
+    '#0d47a1'
   const borderWidth = style.borderWidth ?? defaultStyle.value.borderWidth ?? 3
   const borderStyle = style.borderStyle || 'solid'
-  const backgroundColor = style.backgroundColor || defaultStyle.value.backgroundColor || '#1976d2'
+  const backgroundColor =
+    themeNodePaint.value?.backgroundColor ||
+    style.backgroundColor ||
+    defaultStyle.value.backgroundColor ||
+    '#1976d2'
 
   const baseStyle = {
     backgroundColor,
-    color: style.textColor || defaultStyle.value.textColor || '#ffffff',
+    color:
+      themeNodePaint.value?.textColor ||
+      style.textColor ||
+      defaultStyle.value.textColor ||
+      '#ffffff',
     fontFamily: style.fontFamily || DIAGRAM_NODE_FONT_STACK,
     fontSize: `${style.fontSize || defaultStyle.value.fontSize || 18}px`,
     fontWeight: style.fontWeight || defaultStyle.value.fontWeight || 'bold',
@@ -335,7 +359,12 @@ function handleWidthChange(width: number) {
     >
       <NodeShapeUnderline
         v-if="resolvedStyle.nodeShape === 'underline'"
-        :color="resolvedStyle.borderColor || defaultStyle.borderColor || '#0d47a1'"
+        :color="
+          themeNodePaint?.borderColor ||
+          resolvedStyle.borderColor ||
+          defaultStyle.borderColor ||
+          '#0d47a1'
+        "
       />
       <InlineEditableText
         :text="data.label || ''"

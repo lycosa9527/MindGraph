@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any, Optional
 
+from services.mind_classroom.prompts.lesson_writers import LessonParts, lesson_writer
 from services.mind_classroom.prompts.mastery_prompts import (
     build_axis_contract_block,
     classroom_pref_fields,
@@ -12,11 +13,11 @@ from services.mind_classroom.prompts.mastery_prompts import (
 
 # Shared pedagogy + frame schema. Phase user messages scope the slice of the deck.
 LESSON_PLANNER_SYSTEM = """你是批判性思维教练 + 可视化教学 PPT 导演。
-根据用户提供的思维导图结构，设计面向学习者的图示课件分镜（PPT 风格）。
+根据用户提供的图示结构设计面向学习者的课件分镜（PPT 风格）。图示类型与节点叫法听 diagram_brief。
 本场口吻、深度、听者立场以「本场选择」与用户消息里的 brief 为准，不要默认 K12 或初中～高一。
 
 # 最高优先级：跟着用户导图走（不可违背）
-1. **outline / 当前分支是唯一知识骨架**：禁止发明导图里不存在的一级分支或子点。
+1. **outline / 当前节点是唯一知识骨架**：禁止发明图示里不存在的节点。叫法听 diagram_brief，不要把所有图都说成思维导图分支。
 2. **导图联动字段必准**
    - 主题总览与收束：focus_branch=""、focus_child=""。
    - 分支帧：focus_branch = 该分支的 id（优先）或原文 text。
@@ -81,6 +82,11 @@ def build_lesson_planner_system_message(settings: Optional[dict[str, Any]] = Non
     return f"{LESSON_PLANNER_SYSTEM.rstrip()}\n\n{build_axis_contract_block(settings, include_tour_scope=False)}"
 
 
+def _writer(settings: Optional[dict[str, Any]], language: str) -> LessonParts:
+    raw = settings if isinstance(settings, dict) else {}
+    return lesson_writer(str(raw.get("diagram_type") or ""), language)
+
+
 def _base_payload(
     *,
     language: str,
@@ -116,6 +122,7 @@ def build_open_planner_message(
             ],
         },
         "requirements": [
+            _writer(settings, language).planner_open,
             "只设计开场：反直觉钩子 topic_overview，只问不答",
             "给出全课件统一 style_seed（媒介、配色、光感；视觉年龄听 audience_brief）",
             "batches 仅含一个 batch_role=open；通常 1 帧，最多 2 帧",
@@ -156,8 +163,8 @@ def build_branch_planner_message(
         "branch_total": branch_total,
         "branch": branch,
         "requirements": [
-            f"只设计当前一级分支：{branch_text}（focus_branch 必须用 {focus!r}）",
-            "先 branch_intro（含具体类比），再按 children 顺序 child_detail（可择要）",
+            _writer(settings, language).planner_develop,
+            f"只设计当前节点：{branch_text}（focus_branch 必须用 {focus!r}）",
             "发现对立/误解/两难：加 cognitive_conflict + think_prompt",
             (
                 "本分支尽量安排一帧 A/B 角色抉择（扎根本分支）"
@@ -166,7 +173,7 @@ def build_branch_planner_message(
             ),
             "不要输出其他分支的帧；不要改 style_seed",
             "batches 仅含一个 batch_role=develop",
-            "每帧必须有 teacher_script（口语旁白，点名本分支/子点，遵守 mastery_brief、audience_brief 与 tone_brief）",
+            "每帧必须有 teacher_script（口语旁白，点名本节点角色，遵守 mastery_brief、audience_brief 与 tone_brief）",
             _FRAME_SCHEMA_HINT,
         ],
     }
@@ -198,7 +205,8 @@ def build_close_planner_message(
         "topic": outline_payload.get("topic"),
         "branch_titles": branch_titles,
         "requirements": [
-            "只设计收束：金句 + 有记忆点画面；勿复读分支清单",
+            _writer(settings, language).planner_close,
+            "只设计收束：金句 + 有记忆点画面；勿复读节点清单",
             "batches 仅含一个 batch_role=close；通常 1 帧",
             "focus_branch 与 focus_child 必须为空字符串",
             "不要改 style_seed",

@@ -42,7 +42,7 @@ import {
   type MindClassroomVoiceWarmup,
 } from '@/utils/mindClassroomPrepSlot'
 import {
-  expandLectureFocusNodeIds,
+  lectureStepFitNodeIds,
   type MindClassroomLectureStep,
 } from '@/utils/mindClassroomScript'
 
@@ -130,11 +130,16 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     if (!isLecturing.value) return null
     const step = currentStep.value
     if (!step || step.kind === 'overview' || step.kind === 'closing') return null
-    const expanded = expandLectureFocusNodeIds(
+    const expanded = lectureStepFitNodeIds(
       step,
       sessionTourScope.value,
       (id) => diagramStore.getMindMapDescendantIds(id),
-      activeMode.value
+      activeMode.value,
+      {
+        connections: diagramStore.data?.connections ?? [],
+        nodes: diagramStore.data?.nodes ?? [],
+        diagramType: diagramStore.type,
+      }
     )
     if (!expanded.length) return null
     return new Set(expanded)

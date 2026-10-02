@@ -68,7 +68,7 @@ import {
   type MindClassroomLectureStep,
 } from '@/utils/mindClassroomScript'
 
-const FIT_MS = 900
+const FIT_MS = 1100
 
 let advanceTimer: ReturnType<typeof setTimeout> | null = null
 let transitionTimer: ReturnType<typeof setTimeout> | null = null
@@ -176,6 +176,7 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
       {
         connections: diagramStore.data?.connections ?? [],
         nodes: diagramStore.data?.nodes ?? [],
+        diagramType: diagramStore.type,
       }
     )
     void nextTick(() => {

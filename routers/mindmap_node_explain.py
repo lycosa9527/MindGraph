@@ -243,6 +243,7 @@ async def _stream_explain(
             "path": normalize_org_cache_list(req.ancestor_path),
             "siblings": normalize_org_cache_list(req.sibling_branches),
             "children": normalize_org_cache_list(req.child_branches),
+            "role": normalize_org_cache_text(req.node_role),
         }
     )
     if explain_org is not None:
@@ -282,6 +283,7 @@ async def _stream_explain(
             ancestor_path=req.ancestor_path or [],
             sibling_branches=req.sibling_branches or [],
             child_branches=req.child_branches or [],
+            node_role=req.node_role,
             language=effective_lang,
             facet=facet,
             audience_level=req.audience_level,

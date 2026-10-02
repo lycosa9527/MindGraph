@@ -11,7 +11,9 @@ from agents.mind_maps.node_explain import (
 )
 from agents.mind_maps.node_explain_prompts import (
     RESEARCH_IMAGE_MAX,
+    RESEARCH_IMAGE_REASONING_EFFORT,
     RESEARCH_IMAGE_TOOLS,
+    RESEARCH_REASONING_EFFORT,
     RESEARCH_TOOLS,
 )
 from agents.mind_maps.node_explain_research import (
@@ -19,7 +21,9 @@ from agents.mind_maps.node_explain_research import (
     merge_research_streams,
     split_image_events,
 )
+from clients.llm.responses.dashscope import _build_payload
 from clients.llm.responses.dashscope_events import normalize_responses_event
+from clients.llm.responses.types import ResponsesRequest
 from services.infrastructure.http.error_handler import (
     LLMInvalidParameterError,
     LLMModelNotFoundError,
@@ -112,11 +116,14 @@ async def test_meaning_path_uses_research_tools() -> None:
     assert responses.kwargs is not None
     assert responses.kwargs["tools"] == list(RESEARCH_TOOLS)
     assert responses.kwargs["enable_thinking"] is True
+    assert responses.kwargs["reasoning_effort"] == RESEARCH_REASONING_EFFORT
     assert responses.kwargs["request_type"] == "mindmap_node_explain"
     assert responses.kwargs.get("bill_usage", True) is True
     image_calls = [call for call in responses.calls if list(call.get("tools") or []) == list(RESEARCH_IMAGE_TOOLS)]
     assert len(image_calls) == 1
     assert image_calls[0]["bill_usage"] is False
+    assert image_calls[0]["enable_thinking"] is False
+    assert image_calls[0]["reasoning_effort"] == RESEARCH_IMAGE_REASONING_EFFORT
     kinds = [event["event"] for event in events]
     assert "status" in kinds
     assert "token" in kinds
@@ -394,6 +401,34 @@ def test_completed_emits_usage_only() -> None:
             },
         }
     ]
+
+
+def test_dashscope_payload_sends_reasoning_effort() -> None:
+    """qwen3.8-flash ignores enable_thinking when effort is omitted; send both."""
+    payload = _build_payload(
+        ResponsesRequest(
+            model="qwen3.8-flash",
+            input="光合作用",
+            tools=["web_search"],
+            enable_thinking=True,
+            reasoning_effort="low",
+        )
+    )
+    assert payload["reasoning"] == {"effort": "low"}
+    assert payload["enable_thinking"] is True
+    assert payload["tools"] == [{"type": "web_search"}]
+
+
+def test_dashscope_payload_omits_reasoning_when_unset() -> None:
+    """Other callers keep the previous body when they do not set an effort."""
+    payload = _build_payload(
+        ResponsesRequest(
+            model="qwen3.8-flash",
+            input="光合作用",
+            tools=["web_search"],
+        )
+    )
+    assert "reasoning" not in payload
 
 
 def test_registry_defaults_unknown_provider_to_qwen() -> None:

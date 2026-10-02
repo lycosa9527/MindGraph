@@ -7,9 +7,9 @@ import { useLanguage } from '@/composables'
 import { isCollabGuestAiBlocked } from '@/composables/collab/useCollabGuestAiGate'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useNotifications } from '@/composables/core/useNotifications'
-import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { isPlaceholderText } from '@/composables/editor/placeholderText'
+import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { resolveCanvasAudienceLevel } from '@/composables/mindMap/audience/aiContentLevelInstructions'
 import { withMindMapAudienceContext } from '@/composables/mindMap/audience/withMindMapAudienceContext'
 import { useSavedDiagramsStore } from '@/stores'
@@ -101,6 +101,7 @@ export function useMindMapNodeExplain() {
         ancestor_path: ctx?.ancestorPath ?? [],
         sibling_branches: ctx?.siblingBranches ?? [],
         child_branches: ctx?.childBranches ?? [],
+        node_role: ctx?.nodeRole ?? '',
         language: promptLanguage.value,
         audience_level: resolveCanvasAudienceLevel(),
         diagram_id: savedDiagramsStore.activeDiagramId ?? undefined,

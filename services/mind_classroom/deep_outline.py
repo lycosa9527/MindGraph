@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from services.mind_classroom.node_roles import apply_lecture_roles
 from services.mind_classroom.outline import (
     canvas_place_code,
     clean_node_text,
@@ -64,20 +65,23 @@ def build_tour_nodes(
     outline = extract_mindmap_outline(spec, fallback_title=fallback_title)
     by_id, children, topic_id = _children_map(spec)
     if not by_id or not topic_id:
-        return [
-            {
-                "id": "",
-                "text": outline.topic,
-                "kind": "topic",
-                "parent_id": None,
-                "child_texts": [branch.text for branch in outline.branches],
-                "descendant_ids": [branch.id for branch in outline.branches if branch.id],
-                "place": "center",
-                "parent_text": None,
-                "sibling_texts": [],
-                "stop": "trunk",
-            }
-        ]
+        return apply_lecture_roles(
+            spec,
+            [
+                {
+                    "id": "",
+                    "text": outline.topic,
+                    "kind": "topic",
+                    "parent_id": None,
+                    "child_texts": [branch.text for branch in outline.branches],
+                    "descendant_ids": [branch.id for branch in outline.branches if branch.id],
+                    "place": "center",
+                    "parent_text": None,
+                    "sibling_texts": [],
+                    "stop": "trunk",
+                }
+            ],
+        )
 
     topic_text = clean_node_text(by_id[topic_id].get("text") or by_id[topic_id].get("label")) or outline.topic
     first_ids = sort_topic_branch_ids_clockwise(list(children.get(topic_id, [])), by_id, topic_id)
@@ -148,4 +152,4 @@ def build_tour_nodes(
 
     for branch_id in first_ids:
         walk(branch_id, topic_id)
-    return items
+    return apply_lecture_roles(spec, items)

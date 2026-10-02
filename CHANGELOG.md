@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.136] - 2026-10-03
+
+> **Thinking maps follow the color theme, and a lecture names each map's own nodes.**
+
+### Changed
+
+- **配色** — A solid color theme paints thinking-map nodes, braces, the bridge, and connector lines. Rainbow restores each group's own palette. A hand-painted color that is neither the palette nor empty stays.
+- **括号图** — Layout keeps the node's live id and centers a parent on the whole subtree, so a taller last branch does not drop the parent.
+- **智能生成子图** — The floating toolbar shows AI subgraph on mind maps, concept maps, tree maps, and brace maps. File, web, and voice generation stay on mind-map v2.
+- **思维讲堂** — A lecture walks each diagram's own nodes. Overview and closing cover the map. A later step frames one ring, one column, one comparison side, one cause or effect, or one bridge pair.
+- **节点讲解** — Explain names the selected node's role: association, attribute, comparison side, category, part, step, cause, or bridge pair. The gloss is about 200 words after one web search.
+
+### Tests
+
+- [`frontend/tests/thinkingMapNodePaint.spec.ts`](frontend/tests/thinkingMapNodePaint.spec.ts), [`frontend/tests/thinkingMapConnectionStroke.spec.ts`](frontend/tests/thinkingMapConnectionStroke.spec.ts), [`frontend/tests/braceMapLayout.spec.ts`](frontend/tests/braceMapLayout.spec.ts), [`frontend/tests/thinkingMapLayoutIdentity.spec.ts`](frontend/tests/thinkingMapLayoutIdentity.spec.ts), [`frontend/tests/nodeFloatingAiSubgraph.spec.ts`](frontend/tests/nodeFloatingAiSubgraph.spec.ts), [`frontend/tests/diagramRibbonCapabilities.spec.ts`](frontend/tests/diagramRibbonCapabilities.spec.ts), [`frontend/tests/mindClassroomScript.spec.ts`](frontend/tests/mindClassroomScript.spec.ts), [`frontend/tests/mindMapExplainContext.spec.ts`](frontend/tests/mindMapExplainContext.spec.ts), [`tests/test_mind_classroom_steps.py`](tests/test_mind_classroom_steps.py), [`tests/test_mind_classroom_diagram_prompts.py`](tests/test_mind_classroom_diagram_prompts.py), [`tests/test_mind_map_node_explain.py`](tests/test_mind_map_node_explain.py), [`tests/test_mind_map_node_explain_research.py`](tests/test_mind_map_node_explain_research.py)
+
 ## [5.180.135] - 2026-10-03
 
 > **The same browser stays signed in, and a kicked device cannot refresh itself back in.**

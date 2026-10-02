@@ -131,7 +131,7 @@ const activeColorPanel = ref<'fill' | 'border' | 'text' | null>(null)
 const typographyOpen = ref(false)
 
 const aiSubgraphVisible = computed(
-  () => showCanvasAiFeatures.value && props.showAiSubgraph !== false
+  () => showCanvasAiFeatures.value && props.showAiSubgraph === true
 )
 
 function onAiSubgraphClick(): void {

@@ -35,7 +35,7 @@ export type DiagramRibbonCapabilities = {
   explain: boolean
   /** Mind classroom. Mind maps, thinking maps, and concept maps. */
   mindClassroom: boolean
-  /** File / web / voice summary. Mind maps use the content agent; other types use that generator. */
+  /** File / web / voice summary. Mind-map v2 only. */
   docGenerate: boolean
   /** Three-mode blanking panel. Mind-map v2, thinking maps, and concept maps. */
   learningSheetPanel: boolean
@@ -45,12 +45,16 @@ export type DiagramRibbonCapabilities = {
   outline: boolean
   /** Status-bar hand-gesture guide. Mind-map v2 and the eight thinking maps. */
   gestureGuide: boolean
+  /** AI subgraph. Mind-map v2, concept maps, tree maps, and brace maps. */
   subgraph: boolean
   /** PNG / SVG / PDF / .mg. Mind-map v2 keeps its shorter menu. */
   standardExport: boolean
 }
 
 const MIND_MAP_TYPES = new Set(['mindmap', 'mind_map'])
+
+/** Thinking maps whose AI tab and node toolbar keep 智能生成子图. */
+const AI_SUBGRAPH_THINKING_MAP_TYPES = new Set(['tree_map', 'brace_map'])
 
 export function isMindMapDiagramType(type: string | null | undefined): boolean {
   return typeof type === 'string' && MIND_MAP_TYPES.has(type)
@@ -90,12 +94,13 @@ export function diagramRibbonCapabilities(
     conceptGenerate: conceptMap,
     explain: mindMap || thinkingMap || conceptMap,
     mindClassroom: mindMap || thinkingMap || conceptMap,
-    docGenerate: v2 || thinkingMap,
+    docGenerate: v2,
     learningSheetPanel: v2 || thinkingMap || conceptMap,
     learningSheetToggle: !v2 && !thinkingMap && !conceptMap,
     outline: v2 || thinkingMap,
     gestureGuide: v2 || thinkingMap,
-    subgraph: v2 || thinkingMap || conceptMap,
+    subgraph:
+      v2 || conceptMap || (typeof type === 'string' && AI_SUBGRAPH_THINKING_MAP_TYPES.has(type)),
     standardExport: !v2,
   }
 }

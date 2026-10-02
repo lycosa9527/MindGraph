@@ -492,24 +492,34 @@ defineProps<{
         stroke="#ff8a65"
         stroke-width="3"
       />
-      <line
-        class="anim-line"
-        x1="125"
-        y1="67"
-        x2="152"
-        y2="51"
-        stroke="#ff8a65"
-        stroke-width="3"
-      />
-      <line
-        class="anim-line"
-        x1="125"
-        y1="83"
-        x2="152"
-        y2="99"
-        stroke="#ff8a65"
-        stroke-width="3"
-      />
+      <g class="anim-line">
+        <line
+          x1="125"
+          y1="67"
+          x2="142.5"
+          y2="56.6"
+          stroke="#ff8a65"
+          stroke-width="3"
+        />
+        <polygon
+          points="145.1,60.9 152,51 140,52.3"
+          fill="#ff8a65"
+        />
+      </g>
+      <g class="anim-line">
+        <line
+          x1="125"
+          y1="83"
+          x2="142.5"
+          y2="93.4"
+          stroke="#ff8a65"
+          stroke-width="3"
+        />
+        <polygon
+          points="140,97.7 152,99 145.1,89.1"
+          fill="#ff8a65"
+        />
+      </g>
       <rect
         class="anim-node"
         x="75"

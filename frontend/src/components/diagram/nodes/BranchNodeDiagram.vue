@@ -21,6 +21,7 @@ import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { isBridgeMapPairNode } from '@/utils/bridgeMapIdentity'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { applyNodeShapeToStyle, resolveNodeShape } from '@/utils/nodeShapeStyle'
+import { thinkingMapDisplayedNodeColors } from '@/utils/thinkingMapNodePaint'
 import {
   isTreeMapCategoryNode,
   isTreeMapLeafNode,
@@ -82,9 +83,21 @@ const treeMapGroupColors = computed(() => {
   return idx !== undefined ? getMindmapBranchColor(idx) : null
 })
 
+const themeNodePaint = computed(() => {
+  const node = props.data.originalNode
+  if (!node) return null
+  return thinkingMapDisplayedNodeColors(
+    props.data.diagramType,
+    diagramStore.data?._mindmap_theme,
+    node,
+    resolvedStyle.value
+  )
+})
+
 const shapeLineColor = computed(() => {
   const style = resolvedStyle.value
   return (
+    themeNodePaint.value?.borderColor ||
     style.borderColor ||
     (isTreeMap.value && treeMapGroupColors.value ? treeMapGroupColors.value.border : undefined) ||
     defaultStyle.value.borderColor ||
@@ -108,14 +121,16 @@ const nodeStyle = computed((): CSSProperties => {
   const shouldHaveBackground = !isBridgeMap.value || bridgeBody
   const shouldHaveShadow = !isBridgeMap.value || bridgeBody
   const bgColor = shouldHaveBackground
-    ? style.backgroundColor ||
+    ? themeNodePaint.value?.backgroundColor ||
+      style.backgroundColor ||
       (isTreeMap.value && treeMapGroupColors.value
         ? treeMapGroupColors.value.fill
         : defaultStyle.value.backgroundColor) ||
       '#e3f2fd'
     : 'transparent'
   const borderColor = shouldHaveBorder
-    ? style.borderColor ||
+    ? themeNodePaint.value?.borderColor ||
+      style.borderColor ||
       (isTreeMap.value && treeMapGroupColors.value
         ? treeMapGroupColors.value.border
         : defaultStyle.value.borderColor) ||
@@ -134,7 +149,11 @@ const nodeStyle = computed((): CSSProperties => {
           backgroundColor: bgColor,
         })
       : { borderColor: 'transparent', borderWidth: '0px', borderStyle: 'none' }),
-    color: style.textColor || defaultStyle.value.textColor || '#333333',
+    color:
+      themeNodePaint.value?.textColor ||
+      style.textColor ||
+      defaultStyle.value.textColor ||
+      '#333333',
     fontFamily: style.fontFamily || DIAGRAM_NODE_FONT_STACK,
     fontSize: `${style.fontSize || defaultStyle.value.fontSize || 16}px`,
     fontWeight: style.fontWeight || defaultStyle.value.fontWeight || 'normal',

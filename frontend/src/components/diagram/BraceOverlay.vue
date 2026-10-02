@@ -18,9 +18,10 @@ import { computed } from 'vue'
 import { useVueFlow } from '@vue-flow/core'
 
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { resolveThinkingMapConnectorStroke } from '@/utils/thinkingMapConnectionStroke'
 
 // Diagram store for diagram type
 const diagramStore = useDiagramSession()
@@ -226,11 +227,15 @@ const braceElements = computed(() => {
     const isRootGroup = group.parentId === rootId
     const parentNode = nodes.find((n) => n.id === group.parentId)
     const groupIndex = isRootGroup ? 0 : ((parentNode?.data?.groupIndex as number | undefined) ?? 0)
-    const color = getMindmapBranchColor(groupIndex)
+    const palette = getMindmapBranchColor(groupIndex).border
     return {
       groupId: group.parentId,
       bracePath,
-      strokeColor: color.border,
+      strokeColor: resolveThinkingMapConnectorStroke(
+        diagramStore.data?._mindmap_theme,
+        palette,
+        palette
+      ),
     }
   })
 })
