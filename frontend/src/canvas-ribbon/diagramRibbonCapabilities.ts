@@ -41,7 +41,9 @@ export type DiagramRibbonCapabilities = {
   learningSheetPanel: boolean
   /** Classic `is_learning_sheet` toggle. */
   learningSheetToggle: boolean
+  /** 层级大纲. Mind-map v2 and the eight thinking maps. */
   outline: boolean
+  /** Status-bar hand-gesture guide. Mind-map v2 and the eight thinking maps. */
   gestureGuide: boolean
   subgraph: boolean
   /** PNG / SVG / PDF / .mg. Mind-map v2 keeps its shorter menu. */
@@ -91,8 +93,8 @@ export function diagramRibbonCapabilities(
     docGenerate: v2 || thinkingMap,
     learningSheetPanel: v2 || thinkingMap || conceptMap,
     learningSheetToggle: !v2 && !thinkingMap && !conceptMap,
-    outline: v2,
-    gestureGuide: v2,
+    outline: v2 || thinkingMap,
+    gestureGuide: v2 || thinkingMap,
     subgraph: v2 || thinkingMap || conceptMap,
     standardExport: !v2,
   }

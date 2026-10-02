@@ -23,6 +23,11 @@ import {
   takeBubbleMapStableId,
 } from '@/utils/bubbleMapIdentity'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import {
+  CIRCLE_MAP_OVAL_WIDTH_RATIO,
+  type NodeShape,
+  shapePackHalfExtent,
+} from '@/utils/nodeShapeStyle'
 
 import {
   CONTEXT_FONT_SIZE,
@@ -54,6 +59,35 @@ function defaultContextBubbleRadiusFromText(text: string): number {
 /**
  * Context bubble radius from node text and typography (not DOM box), so font-only edits resize circles.
  */
+function bubbleShapePacksAsBox(shape: NodeShape | undefined): boolean {
+  return shape === 'rectangle' || shape === 'rounded' || shape === 'underline'
+}
+
+function bubbleNodeHalfExtents(
+  shape: NodeShape | undefined,
+  visualR: number
+): { halfX: number; halfY: number } {
+  if (shape === 'oval') {
+    return { halfX: visualR * CIRCLE_MAP_OVAL_WIDTH_RATIO, halfY: visualR }
+  }
+  return { halfX: visualR, halfY: visualR }
+}
+
+function bubbleOutlinePackR(
+  shape: NodeShape | undefined,
+  visualR: number,
+  measured: { width: number; height: number } | undefined
+): number {
+  if (shape === 'underline' && measured && measured.width > 0 && measured.height > 0) {
+    return shapePackHalfExtent('underline', measured.width / 2, measured.height / 2)
+  }
+  if (shape === 'oval') return visualR * CIRCLE_MAP_OVAL_WIDTH_RATIO
+  if (shape === 'rectangle' || shape === 'rounded') {
+    return shapePackHalfExtent(shape, visualR, visualR)
+  }
+  return visualR
+}
+
 function bubbleContextRadiusFromNode(node: DiagramNode): number {
   const trimmed = (node.text ?? '').trim() || ' '
   const fs = typeof node.style?.fontSize === 'number' ? node.style.fontSize : CONTEXT_FONT_SIZE
@@ -92,7 +126,7 @@ function bubbleContextRadiusFromNode(node: DiagramNode): number {
  */
 export function recalculateBubbleMapLayout(
   nodes: DiagramNode[],
-  _nodeDimensions: Record<string, { width: number; height: number }> = {}
+  nodeDimensions: Record<string, { width: number; height: number }> = {}
 ): DiagramNode[] {
   if (!Array.isArray(nodes) || nodes.length === 0) return []
 
@@ -118,35 +152,87 @@ export function recalculateBubbleMapLayout(
   const uniformRadius =
     bubbleNodes.length > 0 ? Math.max(DEFAULT_CONTEXT_RADIUS, ...radii) : DEFAULT_CONTEXT_RADIUS
 
-  const childrenRadius = bubbleMapChildrenRadius(nodeCount, topicR, uniformRadius, uniformRadius)
+  const topicPackR = bubbleOutlinePackR(
+    topicStyle?.nodeShape,
+    topicR,
+    topicNode ? nodeDimensions[topicNode.id] : undefined
+  )
+  let childPackR = 0
+  for (const node of bubbleNodes) {
+    childPackR = Math.max(
+      childPackR,
+      bubbleOutlinePackR(node.style?.nodeShape, uniformRadius, nodeDimensions[node.id])
+    )
+  }
+  if (childPackR <= 0) childPackR = uniformRadius
+  const packCustom =
+    topicPackR !== topicR ||
+    childPackR !== uniformRadius ||
+    bubbleShapePacksAsBox(topicStyle?.nodeShape) ||
+    bubbleNodes.some((node) => bubbleShapePacksAsBox(node.style?.nodeShape))
+  const childrenRadius = bubbleMapChildrenRadius(
+    nodeCount,
+    topicR,
+    uniformRadius,
+    uniformRadius,
+    50,
+    packCustom ? { packAsBox: true, topicPackR, childPackR } : undefined
+  )
 
   const result: DiagramNode[] = []
 
   if (topicNode) {
-    const { noWrap: _noWrap, ...restStyle } = topicNode.style ?? {}
+    const { noWrap: _noWrap, size: _topicSize, ...restStyle } = topicNode.style ?? {}
+    const topicUnderline = topicStyle?.nodeShape === 'underline'
+    const topicMeasured = nodeDimensions[topicNode.id]
+    const topicPacked =
+      topicUnderline && topicMeasured != null && topicMeasured.width > 0 && topicMeasured.height > 0
+    const topicHalves = topicPacked
+      ? { halfX: topicMeasured.width / 2, halfY: topicMeasured.height / 2 }
+      : bubbleNodeHalfExtents(topicStyle?.nodeShape, topicR)
+    const topicHalfX = topicHalves.halfX
+    const topicHalfY = topicHalves.halfY
     result.push({
       ...topicNode,
-      position: { x: Math.round(centerX - topicR), y: Math.round(centerY - topicR) },
-      style: {
-        ...restStyle,
-        size: topicR * 2,
-        fontSize: restStyle.fontSize ?? TOPIC_FONT_SIZE,
-      },
+      position: { x: Math.round(centerX - topicHalfX), y: Math.round(centerY - topicHalfY) },
+      style: topicPacked
+        ? {
+            ...restStyle,
+            fontSize: restStyle.fontSize ?? TOPIC_FONT_SIZE,
+          }
+        : {
+            ...restStyle,
+            size: topicR * 2,
+            fontSize: restStyle.fontSize ?? TOPIC_FONT_SIZE,
+          },
     })
   }
 
   bubbleNodes.forEach((node, index) => {
+    const bubbleUnderline = node.style?.nodeShape === 'underline'
+    const bubbleMeasured = nodeDimensions[node.id]
+    const bubblePacked =
+      bubbleUnderline &&
+      bubbleMeasured != null &&
+      bubbleMeasured.width > 0 &&
+      bubbleMeasured.height > 0
+    const bubbleHalves = bubblePacked
+      ? { halfX: bubbleMeasured.width / 2, halfY: bubbleMeasured.height / 2 }
+      : bubbleNodeHalfExtents(node.style?.nodeShape, uniformRadius)
+    const bubbleHalfX = bubbleHalves.halfX
+    const bubbleHalfY = bubbleHalves.halfY
     const { x, y } = polarToPosition(
       index,
       nodeCount,
       centerX,
       centerY,
       childrenRadius,
-      uniformRadius,
-      uniformRadius
+      bubbleHalfX,
+      bubbleHalfY
     )
     const pos = { x: Math.round(x), y: Math.round(y) }
     const color = getMindmapBranchColor(index)
+    const { size: _bubbleSize, ...bubbleRest } = node.style ?? {}
     result.push({
       ...node,
       position: pos,
@@ -154,14 +240,22 @@ export function recalculateBubbleMapLayout(
         ...node.data,
         [BUBBLE_MAP_UID_DATA_KEY]: node.id,
       }),
-      style: {
-        ...node.style,
-        size: uniformRadius * 2,
-        fontSize: node.style?.fontSize ?? CONTEXT_FONT_SIZE,
-        noWrap: true,
-        backgroundColor: node.style?.backgroundColor || color.fill,
-        borderColor: node.style?.borderColor || color.border,
-      },
+      style: bubblePacked
+        ? {
+            ...bubbleRest,
+            fontSize: node.style?.fontSize ?? CONTEXT_FONT_SIZE,
+            noWrap: true,
+            backgroundColor: node.style?.backgroundColor || color.fill,
+            borderColor: node.style?.borderColor || color.border,
+          }
+        : {
+            ...bubbleRest,
+            size: uniformRadius * 2,
+            fontSize: node.style?.fontSize ?? CONTEXT_FONT_SIZE,
+            noWrap: true,
+            backgroundColor: node.style?.backgroundColor || color.fill,
+            borderColor: node.style?.borderColor || color.border,
+          },
     })
   })
 

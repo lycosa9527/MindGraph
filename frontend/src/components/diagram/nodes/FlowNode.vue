@@ -25,8 +25,10 @@ import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { isFlowMapStepNode } from '@/utils/flowMapIdentity'
 import { isMultiFlowCauseNode, isMultiFlowEffectNode } from '@/utils/multiFlowMapIdentity'
+import { paintNodeShape } from '@/utils/nodeShapeStyle'
 
 import InlineEditableText from './InlineEditableText.vue'
+import NodeShapeUnderline from './NodeShapeUnderline.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 
@@ -87,14 +89,21 @@ const nodeStyle = computed(() => {
     ...getBorderStyleProps(borderColor, borderWidth, borderStyle, {
       backgroundColor,
     }),
-    // Pill shape for multi-flow map (9999px creates fully rounded ends), default rounded rectangle for others
-    borderRadius: isPillShape.value ? '9999px' : `${props.data.style?.borderRadius || 6}px`,
+  }
+  const shapedStyle = paintNodeShape(
+    baseStyle,
+    props.data.style?.nodeShape,
+    borderColor,
+    isPillShape.value ? '9999px' : `${props.data.style?.borderRadius || 6}px`
+  )
+  if (props.data.style?.nodeShape === 'underline') {
+    shapedStyle.minHeight = 0
   }
 
   // Add dynamic width when editing (multi-flow map only; flow_map uses fixed pill size)
   if (isMultiFlowMap.value && dynamicWidth.value !== null) {
     return {
-      ...baseStyle,
+      ...shapedStyle,
       width: `${dynamicWidth.value}px`,
       minWidth: `${dynamicWidth.value}px`,
     }
@@ -103,7 +112,7 @@ const nodeStyle = computed(() => {
   // Multi-flow map: use layout width so full text displays (not fixed 140px)
   if (isMultiFlowMap.value && layoutWidth.value !== null) {
     return {
-      ...baseStyle,
+      ...shapedStyle,
       width: `${layoutWidth.value}px`,
       minWidth: `${layoutWidth.value}px`,
     }
@@ -112,15 +121,31 @@ const nodeStyle = computed(() => {
   // Flow map: adaptive width and height so full text displays
   if (isFlowMap.value) {
     return {
-      ...baseStyle,
+      ...shapedStyle,
       width: 'max-content',
       minWidth: '120px',
-      minHeight: '48px',
+      minHeight: props.data.style?.nodeShape === 'underline' ? 0 : '48px',
       maxWidth: '300px',
     }
   }
 
-  return baseStyle
+  return shapedStyle
+})
+
+const underlineBottomHandleStyle = computed(() => {
+  if (props.data.style?.nodeShape !== 'underline') return undefined
+  return {
+    top: 'auto',
+    bottom: '1px',
+    transform: 'translate(-50%, 50%)',
+  }
+})
+
+const shapeLineColor = computed(() => {
+  const color = groupColor.value
+  return (
+    props.data.style?.borderColor || color?.border || defaultStyle.value.borderColor || '#409eff'
+  )
 })
 
 const BALANCE_PADDING = 5
@@ -283,6 +308,10 @@ function handleBranchMovePointerUp(): void {
     @mouseup.capture="handleBranchMovePointerUp"
     @touchstart.passive.capture="handleBranchMoveTouchStart"
   >
+    <NodeShapeUnderline
+      v-if="data.style?.nodeShape === 'underline'"
+      :color="shapeLineColor"
+    />
     <!-- Delete button - positioned using Vue Flow handle positioning system (Top + Right) -->
     <!-- Positioned at top-right corner using same absolute positioning as handles -->
     <button
@@ -327,6 +356,7 @@ function handleBranchMovePointerUp(): void {
       type="source"
       :position="Position.Bottom"
       class="bg-blue-500!"
+      :style="underlineBottomHandleStyle"
     />
     <!-- Connection handles for horizontal flow (left-to-right between steps) -->
     <!-- For multi-flow map: causes only have right handle, effects only have left handle -->

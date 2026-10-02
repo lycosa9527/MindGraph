@@ -14,6 +14,7 @@ import { type EdgeProps, useVueFlow } from '@vue-flow/core'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphEdgeData } from '@/types'
 import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
+import { type NodeShape, shapeRayHitDistance } from '@/utils/nodeShapeStyle'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
 
@@ -62,10 +63,10 @@ const path = computed(() => {
   const nx = dx / distance
   const ny = dy / distance
 
-  // Source: always use edge of circle toward target
-  const sourceRadius = Math.min(sourceWidth, sourceHeight) / 2
-  const startX = sourceCenterX + nx * sourceRadius
-  const startY = sourceCenterY + ny * sourceRadius
+  const sourceShape = (sourceNode.data?.style as { nodeShape?: NodeShape } | undefined)?.nodeShape
+  const sourceHit = shapeRayHitDistance(sourceShape, sourceWidth / 2, sourceHeight / 2, nx, ny)
+  const startX = sourceCenterX + nx * sourceHit
+  const startY = sourceCenterY + ny * sourceHit
 
   let endX: number
   let endY: number
@@ -89,10 +90,10 @@ const path = computed(() => {
       endY = targetCenterY
     }
   } else {
-    // Target is a circle: use edge of circle toward source
-    const targetRadius = Math.min(targetWidth, targetHeight) / 2
-    endX = targetCenterX - nx * targetRadius
-    endY = targetCenterY - ny * targetRadius
+    const targetShape = (targetNode.data?.style as { nodeShape?: NodeShape } | undefined)?.nodeShape
+    const targetHit = shapeRayHitDistance(targetShape, targetWidth / 2, targetHeight / 2, nx, ny)
+    endX = targetCenterX - nx * targetHit
+    endY = targetCenterY - ny * targetHit
   }
 
   const edgePath = `M ${startX} ${startY} L ${endX} ${endY}`

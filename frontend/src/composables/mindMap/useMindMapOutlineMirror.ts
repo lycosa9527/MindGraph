@@ -1,11 +1,10 @@
 import { computed, nextTick, ref, watch } from 'vue'
 
-import { isMindMapPathCollapsed } from '@/stores/diagram/mindMapCollapse'
+import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import { useDiagramStore } from '@/stores'
-import {
-  buildMindMapOutlineTree,
-  type MindMapOutlineNode,
-} from '@/utils/mindMapOutlineTree'
+import { isMindMapPathCollapsed } from '@/stores/diagram/mindMapCollapse'
+import { type MindMapOutlineNode, buildMindMapOutlineTree } from '@/utils/mindMapOutlineTree'
+import { buildThinkingMapOutlineTree } from '@/utils/thinkingMapOutlineTree'
 
 /** Collect ancestor node ids from root to target (exclusive of target). */
 export function getMindMapAncestorIds(
@@ -48,6 +47,9 @@ export function useMindMapOutlineMirror(options: {
       void conn.id
       void conn.source
       void conn.target
+    }
+    if (isThinkingMapDiagramType(diagramStore.type)) {
+      return buildThinkingMapOutlineTree(diagramStore.type, nodes, connections)
     }
     return buildMindMapOutlineTree(nodes, connections)
   })

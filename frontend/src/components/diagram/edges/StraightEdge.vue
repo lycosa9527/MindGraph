@@ -63,11 +63,19 @@ const path = computed(() => {
   return { edgePath, labelX, labelY }
 })
 
+function nodeIsUnderline(nodeId: string): boolean {
+  const node = diagramStore.data?.nodes.find((item) => item.id === nodeId)
+  return node?.style?.nodeShape === 'underline'
+}
+
 const edgeStyle = computed(() => ({
   stroke: props.data?.style?.strokeColor || '#3b82f6',
   strokeWidth: props.data?.style?.strokeWidth || 2,
   strokeDasharray: props.data?.style?.strokeDasharray || 'none',
-  strokeLinecap: 'round' as const, // Extends stroke at endpoints to eliminate 1-2px gap
+  // A round cap on an underline is not covered by a fill, so the end draws as a thicker knob.
+  strokeLinecap: (nodeIsUnderline(props.source) || nodeIsUnderline(props.target)
+    ? 'butt'
+    : 'round') as 'butt' | 'round',
 }))
 
 // Arrow marker ID

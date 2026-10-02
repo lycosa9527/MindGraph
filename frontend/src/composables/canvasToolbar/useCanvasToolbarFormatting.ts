@@ -10,10 +10,13 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { STYLE_PRESET_PALETTES, type StylePresetColors } from '@/config/colorPalette'
+import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
+import type { DiagramNode, NodeStyle } from '@/types'
 import { type BorderStyleType, getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { colorToHex, hexToRgba, parseAlphaFromColor } from '@/utils/colorFormat'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
+import { type NodeShape, defaultDisplayedNodeShape } from '@/utils/nodeShapeStyle'
 
 export {
   formatBrushActive,
@@ -48,7 +51,19 @@ export function useCanvasToolbarFormatting(options?: {
     'none'
   )
   const textAlign = ref<'left' | 'center' | 'right'>('center')
-  const nodeShape = ref<import('@/utils/nodeShapeStyle').NodeShape>('rounded')
+  const nodeShape = ref<NodeShape | null>('rounded')
+
+  function toolbarDisplayedNodeShape(node: DiagramNode, style: NodeStyle): NodeShape | null {
+    const diagramType = diagramStore.type
+    if (diagramType === 'mindmap' || diagramType === 'mind_map') {
+      return resolveMindMapNodeShape(
+        { id: node.id, type: node.type, style },
+        diagramStore.data?._mindmap_diagram_style
+      )
+    }
+    if (style.nodeShape) return style.nodeShape
+    return defaultDisplayedNodeShape(diagramType, node.type)
+  }
 
   const textColorPalette = [
     '#000000',
@@ -365,8 +380,8 @@ export function useCanvasToolbarFormatting(options?: {
             backgroundColor.value = colorToHex(s.backgroundColor)
             backgroundOpacity.value = parseAlphaFromColor(s.backgroundColor)
           }
-          if (s.nodeShape) nodeShape.value = s.nodeShape
         }
+        nodeShape.value = toolbarDisplayedNodeShape(node, s)
       }
     },
     { deep: true }

@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.134] - 2026-10-02
+
+> **Thinking maps use node shapes, and the outline and gesture guide open on those maps.**
+
+### Added
+
+- **层级大纲** — The eight thinking maps open the hierarchical outline. Add and delete use that map's own nodes. A root row stays. Circle contexts sit under the topic, and bridge pairs sit under the relating factor, left then right.
+- **手势说明** — The status-bar hand-gesture guide is on the eight thinking maps.
+
+### Changed
+
+- **节点形状** — Circle, bubble, double-bubble, tree, brace, flow, multi-flow, and bridge maps can be rounded, rectangle, oval, or underline. The toolbar highlights the shape the node already shows. A boundary ring and a bridge dimension label stay unshaped. An oval keeps the disk height and grows wider. A rectangle or rounded box opens the ring. Lines stop on that outline. A flow trunk skips the nodes it would otherwise run through, and steps from one source share one bar.
+
+### Tests
+
+- [`frontend/tests/thinkingMapNodeShape.spec.ts`](frontend/tests/thinkingMapNodeShape.spec.ts), [`frontend/tests/thinkingMapOutlineTree.spec.ts`](frontend/tests/thinkingMapOutlineTree.spec.ts), [`frontend/tests/circleMapTopicRadius.spec.ts`](frontend/tests/circleMapTopicRadius.spec.ts), [`frontend/tests/flowVerticalSkip.spec.ts`](frontend/tests/flowVerticalSkip.spec.ts), [`frontend/tests/diagramRibbonCapabilities.spec.ts`](frontend/tests/diagramRibbonCapabilities.spec.ts)
+
 ## [5.180.133] - 2026-10-02
 
 > **Learning Space keeps the missing classroom edits, and thinking maps keep node style on the tab canvas.**

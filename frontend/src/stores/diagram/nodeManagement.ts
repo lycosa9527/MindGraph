@@ -1,3 +1,4 @@
+import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import {
   omitNodeStyleLayoutSizes,
   pickFormatBrushStyle,
@@ -76,7 +77,7 @@ import type { DiagramContext } from './types'
  */
 function shouldInvalidateNodeDimensionsOnTextEdit(
   diagramType: DiagramType,
-  nodeId: string
+  _nodeId: string
 ): boolean {
   switch (diagramType) {
     case 'multi_flow_map':
@@ -303,6 +304,18 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
     ) {
       delete ctx.nodeDimensions.value[nodeId]
       ctx.viewBus.emit('diagram:double_bubble_relayout_requested', {})
+    }
+
+    if (updates.style?.nodeShape !== undefined && isThinkingMapDiagramType(ctx.type.value)) {
+      const nextShape = updates.style.nodeShape
+      const prevShape = oldNode.style?.nodeShape
+      if (nextShape === 'underline' || prevShape === 'underline') {
+        delete ctx.nodeDimensions.value[nodeId]
+      }
+      ctx.layoutRecalcTrigger.value++
+      if (ctx.type.value === 'double_bubble_map') {
+        ctx.viewBus.emit('diagram:double_bubble_relayout_requested', {})
+      }
     }
 
     if (

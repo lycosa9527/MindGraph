@@ -14,7 +14,6 @@ import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
-import { useDiagramStore } from '@/stores/diagram'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import { computeScriptAwareMaxWidth } from '@/stores/specLoader/textMeasurementFallback'
 import type { MindGraphNodeProps } from '@/types'
@@ -29,6 +28,7 @@ import {
 } from '@/utils/treeMapIdentity'
 
 import InlineEditableText from './InlineEditableText.vue'
+import NodeShapeUnderline from './NodeShapeUnderline.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 
@@ -67,6 +67,11 @@ const resolvedStyle = computed(() => ({
 
 const nodeShape = computed(() => resolveNodeShape(resolvedStyle.value, false))
 
+const bridgeHasBody = computed(() => {
+  const explicitShape = resolvedStyle.value.nodeShape
+  return isBridgeMap.value && Boolean(explicitShape) && explicitShape !== 'underline'
+})
+
 const treeMapGroupColors = computed(() => {
   if (!isTreeMap.value) return null
   let idx = props.data.groupIndex as number | undefined
@@ -77,12 +82,31 @@ const treeMapGroupColors = computed(() => {
   return idx !== undefined ? getMindmapBranchColor(idx) : null
 })
 
-const nodeStyle = computed((): CSSProperties => {
-  const shouldHaveBorder = !isBridgeMap.value
-  const shouldHaveBackground = !isBridgeMap.value
-  const shouldHaveShadow = !isBridgeMap.value
-
+const shapeLineColor = computed(() => {
   const style = resolvedStyle.value
+  return (
+    style.borderColor ||
+    (isTreeMap.value && treeMapGroupColors.value ? treeMapGroupColors.value.border : undefined) ||
+    defaultStyle.value.borderColor ||
+    '#4e79a7'
+  )
+})
+
+const treeUnderlineSourceStyle = computed(() => {
+  if (!isTreeMap.value || resolvedStyle.value.nodeShape !== 'underline') return undefined
+  return {
+    top: 'auto',
+    bottom: '1px',
+    transform: 'translate(-50%, 50%)',
+  }
+})
+
+const nodeStyle = computed((): CSSProperties => {
+  const style = resolvedStyle.value
+  const bridgeBody = bridgeHasBody.value
+  const shouldHaveBorder = !isBridgeMap.value || bridgeBody
+  const shouldHaveBackground = !isBridgeMap.value || bridgeBody
+  const shouldHaveShadow = !isBridgeMap.value || bridgeBody
   const bgColor = shouldHaveBackground
     ? style.backgroundColor ||
       (isTreeMap.value && treeMapGroupColors.value
@@ -130,6 +154,12 @@ const nodeStyle = computed((): CSSProperties => {
     result.width = `${props.data.style.width}px`
     result.minWidth = `${props.data.style.width}px`
     result.maxWidth = `${props.data.style.width}px`
+  }
+
+  if (isTreeMap.value && shape === 'underline') {
+    result.minHeight = '0'
+    result.paddingTop = '0'
+    result.paddingBottom = '2px'
   }
 
   return result
@@ -252,7 +282,7 @@ function handleBranchNodeClick(): void {
     class="branch-node flex select-none border-solid relative items-center justify-center px-4 py-2"
     :class="{
       'tree-map-node': isTreeMap,
-      'border-none': isBridgeMap,
+      'border-none': isBridgeMap && !bridgeHasBody,
       'cursor-grab': true,
     }"
     :style="nodeStyle"
@@ -262,6 +292,10 @@ function handleBranchNodeClick(): void {
     @click.capture="handleBranchNodeClick"
     @dblclick="handleBranchNodeDoubleClick"
   >
+    <NodeShapeUnderline
+      v-if="resolvedStyle.nodeShape === 'underline'"
+      :color="shapeLineColor"
+    />
     <InlineEditableText
       :text="data.label || ''"
       :node-id="id"
@@ -304,6 +338,7 @@ function handleBranchNodeClick(): void {
       type="source"
       :position="Position.Bottom"
       class="bg-blue-400!"
+      :style="treeUnderlineSourceStyle"
     />
   </div>
 </template>

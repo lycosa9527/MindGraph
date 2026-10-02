@@ -23,8 +23,8 @@ import type {
 } from '@/composables/canvasToolbar/useNodeFloatingToolbarPosition'
 import { useCollabGuestAiGate } from '@/composables/collab/useCollabGuestAiGate'
 import { useLanguage } from '@/composables/core/useLanguage'
-import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { useLearningAiGate } from '@/composables/learningSpace/useLearningAiGate'
 import {
   FLOATING_TOOLBAR_COLORS,
   FLOATING_TOOLBAR_FONT_SIZES,
@@ -50,7 +50,12 @@ const emit = defineEmits<{
 
 const rootEl = ref<HTMLElement | null>(null)
 const diagramStore = useDiagramSession()
-const hideNodeShape = computed(() => diagramStore.type === 'circle_map')
+const hideNodeShape = computed(() => {
+  const nodeId = props.nodeId
+  if (!nodeId) return false
+  const node = diagramStore.data?.nodes?.find((item) => item.id === nodeId)
+  return node?.type === 'boundary' || node?.type === 'label'
+})
 let sizeObserver: ResizeObserver | null = null
 
 function publishSize(el: HTMLElement | null): void {
@@ -239,7 +244,7 @@ function onShapePick(shape: NodeShape) {
           class="nft-divider"
         />
 
-        <!-- Shape selector. Circle maps only render circles. -->
+        <!-- Shape selector. Boundary rings and dimension labels stay unshaped. -->
         <ElDropdown
           v-if="!hideNodeShape"
           trigger="click"
@@ -252,7 +257,7 @@ function onShapePick(shape: NodeShape) {
             :title="t('canvas.floatingToolbar.shapeLabel')"
           >
             <Square
-              v-if="nodeShape === 'rectangle' || nodeShape === 'rounded'"
+              v-if="nodeShape == null || nodeShape === 'rectangle' || nodeShape === 'rounded'"
               class="nft-icon"
               :stroke-width="1.5"
             />

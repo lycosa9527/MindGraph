@@ -673,6 +673,7 @@ const enableDesktopTouchPanPinch = computed(() =>
 function sideToolAllowed(tool: string | null): boolean {
   if (!tool) return false
   if (useMindMapV2.value) return true
+  if (tool === 'outline') return ribbonCaps.value.outline
   if (tool === 'learning_sheet') return ribbonCaps.value.learningSheetPanel
   if (tool === 'waterfall') return ribbonCaps.value.waterfall
   if (tool === 'one_sentence') return ribbonCaps.value.oneSentence

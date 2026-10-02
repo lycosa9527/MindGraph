@@ -21,7 +21,14 @@ import {
 import type { SpecLoaderResult } from './types'
 
 const BRIDGE_VERTICAL_GAP = 5
+const BRIDGE_SHAPED_VERTICAL_GAP = 16
 const BRIDGE_GAP_BETWEEN_PAIRS = 50
+
+/** 5px while pair words stay bare text. A chosen shape opens the gap around the bridge line. */
+export function bridgePairVerticalGap(nodes: DiagramNode[]): number {
+  const shaped = nodes.some((node) => isBridgeMapPairNode(node) && Boolean(node.style?.nodeShape))
+  return shaped ? BRIDGE_SHAPED_VERTICAL_GAP : BRIDGE_VERTICAL_GAP
+}
 
 /**
  * Post-render layout correction for bridge maps.
@@ -57,6 +64,7 @@ export function recalculateBridgeMapLayout(
 
   const firstLeft = findBridgePairSide(pairNodes, 0, 'left')
   let currentX = firstLeft?.position?.x ?? DEFAULT_PADDING + 110
+  const verticalGap = bridgePairVerticalGap(pairNodes)
 
   for (let i = 0; i <= maxPairIndex; i++) {
     const leftNode = findBridgePairSide(pairNodes, i, 'left')
@@ -66,8 +74,8 @@ export function recalculateBridgeMapLayout(
     const leftH = getH(leftNode.id)
     const pairWidth = Math.max(getW(leftNode.id), getW(rightNode.id))
 
-    const leftY = centerY - BRIDGE_VERTICAL_GAP - leftH
-    const rightY = centerY + BRIDGE_VERTICAL_GAP
+    const leftY = centerY - verticalGap - leftH
+    const rightY = centerY + verticalGap
     result.push({
       ...leftNode,
       position: { x: currentX, y: leftY },
@@ -116,7 +124,7 @@ export function loadBridgeMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   const centerY = DEFAULT_CENTER_Y
   const gapBetweenPairs = 50 // Actual gap between node edges (right edge to left edge)
   // Bridge map nodes should be close to the bridge line (smaller gap than default)
-  const verticalGap = 5 // Small gap between node edge and bridge line (was DEFAULT_LEVEL_HEIGHT = 100)
+  const verticalGap = bridgePairVerticalGap([])
   const nodeWidth = DEFAULT_NODE_WIDTH
   // Use consistent height for both nodes to ensure symmetry
   // Use BRANCH_NODE_HEIGHT (36px) which matches BranchNode's min-height

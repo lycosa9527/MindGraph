@@ -13,6 +13,7 @@
  * and paint, and observe it so late font/layout updates still flow into layout.
  */
 import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
@@ -35,8 +36,10 @@ import { isBubbleMapAttributeNode } from '@/utils/bubbleMapIdentity'
 import { isCircleMapContextNode } from '@/utils/circleMapIdentity'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { readDoubleBubbleRole } from '@/utils/doubleBubbleMapIdentity'
+import { CIRCLE_MAP_OVAL_WIDTH_RATIO, applyNodeShapeToStyle } from '@/utils/nodeShapeStyle'
 
 import InlineEditableText from './InlineEditableText.vue'
+import NodeShapeUnderline from './NodeShapeUnderline.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 const diagramStore = useDiagramSession()
@@ -85,7 +88,31 @@ function findContentElement(): HTMLElement | null {
   )
 }
 
+function measureUnderlineTextStack(): void {
+  const root = circleNodeRef.value
+  const stack = root?.querySelector('.circle-node__text-wrapper--underline') as HTMLElement | null
+  if (!stack) {
+    reportDimensions()
+    return
+  }
+  const w = Math.ceil(stack.offsetWidth)
+  const h = Math.ceil(stack.offsetHeight)
+  if (w <= 0 || h <= 0) {
+    reportDimensions()
+    return
+  }
+  diagramStore.setNodeDimensions(props.id, w, h)
+}
+
 function measureRenderedMarkdownAndReport(): void {
+  if (props.data.style?.nodeShape === 'underline') {
+    if (props.data.diagramType === 'double_bubble_map') {
+      reportDimensions()
+      return
+    }
+    measureUnderlineTextStack()
+    return
+  }
   if (!useIntrinsicMdMeasure) {
     reportDimensions()
     return
@@ -142,6 +169,14 @@ watch(
     void flushRenderedMarkdownDimensions().then(() => {
       nextTick(() => setupMarkdownObserver())
     })
+  }
+)
+
+watch(
+  () => props.data.style?.nodeShape,
+  () => {
+    if (!useIntrinsicMdMeasure) return
+    void flushRenderedMarkdownDimensions()
   }
 )
 
@@ -224,8 +259,32 @@ const textMaxWidth = computed(() => {
 // Circle Map colors matching old JS bubble-map-renderer.js THEME
 // Topic: fill #1976d2 (blue), text #fff, stroke #0d47a1, strokeWidth 3
 // Context: per-group colors from mindmap palette (bubble_map, circle_map)
+const shapeLineColor = computed(() => {
+  const color = groupColor.value
+  return (
+    props.data.style?.borderColor ||
+    color?.border ||
+    defaultStyle.value.borderColor ||
+    (isTopicNode.value ? '#0d47a1' : '#1976d2')
+  )
+})
+
+const isDiskOval = computed(() => {
+  if (props.data.style?.nodeShape !== 'oval' || isCapsuleNode.value) return false
+  const diagramType = diagramStore.type
+  return (
+    diagramType === 'circle_map' ||
+    diagramType === 'bubble_map' ||
+    diagramType === 'double_bubble_map'
+  )
+})
+
 const nodeStyle = computed(() => {
-  const width = isCapsuleNode.value ? capsuleWidth.value : circleSize.value
+  const width = isCapsuleNode.value
+    ? capsuleWidth.value
+    : isDiskOval.value
+      ? circleSize.value * CIRCLE_MAP_OVAL_WIDTH_RATIO
+      : circleSize.value
   const height = isCapsuleNode.value ? capsuleHeight.value : circleSize.value
   const color = groupColor.value
   const borderColor =
@@ -242,10 +301,25 @@ const nodeStyle = computed(() => {
     defaultStyle.value.backgroundColor ||
     (isTopicNode.value ? '#1976d2' : '#e3f2fd')
 
-  return {
-    width: typeof width === 'number' ? `${width}px` : width,
-    height: typeof height === 'number' ? `${height}px` : height,
-    ...(isCapsuleNode.value ? { borderRadius: '9999px' } : {}),
+  const explicitShape = props.data.style?.nodeShape
+  const isUnderline = explicitShape === 'underline'
+  const styleSize = props.data.style?.size
+  const styleWidth = props.data.style?.width
+  const styleHeight = props.data.style?.height
+  const hasLayoutBox =
+    isCapsuleNode.value ||
+    (typeof styleSize === 'number' && styleSize > 0) ||
+    (typeof styleWidth === 'number' &&
+      styleWidth > 0 &&
+      typeof styleHeight === 'number' &&
+      styleHeight > 0)
+  const box: CSSProperties = {
+    ...(!isUnderline || hasLayoutBox
+      ? {
+          width: typeof width === 'number' ? `${width}px` : width,
+          height: typeof height === 'number' ? `${height}px` : height,
+        }
+      : {}),
     backgroundColor,
     color:
       props.data.style?.textColor ||
@@ -271,6 +345,9 @@ const nodeStyle = computed(() => {
       backgroundColor,
     }),
   }
+  if (explicitShape) return applyNodeShapeToStyle(box, explicitShape, borderColor, false)
+  if (isCapsuleNode.value) return { ...box, borderRadius: '9999px' }
+  return box
 })
 
 // Inline editing state
@@ -374,12 +451,15 @@ function handleBranchMovePointerUp(): void {
 <template>
   <div
     ref="circleNodeRef"
-    class="circle-node flex items-center justify-center rounded-full border-solid select-none"
+    class="circle-node relative flex items-center justify-center border-solid select-none"
     :class="[
       isTopicNode ? 'cursor-default' : 'cursor-grab',
       isTopicNode ? 'topic-circle' : 'context-circle',
       isCapsuleNode ? 'circle-node--capsule' : '',
+      isDiskOval ? 'circle-node--oval' : '',
       isDoubleBubbleMap ? 'circle-node--with-handles' : '',
+      !data.style?.nodeShape || data.style.nodeShape === 'oval' ? 'rounded-full' : '',
+      data.style?.nodeShape === 'underline' ? 'circle-node--underline' : '',
     ]"
     :style="nodeStyle"
     @dblclick="handleCircleDoubleClick"
@@ -388,7 +468,7 @@ function handleBranchMovePointerUp(): void {
     @touchstart.passive.capture="handleBranchMoveTouchStart"
   >
     <!-- Handles for double bubble map curved edges (connect at node boundary) -->
-    <template v-if="isDoubleBubbleMap">
+    <template v-if="isDoubleBubbleMap && data.style?.nodeShape !== 'underline'">
       <Handle
         id="left"
         :position="Position.Left"
@@ -406,7 +486,28 @@ function handleBranchMovePointerUp(): void {
         :position="Position.Bottom"
       />
     </template>
-    <div class="circle-node__text-wrapper">
+    <div
+      class="circle-node__text-wrapper"
+      :class="{ 'circle-node__text-wrapper--underline': data.style?.nodeShape === 'underline' }"
+    >
+      <template v-if="isDoubleBubbleMap && data.style?.nodeShape === 'underline'">
+        <Handle
+          id="left"
+          :position="Position.Left"
+        />
+        <Handle
+          id="right"
+          :position="Position.Right"
+        />
+        <Handle
+          id="top"
+          :position="Position.Top"
+        />
+        <Handle
+          id="bottom"
+          :position="Position.Bottom"
+        />
+      </template>
       <InlineEditableText
         :text="data.label || ''"
         :node-id="id"
@@ -426,6 +527,11 @@ function handleBranchMovePointerUp(): void {
         @cancel="handleEditCancel"
         @edit-start="isEditing = true"
       />
+      <NodeShapeUnderline
+        v-if="data.style?.nodeShape === 'underline'"
+        inline
+        :color="shapeLineColor"
+      />
     </div>
   </div>
 </template>
@@ -439,7 +545,7 @@ function handleBranchMovePointerUp(): void {
   flex-shrink: 0;
 }
 
-.circle-node:not(.circle-node--capsule) {
+.circle-node:not(.circle-node--capsule):not(.circle-node--underline):not(.circle-node--oval) {
   aspect-ratio: 1;
 }
 
@@ -449,6 +555,20 @@ function handleBranchMovePointerUp(): void {
   justify-content: center;
   align-items: center;
   min-width: 0;
+}
+
+.circle-node__text-wrapper--underline {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.circle-node--underline:hover,
+.context-circle.circle-node--underline:hover,
+.topic-circle.circle-node--underline:hover {
+  transform: none;
 }
 
 .context-circle:hover {

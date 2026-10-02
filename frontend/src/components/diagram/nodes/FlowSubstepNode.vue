@@ -18,8 +18,10 @@ import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { isFlowMapSubstepNode } from '@/utils/flowMapIdentity'
+import { paintNodeShape } from '@/utils/nodeShapeStyle'
 
 import InlineEditableText from './InlineEditableText.vue'
+import NodeShapeUnderline from './NodeShapeUnderline.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
@@ -50,18 +52,26 @@ const nodeStyle = computed(() => {
     ...getBorderStyleProps(borderColor, borderWidth, borderStyle, {
       backgroundColor,
     }),
-    borderRadius: isFlowMap.value ? '9999px' : `${props.data.style?.borderRadius || 4}px`,
+  }
+  const shapedStyle = paintNodeShape(
+    baseStyle,
+    props.data.style?.nodeShape,
+    borderColor,
+    isFlowMap.value ? '9999px' : `${props.data.style?.borderRadius || 4}px`
+  )
+  if (props.data.style?.nodeShape === 'underline') {
+    shapedStyle.minHeight = 0
   }
   if (isFlowMap.value) {
     return {
-      ...baseStyle,
+      ...shapedStyle,
       width: 'max-content',
       minWidth: '120px',
-      minHeight: '48px',
+      minHeight: props.data.style?.nodeShape === 'underline' ? 0 : '48px',
       maxWidth: '230px',
     }
   }
-  return baseStyle
+  return shapedStyle
 })
 
 const SUBSTEP_MAX_TEXT_WIDTH = 180
@@ -146,13 +156,17 @@ function handleBranchMovePointerUp(): void {
 <template>
   <div
     ref="flowSubstepNodeRef"
-    class="flow-substep-node flex items-center justify-center px-3 py-2 border-solid cursor-grab select-none"
+    class="flow-substep-node relative flex items-center justify-center px-3 py-2 border-solid cursor-grab select-none"
     :class="{ 'pill-shape': isFlowMap }"
     :style="nodeStyle"
     @mousedown.capture="handleBranchMovePointerDown"
     @mouseup.capture="handleBranchMovePointerUp"
     @touchstart.passive.capture="handleBranchMoveTouchStart"
   >
+    <NodeShapeUnderline
+      v-if="data.style?.nodeShape === 'underline'"
+      :color="data.style?.borderColor || groupColor?.border || '#1976d2'"
+    />
     <InlineEditableText
       :text="data.label || ''"
       :readonly="isTextReadonly"

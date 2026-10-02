@@ -75,20 +75,35 @@ export function pillHalfExtentForOverlap(halfWidth: number, halfHeight: number):
   return Math.sqrt(halfWidth * halfWidth + halfHeight * halfHeight)
 }
 
+export interface BubbleRingPack {
+  /** Square nodes whose corners must clear the ring (rectangle, rounded, underline). */
+  packAsBox?: boolean
+  /** Topic outline extent. Defaults to topicR (inscribed circle). */
+  topicPackR?: number
+  /** Child outline extent. Defaults to the circle radius, or the pill diagonal. */
+  childPackR?: number
+}
+
 /**
  * Compute bubble map ring radius: max of (topic distance, no-overlap, minimum).
  * Circles: use radius directly. Pills: use diagonal half-extent.
+ * packAsBox keeps the diagonal even when the box is square.
  */
 export function bubbleMapChildrenRadius(
   nodeCount: number,
   topicR: number,
   halfWidth: number,
   halfHeight: number,
-  topicToRingGap: number = 50
+  topicToRingGap: number = 50,
+  pack?: BubbleRingPack
 ): number {
-  const targetDistance = topicR + Math.max(halfWidth, halfHeight) + topicToRingGap
-  const effectiveR =
-    halfWidth === halfHeight ? halfWidth : pillHalfExtentForOverlap(halfWidth, halfHeight)
+  const packAsBox = pack?.packAsBox === true
+  const circleLike = !packAsBox && halfWidth === halfHeight
+  const defaultChildPack = circleLike ? halfWidth : pillHalfExtentForOverlap(halfWidth, halfHeight)
+  const effectiveR = pack?.childPackR ?? defaultChildPack
+  const towardCenter = packAsBox ? effectiveR : Math.max(halfWidth, halfHeight)
+  const topicPack = pack?.topicPackR ?? topicR
+  const targetDistance = topicPack + towardCenter + topicToRingGap
   const noOverlap = minRadiusForNoOverlap(nodeCount, effectiveR)
   return Math.max(targetDistance, noOverlap, RADIAL_MIN_RADIUS)
 }

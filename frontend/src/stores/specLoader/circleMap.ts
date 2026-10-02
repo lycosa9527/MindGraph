@@ -17,10 +17,53 @@ import {
   stampCircleContextData,
   takeCircleMapStableId,
 } from '@/utils/circleMapIdentity'
+import {
+  CIRCLE_MAP_OVAL_WIDTH_RATIO,
+  type NodeShape,
+  shapePackHalfExtent,
+} from '@/utils/nodeShapeStyle'
 
 import { CONTEXT_FONT_SIZE, TOPIC_FONT_SIZE } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 import { calculateCircleMapLayout, estimateContextCircleDiameter } from './utils'
+
+function isCircleBoxShape(shape: NodeShape | undefined): boolean {
+  return shape === 'rectangle' || shape === 'rounded'
+}
+
+function circleDiskRadius(
+  shape: NodeShape | undefined,
+  measured: { width: number; height: number } | undefined
+): number | undefined {
+  if (!measured || measured.width <= 0 || measured.height <= 0) return undefined
+  if (shape === 'oval') return measured.height / 2
+  return Math.max(measured.width, measured.height) / 2
+}
+
+function circleNodeHalfExtents(
+  shape: NodeShape | undefined,
+  visualR: number
+): { halfX: number; halfY: number } {
+  if (shape === 'oval') {
+    return { halfX: visualR * CIRCLE_MAP_OVAL_WIDTH_RATIO, halfY: visualR }
+  }
+  return { halfX: visualR, halfY: visualR }
+}
+
+function circleNodePackR(
+  shape: NodeShape | undefined,
+  visualR: number,
+  measured: { width: number; height: number } | undefined
+): number {
+  if (shape === 'underline' && measured && measured.width > 0 && measured.height > 0) {
+    return shapePackHalfExtent('underline', measured.width / 2, measured.height / 2)
+  }
+  if (shape === 'oval') return visualR * CIRCLE_MAP_OVAL_WIDTH_RATIO
+  if (isCircleBoxShape(shape)) {
+    return shapePackHalfExtent(shape, visualR, visualR)
+  }
+  return visualR
+}
 
 /**
  * Recalculate circle map layout from existing nodes.
@@ -44,31 +87,51 @@ export function recalculateCircleMapLayout(
   const topicText = topicNode?.text ?? ''
 
   let topicROverride: number | undefined
-  if (topicNode) {
-    const m = nodeDimensions[topicNode.id]
-    if (m && m.width > 0 && m.height > 0) {
-      topicROverride = Math.max(m.width, m.height) / 2
-    }
+  if (topicNode && topicNode.style?.nodeShape !== 'underline') {
+    const diskR = circleDiskRadius(topicNode.style?.nodeShape, nodeDimensions[topicNode.id])
+    if (diskR != null) topicROverride = diskR
   }
 
+  const circleContexts = contextNodes.filter((node) => node.style?.nodeShape !== 'underline')
   let uniformContextROverride: number | undefined
-  if (contextNodes.length > 0) {
+  if (circleContexts.length > 0) {
     let maxR = DEFAULT_CONTEXT_RADIUS
-    for (const node of contextNodes) {
-      const measured = nodeDimensions[node.id]
-      const r =
-        measured && measured.width > 0 && measured.height > 0
-          ? Math.max(measured.width, measured.height) / 2
-          : estimateContextCircleDiameter(node.text || ' ') / 2
+    for (const node of circleContexts) {
+      const diskR = circleDiskRadius(node.style?.nodeShape, nodeDimensions[node.id])
+      const r = diskR ?? estimateContextCircleDiameter(node.text || ' ') / 2
       maxR = Math.max(maxR, r)
     }
     uniformContextROverride = maxR
   }
 
-  const layout = calculateCircleMapLayout(nodeCount, contextTexts, topicText, {
+  const layoutBase = calculateCircleMapLayout(nodeCount, contextTexts, topicText, {
     topicR: topicROverride,
     uniformContextR: uniformContextROverride,
   })
+  const topicPackR = topicNode
+    ? circleNodePackR(topicNode.style?.nodeShape, layoutBase.topicR, nodeDimensions[topicNode.id])
+    : layoutBase.topicR
+  let contextPackR = layoutBase.uniformContextR
+  if (contextNodes.length > 0) {
+    const hasCircleBody = contextNodes.some((node) => node.style?.nodeShape !== 'underline')
+    contextPackR = hasCircleBody ? layoutBase.uniformContextR : 0
+    for (const node of contextNodes) {
+      contextPackR = Math.max(
+        contextPackR,
+        circleNodePackR(node.style?.nodeShape, layoutBase.uniformContextR, nodeDimensions[node.id])
+      )
+    }
+    if (contextPackR <= 0) contextPackR = layoutBase.uniformContextR
+  }
+  const layout =
+    topicPackR === layoutBase.topicR && contextPackR === layoutBase.uniformContextR
+      ? layoutBase
+      : calculateCircleMapLayout(nodeCount, contextTexts, topicText, {
+          topicR: topicROverride,
+          uniformContextR: uniformContextROverride,
+          topicPackR,
+          contextPackR,
+        })
   const uniformContextDiameter = layout.uniformContextR * 2
   const topicSize = layout.topicR * 2
 
@@ -87,19 +150,34 @@ export function recalculateCircleMapLayout(
   })
 
   if (topicNode) {
-    const topicStyle = {
-      ...(topicNode.style || {}),
-      size: topicSize,
-      fontSize: topicNode.style?.fontSize ?? TOPIC_FONT_SIZE,
-    }
+    const topicUnderline = topicNode.style?.nodeShape === 'underline'
+    const topicMeasured = nodeDimensions[topicNode.id]
+    const topicPacked =
+      topicUnderline && topicMeasured != null && topicMeasured.width > 0 && topicMeasured.height > 0
+    const topicHalves = topicPacked
+      ? { halfX: topicMeasured.width / 2, halfY: topicMeasured.height / 2 }
+      : circleNodeHalfExtents(topicNode.style?.nodeShape, layout.topicR)
+    const topicHalfX = topicHalves.halfX
+    const topicHalfY = topicHalves.halfY
+    const { size: _topicSize, ...topicRest } = topicNode.style || {}
+    const topicStyle = topicPacked
+      ? {
+          ...topicRest,
+          fontSize: topicNode.style?.fontSize ?? TOPIC_FONT_SIZE,
+        }
+      : {
+          ...topicRest,
+          size: topicSize,
+          fontSize: topicNode.style?.fontSize ?? TOPIC_FONT_SIZE,
+        }
     result.push({
       ...topicNode,
       id: CIRCLE_TOPIC_NODE_ID,
       text: topicNode.text,
       type: 'center',
       position: {
-        x: Math.round(layout.centerX - layout.topicR),
-        y: Math.round(layout.centerY - layout.topicR),
+        x: Math.round(layout.centerX - topicHalfX),
+        y: Math.round(layout.centerY - topicHalfY),
       },
       style: topicStyle,
     })
@@ -109,22 +187,40 @@ export function recalculateCircleMapLayout(
     contextNodes.forEach((node, index) => {
       const angleDeg = (index * 360) / nodeCount - 90
       const angleRad = (angleDeg * Math.PI) / 180
-      const contextRadius = layout.uniformContextR
+      const contextUnderline = node.style?.nodeShape === 'underline'
+      const contextMeasured = nodeDimensions[node.id]
+      const contextPacked =
+        contextUnderline &&
+        contextMeasured != null &&
+        contextMeasured.width > 0 &&
+        contextMeasured.height > 0
+      const contextHalves = contextPacked
+        ? { halfX: contextMeasured.width / 2, halfY: contextMeasured.height / 2 }
+        : circleNodeHalfExtents(node.style?.nodeShape, layout.uniformContextR)
+      const contextHalfX = contextHalves.halfX
+      const contextHalfY = contextHalves.halfY
       const x = Math.round(
-        layout.centerX + layout.childrenRadius * Math.cos(angleRad) - contextRadius
+        layout.centerX + layout.childrenRadius * Math.cos(angleRad) - contextHalfX
       )
       const y = Math.round(
-        layout.centerY + layout.childrenRadius * Math.sin(angleRad) - contextRadius
+        layout.centerY + layout.childrenRadius * Math.sin(angleRad) - contextHalfY
       )
       const color = getMindmapBranchColor(index)
-
-      const contextStyle = {
-        ...(node.style || {}),
-        size: uniformContextDiameter,
-        fontSize: node.style?.fontSize ?? CONTEXT_FONT_SIZE,
-        backgroundColor: node.style?.backgroundColor || color.fill,
-        borderColor: node.style?.borderColor || color.border,
-      }
+      const { size: _contextSize, ...contextRest } = node.style || {}
+      const contextStyle = contextPacked
+        ? {
+            ...contextRest,
+            fontSize: node.style?.fontSize ?? CONTEXT_FONT_SIZE,
+            backgroundColor: node.style?.backgroundColor || color.fill,
+            borderColor: node.style?.borderColor || color.border,
+          }
+        : {
+            ...contextRest,
+            size: uniformContextDiameter,
+            fontSize: node.style?.fontSize ?? CONTEXT_FONT_SIZE,
+            backgroundColor: node.style?.backgroundColor || color.fill,
+            borderColor: node.style?.borderColor || color.border,
+          }
       result.push({
         ...node,
         id: node.id,

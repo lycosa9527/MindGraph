@@ -22,6 +22,7 @@ import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import { type NodeShape, applyNodeShapeToStyle, resolveNodeShape } from '@/utils/nodeShapeStyle'
 
 import InlineEditableText from './InlineEditableText.vue'
+import NodeShapeUnderline from './NodeShapeUnderline.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 
@@ -30,7 +31,10 @@ const llmResultsStore = useLLMResultsStore()
 const { isGenerating: isWholeDiagramGenerating } = storeToRefs(llmResultsStore)
 
 const isTextReadonly = computed(
-  () => props.data.hidden === true || (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly))
+  () =>
+    props.data.hidden === true ||
+    diagramPresentationReadOnlyRef.value ||
+    toValue(diagramStore.isReadonly)
 )
 
 const { getNodeStyle } = useTheme({
@@ -62,6 +66,16 @@ const resolvedStyle = computed(() => ({
   ...(diagramStore.data?._node_styles?.[props.id] || {}),
   ...(props.data.style || {}),
 }))
+
+const underlineBottomHandleStyle = computed(() => {
+  if (resolvedStyle.value.nodeShape !== 'underline') return undefined
+  return {
+    left: '50%',
+    top: 'auto',
+    bottom: '1px',
+    transform: 'translate(-50%, 50%)',
+  }
+})
 
 const topicNodeShape = computed((): NodeShape => {
   const style = resolvedStyle.value
@@ -135,6 +149,9 @@ const nodeStyle = computed(() => {
             ? `${style.borderRadius || 8}px`
             : `${style.borderRadius || 50}%`,
       }
+  if (style.nodeShape === 'underline' && !isTreeMap.value) {
+    shapedStyle.minHeight = 0
+  }
 
   if (isMultiFlowMap.value && dynamicWidth.value !== null) {
     return {
@@ -158,7 +175,7 @@ const nodeStyle = computed(() => {
       ...shapedStyle,
       width: 'max-content',
       minWidth: '120px',
-      minHeight: '48px',
+      minHeight: props.data.style?.nodeShape === 'underline' ? 0 : '48px',
       maxWidth: '400px',
     }
   }
@@ -316,6 +333,10 @@ function handleWidthChange(width: number) {
       :style="nodeStyle"
       @click.capture="handleTopicNodeClick"
     >
+      <NodeShapeUnderline
+        v-if="resolvedStyle.nodeShape === 'underline'"
+        :color="resolvedStyle.borderColor || defaultStyle.borderColor || '#0d47a1'"
+      />
       <InlineEditableText
         :text="data.label || ''"
         :node-id="id"
@@ -363,6 +384,7 @@ function handleWidthChange(width: number) {
         type="source"
         :position="Position.Bottom"
         class="bg-blue-500!"
+        :style="underlineBottomHandleStyle"
       />
 
       <Handle
@@ -408,7 +430,7 @@ function handleWidthChange(width: number) {
         id="bottom"
         type="source"
         :position="Position.Bottom"
-        :style="{ left: '50%', transform: 'translateX(-50%)' }"
+        :style="underlineBottomHandleStyle ?? { left: '50%', transform: 'translateX(-50%)' }"
         class="bg-blue-500!"
       />
     </div>

@@ -12,6 +12,7 @@ import {
   vueFlowNodeToDiagramNode,
 } from '@/types/vueflow'
 import { withClassicMindMapTopicSourceHandle } from '@/utils/classicMindMapTopicHandles'
+import { DOUBLE_BUBBLE_LEFT_TOPIC_ID } from '@/utils/doubleBubbleMapIdentity'
 import {
   mindMapAssociationShouldVoid,
   withMindMapAssociationHandles,
@@ -21,6 +22,7 @@ import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import { isMindMapAssociationConnection, mindMapNodeSide } from '@/utils/mindMapLocation'
 import { buildMindMapOrthogonalSiblingMap } from '@/utils/mindMapOrthogonalSiblings'
 import { filterTreeMindMapNodes } from '@/utils/mindMapSummary'
+import { CIRCLE_MAP_OVAL_WIDTH_RATIO } from '@/utils/nodeShapeStyle'
 
 import {
   recalculateBraceMapLayout,
@@ -128,11 +130,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     const connections = ctx.data.value.connections ?? []
     const treeNodes = filterTreeMindMapNodes(ctx.data.value.nodes)
     const collapsedPaths = getMindMapCollapsedPaths(ctx.data.value)
-    const collapsedNodeIds = getMindMapCollapsedNodeIds(
-      treeNodes,
-      connections,
-      collapsedPaths
-    )
+    const collapsedNodeIds = getMindMapCollapsedNodeIds(treeNodes, connections, collapsedPaths)
     const preserveIncomingY = ctx.mindMapPreserveIncomingY.value
     const laidOut = computeMindMapDisplayLayout(
       'v2',
@@ -308,6 +306,18 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     if (diagramType === 'double_bubble_map') {
       return ctx.data.value.nodes.map((node) => {
         const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+        const topicSize = node.style?.size
+        if (
+          node.id === DOUBLE_BUBBLE_LEFT_TOPIC_ID &&
+          node.style?.nodeShape === 'oval' &&
+          typeof topicSize === 'number' &&
+          topicSize > 0
+        ) {
+          vueFlowNode.position = {
+            ...vueFlowNode.position,
+            x: vueFlowNode.position.x - topicSize * (CIRCLE_MAP_OVAL_WIDTH_RATIO - 1),
+          }
+        }
         vueFlowNode.selected = ctx.selectedNodes.value.includes(node.id)
         vueFlowNode.draggable = false
         return vueFlowNode
@@ -387,53 +397,53 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
           !mindMapAssociationShouldVoid(conn.source, conn.target, { nodes, connections })
       )
       .map((conn) => {
-      const isAssoc = isMindMapAssociationConnection(conn)
-      let effectiveConn =
-        diagramType === 'concept_map' ? augmentConnectionWithOptimalHandles(conn, nodes) : conn
+        const isAssoc = isMindMapAssociationConnection(conn)
+        let effectiveConn =
+          diagramType === 'concept_map' ? augmentConnectionWithOptimalHandles(conn, nodes) : conn
 
-      if (isAssoc) {
-        effectiveConn = withMindMapAssociationHandles(conn, nodes, connections)
-      } else if (isLegacyMindMap) {
-        effectiveConn = withClassicMindMapTopicSourceHandle(effectiveConn, connections, nodes)
-        effectiveConn = {
-          ...effectiveConn,
-          style: {
-            ...(effectiveConn.style || {}),
-            strokeColor: resolveLegacyMindMapConnectionStrokeColor(
-              effectiveConn,
-              nodes,
-              connections
-            ),
-          },
+        if (isAssoc) {
+          effectiveConn = withMindMapAssociationHandles(conn, nodes, connections)
+        } else if (isLegacyMindMap) {
+          effectiveConn = withClassicMindMapTopicSourceHandle(effectiveConn, connections, nodes)
+          effectiveConn = {
+            ...effectiveConn,
+            style: {
+              ...(effectiveConn.style || {}),
+              strokeColor: resolveLegacyMindMapConnectionStrokeColor(
+                effectiveConn,
+                nodes,
+                connections
+              ),
+            },
+          }
         }
-      }
 
-      const edgeType = isAssoc
-        ? 'curved'
-        : isLegacyMindMap
+        const edgeType = isAssoc
           ? 'curved'
-          : isV2MindMap
-            ? 'mindmapOrthogonal'
-            : (effectiveConn.edgeType as MindGraphEdgeType) || defaultEdgeType
-      const edge = connectionToVueFlowEdge(effectiveConn, edgeType)
-      if (diagramType && edge.data) {
-        edge.data = { ...edge.data, diagramType, isAssociation: isAssoc }
-      }
-      if (isAssoc) {
-        edge.zIndex = 8
-      }
-      if (diagramType === 'concept_map' || isAssoc) {
-        edge.selectable = true
-        edge.selected = ctx.selectedConnectionId.value === conn.id
-      } else if (isLegacyMindMap || isV2MindMap) {
-        // Vue Flow adds `.inactive` (no pointer hit) only when selectable is false
-        // and the instance has no edgeClick listeners. Do not register onEdgeClick
-        // on the canvas — concept-map selection lives on CurvedEdge.
-        edge.selectable = false
-        edge.focusable = false
-      }
-      return edge
-    })
+          : isLegacyMindMap
+            ? 'curved'
+            : isV2MindMap
+              ? 'mindmapOrthogonal'
+              : (effectiveConn.edgeType as MindGraphEdgeType) || defaultEdgeType
+        const edge = connectionToVueFlowEdge(effectiveConn, edgeType)
+        if (diagramType && edge.data) {
+          edge.data = { ...edge.data, diagramType, isAssociation: isAssoc }
+        }
+        if (isAssoc) {
+          edge.zIndex = 8
+        }
+        if (diagramType === 'concept_map' || isAssoc) {
+          edge.selectable = true
+          edge.selected = ctx.selectedConnectionId.value === conn.id
+        } else if (isLegacyMindMap || isV2MindMap) {
+          // Vue Flow adds `.inactive` (no pointer hit) only when selectable is false
+          // and the instance has no edgeClick listeners. Do not register onEdgeClick
+          // on the canvas — concept-map selection lives on CurvedEdge.
+          edge.selectable = false
+          edge.focusable = false
+        }
+        return edge
+      })
 
     if (diagramType === 'concept_map' && edges.length > 0) {
       splitMixedArrowHandleGroups(edges, nodes)
@@ -563,9 +573,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
           const d = edge.data?.arrowheadDirection ?? existing?.arrowheadDirection
           return d === 'source' || d === 'target' || d === 'both' ? d : undefined
         })(),
-        edgeType: edge.data?.isAssociation
-          ? 'association'
-          : existing?.edgeType,
+        edgeType: edge.data?.isAssociation ? 'association' : existing?.edgeType,
       }
       return conn
     })

@@ -44,6 +44,8 @@ describe('diagramRibbonCapabilities', () => {
     expect(circle.docGenerate).toBe(true)
     expect(circle.subgraph).toBe(true)
     expect(circle.standardExport).toBe(true)
+    expect(circle.outline).toBe(true)
+    expect(circle.gestureGuide).toBe(true)
 
     const flow = diagramRibbonCapabilities('flow_map', false)
     expect(flow.flowOrientation).toBe(true)
@@ -59,6 +61,8 @@ describe('diagramRibbonCapabilities', () => {
     expect(concept.conceptGenerate).toBe(true)
     expect(concept.docGenerate).toBe(false)
     expect(concept.subgraph).toBe(true)
+    expect(concept.outline).toBe(false)
+    expect(concept.gestureGuide).toBe(false)
     expect(concept.waterfall).toBe(true)
     expect(concept.oneSentence).toBe(true)
     expect(concept.topicGenerate).toBe(true)

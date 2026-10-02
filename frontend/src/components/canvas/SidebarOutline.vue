@@ -6,6 +6,7 @@ import { computed, nextTick, ref } from 'vue'
 
 import { ChevronDown, GitCommit, GripVertical, Plus, Trash2 } from '@lucide/vue'
 
+import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.vue'
 import I18nTooltip from '@/components/common/I18nTooltip.vue'
 import { useLanguage } from '@/composables'
@@ -30,6 +31,7 @@ const emit = defineEmits<{
 const { t } = useLanguage()
 const diagramStore = useDiagramStore()
 const { prefixFor } = useMindMapBranchNumbering()
+const thinkingMapOutline = computed(() => isThinkingMapDiagramType(diagramStore.type))
 
 const DEPTH_INDENT_PX = 22
 const ROOT_PADDING_PX = 12
@@ -144,6 +146,10 @@ function cancelEdit(): void {
 
 function handleAddChild(nodeId: string): void {
   diagramStore.selectNodes(nodeId)
+  if (thinkingMapOutline.value) {
+    eventBus.emit('diagram:add_node_requested', {})
+    return
+  }
   if (nodeId === 'topic') {
     diagramStore.addMindMapBranch(
       undefined,
@@ -161,9 +167,24 @@ function handleAddSibling(nodeId: string): void {
   diagramStore.addMindMapSibling(nodeId, t('canvas.toolbar.newBranch'))
 }
 
+function showOutlineSibling(nodeId: string): boolean {
+  return !thinkingMapOutline.value && nodeId !== 'topic'
+}
+
+function showOutlineDelete(row: OutlineRow): boolean {
+  if (row.node.id === 'topic') return false
+  if (thinkingMapOutline.value && row.depth === 0) return false
+  return true
+}
+
 function handleDelete(nodeId: string): void {
   if (isDiagramPresentationReadOnly()) return
   if (nodeId === 'topic') return
+  if (thinkingMapOutline.value) {
+    diagramStore.selectNodes(nodeId)
+    eventBus.emit('diagram:delete_selected_requested', {})
+    return
+  }
   diagramStore.removeMindMapNodes([nodeId])
   diagramStore.clearSelection()
 }
@@ -239,8 +260,18 @@ function showActions(nodeId: string): boolean {
               aria-hidden="true"
             />
             <!-- Chevron (branch nodes only) -->
+            <span
+              v-if="row.hasChildren && thinkingMapOutline"
+              class="sidebar-outline__toggle shrink-0"
+              aria-hidden="true"
+            >
+              <ChevronDown
+                class="h-3.5 w-3.5"
+                :stroke-width="2"
+              />
+            </span>
             <button
-              v-if="row.hasChildren"
+              v-else-if="row.hasChildren"
               type="button"
               class="sidebar-outline__toggle shrink-0"
               :aria-label="
@@ -319,7 +350,7 @@ function showActions(nodeId: string): boolean {
                 </button>
               </I18nTooltip>
               <I18nTooltip
-                v-if="row.node.id !== 'topic'"
+                v-if="showOutlineSibling(row.node.id)"
                 k="canvas.mindMapSideToolbar.addSibling"
                 placement="top"
                 :show-after="200"
@@ -336,7 +367,7 @@ function showActions(nodeId: string): boolean {
                 </button>
               </I18nTooltip>
               <I18nTooltip
-                v-if="row.node.id !== 'topic'"
+                v-if="showOutlineDelete(row)"
                 k="canvas.mindMapSideToolbar.deleteBranch"
                 placement="top"
                 :show-after="200"

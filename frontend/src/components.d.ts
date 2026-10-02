@@ -425,6 +425,7 @@ declare module 'vue' {
     MyFavoriteCasesModal: typeof import('./components/showcase/MyFavoriteCasesModal.vue')['default']
     MyPublishedCasesModal: typeof import('./components/showcase/MyPublishedCasesModal.vue')['default']
     NodePalettePanel: typeof import('./components/panels/NodePalettePanel.vue')['default']
+    NodeShapeUnderline: typeof import('./components/diagram/nodes/NodeShapeUnderline.vue')['default']
     OAuthQrLoginModal: typeof import('./components/auth/OAuthQrLoginModal.vue')['default']
     OAuthQrLoginPanel: typeof import('./components/auth/OAuthQrLoginPanel.vue')['default']
     OneSentenceKittyAvatar: typeof import('./components/canvas/OneSentenceKittyAvatar.vue')['default']

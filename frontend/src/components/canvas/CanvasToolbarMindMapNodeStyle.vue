@@ -88,7 +88,7 @@ function onNeedsSelectionClick(ev: MouseEvent): void {
         :title="t('canvas.floatingToolbar.shapeLabel')"
       >
         <Square
-          v-if="nodeShape === 'rectangle' || nodeShape === 'rounded'"
+          v-if="nodeShape == null || nodeShape === 'rectangle' || nodeShape === 'rounded'"
           class="nft-icon"
           :stroke-width="1.5"
         />

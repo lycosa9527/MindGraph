@@ -11,20 +11,39 @@
  */
 import { computed } from 'vue'
 
-import { EdgeLabelRenderer, type EdgeProps } from '@vue-flow/core'
+import { EdgeLabelRenderer, type EdgeProps, useVueFlow } from '@vue-flow/core'
 
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphEdgeData } from '@/types'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
+const diagramStore = useDiagramSession()
+const { getEdges, getNodes } = useVueFlow(diagramStore.vueFlowId)
+
+function nodeTopY(nodeId: string): number | undefined {
+  const node = getNodes.value.find((item) => item.id === nodeId)
+  if (!node) return undefined
+  const positioned = node as { computedPosition?: { y: number }; position: { y: number } }
+  return positioned.computedPosition?.y ?? positioned.position.y
+}
+
+// One bus for every step leaving the same source. A per-target midpoint
+// stacks the bars when an underline node is a few pixels shorter.
+function sharedBusY(sourceY: number, targetY: number): number {
+  const tops = getEdges.value
+    .filter((edge) => edge.source === props.source && edge.type === 'step')
+    .map((edge) => nodeTopY(edge.target))
+    .filter((y): y is number => y !== undefined)
+  if (tops.length === 0) return sourceY + (targetY - sourceY) / 2
+  const nearestTop = Math.min(...tops)
+  return sourceY + (nearestTop - sourceY) / 2
+}
 
 // Calculate custom orthogonal path for consistent T-shape
 // Path: source -> down to midY -> horizontal to targetX -> down to target
 const path = computed(() => {
   const { sourceX, sourceY, targetX, targetY } = props
-
-  // Calculate midpoint Y for horizontal segment
-  // This creates consistent T-shape when multiple edges share the same source
-  const midY = sourceY + (targetY - sourceY) / 2
+  const midY = sharedBusY(sourceY, targetY)
 
   // Build SVG path: vertical down, horizontal across, vertical down
   let edgePath: string
@@ -47,6 +66,8 @@ const edgeStyle = computed(() => ({
   stroke: props.data?.style?.strokeColor || '#bbb', // Gray color from old JS
   strokeWidth: props.data?.style?.strokeWidth || 2,
   strokeDasharray: props.data?.style?.strokeDasharray || 'none',
+  strokeLinecap: 'butt' as const,
+  strokeLinejoin: 'miter' as const,
 }))
 </script>
 

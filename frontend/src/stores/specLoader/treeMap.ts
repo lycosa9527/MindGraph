@@ -21,7 +21,6 @@ import {
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { measureTextDimensions } from '@/stores/specLoader/textMeasurement'
 import type { Connection, DiagramNode } from '@/types'
-
 import {
   TREE_MAP_UID_DATA_KEY,
   TREE_TOPIC_NODE_ID,
@@ -310,11 +309,16 @@ export function recalculateTreeMapLayout(
         fontWeight: fw,
         fontFamily: catNode?.style?.fontFamily,
       })
+      const categoryBorder =
+        catNode?.style?.nodeShape === 'underline' ? 0 : TREE_MAP_CATEGORY_BORDER
       const catWidth = Math.max(
-        catDims.width + 2 * TREE_MAP_CATEGORY_BORDER,
+        catDims.width + 2 * categoryBorder,
         NODE_MIN_DIMENSIONS.branch.minWidth
       )
-      const catHeight = Math.max(catDims.height, NODE_MIN_DIMENSIONS.branch.minHeight)
+      const catHeight =
+        catNode?.style?.nodeShape === 'underline'
+          ? catDims.height
+          : Math.max(catDims.height, NODE_MIN_DIMENSIONS.branch.minHeight)
       return { width: catWidth, height: catHeight }
     })
 
@@ -344,11 +348,12 @@ export function recalculateTreeMapLayout(
           fontWeight: fw,
           fontFamily: leaf.style?.fontFamily,
         })
-        const leafW = Math.max(
-          leafDims.width + 2 * TREE_MAP_LEAF_BORDER,
-          NODE_MIN_DIMENSIONS.branch.minWidth
-        )
-        const leafH = Math.max(leafDims.height, NODE_MIN_DIMENSIONS.branch.minHeight)
+        const leafBorder = leaf.style?.nodeShape === 'underline' ? 0 : TREE_MAP_LEAF_BORDER
+        const leafW = Math.max(leafDims.width + 2 * leafBorder, NODE_MIN_DIMENSIONS.branch.minWidth)
+        const leafH =
+          leaf.style?.nodeShape === 'underline'
+            ? leafDims.height
+            : Math.max(leafDims.height, NODE_MIN_DIMENSIONS.branch.minHeight)
         return { width: leafW, height: leafH }
       })
       leafWidths.push(leafBox.width)
