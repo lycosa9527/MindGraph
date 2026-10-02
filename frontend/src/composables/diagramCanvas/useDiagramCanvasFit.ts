@@ -103,6 +103,7 @@ export function useDiagramCanvasFit(options: {
   let fitFromNodesChangeTimeoutId: ReturnType<typeof setTimeout> | null = null
   let fitAfterLoadTimeoutId: ReturnType<typeof setTimeout> | null = null
   let pendingFitAfterMindMapBulk = false
+  let pendingFitAfterTreeMapMeasure = false
   const fitEventUnsubscribers: Array<() => void> = []
 
   function clearFitAfterLoadTimer(): void {
@@ -136,20 +137,32 @@ export function useDiagramCanvasFit(options: {
     runMindMapFitAfterLoad()
   }
 
+  function scheduleTreeMapFitAfterLoad(): void {
+    clearFitAfterLoadTimer()
+    if (diagramStore.layoutMeasureSettling) {
+      pendingFitAfterTreeMapMeasure = true
+      return
+    }
+    runMindMapFitAfterLoad()
+  }
+
   /** One-shot initial fit resets only when a new diagram is loaded, not on edits. */
   fitEventUnsubscribers.push(
     viewBus.on('diagram:loaded', (payload) => {
       if (payload?.skipFit) {
         pendingFitAfterMindMapBulk = false
+        pendingFitAfterTreeMapMeasure = false
         clearFitAfterLoadTimer()
         hasInitialFitDoneForDiagram.value = true
         return
       }
       hasInitialFitDoneForDiagram.value = false
       // Soft reloads often reuse Vue Flow node ids — nodes-initialized may not
-      // re-fire. Mind maps wait for measure-batch; other types fit shortly.
+      // re-fire. Mind maps and tree maps wait for measure-batch; other types fit shortly.
       if (isMindMapDiagramType(diagramStore.type)) {
         scheduleMindMapFitAfterLoad()
+      } else if (diagramStore.type === 'tree_map') {
+        scheduleTreeMapFitAfterLoad()
       } else if (diagramStore.type !== 'concept_map') {
         clearFitAfterLoadTimer()
         fitAfterLoadTimeoutId = setTimeout(() => {
@@ -172,6 +185,18 @@ export function useDiagramCanvasFit(options: {
         return
       }
       pendingFitAfterMindMapBulk = false
+      clearFitAfterLoadTimer()
+      runMindMapFitAfterLoad()
+    }
+  )
+
+  watch(
+    () => diagramStore.layoutMeasureSettling,
+    (settling, wasSettling) => {
+      if (!pendingFitAfterTreeMapMeasure || wasSettling !== true || settling !== false) {
+        return
+      }
+      pendingFitAfterTreeMapMeasure = false
       clearFitAfterLoadTimer()
       runMindMapFitAfterLoad()
     }
@@ -555,6 +580,11 @@ export function useDiagramCanvasFit(options: {
       scheduleMindMapFitAfterLoad()
       return
     }
+    if (diagramStore.type === 'tree_map') {
+      if (pendingFitAfterTreeMapMeasure || fitAfterLoadTimeoutId != null) return
+      scheduleTreeMapFitAfterLoad()
+      return
+    }
     hasInitialFitDoneForDiagram.value = true
     setTimeout(() => {
       viewBus.emit('view:fit_to_canvas_requested', { animate: true })
@@ -566,6 +596,7 @@ export function useDiagramCanvasFit(options: {
       !hasFitTriggeringChange ||
       diagramStore.type === 'concept_map' ||
       isMindMapDiagramType(diagramStore.type) ||
+      (diagramStore.type === 'tree_map' && diagramStore.layoutMeasureSettling) ||
       !fitViewOnInit.value ||
       getNodes().length === 0
     ) {
@@ -584,6 +615,7 @@ export function useDiagramCanvasFit(options: {
       fitFromNodesChangeTimeoutId = null
     }
     pendingFitAfterMindMapBulk = false
+    pendingFitAfterTreeMapMeasure = false
     clearFitAfterLoadTimer()
     fitEventUnsubscribers.forEach((unsub) => unsub())
     fitEventUnsubscribers.length = 0
@@ -595,6 +627,7 @@ export function useDiagramCanvasFit(options: {
       if (!fitViewOnInit.value || newLength === 0) return
       if (oldLength === undefined) return
       if (diagramStore.type === 'concept_map') return
+      if (diagramStore.type === 'tree_map' && diagramStore.layoutMeasureSettling) return
       setTimeout(() => {
         viewBus.emit('view:fit_to_canvas_requested', { animate: true })
       }, ANIMATION.FIT_DELAY)

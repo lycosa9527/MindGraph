@@ -1202,7 +1202,7 @@ export default {
   'diagram.defaults.categoryN': 'Kategori {n}',
   'diagram.defaults.causeN': 'Shkak {n}',
   'diagram.defaults.centralTopic': 'Temë qendrore',
-  'diagram.defaults.childNM': 'Fëmijë {n}.{m}',
+  'diagram.defaults.childNM': 'Nën-element {n}.{m}',
   'diagram.defaults.contextN': 'Kontekst {n}',
   'diagram.defaults.effectN': 'Efekt {n}',
   'diagram.defaults.itemNM': 'Element {n}.{m}',

@@ -1202,7 +1202,7 @@ export default {
   'diagram.defaults.categoryN': 'Категорія {n}',
   'diagram.defaults.causeN': 'Причина {n}',
   'diagram.defaults.centralTopic': 'Центральна тема',
-  'diagram.defaults.childNM': 'Дочірній {n}.{m}',
+  'diagram.defaults.childNM': 'Дочірній елемент {n}.{m}',
   'diagram.defaults.contextN': 'Контекст {n}',
   'diagram.defaults.effectN': 'Наслідок {n}',
   'diagram.defaults.itemNM': 'Елемент {n}.{m}',

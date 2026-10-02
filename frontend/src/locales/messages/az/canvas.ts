@@ -1171,7 +1171,7 @@ export default {
   'diagram.defaults.categoryN': 'Kateqoriya {n}',
   'diagram.defaults.causeN': 'Səbəb {n}',
   'diagram.defaults.centralTopic': 'Mərkəzi mövzu',
-  'diagram.defaults.childNM': 'Alt {n}.{m}',
+  'diagram.defaults.childNM': 'Alt-maddə {n}.{m}',
   'diagram.defaults.contextN': 'Kontekst {n}',
   'diagram.defaults.effectN': 'Nəticə {n}',
   'diagram.defaults.itemNM': 'Element {n}.{m}',

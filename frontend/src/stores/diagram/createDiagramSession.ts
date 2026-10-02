@@ -119,6 +119,7 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
   const mindMapPreserveIncomingY = ref(false)
   const mindMapPreserveIncomingYNodeId = ref<string | null>(null)
   const mindMapBulkLoading = ref(false)
+  const layoutMeasureSettling = ref(false)
   const nodeDimensions = ref<Record<string, { width: number; height: number }>>({})
   const layoutRecalcTrigger = ref(0)
   const sessionEditCount = ref(0)
@@ -175,6 +176,7 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     mindMapPreserveIncomingY,
     mindMapPreserveIncomingYNodeId,
     mindMapBulkLoading,
+    layoutMeasureSettling,
     nodeDimensions,
     layoutRecalcTrigger,
     sessionEditCount,
@@ -511,6 +513,7 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     mindMapPreserveIncomingY.value = false
     mindMapPreserveIncomingYNodeId.value = null
     mindMapBulkLoading.value = false
+    layoutMeasureSettling.value = false
     clearNodeDimensions()
     layoutRecalcTrigger.value = 0
     sessionEditCount.value = 0
@@ -714,6 +717,7 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     mindMapPreserveIncomingY,
     mindMapPreserveIncomingYNodeId,
     mindMapBulkLoading,
+    layoutMeasureSettling,
     nodeDimensions,
     layoutRecalcTrigger,
     recalculateDiagramLayout: () => requestDiagramLayoutRecalc(ctx),

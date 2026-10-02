@@ -16,7 +16,8 @@ import {
   TOPIC_NODE_WIDTH,
 } from './conceptMapLinkPreviewGeometry'
 
-const DROP_PREVIEW_SCALE = 1.2
+/** Dashed stroke weight; underline targets use this as the rule thickness. */
+const DROP_PREVIEW_STROKE = 4
 
 interface NodeWithDimensions {
   dimensions?: { width?: number; height?: number }
@@ -84,6 +85,10 @@ export function getDropPreviewBorderRadius(node: MindGraphNode): string {
   const { diagramType, nodeType, originalNode, style } = data
   const styleRadiusPx = style?.borderRadius != null ? `${style.borderRadius}px` : null
   const v2MindMapShape = resolveMindMapDropPreviewShape(node)
+  const explicitShape = style?.nodeShape
+  if (explicitShape && !v2MindMapShape) {
+    return nodeShapeBorderRadius(explicitShape, true)
+  }
 
   if (vfType === 'concept') {
     return '9999px'
@@ -117,10 +122,13 @@ export function getDropPreviewBorderRadius(node: MindGraphNode): string {
     if (v2MindMapShape) {
       return nodeShapeBorderRadius(v2MindMapShape, true)
     }
-    if (diagramType === 'mindmap' || diagramType === 'mind_map' || diagramType === 'tree_map') {
+    if (diagramType === 'mindmap' || diagramType === 'mind_map') {
       return '9999px'
     }
-    return styleRadiusPx ?? '8px'
+    if (diagramType === 'tree_map') {
+      return nodeShapeBorderRadius('rounded', true)
+    }
+    return styleRadiusPx ?? nodeShapeBorderRadius('rounded', true)
   }
 
   if (vfType === 'flow') {
@@ -164,6 +172,16 @@ export function getDropPreviewBorderRadius(node: MindGraphNode): string {
 export function getDropTargetShapeClass(
   node: MindGraphNode
 ): 'is-circle' | 'is-pill' | 'is-underline' | '' {
+  const explicitShape = node.data?.style?.nodeShape
+  if (explicitShape === 'underline') return 'is-underline'
+  if (explicitShape === 'oval') return 'is-pill'
+  if (explicitShape === 'rectangle' || explicitShape === 'rounded') return ''
+
+  const v2Shape = resolveMindMapDropPreviewShape(node)
+  if (v2Shape === 'underline') return 'is-underline'
+  if (v2Shape === 'oval') return 'is-pill'
+  if (v2Shape) return ''
+
   const vfType = node.type ?? ''
   const data = node.data
   if (vfType === 'bubble') return 'is-circle'
@@ -171,10 +189,6 @@ export function getDropTargetShapeClass(
     if (data?.diagramType === 'double_bubble_map' && data?.nodeType !== 'topic') return 'is-pill'
     return 'is-circle'
   }
-  const v2Shape = resolveMindMapDropPreviewShape(node)
-  if (v2Shape === 'underline') return 'is-underline'
-  if (v2Shape === 'oval') return 'is-pill'
-  if (v2Shape) return ''
   const br = getDropPreviewBorderRadius(node)
   if (br === '9999px') return 'is-pill'
   return ''
@@ -258,26 +272,33 @@ export function getDropTargetStyle(
     }
   }
 
-  const previewW = Math.round(nodeW * DROP_PREVIEW_SCALE)
-  const previewH = Math.round(nodeH * DROP_PREVIEW_SCALE)
-  const offsetX = (previewW - nodeW) / 2
-  const offsetY = (previewH - nodeH) / 2
-
   const borderRadius = getDropPreviewBorderRadius(node)
+  const shapeClass = getDropTargetShapeClass(node)
+
+  if (shapeClass === 'is-underline') {
+    return {
+      position: 'absolute',
+      left: `${node.position.x}px`,
+      top: `${node.position.y + nodeH - DROP_PREVIEW_STROKE}px`,
+      width: `${nodeW}px`,
+      height: `${DROP_PREVIEW_STROKE}px`,
+      borderRadius: '0px',
+      pointerEvents: 'none',
+    }
+  }
 
   const baseStyle: Record<string, string> = {
     position: 'absolute',
-    left: node.position.x - offsetX + 'px',
-    top: node.position.y - offsetY + 'px',
-    width: previewW + 'px',
-    height: previewH + 'px',
+    left: `${node.position.x}px`,
+    top: `${node.position.y}px`,
+    width: `${nodeW}px`,
+    height: `${nodeH}px`,
     borderRadius,
     pointerEvents: 'none',
   }
 
   if (target.type === 'child' || target.type === 'topic') {
-    baseStyle.border = '2px dashed #2563eb'
-    baseStyle.background = 'rgb(37 99 235 / 0.08)'
+    baseStyle.backgroundColor = 'rgb(37 99 235 / 0.08)'
   }
 
   return baseStyle

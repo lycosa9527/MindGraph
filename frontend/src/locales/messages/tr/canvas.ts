@@ -726,7 +726,7 @@ export default {
   'diagram.alternativeDimensions.treeMapTitle': 'Bu konu için diğer olası sınıflandırma boyutları:',
   'diagram.bridgeMap.alternativesEmpty': '[Alternatifler burada görünecek]',
   'diagram.conceptMap.focusQuestionPrefix': 'Odak sorusu: ',
-  'diagram.conceptMap.focusQuestionSuffix': 'Gir',
+  'diagram.conceptMap.focusQuestionSuffix': 'Yazın',
   'diagram.conceptMap.rootConcept': 'Kök kavram',
   'diagram.conceptMap.topicRootRelationship': ' kök kavramı',
   'diagram.contextMenu.addAttribute': 'Özellik ekle',

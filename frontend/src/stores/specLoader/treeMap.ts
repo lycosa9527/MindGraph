@@ -408,7 +408,11 @@ export function recalculateTreeMapLayout(
       byId.set(catId, {
         ...catNode,
         position: { x: categoryX, y: categoryY },
-        style: { ...catNode.style, width: dims.categoryWidth },
+        style: {
+          ...catNode.style,
+          width: dims.categoryWidth,
+          height: dims.categoryHeight,
+        },
       })
     }
 
@@ -435,7 +439,7 @@ export function recalculateTreeMapLayout(
         byId.set(leafId, {
           ...leafNode,
           position: { x: leafX, y: leafY },
-          style: { ...leafNode.style, width: leafWidth },
+          style: { ...leafNode.style, width: leafWidth, height: leafHeight },
         })
       }
       leafY += leafHeight + TREE_MAP_LEAF_SPACING

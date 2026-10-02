@@ -98,6 +98,12 @@ export interface DiagramContext {
   mindMapPreserveIncomingYNodeId: Ref<string | null>
   /** True while measure-batch is active after loadFromSpec (suppress node transform). */
   mindMapBulkLoading: Ref<boolean>
+  /**
+   * True while the generic node-dimension batch is open (tree map and other
+   * thinking maps). Canvas uses this to suppress position transitions until
+   * the single post-measure layout has painted.
+   */
+  layoutMeasureSettling: Ref<boolean>
 
   // Generic node dimension tracking (actual DOM-measured sizes)
   nodeDimensions: Ref<Record<string, { width: number; height: number }>>

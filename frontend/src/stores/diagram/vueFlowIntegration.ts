@@ -1,5 +1,7 @@
 import { computed } from 'vue'
 
+import { pauseTracking, resetTracking } from '@vue/reactivity'
+
 import { isThinkingMapDiagramType } from '@/canvas-ribbon/diagramRibbonCapabilities'
 import {
   augmentConnectionWithOptimalHandles,
@@ -47,6 +49,23 @@ import { mergeLaidOutTreeWithSummaries } from './mindMapSummaryLayout'
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
 
+function snapshotNodeDimensions(
+  dims: Record<string, { width: number; height: number }>
+): Record<string, { width: number; height: number }> {
+  pauseTracking()
+  try {
+    const snap: Record<string, { width: number; height: number }> = {}
+    for (const id of Object.keys(dims)) {
+      const box = dims[id]
+      if (!box) continue
+      snap[id] = { width: box.width, height: box.height }
+    }
+    return snap
+  } finally {
+    resetTracking()
+  }
+}
+
 export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
   const effectiveMindMapMode = computed(() =>
     resolveSessionMindMapCanvasMode(ctx.mindMapCanvasMode.value)
@@ -83,7 +102,13 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
   const treeMapLayoutNodes = computed(() => {
     if (ctx.type.value !== 'tree_map' || !ctx.data.value?.nodes) return []
     void ctx.layoutRecalcTrigger.value
-    return recalculateTreeMapLayout(ctx.data.value.nodes, ctx.nodeDimensions.value)
+    // Flow and brace maps can read live measurements: a recompute does not move
+    // the other nodes. Tree map columns stack, so each child height would shift
+    // the whole map. Read sizes only when the measure batch bumps the trigger.
+    return recalculateTreeMapLayout(
+      ctx.data.value.nodes,
+      snapshotNodeDimensions(ctx.nodeDimensions.value)
+    )
   })
 
   const multiFlowMapLayoutNodes = computed(() => {

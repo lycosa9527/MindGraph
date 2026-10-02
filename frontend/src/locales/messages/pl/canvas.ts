@@ -726,7 +726,7 @@ export default {
   'diagram.alternativeDimensions.treeMapTitle': 'Inne możliwe wymiary klasyfikacji dla tego tematu:',
   'diagram.bridgeMap.alternativesEmpty': '[Alternatywy pojawią się tutaj]',
   'diagram.conceptMap.focusQuestionPrefix': 'Pytanie fokusowe: ',
-  'diagram.conceptMap.focusQuestionSuffix': 'Proszę wejść',
+  'diagram.conceptMap.focusQuestionSuffix': 'Wpisz',
   'diagram.conceptMap.rootConcept': 'Koncepcja korzenia',
   'diagram.conceptMap.topicRootRelationship': ' — koncepcja korzenia',
   'diagram.contextMenu.addAttribute': 'Dodaj atrybut',

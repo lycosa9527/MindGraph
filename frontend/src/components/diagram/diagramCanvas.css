@@ -131,7 +131,7 @@
     transform 0.2s ease;
 }
 
-/* Suppress position animation while measure-batch settles after loadFromSpec */
+/* Suppress position animation while a measure-batch settles after loadFromSpec */
 .diagram-canvas--bulk-load .vue-flow__node {
   transition: none;
 }
@@ -538,9 +538,10 @@
   flex-shrink: 0;
 }
 
-/* ── Branch-move drop-target preview: primary blue, thick marching ants ────
- * Sized/shaped in JS (`getDropTargetStyle`): 1.2× target node, border-radius
- * from Vue Flow node type (circle vs rounded rect).
+/* ── Branch-move drop-target preview: primary blue dashed outline ──────────
+ * Sized/shaped in JS (`getDropTargetStyle`) to the target node's box.
+ * `border` follows `border-radius`, so pills, circles, and rounded rects
+ * trace the real outline instead of a larger rectangle.
  * ──────────────────────────────────────────────────────────────────────── */
 .branch-move-drop-preview {
   --_dp-d: 10px;
@@ -552,58 +553,17 @@
   --_ea-p: var(--_dp-p);
 
   box-sizing: border-box;
-  background-image:
-    repeating-linear-gradient(
-      90deg,
-      var(--_dp-c) 0,
-      var(--_dp-c) var(--_dp-d),
-      transparent var(--_dp-d),
-      transparent var(--_dp-p)
-    ),
-    repeating-linear-gradient(
-      180deg,
-      var(--_dp-c) 0,
-      var(--_dp-c) var(--_dp-d),
-      transparent var(--_dp-d),
-      transparent var(--_dp-p)
-    ),
-    repeating-linear-gradient(
-      270deg,
-      var(--_dp-c) 0,
-      var(--_dp-c) var(--_dp-d),
-      transparent var(--_dp-d),
-      transparent var(--_dp-p)
-    ),
-    repeating-linear-gradient(
-      0deg,
-      var(--_dp-c) 0,
-      var(--_dp-c) var(--_dp-d),
-      transparent var(--_dp-d),
-      transparent var(--_dp-p)
-    );
-  background-size:
-    var(--_dp-p) var(--_dp-w),
-    var(--_dp-w) var(--_dp-p),
-    var(--_dp-p) var(--_dp-w),
-    var(--_dp-w) var(--_dp-p);
-  background-position:
-    0 0,
-    100% 0,
-    100% 100%,
-    0 100%;
-  background-repeat: repeat-x, repeat-y, repeat-x, repeat-y;
-  background-origin: border-box;
-  animation: workshop-ants 0.55s linear infinite;
+  border: var(--_dp-w) dashed var(--_dp-c);
+  background-image: none;
+  animation: none;
 }
 
 :root.dark .branch-move-drop-preview {
   --_dp-c: #60a5fa;
 }
 
-/* Fix Bug 1 (drop-preview): rotating ring for circle drop targets */
+/* True circles: same box as the node, ring follows the circumference. */
 .branch-move-drop-preview.is-circle {
-  background-image: none !important;
-  border: var(--_dp-w) dashed var(--_dp-c);
   border-radius: 50% !important;
   animation: circle-ants 4s linear infinite;
 }
@@ -612,9 +572,22 @@
   border-color: #60a5fa;
 }
 
-/* V2 underline drop targets: keep marching-ants box rectangular (not pill). */
+/* Underline chrome is a rule, not a box. Dash that rule at the node width. */
 .branch-move-drop-preview.is-underline {
+  border: none;
   border-radius: 0 !important;
+  background-color: transparent;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--_dp-c) 0,
+    var(--_dp-c) var(--_dp-d),
+    transparent var(--_dp-d),
+    transparent var(--_dp-p)
+  );
+  background-size: var(--_dp-p) 100%;
+  background-repeat: repeat-x;
+  background-position: 0 0;
+  animation: workshop-ants-underline 0.55s linear infinite;
 }
 
 /* ── AI tab-rec active: green ant line (gradient for pills/rects, rotating ring for circles) ──

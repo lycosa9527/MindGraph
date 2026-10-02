@@ -1171,7 +1171,7 @@ export default {
   'diagram.defaults.categoryN': 'Kategorie {n}',
   'diagram.defaults.causeN': 'Oorsaak {n}',
   'diagram.defaults.centralTopic': 'Sentrale onderwerp',
-  'diagram.defaults.childNM': 'Kind {n}.{m}',
+  'diagram.defaults.childNM': 'Subelement {n}.{m}',
   'diagram.defaults.contextN': 'Konteks {n}',
   'diagram.defaults.effectN': 'Effek {n}',
   'diagram.defaults.itemNM': 'Artikel {n}.{m}',

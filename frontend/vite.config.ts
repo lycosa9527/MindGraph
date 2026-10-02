@@ -280,6 +280,9 @@ export default defineConfig({
       '@tanstack/vue-query',
       '@vueuse/core',
       'vue-demi',
+      // pauseTracking/resetTracking live on @vue/reactivity, not the vue entry.
+      // Prebundle so the first canvas load does not 504 "Outdated Optimize Dep".
+      '@vue/reactivity',
       'pdfjs-dist',
       // Vue Flow is only imported from lazy canvas routes. Without include,
       // Vite rediscovers it on first /training or /canvas load and 504s

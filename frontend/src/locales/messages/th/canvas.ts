@@ -695,7 +695,7 @@ export default {
   'diagram.alternativeDimensions.treeMapTitle': 'มิติการจำแนกที่เป็นไปได้อื่น ๆ สำหรับหัวข้อนี้:',
   'diagram.bridgeMap.alternativesEmpty': '[ทางเลือกจะปรากฏที่นี่]',
   'diagram.conceptMap.focusQuestionPrefix': 'คำถามโฟกัส: ',
-  'diagram.conceptMap.focusQuestionSuffix': 'เข้า',
+  'diagram.conceptMap.focusQuestionSuffix': 'กรอก',
   'diagram.conceptMap.rootConcept': 'แนวคิดหลัก',
   'diagram.conceptMap.topicRootRelationship': 'แนวคิดหลักของ',
   'diagram.contextMenu.addAttribute': 'เพิ่มคุณลักษณะ',

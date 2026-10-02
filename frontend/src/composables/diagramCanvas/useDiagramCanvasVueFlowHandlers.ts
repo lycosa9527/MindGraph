@@ -93,6 +93,9 @@ export function useDiagramCanvasVueFlowHandlers(
     changes.forEach((change) => {
       if (change.type === 'position' && change.position) {
         if (diagramStore.isReadonly) return
+        // Tree map positions are derived. Echoing Vue Flow's snapped positions
+        // back into the store reruns layout once per node as they initialize.
+        if (diagramStore.type === 'tree_map' && change.dragging !== true) return
         diagramStore.updateNodePosition(change.id, change.position, false)
         if (diagramStore.type === 'concept_map') {
           conceptMapPositionNodeIds.add(change.id)

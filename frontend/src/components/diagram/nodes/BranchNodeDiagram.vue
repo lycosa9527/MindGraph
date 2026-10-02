@@ -197,6 +197,10 @@ const nodeStyle = computed((): CSSProperties => {
     result.minWidth = `${props.data.style.width}px`
     result.maxWidth = `${props.data.style.width}px`
   }
+  if (isTreeMap.value && props.data.style?.height != null) {
+    result.height = `${props.data.style.height}px`
+    result.minHeight = `${props.data.style.height}px`
+  }
 
   if (isTreeMap.value && shape === 'underline') {
     result.minHeight = '0'

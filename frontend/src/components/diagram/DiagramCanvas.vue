@@ -193,6 +193,7 @@ const emit = defineEmits<{
 
 const diagramStore = useDiagramSession()
 const mindMapBulkLoading = diagramSessionRef(diagramStore, 'mindMapBulkLoading')
+const layoutMeasureSettling = diagramSessionRef(diagramStore, 'layoutMeasureSettling')
 const savedDiagramsStore = useSavedDiagramsStore()
 const panelsStore = usePanelsStore()
 const uiStore = useUIStore()
@@ -794,7 +795,7 @@ defineExpose({
       'diagram-canvas--hand-tool': useHandToolPanClass,
       'diagram-canvas--learning-sheet-pick': isLearningSheetPickActive,
       'diagram-canvas--format-brush': formatBrushActive,
-      'diagram-canvas--bulk-load': mindMapBulkLoading,
+      'diagram-canvas--bulk-load': mindMapBulkLoading || layoutMeasureSettling,
     }"
     @pointerdown="rememberFollowNodePointer"
     @pointerup="dismissFollowNodeSelection"

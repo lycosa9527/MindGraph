@@ -1202,7 +1202,7 @@ export default {
   'diagram.defaults.categoryN': '범주 {n}',
   'diagram.defaults.causeN': '원인 {n}',
   'diagram.defaults.centralTopic': '중심 주제',
-  'diagram.defaults.childNM': '자식 {n}.{m}',
+  'diagram.defaults.childNM': '하위 항목 {n}.{m}',
   'diagram.defaults.contextN': '맥락 {n}',
   'diagram.defaults.effectN': '결과 {n}',
   'diagram.defaults.itemNM': '항목 {n}.{m}',

@@ -726,7 +726,7 @@ export default {
   'diagram.alternativeDimensions.treeMapTitle': 'Weitere mögliche Klassifikationsdimensionen für dieses Thema:',
   'diagram.bridgeMap.alternativesEmpty': '[Alternativen erscheinen hier]',
   'diagram.conceptMap.focusQuestionPrefix': 'Fokusfrage: ',
-  'diagram.conceptMap.focusQuestionSuffix': 'Bitte treten Sie ein',
+  'diagram.conceptMap.focusQuestionSuffix': 'Eingeben',
   'diagram.conceptMap.rootConcept': 'Wurzelkonzept',
   'diagram.conceptMap.topicRootRelationship': ' — Wurzelkonzept',
   'diagram.contextMenu.addAttribute': 'Attribut hinzufügen',

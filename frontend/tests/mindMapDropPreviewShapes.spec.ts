@@ -120,7 +120,37 @@ describe('mindmap v2 drop preview shapes', () => {
     expect(getDropTargetShapeClass(node)).toBe('')
   })
 
-  it('wraps a node-body drop in a dashed box, including v2 underline children', () => {
+  it('matches a rounded branch box exactly', () => {
+    const node = {
+      ...branchNode('branch-r-1-0'),
+      position: { x: 10, y: 20 },
+      dimensions: { width: 100, height: 36 },
+    }
+    const style = getDropTargetStyle(() => [node], { type: 'child', nodeId: node.id ?? '' })
+    expect(style.left).toBe('10px')
+    expect(style.top).toBe('20px')
+    expect(style.width).toBe('100px')
+    expect(style.height).toBe('36px')
+    expect(style.borderRadius).toBe('4.5px')
+  })
+
+  it('uses a stadium outline for an oval target', () => {
+    const node = branchNode('branch-r-1-0')
+    node.data = { ...node.data, style: { nodeShape: 'oval' } }
+    expect(getDropPreviewBorderRadius(node)).toBe('9999px')
+    expect(getDropTargetShapeClass(node)).toBe('is-pill')
+    const placed = {
+      ...node,
+      position: { x: 4, y: 8 },
+      dimensions: { width: 120, height: 32 },
+    }
+    const style = getDropTargetStyle(() => [placed], { type: 'child', nodeId: node.id ?? '' })
+    expect(style.width).toBe('120px')
+    expect(style.height).toBe('32px')
+    expect(style.borderRadius).toBe('9999px')
+  })
+
+  it('draws an underline target as a rule the width of the node', () => {
     const l2 = useDiagramStore().data?.nodes.find((n) => n.text === '子项1.1')
     expect(l2).toBeTruthy()
     const node = {
@@ -129,8 +159,10 @@ describe('mindmap v2 drop preview shapes', () => {
       dimensions: { width: 80, height: 24 },
     }
     const style = getDropTargetStyle(() => [node], { type: 'child', nodeId: node.id ?? '' })
-    expect(style.height).not.toBe('4px')
-    expect(style.border).toContain('dashed')
-    expect(Number.parseFloat(String(style.width))).toBeGreaterThan(80)
+    expect(style.left).toBe('10px')
+    expect(style.width).toBe('80px')
+    expect(style.height).toBe('4px')
+    expect(style.top).toBe('40px')
+    expect(style.borderRadius).toBe('0px')
   })
 })

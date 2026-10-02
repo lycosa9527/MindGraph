@@ -176,7 +176,7 @@ export function diagramNodeToVueFlowNode(
       ? node.style?.height
       : isDoubleBubbleMap && node.style?.height != null
         ? node.style.height
-        : isTreeMapTopic && node.style?.height != null
+        : (isTreeMapTopic || isTreeMapBranch) && node.style?.height != null
           ? node.style.height
           : undefined
 
