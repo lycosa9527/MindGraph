@@ -2,7 +2,7 @@
 /**
  * Account, security, and plugin tabs. Nested dialogs stay mounted while Settings is open.
  */
-import { toRef } from 'vue'
+import { computed, toRef } from 'vue'
 
 import { Loader2 } from '@lucide/vue'
 
@@ -15,6 +15,7 @@ import OAuthQrLoginModal from '@/components/auth/OAuthQrLoginModal.vue'
 import SetPasswordWithSmsModal from '@/components/auth/SetPasswordWithSmsModal.vue'
 import I18nText from '@/components/common/I18nText.vue'
 
+import SettingsAccountBindings from './SettingsAccountBindings.vue'
 import { type AccountSettingsSection, useAccountSettings } from './useAccountSettings'
 
 const props = defineProps<{
@@ -27,6 +28,8 @@ const emit = defineEmits<{
 }>()
 
 const form = useAccountSettings(toRef(props, 'open'), () => emit('success'))
+
+const showChangePasswordForm = computed(() => !form.isBayiSsoSubject && !form.needsSetLoginPassword)
 </script>
 
 <template>
@@ -139,9 +142,15 @@ const form = useAccountSettings(toRef(props, 'open'), () => emit('success'))
         </button>
       </div>
       <ChangePasswordForm
-        v-else-if="!form.isBayiSsoSubject && !form.needsSetLoginPassword"
+        v-else-if="showChangePasswordForm"
         :active="open && section === 'security'"
       >
+        <template #before-actions>
+          <SettingsAccountBindings
+            v-if="form.showAccountBindingsSection"
+            :form="form"
+          />
+        </template>
         <template #aside>
           <button
             type="button"
@@ -153,59 +162,10 @@ const form = useAccountSettings(toRef(props, 'open'), () => emit('success'))
         </template>
       </ChangePasswordForm>
 
-      <div
-        v-if="form.showAccountBindingsSection"
-        class="space-y-4"
-      >
-        <div class="language-settings-swiss__kicker">
-          <I18nText k="auth.accountBindingsSection" />
-        </div>
-
-        <div v-if="form.showWechatOAuthRow">
-          <label
-            class="language-settings-swiss__kicker"
-            for="account-binding-wechat"
-          >
-            <I18nText k="auth.bindingWechat" />
-          </label>
-          <div class="flex items-center gap-2">
-            <input
-              id="account-binding-wechat"
-              :value="form.wechatBindingStatus"
-              type="text"
-              name="account-binding-wechat"
-              disabled
-              class="swiss-glass-field__input min-w-0 flex-1"
-            />
-            <button
-              v-if="form.wechatOAuthLinked"
-              type="button"
-              class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary shrink-0"
-              :disabled="form.oauthLinksLoading"
-              @click="form.unbindWechat"
-            >
-              <Loader2
-                v-if="form.oauthLinksLoading"
-                class="w-3.5 h-3.5 animate-spin"
-              />
-              <I18nText k="auth.unbindWechat" />
-            </button>
-            <button
-              v-else-if="form.canBindWechat"
-              type="button"
-              class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary shrink-0"
-              :disabled="form.oauthLinksLoading"
-              @click="form.openWechatBindModal"
-            >
-              <Loader2
-                v-if="form.oauthLinksLoading"
-                class="w-3.5 h-3.5 animate-spin"
-              />
-              <I18nText k="auth.bindWechat" />
-            </button>
-          </div>
-        </div>
-      </div>
+      <SettingsAccountBindings
+        v-if="form.showAccountBindingsSection && !showChangePasswordForm"
+        :form="form"
+      />
 
       <div v-if="form.isBayiSsoSubject || form.needsSetLoginPassword">
         <button

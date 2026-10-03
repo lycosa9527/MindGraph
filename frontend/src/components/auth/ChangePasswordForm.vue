@@ -312,6 +312,8 @@ async function handleSubmit() {
       </span>
     </label>
 
+    <slot name="before-actions" />
+
     <div :class="{ 'change-password-actions': Boolean(slots.aside) }">
       <slot name="aside" />
       <button

@@ -469,6 +469,7 @@ declare module 'vue' {
     SchoolInviteCopyButton: typeof import('./components/admin/SchoolInviteCopyButton.vue')['default']
     SessionExpiredAuthCard: typeof import('./components/auth/SessionExpiredAuthCard.vue')['default']
     SetPasswordWithSmsModal: typeof import('./components/auth/SetPasswordWithSmsModal.vue')['default']
+    SettingsAccountBindings: typeof import('./components/settings/SettingsAccountBindings.vue')['default']
     SettingsAccountPanels: typeof import('./components/settings/SettingsAccountPanels.vue')['default']
     SettingsLanguagePanel: typeof import('./components/settings/SettingsLanguagePanel.vue')['default']
     ShareExportModal: typeof import('./components/panels/ShareExportModal.vue')['default']
